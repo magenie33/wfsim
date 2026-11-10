@@ -495,6 +495,7 @@ pub(super) fn field_tick_seeded(
         &mut d.status,
     );
     let scale = InstanceScale {
+            status_duration_extra_seconds: 0.0,
             mb_live,
             crit_multiplier,
             // A STATUS IS STAMPED WITH THE MULTIPLIERS OF THE HIT THAT APPLIED

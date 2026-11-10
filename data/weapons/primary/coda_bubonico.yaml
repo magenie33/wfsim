@@ -120,8 +120,8 @@ attack:
 
 unmodeled:
   - reason: client_rate_spool
-  - reason: client_spool_pellets
   - reason: client_accuracy_runtime
+  - "Inverse spread and additional-multishot spread overrides are not simulated; their per-form consumers remain unverified."
   - reason: spool_rebuilds_after_reload
 
 source:

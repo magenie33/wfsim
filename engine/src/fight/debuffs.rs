@@ -874,6 +874,18 @@ impl DebuffState {
         caps: Option<StackCaps>,
         no_frozen: bool,
     ) -> bool {
+        self.apply_cold_proc_extra(t, status_damage, 0.0, under_overguard, caps, no_frozen)
+    }
+
+    pub(super) fn apply_cold_proc_extra(
+        &mut self,
+        t: f64,
+        status_damage: f64,
+        extra_seconds: f64,
+        under_overguard: bool,
+        caps: Option<StackCaps>,
+        no_frozen: bool,
+    ) -> bool {
         if self.frozen_until.is_some_and(|f| f > t) {
             return false; // inert
         }
@@ -896,7 +908,7 @@ impl DebuffState {
             (false, Some(c)) => c.general,
             (false, None) => TEN_STACK_CAP,
         };
-        DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * status_damage, cap, t);
+        DebuffState::push_capped(&mut self.freeze, t + (STATUS_DURATION + extra_seconds) * status_damage, cap, t);
         // FROZEN IS A STATE, NOT A STACK. It is tripped by the tenth chill and
         // it suppresses further chill for its 3 s (the early return above);
         // the chill itself stays, pinned at ten, which is what the game shows.
@@ -906,7 +918,7 @@ impl DebuffState {
         // four, an Acolyte's four — makes `len() >= TEN_STACK_CAP` unreachable
         // by arithmetic, and a unit that is simply immune says so once.
         if !no_frozen && self.freeze.len() >= TEN_STACK_CAP {
-            self.frozen_until = Some(t + FROZEN_DURATION * status_damage);
+            self.frozen_until = Some(t + (FROZEN_DURATION + extra_seconds) * status_damage);
         }
         true
     }

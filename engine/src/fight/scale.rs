@@ -3,6 +3,7 @@ use super::*;
 /// One instance's damage scaling, as the status payloads need it.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct InstanceScale {
+    pub(super) status_duration_extra_seconds: f64,
     /// Live ModifiedBase (base-damage bucket applied).
     pub(super) mb_live: f64,
     /// The instance's crit multiplier (1.0 when it did not crit).

@@ -8,6 +8,9 @@
 ui:
   "{form}, wait until full": "{form}，等待回满"
   "Wait until full": "等待回满"
+  "Added Status Duration": "额外异常状态持续时间"
+  "Inverse spread and additional-multishot spread overrides are not simulated; their per-form consumers remain unverified.": "尚未模拟反向扩散和额外多重射击的扩散规则；对应形态的调用链仍待核实。"
+  "Added to each status effect's base duration before duration bonuses.": "先加到每种异常状态的基础持续时间，再乘持续时间加成。"
   "Reload-speed buffs gained mid-fight do not update the battery's recharge delay.": "战斗中获得的装填速度增益尚未作用于电池的恢复延迟。"
   "Stop firing before the next shot would empty the battery, then wait until it is full.": "在下一发会打空电池之前停火，等待回满后继续射击。"
   "After depleting the battery, wait until it is full before firing again. Recovery can be interrupted by firing.": "电池耗尽后等待回满再继续射击。恢复期间可以提前开火打断。"

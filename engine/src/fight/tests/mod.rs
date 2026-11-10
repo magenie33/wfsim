@@ -4,6 +4,7 @@
 use super::*;
 
 mod battery_recharge;
+mod coda_bubonico;
 mod bow;
 mod blobs;
 mod m127_stug;
@@ -710,6 +711,7 @@ fn radial_of(status_chance: f64, crit_chance: f64) -> crate::build::loadout::Res
     let mut damage = DamageVector::default();
     damage.set(DamageType::Heat, 300.0);
     crate::build::loadout::ResolvedRadial {
+        status_duration_extra_seconds: 0.0,
         delay_seconds: 0.0,
         blast_kind: crate::model::BlastKind::Contact,
         damage,

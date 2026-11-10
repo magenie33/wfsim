@@ -221,6 +221,10 @@ ignores unknown `kind`s, so the mod still loads). Wiki-sourced calc:
   **duration only** (→ more ticks, ~linear DoT total) and **slows Heat's
   armor-strip ramp** (+100% dur → 1 s steps); no effect on instant procs
   (§6). At −100% or below no duration status lands (§6).
+  A packet's `status_duration_extra_seconds` adds to the status family's base
+  duration before that multiplier. The Bubonico family's explosive packet
+  supplies 9 seconds; its direct packet supplies none. Each affected body's
+  statuses use this packet value, including DoT tick counts and Blast fuses.
 - **Punch through** (`punch_through_bonus`, **meters** — wiki `Punch_Through`):
   pierces enemies/geometry up to the meter budget; each pierced target
   subtracts remaining potential; **every pierced target takes FULL damage**

@@ -1,0 +1,47 @@
+{
+  "source": {
+    "batch_id": "20261109T053558Z-weapon-roster-dossiers",
+    "manifest_sha256": "7b830c6730e20621029d67d9d26e9aa8a216c998c32de73e2e22fe187c979d91",
+    "archive": {
+      "path": "weapon-roster-dossiers.zip",
+      "bytes": 26610207,
+      "sha256": "0204e7947e3f45afd746b696e5405c90e80af6c1924795885be206ae05e5a18c"
+    },
+    "members": [
+      {
+        "path": "shared/objects.jsonl",
+        "bytes": 391622746,
+        "sha256": "ccd1260624914a56a4521f3382d2918e8986ffcf144fa1753ee99800425eece8"
+      },
+      {
+        "path": "weapons/coda_bubonico/dossier.json",
+        "bytes": 888617,
+        "sha256": "ea7f3f68962d4c4daed941a249eb9043733813a6d3de3f9ab495e1195d64f02e"
+      }
+    ],
+    "owner": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaBubonico/CodaBubonicoCannon"
+  },
+  "primary_state": {
+    "ContinuousFireRateAtten": "{0.30000001,1}",
+    "ContinuousMaxShots": "12",
+    "SpindownTime": "0",
+    "InitialFireIterations": "7",
+    "MaximumFireIterations": "7",
+    "FireIterationMode": "INCREMENT"
+  },
+  "primary_fire": {
+    "SpreadInverse": "1",
+    "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfArmCannonAccuracyInfo",
+    "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/InfArmCannonAccuracyInfo",
+    "SpreadExtraProjectiles": "1",
+    "ExtraSpread": "2",
+    "SpreadMultiplier": "3",
+    "MultiShotProjectileType": "CodaInfArmCannonBoltoProjMS"
+  },
+  "unverified_consumers": [
+    "ContinuousMaxShots counter advancement and reset",
+    "Per-form spread update, smoothing and emission scheduling",
+    "Additional-multishot projectile spread and native seed correlations",
+    "Projectile gravity and collision consumer"
+  ]
+}

@@ -52,9 +52,8 @@ attack:
   projectile_speed_mps: 25
   fire_rate: 7.0
   multishot: 1.0
-  # THREE ROUNDS A SHOT, NINE A BURST, which is what the page's own disadvantage
-  # means by "Multiplied consumption results in only three bursts before
-  # recharging" — 36 rounds of magazine divided by 9.
+  # Each round consumes three battery units, so a three-round burst consumes
+  # nine. The 36-unit battery supplies four complete bursts.
   ammo_cost: 3
   crit_chance: 0.05
   crit_multiplier: 3.5
@@ -89,6 +88,7 @@ attack:
   # standing rule for every radial. Its status chance is 57% where the round's
   # is 61%, which is a real difference and is transcribed rather than shared.
   radial:
+    status_duration_extra_seconds: 9.0
     damage: { viral: 143 }
     radius_m: 7.0
     falloff_start_m: 0.0
@@ -100,7 +100,6 @@ attack:
     status_chance: 0.57
 
 unmodeled:
-  - "The explosion's +9 s status duration is applied before other percentage duration bonuses (page), and is not modelled."
   - reason: explosion_ignores_cover
   - "The projectiles arc and travel slowly, so at range they must be led; every shot here connects, so against a moving target the real hit rate is lower."
   - reason: self_stagger

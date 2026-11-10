@@ -288,6 +288,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             v.add(damage_type(t), *val);
         }
         RadialBase {
+            status_duration_extra_seconds: r.status_duration_extra_seconds,
             delay_seconds: r.delay_seconds,
             base_vector: v,
             blast_kind: r.blast_kind,
@@ -361,6 +362,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
     // is exclusive at the edge and a zero would reach nobody at all.
     let cluster = s.attack.cluster.as_ref().map(|c| {
         let contact = a_radial(&RadialSpec {
+            status_duration_extra_seconds: 0.0,
             delay_seconds: 0.0,
             damage: c.damage.clone(),
             radius_m: crate::rules::space::BODY_RADIUS_M,
@@ -400,6 +402,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
     // not affect the reload grenade", and the throw's count is the weapon's.
     let a_throw = |t: &crate::data::weapons::GrenadeThrowSpec| crate::model::GrenadeThrowBase {
         contact: a_radial(&RadialSpec {
+            status_duration_extra_seconds: 0.0,
             delay_seconds: 0.0,
             damage: t.damage.clone(),
             radius_m: crate::rules::space::BODY_RADIUS_M,
@@ -433,6 +436,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
     // a kill makes one dagger.
     let spectral_dagger = s.attack.spectral_dagger.as_ref().map(|g| crate::model::SpectralDaggerBase {
         strike: a_radial(&RadialSpec {
+            status_duration_extra_seconds: 0.0,
             delay_seconds: 0.0,
             damage: g.damage.clone(),
             radius_m: crate::rules::space::BODY_RADIUS_M,

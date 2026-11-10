@@ -299,6 +299,7 @@ pub(super) fn fire_extra_hits(
             owner,
             at,
             InstanceScale {
+                status_duration_extra_seconds: 0.0,
                 // THE CATEGORY'S RULE, not this function's: an extra hit that
                 // deals damage replaces the base its status burns off, and one
                 // that deals none leaves the level above standing. `raw` is
@@ -601,9 +602,10 @@ pub(super) fn settle_procs(
     // through an extra damage instance.
     depth: u32,
 ) {
-    let InstanceScale { mb_live, crit_multiplier, part_factor, landing, attrition, xh_bracket, status_damage_live } =
+    let InstanceScale { status_duration_extra_seconds, mb_live, crit_multiplier, part_factor, landing, attrition, xh_bracket, status_damage_live } =
         scale;
     let status_damage = arc.status_duration(params, at);
+    let duration = |base: f64| (base + status_duration_extra_seconds).max(0.0) * status_damage.max(0.0);
     let sdm = params.status_damage_multiplier + status_damage_live;
     let caps = foe.stack_caps;
     let gcap = |base: usize| caps.map_or(base, |c| base.min(c.general));
@@ -627,13 +629,13 @@ pub(super) fn settle_procs(
     // Gas) at 0..+5 s (the +6 s event is a dud).
     // Signed until the end: a duration under the delay is floor(<0) + 1 = 0
     // ticks, and casting the floor first wrapped it to 0 + 1.
-    let delayed_ticks = ((BLEED_TICKS as f64 * status_damage - BLEED_DELAY).floor() + 1.0).max(0.0) as u32;
+    let delayed_ticks = ((duration(BLEED_TICKS as f64) - BLEED_DELAY).floor() + 1.0).max(0.0) as u32;
     // ONE TICK AT LEAST, until the duration is gone: past -100% status duration
     // "all duration/DoT procs are nullified" (MECHANICS §6), Tesla and Gas included.
     let immediate_ticks = if status_damage <= 0.0 {
         0
     } else {
-        ((BLEED_TICKS as f64 * status_damage).floor() as u32).max(1)
+        (duration(BLEED_TICKS as f64).floor() as u32).max(1)
     };
     // Faction is re-applied at every DERIVATION step — see `faction_at`. A
     // status the hit applied is one step past it, so depth 2 (wiki
@@ -739,14 +741,14 @@ pub(super) fn settle_procs(
         match proc {
             DamageType::Impact => DebuffState::push_capped(
                 &mut debuffs.stagger,
-                at + STAGGER_DURATION * status_damage,
+                at + duration(STAGGER_DURATION),
                 stagger_cap,
                 at,
             ),
             DamageType::Puncture => {
                 DebuffState::push_capped(
                     &mut debuffs.weakened,
-                    at + WEAKENED_DURATION * status_damage,
+                    at + duration(WEAKENED_DURATION),
                     gcap(WEAKENED_CAP),
                     at,
                 );
@@ -884,7 +886,7 @@ pub(super) fn settle_procs(
                     * part_factor
                     // …and Eclipse, applied ONCE at the proc. See `Dot::live`.
                     * ecl;
-                let expiry = at + STATUS_DURATION * status_damage;
+                let expiry = at + duration(STATUS_DURATION);
                 debuffs.apply_heat(
                     at,
                     contrib,
@@ -907,25 +909,25 @@ pub(super) fn settle_procs(
                 // proc is inert. Frozen lasts 3 s against a 12 s buff, so
                 // getting this wrong never shows as the arcane going dark, only
                 // as it never quite decaying.
-                if debuffs.apply_cold_proc(at, status_damage, target.overguard > 0.0, caps, foe.cannot_be_frozen) {
+                if debuffs.apply_cold_proc_extra(at, status_damage, status_duration_extra_seconds, target.overguard > 0.0, caps, foe.cannot_be_frozen) {
                     arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ColdStatus, at);
                 }
             }
             DamageType::Magnetic => DebuffState::push_capped(
                 &mut debuffs.disrupt,
-                at + STATUS_DURATION * status_damage,
+                at + duration(STATUS_DURATION),
                 gcap(TEN_STACK_CAP),
                 at,
             ),
             DamageType::Viral => DebuffState::push_capped(
                 &mut debuffs.virus,
-                at + STATUS_DURATION * status_damage,
+                at + duration(STATUS_DURATION),
                 gcap(TEN_STACK_CAP),
                 at,
             ),
             DamageType::Corrosive => DebuffState::push_capped(
                 &mut debuffs.corrosion,
-                at + CORROSION_DURATION * status_damage,
+                at + duration(CORROSION_DURATION),
                 // THE ONE CEILING A PLAYER CAN MOVE. An Emerald Archon Shard is
                 // "+2 (+3) max stacks of Corrosion", and its page is explicit
                 // that a WEAPON's corrosion may exceed ten because of it. Five
@@ -941,7 +943,7 @@ pub(super) fn settle_procs(
             ),
             DamageType::Radiation => DebuffState::push_capped(
                 &mut debuffs.confusion,
-                at + STATUS_DURATION * status_damage,
+                at + duration(STATUS_DURATION),
                 gcap(TEN_STACK_CAP),
                 at,
             ),
@@ -951,13 +953,13 @@ pub(super) fn settle_procs(
             // counter and nothing else — see `DebuffState::attractor`.
             DamageType::Void => DebuffState::push_capped(
                 &mut debuffs.attractor,
-                at + ATTRACTOR_DURATION * status_damage,
+                at + duration(ATTRACTOR_DURATION),
                 1,
                 at,
             ),
             DamageType::Tau => DebuffState::push_capped(
                 &mut debuffs.tau,
-                at + TAU_DURATION * status_damage,
+                at + duration(TAU_DURATION),
                 gcap(TEN_STACK_CAP),
                 at,
             ),
@@ -975,7 +977,7 @@ pub(super) fn settle_procs(
                     charges_gauge: params.cycle.as_ref().is_some_and(|c|
                         active.form == c.base_form.form && matches!(c.arms,
                             Arms::Gauge { charge_on: crate::model::ChargeOn::HitsAndWeakpoints, .. })),
-                    fuse: at + BLAST_FUSE * status_damage,
+                    fuse: at + duration(BLAST_FUSE),
                     value: BLAST_COEFFICIENT
                         * mb_live
                         * sdm
@@ -1159,6 +1161,7 @@ pub(super) fn settle_procs(
                     owner,
                     at,
                     InstanceScale {
+                        status_duration_extra_seconds: 0.0,
                         // THE 0% MEMBER OF THE EXTRA HIT CATEGORY. This arcane
                         // "adds a 0-damage Extra Hit that applies a guaranteed
                         // status effect" (wiki, Extra_Hit), so the base its

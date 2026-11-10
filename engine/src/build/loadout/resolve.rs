@@ -1296,6 +1296,7 @@ pub fn resolve_for(
         // half of it.
         let (rd, rmb) = build_in(&r.base_vector.scale(charge_scale), None, base_damage, true, 0.0);
         ResolvedRadial {
+            status_duration_extra_seconds: r.status_duration_extra_seconds,
             delay_seconds: r.delay_seconds,
             blast_kind: r.blast_kind,
             damage: rd,

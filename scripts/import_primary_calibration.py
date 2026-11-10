@@ -252,7 +252,7 @@ def calibrate(objects, binding, dossier, doc):
         pellets = number(state.get('MaximumFireIterations'), count)
         if identity.endswith('_single'):
             pellets = number(state.get('InitialFireIterations'), count)
-        else:
+        elif state.get('InitialFireIterations') is None or number(state['InitialFireIterations']) != pellets:
             limits.append('client_spool_pellets')
     factor = number(fire.get('playerDamageMultiplier'), 1) * number(impact.get('PlayerDamageMultiplier'), 1)
     charged = 'ChargeTime' in state
@@ -364,6 +364,9 @@ def calibrate(objects, binding, dossier, doc):
             adopt(updates, doc, ('attack', 'radial', 'damage'), vector, 3e-5)
             if 'ProcChance' in explosion:
                 adopt(updates, doc, ('attack', 'radial', 'status_chance'), number(explosion['ProcChance']))
+            if 'status_duration_extra_seconds' in a['radial']:
+                assert 'ProcExtraTime' in explosion, (identity, 'missing status duration input')
+                adopt(updates, doc, ('attack', 'radial', 'status_duration_extra_seconds'), number(explosion['ProcExtraTime']))
             for native, key in [('DamageRadius', 'radius_m'), ('ExplosionFallOff', 'falloff_reduction')]:
                 if native in projectile:
                     adopt(updates, doc, ('attack', 'radial', key), number(projectile[native].partition('=')[2]))

@@ -590,6 +590,15 @@ that its scripts, alternative attacks or conditional upgrades are simulated.
 
 ### Primary client calibration — remaining consumers
 
+Coda Bubonico's bound primary state has equal initial and maximum fire
+iterations, so its seven-pellet count is fixed. Its secondary burst runs round
+by round, and its explosive packet's extra status duration is applied.
+The native `ContinuousMaxShots` counter's update/reset path remains unverified;
+the declared firing-count ramp is retained. The per-form inverse spread,
+extra-projectile spread overrides, update/emission ordering and projectile
+gravity/collision consumers remain open. The exact input tokens are pinned in
+`tests/fixtures/client/coda-bubonico-scope-2026-10-28.json`.
+
 Every primary form has an explicit source binding and adopted-field receipt in
 `tests/fixtures/client/primary-calibration-2026-10-28.json`. Coverage of these inputs
 does not establish complete runtime or in-game calibration. Supported ordinary

@@ -745,6 +745,9 @@ pub struct ChainSpec {
 /// default to the direct part's when the data does not state them.
 #[derive(Debug, Clone, Deserialize)]
 pub struct RadialSpec {
+    /// Added to each status family's base duration before duration bonuses.
+    #[serde(default)]
+    pub status_duration_extra_seconds: f64,
     pub damage: BTreeMap<String, f64>,
     pub radius_m: f64,
     /// Seconds from projectile contact to its explosion, independent of fire rate.

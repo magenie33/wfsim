@@ -1886,6 +1886,15 @@ fn form_section(
                     dist(rr.radius_m - shown_radius))),
                 "sources": rsrc("radius") }),
         ];
+        if rr.status_duration_extra_seconds > 0.0 {
+            rows.push(json!({
+                "key": "status_duration_extra", "label": "Added Status Duration",
+                "base": secs(rb.status_duration_extra_seconds),
+                "final": secs(rr.status_duration_extra_seconds * panel.status_duration_multiplier),
+                "note": "Added to each status effect's base duration before duration bonuses.",
+                "sources": rsrc("status_duration"),
+            }));
+        }
         // Falloff: full damage inside `start`, then linear down to
         // (1 − reduction) at the rim. Stated as what the rim actually
         // takes, which is the number a reader can act on.
@@ -2372,6 +2381,21 @@ mod source_row_tests {
     fn row<'a>(p: &'a Value, form: &str, label: &str) -> &'a Value {
         rows(p, form).into_iter().find(|r| r["label"] == json!(label))
             .unwrap_or_else(|| panic!("no {label} row on {form}"))
+    }
+
+    #[test]
+    fn coda_radial_duration_is_visible_on_its_own_attack_part() {
+        for (mods, expected) in [(json!([]), "9s"), (json!(["lingering_torment"]), "17.1s")] {
+            let p = panel_json(&json!({"weapon": "coda_bubonico", "mode": "alternate", "mods": mods}));
+            let f = p["forms"].as_array().unwrap().iter().find(|f| f["label"] == "Alternate Fire").unwrap();
+            let radial = f["parts"].as_array().unwrap().iter().find(|r| r["id"] == "radial").unwrap();
+            let extra = radial["stats"].as_array().unwrap().iter()
+                .find(|r| r["key"] == "status_duration_extra").unwrap();
+            assert_eq!(extra["base"], "9s");
+            assert_eq!(extra["final"], expected);
+            let direct = f["parts"].as_array().unwrap().iter().find(|r| r["id"] == "direct").unwrap();
+            assert!(!direct["stats"].as_array().unwrap().iter().any(|r| r["key"] == "status_duration_extra"));
+        }
     }
 
     #[test]

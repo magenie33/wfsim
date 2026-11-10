@@ -591,6 +591,7 @@ fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
         let mut damage = DamageVector::default();
         damage.set(DamageType::Heat, 300.0);
         crate::build::loadout::ResolvedRadial {
+            status_duration_extra_seconds: 0.0,
             delay_seconds: 0.0,
             blast_kind: crate::model::BlastKind::Contact,
             damage,
@@ -662,6 +663,7 @@ fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
 fn the_explosion_arms_an_on_hit_buff_of_its_own() {
     let mk = |with_radial: bool| {
         let radial = with_radial.then(|| crate::build::loadout::ResolvedRadial {
+            status_duration_extra_seconds: 0.0,
             delay_seconds: 0.0,
             blast_kind: crate::model::BlastKind::Contact,
             damage: DamageVector::default(), // 0 damage: a pure extra INSTANCE

@@ -82,6 +82,7 @@ pub struct LingeringBase {
 /// A weapon's radial (explosion) attack part, unmodded.
 #[derive(Debug, Clone)]
 pub struct RadialBase {
+    pub status_duration_extra_seconds: f64,
     /// Seconds after contact before this explosion settles.
     pub delay_seconds: f64,
     pub base_vector: DamageVector,

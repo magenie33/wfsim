@@ -131,6 +131,13 @@ fails the compiled catalog check. Modular entries bind `PrimaryBehaviorOverrides
 their published assembly tables remain in use until the composition consumer is
 verified. `docs/UNMODELLED.md` owns the remaining mechanism coverage.
 
+`scripts/import_coda_bubonico_scope.py --exchange <exchange> --check` verifies
+`coda-bubonico-scope-2026-10-28.json` against the same closed roster archive.
+It retains the exact primary state and firing override tokens alongside their
+unverified consumers. Initial and maximum fire iterations both equal seven;
+the increment mode alone therefore does not establish a pellet-count ramp.
+The adopted radial `ProcExtraTime` remains in the primary calibration receipt.
+
 For this primary calibration, parsed client inputs take priority over conflicting
 published values and prior timing conventions. This includes charge, reload,
 beam-ramp and form-transition parameters. A field's consumer still determines its

@@ -6839,6 +6839,7 @@
           "viral": 143
         },
         "attack.radial.status_chance": 0.57,
+        "attack.radial.status_duration_extra_seconds": 9.0,
         "attack.radial.radius_m": 7.0,
         "attack.radial.falloff_reduction": 0.5
       },
@@ -9658,7 +9659,6 @@
         }
       },
       "limits": [
-        "client_spool_pellets",
         "client_rate_spool",
         "client_accuracy_runtime"
       ],
@@ -9822,6 +9822,7 @@
           "viral": 143
         },
         "attack.radial.status_chance": 0.57,
+        "attack.radial.status_duration_extra_seconds": 9.0,
         "attack.radial.radius_m": 7.0,
         "attack.radial.falloff_reduction": 0.5
       },

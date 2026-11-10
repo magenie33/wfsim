@@ -1475,6 +1475,7 @@ fn a_field_takes_condition_overload_only_where_the_weapon_declares_it() {
 #[test]
 fn a_radial_takes_condition_overload_only_where_the_weapon_declares_it() {
     let radial = |takes: bool| crate::build::loadout::ResolvedRadial {
+        status_duration_extra_seconds: 0.0,
         delay_seconds: 0.0,
         blast_kind: crate::model::BlastKind::Contact,
         damage: {

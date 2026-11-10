@@ -799,17 +799,8 @@ pub struct SustainedFireRate {
     pub over_shots: f64,
 }
 
-/// WHAT IS NOT MODELLED, stated because it is a real difference: the sim
-/// spaces rounds EVENLY at the effective rate instead of clumping them into
-/// bursts. Nothing the single-target arena reads can tell the difference —
-/// total rounds, ammo, status rolls and reload cadence are all identical over
-/// any whole number of bursts — but a buff whose window is shorter than one
-/// burst cycle (0.28 s on a Burston Prime) would see a different pattern, and
-/// so would a per-burst TRIGGER. The Burston has exactly one of those, Reaver's
-/// Rapture ("On Full Burst Hit: +20% Damage"), and it is the reason `count`
-/// is carried rather than folded away into an effective rate: whoever models
-/// that perk needs "every `count`-th round completes a burst", which this
-/// field is, and which an effective rate would have thrown away.
+/// Each pull resolves round by round: intra-burst delays precede the final
+/// round's refire interval. A magazine too short to finish ends the pull early.
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub struct BurstSpec {
     /// Rounds per pull. Each is a full instance — its own multishot, crit and

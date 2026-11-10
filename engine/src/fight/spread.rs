@@ -6,6 +6,7 @@ use super::*;
 /// the total ratio removes the aimed body's quantized elemental contribution.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct TargetComposition {
+    pub(super) status_duration_extra_seconds: f64,
     pub(super) vector: DamageVector,
     pub(super) stage_mb: f64,
     pub(super) aimed_total: f64,
@@ -558,6 +559,7 @@ pub(super) fn spread_hit(
         seat,
         t,
         InstanceScale {
+            status_duration_extra_seconds: status_vector.status_duration_extra_seconds,
             // THE HEAD FACTOR IS NOT IN HERE, which is the point of keeping it
             // off `share`: a Slash bleed off a headshot is the same size as one
             // off a bodyshot, because a status effect reads the modded base.
@@ -1604,6 +1606,7 @@ pub(super) fn fire_syndicate_radial(
             seat,
             at,
             InstanceScale {
+                status_duration_extra_seconds: 0.0,
                 mb_live: sy.damage,
                 crit_multiplier: 1.0,
                 part_factor: 1.0,

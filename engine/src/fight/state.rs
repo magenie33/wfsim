@@ -144,11 +144,8 @@ pub(super) struct Ammo {
     /// the magazine, so a magazine that does not divide by the count leaves a
     /// partial burst at the end and that burst earns nothing.
     ///
-    /// The intra-burst SPACING is averaged here — the cadence code spreads a
-    /// burst's rounds evenly, which is the wiki's own effective-rate formula —
-    /// so this counts which round completes a burst rather than pinning the
-    /// instant it happened. That is the precise part and the part that decides
-    /// which shots carry which stack count.
+    /// The cadence schedules each round's own delay; this counter identifies
+    /// the round that completes the burst and earns its trigger.
     pub(super) rounds_this_mag: u32,
     /// How many times the magazine has been full again — see the macro below.
     pub(super) refills: u32,

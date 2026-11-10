@@ -1271,6 +1271,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             && !rad.is_some_and(|r| r.blast_kind == crate::model::BlastKind::Slam)
             && !active.radial.is_some_and(|r| r.blast_kind == crate::model::BlastKind::Slam);
         let mut spread_composition = TargetComposition {
+            status_duration_extra_seconds: rad.map_or(0.0, |r| r.status_duration_extra_seconds),
             vector: qvec,
             stage_mb,
             aimed_total: qvec.total(),
@@ -2499,6 +2500,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // only be the applying hit's, carried here. A DoT is not a
             // hit, so it never rolls one of its own. MEASUREMENTS M37.
             InstanceScale {
+                status_duration_extra_seconds: spread_composition.status_duration_extra_seconds,
                 mb_live,
                 crit_multiplier,
                 part_factor,
@@ -2546,6 +2548,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // swing.
             let open = t < *influence_until;
             let scale = InstanceScale {
+                status_duration_extra_seconds: 0.0,
                 // THE STATUS IS THE SWING'S OWN, one derivation further
                 // out — so it burns off the base the swing's statuses
                 // burn off, and only the faction rung differs. The wiki

@@ -79,6 +79,7 @@ attack:
   # standing rule for every radial. Its status chance matches the round's here,
   # where the Coda's two differ by four points.
   radial:
+    status_duration_extra_seconds: 9.0
     extra_hit_reads: even   # see notes: extra_hit_reads
     damage: { viral: 143 }
     radius_m: 7.0
