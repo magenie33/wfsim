@@ -8,6 +8,8 @@ import { checkFastChanges, fastJobs, fastScope } from './ci_fast.mjs';
 import { DEEP_SCOPE_GROUPS, RUST_SUITES } from './ci_rust.mjs';
 import { COMPANION_JOBS, companionJobs } from './full_work.mjs';
 import { FACTORY_CHECKS, factoryMatrix } from './factory_shards.mjs';
+import { CLIENT_INPUTS } from './ci_client_inputs.mjs';
+import { PARTS } from './gen_worker_parts.mjs';
 
 export const BROWSER_JOBS = ['site', 'checks', 'services', 'pipeline', 'page', 'parity', 'page-rest', 'mcp', 'bot'];
 export const FRONTEND_JOBS = BROWSER_JOBS.filter(job => !['services', 'pipeline'].includes(job));
@@ -20,6 +22,7 @@ const CI_WIRING = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
   '.github/actions/site-tools/action.yml', '.github/actions/built-site/action.yml',
   '.github/actions/site-tools/install.sh', 'scripts/check_site_setup.mjs',
   'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs', 'scripts/check_ci_policy.mjs',
+  'scripts/ci_client_inputs.mjs', 'scripts/gen_worker_parts.mjs',
   'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs', 'scripts/check_ci_partitions.mjs',
   'scripts/ci_fast.mjs', 'scripts/check_ci_fast.mjs', 'scripts/full_work.mjs',
   'scripts/check_full_work.mjs', 'scripts/check_edge_runtime.mjs', 'scripts/ci_metrics.mjs',
@@ -70,6 +73,7 @@ export function browserCheckPaths(workflow) {
   return new Set([...checkJobPaths(workflow)].filter(([, jobs]) => [...jobs].every(j => SERVICE_CHECK_JOBS.includes(j))).map(([p]) => p));
 }
 const owners = checkJobPaths(readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8'));
+const clientInputs = new Set([...Object.values(CLIENT_INPUTS).flat(), ...PARTS.flatMap(part => [part.part].flat())]);
 
 export function releaseCoverage(jobs) {
   const same = wanted => jobs.length === wanted.length && wanted.every(j => jobs.includes(j));
@@ -87,6 +91,7 @@ export function classify(paths, force = false, verifiedBase = true) {
     if (/^(site\/|desktop\/payload\/|mcp\/engine\.js$|data\/board_state\.yaml$)/.test(path)) kind = 'snapshot';
     else if (/^docs\/(CLIENTS\.md$|measurements\/)/.test(path)) kind = 'full';
     else if (/^(docs\/.*\.md$|README\.md$|LICENSE$)/.test(path)) kind = 'docs';
+    else if (clientInputs.has(path)) kind = 'services';
     else if (/^web\/src\/static\//.test(path) || /^data\/i18n\//.test(path)) kind = 'frontend';
     else if (path === 'mcp/headless.js') kind = 'headless';
     else if (/^mcp\/(index\.js|account\.js|a2a\.js|wrangler\.jsonc)$/.test(path)

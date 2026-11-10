@@ -20,7 +20,8 @@ runs cannot. API errors also fall back to full validation.
 | `docs/CLIENTS.md`, `docs/measurements/` | Full CI: the build reads the contract and counts measurements |
 | MCP source and its exclusive checks | Quick checks, build, artifact contracts and MCP checks |
 | Bot source and its exclusive checks | Quick checks, build, artifact contracts, bot authentication, packaging and card rendering |
-| `web/src/static/`, `data/i18n/`, `worker/`, other checks invoked only by product jobs | Quick checks, build, services, pipeline, all browser checks and all parity shards |
+| Static UI, localization and checks used only by frontend jobs | Quick checks, build, all browser and parity shards, MCP and bot checks |
+| Worker inputs, declared client protocol fixtures and service checks | Quick checks, build, services, pipeline, all browser checks and all parity shards |
 | Generated `site/`, `desktop/payload/`, `mcp/engine.js`, `data/board_state.yaml` only | Quick checks and published-board legality |
 | Engine, optimizer, webapi, game data, Rust dependencies, tooling, workflow or any other path | Full CI |
 
@@ -109,7 +110,12 @@ branch; main runs and shipping are not cancelled in progress.
 Frontend-only changes retain every browser, parity, MCP and bot check, a fresh
 site, the build/simulate/solve smoke and production-runtime contracts. Static UI
 and localization inputs do not invalidate unchanged SQL or factory stress
-fixtures. A generated worker-module change selects the backend coverage again.
+fixtures. Protocol checks load their frontend fixtures through
+`ci_client_inputs.mjs`; selection reads the same declaration and promotes those
+inputs to service coverage. Direct frontend reads in service checks fail the
+selection check. Shared worker and headless sources use the generator's own
+input declaration to select backend coverage before their generated copies
+change. Localization read directly by a service fixture follows the same rule.
 Worker changes retain complete service/pipeline/factory validation; mixed core,
 snapshot or unknown inputs retain the conservative full selection. A frontend
 proof cannot substitute for backend or numerical coverage.

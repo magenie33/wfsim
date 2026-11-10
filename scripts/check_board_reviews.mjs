@@ -9,6 +9,7 @@ import { setDial } from '../worker/dials.js';
 import { readFileSync } from 'node:fs';
 import { tell } from './order_credit.mjs';
 import { runInNewContext } from 'node:vm';
+import { clientSource } from './ci_client_inputs.mjs';
 import { appraiseRoute } from '../worker/appraise.js';
 
 const realRandom = Math.random; Math.random = () => 0.5;
@@ -248,7 +249,7 @@ await check('a chat appraisal freeze triggers shared calibration in the backgrou
  assert.equal(background.length,1);
 });
 
-const headless=runInNewContext(['83-headless-card.js','87-headless.js'].map(name=>readFileSync(new URL('../web/src/static/app/'+name,import.meta.url),'utf8')).join('\n')+`
+const headless=runInNewContext(clientSource('scripts/check_board_reviews.mjs')+`
 headlessBoardRowAxes=()=>({slots:[]}); headlessWithDrafts=(_meta,card)=>card;
 headlessSeat=()=>({}); headlessScenarioOnto=()=>({}); headlessBuiltinStarts=()=>[];
 headlessAppraisalReplay;

@@ -3,13 +3,15 @@ import assert from 'node:assert/strict';
 import './check_ci_fast.mjs';
 import { FAST_JOBS, fastJobs } from './ci_fast.mjs';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { ALL_CI_JOBS, assertGate, BROWSER_JOBS, browserCheckPaths, changedPaths, checkJobPaths,
   classify, CONSUMER_JOBS, FRONTEND_JOBS, jobPlan, OPTIONAL_NATIVE_JOBS, PRODUCT_JOBS } from './ci_policy.mjs';
 import { releaseArtifactsAvailable, trustedRun, validProof, verifiedBase } from './ci_runs.mjs';
 import { COMPANION_JOBS, companionJobs } from './full_work.mjs';
+import { CLIENT_INPUTS, clientSource } from './ci_client_inputs.mjs';
+import { PARTS } from './gen_worker_parts.mjs';
 
 for (const path of ['engine/src/fight.rs', 'optimizer/src/search.rs', 'webapi/src/optimize.rs',
   'data/weapons/braton.yaml', 'Cargo.lock', '.github/workflows/ci.yml', 'scripts/ci_policy.mjs',
@@ -41,7 +43,7 @@ assert.equal(classify(['docs/UI.md', 'README.md']).jobs.length, 0);
 for (const paths of [['docs/UI.md'], ['worker/index.js'], ['web/src/static/style.css'], ['site/release.json']]) {
   assert.deepEqual(classify(paths, false, false).jobs, PRODUCT_JOBS, 'an unverified base cannot justify skipping tests');
 }
-for (const path of ['web/src/static/style.css', 'data/i18n/zh/ui.yaml', 'web/src/static/app/69-board-work.js']) {
+for (const path of ['web/src/static/style.css', 'data/i18n/en/ui.yaml', 'web/src/static/app/40-official-builds.js']) {
   const p = classify([path]);
   assert.equal(p.scope, 'frontend');
   assert.deepEqual(p.jobs, FRONTEND_JOBS);
@@ -52,6 +54,40 @@ for (const path of ['web/src/static/style.css', 'data/i18n/zh/ui.yaml', 'web/src
     assert.deepEqual(classify([server, path]).jobs, BROWSER_JOBS);
   }
   assert.deepEqual(classify([path, 'unregistered/shared.js']).jobs, PRODUCT_JOBS);
+}
+for (const path of PARTS.flatMap(part => [part.part].flat())) {
+  assert.deepEqual(classify([path]).jobs, BROWSER_JOBS, path + ' feeds generated worker or headless code');
+}
+for (const [check, inputs] of Object.entries(CLIENT_INPUTS)) {
+  assert(clientSource(check).length > 0);
+  for (const path of inputs) {
+    const plan = classify([path]);
+    assert.deepEqual(plan.jobs, BROWSER_JOBS, path + ' changes protocol fixture input');
+    assert(companionJobs(plan.jobs).includes('protocol'));
+  }
+}
+function checkClientReads(roots, read = path => readFileSync(path, 'utf8'), exists = existsSync) {
+  const visited = new Set(), pending = [...roots], boundary = new Set(['scripts/ci_client_inputs.mjs', ...PARTS.map(part => part.out)]);
+  while (pending.length) {
+    const path = pending.pop();
+    if (visited.has(path) || boundary.has(path) || /\/(?:node_modules|vendor)\//.test(path)) continue;
+    visited.add(path);
+    const source = read(path).replace(/^\s*\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    assert(!/(?:web\/(?:src\/)?|["']web["']\s*,\s*["']src["']|data\/i18n\/)/.test(source),
+      path + ' must declare frontend fixture inputs through ci_client_inputs.mjs');
+    for (const match of source.matchAll(/["'](\.[^"'\n]+\.(?:js|mjs))["']/g)) {
+      const input = relative(process.cwd(), resolve(dirname(path), match[1])).replaceAll('\\', '/');
+      if (/\.(?:js|mjs)$/.test(input) && exists(input)) pending.push(input);
+    }
+  }
+}
+const serviceRoots = [...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8'))]
+  .filter(([, jobs]) => [...jobs].some(job => ['services', 'pipeline', 'protocol'].includes(job))).map(([check]) => check);
+checkClientReads(serviceRoots);
+for (const source of ["import './nested.mjs';", "import(process.env.FIXTURE || './nested.mjs')"]) {
+  assert.throws(() => checkClientReads(['scripts/fixture.mjs'], path => path.endsWith('fixture.mjs')
+    ? source : "readFileSync(new URL('../web/src/static/app/new-client.js', import.meta.url))", () => true),
+    /nested\.mjs must declare/, 'a helper cannot hide an undeclared frontend read');
 }
 for (const path of ['worker/pg/schema.sql', 'scripts/check_board_verify.mjs', 'scripts/check_tasks.mjs']) {
   const p = classify([path]);
