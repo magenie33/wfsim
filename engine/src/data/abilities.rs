@@ -634,7 +634,7 @@ pub fn resolve(
             // `cost x max(2 - efficiency, 25%)`; W`Ability_Duration`'s sibling
             // rule for speed: `time / (1 + bonus)`).
             energy_cost: def.energy_cost.map(|c| c * (2.0 - efficiency).max(0.25)),
-            cast_seconds: def.cast_seconds / (1.0 + casting_speed_bonus),
+            cast_seconds: def.cast_seconds / crate::rules::sim::time_divisor(1.0 + casting_speed_bonus),
             interrupts_fire: def.interrupts_fire,
             window_seconds: p.duration_seconds.unwrap_or(f64::INFINITY),
         };

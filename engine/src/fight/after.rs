@@ -306,7 +306,8 @@ pub(super) fn next_shot_due(
         }
         if active.bow_cycle.is_none() && params.cycle.as_ref().is_some_and(|c| c.ends == Ends::SingleShot) {
             // This cycle pays the selected attack's draw before its trigger.
-            *t -= active.charge_seconds.unwrap_or(0.0) * active.fire_rate / rate.max(1e-9);
+            *t -= active.charge_seconds.unwrap_or(0.0) * active.refire.clock_rate(active.fire_rate)
+                / active.refire.clock_rate(rate);
         }
         spool.due = *t;
 }
@@ -315,11 +316,12 @@ pub(super) fn next_shot_due(
 #[wfsim_gas_macro::metered]
 pub(super) fn cadence_rate(params: &FightParams, active: &FightParams, t: f64, bar: &mut BuffBar, buff_stacks: &mut [LiveStacks], windows: &CardWindows) -> f64 {
     bar.expire(t);
-    if params.locks("fire_rate") { return active.fire_rate; }
+    if params.locks("fire_rate") { return active.refire.clock_rate(active.fire_rate); }
     let reload = active.fire_rate_on_reload.filter(|_| t < windows.fire_rate_after_reload).map_or(0.0, |b| b.value);
     let stacked = buff_total(active, crate::model::BuffGrant::FireRate, buff_stacks, t);
     let ability = crate::data::abilities::fire_rate_at(&params.abilities_now(), t);
-    (active.fire_rate + reload + stacked + ability) * bar.total_contributions().fire_rate_multiplier
+    active.refire.clock_rate(
+        (active.fire_rate + reload + stacked + ability) * bar.total_contributions().fire_rate_multiplier)
 }
 
 /// A selected charge attack finishes its own draw before it can fire.

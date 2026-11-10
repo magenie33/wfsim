@@ -6,6 +6,13 @@
 //! Monte Carlo runs and golden tests are reproducible (see `docs/CORE.md` §2,
 //! and the determinism rule in `docs/BUFFS.md`).
 
+/// Numerical guard for a time's speed bracket, not a measured game-speed cap.
+/// Keep the raw bonus for later additions; invert only a positive divisor.
+#[wfsim_gas_macro::metered]
+pub fn time_divisor(speed: f64) -> f64 {
+    if speed.is_finite() { speed.max(1e-9) } else { 1e-9 }
+}
+
 /// Simulation configuration.
 ///
 /// `fps` is the tick rate: how many discrete steps the timeline advances per

@@ -668,6 +668,7 @@ pub(super) fn seconds_to_next_shot(
     if let Some(assumed) = active.refire.assumed_interval() {
         return assumed;
     }
+    let rate = active.refire.clock_rate(rate);
     if let Some(h) = swing.as_ref().filter(|h| h.event_timing.is_some()) {
         let converted = melee.input.as_ref().is_some_and(|i| i.converted);
         let mut recovery = (h.delay_seconds - h.hit_delay_seconds.unwrap_or(0.0)).max(0.0) / rate.max(1e-9);
@@ -698,7 +699,7 @@ pub(super) fn seconds_to_next_shot(
     }
     match active.charge_seconds {
         Some(c) => {
-            let draw = c * active.fire_rate / rate.max(1e-9);
+            let draw = c * active.refire.clock_rate(active.fire_rate) / rate;
             match active.charge_cadence {
                 // A bow's draw IS the cycle (wiki's bow formula).
                 crate::model::ChargeCadence::DrawOnly => draw,
@@ -802,7 +803,7 @@ pub(super) fn seconds_to_next_shot(
         }
         None => match active.burst {
             Some(b) if b.count > 1 => {
-                let live = (rate / active.fire_rate.max(1e-9)).max(1.0);
+                let live = (rate / active.refire.clock_rate(active.fire_rate)).max(1.0);
                 let mag_now = if incarnon.in_base_form { incarnon.base_magazine } else { ammo.loaded };
                 let pull_goes_on =
                     !ammo.rounds_this_mag.is_multiple_of(b.count) && can_fire(mag_now, 1.0);

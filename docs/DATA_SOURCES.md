@@ -1110,6 +1110,31 @@ slam-damage rule or calibrate jump, descent and accepted-next-action times.
 
 ### Parsed firing cadence and beast claws
 
+Time-speed boundaries belong to the consumer, not to a universal `1/(1+x)`
+helper. The native operation fold in `20261107T040140Z-unified-precision`
+at RVA `0xaedc48..0xaedd16` applies active SET_MIN/SET_MAX declarations;
+SET bypasses those buckets and bounds. A stacking sum alone does not establish
+a positive speed floor, and rank-operation limits are a separate calculation.
+
+The cadence batch below binds the ordinary base rate getter at `0x1469db0`:
+a positive configured RPM reaches the upgraded weapon query, whose result is
+floored at 1 RPM before float32 conversion to attacks per second. Its replay
+stubs that upgraded query. The ordinary semi timer at `0x169c400` additionally
+uses its 0.1-second wait and explicit bypasses. These are refire-consumer rules,
+not universal charge, melee, beam, reload or animation-speed limits.
+
+`20261107T003254Z-ability-cast-release` binds AbilitiesLib proto56 PCs89..103:
+the marker's animation seconds are divided by castingSpeed only when it is
+positive. The decoded zero comparison jumps over DIV otherwise. This is a
+marker-wait consumer, not proof of the complete casting lock or its upstream
+upgrade calculation. The Catabolyst reload batch verifies the declared -20%
+empty-reload term and nominal positive-denominator arithmetic, but leaves
+complete upgrade evaluation and animation fitting open. Available charge inputs
+likewise do not establish behavior at a nonpositive final speed bracket.
+
+`MECHANICS.md` owns the numerical guards used for those unresolved boundaries;
+they prevent reverse clocks without declaring unverified in-game speed caps.
+
 `scripts/import_client_cadence.py --exchange <root> [--check]` verifies closed
 batch manifests, archive hashes and selected member hashes before importing
 native refire profiles, claw stats and supported card operations. The public

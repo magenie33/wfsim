@@ -309,7 +309,7 @@ impl FrameRuntime {
                 let extra = self.spend_cast_bonus(&ability);
                 self.summon = Summon { at_seconds: t, strength: self.strength_now(t, kills) + extra };
                 self.casts += 1;
-                CAST_SECONDS_UNMEASURED / (1.0 + self.spec.casting_speed_bonus)
+                CAST_SECONDS_UNMEASURED / crate::rules::sim::time_divisor(1.0 + self.spec.casting_speed_bonus)
             }
             Action::Cast { ability } => self.cast(&ability, t, kills),
             _ => 0.0,

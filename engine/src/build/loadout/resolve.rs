@@ -2035,7 +2035,7 @@ pub fn resolve_for(
         headshot_bonus_multiplicative: base.headshot_bonus_multiplicative,
         charge_cadence: base.charge_cadence,
         bow_cycle: base.bow_cycle.map(|b| crate::model::BowCycle {
-            nock_seconds: b.nock_seconds / (1.0 + rl),
+            nock_seconds: b.nock_seconds / crate::rules::sim::time_divisor(1.0 + rl),
             ..b
         }),
         // A fire-rate bonus shortens the gap WITHIN a burst as well as the gap
@@ -2215,8 +2215,8 @@ pub fn resolve_for(
         // magazine. `mag_size` is the same number the magazine field above
         // reports, which is what keeps the two from disagreeing.
         reload_seconds: match base.by_round_reload {
-            Some((start, per, end)) => (start + per * mag_size + end) / (1.0 + rl),
-            None => base.base_reload / (1.0 + rl),
+            Some((start, per, end)) => (start + per * mag_size + end) / crate::rules::sim::time_divisor(1.0 + rl),
+            None => base.base_reload / crate::rules::sim::time_divisor(1.0 + rl),
         },
         reload_bonus: rl,
         reload_from_empty_speed: base.reload_from_empty_speed,

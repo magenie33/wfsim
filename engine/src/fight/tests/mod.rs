@@ -13,6 +13,7 @@ mod attrition_times_co;
 mod buff_decay_family;
 mod burst_cadence;
 mod cadence_ammo_multishot;
+mod negative_fire_rate;
 mod chill_and_co_base;
 mod cycle_buff_conversion;
 mod debilitate_attrition;
