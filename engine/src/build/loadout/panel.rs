@@ -586,12 +586,12 @@ pub struct ResolvedPanel {
     pub base_crit_damage: f64,
     pub base_status_chance: f64,
     pub fire_rate: f64,
+    pub base_fire_rate: f64,
     pub refire: crate::model::RefireRule,
-    /// MODDED charge time (bows) — `base / (1 + fire-rate bonuses)`, the same
-    /// factor `fire_rate` is multiplied by, so the two never disagree about
-    /// what a fire-rate mod did. `Some` means the sim paces on this instead of
-    /// `1 / fire_rate`.
+    /// Modded draw time: its selected speed bucket has the generic charge floor.
+    /// `charge_speed` retains the raw bucket for live additions.
     pub charge_seconds: Option<f64>,
+    pub charge_speed: Option<crate::model::ChargeSpeed>,
     /// See [`crate::model::BowCycle`]; nocking carries the reload-speed bucket.
     pub bow_cycle: Option<crate::model::BowCycle>,
     /// See [`crate::data::weapons::AttackSpec::charge_ammo_per_second`]. Set,

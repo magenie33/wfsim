@@ -16,6 +16,18 @@ fn shotgun_riven_below_minus_one_hundred_percent_fire_rate_finishes() {
     assert_eq!(result["ok"], true, "{result}");
     assert_eq!(result["shots"], json!(1.0));
     assert!(result["dps"].as_f64().unwrap().is_finite());
+    let mut longer = request.clone();
+    longer["duration"] = json!(45);
+    let result = simulate_json(&longer);
+    assert_eq!(result["ok"], true, "{result}");
+    assert_eq!(result["shots"], json!(1.0), "an unmapped refire profile retains its numerical guard");
+    longer["weapon"] = json!("hek");
+    let native = PreparedSimulation::new(&longer).unwrap();
+    assert!(native.params.fire_rate < 0.0);
+    assert!(matches!(native.params.refire, wfsim_engine::model::RefireRule::SemiAutomatic { .. }));
+    let result = simulate_json(&longer);
+    assert_eq!(result["ok"], true, "{result}");
+    assert_eq!(result["shots"], json!(3.0), "the audited default inner floor is 3 RPM");
 }
 
 #[test]

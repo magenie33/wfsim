@@ -14,6 +14,7 @@ mod buff_decay_family;
 mod burst_cadence;
 mod cadence_ammo_multishot;
 mod negative_fire_rate;
+mod inverse_speed;
 mod chill_and_co_base;
 mod cycle_buff_conversion;
 mod debilitate_attrition;
@@ -160,8 +161,10 @@ impl Default for FightParams {
             status_duration_multiplier: 1.0,
             heavy_status: None,
             fire_rate: 1.0,
+            unmodded_fire_rate: 1.0,
             refire: crate::model::RefireRule::Rate,
             charge_seconds: None,
+            charge_speed: None,
             bow_cycle: None,
             charge_cadence: crate::model::ChargeCadence::DrawThenRate,
             sustained_fire_rate: None,

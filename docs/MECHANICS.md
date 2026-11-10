@@ -84,24 +84,35 @@ distinction matters (see [`GLOSSARY.md`](GLOSSARY.md)):
   on its own):
   `effective_fire_rate = base × (1 + Σ mod_bonuses) × Π multipliers`.
 
-Audited native base/semi refire profiles apply the weapon-query minimum of
-1 RPM before conversion to attacks per second, after static and live modifiers
-join their bucket. The pinned cadence vectors in
-`tests/fixtures/client/cadence-claws-2026-10-28.json` verify this consumer floor;
-their upgraded-RPM query is stubbed, so they do not establish every upstream
-negative-upgrade boundary. Other rate rules retain a numerical positive guard.
-Nonfinite inputs use the respective guard. Fixed assumed intervals keep their
-declared timing; semi-auto limits and empty-clip bypass remain separate.
+Audited native base/semi profiles keep two rate bounds separate. With the
+default weapon override and a configured input of at least 3 RPM, the weapon
+query floors its result at 3 RPM. The state getter independently floors that
+result at 1 RPM before float32 multiplication by 1/60. The resulting ordinary
+3-RPM interval is float32 19.999998 seconds. Positive runtime overrides and
+scalar queries with input 1 are different branches; their complete lifecycle
+is not inferred. `RefireRule::weapon_rate` retains the configured rate and
+applies the default branch after static and live bonuses join their raw bucket.
+Semi-auto wait limits, explicit bypasses and fixed assumed intervals remain
+separate. Other rate rules retain a numerical positive guard.
 
-Reload, nock, mode-transition and cast durations divide only by a positive
-speed bracket. `rules::sim::time_divisor` uses a numerical guard when that
-bracket is nonpositive; it is not an in-game cap. Static durations and live
-rescaling use the same guarded divisor to recover the original work, while
-the raw negative bonus remains available for later buffs to offset it.
-Charge and heavy wind-up denominators already retain their positive guards;
-a nonpositive projectile speed has no finite arrival time. These boundaries
-prevent reverse clocks; extreme negative speed effects still need in-game
-calibration.
+The WS_RELOAD denominator is at least float32(0.01); its independently modified
+reload-time numerator is separate. Generic weapon charge uses a minimum
+float32(0.1) for the selected speed query. An optional Charge Rate query
+replaces that query; it does not multiply another tenfold limit into it.
+The draw's raw scalar is retained for live bonuses rather than reconstructed
+from the separately bounded absolute refire rate. Burst intershot speed uses
+its scalar query with a minimum of 1, independently of the between-pull timer.
+The represented projectile initial-speed setter retains at least float32(base
+initial speed * 0.1); this is not a bound on impulse, beam range or every update.
+
+The source contract and native float32 vectors are in
+`tests/fixtures/client/inverse-speed-2026-10-28.json`. These branches do not
+establish complete animation, trajectory or action-acceptance timing. Nock,
+mode-transition and complete-cast proxies retain their own numerical guard
+where the consumer is unverified. Heavy charge's flag-dependent local division
+does not establish its later FSM behavior, so it keeps its explicit limitation.
+Raw negative bonuses remain available for later buffs to offset them; a
+numerical guard is not an inferred game-speed cap.
 
 **Mod capacity & polarity** (wiki `Polarity`; `engine::rules::capacity`). Capacity =
 weapon rank (max 30), doubled by an Orokin Catalyst (60). Slot drain:

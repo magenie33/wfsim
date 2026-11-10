@@ -186,9 +186,11 @@ pub struct FightParams {
     pub toggle: Option<Toggle>,
     /// Status duration multiplier (1.0 = unmodded).
     pub status_duration_multiplier: f64,
-    /// Base fire rate; multiplied live by BuffBar fire-rate multipliers
+    /// Static modded fire rate; multiplied live by BuffBar fire-rate multipliers
     /// (Frenzy x2.5) to schedule the next shot.
     pub fire_rate: f64,
+    /// Configured rate before upgrades; it selects the native weapon-query floor.
+    pub unmodded_fire_rate: f64,
     pub refire: crate::model::RefireRule,
     /// CHARGE trigger (bows): the modded draw before the shot. When `Some` it
     /// REPLACES `1 / fire_rate` as the interval between pulls — the weapon
@@ -196,6 +198,7 @@ pub struct FightParams {
     /// by the same factor they would have multiplied the rate by. `fire_rate`
     /// stays the listed stat, which is what Hemorrhage's below-2.5 gate reads.
     pub charge_seconds: Option<f64>,
+    pub charge_speed: Option<crate::model::ChargeSpeed>,
     /// See [`crate::model::BowCycle`]. A nock is not a magazine reload.
     pub bow_cycle: Option<crate::model::BowCycle>,
     /// Which charge formula paces the shot — see `ChargeCadence`.

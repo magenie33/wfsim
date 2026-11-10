@@ -722,7 +722,8 @@ pub fn run_once_traced(
             }
         }
         if current_melee_event(active, &me.melee).is_some_and(|h| h.event_timing.is_some()) {
-            let event_rate = cadence_rate(me.params, active, t, &mut me.bar, &mut me.buff_stacks, &me.windows);
+            let raw_event_rate = raw_cadence_rate(me.params, active, t, &mut me.bar, &mut me.buff_stacks, &me.windows);
+            let event_rate = active.refire.weapon_rate(raw_event_rate, active.unmodded_fire_rate);
             if let Some(wait) = prepare_melee_event(active, &me.apl, t, event_rate, r.kills, &mut me.melee) {
                 if wait > 0.0 {
                     me.next_t = t + wait;
@@ -744,7 +745,7 @@ pub fn run_once_traced(
                 after_swing(&h, active, me.params, rec, d, combo, melee_combo_multiplier(combo), false,
                     tennokai, mark, converted, r.pellets, t, &mut r, &mut me.melee,
                     &mut me.incarnon, &me.ammo, &mut me.arc, &mut bodies);
-                me.next_t = t + seconds_to_next_shot(active, t, event_rate, initial, Some(h),
+                me.next_t = t + seconds_to_next_shot(active, t, event_rate, raw_event_rate, initial, Some(h),
                     tennokai, converted, &me.ammo, &me.incarnon, &mut me.melee);
                 r.per_seat[seat_index].add(SeatCounters::of(&r).since(counters_before));
                 continue;

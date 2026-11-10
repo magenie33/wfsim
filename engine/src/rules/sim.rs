@@ -13,6 +13,26 @@ pub fn time_divisor(speed: f64) -> f64 {
     if speed.is_finite() { speed.max(1e-9) } else { 1e-9 }
 }
 
+/// WS_RELOAD denominator at RVA 0x1389e5e; the numerator is queried separately.
+#[wfsim_gas_macro::metered]
+pub fn reload_divisor(speed: f64) -> f64 {
+    let minimum = f64::from(0.01_f32);
+    if speed.is_finite() { speed.max(minimum) } else { minimum }
+}
+
+/// Generic selected charge-speed query at RVA 0x159c988, not heavy melee charge.
+#[wfsim_gas_macro::metered]
+pub fn charge_divisor(speed: f64) -> f64 {
+    let minimum = f64::from(0.1_f32);
+    if speed.is_finite() { speed.max(minimum) } else { minimum }
+}
+
+/// Initial-speed setter at RVA 0xb95608; impulse and maximum speed are distinct.
+#[wfsim_gas_macro::metered]
+pub fn projectile_initial_speed(base: f64, modified: f64) -> f64 {
+    modified.max(f64::from(base as f32 * 0.1_f32))
+}
+
 /// Simulation configuration.
 ///
 /// `fps` is the tick rate: how many discrete steps the timeline advances per

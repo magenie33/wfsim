@@ -33,7 +33,9 @@ pub(super) fn live_reload_time(
 /// wiki ties to reload speed.
 #[wfsim_gas_macro::metered]
 pub(super) fn rescale_reload(secs: f64, bucket: f64, live: f64) -> f64 {
-    reload_span(secs, bucket, live)
+    if live == 0.0 { return secs; }
+    secs * crate::rules::sim::time_divisor(1.0 + bucket)
+        / crate::rules::sim::time_divisor(1.0 + bucket + live)
 }
 
 /// A RELOAD IS PAID FOR WHILE IT RUNS, not priced when it starts.
@@ -55,8 +57,8 @@ pub(super) fn reload_span(secs: f64, bucket: f64, add: f64) -> f64 {
     if add == 0.0 {
         return secs;
     }
-    secs * crate::rules::sim::time_divisor(1.0 + bucket)
-        / crate::rules::sim::time_divisor(1.0 + bucket + add)
+    secs * crate::rules::sim::reload_divisor(1.0 + bucket)
+        / crate::rules::sim::reload_divisor(1.0 + bucket + add)
 }
 
 /// EVERY LIVE ADDITION TO THE RELOAD-SPEED BUCKET, in one place.

@@ -544,6 +544,7 @@ impl FightParams {
             crit_multiplier: 3.0,
             status_chance: 0.43,
             fire_rate: 4.5,
+            unmodded_fire_rate: 4.5,
             frenzy: true,
             // Locked-gauge downtime comes from both package state timers.
             magazine_size: 270.0,
@@ -1380,8 +1381,10 @@ impl FightParams {
             status_chance: panel.status_chance,
             base_status_chance: panel.base_status_chance,
             fire_rate: panel.fire_rate,
+            unmodded_fire_rate: panel.base_fire_rate,
             refire: panel.refire,
             charge_seconds: panel.charge_seconds,
+            charge_speed: panel.charge_speed,
             bow_cycle: panel.bow_cycle,
             charge_cadence: panel.charge_cadence,
             sustained_fire_rate: panel.sustained_fire_rate,
@@ -1436,8 +1439,8 @@ impl FightParams {
                 (true, Some(rate)) if rate > 0.0 => {
                     let b = panel.reload_bonus;
                     let refill = panel.magazine_size / rate;
-                    panel.reload_seconds + refill * crate::rules::sim::time_divisor(1.0 + b + arc_reload_bonus)
-                        / crate::rules::sim::time_divisor(1.0 + b)
+                    panel.reload_seconds + refill * crate::rules::sim::reload_divisor(1.0 + b + arc_reload_bonus)
+                        / crate::rules::sim::reload_divisor(1.0 + b)
                 }
                 _ => panel.reload_seconds,
             },
