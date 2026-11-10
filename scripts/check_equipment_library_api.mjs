@@ -27,7 +27,7 @@ for (let i = 0; i < 52; i++) {
 }
 const first = (await call("library", {kind:"warframe", equipment:"volt"})).value;
 assert.equal(first.builds.length, 50);
-assert.equal(first.next, first.entity_weapon_builds.at(-1).id);
+assert.equal(first.next, first.builds.at(-1).id);
 const next = (await call("library", {kind:"warframe", equipment:"volt", after:first.next})).value;
 assert.equal(next.builds.length, 1); assert.equal(next.next, null);
 assert.equal(new Set(first.builds.concat(next.builds).map(b => b.id)).size, 51);
