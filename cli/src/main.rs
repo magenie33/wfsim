@@ -179,7 +179,9 @@ fn dual_toxocyst_baseline() -> FightParams {
         toggle: None,
         status_duration_multiplier: 1.0,
         fire_rate: 1.0,
+        unmodded_fire_rate: 1.0,
         charge_seconds: None, // not a charge weapon (that is a bow's cadence)
+        charge_speed: None,
         frenzy: false,
         locked_stats: Vec::new(),
         locked_buffs: Vec::new(),
@@ -300,6 +302,7 @@ fn dual_toxocyst_incarnon_params() -> FightParams {
         crit_multiplier: 3.0,
         status_chance: 0.43,
         fire_rate: 4.5,
+        unmodded_fire_rate: 4.5,
         frenzy: true,
         magazine_size: 270.0,
         reload_seconds: 3.35,

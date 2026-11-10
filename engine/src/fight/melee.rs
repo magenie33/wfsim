@@ -657,6 +657,7 @@ pub(super) fn seconds_to_next_shot(
     active: &FightParams,
     now: f64,
     rate: f64,
+    raw_rate: f64,
     initial_now: f64,
     swing: Option<crate::model::ComboHit>,
     tennokai: bool,
@@ -698,8 +699,8 @@ pub(super) fn seconds_to_next_shot(
         return recovery;
     }
     match active.charge_seconds {
-        Some(c) => {
-            let draw = c * active.refire.clock_rate(active.fire_rate) / rate;
+        Some(_) => {
+            let draw = charge_span_at_rate(active, raw_rate, rate);
             match active.charge_cadence {
                 // A bow's draw IS the cycle (wiki's bow formula).
                 crate::model::ChargeCadence::DrawOnly => draw,
@@ -803,7 +804,10 @@ pub(super) fn seconds_to_next_shot(
         }
         None => match active.burst {
             Some(b) if b.count > 1 => {
-                let live = (rate / active.refire.clock_rate(active.fire_rate)).max(1.0);
+                let live = if raw_rate == active.fire_rate { 1.0 } else {
+                    let base = active.unmodded_fire_rate.max(1e-9);
+                    (raw_rate / base).max(1.0) / (active.fire_rate / base).max(1.0)
+                };
                 let mag_now = if incarnon.in_base_form { incarnon.base_magazine } else { ammo.loaded };
                 let pull_goes_on =
                     !ammo.rounds_this_mag.is_multiple_of(b.count) && can_fire(mag_now, 1.0);

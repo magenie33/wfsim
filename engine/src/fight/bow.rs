@@ -62,5 +62,5 @@ pub(super) fn nock_span(
     let bonus = params.arcane.reload_bonus
         + arc.total(&params.arcane.buffs, ArcGrant::ReloadSpeed, t)
         + live_reload_speed(params, active, rs_armed, stacks, t);
-    reload_span(bow.nock_seconds, active.reload_bonus, bonus)
+    rescale_reload(bow.nock_seconds, active.reload_bonus, bonus)
 }

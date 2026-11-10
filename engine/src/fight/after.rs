@@ -269,7 +269,8 @@ pub(super) fn next_shot_due(
         if let Some(f) = spool.frame.as_mut().filter(|_| !input_continues) {
             *t = f.act_all(*t, r.kills);
         }
-        let rate = cadence_rate(params, active, *t, bar, buff_stacks, windows);
+        let raw_rate = raw_cadence_rate(params, active, *t, bar, buff_stacks, windows);
+        let rate = active.refire.weapon_rate(raw_rate, active.unmodded_fire_rate);
         // THE TRIGGER CAME OFF, DERIVED rather than listed. Every pause in
         // this loop — a reload, a transform, a dry magazine, a stall on a dry
         // reserve — leaves this shot LATER than the moment the last one made it
@@ -291,23 +292,19 @@ pub(super) fn next_shot_due(
         // at 60% of whatever it was built to.
         let rate = rate * spool_factor(active.sustained_fire_rate, spool.shots);
         spool.shots += 1.0;
-        // On a CHARGE weapon the pull costs a draw, not a rate: divide the
-        // modded charge time by whatever the live buffs did to the rate
-        // (`rate / active.fire_rate` is exactly that factor, and it is 1.0 when no
-        // buff is up). Same bucket, reciprocal application — see `charge_seconds`.
+        // A bow pays its draw before the trigger; its nock is a separate action.
         if active.bow_cycle.is_some() {
             let nock = nock_span(params, active, arc, buff_stacks, rs_armed, *t);
             r.downtime_seconds += nock.min((params.duration_seconds - *t).max(0.0));
             *t += nock;
         } else {
             *t += seconds_to_next_shot(
-                active, *t, rate, initial_now, swing, tennokai, tennokai_heavy, ammo, incarnon, melee,
+                active, *t, rate, raw_rate, initial_now, swing, tennokai, tennokai_heavy, ammo, incarnon, melee,
             );
         }
         if active.bow_cycle.is_none() && params.cycle.as_ref().is_some_and(|c| c.ends == Ends::SingleShot) {
             // This cycle pays the selected attack's draw before its trigger.
-            *t -= active.charge_seconds.unwrap_or(0.0) * active.refire.clock_rate(active.fire_rate)
-                / active.refire.clock_rate(rate);
+            *t -= charge_span_at_rate(active, raw_rate, rate);
         }
         spool.due = *t;
 }
@@ -315,13 +312,17 @@ pub(super) fn next_shot_due(
 /// One attack-speed bucket for animation lead-in, event gaps and recovery.
 #[wfsim_gas_macro::metered]
 pub(super) fn cadence_rate(params: &FightParams, active: &FightParams, t: f64, bar: &mut BuffBar, buff_stacks: &mut [LiveStacks], windows: &CardWindows) -> f64 {
+    active.refire.weapon_rate(raw_cadence_rate(params, active, t, bar, buff_stacks, windows), active.unmodded_fire_rate)
+}
+
+#[wfsim_gas_macro::metered]
+pub(super) fn raw_cadence_rate(params: &FightParams, active: &FightParams, t: f64, bar: &mut BuffBar, buff_stacks: &mut [LiveStacks], windows: &CardWindows) -> f64 {
     bar.expire(t);
-    if params.locks("fire_rate") { return active.refire.clock_rate(active.fire_rate); }
+    if params.locks("fire_rate") { return active.fire_rate; }
     let reload = active.fire_rate_on_reload.filter(|_| t < windows.fire_rate_after_reload).map_or(0.0, |b| b.value);
     let stacked = buff_total(active, crate::model::BuffGrant::FireRate, buff_stacks, t);
     let ability = crate::data::abilities::fire_rate_at(&params.abilities_now(), t);
-    active.refire.clock_rate(
-        (active.fire_rate + reload + stacked + ability) * bar.total_contributions().fire_rate_multiplier)
+    (active.fire_rate + reload + stacked + ability) * bar.total_contributions().fire_rate_multiplier
 }
 
 /// A selected charge attack finishes its own draw before it can fire.
@@ -336,7 +337,23 @@ pub(super) fn charged_shot_span(params: &FightParams, active: &FightParams,
     };
     let add = timed + buff_total(active, crate::model::BuffGrant::FireRate, stacks, at)
         + crate::data::abilities::fire_rate_at(&params.abilities_now(), at);
+    let raw_rate = (active.fire_rate + add) * bar.total_contributions().fire_rate_multiplier;
+    if active.charge_speed.is_some() {
+        return charge_span_at_rate(active, raw_rate, active.refire.weapon_rate(raw_rate, active.unmodded_fire_rate));
+    }
     let factor = (active.fire_rate + add) / active.fire_rate.max(1e-9)
         * bar.total_contributions().fire_rate_multiplier;
     draw / factor.max(1e-9)
+}
+
+/// The selected scalar query uses input 1, independently of absolute refire RPM.
+#[wfsim_gas_macro::metered]
+pub(super) fn charge_span_at_rate(active: &FightParams, raw_rate: f64, clock_rate: f64) -> f64 {
+    let Some(draw) = active.charge_seconds else { return 0.0 };
+    let Some(speed) = active.charge_speed else {
+        return draw * active.refire.clock_rate(active.fire_rate) / active.refire.clock_rate(clock_rate);
+    };
+    if !speed.fire_rate || raw_rate == active.fire_rate { return draw; }
+    let live = speed.multiplier + (raw_rate - active.fire_rate) / active.unmodded_fire_rate.max(1e-9);
+    draw * crate::rules::sim::charge_divisor(speed.multiplier) / crate::rules::sim::charge_divisor(live)
 }

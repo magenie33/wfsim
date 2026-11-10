@@ -3,7 +3,7 @@ use crate::model::{ChargeCadence, RefireRule};
 
 fn interval(p: &FightParams) -> f64 {
     let (_, mut me) = open(p, Seat::WIELDER, &mut Rng::new(7), &crate::record::Record::off(), &None);
-    seconds_to_next_shot(p, 0.0, p.fire_rate, 0.0, None, false, false,
+    seconds_to_next_shot(p, 0.0, p.fire_rate, p.fire_rate, 0.0, None, false, false,
         &me.ammo, &me.incarnon, &mut me.melee)
 }
 
@@ -94,8 +94,8 @@ fn live_speed_bonuses_join_the_negative_bucket_before_the_clock_floor() {
     me.windows.fire_rate_after_reload = 2.0;
     assert_eq!(cadence_rate(&p, &p, 0.0, &mut me.bar, &mut me.buff_stacks, &me.windows), 1.0);
     assert_eq!(cadence_rate(&p, &p, 3.0, &mut me.bar, &mut me.buff_stacks, &me.windows),
-        f64::from(1.0_f32 / 60.0));
-    let stalled = 2.0 / 1e-9;
+        f64::from(3.0_f32 * (1.0_f32 / 60.0)));
+    let stalled = 2.0 / crate::rules::sim::reload_divisor(-0.5);
     assert_eq!(reload_span(stalled, -1.5, 0.25), stalled);
     assert!((reload_span(stalled, -1.5, 1.0) - 4.0).abs() < 1e-9);
     assert_eq!(reload_span(2.0, 0.0, -0.5), 4.0);

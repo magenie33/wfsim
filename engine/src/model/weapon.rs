@@ -38,7 +38,17 @@ fn default_assumed_seconds() -> f64 { 1.0 }
 
 #[wfsim_gas_macro::metered]
 impl RefireRule {
-    /// Audited base/semi consumers floor modified RPM at 1 before float32 / 60
+    /// Default weapon query: input >= 3 RPM floors its result at 3 RPM before
+    /// the separate state getter (inverse-speed-2026-10-28.json, RVA 0x74c060).
+    pub fn weapon_rate(self, rate: f64, unmodded_rate: f64) -> f64 {
+        if matches!(self, Self::NativeRate | Self::SemiAutomatic { .. }) && unmodded_rate * 60.0 >= 3.0 {
+            let minimum = f64::from(3.0_f32 * (1.0_f32 / 60.0_f32));
+            return self.clock_rate(if rate.is_finite() { rate.max(minimum) } else { minimum });
+        }
+        self.clock_rate(rate)
+    }
+
+    /// The outer state getter floors returned RPM at 1 before float32 / 60
     /// (cadence-claws-2026-10-28.json). Other rules retain a numerical guard.
     pub fn clock_rate(self, rate: f64) -> f64 {
         if !matches!(self, Self::NativeRate | Self::SemiAutomatic { .. }) {
@@ -348,6 +358,13 @@ pub struct BowCycle {
 pub enum ChargeCadence {
     DrawOnly,
     DrawThenRate,
+}
+
+/// The selected draw-speed bucket, retained before the consumer's lower bound.
+#[derive(Debug, Clone, Copy)]
+pub struct ChargeSpeed {
+    pub multiplier: f64,
+    pub fire_rate: bool,
 }
 
 /// The CLOSED vocabulary of attack FORMS. Weapons are operated differently one

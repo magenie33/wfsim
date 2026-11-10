@@ -369,11 +369,11 @@ pub(super) fn resolve_the_shot(
         };
         // A LOCKED fire rate is the weapon's default and nothing else: not
         // Pressurized Magazine's on-reload add, not Frenzy's x2.5 in the bar.
-        let live_rate = active.refire.clock_rate(if params.locks("fire_rate") {
+        let live_rate = active.refire.weapon_rate(if params.locks("fire_rate") {
             active.fire_rate
         } else {
             (active.fire_rate + fr_reload_add) * contribs.fire_rate_multiplier
-        });
+        }, active.unmodded_fire_rate);
         let (bd_reload_add, bd_eximus_add) = windows.base_damage_additions(active, t);
 
         // Multishot: pellets this pull = floor + fractional chance; every

@@ -23,6 +23,11 @@ rendering.
 
 # The browser and node checks
 
+`import_inverse_speed.py --exchange <root> --check` verifies the pinned inverse
+speed packet and its generated source fixture. Compiled tests distinguish the
+inner weapon-query floor, outer state floor, reload/charge denominators and
+initial-speed setter, while retaining the unsupported consumer cases explicitly.
+
 `check_full_work.mjs` checks the expensive-work registry, required companion
 jobs and fail-closed producer gates. `check_ci_policy.mjs` rejects missing or
 expired prepared artifacts and proofs missing any required companion result.

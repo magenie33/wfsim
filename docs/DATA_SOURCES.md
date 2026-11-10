@@ -1116,24 +1116,48 @@ at RVA `0xaedc48..0xaedd16` applies active SET_MIN/SET_MAX declarations;
 SET bypasses those buckets and bounds. A stacking sum alone does not establish
 a positive speed floor, and rank-operation limits are a separate calculation.
 
-The cadence batch below binds the ordinary base rate getter at `0x1469db0`:
-a positive configured RPM reaches the upgraded weapon query, whose result is
-floored at 1 RPM before float32 conversion to attacks per second. Its replay
-stubs that upgraded query. The ordinary semi timer at `0x169c400` additionally
-uses its 0.1-second wait and explicit bypasses. These are refire-consumer rules,
-not universal charge, melee, beam, reload or animation-speed limits.
+The ordinary base rate getter at `0x1469db0` floors the weapon query result at
+1 RPM before float32 conversion to attacks per second. With default override
+and input RPM at least 3, the upstream weapon query at `0x74c060` has its own
+3-RPM floor. Smaller scalar inputs and positive runtime overrides take distinct
+branches. The ordinary semi timer at `0x169c400` additionally uses its 0.1-second
+wait and explicit bypasses. These are refire-consumer rules, not universal
+charge, melee, beam, reload or animation-speed limits.
 
 `20261107T003254Z-ability-cast-release` binds AbilitiesLib proto56 PCs89..103:
 the marker's animation seconds are divided by castingSpeed only when it is
 positive. The decoded zero comparison jumps over DIV otherwise. This is a
 marker-wait consumer, not proof of the complete casting lock or its upstream
-upgrade calculation. The Catabolyst reload batch verifies the declared -20%
-empty-reload term and nominal positive-denominator arithmetic, but leaves
-complete upgrade evaluation and animation fitting open. Available charge inputs
-likewise do not establish behavior at a nonpositive final speed bracket.
+upgrade calculation. The Catabolyst reload batch binds its declared -20% empty
+term; complete animation fitting and accepted-action timing remain separate.
 
 `MECHANICS.md` owns the numerical guards used for those unresolved boundaries;
 they prevent reverse clocks without declaring unverified in-game speed caps.
+
+`scripts/import_inverse_speed.py --exchange <root> --check` verifies the closed
+`20261110T043544Z-inverse-speed-client-only` delivery: all four outer files and
+206 archive members, pinned by manifest
+`4ae59166c4188923db55772aea194a4198da4c99cbe325ca5b991285cc721851`.
+The fixture retains all 322 original x64 scalar/consumer replay vectors,
+metadata bindings and limitations. Compiled checks compare 255 applicable
+consumer cases; 67 scalar-query, configured-zero, override-lifecycle and
+heavy-FSM cases retain their source status without claiming full runtime use.
+
+The WS_RELOAD branch `0x1389e00` queries its speed with input 1 and floors the
+denominator at float32(0.01); the reload-time numerator is independently queried.
+Generic charge `0x159c940` floors the selected denominator at float32(0.1).
+Its optional WEAPON_CHARGE_RATE query replaces the first result, rather than
+forming a product of two inverse factors. The initial-speed setter at
+`0xb95608..0xb95636` has a ten-percent base-initial-speed minimum; maximum speed,
+impulse application and update-time vectors are separate consumers.
+
+The replay supplies one active stacking contribution, six rounds of ammo and
+zero separate reload-time contribution. Upgrade activation/filter traversal,
+positive override setters, melee postmultipliers, final heavy FSM and complete
+casting/trajectory behavior remain unverified. Source.zip's historical handoff
+is not the publication authority; READY and matching delivery receipts bind the
+closed packet. The ordinary cadence fixture below keeps its isolated upgraded
+query stub and outer-getter vectors as a distinct test boundary.
 
 `scripts/import_client_cadence.py --exchange <root> [--check]` verifies closed
 batch manifests, archive hashes and selected member hashes before importing

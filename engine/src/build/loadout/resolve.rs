@@ -1684,7 +1684,8 @@ pub fn resolve_for(
         // kept is its complement: Hek's 0.8 is the page's "100% to 20%".
         Falloff::from_spec(f, ps)
     });
-    let projectile_speed_mps = base.projectile_speed_mps.map(|v| v * ps);
+    let projectile_speed_mps = base.projectile_speed_mps
+        .map(|v| crate::rules::sim::projectile_initial_speed(v, v * ps));
 
     let melee_heavy = base.melee_heavy.as_ref().map(|b| Box::new(resolve_for(b, mods, policy, tenno)));
     let stance_heavy = mods.iter().find_map(|m| m.stance)
@@ -1987,6 +1988,7 @@ pub fn resolve_for(
         base_crit_damage: quantize_base_crit_damage(base.base_crit_damage),
         base_status_chance: base.base_status_chance,
         fire_rate: base.base_fire_rate * (1.0 + fr + evo_fr_bonus),
+        base_fire_rate: base.base_fire_rate,
         refire: base.refire,
         // A charged weapon's fire-rate bonuses DIVIDE the draw instead of
         // multiplying a rate (wiki Fire Rate: on charge weapons the bonus
@@ -2014,7 +2016,7 @@ pub fn resolve_for(
                 } else {
                     0.0
                 };
-                Some(mag_size / rate / (1.0 + cr + from_rate).max(1e-9))
+                Some(mag_size / rate / crate::rules::sim::charge_divisor(1.0 + cr + from_rate))
             }
             _ => base.charge_seconds.map(|c| {
             let from_rate = if base.fire_rate_shortens_draw {
@@ -2022,9 +2024,14 @@ pub fn resolve_for(
             } else {
                 0.0
             };
-            c / (1.0 + cr + from_rate).max(1e-9)
+            c / crate::rules::sim::charge_divisor(1.0 + cr + from_rate)
             }),
         },
+        charge_speed: (base.charge_seconds.is_some() || base.charge_ammo_per_second.is_some())
+            .then_some(crate::model::ChargeSpeed {
+                multiplier: 1.0 + cr + if base.fire_rate_shortens_draw { fr + evo_fr_bonus } else { 0.0 },
+                fire_rate: base.fire_rate_shortens_draw,
+            }),
         // …AND IT COSTS THE WHOLE MAGAZINE. "Charging consumes ammo, up to a
         // full magazine on full charge" — so the shot's price is the magazine
         // it just spent, which is also why a bigger magazine is not free.
@@ -2215,8 +2222,8 @@ pub fn resolve_for(
         // magazine. `mag_size` is the same number the magazine field above
         // reports, which is what keeps the two from disagreeing.
         reload_seconds: match base.by_round_reload {
-            Some((start, per, end)) => (start + per * mag_size + end) / crate::rules::sim::time_divisor(1.0 + rl),
-            None => base.base_reload / crate::rules::sim::time_divisor(1.0 + rl),
+            Some((start, per, end)) => (start + per * mag_size + end) / crate::rules::sim::reload_divisor(1.0 + rl),
+            None => base.base_reload / crate::rules::sim::reload_divisor(1.0 + rl),
         },
         reload_bonus: rl,
         reload_from_empty_speed: base.reload_from_empty_speed,
