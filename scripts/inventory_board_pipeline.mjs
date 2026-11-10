@@ -118,7 +118,8 @@ export async function runBoardInventoryCycle({ work, bin, sql, operator: supplie
     if (!state.pending) {
       report('capture');
       state.pending = await captureEpoch({ sql, catalog, generation: state.generation, dir: join(root, `capture-${Date.now()}`),
-        bootstrap: !catalog.meta.complete, relational: true, report: (stage, fields) => { space.check(); report(stage, fields); } });
+        bootstrap: !catalog.meta.complete, relational: true, legacyLibrary: false,
+        report: (stage, fields) => { space.check(); report(stage, fields); } });
       save(statePath, state); context.verifiedInputs = null;
     }
     if (diskBudgetBytes !== undefined) {

@@ -42,6 +42,13 @@ try {
   assert.equal(JSON.parse(readFileSync(paths.builds, 'utf8').split('\n')[0]).id, 'a');
   assert.equal(JSON.parse(readFileSync(paths.queue)).build_id, 'a');
   assert(JSON.parse(readFileSync(paths.meta)).snapshot);
+  const compact = Object.fromEntries(Object.entries(paths).filter(([key]) => key !== 'library')
+    .map(([key, path]) => [key, path + '-compact']));
+  const compactMeta = await captureInventory(sql, compact, '4393e1730621');
+  assert.deepEqual(compactMeta.counts, meta.counts);
+  assert.equal(readFileSync(compact.builds, 'utf8'), readFileSync(paths.builds, 'utf8'),
+    'omitting the derived JSON array preserves every raw build, identity and clock');
+  assert(!readdirSync(dir).some(name => name === 'library-compact' || name.startsWith('undefined')));
   await pg.query("INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES ('a','r','base','old',99,'kpm',0,'2026-10-18T00:00:00.000Z','2026-10-18T00:00:00.000Z')");
   await pg.query(`INSERT INTO board_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
     baseline_score,baseline_metric,baseline_cost_seconds,baseline_by,baseline_started_at,baseline_finished_at,created_at,invalidated_at)

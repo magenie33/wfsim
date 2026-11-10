@@ -142,12 +142,12 @@ export function rankerChannel() {
 const common = receipt => ({ v: 1, engine: receipt.engine, contract: receipt.contract,
   generation: receipt.generation, epoch: receipt.epoch, snapshot: receipt.snapshot });
 
-export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, call, baseEpoch, relational = false, report = progress }) {
+export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, call, baseEpoch, relational = false, legacyLibrary = true, report = progress }) {
   mkdirSync(dir, { recursive: true }); disk(dir);
   const paths = [], started = Date.now(), covers = JSON.stringify(BOARD_KINDS), captureMs = bootstrap ? MAX_CAPTURE_MS : 15 * 60000;
   const check = () => { disk(dir); if (Date.now() - started > captureMs) throw new Error('inventory input capture exceeded its budget'); };
   const file = name => { const path = join(dir, name); paths.push(path); return path; };
-  const raw = { library: file('library.json'), builds: file('builds.ndjson'), facts: file('facts.ndjson'),
+  const raw = { ...(legacyLibrary ? { library: file('library.json') } : {}), builds: file('builds.ndjson'), facts: file('facts.ndjson'),
     queue: file('queue.ndjson'), tasks: file('tasks.ndjson'), meta: file('snapshot.json') };
   return sql.begin('isolation level repeatable read', async transaction => {
     const tx = { unsafe: async (...args) => { check(); return transaction.unsafe(...args); } };

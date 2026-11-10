@@ -58,6 +58,11 @@ added. The daily full projection still reads the authoritative facts.
 
 ## Offline projection verification
 
+The classic controller captures complete raw builds as NDJSON, including each
+identity and arrival clock. It does not also write the derived JSON array of
+records. Legacy full-walk consumers retain that array; the parity check derives
+it from the same sealed build stream before invoking the native oracle.
+
 `node scripts/replay_board_projection.mjs <capture-dir> <bin-dir> <work-dir>
 <manifest-sha256>` replays a complete protected `capture.json` and its sibling
 source files into an isolated directory. The binary directory contains

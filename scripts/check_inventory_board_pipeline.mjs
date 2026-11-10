@@ -127,6 +127,11 @@ try {
     captured = { meta: cut.meta, receipt: cut.receipt, raw: Object.fromEntries(Object.entries(cut.raw).map(([key, path]) => {
       const copy = join(dir, key); copyFileSync(path, copy); return [key, copy];
     })) };
+    assert.equal(cut.raw.library, undefined, 'classic capture keeps one complete build stream');
+    assert(!existsSync(join(cut.raw.builds, '..', 'library.json')));
+    captured.raw.library = join(dir, 'oracle-library');
+    writeFileSync(captured.raw.library, JSON.stringify(readFileSync(captured.raw.builds, 'utf8').trim().split('\n')
+      .filter(Boolean).map(line => JSON.parse(line).record)));
     await query("UPDATE questions SET state='fact',fact_engine=$2 WHERE id=$1", [future, engine]);
   };
   await assert.rejects(cycle(0), /committed input reply loss/);
