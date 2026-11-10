@@ -195,6 +195,9 @@ Confirmed file hashes are flushed through an atomic checkpoint replacement;
 the captured board stamp is sent after its files. Uploads do not hold the
 inventory loop. Comparing the actual stamp with the durable upload ledger
 recovers interrupted delivery even after a coordinator restart.
+The next publication round waits for the prior uploader and stamp acknowledgment
+before replacing files. Source capture and classification can continue while
+delivery runs; the uploader never pairs an older stamp with a newer round's files.
 
 `worker/pg/inventory.sql` records coalesced build and question invalidations in
 the same transaction as source changes. Revisions are equality tokens, never a
