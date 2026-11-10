@@ -225,7 +225,9 @@ otherwise it uses `target/debug/wfsim-board`. A missing binary fails the check.
 `check_live_ranker.mjs` connects the production Bash publication consumer to
 the native ranker. It covers bounded rounds, deferred hot updates, stamping
 when a round finishes, a quiescent epoch and malformed protocol replies.
-Blocked inventory neither invokes publication nor stops the native process.
+Actual unset and explicit-zero startup verify guarded default and legacy input
+selection. Blocked inventory stops an already-running real HTTP uploader before
+another file or stamp, without publishing or stopping the native process.
 
 `check_work_calibration.mjs` compares cursor pages with the grouped payment
 oracle, checks the read-only role and temporary-table isolation, and proves

@@ -181,7 +181,9 @@ admission rules or ordered outputs. Library normalization retains its shared poo
 
 ### Incremental inventory
 
-`INCREMENTAL_INVENTORY=1` enables the inventory coordinator in `live_board.sh`.
+`live_board.sh` defaults to the guarded inventory coordinator
+(`INCREMENTAL_INVENTORY=1`). Explicit `INCREMENTAL_INVENTORY=0` selects legacy
+full-library reads.
 It uses the existing ranker command pipes, with one kernel-held SQLite writer
 lock around a cycle. The ranker starts empty; a full bootstrap requires an
 explicit durable rebuild task. This
@@ -267,7 +269,8 @@ new request. Use `--mode relational` for the relational coordinator.
 
 Blocked inventory reports `needs_bootstrap`, `needs_restore`, `needs_resume`,
 `request_changed` or `needs_space` in `inventory/status.json`. The live loop
-keeps its process and published files, skips publication and waits its normal
+keeps its ranker process and published files, stops its active uploader, skips
+publication and waits its normal
 poll interval. It does not restart the ranker to resolve a blocked inventory.
 
 Publication uses the sealed cut's database time and snapshot, even if later
