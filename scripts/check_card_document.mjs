@@ -28,9 +28,13 @@ const { cardDocument } = await import("../bot/card.mjs");
 /// without a filter, a melee, a weapon with modes, an Incarnon, a kitgun, and an
 /// appraisal's way in and its answer.
 const FIXTURES = [
+  "/nona/help/card",
+  "/nona/help/card?topic=rulers",
   "Torid/card?kind=pz",
   "Torid/card?kind=pz&rv=1",
   "Torid/card?kind=zk",
+  "Torid/card?kind=zk&ruler=standard_multi_target__archimedea500__aimed_body",
+  "Torid/card?kind=pz&ruler=standard_multi_target__sp200",
   "Torid/card?kind=zk&has=critical_chance&malus=any",
   "Laetum/card?kind=zk&n=5",
   "Nikana_Prime/card?kind=pz",
@@ -109,7 +113,7 @@ const out = mkdtempSync(join(tmpdir(), "wfsim-card-document-"));
 let failures = 0, compared = 0;
 const fail = (what) => { failures++; console.log(`  FAIL  ${what}`); };
 for (const f of cases) for (const lang of ["zh", "en"]) {
-  const url = `${PAGE}/weapons/${f}`;
+  const url = PAGE + (f.startsWith("/") ? f : `/weapons/${f}`);
   let page = null, doc = null, same = false;
   for (let i = 0; i < PAGE_TRIES && !same; i++) {
     page = await renderCardWith(url, { lang, wait: 600_000 });

@@ -30,6 +30,14 @@ native migration comparator. Equal results pass; changed damage, signed zero,
 one-ULP values, event ordering, repeat drift, truncated records, artifact
 corruption and duplicate case ids fail. `ENGINE_MIGRATION.md` defines the
 separate real-engine frozen-input comparison and performance procedure.
+`check_nona_help.mjs` executes every illustrated example through the real bot
+parser in both locales. It checks every metadata ruler through zk/pz/fx,
+numeric-ending ids with and without counts, primary defaults, unknown suffixes,
+three bonus filters, any/specific maluses and a legal four-stat numeric FX
+request. A local HTTP fixture proves exact scene-file routing and all-cell
+heads filtering. Image snapshots, copyable captions and complete ruler-index
+fallbacks share the guide. The previous bot module selected through
+`WFSIM_BOT_ANSWER_MODULE` must fail the full-id example.
 
 `check_engine_answer_equivalence.py` rejects damage, one-bit values, event order,
 trace and shape changes while explicitly allowing paired source-accounting
@@ -945,7 +953,8 @@ reads; permanent 404 and a wrong release restore the prior pointer.
 
 ## `check_card_document`
 
-The bot's card is the page's, pixel for pixel: each fixture — a plain gun,
+The bot's card is the page's, pixel for pixel: each fixture — command help,
+the complete ruler index, a plain gun,
 riven builds, the analyst with and without a filter, a melee, a weapon with
 modes, an Incarnon, a kitgun, an appraisal's way in and its answer — is taken
 from `/weapons/<Name>/card` and from the document `bot/card.mjs` writes, in
