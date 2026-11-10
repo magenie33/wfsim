@@ -23,6 +23,8 @@ def exercise(ship, change=None):
         bodies = {"scripts/live_board.sh": "board", "scripts/main.mjs": 'import "../worker/a.js";\nimport("../mcp/a.js");',
                   "worker/a.js": 'export { x } from "./nested.js";', "worker/nested.js": "export const x = 1;",
                   "mcp/a.js": "mcp", "worker/deadlines.js": "deadline", "worker/board_tasks.js": "text read",
+                  "worker/pg/schema.sql": "schema", "worker/pg/library.sql": "library",
+                  "worker/pg/sync.sql": "sync", "worker/pg/inventory.sql": "inventory",
                   "scripts/pg/package.json": "{}", "scripts/pg/package-lock.json": '{"lock":1}',
                   "site/release.json": json.dumps(rel), "site/index.html": '<script src="/asset/app.abc.js"></script>',
                   "site/asset/app.abc.js": 'const ENGINE_ID = "engine";',
@@ -131,6 +133,7 @@ def self_test(ship):
     cases = [(None, True, "matching runtime and UI-only metadata retain the actual old VERSION")]
     for path in ["bin/wfsim-board", "bin/wfsim-intake", "scripts/main.mjs", "worker/nested.js", "mcp/a.js",
                  "worker/deadlines.js", "worker/board_tasks.js", "scripts/pg/package.json", "scripts/pg/package-lock.json",
+                 "worker/pg/schema.sql", "worker/pg/library.sql", "worker/pg/sync.sql", "worker/pg/inventory.sql",
                  "scripts/pg/.installed-lock", "bin/witness/pkg/wfsim_wasm.abc.js", "bin/witness/pkg/wfsim_wasm_bg.abc.wasm",
                  "bin/witness/pkg/pack.data.def.json", "bin/ENGINE"]:
         def drift(local, remote, mode, unit, environment, path=path):
