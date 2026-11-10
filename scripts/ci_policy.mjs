@@ -37,6 +37,7 @@ const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbo
   'scripts/ship.py', 'scripts/release_stage.py', 'scripts/check_release_stage.py', 'scripts/check_ship_bot_assets.py',
   'scripts/check_ship_workers.py', 'scripts/check_ship_bot_live.py',
   'scripts/payload_manifest.py', 'scripts/release_desktop.py', 'scripts/pg/test_db.mjs', 'scripts/intake_batches.mjs',
+  'scripts/import_inverse_speed.py', 'tests/fixtures/client/inverse-speed-2026-10-28.json',
   'deploy/wfsim-task-archive.service', 'deploy/wfsim-task-archive.timer'];
 
 export function checkJobPaths(workflow) {

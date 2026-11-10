@@ -123,6 +123,7 @@ const nonSearchTools = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.
   'scripts/ship.py', 'scripts/release_stage.py', 'scripts/check_release_stage.py', 'scripts/check_ship_bot_assets.py',
   'scripts/check_ship_workers.py', 'scripts/check_ship_bot_live.py',
   'scripts/payload_manifest.py', 'scripts/release_desktop.py', 'scripts/pg/test_db.mjs', 'scripts/intake_batches.mjs',
+  'scripts/import_inverse_speed.py', 'tests/fixtures/client/inverse-speed-2026-10-28.json',
   'deploy/wfsim-task-archive.service', 'deploy/wfsim-task-archive.timer'];
 for (const path of [...ciWiring, ...nonSearchTools]) {
   assert.equal(classify([path]).scope, 'full', path);
@@ -135,7 +136,7 @@ assert.equal(classify(['engine/src/board/equipment.rs', 'webapi/src/lib.rs',
   'scripts/check_equipment_library.mjs', '.github/workflows/ci.yml',
   'scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh', 'scripts/live_board.sh', 'scripts/ship_builds.sh']).deep, false,
   'equipment-library checks and workflow wiring do not force full-catalog search');
-for (const path of ['Cargo.toml', 'Cargo.lock', 'scripts/ci_rust.mjs',
+for (const path of ['Cargo.toml', 'Cargo.lock', 'scripts/ci_rust.mjs', 'tests/fixtures/client/future.json',
   'scripts/check_future.mjs', '.github/workflows/unknown.yml']) assert(classify([path]).deep, path);
 for (const paths of [[], ['optimizer/src/quick.rs'], ['webapi/src/optimize.rs'], ['unknown/file']]) assert(classify(paths).deep);
 assert.equal(classify(['desktop/examples/updatekit.rs']).deep, false, 'independent shell packaging cannot change search enumeration');
