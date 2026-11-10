@@ -92,7 +92,7 @@ const res = await worker.fetch(
 const [queueId, row] = [...stored.entries()][0] || [];
 check("the door takes it", res.status === 200, String(res.status));
 check("...into the queue, under an id that says nothing about the build",
-  row && row.table === "inbox" && /^[0-9a-f-]{36}$/i.test(queueId), `${row && row.table} ${queueId}`);
+  row && row.table === "record_build_submissions" && /^[0-9a-f-]{36}$/i.test(queueId), `${row && row.table} ${queueId}`);
 // VERBATIM. The door has no game data, so anything it decided about the build
 // would be a second answer to a question it cannot see the evidence for.
 check("...storing what arrived, unchanged",
