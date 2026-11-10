@@ -47,8 +47,8 @@ async function delta() {
   const since = new Date(Date.parse(seen || "1970-01-01T00:00:00Z") - OVERLAP_SECONDS * 1000).toISOString();
   const columns = `s.identity,s.ruler,s.mode,s.measured_by,s.score,s.cost_seconds,s.started_at,s.finished_at`;
   const measured = await query(`SELECT ${columns},CASE WHEN r.invalidated_at IS NOT NULL AND r.state <> 'succeeded' THEN r.invalidated_at END AS retired_at
-    FROM scores s LEFT JOIN board_reviews r ON r.id=s.review_id WHERE s.finished_at > ?`,[since]);
-  const retired = await query(`SELECT ${columns},r.invalidated_at AS retired_at FROM board_reviews r JOIN scores s ON s.review_id=r.id
+    FROM state_board_measurement_selection s LEFT JOIN entity_measurement_reviews r ON r.id=s.review_id WHERE s.finished_at > ?`,[since]);
+  const retired = await query(`SELECT ${columns},r.invalidated_at AS retired_at FROM entity_measurement_reviews r JOIN state_board_measurement_selection s ON s.review_id=r.id
     WHERE r.invalidated_at > ? AND r.state <> 'succeeded' AND s.finished_at <= ?`,[since,since]);
   const rows = [...measured,...retired];
   await close();

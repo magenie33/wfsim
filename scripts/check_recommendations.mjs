@@ -7,11 +7,11 @@ const db = await testDb("accounts"), library = await testDb("library");
 const env = { ACCOUNTS: db, LIBRARY: library };
 const identity = "a".repeat(32), other = "b".repeat(32), token = "recommendation-session";
 const check = (name, condition) => { assert.ok(condition, name); console.log("  ok  " + name); };
-await db.run("INSERT INTO accounts (id, created_at, username) VALUES (?, ?, ?)", "reader", "2026-01-01T00:00:00.000Z", "reader");
-await db.run("INSERT INTO sessions (token_hash, account, expires_at) VALUES (?, ?, ?)", await sha256(token), "reader", "2099-01-01T00:00:00.000Z");
+await db.run("INSERT INTO entity_accounts (id, created_at, username) VALUES (?, ?, ?)", "reader", "2026-01-01T00:00:00.000Z", "reader");
+await db.run("INSERT INTO state_login_sessions (token_hash, account, expires_at) VALUES (?, ?, ?)", await sha256(token), "reader", "2099-01-01T00:00:00.000Z");
 for (const id of [identity, other]) {
-  await library.run("INSERT INTO builds (id, at, record) VALUES (?, ?, ?)", id, "2026-11-04", JSON.stringify({ weapon: "furis", mods: ["hornet_strike"] }));
-  await library.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+  await library.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES (?, ?, ?)", id, "2026-11-04", JSON.stringify({ weapon: "furis", mods: ["hornet_strike"] }));
+  await library.run(`INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, id, "standard_single_target", "cycle", "test", 100, "kpm", 0, "2026-11-04", "2026-11-04");
 }
 let currentDay;
@@ -40,21 +40,21 @@ check("A new vote is pending and earns no settled point", voted.ok && voted.pend
 check("The daily allowance is per build rather than global", (await call("/api/recommendations", { ...vote, identity: other })).pending);
 await call("/api/recommendations", { ...vote, identity: other, action: "withdraw" });
 await Promise.all(Array.from({ length: 8 }, () => call("/api/recommendations", vote)));
-check("Repeated and concurrent submissions are idempotent", (await db.get("SELECT count(*) AS n FROM recommendations")).n === 1);
+check("Repeated and concurrent submissions are idempotent", (await db.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 1);
 check("Pending votes do not enter public heat", !Object.keys((await call("/api/recommendations/heat/furis")).heat).length);
 check("The account sees its pending state", (await call("/api/recommendations/state", { identities: [identity, other] })).pending.join() === identity);
 await call("/api/recommendations", { ...vote, action: "withdraw" });
-check("A pending vote can be withdrawn", (await db.get("SELECT count(*) AS n FROM recommendations")).n === 0);
+check("A pending vote can be withdrawn", (await db.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 0);
 await call("/api/recommendations", vote);
 await day("2026-11-05");
-check("A retry after midnight cannot cast an unintended second-day vote", (await call("/api/recommendations", { ...vote, day: "2026-11-04" })).status === 409 && (await db.get("SELECT count(*) AS n FROM recommendations")).n === 1);
+check("A retry after midnight cannot cast an unintended second-day vote", (await call("/api/recommendations", { ...vote, day: "2026-11-04" })).status === 409 && (await db.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 1);
 let heat = await call("/api/recommendations/heat/furis");
 check("The first settlement credits exactly 1.0", heat.heat[identity] === 1 && heat.day === "2026-11-05");
 check("Settlement credits one permanent recommendation point", (await call("/api/recommendations/state", { identities: [identity] })).points === 1);
 await call("/api/recommendations", { ...vote, action: "withdraw" });
-check("A settled vote cannot be withdrawn", (await db.get("SELECT count(*) AS n FROM recommendations")).n === 1);
+check("A settled vote cannot be withdrawn", (await db.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 1);
 await call("/api/recommendations", vote);
-check("The new UTC day grants a new vote", (await db.get("SELECT count(*) AS n FROM recommendations")).n === 2);
+check("The new UTC day grants a new vote", (await db.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 2);
 await day("2026-11-06");
 heat = await call("/api/recommendations/heat/furis");
 check("Each vote ages independently, in exact tenths", heat.heat[identity] === 1.9);
@@ -70,22 +70,22 @@ check("History preserves the authoritative build", history.builds[0].record.weap
 check("The complete history includes expired vote dates", (await call("/api/account/recommendations/votes?identity=" + identity)).votes.length === 2);
 check("Account data never enters public heat", !JSON.stringify(heat).includes("reader") && !JSON.stringify(heat).includes("record"));
 const key = "wf_test_recommendation_agent";
-await db.run("INSERT INTO agent_keys (id, key_hash, name, created_at, account, last_used_at) VALUES (?, ?, ?, ?, ?, ?)",
+await db.run("INSERT INTO entity_agent_keys (id, key_hash, name, created_at, account, last_used_at) VALUES (?, ?, ?, ?, ?, ?)",
   "agent", await sha256(key), "Client", "2026-01-01", "reader", "2099-01-01");
 // The public key prefix is read from the existing credential contract.
 const { readFileSync } = await import("node:fs");
 const prefix = readFileSync(new URL("../worker/agents.js", import.meta.url), "utf8").match(/const KEY_PREFIX = "([^"]+)"/)[1];
 const agentKey = prefix + "recommendation-check";
-await db.run("UPDATE agent_keys SET key_hash = ? WHERE id = ?", await sha256(agentKey), "agent");
+await db.run("UPDATE entity_agent_keys SET key_hash = ? WHERE id = ?", await sha256(agentKey), "agent");
 const headers = { authorization: "Bearer " + agentKey, cookie: "", origin: "https://client.invalid" };
 check("A claimed third-party client can recommend", (await call("/api/recommendations", vote, headers)).ok);
-await db.run("UPDATE agent_keys SET account = NULL WHERE id = ?", "agent");
+await db.run("UPDATE entity_agent_keys SET account = NULL WHERE id = ?", "agent");
 check("An unclaimed credential cannot recommend", (await call("/api/recommendations", vote, headers)).status === 401);
-await db.run("UPDATE agent_keys SET account = ? WHERE id = ?", "reader", "agent");
+await db.run("UPDATE entity_agent_keys SET account = ? WHERE id = ?", "reader", "agent");
 await call("/api/recommendations", vote);
-check("The browser and its client share the same daily allowance", (await db.get("SELECT count(*) AS n FROM recommendations WHERE day = '2026-11-16'")).n === 1);
-await db.run("INSERT INTO accounts (id, created_at, username) VALUES (?, ?, ?)", "another-reader", "2026-01-01", "another_reader");
-await db.run("INSERT INTO sessions (token_hash, account, expires_at) VALUES (?, ?, ?)", await sha256("another-session"), "another-reader", "2099-01-01");
+check("The browser and its client share the same daily allowance", (await db.get("SELECT count(*) AS n FROM record_recommendation_votes WHERE day = '2026-11-16'")).n === 1);
+await db.run("INSERT INTO entity_accounts (id, created_at, username) VALUES (?, ?, ?)", "another-reader", "2026-01-01", "another_reader");
+await db.run("INSERT INTO state_login_sessions (token_hash, account, expires_at) VALUES (?, ?, ?)", await sha256("another-session"), "another-reader", "2099-01-01");
 const another = { cookie: "wfsim_session=another-session" };
 check("Accounts cannot read another account's recommendation history", (await call("/api/account/recommendations?filter=all", undefined, another)).total === 0
   && (await call("/api/account/recommendations/votes?identity=" + identity, undefined, another)).votes.length === 0);
@@ -127,7 +127,7 @@ env.RECOMMENDATION_LIMIT = { limit: async () => ({ success: false }) };
 const throttled = await call("/api/recommendations", vote);
 check("Request limits return a retry time instead of banning clients", throttled.status === 429 && throttled.headers.get("retry-after") === "60");
 delete env.RECOMMENDATION_LIMIT;
-await db.run("DELETE FROM accounts WHERE id = ?", "reader");
-check("Deleting an account erases its recommendation history", (await db.get("SELECT count(*) AS n FROM recommendations")).n === 0);
+await db.run("DELETE FROM entity_accounts WHERE id = ?", "reader");
+check("Deleting an account erases its recommendation history", (await db.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 0);
 await Promise.all([db.close(), library.close()]);
 console.log("\nRecommendation rules passed");

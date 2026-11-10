@@ -69,7 +69,7 @@ try {
   await assert.rejects(acknowledgeInventory(accepted, disk, generation, groups), /interrupted local ACK/);
   disk.close(); disk = openCatalog(path);
   assert.equal(disk.meta.epoch.tokens_processed, 256);
-  assert.equal(disk.statement('SELECT count(*) n FROM receipts').get().n, 257);
+  assert.equal(disk.statement("SELECT count(*) n FROM record_inventory_applied_changes").get().n, 257);
   await acknowledgeInventory(accepted, disk, generation, groups);
   assert.equal(disk.meta.epoch.tokens_processed, 513); assert.equal(disk.pendingAcks().length, 0);
   disk.finishEpoch();

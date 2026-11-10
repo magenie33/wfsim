@@ -29,11 +29,11 @@ export async function deviceLinkRoute(request, env, path) {
     if (!/^[0-9a-f]{24}$/.test(b.verifier || "")) return no("bad_device");
     const label = typeof b.label === "string" ? b.label.trim() : "";
     if (!/^[^\u0000-\u001f\u007f]{1,40}$/u.test(label)) return no("bad_label");
-    await db.prepare("DELETE FROM device_links WHERE expires_at <= ?1").bind(now()).run();
+    await db.prepare("DELETE FROM state_device_claim_challenges WHERE expires_at <= ?1").bind(now()).run();
     const bytes = crypto.getRandomValues(new Uint8Array(8));
     const code = Array.from(bytes, x => ALPHABET[x % ALPHABET.length]).join("");
     const token = random(32), expires = later(DEVICE_LINK_SECONDS);
-    await db.prepare("INSERT INTO device_links (token_hash, code_hash, verifier, label, expires_at) VALUES (?1, ?2, ?3, ?4, ?5)")
+    await db.prepare("INSERT INTO state_device_claim_challenges (token_hash, code_hash, verifier, label, expires_at) VALUES (?1, ?2, ?3, ?4, ?5)")
       .bind(await sha256(token), await codeHash(env, code), b.verifier, label, expires).run();
     const userCode = `${code.slice(0, 4)}-${code.slice(4)}`;
     const uri = `${new URL(request.url).origin}/compute`;
@@ -42,7 +42,7 @@ export async function deviceLinkRoute(request, env, path) {
   }
   if (action === "poll") {
     if (typeof b.device_code !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(b.device_code)) return no("bad_code");
-    const row = await db.prepare("SELECT claimed_at, expires_at FROM device_links WHERE token_hash = ?1")
+    const row = await db.prepare("SELECT claimed_at, expires_at FROM state_device_claim_challenges WHERE token_hash = ?1")
       .bind(await sha256(b.device_code)).first();
     return json({ ok: true, status: !row || row.expires_at <= now() ? "expired" : row.claimed_at ? "claimed" : "pending" });
   }
@@ -51,22 +51,22 @@ export async function deviceLinkRoute(request, env, path) {
   const code = codeOf(b.user_code);
   if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8}$/.test(code)) return no("bad_code");
   const hash = await codeHash(env, code);
-  const row = await db.prepare("SELECT verifier, label, account, claimed_at FROM device_links WHERE code_hash = ?1 AND expires_at > ?2")
+  const row = await db.prepare("SELECT verifier, label, account, claimed_at FROM state_device_claim_challenges WHERE code_hash = ?1 AND expires_at > ?2")
     .bind(hash, now()).first();
   if (!row || row.account && row.account !== account) return no("expired", 404);
   if (action === "review") return json({ ok: true, label: row.label, id: row.verifier.slice(0, 6), claimed: !!row.claimed_at });
   if (row.claimed_at) return json({ ok: true });
   // Reserve a code for one account before invoking the existing ownership rule.
   // Retrying that account can finish an interrupted claim; another cannot steal it.
-  const reserved = await db.prepare(`UPDATE device_links SET account = ?1
+  const reserved = await db.prepare(`UPDATE state_device_claim_challenges SET account = ?1
     WHERE code_hash = ?2 AND expires_at > ?3 AND (account IS NULL OR account = ?1) RETURNING verifier, label`)
     .bind(account, hash, now()).first();
   if (!reserved) return no("expired", 404);
   const claimed = await claimDevice(env, account, reserved);
   if (!claimed.ok) return claimed;
-  await db.prepare("UPDATE devices SET label = ?1 WHERE verifier = ?2 AND account = ?3 AND (label IS NULL OR label != ?1)")
+  await db.prepare("UPDATE relation_account_compute_devices SET label = ?1 WHERE verifier = ?2 AND account = ?3 AND (label IS NULL OR label != ?1)")
     .bind(reserved.label, reserved.verifier, account).run();
-  await db.prepare("UPDATE device_links SET claimed_at = ?1 WHERE code_hash = ?2 AND account = ?3")
+  await db.prepare("UPDATE state_device_claim_challenges SET claimed_at = ?1 WHERE code_hash = ?2 AND account = ?3")
     .bind(now(), hash, account).run();
   return json({ ok: true });
 }

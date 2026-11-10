@@ -43,17 +43,17 @@ const work = (v) => post(verifyRoute, "/api/board/work", { verifier: v, engine: 
 const now = Date.now(), iso = (ms) => new Date(ms).toISOString();
 
 const BIG = "b".repeat(24), WALKER = "c".repeat(24);
-await ACCOUNTS.run("INSERT INTO accounts (id, created_at, username) VALUES ('acc-big', ?, 'big')", iso(now - 3 * 86_400_000));
-await ACCOUNTS.run("INSERT INTO devices (verifier, account, claimed_at) VALUES (?, 'acc-big', 'x')", BIG);
-for (const v of [BIG, WALKER]) await L.run("INSERT INTO verifiers (id, seen, asked_at, asked_engine, asked_lanes, work) VALUES (?, 'x', ?, 'e1', 4, 1)", v, iso(now - 30_000));
+await ACCOUNTS.run("INSERT INTO entity_accounts (id, created_at, username) VALUES ('acc-big', ?, 'big')", iso(now - 3 * 86_400_000));
+await ACCOUNTS.run("INSERT INTO relation_account_compute_devices (verifier, account, claimed_at) VALUES (?, 'acc-big', 'x')", BIG);
+for (const v of [BIG, WALKER]) await L.run("INSERT INTO entity_compute_devices (id, seen, asked_at, asked_engine, asked_lanes, work) VALUES (?, 'x', ?, 'e1', 4, 1)", v, iso(now - 30_000));
 // THE BIG ACCOUNT TOOK EVERYTHING IN THE WINDOW: 100% received against a 50% target.
-await L.run(`INSERT INTO answers (question, engine, device, owner, canon, result, work, compute_ms, at) VALUES ('old', 'e1', ?, 'acc-big', 'k', '{}', 1000, 1000, ?)`, BIG, iso(now - 60_000));
+await L.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, canon, result, work, compute_ms, at) VALUES ('old', 'e1', ?, 'acc-big', 'k', '{}', 1000, 1000, ?)`, BIG, iso(now - 60_000));
 const ask = async (n) => {
   const ids = Array.from({ length: n }, (_, i) => `build${i}`);
-  await L.run("INSERT INTO batches (id, at, why, total) VALUES ('b1', 'b1', 'test', 0) ON CONFLICT DO NOTHING");
+  await L.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES ('b1', 'b1', 'test', 0) ON CONFLICT DO NOTHING");
   for (const id of ids) {
-    await L.run("INSERT INTO builds (id, at, record) VALUES (?, ?, ?) ON CONFLICT DO NOTHING", id, iso(now), JSON.stringify({ weapon: "braton_prime", mods: ["serration", id] }));
-    await L.run("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('b1', ?, 'standard_single_target', 'base') ON CONFLICT DO NOTHING", id);
+    await L.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES (?, ?, ?) ON CONFLICT DO NOTHING", id, iso(now), JSON.stringify({ weapon: "braton_prime", mods: ["serration", id] }));
+    await L.run("INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES ('b1', ?, 'standard_single_target', 'base') ON CONFLICT DO NOTHING", id);
   }
   for (let i = 0; i < ids.length; i += 50) {
     await post(boardTasksRoute, "/api/board/ask", { batch: "b1", rows: ids.slice(i, i + 50).map((identity) => ({ identity, ruler: "standard_single_target", mode: "base" })) },
@@ -68,7 +68,7 @@ check("while work is short, the account past its share is handed nothing, as an 
   held.ok && held.pack === null && held.work === null && !held.stale && !held.banned, JSON.stringify(held));
 check("...and the walk-ins under theirs are handed a pack", !!(walked.pack && walked.pack.tasks.length), JSON.stringify(walked));
 
-await L.run("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL");
+await L.run("UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL");
 await ask(400);
 const plenty = await work(BIG);
 check("while work is plentiful the same account is handed a full pack", !!(plenty.pack && plenty.pack.tasks.length >= 10), JSON.stringify(plenty).slice(0, 200));
@@ -83,16 +83,16 @@ Math.random = random;
   const hour = iso(now - 3 * 3_600_000).slice(0, 13);
   for (const [name, best, recent] of [["slow", 1000, 0], ["mid", 2000, 0], ["busy", 0, 3000], ["fresh", 0, 0]]) {
     const dev = name.padEnd(24, "0");
-    await ACC.run("INSERT INTO accounts (id, created_at, username) VALUES (?, ?, ?)", `acc-${name}`, iso(now), name);
-    await ACC.run("INSERT INTO devices (verifier, account, claimed_at) VALUES (?, ?, 'x')", dev, `acc-${name}`);
-    await LIB.run("INSERT INTO verifiers (id, seen, asked_at, asked_engine, asked_lanes) VALUES (?, 'x', ?, 'e1', 4)", dev, iso(now - 30_000));
-    if (best) await LIB.run("INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)", dev, hour, best);
+    await ACC.run("INSERT INTO entity_accounts (id, created_at, username) VALUES (?, ?, ?)", `acc-${name}`, iso(now), name);
+    await ACC.run("INSERT INTO relation_account_compute_devices (verifier, account, claimed_at) VALUES (?, ?, 'x')", dev, `acc-${name}`);
+    await LIB.run("INSERT INTO entity_compute_devices (id, seen, asked_at, asked_engine, asked_lanes) VALUES (?, 'x', ?, 'e1', 4)", dev, iso(now - 30_000));
+    if (best) await LIB.run("INSERT INTO record_hourly_compute_totals (verifier, hour, work) VALUES (?, ?, ?)", dev, hour, best);
     // UNCREDITED WORK NEVER COUNTS AS CAPACITY: anyone can claim it.
-    await LIB.run(`INSERT INTO answers (question, engine, device, owner, canon, result, work, compute_ms, at, credited)
+    await LIB.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, canon, result, work, compute_ms, at, credited)
                      VALUES ('q', 'e1', ?, ?, 'k', '{}', ?, 1, ?, ?)`, dev, `acc-${name}`, recent || 1e9, iso(now - 60_000), recent ? 1 : 0);
   }
   // THE ENGINE HAS BEEN SERVED SINCE TEN HOURS AGO, so the three-hour-old best hours count.
-  await LIB.run(`INSERT INTO answers (question, engine, device, owner, canon, result, work, at) VALUES ('q0', 'e1', 'x', 'x', 'k', '{}', 1, ?)`, iso(now - 10 * 3_600_000));
+  await LIB.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, canon, result, work, at) VALUES ('q0', 'e1', 'x', 'x', 'k', '{}', 1, ?)`, iso(now - 10 * 3_600_000));
   const tb = await tableOf({ LIBRARY: LIB, ACCOUNTS: ACC }, "e1", now);
   const r = (a) => tb[`acc-${a}`].target / tb["acc-slow"].target;
   check("capacity is the best credited hour, so a machine that delivered twice as much has twice the target", close(r("mid"), 2), JSON.stringify(tb));
@@ -100,7 +100,7 @@ Math.random = random;
     close(r("busy"), 18) && close(r("fresh"), 2), JSON.stringify(tb));
   // A NEW ENGINE first answered a minute ago: no whole hour of it yet, so the
   // old best hours are another unit and count for nothing.
-  await LIB.run("UPDATE answers SET engine = 'e2' WHERE question = 'q'");
+  await LIB.run("UPDATE record_candidate_answers SET engine = 'e2' WHERE question = 'q'");
   const t2 = await tableOf({ LIBRARY: LIB, ACCOUNTS: ACC }, "e2", now);
   check("a best hour from before the served engine's first answer counts for nothing",
     close(t2["acc-mid"].target, t2["acc-slow"].target) && close(t2["acc-busy"].target / t2["acc-slow"].target, 1), JSON.stringify(t2));

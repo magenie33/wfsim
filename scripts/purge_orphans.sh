@@ -30,7 +30,7 @@ purge_statements() {
     | range(0; length; 33) as $i
     | $all[$i : $i + 33] as $chunk
     | {
-        sql: ("DELETE FROM queue WHERE (build_id, ruler, mode) IN (VALUES "
+        sql: ("DELETE FROM state_board_pending_work WHERE (build_id, ruler, mode) IN (VALUES "
               + ([$chunk[] | "(?,?,?)"] | join(",")) + ")"),
         params: [$chunk[] | .build_id, .ruler, .mode]
       }'
@@ -52,7 +52,7 @@ purge() {
     if db_query "$body"; then
       gone=$((gone + $(jq -r '.result[0].meta.changes // 0' "$DB_OUT" 2>/dev/null || echo 0)))
     else
-      echo "::error::queue: the database refused the orphan purge [HTTP $DB_CODE]" >&2
+      echo "::error::state_board_pending_work: the database refused the orphan purge [HTTP $DB_CODE]" >&2
       head -c 500 "$DB_OUT" || true
       return 1
     fi
@@ -70,7 +70,7 @@ self_test() {
   body=$(printf '%s\n' \
     '{"build_id":"07ed","ruler":"standard_single_target","mode":"base"}' \
     '{"build_id":"07ed","ruler":"standard_single_target","mode":"cycle"}' | purge_statements)
-  printf '%s' "$body" | jq -e '.sql == "DELETE FROM queue WHERE (build_id, ruler, mode) IN (VALUES (?,?,?),(?,?,?))"' >/dev/null \
+  printf '%s' "$body" | jq -e '.sql == "DELETE FROM state_board_pending_work WHERE (build_id, ruler, mode) IN (VALUES (?,?,?),(?,?,?))"' >/dev/null \
     && say ok "each row is named whole — build, ruler AND mode" \
     || say FAIL "$(printf '%s' "$body" | jq -r .sql)"
   printf '%s' "$body" | jq -e '.params == ["07ed","standard_single_target","base","07ed","standard_single_target","cycle"]' >/dev/null \

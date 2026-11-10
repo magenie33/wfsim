@@ -19,9 +19,9 @@ export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS,
       await tx.unsafe("SET LOCAL idle_in_transaction_session_timeout='60s'");
       const [stamp] = await tx.unsafe("SELECT to_char(transaction_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') started_at,pg_current_snapshot()::text snapshot");
       const scans = {
-        library: ['SELECT id,at,record FROM builds', []],
+        library: ['SELECT id,at,record FROM entity_weapon_builds', []],
         facts: ['SELECT identity,ruler,mode,measured_by,score,cost_seconds,started_at,finished_at,retired_at FROM board_facts', []],
-        queue: ['SELECT q.batch,q.build_id,q.ruler,q.mode FROM queue q WHERE EXISTS(SELECT 1 FROM batches b WHERE b.id=q.batch)', []],
+        queue: ['SELECT q.batch,q.build_id,q.ruler,q.mode FROM state_board_pending_work q WHERE EXISTS(SELECT 1 FROM entity_compute_batches b WHERE b.id=q.batch)', []],
         tasks: ['SELECT * FROM factory_inventory_rows($1::text,ARRAY(SELECT jsonb_array_elements_text(($2::text)::jsonb)))', [engine, JSON.stringify(covers)]],
       };
       for (const [name, [query, args]] of Object.entries(scans)) {

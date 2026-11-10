@@ -44,7 +44,7 @@ check("a hand-back needs a build", (await call("POST", `/api/appraise/${code}/re
 const b1 = await call("POST", `/api/appraise/${code}/result`, { build, thanks: "  Kai  see https://evil.example/x  and evil.com  " });
 const b2 = await call("POST", `/api/appraise/${code}/result`, { build: { ...build, mods: ["hornet_strike", "riven"] }, thanks: "B" });
 check("every build handed back is kept, each told it may be first", b1.body.ok && b1.body.first && b2.body.first);
-const thanked = (await db.all("SELECT thanks FROM appraisal_results ORDER BY id")).map((r) => r.thanks);
+const thanked = (await db.all("SELECT thanks FROM record_appraisal_candidates ORDER BY id")).map((r) => r.thanks);
 check("unverified typed names cannot become calculator attribution", thanked.every(name => name === ""), JSON.stringify(thanked));
 
 const c1 = (await call("POST", "/api/appraise/claim", { channel: "qq" }, bot)).body;
@@ -57,7 +57,7 @@ const [r1, r2] = c1.judge.map((j) => j.id);
 const c3 = (await call("POST", "/api/appraise/claim", { channel: "qq", judged: [{ id: r2, ok: true, verdict: { score: 87.3 } }] }, bot)).body;
 check("the first build the bot accepts wins", c3.tell.length === 1 && c3.tell[0].code === code && c3.tell[0].result_id === r2 && c3.tell[0].calculator.name === null && c3.tell[0].verdict.score === 87.3, JSON.stringify(c3.tell));
 const c4 = (await call("POST", "/api/appraise/claim", { channel: "qq", judged: [{ id: r1, ok: true }], told: [code] }, bot)).body;
-const row = await db.get("SELECT winner, told_at FROM appraisals WHERE code = ?", code);
+const row = await db.get("SELECT winner, told_at FROM entity_appraisal_requests WHERE code = ?", code);
 check("…once: a later acceptance changes nothing", row.winner === r2, JSON.stringify(row));
 check("…and a told appraisal is not handed out to tell again", c4.tell.length === 0 && Date.parse(row.told_at) > 0);
 const late = await call("POST", `/api/appraise/${code}/result`, { build, thanks: "C" });
@@ -72,14 +72,14 @@ check("the page reads completion without exposing an unverified typed name", don
 const other = (await call("POST", "/api/appraise/new", ask("names"), bot)).body.code;
 await call("POST", `/api/appraise/${other}/result`, { build, thanks: "a 片达人" });
 check("a name carrying a listed word is not carried into a chat at all, though the build counts",
-  (await db.get("SELECT thanks FROM appraisal_results WHERE code = ?", other)).thanks === "");
+  (await db.get("SELECT thanks FROM record_appraisal_candidates WHERE code = ?", other)).thanks === "");
 
 const frozenAsk = (await call("POST", "/api/appraise/new", ask("frozen", "g9", "wechat"), bot)).body.code;
 const lost = (await call("POST", "/api/appraise/new", ask("lost", "g9", "wechat"), bot)).body.code;
 const toFreeze = async (channel = "wechat") => (await call("POST", "/api/appraise/claim", { channel }, bot)).body.freeze || [];
 check("an appraisal just opened is not handed back to freeze", !(await toFreeze()).includes(lost));
-await db.run("UPDATE appraisals SET at = ? WHERE code IN (?, ?)", new Date(Date.now() - 90_000).toISOString(), frozenAsk, lost);
-await db.run("UPDATE appraisals SET request = '{}' WHERE code = ?", frozenAsk);
+await db.run("UPDATE entity_appraisal_requests SET at = ? WHERE code IN (?, ?)", new Date(Date.now() - 90_000).toISOString(), frozenAsk, lost);
+await db.run("UPDATE entity_appraisal_requests SET request = '{}' WHERE code = ?", frozenAsk);
 const again = await toFreeze();
 check("one still unfrozen a minute on is handed back to its bot to freeze", again.includes(lost), JSON.stringify(again));
 check("…never one already frozen", !again.includes(frozenAsk));

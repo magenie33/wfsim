@@ -18,7 +18,7 @@ export function validInventory(value, now = Date.now()) {
 
 export async function readInventoryState(db, now = Date.now()) {
   const empty = { fresh: null, lastComplete: null };
-  const row = await db.prepare("SELECT body,(SELECT engine FROM factory_snapshot WHERE id=1) engine FROM factory_findings WHERE kind = ?").bind(INVENTORY_KEY).first();
+  const row = await db.prepare("SELECT body,(SELECT engine FROM state_factory_snapshot WHERE id=1) engine FROM state_factory_findings WHERE kind = ?").bind(INVENTORY_KEY).first();
   if (!row) return empty;
   try {
     const body = JSON.parse(row.body), at = Date.parse(body.at);
@@ -41,9 +41,9 @@ export function inventoryWrite(plan, now = Date.now()) {
     total: plan?.rows, registered: plan?.queued, orders: plan?.orders, verbs: plan?.verbs };
   if (plan?.v !== 2 || !body.snapshot || typeof body.engine !== "string" || !validInventory(body, now))
     throw new Error("incomplete task inventory");
-  return { sql: `INSERT INTO factory_findings(kind,body,at) SELECT ?1::text,?2::text,?3::text
-    WHERE NOT EXISTS(SELECT 1 FROM factory_snapshot WHERE id=1 AND engine IS NOT NULL AND engine<>?4::text)
+  return { sql: `INSERT INTO state_factory_findings(kind,body,at) SELECT ?1::text,?2::text,?3::text
+    WHERE NOT EXISTS(SELECT 1 FROM state_factory_snapshot WHERE id=1 AND engine IS NOT NULL AND engine<>?4::text)
     ON CONFLICT(kind) DO UPDATE SET body=excluded.body,at=excluded.at
-    WHERE factory_findings.body::jsonb->>'started_at' <= excluded.body::jsonb->>'started_at'`,
+    WHERE state_factory_findings.body::jsonb->>'started_at' <= excluded.body::jsonb->>'started_at'`,
     params: [INVENTORY_KEY, JSON.stringify(body), at, body.engine] };
 }

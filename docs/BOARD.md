@@ -896,13 +896,49 @@ through a Cloudflare Access TCP tunnel to `pg.wfsim.app`.
 
 | database | holds | worker binding | DDL |
 | --- | --- | --- | --- |
-| `wfsim` | the library and the fact factory, one database and one transaction — inbox, builds, scores, batches, queue, orders, shares, usage_days, usage_points, bot_inbox, appraisals, appraisal_results, user_calculations, calculation_reports, user_calculation_cancellations, fissures, donors, rates, donations; questions, demands, answers, verifiers, verifier_hours, watchdog_said, points_pool | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql`, `worker/pg/sync.sql` |
+| `wfsim` | public builds, computation inputs and task rounds, accepted outputs, current scheduling and published measurements, consumers, evidence and contribution accounting | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql`, `worker/pg/sync.sql`, `worker/pg/inventory.sql` |
 | `wfsim_accounts` | the accounts — every table the open half and the paid half name, under their own role | `HYPERDRIVE_ACCOUNTS` → `ACCOUNTS` | `worker/pg/accounts.sql` |
 
 `withDatabases` opens each from its binding; every query is Postgres text.
 Every text column is `COLLATE "C"`, so an ISO instant compares byte by byte
 whatever the server's locale; the last slot's trigger is a function and a
 trigger.
+
+The storage classes are defined in `docs/NAMING.md`. Computation storage has
+one authority for each responsibility:
+
+| relation | authority |
+| --- | --- |
+| `entity_compute_specs` | frozen input and its computation identity |
+| `entity_compute_tasks` | one execution round, its generation and reason |
+| `record_candidate_answers` | submitted evidence, with original work and credit clocks |
+| `relation_task_answer_evidence` | evidence explicitly usable by a particular round |
+| `entity_compute_results` | an accepted canonical output, engine and measurement time |
+| `record_compute_result_proofs` | the output's witness snapshot, subject to detail retention |
+| `record_compute_result_selections` | acceptance and retirement history |
+| `state_compute_scheduling` | current round, scheduling, leases and selected output identity |
+| `relation_task_consumers` | independent consumers and their delivery state |
+| `entity_calculation_reports` | report identity linked to an accepted output, or preserved imported content |
+| `state_calculation_report_selection` | current report for a computation and engine |
+| `relation_calculation_report_access` | owner access and retention independent of task history |
+
+`state_compute_work` projects input and selected output onto the scheduling
+row. Its ordinary lease fields are writable; its input and output bodies are
+read-only projections. Selection metadata is constrained to agree with the
+referenced output. Reopening work creates a new task round. Evidence from a
+retired round counts only through an explicit association; engine recalibration
+may carry eligible evidence from the preceding round.
+An official correction also starts a new round and associates only its accepted
+evidence. Storage rejects a changed canonical output or engine under the same
+accepted task identity.
+
+Concurrent settlement rereads its plan after a task or state conflict, before
+credit or delivery. An older answer cannot release a newer round's lease.
+Removing scheduling rows does not erase accepted outputs. Expiring witness
+detail does not rewrite the accepted result or its permanent aggregate credit.
+Reports retain access independently of their original request row. Imported
+reports with missing task lineage retain their source content and time;
+storage never invents an input or a consensus to attach them to.
 
 - **A SCRIPT REACHES A DATABASE THROUGH ONE DOOR.** `scripts/db.sh` and
   `scripts/db.mjs` take one statement and answer from whichever database

@@ -59,38 +59,38 @@ const row = (t, { score = SCORE, metric = "kpm", work: wk = WORK, extra = {} } =
 const answer = (t, v, { engine = "e1", ip = "", ...o } = {}) => answerAll(t.lease, v, [row(t, o)], { engine, ip });
 const today = new Date().toISOString().slice(0, 10);
 const build = (id, at = new Date().toISOString(), weapon = "braton_prime") =>
-  L.run("INSERT INTO builds (id, at, record) VALUES (?, ?, ?)", id, at, JSON.stringify({ weapon, mods: ["serration", id] }));
+  L.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES (?, ?, ?)", id, at, JSON.stringify({ weapon, mods: ["serration", id] }));
 const queue = async (batch, ...ids) => {
-  await L.run("INSERT INTO batches (id, at, why, total) VALUES (?, ?, 'test', 0) ON CONFLICT DO NOTHING", batch, batch);
-  for (const id of ids) await L.run("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, ?, 'standard_single_target', 'base') ON CONFLICT DO NOTHING", batch, id);
+  await L.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES (?, ?, 'test', 0) ON CONFLICT DO NOTHING", batch, batch);
+  for (const id of ids) await L.run("INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES (?, ?, 'standard_single_target', 'base') ON CONFLICT DO NOTHING", batch, id);
 };
 const ask = (batch, ...ids) => post(boardTasksRoute, "/api/board/ask",
   { batch, rows: ids.map((identity) => ({ identity, ruler: "standard_single_target", mode: "base" })) }, TOKEN);
-const demand = (id) => L.get("SELECT * FROM demands WHERE ref = ?", `${id}|standard_single_target|base`);
-const question = (id) => L.get("SELECT q.* FROM questions q JOIN demands d ON d.question = q.id WHERE d.ref = ?", `${id}|standard_single_target|base`);
+const demand = (id) => L.get("SELECT * FROM relation_task_consumers WHERE ref = ?", `${id}|standard_single_target|base`);
+const question = (id) => L.get("SELECT q.* FROM state_compute_work q JOIN relation_task_consumers d ON d.question = q.id WHERE d.ref = ?", `${id}|standard_single_target|base`);
 const fact = (id) => L.get("SELECT * FROM board_facts WHERE identity = ? AND retired_at IS NULL", id);
-const owed = async (id) => !!(await L.get("SELECT 1 FROM queue WHERE build_id = ?", id));
-const credited = async (v) => ((await L.get("SELECT work FROM verifiers WHERE id = ?", v)) || {}).work || 0;
-const free = () => L.run("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL");
+const owed = async (id) => !!(await L.get("SELECT 1 FROM state_board_pending_work WHERE build_id = ?", id));
+const credited = async (v) => ((await L.get("SELECT work FROM entity_compute_devices WHERE id = ?", v)) || {}).work || 0;
+const free = () => L.run("UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL");
 /// EVERY ONE OF `xs` passes the async test `f`.
 const every = async (xs, f) => { for (const x of xs) if (!(await f(x))) return false; return true; };
 /// ONLY ONE ROW IN PLAY: every other question is withdrawn for the test at hand.
 const only = async (...ids) => {
   const keep = [];
   for (const id of ids) keep.push((await question(id)).id);
-  await L.run(`UPDATE questions SET state = 'withdrawn' WHERE state = 'open' AND id NOT IN (${keep.map(() => "?").join(", ")})`, ...keep);
+  await L.run(`UPDATE state_compute_work SET state = 'withdrawn' WHERE state = 'open' AND id NOT IN (${keep.map(() => "?").join(", ")})`, ...keep);
 };
 const A = "a".repeat(24), B = "b".repeat(24), C = "c".repeat(24), D = "d".repeat(24), E = "e".repeat(24), F = "f".repeat(24);
-for (const v of [A, B, C, D, E, F]) await L.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')", v);
+for (const v of [A, B, C, D, E, F]) await L.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-08')", v);
 // A and D are one person's computers.
-await ACCOUNTS.exec(`INSERT INTO accounts (id, created_at, username) VALUES ('ann', 'x', 'ann');
-  INSERT INTO devices (verifier, account, claimed_at) VALUES ('${A}', 'ann', 'x'), ('${D}', 'ann', 'x');`);
+await ACCOUNTS.exec(`INSERT INTO entity_accounts (id, created_at, username) VALUES ('ann', 'x', 'ann');
+  INSERT INTO relation_account_compute_devices (verifier, account, claimed_at) VALUES ('${A}', 'ann', 'x'), ('${D}', 'ann', 'x');`);
 
 console.log("asked for");
 await build("one"); await build("old", "2020-01-01T00:00:00.000Z"); await build("scored");
 const arrivals = `arrivals-${today}`;
 await queue(arrivals, "one", "old", "scored");
-await L.run("INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at) VALUES ('scored', 'standard_single_target', 'base', 'v', 1, 'kpm', 0, 'x', 'x')");
+await L.run("INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at) VALUES ('scored', 'standard_single_target', 'base', 'v', 1, 'kpm', 0, 'x', 'x')");
 // A CLIENT WHOSE ID THE SITE DOES NOT MAKE is handed nothing, and told whom to ask.
 const stranger = "a7i8qmmcffo718dya4q5";
 const strangerAsk = await work(stranger);
@@ -107,16 +107,16 @@ check("...and its question is the build's record on the ruler, simulated",
 // A SURVEY'S WINNER, submitted as WFSim (`system`), is its own producer and
 // due in three days: asked as a new build, a batch of them starved the rest.
 await build("surveyed");
-await L.run("INSERT INTO queue (batch, build_id, ruler, mode, initiator) VALUES (?, 'surveyed', 'standard_single_target', 'base', 'system')", arrivals);
+await L.run("INSERT INTO state_board_pending_work (batch, build_id, ruler, mode, initiator) VALUES (?, 'surveyed', 'standard_single_target', 'base', 'system')", arrivals);
 await ask(arrivals, "surveyed");
 const surveyAsk = await demand("surveyed") || {};
 check("...a survey's winner by `survey_build`, due three days after it is asked",
   surveyAsk.producer === "survey_build" && Date.parse(surveyAsk.due_at) - Date.parse(surveyAsk.asked_at) === 3 * 86_400_000,
   `${surveyAsk.producer} ${surveyAsk.asked_at} -> ${surveyAsk.due_at}`);
 await build("cell");
-await L.run("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, 'cell', 'standard_single_target__sp200', 'base')", arrivals);
+await L.run("INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES (?, 'cell', 'standard_single_target__sp200', 'base')", arrivals);
 await post(boardTasksRoute, "/api/board/ask", { batch: arrivals, rows: [{ identity: "cell", ruler: "standard_single_target__sp200", mode: "base" }] }, TOKEN);
-const cellAsk = await L.get("SELECT producer, asked_at, due_at FROM demands WHERE ref = 'cell|standard_single_target__sp200|base'") || {};
+const cellAsk = await L.get("SELECT producer, asked_at, due_at FROM relation_task_consumers WHERE ref = 'cell|standard_single_target__sp200|base'") || {};
 check("...but a new build's row under another scene of a ruler by `sweep`", cellAsk.producer === "sweep");
 check("...due three days after it is asked, ahead of a refresh days from its bound",
   Date.parse(cellAsk.due_at) - Date.parse(cellAsk.asked_at) === 3 * 86_400_000, `${cellAsk.asked_at} -> ${cellAsk.due_at}`);
@@ -133,8 +133,9 @@ check("an owed row nobody asked for is asked by the backfill", back.asked === 1 
 check("...and asking again asks nothing", (await post(boardTasksRoute, "/api/board/ask", { backfill: true }, TOKEN)).asked === 0);
 // AN ASK THAT FAILED AFTER WRITING ITS DEMAND left it live on a fact it never
 // delivered: still owed, so the backfill asks it again, and the ask tells it.
-await L.run("UPDATE questions SET state = 'fact', fact_engine = 'e0', fact_at = ? WHERE id = (SELECT question FROM demands WHERE ref = 'lost|standard_single_target|base')",
-  new Date(Date.now() - 86_400_000).toISOString());
+const lost=await L.get("SELECT q.id,q.task_id FROM state_compute_work q JOIN relation_task_consumers d ON d.question=q.id WHERE d.ref='lost|standard_single_target|base'");
+await L.run("SELECT compute_accept_result(?1::text,?2::bigint,'open','fact','{}','e0',?3::text,0,'[]')",
+  lost.id,lost.task_id,new Date(Date.now()-86_400_000).toISOString());
 const stuck = await post(boardTasksRoute, "/api/board/ask", { backfill: true }, TOKEN);
 check("a live demand left on a settled question is asked again by the backfill", stuck.asked === 1, JSON.stringify(stuck));
 check("...which opens an older engine's fact again for the served one", (await question("lost")).state === "open", (await question("lost")).state);
@@ -155,7 +156,7 @@ await only("one");
 const w1 = await work(A, { ip: "203.0.113.1" });
 await answer(task(w1), A, { ip: "203.0.113.1", extra: { counts: { runs: 10, shots: 900, bogus: -1 }, lanes: 4 } });
 check("one result is no fact", !await fact("one") && (await question("one")).state === "open");
-const kept = await L.get("SELECT counts, lanes, compute_ms FROM answers WHERE device = ?", A);
+const kept = await L.get("SELECT counts, lanes, compute_ms FROM record_candidate_answers WHERE device = ?", A);
 check("...and what it cost is kept beside it: its counts, its cores, its time", kept.counts === '{"runs":10,"shots":900}'
   && kept.lanes === 4 && kept.compute_ms === 1000, JSON.stringify(kept));
 check("...its browser's task says it waits", (await post(verifyRoute, "/api/board/mine",
@@ -203,7 +204,7 @@ const told = await tell([{ identity: "two", ruler: "standard_single_target", mod
   (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:live" }, TOKEN));
 check("its fact settles the dispute", told === 1 && (await question("two")).state === "fact");
 check("...crediting the client it agrees with", await credited(C) === WORK);
-const cooled = await L.get("SELECT banned, refusals, refused_until FROM verifiers WHERE id = ?", E);
+const cooled = await L.get("SELECT banned, refusals, refused_until FROM entity_compute_devices WHERE id = ?", E);
 check("...and refusing the one it disproves, for a day", cooled.banned === 1 && cooled.refusals === 1
   && Math.abs(Date.parse(cooled.refused_until) - Date.now() - coolDownMs(0)) < 60_000, JSON.stringify(cooled));
 const banned = await work(E, { ip: "192.0.2.4" });
@@ -218,7 +219,7 @@ await queue(arrivals, "three");
 await ask(arrivals, "three");
 await free(); await only("three");
 const G = "7".repeat(24), H = "6".repeat(24);
-for (const v of [G, H]) await L.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')", v);
+for (const v of [G, H]) await L.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-08')", v);
 const real = Math.random;
 await answer(task(await work(G, { ip: "192.0.2.7" })), G, { ip: "192.0.2.7", score: 9 });
 const second = task(await work(H, { ip: "192.0.2.8" }));
@@ -235,9 +236,9 @@ await tell([{ identity: "three", ruler: "standard_single_target", mode: "base", 
   (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:live" }, TOKEN));
 check("a spot check that disproves them refuses both and takes back what they were paid",
   spot.tasks.length === 1 && await credited(G) === 0 && await credited(H) === 0
-  && (await L.get("SELECT banned FROM verifiers WHERE id = ?", G)).banned === 1);
+  && (await L.get("SELECT banned FROM entity_compute_devices WHERE id = ?", G)).banned === 1);
 check("...and the official fact stands", (await question("three")).state === "fact"
-  && (await L.get("SELECT count(*) AS n FROM answers WHERE void = 1 AND question = ?", (await question("three")).id)).n === 2);
+  && (await L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE void = 1 AND question = ?", (await question("three")).id)).n === 2);
 await L.batch(BOARD_PRODUCERS.new_build.on_fact_writes(env,{payload:{identity:'three',ruler:'standard_single_target',mode:'base'}},
   {official:true,engine:'e1',result:{score:SCORE,metric:'kpm'}}));
 check("an official delivery corrects an incorrect existing public score",(await fact('three'))?.score===SCORE);
@@ -249,16 +250,16 @@ await build("late"); await build("young"); await build("orphan");
 await queue(arrivals, "late", "young", "orphan");
 await ask(arrivals, "late", "young");
 await free(); await only("late", "young");
-await L.run("UPDATE questions SET due_at = '2000-01-01T00:00:00.000Z' WHERE id = ?", (await question("late")).id);
+await L.run("UPDATE state_compute_work SET due_at = '2000-01-01T00:00:00.000Z' WHERE id = ?", (await question("late")).id);
 await answer(task(await work(F, { ip: "192.0.2.9" })), F, { ip: "192.0.2.9", score: 3 });
-check("a late row's single result is open", (await question("late")).state === "open" && (await L.get("SELECT count(*) AS n FROM answers WHERE question = ?", (await question("late")).id)).n === 1);
+check("a late row's single result is open", (await question("late")).state === "open" && (await L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = ?", (await question("late")).id)).n === 1);
 const claim = await post(officialRoute, "/api/tasks/official/claim",
   { witness: "official:scorer", engine: "e1", states: ["open"], producers: ["new_build", "sweep"], max: 100 }, TOKEN);
 check("the scorer claims what is past its deadline and leaves a young row to the clients",
   claim.tasks.map((t) => t.demands[0].payload.identity).join() === "late" && (await question("young")).leased_to === null, JSON.stringify(claim.tasks.length));
 check("no client is handed a claimed row", task(await work(C, { ip: "192.0.2.30" })).identity === "young");
 await free();
-await L.run("UPDATE questions SET lease = 'x', lease_until = '2999-01-01T00:00:00.000Z', leased_to = 'official:scorer' WHERE id = ?", (await question("late")).id);
+await L.run("UPDATE state_compute_work SET lease = 'x', lease_until = '2999-01-01T00:00:00.000Z', leased_to = 'official:scorer' WHERE id = ?", (await question("late")).id);
 // THE SCORER'S OWN READ, run on the schema: the batches in order, then each
 // one's rows after a cursor along the key.
 const body = (...a) => JSON.parse(execFileSync("bash", ["scripts/fetch_queue.sh", "--body", ...a]).toString());
@@ -279,18 +280,18 @@ await tell([{ identity: "late", ruler: "standard_single_target", mode: "base", s
   (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:scorer" }, TOKEN));
 check("...and its answer is the fact, paying the client whose bits it reproduced", (await question("late")).state === "fact" && await credited(F) === WORK);
 check("...whose number the scorer itself writes to the board", !await fact("late"));
-await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+await L.run(`INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
   VALUES ('late', 'standard_single_target', 'base', 'abc123', 3, 'kpm', 1, 'x', '2026-01-01T00:00:00.000Z')`);
 await queue(`refresh-${today}`, "late");
 await ask(`refresh-${today}`, "late");
-const refreshed = await L.get("SELECT * FROM demands WHERE producer = 'refresh' AND ref = ?", "late|standard_single_target|base");
+const refreshed = await L.get("SELECT * FROM relation_task_consumers WHERE producer = 'refresh' AND ref = ?", "late|standard_single_target|base");
 check("a `refresh-` batch's row is asked by `refresh`, due fourteen days after its fact finished",
   refreshed && refreshed.due_at === "2026-01-15T00:00:00.000Z", JSON.stringify(refreshed));
 check("...and one whose official fact is on the served engine costs nothing: the row is measured now, its number kept",
   !await owed("late") && (await fact("late")).finished_at > "2026-01-01T00:00:00.000Z" && (await fact("late")).measured_by === "abc123" && (await fact("late")).score === 3,
   JSON.stringify(await fact("late")));
 await post(officialRoute, "/api/tasks/official/release", { witness: "official:scorer" }, TOKEN);
-check("the release hands back what the run held", !await L.get("SELECT 1 FROM questions WHERE leased_to = 'official:scorer'"));
+check("the release hands back what the run held", !await L.get("SELECT 1 FROM state_compute_work WHERE leased_to = 'official:scorer'"));
 
 console.log("\nleases, engines");
 await free(); await only("young");
@@ -301,7 +302,7 @@ check("a lease is held for longer than the slowest row", LEASE_MS >= 20 * 60_000
 const stale = await work(B, { ip: "198.51.100.40" });
 const dropped = await answer(task(stale), B, { engine: "e2", ip: "198.51.100.40" });
 check("an answer from another engine is dropped, and the row handed out again", dropped.ok
-  && (await L.get("SELECT count(*) AS n FROM answers WHERE question = ?", (await question("young")).id)).n === 0 && (await question("young")).leased_to === null);
+  && (await L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = ?", (await question("young")).id)).n === 0 && (await question("young")).leased_to === null);
 
 console.log("\npacks");
 {
@@ -314,12 +315,12 @@ console.log("\npacks");
   await ask(arrivals, ...ids);
   await free(); await only(...ids);
   const P = "5".repeat(24), Q = "4".repeat(24);
-  for (const v of [P, Q]) await L.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')", v);
+  for (const v of [P, Q]) await L.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-08')", v);
   check("a pack is a minute of the computer's pace, a fair share of what is open, PACK_FIRST before its pace is known",
     packSize(20_000, 4000, 10) === 3 && packSize(1000, 4000, 10) === PACK_MAX && packSize(null, 4000, 10) === PACK_FIRST
     && packSize(1000, 6, 7) === 1 && packSize(1000, 40, 8) === 5);
   check("...leased for one heartbeat, whatever its length", PACK_LEASE_MS === RENEW_MS && PACK_LEASE_MS < LEASE_MS);
-  const asking = (await L.get("SELECT count(*) AS n FROM verifiers WHERE asked_at > ?", new Date(Date.now() - 120_000).toISOString())).n + 1;
+  const asking = (await L.get("SELECT count(*) AS n FROM entity_compute_devices WHERE asked_at > ?", new Date(Date.now() - 120_000).toISOString())).n + 1;
   const p1 = await work(P, { ip: "192.0.2.60", pace: 20_000 });
   const rows = p1.pack ? p1.pack.tasks : [];
   check("a computer is handed a pack: its rows under one lease, in the factory's order",
@@ -327,7 +328,7 @@ console.log("\npacks");
     && p1.pack.lease_ms === PACK_LEASE_MS
     && await every(rows, async (t) => (await question(t.identity)).lease === p1.pack.lease && (await question(t.identity)).leased_to === P)
     // THE FIRST IN ORDER: these forty share a deadline, so no row left open ranks before the pack's last.
-    && !await L.get("SELECT 1 FROM questions WHERE state = 'open' AND lease IS NULL AND id < ?", rows.map((t) => t.question).sort().at(-1)),
+    && !await L.get("SELECT 1 FROM state_compute_work WHERE state = 'open' AND lease IS NULL AND id < ?", rows.map((t) => t.question).sort().at(-1)),
     JSON.stringify(p1));
   const ahead1 = await work(P, { ip: "192.0.2.60", pace: 20_000, ahead: true });
   const ahead2 = await work(P, { ip: "192.0.2.60", pace: 20_000, ahead: true });
@@ -343,12 +344,12 @@ console.log("\npacks");
   check("...as a release keeps it, and one without `keep` gives it back too", keptStill && (await question(kept.identity)).leased_to === null);
   await answerAll(p1.pack.lease, P, rows.slice(0, 2).map((t) => row(t)), { ip: "192.0.2.60", done: false });
   check("answers sent before the pack ends are taken, and its other rows stay its own",
-    await every(rows.slice(0, 2), async (t) => (await question(t.identity)).leased_to === null && await L.get("SELECT 1 FROM answers WHERE question = ? AND device = ?", t.question, P))
+    await every(rows.slice(0, 2), async (t) => (await question(t.identity)).leased_to === null && await L.get("SELECT 1 FROM record_candidate_answers WHERE question = ? AND device = ?", t.question, P))
     && await every(rows.slice(2), async (t) => (await question(t.identity)).lease === p1.pack.lease));
   await answerAll(p1.pack.lease, P, [row(rows[2]), row(rows[0])], { ip: "192.0.2.60" });
   check("...the rest with `done`, a row answered twice in one pack counted once, and the unanswered rows given back",
-    (await L.get("SELECT count(*) AS n FROM answers WHERE question = ? AND device = ?", rows[0].question, P)).n === 1
-    && await L.get("SELECT 1 FROM answers WHERE question = ? AND device = ?", rows[2].question, P)
+    (await L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = ? AND device = ?", rows[0].question, P)).n === 1
+    && await L.get("SELECT 1 FROM record_candidate_answers WHERE question = ? AND device = ?", rows[2].question, P)
     && await every(rows.slice(3), async (t) => (await question(t.identity)).leased_to === null));
   check("one owner's pack makes no fact alone", await every(rows.slice(0, 3), async (t) => (await question(t.identity)).state === "open" && !await fact(t.identity)));
   const p2 = await work(Q, { ip: "198.51.100.61", pace: 20_000 });
@@ -361,14 +362,14 @@ console.log("\npacks");
   check("...and each fact credited once, to each witness", await credited(P) === before + 2 * WORK && await credited(Q) === 2 * WORK);
   // A ROW THE SCORER MEASURED MEANWHILE is not owed: left out of the pack and withdrawn.
   await free();
-  const next = (await L.get(`SELECT d.ref FROM questions q JOIN demands d ON d.question = q.id WHERE q.state = 'open'
-    AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id) ORDER BY q.due_at, q.id LIMIT 1`)).ref.split("|")[0];
-  await L.run("DELETE FROM queue WHERE build_id = ?", next);
+  const next = (await L.get(`SELECT d.ref FROM state_compute_work q JOIN relation_task_consumers d ON d.question = q.id WHERE q.state = 'open'
+    AND NOT EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.question = q.id) ORDER BY q.due_at, q.id LIMIT 1`)).ref.split("|")[0];
+  await L.run("DELETE FROM state_board_pending_work WHERE build_id = ?", next);
   const p3 = await work(B, { ip: "198.51.100.62", pace: 20_000 });
   check("a row no longer owed is left out of a pack and withdrawn where it is found",
     p3.pack && !p3.pack.tasks.some((t) => t.identity === next) && (await question(next)).state === "withdrawn", JSON.stringify(p3.pack && p3.pack.tasks.map((t) => t.identity)));
   await free();
-  await L.run("UPDATE questions SET state = 'withdrawn' WHERE state = 'open'");
+  await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE state = 'open'");
 }
 
 console.log("\norders open before the factory");
@@ -376,16 +377,16 @@ console.log("\norders open before the factory");
   const at = "2026-10-09T00:00:00.000Z";
   await build("legacy");
   await queue("rescore-y", "legacy");
-  await L.run(`INSERT INTO orders (identity, ruler, mode, record, state, engine, slot, at, priority, score, metric, work, produced_by, clients, lease, lease_until, leased_to)
-    VALUES ('legacy', 'standard_single_target', 'base', ?, 'open', 'e1', 1, ?, 1, ?, 'kpm', ?, ?, ?, NULL, NULL, NULL)`, (await L.get("SELECT record FROM builds WHERE id = 'legacy'")).record, at, SCORE, WORK, B, B);
-  await L.run(`INSERT INTO orders (identity, ruler, mode, record, state, engine, slot, at, priority, lease, lease_until, leased_to)
+  await L.run(`INSERT INTO entity_compute_orders (identity, ruler, mode, record, state, engine, slot, at, priority, score, metric, work, produced_by, clients, lease, lease_until, leased_to)
+    VALUES ('legacy', 'standard_single_target', 'base', ?, 'open', 'e1', 1, ?, 1, ?, 'kpm', ?, ?, ?, NULL, NULL, NULL)`, (await L.get("SELECT record FROM entity_weapon_builds WHERE id = 'legacy'")).record, at, SCORE, WORK, B, B);
+  await L.run(`INSERT INTO entity_compute_orders (identity, ruler, mode, record, state, engine, slot, at, priority, lease, lease_until, leased_to)
     VALUES ('gone', 'standard_single_target', 'base', '{}', 'todo', '', 2, ?, 0, NULL, NULL, NULL)`, at);
   check("only the factory's secret adopts", (await post(boardTasksRoute, "/api/board/adopt", {})).ok === false);
   const r = await post(boardTasksRoute, "/api/board/adopt", {}, TOKEN);
   check("an open order is asked of the factory, as of when it was opened, and nothing is left", r.left === 0 && await demand("legacy")
     && (await demand("legacy")).asked_at === at, JSON.stringify(r));
-  check("...its client's result carried", (await L.get("SELECT count(*) AS n FROM answers WHERE question = ? AND device = ?", (await question("legacy")).id, B)).n === 1);
-  check("...and an order nobody owes any more is settled where it is found", (await L.get("SELECT state FROM orders WHERE identity = 'gone'")).state === "settled");
+  check("...its client's result carried", (await L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = ? AND device = ?", (await question("legacy")).id, B)).n === 1);
+  check("...and an order nobody owes any more is settled where it is found", (await L.get("SELECT state FROM entity_compute_orders WHERE identity = 'gone'")).state === "settled");
   await free(); await only("legacy");
   check("its client is not asked again", none(await work(B, { ip: "198.51.100.50" })));
   const before = await credited(B);
@@ -398,13 +399,13 @@ console.log("\norders open before the factory");
   // AN ASK IS RECORDED: when, on which engine (an older protocol marked) and
   // with how many cores, which is what tells an idle page from a closed one.
   const O = "0".repeat(24);
-  await L.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')", O);
+  await L.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-08')", O);
   await work(O, { engine: "old" });
-  const v = await L.get("SELECT asked_at, asked_engine, asked_lanes FROM verifiers WHERE id = ?", O);
+  const v = await L.get("SELECT asked_at, asked_engine, asked_lanes FROM entity_compute_devices WHERE id = ?", O);
   // PROTOCOL 7 IS NOW THE ONE BEFORE (8 is `/api/board/sync`), so it is marked too.
   check("a page's ask for work is recorded, with its engine and its cores", v.asked_at && v.asked_engine === `old/p${PROTOCOL}` && v.asked_lanes === 4, JSON.stringify(v));
   await work(O, { engine: "old", protocol: PROTOCOL - 1 });
-  check("...and an older protocol is marked on it", (await L.get("SELECT asked_engine FROM verifiers WHERE id = ?", O)).asked_engine === `old/p${PROTOCOL - 1}`);
+  check("...and an older protocol is marked on it", (await L.get("SELECT asked_engine FROM entity_compute_devices WHERE id = ?", O)).asked_engine === `old/p${PROTOCOL - 1}`);
   await free();
 }
 
@@ -432,7 +433,7 @@ console.log("\norders open before the factory");
   const DAY = 86_400_000, now = Date.now();
   const measured = async (id, daysAgo) => {
     await build(id);
-    await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+    await L.run(`INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
       VALUES (?, 'standard_single_target', 'base', 'v', 1, 'kpm', 0, 'x', ?)`, id, new Date(now - daysAgo * DAY).toISOString());
   };
   const dueIn = async (id) => (Date.parse((await demand(id)).due_at) - now) / DAY;
@@ -452,18 +453,18 @@ console.log("\norders open before the factory");
 console.log("\nthe database's safety valve");
 {
   await setDial(env, "compute_cap", 1, "check");
-  await L.run("UPDATE verifiers SET asked_at = ?", new Date().toISOString());
+  await L.run("UPDATE entity_compute_devices SET asked_at = ?", new Date().toISOString());
   const fresh = await work("9".repeat(24), { ip: "203.0.113.90" });
   check("past the compute_cap dial a computer that answered nothing lately is handed nothing", fresh.busy === true && none(fresh), JSON.stringify(fresh));
   await setDial(env, "compute_cap", 0, "check");
   check("...and with no cap it is handed work as before", !(await work("8".repeat(24), { ip: "203.0.113.91" })).busy);
-  await L.run("DELETE FROM factory_dials");
+  await L.run("DELETE FROM state_factory_parameters");
   forgetDials();
 }
 
 console.log("\nan older engine still accepted computes the weapons its data matches");
 {
-  await L.run("UPDATE questions SET state = 'withdrawn' WHERE state = 'open'");
+  await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE state = 'open'");
   const until = new Date(Date.now() + 86_400_000).toISOString();
   env.ASSETS = { fetch: async () => new Response(JSON.stringify({ engine: "e1", release: "r9",
     accepted: [{ engine: "e0", until, changed: ["braton_prime"] }, { engine: "eold", until: "2026-01-01T00:00:00.000Z", changed: [] }] })) };
@@ -481,14 +482,14 @@ console.log("\nan older engine still accepted computes the weapons its data matc
   await answer(task(p1), O1, { engine: "e0", ip: "203.0.113.71" });
   const p2 = await work(O2, { engine: "e0", ip: "203.0.113.72" });
   await answer(task(p2), O2, { engine: "e0", ip: "203.0.113.72" });
-  const q = await L.get("SELECT state, fact_engine FROM questions WHERE id = ?", task(p1).question);
+  const q = await L.get("SELECT state, fact_engine FROM state_compute_work WHERE id = ?", task(p1).question);
   check("...two of them agreeing make a fact, the served engine's", q && ["fact", "spot"].includes(q.state) && q.fact_engine === "e1", JSON.stringify(q));
   env.ASSETS = site("e1");
 }
 
 console.log("\nan older engine whose code moved is handed only rows a served answer leads");
 {
-  await L.run("UPDATE questions SET state = 'withdrawn' WHERE state = 'open'");
+  await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE state = 'open'");
   const until = new Date(Date.now() + 86_400_000).toISOString();
   env.ASSETS = { fetch: async () => new Response(JSON.stringify({ engine: "e1", release: "r9", accepted: [{ engine: "ej", until, join: true }] })) };
   await build("join-a");
@@ -499,7 +500,7 @@ console.log("\nan older engine whose code moved is handed only rows a served ans
   const p = await work(J1, { ip: "203.0.113.75" });
   const led = task(p).question;
   await answer(task(p), J1, { ip: "203.0.113.75" });
-  await L.run("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE state = 'open'");
+  await L.run("UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE state = 'open'");
   const j = await work(J2, { engine: "ej", ip: "203.0.113.76" });
   const got = (j.pack ? j.pack.tasks : []).map((x) => x.question);
   check("a joining engine is handed the row the served engine's answer leads, and only that one",
@@ -512,7 +513,7 @@ console.log("\nwhat a protocol 7 call costs the database (worker/factory_calls.j
   // A RATCHET: the database calls one ask and one send of a pack's answers may
   // make. Lower these when a change saves a call; never raise them to pass.
   const WORK_CALLS_AT_MOST = 4, ANSWERS_CALLS_AT_MOST = 9;
-  await L.run("UPDATE questions SET state = 'withdrawn' WHERE state = 'open'");
+  await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE state = 'open'");
   for (const id of ["cost1", "cost2", "cost3"]) await build(id);
   await queue(arrivals, "cost1", "cost2", "cost3");
   await ask(arrivals, "cost1", "cost2", "cost3");

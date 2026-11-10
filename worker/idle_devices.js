@@ -21,20 +21,20 @@ export const loopAsksPerHour = (d) => Math.round((2 * 3_600_000) / d.sync_floor_
 export async function idleDevices(env, served, now = Date.now()) {
   const db = env.LIBRARY, d = await dialsOf(env, now);
   const since = iso(now - IDLE_WINDOW_MS), at = iso(now), hour = iso(now - 3_600_000).slice(0, 13);
-  const { results } = await db.prepare(`WITH online AS (SELECT id, asked_engine, asked_lanes FROM verifiers WHERE asked_at > ?1::text AND banned = 0),
-      asks AS (SELECT verifier, sum(asks) AS asks, max(asks) AS most FROM verifier_asks
+  const { results } = await db.prepare(`WITH online AS (SELECT id, asked_engine, asked_lanes FROM entity_compute_devices WHERE asked_at > ?1::text AND banned = 0),
+      asks AS (SELECT verifier, sum(asks) AS asks, max(asks) AS most FROM record_hourly_work_requests
                 WHERE hour >= ?3::text AND verifier IN (SELECT id FROM online) GROUP BY 1)
     SELECT o.id AS device, o.asked_engine, o.asked_lanes AS lanes, coalesce(k.asks, 0) AS asks, coalesce(k.most, 0) AS most,
-           (SELECT max(a.at) FROM answers a WHERE a.device = o.id) AS last_answer
+           (SELECT max(a.at) FROM record_candidate_answers a WHERE a.device = o.id) AS last_answer
       FROM online o LEFT JOIN asks k ON k.verifier = o.id
-     WHERE NOT EXISTS (SELECT 1 FROM questions q WHERE q.leased_to = o.id AND q.lease_until > ?2::text)
-       AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.device = o.id AND a.at > ?1::text)
-       AND NOT EXISTS (SELECT 1 FROM appraisals p WHERE p.leased_to = o.id AND p.lease_until > ?2::text)
-       AND NOT EXISTS (SELECT 1 FROM appraisal_results r WHERE r.verifier = o.id AND r.at > ?1::text)
+     WHERE NOT EXISTS (SELECT 1 FROM state_compute_work q WHERE q.leased_to = o.id AND q.lease_until > ?2::text)
+       AND NOT EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.device = o.id AND a.at > ?1::text)
+       AND NOT EXISTS (SELECT 1 FROM entity_appraisal_requests p WHERE p.leased_to = o.id AND p.lease_until > ?2::text)
+       AND NOT EXISTS (SELECT 1 FROM record_appraisal_candidates r WHERE r.verifier = o.id AND r.at > ?1::text)
      ORDER BY o.id`).bind(since, at, hour).all();
   const labels = new Map();
   if (env.ACCOUNTS && results.length) {
-    const { results: named } = await env.ACCOUNTS.prepare(`SELECT verifier, label FROM devices
+    const { results: named } = await env.ACCOUNTS.prepare(`SELECT verifier, label FROM relation_account_compute_devices
         WHERE verifier IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))`).bind(JSON.stringify(results.map((r) => r.device))).all();
     for (const n of named) labels.set(n.verifier, n.label || null);
   }
@@ -53,7 +53,7 @@ export async function idleDevices(env, served, now = Date.now()) {
 /// many ids asked in the window, the share that idle is read against.
 export async function idleFindings(env, served, now = Date.now()) {
   const idle = await idleDevices(env, served, now);
-  const online = (await env.LIBRARY.prepare("SELECT count(*) AS n FROM verifiers WHERE asked_at > ? AND banned = 0")
+  const online = (await env.LIBRARY.prepare("SELECT count(*) AS n FROM entity_compute_devices WHERE asked_at > ? AND banned = 0")
     .bind(iso(now - IDLE_WINDOW_MS)).first()).n;
   const d = await dialsOf(env, now);
   const out = [];

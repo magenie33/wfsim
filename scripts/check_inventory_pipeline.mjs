@@ -12,6 +12,8 @@ import { captureInventory } from './capture_compute_inventory.mjs';
 import { classifyInventory } from './classify_compute_inventory.mjs';
 import { openCatalog } from './incremental_inventory.mjs';
 import { questionId } from '../worker/task_contract.js';
+import { seedComputeWork,replaceComputeResult } from './pg/fixtures.mjs';
+import { placeholders } from '../worker/db.js';
 
 const supplied = process.env.WFSIM_INVENTORY_BOARD_BIN;
 const binary = resolve(supplied || 'target/debug/wfsim-board');
@@ -34,6 +36,7 @@ assert.equal(canonical.length, 3);
 const [c, b, d] = canonical, alias = 'a'.repeat(32), future = await questionId('future_verb', { input: 'future' });
 const pg = new PGlite();
 const q = (text, args = []) => pg.query(text, args).then(result => result.rows);
+const fixtureDb={run:(text,...args)=>q(placeholders(text),args),get:async(text,...args)=>(await q(placeholders(text),args))[0]};
 const scalar = async (text, args = []) => Object.values((await q(text, args))[0])[0];
 let afterCapture = null, ackCalls = 0, failCohort = false, failAckReply = false, child, replies, reader, succeeded = false;
 const commandLog = [], ackEvidence = [];
@@ -42,11 +45,11 @@ const unsafe = async (text, args = []) => {
   if (/\binventory_ack\(/.test(text)) {
     const state = json(statePath), db = new DatabaseSync(state.catalog, { readOnly: true });
     try {
-      const meta = JSON.parse(db.prepare('SELECT body FROM meta WHERE id=1').get().body);
+      const meta = JSON.parse(db.prepare("SELECT body FROM state_inventory_generation WHERE id=1").get().body);
       assert.equal(meta.complete, true, 'ACK preceded a complete durable catalog');
-      assert.equal(db.prepare('SELECT count(*) n FROM jobs').get().n, 0, 'ACK preceded all frozen cohort jobs');
+      assert.equal(db.prepare("SELECT count(*) n FROM state_inventory_jobs").get().n, 0, 'ACK preceded all frozen cohort jobs');
       const changes = JSON.parse(args[1]).flat();
-      for (const row of changes) assert(db.prepare('SELECT 1 FROM receipts WHERE scope=? AND key=? AND revision=?')
+      for (const row of changes) assert(db.prepare("SELECT 1 FROM record_inventory_applied_changes WHERE scope=? AND key=? AND revision=?")
         .get(row.scope, row.key, row.revision), 'ACK preceded durable local receipt');
       ackEvidence.push({ generation: args[0], rows: changes.length }); ackCalls++;
     } finally { db.close(); }
@@ -110,20 +113,20 @@ async function cycle(instance = 'working', budgetMs = 15000) {
 
 try {
   await pg.exec(['schema', 'library', 'sync', 'inventory'].map(name => readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta.url), 'utf8')).join('\n'));
-  for (const item of [c, b, d]) await q('INSERT INTO builds(id,at,record) VALUES ($1,\'day\',$2)', [item.id, JSON.stringify(item.record)]);
-  await q('INSERT INTO builds(id,at,record) VALUES ($1,\'day\',$2)', [alias, JSON.stringify({ ...c.record, alias_note: 'raw source' })]);
-  await q("INSERT INTO builds(id,at,record) VALUES ('invalid-source','day','{\"weapon\":\"not-a-weapon\"}')");
-  await q("INSERT INTO batches(id,at,total) VALUES ('one','at',2),('two','at',2)");
-  await q(`INSERT INTO queue(batch,build_id,ruler,mode) VALUES ('one',$1,$3,'base'),('two',$1,$3,'base'),
+  for (const item of [c, b, d]) await q('INSERT INTO entity_weapon_builds(id,at,record) VALUES ($1,\'day\',$2)', [item.id, JSON.stringify(item.record)]);
+  await q('INSERT INTO entity_weapon_builds(id,at,record) VALUES ($1,\'day\',$2)', [alias, JSON.stringify({ ...c.record, alias_note: 'raw source' })]);
+  await q("INSERT INTO entity_weapon_builds(id,at,record) VALUES ('invalid-source','day','{\"weapon\":\"not-a-weapon\"}')");
+  await q("INSERT INTO entity_compute_batches(id,at,total) VALUES ('one','at',2),('two','at',2)");
+  await q(`INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES ('one',$1,$3,'base'),('two',$1,$3,'base'),
     ('one',$2,'retired-ruler','base'),('one','orphan',$3,'base')`, [c.id, b.id, roster[0]]);
-  await q(`INSERT INTO board_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,baseline_score,
+  await q(`INSERT INTO entity_measurement_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,baseline_score,
     baseline_metric,baseline_cost_seconds,baseline_by,baseline_started_at,baseline_finished_at,created_at)
     VALUES ('ref','review','round',$1,$2,'base',$3,'review-question','{}','waiting',100,'kpm',1,'old',
       '2026-11-01T00:00:00.000Z','2026-11-01T00:00:01.000Z','at')`, [d.id, roster[0], engine]);
-  await q(`INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at,review_id)
+  await q(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at,review_id)
     VALUES ($1,$2,'base','old',100,'kpm',1,'2026-11-01T00:00:00.000Z','2026-11-01T00:00:01.000Z','review')`, [d.id, roster[0]]);
-  await q(`INSERT INTO questions(id,verb,request,state,due_at,opened_at,fact_engine) VALUES ($1,'future_verb','{}','open','due','at',$2)`, [future, engine]);
-  await q(`INSERT INTO demands(producer,ref,question,state,asked_at,due_at) VALUES ('future_owner','future',$1,'live','at','due')`, [future]);
+  await seedComputeWork(fixtureDb,{id:future,verb:'future_verb',request:'{}',state:'open',due_at:'due',opened_at:'at'});
+  await q(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES ('future_owner','future',$1,'live','at','due')`, [future]);
   const errorFd = openSync(join(dir, 'ranker.stderr'), 'w');
   child = spawn(binary, ['--serve', join(dir, 'published-board'), '--library', file('empty-library', []), '--builds', file('empty-builds', ''),
     '--facts-in', file('empty-facts', ''), '--state', join(dir, 'board-state.yaml')], { stdio: ['pipe', 'pipe', errorFd] }); closeSync(errorFd);
@@ -134,10 +137,10 @@ try {
   })])).value, /^ok ready /); } finally { clearTimeout(readyTimer); }
 
   failCohort = true;
-  const initialDirty = Number(await scalar('SELECT count(*) FROM inventory_dirty'));
+  const initialDirty = Number(await scalar('SELECT count(*) FROM state_compute_inventory_invalidations'));
   await assert.rejects(cycle('injected-crash'), /injected engine cut/);
-  assert.equal(ackCalls, 0); assert.equal(Number(await scalar('SELECT count(*) FROM inventory_dirty')), initialDirty);
-  assert.equal(Number(await scalar("SELECT count(*) FROM factory_findings WHERE kind='task_inventory'")), 0);
+  assert.equal(ackCalls, 0); assert.equal(Number(await scalar('SELECT count(*) FROM state_compute_inventory_invalidations')), initialDirty);
+  assert.equal(Number(await scalar("SELECT count(*) FROM state_factory_findings WHERE kind='task_inventory'")), 0);
   console.log('ok: a cut before durable cohort completion neither ACKs nor publishes');
 
   let bootstrapRaw, bootstrapMeta, originalReceipt, bootstrapCapture;
@@ -147,7 +150,7 @@ try {
       const copied = join(frozen, name); copyFileSync(path, copied); return [name, copied];
     }));
     bootstrapMeta = cut.meta; originalReceipt = cut.receipt; bootstrapCapture = dirname(cut.capture);
-    await q("UPDATE questions SET state='fact' WHERE id=$1", [future]);
+    await replaceComputeResult(fixtureDb,future,{state:'fact',canon:'{}',fact_engine:engine,fact_at:'2026-11-01T00:00:01.000Z'});
   };
   failAckReply = true;
   await assert.rejects(cycle(), /injected lost ACK reply/);
@@ -156,7 +159,7 @@ try {
   finally { interrupted.close(); }
   const boot = await cycle(); assert.equal(boot.pending, false);
   assert.equal(boot.published.started_at, originalReceipt.started_at); assert.equal(boot.published.snapshot, originalReceipt.snapshot);
-  assert.equal(Number(await scalar("SELECT count(*) FROM inventory_dirty WHERE scope='question' AND key=$1", [future])), 1);
+  assert.equal(Number(await scalar("SELECT count(*) FROM state_compute_inventory_invalidations WHERE scope='question' AND key=$1", [future])), 1);
   const firstOracle = await fullOracle(bootstrapRaw, bootstrapMeta, 'bootstrap'); equalPlan(firstOracle, catalogState());
   for (const workers of [1, 2]) {
     const limited = await fullOracle(bootstrapRaw, bootstrapMeta, `workers-${workers}`, workers);
@@ -170,17 +173,17 @@ try {
   console.log('ok: actual ranker bootstrap matches every full-classifier tuple; later writes retain the original cut and remain dirty');
 
   mature(); await cycle(); equalPlan(await currentOracle('question-delta'), catalogState());
-  assert.equal(Number(await scalar('SELECT count(*) FROM inventory_dirty')), 0);
+  assert.equal(Number(await scalar('SELECT count(*) FROM state_compute_inventory_invalidations')), 0);
   console.log('ok: the next epoch consumes the later lifecycle mutation exactly');
 
-  await q('DELETE FROM builds WHERE id=$1', [c.id]);
-  await q("UPDATE board_reviews SET invalidated_at='2026-11-06T00:00:00.000Z' WHERE id='review'");
+  await q('DELETE FROM entity_weapon_builds WHERE id=$1', [c.id]);
+  await q("UPDATE entity_measurement_reviews SET invalidated_at='2026-11-06T00:00:00.000Z' WHERE id='review'");
   mature(); await cycle(); equalPlan(await currentOracle('delete-retire'), catalogState());
   const canonicalQueued = await questionId('simulate', { record: c.record, ruler: roster[0], mode: 'base' });
   assert(catalogState().tuples.some(row => row.id === canonicalQueued && row.queued === 1));
   console.log('ok: deleting a stored canonical record retains a payable alias and its queued row; fact retirement matches the full oracle');
 
-  for (let i = 0; i < 130; i++) await q('INSERT INTO builds(id,at,record) VALUES ($1,\'day\',$2)', [`new-owner-${String(i).padStart(3, '0')}`, JSON.stringify(c.record)]);
+  for (let i = 0; i < 130; i++) await q('INSERT INTO entity_weapon_builds(id,at,record) VALUES ($1,\'day\',$2)', [`new-owner-${String(i).padStart(3, '0')}`, JSON.stringify(c.record)]);
   mature(); const beforeAck = ackCalls; let next = await cycle('working', 0), turns = 1;
   assert.equal(next.pending, true); assert.equal(ackCalls, beforeAck, 'partial owner chunks acknowledged a frozen cut');
   const active = json(statePath).pending, activeDir = dirname(active.capture);

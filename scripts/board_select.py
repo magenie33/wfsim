@@ -197,11 +197,11 @@ def main() -> int:
         # a change reaching eight thousand rows is a different decision from one
         # reaching forty, and that belongs on screen rather than in the bill.
         print("SELECT count(*) AS rows, sum(s.cost_seconds) / 60 AS cpu_minutes")
-        print("FROM scores s JOIN builds b ON b.id = s.identity")
+        print("FROM state_board_measurement_selection s JOIN entity_weapon_builds b ON b.id = s.identity")
         print(f"WHERE {where};")
         print()
-        print("DELETE FROM scores WHERE rowid IN (")
-        print("  SELECT s.rowid FROM scores s JOIN builds b ON b.id = s.identity")
+        print("DELETE FROM state_board_measurement_selection WHERE rowid IN (")
+        print("  SELECT s.rowid FROM state_board_measurement_selection s JOIN entity_weapon_builds b ON b.id = s.identity")
         print(f"  WHERE {where});")
     return 0
 

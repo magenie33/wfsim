@@ -87,18 +87,18 @@ async function open(request, env) {
   }
   const db = env.LIBRARY, now = Date.now();
   const room = typeof b.room === "string" ? b.room : "";
-  await db.prepare("DELETE FROM appraisals WHERE at < ? AND channel != ?").bind(iso(now - KEEP_MS), SURVEY_CHANNEL).run();
-  await db.prepare("DELETE FROM appraisals WHERE at < ? AND channel = ?").bind(iso(now - SURVEY_KEEP_MS), SURVEY_CHANNEL).run();
-  await db.prepare("DELETE FROM appraisal_results WHERE at < ? AND code NOT IN (SELECT code FROM appraisals)").bind(iso(now - KEEP_MS)).run();
+  await db.prepare("DELETE FROM entity_appraisal_requests WHERE at < ? AND channel != ?").bind(iso(now - KEEP_MS), SURVEY_CHANNEL).run();
+  await db.prepare("DELETE FROM entity_appraisal_requests WHERE at < ? AND channel = ?").bind(iso(now - SURVEY_KEEP_MS), SURVEY_CHANNEL).run();
+  await db.prepare("DELETE FROM record_appraisal_candidates WHERE at < ? AND code NOT IN (SELECT code FROM entity_appraisal_requests)").bind(iso(now - KEEP_MS)).run();
   const [byAsker, byRoom] = await db.batch([
-    db.prepare("SELECT count(*) AS n FROM appraisals WHERE channel = ? AND asker = ? AND at > ?").bind(b.channel, b.asker, iso(now - HOUR)),
-    db.prepare("SELECT count(*) AS n FROM appraisals WHERE channel = ? AND room = ? AND room != '' AND at > ?").bind(b.channel, room, iso(now - HOUR)),
+    db.prepare("SELECT count(*) AS n FROM entity_appraisal_requests WHERE channel = ? AND asker = ? AND at > ?").bind(b.channel, b.asker, iso(now - HOUR)),
+    db.prepare("SELECT count(*) AS n FROM entity_appraisal_requests WHERE channel = ? AND room = ? AND room != '' AND at > ?").bind(b.channel, room, iso(now - HOUR)),
   ]);
   if (byAsker.results[0].n >= PER_ASKER) return json({ ok: false, error: "asker_limit", per_hour: PER_ASKER }, 429);
   if (room && byRoom.results[0].n >= PER_ROOM) return json({ ok: false, error: "room_limit", per_hour: PER_ROOM }, 429);
   for (let i = 0; i < 5; i++) {
     const code = newCode();
-    const r = await db.prepare(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at)
+    const r = await db.prepare(`INSERT INTO entity_appraisal_requests (code, channel, chat, asker, room, weapon, ruler, riven, at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`).bind(code, b.channel, JSON.stringify(b.chat || {}), b.asker, room,
       b.weapon, b.ruler, JSON.stringify(b.riven), iso(now)).run();
     if (r.meta.changes) return json({ ok: true, code });
@@ -110,14 +110,14 @@ async function open(request, env) {
 /// and whom it thanked — never where the chat is or who asked.
 async function read(request, env, code) {
   if (request.method !== "GET") return json({ ok: false, error: "GET only" }, 405);
-  const a = await env.LIBRARY.prepare("SELECT * FROM appraisals WHERE code = ?").bind(code).first();
+  const a = await env.LIBRARY.prepare("SELECT * FROM entity_appraisal_requests WHERE code = ?").bind(code).first();
   if (!a || Date.parse(a.at) < Date.now() - KEEP_MS) return json({ ok: false, error: "no such appraisal" }, 404);
-  const won = a.winner && await env.LIBRARY.prepare("SELECT source,verifier,at FROM appraisal_results WHERE id = ?").bind(a.winner).first();
+  const won = a.winner && await env.LIBRARY.prepare("SELECT source,verifier,at FROM record_appraisal_candidates WHERE id = ?").bind(a.winner).first();
   // ONE BUILD HANDED BACK, by its id — what the bot's replay reads. A build is
   // board material and public; whose browser found it is not said.
   const rid = Number(new URL(request.url).searchParams.get("result"));
   const res = Number.isInteger(rid) && rid > 0
-    && await env.LIBRARY.prepare("SELECT id,build,source,verifier,at FROM appraisal_results WHERE id = ? AND code = ?").bind(rid, code).first();
+    && await env.LIBRARY.prepare("SELECT id,build,source,verifier,at FROM record_appraisal_candidates WHERE id = ? AND code = ?").bind(rid, code).first();
   const [thanked, calculator] = await Promise.all([won ? deliveryName(env, won.source, won) : null, res ? deliveryName(env, res.source, res) : null]);
   return json({ ok: true, code, weapon: a.weapon, ruler: a.ruler, riven: JSON.parse(a.riven), at: msOf(a.at),
     done: !!a.done_at, ...(won ? { thanked: thanked.name || "" } : {}),
@@ -142,12 +142,12 @@ async function freeze(request, env, code, ctx) {
   // THE REQUEST AND WHAT TURNS ITS RESULT INTO A BUILD (68-board-submit.js
   // `boardBuildContext`), kept together: neither means anything alone.
   const frozen = { request: b.request, context: b.context };
-  const r = await env.LIBRARY.prepare("UPDATE appraisals SET request = ?, engine = ? WHERE code = ? AND request IS NULL")
+  const r = await env.LIBRARY.prepare("UPDATE entity_appraisal_requests SET request = ?, engine = ? WHERE code = ? AND request IS NULL")
     .bind(JSON.stringify(frozen), b.engine, code).run();
   // A FREEZE WHOSE ASK FAILED is asked on the bot's retry, with what was stored:
   // the write above made the retry a no-op, so its shape was never handed out.
-  const a = await env.LIBRARY.prepare(`SELECT code, channel, asker, weapon, ruler, request FROM appraisals a WHERE code = ?
-      AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = a.code AND d.producer IN ('chat', 'survey'))`).bind(code).first();
+  const a = await env.LIBRARY.prepare(`SELECT code, channel, asker, weapon, ruler, request FROM entity_appraisal_requests a WHERE code = ?
+      AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.ref = a.code AND d.producer IN ('chat', 'survey'))`).bind(code).first();
   if (a && a.request) await askRiven(env, a, JSON.parse(a.request), Date.now());
   if (a && a.channel !== SURVEY_CHANNEL) await triggerBoardCalibration(env, { weapon: a.weapon, ruler: a.ruler, engine: b.engine }, ctx);
   return json({ ok: true, stored: !!r.meta.changes });
@@ -179,30 +179,30 @@ export async function askRiven(env, a, frozen, now) {
 /// the bot may judge; the agreed one is the appraisal's, and goes to the board.
 const rivenProducer = {
   still_wanted: async (env, d) => {
-    const a = await env.LIBRARY.prepare("SELECT channel, at FROM appraisals WHERE code = ?").bind(d.ref).first();
+    const a = await env.LIBRARY.prepare("SELECT channel, at FROM entity_appraisal_requests WHERE code = ?").bind(d.ref).first();
     return !!a && Date.parse(a.at) >= Date.now() - keepFor(a);
   },
   on_lease: async (env, d, now) => {
-    await env.LIBRARY.prepare("UPDATE appraisals SET started_at = COALESCE(started_at, ?) WHERE code = ?").bind(iso(now), d.ref).run();
+    await env.LIBRARY.prepare("UPDATE entity_appraisal_requests SET started_at = COALESCE(started_at, ?) WHERE code = ?").bind(iso(now), d.ref).run();
   },
   on_answer: async (env, d, x) => {
     if (x.official) return;
     const source = await answerDeliverySource(env, d.question, x, d.payload.weapon);
-    await env.LIBRARY.prepare(`INSERT INTO appraisal_results (code, build, thanks, at, verifier, score, work, key, engine, net,source)
+    await env.LIBRARY.prepare(`INSERT INTO record_appraisal_candidates (code, build, thanks, at, verifier, score, work, key, engine, net,source)
         VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, ?,?)`)
       .bind(d.ref, JSON.stringify(x.result.build), x.at, x.device, x.result.score, x.work, canon(x.result.build), x.engine, x.net, source).run();
   },
   on_fact: async (env, d, fact) => {
     const at = iso(Date.now());
-    const won = await env.LIBRARY.prepare("UPDATE appraisals SET agreed_at = ? WHERE code = ? AND agreed_at IS NULL")
+    const won = await env.LIBRARY.prepare("UPDATE entity_appraisal_requests SET agreed_at = ? WHERE code = ? AND agreed_at IS NULL")
       .bind(at, d.ref).run();
     // AN ASK ANSWERED BY A FACT IT DID NOT WAIT FOR — the same question, agreed
     // for another — still hands the bot a build to judge and tell.
     if (won.meta.changes && fact.result) {
       const first = fact.witnesses?.[0];
       const source = first ? await answerDeliverySource(env, d.question, { ...first, at: first.completed_at, engine: fact.engine }, d.payload.weapon) : null;
-      await env.LIBRARY.prepare(`INSERT INTO appraisal_results (code, build, thanks, at, score, work, key,source)
-          SELECT ?, ?, '', ?, ?, ?, ?,? WHERE NOT EXISTS (SELECT 1 FROM appraisal_results WHERE code = ? AND key = ?)`)
+      await env.LIBRARY.prepare(`INSERT INTO record_appraisal_candidates (code, build, thanks, at, score, work, key,source)
+          SELECT ?, ?, '', ?, ?, ?, ?,? WHERE NOT EXISTS (SELECT 1 FROM record_appraisal_candidates WHERE code = ? AND key = ?)`)
         .bind(d.ref, JSON.stringify(fact.result.build), at, fact.result.score, fact.work, canon(fact.result.build), source,
           d.ref, canon(fact.result.build)).run();
     }
@@ -274,7 +274,7 @@ async function mine(request, env) {
   const db = env.LIBRARY;
   const since = iso(Math.min(...tasks.map((t) => t.at)) - MINE_NEAR_MS);
   const { results: answers } = await db.prepare(
-    `SELECT r.code, r.at, a.weapon FROM appraisal_results r LEFT JOIN appraisals a ON a.code = r.code
+    `SELECT r.code, r.at, a.weapon FROM record_appraisal_candidates r LEFT JOIN entity_appraisal_requests a ON a.code = r.code
       WHERE r.verifier = ? AND r.at >= ? ORDER BY r.at LIMIT 400`).bind(b.verifier, since).all();
   const used = new Set(), out = [];
   for (const t of tasks) {
@@ -290,8 +290,8 @@ async function mine(request, env) {
     used.add(r.code);
     // WHAT THE FACTORY SAYS of this browser's answer to that question.
     const q = r.weapon == null ? null : await env.LIBRARY.prepare(
-      `SELECT q.state, q.fact_at, (SELECT max(CASE WHEN credited = 1 THEN 1 ELSE 0 END) FROM answers x WHERE x.question = q.id AND x.device = ?) AS credited
-         FROM demands d JOIN questions q ON q.id = d.question WHERE d.ref = ? AND d.producer IN ('chat', 'survey')`)
+      `SELECT q.state, q.fact_at, (SELECT max(CASE WHEN credited = 1 THEN 1 ELSE 0 END) FROM record_candidate_answers x WHERE x.question = q.id AND x.device = ?) AS credited
+         FROM relation_task_consumers d JOIN state_compute_work q ON q.id = d.question WHERE d.ref = ? AND d.producer IN ('chat', 'survey')`)
       .bind(b.verifier, r.code).first();
     const state = !q ? "gone" : q.credited ? "confirmed" : q.state === "fact" || q.state === "spot" ? "gone" : "waiting";
     out.push({ at: t.at, code: r.code, state, ...(state === "confirmed" ? { agreed_at: q.fact_at } : {}) });
@@ -314,11 +314,11 @@ async function handBack(request, env, code) {
   try { b = JSON.parse(text); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
   if (!b.build || typeof b.build !== "object" || !Array.isArray(b.build.mods)) return json({ ok: false, error: "needs build" }, 400);
   const db = env.LIBRARY, now = Date.now();
-  const a = await db.prepare("SELECT code, channel, done_at, at FROM appraisals WHERE code = ?").bind(code).first();
+  const a = await db.prepare("SELECT code, channel, done_at, at FROM entity_appraisal_requests WHERE code = ?").bind(code).first();
   if (!appraisalKept(a, now)) return json({ ok: false, error: "no such appraisal" }, 404);
   if (b.lease !== undefined) return volunteerAnswer(request, env, b);
   const source = await localDeliverySource(env, request, b);
-  await db.prepare("INSERT INTO appraisal_results (code, build, thanks, at,source) VALUES (?, ?, '', ?,?)")
+  await db.prepare("INSERT INTO record_appraisal_candidates (code, build, thanks, at,source) VALUES (?, ?, '', ?,?)")
     .bind(code, JSON.stringify(b.build), iso(now), source).run();
   return json({ ok: true, first: !a.done_at });
 }
@@ -332,14 +332,14 @@ async function handBack(request, env, code) {
 const ADOPT_BATCH = 40;
 const UNADOPTED = `request IS NOT NULL AND agreed_at IS NULL AND done_at IS NULL
   AND at > CASE WHEN channel = ? THEN ? ELSE ? END
-  AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = a.code AND d.producer IN ('chat', 'survey'))`;
+  AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.ref = a.code AND d.producer IN ('chat', 'survey'))`;
 const kept = (now) => [SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - KEEP_MS)];
 async function adopt(request, env) {
   if (request.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
   if (!botAuthed(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
   const db = env.LIBRARY, now = Date.now(), since = kept(now);
   const { results } = await db.prepare(
-    `SELECT code, channel, asker, weapon, ruler, at, request, lease, lease_until, leased_to FROM appraisals a
+    `SELECT code, channel, asker, weapon, ruler, at, request, lease, lease_until, leased_to FROM entity_appraisal_requests a
       WHERE ${UNADOPTED} ORDER BY at LIMIT ?`).bind(...since, ADOPT_BATCH).all();
   const { engine } = await servedRelease(env);
   for (const a of results) {
@@ -347,22 +347,22 @@ async function adopt(request, env) {
     const id = await questionId("optimize", JSON.parse(a.request));
     // A SEARCH RUNNING NOW keeps its lease, so its answer lands and is credited.
     if (a.lease && Date.parse(a.lease_until) > now) {
-      await db.prepare("UPDATE questions SET lease = ?, lease_until = ?, leased_to = ? WHERE id = ? AND lease IS NULL")
+      await db.prepare("UPDATE state_compute_work SET lease = ?, lease_until = ?, leased_to = ? WHERE id = ? AND lease IS NULL")
         .bind(a.lease, a.lease_until, a.leased_to, id).run();
     }
     const { results: old } = await db.prepare(
-      "SELECT verifier, build, score, work, engine, net, at FROM appraisal_results WHERE code = ? AND verifier IS NOT NULL ORDER BY id").bind(a.code).all();
+      "SELECT verifier, build, score, work, engine, net, at FROM record_appraisal_candidates WHERE code = ? AND verifier IS NOT NULL ORDER BY id").bind(a.code).all();
     for (const r of old) {
       const who = await witnessOf(env, r.verifier);
       const build = JSON.parse(r.build);
-      await db.prepare(`INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at)
+      await db.prepare(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .bind(id, r.engine || "", r.verifier, who.owner, r.net || "", VERBS.optimize.canon({ build, score: r.score }, r.work),
           JSON.stringify({ build, score: r.score }), r.work, r.at).run();
     }
     if (old.length) await facts().settle(env, id, engine, now);
   }
-  const left = await db.prepare(`SELECT count(*) AS n FROM appraisals a WHERE ${UNADOPTED}`).bind(...since).first();
+  const left = await db.prepare(`SELECT count(*) AS n FROM entity_appraisal_requests a WHERE ${UNADOPTED}`).bind(...since).first();
   return json({ ok: true, adopted: results.length, left: left.n });
 }
 
@@ -380,37 +380,37 @@ async function claim(request, env) {
   for (const j of (Array.isArray(b.judged) ? b.judged : []).slice(0, 50)) {
     const id = Number(j.id);
     if (!Number.isInteger(id)) continue;
-    await db.prepare("UPDATE appraisal_results SET verdict = ?, checked_at = ? WHERE id = ?")
+    await db.prepare("UPDATE record_appraisal_candidates SET verdict = ?, checked_at = ? WHERE id = ?")
       .bind(JSON.stringify({ ok: !!j.ok, ...(j.verdict || {}) }), iso(now), id).run();
     // THE FIRST ACCEPTED BUILD WINS, once: a later one changes nothing.
     if (j.ok) {
-      await db.prepare(`UPDATE appraisals SET winner = ?, done_at = ?
-        WHERE done_at IS NULL AND code = (SELECT code FROM appraisal_results WHERE id = ?)`).bind(id, iso(now), id).run();
+      await db.prepare(`UPDATE entity_appraisal_requests SET winner = ?, done_at = ?
+        WHERE done_at IS NULL AND code = (SELECT code FROM record_appraisal_candidates WHERE id = ?)`).bind(id, iso(now), id).run();
     }
   }
   for (const code of (Array.isArray(b.told) ? b.told : []).slice(0, 50)) {
-    await db.prepare("UPDATE appraisals SET told_at = ? WHERE code = ?").bind(iso(now), String(code)).run();
+    await db.prepare("UPDATE entity_appraisal_requests SET told_at = ? WHERE code = ?").bind(iso(now), String(code)).run();
   }
   for (const code of (Array.isArray(b.started_told) ? b.started_told : []).slice(0, 50)) {
-    await db.prepare("UPDATE appraisals SET started_told = ? WHERE code = ?").bind(iso(now), String(code)).run();
+    await db.prepare("UPDATE entity_appraisal_requests SET started_told = ? WHERE code = ?").bind(iso(now), String(code)).run();
   }
   const { results: toJudge } = await db.prepare(`SELECT r.id, r.code, r.build, r.thanks, r.at,
       a.weapon, a.ruler, a.riven, a.chat, a.asker, a.at AS asked_at
-    FROM appraisal_results r JOIN appraisals a ON a.code = r.code
+    FROM record_appraisal_candidates r JOIN entity_appraisal_requests a ON a.code = r.code
     WHERE a.channel = ? AND a.done_at IS NULL AND r.checked_at IS NULL AND (r.claimed_at IS NULL OR r.claimed_at < ?)
     ORDER BY r.at LIMIT 5`).bind(channel, iso(now - RECLAIM_MS)).all();
   if (toJudge.length) {
-    await db.batch(toJudge.map((r) => db.prepare("UPDATE appraisal_results SET claimed_at = ? WHERE id = ?").bind(iso(now), r.id)));
+    await db.batch(toJudge.map((r) => db.prepare("UPDATE record_appraisal_candidates SET claimed_at = ? WHERE id = ?").bind(iso(now), r.id)));
   }
   const { results: toTell } = await db.prepare(`SELECT a.code, a.weapon, a.ruler, a.riven, a.chat, a.asker, a.at AS asked_at,
       a.done_at, r.id AS result_id, r.thanks, r.verdict, r.source,r.verifier,r.at, CASE WHEN r.verifier IS NULL THEN 0 ELSE 1 END AS volunteer
-    FROM appraisals a JOIN appraisal_results r ON r.id = a.winner
+    FROM entity_appraisal_requests a JOIN record_appraisal_candidates r ON r.id = a.winner
     WHERE a.channel = ? AND a.done_at IS NOT NULL AND a.told_at IS NULL ORDER BY a.done_at LIMIT 20`).bind(channel).all();
   // A COMPUTER TOOK IT: the chat may be told so, once, while it waits.
   const { results: toStart } = await db.prepare(`SELECT code, weapon, ruler, riven, chat, asker, at AS asked_at, started_at
-    FROM appraisals WHERE channel = ? AND started_at IS NOT NULL AND started_told IS NULL AND told_at IS NULL AND done_at IS NULL
+    FROM entity_appraisal_requests WHERE channel = ? AND started_at IS NOT NULL AND started_told IS NULL AND told_at IS NULL AND done_at IS NULL
     ORDER BY started_at LIMIT 20`).bind(channel).all();
-  const { results: toFreeze } = await db.prepare(`SELECT code FROM appraisals
+  const { results: toFreeze } = await db.prepare(`SELECT code FROM entity_appraisal_requests
     WHERE channel = ? AND request IS NULL AND done_at IS NULL AND at < ? AND at >= ? ORDER BY at LIMIT 5`)
     .bind(channel, iso(now - REFREEZE_MS), iso(now - KEEP_MS)).all();
   const parse = (r) => ({ ...r, at: msOf(r.at), asked_at: msOf(r.asked_at), done_at: msOf(r.done_at), started_at: msOf(r.started_at),

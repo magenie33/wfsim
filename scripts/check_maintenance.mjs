@@ -38,10 +38,10 @@ for(const settleAsync of [0,1]) {
   const env={LIBRARY:db,ACCOUNTS:accounts,ASSETS:{fetch:async()=>Response.json({engine:"e1",release:"r1"})}};
   await setDial(env,"sync_proc",1,"check");await setDial(env,"settle_async",settleAsync,"check");
   const batch="arrivals-2026-11-10",A="a".repeat(24),B="b".repeat(24);
-  await db.run("INSERT INTO batches(id,at,why,total) VALUES(?,'x','check',0)",batch);
+  await db.run("INSERT INTO entity_compute_batches(id,at,why,total) VALUES(?,'x','check',0)",batch);
   for(const id of ["one","two","three","four"]){
-    await db.run("INSERT INTO builds(id,at,record) VALUES(?,'x',?)",id,JSON.stringify({weapon:"braton_prime",mods:[id]}));
-    await db.run("INSERT INTO queue(batch,build_id,ruler,mode) VALUES(?,?,'standard_single_target','base')",batch,id);
+    await db.run("INSERT INTO entity_weapon_builds(id,at,record) VALUES(?,'x',?)",id,JSON.stringify({weapon:"braton_prime",mods:[id]}));
+    await db.run("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES(?,?,'standard_single_target','base')",batch,id);
   }
   const post=async(route,path,body)=>{
     const response=await route(new Request("https://wfsim.app"+path,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)}),env,path);
@@ -69,9 +69,9 @@ for(const settleAsync of [0,1]) {
     && result.held?.some(row=>row.question===kept && row.held) && !result.pack && !result.work);
   const old=await post(verifyRoute,"/api/board/answers",{verifier:B,engine:"e1",lease:second.lease,answers:[item(second.questions[0].question)],done:true});
   check("protocol7 drain keeps accepting its existing answer with settle_async="+settleAsync,old.ok===true
-    && (await db.get("SELECT count(*) AS n FROM answers")).n===2);
+    && (await db.get("SELECT count(*) AS n FROM record_candidate_answers")).n===2);
   check("drain leaves remaining work unleased with settle_async="+settleAsync,(await facts().claim(env,{device:"official:check"},{},"e1")).length===0
-    && (await db.get("SELECT count(*) AS n FROM questions WHERE lease IS NOT NULL")).n===1);
+    && (await db.get("SELECT count(*) AS n FROM state_compute_work WHERE lease IS NOT NULL")).n===1);
   env.FACTORY_DRAINING="0";
   check("clearing drain resumes lease admission with settle_async="+settleAsync,!!await facts().next(env,who("c".repeat(24)),"e1"));
   const resumed=await worker.fetch(request("/api/notices/everyone"),{...env,DATABASE_MAINTENANCE:"0"});

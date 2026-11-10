@@ -10,7 +10,7 @@
 // synchronous readers. With no IndexedDB (a private window) the mirror is all
 // there is, and a reload forgets it.
 const RESULTS_DB = "wfsim";
-const RESULTS_STORE = "results";
+const RESULTS_STORE = "entity_simulation_reports";
 /// WHAT A RECORD'S SHAPE IS. A record is never migrated: a field it lacks was
 /// not measured when it was written, and every reader says "not recorded"
 /// rather than reading it as 0. A new field raises this and nothing else.
@@ -27,11 +27,12 @@ function resultsDb() {
   if (resultsDbOpen) return resultsDbOpen;
   resultsDbOpen = new Promise((ok) => {
     let req;
-    try { req = indexedDB.open(RESULTS_DB, 1); } catch (_) { ok(null); return; }
+    try { req = indexedDB.open(RESULTS_DB, 2); } catch (_) { ok(null); return; }
     req.onupgradeneeded = () => {
+      if (req.result.objectStoreNames.contains("results")) req.transaction.objectStore("results").name=RESULTS_STORE;
       if (!req.result.objectStoreNames.contains(RESULTS_STORE)) req.result.createObjectStore(RESULTS_STORE, { keyPath: "id" });
     };
-    req.onsuccess = () => ok(req.result);
+    req.onsuccess = () => { req.result.onversionchange=()=>req.result.close();ok(req.result); };
     req.onerror = () => ok(null);
     req.onblocked = () => ok(null);
   });

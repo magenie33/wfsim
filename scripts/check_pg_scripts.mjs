@@ -45,29 +45,29 @@ const queueIndexes = await query(`SELECT indexname,indexdef FROM pg_indexes
   WHERE schemaname='public' AND tablename='queue' AND indexname IN ('queue_row','queue_calculation')`);
 check("pending calculations use one covering unique index", queueIndexes.length === 1
   && queueIndexes[0].indexname === 'queue_calculation' && queueIndexes[0].indexdef.startsWith('CREATE UNIQUE INDEX'));
-await query("INSERT INTO inbox (id, at, record) VALUES (?, ?, ?), (?, ?, ?)",
+await query("INSERT INTO record_build_submissions (id, at, record) VALUES (?, ?, ?), (?, ?, ?)",
   ["i1", "2026-10-01", JSON.stringify(record), "i2", "2026-10-01", JSON.stringify({ weapon: "braton", mods: [] })]);
 
 check("the inbox is read", await run("fetch_inbox.sh", "inbox.ndjson") === 0 && read("inbox.ndjson").length === 2);
 file("builds.ndjson", `${JSON.stringify({ id: "b1", at: "2026-10-01", record })}\n`);
 file("done.txt", "i1\ni2\n");
 check("a build is shipped and its arrivals spent", await run("ship_builds.sh", "builds.ndjson", "done.txt") === 0
-  && (await query("SELECT weapon FROM builds WHERE id = 'b1'"))[0]?.weapon === "torid"
-  && (await query("SELECT count(*) AS n FROM inbox"))[0].n === 0);
+  && (await query("SELECT weapon FROM entity_weapon_builds WHERE id = 'b1'"))[0]?.weapon === "torid"
+  && (await query("SELECT count(*) AS n FROM record_build_submissions"))[0].n === 0);
 check("...and shipped again it is one row", await run("ship_builds.sh", "builds.ndjson", "done.txt") === 0
-  && (await query("SELECT count(*) AS n FROM builds"))[0].n === 1);
+  && (await query("SELECT count(*) AS n FROM entity_weapon_builds"))[0].n === 1);
 
 const equipment = {kind:"companion", equipment:"sentinel", build:{companion:"sentinel", mods:[]}};
-await query("INSERT INTO equipment_inbox (id, at, record) VALUES (?, ?, ?)", ["equipment:i3", "2026-10-01", JSON.stringify(equipment)]);
+await query("INSERT INTO record_equipment_submissions (id, at, record) VALUES (?, ?, ?)", ["equipment:i3", "2026-10-01", JSON.stringify(equipment)]);
 check("equipment arrivals use the shared inbox reader", await run("fetch_inbox.sh", "equipment-inbox.ndjson") === 0
   && read("equipment-inbox.ndjson").some(line => JSON.parse(line).id === "equipment:i3"));
 file("equipment-builds.ndjson", JSON.stringify({id:"e1", at:"2026-10-01", record:equipment}) + "\n");
 file("equipment-done.txt", "equipment:i3\n");
 check("equipment builds land outside weapon scores before their arrivals are spent",
   await run("ship_builds.sh", "equipment-builds.ndjson", "equipment-done.txt") === 0
-  && (await query("SELECT equipment FROM equipment_builds WHERE id = 'e1'"))[0]?.equipment === "sentinel"
-  && (await query("SELECT count(*) AS n FROM equipment_inbox"))[0].n === 0
-  && (await query("SELECT count(*) AS n FROM builds"))[0].n === 1);
+  && (await query("SELECT equipment FROM entity_equipment_builds WHERE id = 'e1'"))[0]?.equipment === "sentinel"
+  && (await query("SELECT count(*) AS n FROM record_equipment_submissions"))[0].n === 0
+  && (await query("SELECT count(*) AS n FROM entity_weapon_builds"))[0].n === 1);
 
 {
   const bulk = [{ id: "bulk-repeat", at: "first", record: { weapon: "braton", mods: [] } },
@@ -81,18 +81,18 @@ check("equipment builds land outside weapon scores before their arrivals are spe
   const ids = Array.from({ length: 2505 }, (_, i) => `bulk-arrival-${i}`)
     .concat(Array.from({ length: 1205 }, (_, i) => `equipment:bulk-arrival-${i}`));
   file("bulk-done.txt", ids.join("\n") + "\n");
-  await query(`INSERT INTO inbox(id,at,record) SELECT 'bulk-arrival-'||i,'x','{"weapon":"torid"}' FROM generate_series(0,2504) i`);
-  await query(`INSERT INTO equipment_inbox(id,at,record)
+  await query(`INSERT INTO record_build_submissions(id,at,record) SELECT 'bulk-arrival-'||i,'x','{"weapon":"torid"}' FROM generate_series(0,2504) i`);
+  await query(`INSERT INTO record_equipment_submissions(id,at,record)
     SELECT 'equipment:bulk-arrival-'||i,'x',? FROM generate_series(0,1204) i`, [JSON.stringify(equipment)]);
   const status = await run("ship_builds.sh", "bulk-builds.ndjson", "bulk-done.txt");
   check("thousands of mixed builds and spent arrivals use bounded JSON batches",
     status === 0 && /builds: 3713 build\(s\) in 5 statement\(s\), 0 refused/.test(scriptOutput)
     && /inbox: 3710 row\(s\) spent in 5 statement\(s\), 0 refused/.test(scriptOutput)
-    && (await query("SELECT count(*) AS n FROM builds WHERE id LIKE 'bulk-%'"))[0].n === 2506
-    && (await query("SELECT count(*) AS n FROM equipment_builds WHERE id LIKE 'bulk-%'"))[0].n === 1205
-    && (await query("SELECT count(*) AS n FROM inbox WHERE id LIKE 'bulk-%'"))[0].n === 0
-    && (await query("SELECT count(*) AS n FROM equipment_inbox WHERE id LIKE 'equipment:bulk-%'"))[0].n === 0, scriptOutput);
-  const duplicates = await query("SELECT id,at,record FROM builds WHERE id IN ('bulk-repeat','bulk-build-0') ORDER BY id");
+    && (await query("SELECT count(*) AS n FROM entity_weapon_builds WHERE id LIKE 'bulk-%'"))[0].n === 2506
+    && (await query("SELECT count(*) AS n FROM entity_equipment_builds WHERE id LIKE 'bulk-%'"))[0].n === 1205
+    && (await query("SELECT count(*) AS n FROM record_build_submissions WHERE id LIKE 'bulk-%'"))[0].n === 0
+    && (await query("SELECT count(*) AS n FROM record_equipment_submissions WHERE id LIKE 'equipment:bulk-%'"))[0].n === 0, scriptOutput);
+  const duplicates = await query("SELECT id,at,record FROM entity_weapon_builds WHERE id IN ('bulk-repeat','bulk-build-0') ORDER BY id");
   check("duplicate ids keep the last input within one batch and across batches", duplicates.length === 2
     && duplicates.every(row => row.at === "last") && JSON.parse(duplicates[0].record).mods[0] === "split_chamber", JSON.stringify(duplicates));
   let batches = 0, bounded = true;
@@ -111,21 +111,21 @@ check("equipment builds land outside weapon scores before their arrivals are spe
   }
   check("escaped Unicode records split by actual UTF-8 statement bytes before the row ceiling", bounded && batches > 1);
   file("oversize.ndjson", JSON.stringify({ id: "oversize", at: "x", record: { ...record, text: "雪".repeat(BUILD_BATCH_BYTES) } }) + "\n");
-  await query("INSERT INTO inbox(id,at,record) VALUES ('oversize-arrival','x',?)", [JSON.stringify(record)]);
+  await query("INSERT INTO record_build_submissions(id,at,record) VALUES ('oversize-arrival','x',?)", [JSON.stringify(record)]);
   file("oversize-done.txt", "oversize-arrival\n");
   check("one oversized row fails closed before its arrival can be spent", await run("ship_builds.sh", "oversize.ndjson", "oversize-done.txt") !== 0
-    && (await query("SELECT count(*) AS n FROM builds WHERE id = 'oversize'"))[0].n === 0
-    && (await query("SELECT count(*) AS n FROM inbox WHERE id = 'oversize-arrival'"))[0].n === 1);
-  await query("DELETE FROM builds WHERE id LIKE 'bulk-%'");
-  await query("DELETE FROM equipment_builds WHERE id LIKE 'bulk-%'");
-  await query("DELETE FROM inbox WHERE id = 'oversize-arrival'");
+    && (await query("SELECT count(*) AS n FROM entity_weapon_builds WHERE id = 'oversize'"))[0].n === 0
+    && (await query("SELECT count(*) AS n FROM record_build_submissions WHERE id = 'oversize-arrival'"))[0].n === 1);
+  await query("DELETE FROM entity_weapon_builds WHERE id LIKE 'bulk-%'");
+  await query("DELETE FROM entity_equipment_builds WHERE id LIKE 'bulk-%'");
+  await query("DELETE FROM record_build_submissions WHERE id = 'oversize-arrival'");
 }
 const rows = ["standard_single_target", "heavy_gunner"].map((ruler) => JSON.stringify({ build_id: "b1", ruler, mode: "base" })).join("\n");
 file("missing.ndjson", `${rows}\n`);
 await run("ship_queue.sh", "arrivals-2026-10-01", "test", "missing.ndjson");
 await run("ship_queue.sh", "arrivals-2026-10-01", "test", "missing.ndjson");
 check("a batch counts each inserted calculation once across retries",
-  (await query("SELECT count(*) AS n FROM queue"))[0].n === 2 && (await query("SELECT total FROM batches"))[0]?.total === 2);
+  (await query("SELECT count(*) AS n FROM state_board_pending_work"))[0].n === 2 && (await query("SELECT total FROM entity_compute_batches"))[0]?.total === 2);
 check("the queue is read in order", await run("fetch_queue.sh", "queue.ndjson") === 0
   && read("queue.ndjson").map((l) => JSON.parse(l).ruler).join() === "heavy_gunner,standard_single_target");
 // …OVER ONE CONNECTION (scripts/db.sh `db_send`): a read is two statements at
@@ -165,7 +165,7 @@ check("the queue is read in order", await run("fetch_queue.sh", "queue.ndjson") 
   const read = await answer("SELECT 1 AS n");
   const readCalls = calls;
   calls = 0;
-  const write = await answer("DELETE FROM queue");
+  const write = await answer("DELETE FROM state_board_pending_work");
   check("a read cut by the tunnel is read again, a write is not",
     read.success && readCalls === READ_TRIES && !write.success && calls === 1, `read ${JSON.stringify(read)} in ${readCalls}, write ${calls}`);
   await close();
@@ -175,53 +175,53 @@ const fact = { identity: "b1", ruler: "heavy_gunner", mode: "base", measured_by:
   cost_seconds: 3, started_at: "2026-10-01T00:00:00.000Z", finished_at: "2026-10-01T00:00:03.000Z" };
 file("facts.ndjson", `${JSON.stringify(fact)}\n`);
 check("a fact is shipped and its row spent", await run("ship_facts.sh", "facts.ndjson") === 0
-  && (await query("SELECT score FROM scores"))[0]?.score === 12.5 && (await query("SELECT count(*) AS n FROM queue"))[0].n === 1);
+  && (await query("SELECT score FROM state_board_measurement_selection"))[0]?.score === 12.5 && (await query("SELECT count(*) AS n FROM state_board_pending_work"))[0].n === 1);
 file("facts-again.ndjson", `${JSON.stringify({ ...fact, score: 13 })}\n`);
 check("...and measured again it is overwritten", await run("ship_facts.sh", "facts-again.ndjson") === 0
-  && (await query("SELECT score FROM scores"))[0]?.score === 13);
-await query("UPDATE scores SET review_id = 'verified-review', score = 14, finished_at = '2026-10-02T00:00:00.000Z' WHERE identity = 'b1'");
+  && (await query("SELECT score FROM state_board_measurement_selection"))[0]?.score === 13);
+await query("UPDATE state_board_measurement_selection SET review_id = 'verified-review', score = 14, finished_at = '2026-10-02T00:00:00.000Z' WHERE identity = 'b1'");
 file("facts-late.ndjson", JSON.stringify({ ...fact, score: 1 }) + "\n");
 check("an older native fact cannot replace a newer verified review", await run("ship_facts.sh", "facts-late.ndjson") === 0
-  && (await query("SELECT score FROM scores WHERE identity = 'b1'"))[0]?.score === 14);
+  && (await query("SELECT score FROM state_board_measurement_selection WHERE identity = 'b1'"))[0]?.score === 14);
 file("facts-newer.ndjson", JSON.stringify({ ...fact, score: 13, finished_at: "2026-10-03T00:00:00.000Z" }) + "\n");
 check("a fresh native measurement supersedes a review and clears its proof pointer", await run("ship_facts.sh", "facts-newer.ndjson") === 0
-  && (await query("SELECT review_id FROM scores WHERE identity = 'b1'"))[0]?.review_id === null);
+  && (await query("SELECT review_id FROM state_board_measurement_selection WHERE identity = 'b1'"))[0]?.review_id === null);
 check("an older receipt cannot overwrite a newer score after its review pointer clears",await run('ship_facts.sh','facts-late.ndjson')===0
-  && (await query("SELECT score FROM scores WHERE identity='b1'"))[0].score===13);
+  && (await query("SELECT score FROM state_board_measurement_selection WHERE identity='b1'"))[0].score===13);
 check("the facts are read", await run("fetch_facts.sh", "facts-read.ndjson") === 0 && JSON.parse(read("facts-read.ndjson")[0]).score === 13);
 check("the library is read", await run("fetch_library.sh", "library.json") === 0 && readFileSync(join(dir, "library.json"), "utf8").includes("torid"));
 file("snapshot.ndjson", `${JSON.stringify({ k: "b2", v: { at: "2026-10-02", weapon: "braton", mods: [] } })}\n`);
 check("a backup is restored into the library", await run("restore_library.sh", "snapshot.ndjson", "--write") === 0
-  && (await query("SELECT weapon FROM builds WHERE id = 'b2'"))[0]?.weapon === "braton");
+  && (await query("SELECT weapon FROM entity_weapon_builds WHERE id = 'b2'"))[0]?.weapon === "braton");
 
 file("orphans.ndjson", `${JSON.stringify({ build_id: "b1", ruler: "standard_single_target", mode: "base" })}\n`);
-check("an orphan is purged", await run("purge_orphans.sh", "orphans.ndjson") === 0 && (await query("SELECT count(*) AS n FROM queue"))[0].n === 0);
-await query("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('arrivals-2026-10-01', 'b1', 'no_such_ruler', 'base')");
+check("an orphan is purged", await run("purge_orphans.sh", "orphans.ndjson") === 0 && (await query("SELECT count(*) AS n FROM state_board_pending_work"))[0].n === 0);
+await query("INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES ('arrivals-2026-10-01', 'b1', 'no_such_ruler', 'base')");
 // EXECUTED, not sourced (`purge_queue.sh` runs it), so Linux needs the bit.
 process.env.WFSIM_BOARD = file("rulers.sh","#!/bin/sh\necho standard_single_target\necho heavy_gunner\n");
 chmodSync(process.env.WFSIM_BOARD, 0o755);
 check("a ruler the repo no longer has is purged", await run("purge_queue.sh") === 0
-  && (await query("SELECT count(*) AS n FROM queue"))[0].n === 0);
+  && (await query("SELECT count(*) AS n FROM state_board_pending_work"))[0].n === 0);
 // Cancelling the owning batch withdraws its merged calculation. Other keys
 // remain pending, and a calculation never asked still leaves the queue.
 {
   const at = "2026-10-02T00:00:00.000Z";
   for (const [batch, b] of [["arrivals-2026-10-02", "b1"], ["arrivals-2026-10-02", "b2"], ["refresh-2026-10-02", "b2"], ["refresh-2026-10-02", "b3"],
     ["arrivals-2026-10-02", "b4"]]) {
-    await query("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, ?, 'sst', 'base')", [batch, b]);
+    await query("INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES (?, ?, 'sst', 'base')", [batch, b]);
   }
   for (const [q, b, producers, due] of [["q1", "b1", ["new_build", "sweep"], "2026-10-02T01"], ["q2", "b2", ["new_build", "refresh"], "2026-10-02T02"],
     ["q3", "b3", ["refresh"], "2026-10-02T03"]]) {
-    await query("INSERT INTO questions (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', 'open', ?, ?)", [q, due, at]);
+    await query("INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', 'open', ?, ?)", [q, due, at]);
     for (const producer of producers) {
-      await query("INSERT INTO demands (producer, ref, question, state, asked_at, due_at, payload) VALUES (?, ?, ?, 'live', ?, ?, ?)",
+      await query("INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, payload) VALUES (?, ?, ?, 'live', ?, ?, ?)",
         [producer, `${b}|sst|base`, q, at, due, JSON.stringify({ identity: b, ruler: "sst", mode: "base" })]);
     }
   }
   const state = async () => ({
-    queue: (await query("SELECT batch || ':' || build_id AS k FROM queue ORDER BY 1")).map((r) => r.k).join(),
-    live: (await query("SELECT producer || ':' || question AS k FROM demands WHERE state = 'live' ORDER BY 1")).map((r) => r.k).join(),
-    open: (await query("SELECT id FROM questions WHERE state = 'open' ORDER BY id")).map((r) => r.id).join() });
+    queue: (await query("SELECT batch || ':' || build_id AS k FROM state_board_pending_work ORDER BY 1")).map((r) => r.k).join(),
+    live: (await query("SELECT producer || ':' || question AS k FROM relation_task_consumers WHERE state = 'live' ORDER BY 1")).map((r) => r.k).join(),
+    open: (await query("SELECT id FROM state_compute_work WHERE state = 'open' ORDER BY id")).map((r) => r.id).join() });
   process.env.CANCEL_SLICE = "1";
   process.env.CANCEL_PAUSE = "0";
   const named = await run("cancel_queue.sh", "--batch", "arrivals-", "--dry-run") === 0;
@@ -254,7 +254,7 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
     return spawnSync(process.execPath, [new URL("./live_publish.mjs", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), ...args],
       { encoding: "utf8", env: process.env });
   };
-  const rows = (await query("SELECT identity, ruler, mode FROM scores")).length;
+  const rows = (await query("SELECT identity, ruler, mode FROM state_board_measurement_selection")).length;
   const first = await publish("delta", live);
   const grown = readFileSync(facts, "utf8");
   check("a delta appends every row that moved and keeps what the file held",
@@ -268,30 +268,30 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
     `exit ${again.status} ${again.stderr.slice(0, 300)}`);
   const retirementAt='2026-11-06T00:00:00.000Z';
   writeFileSync(join(live,'facts-cursor.txt'),'2026-11-05T00:00:00.000Z\n');
-  await query(`INSERT INTO board_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
+  await query(`INSERT INTO entity_measurement_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
     baseline_score,baseline_metric,baseline_cost_seconds,baseline_by,baseline_started_at,baseline_finished_at,created_at,invalidated_at,invalidation_reason)
     SELECT identity||'|'||ruler||'|'||mode,'retired-check',?,identity,ruler,mode,'new-engine','retired-question','{}','waiting',
-      score,metric,cost_seconds,measured_by,started_at,finished_at,?,?,'corrected formula' FROM scores WHERE identity='b1'`,[retirementAt,retirementAt,retirementAt]);
-  await query("UPDATE scores SET review_id='retired-check' WHERE identity='b1'");
+      score,metric,cost_seconds,measured_by,started_at,finished_at,?,?,'corrected formula' FROM state_board_measurement_selection WHERE identity='b1'`,[retirementAt,retirementAt,retirementAt]);
+  await query("UPDATE state_board_measurement_selection SET review_id='retired-check' WHERE identity='b1'");
   const removed=await publish('delta',live);
   check('a retirement of an old measurement reaches the live delta without changing its measurement clock',removed.status===0
     && readFileSync(join(live,'moved-facts.ndjson'),'utf8').includes('"retired_at":"'+retirementAt+'"'));
   check('full fact exports retain explicit removal events',await run('fetch_facts.sh','retired-facts.ndjson')===0
     && read('retired-facts.ndjson').some(line=>JSON.parse(line).retired_at===retirementAt));
-  await query("INSERT INTO queue(batch,build_id,ruler,mode) VALUES ('arrivals-2026-10-01','b1','heavy_gunner','base')");
+  await query("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES ('arrivals-2026-10-01','b1','heavy_gunner','base')");
   file('obsolete-native.ndjson',JSON.stringify({...fact,score:999,finished_at:'2026-11-06T00:00:30.000Z'})+'\n');
   check('even a later native receipt cannot revive a retired score or consume its outstanding row',await run('ship_facts.sh','obsolete-native.ndjson')===0
-    && (await query("SELECT score FROM scores WHERE identity='b1'"))[0].score===13
-    && (await query("SELECT count(*) AS n FROM queue WHERE build_id='b1'"))[0].n===1);
-  await query("UPDATE board_reviews SET state='succeeded' WHERE id='retired-check'");
-  await query("UPDATE scores SET score=12,finished_at='2026-11-06T00:01:00.000Z' WHERE identity='b1'");
+    && (await query("SELECT score FROM state_board_measurement_selection WHERE identity='b1'"))[0].score===13
+    && (await query("SELECT count(*) AS n FROM state_board_pending_work WHERE build_id='b1'"))[0].n===1);
+  await query("UPDATE entity_measurement_reviews SET state='succeeded' WHERE id='retired-check'");
+  await query("UPDATE state_board_measurement_selection SET score=12,finished_at='2026-11-06T00:01:00.000Z' WHERE identity='b1'");
   const restored=await publish('delta',live);
   check('a completed independent correction publishes a normal replacement event',restored.status===0
     && readFileSync(join(live,'moved-facts.ndjson'),'utf8').includes('"retired_at":null'));
   // A FILE READ WHOLE MOVES THE CURSOR to its newest row: a delta after it asks
   // for hours, never every row since a cursor that had stopped.
   writeFileSync(join(live, "facts-cursor.txt"), "2020-01-01T00:00:00.000Z\n");
-  const newest = (await query("SELECT max(finished_at) AS at FROM scores"))[0].at;
+  const newest = (await query("SELECT max(finished_at) AS at FROM state_board_measurement_selection"))[0].at;
   const moved = await publish("cursor", live);
   check("a store read whole moves the cursor to its newest row",
     moved.status === 0 && readFileSync(join(live, "facts-cursor.txt"), "utf8").trim() === newest,
@@ -300,7 +300,7 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
 {
   const day = 86_400_000, now = Date.now();
   for (const [id, age] of [['periodic-fresh', 13], ['periodic-due', 14], ['periodic-old', 15]]) {
-    await query(`INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)
+    await query(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)
       VALUES (?,'r','base','v',1,'kpm',0,'x',?)`, [id, new Date(now - age * day).toISOString()]);
   }
   const periodic = file('periodic.ndjson', ['periodic-fresh','periodic-due','periodic-old']
@@ -308,13 +308,13 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
   const first = await run('ship_queue.sh', 'refresh-first', 'periodic', periodic);
   const next = await run('ship_queue.sh', 'refresh-next', 'periodic', periodic);
   check('periodic admission waits fourteen days and later rounds share the existing calculations', first === 0 && next === 0
-    && (await query("SELECT count(*) n FROM queue WHERE build_id LIKE 'periodic-%'"))[0].n === 2
-    && (await query("SELECT total FROM batches WHERE id='refresh-first'"))[0].total === 2
-    && (await query("SELECT total FROM batches WHERE id='refresh-next'"))[0].total === 0);
-  await query("DELETE FROM queue WHERE build_id LIKE 'periodic-%'");
-  await query("UPDATE scores SET finished_at=? WHERE identity LIKE 'periodic-%'", [new Date().toISOString()]);
+    && (await query("SELECT count(*) n FROM state_board_pending_work WHERE build_id LIKE 'periodic-%'"))[0].n === 2
+    && (await query("SELECT total FROM entity_compute_batches WHERE id='refresh-first'"))[0].total === 2
+    && (await query("SELECT total FROM entity_compute_batches WHERE id='refresh-next'"))[0].total === 0);
+  await query("DELETE FROM state_board_pending_work WHERE build_id LIKE 'periodic-%'");
+  await query("UPDATE state_board_measurement_selection SET finished_at=? WHERE identity LIKE 'periodic-%'", [new Date().toISOString()]);
   check('a completed measurement starts its own next fourteen-day interval', await run('ship_queue.sh', 'refresh-later', 'periodic', periodic) === 0
-    && (await query("SELECT count(*) n FROM queue WHERE build_id LIKE 'periodic-%'"))[0].n === 0);
+    && (await query("SELECT count(*) n FROM state_board_pending_work WHERE build_id LIKE 'periodic-%'"))[0].n === 0);
 }
 
 // NOTHING A SCRIPT MADE OUTLIVES IT (scripts/db.sh `DB_TMP`): the live board

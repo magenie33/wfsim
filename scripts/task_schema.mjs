@@ -9,7 +9,7 @@ export function taskSchemaSql() {
   const schema = readFileSync(new URL("../worker/pg/schema.sql", import.meta.url), "utf8");
   const sync = readFileSync(new URL("../worker/pg/sync.sql", import.meta.url), "utf8");
   const incremental = readFileSync(new URL("../worker/pg/inventory.sql", import.meta.url), "utf8");
-  const columns = ["demands delivery_at", "answers credit_work", "answers credit_at"].map(pair => {
+  const columns = ["relation_task_consumers delivery_at", "record_candidate_answers credit_work", "record_candidate_answers credit_at"].map(pair => {
     const [table, column] = pair.split(" ");
     return schema.match(new RegExp(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column}[^;]+;`))?.[0];
   });
@@ -21,7 +21,7 @@ export function taskSchemaSql() {
   if (columns.some(x => !x) || indexes.some(x => !x) || !guard || !retention || !inventory) throw new Error("incomplete task-delivery schema");
   return `SET ROLE wfsim;\nSET lock_timeout = '5s';\n${columns.join("\n")}\n${indexes.map(sql => sql.replace("CREATE INDEX ", "CREATE INDEX CONCURRENTLY ")).join("\n")}\n${guard}\n${retention}\n${inventory}\n${incremental}\nDO $grant$ BEGIN
     IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_pipeline') THEN
-      REVOKE ALL ON inventory_dirty,inventory_state,inventory_epochs FROM wfsim_pipeline;
+      REVOKE ALL ON state_compute_inventory_invalidations,state_compute_inventory_generation,record_inventory_captures FROM wfsim_pipeline;
       REVOKE ALL ON SEQUENCE inventory_revision,inventory_generation,inventory_epoch_token FROM wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION factory_inventory_rows(text,text[]) TO wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION inventory_status(),inventory_begin(text,text,text),inventory_changes(bigint),

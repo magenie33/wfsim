@@ -27,12 +27,12 @@ function lit(s) {
 function sql() {
   if (flag("list")) {
     return `SELECT n.id, coalesce(a.username, '(everyone)'), n.kind, n.created_at, coalesce(n.expires_at, ''), left(coalesce(n.text_zh, n.text_en, n.params, ''), 60)
-      FROM notices n LEFT JOIN accounts a ON a.id = n.account ORDER BY n.created_at DESC LIMIT 20;`;
+      FROM entity_notices n LEFT JOIN entity_accounts a ON a.id = n.account ORDER BY n.created_at DESC LIMIT 20;`;
   }
   if (flag("withdraw")) {
     const id = Number(value("withdraw"));
     if (!Number.isInteger(id) || id <= 0) die("--withdraw takes a notice id (see --list)");
-    return `DELETE FROM notices WHERE id = ${id} RETURNING id;`;
+    return `DELETE FROM entity_notices WHERE id = ${id} RETURNING id;`;
   }
   const zh = value("zh"), en = value("en");
   if (!zh && !en) die("a notice needs --zh, --en or both");
@@ -45,10 +45,10 @@ function sql() {
   if (!to && !flag("all")) die("say who: --all, or --to <username>");
   if (to && flag("all")) die("--all or --to, not both");
   const kind = to ? "message" : "announcement";
-  const account = to ? `(SELECT id FROM accounts WHERE username = ${lit(to)})` : "NULL";
+  const account = to ? `(SELECT id FROM entity_accounts WHERE username = ${lit(to)})` : "NULL";
   // A USERNAME NOBODY HOLDS writes nothing, and says so, rather than a notice to everyone.
   const guard = to ? `WHERE ${account} IS NOT NULL` : "";
-  return `INSERT INTO notices (account, kind, text_en, text_zh, link, created_at, expires_at)
+  return `INSERT INTO entity_notices (account, kind, text_en, text_zh, link, created_at, expires_at)
     SELECT ${account}, '${kind}', ${lit(en)}, ${lit(zh)}, ${lit(link)}, ${lit(new Date().toISOString())}, ${lit(expires && expires.toISOString())} ${guard}
     RETURNING id;`;
 }

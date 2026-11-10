@@ -128,7 +128,7 @@ def index_sql() -> str:
     """Concurrent indexes from the same DDL a new database is laid with."""
     ddl = "\n".join((ROOT / "worker" / "pg" / p).read_text() for p in ("schema.sql", "library.sql"))
     statements = []
-    for name in ("questions_odd_at", "questions_dispatched", "scores_pace", "queue_calculation"):
+    for name in ("compute_scheduling_odd_at", "compute_scheduling_dispatched", "scores_pace", "queue_calculation"):
         found = re.search(rf"CREATE (?:UNIQUE )?INDEX IF NOT EXISTS {name}\b[^;]+;", ddl)
         if not found:
             raise ValueError(f"factory index missing from schema: {name}")
@@ -173,7 +173,7 @@ def deploy() -> None:
 SELECT count(*) = 4 AND bool_and(i.indisvalid AND i.indisready)
 FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
 WHERE c.relnamespace = 'public'::regnamespace
-AND c.relname IN ('questions_odd_at', 'questions_dispatched', 'scores_pace', 'queue_calculation');
+AND c.relname IN ('compute_scheduling_odd_at', 'compute_scheduling_dispatched', 'scores_pace', 'queue_calculation');
 """).strip()
     if ready != "t":
         sys.exit("factoryd: required indexes are not valid and ready; running daemon kept")
@@ -194,7 +194,7 @@ AND c.relname IN ('questions_odd_at', 'questions_dispatched', 'scores_pace', 'qu
 
 def verify(t: dict | None = None) -> int:
     t = t or target()
-    row = ssh(t, "sudo -u postgres psql -d wfsim -Atc \"SELECT daemon_commit, daemon_at FROM factory_snapshot WHERE id = 1\"").strip()
+    row = ssh(t, "sudo -u postgres psql -d wfsim -Atc \"SELECT daemon_commit, daemon_at FROM state_factory_snapshot WHERE id = 1\"").strip()
     commit, _, at = row.partition("|")
     want = head()
     age = ssh(t, f"sudo -u postgres psql -d wfsim -Atc \"SELECT extract(epoch FROM now() - '{at}'::timestamptz)::int\"").strip() if at else ""

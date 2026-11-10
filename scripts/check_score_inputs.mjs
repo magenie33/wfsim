@@ -42,17 +42,17 @@ const lines = name => load(name).trim().split('\n').filter(Boolean).map(JSON.par
 try {
   console.log(client ? 'score inputs: postgres.js TCP transport' : 'score inputs: PGlite transport');
   await pg.exec(['schema', 'library', 'sync'].map(n => readFileSync(new URL(`../worker/pg/${n}.sql`, import.meta.url), 'utf8')).join('\n'));
-  await pg.exec(`INSERT INTO batches(id,at,total) VALUES('old','1',0),('new','2',0);
-    INSERT INTO builds(id,at,record) SELECT 'unrelated-'||n,'day','{"weapon":"unrelated"}' FROM generate_series(1,20000) n;
-    INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)
-      SELECT id,'r','base','engine',1,'fixture',1,'a','b' FROM builds;
-    INSERT INTO builds(id,at,record) VALUES('a','day','{"weapon":"a","precise":0.1234567890123456789}'),
+  await pg.exec(`INSERT INTO entity_compute_batches(id,at,total) VALUES('old','1',0),('new','2',0);
+    INSERT INTO entity_weapon_builds(id,at,record) SELECT 'unrelated-'||n,'day','{"weapon":"unrelated"}' FROM generate_series(1,20000) n;
+    INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)
+      SELECT id,'r','base','engine',1,'fixture',1,'a','b' FROM entity_weapon_builds;
+    INSERT INTO entity_weapon_builds(id,at,record) VALUES('a','day','{"weapon":"a","precise":0.1234567890123456789}'),
       ('b','day','{"weapon":"b"}'),('cancelled','day','{"weapon":"cancelled"}');
-    INSERT INTO queue(batch,build_id,ruler,mode) VALUES('new','a','r','base'),('old','b','r','base'),
+    INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES('new','a','r','base'),('old','b','r','base'),
       ('old','b','r','cycle'),('gone','cancelled','r','base'),('old','missing','r','base');
-    INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)
+    INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)
       VALUES('b','r','base','previous',8,'fixture',2,'a','b'); ANALYZE;`);
-  for (let start = 1; start <= 20000; start += 500) await pg.exec(`INSERT INTO queue(batch,build_id,ruler,mode)
+  for (let start = 1; start <= 20000; start += 500) await pg.exec(`INSERT INTO state_board_pending_work(batch,build_id,ruler,mode)
     SELECT 'old','unrelated-'||n,'r','base' FROM generate_series(${start},${start + 499}) n`);
   await pg.exec('ANALYZE');
   let calls = 0;
@@ -100,10 +100,10 @@ try {
     } finally { await operator.close(); }
     assert(builds.every(b => b.candidate));
     const ruler = 'standard_single_target';
-    for (const b of builds) await query("INSERT INTO builds(id,at,record) VALUES($1,'day',$2)", [b.candidate, JSON.stringify(b.record)]);
+    for (const b of builds) await query("INSERT INTO entity_weapon_builds(id,at,record) VALUES($1,'day',$2)", [b.candidate, JSON.stringify(b.record)]);
     const nativeTasks = builds.slice(0, 2).map(b => ({ question: b.candidate, verb: 'simulate', demands: [{ producer: 'sweep',
       ref: `${b.candidate}|${ruler}|base`, payload: { identity: b.candidate, ruler, mode: 'base' } }] }));
-    for (const b of builds.slice(0, 2)) await query("INSERT INTO queue(batch,build_id,ruler,mode) VALUES('old',$1,$2,'base')", [b.candidate, ruler]);
+    for (const b of builds.slice(0, 2)) await query("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES('old',$1,$2,'base')", [b.candidate, ruler]);
     await captureScoreInputs({ sql, claim: async () => nativeTasks, directory, engine: 'test', max: 2 });
     const full = JSON.stringify(builds.map(b => b.record)), limited = load('library.json');
     const dry = (library, shard) => {

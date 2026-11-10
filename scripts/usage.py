@@ -69,7 +69,7 @@ class Log:
         except (ValueError, IndexError, KeyError):
             sys.exit(f"usage.py: postgres failed\n{r.stdout[-400:]}{r.stderr[-400:]}")
 
-    WHERE = "FROM usage_points WHERE day >= ?1 AND release != ?2 AND day < ?3 AND (?4 = 'all' OR shell = ?4)"
+    WHERE = "FROM record_usage_events WHERE day >= ?1 AND release != ?2 AND day < ?3 AND (?4 = 'all' OR shell = ?4)"
 
     def rows(self):
         # Aggregate one calendar day at a time; one SELECT keeps the same snapshot.

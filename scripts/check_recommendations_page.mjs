@@ -62,18 +62,18 @@ try {
   await until("JSON.parse(sessionStorage.getItem('recommendation-test-points') || '[]').some(p => p.event === 'recommendation.ready' && p.subject === 'library')");
   await app.evaluate("document.querySelector(" + JSON.stringify(selector) + ").click()");
   await until("document.querySelector(" + JSON.stringify(selector) + ")?.getAttribute('aria-pressed') === 'true'");
-  check("A recommendation is durably pending", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM recommendations")).n === 1);
+  check("A recommendation is durably pending", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 1);
   check("Pending recommendations leave settled popularity at zero", await app.evaluate("document.querySelector(" + JSON.stringify(selector) + ").closest('.recommendation-control').querySelector('b').textContent === '0.0'"));
   await fetch(fixture.base + '/api/recommendations', { method: 'POST', headers: { 'content-type': 'application/json', origin: fixture.base, cookie: 'wfsim_session=' + fixture.token },
     body: JSON.stringify({ identity: target.id, action: 'withdraw', day: new Date().toISOString().slice(0, 10) }) });
   await app.evaluate("window.dispatchEvent(new Event('focus'))");
   await until("document.querySelector(" + JSON.stringify(selector) + ")?.getAttribute('aria-pressed') === 'false'");
-  check("Returning to the tab observes another client's withdrawal", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM recommendations")).n === 0);
+  check("Returning to the tab observes another client's withdrawal", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 0);
   await app.evaluate("document.querySelector(" + JSON.stringify(selector) + ").click()");
   await until("document.querySelector(" + JSON.stringify(selector) + ")?.getAttribute('aria-pressed') === 'true'");
   await app.evaluate("document.querySelector(" + JSON.stringify(selector) + ").closest('.recommendation-control').querySelector('[data-recommend-withdraw]').click()");
   await until("document.querySelector(" + JSON.stringify(selector) + ")?.getAttribute('aria-pressed') === 'false'");
-  check("Withdrawing a pending recommendation removes it", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM recommendations")).n === 0);
+  check("Withdrawing a pending recommendation removes it", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 0);
   await app.evaluate("document.querySelector(" + JSON.stringify(selector) + ").click()");
   await until("document.querySelector(" + JSON.stringify(selector) + ")?.getAttribute('aria-pressed') === 'true'");
   await app.evaluate("openLibraryBuild(recommendationLibrary.presets.get(" + JSON.stringify(target.preset) + "))");
@@ -81,7 +81,7 @@ try {
   await until("document.querySelector(" + JSON.stringify(presetVote) + ")?.getAttribute('aria-pressed') === 'true'");
   await app.evaluate("document.querySelector(" + JSON.stringify(presetVote) + ").scrollIntoView({ block: 'center' })");
   await until("JSON.parse(sessionStorage.getItem('recommendation-test-points') || '[]').some(p => p.event === 'recommendation.ready' && p.subject === 'preset')");
-  check("A board preset shares the Library's pending recommendation", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM recommendations")).n === 1);
+  check("A board preset shares the Library's pending recommendation", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 1);
   await app.evaluate("document.querySelector('#preset-bar-builder-builds [data-preset-info]').click()");
   const infoVote = '#preset-info-popover ' + selector;
   await until("!!document.querySelector(" + JSON.stringify(infoVote) + ")");
@@ -89,15 +89,15 @@ try {
   await until("JSON.parse(sessionStorage.getItem('recommendation-test-points') || '[]').some(p => p.event === 'recommendation.ready' && p.subject === 'preset_info')");
   await app.evaluate("document.querySelector('#preset-info-popover [data-recommend-withdraw]').click()");
   await until("document.querySelector(" + JSON.stringify(presetVote) + ")?.getAttribute('aria-pressed') === 'false'");
-  check("Withdrawing in preset information updates the preset bar", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM recommendations")).n === 0);
+  check("Withdrawing in preset information updates the preset bar", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 0);
   fixture.env.RECOMMENDATION_LIMIT = { limit: async () => ({ success: false }) };
   await app.evaluate("document.querySelector(" + JSON.stringify(infoVote) + ").click()");
   await until("!!document.querySelector('#preset-info-popover [data-recommend-retry]')");
-  check("A failed recommendation remains retryable without adding a vote", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM recommendations")).n === 0);
+  check("A failed recommendation remains retryable without adding a vote", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 0);
   delete fixture.env.RECOMMENDATION_LIMIT;
   await app.evaluate("document.querySelector('#preset-info-popover [data-recommend-retry]').click(); document.querySelector('#preset-info-popover [data-info-close]').click(); document.querySelector(" + JSON.stringify(presetVote) + ").click()");
   await until("document.querySelector(" + JSON.stringify(presetVote) + ")?.getAttribute('aria-pressed') === 'true'");
-  check("Recommending from the preset reuses the same daily vote", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM recommendations")).n === 1);
+  check("Recommending from the preset reuses the same daily vote", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 1);
   await app.evaluate("copyActivePreset(buildBarCfg())");
   check("An owned copy has no recommendation control", await app.evaluate("!document.querySelector('#preset-bar-builder-builds [data-recommend]')"));
   await app.evaluate("nav(weaponPath(presetWeapon()) + '?view=library')");
@@ -121,7 +121,7 @@ try {
   check("The midnight timer returns history to builds available today", await app.evaluate("recommendationHistoryFilter === 'available' && recommendationHistory.builds.length === 1"));
   await app.evaluate("document.querySelector('.recommendation-history-build footer a').click()");
   await until("document.querySelector(" + JSON.stringify(selector) + ")?.getAttribute('aria-pressed') === 'false' && document.querySelector(" + JSON.stringify(selector) + ").closest('.recommendation-control').querySelector('b').textContent === '1.0'");
-  check("UTC settlement enables the next day's recommendation", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM recommendations")).n === 1);
+  check("UTC settlement enables the next day's recommendation", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === 1);
   await app.evaluate("document.querySelector('[data-recommend-clear]').click(); finder.query.orderBy = [{ field: 'heat', direction: 'desc' }]; libraryProjectQuery(); renderBuildFinder()");
   await until("!recommendationLibrary.loading && document.querySelector('[data-recommendation-id]')?.dataset.recommendationId === " + JSON.stringify(target.id));
   check("Popularity sorting raises the recommended lower-scoring build", await app.evaluate("document.querySelector('[data-recommendation-id]').dataset.recommendationId === " + JSON.stringify(target.id)));
@@ -144,14 +144,14 @@ try {
   const presetShot = await app.send("Page.captureScreenshot", { format: "png" });
   await writeFile(new URL("../target/recommendations-review/preset-mobile.png", import.meta.url), Buffer.from(presetShot.result.data, "base64"));
   await app.evaluate("closePopovers(); accountState.account = null; renderAccountEntry(); recommendationOwner(); refreshLibraryRecommendations()");
-  const before = (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM recommendations")).n;
+  const before = (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM record_recommendation_votes")).n;
   await app.evaluate("document.querySelector(" + JSON.stringify(presetVote) + ").click()");
   await until("location.pathname === '/login'");
-  check("Signed-out recommendations lead to registration or sign-in", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM recommendations")).n === before);
+  check("Signed-out recommendations lead to registration or sign-in", (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM record_recommendation_votes")).n === before);
   const back = await app.evaluate("new URLSearchParams(location.search).get('return')");
   await app.load(back, 4000);
   await until("!sessionStorage.getItem(RECOMMENDATION_INTENT) && recommendationAccount.pending.has(" + JSON.stringify(target.id) + ")");
-  check("Sign-in returns from a preset to the exact Library build and resumes its recommendation", await app.evaluate("libraryActive && recommendationRequested() === " + JSON.stringify(target.id)) && (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM recommendations WHERE day = recommendation_day()")).n === 1);
+  check("Sign-in returns from a preset to the exact Library build and resumes its recommendation", await app.evaluate("libraryActive && recommendationRequested() === " + JSON.stringify(target.id)) && (await fixture.env.ACCOUNTS.get("SELECT count(*) AS n FROM record_recommendation_votes WHERE day = recommendation_day()")).n === 1);
   const points = await app.evaluate("JSON.parse(sessionStorage.getItem('recommendation-test-points'))");
   for (const surface of ['library', 'preset', 'preset_info']) {
     check(surface + " records visible, ready and clicked controls", ['view', 'ready', 'click'].every(event => points.some(p => p.event === 'recommendation.' + event && (p.subject === surface || p.subject.startsWith(surface + '_')))));

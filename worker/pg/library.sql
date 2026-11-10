@@ -20,20 +20,20 @@
 -- A QUEUE, NOT A LIBRARY: `id` is random and exists so one row can be deleted;
 -- two submissions of one build are two rows here and one in `builds`. Nothing
 -- reads this table but intake.
-CREATE TABLE IF NOT EXISTS inbox (
+CREATE TABLE IF NOT EXISTS record_build_submissions (
   id     TEXT COLLATE "C" PRIMARY KEY,
   at     TEXT COLLATE "C" NOT NULL,
   record TEXT COLLATE "C" NOT NULL
 );
 -- WHO ASKED (docs/BOARD.md §"Who asked"): 'user:<code>' signed in, 'anonymous'
 -- signed out, NULL for the bot's own; carried to `queue` by intake.
-ALTER TABLE inbox ADD COLUMN IF NOT EXISTS initiator TEXT COLLATE "C";
+ALTER TABLE record_build_submissions ADD COLUMN IF NOT EXISTS initiator TEXT COLLATE "C";
 -- Trusted derivation provenance, outside the build and never accepted from a client.
-ALTER TABLE inbox ADD COLUMN IF NOT EXISTS family_source TEXT COLLATE "C";
+ALTER TABLE record_build_submissions ADD COLUMN IF NOT EXISTS family_source TEXT COLLATE "C";
 
 -- Arrivals alone create transfers. Retaining their keys prevents a later
 -- resubmission from repeating a completed sibling search.
-CREATE TABLE IF NOT EXISTS family_transfers (
+CREATE TABLE IF NOT EXISTS entity_family_search_requests (
   id TEXT COLLATE "C" PRIMARY KEY,
   source TEXT COLLATE "C" NOT NULL,
   weapon TEXT COLLATE "C" NOT NULL,
@@ -46,19 +46,19 @@ CREATE TABLE IF NOT EXISTS family_transfers (
   created_at TEXT COLLATE "C" NOT NULL,
   completed_at TEXT COLLATE "C"
 );
-CREATE INDEX IF NOT EXISTS family_transfers_waiting ON family_transfers (created_at, id) WHERE state = 'waiting';
+CREATE INDEX IF NOT EXISTS family_transfers_waiting ON entity_family_search_requests (created_at, id) WHERE state = 'waiting';
 
 -- ONE ROW PER BUILD, keyed by a HASH of the canonical build
--- `engine::board::builds::identity` states — its riven's ROLLS included — hashed
+-- `engine::board::entity_weapon_builds::identity` states — its riven's ROLLS included — hashed
 -- by `wfsim-intake`. DERIVED AND NOT ALLOCATED, so the same build always keys
 -- the same: nothing looks the row up before writing it.
 --
 -- The RECORD is kept whole as json rather than exploded into columns: a build's
--- axes are declared once (`engine::board::builds::BUILD_AXES`), and a schema
+-- axes are declared once (`engine::board::entity_weapon_builds::BUILD_AXES`), and a schema
 -- that spelled them out would be one more place to forget one. Anything worth
 -- indexing gets a generated column instead, `weapon` the first, because "how
 -- well covered is this weapon" is the question the board is run on.
-CREATE TABLE IF NOT EXISTS builds (
+CREATE TABLE IF NOT EXISTS entity_weapon_builds (
   id     TEXT COLLATE "C" PRIMARY KEY,
   -- The submission DAY, and nothing finer. The store records nothing about
   -- submitters — no IP, no token, no timestamp that could order one person's
@@ -67,23 +67,23 @@ CREATE TABLE IF NOT EXISTS builds (
   record TEXT COLLATE "C" NOT NULL,
   weapon TEXT COLLATE "C" GENERATED ALWAYS AS ((record::jsonb ->> 'weapon')) STORED
 );
-CREATE INDEX IF NOT EXISTS builds_weapon ON builds (weapon);
-CREATE INDEX IF NOT EXISTS builds_at ON builds (at);
+CREATE INDEX IF NOT EXISTS builds_weapon ON entity_weapon_builds (weapon);
+CREATE INDEX IF NOT EXISTS builds_at ON entity_weapon_builds (at);
 
 -- Warframe and companion builds share intake and canonical ids, without weapon scores.
-CREATE TABLE IF NOT EXISTS equipment_inbox (
+CREATE TABLE IF NOT EXISTS record_equipment_submissions (
   id TEXT COLLATE "C" PRIMARY KEY,
   at TEXT COLLATE "C" NOT NULL,
   record TEXT COLLATE "C" NOT NULL
 );
-CREATE TABLE IF NOT EXISTS equipment_builds (
+CREATE TABLE IF NOT EXISTS entity_equipment_builds (
   id TEXT COLLATE "C" PRIMARY KEY,
   at TEXT COLLATE "C" NOT NULL,
   record TEXT COLLATE "C" NOT NULL,
   kind TEXT COLLATE "C" GENERATED ALWAYS AS ((record::jsonb ->> 'kind')) STORED,
   equipment TEXT COLLATE "C" GENERATED ALWAYS AS ((record::jsonb ->> 'equipment')) STORED
 );
-CREATE INDEX IF NOT EXISTS equipment_builds_scope ON equipment_builds (kind, equipment, id);
+CREATE INDEX IF NOT EXISTS equipment_builds_scope ON entity_equipment_builds (kind, equipment, id);
 
 -- A SCORE IS A FACT, NOT A STEP IN A PIPELINE (docs/BOARD.md).
 --
@@ -94,8 +94,8 @@ CREATE INDEX IF NOT EXISTS equipment_builds_scope ON equipment_builds (kind, equ
 -- their captured baseline. `scripts/ship_facts.sh` writes measured rows;
 -- `scripts/fetch_facts.sh` reads them back out. This table is the only source
 -- the publisher has.
-CREATE TABLE IF NOT EXISTS scores (
-  -- THE BUILD, BY ITS `builds.id`. The name is the one the column was created
+CREATE TABLE IF NOT EXISTS state_board_measurement_selection (
+  -- THE BUILD, BY ITS `entity_weapon_builds.id`. The name is the one the column was created
   -- with and the wire keeps the names it has; what it holds is the id.
   identity     TEXT COLLATE "C" NOT NULL,
   ruler        TEXT COLLATE "C" NOT NULL,
@@ -135,14 +135,14 @@ CREATE TABLE IF NOT EXISTS scores (
 );
 -- "What has this ruler measured" is one indexed query, which is what the set
 -- difference is asked through.
-CREATE INDEX IF NOT EXISTS scores_ruler ON scores (ruler);
+CREATE INDEX IF NOT EXISTS scores_ruler ON state_board_measurement_selection (ruler);
 -- THE TIME ORDER AND ROLLING PACE share one leading timestamp; the included
 -- provenance lets the pace read who measured a score without its heap row.
-CREATE INDEX IF NOT EXISTS scores_pace ON scores (finished_at) INCLUDE (measured_by);
+CREATE INDEX IF NOT EXISTS scores_pace ON state_board_measurement_selection (finished_at) INCLUDE (measured_by);
 DROP INDEX IF EXISTS scores_oldest;
 
 -- One current measurement's witnesses; a newer score clock makes older attribution unavailable.
-CREATE TABLE IF NOT EXISTS score_witnesses (
+CREATE TABLE IF NOT EXISTS relation_measurement_witnesses (
   identity TEXT COLLATE "C" NOT NULL,
   ruler TEXT COLLATE "C" NOT NULL,
   mode TEXT COLLATE "C" NOT NULL,
@@ -155,17 +155,17 @@ CREATE TABLE IF NOT EXISTS score_witnesses (
   credited_at TEXT COLLATE "C" NOT NULL,
   position BIGINT NOT NULL,
   PRIMARY KEY (identity, ruler, mode, device),
-  FOREIGN KEY (identity, ruler, mode) REFERENCES scores(identity, ruler, mode) ON DELETE CASCADE
+  FOREIGN KEY (identity, ruler, mode) REFERENCES state_board_measurement_selection(identity, ruler, mode) ON DELETE CASCADE
 );
-CREATE INDEX IF NOT EXISTS score_witnesses_owner ON score_witnesses (owner, measured_at DESC, identity, ruler, mode);
-CREATE INDEX IF NOT EXISTS score_witnesses_device ON score_witnesses (device, measured_at DESC, identity, ruler, mode);
+CREATE INDEX IF NOT EXISTS score_witnesses_owner ON relation_measurement_witnesses (owner, measured_at DESC, identity, ruler, mode);
+CREATE INDEX IF NOT EXISTS score_witnesses_device ON relation_measurement_witnesses (device, measured_at DESC, identity, ruler, mode);
 CREATE OR REPLACE FUNCTION score_witnesses_replaced() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  DELETE FROM score_witnesses WHERE identity=OLD.identity AND ruler=OLD.ruler AND mode=OLD.mode;
+  DELETE FROM relation_measurement_witnesses WHERE identity=OLD.identity AND ruler=OLD.ruler AND mode=OLD.mode;
   RETURN NEW;
 END $$;
-DROP TRIGGER IF EXISTS scores_replace_witnesses ON scores;
-CREATE TRIGGER scores_replace_witnesses AFTER UPDATE OF finished_at ON scores
+DROP TRIGGER IF EXISTS scores_replace_witnesses ON state_board_measurement_selection;
+CREATE TRIGGER scores_replace_witnesses AFTER UPDATE OF finished_at ON state_board_measurement_selection
   FOR EACH ROW WHEN (OLD.finished_at IS DISTINCT FROM NEW.finished_at) EXECUTE FUNCTION score_witnesses_replaced();
 
 -- WHAT SOMEBODY ASKED TO BE COMPUTED, AND HOW FAR IT GOT. The queue may only
@@ -175,7 +175,7 @@ CREATE TRIGGER scores_replace_witnesses AFTER UPDATE OF finished_at ON scores
 --
 -- NOT A COLUMN ON `scores`: that table is what the site is built from, and a
 -- `pending` flag on it would make every reader know which rows are real.
-CREATE TABLE IF NOT EXISTS batches (
+CREATE TABLE IF NOT EXISTS entity_compute_batches (
   id    TEXT COLLATE "C" PRIMARY KEY,
   -- THE ORDER, AND THE ONLY THING THAT SETS IT. Sorted as text, so a batch
   -- jumps the line by being renamed rather than by a priority nobody can see.
@@ -190,38 +190,38 @@ CREATE TABLE IF NOT EXISTS batches (
 
 -- One pending calculation per (build, ruler, mode), owned by its first batch.
 -- Later batches share it; completion removes it before another round can enter.
-CREATE TABLE IF NOT EXISTS queue (
+CREATE TABLE IF NOT EXISTS state_board_pending_work (
   batch    TEXT COLLATE "C" NOT NULL,
   build_id TEXT COLLATE "C" NOT NULL,
   ruler    TEXT COLLATE "C" NOT NULL,
   mode     TEXT COLLATE "C" NOT NULL,
   PRIMARY KEY (batch, build_id, ruler, mode)
 );
--- WHO ASKED for an arrival's row (`inbox.initiator`, the first one intake saw),
+-- WHO ASKED for an arrival's row (`record_build_submissions.initiator`, the first one intake saw),
 -- read when it is asked of the factory; gone with the row once it is computed.
-ALTER TABLE queue ADD COLUMN IF NOT EXISTS initiator TEXT COLLATE "C";
+ALTER TABLE state_board_pending_work ADD COLUMN IF NOT EXISTS initiator TEXT COLLATE "C";
 -- "WHAT IS LEFT, IN ORDER" is one indexed read.
-CREATE INDEX IF NOT EXISTS queue_batch ON queue (batch);
+CREATE INDEX IF NOT EXISTS queue_batch ON state_board_pending_work (batch);
 -- "IS THIS ROW STILL OWED" (worker/board_tasks.js `owedSql`).
-CREATE UNIQUE INDEX IF NOT EXISTS queue_calculation ON queue (build_id, ruler, mode);
+CREATE UNIQUE INDEX IF NOT EXISTS queue_calculation ON state_board_pending_work (build_id, ruler, mode);
 
 -- Repeated requests share the pending row and preserve its original batch.
 CREATE OR REPLACE FUNCTION queue_once() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE held queue%ROWTYPE;
+DECLARE held state_board_pending_work%ROWTYPE;
 BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended(NEW.build_id || '|' || NEW.ruler || '|' || NEW.mode, 1));
-  SELECT * INTO held FROM queue WHERE build_id=NEW.build_id AND ruler=NEW.ruler AND mode=NEW.mode ORDER BY batch LIMIT 1;
+  SELECT * INTO held FROM state_board_pending_work WHERE build_id=NEW.build_id AND ruler=NEW.ruler AND mode=NEW.mode ORDER BY batch LIMIT 1;
   IF FOUND THEN
     IF held.initiator IS NULL AND NEW.initiator IS NOT NULL THEN
-      UPDATE queue SET initiator=NEW.initiator WHERE batch=held.batch AND build_id=held.build_id AND ruler=held.ruler AND mode=held.mode;
+      UPDATE state_board_pending_work SET initiator=NEW.initiator WHERE batch=held.batch AND build_id=held.build_id AND ruler=held.ruler AND mode=held.mode;
     END IF;
     RETURN NULL;
   END IF;
   RETURN NEW;
 END;
 $$;
-DROP TRIGGER IF EXISTS queue_once ON queue;
-CREATE TRIGGER queue_once BEFORE INSERT ON queue FOR EACH ROW EXECUTE FUNCTION queue_once();
+DROP TRIGGER IF EXISTS queue_once ON state_board_pending_work;
+CREATE TRIGGER queue_once BEFORE INSERT ON state_board_pending_work FOR EACH ROW EXECUTE FUNCTION queue_once();
 
 -- THE BOARD'S ORDERS BEFORE THE FACTORY, read by `/api/board/adopt` alone
 -- (worker/board_tasks.js `adopt`): one owed row each. `state` is where its
@@ -232,7 +232,7 @@ CREATE TRIGGER queue_once BEFORE INSERT ON queue FOR EACH ROW EXECUTE FUNCTION q
 -- same order; `work` the first result's `Shard::work`; `priority` 0 for a new
 -- build's row and 1 for a rescore; `carried_from` the engine a result was
 -- measured by when a release carried it to the next.
-CREATE TABLE IF NOT EXISTS orders (
+CREATE TABLE IF NOT EXISTS entity_compute_orders (
   identity           TEXT COLLATE "C" NOT NULL,
   ruler              TEXT COLLATE "C" NOT NULL,
   mode               TEXT COLLATE "C" NOT NULL,
@@ -257,7 +257,7 @@ CREATE TABLE IF NOT EXISTS orders (
   clients_nets       TEXT COLLATE "C" NOT NULL DEFAULT '',
   PRIMARY KEY (identity, ruler, mode)
 );
-CREATE INDEX IF NOT EXISTS orders_pick ON orders (state, engine, priority, slot);
+CREATE INDEX IF NOT EXISTS orders_pick ON entity_compute_orders (state, engine, priority, slot);
 
 -- SHORT SHARE LINKS: `/weapons/<weapon>/s/<id>` names a stored share code
 -- (worker/index.js §"SHORT SHARE LINKS"). `id` is a hash of (weapon, code,
@@ -265,7 +265,7 @@ CREATE INDEX IF NOT EXISTS orders_pick ON orders (state, engine, priority, slot)
 -- build is one row, and no client chooses an id. `at` is the day. `claim` is
 -- the sharer's measurement when they chose to include one (JSON, validated by
 -- `shareClaim`); NULL otherwise.
-CREATE TABLE IF NOT EXISTS shares (
+CREATE TABLE IF NOT EXISTS entity_short_shares (
   id     TEXT COLLATE "C" PRIMARY KEY,
   weapon TEXT COLLATE "C" NOT NULL,
   code   TEXT COLLATE "C" NOT NULL,
@@ -279,7 +279,7 @@ CREATE TABLE IF NOT EXISTS shares (
 -- `visitors` (subject `all`, `result`, `returning`) or `visitors.country`;
 -- `market` is `china`, `overseas` or `unknown`; `sampled` is 1 when the dataset sampled
 -- that day, so `visitors` is a floor.
-CREATE TABLE IF NOT EXISTS usage_days (
+CREATE TABLE IF NOT EXISTS record_daily_usage_summaries (
   day      TEXT COLLATE "C" NOT NULL,
   event    TEXT COLLATE "C" NOT NULL,
   subject  TEXT COLLATE "C" NOT NULL,
@@ -289,7 +289,7 @@ CREATE TABLE IF NOT EXISTS usage_days (
   sampled  BIGINT NOT NULL,
   PRIMARY KEY (day, event, subject, market)
 );
-CREATE INDEX IF NOT EXISTS usage_days_by_event ON usage_days (event, subject, day);
+CREATE INDEX IF NOT EXISTS usage_days_by_event ON record_daily_usage_summaries (event, subject, day);
 
 -- EVERY USAGE POINT, UNSAMPLED (worker/usage_log.js, docs/ANALYTICS.md §"The
 -- log"): the source of every visitor count. `visitor` is the SHA-256 of the
@@ -297,7 +297,7 @@ CREATE INDEX IF NOT EXISTS usage_days_by_event ON usage_days (event, subject, da
 -- holds it — which is how `/api/e/forget` deletes them. Kept 90 days, then only
 -- `usage_days` remains. No pipeline role is granted it: the public backup
 -- cannot read it.
-CREATE TABLE IF NOT EXISTS usage_points (
+CREATE TABLE IF NOT EXISTS record_usage_events (
   at      TEXT COLLATE "C" NOT NULL,
   day     TEXT COLLATE "C" NOT NULL,
   visitor TEXT COLLATE "C" NOT NULL,
@@ -310,8 +310,8 @@ CREATE TABLE IF NOT EXISTS usage_points (
   country TEXT COLLATE "C" NOT NULL,
   n       DOUBLE PRECISION NOT NULL
 );
-CREATE INDEX IF NOT EXISTS usage_points_by_day ON usage_points (day);
-CREATE INDEX IF NOT EXISTS usage_points_by_visitor ON usage_points (visitor);
+CREATE INDEX IF NOT EXISTS usage_points_by_day ON record_usage_events (day);
+CREATE INDEX IF NOT EXISTS usage_points_by_visitor ON record_usage_events (visitor);
 
 -- WHAT A CHAT SENT THE BOT, until the bot server has answered it (worker/qq.js,
 -- docs/AGENT.md §"The QQ bot"). `id` is the platform's own message id, so a
@@ -319,7 +319,7 @@ CREATE INDEX IF NOT EXISTS usage_points_by_visitor ON usage_points (visitor);
 -- the platform sent it. The server claims a row, answers from its whitelisted
 -- address and marks it done; a row is deleted a day after it arrived, answered
 -- or not.
-CREATE TABLE IF NOT EXISTS bot_inbox (
+CREATE TABLE IF NOT EXISTS record_bot_messages (
   id         TEXT COLLATE "C" PRIMARY KEY,
   channel    TEXT COLLATE "C" NOT NULL,
   kind       TEXT COLLATE "C" NOT NULL,
@@ -333,7 +333,7 @@ CREATE TABLE IF NOT EXISTS bot_inbox (
 -- row per appraisal a chat's bot opened; `chat` is that channel's own record of
 -- where to answer and nothing else reads it. `winner` is the first handed-back
 -- build the bot accepted. Both tables are emptied a day after a row arrived.
-CREATE TABLE IF NOT EXISTS appraisals (
+CREATE TABLE IF NOT EXISTS entity_appraisal_requests (
   code         TEXT COLLATE "C" PRIMARY KEY,
   channel      TEXT COLLATE "C" NOT NULL,
   chat         TEXT COLLATE "C" NOT NULL,
@@ -359,10 +359,10 @@ CREATE TABLE IF NOT EXISTS appraisals (
   started_at   TEXT COLLATE "C",
   started_told TEXT COLLATE "C"
 );
-CREATE INDEX IF NOT EXISTS appraisals_by_asker ON appraisals (channel, asker, at);
-CREATE INDEX IF NOT EXISTS appraisals_by_channel ON appraisals (channel, at);
+CREATE INDEX IF NOT EXISTS appraisals_by_asker ON entity_appraisal_requests (channel, asker, at);
+CREATE INDEX IF NOT EXISTS appraisals_by_channel ON entity_appraisal_requests (channel, at);
 
-CREATE TABLE IF NOT EXISTS appraisal_results (
+CREATE TABLE IF NOT EXISTS record_appraisal_candidates (
   id         BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   code       TEXT COLLATE "C" NOT NULL,
   build      TEXT COLLATE "C" NOT NULL,
@@ -379,13 +379,13 @@ CREATE TABLE IF NOT EXISTS appraisal_results (
   work       BIGINT,
   key        TEXT COLLATE "C",
   net        TEXT COLLATE "C" NOT NULL DEFAULT '',
-  -- THE ENGINE IT RAN ON, which the cap on answers counts by.
+  -- THE ENGINE IT RAN ON, which the cap on record_candidate_answers counts by.
   engine     TEXT COLLATE "C"
 );
-CREATE INDEX IF NOT EXISTS appraisal_results_by_code ON appraisal_results (code);
+CREATE INDEX IF NOT EXISTS appraisal_results_by_code ON record_appraisal_candidates (code);
 -- ONE COMPUTER'S RESULTS IN TIME ORDER (worker/appraise.js `/api/appraise/mine`).
-CREATE INDEX IF NOT EXISTS appraisal_results_by_verifier ON appraisal_results (verifier, at);
-ALTER TABLE appraisal_results ADD COLUMN IF NOT EXISTS source TEXT COLLATE "C";
+CREATE INDEX IF NOT EXISTS appraisal_results_by_verifier ON record_appraisal_candidates (verifier, at);
+ALTER TABLE record_appraisal_candidates ADD COLUMN IF NOT EXISTS source TEXT COLLATE "C";
 
 -- EVERY VOID FISSURE THE GAME OPENS, from the world state the bot server relays
 -- each minute (worker/world.js `fissureLog`). `id` is DE's own, so the minutes
@@ -393,7 +393,7 @@ ALTER TABLE appraisal_results ADD COLUMN IF NOT EXISTS source TEXT COLLATE "C";
 -- `mission` is NULL for a Void Storm. Which combinations a reminder may hold,
 -- and how often each comes, is read from here; a node's planet is not stored,
 -- it is the node's own (worker/world_names.json).
-CREATE TABLE IF NOT EXISTS fissures (
+CREATE TABLE IF NOT EXISTS record_world_fissures (
   id         TEXT COLLATE "C" PRIMARY KEY,
   list       TEXT COLLATE "C" NOT NULL,
   tier       TEXT COLLATE "C" NOT NULL,
@@ -405,37 +405,37 @@ CREATE TABLE IF NOT EXISTS fissures (
 
 -- THE OWNER'S DONATION LEDGER, kept by hand and read by nothing in this
 -- repository.
-CREATE TABLE IF NOT EXISTS donors (
+CREATE TABLE IF NOT EXISTS entity_donors (
   id           BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   display_name TEXT COLLATE "C",
   note         TEXT COLLATE "C"
 );
-CREATE TABLE IF NOT EXISTS rates (
+CREATE TABLE IF NOT EXISTS state_exchange_rate_quotes (
   currency     TEXT COLLATE "C" PRIMARY KEY,
   cny_per_unit DOUBLE PRECISION NOT NULL,
   updated_at   TEXT COLLATE "C" NOT NULL,
   source       TEXT COLLATE "C" NOT NULL
 );
 -- CNY IS THE UNIT THE BOOKS ARE IN, so its rate is 1 and stays 1.
-INSERT INTO rates (currency, cny_per_unit, updated_at, source)
+INSERT INTO state_exchange_rate_quotes (currency, cny_per_unit, updated_at, source)
 VALUES ('CNY', 1.0, '2026-09-09T16:00:00.000Z', 'the accounting currency, by definition')
 ON CONFLICT (currency) DO NOTHING;
-CREATE TABLE IF NOT EXISTS donations (
+CREATE TABLE IF NOT EXISTS record_donation_payments (
   id           BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
   paid_at      TEXT COLLATE "C" NOT NULL CHECK (paid_at LIKE '____-__-__T__:__:__.___Z'),
   channel      TEXT COLLATE "C" NOT NULL,
   account      TEXT COLLATE "C" NOT NULL,
-  donor_id     BIGINT NOT NULL REFERENCES donors (id),
-  currency     TEXT COLLATE "C" NOT NULL REFERENCES rates (currency),
+  donor_id     BIGINT NOT NULL REFERENCES entity_donors (id),
+  currency     TEXT COLLATE "C" NOT NULL REFERENCES state_exchange_rate_quotes (currency),
   gross_amount DOUBLE PRECISION,
   net_amount   DOUBLE PRECISION NOT NULL,
   UNIQUE (channel, paid_at, account)
 );
-CREATE INDEX IF NOT EXISTS donations_donor_id ON donations (donor_id);
-CREATE INDEX IF NOT EXISTS donations_paid_at ON donations (paid_at);
+CREATE INDEX IF NOT EXISTS donations_donor_id ON record_donation_payments (donor_id);
+CREATE INDEX IF NOT EXISTS donations_paid_at ON record_donation_payments (paid_at);
 
 -- One independently verified review per published row; the submitted score is never input.
-CREATE TABLE IF NOT EXISTS board_reviews (
+CREATE TABLE IF NOT EXISTS entity_measurement_reviews (
   ref TEXT COLLATE "C" NOT NULL,
   id TEXT COLLATE "C" PRIMARY KEY,
   round_at TEXT COLLATE "C" NOT NULL,
@@ -456,28 +456,28 @@ CREATE TABLE IF NOT EXISTS board_reviews (
   created_at TEXT COLLATE "C" NOT NULL,
   completed_at TEXT COLLATE "C"
 );
-CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_round ON board_reviews (ref, engine, round_at);
-CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_pending ON board_reviews (ref, engine) WHERE state = 'waiting';
-CREATE INDEX IF NOT EXISTS board_reviews_waiting ON board_reviews (engine, state, created_at);
-CREATE INDEX IF NOT EXISTS board_reviews_question ON board_reviews (question);
-ALTER TABLE scores ADD COLUMN IF NOT EXISTS review_id TEXT COLLATE "C";
-ALTER TABLE board_reviews ADD COLUMN IF NOT EXISTS invalidated_at TEXT COLLATE "C";
-ALTER TABLE board_reviews ADD COLUMN IF NOT EXISTS invalidation_reason TEXT COLLATE "C";
-CREATE INDEX IF NOT EXISTS scores_review ON scores (review_id) WHERE review_id IS NOT NULL;
-CREATE INDEX IF NOT EXISTS board_reviews_invalidated ON board_reviews (invalidated_at) WHERE invalidated_at IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_round ON entity_measurement_reviews (ref, engine, round_at);
+CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_pending ON entity_measurement_reviews (ref, engine) WHERE state = 'waiting';
+CREATE INDEX IF NOT EXISTS board_reviews_waiting ON entity_measurement_reviews (engine, state, created_at);
+CREATE INDEX IF NOT EXISTS board_reviews_question ON entity_measurement_reviews (question);
+ALTER TABLE state_board_measurement_selection ADD COLUMN IF NOT EXISTS review_id TEXT COLLATE "C";
+ALTER TABLE entity_measurement_reviews ADD COLUMN IF NOT EXISTS invalidated_at TEXT COLLATE "C";
+ALTER TABLE entity_measurement_reviews ADD COLUMN IF NOT EXISTS invalidation_reason TEXT COLLATE "C";
+CREATE INDEX IF NOT EXISTS scores_review ON state_board_measurement_selection (review_id) WHERE review_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS board_reviews_invalidated ON entity_measurement_reviews (invalidated_at) WHERE invalidated_at IS NOT NULL;
 
 -- A retired measurement remains auditable and travels as a removal event.
 CREATE OR REPLACE VIEW board_facts AS
 SELECT s.identity,s.ruler,s.mode,s.measured_by,s.score,s.metric,s.cost_seconds,s.started_at,s.finished_at,s.review_id,
   CASE WHEN r.invalidated_at IS NOT NULL AND r.state <> 'succeeded' THEN r.invalidated_at END AS retired_at
-FROM scores s LEFT JOIN board_reviews r ON r.id = s.review_id;
+FROM state_board_measurement_selection s LEFT JOIN entity_measurement_reviews r ON r.id = s.review_id;
 
 -- Older daemons and native receipts cannot revive an explicitly retired row.
 CREATE OR REPLACE FUNCTION protect_retired_board_score() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE held board_reviews%ROWTYPE; replacement board_reviews%ROWTYPE;
+DECLARE held entity_measurement_reviews%ROWTYPE; replacement entity_measurement_reviews%ROWTYPE;
 BEGIN
   IF OLD.review_id IS NULL THEN RETURN NEW; END IF;
-  SELECT * INTO held FROM board_reviews WHERE id=OLD.review_id;
+  SELECT * INTO held FROM entity_measurement_reviews WHERE id=OLD.review_id;
   IF held.invalidated_at IS NULL OR held.state='succeeded' THEN RETURN NEW; END IF;
   IF NEW.review_id=held.id AND NEW.measured_by='verified:'||held.engine
      AND NEW.started_at=NEW.finished_at AND NEW.finished_at>held.invalidated_at
@@ -485,14 +485,14 @@ BEGIN
   THEN RETURN NEW; END IF;
   IF NEW.score=OLD.score AND NEW.measured_by=OLD.measured_by AND NEW.finished_at=OLD.finished_at
      AND NEW.started_at=OLD.started_at AND NEW.review_id IS DISTINCT FROM OLD.review_id THEN
-    SELECT * INTO replacement FROM board_reviews WHERE id=NEW.review_id;
+    SELECT * INTO replacement FROM entity_measurement_reviews WHERE id=NEW.review_id;
     IF replacement.state='waiting' AND replacement.invalidated_at IS NOT NULL AND replacement.baseline_review_id=held.id
     THEN RETURN NEW; END IF;
   END IF;
   RETURN OLD;
 END $$;
-DROP TRIGGER IF EXISTS protect_retired_score ON scores;
-CREATE TRIGGER protect_retired_score BEFORE UPDATE ON scores FOR EACH ROW EXECUTE FUNCTION protect_retired_board_score();
+DROP TRIGGER IF EXISTS protect_retired_score ON state_board_measurement_selection;
+CREATE TRIGGER protect_retired_score BEFORE UPDATE ON state_board_measurement_selection FOR EACH ROW EXECUTE FUNCTION protect_retired_board_score();
 
 -- HOT TABLES RECYCLE SMALLER BATCHES: a fixed floor bounds the work on small
 -- tables, while fractional thresholds keep dead versions and newly inserted
@@ -500,7 +500,7 @@ CREATE TRIGGER protect_retired_score BEFORE UPDATE ON scores FOR EACH ROW EXECUT
 DO $$
 DECLARE relation text;
 BEGIN
-  FOREACH relation IN ARRAY ARRAY['questions', 'answers', 'demands', 'scores', 'queue'] LOOP
+  FOREACH relation IN ARRAY ARRAY['state_compute_scheduling', 'record_candidate_answers', 'relation_task_consumers', 'state_board_measurement_selection', 'state_board_pending_work'] LOOP
     EXECUTE format('ALTER TABLE %I SET (
       autovacuum_vacuum_scale_factor = 0.02,
       autovacuum_vacuum_threshold = 50000,

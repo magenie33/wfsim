@@ -7,7 +7,7 @@ export function createUsage() {
   /// fight, over its weight (docs/BOARD.md §"Fair share between producers"); a
   /// pack is charged in the statement that leases it (`nextPack`).
   async function charge(db, q) {
-    await db.prepare("UPDATE producer_use SET used = used + answer_ms / weight WHERE producer = ?").bind(q.producer || "").run();
+    await db.prepare("UPDATE state_producer_compute_usage SET used = used + answer_ms / weight WHERE producer = ?").bind(q.producer || "").run();
   }
 
 
@@ -31,9 +31,9 @@ export function createUsage() {
   /// work has used, so it comes back level and never with a share banked while
   /// idle. Run by the watchdog's cron.
   async function liftIdle(env) {
-    await env.LIBRARY.prepare(`UPDATE producer_use u SET used = m.v
-        FROM (SELECT min(a.used) AS v FROM producer_use a WHERE EXISTS (SELECT 1 FROM questions q WHERE q.state = 'open' AND q.producer = a.producer)) m
-        WHERE m.v IS NOT NULL AND u.used < m.v AND NOT EXISTS (SELECT 1 FROM questions q WHERE q.state = 'open' AND q.producer = u.producer)`).run();
+    await env.LIBRARY.prepare(`UPDATE state_producer_compute_usage u SET used = m.v
+        FROM (SELECT min(a.used) AS v FROM state_producer_compute_usage a WHERE EXISTS (SELECT 1 FROM state_compute_work q WHERE q.state = 'open' AND q.producer = a.producer)) m
+        WHERE m.v IS NOT NULL AND u.used < m.v AND NOT EXISTS (SELECT 1 FROM state_compute_work q WHERE q.state = 'open' AND q.producer = u.producer)`).run();
   }
 
 

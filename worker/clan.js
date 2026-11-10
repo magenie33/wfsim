@@ -21,7 +21,7 @@ export async function clanRoute(request, env, path) {
   try { b = JSON.parse((await request.text()) || "{}"); } catch (_) { return no("not_json"); }
   const name = clanName(b.name);
   if (!name || name.length > CLAN_NAME_MAX) return no("bad_ign");
-  const row = await env.ACCOUNTS.prepare("SELECT username FROM accounts WHERE id = ?1").bind(account).first();
+  const row = await env.ACCOUNTS.prepare("SELECT username FROM entity_accounts WHERE id = ?1").bind(account).first();
   const result = await requestClanInvite(env, { name, identity: `WFSim user ${row ? row.username : "?"}`,
     lang: b.lang, replaces: b.replaces });
   return result.ok ? json({ ok: true }) : no(result.reason, 502);

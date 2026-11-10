@@ -252,9 +252,9 @@ async function work(request, env) {
     // and a refusal — a cool-down (scripts/live_orders.mjs `ban`) — lifted once over.
     seenOf(db, id, at, c),
     asked,
-    ahead ? db.prepare("SELECT count(*) AS questions, count(DISTINCT lease) AS packs FROM questions WHERE leased_to = ? AND lease_until > ?").bind(id, at)
+    ahead ? db.prepare("SELECT count(*) AS questions, count(DISTINCT lease) AS packs FROM state_compute_work WHERE leased_to = ? AND lease_until > ?").bind(id, at)
       : f.releaseAllOf(env, id, now),
-    db.prepare("SELECT banned, refused_until, last_at FROM verifiers WHERE id = ?").bind(id),
+    db.prepare("SELECT banned, refused_until, last_at FROM entity_compute_devices WHERE id = ?").bind(id),
     // OPEN IS COUNTED ONLY AS FAR AS IT CAN MATTER: `asking` times `packRows`,
     // all that `packSize` and `short` compare it to.
     db.prepare("SELECT * FROM factory_open(?1::text, ?2::bigint, ?3::text, ?4::bigint)")
@@ -407,7 +407,7 @@ async function verify(request, env) {
   if (!LEASE_ID.test(b.lease || "") || !VERIFIER_ID.test(b.verifier || "")) return json({ ok: false, error: "bad request" }, 400);
   const refused = unrecognised(b.verifier);
   if (refused) return refused;
-  const q = await env.LIBRARY.prepare("SELECT id FROM questions WHERE lease = ? AND leased_to = ? LIMIT 1").bind(b.lease, b.verifier).first();
+  const q = await env.LIBRARY.prepare("SELECT id FROM state_compute_work WHERE lease = ? AND leased_to = ? LIMIT 1").bind(b.lease, b.verifier).first();
   if (!q) return json({ ok: true });
   const { lease, verifier, engine, ...a } = b;
   return answers(new Request(request.url, { method: "POST", headers: request.headers,
@@ -469,10 +469,10 @@ async function mine(request, env) {
   const refs = keys.map((k) => `${k.identity}|${k.ruler}|${k.mode}`);
   const db = env.LIBRARY;
   const { results } = await db.prepare(`SELECT k.value AS ref, q.state, q.fact_at,
-            (SELECT max(credited) FROM answers a WHERE a.question = q.id AND a.device = ?1::text AND a.void = 0) AS credited,
-            (SELECT count(*) FROM answers a WHERE a.question = q.id AND a.device = ?1::text AND a.void = 0) AS mine
+            (SELECT max(credited) FROM record_candidate_answers a WHERE a.question = q.id AND a.device = ?1::text AND a.void = 0) AS credited,
+            (SELECT count(*) FROM record_candidate_answers a WHERE a.question = q.id AND a.device = ?1::text AND a.void = 0) AS mine
        FROM jsonb_array_elements_text((?2::text)::jsonb) k
-       JOIN questions q ON q.id = (SELECT d.question FROM demands d WHERE d.ref = k.value AND (d.producer IN ${BOARD_KINDS_SQL} OR d.producer = 'board_review')
+       JOIN state_compute_work q ON q.id = (SELECT d.question FROM relation_task_consumers d WHERE d.ref = k.value AND (d.producer IN ${BOARD_KINDS_SQL} OR d.producer = 'board_review')
                                      ORDER BY d.asked_at DESC LIMIT 1)`)
     .bind(b.verifier, JSON.stringify(refs)).all();
   const byRef = new Map(results.map((r) => [r.ref, r]));

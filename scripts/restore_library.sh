@@ -42,7 +42,7 @@ to_batches() {
     | . as $i
     | $all[$i : $i + 9] as $chunk
     | {
-        sql: ("INSERT INTO builds (id, at, record) VALUES "
+        sql: ("INSERT INTO entity_weapon_builds (id, at, record) VALUES "
               + ([$chunk[] | "(?,?,?)"] | join(","))
               + " ON CONFLICT (id) DO UPDATE SET at = excluded.at, record = excluded.record"),
         params: [$chunk[] | .k, (.v.at // ""), (.v | tojson)]
@@ -128,7 +128,7 @@ STUB
   else
     say FAIL "a key reached the statement: $(head -c 160 /tmp/restore-sent.json)"
   fi
-  if jq -e '.sql | startswith("INSERT INTO builds (id, at, record)") and contains("DO UPDATE")' < /tmp/restore-sent.json > /dev/null; then
+  if jq -e '.sql | startswith("INSERT INTO entity_weapon_builds (id, at, record)") and contains("DO UPDATE")' < /tmp/restore-sent.json > /dev/null; then
     say ok "...into the library table, replacing what is there"
   else
     say FAIL "$(jq -r .sql < /tmp/restore-sent.json | head -c 120)"

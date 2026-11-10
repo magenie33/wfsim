@@ -46,6 +46,15 @@ Acceptance freezes the request and its origin before awaiting storage. IndexedDB
 and pending commands/events. Acceptance is acknowledged after its transaction
 commits. Progress is an in-memory observation broadcast between tabs.
 
+Its object stores separate individually keyed tasks (`entity_calculation_tasks`),
+reports (`entity_calculation_reports`), completion records
+(`record_task_completions`) and pending commands (`state_task_commands`).
+`state_task_queue` retains ordering by identity, including completion and command
+order. Build upload payloads, receipts, stream cursors and authorizations have
+separate stores. Upgrades and writes spanning those stores are atomic; a failed
+upgrade retains the original database. Removing task history keeps saved reports
+and pending delivery data.
+
 Optimization and appraisal show their current phase, completed build evaluations
 and fights, batch counts and elapsed time on the task center and their pages.
 Completed descents count only known starts and passes; a final verification

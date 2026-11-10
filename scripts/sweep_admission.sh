@@ -16,7 +16,7 @@ INTAKE="${WFSIM_INTAKE:-./target/release/wfsim-intake}"
 HERE="$(dirname "${BASH_SOURCE[0]}")"
 
 . "$HERE/db.sh"
-db_query '{"sql":"SELECT q.build_id, q.ruler, q.mode, b.record FROM queue q JOIN builds b ON b.id = q.build_id","params":[]}' \
+db_query '{"sql":"SELECT q.build_id, q.ruler, q.mode, b.record FROM state_board_pending_work q JOIN entity_weapon_builds b ON b.id = q.build_id","params":[]}' \
   || { echo "::error::sweep: the queue read was refused [HTTP $DB_CODE]" >&2; exit 1; }
 # A RECORD IS STORED AS TEXT, and the sweep reads it as the object it is.
 jq -c '.result[0].results[] | .record = (.record | if type == "string" then fromjson else . end)' < "$DB_OUT" \

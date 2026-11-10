@@ -46,7 +46,7 @@ const database = (fail = false) => {
   const tables = new Map();
   const calls = [];
   const rows = new Map();
-  tables.set("inbox", rows);
+  tables.set("record_build_submissions", rows);
   return {
     rows,
     tables,
@@ -63,7 +63,7 @@ const database = (fail = false) => {
           if (into) {
             if (!tables.has(into[1])) tables.set(into[1], new Map());
             const t = tables.get(into[1]);
-            if (into[1] === "inbox") {
+            if (into[1] === "record_build_submissions") {
               const width = sql.includes("family_source") ? 5 : 4;
               for (let at = 0; at < args.length; at += width) t.set(args[at], JSON.parse(args[at + 2]));
             } else t.set(args[0], args);
@@ -193,7 +193,7 @@ console.log("the board's submission endpoint\n");
     keys.every((k) => /^[0-9a-f-]{36}$/i.test(k)), keys.join("  |  "));
   const sql = kv.calls.map((c) => c.sql).join(" ");
   check("...and nothing is written to `builds`",
-    !/INTO builds/.test(sql) && /INTO inbox/.test(sql), sql);
+    !/INTO entity_weapon_builds/.test(sql) && /INTO record_build_submissions/.test(sql), sql);
 }
 
 // ---- 3. AN ORDINARY WEAPON IS UNAFFECTED ----------------------------------
@@ -341,7 +341,7 @@ console.log("the board's submission endpoint\n");
   check("batch submissions carry no score or caller-supplied provenance", stored.every(record =>
     !["score", "initiator", "id", "family_source"].some(key => key in record))
     && db.calls[0].args.filter((_, index) => index % 4 === 3).every(value => value === "anonymous"), JSON.stringify(db.calls));
-  check("the batch writes only the ordinary inbox", db.calls.every(call => /INSERT INTO inbox /.test(call.sql)
+  check("the batch writes only the ordinary inbox", db.calls.every(call => /INSERT INTO record_build_submissions /.test(call.sql)
     && !/INTO (builds|scores)/.test(call.sql)), JSON.stringify(db.calls));
 }
 {
@@ -419,7 +419,7 @@ function harvestFixture(producer = "user_calculation") {
   const harvest = { receipt: granted.receipt, question: granted.question, engine: granted.engine, initiator: "system" };
   const first = await fixture.post({ builds: [{ ...PAYLOAD, score: 999999 }], harvest, initiator: "system" });
   const second = await fixture.post({ builds: [PAYLOAD], harvest });
-  const writes = fixture.db.calls.filter(call => /INSERT INTO inbox/.test(call.sql));
+  const writes = fixture.db.calls.filter(call => /INSERT INTO record_build_submissions/.test(call.sql));
   check("a completed lease's outbox still delivers and retries", first.ok && second.ok && fixture.db.rows.size === 2, `${first.status}/${second.status}`);
   check("the receipt retains the server's original asker without crediting the executor", writes.length === 2
     && writes.every(call => call.args[3] === fixture.db.search.initiator && !/INTO (scores|answers|verifiers)/.test(call.sql))
@@ -452,7 +452,7 @@ function harvestFixture(producer = "user_calculation") {
     const response = await fixture.post({ builds: [], harvest: fixture.source });
     const grant = await response.json();
     const uploaded = await fixture.post({ builds: [PAYLOAD], harvest: { receipt: grant.receipt } });
-    const write = fixture.db.calls.find(call => /INSERT INTO inbox/.test(call.sql));
+    const write = fixture.db.calls.find(call => /INSERT INTO record_build_submissions/.test(call.sql));
     check("trusted optimizer leases do not duplicate the engine's strategy rules", response.ok && grant.receipt && uploaded.ok
       && write?.args[3] === fixture.db.search.initiator, `${strategy}: ${response.status}/${uploaded.status}`);
   }
@@ -480,7 +480,7 @@ function harvestFixture(producer = "user_calculation") {
   const family = harvestFixture("family_build");
   const grant = await (await family.post({ builds: [], harvest: family.source })).json();
   const response = await family.post({ builds: [PAYLOAD, PAYLOAD], harvest: { receipt: grant.receipt } });
-  const write = family.db.calls.find(call => /INSERT INTO inbox/.test(call.sql));
+  const write = family.db.calls.find(call => /INSERT INTO record_build_submissions/.test(call.sql));
   check("family-search candidates retain trusted derivation provenance", response.ok && family.db.rows.size === 2
     && /family_source/.test(write?.sql || "") && write.args[3] === "system" && write.args[4] === family.db.search.ref
     && write.args[8] === "system" && write.args[9] === family.db.search.ref, JSON.stringify(write));
@@ -492,7 +492,7 @@ function harvestFixture(producer = "user_calculation") {
   const expectedQuestion = await questionId("optimize", JSON.parse(fixture.db.appraisal.request));
   const uploaded = await fixture.post({ builds: [PAYLOAD], harvest: { receipt: grant.receipt, question: expectedQuestion } });
   const expectedInitiator = await initiatorCode(fixture.env, "bot", "qq:original-chat-asker");
-  const write = fixture.db.calls.find(call => /INSERT INTO inbox/.test(call.sql));
+  const write = fixture.db.calls.find(call => /INSERT INTO record_build_submissions/.test(call.sql));
   check("an opened appraisal keeps its existing code-based build authority", response.ok && grant.question === expectedQuestion
     && uploaded.ok && write?.args[3] === expectedInitiator, `${response.status}/${uploaded.status}: ${JSON.stringify(write)}`);
   const alternate = harvestFixture();
@@ -512,10 +512,10 @@ function harvestFixture(producer = "user_calculation") {
     const claims = JSON.parse(Buffer.from(continuedGrant.receipt.split(".")[0], "base64url").toString());
     const delivered = await older.post({ builds: [PAYLOAD], harvest: { receipt: continuedGrant.receipt,
       question: olderQuestion, engine: "check-engine" } });
-    const stored = older.db.calls.find(call => /INSERT INTO inbox/.test(call.sql));
+    const stored = older.db.calls.find(call => /INSERT INTO record_build_submissions/.test(call.sql));
     check("a continued appraisal retains its frozen question and original asker without rewriting it", delivered.ok
       && claims.engine === "check-engine" && claims.question === olderQuestion && stored?.args[3] === expectedInitiator
-      && JSON.stringify(older.db.appraisal) === frozenBefore && !older.db.calls.some(call => /UPDATE appraisals/.test(call.sql)), JSON.stringify(claims));
+      && JSON.stringify(older.db.appraisal) === frozenBefore && !older.db.calls.some(call => /UPDATE entity_appraisal_requests/.test(call.sql)), JSON.stringify(claims));
   }
   const staleEngine = await older.post({ builds: [], harvest: { code: "TEST7", engine: "older-engine" } });
   check("an appraisal still requires the currently served execution engine", staleEngine.status === 409

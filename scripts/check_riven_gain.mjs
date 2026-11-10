@@ -47,25 +47,25 @@ const open = async (asker, channel = "qq") => (await appraise("POST", "/api/appr
 // EACH APPRAISAL ITS OWN QUESTION: one frozen request asked twice is ONE
 // question, which is the dedup this check holds at its end.
 const frozen = (tag, engine = "e1") => ({ engine, request: { weapon: "torid", strategy: "quick", tag }, context: { weapon: "torid", rivens: {} } });
-const credited = async (v) => (await L.get("SELECT work FROM verifiers WHERE id = ?", v) || {}).work || 0;
-const today = async (v) => (await L.get("SELECT SUM(work) AS w FROM verifier_hours WHERE verifier = ?", v) || {}).w || 0;
-const questionOf = async (code) => (await L.get("SELECT question FROM demands WHERE ref = ?", code)).question;
+const credited = async (v) => (await L.get("SELECT work FROM entity_compute_devices WHERE id = ?", v) || {}).work || 0;
+const today = async (v) => (await L.get("SELECT SUM(work) AS w FROM record_hourly_compute_totals WHERE verifier = ?", v) || {}).w || 0;
+const questionOf = async (code) => (await L.get("SELECT question FROM relation_task_consumers WHERE ref = ?", code)).question;
 const freeLeases = async () => {
-  await L.run("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL");
+  await L.run("UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL");
 };
 /// A question asked `ms` ago: its age (the cores it needs) and its deadline move back.
 const age = async (code, ms) => {
   const t = (x) => new Date(Date.parse(x) - ms).toISOString();
-  const q = await L.get("SELECT opened_at, due_at FROM questions WHERE id = ?", await questionOf(code));
-  await L.run("UPDATE questions SET opened_at = ?, due_at = ? WHERE id = ?", t(q.opened_at), t(q.due_at), await questionOf(code));
-  await L.run("UPDATE demands SET due_at = ? WHERE ref = ?", t(q.due_at), code);
+  const q = await L.get("SELECT opened_at, due_at FROM state_compute_work WHERE id = ?", await questionOf(code));
+  await L.run("UPDATE state_compute_work SET opened_at = ?, due_at = ? WHERE id = ?", t(q.opened_at), t(q.due_at), await questionOf(code));
+  await L.run("UPDATE relation_task_consumers SET due_at = ? WHERE ref = ?", t(q.due_at), code);
 };
 
 const A = "a".repeat(24), B = "b".repeat(24), C = "c".repeat(24), D = "d".repeat(24);
-for (const v of [A, B, C, D]) await L.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')", v);
+for (const v of [A, B, C, D]) await L.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-08')", v);
 // A and D are one person's computers; B and C are two others'.
-await ACCOUNTS.exec(`INSERT INTO accounts (id, created_at, username) VALUES ('ann', 'x', 'ann'), ('bob', 'x', 'bob');
-  INSERT INTO devices (verifier, account, claimed_at) VALUES ('${A}', 'ann', 'x'), ('${D}', 'ann', 'x'), ('${B}', 'bob', 'x');`);
+await ACCOUNTS.exec(`INSERT INTO entity_accounts (id, created_at, username) VALUES ('ann', 'x', 'ann'), ('bob', 'x', 'bob');
+  INSERT INTO relation_account_compute_devices (verifier, account, claimed_at) VALUES ('${A}', 'ann', 'x'), ('${D}', 'ann', 'x'), ('${B}', 'bob', 'x');`);
 
 console.log("asked, handed out, kept");
 const code = await open("asker1");
@@ -75,7 +75,7 @@ const stored = await appraise("POST", `/api/appraise/${code}/request`, frozen(1)
 const again = await appraise("POST", `/api/appraise/${code}/request`, frozen(9), bot);
 check("...once: a second freeze changes nothing", stored.body.stored === true && again.body.stored === false);
 check("...and freezing it is the ask: one question, one live demand",
-  (await L.get("SELECT count(*) AS n FROM demands WHERE ref = ? AND state = 'live' AND producer = 'chat'", code)).n === 1);
+  (await L.get("SELECT count(*) AS n FROM relation_task_consumers WHERE ref = ? AND state = 'live' AND producer = 'chat'", code)).n === 1);
 
 check("a computer on another engine is handed nothing", (await work(A, "e0")) === null);
 check("a computer offering few cores is not handed a fresh riven gain", (await work(A, "e1", 2) || {}).kind !== "riven_gain");
@@ -86,13 +86,13 @@ check("a computer offering many is handed it, frozen question and all",
   && canon(t1.context) === canon(frozen(1).context), JSON.stringify(t1));
 check("...and nobody else holds it meanwhile", (await work(B) || {}).kind !== "riven_gain");
 // STILL AT IT: the holder's word runs its lease on; anyone else's runs nothing.
-await L.run("UPDATE questions SET lease_until = ? WHERE lease = ?", new Date(Date.now() + 1000).toISOString(), t1.lease);
+await L.run("UPDATE state_compute_work SET lease_until = ? WHERE lease = ?", new Date(Date.now() + 1000).toISOString(), t1.lease);
 const kept = await appraise("POST", `/api/appraise/${code}/renew`, { lease: t1.lease, verifier: A });
-const until = (await L.get("SELECT lease_until FROM questions WHERE lease = ?", t1.lease)).lease_until;
+const until = (await L.get("SELECT lease_until FROM state_compute_work WHERE lease = ?", t1.lease)).lease_until;
 check("a computer still searching keeps its lease running on", kept.body.held === true && Date.parse(until) > Date.now() + 60_000);
 check("...and one that does not hold it is told so, and changes nothing",
   (await appraise("POST", `/api/appraise/${code}/renew`, { lease: t1.lease, verifier: B })).body.held === false
-  && (await L.get("SELECT lease_until FROM questions WHERE lease = ?", t1.lease)).lease_until === until);
+  && (await L.get("SELECT lease_until FROM state_compute_work WHERE lease = ?", t1.lease)).lease_until === until);
 const told1 = await appraise("POST", "/api/appraise/claim", { channel: "qq" }, bot);
 check("the chat may be told a computer took it, once", told1.body.started.some((x) => x.code === code));
 await appraise("POST", "/api/appraise/claim", { channel: "qq", started_told: [code] }, bot);
@@ -103,10 +103,10 @@ const BUILD = { weapon: "torid", mods: ["serration", "riven"], riven_pos: ["crit
 const answer = (t, v, extra = {}, ip = "") => appraise("POST", `/api/appraise/${t.code}/result`,
   { build: BUILD, lease: t.lease, verifier: v, engine: "e1", score: 12.5, work: 4e9, ...extra }, ip ? { "cf-connecting-ip": ip } : {});
 check("an answer under another computer's lease is not kept", (await answer(t1, B)).body.first === false
-  && !await L.get("SELECT 1 FROM appraisal_results WHERE verifier = ?", B));
+  && !await L.get("SELECT 1 FROM record_appraisal_candidates WHERE verifier = ?", B));
 const a1 = await answer(t1, A);
 check("an answer under its lease is kept, as a build the bot may judge", a1.body.ok && a1.body.first === true
-  && !!await L.get("SELECT 1 FROM appraisal_results WHERE verifier = ? AND code = ?", A, code));
+  && !!await L.get("SELECT 1 FROM record_appraisal_candidates WHERE verifier = ? AND code = ?", A, code));
 check("...and one answer credits nobody", await credited(A) === 0);
 const mine = async (v, tasks) => (await appraise("POST", "/api/appraise/mine", { verifier: v, tasks })).body.tasks || [];
 const stateOf = async (v, task) => ((await mine(v, [task]))[0] || {}).state;
@@ -121,20 +121,20 @@ check("unequal answers credit nobody", await credited(A) === 0 && await credited
 await freeLeases();
 const t3 = await work(C);
 check("...and a third computer is asked", t3 && t3.kind === "riven_gain", JSON.stringify(t3));
-const inboxBefore = (await L.get("SELECT COUNT(*) AS n FROM inbox")).n;
+const inboxBefore = (await L.get("SELECT COUNT(*) AS n FROM record_build_submissions")).n;
 await answer(t3, C);
 check("two owners' equal answers credit both — the work, and the hour — and not the one that differed",
   await credited(A) === 4e9 && await credited(C) === 4e9 && await credited(B) === 0 && await today(A) === 4e9 && await today(C) === 4e9,
   `${await credited(A)} ${await credited(B)} ${await credited(C)}`);
 check("...the appraisal is agreed and its build goes to the board's door, as a reader's submission",
-  !!(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", code)).agreed_at
-  && (await L.get("SELECT COUNT(*) AS n FROM inbox")).n === inboxBefore + 1);
+  !!(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = ?", code)).agreed_at
+  && (await L.get("SELECT COUNT(*) AS n FROM record_build_submissions")).n === inboxBefore + 1);
 check("...as its chat's asker, the bot code its demand carries",
-  (await L.get("SELECT count(*) AS n FROM inbox WHERE initiator LIKE 'bot:%'")).n === 1 && (await L.get("SELECT count(*) AS n FROM inbox WHERE initiator IS NULL")).n === 0);
+  (await L.get("SELECT count(*) AS n FROM record_build_submissions WHERE initiator LIKE 'bot:%'")).n === 1 && (await L.get("SELECT count(*) AS n FROM record_build_submissions WHERE initiator IS NULL")).n === 0);
 check("...after which it is handed out no more", (await work(D) || {}).kind !== "riven_gain");
 check("a browser's own riven gain says confirmed once its answer is credited, and gone when it was not",
   await stateOf(A, { code, at: 1 }) === "confirmed" && await stateOf(C, { code, at: 1 }) === "confirmed" && await stateOf(B, { code, at: 1 }) === "gone");
-const answeredAt = Date.parse((await L.get("SELECT at FROM appraisal_results WHERE verifier = ?", C)).at);
+const answeredAt = Date.parse((await L.get("SELECT at FROM record_appraisal_candidates WHERE verifier = ?", C)).at);
 const legacy = await mine(C, [{ weapon: "torid", at: answeredAt + 3000 }]);
 check("...a task stored without its code is matched to its answer by weapon and time",
   legacy.length === 1 && legacy[0].code === code && legacy[0].state === "confirmed", JSON.stringify(legacy));
@@ -154,7 +154,7 @@ await freeLeases();
 await age(late, 3 * 60_000);
 check("...but past them, any computer takes it", (await work(D, "e1", 1) || {}).code === late);
 await freeLeases();
-await L.run("UPDATE questions SET state = 'withdrawn'");
+await L.run("UPDATE state_compute_work SET state = 'withdrawn'");
 
 // A QUESTION FROZEN BEFORE A RELEASE is still served after it: three answers of
 // the old engine that never agreed do not shut it.
@@ -162,13 +162,13 @@ const older = await open("asker3");
 await appraise("POST", `/api/appraise/${older}/request`, frozen(3, "e0"), bot);
 await age(older, 3 * 60_000);
 for (const [v, k] of [["x1", "a"], ["x2", "b"], ["x3", "c"]]) {
-  await L.run(`INSERT INTO answers (question, engine, device, owner, canon, result, work, at) VALUES (?, 'e0', ?, ?, ?, '{}', 1, ?)`,
+  await L.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, canon, result, work, at) VALUES (?, 'e0', ?, ?, ?, '{}', 1, ?)`,
     await questionOf(older), v.repeat(8), v, k, new Date().toISOString());
 }
 check("a question frozen on an older engine is still handed out after a release, its old answers not counted against it",
   (await work(D, "e1", 8) || {}).code === older);
 await freeLeases();
-await L.run("UPDATE questions SET state = 'withdrawn'");
+await L.run("UPDATE state_compute_work SET state = 'withdrawn'");
 
 // EARLIEST DEADLINE FIRST, beside the board's rows: a chat's two minutes, a new
 // build's hour, a survey's day, a rescore's week.
@@ -182,16 +182,16 @@ await L.run("UPDATE questions SET state = 'withdrawn'");
   };
   // A NEW BUILD'S ROW AND A RESCORE'S, asked of the factory as the queue asks.
   const day = new Date().toISOString().slice(0, 10);
-  for (const id of ["new1", "old1"]) await L.run("INSERT INTO builds (id, at, record) VALUES (?, ?, ?)", id, ago(0), JSON.stringify({ weapon: "furis", mods: [id] }));
-  await L.run("INSERT INTO batches (id, at, why, total) VALUES (?, 'x', 'x', 1), ('rescore-x', 'x', 'x', 1)", `arrivals-${day}`);
-  await L.run(`INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, 'new1', 'standard_single_target', 'base'),
+  for (const id of ["new1", "old1"]) await L.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES (?, ?, ?)", id, ago(0), JSON.stringify({ weapon: "furis", mods: [id] }));
+  await L.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES (?, 'x', 'x', 1), ('rescore-x', 'x', 'x', 1)", `arrivals-${day}`);
+  await L.run(`INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES (?, 'new1', 'standard_single_target', 'base'),
     ('rescore-x', 'old1', 'standard_single_target', 'base')`, `arrivals-${day}`);
   const askRows = (batch, identity) => boardTasksRoute(new Request("https://x/api/board/ask", { method: "POST", headers: { authorization: "Bearer ft" },
     body: JSON.stringify({ batch, rows: [{ identity, ruler: "standard_single_target", mode: "base" }] }) }), env, "/api/board/ask");
   await askRows(`arrivals-${day}`, "new1");
   await askRows("rescore-x", "old1");
   const E = "e".repeat(24), F = "f".repeat(24), G = "9".repeat(24), H = "8".repeat(24);
-  for (const v of [E, F, G, H]) await L.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08') ON CONFLICT DO NOTHING", v);
+  for (const v of [E, F, G, H]) await L.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-08') ON CONFLICT DO NOTHING", v);
   const fresh = await shape("fresh", 0);
   const first = await work(E, "e1", 8, "203.0.113.7");
   check("a new build's board row goes before a survey shape due in a day", first && first.kind !== "riven_gain" && first.identity === "new1",
@@ -207,9 +207,9 @@ await L.run("UPDATE questions SET state = 'withdrawn'");
   const third = await work(H, "e1", 8, "192.0.2.4");
   check("a riven gain someone waits on in a chat goes before them all", third && third.code === qq, JSON.stringify(third));
   await freeLeases();
-  await L.run("UPDATE questions SET state = 'withdrawn' WHERE id = ?", await questionOf(qq));
-  await L.run("UPDATE questions SET state = 'withdrawn' WHERE id = (SELECT question FROM demands WHERE ref = 'new1|standard_single_target|base')");
-  await L.run("UPDATE questions SET state = 'withdrawn' WHERE id = ?", await questionOf(overdue));
+  await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id = ?", await questionOf(qq));
+  await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id = (SELECT question FROM relation_task_consumers WHERE ref = 'new1|standard_single_target|base')");
+  await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id = ?", await questionOf(overdue));
   const fourth = await work(E, "e1", 8, "203.0.113.7");
   check("a survey shape due in a day goes before a rescore due in a week", fourth && fourth.code === fresh, JSON.stringify(fourth));
   await answer(fourth, E, {}, "203.0.113.7");
@@ -219,18 +219,18 @@ await L.run("UPDATE questions SET state = 'withdrawn'");
   const s2 = await work(G, "e1", 8, "198.51.100.9");
   check("...but to another", s2 && s2.code === fresh, JSON.stringify(s2));
   await answer(s2, G, {}, "198.51.100.9");
-  check("two owners on two networks agree", !!(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", fresh)).agreed_at);
-  check("...and a survey's agreed build goes to the board's door as WFSim's own", (await L.get("SELECT count(*) AS n FROM inbox WHERE initiator = 'system'")).n >= 1);
+  check("two owners on two networks agree", !!(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = ?", fresh)).agreed_at);
+  check("...and a survey's agreed build goes to the board's door as WFSim's own", (await L.get("SELECT count(*) AS n FROM record_build_submissions WHERE initiator = 'system'")).n >= 1);
 
   // ONE QUESTION, ASKED AGAIN: a chat asking what a survey already agreed on is
   // answered at once, and nobody computes it a second time.
   const asked = await open("asks-the-same");
   await appraise("POST", `/api/appraise/${asked}/request`, frozen(`sfresh`), bot);
   check("a chat asking what a survey already agreed on is answered at once, unfought, with a build for the bot to tell",
-    !!(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", asked)).agreed_at
-    && (await L.get("SELECT count(*) AS n FROM questions WHERE id = ?", await questionOf(asked))).n === 1
+    !!(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = ?", asked)).agreed_at
+    && (await L.get("SELECT count(*) AS n FROM state_compute_work WHERE id = ?", await questionOf(asked))).n === 1
     && await questionOf(asked) === await questionOf(fresh)
-    && !!await L.get("SELECT 1 FROM appraisal_results WHERE code = ?", asked));
+    && !!await L.get("SELECT 1 FROM record_appraisal_candidates WHERE code = ?", asked));
 }
 
 console.log("\nfrozen before the factory");
@@ -238,19 +238,19 @@ console.log("\nfrozen before the factory");
   // A SHAPE FROZEN AND ONCE ANSWERED under the old tables is asked of the factory
   // as of when it was opened, its answer carried.
   const at = new Date(Date.now() - 2 * 86_400_000).toISOString();
-  await L.run(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at, request, engine)
+  await L.run(`INSERT INTO entity_appraisal_requests (code, channel, chat, asker, room, weapon, ruler, riven, at, request, engine)
     VALUES ('OLD01', 'survey', '{}', 'wfsim', '', 'furis', 'standard_single_target', '{}', ?, ?, 'e1')`, at, JSON.stringify(frozen("old")));
-  await L.run(`INSERT INTO appraisal_results (code, build, at, verifier, score, work, key, engine, net)
+  await L.run(`INSERT INTO record_appraisal_candidates (code, build, at, verifier, score, work, key, engine, net)
     VALUES ('OLD01', ?, ?, ?, 12.5, 4000000000, 'k', 'e1', '')`, JSON.stringify(BUILD), at, A);
   check("only the bot's relay adopts", (await appraise("POST", "/api/appraise/adopt", {})).status === 401);
   const r = await appraise("POST", "/api/appraise/adopt", {}, bot);
   check("an appraisal frozen before the factory is asked of it, and nothing is left", r.body.adopted === 1 && r.body.left === 0, JSON.stringify(r.body));
   check("...due as of when it was opened",
-    (await L.get("SELECT due_at FROM questions WHERE id = ?", await questionOf("OLD01"))).due_at < new Date().toISOString());
-  check("...its answer carried", (await L.get("SELECT count(*) AS n FROM answers WHERE question = ? AND device = ?", await questionOf("OLD01"), A)).n === 1);
+    (await L.get("SELECT due_at FROM state_compute_work WHERE id = ?", await questionOf("OLD01"))).due_at < new Date().toISOString());
+  check("...its answer carried", (await L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = ? AND device = ?", await questionOf("OLD01"), A)).n === 1);
   check("...and a second adoption adds nothing", (await appraise("POST", "/api/appraise/adopt", {}, bot)).body.adopted === 0);
   await freeLeases();
-  await L.run("UPDATE questions SET state = 'withdrawn' WHERE id IN (SELECT question FROM demands WHERE producer IN ('new_build', 'survey_build', 'refresh', 'sweep'))");
+  await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id IN (SELECT question FROM relation_task_consumers WHERE producer IN ('new_build', 'survey_build', 'refresh', 'sweep'))");
   check("its owner's computers are not asked again", (await work(D, "e1", 8, "198.51.100.77") || {}).code !== "OLD01");
   await freeLeases();
   const t = await work(C, "e1", 8, "198.51.100.78");
@@ -258,10 +258,10 @@ console.log("\nfrozen before the factory");
   const before = await credited(A);
   await answer(t, C, {}, "198.51.100.78");
   check("...and agreeing with the carried answer credits both", await credited(A) === before + 4e9
-    && !!(await L.get("SELECT agreed_at FROM appraisals WHERE code = 'OLD01'")).agreed_at, `${await credited(A) - before}`);
+    && !!(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = 'OLD01'")).agreed_at, `${await credited(A) - before}`);
   // A SEARCH RUNNING while it is adopted keeps its lease, and its answer lands.
   const lease = "f".repeat(32), soon = new Date(Date.now() + 600_000).toISOString();
-  await L.run(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at, request, engine, lease, lease_until, leased_to)
+  await L.run(`INSERT INTO entity_appraisal_requests (code, channel, chat, asker, room, weapon, ruler, riven, at, request, engine, lease, lease_until, leased_to)
     VALUES ('OLD02', 'survey', '{}', 'wfsim', '', 'furis', 'standard_single_target', '{}', ?, ?, 'e1', ?, ?, ?)`, at, JSON.stringify(frozen("running")), lease, soon, B);
   await appraise("POST", "/api/appraise/adopt", {}, bot);
   const landed = await answer({ code: "OLD02", lease }, B);
@@ -272,16 +272,16 @@ console.log("\nfrozen before the factory");
 // THE ASK LOST AFTER THE WRITE: the bot's retry asks it, with what was stored.
 const lostAsk = await open("asker9");
 await appraise("POST", `/api/appraise/${lostAsk}/request`, frozen(2), bot);
-await L.run("DELETE FROM demands WHERE ref = ?", lostAsk);
+await L.run("DELETE FROM relation_task_consumers WHERE ref = ?", lostAsk);
 const retried = await appraise("POST", `/api/appraise/${lostAsk}/request`, frozen(9), bot);
 check("a freeze whose ask was lost is asked on the retry, as first stored",
-  retried.body.stored === false && (await L.get("SELECT count(*) AS n FROM demands WHERE ref = ? AND state = 'live'", lostAsk)).n === 1
-  && canon(JSON.parse((await L.get("SELECT request FROM questions WHERE id = ?", await questionOf(lostAsk))).request).request) === canon(frozen(2).request));
+  retried.body.stored === false && (await L.get("SELECT count(*) AS n FROM relation_task_consumers WHERE ref = ? AND state = 'live'", lostAsk)).n === 1
+  && canon(JSON.parse((await L.get("SELECT request FROM state_compute_work WHERE id = ?", await questionOf(lostAsk))).request).request) === canon(frozen(2).request));
 
 console.log("\nindependently frozen identical cards");
 {
   await freeLeases();
-  await L.run("UPDATE questions SET state = 'withdrawn'");
+  await L.run("UPDATE state_compute_work SET state = 'withdrawn'");
   const meta = {
     weapons: [{ id: "torid", modes: ["base"], mods: [] }], defaults: { runs: 1000 },
     search_presets: { presets: [{ riven: true, finalists: 1, candidate_runs: 10, search_strategy: "four_elements" }] },
@@ -294,31 +294,31 @@ console.log("\nindependently frozen identical cards");
   const q = await questionOf(first);
   check("separately frozen identical cards share a question and retain separate demands",
     await questionOf(second) === q && await questionOf(cancelled) === q
-    && (await L.get("SELECT count(*) AS n FROM demands WHERE question = ? AND state = 'live'", q)).n === 3);
+    && (await L.get("SELECT count(*) AS n FROM relation_task_consumers WHERE question = ? AND state = 'live'", q)).n === 3);
   await facts().withdraw(env, "chat", cancelled, Date.now());
   check("withdrawing one ask leaves the others live",
-    (await L.get("SELECT count(*) AS n FROM demands WHERE question = ? AND state = 'live'", q)).n === 2);
+    (await L.get("SELECT count(*) AS n FROM relation_task_consumers WHERE question = ? AND state = 'live'", q)).n === 2);
   const before = [await credited(A), await credited(B)];
   const firstTask = await work(A, "e1", 8, "192.0.2.11");
   check("the shared question still needs an independent second witness", firstTask?.code === first || firstTask?.code === second);
   await answer(firstTask, A, {}, "192.0.2.11");
   check("the first answer settles neither ask and credits nobody",
-    !(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", first)).agreed_at
-    && !(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", second)).agreed_at
+    !(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = ?", first)).agreed_at
+    && !(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = ?", second)).agreed_at
     && await credited(A) === before[0]);
   check("another device of that owner cannot supply the second witness", (await work(D))?.kind !== "riven_gain");
   await answer(await work(B, "e1", 8, "198.51.100.11"), B, {}, "198.51.100.11");
   check("two witnesses deliver both active asks, leave the withdrawn one alone, and credit each witness once",
-    !!(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", first)).agreed_at
-    && !!(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", second)).agreed_at
-    && !(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", cancelled)).agreed_at
+    !!(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = ?", first)).agreed_at
+    && !!(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = ?", second)).agreed_at
+    && !(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = ?", cancelled)).agreed_at
     && await credited(A) === before[0] + 4e9 && await credited(B) === before[1] + 4e9);
   const repeat = await open("same-later");
   await freeze(repeat);
   check("a later identical ask receives its own deliverable without new answers or credit",
-    await questionOf(repeat) === q && !!(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", repeat)).agreed_at
-    && !!await L.get("SELECT 1 FROM appraisal_results WHERE code = ?", repeat)
-    && (await L.get("SELECT count(*) AS n FROM answers WHERE question = ?", q)).n === 2
+    await questionOf(repeat) === q && !!(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = ?", repeat)).agreed_at
+    && !!await L.get("SELECT 1 FROM record_appraisal_candidates WHERE code = ?", repeat)
+    && (await L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = ?", q)).n === 2
     && await credited(A) === before[0] + 4e9 && await credited(B) === before[1] + 4e9);
 }
 

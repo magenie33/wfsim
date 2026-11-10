@@ -19,10 +19,10 @@ try {
       const result = await fetch(fixture.base + "/api/recommendations", { method: "POST", headers: { "content-type": "application/json", origin: fixture.base, cookie: "wfsim_session=" + fixture.token },
         body: JSON.stringify({ identity: first.identity, day, ruler: first.ruler, mode: first.mode, action: "recommend" }) });
       if (!result.ok) throw new Error(await result.text());
-      if (name !== "Torid") await fixture.env.ACCOUNTS.run("DELETE FROM recommendations WHERE account = ? AND identity = ?", fixture.account, first.identity);
+      if (name !== "Torid") await fixture.env.ACCOUNTS.run("DELETE FROM record_recommendation_votes WHERE account = ? AND identity = ?", fixture.account, first.identity);
       for (const age of name === "Furis" ? [1, 2] : name === "Laetum" ? [12] : []) {
         const voteDay = new Date(Date.parse(day) - age * 86400000).toISOString().slice(0, 10);
-        await fixture.env.ACCOUNTS.run("INSERT INTO recommendations (account, identity, day) VALUES (?, ?, ?::date)", fixture.account, first.identity, voteDay);
+        await fixture.env.ACCOUNTS.run("INSERT INTO record_recommendation_votes (account, identity, day) VALUES (?, ?, ?::date)", fixture.account, first.identity, voteDay);
       }
     }
     console.log(name + ": " + builds.length + " reviewable builds");

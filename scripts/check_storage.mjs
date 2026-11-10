@@ -51,8 +51,8 @@ const r = await evaluate(`(async () => {
 
   // WHAT IS STORED is read back from IndexedDB itself, not the mirror.
   const stored = () => new Promise((ok) => {
-    const q = indexedDB.open('wfsim', 1);
-    q.onsuccess = () => { const g = q.result.transaction('results').objectStore('results').getAll();
+    const q = indexedDB.open('wfsim', 2);
+    q.onsuccess = () => { const g = q.result.transaction('entity_simulation_reports').objectStore('entity_simulation_reports').getAll();
       g.onsuccess = () => { q.result.close(); ok(g.result); }; };
     q.onerror = () => ok(null);
   });

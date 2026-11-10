@@ -35,19 +35,19 @@ const sync = (v, body = {}, ip = "") => post(syncRoute, "/api/board/sync",
 const result = (lease, question, extra = {}) => ({ lease, question, score: SCORE, metric: "kpm", work: WORK, compute_ms: 1000, ...extra });
 const today = new Date().toISOString().slice(0, 10);
 const ask = (batch, ...ids) => post(boardTasksRoute, "/api/board/ask", { batch, rows: ids.map((identity) => ({ identity, ruler: "standard_single_target", mode: "base" })) });
-const build = (id) => L.run("INSERT INTO builds (id, at, record) VALUES (?, ?, ?)", id, new Date().toISOString(), JSON.stringify({ weapon: "braton_prime", mods: ["serration", id] }));
+const build = (id) => L.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES (?, ?, ?)", id, new Date().toISOString(), JSON.stringify({ weapon: "braton_prime", mods: ["serration", id] }));
 const queue = async (batch, ...ids) => {
-  await L.run("INSERT INTO batches (id, at, why, total) VALUES (?, ?, 'test', 0) ON CONFLICT DO NOTHING", batch, batch);
-  for (const id of ids) await L.run("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, ?, 'standard_single_target', 'base') ON CONFLICT DO NOTHING", batch, id);
+  await L.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES (?, ?, 'test', 0) ON CONFLICT DO NOTHING", batch, batch);
+  for (const id of ids) await L.run("INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES (?, ?, 'standard_single_target', 'base') ON CONFLICT DO NOTHING", batch, id);
 };
-const qOf = async (id) => (await L.get("SELECT q.id FROM questions q JOIN demands d ON d.question = q.id WHERE d.ref = ?", `${id}|standard_single_target|base`)).id;
-const answersOf = (q, v) => L.get("SELECT count(*) AS n FROM answers WHERE question = ? AND device = ?", q, v).then((r) => r.n);
-const comeBack = (v) => L.run("UPDATE verifiers SET next_at = NULL WHERE id = ?", v);
-const free = () => L.run("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL, lease_prev = NULL, leased_to_prev = NULL, lease_prev_until = NULL");
+const qOf = async (id) => (await L.get("SELECT q.id FROM state_compute_work q JOIN relation_task_consumers d ON d.question = q.id WHERE d.ref = ?", `${id}|standard_single_target|base`)).id;
+const answersOf = (q, v) => L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = ? AND device = ?", q, v).then((r) => r.n);
+const comeBack = (v) => L.run("UPDATE entity_compute_devices SET next_at = NULL WHERE id = ?", v);
+const free = () => L.run("UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL, lease_prev = NULL, leased_to_prev = NULL, lease_prev_until = NULL");
 const A = "a".repeat(24), B = "b".repeat(24), C = "c".repeat(24), D = "d".repeat(24), E = "e".repeat(24);
 const ips = { [A]: "203.0.113.1", [B]: "198.51.100.2", [C]: "192.0.2.3", [D]: "203.0.113.4", [E]: "198.51.100.5" };
 const as = (v, body) => sync(v, body, ips[v]);
-for (const v of [A, B, C, D, E]) await L.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-08')", v);
+for (const v of [A, B, C, D, E]) await L.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-08')", v);
 
 const batch = `arrivals-${today}`;
 const ids = Array.from({ length: 30 }, (_, i) => `b${String(i).padStart(2, "0")}`);
@@ -88,7 +88,7 @@ check("a result sent again is taken again and recorded once", again.taken.includ
 // checks answer each send as they answered the first — the row still held, the
 // answer not yet given — and still one answer lands.
 const raced = rows[rows.length - 1];
-const heldThen = await L.all("SELECT * FROM questions WHERE id = ?", raced);
+const heldThen = await L.all("SELECT * FROM state_compute_work WHERE id = ?", raced);
 const blindTo = [];
 const blind = { ...env, LIBRARY: { ...env.LIBRARY, prepare: (sql) => (/FROM factory_given\(/.test(sql)
   ? (blindTo.push("given"), { bind: () => ({ all: async () => ({ results: [] }) }) })
@@ -103,20 +103,20 @@ check("a result sent twice at once is recorded once", await answersOf(raced, A) 
   `${await answersOf(raced, A)} ${blindTo}`);
 
 // A LATE RESULT: the lease ran out, nobody took the row since.
-await L.run("UPDATE questions SET lease_until = ? WHERE id = ?", new Date(Date.now() - 60_000).toISOString(), rows[1]);
+await L.run("UPDATE state_compute_work SET lease_until = ? WHERE id = ?", new Date(Date.now() - 60_000).toISOString(), rows[1]);
 const late = await as(A, { results: [result(lease, rows[1])], held: [{ lease, rows: rows.slice(2) }] });
 check("a result whose lease ran out still counts while nobody took the row", late.taken.includes(rows[1]) && await answersOf(rows[1], A) === 1, JSON.stringify(late).slice(0, 300));
 // …BUT NOT ONCE ANOTHER TOOK IT.
-await L.run("UPDATE questions SET lease = ?, leased_to = ?, lease_until = ? WHERE id = ?", "f".repeat(32), B, new Date(Date.now() + 600_000).toISOString(), rows[2]);
+await L.run("UPDATE state_compute_work SET lease = ?, leased_to = ?, lease_until = ? WHERE id = ?", "f".repeat(32), B, new Date(Date.now() + 600_000).toISOString(), rows[2]);
 const lost = await as(A, { results: [result(lease, rows[2])], held: [{ lease, rows: rows.slice(3) }] });
 check("a result for a row taken since is dropped, and said why", lost.dropped.some((x) => x.question === rows[2] && x.why === "not_held") && await answersOf(rows[2], A) === 0,
   JSON.stringify(lost.dropped));
 
 // A SYNC STATES EVERYTHING ITS ID HOLDS: what it does not name goes back.
-const before = await L.get("SELECT count(*) AS n FROM questions WHERE leased_to = ? AND lease_until > ?", A, new Date().toISOString());
+const before = await L.get("SELECT count(*) AS n FROM state_compute_work WHERE leased_to = ? AND lease_until > ?", A, new Date().toISOString());
 const named = rows.slice(3, 5);
 await as(A, { held: [{ lease, rows: named }] });
-const after = await L.all("SELECT id FROM questions WHERE leased_to = ? AND lease_until > ?", A, new Date().toISOString());
+const after = await L.all("SELECT id FROM state_compute_work WHERE leased_to = ? AND lease_until > ?", A, new Date().toISOString());
 check("a held row it names is kept, every other one it held goes back", before.n > named.length && after.length === named.length
   && after.every((r) => named.includes(r.id)), JSON.stringify({ before: before.n, after }));
 
@@ -133,7 +133,7 @@ await free();
 for (const v of [A, B, C, D, E]) await comeBack(v);
 const target = await qOf("b29");
 // ONLY b29 IN PLAY, so every sync is handed it.
-await L.run("UPDATE questions SET state = 'withdrawn' WHERE state = 'open' AND id <> ?", target);
+await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE state = 'open' AND id <> ?", target);
 const r1 = await as(B);
 check("the row is handed out", r1.pack && r1.pack.tasks[0].question === target, JSON.stringify(r1).slice(0, 200));
 await as(B, { refused: [{ lease: r1.pack.lease, question: target, step: "order" }] });
@@ -144,42 +144,42 @@ for (const v of [C, E]) {
   const r = await as(v);
   await as(v, { refused: [{ lease: r.pack.lease, question: target, step: "order" }] });
 }
-const gone = await L.get("SELECT state FROM questions WHERE id = ?", target);
+const gone = await L.get("SELECT state FROM state_compute_work WHERE id = ?", target);
 check(`refused by ${DIALS.refusals_to_withdraw.default} owners on the served engine, it is withdrawn and written down`,
-  gone.state === "withdrawn" && !!(await L.get("SELECT 1 FROM refusal_withdrawals WHERE question = ?", target)), JSON.stringify(gone));
+  gone.state === "withdrawn" && !!(await L.get("SELECT 1 FROM record_refusal_withdrawals WHERE question = ?", target)), JSON.stringify(gone));
 const found = await facts().audit(env, Date.now(), "e1");
 check("…and the watchdog says so", found.some((f) => f.kind === "refused_rows" && f.questions === 1), JSON.stringify(found));
 await ask(batch, "b29");
-check("asked for again on the same engine, it stays withdrawn", (await L.get("SELECT state FROM questions WHERE id = ?", target)).state === "withdrawn");
+check("asked for again on the same engine, it stays withdrawn", (await L.get("SELECT state FROM state_compute_work WHERE id = ?", target)).state === "withdrawn");
 
 console.log("\nfair share and who waits");
 // F2 — SHORT WORK: a pack is at most open over asking, leased short.
-await L.run("UPDATE questions SET state = 'open' WHERE state = 'withdrawn' AND id <> ?", target);
+await L.run("SELECT compute_open_task(id,'renewed_request','e1',?2::text) FROM state_compute_work WHERE state='withdrawn' AND id<>?1::text", target, new Date().toISOString());
 await free();
 for (const v of [A, B, C, D, E]) await comeBack(v);
-await L.run("UPDATE verifiers SET asked_at = ?", new Date().toISOString());
-const open = (await L.get("SELECT count(*) AS n FROM questions WHERE state = 'open' AND waits = 0")).n;
+await L.run("UPDATE entity_compute_devices SET asked_at = ?", new Date().toISOString());
+const open = (await L.get("SELECT count(*) AS n FROM state_compute_work WHERE state = 'open' AND waits = 0")).n;
 const shortPack = await as(C, { pace_ms: 1000 });
 const cap = Math.floor(open / 5);
 check("while work is short a pack is at most open over asking, and leased short",
   shortPack.pack && shortPack.pack.tasks.length <= cap && shortPack.pack.lease_ms === DIALS.pack_lease_ms.default,
   JSON.stringify({ open, cap, got: shortPack.pack && shortPack.pack.tasks.length, lease_ms: shortPack.pack && shortPack.pack.lease_ms }));
 // F8 — A QUESTION SOMEONE WAITS ON goes alone, to a computer holding nothing.
-await L.run("UPDATE questions SET waits = 1 WHERE id = (SELECT id FROM questions WHERE state = 'open' AND leased_to IS NULL ORDER BY id LIMIT 1)");
-const waiting = (await L.get("SELECT id FROM questions WHERE waits = 1")).id;
-const fairRefill = await L.get("SELECT id,producer,due_at FROM questions WHERE state='open' AND waits=0 AND leased_to IS NULL ORDER BY id DESC LIMIT 1");
-await L.run("UPDATE questions SET producer='survey_build',due_at='2999-01-01' WHERE id=?", fairRefill.id);
-await L.run("UPDATE demands SET producer='survey_build' WHERE question=?", fairRefill.id);
-await L.run("INSERT INTO producer_use (producer,used,answer_ms) VALUES ('survey_build',-1000000,1)");
+await L.run("UPDATE state_compute_work SET waits = 1 WHERE id = (SELECT id FROM state_compute_work WHERE state = 'open' AND leased_to IS NULL ORDER BY id LIMIT 1)");
+const waiting = (await L.get("SELECT id FROM state_compute_work WHERE waits = 1")).id;
+const fairRefill = await L.get("SELECT id,producer,due_at FROM state_compute_work WHERE state='open' AND waits=0 AND leased_to IS NULL ORDER BY id DESC LIMIT 1");
+await L.run("UPDATE state_compute_work SET producer='survey_build',due_at='2999-01-01' WHERE id=?", fairRefill.id);
+await L.run("UPDATE relation_task_consumers SET producer='survey_build' WHERE question=?", fairRefill.id);
+await L.run("INSERT INTO state_producer_compute_usage (producer,used,answer_ms) VALUES ('survey_build',-1000000,1)");
 await comeBack(C);
 const busy = await as(C, { held: [{ lease: shortPack.pack.lease, rows: shortPack.pack.tasks.map((t) => t.question) }] });
 check("a computer holding a pack is never handed a question someone waits on",
   !(busy.work && busy.work.question === waiting) && !(busy.pack && busy.pack.tasks.some((t) => t.question === waiting)), JSON.stringify(busy).slice(0, 200));
 check("…but is handed a pack of the rest, not idled while it stands open", !!(busy.pack && busy.pack.tasks.length), JSON.stringify(busy).slice(0, 200));
 check("a busy refill preserves producer fairness behind a waited-on head", busy.pack?.tasks.some(t => t.question === fairRefill.id), JSON.stringify(busy.pack?.tasks.map(t => t.question)));
-await L.run("UPDATE questions SET producer=?,due_at=? WHERE id=?", fairRefill.producer, fairRefill.due_at, fairRefill.id);
-await L.run("UPDATE demands SET producer=? WHERE question=?", fairRefill.producer, fairRefill.id);
-await L.run("DELETE FROM producer_use WHERE producer='survey_build'");
+await L.run("UPDATE state_compute_work SET producer=?,due_at=? WHERE id=?", fairRefill.producer, fairRefill.due_at, fairRefill.id);
+await L.run("UPDATE relation_task_consumers SET producer=? WHERE question=?", fairRefill.producer, fairRefill.id);
+await L.run("DELETE FROM state_producer_compute_usage WHERE producer='survey_build'");
 await comeBack(D);
 const alone = await as(D);
 check("…a computer holding nothing is, alone, as a pack of one its page runs",
@@ -188,8 +188,8 @@ check("…a computer holding nothing is, alone, as a pack of one its page runs",
 console.log("\nwhether work is short, and coming back");
 // THE SETTLER'S SNAPSHOT DECIDES, while it is fresh: open past any fixed ceiling
 // on a count is plenty, and a fast computer is handed a long-leased pack.
-await L.run("UPDATE questions SET waits = 0");
-const snap = (open, at) => L.run(`INSERT INTO factory_snapshot (id, at, open, urgent, asking, computing, queue_rows, settle_queue_rows, daemon_at, daemon_commit)
+await L.run("UPDATE state_compute_work SET waits = 0");
+const snap = (open, at) => L.run(`INSERT INTO state_factory_snapshot (id, at, open, urgent, asking, computing, queue_rows, settle_queue_rows, daemon_at, daemon_commit)
   VALUES (1, ?1, ?2, 0, 5, 0, 0, 0, ?1, 'check') ON CONFLICT (id) DO UPDATE SET at = excluded.at, open = excluded.open, asking = excluded.asking`, at, open);
 await free(); await comeBack(E);
 await snap(1_000_000, new Date().toISOString());
@@ -202,7 +202,7 @@ const cold = await as(E);
 check("a bootstrap pack allows refill as soon as its pace is measured",
   cold.pack && cold.next_ms === 0, JSON.stringify({ n: cold.pack && cold.pack.tasks.length, next_ms: cold.next_ms }));
 check("the persisted bootstrap gate agrees with the reply",
-  Date.parse((await L.get("SELECT next_at FROM verifiers WHERE id = ?", E)).next_at) <= Date.now());
+  Date.parse((await L.get("SELECT next_at FROM entity_compute_devices WHERE id = ?", E)).next_at) <= Date.now());
 await free(); await comeBack(E);
 const small = await as(E, { pace_ms: 1000 });
 check("a small pack does not gate refill beyond its low-work threshold",
@@ -213,7 +213,7 @@ check("a renewal without new work does not impose a new refill delay", renewOnly
 await free(); await comeBack(E);
 await setDial(env, "sync_scale_pct", 125, "check");
 const beforeScaled = Date.now(), scaled = await as(E, { pace_ms: 30_000, want_ms: 150_000 }), afterScaled = Date.now();
-const scaledGate = Date.parse((await L.get("SELECT next_at FROM verifiers WHERE id = ?", E)).next_at);
+const scaledGate = Date.parse((await L.get("SELECT next_at FROM entity_compute_devices WHERE id = ?", E)).next_at);
 check("a paced partial pack scales its gate and persists the same deadline",
   scaled.pack?.tasks.length === 5 && scaled.next_ms === 37_500
     && scaledGate >= beforeScaled + scaled.next_ms && scaledGate <= afterScaled + scaled.next_ms,
@@ -225,7 +225,7 @@ await snap(1_000_000, new Date(Date.now() - 120_000).toISOString());
 const counted = await as(E, { pace_ms: 1000 });
 check("a stale snapshot is not read: open counted here is short, the pack leased short",
   counted.pack && counted.pack.lease_ms === DIALS.pack_lease_ms.default, JSON.stringify(counted.pack && { n: counted.pack.tasks.length, lease_ms: counted.pack.lease_ms }));
-await L.run("DELETE FROM factory_snapshot");
+await L.run("DELETE FROM state_factory_snapshot");
 
 console.log("\nthe owner's switches");
 await setDial(env, "sync_off", 1, "check");

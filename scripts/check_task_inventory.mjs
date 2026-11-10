@@ -1,3 +1,4 @@
+import { seedComputeWork } from "./pg/fixtures.mjs";
 // Complete demand counts canonical questions from one snapshot.
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
@@ -68,20 +69,20 @@ try {
   await assert.rejects(classifyInventory({ ...input, missing: file('bad-ruler', [row('a', 'old')]) }), /unknown/);
   console.log('ok: canonical aliases and batches share one task; cached delivery is zero work; spot checks count once; admission preserves demand; future task kinds count');
   const db = await testDb('library');
-  await db.run("INSERT INTO builds(id,at,record) VALUES ('old','2026-01-01','{\"weapon\":\"torid\"}')");
+  await db.run("INSERT INTO entity_weapon_builds(id,at,record) VALUES ('old','2026-01-01','{\"weapon\":\"torid\"}')");
   const binding = { builds: file('binding-builds', [{ id: 'old', at: '2026-01-01', record: { weapon: 'torid' } }]),
     canonical: file('binding-canonical', [{ id: 'new', source: 0, record: { weapon: 'torid', mods: [] } }]),
     missing: file('binding-missing', [row('new')]), queue: file('binding-queue', [row('retired', 'old')]), orphans: file('binding-orphans', []), rulers: ['r'] };
   const run = (sql, args) => db.all(sql, ...args);
   await bindInventoryBuilds(binding, run); await bindInventoryBuilds(binding, run);
-  assert.equal((await db.get('SELECT count(*) n FROM builds')).n, 2);
-  assert.equal((await db.get("SELECT at FROM builds WHERE id='new'")).at, '2026-01-01');
-  assert.equal((await db.get('SELECT count(*) n FROM family_transfers')).n, 0);
+  assert.equal((await db.get('SELECT count(*) n FROM entity_weapon_builds')).n, 2);
+  assert.equal((await db.get("SELECT at FROM entity_weapon_builds WHERE id='new'")).at, '2026-01-01');
+  assert.equal((await db.get('SELECT count(*) n FROM entity_family_search_requests')).n, 0);
   await assert.rejects(bindInventoryBuilds({ ...binding, canonical: file('binding-missing-map', []) }, run), /unbound/);
   const save = async (p, at = now) => { const w = inventoryWrite(p, at); await db.run(w.sql, ...w.params); };
   await save(plan); assert.equal((await readInventory(db, now)).total, 4);
   assert.equal((await readInventoryState(db, now)).lastComplete, null, 'an unknown factory engine qualified for display');
-  await db.run("INSERT INTO factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x',?,0,0,0,0,0,0,'x','x')", engine);
+  await db.run("INSERT INTO state_factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x',?,0,0,0,0,0,0,'x','x')", engine);
   let reads = 0;
   const state = await readInventoryState({ prepare(sql) { reads++; return db.prepare(sql); } }, now);
   assert.equal(reads, 1, 'fresh and display inventory used separate database reads');
@@ -98,13 +99,13 @@ try {
     JSON.stringify({ ...state.fresh, expires_at: new Date(Date.parse(state.fresh.expires_at) + 60_000).toISOString() }),
     JSON.stringify({ ...state.fresh, at: state.fresh.expires_at }),
   ]) {
-    await db.run("UPDATE factory_findings SET body=? WHERE kind='task_inventory'", body);
+    await db.run("UPDATE state_factory_findings SET body=? WHERE kind='task_inventory'", body);
     assert.equal((await readInventoryState(db, now)).lastComplete, null, 'malformed or invalid-at-publication inventory qualified for display');
   }
-  await db.run("UPDATE factory_findings SET body=? WHERE kind='task_inventory'", original);
-  await db.run("UPDATE factory_snapshot SET engine='95d73da96acb' WHERE id=1");
+  await db.run("UPDATE state_factory_findings SET body=? WHERE kind='task_inventory'", original);
+  await db.run("UPDATE state_factory_snapshot SET engine='95d73da96acb' WHERE id=1");
   assert.deepEqual(await readInventoryState(db, now), { fresh: null, lastComplete: null }, 'a different engine qualified for display');
-  await db.run("UPDATE factory_snapshot SET engine=? WHERE id=1", engine);
+  await db.run("UPDATE state_factory_snapshot SET engine=? WHERE id=1", engine);
   console.log('ok: one persisted snapshot supplies strict freshness and original-time same-engine display; unknown, future, malformed and invalid publications are refused');
   await save({ ...plan, rows: 999, orders: [{ kind: 'board', total: 999 }], verbs: { simulate: 999 }, started_at: new Date(now - 120000).toISOString() }, now + 1);
   assert.equal((await readInventory(db, now + 1)).total, 4);
@@ -116,13 +117,13 @@ try {
   await assert.rejects(publish(plan, 'wrong'), /401/); await publish(plan);
   assert.equal((await readInventory(db, now)).total, 4, 'publication mixed a later ledger count into the snapshot');
   const request = '{}';
-  await db.run("INSERT INTO questions(id,verb,request,state,due_at,opened_at,producer) VALUES (?,'future_verb',?,'open','x','x','sweep')", future, request);
-  await db.run("INSERT INTO demands(producer,ref,question,state,asked_at,due_at) VALUES ('future_owner','new',?,'live','x','x')", future);
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"future_verb",request:args[1],state:"open",due_at:"x",opened_at:"x",producer:"sweep"});})(db,[future,request]);
+  await db.run("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES ('future_owner','new',?,'live','x','x')", future);
   const exported = await db.all('SELECT * FROM factory_inventory_rows(?,?::text[])', engine, ['sweep']);
   assert.equal(exported.find(q => q.id === future).kind, 'future_owner');
-  await db.run("UPDATE demands SET state='withdrawn'");
+  await db.run("UPDATE relation_task_consumers SET state='withdrawn'");
   assert.equal((await db.all('SELECT * FROM factory_inventory_rows(?,?::text[])', engine, ['sweep'])).length, 0);
-  await db.run("UPDATE factory_snapshot SET engine='ffffffffffff' WHERE id=1");
+  await db.run("UPDATE state_factory_snapshot SET engine='ffffffffffff' WHERE id=1");
   assert.equal(await readInventory(db, now), null, 'an engine change kept a stale inventory goal');
   const current = { ...plan, engine: 'ffffffffffff' };
   await save(current);
