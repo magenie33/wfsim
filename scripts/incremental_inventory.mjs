@@ -77,7 +77,7 @@ export function classifyQuestion(row) {
 }
 
 export class InventoryCatalog {
-  constructor(path, { engine, contract, generation, create = false } = {}) {
+  constructor(path, { engine, contract, generation, create = false, databaseBytes = 8 * 1024 ** 3 } = {}) {
     this.path = path;
     if (!create) statSync(path);
     this.db = new DatabaseSync(path);
@@ -86,7 +86,13 @@ export class InventoryCatalog {
     try {
       this.db.exec(`PRAGMA journal_mode=WAL;PRAGMA synchronous=FULL;PRAGMA cache_size=-16384;
         PRAGMA temp_store=FILE;PRAGMA mmap_size=0;PRAGMA wal_autocheckpoint=256;PRAGMA journal_size_limit=16777216;
-        PRAGMA max_page_count=2097152;PRAGMA busy_timeout=5000;${sql}`);
+        PRAGMA busy_timeout=5000;${sql}`);
+      const pageSize = this.db.prepare('PRAGMA page_size').get().page_size;
+      if (!Number.isSafeInteger(databaseBytes) || databaseBytes < pageSize || databaseBytes > pageSize * 4294967294)
+        throw Error('invalid inventory database disk bound');
+      const pages = Math.floor(databaseBytes / pageSize);
+      if (this.db.prepare('PRAGMA max_page_count=' + pages).get().max_page_count !== pages)
+        throw Error('inventory database already exceeds its disk bound');
       const prior = this.statement('SELECT body FROM meta WHERE id=1').get();
       if (prior) {
         this.meta = JSON.parse(prior.body);
@@ -113,7 +119,10 @@ export class InventoryCatalog {
     const prior = this.meta;
     this.db.exec('BEGIN IMMEDIATE');
     try { const value = fn(); this.db.exec('COMMIT'); return value; }
-    catch (error) { this.db.exec('ROLLBACK'); this.meta = prior; this.symbolIds.clear(); this.symbolNames.clear(); throw error; }
+    catch (error) {
+      if (this.db.isTransaction) this.db.exec('ROLLBACK');
+      this.meta = prior; this.symbolIds.clear(); this.symbolNames.clear(); throw error;
+    }
   }
   symbol(category, name) {
     text(name, category);
