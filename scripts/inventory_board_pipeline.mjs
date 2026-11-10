@@ -74,7 +74,7 @@ async function ackPage(sql, catalog, generation, cut, offset, fault, report) {
 }
 
 export async function runBoardInventoryCycle({ work, bin, sql, operator: supplied, context = {}, budgetMs = 15000,
-  report = progress, fault = async () => {}, onBoard, now = Date.now, diskBudgetBytes } = {}) {
+  report = progress, fault = async () => {}, onBoard, beforeBoard, now = Date.now, diskBudgetBytes } = {}) {
   const root = join(work, 'inventory'), statePath = join(root, 'state.json'); mkdirSync(root, { recursive: true }); disk(root);
   const source = readFileSync(join(bin, 'VERSION'), 'utf8').trim(), engine = readFileSync(join(bin, 'ENGINE'), 'utf8').trim();
   const adapter = await hash(join(bin, 'wfsim-board'));
@@ -158,6 +158,8 @@ export async function runBoardInventoryCycle({ work, bin, sql, operator: supplie
       report('processing', { epoch: receipt.epoch, ...result.metrics });
       if (result.pending) return { pending: true, stage: 'processing' };
     }
+    if (catalog.meta.publication?.round !== receipt.epoch && beforeBoard && !await beforeBoard())
+      return { pending: true, stage: 'prior-board-delivery' };
     const publication = new InventoryPublication(index, work, context, fault);
     space.check();
     const board = await publication.step(receipt, operate, { budgetMs: Math.max(0, until - performance.now()) });
@@ -234,6 +236,7 @@ export async function serveBoardInventory(work, bin) {
       try {
         operator ||= await openInventoryOperator(join(bin, 'wfsim-board'));
         const result = await runBoardInventoryCycle({ work, bin, sql, operator, context, report: monitor.report, diskBudgetBytes,
+          beforeBoard: async () => !push && !await boardDeliveryPending(work),
           onBoard: async () => {
             await child(process.execPath, [join(here, 'board_heads.mjs'), join(work, 'verified')]).done;
             await child('python3', [join(here, 'board_meta.py'), join(work, 'verified'), join(work, 'pub/data/board_state.yaml'), join(work, 'verified/meta.json')]).done;

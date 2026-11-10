@@ -156,6 +156,7 @@ coordinator against sealed cuts and an independent full native classifier.
 It covers committed input response loss, native restart, transaction loss
 before sealing, exact-revision ACK replay, later writes, aliases, deletion
 and expired or superseded cuts without losing the baseline.
+An unconfirmed prior delivery withholds the next round's file replacement.
 `WFSIM_BOARD_PIPELINE_PG_URL` selects an isolated localhost PostgreSQL schema
 through the actual production driver; the default backend is PGlite.
 `check_inventory_publication.mjs` compares every real board, index and state

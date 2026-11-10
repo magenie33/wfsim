@@ -5,15 +5,17 @@ import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, closeSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import { randomUUID } from 'node:crypto';
 import { openCatalog } from './incremental_inventory.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
-import { runInventoryCycle } from './inventory_pipeline.mjs';
 import { captureInventory } from './capture_compute_inventory.mjs';
 import { classifyInventory } from './classify_compute_inventory.mjs';
 import { questionId } from '../worker/task_contract.js';
+const { runInventoryCycle } = await import(process.env.WFSIM_BOARD_PIPELINE_MODULE
+  ? pathToFileURL(resolve(process.env.WFSIM_BOARD_PIPELINE_MODULE)).href : './inventory_pipeline.mjs');
 
 const binary = resolve(process.env.WFSIM_INVENTORY_BOARD_BIN || 'target/debug/wfsim-board');
 const root = mkdtempSync(join(tmpdir(), 'board-pipeline-')), work = join(root, 'work'), bin = join(root, 'bin');
@@ -29,7 +31,7 @@ let active = tcp;
 const query = (sql, args = []) => tcp ? active.unsafe(sql, args) : pg.query(sql, args).then(r => r.rows);
 const err = openSync(join(root, 'engine.log'), 'w');
 let native, operator, afterCapture, acknowledgments = 0, fullCaptures = 0, failed = true, failGate = false;
-let context = {}, lostInput = true, boardBeforeAudit = 0, clockOffset = 0, lostAck = false, closedConnection = false;
+let context = {}, lostInput = true, boardBeforeAudit = 0, clockOffset = 0, lostAck = false, closedConnection = false, holdPriorDelivery = false;
 const described = [];
 const open = async () => {
   context.writer?.close(); context = {};
@@ -76,6 +78,7 @@ const sql = { unsafe, begin: async (options, fn) => {
 } };
 const cycle = budgetMs => runInventoryCycle({ work, bin, sql, operator, context, budgetMs,
   now: () => Date.now() + clockOffset,
+  beforeBoard: async () => !holdPriorDelivery,
   onBoard: async () => current(db => { assert.equal(db.meta.publication.phase, 'complete'); if (!db.meta.complete) boardBeforeAudit++; }),
   fault: async stage => {
     if (stage === 'after-input-commit-before-reply' && lostInput) { lostInput = false; throw Error('injected committed input reply loss'); }
@@ -134,6 +137,10 @@ try {
   await assert.rejects(finish(), /injected stateless engine failure/);
   assert.equal(acknowledgments, 0);
   await native.close(); await open();
+  holdPriorDelivery = true;
+  assert.equal((await cycle(15000)).stage, 'prior-board-delivery');
+  assert.equal(existsSync(join(work, 'verified')), false, 'a new round cannot replace files while the prior stamp is unconfirmed');
+  assert.equal(acknowledgments, 0); holdPriorDelivery = false;
   state = await finish();
   assert.equal(load(statePath).generation, generation); assert.equal(fullCaptures, 1);
   assert.equal(described.length, 3); assert(normalized > 0); assert.equal(boardBeforeAudit, 1);
