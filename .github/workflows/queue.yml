@@ -166,18 +166,7 @@ jobs:
         run: |
           set -euo pipefail
           bash scripts/fetch_inbox.sh inbox.ndjson
-          # A CLOCK ON THE PASS, for the reason `scores.yml` states beside its
-          # own: a killed pass banks nothing, so an unbounded one cannot
-          # converge however often it runs.
-          ./target/release/wfsim-intake --deadline 900 --done done.txt --asked asked.ndjson \
-            < inbox.ndjson > builds.ndjson
-          bash scripts/ship_builds.sh builds.ndjson done.txt
-          # AFTER THE BUILDS, because a queue row naming a build the library does
-          # not hold is a row nothing can ever take. `named`: asked as waited on,
-          # as the live board asks it (worker/board_tasks.js `rowAsk`).
-          jq -c '. + {named: true}' < asked.ndjson > named.ndjson
-          bash scripts/ship_queue.sh "arrivals-$(date -u +'%Y-%m-%d')" \
-            "the fight each arrival was run in" named.ndjson
+          node scripts/intake_batches.mjs inbox.ndjson
 
       - name: the databases
         if: steps.wired.outputs.yes == 'true'

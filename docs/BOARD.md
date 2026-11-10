@@ -93,6 +93,16 @@ build-write refusals stop the pass before family admission or inbox deletion.
 An inbox read supplies a bounded prefix for intake. Reaching its page budget
 leaves remaining arrivals for a later pass without refusing the prefix already read.
 
+Hourly intake processes at most 100 arrivals and 1 MiB of input per batch,
+using the existing canonical intake binary. Each batch stores builds, admits
+family requests and durably asks the named calculations before spending its
+arrivals. Failed or incomplete acknowledgments retain those arrivals. Completed
+batches survive a later failure or deadline; replay shares existing calculation
+keys and preserves their first nonempty initiator and original queue batch.
+A temporary disk index keeps each build's first input timestamp across batches
+within the pass, with a bounded memory cache. Scoring consumes already admitted
+calculations independently of intake.
+
 The `family_build` producer asks the existing `optimize_report` verb as system
 work, without a waiting player, under the normal fair scheduler. Clients with
 `calculation-reports-v1` reproduce complete reports; independent agreement
@@ -1311,8 +1321,8 @@ questions, never a heavier client.
 - **Asking.** `ship_queue.sh` writes the batch and its queue rows, then asks
   the factory for each (`/api/board/ask`, the factory's secret) — from the bot
   server the moment a submission lands (`live_board.sh`: `wfsim-intake
-  --orders`, `ship_builds.sh`), from `queue.yml` hourly, and from scoring
-  preparation's intake. THE FIGHT AN ARRIVAL NAMED IS WAITED ON: the runner
+  --orders`, `ship_builds.sh`) and from `queue.yml` hourly.
+  THE FIGHT AN ARRIVAL NAMED IS WAITED ON: the runner
   marks that row `named` (`wfsim-intake --asked`) and the worker asks it as a
   question someone waits on (`rowAsk`), so the row the player just ran goes
   ahead of the build's other rows and every row nobody waits on; a backfill's
