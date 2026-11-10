@@ -5,13 +5,25 @@
 // memory — and every step runs in turn, in its own schema.
 //   npm install --prefix scripts/pg
 //   const db = await testDb("library"), env = { LIBRARY: db };
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { PGlite } from "./node_modules/@electric-sql/pglite/dist/index.js";
 import { pgDb, placeholders } from "../../worker/db.js";
 
 const PG_DIR = new URL("../../worker/pg/", import.meta.url);
 const DDL = { library: ["schema.sql", "library.sql", "sync.sql", "inventory.sql"], accounts: ["accounts.sql"] };
 const ddl = (kind) => DDL[kind].map((f) => readFileSync(new URL(f, PG_DIR), "utf8")).join("\n");
+const profile = process.env.WFSIM_TEST_DB_TIMING === "1" || !!process.env.WFSIM_TEST_DB_TIMING_FILE;
+const phases = Object.fromEntries(["startup", "schema", "ddl", "search_path", "query", "exec", "transaction"].map(key => [key, { calls: 0, ms: 0 }]));
+const timed = profile ? async (phase, fn) => {
+  const start = performance.now();
+  try { return await fn(); }
+  finally { phases[phase].calls++; phases[phase].ms += performance.now() - start; }
+} : (_, fn) => fn();
+export const testDbTiming = () => profile ? structuredClone(phases) : null;
+if (process.env.WFSIM_TEST_DB_TIMING_FILE) process.on("exit", () => {
+  writeFileSync(process.env.WFSIM_TEST_DB_TIMING_FILE, JSON.stringify({ phases, schemas: opened,
+    transaction_timing_includes_queries: true }, null, 2) + "\n");
+});
 
 // POSTGRES'S OWN TIMERS NEVER HOLD A CHECK OPEN: PGlite arms them as plain
 // timers (ten seconds, or a day under a check's moved clock), so a check that
@@ -25,12 +37,12 @@ globalThis.setTimeout = function (fn, ms, ...args) {
 
 // A COUNT OR A SUM IS A NUMBER, as POSTGRES_OPTIONS reads it on Hyperdrive.
 const pg = new PGlite({ parsers: { 20: (x) => Number(x), 1700: (x) => Number(x) } });
-let chain = pg.waitReady, current = null, opened = 0;
+let chain = timed("startup", () => pg.waitReady), current = null, opened = 0;
 
 /// ONE STEP AFTER EVERY ONE BEFORE IT, in `schema`.
 function step(schema, fn) {
   const run = async () => {
-    if (schema && current !== schema) { await pg.exec(`SET search_path TO ${schema}`); current = schema; }
+    if (schema && current !== schema) { await timed("search_path", () => pg.exec(`SET search_path TO ${schema}`)); current = schema; }
     return fn();
   };
   const out = chain.then(run, run);
@@ -52,11 +64,13 @@ const textOnly = (text) => {
 /// `exec` (any statements), `get`/`all` (rows) and `run` (rows changed).
 export async function testDb(...kinds) {
   const schema = `s${++opened}`;
-  await step(null, () => pg.exec(`CREATE SCHEMA ${schema}`));
-  await step(schema, () => pg.exec(kinds.map(ddl).join("\n")));
+  await step(null, () => timed("schema", () => pg.exec(`CREATE SCHEMA ${schema}`)));
+  await step(schema, () => timed("ddl", () => pg.exec(kinds.map(ddl).join("\n"))));
   const client = {
-    query: (text, params) => step(schema, async () => rowsOf(await pg.query(textOnly(text), params))),
-    transaction: (fn) => step(schema, () => pg.transaction((tx) => fn({ query: async (text, params) => rowsOf(await tx.query(textOnly(text), params)) }))),
+    query: (text, params) => step(schema, async () => rowsOf(await timed("query", () => pg.query(textOnly(text), params)))),
+    transaction: (fn) => step(schema, () => timed("transaction", () => pg.transaction((tx) => fn({
+      query: async (text, params) => rowsOf(await timed("query", () => tx.query(textOnly(text), params))),
+    })))),
   };
   const db = pgDb(client);
   const q = (sql, args) => client.query(placeholders(sql), args);
@@ -73,10 +87,10 @@ export async function testDb(...kinds) {
     await q("INSERT INTO factory_dials (name, value, set_by, set_at) VALUES ('sync_proc', 1, 'check', '2026-01-01T00:00:00.000Z') ON CONFLICT DO NOTHING", []);
   }
   return Object.assign(db, {
-    exec: (sql) => step(schema, () => pg.exec(sql)),
+    exec: (sql) => step(schema, () => timed("exec", () => pg.exec(sql))),
     get: async (sql, ...args) => (await q(sql, args)).rows[0] ?? null,
     all: async (sql, ...args) => (await q(sql, args)).rows,
     run: async (sql, ...args) => (await q(sql, args)).affected,
-    close: () => step(null, () => pg.exec(`DROP SCHEMA ${schema} CASCADE`)),
+    close: () => step(null, () => timed("schema", () => pg.exec(`DROP SCHEMA ${schema} CASCADE`))),
   });
 }
