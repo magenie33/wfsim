@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path';
 const binary = resolve(process.env.WFSIM_INVENTORY_BOARD_BIN || 'target/debug/wfsim-board');
 assert(existsSync(binary), 'build wfsim-board before checking its Bash publication consumer');
 const source = readFileSync(new URL('./live_board.sh', import.meta.url), 'utf8');
-const functions = ['ask', 'publish_incremental'].map(name => {
+const functions = ['ask', 'publish_incremental', 'consume_inventory_status'].map(name => {
   const match = source.match(new RegExp('^'+name+'\\(\\) \\{[\\s\\S]*?^\\}', 'm'));
   assert(match, `${name} must be the production shell function`);
   return match[0];
@@ -29,6 +29,7 @@ try {
   writeFileSync(join(dir, 'facts.ndjson'), facts(canonical, 0));
   writeFileSync(join(dir, 'hot.ndjson'), facts(canonical.slice(0, 1), 1000));
   writeFileSync(join(dir, 'state.yaml'), 'boards: {}\n');
+  writeFileSync(join(dir, 'blocked.json'), JSON.stringify({ blocked: true, stage: 'needs_restore', pending: true, engine_epoch: 'unsafe' }));
   const script = `set -euo pipefail
 coproc RANKER { exec "$WFSIM_RANKER" --serve "$WFSIM_FIXTURE/board" --library "$WFSIM_FIXTURE/library.json" --state "$WFSIM_FIXTURE/state.yaml"; }
 trap 'if [ -n "\u0024{RANKER_PID:-}" ]; then kill "$RANKER_PID" 2>/dev/null || true; wait "$RANKER_PID" 2>/dev/null || true; fi' EXIT
@@ -69,6 +70,14 @@ publish_incremental first
 [ "$changed" = 0 ] && [ "$RANKER_PUBLISHED_EPOCH" = first ]
 ask publish
 [[ "$RANKER_REPLY" =~ ^ok\\ publish\\ 0\\ 0$ ]]
+inventory_blocked=0
+inventory_pending=0
+RANKER_PUBLISH_PENDING=1
+changed=0
+consume_inventory_status "$WFSIM_FIXTURE/blocked.json"
+[ "$inventory_blocked" = 1 ] && [ "$inventory_pending" = 0 ] && [ "$changed" = 0 ]
+[ "$RANKER_PUBLISHED_EPOCH" = first ] && [ "$RANKER_PUBLISH_PENDING" = 1 ]
+kill -0 "$RANKER_PID"
 for malformed in 'ok publish_step 1 0 0' 'ok publish_step 1 0 2 0' 'ok publish 1 0'; do
   ask() { RANKER_REPLY="$malformed"; }
   changed=0
@@ -85,7 +94,7 @@ printf '{"native_round":true,"stamp_with_deferred_updates":true,"quiescent":true
   assert(result.native_round && result.stamp_with_deferred_updates && result.quiescent);
   assert.equal(result.malformed_replies, 3);
   assert(result.turns > 1 && result.turns < 256);
-  console.log('ok: actual Bash/native rounds yield, stamp with deferred updates, drain and reject malformed replies');
+  console.log('ok: actual Bash/native rounds yield, drain, reject malformed replies and retain the live process without publishing blocked inventory');
 } finally {
   rmSync(dir, { recursive: true, force: true });
 }

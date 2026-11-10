@@ -2,13 +2,14 @@
 // Frozen source transactions, durable progress and the real stateless engine.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, closeSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, closeSync, readFileSync, renameSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
 import { openCatalog } from './incremental_inventory.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
-import { runRelationalInventory } from './inventory_relational_pipeline.mjs';
+import { runRelationalInventory, relationalInventoryContext } from './inventory_relational_pipeline.mjs';
+import { InventoryControl, InventoryActionRequired } from './inventory_control.mjs';
 import { captureInventory } from './capture_compute_inventory.mjs';
 import { classifyInventory } from './classify_compute_inventory.mjs';
 import { questionId } from '../worker/task_contract.js';
@@ -35,7 +36,9 @@ const current = fn => {
   const db = openCatalog(load(statePath).catalog);
   try { return fn(db); } finally { db.close(); }
 };
+let generations = 0;
 const unsafe = async (sql, args = []) => {
+  if (sql.includes('SELECT inventory_begin(')) generations++;
   assert(!sql.includes('inventory_cohort_rows'), 'relational capture expanded changes to a weapon cohort');
   if (sql.includes('DECLARE inventory_scan') && sql.includes('FROM builds')) fullCaptures++;
   if (sql.includes('inventory_ack(')) {
@@ -88,6 +91,15 @@ try {
   const future = await questionId('future', { data: 'input' });
   await query("INSERT INTO questions(id,verb,request,state,due_at,opened_at) VALUES($1,'future','{}','open','due','at')", [future]);
   await query("INSERT INTO demands(producer,ref,question,state,asked_at,due_at) VALUES('future','future',$1,'live','at','due')", [future]);
+  const preserved = join(work, 'inventory/capture-1'); mkdirSync(preserved, { recursive: true });
+  writeFileSync(join(preserved, 'protected'), 'original input');
+  await assert.rejects(cycle(0), error => error instanceof InventoryActionRequired && error.stage === 'needs_bootstrap');
+  assert.equal(generations, 0); assert.equal(fullCaptures, 0);
+  assert.equal(readFileSync(join(preserved, 'protected'), 'utf8'), 'original input');
+  const context = await relationalInventoryContext(bin, operator), control = new InventoryControl(join(work, 'inventory'));
+  try { control.request({ mode: 'relational', ...context, reason: 'explicit stateless fixture', maxNewBytes: 1024 ** 3 }); }
+  finally { control.close(); }
+  console.log('ok: initial full capture is admitted only by an explicit durable task');
   let captured;
   afterCapture = async cut => {
     const dir = join(root, 'frozen'); mkdirSync(dir);
@@ -97,6 +109,12 @@ try {
     await query("UPDATE questions SET state='fact',fact_engine=$2 WHERE id=$1", [future, engine]);
   };
   let state = await cycle(0); assert(state.pending); assert.equal(acknowledgments, 0);
+  const originalBuilds = readFileSync(load(statePath).pending.raw.builds), buildsPath = load(statePath).pending.raw.builds;
+  writeFileSync(buildsPath, Buffer.concat([originalBuilds, Buffer.from('corrupt input\n')]));
+  await assert.rejects(cycle(15000), error => error.stage === 'needs_restore');
+  assert.equal(generations, 1); assert.equal(fullCaptures, 1); assert.equal(acknowledgments, 0);
+  writeFileSync(buildsPath, originalBuilds);
+  console.log('ok: changed sealed input is refused before ACK without starting a replacement capture');
   const normalized = described.length, generation = load(statePath).generation;
   await native.close(); await open();
   failGate = true;
@@ -138,6 +156,18 @@ try {
     assert.equal(fullCaptures, before); assert.equal(described.length, derived);
   }
   console.log('ok: expired or superseded publication refreshes the input cut while retaining its verified incremental baseline');
+  const beforeState = readFileSync(statePath), beforeGeneration = generations, beforeCaptures = fullCaptures;
+  const catalogPath = load(statePath).catalog;
+  renameSync(catalogPath, catalogPath + '.preserved');
+  try { await assert.rejects(cycle(15000), error => error.stage === 'needs_bootstrap'); }
+  finally { renameSync(catalogPath + '.preserved', catalogPath); }
+  writeFileSync(join(bin, 'ENGINE'), 'b'.repeat(12));
+  try { await assert.rejects(cycle(15000), error => error.stage === 'needs_bootstrap'); }
+  finally { writeFileSync(join(bin, 'ENGINE'), engine); }
+  assert.equal(generations, beforeGeneration); assert.equal(fullCaptures, beforeCaptures);
+  assert(readFileSync(statePath).equals(beforeState));
+  assert.equal(readFileSync(join(preserved, 'protected'), 'utf8'), 'original input');
+  console.log('ok: missing catalog and changed engine retain original inputs without a new generation or full capture');
   failed = false;
 } catch (error) { console.error(`relational pipeline evidence: ${root}`); throw error; }
 finally {

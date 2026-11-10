@@ -181,6 +181,19 @@ publish_incremental() {
   fi
 }
 
+consume_inventory_status() {
+  local status="$1" epoch
+  inventory_pending=$(jq -r 'if .pending then 1 else 0 end' "$status") || return 1
+  if [ "$(jq -r '.blocked // false' "$status")" = true ]; then
+    inventory_blocked=1
+    inventory_pending=0
+    echo "live: inventory requires explicit action: $(jq -r '.stage' "$status")" >&2
+    return 0
+  fi
+  epoch=$(jq -r '.engine_epoch // empty' "$status") || return 1
+  publish_incremental "$epoch"
+}
+
 ranker_alive() {
   [ -n "${RANKER_PID:-}" ] && kill -0 "$RANKER_PID" 2>/dev/null
 }
@@ -306,14 +319,13 @@ while true; do
     fi
   fi
   inventory_pending=0
+  inventory_blocked=0
   if [ "$INCREMENTAL_INVENTORY" = 1 ]; then
     changed=0
     if ranker_alive; then
       if flock -n "$WORK/inventory.lock" node --max-old-space-size=192 "$HERE/inventory_pipeline.mjs" "$WORK" "$BIN" "$RANKER_INSTANCE" \
           <&"${RANKER[0]}" >&"${RANKER[1]}"; then
-        inventory_pending=$(jq -r 'if .pending then 1 else 0 end' inventory/status.json)
-        inventory_engine_epoch=$(jq -r '.engine_epoch // empty' inventory/status.json)
-        publish_incremental "$inventory_engine_epoch" || stop_ranker
+        consume_inventory_status inventory/status.json || stop_ranker
       else
         echo "live: inventory cycle failed; restarting the ranker from authoritative inputs" >&2
         stop_ranker
@@ -322,7 +334,7 @@ while true; do
   fi
   # A STAMP THAT FAILED IS OWED until one lands.
   [ "$changed" = 1 ] && stamp_owed=1
-  if [ "$stamp_owed" = 1 ]; then
+  if [ "$inventory_blocked" = 0 ] && [ "$stamp_owed" = 1 ]; then
     if stamp; then
       stamp_owed=0
     else
@@ -339,7 +351,7 @@ while true; do
       node "$HERE/live_publish.mjs" push "$WORK" verified || echo "live: the push did not land; the next cycle sends it" >&2
     fi
   fi
-  if [ "$INCREMENTAL_INVENTORY" = 1 ] && [ -n "$PUSH_PID" ] && ! kill -0 "$PUSH_PID" 2>/dev/null \
+  if [ "$inventory_blocked" = 0 ] && [ "$INCREMENTAL_INVENTORY" = 1 ] && [ -n "$PUSH_PID" ] && ! kill -0 "$PUSH_PID" 2>/dev/null \
       && ranker_alive && [ -n "$RANKER_PUBLISHED_EPOCH" ]; then
     start_push
   fi
@@ -347,5 +359,5 @@ while true; do
   if [ "${ONCE:-}" = 1 ]; then
     break
   fi
-  if [ "$inventory_pending" = 1 ] || [ "${RANKER_PUBLISH_PENDING:-0}" = 1 ]; then sleep 1; else sleep "$POLL_SECONDS"; fi
+  if [ "$inventory_blocked" = 0 ] && { [ "$inventory_pending" = 1 ] || [ "${RANKER_PUBLISH_PENDING:-0}" = 1 ]; }; then sleep 1; else sleep "$POLL_SECONDS"; fi
 done

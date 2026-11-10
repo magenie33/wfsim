@@ -156,6 +156,11 @@ worker gets from Hyperdrive; it needs `npm install --prefix scripts/pg`.
 
 ## Inventory checks
 
+`check_inventory_control.mjs` checks immutable explicit requests, single-use
+generation authorization, expected-generation fencing, disk admission and
+failed-capture retention. Actual competing processes and SIGKILL verify
+SQLite writer exclusion and lock recovery without discarding task history.
+
 `check_inventory_relations.mjs` compares every question/category/queued tuple
 with an independent native full walk. It covers aliases, deletion, threshold
 changes, retirement, scene fallback, old ruler families, queue withdrawal,
@@ -165,6 +170,8 @@ records, asserting equal normalization and propagation work and indexed range
 plans. `check_inventory_relational_pipeline.mjs` exercises sealed PGlite cuts,
 interrupted input and engine work, byte checkpoints, acknowledgment order,
 late writes and expired or superseded publication without recapturing history.
+Actual native restarts resume a compatible sealed cut; damaged inputs, missing
+catalogs and changed engines cannot begin another generation or full capture.
 
 `check_score_inputs.mjs` reads leased calculations against 20,000 unrelated
 database rows. It verifies primary-key plans, queue order, duplicate demands,
@@ -186,7 +193,10 @@ same ordered rows as the default; invalid worker limits fail before scanning.
 frozen PGlite cuts and compares every classified question with an independent
 `--each-ruler --gate` walk. It covers source deletion, canonical aliases,
 retirement, multiple apply chunks, later writes, durable acknowledgment and
-input cleanup. Pager budget fixtures require identical question exports across
+input cleanup.
+Native restart, missing-catalog and changed-engine cases retain their original
+files without automatic generation creation, capture, acknowledgment or GC.
+Pager budget fixtures require identical question exports across
 16 MiB to 16 GiB, bounded automatic sizing and invalid-budget refusal.
 One and two concurrent ruler walks retain the exact classified
 question digest. Set `WFSIM_INVENTORY_BOARD_BIN` to select an existing binary;
@@ -195,6 +205,7 @@ otherwise it uses `target/debug/wfsim-board`. A missing binary fails the check.
 `check_live_ranker.mjs` connects the production Bash publication consumer to
 the native ranker. It covers bounded rounds, deferred hot updates, stamping
 when a round finishes, a quiescent epoch and malformed protocol replies.
+Blocked inventory neither invokes publication nor stops the native process.
 
 `check_work_calibration.mjs` compares cursor pages with the grouped payment
 oracle, checks the read-only role and temporary-table isolation, and proves
