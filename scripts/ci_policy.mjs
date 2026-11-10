@@ -24,7 +24,7 @@ const CI_WIRING = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
   'scripts/check_full_work.mjs', 'scripts/check_edge_runtime.mjs', 'scripts/ci_metrics.mjs',
   'scripts/factory_shards.mjs', 'scripts/check_factory_shards.mjs',
   'scripts/release_readiness.py', 'scripts/check_release_readiness.py'];
-const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh',
+const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh', 'scripts/cancel_queue.sh',
   'scripts/live_board.sh', 'scripts/ship_builds.sh', 'scripts/retire_scores.mjs', 'scripts/ship_queue.sh',
   'scripts/fetch_facts.sh', 'scripts/ship_facts.sh', 'scripts/live_publish.mjs', '.github/workflows/queue.yml',
   'deploy/factoryd_grants.sql', 'scripts/check_rescore_paths.mjs', 'scripts/capture_compute_inventory.mjs',

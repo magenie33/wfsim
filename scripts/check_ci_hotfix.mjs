@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { ALL_CI_JOBS, assertGate, OPTIONAL_NATIVE_JOBS, PRODUCT_JOBS } from './ci_policy.mjs';
 import { assertHotfixProof, HOTFIX_CHECKS, HOTFIX_PROFILES, hotfixPlan } from './ci_hotfix.mjs';
 import { trustedRun, validProof } from './ci_runs.mjs';
+import { COMPANION_JOBS } from './full_work.mjs';
 
 const reason = 'Devices finish their packs and time out while asking for the next';
 const paths = ['worker/pg/sync.sql', 'scripts/check_tasks.mjs', 'docs/CHECKS.md'];
@@ -35,7 +36,7 @@ for (const checks of Object.values(HOTFIX_CHECKS)) {
 
 const needs = Object.fromEntries(['plan', 'quick', 'commits', 'coordination', ...ALL_CI_JOBS]
   .map(job => [job, { result: PRODUCT_JOBS.includes(job) ? 'skipped' : 'success' }])
-  .concat(OPTIONAL_NATIVE_JOBS.map(job => [job, { result: 'skipped' }])));
+  .concat([...OPTIONAL_NATIVE_JOBS, ...COMPANION_JOBS].map(job => [job, { result: 'skipped' }])));
 assertGate(plan, needs);
 for (const job of ['plan', 'quick', 'commits', 'coordination', 'hotfix']) {
   for (const result of ['failure', 'cancelled', 'skipped', undefined]) {
