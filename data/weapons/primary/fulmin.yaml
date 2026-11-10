@@ -74,7 +74,6 @@ unmodeled:
   - reason: client_battery_defaults
   - reason: client_accuracy_runtime
   - "Switching modes takes 1 s of animation (0.5 s on Wisp); the sim never switches, so each mode is measured as the whole weapon."
-  - "It gets nothing from reload-triggered mods such as Spring-Loaded Chamber (wiki), because a battery never reloads."
 
 source:
   url: https://wiki.warframe.com/w/Fulmin

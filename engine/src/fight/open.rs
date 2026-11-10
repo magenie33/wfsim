@@ -399,6 +399,7 @@ pub(super) fn open<'a>(
         Vec::new()
     };
     let mut ammo = Ammo {
+        battery: Default::default(),
         drop_kill_mark: 0u32,
         refill_kill_mark: 0u32,
         rounds_this_mag: 0,

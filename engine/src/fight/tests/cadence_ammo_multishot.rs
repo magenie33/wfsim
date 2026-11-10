@@ -167,6 +167,7 @@ fn m126_stug_blazing_barrel_resets_in_both_forms() {
             .map(|b| LiveStacks::seed(0, b.max_stacks, b.duration)).collect();
         let mut rng = Rng::new(126);
         let mut ammo = Ammo {
+            battery: Default::default(),
             drop_kill_mark: 0, refill_kill_mark: 0, rounds_this_mag: 0,
             refills: 0, cap: p.magazine_size, growth_stacks: 0,
             summon_multiplier: 1.0, owed_shells: 0, loaded: p.magazine_size,
@@ -527,7 +528,7 @@ fn a_battery_refills_between_shots_and_a_slow_enough_one_never_reloads() {
     // AT the listed rate the gap IS the delay: nothing regenerates, and the
     // battery runs dry every seven rounds exactly as a magazine would.
     let listed = run_once(&shedu(2.5), &mut Rng::new(4));
-    assert!(listed.reloads > 0, "at the listed rate it must still reload");
+    assert!(listed.downtime_seconds > 0.0, "at the listed rate it must wait for recovery");
 
     // ABOVE break-even it still drains, just slowly — at 2.35/s the gap
     // returns 0.715 rounds against the 1.0 it spends, so the battery lasts
@@ -538,11 +539,12 @@ fn a_battery_refills_between_shots_and_a_slow_enough_one_never_reloads() {
     // 116 s and does not fit this fixture's minute. Worth recording: the
     // approach to break-even is asymptotic, so "does it reload" stops being
     // a question about the weapon and becomes one about the clock.)
-    assert!(run_once(&shedu(2.35), &mut Rng::new(4)).reloads > 0);
+    assert!(run_once(&shedu(2.35), &mut Rng::new(4)).downtime_seconds > 0.0);
 
     // JUST BELOW IT (2.25/s) the reload is gone for good.
     let slow = run_once(&shedu(2.25), &mut Rng::new(4));
     assert_eq!(slow.reloads, 0, "a battery under break-even must never empty");
+    assert_eq!(slow.downtime_seconds, 0.0, "sufficient passive recovery needs no wait");
 
     // …and it is worth REAL rounds: 10% slower and no downtime at all beats
     // the listed rate over a minute.

@@ -209,10 +209,8 @@ pub struct FightParams {
     /// Hemorrhage's below-2.5 gate reads and what the panel prints, exactly as
     /// on a charge weapon.
     pub sustained_fire_rate: Option<crate::model::SustainedFireRate>,
-    /// A MAGAZINE THAT REFILLS ITSELF — see [`crate::model::Battery`].
-    /// The EMPTY case is already `reload_seconds` (delay + a full refill); what
-    /// this adds is the BETWEEN-SHOTS one, which is where the mechanic stops
-    /// being a differently-spelled reload.
+    /// Passive recovery from the last shot. The APL may choose to wait until
+    /// full; recovery itself never fires reload triggers.
     pub battery: Option<crate::model::Battery>,
     /// SECONDARY IRRADIATE'S ECHO, TIMES THIS — a MEASURED coefficient with no
     /// explanation behind it. 1.0 for every entry in the roster but one; see

@@ -34,8 +34,7 @@ effects:
     rankMax: 0.50
 
 unmodeled:
-  - "A reload buff gained mid-fight (Conjunction Voltage's stacks, Merciless) also shortens the refill here, which in game 'is not affected by mods or abilities'. Reload mods are handled correctly. The effect is at most the refill: 0.6 s of a 2.0 s empty cycle on a Tombfinger, so the number can read slightly high."
-  - "In game it stops reload-triggered mods and arcanes, such as Pressurized Magazine or Arcane Awakening, because there is no reload. The sim does not, so a build pairing one with Pax Charge reads high by that card's worth."
+  - "Reload-speed buffs gained mid-fight do not update the battery's recharge delay."
 
 source:
   url: https://wiki.warframe.com/w/Pax_Charge

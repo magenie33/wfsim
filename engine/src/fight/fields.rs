@@ -108,6 +108,7 @@ impl FightParams {
         crate::data::apl::for_fight(
             &self.apl_inserted,
             &crate::data::apl::Shape {
+                battery: firing.battery.is_some(),
                 // A MODE THE TOGGLE PUT THE WEAPON IN IS FIRED ON THE TRIGGER;
                 // the toggle itself was pressed before the fight.
                 attack: if firing.alt_fire_toggles {

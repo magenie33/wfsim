@@ -6,6 +6,11 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "{form}, wait until full": "{form}，等待回满"
+  "Wait until full": "等待回满"
+  "Reload-speed buffs gained mid-fight do not update the battery's recharge delay.": "战斗中获得的装填速度增益尚未作用于电池的恢复延迟。"
+  "Stop firing before the next shot would empty the battery, then wait until it is full.": "在下一发会打空电池之前停火，等待回满后继续射击。"
+  "After depleting the battery, wait until it is full before firing again. Recovery can be interrupted by firing.": "电池耗尽后等待回满再继续射击。恢复期间可以提前开火打断。"
   "Native alternative behavior declarations are bound as evidence; their runtime availability and complete attack sequences are not simulated. Only the declared entry modes are used.": "已绑定原生替代攻击状态作为来源证据；尚未模拟其实际启用条件和完整攻击流程，目前只使用条目中声明的模式。"
   "Kitgun statistics use the published assembly tables; native secondary overrides are bound, but the runtime part-composition consumer is unverified.": "组合枪数值使用已公布的组装表；已绑定原生副武器覆盖参数，但尚未核实运行时的部件合成流程。"
   "Charge time and the selected projectile use parsed inputs. The native charge-cap multiplier consumer is unverified; damage uses the declared packet without multiplying it by that cap.": "蓄力时间和所选弹体使用解析参数；尚未核实原生蓄力倍率上限的实际作用，伤害使用声明的组件值，不再乘以上限。"
@@ -1683,7 +1688,6 @@ ui:
   "in the current fight": 当前这场战斗用的就是它
   "in this build": 仅当前配装
   inactive: 未在场
-  "It gets nothing from reload-triggered mods such as Spring-Loaded Chamber (wiki), because a battery never reloads.": "它吃不到装填触发类 MOD（例如 Spring-Loaded Chamber）（wiki），因为电池从不装填。"
   "It uses no ammo pickups and has a reserve of zero (module); reserves are infinite here, so the limit it is built around does not apply.": "它不使用弹药拾取，备弹为零（模块）；这里备弹无限，所以它围绕的那个限制不适用。"
   "It uses ammo only when dealing damage (wiki); reserves are infinite here, so this changes nothing.": "它只在造成伤害时消耗弹药（wiki）；这里备弹无限，所以没有影响。"
   "It reloads 50% faster from an empty magazine (wiki); the engine has one reload time per weapon. The sim always empties the magazine, so the {seconds} s here is the slow reload and the number reads low.": "空匣换弹快 50%（wiki），而引擎每把武器只有一个换弹时间。模拟总是打空弹匣，所以这里的 {seconds} 秒是慢的那次，数字偏低。"
@@ -3615,8 +3619,6 @@ ui:
   "Contagion Cloud, its augment, leaves a damaging cloud where an enemy dies. It needs a corpse and a second target, so it is not counted; against a crowd the number reads low.": "Contagion Cloud（强化 MOD）会在敌人死亡处留下伤害云。它需要尸体和第二个目标，所以未计入；面对人群时数字偏低。"
   "The teleport and its heavy attack are not modelled: the ability swaps to melee and strikes the target it jumps to. Only the buff the cast leaves behind is modelled.": "瞬移及其重击未建模：技能会切到近战，并重击跳到的目标。只计入施放后留下的增益。"
   "Kullervo's passive, +75% Heavy Attack Efficiency and +100% Heavy Attack Wind Up speed, belongs to the Warframe, and this fight has no Warframe.": "Kullervo 的被动（+75% 重击效率、+100% 重击蓄力速度）属于战甲，而本场没有战甲。"
-  "A reload buff gained mid-fight (Conjunction Voltage's stacks, Merciless) also shortens the refill here, which in game 'is not affected by mods or abilities'. Reload mods are handled correctly. The effect is at most the refill: 0.6 s of a 2.0 s empty cycle on a Tombfinger, so the number can read slightly high.": "战斗中途获得的换弹增益（Conjunction Voltage 的叠层、Merciless）在这里也会缩短充能，而游戏里充能「不受 MOD 或技能影响」。换弹 MOD 的处理是正确的。影响最多就是充能本身：Tombfinger 一次 2.0 秒空匣循环中的 0.6 秒，所以数字可能略偏高。"
-  "In game it stops reload-triggered mods and arcanes, such as Pressurized Magazine or Arcane Awakening, because there is no reload. The sim does not, so a build pairing one with Pax Charge reads high by that card's worth.": "游戏里它会让装填触发类 MOD 和赋能（例如 Pressurized Magazine、Arcane Awakening）失效，因为根本没有装填。模拟没有这道限制，所以同时装了这类卡的配装数字偏高，偏高的量就是那张卡的价值。"
   "The homing bolts are not fired: a headshot kill releases 1-4 bolts, half Slash and half Puncture, with a forced Impact proc and double benefit from crit mods. A headshot build with this arcane reads low by everything the bolts would deal.": "追踪弩箭不会射出：爆头击杀会放出 1–4 支，一半切割、一半穿刺，必定冲击，暴击 MOD 收益翻倍。带这个赋能的爆头配装数字偏低，偏低的量就是这些弩箭的伤害。"
   "The field is not placed: on a kill, a 20% chance to leave a field for 3-12 s dealing 80 Heat to enemies within 10 m. Against a crowd this arcane reads low. Its damage is flat, so it matters less as the build gets stronger.": "力场不会放置：击杀时有 20% 几率留下持续 3–12 秒的力场，对 10 米内的敌人造成 80 火焰伤害。面对人群时这个赋能的数字偏低。它的伤害是固定值，配装越强，占比越小。"
   "The field is not placed: on a kill, a 20% chance to leave a field for 3-12 s dealing 40 Cold to enemies within 10 m. Against a crowd this arcane reads low. Its damage is flat, so it matters less as the build gets stronger.": "力场不会放置：击杀时有 20% 几率留下持续 3–12 秒的力场，对 10 米内的敌人造成 40 冰冻伤害。面对人群时这个赋能的数字偏低。它的伤害是固定值，配装越强，占比越小。"

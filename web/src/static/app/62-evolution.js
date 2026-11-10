@@ -177,6 +177,9 @@ function modeExplain(w, id) {
       : [trF("Fired in its {form} for the whole fight.", { form: firedForm(f) })]));
   }
   if (cycle && earned) out.push(...modeCycleExplain(w, id, earned));
+  if (!declared && !cycle && (modeForm(w, id) || {}).battery) {
+    out.push(tr("After depleting the battery, wait until it is full before firing again. Recovery can be interrupted by firing."));
+  }
   return out;
 }
 

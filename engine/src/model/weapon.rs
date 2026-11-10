@@ -754,8 +754,7 @@ pub struct Battery {
     /// Rounds a second, once the delay has passed (28).
     pub regen_per_second: f64,
     /// The wait before regeneration starts with the battery EMPTY (1.0 s).
-    /// `reload_seconds` already carries `this + magazine/rate`, so this field
-    /// is what the between-shots case needs rather than a second copy of it.
+    /// Both partial recovery and a wait until full read the same clock.
     pub delay_empty_seconds: f64,
     /// …and with rounds still in it (0.4 s).
     pub delay_partial_seconds: f64,

@@ -258,6 +258,7 @@ function headlessBareModeLabel(say, w, id) {
   }
   const f = headlessModeForm(w, id);
   if (f && /_detonate$/.test(id)) return headlessTrF(say, "{form}, detonated", { form: say.t(f.name) });
+  if (f && f.battery) return headlessTrF(say, "{form}, wait until full", { form: say.t(f.name) });
   return f ? say.t(f.name) : say.t(id);
 }
 
@@ -270,7 +271,9 @@ function headlessModeLabel(say, w, id) {
   if (!f) return name;
   return headlessIsCycleMode(id)
     ? headlessTrF(say, "{form} cycle ({base})", { form: say.t((headlessEarnedForm(w) || {}).name || ""), base: say.t(f.name) })
-    : headlessFiredForm(say, f);
+    : f.battery
+      ? headlessTrF(say, "{form}, wait until full", { form: headlessFiredForm(say, f) })
+      : headlessFiredForm(say, f);
 }
 
 // ---- a board row as a build ------------------------------------------------------

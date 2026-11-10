@@ -67,8 +67,6 @@ pub(super) fn charge_magazine_cycle(
     rs_armed: &mut bool,
     opening_closed: &mut bool,
     field_duration_boost: &mut bool,
-    // When the last shot left — what a battery's delay counts from.
-    last_shot_t: f64,
     switch_to: Option<SwitchTo>,
 ) -> Flow {
         // WHAT THE LIST CALLS FOR AT THIS INSTANT. Asked once and matched
@@ -209,13 +207,9 @@ pub(super) fn charge_magazine_cycle(
                 return Flow::Break;
             }
             return Flow::Switch;
-        } else if let (Action::Recharge, Some(b)) = (&want, params.battery) {
-            // THE BATTERY REFILLS FROM THE LAST SHOT, after its delay, to the
-            // brim: the top of the loop credits the gap
-            // (`before`'s battery block), so this only moves the clock.
-            let from = if last_shot_t.is_finite() { last_shot_t } else { *t };
-            let full = from + b.delay_partial_seconds + (ammo.cap - ammo.loaded) / b.regen_per_second.max(1e-9);
-            let wait = (full - *t).max(0.0);
+        } else if let (Action::WaitForFull | Action::Reload, Some(b)) = (&want, params.battery) {
+            let wait = (ammo.battery_full_at(b, *t) - *t).max(0.0);
+            let wait = wait.min((params.duration_seconds - *t).max(0.0));
             r.downtime_seconds += wait;
             *t += wait;
             if *t >= params.duration_seconds {

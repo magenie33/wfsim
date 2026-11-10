@@ -126,6 +126,7 @@ pub(super) struct Spool {
 /// THE MAGAZINE AND THE RESERVE — what is loaded, what is carried, what the
 /// magazine holds now, and the bookkeeping the ammo cards read.
 pub(super) struct Ammo {
+    pub(super) battery: super::battery::BatteryClock,
     /// KILLS ALREADY PAID FOR, so the pickup roll happens once per body.
     ///
     /// Read as a DELTA off the run's own counter rather than hooked onto each
@@ -262,6 +263,7 @@ impl IncarnonState {
     ) -> crate::data::apl::Now<'a> {
         let Some(cy) = params.cycle.as_ref() else {
             return crate::data::apl::Now {
+                battery_needs_refill: params.battery.map(|_| ammo.battery_needs_refill(next_cost, t)),
                 can_fire: can_fire(ammo.available(params, self), next_cost),
                 can_alt_fire: true,
                 gauge_pct: 0.0,
@@ -306,6 +308,7 @@ impl IncarnonState {
             }
         };
         crate::data::apl::Now {
+            battery_needs_refill: None,
             can_alt_fire: cy.ends != Ends::SingleShot || gauge_pct >= 1.0,
             // THE ACTIVE FORM'S MAGAZINE: a CHARGE-MAGAZINE cycle holds the
             // base form's rounds aside while it is transformed, so in that half

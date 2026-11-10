@@ -57,6 +57,7 @@ mod pellet;
 mod flight;
 mod open;
 mod before;
+mod battery;
 mod bow;
 mod after;
 mod resolve;

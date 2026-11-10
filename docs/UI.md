@@ -877,6 +877,8 @@ Cycles state their opening charge, charging source and threshold, alternate use,
 return condition, ammunition and transition costs. Single-shot gauges, Incarnon
 charge magazines and timed recharge meters read their own authoritative fields;
 a declared mode's short description does not replace its cycle conditions.
+Battery modes name their wait-until-full policy. Their APL uses `wait_for_full`,
+and their explanation states that firing can interrupt passive recovery.
 
 **THE BODY IS EVERY CHILD BUT THE HEADING** (`.fold.sect.shut > :not(.fold-h)`)
 rather than a `.fold-b` the markup has to remember to wrap. A section that

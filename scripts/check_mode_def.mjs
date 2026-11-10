@@ -26,9 +26,45 @@ const toridTransition = JSON.parse(readFileSync(new URL("../tests/fixtures/clien
 const app = await openApp({ boot: 12000 });
 const { evaluate, check, send, sleep, BASE } = app;
 
+if (process.env.WFSIM_MODE_BATTERY_ONLY) {
+  await checkBatteryModes();
+  await app.finish("battery modes wait until full in both languages");
+}
+
 if (process.env.WFSIM_MODE_BOARD_ONLY) {
   await checkBoardModes();
   await app.finish("the overview preserves each winning build's mode");
+}
+
+async function checkBatteryModes() {
+  for (const lang of ["en", "zh"]) {
+    await evaluate(`localStorage.setItem('wfsim-lang', ${JSON.stringify(lang)})`);
+    await send("Page.navigate", { url: BASE + "/weapons/Coda_Bubonico/builder" });
+    await sleep(2500);
+    const result = await evaluate(`(async () => {
+      const w = weaponInfo('coda_bubonico');
+      const rows = [];
+      for (const mode of ['base', 'alternate']) {
+        const p = await api('/api/panel', { weapon: 'coda_bubonico', mode });
+        rows.push({
+          mode, label: modeLabel(w, mode), prose: modeExplain(w, mode).join(' '),
+          apl: p.apl,
+        });
+      }
+      return { rows, plain: modeLabel(weaponInfo('braton'), 'base') };
+    })()`);
+    for (const row of result.rows) {
+      check(`Coda Bubonico/${row.mode}/${lang}: full-refill mode label`,
+        row.label.includes(lang === "zh" ? "等待回满" : "wait until full"), row.label);
+      check(`Coda Bubonico/${row.mode}/${lang}: recovery is interruptible`,
+        row.prose.includes(lang === "zh" ? "提前开火打断" : "interrupted by firing"), row.prose);
+      check(`Coda Bubonico/${row.mode}/${lang}: executable wait replaces reload`,
+        row.apl.includes("wait_for_full,if=battery.needs_refill")
+          && !row.apl.some(line => line.startsWith("reload")), row.apl);
+    }
+    check(`ordinary magazine/${lang}: retains its form label`,
+      !/wait until full|等待回满/.test(result.plain), result.plain);
+  }
 }
 
 async function cycleDetails(weapon) {
@@ -64,6 +100,8 @@ async function cycleDetails(weapon) {
     return result;
   })()`);
 }
+
+await checkBatteryModes();
 
 for (const lang of ["en", "zh"]) {
   await evaluate(`localStorage.clear(); localStorage.setItem('wfsim-lang', ${JSON.stringify(lang)})`);

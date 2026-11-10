@@ -1248,7 +1248,8 @@ fn form_section(
         })
     };
     let mut row = |key: &'static str, label: &str, base_s: String, final_s: String| {
-        let mut srcs = sources(key, None);
+        let source_key = if key == "reload" && panel.battery.is_some() { "magazine" } else { key };
+        let mut srcs = sources(source_key, None);
         let mut j = json!({ "key": key, "label": label, "base": base_s, "final": final_s });
         if let Some(by) = lock_by(key) {
             // ...AND WHAT THE LOCK IS THROWING AWAY. The row kept listing
@@ -1391,9 +1392,13 @@ fn form_section(
         );
         row(
             "reload",
-            "Reload",
-            secs(base.base_reload),
-            secs(panel.reload_seconds),
+            if panel.battery.is_some() { "Wait until full" } else { "Reload" },
+            secs(base.battery.map_or(base.base_reload, |b|
+                (b.delay_empty_seconds + raw_mag / b.regen_per_second)
+                    .max(b.empty_animation_seconds.unwrap_or(0.0)))),
+            secs(panel.battery.map_or(panel.reload_seconds, |b|
+                (b.delay_empty_seconds + panel.magazine_size / b.regen_per_second)
+                    .max(b.empty_animation_seconds.unwrap_or(0.0)))),
         );
     }
     // Display emitted angular bounds; native sampler inputs are not angles.
@@ -2188,7 +2193,9 @@ mod mode_apl_tests {
     fn panel_lists_the_simulators_executable_rules() {
         for (weapon, mode, mods, rule) in [
             ("trumna_prime", "cycle", vec![], "alt_fire"),
-            ("haalvu", "base_recharge", vec![], "recharge,if=battery.next_shot_empties"),
+            ("haalvu", "base_recharge", vec![], "wait_for_full,if=battery.next_shot_empties"),
+            ("coda_bubonico", "base", vec![], "wait_for_full,if=battery.needs_refill"),
+            ("coda_bubonico", "alternate", vec![], "wait_for_full,if=battery.needs_refill"),
             ("glaive_prime", "throw_detonate", vec![], "detonate"),
             ("magistar", "base", vec!["crushing_ruin", "dreamers_wrath"], "heavy,if=tennokai"),
         ] {
@@ -2365,6 +2372,26 @@ mod source_row_tests {
     fn row<'a>(p: &'a Value, form: &str, label: &str) -> &'a Value {
         rows(p, form).into_iter().find(|r| r["label"] == json!(label))
             .unwrap_or_else(|| panic!("no {label} row on {form}"))
+    }
+
+    #[test]
+    fn battery_refill_panel_uses_capacity_and_the_passive_clock() {
+        for mode in ["base", "alternate"] {
+            let request = json!({ "weapon": "coda_bubonico", "mode": mode });
+            let plain = panel_json(&request);
+            let form = if mode == "base" { "Base Form" } else { "Alternate Fire" };
+            assert_eq!(row(&plain, form, "Wait until full")["final"], "4.1s");
+            let mut speed = request.clone();
+            speed["mods"] = json!(["tactical_pump"]);
+            let speed = panel_json(&speed);
+            let wait = row(&speed, form, "Wait until full");
+            assert_eq!(wait["final"], "4.1s", "reload speed cannot scale passive regeneration");
+            assert!(wait["sources"].as_array().unwrap().is_empty());
+            let mut capacity = request;
+            capacity["mods"] = json!(["ammo_stock"]);
+            let capacity = panel_json(&capacity);
+            assert_eq!(row(&capacity, form, "Wait until full")["final"], "6.54s");
+        }
     }
 
     #[test]

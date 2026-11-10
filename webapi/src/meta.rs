@@ -676,6 +676,7 @@ pub fn meta_json() -> Value {
                         // to be written once per language and not once per
                         // weapon.
                         "trigger": s.map(|x| x.attack.trigger.clone()),
+                        "battery": s.is_some_and(|s| s.battery.is_some()),
                         "charge_seconds": s.and_then(|x| x.attack.charge_seconds),
                         "ammo_cost": s.map(|x| x.attack.ammo_cost),
                         "meter": s.and_then(|x| x.attack.meter.as_ref()).map(|m| json!({

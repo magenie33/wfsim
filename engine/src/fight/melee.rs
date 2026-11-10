@@ -347,6 +347,7 @@ pub(super) fn prepare_melee_event(active: &FightParams, apl: &crate::data::apl::
         let flash = active.tennokai.enabled && t < melee.tennokai_until;
         let converts = flash && !active.spends_combo && !active.heavy_script.is_empty()
             && apl.pick_rule(&crate::data::apl::Now {
+                battery_needs_refill: None,
                 can_fire: true, can_alt_fire: false, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true,
                 battery_would_empty: false, switch_to: None, glaive_in_flight: false,
                 in_base_form: true, remaining: &|_| 0.0,
@@ -921,6 +922,7 @@ pub(super) fn swing_this_shot(
     // only the condition tells them apart.
     let tennokai_heavy = melee.input.as_ref().map_or_else(|| apl
         .pick_rule(&crate::data::apl::Now {
+            battery_needs_refill: None,
             can_fire: true,
             can_alt_fire: false,
             gauge_pct: 0.0,
@@ -939,6 +941,7 @@ pub(super) fn swing_this_shot(
     // heavy press while the glaive flies, so it is asked as of that instant.
     // Only a throw whose entry carries the in-flight explosion has one to set off.
     let in_flight_action = active.form.is_throw().then(|| apl.pick(&crate::data::apl::Now {
+            battery_needs_refill: None,
             can_fire: true,
             can_alt_fire: false,
             gauge_pct: 0.0,

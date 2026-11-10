@@ -3220,6 +3220,16 @@ round at 4.4 s and starts reloading at 4.8 s. `engine::fight` asks at the top of
 the shot loop, after the previous shot's interval; moving the check to the end
 of a shot would start every reload one interval early.
 
+Battery recovery starts from the last shot, using the parsed empty or partial
+delay and regeneration rate. Each idle interval is credited once. A battery's
+default APL uses `wait_for_full,if=battery.needs_refill`: after depletion, it
+waits for the remaining delay and recovery to full. This is a play policy;
+firing with recovered ammunition interrupts recovery and starts a new delay.
+An explicit empty animation remains a minimum lockout. Recovery consumes no
+reserve ammunition and produces no reload events or reload-triggered buffs.
+`wait_for_full` also serves declared modes that stop before empty; `recharge`
+is accepted as an alias.
+
 **The in-game HUD shows the CEILING** of that fractional counter, which is how
 M14 was readable at all: from 4.25 a single 0.25 shot moves the readout 5 → 4,
 where a clean 5.00 magazine would have stayed at 5. Worth knowing before

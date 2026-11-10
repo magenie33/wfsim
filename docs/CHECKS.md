@@ -2070,6 +2070,10 @@ the list that happens to be open, and put them all back.
 
 ## `check_mode_def`
 
+Battery modes label the full-refill policy separately from passive recovery.
+`WFSIM_MODE_BATTERY_ONLY=1` checks primary and alternate Coda Bubonico modes
+in both languages, their executable wait rules and the ordinary-gun control.
+
 A mode is EXPLAINED, not just named, and its name is
 DERIVED. Each sentence is a TEMPLATE with `{named}` holes filled from
 `/api/meta`'s forms, so a weapon that arrives tomorrow explains itself and

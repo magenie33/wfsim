@@ -94,11 +94,10 @@ pub enum Action {
     /// fight: the weapon's `mode_switch_seconds` on the reload clock, no shot
     /// while it runs. The same word the precombat list uses, where it is free.
     SwitchMode { form: String },
-    /// STOP FIRING AND LET THE BATTERY REFILL, all the way: a battery waits
-    /// out its delay whatever the gap, so the longest refill buys the most
-    /// firing for the wait, and a full one is the longest there is. Not a
-    /// reload — nothing keyed to one fires.
-    Recharge,
+    /// Stop firing until the battery is full. Recovery is passive and can be
+    /// interrupted by firing; this action chooses to wait for the whole refill.
+    #[serde(alias = "recharge")]
+    WaitForFull,
     /// Go into the other form, and come back out of it. TWO ACTIONS AND NOT
     /// ONE: the record logs a transmute's two ends separately, and a list that
     /// said only "transform" would mean different things on different lines —
@@ -219,6 +218,8 @@ pub enum When {
     /// Read off the next shot's live cost, so ammo efficiency moves it and
     /// infinite ammo never makes it hold.
     BatteryWouldEmpty,
+    /// The battery was depleted or cannot pay for the next shot.
+    BatteryNeedsRefill,
     /// `if=tennokai` — the Tennokai flash is up, and what it buys is ONE swing
     /// turned into a heavy attack that spends no combo. A condition and not a
     /// property of the heavy action, because on a form that already spends
@@ -267,7 +268,7 @@ impl Rule {
             Action::Detonate => "detonate".into(),
             Action::Recall => "recall".into(),
             Action::Reload => "reload".into(),
-            Action::Recharge => "recharge".into(),
+            Action::WaitForFull => "wait_for_full".into(),
             Action::SwitchMode { form } => format!("switch_mode,form={form}"),
             Action::TransformIn => "transform_in".into(),
             Action::TransformOut => "transform_out".into(),
@@ -283,6 +284,7 @@ impl Rule {
             }
             When::Tennokai => format!("{act},if=tennokai"),
             When::BatteryWouldEmpty => format!("{act},if=battery.next_shot_empties"),
+            When::BatteryNeedsRefill => format!("{act},if=battery.needs_refill"),
             When::Once => format!("{act},if=once"),
             When::StrengthGain => format!("{act},if=strength_gain"),
         }
@@ -352,6 +354,8 @@ impl Apl {
                 // A FULL MAGAZINE CANNOT BE RELOADED, so a rule that would is
                 // passed over like a transmute into a form already held.
                 Action::Reload => now.magazine_pct < 1.0 - 1e-9,
+                Action::WaitForFull => now.battery_needs_refill.is_some()
+                    && (now.magazine_pct < 1.0 - 1e-9 || now.battery_needs_refill == Some(true)),
                 // …AND A GLAIVE IN THE HAND CANNOT BE DETONATED.
                 Action::Detonate | Action::Recall => now.glaive_in_flight,
                 // …AND A MODE CAN BE SWITCHED TO ONLY FROM THE OTHER ONE.
@@ -370,6 +374,7 @@ impl Apl {
                 When::BuffRemainsUnder { ability, seconds } => (now.remaining)(ability) < *seconds,
                 When::Tennokai => now.tennokai,
                 When::BatteryWouldEmpty => now.battery_would_empty,
+                When::BatteryNeedsRefill => now.battery_needs_refill == Some(true),
                 When::Once | When::StrengthGain => false,
             };
             if holds {
@@ -396,6 +401,8 @@ impl Apl {
 /// cannot answer, and it is the list that grows when a new condition is worth
 /// having. The fight fills it; this module never learns how a gauge is kept.
 pub struct Now<'a> {
+    /// None on a magazine; otherwise whether the battery's full-refill policy holds.
+    pub battery_needs_refill: Option<bool>,
     pub can_fire: bool,
     /// An earned alternate is unavailable until its gauge is full; a free one is ready.
     pub can_alt_fire: bool,
@@ -431,9 +438,11 @@ pub struct Now<'a> {
     pub remaining: &'a dyn Fn(&str) -> f64,
 }
 
-/// **WHAT THE FIGHT ITSELF CONTRIBUTES TO THE LIST** — the three facts that
+/// **WHAT THE FIGHT ITSELF CONTRIBUTES TO THE LIST** — the facts that
 /// decide its own half, and nothing a rule reads at run time.
 pub struct Shape {
+    /// A passive battery refill replaces the ordinary magazine reload.
+    pub battery: bool,
     /// The press this mode is played on (`Action::firing`).
     pub attack: Action,
     /// Is there a transmute to decide? The only mode with two forms in it.
@@ -473,7 +482,11 @@ pub fn for_fight(inserted: &Apl, shape: &Shape) -> Apl {
         out.push(rule(Action::Heavy, When::Tennokai));
     }
     if !shape.attack.is_swing() {
-        out.push(rule(Action::Reload, When::CannotFire));
+        out.push(if shape.battery {
+            rule(Action::WaitForFull, When::BatteryNeedsRefill)
+        } else {
+            rule(Action::Reload, When::CannotFire)
+        });
     }
     out.push(rule(shape.attack.clone(), When::Always));
     Apl(out)
@@ -548,7 +561,7 @@ pub fn preset(mode: &str) -> Option<Apl> {
     };
     Some(for_fight(
         &Apl::default(),
-        &Shape { attack: Action::Shoot, has_cycle, tennokai_heavy: false },
+        &Shape { battery: false, attack: Action::Shoot, has_cycle, tennokai_heavy: false },
     ))
 }
 
@@ -557,12 +570,34 @@ mod tests {
     use super::*;
 
     fn now<'a>(remaining: &'a dyn Fn(&str) -> f64) -> Now<'a> {
-        Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining }
+        Now { battery_needs_refill: None, can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining }
     }
 
     /// An ordinary gun: the trigger, and no flash to convert a swing.
     fn gun(has_cycle: bool) -> Shape {
-        Shape { attack: Action::Shoot, has_cycle, tennokai_heavy: false }
+        Shape { battery: false, attack: Action::Shoot, has_cycle, tennokai_heavy: false }
+    }
+
+    #[test]
+    fn a_battery_wait_is_a_policy_over_passive_recovery() {
+        let apl = for_fight(&Apl::default(), &Shape { battery: true, ..gun(false) });
+        assert_eq!(apl.to_simc(), "wait_for_full,if=battery.needs_refill\nshoot");
+        let none = |_: &str| 0.0;
+        let mut at = now(&none);
+        at.magazine_pct = 0.25;
+        at.battery_needs_refill = Some(true);
+        assert_eq!(apl.pick(&at), Action::WaitForFull);
+        at.battery_needs_refill = Some(false);
+        assert_eq!(apl.pick(&at), Action::Shoot, "recovered ammunition can fire before full");
+        let explicit = Apl(vec![Rule { action: Action::WaitForFull, when: When::Always }]);
+        assert_eq!(explicit.pick(&at), Action::WaitForFull, "the policy may choose to keep waiting");
+        at.magazine_pct = 1.0;
+        assert_eq!(explicit.pick(&at), Action::Shoot, "full batteries skip the wait");
+        at.magazine_pct = 0.25;
+        at.battery_needs_refill = None;
+        assert_eq!(explicit.pick(&at), Action::Shoot, "ordinary magazines cannot wait for recovery");
+        let alias: Action = serde_norway::from_str("{do: recharge}").unwrap();
+        assert_eq!(alias, Action::WaitForFull);
     }
 
     fn cast(id: &str, under: f64) -> Rule {
@@ -734,17 +769,17 @@ prio: 3
     fn a_melee_list_is_the_button_with_the_flash_above_it() {
         // NO RELOAD LINE: a swing has no magazine, and a line that can never
         // hold reads as a step the player takes.
-        let neutral = Shape { attack: Action::Neutral, has_cycle: false, tennokai_heavy: true };
+        let neutral = Shape { battery: false, attack: Action::Neutral, has_cycle: false, tennokai_heavy: true };
         assert_eq!(for_fight(&Apl::default(), &neutral).to_simc(), "heavy,if=tennokai\nneutral");
-        let light = Shape { attack: Action::Slide, has_cycle: false, tennokai_heavy: true };
+        let light = Shape { battery: false, attack: Action::Slide, has_cycle: false, tennokai_heavy: true };
         assert_eq!(for_fight(&Apl::default(), &light).to_simc(), "heavy,if=tennokai\nslide");
-        let heavy = Shape { attack: Action::Heavy, has_cycle: false, tennokai_heavy: false };
+        let heavy = Shape { battery: false, attack: Action::Heavy, has_cycle: false, tennokai_heavy: false };
         assert_eq!(for_fight(&Apl::default(), &heavy).to_simc(), "heavy");
         // AND THE TWO `heavy` LINES ARE TOLD APART BY THEIR CONDITION, which is
         // the only thing that distinguishes a converted swing from the press a
         // heavy build makes all engagement.
         let none = |_: &str| 0.0;
-        let flash = Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true, battery_would_empty: false, switch_to: None, glaive_in_flight: false,
+        let flash = Now { battery_needs_refill: None, can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true, battery_would_empty: false, switch_to: None, glaive_in_flight: false,
                           in_base_form: true, remaining: &none };
         let converted = |a: &Apl| a.pick_rule(&flash)
             .is_some_and(|r| r.action == Action::Heavy && r.when == When::Tennokai);
@@ -759,9 +794,9 @@ prio: 3
         let none = |_: &str| 0.0;
         // IN THE FORM THE GAUGE FILLS IN, which is where `transform_in` is the
         // question; the way back is asked from the other half, below.
-        let at = |pct: f64| Now { can_alt_fire: true, can_fire: true, gauge_pct: pct, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
+        let at = |pct: f64| Now { battery_needs_refill: None, can_alt_fire: true, can_fire: true, gauge_pct: pct, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&at(1.0)), Action::TransformIn, "full: go in");
-        let spent = Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: false, remaining: &none };
+        let spent = Now { battery_needs_refill: None, can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: false, remaining: &none };
         assert_eq!(apl.pick(&spent), Action::TransformOut, "spent: come back");
         // …AND THE WAY OUT IS NOT OFFERED IN THE FORM YOU WOULD BE LEAVING FROM
         // ANYWAY: a fight opens in the base form with an empty gauge, which is
@@ -782,7 +817,7 @@ prio: 3
         assert_eq!(past_full.pick(&at(35.0 / 30.0)), Action::TransformIn);
         assert_eq!(past_full.pick(&at(1.0)), Action::Shoot, "exactly full is not past full");
         // …AND AN EMPTY MAGAZINE IS A RELOAD WHATEVER THE GAUGE SAYS.
-        let dry = Now { can_alt_fire: true, can_fire: false, gauge_pct: 0.5, magazine_pct: 0.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
+        let dry = Now { battery_needs_refill: None, can_alt_fire: true, can_fire: false, gauge_pct: 0.5, magazine_pct: 0.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&dry), Action::Reload);
     }
 
@@ -795,7 +830,7 @@ prio: 3
             Rule { action: Action::Reload, when: When::Always },
         ]);
         let none = |_: &str| 0.0;
-        let at = |pct: f64| Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: pct, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
+        let at = |pct: f64| Now { battery_needs_refill: None, can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: pct, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick_rule(&at(0.4)).map(|r| &r.when), Some(&When::MagazineAtMost { pct: 0.5 }));
         assert_eq!(apl.pick_rule(&at(0.8)).map(|r| &r.when), Some(&When::Always), "only the second holds");
         assert_eq!(apl.pick(&at(1.0)), Action::Shoot, "a full magazine reloads nothing");
@@ -808,12 +843,12 @@ prio: 3
     fn detonate_waits_for_the_glaive_in_the_air() {
         let apl = for_fight(
             &Apl(vec![Rule { action: Action::Detonate, when: When::Always }]),
-            &Shape { attack: Action::ChargedThrow, has_cycle: false, tennokai_heavy: false },
+            &Shape { battery: false, attack: Action::ChargedThrow, has_cycle: false, tennokai_heavy: false },
         );
         assert_eq!(apl.to_simc(), "detonate
 charged_throw");
         let none = |_: &str| 0.0;
-        let now = |flying: bool| Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false,
+        let now = |flying: bool| Now { battery_needs_refill: None, can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false,
                                        battery_would_empty: false, switch_to: None, glaive_in_flight: flying, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&now(false)), Action::ChargedThrow);
         assert_eq!(apl.pick(&now(true)), Action::Detonate);

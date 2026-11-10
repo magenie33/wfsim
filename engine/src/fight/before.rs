@@ -58,24 +58,9 @@ pub(super) fn before_the_shot(
         // `bar.expire` below (at the post-reload t) is still correct.
         // Whether the NEXT shot costs zero ammo — it decides whether an empty
         // magazine reloads, so it has to be known before that branch.
-        // A BATTERY REFILLS WHILE NOBODY IS SHOOTING, counted BEFORE anything
-        // asks whether this shot can be fired — otherwise an empty magazine
-        // goes straight to the reload branch and the mechanic never gets a
-        // turn. The gap is the one a spool reads: `t - spool_due` is what the
-        // weapon spent not firing (`data::weapons::Battery`).
-        //
-        // THE EMPTY CASE IS NOT HERE — that is the ordinary reload, whose
-        // `reload_seconds` already IS `delay_empty + magazine/rate` (1.25 s on
-        // the Shedu). What this adds is the battery filling BETWEEN shots,
-        // which on a weapon slowed below one shot per `delay_partial` means it
-        // never empties at all.
+        // Credit each idle interval once, before the APL decides whether to fire.
         if let Some(b) = params.battery {
-            let idle = t - last_shot_t;
-            let delay = if ammo.loaded < 1e-9 { b.delay_empty_seconds } else { b.delay_partial_seconds };
-            if last_shot_t.is_finite() && b.regen_per_second > 0.0 && idle > delay {
-                let gained = (idle - delay) * b.regen_per_second;
-                ammo.loaded = (ammo.loaded + gained).min(ammo.cap);
-            }
+            ammo.recover_battery(b, last_shot_t, t);
         }
 
         let next_cost = {
@@ -269,6 +254,6 @@ pub(super) fn before_the_shot(
         charge_magazine_cycle(
             params, apl, tennokai, rec, rng, next_cost, t_at, r, ammo, incarnon, double_tap,
             windows, arc, buff_stacks, rs_armed, opening_closed,
-            field_duration_boost, last_shot_t, switch_to,
+            field_duration_boost, switch_to,
         )
 }

@@ -56,9 +56,9 @@ battery:
 modes:
   - id: base_recharge
     name: "Base Form, never emptied"
-    about: "Fired until the next shot would empty the battery, then held while it refills: 1 s back to full, where an empty battery's reload animation is 2 s."
+    about: "Stop firing before the next shot would empty the battery, then wait until it is full."
     rules:
-      - { action: { do: recharge }, when: { if: battery_would_empty } }
+      - { action: { do: wait_for_full }, when: { if: battery_would_empty } }
 
 attack:
   # see notes: cone_half_angle_from_2
