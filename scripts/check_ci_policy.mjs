@@ -19,6 +19,15 @@ for (const path of ['engine/src/fight.rs', 'optimizer/src/search.rs', 'webapi/sr
   assert.equal(classify([path]).scope, 'full', path);
 }
 assert.deepEqual(classify([]).jobs, PRODUCT_JOBS);
+const inventoryControlInputs = ['scripts/inventory_control.mjs', 'scripts/inventory_rebuild.mjs',
+  'scripts/inventory_pipeline.mjs', 'scripts/inventory_relational_pipeline.mjs'];
+for (const path of inventoryControlInputs) {
+  const plan = classify([path]);
+  assert.deepEqual(plan.jobs, PRODUCT_JOBS);
+  assert.equal(plan.deep, false, path + ' retains ordinary correctness coverage without full-catalog search fixtures');
+}
+assert.equal(classify([...inventoryControlInputs, 'optimizer/src/search.rs']).deep, true);
+assert.equal(classify(['scripts/unregistered_inventory.mjs']).deep, true);
 const largePlan = classify(Array.from({ length: 4096 }, (_, i) =>
   `data/weapons/melee/${'weapon_'.repeat(10)}${i}.yaml`));
 const { reasons: largeReasons, ...executionPlan } = largePlan;
@@ -114,7 +123,7 @@ const ciWiring = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
   '.github/actions/built-site/action.yml', 'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs',
   'scripts/check_ci_policy.mjs', 'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs',
   'scripts/check_ci_partitions.mjs', 'scripts/check_site_setup.mjs'];
-const nonSearchTools = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh', 'scripts/cancel_queue.sh',
+const nonSearchTools = [...inventoryControlInputs, 'scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh', 'scripts/cancel_queue.sh',
   'scripts/live_board.sh', 'scripts/ship_builds.sh', 'scripts/retire_scores.mjs', 'scripts/ship_queue.sh',
   'scripts/fetch_facts.sh', 'scripts/ship_facts.sh', 'scripts/live_publish.mjs', '.github/workflows/queue.yml',
   'deploy/factoryd_grants.sql', 'scripts/check_rescore_paths.mjs', 'scripts/capture_compute_inventory.mjs',

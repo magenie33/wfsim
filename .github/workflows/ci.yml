@@ -682,6 +682,7 @@ jobs:
       - name: Incremental inventory matches a full engine walk across frozen database cuts
         run: |
           cargo build -p wfsim-cli --bin wfsim-board
+          node scripts/check_inventory_control.mjs
           node scripts/check_default_parent.mjs
           node scripts/check_inventory_pipeline.mjs
           node scripts/check_inventory_relations.mjs
