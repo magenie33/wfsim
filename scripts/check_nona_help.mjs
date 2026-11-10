@@ -65,7 +65,8 @@ try {
         assert.equal(calls.length,1,JSON.stringify({b:b.id,cmd,suffix,reply}));assert.equal(calls[0].args.ruler,b.id);
         if(cmd==="pz")assert.equal(calls[0].args.limit,suffix?10:3);
       }
-      for(const label of [b.name,h.headlessBenchmarkName(engine.meta,b.id,s=>ui[s] || s)]) {
+      const shown=guides[0].groups.flatMap(group=>group.rows).find(row=>row.id===b.id).name;
+      for(const label of [b.name,shown]) {
         calls=[];await answer(`zk Torid ${label} 10`);assert.equal(calls[0]?.args.ruler,b.id,label);
       }
       opened=[];await answer(example.replace(guides[0].complex.id,b.id),context);assert.equal(opened[0]?.ruler,b.id);
