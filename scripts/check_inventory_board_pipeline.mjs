@@ -27,9 +27,9 @@ const checkingCompat = process.env.WFSIM_CHECK_INVENTORY_COMPAT === '1';
 const compatInputs = { mode: 'semantic', recipe: 'inventory-catalog-v1', target: 'x86_64-unknown-linux-gnu',
   build: { rust: 'fixture-rust', container: 'fixture-container', command: 'fixture-build', rustflags: '', features: [], rules: '1'.repeat(64),
     environment: { WFSIM_DATA_APART: null, WFSIM_GAS_OFF: null }, yaml: 'fixture-yaml' },
-  crates: ['cli','engine','optimizer','webapi'],
-  manifests: Object.fromEntries(['Cargo.toml','Cargo.lock','cli/Cargo.toml','engine/Cargo.toml','optimizer/Cargo.toml','webapi/Cargo.toml'].map(path => [path, '2'.repeat(64)])),
-  rust: Object.fromEntries(['cli','engine','optimizer','webapi'].map(crate => [crate + '/fixture.rs', '3'.repeat(64)])),
+  crates: ['cli','engine','optimizer','webapi','tools/gas-macro'],
+  manifests: Object.fromEntries(['Cargo.toml','Cargo.lock','cli/Cargo.toml','engine/Cargo.toml','optimizer/Cargo.toml','webapi/Cargo.toml','tools/gas-macro/Cargo.toml'].map(path => [path, '2'.repeat(64)])),
+  rust: Object.fromEntries(['cli','engine','optimizer','webapi','tools/gas-macro'].map(crate => [crate + '/fixture.rs', '3'.repeat(64)])),
   engine_data: { 'data/fixture.yaml': '4'.repeat(64) }, engine_code: '5'.repeat(64), unknown: [] };
 const binding = () => createHash('sha256').update(readFileSync(join(bin, 'wfsim-board'))).digest('hex');
 const attest = (inputs = compatInputs, extra = {}) => writeFileSync(join(bin, 'inventory-compat.json'), JSON.stringify({

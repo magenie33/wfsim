@@ -47,6 +47,9 @@ export class InventoryPublication {
     this.context.writer?.close(); this.context.writer = null; this.context.legacyPath = null;
     this.index.transaction(() => {
       if (!initial) {
+        this.q(`INSERT OR IGNORE INTO pub_history(dir,weapon,retain,sha,size)
+          SELECT dir,weapon,CAST(json_extract(body,'$.retain') AS INTEGER),NULL,0 FROM pub_files
+          WHERE json_extract(body,'$.phase') NOT IN('start','legacy')`).run();
         for (const table of ['pub_files','pub_rows','pub_shapes','pub_max','pub_final','pub_leaders','pub_listed']) this.q(`DELETE FROM ${table}`).run();
         this.q(`INSERT OR IGNORE INTO rel_publication_dirty SELECT DISTINCT weapon FROM rel_publication_sources
           UNION SELECT weapon FROM pub_history`).run();

@@ -23,10 +23,11 @@ function semanticInputs(inputs, target) {
     && Object.values(inputs.build.environment).every(value => value === null || typeof value === 'string')
     && inputs.build.rust && inputs.build.container && inputs.build.command && sha(inputs.build.rules)
     && strings(inputs.build.features) && strings(inputs.crates)
-    && ['cli','engine','optimizer','webapi'].every(crate => inputs.crates.includes(crate))
+    && ['cli','engine','optimizer','webapi','tools/gas-macro'].every(crate => inputs.crates.includes(crate))
     && map(inputs.manifests) && ['Cargo.toml','Cargo.lock','cli/Cargo.toml','engine/Cargo.toml','optimizer/Cargo.toml','webapi/Cargo.toml']
       .every(path => sha(inputs.manifests[path]))
-    && map(inputs.rust) && ['cli/','engine/','optimizer/','webapi/'].every(prefix => Object.keys(inputs.rust).some(path => path.startsWith(prefix)))
+    && inputs.crates.every(crate => sha(inputs.manifests[crate + '/Cargo.toml']))
+    && map(inputs.rust) && inputs.crates.every(crate => Object.keys(inputs.rust).some(path => path.startsWith(crate + '/')))
     && map(inputs.engine_data) && sha(inputs.engine_code) && Array.isArray(inputs.unknown) && inputs.unknown.length === 0;
 }
 export function readInventoryCompatibility(bin, adapter) {

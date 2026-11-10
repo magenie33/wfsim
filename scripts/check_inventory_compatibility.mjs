@@ -10,9 +10,9 @@ import { compatibilityCanonical, compatibilityKey, readInventoryCompatibility } 
 const root = mkdtempSync(join(tmpdir(), 'inventory-compat-')), binary = 'a'.repeat(64);
 const inputs = { mode: 'semantic', recipe: 'inventory-catalog-v1', target: 'x86_64-unknown-linux-gnu',
   build: { rust: 'fixture', container: 'fixture', command: 'fixture', rustflags: '', features: [], rules: 'b'.repeat(64), yaml: 'fixture',
-    environment: { WFSIM_DATA_APART: null, WFSIM_GAS_OFF: null } }, crates: ['cli','engine','optimizer','webapi'],
-  manifests: Object.fromEntries(['Cargo.toml','Cargo.lock','cli/Cargo.toml','engine/Cargo.toml','optimizer/Cargo.toml','webapi/Cargo.toml'].map(path => [path, binary])),
-  rust: Object.fromEntries(['cli','engine','optimizer','webapi'].map(crate => [crate + '/fixture.rs', binary])),
+    environment: { WFSIM_DATA_APART: null, WFSIM_GAS_OFF: null } }, crates: ['cli','engine','optimizer','webapi','tools/gas-macro'],
+  manifests: Object.fromEntries(['Cargo.toml','Cargo.lock','cli/Cargo.toml','engine/Cargo.toml','optimizer/Cargo.toml','webapi/Cargo.toml','tools/gas-macro/Cargo.toml'].map(path => [path, binary])),
+  rust: Object.fromEntries(['cli','engine','optimizer','webapi','tools/gas-macro'].map(crate => [crate + '/fixture.rs', binary])),
   engine_data: { 'data/fixture.yaml': binary }, engine_code: binary, unknown: [] };
 const put = (data = inputs, extra = {}) => writeFileSync(join(root, 'inventory-compat.json'), JSON.stringify({ format: 1,
   recipe: inputs.recipe, target: inputs.target, key: compatibilityKey(data), inputs: data, binary_sha256: binary, ...extra }));
