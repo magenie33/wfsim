@@ -126,6 +126,7 @@ jobs:
       - run: node scripts/check_comment_style.mjs
       - run: node scripts/check_time_storage.mjs
       - run: node scripts/check_user_task_queue.mjs
+      - run: node scripts/check_sqlite_migration.mjs
       - run: node scripts/check_optimizer_build_uploads.mjs
       - run: node scripts/check_app_parts.mjs
       - run: node scripts/check_ocr_worker.mjs
@@ -884,6 +885,9 @@ jobs:
       - name: The Tenno reaches the panel, the sim and a share link
         if: matrix.group == 'account'
         run: node scripts/check_tenno.mjs
+      - name: Existing browser stores upgrade without losing reports or delivery state
+        if: matrix.group == 'account'
+        run: node scripts/check_browser_db_migration.mjs
       # A BAR REDRAWN BEFORE ITS PAGE HAS A BUILD threw inside the account's
       # answer, which then skipped the sign-in entry, the notices and the sync —
       # an error only the usage log ever saw.
@@ -1137,6 +1141,8 @@ jobs:
       - run: npm ci --silent --prefix scripts/pg
       - name: A fissure is logged once with its planet, and each combination says how often it came
         run: node scripts/check_world_fissures.mjs
+      - name: Tasks and accepted results retain separate immutable authorities
+        run: node scripts/check_compute_storage.mjs
       - name: What the site tells an account reaches it and nobody else, read once, kept as long as it says
         run: node scripts/check_notices.mjs
       - name: What a reader tells the owner is kept for them and the account alone, and goes with it

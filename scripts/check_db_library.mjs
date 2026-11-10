@@ -10,7 +10,7 @@ const database="wfsim_migration_cutover_"+randomBytes(6).toString("hex");
 const url=new URL(base);url.pathname="/"+database;
 const options={max:1,fetch_types:false,onnotice:()=>{}};
 const admin=postgres(base,options);await admin.unsafe(`CREATE DATABASE ${database}`);
-const db=postgres(url.toString(),options),env={...process.env,WFSIM_MIGRATION_URL:url.toString()};
+const db=postgres(url.toString(),options),env={...process.env,WFSIM_MIGRATION_URL:url.toString(),WFSIM_MIGRATION_REQUIRE_FENCE:"0",WFSIM_MIGRATION_FENCE:"",WFSIM_MIGRATION_PRODUCTION:""};
 const run=(tool,command,...args)=>spawnSync(process.execPath,["scripts/migrations/"+tool+".mjs",command,...args],{env,encoding:"utf8",timeout:90000,maxBuffer:1024*1024});
 const good=(tool,command,...args)=>{
   const result=run(tool,command,...args);
@@ -48,10 +48,25 @@ try {
   const oldGrants=spawnSync("git",["show","898fb4f7729f6b4e4a5e4069a8f410782e21e405:deploy/factoryd_grants.sql"],{encoding:"utf8"});
   assert.equal(oldGrants.status,0);
   for(const match of oldGrants.stdout.matchAll(/GRANT (?!CONNECT)[^;]+;/g))await db.unsafe(match[0]);
+  if(!(await get("SELECT rolname FROM pg_roles WHERE rolname='wfsim'")))await db.unsafe("CREATE ROLE wfsim NOLOGIN");
+  const owned=await db.unsafe("SELECT relname,relkind FROM pg_class WHERE relnamespace='public'::regnamespace AND relkind IN('r','v','S') ORDER BY CASE relkind WHEN 'r' THEN 0 WHEN 'v' THEN 1 ELSE 2 END");
+  for(const relation of owned)await db.unsafe(`ALTER ${relation.relkind==='S' ? 'SEQUENCE' : relation.relkind==='v' ? 'VIEW' : 'TABLE'} public."${relation.relname}" OWNER TO wfsim`);
+  const routines=await db.unsafe("SELECT oid::regprocedure::text AS signature FROM pg_proc WHERE pronamespace='public'::regnamespace AND prokind IN('f','p')");
+  for(const routine of routines)await db.unsafe("ALTER ROUTINE public."+routine.signature+" OWNER TO wfsim");
   const stage=good("db_boundaries","prepare").stage;
   for(const command of ["copy","copy-evidence","check"])good("db_boundaries",command);
   good("db_evidence","--stage="+stage);
   const args=["--stage="+stage];
+  const unfenced=spawnSync(process.execPath,["scripts/migrations/db_library.mjs","reconcile",...args],
+    {env:{...env,WFSIM_MIGRATION_REQUIRE_FENCE:"1",WFSIM_MIGRATION_FENCE:"missing-"+database},encoding:"utf8",timeout:30000});
+  check("a required fence cannot be replaced by an operation name alone",unfenced.status!==0
+    && /exact cross-database fence is not active|no cross-database fence registry exists/.test(unfenced.stderr));
+  const unsafeUrl=new URL(url.toString());
+  unsafeUrl.pathname="/wfsim";
+  const unguarded=spawnSync(process.execPath,["scripts/migrations/db_library.mjs","status",...args],
+    {env:{...env,WFSIM_MIGRATION_URL:unsafeUrl.toString(),WFSIM_MIGRATION_PRODUCTION:""},encoding:"utf8",timeout:30000});
+  check("production names fail before connecting without the exact socket and operation guard",unguarded.status!==0
+    && unguarded.stderr.includes("production execution requires the exact operation id"));
   await db.unsafe(`UPDATE questions SET canon='{ "report": { "score": 99 } }',fact_at='2026-11-09T02:00:00.000Z' WHERE id='q1';
     UPDATE calculation_reports SET result='{  "score": 99  }',at='2026-11-09T02:00:00.000Z' WHERE question='q1';
     DELETE FROM questions WHERE id='q2';
@@ -64,10 +79,18 @@ try {
   check("raw cold reports and owner access survive without invented inputs",(await get(`SELECT count(*) AS n FROM ${stage}.entity_calculation_reports WHERE origin='imported'`)).n==="3"
     && (await get(`SELECT count(*) AS n FROM ${stage}.entity_compute_specs WHERE id='cold-without-input'`)).n==="0"
     && (await get(`SELECT count(*) AS n FROM ${stage}.relation_calculation_report_access`)).n==="3");
-  await db.unsafe("UPDATE questions SET due_at='2026-11-11T00:00:00.000Z' WHERE id='q4'");
+  await db.unsafe("UPDATE questions SET state='open',opened_at='2026-11-10T00:00:00.000Z',due_at='2026-11-11T00:00:00.000Z' WHERE id='q4'");
   const changed=run("db_library","activate",...args);
   check("activation rejects source changes committed after the final audit",changed.status!==0 && changed.stderr.includes("source changed after final reconciliation"));
   good("db_library","reconcile",...args);
+  const reopened=await get(`SELECT t.generation,t.created_at,r.task_id<>s.task_id AS prior_result
+    FROM ${stage}.state_compute_scheduling s JOIN ${stage}.entity_compute_tasks t ON t.id=s.task_id
+    JOIN ${stage}.entity_compute_results r ON r.id=s.result_id WHERE s.id='q4'`);
+  check("a legacy reopening becomes a distinct task while retaining its previous result",reopened.generation==="2"
+    && reopened.created_at==="2026-11-10T00:00:00.000Z" && reopened.prior_result);
+  check("moving a source candidate cannot leave evidence attached to another input",(await get(`SELECT count(*) AS n
+    FROM ${stage}.relation_task_answer_evidence e JOIN ${stage}.entity_compute_tasks t ON t.id=e.task_id
+    JOIN public.answers a ON a.id=e.answer_id WHERE a.question<>t.computation`)).n==="0");
   const before=await fingerprint();
   const interrupted=run("db_library","activate",...args,"--fail-after=7");
   check("interruption after seven actual renames rolls back the entire activation",interrupted.status!==0
@@ -99,6 +122,7 @@ try {
   const rollbackProbe=new Error("rollback runtime probe");
   try {
     await db.begin(async tx=>{
+      await tx.unsafe("SET LOCAL ROLE wfsim");
       const at="2026-11-10T01:00:00.000Z";
       await tx.unsafe("SELECT compute_register_tasks($1::text,'engine',$2::text)",[JSON.stringify([{id:"runtime-probe",verb:"simulate",request:'{ "raw": true }',due_at:at,waits:0,producer:"test"}]),at]);
       const [task]=await tx.unsafe("SELECT task_id FROM state_compute_scheduling WHERE id='runtime-probe'");
@@ -124,6 +148,7 @@ try {
   good("db_library","backout",...args);
   check("pre-write backout restores original source bytes and old runtime functions",before===await fingerprint()
     && (await get("SELECT pg_get_function_result('public.factory_held(text,text,text,text,bigint)'::regprocedure) AS type")).type==="SETOF questions");
+  await db.unsafe("INSERT INTO questions(id,verb,request,state,due_at,opened_at) VALUES('after-backout-new-input','simulate','{}','open','2026-11-10T00:00:00.000Z','2026-11-10T00:00:00.000Z')");
   good("db_library","reconcile",...args);good("db_library","activate",...args);
   const at="2026-11-10T01:00:00.000Z";
   await db.unsafe("SELECT compute_register_tasks($1::text,'engine',$2::text)",[JSON.stringify([{id:"committed-new-task",verb:"simulate",request:'{ "must": "survive" }',due_at:at,waits:0,producer:"test"}]),at]);

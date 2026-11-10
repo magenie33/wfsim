@@ -1,19 +1,18 @@
-// Rehearse atomic account-table renames and a pre-write backout on a restored local database.
+// Rename account tables atomically under a verified fence and refuse reversal after new content arrives.
 import {readFileSync} from "node:fs";
 import {createHash} from "node:crypto";
 import postgres from "../pg/node_modules/postgres/src/index.js";
+import {migrationEndpoint,requireAdministrator,requireDatabaseFence} from "./operation.mjs";
 
 const command=process.argv[2] || "status",url=process.env.WFSIM_MIGRATION_URL;
 if(!url)throw new Error("WFSIM_MIGRATION_URL is required");
-const parsed=new URL(url);
-if(!["127.0.0.1","localhost","[::1]"].includes(parsed.hostname)
-    || !/^\/wfsim_accounts_migration_[a-z0-9_]+$/.test(parsed.pathname))
-  throw new Error("account layout rehearsal requires an isolated local restored database");
+const mode=migrationEndpoint("accounts",url);
 const manifest=JSON.parse(readFileSync(new URL("db-boundaries-2026-11-10.json",import.meta.url),"utf8"));
 const mapping=manifest.databases.find(database=>database.name==="wfsim_accounts").tables;
 if(mapping.some(table=>table.mode!=="rename"))throw new Error("account layout contains a non-metadata transformation");
 const ddl=readFileSync(new URL("../../worker/pg/accounts.sql",import.meta.url),"utf8");
-const digest=createHash("sha256").update(readFileSync(new URL(import.meta.url))).update(ddl).update(JSON.stringify(mapping)).digest("hex");
+const digest=createHash("sha256").update(readFileSync(new URL(import.meta.url))).update(ddl).update(JSON.stringify(mapping))
+  .update(readFileSync(new URL("operation.mjs",import.meta.url))).digest("hex");
 const functions=[...ddl.matchAll(/CREATE OR REPLACE FUNCTION ([a-z_]+)\(/g)].map(match=>match[1]);
 const sql=postgres(url,{max:1,fetch_types:false,onnotice:()=>{},connection:{application_name:"wfsim-accounts-layout-rehearsal"}});
 const quote=value=>'"'+value.replaceAll('"','""')+'"';
@@ -48,12 +47,23 @@ const hashes=async(tx,tables)=>{
 const same=(left,right)=>JSON.stringify(left)===JSON.stringify(right);
 
 try {
+  await requireAdministrator(sql);
+  if(["rename","backout","release"].includes(command))await requireDatabaseFence(sql,url,mode);
   if(command==="status") {
     const exists=(await sql.unsafe("SELECT to_regclass('wfsim_migration_ops.state_account_layout') AS relation"))[0].relation;
     console.log(JSON.stringify({digest,phase:exists ? (await sql.unsafe("SELECT phase FROM wfsim_migration_ops.state_account_layout WHERE id=$1",[manifest.id]))[0]?.phase : "source"}));
+  } else if(command==="release") {
+    await sql.begin(async tx=>{
+      await tx.unsafe("SET TRANSACTION READ WRITE");
+      await tx.unsafe("SELECT pg_advisory_xact_lock(hashtextextended('wfsim-db-boundaries',0))");
+      const [held]=await tx.unsafe("SELECT digest,phase FROM wfsim_migration_ops.state_account_layout WHERE id=$1 FOR UPDATE",[manifest.id]);
+      if(!held || held.digest!==digest || held.phase!=="renamed")throw new Error("release only an activated account layout with the exact tool");
+      await tx.unsafe("UPDATE wfsim_migration_ops.state_account_layout SET phase='live',at=clock_timestamp() WHERE id=$1",[manifest.id]);
+    });
+    console.log(JSON.stringify({ok:true,command,digest,phase:"live",backout_permitted:false,rehearsal_only:mode.local_only,production_changes:mode.production}));
   } else if(command==="rename" || command==="backout") {
     const result=await sql.begin(async tx=>{
-      await tx.unsafe("SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='120s';SET LOCAL idle_in_transaction_session_timeout='10s';SET LOCAL work_mem='16MB';SET LOCAL temp_file_limit='256MB'");
+      await tx.unsafe("SET TRANSACTION READ WRITE;SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='120s';SET LOCAL idle_in_transaction_session_timeout='10s';SET LOCAL work_mem='16MB';SET LOCAL temp_file_limit='256MB'");
       await tx.unsafe("SELECT pg_advisory_xact_lock(hashtextextended('wfsim-db-boundaries',0))");
       await tx.unsafe(`CREATE SCHEMA IF NOT EXISTS wfsim_migration_ops;
         REVOKE ALL ON SCHEMA wfsim_migration_ops FROM PUBLIC;
@@ -62,6 +72,7 @@ try {
           row_hashes jsonb NOT NULL,functions jsonb NOT NULL,at timestamptz NOT NULL DEFAULT clock_timestamp());`);
       const [held]=await tx.unsafe("SELECT * FROM wfsim_migration_ops.state_account_layout WHERE id=$1 FOR UPDATE",[manifest.id]);
       if(held && held.digest!==digest)throw new Error("account rehearsal checkpoint belongs to different source");
+      if(held?.phase==="live")throw new Error("the client/write barrier is closed; preserve the new account layout and recover forward");
       const from=command==="rename" ? "source" : "target",to=from==="source" ? "target" : "source";
       if(held?.phase===(command==="rename" ? "renamed" : "source"))return {already:true,phase:held.phase};
       if(command==="backout" && !held)throw new Error("no account layout baseline exists");
@@ -94,6 +105,6 @@ try {
       await tx.unsafe("UPDATE wfsim_migration_ops.state_account_layout SET phase=$2,at=clock_timestamp() WHERE id=$1",[manifest.id,phase]);
       return {phase,tables:after.length,rows:content.reduce((sum,table)=>sum+table.rows,0),row_hashes:contentAfter,metadata_unchanged:true};
     });
-    console.log(JSON.stringify({ok:true,command,digest,rehearsal_only:true,production_changes:false,...result}));
+    console.log(JSON.stringify({ok:true,command,digest,rehearsal_only:mode.local_only,production_changes:mode.production,...result}));
   } else throw new Error("unknown account rehearsal command: "+command);
 } finally {await sql.end();}

@@ -2,17 +2,19 @@
 import {readFileSync} from "node:fs";
 import {createHash} from "node:crypto";
 import postgres from "../pg/node_modules/postgres/src/index.js";
+import {migrationEndpoint,requireAdministrator,OPERATION_ID} from "./operation.mjs";
 const command=process.argv[2] || "status";
 const configPath=process.argv.find(arg=>arg.startsWith("--config="))?.slice(9);
 if(!configPath)throw new Error("an exact fence configuration is required");
 const config=JSON.parse(readFileSync(configPath,"utf8"));
-if(!/^[a-z0-9_-]+$/.test(config.id || "") || !/^wfsim_migration_[a-z0-9_]+$/.test(config.library || "")
-    || !/^wfsim_accounts_migration_[a-z0-9_]+$/.test(config.accounts || "")
+const production=config.library==="wfsim" && config.accounts==="wfsim_accounts";
+if(!/^[a-z0-9_-]+$/.test(config.id || "") || (!production && (!/^wfsim_migration_[a-z0-9_]+$/.test(config.library || "")
+    || !/^wfsim_accounts_migration_[a-z0-9_]+$/.test(config.accounts || "")))
     || !Array.isArray(config.roles) || !config.roles.length || new Set(config.roles).size!==config.roles.length
-    || config.roles.some(role=>!/^wfsim_[a-z0-9_]+$/.test(role)))throw new Error("isolated local database and application-role names are required");
-const url=process.env.WFSIM_MIGRATION_URL,parsed=new URL(url || "invalid:");
-if(!["localhost","127.0.0.1","[::1]"].includes(parsed.hostname) || parsed.pathname!=="/postgres")
-  throw new Error("the fence rehearsal requires a localhost postgres administrator connection");
+    || config.roles.some(role=>!/^wfsim(?:_[a-z0-9_]+)?$/.test(role)))throw new Error("an exact database and application-role inventory is required");
+const productionRoles=["wfsim","wfsim_accounts","wfsim_accounts_pipeline","wfsim_factoryd","wfsim_pipeline"];
+if(production && JSON.stringify([...config.roles].sort())!==JSON.stringify(productionRoles))throw new Error("the production fence must cover the complete captured application-role inventory");
+const url=process.env.WFSIM_MIGRATION_URL,mode=migrationEndpoint("admin",url,production);
 const sql=postgres(url,{max:1,fetch_types:false,onnotice:()=>{},connection:{application_name:"wfsim-db-fence-rehearsal"}});
 const q=value=>'"'+value.replaceAll('"','""')+'"';
 const literal=value=>"'"+value.replaceAll("'","''")+"'";
@@ -53,6 +55,10 @@ async function fence(){
     if(roles.length!==config.roles.length || roles.some(role=>role.superuser || role.bypass))throw new Error("fence only existing non-privileged application roles");
     if(databases.length!==2 || databases.some(db=>!db.allowed))throw new Error("both target databases must exist and allow operator connections");
     const [identity]=await tx.unsafe("SELECT current_user AS actor,system_identifier::text AS cluster FROM pg_control_system()");
+    if(production && config.cluster!==identity.cluster)throw new Error("production fence requires the captured database cluster identity");
+    if(!production && config.roles.some(role=>productionRoles.includes(role))
+        && (process.env.WFSIM_MIGRATION_PRODUCTION!==OPERATION_ID || process.env.WFSIM_MIGRATION_LOCAL_CLUSTER!==identity.cluster))
+      throw new Error("fencing real application roles in a local rehearsal requires its exact cluster identity and operation id");
     if(config.roles.includes(identity.actor))throw new Error("the migration operator cannot fence its own role");
     const unknown=await tx.unsafe(`SELECT usename FROM pg_stat_activity WHERE datname IN($1,$2) AND usename<>current_user
       AND usename NOT IN(SELECT jsonb_array_elements_text(($3::text)::jsonb)) LIMIT 1`,[config.library,config.accounts,JSON.stringify(config.roles)]);
@@ -93,6 +99,7 @@ async function restore(){
 }
 
 try{
+  await requireAdministrator(sql);
   let result;
   if(command==="fence")result=await fence();
   else if(command==="restore")result=await restore();
@@ -101,5 +108,5 @@ try{
     result={state:exists ? (await sql.unsafe("SELECT * FROM wfsim_migration_ops.state_database_fence WHERE id=$1",[config.id]))[0] : null,
       roles:await selectRoles(sql),databases:await selectDatabases(sql),connections:await connections()};
   }else throw new Error("unknown fence command: "+command);
-  console.log(JSON.stringify({ok:true,command,id:config.id,local_only:true,production_changes:false,...result}));
+  console.log(JSON.stringify({ok:true,command,id:config.id,local_only:mode.local_only,production_changes:mode.production && command!=="status",...result}));
 }finally{await sql.end();}

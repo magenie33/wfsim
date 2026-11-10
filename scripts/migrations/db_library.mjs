@@ -1,13 +1,11 @@
-// Rehearse library activation and refuse layout reversal after any committed application write.
+// Activate separated library storage under a verified fence; committed application writes close layout reversal.
 import {readFileSync} from "node:fs";
 import {createHash} from "node:crypto";
 import postgres from "../pg/node_modules/postgres/src/index.js";
+import {migrationEndpoint,requireAdministrator,requireDatabaseFence} from "./operation.mjs";
 
 const command=process.argv[2] || "status",url=process.env.WFSIM_MIGRATION_URL;
-const parsed=new URL(url || "invalid:");
-if(!["127.0.0.1","localhost","[::1]"].includes(parsed.hostname)
-    || !/^\/wfsim_migration_[a-z0-9_]+$/.test(parsed.pathname))
-  throw new Error("library rehearsal requires an isolated local restored database");
+const mode=migrationEndpoint("library",url);
 const stage=process.argv.find(arg=>arg.startsWith("--stage="))?.slice(8);
 if(!/^wfsim_migrate_[a-f0-9]{12}$/.test(stage || ""))throw new Error("an exact prepared stage is required");
 const root=new URL("../../",import.meta.url);
@@ -19,9 +17,9 @@ const signatures=new Set(ddl.flatMap(source=>[...source.matchAll(/CREATE OR REPL
   .map(match=>match[1]+"("+match[2].split(",").map(arg=>arg.trim().replace(/\s+DEFAULT\s+.*$/i,"")
     .replace(/^(?:INOUT|IN|OUT)\s+/i,"").replace(/^[a-z_]+\s+(jsonb|text|bigint|boolean)$/, "$1").replace(/\s+/g," ")).join(",")+")")));
 const digest=createHash("sha256").update(readFileSync(new URL(import.meta.url))).update(JSON.stringify(mapping))
-  .update(ddl.join("\n")).digest("hex");
+  .update(ddl.join("\n")).update(readFileSync(new URL("operation.mjs",import.meta.url))).digest("hex");
 const quote=value=>'"'+value.replaceAll('"','""')+'"';
-const emit=value=>console.log(JSON.stringify({command,digest,stage,rehearsal_only:true,production_changes:false,...value}));
+const emit=value=>console.log(JSON.stringify({command,digest,stage,rehearsal_only:mode.local_only,production_changes:mode.production && command!=="status",...value}));
 const sql=postgres(url,{max:1,fetch_types:false,onnotice:()=>{},connection:{application_name:"wfsim-library-layout-rehearsal"}});
 const failure=Number(process.argv.find(arg=>arg.startsWith("--fail-after="))?.slice(13) || 0);
 const pauseAfter=Number(process.argv.find(arg=>arg.startsWith("--pause-after="))?.slice(14) || 0);
@@ -36,6 +34,7 @@ const sourceRelation=(item,active)=>active && transformed.has(item.source)
   ? "wfsim_migration_ops."+quote(legacy(item.source)) : "public."+quote(active ? item.target : item.source);
 const query=(tx,text,params=[])=>tx.unsafe(text,params);
 const setup=async tx=>{
+  await query(tx,"SET TRANSACTION READ WRITE");
   await query(tx,"SET LOCAL lock_timeout='3s';SET LOCAL statement_timeout='15min';SET LOCAL work_mem='16MB';SET LOCAL temp_file_limit='256MB'");
   await query(tx,"SELECT pg_advisory_xact_lock(hashtextextended('wfsim-db-boundaries',0))");
 };
@@ -79,11 +78,14 @@ async function prepare() {
         transaction_id xid8 NOT NULL DEFAULT pg_current_xact_id(),at timestamptz NOT NULL DEFAULT clock_timestamp());`);
     const [existing]=await query(tx,"SELECT * FROM wfsim_migration_ops.state_library_layout WHERE id=$1",[manifest.id]);
     if(existing){await prepared(tx);return;}
-    await lockTables(tx,false);
+    await query(tx,"LOCK TABLE public.answers IN ACCESS EXCLUSIVE MODE");
     const tables=await catalog(tx,names(false));
     if(tables.length!==mapping.length)throw new Error("source application inventory is incomplete");
     const indexes=await query(tx,"SELECT pg_get_indexdef('public.answers_once'::regclass) AS definition");
-    const baseline={tables,functions:await functions(tx),triggers:await triggers(tx),stage_triggers:await triggers(tx,stage),answer_index:indexes[0].definition};
+    const stageOwnership=[...await query(tx,`SELECT c.relname AS name,pg_get_userbyid(c.relowner) AS owner
+      FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=$1
+        AND c.relname IN(SELECT jsonb_array_elements_text(($2::text)::jsonb))`,[stage,JSON.stringify([...core,...views])])];
+    const baseline={tables,functions:await functions(tx),triggers:await triggers(tx),stage_triggers:await triggers(tx,stage),stage_ownership:stageOwnership,answer_index:indexes[0].definition};
     await query(tx,"INSERT INTO wfsim_migration_ops.state_library_layout(id,digest,stage,phase,baseline) VALUES($1,$2,$3,'prepared',($4::text)::jsonb)",
       [manifest.id,digest,stage,JSON.stringify(baseline)]);
     await query(tx,`ALTER TABLE public.answers ADD COLUMN task_id bigint;
@@ -91,6 +93,7 @@ async function prepare() {
       ALTER TABLE public.answers ADD CONSTRAINT migration_candidate_task FOREIGN KEY(task_id) REFERENCES ${stage}.entity_compute_tasks(id) NOT VALID`);
   });
   // Existing rows have NULL task_id; the old index continues to guard admission until activation.
+  await query(sql,"SET default_transaction_read_only='off'");
   const [index]=await query(sql,"SELECT indisvalid FROM pg_index WHERE indexrelid=to_regclass('public.migration_answers_task_once')");
   if(index && !index.indisvalid)await query(sql,"DROP INDEX CONCURRENTLY public.migration_answers_task_once");
   await query(sql,"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS migration_answers_task_once ON public.answers(task_id,device,engine) WHERE official=0");
@@ -112,37 +115,47 @@ async function reconcileChunk(tx,ids) {
   const [conflict]=await query(tx,"SELECT q.id FROM migration_final_chunk q JOIN entity_compute_specs d ON d.id=q.id WHERE (q.verb,q.request) IS DISTINCT FROM(d.verb,d.request) LIMIT 1");
   if(conflict)throw new Error("frozen input differs: "+conflict.id);
   await query(tx,`INSERT INTO entity_compute_tasks(computation,generation,created_at,reason,origin)
-    SELECT id,1,opened_at,'imported_current_state','imported' FROM migration_final_chunk ON CONFLICT(computation,generation) DO NOTHING;
+    SELECT q.id,COALESCE(t.generation,0)+1,q.opened_at,'imported_current_state','imported' FROM migration_final_chunk q
+      LEFT JOIN LATERAL(SELECT generation,created_at FROM entity_compute_tasks t WHERE t.computation=q.id ORDER BY generation DESC LIMIT 1)t ON true
+    WHERE t.generation IS NULL OR t.created_at IS DISTINCT FROM q.opened_at;
     WITH inserted AS(INSERT INTO entity_compute_results(computation,task_id,canon,engine,accepted_at)
-      SELECT q.id,t.id,q.canon,q.fact_engine,q.fact_at FROM migration_final_chunk q JOIN entity_compute_tasks t ON t.computation=q.id AND t.generation=1
+      SELECT q.id,t.id,q.canon,q.fact_engine,q.fact_at FROM migration_final_chunk q
+      JOIN LATERAL(SELECT id FROM entity_compute_tasks t WHERE t.computation=q.id ORDER BY generation DESC LIMIT 1)t ON true
       WHERE q.canon IS NOT NULL AND NOT EXISTS(SELECT 1 FROM entity_compute_results r JOIN record_compute_result_proofs p ON p.result_id=r.id
         WHERE r.computation=q.id AND (r.canon,r.engine,r.accepted_at,p.witnesses) IS NOT DISTINCT FROM(q.canon,q.fact_engine,q.fact_at,q.witnesses)) RETURNING id,computation)
       INSERT INTO record_compute_result_proofs(result_id,witnesses) SELECT r.id,q.witnesses FROM inserted r JOIN migration_final_chunk q ON q.id=r.computation;
     INSERT INTO record_compute_result_selections(computation,task_id,result_id,reason,at)
       SELECT r.computation,r.task_id,r.id,'imported_selection',r.accepted_at FROM entity_compute_results r
-      WHERE r.computation IN(SELECT id FROM migration_final_chunk) AND NOT EXISTS(SELECT 1 FROM record_compute_result_selections h WHERE h.result_id=r.id)`);
+      WHERE r.computation IN(SELECT id FROM migration_final_chunk) AND NOT EXISTS(SELECT 1 FROM record_compute_result_selections h
+        WHERE h.computation=r.computation AND h.result_id=r.id)`);
   await query(tx,`INSERT INTO state_compute_scheduling(${stateColumns.join(",")},task_id,result_id)
     SELECT ${qualified("q",stateColumns)},t.id,r.id FROM migration_final_chunk q
-      JOIN entity_compute_tasks t ON t.computation=q.id AND t.generation=1
+      JOIN LATERAL(SELECT id FROM entity_compute_tasks t WHERE t.computation=q.id ORDER BY generation DESC LIMIT 1)t ON true
       LEFT JOIN entity_compute_results r ON r.computation=q.id AND (r.canon,r.engine,r.accepted_at) IS NOT DISTINCT FROM(q.canon,q.fact_engine,q.fact_at)
         AND EXISTS(SELECT 1 FROM record_compute_result_proofs p WHERE p.result_id=r.id AND p.witnesses=q.witnesses)
     ON CONFLICT(id) DO UPDATE SET ${[...stateColumns,"task_id","result_id"].filter(name=>name!=="id").map(name=>name+"=excluded."+name).join(",")}`);
   await query(tx,"DELETE FROM state_compute_scheduling WHERE id IN(SELECT jsonb_array_elements_text(($1::text)::jsonb)) AND id NOT IN(SELECT id FROM migration_final_chunk)",keys);
-  await query(tx,`DELETE FROM relation_task_answer_evidence e USING entity_compute_tasks t,public.answers a
+  for(const scope of ["t.computation","a.question"])await query(tx,`DELETE FROM relation_task_answer_evidence e USING entity_compute_tasks t,public.answers a
     WHERE e.task_id=t.id AND e.answer_id=a.id AND t.computation IS DISTINCT FROM a.question
-      AND (t.computation IN(SELECT jsonb_array_elements_text(($1::text)::jsonb)) OR a.question IN(SELECT jsonb_array_elements_text(($1::text)::jsonb)))`,keys);
+      AND ${scope} IN(SELECT jsonb_array_elements_text(($1::text)::jsonb))`,keys);
   await query(tx,`INSERT INTO relation_task_answer_evidence(task_id,answer_id,role)
-    SELECT t.id,a.id,'imported_current_state' FROM public.answers a JOIN entity_compute_tasks t ON t.computation=a.question AND t.generation=1
+    SELECT s.task_id,a.id,'imported_current_state' FROM public.answers a JOIN state_compute_scheduling s ON s.id=a.question
     WHERE a.question IN(SELECT jsonb_array_elements_text(($1::text)::jsonb)) ON CONFLICT DO NOTHING`,keys);
   const [bad]=await query(tx,`SELECT k.id FROM jsonb_array_elements_text(($1::text)::jsonb) k(id)
     LEFT JOIN public.questions q ON q.id=k.id LEFT JOIN state_compute_work v ON v.id=k.id
     WHERE (q.id IS NULL AND v.id IS NOT NULL) OR (q.id IS NOT NULL AND (v.id IS NULL OR
       ROW(${qualified("q",sourceColumns)}) IS DISTINCT FROM ROW(${qualified("v",sourceColumns)}))) LIMIT 1`,keys);
   if(bad)throw new Error("final dirty-key field audit differs: "+bad.id);
-  const [badEvidence]=await query(tx,`SELECT a.id FROM public.answers a JOIN entity_compute_tasks t ON t.computation=a.question AND t.generation=1
-    LEFT JOIN relation_task_answer_evidence e ON e.task_id=t.id AND e.answer_id=a.id
+  const [badEvidence]=await query(tx,`SELECT a.id FROM public.answers a JOIN state_compute_scheduling s ON s.id=a.question
+    LEFT JOIN relation_task_answer_evidence e ON e.task_id=s.task_id AND e.answer_id=a.id
     WHERE a.question IN(SELECT jsonb_array_elements_text(($1::text)::jsonb)) AND e.answer_id IS NULL LIMIT 1`,keys);
   if(badEvidence)throw new Error("final dirty-key evidence is missing: "+badEvidence.id);
+  for(const scope of ["t.computation","a.question"]){
+    const [misplaced]=await query(tx,`SELECT e.answer_id FROM relation_task_answer_evidence e JOIN entity_compute_tasks t ON t.id=e.task_id
+      JOIN public.answers a ON a.id=e.answer_id WHERE t.computation IS DISTINCT FROM a.question
+        AND ${scope} IN(SELECT jsonb_array_elements_text(($1::text)::jsonb)) LIMIT 1`,keys);
+    if(misplaced)throw new Error("final dirty-key evidence belongs to another input: "+misplaced.answer_id);
+  }
   await query(tx,"DROP TABLE migration_final_chunk");
 }
 
@@ -209,6 +222,10 @@ async function activate() {
       AND expires_at>to_char(((CASE WHEN state='succeeded' THEN COALESCE(completed_at,created_at) ELSE created_at END)::timestamptz
         + interval '14 days') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') LIMIT 1`);
     if(retention)throw new Error("schema application would rewrite a source retention clock: "+retention.id);
+    const [unknownRound]=await query(tx,`SELECT r.id FROM ${stage}.entity_compute_results r
+      CROSS JOIN LATERAL(SELECT created_at FROM ${stage}.entity_compute_tasks t WHERE t.id=r.task_id OFFSET 0)t
+      WHERE r.accepted_at<t.created_at LIMIT 1`);
+    if(unknownRound)throw new Error("accepted output predates its known imported task; preserve it and resolve its provenance before cutover: "+unknownRound.id);
     let count=0;
     for(const item of mapping){
       const target=transformed.has(item.source) ? legacy(item.source) : item.target;
@@ -314,6 +331,11 @@ async function backout() {
       await query(tx,`DROP TRIGGER ${quote(item.name)} ON wfsim_migration_ops.${quote(item.table_name)}`);
     await query(tx,"DROP VIEW public.state_compute_candidate_answers");
     for(const name of [...views,...core])await query(tx,`ALTER ${views.includes(name) ? "VIEW" : "TABLE"} public.${quote(name)} SET SCHEMA ${stage}`);
+    const [{owner:stageOwner}]=await query(tx,"SELECT pg_get_userbyid(nspowner) AS owner FROM pg_namespace WHERE nspname=$1",[stage]);
+    for(const name of [...core,...views]){
+      const owner=p.baseline.stage_ownership?.find(relation=>relation.name===name)?.owner || stageOwner;
+      await query(tx,`ALTER ${views.includes(name) ? "VIEW" : "TABLE"} ${stage}.${quote(name)} OWNER TO ${quote(owner)}`);
+    }
     for(const item of [...mapping].reverse()){
       if(transformed.has(item.source))await query(tx,`ALTER TABLE ${sourceRelation(item,true)} SET SCHEMA public`);
       await query(tx,`ALTER TABLE public.${quote(transformed.has(item.source) ? legacy(item.source) : item.target)} RENAME TO ${quote(item.source)}`);
@@ -345,6 +367,8 @@ async function backout() {
 }
 
 try {
+  await requireAdministrator(sql);
+  if(["reconcile","activate","backout","repair-runtime","release"].includes(command))await requireDatabaseFence(sql,url,mode);
   if(command==="prepare")await prepare();
   else if(command==="reconcile")await reconcile();
   else if(command==="activate")await activate();
