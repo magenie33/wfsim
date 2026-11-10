@@ -67,6 +67,8 @@ assert.deepEqual(JSON.parse(JSON.stringify(headlessRivenGainRequest(read("META")
   { weapon: "test", ruler: "test_ruler", card: {}, rivenId: "R" }).request)), appraisal);
 runInContext(`applyOptState(builtinSearchState(META.search_presets.presets[0], "riven:R"));`, scope);
 assert.equal(read(`optimizeBody().search_strategy`), appraisal.search_strategy);
+assert.equal(Object.hasOwn(read(`optimizeBody()`), "stance"), false, "the builder's stance must not fix every search start");
+assert.equal(Object.hasOwn(appraisal, "stance"), false, "ordinary headless appraisals search the stance slot");
 assert.equal(read(`optimizeBody().starts.length`), 1);
 assert.deepEqual(read(`optimizeBody().starts[0].fixed`), appraisal.starts[0].fixed);
 console.log("  ok  built-ins and headless appraisal supply one user start, retaining its riven and evolutions");

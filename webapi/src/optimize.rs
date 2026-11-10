@@ -14,7 +14,7 @@ use crate::buffs::{BuffMeta, arcane_at_rank, arcane_in_pools, buffs_json, enumer
 use crate::fight::parse_fight;
 use crate::weapon_options::valence_element_of;
 use crate::registry::{WeaponInfo, form_unlock_evo, innate_slots_for, mod_not_here, weapon, wspec};
-use crate::request::{err_json, get_f64, get_str, get_u32};
+use crate::request::{err_json, get_f64, get_u32};
 use crate::rivens::{mod_pool_with_rivens, riven_stat_ids_ok};
 use crate::tenno::tenno_from;
 
@@ -23,6 +23,7 @@ mod requirements;
 mod final_constraints;
 mod builds;
 mod prepared;
+mod stance;
 
 pub use builds::BuildStream;
 
@@ -300,9 +301,9 @@ type Prepared = std::sync::Mutex<std::collections::HashMap<(u32, usize), Option<
 pub struct OptimizePlan {
     weapon_id: String,
     pool: Vec<ModDef>,
-    /// The capacity the Forma planner is given — the weapon's own, plus what a
-    /// STANCE hands back. Not a literal: a melee build reads five to ten points
-    /// of headroom the weapon's rank did not buy.
+    stances: Vec<Option<usize>>,
+    /// The scope's largest available capacity for validating required cards.
+    /// Each candidate uses its own stance's grant when planning Forma.
     cap: u32,
     constraints: Constraints,
     min_slots: usize,
@@ -464,34 +465,13 @@ fn parse_uncached(v: &Value) -> Result<OptimizePlan, Value> {
         }
     }
 
-    // An equipped stance rides every candidate in its own slot. An empty
-    // slot uses the weapon's package timeline, checked by combo_error below.
-    let stance_def = match get_str(v, "stance", "") {
-        "" => None,
-        id => match full.iter().find(|m| m.id == id) {
-            Some(m) if m.stance.is_some() => Some(m.clone()),
-            Some(_) => return Err(err_json(format!("{id} is not a stance"))),
-            None => return Err(err_json(mod_not_here(id, info, &[]))),
-        },
-    };
-    if let Some(m) = &stance_def {
-        if !fixed_ids.iter().any(|id| id == m.id) {
-            fixed_ids.push(m.id.to_string());
-            fixed_ids.sort();
-        }
-        search_ids.retain(|s| s != m.id);
+    let stance_ids = stance::choices(v, &full, &info.id)?;
+    if fixed_ids.iter().chain(&search_ids).any(|id| full.iter().any(|m| m.id == id && m.stance.is_some())) {
+        return Err(err_json("choose stances in the stance slot"));
     }
-    // THE CAP THE PLANNER IS GIVEN. The stance slot at its INNATE colour, which
-    // is what the builder's own capacity line reads — the planner may polarize
-    // that slot for more, and this does not model it, which errs toward
-    // refusing a build the simulator would accept rather than crowning one it
-    // would not.
-    let cap = 60 + stance_def.as_ref().map_or(0, |m| {
-        wfsim_engine::rules::capacity::stance_capacity(
-            m.polarity,
-            wfsim_engine::data::weapons::stance_polarity(&info.id),
-        )
-    });
+    // Validation uses the available headroom; each candidate plans its own stance.
+    let cap = stance_ids.iter().map(|id| stance::capacity(&info.id,
+        id.as_ref().and_then(|id| full.iter().find(|m| m.id == id)))).max().unwrap_or(60);
 
     // ---- exilus scope (the +1 slot, exilus-eligible mods only): its own
     // block. "search" entries are slot OPTIONS alongside "leave empty"; a
@@ -573,8 +553,7 @@ fn parse_uncached(v: &Value) -> Result<OptimizePlan, Value> {
     // which costs the reader exactly what 0–0 exists to protect. It also makes
     // the ceiling mean the same thing on all five axes, which is the point of
     // there being one control.
-    let build_size = get_u32(v, "build_size", 8).clamp(0, 8) as usize
-        + usize::from(stance_def.is_some());
+    let build_size = get_u32(v, "build_size", 8).clamp(0, 8) as usize;
     let mut pool_ids: Vec<String> = fixed_ids.iter().chain(search_ids.iter()).cloned().collect();
     pool_ids.sort();
     pool_ids.dedup();
@@ -634,11 +613,14 @@ fn parse_uncached(v: &Value) -> Result<OptimizePlan, Value> {
     // a legal request as "no legal builds in this scope". It is the same rule
     // `slotRange` writes as a pinned empty mark on every single-slot axis.
     let min_slots = if build_size == 0 { 0 } else { derived_min.max(build_min) };
+    pool_ids.extend(stance_ids.iter().flatten().cloned());
     let pool: Vec<ModDef> = full
         .iter()
         .filter(|m| pool_ids.iter().any(|id| id.as_str() == m.id))
         .cloned()
         .collect();
+    let stances: Vec<Option<usize>> = stance_ids.iter().map(|id|
+        id.as_ref().and_then(|id| pool.iter().position(|m| m.id == id))).collect();
     let constraints = Constraints {
         require: fixed_ids.clone(),
         forbid: Vec::new(),
@@ -962,14 +944,13 @@ fn parse_uncached(v: &Value) -> Result<OptimizePlan, Value> {
     // simulation refuses, with either a seated stance or the native tree.
     let unplayable = |m: &ModeForms| {
         wfsim_engine::data::weapons::spec(&m.fire_id).is_some_and(|s| {
-            wfsim_engine::data::weapons::combo_error(&info.id, s.form_kind(),
-                stance_def.as_ref().and_then(|m| m.stance)).is_some()
+            !stances.iter().any(|i| stance::supported(&info.id, s.form_kind(), i.map(|i| &pool[i])))
         })
     };
     let modes: Vec<ModeForms> =
         mode_ids.iter().map(|id| mode_forms(info, id)).filter(|m| !unplayable(m)).collect();
     if modes.is_empty() {
-        return Err(err_json(if stance_def.is_some() {
+        return Err(err_json(if stances.iter().any(Option::is_some) {
             wfsim_engine::data::weapons::STANCE_LACKS_COMBO
         } else {
             wfsim_engine::data::weapons::STANCELESS_COMBO
@@ -979,7 +960,7 @@ fn parse_uncached(v: &Value) -> Result<OptimizePlan, Value> {
     let final_required = requirements::ids(v);
     requirements::validate(v, requirements::Scope {
         pool: &pool, exilus: &exilus_defs, required: &final_required, legacy: &constraints.require,
-        slots: build_size - usize::from(stance_def.is_some()), forbids: &variant_forbids,
+        slots: build_size, forbids: &variant_forbids, stances: &stances, modes: &modes,
         evos: &evo_sets, assemblies: &assemblies, arcanes: &arcane_sets, cap,
     })?;
     let n_val = valences.len().max(1);
@@ -1076,6 +1057,7 @@ fn parse_uncached(v: &Value) -> Result<OptimizePlan, Value> {
     Ok(OptimizePlan {
         weapon_id: info.id.clone(),
         pool,
+        stances,
         cap,
         constraints,
         min_slots,
@@ -1304,7 +1286,8 @@ pub fn grade_optimize(
     };
     let OptimizePlan {
         pool,
-        cap,
+        stances,
+        cap: _,
         constraints,
         min_slots,
         build_size,
@@ -1384,30 +1367,39 @@ pub fn grade_optimize(
         if vc.require.iter().any(|r| vc.forbid.iter().any(|f| f == r)) {
             continue;
         }
-        let (mut c, _stats, complete) = enumerate_candidates_observed(
-            &pool,
-            &base,
-            None,
-            vi as u32,
-            min_slots as u32,
-            build_size as u32,
-            60,
-            &innate,
-            &vc,
-            &exilus_refs,
-            Some(&state),
-            max_jobs.saturating_sub(cands.len()).max(1),
-            &scenario.arena.tenno,
-            scenario.policy,
-        );
-        c.retain(|c| requirements::contains(&final_required, &pool, &exilus_defs, c));
-        cands.append(&mut c);
-        if !complete || cands.len() >= max_jobs {
-            return err_json(format!(
-                "this scope is too big to grade: it does not fit {max_jobs} candidates. \
-                 Ground truth means evaluating EVERY build, so narrow the scope \
-                 (fewer pooled mods, or pin some) and grade that."
-            ));
+        for &stance in &stances {
+            let seated = stance.map(|i| &pool[i]);
+            if !stance::supported(&info.id, base.form, seated) { continue; }
+            let mut vc = vc.clone();
+            vc.forbid.extend(pool.iter().enumerate().filter(|(i, m)| m.stance.is_some() && Some(*i) != stance).map(|(_, m)| m.id.to_string()));
+            if let Some(m) = seated { vc.require.push(m.id.to_string()); }
+            if vc.require.iter().any(|r| vc.forbid.contains(r)) { continue; }
+            let offset = u32::from(stance.is_some());
+            let (mut c, _stats, complete) = enumerate_candidates_observed(
+                &pool,
+                &base,
+                None,
+                vi as u32,
+                min_slots as u32 + offset,
+                build_size as u32 + offset,
+                stance::capacity(&info.id, seated),
+                &innate,
+                &vc,
+                &exilus_refs,
+                Some(&state),
+                max_jobs.saturating_sub(cands.len()).max(1),
+                &scenario.arena.tenno,
+                scenario.policy,
+            );
+            c.retain(|c| requirements::contains(&final_required, &pool, &exilus_defs, c));
+            cands.append(&mut c);
+            if !complete || cands.len() >= max_jobs {
+                return err_json(format!(
+                    "this scope is too big to grade: it does not fit {max_jobs} candidates. \
+                     Ground truth means evaluating EVERY build, so narrow the scope \
+                     (fewer pooled mods, or pin some) and grade that."
+                ));
+            }
         }
     }
     if cands.is_empty() {
@@ -1447,7 +1439,7 @@ pub fn grade_optimize(
     // the end of the space, which is what a scope small enough to exhaust gets
     // in production too.
     let families: Vec<Option<&'static str>> = pool.iter().map(|m| m.family).collect();
-    let usable: Vec<usize> = (0..pool.len()).collect();
+    let usable: Vec<usize> = (0..pool.len()).filter(|&i| pool[i].stance.is_none()).collect();
     let required: Vec<usize> = constraints
         .require
         .iter()
@@ -1476,10 +1468,8 @@ pub fn grade_optimize(
             if subset.iter().any(|&i| variant_forbids[variants[vi].1][i]) {
                 continue;
             }
-            wfsim_optimizer::expand_one(
-                &pool, base, None, vi as u32, cap, &innate, &exilus_refs,
-                subset, &scenario.arena.tenno, scenario.policy, &mut out,
-            );
+            stance::expand(&pool, &info.id, &stances, base, vi as u32,
+                &variant_forbids[variants[vi].1], &innate, &exilus_refs, subset, &scenario, &mut out);
         }
         out.retain(|c| requirements::contains(&final_required, &pool, &exilus_defs, c));
         out
@@ -1494,6 +1484,7 @@ pub fn grade_optimize(
         let ctx = quick::QuickCtx {
             weapon_id: &info.id,
             pool: &pool,
+            stances: &stances,
             usable: (0..pool.len()).map(|i| usable.contains(&i)).collect(),
             required: required.clone(),
             forms: &forms,
@@ -1509,7 +1500,6 @@ pub fn grade_optimize(
             exilus_defs: &exilus_defs,
             exilus_refs: &exilus_refs,
             innate: &innate,
-            cap,
             scenario: &scenario,
             request: &replay_base,
             runs: candidate_runs,
@@ -1520,7 +1510,7 @@ pub fn grade_optimize(
             work: Default::default(),
             progress: None,
             lead: false,
-            mod_slots: (build_size - usize::from(pool.iter().any(|m| m.stance.is_some()))).min(8),
+            mod_slots: build_size.min(8),
             screen_ratio: replay_base.get("screen_ratio").and_then(Value::as_f64).unwrap_or(quick::SCREEN_RATIO),
             keep_ratio: replay_base.get("keep_ratio").and_then(Value::as_f64).unwrap_or(quick::KEEP_RATIO),
             orders_of: Default::default(),
@@ -1721,7 +1711,8 @@ pub fn run_optimize_resumable(
 ) -> Value {
     let OptimizePlan {
         pool,
-        cap,
+        stances,
+        cap: _,
         constraints,
         min_slots,
         build_size,
@@ -1860,7 +1851,7 @@ pub fn run_optimize_resumable(
     // exhaustive enumeration, stop it early and what it has is a uniform
     // sample. Same loop, same code, no threshold.
     let usable: Vec<usize> = (0..pool.len())
-        .filter(|&i| !constraints.forbid.iter().any(|f| f == pool[i].id))
+        .filter(|&i| pool[i].stance.is_none() && !constraints.forbid.iter().any(|f| f == pool[i].id))
         .collect();
     let required: Vec<usize> = constraints
         .require
@@ -1899,19 +1890,8 @@ pub fn run_optimize_resumable(
             if subset.iter().any(|&i| variant_forbids[variants[vi].1][i]) {
                 continue;
             }
-            wfsim_optimizer::expand_one(
-                &pool,
-                base,
-                None,
-                vi as u32,
-                cap,
-                &innate,
-                &exilus_refs,
-                subset,
-                &scenario.arena.tenno,
-                scenario.policy,
-                &mut out,
-            );
+            stance::expand(&pool, &info.id, &stances, base, vi as u32,
+                &variant_forbids[variants[vi].1], &innate, &exilus_refs, subset, &scenario, &mut out);
         }
         out.retain(|c| requirements::contains(&final_required, &pool, &exilus_defs, c));
         out
@@ -1958,7 +1938,9 @@ pub fn run_optimize_resumable(
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
             let base = forms_for(*variant as usize, set, &refs);
             let Some(c) = wfsim_optimizer::rebuild_candidate(
-                &pool, &base, None, &innate, plan.cap, &scenario.arena.tenno, scenario.policy,
+                &pool, &base, None, &innate,
+                stance::capacity(&info.id, ordered.iter().find_map(|&i| pool[i].stance.is_some().then_some(&pool[i]))),
+                &scenario.arena.tenno, scenario.policy,
                 ordered, *variant, *exilus, &exilus_refs,
             ) else { continue };
             if *ai >= arcanes.len() || !requirements::contains(&final_required, &pool, &exilus_defs, &c) {
@@ -2037,6 +2019,7 @@ pub fn run_optimize_resumable(
             let ctx = quick::QuickCtx {
             weapon_id: &info.id,
             pool: &pool,
+            stances: &stances,
             usable: (0..pool.len()).map(|i| usable.contains(&i)).collect(),
             required: required.clone(),
             forms,
@@ -2052,7 +2035,6 @@ pub fn run_optimize_resumable(
             exilus_defs: &exilus_defs,
             exilus_refs: &exilus_refs,
             innate: &innate,
-            cap,
             scenario: &scenario,
             request: &replay_base,
             runs: candidate_runs,
@@ -2063,7 +2045,7 @@ pub fn run_optimize_resumable(
             work: Default::default(),
             progress: Some(state),
             lead: fleet.get("lead").is_some(),
-            mod_slots: (build_size - usize::from(pool.iter().any(|m| m.stance.is_some()))).min(8),
+            mod_slots: build_size.min(8),
             screen_ratio: replay_base.get("screen_ratio").and_then(Value::as_f64).unwrap_or(quick::SCREEN_RATIO),
             keep_ratio: replay_base.get("keep_ratio").and_then(Value::as_f64).unwrap_or(quick::KEEP_RATIO),
             orders_of: Default::default(),
@@ -2553,12 +2535,9 @@ mod optimizer_evolution_tests {
         let mut with = base.clone();
         with["stance"] = json!("sovereign_outcast");
         let p = super::parse_optimize(&with).expect("with a stance");
-        assert!(
-            p.constraints.require.iter().any(|m| m == "sovereign_outcast"),
-            "{:?}",
-            p.constraints.require
-        );
-        assert_eq!(p.build_size, 9, "the stance's slot is its own");
+        assert_eq!(p.stances.len(), 1);
+        assert_eq!(p.pool[p.stances[0].unwrap()].id, "sovereign_outcast");
+        assert_eq!(p.build_size, 8, "the stance's slot is its own");
         // …AND IT HANDS CAPACITY BACK rather than taking it. Naramon on a slot
         // of another colour is 80% of the listed drain, rounded down: 4.
         assert_eq!(p.cap, 64);

@@ -273,9 +273,6 @@ function optimizeBody() {
     valence_element: valence.element,
     valence_bonus: valence.bonus,
     ...(assembly ? { assembly: { ...assembly } } : {}),
-    // THE STANCE, PINNED TO THE BUILDER'S — a stance decides what a swing
-    // IS, and no position of the descent ranges over it.
-    stance: slotModId(slots[STANCE]) || "",
     // THE FIGHT, WHOLE AND DERIVED — `theFight()`, the call the simulator
     // makes, so a candidate is scored under the fight the replay runs.
     ...theFight(),

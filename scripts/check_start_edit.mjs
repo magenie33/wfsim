@@ -121,4 +121,39 @@ const u = await app.evaluate(`(() => {
 c("an unnamed riven is taken out of the stance, the mods scope and a start's slots and pins",
   u.stance === "" && u.mods.join() === "serration" && u.slots.join() === ",serration" && u.fixed.join() === "1", JSON.stringify(u));
 c("...and the start says so under its card", u.noted === true);
+
+const melee = await app.evaluate(`(async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  history.pushState({}, '', '/weapons/Magistar/optimizer'); route(); await sleep(1800);
+  copyActivePreset(optBarCfg());
+  opt.starts = [{build:stateFromBuild({mods:['crushing_ruin']}, 'magistar'), fixed:[]}];
+  renderOptStarts();
+  renderOptLimits();
+  const offered = document.querySelector('#opt-limit-mods [data-id="crushing_ruin"]');
+  const stanceLimit = !!offered && !offered.querySelector('[data-require]');
+  const independent = !Object.prototype.hasOwnProperty.call(optimizeBody(), 'stance');
+  editStart(0); await sleep(800);
+  const pin = document.querySelector('#stance .start-pin');
+  if (pin) pin.click();
+  $('start-edit-done').click(); await sleep(800);
+  const start = startPayload(opt.starts[0]);
+  const compatible = await api('/api/optimize/check', optimizeBody());
+  const pinned = start.fixed.some(p => p.kind === 'mods' && p.idx === 9);
+  toggleLimit('mods', 'crushing_ruin');
+  const excluded = await api('/api/optimize/check', optimizeBody());
+  const excludedPin = !excluded.compatible && startConflicts(opt.starts[0]).blocked.length > 0;
+  toggleLimit('mods', 'crushing_ruin');
+  editStart(0); await sleep(600);
+  slots[STANCE].mod = null; renderMods(); await sleep(300);
+  $('start-edit-done').click(); await sleep(600);
+  const empty = startPayload(opt.starts[0]);
+  const emptyCompatible = await api('/api/optimize/check', optimizeBody());
+  return {independent, stanceLimit, excludedPin, hasPin:!!pin, pinned, stance:start.slots[9], compatible:compatible.compatible,
+    empty:empty.slots[9], emptyPinned:empty.fixed.some(p => p.kind === 'mods' && p.idx === 9),
+    emptyCompatible:emptyCompatible.compatible};
+})()`);
+c("the optimizer searches stance independently of the player's build", melee.independent);
+c("the stance slot has a pin and sends its own start choice", melee.hasPin && melee.pinned && melee.stance === "crushing_ruin" && melee.compatible, JSON.stringify(melee));
+c("stances can be excluded and an excluded pinned stance blocks the search", melee.stanceLimit && melee.excludedPin, JSON.stringify(melee));
+c("a pinned empty stance remains an explicit start choice", melee.empty == null && melee.emptyPinned && melee.emptyCompatible, JSON.stringify(melee));
 await app.finish("start edit");

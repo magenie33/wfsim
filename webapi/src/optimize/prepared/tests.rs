@@ -53,6 +53,25 @@ fn prepared_fleet_matches_every_cold_batch_and_new_search() {
 }
 
 #[test]
+fn melee_stance_fleet_matches_native_search_with_independent_cache_entries() {
+    let req = json!({"weapon":"magistar", "strategy":"quick", "mods":{}, "build_size":0,
+        "modes":{"base":"search", "forward":"search"}, "starts":[{"slots":[]}],
+        "duration":2, "runs":2, "candidate_runs":2, "finalists":10, "threads":1,
+        "enemy":"thrax_centurion", "level":100});
+    let native = run(parse_optimize(&req).unwrap());
+    let mut fleet_req = req.clone();
+    fleet_req["quick_fleet"] = json!({"lead":true,"fresh":true,"scores":[]});
+    let cold = trace(fleet_req.clone(), false);
+    assert!(cold.len() > 2);
+    assert_eq!(cold.last().unwrap()["results"], native["results"]);
+    assert_eq!(trace(fleet_req, true), cold);
+    let stances: std::collections::HashSet<_> = cold.iter().flat_map(|step|
+        step["scores"].as_array().into_iter().flatten().filter_map(|s| s["key"].as_str())
+            .filter_map(|key| key.rsplit(" t").next()?.split(' ').next())).collect();
+    assert_eq!(stances.len(), 3, "bare and both stances keep independent scores");
+}
+
+#[test]
 fn every_request_field_participates_in_preparation_identity() {
     let mut req = request();
     parse_optimize(&req).unwrap();

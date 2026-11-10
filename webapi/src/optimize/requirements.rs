@@ -33,10 +33,12 @@ pub(super) struct Scope<'a> {
     pub assemblies: &'a [Value],
     pub arcanes: &'a [Vec<String>],
     pub cap: u32,
+    pub stances: &'a [Option<usize>],
+    pub modes: &'a [super::ModeForms],
 }
 
 pub(super) fn validate(v: &Value, scope: Scope<'_>) -> Result<(), Value> {
-    let Scope { pool, exilus, required, legacy, slots, forbids, evos, assemblies, arcanes, cap } = scope;
+    let Scope { pool, exilus, required, legacy, slots, forbids, evos, assemblies, arcanes, cap, stances, modes } = scope;
     let fail = |s: String| super::err_json(s);
     let excluded = |axis: &str, id: &str| v.get("limits").and_then(|l| l.get("exclude")).and_then(|e| e.get(axis))
         .and_then(Value::as_array).is_some_and(|a| a.iter().any(|x| x.as_str() == Some(id)));
@@ -70,7 +72,7 @@ pub(super) fn validate(v: &Value, scope: Scope<'_>) -> Result<(), Value> {
             let kind = p["kind"].as_str().unwrap_or("");
             let i = p["idx"].as_u64();
             let valid = i.is_some_and(|i| match kind {
-                "mods" => i < 9,
+                "mods" => i < 10,
                 "assembly" => i < 2 && assemblies.iter().any(|a| !a.is_null()),
                 "arcane" => i < arcanes.first().map_or(0, Vec::len) as u64,
                 "evo" | "mode" | "valence" => i == 0,
@@ -85,13 +87,17 @@ pub(super) fn validate(v: &Value, scope: Scope<'_>) -> Result<(), Value> {
         let mut pinned_main = Vec::new();
         let mut empty_main = 0;
         let mut pinned_exilus = None;
-        for i in 0..9 {
+        let mut pinned_stance = None;
+        for i in 0..10 {
             if !fixed("mods", i) { continue; }
             let id = s.get("slots").and_then(|a| a.get(i)).and_then(Value::as_str);
             let Some(id) = id else {
                 if i < 8 { empty_main += 1; }
                 if i == 8 && !exilus.iter().any(Option::is_none) {
                     return Err(error("the pinned empty exilus is outside this scope".into()));
+                }
+                if i == 9 && !stances.iter().any(Option::is_none) {
+                    return Err(error("the pinned empty stance is outside this scope".into()));
                 }
                 continue;
             };
@@ -100,10 +106,16 @@ pub(super) fn validate(v: &Value, scope: Scope<'_>) -> Result<(), Value> {
             if pinned_main.iter().any(|p: &&ModDef| p.id == id) {
                 return Err(error(format!("{id} is pinned in more than one slot")));
             }
-            if i == 8 {
+            if i == 9 {
+                if !stances.iter().flatten().any(|&i| pool[i].id == id) { return Err(error(format!("pinned stance {id} is unavailable or excluded"))); }
+                pinned_stance = Some(m);
+            } else if i == 8 {
                 if !exilus.iter().flatten().any(|x| x.id == id) { return Err(error(format!("pinned exilus {id} is unavailable or the exilus is left empty"))); }
                 pinned_exilus = Some(m);
-            } else { pinned_main.push(m); }
+            } else {
+                if m.stance.is_some() { return Err(error(format!("{id} belongs in the stance slot"))); }
+                pinned_main.push(m);
+            }
             if !cards.iter().any(|c| c.id == m.id) { cards.push(m); }
         }
         compatible(&cards).map_err(error)?;
@@ -114,9 +126,19 @@ pub(super) fn validate(v: &Value, scope: Scope<'_>) -> Result<(), Value> {
         if main_count > available { return Err(error(format!("required and pinned mods need {main_count} main slots, but only {available} are free"))); }
         let planned: Vec<_> = cards.iter().filter(|m| m.stance.is_none()).map(|m|
             wfsim_engine::rules::capacity::PlannedMod { base_drain: m.base_drain, polarity: m.polarity }).collect();
+        let info = crate::registry::weapon_of(v)?;
+        let cap = if fixed("mods", 9) { super::stance::capacity(&info.id, pinned_stance) } else { cap };
         if wfsim_engine::rules::capacity::plan_forma(cap, &vec![None; planned.len()], &planned).is_err() {
             return Err(error("required and pinned mods cannot fit the weapon's capacity, even with Forma".into()));
         }
+        if !stances.iter().any(|choice| {
+            let m = choice.map(|i| &pool[i]);
+            (!fixed("mods", 9) || m.map(|m| m.id) == pinned_stance.map(|m| m.id)) && modes.iter().any(|mode| {
+                (!fixed("mode", 0) || s["mode"].as_str().is_none_or(|id| id == mode.id))
+                    && wfsim_engine::data::weapons::spec(&mode.fire_id).is_none_or(|spec|
+                        super::stance::supported(&info.id, spec.form_kind(), m))
+            })
+        }) { return Err(error("the pinned stance and mode have no supported combo in this scope".into())); }
         if !forbids.iter().enumerate().any(|(ei, f)| {
             let pinned_evos = s.get("evolutions").and_then(Value::as_array);
             (!fixed("evo", 0) || pinned_evos.is_none_or(|a| a.iter().filter_map(Value::as_str).all(|id| evos[ei].iter().any(|e| e == id))))

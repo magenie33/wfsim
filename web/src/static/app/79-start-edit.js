@@ -239,6 +239,7 @@ function decorateStartPins() {
   const kids = (id) => [...(($(id) || {}).children || [])];
   kids("mod-slots").forEach((el, i) => { if (i < 8) put(el, "mods:" + i); });
   kids("exilus").slice(0, 1).forEach((el) => put(el, "mods:8"));
+  kids("stance").slice(0, 1).forEach((el) => put(el, "mods:9"));
   kids("arcane-slots").forEach((el, i) => put(el, "arcane:" + i));
   const head = (id, key) => { const b = $(id); if (b && !b.hidden) put(b.querySelector(".bh"), key); };
   kids("assembly-row").forEach((el, i) => put(el, "assembly:" + i));
@@ -262,7 +263,7 @@ function pinSummary(s) {
     if (kind === "mods" || kind === "slots") {
       const slot = (b.slots || [])[i];
       const name = slot?.mod ? requiredLabel(rankedId(slot.mod, slot.rank)) : tr("empty");
-      return (kind === "slots" || !slot?.mod || i === 8 ? `${tr(i === 8 ? "Exilus" : "Fixed slot")} ${i < 8 ? i + 1 : ""}: ` : `${tr("Contains")}: `) + name;
+      return (kind === "slots" || !slot?.mod || i >= 8 ? `${tr(i === 9 ? "Stance" : i === 8 ? "Exilus" : "Fixed slot")} ${i < 8 ? i + 1 : ""}: ` : `${tr("Contains")}: `) + name;
     }
     if (kind === "assembly") {
       const spec = w.assembly || {}, part = i ? spec.component || "loader" : "grip";

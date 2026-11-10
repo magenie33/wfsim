@@ -407,6 +407,7 @@ fn expand_subset(
     // it happens once per exilus option, outside the order loop.
     let base_planned: Vec<PlannedMod> = subset
         .iter()
+        .filter(|&&i| pool[i].stance.is_none())
         .map(|&i| PlannedMod {
             base_drain: pool[i].base_drain,
             polarity: pool[i].polarity,
@@ -551,6 +552,7 @@ pub fn rebuild_candidate(
     let xopt = *exilus_opts.get(exilus as usize)?;
     let mut planned: Vec<PlannedMod> = ordered
         .iter()
+        .filter(|&&i| pool[i].stance.is_none())
         .map(|&i| PlannedMod { base_drain: pool[i].base_drain, polarity: pool[i].polarity })
         .collect();
     if let Some(x) = xopt {

@@ -23,6 +23,12 @@ rendering.
 
 # The browser and node checks
 
+`check_start_edit.mjs` covers start editing and restoration of the player's
+build, including stance card and empty-slot pins. The optimize request carries
+each start's stance without fixing it to the player's current build. Rust
+stance tests cover native/fleet search parity, exclusions, final requirements,
+fixed weapon stances and exact simulator replay.
+
 `import_inverse_speed.py --exchange <root> --check` verifies the pinned inverse
 speed packet and its generated source fixture. Compiled tests distinguish the
 inner weapon-query floor, outer state floor, reload/charge denominators and
@@ -1744,7 +1750,7 @@ Its sharpest pair is the ROUND TRIP — `buildPayload` into
 slot 9. A complete bare Praedos input runs with no stance on the wire;
 Magistar's bare input produces a different fight from either stance. The mode explanation
 also resolves the heavy's weapon-specific charge alongside its motion time.
-The optimizer sends an empty stance slot unchanged, and the board accepts a
+The optimizer leaves the stance searchable, and the board accepts a
 complete stanceless result while still refusing seven main mods.
 
 ## `check_stance_capacity`

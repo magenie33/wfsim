@@ -68,7 +68,7 @@ impl Clone for OptimizePlan {
         let mut scenario = self.scenario.clone();
         scenario.params = params(replay.clone());
         Self {
-            weapon_id: self.weapon_id.clone(), pool: self.pool.clone(), cap: self.cap,
+            weapon_id: self.weapon_id.clone(), pool: self.pool.clone(), stances: self.stances.clone(), cap: self.cap,
             constraints: self.constraints.clone(), min_slots: self.min_slots, build_size: self.build_size,
             evo_sets: self.evo_sets.clone(), variant_forbids: self.variant_forbids.clone(),
             exilus_defs: self.exilus_defs.clone(), arcanes: self.arcanes.clone(), arcane_sets: self.arcane_sets.clone(),

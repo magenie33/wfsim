@@ -2,7 +2,7 @@
 //! THE QUICK DESCENT'S SPACE over one plan's tables (docs/OPTIMIZER.md,
 //! "The quick descent — the quick calc, repeated").
 //!
-//! A build is indices into the plan: eight mod slots, an exilus option, an
+//! A build is indices into the plan: eight mod slots, exilus and stance options, an
 //! arcane set, an evolution set, a mode, a valence and an assembly. That makes "inside the
 //! scope" a lookup — a candidate the quick calc offers is kept when it maps onto
 //! the plan's tables and dropped when it does not. The candidates themselves are
@@ -29,6 +29,7 @@ use wfsim_optimizer::Candidate;
 pub(crate) struct QBuild {
     pub(crate) mods: [Option<usize>; 8],
     pub(crate) exilus: usize,
+    pub(crate) stance: usize,
     pub(crate) arcane: usize,
     pub(crate) evo: usize,
     pub(crate) mode: usize,
@@ -46,18 +47,20 @@ pub(crate) struct SearchBranch {
 impl QBuild {
     /// Indices as they travel between workers: the eight slots (-1 empty),
     /// then exilus, arcane, evolution set, mode, valence, assembly and the
-    /// fixed-slot mask. Only a worker that
+    /// fixed-slot mask, then the stance. Legacy arrays omit the final stance.
+    /// Only a worker that
     /// parsed the same request can read them.
     fn to_json(&self) -> Value {
         let mut v: Vec<i64> = self.mods.iter().map(|m| m.map_or(-1, |i| i as i64)).collect();
         v.extend([self.exilus, self.arcane, self.evo, self.mode, self.val, self.assembly].map(|x| x as i64));
         v.push(i64::from(self.fixed_slots));
+        v.push(self.stance as i64);
         json!(v)
     }
 
     fn from_json(v: &Value) -> Option<Self> {
         let a: Vec<i64> = v.as_array()?.iter().map(|x| x.as_i64()).collect::<Option<_>>()?;
-        if a.len() != 15 {
+        if !matches!(a.len(), 15 | 16) {
             return None;
         }
         let mut mods = [None; 8];
@@ -65,7 +68,7 @@ impl QBuild {
             *m = usize::try_from(a[i]).ok();
         }
         let at = |i: usize| usize::try_from(a[i]).ok();
-        Some(QBuild { mods, exilus: at(8)?, arcane: at(9)?, evo: at(10)?, mode: at(11)?, val: at(12)?, assembly: at(13)?, fixed_slots: u8::try_from(a[14]).ok()? })
+        Some(QBuild { mods, exilus: at(8)?, stance: if a.len() == 16 { at(15)? } else { 0 }, arcane: at(9)?, evo: at(10)?, mode: at(11)?, val: at(12)?, assembly: at(13)?, fixed_slots: u8::try_from(a[14]).ok()? })
     }
 }
 
@@ -109,6 +112,7 @@ thread_local! {
 pub(crate) struct QuickCtx<'a> {
     pub(crate) weapon_id: &'a str,
     pub(crate) pool: &'a [ModDef],
+    pub(crate) stances: &'a [Option<usize>],
     /// Per pool index: not forbidden by the scope.
     pub(crate) usable: Vec<bool>,
     pub(crate) required: Vec<usize>,
@@ -125,10 +129,9 @@ pub(crate) struct QuickCtx<'a> {
     pub(crate) exilus_defs: &'a [Option<ModDef>],
     pub(crate) exilus_refs: &'a [Option<&'a ModDef>],
     pub(crate) innate: &'a [Option<wfsim_engine::rules::capacity::Polarity>],
-    pub(crate) cap: u32,
     pub(crate) scenario: &'a wfsim_optimizer::Scenario,
     /// The request, for what a candidate list needs that the plan does not
-    /// hold: the visitor's rivens, the stance and simulator settings.
+    /// hold: the visitor's rivens and simulator settings.
     pub(crate) request: &'a Value,
     pub(crate) runs: u32,
     pub(crate) seed: u64,
@@ -206,14 +209,17 @@ impl QuickCtx<'_> {
 
     fn orders_now(&self, b: &QBuild) -> Vec<Candidate> {
         let Some(vi) = self.variant(b) else { return Vec::new() };
+        let Some(&stance) = self.stances.get(b.stance) else { return Vec::new() };
+        let base = &self.forms[vi];
+        if !super::stance::supported(self.weapon_id, base.form, stance.map(|i| &self.pool[i])) { return Vec::new(); }
         let mut subset: Vec<usize> = b.mods.iter().flatten().copied().collect();
-        subset.extend(self.pool.iter().enumerate().filter(|(_, m)| m.stance.is_some()).map(|(i, _)| i));
+        subset.extend(stance);
         let forbids = &self.variant_forbids[self.variants[vi].1];
         if subset.iter().any(|&i| forbids[i]) {
             return Vec::new();
         }
         subset.sort_unstable();
-        let base = &self.forms[vi];
+        let cap = super::stance::capacity(self.weapon_id, stance.map(|i| &self.pool[i]));
         // THE BUILD'S OWN EXILUS OPTION ONLY: every other one is another build,
         // planned and resolved for nothing.
         let exilus = match self.exilus_refs.get(b.exilus) {
@@ -224,7 +230,7 @@ impl QuickCtx<'_> {
         let mut out = Vec::new();
         if b.fixed_slots != 0 {
             let x = exilus.first().copied().flatten();
-            out = wfsim_optimizer::expand_with_slots(self.pool, base, vi as u32, self.cap,
+            out = wfsim_optimizer::expand_with_slots(self.pool, base, vi as u32, cap,
                 self.innate, x, &subset, &b.mods, b.fixed_slots, &self.scenario.arena.tenno, self.scenario.policy);
             for c in &mut out { c.exilus = b.exilus as u32; }
             return out;
@@ -234,7 +240,7 @@ impl QuickCtx<'_> {
             base,
             None,
             vi as u32,
-            self.cap,
+            cap,
             self.innate,
             exilus,
             &subset,
@@ -277,7 +283,7 @@ impl QuickCtx<'_> {
     }
 
     fn has_required(&self, b: &QBuild) -> bool {
-        self.required.iter().all(|r| self.pool[*r].stance.is_some() || b.mods.contains(&Some(*r))) && self.final_required.iter().all(|id|
+        self.required.iter().all(|r| b.mods.contains(&Some(*r))) && self.final_required.iter().all(|id|
             b.mods.iter().flatten().any(|&i| self.pool[i].id == id)
                 || self.exilus_defs[b.exilus].as_ref().is_some_and(|m| m.id == id))
     }
@@ -286,10 +292,7 @@ impl QuickCtx<'_> {
     fn candidate_request(&self, b: &QBuild, p: Position) -> Value {
         let mut slots: Vec<Value> = b.mods.iter().map(|m| m.map_or(Value::Null, |i| json!(self.pool[i].id))).collect();
         slots.push(self.exilus_defs[b.exilus].as_ref().map_or(Value::Null, |m| json!(m.id)));
-        slots.push(match self.request.get("stance").and_then(Value::as_str) {
-            Some(s) if !s.is_empty() => json!(s),
-            _ => Value::Null,
-        });
+        slots.push(self.stances[b.stance].map_or(Value::Null, |i| json!(self.pool[i].id)));
         let mut evo_sel = serde_json::Map::new();
         for id in &self.evo_sets[b.evo] {
             if let Some(e) = wfsim_engine::data::evolutions::get(id) {
@@ -344,6 +347,11 @@ impl QuickCtx<'_> {
                 } else if let Some(x) = self.exilus_defs.iter().position(|x| x.as_ref().is_some_and(|m| m.id == id)) {
                     b.exilus = x;
                 }
+            }
+            if let Some(id) = slots.get(9).and_then(Value::as_str) {
+                if let Some(i) = self.stances.iter().position(|m| m.is_some_and(|i| self.pool[i].id == id)) { b.stance = i; }
+            } else if self.stances.len() > 1 {
+                unnamed.push(Position { kind: "mods", idx: 9 });
             }
             if slots.get(8).and_then(Value::as_str).is_none() && self.exilus_defs.len() > 1 {
                 unnamed.push(Position { kind: "mods", idx: 8 });
@@ -505,6 +513,7 @@ impl QuickCtx<'_> {
         QBuild {
             mods: [None; 8],
             exilus: self.exilus_defs.iter().position(Option::is_none).unwrap_or(0),
+            stance: self.stances.iter().position(Option::is_none).unwrap_or(0),
             arcane: 0,
             evo: 0,
             mode: 0,
@@ -535,8 +544,14 @@ impl QuickCtx<'_> {
             .map(|s| {
                 let mut b = self.blank();
                 let mut order: Vec<usize> = self.required.iter().copied().filter(|&i| self.pool[i].stance.is_none()).collect();
-                order.extend(s.mods.iter().copied().filter(|m| !self.required.contains(m)));
                 let mut fixed = Vec::new();
+                if let Some(i) = s.mods.iter().find(|&&i| self.pool[i].stance.is_some()) {
+                    if let Some(si) = self.stances.iter().position(|m| *m == Some(*i)) {
+                        b.stance = si;
+                        if s.locked.contains(i) { fixed.push(Position { kind: "mods", idx: 9 }); }
+                    }
+                }
+                order.extend(s.mods.iter().copied().filter(|m| !self.required.contains(m) && self.pool[*m].stance.is_none()));
                 for (slot, m) in order.into_iter().take(8).enumerate() {
                     b.mods[slot] = Some(m);
                     if self.required.contains(&m) || s.locked.contains(&m) {
@@ -550,7 +565,8 @@ impl QuickCtx<'_> {
                     }
                 }
                 self.seed_required(&mut b, &fixed);
-                QuickStart { build: b, fixed, unnamed: Vec::new() }
+                let unnamed = if self.stances.len() > 1 { vec![Position { kind: "mods", idx: 9 }] } else { Vec::new() };
+                QuickStart { build: b, fixed, unnamed }
             })
             .collect()
     }
@@ -626,6 +642,9 @@ impl QuickSpace for QuickCtx<'_> {
         if self.assemblies.len() > 1 {
             out.extend((0..2).map(|idx| Position { kind: "assembly", idx }));
         }
+        if self.stances.len() > 1 {
+            out.push(Position { kind: "mods", idx: 9 });
+        }
         if self.mode_ids.len() > 1 {
             out.push(Position { kind: "mode", idx: 0 });
         }
@@ -649,7 +668,7 @@ impl QuickSpace for QuickCtx<'_> {
     /// a handful of options each, so a pair of them costs about one card
     /// slot's sweep. Two card slots at once would be C(8,2) x 85^2 builds.
     fn coupled(&self, b: &QBuild) -> Vec<Position> {
-        self.positions(b).into_iter().filter(|p| p.kind != "mods").collect()
+        self.positions(b).into_iter().filter(|p| p.kind != "mods" || p.idx == 9).collect()
     }
 
     fn empty(&self, b: &QBuild) -> Vec<Position> {
@@ -776,7 +795,7 @@ impl QuickSpace for QuickCtx<'_> {
     /// while it still does not. One card per drain is tried, since every card
     /// scored as one there.
     fn repair(&self, b: &QBuild, free: &[Position]) -> Option<QBuild> {
-        let mut slots: Vec<usize> = free.iter().filter(|p| p.kind == "mods").map(|p| p.idx).collect();
+        let mut slots: Vec<usize> = free.iter().filter(|p| p.kind == "mods" && p.idx < 9).map(|p| p.idx).collect();
         slots.retain(|&i| {
             let m = if i < 8 { b.mods[i].map(|m| self.pool[m].id) } else { self.exilus_defs[b.exilus].as_ref().map(|m| m.id) };
             m.is_none_or(|id| !self.final_required.iter().any(|r| r == id))
@@ -834,7 +853,7 @@ impl QuickSpace for QuickCtx<'_> {
         let mut mods: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
         mods.sort_unstable();
         let slots: Vec<_> = (0..8).filter(|&i| b.fixed_slots & (1 << i) != 0).map(|i| (i, b.mods[i])).collect();
-        format!("{mods:?} x{} a{} e{} m{} v{} p{} s{slots:?}", b.exilus, b.arcane, b.evo, b.mode, b.val, b.assembly)
+        format!("{mods:?} x{} a{} e{} m{} v{} p{} t{} s{slots:?}", b.exilus, b.arcane, b.evo, b.mode, b.val, b.assembly, b.stance)
     }
 
     /// The canonical form: the same cards whatever their slots, the same
@@ -849,7 +868,7 @@ impl QuickSpace for QuickCtx<'_> {
             .iter_nonzero()
             .map(|(t, v)| format!("{t:?}:{v:.3}"))
             .collect();
-        format!("{cards:?}|{elements:?}|{}|{}|{:?}|{:?}", b.exilus, b.arcane, self.variant(b), c.slots)
+        format!("{cards:?}|{elements:?}|{}|{}|{}|{:?}|{:?}", b.exilus, b.stance, b.arcane, self.variant(b), c.slots)
     }
 }
 
@@ -861,6 +880,7 @@ impl QuickCtx<'_> {
             .iter()
             .flatten()
             .map(|&i| &self.pool[i])
+            .chain(self.stances[b.stance].map(|i| &self.pool[i]))
             .chain(self.exilus_defs.get(b.exilus).and_then(Option::as_ref))
             .collect();
         let arcanes = self.arcane_sets.get(b.arcane).map_or_else(Vec::new, |s| {
@@ -926,6 +946,10 @@ impl QuickCtx<'_> {
                         _ => false,
                     }
                 }
+                "mods" if p.idx == 9 => match self.stances.iter().position(|x| x.map_or(id == "none", |i| self.pool[i].id == id)) {
+                    Some(i) => { n.stance = i; true }
+                    None => false,
+                },
                 "mods" => match self.exilus_defs.iter().position(|x| x.as_ref().is_some_and(|m| m.id == id)) {
                     Some(xi) => {
                         n.exilus = xi;
@@ -1207,7 +1231,7 @@ impl QuickCtx<'_> {
     fn changes(&self, from: &QBuild, to: &QBuild) -> Vec<Value> {
         let mut out = Vec::new();
         let cards = |b: &QBuild| -> Vec<&str> {
-            let mut v: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
+            let mut v: Vec<&str> = b.mods.iter().flatten().copied().chain(self.stances[b.stance]).map(|i| self.pool[i].id).collect();
             v.sort_unstable();
             v
         };

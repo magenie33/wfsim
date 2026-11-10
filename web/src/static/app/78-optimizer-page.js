@@ -98,7 +98,7 @@ function normalizeLimits(l) {
 /// The builder's list for this weapon: every card, and a row per rank for the
 /// cards on the every-rank list.
 const excludeOffers = (q) => poolWithRivens()
-  .filter((m) => !m.stance && (!q || searchHit(m, q)))
+  .filter((m) => !q || searchHit(m, q))
   .flatMap((m) => [m, ...lowerRanks(m)])
   .sort((a, b) => ((b.riven ? 1 : 0) - (a.riven ? 1 : 0))
     || String(a.name).localeCompare(String(b.name))
@@ -151,9 +151,9 @@ function renderOptLimits() {
       [8, 7, 6, 5, 4, 3, 2, 1, 0].map((n) => `<option value="${n}"${n === L.mods ? " selected" : ""}>${n}</option>`).join("")}</select> ${escHtml(tr("mods"))}</label>`
     + (AX.hasExilus ? toggle(L.exilus, "exilus", tr("fill the exilus")) : "") + `</div>`
     + `<input id="opt-limit-filter" type="text" data-view-only placeholder="${escHtml(tr("search mods by name or effect…"))}" value="${escHtml(q)}" autocomplete="off">`
-    + `<div class="combo-menu opt-limit-list" id="opt-limit-mods">${sectionedRows(excludeOffers(q), (m) => (m.riven ? "Riven" : "Mods"),
+    + `<div class="combo-menu opt-limit-list" id="opt-limit-mods">${sectionedRows(excludeOffers(q), (m) => (m.stance ? "Stance" : m.riven ? "Riven" : "Mods"),
       (m) => modRow(m, { rank: m.card ? m.rank : m.max_rank, attrs: `data-axis="mods" data-id="${m.id}"`,
-        trailing: `<button type="button" class="pchip${required(m.id) ? " sel" : ""}" data-require="${escHtml(m.id)}" aria-pressed="${required(m.id)}">${escHtml(tr(required(m.id) ? "required" : "require"))}</button>`,
+        trailing: m.stance ? "" : `<button type="button" class="pchip${required(m.id) ? " sel" : ""}" data-require="${escHtml(m.id)}" aria-pressed="${required(m.id)}">${escHtml(tr(required(m.id) ? "required" : "require"))}</button>`,
         cls: isOut("mods", m.id) ? "cur opt-out" : "",
         chips: `${m.card ? ` <span class="rkchip">R${m.rank}</span>` : ""}${isOut("mods", m.id) ? outChip() : ""}` }))}</div>`;
   if (AX.arcanes.length) {
@@ -245,7 +245,7 @@ function startConflicts(s) {
   const out = { blocked: [], replaced: [] };
   const note = (k, text) => (pinned(k) ? out.blocked : out.replaced).push(text);
   (b.slots || []).forEach((x, i) => {
-    if (!x || !x.mod || i === STANCE) return;
+    if (!x || !x.mod) return;
     const id = rankedId(x.mod, x.rank);
     const name = ((modById(x.mod) || {}).name || x.mod) + (id.includes("@") ? ` R${x.rank}` : "");
     if (i === EXILUS) {

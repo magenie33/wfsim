@@ -144,13 +144,13 @@ const admission = await evaluate(`(async () => {
   };
   const payload = boardPayloadFromResult(row, ctx);
   return {
-    stance: optimizeBody().stance, mods: payload.mods,
+    stanceFixed: Object.prototype.hasOwnProperty.call(optimizeBody(), 'stance'), mods: payload.mods,
     full: await api('/api/board/check', payload),
     short: await api('/api/board/check', { ...payload, mods: payload.mods.slice(0, 7) }),
   };
 })()`);
-check(`${tag} optimization sends an empty stance slot without adding a card`,
-  admission.stance === '' && admission.mods.length === 8, JSON.stringify(admission));
+check(`${tag} optimization leaves stance searchable and preserves the submitted bare build`,
+  admission.stanceFixed === false && admission.mods.length === 8, JSON.stringify(admission));
 check(`${tag} the board accepts a complete stanceless winner`,
   admission.full.accepted === true, JSON.stringify(admission.full));
 check(`${tag} leaving the stance empty does not waive the eight main slots`,

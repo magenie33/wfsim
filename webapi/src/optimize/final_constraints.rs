@@ -37,7 +37,7 @@ fn merge(s: &mut Value, final_: &Value) -> Result<(), String> {
         let kind = p["kind"].as_str().unwrap_or("");
         let i = p["idx"]
             .as_u64()
-            .filter(|&i| i < 9)
+            .filter(|&i| i < 10)
             .ok_or("unknown final constraint position")? as usize;
         if kind == "mods" && i < 8 {
             if !slot_pin(&p) {
@@ -89,7 +89,7 @@ fn merge(s: &mut Value, final_: &Value) -> Result<(), String> {
             s["slots"] = json!(seated);
         } else {
             let keys: Vec<&str> = match kind {
-                "mods" if i == 8 => vec!["slots"],
+                "mods" if i >= 8 => vec!["slots"],
                 "arcane" => vec!["arcane", "arcane_rank"],
                 "mode" => vec!["mode"],
                 "valence" => vec!["valence_element"],
@@ -120,7 +120,7 @@ fn merge(s: &mut Value, final_: &Value) -> Result<(), String> {
                 let label = match kind {
                     "assembly" => keys[0].to_string(),
                     "arcane" => format!("arcane seat {}", i + 1),
-                    "mods" => "exilus slot".to_string(),
+                    "mods" => if i == 9 { "stance slot" } else { "exilus slot" }.to_string(),
                     "valence" => "progenitor element".to_string(),
                     "evo" => "evolutions".to_string(),
                     _ => kind.to_string(),

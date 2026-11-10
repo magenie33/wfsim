@@ -1766,7 +1766,7 @@ function headlessRivenGainRequest(meta, { weapon, ruler, card, rivenId = "apprai
     valence_element: valence.element,
     valence_bonus: valence.bonus,
     ...(assembly ? { assembly: { ...assembly } } : {}),
-    stance,
+    ...(stance ? { stance } : {}),
     ...sim, runs, custom_enemies: [], buffs: sim.buffs || {}, also_acting: [],
     finalists: preset.finalists,
     strategy: "quick",

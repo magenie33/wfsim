@@ -150,12 +150,18 @@ build. The final round is the
 simulator's own run (§"The answer"), so a row's number is what simulating its
 build answers.
 
-**The stance slot is not searched.** A stance decides what the weapon swings
-(Crushing Ruin against Shattering Storm is 1,275 against 1,162 DPS on the same
-Magistar), so it is a real axis; every candidate carries the builder's.
-An empty stance slot stays empty and uses the weapon's own event timeline.
-Inputs without a complete seated or bare script are filtered by the simulator's
-combo availability rule; a scope with no supported input is refused.
+The stance slot is a search position, coupled with mode. Each start carries its
+own stance; an unpinned slot compares compatible stances and the bare weapon's
+timeline. A pin fixes its card or its empty slot, and final requirements can
+fix it for every start. A weapon's fixed stance is always seated. Candidates
+use the simulator's combo availability rule and their own stance capacity;
+a scope with no supported stance and input combination is refused.
+The grant uses the stance slot's innate polarity; the search does not plan
+a change to that slot's polarity.
+Explicit API requests carrying `stance` retain that fixed choice, including
+an empty string. Tools may narrow the stance options with a `stances` mark map
+(`none` for the bare weapon); an ordinary quick request searches all compatible
+stances. Stance cards travel in the result's flat `mods` list.
 
 ## A card is searched at max rank, unless it is named
 
@@ -623,7 +629,7 @@ riven alone is pinned. The same fill and descent adapt the configuration to
 the target (`docs/BOARD.md` §"Family candidates").
 
 - The positions are the quick calc's axes, in this order: both modular parts,
-  mode, each
+  stance, mode, each
   evolution tier, valence, each arcane seat, mod slots 1–8, the exilus slot.
   WHAT SHAPES THE WEAPON COMES FIRST: a card chosen before the mode or the
   evolutions is chosen for another weapon. With mode last, Burston Prime spent
@@ -636,9 +642,9 @@ the target (`docs/BOARD.md` §"Family candidates").
   card, arcane, evolution, mode and element the weapon takes, with the lower
   ranks of the request's `every_rank` list — so the tables are exactly what
   the quick calc offers. The page sends no scope; only the grader names one.
-  No candidate is EMPTY. It took the page's generator's place after reproducing it
-  on 91 of 91 positions over six weapons; like it, it offers a stance card for
-  a main slot, which the builder's picker does not.
+  The stance position also offers its empty slot; ordinary mod candidates are
+  cards. Stances are offered only in the stance position and never compete for
+  main or exilus slots.
 - **A build scores at its BEST ALLOWED ELEMENT ORDER.** Slot position decides only
   what combines, and a candidate seated in the slot being swept cannot move its
   element behind another: Magnetic + Toxin on Sancti Magistar needs a card swap
