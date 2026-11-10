@@ -7,7 +7,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ALL_CI_JOBS, assertGate, BROWSER_JOBS, browserCheckPaths, changedPaths, checkJobPaths,
-  classify, CONSUMER_JOBS, jobPlan, OPTIONAL_NATIVE_JOBS, PRODUCT_JOBS } from './ci_policy.mjs';
+  classify, CONSUMER_JOBS, FRONTEND_JOBS, jobPlan, OPTIONAL_NATIVE_JOBS, PRODUCT_JOBS } from './ci_policy.mjs';
 import { releaseArtifactsAvailable, trustedRun, validProof, verifiedBase } from './ci_runs.mjs';
 import { COMPANION_JOBS, companionJobs } from './full_work.mjs';
 
@@ -41,7 +41,19 @@ assert.equal(classify(['docs/UI.md', 'README.md']).jobs.length, 0);
 for (const paths of [['docs/UI.md'], ['worker/index.js'], ['web/src/static/style.css'], ['site/release.json']]) {
   assert.deepEqual(classify(paths, false, false).jobs, PRODUCT_JOBS, 'an unverified base cannot justify skipping tests');
 }
-for (const path of ['web/src/static/style.css', 'data/i18n/zh/ui.yaml', 'worker/pg/schema.sql']) {
+for (const path of ['web/src/static/style.css', 'data/i18n/zh/ui.yaml', 'web/src/static/app/69-board-work.js']) {
+  const p = classify([path]);
+  assert.equal(p.scope, 'frontend');
+  assert.deepEqual(p.jobs, FRONTEND_JOBS);
+  assert(!p.jobs.includes('services') && !p.jobs.includes('pipeline'));
+  assert.deepEqual(companionJobs(p.jobs), ['runtime', 'prepare-desktop', 'prepare-live']);
+  for (const server of ['worker/pg/schema.sql', 'worker/board_tasks.js']) {
+    assert.deepEqual(classify([path, server]).jobs, BROWSER_JOBS);
+    assert.deepEqual(classify([server, path]).jobs, BROWSER_JOBS);
+  }
+  assert.deepEqual(classify([path, 'unregistered/shared.js']).jobs, PRODUCT_JOBS);
+}
+for (const path of ['worker/pg/schema.sql', 'scripts/check_board_verify.mjs', 'scripts/check_tasks.mjs']) {
   const p = classify([path]);
   assert(p.jobs.includes('site') && p.jobs.includes('pipeline') && p.jobs.includes('parity'), path);
   assert(!p.jobs.includes('test') && !p.jobs.includes('gas'), path);
@@ -50,7 +62,7 @@ for (const [kind, paths] of Object.entries({ mcp: ['mcp/index.js', 'mcp/account.
   'scripts/check_mcp_entry.mjs', 'scripts/mcp_test_loader.mjs'], bot: ['bot/engine.mjs', 'scripts/check_bot_auth.mjs'] })) {
   for (const path of paths) {
     assert.deepEqual(classify([path]).jobs, CONSUMER_JOBS[kind], path);
-    assert.deepEqual(classify([path, 'web/src/static/style.css']).jobs, BROWSER_JOBS);
+    assert.deepEqual(classify([path, 'web/src/static/style.css']).jobs, FRONTEND_JOBS);
     assert.deepEqual(classify([path, 'engine/src/lib.rs']).jobs, PRODUCT_JOBS);
     for (const pair of [[path, 'site/release.json'], ['site/release.json', path]]) {
       assert.deepEqual(classify(pair).jobs, PRODUCT_JOBS, 'snapshot mixing cannot narrow validation');
@@ -92,9 +104,14 @@ for (const path of ['Cargo.toml', 'Cargo.lock', 'scripts/ci_rust.mjs',
 for (const paths of [[], ['optimizer/src/quick.rs'], ['webapi/src/optimize.rs'], ['unknown/file']]) assert(classify(paths).deep);
 assert.equal(classify(['desktop/examples/updatekit.rs']).deep, false, 'independent shell packaging cannot change search enumeration');
 assert(classify(['desktop/examples/updatekit.rs', 'optimizer/src/quick.rs']).deep);
+for (const path of ['scripts/board_heads.mjs', 'scripts/inventory_publication.mjs', 'scripts/inventory_relations.mjs',
+  'scripts/replay_board_projection.mjs', 'scripts/live_intake.mjs', 'scripts/live_mailbox.mjs']) {
+  assert.equal(classify([path]).deep, false, path);
+  assert(classify([path, 'optimizer/src/quick.rs']).deep);
+}
 assert(classify(['mcp/index.js'], true).deep);
 for (const path of ['scripts/check_kitgun_slot.mjs', 'scripts/check_riven_request.mjs']) {
-  assert.deepEqual(classify([path]).jobs, BROWSER_JOBS, path);
+  assert.deepEqual(classify([path]).jobs, FRONTEND_JOBS, path);
   assert.deepEqual(classify([path], false, false).jobs, PRODUCT_JOBS);
   assert.deepEqual(classify([path], true).jobs, PRODUCT_JOBS);
   assert.equal(classify([path, 'engine/src/lib.rs']).scope, 'full');
@@ -114,7 +131,7 @@ const needs = plan => Object.fromEntries(['plan', 'quick', 'commits', ...ALL_CI_
   [j, { result: ['plan', 'quick', 'commits', ...plan.jobs].includes(j) ? 'success' : 'skipped' }])
   .concat(OPTIONAL_NATIVE_JOBS.map(j => [j, { result: 'skipped' }]))
   .concat(COMPANION_JOBS.map(j => [j, { result: companionJobs(plan.jobs, !!plan.fast).includes(j) ? 'success' : 'skipped' }])));
-for (const plan of [classify(['docs/UI.md']), classify(['worker/index.js']), classify(['engine/src/lib.rs'])]) {
+for (const plan of [classify(['docs/UI.md']), classify(['web/src/static/style.css']), classify(['worker/index.js']), classify(['engine/src/lib.rs'])]) {
   assertGate(plan, needs(plan));
   for (const job of ['plan', 'quick', 'commits', ...plan.jobs]) {
     for (const result of ['failure', 'cancelled', 'skipped', undefined]) {
@@ -171,6 +188,9 @@ assert(!validProof({ ...proof, jobs: PRODUCT_JOBS.filter(j => j !== 'test') }, '
 assert(validProof({ ...proof, jobs: BROWSER_JOBS }, 'abc', 'p'));
 assert(!validProof({ ...proof, jobs: BROWSER_JOBS }, 'abc', 'p', true));
 assert(validProof({ ...proof, jobs: BROWSER_JOBS }, 'abc', 'p', false, BROWSER_JOBS));
+assert(validProof({ ...proof, jobs: FRONTEND_JOBS }, 'abc', 'p', false, FRONTEND_JOBS));
+assert(!validProof({ ...proof, jobs: FRONTEND_JOBS }, 'abc', 'p', false, BROWSER_JOBS));
+assert(!validProof({ ...proof, jobs: FRONTEND_JOBS }, 'abc', 'p', true));
 assert(!validProof({ ...proof, jobs: BROWSER_JOBS }, 'abc', 'p', false, ['test']));
 assert(!validProof({ ...proof, jobs: BROWSER_JOBS }, 'abc', 'p', false, ['published-board']));
 assert(validProof(proof, 'abc', 'p', false, PRODUCT_JOBS));
@@ -228,7 +248,8 @@ assert(browserChecks.size > 0);
 for (const path of browserChecks) {
   const jobs = [...checkJobPaths(workflow).get(path)];
   const expected = jobs.every(j => j === 'mcp') ? CONSUMER_JOBS.mcp
-    : jobs.every(j => j === 'bot') ? CONSUMER_JOBS.bot : BROWSER_JOBS;
+    : jobs.every(j => j === 'bot') ? CONSUMER_JOBS.bot
+    : jobs.every(j => FRONTEND_JOBS.includes(j)) ? FRONTEND_JOBS : BROWSER_JOBS;
   assert.deepEqual(classify([path]).jobs, expected, path);
 }
 assert.deepEqual([...browserCheckPaths('jobs:\n  gas:\n    run: node scripts/check_gas.mjs\n  page:\n    run: node scripts/check_example.mjs\n    run: node scripts/check_gas.mjs\n  quick:\n    run: node scripts/check_quick.mjs\n')],

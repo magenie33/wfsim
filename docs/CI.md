@@ -106,6 +106,14 @@ selected jobs. Do not request a second full run just because the same validated
 commit moves to main. A newer branch run cancels the previous run for that
 branch; main runs and shipping are not cancelled in progress.
 
+Frontend-only changes retain every browser, parity, MCP and bot check, a fresh
+site, the build/simulate/solve smoke and production-runtime contracts. Static UI
+and localization inputs do not invalidate unchanged SQL or factory stress
+fixtures. A generated worker-module change selects the backend coverage again.
+Worker changes retain complete service/pipeline/factory validation; mixed core,
+snapshot or unknown inputs retain the conservative full selection. A frontend
+proof cannot substitute for backend or numerical coverage.
+
 ## Urgent scoped validation
 
 `fast=true` with a reason selects registered maintenance changes. It runs native
@@ -209,8 +217,10 @@ the real test list and runs exact names, refusing a missing protected test or
 empty group. New ordinary whole-scope tests join the ordinary group.
 
 The main page checks run in controls, calculation and community groups. The
-additional page checks run in five independent groups: accounts and sharing,
-views, builder and search, board heads and library integration. Bot card rendering
+additional page checks run in independent groups: accounts and sharing,
+views, three builder/search groups, board heads and library integration. Builder
+groups balance measured command durations while retaining each complete command.
+Bot card rendering
 runs with the bot checks. Each command belongs
 to one group. `check_ci_partitions` rejects missing, duplicate or empty groups;
 the required gate waits for every matrix member. A failed group can be retried
@@ -249,6 +259,10 @@ in independent shards; fixed groups run once per mode. Every shard produces a
 receipt binding its source hashes, mode, seeds and completed assertions. The
 required coverage job rejects missing or duplicate receipts, wrong sources and
 unfinished cases. The default local command still runs the whole original suite.
+Queued settlement, one-call sync and their combined mode run in three separate
+protocol jobs. Every original command/mode pair remains required. These jobs
+start beside native inventory checks, with their own isolated databases; the
+required gate and reusable proof require every selected mode.
 
 Native Linux and Mac slices build beside site validation, without
 release credentials. Published engine targets skip compilation. A producer

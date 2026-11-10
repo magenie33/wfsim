@@ -56,6 +56,7 @@ jobs:
       test_matrix: ${{ steps.scope.outputs.test_matrix }}
       factory_matrix: ${{ steps.scope.outputs.factory_matrix }}
       runtime: ${{ steps.scope.outputs.runtime }}
+      protocol: ${{ steps.scope.outputs.protocol }}
       factory: ${{ steps.scope.outputs.factory }}
       prepare_desktop: ${{ steps.scope.outputs.prepare_desktop }}
       prepare_live: ${{ steps.scope.outputs.prepare_live }}
@@ -108,6 +109,7 @@ jobs:
       - run: node scripts/check_full_work.mjs
       - run: python3 scripts/check_release_readiness.py
       - run: python3 scripts/check_ship_workers.py
+      - run: python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml==6.0.3
       - run: python3 scripts/check_release_stage.py
       - run: python3 scripts/check_ship_bot_assets.py
       - run: node scripts/check_factory_shards.mjs
@@ -407,6 +409,7 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.14'
+      - run: python -m pip install --quiet pyyaml==6.0.3
       - id: inputs
         name: Hash the complete Linux build inputs
         run: echo "digest=$(python scripts/release_stage.py key live --source "$GITHUB_SHA")" >> "$GITHUB_OUTPUT"
@@ -608,6 +611,45 @@ jobs:
       - name: What an agent reads to find WFSim is what the site serves
         run: node scripts/check_agent_discovery.mjs
 
+  protocol:
+    needs: [plan, runtime]
+    if: needs.plan.outputs.protocol == 'true' && needs.plan.outputs.reuse == ''
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [async, proc, proc-async]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - run: npm ci --silent --prefix scripts/pg
+      - name: Queued settlement preserves every factory invariant
+        if: matrix.group == 'async'
+        env:
+          WFSIM_SETTLE_ASYNC: "1"
+        run: |
+          node scripts/check_board_verify.mjs
+          node scripts/check_queue_once.mjs
+          node scripts/check_board_sync.mjs
+          node scripts/check_board_reviews.mjs
+          node scripts/check_fair.mjs
+      - name: One-call sync preserves request-path behavior
+        if: matrix.group == 'proc'
+        env:
+          WFSIM_SYNC_PROC: "1"
+        run: node scripts/check_board_sync.mjs
+      - name: One-call sync and queued settlement preserve joint behavior
+        if: matrix.group == 'proc-async'
+        env:
+          WFSIM_SYNC_PROC: "1"
+          WFSIM_SETTLE_ASYNC: "1"
+        run: |
+          node scripts/check_board_sync.mjs
+          node scripts/check_board_reviews.mjs
+          node scripts/check_board_family.mjs
+
   # The board's pipeline and the factory against a real Postgres, no page.
   pipeline:
     needs: [plan, quick, runtime]
@@ -645,6 +687,13 @@ jobs:
           node scripts/check_inventory_relations.mjs
           node scripts/check_inventory_ranges.mjs
           node scripts/check_inventory_relational_pipeline.mjs
+          node scripts/check_inventory_board_pipeline.mjs
+          node scripts/check_inventory_compatibility.mjs
+          node scripts/check_inventory_publication.mjs
+          node scripts/check_board_projection_replay.mjs
+          node scripts/check_inventory_disk_budget.mjs
+          node scripts/check_board_projection_consumers.mjs
+          node scripts/check_live_mailbox.mjs
           node scripts/check_score_inputs.mjs
           node scripts/check_live_ranker.mjs
           node scripts/check_work_calibration.mjs
@@ -662,6 +711,10 @@ jobs:
         env:
           WFSIM_INTAKE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
         run: node scripts/check_intake_batches.mjs
+      - name: The classic board coordinator preserves frozen cuts through the production driver
+        env:
+          WFSIM_BOARD_PIPELINE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
+        run: node scripts/check_inventory_compatibility.mjs
       - name: Queue cancellation uses the production Postgres driver
         env:
           WFSIM_CANCEL_QUEUE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
@@ -684,15 +737,6 @@ jobs:
         run: python scripts/check_factory_deploy.py
       - name: Answers queued for the settler leave what settling them in the request leaves, once
         run: node scripts/check_settler_async.mjs
-      - name: The factory holds with every answer queued and settled by the settler's pass
-        env:
-          WFSIM_SETTLE_ASYNC: "1"
-        run: |
-          node scripts/check_board_verify.mjs
-          node scripts/check_queue_once.mjs
-          node scripts/check_board_sync.mjs
-          node scripts/check_board_reviews.mjs
-          node scripts/check_fair.mjs
       - name: A sync as one call answers and writes what the statements do, in two round trips at most
         run: node scripts/check_sync_proc.mjs
       - name: Every ask names who asked, one asker is held to its share, and a code is erased once the ask is over
@@ -708,14 +752,6 @@ jobs:
         run: node scripts/check_popular_order.mjs
       - name: Merit mints from contribution points within the day's and the balance's caps, and an account sees only its own
         run: node scripts/check_merit.mjs
-      - name: Protocol 8 holds with each sync one call, its answers settled in the request or queued
-        env:
-          WFSIM_SYNC_PROC: "1"
-        run: |
-          node scripts/check_board_sync.mjs
-          WFSIM_SETTLE_ASYNC=1 node scripts/check_board_sync.mjs
-          WFSIM_SETTLE_ASYNC=1 node scripts/check_board_reviews.mjs
-          WFSIM_SETTLE_ASYNC=1 node scripts/check_board_family.mjs
       - name: A row its page still computes is kept for it, and only a silent one loses it
         run: node scripts/check_renew.mjs
       - name: A riven gain is run by the community and credited when two owners agree
@@ -842,7 +878,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [account, views, builder, heads, library]
+        group: [account, views, builder-1, builder-2, builder-3, heads, library]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/built-site
@@ -866,7 +902,7 @@ jobs:
         if: matrix.group == 'account'
         run: node scripts/check_bar_before_catalog.mjs
       - name: Riven OCR loads real models and recovers after a failed module response
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-3'
         run: node scripts/check_riven_ocr.mjs
       - name: Collected mods compute supported clauses and disclose the rest
         if: matrix.group == 'account'
@@ -875,10 +911,10 @@ jobs:
         if: matrix.group == 'account'
         run: node scripts/check_every_rank.mjs
       - name: Swipe exposes only eligible claws and applies its rank limits
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-1'
         run: node scripts/check_swipe.mjs
       - name: Postures apply combat effects and disclose their partial limits
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-2'
         run: node scripts/check_postures.mjs
       - name: Read-only build rivens stay separate from owned customs
         if: matrix.group == 'account'
@@ -904,7 +940,7 @@ jobs:
         if: matrix.group == 'views'
         run: node scripts/check_board_depth.mjs
       - name: Kitgun module navigation keeps the selected slot and build
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-1'
         run: node scripts/check_kitgun_slot.mjs
       - name: The Build Library filters sorts and streams published builds
         if: matrix.group == 'views'
@@ -916,10 +952,10 @@ jobs:
         if: matrix.group == 'views'
         run: node scripts/check_library_attributes.mjs
       - name: Global calculation conditions keep one editable state
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-2'
         run: node scripts/check_global_conditions.mjs
       - name: Working navigation and execution controls remain accessible
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-3'
         run: node scripts/check_working_navigation.mjs
       # THE DOWNLOAD OFFER, which has three answers and only one of them is
       # visible on the machine it was written on. Its failure modes are silent
@@ -949,31 +985,31 @@ jobs:
         if: matrix.group == 'views'
         run: node scripts/check_compute_orders.mjs
       - name: The board's scene and shooting choices are independent and survive a link
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-3'
         run: node scripts/check_board_ladder.mjs
       - name: All board selectors and labels share the same hierarchy
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-2'
         run: node scripts/check_board_selection.mjs
       - name: A built-in search is read-only, a click copies it, and the run button sends the page's own search
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-3'
         run: node scripts/check_search_presets.mjs
       - name: Final requirements and modular part pins survive start editing
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-2'
         run: node scripts/check_optimizer_requirements.mjs
       - name: All presets share numeric naming, management and inert info
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-2'
         run: node scripts/check_preset_library.mjs
       - name: Complete Warframe and companion builds upload automatically and open from their libraries
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-3'
         run: node scripts/check_equipment_library.mjs
       - name: One hundred presets keep a compact searchable switcher
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-2'
         run: node scripts/check_preset_compact.mjs
       - name: Motovore physical mods and progenitor bonus reach the shared simulator
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-3'
         run: node scripts/check_motovore.mjs
       - name: Mode APL code and prose share executable rules and persistent folds
-        if: matrix.group == 'builder'
+        if: matrix.group == 'builder-2'
         env:
           WFSIM_MODE_DETAILS_ONLY: "1"
         run: node scripts/check_mode_def.mjs
@@ -1200,7 +1236,7 @@ jobs:
 
   ci-required:
     if: ${{ always() }}
-    needs: [plan, quick, runtime, factory-cases, factory, prepare-desktop, prepare-live, commits, coordination, hotfix, test, gas, engine-apart, published-board, site, native-mac, native-linux, checks, services, pipeline, page, parity, page-rest, mcp, bot]
+    needs: [plan, quick, runtime, protocol, factory-cases, factory, prepare-desktop, prepare-live, commits, coordination, hotfix, test, gas, engine-apart, published-board, site, native-mac, native-linux, checks, services, pipeline, page, parity, page-rest, mcp, bot]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
