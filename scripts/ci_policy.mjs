@@ -32,7 +32,7 @@ const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbo
   'scripts/build_batches.mjs', 'scripts/ship_family.mjs', 'scripts/ship_bot.py', '.github/workflows/scores.yml',
   'scripts/factoryd.mjs', 'scripts/pg_task_archive.py', 'scripts/ship_task_archive.py', 'scripts/check_task_archive.py',
   'scripts/ship.py', 'scripts/release_stage.py', 'scripts/check_release_stage.py', 'scripts/check_ship_bot_assets.py',
-  'scripts/check_ship_workers.py',
+  'scripts/check_ship_workers.py', 'scripts/check_ship_bot_live.py',
   'scripts/payload_manifest.py', 'scripts/release_desktop.py', 'scripts/pg/test_db.mjs', 'scripts/intake_batches.mjs',
   'scripts/board_heads.mjs', 'scripts/board_meta.py', 'scripts/incremental_inventory.mjs',
   'scripts/inventory_board_pipeline.mjs', 'scripts/inventory_projection.mjs', 'scripts/inventory_publication.mjs',
