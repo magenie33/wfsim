@@ -58,6 +58,103 @@ def check_order(root):
     return count
 
 
+def check_catalog():
+    original = stage.ROOT
+    import build_site_app as rules
+    count = 0
+    with tempfile.TemporaryDirectory(prefix="wfsim-catalog-compat-") as temporary:
+        root = Path(temporary).resolve()
+        for directory in set(stage.local_crates()) | set(rules.ENGINE_SOURCES):
+            source = original / directory
+            if source.is_dir():
+                shutil.copytree(source, root / directory, dirs_exist_ok=True, ignore=shutil.ignore_patterns("target", "__pycache__"))
+        files = [name for name in stage.execute("git", "ls-files", "-z").split("\0") if name and
+                 (name.endswith(("Cargo.toml", "Cargo.lock")) or name in ("mise.toml", "rust-toolchain", "rust-toolchain.toml"))]
+        files += [*rules.ENGINE_BUILD_INPUTS, "scripts/build_site_app.py", "scripts/rust_tokens.py", "scripts/data_packs.py",
+                  "scripts/release_stage.py", "scripts/payload_manifest.py"]
+        for name in set(files):
+            target = root / name; target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((original / name).read_bytes())
+        (root / "docs").mkdir(exist_ok=True)
+        (root / "docs/uncausal.md").write_text("documentation")
+        subprocess.run(["git", "init", "-q", str(root)], check=True)
+        subprocess.run(["git", "-C", str(root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(root), "-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid",
+                        "commit", "-qm", "actual source fixture"], check=True)
+        environment = dict(os.environ)
+        environment.pop("WFSIM_RELEASE_SOURCE", None); environment.pop("GITHUB_SHA", None)
+        with patch.object(stage, "ROOT", root), patch.dict(os.environ, environment, clear=True):
+            baseline = stage.catalog_inputs("1" * 64)
+            assert baseline["mode"] == "semantic" and not baseline["unknown"], baseline["unknown"]
+            assert {"cli", "engine", "webapi", "optimizer", "tools/gas-macro"} <= set(baseline["crates"])
+            assert "webapi/src/board_rows.rs" in baseline["rust"]
+            key = stage.digest(stage.canonical(baseline)); count += 1
+            mutations = [
+                ("data/i18n/zh.yaml", b"\ncompat_translation: changed\n", True),
+                ("data/board_state.yaml", b"\ncompat_board_snapshot: changed\n", True),
+                ("docs/uncausal.md", b"\nchanged explanation\n", True),
+                ("cli/src/board/run.rs", b"\n// catalog comment only\n", True),
+                ("cli/src/board/run.rs", b"\n#[cfg(test)] fn catalog_only_test() {}\n", True),
+                ("cli/src/board/run.rs", b"\npub const CATALOG_SEMANTIC_PROBE: u64 = 1;\n", False),
+                ("webapi/src/board_rows.rs", b"\npub const CANONICAL_RECORD_PROBE: u64 = 1;\n", False),
+                ("optimizer/src/lib.rs", b"\npub const ENUMERATION_PROBE: u64 = 1;\n", False),
+                ("engine/src/lib.rs", b"\npub const ENGINE_PROBE: u64 = 1;\n", False),
+                ("Cargo.lock", b"\n# locked compiler input differs\n", False),
+                ("data/weapons/primary/braton.yaml", b"\ncompat_gameplay_rule: 1\n", False),
+            ]
+            for name, delta, same in mutations:
+                path = root / name
+                if not path.exists() and name.startswith("data/i18n/"):
+                    path = next((root / "data/i18n").rglob("*.yaml"))
+                before = path.read_bytes(); path.write_bytes(before + delta)
+                changed = stage.catalog_inputs("2" * 64)
+                assert changed["mode"] == "semantic", (name, changed["unknown"])
+                assert (stage.digest(stage.canonical(changed)) == key) == same, name
+                path.write_bytes(before); count += 1
+            manifest = root / "mise.toml"; before = manifest.read_text()
+            manifest.write_text(before.replace("1.97.1", "1.97.2"))
+            assert stage.digest(stage.canonical(stage.catalog_inputs("1" * 64))) != key
+            manifest.write_text(before); count += 1
+            cli = root / "cli/src/board/run.rs"; before = cli.read_bytes()
+            cli.write_bytes(before + b'\nconst EXTERNAL: &str = include_str!("unknown.txt");\n')
+            unknown = stage.catalog_inputs("1" * 64)
+            assert unknown["mode"] == "full-fallback" and unknown["unknown"] and unknown["fallback"]["binary_sha256"] == "1" * 64
+            cli.write_bytes(before); count += 1
+            build = root / "optimizer/build.rs"; build.write_text('fn main() { println!("cargo:rerun-if-changed=external"); }')
+            assert stage.catalog_inputs("1" * 64)["mode"] == "full-fallback"
+            build.unlink(); count += 1
+            output = root / "out"; output.mkdir()
+            binary = output / "wfsim-board"; binary.write_bytes(b"actual first binary bytes")
+            assert stage.verify_catalog(output) is False
+            count += 1
+            stage.write_catalog(output)
+            first = json.loads((output / "inventory-compat.json").read_text())
+            assert first["key"] == key and first["binary_sha256"] == stage.digest(binary.read_bytes())
+            assert stage.verify_catalog(output)
+            count += 1
+            binary.write_bytes(b"different compiled i18n/board binary bytes")
+            try:
+                stage.verify_catalog(output)
+            except ValueError:
+                count += 1
+            else:
+                raise AssertionError("sidecar accepted another actual binary")
+            stage.write_catalog(output)
+            second = json.loads((output / "inventory-compat.json").read_text())
+            assert second["key"] == first["key"] and second["binary_sha256"] != first["binary_sha256"]
+            count += 1
+            second["key"] = "0" * 64
+            (output / "inventory-compat.json").write_bytes(stage.canonical(second))
+            try:
+                stage.verify_catalog(output)
+            except ValueError:
+                count += 1
+            else:
+                raise AssertionError("corrupt compatibility key accepted")
+    print(f"catalog compatibility: {count} real-source temporary-tree controls passed")
+    return count
+
+
 def main():
     passed = 0
     with tempfile.TemporaryDirectory(prefix="wfsim-release-stage-") as temporary:
@@ -71,6 +168,8 @@ def main():
                   "desktop/Cargo.lock": "locked", "desktop/payload.lst": "board/\n",
                   "desktop/examples/updatekit.rs": "signer", "scripts/release_stage.py": "stage",
                   "scripts/payload_manifest.py": "manifest", "mise.toml": '[tools]\nrust="1.97.1"\n',
+                  "scripts/build_site_app.py": "selectors", "scripts/rust_tokens.py": "tokens",
+                  "scripts/data_packs.py": "packs", "scripts/native_pgo.py": "pgo",
                   "site/index.html": "page", "site/pkg/current.wasm": "wasm",
                   "site/board/current.json": "live", "desktop/payload/native/engine.dll": "native"}
         for name, body in bodies.items():
@@ -179,6 +278,22 @@ def main():
                     passed += 1
                 else:
                     raise AssertionError("accepted bad " + title)
+            (directory / "prepared.json").write_bytes(stage.canonical(original))
+            sidecar = directory / "inventory-compat.json"
+            sidecar_before = sidecar.read_bytes()
+            for field in ("key", "binary_sha256"):
+                broken = json.loads(sidecar_before); broken[field] = "0" * 64
+                body = stage.canonical(broken); sidecar.write_bytes(body)
+                record = copy.deepcopy(original)
+                record["outputs"]["inventory-compat.json"] = {"sha256": stage.digest(body), "size": len(body)}
+                (directory / "prepared.json").write_bytes(stage.canonical(record))
+                try:
+                    stage.promote("live", root / "refused")
+                except ValueError:
+                    passed += 1
+                else:
+                    raise AssertionError("promoted a corrupt or wrongly bound sidecar")
+            sidecar.write_bytes(sidecar_before)
             (directory / "prepared.json").write_bytes(stage.canonical(original))
             binary = directory / "wfsim-board"; binary.write_bytes(b"bad output")
             try:
@@ -301,6 +416,7 @@ def main():
                     else:
                         raise AssertionError("failed schema proof passed")
         passed += check_order(root)
+    passed += check_catalog()
     print(f"release preparation: {passed} offline controls passed")
     return 0
 

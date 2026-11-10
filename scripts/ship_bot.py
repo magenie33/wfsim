@@ -201,6 +201,9 @@ def live_files(out: pathlib.Path, rel: dict) -> dict:
              "bin/witness": ["site/release.json"],
              "bin/witness/pkg": [f"site/pkg/wfsim_wasm.{rel['wasm']}.js", f"site/pkg/wfsim_wasm_bg.{rel['wasm']}.wasm",
                                  *(f"site/pkg/{n}" for n in rel.get("packs", []))]}
+    import release_stage
+    if release_stage.verify_catalog(out):
+        files["bin"].append(out / "inventory-compat.json")
     delivered = {f"{directory}/{pathlib.Path(p).name}" for directory, sources in files.items() for p in sources}
     unmapped = [p for p in reached + LIVE_READS if p not in delivered]
     if unmapped:
@@ -222,6 +225,9 @@ request = json.load(sys.stdin)
 bot = request.get("kind") == "bot"
 root = pathlib.Path(request["root"])
 assert root.is_absolute() and root.resolve(strict=True) == root
+def absent():
+    return all(not (root / name).exists() and not (root / name).is_symlink() for name in request.get("absent", []))
+assert absent()
 def state():
     fields = "ActiveState,MainPID,ExecMainStartTimestamp,WorkingDirectory,FragmentPath,DropInPaths,EnvironmentFiles,NeedDaemonReload"
     text = subprocess.check_output(["systemctl", "show", request.get("service", "wfsim-live"), "--timestamp=us+utc", "--property=" + fields], text=True)
@@ -296,7 +302,7 @@ for name, prior in observed.items():
     assert path.resolve(strict=True) == path and signature(path.stat()) == prior
 for name, prior in directories.items():
     assert signature(pathlib.Path(name).stat()) == prior
-assert state() == first and latest <= first[2]
+assert state() == first and latest <= first[2] and absent()
 print(json.dumps({"active": True, "pid": first[1], "started_ns": first[2], "latest_change_ns": latest,
                   "files": hashes, "release": release, "version": version}))
 '''
@@ -307,6 +313,7 @@ def runtime_probe(t: dict, wanted: dict, kind: str = "live") -> dict | None:
         result = subprocess.run(["ssh", *ssh_opts(t), "-o", "ConnectTimeout=10", t["host"],
                                  "python3 -c " + shlex.quote(LIVE_PROBE)],
                                 input=json.dumps({"root": t["root"], "files": list(wanted), "kind": kind,
+                                                  "absent": ["bin/inventory-compat.json"] if kind == "live" and "bin/inventory-compat.json" not in wanted else [],
                                                   "service": t["service"] if kind == "bot" else "wfsim-live"}),
                                 cwd=ROOT, capture_output=True, text=True, timeout=45)
         if result.returncode:
@@ -363,6 +370,8 @@ def deploy_live(t: dict) -> None:
         print(f"live board runtime unchanged — keeping the running service and actual VERSION {version}")
         return
     print("live board runtime not proven identical — deploying normally")
+    if out / "inventory-compat.json" not in files["bin"]:
+        run(["ssh", *o, host, f"rm -f {root}/bin/inventory-compat.json"])
     (out / "VERSION").write_bytes((run(["git", "rev-parse", "HEAD"]).strip() + "\n").encode())
     (out / "ENGINE").write_bytes(f"{engine}\n".encode())
     run(["ssh", *o, host, f"mkdir -p {root}/bin {root}/scripts {root}/live {root}/bin/incoming"])

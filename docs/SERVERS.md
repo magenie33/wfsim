@@ -60,6 +60,23 @@ the legacy path builds only when no prepared artifact exists. An invalid prepare
 artifact stops the release. Compilation never establishes that a remote service
 already loaded its files; the remote byte and process-start proof still applies.
 
+The prepared board binary carries `bin/inventory-compat.json`. Its
+`inventory-catalog-v1` key hashes complete semantic inputs: the CLI's Cargo path
+dependency closure, non-test Rust tokens, manifests/locks, build environment and
+the engine's existing code/data classifiers and prose normalization. Digests
+remain full SHA-256 values. Translations, compiled board bookkeeping and unrelated
+documentation do not change this catalog key; the actual binary SHA still binds
+the sidecar to its executable. Source/run and every raw input/output remain in
+the separate strict prepared receipt. Catalog compatibility does not authorize
+skipping deployment or weaken the complete loaded-runtime proof.
+
+Unrecognized compile-time includes, module paths, build scripts, procedural
+inputs or build configuration use full fallback. Missing legacy sidecars also
+use the binary hash; a present corrupt or wrongly bound sidecar is refused.
+A normal legacy deployment removes stale remote sidecar metadata after the
+unchanged-runtime decision, before replacing the binary. The probe itself
+performs no remote writes.
+
 An unchanged bot keeps its loaded process. Its single deploy inventory includes
 all bot modules, transitive relative imports, generated engine, WASM packs,
 stylesheet and images. The active Node process must use that root and have

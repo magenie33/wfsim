@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Prepare checked release components without publishing or signing them."""
 import argparse
+import ast
+import inspect
 import hashlib
 import json
 import os
@@ -16,7 +18,9 @@ ROOT = Path(__file__).resolve().parent.parent
 TARGET = "x86_64-unknown-linux-gnu"
 # Official rust:1.97.1-bookworm, linux/amd64 manifest (not a moving tag).
 LIVE_IMAGE = "rust@sha256:408fe88047cef61a2087653b0c5255fa51c0f2d6d94ddedd7a2562a9b91a46f6"
-OUTPUTS = {"desktop": ("payload-manifest.json", "updatekit"), "live": ("wfsim-board", "wfsim-intake")}
+OUTPUTS = {"desktop": ("payload-manifest.json", "updatekit"), "live": ("wfsim-board", "wfsim-intake", "inventory-compat.json")}
+CATALOG_RECIPE = "inventory-catalog-v1"
+ENGINE_BUILD_TOKENS = "711a2e4a8bc177ed4d500a188b8dc6756c7c9b6b1aff8481a7cab66b43482a10"
 
 
 def canonical(value):
@@ -41,39 +45,45 @@ def regular(path):
     return path.read_bytes()
 
 
+def local_crates():
+    workspace = tomllib.loads((ROOT / "Cargo.toml").read_text())
+    prefixes, todo = set(), ["cli"]
+    while todo:
+        directory = todo.pop()
+        prefix = directory.rstrip("/") + "/"
+        if prefix in prefixes:
+            continue
+        prefixes.add(prefix)
+        manifest = tomllib.loads((ROOT / directory / "Cargo.toml").read_text())
+        tables = [manifest, *manifest.get("target", {}).values()]
+        for table in tables:
+            for section in ("dependencies", "build-dependencies"):
+                for name, dep in table.get(section, {}).items():
+                    if isinstance(dep, dict) and dep.get("workspace"):
+                        dep = workspace.get("workspace", {}).get("dependencies", {}).get(name)
+                    if isinstance(dep, dict) and "path" in dep:
+                        base = ROOT if table.get(section, {}).get(name, {}).get("workspace") else ROOT / directory
+                        todo.append((base / dep["path"]).resolve().relative_to(ROOT).as_posix())
+    return sorted(prefix.rstrip("/") for prefix in prefixes)
+
+
 def source_inputs(component, source):
     tracked = execute("git", "ls-files", "-z").split("\0")
     if component == "desktop":
         prefixes = {"desktop/"}
     else:
-        # Cargo's local path dependency closure, including build/proc-macro crates.
-        workspace = tomllib.loads((ROOT / "Cargo.toml").read_text())
-        prefixes, todo = set(), ["cli"]
-        while todo:
-            directory = todo.pop()
-            prefix = directory.rstrip("/") + "/"
-            if prefix in prefixes:
-                continue
-            prefixes.add(prefix)
-            manifest = tomllib.loads((ROOT / directory / "Cargo.toml").read_text())
-            tables = [manifest, *manifest.get("target", {}).values()]
-            for table in tables:
-                for section in ("dependencies", "build-dependencies"):
-                    for name, dep in table.get(section, {}).items():
-                        if isinstance(dep, dict) and dep.get("workspace"):
-                            dep = workspace.get("workspace", {}).get("dependencies", {}).get(name)
-                        if isinstance(dep, dict) and "path" in dep:
-                            base = ROOT if table.get(section, {}).get(name, {}).get("workspace") else ROOT / directory
-                            todo.append((base / dep["path"]).resolve().relative_to(ROOT).as_posix())
+        prefixes = {name + "/" for name in local_crates()}
         # Engine build.rs embeds data; native contracts and compile-time fixtures
         # can be read outside a crate. Include whole trees rather than infer semantics.
-        prefixes.update(("data/", "docs/", "tests/", ".cargo/"))
+        prefixes.update(("data/", "docs/", "tests/", ".cargo/", "native/", "wasm/"))
     selected = [p for p in tracked if p and (any(p.startswith(prefix) for prefix in prefixes)
                 or p in ("Cargo.toml", "Cargo.lock", "mise.toml", "rust-toolchain", "rust-toolchain.toml")
-                or p.endswith("/Cargo.toml")) and not p.startswith("desktop/payload/")]
+                or p.endswith(("/Cargo.toml", "/Cargo.lock"))) and not p.startswith("desktop/payload/")]
     selected += ["scripts/release_stage.py", "scripts/payload_manifest.py"]
     if component == "desktop":
         selected += ["worker/ext_documents.js"]
+    else:
+        selected += ["scripts/build_site_app.py", "scripts/rust_tokens.py", "scripts/data_packs.py", "scripts/native_pgo.py"]
     result = {}
     for name in sorted(set(selected)):
         # Board publication may advance main without advancing the selected source.
@@ -98,6 +108,135 @@ def inputs(component, source):
         value["payload_manifest_sha256"] = digest(payload_manifest.build(version_override=source[:8]))
         value["version"] = source[:8]
     return value
+
+
+def catalog_rust(paths, rules):
+    import rust_tokens
+    streams, tests, unknown = {}, [], []
+    for path in paths:
+        rel = path.relative_to(ROOT).as_posix()
+        streams[rel], mods = rust_tokens.digest_text(regular(path).decode())
+        tests += rust_tokens.test_module_paths(rel, mods)
+    out = {}
+    generated = 'include!(concat!(env!("OUT_DIR"),"/embedded_data.rs"))'
+    for rel, stream in streams.items():
+        if rules.is_test_source(rel) or rel in tests or rel.startswith(tuple(tests)) or stream == "[]":
+            continue
+        tokens = json.loads(stream)
+        text = "".join(tokens)
+        macros = [tokens[i] for i in range(len(tokens) - 1) if tokens[i + 1] == "!"]
+        if any(name in macros for name in ("include", "include_str", "include_bytes")):
+            if not (rel == "engine/src/data/mod.rs" and macros.count("include") == 1 and generated in text):
+                unknown.append(rel + ":unknown-include")
+        if any(tokens[i:i + 4] == ["#", "[", "path", "="] for i in range(len(tokens))):
+            unknown.append(rel + ":unknown-module-path")
+        for i in range(len(tokens) - 3):
+            if tokens[i] in ("option_env", "env") and tokens[i + 1:i + 3] == ["!", "("]:
+                if tokens[i + 3] not in ('"CARGO_MANIFEST_DIR"', '"OUT_DIR"', '"CARGO_PKG_VERSION"', '"WFSIM_GAS_OFF"'):
+                    unknown.append(rel + ":unknown-compile-environment")
+        out[rel] = digest(stream.encode())
+    return out, unknown
+
+
+def catalog_inputs(binary_sha256):
+    """Catalog semantics use the engine's classifiers and normalizers, with full hashes."""
+    import build_site_app as rules
+    import rust_tokens
+    import data_packs
+    previous = rules.ROOT
+    rules.ROOT = ROOT
+    rules.prose_keys.cache_clear()
+    unknown, rust, engine_data, engine_code = [], {}, {}, {}
+    crates = local_crates()
+    if not {"cli", "engine", "optimizer", "webapi"} <= set(crates):
+        unknown.append("unrecognized-native-dependency-closure")
+    tracked = execute("git", "ls-files", "-z").split("\0")
+    manifests = {name: digest(regular(ROOT / name)) for name in sorted(tracked) if name and
+                 (name.endswith(("Cargo.toml", "Cargo.lock")) or name.startswith(".cargo/")
+                  or name in ("mise.toml", "rust-toolchain", "rust-toolchain.toml"))}
+    build = {"rust": rust_version(), "container": LIVE_IMAGE,
+             "command": "cargo build --release --locked --bin wfsim-intake --bin wfsim-board",
+             "rustflags": "", "features": [], "environment": {"WFSIM_DATA_APART": None, "WFSIM_GAS_OFF": None},
+             "yaml": rules.yaml.__version__}
+    try:
+        paths = sorted({p for crate in crates for p in (ROOT / crate).rglob("*.rs") if "target" not in p.relative_to(ROOT).parts})
+        rust, found = catalog_rust(paths, rules)
+        unknown += found
+        for crate in crates:
+            manifest = tomllib.loads(regular(ROOT / crate / "Cargo.toml").decode())
+            build_file = manifest.get("package", {}).get("build", "build.rs")
+            if build_file is not False and (ROOT / crate / build_file).exists():
+                name = (Path(crate) / build_file).as_posix()
+                if name != "engine/build.rs" or rust.get(name) != ENGINE_BUILD_TOKENS:
+                    unknown.append(name + ":unrecognized-build-script")
+            if manifest.get("lib", {}).get("proc-macro"):
+                for name in (n for n in rust if n.startswith(crate + "/")):
+                    tokens = json.loads(rust_tokens.digest_text(regular(ROOT / name).decode())[0])
+                    if any(word in tokens for word in ("include", "include_str", "include_bytes", "read", "read_to_string", "read_dir", "File", "Command")):
+                        unknown.append(name + ":unrecognized-proc-macro-input")
+        if any(name.startswith(".cargo/") for name in manifests):
+            unknown.append(".cargo:unrecognized-build-configuration")
+        engine_paths = sorted(p for name in rules.ENGINE_SOURCES for p in (ROOT / name).rglob("*") if p.is_file())
+        engine_rust, found = catalog_rust([p for p in engine_paths if p.suffix == ".rs"], rules)
+        unknown += found
+        for path in engine_paths + [ROOT / name for name in rules.ENGINE_BUILD_INPUTS]:
+            name = path.relative_to(ROOT).as_posix()
+            if rules.is_test_source(name) or name.startswith(rules.ENGINE_ID_NOT):
+                continue
+            if name.startswith("data/"):
+                if not rules.is_engine_data(name):
+                    continue
+                body = rules.without_prose(rules.lean_yaml(regular(path).decode())).encode()
+                engine_data[name] = digest(body)
+            elif path.suffix == ".rs":
+                if name in engine_rust:
+                    engine_code[name] = engine_rust[name]
+            else:
+                engine_code[name] = digest(regular(path).replace(b"\r\n", b"\n"))
+        algorithm = [canonical, digest, local_crates, catalog_rust, catalog_inputs, rules.is_test_source, rules.is_engine_data,
+                     rules.lean_yaml, rules.without_prose, rules.prose_keys, build_live]
+        build["rules"] = digest(canonical({"python": [ast.dump(ast.parse(inspect.getsource(fn)), include_attributes=False) for fn in algorithm],
+            "rust_tokens": digest(regular(Path(rust_tokens.__file__).resolve())),
+            "data_packs": digest(regular(Path(data_packs.__file__).resolve())),
+            "engine_rules": [rules.ENGINE_SOURCES, rules.ENGINE_BUILD_INPUTS, rules.ENGINE_SOURCES_NOT, rules.ENGINE_ID_NOT],
+            "engine_build_tokens": ENGINE_BUILD_TOKENS}))
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        unknown.append("unrecognized-semantic-input:" + type(error).__name__)
+        build.setdefault("rules", digest(regular(Path(__file__).resolve())))
+    finally:
+        rules.ROOT = previous
+        rules.prose_keys.cache_clear()
+    value = {"mode": "full-fallback" if unknown else "semantic", "recipe": CATALOG_RECIPE, "target": TARGET,
+             "build": build, "crates": crates, "manifests": manifests, "rust": rust,
+             "engine_data": engine_data, "engine_code": digest(canonical(engine_code)), "unknown": sorted(set(unknown))}
+    if unknown:
+        value["fallback"] = {"binary_sha256": binary_sha256,
+                             "raw_inputs": source_inputs("live", os.environ.get("WFSIM_RELEASE_SOURCE") or os.environ.get("GITHUB_SHA")
+                                                         or execute("git", "rev-parse", "HEAD"))}
+    return value
+
+
+def write_catalog(directory):
+    board = digest(regular(directory / "wfsim-board"))
+    semantic = catalog_inputs(board)
+    sidecar = {"format": 1, "recipe": CATALOG_RECIPE, "target": TARGET, "key": digest(canonical(semantic)),
+               "inputs": semantic, "binary_sha256": board}
+    (directory / "inventory-compat.json").write_bytes(canonical(sidecar))
+
+
+def verify_catalog(directory):
+    path = directory / "inventory-compat.json"
+    if not path.exists() and not path.is_symlink():
+        return False
+    record = json.loads(regular(path))
+    board = digest(regular(directory / "wfsim-board"))
+    if (set(record) != {"format", "recipe", "target", "key", "inputs", "binary_sha256"}
+            or type(record["format"]) is not int or record["format"] != 1
+            or record["recipe"] != CATALOG_RECIPE or record["target"] != TARGET
+            or record["binary_sha256"] != board or record["inputs"] != catalog_inputs(board)
+            or record["key"] != digest(canonical(record["inputs"]))):
+        raise ValueError("inventory compatibility sidecar or binary binding differs")
+    return True
 
 
 def producer(source):
@@ -167,12 +306,18 @@ def verify(directory, component, source, run=None, previous=False):
         body = regular(directory / name)
         if entry != {"sha256": digest(body), "size": len(body)}:
             raise ValueError("prepared output bytes differ: " + name)
-        if name != "payload-manifest.json" and (body[:6] != b"\x7fELF\x02\x01" or body[18:20] != b"\x3e\x00"):
+        if not name.endswith(".json") and (body[:6] != b"\x7fELF\x02\x01" or body[18:20] != b"\x3e\x00"):
             raise ValueError("prepared executable is not Linux ELF64 little-endian: " + name)
     if component == "desktop":
         import payload_manifest
         if regular(directory / "payload-manifest.json") != payload_manifest.build(version_override=source[:8]):
             raise ValueError("prepared desktop manifest differs from current payload")
+    elif not verify_catalog(directory):
+        raise ValueError("prepared live artifact lacks inventory compatibility sidecar")
+    if previous:
+        unknown = json.loads(regular(directory / "inventory-compat.json"))["inputs"]["unknown"]
+        if any(any(word in item for word in (":unknown-", "unrecognized-build-script", "unrecognized-proc-macro-input", "build-configuration")) for item in unknown):
+            raise ValueError("unknown compilation inputs require a fresh build")
     return record
 
 
@@ -189,7 +334,7 @@ def promote(component, destination):
         destination.mkdir(parents=True, exist_ok=True)
         for name in OUTPUTS[component]:
             shutil.copyfile(directory / name, destination / name)
-            if name != "payload-manifest.json":
+            if not name.endswith(".json"):
                 (destination / name).chmod(0o755)
         print(f"prepared {component}: verified exact source {source}, CI {run}; no build")
         return True
@@ -242,6 +387,7 @@ def build_live(out):
     if result.returncode:
         print("LIVE BOARD NOT SHIPPED — Linux build failed: " + result.stderr[-400:])
         return False
+    (out / "inventory-compat.json").unlink(missing_ok=True)
     return True
 
 
@@ -275,6 +421,8 @@ def prepare(component, out, source, reuse=None):
     if inputs(component, source) != before:
         raise ValueError("release inputs changed while preparing")
     producer(source)
+    if component == "live":
+        write_catalog(out)
     record = {"format": 1, "component": component, "producer": provenance, "inputs": before,
               "input_sha256": digest(canonical(before)), "target": TARGET, "container": before["container"],
               "rustc": rustc, "runner": {key: os.environ.get(key) for key in ("ImageOS", "ImageVersion")},

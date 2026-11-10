@@ -150,6 +150,7 @@ def self_test(ship):
         (lambda l, r, m, u, e: u.write_text("changed"), False, "unit changes after process start deploy"),
         (lambda l, r, m, u, e: e.write_text("changed secret fixture"), False, "environment changes after process start deploy"),
         (lambda l, r, m, u, e: (r / "mcp/a.js").write_text("mcp"), False, "co-host bot rewrite after process start deploys"),
+        (lambda l, r, m, u, e: (r / "bin/inventory-compat.json").write_text('{}'), False, "legacy missing local sidecar removes old remote metadata only after deciding normal deploy"),
     ]
     def release_drift(local, remote, mode, unit, environment):
         path = remote / "bin/witness/release.json"
@@ -188,6 +189,9 @@ def self_test(ship):
                 assert "actual VERSION " + "1" * 40 in result["output"]
             else:
                 assert any(event[0] == "write" and "restart wfsim-live" in event[1][-1] for event in writes)
+                deletes = [i for i, event in enumerate(result["events"]) if isinstance(event, tuple) and event[0] == "write"
+                           and "rm -f " in event[1][-1] and "/bin/inventory-compat.json" in event[1][-1]]
+                assert deletes and result["events"].index("probe") < deletes[0]
                 assert sorted(str(p) for event in writes if event[0] == "send" for p in event[1]) == result["inventory"]
             print(f"  ok    {title}")
         except (AssertionError, OSError, SystemExit) as error:
