@@ -109,9 +109,11 @@ export class InventoryCatalog {
     this.meta = next;
   }
   transaction(fn) {
+    if (this.db.isTransaction) return fn();
+    const prior = this.meta;
     this.db.exec('BEGIN IMMEDIATE');
     try { const value = fn(); this.db.exec('COMMIT'); return value; }
-    catch (error) { this.db.exec('ROLLBACK'); this.symbolIds.clear(); this.symbolNames.clear(); throw error; }
+    catch (error) { this.db.exec('ROLLBACK'); this.meta = prior; this.symbolIds.clear(); this.symbolNames.clear(); throw error; }
   }
   symbol(category, name) {
     text(name, category);

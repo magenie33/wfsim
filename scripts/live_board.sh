@@ -47,9 +47,11 @@ intake_arrivals() {
     < inbox-new.ndjson > builds-new.ndjson 2>> intake.log
   bash "$HERE/ship_builds.sh" builds-new.ndjson done.txt >&2 || return 1
   # …INTO THE MAILBOX the main loop takes them from (`take_arrivals`).
-  { flock 9
-    jq -c 'select(.record.kind == null)' builds-new.ndjson >> arrived-builds.ndjson
-  } 9> mailbox.lock
+  if [ "$INCREMENTAL_INVENTORY" = 0 ]; then
+    { flock 9
+      jq -c 'select(.record.kind == null)' builds-new.ndjson >> arrived-builds.ndjson
+    } 9> mailbox.lock
+  fi
   # THE FIGHT EACH ARRIVAL NAMED GOES FIRST, asked as waited on (`named`): the
   # player just ran it and is looking for that row. The build's other rows
   # follow as ordinary ones, the named row left out so it is asked once.
@@ -230,6 +232,11 @@ fi
 trap '[ -n "$INTAKE_PID" ] && kill "$INTAKE_PID" 2>/dev/null; [ -n "$FETCH_PID" ] && kill "$FETCH_PID" 2>/dev/null; stop_push; stop_ranker; db_cleanup' EXIT
 trap 'exit 143' TERM
 trap 'exit 130' INT
+
+if [ "$INCREMENTAL_INVENTORY" = 1 ]; then
+  node --max-old-space-size=192 "$HERE/inventory_pipeline.mjs" "$WORK" "$BIN" --serve
+  exit $?
+fi
 
 # A FIRST START HAS NO STORE TO RANK FROM, and waits for one.
 if [ ! -s library.json ]; then

@@ -19,7 +19,7 @@
 // `wfsim-board` keeps the newest line of a key, and the hourly read writes the
 // file afresh.
 import { readFileSync, writeFileSync, appendFileSync, existsSync, readdirSync, createReadStream,
-  openSync, closeSync, fsyncSync, renameSync } from "node:fs";
+  openSync, closeSync, fsyncSync, renameSync, statSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { createHash } from "node:crypto";
 import { join, dirname, resolve } from "node:path";
@@ -118,6 +118,9 @@ export async function pushBoard({ workDir = work, boardDir = dir, send = fetch, 
   if (stamp) uploads.push("meta.json");
   for (const name of uploads) {
     if (sent >= maxFiles || now() >= deadline) return finish(true);
+    // The receiver's existing bound also limits allocation before reading a file.
+    if ((name === "meta.json" ? stamp.length : statSync(join(boardDir, name)).size) > 32 * 1024 ** 2)
+      throw new Error(`push ${name}: exceeds the existing 32MiB receiver limit`);
     const bytes = name === "meta.json" ? stamp : readFileSync(join(boardDir, name));
     const sha = createHash("sha256").update(bytes).digest("hex");
     if (ledger[name] === sha) continue;
