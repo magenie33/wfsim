@@ -3,7 +3,7 @@
 import postgres from './pg/node_modules/postgres/src/index.js';
 import { DatabaseSync } from 'node:sqlite';
 import { createReadStream, createWriteStream, appendFileSync, closeSync, existsSync, fsyncSync, mkdirSync,
-  openSync, readFileSync, readdirSync, lstatSync, renameSync, rmSync, statfsSync, writeFileSync } from 'node:fs';
+  openSync, readFileSync, lstatSync, renameSync, rmSync, statfsSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { once } from 'node:events';
 import { createHash } from 'node:crypto';
@@ -17,6 +17,7 @@ import { captureInventory } from './capture_compute_inventory.mjs';
 import { openCatalog, readInventoryRows } from './incremental_inventory.mjs';
 import { shardInventory, auditInventoryInputs } from './inventory_inputs.mjs';
 import { pipelineMonitor } from './pipeline_monitor.mjs';
+import { InventoryControl, InventoryActionRequired, needsAction } from './inventory_control.mjs';
 
 const MAX_CAPTURE_MS = 45 * 60000, RESERVE = 8 * 1024 ** 3, LIMIT = 256;
 const progress = (stage, fields = {}) => console.error(JSON.stringify({ event: 'incremental_inventory', stage, ...fields }));
@@ -30,17 +31,15 @@ function disk(path) {
   const stat = statfsSync(path);
   if (stat.bavail * stat.bsize < RESERVE) throw new Error('inventory needs 8GiB of filesystem reserve');
 }
-function collect(root, state) {
-  const catalogs = new Set([state.catalog, state.previous_catalog].filter(Boolean));
-  const pending = state.pending ? dirname(state.pending.capture) : null;
-  for (const name of readdirSync(root)) {
-    const path = join(root, name);
-    if (lstatSync(path).isSymbolicLink()) continue;
-    if (/^capture-[0-9]+$/.test(name) && path !== pending) rmSync(path, { recursive: true, force: true });
-    if (/^generation-[0-9]+\.sqlite(?:-wal|-shm)?$/.test(name)
-      && !catalogs.has(path.replace(/-(?:wal|shm)$/, ''))) rmSync(path, { force: true });
-  }
+function collect(root, state, completed = null) {
+  if (!completed || !state.rebuild_task || state.pending) return;
+  const path = dirname(completed.capture);
+  if (dirname(path) !== resolve(root) || !/^capture-[0-9]+$/.test(path.split(/[\\/]/).at(-1))
+      || lstatSync(path).isSymbolicLink() || existsSync(join(path, '.protected'))
+      || completed.receipt.status !== 'sealed' || completed.receipt.generation !== state.generation) return;
+  rmSync(path, { recursive: true });
 }
+
 async function hashFile(path) {
   const hash = createHash('sha256');
   for await (const data of createReadStream(path)) hash.update(data);
@@ -135,10 +134,10 @@ export function rankerChannel() {
 const common = receipt => ({ v: 1, engine: receipt.engine, contract: receipt.contract,
   generation: receipt.generation, epoch: receipt.epoch, snapshot: receipt.snapshot });
 
-export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, call, baseEpoch, relational = false, report = progress }) {
+export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, call, baseEpoch, relational = false, report = progress, budgetCheck = () => {} }) {
   mkdirSync(dir, { recursive: true }); disk(dir);
   const paths = [], started = Date.now(), covers = JSON.stringify(BOARD_KINDS), captureMs = bootstrap ? MAX_CAPTURE_MS : 15 * 60000;
-  const check = () => { disk(dir); if (Date.now() - started > captureMs) throw new Error('inventory input capture exceeded its budget'); };
+  const check = () => { disk(dir); budgetCheck(); if (Date.now() - started > captureMs) throw new Error('inventory input capture exceeded its budget'); };
   const file = name => { const path = join(dir, name); paths.push(path); return path; };
   const raw = { library: file('library.json'), builds: file('builds.ndjson'), facts: file('facts.ndjson'),
     queue: file('queue.ndjson'), tasks: file('tasks.ndjson'), meta: file('snapshot.json') };
@@ -251,28 +250,45 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
 
 export { save as saveInventoryState, hashFile as hashInventoryFile, collect as collectInventoryFiles, disk as checkInventoryDisk };
 
-export async function runInventoryCycle({ work, bin, instance, sql, call, budgetMs = 15000, report = progress }) {
-  const root = join(work, 'inventory'); mkdirSync(root, { recursive: true }); disk(root);
-  const statePath = join(root, 'state.json'), source = readFileSync(join(bin, 'VERSION'), 'utf8').trim();
+export async function inventoryContext(bin) {
+  const source = readFileSync(join(bin, 'VERSION'), 'utf8').trim();
   const engine = readFileSync(join(bin, 'ENGINE'), 'utf8').trim();
   const algorithm = createHash('sha256');
   for (const file of ['./classify_compute_inventory.mjs', './incremental_inventory.mjs', './inventory_inputs.mjs',
     './inventory_pipeline.mjs', '../worker/task_contract.js']) algorithm.update(readFileSync(new URL(file, import.meta.url)));
   const contract = { v: 1, algorithm: 'board-inventory-v1', covers: BOARD_KINDS, adapter: await hashFile(join(bin, 'wfsim-board')),
     classifier: algorithm.digest('hex') };
+  return { source, engine, contract };
+}
+
+export async function runInventoryCycle(options) {
+  const control = new InventoryControl(join(options.work, 'inventory'));
+  try { return await inventoryCycle({ ...options, control }); } finally { control.close(); }
+}
+
+async function inventoryCycle({ work, bin, instance, sql, call, budgetMs = 15000, report = progress, control }) {
+  const root = join(work, 'inventory'); disk(root);
+  const statePath = join(root, 'state.json'), { source, engine, contract } = await inventoryContext(bin);
   let state = existsSync(statePath) ? load(statePath) : null;
   report('generation');
   const [{ status }] = await sql.unsafe('SELECT inventory_status() status');
-  if (!state || state.instance !== instance || state.generation !== status?.generation || canon(status.contract) !== canon(contract) || status.engine !== engine) {
-    const [{ generation }] = await sql.unsafe('SELECT inventory_begin($1::text,$2::text,$3::text) generation', [engine, JSON.stringify(contract), status?.generation || null]);
+  if (control.current()?.phase === 'requested' || !state || state.generation !== status?.generation || canon(status.contract) !== canon(contract) || status.engine !== engine) {
+    const context = { mode: 'classic', engine, contract, status };
+    const begun = control.bound(context) || await control.begin(context, sql);
+    const generation = { generation: begun.generation };
     const previous = state?.published_at ? state.catalog : state?.previous_catalog;
-    state = { generation: generation.generation, instance, engine, contract, catalog: join(root, `generation-${generation.generation}.sqlite`),
+    state = { generation: generation.generation, rebuild_task: begun.task, instance, engine, contract, catalog: join(root, `generation-${generation.generation}.sqlite`),
       previous_catalog: previous, engine_epoch: null, pending: null };
     save(statePath, state);
   }
-  collect(root, state);
+  if (state.instance !== instance) needsAction('needs_restore', 'the new native process has not restored the existing inventory; no generation or capture was started');
+  control.checkTask(state);
+  const create = control.current()?.id === state.rebuild_task && control.current()?.phase === 'created';
+  if (!existsSync(state.catalog) && !create) needsAction('needs_bootstrap', 'the existing catalog is missing; it will not be silently recreated');
+  if (state.pending) await control.verifyCapture(state.pending, state);
   report('catalog', { generation: state.generation });
-  const catalog = openCatalog(state.catalog, { engine, contract, generation: state.generation, create: true });
+  const catalog = openCatalog(state.catalog, { engine, contract, generation: state.generation, create });
+  if (create) control.phase(state.rebuild_task, 'active', state.generation);
   const started = Date.now();
   try {
     if (!state.pending && state.published_at && Date.now() - Date.parse(state.published_at) < 60000)
@@ -280,11 +296,14 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
     if (!state.pending) {
       const dir = join(root, `capture-${Date.now()}`);
       report('capture');
-      state.pending = await captureEpoch({ sql, catalog, generation: state.generation, dir, bootstrap: !catalog.meta.complete, call, baseEpoch: state.engine_epoch, report });
-      state.engine_epoch = state.pending.engine_epoch; state.pending.phase = 'preparing';
-      save(statePath, state);
+      const capture = () => captureEpoch({ sql, catalog, generation: state.generation, dir, bootstrap: !catalog.meta.complete,
+        call, baseEpoch: state.engine_epoch, report, budgetCheck: () => control.checkTask(state) });
+      const saved = () => { state.engine_epoch = state.pending.engine_epoch; state.pending.phase = 'preparing'; save(statePath, state); };
+      if (!catalog.meta.complete) await control.capture(state, capture, saved);
+      else { state.pending = await capture(); saved(); }
     }
     const cut = state.pending, receipt = cut.receipt, dir = dirname(cut.capture);
+    await control.verifyCapture(cut, state);
     catalog.beginEpoch(receipt);
     if (cut.phase === 'preparing' && catalog.meta.epoch.phase !== 'preparing') {
       if (cut.bootstrap) {
@@ -318,7 +337,7 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
     }
     let chunks = 0;
     while (catalog.jobs(1).length && (chunks === 0 || Date.now() - started < budgetMs)) {
-      disk(root);
+      disk(root); control.checkTask(state);
       const job = catalog.jobs(1)[0], scope = cut.scopes.find(scope => scope.key === job.key);
       if (!scope) throw new Error('inventory cohort manifest is unavailable');
       const output = join(dir, `members-${job.key}-${job.after_owner || 'start'}.ndjson`);
@@ -338,6 +357,7 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
         records: cut.meta.counts.library, tasks: cut.meta.counts.tasks, rows: audit.plan.rows, queued: audit.plan.queued, digest: audit.plan.question_digest } });
       report('audited', { epoch: receipt.epoch, rows: audit.plan.rows });
     }
+    control.checkTask(state);
     report('acknowledging', { epoch: receipt.epoch });
     await acknowledgeInventory(sql, catalog, state.generation, batches(cut.changes),
       fields => report('acknowledging', { epoch: receipt.epoch, ...fields }));
@@ -346,7 +366,7 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
     const [{ published }] = await sql.unsafe('SELECT inventory_publish_cut($1::text,$2::text) published',
       [receipt.epoch, JSON.stringify({ ...body, generation: state.generation, contract })]);
     catalog.activate(published); save(join(root, 'last-publication.json'), { receipt: published, capture: load(cut.capture) });
-    state.published_at = published.at; state.pending = null; save(statePath, state); collect(root, state);
+    state.published_at = published.at; state.pending = null; save(statePath, state); control.complete(state); collect(root, state, cut);
     report('published', { epoch: receipt.epoch, total: published.total, started_at: published.started_at });
     return { pending: false, published, engine_epoch: state.engine_epoch };
   } finally { catalog.close(); }
@@ -362,6 +382,11 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   try {
     const result = await runInventoryCycle({ work: resolve(work), bin: resolve(bin), instance, sql, call: engine.call, report: monitor.report });
     save(join(work, 'inventory/status.json'), result); monitor.finish(result.pending ? 'pending' : 'complete');
-  } catch (error) { monitor.finish('failed', error); process.exitCode = 1; }
+  } catch (error) {
+    if (error instanceof InventoryActionRequired) {
+      save(join(work, 'inventory/status.json'), { blocked: true, pending: false, stage: error.stage, reason: error.message, engine_epoch: null });
+      monitor.report(error.stage); monitor.finish('blocked', error);
+    } else { monitor.finish('failed', error); process.exitCode = 1; }
+  }
   finally { engine.close(); await sql.end({ timeout: 5 }); }
 }

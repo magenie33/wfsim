@@ -1,13 +1,14 @@
 // A frozen Postgres cut crosses the actual ranker, catalog and full classifier.
 import assert from 'node:assert/strict';
 import { spawn, execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, closeSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, closeSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { DatabaseSync } from 'node:sqlite';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
-import { runInventoryCycle } from './inventory_pipeline.mjs';
+import { runInventoryCycle, inventoryContext } from './inventory_pipeline.mjs';
+import { InventoryControl, InventoryActionRequired } from './inventory_control.mjs';
 import { captureInventory } from './capture_compute_inventory.mjs';
 import { classifyInventory } from './classify_compute_inventory.mjs';
 import { openCatalog } from './incremental_inventory.mjs';
@@ -41,7 +42,10 @@ const scalar = async (text, args = []) => Object.values((await q(text, args))[0]
 let afterCapture = null, ackCalls = 0, failCohort = false, failAckReply = false, child, replies, reader, succeeded = false;
 const commandLog = [], ackEvidence = [];
 const statePath = join(work, 'inventory/state.json');
+let generations = 0, captureAttempts = 0;
 const unsafe = async (text, args = []) => {
+  if (text.includes('SELECT inventory_begin(')) generations++;
+  if (text.includes('SELECT inventory_epoch_begin(')) captureAttempts++;
   if (/\binventory_ack\(/.test(text)) {
     const state = json(statePath), db = new DatabaseSync(state.catalog, { readOnly: true });
     try {
@@ -136,13 +140,17 @@ try {
     readyTimer = setTimeout(() => reject(new Error('inventory test ranker startup deadline')), 30000);
   })])).value, /^ok ready /); } finally { clearTimeout(readyTimer); }
 
-  failCohort = true;
-  const initialDirty = Number(await scalar('SELECT count(*) FROM state_compute_inventory_invalidations'));
-  await assert.rejects(cycle('injected-crash'), /injected engine cut/);
-  assert.equal(ackCalls, 0); assert.equal(Number(await scalar('SELECT count(*) FROM state_compute_inventory_invalidations')), initialDirty);
-  assert.equal(Number(await scalar("SELECT count(*) FROM state_factory_findings WHERE kind='task_inventory'")), 0);
-  console.log('ok: a cut before durable cohort completion neither ACKs nor publishes');
-
+  const preserved = join(work, 'inventory/capture-1'); mkdirSync(preserved, { recursive: true });
+  writeFileSync(join(preserved, 'protected'), 'original input');
+  writeFileSync(join(work, 'inventory/generation-777.sqlite'), 'original catalog');
+  await assert.rejects(cycle(), error => error instanceof InventoryActionRequired && error.stage === 'needs_bootstrap');
+  assert.equal(generations, 0); assert.equal(captureAttempts, 0);
+  assert.equal(readFileSync(join(preserved, 'protected'), 'utf8'), 'original input');
+  assert.equal(readFileSync(join(work, 'inventory/generation-777.sqlite'), 'utf8'), 'original catalog');
+  const context = await inventoryContext(bin), control = new InventoryControl(join(work, 'inventory'));
+  try { control.request({ mode: 'classic', ...context, reason: 'explicit pipeline fixture', maxNewBytes: 1024 ** 3 }); }
+  finally { control.close(); }
+  console.log('ok: missing startup state preserves files and cannot create a generation or capture without a task');
   let bootstrapRaw, bootstrapMeta, originalReceipt, bootstrapCapture;
   afterCapture = async cut => {
     const frozen = join(dir, 'frozen-bootstrap'); mkdirSync(frozen);
@@ -152,6 +160,13 @@ try {
     bootstrapMeta = cut.meta; originalReceipt = cut.receipt; bootstrapCapture = dirname(cut.capture);
     await replaceComputeResult(fixtureDb,future,{state:'fact',canon:'{}',fact_engine:engine,fact_at:'2026-11-01T00:00:01.000Z'});
   };
+  failCohort = true;
+  const initialDirty = Number(await scalar('SELECT count(*) FROM state_compute_inventory_invalidations'));
+  await assert.rejects(cycle(), /injected engine cut/);
+  assert.equal(ackCalls, 0); assert.equal(Number(await scalar('SELECT count(*) FROM state_compute_inventory_invalidations')), initialDirty);
+  assert.equal(Number(await scalar("SELECT count(*) FROM state_factory_findings WHERE kind='task_inventory'")), 0);
+  console.log('ok: a cut before durable cohort completion neither ACKs nor publishes');
+
   failAckReply = true;
   await assert.rejects(cycle(), /injected lost ACK reply/);
   const interrupted = openCatalog(json(statePath).catalog);
@@ -197,7 +212,33 @@ try {
   assert(!existsSync(activeDir), 'completed chunk payload was not reclaimed'); assert.equal(json(statePath).pending, null);
   assert.equal(json(join(work, 'inventory/last-publication.json')).receipt.epoch, active.receipt.epoch);
   console.log('ok: GC preserves pending input payloads and reclaims completed cuts after durable publication');
-  file('receipt.json', { v: 1, actual_binary: binary, cases: 6, ackEvidence, commandLog, final: catalogState().summary });
+  const finalState = json(statePath), beforeState = readFileSync(statePath), beforeGeneration = generations, beforeCaptures = captureAttempts;
+  renameSync(finalState.catalog, finalState.catalog + '.preserved');
+  try { await assert.rejects(cycle(), error => error.stage === 'needs_bootstrap'); }
+  finally { renameSync(finalState.catalog + '.preserved', finalState.catalog); }
+  writeFileSync(join(bin, 'ENGINE'), 'b'.repeat(12));
+  try { await assert.rejects(cycle(), error => error.stage === 'needs_bootstrap'); }
+  finally { writeFileSync(join(bin, 'ENGINE'), engine); }
+  assert.equal(generations, beforeGeneration); assert.equal(captureAttempts, beforeCaptures);
+  assert(readFileSync(statePath).equals(beforeState));
+  assert.equal(readFileSync(join(preserved, 'protected'), 'utf8'), 'original input');
+  reader.close(); child.stdin.end();
+  const oldChild = child;
+  await Promise.race([onceExit(oldChild), new Promise(resolve => setTimeout(resolve, 2000))]);
+  if (oldChild.exitCode === null) { oldChild.kill('SIGKILL'); await onceExit(oldChild); }
+  const restartedErrors = openSync(join(dir, 'ranker.stderr'), 'a');
+  child = spawn(binary, ['--serve', join(dir, 'published-board'), '--library', file('empty-library', []),
+    '--builds', file('empty-builds', ''), '--facts-in', file('empty-facts', ''), '--state', join(dir, 'board-state.yaml')],
+    { stdio: ['pipe', 'pipe', restartedErrors] }); closeSync(restartedErrors);
+  reader = createInterface({ input: child.stdout }); replies = reader[Symbol.asyncIterator]();
+  let restartTimer;
+  try { assert.match((await Promise.race([replies.next(), new Promise((_, reject) => {
+    restartTimer = setTimeout(() => reject(Error('restarted ranker deadline')), 30000);
+  })])).value, /^ok ready /); } finally { clearTimeout(restartTimer); }
+  await assert.rejects(cycle('actual-new-process'), error => error.stage === 'needs_restore');
+  assert.equal(generations, beforeGeneration); assert.equal(captureAttempts, beforeCaptures);
+  console.log('ok: missing catalog, engine change and native instance change request action without rebuilding, ACK or GC');
+  file('receipt.json', { v: 1, actual_binary: binary, cases: 8, ackEvidence, commandLog, final: catalogState().summary });
   succeeded = true;
 } catch (error) { console.error(`inventory pipeline fixture retained: ${dir}`); throw error; }
 finally {

@@ -182,8 +182,9 @@ admission rules or ordered outputs. Library normalization retains its shared poo
 ### Incremental inventory
 
 `INCREMENTAL_INVENTORY=1` enables the inventory coordinator in `live_board.sh`.
-It uses the existing ranker command pipes, with one filesystem lock around a
-cycle. The ranker starts empty and derives the coherent bootstrap once. This
+It uses the existing ranker command pipes, with one kernel-held SQLite writer
+lock around a cycle. The ranker starts empty; a full bootstrap requires an
+explicit durable rebuild task. This
 path replaces the ranker's hourly library reload and rolling score
 read with authoritative source updates. Normal queue maintenance retains full
 reconciliation as a fallback. Official scoring reads only its leased inputs.
@@ -226,16 +227,56 @@ a lost response replays the durable receipts without counting them twice.
 
 A generation is fenced by engine, adapter and classifier contract. Bootstrap
 compares every effective question id, category and registration flag with the
-full classifier before activation. A ranker restart starts a shadow rebuild
-from source tables. The previous catalog remains available while a replacement
-is built; the published goal retains its normal engine and freshness checks.
+full classifier before activation. Deployment, process restart, a missing
+catalog and a changed contract never authorize a full rebuild. The classic
+ranker's memory is not restored from its catalog: a different native instance
+reports `needs_restore` and preserves the existing catalog and published files.
+The published goal retains its normal engine and freshness checks.
 Engine changes reuse legitimate score facts and never request a rescore.
+
+`inventory/controller.sqlite` separates immutable rebuild requests, mutable
+task state and execution events. A request pins the mode, engine, adapter and
+classifier contract, expected PostgreSQL generation, reason and disk budget.
+Only a matching unconsumed request may call `inventory_begin`. An uncertain
+generation start or interrupted full capture requires explicit attention;
+background retries cannot start another generation or repeat the full capture.
+A sealed pending cut can resume after its receipt, manifest and input hashes
+are verified. Previously verified unchanged files need only metadata checks.
+
+The operator records a request with the deployed scripts and binaries:
+
+```sh
+node scripts/inventory_rebuild.mjs status --work "$WORK"
+node scripts/inventory_rebuild.mjs request --work "$WORK" --bin "$BIN" \
+  --mode classic --reason "approved full inventory rebuild" \
+  --max-new-bytes "$INVENTORY_REBUILD_MAX_BYTES"
+node scripts/inventory_rebuild.mjs cancel --work "$WORK" \
+  --task "$REBUILD_TASK_ID" --reason "cancel this attempt"
+```
+
+`WORK` and `BIN` are absolute paths; request also requires `PG_URL`.
+`INVENTORY_REBUILD_MAX_BYTES` is an explicitly assessed growth budget, with no
+default. Admission checks that budget plus an 8GiB reserve against current
+free space and pins the filesystem. These checks do not qualify a full-scale
+bootstrap's storage or time requirements. Request records intent without
+capturing inputs; the next matching controller cycle consumes it. Status is
+readable during a running cycle. Request and cancellation refuse immediately
+while a controller cycle holds its lock. Cancellation
+retains partial inputs, catalogs and the task history. A new attempt needs a
+new request. Use `--mode relational` for the relational coordinator.
+
+Blocked inventory reports `needs_bootstrap`, `needs_restore`, `needs_resume`,
+`request_changed` or `needs_space` in `inventory/status.json`. The live loop
+keeps its process and published files, skips publication and waits its normal
+poll interval. It does not restart the ranker to resolve a blocked inventory.
 
 Publication uses the sealed cut's database time and snapshot, even if later
 changes are already pending. It never advances freshness to the publication
-time. Interrupted or expired cuts cannot publish. Completed input spools are
-removed after publication; current and previous catalog generations and the
-last publication manifest remain. SQLite uses a 16MiB page cache, bounded
+time. Interrupted or expired cuts cannot publish. After durable publication,
+cleanup may remove only that completed task's capture directory. Protected
+directories, unrelated captures and historical catalog generations remain;
+startup does not collect them. The last publication manifest remains.
+SQLite uses a 16MiB page cache, bounded
 imports and no memory mapping; the coordinator reserves 8GiB of filesystem
 space and caps initial capture at 45 minutes and delta capture at 15 minutes.
 
@@ -304,7 +345,9 @@ acknowledgment, and source updates after the cut retain their own dirty token.
 Publication keeps the captured database clock. An expired cut retains its
 baseline and takes a new delta cut; it does not renormalize history.
 
-Engine, binary or algorithm changes create a new fenced generation.
+Engine, binary or algorithm changes require an explicit new rebuild task.
+Compatible sealed input and relational checkpoints resume in the same
+generation after a stateless native operator restart.
 Bootstrap audits the question union with the disk classifier; CI independently
 compares membership with the complete native walk. This is a board adapter
 with explicit dependencies, not a general incremental SQL planner. A change
@@ -312,10 +355,11 @@ affecting every membership still requires proportional output work. The
 indexed maximum query may examine multiple high scores when target admission
 filters them; the time budget bounds cycles softly, not individual SQL calls.
 
-Apply the additive task schema before enabling this path. Rollback sets
-`INCREMENTAL_INVENTORY=0` and restarts the live service on the current validated
-release, preserving engine consistency with the other channels. Source tables
-and the last published inventory are preserved.
+Apply the additive task schema before enabling this path. When recovery is
+required, preserve source tables, checkpoints and the last published inventory
+and resolve the reported action before resuming. The legacy
+`INCREMENTAL_INVENTORY=0` mode performs full library reads; switching modes is
+an explicit operational decision and does not restore an inventory checkpoint.
 
 The community goal sums `demand.json`'s `orders` and displays its update time.
 These counts describe actual pending queue entries; admission owns which work

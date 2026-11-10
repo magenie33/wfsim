@@ -15,6 +15,7 @@ import { InventoryRelations } from './inventory_relations.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
 import { auditInventoryInputs } from './inventory_inputs.mjs';
 import { pipelineMonitor } from './pipeline_monitor.mjs';
+import { InventoryControl, InventoryActionRequired, needsAction } from './inventory_control.mjs';
 import { captureEpoch, saveInventoryState as save, hashInventoryFile, collectInventoryFiles as collect,
   checkInventoryDisk as disk } from './inventory_pipeline.mjs';
 
@@ -90,41 +91,59 @@ async function audit(index, cut, directory) {
     rows: result.plan.rows, queued: result.plan.queued, digest: result.plan.question_digest } });
 }
 
-export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000, operator: supplied, report = progress }) {
-  const root = join(work, 'inventory'), statePath = join(root, 'state.json'); mkdirSync(root, { recursive: true }); disk(root);
+export async function relationalInventoryContext(bin, operator) {
   const source = readFileSync(join(bin, 'VERSION'), 'utf8').trim(), engine = readFileSync(join(bin, 'ENGINE'), 'utf8').trim();
   const algorithm = createHash('sha256');
   for (const name of ['./inventory_relations.mjs', './inventory_relational_pipeline.mjs', './incremental_inventory.mjs',
     './inventory_inputs.mjs', './inventory_pipeline.mjs', './inventory_operator.mjs', './capture_compute_inventory.mjs',
     './classify_compute_inventory.mjs', '../worker/task_contract.js', '../worker/task_inventory.js', '../worker/board_kinds.js'])
     algorithm.update(readFileSync(new URL(name, import.meta.url)));
+  const contract = { v: 1, algorithm: 'board-inventory-relations-v1', covers: BOARD_KINDS,
+      adapter: await hashInventoryFile(join(bin, 'wfsim-board')), classifier: algorithm.digest('hex'), operator: operator.contract };
+  return { source, engine, contract };
+}
+
+export async function runRelationalInventory(options) {
+  const control = new InventoryControl(join(options.work, 'inventory'));
+  try { return await relationalCycle({ ...options, control }); } finally { control.close(); }
+}
+
+async function relationalCycle({ work, bin, sql, budgetMs = 15000, operator: supplied, report = progress, control }) {
+  const root = join(work, 'inventory'), statePath = join(root, 'state.json'); mkdirSync(root, { recursive: true }); disk(root);
   const operator = supplied || await openInventoryOperator(join(bin, 'wfsim-board'));
+  const { source, engine, contract } = await relationalInventoryContext(bin, operator);
   let catalog;
   try {
-    const contract = { v: 1, algorithm: 'board-inventory-relations-v1', covers: BOARD_KINDS,
-      adapter: await hashInventoryFile(join(bin, 'wfsim-board')), classifier: algorithm.digest('hex'), operator: operator.contract };
     let state = existsSync(statePath) ? load(statePath) : null;
     report('generation');
     const [{ status }] = await sql.unsafe('SELECT inventory_status() status');
-    if (!state || state.generation !== status?.generation || canon(status.contract) !== canon(contract) || status.engine !== engine) {
-      const [{ generation }] = await sql.unsafe('SELECT inventory_begin($1::text,$2::text,$3::text) generation',
-        [engine, JSON.stringify(contract), status?.generation || null]);
-      state = { generation: generation.generation, engine, contract, catalog: join(root, `generation-${generation.generation}.sqlite`),
+    if (control.current()?.phase === 'requested' || !state || state.generation !== status?.generation || canon(status.contract) !== canon(contract) || status.engine !== engine) {
+      const context = { mode: 'relational', engine, contract, status };
+      const begun = control.bound(context) || await control.begin(context, sql);
+      const generation = { generation: begun.generation };
+      state = { generation: generation.generation, rebuild_task: begun.task, engine, contract, catalog: join(root, `generation-${generation.generation}.sqlite`),
         previous_catalog: state?.published_at ? state.catalog : state?.previous_catalog, pending: null };
       save(statePath, state);
     }
-    collect(root, state);
-    catalog = openCatalog(state.catalog, { engine, contract, generation: state.generation, create: true });
+    control.checkTask(state);
+    const create = control.current()?.id === state.rebuild_task && control.current()?.phase === 'created';
+    if (!existsSync(state.catalog) && !create) needsAction('needs_bootstrap', 'the existing catalog is missing; it will not be silently recreated');
+    if (state.pending) await control.verifyCapture(state.pending, state);
+    catalog = openCatalog(state.catalog, { engine, contract, generation: state.generation, create });
+    if (create) control.phase(state.rebuild_task, 'active', state.generation);
     const index = new InventoryRelations(catalog, operator.contract), operate = operator.call;
     const until = performance.now() + budgetMs;
     if (!state.pending && state.published_at && Date.now() - Date.parse(state.published_at) < 60000) return { pending: false };
     if (!state.pending) {
       report('capture', { generation: state.generation });
-      state.pending = await captureEpoch({ sql, catalog, generation: state.generation, dir: join(root, `capture-${Date.now()}`),
-        bootstrap: !catalog.meta.complete, relational: true, report });
-      save(statePath, state);
+      const capture = () => captureEpoch({ sql, catalog, generation: state.generation, dir: join(root, `capture-${Date.now()}`),
+        bootstrap: !catalog.meta.complete, relational: true, report, budgetCheck: () => control.checkTask(state) });
+      const saved = () => save(statePath, state);
+      if (!catalog.meta.complete) await control.capture(state, capture, saved);
+      else { state.pending = await capture(); saved(); }
     }
     const cut = state.pending, receipt = cut.receipt, directory = dirname(cut.capture);
+    await control.verifyCapture(cut, state);
     catalog.beginEpoch(receipt);
     if (catalog.meta.epoch.phase === 'preparing') {
       let input = catalog.meta.input?.epoch === receipt.epoch ? catalog.meta.input : { epoch: receipt.epoch, file: 0, offset: 0, count: 0, limit: 16 };
@@ -132,6 +151,7 @@ export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000,
       while (input.file < files.length) {
         const [kind, path] = files[input.file], start = performance.now();
         const page = await readPage(path, input.offset, input.limit);
+        control.checkTask(state);
         await applyPage(index, operate, page, kind, cut.bootstrap);
         const elapsed = Math.max(1, performance.now() - start), estimate = Math.floor(input.limit * 100 / elapsed);
         input = { ...input, offset: page.offset, count: input.count + page.rows.length,
@@ -155,6 +175,7 @@ export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000,
       if (result.pending) return { pending: true, stage: 'processing', metrics: result.metrics };
     }
     if (!catalog.meta.complete) { report('audit', { epoch: receipt.epoch }); await audit(index, cut, directory); report('audited', { epoch: receipt.epoch }); }
+    control.checkTask(state);
     report('acknowledging', { epoch: receipt.epoch });
     for (let offset = catalog.meta.ack?.epoch === receipt.epoch ? catalog.meta.ack.offset : 0;;) {
       const page = await readPage(cut.changes, offset, 256);
@@ -188,7 +209,7 @@ export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000,
       throw error;
     }
     catalog.activate(published); save(join(root, 'last-publication.json'), { receipt: published, capture: load(cut.capture) });
-    state.published_at = published.at; state.pending = null; save(statePath, state); collect(root, state);
+    state.published_at = published.at; state.pending = null; save(statePath, state); control.complete(state); collect(root, state, cut);
     report('published', { epoch: receipt.epoch, total: published.total });
     return { pending: false, published, metrics: index.metrics };
   } finally { catalog?.close(); if (!supplied) await operator.close(); }
@@ -204,6 +225,11 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   try {
     const result = await runRelationalInventory({ work: resolve(work), bin: resolve(bin), sql, report: monitor.report });
     monitor.finish(result.pending ? 'pending' : 'complete'); console.log(JSON.stringify(result));
-  } catch (error) { monitor.finish('failed', error); process.exitCode = 1; }
+  } catch (error) {
+    if (error instanceof InventoryActionRequired) {
+      const blocked = { blocked: true, pending: false, stage: error.stage, reason: error.message };
+      save(join(work, 'inventory/status.json'), blocked); monitor.report(error.stage); monitor.finish('blocked', error); console.log(JSON.stringify(blocked));
+    } else { monitor.finish('failed', error); process.exitCode = 1; }
+  }
   finally { await sql.end({ timeout: 5 }); }
 }

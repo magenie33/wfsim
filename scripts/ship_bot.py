@@ -142,6 +142,7 @@ LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/was
                 "scripts/inventory_pipeline.mjs", "scripts/incremental_inventory.mjs", "scripts/inventory_inputs.mjs",
                 "scripts/inventory_relational_pipeline.mjs", "scripts/inventory_relations.mjs", "scripts/inventory_operator.mjs",
                 "scripts/sqlite_schema.mjs",
+                "scripts/inventory_control.mjs", "scripts/inventory_rebuild.mjs",
                 "scripts/pipeline_monitor.mjs",
                 "scripts/classify_compute_inventory.mjs", "scripts/capture_compute_inventory.mjs",
                 "scripts/board_meta.py", "scripts/fetch_library.sh", "scripts/library_array.mjs", "scripts/fetch_facts.sh",
