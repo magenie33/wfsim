@@ -51,16 +51,26 @@ const speaker = (engine, lang) => {
 const appraisalAt = (engine) => (code, result) => fetch(`${engine.site}/api/appraise/${encodeURIComponent(code)}${
   result ? `?result=${result}` : ""}`, { signal: AbortSignal.timeout(30_000) }).then((r) => (r.ok ? r.json() : null));
 
+const documentOf = (inside, css, lang, wayIn = false) => `<!doctype html><html lang="${lang}" data-theme="light"><head><meta charset="utf-8"><style>${css}</style></head>
+  <body class="on-card"><main id="card-page" class="card-page${wayIn ? " lc-way-in" : ""}">${inside}</main></body></html>`;
+
 /// THE CARD AT `url` (a `/weapons/<Name>/card?…` address): `{ html, verdict }`,
 /// the whole document and, for an appraisal's answer, its replay's verdict
 /// (`headlessAppraisalReplay`, the fight run on this machine's cores) — or null
-/// for a card that is not a weapon's, which only the page draws.
+/// for help or a card without a replay. Contributor cards use the page.
 /// `opts.css` and `opts.img` name the style and pictures (a check's own build),
 /// `opts.appraisal(code, result)` the appraisal's door and `opts.now` the clock
-/// a verdict is dated by.
-export async function cardDocument(engine, url, { lang = "zh", css = siteStyle(), img = IMG, appraisal = appraisalAt(engine), now, rows: snapshotRows, witnesses: snapshotWitnesses } = {}) {
+/// a verdict is dated by. `opts.help` is the answer's captured help guide.
+export async function cardDocument(engine, url, { lang = "zh", css = siteStyle(), img = IMG, appraisal = appraisalAt(engine), now, rows: snapshotRows, witnesses: snapshotWitnesses, help: helpSnapshot } = {}) {
   const h = engine.headless;
   const u = new URL(url);
+  if (/^\/nona\/help\/card\/?$/.test(u.pathname)) {
+    const say = speaker(engine, lang), request = h.headlessNonaHelpRequest(engine.meta);
+    const topic = u.searchParams.get("topic") === "rulers" ? "rulers" : "commands";
+    const guide = helpSnapshot?.lang === lang && helpSnapshot.topic === topic ? helpSnapshot
+      : h.headlessNonaHelp(say, request ? engine.api("/api/riven", request) : null, topic);
+    return {html:documentOf(h.headlessNonaHelpCard(guide,SITE),css,lang),verdict:null};
+  }
   const path = /^(\/weapons\/[^/]+)\/card\/?$/.exec(u.pathname);
   if (!path) return null;
   const ask = h.headlessCardAsk(u.search);
@@ -71,7 +81,7 @@ export async function cardDocument(engine, url, { lang = "zh", css = siteStyle()
   const w = say.meta.weapons.find((x) => x.id === plain.id);
   const job = ask.kind === "appraise" ? await appraisal(ask.code, ask.result) : null;
   if (ask.kind === "appraise" && !job) throw new Error(`no appraisal ${ask.code}`);
-  const rows = Array.isArray(snapshotRows) ? snapshotRows : ask.kind === "appraise" && !(job && job.result) ? [] : (await engine.host.board(w.id)) || [];
+  const rows = Array.isArray(snapshotRows) ? snapshotRows : ask.kind === "appraise" && !(job && job.result) ? [] : (await (ask.kind === "pz" ? engine.host.boardHeads(w.id, ask.ruler) : engine.host.board(w.id, job?.ruler || ask.ruler))) || [];
   // THE NUMBER A CHAT IS TOLD is this replay's, never the searcher's.
   const verdict = job && job.result ? await h.headlessAppraisalReplay(say, w, job, rows, {
     board: (id, ruler) => engine.host.boardNow(id, ruler),
@@ -85,7 +95,6 @@ export async function cardDocument(engine, url, { lang = "zh", css = siteStyle()
   // EVERY PICTURE EAGER, as the page sets them before its screenshot.
   const inside = card.draw(qr && qr.svg).replace(/ loading="lazy"/g, ' loading="eager"')
     .replace(/ src="([^"]*)"/g, (_, src) => ` src="${inlined(src, img)}"`);
-  return { html: `<!doctype html><html lang="${lang}" data-theme="light"><head><meta charset="utf-8"><style>${css}</style></head>`
-    + `<body class="on-card"><main id="card-page" class="card-page${card.wayIn ? " lc-way-in" : ""}">${inside}</main></body></html>`,
+  return { html: documentOf(inside,css,lang,card.wayIn),
     verdict: verdict ? h.headlessVerdictRecord(verdict) : null };
 }
