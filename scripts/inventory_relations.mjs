@@ -21,6 +21,12 @@ const schema = `
     PRIMARY KEY(bucket,ruler,mode,target)) WITHOUT ROWID;
   CREATE TABLE IF NOT EXISTS rel_jobs(id TEXT PRIMARY KEY) WITHOUT ROWID;
   CREATE TABLE IF NOT EXISTS rel_contract(id INTEGER PRIMARY KEY CHECK(id=1),body TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS rel_publication_sources(id TEXT PRIMARY KEY,seq INTEGER NOT NULL UNIQUE,candidate TEXT NOT NULL,
+    weapon TEXT NOT NULL,admit INTEGER NOT NULL,modes TEXT NOT NULL) WITHOUT ROWID;
+  CREATE INDEX IF NOT EXISTS rel_publication_sources_rows ON rel_publication_sources(weapon,candidate,seq);
+  CREATE TABLE IF NOT EXISTS rel_publication_facts(identity TEXT NOT NULL,ruler TEXT NOT NULL,mode TEXT NOT NULL,
+    at TEXT NOT NULL,retired INTEGER NOT NULL,body TEXT NOT NULL,PRIMARY KEY(identity,ruler,mode)) WITHOUT ROWID;
+  CREATE TABLE IF NOT EXISTS rel_publication_dirty(weapon TEXT PRIMARY KEY) WITHOUT ROWID;
 `;
 const mask = hex => BigInt.asIntN(64, BigInt(`0x${hex}`));
 const bit = target => BigInt.asIntN(64, 1n << BigInt(target));
@@ -41,6 +47,9 @@ export class InventoryRelations {
   }
   q(sql) { return this.catalog.statement(sql); }
   transaction(fn) { return this.catalog.transaction(fn); }
+  publicationDirty(weapon) {
+    if (weapon) this.q('INSERT OR IGNORE INTO rel_publication_dirty VALUES(?)').run(weapon);
+  }
   dirty(id) {
     this.q('INSERT OR IGNORE INTO rel_jobs VALUES(?)').run(id);
     this.q('INSERT OR IGNORE INTO rel_jobs SELECT id FROM rel_candidates WHERE default_id=?').run(id);
@@ -87,12 +96,20 @@ export class InventoryRelations {
       const candidates = new Set();
       for (let i = 0; i < changed.length; i++) {
         const row = changed[i], d = descriptions[i], old = this.q('SELECT candidate FROM rel_sources WHERE id=?').get(row.id);
+        this.publicationDirty(this.q('SELECT weapon FROM rel_publication_sources WHERE id=?').get(row.id)?.weapon);
         if (old?.candidate) candidates.add(old.candidate);
         this.q(`INSERT INTO records(build_id,stored) VALUES(?,?) ON CONFLICT(build_id)
           DO UPDATE SET stored=excluded.stored,fallback=NULL`).run(row.id, row.deleted || row.record == null ? null : canon(row.record));
         if (row.deleted || row.record == null) this.q('DELETE FROM rel_sources WHERE id=?').run(row.id);
         else this.q(`INSERT INTO rel_sources(id,candidate,body) VALUES(?,?,?) ON CONFLICT(id)
           DO UPDATE SET candidate=excluded.candidate,body=excluded.body`).run(row.id, d.candidate, canon(d));
+        this.q('DELETE FROM rel_publication_sources WHERE id=?').run(row.id);
+        if (!row.deleted && row.record != null && d.candidate && d.publication) {
+          const seq = this.q('SELECT seq FROM rel_sources WHERE id=?').get(row.id).seq;
+          this.q('INSERT INTO rel_publication_sources VALUES(?,?,?,?,?,?)')
+            .run(row.id, seq, d.candidate, d.bucket[0], mask(d.admit), canon(d.publication_modes));
+          this.publicationDirty(d.bucket[0]);
+        }
         if (d.candidate) candidates.add(d.candidate);
         // A stored canonical record takes precedence over all normalized aliases.
         this.dirty(row.id);
@@ -106,11 +123,25 @@ export class InventoryRelations {
     const normalized = await operate('facts', rows);
     if (normalized.length !== rows.length) throw Error('incomplete engine fact keys');
     this.transaction(() => {
-      for (const id of replace) { this.touchGroups(id); this.q('DELETE FROM rel_facts WHERE identity=?').run(id); this.dirty(id); }
+      for (const id of replace) {
+        this.touchGroups(id); this.q('DELETE FROM rel_facts WHERE identity=?').run(id);
+        this.q('DELETE FROM rel_publication_facts WHERE identity=?').run(id);
+        for (const row of this.q('SELECT DISTINCT weapon FROM rel_publication_sources WHERE candidate=?').iterate(id)) this.publicationDirty(row.weapon);
+        this.dirty(id);
+      }
       for (const row of normalized) {
         const score = Number(row.score);
-        if (!row.gate_ruler || !row.mode || !Number.isFinite(score)) continue;
+        if (!row.mode || !Number.isFinite(score)) continue;
         const at = row.retired_at ?? row.finished_at ?? '', retired = Number(row.retired_at != null);
+        const publication = this.q('SELECT at,retired FROM rel_publication_facts WHERE identity=? AND ruler=? AND mode=?')
+          .get(row.identity, row.ruler, row.mode);
+        if (!publication || publication.at < at || publication.at === at && (!publication.retired || retired)) {
+          this.q(`INSERT INTO rel_publication_facts VALUES(?,?,?,?,?,?) ON CONFLICT(identity,ruler,mode) DO UPDATE SET
+            at=excluded.at,retired=excluded.retired,body=excluded.body`)
+            .run(row.identity, row.ruler, row.mode, at, retired, canon(row));
+          for (const source of this.q('SELECT DISTINCT weapon FROM rel_publication_sources WHERE candidate=?').iterate(row.identity)) this.publicationDirty(source.weapon);
+        }
+        if (!row.gate_ruler) continue;
         const prior = this.q('SELECT * FROM rel_facts WHERE identity=? AND ruler=? AND mode=?').get(row.identity, row.ruler, row.mode);
         if (prior && (prior.at > at || prior.at === at && prior.retired && !retired)) continue;
         const bucket = this.q('SELECT bucket FROM rel_candidates WHERE id=?').get(row.identity)?.bucket || null;

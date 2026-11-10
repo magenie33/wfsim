@@ -7,7 +7,7 @@ import { dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { DatabaseSync } from 'node:sqlite';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
-import { runInventoryCycle } from './inventory_pipeline.mjs';
+import { runLegacyInventoryCycle as runInventoryCycle } from './inventory_pipeline.mjs';
 import { captureInventory } from './capture_compute_inventory.mjs';
 import { classifyInventory } from './classify_compute_inventory.mjs';
 import { openCatalog } from './incremental_inventory.mjs';

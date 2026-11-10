@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { inventoryCursor } from './inventory_pipeline.mjs';
+import { inventoryCursor, inventoryNextFetch } from './inventory_pipeline.mjs';
 
 const total = 27038064;
 if (process.argv[2] === 'scale') {
@@ -36,6 +36,14 @@ if (process.argv[2] === 'scale') {
     console.error(error.message); process.exitCode = 1;
   }
 } else {
+  assert.equal(inventoryNextFetch(80000, 80000, 81, 42106), 9499, 'the observed 42s page shrinks toward five seconds');
+  assert.equal(inventoryNextFetch(1000, 80000, 81, 100), 4000, 'fast pages grow at most fourfold');
+  assert.equal(inventoryNextFetch(80000, 80000, 81, 0), 80000, 'fast pages retain the hard row bound');
+  for (const invalid of [undefined, NaN, Infinity, -1, '10'])
+    assert.equal(inventoryNextFetch(1000, 80000, 81, invalid), 1000, 'invalid latency cannot grow a page');
+  assert.equal(inventoryNextFetch(1000, 80000, 9 * 1024 ** 2, 1), 1, 'an oversized row travels whole and alone on later pages');
+  assert.equal(inventoryNextFetch(80000, 80000, 3000, 42106), Math.floor(8 * 1024 ** 2 / 3000), 'byte width still bounds the slower page');
+  console.log('ok: slow pages shrink, fast growth stays bounded, malformed timing stays conservative and large rows remain complete');
   const run = rows => spawnSync(process.execPath, ['--max-old-space-size=96', fileURLToPath(import.meta.url), 'scale', String(rows)],
     { encoding: 'utf8', timeout: 180000 });
   const broken = run(5000);

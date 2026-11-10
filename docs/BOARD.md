@@ -56,6 +56,23 @@ row bytes and measurement clocks remain intact; listed counts follow the rows,
 and submission counts retain the last full projection. No row or score is
 added. The daily full projection still reads the authoritative facts.
 
+## Offline projection verification
+
+`node scripts/replay_board_projection.mjs <capture-dir> <bin-dir> <work-dir>
+<manifest-sha256>` replays a complete protected `capture.json` and its sibling
+source files into an isolated directory. The binary directory contains
+`wfsim-board` and its matching `ENGINE`. The output directory must be empty on
+the first invocation; the same invocation resumes committed SQLite pages and
+publication prefixes. Input hashes and the engine, binary and projection
+contract must still match. A changed fence requires a new output directory.
+
+This path opens no database connection and publishes nothing. Its local
+projection identity is not a database epoch. It writes the real native board
+rows, indexes, state, heads and stamp, preserving measurement metadata. The
+report separates complete import and classification from delivery eligibility:
+any final file above the existing 32 MiB receiver limit makes the command fail.
+The source capture remains unchanged.
+
 ## Family candidates
 
 An arriving library build seeds one quick search for each other roster weapon
