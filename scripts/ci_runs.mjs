@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { assertGate, output, policyDigest, PRODUCT_JOBS, releaseCoverage } from './ci_policy.mjs';
 import { assertHotfixProof } from './ci_hotfix.mjs';
 import { checkFastChanges, checkFastProof, fastJobs } from './ci_fast.mjs';
+import { companionJobs } from './full_work.mjs';
 
 export function validProof(proof, sha, policy, full = false, required = [], deep = false) {
   const fast = proof?.scope === 'fast';
@@ -21,6 +22,7 @@ export function validProof(proof, sha, policy, full = false, required = [], deep
     && (fast || required.every(j => proof.jobs.includes(j)))
     && (fast || !(full || deep) || proof.deep === true)
     && proof.jobs.every(j => proof.results?.[j] === 'success')
+    && companionJobs(proof.jobs, fast).every(j => proof.results?.[j] === 'success')
     && ['quick', 'commits', 'plan'].every(j => proof.results?.[j] === 'success');
 }
 
@@ -35,6 +37,11 @@ function gh(args) {
   return execFileSync('gh', args, { encoding: 'utf8', timeout: 60_000, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 const api = path => JSON.parse(gh(['api', path]));
+
+export function releaseArtifactsAvailable(artifacts) {
+  return ['site-built', 'ci-proof', 'release-desktop', 'release-live']
+    .every(name => artifacts.some(a => a.name === name && !a.expired));
+}
 
 export function verifiedBase(base, repository, dependencies = {}) {
   const query = dependencies.api || api;
@@ -54,7 +61,7 @@ export function findRun({ sha, repository, policy, full, required = [], deep = f
   for (const run of runs) {
     if (!trustedRun(run, { sha, repository, workflow, current })) continue;
     const artifacts = api(`repos/${repository}/actions/runs/${run.id}/artifacts?per_page=100`).artifacts;
-    if (!['site-built', 'ci-proof'].every(name => artifacts.some(a => a.name === name && !a.expired))) continue;
+    if (!releaseArtifactsAvailable(artifacts)) continue;
     const dir = mkdtempSync(join(tmpdir(), 'wfsim-ci-proof-'));
     try {
       gh(['run', 'download', String(run.id), '--repo', repository, '--name', 'ci-proof', '--dir', dir]);

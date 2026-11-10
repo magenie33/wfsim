@@ -59,8 +59,8 @@ assert.throws(() => checkFastChanges(parentScope, 'head', parentFixture(oldParen
 assert.throws(() => checkFastChanges({ ...parentScope, paths: [parent] }, 'head', parentFixture(oldParent, fixedParent)));
 assert.throws(() => checkFastChanges({ ...scope, paths: [parentTests] }, 'head', fixture('existing tests', 'deleted tests')));
 const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
-assert(workflow.includes("if: ${{ !fromJSON(needs.plan.outputs.plan).fast }}"));
-assert(workflow.includes('if [ "$FAST_CI" != "true" ]; then node scripts/check_tasks.mjs; fi'));
+assert(workflow.includes("if: needs.plan.outputs.factory == 'true' && needs.plan.outputs.reuse == ''"));
+assert(!workflow.includes('node scripts/check_tasks.mjs'), 'full factory cases are owned by the coverage-checked runner');
 assert(workflow.includes("if: matrix.group == 'fast'"));
 assert(workflow.includes('run: node scripts/ci_fast.mjs page'));
 assert(workflow.includes('cargo test -p wfsim-cli --lib board::'));

@@ -106,9 +106,9 @@ def producer(source):
     execute("git", "diff", "--exit-code", source, "--", ".", ":!site", ":!desktop/payload", ":!mcp/engine.js")
     env = os.environ
     if (env.get("GITHUB_REPOSITORY") != "magenie33/wfsim" or env.get("GITHUB_SHA") != source
-            or env.get("GITHUB_WORKFLOW") != "CI" or env.get("GITHUB_EVENT_NAME") not in ("push", "workflow_dispatch", "schedule")
+            or env.get("GITHUB_WORKFLOW") != "CI" or env.get("GITHUB_EVENT_NAME") not in ("push", "workflow_dispatch", "schedule", "pull_request")
             or not env.get("GITHUB_RUN_ID", "").isdigit() or not env.get("GITHUB_RUN_ATTEMPT", "").isdigit()):
-        raise ValueError("prepare requires a non-PR CI producer in the source repository")
+        raise ValueError("prepare requires a CI producer in the source repository")
     return {"repository": env["GITHUB_REPOSITORY"], "workflow": "CI", "run": env["GITHUB_RUN_ID"],
             "attempt": env["GITHUB_RUN_ATTEMPT"], "source": source}
 

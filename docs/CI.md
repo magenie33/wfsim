@@ -181,8 +181,8 @@ Job outputs carry execution fields; path classifications stay in the summary
 and logs so large release batches fit the process environment limit.
 
 A reusable run must be completed and successful, belong to this repository's
-CI workflow, name the exact same commit and contain unexpired `site-built` and
-`ci-proof` artifacts. PR runs are never release evidence. The proof binds the
+CI workflow, name the exact same commit and contain unexpired `site-built`,
+`ci-proof`, `release-desktop` and `release-live` artifacts. PR runs are never release evidence. The proof binds the
 commit, policy digest, successful jobs and full-catalog depth. A proof must cover every job selected
 by the later run: a product-only proof cannot replace Rust or gas checks.
 Reused proofs cannot be reused again; the original run
@@ -220,8 +220,9 @@ jobs, retaining each weapon, ruler, card shape and link-code input. The partitio
 check compares the full case set with the unbalanced layout.
 
 System dependency installation skips packages already installed. Site builds
-install the CJK font and linker; publishing also installs the Linux shell's GUI
-dependencies. Setup is noninteractive, has bounded network and process waits,
+install the CJK font and linker; the desktop preparation job installs its GUI
+dependencies. Publishing a verified prepared desktop uses the publish setup.
+Setup is noninteractive, has bounded network and process waits,
 and prints the package-manager log on failure. Downloads run before package
 installation. A failed Ubuntu runner mirror gets one bounded retry using the
 official HTTPS archive, with copied source configuration and the same archive
@@ -235,11 +236,41 @@ Build setup validates the complete declared art set and pinned OCR/library
 bytes before compiling the site. The preflight and the full build use the same
 helpers. It writes no generated files.
 
-Service and SQL protocol jobs start after quick checks without waiting for
-the site. Native Linux and Mac slices build beside site validation, without
+Service and SQL protocol jobs start after quick checks and production-runtime
+contracts without waiting for the site. The runtime job uses the release-pinned
+Wrangler runtime and compatibility settings, including a real unsupported-Request
+negative control. SQL capture and cancellation also run through the actual TCP
+Postgres driver under a non-superuser role before native compilation. Full
+native scorer parity remains in the pipeline job.
+
+Factory cases are declared in `scripts/factory_shards.mjs`. Both settlement
+modes retain every original random seed and fixed regression. Random cases run
+in independent shards; fixed groups run once per mode. Every shard produces a
+receipt binding its source hashes, mode, seeds and completed assertions. The
+required coverage job rejects missing or duplicate receipts, wrong sources and
+unfinished cases. The default local command still runs the whole original suite.
+
+Native Linux and Mac slices build beside site validation, without
 release credentials. Published engine targets skip compilation. A producer
 stamps each artifact with engine, module, data, source and exact bytes; shipping
 downloads from the checked CI run and verifies that stamp before signing.
+Secretless desktop and live-runtime producers are required companions of a site
+release. Their prepared artifacts come from that same qualified run. A bad
+present artifact blocks promotion; unavailable legacy artifacts use the normal
+build path. The required gate and reusable proof both enforce the companion jobs.
+The Linux producer may restore by its complete input digest. It still verifies
+the cached receipt against the official artifact from a successful repository
+CI run and checks every output byte before issuing the current run's receipt.
+An unproven cache rebuilds normally. PRs exercise secretless preparation, but
+their runs cannot supply release evidence or trusted reuse.
+
+`scripts/full_work.mjs` registers expensive validation, site and native builds,
+deployment, intake, scoring, board projection and client resource updates. Each
+entry names its authoritative inputs, invalidation rule, resource bound, durable
+boundary, evidence and rollback. Unknown dependencies retain full validation.
+`ci-timing.json` reports job execution, expensive steps and time before each job
+starts. That last measurement includes dependencies and runner queue time; it
+does not claim to separate them. Unreported cache hits remain unknown.
 
 The shared browser harness polls readiness instead of always waiting thirteen
 seconds. Explicit test waits remain explicit. Chrome process/debugging-target

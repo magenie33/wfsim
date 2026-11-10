@@ -8,7 +8,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ALL_CI_JOBS, assertGate, BROWSER_JOBS, browserCheckPaths, changedPaths, checkJobPaths,
   classify, CONSUMER_JOBS, jobPlan, OPTIONAL_NATIVE_JOBS, PRODUCT_JOBS } from './ci_policy.mjs';
-import { trustedRun, validProof, verifiedBase } from './ci_runs.mjs';
+import { releaseArtifactsAvailable, trustedRun, validProof, verifiedBase } from './ci_runs.mjs';
+import { COMPANION_JOBS, companionJobs } from './full_work.mjs';
 
 for (const path of ['engine/src/fight.rs', 'optimizer/src/search.rs', 'webapi/src/optimize.rs',
   'data/weapons/braton.yaml', 'Cargo.lock', '.github/workflows/ci.yml', 'scripts/ci_policy.mjs',
@@ -71,6 +72,8 @@ const nonSearchTools = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.
   'deploy/factoryd_grants.sql', 'scripts/check_rescore_paths.mjs', 'scripts/capture_compute_inventory.mjs',
   'scripts/build_batches.mjs', 'scripts/ship_family.mjs', 'scripts/ship_bot.py', '.github/workflows/scores.yml',
   'scripts/factoryd.mjs', 'scripts/pg_task_archive.py', 'scripts/ship_task_archive.py', 'scripts/check_task_archive.py',
+  'scripts/ship.py', 'scripts/release_stage.py', 'scripts/check_release_stage.py', 'scripts/check_ship_bot_assets.py',
+  'scripts/payload_manifest.py', 'scripts/release_desktop.py', 'scripts/pg/test_db.mjs', 'scripts/intake_batches.mjs',
   'deploy/wfsim-task-archive.service', 'deploy/wfsim-task-archive.timer'];
 for (const path of [...ciWiring, ...nonSearchTools]) {
   assert.equal(classify([path]).scope, 'full', path);
@@ -86,6 +89,8 @@ assert.equal(classify(['engine/src/board/equipment.rs', 'webapi/src/lib.rs',
 for (const path of ['Cargo.toml', 'Cargo.lock', 'scripts/ci_rust.mjs',
   'scripts/check_future.mjs', '.github/workflows/unknown.yml']) assert(classify([path]).deep, path);
 for (const paths of [[], ['optimizer/src/quick.rs'], ['webapi/src/optimize.rs'], ['unknown/file']]) assert(classify(paths).deep);
+assert.equal(classify(['desktop/examples/updatekit.rs']).deep, false, 'independent shell packaging cannot change search enumeration');
+assert(classify(['desktop/examples/updatekit.rs', 'optimizer/src/quick.rs']).deep);
 assert(classify(['mcp/index.js'], true).deep);
 for (const path of ['scripts/check_kitgun_slot.mjs', 'scripts/check_riven_request.mjs']) {
   assert.deepEqual(classify([path]).jobs, BROWSER_JOBS, path);
@@ -106,7 +111,8 @@ assert.equal(classify(['docs/UI.md', 'data/board_state.yaml']).scope, 'snapshot'
 
 const needs = plan => Object.fromEntries(['plan', 'quick', 'commits', ...ALL_CI_JOBS].map(j =>
   [j, { result: ['plan', 'quick', 'commits', ...plan.jobs].includes(j) ? 'success' : 'skipped' }])
-  .concat(OPTIONAL_NATIVE_JOBS.map(j => [j, { result: 'skipped' }])));
+  .concat(OPTIONAL_NATIVE_JOBS.map(j => [j, { result: 'skipped' }]))
+  .concat(COMPANION_JOBS.map(j => [j, { result: companionJobs(plan.jobs, !!plan.fast).includes(j) ? 'success' : 'skipped' }])));
 for (const plan of [classify(['docs/UI.md']), classify(['worker/index.js']), classify(['engine/src/lib.rs'])]) {
   assertGate(plan, needs(plan));
   for (const job of ['plan', 'quick', 'commits', ...plan.jobs]) {
@@ -129,8 +135,19 @@ for (const name of OPTIONAL_NATIVE_JOBS) {
   assert.throws(() => assertGate(full, missing));
 }
 const proof = { version: 1, sha: 'abc', policy: 'p', reused: false, deep: true, jobs: PRODUCT_JOBS,
-  results: Object.fromEntries(['quick', 'commits', 'plan', ...PRODUCT_JOBS].map(j => [j, 'success'])) };
+  results: Object.fromEntries(['quick', 'commits', 'plan', ...PRODUCT_JOBS, ...COMPANION_JOBS].map(j => [j, 'success'])) };
 assert(validProof(proof, 'abc', 'p', true));
+for (const name of COMPANION_JOBS) {
+  const results = { ...proof.results }; delete results[name];
+  assert(!validProof({ ...proof, results }, 'abc', 'p', true), `${name}: missing companion proof blocks release`);
+  assert(!validProof({ ...proof, results: { ...proof.results, [name]: 'failure' } }, 'abc', 'p', true));
+}
+const artifacts = ['site-built', 'ci-proof', 'release-desktop', 'release-live'].map(name => ({ name, expired: false }));
+assert(releaseArtifactsAvailable(artifacts));
+for (const artifact of artifacts) {
+  assert(!releaseArtifactsAvailable(artifacts.filter(a => a !== artifact)));
+  assert(!releaseArtifactsAvailable(artifacts.map(a => a === artifact ? { ...a, expired: true } : a)));
+}
 const fastProof = { ...proof, scope: 'fast', jobs: FAST_JOBS, fast: { base: 'a'.repeat(40), paths: [], reason: 'maintenance' } };
 assert(validProof(fastProof, 'abc', 'p'));
 assert(!validProof(fastProof, 'abc', 'p', true));
@@ -216,6 +233,8 @@ for (const path of browserChecks) {
 assert.deepEqual([...browserCheckPaths('jobs:\n  gas:\n    run: node scripts/check_gas.mjs\n  page:\n    run: node scripts/check_example.mjs\n    run: node scripts/check_gas.mjs\n  quick:\n    run: node scripts/check_quick.mjs\n')],
   ['scripts/check_example.mjs']);
 assert.deepEqual([...browserCheckPaths('jobs:\n  page:\n    # node scripts/check_comment.mjs\n    - name: node scripts/check_title.mjs\n      run: |\n        # node scripts/check_disabled.mjs\n        node scripts/check_example.mjs\n  gas:\n    - run: |\n        MODE=build node scripts/check_example.mjs\n')], []);
+assert.deepEqual([...checkJobPaths('jobs:\n  factory-cases:\n    run: node scripts/factory_shards.mjs run mode="$MODE"\n')]
+  .map(([path, jobs]) => [path, [...jobs]]), [['scripts/check_tasks.mjs', ['factory-cases']]], 'wrapped checks retain their actual owner');
 const gate = workflow.slice(workflow.indexOf('\n  ci-required:'));
 assert.match(gate, /if:.*always\(\)/);
 const jobIds = [...workflow.slice(workflow.indexOf('\njobs:\n')).matchAll(/^  ([\w-]+):$/gm)]
@@ -226,10 +245,10 @@ assert.match(workflow, /cancel-in-progress:.*refs\/heads\/main/);
 assert(!workflow.split('\n  site:')[1].split('\n  native-mac:')[0].includes("github.event_name != 'pull_request'"), 'PRs build the current site');
 assert.match(workflow, /node scripts\/check_ci_policy\.mjs/);
 const pipeline = workflow.split('\n  pipeline:')[1].split('\n  page:')[0];
-assert.match(pipeline, /needs: \[plan, quick\]/);
+assert.match(pipeline, /needs: \[plan, quick, runtime\]/);
 assert(!pipeline.includes('built-site'), 'SQL and protocol checks must not wait for artwork');
 const services = workflow.split('\n  services:')[1].split('\n  mcp:')[0];
-assert.match(services, /needs: \[plan, quick\]/);
+assert.match(services, /needs: \[plan, quick, runtime\]/);
 assert(!services.includes('built-site'));
 assert.match(workflow, /- id: scope\s+env:\s+GH_TOKEN:.*\n\s+run: node scripts\/ci_policy\.mjs/);
 const ship = readFileSync('.github/workflows/ship.yml', 'utf8');

@@ -23,6 +23,22 @@ rendering.
 
 # The browser and node checks
 
+`check_full_work.mjs` checks the expensive-work registry, required companion
+jobs and fail-closed producer gates. `check_ci_policy.mjs` rejects missing or
+expired prepared artifacts and proofs missing any required companion result.
+`check_edge_runtime.mjs` runs the public CLI helper on the release-pinned
+Workers runtime with the deployed compatibility settings. Its outbound service
+is local: fixed upstream URL, credential isolation, redirects, response limits
+and both default and arrow fetch calls need no external service. A real invalid
+Request constructor is the negative control.
+`check_release_core.mjs` runs build, simulate and solve on the shipping module
+and data packs, using the unchanged client-search fixture. Invalid weapons
+fail each actual door; a broken fixture must fail the release smoke.
+`check_release_readiness.py` verifies exact backend identity and canonical
+manifest bytes, and rejects stale versions, redirects and oversized responses
+through a real local HTTP server. Anonymous authentication failure is not a
+database schema readiness test.
+
 `import_secondary_calibration.py --exchange <exchange> --check` verifies every
 secondary form binding, all pinned source hashes and adopted/retained components.
 `every_secondary_form_matches_its_adopted_client_fields` checks compiled data and

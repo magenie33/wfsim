@@ -267,12 +267,9 @@ def main():
                 assert not (root / "private").exists()
             passed += 1
             with patch.dict(os.environ, {"GITHUB_EVENT_NAME": "pull_request"}):
-                try:
-                    stage.producer(source)
-                except ValueError:
-                    passed += 1
-                else:
-                    raise AssertionError("accepted PR producer")
+                record = stage.producer(source)
+                assert record["source"] == source and record["workflow"] == "CI"
+                passed += 1
             # SQL prerequisites are explicit; an HTTP authentication refusal is no proof.
             base = "1" * 40
             sql = root / "worker/pg/library.sql"; sql.parent.mkdir(parents=True); sql.write_text("DDL fixture")

@@ -12,6 +12,8 @@ import { captureScoreInputs } from './fetch_score_inputs.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
 
 const connection = process.env.WFSIM_SCORE_INPUTS_PG_URL;
+const transportOnly = process.argv.includes('--transport-only');
+assert(process.argv.slice(2).every(arg => arg === '--transport-only'), 'unknown score-input check argument');
 if (connection) assert(['127.0.0.1', 'localhost'].includes(new URL(connection).hostname), 'use a local test database');
 const client = connection ? postgres(connection, { max: 1, fetch_types: false, onnotice: () => {} }) : null;
 const schema = 'score_inputs_' + randomUUID().replaceAll('-', '');
@@ -88,32 +90,34 @@ try {
   assert.equal(empty.rows, 0); assert.equal(load('library.json'), '[]'); assert.equal(load('queue.ndjson'), '');
   console.log('ok: failed capture cannot publish partial inputs; oversized claims fail; empty claims read no source rows');
 
-  const binary = resolve(process.env.WFSIM_INVENTORY_BOARD_BIN || 'target/debug/wfsim-board');
-  const operator = await openInventoryOperator(binary);
-  let builds;
-  try {
-    const records = JSON.parse(readFileSync(new URL('../tests/gas/rows.json', import.meta.url))).slice(0, 4).map(r => r.record);
-    builds = await operator.call('describe', records.map((record, i) => ({ id: String(i), record })));
-  } finally { await operator.close(); }
-  assert(builds.every(b => b.candidate));
-  const ruler = 'standard_single_target';
-  for (const b of builds) await query("INSERT INTO builds(id,at,record) VALUES($1,'day',$2)", [b.candidate, JSON.stringify(b.record)]);
-  const nativeTasks = builds.slice(0, 2).map(b => ({ question: b.candidate, verb: 'simulate', demands: [{ producer: 'sweep',
-    ref: `${b.candidate}|${ruler}|base`, payload: { identity: b.candidate, ruler, mode: 'base' } }] }));
-  for (const b of builds.slice(0, 2)) await query("INSERT INTO queue(batch,build_id,ruler,mode) VALUES('old',$1,$2,'base')", [b.candidate, ruler]);
-  await captureScoreInputs({ sql, claim: async () => nativeTasks, directory, engine: 'test', max: 2 });
-  const full = JSON.stringify(builds.map(b => b.record)), limited = load('library.json');
-  const dry = (library, shard) => {
-    const result = spawnSync(binary, [ruler, '--dry-run', '--new-limit', '10', '--deadline', '60', '--shard', shard,
-      '--queue-in', join(directory, 'queue.ndjson'), '--facts-in', join(directory, 'facts-known.ndjson')],
-    { input: library, encoding: 'utf8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] });
-    assert.equal(result.status, 0, result.stderr);
-    return result.stderr.match(/dry-run: todo=\d+ work=\d+/)?.[0];
-  };
-  for (const shard of ['0/1', '0/2', '1/2']) {
-    const expected = dry(full, shard); assert(expected, 'native dry-run did not report work');
-    if (shard === '0/1') assert(expected.includes('todo=2 '), expected);
-    assert.equal(dry(limited, shard), expected, `bounded native scoring changed shard ${shard}`);
+  if (!transportOnly) {
+    const binary = resolve(process.env.WFSIM_INVENTORY_BOARD_BIN || 'target/debug/wfsim-board');
+    const operator = await openInventoryOperator(binary);
+    let builds;
+    try {
+      const records = JSON.parse(readFileSync(new URL('../tests/gas/rows.json', import.meta.url))).slice(0, 4).map(r => r.record);
+      builds = await operator.call('describe', records.map((record, i) => ({ id: String(i), record })));
+    } finally { await operator.close(); }
+    assert(builds.every(b => b.candidate));
+    const ruler = 'standard_single_target';
+    for (const b of builds) await query("INSERT INTO builds(id,at,record) VALUES($1,'day',$2)", [b.candidate, JSON.stringify(b.record)]);
+    const nativeTasks = builds.slice(0, 2).map(b => ({ question: b.candidate, verb: 'simulate', demands: [{ producer: 'sweep',
+      ref: `${b.candidate}|${ruler}|base`, payload: { identity: b.candidate, ruler, mode: 'base' } }] }));
+    for (const b of builds.slice(0, 2)) await query("INSERT INTO queue(batch,build_id,ruler,mode) VALUES('old',$1,$2,'base')", [b.candidate, ruler]);
+    await captureScoreInputs({ sql, claim: async () => nativeTasks, directory, engine: 'test', max: 2 });
+    const full = JSON.stringify(builds.map(b => b.record)), limited = load('library.json');
+    const dry = (library, shard) => {
+      const result = spawnSync(binary, [ruler, '--dry-run', '--new-limit', '10', '--deadline', '60', '--shard', shard,
+        '--queue-in', join(directory, 'queue.ndjson'), '--facts-in', join(directory, 'facts-known.ndjson')],
+      { input: library, encoding: 'utf8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] });
+      assert.equal(result.status, 0, result.stderr);
+      return result.stderr.match(/dry-run: todo=\d+ work=\d+/)?.[0];
+    };
+    for (const shard of ['0/1', '0/2', '1/2']) {
+      const expected = dry(full, shard); assert(expected, 'native dry-run did not report work');
+      if (shard === '0/1') assert(expected.includes('todo=2 '), expected);
+      assert.equal(dry(limited, shard), expected, `bounded native scoring changed shard ${shard}`);
+    }
+    console.log('ok: actual native scorer and both shards select identical work from complete and claimed-only libraries');
   }
-  console.log('ok: actual native scorer and both shards select identical work from complete and claimed-only libraries');
 } finally { await pg.close(); rmSync(directory, { recursive: true, force: true }); }

@@ -6,24 +6,32 @@ import { pathToFileURL } from 'node:url';
 import { hotfixPlan } from './ci_hotfix.mjs';
 import { checkFastChanges, fastJobs, fastScope } from './ci_fast.mjs';
 import { DEEP_SCOPE_GROUPS, RUST_SUITES } from './ci_rust.mjs';
+import { COMPANION_JOBS, companionJobs } from './full_work.mjs';
+import { FACTORY_CHECKS, factoryMatrix } from './factory_shards.mjs';
 
 export const BROWSER_JOBS = ['site', 'checks', 'services', 'pipeline', 'page', 'parity', 'page-rest', 'mcp', 'bot'];
 export const PRODUCT_JOBS = ['test', 'gas', 'engine-apart', 'published-board', ...BROWSER_JOBS];
 export const ALL_CI_JOBS = [...PRODUCT_JOBS, 'hotfix'];
 export const CONSUMER_JOBS = { mcp: ['site', 'checks', 'mcp'], bot: ['site', 'checks', 'bot'] };
 export const OPTIONAL_NATIVE_JOBS = ['native-mac', 'native-linux'];
+const SERVICE_CHECK_JOBS = [...BROWSER_JOBS, 'runtime', 'factory-cases', 'factory'];
 const CI_WIRING = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
   '.github/actions/site-tools/action.yml', '.github/actions/built-site/action.yml',
   '.github/actions/site-tools/install.sh', 'scripts/check_site_setup.mjs',
   'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs', 'scripts/check_ci_policy.mjs',
   'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs', 'scripts/check_ci_partitions.mjs',
-  'scripts/ci_fast.mjs', 'scripts/check_ci_fast.mjs'];
+  'scripts/ci_fast.mjs', 'scripts/check_ci_fast.mjs', 'scripts/full_work.mjs',
+  'scripts/check_full_work.mjs', 'scripts/check_edge_runtime.mjs', 'scripts/ci_metrics.mjs',
+  'scripts/factory_shards.mjs', 'scripts/check_factory_shards.mjs',
+  'scripts/release_readiness.py', 'scripts/check_release_readiness.py'];
 const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh',
   'scripts/live_board.sh', 'scripts/ship_builds.sh', 'scripts/retire_scores.mjs', 'scripts/ship_queue.sh',
   'scripts/fetch_facts.sh', 'scripts/ship_facts.sh', 'scripts/live_publish.mjs', '.github/workflows/queue.yml',
   'deploy/factoryd_grants.sql', 'scripts/check_rescore_paths.mjs', 'scripts/capture_compute_inventory.mjs',
   'scripts/build_batches.mjs', 'scripts/ship_family.mjs', 'scripts/ship_bot.py', '.github/workflows/scores.yml',
   'scripts/factoryd.mjs', 'scripts/pg_task_archive.py', 'scripts/ship_task_archive.py', 'scripts/check_task_archive.py',
+  'scripts/ship.py', 'scripts/release_stage.py', 'scripts/check_release_stage.py', 'scripts/check_ship_bot_assets.py',
+  'scripts/payload_manifest.py', 'scripts/release_desktop.py', 'scripts/pg/test_db.mjs', 'scripts/intake_batches.mjs',
   'deploy/wfsim-task-archive.service', 'deploy/wfsim-task-archive.timer'];
 
 export function checkJobPaths(workflow) {
@@ -40,9 +48,11 @@ export function checkJobPaths(workflow) {
         while (j + 1 < lines.length && (!lines[j + 1].trim() || lines[j + 1].search(/\S/) > indent)) commands.push(lines[++j]);
       } else commands.push(run[1]);
       for (const line of commands.filter(line => !line.trimStart().startsWith('#'))) {
-        for (const command of line.matchAll(/\bnode (scripts\/check_[\w-]+\.mjs)\b/g)) {
-          if (!paths.has(command[1])) paths.set(command[1], new Set());
-          paths.get(command[1]).add(sections[i]);
+        const invoked = [...line.matchAll(/\bnode (scripts\/check_[\w-]+\.mjs)\b/g)].map(m => m[1]);
+        if (/\bnode scripts\/factory_shards\.mjs run\b/.test(line)) invoked.push(FACTORY_CHECKS.command[1]);
+        for (const path of invoked) {
+          if (!paths.has(path)) paths.set(path, new Set());
+          paths.get(path).add(sections[i]);
         }
       }
     }
@@ -50,7 +60,7 @@ export function checkJobPaths(workflow) {
   return paths;
 }
 export function browserCheckPaths(workflow) {
-  return new Set([...checkJobPaths(workflow)].filter(([, jobs]) => [...jobs].every(j => BROWSER_JOBS.includes(j))).map(([p]) => p));
+  return new Set([...checkJobPaths(workflow)].filter(([, jobs]) => [...jobs].every(j => SERVICE_CHECK_JOBS.includes(j))).map(([p]) => p));
 }
 const owners = checkJobPaths(readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8'));
 
@@ -76,7 +86,7 @@ export function classify(paths, force = false, verifiedBase = true) {
       || path === 'scripts/mcp_test_loader.mjs') kind = 'mcp';
     else if (/^bot\//.test(path)) kind = 'bot';
     else if (/^worker\//.test(path)) kind = 'services';
-    else if (owners.has(path) && [...owners.get(path)].every(j => BROWSER_JOBS.includes(j))) {
+    else if (owners.has(path) && [...owners.get(path)].every(j => SERVICE_CHECK_JOBS.includes(j))) {
       const jobs = [...owners.get(path)];
       kind = jobs.every(j => j === 'mcp') ? 'mcp' : jobs.every(j => j === 'bot') ? 'bot' : 'browser-check';
     }
@@ -99,7 +109,7 @@ export function classify(paths, force = false, verifiedBase = true) {
     deep: force || !paths.length || !verifiedBase
       || paths.some(p => /^(optimizer\/|webapi\/src\/optimize(?:\.rs|\/))/.test(p))
       || reasons.some(r => r.kind === 'full' && !CI_WIRING.includes(r.path) && !NON_SEARCH_TOOLS.includes(r.path)
-        && !/^(engine\/|data\/|webapi\/src\/|native\/|wasm\/|cli\/|web\/)/.test(r.path)) };
+        && !/^(engine\/|data\/|webapi\/src\/|native\/|wasm\/|cli\/|web\/|desktop\/)/.test(r.path)) };
 }
 
 export function policyDigest() {
@@ -141,12 +151,16 @@ export function assertGate(plan, needs, reused = false) {
     const expected = !reused && plan.jobs.includes(name) ? 'success' : 'skipped';
     if (needs[name]?.result !== expected) throw new Error(`${name}: expected ${expected}, got ${needs[name]?.result || 'missing'}`);
   }
+  for (const name of COMPANION_JOBS) {
+    const expected = !reused && companionJobs(plan.jobs, !!plan.fast).includes(name) ? 'success' : 'skipped';
+    if (needs[name]?.result !== expected) throw new Error(`${name}: expected ${expected}, got ${needs[name]?.result || 'missing'}`);
+  }
   for (const [name, job] of Object.entries(needs)) {
     if (OPTIONAL_NATIVE_JOBS.includes(name)) {
       if (!['success', 'failure', 'skipped', 'cancelled'].includes(job.result)) throw new Error(`${name}: missing result`);
       continue;
     }
-    if (!ALL_CI_JOBS.includes(name) && job.result !== 'success') throw new Error(`${name}: ${job.result}`);
+    if (![...ALL_CI_JOBS, ...COMPANION_JOBS].includes(name) && job.result !== 'success') throw new Error(`${name}: ${job.result}`);
   }
   for (const name of OPTIONAL_NATIVE_JOBS) {
     if (!needs[name]) throw new Error(`${name}: missing`);
@@ -190,6 +204,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     plan.deep = false;
   }
   output({ plan: jobPlan(plan), policy: policyDigest(), native: plan.jobs.includes('gas'), hotfix_matrix: plan.matrix || { group: [] },
+    factory_matrix: { include: factoryMatrix() },
+    ...Object.fromEntries(COMPANION_JOBS.map(j => [j.replaceAll('-', '_'), companionJobs(plan.jobs, !!plan.fast).includes(j)])),
     test_matrix: { suite: [...RUST_SUITES, ...(plan.deep ? Object.keys(DEEP_SCOPE_GROUPS) : [])] },
     ...Object.fromEntries(ALL_CI_JOBS.map(j => [j.replaceAll('-', '_'), plan.jobs.includes(j)])) });
   const summary = `## CI scope: ${plan.scope}\n\nSelected: ${plan.jobs.join(', ') || 'quick checks only'}.\n\n${plan.forced ? 'Full validation requested, baseline unverified, or no reliable diff available.\n' : ''}\n${plan.reasons.map(r => `- ${JSON.stringify(r.path)}: ${r.kind}`).join('\n')}\n`;
