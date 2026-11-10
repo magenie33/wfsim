@@ -24,6 +24,15 @@ const appraisalReplay = (w, job) => headlessAppraisalReplay(pageSay(), w, job, B
 
 const cardBox = (head, body) => headlessCardBox(head, body);
 
+async function renderNonaHelpCard(topic) {
+  document.body.removeAttribute("data-card-ready");
+  const box=$("card-page"), request=headlessNonaHelpRequest(META);
+  const guide=headlessNonaHelp(pageSay(),request ? await api("/api/riven",request) : null,topic);
+  box.classList.remove("lc-way-in");
+  box.innerHTML=headlessNonaHelpCard(guide,LIVE_ORIGIN);
+  document.body.dataset.cardReady="1";
+}
+
 /// `ask` is `cardParams()` read BEFORE the weapon opened: opening one restores
 /// its saved build, which rewrites the address and takes the query with it.
 async function renderCardPage(w, ask) {

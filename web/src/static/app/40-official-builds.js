@@ -344,7 +344,10 @@ function boardFileSignal(state) {
 }
 const boardHasCell = (id, benchmark) => BOARD_HAVE.has(id) && (!boardFiles.has(id) || boardFiles.get(id).loaded.has(boardCellDir(benchmark)));
 function boardRequestedDirs(id) {
-  if (/\/card\/?$/.test(location.pathname)) return benchScenes();
+  if (/\/card\/?$/.test(location.pathname)) {
+    const ask=cardParams();
+    return ask.kind === "appraise" ? benchScenes() : [boardCellDir(ask.ruler || libraryDefaultBenchmark())];
+  }
   const query = new URLSearchParams(location.search);
   const benchmark = query.get("bench") || (finder.weapon === id && modSuffix() === "build-library" ? finder.b
     : modSuffix() === "riven-analyst" ? raRuler : null) || libraryDefaultBenchmark();

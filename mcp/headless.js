@@ -114,6 +114,80 @@ function headlessWitnessesHtml(say, witnesses, origin) {
     return `${headlessEsc(say.t(i ? "Verified by" : "Calculated by"))}: ${who}`;
   }).join(" · ");
 }
+function headlessNonaHelpRequest(meta) {
+  const weapon = (meta.weapons || []).find(w => w.id === "torid") || (meta.weapons || []).find(w => w.riven_class === "rifle");
+  return weapon ? {weapon:weapon.id,rank:meta.riven_rules?.max_rank ?? 8,
+    bonuses:[{id:"critical_damage",roll:1},{id:"multishot",roll:1},{id:"weapon_recoil",roll:1}],
+    malus:{id:"damage_to_corpus",roll:1}} : null;
+}
+function headlessBoardFile(meta, weapon, ruler) {
+  const selected=(meta.benchmarks || []).find(b=>b.id===ruler);
+  if (ruler && !selected) return null;
+  return `/board/${selected?.cell_dir ? selected.cell_dir+"/" : ""}${encodeURIComponent(weapon)}.json`;
+}
+function headlessNonaHelp(say, riven, topic = "commands") {
+  const t=say.t, all=say.meta.benchmarks || [], primary=all.find(b=>b.primary) || all[0];
+  const request=headlessNonaHelpRequest(say.meta), weapon=say.meta.weapons?.find(w=>w.id===request?.weapon), name=weapon?.name || "weapon";
+  const full=b=>headlessBenchmarkName(say.meta,b.id,t), short=b=>t(b.name.split(" · ")[0]);
+  const groups=all.filter(b=>!b.base || b.base===b.id).map(base=>({id:base.id,name:short(base),
+    rows:all.filter(b=>(b.base || b.id)===base.id).map(b=>({id:b.id,name:full(b),primary:!!b.primary}))}));
+  const complex=all.find(b=>b.base==="standard_multi_target" && b.cell?.scene==="archimedea500" && b.cell?.shooting==="aimed_body")
+    || all.find(b=>b.cell?.scene && b.cell?.shooting) || primary;
+  const other=all.find(b=>b.id==="demolisher") || primary;
+  const words=say.lang==="zh" ? {positive:"双暴 多重",any:"负任意",negative:"负弹匣",riven:"裂罅"} :
+    {positive:"critical chance critical damage multishot",any:"any negative",negative:"-magazine capacity",riven:"riven"};
+  const fx=riven?.ok && !riven.illegal?.length && riven.stats?.length === 4
+    ? `fx ${name} ${complex?.id || ""} ${riven.stats.map(stat=>say.tf(stat.text)).join(" ")}` : "";
+  const entries=[
+    {command:"zk",title:t("Find a riven ranking"),syntax:t("zk weapon [ruler] [bonus stats] [malus] [count]"),
+      note:t("Combine three bonus stats, a malus condition and a result count. A named malus is stricter than any malus."),
+      examples:[`zk ${name} ${complex?.id || ""} ${words.positive} ${words.any} 10`,
+        `zk ${name} ${other ? short(other) : ""} ${words.positive} ${words.negative} 10`]},
+    {command:"pz",title:t("Find a measured build"),syntax:t("pz weapon [ruler] [riven] [count]"),
+      note:t("Add riven to request builds with one; omit it to request riven-free builds."),
+      examples:[`pz ${name} ${complex?.id || ""} ${words.riven} 10`,`pz ${name} ${other ? short(other) : ""} 10`]},
+    {command:"fx",title:t("Calculate your own riven"),syntax:t("fx weapon [ruler] each stat with its card value"),
+      note:t("Use max-rank card values: two or three bonuses and at most one malus. Keep printed signs and faction multipliers; negative recoil can be a bonus."),
+      examples:fx ? [fx] : [], unavailable:fx ? "" : t("Use the values printed on your own card.")},
+    {command:"gx",title:t("Find compute contributions"),syntax:t("gx [count or public nickname]"),
+      note:t("Use a count for the ranking, or a contributor's exact public nickname for their record."),examples:["gx 10"]},
+  ];
+  return {lang:say.lang,topic:topic==="rulers"?"rulers":"commands",title:t(topic==="rulers"?"Choose a board (ruler)":"Nona · Command guide"),
+    intro:t("Choose what to do, select a ruler, then add your conditions."),groups,entries,
+    default:t("Without a ruler, the command uses {ruler}.").replace("{ruler}",primary ? full(primary) : "—"),
+    rulerNote:t("Short names select default conditions. A full ruler ID selects enemy strength and shooting conditions."),
+    complex:complex ? {id:complex.id,name:full(complex)} : null,
+    optional:t("Square brackets are optional; do not type the brackets. Counts are 1–10 for zk, pz and gx."),
+    next:t("Send help rulers for the complete board IDs and conditions."),
+    results:t("Riven gain compares with the best riven-free build under the same ruler. FX delivers after replay; independent agreement still controls contribution credit."),
+    credit:t("Board entries retain calculation and verification attribution. An FX result names its delivery author. Account identity settings control public names and labels.")};
+}
+function headlessNonaHelpText(guide, origin, caption = false) {
+  const link=origin+"/nona/help/card"+(guide.topic==="rulers"?"?topic=rulers":"");
+  if (guide.topic === "rulers" && !caption) return [guide.title,guide.default,guide.rulerNote,
+    ...guide.groups.flatMap(group=>[group.name,...group.rows.map(row=>row.id)]),link].join("\n");
+  if (caption) return [guide.title,guide.rulerNote,...guide.entries.slice(0,3).map(entry=>entry.examples[0]).filter(Boolean),guide.next,link].join("\n");
+  return [guide.title,guide.intro,guide.default,guide.rulerNote,...guide.groups.map(group=>`${group.name}: ${group.id}`),
+    guide.complex ? guide.complex.name+"\n"+guide.complex.id : "",
+    ...guide.entries.flatMap(entry=>[entry.title,entry.syntax,entry.note,...entry.examples,entry.unavailable || ""]),
+    guide.optional,guide.results,guide.credit,guide.next,link].filter(Boolean).join("\n");
+}
+function headlessNonaHelpCard(guide, origin) {
+  const esc=headlessEsc, rulers=guide.topic==="rulers";
+  const examples=entry=>entry.examples.map(command=>`<pre class="nh-command"><code>${esc(command)}</code></pre>`).join("");
+  const group=part=>headlessCardBox(`<b>${esc(part.name)}</b>`,part.rows.map(row=>
+    `<div class="nh-ruler-row"><code>${esc(row.id)}</code><span>${esc(row.name)}</span></div>`).join(""));
+  return `<article class="nona-help"><header class="lc-top"><span class="brand">WF<span>Sim</span></span><span class="sb-empty">wfsim.app</span></header>
+    <h1 class="lc-title">${esc(guide.title)}</h1><p class="nh-intro">${esc(guide.intro)}</p>
+    ${headlessCardBox(`<b>ruler</b>`,`<p>${esc(guide.default)}</p><p>${esc(guide.rulerNote)}</p>
+      <div class="nh-families">${guide.groups.map(part=>`<span><b>${esc(part.name)}</b><code>${esc(part.id)}</code></span>`).join("")}</div>
+      ${guide.complex ? `<p class="nh-scope">${esc(guide.complex.name)}</p><pre class="nh-command"><code>${esc(guide.complex.id)}</code></pre>` : ""}`)}
+    ${rulers ? `<div class="nh-ruler-grid">${guide.groups.map(group).join("")}</div>` : guide.entries.map(entry=>
+      headlessCardBox(`<b class="nh-key">${esc(entry.command)}</b><b>${esc(entry.title)}</b>`,
+        `<p class="nh-syntax">${esc(entry.syntax)}</p>${examples(entry)}<p>${esc(entry.note)}</p>${entry.unavailable ? `<p>${esc(entry.unavailable)}</p>` : ""}`)).join("")}
+    <p class="nh-foot">${esc(guide.optional)}</p><p class="nh-foot">${esc(guide.results)}</p><p class="nh-foot">${esc(guide.credit)}</p>
+    <footer class="lc-foot"><span>${esc(guide.next)}</span><span>${esc(origin.replace(/^https?:\/\//,""))}/nona/help/card</span></footer></article>`;
+}
 function headlessBoardRecord(weapon, row) {
   const riven = row.riven || (row.riven_pos?.length ? { bonuses: row.riven_pos, malus: row.riven_neg, rolls: row.riven_rolls } : null);
   return { weapon, mods: row.mods || [], evolutions: row.evolutions || [], arcanes: row.arcanes || [],
@@ -926,7 +1000,7 @@ const rivenQueryFold = (x) => String(x || "").normalize("NFKC").toLowerCase()
 function rivenQuery(pool, locales, text) {
   const words = [];
   for (const w of rivenStatWords(pool, locales)) words.push({ ...w, w: rivenQueryFold(w.w) });
-  for (const l of locales || []) {
+  for (const l of [{riven_query_words:{any_malus:["any negative","any malus"],no_malus:["no negative","no malus"]}}, ...(locales || [])]) {
     for (const [role, ws] of Object.entries(l.riven_query_words || {})) for (const w of ws) words.push({ w: rivenQueryFold(w), role });
   }
   words.sort((a, b) => b.w.length - a.w.length);
@@ -1933,18 +2007,19 @@ const HEADLESS_QUERIES = [
     anchor: "#build-finder",
     args: {
       weapon: HEADLESS_WEAPON_ARG,
+      ruler: { kind: "string", what: "only this exact benchmark cell id" },
       riven: { kind: "string", what: "\"without\" (default), \"with\" or \"any\"", enum: () => ["without", "with", "any"] },
       mode: { kind: "string", what: "only this mode id" },
       limit: { kind: "number", min: 1, max: BOARD_HEADS_PLACES, what: "rows per group, default 3" },
       distinct: { kind: "boolean", what: "one row per place, its preferred build; `limit` counts places" },
       pooled: { kind: "boolean", what: "rank a ruler's modes together" },
     },
-    async run({ weapon, riven = "without", mode: m, limit = 3, distinct = false, pooled = false }, host) {
+    async run({ weapon, ruler, riven = "without", mode: m, limit = 3, distinct = false, pooled = false }, host) {
       const w = headlessWeapon(host, weapon);
       if (w.ok === false) return w;
       // THE HEADS ANSWER THIS AS EVERY ROW DOES (`boardHeads`, `limit` at most
       // `BOARD_HEADS_PLACES`); a host without them reads the whole board.
-      const rows = await (host.boardHeads ? host.boardHeads(w.id) : host.board(w.id));
+      const rows = await (host.boardHeads ? host.boardHeads(w.id, ruler) : host.board(w.id, ruler));
       if (!rows) return headlessNo("board_not_loaded", { because: "this weapon has no board rows yet" });
       const benches = host.meta().benchmarks || [];
       const name = headlessNameOf(host.meta());
@@ -1952,7 +2027,7 @@ const HEADLESS_QUERIES = [
       const evo = (id) => (evos.find((x) => x.id === id) || { name: id }).name;
       const ranked = rankBoard(rows, benches.map((b) => b.id), w.modes);
       const scoped = (pooled ? pooledRanking(ranked) : ranked)
-        .filter((x) => (riven === "any" || x.riven === (riven === "with")) && (!m || x.mode === m));
+        .filter((x) => (!ruler || x.row.benchmark === ruler) && (riven === "any" || x.riven === (riven === "with")) && (!m || x.mode === m));
       const picked = distinct
         ? distinctTop(scoped, limit, (x) => `${x.row.benchmark}#${pooled ? "" : x.mode}#${x.riven}`, host.meta())
         : scoped.filter((x) => x.rank <= limit);
@@ -2026,7 +2101,7 @@ const HEADLESS_QUERIES = [
     async run({ weapon, ruler, mode: m, bonuses = [], malus = null, pooled = false }, host) {
       const w = headlessWeapon(host, weapon);
       if (w.ok === false) return w;
-      const rows = await host.board(w.id);
+      const rows = await host.board(w.id, ruler);
       if (!rows) return headlessNo("board_not_loaded", { because: "this weapon has no board rows yet" });
       const meta = host.meta();
       const name = headlessNameOf(meta);
@@ -2094,4 +2169,4 @@ const HEADLESS_QUERIES = [
 export { HEADLESS_ABOUT, HEADLESS_QUERIES, HEADLESS_RETIRED, headlessCheckArgs, headlessSchema, headlessNo, headlessToolName, headlessUnknown,
   headlessSeat, headlessStateAxes, headlessWeapon, headlessWeaponPath, headlessWeaponAt, rivenStatNames, rivenStatNameEn, ocrFold, rivenQuery, readRivenLines, boardMeasuredAt, measuredText, distinctTop, pooledRanking, pooledRivens,
   placed, placeAmong, tieGroups, boardRowParts, rankBoard, boardHeads, BOARD_HEADS_PLACES, headlessRivenGainRequest,
-  headlessSpeaker, headlessContributorText, headlessWitnessesText, headlessWitnessesHtml, headlessBoardRecord, headlessMeasurementWitnesses, headlessCardBoard, headlessCardAsk, headlessLongCard, headlessRivenAnswer, headlessAppraisalReplay, headlessVerdictRecord, headlessLibraryFacts, headlessLibrarySummary };
+  headlessBoardFile, headlessBenchmarkName, headlessNonaHelpRequest, headlessNonaHelp, headlessNonaHelpText, headlessNonaHelpCard, headlessSpeaker, headlessContributorText, headlessWitnessesText, headlessWitnessesHtml, headlessBoardRecord, headlessMeasurementWitnesses, headlessCardBoard, headlessCardAsk, headlessLongCard, headlessRivenAnswer, headlessAppraisalReplay, headlessVerdictRecord, headlessLibraryFacts, headlessLibrarySummary };

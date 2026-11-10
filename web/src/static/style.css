@@ -4222,3 +4222,22 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .identity-settings input[type="checkbox"]{width:auto;margin:0}
 .identity-settings .field label{flex-direction:column;align-items:stretch}
 .identity-settings select{width:100%}
+
+.nona-help{font-size:16px;line-height:1.5}
+.nona-help .lc-title{font-size:29px}
+.nona-help .lc-head{font-size:20px;gap:12px}
+.nona-help p{margin:8px 0}
+.nh-intro{color:var(--text-2);margin-bottom:16px!important}
+.nh-key{color:var(--accent);font:700 24px ui-monospace,monospace}
+.nh-syntax{font-size:14px;color:var(--text-2)}
+.nh-command{white-space:pre-wrap;overflow-wrap:anywhere;font:500 15px/1.6 ui-monospace,monospace;background:var(--plane);border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin:9px 0;color:var(--text)}
+.nh-families{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.nh-families>span{display:flex;flex-direction:column;border-left:3px solid var(--accent);padding:4px 10px}
+.nh-families code{font-size:12px;overflow-wrap:anywhere;color:var(--text-2)}
+.nh-scope,.nh-foot{font-size:14px;color:var(--text-2)}
+.nh-ruler-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.nh-ruler-grid .lc-box{padding:10px;min-width:0}
+.nh-ruler-row{display:flex;flex-direction:column;gap:3px;padding:9px 0;border-top:1px solid var(--line)}
+.nh-ruler-row code{font-size:12px;overflow-wrap:anywhere}
+.nh-ruler-row span{font-size:11px;color:var(--text-2)}
+.nona-help .lc-foot{justify-content:space-between;align-items:start}

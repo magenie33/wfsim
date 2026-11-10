@@ -968,18 +968,19 @@ const HEADLESS_QUERIES = [
     anchor: "#build-finder",
     args: {
       weapon: HEADLESS_WEAPON_ARG,
+      ruler: { kind: "string", what: "only this exact benchmark cell id" },
       riven: { kind: "string", what: "\"without\" (default), \"with\" or \"any\"", enum: () => ["without", "with", "any"] },
       mode: { kind: "string", what: "only this mode id" },
       limit: { kind: "number", min: 1, max: BOARD_HEADS_PLACES, what: "rows per group, default 3" },
       distinct: { kind: "boolean", what: "one row per place, its preferred build; `limit` counts places" },
       pooled: { kind: "boolean", what: "rank a ruler's modes together" },
     },
-    async run({ weapon, riven = "without", mode: m, limit = 3, distinct = false, pooled = false }, host) {
+    async run({ weapon, ruler, riven = "without", mode: m, limit = 3, distinct = false, pooled = false }, host) {
       const w = headlessWeapon(host, weapon);
       if (w.ok === false) return w;
       // THE HEADS ANSWER THIS AS EVERY ROW DOES (`boardHeads`, `limit` at most
       // `BOARD_HEADS_PLACES`); a host without them reads the whole board.
-      const rows = await (host.boardHeads ? host.boardHeads(w.id) : host.board(w.id));
+      const rows = await (host.boardHeads ? host.boardHeads(w.id, ruler) : host.board(w.id, ruler));
       if (!rows) return headlessNo("board_not_loaded", { because: "this weapon has no board rows yet" });
       const benches = host.meta().benchmarks || [];
       const name = headlessNameOf(host.meta());
@@ -987,7 +988,7 @@ const HEADLESS_QUERIES = [
       const evo = (id) => (evos.find((x) => x.id === id) || { name: id }).name;
       const ranked = rankBoard(rows, benches.map((b) => b.id), w.modes);
       const scoped = (pooled ? pooledRanking(ranked) : ranked)
-        .filter((x) => (riven === "any" || x.riven === (riven === "with")) && (!m || x.mode === m));
+        .filter((x) => (!ruler || x.row.benchmark === ruler) && (riven === "any" || x.riven === (riven === "with")) && (!m || x.mode === m));
       const picked = distinct
         ? distinctTop(scoped, limit, (x) => `${x.row.benchmark}#${pooled ? "" : x.mode}#${x.riven}`, host.meta())
         : scoped.filter((x) => x.rank <= limit);
@@ -1061,7 +1062,7 @@ const HEADLESS_QUERIES = [
     async run({ weapon, ruler, mode: m, bonuses = [], malus = null, pooled = false }, host) {
       const w = headlessWeapon(host, weapon);
       if (w.ok === false) return w;
-      const rows = await host.board(w.id);
+      const rows = await host.board(w.id, ruler);
       if (!rows) return headlessNo("board_not_loaded", { because: "this weapon has no board rows yet" });
       const meta = host.meta();
       const name = headlessNameOf(meta);

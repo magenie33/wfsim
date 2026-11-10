@@ -39,7 +39,7 @@ export async function loadEngine({ site = SITE } = {}) {
     const hit = boards.get(url);
     if (hit && Date.now() - hit.at < BOARD_TTL_MS) return hit.rows;
     const r = await fetch(url);
-    const rows = r.ok ? await r.json() : null;
+    const rows = r.ok && !r.headers.get("content-type")?.includes("text/html") ? await r.json() : null;
     boards.set(url, { at: Date.now(), rows });
     return rows;
   };
@@ -47,8 +47,9 @@ export async function loadEngine({ site = SITE } = {}) {
   const host = {
     meta: () => meta,
     names: () => Object.values(i18n),
-    async board(id) {
-      return kept(`${site}/board/${id}.json`);
+    async board(id, ruler) {
+      const path = headless.headlessBoardFile(meta,id,ruler);
+      return path ? kept(site+path) : null;
     },
     async boardNow(id, ruler) {
       const dir = meta.benchmarks.find(item => item.id === ruler)?.cell_dir;
@@ -67,8 +68,8 @@ export async function loadEngine({ site = SITE } = {}) {
       }}),
     // THE HEADS, for a top-N answer (docs/BOARD.md §"The heads"); every row
     // where a weapon has none yet.
-    async boardHeads(id) {
-      return (await kept(`${site}/board/heads/${id}.json`)) || host.board(id);
+    async boardHeads(id, ruler) {
+      return (await kept(`${site}/board/heads/${id}.json`)) || host.board(id, ruler);
     },
     api: async (path, body) => api(path, body),
     tr: (s) => (zh.ui && zh.ui[s]) || s,

@@ -183,7 +183,7 @@ const rivenQueryFold = (x) => String(x || "").normalize("NFKC").toLowerCase()
 function rivenQuery(pool, locales, text) {
   const words = [];
   for (const w of rivenStatWords(pool, locales)) words.push({ ...w, w: rivenQueryFold(w.w) });
-  for (const l of locales || []) {
+  for (const l of [{riven_query_words:{any_malus:["any negative","any malus"],no_malus:["no negative","no malus"]}}, ...(locales || [])]) {
     for (const [role, ws] of Object.entries(l.riven_query_words || {})) for (const w of ws) words.push({ w: rivenQueryFold(w), role });
   }
   words.sort((a, b) => b.w.length - a.w.length);

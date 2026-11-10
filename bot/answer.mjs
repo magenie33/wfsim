@@ -23,8 +23,9 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   const boardAttribution = async (weapon, url) => {
     try {
       if (!host?.board || !host?.computationNames) return {entries:[],names:new Map()};
-      const boardRows = await host.board(weapon.id) || [];
-      const selected = headless.headlessCardBoard(say, weapon, headless.headlessCardAsk(new URL(url).search), boardRows);
+      const ask = headless.headlessCardAsk(new URL(url).search);
+      const boardRows = await (ask.kind === "pz" && host.boardHeads ? host.boardHeads(weapon.id, ask.ruler) : host.board(weapon.id, ask.ruler)) || [];
+      const selected = headless.headlessCardBoard(say, weapon, ask, boardRows);
       return {...selected,boardRows,names:await host.computationNames(weapon.id,selected.rows)};
     } catch (_) { return {entries:[],names:new Map()}; }
   };
@@ -43,7 +44,8 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
       const full = nameFold(n);
       return (full.endsWith("prime") ? [full, full.slice(0, -5) + "p"] : [full]).map((n) => ({ w, n }));
     })).sort((a, b) => b.n.length - a.n.length);
-  const rulerShort = (b) => t(b.name).split(" · ")[0];
+  const rulerShort = b => t(b.name.split(" · ")[0]);
+  const rulerName = b => headless.headlessBenchmarkName(meta, b.id, t);
   const statNames = (cls) => headless.rivenStatNames((meta.riven_stats || {})[cls] || [], [zh]);
   const statZh = (cls, id) => {
     const s = ((meta.riven_stats || {})[cls] || []).find((x) => x.id === id);
@@ -89,22 +91,24 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   /// words around it; `ruler` is null when none is named.
   const benches = meta.benchmarks || [];
   function rulerIn(left) {
-    const names = benches.flatMap((b) => [squash(rulerShort(b)), squash(b.name.split(" · ")[0])].map((n) => ({ b, n })))
-      .filter((x) => x.n).sort((a, z) => z.n.length - a.n.length);
+    const names = benches.flatMap(b => [b.id, b.name, rulerName(b),
+      ...(!b.base || b.base === b.id ? [rulerShort(b), b.name.split(" · ")[0]] : [])]
+      .map(name => ({b,n:squash(name)}))).filter(x => x.n).sort((a,z) => z.n.length-a.n.length);
     const hit = names.find((x) => left.includes(x.n));
     return hit ? { ruler: hit.b, left: left.replace(hit.n, "") } : { ruler: null, left };
   }
   const defaultRuler = () => benches.find((b) => b.primary) || benches[0];
-  const rulerList = () => benches.map(rulerShort).join("、");
+  const rulerList = () => [...new Set(benches.filter(b=>!b.base || b.base===b.id).map(rulerShort))].join("、");
 
-  const help = () => [
-    t("Nona here. Builds, rivens, or your own riven gain? Pick a command. (￣ー￣)ゞ"),
-    t("zk weapon [ruler] [stats] [count]: look up the riven ranking and its calculation witnesses."),
-    t("pz weapon [ruler] [riven] [count]: look up measured builds; add riven for builds with one."),
-    t("fx weapon [ruler] each stat with its number: submit your riven for community search; Nona replays the result before posting it."),
-    t("gx [name or count]: look up lifetime, recent and weekly compute contributions; use a public nickname to find one person."),
-    t("Try {a}, or {b}.", { a: "zk 托里德 双暴 负任意 5", b: "pz 托里德 爆破使 紫卡 3" }),
-  ].join("\n");
+  const help = async topic => {
+    const request = headless.headlessNonaHelpRequest(meta);
+    let riven = null;
+    try { if (request) riven = await host.api("/api/riven", request); } catch (_) { /* other help remains available */ }
+    const guide = headless.headlessNonaHelp(say, riven, /^(rulers?|标尺|榜单)$/i.test(topic || "") ? "rulers" : "commands");
+    return {line:headless.headlessNonaHelpText(guide,SITE,true),card:SITE+"/nona/help/card"+(guide.topic==="rulers"?"?topic=rulers":""),
+      text:headless.headlessNonaHelpText(guide,SITE),cardData:{help:guide},cardVersion:JSON.stringify(guide)};
+  };
+
   const UNREAD = "I could not read “{word}”. Use the card's stat name, or an alias such as 双暴, 暴伤 or 负任意. (・_・;)";
   const NO_WEAPON = "Which weapon? Add its name, like {e}. (・_・;)";
   const NOT_FOUND = "I could not find that weapon. Check the name; Chinese and English both work. (・_・;)";
@@ -114,41 +118,39 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     if (!rest) return t(NO_WEAPON, { e: "pz 托里德 3" });
     const hit = weaponOf(rest);
     if (!hit) return t(NOT_FOUND);
-    const { n, left: afterCount } = countOf(hit.left);
-    // "紫卡" anywhere after the weapon asks for riven builds; what is left names the ruler.
-    const rivenWords = ((zh.riven_query_words || {}).with_riven || []).map(squash).sort((a, b) => b.length - a.length);
-    const said = rivenWords.find((x) => x && afterCount.includes(x));
-    const named = rulerIn(said ? afterCount.replace(said, "") : afterCount);
-    // A WORD THAT IS NOT A RULER IS SAID, never quietly read as the default one.
-    if (named.left) return t("I could not read “{word}”. Choose a ruler from {list}; add riven for a build with one. (・_・;)", { word: named.left, list: rulerList() });
+    const named = rulerIn(hit.left);
+    const { n, left: afterCount } = countOf(named.left);
+    const rivenWords = ((zh.riven_query_words || {}).with_riven || []).map(squash).sort((a,b)=>b.length-a.length);
+    const said = rivenWords.find(word => word && afterCount.includes(word));
+    const unread = said ? afterCount.replace(said, "") : afterCount;
+    if (unread) return t("I could not read “{word}”. Choose a ruler from {list}; add riven for a build with one. (・_・;)", {word:unread,list:rulerList()});
     const ruler = named.ruler || defaultRuler();
-    const r = await run("builder.board.read", { weapon: hit.w.id, riven: said ? "with" : "without", limit: n || 3, distinct: true, pooled: true });
+    const r = await run("builder.board.read", { weapon: hit.w.id, ruler: ruler.id, riven: said ? "with" : "without", limit: n || 3, distinct: true, pooled: true });
     if (r.ok === false) return t(NOT_MEASURED);
     const rows = r.rows.filter((x) => x.ruler_id === ruler.id);
     if (!rows.length) return t(NOT_MEASURED);
     const shown = rows.length;
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=pz&ruler=${encodeURIComponent(ruler.id)}&n=${shown}${said ? "&rv=1" : ""}`;
     const attribution = await boardAttribution(hit.w, card);
-    const text = [`${weaponName(hit.w)} · ${rulerShort(ruler)}`]
+    const text = [`${weaponName(hit.w)} · ${rulerName(ruler)}`]
       .concat(rows.map((x, i) => `#${x.rank}${x.tied > 1 ? `（${t("{n} builds tie", { n: x.tied })}）` : ""} ${x.score}  ${(x.build ? x.build.mods.map(modName) : x.mods).join("、")}${
         x.build && x.build.arcane.length ? ` | ${t("Arcane")}: ${x.build.arcane.map(arcaneName).join("、")}` : ""}${
         x.build && x.build.evolutions.length ? ` | ${t("Evolutions")}: ${x.build.evolutions.map(evoName).join("、")}` : ""}\n  ${attributionText(attribution,attribution.entries[i]?.row)}`))
       .join("\n");
     return { line: t(said ? "Found {n} riven builds for {w} under {ruler}. (￣ー￣)ゞ" : "Found {n} builds for {w} under {ruler}. (￣ー￣)ゞ",
-      { w: weaponName(hit.w), ruler: rulerShort(ruler), n: shown }), card, text, ...cardAttribution(attribution) };
+      { w: weaponName(hit.w), ruler: rulerName(ruler), n: shown }), card, text, ...cardAttribution(attribution) };
   }
 
   async function zk(rest) {
     if (!rest) return t(NO_WEAPON, { e: "zk 托里德 双暴" });
     const hit = weaponOf(rest);
     if (!hit) return t(NOT_FOUND);
-    const { n, left: afterCount } = countOf(hit.left);
-    const cls = hit.w.riven_class;
-    const named = rulerIn(afterCount);
-    const ask = headless.rivenQuery((meta.riven_stats || {})[cls] || [], [zh], named.left);
+    const named = rulerIn(hit.left), ruler = named.ruler || defaultRuler();
+    const { n, left } = countOf(named.left), cls = hit.w.riven_class;
+    const ask = headless.rivenQuery((meta.riven_stats || {})[cls] || [], [zh], left);
     if (ask.unread.length) return t(UNREAD, { word: ask.unread[0] });
     const r = await run("builder.rivens.read", { weapon: hit.w.id, bonuses: ask.bonuses, malus: ask.malus, pooled: true,
-      ...(named.ruler ? { ruler: named.ruler.id } : {}) });
+      ruler: ruler.id });
     if (r.ok === false || !r.groups.length) return t(NOT_MEASURED);
     const g = r.groups.find((x) => x.rivens.length);
     if (!g) return t("The board has no riven matching these stats yet. Try fewer filters. (・_・;)");
@@ -160,11 +162,11 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const attribution = await boardAttribution(hit.w, card);
     const line = (x) => `#${x.rank} ${x.stat_ids.bonuses.map((id) => signedStatZh(cls, id)).join(" ")}${
       x.stat_ids.malus ? " " + signedStatZh(cls, x.stat_ids.malus, true) : ""}  ${x.score}${x.gain == null ? "" : `（${x.gain >= 0 ? "+" : "−"}${Math.abs(x.gain * 100).toFixed(1)}%）`}`;
-    const text = [`${weaponName(hit.w)} · ${t(g.ruler).split(" · ")[0]}`,
+    const text = [`${weaponName(hit.w)} · ${rulerName(ruler)}`,
       `${t("The board's best riven-free build")}: ${g.riven_free ? g.riven_free.score : "—"}${g.riven_free ? "\n  " + attributionText(attribution,attribution.top?.row) : ""}`]
       .concat(top.map((x,i) => line(x) + "\n  " + attributionText(attribution,attribution.entries[i]?.row))).join("\n");
     return { line: t("Here is {w}'s riven ranking under {ruler}, compared with the best build without a riven. (*/ω＼*)",
-      { w: weaponName(hit.w), ruler: t(g.ruler).split(" · ")[0] }), card, text, ...cardAttribution(attribution) };
+      { w: weaponName(hit.w), ruler: rulerName(ruler) }), card, text, ...cardAttribution(attribution) };
   }
 
   /// GX: THE COMPUTE RANKINGS, all three — or, after it, the exact name the
@@ -265,7 +267,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const say = headless.headlessSpeaker({}, { zh }, "zh");
     const line = slots.map((sl) => say.tf(resolved.stats.find((s) => s.slot === sl.slot).text)).join(" ");
     return { line: t("Nona has your riven, code {code}. I will replay the result and post it here when it passes. (๑•̀ㅂ•́)و✧", { code: opened.code }),
-      card, text: `${weaponName(hit.w)} · ${rulerShort(ruler)} · ${line}\n${SITE}/appraise/${opened.code}` };
+      card, text: `${weaponName(hit.w)} · ${rulerName(ruler)} · ${line}\n${SITE}/appraise/${opened.code}` };
   }
 
   /// …AND WHILE IT WAITS: a computer has taken it.
@@ -277,7 +279,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     try {
       const p = parse(text);
       const r = p.cmd === "zk" ? await zk(p.rest) : p.cmd === "pz" ? await pz(p.rest) : p.cmd === "fx" ? await fx(p.rest, ctx)
-        : p.cmd === "gx" ? await gx(p.rest) : help();
+        : p.cmd === "gx" ? await gx(p.rest) : await help(p.rest);
       return typeof r === "string" ? { text: r } : r;
     } catch (error) {
       console.error("nona command failed", error?.message || "unknown error");

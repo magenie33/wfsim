@@ -71,6 +71,12 @@ async function route() {
   // A RIVEN APPRAISAL'S LINK (81-appraisal.js) becomes its weapon's optimizer.
   const appraiseCode = location.pathname.match(/^\/appraise\/([A-Za-z0-9]{3,12})\/?$/);
   if (appraiseCode) { await openAppraisal(appraiseCode[1], new URLSearchParams(location.search).has("freeze")); return; }
+  if (/^\/nona\/help\/card\/?$/.test(location.pathname)) {
+    document.body.classList.add("on-card");
+    document.documentElement.dataset.theme = "light";
+    await renderNonaHelpCard(new URLSearchParams(location.search).get("topic"));
+    return;
+  }
   // THE CONTRIBUTORS' LONG IMAGE (45-card-page.js), a card of no weapon.
   if (/^\/contributors\/card\/?$/.test(location.pathname)) {
     document.body.classList.add("on-card");
