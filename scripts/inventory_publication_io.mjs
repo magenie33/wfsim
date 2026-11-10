@@ -10,7 +10,7 @@ export async function fileHash(path) {
   for await (const bytes of createReadStream(path)) hash.update(bytes);
   return hash.digest('hex');
 }
-function syncDirectory(path) {
+export function syncDirectory(path) {
   const fd = openSync(dirname(path), 'r');
   try { fsyncSync(fd); } finally { closeSync(fd); }
 }

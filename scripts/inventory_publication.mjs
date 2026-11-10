@@ -3,7 +3,7 @@
 import { existsSync, statSync, readFileSync, writeFileSync, mkdirSync, renameSync, rmSync, openSync, closeSync, fsyncSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { jsonArrayRows } from './json_array_stream.mjs';
-import { outputWriter, fileHash } from './inventory_publication_io.mjs';
+import { outputWriter, fileHash, syncDirectory } from './inventory_publication_io.mjs';
 
 const LIMIT = 256;
 const schema = `
@@ -225,6 +225,8 @@ export class InventoryPublication {
       await operate('state', [{ path: partial, boards }]);
       const fd = openSync(partial, 'r'); try { fsyncSync(fd); } finally { closeSync(fd); }
       renameSync(partial, this.statePath);
+      syncDirectory(this.statePath);
+      await this.fault('after-state-before-checkpoint', {});
       this.index.transaction(() => {
         this.q('DELETE FROM rel_publication_dirty').run();
         this.catalog.setMeta({ ...this.catalog.meta, publication: { ...publication, phase: 'complete' } });
@@ -235,6 +237,7 @@ export class InventoryPublication {
     if (publication.indexClosing) {
       const writer = await outputWriter(this.context, path, publication.indexClosing);
       if (!writer.renamed) await writer.finish();
+      await this.fault('after-index-before-checkpoint', { path });
       this.catalog.setMeta({ ...this.catalog.meta, publication: { round: publication.round, phase: 'files', index: publication.index + 1 } });
       return;
     }
@@ -257,6 +260,7 @@ export class InventoryPublication {
       const receipt = writer.checkpoint();
       this.catalog.setMeta({ ...this.catalog.meta, publication: { ...publication, indexClosing: receipt } });
       await writer.finish();
+      await this.fault('after-index-before-checkpoint', { path });
       this.catalog.setMeta({ ...this.catalog.meta, publication: { ...publication, index: publication.index + 1 } });
     } else {
       const receipt = writer.checkpoint(), last = rows.at(-1);

@@ -44,15 +44,19 @@ const facts = described.flatMap((d, i) => native.contract.rulers.flatMap((r, n) 
 }))));
 const factsPath = join(root, 'facts.ndjson');
 writeFileSync(factsPath, facts.map(row => JSON.stringify(row) + '\n').join(''));
+const scene = native.contract.rulers.find(row => row.scene).id;
+const legacy = '[{ "opaque": {"provenance":"raw bytes stay"} },' + JSON.stringify({ benchmark: scene, mode: 'base', score: 42, mods: [] })
+  + ',' + JSON.stringify({ benchmark: 'removed_ruler_v1', score: 99 }) + ']';
+mkdirSync(join(work, 'verified')); writeFileSync(join(work, 'verified/acceltra.json'), legacy);
 async function normalize() {
   for (let offset = 0; offset < sources.length; offset += 256) await index.sources(sources.slice(offset, offset + 256), native.call);
   for (let offset = 0; offset < facts.length; offset += 256) await index.facts(facts.slice(offset, offset + 256), native.call);
   while (index.pending()) await index.step(native.call, { budgetMs: 100 });
 }
-async function publish(epoch, fault) {
+async function publish(epoch, fault, operate = native.call) {
   for (let n = 0; n < 10000; n++) {
     const publication = new InventoryPublication(index, work, context, fault);
-    const result = await publication.step({ epoch }, native.call, { budgetMs: 50 });
+    const result = await publication.step({ epoch }, operate, { budgetMs: 50 });
     if (!result.pending) return;
   }
   throw Error('disk publication did not converge');
@@ -68,6 +72,7 @@ function files(directory, prefix = '') {
 }
 function fullOracle() {
   rmSync(oracle, { recursive: true, force: true }); mkdirSync(oracle);
+  writeFileSync(join(oracle, 'acceltra.json'), legacy);
   execFileSync(binary, ['--project', oracle, '--facts-in', factsPath, '--state', join(root, 'oracle-state.yaml')],
     { input: JSON.stringify(sources.map(s => s.record)), stdio: ['pipe', 'ignore', 'pipe'], timeout: 60000 });
 }
@@ -91,6 +96,14 @@ try {
   await assert.rejects(publish('one', async stage => { if (stage === 'after-file-before-checkpoint' && lost) {
     lost = false; throw Error('renamed file reply loss');
   } }), /renamed file reply loss/);
+  await reopen(); lost = true;
+  await assert.rejects(publish('one', async stage => { if (stage === 'after-index-before-checkpoint' && lost) {
+    lost = false; throw Error('renamed index reply loss');
+  } }), /renamed index reply loss/);
+  await reopen(); lost = true;
+  await assert.rejects(publish('one', async stage => { if (stage === 'after-state-before-checkpoint' && lost) {
+    lost = false; throw Error('state checkpoint reply loss');
+  } }), /state checkpoint reply loss/);
   await reopen(); await publish('one'); fullOracle(); equalFiles();
   const pages = [...files(join(work, 'verified')).entries()].filter(([name]) => !name.endsWith('index.json')).flatMap(([, body]) => JSON.parse(body));
   assert(pages.length > 256); assert(pages.some(row => row.riven?.rolls[0] === 1.1));
@@ -110,6 +123,11 @@ try {
     .get(change.identity, change.ruler, change.mode).body).provenance, change.provenance);
   assert(existsSync(join(work, 'verified/braton_prime.json')));
   console.log('ok: warm metadata-only fact replacement retains score, original author/clock and exact native bytes');
+  const dirty = () => { for (const row of index.q('SELECT DISTINCT weapon FROM rel_publication_sources').iterate()) index.publicationDirty(row.weapon); };
+  dirty(); await publish('broken-floor', undefined, async (op, rows) => op === 'floor' ? rows.map(() => ({ keep: true })) : native.call(op, rows));
+  assert.throws(equalFiles, /disk publication differs from full native board bytes/);
+  dirty(); await publish('repaired-floor'); fullOracle(); equalFiles();
+  console.log('ok: a real keep-all-floor mutant fails the native byte oracle; restored native decisions pass');
   succeeded = true;
 } catch (error) { console.error('publication evidence: ' + root); throw error; }
 finally {
