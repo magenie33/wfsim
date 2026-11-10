@@ -84,6 +84,25 @@ distinction matters (see [`GLOSSARY.md`](GLOSSARY.md)):
   on its own):
   `effective_fire_rate = base × (1 + Σ mod_bonuses) × Π multipliers`.
 
+Audited native base/semi refire profiles apply the weapon-query minimum of
+1 RPM before conversion to attacks per second, after static and live modifiers
+join their bucket. The pinned cadence vectors in
+`tests/fixtures/client/cadence-claws-2026-10-28.json` verify this consumer floor;
+their upgraded-RPM query is stubbed, so they do not establish every upstream
+negative-upgrade boundary. Other rate rules retain a numerical positive guard.
+Nonfinite inputs use the respective guard. Fixed assumed intervals keep their
+declared timing; semi-auto limits and empty-clip bypass remain separate.
+
+Reload, nock, mode-transition and cast durations divide only by a positive
+speed bracket. `rules::sim::time_divisor` uses a numerical guard when that
+bracket is nonpositive; it is not an in-game cap. Static durations and live
+rescaling use the same guarded divisor to recover the original work, while
+the raw negative bonus remains available for later buffs to offset it.
+Charge and heavy wind-up denominators already retain their positive guards;
+a nonpositive projectile speed has no finite arrival time. These boundaries
+prevent reverse clocks; extreme negative speed effects still need in-game
+calibration.
+
 **Mod capacity & polarity** (wiki `Polarity`; `engine::rules::capacity`). Capacity =
 weapon rank (max 30), doubled by an Orokin Catalyst (60). Slot drain:
 **matching polarity −50% rounded UP** (11 → 6); **mismatched +25% rounded

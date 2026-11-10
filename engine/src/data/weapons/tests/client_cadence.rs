@@ -31,10 +31,10 @@ fn native_cadence_vectors_match_at_audited_float32_nodes() {
             continue;
         }
         let rpm = row["weapon_consumer_return_rpm"].as_f64().unwrap() as f32;
-        let rate = rpm.max(1.0) * (1.0_f32 / 60.0);
+        let rate = rpm * (1.0_f32 / 60.0);
         let value = match case {
-            "rate" => rate,
-            "base_interval" => RefireRule::Rate.interval(f64::from(rate), false) as f32,
+            "rate" => RefireRule::NativeRate.clock_rate(f64::from(rate)) as f32,
+            "base_interval" => RefireRule::NativeRate.interval(f64::from(rate), false) as f32,
             "semi_interval" => RefireRule::SemiAutomatic { skip_wait_on_empty: false }
                 .interval(f64::from(rate), false) as f32,
             _ => panic!("unknown vector"),

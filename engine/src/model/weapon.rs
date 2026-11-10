@@ -38,6 +38,16 @@ fn default_assumed_seconds() -> f64 { 1.0 }
 
 #[wfsim_gas_macro::metered]
 impl RefireRule {
+    /// Audited base/semi consumers floor modified RPM at 1 before float32 / 60
+    /// (cadence-claws-2026-10-28.json). Other rules retain a numerical guard.
+    pub fn clock_rate(self, rate: f64) -> f64 {
+        if !matches!(self, Self::NativeRate | Self::SemiAutomatic { .. }) {
+            return crate::rules::sim::time_divisor(rate);
+        }
+        const MIN_RATE: f64 = (1.0_f32 / 60.0_f32) as f64;
+        if rate.is_finite() { rate.max(MIN_RATE) } else { MIN_RATE }
+    }
+
     /// A stated assumption for attacks whose complete cycle is uncalibrated.
     pub fn assumed_interval(self) -> Option<f64> {
         match self {
@@ -48,6 +58,7 @@ impl RefireRule {
 
     /// Matching-client ordinary semi timer: RVA 0x169c400; explicit empty-clip bypass.
     pub fn interval(self, rate: f64, empty: bool) -> f64 {
+        let rate = self.clock_rate(rate);
         match self {
             Self::Rate => 1.0 / rate,
             Self::NativeRate => f64::from(1.0_f32 / rate as f32),

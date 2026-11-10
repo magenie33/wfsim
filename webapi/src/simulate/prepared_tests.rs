@@ -3,6 +3,22 @@ use crate::board_rows::{board_fold_json, board_runs_json, fold_runs};
 use wfsim_engine::fight::Shard;
 
 #[test]
+fn shotgun_riven_below_minus_one_hundred_percent_fire_rate_finishes() {
+    let request = json!({"weapon":"strun", "duration":8, "runs":2, "seed":7,
+        "distance":0, "headshot_pct":0,
+        "mods":["critical_deceleration", "tainted_shell", "riven:slow"],
+        "rivens":[{"id":"slow", "spec":{"bonuses":[
+            {"id":"damage", "roll":1.0}, {"id":"critical_chance", "roll":1.0}],
+            "malus":{"id":"fire_rate", "roll":1.1}}}]});
+    let prepared = PreparedSimulation::new(&request).unwrap();
+    assert!(prepared.params.fire_rate < 0.0, "the reported negative bucket is represented");
+    let result = simulate_json(&request);
+    assert_eq!(result["ok"], true, "{result}");
+    assert_eq!(result["shots"], json!(1.0));
+    assert!(result["dps"].as_f64().unwrap().is_finite());
+}
+
+#[test]
 fn claws_use_family_intervals_and_ignore_legacy_overrides() {
     let mut request = json!({"weapon":"adarza_claws", "duration":1.01,
         "runs":1, "distance":0, "headshot_pct":0, "mods":["maul", "bite"]});

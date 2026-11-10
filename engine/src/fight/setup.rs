@@ -1436,7 +1436,8 @@ impl FightParams {
                 (true, Some(rate)) if rate > 0.0 => {
                     let b = panel.reload_bonus;
                     let refill = panel.magazine_size / rate;
-                    panel.reload_seconds + refill * (1.0 + b + arc_reload_bonus) / (1.0 + b)
+                    panel.reload_seconds + refill * crate::rules::sim::time_divisor(1.0 + b + arc_reload_bonus)
+                        / crate::rules::sim::time_divisor(1.0 + b)
                 }
                 _ => panel.reload_seconds,
             },
@@ -1778,8 +1779,8 @@ impl FightParams {
                     charges_to_fill: (inc_form.charges_to_fill / (1.0 + inc_form.charge_rate)).ceil() as u32,
                 },
                 ends: if inc_form.single_shot { Ends::SingleShot } else { Ends::ChargeMagazine },
-                transmute_out_seconds: inc_form.transmute_out / rl,
-                transmute_seconds: inc_form.transmute_in / rl,
+                transmute_out_seconds: inc_form.transmute_out / crate::rules::sim::time_divisor(rl),
+                transmute_seconds: inc_form.transmute_in / crate::rules::sim::time_divisor(rl),
                 reload_bucket: rl - 1.0,
             }),
             ..Self::from_panel(incarnon, arena, arcane)
@@ -1808,7 +1809,7 @@ impl FightParams {
                 .unwrap_or(crate::model::StackingBuff { per_stack: 0.0, ..*o }))
             .collect();
         let rl = 1.0 + reload_bonus;
-        self.toggle = Some(super::params::Toggle { other: Box::new(other), switch_seconds: seconds / rl, reload_bucket: rl - 1.0 });
+        self.toggle = Some(super::params::Toggle { other: Box::new(other), switch_seconds: seconds / crate::rules::sim::time_divisor(rl), reload_bucket: rl - 1.0 });
         self
     }
 

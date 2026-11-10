@@ -21,7 +21,7 @@ pub(super) fn live_reload_time(
     let (secs, bucket) = match form.reload_from_empty_speed {
         innate if from_empty && innate != 0.0 => {
             let b = form.reload_bonus;
-            (form.reload_seconds * (1.0 + b) / (1.0 + b + innate).max(1e-9), b + innate)
+            (reload_span(form.reload_seconds, b, innate), b + innate)
         }
         _ => (form.reload_seconds, form.reload_bonus),
     };
@@ -52,10 +52,11 @@ pub(super) fn rescale_reload(secs: f64, bucket: f64, live: f64) -> f64 {
 /// live bonus at all falls straight through to `secs`.
 #[wfsim_gas_macro::metered]
 pub(super) fn reload_span(secs: f64, bucket: f64, add: f64) -> f64 {
-    if add <= 0.0 {
+    if add == 0.0 {
         return secs;
     }
-    secs * (1.0 + bucket) / (1.0 + bucket + add)
+    secs * crate::rules::sim::time_divisor(1.0 + bucket)
+        / crate::rules::sim::time_divisor(1.0 + bucket + add)
 }
 
 /// EVERY LIVE ADDITION TO THE RELOAD-SPEED BUCKET, in one place.
