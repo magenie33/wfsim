@@ -151,6 +151,16 @@ worker gets from Hyperdrive; it needs `npm install --prefix scripts/pg`.
 
 ## Inventory checks
 
+`check_inventory_compatibility.mjs` compares canonical input bytes with the
+producer's Python format and checks compact identities, Rust/lock/toolchain/data
+changes, unknown or missing closure fallback and wrong binding refusal. The real
+native/PGlite controller then replaces its executable with a semantically equal
+fixture artifact and requires zero capture/normalization. A changed publisher
+updates the actual stamp and stale heads while preserving source epoch,
+classification and measured row bytes. Semantic changes and missing sidecars
+must perform complete capture. Producer qualification is checked separately by
+the release producer's tests; these are consumer fixtures.
+
 `check_inventory_board_pipeline.mjs` drives the production classic disk
 coordinator against sealed cuts and an independent full native classifier.
 It covers committed input response loss, native restart, transaction loss
