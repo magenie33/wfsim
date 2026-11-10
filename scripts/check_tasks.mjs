@@ -1,3 +1,4 @@
+import { seedComputeWork,seedComputeWorkMany,replaceComputeResult } from "./pg/fixtures.mjs";
 // THE FACT FACTORY'S TWO PROPERTIES (worker/tasks.js), on random books, with no
 // network: LIVENESS — a witness is handed nothing only when nothing exists that
 // it may answer, and otherwise the earliest deadline among what it may — and
@@ -82,9 +83,7 @@ console.log("liveness: handed nothing only when nothing may be answered, else th
         const opened = NOW - Math.floor(r() * 300_000), due = NOW + Math.floor((r() - 0.5) * 7_200_000);
         const leased = r() < 0.2 ? pick(r, [NOW + 60_000, NOW - 60_000]) : null;
         const waits = r() < 0.2 ? 1 : 0;
-        await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, lanes, lease, lease_until, leased_to, waits)
-          VALUES (?, ?, '{}', ?, ?, ?, ?, ?, ?, ?, ?)`, id, verb, state, iso(due), iso(opened), lanes && JSON.stringify(lanes),
-          leased ? "l" : null, leased ? iso(leased) : null, leased ? "dx" : null, waits);
+        await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:args[1],request:"{}",state:args[2],due_at:args[3],opened_at:args[4],lanes:args[5],lease:args[6],lease_until:args[7],leased_to:args[8],waits:args[9]});})(db,[id,verb,state,iso(due),iso(opened),lanes && JSON.stringify(lanes),leased ? "l" : null,leased ? iso(leased) : null,leased ? "dx" : null,waits]);
         await db.run("INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at) VALUES ('p', ?, ?, 'live', ?, ?)", id, id, iso(opened), iso(due));
         const answers = [];
         for (let k = Math.floor(r() * 3); k > 0; k--) {
@@ -277,7 +276,7 @@ await runCase("fixed:withdrawn", async () => {
   // new engine: the question opens again, and nobody waits on it.
   await f.demand(env, { producer: "p", ref: "waited", verb: "simulate", request: { row: 6 }, due_in_ms: 1000, waits: true }, "e1", NOW);
   const waited = await questionId("simulate", { row: 6 });
-  await db.run("UPDATE state_compute_work SET state = 'fact', fact_engine = 'e1' WHERE id = ?", waited);
+  await replaceComputeResult(db,waited,{state:'fact',canon:'{}',fact_engine:'e1',fact_at:iso(NOW)});
   await db.run("UPDATE relation_task_consumers SET state = 'served' WHERE ref = 'waited'");
   await f.demand(env, { producer: "p", ref: "swept", verb: "simulate", request: { row: 6 }, due_in_ms: 1000 }, "e2", NOW);
   const reopened = await db.get("SELECT state, waits FROM state_compute_work WHERE id = ?", waited);
@@ -328,7 +327,7 @@ await runCase("fixed:withdrawn-spot", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS });
   const id = await f.demand(env, { producer: "p", ref: "spotted", verb: "simulate", request: { row: 3 }, due_in_ms: 1000 }, "e1", NOW);
-  await db.run("UPDATE state_compute_work SET state = 'spot' WHERE id = ?", id);
+  await replaceComputeResult(db,id,{state:'spot',canon:'{}',fact_engine:'e1',fact_at:iso(NOW)});
   await f.withdraw(env, "p", "spotted", NOW);
   const [t] = await f.claim(env, { device: "official" }, { states: ["spot"], max: 1 }, "e1", NOW);
   check("a spot nobody asks for any more is still claimed with its demand, so the official machines can settle it",
@@ -439,6 +438,36 @@ await runCase("fixed:settlement-race", async () => {
   await Promise.all([f.settle(env, id, "e1", NOW), f.settle(env, id, "e1", NOW)]);
   const paid = await db.get("SELECT sum(work) AS w, sum(agreed) AS n FROM entity_compute_devices");
   check("two settlings of one question at once credit each witness once", paid.w === 10 && paid.n === 2, JSON.stringify(paid));
+  check("concurrent settlement selects one immutable output and records one selection",
+    (await db.get("SELECT count(*) AS n FROM entity_compute_results")).n===1
+    && (await db.get("SELECT count(*) AS n FROM record_compute_result_selections WHERE result_id IS NOT NULL")).n===1);
+});
+await runCase("fixed:correction-during-settlement", async () => {
+  const db=await testDb("library"),env={LIBRARY:db};
+  const f=factory({verbs:VERBS,producers:PRODUCERS,random:()=>1});
+  await db.exec("INSERT INTO entity_compute_devices(id,seen) VALUES('a','x'),('b','x')");
+  const id=await f.demand(env,{producer:'p',ref:'correction-race',verb:'simulate',request:{correction:1},due_in_ms:1000},'e1',NOW);
+  const first=(await db.get("SELECT task_id FROM state_compute_work WHERE id=?",id)).task_id;
+  await db.run("INSERT INTO record_candidate_answers(question,engine,device,owner,net,canon,result,work,at) VALUES(?,'e1','a','a','a',?,'{}',5,?)",id,canon({score:1,work:5}),iso(NOW));
+  const witness={device:'b',owner:'b',net:'b'},held=await f.next(env,witness,'e1',NOW);
+  let changed=false;
+  const batch=db.batch.bind(db);
+  env.LIBRARY={...db,batch:async statements=>{
+    if(!changed && statements.some(statement=>/compute_accept_result\(/.test(statement.sql))) {
+      changed=true;
+      await db.run("SELECT compute_open_task(?1::text,'correction','e1',?2::text,true)",id,iso(NOW+1));
+      await db.run("UPDATE state_compute_work SET lease='new-round',leased_to='b',leased_at=?,lease_until=? WHERE id=?",iso(NOW+1),iso(NOW+600000),id);
+    }
+    return batch(statements);
+  }};
+  await f.answer(env,witness,{lease:held.lease,engine:'e1',result:{score:1},work:5},NOW);
+  const current=await db.get("SELECT * FROM state_compute_work WHERE id=?",id);
+  check("correction during settlement replans from its new round without accepting old evidence",changed && current.task_id!==first && current.state==='open'
+    && (await db.get("SELECT count(*) AS n FROM entity_compute_results")).n===0
+    && (await db.get("SELECT count(*) AS n FROM state_compute_candidate_answers")).n===0);
+  check("an older answer cannot release its device's new-round lease or pay retired evidence",current.lease==='new-round'
+    && (await db.get("SELECT sum(work) AS n FROM entity_compute_devices")).n===0);
+  await db.close();
 });
 
 console.log("\nthe watchdog");
@@ -511,7 +540,7 @@ await runCase("fixed:disagreeing", async () => {
   let k = 0;
   const put = async (n, owner, c) => {
     for (let i = 0; i < n; i++, k++) {
-      await db.run("INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon) VALUES (?, 'simulate', '{}', 'fact', ?, ?, ?)", `f${k}`, iso(NOW), iso(NOW), fact);
+      await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:"fact",due_at:args[1],opened_at:args[2],canon:args[3]});})(db,[`f${k}`,iso(NOW),iso(NOW),fact]);
       await db.run("INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, 'e1', ?, ?, '', ?, '{}', 5, ?)", `f${k}`, `${owner}-d`, owner, c, iso(NOW - 60_000));
     }
   };
@@ -735,7 +764,7 @@ await runCase("fixed:fair-share", async () => {
   await f.answerPack(env, w, { lease: pk.lease, engine: "e1", answers: pk.questions.slice(0, 2).map((x) => ({ question: x.question, result: { score: 1 }, work: 1, compute_ms: 600 })), done: true }, NOW);
   check("...and its answers' fights are its producer's mean, the first ones whole",
     Math.abs((await db.get("SELECT answer_ms FROM state_producer_compute_usage WHERE producer = 'p'")).answer_ms - 600) < 1e-9);
-  await db.run("INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, producer) VALUES ('stray', 'simulate', '{}', 'open', ?, ?, 'nobody')", iso(NOW - 1), iso(NOW));
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"stray",verb:"simulate",request:"{}",state:"open",due_at:args[0],opened_at:args[1],producer:"nobody"});})(db,[iso(NOW - 1),iso(NOW)]);
   await db.run("INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at) VALUES ('p', 'stray', 'stray', 'live', ?, ?)", iso(NOW), iso(NOW - 1));
   await db.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id <> 'stray'");
   const stray = await f.next(env, who(), "e1", NOW);
@@ -765,8 +794,7 @@ await runCase("fixed:redeliver", async () => {
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const old = new Date(NOW - 3_600_000).toISOString();
   await db.run("INSERT INTO state_factory_progress (name, through) VALUES ('redeliver', ?)", old);
-  await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
-    VALUES ('lost', 'simulate', '{}', 'fact', ?, ?, '{"score":1,"work":1}', 'e1', ?)`, old, old, old);
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"lost",verb:"simulate",request:"{}",state:"fact",due_at:args[0],opened_at:args[1],canon:"{\"score\":1,\"work\":1}",fact_engine:"e1",fact_at:args[2]});})(db,[old,old,old]);
   await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at) VALUES ('p', 'lost-ref', 'lost', 'live', ?, ?)`, old, old);
   const before = told.length;
   const n = await f.redeliver(env, NOW);
@@ -785,8 +813,7 @@ await runCase("fixed:redeliver-cursor", async () => {
   const at = (m) => new Date(NOW - m * 60_000).toISOString();
   await db.run("INSERT INTO state_factory_progress (name, through) VALUES ('redeliver', ?)", at(60));
   const fact = async (id, m, producer) => {
-    await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
-      VALUES (?, 'simulate', '{}', 'fact', ?, ?, '{"score":1,"work":1}', 'e1', ?)`, id, at(m), at(m), at(m));
+    await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:"fact",due_at:args[1],opened_at:args[2],canon:"{\"score\":1,\"work\":1}",fact_engine:"e1",fact_at:args[3]});})(db,[id,at(m),at(m),at(m)]);
     await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at) VALUES (?, ?, ?, 'live', ?, ?)`, producer, `${id}-ref`, id, at(m), at(m));
   };
   await fact("f-flaky", 50, "flaky");
@@ -807,8 +834,7 @@ await runCase("fixed:unpaid-witnesses", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const t = (m) => new Date(NOW - m * 60_000).toISOString();
-  await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
-    VALUES ('unpaid', 'simulate', '{}', 'fact', ?, ?, 'c', 'e1', ?)`, t(90), t(90), t(60));
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"unpaid",verb:"simulate",request:"{}",state:"fact",due_at:args[0],opened_at:args[1],canon:"c",fact_engine:"e1",fact_at:args[2]});})(db,[t(90),t(90),t(60)]);
   for (const [dev, at, canon] of [["w1", t(70), "c"], ["w2", t(65), "c"], ["late", t(50), "c"], ["wrong", t(66), "x"]]) {
     await db.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-01')", dev);
     await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
@@ -829,8 +855,7 @@ await runCase("fixed:already-paid", async () => {
   // THE OLDER FACT is settled and paid: o1's second device is no witness, and
   // never will be. THE NEWER ONE still owes both of its witnesses.
   for (const [id, fact] of [["covered", t(120)], ["owed", t(60)]]) {
-    await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
-      VALUES (?, 'simulate', '{}', 'fact', ?, ?, 'c', 'e1', ?)`, id, fact, fact, fact);
+    await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:"fact",due_at:args[1],opened_at:args[2],canon:"c",fact_engine:"e1",fact_at:args[3]});})(db,[id,fact,fact,fact]);
   }
   for (const [q, dev, owner, at, credited] of [["covered", "a1", "o1", t(130), 1], ["covered", "a2", "o2", t(125), 1],
     ["covered", "a3", "o1", t(124), 0], ["owed", "b1", "o3", t(70), 0], ["owed", "b2", "o4", t(65), 0]]) {
@@ -849,8 +874,7 @@ await runCase("fixed:covered-answer", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const t = (m) => new Date(NOW - m * 60_000).toISOString();
-  await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
-    VALUES ('twice', 'simulate', '{}', 'fact', ?, ?, 'c', 'e1', ?)`, t(90), t(90), t(60));
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"twice",verb:"simulate",request:"{}",state:"fact",due_at:args[0],opened_at:args[1],canon:"c",fact_engine:"e1",fact_at:args[2]});})(db,[t(90),t(90),t(60)]);
   // c3 IS c1's OWNER AGAIN, after it: no witness while c1 is one.
   for (const [dev, owner, at] of [["c1", "o1", t(70)], ["c2", "o2", t(68)], ["c3", "o1", t(66)]]) {
     await db.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-01')", dev);
@@ -872,8 +896,7 @@ await runCase("fixed:repay-cursor", async () => {
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const t = (m) => new Date(NOW - m * 60_000).toISOString();
   const owe = async (id, m) => {
-    await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
-      VALUES (?, 'simulate', '{}', 'fact', ?, ?, 'c', 'e1', ?)`, id, t(m + 30), t(m + 30), t(m));
+    await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:"fact",due_at:args[1],opened_at:args[2],canon:"c",fact_engine:"e1",fact_at:args[3]});})(db,[id,t(m + 30),t(m + 30),t(m)]);
     for (const dev of [`${id}-1`, `${id}-2`]) {
       await db.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-01')", dev);
       await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
@@ -909,8 +932,7 @@ console.log("\na fact is no older than its last witness");
 await runCase("fixed:last-witness", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
-  await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at) VALUES ('late', 'simulate', '{}', 'open', ?, ?)`,
-    new Date(NOW + 3_600_000).toISOString(), new Date(NOW - 60_000).toISOString());
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"late",verb:"simulate",request:"{}",state:"open",due_at:args[0],opened_at:args[1]});})(db,[new Date(NOW + 3_600_000).toISOString(),new Date(NOW - 60_000).toISOString()]);
   // THE SECOND ANSWER'S REQUEST STAMPED IT after the settler took its time.
   const later = new Date(NOW + 500).toISOString();
   for (const [dev, at] of [["l1", new Date(NOW - 30_000).toISOString()], ["l2", later]]) {
@@ -939,22 +961,15 @@ await runCase("fixed:official-pool", async () => {
 
 console.log("many asks in two statements a chunk leave every table as one write a row did");
 await runCase("fixed:demand-all-books", async () => {
-  // ONE WRITE A ROW, as `demandAll` asked before it wrote a chunk at once: the
-  // reference the set-based writes are held to, on the same random books.
+  // The row-at-a-time adapter checks chunking, demand replacement and delivery;
+  // storage boundaries use the shared primitives and have independent checks.
   const oneAtATime = async (env, producers, asks, engine, now) => {
     const db = env.LIBRARY, at = iso(now), ids = [];
     for (const a of asks) ids.push(await questionId(a.verb, a.request));
     for (const [k, { producer, ref, request, due_in_ms, payload = {}, lanes = null, waits = false }] of asks.entries()) {
       const due = iso(now + due_in_ms);
-      await db.run(`INSERT INTO state_compute_work AS t (id, verb, request, state, due_at, opened_at, lanes, waits, producer) VALUES (?, ?, ?, 'open', ?, ?, ?, ?, ?)
-          ON CONFLICT (id) DO UPDATE SET
-            state = CASE WHEN t.state = 'withdrawn' THEN 'open' ELSE t.state END,
-            opened_at = CASE WHEN t.state = 'withdrawn' THEN excluded.opened_at ELSE t.opened_at END,
-            due_at = CASE WHEN t.state = 'withdrawn' OR excluded.due_at < t.due_at THEN excluded.due_at ELSE t.due_at END,
-            producer = CASE WHEN t.state = 'withdrawn' OR excluded.due_at < t.due_at THEN excluded.producer ELSE t.producer END,
-            waits = CASE WHEN t.state = 'withdrawn' THEN excluded.waits ELSE GREATEST(t.waits, excluded.waits) END,
-            lanes = COALESCE(t.lanes, excluded.lanes)`,
-        ids[k], asks[k].verb, canon(request), due, at, lanes ? JSON.stringify(lanes) : null, waits ? 1 : 0, producer);
+      await db.run("SELECT compute_register_tasks(?1::text,?2::text,?3::text)",JSON.stringify([{id:ids[k],verb:asks[k].verb,
+        request:canon(request),due_at:due,lanes:lanes ? JSON.stringify(lanes) : null,waits:waits ? 1 : 0,producer,initiator:null}]),engine,at);
       await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES (?, ?, ?, 'live', ?, ?, ?, ?)
           ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
             due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`,
@@ -966,8 +981,9 @@ await runCase("fixed:demand-all-books", async () => {
     for (const q of facts) {
       const settled = q.state === "fact" || q.state === "spot";
       if (settled ? q.fact_engine !== engine : !q.served_answered) {
-        await db.run(`UPDATE state_compute_work SET state = 'open', opened_at = ?, lease = NULL, lease_until = NULL, leased_to = NULL,
-            waits = (SELECT COALESCE(max(l.waits), 0) FROM relation_task_consumers l WHERE l.question = state_compute_work.id AND l.state = 'live') WHERE id = ? AND state = ?`, at, q.id, q.state);
+        await db.run("SELECT compute_open_task(?1::text,'engine_recalibration',?2::text,?3::text)",q.id,engine,at);
+        await db.run(`UPDATE state_compute_work SET waits=(SELECT COALESCE(max(l.waits),0) FROM relation_task_consumers l
+          WHERE l.question=state_compute_work.id AND l.state='live') WHERE id=?`,q.id);
         continue;
       }
       if (!settled) continue;
@@ -989,10 +1005,7 @@ await runCase("fixed:demand-all-books", async () => {
       if (r() < 0.4) continue;
       const id = await questionId("simulate", { n: k }), state = pick(r, ["open", "fact", "fact", "spot", "withdrawn", "disputed"]);
       const lanes = r() < 0.3 ? JSON.stringify([{ lanes: 4, after_ms: 0 }]) : null;
-      await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, lanes, waits, canon, fact_engine, withdrawn_at)
-          VALUES (?, 'simulate', ?, ?, ?, ?, ?, ?, ?, ?, ?)`, id, canon({ n: k }), state, iso(NOW + Math.floor((r() - 0.5) * 7_200_000)),
-        iso(NOW - 600_000), lanes, r() < 0.2 ? 1 : 0, ["fact", "spot"].includes(state) ? "c" : null,
-        ["fact", "spot"].includes(state) ? pick(r, ["e1", "e0", null]) : null, state === "withdrawn" ? iso(NOW - 600_000) : null);
+      await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:args[1],state:args[2],due_at:args[3],opened_at:args[4],lanes:args[5],waits:args[6],canon:args[7],fact_engine:args[8],withdrawn_at:args[9]});})(db,[id,canon({ n: k }),state,iso(NOW + Math.floor((r() - 0.5) * 7_200_000)),iso(NOW - 600_000),lanes,r() < 0.2 ? 1 : 0,["fact", "spot"].includes(state) ? "c" : null,["fact", "spot"].includes(state) ? pick(r, ["e1", "e0", null]) : null,state === "withdrawn" ? iso(NOW - 600_000) : null]);
       if (["fact", "spot"].includes(state)) {
         for (const official of r() < 0.5 ? [0] : [0, 1]) {
           await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, official, canon, result, work, at)
@@ -1010,8 +1023,17 @@ await runCase("fixed:demand-all-books", async () => {
     due_in_ms: Math.floor(r() * 86_400_000), waits: r() < 0.15, lanes: r() < 0.3 ? pick(r, [[{ lanes: 8, after_ms: 0 }], [{ lanes: 2, after_ms: 0 }]]) : null,
     payload: r() < 0.5 ? { k: Math.floor(r() * 9) } : undefined }));
   const state = async (db, said) => JSON.stringify([
-    await db.all("SELECT * FROM state_compute_work ORDER BY id"), await db.all("SELECT * FROM relation_task_consumers ORDER BY producer, ref"),
+    (await db.all("SELECT * FROM state_compute_work ORDER BY id")).map(({task_id,result_id,...row})=>row), await db.all("SELECT * FROM relation_task_consumers ORDER BY producer, ref"),
     await db.all("SELECT * FROM told_log ORDER BY ref, canon"), [...said].sort()]);
+  const difference=(left,right,path="root")=>{
+    if(JSON.stringify(left)===JSON.stringify(right))return null;
+    if(left && right && typeof left==='object' && typeof right==='object') {
+      for(const key of new Set([...Object.keys(left),...Object.keys(right)])) {
+        const found=difference(left[key],right[key],path+'.'+key);if(found)return found;
+      }
+    }
+    return path+': '+JSON.stringify(left)+' != '+JSON.stringify(right);
+  };
   let bad = 0, first = "";
   const trials = Math.max(20, Math.floor(TRIALS / 10));
   for (let t = 0; t < trials && bad < 3; t++) {
@@ -1027,7 +1049,7 @@ await runCase("fixed:demand-all-books", async () => {
     await oneAtATime({ LIBRARY: a }, producersOf(was), asks, "e1", NOW);
     await factory({ verbs: VERBS, producers: producersOf(now) }).demandAll({ LIBRARY: b }, asks, "e1", NOW);
     const [x, y] = [await state(a, was), await state(b, now)];
-    if (x !== y) { bad++; first ||= `trial ${t} (${asks.length} asks): ${x.slice(0, 200)} … vs … ${y.slice(0, 200)}`; }
+    if (x !== y) { bad++; first ||= `trial ${t} (${asks.length} asks): ${difference(JSON.parse(x),JSON.parse(y))}`; }
   }
   check(`on ${trials} random books, asked a row at a time and asked at once leave the same questions, demands and tellings`, bad === 0, first);
 });
@@ -1038,13 +1060,11 @@ await runCase("fixed:eligibility-plan", async () => {
   // Statistics know only the old engine; the new one's answers arrive after
   // ANALYZE, mostly on questions outside the small open field.
   const open = 32, cold = 2000;
-  await db.exec(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at)
-    SELECT 'q'||i, 'simulate', '{}', CASE WHEN i <= ${open} THEN 'open' ELSE 'fact' END,
-      '2026-10-29', '2026-10-28' FROM generate_series(1, ${open + cold}) i;
-    INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at)
+  await seedComputeWorkMany(db,Array.from({length:open+cold},(_,i)=>({id:'q'+(i+1),state:i<open ? 'open' : 'fact',due_at:'2026-10-29',opened_at:'2026-10-28'})));
+  await db.exec(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at)
     SELECT 'q'||i, 'old', 'other', 'other', '', 'c', '{}', 1, '2026-10-28' FROM generate_series(1, ${open + cold}) i;
-    ANALYZE questions;
-    ANALYZE answers;
+    ANALYZE state_compute_scheduling;
+    ANALYZE record_candidate_answers;
     INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at)
     SELECT 'q'||i, 'fresh', 'other', 'other', '', 'c', '{}', 1, '2026-10-29' FROM generate_series(${open + 1}, ${open + cold}) i;`);
   const row = await db.get(`EXPLAIN (ANALYZE, FORMAT JSON, TIMING OFF)
@@ -1053,7 +1073,7 @@ await runCase("fixed:eligibility-plan", async () => {
   const plan = row["QUERY PLAN"][0].Plan;
   let read = 0;
   const walk = (p) => {
-    if (p["Relation Name"] === "answers") read += (p["Actual Rows"] + (p["Rows Removed by Filter"] || 0)) * p["Actual Loops"];
+    if (p["Relation Name"] === "record_candidate_answers") read += (p["Actual Rows"] + (p["Rows Removed by Filter"] || 0)) * p["Actual Loops"];
     for (const child of p.Plans || []) walk(child);
   };
   walk(plan);
@@ -1065,15 +1085,12 @@ await runCase("fixed:eligibility-plan", async () => {
 console.log("\nofficial claims keep bounded index plans when prepared statements are reused");
 await runCase("fixed:official-claim-plans", async () => {
   const db = await testDb("library"), f = factory({ verbs: VERBS, producers: PRODUCERS });
-  await db.exec(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at)
-    SELECT 'claim-'||i, 'simulate', '{}', CASE WHEN i <= 1000 THEN 'open'
-      WHEN i <= 1003 THEN (ARRAY['disputed','spot','nondeterministic'])[i-1000] ELSE 'fact' END,
-      '2026-10-09', '2026-10-08' FROM generate_series(1, 20000) i;
-    INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at)
+  await seedComputeWorkMany(db,Array.from({length:20000},(_,i)=>({id:'claim-'+(i+1),state:i<1000 ? 'open' : i<1003 ? ['disputed','spot','nondeterministic'][i-1000] : 'fact',due_at:'2026-10-09',opened_at:'2026-10-08'})));
+  await db.exec(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at)
     SELECT 'p', id, id, 'live', opened_at, due_at FROM state_compute_work;
     INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at, official)
     SELECT id, 'old', 'other', 'other', '', 'c', '{}', 1, opened_at, 1 FROM state_compute_work;
-    ANALYZE questions; ANALYZE demands; ANALYZE answers;
+    ANALYZE state_compute_scheduling; ANALYZE relation_task_consumers; ANALYZE record_candidate_answers;
     INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at, official)
     SELECT id, 'fresh', 'official', 'official', '', 'c', '{}', 1, opened_at, 1 FROM state_compute_work WHERE state = 'fact';`);
   let sql, args;
@@ -1091,9 +1108,10 @@ await runCase("fixed:official-claim-plans", async () => {
       const row = await db.get(`EXPLAIN (ANALYZE, FORMAT JSON, TIMING OFF) EXECUTE official_claim(${args.map(literal).join(",")})`);
       await db.exec("ROLLBACK");
       const reads = { answers: 0, demands: 0 }, scans = [], walk = (p) => {
-        if (p["Relation Name"] === "questions" && p["Node Type"] !== "ModifyTable"
+        if (p["Relation Name"] === "state_compute_scheduling" && p["Node Type"] !== "ModifyTable"
             && (p["Node Type"] === "Seq Scan" || p["Plan Rows"] > 1003)) scans.push({ scan: p["Node Type"], rows: p["Plan Rows"] });
-        if (Object.hasOwn(reads, p["Relation Name"])) reads[p["Relation Name"]]
+        const relation={record_candidate_answers:"answers",relation_task_consumers:"demands"}[p["Relation Name"]];
+        if (relation) reads[relation]
           += Math.max(1, p["Actual Rows"] + (p["Rows Removed by Filter"] || 0)) * p["Actual Loops"];
         for (const child of p.Plans || []) walk(child);
       };
@@ -1106,7 +1124,7 @@ await runCase("fixed:official-claim-plans", async () => {
   }
   await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at)
     VALUES ('sparse', 'only-sparse', 'claim-1000', 'live', '2026-10-08', '2026-10-09')`);
-  await db.exec("ANALYZE demands");
+  await db.exec("ANALYZE relation_task_consumers");
   for (const name of ["sparse", "absent"]) {
     await f.claim({ LIBRARY: capture }, { device: "official" }, { states: ["open"], max: 1, producers: [name] }, "fresh", NOW);
     await db.exec(`PREPARE official_claim AS ${sql}`);
@@ -1115,7 +1133,8 @@ await runCase("fixed:official-claim-plans", async () => {
       const row = await db.get(`EXPLAIN (ANALYZE, FORMAT JSON, TIMING OFF) EXECUTE official_claim(${args.map(literal).join(",")})`);
       await db.exec("ROLLBACK");
       const reads = { questions: 0, answers: 0, demands: 0 }, walk = (p) => {
-        if (p["Node Type"] !== "ModifyTable" && Object.hasOwn(reads, p["Relation Name"])) reads[p["Relation Name"]]
+        const relation={state_compute_scheduling:"questions",record_candidate_answers:"answers",relation_task_consumers:"demands"}[p["Relation Name"]];
+        if (p["Node Type"] !== "ModifyTable" && relation) reads[relation]
           += Math.max(1, p["Actual Rows"] + (p["Rows Removed by Filter"] || 0)) * p["Actual Loops"];
         for (const child of p.Plans || []) walk(child);
       };
@@ -1136,8 +1155,7 @@ await runCase("fixed:producer-literals", async () => {
   const names = ["apostrophe'producer", "back\\slash", "both'\\\n雪"];
   const f = factory({ verbs: VERBS, producers: { ...PRODUCERS, ...Object.fromEntries(names.map(name => [name, PRODUCERS.p])) } });
   for (const [i, name] of ["p", ...names].entries()) {
-    await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at)
-      VALUES (?, 'simulate', '{}', 'open', ?, ?)`, `literal-${i}`, iso(NOW - 1000), iso(NOW - 2000));
+    await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:"open",due_at:args[1],opened_at:args[2]});})(db,[`literal-${i}`,iso(NOW - 1000),iso(NOW - 2000)]);
     await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at)
       VALUES (?, ?, ?, 'live', ?, ?)`, name, `literal-${i}`, `literal-${i}`, iso(NOW - 2000), iso(NOW - 1000));
   }
@@ -1169,8 +1187,7 @@ await runCase("fixed:official-claim-books", async () => {
         producer: pick(r, ["p", "q"]), waits: pick(r, [0, 1]), due: NOW + pick(r, [-1000, 1000]),
         held: r() < 0.25, answered: r() < 0.25, old: r() < 0.5 };
       rows.push(q);
-      await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, waits, lease_until)
-        VALUES (?, 'simulate', '{}', ?, ?, ?, ?, ?)`, q.id, q.state, iso(q.due), iso(NOW - 2000), q.waits, q.held ? iso(NOW + 1000) : null);
+      await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:args[1],due_at:args[2],opened_at:args[3],waits:args[4],lease_until:args[5]});})(db,[q.id,q.state,iso(q.due),iso(NOW - 2000),q.waits,q.held ? iso(NOW + 1000) : null]);
       await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at)
         VALUES (?, ?, ?, 'live', ?, ?)`, q.producer, q.id, q.id, iso(NOW - 2000), iso(q.due));
       if (q.answered) await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at)

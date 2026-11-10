@@ -19,13 +19,13 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   const usage = createUsage();
   const ledger = createLedger({ verbs, producerOf });
   const delivery = createDelivery({ producerOf, liveDemands: ledger.liveDemands, commit: ledger.commit });
-  const demandAll = async (env, asks, engine, now = Date.now()) => {
-    const registered = await ledger.demandAll(env, asks, engine, now);
+  const demandAll = async (env, asks, engine, now = Date.now(), options = {}) => {
+    const registered = await ledger.demandAll(env, asks, engine, now, options);
     try { await delivery.deliverMany(env, registered.ready, now); }
     catch (error) { console.log(JSON.stringify({ event: "task.delivery_pending", error: String(error) })); }
     return registered.ids;
   };
-  const demand = async (env, ask, engine, now = Date.now()) => (await demandAll(env, [ask], engine, now))[0];
+  const demand = async (env, ask, engine, now = Date.now(), options = {}) => (await demandAll(env, [ask], engine, now, options))[0];
   const credit = createCredit();
   const onLease = async (env, demand, now) => {
     try { await producerOf(demand.producer).on_lease?.(env, demand, now); }

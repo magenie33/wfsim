@@ -245,7 +245,7 @@ BEGIN
     LEFT JOIN record_refusal_withdrawals refused ON refused.question=k.id AND refused.engine=$1;
   RETURN jsonb_build_object('v',1,'generation',held.generation::text,'engine',held.engine,'contract',held.contract,
     'snapshot',pg_current_snapshot()::text,'started_at',to_char(transaction_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-    'changes',changes,'entity_weapon_builds',build_rows,'facts',fact_rows,'state_board_pending_work',queue_rows,'tasks',task_rows);
+    'changes',changes,'builds',build_rows,'facts',fact_rows,'queue',queue_rows,'tasks',task_rows);
 END $$;
 REVOKE ALL ON FUNCTION inventory_inputs(text,text,text) FROM PUBLIC;
 
@@ -266,13 +266,13 @@ BEGIN
     THEN RAISE EXCEPTION 'invalid inventory cohort scope'; END IF;
   SELECT ARRAY(SELECT jsonb_array_elements_text(scopes->'weapons')),
     ARRAY(SELECT jsonb_array_elements_text(scopes->'identities')) INTO weapons,identities;
-  RETURN QUERY SELECT 'entity_weapon_builds'::text,jsonb_build_object('id',b.id,'at',b.at,'record',b.record::jsonb)
+  RETURN QUERY SELECT 'builds'::text,jsonb_build_object('id',b.id,'at',b.at,'record',b.record::jsonb)
     FROM entity_weapon_builds b WHERE b.weapon=ANY(weapons);
   RETURN QUERY WITH selected AS MATERIALIZED (SELECT b.id FROM entity_weapon_builds b WHERE b.weapon=ANY(weapons)
     UNION SELECT unnest(identities)) SELECT 'facts'::text,to_jsonb(f) FROM selected k
     JOIN LATERAL (SELECT * FROM board_facts f WHERE f.identity=k.id OFFSET 0) f ON true;
   RETURN QUERY WITH selected AS MATERIALIZED (SELECT b.id FROM entity_weapon_builds b WHERE b.weapon=ANY(weapons)
-    UNION SELECT unnest(identities)) SELECT 'state_board_pending_work'::text,jsonb_build_object('batch',q.batch,'build_id',q.build_id,'ruler',q.ruler,'mode',q.mode)
+    UNION SELECT unnest(identities)) SELECT 'queue'::text,jsonb_build_object('batch',q.batch,'build_id',q.build_id,'ruler',q.ruler,'mode',q.mode)
     FROM selected k JOIN LATERAL (SELECT * FROM state_board_pending_work q WHERE q.build_id=k.id OFFSET 0) q ON true
       WHERE EXISTS(SELECT 1 FROM entity_compute_batches b WHERE b.id=q.batch);
 END $$;

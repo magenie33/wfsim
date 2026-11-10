@@ -442,16 +442,19 @@ let computeDb = null, resultsMem = [], pendingMem = [];
 function openResults() {
   if (!computeDb) computeDb = new Promise((ok) => {
     try {
-      const rq = indexedDB.open(COMPUTE_DB, 1);
+      const rq = indexedDB.open(COMPUTE_DB, 2);
       rq.onupgradeneeded = () => {
-        for (const s of ["results", "pending"]) if (!rq.result.objectStoreNames.contains(s)) rq.result.createObjectStore(s, { keyPath: "question" });
+        for (const [old,name] of [["results","entity_client_compute_results"],["pending","state_compute_credit_pending"]]) {
+          if(rq.result.objectStoreNames.contains(old))rq.transaction.objectStore(old).name=name;
+          if(!rq.result.objectStoreNames.contains(name))rq.result.createObjectStore(name,{keyPath:"question"});
+        }
       };
-      rq.onsuccess = () => ok(rq.result);
+      rq.onsuccess = () => {rq.result.onversionchange=()=>rq.result.close();ok(rq.result);};
       rq.onerror = rq.onblocked = () => ok(null);
     } catch (_) { ok(null); }
   }).then(async (db) => {
     if (!db) return null;
-    try { [resultsMem, pendingMem] = await Promise.all([idbAll(db, "results"), idbAll(db, "pending")]); } catch (_) { return null; }
+    try { [resultsMem, pendingMem] = await Promise.all([idbAll(db, "entity_client_compute_results"), idbAll(db, "state_compute_credit_pending")]); } catch (_) { return null; }
     return db;
   });
   return computeDb;
@@ -491,8 +494,8 @@ async function keptResults(id) {
   const now = Date.now(), mine = (r) => r.verifier === id && r.engine === ENGINE_ID;
   const goneR = new Set(resultsMem.filter((r) => !mine(r) || now - r.at > RESULT_KEEP_MS).map((r) => r.question));
   const goneP = new Set(pendingMem.filter((r) => r.verifier !== id || now - r.at > PENDING_KEEP_MS).map((r) => r.question));
-  if (goneR.size) { resultsMem = resultsMem.filter((r) => !goneR.has(r.question)); await idbWrite("results", [], [...goneR]).catch(() => {}); }
-  if (goneP.size) { pendingMem = pendingMem.filter((r) => !goneP.has(r.question)); await idbWrite("pending", [], [...goneP]).catch(() => {}); }
+  if (goneR.size) { resultsMem = resultsMem.filter((r) => !goneR.has(r.question)); await idbWrite("entity_client_compute_results", [], [...goneR]).catch(() => {}); }
+  if (goneP.size) { pendingMem = pendingMem.filter((r) => !goneP.has(r.question)); await idbWrite("state_compute_credit_pending", [], [...goneP]).catch(() => {}); }
   return resultsMem.slice().sort((a, b) => a.at - b.at);
 }
 /// POINTS NOT YET CONFIRMED: every kept or taken result's work, as points.
@@ -624,8 +627,8 @@ async function takeSynced(r, sent, sentAt, held) {
     resultsMem = resultsMem.filter((x) => !gone.has(x.question));
     const moved = taken.map((q) => { const x = byQ.get(q); return { question: q, verifier: x.verifier, engine: x.engine, work: x.work, at: Date.now() }; });
     pendingMem = [...pendingMem.filter((x) => !gone.has(x.question)), ...moved];
-    await idbWrite("results", [], [...gone]).catch(() => {});
-    await idbWrite("pending", moved, []).catch(() => {});
+    await idbWrite("entity_client_compute_results", [], [...gone]).catch(() => {});
+    await idbWrite("state_compute_credit_pending", moved, []).catch(() => {});
     computeSent([...gone].map((q) => byQ.get(q).key).filter(Boolean));
   }
   for (const h of r.held || []) {
@@ -637,7 +640,7 @@ async function takeSynced(r, sent, sentAt, held) {
   const settled = new Set((r.states || []).filter((s) => s.state === "confirmed" || s.state === "gone").map((s) => s.question));
   if (settled.size) {
     pendingMem = pendingMem.filter((x) => !settled.has(x.question));
-    await idbWrite("pending", [], [...settled]).catch(() => {});
+    await idbWrite("state_compute_credit_pending", [], [...settled]).catch(() => {});
   }
   if (r.points) { devicePointsAt = Date.now(); await takeDevicePoints({ ok: true, ...r.points }); }
   else if (gone.size) renderBoardConsent();
@@ -1085,7 +1088,7 @@ async function packRowOnce(id, p) {
     // KEPT BEFORE ANYTHING ELSE HAPPENS: a result in IndexedDB survives the page.
     const kept = { ...answer, lease: p.lease, verifier: id, engine: ENGINE_ID, at: Date.now(), key: taskKey(t) };
     resultsMem = [...resultsMem.filter((x) => x.question !== t.question), kept];
-    await idbWrite("results", [kept], []).catch(() => {});
+    await idbWrite("entity_client_compute_results", [kept], []).catch(() => {});
     p.done.add(t.question);
   } else p.unsent.push({ key: taskKey(t), ...answer });
   computeFinished += 1;

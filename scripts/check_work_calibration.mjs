@@ -1,3 +1,4 @@
+import { seedComputeWork } from "./pg/fixtures.mjs";
 // Scoped calibration reads and counter totals preserve the individual-payment oracle.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -15,8 +16,7 @@ const db = await testDb('library');
 try {
   for (let i = 1; i <= 9; i++) {
     const id = 'q'+i;
-    await db.run("INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at) VALUES(?1,?2,?3,'open',?4,?4)",
-      id, i === 4 ? 'optimize' : 'simulate', JSON.stringify({ record: { weapon: 'braton' }, fixture: i }), at);
+    await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:args[1],request:args[2],state:"open",due_at:args[3],opened_at:args[3]});})(db,[id,i === 4 ? 'optimize' : 'simulate',JSON.stringify({ record: { weapon: 'braton' }, fixture: i }),at]);
     await db.run(`INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,at,counts,credited,official,void)
       VALUES(?1,'e',?2,?2,'c','{}',?3,?4,?5,?6,?7,?8)`, id, 'device-'+i, 100+i,
       i === 7 ? since : i === 8 ? '2026-11-08T00:00:00.000Z' : at,

@@ -38,9 +38,9 @@ export async function intakeBatches(file, { intake = join(ROOT, 'target/release/
   const path = name => join(scratch, name), started = Date.now(), end = started + deadlineSeconds * 1000;
   const batch = `arrivals-${new Date(started).toISOString().slice(0, 10)}`;
   const state = new DatabaseSync(path('first-builds.sqlite'));
-  state.exec('PRAGMA cache_size=-2048; PRAGMA mmap_size=0; PRAGMA temp_store=FILE; CREATE TABLE first_builds(id TEXT PRIMARY KEY, at TEXT) WITHOUT ROWID');
-  const first = state.prepare('INSERT INTO first_builds(id,at) VALUES(?,?) ON CONFLICT DO NOTHING');
-  const clock = state.prepare('SELECT at FROM first_builds WHERE id=?');
+  state.exec("PRAGMA cache_size=-2048; PRAGMA mmap_size=0; PRAGMA temp_store=FILE; CREATE TABLE state_first_build_submission_times(id TEXT PRIMARY KEY, at TEXT) WITHOUT ROWID");
+  const first = state.prepare("INSERT INTO state_first_build_submission_times(id,at) VALUES(?,?) ON CONFLICT DO NOTHING");
+  const clock = state.prepare("SELECT at FROM state_first_build_submission_times WHERE id=?");
   const result = { batches: 0, arrivals: 0, builds: 0 };
   let pending = [], bytes = 0;
   const execute = (command, args, io = {}) => run(command, args, { ...io, signal });

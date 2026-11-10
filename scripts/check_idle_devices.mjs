@@ -1,3 +1,4 @@
+import { seedComputeWork, replaceComputeResult } from "./pg/fixtures.mjs";
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // COMPUTERS ON BUT IDLE (worker/idle_devices.js), found and said by the watchdog.
 // Plain node on PGlite: ids that asked in the last half hour are sorted into an
@@ -87,7 +88,7 @@ check("a repair that throws keeps no round from being written", (await db.all("S
 console.log("\nfailed checks remain unknown while other findings survive");
 const failAt = NOW + 5 * 3_600_000;
 await db.run("UPDATE entity_compute_devices SET last_at = ?", iso(failAt));
-await db.run("INSERT INTO state_compute_work (id, verb, request, state, opened_at, due_at) VALUES ('odd', 'simulate', '{}', 'nondeterministic', ?, ?)", iso(failAt), iso(failAt));
+await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"odd",verb:"simulate",request:"{}",state:"nondeterministic",opened_at:args[0],due_at:args[1]});})(db,[iso(failAt),iso(failAt)]);
 const fails = (pattern) => new Proxy(db, { get: (o, k) => {
   if (k !== "prepare") return typeof o[k] === "function" ? o[k].bind(o) : o[k];
   return (sql) => {
@@ -145,10 +146,8 @@ console.log("\nstalls respect each producer's complete demand history");
   const db = await testDb("library"), env = { LIBRARY: db }, old = iso(NOW - 3_600_000), at = iso(NOW);
   const f = factory({ verbs: {}, producers: {} });
   await db.run("INSERT INTO entity_compute_devices (id, seen, last_at) VALUES ('busy', 'today', ?)", at);
-  await db.exec(`INSERT INTO state_compute_work (id,verb,request,state,opened_at,due_at) VALUES
-    ('quiet','simulate','{}','open','${old}','${old}'),('speaking','simulate','{}','open','${old}','${old}'),
-    ('held','simulate','{}','open','${old}','${old}');
-    INSERT INTO relation_task_consumers (producer,ref,question,state,asked_at,due_at) VALUES
+  for (const id of ["quiet","speaking","held"]) await seedComputeWork(db,{id,verb:"simulate",request:{},state:"open",opened_at:old,due_at:old});
+  await db.exec(`INSERT INTO relation_task_consumers (producer,ref,question,state,asked_at,due_at) VALUES
     ('quiet','a','quiet','live','${old}','${old}'),('quiet','b','quiet','live','${old}','${old}'),
     ('speaking','current','speaking','live','${old}','${old}'),('speaking','past','gone','withdrawn','${old}','${old}'),
     ('held','held','held','live','${old}','${old}');`);
@@ -169,7 +168,8 @@ console.log("\nlegacy redelivery advances without an unbounded history scan");
     producers: { p: { on_fact: async (_, demand) => { delivered.push(demand.ref); } } } });
   const fact = async (ref, at) => {
     await f.demand(env, { producer: "p", ref, verb: "simulate", request: { ref }, due_in_ms: 1000 }, "e1", start);
-    await db.run("UPDATE state_compute_work SET state='fact',canon='{}',fact_engine='e1',fact_at=? WHERE id=(SELECT question FROM relation_task_consumers WHERE ref=?)", iso(at), ref);
+    const {question}=await db.get("SELECT question FROM relation_task_consumers WHERE ref=?",ref);
+    await replaceComputeResult(db,question,{state:"fact",canon:"{}",fact_engine:"e1",fact_at:iso(at)});
   };
   await db.run("INSERT INTO state_factory_progress(name,through) VALUES ('redeliver',?)", iso(start));
   await fact("later", start + 2 * 3_600_000);
@@ -200,7 +200,8 @@ console.log("\nlegacy redelivery advances without an unbounded history scan");
   const f = factory({ verbs: { simulate: { cap: 2, canon: (result) => JSON.stringify(result) } },
     producers: { p: { on_fact: async (_, demand) => { delivered.push(demand.ref); } } } });
   await f.demand(env, { producer: "p", ref: "cold", verb: "simulate", request: { cold: true }, due_in_ms: 1000 }, "e1", NOW - 3_600_000);
-  await db.run("UPDATE state_compute_work SET state='fact',canon='{}',fact_engine='e1',fact_at=?", iso(NOW - 30 * 60_000));
+  const {id}=await db.get("SELECT id FROM state_compute_work");
+  await replaceComputeResult(db,id,{state:"fact",canon:"{}",fact_engine:"e1",fact_at:iso(NOW - 30 * 60_000)});
   let through = NOW - 7 * 86_400_000, bounded = true, skipped = false, passes = 0;
   for (; passes < 168 && !delivered.length; passes++) {
     await f.redeliver(env, NOW, 2);

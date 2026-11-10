@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { computationSchemaSql } from './computation_schema.mjs';
 import { testDb } from './pg/test_db.mjs';
+import { replaceComputeResult } from './pg/fixtures.mjs';
 import { factory } from '../worker/tasks.js';
 import { VERBS } from '../worker/factory.js';
 import { BOARD_PRODUCERS } from '../worker/board_tasks.js';
@@ -26,7 +27,7 @@ const pipelineSchema = (await library.get('SELECT current_schema() AS name')).na
 await library.exec(`CREATE ROLE wfsim_pipeline; GRANT USAGE ON SCHEMA ${pipelineSchema} TO wfsim_pipeline;
   GRANT SELECT, INSERT, UPDATE, DELETE ON state_board_measurement_selection TO wfsim_pipeline;`);
 await check('the upgrade applies twice to a pre-attribution database and only shortens optimization details', async () => {
-  await library.exec('DROP TABLE relation_measurement_witnesses,computation_witnesses,computation_records; DROP TRIGGER scores_replace_witnesses ON state_board_measurement_selection; DROP FUNCTION score_witnesses_replaced(); ALTER TABLE state_compute_work DROP COLUMN witnesses; ALTER TABLE entity_compute_devices DROP COLUMN signatures; ALTER TABLE record_hourly_compute_totals DROP COLUMN signatures');
+  await library.exec('DROP TABLE relation_measurement_witnesses,relation_computation_witnesses,state_public_computation_summaries; DROP TRIGGER scores_replace_witnesses ON state_board_measurement_selection; DROP FUNCTION score_witnesses_replaced(); ALTER TABLE entity_compute_devices DROP COLUMN signatures; ALTER TABLE record_hourly_compute_totals DROP COLUMN signatures');
   await accounts.exec('ALTER TABLE entity_accounts DROP COLUMN profile_id');
   for (const kind of ['simulation', 'optimization']) await library.run(`INSERT INTO entity_user_calculation_requests
     (id,task,owner,kind,engine,question,state,created_at,completed_at,expires_at) VALUES (?,?,?,?,'engine','question','succeeded','2026-01-01T00:00:00.000Z','2026-01-02T00:00:00.000Z','2026-02-01T00:00:00.000Z')`, kind, kind, 'owner', kind);
@@ -41,7 +42,7 @@ await check('the pipeline replaces a score and clears its old witnesses without 
     SET ROLE wfsim_pipeline;`);
   try {
     await library.run("UPDATE state_board_measurement_selection SET finished_at='new' WHERE identity='pipeline-check'");
-    const privateColumn = await library.get("SELECT has_column_privilege(current_user,'score_witnesses','owner','SELECT') AS allowed");
+    const privateColumn = await library.get("SELECT has_column_privilege(current_user,'relation_measurement_witnesses','owner','SELECT') AS allowed");
     assert.equal(privateColumn.allowed, false);
   } finally { await library.exec('RESET ROLE'); }
   assert.equal((await library.get("SELECT count(*) AS n FROM relation_measurement_witnesses WHERE identity='pipeline-check'")).n, 0);
@@ -112,7 +113,7 @@ await check('identity and summary avoid record scans while retaining current pri
   assert.equal(identityValue.profile.name, 'ANN');
   assert.ok(!('points' in identityValue.profile) && !('candidates' in identityValue));
   const noRecords = { ...env, LIBRARY: { prepare(sql) {
-    assert.ok(!/score_witnesses|computation_records/.test(sql), 'summary must not query record tables');
+    assert.ok(!/relation_measurement_witnesses|state_public_computation_summaries/.test(sql), 'summary must not query record tables');
     return library.prepare(sql);
   } } };
   const summaryResponse = await contributorProfilesRoute(request('summary'), noRecords, '/api/contributors/profile/' + publicId);
@@ -186,7 +187,7 @@ await check('optimization records preserve attribution without exposing private 
 await check('settling an unchanged proof again does not renew its fourteen day detail window', async () => {
   const original = await library.get('SELECT * FROM state_public_computation_summaries WHERE question=?', optimization);
   const later = new Date(Date.now() + 60000).toISOString();
-  await library.run('UPDATE state_compute_work SET fact_at=? WHERE id=?', later, optimization);
+  await replaceComputeResult(library,optimization,{fact_at:later});
   const q = await library.get('SELECT * FROM state_compute_work WHERE id=?', optimization);
   await library.batch(computationWrites(library, q, JSON.parse(q.witnesses), engine, later));
   const kept = await library.get('SELECT * FROM state_public_computation_summaries WHERE question=?', optimization);

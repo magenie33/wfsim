@@ -59,8 +59,8 @@ const SETUP = `
   const idle = () => wait(() => !!computeWake, 20000);
   const kick = async () => { await idle(); const w = computeWake; if (w) w(); await new Promise((r) => setTimeout(r, 50)); };
   const syncs = () => window.__calls.filter((c) => c.kind === "sync");
-  const idbResults = () => new Promise((ok) => { const rq = indexedDB.open("wfsim-compute", 1);
-    rq.onsuccess = () => { const g = rq.result.transaction("results").objectStore("results").getAll(); g.onsuccess = () => ok(g.result); g.onerror = () => ok([]); };
+  const idbResults = () => new Promise((ok) => { const rq = indexedDB.open("wfsim-compute", 2);
+    rq.onsuccess = () => { const g = rq.result.transaction("entity_client_compute_results").objectStore("entity_client_compute_results").getAll(); g.onsuccess = () => ok(g.result); g.onerror = () => ok([]); };
     rq.onerror = () => ok([]); });
   const fresh = (o = {}) => { heldPack = null; packQueue = []; refusedPending = []; lostRows = new Set(); syncNotBefore = 0; syncFailures = 0;
     lastSyncAt = Date.now(); bootSyncAt = 1; window.__calls.length = 0; window.__syncReply = null; window.__signal = null; Object.assign(window, o); };

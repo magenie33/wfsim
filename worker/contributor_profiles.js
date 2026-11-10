@@ -34,7 +34,7 @@ export async function computationNames(env, rows) {
   const current = results.filter(s => rows.some(row => row.identity === s.identity && row.ruler === s.ruler && row.mode === s.mode
     && minute(row.measured_at) === minute(s.finished_at) && row.measured_by === s.measured_by.replace(/^verified:/, "")
     && Math.abs(row.score - s.score) <= 1e-12 * Math.max(1, Math.abs(s.score))));
-  const named = await namesForRows(env, current, "score_witnesses", "score");
+  const named = await namesForRows(env, current, "relation_measurement_witnesses", "score");
   return named.map(row => ({ identity: row.identity, ruler: row.ruler, mode: row.mode, measured_at: row.finished_at,
     witnesses: row.witnesses.length ? row.witnesses : row.measured_by.startsWith("verified:") ? [] : [{ official: true, name: null }] }));
 }
@@ -58,7 +58,7 @@ export async function contributorProfilesRoute(request, env, path) {
   if (record) {
     const row = await env.LIBRARY.prepare("SELECT * FROM state_public_computation_summaries WHERE question=? AND expires_at>?").bind(record[1], iso(Date.now())).first();
     if (!row) return no("unavailable", 410);
-    return reply({ ok: true, record: (await namesForRows(env, [row], "computation_witnesses", "question"))[0] });
+    return reply({ ok: true, record: (await namesForRows(env, [row], "relation_computation_witnesses", "question"))[0] });
   }
   const me = await sessionAccount(env, request);
   if (!profile && !me) return no("not_signed_in", 401);
@@ -89,7 +89,7 @@ export async function contributorProfilesRoute(request, env, path) {
       AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=s.identity AND f.ruler=s.ruler AND f.mode=s.mode AND f.retired_at IS NOT NULL)
       ORDER BY s.finished_at DESC,s.identity DESC,s.ruler DESC,s.mode DESC LIMIT ?7::bigint`).bind(owners, weapon, ...cursor, size + 1).all());
     next = rows.length > size ? rows[size - 1] : null;
-    rows = (await namesForRows(env, rows.slice(0, size), "score_witnesses", "score")).map(row => ({ ...row, record: JSON.parse(row.record) }));
+    rows = (await namesForRows(env, rows.slice(0, size), "relation_measurement_witnesses", "score")).map(row => ({ ...row, record: JSON.parse(row.record) }));
     next = next ? [next.finished_at, next.identity, next.ruler, next.mode] : null;
   } else {
     const cursor = before || ["9999", "~"];
@@ -98,7 +98,7 @@ export async function contributorProfilesRoute(request, env, path) {
       AND (?3::text='' OR r.weapon=?3::text) AND (r.completed_at,r.question)<(?4::text,?5::text)
       ORDER BY r.completed_at DESC,r.question DESC LIMIT ?6::bigint`).bind(owners, iso(Date.now()), weapon, ...cursor, size + 1).all());
     next = rows.length > size ? [rows[size - 1].completed_at, rows[size - 1].question] : null;
-    rows = await namesForRows(env, rows.slice(0, size), "computation_witnesses", "question");
+    rows = await namesForRows(env, rows.slice(0, size), "relation_computation_witnesses", "question");
   }
   return reply({ ok: true, profile: { ...identity, ...contribution }, kind, keep_days: 14, candidates: rows, next });
 }

@@ -1,3 +1,4 @@
+import { seedComputeWork } from "./pg/fixtures.mjs";
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Capacity backs off background reads while the same facts, fairness and
 // public counts survive; failures cannot wedge a cache or the background lane.
@@ -183,7 +184,7 @@ console.log("ok: either cache refresh keeps its full read budget; both warm cach
 
 for (const [id, state, odd, age] of [["both", "nondeterministic", 1, 0], ["recent", "fact", 1, 0],
   ["old", "fact", 1, 2 * 86_400_000], ["unsettled", "nondeterministic", 0, 2 * 86_400_000]]) {
-  await L.run("INSERT INTO state_compute_work (id,verb,request,state,due_at,opened_at,odd,fact_at) VALUES (?,'simulate','{}',?,'x','x',?,?)", id, state, odd, new Date(now - age).toISOString());
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:args[1],due_at:"x",opened_at:"x",odd:args[2],fact_at:args[3]});})(L,[id,state,odd,new Date(now - age).toISOString()]);
 }
 const f = factory({ verbs: { simulate: { canon: () => "" } }, producers: {} });
 assert.equal((await f.audit({ LIBRARY: L }, now)).find((x) => x.kind === "nondeterministic").questions, 3);

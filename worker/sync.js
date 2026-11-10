@@ -155,7 +155,7 @@ async function sync(request, env) {
   // THE OWNER'S OTHER SWITCH: the database work in one call (`sync_proc`). With
   // answers settled in the request (`settle_async` 0) they are recorded here
   // first, so they are settled before anything the call decides.
-  if (d.sync_proc === 1) {
+  if (d.sync_proc === 1 && env.FACTORY_DRAINING!=="1") {
     const whole = d.settle_async === 1;
     let given = null;
     if (!whole) { await seen(); given = await results(x); }

@@ -1,3 +1,4 @@
+import { seedComputeWork } from "./pg/fixtures.mjs";
 // Complete demand counts canonical questions from one snapshot.
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
@@ -116,7 +117,7 @@ try {
   await assert.rejects(publish(plan, 'wrong'), /401/); await publish(plan);
   assert.equal((await readInventory(db, now)).total, 4, 'publication mixed a later ledger count into the snapshot');
   const request = '{}';
-  await db.run("INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at,producer) VALUES (?,'future_verb',?,'open','x','x','sweep')", future, request);
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"future_verb",request:args[1],state:"open",due_at:"x",opened_at:"x",producer:"sweep"});})(db,[future,request]);
   await db.run("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES ('future_owner','new',?,'live','x','x')", future);
   const exported = await db.all('SELECT * FROM factory_inventory_rows(?,?::text[])', engine, ['sweep']);
   assert.equal(exported.find(q => q.id === future).kind, 'future_owner');

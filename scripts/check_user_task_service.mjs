@@ -26,6 +26,34 @@ await check("acceptance is durable and idempotent", async () => {
   assert.equal(a.ok, true); assert.equal(a.id, b.id); assert.equal(a.question, b.question);
   assert.equal((await db.get("SELECT count(*) AS n FROM entity_user_calculation_requests")).n, 1);
 });
+await check("failed task admission rolls back its consumer request",async()=>{
+  const pending=accepted("simulation",{...request,unique:"atomic-admission"}),batch=db.batch;
+  db.batch=statements=>{
+    const index=statements.findIndex(statement=>statement.sql.includes("compute_register_tasks("));
+    return batch(index<0 ? statements : [...statements.slice(0,index),db.prepare("SELECT 1/0"),...statements.slice(index)]);
+  };
+  try { await assert.rejects(call("accept",pending)); }
+  finally { db.batch=batch; }
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_user_calculation_requests WHERE id=?",pending.id)).n,0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM relation_task_consumers WHERE ref=?",pending.id)).n,0);
+});
+await check("cancellation between validation and admission wins durably",async()=>{
+  const pending=accepted("simulation",{...request,unique:"cancel-admission-race"}),batch=db.batch;
+  let interrupted=false;
+  db.batch=async statements=>{
+    if (!interrupted && statements.some(statement=>statement.sql.includes("compute_register_tasks("))) {
+      interrupted=true;
+      await call("cancel",{owner,ids:[pending.id]});
+    }
+    return batch(statements);
+  };
+  let response;
+  try { response=await call("accept",pending); }
+  finally { db.batch=batch; }
+  assert.equal(response.status,410);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_user_calculation_requests WHERE id=?",pending.id)).n,0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM relation_task_consumers WHERE ref=?",pending.id)).n,0);
+});
 await check("an acceptance identity cannot change its inputs or owner", async () => {
   assert.equal((await call("accept", { ...first, request: { ...request, runs: 99 } })).status, 409);
   assert.equal((await call("accept", { ...first, owner: another })).status, 409);
@@ -101,6 +129,24 @@ await check("a corrected report selects the new output under the same engine",as
   assert.notEqual(current.report_id,old.report_id);
   assert.equal(current.retained_from,old.retained_from);
   assert.deepEqual((await call("status",{owner,ids:[pending.id],include_results:true})).tasks[0].result,calculationReport(corrected));
+});
+await check("an imported report survives without invented task or input records",async()=>{
+  const id=randomUUID(),task=randomUUID(),question="f".repeat(32),at=new Date(Date.now()-10*86_400_000).toISOString();
+  const storedOwner=(await db.get("SELECT owner FROM entity_user_calculation_requests WHERE id=?",first.id)).owner;
+  const saved=await db.get("INSERT INTO entity_calculation_reports(question,engine,at,origin,body) VALUES(?1,?2,?3,'imported',?4) RETURNING id",
+    question,engine,at,JSON.stringify(calculationReport(report)));
+  await db.run("INSERT INTO state_calculation_report_selection(question,engine,report_id,at,retained_from) VALUES(?,?,?,?,?)",
+    question,engine,saved.id,at,at);
+  await db.run("INSERT INTO relation_calculation_report_access(id,owner,question,engine,task,kind,created_at,completed_at,expires_at) VALUES(?,?,?,?,?,'simulation',?,?,?)",
+    id,storedOwner,question,engine,task,at,at,new Date(Date.now()+86_400_000).toISOString());
+  await purgeUserCalculations(env);
+  const kept=(await call("status",{owner,ids:[id],include_results:true})).tasks[0];
+  assert.deepEqual(kept.result,calculationReport(report));
+  assert.equal(kept.computation.completed_at,at);
+  assert.equal(kept.computation.origin,"imported");
+  assert.equal((await call("status",{owner:another,ids:[id],include_results:true})).tasks.length,0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_compute_specs WHERE id=?",question)).n,0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_compute_tasks WHERE computation=?",question)).n,0);
 });
 await check('optimization requests expire after fourteen days and new windows cannot revive a report', async () => {
   const OriginalDate = Date;

@@ -13,6 +13,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
   /// no cores free now (asking ahead), which a question someone waits on is never
   /// handed; `before` keeps to questions due before then.
   async function next(env, w, engine, now = Date.now()) {
+    if(env.FACTORY_DRAINING==="1")return null;
     const db = env.LIBRARY, at = iso(now), most = w.most ?? 1, d = await dialsOf(env, now);
     for (let tries = 0; tries < PICK_ROUNDS; tries++) {
       const q = await db.prepare(HEAD).bind(...eligibleArgs(w, engine, at, d)).first();
@@ -60,6 +61,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
   /// the queue again and none of it counts.
   /// The pick, the lease and the charge are worker/pg/sync.sql `factory_lease_pack`.
   async function nextPack(env, w, engine, { n, lease_ms, most = 1, exclude = null, join = null, producer = null }, now = Date.now()) {
+    if(env.FACTORY_DRAINING==="1")return null;
     const db = env.LIBRARY, at = iso(now), lease = newLease(), d = await dialsOf(env, now);
     const [, , , , , , , , ceiling, grace] = eligibleArgs(w, engine, at, d);
     const kept = [], wanted = [];
@@ -184,6 +186,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
   /// with its demands, the live ones first, which say what to compute — a fact
   /// checked again has only served ones.
   async function claim(env, w, { states = ["open", ...OFFICIAL_STATES], producers = null, max = 100, lease_ms = 6 * 3_600_000 }, engine, now = Date.now()) {
+    if(env.FACTORY_DRAINING==="1")return [];
     const db = env.LIBRARY, at = iso(now);
     max = Math.trunc(Number(max));
     const wanted = ["open", ...OFFICIAL_STATES].filter((state) => states.includes(state));

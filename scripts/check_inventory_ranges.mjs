@@ -27,12 +27,12 @@ async function run(size) {
   index.transaction(() => {
     for (let i = 0; i < size; i++) {
       const id = String(i).padStart(8, '0'), body = descriptor(id), score = i === 0 ? 100 : i === 1 ? 21 : 10;
-      index.q('INSERT INTO rel_sources(id,candidate,body) VALUES(?,?,?)').run(id, id, JSON.stringify({ ...body, id }));
-      index.q('INSERT INTO rel_candidates VALUES(?,?,?,?,?)').run(id, bucket, 3, null, JSON.stringify(body));
-      index.q('INSERT INTO records(build_id,stored) VALUES(?,?)').run(id, JSON.stringify(body.record));
-      index.q('INSERT INTO rel_facts VALUES(?,?,?,?,?,?,?,?,?)').run(id, 'r', 'base', score, '', bucket, 'a', 0, 'r');
+      index.q("INSERT INTO entity_catalog_sources(id,candidate,body) VALUES(?,?,?)").run(id, id, JSON.stringify({ ...body, id }));
+      index.q("INSERT INTO entity_catalog_candidates VALUES(?,?,?,?,?)").run(id, bucket, 3, null, JSON.stringify(body));
+      index.q("INSERT INTO entity_inventory_builds(build_id,stored) VALUES(?,?)").run(id, JSON.stringify(body.record));
+      index.q("INSERT INTO state_catalog_measurements VALUES(?,?,?,?,?,?,?,?,?)").run(id, 'r', 'base', score, '', bucket, 'a', 0, 'r');
     }
-    for (const target of [0, 1]) index.q('INSERT INTO rel_leaders VALUES(?,?,?,?,?)').run(bucket, 'r', 'base', target, 100);
+    for (const target of [0, 1]) index.q("INSERT INTO state_catalog_leaders VALUES(?,?,?,?,?)").run(bucket, 'r', 'base', target, 100);
     index.dirty('00000000'); index.dirty('00000001');
   });
   const drain = async () => { while (index.pending()) await index.step(operate, { limit: 7, budgetMs: 10 }); };
@@ -49,11 +49,11 @@ async function run(size) {
   await drain();
   const crossing = delta(index.metrics, before);
   assert.equal(crossing.candidates, 2); assert.equal(crossing.range_rows, 2); assert.equal(catalog.summary().rows, 1);
-  const plan = index.q(`EXPLAIN QUERY PLAN SELECT identity,score FROM rel_facts
+  const plan = index.q(`EXPLAIN QUERY PLAN SELECT identity,score FROM state_catalog_measurements
     WHERE bucket=? AND gate_ruler=? AND mode=? AND retired=0 AND score>=? AND score<=?
     AND (score,identity)>(?,?) ORDER BY score,identity LIMIT ?`).all(bucket, 'r', 'base', 20, 22, 20, '', 7);
   assert(plan.some(p => /SEARCH .*rel_facts_score/.test(p.detail)), JSON.stringify(plan));
-  assert(!plan.some(p => /TEMP B-TREE|SCAN rel_facts/.test(p.detail)), JSON.stringify(plan));
+  assert(!plan.some(p => /TEMP B-TREE|SCAN state_catalog_measurements/.test(p.detail)), JSON.stringify(plan));
   catalog.close(); catalog = openCatalog(path); index = new InventoryRelations(catalog, contract);
   assert(!index.pending()); assert.equal(catalog.summary().rows, 1);
   await assert.rejects(index.step(operate, { limit: 257 }), /budget/);

@@ -1,3 +1,4 @@
+import { seedComputeWork } from "./pg/fixtures.mjs";
 // WHO ASKED (docs/BOARD.md §"Who asked"): a demand carries its initiator and a
 // question its earliest-due live demand's; an initiator past its share of the
 // live leases is passed over (dial `initiator_share_pct`, worker/pg/sync.sql
@@ -85,10 +86,8 @@ check("…a live one keeps it, and the system's is never a code to erase",
   && (await L.get("SELECT initiator FROM relation_task_consumers WHERE ref = 's0'")).initiator === "system");
 
 const backlog = await testDb("library");
-await backlog.exec(`INSERT INTO state_compute_work (id,verb,request,state,due_at,opened_at,initiator)
-  SELECT 'closed-'||i,'simulate','{}',CASE WHEN i%2=0 THEN 'fact' ELSE 'withdrawn' END,'x','x','user:old' FROM generate_series(1,1007) i;
-  INSERT INTO relation_task_consumers (producer,ref,question,state,asked_at,due_at,initiator)
-  SELECT 'sweep','closed-'||i,'closed-'||i,CASE WHEN i%2=0 THEN 'served' ELSE 'withdrawn' END,'x','x','bot:old' FROM generate_series(1,1007) i;`);
+for (let i=1;i<=1007;i++) await seedComputeWork(backlog,{id:`closed-${i}`,verb:"simulate",request:{},state:i%2===0 ? "fact" : "withdrawn",due_at:"x",opened_at:"x",initiator:"user:old"});
+await backlog.exec(`INSERT INTO relation_task_consumers (producer,ref,question,state,asked_at,due_at,initiator) SELECT 'sweep','closed-'||i,'closed-'||i,CASE WHEN i%2=0 THEN 'served' ELSE 'withdrawn' END,'x','x','bot:old' FROM generate_series(1,1007) i;`);
 const drain = async () => Number((await backlog.get("SELECT factory_forget_codes() AS n")).n);
 const batches = [await drain(), await drain(), await drain()];
 check("code cleanup commits bounded batches and reaches the remaining rows on its next pass",

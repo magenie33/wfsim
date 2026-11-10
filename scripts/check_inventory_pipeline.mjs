@@ -12,6 +12,8 @@ import { captureInventory } from './capture_compute_inventory.mjs';
 import { classifyInventory } from './classify_compute_inventory.mjs';
 import { openCatalog } from './incremental_inventory.mjs';
 import { questionId } from '../worker/task_contract.js';
+import { seedComputeWork,replaceComputeResult } from './pg/fixtures.mjs';
+import { placeholders } from '../worker/db.js';
 
 const supplied = process.env.WFSIM_INVENTORY_BOARD_BIN;
 const binary = resolve(supplied || 'target/debug/wfsim-board');
@@ -34,6 +36,7 @@ assert.equal(canonical.length, 3);
 const [c, b, d] = canonical, alias = 'a'.repeat(32), future = await questionId('future_verb', { input: 'future' });
 const pg = new PGlite();
 const q = (text, args = []) => pg.query(text, args).then(result => result.rows);
+const fixtureDb={run:(text,...args)=>q(placeholders(text),args),get:async(text,...args)=>(await q(placeholders(text),args))[0]};
 const scalar = async (text, args = []) => Object.values((await q(text, args))[0])[0];
 let afterCapture = null, ackCalls = 0, failCohort = false, failAckReply = false, child, replies, reader, succeeded = false;
 const commandLog = [], ackEvidence = [];
@@ -42,11 +45,11 @@ const unsafe = async (text, args = []) => {
   if (/\binventory_ack\(/.test(text)) {
     const state = json(statePath), db = new DatabaseSync(state.catalog, { readOnly: true });
     try {
-      const meta = JSON.parse(db.prepare('SELECT body FROM meta WHERE id=1').get().body);
+      const meta = JSON.parse(db.prepare("SELECT body FROM state_inventory_generation WHERE id=1").get().body);
       assert.equal(meta.complete, true, 'ACK preceded a complete durable catalog');
-      assert.equal(db.prepare('SELECT count(*) n FROM jobs').get().n, 0, 'ACK preceded all frozen cohort jobs');
+      assert.equal(db.prepare("SELECT count(*) n FROM state_inventory_jobs").get().n, 0, 'ACK preceded all frozen cohort jobs');
       const changes = JSON.parse(args[1]).flat();
-      for (const row of changes) assert(db.prepare('SELECT 1 FROM receipts WHERE scope=? AND key=? AND revision=?')
+      for (const row of changes) assert(db.prepare("SELECT 1 FROM record_inventory_applied_changes WHERE scope=? AND key=? AND revision=?")
         .get(row.scope, row.key, row.revision), 'ACK preceded durable local receipt');
       ackEvidence.push({ generation: args[0], rows: changes.length }); ackCalls++;
     } finally { db.close(); }
@@ -122,7 +125,7 @@ try {
       '2026-11-01T00:00:00.000Z','2026-11-01T00:00:01.000Z','at')`, [d.id, roster[0], engine]);
   await q(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at,review_id)
     VALUES ($1,$2,'base','old',100,'kpm',1,'2026-11-01T00:00:00.000Z','2026-11-01T00:00:01.000Z','review')`, [d.id, roster[0]]);
-  await q(`INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at,fact_engine) VALUES ($1,'future_verb','{}','open','due','at',$2)`, [future, engine]);
+  await seedComputeWork(fixtureDb,{id:future,verb:'future_verb',request:'{}',state:'open',due_at:'due',opened_at:'at'});
   await q(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES ('future_owner','future',$1,'live','at','due')`, [future]);
   const errorFd = openSync(join(dir, 'ranker.stderr'), 'w');
   child = spawn(binary, ['--serve', join(dir, 'published-board'), '--library', file('empty-library', []), '--builds', file('empty-builds', ''),
@@ -147,7 +150,7 @@ try {
       const copied = join(frozen, name); copyFileSync(path, copied); return [name, copied];
     }));
     bootstrapMeta = cut.meta; originalReceipt = cut.receipt; bootstrapCapture = dirname(cut.capture);
-    await q("UPDATE state_compute_work SET state='fact' WHERE id=$1", [future]);
+    await replaceComputeResult(fixtureDb,future,{state:'fact',canon:'{}',fact_engine:engine,fact_at:'2026-11-01T00:00:01.000Z'});
   };
   failAckReply = true;
   await assert.rejects(cycle(), /injected lost ACK reply/);

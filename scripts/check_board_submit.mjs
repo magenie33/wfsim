@@ -46,7 +46,7 @@ const database = (fail = false) => {
   const tables = new Map();
   const calls = [];
   const rows = new Map();
-  tables.set("inbox", rows);
+  tables.set("record_build_submissions", rows);
   return {
     rows,
     tables,
@@ -63,7 +63,7 @@ const database = (fail = false) => {
           if (into) {
             if (!tables.has(into[1])) tables.set(into[1], new Map());
             const t = tables.get(into[1]);
-            if (into[1] === "inbox") {
+            if (into[1] === "record_build_submissions") {
               const width = sql.includes("family_source") ? 5 : 4;
               for (let at = 0; at < args.length; at += width) t.set(args[at], JSON.parse(args[at + 2]));
             } else t.set(args[0], args);

@@ -106,12 +106,15 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     const answered = new Map(items.map(({ q, a }) => [q.id,
       { question: q.id, device: w.device, net: w.net || "", engine: a.engine, result: a.result, work: a.work, official: !!official, at }]));
     const ids = JSON.stringify([...answered.keys()]);
+    const rounds=JSON.stringify(items.map(({q})=>({id:q.id,task_id:q.task_id})));
     // THE LEASE GOES ONLY ONCE THE QUESTION IS SETTLED, in the settling's own
     // write: the answered question heads every witness's order, so freed before
     // it became a fact it was taken at once and answered again for nothing.
     await settleMany(env, [...answered.keys()], engine, now, { answered, peer, after: [
       db.prepare(`UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL
-                   WHERE ${inIdOrder(`id IN ${listOf(db, "?")} AND leased_to = ?`)}`).bind(ids, w.device)] });
+                   WHERE ${inIdOrder(`id IN ${listOf(db, "?1")} AND leased_to = ?2 AND EXISTS(
+                     SELECT 1 FROM jsonb_to_recordset((?3::text)::jsonb) x(id text,task_id bigint)
+                     WHERE x.id=state_compute_work.id AND x.task_id=state_compute_work.task_id)`)}`).bind(ids, w.device, rounds)] });
   }
 
 
@@ -157,7 +160,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
   /// is credited only once — so two witnesses settling one question at the same
   /// moment cannot both count. `answered` tells each question's producers of the
   /// answer just recorded (`on_answer`); `after` is written with the rest.
-  async function settleMany(env, ids, engine, now, { answered = null, after = [], peer = null } = {}) {
+  async function settleMany(env, ids, engine, now, { answered = null, after = [], peer = null, attempt = 0 } = {}) {
     const db = env.LIBRARY, list = JSON.stringify([...new Set(ids)]), ids_ = listOf(db, "?");
     const [qs, as, ds] = await db.batch([
       db.prepare(`SELECT * FROM state_compute_work WHERE id IN ${ids_}`).bind(list),
@@ -194,7 +197,14 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     // …ITS QUESTIONS LOCKED FIRST, IN ID ORDER (`inIdOrder`): each write after
     // finds its row already held, so the commit never waits holding one.
     if (writes.length) writes.unshift(db.prepare(`SELECT id FROM state_compute_work WHERE ${inIdOrder(`id IN ${ids_}`)}`).bind(list));
-    await commit(env, writes);
+    try { await commit(env, writes); }
+    catch(error) {
+      // A conflicting settlement invalidates the plan, so retry its reads before any credit or delivery.
+      if(error?.code!=="40001" || attempt>=2)throw error;
+      await settleMany(env,ids,engine,now,{after,peer,attempt:attempt+1});
+      if(errors.length)throw errors[0];
+      return;
+    }
     try { await credit(db, credits, now); } catch (error) { errors.push(error); }
     try { await flush(env, later, now); } catch (error) { errors.push(error); }
     if (errors.length) throw errors[0];

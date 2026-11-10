@@ -55,6 +55,7 @@ import { withDatabases } from "./db.js";
 import { edgeServe } from "./pages.js";
 import { websiteRequest } from "./website_proxy.js";
 import { authorizeHarvest } from "./board_harvest.js";
+import { databaseMaintenance, maintenanceResponse } from "./maintenance.js";
 
 const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
 export const BOARD_SUBMIT_BATCH_MAX = 128;
@@ -720,6 +721,7 @@ const WELL_KNOWN_OPEN = new Set(["/.well-known/ai-catalog.json", "/.well-known/a
 
 export default {
   async scheduled(event, env, ctx) {
+    if(databaseMaintenance(env))return;
     ctx.waitUntil((async () => {
       const f = withDatabases(env);
       try {
@@ -740,6 +742,11 @@ export default {
     request = websiteRequest(request, env);
     if (request instanceof Response) return request;
     if (new URL(request.url).pathname === CLI_MANIFEST_PATH) return clientRelease(request);
+    if(databaseMaintenance(env)) {
+      const path=new URL(request.url).pathname;
+      if(path.startsWith("/api/") || path.startsWith("/og/"))return maintenanceResponse();
+      return await edgeServe(request,env) || env.ASSETS.fetch(request);
+    }
     const f = withDatabases(env);
     try {
       return await serve(request, f.env, ctx);

@@ -1,3 +1,4 @@
+import { seedComputeWork } from "./pg/fixtures.mjs";
 // THE SETTLER IN SHADOW (worker/settler.js, scripts/factoryd.mjs): its fair table
 // is the worker's `tableOf` to the last digit through Postgres, its snapshot
 // counts what the worker's own answers count, its judgement of a settled
@@ -46,9 +47,7 @@ console.log("the fair table");
 
 console.log("the snapshot");
 {
-  await L.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, waits) VALUES
-      ('o1', 'simulate', '{}', 'open', ?, ?, 0), ('o2', 'simulate', '{}', 'open', ?, ?, 0), ('u1', 'simulate', '{}', 'open', ?, ?, 1)`,
-    iso(now + 1), iso(now), iso(now + 1), iso(now), iso(now + 1), iso(now));
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"o1",verb:"simulate",request:"{}",state:"open",due_at:args[0],opened_at:args[1],waits:0});await seedComputeWork(fixtureDb,{id:"o2",verb:"simulate",request:"{}",state:"open",due_at:args[2],opened_at:args[3],waits:0});await seedComputeWork(fixtureDb,{id:"u1",verb:"simulate",request:"{}",state:"open",due_at:args[4],opened_at:args[5],waits:1});})(L,[iso(now + 1),iso(now),iso(now + 1),iso(now),iso(now + 1),iso(now)]);
   await L.run("UPDATE state_compute_work SET lease = 'l', lease_until = ?, leased_to = 'x' WHERE id = 'o2'", iso(now + 60_000));
   await L.run("UPDATE entity_compute_devices SET last_at = ? WHERE id = ?", iso(now - 60_000), "b".repeat(24));
   const s = await snapshotTick(env, { engine: "e1", release: "r1", commit: "abc" }, now);
@@ -68,7 +67,7 @@ console.log("settling, in shadow");
   const f = factory({ verbs: VERBS, producers: { p: { on_fact: async () => {} } }, random: () => 0.999 });
   const t0 = now - 10 * 60_000;
   const ask = async (id) => {
-    await L.run("INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', 'open', ?, ?)", id, iso(t0 + 3_600_000), iso(t0));
+    await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:"open",due_at:args[1],opened_at:args[2]});})(L,[id,iso(t0 + 3_600_000),iso(t0)]);
     await L.run("INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at) VALUES ('p', ?, ?, 'live', ?, ?)", id, id, iso(t0), iso(t0 + 3_600_000));
   };
   const give = async (id, device, owner, score) => {
@@ -86,7 +85,9 @@ console.log("settling, in shadow");
   check("…and goes on from its cursor, judging none twice",
     (await settleShadow(env, { threshold: 2, from: r.cursor }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1)).checked === 0);
   check("a question settled less than the lag ago waits", (await settleShadow(env, { threshold: 2, from }, t0 + 1_000)).checked === 0);
-  await L.run("UPDATE state_compute_work SET canon = 'x' WHERE id = 's1'");
+  const injected=await L.get("SELECT task_id,fact_engine,fact_at FROM state_compute_work WHERE id='s1'");
+  await L.run("SELECT compute_accept_result('s1',?1::bigint,'fact','fact','x',?2::text,?3::text,0,'[]')",
+    injected.task_id,injected.fact_engine,injected.fact_at);
   await L.run("UPDATE record_candidate_answers SET credited = 0 WHERE question = 's2' AND device = 's2b'");
   r = await settleShadow(env, { threshold: 2, from }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1);
   check("a fact whose canon no group gave, and a witness left unpaid, are each a difference",

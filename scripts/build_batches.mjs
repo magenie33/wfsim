@@ -23,12 +23,12 @@ export async function* buildBatches(file, { deleting = false, maxRows = BUILD_BA
     if (!line) continue;
     let table, value;
     if (deleting) {
-      table = line.startsWith("equipment:") ? "equipment_inbox" : "inbox";
+      table = line.startsWith("equipment:") ? "record_equipment_submissions" : "record_build_submissions";
       value = line;
     } else {
       let build;
       try { build = JSON.parse(line); } catch { throw new Error(`invalid intake build on line ${position + 1}`); }
-      table = ["warframe", "companion"].includes(build.record?.kind) ? "equipment_builds" : "builds";
+      table = ["warframe", "companion"].includes(build.record?.kind) ? "entity_equipment_builds" : "entity_weapon_builds";
       value = { id: build.id, at: build.at, record: JSON.stringify(build.record ?? null), position: ++position };
     }
     if (!batches.has(table)) {

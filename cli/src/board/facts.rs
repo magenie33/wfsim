@@ -394,7 +394,7 @@ mod tests {
     fn the_scores_table_holds_one_fact_per_row() {
         let library = include_str!("../../../worker/pg/library.sql");
         let scores = library
-            .split("CREATE TABLE IF NOT EXISTS scores (")
+            .split("CREATE TABLE IF NOT EXISTS state_board_measurement_selection (")
             .nth(1)
             .expect("the library has a scores table");
         let key = scores

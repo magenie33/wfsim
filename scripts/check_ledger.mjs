@@ -1,3 +1,4 @@
+import { seedComputeWork } from "./pg/fixtures.mjs";
 // A DEVICE'S POINTS LEDGER (worker/contribution.js §"The ledger"), with no
 // network — docs/BOARD.md §"Contribution". Every hour a device was credited is
 // said with where it went: kept on the device, the reader's own account, or
@@ -44,7 +45,7 @@ await accounts.run("INSERT INTO relation_account_compute_devices (verifier, acco
 // E: nobody ever claimed it.
 await hour(E, "2026-10-06T11", 7, 1);
 // D's results that earned nothing: one against an agreed fact, one still open, one set aside — and three that do not count.
-const q = (id, state) => library.run("INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', ?, '2026-12-01', '2026-10-01')", id, state);
+const q = (id, state) => (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:args[1],due_at:"2026-12-01",opened_at:"2026-10-01"});})(library,[id,state]);
 await q("q-fact", "fact"); await q("q-open", "open"); await q("q-old", "fact");
 await q("q-void", "fact"); await q("q-paid", "fact");
 const answer = (question, at, { credited = 0, voided = 0, official = 0 } = {}) => library.run(

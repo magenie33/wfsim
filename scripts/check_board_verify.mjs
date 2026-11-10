@@ -133,8 +133,9 @@ check("an owed row nobody asked for is asked by the backfill", back.asked === 1 
 check("...and asking again asks nothing", (await post(boardTasksRoute, "/api/board/ask", { backfill: true }, TOKEN)).asked === 0);
 // AN ASK THAT FAILED AFTER WRITING ITS DEMAND left it live on a fact it never
 // delivered: still owed, so the backfill asks it again, and the ask tells it.
-await L.run("UPDATE state_compute_work SET state = 'fact', fact_engine = 'e0', fact_at = ? WHERE id = (SELECT question FROM relation_task_consumers WHERE ref = 'lost|standard_single_target|base')",
-  new Date(Date.now() - 86_400_000).toISOString());
+const lost=await L.get("SELECT q.id,q.task_id FROM state_compute_work q JOIN relation_task_consumers d ON d.question=q.id WHERE d.ref='lost|standard_single_target|base'");
+await L.run("SELECT compute_accept_result(?1::text,?2::bigint,'open','fact','{}','e0',?3::text,0,'[]')",
+  lost.id,lost.task_id,new Date(Date.now()-86_400_000).toISOString());
 const stuck = await post(boardTasksRoute, "/api/board/ask", { backfill: true }, TOKEN);
 check("a live demand left on a settled question is asked again by the backfill", stuck.asked === 1, JSON.stringify(stuck));
 check("...which opens an older engine's fact again for the served one", (await question("lost")).state === "open", (await question("lost")).state);

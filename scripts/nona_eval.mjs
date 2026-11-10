@@ -168,8 +168,8 @@ for (const c of run) {
     const busy = () => document.getElementById("nona-send").classList.contains("busy");
     while (busy() && Date.now() - t0 < 240000) await wait(500);
     const all = await new Promise((ok) => {
-      const req = indexedDB.open("wfsim-nona", 1);
-      req.onsuccess = () => { const g = req.result.transaction("conversations").objectStore("conversations").getAll(); g.onsuccess = () => ok(g.result); };
+      const req = indexedDB.open("wfsim-nona", 2);
+      req.onsuccess = () => { const g = req.result.transaction("entity_conversations").objectStore("entity_conversations").getAll(); g.onsuccess = () => ok(g.result); };
       req.onerror = () => ok([]);
     });
     const conv = all.sort((a, b) => b.updated_at - a.updated_at)[0] || { messages: [], made: [], usage: null };

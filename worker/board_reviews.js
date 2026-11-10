@@ -34,7 +34,7 @@ export const BOARD_REVIEW_PRODUCER = {
         completed_at = ?4::text WHERE ref = ?5::text AND id = ?6::text AND question = ?7::text AND state = 'waiting'`)
       .bind(fact.result.score, fact.result.metric, `verified:${fact.engine}`, at, demand.ref, demand.payload.review, demand.question, fact.engine),
       ...scoreWitnessWrites(db, demand.payload.identity, demand.payload.ruler, demand.payload.mode, at, fact),
-      db.prepare(`DELETE FROM state_board_pending_work q USING board_reviews r WHERE r.id = ? AND r.state = 'succeeded'
+      db.prepare(`DELETE FROM state_board_pending_work q USING entity_measurement_reviews r WHERE r.id = ? AND r.state = 'succeeded'
         AND q.build_id = r.identity AND q.ruler = r.ruler AND q.mode = r.mode`).bind(demand.payload.review)];
   },
   async on_retract(env, demand) {

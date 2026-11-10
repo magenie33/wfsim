@@ -47,5 +47,9 @@ export async function purgeComputationRecords(env, now = Date.now()) {
     db.prepare(`SELECT id FROM state_compute_work WHERE id IN (SELECT x.question FROM jsonb_to_recordset((?::text)::jsonb) x(question text)) ORDER BY id FOR UPDATE`).bind(expired),
     db.prepare(`DELETE FROM state_public_computation_summaries r USING jsonb_to_recordset((?::text)::jsonb) x(question text,completed_at text)
       WHERE r.question=x.question AND r.completed_at=x.completed_at`).bind(expired),
+    db.prepare(`DELETE FROM record_compute_result_proofs p USING entity_compute_results r,
+      jsonb_to_recordset((?::text)::jsonb) x(question text)
+      WHERE p.result_id=r.id AND r.computation=x.question
+        AND NOT EXISTS(SELECT 1 FROM state_public_computation_summaries s WHERE s.question=x.question)`).bind(expired),
   ]);
 }

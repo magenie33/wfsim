@@ -1,3 +1,4 @@
+import { seedComputeWork } from "./pg/fixtures.mjs";
 import assert from 'node:assert/strict';
 import { testDb } from './pg/test_db.mjs';
 import { boardReviewsRoute, BOARD_REVIEW_PRODUCER, calibrateBoard } from '../worker/board_reviews.js';
@@ -41,7 +42,7 @@ await check('ordinary scorer receipts never answer a fresh review round',async()
  });
 });
 const cached=await questionId('simulate',{record,ruler,mode});
-await db.run("INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at,canon,fact_engine,fact_at) VALUES (?,'simulate',?,'fact',?,?,?,?,?)",cached,canon({record,ruler,mode}),old,old,canon({score:10,metric:'kpm',work:100}),engine,old);
+await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:args[1],state:"fact",due_at:args[2],opened_at:args[3],canon:args[4],fact_engine:args[5],fact_at:args[6]});})(db,[cached,canon({record,ruler,mode}),old,old,canon({score:10,metric:'kpm',work:100}),engine,old]);
 await db.run('INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,at) VALUES (?,?,?,?,?,?,?,?)',cached,engine,'cached-witness','cached-owner',canon({score:10,metric:'kpm',work:100}),JSON.stringify({score:10,metric:'kpm'}),100,old);
 await check('review opens a fresh question and preserves the old public score',async()=>{
  accepted=await call(target);assert.equal(accepted.ok,true);

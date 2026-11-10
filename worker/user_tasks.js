@@ -80,9 +80,12 @@ export async function purgeUserCalculations(env, now = Date.now()) {
   await db.prepare("DELETE FROM relation_calculation_report_access WHERE expires_at<=?").bind(iso(now)).run();
   await db.prepare(`DELETE FROM state_calculation_report_selection r WHERE NOT EXISTS
     (SELECT 1 FROM relation_calculation_report_access a WHERE a.question=r.question AND a.engine=r.engine)`).run();
-  await db.prepare(`DELETE FROM entity_compute_results r USING entity_calculation_reports p WHERE p.id=r.id
+  await db.prepare(`DELETE FROM entity_compute_results r USING entity_calculation_reports p WHERE p.result_id=r.id
     AND NOT EXISTS(SELECT 1 FROM relation_calculation_report_access a WHERE a.question=p.question AND a.engine=p.engine)
     AND NOT EXISTS(SELECT 1 FROM state_compute_scheduling s WHERE s.id=p.question)`).run();
+  await db.prepare(`DELETE FROM entity_calculation_reports p WHERE p.origin='imported'
+    AND NOT EXISTS(SELECT 1 FROM relation_calculation_report_access a WHERE a.question=p.question AND a.engine=p.engine)
+    AND NOT EXISTS(SELECT 1 FROM entity_user_calculation_requests t WHERE t.question=p.question AND t.engine=p.engine)`).run();
   await db.prepare(`DELETE FROM entity_compute_tasks t USING entity_compute_specs s WHERE s.id=t.computation
     AND s.verb IN ('simulate_report','optimize_report')
     AND NOT EXISTS(SELECT 1 FROM state_compute_scheduling q WHERE q.id=s.id)
@@ -135,23 +138,34 @@ export async function userTasksRoute(request, env, path) {
     const question = await questionId(VERBS[body.kind], execution);
     if (old && (old.owner !== owner || old.question !== question || old.engine !== body.engine || old.task !== body.task))
       return json({ ok: false, error: "This command already describes another request." }, 409);
+    const before=[];
     if (!old) {
       const count = await db.prepare("SELECT count(*) AS n FROM entity_user_calculation_requests t WHERE owner = ? AND state = 'waiting' AND expires_at > ? AND NOT EXISTS (SELECT 1 FROM state_compute_work q WHERE q.id = t.question AND q.state IN ('disputed', 'nondeterministic', 'withdrawn'))").bind(owner, iso(now)).first();
       if (count.n >= 100) return json({ ok: false, error: "This browser already has 100 pending calculations." }, 429);
-      await db.batch([db.prepare("SELECT id FROM state_compute_work WHERE id = ? FOR UPDATE").bind(question),
-        db.prepare("INSERT INTO entity_user_calculation_requests (id, task, owner, kind, engine, question, state, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, 'waiting', ?, ?) ON CONFLICT DO NOTHING")
+      before.push(db.prepare("SELECT id FROM state_compute_work WHERE id = ? FOR UPDATE").bind(question),
+        db.prepare("SELECT compute_admit_user_request(?1::text,?2::text,?3::text,?4::text,?5::text,?6::text,?7::text,?8::text)")
         .bind(body.id, body.task, owner, body.kind, body.engine, question, iso(now), iso(now + keepMs)),
-      ]);
+      );
+    }
+    // Consumer ownership, frozen input and durable work are admitted in one transaction.
+    if (!old || old.state === "waiting") {
+      try {
+        await facts().demand(env,{producer:"user_calculation",ref:body.id,verb:VERBS[body.kind],request:execution,
+          due_in_ms:DEADLINE_MS.user_calculation,waits:false,initiator:`user:${owner.slice(0,16)}`},
+          body.engine,old ? Date.parse(old.created_at) : now,{before});
+      } catch (error) {
+        if (error.message.includes("user calculation already cancelled"))
+          return json({ok:false,error:"This community request has ended."},410);
+        if (error.code==="23505" && error.message.includes("user calculation identity conflict"))
+          return json({ok:false,error:"This command already describes another request."},409);
+        throw error;
+      }
     }
     const stored = await db.prepare("SELECT owner, question, task, engine FROM entity_user_calculation_requests WHERE id = ?").bind(body.id).first();
     if (stored.owner !== owner || stored.question !== question || stored.task !== body.task || stored.engine !== body.engine)
       return json({ ok: false, error: "This command already describes another request." }, 409);
     if (body.kind === "appraisal" && old?.kind === "optimization")
       await db.prepare("UPDATE entity_user_calculation_requests SET kind='appraisal' WHERE id=? AND owner=?").bind(body.id, owner).run();
-    // Repeating a lost acceptance finishes its demand, without reopening a cancelled one.
-    if (!old || old.state === "waiting") await facts().demand(env, { producer: "user_calculation", ref: body.id,
-      verb: VERBS[body.kind], request: execution, due_in_ms: DEADLINE_MS.user_calculation,
-      waits: false, initiator: `user:${owner.slice(0, 16)}` }, body.engine, old ? Date.parse(old.created_at) : now);
     const kept = await db.prepare("SELECT expires_at FROM entity_user_calculation_requests WHERE id=?").bind(body.id).first();
     return json({ ok: true, id: body.id, question, keep_until: kept.expires_at });
   }
@@ -159,11 +173,9 @@ export async function userTasksRoute(request, env, path) {
   if (!ids.length || ids.length > 100 || !ids.every((id) => UUID.test(id || ""))) return json({ ok: false, error: "invalid task ids" }, 400);
   if (path === "/api/user-tasks/cancel") {
     for (const id of ids) {
-      await db.prepare("INSERT INTO state_request_cancellation_tombstones (id, owner, expires_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING")
-        .bind(id, owner, iso(now + USER_TASK_KEEP_MS)).run();
-      const changed = await db.prepare("UPDATE entity_user_calculation_requests SET state = 'cancelled', completed_at = ? WHERE id = ? AND owner = ? AND state = 'waiting'")
-        .bind(iso(now), id, owner).run();
-      if (changed.meta.changes) await facts().withdraw(env, "user_calculation", id, now);
+      const changed=await db.prepare("SELECT compute_cancel_user_request(?1::text,?2::text,?3::text,?4::text) AS changed")
+        .bind(id,owner,iso(now),iso(now+USER_TASK_KEEP_MS)).first();
+      if (changed.changed) await facts().withdraw(env,"user_calculation",id,now);
     }
   } else if (path !== "/api/user-tasks/status") return json({ ok: false, error: "not found" }, 404);
   const after = body.after || {};
@@ -177,7 +189,7 @@ export async function userTasksRoute(request, env, path) {
         FROM relation_calculation_report_access a WHERE a.owner=?1::text
         AND NOT EXISTS(SELECT 1 FROM entity_user_calculation_requests t WHERE t.id=a.id))
     SELECT t.id, t.task, t.kind, t.question, t.state, t.engine, t.expires_at, t.completed_at, q.state AS question_state,
-      q.leased_to IS NOT NULL AND q.lease_until > ?3::text AS computing, r.result,
+      q.leased_to IS NOT NULL AND q.lease_until > ?3::text AS computing, CASE WHEN ?5::boolean THEN r.result ELSE NULL END AS result,r.origin AS report_origin,
       a.id AS candidate,a.device,a.owner AS calculator,a.official,a.at,
       CASE WHEN ?5::boolean THEN a.result ELSE NULL END AS candidate_result
       FROM owned t LEFT JOIN state_compute_work q ON q.id = t.question
@@ -200,7 +212,7 @@ export async function userTasksRoute(request, env, path) {
     execution_state: row.computing ? "running" : "queued",
     phase: row.computing ? "Computing and verifying" : "Waiting for community compute", engine: row.engine, keep_until: row.expires_at,
     ...(report ? { result: report, delivery: source } : body.include_results === true && row.state === "succeeded" && row.result && Date.parse(row.expires_at) > now
-      ? { result: JSON.parse(row.result), computation: { question: row.question, engine: row.engine, completed_at: row.completed_at } } : {}) };
+      ? { result: JSON.parse(row.result), computation: { question: row.question, engine: row.engine, completed_at: row.completed_at,origin:row.report_origin } } : {}) };
   })) });
 }
 async function answer(request, env, body) {

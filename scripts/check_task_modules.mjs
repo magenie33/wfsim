@@ -5,6 +5,7 @@ import { factory, canon } from "../worker/tasks.js";
 import { createDispatch } from "../worker/task_dispatch.js";
 import { testDb } from "./pg/test_db.mjs";
 import { taskSchemaSql } from "./task_schema.mjs";
+import { replaceComputeResult } from "./pg/fixtures.mjs";
 
 for (const name of ["contract", "ledger", "dispatch", "verification", "delivery", "credit", "usage", "observation"]) {
   const text = readFileSync(new URL(`../worker/task_${name}.js`, import.meta.url), "utf8");
@@ -18,7 +19,7 @@ console.log("ok: modules depend on common contracts; dispatch owns only selectio
 const now = Date.now(), db = await testDb("library"), env = { LIBRARY: db };
 const upgrade = taskSchemaSql();
 assert(upgrade.includes("CREATE INDEX CONCURRENTLY IF NOT EXISTS demands_delivery"));
-await db.exec("ALTER TABLE relation_task_consumers DROP COLUMN delivery_at; DROP FUNCTION factory_past_safe(text,text) CASCADE; ALTER TABLE record_candidate_answers DROP COLUMN credit_work; ALTER TABLE record_candidate_answers DROP COLUMN credit_at; DROP FUNCTION factory_delivery_guard(text,text,text,text,text,text,text)");
+await db.exec("ALTER TABLE relation_task_consumers DROP COLUMN delivery_at; DROP FUNCTION factory_past_safe(text,text) CASCADE; DROP FUNCTION factory_delivery_guard(text,text,text,text,text,text,text)");
 const localUpgrade = upgrade.replace("SET ROLE wfsim;", "").replaceAll("CREATE INDEX CONCURRENTLY", "CREATE INDEX");
 await db.exec(localUpgrade);
 await db.exec(localUpgrade);
@@ -55,7 +56,7 @@ assert.equal((await db.get("SELECT sum(work) n FROM entity_compute_devices")).n,
 console.log("ok: a new registered verb shares work; failed consumers retry independently without recomputation or duplicate credit");
 
 const cachedAt = now + 13 * 60000;
-await db.run("UPDATE state_compute_work SET fact_at=? WHERE id=?", new Date(cachedAt - 13 * 86400000).toISOString(), ids[0]);
+await replaceComputeResult(db,ids[0],{fact_at:new Date(cachedAt - 13 * 86400000).toISOString()});
 broken = true;
 const cached = await f.demand(env, { ...asks[0], ref: "cached-retry" }, "e", cachedAt);
 assert.equal(cached, ids[0]);
@@ -156,7 +157,7 @@ for (const superseded of ["fact", "demand"]) {
     if (supersede && list.some(s => s.sql.includes("factory_delivery_guard"))) {
       supersede = false;
       if (superseded === "fact") {
-        await L.run("UPDATE state_compute_work SET state='open',canon=NULL,fact_engine=NULL");
+        await L.run("SELECT compute_open_task(id,'correction','e',?::text,true) FROM state_compute_work",new Date(now).toISOString());
         await L.run("UPDATE relation_task_consumers SET delivery_at=NULL");
       } else await L.run("UPDATE relation_task_consumers SET payload='{}',asked_at=?", new Date(now + 1).toISOString());
     }

@@ -128,7 +128,7 @@ def index_sql() -> str:
     """Concurrent indexes from the same DDL a new database is laid with."""
     ddl = "\n".join((ROOT / "worker" / "pg" / p).read_text() for p in ("schema.sql", "library.sql"))
     statements = []
-    for name in ("questions_odd_at", "questions_dispatched", "scores_pace", "queue_calculation"):
+    for name in ("compute_scheduling_odd_at", "compute_scheduling_dispatched", "scores_pace", "queue_calculation"):
         found = re.search(rf"CREATE (?:UNIQUE )?INDEX IF NOT EXISTS {name}\b[^;]+;", ddl)
         if not found:
             raise ValueError(f"factory index missing from schema: {name}")

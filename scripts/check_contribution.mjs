@@ -1,3 +1,4 @@
+import { seedComputeWork, replaceComputeResult } from "./pg/fixtures.mjs";
 // THE CONTRIBUTION RANKING (worker/contribution.js), with no network — docs/BOARD.md
 // §"Contribution". A signed-in browser claims its device and the first claim owns
 // it; an account's points are its devices' credited work, a refused device's
@@ -282,9 +283,7 @@ await library.run("UPDATE entity_compute_devices SET last_at = '2020-01-01T00:00
   // queue owes with the refresh. 5 x 2 s + 2 x 60 s of work, and the volunteers
   // answered 372 s in the pace window's whole hours. The hour under way is not
   // one of them.
-  await L.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, fact_at) VALUES
-    ('fs', 'simulate', '{}', 'fact', 'x', 'x', ?), ('fo', 'optimize', '{}', 'fact', 'x', 'x', ?),
-    ('oo1', 'optimize', '{}', 'open', 'x', 'x', NULL), ('oo2', 'optimize', '{}', 'open', 'x', 'x', NULL)`, ago(1_800_000), ago(1_800_000));
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"fs",verb:"simulate",request:"{}",state:"fact",due_at:"x",opened_at:"x",fact_at:args[0]});await seedComputeWork(fixtureDb,{id:"fo",verb:"optimize",request:"{}",state:"fact",due_at:"x",opened_at:"x",fact_at:args[1]});await seedComputeWork(fixtureDb,{id:"oo1",verb:"optimize",request:"{}",state:"open",due_at:"x",opened_at:"x",fact_at:null});await seedComputeWork(fixtureDb,{id:"oo2",verb:"optimize",request:"{}",state:"open",due_at:"x",opened_at:"x",fact_at:null});})(L,[ago(1_800_000),ago(1_800_000)]);
   for (const [q, d, ms, t] of [["fs", "d1", 1000, 3_600_000], ["fs", "d2", 1000, 0], ["fo", "d1", 30_000, 3_600_000], ["fo", "d2", 30_000, 0]]) {
     await L.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, canon, result, work, compute_ms, at) VALUES (?, 'e1', ?, ?, 'c', '{}', 1, ?, ?)`, q, d, d, ms, ago(t));
   }
@@ -305,8 +304,7 @@ await library.run("UPDATE entity_compute_devices SET last_at = '2020-01-01T00:00
     (await demandOf({ LIBRARY: L }, now, 1)).clear_hours === null);
   // THE ORDERS AS ONE LIST: each kind's rows, and those a device has taken —
   // r1's question leased once, by the kind its rows count as, a rescore's.
-  await L.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, leased_at) VALUES ('qr1', 'simulate', '{}', 'open', 'x', 'x', ?),
-    ('qs1', 'simulate', '{}', 'open', 'x', 'x', NULL)`, ago(60_000));
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"qr1",verb:"simulate",request:"{}",state:"open",due_at:"x",opened_at:"x",leased_at:args[0]});await seedComputeWork(fixtureDb,{id:"qs1",verb:"simulate",request:"{}",state:"open",due_at:"x",opened_at:"x",leased_at:null});})(L,[ago(60_000)]);
   await L.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, payload) VALUES
     ('sweep', 'r1|heavy_gunner|base', 'qr1', 'live', 'x', 'x', '{"batch":"rescore-x"}'), ('sweep', 's1|heavy_gunner|base', 'qs1', 'live', 'x', 'x', '{"batch":"arrivals-2026-03-01"}')`);
   const listed = (await demandOf({ LIBRARY: L }, now)).orders;
@@ -316,7 +314,7 @@ await library.run("UPDATE entity_compute_devices SET last_at = '2020-01-01T00:00
     JSON.stringify(listed));
   await L.run("DELETE FROM relation_task_consumers WHERE question IN ('qr1', 'qs1')");
   await L.run("DELETE FROM state_compute_work WHERE id IN ('qr1', 'qs1')");
-  await L.run("UPDATE state_compute_work SET fact_at = NULL WHERE id = 'fo'");
+  await L.run("SELECT compute_open_task('fo','fixture_retirement',NULL,?::text,true)",new Date(now).toISOString());
   // Kept, a price is a number although a verb has since no fact; the hour may turn meanwhile.
   check("...the day's price kept ten minutes, priced again after", (await demandOf(kept, now + 60_000)).clear_hours > 0
     && (await demandOf(kept, now + 11 * 60_000)).clear_hours === null);
@@ -325,8 +323,7 @@ await library.run("UPDATE entity_compute_devices SET last_at = '2020-01-01T00:00
   // lease runs and one has lapsed; the two answers of the last minute.
   await L.run("INSERT INTO entity_compute_devices (id, seen, asked_at) VALUES ('ask1', 'x', ?), ('ask2', 'x', ?), ('ask0', 'x', ?)",
     ago(60_000), ago(60_000), ago(NOW_WINDOW_MS + 60_000));
-  await L.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, leased_to, lease_until) VALUES
-    ('qh1', 'simulate', '{}', 'open', 'x', 'x', 'ask1', ?), ('qh2', 'simulate', '{}', 'open', 'x', 'x', 'ask2', ?)`, ago(-60_000), ago(60_000));
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"qh1",verb:"simulate",request:"{}",state:"open",due_at:"x",opened_at:"x",leased_to:"ask1",lease_until:args[0]});await seedComputeWork(fixtureDb,{id:"qh2",verb:"simulate",request:"{}",state:"open",due_at:"x",opened_at:"x",leased_to:"ask2",lease_until:args[1]});})(L,[ago(-60_000),ago(60_000)]);
   const fleet = (await demandOf({ LIBRARY: L }, now)).now;
   check("the fleet this moment: ids that asked in the window, leases running, volunteer answers in it",
     JSON.stringify(fleet) === JSON.stringify({ window_seconds: NOW_WINDOW_MS / 1000, asking: 2, held: 1, answered: 2, starved: false }), JSON.stringify(fleet));
@@ -344,7 +341,7 @@ await library.run("UPDATE entity_compute_devices SET last_at = '2020-01-01T00:00
     orders: [{ kind: 'board', total: 1000 }], verbs: { simulate: 1000 } }, now);
   await L.run(saved.sql, ...saved.params);
   await L.run("INSERT INTO state_factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x',?,0,0,0,0,0,0,'x','x')", engine);
-  await L.run("UPDATE state_compute_work SET fact_engine=? WHERE id='fs'", engine);
+  await replaceComputeResult(L,"fs",{fact_engine:engine});
   await L.run(`INSERT INTO record_candidate_answers (question,engine,device,owner,canon,result,work,compute_ms,at) VALUES
     ('fs',?1::text,'current-s1','current-owner1','c','{}',1,1000,?2::text),
     ('fs',?1::text,'current-s2','current-owner2','c','{}',1,1000,?3::text)`, engine, ago(3_600_000), ago(0));
@@ -381,8 +378,7 @@ check("the nav asks the same count alone", (await call("/api/board/computing")).
   const snapshot = inventoryWrite({v:2,started_at:before(3600000),snapshot:'price:price:',engine,rows:1000,queued:0,
     orders:[{kind:'board',total:1000}],verbs:{simulate:1000}},at);
   await P.run(snapshot.sql,...snapshot.params);
-  for (const id of ['sampled','outside-sample','official-only']) await P.run(`INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at,fact_at,fact_engine)
-    VALUES (?,'simulate','{}','fact','x','x',?,?)`,id,before(60000),engine);
+  for (const id of ['sampled','outside-sample','official-only']) await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:"fact",due_at:"x",opened_at:"x",fact_at:args[1],fact_engine:args[2]});})(P,[id,before(60000),engine]);
   for (const [id,device,ms,age,official] of [['sampled','one',1000,120000,0],['sampled','two',1000,120000,0],
     ['official-only','official',9000,60000,1],['outside-sample','later-id-older-time',500,180000,0]])
     await P.run(`INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,compute_ms,at,official)
@@ -427,9 +423,7 @@ await claim(ed, P, "Mac · Chrome"); await claim(ed, Q, "\u0007bell");
 await library.run("UPDATE entity_compute_devices SET last_at = '2026-10-08T06:00:00.000Z' WHERE id = ?", P);
 // TWO BOARD ROWS OF THE FACT FACTORY, one leased now and one whose lease ran out.
 for (const [id, weapon, until, who] of [["b1", "torid", Date.now() + 60000, P], ["b2", "furis", Date.now() - 60000, Q]]) {
-  await library.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, lease, lease_until, leased_to)
-    VALUES (?, 'simulate', ?, 'open', 'x', 'x', 'l', ?, ?)`, id, JSON.stringify({ record: { weapon, mods: ["x"] }, ruler: "standard_single_target", mode: "base" }),
-    new Date(until).toISOString(), who);
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:args[1],state:"open",due_at:"x",opened_at:"x",lease:"l",lease_until:args[2],leased_to:args[3]});})(library,[id,JSON.stringify({ record: { weapon, mods: ["x"] }, ruler: "standard_single_target", mode: "base" }),new Date(until).toISOString(),who]);
   await library.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, payload) VALUES ('new_build', ?, ?, 'live', 'x', 'x', ?)`, `${id}|standard_single_target|base`, id, JSON.stringify({ identity: id, ruler: "standard_single_target", mode: "base" }));
 }
 const eds = (await mine(ed)).devices;

@@ -15,12 +15,13 @@ export function createLedger({ verbs, producerOf } = {}) {
   /// asked it already; a fact the served engine holds is returned for delivery.
   /// `waits`: a person is waiting on it now — §"Order". `initiator`: who asked,
   /// docs/BOARD.md §"Who asked".
-  async function demand(env, ask, engine, now = Date.now()) {
-    return (await demandAll(env, [ask], engine, now)).ids[0];
+  async function demand(env, ask, engine, now = Date.now(), options = {}) {
+    return (await demandAll(env, [ask], engine, now, options)).ids[0];
   }
 
 
-  async function demandAll(env, asks, engine, now = Date.now()) {
+  async function demandAll(env, asks, engine, now = Date.now(), {before=[]} = {}) {
+    if (before.length && asks.length>DEMAND_CHUNK) throw new Error("atomic task admission exceeds one batch");
     const db = env.LIBRARY, at = iso(now), ids = [];
     for (const a of asks) {
       if (!verbs[a.verb]) throw new Error(`no verb ${a.verb}`);
@@ -41,6 +42,7 @@ export function createLedger({ verbs, producerOf } = {}) {
       // A QUESTION THE CLIENTS' ENGINE REFUSED (`refuseRows`) stays withdrawn on
       // that engine however often it is asked again; a new engine tries it anew.
       await db.batch([
+        ...(i===0 ? before : []),
         db.prepare(`SELECT compute_register_tasks(?2::text,?3::text,?1::text)`)
           .bind(at, JSON.stringify(sorted(qs, (q) => q.id)), engine || ""),
         db.prepare(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, waits, payload, initiator, delivery_at)
@@ -79,7 +81,9 @@ export function createLedger({ verbs, producerOf } = {}) {
         db.prepare(`SELECT compute_open_task(q.id,'engine_recalibration',?3::text,?1::text) FROM state_compute_work q
           JOIN jsonb_to_recordset((?2::text)::jsonb) AS x(id text,state text) ON q.id=x.id AND q.state=x.state ORDER BY q.id`)
           .bind(at, JSON.stringify(stale.map((q) => ({ id: q.id, state: q.state }))), engine || ""),
-        db.prepare(`SELECT factory_restate(value) FROM jsonb_array_elements_text((?::text)::jsonb) ORDER BY value`)
+        db.prepare(`UPDATE state_compute_work q SET waits=(SELECT COALESCE(max(d.waits),0)
+          FROM relation_task_consumers d WHERE d.question=q.id AND d.state='live')
+          WHERE q.id IN(SELECT jsonb_array_elements_text((?::text)::jsonb)) AND q.state='open'`)
           .bind(JSON.stringify(stale.map(q => q.id))),
       ]);
     }

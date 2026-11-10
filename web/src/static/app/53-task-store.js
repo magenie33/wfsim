@@ -39,13 +39,46 @@ class UserTaskMemoryStore {
   }
 }
 
+const USER_TASK_STORES = { tasks:"entity_calculation_tasks", events:"record_task_completions", commands:"state_task_commands",
+  order:"state_task_queue", artifacts:"entity_calculation_reports", values:"state_task_client_data",
+  uploads:"state_build_uploads", deliveries:"record_build_deliveries", streams:"state_build_streams", authorizations:"state_build_authorizations" };
+function userTaskValueStore(key) {
+  if (key.startsWith("artifact:")) return USER_TASK_STORES.artifacts;
+  if (key.startsWith("optimization-build-upload:")) return USER_TASK_STORES.uploads;
+  if (/^optimization-build-(seen|refused):/.test(key)) return USER_TASK_STORES.deliveries;
+  if (key.startsWith("optimization-build-source:")) return USER_TASK_STORES.streams;
+  if (key.startsWith("optimization-build-receipt:")) return USER_TASK_STORES.authorizations;
+  return USER_TASK_STORES.values;
+}
+function writeUserTaskState(tx,state) {
+  for (const name of ["tasks","events","commands"]) {
+    const store=tx.objectStore(USER_TASK_STORES[name]);store.clear();
+    for (const row of state[name] || []) store.add(row,row.id);
+  }
+  const {tasks,events,commands,...other}=state;
+  tx.objectStore(USER_TASK_STORES.order).put({...other,order:tasks.map(task=>task.id),
+    event_order:(events || []).map(event=>event.id),command_order:(commands || []).map(command=>command.id)},"state");
+}
+
 class UserTaskBrowserStore {
   constructor(db) { this.db = db; this.persistent = true; }
   static open() {
     return new Promise((resolve, reject) => {
       let request, settled = false;
-      try { request = indexedDB.open("wfsim-user-tasks", 1); } catch (error) { reject(error); return; }
-      request.onupgradeneeded = () => request.result.createObjectStore("queue");
+      try { request = indexedDB.open("wfsim-user-tasks", 2); } catch (error) { reject(error); return; }
+      request.onupgradeneeded = () => {
+        const db=request.result,tx=request.transaction;
+        for(const name of Object.values(USER_TASK_STORES)) if(!db.objectStoreNames.contains(name))db.createObjectStore(name);
+        if(!db.objectStoreNames.contains("queue"))return;
+        const cursor=tx.objectStore("queue").openCursor();
+        cursor.onsuccess=()=>{
+          const row=cursor.result;
+          if(!row){db.deleteObjectStore("queue");return;}
+          if(row.key==="state")writeUserTaskState(tx,row.value);
+          else tx.objectStore(userTaskValueStore(row.key)).add(row.value,row.key);
+          row.continue();
+        };
+      };
       request.onsuccess = () => {
         if (settled) { request.result.close(); return; }
         settled = true;
@@ -60,8 +93,8 @@ class UserTaskBrowserStore {
   value(key, value) {
     const write = arguments.length > 1;
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction("queue", write ? "readwrite" : "readonly");
-      const request = write ? tx.objectStore("queue").put(value, key) : tx.objectStore("queue").get(key);
+      const name=userTaskValueStore(key),tx = this.db.transaction(name, write ? "readwrite" : "readonly");
+      const request = write ? tx.objectStore(name).put(value, key) : tx.objectStore(name).get(key);
       tx.oncomplete = () => resolve(write ? value : request.result || null);
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
@@ -69,8 +102,8 @@ class UserTaskBrowserStore {
   }
   entries(prefix) {
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction("queue", "readonly");
-      const request = tx.objectStore("queue").getAll(IDBKeyRange.bound(prefix, prefix + "\uffff"));
+      const name=userTaskValueStore(prefix),tx = this.db.transaction(name, "readonly");
+      const request = tx.objectStore(name).getAll(IDBKeyRange.bound(prefix, prefix + "\uffff"));
       tx.oncomplete = () => resolve(request.result);
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
@@ -78,8 +111,8 @@ class UserTaskBrowserStore {
   }
   takeValues(prefix, limit) {
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction("queue", "readonly"), rows = [];
-      const request = tx.objectStore("queue").openCursor(IDBKeyRange.bound(prefix, prefix + "\uffff"));
+      const name=userTaskValueStore(prefix),tx = this.db.transaction(name, "readonly"), rows = [];
+      const request = tx.objectStore(name).openCursor(IDBKeyRange.bound(prefix, prefix + "\uffff"));
       request.onsuccess = () => {
         const cursor = request.result;
         if (cursor && rows.length < limit) { rows.push({ key: cursor.key, value: cursor.value }); cursor.continue(); }
@@ -90,18 +123,21 @@ class UserTaskBrowserStore {
   }
   countValues(prefix) {
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction("queue", "readonly");
-      const request = tx.objectStore("queue").count(IDBKeyRange.bound(prefix, prefix + "\uffff"));
+      const name=userTaskValueStore(prefix),tx = this.db.transaction(name, "readonly");
+      const request = tx.objectStore(name).count(IDBKeyRange.bound(prefix, prefix + "\uffff"));
       tx.oncomplete = () => resolve(request.result);
       tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
     });
   }
   putOnce(entries) {
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction("queue", "readwrite"), store = tx.objectStore("queue");
+      const names=[...new Set(entries.flatMap(({key,marker})=>[userTaskValueStore(key),userTaskValueStore(marker)]))];
+      if(!names.length){resolve();return;}
+      const tx = this.db.transaction(names, "readwrite");
       for (const { key, marker, value } of entries) {
-        const request = store.get(marker);
-        request.onsuccess = () => { if (request.result === undefined) { store.put(true, marker); store.put(value, key); } };
+        const store=tx.objectStore(userTaskValueStore(key)),markers=tx.objectStore(userTaskValueStore(marker));
+        const request = markers.get(marker);
+        request.onsuccess = () => { if (request.result === undefined) { markers.put(true, marker); store.put(value, key); } };
       }
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
@@ -109,28 +145,43 @@ class UserTaskBrowserStore {
   }
   writeValues(entries) {
     return new Promise((resolve, reject) => {
-      const tx = this.db.transaction("queue", "readwrite"), store = tx.objectStore("queue");
-      for (const { key, value, remove } of entries) {
-        if (remove) store.delete(key); else store.put(value, key);
-      }
+      const names=[...new Set(entries.map(({key})=>userTaskValueStore(key)))];
+      if(!names.length){resolve();return;}
+      const tx = this.db.transaction(names, "readwrite");
+      try {
+        for (const { key, value, remove } of entries) {
+          const store=tx.objectStore(userTaskValueStore(key));
+          if (remove) store.delete(key); else store.put(value, key);
+        }
+      } catch(error) {tx.abort();reject(error);return;}
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
     });
   }
   change(transform, mode = "readwrite") {
     return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction("queue", mode);
-      const store = transaction.objectStore("queue");
-      const request = store.get("state");
+      const names=["tasks","events","commands","order"].map(name=>USER_TASK_STORES[name]);
+      const transaction = this.db.transaction(names, mode);
+      const requests=[...names.slice(0,3).map(name=>transaction.objectStore(name).getAll()),
+        transaction.objectStore(USER_TASK_STORES.order).get("state")];
       let result, failure;
-      request.onsuccess = () => {
+      let remaining=requests.length;
+      const ready=()=>{
+        if(--remaining)return;
         try {
-          const state = request.result || { tasks: [] };
+          const [tasks,events,commands,metadata]=requests.map(request=>request.result);
+          const {order=[],event_order=[],command_order=[],...other}=metadata || {};
+          const ordered=(rows,ids)=>{
+            const positions=new Map(ids.map((id,index)=>[id,index]));
+            return rows.sort((a,b)=>(positions.get(a.id)??Infinity)-(positions.get(b.id)??Infinity));
+          };
+          const state={...other,tasks:ordered(tasks,order),events:ordered(events,event_order),commands:ordered(commands,command_order)};
           const value = transform(state);
           result = value == null ? value : taskClone(value);
-          if (mode === "readwrite") store.put(state, "state");
+          if (mode === "readwrite") writeUserTaskState(transaction,state);
         } catch (error) { failure = error; transaction.abort(); }
       };
+      requests.forEach(request=>{request.onsuccess=ready;});
       transaction.oncomplete = () => resolve(result);
       transaction.onerror = () => reject(failure || transaction.error);
       transaction.onabort = () => reject(failure || transaction.error);

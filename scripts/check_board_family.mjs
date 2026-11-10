@@ -1,3 +1,4 @@
+import { seedComputeWork } from "./pg/fixtures.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { testDb } from "./pg/test_db.mjs";
@@ -25,16 +26,16 @@ const check = async (name, run) => { await run(); passed++; console.log(`  ok  $
 const count = async table => (await db.get(`SELECT count(*) AS n FROM ${table}`)).n;
 await check("only the trusted intake can admit family work", async () => {
   assert.equal((await call([job], "wrong")).status, 401);
-  assert.equal(await count("family_transfers"), 0);
+  assert.equal(await count('entity_family_search_requests'), 0);
 });
 await check("the source build must land before its family requests", async () => {
   assert.equal((await call()).status, 409);
-  assert.equal(await count("family_transfers"), 0);
+  assert.equal(await count('entity_family_search_requests'), 0);
   await db.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES (?, ?, ?)", source, "2026-11-01", JSON.stringify({ weapon: "burston_prime" }));
 });
 await check("an empty admission never scans historical builds", async () => {
   assert.equal((await call([])).status, 200);
-  assert.equal(await count("family_transfers"), 0);
+  assert.equal(await count('entity_family_search_requests'), 0);
 });
 await check("durable admission never waits for task registration", async () => {
   const demand = facts().demand, demandAll = facts().demandAll;
@@ -42,20 +43,20 @@ await check("durable admission never waits for task registration", async () => {
   try {
     const got = await call();
     assert.equal(got.status, 200); assert.equal(got.engine, engine); assert.equal(got.accepted, 1);
-    assert.equal(await count("family_transfers"), 1); assert.equal(await count("demands"), 0);
+    assert.equal(await count('entity_family_search_requests'), 1); assert.equal(await count('relation_task_consumers'), 0);
   } finally { facts().demand = demand; facts().demandAll = demandAll; }
 });
 await check("interrupted admission resumes only its durable transfer", async () => {
   env.FACTORY_PAUSED = "1";
   assert.equal((await call()).status, 200);
-  assert.equal(await count("family_transfers"), 1); assert.equal(await count("demands"), 0);
+  assert.equal(await count('entity_family_search_requests'), 1); assert.equal(await count('relation_task_consumers'), 0);
   delete env.FACTORY_PAUSED;
   await askFamilyTransfers(env);
-  assert.equal(await count("demands"), 1);
+  assert.equal(await count('relation_task_consumers'), 1);
 });
 await check("concurrent resubmissions coalesce into one independent background search", async () => {
   await Promise.all([call(), call()]);
-  assert.equal(await count("family_transfers"), 1); assert.equal(await count("questions"), 1);
+  assert.equal(await count('entity_family_search_requests'), 1); assert.equal(await count('state_compute_work'), 1);
   const demand = await db.get("SELECT * FROM relation_task_consumers");
   assert.equal(demand.producer, "family_build"); assert.equal(demand.waits, 0); assert.equal(demand.initiator, "system");
   assert.equal((await db.get("SELECT * FROM state_compute_work")).verb, "optimize_report");
@@ -70,11 +71,11 @@ await check("an interrupted engine rebind remains retryable after its metadata w
   assert.equal((await db.get("SELECT asked_engine FROM entity_family_search_requests")).asked_engine, null);
   await askFamilyTransfers(env);
   assert.equal((await db.get("SELECT asked_engine FROM entity_family_search_requests")).asked_engine, engine);
-  assert.equal(await count("questions"), 1);
+  assert.equal(await count('state_compute_work'), 1);
 });
 await check("user report retention preserves a live family search", async () => {
   await purgeUserCalculations(env);
-  assert.equal(await count("questions"), 1); assert.equal(await count("demands"), 1);
+  assert.equal(await count('state_compute_work'), 1); assert.equal(await count('relation_task_consumers'), 1);
 });
 await check("only capable clients lease family optimization reports on either sync path", async () => {
   for (const proc of [0, 1]) {
@@ -102,16 +103,16 @@ await check("one witness cannot publish a derived build", async () => {
   const path = "/api/user-tasks/answer";
   const response = await userTasksRoute(new Request(`https://wfsim.test${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
     verifier: who.device, engine, lease: work.lease, question: work.question, work: 100, report }) }), env, path);
-  assert.equal(response.status, 200); assert.equal(await count("inbox"), 0);
+  assert.equal(response.status, 200); assert.equal(await count('record_build_submissions'), 0);
 });
 await check("independent agreement submits the target build with trusted nonrecursive provenance", async () => {
   const who = witness("6"), work = await facts().next(env, who, engine);
   assert.ok(work); await facts().answer(env, who, { lease: work.lease, engine, result: { report }, work: 100 });
-  assert.equal(await count("inbox"), 1); assert.equal(await count("scores"), 0);
+  assert.equal(await count('record_build_submissions'), 1); assert.equal(await count('state_board_measurement_selection'), 0);
   const inbox = await db.get("SELECT * FROM record_build_submissions"), transfer = await db.get("SELECT * FROM entity_family_search_requests");
-  assert.equal(record_build_submissions.family_source, transfer.id); assert.equal(record_build_submissions.initiator, "system");
+  assert.equal(inbox.family_source, transfer.id); assert.equal(inbox.initiator, "system");
   assert.equal(transfer.state, "succeeded");
-  const record = JSON.parse(record_build_submissions.record);
+  const record = JSON.parse(inbox.record);
   assert.equal(record.weapon, "burston"); assert.deepEqual(record.mods, ["serration", "speed_trigger", "riven"]);
   assert.deepEqual(record.riven_pos, ["critical_damage", "multishot"]);
   assert.equal(record.family_source, undefined);
@@ -120,7 +121,7 @@ await check("completed transfers and replayed facts cannot submit again", async 
   await call();
   const row = await db.get("SELECT * FROM entity_family_search_requests");
   await FAMILY_PRODUCERS.family_build.on_fact(env, { ref: row.id }, { engine, result: { report } });
-  assert.equal(await count("inbox"), 1); assert.equal(await count("questions"), 1);
+  assert.equal(await count('record_build_submissions'), 1); assert.equal(await count('state_compute_work'), 1);
 });
 await check("a crash after derived submission resumes without a second inbox record", async () => {
   const row = await db.get("SELECT * FROM entity_family_search_requests"), prepare = db.prepare;
@@ -133,7 +134,7 @@ await check("a crash after derived submission resumes without a second inbox rec
     await assert.rejects(FAMILY_PRODUCERS.family_build.on_fact(env, { ref: row.id }, { engine, result: { report } }), /interrupted completion/);
   } finally { db.prepare = prepare; }
   await FAMILY_PRODUCERS.family_build.on_fact(env, { ref: row.id }, { engine, result: { report } });
-  assert.equal(await count("inbox"), 1);
+  assert.equal(await count('record_build_submissions'), 1);
 });
 await check("the public submission cannot forge derivation provenance", async () => {
   const response = await worker.fetch(new Request("https://wfsim.test/api/board/submit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
@@ -147,7 +148,7 @@ await check("an empty search terminates without inventing a score", async () => 
   await db.run("UPDATE entity_family_search_requests SET state = 'waiting' WHERE id = ?", row.id);
   await FAMILY_PRODUCERS.family_build.on_fact(env, { ref: row.id }, { engine, result: { report: { results: [] } } });
   assert.equal((await db.get("SELECT state FROM entity_family_search_requests")).state, "failed");
-  assert.equal(await count("scores"), 0);
+  assert.equal(await count('state_board_measurement_selection'), 0);
 });
 await check("transfer transport preserves requests and requires acknowledged durable admission", async () => {
   const sent = [];
@@ -177,17 +178,16 @@ await check("the deployed daemon role can deliver family facts", async () => {
 await check("a future arrival can seed the same family on a new engine without a historical sweep", async () => {
   env.ASSETS = { fetch: async () => Response.json({ engine: "next-engine" }) };
   await call([]);
-  assert.equal(await count("family_transfers"), 1);
+  assert.equal(await count('entity_family_search_requests'), 1);
   await call();
-  assert.equal(await count("family_transfers"), 2);
+  assert.equal(await count('entity_family_search_requests'), 2);
   assert.equal((await db.get("SELECT count(*) AS n FROM entity_family_search_requests WHERE engine = 'next-engine'")).n, 1);
 });
 await check("leased search receipts deliver atomic build batches after the lease closes", async () => {
   env.AUTH_SECRET = "family-harvest-check-only";
   const question = "e".repeat(32), lease = "f".repeat(32), verifier = "e".repeat(24);
   const at = new Date().toISOString(), until = new Date(Date.now() + 60_000).toISOString();
-  await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, lease, lease_until, leased_to)
-    VALUES (?, 'optimize_report', ?, 'open', ?, ?, ?, ?, ?)`, question, JSON.stringify({ weapon: "torid", strategy: "quick", __board_upload: true }), at, at, lease, until, verifier);
+  await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"optimize_report",request:args[1],state:"open",due_at:args[2],opened_at:args[3],lease:args[4],lease_until:args[5],leased_to:args[6]});})(db,[question,JSON.stringify({ weapon: "torid", strategy: "quick", __board_upload: true }),at,at,lease,until,verifier]);
   await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, initiator)
     VALUES ('user_calculation', 'harvest-service', ?, 'live', ?, ?, 'user:harvest-requester')`, question, at, at);
   const submit = body => worker.fetch(new Request("https://wfsim.test/api/board/submit", { method: "POST",
@@ -198,21 +198,21 @@ await check("leased search receipts deliver atomic build batches after the lease
   assert.equal(grant.question, question);
   await db.run("UPDATE state_compute_work SET lease = NULL, leased_to = NULL, lease_until = NULL WHERE id = ?", question);
   await db.run("UPDATE relation_task_consumers SET state = 'served' WHERE question = ?", question);
-  const before = await count("inbox");
+  const before = await count('record_build_submissions');
   const builds = Array.from({ length: 128 }, () => ({ weapon: "torid", mods: ["serration"], score: 123, initiator: "system", family_source: "fake" }));
   const calls = db.cost.calls;
   const response = await submit({ builds, harvest: { receipt: grant.receipt, question, engine: "next-engine" } });
   assert.equal(response.status, 200, await response.clone().text());
   assert.equal(db.cost.calls - calls, 1, "one multi-row insert is one database round trip");
   assert.equal((await response.json()).results.filter(item => item.ok).length, builds.length);
-  assert.equal(await count("inbox"), before + builds.length);
+  assert.equal(await count('record_build_submissions'), before + builds.length);
   const rows = await db.all("SELECT record, initiator, family_source FROM record_build_submissions WHERE initiator = 'user:harvest-requester'");
   assert.equal(rows.length, builds.length);
   assert.ok(rows.every(row => row.family_source === null && JSON.parse(row.record).score === undefined));
-  assert.equal(await count("scores"), 0);
+  assert.equal(await count('state_board_measurement_selection'), 0);
   const wrong = await submit({ builds, harvest: { receipt: grant.receipt, question: "a".repeat(32) } });
   assert.equal(wrong.status, 403);
-  assert.equal(await count("inbox"), before + builds.length);
+  assert.equal(await count('record_build_submissions'), before + builds.length);
   await db.run("UPDATE state_compute_work SET lease = ?, leased_to = ?, lease_until = ? WHERE id = ?", lease, verifier, until, question);
   await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, initiator)
     VALUES ('family_build', 'harvest-family-source', ?, 'live', ?, ?, 'system')`, question, at, at);

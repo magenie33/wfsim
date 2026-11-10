@@ -176,8 +176,8 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
         await writeRows(result.delta, changedInputs());
       } else {
         const index = new DatabaseSync(join(dir, 'scopes.sqlite'));
-        index.exec('PRAGMA cache_size=-16384;PRAGMA temp_store=FILE;CREATE TABLE scopes(weapon TEXT PRIMARY KEY);CREATE TABLE aliases(weapon TEXT,id TEXT,PRIMARY KEY(weapon,id)) WITHOUT ROWID;');
-        const scopePut = index.prepare('INSERT OR IGNORE INTO scopes VALUES(?)'), aliasPut = index.prepare('INSERT OR IGNORE INTO aliases VALUES(?,?)');
+        index.exec("PRAGMA cache_size=-16384;PRAGMA temp_store=FILE;CREATE TABLE state_inventory_scopes(weapon TEXT PRIMARY KEY);CREATE TABLE relation_inventory_scope_aliases(weapon TEXT,id TEXT,PRIMARY KEY(weapon,id)) WITHOUT ROWID;");
+        const scopePut = index.prepare("INSERT OR IGNORE INTO state_inventory_scopes VALUES(?)"), aliasPut = index.prepare("INSERT OR IGNORE INTO relation_inventory_scope_aliases VALUES(?,?)");
         let number = 0;
         try {
           for await (const chunk of batches(changes, 64)) {
@@ -189,7 +189,7 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
             for (const row of input.builds) {
               const old = catalog.owner(row.id);
               if (old?.weapon) { scopePut.run(old.weapon); aliasPut.run(old.weapon, row.id); }
-              for (const owner of catalog.statement(`SELECT DISTINCT o.weapon FROM owners o JOIN records r ON r.id=o.candidate WHERE r.build_id=? AND o.weapon IS NOT NULL`).iterate(row.id)) {
+              for (const owner of catalog.statement(`SELECT DISTINCT o.weapon FROM relation_inventory_owners o JOIN entity_inventory_builds r ON r.id=o.candidate WHERE r.build_id=? AND o.weapon IS NOT NULL`).iterate(row.id)) {
                 scopePut.run(owner.weapon); aliasPut.run(owner.weapon, row.id);
               }
             }
@@ -206,8 +206,8 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
             }
             result.applies.push({ builds, facts, tasks, owners });
           }
-          for (const scope of index.prepare('SELECT weapon FROM scopes ORDER BY weapon').iterate()) {
-            for (const row of catalog.statement(`SELECT DISTINCT r.build_id id FROM owners o JOIN records r ON r.id=o.candidate
+          for (const scope of index.prepare("SELECT weapon FROM state_inventory_scopes ORDER BY weapon").iterate()) {
+            for (const row of catalog.statement(`SELECT DISTINCT r.build_id id FROM relation_inventory_owners o JOIN entity_inventory_builds r ON r.id=o.candidate
               WHERE o.weapon=? AND (r.stored IS NULL OR json_extract(r.stored,'$.weapon')<>o.weapon)`).iterate(scope.weapon)) aliasPut.run(scope.weapon, row.id);
             const key = createHash('sha256').update(scope.weapon).digest('hex').slice(0, 16), prefix = `scope-${key}`;
             const files = { builds: file(`${prefix}.builds`), facts: file(`${prefix}.facts`), queue: file(`${prefix}.queue`) };
@@ -225,7 +225,7 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
             try {
               await collect({ weapons: [scope.weapon], identities: [] });
               let aliases = [];
-              for (const alias of index.prepare('SELECT id FROM aliases WHERE weapon=? ORDER BY id').iterate(scope.weapon)) {
+              for (const alias of index.prepare("SELECT id FROM relation_inventory_scope_aliases WHERE weapon=? ORDER BY id").iterate(scope.weapon)) {
                 aliases.push(alias.id);
                 if (aliases.length === LIMIT) { await collect({ weapons: [], identities: aliases }); aliases = []; }
               }

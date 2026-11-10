@@ -24,8 +24,8 @@ function commitDirectory(staging, out, paths) {
 function database(path) {
   const db = new DatabaseSync(path);
   db.exec(`PRAGMA cache_size=-${CACHE_KIB};PRAGMA temp_store=FILE;PRAGMA mmap_size=0;PRAGMA journal_mode=OFF;PRAGMA synchronous=OFF;
-    CREATE TABLE sources(id TEXT PRIMARY KEY,ordinal INTEGER NOT NULL) WITHOUT ROWID;
-    CREATE TABLE canonical(id TEXT PRIMARY KEY) WITHOUT ROWID;`);
+    CREATE TABLE entity_inventory_source_files(id TEXT PRIMARY KEY,ordinal INTEGER NOT NULL) WITHOUT ROWID;
+    CREATE TABLE state_canonical_build_ids(id TEXT PRIMARY KEY) WITHOUT ROWID;`);
   return db;
 }
 
@@ -50,7 +50,7 @@ class Files {
 }
 
 async function indexSources(db, builds) {
-  const add = db.prepare('INSERT INTO sources VALUES(?,?)');
+  const add = db.prepare("INSERT INTO entity_inventory_source_files VALUES(?,?)");
   let count = 0;
   db.exec('BEGIN');
   try {
@@ -84,15 +84,15 @@ export async function shardInventory({ builds, facts, queue, tasks, owners, out,
   const db = database(join(staging, 'inputs.sqlite')), files = new Files(staging);
   let done = false;
   try {
-    db.exec(`CREATE TABLE owners(owner TEXT PRIMARY KEY,candidate TEXT,weapon TEXT,riven INTEGER) WITHOUT ROWID;
-      CREATE TABLE identities(id TEXT NOT NULL,weapon TEXT NOT NULL,riven INTEGER NOT NULL,PRIMARY KEY(id,weapon,riven)) WITHOUT ROWID;
-      CREATE TABLE scopes(key TEXT PRIMARY KEY,weapon TEXT NOT NULL,riven INTEGER NOT NULL) WITHOUT ROWID;`);
+    db.exec(`CREATE TABLE relation_inventory_source_candidates(owner TEXT PRIMARY KEY,candidate TEXT,weapon TEXT,riven INTEGER) WITHOUT ROWID;
+      CREATE TABLE relation_inventory_build_scopes(id TEXT NOT NULL,weapon TEXT NOT NULL,riven INTEGER NOT NULL,PRIMARY KEY(id,weapon,riven)) WITHOUT ROWID;
+      CREATE TABLE state_inventory_scopes(key TEXT PRIMARY KEY,weapon TEXT NOT NULL,riven INTEGER NOT NULL) WITHOUT ROWID;`);
     const count = await indexSources(db, builds);
-    const source = db.prepare('SELECT ordinal FROM sources WHERE id=?');
-    const addOwner = db.prepare('INSERT INTO owners VALUES(?,?,?,?)');
-    const addIdentity = db.prepare('INSERT OR IGNORE INTO identities VALUES(?,?,?)');
-    const addScope = db.prepare('INSERT OR IGNORE INTO scopes VALUES(?,?,?)');
-    const seenCanonical = db.prepare('INSERT OR IGNORE INTO canonical VALUES(?)');
+    const source = db.prepare("SELECT ordinal FROM entity_inventory_source_files WHERE id=?");
+    const addOwner = db.prepare("INSERT INTO relation_inventory_source_candidates VALUES(?,?,?,?)");
+    const addIdentity = db.prepare("INSERT OR IGNORE INTO relation_inventory_build_scopes VALUES(?,?,?)");
+    const addScope = db.prepare("INSERT OR IGNORE INTO state_inventory_scopes VALUES(?,?,?)");
+    const seenCanonical = db.prepare("INSERT OR IGNORE INTO state_canonical_build_ids VALUES(?)");
     let ownerCount = 0, end = null;
     db.exec('BEGIN');
     for await (const row of readInventoryRows(owners)) {
@@ -118,12 +118,12 @@ export async function shardInventory({ builds, facts, queue, tasks, owners, out,
     db.exec('COMMIT');
     footer(end, { engine, contract, snapshot, generation, epoch }, ownerCount, 0);
     if (ownerCount !== count) throw new Error('incomplete inventory owner baseline');
-    const scopeOfOwner = db.prepare('SELECT weapon,riven FROM owners WHERE owner=? AND weapon IS NOT NULL');
+    const scopeOfOwner = db.prepare("SELECT weapon,riven FROM relation_inventory_source_candidates WHERE owner=? AND weapon IS NOT NULL");
     for await (const row of readInventoryRows(builds)) {
       const scope = scopeOfOwner.get(row.id);
       if (scope) files.write(`${keyOf(scope.weapon, scope.riven)}/builds.ndjson`, row);
     }
-    const scopesFor = db.prepare('SELECT weapon,riven FROM identities WHERE id=? ORDER BY weapon,riven');
+    const scopesFor = db.prepare("SELECT weapon,riven FROM relation_inventory_build_scopes WHERE id=? ORDER BY weapon,riven");
     const counts = { builds: count, owners: ownerCount, facts: 0, queue: 0, unmapped_facts: 0, unmapped_queue: 0 };
     for (const [name, input, identity] of [['facts', facts, 'identity'], ['queue', queue, 'build_id']]) {
       for await (const row of readInventoryRows(input)) {
@@ -136,7 +136,7 @@ export async function shardInventory({ builds, facts, queue, tasks, owners, out,
         if (!mapped) { counts[`unmapped_${name}`]++; files.write(`unmapped.${name}.ndjson`, row); }
       }
     }
-    const scopes = db.prepare('SELECT key,weapon,riven FROM scopes ORDER BY weapon,riven').all().map(row => ({ ...row, riven: !!row.riven,
+    const scopes = db.prepare("SELECT key,weapon,riven FROM state_inventory_scopes ORDER BY weapon,riven").all().map(row => ({ ...row, riven: !!row.riven,
       scope: { weapon: row.weapon, riven: !!row.riven }, counts: Object.fromEntries(['builds', 'facts', 'queue'].map(name => [name, files.counts.get(`${row.key}/${name}.ndjson`) || 0])),
       builds: join(resolve(out), row.key, 'builds.ndjson'), facts: join(resolve(out), row.key, 'facts.ndjson'), queue: join(resolve(out), row.key, 'queue.ndjson') }));
     for (const scope of scopes) for (const name of ['builds', 'facts', 'queue']) {
@@ -171,11 +171,11 @@ export async function auditInventoryInputs({ builds, queue, tasks, meta, rulers,
   const db = database(join(staging, 'audit.sqlite')), files = new Files(staging);
   let done = false;
   try {
-    db.exec('CREATE TABLE valid_queue(build_id TEXT NOT NULL,ruler TEXT NOT NULL,mode TEXT NOT NULL,PRIMARY KEY(build_id,ruler,mode)) WITHOUT ROWID');
+    db.exec("CREATE TABLE state_validated_inventory_work(build_id TEXT NOT NULL,ruler TEXT NOT NULL,mode TEXT NOT NULL,PRIMARY KEY(build_id,ruler,mode)) WITHOUT ROWID");
     const sourceCount = await indexSources(db, builds), roster = new Set(rulers);
     if (sourceCount !== meta.counts.library) throw new Error('incomplete inventory audit builds');
-    const source = db.prepare('SELECT ordinal FROM sources WHERE id=?'), seen = db.prepare('INSERT OR IGNORE INTO canonical VALUES(?)');
-    const addQueued = db.prepare('INSERT OR IGNORE INTO valid_queue VALUES(?,?,?)');
+    const source = db.prepare("SELECT ordinal FROM entity_inventory_source_files WHERE id=?"), seen = db.prepare("INSERT OR IGNORE INTO state_canonical_build_ids VALUES(?)");
+    const addQueued = db.prepare("INSERT OR IGNORE INTO state_validated_inventory_work VALUES(?,?,?)");
     db.exec('BEGIN');
     let memberCount = 0;
     for await (const path of engineOutputs) {
@@ -201,7 +201,7 @@ export async function auditInventoryInputs({ builds, queue, tasks, meta, rulers,
       footer(end, { engine: meta.engine, contract, snapshot: meta.snapshot, generation, epoch }, owners, rows);
     }
     db.exec('COMMIT');
-    const valid = db.prepare('SELECT 1 FROM valid_queue WHERE build_id=? AND ruler=? AND mode=?');
+    const valid = db.prepare("SELECT 1 FROM state_validated_inventory_work WHERE build_id=? AND ruler=? AND mode=?");
     let raw = 0;
     for await (const row of readInventoryRows(queue)) {
       raw++;

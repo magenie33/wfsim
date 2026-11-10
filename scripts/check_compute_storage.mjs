@@ -84,6 +84,9 @@ try {
   await db.run("SELECT compute_accept_result('spec',?1::bigint,'open','fact','new','e1',?2::text,0,'[]')",next.task_id,later);
   check("the current selection changes without overwriting history",(await db.get("SELECT canon FROM state_compute_work WHERE id='spec'")).canon==="new"
     && (await db.get("SELECT count(*) AS n FROM entity_compute_results")).n===2);
+  await db.run("SELECT compute_open_task('spec','engine_recalibration','e2',?::text)",later);
+  check("engine recalibration carries the preceding task's eligible evidence",(await db.get("SELECT count(*) AS n FROM state_compute_candidate_answers")).n===1);
+  check("engine recalibration cannot revive a retired round's candidates",(await db.get("SELECT count(*) AS n FROM state_compute_candidate_answers WHERE canon='old'")).n===0);
   await fails("selection metadata must match its result",() => db.run("UPDATE state_compute_scheduling SET fact_engine='wrong' WHERE id='spec'"),"23503");
   await db.run("DELETE FROM state_compute_work WHERE id='spec'");
   check("queue cleanup preserves results and their input",(await db.get("SELECT count(*) AS n FROM entity_compute_results")).n===2

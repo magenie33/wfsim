@@ -1,3 +1,4 @@
+import { seedComputeWork } from "./pg/fixtures.mjs";
 // AN OFFICIAL CHECK OF ANOTHER ENGINE IS NONE (worker/pg/sync.sql
 // `factory_moot_checks`, the settler's `moot` tick, worker/tasks.js
 // `demandAll`): a dispute or a non-deterministic question no answer of the
@@ -24,10 +25,7 @@ const NOW = Date.parse("2026-11-01T12:00:00.000Z"), iso = (ms) => new Date(ms).t
 VERBS.simulate.recheck = 0;
 const f = facts();
 
-const question = (id, state, { fact_engine = null, lease = false } = {}) => L.run(
-  `INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at, lease, lease_until, leased_to)
-   VALUES (?, 'simulate', '{}', ?, ?, ?, ?, ?, ?, ?, ?, ?)`, id, state, AT, AT, fact_engine ? "c1" : null, fact_engine, fact_engine ? AT : null,
-  lease ? "l" : null, lease ? iso(NOW + 6 * 3_600_000) : null, lease ? "official:settle-0" : null);
+const question = (id, state, { fact_engine = null, lease = false } = {}) => (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:args[1],due_at:args[2],opened_at:args[3],canon:args[4],fact_engine:args[5],fact_at:args[6],lease:args[7],lease_until:args[8],leased_to:args[9]});})(L,[id,state,AT,AT,fact_engine ? "c1" : null,fact_engine,fact_engine ? AT : null,lease ? "l" : null,lease ? iso(NOW + 6 * 3_600_000) : null,lease ? "official:settle-0" : null]);
 const demand = (question, state) => L.run(
   `INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, payload, served_at) VALUES ('sweep', ?, ?, ?, ?, ?, ?, ?)`,
   `ref-${question}`, question, state, AT, AT, JSON.stringify({ identity: `b-${question}`, ruler: "r", mode: "m" }), state === "served" ? AT : null);

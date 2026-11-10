@@ -26,10 +26,11 @@ GRANT SELECT, INSERT ON record_build_submissions TO wfsim_factoryd;
 GRANT SELECT,INSERT,DELETE ON entity_compute_specs,entity_compute_tasks,entity_compute_results TO wfsim_factoryd;
 GRANT UPDATE (proof_archive,proof_digest) ON entity_compute_results TO wfsim_factoryd;
 GRANT SELECT,INSERT ON record_compute_result_selections TO wfsim_factoryd;
+GRANT SELECT,INSERT,DELETE ON record_compute_result_proofs TO wfsim_factoryd;
 GRANT SELECT,INSERT,UPDATE,DELETE ON state_compute_scheduling,relation_task_answer_evidence TO wfsim_factoryd;
 GRANT SELECT ON state_compute_candidate_answers TO wfsim_factoryd;
 GRANT SELECT,INSERT,DELETE ON entity_calculation_reports,relation_calculation_report_access TO wfsim_factoryd;
 GRANT SELECT,INSERT,UPDATE,DELETE ON state_calculation_report_selection TO wfsim_factoryd;
 GRANT SELECT ON state_current_calculation_reports TO wfsim_factoryd;
 GRANT USAGE,SELECT ON SEQUENCE entity_compute_tasks_id_seq,entity_compute_results_id_seq,
-  record_compute_result_selections_id_seq TO wfsim_factoryd;
+  record_compute_result_selections_id_seq,entity_calculation_reports_id_seq TO wfsim_factoryd;
