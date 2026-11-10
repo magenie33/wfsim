@@ -175,6 +175,7 @@ jobs:
           WFSIM_RELEASE_SOURCE: ${{ needs.due.outputs.src }}
           WFSIM_RELEASE_RUN: ${{ needs.due.outputs.run }}
           WFSIM_RELEASE_BASE: ${{ needs.due.outputs.base }}
+          WFSIM_SCHEMA_READINESS_RECEIPT_JSON: ${{ secrets.WFSIM_SCHEMA_READINESS_RECEIPT_JSON }}
         run: |
           set -euo pipefail
           # THE KEYS AS ship.py READS THEM, under private/ (gitignored), for this step alone.
@@ -189,6 +190,11 @@ jobs:
              printf '%s\n' "$WEBSITE_KNOWN_HOSTS" > private/bandwagon/known_hosts)
           fi
           trap 'rm -rf private' EXIT
+          if [ -n "$WFSIM_SCHEMA_READINESS_RECEIPT_JSON" ]; then
+            export WFSIM_SCHEMA_READINESS_RECEIPT="$PWD/private/schema-readiness.json"
+            (umask 077; printf '%s\n' "$WFSIM_SCHEMA_READINESS_RECEIPT_JSON" > "$WFSIM_SCHEMA_READINESS_RECEIPT")
+            unset WFSIM_SCHEMA_READINESS_RECEIPT_JSON
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if [ "$DRY_RUN" = "true" ]; then python scripts/ship.py --built --dry-run; exit 0; fi
