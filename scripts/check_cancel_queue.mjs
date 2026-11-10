@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
 import { query, close } from './db.mjs';
+import { seedComputeWork } from './pg/fixtures.mjs';
 
 const connection = process.env.WFSIM_CANCEL_QUEUE_PG_URL;
 if (connection) assert(['127.0.0.1', 'localhost'].includes(new URL(connection).hostname), 'use a local test database');
@@ -55,7 +56,8 @@ try {
   }
   for (const [id, kind, producers] of [[odd, 'open', ['new_build', 'sweep']], ['b2', 'open', ['new_build', 'refresh']],
     ['b3', 'open', ['refresh']], ['b5', 'fact', ['survey_build']], ['b6', 'open', ['new_build', 'user']]]) {
-    await query("INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at) VALUES(?,'simulate','{}',?,'2026-10-02','2026-10-01')", [id, kind]);
+    await seedComputeWork({run:(sql,...args)=>query(sql,args),get:async(sql,...args)=>(await query(sql,args))[0]},
+      {id,verb:'simulate',request:'{}',state:kind,due_at:'2026-10-02',opened_at:'2026-10-01'});
     for (const producer of producers) await query(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,payload)
       VALUES(?,?,?,'live','2026-10-01','2026-10-02',?)`, [producer, `${id}|sst|base`, id, JSON.stringify({ identity: id, ruler: 'sst', mode: 'base' })]);
   }

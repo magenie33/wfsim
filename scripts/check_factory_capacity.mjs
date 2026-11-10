@@ -1,4 +1,4 @@
-import { seedComputeWork } from "./pg/fixtures.mjs";
+import { seedComputeWork, seedComputeWorkMany } from "./pg/fixtures.mjs";
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Capacity backs off background reads while the same facts, fairness and
 // public counts survive; failures cannot wedge a cache or the background lane.
@@ -193,15 +193,14 @@ console.log("ok: the watchdog counts overlapping disagreement states once and ex
 await L.close();
 
 const A = await testDb("library"), past = new Date(now - 3_600_000).toISOString();
-await A.exec(`INSERT INTO state_compute_work (id,verb,request,state,opened_at,due_at)
-  SELECT 'audit-' || i, 'simulate', '{}', 'open', '${past}', '${past}' FROM generate_series(1,20000) i;
-  INSERT INTO relation_task_consumers (producer,ref,question,state,asked_at,due_at)
+await seedComputeWorkMany(A,Array.from({length:20000},(_,i)=>({id:'audit-'+(i+1),verb:'simulate',request:'{}',state:'open',opened_at:past,due_at:past})));
+await A.exec(`INSERT INTO relation_task_consumers (producer,ref,question,state,asked_at,due_at)
   SELECT CASE WHEN id IN ('audit-19999','audit-20000') THEN 'silent' ELSE 'busy' END,
     id,id,'live',opened_at,due_at FROM state_compute_work;
   INSERT INTO record_candidate_answers (question,engine,device,owner,net,canon,result,work,at)
   VALUES ('audit-1','current','witness','owner','','c','{}',1,'${at}');
   INSERT INTO entity_compute_devices (id,seen,last_at) VALUES ('witness','${at}','${at}');
-  ANALYZE questions; ANALYZE demands; ANALYZE answers;`);
+  ANALYZE state_compute_scheduling; ANALYZE relation_task_consumers; ANALYZE record_candidate_answers;`);
 let auditSql, auditArgs, unsettledSql, unsettledArgs;
 const observed = { ...A, prepare(sql) {
   const statement = A.prepare(sql);
@@ -258,11 +257,11 @@ for (const mode of ["force_generic_plan", "force_custom_plan"]) {
   const plan = await A.get(`EXPLAIN (ANALYZE,FORMAT JSON,TIMING OFF) EXECUTE unsettled_audit(${unsettledArgs.map(literal).join(",")})`);
   let readAnswers = 0;
   const walk = node => {
-    if (node["Relation Name"] === "answers") readAnswers += Math.max(1, node["Actual Rows"] + (node["Rows Removed by Filter"] || 0)) * node["Actual Loops"];
+    if (node["Relation Name"] === "record_candidate_answers") readAnswers += Math.max(1, node["Actual Rows"] + (node["Rows Removed by Filter"] || 0)) * node["Actual Loops"];
     for (const child of node.Plans || []) walk(child);
   };
   walk(plan["QUERY PLAN"][0].Plan);
-  assert.ok(readAnswers <= 100, `${mode}: official settlement must not scan other questions' recent answers (${readAnswers})`);
+  assert.ok(readAnswers > 0 && readAnswers <= 100, `${mode}: official settlement must read its candidates without scanning other questions' recent answers (${readAnswers})`);
 }
 await A.exec("DEALLOCATE unsettled_audit; RESET plan_cache_mode");
 await A.close();
@@ -273,7 +272,7 @@ const C = await testDb("library");
 await C.exec(`INSERT INTO state_board_pending_work (batch,build_id,ruler,mode)
   SELECT 'batch-' || ((i-1)/2000), 'queued-' || ((i-1)%1000), 'test__cell',
     CASE WHEN (i-1)%2000 < 1000 THEN 'base' ELSE 'cycle' END FROM generate_series(1,20000) i;
-  ANALYZE queue;`);
+  ANALYZE state_board_pending_work;`);
 let cellsSql;
 const cellsDb = { ...C, prepare(sql) { if (/FROM state_board_pending_work WHERE ruler LIKE/.test(sql)) cellsSql=sql; return C.prepare(sql); } };
 const cells = await cellsFilling({ LIBRARY: cellsDb }, now);

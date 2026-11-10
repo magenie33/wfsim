@@ -85,6 +85,11 @@ try {
   await db.unsafe("SELECT pg_advisory_xact_lock(hashtextextended('wfsim-db-boundaries',0))");
   check("SIGKILL during actual metadata changes leaves the whole source layout intact",before===await fingerprint()
     && good("db_library","status",...args).phase==="reconciled");
+  await db.unsafe("GRANT INSERT ON donors TO wfsim_factoryd");
+  const widened=run("db_library","activate",...args);
+  check("activation rejects an unexpected widening of existing table permissions",widened.status!==0
+    && widened.stderr.includes("source object identity/privilege changed: donors"));
+  await db.unsafe("REVOKE INSERT ON donors FROM wfsim_factoryd");
   good("db_library","activate",...args);
   check("dispatch indexes belong to the new scheduling heap",(await get("SELECT indrelid='state_compute_scheduling'::regclass AS correct FROM pg_index WHERE indexrelid='questions_by_producer'::regclass")).correct
     && (await get("SELECT indrelid='state_compute_scheduling'::regclass AS correct FROM pg_index WHERE indexrelid='questions_coded'::regclass")).correct);

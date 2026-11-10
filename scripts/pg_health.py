@@ -26,7 +26,7 @@ SELECT json_build_object(
    'epoch',body::jsonb->>'epoch','engine',body::jsonb->>'engine') FROM state_factory_findings WHERE kind='task_inventory'),
  'generation',inventory_status(),
  'dirty',(SELECT json_build_object('estimated',n_live_tup,'dead',n_dead_tup,'last_analyze',last_autoanalyze)
-   FROM pg_stat_user_tables WHERE relname='inventory_dirty'),
+   FROM pg_stat_user_tables WHERE relname='state_compute_inventory_invalidations'),
  'sessions',(SELECT coalesce(json_agg(s),'[]'::json) FROM (SELECT pid,left(application_name,60) application,
    state,wait_event_type,wait_event,query_id::text,
    round(extract(epoch FROM clock_timestamp()-xact_start)) transaction_seconds,

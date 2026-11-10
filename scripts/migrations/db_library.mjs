@@ -254,7 +254,15 @@ async function activate() {
     const after=await catalog(tx,names(true));
     for(const before of p.baseline.tables){
       const table=after.find(table=>table.oid===before.oid);
-      if(!table || ["storage","owner","acl"].some(key=>table[key]!==before[key]))throw new Error("source object identity/privilege changed: "+before.name);
+      if(!table || ["storage","owner"].some(key=>table[key]!==before[key]))throw new Error("source object identity/privilege changed: "+before.name);
+      // NULL ACL and an explicit owner-only ACL grant the same rights after REVOKE FROM PUBLIC.
+      const [permissions]=await query(tx,`SELECT
+        (SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable)
+          FROM aclexplode(COALESCE($1::aclitem[],acldefault('r',$3::oid)))a)
+        IS NOT DISTINCT FROM
+        (SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable)
+          FROM aclexplode(COALESCE($2::aclitem[],acldefault('r',$3::oid)))a) AS same`,[before.acl,table.acl,before.owner]);
+      if(!permissions.same)throw new Error("source object identity/privilege changed: "+before.name);
     }
     await phase(tx,"activated");return {source_tables:after.length,new_core_tables:core.length,metadata_unchanged:true};
   });emit({ok:true,phase:"activated",...result});
@@ -315,6 +323,7 @@ async function backout() {
       await query(tx,`ALTER ROUTINE wfsim_migration_ops.${signature} SET SCHEMA public`);
     }
     await query(tx,"ALTER INDEX public.answers_once RENAME TO migration_answers_task_once");
+    await query(tx,"SET LOCAL maintenance_work_mem='128MB';SET LOCAL max_parallel_maintenance_workers=0;SET LOCAL temp_file_limit='4GB'");
     await query(tx,p.baseline.answer_index);
     for(const item of p.baseline.functions)await query(tx,item.definition);
     const old=new Set(p.baseline.functions.map(fn=>fn.signature));

@@ -173,7 +173,7 @@ def deploy() -> None:
 SELECT count(*) = 4 AND bool_and(i.indisvalid AND i.indisready)
 FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
 WHERE c.relnamespace = 'public'::regnamespace
-AND c.relname IN ('questions_odd_at', 'questions_dispatched', 'scores_pace', 'queue_calculation');
+AND c.relname IN ('compute_scheduling_odd_at', 'compute_scheduling_dispatched', 'scores_pace', 'queue_calculation');
 """).strip()
     if ready != "t":
         sys.exit("factoryd: required indexes are not valid and ready; running daemon kept")
