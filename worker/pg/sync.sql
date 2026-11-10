@@ -11,6 +11,39 @@
 -- Instants are ISO-ms text (schema.sql); arguments are positional, as a column
 -- of the same name would shadow a named one inside a SQL function.
 
+-- Changing an accepted canonical output is a fresh round, including official corrections.
+CREATE OR REPLACE FUNCTION compute_result_round() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE selected entity_compute_results%ROWTYPE;
+BEGIN
+  SELECT r.* INTO selected FROM state_compute_scheduling s JOIN entity_compute_results r ON r.id=s.result_id
+    WHERE s.id=NEW.computation AND s.task_id=NEW.task_id AND r.task_id=NEW.task_id FOR UPDATE OF s;
+  IF FOUND AND (selected.canon,selected.engine) IS DISTINCT FROM (NEW.canon,NEW.engine) THEN
+    RAISE EXCEPTION 'changing an accepted output requires a new compute task';
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS compute_result_round ON entity_compute_results;
+CREATE TRIGGER compute_result_round BEFORE INSERT ON entity_compute_results
+  FOR EACH ROW EXECUTE FUNCTION compute_result_round();
+
+CREATE OR REPLACE FUNCTION compute_prepare_correction(text,bigint,text,text,text,text) RETURNS bigint LANGUAGE plpgsql AS $$
+DECLARE held state_compute_scheduling%ROWTYPE; selected entity_compute_results%ROWTYPE; next_task bigint;
+BEGIN
+  SELECT * INTO held FROM state_compute_scheduling WHERE id=$1 FOR UPDATE;
+  IF NOT FOUND OR held.task_id IS DISTINCT FROM $2 THEN
+    RAISE EXCEPTION 'compute task changed before correction' USING ERRCODE='40001';
+  END IF;
+  SELECT * INTO selected FROM entity_compute_results WHERE id=held.result_id AND task_id=held.task_id;
+  IF NOT FOUND OR (selected.canon,selected.engine) IS NOT DISTINCT FROM ($3,$4) THEN RETURN held.task_id; END IF;
+  next_task:=compute_open_task($1,'official_correction',$4,$5,true);
+  INSERT INTO relation_task_answer_evidence(task_id,answer_id,role)
+    SELECT next_task,a.id,'accepted_correction' FROM record_candidate_answers a
+      JOIN relation_task_answer_evidence e ON e.answer_id=a.id AND e.task_id=held.task_id
+    WHERE a.question=$1 AND a.id IN(SELECT value::bigint FROM jsonb_array_elements_text($6::jsonb)) AND a.void=0
+    ON CONFLICT DO NOTHING;
+  RETURN next_task;
+END $$;
+
 -- A LEASE ANOTHER MAY TAKE: none, run out, or held past the ceiling (dial
 -- `row_ceiling_ms`, here in seconds) at instant $3.
 CREATE OR REPLACE FUNCTION factory_takeable(text, text, text, bigint) RETURNS boolean

@@ -120,12 +120,12 @@ await check("a corrected report selects the new output under the same engine",as
   const pending=accepted("simulation",{...request,unique:"report-correction"}), got=await call("accept",pending);
   await facts().answerOfficial(env,{device:"official:correction",owner:"official:correction",official:true},
     {question:got.question,engine,work:100,result:{report}});
-  const old=await db.get("SELECT report_id,retained_from FROM state_current_calculation_reports WHERE question=? AND engine=?",got.question,engine);
-  await db.run("SELECT compute_open_task(?1::text,'correction',?2::text,?3::text,true)",got.question,engine,new Date().toISOString());
+  const old=await db.get("SELECT r.report_id,r.retained_from,q.task_id FROM state_current_calculation_reports r JOIN state_compute_work q ON q.id=r.question WHERE r.question=? AND r.engine=?",got.question,engine);
   const corrected={...report,correction:"verified replacement"};
   await facts().answerOfficial(env,{device:"official:corrected",owner:"official:corrected",official:true},
     {question:got.question,engine,work:100,result:{report:corrected}});
-  const current=await db.get("SELECT report_id,retained_from FROM state_current_calculation_reports WHERE question=? AND engine=?",got.question,engine);
+  const current=await db.get("SELECT r.report_id,r.retained_from,q.task_id FROM state_current_calculation_reports r JOIN state_compute_work q ON q.id=r.question WHERE r.question=? AND r.engine=?",got.question,engine);
+  assert.notEqual(current.task_id,old.task_id,"a changed official report must start a new execution round");
   assert.notEqual(current.report_id,old.report_id);
   assert.equal(current.retained_from,old.retained_from);
   assert.deepEqual((await call("status",{owner,ids:[pending.id],include_results:true})).tasks[0].result,calculationReport(corrected));

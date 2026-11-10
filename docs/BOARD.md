@@ -928,6 +928,9 @@ read-only projections. Selection metadata is constrained to agree with the
 referenced output. Reopening work creates a new task round. Evidence from a
 retired round counts only through an explicit association; engine recalibration
 may carry eligible evidence from the preceding round.
+An official correction also starts a new round and associates only its accepted
+evidence. Storage rejects a changed canonical output or engine under the same
+accepted task identity.
 
 Concurrent settlement rereads its plan after a task or state conflict, before
 credit or delivery. An older answer cannot release a newer round's lease.

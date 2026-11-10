@@ -278,7 +278,13 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
 
 
   async function settleOfficial(env, q, all, served, officialSays, engine, now) {
-    const db = env.LIBRARY, id = q.id;
+    const db = env.LIBRARY, id = q.id, priorState=q.state;
+    const prepareCorrection=async accepted=>{
+      if(q.result_id==null || q.canon===officialSays.canon && q.fact_engine===engine)return;
+      const row=await db.prepare("SELECT compute_prepare_correction(?1::text,?2::bigint,?3::text,?4::text,?5::text,?6::text) AS task_id")
+        .bind(id,q.task_id,officialSays.canon,engine,iso(now),JSON.stringify(accepted.map(answer=>answer.id))).first();
+      if(row.task_id!==q.task_id)q={...q,task_id:row.task_id,state:"open"};
+    };
     // AN OFFICIAL ANSWER WITHOUT WORK — a native build's, which counts no gas —
     // witnesses the score alone: it is the fact, and a volunteer who gave the
     // score is owed a check of the work by the witness that counts it (the
@@ -286,12 +292,13 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     if (JSON.parse(officialSays.canon).work === null) {
       const owed = all.some((a) => !a.official && sansWork(a.canon) === sansWork(officialSays.canon));
       const witnesses = acceptedWitnesses([officialSays], iso(now), JSON.parse(q.witnesses || "[]"));
+      await prepareCorrection([officialSays]);
       await db.batch([
         acceptResult(db,q,owed ? "spot" : "fact",officialSays.canon,engine,iso(now),0,witnesses),
         readyFact(db, id, officialSays.canon, engine, iso(now)),
         ...factWrites(env, { ...q, canon: officialSays.canon }, witnesses, engine, iso(now)),
       ]);
-      if (q.state !== "spot") await deliver(env, { ...q, canon: officialSays.canon, fact_at: iso(now), fact_engine: engine, witnesses }, now, officialSays);
+      if (priorState !== "spot") await deliver(env, { ...q, canon: officialSays.canon, fact_at: iso(now), fact_engine: engine, witnesses }, now, officialSays);
       return;
     }
     // THE OFFICIAL MACHINES' ANSWER IS THE FACT, whatever state it was in. The
@@ -316,6 +323,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     // whose answer is not deterministic. Nobody is refused; the watchdog says so.
     const odd = q.state === "nondeterministic" || (q.state === "disputed" && !agree.length);
     const witnesses = acceptedWitnesses([...agree, officialSays], iso(now), JSON.parse(q.witnesses || "[]"));
+    await prepareCorrection([...agree,officialSays]);
     await db.batch([
       acceptResult(db,q,"fact",officialSays.canon,engine,iso(now),odd ? 1 : 0,witnesses),
       readyFact(db, id, officialSays.canon, engine, iso(now)),
@@ -327,13 +335,13 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     // ONLY A DISPUTE OR A SPOT CHECK REFUSES: an open question past its deadline
     // that they answered differently is measured again, its answer unpaid —
     // one witness against them is not yet a witness found lying.
-    if (refusing && !odd && (q.state === "disputed" || q.state === "spot")) {
+    if (refusing && !odd && (priorState === "disputed" || priorState === "spot")) {
       for (const a of wrong) {
         try { await (on_disproved ? on_disproved(env, a) : refuse(env, a.device, now)); }
         catch (error) { errors.push(error); }
       }
     }
-    if (q.state !== "spot" || moved) {
+    if (priorState !== "spot" || moved) {
       try { await deliver(env, { ...q, canon: officialSays.canon, fact_at: iso(now), fact_engine: engine, witnesses }, now, officialSays); }
       catch (error) { errors.push(error); }
     }

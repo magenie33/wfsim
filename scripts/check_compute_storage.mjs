@@ -68,6 +68,7 @@ try {
   check("transport retry is one candidate",(await db.get("SELECT count(*) AS n FROM record_candidate_answers")).n===1);
   const old = await db.get("SELECT compute_accept_result('spec',?1::bigint,'open','fact','old','e1',?2::text,0,'[]') AS id",first.task_id,at);
   check("accepted result is independently stored",(await db.get("SELECT canon FROM entity_compute_results WHERE id=?",old.id)).canon==="old");
+  await fails("changing an accepted output requires a new task round",()=>db.run("SELECT compute_accept_result('spec',?1::bigint,'fact','fact','changed','e1',?2::text,0,'[]')",first.task_id,later));
   check("a task stores no result body",(await db.get("SELECT count(*) AS n FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='entity_compute_tasks' AND column_name IN ('canon','result','score','report')")).n===0);
   await fails("accepted result body is immutable",() => db.run("UPDATE entity_compute_results SET canon='other' WHERE id=?",old.id));
   await db.run("SELECT compute_open_task('spec','correction','e1',?::text,true)",later);
