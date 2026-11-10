@@ -29,6 +29,11 @@ const riven = { weapon: 'torid', arcanes: ['primary_deadhead'], exilus: 'vigilan
   evolutions: ['torid_evo1_incarnon_form','torid_final_fusillade','torid_swift_deliverance','torid_survivors_edge'],
   mods: ['primed_cryo_rounds','malignant_force','hellfire','primary_acuity','galvanized_scope','vital_sense','hunter_track','riven'],
   riven_neg: 'status_duration', riven_pos: ['critical_chance','critical_damage','damage'] };
+records.push({ weapon: 'tombfinger_secondary', grip: 'haymaker', loader: 'splat', arcanes: ['pax_charge','secondary_fortifier'],
+  mods: ['jolt','pistol_pestilence','primed_heated_charge','pistol_acuity','hornet_strike','primed_target_cracker','galvanized_shot','anemic_agility'] },
+{ weapon: 'sepfahn_one_handed', grip: 'peye', link: 'vargeet_jai_ii', arcanes: ['exodia_triumph','melee_exposure'], exilus: 'dreamers_wrath',
+  mods: ['primed_fever_strike','vicious_frost','condition_overload','blood_rush','berserker_fury','weeping_wounds','magnetic_rush','riven'],
+  riven_pos: ['critical_chance','critical_damage'], riven_neg: 'impact', riven_rolls: [1.1,1.1,0.9] });
 records.push({ ...riven, riven_rolls: [0.9,1.1,1.1,0.9] }, { ...riven, riven_rolls: [1.1,1.1,1.1,0.9] });
 const described = [];
 for (let i = 0; i < records.length; i += 256)
@@ -108,6 +113,10 @@ try {
   const pages = [...files(join(work, 'verified')).entries()].filter(([name]) => !name.endsWith('index.json')).flatMap(([, body]) => JSON.parse(body));
   assert(pages.length > 256); assert(pages.some(row => row.riven?.rolls[0] === 1.1));
   assert(!pages.some(row => row.riven?.rolls[0] === 0.9));
+  const kitgun = JSON.parse(readFileSync(join(work, 'verified/tombfinger_secondary.json')));
+  const zaw = JSON.parse(readFileSync(join(work, 'verified/sepfahn_one_handed.json')));
+  assert(kitgun.length && kitgun.every(row => row.grip === 'haymaker' && row.loader === 'splat'));
+  assert(zaw.length && zaw.every(row => row.grip === 'peye' && row.link === 'vargeet_jai_ii'));
   console.log('ok: cross-batch same-weapon order, global shape/default tie, inclusive floor and output/rename crash recovery match every native board/index/state byte');
   const before = files(join(work, 'verified'));
   const change = { ...facts.find(row => row.identity === described[1].candidate), measured_by: 'verified:ffffffffffff',
