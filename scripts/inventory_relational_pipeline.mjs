@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Durable incremental maintenance, independent of a ranker's process lifetime.
 import postgres from './pg/node_modules/postgres/src/index.js';
-import { createReadStream, createWriteStream, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
-import { createInterface } from 'node:readline';
-import { once } from 'node:events';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -13,82 +11,13 @@ import { inventoryWrite, INVENTORY_MAX_MS } from '../worker/task_inventory.js';
 import { openCatalog } from './incremental_inventory.mjs';
 import { InventoryRelations } from './inventory_relations.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
-import { auditInventoryInputs } from './inventory_inputs.mjs';
+import { readInventoryPage, applyInventoryPage, auditInventoryProjection } from './inventory_projection.mjs';
 import { pipelineMonitor } from './pipeline_monitor.mjs';
 import { captureEpoch, saveInventoryState as save, hashInventoryFile, collectInventoryFiles as collect,
   checkInventoryDisk as disk } from './inventory_pipeline.mjs';
 
 const load = path => JSON.parse(readFileSync(path, 'utf8'));
 const progress = (stage, fields) => console.error(JSON.stringify({ event: 'relational_inventory', stage, ...fields }));
-
-async function readPage(path, offset, limit) {
-  const size = statSync(path).size;
-  if (offset > size) throw Error('inventory checkpoint exceeds immutable input');
-  const stream = createReadStream(path, { start: offset }), reader = createInterface({ input: stream, crlfDelay: Infinity });
-  stream.on('error', error => reader.emit('error', error));
-  const rows = []; let next = offset;
-  try {
-    for await (const line of reader) {
-      next = Math.min(size, next + Buffer.byteLength(line) + 1);
-      if (line.trim()) rows.push(JSON.parse(line));
-      if (rows.length === limit) break;
-    }
-  } finally { reader.close(); stream.destroy(); }
-  return { rows, offset: next, done: next === size };
-}
-
-async function applyRows(index, operate, kind, rows, bootstrap) {
-  if (kind === 'builds') await index.sources(rows, operate);
-  else if (kind === 'facts') await index.facts(rows, operate);
-  else if (kind === 'queue') index.queue(rows);
-  else if (kind === 'tasks') index.catalog.applyLifecycle(rows, { bootstrap });
-  else if (kind === 'reset') {
-    const replace = rows.map(row => row.id);
-    await index.facts([], operate, { replace }); index.queue([], { replace });
-  } else throw Error('unknown relational input');
-}
-
-async function applyPage(index, operate, page, kind, bootstrap) {
-  if (kind !== 'delta') return applyRows(index, operate, kind, page.rows, bootstrap);
-  let current = null, rows = [];
-  for (const item of page.rows) {
-    if (current !== item.kind && rows.length) { await applyRows(index, operate, current, rows, false); rows = []; }
-    current = item.kind; rows.push(item.row);
-  }
-  if (rows.length) await applyRows(index, operate, current, rows, false);
-}
-
-async function audit(index, cut, directory) {
-  const path = join(directory, 'relational-members.ndjson'), out = createWriteStream(path);
-  let error = null, owners = 0, rows = 0;
-  out.on('error', e => { error = e; });
-  const write = async row => {
-    if (error) throw error;
-    if (!out.write(JSON.stringify(row) + '\n')) await once(out, 'drain');
-  };
-  try {
-    for (const source of index.q('SELECT id,body FROM rel_candidates ORDER BY id').iterate()) {
-      const candidate = JSON.parse(source.body);
-      const binding = index.q('SELECT id FROM rel_sources WHERE candidate=? ORDER BY seq LIMIT 1').get(source.id);
-      await write({ type: 'owner', owner: source.id, build_id: source.id, record: candidate.record, binding_owner: binding.id }); owners++;
-      for (const member of index.q(`SELECT r.build_id,ru.name ruler,mo.name mode,m.queued FROM members m
-        JOIN owners o ON o.id=m.owner JOIN records r ON r.id=m.candidate JOIN symbols ru ON ru.id=m.ruler
-        JOIN symbols mo ON mo.id=m.mode WHERE o.owner=? ORDER BY ru.name,mo.name`).iterate(source.id)) {
-        await write({ type: 'row', owner: source.id, ...member }); rows++;
-      }
-    }
-    await write({ type: 'end', v: 1, ...cut.receipt, owners, rows, complete: true });
-    out.end(); await once(out, 'finish'); if (error) throw error;
-  } finally { out.destroy(); }
-  const result = await auditInventoryInputs({ ...cut.raw, meta: cut.meta, rulers: index.contract.rulers.map(r => r.id),
-    engineOutputs: [path], contract: cut.receipt.contract, generation: cut.receipt.generation,
-    epoch: cut.receipt.epoch, out: join(directory, 'audit') });
-  const sources = index.q('SELECT count(*) n FROM rel_sources').get().n;
-  if (sources !== cut.meta.counts.library) throw Error('incomplete relational source baseline');
-  index.catalog.seal({ snapshot: cut.receipt.snapshot, started_at: cut.receipt.started_at, expected: {
-    owners, records: cut.meta.counts.library, tasks: cut.meta.counts.tasks,
-    rows: result.plan.rows, queued: result.plan.queued, digest: result.plan.question_digest } });
-}
 
 export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000, operator: supplied, report = progress }) {
   const root = join(work, 'inventory'), statePath = join(root, 'state.json'); mkdirSync(root, { recursive: true }); disk(root);
@@ -131,8 +60,8 @@ export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000,
       const files = cut.bootstrap ? ['builds', 'facts', 'queue', 'tasks'].map(kind => [kind, cut.raw[kind]]) : [['delta', cut.delta]];
       while (input.file < files.length) {
         const [kind, path] = files[input.file], start = performance.now();
-        const page = await readPage(path, input.offset, input.limit);
-        await applyPage(index, operate, page, kind, cut.bootstrap);
+        const page = await readInventoryPage(path, input.offset, input.limit);
+        await applyInventoryPage(index, operate, page, kind, cut.bootstrap);
         const elapsed = Math.max(1, performance.now() - start), estimate = Math.floor(input.limit * 100 / elapsed);
         input = { ...input, offset: page.offset, count: input.count + page.rows.length,
           limit: Math.max(1, Math.min(256, input.limit * 2, estimate)) };
@@ -154,10 +83,10 @@ export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000,
       report('processing', { epoch: receipt.epoch, ...result.metrics });
       if (result.pending) return { pending: true, stage: 'processing', metrics: result.metrics };
     }
-    if (!catalog.meta.complete) { report('audit', { epoch: receipt.epoch }); await audit(index, cut, directory); report('audited', { epoch: receipt.epoch }); }
+    if (!catalog.meta.complete) { report('audit', { epoch: receipt.epoch }); await auditInventoryProjection(index, cut, directory); report('audited', { epoch: receipt.epoch }); }
     report('acknowledging', { epoch: receipt.epoch });
     for (let offset = catalog.meta.ack?.epoch === receipt.epoch ? catalog.meta.ack.offset : 0;;) {
-      const page = await readPage(cut.changes, offset, 256);
+      const page = await readInventoryPage(cut.changes, offset, 256);
       if (page.rows.length) {
         catalog.recordReceipts(page.rows);
         await sql.unsafe('SELECT inventory_ack($1::text,$2::text)', [state.generation, JSON.stringify(page.rows)]);
