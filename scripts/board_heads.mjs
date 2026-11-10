@@ -19,7 +19,7 @@ const HEADS = "heads";
 
 const json = (dir) => (existsSync(dir) ? readdirSync(dir).filter((f) => f.endsWith(".json") && f !== "index.json" && f !== "meta.json") : []);
 
-async function writeHeads(dir) {
+async function writeHeads(dir, force = false) {
   const out = join(dir, HEADS);
   mkdirSync(out, { recursive: true });
   const scenes = readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory() && e.name !== HEADS).map((e) => e.name);
@@ -44,7 +44,7 @@ async function writeHeads(dir) {
   for (const [id, paths] of files) {
     const at = join(out, `${id}.json`);
     const was = existsSync(at) ? statSync(at).mtimeMs : -1;
-    if (paths.every((p) => statSync(p).mtimeMs <= was)) continue;
+    if (!force && paths.every((p) => statSync(p).mtimeMs <= was)) continue;
     db.exec('DELETE FROM rows;DELETE FROM kept;BEGIN');
     let count = 0;
     for (const path of paths) for await (const raw of jsonArrayRows(path)) {
@@ -82,5 +82,5 @@ async function writeHeads(dir) {
 const dir = process.argv[2];
 if (!dir) { console.error("usage: board_heads.mjs <board-dir>"); process.exit(2); }
 const t = Date.now();
-const r = await writeHeads(dir);
+const r = await writeHeads(dir, process.argv[3] === '--force');
 console.error(`heads: ${r.wrote} written, ${r.dropped} dropped, ${r.weapons} weapons, ${Date.now() - t} ms`);

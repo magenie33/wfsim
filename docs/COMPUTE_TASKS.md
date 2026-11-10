@@ -230,7 +230,16 @@ the unchanged validator and exact-revision ACK for each chunk, so a failure
 rolls back the whole page. Local acknowledgments follow database success;
 a lost response replays the durable receipts without counting them twice.
 
-A generation is fenced by engine, adapter and classifier contract. Bootstrap
+A generation is fenced by engine and the classifier compatibility contract. A
+qualified `bin/inventory-compat.json` binds its complete semantic inputs to the
+actual native binary SHA256. Its versioned recipe covers the native Rust
+dependency closure, manifests, lock, toolchain/build rules and engine semantic
+data/code. PostgreSQL, the catalog and sealed receipts use the same compact
+identity and catalog JavaScript digest; the full input map stays in the sidecar.
+Missing or unrecognized compatibility proof retains the strict binary/runtime
+fallback. A mismatched binary or declared input digest is refused. Deployment
+and loaded-state verification still check the complete actual runtime bytes.
+Bootstrap
 compares every effective question id, category and registration flag with the
 full classifier before activation. A process restart validates its engine,
 binary, contract and immutable input hashes, then resumes committed byte offsets,
@@ -240,6 +249,12 @@ the next attempt obtains a new receipt and retains the complete disk baseline.
 The previous catalog remains available while a replacement is built; the
 published goal retains its normal engine and freshness checks.
 Engine changes reuse legitimate score facts and never request a rescore.
+
+Publication scripts and their actual headless dependencies have a separate
+fence. A changed publication fence rebuilds outputs from the complete retained
+disk projection, forces heads regeneration and preserves question classification,
+source epoch and measurement clocks. It does not recapture or renormalize source
+records. Delivery still waits for the previous stamp's durable upload ledger.
 
 Publication uses the sealed cut's database time and snapshot, even if later
 changes are already pending. It never advances freshness to the publication

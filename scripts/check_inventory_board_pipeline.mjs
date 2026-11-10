@@ -2,13 +2,14 @@
 // The production classic controller resumes disk state and publishes actual native rows.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, closeSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, closeSync, readFileSync, writeFileSync, rmSync, utimesSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
 import postgres from './pg/node_modules/postgres/src/index.js';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
+import { compatibilityKey, readInventoryCompatibility } from './inventory_compatibility.mjs';
 import { openCatalog } from './incremental_inventory.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
 import { captureInventory } from './capture_compute_inventory.mjs';
@@ -22,6 +23,18 @@ const root = mkdtempSync(join(tmpdir(), 'board-pipeline-')), work = join(root, '
 mkdirSync(work); mkdirSync(bin); copyFileSync(binary, join(bin, 'wfsim-board'));
 const engine = '0ae1bf8edb0f';
 writeFileSync(join(bin, 'ENGINE'), engine); writeFileSync(join(bin, 'VERSION'), 'relational-test');
+const checkingCompat = process.env.WFSIM_CHECK_INVENTORY_COMPAT === '1';
+const compatInputs = { mode: 'semantic', recipe: 'inventory-catalog-v1', target: 'x86_64-unknown-linux-gnu',
+  build: { rust: 'fixture-rust', container: 'fixture-container', command: 'fixture-build', rustflags: '', features: [], rules: '1'.repeat(64),
+    environment: { WFSIM_DATA_APART: null, WFSIM_GAS_OFF: null }, yaml: 'fixture-yaml' },
+  crates: ['cli','engine','optimizer','webapi','tools/gas-macro'],
+  manifests: Object.fromEntries(['Cargo.toml','Cargo.lock','cli/Cargo.toml','engine/Cargo.toml','optimizer/Cargo.toml','webapi/Cargo.toml','tools/gas-macro/Cargo.toml'].map(path => [path, '2'.repeat(64)])),
+  rust: Object.fromEntries(['cli','engine','optimizer','webapi','tools/gas-macro'].map(crate => [crate + '/fixture.rs', '3'.repeat(64)])),
+  engine_data: { 'data/fixture.yaml': '4'.repeat(64) }, engine_code: '5'.repeat(64), unknown: [] };
+const binding = () => createHash('sha256').update(readFileSync(join(bin, 'wfsim-board'))).digest('hex');
+const attest = (inputs = compatInputs, extra = {}) => writeFileSync(join(bin, 'inventory-compat.json'), JSON.stringify({
+  format: 1, recipe: 'inventory-catalog-v1', target: inputs.target, key: compatibilityKey(inputs), inputs, binary_sha256: binding(), ...extra }));
+if (checkingCompat) attest();
 const statePath = join(work, 'inventory/state.json'), load = p => JSON.parse(readFileSync(p, 'utf8'));
 const connection = process.env.WFSIM_BOARD_PIPELINE_PG_URL;
 if (connection) assert(['127.0.0.1','localhost'].includes(new URL(connection).hostname), 'use a local fixture database');
@@ -35,7 +48,7 @@ let context = {}, lostInput = true, boardBeforeAudit = 0, clockOffset = 0, lostA
 const described = [];
 const open = async () => {
   context.writer?.close(); context = {};
-  native = await openInventoryOperator(binary, { stderr: err });
+  native = await openInventoryOperator(join(bin, 'wfsim-board'), { stderr: err });
   operator = { contract: native.contract, call: async (op, rows) => {
     if (op === 'describe') described.push(...rows.map(r => r.id));
     if (op === 'gate' && failGate) { failGate = false; throw Error('injected stateless engine failure'); }
@@ -79,7 +92,13 @@ const sql = { unsafe, begin: async (options, fn) => {
 const cycle = budgetMs => runInventoryCycle({ work, bin, sql, operator, context, budgetMs,
   now: () => Date.now() + clockOffset,
   beforeBoard: async () => !holdPriorDelivery,
-  onBoard: async () => current(db => { assert.equal(db.meta.publication.phase, 'complete'); if (!db.meta.complete) boardBeforeAudit++; }),
+  onBoard: async ({ forceHeads }) => {
+    current(db => { assert.equal(db.meta.publication.phase, 'complete'); if (!db.meta.complete) boardBeforeAudit++; });
+    if (checkingCompat) {
+      execFileSync(process.execPath, ['scripts/board_heads.mjs', join(work, 'verified'), ...(forceHeads ? ['--force'] : [])]);
+      execFileSync('python3', ['scripts/board_meta.py', join(work, 'verified'), join(work, 'pub/data/board_state.yaml'), join(work, 'verified/meta.json')]);
+    }
+  },
   fault: async stage => {
     if (stage === 'after-input-commit-before-reply' && lostInput) { lostInput = false; throw Error('injected committed input reply loss'); }
     if (stage === 'after-ack-before-offset' && lostAck) { lostAck = false; throw Error('injected committed ACK reply loss'); }
@@ -118,6 +137,9 @@ try {
   const seed = JSON.parse(readFileSync(new URL('../tests/gas/rows.json', import.meta.url))).slice(0, 3).map(r => r.record);
   const canonical = await native.call('describe', seed.map((record, i) => ({ id: String(i), record })));
   for (const row of canonical) await query('INSERT INTO builds(id,at,record) VALUES($1,\'day\',$2)', [row.candidate, JSON.stringify(row.record)]);
+  if (checkingCompat) await query(`INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)
+    VALUES($1,'standard_single_target','base',$2,123.45678901234,'fixture',1.25,'2026-11-09T00:00:00.000Z','2026-11-09T00:01:02.987Z')`,
+    [canonical[1].candidate, 'verified:' + engine]);
   const future = await questionId('future', { data: 'input' });
   await query("INSERT INTO questions(id,verb,request,state,due_at,opened_at) VALUES($1,'future','{}','open','due','at')", [future]);
   await query("INSERT INTO demands(producer,ref,question,state,asked_at,due_at) VALUES('future','future',$1,'live','at','due')", [future]);
@@ -188,6 +210,40 @@ try {
   assert.equal(superseded.stage, 'refresh-superseded-cut'); await finish();
   assert.equal(fullCaptures, historyBefore); assert.equal(described.length, normalizedBefore);
   console.log('ok: expired or superseded publication refreshes the input cut while retaining its verified incremental baseline');
+  if (checkingCompat) {
+    current(db => assert(JSON.stringify(db.meta.contract).length < 1500, 'database/catalog receipts must retain only compact semantic identity'));
+    const freeze = () => ({ generation: load(statePath).generation, epoch: current(db => JSON.stringify(db.meta.epoch)),
+      digest: current(db => db.digest()), captures: fullCaptures, normalized: described.length,
+      row: readFileSync(join(work, 'verified/braton_prime.json'), 'utf8') });
+    const stable = freeze(), originalBinary = readFileSync(join(bin, 'wfsim-board'));
+    const measured = JSON.parse(stable.row); assert(measured.length > 0);
+    assert(measured.every(row => row.measured_at === '2026-11-09T00:01Z' && row.measured_by === engine && row.score === 123.45678901234));
+    await native.close();
+    writeFileSync(join(bin, 'wfsim-board'), '#!/bin/sh\nexec \'' + binary.replaceAll("'", "'\\''") + '\' "$@"\n'); attest(); await open();
+    await cycle(15000); assert.deepEqual(freeze(), stable, 'a newly bound binary with identical semantic inputs must retain the catalog/cut');
+    const publisher = resolve('scripts/board_meta.py'), before = readFileSync(publisher, 'utf8');
+    const headsPath = join(work, 'verified/heads/braton_prime.json'), originalHeads = readFileSync(headsPath, 'utf8');
+    writeFileSync(headsPath, '[]'); const future = new Date(Date.now() + 60000); utimesSync(headsPath, future, future);
+    try {
+      writeFileSync(publisher, before.replace('meta = build()', 'meta = build()\n    meta["compat_fixture"] = 1'));
+      let result; for (let n = 0; n < 100; n++) { result = await cycle(15000); if (!result.pending) break; }
+      assert.equal(result.stage, 'publication-refreshed');
+      assert.equal(load(join(work, 'verified/meta.json')).compat_fixture, 1, 'the changed real publisher must run');
+      assert.equal(readFileSync(headsPath, 'utf8'), originalHeads, 'publisher compatibility must bypass stale heads mtime and rebuild the real file');
+      assert.deepEqual(freeze(), stable, 'publisher refresh must preserve source epoch, classification, measurement bytes and normalization');
+    } finally { writeFileSync(publisher, before); }
+    await finish(); assert.deepEqual(freeze(), stable);
+    attest(compatInputs, { binary_sha256: '0'.repeat(64) });
+    await assert.rejects(cycle(15000), /binary binding mismatch/); assert.deepEqual(freeze(), stable);
+    const changed = structuredClone(compatInputs); changed.engine_data['data/fixture.yaml'] = '6'.repeat(64); attest(changed);
+    await finish(); assert.equal(fullCaptures, stable.captures + 1); assert.equal(described.length, stable.normalized + 3);
+    assert.notEqual(load(statePath).generation, stable.generation, 'a semantic input change must rebuild');
+    const next = load(statePath).generation; rmSync(join(bin, 'inventory-compat.json'));
+    await finish(); assert.notEqual(load(statePath).generation, next, 'a missing sidecar must take strict full fallback');
+    assert.equal(readInventoryCompatibility(bin, binding()).mode, 'strict-binary');
+    await native.close(); writeFileSync(join(bin, 'wfsim-board'), originalBinary); await open();
+    console.log('ok: actual changed executable reuses semantic catalog; real publisher output refresh keeps epoch/questions/measurement bytes without capture/describe; wrong binding refuses; semantic/missing inputs take full fallback');
+  }
   failed = false;
 } catch (error) { console.error(`classic disk pipeline evidence: ${root}`); throw error; }
 finally {

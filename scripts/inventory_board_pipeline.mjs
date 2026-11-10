@@ -18,6 +18,7 @@ import { captureEpoch, acknowledgeInventory, saveInventoryState as save, hashInv
   collectInventoryFiles as collect, checkInventoryDisk as disk } from './inventory_pipeline.mjs';
 import { pipelineMonitor } from './pipeline_monitor.mjs';
 import { inventoryDiskBudget } from './inventory_disk_budget.mjs';
+import { readInventoryCompatibility, compatibilityKey } from './inventory_compatibility.mjs';
 
 const load = path => JSON.parse(readFileSync(path, 'utf8'));
 const progress = (stage, fields = {}) => console.error(JSON.stringify({ event: 'board_inventory', stage, ...fields }));
@@ -27,6 +28,13 @@ const algorithmFiles = ['./inventory_board_pipeline.mjs','./inventory_pipeline.m
   './incremental_inventory.mjs','./inventory_inputs.mjs','./inventory_operator.mjs','./capture_compute_inventory.mjs',
   './classify_compute_inventory.mjs','./board_heads.mjs','./board_meta.py','./inventory_disk_budget.mjs',
   '../worker/task_contract.js','../worker/task_inventory.js','../worker/board_kinds.js'];
+const publicationFiles = ['./inventory_publication.mjs','./inventory_publication_io.mjs','./json_array_stream.mjs',
+  './board_heads.mjs','./board_meta.py','../mcp/headless.js'];
+const catalogFiles = [...algorithmFiles.filter(path => !publicationFiles.includes(path)), './inventory_compatibility.mjs'];
+const catalogDependencies = ['./pg/package.json','./pg/package-lock.json','../worker/pg/schema.sql',
+  '../worker/pg/library.sql','../worker/pg/sync.sql','../worker/pg/inventory.sql'];
+const filesKey = paths => compatibilityKey(Object.fromEntries(paths.map(path => [path,
+  existsSync(new URL(path, import.meta.url)) ? createHash('sha256').update(readFileSync(new URL(path, import.meta.url))).digest('hex') : null])));
 
 async function verifyInputs(cut, sql, context) {
   const keys = ['epoch','generation','engine','contract','snapshot','started_at','manifest_sha','change_count','status'];
@@ -86,9 +94,17 @@ export async function runBoardInventoryCycle({ work, bin, sql, operator: supplie
     if (!['describe','facts','gate','render','floor','carry','state'].every(op => operator.contract.operators.includes(op)))
       throw Error('native board publication operator is unavailable');
     context.operatorAdapter = adapter;
-    const algorithm = createHash('sha256'); for (const path of algorithmFiles) algorithm.update(readFileSync(new URL(path, import.meta.url)));
-    const contract = { v: 1, algorithm: 'board-inventory-disk-v1', covers: BOARD_KINDS, adapter,
-      classifier: algorithm.digest('hex'), operator: operator.contract };
+    const sidecar = join(bin, 'inventory-compat.json'), compatibilityStamp = existsSync(sidecar) ? fingerprint(sidecar) : null;
+    const cached = context.compatibility;
+    const proof = cached?.adapter === adapter && canon(cached.stamp) === canon(compatibilityStamp)
+      ? cached.value : readInventoryCompatibility(bin, adapter);
+    context.compatibility = { adapter, stamp: compatibilityStamp, value: proof };
+    const compatible = catalogDependencies.every(path => existsSync(new URL(path, import.meta.url)))
+      ? proof : { mode: 'strict-binary', identity: { binary_sha256: adapter } };
+    const contract = { v: 1, algorithm: 'board-inventory-disk-v2', covers: BOARD_KINDS, native: compatible.identity,
+      classifier: filesKey([...new Set([...(compatible.mode === 'semantic' ? catalogFiles : [...algorithmFiles, ...publicationFiles, './inventory_compatibility.mjs']),
+        ...catalogDependencies])]), operator: compatibilityKey(operator.contract) };
+    const publicationKey = compatibilityKey({ native: compatible.identity, runtime: filesKey(publicationFiles) });
     let state = existsSync(statePath) ? load(statePath) : null;
     const same = state && state.engine === engine && canon(state.contract) === canon(contract);
     if (state) collect(root, state);
@@ -103,6 +119,9 @@ export async function runBoardInventoryCycle({ work, bin, sql, operator: supplie
         previous_catalog: state?.published_at ? state.catalog : state?.previous_catalog, pending: null };
       save(statePath, state); context.verifiedInputs = null;
     }
+    if (state.runtime?.adapter !== adapter || state.runtime?.publication !== publicationKey) {
+      state.runtime = { adapter, publication: publicationKey, compatibility: compatible.mode }; save(statePath, state);
+    }
     collect(root, state);
     let space = inventoryDiskBudget({ work, databasePath: state.catalog, totalBytes: diskBudgetBytes });
     catalog = openCatalog(state.catalog, { engine, contract, generation: state.generation, create: true, databaseBytes: space.databaseBytes });
@@ -114,6 +133,18 @@ export async function runBoardInventoryCycle({ work, bin, sql, operator: supplie
     const index = new InventoryRelations(catalog, operator.contract), operate = operator.call;
     index.operate = operate;
     const until = performance.now() + budgetMs;
+    const publication = new InventoryPublication(index, work, context, fault);
+    publication.compatibility(publicationKey);
+    if (catalog.meta.publication_refresh && !state.pending && catalog.meta.complete) {
+      space.check();
+      if (beforeBoard && !await beforeBoard()) return { pending: true, stage: 'prior-board-delivery' };
+      const refreshed = await publication.step({ projectionId: 'publication:' + publicationKey + ':' + catalog.meta.epoch.epoch }, operate,
+        { budgetMs: Math.max(0, until - performance.now()) });
+      if (refreshed.pending) return { pending: true, stage: 'publication-refresh' };
+      if (onBoard) await onBoard({ work, catalog: state.catalog, forceHeads: true });
+      catalog.setMeta({ ...catalog.meta, publication_refresh: null });
+      return { pending: false, stage: 'publication-refreshed' };
+    }
     if (!state.pending && state.published_at && now() - Date.parse(state.published_at) < 60000) return { pending: false };
     if (!state.pending) {
       report('capture');
@@ -161,15 +192,14 @@ export async function runBoardInventoryCycle({ work, bin, sql, operator: supplie
     }
     if (catalog.meta.publication?.round !== receipt.epoch && beforeBoard && !await beforeBoard())
       return { pending: true, stage: 'prior-board-delivery' };
-    const publication = new InventoryPublication(index, work, context, fault);
     space.check();
     const board = await publication.step(receipt, operate, { budgetMs: Math.max(0, until - performance.now()) });
     report('board', { epoch: receipt.epoch });
     if (board.pending) return { pending: true, stage: 'board' };
     if (!catalog.meta.publication.announced && now() - Date.parse(receipt.started_at) < INVENTORY_MAX_MS && onBoard) {
-      await onBoard({ epoch: receipt.epoch, work, catalog: state.catalog });
+      await onBoard({ epoch: receipt.epoch, work, catalog: state.catalog, forceHeads: Boolean(catalog.meta.publication_refresh) });
       await fault('after-board-before-announced', { epoch: receipt.epoch });
-      catalog.setMeta({ ...catalog.meta, publication: { ...catalog.meta.publication, announced: true } });
+      catalog.setMeta({ ...catalog.meta, publication_refresh: null, publication: { ...catalog.meta.publication, announced: true } });
       return { pending: true, stage: 'board-ready' };
     }
     if (!catalog.meta.complete) {
@@ -238,8 +268,8 @@ export async function serveBoardInventory(work, bin) {
         operator ||= await openInventoryOperator(join(bin, 'wfsim-board'));
         const result = await runBoardInventoryCycle({ work, bin, sql, operator, context, report: monitor.report, diskBudgetBytes,
           beforeBoard: async () => !push && !await boardDeliveryPending(work),
-          onBoard: async () => {
-            await child(process.execPath, [join(here, 'board_heads.mjs'), join(work, 'verified')]).done;
+          onBoard: async ({ forceHeads }) => {
+            await child(process.execPath, [join(here, 'board_heads.mjs'), join(work, 'verified'), ...(forceHeads ? ['--force'] : [])]).done;
             await child('python3', [join(here, 'board_meta.py'), join(work, 'verified'), join(work, 'pub/data/board_state.yaml'), join(work, 'verified/meta.json')]).done;
             pushOwed = true;
           } });

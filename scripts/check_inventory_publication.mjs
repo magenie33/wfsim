@@ -50,8 +50,8 @@ const facts = described.flatMap((d, i) => native.contract.rulers.flatMap((r, n) 
 const factsPath = join(root, 'facts.ndjson');
 writeFileSync(factsPath, facts.map(row => JSON.stringify(row) + '\n').join(''));
 const scene = native.contract.rulers.find(row => row.scene).id;
-const legacy = '[{ "opaque": {"provenance":"raw bytes stay"} },' + JSON.stringify({ benchmark: scene, mode: 'base', score: 42, mods: [] })
-  + ',' + JSON.stringify({ benchmark: 'removed_ruler_v1', score: 99 }) + ']';
+const legacy = '[{ "opaque": {"provenance":"raw bytes stay"} },' + JSON.stringify({ benchmark: 'removed_ruler_v1', score: 99 })
+  + ',' + JSON.stringify({ benchmark: scene, mode: 'base', score: 42, mods: [] }) + ']';
 mkdirSync(join(work, 'verified')); writeFileSync(join(work, 'verified/acceltra.json'), legacy);
 async function normalize() {
   for (let offset = 0; offset < sources.length; offset += 256) await index.sources(sources.slice(offset, offset + 256), native.call);
@@ -101,6 +101,7 @@ try {
   await assert.rejects(publish('one', async stage => { if (stage === 'after-file-before-checkpoint' && lost) {
     lost = false; throw Error('renamed file reply loss');
   } }), /renamed file reply loss/);
+  new InventoryPublication(index, work, context).compatibility('changed-publisher-after-rename');
   await reopen(); lost = true;
   await assert.rejects(publish('one', async stage => { if (stage === 'after-index-before-checkpoint' && lost) {
     lost = false; throw Error('renamed index reply loss');
