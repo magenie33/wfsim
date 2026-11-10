@@ -11,9 +11,10 @@ import { InventoryPublication } from './inventory_publication.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
 import { readInventoryPage, applyInventoryPage } from './inventory_projection.mjs';
 import { fileHash } from './inventory_publication_io.mjs';
+import { inventoryDiskBudget } from './inventory_disk_budget.mjs';
 
 const components = ['replay_board_projection.mjs','inventory_relations.mjs','incremental_inventory.mjs','inventory_operator.mjs',
-  'inventory_projection.mjs','inventory_publication.mjs','inventory_publication_io.mjs','json_array_stream.mjs','board_heads.mjs','board_meta.py'];
+  'inventory_projection.mjs','inventory_publication.mjs','inventory_publication_io.mjs','inventory_disk_budget.mjs','json_array_stream.mjs','board_heads.mjs','board_meta.py'];
 function save(path, value) {
   const partial = path + '.partial'; writeFileSync(partial, JSON.stringify(value));
   const fd = openSync(partial, 'r'); try { fsyncSync(fd); } finally { closeSync(fd); }
@@ -35,7 +36,7 @@ function artifacts(root, prefix = '') {
   }
   return files;
 }
-export async function replayBoardProjection({ capture, bin, work, manifestSha, fault = async () => {}, stopAfterBatches = Infinity } = {}) {
+export async function replayBoardProjection({ capture, bin, work, manifestSha, diskBudgetBytes, fault = async () => {}, stopAfterBatches = Infinity } = {}) {
   capture = resolve(capture); bin = resolve(bin); work = resolve(work);
   if (!/^[a-f0-9]{64}$/.test(manifestSha || '')) throw Error('the protected capture manifest SHA256 is required');
   if (work === capture || work.startsWith(capture + '/') || work === bin || work.startsWith(bin + '/')) throw Error('an isolated output directory is required');
@@ -53,6 +54,7 @@ export async function replayBoardProjection({ capture, bin, work, manifestSha, f
   if (Object.values(raw).some(path => !names.has(basename(path)))) throw Error('capture input is not protected by its manifest');
   const snapshot = JSON.parse(readFileSync(raw.meta)), engine = readFileSync(join(bin, 'ENGINE'), 'utf8').trim();
   if (snapshot.engine !== engine || !manifest.bootstrap) throw Error('offline replay requires the matching complete source baseline');
+  const disk = inventoryDiskBudget({ work, sources: [manifestPath, ...manifest.files.map(file => join(capture, basename(file.path)))], totalBytes: diskBudgetBytes });
   const algorithm = createHash('sha256');
   for (const name of components) algorithm.update(readFileSync(new URL(name, import.meta.url)));
   const operator = await openInventoryOperator(join(bin, 'wfsim-board'));
@@ -62,7 +64,8 @@ export async function replayBoardProjection({ capture, bin, work, manifestSha, f
     for (const op of ['describe','facts','gate','render','floor','carry','state'])
       if (!operator.contract.operators?.includes(op)) throw Error('offline replay requires native publication operators');
     const contract = { v: 1, algorithm: 'offline-board-projection-v1', engine, manifest_sha: manifestSha,
-      adapter: await fileHash(join(bin, 'wfsim-board')), classifier: algorithm.digest('hex'), operator: operator.contract };
+      adapter: await fileHash(join(bin, 'wfsim-board')), classifier: algorithm.digest('hex'), operator: operator.contract,
+      disk_budget_bytes: diskBudgetBytes ?? null };
     const projectionId = createHash('sha256').update(JSON.stringify(contract)).digest('hex');
     let state;
     if (existsSync(checkpoint)) {
@@ -74,7 +77,7 @@ export async function replayBoardProjection({ capture, bin, work, manifestSha, f
         contract, phase: 'import', counts: snapshot.counts };
       save(checkpoint, state);
     }
-    catalog = openCatalog(join(work, 'projection.sqlite'), { engine, contract, generation: projectionId, create: true });
+    catalog = openCatalog(join(work, 'projection.sqlite'), { engine, contract, generation: projectionId, create: true, databaseBytes: disk.databaseBytes });
     if (catalog.db.prepare('PRAGMA quick_check').get().quick_check !== 'ok') throw Error('offline catalog integrity check failed');
     const index = new InventoryRelations(catalog, operator.contract), operate = operator.call;
     let batches = 0, lastReport = 0;
@@ -82,11 +85,12 @@ export async function replayBoardProjection({ capture, bin, work, manifestSha, f
       if (Date.now() - lastReport < 1000 && phase !== 'complete') return;
       lastReport = Date.now();
       console.log(JSON.stringify({ event: 'offline_board_projection', phase, input: catalog.meta.input,
-        memory: process.memoryUsage(), metrics: index.metrics, native_pid: operator.pid }));
+        memory: process.memoryUsage(), disk: disk.report(), metrics: index.metrics, native_pid: operator.pid }));
     };
     const files = ['builds','facts','queue','tasks'];
     let input = catalog.meta.input || { file: 0, offset: 0, count: 0 };
     while (input.file < files.length) {
+      disk.check();
       const kind = files[input.file], page = await readInventoryPage(raw[kind], input.offset, 256);
       let next = { file: input.file, offset: page.offset, count: input.count + page.rows.length };
       if (page.done) {
@@ -109,6 +113,7 @@ export async function replayBoardProjection({ capture, bin, work, manifestSha, f
     }
     state.phase = 'classify'; save(checkpoint, state);
     while (index.pending()) {
+      disk.check();
       await index.step(operate, { budgetMs: 100 }); report('classify');
       await fault('after-classification-batch', {});
       if (++batches >= stopAfterBatches) return { pending: true, phase: 'classify', projection_id: projectionId };
@@ -116,6 +121,7 @@ export async function replayBoardProjection({ capture, bin, work, manifestSha, f
     state.phase = 'publication'; save(checkpoint, state);
     const publication = new InventoryPublication(index, work, context, fault);
     while ((await publication.step({ projectionId }, operate, { budgetMs: 100 })).pending) {
+      disk.check();
       report('publication');
       if (++batches >= stopAfterBatches) return { pending: true, phase: 'publication', projection_id: projectionId };
     }
@@ -124,7 +130,8 @@ export async function replayBoardProjection({ capture, bin, work, manifestSha, f
     await command('python3', [join(here, 'board_meta.py'), join(work, 'verified'), join(work, 'pub/data/board_state.yaml'), join(work, 'verified/meta.json')]);
     const output = artifacts(join(work, 'verified'));
     const oversized = output.filter(file => file.bytes > 32 * 1024 ** 2).map(({ name, bytes }) => ({ name, bytes }));
-    state = { ...state, phase: 'complete', summary: catalog.summary(), question_digest: catalog.digest(),
+    disk.check(true);
+    state = { ...state, phase: 'complete', summary: catalog.summary(), question_digest: catalog.digest(), disk: disk.report(),
       files: output.length, output_bytes: output.reduce((n, file) => n + file.bytes, 0),
       largest_file: output.map(({ name, bytes }) => ({ name, bytes })).sort((a, b) => b.bytes - a.bytes)[0] || null,
       existing_receiver_limit_bytes: 32 * 1024 ** 2, delivery_eligible: !oversized.length, oversized,
@@ -134,10 +141,10 @@ export async function replayBoardProjection({ capture, bin, work, manifestSha, f
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
-  const [capture, bin, work, manifestSha] = process.argv.slice(2);
-  if (!capture || !bin || !work || !manifestSha || process.argv.length !== 6)
-    throw Error('usage: replay_board_projection.mjs <capture-dir> <bin-dir> <empty-work-dir> <manifest-sha256>');
-  const result = await replayBoardProjection({ capture, bin, work, manifestSha });
+  const [capture, bin, work, manifestSha, diskBytes] = process.argv.slice(2);
+  if (!capture || !bin || !work || !manifestSha || process.argv.length < 6 || process.argv.length > 7)
+    throw Error('usage: replay_board_projection.mjs <capture-dir> <bin-dir> <empty-work-dir> <manifest-sha256> [total-disk-bytes]');
+  const result = await replayBoardProjection({ capture, bin, work, manifestSha, diskBudgetBytes: diskBytes === undefined ? undefined : Number(diskBytes) });
   console.log(JSON.stringify(result));
   if (result.delivery_eligible === false) process.exitCode = 2;
 }
