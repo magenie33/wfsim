@@ -349,9 +349,10 @@ function cardHead(c, t, w) {
   g.font = `600 13px ${t.body}`; g.fillStyle = t.gold;
   const kind = [tr(cap1(w.slot || "")), tr(w.subtype || w.mod_class || "")].filter(Boolean).join(" · ");
   let ns = 64;
+  const name = weaponEntryName(w);
   g.font = `700 ${ns}px ${t.display}`;
-  while (ns > 40 && g.measureText(w.name).width > maxW) { ns -= 2; g.font = `700 ${ns}px ${t.display}`; }
-  const nameLines = wrapText(g, w.name, maxW, 2);
+  while (ns > 40 && g.measureText(name).width > maxW) { ns -= 2; g.font = `700 ${ns}px ${t.display}`; }
+  const nameLines = wrapText(g, name, maxW, 2);
   const modeY = H - 40, nameY = modeY - 44 - (nameLines.length - 1) * ns * 1.05;
   g.save(); g.shadowColor = "rgba(0,0,0,.6)"; g.shadowBlur = 24; g.fillStyle = t.text;
   nameLines.forEach((ln, k) => g.fillText(ln, x, nameY + k * ns * 1.05));

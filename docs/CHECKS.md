@@ -572,6 +572,10 @@ in card order and name-first order. Multi-stat aliases are refused where a
 single rolled value is required. Prime weapon suffixes accept P/p in fx, zk
 and pz without selecting the base weapon. Replies keep the engine's printed
 value-before-name lines; Combo Duration's seconds cannot become the SC alias.
+All 34 modular entries are checked in both roster orders: official complete
+names, slot/handedness aliases and exact ids resolve one entry; bare families
+return full candidates before any API call. Unknown FX inputs explain the
+required slot/type. Shared FX image titles use the complete name in both locales.
 
 ## `check_ocr_worker` and `check_riven_ocr`
 

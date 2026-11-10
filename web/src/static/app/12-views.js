@@ -445,11 +445,7 @@ const nameMatches = (q, ...names) => !q || names.some((n) => n && String(n).toLo
 
 
 /// Same-named weapons in different slots include the slot wherever chosen by name.
-const weaponEntryName = (w) => {
-  if (!w) return "";
-  const shared = (META.weapons || []).some((x) => x.name === w.name && x.slot !== w.slot);
-  return w.name + (shared ? ` (${tr(ARC_POOL_LABEL[w.slot] || w.slot)})` : "");
-};
+const weaponEntryName = (w) => headlessWeaponEntryName(META, w, tr);
 
 /// WHAT THE HOME PAGE IS FILTERED BY, kept for the visit: one search across
 /// every slot, and each weapon slot's own chips.
@@ -498,7 +494,7 @@ function renderHome() {
     return `<a class="wcard" href="/weapons/${urlSlug(w)}">
       ${imgTag(IMG(w.image), "wc-img")}
       <div class="wc-info">
-        <div class="wc-name">${w.name}</div>
+        <div class="wc-name">${escHtml(weaponEntryName(w))}</div>
         <div class="wc-tags">${tags}</div>
       </div>
     </a>`;

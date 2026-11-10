@@ -281,7 +281,7 @@ async function openAnalysisShare(record, state, host) {
   const url = await shareUrl(null, null, { state });
   if (!host.isConnected || presetWeapon() !== record.request.weapon) return;
   const v = record.result.verdict;
-  const text = [`${weaponInfo(record.request.weapon)?.name} · ${tr("Riven Analyst")} — WFSim`, benchmarkName(record.origin.ruler),
+  const text = [`${weaponEntryName(weaponInfo(record.request.weapon))} · ${tr("Riven Analyst")} — WFSim`, benchmarkName(record.origin.ruler),
     `${tr("Riven grade")}: ${v.grade}/100 · ${tr("Score")}: ${v.shown}`,
     `${tr("vs the best riven-free build")}: ${v.gain == null ? "—" : gainPct(v.gain)}`,
     ...await shareText({ state }), ...headlessRivenGradeNotes(pageSay(), v), `${tr("Engine")}: ${record.engine}`, url].join("\n");

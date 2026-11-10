@@ -951,11 +951,13 @@ const HEADLESS_QUERIES = [
     },
     run({ query, limit = 12 }, host) {
       const locales = host.names();
-      const hits = (host.meta().weapons || []).filter((w) =>
-        headlessHit([w.id, w.name, w.name_en].concat(locales.map((l) => (l.weapons || {})[w.id])), query));
+      const hits = (host.meta().weapons || []).filter((w) => {
+        const names = headlessWeaponAliases(w, locales);
+        return headlessHit(names.complete.concat(names.incomplete), query);
+      });
       return {
         found: hits.length,
-        rows: hits.slice(0, limit).map((w) => ({ id: w.id, name: w.name, class: w.class,
+        rows: hits.slice(0, limit).map((w) => ({ id: w.id, name: headlessWeaponEntryName(host.meta(), w, host.tr), class: w.class,
           url: host.origin + headlessWeaponPath(host.meta().weapons || [], w.id) })),
         ...(hits.length > limit ? { more: hits.length - limit } : {}),
       };

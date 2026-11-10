@@ -90,8 +90,7 @@ const rivenKin = (w) => ((META && META.weapons) || []).filter((x) =>
   && (x.riven_class || x.mod_class) === (w.riven_class || w.mod_class));
 /// A kin weapon's name, with its slot where the roster has two of that name
 /// (a Kitgun's two entries are both the chamber).
-const kinName = (x) => (((META && META.weapons) || []).filter((y) => y.name === x.name).length > 1
-  ? `${x.name} (${tr(x.slot === "secondary" ? "Secondary" : "Primary")})` : x.name);
+const kinName = (x) => weaponEntryName(x);
 
 async function resolveRiven(pending) {
   if (!riven) return;

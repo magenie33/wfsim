@@ -113,7 +113,7 @@ function renderAppraisal() {
     "done-before": tr("This riven's gain has already been found. Thank you for coming!"),
     failed: `${tr("The riven gain could not finish")}: ${appraisal.error || ""}`,
   }[p] || "";
-  box.innerHTML = `<div class="appraisal-h"><b>${escHtml(tr("Riven gain"))}</b></div>
+  box.innerHTML = `<div class="appraisal-h"><b>${escHtml(weaponEntryName(weaponInfo(appraisal.job.weapon)))} · ${escHtml(tr("Riven gain"))}</b></div>
     <div class="appraisal-b">${escHtml(said)}</div>`;
 }
 

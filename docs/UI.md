@@ -423,6 +423,10 @@ Primary and secondary Kitguns are separate weapon entries in search, the fight
 roster and the overview. Same-named weapons in different slots include the slot
 in their names. Each Kitgun entry takes its own highest score across modes and
 assemblies; its configuration page offers only its own parts.
+Complete modular labels also identify FX tasks, reports, shared analysis text
+and image titles. Kitgun suffixes use Primary/Secondary (主要武器/次要武器);
+Zaws retain the class suffix declared on their entry. Input aliases do not
+replace these display labels.
 
 ## Build Library
 
