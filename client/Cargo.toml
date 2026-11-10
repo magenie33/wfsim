@@ -2,7 +2,7 @@
 
 [package]
 name = "wfsim-client"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.97"
 license = "AGPL-3.0-or-later"
@@ -29,6 +29,7 @@ battery = "0.7"
 time = { version = "0.3", features = ["formatting", "parsing"] }
 httpdate = "1"
 url = "2"
+semver = "1"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

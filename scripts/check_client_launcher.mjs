@@ -33,6 +33,7 @@ try {
   const config = json('config.json'); config.range = { min:0,max:0 }; config.consent = { v:1,at:new Date().toISOString() };
   let allowAck=false, requests=0, controls=0;
   server=createServer(async(req,res)=>{
+    if(req.url==='/cli/latest.json'){res.writeHead(404).end();return;}
     if(req.url!=='/api/board/sync'){controls++;res.writeHead(500).end();return;}
     let raw='';for await(const c of req)raw+=c;
     const b=JSON.parse(raw);requests++;
