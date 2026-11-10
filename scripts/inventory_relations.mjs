@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Indexed admission state; the engine owns normalization and the final gate.
 import { canon } from '../worker/task_contract.js';
+import { createHash } from 'node:crypto';
 
 const schema = `
-  CREATE TABLE IF NOT EXISTS rel_sources(seq INTEGER PRIMARY KEY,id TEXT NOT NULL UNIQUE,candidate TEXT,body TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS rel_sources(seq INTEGER PRIMARY KEY,id TEXT NOT NULL UNIQUE,candidate TEXT,body TEXT NOT NULL,normalized BLOB);
   CREATE INDEX IF NOT EXISTS rel_sources_candidate ON rel_sources(candidate,seq);
-  CREATE TABLE IF NOT EXISTS rel_candidates(id TEXT PRIMARY KEY,bucket TEXT NOT NULL,admit INTEGER NOT NULL,default_id TEXT,body TEXT NOT NULL) WITHOUT ROWID;
+  CREATE TABLE IF NOT EXISTS rel_candidates(id TEXT PRIMARY KEY,bucket TEXT NOT NULL,admit INTEGER NOT NULL,default_id TEXT,
+    source INTEGER NOT NULL,signature BLOB NOT NULL) WITHOUT ROWID;
   CREATE INDEX IF NOT EXISTS rel_candidates_default ON rel_candidates(default_id,id);
   CREATE TABLE IF NOT EXISTS rel_facts(identity TEXT NOT NULL,ruler TEXT NOT NULL,mode TEXT NOT NULL,score REAL NOT NULL,
     scene TEXT NOT NULL,bucket TEXT,at TEXT NOT NULL,retired INTEGER NOT NULL,gate_ruler TEXT NOT NULL,PRIMARY KEY(identity,ruler,mode)) WITHOUT ROWID;
@@ -47,6 +49,27 @@ export class InventoryRelations {
   }
   q(sql) { return this.catalog.statement(sql); }
   transaction(fn) { return this.catalog.transaction(fn); }
+  descriptor(row) {
+    const body = JSON.parse(row.body), d = { id: row.id, candidate: row.candidate, ...body };
+    if (row.candidate) {
+      const text = row.normalized == null ? row.stored : row.normalized_record;
+      if (!text) throw Error('normalized source record reference is unavailable');
+      d.record = JSON.parse(text);
+      if (d.publication) d.publication = { identity: d.candidate, mode: '', score: 0, measured_at: '', measured_by: '', ...d.publication };
+    }
+    return d;
+  }
+  source(seq) {
+    return this.q(`SELECT s.*,r.id record_id,r.stored,n.body normalized_record FROM rel_sources s
+      JOIN records r ON r.build_id=s.id LEFT JOIN record_blobs n ON n.key=s.normalized WHERE s.seq=?`).get(seq);
+  }
+  candidateDescriptor(id) {
+    const held = this.q('SELECT source,CAST(admit AS TEXT) admit FROM rel_candidates WHERE id=?').get(id);
+    if (!held) return null;
+    const source = this.source(held.source), d = this.descriptor(source); delete d.id;
+    d.admit = BigInt.asUintN(64, BigInt(held.admit)).toString(16).padStart(16, '0');
+    return { descriptor: d, reference: { normalized: source.normalized, source: source.record_id } };
+  }
   publicationDirty(weapon) {
     if (weapon) this.q('INSERT OR IGNORE INTO rel_publication_dirty VALUES(?)').run(weapon);
   }
@@ -59,23 +82,28 @@ export class InventoryRelations {
       WHERE identity=? AND bucket IS NOT NULL`).run(id);
   }
   candidate(id) {
-    const old = this.q('SELECT body FROM rel_candidates WHERE id=?').get(id)?.body;
-    let first = null, admit = 0n;
-    for (const row of this.q('SELECT body FROM rel_sources WHERE candidate=? ORDER BY seq').iterate(id)) {
+    const old = this.q('SELECT signature,source FROM rel_candidates WHERE id=?').get(id);
+    let first = null, firstSeq = null, admit = 0n;
+    for (const row of this.q('SELECT seq,body FROM rel_sources WHERE candidate=? ORDER BY seq').iterate(id)) {
       const body = JSON.parse(row.body); first ||= body; admit |= mask(body.admit);
+      firstSeq ??= row.seq;
       if (canon(body.bucket) !== canon(first.bucket) || body.default !== first.default)
         throw Error('canonical identity has conflicting engine dependencies');
     }
-    const next = first ? { ...first, admit: BigInt.asUintN(64, admit).toString(16).padStart(16, '0') } : null;
+    const next = first ? { ...this.descriptor(this.source(firstSeq)), admit: BigInt.asUintN(64, admit).toString(16).padStart(16, '0') } : null;
     // Owner aliases do not invalidate their canonical calculation when its inputs agree.
     if (next) delete next.id;
-    const body = next ? canon(next) : null;
-    if (body === old || body === null && old === undefined) return;
+    const signature = next ? createHash('sha256').update(canon(next)).digest() : null;
+    if (signature && old && Buffer.from(old.signature).equals(signature)) {
+      if (old.source !== firstSeq) this.q('UPDATE rel_candidates SET source=? WHERE id=?').run(firstSeq, id);
+      return;
+    }
+    if (!signature && !old) return;
     this.touchGroups(id);
     if (next) {
-      this.q(`INSERT INTO rel_candidates VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
-        bucket=excluded.bucket,admit=excluded.admit,default_id=excluded.default_id,body=excluded.body`)
-        .run(id, canon(next.bucket), admit, next.default, body);
+      this.q(`INSERT INTO rel_candidates VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+        bucket=excluded.bucket,admit=excluded.admit,default_id=excluded.default_id,source=excluded.source,signature=excluded.signature`)
+        .run(id, canon(next.bucket), admit, next.default, firstSeq, signature);
       this.q('UPDATE rel_facts SET bucket=? WHERE identity=?').run(canon(next.bucket), id);
     } else {
       this.q('DELETE FROM rel_candidates WHERE id=?').run(id);
@@ -98,11 +126,26 @@ export class InventoryRelations {
         const row = changed[i], d = descriptions[i], old = this.q('SELECT candidate FROM rel_sources WHERE id=?').get(row.id);
         this.publicationDirty(this.q('SELECT weapon FROM rel_publication_sources WHERE id=?').get(row.id)?.weapon);
         if (old?.candidate) candidates.add(old.candidate);
+        this.catalog.detachRecord(row.id);
         this.q(`INSERT INTO records(build_id,stored) VALUES(?,?) ON CONFLICT(build_id)
-          DO UPDATE SET stored=excluded.stored,fallback=NULL`).run(row.id, row.deleted || row.record == null ? null : canon(row.record));
+          DO UPDATE SET stored=excluded.stored,fallback=NULL,normalized=NULL,source_record=NULL`).run(row.id, row.deleted || row.record == null ? null : canon(row.record));
         if (row.deleted || row.record == null) this.q('DELETE FROM rel_sources WHERE id=?').run(row.id);
-        else this.q(`INSERT INTO rel_sources(id,candidate,body) VALUES(?,?,?) ON CONFLICT(id)
-          DO UPDATE SET candidate=excluded.candidate,body=excluded.body`).run(row.id, d.candidate, canon(d));
+        else {
+          const body = { ...d }; delete body.id; delete body.candidate; delete body.record;
+          let normalized = null;
+          if (d.record && canon(d.record) !== canon(row.record)) {
+            const record = canon(d.record); normalized = createHash('sha256').update(record).digest();
+            this.q('INSERT OR IGNORE INTO record_blobs VALUES(?,?)').run(normalized, record);
+          }
+          if (body.publication) {
+            body.publication = { ...body.publication };
+            for (const [key, value] of Object.entries({ identity: d.candidate, mode: '', score: 0, measured_at: '', measured_by: '' }))
+              if (body.publication[key] === value) delete body.publication[key];
+          }
+          this.q(`INSERT INTO rel_sources(id,candidate,body,normalized) VALUES(?,?,?,?) ON CONFLICT(id)
+            DO UPDATE SET candidate=excluded.candidate,body=excluded.body,normalized=excluded.normalized`)
+            .run(row.id, d.candidate, canon(body), normalized);
+        }
         this.q('DELETE FROM rel_publication_sources WHERE id=?').run(row.id);
         if (!row.deleted && row.record != null && d.candidate && d.publication) {
           const seq = this.q('SELECT seq FROM rel_sources WHERE id=?').get(row.id).seq;
@@ -221,7 +264,7 @@ export class InventoryRelations {
     return best ?? (scene ? this.share(id, target, '') : null);
   }
   async project(id, operate) {
-    const stored = this.q('SELECT body FROM rel_candidates WHERE id=?').get(id);
+    const stored = this.candidateDescriptor(id);
     if (!stored) {
       this.transaction(() => {
         if (this.q('SELECT 1 FROM owners WHERE owner=?').get(id)) this.catalog.beginOwner({ owner: id, build_id: null }, {});
@@ -229,7 +272,7 @@ export class InventoryRelations {
       });
       return;
     }
-    const candidate = JSON.parse(stored.body), requests = [], targets = [];
+    const candidate = stored.descriptor, requests = [], targets = [];
     const owed = !!this.q('SELECT 1 FROM rel_queue WHERE identity=? LIMIT 1').get(id);
     for (let target = 0; target < this.contract.rulers.length; target++) {
       if (!allowed(candidate.admit, target)) continue;
@@ -243,7 +286,7 @@ export class InventoryRelations {
     if (decisions.length !== targets.length || decisions.some(d => typeof d.eligible !== 'boolean')) throw Error('incomplete engine gates');
     this.transaction(() => {
       const owner = this.catalog.beginOwner({ owner: id, build_id: id, record: candidate.record,
-        weapon: candidate.bucket[0], riven: candidate.bucket[1] }, {}), prefixes = new Map();
+        record_reference: stored.reference, weapon: candidate.bucket[0], riven: candidate.bucket[1] }, {}), prefixes = new Map();
       const variants = this.q('SELECT body FROM rel_sources WHERE candidate=? ORDER BY seq');
       for (const source of variants.iterate(id)) {
         const body = JSON.parse(source.body);

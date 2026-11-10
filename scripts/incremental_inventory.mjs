@@ -11,7 +11,10 @@ const CHUNK = 256, OWNER_LIMIT = 64;
 const active = new Set(['open', 'disputed', 'nondeterministic']);
 const sql = `
   CREATE TABLE IF NOT EXISTS meta(id INTEGER PRIMARY KEY CHECK(id=1),body TEXT NOT NULL);
-  CREATE TABLE IF NOT EXISTS records(id INTEGER PRIMARY KEY,build_id TEXT NOT NULL UNIQUE,stored TEXT,fallback TEXT);
+  CREATE TABLE IF NOT EXISTS record_blobs(key BLOB PRIMARY KEY,body TEXT NOT NULL) WITHOUT ROWID;
+  CREATE TABLE IF NOT EXISTS records(id INTEGER PRIMARY KEY,build_id TEXT NOT NULL UNIQUE,stored TEXT,fallback TEXT,
+    normalized BLOB,source_record INTEGER);
+  CREATE INDEX IF NOT EXISTS records_source ON records(source_record) WHERE source_record IS NOT NULL;
   CREATE TABLE IF NOT EXISTS owners(id INTEGER PRIMARY KEY,owner TEXT NOT NULL UNIQUE,candidate INTEGER,scope TEXT,weapon TEXT,riven INTEGER,source INTEGER);
   CREATE INDEX IF NOT EXISTS owners_candidate ON owners(candidate);
   CREATE INDEX IF NOT EXISTS owners_weapon ON owners(weapon,riven);
@@ -144,9 +147,17 @@ export class InventoryCatalog {
     return name;
   }
   record(build) {
-    const row = this.statement('SELECT id,coalesce(stored,fallback) record FROM records WHERE build_id=?').get(build);
+    const row = this.statement(`SELECT r.id,coalesce(r.stored,r.fallback,n.body,s.stored) record FROM records r
+      LEFT JOIN record_blobs n ON n.key=r.normalized LEFT JOIN records s ON s.id=r.source_record WHERE r.build_id=?`).get(build);
     if (!row?.record) throw new Error(`inventory build unavailable: ${build}`);
     return row;
+  }
+  detachRecord(build) {
+    const row = this.statement('SELECT id,stored FROM records WHERE build_id=?').get(build);
+    if (!row?.stored || !this.statement('SELECT 1 FROM records WHERE source_record=? LIMIT 1').get(row.id)) return;
+    const key = createHash('sha256').update(row.stored).digest();
+    this.statement('INSERT OR IGNORE INTO record_blobs VALUES(?,?)').run(key, row.stored);
+    this.statement('UPDATE records SET normalized=?,source_record=NULL WHERE source_record=?').run(key, row.id);
   }
   putRecords(rows, { stored = true } = {}) {
     if (!Array.isArray(rows) || rows.length > CHUNK) throw new Error('inventory record batch exceeds bound');
@@ -154,8 +165,9 @@ export class InventoryCatalog {
       for (const row of rows) {
         text(row.id, 'build');
         if (!row.deleted && (!row.record || typeof row.record !== 'object')) throw new Error('invalid inventory record');
+        if (stored) this.detachRecord(row.id);
         const column = stored ? 'stored' : 'fallback';
-        const update = stored ? 'stored=excluded.stored,fallback=NULL'
+        const update = stored ? 'stored=excluded.stored,fallback=NULL,normalized=NULL,source_record=NULL'
           : 'fallback=CASE WHEN records.stored IS NULL THEN excluded.fallback ELSE NULL END';
         this.statement(`INSERT INTO records(build_id,${column}) VALUES(?,?) ON CONFLICT(build_id) DO UPDATE SET ${update}`)
           .run(row.id, row.deleted ? null : canon(row.record));
@@ -193,7 +205,8 @@ export class InventoryCatalog {
   }
   owner(owner) {
     const row = this.statement(`SELECT o.owner,c.build_id,o.weapon,o.riven,o.source,o.scope,s.stored stored_record,
-      coalesce(c.stored,c.fallback) canonical_record FROM owners o LEFT JOIN records c ON c.id=o.candidate
+      coalesce(c.stored,c.fallback,n.body,cs.stored) canonical_record FROM owners o LEFT JOIN records c ON c.id=o.candidate
+      LEFT JOIN record_blobs n ON n.key=c.normalized LEFT JOIN records cs ON cs.id=c.source_record
       LEFT JOIN records s ON s.build_id=o.owner WHERE o.owner=?`).get(owner);
     return row ? { ...row, scope: JSON.parse(row.scope), riven: row.riven == null ? null : !!row.riven,
       stored_record: row.stored_record ? JSON.parse(row.stored_record) : null,
@@ -278,7 +291,16 @@ export class InventoryCatalog {
     let candidate = null;
     if (header.build_id != null) {
       text(header.build_id, 'candidate');
-      if (header.record) this.statement(`INSERT INTO records(build_id,fallback) VALUES(?,?)
+      if (header.record_reference) {
+        const reference = header.record_reference;
+        const value = reference.normalized ? this.statement('SELECT body FROM record_blobs WHERE key=?').get(reference.normalized)?.body
+          : this.statement('SELECT stored FROM records WHERE id=?').get(reference.source)?.stored;
+        if (value !== canon(header.record)) throw Error('inventory canonical record reference changed');
+        this.statement(`INSERT INTO records(build_id,normalized,source_record) VALUES(?,?,?) ON CONFLICT(build_id) DO UPDATE SET
+          fallback=NULL,normalized=CASE WHEN records.stored IS NULL THEN excluded.normalized END,
+          source_record=CASE WHEN records.stored IS NULL THEN excluded.source_record END`)
+          .run(header.build_id, reference.normalized, reference.normalized ? null : reference.source);
+      } else if (header.record) this.statement(`INSERT INTO records(build_id,fallback) VALUES(?,?)
         ON CONFLICT(build_id) DO UPDATE SET fallback=CASE WHEN records.stored IS NULL THEN excluded.fallback ELSE NULL END`)
         .run(header.build_id, canon(header.record));
       candidate = this.record(header.build_id).id;

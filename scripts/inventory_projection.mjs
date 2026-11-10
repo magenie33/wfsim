@@ -70,8 +70,8 @@ export async function auditInventoryProjection(index, cut, directory) {
     if (!out.write(JSON.stringify(row) + '\n')) await once(out, 'drain');
   };
   try {
-    for (const source of index.q('SELECT id,body FROM rel_candidates ORDER BY id').iterate()) {
-      const candidate = JSON.parse(source.body);
+    for (const source of index.q('SELECT id FROM rel_candidates ORDER BY id').iterate()) {
+      const candidate = index.candidateDescriptor(source.id).descriptor;
       const binding = index.q('SELECT id FROM rel_sources WHERE candidate=? ORDER BY seq LIMIT 1').get(source.id);
       await write({ type: 'owner', owner: source.id, build_id: source.id, record: candidate.record, binding_owner: binding.id }); owners++;
       for (const member of index.q(`SELECT r.build_id,ru.name ruler,mo.name mode,m.queued FROM members m

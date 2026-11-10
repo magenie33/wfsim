@@ -134,10 +134,12 @@ export class InventoryPublication {
       .get(file.weapon, bit);
     if (empty) throw Error('admitted publication source has no mode');
     const page = this.q(`SELECT f.identity,f.mode fact_mode,f.body fact,s.seq source,s.id owner,d.body descriptor,
+        d.normalized,r.stored raw_record,n.body normalized_record,
         CAST(m.key AS INTEGER) mode_order,m.value mode
       FROM rel_publication_facts f INDEXED BY rel_publication_facts_rows
       JOIN rel_publication_sources s ON s.candidate=f.identity AND s.weapon=? AND (s.admit & ?)<>0
-      JOIN rel_sources d ON d.id=s.id JOIN json_each(s.modes) m ON json_extract(m.value,'$.id')=f.mode
+      JOIN rel_sources d ON d.id=s.id JOIN records r ON r.build_id=d.id LEFT JOIN record_blobs n ON n.key=d.normalized
+      JOIN json_each(s.modes) m ON json_extract(m.value,'$.id')=f.mode
       WHERE f.ruler=? AND f.retired=0 AND (f.identity,f.mode,s.seq,CAST(m.key AS INTEGER))>(?,?,?,?)
       ORDER BY f.identity,f.mode,s.seq,CAST(m.key AS INTEGER) LIMIT ?`)
       .all(file.weapon, bit, rulers[target].id, ...state.input, LIMIT);
@@ -147,7 +149,8 @@ export class InventoryPublication {
       const key = JSON.stringify([row.identity, row.fact_mode]); if (seen.has(key)) return false; seen.add(key); return true;
     });
     const rendered = await operate('render', unique.map(row => {
-      const d = JSON.parse(row.descriptor), mode = JSON.parse(row.mode);
+      const d = this.index.descriptor({ id: row.owner, candidate: row.identity, body: row.descriptor,
+        normalized: row.normalized, stored: row.raw_record, normalized_record: row.normalized_record }), mode = JSON.parse(row.mode);
       return { benchmark: rulers[target].id, mode: mode.mode, row: { ...d.record, ...d.publication }, fact: JSON.parse(row.fact) };
     }));
     this.index.transaction(() => {

@@ -27,8 +27,9 @@ async function run(size) {
   index.transaction(() => {
     for (let i = 0; i < size; i++) {
       const id = String(i).padStart(8, '0'), body = descriptor(id), score = i === 0 ? 100 : i === 1 ? 21 : 10;
-      index.q('INSERT INTO rel_sources(id,candidate,body) VALUES(?,?,?)').run(id, id, JSON.stringify({ ...body, id }));
-      index.q('INSERT INTO rel_candidates VALUES(?,?,?,?,?)').run(id, bucket, 3, null, JSON.stringify(body));
+      const { record, ...metadata } = body;
+      const source = index.q('INSERT INTO rel_sources(id,candidate,body) VALUES(?,?,?)').run(id, id, JSON.stringify(metadata));
+      index.q('INSERT INTO rel_candidates VALUES(?,?,?,?,?,?)').run(id, bucket, 3, null, source.lastInsertRowid, Buffer.alloc(32));
       index.q('INSERT INTO records(build_id,stored) VALUES(?,?)').run(id, JSON.stringify(body.record));
       index.q('INSERT INTO rel_facts VALUES(?,?,?,?,?,?,?,?,?)').run(id, 'r', 'base', score, '', bucket, 'a', 0, 'r');
     }
