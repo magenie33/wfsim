@@ -27,10 +27,11 @@ export const FULL_WORK = [
     evidence: 'engine-apart, browser cache and native/WASM parity checks', rollback: 'previous coherent release and immutable resources' },
 ];
 
-export const COMPANION_JOBS = ['runtime', 'factory-cases', 'factory', 'prepare-desktop', 'prepare-live'];
+export const COMPANION_JOBS = ['runtime', 'protocol', 'factory-cases', 'factory', 'prepare-desktop', 'prepare-live'];
 export function companionJobs(jobs, fast = false) {
   const selected = [];
   if (jobs.some(j => ['site', 'services', 'pipeline'].includes(j))) selected.push('runtime');
+  if (jobs.includes('pipeline')) selected.push('protocol');
   if (!fast && jobs.some(j => ['services', 'pipeline'].includes(j))) selected.push('factory-cases', 'factory');
   if (jobs.includes('site')) selected.push('prepare-desktop', 'prepare-live');
   return selected;

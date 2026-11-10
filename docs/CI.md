@@ -20,7 +20,8 @@ runs cannot. API errors also fall back to full validation.
 | `docs/CLIENTS.md`, `docs/measurements/` | Full CI: the build reads the contract and counts measurements |
 | MCP source and its exclusive checks | Quick checks, build, artifact contracts and MCP checks |
 | Bot source and its exclusive checks | Quick checks, build, artifact contracts, bot authentication, packaging and card rendering |
-| `web/src/static/`, `data/i18n/`, `worker/`, other checks invoked only by product jobs | Quick checks, build, services, pipeline, all browser checks and all parity shards |
+| Static UI, localization and checks used only by frontend jobs | Quick checks, build, all browser and parity shards, MCP and bot checks |
+| Worker inputs, declared client protocol fixtures and service checks | Quick checks, build, services, pipeline, all browser checks and all parity shards |
 | Generated `site/`, `desktop/payload/`, `mcp/engine.js`, `data/board_state.yaml` only | Quick checks and published-board legality |
 | Engine, optimizer, webapi, game data, Rust dependencies, tooling, workflow or any other path | Full CI |
 
@@ -105,6 +106,19 @@ a fast-forward of that exact SHA can reuse its evidence when it covers the
 selected jobs. Do not request a second full run just because the same validated
 commit moves to main. A newer branch run cancels the previous run for that
 branch; main runs and shipping are not cancelled in progress.
+
+Frontend-only changes retain every browser, parity, MCP and bot check, a fresh
+site, the build/simulate/solve smoke and production-runtime contracts. Static UI
+and localization inputs do not invalidate unchanged SQL or factory stress
+fixtures. Protocol checks load their frontend fixtures through
+`ci_client_inputs.mjs`; selection reads the same declaration and promotes those
+inputs to service coverage. Direct frontend reads in service checks fail the
+selection check. Shared worker and headless sources use the generator's own
+input declaration to select backend coverage before their generated copies
+change. Localization read directly by a service fixture follows the same rule.
+Worker changes retain complete service/pipeline/factory validation; mixed core,
+snapshot or unknown inputs retain the conservative full selection. A frontend
+proof cannot substitute for backend or numerical coverage.
 
 ## Urgent scoped validation
 
@@ -209,8 +223,10 @@ the real test list and runs exact names, refusing a missing protected test or
 empty group. New ordinary whole-scope tests join the ordinary group.
 
 The main page checks run in controls, calculation and community groups. The
-additional page checks run in five independent groups: accounts and sharing,
-views, builder and search, board heads and library integration. Bot card rendering
+additional page checks run in independent groups: accounts and sharing,
+views, three builder/search groups, board heads and library integration. Builder
+groups balance measured command durations while retaining each complete command.
+Bot card rendering
 runs with the bot checks. Each command belongs
 to one group. `check_ci_partitions` rejects missing, duplicate or empty groups;
 the required gate waits for every matrix member. A failed group can be retried
@@ -249,6 +265,10 @@ in independent shards; fixed groups run once per mode. Every shard produces a
 receipt binding its source hashes, mode, seeds and completed assertions. The
 required coverage job rejects missing or duplicate receipts, wrong sources and
 unfinished cases. The default local command still runs the whole original suite.
+Queued settlement, one-call sync and their combined mode run in three separate
+protocol jobs. Every original command/mode pair remains required. These jobs
+start beside native inventory checks, with their own isolated databases; the
+required gate and reusable proof require every selected mode.
 
 Native Linux and Mac slices build beside site validation, without
 release credentials. Published engine targets skip compilation. A producer

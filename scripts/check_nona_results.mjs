@@ -5,8 +5,10 @@ import { testDb } from "./pg/test_db.mjs";
 import { serveSite } from "./cdp.mjs";
 import { loadEngine } from "../bot/engine.mjs";
 import { contributorProfilesRoute } from "../worker/contributor_profiles.js";
+import { clientSource } from './ci_client_inputs.mjs';
 const { makeAnswer } = await import(process.env.WFSIM_BOT_ANSWER_MODULE || "../bot/answer.mjs");
-const ui = JSON.parse(execFileSync("python3", ["-c", "import yaml,json;print(json.dumps(yaml.safe_load(open('data/i18n/zh/ui.yaml'))['ui']))"], {encoding:"utf8"}));
+const ui = JSON.parse(execFileSync("python3", ["-c", "import yaml,json,sys;print(json.dumps(yaml.safe_load(sys.stdin)['ui']))"],
+  {encoding:"utf8", input: clientSource('scripts/check_nona_results.mjs')}));
 const server = await serveSite("site"), site = "http://127.0.0.1:" + server.address().port;
 const engine = await loadEngine({site}), h = engine.headless;
 const env = {ACCOUNTS:await testDb("accounts"),LIBRARY:await testDb("library")};

@@ -27,6 +27,30 @@ function pageGroups(workflow, job = 'page-rest') {
   return commands;
 }
 
+function protocolCases(workflow) {
+  const section = workflow.split('\n  protocol:\n')[1]?.split(/\n  [\w-]+:\n/)[0];
+  assert(section, 'protocol matrix exists');
+  assert.match(section, /fail-fast: false/);
+  assert.deepEqual(list(section.match(/group: \[([^\]]+)\]/)[1]), ['async', 'proc', 'proc-async']);
+  const cases = [];
+  for (const step of section.split(/^      - /m).slice(1)) {
+    const group = step.match(/if: matrix\.group == '([\w-]+)'/)?.[1];
+    const commands = [...step.matchAll(/\bnode scripts\/(check_[\w-]+\.mjs)\b/g)].map(match => match[1]);
+    if (!commands.length) continue;
+    assert(['async', 'proc', 'proc-async'].includes(group));
+    assert.equal(/WFSIM_SYNC_PROC: "1"/.test(step), group !== 'async', group);
+    assert.equal(/WFSIM_SETTLE_ASYNC: "1"/.test(step), group !== 'proc', group);
+    cases.push(...commands.map(command => `${group}/${command}`));
+  }
+  assert.equal(new Set(cases).size, cases.length, 'each command and protocol mode executes once');
+  assert.deepEqual([...cases].sort(), [
+    'async/check_board_verify.mjs', 'async/check_queue_once.mjs', 'async/check_board_sync.mjs',
+    'async/check_board_reviews.mjs', 'async/check_fair.mjs', 'proc/check_board_sync.mjs',
+    'proc-async/check_board_sync.mjs', 'proc-async/check_board_reviews.mjs', 'proc-async/check_board_family.mjs',
+  ].sort(), 'all original protocol command/mode pairs remain');
+  return cases;
+}
+
 const prefix = 'optimize::whole_scope_tests::';
 const tests = [...Object.values(WHOLE_SCOPE_GROUPS), ...DEEP_SCOPE_TESTS, prefix + 'first', prefix + 'second'];
 const groups = wholeScopeGroups([...tests, 'other::test']);
@@ -60,6 +84,10 @@ assert.throws(() => rivenRequestCases(meta, everyRulerOn, 4, 4, 4));
 assert.throws(() => rivenRequestCases({ weapons: [], benchmarks: [] }, everyRulerOn, 0, 1, 4));
 
 const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
+protocolCases(workflow);
+assert.throws(() => protocolCases(workflow.replace('group: [async, proc, proc-async]', 'group: [async, proc]')));
+assert.throws(() => protocolCases(workflow.replace('          node scripts/check_board_family.mjs\n', '')));
+assert.throws(() => protocolCases(workflow.replace('WFSIM_SYNC_PROC: "1"', 'WFSIM_SYNC_PROC: "0"')));
 assert.deepEqual(new Set([...RUST_SUITES, ...Object.keys(DEEP_SCOPE_GROUPS)]), new Set(['workspace', 'webapi', 'accuracy', ...RUST_GROUPS]));
 assert.match(workflow, /matrix:.*fromJSON\(needs\.plan\.outputs\.test_matrix\)/);
 assert.match(workflow, /fleet-work\|deep-descent\|deep-screened\|deep-fleet\) node/);
@@ -68,9 +96,9 @@ assert.match(workflow, /webapi\).*--skip optimize::whole_scope_tests::.*--skip o
 assert.match(workflow, /\*\).*exit 2/);
 const pages = pageGroups(workflow);
 const mainPages = pageGroups(workflow, 'page');
-assert.throws(() => pageGroups(workflow.replace("if: matrix.group == 'builder'", "if: matrix.group == 'absent'")));
-assert.throws(() => pageGroups(workflow.replace("        if: matrix.group == 'builder'\n", '')));
-assert.throws(() => pageGroups(workflow.replace('group: [account, views, builder, heads, library]', 'group: [account]')));
+assert.throws(() => pageGroups(workflow.replace("if: matrix.group == 'builder-1'", "if: matrix.group == 'absent'")));
+assert.throws(() => pageGroups(workflow.replace("        if: matrix.group == 'builder-1'\n", '')));
+assert.throws(() => pageGroups(workflow.replace('group: [account, views, builder-1, builder-2, builder-3, heads, library]', 'group: [account]')));
 assert.throws(() => pageGroups(workflow.replace("if: matrix.group == 'controls'", "if: matrix.group == 'absent'"), 'page'));
 assert.throws(() => pageGroups(workflow.replace('fromJSON(\'["fast"]\')', 'fromJSON(\'["controls"]\')'), 'page'));
 assert.throws(() => pageGroups(workflow.replace('fromJSON(\'["fast"]\')', 'fromJSON(\'[]\')'), 'page'));

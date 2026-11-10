@@ -12,7 +12,7 @@ for (const row of FULL_WORK) {
 }
 assert.deepEqual(companionJobs([]), []);
 assert.deepEqual(companionJobs(['services']), ['runtime', 'factory-cases', 'factory']);
-assert.deepEqual(companionJobs(['pipeline'], true), ['runtime']);
+assert.deepEqual(companionJobs(['pipeline'], true), ['runtime', 'protocol']);
 assert.deepEqual(companionJobs(['site']), ['runtime', 'prepare-desktop', 'prepare-live']);
 const plan = classify(['new-core/input']);
 const results = Object.fromEntries(['plan', 'quick', 'commits', ...ALL_CI_JOBS, ...COMPANION_JOBS, ...OPTIONAL_NATIVE_JOBS]

@@ -12,7 +12,7 @@ import { setDial, forgetDials, DIALS, SYNC_CLIENT_DIALS } from "../worker/dials.
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { facts } from "../worker/factory.js";
 import { testDb } from "./pg/test_db.mjs";
-import { readFileSync } from "node:fs";
+import { clientSource } from "./ci_client_inputs.mjs";
 import { runInNewContext } from "node:vm";
 
 Math.random = () => 0.5;
@@ -234,7 +234,7 @@ await setDial(env, "sync_off", 0, "check");
 forgetDials(); forgetWitnesses();
 
 console.log("\nthe official page and desktop refill loop");
-const source = readFileSync(new URL("../web/src/static/app/69-board-work.js", import.meta.url), "utf8");
+const source = clientSource('scripts/check_board_sync.mjs');
 let monotonic = 0;
 const page = {
   Date: class extends Date { static now() { return 100_000; } },

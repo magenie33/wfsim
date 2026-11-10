@@ -8,17 +8,21 @@ import { checkFastChanges, fastJobs, fastScope } from './ci_fast.mjs';
 import { DEEP_SCOPE_GROUPS, RUST_SUITES } from './ci_rust.mjs';
 import { COMPANION_JOBS, companionJobs } from './full_work.mjs';
 import { FACTORY_CHECKS, factoryMatrix } from './factory_shards.mjs';
+import { CLIENT_INPUTS } from './ci_client_inputs.mjs';
+import { PARTS } from './gen_worker_parts.mjs';
 
 export const BROWSER_JOBS = ['site', 'checks', 'services', 'pipeline', 'page', 'parity', 'page-rest', 'mcp', 'bot'];
+export const FRONTEND_JOBS = BROWSER_JOBS.filter(job => !['services', 'pipeline'].includes(job));
 export const PRODUCT_JOBS = ['test', 'gas', 'engine-apart', 'published-board', ...BROWSER_JOBS];
 export const ALL_CI_JOBS = [...PRODUCT_JOBS, 'hotfix'];
 export const CONSUMER_JOBS = { mcp: ['site', 'checks', 'mcp'], bot: ['site', 'checks', 'bot'] };
 export const OPTIONAL_NATIVE_JOBS = ['native-mac', 'native-linux'];
-const SERVICE_CHECK_JOBS = [...BROWSER_JOBS, 'runtime', 'factory-cases', 'factory'];
+const SERVICE_CHECK_JOBS = [...BROWSER_JOBS, 'runtime', 'protocol', 'factory-cases', 'factory'];
 const CI_WIRING = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
   '.github/actions/site-tools/action.yml', '.github/actions/built-site/action.yml',
   '.github/actions/site-tools/install.sh', 'scripts/check_site_setup.mjs',
   'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs', 'scripts/check_ci_policy.mjs',
+  'scripts/ci_client_inputs.mjs', 'scripts/gen_worker_parts.mjs',
   'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs', 'scripts/check_ci_partitions.mjs',
   'scripts/ci_fast.mjs', 'scripts/check_ci_fast.mjs', 'scripts/full_work.mjs',
   'scripts/check_full_work.mjs', 'scripts/check_edge_runtime.mjs', 'scripts/ci_metrics.mjs',
@@ -31,7 +35,7 @@ const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbo
   'scripts/build_batches.mjs', 'scripts/ship_family.mjs', 'scripts/ship_bot.py', '.github/workflows/scores.yml',
   'scripts/factoryd.mjs', 'scripts/pg_task_archive.py', 'scripts/ship_task_archive.py', 'scripts/check_task_archive.py',
   'scripts/ship.py', 'scripts/release_stage.py', 'scripts/check_release_stage.py', 'scripts/check_ship_bot_assets.py',
-  'scripts/check_ship_workers.py',
+  'scripts/check_ship_workers.py', 'scripts/check_ship_bot_live.py',
   'scripts/payload_manifest.py', 'scripts/release_desktop.py', 'scripts/pg/test_db.mjs', 'scripts/intake_batches.mjs',
   'deploy/wfsim-task-archive.service', 'deploy/wfsim-task-archive.timer'];
 
@@ -64,10 +68,11 @@ export function browserCheckPaths(workflow) {
   return new Set([...checkJobPaths(workflow)].filter(([, jobs]) => [...jobs].every(j => SERVICE_CHECK_JOBS.includes(j))).map(([p]) => p));
 }
 const owners = checkJobPaths(readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8'));
+const clientInputs = new Set([...Object.values(CLIENT_INPUTS).flat(), ...PARTS.flatMap(part => [part.part].flat())]);
 
 export function releaseCoverage(jobs) {
   const same = wanted => jobs.length === wanted.length && wanted.every(j => jobs.includes(j));
-  return same(PRODUCT_JOBS) || same(BROWSER_JOBS) || same(CONSUMER_JOBS.mcp) || same(CONSUMER_JOBS.bot)
+  return same(PRODUCT_JOBS) || same(BROWSER_JOBS) || same(FRONTEND_JOBS) || same(CONSUMER_JOBS.mcp) || same(CONSUMER_JOBS.bot)
     || same([...new Set([...CONSUMER_JOBS.mcp, ...CONSUMER_JOBS.bot])]);
 }
 
@@ -81,6 +86,7 @@ export function classify(paths, force = false, verifiedBase = true) {
     if (/^(site\/|desktop\/payload\/|mcp\/engine\.js$|data\/board_state\.yaml$)/.test(path)) kind = 'snapshot';
     else if (/^docs\/(CLIENTS\.md$|measurements\/)/.test(path)) kind = 'full';
     else if (/^(docs\/.*\.md$|README\.md$|LICENSE$)/.test(path)) kind = 'docs';
+    else if (clientInputs.has(path)) kind = 'services';
     else if (/^web\/src\/static\//.test(path) || /^data\/i18n\//.test(path)) kind = 'frontend';
     else if (path === 'mcp/headless.js') kind = 'headless';
     else if (/^mcp\/(index\.js|account\.js|a2a\.js|wrangler\.jsonc)$/.test(path)
@@ -89,7 +95,8 @@ export function classify(paths, force = false, verifiedBase = true) {
     else if (/^worker\//.test(path)) kind = 'services';
     else if (owners.has(path) && [...owners.get(path)].every(j => SERVICE_CHECK_JOBS.includes(j))) {
       const jobs = [...owners.get(path)];
-      kind = jobs.every(j => j === 'mcp') ? 'mcp' : jobs.every(j => j === 'bot') ? 'bot' : 'browser-check';
+      kind = jobs.every(j => j === 'mcp') ? 'mcp' : jobs.every(j => j === 'bot') ? 'bot'
+        : jobs.every(j => FRONTEND_JOBS.includes(j)) ? 'browser-check' : 'service-check';
     }
     else kind = 'full';
     reasons.push({ path, kind });
@@ -97,13 +104,15 @@ export function classify(paths, force = false, verifiedBase = true) {
     if (kind === 'mcp' || kind === 'bot') consumers.add(kind);
     if (kind === 'headless') { consumers.add('mcp'); consumers.add('bot'); }
     if (kind === 'full') scope = 'full';
-    else if (scope !== 'full' && ['frontend', 'services', 'browser-check'].includes(kind)) scope = 'product';
+    else if (scope !== 'full' && ['services', 'service-check'].includes(kind)) scope = 'product';
+    else if (!['full', 'product'].includes(scope) && ['frontend', 'browser-check'].includes(kind)) scope = 'frontend';
     else if (scope === 'docs' && consumers.size) scope = 'consumers';
     else if (scope === 'docs' && kind === 'snapshot') scope = 'snapshot';
   }
-  if (snapshot && (scope === 'product' || consumers.size)) scope = 'full';
+  if (snapshot && (['product', 'frontend'].includes(scope) || consumers.size)) scope = 'full';
   if (force || !paths.length || !verifiedBase) scope = 'full';
   const jobs = scope === 'full' ? PRODUCT_JOBS : scope === 'product' ? BROWSER_JOBS
+    : scope === 'frontend' ? FRONTEND_JOBS
     : scope === 'consumers' ? [...new Set([...consumers].sort().flatMap(c => CONSUMER_JOBS[c]))]
     : scope === 'snapshot' ? ['published-board'] : [];
   return { scope, jobs, reasons, forced: force || !paths.length || !verifiedBase, verifiedBase,

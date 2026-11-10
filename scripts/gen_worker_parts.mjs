@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-const PARTS = [
+export const PARTS = [
   {
     part: "web/src/static/app/83-headless-card.js",
     symbol: "headlessBoardPayloadFromResult",
@@ -44,6 +44,7 @@ const boardRivenName = (riven) => HOST.rivenName(riven);
   },
 ];
 
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
 let stale = 0;
 for (const p of PARTS) {
   const { out, head, tail } = p;
@@ -70,3 +71,4 @@ for (const p of PARTS) {
   }
 }
 if (stale) process.exit(1);
+}
