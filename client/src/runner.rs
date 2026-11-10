@@ -103,6 +103,10 @@ pub fn run(dir: &Path, id: &str, quit: Arc<AtomicBool>) -> Result<()> {
     let mut last_error: Option<String> = None;
     let mut logged_at = Instant::now();
     lower_priority();
+    state::write(
+        &dir.join("host-ready.json"),
+        &json!({"run":nonce,"pid":std::process::id(),"version":crate::BUILD}),
+    )?;
     loop {
         let now = Instant::now();
         // Completed answers reach durable storage before any release or shutdown.
@@ -179,7 +183,10 @@ pub fn run(dir: &Path, id: &str, quit: Arc<AtomicBool>) -> Result<()> {
         let stop_requested = state::read::<Value>(&dir.join("stop.json"))
             .ok()
             .is_some_and(|s| s["run"] == nonce);
-        let stopping = quit.load(Ordering::Relaxed) || stop_requested;
+        let updating = state::read::<Value>(&dir.join("host-update.json"))
+            .ok()
+            .is_some_and(|s| s["run"] == nonce);
+        let stopping = quit.load(Ordering::Relaxed) || stop_requested || updating;
         let sampled = now >= next_sample;
         if sampled {
             observed = pressure.sample();
@@ -722,7 +729,7 @@ pub fn run(dir: &Path, id: &str, quit: Arc<AtomicBool>) -> Result<()> {
             state::write(
                 &dir.join("status.json"),
                 &json!({"run":nonce,"pid":std::process::id(),"at":state::timestamp(),
-            "state":phase,"engine":engine_id,"range":config.range,"target_percent":previous,"cpu_percent":own,
+            "state":phase,"version":crate::BUILD,"engine":engine_id,"range":config.range,"target_percent":previous,"cpu_percent":own,
             "completed":completed,"pending":out.len(),"progress":progress,"error":last_error}),
             )?;
             next_status = now + Duration::from_secs(1);
@@ -738,6 +745,16 @@ pub fn run(dir: &Path, id: &str, quit: Arc<AtomicBool>) -> Result<()> {
         "Stopped. {} pending answers kept for the next start.",
         out.len()
     );
+    if !quit.load(Ordering::Relaxed)
+        && !state::read::<Value>(&dir.join("stop.json"))
+            .ok()
+            .is_some_and(|s| s["run"] == nonce)
+        && state::read::<Value>(&dir.join("host-update.json"))
+            .ok()
+            .is_some_and(|s| s["run"] == nonce)
+    {
+        return Err(crate::update::HostChanged.into());
+    }
     Ok(())
 }
 

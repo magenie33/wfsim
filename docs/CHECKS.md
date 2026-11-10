@@ -657,6 +657,8 @@ platforms. `check_client_release.mjs` checks the upload list derived from native
 manifest entries and the single `npm pack --json` result, including scoped and
 unscoped tarballs, duplicate names, missing files and stale or stray artifacts.
 It also checks that the workflow uses this list, without overlapping globs.
+The immutable CLI manifest signature is included exactly once and is created
+with the existing release signing key before publication.
 Trusted publishing checks require a supported npm version, the exact repository
 URL, workflow identity permissions and the existing main/release protection.
 `check_client_cors.py` checks additive website GET access, all prior rules and
@@ -670,6 +672,15 @@ Normal CLI publication does not require bucket-management permissions.
 `cargo test --manifest-path client/Cargo.toml` covers range parsing,
 persistent identity, corrupt identity refusal, global fractional CPU budgets,
 cancellation, outbox acknowledgments and shared result-payload fixtures.
+Host-update unit cases cover raw signature/launch/platform/version bindings,
+corrupted or partial downloads, unsigned legacy locators and pointer mismatch.
+`check_client_update.mjs` checks signing and pre-upload refusal, then invokes
+the ignored native lifecycle fixture with test-only keys and loopback traffic.
+It verifies a real worker's update, startup acknowledgment, unchanged identity,
+config and durable outbox, crash fallback and failed-version suppression.
+Its npm fixture removes the cached bootstrap while background work continues;
+on Linux it inspects the startup unit with an isolated systemctl stub.
+Fixture keys never enter a production CLI or release trust store.
 `check_client_launcher.mjs` exercises native consent, zero-budget operation,
 lost replies, durable acknowledgments, single-instance exclusion, background
 stop/resume and the verified npm entry. It uses a loopback fake server and

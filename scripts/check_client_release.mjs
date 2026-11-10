@@ -24,7 +24,7 @@ const refuse = (label, pattern) => {
 
 try {
   mkdirSync(directory);
-  for (const name of [...natives, 'release.json', 'SHA256SUMS', 'source.zip', 'wfsim-old.tgz', 'wfsim-unlisted', 'scratch.txt']) {
+  for (const name of [...natives, 'release.json', 'release.json.sig', 'SHA256SUMS', 'source.zip', 'wfsim-old.tgz', 'wfsim-unlisted', 'scratch.txt']) {
     writeFileSync(path.join(directory, name), name);
   }
   save('release.json', manifest);
@@ -34,7 +34,7 @@ try {
     const result = run();
     assert.equal(result.status, 0, result.stderr);
     const files = result.stdout.trim().split(/\r?\n/);
-    assert.deepEqual(files, [...natives, 'release.json', 'SHA256SUMS', 'source.zip', filename].map(name => path.join(directory, name)));
+    assert.deepEqual(files, [...natives, 'release.json', 'release.json.sig', 'SHA256SUMS', 'source.zip', filename].map(name => path.join(directory, name)));
     assert.equal(new Set(files.map(file => path.basename(file))).size, files.length);
     ok(`${filename} is included once beside exactly the manifest's native files`);
     const oldList = [...readdirSync(directory).filter(name => name.startsWith('wfsim-')),
@@ -77,6 +77,10 @@ try {
   assert.equal(pkg.repository?.type, 'git');
   assert.equal(pkg.repository?.url, 'git+https://github.com/magenie33/wfsim.git');
   ok('the npm repository URL matches the authorized GitHub publisher');
+  assert(publish.includes('node scripts/sign_client_release.mjs target/client-release'));
+  assert(publish.includes('UPDATE_KEY: ${{ secrets.UPDATE_KEY }}'));
+  assert(publish.indexOf('node scripts/sign_client_release.mjs') < publish.indexOf('gh release create'));
+  ok('CLI signing reuses the existing protected key before publication');
   console.log(`CLI release assets: ${checks} checks passed; no upload or native rebuild.`);
 } finally {
   rmSync(temporary, { recursive: true, force: true });

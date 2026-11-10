@@ -21,6 +21,7 @@ const status=()=>{try{return JSON.parse(readFileSync(path.join(dir,'status.json'
 const run=(...a)=>spawnSync(binary,['--data-dir',dir,...a],{encoding:'utf8',timeout:10_000});
 const server=createServer(async(req,res)=>{
   let reply;
+  if(req.url==='/cli/latest.json'){res.writeHead(404).end();return;}
   if(req.url==='/release.json')reply=release;
   else if(req.url==='/work.json')reply={v:1,at:new Date().toISOString(),open:3,urgent:0,engine:release.engine,release:release.release,
     mode:'signal',poll_ms:1000,jitter_ms:0,urgent_jitter_ms:0};

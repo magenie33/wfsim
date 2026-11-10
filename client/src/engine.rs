@@ -8,8 +8,7 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::path::Path;
 
-#[path = "../../desktop/src/trust.rs"]
-mod trust;
+use crate::trust;
 
 type Api = unsafe extern "C" fn(*const u8, usize, *const u8, usize, *mut usize) -> *mut u8;
 type Install = unsafe extern "C" fn(*const u8, usize, *mut usize) -> *mut u8;
@@ -204,8 +203,12 @@ fn hex<const N: usize>(s: &str) -> Option<[u8; N]> {
 }
 
 pub fn verify(body: &[u8], sig: &str) -> Result<()> {
+    verify_with_keys(body, sig, trust::PUBLIC_KEYS)
+}
+
+pub(crate) fn verify_with_keys(body: &[u8], sig: &str, keys: &[&str]) -> Result<()> {
     let signature = Signature::from_bytes(&hex::<64>(sig).ok_or("malformed engine signature")?);
-    if trust::PUBLIC_KEYS.iter().any(|key| {
+    if keys.iter().any(|key| {
         hex::<32>(key)
             .and_then(|k| VerifyingKey::from_bytes(&k).ok())
             .is_some_and(|k| k.verify(body, &signature).is_ok())

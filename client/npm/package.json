@@ -1,6 +1,6 @@
 {
   "name": "wfsim",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Join WFSim volunteer computing with the official native client",
   "license": "AGPL-3.0-or-later",
   "repository": {

@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "CLI host version (empty uses 0.1.0-date.run)"
+        description: "CLI host version (empty uses 0.2.0-date.run)"
         type: string
         default: ""
       npm:
@@ -67,7 +67,7 @@ jobs:
         env:
           REQUESTED: ${{ inputs.version }}
         run: |
-          node -e 'const fs=require("node:fs");const v=process.env.REQUESTED||`0.1.0-${new Date().toISOString().slice(0,10).replaceAll("-","")}.${process.env.GITHUB_RUN_NUMBER}`;if(!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(v))throw Error("invalid version");fs.appendFileSync(process.env.GITHUB_OUTPUT,`version=${v}\n`);'
+          node -e 'const fs=require("node:fs");const v=process.env.REQUESTED||`0.2.0-${new Date().toISOString().slice(0,10).replaceAll("-","")}.${process.env.GITHUB_RUN_NUMBER}`;if(!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(v))throw Error("invalid version");fs.appendFileSync(process.env.GITHUB_OUTPUT,`version=${v}\n`);'
   build:
     needs: version
     strategy:
@@ -146,8 +146,10 @@ jobs:
       - env:
           CLI_VERSION: ${{ needs.version.outputs.version }}
           CLI_NPM: ${{ inputs.npm }}
+          UPDATE_KEY: ${{ secrets.UPDATE_KEY }}
         run: |
           node scripts/build_client_release.mjs "version=$CLI_VERSION" "npm=$CLI_NPM"
+          node scripts/sign_client_release.mjs target/client-release
           git archive --format=zip --output=target/client-release/source.zip HEAD
           python3 scripts/release_client.py target/client-release --dry-run
           npm pack ./target/client-release/npm --pack-destination target/client-release --json > target/client-release/npm-pack.json

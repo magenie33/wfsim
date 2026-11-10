@@ -59,6 +59,20 @@ The host supervises one compute process. Engine updates replace that process
 after its work and answers have drained, releasing native engine memory while
 preserving the device identity, settings and durable pending answers.
 
+CLI host updates are automatic. The running client checks the official channel
+at startup and about once an hour, including while computing is paused. It
+verifies the signed release and executable hash before switching, returns
+unfinished leases and preserves pending answers. A new host that fails to
+start or crashes falls back to the previous version. Download failures leave
+the current computation running. Stable releases follow stable host versions.
+
+The original command remains usable after an update. Background operation and
+Linux startup services use a persistent launcher in the device directory, so
+clearing npm's cache does not remove their executable. `status` includes the
+running host version and latest update outcome. Keep the device directory on
+writable storage. A host without an automatic updater needs one manual upgrade
+to a version that includes it.
+
 The default data directory is:
 
 | system | directory |

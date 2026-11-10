@@ -35,6 +35,33 @@ change drains work and replaces that process; the OS releases native static and
 thread state. Identity, settings and unacknowledged answers stay in the device
 directory across the replacement.
 
+The CLI host follows the same canonical `cli/latest.json` pointer. This raw
+pointer is only a locator: the updater reads the immutable
+`cli/releases/<version>/release.json` and its detached `release.json.sig`,
+verifies the exact original manifest bytes against `desktop/src/trust.rs`,
+then obtains the platform, launch contract, size, hash and URLs from that signed
+manifest. `sign_client_release.mjs` uses the existing protected `UPDATE_KEY`;
+publication verifies the signature before uploading any bytes. The detached
+signature is uploaded beside its release before the existing latest pointer.
+Older unsigned release manifests keep their existing meaning.
+
+Signed `launch: 1` hosts retain the `--data-dir <directory> join --worker`
+entry and run/stop token contract. The supervisor downloads in the background,
+checks the signed build version, asks the worker to return unfinished leases
+and persist results, then starts the new host with the same device directory.
+A startup acknowledgment commits the installed pointer. Failure restores the
+previous verified host or bundled bootstrap, retaining a version high-water
+mark so the failed release and older signed manifests cannot cause a loop.
+Only the current and previous downloaded hosts are retained. The host launch
+contract is independent of the engine ABI and public compute protocol.
+
+The fixed command and Linux unit use a user-owned launcher; downloaded hosts
+have separate versioned paths. Updating never requires replacing a running
+Windows executable or writing into npm's cache or a system installation.
+Checks run at startup and hourly with jitter, even at zero CPU budget. A
+stopped client does not restart for an update. A stable host ignores prerelease
+updates. Network or verification failures leave the current host running.
+
 ### CLI host versions
 
 CLI host versions follow [SemVer](https://semver.org/). Before `1.0.0`,

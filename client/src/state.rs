@@ -196,7 +196,7 @@ pub fn write<T: Serialize>(path: &Path, value: &T) -> Result<()> {
 }
 
 #[cfg(windows)]
-fn replace(from: &Path, to: &Path) -> Result<()> {
+pub(crate) fn replace(from: &Path, to: &Path) -> Result<()> {
     use std::os::windows::ffi::OsStrExt;
     unsafe extern "system" {
         fn MoveFileExW(from: *const u16, to: *const u16, flags: u32) -> i32;
