@@ -86,8 +86,11 @@ console.log("settling, in shadow");
     (await settleShadow(env, { threshold: 2, from: r.cursor }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1)).checked === 0);
   check("a question settled less than the lag ago waits", (await settleShadow(env, { threshold: 2, from }, t0 + 1_000)).checked === 0);
   const injected=await L.get("SELECT task_id,fact_engine,fact_at FROM state_compute_work WHERE id='s1'");
-  await L.run("SELECT compute_accept_result('s1',?1::bigint,'fact','fact','x',?2::text,?3::text,0,'[]')",
-    injected.task_id,injected.fact_engine,injected.fact_at);
+  const evidence=await L.all("SELECT id FROM state_compute_candidate_answers WHERE question='s1'");
+  const corrected=await L.get("SELECT compute_prepare_correction('s1',?1::bigint,'x',?2::text,?3::text,?4::text) AS task_id",
+    injected.task_id,injected.fact_engine,injected.fact_at,JSON.stringify(evidence.map(answer=>answer.id)));
+  await L.run("SELECT compute_accept_result('s1',?1::bigint,'open','fact','x',?2::text,?3::text,0,'[]')",
+    corrected.task_id,injected.fact_engine,injected.fact_at);
   await L.run("UPDATE record_candidate_answers SET credited = 0 WHERE question = 's2' AND device = 's2b'");
   r = await settleShadow(env, { threshold: 2, from }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1);
   check("a fact whose canon no group gave, and a witness left unpaid, are each a difference",
