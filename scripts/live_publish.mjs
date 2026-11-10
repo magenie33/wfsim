@@ -103,7 +103,10 @@ export async function pushBoard({ workDir = work, boardDir = dir, send = fetch, 
   const ledgerPath = join(workDir, "pushed.json"), deadline = now() + budgetMs;
   const ledger = existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, "utf8")) : {};
   if (!ledger || Array.isArray(ledger) || typeof ledger !== "object") throw new Error("invalid pushed ledger");
-  const stampPath = join(boardDir, "meta.json"), stamp = existsSync(stampPath) ? readFileSync(stampPath) : null;
+  const stampPath = join(boardDir, "meta.json");
+  if (existsSync(stampPath) && statSync(stampPath).size > 32 * 1024 ** 2)
+    throw new Error('push meta.json: exceeds the existing 32MiB receiver limit');
+  const stamp = existsSync(stampPath) ? readFileSync(stampPath) : null;
   let sent = 0;
   const finish = pending => { console.error(`live: pushed ${sent} file(s)${pending ? " (pending)" : ""}`); return { sent, pending }; };
   // THE STAMP GOES LAST, so a reader who sees a new `meta.json` finds every file

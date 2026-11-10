@@ -234,7 +234,8 @@ trap 'exit 143' TERM
 trap 'exit 130' INT
 
 if [ "$INCREMENTAL_INVENTORY" = 1 ]; then
-  node --max-old-space-size=192 "$HERE/inventory_pipeline.mjs" "$WORK" "$BIN" --serve
+  if [ "${ONCE:-}" = 1 ]; then intake_arrivals || true; fi
+  flock -n "$WORK/inventory.lock" node --max-old-space-size=192 "$HERE/inventory_pipeline.mjs" "$WORK" "$BIN" --serve
   exit $?
 fi
 
