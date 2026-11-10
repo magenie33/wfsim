@@ -1135,6 +1135,8 @@ jobs:
         with:
           node-version: '22.23.4'
       - run: npm ci --silent --prefix scripts/pg
+      - name: Maintenance fences APIs and scheduled work while draining preserves existing work
+        run: node scripts/check_maintenance.mjs
       - name: A fissure is logged once with its planet, and each combination says how often it came
         run: node scripts/check_world_fissures.mjs
       - name: What the site tells an account reaches it and nobody else, read once, kept as long as it says
