@@ -191,6 +191,8 @@ await check("a deployment change does not change the computation identity", asyn
   assert.equal(old.status, 200); assert.equal(old.question, current.question);
 });
 await check("both protocol 8 paths lease reports only to capable clients", async () => {
+  const waiting=await db.all("SELECT id,owner FROM entity_user_calculation_requests WHERE state='waiting'");
+  for(const row of waiting)for(const token of [owner,another])await call('cancel',{owner:token,ids:[row.id]});
   for (const proc of [0, 1]) {
     await setDial(env, 'sync_proc', proc, 'check');
     const request = accepted('simulation', { weapon: 'torid', runs: 20 + proc });

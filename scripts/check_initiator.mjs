@@ -116,8 +116,8 @@ const okIn = (await submit("wfsim_session=tok")).ok, okOut = (await submit(null)
 const inbox = (await L.all("SELECT initiator FROM record_build_submissions ORDER BY initiator")).map((r) => r.initiator);
 check("a submission signed in keeps its account's code, one signed out `anonymous`, and nothing else about either",
   okIn && okOut && inbox.length === 2 && inbox[0] === "anonymous" && inbox[1] === await initiatorCode(env, "user", "acc1")
-  && (await L.all("SELECT * FROM record_build_submissions")).every((r) => Object.keys(r).sort().join() === "at,family_source,id,initiator,record"
-    && r.family_source === null), JSON.stringify(inbox));
+  && (await L.all("SELECT * FROM record_build_submissions")).every((r) => Object.keys(r).sort().join() === "at,family_source,id,initiator,observation,record"
+    && r.family_source === null && r.observation === null), JSON.stringify(inbox));
 
 // ---- an arrival asked ----
 await L.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES ('arrivals-2026-10-14', 'a', 't', 1), ('backfill-2026-10-14', 'b', 't', 1)");
@@ -156,8 +156,8 @@ check("a code is its kind and a keyed hash: the same asker the same code, anothe
 // A PIPELINE THAT READS THE INBOX WITHOUT IT hands intake a record with no
 // initiator, and every row it ships is unrecorded.
 const readers = ["scripts/fetch_inbox.sh", "scripts/live_board.sh"].map((p) => [p, fs.readFileSync(new URL(`../${p}`, import.meta.url), "utf8")]);
-const blind = readers.flatMap(([p, src]) => [...src.matchAll(/SELECT ([^"]*?) FROM record_build_submissions/g)].filter((m) => !/\binitiator\b/.test(m[1])).map((m) => `${p}: ${m[0]}`));
-check("every intake's read of the inbox takes who asked", readers.every(([, src]) => /FROM record_build_submissions/.test(src)) && !blind.length, blind.join("; "));
+const blind = readers.flatMap(([p, src]) => [...src.matchAll(/SELECT ([^"]*?) FROM (?:record_build_submissions|state_build_inbox_inputs)/g)].filter((m) => !/\binitiator\b/.test(m[1])).map((m) => `${p}: ${m[0]}`));
+check("every intake's read of the inbox takes who asked", readers.every(([, src]) => /FROM state_build_inbox_inputs/.test(src)) && !blind.length, blind.join("; "));
 
 if (failures) { console.log(`\ncheck_initiator: ${failures} failure(s)`); process.exit(1); }
 console.log("\ncheck_initiator: ok");

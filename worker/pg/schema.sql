@@ -195,6 +195,14 @@ CREATE TABLE IF NOT EXISTS record_compute_result_selections (
   at TEXT COLLATE "C" NOT NULL
 );
 CREATE INDEX IF NOT EXISTS compute_selections_by_computation ON record_compute_result_selections(computation, id);
+CREATE OR REPLACE FUNCTION factory_default_zone(text) RETURNS bigint
+LANGUAGE sql IMMUTABLE AS $$
+  SELECT CASE WHEN $1 IN ('user_calculation','chat','survey') THEN 0
+    WHEN $1='board_review' THEN 1 ELSE 3 END::bigint
+$$;
+CREATE SEQUENCE IF NOT EXISTS compute_queue_position;
+SELECT setval('compute_queue_position',GREATEST((SELECT coalesce(max(id),0) FROM entity_compute_tasks),
+  (SELECT last_value FROM compute_queue_position)),true);
 CREATE TABLE IF NOT EXISTS state_compute_scheduling (
   id TEXT COLLATE "C" PRIMARY KEY,
   -- This dispatch key is a constrained copy of the immutable specification's verb.
@@ -228,6 +236,11 @@ CREATE TABLE IF NOT EXISTS state_compute_scheduling (
   CHECK ((result_id IS NULL AND fact_engine IS NULL AND fact_at IS NULL)
       OR (result_id IS NOT NULL AND fact_engine IS NOT NULL AND fact_at IS NOT NULL))
 );
+ALTER TABLE state_compute_scheduling ADD COLUMN IF NOT EXISTS zone BIGINT;
+ALTER TABLE state_compute_scheduling ADD COLUMN IF NOT EXISTS zone_position BIGINT;
+ALTER TABLE state_compute_scheduling ADD COLUMN IF NOT EXISTS required_capability TEXT COLLATE "C";
+CREATE INDEX IF NOT EXISTS compute_scheduling_zone ON state_compute_scheduling
+  (state,coalesce(zone,factory_default_zone(producer)),coalesce(zone_position,task_id),id);
 CREATE INDEX IF NOT EXISTS compute_scheduling_order ON state_compute_scheduling(state, waits DESC, due_at, id);
 CREATE INDEX IF NOT EXISTS compute_scheduling_holder ON state_compute_scheduling(leased_to);
 CREATE INDEX IF NOT EXISTS compute_scheduling_lease ON state_compute_scheduling(lease);
@@ -247,7 +260,8 @@ CREATE OR REPLACE VIEW state_compute_work AS
     (SELECT r.canon FROM entity_compute_results r WHERE r.id=s.result_id) AS canon,
     s.fact_engine,s.fact_at,s.odd,s.withdrawn_at,
     COALESCE((SELECT p.witnesses FROM record_compute_result_proofs p WHERE p.result_id=s.result_id),'[]') AS witnesses,
-    s.producer,s.initiator,s.task_id,s.result_id
+    s.producer,s.initiator,s.task_id,s.result_id,
+    coalesce(s.zone,factory_default_zone(s.producer)) AS zone,coalesce(s.zone_position,s.task_id) AS zone_position,s.required_capability
   FROM state_compute_scheduling s;
 
 CREATE OR REPLACE FUNCTION compute_open_task(text,text,text,text,boolean DEFAULT false) RETURNS bigint
@@ -261,6 +275,7 @@ BEGIN
   INSERT INTO entity_compute_tasks(computation,generation,created_at,reason,requested_engine)
     VALUES ($1,next_generation,$4,$2,$3) RETURNING id INTO next_task;
   UPDATE state_compute_scheduling SET task_id=next_task,state='open',opened_at=$4,
+    zone_position=CASE WHEN compute_round_occupied(held.id,held.task_id) THEN coalesce(held.zone_position,held.task_id) ELSE nextval('compute_queue_position') END,
     lease=NULL,lease_until=NULL,leased_to=NULL,leased_at=NULL,
     lease_prev=NULL,leased_to_prev=NULL,lease_prev_until=NULL,needs=NULL,odd=0,withdrawn_at=NULL,
     result_id=CASE WHEN $5 THEN NULL ELSE result_id END,
@@ -269,10 +284,18 @@ BEGIN
   INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload)
     SELECT DISTINCT ON(producer,ref) next_task,producer,ref,trigger_id,asked_at,payload FROM relation_compute_task_sources WHERE task_id=held.task_id
     ORDER BY producer,ref,asked_at DESC,trigger_id;
+  IF $2 IN('official_correction','refused_evidence','input_invalidated') THEN
+    INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload)
+      VALUES(next_task,'system',$2||':'||$1,$2||':'||held.task_id::text,$4,
+        jsonb_build_object('reason',$2,'previous_task',held.task_id,'requested_engine',$3)::text);
+  END IF;
   IF $5 AND held.result_id IS NOT NULL THEN
     INSERT INTO record_compute_result_selections(computation,task_id,previous_result_id,reason,at)
       VALUES ($1,next_task,held.result_id,$2,$4);
   END IF;
+  UPDATE state_build_workflow_nodes node SET task_id=next_task
+    WHERE node.computation=$1 AND node.task_id=held.task_id AND node.state='queued'
+      AND EXISTS(SELECT 1 FROM state_build_workflows f WHERE f.id=node.workflow AND f.state='active');
   RETURN next_task;
 END $$;
 
@@ -280,10 +303,10 @@ CREATE OR REPLACE FUNCTION compute_register_tasks(text,text,text) RETURNS void L
 DECLARE x record; held state_compute_scheduling%ROWTYPE; next_task bigint; spec entity_compute_specs%ROWTYPE;
 BEGIN
   FOR x IN SELECT * FROM jsonb_to_recordset($1::jsonb) AS x(id text,verb text,request text,due_at text,
-    lanes text,waits bigint,producer text,initiator text) ORDER BY id LOOP
+    lanes text,waits bigint,producer text,initiator text,zone bigint,position bigint,capability text) ORDER BY id LOOP
     INSERT INTO entity_compute_specs(id,verb,request) VALUES(x.id,x.verb,x.request) ON CONFLICT(id) DO NOTHING;
     SELECT * INTO spec FROM entity_compute_specs WHERE id=x.id FOR UPDATE;
-    IF spec.verb IS DISTINCT FROM x.verb OR spec.request IS DISTINCT FROM x.request THEN
+    IF spec.verb IS DISTINCT FROM x.verb OR spec.request::jsonb IS DISTINCT FROM x.request::jsonb THEN
       RAISE EXCEPTION 'computation identity has different frozen input';
     END IF;
     SELECT * INTO held FROM state_compute_scheduling WHERE id=x.id FOR UPDATE;
@@ -291,8 +314,9 @@ BEGIN
       INSERT INTO entity_compute_tasks(computation,generation,created_at,reason,requested_engine)
         SELECT x.id,COALESCE(max(generation),0)+1,$3,'request',$2 FROM entity_compute_tasks WHERE computation=x.id
         RETURNING id INTO next_task;
-      INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,lanes,waits,producer,initiator)
-        VALUES(x.id,x.verb,next_task,'open',x.due_at,$3,x.lanes,x.waits,x.producer,x.initiator);
+      INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,lanes,waits,producer,initiator,zone,zone_position,required_capability)
+        VALUES(x.id,x.verb,next_task,'open',x.due_at,$3,x.lanes,x.waits,x.producer,x.initiator,
+          coalesce(x.zone,factory_default_zone(x.producer)),coalesce(x.position,nextval('compute_queue_position')),x.capability);
     ELSE
       IF held.state='withdrawn' AND NOT EXISTS(SELECT 1 FROM record_refusal_withdrawals WHERE question=x.id AND engine=$2) THEN
         PERFORM compute_open_task(x.id,'renewed_request',$2,$3);
@@ -302,6 +326,11 @@ BEGIN
         held.initiator:=x.initiator;
       END IF;
       UPDATE state_compute_scheduling SET due_at=LEAST(held.due_at,x.due_at),
+        required_capability=coalesce(required_capability,x.capability),
+        zone=CASE WHEN held.state='withdrawn' THEN coalesce(x.zone,factory_default_zone(x.producer)) ELSE
+          least(coalesce(held.zone,factory_default_zone(held.producer)),coalesce(x.zone,factory_default_zone(x.producer))) END,
+        zone_position=CASE WHEN coalesce(x.zone,factory_default_zone(x.producer))<coalesce(held.zone,factory_default_zone(held.producer))
+          THEN coalesce(x.position,nextval('compute_queue_position')) ELSE zone_position END,
         producer=CASE WHEN x.due_at<held.due_at THEN x.producer ELSE held.producer END,
         initiator=CASE WHEN x.due_at<held.due_at THEN x.initiator ELSE held.initiator END,
         waits=GREATEST(held.waits,x.waits),lanes=COALESCE(held.lanes,x.lanes) WHERE id=x.id;
@@ -311,7 +340,7 @@ END $$;
 
 CREATE OR REPLACE FUNCTION compute_admit_tasks(text,text,text,text) RETURNS void
 LANGUAGE plpgsql AS $$
-DECLARE s jsonb; d jsonb; q record; source record; opened text[]:='{}';
+DECLARE s jsonb; d jsonb; prepared jsonb:='[]'; q record; source record; opened text[]:='{}'; previous_question text; affected text[]:='{}';
 BEGIN
   s := $1::jsonb; d := $2::jsonb;
   IF jsonb_typeof(s)<>'array' OR jsonb_typeof(d)<>'array' OR jsonb_array_length(s)>250
@@ -323,9 +352,14 @@ BEGIN
     OR EXISTS(SELECT 1 FROM jsonb_array_elements(s) x WHERE NOT EXISTS(
       SELECT 1 FROM jsonb_array_elements(d) y WHERE y->>'question'=x->>'id'))
     THEN RAISE EXCEPTION 'a compute task requires a source'; END IF;
-  PERFORM compute_register_tasks($1,$3,$4);
-  FOR q IN SELECT x.id,x.reason,x.invalidate FROM jsonb_to_recordset(s) AS x(id text,force boolean,invalidate boolean,reason text)
-      JOIN state_compute_scheduling a ON a.id=x.id WHERE (x.force AND a.state IN ('fact','spot')) OR (x.invalidate AND a.state IN ('open','disputed','nondeterministic')) ORDER BY x.id LOOP
+  FOR source IN SELECT value FROM jsonb_array_elements(s) ORDER BY coalesce((value->>'ordinal')::bigint,0) LOOP
+    prepared:=prepared||jsonb_build_array(source.value||jsonb_build_object('position',nextval('compute_queue_position')));
+  END LOOP;
+  PERFORM compute_register_tasks(prepared::text,$3,$4);
+  FOR q IN SELECT DISTINCT ON(x.id) x.id,x.reason,x.invalidate FROM jsonb_to_recordset(s) AS x(id text,force boolean,invalidate boolean,reason text)
+      JOIN state_compute_scheduling a ON a.id=x.id WHERE
+      (x.force AND a.state IN ('fact','spot') AND NOT compute_round_occupied(a.id,a.task_id))
+      OR (x.invalidate AND a.state IN ('open','disputed','nondeterministic','fact','spot')) ORDER BY x.id LOOP
     IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(d) x JOIN state_compute_scheduling a ON a.id=q.id
       JOIN entity_compute_tasks t ON t.computation=a.id
       JOIN relation_compute_task_sources p ON p.task_id=t.id AND p.producer=x->>'producer'
@@ -335,9 +369,12 @@ BEGIN
     END IF;
   END LOOP;
   FOR source IN SELECT * FROM jsonb_to_recordset(d) AS x(producer text,ref text,question text,
-      trigger_id text,ordinal bigint,asked_at text,due_at text,waits bigint,payload text,initiator text)
+      trigger_id text,ordinal bigint,asked_at text,due_at text,waits bigint,payload text,initiator text,zone bigint)
       ORDER BY producer,ref,ordinal,trigger_id LOOP
     SELECT * INTO STRICT q FROM state_compute_scheduling WHERE id=source.question;
+    SELECT question INTO previous_question FROM relation_task_consumers
+      WHERE producer=source.producer AND ref=source.ref FOR UPDATE;
+    IF previous_question IS NOT NULL THEN affected:=array_append(affected,previous_question); END IF;
     IF EXISTS(SELECT 1 FROM relation_compute_task_sources p WHERE p.task_id=q.task_id AND p.producer=source.producer
       AND p.ref=source.ref AND p.trigger_id=source.trigger_id AND
         (p.payload::jsonb IS DISTINCT FROM source.payload::jsonb)) THEN
@@ -346,14 +383,18 @@ BEGIN
     INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload)
       VALUES(q.task_id,source.producer,source.ref,source.trigger_id,coalesce(source.asked_at,$4),source.payload)
       ON CONFLICT DO NOTHING;
-    INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,waits,payload,initiator,delivery_at)
+    INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,waits,payload,initiator,delivery_at,zone)
       VALUES(source.producer,source.ref,source.question,'live',coalesce(source.asked_at,$4),source.due_at,source.waits,source.payload,source.initiator,
-        CASE WHEN q.state IN ('fact','spot') THEN $4 END)
+        CASE WHEN q.state IN ('fact','spot') THEN $4 END,coalesce(source.zone,factory_default_zone(source.producer)))
       ON CONFLICT(producer,ref) DO UPDATE SET question=excluded.question,state='live',asked_at=excluded.asked_at,
         due_at=excluded.due_at,waits=excluded.waits,payload=excluded.payload,served_at=NULL,
-        initiator=excluded.initiator,delivery_at=excluded.delivery_at;
+        initiator=excluded.initiator,delivery_at=excluded.delivery_at,zone=excluded.zone;
   END LOOP;
-  PERFORM factory_restate(id) FROM unnest(opened) AS t(id) ORDER BY id;
+  PERFORM factory_restate(id) FROM (SELECT DISTINCT unnest(affected) id
+    UNION SELECT value->>'id' FROM jsonb_array_elements(s)) changed ORDER BY id;
+  INSERT INTO state_producer_compute_usage(producer,used)
+    SELECT DISTINCT value->>'producer',coalesce((SELECT min(used) FROM state_producer_compute_usage),0)
+      FROM jsonb_array_elements(d) ON CONFLICT DO NOTHING;
 END $$;
 
 CREATE OR REPLACE FUNCTION compute_accept_result(text,bigint,text,text,text,text,text,bigint,text) RETURNS bigint
@@ -415,6 +456,15 @@ CREATE INDEX IF NOT EXISTS demands_live ON relation_task_consumers (state, produ
 -- starts here, not from every settled question (worker/tasks.js `redeliver`).
 CREATE INDEX IF NOT EXISTS demands_live_question ON relation_task_consumers (question) WHERE state = 'live';
 ALTER TABLE relation_task_consumers ADD COLUMN IF NOT EXISTS delivery_at TEXT COLLATE "C";
+ALTER TABLE relation_task_consumers ADD COLUMN IF NOT EXISTS zone BIGINT;
+DO $queue_zone$ BEGIN
+  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='state_compute_scheduling'::regclass AND conname='compute_zone_bounds') THEN
+    ALTER TABLE state_compute_scheduling ADD CONSTRAINT compute_zone_bounds CHECK(zone BETWEEN 0 AND 99) NOT VALID;
+  END IF;
+  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='relation_task_consumers'::regclass AND conname='consumer_zone_bounds') THEN
+    ALTER TABLE relation_task_consumers ADD CONSTRAINT consumer_zone_bounds CHECK(zone BETWEEN 0 AND 99) NOT VALID;
+  END IF;
+END $queue_zone$;
 CREATE INDEX IF NOT EXISTS demands_delivery ON relation_task_consumers (delivery_at, question) WHERE state = 'live' AND delivery_at IS NOT NULL;
 -- THE LIVE DEMANDS PAST DUE, a thousand of a million and a half (worker/tasks.js
 -- `audit`): the planner prices `due_at` over every state, where served rows are
@@ -808,6 +858,10 @@ CREATE INDEX IF NOT EXISTS computation_witnesses_device ON relation_computation_
 CREATE OR REPLACE FUNCTION compute_source_exists(text,text,text,text) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
 DECLARE p jsonb;
 BEGIN
+  IF $1='build_workflow' THEN
+    RETURN EXISTS(SELECT 1 FROM state_build_workflow_nodes n JOIN entity_build_workflows f ON f.id=n.workflow
+      WHERE n.workflow=split_part($2,'|',1) AND n.id=split_part($2,'|',2) AND n.definition->>'computation'=$4);
+  END IF;
   IF $1='user_calculation' THEN RETURN EXISTS(SELECT 1 FROM entity_user_calculation_requests t WHERE t.id=$2 AND t.question=$4);
   ELSIF $1='family_build' THEN RETURN EXISTS(SELECT 1 FROM entity_family_search_requests t WHERE t.id=$2);
   ELSIF $1 IN ('chat','survey') THEN RETURN EXISTS(SELECT 1 FROM entity_appraisal_requests a WHERE a.code=$2 AND a.request IS NOT NULL);
@@ -821,10 +875,12 @@ BEGIN
   END IF;
   RETURN false;
 END $$;
-CREATE OR REPLACE FUNCTION compute_task_has_source(text) RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT EXISTS(SELECT 1 FROM relation_task_consumers d WHERE d.question=$1 AND d.state='live'
+CREATE OR REPLACE FUNCTION compute_task_has_source(text) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  RETURN EXISTS(SELECT 1 FROM relation_task_consumers d WHERE d.question=$1 AND d.state='live'
     AND compute_source_exists(d.producer,d.ref,d.payload,$1))
-$$;
+    OR EXISTS(SELECT 1 FROM state_build_workflow_nodes n JOIN state_build_workflows f ON f.id=n.workflow WHERE n.computation=$1 AND f.state='active');
+END $$;
 CREATE TABLE IF NOT EXISTS record_compute_queue_removals (
   task_id BIGINT PRIMARY KEY,
   computation TEXT COLLATE "C" NOT NULL,

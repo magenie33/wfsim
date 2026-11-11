@@ -66,7 +66,7 @@ export async function authorizeHarvest(env, input, now = Date.now(), httpRequest
       FROM state_compute_work q JOIN relation_task_consumers d ON d.question = q.id AND d.state = 'live'
       WHERE q.lease = ?1::text AND q.leased_to = ?2::text AND q.lease_until >= ?3::text
         AND q.verb IN ('optimize', 'optimize_report') AND (?4::text = '' OR q.id = ?4::text)
-        AND d.producer IN ('chat', 'survey', 'user_calculation', 'family_build')
+        AND d.producer IN ('chat', 'survey', 'user_calculation', 'family_build', 'build_workflow')
       ORDER BY CASE WHEN d.producer='user_calculation' AND coalesce(d.payload::jsonb->>'board_upload','false')<>'true' THEN 1 ELSE 0 END,
         d.due_at, d.asked_at, d.producer, d.ref LIMIT 1`)
     .bind(input.lease, input.verifier, iso(now), input.question || "").first();
@@ -79,6 +79,6 @@ export async function authorizeHarvest(env, input, now = Date.now(), httpRequest
   if (row.producer === "user_calculation" && JSON.parse(row.payload || '{}').board_upload !== true)
     return { disabled: true, public: { disabled: true } };
   return issue(env, { question: row.id, weapon: request.weapon, engine: input.engine,
-    initiator: row.producer === "survey" || row.producer === "family_build" ? "system" : row.initiator || null,
-    family_source: row.producer === "family_build" ? row.ref : null }, now);
+    initiator: row.producer === "survey" || row.producer === "family_build" || row.producer === "build_workflow" ? "system" : row.initiator || null,
+    family_source: row.producer === "family_build" ? row.ref : row.producer === "build_workflow" ? "workflow-candidate|"+row.ref : null }, now);
 }

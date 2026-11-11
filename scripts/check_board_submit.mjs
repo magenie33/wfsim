@@ -387,7 +387,7 @@ function harvestFixture(producer = "user_calculation") {
   db.held = true;
   db.leaseUntil = Date.now() + 60_000;
   db.search = { id: HARVEST_QUESTION, verb: "optimize_report", request: JSON.stringify({ weapon: PAYLOAD.weapon, strategy: "quick", __board_upload: true }),
-    producer, ref: "trusted_transfer", initiator: "user:original_asker" };
+    producer, payload:JSON.stringify({board_upload:true}),ref: "trusted_transfer", initiator: "user:original_asker" };
   db.appraisal = { code: "TEST7", channel: "qq", asker: "original-chat-asker", weapon: PAYLOAD.weapon,
     engine: "check-engine", at: new Date().toISOString(),
     request: JSON.stringify({ request: { weapon: PAYLOAD.weapon, strategy: "quick" }, context: { weapon: PAYLOAD.weapon } }) };
@@ -459,6 +459,7 @@ function harvestFixture(producer = "user_calculation") {
   for (const flag of [false, undefined]) {
     const fixture = harvestFixture();
     fixture.db.search.request = JSON.stringify({ weapon: PAYLOAD.weapon, strategy: "quick", __board_upload: flag });
+    fixture.db.search.payload=JSON.stringify({board_upload:flag});
     const response = await fixture.post({ builds: [], harvest: { ...fixture.source, __board_upload: true } });
     const result = await response.json();
     check("a personal search without captured consent can compute without a build receipt", response.ok && result.ok

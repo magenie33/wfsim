@@ -292,13 +292,13 @@ async function requestBoardReview(task, result, record) {
   const id = "board-review-request:" + record.id;
   boardReviewTrackers.set(id, { id, identity: matched.identity, weapon: matched.weapon, ruler: matched.ruler, mode: matched.mode,
     engine: task.engine, observed_score: measured, baseline_score: old, metric: metric.id,
-    source: record.id, sources: [record.id], state: "submitting", phase: "Requesting board calibration" });
+    request: structuredClone(task.request), source: record.id, sources: [record.id], state: "submitting", phase: "Requesting board calibration" });
   await saveBoardReviewTrackers(); renderBoardReviewNote(); scheduleUserTasks(); scheduleBoardReviews(0);
 }
 async function acceptBoardReview(task) {
   const response = await fetch("/api/board/review", { method: "POST", headers: { "content-type": "application/json" },
     body: JSON.stringify({ identity: task.identity, ruler: task.ruler, mode: task.mode, engine: task.engine,
-      observed_score: task.observed_score, baseline_score: task.baseline_score, metric: task.metric }), signal: timeoutSignal(15_000) });
+      observed_score: task.observed_score, baseline_score: task.baseline_score, metric: task.metric, request: task.request }), signal: timeoutSignal(15_000) });
   const accepted = await response.json().catch(() => null);
   if (!boardReviewTrackers.has(task.id)) return;
   if (response.ok && accepted?.ok && accepted.skipped) {
@@ -322,7 +322,7 @@ async function saveBoardReviewTrackers() {
     const discarded = [...boardReviewTrackers.values()].find(task => !boardReviewActive(task)) || boardReviewTrackers.values().next().value;
     boardReviewTrackers.delete(discarded.id);
   }
-  const list = [...boardReviewTrackers.values()].slice(-50).map(({ id, review, identity, weapon, ruler, mode, engine, observed_score, baseline_score, metric, source, sources, state, publication, publication_attempts }) => ({ id, review, identity, weapon, ruler, mode, engine, observed_score, baseline_score, metric, source, sources, state, publication, publication_attempts }));
+  const list = [...boardReviewTrackers.values()].slice(-50).map(({ id, review, identity, weapon, ruler, mode, engine, observed_score, baseline_score, metric, request, source, sources, state, publication, publication_attempts }) => ({ id, review, identity, weapon, ruler, mode, engine, observed_score, baseline_score, metric, request, source, sources, state, publication, publication_attempts }));
   await queue.store.value("board-review-trackers", list);
 }
 function scheduleBoardReviews(ms = 10_000) {

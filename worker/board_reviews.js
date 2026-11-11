@@ -74,7 +74,7 @@ export async function boardReviewsRoute(request, env, path, ctx) {
   if (path === "/api/board/retire") return retireScores(request, env);
   if (request.method !== "POST" || !sameSite(request)) return json({ ok: false, error: "bad request" }, 403);
   const raw = await request.text();
-  if (raw.length > 8192) return json({ ok: false, error: "payload too large" }, 413);
+  if (raw.length > 65536) return json({ ok: false, error: "payload too large" }, 413);
   let body;
   try { body = JSON.parse(raw); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
   if (!body || typeof body !== "object" || Array.isArray(body)) return json({ ok: false, error: "bad request" }, 400);
@@ -91,8 +91,9 @@ export async function boardReviewsRoute(request, env, path, ctx) {
   }
   if (path !== "/api/board/review") return json({ ok: false, error: "not found" }, 404);
   if (!ID.test(body.identity || "") || !SLUG.test(body.ruler || "") || !SLUG.test(body.mode || "") || !ENGINE_ID.test(body.engine || "")
+      || !body.request || typeof body.request!=="object" || Array.isArray(body.request)
       || !Number.isFinite(body.observed_score) || !Number.isFinite(body.baseline_score) || !SLUG.test(body.metric || "")
-      || Object.keys(body).some(key => !["identity", "ruler", "mode", "engine", "observed_score", "baseline_score", "metric"].includes(key)))
+      || Object.keys(body).some(key => !["identity", "ruler", "mode", "engine", "observed_score", "baseline_score", "metric", "request"].includes(key)))
     return json({ ok: false, error: "invalid board row" }, 400);
   const served = await servedRelease(env);
   if (!served.engine || served.engine !== body.engine) return json({ ok: false, error: "The engine changed. Run this calculation again from its page." }, 409);
@@ -112,13 +113,13 @@ async function requestReview(env, body, captured = null, repair = false) {
       return json({ ok: true, accepted: false, skipped: true });
   }
   const observation = captured || repair ? null : { score: body.observed_score, metric: body.metric,
-    engine: body.engine, baseline_score: baseline.score, baseline_finished_at: baseline.finished_at };
+    engine: body.engine, baseline_score: baseline.score, baseline_finished_at: baseline.finished_at,request:body.request,ruler:body.ruler,mode:body.mode };
   const ref = calculationId(body.identity, body.ruler, body.mode), now = Date.now();
   await closeWithdrawn(env, ref);
   const round = repair ? iso(now) : iso(Math.floor(now / BOARD_REVIEW_COOLDOWN_MS) * BOARD_REVIEW_COOLDOWN_MS);
   const old = await db.prepare("SELECT * FROM entity_measurement_reviews WHERE ref = ? ORDER BY (state='waiting') DESC,created_at DESC LIMIT 1").bind(ref).first();
   if (old && (old.state === "waiting" || (!repair && Date.parse(old.created_at) > now - BOARD_REVIEW_COOLDOWN_MS))) {
-    if (old.state === "waiting" && !repair) await askReview(env, old, true, observation);
+    if (old.state === "waiting" && !repair && !observation) await askReview(env, old, true);
     return json({ ok: true, accepted: false, id: old.id, next_ms: 10_000 });
   }
   if (!repair && (await db.prepare("SELECT count(*) AS n FROM entity_measurement_reviews WHERE engine = ? AND state = 'waiting'").bind(body.engine).first()).n >= 1000)
@@ -126,17 +127,23 @@ async function requestReview(env, body, captured = null, repair = false) {
   const id = crypto.randomUUID();
   const input = { record: JSON.parse(baseline.record), ruler: body.ruler, mode: body.mode, review: id };
   const question = await questionId("simulate", input);
-  const stored = await db.prepare(`INSERT INTO entity_measurement_reviews (ref, id, round_at, identity, ruler, mode, engine, question, record, state,
+  const registration = db.prepare(`INSERT INTO entity_measurement_reviews (ref, id, round_at, identity, ruler, mode, engine, question, record, state,
       baseline_score, baseline_metric, baseline_cost_seconds, baseline_review_id, baseline_by, baseline_started_at, baseline_finished_at, created_at)
     SELECT ?1::text, ?2::text, ?12::text, s.identity, s.ruler, s.mode, ?3::text, ?4::text, ?13::text, 'waiting', s.score, s.metric,
       s.cost_seconds, s.review_id, s.measured_by, s.started_at, s.finished_at, ?5::text FROM state_board_measurement_selection s
       WHERE s.identity = ?6::text AND s.ruler = ?7::text AND s.mode = ?8::text
       AND s.finished_at = ?9::text AND s.measured_by = ?10::text AND s.score = ?11::double precision
     ON CONFLICT DO NOTHING RETURNING *`).bind(ref, id, body.engine, question, iso(now), body.identity, body.ruler, body.mode,
-      baseline.finished_at, baseline.measured_by, baseline.score, round, baseline.record).first();
+      baseline.finished_at, baseline.measured_by, baseline.score, round, baseline.record);
+  const inbox=observation ? [db.prepare(`INSERT INTO record_build_submissions(id,at,record,initiator,observation)
+    SELECT ?1::text,?2::text,?3::text,'anonymous',?4::text WHERE EXISTS(
+      SELECT 1 FROM entity_measurement_reviews WHERE id=?5::text AND state='waiting') ON CONFLICT DO NOTHING`)
+    .bind('review:'+id,iso(now),JSON.stringify({...JSON.parse(baseline.record),benchmark:body.ruler,mode:body.mode}),
+      JSON.stringify({...observation,review:id}),id)] : [];
+  const stored=(await db.batch([registration,...inbox]))[0].results[0];
   const review = stored || await db.prepare("SELECT * FROM entity_measurement_reviews WHERE ref = ? ORDER BY (state='waiting') DESC,created_at DESC LIMIT 1").bind(ref).first();
   if (!review) return json({ ok: false, error: "The board changed. Run this calculation again." }, 409);
-  if (review.state === "waiting" && !repair) await askReview(env, review, true, observation);
+  if (review.state === "waiting" && !repair && !observation) await askReview(env, review, true);
   return json({ ok: true, accepted: review.id === id, id: review.id, next_ms: 10_000 });
 }
 
@@ -240,7 +247,7 @@ async function reviewStatus(env, ids) {
   return json({ ok: true, next_ms: 10_000, reviews: results.map(row => ({ id: row.id, identity: row.identity, ruler: row.ruler, mode: row.mode,
     record: JSON.parse(row.record),
     state: row.state === "waiting" && row.phase === "withdrawn" ? "failed" : row.state,
-    phase: ["disputed", "nondeterministic", "spot"].includes(row.phase) ? "Checking" : row.lease_until > now ? "Computing and verifying" : "Waiting for community compute",
+    phase: row.task_id==null && row.workflow==null ? "Preparing task" : ["disputed", "nondeterministic", "spot"].includes(row.phase) ? "Checking" : row.lease_until > now ? "Computing and verifying" : "Waiting for community compute",
     witnesses: Math.min(2, row.witnesses), created_at: row.created_at, completed_at: row.completed_at,
     engine: row.result_engine || row.engine, score: row.state === "succeeded" && row.canon ? JSON.parse(row.canon).score : null,
     baseline: row.baseline_score, current_score: row.current_score, metric: row.current_metric, current_by: row.current_by })) });

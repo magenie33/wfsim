@@ -89,6 +89,25 @@ pub(crate) fn normalize(
     out.insert("duration".into(), json!(fight.duration));
     out.insert("runs".into(), json!(fight.runs));
     out.insert("seed".into(), json!(fight.seed));
+    for key in ["abilities","apl","auras","buff_triggers_off","custom_enemies","formation","shards","also_acting"] {
+        if !out.get(key).is_some_and(Value::is_array) {out.insert(key.into(),json!([]));}
+    }
+    for (key,default) in [("frame",json!("")),("ability_strength",Value::Null),("aim_at",Value::Null),
+        ("guardian_aura",json!(false)),("ancient_protector_aura",json!(false)),("scope_zoom",json!(0)),("squad_size",json!(1))] {
+        if !out.contains_key(key) {out.insert(key.into(),default);}
+    }
+    if !out.contains_key("arcane") {out.insert("arcane".into(),json!([]));}
+    let arcs=initial.get("arcane").and_then(Value::as_array).map_or(0,Vec::len);
+    out.insert("arcane_rank".into(),json!((0..arcs).map(|i|initial["arcane_rank"][i].as_u64()).collect::<Vec<_>>()));
+    if !out.contains_key("valence_element") {out.insert("valence_element".into(),json!(""));}
+    if !out.contains_key("valence_bonus") {out.insert("valence_bonus".into(),json!(0));}
+    // An empty configured map is the natural policy. Legacy overrides keep
+    // their separate constructor path until an explicit map supersedes them.
+    if fight.buff_cfg.is_some() || (!crate::request::get_bool(&initial,"assume_max",false)
+        && crate::request::get_bool(&initial,"frenzy",true)) {
+        out.entry("buffs").or_insert_with(||json!({}));
+        out.remove("assume_max");out.remove("frenzy");
+    }
     out.insert(
         "rivens".into(),
         Value::Array(rivens.into_values().collect()),

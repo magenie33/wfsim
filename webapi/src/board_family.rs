@@ -49,10 +49,10 @@ pub fn transfers(record: &Value, ruler: &str, mode: &str) -> Vec<Value> {
                 wfsim_engine::data::evolutions::for_weapon(&w.id).iter().any(|e| e.id == **id)).collect();
             let start = json!({ "slots": slots, "arcane": source.arcanes, "evolutions": evos,
                 "mode": played.id, "valence_element": source.valence, "fixed": fixed });
-            let shape = source.riven.as_ref().map(|s| json!({ "riven_pos": s.bonuses, "riven_neg": s.malus }));
+            let shape = source.riven.as_ref().map(|s| json!({ "riven_pos": s.bonuses, "riven_neg": s.malus, "riven_rolls": if source.riven_rolls.is_empty() {wfsim_engine::build::rivens::default_rolls(s)} else {source.riven_rolls.clone()} }));
             if let Some(s) = &source.riven {
                 let class = wfsim_engine::build::rivens::class_for_weapon(&w.id)?;
-                let riven = wfsim_engine::build::rivens::god_roll(s, class);
+                let riven = if source.riven_rolls.is_empty() { wfsim_engine::build::rivens::god_roll(s, class) } else { s.at(class, &source.riven_rolls) };
                 request["rivens"] = crate::simulate::riven_request(&riven);
             }
             let obj = request.as_object_mut()?;
@@ -117,8 +117,9 @@ mod tests {
         let fixed = job["request"]["starts"][0]["fixed"].as_array().unwrap();
         assert_eq!(fixed.len(), 1);
         let idx = fixed[0]["idx"].as_u64().unwrap() as usize;
-        assert_eq!(job["request"]["starts"][0]["slots"][idx], crate::simulate::RIVEN_ITEM);
-        assert_eq!(job["context"]["rivens"][crate::simulate::RIVEN_ITEM]["riven_pos"], record["riven_pos"]);
+        let riven=job["request"]["starts"][0]["slots"][idx].as_str().unwrap();
+        assert!(riven.starts_with("riven:"));
+        assert_eq!(job["context"]["rivens"][riven]["riven_pos"], record["riven_pos"]);
         assert!(crate::parse_optimize(&job["request"]).is_ok());
     }
 

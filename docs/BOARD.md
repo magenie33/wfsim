@@ -8,10 +8,9 @@ number**. Everything else follows from it:
 - a forged score is impossible, because no score is ever accepted;
 - a correction retains the build, retires its incorrect measurement and asks
   for independent remeasurement. Nobody is asked to resubmit;
-- **THE STORE IS A LIBRARY OF BUILDS AND EVERY RULER CROSSES THE WHOLE OF IT**. A submission carries no score, so the ruler it happened to be
-  measured under was never a property of the record. ANY fight can upload, and
-  a new ruler is scored from the library the day it lands rather than waiting
-  for anyone to resubmit;
+- the library retains all legal encountered builds. First registration captures
+  the current boards and family once. Later definitions require an explicit
+  system task; resubmission of a known build does not backfill them;
 - **…AND EVERY MODE OF THE WEAPON IS SCORED FROM IT.** The mode a build was
   tuned for was never a property of the record either — mods are equipped on the
   WEAPON and a mode is how it is fired, so nothing about a build can become
@@ -56,70 +55,27 @@ row bytes and measurement clocks remain intact; listed counts follow the rows,
 and submission counts retain the last full projection. No row or score is
 added. The daily full projection still reads the authoritative facts.
 
-## Family candidates
+## Build workflows
 
-An arriving library build seeds one quick search for each other roster weapon
-with the same nonempty riven family and weapon slot. Intake emits these
-requests for the default corner alone; it never simulates or searches. It reads
-only arrivals, with no historical library sweep.
+First legal registration and a matching-environment numeric correction use one
+captured expansion. Its rules, storage and queue boundaries are specified in
+[COMPUTE_TASKS.md](COMPUTE_TASKS.md). The original build and complete legal family
+copies receive measurements across their captured boards and sustainable modes.
+An incompatible copy retains compatible search positions, runs the existing
+quick optimizer, then measures its accepted output. Derived output never
+restarts family expansion.
 
-`webapi::board_family` builds each target request from the ruler's scenario and
-the source configuration. Compatible main cards keep their relative element
-order, unavailable cards become empty positions, and unavailable evolutions
-are left for the target to choose. Modular parts and stances use the target's
-legal choices. A riven keeps its shape, is pinned in the start, and resolves
-its rolls through the target weapon. The preset's Four elements strategy processes
-that single start; the quick search fills missing positions and descends over
-the target's full candidate scope, including its
-exclusive cards. Its result is a candidate, with no claim of global optimality.
+Native intake preserves the actual canonical build. Build and intent storage
+commit together before their source inbox rows are spent. A retry reuses both;
+a failed admission leaves the build and workflow absent. Known global builds
+create no ordinary intake work, regardless of their visible rank or missing
+scores. Storage legality is distinct from eligibility on a specific ruler.
 
-`ship_builds.sh` lands the source builds, then sends the emitted requests to
-factory-authenticated `POST /api/board/family`, then spends the source inbox
-rows. `family_transfers` retains one key per source build, target weapon and ruler.
-Engine identity records admission provenance. Repeated arrivals share it. Interrupted admission resumes
-from that table; completed transfers are not recreated by a library scan.
-
-Admission acknowledges durable requests without dispatching historical work in
-the HTTP request. The watchdog registers admitted transfers in bounded packs.
-The shipper deduplicates transfer identities, bounds each request by rows and
-bytes, and keeps one engine and request body across transient retries. An
-engine change can acknowledge already admitted requests; missing admissions
-for the prior engine remain unacknowledged and retain their source inbox rows.
-
-Build storage and inbox deletion use bounded JSON batches over the pipeline's
-existing database connection. Duplicate build ids keep their last input record.
-Only these idempotent writes retry transient connection failures; permanent
-build-write refusals stop the pass before family admission or inbox deletion.
-An inbox read supplies a bounded prefix for intake. Reaching its page budget
-leaves remaining arrivals for a later pass without refusing the prefix already read.
-
-Hourly intake processes at most 100 arrivals and 1 MiB of input per batch,
-using the existing canonical intake binary. Each batch stores builds, admits
-family requests and durably asks the named calculations before spending its
-arrivals. Failed or incomplete acknowledgments retain those arrivals. Completed
-batches survive a later failure or deadline; replay shares existing calculation
-keys and preserves their first nonempty initiator and original queue batch.
-A temporary disk index keeps each build's first input timestamp across batches
-within the pass, with a bounded memory cache. Scoring consumes already admitted
-calculations independently of intake.
-
-The `family_build` producer asks the existing `optimize_report` verb as system
-work, without a waiting player, under the normal fair scheduler. Clients with
-`calculation-reports-v1` reproduce complete reports; independent agreement
-submits the winner through the board's ordinary door. The website and Worker
-use the same result-to-record function. No optimizer score becomes a published
-board score: the target record goes through intake and owes its own formal
-measurements across every admitted ruler and sustainable mode.
-
-The derived inbox row carries trusted `family_source` provenance outside the
-build. Public submissions cannot supply it. Intake stores and queues derived
-records normally but emits no further family requests from them. Delivery
-retries use one deterministic inbox id, including a retry after submission
-landed but completion did not. This bounds propagation to one generation.
-
-Apply `worker/pg/library.sql` and the daemon's grants before deploying the Worker
-and the intake scripts. The mechanism starts with subsequent arrivals; no
-backfill or manual resubmission is required.
+The legacy family admission endpoint returns its disabled state. Existing
+recorded family requests continue to compute and deliver, without release-based
+reopening. Trusted derived provenance is outside the build and cannot be
+supplied by a public upload. Accepted optimizer continuations retain their
+parent scope; intermediate candidates only enter the build library.
 
 ## Who computes the board
 
@@ -892,7 +848,7 @@ through a Cloudflare Access TCP tunnel to `pg.wfsim.app`.
 
 | database | holds | worker binding | DDL |
 | --- | --- | --- | --- |
-| `wfsim` | public builds, computation inputs and task rounds, accepted outputs, current scheduling and published measurements, consumers, evidence and contribution accounting | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql`, `worker/pg/sync.sql`, `worker/pg/inventory.sql` |
+| `wfsim` | public builds, computation inputs and task rounds, accepted outputs, current scheduling and published measurements, consumers, evidence and contribution accounting | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql`, `worker/pg/sync.sql`, `worker/pg/inventory.sql`, `worker/pg/build_workflows.sql` |
 | `wfsim_accounts` | the accounts — every table the open half and the paid half name, under their own role | `HYPERDRIVE_ACCOUNTS` → `ACCOUNTS` | `worker/pg/accounts.sql` |
 
 `withDatabases` opens each from its binding; every query is Postgres text.
@@ -1090,15 +1046,21 @@ sudo -u postgres psql -c "CREATE ROLE wfsim_accounts LOGIN PASSWORD '…'" -c "C
 sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/pg/schema.sql
 sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/pg/library.sql
 sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/pg/sync.sql
+sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/pg/inventory.sql
+sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/pg/build_workflows.sql
 sudo -u postgres psql -d wfsim_accounts -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim_accounts' -f worker/pg/accounts.sql
 sudo -u postgres psql -d wfsim -c "CREATE ROLE wfsim_pipeline LOGIN PASSWORD '…'" \
-  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON inbox, builds, equipment_inbox, equipment_builds, scores, batches, queue TO wfsim_pipeline" \
-  -c "GRANT SELECT ON verifiers, verifier_hours, verifier_asks, adjustments, factory_events TO wfsim_pipeline" \
-  -c "GRANT SELECT (code, channel, request) ON appraisals TO wfsim_pipeline"
-sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f deploy/computation_grants.sql
+  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON record_build_submissions, entity_weapon_builds, record_equipment_submissions, entity_equipment_builds, state_board_measurement_selection, entity_compute_batches, state_board_pending_work TO wfsim_pipeline" \
+  -c "GRANT SELECT ON entity_compute_devices, record_hourly_compute_totals, record_hourly_work_requests, record_unowned_credit_transfers, record_factory_incidents TO wfsim_pipeline" \
+  -c "GRANT SELECT (code, channel, request) ON entity_appraisal_requests TO wfsim_pipeline"
+node scripts/task_schema.mjs > task-delivery.sql
+sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -f task-delivery.sql
 sudo -u postgres psql -d wfsim_accounts -c "CREATE ROLE wfsim_accounts_pipeline LOGIN PASSWORD '…'" \
-  -c "GRANT SELECT ON devices TO wfsim_accounts_pipeline"
+  -c "GRANT SELECT ON relation_account_compute_devices TO wfsim_accounts_pipeline"
 ```
+
+For existing installations, use the additive upgrade in
+[COMPUTE_TASKS.md](COMPUTE_TASKS.md), rather than the initial layout migration.
 
 A Hyperdrive config for each database as its owner, bound in `wrangler.jsonc`
 as `HYPERDRIVE` and `HYPERDRIVE_ACCOUNTS`. Repository secrets
@@ -1228,36 +1190,18 @@ finding:
 the request path leaves, and what one clean pass leaves after a pass that died
 at any call.
 
-### Fair share between producers
+### Queue zones
 
-**EARLIEST DEADLINE FIRST ALONE COLLAPSES UNDER OVERLOAD**, and this work never
-runs out: the batch due first takes every computer and every other producer
-misses its deadline (a survey's thousands of shapes, due together, hold the
-board's rows at zero for hours). So deadlines order work INSIDE a producer and
-compute is shared BETWEEN producers, as Linux's CFS shares a CPU and BOINC a
-volunteer's machine among projects — no amount of compute is set for any
-problem, and a new kind of task is a new producer that takes its share.
+The queue consists of zones `00`–`99`, each with FIFO order. Human requests use
+`00`, mismatch corrections `01`, and ordinary intake `03`. System commands may
+select a zone explicitly. Dispatch chooses the earliest zone with executable
+work, then its earliest eligible entry. A held lease, unsupported capability
+or dependency does not block the next eligible entry. Adding a source to an
+occupied computation may promote it, preserving its lease and joining the
+new zone's tail. Sustained early-zone arrivals can delay later zones.
 
-- **`producer_use`**, a row a producer: `used`, the compute charged to it,
-  over its `weight` (1 for all); `answer_ms`, the running mean of its answers'
-  fights (`PRODUCER_MEAN_SHARE`, about the last sixty).
-- **A HAND-OUT IS CHARGED** each question's `answer_ms`, in the statement
-  that leases it: an expensive survey shape counts as dozens of board rows, so
-  shares are of compute, not of questions. A lease nobody answers was still
-  handed out, and stays charged.
-- **THE PICK** (`fairSql`): each producer's head among what this witness may
-  answer, one probe each on `(state, producer, waits DESC, due_at, id)`; of
-  those, the waited-on first, then the least `used`. A pack is one producer's
-  rows. Where no producer's row finds a question the plain order does, so
-  liveness never rests on `producer_use`.
-  A busy witness that cannot take a standalone head chooses again among
-  packable rows, under the same producer order.
-- **NO SHARE IS BANKED.** A new producer starts at the least any has used, and
-  the watchdog lifts one with nothing open to the least used among those with
-  open work (`liftIdle`), so one that comes back after a quiet day is level,
-  not owed a day.
-- `questions.producer` is the producer of its earliest-due live demand, kept
-  where `due_at` is (`demandAll`, `restate`).
+Producer usage remains accounting and observation. It does not change queue
+order. Deadlines continue to determine eligibility for official fallback.
 
 ### Who asked
 
@@ -1318,27 +1262,9 @@ a paid feature or money; it changes no number, score or witness rule.
 
 ### Merit priority
 
-**A SIGNED-IN PLAYER'S OWN ARRIVALS, SOONER, PAID ONLY WHEN THEY WENT AHEAD OF
-SOMEONE** (`holdPriority`, `settleMerit`). Waited-on work still goes first and
-is never held; a system row, an anonymous one and a row the board already
-scored never move.
-
-- **THE SWITCH** (the account panel, `/api/account/merit`) is the consent: while
-  it is on, `merit_codes` maps the account's `user:` code to it, and turning it
-  off deletes the mapping. Nothing else maps a code to an account.
-- **AT THE ASK** (`ask`, an `arrivals-` batch): each row whose queue row names a
-  switched-on account is priced — the median work of the recent paid answers on
-  its ruler and mode, in points, up to the next ten, else
-  `merit_price_default` — and, while the balance pays it, held: the price leaves
-  the balance (`spend`), a `merit_holds` row keeps the old and the new
-  deadline, and the row is due `merit_priority_pct` (30%) of its deadline
-  sooner. At most `merit_rows_per_hour` an account a UTC hour, and only while the
-  holds are under `merit_share_pct` of the board's live rows.
-- **SETTLED** by the ten-minute cron once a computer took the row: CHARGED where
-  an open row of its producer nobody paid for, opened before the hold, was due
-  between the two deadlines; REFUNDED where it passed nobody, where its ask was
-  withdrawn, or after `merit_hold_max_ms`. A refund is one ledger row keyed by
-  the hold, so settling twice refunds once; a settled hold keeps no code.
+Queue admission does not create Merit priority holds. Existing holds retain
+their settlement and refund records. Queue zones and FIFO determine execution
+order; account status does not move a computation ahead of its zone.
 
 ## Compute orders
 
@@ -1967,46 +1893,30 @@ The bill still reports what is SPENT, not what earned room: a build with fewer
 mods than mastery has polarizations buys all five, and the last land on empty
 slots.
 
-## Rivens: a SHAPE, not an item
+## Riven builds and shapes
 
-A riven ITEM stays off the board: a board that counted personal random items
-would rank luck. What is on the board is not the item.
+A submission retains the actual normalized build: mod ranks, ordered riven
+stats and their paired rolls, evolutions and the other declared build axes.
+The library retains every legal build independently of the displayed board.
+Two copies with the same stats and different rolls are different builds.
+Personal item names and editable card metadata remain outside build identity.
 
-**A SUBMISSION CARRIES A SHAPE** — which stats the card rolled, and which one
-is the malus. Nothing else: a roll is one person's luck, and the player's own
-numbers never leave the browser. It is a statement anybody can act on ("roll
-this weapon for these stats"), and it carries no free-text field a player
-authors.
+First intake captures the current boards and family and creates the shared
+workflow described in [COMPUTE_TASKS.md](COMPUTE_TASKS.md). It does not generate
+additional riven corners or mod ranks. Repeated intake of an existing build
+creates no work. Explicit system requests own additional coverage.
 
-**AND THE LIBRARY HOLDS A BUILD**, which needs numbers. `wfsim-intake` stores
-the GOD ROLL — every bonus at its ceiling, the malus at its floor — which is the
-same rule that scores every row at full Forma, every mod at max rank and every
-valence at the roll's maximum: anything a player can eventually reach is not
-part of what a row states. Two players who rolled the same stats submitted the
-same build.
+Publication groups the measured corners of one shape into one row
+(`one_row_per_shape`), selecting its best score and preferring the default
+corner on a tie. This presentation does not merge their stored build identities.
+A near-tie follows the stored score until per-measurement spread is available.
 
-**AND WHERE THE SIGN HAS STOPPED ANSWERING, THE OTHER END IS A BUILD OF ITS
-OWN.** Intake stores every corner of the shape and asks a FIGHT for the default
-alone; which corner is best is a comparison of SCORES, and the scorer is what
-banks those. Three things follow, and they are the whole of the rule:
+Intake runs no fights. The workflow sends every required measurement or
+incompatible-family search through normal computation admission and verification.
 
-- **an alternative corner waits for its default to clear the entry line**
-  (`board::entry`). A riven nobody will see on the board is a riven whose best
-  corner nobody will read, and that question costs a fight to answer.
-- **the corners of one shape publish as ONE ROW**, the best-scoring one, a tie
-  going to the god roll (`one_row_per_shape`). The advice is the shape; two
-  rows differing only in which end a stat landed on is that advice twice.
-- **and the tolerance is gone until the standard error is banked.** Two corners
-  inside the ruler's own noise should read as a draw; `scores` has a column for
-  the number and none for its spread, so a near-tie is settled by whichever came
-  out higher — the way every other near-tie on this board is.
-
-**AND NO FIGHT IS RUN AT INTAKE**, which is the whole of why this shape and not
-another. A fight there is the SCORER's fight run twice — once to pick a winner
-and throw the number away, once to bank it — which is two answers to one
-question with the evidence in the discarded half. It is also single-threaded
-and hourly, where the scorer fans out to 32 shards: 20-182 s a riven record
-against 0.01 s.
+The engine's search candidates use `build::rivens::ambiguous_stats` to identify
+stats whose best bound depends on the fight. This is a search rule; it does not
+create intake work. Its defined cases follow.
 
 **WHICH STATS GET MORE THAN ONE CORNER AT ALL** is
 `build::rivens::ambiguous_stats`. Three sources and no fourth:
@@ -2039,31 +1949,10 @@ against 0.01 s.
   a row is missing — an extra row costs two fights, a missing one publishes a
   card the fight would have argued with.
 
-**A CARD'S RANK IS A CORNER THE SAME WAY, BY NAME.** A submitted rank is
-dropped and every card is stored at max rank, except the cards
-`data/search/every_rank.yaml` names: each of those in the build is a corner at
-every rank, crossed with every riven corner: a low-rank Hunter Track moves a
-deep Status Duration malus back up the band. A card joins the list by name,
-never by resembling one on it, and its rank is part of the id —
-`<card>@<rank>` in `mods` (`data::mods::RANK_MARK`).
-
-A variant names its full-rank parent through the same canonical mod ordering
-as intake. Restoring ranks can change drain order, so stripping rank suffixes
-alone does not produce the parent's identity. An existing unmeasured parent
-keeps its variants waiting; a qualifying measurement releases them. A legacy
-variant whose parent is absent retains its existing eligibility.
-
-Measured over the library: 1,948 of 2,418 riven builds have no ambiguous stat
-at all and are the god roll and nothing else; 470 name one worth more corners,
-and all but five of those name exactly one — two builds for a sign stat, five
-for a duration malus, not sixteen.
-
-**A CORNER RULE THAT GROWS REACHES ARRIVALS ALONE**, because intake reads the
-inbox and the inbox is emptied as it goes. The builds already stored get the
-new corners from `backfill.yml` (`scripts/backfill_duration_corners.sh`), run
-by hand: it sends each stored duration-malus record back through intake and
-writes only the inside rolls the library lacks, never an end — a record
-canonicalised differently since it was stored would come back under a new id.
+Submitted mod ranks remain part of the canonical build ID, encoded as
+`<card>@<rank>` in `mods` (`data::mods::RANK_MARK`). Search enumeration follows
+`data/search/every_rank.yaml`; storing one build does not enumerate those ranks.
+Already recorded variant tasks retain their existing eligibility rules.
 
 **AND WHEN TWO RULERS DISAGREE, THAT IS TWO ROWS AND ONE LIBRARY.** One ruler
 cannot speak for another and the card that wins a crowd need not win one
@@ -2098,10 +1987,9 @@ deciding which subset each weapon's shown row is drawn from.
 **TAKING A RIVEN ROW GIVES YOU THE RIVEN.** The record names no item, so the
 page creates one, named after the shape so taking the same row twice reuses it.
 
-**WHAT IT COSTS, AND WHO PAYS IT.** `wfsim-intake` does, once, when the record
-enters the library, and for four builds in five it costs nothing at all — the
-god roll needs no fight. A riven build is then an ordinary build with numbers on
-it, scored once like any other, and the scorer probes nothing.
+The captured workflow owns computation and durable delivery. Intake preserves
+entities and plans; the scorer stores accepted measurements. Neither result
+publication nor a derived build starts another family expansion.
 
 ### The Riven Analyst
 

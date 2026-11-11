@@ -40,7 +40,7 @@ let passed = 0;
 const check = async (name, fn) => { await fn(); passed++; console.log(`ok: ${name}`); };
 
 try {
-  await pg.exec(['schema', 'library', 'sync'].map(ddl).join('\n') + '\n' + inventorySql);
+  await pg.exec(['schema','library','sync','build_workflows'].map(ddl).join('\n') + '\n' + inventorySql);
   await check('source writes are tracked before the first generation exists', async () => {
     await build('a');
     assert.deepEqual((await changes()).map(r => [r.scope, r.key]), [['build', 'a']]);

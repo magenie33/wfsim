@@ -9,12 +9,14 @@ export function taskSchemaSql() {
   const schema = readFileSync(new URL("../worker/pg/schema.sql", import.meta.url), "utf8");
   const library = readFileSync(new URL("../worker/pg/library.sql", import.meta.url), "utf8");
   const sync = readFileSync(new URL("../worker/pg/sync.sql", import.meta.url), "utf8");
+  const workflows = readFileSync(new URL("../worker/pg/build_workflows.sql", import.meta.url), "utf8");
   const incremental = readFileSync(new URL("../worker/pg/inventory.sql", import.meta.url), "utf8");
-  const columns = ["relation_task_consumers delivery_at", "record_candidate_answers credit_work", "record_candidate_answers credit_at"].map(pair => {
+  const columns = ["relation_task_consumers delivery_at", "record_candidate_answers credit_work", "record_candidate_answers credit_at",
+    "state_compute_scheduling zone", "state_compute_scheduling zone_position", "state_compute_scheduling required_capability", "relation_task_consumers zone"].map(pair => {
     const [table, column] = pair.split(" ");
     return schema.match(new RegExp(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column}[^;]+;`))?.[0];
   });
-  const indexes = ["demands_delivery", "answers_credit_pending"].map(name =>
+  const indexes = ["demands_delivery", "answers_credit_pending", "compute_scheduling_zone"].map(name =>
     schema.match(new RegExp(`CREATE INDEX IF NOT EXISTS ${name}\\b[^;]+;`))?.[0]);
   const identity = [
     library.match(/CREATE OR REPLACE FUNCTION protect_retired_board_score[^]*?END \$\$;/)?.[0],
@@ -29,18 +31,44 @@ export function taskSchemaSql() {
     "REVOKE ALL ON FUNCTION compute_remove_untraced(text,bigint,text) FROM PUBLIC;",
     sync.match(/CREATE OR REPLACE FUNCTION factory_task_detail[^]*?END \$\$;/)?.[0],
   ];
+  const zonePrelude = schema.match(/CREATE OR REPLACE FUNCTION factory_default_zone[^]*?(?=CREATE TABLE IF NOT EXISTS state_compute_scheduling)/)?.[0];
+  const zones = [
+    schema.match(/DO \$queue_zone\$[^]*?END \$queue_zone\$;/)?.[0],
+    schema.match(/CREATE OR REPLACE VIEW state_compute_work[^]*?FROM state_compute_scheduling s;/)?.[0],
+    schema.match(/CREATE OR REPLACE FUNCTION compute_register_tasks[^]*?END \$\$;/)?.[0],
+    ...[...sync.matchAll(/CREATE OR REPLACE FUNCTION factory_head\([^]*?\$\$;/g)].map(m => m[0]),
+    sync.match(/CREATE OR REPLACE FUNCTION factory_take\([^]*?\$\$;/)?.[0],
+    ...['factory_take_pack_zoned','factory_take_pack','factory_lease_pack_zoned','factory_lease_pack'].map(name =>
+      sync.match(new RegExp('CREATE OR REPLACE FUNCTION '+name+'\\([^]*?\\$\\$;'))?.[0]),
+    sync.match(/CREATE OR REPLACE FUNCTION factory_eligible\([^]*?\$\$;/)?.[0],
+    sync.match(/CREATE OR REPLACE FUNCTION factory_moot_checks\([^]*?\$\$;/)?.[0],
+    sync.match(/CREATE OR REPLACE PROCEDURE board_sync_steps\([^]*?\$\$;/)?.[0],
+    sync.match(/CREATE OR REPLACE PROCEDURE board_sync\([^]*?END \$\$;/)?.[0],
+    sync.match(/CREATE OR REPLACE FUNCTION factory_restate\([^]*?\$\$;/)?.[0],
+  ];
+  if (!zonePrelude || zones.some(sql => !sql)) throw new Error("incomplete queue-zone schema");
   if (identity.some(sql => !sql)) throw new Error("incomplete compute identity schema");
   const guard = sync.match(/CREATE OR REPLACE FUNCTION factory_delivery_guard\([^]*?END \$\$;/)?.[0];
   const retention = sync.match(/CREATE OR REPLACE FUNCTION factory_past_safe\([^]*?\$\$;/)?.[0];
   const inventory = sync.match(/SELECT set_config\('search_path'[^\n]+\nCREATE OR REPLACE FUNCTION factory_inventory_rows\([^]*?\$\$;\nREVOKE[^;]+;/)?.[0];
   if (columns.some(x => !x) || indexes.some(x => !x) || !guard || !retention || !inventory) throw new Error("incomplete task-delivery schema");
-  return `SET ROLE wfsim;\nSET lock_timeout = '5s';\n${columns.join("\n")}\n${indexes.map(sql => sql.replace("CREATE INDEX ", "CREATE INDEX CONCURRENTLY ")).join("\n")}\n${guard}\n${retention}\n${inventory}\n${incremental}\n${identity.join("\n")}\nDO $grant$ BEGIN
+  return `SET ROLE wfsim;\nSET lock_timeout = '5s';\n${zonePrelude}\n${columns.join("\n")}\n${indexes.map(sql => sql.replace("CREATE INDEX ", "CREATE INDEX CONCURRENTLY ")).join("\n")}\n${zones.join("\n")}\n${guard}\n${retention}\n${inventory}\n${incremental}\n${workflows}\n${identity.join("\n")}\nDO $grant$ BEGIN
     IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_factoryd') THEN
       GRANT SELECT,INSERT ON relation_compute_task_sources TO wfsim_factoryd;
+      GRANT SELECT,INSERT ON state_producer_compute_usage TO wfsim_factoryd;
+      GRANT SELECT ON entity_weapon_builds TO wfsim_factoryd;
+      GRANT INSERT ON entity_compute_batches,entity_measurement_reviews TO wfsim_factoryd;
+      GRANT UPDATE(id) ON entity_compute_specs TO wfsim_factoryd;
+      GRANT SELECT ON entity_build_workflow_scopes,entity_build_workflows,entity_build_workflow_expansions,record_build_workflow_triggers TO wfsim_factoryd;
+      GRANT SELECT,UPDATE ON state_build_workflows,state_build_workflow_nodes TO wfsim_factoryd;
+      GRANT EXECUTE ON FUNCTION build_workflow_repair(text,text,text,text) TO wfsim_factoryd;
+      GRANT USAGE,SELECT ON SEQUENCE compute_queue_position TO wfsim_factoryd;
     END IF;
     IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_pipeline') THEN
       REVOKE ALL ON state_compute_inventory_invalidations,state_compute_inventory_generation,record_inventory_captures FROM wfsim_pipeline;
       REVOKE ALL ON SEQUENCE inventory_revision,inventory_generation,inventory_epoch_token FROM wfsim_pipeline;
+      GRANT SELECT ON state_build_inbox_inputs TO wfsim_pipeline;
+      GRANT EXECUTE ON FUNCTION build_intake_batch(text),build_spend_submissions(text) TO wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION factory_inventory_rows(text,text[]) TO wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION inventory_status(),inventory_begin(text,text,text),inventory_changes(bigint),
         inventory_inputs(text,text,text),inventory_cohort_rows(text,text,text),inventory_ack(text,text),inventory_publish(text),

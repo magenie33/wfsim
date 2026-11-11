@@ -148,6 +148,9 @@ try {
   good("db_library","backout",...args);
   check("pre-write backout restores original source bytes and old runtime functions",before===await fingerprint()
     && (await get("SELECT pg_get_function_result('public.factory_held(text,text,text,text,bigint)'::regprocedure) AS type")).type==="SETOF questions");
+  check("backout retains additive workflow objects only inside its prepared stage",(await get("SELECT to_regclass('public.entity_build_workflows') AS workflow,to_regclass('public.relation_compute_task_sources') AS sources")).workflow===null
+    && (await get("SELECT to_regclass('public.relation_compute_task_sources') AS sources")).sources===null);
+  check("backout restores the original daemon privilege boundary",!(await get("SELECT has_table_privilege('wfsim_factoryd','producer_use','INSERT') AS widened")).widened);
   await db.unsafe("INSERT INTO questions(id,verb,request,state,due_at,opened_at) VALUES('after-backout-new-input','simulate','{}','open','2026-11-10T00:00:00.000Z','2026-11-10T00:00:00.000Z')");
   good("db_library","reconcile",...args);good("db_library","activate",...args);
   const at="2026-11-10T01:00:00.000Z";

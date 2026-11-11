@@ -13,18 +13,21 @@ async function database() {
   const sql = postgres(url, { max: 8, fetch_types: false, onnotice: () => {}, connection: { search_path: schema, statement_timeout: 10000 },
     types: { bigint: { to: 20, from: [20], parse: Number, serialize: String } } });
   await sql.unsafe(`CREATE SCHEMA ${schema}`);
-  for (const name of ["schema", "library", "sync", "inventory"]) await sql.unsafe(readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta.url), "utf8"));
+  for (const name of ["schema", "library", "sync", "inventory", "build_workflows"]) await sql.unsafe(readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta.url), "utf8"));
   const query = async (text, args = []) => { const r = await sql.unsafe(text, args); return { rows: [...r], affected: r.count }; };
   return Object.assign(pgDb({ query, transaction: fn => sql.begin(tx => fn({ query: async (text, args) => {
     const r = await tx.unsafe(text, args); return { rows: [...r], affected: r.count };
   } })) }), {
     get: async (text, ...args) => (await query(placeholders(text),args)).rows[0] || null,
+    all: async (text,...args) => (await query(placeholders(text),args)).rows,
     run: async (text, ...args) => (await query(placeholders(text),args)).affected,
     close: async () => { await sql.unsafe(`DROP SCHEMA ${schema} CASCADE`); await sql.end(); },
   });
 }
 import { identityPage, applyIdentityEntry } from "./compute_identity.mjs";
 import { queueSourcePage } from "./compute_queue_sources.mjs";
+import { buildWorkflowCases,workflowProtocolCases } from "./check_build_workflows.mjs";
+import { queueZoneCases } from "./check_queue_zones.mjs";
 import { factory, questionId as productionQuestionId, canon } from "../worker/tasks.js";
 
 const hashSource = readFileSync(new URL("../worker/computation_input.js", import.meta.url),"utf8");
@@ -38,7 +41,7 @@ try {
   if (process.argv.includes("--break-source-guard")) {
     const source=readFileSync(new URL("../worker/pg/schema.sql",import.meta.url),"utf8");
     const definition=source.match(/CREATE OR REPLACE FUNCTION compute_admit_tasks[^]*?END \$\$;/)[0];
-    const from=definition.indexOf("  IF EXISTS(SELECT 1 FROM jsonb_array_elements(d) x WHERE"),until=definition.indexOf("  PERFORM compute_register_tasks",from);
+    const from=definition.indexOf("  IF EXISTS(SELECT 1 FROM jsonb_array_elements(d) x WHERE"),until=definition.indexOf("  FOR source IN SELECT value",from);
     assert.ok(from>0 && until>from);await db.run(definition.slice(0,from)+definition.slice(until));
   }
   const base = { build: "build", scenario: "scenario", runs: 1000 };
@@ -53,7 +56,7 @@ try {
   assert.equal((await db.get("SELECT task_id FROM state_compute_scheduling WHERE id=?", id)).task_id, original.task_id);
   assert.equal((await db.get("SELECT count(*) AS n FROM entity_compute_tasks WHERE computation=?", id)).n, 1);
   assert.equal((await db.get("SELECT count(*) AS n FROM relation_compute_task_sources WHERE task_id=?", original.task_id)).n, 2);
-  assert.equal((await db.get("SELECT producer FROM state_compute_scheduling WHERE id=?", id)).producer, "second");
+  assert.equal((await db.get("SELECT producer FROM state_compute_scheduling WHERE id=?", id)).producer, "first");
   await db.run("UPDATE state_compute_scheduling SET lease='held',leased_to='machine',lease_until='2999-01-01' WHERE id=?", id);
   await f.demand(env, ask("first", "request-three"), "engine-three", at + 1000);
   assert.equal((await db.get("SELECT lease FROM state_compute_scheduling WHERE id=?", id)).lease, "held");
@@ -118,5 +121,8 @@ try {
   assert.equal((await db.get("SELECT count(*) AS n FROM entity_compute_tasks WHERE computation=?",entry.spec.id)).n,1);
   assert.equal((await db.get("SELECT asked_at FROM relation_compute_task_sources WHERE task_id=?",moved.task_id)).asked_at,'2026-11-11');
   const audit=await queueSourcePage(db,{limit:100}); assert.ok(audit.scanned>0); assert.equal(audit.removed,0);
-  console.log("compute admission: shared identity, reordered priority, held execution, all origins, retries and atomic rejection pass");
+  await queueZoneCases(db);
+  await buildWorkflowCases(db);
+  await workflowProtocolCases();
+  console.log("compute admission: shared identity, queue zones, held execution, all origins, retries and atomic rejection pass");
 } finally { await db.close(); }

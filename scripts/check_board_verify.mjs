@@ -138,7 +138,7 @@ await L.run("SELECT compute_accept_result(?1::text,?2::bigint,'open','fact','{}'
   lost.id,lost.task_id,new Date(Date.now()-86_400_000).toISOString());
 const stuck = await post(boardTasksRoute, "/api/board/ask", { backfill: true }, TOKEN);
 check("a live demand left on a settled question is asked again by the backfill", stuck.asked === 1, JSON.stringify(stuck));
-check("...which opens an older engine's fact again for the served one", (await question("lost")).state === "open", (await question("lost")).state);
+check("...which reuses the accepted fact across deployments", (await question("lost")).state === "fact" && (await question("lost")).task_id === lost.task_id, (await question("lost")).state);
 
 console.log("\nhanded out, answered");
 check("a page that cannot fill a task is handed none", none(await work(A, { protocol: null })));
@@ -328,7 +328,8 @@ console.log("\npacks");
     && p1.pack.lease_ms === PACK_LEASE_MS
     && await every(rows, async (t) => (await question(t.identity)).lease === p1.pack.lease && (await question(t.identity)).leased_to === P)
     // THE FIRST IN ORDER: these forty share a deadline, so no row left open ranks before the pack's last.
-    && !await L.get("SELECT 1 FROM state_compute_work WHERE state = 'open' AND lease IS NULL AND id < ?", rows.map((t) => t.question).sort().at(-1)),
+    && !await L.get(`SELECT 1 FROM state_compute_work q WHERE state='open' AND lease IS NULL
+      AND (zone,zone_position,id)<(SELECT zone,zone_position,id FROM state_compute_work WHERE id=?)`,rows.at(-1).question),
     JSON.stringify(p1));
   const ahead1 = await work(P, { ip: "192.0.2.60", pace: 20_000, ahead: true });
   const ahead2 = await work(P, { ip: "192.0.2.60", pace: 20_000, ahead: true });
@@ -363,7 +364,7 @@ console.log("\npacks");
   // A ROW THE SCORER MEASURED MEANWHILE is not owed: left out of the pack and withdrawn.
   await free();
   const next = (await L.get(`SELECT d.ref FROM state_compute_work q JOIN relation_task_consumers d ON d.question = q.id WHERE q.state = 'open'
-    AND NOT EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.question = q.id) ORDER BY q.due_at, q.id LIMIT 1`)).ref.split("|")[0];
+    AND NOT EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.question = q.id) ORDER BY q.zone,q.zone_position,q.id LIMIT 1`)).ref.split("|")[0];
   await L.run("DELETE FROM state_board_pending_work WHERE build_id = ?", next);
   const p3 = await work(B, { ip: "198.51.100.62", pace: 20_000 });
   check("a row no longer owed is left out of a pack and withdrawn where it is found",

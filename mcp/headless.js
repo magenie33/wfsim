@@ -1689,8 +1689,10 @@ const headlessNewRivenId = () => "r" + Date.now().toString(36) + Math.random().t
 /// combine, so two players listing them in different orders describe one riven
 /// and must make one row — and its malus.
 function headlessRivenShape(spec) {
-  const ids = (xs) => (xs || []).map((x) => x && x.id).filter(Boolean);
-  return { riven_pos: ids(spec.bonuses || spec.positives).sort(), riven_neg: ((spec.malus || spec.curse) || {}).id || "" };
+  const bonuses=(spec.bonuses || spec.positives || []).filter(x=>x?.id).slice().sort((a,b)=>a.id.localeCompare(b.id));
+  const malus=spec.malus || spec.curse;
+  return {riven_pos:bonuses.map(x=>x.id),riven_neg:malus?.id || "",
+    ...(bonuses.length ? {riven_rolls:[...bonuses.map(x=>Number.isFinite(x.roll)?x.roll:1.1),...(malus?.id?[Number.isFinite(malus.roll)?malus.roll:0.9]:[])]}: {})};
 }
 
 /// A START AS `/api/optimize` READS ONE: the build's slots, its axes, its pins.

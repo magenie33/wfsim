@@ -34,7 +34,7 @@ async function run(script, ...args) {
   return r.status;
 }
 
-const schema = ["schema.sql", "library.sql", "sync.sql"].map((f) => readFileSync(new URL(`worker/pg/${f}`, ROOT), "utf8")).join("\n");
+const schema = ["schema.sql", "library.sql", "sync.sql", "inventory.sql", "build_workflows.sql"].map((f) => readFileSync(new URL(`worker/pg/${f}`, ROOT), "utf8")).join("\n");
 {
   const { PGlite } = await import("./pg/node_modules/@electric-sql/pglite/dist/index.js");
   const pg = new PGlite(join(dir, "db"));
@@ -50,7 +50,7 @@ await query("INSERT INTO record_build_submissions (id, at, record) VALUES (?, ?,
   ["i1", "2026-10-01", JSON.stringify(record), "i2", "2026-10-01", JSON.stringify({ weapon: "braton", mods: [] })]);
 
 check("the inbox is read", await run("fetch_inbox.sh", "inbox.ndjson") === 0 && read("inbox.ndjson").length === 2);
-file("builds.ndjson", `${JSON.stringify({ id: "b1", at: "2026-10-01", record })}\n`);
+file("builds.ndjson", `${JSON.stringify({ derived:true, id: "b1", at: "2026-10-01", record })}\n`);
 file("done.txt", "i1\ni2\n");
 check("a build is shipped and its arrivals spent", await run("ship_builds.sh", "builds.ndjson", "done.txt") === 0
   && (await query("SELECT weapon FROM entity_weapon_builds WHERE id = 'b1'"))[0]?.weapon === "torid"
@@ -71,14 +71,14 @@ check("equipment builds land outside weapon scores before their arrivals are spe
   && (await query("SELECT count(*) AS n FROM entity_weapon_builds"))[0].n === 1);
 
 {
-  const bulk = [{ id: "bulk-repeat", at: "first", record: { weapon: "braton", mods: [] } },
+  const bulk = [{ id: "bulk-repeat", at: "first", record },
     { id: "bulk-repeat", at: "last", record }];
   for (let i = 0; i < 2505; i++) {
     bulk.push({ id: `bulk-build-${i}`, at: "first", record });
     if (i < 1205) bulk.push({ id: `bulk-equipment-${i}`, at: "first", record: equipment });
   }
-  bulk.push({ id: "bulk-build-0", at: "last", record: { ...record, mods: ["split_chamber"] } });
-  const source = file("bulk-builds.ndjson", bulk.map(row => JSON.stringify(row)).join("\n") + "\n");
+  bulk.push({ id: "bulk-build-0", at: "last", record });
+  const source = file("bulk-builds.ndjson", bulk.map(row => JSON.stringify({...row,derived:true})).join("\n") + "\n");
   const ids = Array.from({ length: 2505 }, (_, i) => `bulk-arrival-${i}`)
     .concat(Array.from({ length: 1205 }, (_, i) => `equipment:bulk-arrival-${i}`));
   file("bulk-done.txt", ids.join("\n") + "\n");
@@ -94,8 +94,8 @@ check("equipment builds land outside weapon scores before their arrivals are spe
     && (await query("SELECT count(*) AS n FROM record_build_submissions WHERE id LIKE 'bulk-%'"))[0].n === 0
     && (await query("SELECT count(*) AS n FROM record_equipment_submissions WHERE id LIKE 'equipment:bulk-%'"))[0].n === 0, scriptOutput);
   const duplicates = await query("SELECT id,at,record FROM entity_weapon_builds WHERE id IN ('bulk-repeat','bulk-build-0') ORDER BY id");
-  check("duplicate ids keep the last input within one batch and across batches", duplicates.length === 2
-    && duplicates.every(row => row.at === "last") && JSON.parse(duplicates[0].record).mods[0] === "split_chamber", JSON.stringify(duplicates));
+  check("duplicate ids retain their first entity and input", duplicates.length === 2
+    && duplicates.every(row => row.at === (row.id === "bulk-repeat" ? "last" : "first")) && JSON.parse(duplicates[0].record).weapon === record.weapon, JSON.stringify(duplicates));
   let batches = 0, bounded = true;
   for await (const batch of buildBatches(source)) {
     batches++;
@@ -104,14 +104,14 @@ check("equipment builds land outside weapon scores before their arrivals are spe
   }
   check("emitted build statements bind one scalar JSON value within both bounds", bounded && batches === 5);
   const wide = file("wide-builds.ndjson", Array.from({ length: 24 }, (_, i) => JSON.stringify({
-    id: `wide-${i}`, at: "x", record: { ...record, text: '雪"\\'.repeat(5000) } })).join("\n"));
+    derived:true,id: `wide-${i}`, at: "x", record: { ...record, text: '雪"\\'.repeat(5000) } })).join("\n"));
   batches = 0; bounded = true;
   for await (const batch of buildBatches(wide)) {
     batches++;
     bounded &&= Buffer.byteLength(JSON.stringify(batch)) <= BUILD_BATCH_BYTES;
   }
   check("escaped Unicode records split by actual UTF-8 statement bytes before the row ceiling", bounded && batches > 1);
-  file("oversize.ndjson", JSON.stringify({ id: "oversize", at: "x", record: { ...record, text: "雪".repeat(BUILD_BATCH_BYTES) } }) + "\n");
+  file("oversize.ndjson", JSON.stringify({ derived:true,id: "oversize", at: "x", record: { ...record, text: "雪".repeat(BUILD_BATCH_BYTES) } }) + "\n");
   await query("INSERT INTO record_build_submissions(id,at,record) VALUES ('oversize-arrival','x',?)", [JSON.stringify(record)]);
   file("oversize-done.txt", "oversize-arrival\n");
   check("one oversized row fails closed before its arrival can be spent", await run("ship_builds.sh", "oversize.ndjson", "oversize-done.txt") !== 0

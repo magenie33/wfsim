@@ -165,18 +165,19 @@ check("while work is short a pack is at most open over asking, and leased short"
   shortPack.pack && shortPack.pack.tasks.length <= cap && shortPack.pack.lease_ms === DIALS.pack_lease_ms.default,
   JSON.stringify({ open, cap, got: shortPack.pack && shortPack.pack.tasks.length, lease_ms: shortPack.pack && shortPack.pack.lease_ms }));
 // F8 — A QUESTION SOMEONE WAITS ON goes alone, to a computer holding nothing.
-await L.run("UPDATE state_compute_work SET waits = 1 WHERE id = (SELECT id FROM state_compute_work WHERE state = 'open' AND leased_to IS NULL ORDER BY id LIMIT 1)");
+await L.run("UPDATE state_compute_scheduling SET waits = 1,zone=0 WHERE id = (SELECT id FROM state_compute_work WHERE state = 'open' AND leased_to IS NULL ORDER BY id LIMIT 1)");
 const waiting = (await L.get("SELECT id FROM state_compute_work WHERE waits = 1")).id;
 const fairRefill = await L.get("SELECT id,producer,due_at FROM state_compute_work WHERE state='open' AND waits=0 AND leased_to IS NULL ORDER BY id DESC LIMIT 1");
 await L.run("UPDATE state_compute_work SET producer='survey_build',due_at='2999-01-01' WHERE id=?", fairRefill.id);
 await L.run("UPDATE relation_task_consumers SET producer='survey_build' WHERE question=?", fairRefill.id);
 await L.run("INSERT INTO state_producer_compute_usage (producer,used,answer_ms) VALUES ('survey_build',-1000000,1)");
 await comeBack(C);
+const refillOrder=await L.all("SELECT id FROM state_compute_work WHERE state='open' AND waits=0 AND leased_to IS NULL ORDER BY zone,zone_position,id");
 const busy = await as(C, { held: [{ lease: shortPack.pack.lease, rows: shortPack.pack.tasks.map((t) => t.question) }] });
 check("a computer holding a pack is never handed a question someone waits on",
   !(busy.work && busy.work.question === waiting) && !(busy.pack && busy.pack.tasks.some((t) => t.question === waiting)), JSON.stringify(busy).slice(0, 200));
 check("…but is handed a pack of the rest, not idled while it stands open", !!(busy.pack && busy.pack.tasks.length), JSON.stringify(busy).slice(0, 200));
-check("a busy refill preserves producer fairness behind a waited-on head", busy.pack?.tasks.some(t => t.question === fairRefill.id), JSON.stringify(busy.pack?.tasks.map(t => t.question)));
+check("a busy refill retains FIFO behind an ineligible held head", JSON.stringify(busy.pack?.tasks.map(t=>t.question))===JSON.stringify(refillOrder.slice(0,busy.pack?.tasks.length).map(t=>t.id)),JSON.stringify(busy.pack?.tasks.map(t=>t.question)));
 await L.run("UPDATE state_compute_work SET producer=?,due_at=? WHERE id=?", fairRefill.producer, fairRefill.due_at, fairRefill.id);
 await L.run("UPDATE relation_task_consumers SET producer=? WHERE question=?", fairRefill.producer, fairRefill.id);
 await L.run("DELETE FROM state_producer_compute_usage WHERE producer='survey_build'");

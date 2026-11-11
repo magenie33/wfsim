@@ -25,7 +25,7 @@ if (connection) assert(['127.0.0.1', 'localhost'].includes(new URL(connection).h
 const client = connection ? postgres(connection, { max: 1, fetch_types: false, onnotice: () => {} }) : null;
 const schema = 'intake_batches_' + randomUUID().replaceAll('-', '');
 const env = Object.fromEntries(['PG_URL', 'FACTORY_ORIGIN', 'FACTORY_TOKEN'].map(key => [key, process.env[key]]));
-const ddl = ['schema', 'library', 'sync'].map(name => readFileSync(join(root, 'worker/pg', `${name}.sql`), 'utf8')).join('\n');
+const ddl = ['schema','library','sync','inventory','build_workflows'].map(name => readFileSync(join(root, 'worker/pg', `${name}.sql`), 'utf8')).join('\n');
 let askMode = 'ok', familyMode = 'ok';
 const requests = [], admitted = new Set();
 const server = createServer(async (req, response) => {
@@ -56,11 +56,11 @@ async function seed(rows) {
   return file('inbox.ndjson', rows.map(row => JSON.stringify(row)).join('\n') + '\n');
 }
 const pending = async () => (await query('SELECT id FROM record_build_submissions UNION ALL SELECT id FROM record_equipment_submissions ORDER BY id')).map(row => row.id);
-const saved = () => query('SELECT id,at,record FROM entity_weapon_builds ORDER BY id');
+const saved = async () => (await query('SELECT id,at,record FROM entity_weapon_builds ORDER BY id')).map(row=>({...row,record:JSON.parse(row.record)}));
 const owed = () => query('SELECT batch,build_id,ruler,mode,initiator FROM state_board_pending_work ORDER BY build_id,ruler,mode');
 async function clear() {
   await query('DELETE FROM record_build_submissions'); await query('DELETE FROM record_equipment_submissions');
-  await query('DELETE FROM entity_weapon_builds'); await query('DELETE FROM entity_equipment_builds');
+  await query('TRUNCATE entity_weapon_builds CASCADE'); await query('DELETE FROM entity_equipment_builds');
   await query('DELETE FROM state_board_pending_work'); await query('DELETE FROM entity_compute_batches');
   askMode = familyMode = 'ok'; requests.length = 0; admitted.clear();
 }
@@ -96,71 +96,37 @@ try {
   const reference = spawnSync(intake, [], { input: rows.map(row => JSON.stringify(row)).join('\n'), encoding: 'utf8' });
   assert.equal(reference.status, 0, reference.stderr);
   const referenceBuilds = reference.stdout.split('\n').filter(Boolean).map(JSON.parse);
-  const expected = referenceBuilds.map(({ id, at, record }) => ({ id, at, record: JSON.stringify(record) })).sort((a, b) => a.id.localeCompare(b.id));
-  const expectedFamily = new Set(referenceBuilds.flatMap(build => build.family || []).map(job => JSON.stringify([job.source, job.weapon, job.ruler, 'fixture-engine'])));
-  const familyCount = referenceBuilds.find(build => build.record.mods.includes('speed_trigger')).family.length;
-  assert(familyCount > 0, 'the failure fixture must exercise family admission');
-  let calls = 0;
-  await assert.rejects(execute(input, { run: async (...args) => {
-    if (args[0] === intake && ++calls === 2) throw new Error('cut before second batch');
+  const expected = referenceBuilds.map(({id,at,record})=>({id,at:at.slice(0,10),record})).sort((a,b)=>a.id.localeCompare(b.id));
+  let calls=0;
+  await assert.rejects(execute(input,{run:async(...args)=>{
+    if(args[0]===intake && ++calls===2)throw new Error('cut before second batch');
     return runIntakeCommand(...args);
-  } }), /cut before second batch/);
-  assert(!((await pending()).includes('a')), 'completed prefix was not spent');
-  assert((await pending()).includes('bb'), 'unprocessed arrival was spent');
-  assert.equal((await saved()).length, 1); assert.equal((await owed()).length, 1);
-  await execute(input);
-  assert.deepEqual(await pending(), []);
-  assert.deepEqual(await saved(), expected, 'batching changed canonical records or original clocks');
-  const queue = await owed(), torid = (await saved()).find(row => JSON.parse(row.record).mods.includes('speed_trigger'));
-  assert.equal(queue.find(row => row.build_id === torid.id).initiator, 'user:first', 'first nonempty initiator changed');
-  assert.equal((await query('SELECT sum(total) AS n FROM entity_compute_batches'))[0].n, queue.length, 'replay counted existing work');
-  assert.deepEqual(admitted, expectedFamily); assert(requests.filter(row => row.path === '/api/board/ask').every(row => row.body.rows.every(item => item.named === true)));
-  console.log('ok: a completed prefix survives a cut; replay matches full intake clocks, records, first initiator, family and unique work counts');
-
-  for (const fault of ['build', 'family', 'queue', 'ask', 'lost', 'partial', 'delete']) {
-    await clear();
-    const source = await seed([family('source')]);
-    if (fault === 'build') await trip('entity_weapon_builds', true);
-    if (fault === 'queue') await trip('state_board_pending_work', true);
-    if (fault === 'delete') await trip('record_build_submissions', true);
-    if (fault === 'family') familyMode = 'refuse';
-    if (fault === 'ask') askMode = 'refuse';
-    if (['lost', 'partial'].includes(fault)) askMode = fault;
-    await assert.rejects(execute(source), undefined, `${fault} failure was acknowledged`);
-    assert.deepEqual(await pending(), ['source'], `${fault} failure spent its source`);
-    if (fault !== 'build') assert.equal((await saved()).length, 1);
-    if (['ask', 'lost', 'partial', 'delete'].includes(fault)) assert.equal((await owed()).length, 1, 'pending work was lost');
-    for (const table of ['entity_weapon_builds', 'state_board_pending_work', 'record_build_submissions']) await trip(table, false);
-    familyMode = askMode = 'ok';
-    await execute(source);
-    assert.deepEqual(await pending(), []); assert.equal((await saved()).length, 1); assert.equal((await owed()).length, 1);
-    assert.equal((await query('SELECT sum(total) AS n FROM entity_compute_batches'))[0].n, 1);
-    assert.equal(admitted.size, familyCount);
+  }}),/cut before second batch/);
+  assert(!(await pending()).includes('a'));assert((await pending()).includes('bb'));
+  assert.equal((await saved()).length,1);
+  assert((await query('SELECT count(*) n FROM state_build_workflow_nodes'))[0].n>0);
+  await execute(input);assert.deepEqual(await pending(),[]);assert.deepEqual(await saved(),expected);
+  const flows=(await query('SELECT count(*) n FROM entity_build_workflows'))[0].n;
+  const tasks=(await query('SELECT count(*) n FROM state_compute_work'))[0].n;
+  await execute(input);assert.equal((await query('SELECT count(*) n FROM entity_build_workflows'))[0].n,flows);
+  assert.equal((await query('SELECT count(*) n FROM state_compute_work'))[0].n,tasks);
+  assert.equal((await owed()).length,0);assert.equal(requests.length,0,'intake bypassed atomic workflow admission through legacy HTTP');
+  console.log('ok: committed prefixes survive cuts; repeats retain one intent and physical work without old queue or HTTP admission');
+  for(const fault of ['build','compute','delete']) {
+    await clear();const source=await seed([family('source')]);
+    const table=fault==='build'?'entity_weapon_builds':fault==='compute'?'entity_compute_specs':'record_build_submissions';
+    await trip(table,true);await assert.rejects(execute(source));assert.deepEqual(await pending(),['source']);
+    assert.equal((await saved()).length,fault==='delete'?1:0,'failed admission must roll back the build and its intent');
+    await trip(table,false);await execute(source);assert.deepEqual(await pending(),[]);
+    assert.equal((await saved()).length,1);assert.equal((await query('SELECT count(*) n FROM entity_build_workflows'))[0].n,1);
   }
-  console.log('ok: build/family/queue/ask/partial ACK/lost reply/delete failures retain arrivals; retries admit one calculation');
-
+  console.log('ok: build, computation admission and inbox deletion failures preserve retryable arrivals without duplicate workflows');
   await clear();
-  const source = await seed([arrival('one')]);
-  await assert.rejects(execute(source, { run: async (...args) => {
-    await runIntakeCommand(...args);
-    if (args[1].includes(join(root, 'scripts/ship_builds.sh')) && args[1].at(-2).endsWith('/empty')) throw new Error('delete reply lost');
-  } }), /delete reply lost/);
-  assert.deepEqual(await pending(), []);
-  const before = await owed(); await execute(source);
-  assert.deepEqual(await owed(), before); assert.equal((await query('SELECT sum(total) AS n FROM entity_compute_batches'))[0].n, 1);
-  console.log('ok: losing the final delete reply cannot duplicate work on replay');
-
-  await clear();
-  const fifo = await seed([arrival('fifo', 'braton_prime', { initiator: 'user:new' })]);
-  const canonical = spawnSync(intake, [], { input: readFileSync(fifo), encoding: 'utf8' });
-  assert.equal(canonical.status, 0, canonical.stderr);
-  const identity = JSON.parse(canonical.stdout.split('\n')[0]).id;
+  const fifo=await seed([arrival('fifo')]);
   await query("INSERT INTO entity_compute_batches(id,at,total) VALUES('existing','2000-01-01',1)");
-  await query("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode,initiator) VALUES('existing',?,'standard_single_target','base','user:original')", [identity]);
-  await execute(fifo);
-  assert.deepEqual((await owed()).map(({ batch, initiator }) => ({ batch, initiator })), [{ batch: 'existing', initiator: 'user:original' }]);
-  assert.equal((await query('SELECT sum(total) AS n FROM entity_compute_batches'))[0].n, 1);
-  console.log('ok: an existing calculation retains its FIFO batch and original initiator');
+  await query("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode,initiator) VALUES('existing','legacy','standard_single_target','base','user:original')");
+  const before=await owed();await execute(fifo);assert.deepEqual(await owed(),before);
+  console.log('ok: intake leaves existing legacy queue rows unchanged');
 
   await clear();
   const boundRows = [arrival('byte-a'), arrival('byte-b'), arrival('byte-c')];

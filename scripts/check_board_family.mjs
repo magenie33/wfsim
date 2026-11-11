@@ -24,28 +24,15 @@ const call = async (jobs = [job], token = "check", pinned) => {
 let passed = 0;
 const check = async (name, run) => { await run(); passed++; console.log(`  ok  ${name}`); };
 const count = async table => (await db.get(`SELECT count(*) AS n FROM ${table}`)).n;
-await check("only the trusted intake can admit family work", async () => {
-  assert.equal((await call([job], "wrong")).status, 401);
-  assert.equal(await count('entity_family_search_requests'), 0);
+await check("legacy family admission is disabled and cannot scan or create work",async()=>{
+ assert.equal((await call([job],'wrong')).status,401);
+ const before=db.cost.calls;const result=await call();assert.equal(result.disabled,true);assert.equal(result.accepted,0);
+ assert.equal(db.cost.calls,before);assert.equal(await count('entity_family_search_requests'),0);
 });
-await check("the source build must land before its family requests", async () => {
-  assert.equal((await call()).status, 409);
-  assert.equal(await count('entity_family_search_requests'), 0);
-  await db.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES (?, ?, ?)", source, "2026-11-01", JSON.stringify({ weapon: "burston_prime" }));
-});
-await check("an empty admission never scans historical builds", async () => {
-  assert.equal((await call([])).status, 200);
-  assert.equal(await count('entity_family_search_requests'), 0);
-});
-await check("durable admission never waits for task registration", async () => {
-  const demand = facts().demand, demandAll = facts().demandAll;
-  facts().demand = facts().demandAll = async () => { throw new Error("registration unavailable"); };
-  try {
-    const got = await call();
-    assert.equal(got.status, 200); assert.equal(got.engine, engine); assert.equal(got.accepted, 1);
-    assert.equal(await count('entity_family_search_requests'), 1); assert.equal(await count('relation_task_consumers'), 0);
-  } finally { facts().demand = demand; facts().demandAll = demandAll; }
-});
+// An existing request is a fixture of the pre-upgrade queue, not new admission.
+await db.run("INSERT INTO entity_weapon_builds(id,at,record) VALUES(?,?,?)",source,'2026-11-01',JSON.stringify({weapon:'burston_prime'}));
+await db.run("INSERT INTO entity_family_search_requests(id,source,weapon,ruler,request,context,engine,state,created_at) VALUES('retained-family',?,?,?,?,?,?,'waiting',?)",
+ source,job.weapon,job.ruler,JSON.stringify(job.request),JSON.stringify(job.context),engine,new Date().toISOString());
 await check("interrupted admission resumes only its durable transfer", async () => {
   env.FACTORY_PAUSED = "1";
   assert.equal((await call()).status, 200);
@@ -225,168 +212,4 @@ await check("leased search receipts deliver atomic build batches after the lease
   assert.deepEqual(familyInbox, { initiator: "system", family_source: "harvest-family-source" });
 });
 
-await check("one admission batch and one resumer batch have bounded database calls", async () => {
-  const db = await testDb("library");
-  const env = { LIBRARY: db, FACTORY_TOKEN: "check", ASSETS: { fetch: async () => Response.json({ engine }) } };
-  await db.exec(`INSERT INTO entity_weapon_builds (id,at,record) SELECT lpad(to_hex(i),32,'0'),'2026-11-01','{}' FROM generate_series(1,100) i`);
-  const jobs = Array.from({ length: 100 }, (_, i) => ({ ...job, source: (i + 1).toString(16).padStart(32, "0") }));
-  const post = async () => familyRoute(new Request("https://wfsim.test/api/board/family", { method: "POST",
-    headers: { authorization: "Bearer check" }, body: JSON.stringify({ engine, jobs }) }), env);
-  let calls = db.cost.calls;
-  const first = await post();
-  assert.equal(first.status, 200); assert.equal((await first.json()).accepted, 100);
-  assert.ok(db.cost.calls - calls <= 2, String(db.cost.calls - calls));
-  assert.equal((await db.get("SELECT count(*) AS n FROM relation_task_consumers")).n, 0);
-  calls = db.cost.calls;
-  assert.equal((await post()).status, 200);
-  assert.ok(db.cost.calls - calls <= 2, String(db.cost.calls - calls));
-  calls = db.cost.calls;
-  await askFamilyTransfers(env);
-  assert.ok(db.cost.calls - calls <= 5, String(db.cost.calls - calls));
-  assert.equal((await db.get("SELECT count(*) AS n FROM relation_task_consumers")).n, 100);
-  assert.equal((await db.get("SELECT count(*) AS n FROM entity_family_search_requests WHERE asked_engine=?", engine)).n, 100);
-  await db.close();
-});
-await check("every source must land before a partial admission can be acknowledged", async () => {
-  const db = await testDb("library"), env = { LIBRARY: db, FACTORY_TOKEN: "check", ASSETS: { fetch: async () => Response.json({ engine }) } };
-  const second = "b".repeat(32), jobs = [job, { ...job, source: second }];
-  await db.run("INSERT INTO entity_weapon_builds(id,at,record) VALUES (?,?,?)", source, "2026-11-01", "{}");
-  const post = () => familyRoute(new Request("https://wfsim.test/api/board/family", { method: "POST",
-    headers: { authorization: "Bearer check" }, body: JSON.stringify({ engine, jobs }) }), env);
-  assert.equal((await post()).status, 409);
-  assert.equal((await db.get("SELECT count(*) AS n FROM entity_family_search_requests")).n, 1);
-  await db.run("INSERT INTO entity_weapon_builds(id,at,record) VALUES (?,?,?)", second, "2026-11-01", "{}");
-  const replay = await post();
-  assert.equal(replay.status, 200); assert.equal((await replay.json()).accepted, 2);
-  assert.equal((await db.get("SELECT count(*) AS n FROM entity_family_search_requests")).n, 2);
-  assert.equal((await db.get("SELECT count(*) AS n FROM relation_task_consumers")).n, 0);
-  await db.close();
-});
-await check("interrupted batched marking reuses demands without dropping waiting transfers", async () => {
-  const db = await testDb("library"), env = { LIBRARY: db, FACTORY_TOKEN: "check", ASSETS: { fetch: async () => Response.json({ engine }) } };
-  await db.run("INSERT INTO entity_weapon_builds(id,at,record) VALUES (?,?,?)", source, "2026-11-01", "{}");
-  const post = () => familyRoute(new Request("https://wfsim.test/api/board/family", { method: "POST",
-    headers: { authorization: "Bearer check" }, body: JSON.stringify({ engine, jobs: [job] }) }), env);
-  assert.equal((await post()).status, 200);
-  const prepare = db.prepare;
-  db.prepare = text => {
-    if (text.includes("SET asked_engine =")) throw new Error("marking interrupted");
-    return prepare(text);
-  };
-  try { await assert.rejects(askFamilyTransfers(env), /marking interrupted/); }
-  finally { db.prepare = prepare; }
-  assert.equal((await db.get("SELECT asked_engine FROM entity_family_search_requests")).asked_engine, null);
-  assert.equal((await db.get("SELECT count(*) AS n FROM relation_task_consumers")).n, 1);
-  await askFamilyTransfers(env);
-  assert.equal((await db.get("SELECT count(*) AS n FROM relation_task_consumers")).n, 1);
-  assert.equal((await db.get("SELECT asked_engine FROM entity_family_search_requests")).asked_engine, engine);
-  await db.close();
-});
-await check("lost admission ACK is replayable across an engine release without a second transfer", async () => {
-  const db = await testDb("library"), env = { LIBRARY: db, FACTORY_TOKEN: "check", ASSETS: { fetch: async () => Response.json({ engine }) } };
-  await db.run("INSERT INTO entity_weapon_builds(id,at,record) VALUES (?,?,?)", source, "2026-11-01", "{}");
-  const bodies = [];
-  await shipFamily([{ family: [job] }], { token: "check", wait: async () => {}, send: async (url, options) => {
-    if (url.endsWith("/release.json")) return Response.json({ engine });
-    bodies.push(options.body);
-    const response = await familyRoute(new Request(url, options), env);
-    if (bodies.length === 1) {
-      env.ASSETS = { fetch: async () => Response.json({ engine: "next-engine" }) };
-      return new Response(new ReadableStream({ start(controller) {
-        controller.enqueue(new TextEncoder().encode('{"ok":true,'));
-        controller.error(new TypeError("lost ACK body", { cause: { code: "ECONNRESET" } }));
-      } }));
-    }
-    return response;
-  } });
-  assert.equal(bodies.length, 2); assert.equal(bodies[0], bodies[1]);
-  assert.equal((await db.get("SELECT count(*) AS n FROM entity_family_search_requests")).n, 1);
-  assert.equal((await db.get("SELECT engine FROM entity_family_search_requests")).engine, engine);
-  const other = { ...job, ruler: "heavy_gunner", context: { ...job.context, benchmark: "heavy_gunner" } };
-  const refused = await familyRoute(new Request("https://wfsim.test/api/board/family", { method: "POST",
-    headers: { authorization: "Bearer check" }, body: JSON.stringify({ engine, jobs: [other] }) }), env);
-  assert.equal(refused.status, 409);
-  assert.equal((await db.get("SELECT count(*) AS n FROM entity_family_search_requests")).n, 1);
-  await db.close();
-});
-await check("streamed family transport deduplicates globally and bounds count and UTF-8 bytes", async () => {
-  let produced = 0, firstPostAt = null;
-  const sent = [], target = i => ({ ...job, source: i.toString(16).padStart(32, "0") });
-  async function* builds() {
-    for (let i = 1; i <= 251; i++) { produced++; yield { family: [target(i), target(1)] }; }
-  }
-  const send = async (url, options) => {
-    if (url.endsWith("/release.json")) return Response.json({ engine });
-    firstPostAt ??= produced;
-    const body = JSON.parse(options.body); sent.push(options.body);
-    return Response.json({ ok: true, engine, accepted: body.jobs.length });
-  };
-  const result = await shipFamily(builds(), { token: "check", send });
-  assert.ok(firstPostAt < produced); assert.equal(result.jobs, 251);
-  const jobs = sent.flatMap(body => JSON.parse(body).jobs);
-  assert.equal(jobs.length, 251); assert.equal(new Set(jobs.map(item => item.source)).size, 251);
-  assert.ok(sent.every(body => JSON.parse(body).jobs.length <= 100 && Buffer.byteLength(body) <= 512 * 1024));
-  sent.length = 0;
-  await shipFamily(Array.from({ length: 40 }, (_, i) => ({ family: [{ ...target(i), context: { ...job.context, text: "雪".repeat(10_000) } }] })), { token: "check", send });
-  assert.ok(sent.length > 1 && sent.every(body => Buffer.byteLength(body) <= 512 * 1024));
-  const posts = sent.length;
-  await assert.rejects(shipFamily([{ family: [{ ...job, context: { ...job.context, text: "雪".repeat(200_000) } }] }], { token: "check", send }), /byte limit/);
-  assert.equal(sent.length, posts);
-});
-await check("only transient transport errors retry, with bounded attempts and stable batch bytes", async () => {
-  const bodies = [], delays = [];
-  await shipFamily([{ family: [job] }], { token: "check", wait: async ms => delays.push(ms), send: async (url, options) => {
-    if (url.endsWith("/release.json")) return Response.json({ engine });
-    bodies.push(options.body);
-    if (bodies.length === 1) throw Object.assign(new Error("network cut"), { code: "ECONNRESET" });
-    if (bodies.length === 2) return Response.json({ ok: false }, { status: 503 });
-    return Response.json({ ok: true, engine, accepted: 1 });
-  } });
-  assert.equal(bodies.length, 3); assert.equal(new Set(bodies).size, 1); assert.deepEqual(delays, [2000, 4000]);
-  let tries = 0;
-  await assert.rejects(shipFamily([{ family: [job] }], { token: "check", wait: async () => {}, send: async (url) => {
-    if (url.endsWith("/release.json")) return Response.json({ engine });
-    tries++; return Response.json({ ok: false }, { status: 503 });
-  } }));
-  assert.equal(tries, 3);
-  for (const status of [400, 401, 409, 413]) {
-    tries = 0;
-    await assert.rejects(shipFamily([{ family: [job] }], { token: "check", wait: async () => {}, send: async url => {
-      if (url.endsWith("/release.json")) return Response.json({ engine });
-      tries++; return Response.json({ ok: false }, { status });
-    } }));
-    assert.equal(tries, 1);
-  }
-  for (const ack of [{ ok: true }, { ok: true, engine: "other-engine", accepted: 1 }, { ok: true, engine, accepted: 0 }]) {
-    tries = 0;
-    await assert.rejects(shipFamily([{ family: [job] }], { token: "check", send: async url => {
-      if (url.endsWith("/release.json")) return Response.json({ engine });
-      tries++; return Response.json(ack);
-    } }), /acknowledged/);
-    assert.equal(tries, 1);
-  }
-  tries = 0;
-  await assert.rejects(shipFamily([{ family: [job] }], { token: "check", send: async url => {
-    if (url.endsWith("/release.json")) return Response.json({ engine });
-    tries++; return new Response('{"ok":');
-  } }), SyntaxError);
-  assert.equal(tries, 1);
-  tries = 0;
-  await shipFamily([{ family: [job] }], { token: "check", wait: async () => {}, send: async url => {
-    if (url.endsWith("/release.json")) return Response.json({ engine });
-    if (++tries === 1) return new Response(new ReadableStream({ start(controller) {
-      controller.error(new DOMException("ACK timed out", "AbortError"));
-    } }));
-    return Response.json({ ok: true, engine, accepted: 1 });
-  } });
-  assert.equal(tries, 2);
-  tries = 0; delays.length = 0;
-  await shipFamily([{ family: [job] }], { token: "check", wait: async ms => delays.push(ms), send: async url => {
-    if (url.endsWith("/release.json")) return Response.json({ engine });
-    if (++tries === 1) return Response.json({ ok: false }, { status: 429, headers: { "retry-after": "9999" } });
-    return Response.json({ ok: true, engine, accepted: 1 });
-  } });
-  assert.equal(tries, 2); assert.deepEqual(delays, [30_000]);
-});
-await db.close();
-console.log(`\n${passed} family spread checks passed`);
+console.log(`\n${passed} retained family and disabled-ingress checks passed`);

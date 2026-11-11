@@ -65,6 +65,7 @@ pub use catalogue::catalogue_json;
 pub use warframe::{operator_panel_json, warframe_catalog_json, warframe_panel_json};
 mod companion;
 mod computation;
+pub mod board_flow;
 
 use serde_json::Value;
 

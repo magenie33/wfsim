@@ -9,14 +9,7 @@ use crate::tenno::wielder_build_of;
 use crate::registry::enemies;
 use crate::request::{get_str, get_u32};
 
-/// THE RIVEN SHAPE a board payload carries — two flat fields, the way the
-/// endpoint stores them.
-///
-/// The ROLLS are deliberately not on the wire: a row states a SHAPE, the
-/// library holds that shape's corners, and the ruler's own scores say which
-/// corner leads. Sending a roll would be sending one person's luck, and would
-/// invite the question of why the board's number is not the one on the
-/// submitter's card.
+/// The stat shape. Library intake pairs and sorts any submitted rolls with it.
 pub(crate) fn riven_shape_from(v: &Value) -> Option<wfsim_engine::build::rivens::RivenShape> {
     let bonuses: Vec<String> = v
         .get("riven_pos")
@@ -58,7 +51,7 @@ pub fn build_keys_json(v: &Value) -> Value {
     if get_str(v, "kind", "board") == "build" {
         let keys: Vec<Value> = v.get("builds").and_then(Value::as_array).map(Vec::as_slice).unwrap_or(&[])
             .iter().map(|record| {
-                crate::board_rows::board_build(record)
+                crate::board_rows::library_build(record)
                     .map(|b| json!(wfsim_engine::board::builds::build_id(&b)))
                     .unwrap_or(Value::Null)
             }).collect();
@@ -109,6 +102,12 @@ pub fn build_keys_json(v: &Value) -> Value {
 /// app can check itself it still checks, because a reason on screen beats a
 /// round trip; this is the backstop for the rest.
 pub fn board_check_json(v: &Value) -> Value {
+    if get_str(v,"scope","")=="library" {
+        return match crate::board_rows::library_build(v) {
+            Ok(b)=>json!({"ok":true,"accepted":true,"forma":b.forma,"drain":b.drain}),
+            Err(reason)=>json!({"ok":true,"accepted":false,"reason":reason}),
+        };
+    }
     let bench = get_str(v, "benchmark", "");
     let weapon = get_str(v, "weapon", "");
     let list = |k: &str| -> Vec<String> {

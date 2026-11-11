@@ -63,7 +63,7 @@ export async function purgeUserCalculations(env, now = Date.now()) {
   await db.prepare(`DELETE FROM record_compute_identity_changes c WHERE c.snapshot::jsonb#>>'{scheduling,verb}' IN ('simulate_report','optimize_report')
     AND NOT EXISTS(SELECT 1 FROM entity_user_calculation_requests t WHERE t.question IN(c.previous_computation,c.computation) AND t.expires_at>?1::text)
     AND NOT EXISTS(SELECT 1 FROM relation_calculation_report_access a WHERE a.question IN(c.previous_computation,c.computation) AND a.expires_at>?1::text)
-    AND NOT EXISTS(SELECT 1 FROM relation_task_consumers d WHERE d.question IN(c.previous_computation,c.computation) AND d.producer='family_build')`)
+    AND NOT EXISTS(SELECT 1 FROM relation_task_consumers d WHERE d.question IN(c.previous_computation,c.computation) AND d.producer IN ('family_build','build_workflow'))`)
     .bind(iso(now)).run();
   const { results } = await db.prepare("SELECT id FROM entity_user_calculation_requests WHERE expires_at < ? AND state = 'waiting' LIMIT 100").bind(iso(now)).all();
   for (const row of results) await facts().withdraw(env, "user_calculation", row.id, now);
@@ -72,10 +72,10 @@ export async function purgeUserCalculations(env, now = Date.now()) {
   await db.prepare("UPDATE entity_user_calculation_requests SET state = 'expired' WHERE expires_at < ?").bind(iso(now)).run();
   const { results: orphaned } = await db.prepare(`SELECT q.id FROM state_compute_work q WHERE q.verb IN ('simulate_report', 'optimize_report')
       AND NOT EXISTS (SELECT 1 FROM entity_user_calculation_requests t WHERE t.question = q.id)
-      AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question = q.id AND d.producer = 'family_build')`).all();
+      AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question = q.id AND d.producer IN ('family_build','build_workflow'))`).all();
   for (const row of orphaned) {
     const unowned = `NOT EXISTS (SELECT 1 FROM entity_user_calculation_requests t WHERE t.question = ?2::text)
-      AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question = ?2::text AND d.producer = 'family_build')`;
+      AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question = ?2::text AND d.producer IN ('family_build','build_workflow'))`;
     const tables = ["relation_task_consumers", "record_candidate_answers", "record_engine_refusals", "state_pending_verifications", "state_task_answer_heads"];
     await db.batch([
       db.prepare("SELECT id FROM state_compute_work WHERE id = ? FOR UPDATE").bind(row.id),
@@ -84,7 +84,7 @@ export async function purgeUserCalculations(env, now = Date.now()) {
     ]);
   }
   await db.prepare("DELETE FROM relation_calculation_report_access WHERE expires_at<=?").bind(iso(now)).run();
-  await db.prepare(`DELETE FROM state_calculation_report_selection r WHERE NOT EXISTS
+  await db.prepare(`DELETE FROM state_calculation_report_selection r WHERE NOT EXISTS(SELECT 1 FROM state_build_workflow_nodes n JOIN state_build_workflows f ON f.id=n.workflow WHERE n.computation=r.question AND f.state='active') AND NOT EXISTS
     (SELECT 1 FROM relation_calculation_report_access a WHERE a.question=r.question AND a.engine=r.engine)`).run();
   await db.prepare(`DELETE FROM entity_compute_results r USING entity_calculation_reports p WHERE p.result_id=r.id
     AND NOT EXISTS(SELECT 1 FROM relation_calculation_report_access a WHERE a.question=p.question AND a.engine=p.engine)

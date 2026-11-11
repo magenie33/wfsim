@@ -36,51 +36,12 @@ const answer = (question, canon, engine, owner = `o${n}`) => L.run(
 const stateOf = async (id) => (await L.get("SELECT state, lease, canon FROM state_compute_work WHERE id = ?", id)) || {};
 const moot = async () => Number((await L.get("SELECT factory_moot_checks('e1', 1000) AS n")).n);
 
-// ---- the settler's pass ----
-await question("asked", "disputed", { lease: true }); await demand("asked", "live"); await answer("asked", "c1", "e0"); await answer("asked", "c2", "e0");
-await question("unasked", "disputed"); await demand("unasked", "served"); await answer("unasked", "c1", "e0"); await answer("unasked", "c2", "e0");
-await question("odd", "nondeterministic"); await demand("odd", "live"); for (const c of ["c1", "c2", "c3"]) await answer("odd", c, "e0");
-await question("served", "disputed"); await demand("served", "live"); await answer("served", "c1", "e1"); await answer("served", "c2", "e1");
-await question("spot-old", "spot", { fact_engine: "e0" }); await demand("spot-old", "served");
-await question("spot-served", "spot", { fact_engine: "e1" }); await demand("spot-served", "served");
-
-check("one pass moves the two disputes, the non-deterministic one and the old spot", (await moot()) === 4);
-const asked = await stateOf("asked");
-check("a dispute of another engine a live demand waits on is open again, its official lease gone", asked.state === "open" && asked.lease === null, JSON.stringify(asked));
-check("…its answers carried", Number((await L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = 'asked'")).n) === 2);
-check("a dispute of another engine nobody asks for any more is withdrawn", (await stateOf("unasked")).state === "withdrawn");
-check("a non-deterministic question of another engine is open again", (await stateOf("odd")).state === "open");
-check("a dispute of the served engine stays the official machines'", (await stateOf("served")).state === "disputed");
-const back = await stateOf("spot-old");
-check("a spot of another engine's fact is that fact again", back.state === "fact" && back.canon === "c1", JSON.stringify(back));
-check("a spot of the served engine's fact stays a spot", (await stateOf("spot-served")).state === "spot");
-check("a second pass finds nothing", (await moot()) === 0);
-
-// ---- reopened, settled by the served engine ----
-await answer("asked", "c3", "e0");
-await answer("asked", "c9", "e1");
-await f.settle(env, "asked", "e1", NOW);
-check("the old answers do not fill the cap: one answer of the served engine matching none leaves it open", (await stateOf("asked")).state === "open");
-await answer("asked", "c9", "e1");
-await f.settle(env, "asked", "e1", NOW);
-const settled = await stateOf("asked");
-check("…and two of it agreeing make the fact", ["fact", "spot"].includes(settled.state) && settled.canon === "c9", JSON.stringify(settled));
-await answer("odd", "c2", "e1");
-await f.settle(env, "odd", "e1", NOW);
-const joined = await stateOf("odd");
-check("one answer of the served engine reproducing an old one makes the fact with it", ["fact", "spot"].includes(joined.state) && joined.canon === "c2", JSON.stringify(joined));
-
-// ---- asked again ----
-const ask = { producer: "sweep", ref: "again", verb: "simulate", request: { record: { weapon: "w" }, ruler: "r", mode: "m" }, due_in_ms: 3_600_000, payload: {} };
-const [qa] = await f.demandAll(env, [ask], "e0", NOW - 7_200_000);
-await L.run("UPDATE state_compute_work SET state = 'disputed' WHERE id = ?", qa);
-await answer(qa, "c1", "e0"); await answer(qa, "c2", "e0");
-await f.demandAll(env, [ask], "e1", NOW);
-check("a dispute of another engine asked again is open again at once", (await stateOf(qa)).state === "open");
-await L.run("UPDATE state_compute_work SET state = 'disputed' WHERE id = ?", qa);
-await answer(qa, "c1", "e1"); await answer(qa, "c2", "e1");
-await f.demandAll(env, [ask], "e1", NOW);
-check("…and a dispute of the served engine asked again stays a dispute", (await stateOf(qa)).state === "disputed");
-
-console.log(failures ? `\n${failures} failed` : "\nan official check of another engine is none, and goes back to whom it can still mean something");
-process.exit(failures ? 1 : 0);
+for(const [id,state]of [['asked','disputed'],['odd','nondeterministic'],['spot-old','spot']]) {
+ await question(id,state,{lease:true,...(state==='spot'?{fact_engine:'e0'}:{})});await demand(id,'live');await answer(id,'c1','e0');
+}
+const before=await L.all('SELECT * FROM state_compute_work ORDER BY id');
+check('an engine deployment creates no recalibration round',await moot()===0);
+check('existing disputed, nondeterministic and spot entries retain their leases and results',JSON.stringify(await L.all('SELECT * FROM state_compute_work ORDER BY id'))===JSON.stringify(before));
+check('repeated maintenance remains a no-op',await moot()===0);
+console.log(failures?`\n${failures} failed`:'\nrelease metadata cannot reopen or replace queued work');
+process.exitCode=failures?1:0;

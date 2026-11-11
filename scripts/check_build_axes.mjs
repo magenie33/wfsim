@@ -168,7 +168,7 @@ check("...and the answer-side guard it leans on is still here",
 // coverage question rather than a list.
 {
   const scorer = ["cli/src/bin/wfsim-board.rs"]
-    .concat(readdirSync(resolve(ROOT, "cli/src/board")).sort().map((f) => "cli/src/board/" + f))
+    .concat(readdirSync(resolve(ROOT,"cli/src/board"),{recursive:true,withFileTypes:true}).filter(f=>f.isFile() && f.name.endsWith(".rs")).map(f=>resolve(f.parentPath,f.name)).sort())
     .map(read)
     .join(String.fromCharCode(10));
   // BY ANY SPELLING IT USES. Each protocol spells its own half — `arcane` on a

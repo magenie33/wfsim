@@ -17,11 +17,9 @@ result numbers. Adding a type does not require changing its lifecycle.
 Simulation, optimization and saved-riven appraisal use the durable queue.
 Appraisal uses `headlessRivenGainRequest`, followed by
 `headlessAppraisalReplay`, the search and grade used by the chat workflow.
-Acceptance independently triggers old-engine board calibration in both riven
-categories (`docs/BOARD.md`). The grade fetches the current published rows
-for its ruler after the official replay, bypassing the page or bot's retained
-board. Calibration failures and unfinished rounds do not delay the search or
-grade; later published corrections benefit later appraisals.
+Appraisal reads current published rows after its official replay. It does not
+create board calibration tasks; mismatching official simulations use the
+unified build observation flow described in `docs/COMPUTE_TASKS.md`.
 Saved cards remain editable in the original riven editor. Text import uses
 `readRivenLines`, shared with chat and screenshot stat naming. A batch is an
 atomic group of independent requests; each retains its own result and retry.
@@ -145,7 +143,7 @@ receipt for the original initiator; executor identity never replaces it
 
 ## Community execution
 
-`worker/user_tasks.js` is a producer of the existing fair fact factory.
+`worker/user_tasks.js` is a producer of the shared fact factory.
 `simulate_report` and `optimize_report` compare complete reports, including all
 finalists and the fields needed to open or replay them. Wall-clock timings are
 excluded from agreement; calculation fields and engine work participate.
@@ -159,8 +157,8 @@ The existing simulation and quick search entry points perform the work.
 Clients advertise `calculation-reports-v1`. The factory's shared eligibility
 rule excludes these verbs for older clients, on protocol 8's JavaScript and SQL
 paths and protocol 7. Official tooling must explicitly request this producer.
-The producer has the same fair-share weight as existing producers, a six-hour
-deadline, no fleet reservation and no paid priority. Its browser initiator
+Explicit human requests enter zone `00` in FIFO order. A six-hour deadline
+controls official eligibility rather than volunteer queue order. Its browser initiator
 uses the existing cap and forgetting rules. Batch requests do not assert that someone
 is actively waiting.
 

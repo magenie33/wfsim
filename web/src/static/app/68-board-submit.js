@@ -178,16 +178,10 @@ function boardPayload() {
       .filter((s) => s.mod)
       .map((s) => (isRivenId(s.mod) ? BOARD_RIVEN_SLOT : slotModId(s)))
       .concat((slots[STANCE] || {}).mod ? [slotModId(slots[STANCE])] : []),
-    // …AND WHAT THAT SLOT HOLDS, as a SHAPE. Which stats, and which is the
-    // malus — never the rolls: the board scores a shape at its own ceiling, the
-    // same way it scores every row at full Forma and every valence at the
-    // roll's maximum. What one copy landed on is luck.
-    //
-    // STATED EVEN WHEN EMPTY, like `valence` beside it: a payload that names
-    // every axis is one a reader can check against the worker's table, and the
-    // endpoint drops an empty one rather than storing it.
+    // Stat names and their paired rolls identify the submitted build.
     riven_pos: boardRivenShape().riven_pos,
     riven_neg: boardRivenShape().riven_neg,
+    riven_rolls: boardRivenShape().riven_rolls,
     evolutions: Object.values(evoSel).filter(Boolean),
     arcanes: arcanes.slice(),
     // THE PROGENITOR ELEMENT, for an adversary weapon. The ELEMENT only: the
@@ -378,29 +372,19 @@ function refreshBoardDoor() {
   }, 250);
 }
 
-/// WHICH RULERS WOULD TAKE THIS BUILD, asked of the board's own door.
-///
-/// `/api/board/check` is `validate_for_board` itself — the same call the scorer
-/// makes, not a copy of its rules, because a second implementation is a second
-/// answer and the player has to be given the board's.
-///
-/// FROM A RULER, it is asked about that one. FROM A FIGHT OF YOUR OWN there is
-/// no ruler to name, so it is asked about ALL of them: a build only has to
-/// qualify somewhere to be worth uploading, and "it qualifies for 2 of 3" is
-/// the one thing a reader can act on. The page is not predicting a SCORE here —
-/// that is the scorer's and always was — only whether the door opens at all.
+/// Library legality controls retention; ruler eligibility only counts its boards.
 async function boardVerdict(body) {
+  const legal=await api("/api/board/check",{...body,scope:"library"});
+  if(!legal?.ok || legal.accepted===false)return legal;
   const ids = body.benchmark ? [body.benchmark] : benchList().map((b) => b.id);
   if (!ids.length) return { ok: true, accepted: true, boards: 0, of: 0 };
   let accepted = 0;
-  let reason = "";
   for (const id of ids) {
     const v = await api("/api/board/check", { ...body, benchmark: id });
     if (!v || !v.ok) return { ok: false };
-    if (v.accepted === false) reason = reason || v.reason || "";
-    else accepted += 1;
+    if (v.accepted !== false) accepted += 1;
   }
-  return { ok: true, accepted: accepted > 0, reason, boards: accepted, of: ids.length };
+  return { ok: true, accepted: true, reason: "", boards: accepted, of: ids.length };
 }
 
 /// **IS THIS BUILD ALREADY A ROW?** — asked of the ENGINE, in one call.
@@ -414,7 +398,7 @@ async function boardVerdict(body) {
 /// A BUILD IS NOT ITS SPELLING, which is why this cannot be a comparison here:
 /// `board::builds::canonical_mods` sorts the non-elementals by drain and leaves the
 /// elementals in the order that PAIRS them, evolutions are a set, a riven is a
-/// shape rather than its rolls, and only the engine has the mod POOL that tells
+/// stat/roll pairs stay together, and only the engine has the mod POOL that tells
 /// an elemental mod from any other. `/api/build/keys` IS `board::builds::board_key`,
 /// the key the scorer files rows under, asked of the build on screen and every
 /// row this weapon holds in one pass.
@@ -439,8 +423,9 @@ async function boardRowMatching(body) {
     // not part of the build.
     riven_pos: (r.board.riven || {}).bonuses || [],
     riven_neg: (r.board.riven || {}).malus || "",
+    riven_rolls: (r.board.riven || {}).rolls,
   });
-  const res = await api("/api/build/keys", { builds: [body].concat(rows.map(asBuild)) });
+  const res = await api("/api/build/keys", { kind:"build",builds: [body].concat(rows.map(asBuild)) });
   const keys = res && res.ok ? res.keys || [] : [];
   if (!keys[0]) return null;
   const i = keys.findIndex((k, n) => n > 0 && k === keys[0]);

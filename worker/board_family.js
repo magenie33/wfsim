@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // New arrivals seed sibling searches; derived inbox records never seed another round.
 import { facts, DEADLINE_MS, factoryAuthed } from "./factory.js";
-import { questionId } from "./tasks.js";
-import { json, servedRelease, ENGINE_ID } from "./verify.js";
+import { json, servedRelease } from "./verify.js";
 import { iso } from "./instant.js";
 import { submitRecord } from "./index.js";
 import { headlessBoardPayloadFromResult } from "./board_payload.js";
@@ -53,36 +52,5 @@ export async function askFamilyTransfers(env) {
 
 export async function familyRoute(request, env) {
   if (request.method !== "POST" || !factoryAuthed(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
-  if (!env.LIBRARY) return json({ ok: false, error: "The library is unavailable." }, 503);
-  const raw = await request.text();
-  if (raw.length > 1_048_576) return json({ ok: false, error: "payload too large" }, 413);
-  let body;
-  try { body = JSON.parse(raw); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
-  if ((body?.engine !== undefined && (typeof body.engine !== "string" || !ENGINE_ID.test(body.engine)))
-      || !Array.isArray(body?.jobs) || body.jobs.length > 100 || body.jobs.some(job => !job || job.input_schema !== 1 || !ID.test(job.source || "")
-      || !SLUG.test(job.weapon || "") || !SLUG.test(job.ruler || "") || job.request?.weapon !== job.weapon
-      || job.request.strategy !== "quick" || !Array.isArray(job.request.starts) || job.request.finalists !== 1
-      || job.context?.weapon !== job.weapon || job.context.benchmark !== job.ruler))
-    return json({ ok: false, error: "invalid family requests" }, 400);
-  const { engine } = await servedRelease(env);
-  if (!engine) return json({ ok: false, error: "No engine is served." }, 503);
-  const wanted = body.engine || engine, rows = new Map();
-  for (const job of body.jobs) {
-    const id = await questionId("family_build", { source: job.source, weapon: job.weapon, ruler: job.ruler });
-    if (!rows.has(id)) rows.set(id, { id, source: job.source, weapon: job.weapon, ruler: job.ruler,
-      request: JSON.stringify(job.request), context: JSON.stringify(job.context) });
-  }
-  if (!rows.size) return json({ ok: true, engine: wanted, accepted: 0 });
-  const batch = JSON.stringify([...rows.values()].sort((a, b) => a.id.localeCompare(b.id)));
-  if (wanted === engine) await env.LIBRARY.prepare(`INSERT INTO entity_family_search_requests
-    (id, source, weapon, ruler, request, context, engine, state, created_at)
-    SELECT x.id, x.source, x.weapon, x.ruler, x.request, x.context, ?2::text, 'waiting', ?3::text
-    FROM jsonb_to_recordset((?1::text)::jsonb) AS x(id text, source text, weapon text, ruler text, request text, context text)
-    WHERE EXISTS (SELECT 1 FROM entity_weapon_builds b WHERE b.id = x.source) ORDER BY x.id ON CONFLICT DO NOTHING`)
-    .bind(batch, wanted, iso(Date.now())).run();
-  const { results: stored } = await env.LIBRARY.prepare(`SELECT t.id FROM entity_family_search_requests t
-    JOIN jsonb_to_recordset((?::text)::jsonb) AS x(id text) ON t.id = x.id`).bind(batch).all();
-  if (stored.length !== rows.size) return json({ ok: false, error: wanted === engine
-    ? "The source build has not landed." : "The served engine changed before admission." }, 409);
-  return json({ ok: true, engine: wanted, accepted: rows.size });
+  return json({ok:true,accepted:0,disabled:true});
 }

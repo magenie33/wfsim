@@ -16,7 +16,6 @@ import { BOARD_KINDS, BOARD_WORK_KINDS } from "./board_kinds.js";
 import { iso, PACE_HOURS } from "./instant.js";
 import { witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, SCENE_FIRST_MS, VERBS, factoryAuthed } from "./factory.js";
-import { holdPriority } from "./merit.js";
 import { servedRelease } from "./verify.js";
 import { retireBoardRows } from "./board_reviews.js";
 import { scoreWitnessWrites } from "./computation_records.js";
@@ -263,8 +262,7 @@ async function ask(request, env) {
       && !(b.batch.startsWith("refresh-") && measured && Date.parse(measured) > now - REFRESH_WITHIN_MS);
   })
     .map((r) => rowAsk(b.batch, { ...r, initiator: whoOf.get(calculationId(r.identity, r.ruler, r.mode)) }, buildOf.get(r.identity).record, buildOf.get(r.identity).at, scored.get(calculationId(r.identity, r.ruler, r.mode)), now));
-  // A SIGNED-IN PLAYER'S MERIT may move their rows sooner (docs/BOARD.md §"Merit priority").
-  await facts().demandAll(env, await holdPriority(env, b.batch, asks, BOARD_KINDS_SQL, now), engine, now);
+  await facts().demandAll(env, asks, engine, now);
   return json({ ok: true, asked: asks.length, skipped: rows.length - asks.length });
 }
 

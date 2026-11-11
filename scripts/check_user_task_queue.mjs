@@ -329,18 +329,23 @@ await check("a running computation keeps its attempt when another source arrives
   assert.equal(duplicate.id,original.id);assert.equal(queue.list()[0].attempt,attempt);
   finish.resolve();await running;await queue.deliverEvents();assert.equal(delivered.length,2);
 });
-await check("untraced legacy entries leave the local queue and known duplicates coalesce",async()=>{
-  const {queue,store}=fixture();const first=await create(queue);
+await check("existing legacy queue entries remain untouched",async()=>{
+  const {queue,store}=fixture();await create(queue);
   await store.change(state=>{delete state.tasks[0].computation;delete state.tasks[0].sources;
     state.tasks.push({...structuredClone(state.tasks[0]),id:"legacy-duplicate"});
     state.tasks.push({...structuredClone(state.tasks[0]),id:"untraced",request:{count:19},origin:null});});
-  await queue.prepare();
-  assert.equal(queue.list().filter(task=>task.state==="queued").length,1);
-  assert.equal(queue.list().find(task=>task.id===first.id).sources.length,2);
-  assert.equal(queue.list().find(task=>task.id==="untraced").state,"cancelled");
+  const before=await store.read();await queue.prepare();assert.deepEqual(await store.read(),before);
+});
+await check("a completed calculation retains its ID until every source delivery finishes",async()=>{
+  const {queue,type}=fixture();let available=false;const delivered=[];
+  type.completed=async task=>{if(!available)throw Object.assign(new Error('offline'),{retryable:false});delivered.push(task.source_id);};
+  const original=await create(queue);await queue.runNext();await queue.deliverEvents();
+  assert.equal((await create(queue)).id,original.id);assert.equal(queue.list().length,1);
+  available=true;await queue.deliverEvents();assert.equal(delivered.length,2);
+  assert.notEqual((await create(queue)).id,original.id);
 });
 await check("the duplicate assertion fails when active lookup is removed",async()=>{
-  const needle='const held = state.tasks.find(row => row.computation === task.computation && ["queued", "running"].includes(row.state));';
+  const needle='const held = state.tasks.find(row => row.computation === task.computation && (["queued", "running"].includes(row.state) || state.events?.some(event => event.task === row.id && !event.delivered_at)));';
   assert.ok(source.includes(needle));
   const {queue}=fixture({implementation:classes(source.replace(needle,'const held = null;'))});
   await create(queue);await create(queue);

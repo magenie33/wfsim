@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// HOW LONG EACH ASK MAY WAIT — THE WHOLE DISPATCH POLICY (worker/factory.js
+// HOW LONG EACH ASK MAY WAIT FOR OFFICIAL FALLBACK (worker/factory.js
 // re-exports it). A module that imports nothing, so the order center in
 // wfsim-cloud states the same policy without bundling the factory.
 
-/// Hand-outs go earliest deadline first, and a question past its deadline is the
-/// official machines' too, whatever its kind. A kind is only when it is asked and
-/// this; a refresh is due when its row turns `REFRESH_WITHIN_MS` old, not a span
-/// after its ask, so idle volunteers take it early and a busy fleet lets it wait.
+/// Zones and FIFO order volunteer execution. A question past its deadline is
+/// also eligible for its official executor. Deadlines do not reorder a zone.
 export const REFRESH_WITHIN_MS = 14 * 86_400_000;
 export const DEADLINE_MS = {
   board_review: 15 * 60_000,

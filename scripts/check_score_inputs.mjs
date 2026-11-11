@@ -41,7 +41,7 @@ const load = name => readFileSync(join(directory, name), 'utf8');
 const lines = name => load(name).trim().split('\n').filter(Boolean).map(JSON.parse);
 try {
   console.log(client ? 'score inputs: postgres.js TCP transport' : 'score inputs: PGlite transport');
-  await pg.exec(['schema', 'library', 'sync'].map(n => readFileSync(new URL(`../worker/pg/${n}.sql`, import.meta.url), 'utf8')).join('\n'));
+  await pg.exec(['schema','library','sync','build_workflows'].map(n => readFileSync(new URL(`../worker/pg/${n}.sql`, import.meta.url), 'utf8')).join('\n'));
   await pg.exec(`INSERT INTO entity_compute_batches(id,at,total) VALUES('old','1',0),('new','2',0);
     INSERT INTO entity_weapon_builds(id,at,record) SELECT 'unrelated-'||n,'day','{"weapon":"unrelated"}' FROM generate_series(1,20000) n;
     INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)

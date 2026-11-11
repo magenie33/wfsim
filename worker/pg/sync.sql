@@ -91,6 +91,7 @@ CREATE OR REPLACE FUNCTION factory_eligible(text, bigint, bigint, text, text, te
 RETURNS SETOF state_compute_work LANGUAGE sql STABLE AS $$
   SELECT q.* FROM state_compute_work q
   WHERE factory_takeable(q.lease_until, q.leased_at, $1, $9)
+    AND ($2=1 OR q.required_capability IS NULL OR $5::jsonb ? ('cap:'||q.required_capability))
     AND (q.verb NOT IN ('simulate_report', 'optimize_report') OR $5::jsonb ? 'cap:calculation-reports-v1')
     AND ($2 = 1 OR q.lanes IS NULL OR EXISTS (SELECT 1 FROM state_compute_candidate_answers x WHERE x.question = q.id)
          OR $3 >= (SELECT min((t ->> 'lanes')::numeric) FROM jsonb_array_elements(q.lanes::jsonb) t
@@ -109,33 +110,16 @@ RETURNS SETOF state_compute_work LANGUAGE sql STABLE AS $$
           AND s.queued_at > to_char(($1::timestamptz AT TIME ZONE 'UTC') - make_interval(secs => $10), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 $$;
 
--- THE HEAD OF A WITNESS'S ORDER (docs/BOARD.md §"Fair share between producers"):
--- for a volunteer each producer's head, one index probe each, and of those the
--- waited-on first, then the producer that has used least; where no producer's
--- row finds one the plain order does. The official machines ($2 = 1) take what
--- is past its deadline and what only they settle ($11, json), in the plain order.
+-- Executable work is selected by zone, then its position within that zone.
 CREATE OR REPLACE FUNCTION factory_head(text, bigint, bigint, text, text, text, text, text, bigint, bigint, text, text)
 RETURNS TABLE (id text, verb text, request text, state text, due_at text, waits bigint, producer text)
 LANGUAGE sql STABLE AS $$
-  WITH eligible AS NOT MATERIALIZED (
-    SELECT * FROM factory_eligible($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) q
-    WHERE $12 IS NULL OR (q.waits = 0 AND q.verb IN (SELECT jsonb_array_elements_text($12::jsonb))))
-  SELECT z.id, z.verb, z.request, z.state, z.due_at, z.waits, z.producer FROM (
-    (SELECT 0 AS fallback, x.* FROM state_producer_compute_usage u CROSS JOIN LATERAL (
-       SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer
-       FROM eligible q
-       WHERE q.state = 'open' AND q.producer = u.producer ORDER BY q.waits DESC, q.due_at, q.id LIMIT 1) x
-     WHERE $2 = 0 ORDER BY x.waits DESC, u.used, x.due_at, x.id LIMIT 1)
-    UNION ALL
-    (SELECT 1, q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer
-     FROM eligible q
-     WHERE $2 = 0 AND q.state = 'open' ORDER BY q.waits DESC, q.due_at, q.id LIMIT 1)
-    UNION ALL
-    (SELECT 2, q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer
-     FROM eligible q
-     WHERE $2 = 1 AND ((q.state = 'open' AND q.due_at < $1) OR q.state IN (SELECT jsonb_array_elements_text($11::jsonb)))
-     ORDER BY q.waits DESC, q.due_at, q.id LIMIT 1)
-  ) z ORDER BY z.fallback LIMIT 1
+  SELECT q.id,q.verb,q.request,q.state,q.due_at,q.waits,q.producer
+    FROM factory_eligible($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) q
+    WHERE ($12 IS NULL OR (q.waits=0 AND q.verb IN(SELECT jsonb_array_elements_text($12::jsonb))))
+      AND (($2=0 AND q.state='open') OR ($2=1 AND
+        ((q.state='open' AND q.due_at<$1) OR q.state IN(SELECT jsonb_array_elements_text($11::jsonb)))))
+    ORDER BY q.zone,q.zone_position,q.id LIMIT 1
 $$;
 CREATE OR REPLACE FUNCTION factory_head(text, bigint, bigint, text, text, text, text, text, bigint, bigint, text)
 RETURNS TABLE (id text, verb text, request text, state text, due_at text, waits bigint, producer text)
@@ -164,39 +148,17 @@ $$;
 -- joins a served one that reproduces it, and kept to the served engine, every
 -- release left the half-answered behind the rest until someone copied them over.
 CREATE OR REPLACE FUNCTION factory_take(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint)
-RETURNS SETOF text LANGUAGE plpgsql AS $$
-DECLARE
-  v_led text[];
-BEGIN
-  IF $12 IS NULL THEN
-    SELECT coalesce(array_agg(t.id), '{}') INTO v_led FROM (
-      SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN state_compute_work q ON q.id = e.id
-      WHERE e.id IN (SELECT l.question FROM state_task_answer_heads l)
-        AND e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
-        AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
-        AND ($13 IS NULL OR e.producer = $13)
-        AND q.state = 'open' AND q.waits = 0 AND factory_takeable(q.lease_until, q.leased_at, $1, $8)
-      ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED) t;
-    RETURN QUERY SELECT unnest(v_led);
-    IF cardinality(v_led) >= $14 THEN RETURN; END IF;
-    RETURN QUERY SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN state_compute_work q ON q.id = e.id
-    WHERE e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
-      AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
-      AND ($13 IS NULL OR e.producer = $13)
-      AND q.state = 'open' AND q.waits = 0 AND factory_takeable(q.lease_until, q.leased_at, $1, $8)
-      AND NOT (q.id = ANY (v_led))
-    ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 - cardinality(v_led) FOR UPDATE OF q SKIP LOCKED;
-  ELSE
-    RETURN QUERY SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN state_compute_work q ON q.id = e.id
-    WHERE e.id IN (SELECT l.question FROM state_task_answer_heads l WHERE l.engine = $12 AND EXISTS (SELECT 1 FROM state_compute_candidate_answers s
-        WHERE s.question = l.question AND s.engine = $12 AND s.void = 0 AND s.owner <> $5 AND ($6 = '' OR s.net <> $6)))
-      AND e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
-      AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
-      AND ($13 IS NULL OR e.producer = $13)
-      AND q.state = 'open' AND q.waits = 0 AND factory_takeable(q.lease_until, q.leased_at, $1, $8)
-    ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED;
-  END IF;
-END $$;
+RETURNS SETOF text LANGUAGE sql AS $$
+  SELECT q.id FROM factory_eligible($1,0,$2,$3,$4,$5,$6,$7,$8,$9) e
+    JOIN state_compute_work q ON q.id=e.id
+    WHERE e.state='open' AND e.waits=0 AND e.verb IN(SELECT jsonb_array_elements_text($10::jsonb))
+      AND ($11 IS NULL OR coalesce(e.request::jsonb #>> '{record,weapon}',e.request::jsonb->>'weapon') NOT IN(SELECT jsonb_array_elements_text($11::jsonb)))
+      AND ($13 IS NULL OR e.producer=$13)
+      AND ($12 IS NULL OR EXISTS(SELECT 1 FROM state_compute_candidate_answers s
+        WHERE s.question=e.id AND s.engine=$12 AND s.void=0 AND s.owner<>$5 AND ($6='' OR s.net<>$6)))
+      AND q.state='open' AND q.waits=0 AND factory_takeable(q.lease_until,q.leased_at,$1,$8)
+    ORDER BY e.zone,e.zone_position,e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED
+$$;
 
 -- A consumer transaction may apply only the fact and demand it read.
 CREATE OR REPLACE FUNCTION factory_delivery_guard(text,text,text,text,text,text,text) RETURNS void LANGUAGE plpgsql AS $$
@@ -236,15 +198,21 @@ CREATE TRIGGER questions_led AFTER UPDATE OF state ON state_compute_scheduling
 
 -- …LEASED TOGETHER as $15 until $16 to device $17 — unless it holds $18 packs
 -- already.
-CREATE OR REPLACE FUNCTION factory_take_pack(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint,
+CREATE OR REPLACE FUNCTION factory_take_pack_zoned(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint,
   text, text, text, bigint)
-RETURNS TABLE (id text, verb text, request text, due_at text, producer text) LANGUAGE sql AS $$
+RETURNS TABLE (id text, verb text, request text, due_at text, producer text, zone bigint, zone_position bigint) LANGUAGE sql AS $$
   UPDATE state_compute_work q SET (lease_prev, leased_to_prev, lease_prev_until) = (SELECT * FROM factory_supersede(q.lease_prev,
       q.leased_to_prev, q.lease_prev_until, q.lease, q.leased_to, q.lease_until, $1)),
     lease = $15, lease_until = $16, leased_to = $17, leased_at = $1
   WHERE q.id IN (SELECT factory_take($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14))
     AND (SELECT count(DISTINCT h.lease) FROM state_compute_work h WHERE h.leased_to = $17 AND h.lease_until > $1 AND h.lease <> $15) < $18
-  RETURNING q.id, q.verb, q.request, q.due_at, q.producer
+  RETURNING q.id, q.verb, q.request, q.due_at, q.producer, q.zone, q.zone_position
+$$;
+
+CREATE OR REPLACE FUNCTION factory_take_pack(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint,
+  text, text, text, bigint)
+RETURNS TABLE (id text, verb text, request text, due_at text, producer text) LANGUAGE sql AS $$
+  SELECT t.id,t.verb,t.request,t.due_at,t.producer FROM factory_take_pack_zoned($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) t
 $$;
 
 -- …EACH PRODUCER CHARGED ITS ROWS at its mean fight over its weight ($1: [{ p, n }]).
@@ -255,13 +223,19 @@ CREATE OR REPLACE FUNCTION factory_charge(text) RETURNS void LANGUAGE sql AS $$
 $$;
 
 -- …BOTH IN ONE STATEMENT, the pick before the charge's lock.
+CREATE OR REPLACE FUNCTION factory_lease_pack_zoned(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint,
+  text, text, text, bigint)
+RETURNS TABLE (id text, verb text, request text, due_at text, producer text, zone bigint, zone_position bigint) LANGUAGE sql AS $$
+  WITH taken AS MATERIALIZED (SELECT * FROM factory_take_pack_zoned($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)),
+  charged AS MATERIALIZED (SELECT factory_charge((SELECT jsonb_agg(jsonb_build_object('p', c.producer, 'n', c.n) ORDER BY c.producer)
+    FROM (SELECT t.producer, count(*) AS n FROM taken t GROUP BY t.producer) c)::text))
+  SELECT t.id, t.verb, t.request, t.due_at, t.producer, t.zone, t.zone_position FROM taken t CROSS JOIN charged
+$$;
+
 CREATE OR REPLACE FUNCTION factory_lease_pack(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint,
   text, text, text, bigint)
 RETURNS TABLE (id text, verb text, request text, due_at text, producer text) LANGUAGE sql AS $$
-  WITH taken AS MATERIALIZED (SELECT * FROM factory_take_pack($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)),
-  charged AS MATERIALIZED (SELECT factory_charge((SELECT jsonb_agg(jsonb_build_object('p', c.producer, 'n', c.n) ORDER BY c.producer)
-    FROM (SELECT t.producer, count(*) AS n FROM taken t GROUP BY t.producer) c)::text))
-  SELECT t.id, t.verb, t.request, t.due_at, t.producer FROM taken t CROSS JOIN charged
+  SELECT t.id,t.verb,t.request,t.due_at,t.producer FROM factory_lease_pack_zoned($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) t
 $$;
 
 -- WHO IS ASKING: an id that asked since $1, OR one holding a live lease at $2 —
@@ -291,16 +265,17 @@ LANGUAGE sql STABLE AS $$
   WHERE NOT EXISTS (SELECT 1 FROM s)
 $$;
 
--- A QUESTION AFTER ITS DEMANDS MOVED: the earliest deadline still standing, the
--- larger wait and that deadline's producer and initiator — or withdrawn, nobody asking.
+-- Current source intent owns zone; a zone change joins the destination tail.
 CREATE OR REPLACE FUNCTION factory_restate(text) RETURNS void LANGUAGE sql AS $$
-  UPDATE state_compute_work q SET due_at = l.due, waits = l.waits, producer = l.producer, initiator = l.initiator
-    FROM (SELECT min(due_at) AS due, max(waits) AS waits, count(*) AS n, (array_agg(producer ORDER BY due_at, producer))[1] AS producer,
-            (array_agg(initiator ORDER BY due_at, producer))[1] AS initiator
-          FROM relation_task_consumers WHERE question = $1 AND state = 'live') l
-    WHERE q.id = $1 AND l.n > 0;
-  UPDATE state_compute_work SET state = 'withdrawn', lease = NULL, lease_until = NULL, leased_to = NULL
-    WHERE id = $1 AND state = 'open' AND NOT EXISTS (SELECT 1 FROM relation_task_consumers WHERE question = $1 AND state = 'live');
+  UPDATE state_compute_scheduling q SET due_at=l.due,waits=l.waits,producer=l.producer,initiator=l.initiator,
+    zone=l.zone,zone_position=CASE WHEN coalesce(q.zone,factory_default_zone(q.producer))<>l.zone
+      THEN nextval('compute_queue_position') ELSE coalesce(q.zone_position,q.task_id) END
+    FROM (SELECT min(due_at) due,max(waits) waits,count(*) n,min(coalesce(zone,factory_default_zone(producer))) zone,
+      (array_agg(producer ORDER BY coalesce(zone,factory_default_zone(producer)),asked_at,producer))[1] producer,
+      (array_agg(initiator ORDER BY coalesce(zone,factory_default_zone(producer)),asked_at,producer))[1] initiator
+      FROM relation_task_consumers WHERE question=$1 AND state='live') l WHERE q.id=$1 AND l.n>0;
+  UPDATE state_compute_scheduling SET state='withdrawn',lease=NULL,lease_until=NULL,leased_to=NULL
+    WHERE id=$1 AND state='open' AND NOT EXISTS(SELECT 1 FROM relation_task_consumers WHERE question=$1 AND state='live');
 $$;
 
 -- COVERED (`record_candidate_answers.credited = 2`): on the questions $1 (json), an agreeing answer
@@ -339,33 +314,9 @@ CREATE OR REPLACE FUNCTION factory_forget_codes() RETURNS bigint LANGUAGE sql AS
   SELECT (SELECT count(*) FROM d) + (SELECT count(*) FROM q)
 $$;
 
--- AN OFFICIAL CHECK OF ANOTHER ENGINE IS NONE: the official machines run the
--- served engine $1 alone, so a dispute or a non-deterministic question no
--- answer of $1 is in can neither be settled nor refuse anyone, and a spot of a
--- fact $1 did not form cannot check it. The first is asked of the volunteers
--- again, as a fact of another engine is (worker/tasks.js `demandAll`): open,
--- its answers carried, and withdrawn where no live demand waits
--- (`factory_restate`); the second is the fact it was. Any answer of $1 keeps it
--- the official machines', a void one too: the pick reads the index alone, not
--- every answer of tens of thousands of questions. At most $2 a call;
--- returns how many moved. Definer, as `factory_forget_past`.
+-- A release change cannot create work or replace an active computation.
 CREATE OR REPLACE FUNCTION factory_moot_checks(text, bigint) RETURNS bigint
-LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE v text[]; n bigint; qid text;
-BEGIN
-  SELECT coalesce(array_agg(t.id), '{}') INTO v FROM (
-    SELECT q.id FROM state_compute_work q WHERE q.state IN ('disputed', 'nondeterministic')
-       AND NOT EXISTS (SELECT 1 FROM state_compute_candidate_answers a WHERE a.question = q.id AND a.engine = $1)
-     LIMIT $2 FOR UPDATE OF q SKIP LOCKED) t;
-  PERFORM compute_open_task(q.id,'engine_recalibration',$1,to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')) FROM state_compute_work q WHERE q.id=ANY(v) ORDER BY q.id;
-  FOREACH qid IN ARRAY v LOOP PERFORM factory_restate(qid); END LOOP;
-  WITH back AS (UPDATE state_compute_work q SET state = 'fact', lease = NULL, lease_until = NULL, leased_to = NULL
-      WHERE q.id IN (SELECT p.id FROM state_compute_work p WHERE p.state = 'spot' AND p.fact_engine IS DISTINCT FROM $1
-                      LIMIT $2 FOR UPDATE SKIP LOCKED)
-      RETURNING 1)
-  SELECT count(*) INTO n FROM back;
-  RETURN cardinality(v) + n;
-END $$;
+LANGUAGE sql SECURITY DEFINER AS $$ SELECT 0::bigint $$;
 
 -- Delivery and credit must finish before task detail can expire. Recent asks
 -- and answers restart its window; refusal markers still prevent unsafe re-asks.
@@ -373,7 +324,9 @@ END $$;
 -- credit index can look empty to the planner while retaining many old entries.
 CREATE OR REPLACE FUNCTION factory_past_safe(text, text) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
 BEGIN
-  RETURN NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question = $1
+  RETURN NOT EXISTS (SELECT 1 FROM state_build_workflow_nodes n JOIN state_build_workflows f ON f.id=n.workflow
+       WHERE n.computation=$1 AND f.state='active')
+     AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question = $1
                         AND (d.state = 'live' OR d.asked_at >= $2 OR d.served_at >= $2))
      AND NOT EXISTS (SELECT 1 FROM (SELECT at FROM record_candidate_answers WHERE question=$1 OFFSET 0) a WHERE a.at >= $2)
      AND NOT EXISTS (SELECT 1 FROM
@@ -865,8 +818,8 @@ BEGIN
   -- all are (`sift`). Each pick is charged as its own (`board_sync`).
   FOR v_round IN 1..8 LOOP
     EXIT WHEN jsonb_array_length(v_have) >= v_size;
-    v_got := COALESCE((SELECT jsonb_agg(to_jsonb(t)) FROM factory_take_pack(v_at, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling,
-      v_grace_s, (p -> 'packable')::text, p #>> '{grace,exclude}', p #>> '{grace,join}', CASE WHEN v_packable THEN v_head.producer END,
+    v_got := COALESCE((SELECT jsonb_agg(to_jsonb(t)) FROM factory_take_pack_zoned(v_at, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling,
+      v_grace_s, (p -> 'packable')::text, p #>> '{grace,exclude}', p #>> '{grace,join}', NULL::text,
       v_size - jsonb_array_length(v_have), v_lease, CASE WHEN v_short THEN p #>> '{pack,short_until}' ELSE p #>> '{pack,long_until}' END, v_dev,
       (p ->> 'packs_held')::bigint) t), '[]'::jsonb);
     EXIT WHEN jsonb_array_length(v_got) = 0;
@@ -880,7 +833,8 @@ BEGIN
       RAISE EXCEPTION 'board_sync: a pack demand of a producer not owed in sql' USING ERRCODE = 'WS001';
     END IF;
     v_unwanted := COALESCE((SELECT jsonb_agg(jsonb_build_array(e ->> 'producer', e ->> 'ref', e ->> 'question')) FROM jsonb_array_elements(v_ds) e
-      WHERE NOT CASE WHEN e ->> 'producer' = 'board_review' THEN board_review_wanted(e ->> 'ref', e ->> 'question')
+      WHERE NOT CASE WHEN e ->> 'producer' = 'build_workflow' THEN build_workflow_wanted(e ->> 'ref',e ->> 'question')
+        WHEN e ->> 'producer' = 'board_review' THEN board_review_wanted(e ->> 'ref', e ->> 'question')
         ELSE board_owed((e ->> 'payload')::jsonb ->> 'identity', (e ->> 'payload')::jsonb ->> 'ruler', (e ->> 'payload')::jsonb ->> 'mode') END),
       '[]'::jsonb);
     IF jsonb_array_length(v_unwanted) > 0 THEN
@@ -900,13 +854,13 @@ BEGIN
       PERFORM factory_restate(g.id) FROM (SELECT DISTINCT jsonb_array_elements_text(v_gone) AS id ORDER BY 1) g;
     END IF;
     v_have := v_have || COALESCE((SELECT jsonb_agg(jsonb_build_object('question', t ->> 'id', 'verb', t ->> 'verb', 'request', t ->> 'request',
-        'due_at', t ->> 'due_at', 'demands', (SELECT COALESCE(jsonb_agg(jsonb_build_object('producer', e ->> 'producer', 'ref', e ->> 'ref',
+        'due_at', t ->> 'due_at', 'zone',(t->>'zone')::bigint,'zone_position',(t->>'zone_position')::bigint,'demands', (SELECT COALESCE(jsonb_agg(jsonb_build_object('producer', e ->> 'producer', 'ref', e ->> 'ref',
           'payload', e ->> 'payload') ORDER BY (e ->> 'k')::bigint), '[]'::jsonb) FROM jsonb_array_elements(v_wanted) e WHERE e ->> 'question' = t ->> 'id')))
       FROM jsonb_array_elements(v_got) t WHERE NOT v_gone ? (t ->> 'id')), '[]'::jsonb);
     EXIT WHEN jsonb_array_length(v_gone) = 0;
   END LOOP;
   r := jsonb_set(r, '{use,charge}', v_charges);
-  v_got := COALESCE((SELECT jsonb_agg(t ORDER BY t ->> 'due_at' COLLATE "C", t ->> 'question' COLLATE "C") FROM jsonb_array_elements(v_have) t), '[]'::jsonb);
+  v_got := COALESCE((SELECT jsonb_agg(t ORDER BY (t ->> 'zone')::bigint,(t ->> 'zone_position')::bigint,t ->> 'question' COLLATE "C") FROM jsonb_array_elements(v_have) t), '[]'::jsonb);
   IF jsonb_array_length(v_got) = 0 THEN
     UPDATE entity_compute_devices SET next_at = p ->> 'idle_at' WHERE id = v_dev;
     r := r || jsonb_build_object('outcome', 'idle');

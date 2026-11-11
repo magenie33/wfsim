@@ -28,44 +28,31 @@ pub fn at_max_rank(id: &str) -> String {
     wfsim_engine::data::mods::split_rank(id).0.to_string()
 }
 
-/// WHAT A SUBMISSION IS, by the library's door: legal, normalised, its riven a
-/// shape. `Err` is the reason intake refuses it. The record is the inbox one —
-/// the fields `offerBoardSubmit` sends, as the worker stores them.
+/// A legal submitted build retains its declared ranks and riven rolls.
 pub fn library_build(rec: &Value) -> Result<ValidBuild, String> {
-    let weapon = get_str(rec, "weapon", "");
-    let riven = {
-        let bonuses = ids(rec, "riven_pos");
-        (!bonuses.is_empty()).then(|| wfsim_engine::build::rivens::RivenShape {
-            bonuses,
-            malus: Some(get_str(rec, "riven_neg", "").to_string()).filter(|m| !m.is_empty()),
-        })
-    };
-    let assembly = wfsim_engine::data::weapons::assembly::of(
-        weapon,
-        get_str(rec, "grip", ""),
-        get_str(rec, "loader", ""),
-        get_str(rec, "link", ""),
-    );
-    let mods: Vec<String> = ids(rec, "mods").iter().map(|m| at_max_rank(m)).collect();
-    let exilus = at_max_rank(get_str(rec, "exilus", ""));
-    wfsim_engine::board::builds::validate_with(
-        weapon,
-        &mods,
-        &ids(rec, "evolutions"),
-        &ids(rec, "arcanes"),
-        get_str(rec, "valence", ""),
-        riven.as_ref(),
-        Some(exilus.as_str()).filter(|x| !x.is_empty()),
-        assembly.as_ref(),
-    )
-    // THE WARFRAME, by the board's own rule rather than by a second copy of it:
-    // dropped where a ruler pins a frameless Tenno, required on an Exalted
-    // weapon whose numbers are that frame's.
-    .and_then(|v| {
-        let w: Option<wfsim_engine::data::warframes::Build> =
-            rec.get("wielder").and_then(|x| serde_json::from_value(x.clone()).ok());
-        v.with_wielder(w.as_ref())
-    })
+    let mut record = rec.clone();
+    let bonuses = ids(rec, "riven_pos");
+    if let Some(raw) = rec.get("riven_rolls") {
+        let rolls: Vec<f64> = raw.as_array().ok_or("riven rolls must be an array")?
+            .iter().map(|v| v.as_f64().filter(|n| n.is_finite()).ok_or("invalid riven roll"))
+            .collect::<Result<_, _>>()?;
+        let malus = !get_str(rec, "riven_neg", "").is_empty();
+        if rolls.len() != bonuses.len() + usize::from(malus) { return Err("riven roll count does not match its stats".into()); }
+        let mut paired: Vec<_> = bonuses.iter().cloned().zip(rolls.iter().copied()).collect();
+        paired.sort_by(|a,b| a.0.cmp(&b.0));
+        record["riven_pos"] = json!(paired.iter().map(|p| &p.0).collect::<Vec<_>>());
+        let mut sorted: Vec<_> = paired.iter().map(|p| p.1).collect();
+        if malus { sorted.push(*rolls.last().unwrap()); }
+        record["riven_rolls"] = json!(sorted);
+    }
+    let mut build = board_build(&record)?;
+    if let Some(shape) = &build.riven {
+        if build.riven_rolls.is_empty() { build.riven_rolls = wfsim_engine::build::rivens::default_rolls(shape); }
+        let class = wfsim_engine::build::rivens::class_for_weapon(&build.weapon).ok_or("no riven class")?;
+        let illegal = shape.at(class, &build.riven_rolls).illegal();
+        if !illegal.is_empty() { return Err(illegal.join("; ")); }
+    }
+    Ok(build)
 }
 
 /// THE CANONICAL BUILD, as the library stores one.
@@ -351,10 +338,12 @@ pub fn board_fold_json(v: &Value) -> Value {
 /// fold held (`Shard::work`), which a compute order's clients must agree on
 /// beside the score (docs/BOARD.md §"Contribution").
 pub fn board_score_json(v: &Value) -> Value {
-    let Some(bench) = bench_named(get_str(v, "ruler", "")) else {
-        return crate::request::err_json("unknown ruler".to_string());
-    };
     let req = v.get("request").cloned().unwrap_or(Value::Null);
+    let metric = if let Some(metric)=req.get("metric").and_then(Value::as_str).and_then(wfsim_engine::rules::metrics::get) {
+        metric
+    } else if let Some(bench)=bench_named(get_str(v,"ruler","")) { bench.metric() }
+    else {return crate::request::err_json("unknown score metric");};
+    let duration=req.get("duration").and_then(Value::as_f64).unwrap_or(300.0);
     let acc: wfsim_engine::fight::Shard = match serde_json::from_value(v.get("acc").cloned().unwrap_or(Value::Null)) {
         Ok(s) => s,
         Err(e) => return crate::request::err_json(format!("acc: {e}")),
@@ -369,5 +358,5 @@ pub fn board_score_json(v: &Value) -> Value {
         wfsim_engine::fight::WORK_COUNTERS.iter().zip(acc.work_counts()).map(|(k, n)| ((*k).to_string(), json!(n))).collect();
     let mut counts = counts;
     counts.insert("gas".to_string(), json!(acc.gas));
-    json!({ "ok": true, "score": row_score(bench, &out), "metric": bench.metric().id, "work": acc.work(), "counts": counts })
+    json!({ "ok": true, "score": metric.of(out.get(metric.field).and_then(Value::as_f64).unwrap_or(0.0),duration), "metric": metric.id, "work": acc.work(), "counts": counts })
 }

@@ -34,7 +34,7 @@ only the current run's input.
 | `task_contract.js` | Canonical identity, witness independence and lifecycle constants |
 | `task_ledger.js` | Demand registration, deduplication, withdrawal and durable state access |
 | `task_dispatch.js` | Selection, claims, leases, renewal and release |
-| `task_usage.js` | Compute-cost accounting used by fair scheduling |
+| `task_usage.js` | Compute-cost accounting |
 | `task_verification.js` | Answers, agreement and verified facts |
 | `task_delivery.js` | Consumer delivery and retries |
 | `task_credit.js` | Idempotent contribution settlement and repayment |
@@ -71,7 +71,7 @@ search algorithm consumes them. Missing mode retains its constructor semantics.
 The page, bot and family intake use this same endpoint or Rust function.
 `input_schema=1` identifies that admission contract without entering the hash.
 An older request producer must reload before admitting persistent shared work;
-volunteer execution capabilities remain unchanged.
+older volunteers continue to execute compatible work.
 
 `compute_admit_tasks` admits inputs, the current execution round, every trigger
 snapshot and current consumer links in one transaction. A nonempty registered
@@ -81,41 +81,81 @@ trigger snapshots while its last occurrence sets the current consumer link.
 Deadlines and waiting priority may change without replacing a held lease.
 
 `state_compute_scheduling.id` is the unique computation key. Taking a lease
-keeps that entry in the queue; another source joins it. Independent witnesses
-are attempts within that same round, rather than new queue entries. An accepted
-result is reused across deployments. Retention expiry or an explicit review
-can open a later round under the same computation ID. Confirmed invalidation
-fences the previous round before opening its replacement; a repeated correction
-cannot open another round. Result engine and submission engine remain separate
-provenance. Old candidates cannot certify a replacement round implicitly.
+keeps that entry occupied. Another source joins it and may promote its zone;
+it cannot add another queue entry or replace the held lease. Independent
+witnesses are execution attempts under that entry. Engine changes neither
+reopen results nor recreate disputes.
 
-`relation_compute_task_sources` preserves trigger snapshots separately from
-`relation_task_consumers`, which owns current delivery. A continuation carries
-at most the latest snapshot per consumer, while prior rounds retain their own
-triggers. Task archives include these source relations. Every producer must
-register its durable source lookup in `compute_source_exists` as well as its
-business callbacks.
+The queue consists of zones `00` through `99`. Explicit human calculations use
+`00`, matching-environment corrections use `01`, and ordinary intake uses `03`.
+A system source may select any zone. Dispatch selects the first executable
+entry by zone, then FIFO position within that zone. A source promotion joins
+the destination tail. Dependencies, unsupported capabilities and held leases
+are eligibility constraints. They do not block other executable entries.
+Sustained earlier-zone work can delay later zones; producer usage and deadlines
+do not reorder a zone.
 
-## Identity cutover and source cleanup
+A build workflow keeps every participating computation occupied until all its
+required steps finish, including accepted output, durable delivery and derived
+build intake. A finished child cannot open a duplicate round while its parent
+remains active. After terminal closure, a new explicit source may request a
+later execution under the same computation ID. A confirmed invalidation fences
+an attempt within the occupied entry and records its system cause; the parent
+continues to refer to its current attempt. Prior inputs and results remain
+immutable history.
 
-Apply the additive task schema and daemon grants before publishing matching
-Worker, native, WASM and bot code. During an identity cutover, fence application
-writers with the recorded database-role fence. Use the validated native engine
-on loopback to prepare bounded plans with `scripts/migrations/compute_identity.mjs`.
-The operator-only apply path checks the actual fence, matches the original
-round and consumers, and commits each replacement atomically. It preserves raw
-inputs, prior results and a `record_compute_identity_changes` receipt; request
-and consumer references move to the standardized computation. Replaying a plan
-is idempotent. Retained source records cannot be replaced with inferred history.
+`relation_compute_task_sources` preserves each trigger snapshot separately from
+`relation_task_consumers`, which owns current delivery. Workflow triggers retain
+first intake, observations and system commands, even when they coalesce. Task
+archives include source relations. Missing initiator attribution never implies
+a missing source.
 
-`scripts/compute_queue_sources.mjs` audits at most 1,000 active entries per page.
-Its default is read-only; `--apply` removes only entries without any resolvable
-live business request or plan. A missing initiator is not evidence of a missing
-source. Removal rechecks sources under the queue row lock, clears current and
-previous leases, withdraws consumers and records `record_compute_queue_removals`.
-Builds, frozen inputs and accepted results remain. The returned cursor and
-observation time belong to that page; they do not claim a complete queue count.
-A subsequent valid trigger can admit the same computation again.
+Existing queued entries keep their original inputs, IDs, attempts and leases.
+The rollout does not run identity rekeying, orphan removal or queue cleanup.
+Local and offline queues deduplicate new work within their own store. Their
+IDs remain held through pending completion deliveries; existing legacy local
+entries are not rewritten or cancelled during startup.
+
+## Build intake and captured scope
+
+All legal submitted builds are retained independently of frontend rankings.
+Native intake preserves canonical mod ranks, riven stat/roll pairing and exact
+build identity. It captures the current boards, scenarios, modes and family
+relationships without simulating a fight. `scope: "library"` on
+`/api/board/check` checks storage legality; ordinary board checks retain each
+ruler's eligibility rules.
+
+`build_intake_batch` commits a first build, its immutable workflow and all
+sourced computation demands in one transaction. An existing global build does
+not create intake work, including when it lacks scores or new boards exist.
+A local observation creates correction work only after native normalization
+matches the official fight and the database still holds the compared baseline.
+Equal values, stale baselines and different environments create no correction.
+The public review endpoint durably captures an observation in the same inbox;
+it does not implement a second task expansion.
+
+First intake and correction reuse the same expansion: measure the source on
+its captured applicable boards, copy the complete build to current family
+members, and measure legal copies. An incompatible target uses the existing
+quick optimizer with compatible positions retained, then measures the accepted
+result on that captured scope. Derived results continue their parent and never
+start another family fanout. Intermediate family candidates can be retained
+without advancing the accepted-result continuation.
+
+| Table | Contents |
+| --- | --- |
+| `entity_build_workflow_scopes` | Interned immutable board/scenario/mode snapshots |
+| `entity_build_workflows` | One logical expansion, its root build, scope and initial source |
+| `entity_build_workflow_expansions` | Frozen compact node plans, including accepted optimizer continuations |
+| `state_build_workflows` | Active/terminal state, zone and temporary initiator attribution |
+| `state_build_workflow_nodes` | Current dependency, computation, attempt and delivery references |
+| `record_build_workflow_triggers` | Every accepted intake, mismatch or explicit system source |
+
+The snapshot is shared across builds; canonical build records remain in the
+library rather than being copied into stored plans. Templates and patches
+avoid repeating a complete fight inside one expansion. Queue admission is
+independent of scope construction: equivalent nodes share the same physical
+computation and deliver separately to every consumer.
 
 ## Verification and delivery
 
@@ -164,15 +204,18 @@ the account upgrade as its database owner and then the daemon grants. Existing
 details are shortened only for optimization and appraisal. Public names must
 not be enabled before both database upgrades have succeeded.
 
-The output adds nullable delivery and payment readiness, creates their partial
+The output installs the captured-workflow tables, inbox view, bounded admission
+functions and grants, and adds nullable zone/capability columns. It also adds
+nullable delivery and payment readiness, creates their partial
 indexes concurrently and installs delivery and retention guards. Run outside a transaction
-and confirm `demands_delivery` and `answers_credit_pending` are valid and ready
+and confirm `demands_delivery`, `answers_credit_pending` and `compute_scheduling_zone` are valid and ready
 before deploying code. The same upgrade installs the restricted inventory reader
 and grants its execution to the existing pipeline role. Existing binaries
 ignore the additive schema. A lock timeout or failed index build must be
 resolved before deployment; an invalid concurrent index must be removed before
 retrying. Deploy the Worker and daemon from the same validated commit, then
-run normal queue reconciliation to publish the first complete inventory.
+run normal queue reconciliation only to recover existing pending registrations.
+Complete inventory capture remains an explicit operation.
 The compute page reads queued orders independently of that scan. Rolling back code
 retains the additive schema and inventory; no task or score backfill is needed.
 
@@ -183,8 +226,8 @@ Dates and batches are not part of it. Each pending calculation has one
 `(build_id, ruler, mode)` queue row; the wire continues carrying this ID as `ref`.
 Repeated batches and refresh rounds merge into its original batch and may fill
 an absent initiator. Only newly inserted calculations increase a pipeline batch's total.
-A unique index enforces the calculation key; a completed row may enter a later
-round. Periodic refreshes wait fourteen days after the last measurement.
+A unique index enforces the calculation key. Existing pending legacy rows
+continue to execute. Periodic refresh does not create ordinary work.
 Explicit board corrections retain their immediate independent-review path.
 
 The demand projection gives a full background-read statement budget when queue

@@ -11,7 +11,7 @@ if(!/^wfsim_migrate_[a-f0-9]{12}$/.test(stage || ""))throw new Error("an exact p
 const root=new URL("../../",import.meta.url);
 const manifest=JSON.parse(readFileSync(new URL("db-boundaries-2026-11-10.json",import.meta.url),"utf8"));
 const mapping=manifest.databases.find(database=>database.name==="wfsim").tables;
-const files=["schema","library","sync","inventory"];
+const files=["schema","library","sync","inventory","build_workflows"];
 const ddl=files.map(name=>readFileSync(new URL("worker/pg/"+name+".sql",root),"utf8"));
 const signatures=new Set(ddl.flatMap(source=>[...source.matchAll(/CREATE OR REPLACE (?:FUNCTION|PROCEDURE) ([a-z_]+)\(([^)]*)\)/g)]
   .map(match=>match[1]+"("+match[2].split(",").map(arg=>arg.trim().replace(/\s+DEFAULT\s+.*$/i,"")
@@ -26,8 +26,12 @@ const pauseAfter=Number(process.argv.find(arg=>arg.startsWith("--pause-after="))
 const transformed=new Set(["questions","calculation_reports"]);
 const core=["entity_compute_specs","entity_compute_tasks","entity_compute_results","record_compute_result_proofs",
   "record_compute_result_selections","state_compute_scheduling","relation_task_answer_evidence",
-  "entity_calculation_reports","state_calculation_report_selection","relation_calculation_report_access"];
-const views=["state_compute_work","state_current_calculation_reports"];
+  "entity_calculation_reports","state_calculation_report_selection","relation_calculation_report_access",
+  "relation_compute_task_sources","record_compute_queue_removals","record_compute_identity_changes",
+  "entity_build_workflow_scopes","entity_build_workflows","entity_build_workflow_expansions",
+  "state_build_workflows","state_build_workflow_nodes","record_build_workflow_triggers"];
+const views=["state_compute_work","state_current_calculation_reports","state_build_inbox_inputs"];
+const sequences=["compute_queue_position"];
 const legacy=name=>"record_migration_legacy_"+name;
 const names=active=>mapping.map(row=>active ? (transformed.has(row.source) ? legacy(row.source) : row.target) : row.source);
 const sourceRelation=(item,active)=>active && transformed.has(item.source)
@@ -234,7 +238,12 @@ async function activate() {
       if(++count===failure)throw new Error("injected activation interruption after "+count+" metadata renames");
       if(count===pauseAfter)await query(tx,"SELECT pg_sleep(30)");
     }
-    for(const name of [...core,...views])await query(tx,`ALTER ${views.includes(name) ? "VIEW" : "TABLE"} ${stage}.${quote(name)} SET SCHEMA public`);
+    for(const name of [...core,...views,...sequences]){
+      const [relation]=await query(tx,"SELECT to_regclass($1) AS id",[stage+"."+name]);
+      if(relation.id)await query(tx,`ALTER ${sequences.includes(name) ? "SEQUENCE" : views.includes(name) ? "VIEW" : "TABLE"} ${stage}.${quote(name)} SET SCHEMA public`);
+    }
+    const [zoneFunction]=await query(tx,"SELECT to_regprocedure($1) AS id",[stage+".factory_default_zone(text)"]);
+    if(zoneFunction.id)await query(tx,`ALTER FUNCTION ${stage}.factory_default_zone(text) SET SCHEMA public`);
     const moved=[];
     for(const fn of p.baseline.functions){
       const signature=fn.signature.replace(/^public\./,"");
@@ -252,15 +261,10 @@ async function activate() {
     for(const source of ddl)await query(tx,source);
     const owner=p.baseline.tables.find(table=>table.name==="questions").owner;
     const [{name:ownerName}]=await query(tx,"SELECT rolname AS name FROM pg_roles WHERE oid=$1::oid",[owner]);
-    for(const name of [...core,...views,"state_compute_candidate_answers"])await query(tx,`ALTER ${[...views,"state_compute_candidate_answers"].includes(name) ? "VIEW" : "TABLE"} public.${quote(name)} OWNER TO ${quote(ownerName)}`);
+    for(const name of [...core,...views,...sequences,"state_compute_candidate_answers"])await query(tx,`ALTER ${sequences.includes(name) ? "SEQUENCE" : [...views,"state_compute_candidate_answers"].includes(name) ? "VIEW" : "TABLE"} public.${quote(name)} OWNER TO ${quote(ownerName)}`);
     const oldFunctions=new Set(p.baseline.functions.map(fn=>fn.signature));
     for(const fn of await functions(tx))if(!oldFunctions.has(fn.signature))
       await query(tx,`ALTER ROUTINE public.${fn.signature.replace(/^public\./,"")} OWNER TO ${quote(ownerName)}`);
-    const [daemon]=await query(tx,"SELECT rolname FROM pg_roles WHERE rolname='wfsim_factoryd'");
-    if(daemon){
-      const grants=readFileSync(new URL("deploy/factoryd_grants.sql",root),"utf8");
-      for(const match of grants.matchAll(/GRANT (?!CONNECT)[^;]+;/g))await query(tx,match[0]);
-    }
     await query(tx,`CREATE OR REPLACE FUNCTION wfsim_migration_ops.capture_library_write() RETURNS trigger LANGUAGE plpgsql
       SECURITY DEFINER SET search_path=pg_catalog AS $$BEGIN
         INSERT INTO wfsim_migration_ops.record_library_writes(relation_name,operation) VALUES(TG_TABLE_NAME,TG_OP);RETURN NULL;
@@ -280,6 +284,11 @@ async function activate() {
         (SELECT jsonb_agg(to_jsonb(a) ORDER BY a.grantor,a.grantee,a.privilege_type,a.is_grantable)
           FROM aclexplode(COALESCE($2::aclitem[],acldefault('r',$3::oid)))a) AS same`,[before.acl,table.acl,before.owner]);
       if(!permissions.same)throw new Error("source object identity/privilege changed: "+before.name);
+    }
+    const [daemon]=await query(tx,"SELECT rolname FROM pg_roles WHERE rolname='wfsim_factoryd'");
+    if(daemon){
+      const grants=readFileSync(new URL("deploy/factoryd_grants.sql",root),"utf8");
+      for(const match of grants.matchAll(/GRANT (?!CONNECT)[^;]+;/g))await query(tx,match[0]);
     }
     await phase(tx,"activated");return {source_tables:after.length,new_core_tables:core.length,metadata_unchanged:true};
   });emit({ok:true,phase:"activated",...result});
@@ -330,15 +339,22 @@ async function backout() {
     for(const item of await triggers(tx,"wfsim_migration_ops"))if(oldTables.has(item.table_name))
       await query(tx,`DROP TRIGGER ${quote(item.name)} ON wfsim_migration_ops.${quote(item.table_name)}`);
     await query(tx,"DROP VIEW public.state_compute_candidate_answers");
-    for(const name of [...views,...core])await query(tx,`ALTER ${views.includes(name) ? "VIEW" : "TABLE"} public.${quote(name)} SET SCHEMA ${stage}`);
+    for(const name of [...views,...core,...sequences])await query(tx,`ALTER ${sequences.includes(name) ? "SEQUENCE" : views.includes(name) ? "VIEW" : "TABLE"} public.${quote(name)} SET SCHEMA ${stage}`);
     const [{owner:stageOwner}]=await query(tx,"SELECT pg_get_userbyid(nspowner) AS owner FROM pg_namespace WHERE nspname=$1",[stage]);
-    for(const name of [...core,...views]){
+    for(const name of [...core,...views,...sequences]){
       const owner=p.baseline.stage_ownership?.find(relation=>relation.name===name)?.owner || stageOwner;
-      await query(tx,`ALTER ${views.includes(name) ? "VIEW" : "TABLE"} ${stage}.${quote(name)} OWNER TO ${quote(owner)}`);
+      await query(tx,`ALTER ${sequences.includes(name) ? "SEQUENCE" : views.includes(name) ? "VIEW" : "TABLE"} ${stage}.${quote(name)} OWNER TO ${quote(owner)}`);
     }
     for(const item of [...mapping].reverse()){
       if(transformed.has(item.source))await query(tx,`ALTER TABLE ${sourceRelation(item,true)} SET SCHEMA public`);
       await query(tx,`ALTER TABLE public.${quote(transformed.has(item.source) ? legacy(item.source) : item.target)} RENAME TO ${quote(item.source)}`);
+    }
+    for(const before of p.baseline.tables){
+      const added=await query(tx,`SELECT a.privilege_type,CASE WHEN a.grantee=0 THEN NULL ELSE pg_get_userbyid(a.grantee) END AS grantee
+        FROM pg_class c CROSS JOIN LATERAL aclexplode(COALESCE(c.relacl,acldefault('r',c.relowner)))a
+        WHERE c.oid=$1::oid AND NOT EXISTS(SELECT 1 FROM aclexplode(COALESCE($2::aclitem[],acldefault('r',$3::oid)))b
+          WHERE b.grantee=a.grantee AND b.privilege_type=a.privilege_type)`,[before.oid,before.acl,before.owner]);
+      for(const grant of added)await query(tx,`REVOKE ${grant.privilege_type} ON public.${quote(before.name)} FROM ${grant.grantee===null ? "PUBLIC" : quote(grant.grantee)}`);
     }
     for(const signature of p.baseline.moved_functions){
       await query(tx,`DROP ROUTINE IF EXISTS public.${signature}`);

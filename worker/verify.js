@@ -245,7 +245,7 @@ async function work(request, env) {
   const lanes = ahead ? 0 : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
   const pace = Number.isInteger(b.pace_ms) && b.pace_ms >= 100 && b.pace_ms <= d.lease_ms ? b.pace_ms : null;
   const who = await witnessOf(env, id);
-  const w = { device: id, owner: who.owner, siblings: [...who.siblings, ...(b.capabilities?.includes("calculation-reports-v1") ? ["cap:calculation-reports-v1"] : [])], net: await netOf(request, env), lanes };
+  const w = { device: id, owner: who.owner, siblings: [...who.siblings, ...["calculation-reports-v1","fixed-board-input-v1"].filter(c=>b.capabilities?.includes(c)).map(c=>"cap:"+c)], net: await netOf(request, env), lanes };
   const f = facts();
   const [, , held, me, fair, head] = await db.batch([
     // THE CLIENT, remembered by the id it made and nothing else; its day kept,
@@ -288,7 +288,7 @@ async function work(request, env) {
   if (short && throttled(await fairTable(request, env, served.engine, now), accountOf(who.owner, id))) return none;
   const n = single ? 1 : packSize(pace, open, asking, d), lease_ms = single ? d.lease_ms : d.pack_lease_ms;
   const p = await f.nextPack(env, w, engine, { n, lease_ms, most: ahead ? d.packs_held : 1, exclude: grace && !grace.join ? grace.changed : null, join: grace && grace.join ? served.engine : null,
-    producer: first && f.packable(first) ? first.producer : null }, now);
+    producer: null }, now);
   const tasks = p ? p.questions.map(packTaskOf).filter(Boolean) : [];
   if (single) {
     const t = tasks[0];

@@ -350,10 +350,11 @@ class UserTaskQueue {
         result_ref: null, error: null, created_at: taskInstant(), updated_at: taskInstant(), completed_at: null };
     }));
     const accepted = await this.change((state) => tasks.map(task => {
-      const held = state.tasks.find(row => row.computation === task.computation && ["queued", "running"].includes(row.state));
+      const held = state.tasks.find(row => row.computation === task.computation && (["queued", "running"].includes(row.state) || state.events?.some(event => event.task === row.id && !event.delivered_at)));
       if (held) {
         (held.sources ||= taskSources(held)).push(...task.sources);
         held.updated_at = taskInstant();
+        held.removed_at = null;
         return held;
       }
       state.tasks.push(task); return task;
@@ -363,39 +364,7 @@ class UserTaskQueue {
   }
 
   async prepare() {
-    return this.lock("identity", async () => {
-      const rows = (await this.store.read()).tasks.filter(row => ["queued", "running"].includes(row.state) && !row.computation);
-      const normalized = new Map();
-      for (const row of rows) {
-        if (!row.origin || !Object.keys(row.origin).length) { normalized.set(row.id, null); continue; }
-        const input = await this.normalize(row.kind, taskClone(row.request));
-        normalized.set(row.id, { request: input.request, computation: await computationId(taskVerb(row.kind), taskIdentityInput(row.kind,input.request,row.origin)),
-          origin: { ...row.origin, ...(row.origin.board ? {board:computationReferences(row.origin.board,input.aliases)} : {}), input_aliases: input.aliases || {}, input_key: computationCanon(computationInput(taskVerb(row.kind), row.request)) } });
-      }
-      if (!rows.length) return;
-      await this.change(state => {
-        for (const row of state.tasks) if (normalized.has(row.id) && !row.computation && ["queued", "running"].includes(row.state)) {
-          const input = normalized.get(row.id);
-          if (input) Object.assign(row, input, { original_request: taskClone(row.request),
-            ...(row.state === "running" ? {state:"queued",attempt:null,generation:row.generation+1} : {}), sources: [{ id: row.id, origin: input.origin, created_at: row.created_at }] });
-          else {
-            if (row.destination !== "local") (state.commands ||= []).push({ id: crypto.randomUUID(), action: "cancel", destination: row.destination,
-              remote: row.remote_command || row.attempt, delivered_at: null });
-            Object.assign(row, { state: "cancelled", generation: row.generation + 1, completed_at: taskInstant(), error: "This task has no source." });
-          }
-        }
-        const held = new Map();
-        for (const row of [...state.tasks].sort((a,b) => Number(b.state === "running") - Number(a.state === "running"))) {
-          if (!["queued", "running"].includes(row.state) || !row.computation) continue;
-          const prior = held.get(row.computation);
-          if (!prior) { held.set(row.computation,row); continue; }
-          (prior.sources ||= taskSources(prior)).push(...taskSources(row));
-          if (row.destination !== "local") (state.commands ||= []).push({ id: crypto.randomUUID(), action: "cancel", destination: row.destination,
-            remote: row.remote_command || row.attempt, delivered_at: null });
-          Object.assign(row, { state: "cancelled", generation: row.generation + 1, superseded_by: prior.id, completed_at: taskInstant() });
-        }
-      });
-    });
+    // Existing queued entries retain their inputs, attempts and delivery state.
   }
 
   wait(id) {
@@ -426,7 +395,7 @@ class UserTaskQueue {
       if (!["failed", "cancelled", "interrupted"].includes(task.state)) throw new Error("This task cannot be retried.");
       const type = this.types.get(task.kind);
       if (!type || !this.executors.get(task.destination || "local")?.supports(type) || task.request_schema !== type.schema) throw new Error("This task type cannot run here.");
-      const held = state.tasks.find(row => row.id !== id && row.computation === task.computation && ["queued", "running"].includes(row.state));
+      const held = state.tasks.find(row => row.id !== id && row.computation === task.computation && (["queued", "running"].includes(row.state) || state.events?.some(event => event.task === row.id && !event.delivered_at)));
       if (held) {
         (held.sources ||= taskSources(held)).push({ id: crypto.randomUUID(), origin: taskClone(task.origin), created_at: taskInstant() });
         return held;
@@ -629,11 +598,15 @@ class UserTaskQueue {
           }
         }
         catch (error) { this.eventError = String(error.message || error); this.changed(); if (error.retryable !== false) this.retryDelivery(); continue; }
-        await this.change((state) => {
+        const pending = await this.change((state) => {
           const row = state.events?.find((row) => row.id === event.id);
-          if (row) row.delivered_at = taskInstant();
+          const current = state.tasks.find(task => task.id === event.task);
+          const pending = current?.attempt === event.id && type?.completed && taskSources(current).some(source => !row?.delivered_sources?.includes(source.id));
+          if (row && !pending) row.delivered_at = taskInstant();
           state.tasks = state.tasks.filter((task) => !task.removed_at || state.events.some((event) => event.task === task.id && !event.delivered_at));
+          return pending;
         });
+        if (pending) this.retryDelivery();
       }
     }).catch((error) => { this.eventError = String(error.message || error); this.changed(); })
       .finally(() => { this.eventDelivery = null; this.changed(); });

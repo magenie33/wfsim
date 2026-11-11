@@ -532,6 +532,7 @@ function rowProgress(p, done, total) {
 }
 async function prepareBoardRow(t) {
   const began = performance.now();
+  if(t.fight) return {ok:true,request:t.fight};
   const order = await api("/api/board/order", { record: t.record, ruler: t.ruler, mode: t.mode }, null, { community: true });
   if (order?.ok) learnTiming(refillTiming.prepare, performance.now() - began);
   return order;
@@ -564,7 +565,7 @@ function workLeftMs() {
 }
 function boardSyncBody(id, { want, keep = null, results }) {
   const c = computeConsent(), idle = idleLoad();
-  return { verifier: id, engine: ENGINE_ID, protocol: 8, capabilities: ["calculation-reports-v1"], ...(c ? { consent: { v: c.v, at: c.at } } : {}),
+  return { verifier: id, engine: ENGINE_ID, protocol: 8, capabilities: ["calculation-reports-v1","fixed-board-input-v1"], ...(c ? { consent: { v: c.v, at: c.at } } : {}),
     lanes: communityLanes(), ...(boardPaceMs ? { pace_ms: Math.min(syncDials.sync_lease_ms, Math.max(100, Math.round(boardPaceMs))) } : {}),
     want_ms: c && c.on && !computeHeld() ? Math.max(0, Math.round(want)) : 0, held: heldRows(),
     results: results.map(({ verifier: _v, engine: _e, at: _a, key: _k, ...r }) => r),
@@ -870,7 +871,7 @@ async function askWork(id, ahead = false) {
   if (!c) return null;
   const at = Date.now(), lanes = communityLanes();
   const idle = ahead ? {} : idleLoad();
-  const sent = await postBoardWork("/api/board/work", { verifier: id, engine: ENGINE_ID, protocol: 7, capabilities: ["calculation-reports-v1"], consent: { v: c.v, at: c.at },
+  const sent = await postBoardWork("/api/board/work", { verifier: id, engine: ENGINE_ID, protocol: 7, capabilities: ["calculation-reports-v1","fixed-board-input-v1"], consent: { v: c.v, at: c.at },
     lanes, ...(boardPaceMs ? { pace_ms: Math.round(boardPaceMs) } : {}), ...(ahead ? { ahead: true } : {}),
     ...(Object.keys(idle).length ? { idle: Object.entries(idle).map(([hour, x]) => ({ hour, ...x })) } : {}) });
   const ask = sent, dropped = roadDropped;
@@ -1028,7 +1029,7 @@ async function packRowOnce(id, p) {
   const refill = p8 ? () => refill8(id) : () => { if ((p.tasks.length - p.next) * boardPaceMs <= REFILL_MS) askAhead(id); };
   const prepared = p8 && p.prepared?.question === t.question ? await p.prepared.promise : null;
   const order = p8 ? prepared || await prepareBoardRow(t)
-    : await api("/api/board/order", { record: t.record, ruler: t.ruler, mode: t.mode }, null, { community: true });
+    : await prepareBoardRow(t);
   p.prepared = null;
   // A ROW THIS ENGINE REFUSES is said so in the next sync (`refused`): given back,
   // never handed here again, and withdrawn once enough owners refused it.
