@@ -16,11 +16,15 @@ inputs:
 runs:
   using: composite
   steps:
-    # Site builds need the CJK font and xwin's linker; publishing also builds
-    # the Linux desktop shell. The MSVC headers require clang 19 or newer.
+    # Source and legacy desktop builds need the CJK font and xwin linker.
+    # Prepared publication consumes checked artifacts without compiling them.
     - shell: bash
       run: |
         set -euo pipefail
+        if [ '${{ inputs.build }}' = 'publish' ]; then
+          echo 'using verified prepared components; no system build dependencies'
+          exit 0
+        fi
         llvm=$(ls -d /usr/lib/llvm-* | sort -V | tail -1); v=${llvm##*-}
         [ "$v" -ge 19 ] || { echo "::error::newest clang on this runner is $v; cargo xwin needs 19"; exit 1; }
         bash "$GITHUB_ACTION_PATH/install.sh" '${{ inputs.build }}' "$v"

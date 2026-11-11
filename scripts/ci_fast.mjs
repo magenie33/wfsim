@@ -9,6 +9,7 @@ export const fastJobs = paths => Array.isArray(paths) && paths.includes('engine/
 const PATHS = new Set([
   '.github/workflows/ci.yml', 'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs',
   'scripts/ci_fast.mjs', 'scripts/check_ci_fast.mjs', 'scripts/check_ci_policy.mjs', 'scripts/check_ci_partitions.mjs',
+  '.github/actions/site-tools/action.yml', 'scripts/check_site_setup.mjs',
   'cli/src/board/run.rs', 'cli/src/board/assemble/inventory.rs',
   'engine/src/board/builds/identity.rs', 'engine/src/board/builds/tests/catalog.rs',
   'scripts/check_default_parent.mjs',
@@ -41,6 +42,17 @@ export function fastScope(paths, { base, verifiedBase, force = false, hotfix = f
 export function checkFastChanges(scope, head = 'HEAD', run = git) {
   const before = path => run(['show', `${scope.base}:${path}`]);
   const after = path => run(['show', `${head}:${path}`]);
+  const setup = '.github/actions/site-tools/action.yml';
+  if (scope.paths.includes(setup)) {
+    const oldComment = "    # Site builds need the CJK font and xwin's linker; publishing also builds\n    # the Linux desktop shell. The MSVC headers require clang 19 or newer.\n";
+    const newComment = "    # Source and legacy desktop builds need the CJK font and xwin linker.\n    # Prepared publication consumes checked artifacts without compiling them.\n";
+    const guard = "        if [ '${{ inputs.build }}' = 'publish' ]; then\n          echo 'using verified prepared components; no system build dependencies'\n          exit 0\n        fi\n";
+    const original = before(setup);
+    const expected = original.replace(oldComment, newComment).replace('        set -euo pipefail\n', '        set -euo pipefail\n' + guard);
+    if (!original.includes(oldComment) || expected === original || after(setup) !== expected
+        || !scope.paths.includes('scripts/check_site_setup.mjs'))
+      throw new Error('Fast CI permits only skipping source system dependencies for verified prepared publication, with its missing-tool regression');
+  }
   const capture = 'scripts/capture_compute_inventory.mjs';
   if (scope.paths.includes(capture)) {
     const original = after(capture).replace('const FETCH_ROWS = 20000;\n\n', '')

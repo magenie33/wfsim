@@ -20,6 +20,18 @@ assert.throws(() => checkFastProof({ ...proof, fast: { ...scope, paths: [] } }, 
 assert.throws(() => checkFastProof({ ...proof, jobs: FAST_JOBS.slice(1) }, paths));
 const sql = 'outside;\nCREATE OR REPLACE FUNCTION factory_forget_codes() RETURNS bigint LANGUAGE sql AS $$ SELECT 1 $$;\n';
 const fixture = (before, after) => args => args[1].startsWith(base + ':') ? before : after;
+const setupPath = '.github/actions/site-tools/action.yml';
+const setupScope = fastScope([setupPath, 'scripts/check_site_setup.mjs'], options);
+const newSetup = readFileSync(setupPath, 'utf8');
+const publishGuard = "        if [ '${{ inputs.build }}' = 'publish' ]; then\n          echo 'using verified prepared components; no system build dependencies'\n          exit 0\n        fi\n";
+const oldSetup = newSetup.replace(publishGuard, '').replace(
+  '    # Source and legacy desktop builds need the CJK font and xwin linker.\n    # Prepared publication consumes checked artifacts without compiling them.\n',
+  "    # Site builds need the CJK font and xwin's linker; publishing also builds\n    # the Linux desktop shell. The MSVC headers require clang 19 or newer.\n");
+checkFastChanges(setupScope, 'head', fixture(oldSetup, newSetup));
+assert.throws(() => checkFastChanges(setupScope, 'head', fixture(oldSetup, newSetup.replace("= 'publish'", "= 'false'"))));
+assert.throws(() => checkFastChanges(setupScope, 'head', fixture(oldSetup, newSetup.replace('-ge 19', '-ge 1'))));
+assert.throws(() => checkFastChanges(setupScope, 'head', fixture(oldSetup, newSetup.replace('"1.97.1"', '"1.96.0"'))));
+assert.throws(() => checkFastChanges({ ...setupScope, paths: [setupPath] }, 'head', fixture(oldSetup, newSetup)));
 const capture = 'scripts/capture_compute_inventory.mjs';
 const captureScope = fastScope([capture, 'scripts/check_inventory_capture.mjs'], options);
 const oldCapture = "snapshot();\n'FETCH FORWARD 5000 FROM inventory_scan';\nrows.length < 5000;\n";

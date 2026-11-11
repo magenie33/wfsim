@@ -138,6 +138,9 @@ The capture window exception changes only its bounded fetch size. Its service
 regression must retain one snapshot across pages and preserve prior files on failure.
 The comparison base must be verified. The proof records its base and exact
 paths; reuse and shipping recheck them. `full=true` does not reuse a fast proof.
+Prepared publication may skip the source-only system dependency step, with its
+missing-tool regression. Source and legacy desktop builds retain their font
+and linker checks; all prepared-component and release proof checks still run.
 
 ```sh
 gh workflow run ci.yml --ref <branch> -f fast=true -f reason="<maintenance release>"

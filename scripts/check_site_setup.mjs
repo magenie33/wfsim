@@ -102,6 +102,17 @@ try {
   assert.equal(install.status, 100);
   assert.doesNotMatch(install.calls, /Dir::Etc::source/, 'installation errors are not retried as mirror failures');
   assert.equal(run('unknown').status, 2);
+  const action = readFileSync('.github/actions/site-tools/action.yml', 'utf8');
+  const setup = action.split('      run: |\n')[1].split('\n    - ')[0]
+    .split('\n').map(line => line.startsWith('        ') ? line.slice(8) : line).join('\n')
+    .replaceAll('${{ inputs.build }}', 'publish');
+  stub('ls', 'echo compiler-probe >> "$SETUP_LOG"; exit 99');
+  writeFileSync(log, '');
+  const preparedOnly = spawnSync('bash', ['-c', setup], { encoding: 'utf8',
+    env: { ...process.env, PATH: dir + ':' + process.env.PATH, SETUP_LOG: log,
+      GITHUB_ACTION_PATH: resolve('.github/actions/site-tools'), GITHUB_PATH: join(dir, 'github-path') } });
+  assert.equal(preparedOnly.status, 0, preparedOnly.stdout + preparedOnly.stderr);
+  assert.equal(readFileSync(log, 'utf8'), '', 'prepared publication must work without compiler probes or package installation');
   console.log('Site setup skips installed dependencies, recovers mirror failures before installation and retains bounded signed-archive failures.');
 } finally {
   rmSync(dir, { recursive: true, force: true });
