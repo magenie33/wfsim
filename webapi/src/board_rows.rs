@@ -272,7 +272,15 @@ pub fn board_order_json(v: &Value) -> Value {
         .into_iter()
         .find(|(p, _)| (if p.id.is_empty() { "base" } else { p.id }) == mode)
     {
-        Some((_, req)) => json!({ "ok": true, "request": req, "identity": wfsim_engine::board::builds::build_id(&b) }),
+        Some((_, req)) => {
+            let mut out=json!({ "ok":true,"request":req,"identity":wfsim_engine::board::builds::build_id(&b) });
+            if let Some(actual)=v.get("observation") {
+                out["matches_observation"]=crate::board_flow::observation(&record,Some(&json!({
+                    "ruler":ruler,"mode":mode,"request":actual
+                })))["valid"].clone();
+            }
+            out
+        },
         None => crate::request::err_json("this build has no supported sustainable input for that mode"),
     }
 }

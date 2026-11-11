@@ -27,8 +27,10 @@ number**. Everything else follows from it:
   intermediate candidates and finalists. Upload consent remains the task's
   captured choice. Library legality does not require enough mods or arcanes to
   qualify for a board. First global registration starts the shared intake flow;
-  a known build creates no work, and an optimizer score never requests
-  calibration. Family fill is a special optimization: its accepted result
+  a known build creates no intake work. Completed finalists also use the shared
+  exact-environment numeric review entry; intermediate candidates do not.
+  Official scenarios use their ruler's run count for the final round.
+  Family fill is a special optimization: its accepted result
   continues its captured parent scope, and its intermediate candidates never
   restart family expansion;
 - every row is reproducible by anyone with the repo, since the score was

@@ -104,11 +104,22 @@ pub fn observation(record: &Value, raw: Option<&Value>) -> Value {
     let physical=|request:&Value| {
         let mut request=request.clone();
         if let Some(object)=request.as_object_mut() {
-            for field in ["replay","replay_follow","run_series","run"] {object.remove(field);}
+            // Search controls and capacity layouts do not change the final fight.
+            for field in ["replay","replay_follow","run_series","run","mod_slots","starts","limits","final",
+                "strategy","search_strategy","candidate_runs","finalists","final_runs","max_evals","max_jobs",
+                "build_min","build_size","every_rank","screen_ratio","keep_ratio","shard","shards","threads",
+                "quick_fleet","arcanes","modes","valence","exilus","stance","assemblies"] {object.remove(field);}
             for field in ["custom_enemies","also_acting"] {
                 if object.get(field).is_some_and(|v|v.as_array().is_some_and(Vec::is_empty)) {object.remove(field);}
             }
         }
+        let fight=crate::fight::parse_fight(&request)?;
+        let ranks:Vec<_>=request["arcane"].as_array().into_iter().flatten().enumerate().map(|(i,id)| {
+            request["arcane_rank"][i].as_u64().or_else(|| fight.info.arcane_pools.get(i)
+                .and_then(|pool|wfsim_engine::data::arcanes::for_slot(pool,id.as_str().unwrap_or("")))
+                .map(|card|u64::from(card.max_rank)))
+        }).collect();
+        request["arcane_rank"]=json!(ranks);
         crate::computation::normalize("simulation",&request)
     };
     let Ok((local,_))=physical(&value["request"]) else {return value};
@@ -163,6 +174,18 @@ mod tests {
         let mut report=raw.clone();report["request"]["replay"]=json!(true);report["request"]["custom_enemies"]=json!([]);report["request"]["also_acting"]=json!([]);
         report["request"]["player_at"]=json!([0,0]);report["request"]["target_at"]=json!([0,0.5]);
         assert_eq!(observation(&record,Some(&report))["valid"],true);
+        let mut finalist=raw.clone();
+        finalist["request"]["strategy"]=json!("quick");
+        finalist["request"]["starts"]=json!([]);
+        finalist["request"]["candidate_runs"]=json!(10);
+        finalist["request"]["finalists"]=json!(3);
+        finalist["request"]["limits"]=json!({});
+        finalist["request"]["mod_slots"]=json!([]);
+        finalist["request"]["arcane_rank"]=json!([5]);
+        assert_eq!(observation(&record,Some(&finalist))["valid"],true,"a final replay has the same official fight");
+        let ordered=crate::board_rows::board_order_json(&json!({"record":record,"ruler":node["ruler"],
+            "mode":node["mode"],"observation":finalist["request"]}));
+        assert_eq!(ordered["matches_observation"],true);
         for field in ["runs","seed","duration"] {
             let mut changed=raw.clone();changed["request"][field]=if field=="duration" {
                 json!(changed["request"][field].as_f64().unwrap()+1.0)

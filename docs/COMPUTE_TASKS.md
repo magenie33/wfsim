@@ -9,8 +9,9 @@ create tasks through reconciliation. It does not purge pending work. Complete
 inventory capture requires an explicit `INVENTORY_ONLY=1` request. Operator
 rescore remains an explicit source.
 
-Appraisal does not calibrate board references. The legacy calibration endpoint
-acknowledges its disabled state without scanning the library or creating work.
+The legacy appraisal calibration endpoint acknowledges its disabled state
+without scanning the library or creating work. Completed optimizer measurements
+use the same observation entry as simulation.
 A matching local simulation requests review only when its numeric result
 differs; an engine identifier difference alone does not request review.
 
@@ -163,8 +164,18 @@ An ordinary optimization submits every encountered legal build through the
 normal build inbox, including intermediate candidates and final results.
 Collection uses library legality independently of board eligibility and retains
 paired riven rolls. Upload consent and durable outbox delivery remain unchanged.
-The search's score is not a correction observation. A new global build starts
-ordinary captured intake in zone `03`; a known build creates no intake work.
+Intermediate search scores are not correction observations. A new global build
+starts ordinary captured intake in zone `03`; a known build creates no intake
+work. Completed user-visible finalists also pass their frozen final replay and
+measured number to the existing simulation review entry. Only an exact official
+fight with the same runs and seed and a differing current baseline creates
+correction work in zone `01`. Cancelled, rough and refused rows do not qualify.
+
+Selecting an official scenario pins the optimizer's final round to that ruler's
+run count. Candidate screening keeps its own budget. The request and precision
+label use the same resolver; custom scenarios retain the chosen simulation
+count. Review compares normalized actual inputs in the native engine, excluding
+inert search controls and capacity layout, without rerunning a finalist.
 
 Family fill is a special optimization whose source identifies its parent
 workflow and node. Its accepted result advances that parent's captured scope;

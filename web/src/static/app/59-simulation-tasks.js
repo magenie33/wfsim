@@ -246,37 +246,23 @@ function boardReviewEffective(value, weapon, buffs) {
   return body;
 }
 async function matchingBoardReview(task) {
-  if (!task.origin.fight || task.engine !== ENGINE_ID) return null;
+  if (task.engine !== ENGINE_ID) return null;
   if (!benchList().some(bench => task.request.runs === bench.scenario.runs
     && (!task.origin.benchmark || task.origin.benchmark === bench.id))) return null;
-  const weapon = task.request.weapon, w = weaponInfo(weapon);
+  const weapon = task.request.weapon;
   await loadBoard(weapon);
   if (!BOARD_HAVE.has(weapon)) throw new Error("The board is unavailable.");
-  const mods = JSON.stringify((task.request.mods || []).map(id => isRivenId(id) ? BOARD_RIVEN_SLOT : id));
+  const input = await api("/api/computation/input", { kind: "simulation", request: task.request });
+  if (!input?.ok) return null;
+  const mods = JSON.stringify((input.request.mods || []).map(id => isRivenId(id) ? BOARD_RIVEN_SLOT : id));
   const rows = taskClone((BOARD[weapon] || []).filter(row => JSON.stringify((row.mods || []).concat(row.exilus ? [row.exilus] : [])) === mods));
-  if (!rows.length) return null;
-  const panel = await api("/api/panel", task.request);
-  if (!Array.isArray(panel?.buffs)) return null;
-  const buffs = new Map(panel.buffs.map(buff => [buff.id, buff]));
-  const captured = boardReviewRequest(boardReviewEffective(task.request, weapon, buffs));
-  const matches = new Map(), actualFight = taskClone(task.origin.fight); delete actualFight.__weapon;
-  const fightKey = JSON.stringify(boardReviewCanonical(boardReviewEffective(actualFight, weapon, buffs)));
   for (const row of rows) {
     if ((row.mode || "base") !== task.request.mode || (task.origin.benchmark && row.benchmark !== task.origin.benchmark)) continue;
     const bench = benchList().find(item => item.id === row.benchmark);
     if (!bench || task.request.runs !== bench.scenario.runs) continue;
-    const contact = 2 * (Number(META.body_radius_m) || 0.25);
-    const fight = headlessScenarioOnto(META, bench.scenario, contact, bench.scenario.metric);
-    if (!matches.has(bench.id)) matches.set(bench.id, JSON.stringify(boardReviewCanonical(boardReviewEffective(fight, weapon, buffs))) === fightKey);
-    if (!matches.get(bench.id)) continue;
-    const state = boardRowState(w, row);
-    const rivens = (state.slots || []).map(slot => slot.mod).filter(isRivenId).map(id => ({
-      id: id.slice(RIVEN_PREFIX.length), name: "", spec: rivenSpecFor(id, weapon)?.spec }));
-    const reference = { ...headlessSeat(META, state, wielderPayloadOf(state.wielder || { frame: PROTOTYPE_ID, preset: "" })),
-      rivens, ...fight, runs: bench.scenario.runs, custom_enemies: [], also_acting: [] };
-    if (boardReviewRequest(boardReviewEffective(reference, weapon, buffs)) !== captured) continue;
-    const ordered = await api("/api/board/order", { record: boardReviewRecord(weapon, row), ruler: row.benchmark, mode: row.mode || "base" });
-    if (!ordered?.ok || !/^[a-f0-9]{32}$/.test(ordered.identity || "")) continue;
+    const ordered = await api("/api/board/order", { record: boardReviewRecord(weapon, row), ruler: row.benchmark,
+      mode: row.mode || "base", observation: task.request });
+    if (!ordered?.ok || ordered.matches_observation !== true || !/^[a-f0-9]{32}$/.test(ordered.identity || "")) continue;
     return { row, identity: ordered.identity, ruler: row.benchmark, mode: row.mode || "base", weapon };
   }
   return null;

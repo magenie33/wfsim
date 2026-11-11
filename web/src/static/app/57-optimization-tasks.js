@@ -197,6 +197,16 @@ async function executeOptimization(task, { signal, report, checkpoint }) {
     release();
   }
 }
+async function requestOptimizationReviews(task, result, record) {
+  if (!boardReviewEnabled() || result?.ok === false || result?.cancelled) return;
+  for (const [index, row] of (result.results || []).entries()) {
+    if (!row.replay || row.rough || row.simulator_error || !Number.isFinite(row.kill_progress)
+      || row.replay.runs !== result.final_runs) continue;
+    await requestBoardReview({ ...task, request: row.replay },
+      { score: row.kill_progress, dps: row.dps, duration: row.replay.duration },
+      { id: `${record.id}:final:${index}` });
+  }
+}
 USER_TASK_TYPES.set("optimization", {
   schema: 1, icon: "↗", community: { kind: "optimization" }, execute: executeOptimization,
   progress: optimizationTaskProgress,
@@ -222,6 +232,7 @@ USER_TASK_TYPES.set("optimization", {
     if (task.sources) { record.sources = task.sources; await userTasks.store.value(`artifact:${task.result_ref}`, record); }
     await offerOptBoardSubmit(record.result.search || record.result, { task: task.id, context: task.origin.board,
       appraisal: !!task.origin.appraisal, source: await optimizationTaskBuildSource({ ...task, sources: null }) });
+    await requestOptimizationReviews(task, record.result.search || record.result, record);
     if (task.origin.appraisal) await sendCapturedAppraisal(task, record.result.search || record.result);
   },
   async recover(task) { return await userTasks.store.value(`artifact:${task.attempt}`) ? task.attempt : null; },

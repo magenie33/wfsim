@@ -17,9 +17,9 @@ result numbers. Adding a type does not require changing its lifecycle.
 Simulation, optimization and saved-riven appraisal use the durable queue.
 Appraisal uses `headlessRivenGainRequest`, followed by
 `headlessAppraisalReplay`, the search and grade used by the chat workflow.
-Appraisal reads current published rows after its official replay. It does not
-create board calibration tasks; mismatching official simulations use the
-unified build observation flow described in `docs/COMPUTE_TASKS.md`.
+Appraisal reads current published rows after its official replay. Final search
+measurements and simulations share the unified build observation flow described
+in `docs/COMPUTE_TASKS.md`; intermediate search candidates only submit builds.
 Saved cards remain editable in the original riven editor. Text import uses
 `readRivenLines`, shared with chat and screenshot stat naming. A batch is an
 atomic group of independent requests; each retains its own result and retry.
@@ -31,7 +31,7 @@ Its details retain worker health and the existing calculator reset. Work this de
 for other players appears separately and reads the existing contribution log.
 
 `board-review` observes an independent review triggered by a matching official
-simulation. Its persisted outbox and remote identity survive reloads without
+simulation or completed optimizer finalist. Its persisted outbox and remote identity survive reloads without
 holding a local calculation lock. Completion delivery creates the outbox before
 it is acknowledged. Hiding an observation leaves the shared review running.
 The server owns its verified number; browser storage keeps only linkage and
