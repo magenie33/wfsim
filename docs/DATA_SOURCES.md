@@ -138,8 +138,9 @@ unverified consumers. Initial and maximum fire iterations both equal seven;
 the increment mode alone therefore does not establish a pellet-count ramp.
 The adopted radial `ProcExtraTime` remains in the primary calibration receipt.
 
-[Client research questions](RESEARCH_QUESTIONS.md) lists the open Coda consumers,
-the evidence needed to close each one and the Windows exchange handoff.
+[Research question workflow](RESEARCH_QUESTIONS.md) routes both machines to the
+single shared queue. Add unresolved source questions there and remove them
+after their returned evidence is verified and archived.
 
 For this primary calibration, parsed client inputs take priority over conflicting
 published values and prior timing conventions. This includes charge, reload,

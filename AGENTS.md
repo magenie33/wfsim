@@ -19,6 +19,9 @@ fails **silently**. Everything else is routed to `docs/` (§"Read first").
   live servers included, kept current and deleted once live. Ask a block's
   session before touching what it names; one session on a live thing at a time
   (`private/agents/notes/sessions-claim-their-work.md`).
+- Read the shared research queue at session start and after a context reset
+  (`docs/RESEARCH_QUESTIONS.md`). Add source questions current evidence cannot
+  answer; archive verified answers before removing them from the queue.
 - **One worktree per task**, from `origin/main`: several sessions share the
   main checkout, so never build, stage or commit there (`docs/DEVELOPMENT.md`
   §"Sharing the checkout").
