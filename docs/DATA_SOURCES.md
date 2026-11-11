@@ -138,6 +138,9 @@ unverified consumers. Initial and maximum fire iterations both equal seven;
 the increment mode alone therefore does not establish a pellet-count ramp.
 The adopted radial `ProcExtraTime` remains in the primary calibration receipt.
 
+[Client research questions](RESEARCH_QUESTIONS.md) lists the open Coda consumers,
+the evidence needed to close each one and the Windows exchange handoff.
+
 For this primary calibration, parsed client inputs take priority over conflicting
 published values and prior timing conventions. This includes charge, reload,
 beam-ramp and form-transition parameters. A field's consumer still determines its
