@@ -121,8 +121,33 @@ try {
   assert.equal((await db.get("SELECT count(*) AS n FROM entity_compute_tasks WHERE computation=?",entry.spec.id)).n,1);
   assert.equal((await db.get("SELECT asked_at FROM relation_compute_task_sources WHERE task_id=?",moved.task_id)).asked_at,'2026-11-11');
   const audit=await queueSourcePage(db,{limit:100}); assert.ok(audit.scanned>0); assert.equal(audit.removed,0);
+  const duplicateRequest={weapon:'braton',runs:11,seed:432198};
+  for(const [index,name] of ['duplicate-old-a','duplicate-old-b','duplicate-running'].entries()) {
+    await db.run("SELECT compute_register_tasks(?::text,'old-engine',?::text)",JSON.stringify([{id:name,verb:'simulate_report',
+      request:canon({...duplicateRequest,engine:'old-'+index}),due_at:'2027-11-11',waits:0,producer:'user_calculation',zone:[3,0,1][index]}]),'2026-11-11');
+    await db.run(`INSERT INTO entity_user_calculation_requests(id,task,owner,kind,engine,question,state,created_at,expires_at)
+      VALUES(?,?,'owner','simulation','old-engine',?,'waiting','2026-11-11','2027-11-11')`,name,name,name);
+    await db.run("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,zone) VALUES('user_calculation',?,?,'live','2026-11-11','2027-11-11',?)",name,name,[3,0,1][index]);
+  }
+  await db.run("UPDATE state_compute_scheduling SET lease='keep-running',leased_to='device',lease_until='2999-01-01' WHERE id='duplicate-running'");
+  const duplicatePlan=await identityPage(db,async(_kind,request)=>({request:computationWithoutMetadata(request),aliases:{}}),{engine:'current-engine',duplicatesOnly:true});
+  const duplicates=duplicatePlan.entries.filter(e=>e.action==='rekey' && e.id.startsWith('duplicate-old'));
+  assert.equal(duplicates.length,2);assert.equal(duplicates[0].spec.id,duplicates[1].spec.id);
+  assert.equal(duplicatePlan.entries.find(e=>e.id==='duplicate-running').action,'deferred');
+  for(const entry of duplicates)await applyIdentityEntry(db,entry);
+  assert.equal((await db.get('SELECT zone FROM state_compute_work WHERE id=?',duplicates[0].spec.id)).zone,0);
+  assert.equal((await db.get('SELECT count(*) n FROM relation_task_consumers WHERE question=? AND state=\'live\'',duplicates[0].spec.id)).n,2);
+  assert.equal((await db.get("SELECT lease FROM state_compute_work WHERE id='duplicate-running'")).lease,'keep-running');
+  assert.equal((await db.get("SELECT count(*) n FROM entity_compute_specs WHERE id LIKE 'duplicate-old-%'")).n,2,'duplicate consolidation retains original immutable inputs');
+  const heldPlan=structuredClone(duplicates[0]);heldPlan.id='duplicate-running';heldPlan.task_id=(await db.get("SELECT task_id FROM state_compute_work WHERE id='duplicate-running'")).task_id;
+  await assert.rejects(applyIdentityEntry(db,heldPlan),e=>e.code==='40001');
+  console.log('duplicate consolidation: proof-only merge, source/zone preservation, history retention and running-lease deferral pass');
   await queueZoneCases(db);
   await buildWorkflowCases(db);
   await workflowProtocolCases();
   console.log("compute admission: shared identity, queue zones, held execution, all origins, retries and atomic rejection pass");
 } finally { await db.close(); }
+
+function computationWithoutMetadata(request) {
+  const copy={...request};delete copy.engine;return copy;
+}

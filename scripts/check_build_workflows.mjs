@@ -44,9 +44,20 @@ export async function buildWorkflowCases(db) {
     optimize_report:{cap:3,lease_ms:60000,canon}},producers:{build_workflow:BUILD_WORKFLOW_PRODUCER,system:{on_fact:async()=>{}}}});
   if(process.argv.includes('--break-completion-hold')) await db.run(`CREATE OR REPLACE FUNCTION compute_round_occupied(text,bigint)
     RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT EXISTS(SELECT 1 FROM relation_task_consumers WHERE question=$1 AND state='live') $$`);
+  if(process.argv.includes('--break-merged-engine')) {
+    const sql=readFileSync(new URL('../worker/pg/schema.sql',import.meta.url),'utf8');
+    await db.exec(sql.match(/CREATE OR REPLACE FUNCTION compute_admit_tasks[^]*?END \$\$;/)[0]
+      .replace("SET required_engine=nullif($3,'')",'SET required_engine=target.required_engine'));
+  }
+  if(process.argv.includes('--break-delivery-round')) {
+    const sql=readFileSync(new URL('../worker/pg/sync.sql',import.meta.url),'utf8');
+    await db.run(sql.match(/CREATE OR REPLACE FUNCTION factory_delivery_guard[^]*?END \$\$;/)[0]
+      .replace('AND ($8 IS NULL OR task_id=$8)','AND true'));
+  }
   if(process.argv.includes('--break-scope-gate')) {
     const sql=readFileSync(new URL('../worker/pg/build_workflows.sql',import.meta.url),'utf8');
-    await db.exec(sql.match(/CREATE OR REPLACE FUNCTION build_intake_batch[^]*?END \$\$;/)[0].replace('IF inserted IS NOT NULL THEN','IF true THEN'));
+    await db.exec(sql.match(/CREATE OR REPLACE FUNCTION build_intake_batch[^]*?END \$\$;/)[0]
+      .replace('    IF reason IS NULL THEN',"    IF inserted IS NULL AND reason='intake' THEN reason:=NULL; END IF;\n    IF reason IS NULL THEN"));
   }
   const fixture=async(id,suffix='',extra={})=>prepareIntakeBuild({id,at,record:{weapon:'braton',mods:['serration']},from:['inbox:'+id],initiator:'anonymous',
     flow:{schema:1,scope:{boards:[{id:'one'+suffix},{id:'two'}],modes:{braton:['base']}},builds:[],
@@ -62,7 +73,7 @@ export async function buildWorkflowCases(db) {
   const original=await nodes(root.id);assert.equal(original.length,2);
   assert.equal((await db.get('SELECT zone FROM state_compute_work WHERE id=?',original[0].computation)).zone,3);
   await intake(await fixture(root.id,'-future'));
-  assert.equal(await count(root.id),1,'an already stored build does not backfill a new board');
+  assert.equal(await count(root.id),2,'a known build checks its current boards and joins shared work for missing coverage');
   const invalid=await fixture('invalid-plan');delete invalid.flow.nodes[0].computation;
   await assert.rejects(intake(invalid),/canonical computation/);
   assert.equal(await db.get('SELECT id FROM entity_weapon_builds WHERE id=?',invalid.id),null,'entity and intent roll back together');
@@ -78,7 +89,8 @@ export async function buildWorkflowCases(db) {
     {question:original[0].computation,engine:'e',result:{score:123,metric:'dps'},work:1});
   assert.equal((await nodes(root.id))[0].state,'succeeded');
   assert.equal((await db.get('SELECT state FROM state_build_workflows WHERE id=?',original[0].workflow)).state,'active');
-  await f.demand(env,{producer:'system',ref:'hold-check',verb:'simulate',request:root.flow.templates[0],payload:{reason:'explicit check'},force:true,zone:0,due_in_ms:0},'new-engine');
+  assert.equal((await db.get('SELECT compute_round_occupied(?,?) AS held',original[0].computation,original[0].task_id)).held,true);
+  await f.demand(env,{producer:'system',ref:'hold-check',verb:'simulate',request:root.flow.templates[0],payload:{reason:'explicit check'},zone:0,due_in_ms:0},'new-engine');
   assert.equal((await db.get('SELECT task_id FROM state_compute_work WHERE id=?',original[0].computation)).task_id,original[0].task_id,
     'a completed child stays occupied until its entire workflow finishes');
   await f.answerOfficial(env,{device:'official:workflow',owner:'official:workflow'},
@@ -136,6 +148,92 @@ export async function buildWorkflowCases(db) {
   assert.equal((await db.get("SELECT count(*) n FROM record_build_workflow_triggers WHERE source#>>'{system,reason}'='retracted measurement proof'")).n,1);
   console.log('build workflows: exact-environment correction, guarded replacement and explicitly sourced proof repair pass');
   console.log('build workflows: atomic registration, global existence, shared work, full-flow hold and captured continuation pass');
+  await currentCoverageCases(db);
+  await coalescedRequirementCases(db);
+}
+
+async function currentCoverageCases(db) {
+  const env={LIBRARY:db},id='coverage-known',at='2026-11-11T00:00:00.000Z',record={weapon:'braton',mods:['serration']};
+  const f=factory({verbs:{simulate:{cap:2,lease_ms:60000,canon:(r,w)=>canon({...r,work:w})}},producers:{build_workflow:BUILD_WORKFLOW_PRODUCER}});
+  await db.run('INSERT INTO entity_weapon_builds(id,at,record) VALUES(?,?,?)',id,at,JSON.stringify(record));
+  for(const ruler of ['coverage_old_a','coverage_old_hidden']) await db.run(`INSERT INTO state_board_measurement_selection
+    (identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES(?,?,'base','prior',0.00001,'dps',0,?,?)`,id,ruler,at,at);
+  const make=async(count,source)=>prepareIntakeBuild({id,at,record,from:[source],initiator:'anonymous',flow:{schema:1,
+    scope:{boards:['coverage_old_a','coverage_old_hidden','coverage_new_a','coverage_new_b'].slice(0,count).map(id=>({id}))},
+    builds:[],templates:[{weapon:'braton',runs:2}],patches:Array.from({length:count},(_,i)=>({set:{seed:987650+i},remove:[]})),
+    nodes:['coverage_old_a','coverage_old_hidden','coverage_new_a','coverage_new_b'].slice(0,count)
+      .map((ruler,i)=>({kind:'measure',identity:id,ruler,mode:'base',template:0,patch:i}))}});
+  const intake=async input=>db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
+  const tasksBefore=(await db.get('SELECT count(*) n FROM entity_compute_tasks')).n;
+  await intake(await make(2,'already-covered'));
+  assert.equal((await db.get('SELECT count(*) n FROM entity_build_workflows WHERE build_id=?',id)).n,0,'all stored scores count, independently of visible rank');
+  await intake(await make(4,'from-old-board'));
+  const flow=await db.get('SELECT id FROM state_build_workflows WHERE build_id=?',id);
+  await Promise.all(Array.from({length:24},async(_,i)=>intake(await make(4,'concurrent-upload-'+i))));
+  const rows=await db.all('SELECT * FROM state_build_workflow_nodes WHERE workflow=? ORDER BY position',flow.id);
+  assert.deepEqual(rows.map(n=>n.state),['skipped','skipped','queued','queued']);
+  assert.equal((await db.get('SELECT count(*) n FROM entity_compute_tasks')).n,tasksBefore+2,'only missing boards create computation work');
+  assert.equal((await db.get('SELECT count(*) n FROM record_build_workflow_triggers WHERE workflow=?',flow.id)).n,25,'concurrent upload sources are retained');
+  for(const n of rows.filter(n=>n.state==='queued')) await f.answerOfficial(env,{device:'official:coverage',owner:'official:coverage'},
+    {question:n.computation,engine:'e',result:{score:42,metric:'dps'},work:1});
+  assert.equal((await db.get('SELECT state FROM state_build_workflows WHERE id=?',flow.id)).state,'succeeded');
+  const tasksAfter=(await db.get('SELECT count(*) n FROM entity_compute_tasks')).n;
+  await intake(await make(4,'from-new-board'));
+  assert.equal((await db.get('SELECT count(*) n FROM entity_compute_tasks')).n,tasksAfter);
+  assert.equal((await db.get('SELECT count(*) n FROM state_board_measurement_selection WHERE identity=?',id)).n,4);
+  console.log('build coverage: known and hidden rows, current new boards, 24 concurrent uploads, complete delivery and repeat no-growth pass');
+}
+
+async function coalescedRequirementCases(db) {
+  const env={LIBRARY:db},request={weapon:'braton',runs:2,seed:887766},at=Date.now();let fail=true;
+  await db.run('CREATE TABLE coalesced_deliveries(ref text PRIMARY KEY,task_id bigint,result_id bigint)');
+  const producer={on_fact_writes(env,d,fact){
+    if(['blocked-delivery','later-force'].includes(d.ref) && fail)throw Error('delivery fixture temporarily unavailable');
+    return [env.LIBRARY.prepare('INSERT INTO coalesced_deliveries VALUES(?,?,?) ON CONFLICT DO NOTHING').bind(d.ref,fact.task_id,fact.result_id)];
+  }};
+  const f=factory({verbs:{simulate:{cap:2,lease_ms:60000,canon:(r,w)=>canon({...r,work:w})}},producers:{merge:producer}});
+  const ask=(ref,extra={})=>({producer:'merge',ref,verb:'simulate',request,payload:{ref},due_in_ms:60000,zone:3,...extra});
+  const id=await f.demand(env,ask('first-intake'),'old-engine',at);
+  await db.run("UPDATE state_compute_scheduling SET lease='retained-lease',leased_to='running-machine',lease_until='2999-01-01' WHERE id=?",id);
+  const initial=await db.get('SELECT task_id,lease FROM state_compute_work WHERE id=?',id);
+  await Promise.all(Array.from({length:24},(_,i)=>f.demand(env,ask(i===23?'blocked-delivery':'source-'+i,
+    {force:i%3!==0,zone:[3,1,0][i%3]}),'new-engine',at+1)));
+  const merged=await db.get('SELECT * FROM state_compute_work WHERE id=?',id);
+  assert.equal(merged.task_id,initial.task_id);assert.equal(merged.lease,initial.lease);
+  assert.equal(merged.zone,0);assert.equal(merged.required_engine,'new-engine');
+  assert.equal((await db.get('SELECT count(*) n FROM relation_compute_task_sources WHERE task_id=?',initial.task_id)).n,25);
+  assert.equal((await db.get('SELECT count(*) n FROM relation_compute_task_sources WHERE task_id=? AND requirements->>\'force\'=\'true\'',initial.task_id)).n,16);
+  await f.answerOfficial(env,{device:'official:old',owner:'official:old'},{question:id,engine:'old-engine',result:{score:10},work:1});
+  assert.equal((await db.get('SELECT state FROM state_compute_work WHERE id=?',id)).state,'open','old engine cannot satisfy a newer merged requirement');
+  assert.equal((await db.get('SELECT count(*) n FROM coalesced_deliveries')).n,0);
+  await assert.rejects(f.answerOfficial(env,{device:'official:new',owner:'official:new'},
+    {question:id,engine:'new-engine',result:{score:20},work:1}),/temporarily unavailable/);
+  const accepted=await db.get('SELECT * FROM state_compute_work WHERE id=?',id);
+  assert.equal((await db.get('SELECT count(*) n FROM coalesced_deliveries')).n,24);
+  assert.equal((await db.get('SELECT compute_round_occupied(?,?) held',id,accepted.task_id)).held,true,'failed delivery retains active ID');
+  fail=false;await f.redeliver(env,Date.now()+120000);
+  assert.equal((await db.get('SELECT count(*) n FROM coalesced_deliveries')).n,25);
+  assert.equal((await db.get('SELECT count(DISTINCT task_id) tasks,count(DISTINCT result_id) results FROM coalesced_deliveries')).results,1);
+  assert.equal((await db.get('SELECT compute_round_occupied(?,?) held',id,accepted.task_id)).held,false);
+  await f.demand(env,ask('later-force',{force:true,zone:0}),'new-engine',at+2);
+  const next=await db.get('SELECT * FROM state_compute_work WHERE id=?',id);
+  assert.notEqual(next.task_id,accepted.task_id);
+  assert.equal((await db.get('SELECT count(*) n FROM state_compute_scheduling WHERE id=?',id)).n,1);
+  await assert.rejects(db.run('SELECT compute_accept_result(?,?,\'open\',\'fact\',?,\'old-engine\',?,0,\'[]\')',id,next.task_id,accepted.canon,new Date().toISOString()),e=>e.code==='40001');
+  fail=true;
+  await assert.rejects(f.answerOfficial(env,{device:'official:next',owner:'official:next'},
+    {question:id,engine:'new-engine',result:{score:20},work:1}),/temporarily unavailable/);
+  const late=await db.get("SELECT * FROM relation_task_consumers WHERE producer='merge' AND ref='later-force'");
+  await assert.rejects(db.run('SELECT factory_delivery_guard(?,?,?,?,?,?,?,?)',id,accepted.canon,'new-engine',late.producer,late.ref,late.asked_at,late.payload,accepted.task_id),
+    e=>e.code==='WS002','equal output from another round cannot acknowledge a newer request');
+  fail=false;await f.redeliver(env,Date.now()+120000);
+  assert.equal((await db.get('SELECT compute_round_occupied(?,?) held',id,next.task_id)).held,false);
+  const batchRequest={...request,seed:887767};
+  const batchIds=await f.demandAll(env,[ask('batch-intake',{request:batchRequest}),ask('batch-review',{request:batchRequest,force:true,zone:1})],'new-engine',at+3);
+  assert.equal(batchIds[0],batchIds[1]);
+  const snapshots=await db.all('SELECT ref,requirements FROM relation_compute_task_sources WHERE task_id=(SELECT task_id FROM state_compute_scheduling WHERE id=?) ORDER BY ref',batchIds[0]);
+  assert.deepEqual(snapshots.map(s=>s.requirements.force),[false,true]);
+  console.log('compute coalescing: 24 mixed sources, highest zone, held lease, latest engine, all-source delivery/retry and ID release pass');
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href) {
  const db=await testDb('library');try{await buildWorkflowCases(db);}finally{await db.close();}

@@ -1086,6 +1086,45 @@ await runCase("fixed:eligibility-plan", async () => {
   await db.close();
 });
 
+console.log("\nlane eligibility reads only the selected questions' answers");
+await runCase("fixed:lane-answer-plan", async () => {
+  const db = await testDb("library"), open = 1000, cold = 20000;
+  await seedComputeWorkMany(db, Array.from({length:open+cold}, (_, i) => ({
+    id:'lane-'+String(i+1).padStart(5,'0'), state:i<open ? 'open' : 'fact',
+    due_at:'2026-10-29', opened_at:'2026-10-28',
+  })));
+  await db.exec(`UPDATE state_compute_work SET lanes = '[{"lanes":8,"after_ms":0}]';
+    INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at)
+    SELECT id, 'old', 'other', 'other', '', 'c', '{}', 1, opened_at FROM state_compute_work
+    WHERE state = 'fact' OR id = 'lane-00001';
+    ANALYZE state_compute_scheduling; ANALYZE record_candidate_answers;
+    ANALYZE relation_task_answer_evidence;
+    PREPARE lane_eligible(text,bigint,bigint,text,text,text,text,text,bigint,bigint) AS
+      SELECT id FROM factory_eligible($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      WHERE state = 'open' ORDER BY waits DESC, due_at, id LIMIT ${open}`);
+  for (const mode of ['force_generic_plan','force_custom_plan']) {
+    await db.exec(`SET plan_cache_mode = ${mode}`);
+    for (const lanes of [1,8]) {
+      const args = `'2026-10-29T12:00:00.000Z',0,${lanes},'fresh','["me"]','me','',NULL,7200,120`;
+      const rows = await db.all(`EXECUTE lane_eligible(${args})`);
+      check(`${mode}: a prior answer opens the lane gate; unanswered questions still need their lanes`,
+        rows.length === (lanes === 1 ? 1 : open) && rows[0]?.id === 'lane-00001', JSON.stringify(rows));
+      const row = await db.get(`EXPLAIN (ANALYZE, FORMAT JSON, TIMING OFF) EXECUTE lane_eligible(${args})`);
+      let reads = 0;
+      const walk = p => {
+        if (p['Relation Name'] === 'record_candidate_answers')
+          reads += Math.max(1, p['Actual Rows'] + (p['Rows Removed by Filter'] || 0)) * p['Actual Loops'];
+        for (const child of p.Plans || []) walk(child);
+      };
+      walk(row['QUERY PLAN'][0].Plan);
+      check(`${mode}, ${lanes} lanes: the lane gate never reads the closed answer history`,
+        reads <= 4 * open, `${reads} answer reads for ${open} open questions`);
+    }
+  }
+  await db.exec('DEALLOCATE lane_eligible; RESET plan_cache_mode');
+  await db.close();
+});
+
 console.log("\nofficial claims keep bounded index plans when prepared statements are reused");
 await runCase("fixed:official-claim-plans", async () => {
   const db = await testDb("library"), f = factory({ verbs: VERBS, producers: PRODUCERS });

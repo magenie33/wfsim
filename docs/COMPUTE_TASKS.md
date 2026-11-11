@@ -98,9 +98,12 @@ do not reorder a zone.
 
 A build workflow keeps every participating computation occupied until all its
 required steps finish, including accepted output, durable delivery and derived
-build intake. A finished child cannot open a duplicate round while its parent
-remains active. After terminal closure, a new explicit source may request a
-later execution under the same computation ID. A confirmed invalidation fences
+build intake. An ordinary source reuses a finished child while its parent remains active.
+A fresh explicit recalculation can require another execution round within that
+occupied entry; its input ID and active queue position remain held. Queued or
+running requests merge their sources, highest priority and latest required
+engine without replacing a held lease. After terminal closure, a new explicit
+source may request a later execution under the same computation ID. A confirmed invalidation fences
 an attempt within the occupied entry and records its system cause; the parent
 continues to refer to its current attempt. Prior inputs and results remain
 immutable history.
@@ -108,11 +111,22 @@ immutable history.
 `relation_compute_task_sources` preserves each trigger snapshot separately from
 `relation_task_consumers`, which owns current delivery. Workflow triggers retain
 first intake, observations and system commands, even when they coalesce. Task
-archives include source relations. Missing initiator attribution never implies
+archives include source relations and immutable requirement snapshots. Delivery
+binds the selected result and execution round, so an equal output from an older
+round cannot acknowledge a newer request. Failed delivery retries the committed
+result and keeps the computation occupied until every live consumer finishes. Missing initiator attribution never implies
 a missing source.
 
 Existing queued entries keep their original inputs, IDs, attempts and leases.
-The rollout does not run identity rekeying, orphan removal or queue cleanup.
+The code/schema rollout preserves retained queue entries. After live validation,
+`compute_identity.mjs deduplicate-plan` prepares bounded equivalence groups for
+retained report/search requests. `deduplicate-apply` merges only proven
+duplicates, retaining sources, highest zone and original input/result history.
+Running leases, active workflow bindings and pending verification are deferred
+and checked again under the application lock. Opaque legacy board references
+are deferred until their actual fights can be proven; source-less work is not
+removed by duplicate consolidation. Normalization alone does not authorize
+replacing a solitary old identity.
 Local and offline queues deduplicate new work within their own store. Their
 IDs remain held through pending completion deliveries; existing legacy local
 entries are not rewritten or cancelled during startup.
@@ -126,9 +140,13 @@ relationships without simulating a fight. `scope: "library"` on
 `/api/board/check` checks storage legality; ordinary board checks retain each
 ruler's eligibility rules.
 
-`build_intake_batch` commits a first build, its immutable workflow and all
-sourced computation demands in one transaction. An existing global build does
-not create intake work, including when it lacks scores or new boards exist.
+`build_intake_batch` commits a build, its immutable captured workflow and all
+sourced computation demands in one transaction. Every legal arrival checks
+the build's current applicable coverage through indexed measurement keys.
+Previously stored scores count independently of frontend rank. Only missing
+measurements create ordinary work; an active equivalent computation is shared.
+A newly added board is discovered by a later arrival from any board.
+Already active expansions keep their captured scope.
 A local observation creates correction work only after native normalization
 matches the official fight and the database still holds the compared baseline.
 Equal values, stale baselines and different environments create no correction.
@@ -164,9 +182,8 @@ An ordinary optimization submits every encountered legal build through the
 normal build inbox, including intermediate candidates and final results.
 Collection uses library legality independently of board eligibility and retains
 paired riven rolls. Upload consent and durable outbox delivery remain unchanged.
-Intermediate search scores are not correction observations. A new global build
-starts ordinary captured intake in zone `03`; a known build creates no intake
-work. Completed user-visible finalists also pass their frozen final replay and
+Intermediate search scores are not correction observations. New and known builds
+check current coverage and enter missing ordinary work in zone `03`. Completed user-visible finalists also pass their frozen final replay and
 measured number to the existing simulation review entry. Only an exact official
 fight with the same runs and seed and a differing current baseline creates
 correction work in zone `01`. Cancelled, rough and refused rows do not qualify.

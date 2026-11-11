@@ -181,6 +181,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
         }
       }
       const all = as.results.filter((a) => a.question === q.id);
+      if(q.required_engine && q.required_engine!==engine) continue;
       const served = all.filter((a) => a.engine === engine);
       const officialSays = served.filter((a) => a.official).at(-1);
       if (officialSays) {

@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS relation_compute_task_sources (
   PRIMARY KEY (task_id, producer, ref, trigger_id)
 );
 CREATE INDEX IF NOT EXISTS compute_task_sources_ref ON relation_compute_task_sources(producer,ref,task_id);
+ALTER TABLE relation_compute_task_sources ADD COLUMN IF NOT EXISTS requirements JSONB NOT NULL DEFAULT '{}';
 
 
 CREATE TABLE IF NOT EXISTS entity_compute_results (
@@ -239,6 +240,7 @@ CREATE TABLE IF NOT EXISTS state_compute_scheduling (
 ALTER TABLE state_compute_scheduling ADD COLUMN IF NOT EXISTS zone BIGINT;
 ALTER TABLE state_compute_scheduling ADD COLUMN IF NOT EXISTS zone_position BIGINT;
 ALTER TABLE state_compute_scheduling ADD COLUMN IF NOT EXISTS required_capability TEXT COLLATE "C";
+ALTER TABLE state_compute_scheduling ADD COLUMN IF NOT EXISTS required_engine TEXT COLLATE "C";
 CREATE INDEX IF NOT EXISTS compute_scheduling_zone ON state_compute_scheduling
   (state,coalesce(zone,factory_default_zone(producer)),coalesce(zone_position,task_id),id);
 CREATE INDEX IF NOT EXISTS compute_scheduling_order ON state_compute_scheduling(state, waits DESC, due_at, id);
@@ -261,7 +263,7 @@ CREATE OR REPLACE VIEW state_compute_work AS
     s.fact_engine,s.fact_at,s.odd,s.withdrawn_at,
     COALESCE((SELECT p.witnesses FROM record_compute_result_proofs p WHERE p.result_id=s.result_id),'[]') AS witnesses,
     s.producer,s.initiator,s.task_id,s.result_id,
-    coalesce(s.zone,factory_default_zone(s.producer)) AS zone,coalesce(s.zone_position,s.task_id) AS zone_position,s.required_capability
+    coalesce(s.zone,factory_default_zone(s.producer)) AS zone,coalesce(s.zone_position,s.task_id) AS zone_position,s.required_capability,s.required_engine
   FROM state_compute_scheduling s;
 
 CREATE OR REPLACE FUNCTION compute_open_task(text,text,text,text,boolean DEFAULT false) RETURNS bigint
@@ -277,13 +279,12 @@ BEGIN
   UPDATE state_compute_scheduling SET task_id=next_task,state='open',opened_at=$4,
     zone_position=CASE WHEN compute_round_occupied(held.id,held.task_id) THEN coalesce(held.zone_position,held.task_id) ELSE nextval('compute_queue_position') END,
     lease=NULL,lease_until=NULL,leased_to=NULL,leased_at=NULL,
-    lease_prev=NULL,leased_to_prev=NULL,lease_prev_until=NULL,needs=NULL,odd=0,withdrawn_at=NULL,
+    lease_prev=NULL,leased_to_prev=NULL,lease_prev_until=NULL,needs=NULL,odd=0,withdrawn_at=NULL,required_engine=NULL,
     result_id=CASE WHEN $5 THEN NULL ELSE result_id END,
     fact_engine=CASE WHEN $5 THEN NULL ELSE fact_engine END,
     fact_at=CASE WHEN $5 THEN NULL ELSE fact_at END WHERE id=$1;
-  INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload)
-    SELECT DISTINCT ON(producer,ref) next_task,producer,ref,trigger_id,asked_at,payload FROM relation_compute_task_sources WHERE task_id=held.task_id
-    ORDER BY producer,ref,asked_at DESC,trigger_id;
+  INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload,requirements)
+    SELECT next_task,producer,ref,trigger_id,asked_at,payload,requirements FROM relation_compute_task_sources WHERE task_id=held.task_id;
   IF $2 IN('official_correction','refused_evidence','input_invalidated') THEN
     INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload)
       VALUES(next_task,'system',$2||':'||$1,$2||':'||held.task_id::text,$4,
@@ -358,7 +359,7 @@ BEGIN
   PERFORM compute_register_tasks(prepared::text,$3,$4);
   FOR q IN SELECT DISTINCT ON(x.id) x.id,x.reason,x.invalidate FROM jsonb_to_recordset(s) AS x(id text,force boolean,invalidate boolean,reason text)
       JOIN state_compute_scheduling a ON a.id=x.id WHERE
-      (x.force AND a.state IN ('fact','spot') AND NOT compute_round_occupied(a.id,a.task_id))
+      (x.force AND a.state IN ('fact','spot'))
       OR (x.invalidate AND a.state IN ('open','disputed','nondeterministic','fact','spot')) ORDER BY x.id LOOP
     IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(d) x JOIN state_compute_scheduling a ON a.id=q.id
       JOIN entity_compute_tasks t ON t.computation=a.id
@@ -368,8 +369,15 @@ BEGIN
       opened:=array_append(opened,q.id);
     END IF;
   END LOOP;
+  UPDATE state_compute_scheduling target SET required_engine=nullif($3,'')
+    FROM jsonb_to_recordset(s) x(id text,force boolean,invalidate boolean)
+    WHERE target.id=x.id AND (x.force OR x.invalidate) AND nullif($3,'') IS NOT NULL
+      AND EXISTS(SELECT 1 FROM jsonb_array_elements(d) incoming WHERE incoming->>'question'=target.id
+        AND NOT EXISTS(SELECT 1 FROM relation_compute_task_sources previous JOIN entity_compute_tasks t ON t.id=previous.task_id
+          WHERE t.computation=target.id AND previous.producer=incoming->>'producer' AND previous.ref=incoming->>'ref'
+            AND previous.trigger_id=incoming->>'trigger_id'));
   FOR source IN SELECT * FROM jsonb_to_recordset(d) AS x(producer text,ref text,question text,
-      trigger_id text,ordinal bigint,asked_at text,due_at text,waits bigint,payload text,initiator text,zone bigint)
+      trigger_id text,ordinal bigint,asked_at text,due_at text,waits bigint,payload text,initiator text,zone bigint,force boolean,invalidate boolean)
       ORDER BY producer,ref,ordinal,trigger_id LOOP
     SELECT * INTO STRICT q FROM state_compute_scheduling WHERE id=source.question;
     SELECT question INTO previous_question FROM relation_task_consumers
@@ -380,15 +388,19 @@ BEGIN
         (p.payload::jsonb IS DISTINCT FROM source.payload::jsonb)) THEN
       RAISE EXCEPTION 'compute source identity conflict' USING ERRCODE='23505';
     END IF;
-    INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload)
-      VALUES(q.task_id,source.producer,source.ref,source.trigger_id,coalesce(source.asked_at,$4),source.payload)
+    INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload,requirements)
+      SELECT q.task_id,source.producer,source.ref,source.trigger_id,coalesce(source.asked_at,$4),source.payload,
+        jsonb_build_object('force',coalesce(source.force,x.force,false),'invalidate',coalesce(source.invalidate,x.invalidate,false),'engine',$3,'zone',source.zone)
+      FROM jsonb_to_recordset(s) x(id text,force boolean,invalidate boolean) WHERE x.id=source.question
       ON CONFLICT DO NOTHING;
     INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,waits,payload,initiator,delivery_at,zone)
       VALUES(source.producer,source.ref,source.question,'live',coalesce(source.asked_at,$4),source.due_at,source.waits,source.payload,source.initiator,
         CASE WHEN q.state IN ('fact','spot') THEN $4 END,coalesce(source.zone,factory_default_zone(source.producer)))
       ON CONFLICT(producer,ref) DO UPDATE SET question=excluded.question,state='live',asked_at=excluded.asked_at,
         due_at=excluded.due_at,waits=excluded.waits,payload=excluded.payload,served_at=NULL,
-        initiator=excluded.initiator,delivery_at=excluded.delivery_at,zone=excluded.zone;
+        initiator=excluded.initiator,delivery_at=excluded.delivery_at,
+        zone=CASE WHEN relation_task_consumers.question=excluded.question AND relation_task_consumers.state='live'
+          THEN least(relation_task_consumers.zone,excluded.zone) ELSE excluded.zone END;
   END LOOP;
   PERFORM factory_restate(id) FROM (SELECT DISTINCT unnest(affected) id
     UNION SELECT value->>'id' FROM jsonb_array_elements(s)) changed ORDER BY id;
@@ -402,7 +414,8 @@ LANGUAGE plpgsql AS $$
 DECLARE held state_compute_scheduling%ROWTYPE; result_key bigint;
 BEGIN
   SELECT * INTO held FROM state_compute_scheduling WHERE id=$1 FOR UPDATE;
-  IF NOT FOUND OR $2 IS NULL OR held.task_id<>$2 OR held.state<>$3 THEN
+  IF NOT FOUND OR $2 IS NULL OR held.task_id<>$2 OR held.state<>$3
+    OR (held.required_engine IS NOT NULL AND held.required_engine<>$6) THEN
     RAISE EXCEPTION 'compute task changed before result acceptance' USING ERRCODE='40001';
   END IF;
   IF $4 NOT IN ('fact','spot') OR $5 IS NULL OR $6 IS NULL OR $7 IS NULL
@@ -927,6 +940,10 @@ BEGIN
   IF NOT FOUND OR q.task_id<>$2 OR q.state<>'open' OR target IS NULL OR target=q.id THEN
     RAISE EXCEPTION 'compute task changed before identity migration' USING ERRCODE='40001';
   END IF;
+  IF q.lease_until>=$6 OR q.lease_prev_until>=$6 OR EXISTS(SELECT 1 FROM state_pending_verifications WHERE question=q.id)
+    OR EXISTS(SELECT 1 FROM state_build_workflow_nodes n JOIN state_build_workflows f ON f.id=n.workflow WHERE n.computation=q.id AND f.state='active') THEN
+    RAISE EXCEPTION 'running or finishing computation must retain its identity' USING ERRCODE='40001';
+  END IF;
   IF NOT compute_task_has_source(q.id) THEN RAISE EXCEPTION 'untraceable task cannot be migrated'; END IF;
   IF coalesce((SELECT jsonb_agg(to_jsonb(d) ORDER BY d.producer,d.ref) FROM relation_task_consumers d WHERE d.question=q.id AND d.state='live'),'[]'::jsonb)
       IS DISTINCT FROM $5::jsonb THEN RAISE EXCEPTION 'compute sources changed before identity migration' USING ERRCODE='40001'; END IF;
@@ -954,6 +971,9 @@ BEGIN
   END LOOP;
   PERFORM compute_admit_tasks($3,$4,coalesce(spec->>'requested_engine',q.fact_engine),$6);
   SELECT task_id INTO STRICT replacement FROM state_compute_scheduling WHERE id=target;
+  INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload,requirements)
+    SELECT replacement,producer,ref,trigger_id,asked_at,payload,requirements FROM relation_compute_task_sources WHERE task_id=q.task_id
+    ON CONFLICT DO NOTHING;
   UPDATE entity_measurement_reviews SET task_id=replacement WHERE question=target AND task_id IS NULL AND state='waiting';
   INSERT INTO record_compute_identity_changes(task_id,previous_computation,computation,replacement_task_id,changed_at,snapshot)
     VALUES(q.task_id,q.id,target,replacement,$6,detail::text);

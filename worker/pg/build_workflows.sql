@@ -117,6 +117,11 @@ BEGIN
   SELECT w.kind,w.build_id,w.source,s.zone,s.due_at,s.initiator INTO STRICT f FROM entity_build_workflows w JOIN state_build_workflows s ON s.id=w.id WHERE w.id=$1;
   FOR n IN SELECT * FROM state_build_workflow_nodes WHERE expansion=expansion_id ORDER BY position LOOP
     IF n.definition->>'kind'='measure' THEN
+      IF f.kind='intake' AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
+        WHERE s.identity=n.definition->>'identity' AND s.ruler=n.definition->>'ruler' AND s.mode=n.definition->>'mode') THEN
+        UPDATE state_build_workflow_nodes SET state='skipped',delivered_at=$4 WHERE workflow=$1 AND id=n.id;
+        CONTINUE;
+      END IF;
       patch:=$3->'patches'->(n.definition->>'patch')::int;
       request:=(($3->'templates'->(n.definition->>'template')::int)||(patch->'set'))-
         ARRAY(SELECT jsonb_array_elements_text(patch->'remove'));
@@ -171,8 +176,8 @@ BEGIN
     WHERE node.expansion=expansion_id AND r.id=node.definition->>'review' AND r.task_id IS NULL;
 END $$;
 
--- First registration and its captured intent commit together. Repeated input
--- does not manufacture a missing-coverage request.
+-- Each legal arrival checks its captured current coverage through indexed keys.
+-- Existing measurements satisfy intake; explicit correction still requests fresh work.
 CREATE OR REPLACE FUNCTION build_intake_batch(text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE input jsonb; plan jsonb; observation jsonb; inserted text; held text; flow_id text;
   at text:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
@@ -193,7 +198,8 @@ BEGIN
     IF held::jsonb IS DISTINCT FROM input->'record' THEN RAISE EXCEPTION 'build identity has different canonical inputs'; END IF;
     plan:=input->'flow'; observation:=input->'observation';
     trigger_key:=coalesce(observation->>'review',CASE WHEN input#>>'{system_source,id}' IS NOT NULL
-      THEN build_workflow_system_key(input#>>'{system_source,id}',input->>'id') END);
+      THEN build_workflow_system_key(input#>>'{system_source,id}',input->>'id') END,
+      'intake:'||(input->>'id')||':'||md5(jsonb_build_array(input->'from',plan->'scope')::text));
     IF EXISTS(SELECT 1 FROM record_build_workflow_triggers WHERE id=trigger_key) THEN CONTINUE; END IF;
     parent:=input#>>'{flow_source,workflow}';node_key:=input#>>'{flow_source,node}';
     IF parent IS NOT NULL THEN
@@ -209,7 +215,6 @@ BEGIN
     IF coalesce((input->>'derived')::boolean,false) THEN CONTINUE; END IF;
     reason:=NULL;
     IF jsonb_typeof(input->'system_source')='object' THEN reason:='system';priority:=coalesce((input->>'zone')::bigint,0);
-    ELSIF inserted IS NOT NULL THEN reason:='intake';priority:=3;
     ELSIF observation->>'valid'='true' AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
       JOIN entity_measurement_reviews r ON r.id=observation->>'review'
       WHERE s.identity=input->>'id' AND s.ruler=observation->>'ruler' AND s.mode=observation->>'mode'
@@ -218,6 +223,16 @@ BEGIN
         AND s.metric=observation->>'metric' AND abs(s.score-(observation->>'score')::double precision)>
           1e-12*greatest(abs(s.score),abs((observation->>'score')::double precision))) THEN
       reason:='correction';priority:=1;
+    ELSE
+      captured_key:=md5((input->>'id')||E'\n'||plan::text);
+      IF inserted IS NOT NULL OR EXISTS(SELECT 1 FROM jsonb_array_elements(plan->'nodes') n
+        WHERE n->>'kind'='measure' AND NOT EXISTS(SELECT 1 FROM state_board_measurement_selection s
+          WHERE s.identity=n->>'identity' AND s.ruler=n->>'ruler' AND s.mode=n->>'mode'))
+        OR EXISTS(SELECT 1 FROM state_build_workflows WHERE scope_key=captured_key AND state='active')
+        OR (EXISTS(SELECT 1 FROM jsonb_array_elements(plan->'nodes') n WHERE n->>'kind'='optimize')
+          AND NOT EXISTS(SELECT 1 FROM state_build_workflows WHERE scope_key=captured_key AND state='succeeded')) THEN
+        reason:='intake';priority:=3;
+      END IF;
     END IF;
     IF reason IS NULL THEN
       IF observation->>'review' IS NOT NULL THEN UPDATE entity_measurement_reviews SET state='superseded',completed_at=at
@@ -225,7 +240,7 @@ BEGIN
       CONTINUE;
     END IF;
     IF plan IS NULL OR plan->>'schema' IS DISTINCT FROM '1' THEN RAISE EXCEPTION 'first intake requires a captured workflow'; END IF;
-    captured_key:=md5((input->>'id')||E'\n'||plan::text);
+    captured_key:=md5((input->>'id')||E'\n'||plan::text||CASE WHEN reason='intake' THEN '' ELSE E'\n'||trigger_key END);
     SELECT id INTO flow_id FROM state_build_workflows WHERE scope_key=captured_key AND state='active' FOR UPDATE;
     origin:=jsonb_build_object('kind',reason,'inbox',coalesce(input->'from','[]'::jsonb),'observation',observation,
       'system',input->'system_source','deadlines',input->'deadlines','origin',CASE WHEN reason='system' OR input->>'initiator'='system' THEN 'system'
@@ -245,7 +260,12 @@ BEGIN
       PERFORM factory_restate(node.computation) FROM state_build_workflow_nodes node WHERE node.workflow=flow_id AND node.state='queued' ORDER BY node.computation;
     END IF;
     INSERT INTO record_build_workflow_triggers(id,workflow,source,at)
-      VALUES(coalesce(trigger_key,'intake:'||(input->>'id')),flow_id,origin,at) ON CONFLICT DO NOTHING;
+      VALUES(trigger_key,flow_id,origin,at) ON CONFLICT DO NOTHING;
+    INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload,requirements)
+      SELECT n.task_id,'build_workflow',flow_id||'|'||n.id,trigger_key,at,
+        jsonb_build_object('workflow',flow_id,'node',n.id,'source',origin)::text,
+        jsonb_build_object('force',reason IN('correction','system'),'zone',priority,'engine',observation->>'engine')
+      FROM state_build_workflow_nodes n WHERE n.workflow=flow_id AND n.task_id IS NOT NULL ON CONFLICT DO NOTHING;
     IF observation->>'review' IS NOT NULL THEN UPDATE entity_measurement_reviews SET workflow=flow_id
       WHERE id=observation->>'review' AND state='waiting'; END IF;
     PERFORM build_workflow_finish(flow_id,at);

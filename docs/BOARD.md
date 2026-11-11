@@ -8,9 +8,10 @@ number**. Everything else follows from it:
 - a forged score is impossible, because no score is ever accepted;
 - a correction retains the build, retires its incorrect measurement and asks
   for independent remeasurement. Nobody is asked to resubmit;
-- the library retains all legal encountered builds. First registration captures
-  the current boards and family once. Later definitions require an explicit
-  system task; resubmission of a known build does not backfill them;
+- the library retains all legal encountered builds. Each legal arrival captures
+  the current boards and family and checks that build's coverage. Existing
+  measurements count regardless of visible rank; only missing measurements
+  enter ordinary intake work;
 - **…AND EVERY MODE OF THE WEAPON IS SCORED FROM IT.** The mode a build was
   tuned for was never a property of the record either — mods are equipped on the
   WEAPON and a mode is how it is fired, so nothing about a build can become
@@ -26,8 +27,8 @@ number**. Everything else follows from it:
 - Ordinary optimization submits every legal encountered build, including
   intermediate candidates and finalists. Upload consent remains the task's
   captured choice. Library legality does not require enough mods or arcanes to
-  qualify for a board. First global registration starts the shared intake flow;
-  a known build creates no intake work. Completed finalists also use the shared
+  qualify for a board. The shared intake flow checks current coverage for new
+  and known builds. Completed finalists also use the shared
   exact-environment numeric review entry; intermediate candidates do not.
   Official scenarios use their ruler's run count for the final round.
   Family fill is a special optimization: its accepted result
@@ -52,7 +53,7 @@ added. The daily full projection still reads the authoritative facts.
 
 ## Build workflows
 
-First legal registration and a matching-environment numeric correction use one
+Legal arrivals and matching-environment numeric corrections use the shared
 captured expansion. Its rules, storage and queue boundaries are specified in
 [COMPUTE_TASKS.md](COMPUTE_TASKS.md). The original build and complete legal family
 copies receive measurements across their captured boards and sustainable modes.
@@ -63,8 +64,9 @@ restarts family expansion.
 Native intake preserves the actual canonical build. Build and intent storage
 commit together before their source inbox rows are spent. A retry reuses both;
 a failed admission leaves the build and workflow absent. Known global builds
-create no ordinary intake work, regardless of their visible rank or missing
-scores. Storage legality is distinct from eligibility on a specific ruler.
+check current applicable coverage through indexed build/ruler/mode keys. Existing
+scores satisfy intake; missing ones join one computation per actual input.
+Storage legality is distinct from eligibility on a specific ruler.
 
 The legacy family admission endpoint returns its disabled state. Existing
 recorded family requests continue to compute and deliver, without release-based

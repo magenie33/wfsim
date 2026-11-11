@@ -87,13 +87,15 @@ $$;
 -- and not just queued for the settler (dial `settle_grace_ms`).
 -- $1 at, $2 official, $3 lanes, $4 engine, $5 siblings (json), $6 owner,
 -- $7 net, $8 before, $9 row ceiling and $10 settle grace in seconds.
+-- Keep the lane answer lookup correlated instead of hashing the entire history.
 CREATE OR REPLACE FUNCTION factory_eligible(text, bigint, bigint, text, text, text, text, text, bigint, bigint)
 RETURNS SETOF state_compute_work LANGUAGE sql STABLE AS $$
   SELECT q.* FROM state_compute_work q
   WHERE factory_takeable(q.lease_until, q.leased_at, $1, $9)
+    AND (q.required_engine IS NULL OR q.required_engine=$4)
     AND ($2=1 OR q.required_capability IS NULL OR $5::jsonb ? ('cap:'||q.required_capability))
     AND (q.verb NOT IN ('simulate_report', 'optimize_report') OR $5::jsonb ? 'cap:calculation-reports-v1')
-    AND ($2 = 1 OR q.lanes IS NULL OR EXISTS (SELECT 1 FROM state_compute_candidate_answers x WHERE x.question = q.id)
+    AND ($2 = 1 OR q.lanes IS NULL OR EXISTS (SELECT 1 FROM (SELECT 1 FROM state_compute_candidate_answers x WHERE x.question = q.id OFFSET 0) answered)
          OR $3 >= (SELECT min((t ->> 'lanes')::numeric) FROM jsonb_array_elements(q.lanes::jsonb) t
                    WHERE (t ->> 'after_ms')::numeric <= extract(epoch FROM ($1::timestamptz - q.opened_at::timestamptz)) * 1000))
     -- Read this question before filtering its engine: a newly released engine
@@ -161,14 +163,18 @@ RETURNS SETOF text LANGUAGE sql AS $$
 $$;
 
 -- A consumer transaction may apply only the fact and demand it read.
-CREATE OR REPLACE FUNCTION factory_delivery_guard(text,text,text,text,text,text,text) RETURNS void LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION factory_delivery_guard(text,text,text,text,text,text,text,bigint) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM 1 FROM state_compute_work WHERE id=$1 AND state IN ('fact','spot')
-    AND canon IS NOT DISTINCT FROM $2 AND fact_engine IS NOT DISTINCT FROM $3 FOR UPDATE;
+    AND canon IS NOT DISTINCT FROM $2 AND fact_engine IS NOT DISTINCT FROM $3
+    AND ($8 IS NULL OR task_id=$8) AND (required_engine IS NULL OR required_engine=$3) FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'stale task delivery' USING ERRCODE='WS002'; END IF;
   PERFORM 1 FROM relation_task_consumers WHERE producer=$4 AND ref=$5 AND question=$1 AND asked_at=$6 AND payload=$7 AND state='live' FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'stale task delivery' USING ERRCODE='WS002'; END IF;
 END $$;
+CREATE OR REPLACE FUNCTION factory_delivery_guard(text,text,text,text,text,text,text) RETURNS void LANGUAGE sql AS $$
+  SELECT factory_delivery_guard($1,$2,$3,$4,$5,$6,$7,NULL::bigint)
+$$;
 
 -- THE LED QUESTIONS KEPT (schema.sql `led_questions`): a volunteer's answer on an
 -- open question adds its row, the question leaving `open` drops every row of it.

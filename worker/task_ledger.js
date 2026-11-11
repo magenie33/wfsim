@@ -42,7 +42,7 @@ export function createLedger({ verbs, producerOf } = {}) {
         const q = qs.get(id);
         if (!q) qs.set(id, { id, ordinal: k, zone, capability, verb, request: canon(computationInput(verb, request)), due_at, lanes: l, waits: w, producer, initiator, force, invalidate, reason });
         else Object.assign(q, { ...(due_at < q.due_at ? { due_at, producer, initiator } : {}), waits: Math.max(q.waits, w), lanes: q.lanes ?? l, force: q.force || force, invalidate: q.invalidate || invalidate, ...(force ? {reason} : {}) });
-        ds.set(JSON.stringify([producer, ref, trigger_id]), { producer, ref, trigger_id, ordinal: k, question: id, due_at, waits: w, payload: JSON.stringify(payload), initiator, zone });
+        ds.set(JSON.stringify([producer, ref, trigger_id]), { producer, ref, trigger_id, ordinal: k, question: id, due_at, waits: w, payload: JSON.stringify(payload), initiator, zone, force, invalidate });
       });
       // IN KEY ORDER, so two asks writing the same rows take their locks alike.
       const sorted = (m, key) => [...m.values()].sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));

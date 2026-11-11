@@ -12,7 +12,7 @@ export function taskSchemaSql() {
   const workflows = readFileSync(new URL("../worker/pg/build_workflows.sql", import.meta.url), "utf8");
   const incremental = readFileSync(new URL("../worker/pg/inventory.sql", import.meta.url), "utf8");
   const columns = ["relation_task_consumers delivery_at", "record_candidate_answers credit_work", "record_candidate_answers credit_at",
-    "state_compute_scheduling zone", "state_compute_scheduling zone_position", "state_compute_scheduling required_capability", "relation_task_consumers zone"].map(pair => {
+    "state_compute_scheduling zone", "state_compute_scheduling zone_position", "state_compute_scheduling required_capability", "state_compute_scheduling required_engine", "relation_task_consumers zone"].map(pair => {
     const [table, column] = pair.split(" ");
     return schema.match(new RegExp(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column}[^;]+;`))?.[0];
   });
@@ -22,7 +22,8 @@ export function taskSchemaSql() {
     library.match(/CREATE OR REPLACE FUNCTION protect_retired_board_score[^]*?END \$\$;/)?.[0],
     ...[...library.matchAll(/ALTER TABLE entity_measurement_reviews ADD COLUMN IF NOT EXISTS (?:task_id|result_engine)[^;]+;/g)].map(match => match[0]),
     schema.match(/CREATE TABLE IF NOT EXISTS relation_compute_task_sources[^]*?CREATE INDEX IF NOT EXISTS compute_task_sources_ref[^;]+;/)?.[0],
-    ...["compute_open_task", "compute_admit_tasks", "compute_admit_user_request", "compute_select_report", "compute_source_exists", "compute_remove_untraced", "compute_rekey_active"].map(name => schema.match(new RegExp(`CREATE OR REPLACE FUNCTION ${name}\\([^]*?END \\$\\$;`))?.[0]),
+    schema.match(/ALTER TABLE relation_compute_task_sources ADD COLUMN IF NOT EXISTS requirements[^;]+;/)?.[0],
+    ...["compute_open_task", "compute_admit_tasks", "compute_accept_result", "compute_admit_user_request", "compute_select_report", "compute_source_exists", "compute_remove_untraced", "compute_rekey_active"].map(name => schema.match(new RegExp(`CREATE OR REPLACE FUNCTION ${name}\\([^]*?END \\$\\$;`))?.[0]),
     schema.match(/CREATE OR REPLACE FUNCTION compute_task_has_source[^]*?\$\$;/)?.[0],
     schema.match(/ALTER TABLE entity_user_calculation_requests ADD COLUMN IF NOT EXISTS result_engine[^;]+;/)?.[0],
     schema.match(/CREATE TABLE IF NOT EXISTS record_compute_queue_removals[^]*?\n\);/)?.[0],
@@ -48,7 +49,7 @@ export function taskSchemaSql() {
   ];
   if (!zonePrelude || zones.some(sql => !sql)) throw new Error("incomplete queue-zone schema");
   if (identity.some(sql => !sql)) throw new Error("incomplete compute identity schema");
-  const guard = sync.match(/CREATE OR REPLACE FUNCTION factory_delivery_guard\([^]*?END \$\$;/)?.[0];
+  const guard = [...sync.matchAll(/CREATE OR REPLACE FUNCTION factory_delivery_guard\([^]*?\$\$;/g)].map(m=>m[0]).join('\n');
   const retention = sync.match(/CREATE OR REPLACE FUNCTION factory_past_safe\([^]*?\$\$;/)?.[0];
   const inventory = sync.match(/SELECT set_config\('search_path'[^\n]+\nCREATE OR REPLACE FUNCTION factory_inventory_rows\([^]*?\$\$;\nREVOKE[^;]+;/)?.[0];
   if (columns.some(x => !x) || indexes.some(x => !x) || !guard || !retention || !inventory) throw new Error("incomplete task-delivery schema");

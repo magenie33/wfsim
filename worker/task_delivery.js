@@ -9,6 +9,10 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
   /// EVERY LIVE DEMAND IS TOLD THE FACT, once.
   async function deliver(env, q, now, by = null) {
     const db = env.LIBRARY;
+    const selected=await db.prepare("SELECT * FROM state_compute_work WHERE id=? AND task_id=? AND canon=? AND fact_engine=? AND state IN('fact','spot')")
+      .bind(q.id,q.task_id,q.canon,q.fact_engine).first();
+    if(!selected)return;
+    q=selected;
     const answerOf = by || await db.prepare("SELECT * FROM record_candidate_answers WHERE question = ? AND canon = ? ORDER BY official DESC, id LIMIT 1")
       .bind(q.id, q.canon).first();
     await deliverGroups(env, [{ q, answerOf, demands: await liveDemands(db, q.id) }], now);
@@ -76,14 +80,15 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
   async function flush(env, pending, now) {
     if (!pending.length) return;
     const keys = pending.map(({ q }) => ({ id: q.id, canon: q.canon, engine: q.fact_engine }));
-    const { results: live } = await env.LIBRARY.prepare(`SELECT d.*, q.fact_at, q.witnesses FROM relation_task_consumers d JOIN state_compute_work q ON q.id = d.question
+    const { results: live } = await env.LIBRARY.prepare(`SELECT d.*, q.fact_at, q.witnesses,q.result_id,q.task_id AS current_task_id FROM relation_task_consumers d JOIN state_compute_work q ON q.id = d.question
       JOIN jsonb_to_recordset((?::text)::jsonb) AS x(id text, canon text, engine text)
         ON x.id = q.id AND x.canon = q.canon AND x.engine = q.fact_engine
       WHERE d.state = 'live' AND q.state IN ('fact', 'spot')`)
       .bind(JSON.stringify(keys)).all();
     await deliverGroups(env, pending.map(({ q, answerOf }) => {
       const demands = live.filter(d => d.question === q.id);
-      return { q: { ...q, fact_at: demands[0]?.fact_at || q.fact_at, witnesses: demands[0]?.witnesses || q.witnesses }, answerOf, demands };
+      return { q: { ...q, fact_at: demands[0]?.fact_at || q.fact_at, witnesses: demands[0]?.witnesses || q.witnesses,
+        result_id:demands[0]?.result_id ?? q.result_id,task_id:demands[0]?.current_task_id ?? q.task_id }, answerOf, demands };
     }), now);
   }
 
@@ -129,10 +134,13 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
       witnesses: Array.isArray(q.witnesses) ? q.witnesses : JSON.parse(q.witnesses || "[]") };
     for (const d of demands) {
       const p = producerOf(d.producer), told = { ...d, payload: JSON.parse(d.payload) };
-      const guard = db.prepare("SELECT factory_delivery_guard(?::text,?::text,?::text,?::text,?::text,?::text,?::text)")
-        .bind(q.id, q.canon, q.fact_engine, d.producer, d.ref, d.asked_at, d.payload);
-      const served = db.prepare("UPDATE relation_task_consumers SET state='served',served_at=?,delivery_at=NULL WHERE producer=? AND ref=? AND question=? AND asked_at=? AND payload=? AND state='live'")
-        .bind(iso(now), d.producer, d.ref, q.id, d.asked_at, d.payload);
+      const guard = db.prepare("SELECT factory_delivery_guard(?::text,?::text,?::text,?::text,?::text,?::text,?::text,?::bigint)")
+        .bind(q.id, q.canon, q.fact_engine, d.producer, d.ref, d.asked_at, d.payload, q.task_id);
+      const served = db.prepare(`UPDATE relation_task_consumers SET state='served',served_at=?,delivery_at=NULL
+        WHERE producer=? AND ref=? AND question=? AND asked_at=? AND payload=? AND state='live'
+          AND EXISTS(SELECT 1 FROM state_compute_work q WHERE q.id=question AND q.task_id=?
+            AND q.state IN('fact','spot') AND q.canon=? AND q.fact_engine=?)`)
+        .bind(iso(now), d.producer, d.ref, q.id, d.asked_at, d.payload, q.task_id, q.canon, q.fact_engine);
       if (p.on_fact_writes) writes.push(guard, ...p.on_fact_writes(env, told, fact).map((side) => ({ side })), served);
       else later.push(async () => { await guard.run(); await p.on_fact(env, told, fact); await served.run(); });
     }
