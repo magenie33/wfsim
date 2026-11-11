@@ -968,8 +968,9 @@ await runCase("fixed:demand-all-books", async () => {
   const oneAtATime = async (env, producers, asks, engine, now) => {
     const db = env.LIBRARY, at = iso(now), ids = [];
     for (const a of asks) ids.push(await questionId(a.verb, a.request));
-    const changed=new Set(ids);
+    const changed=new Set();
     for (const [k, { producer, ref, request, due_in_ms, payload = {}, lanes = null, waits = false }] of asks.entries()) {
+      changed.add(ids[k]);
       const old=await db.get("SELECT question FROM relation_task_consumers WHERE producer=? AND ref=?",producer,ref);if(old)changed.add(old.question);
       const due = iso(now + due_in_ms);
       await db.run("SELECT compute_register_tasks(?1::text,?2::text,?3::text)",JSON.stringify([{id:ids[k],verb:asks[k].verb,
@@ -978,8 +979,12 @@ await runCase("fixed:demand-all-books", async () => {
           ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
             due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`,
         producer, ref, ids[k], at, due, waits ? 1 : 0, JSON.stringify(payload));
+      // Current consumers settle at each admission boundary, including ref moves.
+      if((k+1)%250===0 || k===asks.length-1) {
+        for(const id of changed)await db.run("SELECT factory_restate(?)",id);
+        changed.clear();
+      }
     }
-    for(const id of changed)await db.run("SELECT factory_restate(?)",id);
     const facts = await db.all(`SELECT q.*, EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.question = q.id AND a.engine = ?) AS served_answered
         FROM state_compute_work q WHERE q.id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
         AND q.state IN ('fact', 'spot', 'disputed', 'nondeterministic')`, engine, JSON.stringify([...new Set(ids)]));

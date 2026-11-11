@@ -19,7 +19,7 @@ export async function queueZoneCases(db) {
   if(process.argv.includes('--break-zone-order')) {
     const source=readFileSync(new URL('../worker/pg/sync.sql',import.meta.url),'utf8');
     const definition=source.match(/CREATE OR REPLACE FUNCTION factory_head\([^]*?\$\$;/)[0];
-    await db.run(definition.replace('ORDER BY q.zone,q.zone_position,q.id','ORDER BY q.due_at,q.id'));
+    await db.exec(definition.replace('ORDER BY q.zone,q.zone_position,q.id','ORDER BY q.due_at,q.id'));
   }
   try {
     const [low,daily,review,manual]=await admit([row('zone-low',99,{due_in_ms:-40000}),row('zone-daily',3),
