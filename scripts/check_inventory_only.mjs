@@ -115,9 +115,9 @@ try {
   const invalid = ["2", "true", "bogus"].map(mode => reconcile(mode));
   check(invalid.every(result => result.status !== 0 && result.phases.length === 0), "invalid nonempty inventory modes fail before capture");
   const normal = [undefined, "0", ""].map(mode => reconcile(mode));
-  const normalPhases = [...expected, "popularity", "pace", "order", "dispatch", "backfill", "purge_queue", "purge_orphans", "fetch_queue"];
+  const normalPhases = ["backfill", "fetch_queue"];
   check(normal.every(result => result.status === 0 && JSON.stringify(result.phases) === JSON.stringify(normalPhases)),
-    "unset, empty and zero modes retain normal pacing, dispatch, backfill and purge", JSON.stringify(normal.map(result => result.phases)));
+    "ordinary reconciliation only recovers existing work and never enumerates, creates or purges tasks", JSON.stringify(normal.map(result => result.phases)));
 
   check(/\n      inventory_only:\n(?: {8}[^\n]*\n)*?        type: boolean\n(?: {8}[^\n]*\n)*?        default: false/.test(workflow),
     "inventory-only is an explicit boolean dispatch input defaulting to false");
@@ -128,7 +128,7 @@ try {
     "inventory-only does not schedule the real intake/family step");
   const scan = steps.find(step => step.includes("bash scripts/reconcile_queue.sh")) || "";
   check(scan && evaluate(field(scan, "if") || "true", true) && evaluate(field(scan, "if") || "true", false),
-    "both workflow modes retain the complete reconciliation step");
+    "both workflow modes reach their selected reconciliation behavior");
   const preflight = steps.find(step => field(step, "name") === "validate inventory-only request") || "";
   check(preflight && steps.indexOf(preflight) < steps.indexOf(intake)
     && steps.indexOf(preflight) < steps.findIndex(step => step.includes("uses: ./.github/actions/databases")),

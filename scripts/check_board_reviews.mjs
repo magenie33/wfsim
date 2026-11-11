@@ -23,7 +23,14 @@ const target={identity,ruler,mode,engine};
 const now=new Date().toISOString(), old='2026-01-01T00:00:00.000Z';
 await db.run('INSERT INTO entity_weapon_builds(id,at,record) VALUES (?,?,?)',identity,old,JSON.stringify(record));
 await db.run('INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES (?,?,?,?,?,?,?,?,?)',identity,ruler,mode,'old-engine',10,'kpm',1,old,old);
-const call=async(body,path='/api/board/review')=>{const res=await boardReviewsRoute(new Request('https://wfsim.test'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),env,path);return {status:res.status,...await res.json()};};
+const call=async(body,path='/api/board/review')=>{
+ if(path==='/api/board/review') {
+  const baseline=await db.get('SELECT score,metric FROM state_board_measurement_selection WHERE identity=? AND ruler=? AND mode=?',body.identity,body.ruler,body.mode);
+  body={observed_score:(baseline?.score??10)+5,baseline_score:baseline?.score??10,metric:baseline?.metric??'kpm',...body};
+ }
+ const res=await boardReviewsRoute(new Request('https://wfsim.test'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),env,path);
+ return {status:res.status,...await res.json()};
+};
 let clockShift=0;
 const age=()=>db.run('UPDATE entity_measurement_reviews SET created_at=?,round_at=? WHERE id=?',old,new Date(Date.parse(old)+clockShift++*3_600_000).toISOString(),accepted.id);
 const score=()=>db.get('SELECT * FROM state_board_measurement_selection WHERE identity=?',identity);
@@ -42,12 +49,21 @@ await check('ordinary scorer receipts never answer a fresh review round',async()
  });
 });
 const cached=await questionId('simulate',{record,ruler,mode});
+await check('legacy version-only review requests cannot create work',async()=>{
+ const raw=await boardReviewsRoute(new Request('https://wfsim.test/api/board/review',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(target)}),env,'/api/board/review');
+ assert.equal(raw.status,400);
+ assert.equal((await call({...target,observed_score:10})).skipped,true);
+ assert.equal((await call({...target,baseline_score:11})).status,409);
+ assert.equal((await db.get('SELECT count(*) n FROM entity_measurement_reviews')).n,0);
+});
 await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:args[1],state:"fact",due_at:args[2],opened_at:args[3],canon:args[4],fact_engine:args[5],fact_at:args[6]});})(db,[cached,canon({record,ruler,mode}),old,old,canon({score:10,metric:'kpm',work:100}),engine,old]);
 await db.run('INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,at) VALUES (?,?,?,?,?,?,?,?)',cached,engine,'cached-witness','cached-owner',canon({score:10,metric:'kpm',work:100}),JSON.stringify({score:10,metric:'kpm'}),100,old);
 await check('review opens a fresh round under the same computation and preserves the old public score',async()=>{
  accepted=await call(target);assert.equal(accepted.ok,true);
  const row=await db.get('SELECT * FROM entity_measurement_reviews');
  assert.equal(row.question,cached);assert.equal((await score()).score,10);
+ const source=await db.get("SELECT payload FROM relation_task_consumers WHERE producer='board_review' AND ref=?",row.ref);
+ assert.deepEqual(JSON.parse(source.payload).observation,{score:15,metric:'kpm',engine,baseline_score:10,baseline_finished_at:old});
  assert.equal((await db.get('SELECT state FROM state_compute_work WHERE id=?',row.question)).state,'open');
 });
 await check('repeated and concurrent requests share one review',async()=>{
@@ -183,60 +199,23 @@ await check('a queued review survives deployment while its baseline stays until 
  if(work)await facts().answer(env,who,{lease:work.lease,engine,result:{score:999,metric:'kpm'},work:100});
  assert.equal((await score()).score,20);
 });
-const expected = [];
-await check('calibration scans past current-engine rows to fill ten in each category',async()=>{
- for(const category of [0,1])for(let i=0;i<26;i++){
-  const id=(1000+category*100+i).toString(16).padStart(32,'0');
-  const entry={weapon:'torid',mods:category?['riven']:['serration'],...(category?{riven_pos:['critical_damage','multishot']}: {})};
-  const by=i<12?(i%2?'verified:e2':'e2'):i===12?'e20':'old';
-  await db.run('INSERT INTO entity_weapon_builds(id,at,record) VALUES (?,?,?)',id,old,JSON.stringify(entry));
-  await db.run('INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES (?,?,?,?,?,?,?,?,?)',id,ruler,mode,by,100-i,'kpm',1,old,old);
-  if(i>=12&&i<22)expected.push(id);
- }
- await calibrateBoard(env,{weapon:'torid',ruler,engine});
- const rows=await db.all("SELECT identity FROM entity_measurement_reviews WHERE record::jsonb ->> 'weapon' = 'torid'");
- assert.deepEqual(rows.map(row=>row.identity).sort(),expected.sort());
- assert.equal(rows.length,20);
+await check('legacy calibration calls create no task and touch no database',async()=>{
+ const forbidden={get LIBRARY(){throw new Error('calibration opened the database');}};
+ await calibrateBoard(forbidden,{weapon:'torid',ruler,engine});
+ const before=await db.all('SELECT * FROM state_compute_work ORDER BY id');
+ await Promise.all([calibrateBoard(env,{weapon:'torid',ruler,engine}),calibrateBoard(env,{weapon:'torid',ruler,engine:'old'})]);
+ assert.deepEqual(await db.all('SELECT * FROM state_compute_work ORDER BY id'),before);
 });
-await check('parallel appraisal triggers reuse the same pending row reviews',async()=>{
- await Promise.all([calibrateBoard(env,{weapon:'torid',ruler,engine}),calibrateBoard(env,{weapon:'torid',ruler,engine})]);
- assert.equal((await db.get("SELECT count(*) AS n FROM entity_measurement_reviews WHERE record::jsonb ->> 'weapon' = 'torid'")).n,20);
-});
-await check('the per-category calibration count is a dial and can exceed ten',async()=>{
- await setDial(env,'appraisal_calibration_rows',12,'check');
- await calibrateBoard(env,{weapon:'torid',ruler,engine});
- assert.equal((await db.get("SELECT count(*) AS n FROM entity_measurement_reviews WHERE record::jsonb ->> 'weapon' = 'torid'")).n,24);
-});
-await check('same-engine rows need no review proof and another ruler adds nothing',async()=>{
- await db.run("UPDATE state_board_measurement_selection SET measured_by='verified:e2',review_id=NULL WHERE identity IN(SELECT id FROM entity_weapon_builds WHERE weapon='torid')");
- await calibrateBoard(env,{weapon:'torid',ruler,engine});
- await calibrateBoard(env,{weapon:'torid',ruler:'another_ruler',engine});
- assert.equal((await db.get("SELECT count(*) AS n FROM entity_measurement_reviews WHERE record::jsonb ->> 'weapon' = 'torid'")).n,24);
-});
-await check('disabled calibration and a stale engine enqueue no work',async()=>{
- await setDial(env,'appraisal_calibration_rows',0,'check');
- await calibrateBoard(env,{weapon:'torid',ruler,engine});
- await setDial(env,'appraisal_calibration_rows',10,'check');
- await calibrateBoard(env,{weapon:'torid',ruler,engine:'e1'});
- assert.equal((await db.get("SELECT count(*) AS n FROM entity_measurement_reviews WHERE record::jsonb ->> 'weapon' = 'torid'")).n,24);
-});
-await check('calibration acknowledgment does not wait for its database scan',async()=>{
- let release;
- const blocked=new Promise(resolve=>{release=resolve;});
- const {forgetDials}=await import('../worker/dials.js'); forgetDials();
- const statement={all:()=>blocked,bind(){return this;}};
- const fake={...env,LIBRARY:{prepare:()=>statement}},background=[];
+await check('old calibration HTTP calls return disabled without background work',async()=>{
+ const fake={...env,LIBRARY:{prepare(){throw new Error('calibration scanned the library');}}},background=[];
  const response=await boardReviewsRoute(new Request('https://wfsim.test/api/board/calibrate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({weapon:'torid',ruler,engine})}),fake,'/api/board/calibrate',{waitUntil:work=>background.push(work)});
- assert.equal(response.status,200);assert.equal(background.length,1);
- release({results:[]});await Promise.all(background);forgetDials();
-});
-await check('the trigger rejects client scores and old engines',async()=>{
+ assert.equal(response.status,200);assert.deepEqual(await response.json(),{ok:true,accepted:false,disabled:true});
+ assert.equal(background.length,0);
  assert.equal((await call({weapon:'torid',ruler,engine,score:999},'/api/board/calibrate')).status,400);
- assert.equal((await call({weapon:'torid',ruler,engine:'old'},'/api/board/calibrate')).status,409);
+ assert.equal((await call({weapon:'torid',ruler,engine:'old'},'/api/board/calibrate')).disabled,true);
 });
-await check('a chat appraisal freeze triggers shared calibration in the background',async()=>{
- const id=(1000+25).toString(16).padStart(32,'0');
- await db.run("UPDATE state_board_measurement_selection SET measured_by='old' WHERE identity=?",id);
+await check('chat appraisal freezing does not spawn board calibration',async()=>{
+ const before=await db.all('SELECT * FROM entity_measurement_reviews ORDER BY id');
  const background=[],ctx={waitUntil:work=>background.push(work)},botEnv={...env,BOT_RELAY_TOKEN:'check'};
  const invoke=async(path,body)=>{
   const response=await appraiseRoute(new Request('https://wfsim.test'+path,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer check'},body:JSON.stringify(body)}),botEnv,path,ctx);
@@ -244,10 +223,12 @@ await check('a chat appraisal freeze triggers shared calibration in the backgrou
  };
  const opened=await invoke('/api/appraise/new',{channel:'qq',asker:'calibration',weapon:'torid',ruler,riven:{bonuses:[]}});
  await invoke('/api/appraise/'+opened.code+'/request',{input_schema:1,engine,request:{weapon:'torid',strategy:'quick'},context:{weapon:'torid'}});
- assert.equal(background.length,1);await Promise.all(background);
- assert.ok(await db.get('SELECT id FROM entity_measurement_reviews WHERE identity=?',id));
  await invoke('/api/appraise/'+opened.code+'/request',{input_schema:1,engine,request:{weapon:'torid',strategy:'quick'},context:{weapon:'torid'}});
- assert.equal(background.length,1);
+ assert.equal(background.length,0);
+ assert.deepEqual(await db.all('SELECT * FROM entity_measurement_reviews ORDER BY id'),before);
+});
+await check('matching local values skip review across engine releases',async()=>{
+ await import('./check_board_review_trigger.mjs');
 });
 
 const headless=runInNewContext(clientSource('scripts/check_board_reviews.mjs')+`

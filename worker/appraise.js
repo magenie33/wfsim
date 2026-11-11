@@ -13,7 +13,6 @@ import { netOf, servedRelease, countsOf, unrecognised } from "./verify.js";
 import { canon, questionId, witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, VERBS } from "./factory.js";
 import { initiatorCode } from "./accounts.js";
-import { triggerBoardCalibration } from "./board_reviews.js";
 import { answerDeliverySource, localDeliverySource, deliveryName } from "./delivery_sources.js";
 
 const CODE_CHARS = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // no 0/O, 1/I/L
@@ -149,7 +148,6 @@ async function freeze(request, env, code, ctx) {
   const a = await env.LIBRARY.prepare(`SELECT code, channel, asker, weapon, ruler, request FROM entity_appraisal_requests a WHERE code = ?
       AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.ref = a.code AND d.producer IN ('chat', 'survey'))`).bind(code).first();
   if (a && a.request) await askRiven(env, a, JSON.parse(a.request), Date.now());
-  if (a && a.channel !== SURVEY_CHANNEL) await triggerBoardCalibration(env, { weapon: a.weapon, ruler: a.ruler, engine: b.engine }, ctx);
   return json({ ok: true, stored: !!r.meta.changes });
 }
 

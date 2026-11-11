@@ -2829,8 +2829,8 @@ review transport is stubbed; engine parsing and published row matching are real.
 
 The executor browser check runs a real optimizer, navigates away, opens its
 saved report and checks shared typed-card import and batch admission. The
-appraisal artifact retains the board fetched at grading, and submission fires
-one independent calibration trigger for its batch. The
+appraisal artifact retains the board fetched at grading, and submission does
+not start independent board calibration. The
 service check applies the real Postgres schema on PGlite and checks idempotent
 admission, secret ownership, full-report agreement, independent cancellation,
 capability filtering, retention and delivery with the deployed daemon role's

@@ -70,8 +70,6 @@ async function submitSavedAppraisals(ids, ruler, destination = "local", capture 
       author_profile: accountState.account?.profile_id || null } });
   }
   const tasks = await queue.createMany(entries);
-  fetch("/api/board/calibrate", { method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ weapon, ruler, engine: ENGINE_ID }), keepalive: true }).catch(() => {});
   return tasks;
 }
 async function appraisalBoardNow(weapon, ruler) {

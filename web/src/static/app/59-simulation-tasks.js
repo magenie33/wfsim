@@ -284,19 +284,26 @@ async function matchingBoardReview(task) {
 async function requestBoardReview(task, result, record) {
   const matched = await matchingBoardReview(task);
   if (!matched) return;
-  const measured = metricValue(metricOf((benchList().find(bench => bench.id === matched.ruler)?.scenario || {}).metric), result);
-  const old = matched.row.score, by = String(matched.row.measured_by || "").replace(/^verified:/, "");
-  if (by === task.engine && Math.abs(measured - old) <= 1e-12 * Math.max(Math.abs(measured), Math.abs(old))) return;
+  const metric = metricOf((benchList().find(bench => bench.id === matched.ruler)?.scenario || {}).metric);
+  const measured = metricValue(metric, result);
+  const old = matched.row.score;
+  if (!Number.isFinite(measured) || !Number.isFinite(old)) return;
+  if (Math.abs(measured - old) <= 1e-12 * Math.max(Math.abs(measured), Math.abs(old))) return;
   const id = "board-review-request:" + record.id;
   boardReviewTrackers.set(id, { id, identity: matched.identity, weapon: matched.weapon, ruler: matched.ruler, mode: matched.mode,
-    engine: task.engine, source: record.id, sources: [record.id], state: "submitting", phase: "Requesting board calibration" });
+    engine: task.engine, observed_score: measured, baseline_score: old, metric: metric.id,
+    source: record.id, sources: [record.id], state: "submitting", phase: "Requesting board calibration" });
   await saveBoardReviewTrackers(); renderBoardReviewNote(); scheduleUserTasks(); scheduleBoardReviews(0);
 }
 async function acceptBoardReview(task) {
   const response = await fetch("/api/board/review", { method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ identity: task.identity, ruler: task.ruler, mode: task.mode, engine: task.engine }), signal: timeoutSignal(15_000) });
+    body: JSON.stringify({ identity: task.identity, ruler: task.ruler, mode: task.mode, engine: task.engine,
+      observed_score: task.observed_score, baseline_score: task.baseline_score, metric: task.metric }), signal: timeoutSignal(15_000) });
   const accepted = await response.json().catch(() => null);
   if (!boardReviewTrackers.has(task.id)) return;
+  if (response.ok && accepted?.ok && accepted.skipped) {
+    boardReviewTrackers.delete(task.id); await saveBoardReviewTrackers(); return;
+  }
   if (!response.ok || !accepted?.ok) {
     if ([400, 404, 409].includes(response.status)) boardReviewTrackers.set(task.id, { ...task, state: "failed", error: accepted?.error });
     return;
@@ -315,7 +322,7 @@ async function saveBoardReviewTrackers() {
     const discarded = [...boardReviewTrackers.values()].find(task => !boardReviewActive(task)) || boardReviewTrackers.values().next().value;
     boardReviewTrackers.delete(discarded.id);
   }
-  const list = [...boardReviewTrackers.values()].slice(-50).map(({ id, review, identity, weapon, ruler, mode, engine, source, sources, state, publication, publication_attempts }) => ({ id, review, identity, weapon, ruler, mode, engine, source, sources, state, publication, publication_attempts }));
+  const list = [...boardReviewTrackers.values()].slice(-50).map(({ id, review, identity, weapon, ruler, mode, engine, observed_score, baseline_score, metric, source, sources, state, publication, publication_attempts }) => ({ id, review, identity, weapon, ruler, mode, engine, observed_score, baseline_score, metric, source, sources, state, publication, publication_attempts }));
   await queue.store.value("board-review-trackers", list);
 }
 function scheduleBoardReviews(ms = 10_000) {

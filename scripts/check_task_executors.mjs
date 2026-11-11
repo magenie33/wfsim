@@ -220,8 +220,7 @@ try {
       if (finished.state !== 'succeeded') throw new Error('Appraisal failed: ' + finished.error);
       graded = await userTasks.store.value('artifact:' + finished.result_ref);
     } finally { window.fetch = originalFetch; headlessAppraisalReplay = originalReplay; benchmark.scenario = oldTerms; Object.assign(preset, oldPreset); }
-    out.calibration = calibrations.length === 1 && calibrations[0].weapon === presetWeapon()
-      && calibrations[0].ruler === ruler && calibrations[0].engine === ENGINE_ID;
+    out.calibration = calibrations.length === 0;
     out.grade = graded.result.verdict.ok && Number.isFinite(graded.result.verdict.grade) && graded.result.search.results.length > 0;
     out.reference = Array.isArray(graded.result.verdict.reference_rows) && !!graded.result.verdict.at;
     history.pushState(null, '', rivenAnalysisPath(presetWeapon(), graded.id)); await route();
@@ -271,7 +270,7 @@ try {
     analysisReplayProgress: "appraisal replay replaces search counts with its own completed work",
     analysisReplayEntry: "appraisal enters an indeterminate replay stage before waiting for its first fight",
   })) app.check(label, result[key] === true, JSON.stringify(result));
-  app.check("one batch triggers calibration without waiting for its availability", result.calibration, JSON.stringify(result));
+  app.check("an appraisal batch creates no independent calibration", result.calibration, JSON.stringify(result));
   for (const [key, label] of Object.entries({ analysisEntry: "saved-card analysis opens the dedicated page and shared card preview", analysisDefault: "analysis defaults to the official ruler and local execution", executorAvailability: "the open dialog follows community availability after loading", fxRequest: "the accepted analysis is exactly the fx request and context", analysisLink: "the task result opens its analysis report", reportGrade: "the report displays its artifact's grade and score", reportStandard: "the report exposes the fx standard and sharing", analysisHistory: "deleting the card and task leaves immutable analysis history", reportFrozen: "the shared build keeps the submitted rolls after the owned card is deleted", analysisShare: "sharing includes the dated grade, ruler and frozen build", optimizerRecord: "the same artifact appears in optimizer history", analysisBuild: "opening the winner creates a build with the original submitted riven", realSearch: "the original optimizer executes through the task queue", fixedSearch: "optimization keeps its captured scope and owner", editor: "search completion leaves another weapon's editor unchanged", reportLink: "the search report has a durable result link", openReport: "the saved search report opens without changing the original editor", frozenRiven: "captured riven rolls and rank survive later edits to the owned card", artifact: "every ranked result retains its original replay request", typed: "typed cards use the shared reader and become editable saved rivens", batchControls: "saved rivens expose selection and batch appraisal", appraisalCapture: "appraisal captures the card, ruler and batch before execution", grade: "a real search is replayed and graded through the shared appraisal pipeline", reference: "the appraisal report retains its reference board and measurement time", transient: "a replaced automatic scan cannot report into its successor", reset: "resetting the calculator clears its transient running item" }))
     app.check(label, result[key], JSON.stringify(result));
 } finally { await app.close(); }

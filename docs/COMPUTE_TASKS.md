@@ -3,6 +3,17 @@
 `worker/tasks.js` preserves the factory API and composes independent modules.
 Business types register verbs and producers in `worker/factory.js`.
 
+Ordinary queue reconciliation recovers only work already recorded in the
+pending queue. Missing scores, newly added boards and library coverage do not
+create tasks through reconciliation. It does not purge pending work. Complete
+inventory capture requires an explicit `INVENTORY_ONLY=1` request. Operator
+rescore remains an explicit source.
+
+Appraisal does not calibrate board references. The legacy calibration endpoint
+acknowledges its disabled state without scanning the library or creating work.
+A matching local simulation requests review only when its numeric result
+differs; an engine identifier difference alone does not request review.
+
 Official scoring claims overdue questions before reading inputs.
 `fetch_score_inputs.mjs` resolves the claimed board references through indexed
 queue, build and fact keys in one repeatable-read snapshot. Its disk spool
