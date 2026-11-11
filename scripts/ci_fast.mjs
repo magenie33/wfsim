@@ -9,7 +9,7 @@ export const fastJobs = paths => Array.isArray(paths) && paths.includes('engine/
 const PATHS = new Set([
   '.github/workflows/ci.yml', 'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs',
   'scripts/ci_fast.mjs', 'scripts/check_ci_fast.mjs', 'scripts/check_ci_policy.mjs', 'scripts/check_ci_partitions.mjs',
-  '.github/actions/site-tools/action.yml', 'scripts/check_site_setup.mjs',
+  '.github/actions/site-tools/action.yml', '.github/actions/site-tools/install.sh', 'scripts/check_site_setup.mjs',
   'cli/src/board/run.rs', 'cli/src/board/assemble/inventory.rs',
   'engine/src/board/builds/identity.rs', 'engine/src/board/builds/tests/catalog.rs',
   'scripts/check_default_parent.mjs',
@@ -42,6 +42,16 @@ export function fastScope(paths, { base, verifiedBase, force = false, hotfix = f
 export function checkFastChanges(scope, head = 'HEAD', run = git) {
   const before = path => run(['show', `${scope.base}:${path}`]);
   const after = path => run(['show', `${head}:${path}`]);
+  const installer = '.github/actions/site-tools/install.sh';
+  if (scope.paths.includes(installer)) {
+    const original = before(installer);
+    const expected = original
+      .replace('against the official archive', 'against an independent signed Ubuntu mirror')
+      .replace("lambda m: 'https://' + ('security' if m[1] else 'archive') + '.ubuntu.com/ubuntu'", "lambda m: 'https://mirrors.edge.kernel.org/ubuntu'")
+      .replace("'https://archive.ubuntu.com/ubuntu', text)", "'https://mirrors.edge.kernel.org/ubuntu', text)");
+    if (expected === original || after(installer) !== expected || !scope.paths.includes('scripts/check_site_setup.mjs'))
+      throw new Error('Fast CI permits only the independent signed Ubuntu fallback destination with its regression');
+  }
   const setup = '.github/actions/site-tools/action.yml';
   if (scope.paths.includes(setup)) {
     const oldComment = "    # Site builds need the CJK font and xwin's linker; publishing also builds\n    # the Linux desktop shell. The MSVC headers require clang 19 or newer.\n";

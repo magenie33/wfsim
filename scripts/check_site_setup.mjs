@@ -42,7 +42,7 @@ try {
   for (const failure of ['first-download', 'first-update']) {
     const recovered = run('true', 'no', failure);
     assert.equal(recovered.status, 0, recovered.stdout + recovered.stderr);
-    assert.match(recovered.calls, /https:\/\/archive.ubuntu.com\/ubuntu/);
+    assert.match(recovered.calls, /https:\/\/mirrors.edge.kernel.org\/ubuntu/);
     assert.match(recovered.calls, /Signed-By: \/usr\/share\/keyrings\/ubuntu-archive-keyring.gpg/);
     assert(recovered.calls.includes(extra.trim()), 'other signed repositories are preserved');
     assert.match(recovered.calls, /--no-download/);
@@ -57,8 +57,8 @@ try {
   writeFileSync(join(sources, 'sources.list.d/ubuntu.sources'), mirrorList);
   const runnerMirror = run('true', 'no', 'first-download');
   assert.equal(runnerMirror.status, 0, runnerMirror.stdout + runnerMirror.stderr);
-  assert.doesNotMatch(runnerMirror.calls, /mirror\+file:/, 'Ubuntu runner mirror lists must also switch to the official HTTPS archives');
-  assert.match(runnerMirror.calls, /https:\/\/security.ubuntu.com\/ubuntu/);
+  assert.doesNotMatch(runnerMirror.calls, /mirror\+file:/, 'Ubuntu runner mirror lists must also switch to the independent signed Ubuntu mirror');
+  assert.match(runnerMirror.calls, /https:\/\/mirrors.edge.kernel.org\/ubuntu/);
   assert.match(runnerMirror.calls, /Suites: noble-security/);
   assert.equal(readFileSync(join(sources, 'sources.list.d/ubuntu.sources'), 'utf8'), mirrorList);
   writeFileSync(join(sources, 'sources.list.d/ubuntu.sources'), ubuntu);

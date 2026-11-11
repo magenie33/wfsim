@@ -141,6 +141,8 @@ paths; reuse and shipping recheck them. `full=true` does not reuse a fast proof.
 Prepared publication may skip the source-only system dependency step, with its
 missing-tool regression. Source and legacy desktop builds retain their font
 and linker checks; all prepared-component and release proof checks still run.
+The registered setup mirror repair changes only the signed Ubuntu fallback
+destination; package selection, signature checks and bounded failures remain.
 
 ```sh
 gh workflow run ci.yml --ref <branch> -f fast=true -f reason="<maintenance release>"

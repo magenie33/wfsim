@@ -46,7 +46,7 @@ download() {
     "${apt_options[@]}" install -y --no-install-recommends --download-only "${missing[@]}"
 }
 if ! download primary 120; then
-  echo '::warning::runner Ubuntu mirror failed; retrying downloads against the official archive'
+  echo '::warning::runner Ubuntu mirror failed; retrying downloads against an independent signed Ubuntu mirror'
   python3 - "${WFSIM_APT_SOURCE_DIR:-/etc/apt}" "$log_dir/mirror" <<'PY'
 from pathlib import Path
 import re
@@ -61,9 +61,9 @@ for path in files:
     if not path.is_file():
         continue
     text, mirrors = re.subn(r'mirror\+file:/+etc/apt/apt-mirrors(-security)?\.txt\b',
-        lambda m: 'https://' + ('security' if m[1] else 'archive') + '.ubuntu.com/ubuntu', path.read_text())
+        lambda m: 'https://mirrors.edge.kernel.org/ubuntu', path.read_text())
     text, count = re.subn(r'(?:https?://azure\.archive|http://archive)\.ubuntu\.com/ubuntu\b',
-                         'https://archive.ubuntu.com/ubuntu', text)
+                         'https://mirrors.edge.kernel.org/ubuntu', text)
     changed += count + mirrors
     (dest / path.relative_to(source)).write_text(text)
 if not changed:

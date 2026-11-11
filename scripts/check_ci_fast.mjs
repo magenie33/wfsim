@@ -20,6 +20,20 @@ assert.throws(() => checkFastProof({ ...proof, fast: { ...scope, paths: [] } }, 
 assert.throws(() => checkFastProof({ ...proof, jobs: FAST_JOBS.slice(1) }, paths));
 const sql = 'outside;\nCREATE OR REPLACE FUNCTION factory_forget_codes() RETURNS bigint LANGUAGE sql AS $$ SELECT 1 $$;\n';
 const fixture = (before, after) => args => args[1].startsWith(base + ':') ? before : after;
+const installerPath = '.github/actions/site-tools/install.sh';
+const installerScope = fastScope([installerPath, 'scripts/check_site_setup.mjs'], options);
+const newInstaller = readFileSync(installerPath, 'utf8');
+const oldInstaller = newInstaller
+  .replace('against an independent signed Ubuntu mirror', 'against the official archive')
+  .replace("lambda m: 'https://mirrors.edge.kernel.org/ubuntu'", "lambda m: 'https://' + ('security' if m[1] else 'archive') + '.ubuntu.com/ubuntu'")
+  .replace("'https://mirrors.edge.kernel.org/ubuntu', text)", "'https://archive.ubuntu.com/ubuntu', text)");
+checkFastChanges(installerScope, 'head', fixture(oldInstaller, newInstaller));
+for (const unsafe of [newInstaller.replace('Acquire::Retries=0', 'Acquire::Retries=100'),
+  newInstaller.replace('APT::Update::Error-Mode=any', 'APT::Update::Error-Mode=none'),
+  newInstaller.replace('--no-install-recommends', '--allow-unauthenticated'),
+  newInstaller.replaceAll('https://mirrors.edge.kernel.org', 'https://untrusted.example')])
+  assert.throws(() => checkFastChanges(installerScope, 'head', fixture(oldInstaller, unsafe)));
+assert.throws(() => checkFastChanges({ ...installerScope, paths: [installerPath] }, 'head', fixture(oldInstaller, newInstaller)));
 const setupPath = '.github/actions/site-tools/action.yml';
 const setupScope = fastScope([setupPath, 'scripts/check_site_setup.mjs'], options);
 const newSetup = readFileSync(setupPath, 'utf8');
