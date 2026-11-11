@@ -68,18 +68,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "d4099a98";
+const BUILD_ID = "33af8d1f";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "d3f1d423+";
+const BUILD_SHA = "ca54cbac+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "67539c98ce41";
+const RELEASE_ID = "d1a760bd4b9d";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -1134,7 +1134,7 @@ const ENGINE_WASM_BYTES = 10891156;
 /// THE ANSWERS THE BUILD ALREADY KNOWS, path to file (scripts/engine_views.mjs):
 /// a page reads its catalog from these and draws before the engine has
 /// downloaded, which then only has to be there by the first computation.
-const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.1180c3875f39.json", "/api/i18n": "/pkg/i18n.eb293c2ff2d9.json", "/api/warframe/catalog": "/pkg/warframes.5e085bf6fef0.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
+const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.1180c3875f39.json", "/api/i18n": "/pkg/i18n.9cdc09ba2938.json", "/api/warframe/catalog": "/pkg/warframes.5e085bf6fef0.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
 /// A DOWNLOAD THAT RECEIVES NOTHING FOR THIS LONG IS CUT, so a stalled line ends
 /// in a failure the lanes can report rather than in lanes that wait for ever.
 const ENGINE_STALL_MS = 60_000;
@@ -32009,10 +32009,10 @@ function demandHours(h) {
 }
 /// EACH KIND OF ORDER BY ITS NAME, as the worker lists them (worker/contribution.js
 /// `ORDER_KINDS`); a kind this page does not know yet is shown by its id.
-const ORDER_KIND_NAMES = { rescore: "rescores after a model change {n}", sweep: "a ruler's first pass over older builds {n}",
+const ORDER_KIND_NAMES = { rescore: "rescores after a model change {n}", sweep: "background leaderboard measurements {n}",
   new_build: "new builds {n}", refresh: "requested score refreshes {n}", riven_gain: "riven gains {n}", user_calculation: "player calculations {n}",
   board: "leaderboard calculations {n}", board_review: "leaderboard reviews {n}", chat: "riven analyses {n}", survey: "survey searches {n}",
-  family_build: "related weapon searches {n}", verification: "result checks {n}" };
+  family_build: "related weapon searches {n}", verification: "result checks {n}", unattributed_calculation: "unattributed calculations {n}" };
 function computeDemandHtml() {
   const d = computeDemand;
   if (!d) return "";
@@ -32024,7 +32024,15 @@ function computeDemandHtml() {
   const counted = Number.isSafeInteger(owed) && owed >= 0;
   const done = d.per_hour.volunteers + d.per_hour.official;
   const share = done ? Math.round((100 * d.per_hour.volunteers) / done) : 0;
-  const list = (counted ? orders : []).filter(o => o.total).map(o => `<li><span>${escHtml(tr(ORDER_KIND_NAMES[o.kind] || `${o.kind} {n}`).replace("{n}", n(o.total)))}</span></li>`).join("");
+  const sourceNames = { requested: "from user requests {n}", system: "system generated {n}", unattributed: "source unknown {n}" };
+  const list = (counted ? orders : []).filter(o => o.total).map(o => {
+    const sources = Object.keys(sourceNames).map(key => o.sources?.[key]);
+    const valid = sources.every(value => Number.isSafeInteger(value) && value >= 0) && sources.reduce((sum, value) => sum + value, 0) === o.total;
+    const source = valid ? Object.entries(sourceNames).filter(([key]) => o.sources[key]).map(([key, name]) =>
+      tr(name).replace("{n}", n(o.sources[key]))).join(" · ") : "";
+    return `<li><span>${escHtml(tr(ORDER_KIND_NAMES[o.kind] || `${o.kind} {n}`).replace("{n}", n(o.total)))}</span>${
+      source ? `<span class="set-note">${escHtml(source)}</span>` : ""}</li>`;
+  }).join("");
   // EACH SURVEY IS A GOAL the reader can watch close: every riven shape of one
   // weapon, how many are confirmed and how many begun.
   const goals = (d.surveys || []).map((g) => {
@@ -32040,8 +32048,9 @@ function computeDemandHtml() {
   const clearance = counted && owed > 0 && Number.isFinite(d.clear_hours) && d.clear_hours >= 0
     ? `<div class="kv"><dt>${aT("Cleared in")}</dt><dd>${big(demandHours(d.clear_hours))}
       <div class="set-note">${aT("at the last 24 hours' average compute")}</div></dd></div>` : "";
-  const updated = Number.isFinite(Date.parse(d.at))
-    ? tr("Updated {time}").replace("{time}", new Date(d.at).toLocaleString(accountLocale())) : "";
+  const countedAt = d.counts_at ?? d.at;
+  const updated = Number.isFinite(Date.parse(countedAt))
+    ? tr("Updated {time}").replace("{time}", new Date(countedAt).toLocaleString(accountLocale())) : "";
   return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Community goal")}</h2><span class="set-note" style="margin-left:auto">${
     escHtml(updated)}</span></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
