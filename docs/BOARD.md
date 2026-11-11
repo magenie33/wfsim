@@ -376,17 +376,13 @@ minutes are unlimited.
 
 **A RUN'S WORK IS DECIDED AT ITS START AND NEVER CHANGES.** The queue is read
 once, in the first job, and handed to every shard as an artifact — which is what
-lets them agree on who owns which row without talking. Builds that arrive while
-a run is fighting are picked up by the next hour's reconciliation.
+lets them agree on who owns which row without talking. Builds arriving during a run enter through intake and are eligible for a later
+scoring run.
 
-**A ROW NO BUILD CAN PAY IS FORGOTTEN, AND A ZERO IS PAID.** A queue row is
-deleted beside the fact that settles it, so the reconciliation's dry run names
-every queued (build, mode) that a full walk of the library never produced —
-a build the ruler refuses, a mode the weapon lost, an id the identity rule has
-since moved — and `purge_orphans.sh` forgets them; the page's "rows still
-measuring" is otherwise a floor no run can lower. A fight that RAN and dealt
-nothing is a measurement and is banked as 0 (the entry line keeps it off the
-page); only a fight that did not run is refused.
+**EXISTING QUEUED WORK IS RETAINED.** Ordinary reconciliation neither enumerates
+missing coverage nor purges orphan or retired-ruler rows. Explicit cancellation
+owns removal. A fight that ran and dealt nothing remains a measurement of zero;
+a fight that did not run is refused.
 
 **AN ORDER IS CANCELLED WITH `cancel_queue.sh`, NEVER A BARE DELETE.**
 `--all`, `--batch <prefix>` and/or `--ruler <id>` name the queue rows
@@ -399,8 +395,8 @@ order first, each write its own transaction taking rows with SKIP LOCKED so a
 sync is never waited on; a final pass takes what a lock skipped and the queue
 rows no open question asks for. A queue row deleted alone leaves its question
 open at the head of the order, where every pick withdraws it at a pack's worth
-an ask. A row the library still owes is queued again by the next
-reconciliation, so a cancel that should hold stops that writer first.
+an ask. Reconciliation does not recreate a cancelled calculation from a library
+coverage gap.
 
 **NOTHING ASKS FOR A MEASURED ROW AGAIN ON THE CLOCK.** A row is measured again
 only when a person asks — the rescore button, or a batch by hand. The engine id
@@ -1001,11 +997,13 @@ currently 1,000. This is an effective request parameter, not a write to the
 browser's precision preference. The control is read-only while that board
 build is active; an owned build restores the unchanged personal preference.
 Calibration continues to require the complete captured build, fight, seed,
-run count and served engine to match. Equal current-engine results do not
+run count and served engine to match. Equal numeric results do not
 request duplicate review rounds.
 
-`POST /api/board/review` accepts only an existing `(identity, ruler, mode)` and
-the served engine. It accepts no client score or build payload. The service
+`POST /api/board/review` accepts an existing `(identity, ruler, mode)`, the
+served engine, `observed_score`, `baseline_score` and `metric`. A changed baseline
+is rejected; an equal local value is skipped. The observation is retained in
+the request's source payload and is never published as a board result. The service
 freezes the library record and current score in `board_reviews`. Its
 `board_review` producer asks the existing `simulate` verb with a fresh review
 nonce: a cached fact for an ordinary refresh cannot answer this round.
@@ -1065,16 +1063,10 @@ unreachable publication keeps a bounded refresh pending; reopening the board
 or repeating a coalesced review restarts it. Published rows alone populate the
 board, and historical simulations retain their original results.
 
-`POST /api/board/calibrate` accepts `{ weapon, ruler, engine }` on the served
-engine. It independently asks the same review producer for each category's
-highest-scoring old-engine rows across modes. Current-engine measurements,
-official or `verified:`, are skipped before counting the
-`appraisal_calibration_rows` allowance (default 10 per category, adjustable
-0–500; 0 disables it). A short category stops at its last row. Existing rounds,
-cooldowns and admission limits still apply. The Worker continues this work
-after acknowledging the trigger; an appraisal never waits on its completion.
-Saved-card analysis triggers it once per submitted batch; a chat appraisal
-triggers it when frozen. Bulk surveys do not trigger it.
+`POST /api/board/calibrate` accepts its existing request shape and returns
+`{ ok: true, accepted: false, disabled: true }`. It performs no library scan
+and creates no work. Saved-card analysis and chat appraisal do not request
+board calibration. Engine provenance alone is not evidence of a wrong score.
 
 #### Setting a server up
 
@@ -1368,8 +1360,8 @@ questions, never a heavier client.
   (due in three days: a batch of them owes millions of rows) — `refresh` for a `refresh-` batch's (due when its fact is fourteen days old),
   `sweep` for a rescore's, an older build's first pass, or a `backfill-`
   batch's (due in a week).
-- **The most popular weapon first.** A rescore and the reconciliation ask
-  their rows in the order `/api/popularity` counts weapons, inside one by the
+- **The most popular weapon first.** An explicit rescore asks
+  its rows in the order `/api/popularity` counts weapons, inside one by the
   row's last score (`popular_order.py`), each row naming its weapon's place
   (`order`). A placed row is due by its batch's DAY plus its producer's
   deadline, a second a place (`rowAsk`), so the factory's earliest-deadline
@@ -1377,9 +1369,8 @@ questions, never a heavier client.
   many runs asked the batch. A rescore is one batch a weapon,
   `rescore-<weapon>-<day>`, every ruler's rows in it when each ruler's run
   names the same `day`: the order center lists them most popular first, and
-  each is moved or cancelled alone. The reconciliation ships `backfill-`, rows nobody
-  ordered: under `arrivals-` a day's library growth queued inside `new_build`
-  ahead of the submission somebody waits on. An
+  each is moved or cancelled alone. Reconciliation repairs existing pending rows
+  without creating missing-coverage batches. An
   arrival's row the board already scored is not asked: a resubmission the page
   did not recognise is the same build. ONLY A ROW THE BOARD ADMITS IS QUEUED:
   every writer takes its rows from `owed_rows` (`webapi/src/board_rows.rs`),
@@ -2244,10 +2235,9 @@ and no mode (`canonical` drops both, since mods are equipped on the WEAPON and a
 mode is how it is fired), so after intake the question cannot be asked at all.
 Clearing the line on that one fight earns the other eighty-odd rows.
 
-**AND A BUILD WITH NOTHING OWED IS ASKED FOR EVERYTHING.** That is the net. An
-arrival row that was spent, dropped with its batch or never written would
-otherwise leave a build nothing ever measures, which is the one failure the
-reconciliation exists to make impossible.
+**MISSING COVERAGE DOES NOT REQUEST WORK.** A build without a result is not
+automatically expanded by reconciliation. New boards and historical gaps need
+an explicit system plan.
 
 **AN ARRIVAL IS UNGATED, AND THAT IS HOW A PARKED BUILD COMES BACK.** Somebody
 pressing upload is a person asking, so a build the line parked is re-measured on
@@ -2256,9 +2246,8 @@ itself, with nobody having to know which build to look for. The cost is one
 fight per submission, which is the cost the first fight always is.
 
 **EVERY OTHER PATH OBEYS THE LINE AND THE RESCORE BUTTON DOES NOT.** `--gate` is
-passed by the arrivals reconciliation and by the refresh, which is where the
-line pays for itself: a first measurement is a one-off bill and the refresh
-recurs for the life of the board. A person asking for a ruler again after a model
+used by explicit inventory enumeration. A refresh is an explicitly sourced
+request, rather than a clock-driven consequence of a library gap. A person asking for a ruler again after a model
 correction is the other path that may reach a parked build, and
 `check_rescore_paths.mjs` asserts every one of them.
 
@@ -2267,8 +2256,8 @@ build keeps its row in `builds` and every fact in `scores`; what stops is the
 spending. The line is relative to a leader and a leader can be CORRECTED
 DOWNWARDS — a group whose best falls from 50 to 1 makes a row that was under the
 line a row well over it — and because the facts are still there, the next
-publish re-ranks it back onto the board and the next reconciliation starts
-asking for it again, with nobody doing anything. Deleting the facts would make
+publication re-ranks it back onto the board. Missing measurements still require
+an explicit source. Deleting the facts would make
 that recovery impossible and invisible: a board that looks entirely normal and
 is missing the builds that now deserve to be on it.
 
@@ -2736,16 +2725,10 @@ build has landed in it; the modes are the ones a build owes rows in
 ruler and scene and says how many rows one build owes, so an axis added to
 `data/benchmarks/` is priced before it ships.
 
-**A SCENE COSTS A BOARD, AND IS PAID FOR AFTER THE BASE.** Every build owes a
-row in every cell, so each rung multiplies the rows owed by the rulers it
-spans, and a new rung starts with every build unmeasured. A cell's row is never
-`new_build`'s: a new build is ranked first where it was always ranked, and the
-other scenes are a sweep's (`isLadderCell` in `worker/board_tasks.js`).
-Its first pass is asked at a pace, at most `SCENE_ROWS_PER_RUN` cell rows a
-reconciliation, one weapon finished before the next and the most popular
-first (`scripts/scene_rows.py`) — a scene's leading build need not be the
-base's — so a
-new rung never floods the factory's open questions.
+**NEW SCENES DO NOT AUTOMATICALLY BACKFILL THE LIBRARY.** Scene coverage is
+captured by the request that asks for it. Adding a rung creates no historical
+calculation by itself. Existing requests keep their recorded scope; historical
+coverage requires an explicit system plan.
 
 **A SCENE'S ROWS LIVE IN ITS OWN DIRECTORY**, `site/board/<cell_dir>/` (a
 weapon file and an `index.json`, as at the top) and the live board's

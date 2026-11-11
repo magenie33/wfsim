@@ -6,7 +6,6 @@ import { questionId } from "./tasks.js";
 import { sameSite, limited } from "./accounts.js";
 import { json, servedRelease, ENGINE_ID } from "./verify.js";
 import { iso } from "./instant.js";
-import { dialsOf } from "./dials.js";
 import { scoreWitnessWrites } from "./computation_records.js";
 
 export const BOARD_REVIEW_COOLDOWN_MS = 3_600_000;
@@ -81,11 +80,7 @@ export async function boardReviewsRoute(request, env, path, ctx) {
     if (!SLUG.test(body.weapon || "") || !SLUG.test(body.ruler || "") || !ENGINE_ID.test(body.engine || "")
         || Object.keys(body).some(key => !["weapon", "ruler", "engine"].includes(key)))
       return json({ ok: false, error: "invalid board" }, 400);
-    if ((await servedRelease(env)).engine !== body.engine) return json({ ok: false, error: "The engine changed." }, 409);
-    if (env.FACTORY_PAUSED === "1") return json({ ok: false, error: "Community execution is paused." }, 503);
-    if (await limited(env, request, "board-review")) return json({ ok: false, error: "Too many review requests. Try again later." }, 429);
-    await triggerBoardCalibration(env, body, ctx);
-    return json({ ok: true });
+    return json({ ok: true, accepted: false, disabled: true });
   }
   if (path === "/api/board/review/status") {
     if (!Array.isArray(body.ids) || !body.ids.length || body.ids.length > 50 || !body.ids.every(id => UUID.test(id)))
@@ -94,7 +89,8 @@ export async function boardReviewsRoute(request, env, path, ctx) {
   }
   if (path !== "/api/board/review") return json({ ok: false, error: "not found" }, 404);
   if (!ID.test(body.identity || "") || !SLUG.test(body.ruler || "") || !SLUG.test(body.mode || "") || !ENGINE_ID.test(body.engine || "")
-      || Object.keys(body).some(key => !["identity", "ruler", "mode", "engine"].includes(key)))
+      || !Number.isFinite(body.observed_score) || !Number.isFinite(body.baseline_score) || !SLUG.test(body.metric || "")
+      || Object.keys(body).some(key => !["identity", "ruler", "mode", "engine", "observed_score", "baseline_score", "metric"].includes(key)))
     return json({ ok: false, error: "invalid board row" }, 400);
   const served = await servedRelease(env);
   if (!served.engine || served.engine !== body.engine) return json({ ok: false, error: "The engine changed. Run this calculation again from its page." }, 409);
@@ -107,12 +103,20 @@ async function requestReview(env, body, captured = null, repair = false) {
   const baseline = captured || await db.prepare(`SELECT s.*, b.record FROM state_board_measurement_selection s JOIN entity_weapon_builds b ON b.id = s.identity
     WHERE s.identity = ? AND s.ruler = ? AND s.mode = ?`).bind(body.identity, body.ruler, body.mode).first();
   if (!baseline) return json({ ok: false, error: "This row is no longer on the board." }, 404);
+  if (!captured && !repair) {
+    if (baseline.score !== body.baseline_score || baseline.metric !== body.metric)
+      return json({ ok: false, error: "The board changed. Run this calculation again." }, 409);
+    if (Math.abs(body.observed_score - baseline.score) <= 1e-12 * Math.max(Math.abs(body.observed_score), Math.abs(baseline.score)))
+      return json({ ok: true, accepted: false, skipped: true });
+  }
+  const observation = captured || repair ? null : { score: body.observed_score, metric: body.metric,
+    engine: body.engine, baseline_score: baseline.score, baseline_finished_at: baseline.finished_at };
   const ref = calculationId(body.identity, body.ruler, body.mode), now = Date.now();
   await closeWithdrawn(env, ref);
   const round = repair ? iso(now) : iso(Math.floor(now / BOARD_REVIEW_COOLDOWN_MS) * BOARD_REVIEW_COOLDOWN_MS);
   const old = await db.prepare("SELECT * FROM entity_measurement_reviews WHERE ref = ? AND engine = ? ORDER BY created_at DESC LIMIT 1").bind(ref, body.engine).first();
   if (old?.engine === body.engine && (old.state === "waiting" || (!repair && Date.parse(old.created_at) > now - BOARD_REVIEW_COOLDOWN_MS))) {
-    if (old.state === "waiting" && !repair) await askReview(env, old, true);
+    if (old.state === "waiting" && !repair) await askReview(env, old, true, observation);
     return json({ ok: true, accepted: false, id: old.id, next_ms: 10_000 });
   }
   if (!repair && (await db.prepare("SELECT count(*) AS n FROM entity_measurement_reviews WHERE engine = ? AND state = 'waiting'").bind(body.engine).first()).n >= 1000)
@@ -130,7 +134,7 @@ async function requestReview(env, body, captured = null, repair = false) {
       baseline.finished_at, baseline.measured_by, baseline.score, round, baseline.record).first();
   const review = stored || await db.prepare("SELECT * FROM entity_measurement_reviews WHERE ref = ? AND engine = ? ORDER BY created_at DESC LIMIT 1").bind(ref, body.engine).first();
   if (!review) return json({ ok: false, error: "The board changed. Run this calculation again." }, 409);
-  if (review.state === "waiting" && !repair) await askReview(env, review, true);
+  if (review.state === "waiting" && !repair) await askReview(env, review, true, observation);
   return json({ ok: true, accepted: review.id === id, id: review.id, next_ms: 10_000 });
 }
 
@@ -205,39 +209,17 @@ export async function retireBoardRows(env,rows,engine,after=null) {
   return json({ok:true,reviews,after});
 }
 
-// Current-engine rows do not consume either category's calibration allowance.
-export async function calibrateBoard(env, { weapon, ruler, engine }) {
-  if (!env.LIBRARY || env.FACTORY_PAUSED === "1" || (await servedRelease(env)).engine !== engine) return;
-  const limit = (await dialsOf(env)).appraisal_calibration_rows;
-  if (!limit) return;
-  const { results } = await env.LIBRARY.prepare(`SELECT * FROM (
-    SELECT s.*, b.record, row_number() OVER (
-      PARTITION BY coalesce(jsonb_array_length(b.record::jsonb -> 'riven_pos'), 0) > 0
-      ORDER BY s.score DESC, s.identity, s.mode) AS position
-    FROM entity_weapon_builds b JOIN board_facts s ON s.identity = b.id
-    WHERE b.weapon = ?1::text AND s.ruler = ?2::text AND s.retired_at IS NULL
-      AND regexp_replace(s.measured_by, '^verified:', '') <> ?3::text
-    ) ranked WHERE position <= ?4::bigint ORDER BY position, identity, mode`)
-    .bind(weapon, ruler, engine, limit).all();
-  for (const row of results) {
-    const response = await requestReview(env, { identity: row.identity, ruler, mode: row.mode, engine }, row);
-    if (response.status === 429) break;
-  }
-}
-export async function triggerBoardCalibration(env, input, ctx) {
-  const work = calibrateBoard(env, input).catch(error => {
-    console.log(JSON.stringify({ event: "board.calibration_failed", weapon: input.weapon, ruler: input.ruler, error: String(error) }));
-  });
-  if (ctx?.waitUntil) ctx.waitUntil(work);
-  else await work;
-}
-async function askReview(env, row, waited = false) {
-  const prior = row.invalidated_at ? await env.LIBRARY.prepare("SELECT waits FROM relation_task_consumers WHERE producer='board_review' AND ref=? AND question=?")
-    .bind(row.ref,row.question).first() : null;
+// Retained imports and old clients cannot create version-based calibration.
+export async function calibrateBoard() {}
+export async function triggerBoardCalibration() {}
+async function askReview(env, row, waited = false, observation = null) {
+  const prior = await env.LIBRARY.prepare("SELECT waits,payload FROM relation_task_consumers WHERE producer='board_review' AND ref=? AND question=?")
+    .bind(row.ref,row.question).first();
+  observation = prior ? JSON.parse(prior.payload).observation || null : observation;
   const waits = waited || !row.invalidated_at || prior?.waits === 1;
   await facts().demand(env, { producer: "board_review", ref: row.ref, verb: "simulate",
     request: { record: JSON.parse(row.record), ruler: row.ruler, mode: row.mode, review: row.id }, due_in_ms: waits ? DEADLINE_MS.board_review : DEADLINE_MS.sweep,
-    payload: { identity: row.identity, ruler: row.ruler, mode: row.mode, review: row.id }, waits, initiator: waits ? "anonymous" : "system" },
+    payload: { identity: row.identity, ruler: row.ruler, mode: row.mode, review: row.id, ...(observation ? { observation } : {}) }, waits, initiator: waits ? "anonymous" : "system" },
   row.engine, Date.parse(row.created_at));
 }
 async function reviewStatus(env, ids) {

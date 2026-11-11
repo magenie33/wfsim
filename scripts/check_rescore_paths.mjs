@@ -259,8 +259,10 @@ const step = (name) => {
   return lines.slice(at, end < 0 ? lines.length : end).join(NL);
 };
 const reconcile = readFileSync(resolve(ROOT, "scripts/reconcile_queue.sh"), "utf8");
-check(passesGate(reconcile), "the arrivals reconciliation obeys the entry line",
-  "every build that ever arrives would be asked for every ruler and every mode");
+check(passesGate(reconcile), "explicit inventory enumeration obeys the entry line");
+check(!codeOfReconciliation().some(line => /ship_queue\.sh/.test(line) && !/--backfill/.test(line)),
+  "ordinary reconciliation never creates missing-coverage batches");
+function codeOfReconciliation() { return reconcile.split(NL).filter(line => !line.trim().startsWith("#")); }
 check(!/--queue-older/.test(queueWf),
   "no measured row is asked for again on the clock",
   "the engine id moves on edits that move no number, so an hourly re-ask "

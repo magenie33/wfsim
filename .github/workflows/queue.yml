@@ -78,8 +78,8 @@ env:
 jobs:
   take-in:
     runs-on: ubuntu-latest
-    # A pass captures and classifies the full inventory, admits paced rows,
-    # repairs existing orders and reads the queue back. Keep its budget bounded;
+    # Ordinary passes repair existing orders; explicit inventory-only passes
+    # capture and classify coverage without queue mutations. Keep budgets bounded;
     # a running pass finishes before the next starts under board-queue.
     timeout-minutes: ${{ inputs.rescore != '' && 180 || 150 }}
     steps:
@@ -188,7 +188,7 @@ jobs:
           INVENTORY_RUNNER_OS: ${{ runner.os }}
         run: bash scripts/prepare_inventory_memory.sh --check
 
-      - name: ask for what has no score
+      - name: recover existing work or publish the requested inventory
         if: steps.wired.outputs.yes == 'true'
         env:
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
