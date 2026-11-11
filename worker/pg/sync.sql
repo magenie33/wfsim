@@ -87,12 +87,14 @@ $$;
 -- and not just queued for the settler (dial `settle_grace_ms`).
 -- $1 at, $2 official, $3 lanes, $4 engine, $5 siblings (json), $6 owner,
 -- $7 net, $8 before, $9 row ceiling and $10 settle grace in seconds.
+-- Keep the lane gate's answer lookup correlated: a hash of the entire answer
+-- history must never precede a bounded task selection.
 CREATE OR REPLACE FUNCTION factory_eligible(text, bigint, bigint, text, text, text, text, text, bigint, bigint)
 RETURNS SETOF state_compute_work LANGUAGE sql STABLE AS $$
   SELECT q.* FROM state_compute_work q
   WHERE factory_takeable(q.lease_until, q.leased_at, $1, $9)
     AND (q.verb NOT IN ('simulate_report', 'optimize_report') OR $5::jsonb ? 'cap:calculation-reports-v1')
-    AND ($2 = 1 OR q.lanes IS NULL OR EXISTS (SELECT 1 FROM state_compute_candidate_answers x WHERE x.question = q.id)
+    AND ($2 = 1 OR q.lanes IS NULL OR EXISTS (SELECT 1 FROM (SELECT 1 FROM state_compute_candidate_answers x WHERE x.question = q.id OFFSET 0) answered)
          OR $3 >= (SELECT min((t ->> 'lanes')::numeric) FROM jsonb_array_elements(q.lanes::jsonb) t
                    WHERE (t ->> 'after_ms')::numeric <= extract(epoch FROM ($1::timestamptz - q.opened_at::timestamptz)) * 1000))
     -- Read this question before filtering its engine: a newly released engine
