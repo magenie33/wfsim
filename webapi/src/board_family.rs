@@ -72,7 +72,9 @@ pub fn transfers(record: &Value, ruler: &str, mode: &str) -> Vec<Value> {
             if let Some(assembly) = &target.assembly {
                 context.as_object_mut()?.extend(assembly.parts().as_object()?.clone());
             }
-            Some(json!({ "source": builds::build_id(&source), "weapon": w.id, "ruler": bench.id, "request": request, "context": context }))
+            let (request, aliases) = crate::computation::normalize("optimization", &request).ok()?;
+            let context = crate::computation::replace_ids(&context, &aliases);
+            Some(json!({ "input_schema": 1, "source": builds::build_id(&source), "weapon": w.id, "ruler": bench.id, "request": request, "context": context }))
         }).collect()
 }
 

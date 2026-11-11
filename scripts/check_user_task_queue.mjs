@@ -3,10 +3,12 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import { webcrypto } from "node:crypto";
 
+const identity = ["52-computation-input"].map(name =>
+  readFileSync(new URL(`../web/src/static/app/${name}.js`, import.meta.url), "utf8")).join("\n");
 const source = readFileSync(new URL("../web/src/static/app/53-task-store.js", import.meta.url), "utf8");
 function classes(code = source) {
-  const context = vm.createContext({ crypto: webcrypto, AbortController, console });
-  vm.runInContext(code + "\nglobalThis.classes = { UserTaskQueue, UserTaskMemoryStore };", context);
+  const context = vm.createContext({ crypto: webcrypto, TextEncoder, AbortController, console });
+  vm.runInContext(identity + "\n" + code + "\nglobalThis.classes = { UserTaskQueue, UserTaskMemoryStore };", context);
   return context.classes;
 }
 const locks = () => {
@@ -85,7 +87,7 @@ await check("a new executor can run a type without changing the queue", async ()
 });
 await check("waiting order determines the next executed task", async () => {
   const { queue } = fixture();
-  const first = await create(queue), second = await create(queue);
+  const first = await create(queue), second = await create(queue, 6);
   await queue.move(second.id, -1);
   await queue.runNext();
   assert.equal(queue.list().find((task) => task.id === second.id).state, "succeeded");
@@ -145,7 +147,7 @@ await check("removing cancelled work cannot strand the next task", async () => {
 });
 await check("recovery interrupts abandoned work and adopts a committed result", async () => {
   const { queue, store, artifacts } = fixture();
-  const first = await create(queue), second = await create(queue);
+  const first = await create(queue), second = await create(queue, 6);
   await store.change((state) => {
     Object.assign(state.tasks[0], { state: "running", attempt: "abandoned" });
     Object.assign(state.tasks[1], { state: "running", attempt: "committed" });
@@ -155,15 +157,17 @@ await check("recovery interrupts abandoned work and adopts a committed result", 
   assert.equal(queue.list().find((task) => task.id === first.id).state, "interrupted");
   assert.equal(queue.list().find((task) => task.id === second.id).result_ref, "committed");
 });
-await check("a different engine or request schema cannot silently execute", async () => {
+await check("a queued calculation uses the current engine while incompatible schemas stay interrupted", async () => {
   const { queue, type } = fixture();
   const task = await create(queue);
   queue.engine = "engine-b";
   await queue.runNext();
-  assert.equal(queue.list()[0].state, "interrupted");
-  await assert.rejects(queue.retry(task.id));
-  queue.engine = "engine-a"; type.schema = 2;
-  await assert.rejects(queue.retry(task.id));
+  assert.equal(queue.list()[0].state, "succeeded");
+  assert.equal(queue.list()[0].engine, "engine-b");
+  assert.equal(queue.list()[0].submitted_engine, "engine-a");
+  const next = await create(queue); type.schema = 2;
+  await queue.runNext(); assert.equal(queue.list().find(row => row.id === next.id).state, "interrupted");
+  await assert.rejects(queue.retry(next.id));
 });
 await check("a storage failure cannot acknowledge task acceptance", async () => {
   const { queue, store } = fixture();
@@ -235,7 +239,7 @@ await check("a batch is admitted atomically and never partly queued", async () =
 await check("a task's checkpoint is isolated from every other task", async () => {
   const { queue, store, type } = fixture();
   type.execute = async (task, { checkpoint }) => { await checkpoint({ marker: task.id }); return {}; };
-  const first = await create(queue), second = await create(queue);
+  const first = await create(queue), second = await create(queue, 6);
   await queue.runNext(); await queue.runNext();
   assert.equal(await store.value('checkpoint:' + first.id), null);
   assert.equal(await store.value('checkpoint:' + second.id), null);
@@ -302,5 +306,60 @@ await check("removing history preserves a pending completion delivery", async ()
   assert.equal(queue.list().length, 0); assert.equal((await store.read()).tasks.length, 1);
   available = true; await queue.deliverEvents();
   assert.equal(delivered, 1); assert.equal((await store.read()).tasks.length, 0);
+});
+await check("concurrent equal submissions keep every source on one pending execution", async () => {
+  const { queue, type } = fixture();
+  const delivered = []; type.completed = async task => delivered.push(task.origin.context.preset);
+  const tasks = await Promise.all(Array.from({length: 8}, (_, i) => queue.create("new-calculation",{count:5},
+    {context:{...origin.context,preset:"source-"+i}})));
+  assert.equal(new Set(tasks.map(task => task.id)).size,1); assert.equal(queue.list().length,1);
+  assert.equal(queue.list()[0].sources.length,8);
+  await queue.runNext(); await queue.deliverEvents(); await queue.deliverEvents();
+  assert.equal(delivered.length,8); assert.equal(new Set(delivered).size,8);
+  await queue.create("new-calculation",{count:5},origin);
+  assert.equal(queue.list().filter(task => task.state === "queued").length,1);
+});
+await check("a running computation keeps its attempt when another source arrives", async () => {
+  const ready = deferred(), finish = deferred();
+  const {queue,type} = fixture({run:async()=>{ready.resolve();await finish.promise;return {};}});
+  const delivered=[];type.completed=async task=>delivered.push(task.origin.context.preset);
+  const original=await create(queue),running=queue.runNext();await ready.promise;
+  const attempt=queue.list()[0].attempt;
+  const duplicate=await queue.create("new-calculation",original.request,{context:{...origin.context,preset:"second"}});
+  assert.equal(duplicate.id,original.id);assert.equal(queue.list()[0].attempt,attempt);
+  finish.resolve();await running;await queue.deliverEvents();assert.equal(delivered.length,2);
+});
+await check("untraced legacy entries leave the local queue and known duplicates coalesce",async()=>{
+  const {queue,store}=fixture();const first=await create(queue);
+  await store.change(state=>{delete state.tasks[0].computation;delete state.tasks[0].sources;
+    state.tasks.push({...structuredClone(state.tasks[0]),id:"legacy-duplicate"});
+    state.tasks.push({...structuredClone(state.tasks[0]),id:"untraced",request:{count:19},origin:null});});
+  await queue.prepare();
+  assert.equal(queue.list().filter(task=>task.state==="queued").length,1);
+  assert.equal(queue.list().find(task=>task.id===first.id).sources.length,2);
+  assert.equal(queue.list().find(task=>task.id==="untraced").state,"cancelled");
+});
+await check("the duplicate assertion fails when active lookup is removed",async()=>{
+  const needle='const held = state.tasks.find(row => row.computation === task.computation && ["queued", "running"].includes(row.state));';
+  assert.ok(source.includes(needle));
+  const {queue}=fixture({implementation:classes(source.replace(needle,'const held = null;'))});
+  await create(queue);await create(queue);
+  assert.throws(()=>assert.equal(queue.list().filter(row=>row.state==="queued").length,1));
+});
+await check("remote command retries keep their captured authorization after a source joins",async()=>{
+  const {queue,store}=fixture(),sent=[];
+  const code=readFileSync(new URL("../web/src/static/app/61-community-tasks.js",import.meta.url),"utf8");
+  const body=code.slice(code.indexOf('async function communityTaskAccept('),code.indexOf('async function observeCommunityTasks('));
+  const context=vm.createContext({COMPUTATION_INPUT_SCHEMA:1,taskSources:task=>task.sources?.length?task.sources:[{origin:task.origin}],
+    USER_TASK_TYPES:new Map([['optimization',{community:{kind:'optimization'}}]]),initUserTasks:async()=>queue,userTaskLock:locks(),
+    communityTaskCall:async(_action,body)=>{sent.push(structuredClone(body));return {};}});
+  vm.runInContext(body+'\nglobalThis.accept=communityTaskAccept;',context);
+  const task={id:'task',kind:'optimization',engine:'one',request:{weapon:'braton',runs:1},origin:{board_upload:false}};
+  await context.accept(task,'command');
+  task.sources=[{origin:task.origin},{origin:{board_upload:true}}];task.engine='two';
+  await context.accept(task,'command');
+  assert.deepEqual(sent[0],sent[1]);assert.equal(sent[1].request.__board_upload,false);
+  await context.accept(task,'second-command');assert.equal(sent[2].request.__board_upload,true);
+  assert.ok(await store.value('community-acceptance:command'));
 });
 console.log(`\n${passed} user task queue checks passed`);

@@ -106,8 +106,10 @@ async function communityOptimizationBuildSource(work, verifier) {
   return source;
 }
 async function optimizationTaskBuildSource(task) {
-  if (task.origin?.appraisal?.code) return communityOptimizationBuildSource({ code: task.origin.appraisal.code });
-  const upload = typeof task.origin?.board_upload === "boolean" ? task.origin.board_upload : task.request?.__board_upload === true;
+  const origins = task.sources?.length ? task.sources.map(source => source.origin) : [task.origin];
+  const explicit = origins.find(origin => origin?.appraisal?.code);
+  if (explicit) return communityOptimizationBuildSource({ code: explicit.appraisal.code });
+  const upload = origins.some(origin => typeof origin?.board_upload === "boolean" ? origin.board_upload : task.request?.__board_upload === true);
   return { kind: upload ? "public" : "disabled" };
 }
 

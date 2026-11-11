@@ -13,7 +13,7 @@ import worker from "../worker/index.js";
 const db = await testDb("library"), engine = "test-engine";
 const env = { LIBRARY: db, FACTORY_TOKEN: "check", ASSETS: { fetch: async () => Response.json({ engine }) } };
 const source = "a".repeat(32), ruler = "standard_single_target";
-const job = { source, weapon: "burston", ruler, request: { weapon: "burston", strategy: "quick", runs: 2, finalists: 1,
+const job = { input_schema: 1, source, weapon: "burston", ruler, request: { weapon: "burston", strategy: "quick", runs: 2, finalists: 1,
   starts: [{ slots: ["serration", null, "riven:board"], fixed: [{ kind: "mods", idx: 2 }] }] },
   context: { weapon: "burston", benchmark: ruler, mode: "base", rivens: { "riven:board": { riven_pos: ["critical_damage", "multishot"], riven_neg: "" } } } };
 const call = async (jobs = [job], token = "check", pinned) => {
@@ -64,6 +64,7 @@ await check("concurrent resubmissions coalesce into one independent background s
 await check("an interrupted engine rebind remains retryable after its metadata write", async () => {
   const row = await db.get("SELECT * FROM entity_family_search_requests");
   await db.run("UPDATE entity_family_search_requests SET asked_engine = NULL WHERE id = ?", row.id);
+  await db.run("DELETE FROM relation_task_consumers WHERE producer='family_build' AND ref=?",row.id);
   const demandAll = facts().demandAll;
   facts().demandAll = async () => { throw new Error("interrupted ask"); };
   try { await assert.rejects(askFamilyTransfers(env), /interrupted ask/); }
@@ -175,13 +176,13 @@ await check("the deployed daemon role can deliver family facts", async () => {
     assert.equal((await db.get("SELECT state FROM entity_family_search_requests")).state, "succeeded");
   } finally { await db.exec("RESET ROLE"); }
 });
-await check("a future arrival can seed the same family on a new engine without a historical sweep", async () => {
+await check("a deployment change and repeated arrival preserve the same family request", async () => {
   env.ASSETS = { fetch: async () => Response.json({ engine: "next-engine" }) };
   await call([]);
   assert.equal(await count('entity_family_search_requests'), 1);
   await call();
-  assert.equal(await count('entity_family_search_requests'), 2);
-  assert.equal((await db.get("SELECT count(*) AS n FROM entity_family_search_requests WHERE engine = 'next-engine'")).n, 1);
+  assert.equal(await count('entity_family_search_requests'), 1);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_family_search_requests WHERE engine = 'next-engine'")).n, 0);
 });
 await check("leased search receipts deliver atomic build batches after the lease closes", async () => {
   env.AUTH_SECRET = "family-harvest-check-only";
@@ -190,6 +191,7 @@ await check("leased search receipts deliver atomic build batches after the lease
   await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"optimize_report",request:args[1],state:"open",due_at:args[2],opened_at:args[3],lease:args[4],lease_until:args[5],leased_to:args[6]});})(db,[question,JSON.stringify({ weapon: "torid", strategy: "quick", __board_upload: true }),at,at,lease,until,verifier]);
   await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, initiator)
     VALUES ('user_calculation', 'harvest-service', ?, 'live', ?, ?, 'user:harvest-requester')`, question, at, at);
+  await db.run("UPDATE relation_task_consumers SET payload='{\"board_upload\":true}' WHERE ref='harvest-service'");
   const submit = body => worker.fetch(new Request("https://wfsim.test/api/board/submit", { method: "POST",
     headers: { "content-type": "application/json" }, body: JSON.stringify(body) }), env, { waitUntil() {} });
   const grantedResponse = await submit({ builds: [], harvest: { lease, verifier, question, engine: "next-engine" } });

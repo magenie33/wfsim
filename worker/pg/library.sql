@@ -456,6 +456,8 @@ CREATE TABLE IF NOT EXISTS entity_measurement_reviews (
   created_at TEXT COLLATE "C" NOT NULL,
   completed_at TEXT COLLATE "C"
 );
+ALTER TABLE entity_measurement_reviews ADD COLUMN IF NOT EXISTS task_id BIGINT REFERENCES entity_compute_tasks(id);
+ALTER TABLE entity_measurement_reviews ADD COLUMN IF NOT EXISTS result_engine TEXT COLLATE "C";
 CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_round ON entity_measurement_reviews (ref, engine, round_at);
 CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_pending ON entity_measurement_reviews (ref, engine) WHERE state = 'waiting';
 CREATE INDEX IF NOT EXISTS board_reviews_waiting ON entity_measurement_reviews (engine, state, created_at);
@@ -479,7 +481,7 @@ BEGIN
   IF OLD.review_id IS NULL THEN RETURN NEW; END IF;
   SELECT * INTO held FROM entity_measurement_reviews WHERE id=OLD.review_id;
   IF held.invalidated_at IS NULL OR held.state='succeeded' THEN RETURN NEW; END IF;
-  IF NEW.review_id=held.id AND NEW.measured_by='verified:'||held.engine
+  IF NEW.review_id=held.id AND NEW.measured_by='verified:'||coalesce(held.result_engine,held.engine)
      AND NEW.started_at=NEW.finished_at AND NEW.finished_at>held.invalidated_at
      AND OLD.score=held.baseline_score AND OLD.measured_by=held.baseline_by AND OLD.finished_at=held.baseline_finished_at
   THEN RETURN NEW; END IF;

@@ -12,8 +12,8 @@ export const FAMILY_PRODUCERS = { family_build: {
   still_wanted: async (env, demand) => !!await env.LIBRARY.prepare("SELECT id FROM entity_family_search_requests WHERE id = ? AND state = 'waiting'")
     .bind(demand.ref).first(),
   on_fact: async (env, demand, fact) => {
-    const row = await env.LIBRARY.prepare("SELECT * FROM entity_family_search_requests WHERE id = ? AND state = 'waiting' AND engine = ?")
-      .bind(demand.ref, fact.engine).first();
+    const row = await env.LIBRARY.prepare("SELECT * FROM entity_family_search_requests WHERE id = ? AND state = 'waiting'")
+      .bind(demand.ref).first();
     if (!row) return;
     const best = fact.result?.report?.results?.[0];
     if (!best) {
@@ -36,22 +36,17 @@ export async function askFamilyTransfers(env) {
   if (!env.LIBRARY || env.FACTORY_PAUSED === "1") return;
   const { engine } = await servedRelease(env);
   if (!engine) return;
-  const { results } = await env.LIBRARY.prepare(`SELECT t.* FROM entity_family_search_requests t
-    WHERE t.state = 'waiting' AND (t.asked_engine IS DISTINCT FROM ?1::text OR NOT EXISTS
+  const { results } = await env.LIBRARY.prepare(`SELECT t.*,EXISTS(SELECT 1 FROM relation_task_consumers d WHERE d.producer='family_build' AND d.ref=t.id) AS already_asked FROM entity_family_search_requests t
+    WHERE t.state = 'waiting' AND (t.asked_engine IS NULL OR NOT EXISTS
       (SELECT 1 FROM relation_task_consumers d WHERE d.producer = 'family_build' AND d.ref = t.id)) ORDER BY t.created_at, t.id LIMIT 100`)
-    .bind(engine).all();
+    .all();
   if (!results.length) return;
-  const keys = JSON.stringify(results.map(row => row.id).sort());
-  const { results: waiting } = await env.LIBRARY.prepare(`UPDATE entity_family_search_requests SET engine = ?1::text
-    WHERE id IN (SELECT id FROM entity_family_search_requests WHERE state = 'waiting'
-      AND id IN (SELECT value FROM jsonb_array_elements_text((?2::text)::jsonb)) ORDER BY id FOR UPDATE) RETURNING id`)
-    .bind(engine, keys).all();
-  const rows = results.filter(row => waiting.some(item => item.id === row.id));
-  if (!rows.length) return;
-  await facts().demandAll(env, rows.map(row => ({ producer: "family_build", ref: row.id, verb: "optimize_report", request: JSON.parse(row.request),
+  const rows = results;
+  const missing = rows.filter(row => !row.already_asked);
+  if (missing.length) await facts().demandAll(env, missing.map(row => ({ producer: "family_build", ref: row.id, verb: "optimize_report", request: JSON.parse(row.request),
     due_in_ms: DEADLINE_MS.family_build, payload: { weapon: row.weapon, ruler: row.ruler }, waits: false, initiator: "system" })), engine);
   await env.LIBRARY.prepare(`UPDATE entity_family_search_requests SET asked_engine = ?1::text WHERE id IN
-    (SELECT id FROM entity_family_search_requests WHERE engine = ?1::text
+    (SELECT id FROM entity_family_search_requests WHERE state='waiting'
       AND id IN (SELECT value FROM jsonb_array_elements_text((?2::text)::jsonb)) ORDER BY id FOR UPDATE)`)
     .bind(engine, JSON.stringify(rows.map(row => row.id))).run();
 }
@@ -64,7 +59,7 @@ export async function familyRoute(request, env) {
   let body;
   try { body = JSON.parse(raw); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
   if ((body?.engine !== undefined && (typeof body.engine !== "string" || !ENGINE_ID.test(body.engine)))
-      || !Array.isArray(body?.jobs) || body.jobs.length > 100 || body.jobs.some(job => !job || !ID.test(job.source || "")
+      || !Array.isArray(body?.jobs) || body.jobs.length > 100 || body.jobs.some(job => !job || job.input_schema !== 1 || !ID.test(job.source || "")
       || !SLUG.test(job.weapon || "") || !SLUG.test(job.ruler || "") || job.request?.weapon !== job.weapon
       || job.request.strategy !== "quick" || !Array.isArray(job.request.starts) || job.request.finalists !== 1
       || job.context?.weapon !== job.weapon || job.context.benchmark !== job.ruler))
@@ -73,7 +68,7 @@ export async function familyRoute(request, env) {
   if (!engine) return json({ ok: false, error: "No engine is served." }, 503);
   const wanted = body.engine || engine, rows = new Map();
   for (const job of body.jobs) {
-    const id = await questionId("family_build", { source: job.source, weapon: job.weapon, ruler: job.ruler, engine: wanted });
+    const id = await questionId("family_build", { source: job.source, weapon: job.weapon, ruler: job.ruler });
     if (!rows.has(id)) rows.set(id, { id, source: job.source, weapon: job.weapon, ruler: job.ruler,
       request: JSON.stringify(job.request), context: JSON.stringify(job.context) });
   }

@@ -135,7 +135,7 @@ async function freeze(request, env, code, ctx) {
   if (text.length > MAX_REQUEST) return json({ ok: false, error: "too large" }, 413);
   let b;
   try { b = JSON.parse(text); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
-  if (!ENGINE_ID.test(b.engine || "") || !b.request || typeof b.request !== "object"
+  if (b.input_schema !== 1 || !ENGINE_ID.test(b.engine || "") || !b.request || typeof b.request !== "object"
       || !b.context || typeof b.context !== "object") {
     return json({ ok: false, error: "needs engine, request and context" }, 400);
   }
@@ -169,7 +169,7 @@ export async function askRiven(env, a, frozen, now) {
   const chat = a.channel !== SURVEY_CHANNEL;
   const { engine } = await servedRelease(env);
   await facts().demand(env, { producer: chat ? "chat" : "survey", ref: a.code, verb: "optimize", request: frozen,
-    due_in_ms: DEADLINE_MS[chat ? "chat" : "survey"], payload: { weapon: a.weapon, ruler: a.ruler },
+    due_in_ms: DEADLINE_MS[chat ? "chat" : "survey"], payload: { weapon: a.weapon, ruler: a.ruler, context: frozen.context },
     lanes: chat ? RIVEN_LANE_TIERS : null, waits: chat,
     initiator: chat ? await initiatorCode(env, "bot", `${a.channel}:${a.asker}`) : "system" }, engine, now);
 }
@@ -218,7 +218,7 @@ export const RIVEN_PRODUCERS = { chat: rivenProducer, survey: rivenProducer };
 /// THE TASK THE FACTORY LEASED, in the shape the page runs a riven gain in.
 export function rivenWork(leased) {
   const d = leased.demands[0];
-  const { request, context } = leased.request;
+  const { request } = leased.request, context = d.payload.context || leased.request.context;
   return { kind: "riven_gain", lease: leased.lease, code: d.ref, weapon: d.payload.weapon, ruler: d.payload.ruler, request, context };
 }
 

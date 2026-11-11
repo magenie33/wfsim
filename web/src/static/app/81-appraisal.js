@@ -60,6 +60,11 @@ async function openAppraisal(code, freeze = false) {
       rivenId: appraisal.rivenMod.slice(RIVEN_PREFIX.length) });
     if (!asked) throw new Error(`unknown ruler ${job.ruler}`);
     if (freeze) {
+      const normalized = await api("/api/computation/input", { kind: "optimization", request: asked.request, context: asked.context });
+      if (!normalized?.ok) throw new Error(normalized?.error || "Invalid appraisal input.");
+      asked.request = normalized.request;
+      asked.context = normalized.context;
+      asked.input_schema = normalized.schema;
       document.body.dataset.request = JSON.stringify({ engine: ENGINE_ID, ...asked });
       return;
     }

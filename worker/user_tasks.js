@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Browser-owned requests consume facts from the same fair factory as the board.
+import { COMPUTATION_INPUT_SCHEMA } from "./computation_input.js";
 import { facts, DEADLINE_MS } from "./factory.js";
 import { canon, questionId, witnessOf } from "./tasks.js";
 import { sameSite, sha256, limited } from "./accounts.js";
@@ -25,7 +26,7 @@ export function reportCanon(result, work) { return canon({ report: calculationRe
 const wanted = async (env, demand) => {
   const row = await env.LIBRARY.prepare("SELECT engine FROM entity_user_calculation_requests WHERE id = ? AND state = 'waiting' AND expires_at > ?")
     .bind(demand.ref, iso(Date.now())).first();
-  return !!row && row.engine === (await servedRelease(env)).engine;
+  return !!row;
 };
 export const USER_TASK_PRODUCERS = { user_calculation: {
   still_wanted: wanted,
@@ -37,16 +38,16 @@ export const USER_TASK_PRODUCERS = { user_calculation: {
       env.LIBRARY.prepare("SELECT compute_select_report(?1::text,?2::text,?3::text)")
         .bind(demand.question,fact.engine,completedAt),
       env.LIBRARY.prepare(`INSERT INTO relation_calculation_report_access(id,owner,question,engine,task,kind,created_at,completed_at,expires_at)
-        SELECT t.id,t.owner,t.question,t.engine,t.task,t.kind,t.created_at,r.at,
+        SELECT t.id,t.owner,t.question,r.engine,t.task,t.kind,t.created_at,r.at,
           to_char((r.retained_from::timestamptz+(CASE WHEN t.kind='simulation' THEN ?1::bigint ELSE ?4::bigint END)*interval '1 millisecond')
             AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-        FROM entity_user_calculation_requests t JOIN state_current_calculation_reports r ON r.question=t.question AND r.engine=t.engine
-        WHERE t.id=?2::text AND t.state='waiting' AND t.engine=?3::text ON CONFLICT(id) DO NOTHING`)
+        FROM entity_user_calculation_requests t JOIN state_current_calculation_reports r ON r.question=t.question AND r.engine=?3::text
+        WHERE t.id=?2::text AND t.state='waiting' ON CONFLICT(id) DO NOTHING`)
         .bind(USER_TASK_KEEP_MS,demand.ref,fact.engine,COMPUTATION_KEEP_MS),
-      env.LIBRARY.prepare(`UPDATE entity_user_calculation_requests t SET state='succeeded',completed_at=r.at,
+      env.LIBRARY.prepare(`UPDATE entity_user_calculation_requests t SET state='succeeded',completed_at=r.at,result_engine=r.engine,
           expires_at=to_char((r.retained_from::timestamptz + (CASE WHEN t.kind='simulation' THEN ?1::bigint ELSE ?4::bigint END)
             * interval '1 millisecond') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
-        FROM state_current_calculation_reports r WHERE t.id=?2::text AND t.state='waiting' AND t.engine=?3::text AND r.question=t.question AND r.engine=t.engine`)
+        FROM state_current_calculation_reports r WHERE t.id=?2::text AND t.state='waiting' AND r.question=t.question AND r.engine=?3::text`)
         .bind(USER_TASK_KEEP_MS, demand.ref, fact.engine, COMPUTATION_KEEP_MS),
     ]);
   },
@@ -59,6 +60,11 @@ export async function purgeUserCalculations(env, now = Date.now()) {
   const db = env.LIBRARY;
   if (!db) return;
   await purgeComputationRecords(env, now);
+  await db.prepare(`DELETE FROM record_compute_identity_changes c WHERE c.snapshot::jsonb#>>'{scheduling,verb}' IN ('simulate_report','optimize_report')
+    AND NOT EXISTS(SELECT 1 FROM entity_user_calculation_requests t WHERE t.question IN(c.previous_computation,c.computation) AND t.expires_at>?1::text)
+    AND NOT EXISTS(SELECT 1 FROM relation_calculation_report_access a WHERE a.question IN(c.previous_computation,c.computation) AND a.expires_at>?1::text)
+    AND NOT EXISTS(SELECT 1 FROM relation_task_consumers d WHERE d.question IN(c.previous_computation,c.computation) AND d.producer='family_build')`)
+    .bind(iso(now)).run();
   const { results } = await db.prepare("SELECT id FROM entity_user_calculation_requests WHERE expires_at < ? AND state = 'waiting' LIMIT 100").bind(iso(now)).all();
   for (const row of results) await facts().withdraw(env, "user_calculation", row.id, now);
   await db.prepare("DELETE FROM entity_user_calculation_requests WHERE expires_at < ? AND state <> 'waiting'").bind(iso(now)).run();
@@ -119,6 +125,8 @@ export async function userTasksRoute(request, env, path) {
     return json({ ok: true, source: await localDeliverySource(env, request, body) });
   }
   if (path === "/api/user-tasks/accept") {
+    if (body.input_schema !== COMPUTATION_INPUT_SCHEMA)
+      return json({ok:false,error:"Reload this page before sending a calculation to community compute."},409);
     if (!UUID.test(body.id || "") || !UUID.test(body.task || "") || !VERBS[body.kind] || !ENGINE_ID.test(body.engine || "")
         || !body.request || typeof body.request !== "object" || !body.request.weapon)
       return json({ ok: false, error: "invalid calculation" }, 400);
@@ -126,17 +134,17 @@ export async function userTasksRoute(request, env, path) {
         || (body.kind !== "simulation" && (body.request.strategy !== "quick" || !Array.isArray(body.request.starts))))
       return json({ ok: false, error: "invalid calculation" }, 400);
     const served = await servedRelease(env);
-    if (!served.engine || served.engine !== body.engine) return json({ ok: false, error: "The engine changed. Run this calculation again from its page." }, 409);
+    if (!served.engine) return json({ ok: false, error: "No computation engine is available." }, 503);
     if (env.FACTORY_PAUSED === "1") return json({ ok: false, error: "Community execution is paused." }, 503);
     const cancelled = await db.prepare("SELECT id FROM state_request_cancellation_tombstones WHERE id = ? AND owner = ?").bind(body.id, owner).first();
     if (cancelled) return json({ ok: false, error: "This community request has ended." }, 410);
     const old = await db.prepare("SELECT * FROM entity_user_calculation_requests WHERE id = ?").bind(body.id).first();
-    // A completed cache entry cannot outlive its window through a new consumer.
-    const original = await questionId(VERBS[body.kind], body.request);
-    const keepMs = taskKeepMs(body.kind), execution = old?.question === original ? body.request : { ...body.request,
-      __retention_window: Math.floor((old ? Date.parse(old.created_at) : now) / keepMs) };
+    const keepMs = taskKeepMs(body.kind), execution = body.request;
     const question = await questionId(VERBS[body.kind], execution);
-    if (old && (old.owner !== owner || old.question !== question || old.engine !== body.engine || old.task !== body.task))
+    const retained = await db.prepare("SELECT r.retained_from FROM state_current_calculation_reports r JOIN state_compute_scheduling q ON q.id=r.question AND q.fact_engine=r.engine WHERE r.question=?")
+      .bind(question).first();
+    const force = !!retained && Date.parse(retained.retained_from) + keepMs <= now;
+    if (old && (old.owner !== owner || old.question !== question || old.task !== body.task))
       return json({ ok: false, error: "This command already describes another request." }, 409);
     const before=[];
     if (!old) {
@@ -151,18 +159,18 @@ export async function userTasksRoute(request, env, path) {
     if (!old || old.state === "waiting") {
       try {
         await facts().demand(env,{producer:"user_calculation",ref:body.id,verb:VERBS[body.kind],request:execution,
-          due_in_ms:DEADLINE_MS.user_calculation,waits:false,initiator:`user:${owner.slice(0,16)}`},
+          due_in_ms:DEADLINE_MS.user_calculation,payload:{board_upload:body.request.__board_upload===true},force,reason:"retention_expired",waits:false,initiator:`user:${owner.slice(0,16)}`},
           body.engine,old ? Date.parse(old.created_at) : now,{before});
       } catch (error) {
         if (error.message.includes("user calculation already cancelled"))
           return json({ok:false,error:"This community request has ended."},410);
-        if (error.code==="23505" && error.message.includes("user calculation identity conflict"))
+        if (error.code==="23505" && /(?:user calculation|compute source) identity conflict/.test(error.message))
           return json({ok:false,error:"This command already describes another request."},409);
         throw error;
       }
     }
     const stored = await db.prepare("SELECT owner, question, task, engine FROM entity_user_calculation_requests WHERE id = ?").bind(body.id).first();
-    if (stored.owner !== owner || stored.question !== question || stored.task !== body.task || stored.engine !== body.engine)
+    if (stored.owner !== owner || stored.question !== question || stored.task !== body.task)
       return json({ ok: false, error: "This command already describes another request." }, 409);
     if (body.kind === "appraisal" && old?.kind === "optimization")
       await db.prepare("UPDATE entity_user_calculation_requests SET kind='appraisal' WHERE id=? AND owner=?").bind(body.id, owner).run();
@@ -185,32 +193,31 @@ export async function userTasksRoute(request, env, path) {
   const currentEngine = (await servedRelease(env)).engine;
   const { results } = await db.prepare(`WITH owned AS (
       SELECT t.* FROM entity_user_calculation_requests t WHERE t.owner=?1::text
-      UNION ALL SELECT a.id,a.task,a.owner,a.kind,a.engine,a.question,'succeeded',a.created_at,a.completed_at,a.expires_at
+      UNION ALL SELECT a.id,a.task,a.owner,a.kind,a.engine,a.question,'succeeded',a.created_at,a.completed_at,a.expires_at,a.engine
         FROM relation_calculation_report_access a WHERE a.owner=?1::text
         AND NOT EXISTS(SELECT 1 FROM entity_user_calculation_requests t WHERE t.id=a.id))
-    SELECT t.id, t.task, t.kind, t.question, t.state, t.engine, t.expires_at, t.completed_at, q.state AS question_state,
+    SELECT t.id, t.task, t.kind, t.question, t.state, t.engine AS submitted_engine, CASE WHEN t.state='waiting' THEN COALESCE(q.fact_engine,?6::text) ELSE COALESCE(t.result_engine,t.engine) END AS engine, t.expires_at, t.completed_at, q.state AS question_state,
       q.leased_to IS NOT NULL AND q.lease_until > ?3::text AS computing, CASE WHEN ?5::boolean THEN r.result ELSE NULL END AS result,r.origin AS report_origin,
-      a.id AS candidate,a.device,a.owner AS calculator,a.official,a.at,
+      a.id AS candidate,a.engine AS candidate_engine,a.device,a.owner AS calculator,a.official,a.at,
       CASE WHEN ?5::boolean THEN a.result ELSE NULL END AS candidate_result
       FROM owned t LEFT JOIN state_compute_work q ON q.id = t.question
-      LEFT JOIN state_current_calculation_reports r ON r.question = t.question AND r.engine = t.engine
-      LEFT JOIN LATERAL (SELECT id,device,owner,official,at,result FROM record_candidate_answers
-        WHERE question=t.question AND engine=t.engine AND void=0 AND t.kind='appraisal'
+      LEFT JOIN state_current_calculation_reports r ON r.question = t.question AND r.engine = COALESCE(t.result_engine,q.fact_engine)
+      LEFT JOIN LATERAL (SELECT id,engine,device,owner,official,at,result FROM state_compute_candidate_answers
+        WHERE question=t.question AND task_id=q.task_id AND void=0 AND t.kind='appraisal'
         AND id>COALESCE(((?4::text)::jsonb->>t.id)::bigint,0) ORDER BY at,id LIMIT 1) a ON true
       WHERE t.owner = ?1::text AND t.id IN (SELECT value FROM jsonb_array_elements_text((?2::text)::jsonb))`)
-    .bind(owner, JSON.stringify(ids), iso(now), JSON.stringify(after), body.include_results === true).all();
+    .bind(owner, JSON.stringify(ids), iso(now), JSON.stringify(after), body.include_results === true, currentEngine).all();
   return json({ ok: true, next_ms: 10_000, tasks: await Promise.all(results.map(async row => {
-    const available = ["waiting", "succeeded"].includes(row.state) && Date.parse(row.expires_at) > now && row.engine === currentEngine && row.question_state !== "withdrawn";
+    const available = ["waiting", "succeeded"].includes(row.state) && Date.parse(row.expires_at) > now && row.question_state !== "withdrawn";
     const candidate = available && row.candidate ? row.candidate : null;
     const report = candidate && body.include_results === true ? calculationReport(JSON.parse(row.candidate_result).report) : null;
-    const source = report ? await answerDeliverySource(env, row.question, { engine: row.engine, owner: row.calculator,
+    const source = report ? await answerDeliverySource(env, row.question, { engine: row.candidate_engine, owner: row.calculator,
       device: row.device, official: row.official, at: row.at }, report.weapon || report.results?.[0]?.replay?.weapon) : null;
     return { id: row.id, task: row.task, ...(candidate ? { candidate } : {}),
-    state: row.state === "waiting" && currentEngine && row.engine !== currentEngine ? "failed" : Date.parse(row.expires_at) <= now ? "expired" : row.state === "waiting" && ["disputed", "nondeterministic", "withdrawn"].includes(row.question_state) ? "failed" : row.state,
-    ...(row.state === "waiting" && currentEngine && row.engine !== currentEngine ? { error: "The engine changed. Run this calculation again from its page." } : {}),
+    state: Date.parse(row.expires_at) <= now ? "expired" : row.state === "waiting" && ["disputed", "nondeterministic", "withdrawn"].includes(row.question_state) ? "failed" : row.state,
     ...(row.state === "waiting" && row.question_state === "withdrawn" ? { error: "The engine refused this calculation." } : {}),
     execution_state: row.computing ? "running" : "queued",
-    phase: row.computing ? "Computing and verifying" : "Waiting for community compute", engine: row.engine, keep_until: row.expires_at,
+    phase: row.computing ? "Computing and verifying" : "Waiting for community compute", engine: row.engine, submitted_engine: row.submitted_engine, keep_until: row.expires_at,
     ...(report ? { result: report, delivery: source } : body.include_results === true && row.state === "succeeded" && row.result && Date.parse(row.expires_at) > now
       ? { result: JSON.parse(row.result), computation: { question: row.question, engine: row.engine, completed_at: row.completed_at,origin:row.report_origin } } : {}) };
   })) });

@@ -44,10 +44,10 @@ await check('ordinary scorer receipts never answer a fresh review round',async()
 const cached=await questionId('simulate',{record,ruler,mode});
 await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:args[1],state:"fact",due_at:args[2],opened_at:args[3],canon:args[4],fact_engine:args[5],fact_at:args[6]});})(db,[cached,canon({record,ruler,mode}),old,old,canon({score:10,metric:'kpm',work:100}),engine,old]);
 await db.run('INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,at) VALUES (?,?,?,?,?,?,?,?)',cached,engine,'cached-witness','cached-owner',canon({score:10,metric:'kpm',work:100}),JSON.stringify({score:10,metric:'kpm'}),100,old);
-await check('review opens a fresh question and preserves the old public score',async()=>{
+await check('review opens a fresh round under the same computation and preserves the old public score',async()=>{
  accepted=await call(target);assert.equal(accepted.ok,true);
  const row=await db.get('SELECT * FROM entity_measurement_reviews');
- assert.notEqual(row.question,cached);assert.equal((await score()).score,10);
+ assert.equal(row.question,cached);assert.equal((await score()).score,10);
  assert.equal((await db.get('SELECT state FROM state_compute_work WHERE id=?',row.question)).state,'open');
 });
 await check('repeated and concurrent requests share one review',async()=>{
@@ -90,7 +90,7 @@ await check('an independent agreeing witness atomically replaces only the review
 });
 await check('a completed review is coalesced during its cooldown',async()=>{
  assert.equal((await call(target)).id,accepted.id);
- assert.equal((await db.get('SELECT count(*) AS n FROM state_compute_work')).n,2);
+ assert.equal((await db.get('SELECT count(*) AS n FROM state_compute_work')).n,1);
 });
 await check('older cached board facts cannot overwrite a newer verified review',async()=>{
  await db.run("INSERT INTO entity_compute_batches(id,at,total) VALUES ('cached',?,1)",now);
@@ -144,7 +144,7 @@ await check('retraction skips invalid older review proofs and leaves newer proof
  await age();accepted=await call(target);
  for(const digit of ['8','9']){const who=witness(digit),work=await facts().next(env,who,engine);assert.ok(work);await facts().answer(env,who,{lease:work.lease,engine,result:{score:22,metric:'kpm'},work:100});}
  const second=await db.get('SELECT * FROM entity_measurement_reviews WHERE id=?',accepted.id);
- const retract=row=>BOARD_REVIEW_PRODUCER.on_retract(env,{ref:row.ref,question:row.question});
+ const retract=row=>BOARD_REVIEW_PRODUCER.on_retract(env,{ref:row.ref,question:row.question,payload:{review:row.id}});
  await retract(first);assert.equal((await score()).score,22);assert.equal((await score()).review_id,second.id);
  await retract(second);assert.equal((await score()).score,20);assert.equal((await score()).review_id,null);
 });
@@ -159,7 +159,7 @@ await check('the deployed daemon role can deliver a review with its proof atomic
  try{
   assert.equal(await BOARD_REVIEW_PRODUCER.still_wanted(env,{ref:row.ref,question:row.question}),true);
   await db.batch(BOARD_REVIEW_PRODUCER.on_fact_writes(env,{ref:row.ref,question:row.question,payload:{review:row.id}},
-   {engine,result:{score:20,metric:'kpm'}}));
+   {engine,task_id:row.task_id,result:{score:20,metric:'kpm'}}));
  }finally{await db.exec('RESET ROLE');}
  assert.equal((await score()).review_id,row.id);assert.equal((await state(row.id)).state,'succeeded');
 });
@@ -167,7 +167,7 @@ await check('an invalidated review cannot resurrect an unproven community baseli
  await age();await db.run("UPDATE state_board_measurement_selection SET review_id=NULL,measured_by='verified:e1' WHERE identity=?",identity);
  accepted=await call(target);const row=await db.get('SELECT * FROM entity_measurement_reviews WHERE id=?',accepted.id);
  const demand={ref:row.ref,question:row.question,payload:{review:row.id}};
- await db.batch(BOARD_REVIEW_PRODUCER.on_fact_writes(env,demand,{engine,result:{score:23,metric:'kpm'}}));
+ await db.batch(BOARD_REVIEW_PRODUCER.on_fact_writes(env,demand,{engine,task_id:row.task_id,result:{score:23,metric:'kpm'}}));
  await BOARD_REVIEW_PRODUCER.on_retract(env,demand);await BOARD_REVIEW_PRODUCER.on_retract(env,demand);
  assert.ok((await db.get('SELECT retired_at FROM board_facts WHERE identity=?',identity)).retired_at);
  assert.equal((await db.get('SELECT count(*) AS n FROM state_board_measurement_selection WHERE identity=?',identity)).n,1,'the invalid score remains an auditable removal event');
@@ -175,10 +175,10 @@ await check('an invalidated review cannot resurrect an unproven community baseli
  await db.run('INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES (?,?,?,?,?,?,?,?,?)',identity,ruler,mode,'e1',20,'kpm',0,now,now);
  await db.run('DELETE FROM state_board_pending_work WHERE batch=?','review-repair:'+row.id);
 });
-await check('engine changes cannot publish an old review into the new release',async()=>{
+await check('a queued review survives deployment while its baseline stays until agreement',async()=>{
  await age();accepted=await call(target);
  engine='e2'; env.ASSETS={fetch:async()=>Response.json({engine})};
- assert.equal((await state(accepted.id)).state,'failed');
+ assert.equal((await state(accepted.id)).state,'waiting');
  const who=witness('7'),work=await facts().next(env,who,engine);
  if(work)await facts().answer(env,who,{lease:work.lease,engine,result:{score:999,metric:'kpm'},work:100});
  assert.equal((await score()).score,20);
@@ -243,10 +243,10 @@ await check('a chat appraisal freeze triggers shared calibration in the backgrou
   assert.equal(response.status,200);return response.json();
  };
  const opened=await invoke('/api/appraise/new',{channel:'qq',asker:'calibration',weapon:'torid',ruler,riven:{bonuses:[]}});
- await invoke('/api/appraise/'+opened.code+'/request',{engine,request:{weapon:'torid',strategy:'quick'},context:{weapon:'torid'}});
+ await invoke('/api/appraise/'+opened.code+'/request',{input_schema:1,engine,request:{weapon:'torid',strategy:'quick'},context:{weapon:'torid'}});
  assert.equal(background.length,1);await Promise.all(background);
  assert.ok(await db.get('SELECT id FROM entity_measurement_reviews WHERE identity=?',id));
- await invoke('/api/appraise/'+opened.code+'/request',{engine,request:{weapon:'torid',strategy:'quick'},context:{weapon:'torid'}});
+ await invoke('/api/appraise/'+opened.code+'/request',{input_schema:1,engine,request:{weapon:'torid',strategy:'quick'},context:{weapon:'torid'}});
  assert.equal(background.length,1);
 });
 
@@ -286,7 +286,8 @@ await check('confirmed incorrect scores retire through a trusted independent rev
  assert.ok(held.retired_at); assert.equal(held.score,33,'retirement preserves the original measurement');
  const review=await db.get('SELECT * FROM entity_measurement_reviews WHERE id=?',held.review_id);
  assert.equal(review.state,'waiting'); assert.equal(review.invalidation_reason,body.reason);
- assert.notEqual(review.question,await questionId('simulate',{record,ruler,mode}),'retirement cannot reuse cached facts');
+ assert.equal(review.question,await questionId('simulate',{record,ruler,mode}),'retirement retains the computation identity');
+ assert.equal((await db.get('SELECT state FROM state_compute_work WHERE id=?',review.question)).state,'open','retirement requires a fresh execution');
  await db.run('UPDATE state_board_measurement_selection SET score=777,review_id=NULL WHERE identity=?',id);
  assert.equal((await db.get('SELECT score FROM state_board_measurement_selection WHERE identity=?',id)).score,33,'database protection also rejects old unpatched writers');
  const again=await boardReviewsRoute(new Request('https://wfsim.test/api/board/retire',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer retirement-check'},body:JSON.stringify(body)}),env,'/api/board/retire');
@@ -297,7 +298,7 @@ await check('confirmed incorrect scores retire through a trusted independent rev
  await db.batch(BOARD_PRODUCERS.new_build.on_fact_writes(env,demand,ordinary));
  assert.equal((await db.get('SELECT score FROM state_board_measurement_selection WHERE identity=?',id)).score,33,'ordinary cached deliveries cannot revive a retired score');
  assert.equal((await db.get('SELECT count(*) AS n FROM state_board_pending_work WHERE build_id=?',id)).n,1);
- await db.batch(BOARD_REVIEW_PRODUCER.on_fact_writes(env,{ref:review.ref,question:review.question,payload:{review:review.id}},ordinary));
+ await db.batch(BOARD_REVIEW_PRODUCER.on_fact_writes(env,{ref:review.ref,question:review.question,payload:{review:review.id}},{...ordinary,task_id:review.task_id}));
  const replaced=await db.get('SELECT * FROM board_facts WHERE identity=?',id);
  assert.equal(replaced.retired_at,null); assert.equal(replaced.score,99);
  assert.equal((await db.get('SELECT count(*) AS n FROM state_board_pending_work WHERE build_id=?',id)).n,0);
@@ -324,13 +325,14 @@ await check('confirmed incorrect scores retire through a trusted independent rev
  const before=await db.get('SELECT * FROM entity_measurement_reviews WHERE id=?',retry.id);
  engine='e3';env.ASSETS={fetch:async()=>Response.json({engine})};
  const moved=await trusted({repair:true}),current=moved.reviews.find(r=>r.identity===id);
- assert.ok(current && current.id!==retry.id,'retired rows resume on the newly served engine');
+ assert.equal(current,undefined,'a deployment change does not reopen the pending retirement');
+ const currentId=retry.id;
  await db.batch(BOARD_REVIEW_PRODUCER.on_fact_writes(env,{ref:before.ref,question:before.question,payload:{review:before.id}},
   {engine:before.engine,result:{score:1000,metric:'kpm'}}));
  assert.ok((await db.get('SELECT retired_at FROM board_facts WHERE identity=?',id)).retired_at,'superseded review cannot revive a score');
- const fresh=await db.get('SELECT * FROM entity_measurement_reviews WHERE id=?',current.id);
+ const fresh=await db.get('SELECT * FROM entity_measurement_reviews WHERE id=?',currentId);
  await db.batch(BOARD_REVIEW_PRODUCER.on_fact_writes(env,{ref:fresh.ref,question:fresh.question,payload:{review:fresh.id}},
-  {engine,result:{score:25,metric:'kpm'}}));
+  {engine,task_id:fresh.task_id,result:{score:25,metric:'kpm'}}));
  const final=await db.get('SELECT * FROM board_facts WHERE identity=?',id);
  assert.equal(final.retired_at,null);assert.equal(final.score,25);
 });

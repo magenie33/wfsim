@@ -38,7 +38,7 @@ const identity = async (name, body) => { const path = "/api/account/identity", r
 const proof = async id => { const path = "/api/computations/" + id, response = await contributorProfilesRoute(req(path), env, path); return { status: response.status, ...await response.json() }; };
 let passed = 0;
 const check = async (name, fn) => { await fn(); passed++; console.log("  ok  " + name); };
-const input = { id: randomUUID(), task: randomUUID(), kind: "appraisal", engine,
+const input = { input_schema: 1, id: randomUUID(), task: randomUUID(), kind: "appraisal", engine,
   request: { weapon: "torid", runs: 2, strategy: "quick", starts: [], rivens: [{ id: "fixture" }] } };
 const accepted = await call("accept", input);
 assert.equal(accepted.ok, true);

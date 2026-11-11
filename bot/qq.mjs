@@ -141,6 +141,11 @@ async function freezeAppraisal(code) {
       console.error(`freeze ${code}: no search for ${job.weapon} under ${job.ruler}`);
       return;
     }
+    const normalized = engine.api("/api/computation/input", { kind: "optimization", request: asked.request, context: asked.context });
+    if (!normalized.ok) throw new Error(normalized.error || "invalid appraisal input");
+    asked.request = normalized.request;
+    asked.context = normalized.context;
+    asked.input_schema = normalized.schema;
     await call(`/api/appraise/${code}/request`, { method: "POST", headers: { "content-type": "application/json",
       authorization: `Bearer ${env.BOT_RELAY_TOKEN}` }, body: JSON.stringify({ engine: release.engine, ...asked }) });
     freezing.delete(code);

@@ -39,6 +39,15 @@ it is acknowledged. Hiding an observation leaves the shared review running.
 The server owns its verified number; browser storage keeps only linkage and
 submission state, with at most fifty observations.
 
+Local and offline work remains available without server registration. The local
+queue deduplicates queued and running entries by computation ID within this
+browser's store; the shared queue deduplicates globally. Each source retains
+its own frozen context, authorization and completion delivery. Queue history IDs
+remain separate from computation IDs. An appraisal additionally identifies its
+grading ruler. Removing task history retains result artifacts and pending
+source deliveries. Admission and cutover rules are in
+[COMPUTE_TASKS.md](COMPUTE_TASKS.md).
+
 ## Local ownership
 
 Acceptance freezes the request and its origin before awaiting storage. IndexedDB
@@ -79,8 +88,10 @@ storage. Late results cannot settle cancelled or superseded attempts.
 A lost local runner leaves its attempt interrupted unless an already committed
 artifact can be adopted. Retry preserves inputs and identity. A compatible
 native optimizer job can be reattached; compatible engine checkpoints can
-resume their own task. Otherwise retry restarts. An incompatible engine or
-request schema requires a fresh request from the original page.
+resume their own task. Otherwise retry restarts. A queued request runs on the current available engine when its request schema
+is compatible. The submitted engine remains provenance; incompatible checkpoints
+restart from the fixed inputs. An incompatible request schema requires a fresh
+request from the original page.
 
 Without IndexedDB or Web Locks, the queue explicitly promises only this
 session. It does not promise cross-tab ownership or reload recovery.
@@ -163,9 +174,10 @@ reading it, retrying delivery and adding another consumer do not renew it.
 Shared input/report payloads are removed once their last consumer expires;
 aggregate contributions remain. Cancellation withdraws only that consumer.
 
-Equal user requests share within a server-assigned retention window. A new
-window creates a fresh question; consumers adopting a cached report keep its
-original completion and expiry. Legacy command retries keep their question id.
+Equal normalized inputs share one computation ID across deployments and
+retention windows. An expired report requires a fresh execution round under that
+same ID; adopting a retained report keeps its original completion and expiry.
+An acceptance command retains its original authorization across retries.
 Public computation records contain only weapon, kind, engine, completion time
 and accepted witnesses. They expire after 14 days and disclose no private inputs
 or report. Optimization attribution counts the task once for each accepted

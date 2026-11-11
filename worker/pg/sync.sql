@@ -405,6 +405,7 @@ END $$;
 CREATE OR REPLACE FUNCTION factory_task_detail(text) RETURNS jsonb LANGUAGE plpgsql STABLE AS $$
 BEGIN
   RETURN (SELECT jsonb_build_object('question',to_jsonb(q),
+    'sources',coalesce((SELECT jsonb_agg(to_jsonb(p) ORDER BY p.task_id,p.producer,p.ref,p.trigger_id) FROM relation_compute_task_sources p JOIN entity_compute_tasks t ON t.id=p.task_id WHERE t.computation=q.id),'[]'::jsonb),
     'answers',coalesce((SELECT jsonb_agg(to_jsonb(a) ORDER BY a.id) FROM record_candidate_answers a WHERE a.question=q.id),'[]'::jsonb),
     'demands',coalesce((SELECT jsonb_agg(to_jsonb(d) ORDER BY d.producer,d.ref) FROM relation_task_consumers d WHERE d.question=q.id),'[]'::jsonb),
     'engine_refusals',coalesce((SELECT jsonb_agg(to_jsonb(e) ORDER BY e.device,e.engine) FROM record_engine_refusals e WHERE e.question=q.id),'[]'::jsonb),

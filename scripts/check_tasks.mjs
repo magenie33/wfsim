@@ -244,11 +244,10 @@ await runCase("fixed:shared-producers", async () => {
   await f.demand(env, { producer: "p", ref: "asked-again", verb: "optimize", request: { riven: "x" }, due_in_ms: 1000 }, "e1", NOW);
   check("a question already a fact on the served engine is told at once, unfought", told.length === 1 && told[0].ref === "asked-again");
   await f.demand(env, { producer: "p", ref: "next-release", verb: "optimize", request: { riven: "x" }, due_in_ms: 1000 }, "e2", NOW);
-  check("...and on another engine it opens again", (await db.get("SELECT state FROM state_compute_work")).state === "open");
-  const c = await f.next(env, { device: "c", owner: "oc", net: "nc" }, "e2", NOW);
-  await f.answer(env, { device: "c", owner: "oc", net: "nc" }, { lease: c.lease, engine: "e2", result: { build: "b", score: 5 }, work: 7 }, NOW);
-  check("...where one answer of the new engine that reproduces the old bits makes the fact again",
-    (await db.get("SELECT state, fact_engine FROM state_compute_work")).fact_engine === "e2");
+  check("another deployment reuses the accepted fact", (await db.get("SELECT state FROM state_compute_work")).state === "fact");
+  check("its execution provenance stays with the actual engine", (await db.get("SELECT fact_engine FROM state_compute_work")).fact_engine === "e1");
+  check("a later deployment does not create another execution round", (await db.get("SELECT count(*) AS n FROM entity_compute_tasks")).n===1);
+
 });
 await runCase("fixed:withdrawn", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
@@ -280,8 +279,8 @@ await runCase("fixed:withdrawn", async () => {
   await db.run("UPDATE relation_task_consumers SET state = 'served' WHERE ref = 'waited'");
   await f.demand(env, { producer: "p", ref: "swept", verb: "simulate", request: { row: 6 }, due_in_ms: 1000 }, "e2", NOW);
   const reopened = await db.get("SELECT state, waits FROM state_compute_work WHERE id = ?", waited);
-  check("a fact of another engine asked again opens waited on only if a live demand waits — a served one's wait is over",
-    reopened.state === "open" && Number(reopened.waits) === 0, JSON.stringify(reopened));
+  check("a deployment change keeps the accepted fact outside the execution queue",
+    reopened.state === "fact", JSON.stringify(reopened));
   check("an open question no demand asks for any more is withdrawn by the pack that picks it, which is the row behind",
     (await db.get("SELECT state FROM state_compute_work WHERE id = ?", orphan)).state === "withdrawn"
       && after && after.questions.length === 1 && after.questions[0].demands[0].ref === "behind", JSON.stringify(after));
@@ -980,12 +979,6 @@ await runCase("fixed:demand-all-books", async () => {
         AND q.state IN ('fact', 'spot', 'disputed', 'nondeterministic')`, engine, JSON.stringify([...new Set(ids)]));
     for (const q of facts) {
       const settled = q.state === "fact" || q.state === "spot";
-      if (settled ? q.fact_engine !== engine : !q.served_answered) {
-        await db.run("SELECT compute_open_task(?1::text,'engine_recalibration',?2::text,?3::text)",q.id,engine,at);
-        await db.run(`UPDATE state_compute_work SET waits=(SELECT COALESCE(max(l.waits),0) FROM relation_task_consumers l
-          WHERE l.question=state_compute_work.id AND l.state='live') WHERE id=?`,q.id);
-        continue;
-      }
       if (!settled) continue;
       const a = await db.get("SELECT * FROM record_candidate_answers WHERE question = ? AND canon = ? ORDER BY official DESC, id LIMIT 1", q.id, q.canon);
       const fact = { question: q.id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon, result: a ? JSON.parse(a.result) : null,
@@ -1020,7 +1013,7 @@ await runCase("fixed:demand-all-books", async () => {
   };
   const asksOf = (r, n) => Array.from({ length: 1 + Math.floor(r() * (r() < 0.3 ? 600 : 40)) }, () => ({
     producer: pick(r, ["p", "q", "w"]), ref: `r${Math.floor(r() * 60)}`, verb: "simulate", request: { n: Math.floor(r() * (n + 10)) },
-    due_in_ms: Math.floor(r() * 86_400_000), waits: r() < 0.15, lanes: r() < 0.3 ? pick(r, [[{ lanes: 8, after_ms: 0 }], [{ lanes: 2, after_ms: 0 }]]) : null,
+    trigger_id: `event-${r()}`, due_in_ms: Math.floor(r() * 86_400_000), waits: r() < 0.15, lanes: r() < 0.3 ? pick(r, [[{ lanes: 8, after_ms: 0 }], [{ lanes: 2, after_ms: 0 }]]) : null,
     payload: r() < 0.5 ? { k: Math.floor(r() * 9) } : undefined }));
   const state = async (db, said) => JSON.stringify([
     (await db.all("SELECT * FROM state_compute_work ORDER BY id")).map(({task_id,result_id,...row})=>row), await db.all("SELECT * FROM relation_task_consumers ORDER BY producer, ref"),

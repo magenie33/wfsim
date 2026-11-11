@@ -156,6 +156,15 @@ worker gets from Hyperdrive; it needs `npm install --prefix scripts/pg`.
 
 ## Inventory checks
 
+`check_compute_admission.mjs` verifies engine-independent input identity, atomic
+sourced admission, held leases, idempotent triggers, explicit new rounds,
+source rechecks and cutover rollback. `WFSIM_ADMISSION_TEST_URL` runs the same
+checks and 24 competing admissions on isolated local PostgreSQL. Its
+`--break-source-guard` and `--break-identity-metadata` controls must fail.
+`check_user_task_queue` also removes its actual duplicate lookup as a negative
+control and verifies source fan-out and frozen remote authorization.
+
+
 `check_compute_storage.mjs` verifies distinct immutable inputs, execution rounds
 and accepted outputs, explicit candidate membership, stale-round rejection and
 retention independent of scheduling cleanup. It runs in the service job with

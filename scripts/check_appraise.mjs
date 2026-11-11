@@ -16,6 +16,7 @@ const db = await testDb("library");
 const LIBRARY = db;
 const env = { BOT_RELAY_TOKEN: "relay", LIBRARY };
 const call = async (method, path, body, headers = {}) => {
+  if (body && typeof body === "object" && path.endsWith("/request")) body = {...body,input_schema:1};
   const r = await appraiseRoute(new Request(`https://x${path}`, { method, headers,
     ...(body === undefined ? {} : { body: typeof body === "string" ? body : JSON.stringify(body) }) }), env, path.split("?")[0]);
   return { status: r.status, body: await r.json() };

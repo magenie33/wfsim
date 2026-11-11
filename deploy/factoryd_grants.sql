@@ -28,6 +28,7 @@ GRANT UPDATE (proof_archive,proof_digest) ON entity_compute_results TO wfsim_fac
 GRANT SELECT,INSERT ON record_compute_result_selections TO wfsim_factoryd;
 GRANT SELECT,INSERT,DELETE ON record_compute_result_proofs TO wfsim_factoryd;
 GRANT SELECT,INSERT,UPDATE,DELETE ON state_compute_scheduling,relation_task_answer_evidence TO wfsim_factoryd;
+GRANT SELECT,INSERT ON relation_compute_task_sources TO wfsim_factoryd;
 GRANT SELECT ON state_compute_candidate_answers TO wfsim_factoryd;
 GRANT SELECT,INSERT,DELETE ON entity_calculation_reports,relation_calculation_report_access TO wfsim_factoryd;
 GRANT SELECT,INSERT,UPDATE,DELETE ON state_calculation_report_selection TO wfsim_factoryd;

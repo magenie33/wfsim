@@ -123,9 +123,9 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
   /// after them (`later`).
   function deliverPlan(env, q, now, answerOf, demands, writes, later) {
     const db = env.LIBRARY;
-    const fact = { question: q.id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon, at: q.fact_at || iso(now),
+    const fact = { question: q.id, task_id: q.task_id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon, at: q.fact_at || iso(now),
       result: answerOf ? JSON.parse(answerOf.result) : null, work: answerOf ? answerOf.work : 0,
-      engine: answerOf ? answerOf.engine : null, official: !!(answerOf && answerOf.official),
+      engine: q.fact_engine, official: !!(answerOf && answerOf.official),
       witnesses: Array.isArray(q.witnesses) ? q.witnesses : JSON.parse(q.witnesses || "[]") };
     for (const d of demands) {
       const p = producerOf(d.producer), told = { ...d, payload: JSON.parse(d.payload) };

@@ -29,18 +29,23 @@ USER_TASK_TYPES.set("simulation", {
     } finally { release(); }
   },
   async save(task, result, { persistent }) {
-    const record = await resultAddCaptured(result, frozenTaskBuild(task.origin.build, task.request), task.origin.context, task.attempt, persistent);
+    const record = await resultAddCaptured(result, frozenTaskBuild(task.origin.build, task.request, task.origin.input_aliases), task.origin.context, task.attempt, persistent);
     resultMem.set(resultMemKey(task.origin.context.weapon, task.origin.context.preset), { ...record, r: result });
     track("simulator.run", task.request.weapon, task.request.runs);
     noteSimRun(task.request.runs);
-    if (task.origin.board) offerBoardSubmit({ body: task.origin.board, context: task.origin.context }).catch(() => {});
     return record.id;
   },
   async completed(task) {
-    if (!boardReviewEnabled()) return;
     if (!results.some(record => record.id === task.result_ref)) await loadResults();
-    const record = results.find(record => record.id === task.result_ref);
-    if (record) await requestBoardReview(task, record.r, record);
+    let record = results.find(record => record.id === task.result_ref);
+    if (!record) return;
+    if (task.source_id && task.source_id !== taskSources(task)[0].id) {
+      record = await resultAddCaptured(record.r, frozenTaskBuild(task.origin.build, task.request, task.origin.input_aliases),
+        task.origin.context, `${task.result_ref}:${task.source_id}`, userTasks.store.persistent);
+    }
+    resultMem.set(resultMemKey(task.origin.context.weapon, task.origin.context.preset), record);
+    if (task.origin.board) await offerBoardSubmit({ body: task.origin.board, context: task.origin.context });
+    if (boardReviewEnabled()) await requestBoardReview(task, record.r, record);
   },
   async recover(task) {
     await loadResults();
@@ -52,17 +57,20 @@ USER_TASK_TYPES.set("simulation", {
 function simulationTaskForPage() {
   if (!userTasks || !META || !$("weapon").value) return null;
   const candidates = userTasks.view().filter((task) => task.kind === "simulation" && userTaskActive(task)
-    && task.origin.context.weapon === presetWeapon() && task.origin.context.preset === activePreset && task.request.runs === simRuns());
+    && taskSources(task).some(source => source.origin.context?.weapon === presetWeapon() && source.origin.context?.preset === activePreset) && task.request.runs === simRuns());
   if (!candidates.length) return null;
   const key = simKey();
-  return candidates.find((task) => task.origin.context.key === key) || null;
+  return candidates.find((task) => taskSources(task).some(source => source.origin.context?.key === key)) || null;
 }
 function simulationResultForPage() {
   if (!userTasks || activePreset) return null;
   const key = simKey();
   const task = userTasks.view().slice().reverse().find((task) => task.kind === "simulation" && task.state === "succeeded"
-    && task.origin.context.weapon === presetWeapon() && !task.origin.context.preset && task.origin.context.key === key);
-  return task ? results.find((record) => record.id === task.result_ref) || null : null;
+    && taskSources(task).some(source => source.origin.context?.weapon === presetWeapon() && !source.origin.context?.preset && source.origin.context?.key === key));
+  if (!task) return null;
+  const source = taskSources(task).find(source => source.origin.context?.weapon === presetWeapon() && !source.origin.context?.preset && source.origin.context?.key === key);
+  const id = source.id === taskSources(task)[0].id ? task.result_ref : `${task.result_ref}:${source.id}`;
+  return results.find(record => record.id === id) || null;
 }
 function renderSimulationTask(redrawResult = false) {
   const box = $("sim-results"), btn = $("run-sim");

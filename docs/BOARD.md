@@ -75,8 +75,8 @@ exclusive cards. Its result is a candidate, with no claim of global optimality.
 
 `ship_builds.sh` lands the source builds, then sends the emitted requests to
 factory-authenticated `POST /api/board/family`, then spends the source inbox
-rows. `family_transfers` retains one key per source build, target weapon, ruler
-and served engine. Repeated arrivals share it. Interrupted admission resumes
+rows. `family_transfers` retains one key per source build, target weapon and ruler.
+Engine identity records admission provenance. Repeated arrivals share it. Interrupted admission resumes
 from that table; completed transfers are not recreated by a library scan.
 
 Admission acknowledges durable requests without dispatching historical work in
@@ -844,9 +844,9 @@ device or engine.
   `withdrawn`.
 - **ONE COMPUTATION, CREDITED ONCE.** Two producers asking one thing share one
   question; the fact goes to both, and its witnesses are credited its work once.
-  A fact the served engine already holds is told to a later ask at once; one of
-  another engine opens again, its answers carried for the new engine to
-  reproduce or replace.
+  An accepted fact is told to a later ask at once, across engine releases.
+  A review, explicit invalidation or expired report opens a new execution round
+  under the same computation identity.
 - **THE WATCHDOG** (`watchdog`, every ten minutes): a producer whose overdue
   questions got no answer in half an hour while witnesses worked, a
   non-deterministic question, a dispute or spot nobody settled in two hours
@@ -918,6 +918,9 @@ one authority for each responsibility:
 | `record_compute_result_selections` | acceptance and retirement history |
 | `state_compute_scheduling` | current round, scheduling, leases and selected output identity |
 | `relation_task_consumers` | independent consumers and their delivery state |
+| `relation_compute_task_sources` | each trigger and its captured context, separate from delivery |
+| `record_compute_queue_removals` | removal of active work with no resolvable source |
+| `record_compute_identity_changes` | original inputs and references retained by identity cutover |
 | `entity_calculation_reports` | report identity linked to an accepted output, or preserved imported content |
 | `state_calculation_report_selection` | current report for a computation and engine |
 | `relation_calculation_report_access` | owner access and retention independent of task history |
@@ -1007,9 +1010,11 @@ request duplicate review rounds.
 `POST /api/board/review` accepts only an existing `(identity, ruler, mode)` and
 the served engine. It accepts no client score or build payload. The service
 freezes the library record and current score in `board_reviews`. Its
-`board_review` producer asks the existing `simulate` verb with a fresh review
-nonce: a cached fact for an ordinary refresh cannot answer this round.
-Pending rounds coalesce per row and engine; completed rounds have a one-hour
+`board_review` producer asks the existing `simulate` verb with its review ID as
+a source token. The computation ID stays the ordinary row's ID; the review
+references the active round or opens a fresh round, so cached facts cannot
+certify a requested remeasurement.
+Pending rounds coalesce per row across deployments; completed rounds have a one-hour
 cooldown, with a unique UTC-hour key bounding concurrent admissions. The
 existing anonymous rate limiter and a thousand pending rounds per engine
 bound admission.
@@ -1459,8 +1464,8 @@ questions, never a heavier client.
   and nobody is refused, since the release moved the number. **AN OFFICIAL
   CHECK OF ANOTHER ENGINE IS NONE**: the official machines run the served
   engine alone, so a dispute or a non-deterministic question no answer of it
-  is in goes back to the volunteers as a fact of another engine does — open
-  where a live demand waits, its answers carried, withdrawn where none does —
+  is in goes back to the volunteers, open where a live demand waits, eligible
+  evidence carried and withdrawn where none does —
   and a spot of another engine's fact is that fact again
   (`factory_moot_checks`, at a re-ask and the settler's `moot` tick).
 - **Fighting.** The client asks `/api/board/order` for the fight off the record

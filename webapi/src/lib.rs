@@ -64,6 +64,7 @@ pub use simulate::{
 pub use catalogue::catalogue_json;
 pub use warframe::{operator_panel_json, warframe_catalog_json, warframe_panel_json};
 mod companion;
+mod computation;
 
 use serde_json::Value;
 
@@ -92,6 +93,7 @@ pub const ROUTES: &[(&str, Endpoint)] = &[
     ("/api/board/fold", board_rows::board_fold_json),
     ("/api/board/score", board_rows::board_score_json),
     ("/api/build/keys", build_keys_json),
+    ("/api/computation/input", computation::input_json),
     ("/api/build/static", static_stats::static_stats_json),
     ("/api/forma/plan", forma_plan_json),
     ("/api/optimize/check", optimize_check_json),

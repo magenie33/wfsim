@@ -12,7 +12,7 @@ const db = await testDb("library");
 const env = { LIBRARY: db, ASSETS: { fetch: async () => Response.json({ engine: "test-engine", release: "test-release" }) } };
 const owner = "a".repeat(64), another = "b".repeat(64), engine = "test-engine";
 const request = { weapon: "torid", mods: [], runs: 2, replay: true };
-const accepted = (kind = "simulation", body = request) => ({ owner, id: randomUUID(), task: randomUUID(), engine, kind, request: body });
+const accepted = (kind = "simulation", body = request) => ({ input_schema: 1, owner, id: randomUUID(), task: randomUUID(), engine, kind, request: body });
 const call = async (action, body) => {
   const path = `/api/user-tasks/${action}`;
   const response = await userTasksRoute(new Request(`https://wfsim.test${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }), env, path);
@@ -29,7 +29,7 @@ await check("acceptance is durable and idempotent", async () => {
 await check("failed task admission rolls back its consumer request",async()=>{
   const pending=accepted("simulation",{...request,unique:"atomic-admission"}),batch=db.batch;
   db.batch=statements=>{
-    const index=statements.findIndex(statement=>statement.sql.includes("compute_register_tasks("));
+    const index=statements.findIndex(statement=>statement.sql.includes("compute_admit_tasks("));
     return batch(index<0 ? statements : [...statements.slice(0,index),db.prepare("SELECT 1/0"),...statements.slice(index)]);
   };
   try { await assert.rejects(call("accept",pending)); }
@@ -41,7 +41,7 @@ await check("cancellation between validation and admission wins durably",async()
   const pending=accepted("simulation",{...request,unique:"cancel-admission-race"}),batch=db.batch;
   let interrupted=false;
   db.batch=async statements=>{
-    if (!interrupted && statements.some(statement=>statement.sql.includes("compute_register_tasks("))) {
+    if (!interrupted && statements.some(statement=>statement.sql.includes("compute_admit_tasks("))) {
       interrupted=true;
       await call("cancel",{owner,ids:[pending.id]});
     }
@@ -166,7 +166,15 @@ await check('optimization requests expire after fourteen days and new windows ca
     assert.equal(cached.keep_until, got.keep_until);
     clock += COMPUTATION_KEEP_MS;
     assert.equal((await call('status', { owner, ids: [pending.id], include_results: true })).tasks[0].result, undefined);
-    assert.notEqual((await call('accept', accepted('optimization', pending.request))).question, got.question);
+    const fresh = await call('accept', accepted('optimization', pending.request));
+    assert.equal(fresh.question, got.question);
+    assert.equal((await call('status', { owner, ids: [fresh.id] })).tasks[0].state, 'waiting');
+    await facts().answerOfficial(env,{device:'official:renewal',owner:'official:renewal',official:true},
+      {question:fresh.question,engine,work:100,result:{report}});
+    const renewed=(await call('status',{owner,ids:[fresh.id],include_results:true})).tasks[0];
+    assert.equal(renewed.state,'succeeded');assert.ok(renewed.result);
+    assert.equal(Date.parse(renewed.keep_until)-clock,COMPUTATION_KEEP_MS);
+    assert.equal((await call('status',{owner,ids:[pending.id],include_results:true})).tasks[0].result,undefined);
     const sim = await call('accept', accepted('simulation', { weapon: 'torid', runs: 2, unique: 'sim-retention' }));
     assert.equal(Date.parse(sim.keep_until) - clock, USER_TASK_KEEP_MS);
   } finally { globalThis.Date = OriginalDate; }
@@ -177,8 +185,10 @@ await check("a cancellation arriving before acceptance cannot be lost", async ()
   assert.equal((await call("accept", pending)).status, 410);
   assert.equal((await call("status", { owner, ids: [pending.id] })).tasks.length, 0);
 });
-await check("engine mismatches are rejected before admission", async () => {
-  assert.equal((await call("accept", { ...accepted(), engine: "old-engine" })).status, 409);
+await check("a deployment change does not change the computation identity", async () => {
+  const current = await call("accept", accepted());
+  const old = await call("accept", { ...accepted(), engine: "old-engine" });
+  assert.equal(old.status, 200); assert.equal(old.question, current.question);
 });
 await check("both protocol 8 paths lease reports only to capable clients", async () => {
   for (const proc of [0, 1]) {
@@ -197,13 +207,15 @@ await check("both protocol 8 paths lease reports only to capable clients", async
   }
   await setDial(env, 'sync_proc', 0, 'check');
 });
-await check("a new engine cannot silently answer an older accepted request", async () => {
+await check("queued inputs survive a deployment change", async () => {
   const pending = accepted('simulation', { weapon: 'torid', runs: 55 }); await call('accept', pending);
   const prior = env.ASSETS;
   env.ASSETS = { fetch: async () => Response.json({ engine: 'next-engine' }) };
   const status = (await call('status', { owner, ids: [pending.id] })).tasks[0];
-  assert.equal(status.state, 'failed'); assert.match(status.error, /engine changed/);
-  assert.equal(await facts().next(env, witness('6'), 'next-engine'), null);
+  assert.equal(status.state, 'waiting'); assert.equal(status.engine, 'next-engine');
+  const work = await facts().next(env, witness('6'), 'next-engine');
+  assert.ok(work); await facts().release(env, witness('6').device, work.lease);
+  await call('cancel', { owner, ids: [pending.id] });
   env.ASSETS = prior;
 });
 await check("engine refusals end an invalid request without publishing a number", async () => {
@@ -218,11 +230,13 @@ await check("engine refusals end an invalid request without publishing a number"
   assert.equal(status.state, 'failed'); assert.equal(status.result, undefined);
 });
 await check("expiry removes ownership and reports after retention", async () => {
+  await db.run("INSERT INTO record_compute_identity_changes(task_id,previous_computation,computation,replacement_task_id,changed_at,snapshot) VALUES(98765,'expired-old','expired-new',98766,'2026-11-11',?)",JSON.stringify({scheduling:{verb:'simulate_report'},input:{private:'expired'}}));
   await db.run("UPDATE entity_user_calculation_requests SET expires_at = '2000-01-01T00:00:00.000Z'");
   await db.run("UPDATE relation_calculation_report_access SET expires_at = '2000-01-01T00:00:00.000Z'");
   await purgeUserCalculations(env); await purgeUserCalculations(env);
   assert.equal((await db.get("SELECT count(*) AS n FROM entity_user_calculation_requests")).n, 0);
   assert.equal((await db.get("SELECT count(*) AS n FROM entity_calculation_reports")).n, 0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM record_compute_identity_changes")).n, 0);
 });
 await check("the deployed daemon role can deliver a completed calculation", async () => {
   const pending = accepted();

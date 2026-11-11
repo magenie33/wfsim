@@ -38,7 +38,7 @@ try {
     limits.exclude.mods = buildPool().filter(mod => mod.id !== 'serration').map(mod => mod.id);
     applyOptState({ starts: [{ build: stateFromBuild({ mods: ['serration'] }, 'torid'), fixed: ['mods:0'] }], limits, candidate_runs: 1, finalists: 2 });
     sim.duration = 1; setSimRuns(1);
-    const expected = taskClone(nameableOptimizeBody(optimizeBody()));
+    const expected = (await api("/api/computation/input", { kind: "optimization", request: taskClone(nameableOptimizeBody(optimizeBody())) })).request;
     const heldSearch = heldExecutor('optimization');
     let probe;
     try {
@@ -167,8 +167,8 @@ try {
     await until(() => userTasks.list().some(task => task.kind === 'appraisal' && !prior.has(task.id)));
     const tasks = userTasks.list().filter(task => task.kind === 'appraisal' && !prior.has(task.id));
     storePresetList(RIVENS, displayedCards);
-    out.fxRequest = JSON.stringify(tasks[0].request) === JSON.stringify(expectedAppraisal.request)
-      && JSON.stringify(tasks[0].origin.board) === JSON.stringify(expectedAppraisal.context);
+    out.fxRequest = computationCanon(tasks[0].request) === computationCanon((await api("/api/computation/input", {kind:"optimization",request:expectedAppraisal.request})).request)
+      && computationCanon(tasks[0].origin.board) === computationCanon(computationReferences(expectedAppraisal.context,tasks[0].origin.input_aliases));
     out.analysisLink = USER_TASK_TYPES.get('appraisal').resultLink({ ...tasks[0], result_ref: 'capture' }).includes('/riven-analyst?analysis-result=');
     out.appraisalCapture = tasks.length === 1 && tasks[0].kind === 'appraisal' && !!tasks[0].origin.batch && tasks[0].origin.ruler === ruler;
     const heldAppraisal = heldExecutor('appraisal');

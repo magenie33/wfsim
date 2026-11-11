@@ -1,11 +1,11 @@
 // Search execution and artifacts belong to a task; the editor is an observer.
 const optimizationKey = (request) => JSON.stringify(request);
 let optimizationReport = null;
-function frozenTaskBuild(state, request) {
+function frozenTaskBuild(state, request, aliases = {}) {
   const captured = taskClone(state), weapon = request.weapon;
   const definitions = new Map((request.rivens || []).map((entry) => [RIVEN_PREFIX + (entry.id || entry.name), entry.spec]));
   for (const slot of captured.slots || []) {
-    const spec = definitions.get(slot.mod);
+    const spec = definitions.get(aliases[slot.mod] || slot.mod);
     if (spec) slot.mod = READONLY_RIVEN_PREFIX + encodeURIComponent(JSON.stringify([rivenScope(weapon), headlessWithDrafts(META, spec)]));
   }
   return captured;
@@ -212,15 +212,16 @@ USER_TASK_TYPES.set("optimization", {
   async save(task, result) {
     result.computation ||= result.search?.computation || { local: true, engine: task.engine, completed_at: taskInstant() };
     await userTasks.store.value(`artifact:${task.attempt}`, { id: task.attempt, task: task.id, kind: task.kind,
-      engine: task.engine, computation: result.computation || { local: true }, request: task.request, origin: task.origin, result, at: taskInstant() });
+      engine: task.engine, computation: result.computation || { local: true }, request: task.request, origin: task.origin, sources: task.sources, result, at: taskInstant() });
     track("optimizer.run", task.request.weapon);
     return task.attempt;
   },
   async completed(task) {
     const record = await userTasks.store.value(`artifact:${task.result_ref}`);
     if (!record) return;
+    if (task.sources) { record.sources = task.sources; await userTasks.store.value(`artifact:${task.result_ref}`, record); }
     await offerOptBoardSubmit(record.result.search || record.result, { task: task.id, context: task.origin.board,
-      appraisal: !!task.origin.appraisal, source: await optimizationTaskBuildSource(task) });
+      appraisal: !!task.origin.appraisal, source: await optimizationTaskBuildSource({ ...task, sources: null }) });
     if (task.origin.appraisal) await sendCapturedAppraisal(task, record.result.search || record.result);
   },
   async recover(task) { return await userTasks.store.value(`artifact:${task.attempt}`) ? task.attempt : null; },
@@ -229,7 +230,7 @@ USER_TASK_TYPES.set("optimization", {
 function optimizationTaskForPage() {
   if (!userTasks || !META || !$('weapon')?.value || optimizationReport) return null;
   const key = optimizationKey(nameableOptimizeBody(optimizeBody()));
-  return userTasks.view().find((task) => task.kind === "optimization" && userTaskActive(task) && optimizationKey(task.request) === key) || null;
+  return userTasks.view().find((task) => task.kind === "optimization" && userTaskActive(task) && taskSources(task).some(source => source.origin.input_key === computationCanon(computationInput("optimize_report", nameableOptimizeBody(optimizeBody()))) || optimizationKey(task.request) === key)) || null;
 }
 let optimizationShown = null;
 function renderOptimizationTask(redraw = false) {
@@ -250,7 +251,7 @@ function renderOptimizationTask(redraw = false) {
     if (ended?.state === "succeeded" && redraw) {
       const weapon = $("weapon").value, key = optimizationKey(nameableOptimizeBody(optimizeBody()));
       userTasks.store.value(`artifact:${ended.result_ref}`).then((record) => {
-        if (record && optimizationKey(record.request) === key && optimizationKey(nameableOptimizeBody(optimizeBody())) === key && $("weapon").value === weapon && !optimizationTaskForPage()) renderOptResults(record.result);
+        if (record && (optimizationKey(record.request) === key || taskSources(ended).some(source => source.origin.input_key === computationCanon(computationInput("optimize_report", nameableOptimizeBody(optimizeBody()))))) && optimizationKey(nameableOptimizeBody(optimizeBody())) === key && $("weapon").value === weapon && !optimizationTaskForPage()) renderOptResults(record.result);
       }).catch(userTaskFailed);
     } else if (ended) box.innerHTML = `<div class="placeholder">${escHtml(tr(ended.error || userTaskLabel(ended.state)))}</div>`;
   }

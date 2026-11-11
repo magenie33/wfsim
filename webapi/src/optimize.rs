@@ -26,6 +26,16 @@ mod prepared;
 
 pub use builds::BuildStream;
 
+pub(crate) fn task_request(v: &Value) -> Result<Value, Value> {
+    let plan = parse_optimize(v)?;
+    let mut out = v.clone();
+    for (key, value) in [("candidate_runs", json!(plan.candidate_runs)), ("finalists", json!(plan.finalists)),
+        ("max_evals", json!(plan.max_evals)), ("shards", json!(plan.shards)), ("shard", json!(plan.shard))] {
+        out[key] = value;
+    }
+    Ok(out)
+}
+
 pub fn optimize_check_json(v: &Value) -> Value { final_constraints::check(v) }
 #[cfg(test)]
 mod requirements_tests;

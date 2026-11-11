@@ -59,8 +59,8 @@ const boardProducer = {
           WHERE identity=?2::text AND ruler=?3::text AND mode=?5::text AND finished_at<?1::text
             AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=state_board_measurement_selection.identity AND f.ruler=state_board_measurement_selection.ruler AND f.mode=state_board_measurement_selection.mode AND f.retired_at IS NOT NULL)
             AND (state_board_measurement_selection.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM entity_measurement_reviews r JOIN state_compute_work proof ON proof.id=r.question
-              WHERE r.id=state_board_measurement_selection.review_id AND r.engine=?8::text AND proof.fact_at>?9::text))`)
-          .bind(at, identity, ruler, fact.result.score, mode,`verified:${fact.engine}`,fact.result.metric,fact.engine,fact.at || at),
+              WHERE r.id=state_board_measurement_selection.review_id AND (r.task_id=?10::bigint OR r.completed_at>=?9::text) AND ?8::text IS NOT NULL))`)
+          .bind(at, identity, ruler, fact.result.score, mode,`verified:${fact.engine}`,fact.result.metric,fact.engine,fact.at || at,fact.task_id || null),
         ...scoreWitnessWrites(db, identity, ruler, mode, at, fact),
         db.prepare("DELETE FROM state_board_pending_work WHERE build_id = ? AND ruler = ? AND mode = ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=state_board_pending_work.build_id AND f.ruler=state_board_pending_work.ruler AND f.mode=state_board_pending_work.mode AND f.retired_at IS NOT NULL)").bind(identity, ruler, mode),
       ];
@@ -74,8 +74,8 @@ const boardProducer = {
          WHERE NOT EXISTS (SELECT 1 FROM entity_measurement_reviews retired WHERE retired.id=state_board_measurement_selection.review_id AND retired.invalidated_at IS NOT NULL AND retired.state <> 'succeeded')
            AND state_board_measurement_selection.finished_at <= excluded.finished_at
            AND (state_board_measurement_selection.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM entity_measurement_reviews r JOIN state_compute_work proof ON proof.id = r.question
-           WHERE r.id = state_board_measurement_selection.review_id AND r.engine = ?9::text AND proof.fact_at > ?10::text)) AND EXISTS (SELECT 1 FROM state_board_pending_work q WHERE q.build_id = state_board_measurement_selection.identity AND q.ruler = state_board_measurement_selection.ruler AND q.mode = state_board_measurement_selection.mode)`)
-        .bind(identity, ruler, mode, `verified:${fact.engine}`, fact.result.score, fact.result.metric, at, at, fact.engine, fact.at || at),
+           WHERE r.id = state_board_measurement_selection.review_id AND (r.task_id=?11::bigint OR r.completed_at>=?10::text) AND ?9::text IS NOT NULL)) AND EXISTS (SELECT 1 FROM state_board_pending_work q WHERE q.build_id = state_board_measurement_selection.identity AND q.ruler = state_board_measurement_selection.ruler AND q.mode = state_board_measurement_selection.mode)`)
+        .bind(identity, ruler, mode, `verified:${fact.engine}`, fact.result.score, fact.result.metric, at, at, fact.engine, fact.at || at, fact.task_id || null),
       ...scoreWitnessWrites(db, identity, ruler, mode, at, fact),
       db.prepare("DELETE FROM state_board_pending_work WHERE build_id = ? AND ruler = ? AND mode = ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=state_board_pending_work.build_id AND f.ruler=state_board_pending_work.ruler AND f.mode=state_board_pending_work.mode AND f.retired_at IS NOT NULL)").bind(identity, ruler, mode),
     ];

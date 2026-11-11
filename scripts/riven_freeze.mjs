@@ -20,7 +20,7 @@ const calls = Math.max(1, Number(args[1] || 16));
 const token = dry ? "" : (process.env.BOT_RELAY_TOKEN
   || readFileSync(new URL("../private/qq/relay.token", import.meta.url), "utf8")).trim();
 const { engine } = JSON.parse(readFileSync(new URL("../site/release.json", import.meta.url), "utf8"));
-const { meta, headless } = await loadEngine();
+const { meta, headless, api } = await loadEngine();
 
 let ok = 0, bad = 0;
 const t0 = Date.now();
@@ -41,6 +41,11 @@ await pool(codes, calls, async (code) => {
     if (!job || !job.ok) throw new Error(`read ${r.status}`);
     const asked = headless.headlessRivenGainRequest(meta, { weapon: job.weapon, ruler: job.ruler, card: job.riven || {} });
     if (!asked) throw new Error(`no search for ${job.weapon} under ${job.ruler}`);
+    const normalized = api("/api/computation/input", { kind: "optimization", request: asked.request, context: asked.context });
+    if (!normalized.ok) throw new Error(normalized.error || "invalid appraisal input");
+    asked.request = normalized.request;
+    asked.context = normalized.context;
+    asked.input_schema = normalized.schema;
     const body = JSON.stringify({ engine, ...asked });
     if (dry) {
       console.log(code, body);
