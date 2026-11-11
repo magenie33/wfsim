@@ -115,6 +115,17 @@ Explicit board corrections retain their immediate independent-review path.
 The demand projection gives a full background-read statement budget when queue
 counts or compute-cost estimates need refreshing. The normal budget applies
 only while both caches remain valid; their refresh intervals are independent.
+`counts_at` retains the queue count's sampling time across file publications.
+Pending queue keys and consumer keys are unique, so their counting join needs
+no intermediate grouping of every build, ruler and mode.
+
+Each order's `sources` partitions its total into `requested`, `system` and
+`unattributed`, using its recorded initiator. Anonymous, account and bot request
+tags count as requested; the explicit system tag counts as system; absent or
+unrecognized tags remain unattributed. These counts describe recorded causes,
+not distinct people, execution devices or complete historical derivation chains.
+Report orders use their current scheduling producer, the earliest live demand,
+so shared computations count once and family searches retain their own category.
 
 Full reconciliation captures builds, scores, queue rows and task lifecycle in one
 read-only repeatable-read transaction. A lost connection aborts the capture;

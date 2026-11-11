@@ -1724,7 +1724,7 @@ see two.
 
 ```text
 { ok, v: 1, at, computing, owed: { new_builds, rescores, sweeps, refreshes },
-  riven_gains, orders: [{ kind, total, dispatched }],
+  riven_gains, counts_at, orders: [{ kind, total, dispatched, sources }],
   surveys: [{ weapon, ruler, shapes, agreed, started, clear_hours }],
   per_hour: { volunteers, official }, clear_hours,
   now: { window_seconds, asking, held, answered, starved },
@@ -1733,7 +1733,7 @@ see two.
 ```
 
 The community goal sums `orders`, the actual queued work, and displays this
-reading's update time and optional `clear_hours`. Queue admission owns which
+count's sampling time (`counts_at`, falling back to `at`) and optional `clear_hours`. Queue admission owns which
 work enters the total. Full-library `goal` snapshots remain separate workload
 observations; their absence, expiry or engine version does not hide the queue.
 `COMPUTE_TASKS.md` defines the inventory's freshness and publication rules.
@@ -1747,6 +1747,11 @@ observations; their absence, expiry or engine version does not hide the queue.
   or before — and a riven gain's once begun; the rest wait on the server. A new
   kind is added to the list and named on the page (`ORDER_KIND_NAMES`); a
   page that does not know it shows it by its id.
+  Report tasks retain their scheduling producer, including `user_calculation`
+  and `family_build`; a missing producer is `unattributed_calculation`.
+  Each row's `sources` sums to its total and separates recorded user requests,
+  system generation and missing provenance. `sweep` includes background scene
+  measurements of new builds as well as older builds.
 - `per_hour`: scores written over the last 24 hours, per hour, by who
   computed them. One hour swings five-fold between two quiet ones and a
   stopped hour reads as never; anything under a day reads the time of day,

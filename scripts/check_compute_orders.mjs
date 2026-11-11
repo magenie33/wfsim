@@ -15,7 +15,8 @@ try {
     const box = document.createElement('div'); box.innerHTML = computeDemandHtml();
     const row = [...box.querySelectorAll('.kv')].find(k => k.querySelector('dt').textContent === 'Total orders');
     return { total: row?.querySelector('b')?.textContent,
-      rows: [...box.querySelectorAll('.order-list li')].map(li => li.textContent.trim()),
+      rows: [...box.querySelectorAll('.order-list li > span:first-child')].map(li => li.textContent.trim()),
+      sources: [...box.querySelectorAll('.order-list .set-note')].map(node => node.textContent),
       note: box.querySelector('.bh .set-note')?.textContent,
       estimate: [...box.querySelectorAll('.kv')].find(k => k.querySelector('dt').textContent === 'Cleared in')?.textContent.trim() || null };
   })()`);
@@ -26,6 +27,20 @@ try {
   const updated = await app.evaluate(`new Date(${JSON.stringify(demand.at)}).toLocaleString(accountLocale())`);
   app.check("the queue reading supplies its update time and clearance estimate",
     state.note === 'Updated ' + updated && state.estimate?.includes('6 min'), JSON.stringify(state));
+  const counts_at = new Date(now - 9 * 60000).toISOString();
+  state = await draw({ ...demand, counts_at, orders: [
+    { kind: 'user_calculation', total: 2 }, { kind: 'family_build', total: 3 },
+    { kind: 'unattributed_calculation', total: 1 },
+  ] });
+  const sampled = await app.evaluate(`new Date(${JSON.stringify(counts_at)}).toLocaleString(accountLocale())`);
+  app.check("cached queue counts show their sampling time and separate player, family and unattributed sources",
+    state.total === '6' && state.note === 'Updated ' + sampled
+    && state.rows.join('|') === 'player calculations 2|related weapon searches 3|unattributed calculations 1', JSON.stringify(state));
+  state = await draw({ ...demand, orders: [{ kind: 'sweep', total: 9, sources: { requested: 2, system: 3, unattributed: 4 } }] });
+  app.check("a background order shows disjoint recorded origins", state.rows[0] === 'background leaderboard measurements 9'
+    && state.sources[0] === 'from user requests 2 · system generated 3 · source unknown 4', JSON.stringify(state));
+  state = await draw({ ...demand, orders: [{ kind: 'sweep', total: 9, sources: { requested: 2, system: 3, unattributed: 5 } }] });
+  app.check("source totals that disagree with pending work are not presented as valid", state.total === '9' && !state.sources.length, JSON.stringify(state));
   state = await draw({ ...demand, orders: [{ kind: 'new_build', total: 200, dispatched: 100 }] });
   app.check("new queue entries increase the total", state.total === '200', JSON.stringify(state));
   state = await draw({ ...demand, orders: [{ kind: 'new_build', total: 15, dispatched: 10 }] });

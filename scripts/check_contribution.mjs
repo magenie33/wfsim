@@ -309,7 +309,7 @@ await library.run("UPDATE entity_compute_devices SET last_at = '2020-01-01T00:00
     ('sweep', 'r1|heavy_gunner|base', 'qr1', 'live', 'x', 'x', '{"batch":"rescore-x"}'), ('sweep', 's1|heavy_gunner|base', 'qs1', 'live', 'x', 'x', '{"batch":"arrivals-2026-03-01"}')`);
   const listed = (await demandOf({ LIBRARY: L }, now)).orders;
   check("the orders are a list a kind a row, each with what a device has taken of it",
-    JSON.stringify(listed) === JSON.stringify([{ kind: "rescore", total: 1, dispatched: 1 }, { kind: "sweep", total: 2, dispatched: 0 },
+    JSON.stringify(listed.map(({ sources, ...order }) => order)) === JSON.stringify([{ kind: "rescore", total: 1, dispatched: 1 }, { kind: "sweep", total: 2, dispatched: 0 },
       { kind: "new_build", total: 1, dispatched: 0 }, { kind: "refresh", total: 1, dispatched: 0 }, { kind: "riven_gain", total: 1, dispatched: 0 }]),
     JSON.stringify(listed));
   await L.run("DELETE FROM relation_task_consumers WHERE question IN ('qr1', 'qs1')");
@@ -388,6 +388,55 @@ check("the nav asks the same count alone", (await call("/api/board/computing")).
   check("cost samples follow time and a hard row bound; unrelated and official-only facts cannot dilute their price",
     result.clearance.state==='ready' && result.clearance.hours===1000,JSON.stringify(result.clearance));
   await P.close();
+}
+{
+  const D = await testDb("library"), at = Date.now(), clock = n => new Date(at + n).toISOString();
+  for (const [id, verb, producer, state, leased_at] of [
+    ['player-simulation', 'simulate_report', 'user_calculation', 'open', null],
+    ['player-search', 'optimize_report', 'user_calculation', 'open', null],
+    ['family-one', 'optimize_report', 'family_build', 'open', clock(-1000)],
+    ['family-two', 'optimize_report', 'family_build', 'open', null],
+    ['future-search', 'optimize_report', 'future_producer', 'open', null],
+    ['unattributed', 'optimize_report', '', 'open', null],
+    ['finished', 'optimize_report', 'user_calculation', 'fact', null],
+    ['cancelled', 'optimize_report', 'user_calculation', 'withdrawn', null],
+    ['price-search', 'optimize_report', 'family_build', 'fact', null],
+    ['price-simulation', 'simulate_report', 'user_calculation', 'fact', null],
+  ]) await seedComputeWork(D, { id, verb, producer, state, leased_at,
+    initiator: producer === 'family_build' ? 'system' : producer === 'user_calculation' ? 'anonymous' : null,
+    request: '{}', due_at: clock(0),
+    opened_at: clock(-180000), ...(state === 'fact' ? { fact_engine: 'e1', fact_at: clock(-60000) } : {}) });
+  for (const [question, ms] of [['price-search', 1000], ['price-simulation', 500]]) for (const device of ['one', 'two'])
+    await D.run(`INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,compute_ms,at)
+      VALUES (?,'e1',?,?,'c','{}',1,?,?)`, question, device, device, ms, clock(-120000));
+  await D.run("INSERT INTO record_hourly_compute_totals(verifier,hour,ms) VALUES ('worker',?,?)",
+    clock(-7200000).slice(0,13), PACE_HOURS * 3600000);
+  const kept = { LIBRARY: D }, reading = await demandOf(kept, at);
+  check("report orders follow their scheduling producer; family, future and unattributed work never become player requests",
+    JSON.stringify(reading.orders.map(({ sources, ...order }) => order)) === JSON.stringify([
+      { kind: 'family_build', total: 2, dispatched: 1 }, { kind: 'future_producer', total: 1, dispatched: 0 },
+      { kind: 'unattributed_calculation', total: 1, dispatched: 0 }, { kind: 'user_calculation', total: 2, dispatched: 0 },
+    ]), JSON.stringify(reading.orders));
+  check("report sources preserve recorded initiators and mark absent provenance unknown", reading.orders.every(order => {
+    const source = order.kind === 'family_build' ? 'system' : order.kind === 'user_calculation' ? 'requested' : 'unattributed';
+    return order.sources[source] === order.total && Object.values(order.sources).reduce((sum, n) => sum + n, 0) === order.total;
+  }), JSON.stringify(reading.orders));
+  check("compute cost sums one verb across every producer", Math.abs(reading.clear_hours - 11000 / 3600000) < 1e-12,
+    String(reading.clear_hours));
+  const cached = await demandOf(kept, at + 60000);
+  check("republishing cached counts retains their original sampling time", reading.counts_at === clock(0)
+    && cached.counts_at === reading.counts_at && cached.at === clock(60000));
+  await D.run("UPDATE state_compute_work SET state='withdrawn' WHERE id='family-two'");
+  const refreshed = await demandOf(kept, at + 660000);
+  check("a count refresh advances its sampling time and removes cancelled work", refreshed.counts_at === clock(660000)
+    && refreshed.orders.find(o => o.kind === 'family_build')?.total === 1, JSON.stringify(refreshed.orders));
+  await D.run("INSERT INTO entity_compute_batches(id,at,total) VALUES ('source-fixture','x',4)");
+  for (const [build, initiator] of [['user', 'anonymous'], ['bot', 'bot:fixture'], ['system', 'system'], ['unknown', null]])
+    await D.run("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode,initiator) VALUES ('source-fixture',?,'r','base',?)", build, initiator);
+  const sourced = (await demandOf({ LIBRARY: D }, at)).orders.find(order => order.kind === 'sweep');
+  check("board source counts sum to unique pending work without inferring missing history", sourced.total === 4
+    && JSON.stringify(sourced.sources) === JSON.stringify({ requested: 2, system: 1, unattributed: 1 }), JSON.stringify(sourced));
+  await D.close();
 }
 check("both say how many browsers are computing now, an old answer not counted",
   found.computing === 0 && (await who("bob")).computing === 1 && (await call("/api/contributors")).computing === 1);
