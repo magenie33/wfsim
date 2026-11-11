@@ -23,21 +23,14 @@ number**. Everything else follows from it:
   submitter never tried it.
   `transformed` and its kind are still refused: a gauge you must fill and run
   dry is not a way to play for three hundred seconds;
-- **EVERY FINALIST OF A SEARCH IS UPLOADED**, not just the build somebody ran in
-  the simulator. A path to the store that runs off a simulator run alone takes
-  one build at a time, so a search ranking twenty sends none of them and the
-  strongest thing this app produces reaches the board only when a player copies
-  a row into the builder by hand and runs it again. There is no cap: the
-  finalist count is the searcher's own setting, they are all real builds, and
-  the store is keyed by identity, so twenty submissions of which twelve are
-  already held collapse onto twelve rows. **Nothing is pre-filtered on the
-  page, from any path**: how full a build must be is the searcher's setting
-  too, so a seven-mod scope produces seven-mod winners — and those are refused
-  by `/api/board/check`, which IS `validate_for_board` rather than a copy of
-  it, because a second implementation is a second answer. There is one
-  rule, it is the engine's, and the page ASKS it (`boardDoor`). The panel reports the run
-  in aggregate ("7 of 10 uploaded · 3 × needs 8 mods"), since twenty rows off
-  one search differ in their mods and not in why the board would not take them;
+- Ordinary optimization submits every legal encountered build, including
+  intermediate candidates and finalists. Upload consent remains the task's
+  captured choice. Library legality does not require enough mods or arcanes to
+  qualify for a board. First global registration starts the shared intake flow;
+  a known build creates no work, and an optimizer score never requests
+  calibration. Family fill is a special optimization: its accepted result
+  continues its captured parent scope, and its intermediate candidates never
+  restart family expansion;
 - every row is reproducible by anyone with the repo, since the score was
   computed by the engine that ships to their browser under the benchmark's own
   pinned seed. Wasm, Windows native and Linux native agree to the last bit

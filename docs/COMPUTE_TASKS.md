@@ -157,6 +157,29 @@ avoid repeating a complete fight inside one expansion. Queue admission is
 independent of scope construction: equivalent nodes share the same physical
 computation and deliver separately to every consumer.
 
+## Optimization output and retained tasks
+
+An ordinary optimization submits every encountered legal build through the
+normal build inbox, including intermediate candidates and final results.
+Collection uses library legality independently of board eligibility and retains
+paired riven rolls. Upload consent and durable outbox delivery remain unchanged.
+The search's score is not a correction observation. A new global build starts
+ordinary captured intake in zone `03`; a known build creates no intake work.
+
+Family fill is a special optimization whose source identifies its parent
+workflow and node. Its accepted result advances that parent's captured scope;
+intermediate candidates may enter the library but never start another family
+expansion. It uses the same optimizer and execution queue as ordinary search. Purpose
+belongs to source and delivery context, outside computation identity. When a
+shared search has an ordinary source allowing upload, candidate authorization
+uses ordinary submit; special-only sources retain their bounded purpose.
+
+Previously queued and leased calculations continue with their original inputs,
+identities and leases. Disabling an automatic producer stops future creation;
+it does not cancel its retained tasks. Existing ordinary optimization outputs
+use ordinary submit; retained family-fill outputs retain their special purpose.
+No legacy task is rekeyed, reset or recreated for this classification.
+
 ## Verification and delivery
 
 Verified task state commits before consumer writes or contribution settlement.

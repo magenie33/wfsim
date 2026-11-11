@@ -19,7 +19,7 @@ struct HeldBuilds {
     closed: bool,
 }
 
-/// Complete builds encountered by a search, retained until its reader
+/// Legal builds encountered by a search, retained until its reader
 /// acknowledges a persisted batch. This channel carries no measured scores.
 #[derive(Clone, Default)]
 pub struct BuildStream {
@@ -84,22 +84,23 @@ impl BuildStream {
 }
 
 impl Replay {
-    /// A candidate's ordinary library record, admitted by the board's own door.
+    /// A candidate's legal library record, independent of board eligibility.
     fn admitted_build(&self, c: &Candidate, ai: usize) -> Option<(String, Value)> {
         let mut row = self.build_axes(c, ai);
         let mods: Vec<&str> = c.ordered.iter().map(|&i| self.mods[i]).collect();
         let riven = mods.iter().copied().find(|id| id.starts_with("riven:"));
-        let shape = match riven {
-            Some(id) => Some(self.riven_shapes.get(id)?),
+        let spec = match riven {
+            Some(id) => Some(self.riven_specs.get(id)?),
             None => None,
         };
         let (arcanes, _) = self.arcane(ai);
         row["weapon"] = self.base.get("weapon")?.clone();
         row["mods"] = json!(mods.iter().copied().map(|id| if id.starts_with("riven:") { "riven" } else { id }).collect::<Vec<_>>());
         row["arcanes"] = json!(arcanes);
-        if let Some(shape) = shape {
-            row["riven_pos"] = json!(shape.bonuses);
-            row["riven_neg"] = json!(shape.malus);
+        if let Some(spec) = spec {
+            row["riven_pos"] = json!(spec.bonuses.iter().map(|stat| &stat.id).collect::<Vec<_>>());
+            row["riven_neg"] = json!(spec.malus.as_ref().map(|stat| &stat.id));
+            row["riven_rolls"] = json!(spec.bonuses.iter().chain(spec.malus.iter()).map(|stat| stat.roll).collect::<Vec<_>>());
         }
         if let Some(wielder) = crate::tenno::wielder_build_of(&self.base) {
             row["wielder"] = serde_json::to_value(wielder).ok()?;
@@ -110,12 +111,9 @@ impl Replay {
         if let Some(parts) = assembly { object.extend(parts); }
         if object.get("exilus").and_then(Value::as_str) == Some("none") { object.remove("exilus"); }
         let build = crate::board_rows::library_build(&row).ok()?;
-        let admitted = wfsim_engine::board::benchmarks::all().iter().any(|bench| {
-            wfsim_engine::board::builds::admit_for_board(&bench.id, &build.weapon, &build).is_ok()
-        });
-        if !admitted { return None; }
         let key = wfsim_engine::board::builds::build_id(&build);
         let mut record = crate::board_rows::canonical_record(&build);
+        if !build.riven_rolls.is_empty() { record = crate::board_rows::with_rolls(record, &build.riven_rolls); }
         record["mode"] = row["mode"].clone();
         Some((key, record))
     }
@@ -194,22 +192,30 @@ mod tests {
         for record in builds {
             let build = crate::board_rows::library_build(record).unwrap();
             assert!(wfsim_engine::board::builds::admit_for_board("standard_single_target", &build.weapon, &build).is_ok());
-            for forbidden in ["score", "kill_progress", "replay", "rivens", "riven_rolls", "seed", "enemy"] {
+            for forbidden in ["score", "kill_progress", "replay", "rivens", "seed", "enemy"] {
                 assert!(record.get(forbidden).is_none(), "{forbidden} is not a submitted build axis");
             }
         }
     }
 
     #[test]
-    fn board_admission_refuses_partial_mods_and_missing_arcanes() {
-        assert!(short(&request(&MODS[..7]))["builds"].as_array().unwrap().is_empty());
-        let mut req = request(&MODS);
-        req["arcanes"] = json!({ "none": "fixed" });
-        assert!(short(&req)["builds"].as_array().unwrap().is_empty());
+    fn library_capture_retains_legal_builds_without_board_eligibility() {
+        let mut no_arcane = request(&MODS);
+        no_arcane["arcanes"] = json!({ "none": "fixed" });
+        for req in [request(&MODS[..7]), no_arcane] {
+            let out = short(&req);
+            let records = out["builds"].as_array().unwrap();
+            assert!(!records.is_empty(), "legal builds enter submit even when no board admits them");
+            for record in records {
+                let build = crate::board_rows::library_build(record).unwrap();
+                assert!(wfsim_engine::board::benchmarks::all().iter().all(|bench|
+                    wfsim_engine::board::builds::admit_for_board(&bench.id, &build.weapon, &build).is_err()));
+            }
+        }
     }
 
     #[test]
-    fn encountered_rivens_export_shapes_at_the_librarys_card_ranks() {
+    fn encountered_rivens_retain_paired_actual_rolls() {
         let mut ids = MODS;
         ids[7] = "riven:local";
         let mut req = request(&ids);
@@ -225,7 +231,9 @@ mod tests {
             assert_eq!(record["riven_pos"], json!(["critical_chance", "damage"]));
             assert!(record["mods"].as_array().unwrap().iter().any(|id| id == "riven"));
             assert_eq!(record["arcanes"], json!(["primary_deadhead"]));
-            assert!(record.get("riven_rolls").is_none());
+            assert_eq!(record["riven_rolls"], json!([0.94, 1.03]));
+            let build = crate::board_rows::library_build(record).unwrap();
+            assert_eq!(build.riven_rolls, vec![0.94, 1.03]);
         }
     }
 

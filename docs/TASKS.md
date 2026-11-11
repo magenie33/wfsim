@@ -128,7 +128,7 @@ retry and transfer retain it. Declining upload leaves computation available.
 Local delivery also pauses while the current global upload switch is off.
 The existing explicit purpose of a chat appraisal authorizes its delivery.
 
-Engine-admitted builds encountered during search use a separate durable outbox,
+Legal builds encountered during ordinary search use a separate durable outbox,
 including short-only candidates and distinct element orders. Reports retain
 their ranking rather than the collection. Sparse arrivals share a 250 ms
 background batching window; full 128-record batches proceed immediately.

@@ -68,6 +68,7 @@ export async function authorizeHarvest(env, input, now = Date.now(), httpRequest
         AND q.verb IN ('optimize', 'optimize_report') AND (?4::text = '' OR q.id = ?4::text)
         AND d.producer IN ('chat', 'survey', 'user_calculation', 'family_build', 'build_workflow')
       ORDER BY CASE WHEN d.producer='user_calculation' AND coalesce(d.payload::jsonb->>'board_upload','false')<>'true' THEN 1 ELSE 0 END,
+        CASE WHEN d.producer IN ('family_build','build_workflow') THEN 1 ELSE 0 END,
         d.due_at, d.asked_at, d.producer, d.ref LIMIT 1`)
     .bind(input.lease, input.verifier, iso(now), input.question || "").first();
   if (!row || !["optimize", "optimize_report"].includes(row.verb)) return failure("the harvest search is no longer held", 403);

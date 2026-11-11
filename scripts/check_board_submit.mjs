@@ -23,6 +23,9 @@ import worker, { AXES, MAX_MODS, BOARD_SUBMIT_BATCH_MAX, BOARD_SUBMIT_BATCH_BYTE
 import { initiatorCode, hmac } from "../worker/accounts.js";
 import { USER_TASK_KEEP_MS } from "../worker/user_tasks.js";
 import { questionId } from "../worker/task_contract.js";
+import { authorizeHarvest } from "../worker/board_harvest.js";
+import { testDb } from "./pg/test_db.mjs";
+import { seedComputeWork } from "./pg/fixtures.mjs";
 import fs from "node:fs";
 import { appSource } from "./app_source.mjs";
 
@@ -405,6 +408,36 @@ function harvestFixture(producer = "user_calculation") {
   const env = { AUTH_SECRET: "submission-harvest-check-only", ASSETS: { fetch: async () => Response.json({ engine: "check-engine" }) } };
   const source = { lease: HARVEST_LEASE, verifier: HARVEST_VERIFIER, question: HARVEST_QUESTION, engine: "check-engine" };
   return { db, env, source, post: body => post(body, db, { env }) };
+}
+{
+  const db = await testDb("library");
+  try {
+    const now = Date.now(), at = new Date(now).toISOString();
+    await seedComputeWork(db, { id: HARVEST_QUESTION, verb: "optimize_report", request: { weapon: PAYLOAD.weapon },
+      state: "open", opened_at: at, due_at: at, lease: HARVEST_LEASE, leased_to: HARVEST_VERIFIER,
+      lease_until: new Date(now + 60_000).toISOString() });
+    const env = { LIBRARY: db, AUTH_SECRET: "shared-search-purpose-check",
+      ASSETS: { fetch: async () => Response.json({ engine: "check-engine" }) } };
+    const input = { lease: HARVEST_LEASE, verifier: HARVEST_VERIFIER, question: HARVEST_QUESTION, engine: "check-engine" };
+    for (const producer of ["family_build", "build_workflow"]) {
+      await db.run("DELETE FROM relation_task_consumers");
+      const ref = "parent|node";
+      await db.run(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,payload)
+        VALUES(?,?,?,'live',?,'2000-01-01','{}')`, producer, ref, HARVEST_QUESTION, at);
+      const expected = producer === "family_build" ? ref : "workflow-candidate|" + ref;
+      check(`${producer}: a special optimization keeps its captured purpose`,
+        (await authorizeHarvest(env, input, now)).claims?.family_source === expected);
+      await db.run(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,payload)
+        VALUES('user_calculation','ordinary',?,'live',?,'2100-01-01','{"board_upload":true}')`, HARVEST_QUESTION, at);
+      check(`${producer}: a coalesced ordinary source submits candidates through ordinary intake`,
+        (await authorizeHarvest(env, input, now)).claims?.family_source === null);
+      await db.run(`UPDATE relation_task_consumers SET payload='{"board_upload":false}' WHERE producer='user_calculation'`);
+      check(`${producer}: a disabled ordinary source leaves special-purpose delivery intact`,
+        (await authorizeHarvest(env, input, now)).claims?.family_source === expected);
+    }
+    check("source purpose does not duplicate the underlying computation task",
+      (await db.get("SELECT count(*) AS n FROM entity_compute_tasks")).n === 1);
+  } finally { await db.close(); }
 }
 {
   const fixture = harvestFixture();
