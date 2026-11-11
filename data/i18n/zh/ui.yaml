@@ -3235,6 +3235,10 @@ ui:
   "riven analyses {n}": "裂罅分析 {n}"
   "survey searches {n}": "普查搜索 {n}"
   "related weapon searches {n}": "同族武器搜索 {n}"
+  "unattributed calculations {n}": "来源未归类的计算 {n}"
+  "from user requests {n}": "用户请求衍生 {n}"
+  "system generated {n}": "系统生成 {n}"
+  "source unknown {n}": "来源未知 {n}"
   "result checks {n}": "结果验证 {n}"
   "tasks": 个任务
   "dispatched {n}": "已派出 {n}"
@@ -3242,7 +3246,7 @@ ui:
   "rows of scores": 行成绩
   "new builds {n}": "新提交的配装 {n}"
   "rescores after a model change {n}": "模型更新后重算 {n}"
-  "a ruler's first pass over older builds {n}": "老配装补算新标尺 {n}"
+  "background leaderboard measurements {n}": "后台榜单测量 {n}"
   "requested score refreshes {n}": "已请求的成绩刷新 {n}"
   "riven gains {n}": "裂罅收益 {n} 个"
   "Done per hour": 每小时完成

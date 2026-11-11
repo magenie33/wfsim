@@ -648,6 +648,10 @@ const demandCosts = new WeakMap();
 /// owed rows are counted under. A kind is added here and named on the page
 /// (73-compute.js `ORDER_KIND_NAMES`); a page that does not know it yet shows it by its id.
 export const ORDER_KINDS = [["rescore", 1], ["sweep", 2], ["new_build", 0], ["refresh", 3]];
+const DEMAND_SOURCE = `CASE WHEN q.initiator = 'system' THEN 'system'
+  WHEN q.initiator = 'anonymous' OR q.initiator LIKE 'user:%' OR q.initiator LIKE 'bot:%' THEN 'requested'
+  ELSE 'unattributed' END`;
+const emptyDemandSources = () => ({ requested: 0, system: 0, unattributed: 0 });
 /// THE FLEET THIS MOMENT (`now`): who asked, what they hold and what they
 /// answered over the last `NOW_WINDOW_MS`. Every speed above is a day's, and
 /// a day's mean hides an afternoon of nobody handed anything.
@@ -717,11 +721,14 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
       // demands are read once and joined whole: looked up a queue row at a time,
       // every row cost an index walk for the few that have one.
       db.prepare(`WITH d AS MATERIALIZED (SELECT ref FROM relation_task_consumers WHERE state = 'live' AND producer = 'new_build')
-                  SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN d.ref IS NOT NULL THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
+                  SELECT CASE WHEN d.ref IS NOT NULL THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END AS k,
+                    ${DEMAND_SOURCE} AS source, COUNT(*) AS n
                   FROM state_board_pending_work q JOIN entity_compute_batches b ON b.id = q.batch
                   LEFT JOIN d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
-                  GROUP BY q.build_id, q.ruler, q.mode) x GROUP BY k`),
-      db.prepare("SELECT verb, COUNT(*) AS n FROM state_compute_work WHERE state = 'open' GROUP BY verb"),
+                  GROUP BY k, source`),
+      db.prepare(`SELECT verb, producer, ${DEMAND_SOURCE} AS source, COUNT(*) AS n,
+                    COUNT(*) FILTER (WHERE leased_at IS NOT NULL OR lease IS NOT NULL) AS dispatched
+                  FROM state_compute_scheduling q WHERE state = 'open' GROUP BY verb, producer, source`),
     ]),
     ...(costs ? [] : [
       // Bounded samples and indexed lateral lookups avoid a full question-table
@@ -752,9 +759,13 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   let cursor = 0;
   const owed = counts ? null : rest[cursor++], open = counts ? null : rest[cursor++];
   const spent = costs ? null : rest[cursor++], taken = counts ? null : rest[cursor++];
-  const counted = counts || { by: Object.fromEntries(owed.results.map((r) => [r.k, Number(r.n)])),
+  const counted = counts || { by: {}, sources: {},
     takenBy: Object.fromEntries(taken.results.map((r) => [r.k, Number(r.n)])),
-    openOf: open.results.map((r) => ({ verb: r.verb, n: Number(r.n) })) };
+    openOf: open.results.map((r) => ({ verb: r.verb, producer: r.producer, source: r.source, n: Number(r.n), dispatched: Number(r.dispatched) })) };
+  if (!counts) for (const row of owed.results) {
+    counted.by[row.k] = (counted.by[row.k] || 0) + Number(row.n);
+    (counted.sources[row.k] ||= emptyDemandSources())[row.source] += Number(row.n);
+  }
   const by = counted.by;
   const h = done.results[0] || {};
   const perHour = (x) => Math.round(Number(x || 0) / PACE_HOURS);
@@ -762,13 +773,13 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
     factsOf: Object.fromEntries(spent.results.map((r) => [r.verb, Number(r.facts)])) };
   if (!costs || !counts) {
     demandCosts.set(env, { engine, countsAt: counts ? counts.countsAt : now, costsAt: costs ? costs.costsAt : now,
-      msOf, factsOf, by, takenBy: counted.takenBy, openOf: counted.openOf });
+      msOf, factsOf, by, sources: counted.sources, takenBy: counted.takenBy, openOf: counted.openOf });
     if (!costs) options.onCosts?.(performance.now() - began);
   }
   const msPerHour = Number((answered.results[0] || {}).ms || 0) / PACE_HOURS;
   // THE BOARD'S ROWS are the queue's; every other verb's open questions are its work.
   const left = { simulate: (by[0] || 0) + (by[1] || 0) + (by[2] || 0) + (by[3] || 0) };
-  for (const r of counted.openOf) if (r.verb !== "simulate") left[r.verb] = r.n;
+  for (const r of counted.openOf) if (r.verb !== "simulate") left[r.verb] = (left[r.verb] || 0) + r.n;
   let ms = 0;
   for (const [verb, n] of Object.entries(left)) {
     if (!n) continue;
@@ -776,11 +787,19 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
     ms += n * (msOf[verb] || 0) / factsOf[verb];
   }
   const clearHours = ms !== null && msPerHour > 0 ? ms / msPerHour : null;
-  const orders = [...ORDER_KINDS.map(([kind, k]) => ({ kind, total: by[k] || 0, dispatched: Math.min(by[k] || 0, counted.takenBy[k] || 0) })),
-    { kind: "riven_gain", total: Number((gains.results[0] || {}).n || 0), dispatched: Number((gains.results[0] || {}).started || 0) }]
+  const gainsTotal = Number((gains.results[0] || {}).n || 0);
+  const orders = [...ORDER_KINDS.map(([kind, k]) => ({ kind, total: by[k] || 0, dispatched: Math.min(by[k] || 0, counted.takenBy[k] || 0),
+    sources: counted.sources[k] || emptyDemandSources() })),
+    { kind: "riven_gain", total: gainsTotal, dispatched: Number((gains.results[0] || {}).started || 0),
+      sources: { ...emptyDemandSources(), requested: gainsTotal } }]
     .filter((o) => o.total > 0);
-  const userRequests = counted.openOf.filter((row) => ["simulate_report", "optimize_report"].includes(row.verb)).reduce((sum, row) => sum + row.n, 0);
-  if (userRequests) orders.push({ kind: "user_calculation", total: userRequests, dispatched: null });
+  // The scheduler attributes a shared question to its earliest live demand once.
+  const reports = new Map();
+  for (const row of counted.openOf.filter(row => ["simulate_report", "optimize_report"].includes(row.verb))) {
+    const kind = row.producer || "unattributed_calculation", order = reports.get(kind) || { kind, total: 0, dispatched: 0, sources: emptyDemandSources() };
+    order.total += row.n; order.dispatched += row.dispatched; order.sources[row.source] += row.n; reports.set(kind, order);
+  }
+  orders.push(...[...reports.values()].sort((a, b) => a.kind.localeCompare(b.kind)));
   const reading = await nowOf(db, now);
   let goal = null;
   if (inventory) {
@@ -792,7 +811,7 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
     }
     goal = { ...inventory, clear_hours: work !== null && msPerHour > 0 ? work / msPerHour : null };
   }
-  return { ok: true, v: 1, at, computing: await computingNow(env),
+  return { ok: true, v: 1, at, counts_at: iso(counts ? counts.countsAt : now), computing: await computingNow(env),
     owed: { new_builds: by[0] || 0, rescores: by[1] || 0, sweeps: by[2] || 0, refreshes: by[3] || 0 },
     riven_gains: Number((gains.results[0] || {}).n || 0),
     orders,
