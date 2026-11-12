@@ -10,6 +10,7 @@ import { mintMerit, meritCaps, meritRoute, settleMerit, holdPriority } from "../
 import { DIAL_DEFAULTS, forgetDials } from "../worker/dials.js";
 import { sha256, initiatorCode } from "../worker/accounts.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
+import { BOARD_KINDS } from "../worker/board_kinds.js";
 import { testDb } from "./pg/test_db.mjs";
 
 let failures = 0;
@@ -106,10 +107,23 @@ check("…and from nobody signed in", (await meritRoute(new Request("https://wfs
   await dial("merit_rows_per_hour", 3); await dial("merit_share_pct", 100);
   forgetDials();
   await ask(rows);
+  check("queue admission creates no priority holds or Merit charge", !(await L.get("SELECT 1 FROM state_compute_priority_holds"))
+    && Number((await A.get("SELECT balance FROM state_account_priority_credit WHERE account='payer'")).balance) === 1000);
+  const admitted = await L.all(`SELECT d.*,q.request FROM relation_task_consumers d JOIN state_compute_work q ON q.id=d.question ORDER BY d.ref`);
+  const ordinaryDue = admitted.map(row => Date.parse(row.due_at) - Date.parse(row.asked_at));
+  check("queue admission retains equal deadlines across account and anonymous sources", ordinaryDue.every(value => value === ordinaryDue[0]));
+  // Retained priority holds still own their charge and refund decisions.
+  const heldAt=Date.now();
+  await holdPriority(env,batch,admitted.map(row=>({producer:row.producer,ref:row.ref,request:JSON.parse(row.request),
+    due_in_ms:Date.parse(row.due_at)-heldAt,initiator:row.initiator,waits:Number(row.waits)>0})),"("+BOARD_KINDS.map(kind=>"'"+kind+"'").join(",")+")",heldAt);
+  for (const hold of await L.all("SELECT producer,ref,boosted_due FROM state_compute_priority_holds")) {
+    await L.run("UPDATE relation_task_consumers SET due_at=? WHERE producer=? AND ref=?",hold.boosted_due,hold.producer,hold.ref);
+    await L.run("UPDATE state_compute_work SET due_at=? WHERE id=(SELECT question FROM relation_task_consumers WHERE producer=? AND ref=?)",hold.boosted_due,hold.producer,hold.ref);
+  }
   const due = Object.fromEntries((await L.all("SELECT payload::jsonb ->> 'identity' AS id, due_at, asked_at FROM relation_task_consumers")).map((r) => [r.id, Date.parse(r.due_at) - Date.parse(r.asked_at)]));
   const holds = await L.all("SELECT ref, price, state, code FROM state_compute_priority_holds ORDER BY id");
   const bal = async () => Number((await A.get("SELECT balance FROM state_account_priority_credit WHERE account = 'payer'")).balance);
-  check("a signed-in player's rows are held at their price, up to the hour's cap, and paid from the balance",
+  check("retained holds keep their price, hourly cap and balance charge",
     holds.length === 3 && holds.every((h) => Number(h.price) === DIAL_DEFAULTS.merit_price_default) && (await bal()) === 1000 - 3 * DIAL_DEFAULTS.merit_price_default,
     JSON.stringify({ holds, bal: await bal() }));
   check("…each held row is due 30% sooner, an anonymous one and one past the cap as they would be",
@@ -119,7 +133,7 @@ check("…and from nobody signed in", (await meritRoute(new Request("https://wfs
   forgetDials();
   await L.run("DELETE FROM relation_task_consumers WHERE payload::jsonb ->> 'identity' = 'p4'");
   await ask(["p4"]);
-  check("past the share of the board's live rows nobody's merit moves a row", (await L.all("SELECT id FROM state_compute_priority_holds")).length === 3);
+  check("another queue admission leaves retained holds unchanged", (await L.all("SELECT id FROM state_compute_priority_holds")).length === 3);
   await dial("merit_share_pct", 20);
   forgetDials();
   // SETTLED: p1 taken while an unpaid row was due between its two deadlines; p2 taken past nobody; p3's ask withdrawn.
@@ -128,7 +142,7 @@ check("…and from nobody signed in", (await meritRoute(new Request("https://wfs
   const h1 = await L.get("SELECT boosted_due, natural_due FROM state_compute_priority_holds WHERE ref LIKE 'p1|%'");
   const between = new Date((Date.parse(h1.boosted_due) + Date.parse(h1.natural_due)) / 2).toISOString();
   await L.run("UPDATE state_compute_work SET due_at = ?, producer = (SELECT producer FROM state_compute_work WHERE id = ?) WHERE id = ?", between, q1, qf);
-  await L.run("UPDATE state_compute_work SET leased_at = ? WHERE id IN (?, ?)", at, q1, q2);
+  await L.run("UPDATE state_compute_work SET leased_at = ? WHERE id IN (?, ?)", new Date(heldAt+1000).toISOString(), q1, q2);
   const h2 = await L.get("SELECT boosted_due, natural_due FROM state_compute_priority_holds WHERE ref LIKE 'p2|%'");
   if (Date.parse(between) > Date.parse(h2.boosted_due) && Date.parse(between) < Date.parse(h2.natural_due)) {
     await L.run("UPDATE state_compute_work SET producer = 'other' WHERE id = ?", q2);

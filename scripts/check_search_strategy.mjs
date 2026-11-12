@@ -18,7 +18,7 @@ runInContext(`
       presets: [{ id: "riven_appraisal", riven: true, finalists: 1, candidate_runs: 10, search_strategy: "four_elements" }]
     },
     mod_pools: { rifle: ["heat_card", "cold_card", "electric_card", "toxin_card"].map(id => ({ id, max_rank: 3 })) },
-    benchmarks: [{ id: "test_ruler", scenario: { duration: 10 } }],
+    benchmarks: [{ id: "test_ruler", scenario: { duration: 10, runs: 1000 } }],
     defaults: {}, riven_rules: { max_rank: 8 }
   };
   const select = { value: "", innerHTML: "" };
@@ -39,7 +39,9 @@ runInContext(`
   const mode = "base", valence = { element: "", bonus: 0 }, assembly = null;
   const evoSel = { 1: "second" };
   const slots = [], STANCE = 9, slotModId = () => null;
-  const theFight = () => ({ duration: 10 }), startPayload = start => headlessStartPayload(META, start);
+  let activeScenario = null;
+  const scenarioNamed = id => id ? { builtin: id } : null, benchList = () => META.benchmarks, simRuns = () => 73;
+  const theFight = (overrides = {}) => ({ duration: 10, runs: simRuns(), ...overrides }), startPayload = start => headlessStartPayload(META, start);
   let updates = 0;
   updateOptEstimate = () => { updates++; };
   const document = { activeElement: null };
@@ -69,6 +71,10 @@ runInContext(`applyOptState(builtinSearchState(META.search_presets.presets[0], "
 assert.equal(read(`optimizeBody().search_strategy`), appraisal.search_strategy);
 assert.equal(read(`optimizeBody().starts.length`), 1);
 assert.deepEqual(read(`optimizeBody().starts[0].fixed`), appraisal.starts[0].fixed);
+assert.equal(read(`optimizeBody().runs`), 73);
+runInContext('activeScenario = "test_ruler";', scope);
+assert.equal(read(`optimizeBody().runs`), 1000);
+runInContext('activeScenario = null;', scope);
 console.log("  ok  built-ins and headless appraisal supply one user start, retaining its riven and evolutions");
 
 const card = { bonuses: [{ id: "critical_damage", roll: 1.07 }, { id: "multishot", roll: 0.94 }],
