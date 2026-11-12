@@ -136,30 +136,32 @@ $$;
 -- The pick skips rows another pick holds (two asks at once deadlocked), and the
 -- row itself is checked again once locked, as another may have taken it since.
 -- $1 at, $2 lanes, $3 engine, $4 siblings, $5 owner, $6 net, $7 before, $8, $9 as above.
--- THE JOIN PICK STARTS FROM THE SERVED ENGINE'S ANSWERS, in its own statement:
--- walked down the order, a new engine's few answers among a million open rows
--- took ten seconds and more, under the producer_use lock every sync waits on.
--- ITS CANDIDATES ARE THE SERVED ENGINE'S LED QUESTIONS, each then checked for
--- another owner's answer: a semi-join on the engine's answers read the day of
--- them, 8 s a pick and 25 s under load, and the syncs locked behind it failed.
--- A QUESTION ANOTHER VOLUNTEER HAS ANSWERED GOES FIRST, in the order, then the
--- rest: one more agreeing answer makes it a fact, where a fresh row needs two,
--- and its first witness waits for that answer to be paid. Taken by the deadline
--- alone, a batch due sooner asked after the first answer left it waiting behind
--- every row of that batch. WHATEVER ENGINE ANSWERED: an older engine's answer
--- joins a served one that reproduces it, and kept to the served engine, every
--- release left the half-answered behind the rest until someone copied them over.
+-- Grace picks start at the served engine's answer heads: walking the open
+-- queue to find sparse served answers makes a release's grace picks unbounded.
+-- The lateral fence keeps eligibility and witness checks local to each head;
+-- both paths retain zone order and FIFO among their eligible candidates.
 CREATE OR REPLACE FUNCTION factory_take(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint)
 RETURNS SETOF text LANGUAGE sql AS $$
-  SELECT q.id FROM factory_eligible($1,0,$2,$3,$4,$5,$6,$7,$8,$9) e
+  WITH heads AS MATERIALIZED (SELECT question FROM state_task_answer_heads WHERE $12 IS NOT NULL AND engine=$12)
+  SELECT normal.id FROM (SELECT q.id FROM factory_eligible($1,0,$2,$3,$4,$5,$6,$7,$8,$9) e
     JOIN state_compute_work q ON q.id=e.id
-    WHERE e.state='open' AND e.waits=0 AND e.verb IN(SELECT jsonb_array_elements_text($10::jsonb))
+    WHERE $12 IS NULL AND e.state='open' AND e.waits=0 AND e.verb IN(SELECT jsonb_array_elements_text($10::jsonb))
       AND ($11 IS NULL OR coalesce(e.request::jsonb #>> '{record,weapon}',e.request::jsonb->>'weapon') NOT IN(SELECT jsonb_array_elements_text($11::jsonb)))
       AND ($13 IS NULL OR e.producer=$13)
-      AND ($12 IS NULL OR EXISTS(SELECT 1 FROM state_compute_candidate_answers s
-        WHERE s.question=e.id AND s.engine=$12 AND s.void=0 AND s.owner<>$5 AND ($6='' OR s.net<>$6)))
       AND q.state='open' AND q.waits=0 AND factory_takeable(q.lease_until,q.leased_at,$1,$8)
-    ORDER BY e.zone,e.zone_position,e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED
+    ORDER BY e.zone,e.zone_position,e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED) normal
+  UNION ALL
+  SELECT joined.id FROM (SELECT q.id FROM heads h CROSS JOIN LATERAL (
+      SELECT e.* FROM factory_eligible($1,0,$2,$3,$4,$5,$6,$7,$8,$9) e WHERE e.id=h.question OFFSET 0) e
+    JOIN state_compute_work q ON q.id=e.id
+    WHERE $12 IS NOT NULL AND e.state='open' AND e.waits=0 AND e.verb IN(SELECT jsonb_array_elements_text($10::jsonb))
+      AND ($11 IS NULL OR coalesce(e.request::jsonb #>> '{record,weapon}',e.request::jsonb->>'weapon') NOT IN(SELECT jsonb_array_elements_text($11::jsonb)))
+      AND ($13 IS NULL OR e.producer=$13)
+      AND EXISTS(SELECT 1 FROM (SELECT s.engine,s.void,s.owner,s.net FROM state_compute_candidate_answers s
+          WHERE s.question=e.id OFFSET 0) s
+        WHERE s.engine=$12 AND s.void=0 AND s.owner<>$5 AND ($6='' OR s.net<>$6))
+      AND q.state='open' AND q.waits=0 AND factory_takeable(q.lease_until,q.leased_at,$1,$8)
+    ORDER BY e.zone,e.zone_position,e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED) joined
 $$;
 
 -- A consumer transaction may apply only the fact and demand it read.

@@ -729,6 +729,8 @@ await runCase("fixed:join-engine", async () => {
   await send(who("s3"), "e1", differs, 6, 100);
   await send(who("j4"), "e0", differs, 7, 100);
   check("...and a different result does not join, whatever its work", (await state(differs)) === "open");
+  await db.close();
+  await checkJoinPlan();
 });
 
 console.log("\nfair share between producers: the one that has used least, by compute, earliest deadline inside it");
@@ -1057,6 +1059,40 @@ await runCase("fixed:demand-all-books", async () => {
   }
   check(`on ${trials} random books, asked a row at a time and asked at once leave the same questions, demands and tellings`, bad === 0, first);
 });
+
+async function checkJoinPlan() {
+  const db = await testDb("library"), open = 10000;
+  await seedComputeWorkMany(db, Array.from({length:open}, (_, i) => ({
+    id:'join-'+String(i+1).padStart(5,'0'), state:'open', due_at:'2026-10-29', opened_at:'2026-10-28',
+  })));
+  await db.exec(`ANALYZE state_compute_scheduling; ANALYZE state_task_answer_heads;
+    INSERT INTO record_candidate_answers (question,engine,device,owner,net,canon,result,work,at)
+    SELECT id,'served','other','other','other','c','{}',1,opened_at FROM state_compute_work
+    WHERE id IN('join-09998','join-09999','join-10000');
+    UPDATE state_compute_scheduling SET zone=0,zone_position=1 WHERE id='join-10000';`);
+  const args = ['2026-10-29T12:00:00.000Z',8,'old','["me"]','me','mine',null,7200,120,'["simulate"]',null,'served',null,2];
+  const signature = 'factory_take(text,bigint,text,text,text,text,text,bigint,bigint,text,text,text,text,bigint)';
+  const { prosrc } = await db.get('SELECT prosrc FROM pg_proc WHERE oid=?::regprocedure', signature);
+  const literal = (v,i) => (v===null ? 'NULL' : typeof v==='number' ? String(v) : `'${v.replaceAll("'","''")}'`)
+    + ([1,7,8,13].includes(i) ? '::bigint' : '::text');
+  const types = signature.slice(signature.indexOf('('));
+  for (const mode of ['force_generic_plan','force_custom_plan']) {
+    await db.exec(`SET plan_cache_mode=${mode}; PREPARE join_pick${types} AS ${prosrc}; BEGIN`);
+    const row = await db.get(`EXPLAIN (ANALYZE,FORMAT JSON,TIMING OFF) EXECUTE join_pick(${args.map(literal).join(',')})`);
+    let reads=0;
+    const walk = p => {
+      if (p['Relation Name']==='state_compute_scheduling')
+        reads+=(p['Actual Rows']+(p['Rows Removed by Filter']||0))*p['Actual Loops'];
+      for (const child of p.Plans||[]) walk(child);
+    };
+    walk(row['QUERY PLAN'][0].Plan);
+    const picked = await db.all(`SELECT factory_take(${args.map(literal).join(',')}) AS id`);
+    check(`${mode}: grace candidates retain zone order then FIFO`, picked.map(x=>x.id).join(',')==='join-10000,join-09998', JSON.stringify(picked));
+    check(`${mode}: a sparse grace pick reads its answer heads, not all open questions`, reads<=64, `${reads} question reads for 3 answer heads`);
+    await db.exec('ROLLBACK; DEALLOCATE join_pick; RESET plan_cache_mode');
+  }
+  await db.close();
+}
 
 console.log("\na new engine before its first statistics refresh");
 await runCase("fixed:eligibility-plan", async () => {
