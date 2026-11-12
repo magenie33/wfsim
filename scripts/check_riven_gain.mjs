@@ -2,7 +2,7 @@
 // question of the fact factory (worker/tasks.js, whose own properties
 // check_tasks.mjs holds), with no network: only the bot freezes its question,
 // once, and freezing it is the ask; a computer asking for work is handed it on
-// the engine the site serves, in deadline order beside the board's rows; a
+// the engine the site serves, by queue zone and FIFO beside the board's rows; a
 // second goes only to another owner's computer on another network; an answer
 // counts only under its own lease and is kept as a build the bot may judge; two
 // owners' equal answers credit both, once, and send the build to the board; one
@@ -29,6 +29,7 @@ const env = { BOT_RELAY_TOKEN: "relay", FACTORY_TOKEN: "ft", LIBRARY, ACCOUNTS, 
 const L = LIBRARY;
 
 const appraise = async (method, path, body, headers = {}) => {
+  if (body && typeof body === "object" && path.endsWith("/request")) body = { input_schema: 1, ...body };
   const r = await appraiseRoute(new Request(`https://x${path}`, { method, headers,
     ...(body === undefined ? {} : { body: JSON.stringify(body) }) }), env, path);
   return { status: r.status, body: await r.json() };
@@ -71,6 +72,7 @@ console.log("asked, handed out, kept");
 const code = await open("asker1");
 check("nobody runs a riven gain whose question is not frozen", (await work(A) || {}).kind !== "riven_gain");
 check("only the bot freezes the question", (await appraise("POST", `/api/appraise/${code}/request`, frozen(1))).status === 401);
+check("a freeze without the current input schema is refused", (await appraise("POST", `/api/appraise/${code}/request`, { ...frozen(1), input_schema: 0 }, bot)).status === 400);
 const stored = await appraise("POST", `/api/appraise/${code}/request`, frozen(1), bot);
 const again = await appraise("POST", `/api/appraise/${code}/request`, frozen(9), bot);
 check("...once: a second freeze changes nothing", stored.body.stored === true && again.body.stored === false);
@@ -170,8 +172,7 @@ check("a question frozen on an older engine is still handed out after a release,
 await freeLeases();
 await L.run("UPDATE state_compute_work SET state = 'withdrawn'");
 
-// EARLIEST DEADLINE FIRST, beside the board's rows: a chat's two minutes, a new
-// build's hour, a survey's day, a rescore's week.
+// Zone priority and FIFO retain their order across producer deadlines.
 {
   const ago = (ms) => new Date(Date.now() - ms).toISOString();
   const shape = async (tag, agoMs) => {
@@ -193,19 +194,22 @@ await L.run("UPDATE state_compute_work SET state = 'withdrawn'");
   const E = "e".repeat(24), F = "f".repeat(24), G = "9".repeat(24), H = "8".repeat(24);
   for (const v of [E, F, G, H]) await L.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-08') ON CONFLICT DO NOTHING", v);
   const fresh = await shape("fresh", 0);
+  check("explicit survey work and ordinary intake retain their declared zones",
+    Number((await L.get("SELECT zone FROM state_compute_work WHERE id=?",await questionOf(fresh))).zone) === 0
+    && Number((await L.get("SELECT zone FROM state_compute_work WHERE id=(SELECT question FROM relation_task_consumers WHERE ref='new1|standard_single_target|base')")).zone) === 3);
   const first = await work(E, "e1", 8, "203.0.113.7");
-  check("a new build's board row goes before a survey shape due in a day", first && first.kind !== "riven_gain" && first.identity === "new1",
+  check("earlier-zone work precedes ordinary intake despite its later deadline", first && first.code === fresh,
     JSON.stringify(first));
   await freeLeases();
   const overdue = await shape("overdue", 2 * 86_400_000);
   const second = await work(E, "e1", 8, "203.0.113.7");
-  check("...but a survey shape a day overdue goes before it: nothing waits for ever behind a kind that keeps arriving",
-    second && second.code === overdue, JSON.stringify(second));
+  check("an overdue deadline does not overtake an earlier entry in its zone",
+    second && second.code === fresh, JSON.stringify(second));
   await freeLeases();
   const qq = await open("someone");
   await appraise("POST", `/api/appraise/${qq}/request`, frozen("chat"), bot);
   const third = await work(H, "e1", 8, "192.0.2.4");
-  check("a riven gain someone waits on in a chat goes before them all", third && third.code === qq, JSON.stringify(third));
+  check("a later chat request joins behind existing work in its zone", third && third.code === fresh, JSON.stringify(third));
   await freeLeases();
   await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id = ?", await questionOf(qq));
   await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id = (SELECT question FROM relation_task_consumers WHERE ref = 'new1|standard_single_target|base')");
