@@ -70,14 +70,6 @@ pub(super) struct Dot {
     /// Which DERIVATION STEP the faction bonus is re-applied at for this tick
     /// (2 for a status a hit applied). See `faction_at`.
     pub(super) depth: u32,
-    /// Does the SOURCE scale this at all?
-    ///
-    /// False for the one DoT that is a share of the TARGET's own pool — a
-    /// shield-break Electricity tick is `3% x stacks` of what was broken, and
-    /// no bonus the shooter carries touches it. Without this flag it would pick
-    /// up Lavos and Eclipse through `live`, which is a bonus on a number that
-    /// was never the weapon's.
-    pub(super) source_scaled: bool,
     /// WHAT THE ACCUMULATOR'S INITIAL `1` IS WORTH here — `C x` the multipliers
     /// that are NOT re-read live, and 0.0 for a tick the rule does not cover.
     /// See [`Dot::accumulator_unit`].
@@ -126,9 +118,6 @@ impl Dot {
     /// `s` is the source read at the tick ([`Source::at`]) — once for every
     /// stack of one type at one instant, not once per stack.
     pub(super) fn live(&self, s: &Source) -> f64 {
-        if !self.source_scaled {
-            return self.frozen;
-        }
         self.frozen * (self.bracket + s.element) * faction_at(s.faction, self.depth)
     }
 
@@ -150,7 +139,7 @@ impl Dot {
     /// ONLY ONE FACTION LAYER, since the seed already holds the hit's own, so a
     /// payload at `depth` puts `depth − 1` in the seed and one here. M56.
     pub(super) fn accumulator_unit(&self, s: &Source) -> f64 {
-        if !self.source_scaled || self.unit == 0.0 {
+        if self.unit == 0.0 {
             return 0.0;
         }
         self.unit * (self.bracket + s.element) * s.faction
@@ -193,7 +182,7 @@ impl Dot {
         landing: bool,
     ) -> crate::record::Part {
         use crate::record::{Factor, Part, Scale};
-        let mut tail = if self.source_scaled { drop_ones(over) } else { Vec::new() };
+        let mut tail = drop_ones(over);
         if landing && (self.landing.factor - 1.0).abs() > 1e-12 {
             tail.push(Scale { factor: Factor::TickLanding, value: self.landing.factor });
         }

@@ -263,7 +263,8 @@ pub(super) fn fire_extra_hits(
         );
         r.note_kills(u32::from(killed), at, params.drop_is_in_reach(target.at));
         if let Some(pool) = broke {
-            push_break_proc(debuffs, owner, params, at, pool);
+            push_break_proc(debuffs, owner, params, at, pool, active, &params.foe,
+                target, gal, arc, r, rec, rng, 0.0);
         }
         if killed {
             gal.bump_on_kill(params, at);
@@ -713,7 +714,7 @@ pub(super) fn settle_procs(
                 unit: coeff * sdm * ecl,
                 bracket,
                 depth,
-                source_scaled: true,
+
                 dtype,
                 ignores_armor,
                 seed: rec.seed(seed_of(coeff, part, sdm)),
@@ -1085,7 +1086,8 @@ pub(super) fn settle_procs(
                     // counting hits sees.
                     r.note_kills(killed as u32, at, params.drop_is_in_reach(target.at));
                     if let Some(pool) = broke_any {
-                        push_break_proc(debuffs, owner, params, at, pool);
+                        push_break_proc(debuffs, owner, params, at, pool, active, foe,
+                    target, gal, arc, r, rec, rng, status_damage_live);
                     }
                     if killed {
                         gal.bump_on_kill(params, at);
@@ -1243,7 +1245,8 @@ pub(super) fn settle_procs(
             );
             r.note_kills(killed as u32, at, params.drop_is_in_reach(target.at));
             if let Some(pool) = broke {
-                push_break_proc(debuffs, owner, params, at, pool);
+                push_break_proc(debuffs, owner, params, at, pool, active, foe,
+                    target, gal, arc, r, rec, rng, status_damage_live);
             }
             if killed {
                 gal.bump_on_kill(params, at);

@@ -123,16 +123,16 @@ impl DebuffState {
         // under Melee Influence they were 73% of every pop.
         // A handful of groups at most; one that does not fit is queued per
         // stack as before, which costs a stale pop and changes nothing.
-        let mut groups = [(DamageType::Impact, false, 0.0f64); 8];
+        let mut groups = [(DamageType::Impact, 0.0f64); 8];
         let mut n = 0;
         for (i, d) in self.dots.iter().enumerate() {
             if d.ticks_left > 0 {
                 if consolidated(d.dtype) {
-                    if groups[..n].iter().any(|&(t, scaled, at)| t == d.dtype && scaled == d.source_scaled && (at - d.next_tick).abs() < 1e-9) {
+                    if groups[..n].iter().any(|&(t, at)| t == d.dtype && (at - d.next_tick).abs() < 1e-9) {
                         continue;
                     }
                     if n < groups.len() {
-                        groups[n] = (d.dtype, d.source_scaled, d.next_tick);
+                        groups[n] = (d.dtype, d.next_tick);
                         n += 1;
                     }
                 }
@@ -308,7 +308,6 @@ pub(super) fn process_ticks(
             Ev::Dot(i) => {
                 let dtype = debuffs.dots[*i].dtype;
                 let ignores_armor = debuffs.dots[*i].ignores_armor;
-                let source_scaled = debuffs.dots[*i].source_scaled;
                 tick_landing = debuffs.proc_landing(&debuffs.dots[*i]);
                 // THE ROW POINTS BACK AT THE ROUND THAT SEEDED IT, not at
                 // whatever the weapon is doing four seconds later. Swapped for
@@ -344,7 +343,6 @@ pub(super) fn process_ticks(
                     let source = crate::fight::dot::Source::at(params, dtype, now, w);
                     for d in debuffs.dots.iter_mut() {
                         if d.dtype == dtype
-                            && d.source_scaled == source_scaled
                             && d.ticks_left > 0
                             && (d.next_tick - now).abs() < 1e-9
                         {
@@ -524,12 +522,13 @@ pub(super) fn process_ticks(
                 ..Instance::default()
             },
         );
-        rec.attribute_to(was);
         r.dot_ticks += is_dot_tick as u32;
         r.note_kills(killed as u32, now, params.drop_is_in_reach(target.at));
         if let Some(pool) = broke {
-            push_break_proc(debuffs, dot_owner, params, now, pool);
+            push_break_proc(debuffs, dot_owner, params, now, pool, active, foe,
+                target, gal, arc, r, rec, rng, 0.0);
         }
+        rec.attribute_to(was);
         if killed {
             // Ordinary kill effects include status kills. Electricity/Gas
             // also keep their latest application's weak-point flag (M100).

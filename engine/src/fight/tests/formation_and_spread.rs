@@ -908,7 +908,7 @@ fn a_gas_cloud_survives_the_death_and_nothing_else_does() {
         owner: Seat::WIELDER,
         cause: u32::MAX,
         next_tick: 5.0, ticks_left: 4, frozen: 100.0, landing: ProcLanding::default(), bracket: 1.0, depth: 0,
-        source_scaled: false, unit: 0.0, dtype, ignores_armor: false, seed: u32::MAX,
+        unit: 0.0, dtype, ignores_armor: false, seed: u32::MAX,
     };
     let mut d = DebuffState::default();
     d.dots.push(dot(DamageType::Gas));

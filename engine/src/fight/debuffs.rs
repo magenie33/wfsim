@@ -644,7 +644,7 @@ impl DebuffState {
             if let Some(shared) = self
                 .dots
                 .iter()
-                .find(|d| d.dtype == dot.dtype && d.source_scaled == dot.source_scaled && d.ticks_left > 0)
+                .find(|d| d.dtype == dot.dtype && d.ticks_left > 0)
                 .map(|d| d.next_tick)
             {
                 if shared > dot.next_tick {
@@ -667,7 +667,7 @@ impl DebuffState {
 
     /// Append one DoT, lowering `dots_due` to it.
     pub(super) fn push_dot(&mut self, dot: Dot) {
-        if dot.source_scaled && dot.ticks_left > 0 {
+        if dot.ticks_left > 0 {
             match dot.dtype {
                 DamageType::Electricity => self.proc_landings[0] = dot.landing,
                 DamageType::Gas => self.proc_landings[1] = dot.landing,
@@ -681,7 +681,6 @@ impl DebuffState {
     }
 
     pub(super) fn proc_landing(&self, dot: &Dot) -> ProcLanding {
-        if !dot.source_scaled { return dot.landing; }
         match dot.dtype {
             DamageType::Electricity => self.proc_landings[0],
             DamageType::Gas => self.proc_landings[1],

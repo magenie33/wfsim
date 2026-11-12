@@ -370,7 +370,7 @@ fn independent_dots_cap_per_type_fifo() {
         landing: ProcLanding::default(),
         bracket: 1.0,
         depth: 0,
-        source_scaled: false,
+
         unit: 0.0,
         dtype: ty,
         ignores_armor: false,

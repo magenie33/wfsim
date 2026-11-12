@@ -4,7 +4,7 @@ fn stored_dot(dtype: DamageType, ticks_left: u32, frozen: f64) -> Dot {
     Dot {
         owner: Seat::WIELDER, cause: u32::MAX, seed: u32::MAX,
         next_tick: 1.0, ticks_left, frozen, landing: ProcLanding::default(), bracket: 1.0,
-        depth: DEPTH_PROC, source_scaled: true, unit: 0.0,
+        depth: DEPTH_PROC, unit: 0.0,
         dtype, ignores_armor: dtype == DamageType::Slash,
     }
 }

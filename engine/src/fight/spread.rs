@@ -428,7 +428,7 @@ pub(super) fn spread_hit(
         params.overguard_multiplier(),
         watching(rec, &mut breakdown),
     );
-    let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
+    let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
     // A SPREAD INSTANCE IS A WHOLE VECTOR, so the number reads as its biggest
     // component — see `DamageVector::dominant`. Computed only while tracing.
     ledger::settle(
@@ -510,6 +510,10 @@ pub(super) fn spread_hit(
         r.note_kills(u32::from(killed), t, params.drop_is_in_reach(foe.state.at));
     } else {
         r.note_tendril_kills(u32::from(killed), t, params.drop_is_in_reach(foe.state.at));
+    }
+    if let Some(pool) = broke {
+        push_break_proc(&mut foe.debuffs, seat, params, t, pool, active, spec.params,
+            &mut foe.state, gal, arc, r, rec, &mut d.status, 0.0);
     }
     // …AND IT IS STILL THE WEAPON'S KILL, whichever mechanism carried it there.
     // A chain, a blast and a spread all deal the weapon's own number to a
@@ -601,7 +605,7 @@ pub(super) fn spread_hit(
     );
     if by == SpreadBy::FollowThrough {
         landed.killed |= detonate_heavy_status(seat, inst.target, foe, spec.params, params, active, w,
-            active.spends_combo || tennokai_heavy, t, gal, arc, r, rec);
+            active.spends_combo || tennokai_heavy, t, gal, arc, r, rec, &mut d.status);
     }
     landed
 }
@@ -1576,7 +1580,7 @@ pub(super) fn fire_syndicate_radial(
         params.overguard_multiplier(),
         watching(rec, &mut breakdown),
     );
-    let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
+    let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
     r.sources.syndicate += eff;
     r.sources.syndicate_by_type[sy.element as usize] += eff;
     ledger::settle(
@@ -1591,6 +1595,10 @@ pub(super) fn fire_syndicate_radial(
         },
     );
     r.note_kills(u32::from(killed), at, params.drop_is_in_reach(target.at));
+    if let Some(pool) = broke {
+        push_break_proc(debuffs, seat, params, at, pool, params, &params.foe,
+            target, gal, arc, r, rec, rng, 0.0);
+    }
     // GUARANTEED, for five of the six — Justice stuns instead of applying
     // Blast, the one place these effects differ in kind rather than in element.
     //

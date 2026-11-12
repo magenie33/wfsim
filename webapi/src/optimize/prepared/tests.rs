@@ -21,13 +21,21 @@ fn run(plan: OptimizePlan) -> Value {
     run_optimize(plan, &FunnelState::default(), |_, _| {}, None)
 }
 
+fn trace_output(mut value: Value) -> Value {
+    // Independent invocations can encounter builds in a different order.
+    if let Some(builds) = value["builds"].as_array_mut() {
+        builds.sort_by_key(Value::to_string);
+    }
+    value
+}
+
 fn trace(mut req: Value, cached: bool) -> Vec<Value> {
     let mut trace = Vec::new();
     let parse = if cached { parse_optimize } else { parse_uncached };
     for step in 0..500 {
         let result = run(parse(&req).unwrap());
         assert_eq!(result["ok"], true, "{result}");
-        trace.push(result.clone());
+        trace.push(trace_output(result.clone()));
         let Some(pending) = result["pending"].as_array() else { return trace };
         let mut scores = Vec::new();
         for batch in pending.chunks(pending.len().div_ceil(3)) {
@@ -35,7 +43,7 @@ fn trace(mut req: Value, cached: bool) -> Vec<Value> {
             let result = run(parse(&req).unwrap());
             assert_eq!(result["ok"], true, "{result}");
             scores.extend(result["scores"].as_array().unwrap().iter().cloned());
-            trace.push(result);
+            trace.push(trace_output(result));
         }
         req["quick_fleet"] = json!({"lead":true, "fresh":false, "scores":scores});
         assert!(step < 499, "the search must settle");

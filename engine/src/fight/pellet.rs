@@ -2140,7 +2140,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         }
 
         if let Some(pool) = broke {
-            push_break_proc(&mut bodies[0].debuffs, seat, params, t, pool);
+            push_break_proc(&mut bodies[0].debuffs, seat, params, t, pool, active, &params.foe,
+                &mut bodies[0].state, gal, arc, r, rec, &mut d.status, status_damage_live);
         }
         // THE ROW FOR THIS PELLET — a MACRO with two call sites,
         // because a pellet has two ways of ending and the row has to
@@ -2525,7 +2526,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         );
         if direct {
             detonate_heavy_status(seat, 0, &mut bodies[0], &params.foe, params, active, windows,
-                active.spends_combo || tennokai_heavy, t, gal, arc, r, rec);
+                active.spends_combo || tennokai_heavy, t, gal, arc, r, rec, &mut d.status);
         }
         // MELEE INFLUENCE — every eligible status this swing applied,
         // arriving on everything standing around the body that took it.

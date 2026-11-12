@@ -1,4 +1,3 @@
-use crate::rules::math::Portable;
 use super::*;
 
 /// Live on-kill stack state (Galvanized graceful decay: on timeout lose
@@ -159,13 +158,10 @@ impl GalStacks {
     }
 }
 
-/// Disrupt's on-break payload (data/debuffs/disrupt.yaml): breaking
-/// shields OR overguard with Disrupt active fires a forced Tesla Chain
-/// instance totalling 3% of the broken pool's MAX per Magnetic stack
-/// (cap 30%), over 6 ticks; status-damage mods apply TWICE; base-damage
-/// mods never.
-// WHOSE BREAK IT WAS. The tick is a share of the pool that broke, and the
-// seat that broke it is the one it pays.
+/// M8/M100: a pool break supplies a body hit's base to ordinary Electricity.
+/// The current Magnetic count is frozen here; the breaking hit supplies
+/// the proc context. No separate clock, landing or source-scaling rule.
+#[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn push_break_proc(
     debuffs: &mut DebuffState,
@@ -173,34 +169,35 @@ pub(super) fn push_break_proc(
     params: &FightParams,
     now: f64,
     pool: BrokenPool,
+    active: &FightParams,
+    foe: &Foe,
+    target: &mut TargetState,
+    gal: &mut GalStacks,
+    arc: &mut ArcRuntime,
+    r: &mut RunResult,
+    rec: &mut crate::record::Record,
+    rng: &mut Rng,
+    status_damage_live: f64,
 ) {
     let stacks = debuffs.disrupt.len();
     if stacks == 0 {
         return;
     }
     let pool_max = match pool {
-        BrokenPool::Overguard => params.foe.overguard(),
-        BrokenPool::Shield => params.foe.max_shield(),
+        BrokenPool::Overguard => foe.overguard(),
+        BrokenPool::Shield => foe.max_shield(),
     };
-    let fraction = (0.03 * stacks as f64).min(0.30);
-    let total = fraction * pool_max * params.status_damage_multiplier.powi_portable(2);
-    debuffs.push_dot(Dot {
-        owner,
-        next_tick: now,
-        ticks_left: 6,
-        // A BROKEN POOL is the TARGET's own doing, so it points at no shot.
-        cause: u32::MAX,
-        frozen: total / 6.0,
+    let mb_live = (0.03 * stacks as f64).min(0.30) * pool_max
+        / (BLEED_TICKS as f64 * DOT_COEFFICIENT);
+    let mit = debuffs.mitigation(now, params.status_duration_multiplier,
+        params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
+    settle_procs(vec![DamageType::Electricity], owner, now, InstanceScale {
+        mb_live,
+        crit_multiplier: 1.0,
+        part_factor: 1.0,
         landing: ProcLanding::default(),
-        // A SHARE OF THE TARGET'S OWN POOL, so nothing the shooter carries
-        // scales it — not the element bracket, not faction, not Eclipse, and
-        // not the accumulator, whose rule names "weapon-generated" statuses.
-        bracket: 1.0,
-        depth: 0,
-        source_scaled: false,
-        unit: 0.0,
-        dtype: DamageType::Electricity,
-        ignores_armor: false,
-        seed: u32::MAX,
-    });
+        attrition: 1.0,
+        xh_bracket: 1.0,
+        status_damage_live,
+    }, debuffs, gal, arc, target, params, active, &mit, r, rec, rng, foe, DEPTH_PROC);
 }

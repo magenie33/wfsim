@@ -25,7 +25,7 @@ fn applications(dtype: DamageType, hits: &[(bool, bool)], lethal: bool, dense: b
             body.debuffs.push_dot(Dot {
                 owner: Seat::WIELDER, next_tick: 5.0, ticks_left: 6, cause: u32::MAX,
                 frozen: 0.0, landing: ProcLanding::default(), bracket: 1.0,
-                depth: DEPTH_PROC, source_scaled: true, unit: 0.0, dtype: DamageType::Toxin,
+                depth: DEPTH_PROC, unit: 0.0, dtype: DamageType::Toxin,
                 ignores_armor: false, seed: u32::MAX,
             });
         }
@@ -87,7 +87,7 @@ fn m100_precision_flags_do_not_depend_on_the_damage_multiplier() {
             body.debuffs.push_dot(Dot {
                 owner: Seat::WIELDER, next_tick: 0.0, ticks_left: 1, cause: u32::MAX,
                 frozen: 10.0, landing: ProcLanding::at(1.0, &part), bracket: 1.0,
-                depth: DEPTH_PROC, source_scaled: true, unit: 0.0, dtype,
+                depth: DEPTH_PROC, unit: 0.0, dtype,
                 ignores_armor: false, seed: u32::MAX,
             });
             process_ticks(&mut windows_for(&p), &mut body, &mut gal, &mut arc, 0.01,
@@ -112,14 +112,15 @@ fn m100_other_status_kills_do_not_inherit_precision_flags() {
 }
 
 #[test]
-fn m100_magnetic_break_payload_keeps_its_separate_body_landing() {
+fn m100_a_body_break_proc_makes_the_common_tick_a_body_kill() {
     let (mut p, mut body, mut gal, mut arc, mut r, mut rec) = applications(DamageType::Electricity, &[(true, false)], false, false);
     p.foe.base_overguard = 1_000_000.0;
     p.foe.base_health = 5000.0;
     p.foe.mode = TargetMode::InstantRespawn;
     body.state.health = 5000.0;
     body.debuffs.disrupt.push(6.0);
-    push_break_proc(&mut body.debuffs, Seat::WIELDER, &p, 0.0, BrokenPool::Overguard);
+    push_break_proc(&mut body.debuffs, Seat::WIELDER, &p, 0.0, BrokenPool::Overguard,
+        &p, &p.foe, &mut body.state, &mut gal, &mut arc, &mut r, &mut rec, &mut Rng::new(9), 0.0);
     process_ticks(&mut windows_for(&p), &mut body, &mut gal, &mut arc, 0.01,
         &p, &p, &mut r, &mut rec, &mut Rng::new(1), &p.foe, 0);
     assert_eq!(r.kills, 1);

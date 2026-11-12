@@ -40,19 +40,12 @@ on_shield_or_overguard_break:
   # (total = per_stack_fraction_of_max_pool x stacks, up to cap_fraction).
   per_stack_fraction_of_max_pool: 0.03
   cap_fraction_of_max_pool: 0.30
-  # Attribution with mixed appliers (M8, open): EXPECTED = per-stack
-  # (hypothesis D) - each surviving stack contributes its 3% chunk scaled
-  # by ITS OWN applier's context, summed; the breaking weapon is
-  # irrelevant. Reasoning: "per stack" wording; Blast's radial already
-  # sums per-stack snapshots; proc instances demonstrably carry their
-  # source context (multi-weapon Bleeds tick at different values); the
-  # counter-precedents have special causes (Heat = singleton with one
-  # context slot; Frozen's reset stacks = newly created entities with no
-  # parents). The wiki's singular phrasing likely describes the
-  # single-source common case.
+  # M8/M100: the breaking weapon supplies the ordinary Electricity
+  # context; the current Magnetic count is snapshotted. Apply it to the
+  # body and join the common Electricity pile and clock.
   scaling:
     base_damage_mods: none            # Serration does NOTHING
-    status_damage_mods: applied_twice # Elementalist x1.9^2 = 3.61
+    status_damage_mods: normal        # ordinary Electricity proc scaling
     faction_damage: applied_twice     # the usual double dip
     electricity_mods: normal          # Convulsion applies even when
                                       # Electricity is combined into

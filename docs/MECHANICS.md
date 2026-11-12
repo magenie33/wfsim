@@ -2724,14 +2724,13 @@ component** of the hit vector:
   Headshot play never feels the gate; body-aimed rapid fire eats it on
   every shield break.
 - Magnetic status: +100% damage to shields/Overguard on the first stack,
-  +25%/stack after (max +325%), and blocks natural shield regen; on
-  break, Electricity burst = 3%/stack of **the broken pool's** max (max
-  30%), "**When Shield or Overguard breaks**, deal Electricity Damage for
-  3% of enemy's Max Shield or Overguard per stack with a forced Electricity
-  Status Effect" — **or Overguard** is load-bearing, and the engine takes the
-  pool that BROKE: the roster's only enemy is a Thrax Centurion, which carries
-  15.5 M Overguard and no shield at all, so reading the line as shields-only
-  deletes the burst entirely.
+  +25%/stack after (max +325%), and blocks natural shield regen. A shield or
+  Overguard break snapshots the current Magnetic count and supplies a base
+  from that pool's maximum to an ordinary body-applied Electricity proc
+  (M8/M100). The breaking weapon supplies element, status damage, Roar and
+  duration; the proc joins the common clock, accumulator and landing. Its
+  body application resets a head pile's anchor; a subsequent head Electricity
+  application restores it without changing the stored pool-derived seed.
 - Shields recharge after a delay when not hit; status DoTs do not reset the
   delay timer.
 - Faction vulnerability/resistance (×1.5/×0.5) applies **per component at

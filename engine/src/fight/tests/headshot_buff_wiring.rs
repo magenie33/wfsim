@@ -207,7 +207,7 @@ fn a_burning_cloud_reads_the_window_at_every_tick() {
         landing: ProcLanding::default(),
         bracket: 1.0,
         depth: 0,
-        source_scaled: true,
+
         unit: 0.0,
         dtype: DamageType::Gas,
         ignores_armor: false,
