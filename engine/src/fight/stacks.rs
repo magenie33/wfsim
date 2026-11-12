@@ -191,7 +191,9 @@ pub(super) fn push_break_proc(
         / (BLEED_TICKS as f64 * DOT_COEFFICIENT);
     let mit = debuffs.mitigation(now, params.status_duration_multiplier,
         params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
-    settle_procs(vec![DamageType::Electricity], owner, now, InstanceScale {
+    let procs = crate::rules::status::procs_for_hit(&[DamageType::Electricity],
+        0.0, &DamageVector::new(), &foe.status_immunities, rng);
+    settle_procs(procs, owner, now, InstanceScale {
         mb_live,
         crit_multiplier: 1.0,
         part_factor: 1.0,

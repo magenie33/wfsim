@@ -123,6 +123,17 @@ fn m8_break_electricity_uses_the_normal_area_proc_path() {
 }
 
 #[test]
+fn m8_forced_break_electricity_uses_the_normal_immunity_filter() {
+    let mut q = Probe::new();
+    q.body.debuffs.disrupt = vec![6.0; 10];
+    q.p.foe.status_immunities = vec![DamageType::Electricity];
+    q.break_pool(BrokenPool::Overguard, 0.0);
+    assert!(q.body.debuffs.dots.is_empty());
+    assert!(q.body.debuffs.area_out.is_empty());
+    assert_eq!(q.r.procs, 0);
+}
+
+#[test]
 fn m8_the_breaking_context_does_not_come_from_older_magnetic_stacks() {
     let mut q = Probe::new();
     q.p.status_duration_multiplier = 3.0;
