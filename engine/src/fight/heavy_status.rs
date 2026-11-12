@@ -86,8 +86,13 @@ pub(super) fn detonate_heavy_status(
         || Instance { origin: crate::record::Origin::Status, base: raw, ..Instance::default() });
     r.dot_ticks += 1;
     r.note_kills(u32::from(killed), t, params.drop_is_in_reach(body.state.at));
-    if let Some(pool) = broke { push_break_proc(&mut body.debuffs, owner, params, t, pool, active, foe,
-        &mut body.state, gal, arc, r, rec, rng, 0.0); }
+    if let Some(pool) = broke.filter(|_| !killed) {
+        if push_break_proc(&mut body.debuffs, owner, params, t, pool, active, foe,
+            &mut body.state, gal, arc, r, rec, rng, 0.0, body_index) {
+            body.fallen = true;
+            return true;
+        }
+    }
     if killed {
         body.fallen = true;
         gal.bump_on_kill(params, t);

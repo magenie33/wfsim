@@ -2139,10 +2139,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             }
         }
 
-        if let Some(pool) = broke {
+        let break_killed = broke.filter(|_| !killed).is_some_and(|pool|
             push_break_proc(&mut bodies[0].debuffs, seat, params, t, pool, active, &params.foe,
-                &mut bodies[0].state, gal, arc, r, rec, &mut d.status, status_damage_live);
-        }
+                &mut bodies[0].state, gal, arc, r, rec, &mut d.status, status_damage_live, 0));
         // THE ROW FOR THIS PELLET — a MACRO with two call sites,
         // because a pellet has two ways of ending and the row has to
         // survive both.
@@ -2262,6 +2261,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // `field_tick`. What follows hits the fresh spawn, standing
             // in whatever is still burning where it spawned.
             bodies[0].debuffs.on_death(seat, params.acid_shells, &params.foe);
+            log_this_pellet!(Vec::new());
+            continue;
+        }
+        if break_killed {
+            bodies[0].fallen = true;
             log_this_pellet!(Vec::new());
             continue;
         }
@@ -2488,6 +2492,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             procs,
             seat,
             t,
+            0,
             // THE HIT'S ATTRITION ROLL TRAVELS WITH ITS STATUSES. A proc's
             // magnitude is the applying instance's — which is why
             // `crit_multiplier` is already here — and Devouring/Devastating

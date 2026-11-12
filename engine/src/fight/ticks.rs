@@ -524,9 +524,12 @@ pub(super) fn process_ticks(
         );
         r.dot_ticks += is_dot_tick as u32;
         r.note_kills(killed as u32, now, params.drop_is_in_reach(target.at));
-        if let Some(pool) = broke {
-            push_break_proc(debuffs, dot_owner, params, now, pool, active, foe,
-                target, gal, arc, r, rec, rng, 0.0);
+        if let Some(pool) = broke.filter(|_| !killed) {
+            if push_break_proc(debuffs, dot_owner, params, now, pool, active, foe,
+                target, gal, arc, r, rec, rng, 0.0, body_index) {
+                rec.attribute_to(was);
+                break;
+            }
         }
         rec.attribute_to(was);
         if killed {

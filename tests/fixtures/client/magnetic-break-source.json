@@ -1,0 +1,149 @@
+{
+  "client_build": "2026.10.28.09.54",
+  "batch": "20261112T112832Z-magnetic-break-client-only",
+  "manifest_sha256": "330502e31d60adb9e78a0b3397a7069482ea34c9afb19712561f2a4256324eba",
+  "member": "replay.json",
+  "scope": "Native Overguard pool/count preparation before weakness normalization, upgrades and recipients; attainable counts only.",
+  "cases": [
+    {
+      "pool": 99,
+      "stacks": 1,
+      "expected": 0
+    },
+    {
+      "pool": 100,
+      "stacks": 1,
+      "expected": 0
+    },
+    {
+      "pool": 1001,
+      "stacks": 1,
+      "expected": 5
+    },
+    {
+      "pool": 10000,
+      "stacks": 1,
+      "expected": 50
+    },
+    {
+      "pool": 138180,
+      "stacks": 1,
+      "expected": 690
+    },
+    {
+      "pool": 138199,
+      "stacks": 1,
+      "expected": 690
+    },
+    {
+      "pool": 1000000,
+      "stacks": 1,
+      "expected": 5000
+    },
+    {
+      "pool": 99,
+      "stacks": 2,
+      "expected": 0
+    },
+    {
+      "pool": 100,
+      "stacks": 2,
+      "expected": 1
+    },
+    {
+      "pool": 1001,
+      "stacks": 2,
+      "expected": 10
+    },
+    {
+      "pool": 10000,
+      "stacks": 2,
+      "expected": 100
+    },
+    {
+      "pool": 138180,
+      "stacks": 2,
+      "expected": 1381
+    },
+    {
+      "pool": 138199,
+      "stacks": 2,
+      "expected": 1381
+    },
+    {
+      "pool": 1000000,
+      "stacks": 2,
+      "expected": 10000
+    },
+    {
+      "pool": 99,
+      "stacks": 5,
+      "expected": 2
+    },
+    {
+      "pool": 100,
+      "stacks": 5,
+      "expected": 2
+    },
+    {
+      "pool": 1001,
+      "stacks": 5,
+      "expected": 25
+    },
+    {
+      "pool": 10000,
+      "stacks": 5,
+      "expected": 250
+    },
+    {
+      "pool": 138180,
+      "stacks": 5,
+      "expected": 3454
+    },
+    {
+      "pool": 138199,
+      "stacks": 5,
+      "expected": 3454
+    },
+    {
+      "pool": 1000000,
+      "stacks": 5,
+      "expected": 25000
+    },
+    {
+      "pool": 99,
+      "stacks": 10,
+      "expected": 4
+    },
+    {
+      "pool": 100,
+      "stacks": 10,
+      "expected": 5
+    },
+    {
+      "pool": 1001,
+      "stacks": 10,
+      "expected": 50
+    },
+    {
+      "pool": 10000,
+      "stacks": 10,
+      "expected": 500
+    },
+    {
+      "pool": 138180,
+      "stacks": 10,
+      "expected": 6908
+    },
+    {
+      "pool": 138199,
+      "stacks": 10,
+      "expected": 6909
+    },
+    {
+      "pool": 1000000,
+      "stacks": 10,
+      "expected": 50000
+    }
+  ]
+}

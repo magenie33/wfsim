@@ -1039,3 +1039,15 @@ Protector reads the weapon's damage callback, whose coefficient differs from
 the posture's apply script. Balanced's moving-only stagger and Elusive's
 incoming-bullet evasion remain unmodelled; the offensive arena has no companion
 movement or incoming attacks. The card descriptions state these limits.
+
+## Magnetic break source normalization
+
+Magnetic break damage uses the recovered float32 `0.005` pool/count source
+and the owner's two-stage status-damage rule (M8). The native conditional
+weapon/proxy weakness division and rounding are not applied: the simulator
+does not yet bind the live weapon weakness value or effective proxy maximum.
+The owner's isolated 3455/9154 readings are preserved without claiming that
+their live pool and normalized seed have been reconstructed. Native
+faction/Roar operation eligibility and exact same-frame ordering remain
+partial; the existing ordinary proc rules and owner-measured source/landing
+rules apply.

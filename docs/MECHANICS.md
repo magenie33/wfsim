@@ -2725,12 +2725,17 @@ component** of the hit vector:
   every shield break.
 - Magnetic status: +100% damage to shields/Overguard on the first stack,
   +25%/stack after (max +325%), and blocks natural shield regen. A shield or
-  Overguard break snapshots the current Magnetic count and supplies a base
-  from that pool's maximum to an ordinary body-applied Electricity proc
-  (M8/M100). The breaking weapon supplies element, status damage, Roar and
-  duration; the proc joins the common clock, accumulator and landing. Its
-  body application resets a head pile's anchor; a subsequent head Electricity
-  application restores it without changing the stored pool-derived seed.
+  Overguard break snapshots the current Magnetic count. Its Electric damage
+  source is the truncated float32 product of the pool maximum, 0.005 and
+  count, capped at 10 (M8 native fixtures). The body-applied damage packet
+  forces ordinary Electricity; the breaking weapon supplies its context.
+  Status damage scales the packet's source and then the child proc, so the
+  child receives it twice. Electricity modifiers and duration follow the
+  ordinary proc path. The proc joins the common clock, accumulator and
+  landing: its body application resets a head pile's anchor; a subsequent
+  head Electricity application restores it without changing stored seeds.
+  Conditional weapon/proxy weakness normalization is not modeled
+  (`UNMODELLED.md` §Magnetic break source normalization).
 - Shields recharge after a delay when not hit; status DoTs do not reset the
   delay timer.
 - Faction vulnerability/resistance (×1.5/×0.5) applies **per component at

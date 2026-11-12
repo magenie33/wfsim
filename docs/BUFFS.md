@@ -84,11 +84,11 @@ the attacker's `BuffBar` and the defender's `DebuffBar` (+ the defender's
   A stack = `{ application timestamp (the FIFO key), applier context
   snapshot (the hit-formula inputs), expiry, payload values }`. This is
   what keeps 4 players × 100 weapons on one target coherent: each Bleed
-  ticks at its own value, each Magnetic stack's break-chunk reads its own
-  mods, FIFO replacement swaps whole instances with their provenance.
-  System-issued effects derive their context from instances (per-stack
-  sum — Blast radial, expected for the Magnetic break-proc) or from a
-  designated trigger instance (Frozen's reset stacks), never from thin
+  ticks at its own value, and FIFO replacement swaps whole instances with
+  their provenance. Magnetic break reads the current count and the breaking
+  hit's context (M8). System-issued effects derive their context from instances
+  (Blast's per-stack sum) or from a designated trigger instance
+  (Frozen's reset stacks), never from thin
   air. Heat's singleton accumulator is the lone exception with a single
   shared context slot (locked to its first proc).
 - CC components (stagger, knockdown) are debuff properties with per-unit

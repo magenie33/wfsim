@@ -35,7 +35,7 @@ fn applications(dtype: DamageType, hits: &[(bool, bool)], lethal: bool, dense: b
     for &(head, crit) in hits {
         let part = if head { all_head().remove(0) } else { mono_body(1.0).remove(0) };
         let mit = body.debuffs.mitigation(0.0, 1.0, 0.0, 0.0);
-        settle_procs(vec![dtype], Seat::WIELDER, 0.0, InstanceScale {
+        settle_procs(vec![dtype], Seat::WIELDER, 0.0, 0, InstanceScale {
             mb_live: 160.0,
             crit_multiplier: if crit { if head { 2.0 * cd } else { cd } } else { 1.0 },
             part_factor: if head { 5.4 } else { 1.0 },
@@ -120,7 +120,7 @@ fn m100_a_body_break_proc_makes_the_common_tick_a_body_kill() {
     body.state.health = 5000.0;
     body.debuffs.disrupt.push(6.0);
     push_break_proc(&mut body.debuffs, Seat::WIELDER, &p, 0.0, BrokenPool::Overguard,
-        &p, &p.foe, &mut body.state, &mut gal, &mut arc, &mut r, &mut rec, &mut Rng::new(9), 0.0);
+        &p, &p.foe, &mut body.state, &mut gal, &mut arc, &mut r, &mut rec, &mut Rng::new(9), 0.0, 0);
     process_ticks(&mut windows_for(&p), &mut body, &mut gal, &mut arc, 0.01,
         &p, &p, &mut r, &mut rec, &mut Rng::new(1), &p.foe, 0);
     assert_eq!(r.kills, 1);

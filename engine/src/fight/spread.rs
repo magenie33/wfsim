@@ -264,6 +264,7 @@ pub(super) fn spread_from_influence(
                 procs,
                 seat,
                 t,
+                b,
                 scale,
                 dbf,
                 gal,
@@ -511,9 +512,12 @@ pub(super) fn spread_hit(
     } else {
         r.note_tendril_kills(u32::from(killed), t, params.drop_is_in_reach(foe.state.at));
     }
-    if let Some(pool) = broke {
-        push_break_proc(&mut foe.debuffs, seat, params, t, pool, active, spec.params,
-            &mut foe.state, gal, arc, r, rec, &mut d.status, 0.0);
+    if let Some(pool) = broke.filter(|_| !killed) {
+        if push_break_proc(&mut foe.debuffs, seat, params, t, pool, active, spec.params,
+            &mut foe.state, gal, arc, r, rec, &mut d.status, 0.0, inst.target) {
+            foe.fallen = true;
+            return Landed { procs: Vec::new(), raw, shares, killed: true };
+        }
     }
     // …AND IT IS STILL THE WEAPON'S KILL, whichever mechanism carried it there.
     // A chain, a blast and a spread all deal the weapon's own number to a
@@ -561,6 +565,7 @@ pub(super) fn spread_hit(
         procs,
         seat,
         t,
+        inst.target,
         InstanceScale {
             // THE HEAD FACTOR IS NOT IN HERE, which is the point of keeping it
             // off `share`: a Slash bleed off a headshot is the same size as one
@@ -1595,9 +1600,11 @@ pub(super) fn fire_syndicate_radial(
         },
     );
     r.note_kills(u32::from(killed), at, params.drop_is_in_reach(target.at));
-    if let Some(pool) = broke {
-        push_break_proc(debuffs, seat, params, at, pool, params, &params.foe,
-            target, gal, arc, r, rec, rng, 0.0);
+    if let Some(pool) = broke.filter(|_| !killed) {
+        if push_break_proc(debuffs, seat, params, at, pool, params, &params.foe,
+            target, gal, arc, r, rec, rng, 0.0, 0) {
+            return;
+        }
     }
     // GUARANTEED, for five of the six — Justice stuns instead of applying
     // Blast, the one place these effects differ in kind rather than in element.
@@ -1614,6 +1621,7 @@ pub(super) fn fire_syndicate_radial(
             vec![sy.element],
             seat,
             at,
+            0,
             InstanceScale {
                 mb_live: sy.damage,
                 crit_multiplier: 1.0,

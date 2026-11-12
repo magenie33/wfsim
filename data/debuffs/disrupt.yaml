@@ -32,20 +32,19 @@ effects:
 
 # System-issued effect #2 (same trigger-attribution pattern as Frozen's
 # reset stacks): breaking the target's Shields/Overguard while Disrupt is
-# active fires a FORCED Electricity proc (a Tesla Chain instance).
+# active deals Electricity damage with a forced ordinary Electricity proc.
 on_shield_or_overguard_break:
   forced_proc: tesla_chain
-  # Total damage over the 6 s proc: 3% of MAX shields/overguard per
-  # Magnetic stack, capped at 30% at 10 stacks
-  # (total = per_stack_fraction_of_max_pool x stacks, up to cap_fraction).
-  per_stack_fraction_of_max_pool: 0.03
-  cap_fraction_of_max_pool: 0.30
+  # Raw packet source before status scaling, not total DoT damage. M8 binds
+  # the effective child declaration and float32/integer preparation.
+  per_stack_fraction_of_max_pool: 0.005
+  cap_fraction_of_max_pool: 0.05
   # M8/M100: the breaking weapon supplies the ordinary Electricity
   # context; the current Magnetic count is snapshotted. Apply it to the
   # body and join the common Electricity pile and clock.
   scaling:
     base_damage_mods: none            # Serration does NOTHING
-    status_damage_mods: normal        # ordinary Electricity proc scaling
+    status_damage_mods: packet_and_proc # inherited source, then ordinary proc
     faction_damage: applied_twice     # the usual double dip
     electricity_mods: normal          # Convulsion applies even when
                                       # Electricity is combined into
