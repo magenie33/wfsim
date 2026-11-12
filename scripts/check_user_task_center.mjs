@@ -20,11 +20,24 @@ try {
     await userTasks.store.change(state => { state.tasks = []; });
     await userTasks.refresh();
     const out = {};
+    const simulationType = USER_TASK_TYPES.get('simulation');
+    const completed = simulationType.completed;
+    let delivered = null;
+    simulationType.completed = async function(task) {
+      await completed.call(this, task);
+      delivered = task.result_ref;
+    };
     activePreset = '';
     setSimRuns(2); sim.duration = 1;
     await runSim();
     out.unnamedResult = !!document.querySelector('#sim-results table, #sim-results .fold')
       && userTasks.list().some(task => task.state === 'succeeded' && !task.origin.context.preset);
+    await until(() => !!delivered);
+    out.replayRetained = !!resultMem.get(resultMemKey())?.r.replay;
+    const measuredScore = shownResult.r.score;
+    renderStoredSimResult();
+    out.replayRerender = !!shownResult.r.replay && shownResult.r.score === measuredScore;
+    simulationType.completed = completed;
     await userTasks.store.change(state => { state.tasks = []; });
     await userTasks.refresh();
     const addBuild = async () => {
@@ -92,6 +105,8 @@ try {
   })()`, { userGesture: true });
   for (const [name, key] of [["only one heavy calculation runs while another waits", "oneHeavy"],
     ["an unnamed build keeps and displays its task-owned result", "unnamedResult"],
+    ["task delivery retains the measured replay", "replayRetained"],
+    ["redrawing a result preserves its replay and measured score", "replayRerender"],
     ["another tab observes the same running attempt without claiming it", "oneRunner"],
     ["requests keep their submitted weapon, fight and run count", "frozen"], ["the task list is visible from the second page", "visible"],
     ["the center does not duplicate any configuration form", "noForm"], ["quick calculation has one transient list item", "quick"],

@@ -43,7 +43,11 @@ USER_TASK_TYPES.set("simulation", {
       record = await resultAddCaptured(record.r, frozenTaskBuild(task.origin.build, task.request, task.origin.input_aliases),
         task.origin.context, `${task.result_ref}:${task.source_id}`, userTasks.store.persistent);
     }
-    resultMem.set(resultMemKey(task.origin.context.weapon, task.origin.context.preset), record);
+    // Stored records omit frames; completion keeps the measured replay in memory.
+    const measured = [...resultMem.values()].find(entry => entry.r.replay
+      && (entry.id === record.id || entry.id === task.result_ref));
+    resultMem.set(resultMemKey(task.origin.context.weapon, task.origin.context.preset),
+      measured ? { ...record, r: measured.r } : record);
     if (task.origin.board) await offerBoardSubmit({ body: task.origin.board, context: task.origin.context });
     if (boardReviewEnabled()) await requestBoardReview(task, record.r, record);
   },

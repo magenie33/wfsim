@@ -378,7 +378,8 @@ fails when one entry keeps the shared wiki-name path.
 The first checks the generic local lifecycle, immutable inputs, attempt guards
 and artifact ownership, including a broken-guard negative control. The second
 drives real calculations across pages and tabs, including unnamed builds,
-cancelled completions, report links and mobile layout. Contracts and commands
+cancelled completions, report links and mobile layout. Task completion and
+result redraws retain the measured replay and score in memory. Contracts and commands
 are in [TASKS.md](TASKS.md).
 
 `check_task_executors` also opens the saved-card analysis window, compares its
