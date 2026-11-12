@@ -120,6 +120,25 @@ pub fn observation(record: &Value, raw: Option<&Value>) -> Value {
                 .map(|card|u64::from(card.max_rank)))
         }).collect();
         request["arcane_rank"]=json!(ranks);
+        // Scenarios retain every class and buff; this comparison covers only
+        // the submitted build. Keep unknown fight terms conservative.
+        let panel=crate::panel::panel_json(&request);
+        if panel["ok"]!=true {return Err(panel);}
+        if let Some(buffs)=request.get_mut("buffs").and_then(Value::as_object_mut) {
+            buffs.retain(|id,setting| panel["buffs"].as_array().is_some_and(|cards| cards.iter().any(|card| {
+                card["id"]==*id && !setting.as_object().is_some_and(|value| {
+                    value.keys().all(|key| ["stacks","locked"].contains(&key.as_str()))
+                        && setting["stacks"]==card["default_stacks"]
+                        && setting["locked"].as_bool().unwrap_or(false)==card["default_locked"].as_bool().unwrap_or(false)
+                })
+            })));
+        }
+        if let Some(rules)=request.get_mut("class_rules").and_then(Value::as_object_mut) {
+            let class=wfsim_engine::build::scenario::class_of(&fight.info.id);
+            rules.retain(|key,_| class==Some(key.as_str())
+                || !wfsim_engine::build::scenario::WEAPON_CLASSES.contains(&key.as_str()));
+            if rules.is_empty() {request.as_object_mut().unwrap().remove("class_rules");}
+        }
         crate::computation::normalize("simulation",&request)
     };
     let Ok((local,_))=physical(&value["request"]) else {return value};
@@ -186,12 +205,48 @@ mod tests {
         let ordered=crate::board_rows::board_order_json(&json!({"record":record,"ruler":node["ruler"],
             "mode":node["mode"],"observation":finalist["request"]}));
         assert_eq!(ordered["matches_observation"],true);
+        let mut unrelated=raw.clone();
+        unrelated["request"]["class_rules"]=json!({"archgun":{"infinite_ammo":true}});
+        unrelated["request"]["buffs"]=json!({"unrelated_weapon_buff":{"stacks":10,"locked":true}});
+        assert_eq!(observation(&record,Some(&unrelated))["valid"],true);
+        let panel=crate::panel::panel_json(&raw["request"]);
+        let buff=&panel["buffs"][0];
+        assert!(buff["id"].is_string());
+        let mut changed=raw.clone();
+        changed["request"]["buffs"]=json!({buff["id"].as_str().unwrap():{
+            "stacks":if buff["default_stacks"]==0 {1}else{0},
+            "locked":!buff["default_locked"].as_bool().unwrap()}});
+        assert_eq!(observation(&record,Some(&changed))["valid"],false);
+        for (field,value) in [("unknown_fight_term",json!(1)),
+            ("class_rules",json!({"primary":{"headshot_pct":0}})),
+            ("arcane_rank",json!([0])),("also_acting",json!([{"weapon":"furis"}]))] {
+            let mut changed=raw.clone();changed["request"][field]=value;
+            assert_eq!(observation(&record,Some(&changed))["valid"],false,"{field}");
+        }
         for field in ["runs","seed","duration"] {
             let mut changed=raw.clone();changed["request"][field]=if field=="duration" {
                 json!(changed["request"][field].as_f64().unwrap()+1.0)
             } else {json!(changed["request"][field].as_u64().unwrap()+1)};
             assert_eq!(observation(&record,Some(&changed))["valid"],false,"{field}");
         }
+    }
+    #[test]
+    fn correction_rejects_a_consumed_class_override() {
+        let record=json!({"weapon":"larkspur","mods":["rubedo_lined_barrel","dual_rounds","parallax_scope",
+            "hollowed_bullets","combustion_rounds","electrified_barrel","venomous_clip","magma_chamber"],
+            "arcanes":["primary_merciless","secondary_merciless"]});
+        let p=plan(&record,"standard_single_target","base",false,None);
+        let node=p["nodes"].as_array().unwrap().iter().find(|n|n["ruler"]=="standard_single_target").unwrap();
+        let mut request=p["templates"][node["template"].as_u64().unwrap() as usize].clone();
+        let patch=&p["patches"][node["patch"].as_u64().unwrap() as usize];
+        request.as_object_mut().unwrap().extend(patch["set"].as_object().unwrap().clone());
+        for key in patch["remove"].as_array().unwrap() {request.as_object_mut().unwrap().remove(key.as_str().unwrap());}
+        let mut raw=json!({"ruler":node["ruler"],"mode":node["mode"],"request":request});
+        assert_eq!(observation(&record,Some(&raw))["valid"],true);
+        assert!(!crate::fight::parse_fight(&raw["request"]).unwrap().infinite_ammo);
+        raw["request"]["class_rules"]=json!({"archgun":{"infinite_ammo":true}});
+        assert!(crate::fight::parse_fight(&raw["request"]).unwrap().infinite_ammo);
+        assert_eq!(observation(&record,Some(&raw))["valid"],false);
     }
     #[test]
     fn storage_legality_does_not_require_a_visible_board_row() {

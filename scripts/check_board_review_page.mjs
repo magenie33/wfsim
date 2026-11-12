@@ -84,7 +84,9 @@ try {
       if (url === '/api/board/review/status') return Response.json({ ok: true, reviews: [{ id: remote, state: 'succeeded', score: 12, witnesses: 2 }] });
       return nativeFetch(url, options);
     };
-    const track = { id: 'test-outbox', identity: 'a'.repeat(32), weapon: 'laetum', ruler: 'standard_single_target', mode: 'cycle', engine: ENGINE_ID, source: 'test-report', sources: ['test-report'], state: 'submitting' };
+    const track = { id: 'test-outbox', identity: 'a'.repeat(32), weapon: 'laetum', ruler: 'standard_single_target', mode: 'cycle', engine: ENGINE_ID,
+      observed_score: matched.row.score + 1, baseline_score: matched.row.score, metric: metric.id, request: taskClone(plain.request),
+      source: 'test-report', sources: ['test-report'], state: 'submitting' };
     boardReviewTrackers.clear(); boardReviewTrackers.set(track.id, track); await saveBoardReviewTrackers();
     checks.outbox = (await userTasks.store.value('board-review-trackers'))[0].state === 'submitting';
     const accepting = acceptBoardReview(track);
@@ -93,7 +95,10 @@ try {
     release(); await accepting; checks.hiddenStaysHidden = boardReviewTrackers.size === 0;
     boardReviewTrackers.set(track.id, track);
     const second = acceptBoardReview(track); await Promise.resolve(); release(); await second;
-    checks.targetOnly = requests.every(body => Object.keys(body).sort().join(',') === 'engine,identity,mode,ruler');
+    checks.numericObservation = requests.length === 2 && requests.every(body =>
+      Object.keys(body).sort().join(',') === 'baseline_score,engine,identity,metric,mode,observed_score,request,ruler'
+      && body.observed_score === track.observed_score && body.baseline_score === track.baseline_score
+      && body.metric === metric.id && JSON.stringify(body.request) === JSON.stringify(plain.request));
     checks.remoteObserved = boardReviewTrackers.get('board-review:' + remote)?.state === 'waiting';
     let refreshed = 0; refreshReviewedBoard = async () => { refreshed++; return refreshed >= 2; };
     await pollBoardReviews();
