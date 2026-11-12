@@ -17,11 +17,9 @@ result numbers. Adding a type does not require changing its lifecycle.
 Simulation, optimization and saved-riven appraisal use the durable queue.
 Appraisal uses `headlessRivenGainRequest`, followed by
 `headlessAppraisalReplay`, the search and grade used by the chat workflow.
-Acceptance independently triggers old-engine board calibration in both riven
-categories (`docs/BOARD.md`). The grade fetches the current published rows
-for its ruler after the official replay, bypassing the page or bot's retained
-board. Calibration failures and unfinished rounds do not delay the search or
-grade; later published corrections benefit later appraisals.
+Appraisal reads current published rows after its official replay. Final search
+measurements and simulations share the unified build observation flow described
+in `docs/COMPUTE_TASKS.md`; intermediate search candidates only submit builds.
 Saved cards remain editable in the original riven editor. Text import uses
 `readRivenLines`, shared with chat and screenshot stat naming. A batch is an
 atomic group of independent requests; each retains its own result and retry.
@@ -33,11 +31,20 @@ Its details retain worker health and the existing calculator reset. Work this de
 for other players appears separately and reads the existing contribution log.
 
 `board-review` observes an independent review triggered by a matching official
-simulation. Its persisted outbox and remote identity survive reloads without
+simulation or completed optimizer finalist. Its persisted outbox and remote identity survive reloads without
 holding a local calculation lock. Completion delivery creates the outbox before
 it is acknowledged. Hiding an observation leaves the shared review running.
 The server owns its verified number; browser storage keeps only linkage and
 submission state, with at most fifty observations.
+
+Local and offline work remains available without server registration. The local
+queue deduplicates queued and running entries by computation ID within this
+browser's store; the shared queue deduplicates globally. Each source retains
+its own frozen context, authorization and completion delivery. Queue history IDs
+remain separate from computation IDs. An appraisal additionally identifies its
+grading ruler. Removing task history retains result artifacts and pending
+source deliveries. Admission and cutover rules are in
+[COMPUTE_TASKS.md](COMPUTE_TASKS.md).
 
 ## Local ownership
 
@@ -79,8 +86,10 @@ storage. Late results cannot settle cancelled or superseded attempts.
 A lost local runner leaves its attempt interrupted unless an already committed
 artifact can be adopted. Retry preserves inputs and identity. A compatible
 native optimizer job can be reattached; compatible engine checkpoints can
-resume their own task. Otherwise retry restarts. An incompatible engine or
-request schema requires a fresh request from the original page.
+resume their own task. Otherwise retry restarts. A queued request runs on the current available engine when its request schema
+is compatible. The submitted engine remains provenance; incompatible checkpoints
+restart from the fixed inputs. An incompatible request schema requires a fresh
+request from the original page.
 
 Without IndexedDB or Web Locks, the queue explicitly promises only this
 session. It does not promise cross-tab ownership or reload recovery.
@@ -119,7 +128,7 @@ retry and transfer retain it. Declining upload leaves computation available.
 Local delivery also pauses while the current global upload switch is off.
 The existing explicit purpose of a chat appraisal authorizes its delivery.
 
-Engine-admitted builds encountered during search use a separate durable outbox,
+Legal builds encountered during ordinary search use a separate durable outbox,
 including short-only candidates and distinct element orders. Reports retain
 their ranking rather than the collection. Sparse arrivals share a 250 ms
 background batching window; full 128-record batches proceed immediately.
@@ -134,7 +143,7 @@ receipt for the original initiator; executor identity never replaces it
 
 ## Community execution
 
-`worker/user_tasks.js` is a producer of the existing fair fact factory.
+`worker/user_tasks.js` is a producer of the shared fact factory.
 `simulate_report` and `optimize_report` compare complete reports, including all
 finalists and the fields needed to open or replay them. Wall-clock timings are
 excluded from agreement; calculation fields and engine work participate.
@@ -148,8 +157,8 @@ The existing simulation and quick search entry points perform the work.
 Clients advertise `calculation-reports-v1`. The factory's shared eligibility
 rule excludes these verbs for older clients, on protocol 8's JavaScript and SQL
 paths and protocol 7. Official tooling must explicitly request this producer.
-The producer has the same fair-share weight as existing producers, a six-hour
-deadline, no fleet reservation and no paid priority. Its browser initiator
+Explicit human requests enter zone `00` in FIFO order. A six-hour deadline
+controls official eligibility rather than volunteer queue order. Its browser initiator
 uses the existing cap and forgetting rules. Batch requests do not assert that someone
 is actively waiting.
 
@@ -163,9 +172,10 @@ reading it, retrying delivery and adding another consumer do not renew it.
 Shared input/report payloads are removed once their last consumer expires;
 aggregate contributions remain. Cancellation withdraws only that consumer.
 
-Equal user requests share within a server-assigned retention window. A new
-window creates a fresh question; consumers adopting a cached report keep its
-original completion and expiry. Legacy command retries keep their question id.
+Equal normalized inputs share one computation ID across deployments and
+retention windows. An expired report requires a fresh execution round under that
+same ID; adopting a retained report keeps its original completion and expiry.
+An acceptance command retains its original authorization across retries.
 Public computation records contain only weapon, kind, engine, completion time
 and accepted witnesses. They expire after 14 days and disclose no private inputs
 or report. Optimization attribution counts the task once for each accepted

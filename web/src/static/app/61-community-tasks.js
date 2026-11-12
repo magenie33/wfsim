@@ -26,10 +26,19 @@ async function communityTaskCall(action, body) {
   return result;
 }
 async function communityTaskAccept(task, command) {
-  const explicit = !!task.origin?.appraisal, captured = typeof task.origin?.board_upload === "boolean";
-  const request = (task.kind === "optimization" || task.kind === "appraisal") && (explicit || captured)
-    ? { ...task.request, __board_upload: explicit || task.origin.board_upload === true } : task.request;
-  return communityTaskCall("accept", { id: command, task: task.id, kind: USER_TASK_TYPES.get(task.kind)?.community?.kind || task.kind, engine: task.engine, request });
+  const origins = taskSources(task).map(source => source.origin);
+  const upload = origins.some(origin => !!origin?.appraisal || origin?.board_upload === true);
+  const request = { ...task.request, __board_upload: upload };
+  const queue = await initUserTasks(), key = `community-acceptance:${command}`;
+  const body = await userTaskLock(key,async()=>{
+    const held=await queue.store.value(key);
+    if (held) return held;
+    const captured={ input_schema: COMPUTATION_INPUT_SCHEMA, id: command, task: task.id,
+      kind: USER_TASK_TYPES.get(task.kind)?.community?.kind || task.kind, engine: task.engine, request };
+    await queue.store.value(key,captured);
+    return captured;
+  });
+  return communityTaskCall("accept", body);
 }
 async function observeCommunityTasks(id, signal) {
   if (!communityTaskPoll && (Date.now() >= communityTaskPollAt || !communityTaskStates.has(id))) {

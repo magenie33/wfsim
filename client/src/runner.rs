@@ -426,7 +426,7 @@ pub fn run(dir: &Path, id: &str, quit: Arc<AtomicBool>) -> Result<()> {
                         }
                     }
                     if protocol == 8 {
-                        let response = net.post("/api/board/sync", &json!({"verifier":id,"engine":send_engine,"protocol":8,
+                        let response = net.post("/api/board/sync", &json!({"verifier":id,"engine":send_engine,"protocol":8,"capabilities":["fixed-board-input-v1"],
                             "consent":config.consent,"lanes":((cores as f64*previous/100.0).ceil() as usize).clamp(1,256),
                             "pace_ms":pace_ms.round() as u64,
                             "want_ms":if needs_work && send_engine==engine_id {millis(&dials,"pack8_ms",600_000)}else{0},

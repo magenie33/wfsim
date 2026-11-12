@@ -2,6 +2,7 @@
 // Task registration and durable demand state.
 import { iso } from "./instant.js";
 import { canon, questionId } from "./task_contract.js";
+import { computationInput } from "./computation_input.js";
 
 export function createLedger({ verbs, producerOf } = {}) {
   const listOf = (db, p) => `(SELECT value FROM jsonb_array_elements_text((${p}::text)::jsonb))`;
@@ -20,22 +21,28 @@ export function createLedger({ verbs, producerOf } = {}) {
   }
 
 
-  async function demandAll(env, asks, engine, now = Date.now(), {before=[]} = {}) {
-    if (before.length && asks.length>DEMAND_CHUNK) throw new Error("atomic task admission exceeds one batch");
+  async function demandAll(env, asks, engine, now = Date.now(), {before=[],after=[]} = {}) {
+    if ((before.length || after.length) && asks.length>DEMAND_CHUNK) throw new Error("atomic task admission exceeds one batch");
     const db = env.LIBRARY, at = iso(now), ids = [];
     for (const a of asks) {
       if (!verbs[a.verb]) throw new Error(`no verb ${a.verb}`);
       producerOf(a.producer);
+      if (typeof a.ref !== "string" || !a.ref.trim()) throw new Error("a compute task requires a source");
+      if (a.zone !== undefined && a.zone !== null && (!Number.isInteger(a.zone) || a.zone < 0 || a.zone > 99))
+        throw new Error("queue zone must be an integer from00 to99");
+      const payload = a.payload ?? {}, trigger = a.trigger_id ?? (payload.review || payload.batch || a.ref);
+      if (!payload || typeof payload !== "object" || Array.isArray(payload) || typeof trigger !== "string" || !trigger.trim())
+        throw new Error("a compute task requires a source");
       ids.push(await questionId(a.verb, a.request));
     }
     for (let i = 0; i < asks.length; i += DEMAND_CHUNK) {
       const qs = new Map(), ds = new Map();
-      asks.slice(i, i + DEMAND_CHUNK).forEach(({ producer, ref, verb, request, due_in_ms, payload = {}, lanes = null, waits = false, initiator = null }, k) => {
+      asks.slice(i, i + DEMAND_CHUNK).forEach(({ producer, ref, verb, request, due_in_ms, payload = {}, trigger_id = payload.review || payload.batch || ref, force = false, invalidate = false, reason = "requested_recalculation", lanes = null, waits = false, initiator = null, zone = null, capability = null }, k) => {
         const id = ids[i + k], due_at = iso(now + due_in_ms), w = waits ? 1 : 0, l = lanes ? JSON.stringify(lanes) : null;
         const q = qs.get(id);
-        if (!q) qs.set(id, { id, verb, request: canon(request), due_at, lanes: l, waits: w, producer, initiator });
-        else Object.assign(q, { ...(due_at < q.due_at ? { due_at, producer, initiator } : {}), waits: Math.max(q.waits, w), lanes: q.lanes ?? l });
-        ds.set(JSON.stringify([producer, ref]), { producer, ref, question: id, due_at, waits: w, payload: JSON.stringify(payload), initiator });
+        if (!q) qs.set(id, { id, ordinal: k, zone, capability, verb, request: canon(computationInput(verb, request)), due_at, lanes: l, waits: w, producer, initiator, force, invalidate, reason });
+        else Object.assign(q, { ...(due_at < q.due_at ? { due_at, producer, initiator } : {}), waits: Math.max(q.waits, w), lanes: q.lanes ?? l, force: q.force || force, invalidate: q.invalidate || invalidate, ...(force ? {reason} : {}) });
+        ds.set(JSON.stringify([producer, ref, trigger_id]), { producer, ref, trigger_id, ordinal: k, question: id, due_at, waits: w, payload: JSON.stringify(payload), initiator, zone, force, invalidate });
       });
       // IN KEY ORDER, so two asks writing the same rows take their locks alike.
       const sorted = (m, key) => [...m.values()].sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));
@@ -43,16 +50,9 @@ export function createLedger({ verbs, producerOf } = {}) {
       // that engine however often it is asked again; a new engine tries it anew.
       await db.batch([
         ...(i===0 ? before : []),
-        db.prepare(`SELECT compute_register_tasks(?2::text,?3::text,?1::text)`)
-          .bind(at, JSON.stringify(sorted(qs, (q) => q.id)), engine || ""),
-        db.prepare(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, waits, payload, initiator, delivery_at)
-                      SELECT x.producer, x.ref, x.question, 'live', ?1::text, x.due_at, x.waits, x.payload, x.initiator,
-                        CASE WHEN EXISTS (SELECT 1 FROM state_compute_work q WHERE q.id=x.question AND q.state IN ('fact','spot') AND q.fact_engine=?3::text) THEN ?1::text END
-                      FROM jsonb_to_recordset((?2::text)::jsonb) AS x(producer text, ref text, question text, due_at text, waits bigint, payload text, initiator text)
-                    ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
-                      due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL,
-                      initiator = excluded.initiator, delivery_at=excluded.delivery_at`)
-          .bind(at, JSON.stringify(sorted(ds, (d) => `${d.producer}\u0000${d.ref}`)), engine || ""),
+        db.prepare(`SELECT compute_admit_tasks(?1::text,?2::text,?3::text,?4::text)`)
+          .bind(JSON.stringify(sorted(qs, (q) => q.id)), JSON.stringify(sorted(ds, (d) => `${d.producer}\u0000${d.ref}\u0000${d.trigger_id}`)), engine || "", at),
+        ...after,
         // A PRODUCER NEVER SEEN starts at the least any has used: no credit banked.
         db.prepare(`INSERT INTO state_producer_compute_usage (producer, used)
                       SELECT x.p, COALESCE((SELECT min(used) FROM state_producer_compute_usage), 0) FROM jsonb_array_elements_text((?1::text)::jsonb) AS x(p)
@@ -60,34 +60,13 @@ export function createLedger({ verbs, producerOf } = {}) {
           .bind(JSON.stringify([...new Set([...ds.values()].map((d) => d.producer))].sort())),
       ]);
     }
-    const { results } = await db.prepare(`SELECT q.*, EXISTS (SELECT 1 FROM state_compute_candidate_answers a WHERE a.question = q.id AND a.engine = ?2::text) AS served_answered
+    const { results } = await db.prepare(`SELECT q.*
         FROM state_compute_work q WHERE q.id IN ${listOf(db, "?1")} AND q.state IN ('fact', 'spot', 'disputed', 'nondeterministic')`)
-      .bind(JSON.stringify([...new Set(ids)]), engine || "").all();
-    // A FACT OF ANOTHER ENGINE answers nothing now: the question opens again,
-    // its answers carried for the served engine to reproduce or replace. So
-    // does a dispute no answer of the served engine is in: the official
-    // machines run that engine alone, and could neither settle it nor refuse
-    // anyone (worker/pg/sync.sql `factory_moot_checks`).
-    // WAITED ON ONLY IF A LIVE DEMAND WAITS: a question's `waits` is its live
-    // demands' (`factory_restate`), never a served one's. Kept from a demand
-    // long served, a re-asked row goes alone to a free computer as though a
-    // player waited, and a fleet handed one row a sync idles out the floor.
+      .bind(JSON.stringify([...new Set(ids)])).all();
+    // Explicit retirement opens a new round. A different deployment alone
+    // changes neither the entity inputs nor the validity of an accepted fact.
     const settled = (q) => q.state === "fact" || q.state === "spot";
-    const stale = results.filter((q) => (settled(q) ? q.fact_engine !== engine : !q.served_answered));
-    if (stale.length) {
-      // AN OFFICIAL LEASE GOES WITH THE DISPUTE: held, it kept the volunteers off
-      // the row for the claim's hours.
-      await db.batch([
-        db.prepare(`SELECT compute_open_task(q.id,'engine_recalibration',?3::text,?1::text) FROM state_compute_work q
-          JOIN jsonb_to_recordset((?2::text)::jsonb) AS x(id text,state text) ON q.id=x.id AND q.state=x.state ORDER BY q.id`)
-          .bind(at, JSON.stringify(stale.map((q) => ({ id: q.id, state: q.state }))), engine || ""),
-        db.prepare(`UPDATE state_compute_work q SET waits=(SELECT COALESCE(max(d.waits),0)
-          FROM relation_task_consumers d WHERE d.question=q.id AND d.state='live')
-          WHERE q.id IN(SELECT jsonb_array_elements_text((?::text)::jsonb)) AND q.state='open'`)
-          .bind(JSON.stringify(stale.map(q => q.id))),
-      ]);
-    }
-    return { ids, ready: results.filter(q => settled(q) && q.fact_engine === engine) };
+    return { ids, ready: results.filter(settled) };
   }
 
 

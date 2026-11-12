@@ -71,7 +71,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
     // client is handed the live rows behind them, never nothing.
     for (let round = 0; round < PICK_ROUNDS && kept.length < n; round++) {
       const [taken, ds] = await db.batch([
-        db.prepare(`SELECT * FROM factory_lease_pack(?1::text, ?2::bigint, ?3::text, ?4::text, ?5::text, ?6::text, ?7::text, ?8::bigint, ?9::bigint,
+        db.prepare(`SELECT * FROM factory_lease_pack_zoned(?1::text, ?2::bigint, ?3::text, ?4::text, ?5::text, ?6::text, ?7::text, ?8::bigint, ?9::bigint,
             ?10::text, ?11::text, ?12::text, ?13::text, ?14::bigint, ?15::text, ?16::text, ?17::text, ?18::bigint)`)
           .bind(at, w.lanes ?? 1, engine, JSON.stringify(w.siblings || [w.device]), w.owner || w.device, w.net || "", w.before ?? null, ceiling, grace,
             PACKABLE, exclude ? JSON.stringify(exclude) : null, join, producer, n - kept.length, lease, iso(now + lease_ms), w.device, most),
@@ -96,7 +96,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
     }
     for (const x of wanted) await onLease(env, x, now);
     const questions = kept
-      .sort((a, b) => (a.due_at < b.due_at ? -1 : a.due_at > b.due_at ? 1 : a.id < b.id ? -1 : 1))
+      .sort((a, b) => a.zone-b.zone || a.zone_position-b.zone_position || a.id.localeCompare(b.id))
       .map((q) => ({ question: q.id, verb: q.verb, request: JSON.parse(q.request), due_at: q.due_at,
         demands: wanted.filter((x) => x.question === q.id).map(({ producer, ref, payload }) => ({ producer, ref, payload })) }));
     return questions.length ? { lease, lease_ms, questions } : null;
@@ -208,22 +208,24 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
               AND d.producer IN (${selected.map(literal).join(", ")}))` : "TRUE";
     // Read each question's answers before filtering its engine: a new engine
     // absent from statistics can otherwise read the closed field per candidate.
-    const takeable = `q.verb NOT IN (SELECT value FROM jsonb_array_elements_text((?5::text)::jsonb))
+    const capabilities=Array.isArray(w.capabilities)?w.capabilities:[];
+    const capable=capabilities.length ? `q.required_capability IN (${capabilities.map(literal).join(',')})` : 'FALSE';
+    const takeable = `(q.required_capability IS NULL OR ${capable}) AND q.verb NOT IN (SELECT value FROM jsonb_array_elements_text((?5::text)::jsonb))
             AND (q.lease_until IS NULL OR q.lease_until < ?3::text)
             AND ${producer}
             AND NOT EXISTS (SELECT 1 FROM (SELECT a.device, a.engine FROM state_compute_candidate_answers a
               WHERE a.question = q.id OFFSET 0) a WHERE a.device = ?2::text AND a.engine = ?4::text)`;
     const take = (n) => {
       const candidates = wanted.map((state) => `(SELECT q.id FROM state_compute_work q WHERE ${stateOf(state)} AND ${takeable}
-            ORDER BY q.waits DESC, q.due_at, q.id LIMIT ${n * CLAIM_SPARE})`).join(" UNION ALL ");
+            ORDER BY q.zone, q.zone_position, q.id LIMIT ${n * CLAIM_SPARE})`).join(" UNION ALL ");
       return db.prepare(`WITH c AS (${candidates})
         UPDATE state_compute_work SET lease = replace(gen_random_uuid()::text, '-', ''), lease_until = ?1::text, leased_to = ?2::text, leased_at = NULL
         WHERE id IN (SELECT q.id FROM state_compute_work q
           WHERE q.id IN (SELECT id FROM c)
             AND (${wanted.map((state) => `(${stateOf(state)})`).join(" OR ")})
             AND ${takeable}
-          ORDER BY q.waits DESC, q.due_at, q.id LIMIT ${n} FOR UPDATE OF q SKIP LOCKED)
-        RETURNING id, verb, request, state, lease, waits, due_at`)
+          ORDER BY q.zone, q.zone_position, q.id LIMIT ${n} FOR UPDATE OF q SKIP LOCKED)
+        RETURNING id, verb, request, state, lease, waits, due_at, zone, zone_position`)
         .bind(iso(now + lease_ms), w.device, at, engine, JSON.stringify(blocked)).all();
     };
     // AN OPEN ROW NOBODY OWES ANY MORE is withdrawn where it is found and the
@@ -247,7 +249,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
     }
     if (!results.length) return [];
     // IN THE ORDER IT WAS CHOSEN: an UPDATE returns its rows in none.
-    results.sort((a, b) => b.waits - a.waits || (a.due_at < b.due_at ? -1 : a.due_at > b.due_at ? 1 : a.id < b.id ? -1 : 1));
+    results.sort((a, b) => a.zone-b.zone || a.zone_position-b.zone_position || a.id.localeCompare(b.id));
     // A SPOT NOBODY ASKS FOR ANY MORE still owes its volunteers a verdict, so it
     // comes with its withdrawn demands: without one it is claimed, skipped and
     // released forever, ahead of every question behind it.

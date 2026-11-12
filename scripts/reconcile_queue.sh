@@ -1,20 +1,10 @@
 #!/usr/bin/env bash
-# WHAT NOBODY HAS ASKED FOR YET, ASKED FOR — and the queue read back after.
+# Repair already queued work; an explicit inventory request remains read-only.
 #
 #   scripts/reconcile_queue.sh <library.json> <facts.ndjson> <queue.ndjson>
 #
-# `builds x rulers x modes` is the DEFINITION of what should exist. The queue is
-# written by hand — intake for an arrival, a person for a rescore — and a
-# hand-written list's one failure is a row nobody wrote, which would never be
-# computed and never be noticed. This closes the gap to the definition and
-# reports the complete inventory before admission pacing.
-#
-# IT IS NOT A SECOND SOURCE. It only ever ADDS, and only rows that have no
-# score, so the worst it can do is ask for something already owed — which the
-# queue's own primary key absorbs.
-#
-# Queue maintenance owns complete repair. Official scoring independently reads
-# its leased calculations, so a repair pass cannot hold already requested work.
+# Missing library coverage is not a task source. Only existing queue entries
+# are recovered here; new boards and missing scores require an explicit plan.
 set -euo pipefail
 
 LIB="${1:?usage: reconcile_queue.sh <library.json> <facts.ndjson> <queue.ndjson>}"
@@ -25,6 +15,12 @@ INVENTORY_ONLY="${INVENTORY_ONLY:-0}"
 case "$INVENTORY_ONLY" in 0|1) ;; *) echo "inventory: INVENTORY_ONLY must be 0 or 1" >&2; exit 2 ;; esac
 # EVERY OWED ROW, whoever is measuring it: a hold here would claim and hide rows.
 unset CLAIMED
+
+if [ "$INVENTORY_ONLY" = 0 ]; then
+  bash scripts/ship_queue.sh --backfill
+  bash scripts/fetch_queue.sh "$OUT"
+  exit 0
+fi
 
 inventory=$(mktemp)
 python3 scripts/inventory_phase.py capture -- node scripts/capture_compute_inventory.mjs "$LIB" "$FACTS" "$OUT" "$inventory"
@@ -60,44 +56,4 @@ python3 scripts/inventory_phase.py classify -- node scripts/compute_inventory.mj
 rm -f "$inventory" "$inventory.builds" "$inventory.canonical" "$inventory.tasks" "$inventory.json"
 rm -f "$roster"
 
-if [ "$INVENTORY_ONLY" = 1 ]; then
-  rm -f "$missing" "$orphans"
-  exit 0
-fi
-
-# A SCENE'S FIRST PASS IS PACED: a new rung owes every build a row at once, and
-# one run asking a whole board floods the factory's open questions. At most
-# `SCENE_ROWS_PER_RUN` cell rows a run, one weapon finished before the next and
-# the popular first; the rest are still missing next run (`scene_rows.py`).
-popular=$(mktemp)
-curl -s --connect-timeout 15 --max-time 60 https://wfsim.app/api/popularity > "$popular" || : > "$popular"
-paced=$(mktemp)
-python3 scripts/scene_rows.py "$FACTS" "$popular" "$missing" "${SCENE_ROWS_PER_RUN:-40000}" > "$paced"
-# …AND EVERY ROW ASKED IN POPULARITY ORDER, base rows and cells alike.
-python3 scripts/popular_order.py "$popular" "$FACTS" < "$paced" > "$missing"
-rm -f "$popular" "$paced"
-
-# ONE BATCH A DAY, named by the day. An hourly clock would otherwise mint
-# twenty-four groups a day and a list nobody can read is a list nobody uses;
-# `ship_queue.sh` ADDS to a batch that already exists, so the day's rows are one
-# group however many times this runs. `backfill-`, never `arrivals-`: the worker
-# asks an arrival's row as a new build's, and nobody here is waiting on these.
-bash scripts/ship_queue.sh "backfill-$(date -u +'%Y-%m-%d')" \
-  "builds nothing had asked for yet" "$missing"
-rm -f "$missing"
-# …AND EVERY ROW OWED HAS ITS ORDER, whichever run wrote the row and however it
-# ended (`ship_queue.sh --backfill`).
-bash scripts/ship_queue.sh --backfill
-
-# …AND THE OTHER HALF OF THE SAME DEFINITION. The loop above adds every
-# (build, ruler, mode) that should exist and does not; this forgets the ones
-# that exist and should not, which is a row under a ruler `data/benchmarks/`
-# no longer has. Nothing else can: a queue row is deleted beside the fact that
-# settles it, and a retired ruler never produces one.
-bash scripts/purge_queue.sh
-# …AND A ROW NO BUILD CAN PAY — a refused build, a lost mode, an id the
-# identity rule has moved — which no fact will ever settle either.
-bash scripts/purge_orphans.sh "$orphans"
-rm -f "$orphans"
-
-bash scripts/fetch_queue.sh "$OUT"
+rm -f "$missing" "$orphans"

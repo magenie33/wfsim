@@ -23,6 +23,12 @@ async function initUserTasks() {
       userTaskChannel = new BroadcastChannel("wfsim-user-tasks");
     }
     userTasks = new UserTaskQueue({ store, types: USER_TASK_TYPES, engine: ENGINE_ID, lock: userTaskLock,
+      normalize: async (kind, request) => {
+        if (!["simulation", "optimization", "appraisal"].includes(kind)) return { request };
+        const normalized = await api("/api/computation/input", { kind: kind === "simulation" ? "simulation" : "optimization", request });
+        if (!normalized?.ok) throw new Error(normalized?.error || "The calculation input could not be normalized.");
+        return normalized;
+      },
       changed: scheduleUserTasks, retryDelivery: retryUserTaskDelivery, publish: (message) => userTaskChannel?.postMessage(message) });
     initOptimizationBuildUploads(userTasks);
     if (userTaskChannel) userTaskChannel.onmessage = (event) => {
@@ -90,7 +96,7 @@ function userTaskRow(task, waiting) {
       if (task.destination === "community") actions += action("local", "Run on this device");
       else if (communityTaskCapable(task)) actions += action("community", "Send to community");
     }
-    if (["failed", "cancelled", "interrupted"].includes(task.state) && task.engine === ENGINE_ID && type
+    if (["failed", "cancelled", "interrupted"].includes(task.state) && type
         && task.request_schema === type.schema && USER_TASK_EXECUTORS.get(task.destination || "local")?.supports(type)) actions += action("retry", "Retry");
     if (task.result_ref && type?.resultLink) actions += `<a class="ghost-btn task-result" data-native target="_blank" rel="noopener" href="${escHtml(type.resultLink(task))}">${escHtml(tr("View result"))}</a>`;
     if (!userTaskActive(task)) actions += action("remove", "Remove from list");

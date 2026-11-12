@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Shared task identity, witness rules and lifecycle constants.
 import { DIAL_DEFAULTS } from "./dials.js";
+import { computationCanon, computationId } from "./computation_input.js";
 
 export const OFFICIAL_STATES = ["disputed", "spot", "nondeterministic"];
 /// HOW MANY CANDIDATES A CLAIM READS FOR EACH QUESTION IT MAY TAKE, per state:
@@ -32,9 +33,7 @@ export const SUPERSEDE = `(lease_prev, leased_to_prev, lease_prev_until) = (SELE
   lease_prev_until, lease, leased_to, lease_until, ?1::text))`;
 
 /// Text whose bytes two equal values share: keys sorted, at every depth.
-export const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
-  : v && typeof v === "object" ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${canon(v[k])}`).join(",")}}`
-  : JSON.stringify(v));
+export const canon = computationCanon;
 
 /// AN ANSWER A FEW ULP OFF ANOTHER, everything else equal: a score folded in
 /// another grouping (docs/WASM.md "one grouping is one answer"). Bits are still
@@ -77,7 +76,7 @@ export const nearAnswer = (same) => (x, y) => {
 export const hex = (buf) => [...new Uint8Array(buf)].map((x) => x.toString(16).padStart(2, "0")).join("");
 /// A QUESTION'S ID IS WHAT IT ASKS: two producers asking one thing share it.
 export async function questionId(verb, request) {
-  return hex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${verb}\n${canon(request)}`))).slice(0, 32);
+  return computationId(verb, request);
 }
 export const newLease = () => hex(crypto.getRandomValues(new Uint8Array(16)));
 

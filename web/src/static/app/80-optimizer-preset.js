@@ -212,7 +212,7 @@ function updateOptEstimate() {
   if ($("opt-cand-runs")) $("opt-cand-runs").value = String(optRun.candidate_runs);
   const en = allEnemies().find((e) => e.id === sim.enemy) || {};
   $("opt-estimate").innerHTML = escHtml(tr("{n} starts · best {k} · {r} runs a candidate · final round {f} runs")
-    .replace("{n}", n).replace("{k}", optRun.finalists).replace("{r}", optRun.candidate_runs).replace("{f}", simRuns().toLocaleString()))
+    .replace("{n}", n).replace("{k}", optRun.finalists).replace("{r}", optRun.candidate_runs).replace("{f}", optimizationFinalRuns().toLocaleString()))
     + ` · ${escHtml(tr("vs"))} <b>${escHtml(en.name || sim.enemy)}</b> Lv ${sim.level}${empowermentLabel(sim.steel_path, sim.empowered, true) ? ` (${empowermentLabel(sim.steel_path, sim.empowered, true)})` : ""} · ${sim.duration} s`;
   // A START THAT PINS WHAT A LIMIT RULES OUT has no answer to give: the run
   // waits until one side changes, and says so here.
@@ -261,6 +261,10 @@ const optIsLive = () => !!userTasks?.view().some((task) => task.state === "runni
 /// and the optimizer as they stand. A riven gain freezes it once, on a page that
 /// holds nothing of anyone's (81-appraisal.js), so every computer searches the
 /// same question.
+function optimizationFinalRuns() {
+  const ruler = scenarioNamed(activeScenario)?.builtin;
+  return benchList().find(bench => bench.id === ruler)?.scenario.runs ?? simRuns();
+}
 function optimizeBody() {
   // NO SCOPE: the server searches every candidate the quick calc offers.
   const starts = startsPayload();
@@ -278,7 +282,7 @@ function optimizeBody() {
     stance: slotModId(slots[STANCE]) || "",
     // THE FIGHT, WHOLE AND DERIVED — `theFight()`, the call the simulator
     // makes, so a candidate is scored under the fight the replay runs.
-    ...theFight(),
+    ...theFight({ runs: optimizationFinalRuns() }),
     // The best N of every whole build the starts' sweeps scored, each
     // re-measured at the final runs.
     finalists: optRun.finalists,

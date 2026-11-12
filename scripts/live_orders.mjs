@@ -43,14 +43,14 @@ async function settle() {
   const dir = join(work, "settle");
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
-  const facts = [], reviews = [];
+  const facts = [], reviews = [], workflows = [];
   let claimed = 0;
   try {
     try {
       const { tasks } = await official("claim", { witness: WITNESS, engine: w.engine, states: ["disputed", "spot", "nondeterministic"],
-        producers: BOARD_WORK_KINDS, max: SETTLE_PER_CYCLE, lease_ms: 2 * SETTLE_FIGHT_MS });
+        producers: [...BOARD_WORK_KINDS,"build_workflow"], capabilities:["fixed-board-input-v1"], max: SETTLE_PER_CYCLE, lease_ms: 2 * SETTLE_FIGHT_MS });
       if (tasks.length < SETTLE_PER_CYCLE) {
-        const fallback = await official("claim", { witness: WITNESS, engine: w.engine, states: ["open"], producers: ["board_review"],
+        const fallback = await official("claim", { witness: WITNESS, engine: w.engine, states: ["open"], producers: ["board_review","build_workflow"], capabilities:["fixed-board-input-v1"],
           max: SETTLE_PER_CYCLE - tasks.length, lease_ms: 2 * SETTLE_FIGHT_MS });
         tasks.push(...fallback.tasks);
       }
@@ -58,7 +58,8 @@ async function settle() {
       for (const t of tasks) {
         const d = t.demands[0];
         if (!d) { console.error(`orders: ${t.question.slice(0, 8)} came with no demand — skipped`); continue; }
-        const row = { record: t.request.record, identity: d.payload.identity, ruler: t.request.ruler, mode: t.request.mode };
+        const row = d.producer==="build_workflow"
+          ? {...d.payload,fight:t.request} : {record:t.request.record,identity:d.payload.identity,ruler:t.request.ruler,mode:t.request.mode};
         const began = new Date();
         let timer;
         const late = new Promise((_, no) => { timer = setTimeout(() => no(LATE), SETTLE_FIGHT_MS); });
@@ -71,6 +72,10 @@ async function settle() {
         if (stuck) break;
         if (!got) continue;
         const done = new Date();
+        if (d.producer === "build_workflow") {
+          workflows.push({ref:d.ref,result:{score:got.score,metric:got.metric},work:got.work});
+          continue;
+        }
         if (d.producer === "board_review") {
           reviews.push({ ref: d.ref, result: { score: got.score, metric: got.metric }, work: got.work });
           continue;
@@ -79,6 +84,7 @@ async function settle() {
           score: got.score, cost_seconds: (done - began) / 1000, started_at: began.toISOString(), finished_at: done.toISOString(), work: got.work });
       }
     } finally { await w.close(); }
+    if(workflows.length) await official("answer",{witness:WITNESS,engine:w.engine,producers:["build_workflow"],answers:workflows});
     if (reviews.length) await official("answer", { witness: WITNESS, engine: w.engine, producers: ["board_review"], answers: reviews });
     if (facts.length) {
       writeFileSync(join(dir, "facts.ndjson"), facts.map((f) => `${JSON.stringify(f)}\n`).join(""));

@@ -10,7 +10,7 @@ import { replaceComputeResult } from "./pg/fixtures.mjs";
 for (const name of ["contract", "ledger", "dispatch", "verification", "delivery", "credit", "usage", "observation"]) {
   const text = readFileSync(new URL(`../worker/task_${name}.js`, import.meta.url), "utf8");
   const imports = [...text.matchAll(/from\s+["']([^"']+)["']/g)].map(m => m[1]);
-  assert(imports.every(p => ["./task_contract.js", "./dials.js", "./instant.js"].includes(p)), `${name} imports a business or peer implementation`);
+  assert(imports.every(p => ["./task_contract.js", "./computation_input.js", "./dials.js", "./instant.js"].includes(p)), `${name} imports a business or peer implementation`);
 }
 const dispatchText = readFileSync(new URL("../worker/task_dispatch.js", import.meta.url), "utf8");
 assert(!/producerOf|on_fact|on_answer|verifier_hours|points_pool|credit\(/.test(dispatchText), "dispatch reaches settlement or a business adapter");

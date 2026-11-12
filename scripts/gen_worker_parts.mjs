@@ -12,6 +12,12 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 export const PARTS = [
   {
+    part: ["web/src/static/app/52-computation-input.js"],
+    out: "worker/computation_input.js",
+    head: "",
+    tail: "export { COMPUTATION_INPUT_SCHEMA, computationInput, computationCanon, computationId, computationReferences };\n",
+  },
+  {
     part: "web/src/static/app/83-headless-card.js",
     symbol: "headlessBoardPayloadFromResult",
     out: "worker/board_payload.js",

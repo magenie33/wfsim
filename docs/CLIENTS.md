@@ -696,6 +696,13 @@ client's native build is held to it by item 7.
 
 ## Complete calculation reports
 
+A client advertising `fixed-board-input-v1` can execute captured board work.
+Its task contains `fight`, the frozen simulation request. Pass it unchanged to
+`/api/board/runs`, `/api/board/fold` and `/api/board/score`, instead of rebuilding
+it from a current ruler. A client without the capability continues receiving
+legacy work. The capability is checked on both protocol 8 paths and protocol 7.
+Official tools must advertise it as well.
+
 A client advertising `capabilities: ["calculation-reports-v1"]` can receive
 `work.kind: "user_calculation"`, with `calculation` (`simulation` or
 `optimization`), `question`, `lease` and the frozen engine `request`.

@@ -29,18 +29,23 @@ USER_TASK_TYPES.set("simulation", {
     } finally { release(); }
   },
   async save(task, result, { persistent }) {
-    const record = await resultAddCaptured(result, frozenTaskBuild(task.origin.build, task.request), task.origin.context, task.attempt, persistent);
+    const record = await resultAddCaptured(result, frozenTaskBuild(task.origin.build, task.request, task.origin.input_aliases), task.origin.context, task.attempt, persistent);
     resultMem.set(resultMemKey(task.origin.context.weapon, task.origin.context.preset), { ...record, r: result });
     track("simulator.run", task.request.weapon, task.request.runs);
     noteSimRun(task.request.runs);
-    if (task.origin.board) offerBoardSubmit({ body: task.origin.board, context: task.origin.context }).catch(() => {});
     return record.id;
   },
   async completed(task) {
-    if (!boardReviewEnabled()) return;
     if (!results.some(record => record.id === task.result_ref)) await loadResults();
-    const record = results.find(record => record.id === task.result_ref);
-    if (record) await requestBoardReview(task, record.r, record);
+    let record = results.find(record => record.id === task.result_ref);
+    if (!record) return;
+    if (task.source_id && task.source_id !== taskSources(task)[0].id) {
+      record = await resultAddCaptured(record.r, frozenTaskBuild(task.origin.build, task.request, task.origin.input_aliases),
+        task.origin.context, `${task.result_ref}:${task.source_id}`, userTasks.store.persistent);
+    }
+    resultMem.set(resultMemKey(task.origin.context.weapon, task.origin.context.preset), record);
+    if (task.origin.board) await offerBoardSubmit({ body: task.origin.board, context: task.origin.context });
+    if (boardReviewEnabled()) await requestBoardReview(task, record.r, record);
   },
   async recover(task) {
     await loadResults();
@@ -52,17 +57,20 @@ USER_TASK_TYPES.set("simulation", {
 function simulationTaskForPage() {
   if (!userTasks || !META || !$("weapon").value) return null;
   const candidates = userTasks.view().filter((task) => task.kind === "simulation" && userTaskActive(task)
-    && task.origin.context.weapon === presetWeapon() && task.origin.context.preset === activePreset && task.request.runs === simRuns());
+    && taskSources(task).some(source => source.origin.context?.weapon === presetWeapon() && source.origin.context?.preset === activePreset) && task.request.runs === simRuns());
   if (!candidates.length) return null;
   const key = simKey();
-  return candidates.find((task) => task.origin.context.key === key) || null;
+  return candidates.find((task) => taskSources(task).some(source => source.origin.context?.key === key)) || null;
 }
 function simulationResultForPage() {
   if (!userTasks || activePreset) return null;
   const key = simKey();
   const task = userTasks.view().slice().reverse().find((task) => task.kind === "simulation" && task.state === "succeeded"
-    && task.origin.context.weapon === presetWeapon() && !task.origin.context.preset && task.origin.context.key === key);
-  return task ? results.find((record) => record.id === task.result_ref) || null : null;
+    && taskSources(task).some(source => source.origin.context?.weapon === presetWeapon() && !source.origin.context?.preset && source.origin.context?.key === key));
+  if (!task) return null;
+  const source = taskSources(task).find(source => source.origin.context?.weapon === presetWeapon() && !source.origin.context?.preset && source.origin.context?.key === key);
+  const id = source.id === taskSources(task)[0].id ? task.result_ref : `${task.result_ref}:${source.id}`;
+  return results.find(record => record.id === id) || null;
 }
 function renderSimulationTask(redrawResult = false) {
   const box = $("sim-results"), btn = $("run-sim");
@@ -238,37 +246,23 @@ function boardReviewEffective(value, weapon, buffs) {
   return body;
 }
 async function matchingBoardReview(task) {
-  if (!task.origin.fight || task.engine !== ENGINE_ID) return null;
+  if (task.engine !== ENGINE_ID) return null;
   if (!benchList().some(bench => task.request.runs === bench.scenario.runs
     && (!task.origin.benchmark || task.origin.benchmark === bench.id))) return null;
-  const weapon = task.request.weapon, w = weaponInfo(weapon);
+  const weapon = task.request.weapon;
   await loadBoard(weapon);
   if (!BOARD_HAVE.has(weapon)) throw new Error("The board is unavailable.");
-  const mods = JSON.stringify((task.request.mods || []).map(id => isRivenId(id) ? BOARD_RIVEN_SLOT : id));
+  const input = await api("/api/computation/input", { kind: "simulation", request: task.request });
+  if (!input?.ok) return null;
+  const mods = JSON.stringify((input.request.mods || []).map(id => isRivenId(id) ? BOARD_RIVEN_SLOT : id));
   const rows = taskClone((BOARD[weapon] || []).filter(row => JSON.stringify((row.mods || []).concat(row.exilus ? [row.exilus] : [])) === mods));
-  if (!rows.length) return null;
-  const panel = await api("/api/panel", task.request);
-  if (!Array.isArray(panel?.buffs)) return null;
-  const buffs = new Map(panel.buffs.map(buff => [buff.id, buff]));
-  const captured = boardReviewRequest(boardReviewEffective(task.request, weapon, buffs));
-  const matches = new Map(), actualFight = taskClone(task.origin.fight); delete actualFight.__weapon;
-  const fightKey = JSON.stringify(boardReviewCanonical(boardReviewEffective(actualFight, weapon, buffs)));
   for (const row of rows) {
     if ((row.mode || "base") !== task.request.mode || (task.origin.benchmark && row.benchmark !== task.origin.benchmark)) continue;
     const bench = benchList().find(item => item.id === row.benchmark);
     if (!bench || task.request.runs !== bench.scenario.runs) continue;
-    const contact = 2 * (Number(META.body_radius_m) || 0.25);
-    const fight = headlessScenarioOnto(META, bench.scenario, contact, bench.scenario.metric);
-    if (!matches.has(bench.id)) matches.set(bench.id, JSON.stringify(boardReviewCanonical(boardReviewEffective(fight, weapon, buffs))) === fightKey);
-    if (!matches.get(bench.id)) continue;
-    const state = boardRowState(w, row);
-    const rivens = (state.slots || []).map(slot => slot.mod).filter(isRivenId).map(id => ({
-      id: id.slice(RIVEN_PREFIX.length), name: "", spec: rivenSpecFor(id, weapon)?.spec }));
-    const reference = { ...headlessSeat(META, state, wielderPayloadOf(state.wielder || { frame: PROTOTYPE_ID, preset: "" })),
-      rivens, ...fight, runs: bench.scenario.runs, custom_enemies: [], also_acting: [] };
-    if (boardReviewRequest(boardReviewEffective(reference, weapon, buffs)) !== captured) continue;
-    const ordered = await api("/api/board/order", { record: boardReviewRecord(weapon, row), ruler: row.benchmark, mode: row.mode || "base" });
-    if (!ordered?.ok || !/^[a-f0-9]{32}$/.test(ordered.identity || "")) continue;
+    const ordered = await api("/api/board/order", { record: boardReviewRecord(weapon, row), ruler: row.benchmark,
+      mode: row.mode || "base", observation: task.request });
+    if (!ordered?.ok || ordered.matches_observation !== true || !/^[a-f0-9]{32}$/.test(ordered.identity || "")) continue;
     return { row, identity: ordered.identity, ruler: row.benchmark, mode: row.mode || "base", weapon };
   }
   return null;
@@ -276,19 +270,26 @@ async function matchingBoardReview(task) {
 async function requestBoardReview(task, result, record) {
   const matched = await matchingBoardReview(task);
   if (!matched) return;
-  const measured = metricValue(metricOf((benchList().find(bench => bench.id === matched.ruler)?.scenario || {}).metric), result);
-  const old = matched.row.score, by = String(matched.row.measured_by || "").replace(/^verified:/, "");
-  if (by === task.engine && Math.abs(measured - old) <= 1e-12 * Math.max(Math.abs(measured), Math.abs(old))) return;
+  const metric = metricOf((benchList().find(bench => bench.id === matched.ruler)?.scenario || {}).metric);
+  const measured = metricValue(metric, result);
+  const old = matched.row.score;
+  if (!Number.isFinite(measured) || !Number.isFinite(old)) return;
+  if (Math.abs(measured - old) <= 1e-12 * Math.max(Math.abs(measured), Math.abs(old))) return;
   const id = "board-review-request:" + record.id;
   boardReviewTrackers.set(id, { id, identity: matched.identity, weapon: matched.weapon, ruler: matched.ruler, mode: matched.mode,
-    engine: task.engine, source: record.id, sources: [record.id], state: "submitting", phase: "Requesting board calibration" });
+    engine: task.engine, observed_score: measured, baseline_score: old, metric: metric.id,
+    request: structuredClone(task.request), source: record.id, sources: [record.id], state: "submitting", phase: "Requesting board calibration" });
   await saveBoardReviewTrackers(); renderBoardReviewNote(); scheduleUserTasks(); scheduleBoardReviews(0);
 }
 async function acceptBoardReview(task) {
   const response = await fetch("/api/board/review", { method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ identity: task.identity, ruler: task.ruler, mode: task.mode, engine: task.engine }), signal: timeoutSignal(15_000) });
+    body: JSON.stringify({ identity: task.identity, ruler: task.ruler, mode: task.mode, engine: task.engine,
+      observed_score: task.observed_score, baseline_score: task.baseline_score, metric: task.metric, request: task.request }), signal: timeoutSignal(15_000) });
   const accepted = await response.json().catch(() => null);
   if (!boardReviewTrackers.has(task.id)) return;
+  if (response.ok && accepted?.ok && accepted.skipped) {
+    boardReviewTrackers.delete(task.id); await saveBoardReviewTrackers(); return;
+  }
   if (!response.ok || !accepted?.ok) {
     if ([400, 404, 409].includes(response.status)) boardReviewTrackers.set(task.id, { ...task, state: "failed", error: accepted?.error });
     return;
@@ -307,7 +308,7 @@ async function saveBoardReviewTrackers() {
     const discarded = [...boardReviewTrackers.values()].find(task => !boardReviewActive(task)) || boardReviewTrackers.values().next().value;
     boardReviewTrackers.delete(discarded.id);
   }
-  const list = [...boardReviewTrackers.values()].slice(-50).map(({ id, review, identity, weapon, ruler, mode, engine, source, sources, state, publication, publication_attempts }) => ({ id, review, identity, weapon, ruler, mode, engine, source, sources, state, publication, publication_attempts }));
+  const list = [...boardReviewTrackers.values()].slice(-50).map(({ id, review, identity, weapon, ruler, mode, engine, observed_score, baseline_score, metric, request, source, sources, state, publication, publication_attempts }) => ({ id, review, identity, weapon, ruler, mode, engine, observed_score, baseline_score, metric, request, source, sources, state, publication, publication_attempts }));
   await queue.store.value("board-review-trackers", list);
 }
 function scheduleBoardReviews(ms = 10_000) {

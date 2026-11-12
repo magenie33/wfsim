@@ -17,375 +17,80 @@
 //! that arrives over the wire is an id an attacker chooses, and choosing one is
 //! choosing which stored build to overwrite.
 //!
-//! WHAT IT DOES NOT DO IS ADMIT. `validate_with` is the LEGALITY door — could a
-//! player equip this — and admission is the RULER's, asked per ruler in the
-//! scorer. The store is a library of builds and every ruler crosses the whole
-//! of it, so a build no current ruler would take is still worth keeping: the
-//! next ruler is scored from the library the day it lands.
+//! Legal builds are retained independently of board visibility. Captured plans
+//! describe the current boards and family; database admission decides whether
+//! the build is new or an exact-environment observation needs correction.
 
 use std::collections::BTreeMap;
 use std::io::{BufRead, Write};
 
 use serde_json::{json, Value};
 use wfsim_cli::args::flag;
-use wfsim_engine::board::benchmarks::family;
 
 fn id(rec: &Value, key: &str) -> String {
     rec.get(key).and_then(Value::as_str).unwrap_or("").to_string()
 }
 
-/// EVERY CORNER OF THE SHAPE, THE DEFAULT FIRST — and no fight to choose
-/// between them.
-///
-/// A SHAPE IS NOT A BUILD. The shape says which stats a riven rolled; a fight
-/// needs numbers, and for most stats the best number is obvious — every bonus
-/// at its ceiling, the malus at its floor, every card at max rank. That is the
-/// DEFAULT, and it is the answer for all but a few hundred builds.
-///
-/// A STAT LOSES ITS SIGN FOR A LISTED REASON (`build::rivens::ambiguous_stats`)
-/// AND A CARD LOSES ITS MAX RANK ONLY BY BEING NAMED in
-/// `data/search/every_rank.yaml`: a Status Duration malus is asked at each of
-/// its five rolls, because its best sits inside the band, and a listed card at
-/// each of its ranks. Each combination of those is a CORNER, and every corner
-/// is a build a player could go and assemble.
-///
-/// WHICH CORNER IS BEST IS A SCORE, AND A SCORE IS THE SCORER'S — so no fight
-/// is run here. The caller asks one for the DEFAULT alone (index 0); the rest
-/// are builds in the library with no fact yet, and what asks for them is the
-/// entry line, where the numbers already are (docs/BOARD.md §Rivens).
-fn corners_for(v: &wfsim_engine::board::builds::ValidBuild) -> Vec<wfsim_engine::board::builds::ValidBuild> {
-    let class = wfsim_engine::build::rivens::class_for_weapon(&v.weapon);
-    let rolls: Vec<Vec<f64>> = match (&v.riven, class) {
-        (None, _) => vec![Vec::new()],
-        (Some(_), None) => return Vec::new(),
-        (Some(shape), Some(_)) => wfsim_engine::build::rivens::corners(
-            shape,
-            &wfsim_engine::build::rivens::ambiguous_stats(shape, &v.weapon),
-        ),
-    };
-    let mods = rank_choices(v);
-    let with = |c: &(Vec<f64>, Vec<String>)| {
-        let mut b = v.clone().with_riven_rolls(c.0.clone());
-        b.mods = c.1.clone();
-        b
-    };
-    // THE DEFAULT FIRST, and the order is the contract: `rolls[0]` is the god
-    // roll and `mods[0]` is every card at max rank, both by construction.
-    let default = (rolls[0].clone(), mods[0].clone());
-    let mut out = vec![with(&default)];
-    out.extend(
-        rolls
-            .iter()
-            .flat_map(|r| mods.iter().map(move |m| (r.clone(), m.clone())))
-            .filter(|c| *c != default)
-            .map(|c| with(&c)),
-    );
-    out
-}
-
-
-/// EVERY MOD LIST A BUILD MAY BE STORED WITH, the build as it stands first:
-/// each card the every-rank list names at each of its ranks, crossed.
-fn rank_choices(v: &wfsim_engine::board::builds::ValidBuild) -> Vec<Vec<String>> {
-    let listed = &wfsim_engine::data::mods::every_rank().mods;
-    let pool = wfsim_engine::data::mods::pool_for_weapon(&v.weapon);
-    let mut out: Vec<Vec<String>> = vec![v.mods.clone()];
-    for (i, id) in v.mods.iter().enumerate() {
-        let Some(card) = pool.iter().find(|m| m.id == id.as_str() && listed.iter().any(|l| l == m.id))
-        else {
-            continue;
-        };
-        let lower: Vec<String> = (0..card.max_rank)
-            .map(|r| wfsim_engine::data::mods::ranked_id(card.id, r, card.max_rank))
-            .filter(|r| wfsim_engine::data::mods::at_rank(r).is_some())
-            .collect();
-        out = out
-            .into_iter()
-            .flat_map(|m| {
-                let at: Vec<Vec<String>> = lower
-                    .iter()
-                    .map(|r| {
-                        let mut x = m.clone();
-                        x[i] = r.clone();
-                        x
-                    })
-                    .collect();
-                std::iter::once(m).chain(at)
-            })
-            .collect();
-    }
-    out
-}
-
-/// THE FIGHT AN ARRIVAL NAMED, as a queue row — and this is the only place in
-/// the pipeline that can say it.
-///
-/// A BUILD HAS NO RULER AND NO MODE: `canonical` drops both on purpose, because
-/// mods are equipped on the WEAPON and a mode is how it is fired. So the fight
-/// a submitter actually ran is a property of the ARRIVAL, and it exists only
-/// here, for the length of this pass. Asked for now, it is the one row a build
-/// nothing has measured is owed; unasked, the reconciliation falls back to
-/// every row the build could have, which is the entry line paying 84 fights
-/// where one would do.
-///
-/// IT IS NOT GATED, and that is what it is for: somebody pressing upload is a
-/// person asking, so a build the entry line parked is re-measured on the fight
-/// they just ran it in. A mechanic that changed makes it come back by itself.
-/// `sent_ruler` and `sent_mode` are the INBOX record's, taken before the
-/// canonical one shadows it — that one has neither, which is the whole point.
-fn asked_row(
-    sent_ruler: &str,
-    sent_mode: &str,
-    owed: &[(String, String)],
-    key: &str,
-) -> Option<Value> {
-    // ONLY A ROW THE BOARD ADMITS. `owed` is `owed_rows`: a ruler the roster no
-    // longer has, an unsupported mode and a build the ruler refuses
-    // (a melee row with an empty stance slot) all ask for nothing, since no
-    // client's `/api/board/order` could open that row. The ruler is matched by
-    // family — a `_vN` record names the ruler it is a version of — and the mode
-    // sent is taken if that row is owed, else the ruler's first.
-    let mine: Vec<&(String, String)> = owed.iter().filter(|(r, _)| family(r) == family(sent_ruler)).collect();
-    let (ruler, mode) = mine.iter().find(|(_, m)| m == sent_mode).or_else(|| mine.first())?;
-    Some(json!({ "build_id": key, "ruler": ruler, "mode": mode }))
-}
-
-/// WHAT ONE PASS OF THE INBOX PRODUCES: the builds, the fights the arrivals
-/// named, and the inbox ids that may now be deleted.
-///
-/// A FUNCTION rather than a loop inside `main`, because the properties worth
-/// asserting are all about this: which records collapse onto one build, which
-/// do not, and what a refusal does with the row.
-/// AND A CLOCK ON THE PASS, because a pass that does not END banks nothing:
-/// `done` is written when this returns, so a run killed halfway has spent the
-/// CPU and left every row where it was — a pipeline that cannot converge
-/// however often it runs. It stops taking NEW records when the clock runs out;
-/// the rest are still owed and the next hour takes them.
+/// Normalize exact encountered builds and capture their current expansion.
+/// The database decides first registration, correction and active-ID reuse.
 fn intake(
     lines: impl Iterator<Item = String>,
     deadline: Option<std::time::Duration>,
-    mut orders: Option<&mut Vec<Value>>,
+    _orders: Option<&mut Vec<Value>>,
 ) -> (Vec<Value>, Vec<Value>, Vec<String>, usize, usize) {
     let started = std::time::Instant::now();
-    // ONE ROW PER BUILD, DEDUPED HERE TOO. Two inbox rows can be the same build
-    // — a resubmission is a second row in a queue on purpose — and emitting it
-    // twice would spend two writes on one row for no reason.
     let mut built: BTreeMap<String, Value> = BTreeMap::new();
-    // …AND THE FIGHT EACH ARRIVAL NAMED, deduped the same way: one row per
-    // (build, ruler, mode), because two people sending one build from one board
-    // are asking for one fight.
-    let mut asked: BTreeMap<String, Value> = BTreeMap::new();
-    // WHAT MAY BE DELETED FROM THE INBOX. A refused record is DONE, not
-    // retried: it will never become legal, and a queue that keeps what it
-    // cannot use grows for ever.
-    let mut done: Vec<String> = Vec::new();
-    let (mut seen, mut refused) = (0usize, 0usize);
-
-    let mut left = 0usize;
-    // …AND THE SAME RECORD IS ONLY PAID FOR ONCE. A resubmission is a second
-    // inbox row on purpose and the builds are deduped below, but the CORNER
-    // SEARCH runs before that dedupe and costs fights — so two copies of one
-    // riven build were two searches for one answer. The inbox held 997 rows
-    // over 745 distinct records the day this was written.
-    let mut already: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    let mut done = Vec::new();
+    let (mut seen, mut refused, mut left) = (0, 0, 0);
     for line in lines {
-        let line = line.trim();
-        if line.is_empty() {
-            continue;
-        }
-        // BEFORE THE RECORD, NEVER INSIDE IT: a record is taken whole or not at
-        // all, so `done` never names a row whose build did not come out.
-        if deadline.is_some_and(|d| started.elapsed() >= d) {
-            left += 1;
-            continue;
-        }
-        let Ok(row) = serde_json::from_str::<Value>(line) else { continue };
-        // THE RECORD TRAVELS AS AN OBJECT OR AS TEXT, because the database
-        // column is text and a local file may hold either.
+        if line.trim().is_empty() { continue; }
+        if deadline.is_some_and(|d| started.elapsed() >= d) { left += 1; continue; }
+        let Ok(row) = serde_json::from_str::<Value>(&line) else { continue };
         let rec = match row.get("record") {
-            Some(Value::String(s)) => serde_json::from_str::<Value>(s).unwrap_or(Value::Null),
-            Some(v) => v.clone(),
-            None => Value::Null,
+            Some(Value::String(s)) => serde_json::from_str(s).unwrap_or(Value::Null),
+            Some(v) => v.clone(), None => Value::Null,
         };
-        if !rec.is_object() {
-            continue;
-        }
         seen += 1;
-        done.push(id(&row, "id"));
-        if rec.get("kind").is_some() {
-            match wfsim_engine::board::equipment::canonical(&rec) {
-                Ok(record) => {
-                    let key = wfsim_engine::board::equipment::build_id(&record);
-                    let at = rec.get("at").and_then(Value::as_str).unwrap_or("");
-                    let entry = built.entry(key.clone()).or_insert_with(||
-                        json!({"id":key, "at":at, "record":record, "from":[]}));
-                    entry["from"].as_array_mut().unwrap().push(json!(id(&row, "id")));
-                }
-                Err(why) => { refused += 1; eprintln!("refused equipment: {why}"); }
-            }
-            continue;
-        }
-        // WHO ASKED (docs/BOARD.md §"Who asked"), the inbox row's, carried to
-        // the fight it named and nowhere else: never into the library.
-        let initiator = row.get("initiator").and_then(Value::as_str).map(str::to_owned);
-        // WHAT THIS RECORD ALREADY PRODUCED, if a copy of it came through
-        // earlier in this pass: the row is still DONE and the build still
-        // remembers it, and nothing has to be searched for again.
-        let rkey = format!("{}:{rec}", row.get("family_source").is_some_and(Value::is_string));
-        if let Some(keys) = already.get(&rkey) {
-            for k in keys {
-                // …and a fight or an order a copy asked for without a name takes this one's.
-                if let Some(who) = &initiator {
-                    for (_, ask) in asked.iter_mut().filter(|(ak, _)| ak.starts_with(&format!("{k}#"))) {
-                        if ask.get("initiator").is_none() {
-                            ask["initiator"] = json!(who);
-                        }
-                    }
-                    if let Some(sink) = orders.as_deref_mut() {
-                        for order in sink.iter_mut().filter(|o| o["build_id"] == json!(k)) {
-                            if order.get("initiator").is_none() {
-                                order["initiator"] = json!(who);
-                            }
-                        }
-                    }
-                }
-                if let Some(from) =
-                    built.get_mut(k).and_then(|b| b.get_mut("from")).and_then(Value::as_array_mut)
-                {
-                    let was = json!(id(&row, "id"));
-                    if !from.contains(&was) {
-                        from.push(was);
-                    }
-                }
-            }
-            continue;
-        }
-
-        let weapon = id(&rec, "weapon");
-        // THE LIBRARY'S DOOR, `board_rows::library_build` — the page's producer
-        // reads a submission with the same function, so the build it measures
-        // is the build this stores.
-        let v = match wfsim_webapi::board_rows::library_build(&rec) {
-            Ok(v) => v,
-            // THE REASON IS PRINTED, not counted. "2 refused" tells nobody
-            // anything, including the person who submitted them.
-            Err(why) => {
-                eprintln!("refused {weapon}: {why}");
-                refused += 1;
-                continue;
-            }
+        done.push(id(&row,"id"));
+        let normalized = if rec.get("kind").is_some() {
+            wfsim_engine::board::equipment::canonical(&rec).map(|record| {
+                (wfsim_engine::board::equipment::build_id(&record),record)
+            })
+        } else {
+            wfsim_webapi::board_rows::library_build(&rec).map(|v| {
+                let key = wfsim_engine::board::builds::build_id(&v);
+                let record = wfsim_webapi::board_rows::canonical_record(&v);
+                let record = if v.riven_rolls.is_empty() {record}
+                    else {wfsim_webapi::board_rows::with_rolls(record,&v.riven_rolls)};
+                (key,record)
+            })
         };
-        // THE FIGHT THIS ARRIVAL NAMED, read while the INBOX record is still in
-        // scope: the canonical one shadows it below and carries neither field.
-        let sent = (id(&rec, "benchmark"), id(&rec, "mode"));
-        let at = id(&row, "at");
-        // A RIVEN BECOMES ITS CORNERS, and a build without one is itself. The
-        // record that arrives states a SHAPE; what is stored is a build a player
-        // could go and assemble, which needs numbers.
-        let corners = corners_for(&v);
-        if corners.is_empty() {
-            eprintln!("refused {weapon}: its riven names a shape this engine cannot resolve");
-            refused += 1;
+        let (key,record) = match normalized {
+            Ok(value) => value,
+            Err(why) => { refused += 1; eprintln!("refused {}: {why}",id(&rec,"weapon")); continue; }
+        };
+        let event = format!("{key}|{}|{}",row.get("family_source").unwrap_or(&Value::Null),row.get("observation").unwrap_or(&Value::Null));
+        if let Some(entry) = built.get_mut(&event) {
+            entry["from"].as_array_mut().unwrap().push(json!(id(&row,"id")));
+            if entry["initiator"].is_null() && row["initiator"].is_string() {entry["initiator"]=row["initiator"].clone();}
             continue;
         }
-        for (nth, corner) in corners.into_iter().enumerate() {
-            // A CORNER'S MODS ARE CANONICALISED AGAIN: a lower rank drains
-            // less, and the representative orders plain cards by drain.
-            let v = match wfsim_engine::board::builds::validate_with(
-                &corner.weapon,
-                &corner.mods,
-                &corner.evolutions,
-                &corner.arcanes,
-                &corner.valence,
-                corner.riven.as_ref(),
-                corner.exilus.as_deref(),
-                corner.assembly.as_ref(),
-            ) {
-                Ok(b) => b.with_riven_rolls(corner.riven_rolls.clone()),
-                Err(why) => {
-                    eprintln!("refused {weapon} at {:?}: {why}", corner.mods);
-                    continue;
-                }
-            };
-            let rolls = v.riven_rolls.clone();
-            // THE ROLLS GO ON THE BUILD BEFORE THE KEY IS TAKEN. They are part
-            // of the fight, so they are part of the identity the id hashes —
-            // two ends of one shape are two builds with two numbers.
-            let key = wfsim_engine::board::builds::build_id(&v);
-            let rec = if rolls.is_empty() {
-                wfsim_webapi::board_rows::canonical_record(&v)
-            } else {
-                wfsim_webapi::board_rows::with_rolls(wfsim_webapi::board_rows::canonical_record(&v), &rolls)
-            };
-            // …AND WHICH QUEUE ROWS PRODUCED IT. Two records can be one build —
-            // a resubmission, or two spellings of one pairing — so the build
-            // knows what it came from, and the write that lands it is the write
-            // that spends them. It is not stored: it is true of this pass, not
-            // of the build.
-            let entry = built
-                .entry(key.clone())
-                .or_insert_with(|| json!({ "id": key, "at": at, "record": rec, "from": [] }));
-            if let Some(from) = entry.get_mut("from").and_then(Value::as_array_mut) {
-                let was = json!(id(&row, "id"));
-                if !from.contains(&was) {
-                    from.push(was);
-                }
-            }
-            already.entry(rkey.clone()).or_default().push(key.clone());
-            // THE FIGHT IS ASKED FOR THE DEFAULT CORNER ALONE. Every corner is
-            // a build and goes in the library; which of them is worth a fight
-            // is the ENTRY LINE's question, and the line is the scorer's. A
-            // riven nobody would publish costs one fight here, not four.
-            if nth > 0 {
-                continue;
-            }
-            if !row.get("family_source").is_some_and(Value::is_string) {
-                entry["family"] = json!(wfsim_webapi::board_family::transfers(&rec, &sent.0, &sent.1));
-            }
-            // …AND EVERY ROW IT OWES, AS A COMPUTE ORDER — the live board opens
-            // them the moment the build arrives (docs/BOARD.md §"Compute
-            // orders"); the queue's own reconciliation asks more slowly.
-            // ONE DOOR FOR BOTH: the rows the board admits this build on
-            // (`owed_rows`, through the `validate_for_board_with` that the
-            // scorer and `/api/board/order` use), so nothing is queued that no
-            // client can open.
-            let owed = wfsim_webapi::board_rows::owed_rows(&rec);
-            if let Some(sink) = orders.as_deref_mut() {
-                for (ruler, mode) in &owed {
-                    let mut order = json!({ "build_id": key, "ruler": ruler, "mode": mode });
-                    if let Some(who) = &initiator {
-                        order["initiator"] = json!(who);
-                    }
-                    sink.push(order);
-                }
-            }
-            // THE FIGHT THEY RAN IT IN. `sent` was taken before the canonical
-            // record shadowed the inbox one, which carries neither field.
-            // TWO PEOPLE ASKING ONE FIGHT are one row, and the first who asked
-            // with a name is the one it carries.
-            if let Some(mut ask) = asked_row(&sent.0, &sent.1, &owed, &key) {
-                if let Some(who) = &initiator {
-                    ask["initiator"] = json!(who);
-                }
-                let k = format!("{key}#{}#{}", id(&ask, "ruler"), id(&ask, "mode"));
-                match asked.get_mut(&k) {
-                    Some(was) if was.get("initiator").is_none() => {
-                        if let Some(who) = &initiator {
-                            was["initiator"] = json!(who);
-                        }
-                    }
-                    Some(_) => {}
-                    None => {
-                        asked.insert(k, ask);
-                    }
-                }
+        let mut entry=json!({"id":key,"at":row["at"],"record":record,"from":[id(&row,"id")]});
+        if rec.get("kind").is_none() {
+            let derived=row.get("family_source").is_some_and(Value::is_string);
+            entry["derived"]=json!(derived);
+            entry["initiator"]=row["initiator"].clone();
+            entry["flow"]=wfsim_webapi::board_flow::plan(&record,&id(&rec,"benchmark"),&id(&rec,"mode"),!derived,row.get("workflow_scope"));
+            entry["observation"]=wfsim_webapi::board_flow::observation(&record,row.get("observation"));
+            if let Some(source)=row["family_source"].as_str() {
+                let parts:Vec<_>=source.split('|').collect();
+                if parts.len()==3 && parts[0]=="workflow" {entry["flow_source"]=json!({"workflow":parts[1],"node":parts[2]});}
             }
         }
+        built.insert(event,entry);
     }
-    if left > 0 {
-        eprintln!("intake: {left} record(s) left for the next pass — the clock ran out");
-    }
-    (built.into_values().collect(), asked.into_values().collect(), done, seen, refused)
+    if left>0 {eprintln!("intake: {left} record(s) left for the next pass");}
+    (built.into_values().collect(),Vec::new(),done,seen,refused)
 }
 
 /// QUEUE ROWS THE BOARD DOES NOT ADMIT, read as `{build_id, ruler, mode, record}`
@@ -483,439 +188,62 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    fn arrival(id: &str, extra: Value) -> Value {
+        let mut row=json!({"id":id,"at":"2026-11-11","record":{"weapon":"burston_prime",
+            "mods":["serration","split_chamber","point_strike","vital_sense","hellfire","infected_clip","stormbringer","gilded_truth"],
+            "arcanes":["primary_merciless"]}});
+        row.as_object_mut().unwrap().extend(extra.as_object().unwrap().clone());row
+    }
+    fn run(rows: Vec<Value>) -> (Vec<Value>,Vec<Value>,Vec<String>,usize,usize) {
+        intake(rows.into_iter().map(|r|r.to_string()),None,None)
+    }
     #[test]
-    fn equipment_arrivals_are_canonical_and_owe_no_weapon_fights() {
-        let mut record = json!({"kind":"companion", "at":"2026-11-06", "build":{"companion":"sentinel", "mods":
-            wfsim_engine::data::companions::seatable_by("sentinel").take(10).map(|m| json!({"id":m.id})).collect::<Vec<_>>()}});
-        let first = json!({"id":"equipment:a", "record":record}).to_string();
-        record["build"]["mods"].as_array_mut().unwrap().reverse();
-        let second = json!({"id":"equipment:b", "record":record}).to_string();
-        let mut orders = Vec::new();
-        let (builds, asked, done, seen, refused) = intake([first,second].into_iter(), None, Some(&mut orders));
-        assert_eq!((seen,refused,done.len(),builds.len()), (2,0,2,1));
-        assert_eq!(builds[0]["record"]["kind"], "companion");
-        assert_eq!(builds[0]["from"].as_array().unwrap().len(), 2);
-        assert!(asked.is_empty() && orders.is_empty());
+    fn canonical_builds_merge_modes_and_equivalent_spellings() {
+        let a=arrival("a",json!({}));let mut b=a.clone();b["id"]=json!("b");b["record"]["mode"]=json!("base");
+        b["record"]["mods"][0]=json!("split_chamber");b["record"]["mods"][1]=json!("serration");
+        let (builds,asked,done,..)=run(vec![a,b]);
+        assert_eq!(builds.len(),1);assert_eq!(builds[0]["from"].as_array().unwrap().len(),2);
+        assert_eq!(done.len(),2);assert!(asked.is_empty());assert!(builds[0]["record"].get("mode").is_none());
     }
-
-    fn family_arrival(derived: bool, riven: bool) -> String {
-        let mut record = json!({ "weapon": "burston_prime", "mods": ["serration", "split_chamber", "point_strike",
-            "vital_sense", "hellfire", "infected_clip", "stormbringer", "gilded_truth"], "arcanes": ["primary_merciless"] });
-        if riven {
-            record["mods"][0] = json!("riven");
-            record["riven_pos"] = json!(["critical_damage", "multishot"]);
-        }
-        let mut row = json!({ "id": if derived { "derived" } else { "original" }, "at": "2026-11-01", "record": record });
-        if derived { row["family_source"] = json!("trusted-transfer"); }
-        row.to_string()
-    }
-
     #[test]
-    fn a_new_family_arrival_seeds_one_sibling_and_derived_arrivals_stop() {
-        for riven in [false, true] {
-            let (root, ..) = intake(vec![family_arrival(false, riven)].into_iter(), None, None);
-            assert!(!root.is_empty());
-            assert_eq!(root[0]["family"].as_array().unwrap().len(), 1);
-            assert_eq!(root[0]["family"][0]["source"], root[0]["id"]);
-            assert_eq!(root[0]["family"][0]["weapon"], "burston");
-            let (derived, ..) = intake(vec![family_arrival(true, riven)].into_iter(), None, None);
-            assert!(derived.iter().all(|b| b.get("family").is_none()));
-        }
+    fn captures_family_once_and_never_recurses_from_derived_output() {
+        let a=arrival("a",json!({}));let mut b=a.clone();b["id"]=json!("b");b["family_source"]=json!("workflow|parent|1");
+        let (builds,..)=run(vec![a,b]);assert_eq!(builds.len(),2);
+        let root=builds.iter().find(|b|b["derived"]==false).unwrap();
+        assert!(root["flow"]["nodes"].as_array().unwrap().iter().any(|n|n["kind"]=="optimize"));
+        let child=builds.iter().find(|b|b["derived"]==true).unwrap();
+        assert!(child["flow"]["nodes"].as_array().unwrap().iter().all(|n|n["kind"]=="measure"));
+        assert_eq!(child["flow_source"],json!({"workflow":"parent","node":"1"}));
     }
-
     #[test]
-    fn an_independent_arrival_is_not_hidden_by_a_derived_copy_in_the_same_pass() {
-        let (builds, ..) = intake(vec![family_arrival(true, false), family_arrival(false, false)].into_iter(), None, None);
-        assert_eq!(builds.len(), 1);
-        assert_eq!(builds[0]["family"].as_array().unwrap().len(), 1);
+    fn two_parent_continuations_of_one_build_both_survive() {
+        let a=arrival("a",json!({"family_source":"workflow|parent|1"}));
+        let b=arrival("b",json!({"family_source":"workflow|parent|2"}));
+        let (builds,..)=run(vec![a,b]);assert_eq!(builds.len(),2);assert_eq!(builds[0]["id"],builds[1]["id"]);
+        assert_ne!(builds[0]["flow_source"],builds[1]["flow_source"]);
     }
-
-    /// A record as the door stores one, around a mod list.
-    fn row(inbox_id: &str, mods: &[&str], extra: Value) -> String {
-        let mut rec = json!({ "weapon": "torid", "mods": mods });
-        if let (Some(o), Some(e)) = (rec.as_object_mut(), extra.as_object()) {
-            for (k, v) in e {
-                o.insert(k.clone(), v.clone());
-            }
-        }
-        json!({ "id": inbox_id, "at": "2026-01-01", "record": rec }).to_string()
-    }
-
-    const FULL: [&str; 8] = [
-        "galvanized_chamber",
-        "primed_firestorm",
-        "galvanized_scope",
-        "vital_sense",
-        "magnetic_capacity",
-        "primed_cryo_rounds",
-        "malignant_force",
-        "hellfire",
-    ];
-
-    fn ids_of(lines: Vec<String>) -> Vec<String> {
-        intake(lines.into_iter(), None, None)
-            .0
-            .iter()
-            .map(|b| b["id"].as_str().unwrap_or_default().to_string())
-            .collect()
-    }
-
-    /// THE MODE A SUBMITTER HAPPENED TO BE IN IS NOT A BUILD.
-    ///
-    /// Mods are equipped on the WEAPON and a mode is how it is fired, so nothing
-    /// about a build can become a different build by being played differently —
-    /// and one submission is already scored in every mode the weapon sustains.
-    /// The door's own key carried `mode` until this file existed, so the same
-    /// cards sent from two modes were two rows in a table whose whole promise is
-    /// one row per build.
     #[test]
-    fn one_build_sent_from_two_modes_is_one_build() {
-        let ids = ids_of(vec![
-            row("a", &FULL, json!({ "mode": "base" })),
-            row("b", &FULL, json!({ "mode": "cycle" })),
-            row("c", &FULL, json!({})),
-        ]);
-        assert_eq!(ids.len(), 1, "three records, one build: {ids:?}");
-        // …AND THE MODE IS NOT WRITTEN DOWN EITHER, or the record would state a
-        // property the build has not got.
-        let (builds, ..) = intake(vec![row("a", &FULL, json!({ "mode": "cycle" }))].into_iter(), None, None);
-        assert!(builds[0]["record"].get("mode").is_none(), "{}", builds[0]);
+    fn exact_mod_ranks_and_riven_rolls_are_entities() {
+        let a=arrival("a",json!({}));let mut b=a.clone();b["record"]["mods"][0]=json!("serration@2");
+        let (builds,..)=run(vec![a,b]);assert_eq!(builds.len(),2);assert_ne!(builds[0]["id"],builds[1]["id"]);
+        assert!(builds.iter().any(|b|b["record"]["mods"].as_array().unwrap().contains(&json!("serration@2"))));
     }
-
-    /// A RESUBMISSION IS ONE ROW, and the id is what makes it one — derived from
-    /// the build, so nothing has to read the table to find out.
     #[test]
-    fn the_same_build_twice_is_one_build() {
-        let ids = ids_of(vec![row("a", &FULL, json!({})), row("b", &FULL, json!({}))]);
-        assert_eq!(ids.len(), 1, "{ids:?}");
+    fn source_context_is_separate_from_the_build_entity() {
+        let (builds,..)=run(vec![arrival("a",json!({"initiator":"user:code"}))]);
+        assert_eq!(builds[0]["initiator"],"user:code");assert!(!builds[0]["record"].to_string().contains("user:code"));
     }
-
-    /// THE PAIRING IS THE BUILD, and the ORDER is how it is stated.
-    ///
-    /// Mods combine elements in the order they sit in, so a list that pairs the
-    /// same way is one build however it is spelled — and a list that pairs
-    /// differently is another one. Measured on this weapon: Heat/Cold/Toxin is
-    /// Blast plus Toxin where Cold/Toxin/Heat is Viral plus Heat, 12,424 DPS
-    /// against 46,583.
     #[test]
-    fn two_spellings_of_one_pairing_are_one_build_and_two_pairings_are_two() {
-        let head = &FULL[..5];
-        let same: Vec<&str> = head
-            .iter()
-            .chain(["malignant_force", "primed_cryo_rounds", "hellfire"].iter())
-            .copied()
-            .collect();
-        let other: Vec<&str> = head
-            .iter()
-            .chain(["hellfire", "primed_cryo_rounds", "malignant_force"].iter())
-            .copied()
-            .collect();
-        assert_eq!(
-            ids_of(vec![row("a", &FULL, json!({})), row("b", &same, json!({}))]).len(),
-            1,
-            "Cold+Toxin and Toxin+Cold are both Viral"
-        );
-        assert_eq!(
-            ids_of(vec![row("a", &FULL, json!({})), row("b", &other, json!({}))]).len(),
-            2,
-            "Heat+Cold is Blast, and that is a different fight"
-        );
+    fn legality_and_board_visibility_are_separate() {
+        let a=json!({"id":"a","at":"2026-11-11","record":{"weapon":"braton","mods":["serration"]}});
+        let bad=json!({"id":"bad","record":{"weapon":"missing","mods":[]}});
+        let (builds,asked,done,seen,refused)=run(vec![a,bad]);
+        assert_eq!((builds.len(),done.len(),seen,refused),(1,2,2,1));assert!(asked.is_empty());
     }
-
-    /// AN ID IS THE BUILD'S OWN, AND IT IS STABLE. Two passes agree, and it is
-    /// the shape a database key has to be.
     #[test]
-    fn the_id_is_derived_and_stable() {
-        let one = ids_of(vec![row("a", &FULL, json!({}))]);
-        let two = ids_of(vec![row("b", &FULL, json!({}))]);
-        assert_eq!(one, two, "the same build hashes the same twice");
-        assert_eq!(one[0].len(), 32, "128 bits of hex: {}", one[0]);
-        assert!(one[0].chars().all(|c| c.is_ascii_hexdigit()), "{}", one[0]);
-    }
-
-    /// A RECORD NOBODY COULD EQUIP IS DONE, NOT RETRIED. It will never become
-    /// legal, and a queue that keeps what it cannot use grows for ever.
-    /// A NEW BUILD OWES EVERY ROW IT CAN BE SCORED ON, and only those — each
-    /// filed under the build this pass derives, which is the id the library
-    /// stores it under. An Incarnon weapon owes a row per form on every ruler.
-    #[test]
-    fn a_new_build_opens_an_order_for_every_row_it_owes() {
-        let rec = json!({
-            "weapon": "braton_prime",
-            "mods": ["hellfire", "primary_acuity", "galvanized_aptitude", "hammer_shot",
-                     "speed_trigger", "vigilante_fervor", "vital_sense", "magnetic_capacity"],
-            "evolutions": ["braton_prime_evo1_incarnon_form", "braton_prime_daring_reverie",
-                           "braton_prime_voids_guidance", "braton_prime_prelude_of_might"],
-            "arcanes": ["primary_deadhead"],
-        });
-        let line = json!({ "id": "o", "at": "2026-10-07", "record": rec }).to_string();
-        let mut orders = Vec::new();
-        let (builds, ..) = intake(vec![line].into_iter(), None, Some(&mut orders));
-        assert_eq!(builds.len(), 1);
-        let rulers = wfsim_engine::board::benchmarks::all().len();
-        assert_eq!(orders.len(), rulers * 2, "every ruler, both forms: {orders:?}");
-        assert!(orders.iter().all(|o| o["build_id"] == builds[0]["id"]), "filed under another build");
-        assert!(orders.iter().any(|o| o["mode"] == "cycle") && orders.iter().any(|o| o["mode"] == "base"));
-    }
-
-    /// An arrival opens only supported rows admitted by its ruler.
-    #[test]
-    fn the_fight_an_arrival_named_is_asked_only_where_the_board_admits_it() {
-        let mods = |stance: Option<&'static str>| {
-            let mut m = vec!["primed_fever_strike", "vicious_frost", "volcanic_edge", "condition_overload",
-                             "primed_fury", "weeping_wounds", "magnetic_rush", "organ_shatter"];
-            m.extend(stance);
-            m
-        };
-        let line = |id: &str, stance: Option<&'static str>| json!({ "id": id, "at": "2026-10-13", "record": {
-            "weapon": "magistar", "mods": mods(stance),
-            "evolutions": ["magistar_evo1_incarnon_form", "magistar_edge_of_justice",
-                           "magistar_seismic_slam", "magistar_subtle_force"],
-            "arcanes": ["melee_duplicate"], "exilus": "dreamers_wrath",
-            "benchmark": "standard_single_target", "mode": "slide",
-        }}).to_string();
-        for (id, stance) in [("bare", None), ("stance", Some("crushing_ruin"))] {
-            let (builds, asked, ..) = intake(vec![line(id, stance)].into_iter(), None, None);
-            assert_eq!(builds.len(), 1, "the library keeps the {id} build");
-            assert_eq!(asked.len(), 1, "the supported {id} input is admitted: {asked:?}");
-            assert_eq!((asked[0]["ruler"].as_str(), asked[0]["mode"].as_str()), (Some("standard_single_target"), Some("slide")));
-        }
-    }
-
-    /// THE SWEEP NAMES A QUEUED ROW THE BOARD REFUSES, WITH ITS REASON, and
-    /// passes one it admits.
-    #[test]
-    fn the_sweep_names_only_rows_the_board_refuses() {
-        let bare = json!({ "weapon": "magistar",
-            "mods": ["primed_fever_strike", "vicious_frost", "volcanic_edge", "condition_overload",
-                     "primed_fury", "weeping_wounds", "magnetic_rush", "organ_shatter"],
-            "evolutions": ["magistar_evo1_incarnon_form", "magistar_edge_of_justice",
-                           "magistar_seismic_slam", "magistar_subtle_force"],
-            "arcanes": ["melee_duplicate"] });
-        let mut stance = bare.clone();
-        if let Some(m) = stance["mods"].as_array_mut() {
-            m.push(json!("crushing_ruin"));
-        }
-        let mut incomplete = bare.clone();
-        incomplete["weapon"] = json!("corufell_prime");
-        incomplete["evolutions"] = json!([]);
-        let q = |build: &str, rec: &Value, mode: &str| json!({ "build_id": build, "ruler": "standard_single_target", "mode": mode, "record": rec }).to_string();
-        let (refused, why) = sweep_admission(vec![
-            q("bare", &bare, "slide"), q("stance", &stance, "slide"), q("incomplete", &incomplete, "block"),
-        ].into_iter());
-        assert_eq!(refused, vec![json!({ "build_id": "incomplete", "ruler": "standard_single_target", "mode": "block" })]);
-        assert_eq!(why.get("an unsupported or unsustainable mode"), Some(&1), "{why:?}");
-    }
-
-    #[test]
-    fn a_refused_record_leaves_the_inbox() {
-        let (builds, _, done, seen, refused) = intake(
-            vec![
-                json!({"id":"bad","at":"d","record":{"weapon":"not_a_weapon","mods":[]}}).to_string(),
-                row("good", &FULL, json!({})),
-            ]
-            .into_iter(),
-            None,
-            None,
-        );
-        assert_eq!((seen, refused, builds.len()), (2, 1, 1));
-        assert_eq!(done, vec!["bad", "good"], "both rows are spent");
-    }
-
-    /// A RIVEN ARRIVES AS A SHAPE AND LEAVES AS A BUILD.
-    ///
-    /// What a player sends is which stats the card rolled; what a fight needs is
-    /// numbers, and which END of the band is best is the fight's answer rather
-    /// than the sign on the card. So every corner is asked, on every ruler and
-    /// every mode, and what is stored is the winner — or the winnerS, when two
-    /// fights disagree.
-    ///
-    /// THE ROLLS ARE IN THE ID, and the assertion below is why: two ends of one
-    /// shape are two builds with two numbers, and an id that could not tell them
-    /// apart would file the second under the first's.
-    ///
-    /// IT RUNS FIGHTS, which is what makes it slow and what makes it worth
-    /// having — the alternative is a per-stat table that is wrong on the three
-    /// weapons whose Incarnon pays for NOT critting.
-    #[test]
-    fn a_riven_is_stored_with_the_numbers_a_fight_chose() {
-        let rec = json!({
-            "weapon": "braton_prime",
-            "mods": ["serration", "split_chamber", "riven"],
-            "riven_pos": ["critical_damage", "damage"],
-            "riven_neg": "zoom",
-        });
-        let line = json!({ "id": "u1", "at": "2026-01-01", "record": rec }).to_string();
-        let (builds, .., refused) = intake(vec![line].into_iter(), None, None);
-        assert_eq!(refused, 0, "a legal riven build is not refused");
-        assert!(!builds.is_empty(), "a riven shape resolves to at least one build");
-
-        for b in &builds {
-            let rolls = b["record"]["riven_rolls"].as_array().expect("rolls are stored");
-            assert_eq!(rolls.len(), 3, "two bonuses and a malus: {rolls:?}");
-            // EVERY CORNER IS AN END OF THE BAND, never something between.
-            for r in rolls {
-                let r = r.as_f64().unwrap_or_default();
-                assert!(r == 0.9 || r == 1.1, "a corner is an end of the band: {r}");
-            }
-            // A STAT THE FIGHT CANNOT READ GOES TO THE PLAYER. Zoom scores the
-            // same at both ends against one standing target, and the board is
-            // publishing a card somebody will go and try to obtain.
-            assert_eq!(rolls[2].as_f64(), Some(0.9), "the malus is at its floor: {rolls:?}");
-        }
-        // …AND TWO CORNERS ARE TWO IDS, which is what keeps them apart.
-        let ids: std::collections::BTreeSet<&str> =
-            builds.iter().filter_map(|b| b["id"].as_str()).collect();
-        assert_eq!(ids.len(), builds.len(), "each corner has its own id");
-    }
-
-    /// A RANK ARRIVING ON A CARD THE EVERY-RANK LIST DOES NOT NAME IS DROPPED:
-    /// investment is not a choice, so that card is stored at max rank.
-    #[test]
-    fn a_submitted_rank_is_stored_at_max() {
-        let mut mods = FULL.to_vec();
-        mods[3] = "vital_sense@2";
-        let (builds, .., refused) = intake(vec![row("r", &mods, json!({}))].into_iter(), None, None);
-        assert_eq!((refused, builds.len()), (0, 1));
-        let stored: Vec<&str> = builds[0]["record"]["mods"]
-            .as_array()
-            .expect("mods")
-            .iter()
-            .filter_map(Value::as_str)
-            .collect();
-        assert!(stored.contains(&"vital_sense"), "{stored:?}");
-        assert_eq!(ids_of(vec![row("r", &mods, json!({}))]), ids_of(vec![row("f", &FULL, json!({}))]));
-    }
-
-    /// A CARD THE LIST NAMES IS ASKED AT EVERY RANK, and two such cards at
-    /// every PAIR of ranks: Hunter Track's six by Continuous Misery's four.
-    #[test]
-    fn every_listed_card_is_crossed_at_every_rank() {
-        let mods: Vec<String> = ["hunter_track", "continuous_misery", "serration"].map(String::from).to_vec();
-        let v = wfsim_engine::board::builds::validate("braton_prime", &mods, &[], &[], "").expect("legal");
-        let choices = rank_choices(&v);
-        assert_eq!(choices.len(), 6 * 4);
-        assert_eq!(choices[0], v.mods, "the build as it stands comes first");
-        assert!(choices.iter().any(|m| m.contains(&"hunter_track@0".to_string())
-            && m.contains(&"continuous_misery@2".to_string())));
-        assert!(choices.iter().all(|m| m.contains(&"serration".to_string())), "an unlisted card is pinned");
-    }
-
-    /// ADMISSION IS THE RULER'S, NOT THIS FILE'S. A thin build is legal to
-    /// equip and is kept: the store is a library and every ruler crosses the
-    /// whole of it, so a build no current ruler would take is what the NEXT
-    /// ruler is scored from the day it lands.
-    #[test]
-    fn a_build_no_ruler_would_admit_is_still_a_build() {
-        let ids = ids_of(vec![row("a", &["serration"], json!({}))]);
-        assert_eq!(ids.len(), 1, "one legal mod is a legal build");
-    }
-
-    fn asked_of(lines: Vec<String>) -> Vec<Value> {
-        intake(lines.into_iter(), None, None).1
-    }
-
-    /// AN ARRIVAL THE BOARD ADMITS on every ruler — an Incarnon weapon with all
-    /// four tiers, since a ruler refuses one without them — and the fight it was
-    /// run in.
-    fn admitted(inbox_id: &str, ruler: &str, mode: &str) -> String {
-        json!({ "id": inbox_id, "at": "2026-01-01", "record": {
-            "weapon": "braton_prime",
-            "mods": ["hellfire", "primary_acuity", "galvanized_aptitude", "hammer_shot",
-                     "speed_trigger", "vigilante_fervor", "vital_sense", "magnetic_capacity"],
-            "evolutions": ["braton_prime_evo1_incarnon_form", "braton_prime_daring_reverie",
-                           "braton_prime_voids_guidance", "braton_prime_prelude_of_might"],
-            "arcanes": ["primary_deadhead"],
-            "benchmark": ruler, "mode": mode,
-        }}).to_string()
-    }
-
-    /// **THE FIGHT THE SUBMITTER RAN IS ASKED FOR**, and it is the only thing
-    /// that can be: `canonical` drops the ruler and the mode, so after this
-    /// pass nothing in the pipeline knows what board they were on.
-    #[test]
-    fn an_arrival_asks_for_the_fight_it_named() {
-        let asked = asked_of(vec![admitted("a", "standard_multi_target", "cycle")]);
-        assert_eq!(asked.len(), 1, "one arrival, one fight");
-        assert_eq!(asked[0]["ruler"], "standard_multi_target");
-        assert_eq!(asked[0]["mode"], "cycle");
-    }
-
-    /// **TWO PEOPLE SENDING ONE BUILD FROM ONE BOARD ASK FOR ONE FIGHT**, and
-    /// from two boards for two — the row is keyed by what makes it a different
-    /// measurement, exactly as `scores` is.
-    #[test]
-    fn one_fight_per_build_ruler_and_mode() {
-        let asked = asked_of(vec![
-            admitted("a", "standard_multi_target", "cycle"),
-            admitted("b", "standard_multi_target", "cycle"),
-            admitted("c", "standard_single_target", "cycle"),
-        ]);
-        assert_eq!(asked.len(), 2, "{asked:?}");
-    }
-
-    /// **WHO ASKED TRAVELS WITH THE FIGHT, AND ONLY THERE**: the asked row
-    /// carries the inbox row's initiator, the first named one when two ask one
-    /// fight, and the library's build never carries it.
-    #[test]
-    fn who_asked_travels_with_the_fight_alone() {
-        let named = |inbox_id: &str, who: Option<&str>| {
-            let mut v: Value = serde_json::from_str(&admitted(inbox_id, "standard_multi_target", "cycle")).unwrap();
-            if let Some(w) = who {
-                v["initiator"] = json!(w);
-            }
-            v.to_string()
-        };
-        let (builds, asked, ..) = intake(vec![named("a", Some("user:x"))].into_iter(), None, None);
-        assert_eq!(asked[0]["initiator"], "user:x");
-        assert!(!builds[0].to_string().contains("user:x"), "the library never holds it: {}", builds[0]);
-        let asked = asked_of(vec![named("c", None), named("d", Some("user:z")), named("e", Some("anonymous"))]);
-        assert_eq!(asked.len(), 1);
-        assert_eq!(asked[0]["initiator"], "user:z", "{asked:?}");
-        assert!(asked_of(vec![named("f", None)])[0].get("initiator").is_none());
-        // THE LIVE PATH'S ORDERS carry it too, a copy filling one that had none.
-        let mut orders = Vec::new();
-        intake(vec![named("g", None), named("h", Some("user:o"))].into_iter(), None, Some(&mut orders));
-        assert!(!orders.is_empty() && orders.iter().all(|o| o["initiator"] == "user:o"), "{orders:?}");
-        let mut orders = Vec::new();
-        intake(vec![named("i", None)].into_iter(), None, Some(&mut orders));
-        assert!(orders.iter().all(|o| o.get("initiator").is_none()), "{orders:?}");
-    }
-
-    /// **A MODE THE WEAPON CANNOT SUSTAIN IS NOT ASKED FOR.** The scorer
-    /// enumerates sustainable modes and matches the queue on that id, so a row
-    /// naming any other is a row nothing will ever take — and the build would
-    /// wait for a fight that never comes.
-    #[test]
-    fn an_unsustainable_mode_falls_back_to_one_that_is() {
-        let asked = asked_of(vec![admitted("a", "standard_single_target", "transformed")]);
-        assert_eq!(asked.len(), 1);
-        let modes: Vec<String> = wfsim_engine::data::weapons::play_modes("braton_prime")
-            .into_iter()
-            .filter(|m| m.sustainable)
-            .map(|m| if m.id.is_empty() { "base".to_string() } else { m.id.to_string() })
-            .collect();
-        let got = asked[0]["mode"].as_str().unwrap_or_default().to_string();
-        assert!(modes.contains(&got), "{got} is not sustainable on the Braton Prime");
-    }
-
-    /// **A RETIRED RULER ASKS FOR NOTHING.** `purge_queue` would delete the row
-    /// and the reconciliation covers the build anyway, so a record naming a
-    /// board the roster no longer has is not a build left waiting.
-    #[test]
-    fn a_ruler_the_roster_lost_asks_for_nothing() {
-        let asked = asked_of(vec![admitted("a", "a_board_that_was_retired", "base")]);
-        assert!(asked.is_empty(), "{asked:?}");
-    }
-
-    /// **AN OLDER VERSION OF A LIVE RULER IS THAT RULER.** Records in the store
-    /// name `standard_single_target_v1`, and a build aimed at it belongs on the current
-    /// one's board — the same `_vN` rule the scorer applies.
-    #[test]
-    fn an_older_version_of_a_ruler_asks_for_the_current_one() {
-        let asked = asked_of(vec![admitted("a", "standard_single_target_v1", "base")]);
-        assert_eq!(asked.len(), 1, "{asked:?}");
-        assert_eq!(asked[0]["ruler"], "standard_single_target");
+    fn equipment_keeps_its_own_entity_without_weapon_work() {
+        let a=json!({"id":"equipment:a","at":"2026-11-11","record":{"kind":"companion","build":{"companion":"sentinel","mods":wfsim_engine::data::companions::seatable_by("sentinel").take(10).map(|m|json!({"id":m.id})).collect::<Vec<_>>()}}});
+        let (builds,asked,..)=run(vec![a]);assert_eq!(builds.len(),1);assert_eq!(builds[0]["record"]["kind"],"companion");
+        assert!(builds[0].get("flow").is_none());assert!(asked.is_empty());
     }
 }

@@ -10,7 +10,7 @@ import { PGlite } from "./node_modules/@electric-sql/pglite/dist/index.js";
 import { pgDb, placeholders } from "../../worker/db.js";
 
 const PG_DIR = new URL("../../worker/pg/", import.meta.url);
-const DDL = { library: ["schema.sql", "library.sql", "sync.sql", "inventory.sql"], accounts: ["accounts.sql"] };
+const DDL = { library: ["schema.sql", "library.sql", "sync.sql", "inventory.sql", "build_workflows.sql"], accounts: ["accounts.sql"] };
 const ddl = (kind) => DDL[kind].map((f) => readFileSync(new URL(f, PG_DIR), "utf8")).join("\n");
 const profile = process.env.WFSIM_TEST_DB_TIMING === "1" || !!process.env.WFSIM_TEST_DB_TIMING_FILE;
 const phases = Object.fromEntries(["startup", "schema", "ddl", "search_path", "query", "exec", "transaction"].map(key => [key, { calls: 0, ms: 0 }]));
@@ -36,8 +36,9 @@ globalThis.setTimeout = function (fn, ms, ...args) {
 };
 
 // A COUNT OR A SUM IS A NUMBER, as POSTGRES_OPTIONS reads it on Hyperdrive.
-const pg = new PGlite({ parsers: { 20: (x) => Number(x), 1700: (x) => Number(x) } });
-let chain = timed("startup", () => pg.waitReady), current = null, opened = 0;
+const createPg = () => new PGlite({ parsers: { 20: (x) => Number(x), 1700: (x) => Number(x) } });
+let pg = createPg(), chain = timed("startup", () => pg.waitReady), current = null, opened = 0, epochSchemas = 0;
+const liveSchemas = new Set();
 
 /// ONE STEP AFTER EVERY ONE BEFORE IT, in `schema`.
 function step(schema, fn) {
@@ -65,6 +66,7 @@ const textOnly = (text) => {
 export async function testDb(...kinds) {
   const schema = `s${++opened}`;
   await step(null, () => timed("schema", () => pg.exec(`CREATE SCHEMA ${schema}`)));
+  liveSchemas.add(schema);epochSchemas++;
   await step(schema, () => timed("ddl", () => pg.exec(kinds.map(ddl).join("\n"))));
   const client = {
     query: (text, params) => step(schema, async () => rowsOf(await timed("query", () => pg.query(textOnly(text), params)))),
@@ -91,6 +93,13 @@ export async function testDb(...kinds) {
     get: async (sql, ...args) => (await q(sql, args)).rows[0] ?? null,
     all: async (sql, ...args) => (await q(sql, args)).rows,
     run: async (sql, ...args) => (await q(sql, args)).affected,
-    close: () => step(null, () => timed("schema", () => pg.exec(`DROP SCHEMA ${schema} CASCADE`))),
+    close: () => step(null, async () => {
+      await timed("schema", () => pg.exec(`DROP SCHEMA ${schema} CASCADE`));liveSchemas.delete(schema);
+      // PostgreSQL catalog caches outlive dropped schemas inside one WASM VM.
+      // Rotate only when every database has closed, keeping large books bounded.
+      if(!liveSchemas.size && epochSchemas>=64) {
+        await pg.close();pg=createPg();await timed("startup",()=>pg.waitReady);current=null;epochSchemas=0;
+      }
+    }),
   });
 }

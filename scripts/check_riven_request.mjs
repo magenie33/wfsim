@@ -98,8 +98,9 @@ await Promise.all(apps.map(async (app) => {
       const at = Object.fromEntries(((await api("/api/panel", buildPayload())).buffs || []).map((b) => [b.id, b]));
       request.buffs = Object.fromEntries(Object.entries(request.buffs || {}).filter(([id, c]) => at[id]
         && !(c.stacks === at[id].default_stacks && !!c.locked === !!at[id].default_locked)));
-      return JSON.stringify({ request,
-        context: { ...boardBuildContext(), rivens: { [appraisal.rivenMod]: boardRivenShape(appraisal.rivenMod) } } });
+      const normalized = await api("/api/computation/input", {kind:"optimization",request});
+      return JSON.stringify({ request:normalized.request,
+        context: computationReferences({ ...boardBuildContext(), rivens: { [appraisal.rivenMod]: boardRivenShape(appraisal.rivenMod) } },normalized.aliases) });
     })()`));
     const diff = parts(shown, { request: page.request, context: page.context });
     compared++;

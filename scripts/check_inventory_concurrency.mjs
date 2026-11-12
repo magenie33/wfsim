@@ -31,7 +31,7 @@ try {
     try { await a.unsafe('SELECT 1'); break; }
     catch (error) { if (attempt === 60) throw error; await pause(250); }
   }
-  await a.unsafe(['schema', 'library', 'sync'].map(ddl).join('\n') + '\n' + source);
+  await a.unsafe(['schema','library','sync','build_workflows'].map(ddl).join('\n') + '\n' + source);
   await check('old begin fails under a writer; new begin preserves its late dirty key', async () => {
     await a.unsafe(oldDefinition('inventory_begin'));
     await b.unsafe("BEGIN; INSERT INTO entity_weapon_builds(id,at,record) VALUES ('late','at','{}')");

@@ -26,6 +26,16 @@ mod prepared;
 
 pub use builds::BuildStream;
 
+pub(crate) fn task_request(v: &Value) -> Result<Value, Value> {
+    let plan = parse_optimize(v)?;
+    let mut out = v.clone();
+    for (key, value) in [("candidate_runs", json!(plan.candidate_runs)), ("finalists", json!(plan.finalists)),
+        ("max_evals", json!(plan.max_evals)), ("shards", json!(plan.shards)), ("shard", json!(plan.shard))] {
+        out[key] = value;
+    }
+    Ok(out)
+}
+
 pub fn optimize_check_json(v: &Value) -> Value { final_constraints::check(v) }
 #[cfg(test)]
 mod requirements_tests;
@@ -224,7 +234,7 @@ pub(crate) struct Replay {
     /// Per variant: mode, evolutions, progenitor element and modular parts.
     variants: Vec<(String, Vec<String>, Option<String>, Value)>,
     builds: BuildStream,
-    riven_shapes: std::collections::HashMap<&'static str, wfsim_engine::build::rivens::RivenShape>,
+    riven_specs: std::collections::HashMap<&'static str, wfsim_engine::build::rivens::RivenSpec>,
 }
 
 impl Replay {
@@ -1054,14 +1064,7 @@ fn parse_uncached(v: &Value) -> Result<OptimizePlan, Value> {
             .map(|&(mi, ei, li, ai)| (modes[mi].id.clone(), evo_sets[ei].clone(), valences.get(li).cloned(), assemblies[ai].clone()))
             .collect(),
         builds: BuildStream::default(),
-        riven_shapes: crate::rivens::riven_specs_from(&replay_base, info).into_iter().map(|(id, spec)| {
-            let mut bonuses: Vec<String> = spec.bonuses.into_iter().map(|s| s.id).collect();
-            bonuses.sort();
-            (id, wfsim_engine::build::rivens::RivenShape {
-                bonuses,
-                malus: spec.malus.map(|s| s.id),
-            })
-        }).collect(),
+        riven_specs: crate::rivens::riven_specs_from(&replay_base, info).into_iter().collect(),
     });
     // THE OPTIMIZER BUILDS NO FIGHT: a candidate is scored in the fight the
     // simulator builds from its request (`simulate::Entrant`), prepared once per

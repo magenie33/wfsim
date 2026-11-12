@@ -86,7 +86,7 @@ async function currentOracle(tag) {
   const meta = await captureInventory(sql, raw, engine); await oracle(raw, meta, tag);
 }
 try {
-  await pg.exec(['schema', 'library', 'sync', 'inventory'].map(n => readFileSync(new URL(`../worker/pg/${n}.sql`, import.meta.url), 'utf8')).join('\n'));
+  await pg.exec(['schema','library','sync','inventory','build_workflows'].map(n => readFileSync(new URL(`../worker/pg/${n}.sql`, import.meta.url), 'utf8')).join('\n'));
   await open();
   const seed = JSON.parse(readFileSync(new URL('../tests/gas/rows.json', import.meta.url))).slice(0, 3).map(r => r.record);
   const canonical = await native.call('describe', seed.map((record, i) => ({ id: String(i), record })));

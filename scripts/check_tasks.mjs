@@ -1,7 +1,7 @@
 import { seedComputeWork,seedComputeWorkMany,replaceComputeResult } from "./pg/fixtures.mjs";
 // THE FACT FACTORY'S TWO PROPERTIES (worker/tasks.js), on random books, with no
 // network: LIVENESS — a witness is handed nothing only when nothing exists that
-// it may answer, and otherwise the earliest deadline among what it may — and
+// it may answer, and otherwise the first eligible zone/FIFO entry — and
 // TERMINATION — with honest, lying and non-deterministic witnesses answering at
 // random, every question ends a fact or withdrawn once the official machines
 // have had their turn. Then the cases that once failed in production, one each.
@@ -62,7 +62,7 @@ const PRODUCERS = {
   q: { on_fact: async (env, d, fact) => { told.push({ ref: d.ref, canon: fact.canon }); } },
 };
 
-console.log("liveness: handed nothing only when nothing may be answered, else the waited-on, then the earliest deadline");
+console.log("liveness: handed nothing only when nothing may be answered, else zone order and FIFO");
 {
   let bad = 0, first = "", badPack = 0, firstPack = "";
   const trials = selection.cases.filter(row => row.family === "liveness");
@@ -93,7 +93,9 @@ console.log("liveness: handed nothing only when nothing may be answered, else th
           await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, ?, ?, ?, ?, 'c', '{}', 1, ?)`, id, a.engine, a.device, a.owner, a.net, iso(NOW));
           answers.push(a);
         }
-        qs.push({ id, verb, state, lanes, opened, due, leased, answers, waits });
+        const zone=pick(r,[0,1,3,99]);
+        await db.run("UPDATE state_compute_scheduling SET zone=?,zone_position=? WHERE id=?",zone,i+1,id);
+        qs.push({id,verb,state,lanes,opened,due,leased,answers,waits,zone,position:i+1});
       }
       const me = pick(r, devices), lanes = pick(r, [0, 1, 2, 4, 8]), before = r() < 0.3 ? NOW + Math.floor((r() - 0.5) * 3_600_000) : null;
       const siblings = devices.filter((d) => d.owner === me.owner).map((d) => d.device);
@@ -103,14 +105,14 @@ console.log("liveness: handed nothing only when nothing may be answered, else th
           || lanes >= Math.min(...q.lanes.filter((x) => x.after_ms <= NOW - q.opened).map((x) => x.lanes)))
         && (before === null || q.due < before)
         && !q.answers.some((a) => a.engine === "e1" && (siblings.includes(a.device) || a.owner === me.owner || (me.net && a.net === me.net)));
-      const eligible = qs.filter(may).sort((a, b) => b.waits - a.waits || a.due - b.due || (a.id < b.id ? -1 : 1));
+      const eligible = qs.filter(may).sort((a, b) => a.zone-b.zone || a.position-b.position);
       const w = { device: me.device, owner: me.owner, siblings, net: me.net, lanes, before: before === null ? null : iso(before) };
       // A PACK, by the same rule: the first `size` it may answer of a packable
       // verb that nobody waits on — read before `next` leases one of them — those
       // another witness answered first, on whatever engine.
       const size = 1 + Math.floor(r() * 5);
-      const packable = eligible.filter((q) => !q.waits && q.verb === "simulate"), led = (q) => q.answers.length > 0;
-      const packWant = [...packable.filter(led), ...packable.filter((q) => !led(q))].slice(0, size).map((q) => q.id);
+      const packable = eligible.filter((q) => !q.waits && q.verb === "simulate");
+      const packWant = packable.slice(0,size).map((q) => q.id);
       const pack = await f.nextPack(env, w, "e1", { n: size, lease_ms: 60_000, most: 1 }, NOW);
       const packGot = pack ? pack.questions.map((q) => q.question) : [];
       const sameSet = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
@@ -244,11 +246,10 @@ await runCase("fixed:shared-producers", async () => {
   await f.demand(env, { producer: "p", ref: "asked-again", verb: "optimize", request: { riven: "x" }, due_in_ms: 1000 }, "e1", NOW);
   check("a question already a fact on the served engine is told at once, unfought", told.length === 1 && told[0].ref === "asked-again");
   await f.demand(env, { producer: "p", ref: "next-release", verb: "optimize", request: { riven: "x" }, due_in_ms: 1000 }, "e2", NOW);
-  check("...and on another engine it opens again", (await db.get("SELECT state FROM state_compute_work")).state === "open");
-  const c = await f.next(env, { device: "c", owner: "oc", net: "nc" }, "e2", NOW);
-  await f.answer(env, { device: "c", owner: "oc", net: "nc" }, { lease: c.lease, engine: "e2", result: { build: "b", score: 5 }, work: 7 }, NOW);
-  check("...where one answer of the new engine that reproduces the old bits makes the fact again",
-    (await db.get("SELECT state, fact_engine FROM state_compute_work")).fact_engine === "e2");
+  check("another deployment reuses the accepted fact", (await db.get("SELECT state FROM state_compute_work")).state === "fact");
+  check("its execution provenance stays with the actual engine", (await db.get("SELECT fact_engine FROM state_compute_work")).fact_engine === "e1");
+  check("a later deployment does not create another execution round", (await db.get("SELECT count(*) AS n FROM entity_compute_tasks")).n===1);
+
 });
 await runCase("fixed:withdrawn", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
@@ -280,8 +281,8 @@ await runCase("fixed:withdrawn", async () => {
   await db.run("UPDATE relation_task_consumers SET state = 'served' WHERE ref = 'waited'");
   await f.demand(env, { producer: "p", ref: "swept", verb: "simulate", request: { row: 6 }, due_in_ms: 1000 }, "e2", NOW);
   const reopened = await db.get("SELECT state, waits FROM state_compute_work WHERE id = ?", waited);
-  check("a fact of another engine asked again opens waited on only if a live demand waits — a served one's wait is over",
-    reopened.state === "open" && Number(reopened.waits) === 0, JSON.stringify(reopened));
+  check("a deployment change keeps the accepted fact outside the execution queue",
+    reopened.state === "fact", JSON.stringify(reopened));
   check("an open question no demand asks for any more is withdrawn by the pack that picks it, which is the row behind",
     (await db.get("SELECT state FROM state_compute_work WHERE id = ?", orphan)).state === "withdrawn"
       && after && after.questions.length === 1 && after.questions[0].demands[0].ref === "behind", JSON.stringify(after));
@@ -743,10 +744,10 @@ await runCase("fixed:fair-share", async () => {
   const use = async (p, used, ms) => db.run("UPDATE state_producer_compute_usage SET used = ?, answer_ms = ? WHERE producer = ?", used, ms, p);
   await use("p", 0, 1000); await use("q", 0, 1000);
   const order = async (n) => { const out = []; for (let i = 0; i < n; i++) { const t = await f.next(env, who(), "e1", NOW); out.push(t && t.demands[0].producer); } return out.join(""); };
-  check("two producers of equal cost take turns, whoever is due first", (await order(4)) === "pqpq");
+  check("one zone retains admission order across producers", (await order(4)) === "pppp");
   await use("p", 0, 3000); await use("q", 0, 1000);
-  check("...and by compute: one that costs three times as much is handed a third as often", (await order(4)) === "pqqq");
-  const waited = await ask("q", "waited", 7_200_000, { waits: true });
+  check("usage accounting does not reorder a zone", (await order(4)) === "ppqq");
+  const waited = await ask("q", "waited", 7_200_000, { waits: true,zone:0 });
   await use("q", 1e9, 1000);
   const t = await f.next(env, who(), "e1", NOW);
   check("a question somebody waits on goes first, whatever its producer has used", t && t.question === waited);
@@ -759,6 +760,7 @@ await runCase("fixed:fair-share", async () => {
   check("...and one with nothing open is lifted to it, so it never comes back with a share banked",
     (await db.get("SELECT used FROM state_producer_compute_usage WHERE producer = 'r'")).used === (await db.get("SELECT min(used) AS used FROM state_producer_compute_usage WHERE producer IN ('p', 'q')")).used);
   await use("p", 0, 0);
+  await db.run("UPDATE state_compute_work SET lease=NULL,lease_until=NULL,leased_to=NULL");
   const w = who(), pk = await f.nextPack(env, w, "e1", { n: 9, lease_ms: 60_000, producer: "p" }, NOW);
   check("a pack holds one producer's rows", pk && pk.questions.every((x) => x.demands.every((d) => d.producer === "p")), JSON.stringify(pk && pk.questions.map((x) => x.demands[0].producer)));
   await f.answerPack(env, w, { lease: pk.lease, engine: "e1", answers: pk.questions.slice(0, 2).map((x) => ({ question: x.question, result: { score: 1 }, work: 1, compute_ms: 600 })), done: true }, NOW);
@@ -966,7 +968,10 @@ await runCase("fixed:demand-all-books", async () => {
   const oneAtATime = async (env, producers, asks, engine, now) => {
     const db = env.LIBRARY, at = iso(now), ids = [];
     for (const a of asks) ids.push(await questionId(a.verb, a.request));
+    const changed=new Set();
     for (const [k, { producer, ref, request, due_in_ms, payload = {}, lanes = null, waits = false }] of asks.entries()) {
+      changed.add(ids[k]);
+      const old=await db.get("SELECT question FROM relation_task_consumers WHERE producer=? AND ref=?",producer,ref);if(old)changed.add(old.question);
       const due = iso(now + due_in_ms);
       await db.run("SELECT compute_register_tasks(?1::text,?2::text,?3::text)",JSON.stringify([{id:ids[k],verb:asks[k].verb,
         request:canon(request),due_at:due,lanes:lanes ? JSON.stringify(lanes) : null,waits:waits ? 1 : 0,producer,initiator:null}]),engine,at);
@@ -974,18 +979,17 @@ await runCase("fixed:demand-all-books", async () => {
           ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
             due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`,
         producer, ref, ids[k], at, due, waits ? 1 : 0, JSON.stringify(payload));
+      // Current consumers settle at each admission boundary, including ref moves.
+      if((k+1)%250===0 || k===asks.length-1) {
+        for(const id of changed)await db.run("SELECT factory_restate(?)",id);
+        changed.clear();
+      }
     }
     const facts = await db.all(`SELECT q.*, EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.question = q.id AND a.engine = ?) AS served_answered
         FROM state_compute_work q WHERE q.id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
         AND q.state IN ('fact', 'spot', 'disputed', 'nondeterministic')`, engine, JSON.stringify([...new Set(ids)]));
     for (const q of facts) {
       const settled = q.state === "fact" || q.state === "spot";
-      if (settled ? q.fact_engine !== engine : !q.served_answered) {
-        await db.run("SELECT compute_open_task(?1::text,'engine_recalibration',?2::text,?3::text)",q.id,engine,at);
-        await db.run(`UPDATE state_compute_work SET waits=(SELECT COALESCE(max(l.waits),0) FROM relation_task_consumers l
-          WHERE l.question=state_compute_work.id AND l.state='live') WHERE id=?`,q.id);
-        continue;
-      }
       if (!settled) continue;
       const a = await db.get("SELECT * FROM record_candidate_answers WHERE question = ? AND canon = ? ORDER BY official DESC, id LIMIT 1", q.id, q.canon);
       const fact = { question: q.id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon, result: a ? JSON.parse(a.result) : null,
@@ -1020,10 +1024,10 @@ await runCase("fixed:demand-all-books", async () => {
   };
   const asksOf = (r, n) => Array.from({ length: 1 + Math.floor(r() * (r() < 0.3 ? 600 : 40)) }, () => ({
     producer: pick(r, ["p", "q", "w"]), ref: `r${Math.floor(r() * 60)}`, verb: "simulate", request: { n: Math.floor(r() * (n + 10)) },
-    due_in_ms: Math.floor(r() * 86_400_000), waits: r() < 0.15, lanes: r() < 0.3 ? pick(r, [[{ lanes: 8, after_ms: 0 }], [{ lanes: 2, after_ms: 0 }]]) : null,
+    trigger_id: `event-${r()}`, due_in_ms: Math.floor(r() * 86_400_000), waits: r() < 0.15, lanes: r() < 0.3 ? pick(r, [[{ lanes: 8, after_ms: 0 }], [{ lanes: 2, after_ms: 0 }]]) : null,
     payload: r() < 0.5 ? { k: Math.floor(r() * 9) } : undefined }));
   const state = async (db, said) => JSON.stringify([
-    (await db.all("SELECT * FROM state_compute_work ORDER BY id")).map(({task_id,result_id,...row})=>row), await db.all("SELECT * FROM relation_task_consumers ORDER BY producer, ref"),
+    (await db.all("SELECT * FROM state_compute_work ORDER BY id")).map(({task_id,result_id,zone_position,withdrawn_at,...row})=>row.state==='withdrawn'?{...row,due_at:null,producer:null,initiator:null,waits:null}:row), (await db.all("SELECT * FROM relation_task_consumers ORDER BY producer, ref")).map(row=>({...row,zone:row.zone??3})),
     await db.all("SELECT * FROM told_log ORDER BY ref, canon"), [...said].sort()]);
   const difference=(left,right,path="root")=>{
     if(JSON.stringify(left)===JSON.stringify(right))return null;
@@ -1079,6 +1083,45 @@ await runCase("fixed:eligibility-plan", async () => {
   walk(plan);
   check("a new engine still offers every eligible open question", plan["Actual Rows"] === open, JSON.stringify(plan));
   check("eligibility reads answers for the open field, not the engine's other answers", read <= 4 * open, `${read} answers for ${open} questions`);
+  await db.close();
+});
+
+console.log("\nlane eligibility reads only the selected questions' answers");
+await runCase("fixed:lane-answer-plan", async () => {
+  const db = await testDb("library"), open = 1000, cold = 20000;
+  await seedComputeWorkMany(db, Array.from({length:open+cold}, (_, i) => ({
+    id:'lane-'+String(i+1).padStart(5,'0'), state:i<open ? 'open' : 'fact',
+    due_at:'2026-10-29', opened_at:'2026-10-28',
+  })));
+  await db.exec(`UPDATE state_compute_work SET lanes = '[{"lanes":8,"after_ms":0}]';
+    INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at)
+    SELECT id, 'old', 'other', 'other', '', 'c', '{}', 1, opened_at FROM state_compute_work
+    WHERE state = 'fact' OR id = 'lane-00001';
+    ANALYZE state_compute_scheduling; ANALYZE record_candidate_answers;
+    ANALYZE relation_task_answer_evidence;
+    PREPARE lane_eligible(text,bigint,bigint,text,text,text,text,text,bigint,bigint) AS
+      SELECT id FROM factory_eligible($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      WHERE state = 'open' ORDER BY waits DESC, due_at, id LIMIT ${open}`);
+  for (const mode of ['force_generic_plan','force_custom_plan']) {
+    await db.exec(`SET plan_cache_mode = ${mode}`);
+    for (const lanes of [1,8]) {
+      const args = `'2026-10-29T12:00:00.000Z',0,${lanes},'fresh','["me"]','me','',NULL,7200,120`;
+      const rows = await db.all(`EXECUTE lane_eligible(${args})`);
+      check(`${mode}: a prior answer opens the lane gate; unanswered questions still need their lanes`,
+        rows.length === (lanes === 1 ? 1 : open) && rows[0]?.id === 'lane-00001', JSON.stringify(rows));
+      const row = await db.get(`EXPLAIN (ANALYZE, FORMAT JSON, TIMING OFF) EXECUTE lane_eligible(${args})`);
+      let reads = 0;
+      const walk = p => {
+        if (p['Relation Name'] === 'record_candidate_answers')
+          reads += Math.max(1, p['Actual Rows'] + (p['Rows Removed by Filter'] || 0)) * p['Actual Loops'];
+        for (const child of p.Plans || []) walk(child);
+      };
+      walk(row['QUERY PLAN'][0].Plan);
+      check(`${mode}, ${lanes} lanes: the lane gate never reads the closed answer history`,
+        reads <= 4 * open, `${reads} answer reads for ${open} open questions`);
+    }
+  }
+  await db.exec('DEALLOCATE lane_eligible; RESET plan_cache_mode');
   await db.close();
 });
 
@@ -1197,7 +1240,7 @@ await runCase("fixed:official-claim-books", async () => {
     const producers = pick(r, [null, [], ["p"], ["q"]]), max = 1 + Math.floor(r() * 5);
     const expected = rows.filter((q) => states.includes(q.state) && ["open", "disputed", "spot", "nondeterministic"].includes(q.state)
       && (q.state !== "open" || q.due < NOW) && !q.held && !(q.answered && !q.old) && (!producers || producers.includes(q.producer)))
-      .sort((a, b) => b.waits - a.waits || a.due - b.due || (a.id < b.id ? -1 : 1)).slice(0, max).map((q) => q.id);
+      .sort((a, b) => a.zone-b.zone || a.position-b.position).slice(0, max).map((q) => q.id);
     const actual = (await f.claim(env, { device: "official" }, { states, producers, max }, "e1", NOW)).map((q) => q.question);
     if (JSON.stringify(actual) !== JSON.stringify(expected)) { bad++; first ||= `trial ${trial}: ${actual} vs ${expected}`; }
     await db.close();

@@ -3,6 +3,18 @@
 `worker/tasks.js` preserves the factory API and composes independent modules.
 Business types register verbs and producers in `worker/factory.js`.
 
+Ordinary queue reconciliation recovers only work already recorded in the
+pending queue. Missing scores, newly added boards and library coverage do not
+create tasks through reconciliation. It does not purge pending work. Complete
+inventory capture requires an explicit `INVENTORY_ONLY=1` request. Operator
+rescore remains an explicit source.
+
+The legacy appraisal calibration endpoint acknowledges its disabled state
+without scanning the library or creating work. Completed optimizer measurements
+use the same observation entry as simulation.
+A matching local simulation requests review only when its numeric result
+differs; an engine identifier difference alone does not request review.
+
 Official scoring claims overdue questions before reading inputs.
 `fetch_score_inputs.mjs` resolves the claimed board references through indexed
 queue, build and fact keys in one repeatable-read snapshot. Its disk spool
@@ -23,7 +35,7 @@ only the current run's input.
 | `task_contract.js` | Canonical identity, witness independence and lifecycle constants |
 | `task_ledger.js` | Demand registration, deduplication, withdrawal and durable state access |
 | `task_dispatch.js` | Selection, claims, leases, renewal and release |
-| `task_usage.js` | Compute-cost accounting used by fair scheduling |
+| `task_usage.js` | Compute-cost accounting |
 | `task_verification.js` | Answers, agreement and verified facts |
 | `task_delivery.js` | Consumer delivery and retries |
 | `task_credit.js` | Idempotent contribution settlement and repayment |
@@ -41,6 +53,160 @@ Verb metadata declares official-producer restrictions. A new registered verb
 or producer requires no type-name branch in dispatch. Business callbacks remain
 owned by their producers. Lease-notification failure is observed without
 discarding the lease returned to the witness.
+
+## Computation identity and admission
+
+A computation ID is the first 32 hexadecimal characters of SHA-256 over the
+operation, a newline and canonical entity inputs. The operation declares the
+required output: a board measurement, a best-build search or a complete report.
+Inputs include the build, fight, seed, repetitions and search scope or budget.
+Engine and release identifiers, review tokens, retention windows, upload
+consent, source labels and executor thread counts do not participate.
+
+`/api/computation/input` materializes calculation inputs through the actual
+fight and search parsers. Simulation uses the existing build canonicalizer,
+retaining element pairing and the exilus seat. A riven is identified by its
+submitted stats, rolls, rank and polarity; local card names remain source
+context. Optimization retains start order and slot positions because the
+search algorithm consumes them. Missing mode retains its constructor semantics.
+The page, bot and family intake use this same endpoint or Rust function.
+`input_schema=1` identifies that admission contract without entering the hash.
+An older request producer must reload before admitting persistent shared work;
+older volunteers continue to execute compatible work.
+
+`compute_admit_tasks` admits inputs, the current execution round, every trigger
+snapshot and current consumer links in one transaction. A nonempty registered
+producer, reference and trigger identity are required. Repeating a trigger is
+idempotent; changing its payload is an identity conflict. A batch retains all
+trigger snapshots while its last occurrence sets the current consumer link.
+Deadlines and waiting priority may change without replacing a held lease.
+
+`state_compute_scheduling.id` is the unique computation key. Taking a lease
+keeps that entry occupied. Another source joins it and may promote its zone;
+it cannot add another queue entry or replace the held lease. Independent
+witnesses are execution attempts under that entry. Engine changes neither
+reopen results nor recreate disputes.
+
+The queue consists of zones `00` through `99`. Explicit human calculations use
+`00`, matching-environment corrections use `01`, and ordinary intake uses `03`.
+A system source may select any zone. Dispatch selects the first executable
+entry by zone, then FIFO position within that zone. A source promotion joins
+the destination tail. Dependencies, unsupported capabilities and held leases
+are eligibility constraints. They do not block other executable entries.
+Sustained earlier-zone work can delay later zones; producer usage and deadlines
+do not reorder a zone.
+
+A build workflow keeps every participating computation occupied until all its
+required steps finish, including accepted output, durable delivery and derived
+build intake. An ordinary source reuses a finished child while its parent remains active.
+A fresh explicit recalculation can require another execution round within that
+occupied entry; its input ID and active queue position remain held. Queued or
+running requests merge their sources, highest priority and latest required
+engine without replacing a held lease. After terminal closure, a new explicit
+source may request a later execution under the same computation ID. A confirmed invalidation fences
+an attempt within the occupied entry and records its system cause; the parent
+continues to refer to its current attempt. Prior inputs and results remain
+immutable history.
+
+`relation_compute_task_sources` preserves each trigger snapshot separately from
+`relation_task_consumers`, which owns current delivery. Workflow triggers retain
+first intake, observations and system commands, even when they coalesce. Task
+archives include source relations and immutable requirement snapshots. Delivery
+binds the selected result and execution round, so an equal output from an older
+round cannot acknowledge a newer request. Failed delivery retries the committed
+result and keeps the computation occupied until every live consumer finishes. Missing initiator attribution never implies
+a missing source.
+
+Existing queued entries keep their original inputs, IDs, attempts and leases.
+The code/schema rollout preserves retained queue entries. After live validation,
+`compute_identity.mjs deduplicate-plan` prepares bounded equivalence groups for
+retained report/search requests. `deduplicate-apply` merges only proven
+duplicates, retaining sources, highest zone and original input/result history.
+Running leases, active workflow bindings and pending verification are deferred
+and checked again under the application lock. Opaque legacy board references
+are deferred until their actual fights can be proven; source-less work is not
+removed by duplicate consolidation. Normalization alone does not authorize
+replacing a solitary old identity.
+Local and offline queues deduplicate new work within their own store. Their
+IDs remain held through pending completion deliveries; existing legacy local
+entries are not rewritten or cancelled during startup.
+
+## Build intake and captured scope
+
+All legal submitted builds are retained independently of frontend rankings.
+Native intake preserves canonical mod ranks, riven stat/roll pairing and exact
+build identity. It captures the current boards, scenarios, modes and family
+relationships without simulating a fight. `scope: "library"` on
+`/api/board/check` checks storage legality; ordinary board checks retain each
+ruler's eligibility rules.
+
+`build_intake_batch` commits a build, its immutable captured workflow and all
+sourced computation demands in one transaction. Every legal arrival checks
+the build's current applicable coverage through indexed measurement keys.
+Previously stored scores count independently of frontend rank. Only missing
+measurements create ordinary work; an active equivalent computation is shared.
+A newly added board is discovered by a later arrival from any board.
+Already active expansions keep their captured scope.
+A local observation creates correction work only after native normalization
+matches the official fight and the database still holds the compared baseline.
+Equal values, stale baselines and different environments create no correction.
+The public review endpoint durably captures an observation in the same inbox;
+it does not implement a second task expansion.
+
+First intake and correction reuse the same expansion: measure the source on
+its captured applicable boards, copy the complete build to current family
+members, and measure legal copies. An incompatible target uses the existing
+quick optimizer with compatible positions retained, then measures the accepted
+result on that captured scope. Derived results continue their parent and never
+start another family fanout. Intermediate family candidates can be retained
+without advancing the accepted-result continuation.
+
+| Table | Contents |
+| --- | --- |
+| `entity_build_workflow_scopes` | Interned immutable board/scenario/mode snapshots |
+| `entity_build_workflows` | One logical expansion, its root build, scope and initial source |
+| `entity_build_workflow_expansions` | Frozen compact node plans, including accepted optimizer continuations |
+| `state_build_workflows` | Active/terminal state, zone and temporary initiator attribution |
+| `state_build_workflow_nodes` | Current dependency, computation, attempt and delivery references |
+| `record_build_workflow_triggers` | Every accepted intake, mismatch or explicit system source |
+
+The snapshot is shared across builds; canonical build records remain in the
+library rather than being copied into stored plans. Templates and patches
+avoid repeating a complete fight inside one expansion. Queue admission is
+independent of scope construction: equivalent nodes share the same physical
+computation and deliver separately to every consumer.
+
+## Optimization output and retained tasks
+
+An ordinary optimization submits every encountered legal build through the
+normal build inbox, including intermediate candidates and final results.
+Collection uses library legality independently of board eligibility and retains
+paired riven rolls. Upload consent and durable outbox delivery remain unchanged.
+Intermediate search scores are not correction observations. New and known builds
+check current coverage and enter missing ordinary work in zone `03`. Completed user-visible finalists also pass their frozen final replay and
+measured number to the existing simulation review entry. Only an exact official
+fight with the same runs and seed and a differing current baseline creates
+correction work in zone `01`. Cancelled, rough and refused rows do not qualify.
+
+Selecting an official scenario pins the optimizer's final round to that ruler's
+run count. Candidate screening keeps its own budget. The request and precision
+label use the same resolver; custom scenarios retain the chosen simulation
+count. Review compares normalized actual inputs in the native engine, excluding
+inert search controls and capacity layout, without rerunning a finalist.
+
+Family fill is a special optimization whose source identifies its parent
+workflow and node. Its accepted result advances that parent's captured scope;
+intermediate candidates may enter the library but never start another family
+expansion. It uses the same optimizer and execution queue as ordinary search. Purpose
+belongs to source and delivery context, outside computation identity. When a
+shared search has an ordinary source allowing upload, candidate authorization
+uses ordinary submit; special-only sources retain their bounded purpose.
+
+Previously queued and leased calculations continue with their original inputs,
+identities and leases. Disabling an automatic producer stops future creation;
+it does not cancel its retained tasks. Existing ordinary optimization outputs
+use ordinary submit; retained family-fill outputs retain their special purpose.
+No legacy task is rekeyed, reset or recreated for this classification.
 
 ## Verification and delivery
 
@@ -89,15 +255,18 @@ the account upgrade as its database owner and then the daemon grants. Existing
 details are shortened only for optimization and appraisal. Public names must
 not be enabled before both database upgrades have succeeded.
 
-The output adds nullable delivery and payment readiness, creates their partial
+The output installs the captured-workflow tables, inbox view, bounded admission
+functions and grants, and adds nullable zone/capability columns. It also adds
+nullable delivery and payment readiness, creates their partial
 indexes concurrently and installs delivery and retention guards. Run outside a transaction
-and confirm `demands_delivery` and `answers_credit_pending` are valid and ready
+and confirm `demands_delivery`, `answers_credit_pending` and `compute_scheduling_zone` are valid and ready
 before deploying code. The same upgrade installs the restricted inventory reader
 and grants its execution to the existing pipeline role. Existing binaries
 ignore the additive schema. A lock timeout or failed index build must be
 resolved before deployment; an invalid concurrent index must be removed before
 retrying. Deploy the Worker and daemon from the same validated commit, then
-run normal queue reconciliation to publish the first complete inventory.
+run normal queue reconciliation only to recover existing pending registrations.
+Complete inventory capture remains an explicit operation.
 The compute page reads queued orders independently of that scan. Rolling back code
 retains the additive schema and inventory; no task or score backfill is needed.
 
@@ -108,8 +277,8 @@ Dates and batches are not part of it. Each pending calculation has one
 `(build_id, ruler, mode)` queue row; the wire continues carrying this ID as `ref`.
 Repeated batches and refresh rounds merge into its original batch and may fill
 an absent initiator. Only newly inserted calculations increase a pipeline batch's total.
-A unique index enforces the calculation key; a completed row may enter a later
-round. Periodic refreshes wait fourteen days after the last measurement.
+A unique index enforces the calculation key. Existing pending legacy rows
+continue to execute. Periodic refresh does not create ordinary work.
 Explicit board corrections retain their immediate independent-review path.
 
 The demand projection gives a full background-read statement budget when queue

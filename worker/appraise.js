@@ -13,7 +13,6 @@ import { netOf, servedRelease, countsOf, unrecognised } from "./verify.js";
 import { canon, questionId, witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, VERBS } from "./factory.js";
 import { initiatorCode } from "./accounts.js";
-import { triggerBoardCalibration } from "./board_reviews.js";
 import { answerDeliverySource, localDeliverySource, deliveryName } from "./delivery_sources.js";
 
 const CODE_CHARS = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // no 0/O, 1/I/L
@@ -135,7 +134,7 @@ async function freeze(request, env, code, ctx) {
   if (text.length > MAX_REQUEST) return json({ ok: false, error: "too large" }, 413);
   let b;
   try { b = JSON.parse(text); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
-  if (!ENGINE_ID.test(b.engine || "") || !b.request || typeof b.request !== "object"
+  if (b.input_schema !== 1 || !ENGINE_ID.test(b.engine || "") || !b.request || typeof b.request !== "object"
       || !b.context || typeof b.context !== "object") {
     return json({ ok: false, error: "needs engine, request and context" }, 400);
   }
@@ -149,7 +148,6 @@ async function freeze(request, env, code, ctx) {
   const a = await env.LIBRARY.prepare(`SELECT code, channel, asker, weapon, ruler, request FROM entity_appraisal_requests a WHERE code = ?
       AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.ref = a.code AND d.producer IN ('chat', 'survey'))`).bind(code).first();
   if (a && a.request) await askRiven(env, a, JSON.parse(a.request), Date.now());
-  if (a && a.channel !== SURVEY_CHANNEL) await triggerBoardCalibration(env, { weapon: a.weapon, ruler: a.ruler, engine: b.engine }, ctx);
   return json({ ok: true, stored: !!r.meta.changes });
 }
 
@@ -169,7 +167,7 @@ export async function askRiven(env, a, frozen, now) {
   const chat = a.channel !== SURVEY_CHANNEL;
   const { engine } = await servedRelease(env);
   await facts().demand(env, { producer: chat ? "chat" : "survey", ref: a.code, verb: "optimize", request: frozen,
-    due_in_ms: DEADLINE_MS[chat ? "chat" : "survey"], payload: { weapon: a.weapon, ruler: a.ruler },
+    due_in_ms: DEADLINE_MS[chat ? "chat" : "survey"], payload: { weapon: a.weapon, ruler: a.ruler, context: frozen.context },
     lanes: chat ? RIVEN_LANE_TIERS : null, waits: chat,
     initiator: chat ? await initiatorCode(env, "bot", `${a.channel}:${a.asker}`) : "system" }, engine, now);
 }
@@ -218,7 +216,7 @@ export const RIVEN_PRODUCERS = { chat: rivenProducer, survey: rivenProducer };
 /// THE TASK THE FACTORY LEASED, in the shape the page runs a riven gain in.
 export function rivenWork(leased) {
   const d = leased.demands[0];
-  const { request, context } = leased.request;
+  const { request } = leased.request, context = d.payload.context || leased.request.context;
   return { kind: "riven_gain", lease: leased.lease, code: d.ref, weapon: d.payload.weapon, ruler: d.payload.ruler, request, context };
 }
 

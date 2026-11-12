@@ -17,7 +17,7 @@ if (connection) assert(['127.0.0.1', 'localhost'].includes(new URL(connection).h
 const directory = mkdtempSync(join(tmpdir(), 'cancel-queue-'));
 const schema = 'cancel_queue_' + randomUUID().replaceAll('-', '');
 const client = connection ? postgres(connection, { max: 1, fetch_types: false, onnotice: () => {} }) : null;
-const ddl = ['schema', 'library', 'sync'].map(n => readFileSync(new URL(`../worker/pg/${n}.sql`, import.meta.url), 'utf8')).join('\n');
+const ddl = ['schema','library','sync','build_workflows'].map(n => readFileSync(new URL(`../worker/pg/${n}.sql`, import.meta.url), 'utf8')).join('\n');
 const script = fileURLToPath(new URL('./cancel_queue.sh', import.meta.url));
 const original = process.env.PG_URL;
 async function run(...args) {

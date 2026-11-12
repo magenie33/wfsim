@@ -8,7 +8,7 @@ import { captureInventory } from './capture_compute_inventory.mjs';
 const dir = mkdtempSync(join(tmpdir(), 'compute-capture-'));
 const pg = new PGlite();
 try {
-  await pg.exec(['schema.sql', 'library.sql', 'sync.sql'].map(name => readFileSync(new URL(`../worker/pg/${name}`, import.meta.url), 'utf8')).join('\n'));
+  await pg.exec(['schema.sql','library.sql','sync.sql','build_workflows.sql'].map(name => readFileSync(new URL(`../worker/pg/${name}`, import.meta.url), 'utf8')).join('\n'));
   await pg.query("INSERT INTO entity_weapon_builds(id,at,record) VALUES ('a','x','{\"weapon\":\"torid\"}')");
   await pg.query("INSERT INTO entity_weapon_builds(id,at,record) SELECT 'b'||i,'x','{\"weapon\":\"torid\"}' FROM generate_series(1,25000) i");
   await pg.query("INSERT INTO entity_compute_batches(id,at,why,total) VALUES ('b','x','test',1)");

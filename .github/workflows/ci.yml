@@ -1144,6 +1144,8 @@ jobs:
         run: node scripts/check_maintenance.mjs
       - name: A fissure is logged once with its planet, and each combination says how often it came
         run: node scripts/check_world_fissures.mjs
+      - name: Computation identity admits one active task with every trigger retained
+        run: node scripts/check_compute_admission.mjs
       - name: Tasks and accepted results retain separate immutable authorities
         run: node scripts/check_compute_storage.mjs
       - name: What the site tells an account reaches it and nobody else, read once, kept as long as it says

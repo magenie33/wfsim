@@ -116,7 +116,7 @@ async function cycle(instance = 'working', budgetMs = 15000) {
 }
 
 try {
-  await pg.exec(['schema', 'library', 'sync', 'inventory'].map(name => readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta.url), 'utf8')).join('\n'));
+  await pg.exec(['schema','library','sync','inventory','build_workflows'].map(name => readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta.url), 'utf8')).join('\n'));
   for (const item of [c, b, d]) await q('INSERT INTO entity_weapon_builds(id,at,record) VALUES ($1,\'day\',$2)', [item.id, JSON.stringify(item.record)]);
   await q('INSERT INTO entity_weapon_builds(id,at,record) VALUES ($1,\'day\',$2)', [alias, JSON.stringify({ ...c.record, alias_note: 'raw source' })]);
   await q("INSERT INTO entity_weapon_builds(id,at,record) VALUES ('invalid-source','day','{\"weapon\":\"not-a-weapon\"}')");

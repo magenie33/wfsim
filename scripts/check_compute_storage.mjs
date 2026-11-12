@@ -5,7 +5,7 @@ import { randomBytes } from "node:crypto";
 import { pgDb, placeholders } from "../worker/db.js";
 
 const broken = process.argv.includes("--break-stale-acceptance"), url = process.env.WFSIM_MIGRATION_TEST_URL;
-const ddl = ["schema", "library", "sync", "inventory"].map(name => readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta.url), "utf8")).join("\n");
+const ddl = ["schema", "library", "sync", "inventory", "build_workflows"].map(name => readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta.url), "utf8")).join("\n");
 let source = ddl;
 if (broken) {
   assert.ok(source.includes("held.task_id<>$2 OR"), "stale-acceptance control must alter the actual guard");

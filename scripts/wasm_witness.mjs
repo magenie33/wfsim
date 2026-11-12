@@ -101,8 +101,8 @@ export async function witness({ lanes = os.cpus().length, pkg = "", site = SITE 
     waiting.set(id, { resolve, reject });
     w.postMessage({ id, request, from, count });
   });
-  async function row({ record, ruler, mode, identity }) {
-    const { request } = api("/api/board/order", { record, ruler, mode });
+  async function row({ record, ruler, mode, identity, fight }) {
+    const request = fight || api("/api/board/order", { record, ruler, mode }).request;
     const total = Number(request.runs) || 0;
     // A SHARD PER RUN, whatever lane fought it: how the runs are split never
     // moves a bit, the order they are folded in does.
