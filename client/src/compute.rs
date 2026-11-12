@@ -28,13 +28,17 @@ pub fn row(
     tx: &Sender<Progress>,
 ) -> Result<Value> {
     let mut spent = 0.0;
-    let order = if task["fight"].is_object() { json!({"ok":true,"request":task["fight"]}) } else { ask(
-        engine,
-        budget,
-        "/api/board/order",
-        &json!({"record": task["record"], "ruler":task["ruler"], "mode":task["mode"]}),
-        &mut spent,
-    )? };
+    let order = if task["fight"].is_object() {
+        json!({"ok":true,"request":task["fight"]})
+    } else {
+        ask(
+            engine,
+            budget,
+            "/api/board/order",
+            &json!({"record": task["record"], "ruler":task["ruler"], "mode":task["mode"]}),
+            &mut spent,
+        )?
+    };
     let request = &order["request"];
     let total = request["runs"]
         .as_u64()
