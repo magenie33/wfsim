@@ -12,7 +12,8 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 export const PARTS = [
   {
-    part: ["web/src/static/app/52-computation-input.js"],
+    part: "web/src/static/app/53-task-store.js",
+    before: "const USER_TASK_TYPES =",
     out: "worker/computation_input.js",
     head: "",
     tail: "export { COMPUTATION_INPUT_SCHEMA, computationInput, computationCanon, computationId, computationReferences };\n",
@@ -54,8 +55,13 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
 let stale = 0;
 for (const p of PARTS) {
   const { out, head, tail } = p;
-  const part = [p.part].flat().join(" + ") + (p.symbol ? `#${p.symbol}` : "");
+  const part = [p.part].flat().join(" + ") + (p.symbol ? `#${p.symbol}` : "") + (p.before ? ` before ${p.before}` : "");
   let body = [p.part].flat().map((f) => readFileSync(resolve(ROOT, f), "utf8")).join("\n");
+  if (p.before) {
+    const until = body.indexOf(p.before);
+    if (until < 0) throw new Error(`cannot find shared prefix ${p.before}`);
+    body = body.slice(0, until);
+  }
   if (p.symbol) {
     const from = body.indexOf(`function ${p.symbol}(`), until = body.indexOf("\n}\n", from);
     if (from < 0 || until < 0) throw new Error(`cannot find shared function ${p.symbol}`);

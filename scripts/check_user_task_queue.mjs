@@ -3,12 +3,10 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import { webcrypto } from "node:crypto";
 
-const identity = ["52-computation-input"].map(name =>
-  readFileSync(new URL(`../web/src/static/app/${name}.js`, import.meta.url), "utf8")).join("\n");
 const source = readFileSync(new URL("../web/src/static/app/53-task-store.js", import.meta.url), "utf8");
 function classes(code = source) {
   const context = vm.createContext({ crypto: webcrypto, TextEncoder, AbortController, console });
-  vm.runInContext(identity + "\n" + code + "\nglobalThis.classes = { UserTaskQueue, UserTaskMemoryStore };", context);
+  vm.runInContext(code + "\nglobalThis.classes = { UserTaskQueue, UserTaskMemoryStore };", context);
   return context.classes;
 }
 const locks = () => {

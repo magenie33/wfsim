@@ -443,13 +443,14 @@ await check("an opted-out community task still computes without any build POST",
 });
 
 await check("community retries retain the task's saved upload setting instead of the current toggle", async () => {
-  const calls = [];
+  const calls = [], store = new UserTaskMemoryStore();
   const scope = vm.createContext({ console, crypto: webcrypto, setTimeout, clearTimeout,
     window: { addEventListener() {} }, boardConsent: () => "yes",
-    USER_TASK_TYPES: new Map([["optimization", { community: { kind: "optimization" } }], ["appraisal", { community: { kind: "optimization" } }]]),
-    USER_TASK_EXECUTORS: new Map([["local", {}]]),
+    initUserTasks: async () => ({ store }), userTaskLock: locks(),
     capture: async (action, body) => { calls.push(plain(body)); return { ok: true }; } });
-  vm.runInContext(read("app/61-community-tasks.js") + "\ncommunityTaskCall = capture; globalThis.acceptFrozen = communityTaskAccept;", scope);
+  vm.runInContext(storeSource + "\n" + read("app/61-community-tasks.js")
+    + "\nUSER_TASK_TYPES.set('optimization', { community: { kind: 'optimization' } }); USER_TASK_TYPES.set('appraisal', { community: { kind: 'optimization' } });"
+    + "\ncommunityTaskCall = capture; globalThis.acceptFrozen = communityTaskAccept;", scope);
   const task = { id: "task", kind: "optimization", engine: "engine-a", request: { weapon: "braton_prime" }, origin: { board_upload: false } };
   await scope.acceptFrozen(task, "same-command"); scope.boardConsent = () => "no";
   await scope.acceptFrozen(task, "same-command");
@@ -462,12 +463,17 @@ await check("community retries retain the task's saved upload setting instead of
   const legacy = { ...task, origin: {} };
   scope.boardConsent = () => "yes"; await scope.acceptFrozen(legacy, "legacy-command");
   scope.boardConsent = () => "no"; await scope.acceptFrozen(legacy, "legacy-command");
-  assert.deepEqual(calls[4], calls[5]); assert.deepEqual(calls[4].request, task.request);
-  assert.equal(Object.hasOwn(calls[4].request, "__board_upload"), false, "legacy acceptance must retain its original question");
+  assert.deepEqual(calls[4], calls[5]); assert.deepEqual(calls[4].request, { ...task.request, __board_upload: false });
+  assert.equal(calls[4].request.__board_upload, false, "legacy acceptance never enables uploads from the current toggle");
   await scope.acceptFrozen({ ...legacy, origin: undefined }, "missing-origin-command");
-  assert.deepEqual(calls[6].request, task.request);
+  assert.deepEqual(calls[6].request, { ...task.request, __board_upload: false });
   await scope.acceptFrozen({ ...legacy, request: { ...task.request, __board_upload: false } }, "existing-flag-command");
   assert.equal(calls[7].request.__board_upload, false);
+  const merged = { ...task, sources: [{ id: "private", origin: { board_upload: false } }, { id: "public", origin: { board_upload: true } }] };
+  await scope.acceptFrozen(merged, "merged-command");
+  await scope.acceptFrozen({ ...merged, sources: [merged.sources[0]] }, "merged-command");
+  assert.equal(calls[8].request.__board_upload, true);
+  assert.deepEqual(calls[8], calls[9], "a retried command retains its captured source permissions");
 });
 
 await check("legacy local tasks need a saved affirmative upload choice", async () => {

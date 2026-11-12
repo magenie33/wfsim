@@ -133,8 +133,8 @@ jobs:
           path: target/client-artifacts
           merge-multiple: true
       - run: node scripts/check_client_release.mjs
-      - run: node scripts/check_client_live_engine.mjs
       - name: Require qualified exact main commit
+        id: engine-proof
         env:
           GH_TOKEN: ${{ github.token }}
           EXPECTED_SHA: ${{ github.sha }}
@@ -143,6 +143,27 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           proof=$(node scripts/ci_runs.mjs ship "$EXPECTED_SHA")
           test -n "$proof"
+          echo "run=$proof" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: site-built
+          path: ${{ runner.temp }}/cli-engine
+          run-id: ${{ steps.engine-proof.outputs.run }}
+          github-token: ${{ github.token }}
+      - name: Use the engine checked on this exact source
+        env:
+          CHECKED_SITE: ${{ runner.temp }}/cli-engine/site
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, shutil
+          source = pathlib.Path(os.environ['CHECKED_SITE'])
+          release = json.loads((source / 'release.json').read_text())
+          commit = release['commit'].removesuffix('+')
+          assert len(commit) >= 8 and os.environ['GITHUB_SHA'].startswith(commit)
+          shutil.copytree(source / 'pkg', pathlib.Path('site/pkg'), dirs_exist_ok=True)
+          shutil.copyfile(source / 'release.json', 'site/release.json')
+          PY
+      - run: node scripts/check_client_live_engine.mjs
       - env:
           CLI_VERSION: ${{ needs.version.outputs.version }}
           CLI_NPM: ${{ inputs.npm }}
