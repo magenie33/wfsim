@@ -158,9 +158,9 @@ impl GalStacks {
     }
 }
 
-/// M8/M100: a pool break supplies a body hit's base to ordinary Electricity.
-/// The current Magnetic count is frozen here; the breaking hit supplies
-/// the proc context. No separate clock, landing or source-scaling rule.
+/// M8: a pool break deals Electricity and forces an ordinary body proc.
+/// The proc inherits the packet's status-scaled source, then applies its own
+/// status scaling. Both keep the breaking weapon's context.
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn push_break_proc(
@@ -178,22 +178,26 @@ pub(super) fn push_break_proc(
     rec: &mut crate::record::Record,
     rng: &mut Rng,
     status_damage_live: f64,
-) {
+    body_index: usize,
+) -> bool {
     let stacks = debuffs.disrupt.len();
     if stacks == 0 {
-        return;
+        return false;
     }
     let pool_max = match pool {
         BrokenPool::Overguard => foe.overguard(),
         BrokenPool::Shield => foe.max_shield(),
     };
-    let mb_live = (0.03 * stacks as f64).min(0.30) * pool_max
-        / (BLEED_TICKS as f64 * DOT_COEFFICIENT);
+    let base = crate::rules::status::magnetic_break_source(pool_max, stacks);
+    let status = params.status_damage_multiplier + status_damage_live
+        + params.status_damage_of(DamageType::Electricity);
+    let mb_live = base * status;
     let mit = debuffs.mitigation(now, params.status_duration_multiplier,
         params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
     let procs = crate::rules::status::procs_for_hit(&[DamageType::Electricity],
         0.0, &DamageVector::new(), &foe.status_immunities, rng);
-    settle_procs(procs, owner, now, InstanceScale {
+    let generation = target.generation;
+    settle_procs(procs, owner, now, body_index, InstanceScale {
         mb_live,
         crit_multiplier: 1.0,
         part_factor: 1.0,
@@ -202,4 +206,34 @@ pub(super) fn push_break_proc(
         xh_bracket: 1.0,
         status_damage_live,
     }, debuffs, gal, arc, target, params, active, &mit, r, rec, rng, foe, DEPTH_PROC);
+    if target.generation != generation {
+        return true;
+    }
+    let layers = [
+        (crate::record::Factor::StatusDamage, status),
+        (crate::record::Factor::Faction, params.faction_bracket_at(now)),
+        (crate::record::Factor::TargetMultiplier, foe.faction_bracket_multiplier),
+        (crate::record::Factor::WarframeAbility, params.ability_final_at(now)),
+    ];
+    let raw = layers.iter().fold(base, |value, (_, factor)| value * factor);
+    let mut breakdown = Breakdown::default();
+    let settled = target.apply(raw, TypeShares::single(DamageType::Electricity), false,
+        now, foe, false, &mit, params.overguard_multiplier(), watching(rec, &mut breakdown));
+    r.sources.add_status(DamageType::Electricity, settled.effective);
+    ledger::settle(r, rec, now, owner, body_index, DamageType::Electricity, PopKind::Status,
+        &breakdown, settled, Some(debuffs), ledger::Clock::Hit,
+        || Instance { origin: crate::record::Origin::Status, base,
+            part: Some("body".into()), layers: mul_layers(base, &layers), ..Instance::default() });
+    r.note_kills(u32::from(settled.killed), now, params.drop_is_in_reach(target.at));
+    if settled.killed {
+        gal.bump_on_kill(params, now);
+        arc.on_kill(params, now);
+        debuffs.on_death(owner, params.acid_shells, foe);
+        return true;
+    }
+    if let Some(pool) = settled.broken {
+        return push_break_proc(debuffs, owner, params, now, pool, active, foe,
+            target, gal, arc, r, rec, rng, status_damage_live, body_index);
+    }
+    false
 }

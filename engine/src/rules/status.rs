@@ -21,6 +21,14 @@
 use crate::rules::damage::{DamageType, DamageVector};
 use crate::rules::rng::Rng;
 
+/// MagneticDamageProc's effective child coefficient is float32(0.005).
+/// M8 native pool fixtures: multiply pool then count in f32, truncate once.
+#[wfsim_gas_macro::metered]
+pub fn magnetic_break_source(maximum_pool: f64, stacks: usize) -> f64 {
+    ((maximum_pool as f32 * 0.005_f32) * stacks.min(10) as f32).trunc() as f64
+}
+
+
 /// Number of rolled (non-forced) procs for one hit at `status_chance`
 /// (fraction; may exceed 1.0).
 #[wfsim_gas_macro::metered]
@@ -355,6 +363,23 @@ mod tests {
             assert_eq!(
                 draw_proc_type(&v, &[], &mut rng),
                 Some(DamageType::Radiation)
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod magnetic_native {
+    #[test]
+    fn magnetic_pool_source_matches_original_byte_replay_vectors() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/client/magnetic-break-source.json"
+        )).unwrap();
+        for case in fixture["cases"].as_array().unwrap() {
+            assert_eq!(
+                super::magnetic_break_source(case["pool"].as_f64().unwrap(),
+                    case["stacks"].as_u64().unwrap() as usize),
+                case["expected"].as_f64().unwrap(), "{case}",
             );
         }
     }

@@ -160,7 +160,7 @@ fn aksondol_encumber_uses_the_weapons_status_payload_and_live_buffs() {
                 let here = &mut shot_fight.bodies[0];
                 let mit = here.debuffs.mitigation(2.0, p.status_duration_multiplier,
                     p.armor_strip_per_puncture, p.squad.enemy_armor_multiplier);
-                settle_procs(vec![DamageType::Cold, bonus], Seat::WIELDER, 2.0,
+                settle_procs(vec![DamageType::Cold, bonus], Seat::WIELDER, 2.0, 0,
                     InstanceScale {
                         mb_live: base, crit_multiplier: 1.0, part_factor: 1.0, landing: ProcLanding::default(),
                         attrition: 1.0, xh_bracket: p.extra_hit_bracket(2.0, &shot_me.windows), status_damage_live: 0.0,

@@ -262,9 +262,11 @@ pub(super) fn fire_extra_hits(
             },
         );
         r.note_kills(u32::from(killed), at, params.drop_is_in_reach(target.at));
-        if let Some(pool) = broke {
-            push_break_proc(debuffs, owner, params, at, pool, active, &params.foe,
-                target, gal, arc, r, rec, rng, 0.0);
+        if let Some(pool) = broke.filter(|_| !killed) {
+            if push_break_proc(debuffs, owner, params, at, pool, active, &params.foe,
+                target, gal, arc, r, rec, rng, 0.0, 0) {
+                return true;
+            }
         }
         if killed {
             gal.bump_on_kill(params, at);
@@ -299,6 +301,7 @@ pub(super) fn fire_extra_hits(
             procs,
             owner,
             at,
+            0,
             InstanceScale {
                 // THE CATEGORY'S RULE, not this function's: an extra hit that
                 // deals damage replaces the base its status burns off, and one
@@ -580,6 +583,7 @@ pub(super) fn settle_procs(
     // pays out four seconds later is still credited to whoever applied it.
     owner: Seat,
     at: f64,
+    body_index: usize,
     scale: InstanceScale,
     debuffs: &mut DebuffState,
     gal: &mut GalStacks,
@@ -1056,7 +1060,7 @@ pub(super) fn settle_procs(
                         let stack = b.value;
                         let part = rec.is_on().then(|| b.seed_part(rec));
                         ledger::settle(
-                            r, rec, at, owner, 0, DamageType::Blast, PopKind::Blast,
+                            r, rec, at, owner, body_index, DamageType::Blast, PopKind::Blast,
                             &breakdown, settled, Some(debuffs),
                             ledger::Clock::Dot,
                             || Instance {
@@ -1085,9 +1089,11 @@ pub(super) fn settle_procs(
                     // shared it. The same rule M76 states for what an arcane
                     // counting hits sees.
                     r.note_kills(killed as u32, at, params.drop_is_in_reach(target.at));
-                    if let Some(pool) = broke_any {
-                        push_break_proc(debuffs, owner, params, at, pool, active, foe,
-                    target, gal, arc, r, rec, rng, status_damage_live);
+                    if let Some(pool) = broke_any.filter(|_| !killed) {
+                        if push_break_proc(debuffs, owner, params, at, pool, active, foe,
+                            target, gal, arc, r, rec, rng, status_damage_live, body_index) {
+                            return;
+                        }
                     }
                     if killed {
                         gal.bump_on_kill(params, at);
@@ -1160,6 +1166,7 @@ pub(super) fn settle_procs(
                     vec![part],
                     owner,
                     at,
+                    body_index,
                     InstanceScale {
                         // THE 0% MEMBER OF THE EXTRA HIT CATEGORY. This arcane
                         // "adds a 0-damage Extra Hit that applies a guaranteed
@@ -1230,7 +1237,7 @@ pub(super) fn settle_procs(
             r.sources.arcane_on_status += eff;
             r.sources.arcane_by_type[proc as usize] += eff;
             ledger::settle(
-                r, rec, at, owner, 0, proc, PopKind::Arcane, &breakdown, settled,
+                r, rec, at, owner, body_index, proc, PopKind::Arcane, &breakdown, settled,
                 Some(debuffs),
                 ledger::Clock::Hit,
                 || Instance {
@@ -1244,9 +1251,11 @@ pub(super) fn settle_procs(
                 },
             );
             r.note_kills(killed as u32, at, params.drop_is_in_reach(target.at));
-            if let Some(pool) = broke {
-                push_break_proc(debuffs, owner, params, at, pool, active, foe,
-                    target, gal, arc, r, rec, rng, status_damage_live);
+            if let Some(pool) = broke.filter(|_| !killed) {
+                if push_break_proc(debuffs, owner, params, at, pool, active, foe,
+                    target, gal, arc, r, rec, rng, status_damage_live, body_index) {
+                    return;
+                }
             }
             if killed {
                 gal.bump_on_kill(params, at);

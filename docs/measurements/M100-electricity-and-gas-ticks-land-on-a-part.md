@@ -220,6 +220,10 @@ duration values and additional damage numbers were not supplied. M8 records
 this breaking-weapon source rule; the earlier Magnetic appliers are not the
 source to follow. The owner states this calibration batch is complete.
 
+M8 records the independent Electric break damage and its forced ordinary
+proc as two stages. Status damage applies to the parent source and again
+to the child proc; an existing Electric pile keeps its current tick clock.
+
 ### Implementation
 
 `lands_on_a_part` names the two families, and `Dot::landing` carries the

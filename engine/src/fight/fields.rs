@@ -457,9 +457,11 @@ pub(super) fn field_tick_seeded(
     // the orb report 6.88 strikes an orb when it makes at most six.
     r.field_ticks += u32::from(!is_blast);
     r.note_kills(killed as u32, at, params.drop_is_in_reach(target.at));
-    if let Some(pool) = broke {
-        push_break_proc(debuffs, owner, params, at, pool, active, foe,
-            target, gal, arc, r, rec, &mut d.status, 0.0);
+    if let Some(pool) = broke.filter(|_| !killed) {
+        if push_break_proc(debuffs, owner, params, at, pool, active, foe,
+            target, gal, arc, r, rec, &mut d.status, 0.0, body_index) {
+            return FieldOutcome { killed: true, crit_tier: tier };
+        }
     }
     if killed {
         gal.bump_on_kill(params, at);
@@ -526,6 +528,7 @@ pub(super) fn field_tick_seeded(
         procs,
         owner,
         at,
+        body_index,
         scale,
         debuffs,
         gal,
