@@ -627,6 +627,11 @@ part and faction in it), `C` is 0.5 for Heat / Electricity / Toxin / Gas and
   but affected by deadhead-like bonuses: … Electricity and Gas status procs".
   So a head hit's tick on the struck body is `S × 5.4 × 1.8` at +80%, where
   Heat, Toxin and Blast stop at `S × 5.4` (`lands_on_a_part`, `Dot::landing`).
+  Each Electricity/Gas stack retains its applying hit's seed. The latest
+  application selects the landing of the whole consolidated tick and its
+  lethal weak-point flag: head/head/body gives 2834, body/head/head 5100 in
+  M100's +80% headshot, +200% element setup. A later body application keeps
+  the older head and critical seeds while changing the tick's landing.
 
 It is worth 0.5 damage before multipliers — 2.9% of a tick on a base-35 rifle
 and 0.25% on a base of 400, which is why it took a small gun to see.

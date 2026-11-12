@@ -578,7 +578,7 @@ pub fn run_once_traced(
             let active = l.active(me.params);
             // What is due before the hit settles first, as it does before a pull.
             process_ticks(
-                &me.windows, &mut bodies[0], &mut me.gal, &mut me.arc, l.t + 1e-9,
+                &mut me.windows, &mut bodies[0], &mut me.gal, &mut me.arc, l.t + 1e-9,
                 me.params, active, &mut r, rec, &mut me.d.status, &me.params.foe, 0,
             );
             // …AND EVERY ENTITY OF THIS SEAT DUE BEFORE IT: a pile whose fuse ran
@@ -731,7 +731,7 @@ pub fn run_once_traced(
                     continue;
                 }
             }
-            process_ticks(&me.windows, &mut bodies[0], &mut me.gal, &mut me.arc, t + 1e-9,
+            process_ticks(&mut me.windows, &mut bodies[0], &mut me.gal, &mut me.arc, t + 1e-9,
                 me.params, active, &mut r, rec, &mut d.status, &me.params.foe, 0);
             process_entities(&mut entities, t, &mut turn!(me, active, &mut *d), &mut r, rec, &mut bodies);
             if let Some(h) = current_melee_event(active, &me.melee)
@@ -841,7 +841,7 @@ pub fn run_once_traced(
 
         // Status events scheduled before this shot land first.
         process_ticks(
-            &me.windows,
+            &mut me.windows,
             &mut bodies[0],
             &mut me.gal,
             &mut me.arc,
@@ -1259,7 +1259,7 @@ pub fn run_once_traced(
     // state of the seat that seeded it.
     let me = &mut seats[Seat::WIELDER.0];
     process_ticks(
-        &me.windows,
+        &mut me.windows,
         &mut bodies[0],
         &mut me.gal,
         &mut me.arc,
@@ -1273,7 +1273,7 @@ pub fn run_once_traced(
         0,
     );
     settle_crowd_ticks(
-        &me.windows, &mut bodies, &mut me.gal, &mut me.arc, end,
+        &mut me.windows, &mut bodies, &mut me.gal, &mut me.arc, end,
         params, me.fixed.field_active, &mut r, rec, &mut me.d.status,
     );
 

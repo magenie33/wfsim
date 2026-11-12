@@ -19,6 +19,7 @@ mod chill_and_co_base;
 mod cycle_buff_conversion;
 mod debilitate_attrition;
 mod dot_ticks_measured;
+mod m100_latest_proc_part;
 mod damage_floor;
 mod elements_arcanes_weakpoints;
 mod every_form_runs;

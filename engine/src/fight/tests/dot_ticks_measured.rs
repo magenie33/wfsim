@@ -367,7 +367,7 @@ fn independent_dots_cap_per_type_fifo() {
         next_tick: 0.0,
         ticks_left: 6,
         frozen: v,
-        landing: 1.0,
+        landing: ProcLanding::default(),
         bracket: 1.0,
         depth: 0,
         source_scaled: false,

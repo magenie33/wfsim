@@ -11,7 +11,7 @@ pub(super) struct InstanceScale {
     pub(super) part_factor: f64,
     /// What an Electricity or Gas tick is worth where THIS instance struck —
     /// [`Dot::landing`]. 1.0 off a head.
-    pub(super) landing: f64,
+    pub(super) landing: ProcLanding,
     /// DEVOURING/DEVASTATING ATTRITION on THIS instance, or 1.0.
     ///
     /// 1.0 everywhere but the Primary Debilitate split, and that is the whole

@@ -1300,7 +1300,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             }
         };
         let part_factor = if direct { part_factor } else { 1.0 };
-        let landing = if direct { landing } else { 1.0 };
+        let landing = if direct { ProcLanding::at(landing, part) } else { ProcLanding::default() };
         // ModifiedBase carries the merge too, which is what makes
         // damaging status effects "affected TWICE by multishot": more
         // procs from the summed status chance, and a bigger payload
@@ -1574,7 +1574,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 spread_from_punch_through(
                     seat, windows, bodies, params, active, struck, raw / bucket, shares, punch,
                     spread_mb, status_chance, forced, &spread_composition, part.is_head, part_factor,
-                    landing, &mut *gal, &mut *arc, &mut *r, rec, d, t,
+                    landing.factor, &mut *gal, &mut *arc, &mut *r, rec, d, t,
                 );
             }
             continue;
@@ -1882,7 +1882,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     &spread_composition,
                     head_direct,
                     part_factor,
-                    landing,
+                    landing.factor,
                     &mut *gal,
                     &mut *arc,
                     &mut *r,
@@ -2096,7 +2096,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     t,
                     head_direct,
                     pm_mult * cc_mult * combo_multiplier,
-                    landing,
+                    landing.factor,
                     co_mult.types as u32,
                 )));
             }

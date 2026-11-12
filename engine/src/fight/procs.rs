@@ -310,7 +310,7 @@ pub(super) fn fire_extra_hits(
                 // what the trigger's own procs took once.
                 crit_multiplier: 1.0,
                 part_factor: 1.0,
-                landing: 1.0,
+                landing: ProcLanding::default(),
                 // **AND DEVOURING ATTRITION IS NOT ROLLED AGAIN** — measured. An extra hit is a percentage of a hit
                 // that has ALREADY taken its x21, so it inherits that and
                 // stops there: Xata's Whisper cannot re-trigger the roll and
@@ -473,13 +473,13 @@ pub(super) fn drain_area_procs(
             let (Some(spec), Some(here)) = (params.body(j), bodies.get_mut(j)) else { continue };
             let (dbf, fp, parts) = (&mut here.debuffs, spec.params, spec.body_parts);
             let cap = dot_cap_for(fp, dot.dtype);
-            // ONE LANDING PER BODY PER ARC, drawn only where a head pays more.
+            // One landing per receiving body and arc; its weak-point flag
+            // exists even when no bonus raises the head's damage (M100).
             let dot = if dot.dtype == DamageType::Electricity
-                && head_landing > 1.0
                 && parts.iter().any(|p| p.is_head)
                 && arc_landing.chance(TESLA_HEAD_LANDING_CHANCE)
             {
-                Dot { landing: head_landing, ..dot }
+                Dot { landing: ProcLanding::at(head_landing, parts.iter().find(|p| p.is_head).expect("head part")), ..dot }
             } else {
                 dot
             };
@@ -706,7 +706,7 @@ pub(super) fn settle_procs(
                 // bracket and the faction bonus are re-read at every tick
                 // (`Dot::live`); the final multiplier is not, measured.
                 frozen: coeff * mb_live * sdm * crit_multiplier * part * attrition * ecl,
-                landing: if lands_on_a_part(dtype) { landing } else { 1.0 },
+                landing: if lands_on_a_part(dtype) { landing } else { ProcLanding::default() },
                 // …and what the accumulator's initial 1 is worth: the same
                 // chain with the SEED taken out of it. See
                 // `Dot::accumulator_unit`.
@@ -818,7 +818,7 @@ pub(super) fn settle_procs(
                 // body hit's own tick is 24 — x5.4, the whole head ladder (M100).
                 // Where the arc lands is drawn in `drain_area_procs`.
                 debuffs.post_area(
-                    Dot { landing: 1.0, ..dot },
+                    Dot { landing: ProcLanding::default(), ..dot },
                     TESLA_RADIUS_M,
                     dot_cap_of(DamageType::Electricity),
                 );
@@ -853,7 +853,7 @@ pub(super) fn settle_procs(
                     None => u32::MAX,
                 };
                 debuffs.post_area(
-                    Dot { frozen: dot.frozen / part_factor.max(1e-9), landing: 1.0, seed, ..dot },
+                    Dot { frozen: dot.frozen / part_factor.max(1e-9), landing: ProcLanding::default(), seed, ..dot },
                     radius_m,
                     dot_cap_of(DamageType::Gas),
                 );

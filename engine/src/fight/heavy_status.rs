@@ -7,20 +7,24 @@ use super::*;
 impl DebuffState {
     pub(super) fn take_status_damage(&mut self, params: &FightParams, w: &CardWindows, now: f64) -> DamageVector {
         let mut damage = DamageVector::new();
-        let mut groups: Vec<(DamageType, f64)> = Vec::new();
+        let mut groups: Vec<(DamageType, bool, f64)> = Vec::new();
+        let landings = self.proc_landings;
         self.dots.retain(|d| {
             if !matches!(d.dtype, DamageType::Slash | DamageType::Toxin | DamageType::Electricity | DamageType::Gas) {
                 return true;
             }
             let source = dot::Source::at(params, d.dtype, now, w);
             let kind = if d.ignores_armor { DamageType::Cinematic } else { d.dtype };
-            let landing = if consolidated(d.dtype) { d.landing } else { 1.0 };
+            let landing = if d.source_scaled {
+                match d.dtype { DamageType::Electricity => landings[0].factor,
+                    DamageType::Gas => landings[1].factor, _ => 1.0 }
+            } else { d.landing.factor };
             let mut total = d.live(&source) * f64::from(d.ticks_left) * landing;
             for tick in 0..d.ticks_left {
                 let at = d.next_tick + f64::from(tick);
-                if !consolidated(d.dtype) || !groups.iter().any(|&(ty, t)| ty == d.dtype && (t - at).abs() < 1e-9) {
+                if !consolidated(d.dtype) || !groups.iter().any(|&(ty, scaled, t)| ty == d.dtype && scaled == d.source_scaled && (t - at).abs() < 1e-9) {
                     total += d.accumulator_unit(&source) * landing;
-                    if consolidated(d.dtype) { groups.push((d.dtype, at)); }
+                    if consolidated(d.dtype) { groups.push((d.dtype, d.source_scaled, at)); }
                 }
             }
             damage.add(kind, total);

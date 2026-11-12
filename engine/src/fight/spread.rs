@@ -309,7 +309,7 @@ pub(super) fn spread_hit(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — an instance's statuses are settled here.
-    w: &CardWindows,
+    w: &mut CardWindows,
     inst: &crate::rules::chain::Instance,
     foe: &mut Body,
     spec: &BodySpec<'_>,
@@ -575,7 +575,10 @@ pub(super) fn spread_hit(
             // round, on a ruler whose own rule is that a punched body IS a
             // weak-point hit.
             part_factor: inst.status_part_factor,
-            landing: inst.status_landing,
+            landing: if inst.headshot {
+                spec.body_parts.iter().find(|p| p.is_head)
+                    .map_or_else(ProcLanding::default, |p| ProcLanding::at(inst.status_landing, p))
+            } else { ProcLanding::default() },
             attrition,
             // THE FIRING FORM'S bracket, like any other instance of this shot —
             // a chain hop is the same shot, and the Extra Hit it may set off is
@@ -661,7 +664,7 @@ pub(super) fn spread_from_melee(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    w: &CardWindows,
+    w: &mut CardWindows,
     bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
@@ -747,7 +750,7 @@ pub(super) fn spread_from_punch_through(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    w: &CardWindows,
+    w: &mut CardWindows,
     bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
@@ -931,7 +934,7 @@ pub(super) fn spread_from_ricochet(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    w: &CardWindows,
+    w: &mut CardWindows,
     bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
@@ -1033,7 +1036,7 @@ pub(super) fn spread_from_echo(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    w: &CardWindows,
+    w: &mut CardWindows,
     bodies: &mut [Body],
     // STACKS ON THE BODY THAT WAS HIT, read at the moment of the hit — the
     // arcane's gate is about the target, not about the shooter.
@@ -1152,7 +1155,7 @@ pub(super) fn spread_from_tendrils(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    w: &CardWindows,
+    w: &mut CardWindows,
     bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
@@ -1260,7 +1263,7 @@ pub(super) fn spread_from_blast(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    w: &CardWindows,
+    w: &mut CardWindows,
     // WHERE THE ROUND WENT OFF, decided by the caller from the pellet's own
     // deviation — not assumed to be the aimed body's surface, which is what it
     // was until 2026-08-19 and the whole of the bug this signature ends.
@@ -1328,7 +1331,7 @@ pub(super) fn blast_at(
     seat: Seat,
     // See `process_ticks`.
     // WHOSE ATTACK REACHED HERE. One strike, whatever it travelled through.
-    w: &CardWindows,
+    w: &mut CardWindows,
     det: crate::rules::space::Detonation,
     bodies: &mut [Body],
     params: &FightParams,
@@ -1431,7 +1434,7 @@ pub(super) fn spread_from_seeds(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — this instance's statuses are settled here.
-    w: &CardWindows,
+    w: &mut CardWindows,
     bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
@@ -1607,7 +1610,7 @@ pub(super) fn fire_syndicate_radial(
                 mb_live: sy.damage,
                 crit_multiplier: 1.0,
                 part_factor: 1.0,
-                landing: 1.0,
+                landing: ProcLanding::default(),
                 attrition: 1.0,
                 // A syndicate blast is 1000 of one element and "the build does
                 // not scale it", so a Blast stack it applies detonates with no
@@ -1676,7 +1679,7 @@ pub(super) fn spread_beyond_the_target(
     // and whatever it travelled through.
     seat: Seat,
     // See `process_ticks` — what is already burning reads the live windows.
-    w: &CardWindows,
+    w: &mut CardWindows,
     params: &FightParams,
     active: &FightParams,
     rec: &mut crate::record::Record,

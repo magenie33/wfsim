@@ -317,7 +317,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     if g.bodies.len() > 1 {
         spread_beyond_the_target(
             me.seat,
-            &me.windows,
+            &mut me.windows,
             me.params,
             active,
             g.rec,

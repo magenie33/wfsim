@@ -1,5 +1,27 @@
 use super::*;
 
+/// A status tick's own landing, separate from its applying hit's seed (M100).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(super) struct ProcLanding {
+    pub(super) factor: f64,
+    pub(super) head: bool,
+    pub(super) weak_point: bool,
+}
+
+#[wfsim_gas_macro::metered]
+impl Default for ProcLanding {
+    fn default() -> Self {
+        Self { factor: 1.0, head: false, weak_point: false }
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl ProcLanding {
+    pub(super) fn at(factor: f64, part: &BodyPart) -> Self {
+        Self { factor, head: part.is_head, weak_point: part.is_weak_point }
+    }
+}
+
 /// A live DoT instance: the proccing hit's deferred damage (provenance
 /// snapshot baked into `value`). Bleed (Cinematic ticks) ignores armor;
 /// elemental DoTs (Toxin/Electricity/Gas, Disrupt's break-proc Tesla) take
@@ -35,11 +57,11 @@ pub(super) struct Dot {
     ///
     /// The SOURCE's half is not here: see [`Dot::live`].
     pub(super) frozen: f64,
-    /// WHERE THE TICK ITSELF LANDS, over the WHOLE tick — accumulator included.
-    /// 1.0 on a body; on a head, the headshot-damage brackets over a 1x base
-    /// (`lands_on_a_part`). Separate from `frozen`, which holds the part the
-    /// HIT struck. MEASUREMENTS M100.
-    pub(super) landing: f64,
+    /// This application's tick landing: 1.0 on a body, headshot brackets over
+    /// a 1x base on a head. The pile keeps its latest one in `proc_landings`
+    /// for the whole tick and accumulator; `frozen` retains the hit's part.
+    /// MEASUREMENTS M100.
+    pub(super) landing: ProcLanding,
     /// The MOD-side element bracket, `1 + Σ this element's bonuses` — frozen
     /// because mods do not change mid-fight, and carried rather than re-read
     /// because a transform weapon's ACTIVE form is not always the form that
@@ -172,8 +194,8 @@ impl Dot {
     ) -> crate::record::Part {
         use crate::record::{Factor, Part, Scale};
         let mut tail = if self.source_scaled { drop_ones(over) } else { Vec::new() };
-        if landing && (self.landing - 1.0).abs() > 1e-12 {
-            tail.push(Scale { factor: Factor::TickLanding, value: self.landing });
+        if landing && (self.landing.factor - 1.0).abs() > 1e-12 {
+            tail.push(Scale { factor: Factor::TickLanding, value: self.landing.factor });
         }
         let kept = rec.seed_at(self.seed)
             .filter(|s| (s.value() - self.frozen).abs() <= 1e-9 * self.frozen.abs().max(1.0));
@@ -198,8 +220,8 @@ impl Dot {
     ) -> crate::record::Part {
         use crate::record::{Factor, Part, Scale};
         let mut of = drop_ones(over);
-        if landing && (self.landing - 1.0).abs() > 1e-12 {
-            of.push(Scale { factor: Factor::TickLanding, value: self.landing });
+        if landing && (self.landing.factor - 1.0).abs() > 1e-12 {
+            of.push(Scale { factor: Factor::TickLanding, value: self.landing.factor });
         }
         Part { factor: Factor::StatusAccumulator, amount, head: self.unit, head_factor: None, of }
     }

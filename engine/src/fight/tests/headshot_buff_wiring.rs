@@ -204,7 +204,7 @@ fn a_burning_cloud_reads_the_window_at_every_tick() {
         next_tick: 0.0,
         ticks_left: 6,
         frozen: 100.0,
-        landing: 1.0,
+        landing: ProcLanding::default(),
         bracket: 1.0,
         depth: 0,
         source_scaled: true,

@@ -3,7 +3,7 @@ use super::*;
 fn stored_dot(dtype: DamageType, ticks_left: u32, frozen: f64) -> Dot {
     Dot {
         owner: Seat::WIELDER, cause: u32::MAX, seed: u32::MAX,
-        next_tick: 1.0, ticks_left, frozen, landing: 1.0, bracket: 1.0,
+        next_tick: 1.0, ticks_left, frozen, landing: ProcLanding::default(), bracket: 1.0,
         depth: DEPTH_PROC, source_scaled: true, unit: 0.0,
         dtype, ignores_armor: dtype == DamageType::Slash,
     }
@@ -41,6 +41,24 @@ fn consolidated_cashout_counts_one_accumulator_per_future_tick() {
     db.push_dot(first);
     db.push_dot(last);
     assert_eq!(db.take_status_damage(&p, &windows_for(&p), 0.0).total(), 102.0);
+}
+
+#[test]
+fn mixed_status_cashout_uses_the_latest_landing_for_every_pending_tick() {
+    let p = FightParams::default();
+    for dtype in [DamageType::Electricity, DamageType::Gas] {
+        for last_head in [false, true] {
+            let mut db = DebuffState::default();
+            for (ticks, seed, head) in [(2, 10.0, !last_head), (4, 20.0, last_head)] {
+                let mut d = stored_dot(dtype, ticks, seed);
+                d.unit = 0.5;
+                d.landing = ProcLanding { factor: if head { 1.8 } else { 1.0 }, head, weak_point: head };
+                db.push_dot(d);
+            }
+            let expected = 102.0 * if last_head { 1.8 } else { 1.0 };
+            assert!((db.take_status_damage(&p, &windows_for(&p), 0.0).total() - expected).abs() < 1e-9);
+        }
+    }
 }
 
 #[test]

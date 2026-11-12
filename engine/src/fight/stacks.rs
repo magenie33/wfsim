@@ -191,7 +191,7 @@ pub(super) fn push_break_proc(
         // A BROKEN POOL is the TARGET's own doing, so it points at no shot.
         cause: u32::MAX,
         frozen: total / 6.0,
-        landing: 1.0,
+        landing: ProcLanding::default(),
         // A SHARE OF THE TARGET'S OWN POOL, so nothing the shooter carries
         // scales it — not the element bracket, not faction, not Eclipse, and
         // not the accumulator, whose rule names "weapon-generated" statuses.

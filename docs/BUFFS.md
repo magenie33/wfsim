@@ -211,7 +211,8 @@ which is why the choice has to be data rather than a default nobody re-read.
 
 One definition, in `fight::pellet::weakpoint_kill`, and everything that reads
 the trigger reads it there: an eligible direct instance entered a weak point
-and killed that body. Stug's declared area direct explosion qualifies (M127).
+and killed that body, or an Electricity/Gas tick killed with its latest
+application's weak-point flag (M100). Stug's declared area direct explosion qualifies (M127).
 A WEAK POINT, not a head (`is_weak_point`, MECHANICS
 §Body parts): Update 44.0 converted both Deadheads and Galvanized Scope /
 Crosshairs from "On Headshot" to "On Weakpoint". The wire id stays

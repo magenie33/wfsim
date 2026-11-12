@@ -103,7 +103,8 @@ it to the record (`record::Seed`) and the status carries its index. The tick
 draws each seed as that product, then what it re-read live (element bracket,
 faction, the target's own multiplier) and where the tick landed. A
 consolidated family (Electricity, Gas) is one part PER STACK, since its stacks
-need not share a seed, a depth or a landing; a Heat burn is one entity and
+need not share a seed or a depth; all its parts use the group's latest
+application landing (M100). A Heat burn is one entity and
 starts at its own sum; a Blast stack is one part. A part prints a product only
 when the product reaches the number it pays — otherwise the bare number —
 which `every_status_tick_is_drawn_down_to_the_hit` holds for every family. A

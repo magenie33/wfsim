@@ -59,7 +59,7 @@ const MUTATION_CROWD: usize = 3;
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn throw_reload_grenades(
-    w: &CardWindows,
+    w: &mut CardWindows,
     owner: Seat,
     at: f64,
     // WHICH THROW: the big one follows a reload from empty, any other reload
@@ -148,7 +148,7 @@ pub(super) fn throw_reload_grenades(
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 fn settle(
-    w: &CardWindows,
+    w: &mut CardWindows,
     owner: Seat,
     part: &crate::build::loadout::ResolvedLingering,
     multiplier: f64,

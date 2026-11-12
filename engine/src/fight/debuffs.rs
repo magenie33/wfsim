@@ -157,6 +157,9 @@ pub(super) struct DebuffState {
     /// `dots_due` a lower bound, and a tick pass that trusts a stale one skips
     /// a tick that was due.
     pub(super) dots: Vec<Dot>,
+    /// Electricity/Gas use the latest application's landing for the whole tick
+    /// and its lethal weak-point flag; each Dot still owns its hit seed (M100).
+    pub(super) proc_landings: [ProcLanding; 2],
     /// NO DoT TICKS BEFORE THIS — a LOWER bound on the earliest `next_tick` in
     /// `dots`, `None` when nothing is known. Set exactly at the end of every
     /// tick pass and lowered by every append; a removal only raises the truth,
@@ -611,10 +614,12 @@ impl DebuffState {
                 linear_falloff: false,
             });
         }
+        let gas_landing = self.proc_landings[1];
         *self = DebuffState::default();
         self.area_out = out;
         self.area_hit = hits;
         self.dots = clouds;
+        self.proc_landings[1] = gas_landing;
     }
 
     pub(super) fn push_dot_capped(&mut self, mut dot: Dot, cap: Option<usize>) {
@@ -639,7 +644,7 @@ impl DebuffState {
             if let Some(shared) = self
                 .dots
                 .iter()
-                .find(|d| d.dtype == dot.dtype && d.ticks_left > 0)
+                .find(|d| d.dtype == dot.dtype && d.source_scaled == dot.source_scaled && d.ticks_left > 0)
                 .map(|d| d.next_tick)
             {
                 if shared > dot.next_tick {
@@ -662,10 +667,26 @@ impl DebuffState {
 
     /// Append one DoT, lowering `dots_due` to it.
     pub(super) fn push_dot(&mut self, dot: Dot) {
+        if dot.source_scaled && dot.ticks_left > 0 {
+            match dot.dtype {
+                DamageType::Electricity => self.proc_landings[0] = dot.landing,
+                DamageType::Gas => self.proc_landings[1] = dot.landing,
+                _ => {}
+            }
+        }
         if let Some(due) = self.dots_due.as_mut() {
             *due = due.min(dot.next_tick);
         }
         self.dots.push(dot);
+    }
+
+    pub(super) fn proc_landing(&self, dot: &Dot) -> ProcLanding {
+        if !dot.source_scaled { return dot.landing; }
+        match dot.dtype {
+            DamageType::Electricity => self.proc_landings[0],
+            DamageType::Gas => self.proc_landings[1],
+            _ => ProcLanding::default(),
+        }
     }
 
     /// Apply a Heat proc to the singleton accumulator: add its contribution to

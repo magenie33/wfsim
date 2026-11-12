@@ -200,7 +200,7 @@ pub(super) fn weapon_status_scale(turn: &mut Turn, active: &FightParams, at: f64
     let base = active.dot_modified_base.unwrap_or_else(|| active.damage.total());
     let mb_live = base * (1.0 + active.base_damage_bonus + add) / (1.0 + active.base_damage_bonus);
     let status_damage_live = buff_total(active, crate::model::BuffGrant::StatusDamage, turn.buff_stacks, at);
-    InstanceScale { mb_live, crit_multiplier: 1.0, part_factor: 1.0, landing: 1.0,
+    InstanceScale { mb_live, crit_multiplier: 1.0, part_factor: 1.0, landing: ProcLanding::default(),
         attrition: 1.0, xh_bracket: active.extra_hit_bracket(at, turn.w), status_damage_live }
 }
 

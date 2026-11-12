@@ -500,10 +500,9 @@ pub(super) fn field_tick_seeded(
             // IT — measured (M54), and 1.0 for every field that cannot find a
             // head, which is the value this passed before the orb arrived.
             part_factor,
-            landing: match part {
-                Some(p) if p.is_head => ctx.head_landing,
-                _ => 1.0,
-            },
+            landing: part.map_or_else(ProcLanding::default, |p| {
+                ProcLanding::at(if p.is_head { ctx.head_landing } else { 1.0 }, p)
+            }),
             attrition: 1.0,
             // The BASE ATTACK's, not the cloud's: a Blast stack the cloud
             // applies still detonates off a gun, and the bracket its extra hit

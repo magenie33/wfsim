@@ -123,16 +123,16 @@ impl DebuffState {
         // under Melee Influence they were 73% of every pop.
         // A handful of groups at most; one that does not fit is queued per
         // stack as before, which costs a stale pop and changes nothing.
-        let mut groups = [(DamageType::Impact, 0.0f64); 8];
+        let mut groups = [(DamageType::Impact, false, 0.0f64); 8];
         let mut n = 0;
         for (i, d) in self.dots.iter().enumerate() {
             if d.ticks_left > 0 {
                 if consolidated(d.dtype) {
-                    if groups[..n].iter().any(|&(t, at)| t == d.dtype && (at - d.next_tick).abs() < 1e-9) {
+                    if groups[..n].iter().any(|&(t, scaled, at)| t == d.dtype && scaled == d.source_scaled && (at - d.next_tick).abs() < 1e-9) {
                         continue;
                     }
                     if n < groups.len() {
-                        groups[n] = (d.dtype, d.next_tick);
+                        groups[n] = (d.dtype, d.source_scaled, d.next_tick);
                         n += 1;
                     }
                 }
@@ -161,7 +161,7 @@ impl DebuffState {
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn settle_crowd_ticks(
-    w: &CardWindows,
+    w: &mut CardWindows,
     bodies: &mut [Body],
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
@@ -191,7 +191,7 @@ pub(super) fn process_ticks(
     // element buff strengthens what is already burning and stops the moment it
     // lapses (`FightParams::element_at`). A tick loop that could not see them
     // would have to freeze the answer at the proc, which is a different number.
-    w: &CardWindows,
+    w: &mut CardWindows,
     // THE BODY THIS LANDS ON. Its pools and the statuses on them are
     // one thing, so they arrive as one.
     body: &mut Body,
@@ -303,10 +303,13 @@ pub(super) fn process_ticks(
         // hit fires off a status — and the Blast detonation is the documented
         // exception (wiki `Extra_Hit`, Bugs: "Only Xata's Whisper will be
         // triggered by blast Detonations, no other extra hit will").
+        let mut tick_landing = ProcLanding::default();
         let (value, ignores_armor, is_dot_tick, hit_type, src, xh) = match &ev {
             Ev::Dot(i) => {
                 let dtype = debuffs.dots[*i].dtype;
                 let ignores_armor = debuffs.dots[*i].ignores_armor;
+                let source_scaled = debuffs.dots[*i].source_scaled;
+                tick_landing = debuffs.proc_landing(&debuffs.dots[*i]);
                 // THE ROW POINTS BACK AT THE ROUND THAT SEEDED IT, not at
                 // whatever the weapon is doing four seconds later. Swapped for
                 // the duration of this settlement and put back below, so the
@@ -341,6 +344,7 @@ pub(super) fn process_ticks(
                     let source = crate::fight::dot::Source::at(params, dtype, now, w);
                     for d in debuffs.dots.iter_mut() {
                         if d.dtype == dtype
+                            && d.source_scaled == source_scaled
                             && d.ticks_left > 0
                             && (d.next_tick - now).abs() < 1e-9
                         {
@@ -349,20 +353,20 @@ pub(super) fn process_ticks(
                             // AT `now`, NOT AT THE MOMENT IT WAS APPLIED — see
                             // `Dot::live`. A buff the shooter gained while this
                             // was burning is already in it.
-                            // THE LANDING SCALES THE ACCUMULATOR TOO: 234, not
-                            // 233, off a 24 body tick (M100). A group takes the
-                            // landing of the seed that brought its `1`.
-                            let paid = d.live(&source) * d.landing;
+                            // M100: the latest application changes the whole
+                            // tick's landing without changing any hit seed.
+                            let paid = d.live(&source) * tick_landing.factor;
                             sum += paid;
                             let first = unit == 0.0;
                             if first {
-                                unit = d.accumulator_unit(&source) * d.landing;
+                                unit = d.accumulator_unit(&source) * tick_landing.factor;
                             }
                             if rec.is_on() {
                                 let (over_seed, over_acc) = d.explain(params, now, w);
-                                parts.push(d.seed_part(rec, paid, over_seed, true));
+                                let landed = Dot { landing: tick_landing, ..*d };
+                                parts.push(landed.seed_part(rec, paid, over_seed, true));
                                 if first && unit != 0.0 {
-                                    acc_part = Some(d.accumulator_part(unit, over_acc, true));
+                                    acc_part = Some(landed.accumulator_part(unit, over_acc, true));
                                 }
                             }
                         }
@@ -495,6 +499,7 @@ pub(super) fn process_ticks(
             ledger::Clock::Dot,
             || Instance {
                 origin: crate::record::Origin::Status,
+                head: tick_landing.head,
                 // EVERY SEED DOWN TO THE HIT'S MODIFIED BASE. The hit's own
                 // half — coefficient, status damage, crit, body part — was kept
                 // by the record when the proc landed (`record::Seed`), so the
@@ -526,15 +531,17 @@ pub(super) fn process_ticks(
             push_break_proc(debuffs, dot_owner, params, now, pool);
         }
         if killed {
-            // Status-proc kills grant Galvanized stacks too (GS rules),
-            // and count for on-kill arcanes (Merciless — NOT Deadhead,
-            // whose precision boundary excludes status-proc kills).
+            // Ordinary kill effects include status kills. Electricity/Gas
+            // also keep their latest application's weak-point flag (M100).
             // GAS TOO, and it is the one that had to be asked: the cloud is an
             // entity with a radius that outlives its host, so "the cloud's kill
             // rather than the weapon's" is a reading the shape invites and the
             // game refuses (MEASUREMENTS M70).
             gal.bump_on_kill(params, now);
             arc.on_kill(params, now);
+            if tick_landing.weak_point {
+                weakpoint_kill(params, arc, w, now);
+            }
             // Fresh individual: clean DebuffBar.
             debuffs.on_death(dot_owner, params.acid_shells, &params.foe);
             break;

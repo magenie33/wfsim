@@ -162,7 +162,7 @@ fn aksondol_encumber_uses_the_weapons_status_payload_and_live_buffs() {
                     p.armor_strip_per_puncture, p.squad.enemy_armor_multiplier);
                 settle_procs(vec![DamageType::Cold, bonus], Seat::WIELDER, 2.0,
                     InstanceScale {
-                        mb_live: base, crit_multiplier: 1.0, part_factor: 1.0, landing: 1.0,
+                        mb_live: base, crit_multiplier: 1.0, part_factor: 1.0, landing: ProcLanding::default(),
                         attrition: 1.0, xh_bracket: p.extra_hit_bracket(2.0, &shot_me.windows), status_damage_live: 0.0,
                     }, &mut here.debuffs, &mut shot_me.gal, &mut shot_me.arc, &mut here.state,
                     &p, &p, &mit, &mut shot_fight.r, &mut rec, &mut shot_me.d.status, &p.foe, DEPTH_PROC);
