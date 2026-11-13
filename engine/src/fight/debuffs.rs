@@ -653,10 +653,13 @@ impl DebuffState {
             }
         }
         if let Some(cap) = cap {
-            while self.dots.iter().filter(|d| d.dtype == dot.dtype).count() >= cap {
+            // Count once; FIFO removal preserves every other family's order.
+            let mut count = self.dots.iter().filter(|d| d.dtype == dot.dtype).count();
+            while count >= cap {
                 match self.dots.iter().position(|d| d.dtype == dot.dtype) {
                     Some(i) => {
                         self.dots.remove(i);
+                        count -= 1;
                     }
                     None => break,
                 }

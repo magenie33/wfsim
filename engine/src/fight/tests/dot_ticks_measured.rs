@@ -399,6 +399,48 @@ fn independent_dots_cap_per_type_fifo() {
     assert_eq!(sla, vec![9.0]);
 }
 
+fn tagged_dot(tag: u32, dtype: DamageType) -> Dot {
+    Dot {
+        owner: Seat::WIELDER, cause: tag, next_tick: 0.0, ticks_left: 6,
+        frozen: f64::from(tag), landing: ProcLanding::default(), bracket: 1.0,
+        depth: 0, unit: 0.0, dtype, ignores_armor: false, seed: tag,
+    }
+}
+
+#[test]
+fn capped_dot_eviction_preserves_interleaved_order_and_the_original_clock() {
+    use DamageType::{Electricity, Gas, Toxin};
+    let mut d = DebuffState::default();
+    for (i, dtype) in [Toxin, Gas, Electricity, Gas, Toxin, Gas, Electricity, Gas, Gas].into_iter().enumerate() {
+        d.push_dot(tagged_dot(i as u32 + 1, dtype));
+    }
+    d.dots[1].ticks_left = 0;
+    d.dots[1].next_tick = 99.0;
+    d.dots[3].next_tick = 7.25;
+    let mut next = tagged_dot(10, Gas);
+    next.next_tick = 3.5;
+    next.landing = ProcLanding { factor: 1.8, head: true, weak_point: true };
+    d.push_dot_capped(next, Some(2));
+    assert_eq!(d.dots.iter().map(|dot| dot.cause).collect::<Vec<_>>(), [1, 3, 5, 7, 9, 10]);
+    let last = d.dots.last().unwrap();
+    assert_eq!(last.next_tick, 7.25, "the first live clock is read before eviction");
+    assert_eq!(last.ticks_left, 6, "alignment preserves the application's lifetime");
+    assert_eq!(d.proc_landing(last), next.landing);
+    assert_eq!(d.dots[4].landing, ProcLanding::default(), "existing hit seeds keep their landing");
+}
+
+#[test]
+fn a_zero_dot_cap_replaces_only_its_own_type() {
+    let mut d = DebuffState::default();
+    for (tag, dtype) in [(1, DamageType::Gas), (2, DamageType::Electricity), (3, DamageType::Gas)] {
+        d.push_dot(tagged_dot(tag, dtype));
+    }
+    for tag in [4, 5] {
+        d.push_dot_capped(tagged_dot(tag, DamageType::Gas), Some(0));
+        assert_eq!(d.dots.iter().map(|dot| dot.cause).collect::<Vec<_>>(), [2, tag]);
+    }
+}
+
 #[test]
 fn corrosion_strips_armor_multiplicatively() {
     // Capped armor (90% DR): forced Corrosive procs stack 20%+6%/stack
