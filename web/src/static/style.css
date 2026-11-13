@@ -3814,7 +3814,7 @@ body.on-build-library #preset-bar-builder-builds,body.on-build-library #forma-bl
 body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-library #jump{display:none}
 .library-entry{display:flex;justify-content:flex-end;margin:0 0 10px}
 .library-entry[hidden],.fd-scope[hidden]{display:none}
-.library-toolbar{position:sticky;top:calc(var(--shell-header-height,50px) + var(--page-tabs-height,0px));z-index:18;background:var(--surface);border-radius:12px 12px 0 0;border-bottom:1px solid var(--line)}
+.library-toolbar{position:sticky;top:calc(var(--shell-header-height,50px) + var(--page-tabs-height,0px));z-index:18;background:var(--surface);border-radius:12px 12px 0 0;border-bottom:1px solid var(--line);margin-bottom:var(--library-toolbar-gap,0px)}
 .library-toolbar-row{display:flex;align-items:center;gap:8px;padding:10px 12px 4px}
 .library-context{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:none;color:var(--text-2);text-align:left;cursor:pointer;font-size:12px}
 .library-sort{display:flex;flex-direction:row;align-items:center;gap:6px;font-size:11px;color:var(--muted)}

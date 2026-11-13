@@ -1020,7 +1020,9 @@ All settings can introduce a buff that the current weapon cannot grant.
 The compact sticky shell and one-row page tabs stay available while scrolling.
 Long tab strips scroll horizontally; selecting a route reveals its active tab.
 Local sticky bars use the measured shell and tab heights and compact in that
-space. Weapon artwork and large titles remain in normal document flow.
+space. Compact library toolbars retain their expanded document space so short
+pages keep their scroll position. Weapon artwork and large titles remain in
+normal document flow.
 
 Simulation and optimization keep their bottom run blocks and original result
 views in their modules. Each run block has its own heading in the jump menu.
