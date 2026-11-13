@@ -4,7 +4,7 @@ Chinese name: 收割者 Prime
 
 Scythe · Melee · Mastery Rank 10. 200 base damage (impact 30, puncture 30, slash 140), 35% crit chance, 2.5x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-13
+## Best riven-free build on the WFSim board, as of 2026-11-14
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

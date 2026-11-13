@@ -4,7 +4,7 @@ Chinese name: 葛拉卡达
 
 Rifle · Primary · Mastery Rank 5. 11 base damage (impact 4.4, puncture 3.66666, slash 2.93334), 25% crit chance, 2x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-13
+## Best riven-free build on the WFSim board, as of 2026-11-14
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
