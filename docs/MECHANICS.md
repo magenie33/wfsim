@@ -1983,6 +1983,9 @@ the body that stood up.
 **Only the round punches through.** At every body it reaches it rolls the
 multishot again, each instance its own crit (two bodies punched read five
 numbers), and a body it killed in front of it stops nothing behind.
+Each body's rolls apply to the round's damage before critical and noncritical
+bonuses. A zero or negative factor on the aimed hit cannot amplify or erase
+the independently rolled hit behind it.
 
 ### Multishot perks that are not a flat bonus
 

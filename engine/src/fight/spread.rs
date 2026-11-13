@@ -764,6 +764,7 @@ pub(super) fn spread_from_punch_through(
     params: &FightParams,
     active: &FightParams,
     struck: &[usize],
+    // Before critical and noncritical rolls: each body applies its own.
     raw_per_bucket: f64,
     shares: TypeShares,
     // THE ROUND'S ROLLS, made again at every body (M119): two bodies punched
@@ -857,8 +858,7 @@ pub(super) fn spread_from_punch_through(
             status_part_factor: head_part_factor,
             status_landing: head_status_landing,
         };
-        // THE ROUND'S AIMED ROLL, divided back out of the raw it was handed.
-        let unrolled = raw_per_bucket / (punch.crit_multiplier * punch.attrition).max(1e-12);
+        // The round carries raw damage before either body's independent rolls.
         let instances = punch.multishot.floor() as u32 + d.spine.chance(punch.multishot.fract()) as u32;
         for _ in 0..instances {
             let tier = upgrade_crit_tier(
@@ -876,7 +876,7 @@ pub(super) fn spread_from_punch_through(
                 &inst,
                 foe,
                 &spec,
-                unrolled * crit_multiplier * attrition,
+                raw_per_bucket * crit_multiplier * attrition,
                 shares,
                 crit_multiplier,
                 tier,
@@ -915,9 +915,6 @@ pub(super) struct PunchRolls {
     pub(super) multishot: f64,
     pub(super) crit_chance: f64,
     pub(super) crit_damage: f64,
-    /// The aimed instance's own crit and non-crit factors, inside the raw.
-    pub(super) crit_multiplier: f64,
-    pub(super) attrition: f64,
 }
 
 /// A RICOCHET — the projectile arriving again, at a body it has not hit yet.
