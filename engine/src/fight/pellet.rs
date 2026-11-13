@@ -1485,7 +1485,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         } else {
             dt_mult
         };
-        let raw_at_epicentre = qtotal
+        let raw_before_roll = |crit_multiplier, attrition| qtotal
             * part_factor
             * crit_multiplier
             * bucket
@@ -1530,6 +1530,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // stands here beside Double Tap rather than in a bucket.
             * ms_damage
             * pm_mult;
+        let punch_raw = if struck.len() > 1 { raw_before_roll(1.0, 1.0) * falloff / bucket } else { 0.0 };
+        let raw_at_epicentre = raw_before_roll(crit_multiplier, attrition);
         let raw = raw_at_epicentre * falloff;
         // AN EXPLOSION THAT MISSES THE AIMED BODY STILL CATCHES THE ONES IT
         // REACHES — a shockwave 5 m down the floor, a grenade landed beside the
@@ -1556,8 +1558,6 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             multishot: round_multishot,
             crit_chance: cc_pellet,
             crit_damage: cd,
-            crit_multiplier,
-            attrition,
         };
         if direct && contact {
             let mut contact_seeds = Vec::new();
@@ -1572,7 +1572,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         if direct && bodies[0].fallen {
             if !follows && params.beam.is_none() && struck.len() > 1 {
                 spread_from_punch_through(
-                    seat, windows, bodies, params, active, struck, raw / bucket, shares, punch,
+                    seat, windows, bodies, params, active, struck, punch_raw, shares, punch,
                     spread_mb, status_chance, forced, &spread_composition, part.is_head, part_factor,
                     landing.factor, &mut *gal, &mut *arc, &mut *r, rec, d, t,
                 );
@@ -1873,7 +1873,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     params,
                     active,
                     struck,
-                    raw / bucket,
+                    punch_raw,
                     shares,
                     punch,
                     spread_mb,
