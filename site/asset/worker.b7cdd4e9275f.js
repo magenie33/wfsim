@@ -16,7 +16,7 @@
 // optimizer's fleets settle on `onerror` alone and know no such message.
 const loadFailed = (cause) => postMessage({ kind: "load_failed", cause });
 try {
-  importScripts("/pkg/wfsim_wasm.3b6eb6afc35c.js");
+  importScripts("/pkg/wfsim_wasm.e61d9b26c91e.js");
 } catch (err) {
   loadFailed("glue");
   throw err;
