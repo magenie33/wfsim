@@ -88,6 +88,9 @@ export async function testDb(...kinds) {
   if (process.env.WFSIM_SYNC_PROC === "1" && kinds.includes("library")) {
     await q("INSERT INTO state_factory_parameters (name, value, set_by, set_at) VALUES ('sync_proc', 1, 'check', '2026-01-01T00:00:00.000Z') ON CONFLICT DO NOTHING", []);
   }
+  if (process.env.WFSIM_ANSWER_BULK === "1" && kinds.includes("library")) {
+    await q("INSERT INTO state_factory_parameters (name, value, set_by, set_at) VALUES ('answer_bulk', 1, 'check', '2026-01-01T00:00:00.000Z') ON CONFLICT DO NOTHING", []);
+  }
   return Object.assign(db, {
     exec: (sql) => step(schema, () => timed("exec", () => pg.exec(sql))),
     get: async (sql, ...args) => (await q(sql, args)).rows[0] ?? null,

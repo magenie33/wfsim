@@ -630,6 +630,7 @@ jobs:
         if: matrix.group == 'async'
         env:
           WFSIM_SETTLE_ASYNC: "1"
+          WFSIM_ANSWER_BULK: "1"
         run: |
           node scripts/check_board_verify.mjs
           node scripts/check_queue_once.mjs
@@ -640,12 +641,14 @@ jobs:
         if: matrix.group == 'proc'
         env:
           WFSIM_SYNC_PROC: "1"
+          WFSIM_ANSWER_BULK: "1"
         run: node scripts/check_board_sync.mjs
       - name: One-call sync and queued settlement preserve joint behavior
         if: matrix.group == 'proc-async'
         env:
           WFSIM_SYNC_PROC: "1"
           WFSIM_SETTLE_ASYNC: "1"
+          WFSIM_ANSWER_BULK: "1"
         run: |
           node scripts/check_board_sync.mjs
           node scripts/check_board_reviews.mjs
@@ -1148,6 +1151,8 @@ jobs:
         run: node scripts/check_compute_admission.mjs
       - name: Tasks and accepted results retain separate immutable authorities
         run: node scripts/check_compute_storage.mjs
+      - name: Result batches commit atomically with ordered locks and bounded database calls
+        run: node scripts/check_answer_batches.mjs
       - name: What the site tells an account reaches it and nobody else, read once, kept as long as it says
         run: node scripts/check_notices.mjs
       - name: What a reader tells the owner is kept for them and the account alone, and goes with it

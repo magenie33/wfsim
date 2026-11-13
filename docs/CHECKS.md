@@ -1032,6 +1032,20 @@ Late and on-time handoffs feed positive and zero gaps respectively. Background
 preparation is reused, and completed-row pace is learned for its task and share
 only when that share stayed unchanged.
 
+## `check_answer_batches`
+
+Result reception commits candidates, queue entries and learned producer costs
+together; stale task rounds roll the whole batch back. Reversed submissions
+retain the settler's lock order, and the real worker receives two hundred
+results in bounded database statements. The separate-statement fallback stays
+covered. Double-encoded or incomplete transport envelopes fail before reception.
+`--break-envelope`, `--break-order` and `--break-worker-bulk` must fail.
+
+`WFSIM_ANSWER_TEST_URL` runs the same cases on an isolated localhost PostgreSQL
+database and adds concurrent reversed witnesses, same-device retries and
+settlement-lock collisions. The default uses PGlite.
+`--break-procedure-locks` on TCP must expose opposite lease-group lock order.
+
 ## `check_sync_proc`
 
 Plain node on PGlite: protocol 8's sync as one call (`board_sync`,

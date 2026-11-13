@@ -2,6 +2,16 @@
 // Compute-cost accounting for fair scheduling.
 import { PRODUCER_MEAN_SHARE } from "./task_contract.js";
 
+function answerCosts(items) {
+  const by = {};
+  for (const { q, a } of items) {
+    if (!Number.isFinite(a.compute_ms) || a.compute_ms <= 0) continue;
+    const b = by[q.producer || ""] ||= { ms: 0, n: 0 };
+    b.ms += a.compute_ms; b.n += 1;
+  }
+  return Object.entries(by).sort().map(([p, b]) => ({ p, ms: b.ms, n: b.n }));
+}
+
 export function createUsage() {
   /// WHAT A HAND-OUT COSTS ITS PRODUCER: the question at its producer's mean
   /// fight, over its weight (docs/BOARD.md §"Fair share between producers"); a
@@ -15,13 +25,7 @@ export function createUsage() {
   /// move it as `k` folds of `PRODUCER_MEAN_SHARE` would. A statement for the
   /// answers' own batch, or null. worker/pg/sync.sql `factory_learn`.
   function learnCost(db, items) {
-    const by = {};
-    for (const { q, a } of items) {
-      if (!Number.isFinite(a.compute_ms) || a.compute_ms <= 0) continue;
-      const b = by[q.producer || ""] ||= { ms: 0, n: 0 };
-      b.ms += a.compute_ms; b.n += 1;
-    }
-    const rows = Object.entries(by).sort().map(([p, b]) => ({ p, ms: b.ms, n: b.n }));
+    const rows = answerCosts(items);
     if (!rows.length) return null;
     return db.prepare("SELECT factory_learn(?1::text, ?2::double precision)").bind(JSON.stringify(rows), PRODUCER_MEAN_SHARE);
   }
@@ -37,5 +41,5 @@ export function createUsage() {
   }
 
 
-  return { charge, learnCost, liftIdle };
+  return { charge, learnCost, answerCosts, liftIdle };
 }
