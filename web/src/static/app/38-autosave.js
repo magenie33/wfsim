@@ -88,6 +88,7 @@ const buildIsUntouched = () =>
   pristineBuild !== null && JSON.stringify(canon(snapshotState())) === pristineBuild;
 
 function markPresetDirty() {
+  refreshResultStatus();
   // A START OPEN IN THE BUILDER is not the player's build: its edits go back
   // into the start when it is closed, and must never reach a preset.
   if (presetApplying || startEdit) return;
@@ -164,6 +165,7 @@ function writeScenarioFields(patch) {
 }
 
 function markScenarioDirty() {
+  refreshResultStatus();
   if (presetApplying) return;
   scenarioSaveTimer = deferSave("scenarios", () => {
     if (!activeScenario || presetApplying) return;

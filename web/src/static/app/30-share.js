@@ -194,7 +194,7 @@ function sharePayloadInPool(build) {
   // recipient's own run is what decides. Three numbers, not the whole result
   // object — the card needs the headline and the fight, and the fight is
   // field 7.
-  const r = p && (resultLatest(presetWeapon(), presetId(p)) || {}).r;
+  const r = p && matchingResult()?.r;
   const m = r ? [r3(r.score), r.duration, Math.round(r.dps || 0)] : 0;
 
   // THE TWO AXES THAT ARE THE BUILD AND ARE NOT A SLOT: how the weapon is

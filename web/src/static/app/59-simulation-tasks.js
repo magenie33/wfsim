@@ -29,7 +29,8 @@ USER_TASK_TYPES.set("simulation", {
     } finally { release(); }
   },
   async save(task, result, { persistent }) {
-    const record = await resultAddCaptured(result, frozenTaskBuild(task.origin.build, task.request, task.origin.input_aliases), task.origin.context, task.attempt, persistent);
+    const record = await resultAddCaptured(result, frozenTaskBuild(task.origin.build, task.request, task.origin.input_aliases),
+      { ...task.origin.context, request: task.request }, task.attempt, persistent);
     resultMem.set(resultMemKey(task.origin.context.weapon, task.origin.context.preset), { ...record, r: result });
     track("simulator.run", task.request.weapon, task.request.runs);
     noteSimRun(task.request.runs);
@@ -41,7 +42,7 @@ USER_TASK_TYPES.set("simulation", {
     if (!record) return;
     if (task.source_id && task.source_id !== taskSources(task)[0].id) {
       record = await resultAddCaptured(record.r, frozenTaskBuild(task.origin.build, task.request, task.origin.input_aliases),
-        task.origin.context, `${task.result_ref}:${task.source_id}`, userTasks.store.persistent);
+        { ...task.origin.context, request: task.request }, `${task.result_ref}:${task.source_id}`, userTasks.store.persistent);
     }
     // Stored records omit frames; completion keeps the measured replay in memory.
     const measured = [...resultMem.values()].find(entry => entry.r.replay
@@ -155,7 +156,7 @@ async function openSimulationReport(weapon, id) {
   show("sim-viewing", false);
   renderSim();
   show("sim-results-block", true);
-  renderResults(record.r, record.at, record.build);
+  renderResults(record.r, record.at, record.build, record);
 }
 
 // A review observes one public verification round without holding local calculation resources.
@@ -367,8 +368,7 @@ async function refreshReviewedBoard(task) {
 function renderBoardReviewNote() {
   const box = $("sim-board-review");
   if (!box) return;
-  const record = simulationReport || (resultViewing && results.find(row => row.id === resultViewing))
-    || resultLatest(presetWeapon(), activePreset) || simulationResultForPage();
+  const record = resultForPage();
   const task = [...boardReviewTrackers.values()].find(task => (task.sources || [task.source]).includes(record?.id));
   if (!task) { box.innerHTML = ""; return; }
   const text = task.state === "submitting" ? tr("Requesting board calibration") : task.state === "succeeded" ? tr("Board calibration verified") : task.state === "superseded" ? tr("The board was updated while this review ran.")

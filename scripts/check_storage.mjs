@@ -15,6 +15,7 @@
 //   · THE RECORDS SURVIVE A RELOAD, and a `lastResult` an older page left in a
 //     saved build becomes a record and leaves the build.
 import { openApp } from "./cdp.mjs";
+import { checkSimulationContext } from './check_simulation_context.mjs';
 
 const app = await openApp({ boot: 12000 });
 const { evaluate, check, finish } = app;
@@ -214,4 +215,5 @@ check("…another family sees only its own", riven.onLaetum.join() === "family c
 check("…and a weapon with no cards sees none", riven.onTorid.join() === "",
   riven.onTorid.join(" "));
 
+await checkSimulationContext(app);
 await finish("storage is bounded by the summary, not by how hard you measured");

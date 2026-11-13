@@ -14,7 +14,7 @@ const RESULTS_STORE = "entity_simulation_reports";
 /// WHAT A RECORD'S SHAPE IS. A record is never migrated: a field it lacks was
 /// not measured when it was written, and every reader says "not recorded"
 /// rather than reading it as 0. A new field raises this and nothing else.
-const RESULT_SCHEMA = 1;
+const RESULT_SCHEMA = 2;
 /// How many unpinned records one build keeps per fight; a pinned one is kept
 /// until it is deleted.
 const RESULT_KEEP = 5;
@@ -76,7 +76,7 @@ function resultRecord(r, build, context = resultContext(), id = presetNewId()) {
     id, schema: RESULT_SCHEMA, at: Date.now(),
     engine: r.computation?.engine || ENGINE_ID, release: RELEASE_ID,
     computation: r.computation || { local: true },
-    ...context, build,
+    ...JSON.parse(JSON.stringify(context)), build,
     kept: false, r: { ...r, replay: null },
   };
 }
@@ -104,9 +104,9 @@ async function resultAddCaptured(r, build, context, id, persistent) {
 
 /// Record a run, and trim what that build keeps for that fight. The blank
 /// (no preset open) records nothing: no build is there for a record to name.
-function resultAdd(r, build) {
-  if (!activePreset) return null;
-  const rec = resultRecord(r, build);
+function resultAdd(r, build, context = { ...resultContext(), request: taskClone({ ...buildPayload(), ...theFight() }) }) {
+  if (!context.preset) return null;
+  const rec = resultRecord(r, build, context);
   results.push(rec);
   const same = (x) => !x.kept && x.weapon === rec.weapon && x.preset === rec.preset && x.scenario === rec.scenario;
   const drop = results.filter(same).slice(0, -RESULT_KEEP).map((x) => x.id);
@@ -147,7 +147,7 @@ async function lastResultsToRecords() {
         let fight;
         try { fight = JSON.parse(lr.key)[4]; } catch (_) { fight = undefined; }
         made.push({
-          id: presetNewId(), schema: RESULT_SCHEMA, at: lr.at || 0, weapon: p.scope || "", preset: presetId(p),
+          id: presetNewId(), schema: 1, at: lr.at || 0, weapon: p.scope || "", preset: presetId(p),
           key: lr.key, ...(fight ? { fight } : {}), kept: false, r: { ...lr.r, replay: null },
         });
       }

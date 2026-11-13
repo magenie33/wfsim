@@ -2535,6 +2535,12 @@ arrives.
 
 ## `check_storage`
 
+Its imported `check_simulation_context` drives Kuva Nukor through two saved
+fights. Switching restores the matching measurement; edits and history retain
+the measured units, headshot rate and combat-record request. Changed inputs are
+marked beside the result. The context and request assertions fail against the
+prior renderer.
+
 How much room the app takes on the reader's machine. It
 measures the RATIO rather than asserting a constant, fills the disk from OTHER
 weapons' keys to prove the shed sweeps the origin, and plants a replay written

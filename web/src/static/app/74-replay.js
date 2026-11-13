@@ -54,12 +54,13 @@ function scrubLegend(rp) {
 /// `formation[i]`; the result names bodies by ID, so the two are joined on the
 /// name the page itself gave them.
 function bodyHeat(r) {
+  const fight = resultFight();
   const idAt = (i) => (i === 0
     ? (((r.replay || {}).tracked || [])[0] || (r.bodies || [])[0] && r.bodies[0].id)
-    : ((sim.formation || [])[i - 1] || {}).id || `e${i + 1}`);
+    : ((fight.formation || [])[i - 1] || {}).id || `e${i + 1}`);
   const top = Math.max(...(r.bodies || []).map((b) => b.damage)) || 1;
   const byId = Object.fromEntries((r.bodies || []).map((b) => [b.id, b.damage / top]));
-  const n = 1 + (sim.formation || []).length;
+  const n = 1 + (fight.formation || []).length;
   return { idAt, n, heat: Array.from({ length: n }, (_, i) => byId[idAt(i)] || 0) };
 }
 
@@ -707,10 +708,10 @@ function wireReplay(r) {
     const was = el.querySelector(".nm").innerHTML;
     el.querySelector(".nm").textContent = tr("following…");
     try {
-      const r = await api("/api/simulate", {
-        ...buildPayload(),
-        ...theFight({ replay: true, replay_follow: [id], runs: 1, run: shownResult.r.run }),
-      });
+      const measured = shownResult;
+      const r = await api("/api/simulate", resultRequest(measured.r,
+        { replay: true, replay_follow: [id], runs: 1, run: measured.r.run }));
+      if (shownResult?.r !== measured.r) return;
       const rp = r && r.replay;
       const k = rp && (rp.tracked || []).indexOf(id);
       if (!rp || k < 0) throw new Error("not followed");
@@ -758,7 +759,8 @@ function wireReplay(r) {
     const { idAt, heat, n } = bodyHeat(r);
     const selIdx = Array.from({ length: n }, (_, i) => i)
       .find((i) => idAt(i) === (rp.tracked || [])[replayFoeIdx(rp)]);
-    mountArena(sceneEl, sim, (allEnemies().find((e) => e.id === sim.enemy) || allEnemies()[0]), {
+    const fight = resultFight();
+    mountArena(sceneEl, fight, (allEnemies().find((e) => e.id === fight.enemy) || allEnemies()[0]), {
       readonly: true,
       heat,
       selected: selIdx,

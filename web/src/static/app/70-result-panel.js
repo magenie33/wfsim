@@ -1,28 +1,27 @@
 // ---- the result on screen ------------------------------------------------
-// The simulator shows the ACTIVE preset's newest record (`resultLatest`) —
-// switching builds switches the displayed numbers too, or clears them when
-// that build was never tested.
+// The simulator restores the active inputs' newest measurement, or marks
+// the build's newest record as stale when those inputs have not been measured.
 // WHAT was measured: the build and the fight, together. A number is only
 // this build's number while both are unchanged — the share card states the
 // two side by side, so it has to know when the stored one stopped matching.
 function simKey() {
-  const st = snapshotState();
-  return JSON.stringify([st.slots, st.arcane, st.arcaneRank, st.evoSel, snapshotScenario()]);
+  return JSON.stringify(canon({ ...buildPayload(), ...theFight() }));
 }
 
-function saveSimResult(r, build) {
+function saveSimResult(r, build, context) {
   resultViewing = null;
-  const rec = resultAdd(r, build);
+  const rec = resultAdd(r, build, context);
   // …AND IN MEMORY, which is where the REPLAY stays for good: a record has none.
-  if (rec) resultMem.set(resultMemKey(), { ...rec, r });
+  if (rec) resultMem.set(resultMemKey(rec.weapon, rec.preset), { ...rec, r });
+  return rec;
 }
 
 // The result to PUT ON A CARD: the stored one if it still describes this
 // build in this fight, else a fresh run. Reusing a stale one would be worse than having none — the card
 // would attach a measurement to a build that never produced it.
 async function resultForShare() {
-  const rec = resultLatest(presetWeapon(), activePreset);
-  if (rec && rec.r && rec.key === simKey()) return rec;
+  const rec = matchingResult();
+  if (rec?.r) return rec;
   // The PANEL first, awaited. `refreshPanel` is debounced and returns before
   // it has answered, so a share clicked seconds after an edit was composing
   // its buff map from the PREVIOUS build's `buffList` — a buff the new mod
@@ -39,11 +38,12 @@ async function resultForShare() {
   // A share card that takes a minute to appear is a share card nobody waits
   // for.
   const build = snapshotState();
-  const r = await simulateFleet({ ...buildPayload(), ...theFight() });
+  const context = resultContext(), request = taskClone({ ...buildPayload(), ...theFight() });
+  const r = await simulateFleet(request);
   if (!r || r.ok === false) return null;
-  saveSimResult(r, build);
+  const saved = saveSimResult(r, build, { ...context, request });
   renderStoredSimResult();
-  return { r, at: Date.now(), key: simKey() };
+  return saved ? { ...saved, r } : { ...context, request, build, r, at: Date.now() };
 }
 /// THE RESULT ON SCREEN, held in memory as well as in storage.
 ///
@@ -59,13 +59,45 @@ const resultMemKey = (weapon = presetWeapon(), preset = activePreset) => JSON.st
 /// opening another build or running again shows the newest.
 let resultViewing = null;
 
+const matchingResult = () => {
+  const key = simKey();
+  return resultsFor(presetWeapon(), activePreset).find(record => record.key === key);
+};
+function resultForPage() {
+  if (simulationReport && new URLSearchParams(location.search).get("measurement") === simulationReport.id) {
+    return results.find(record => record.id === simulationReport.id) || null;
+  }
+  return (resultViewing && results.find(record => record.id === resultViewing
+    && record.weapon === presetWeapon() && record.preset === activePreset))
+    || matchingResult() || resultLatest(presetWeapon(), activePreset) || simulationResultForPage();
+}
+const resultFight = () => shownResult?.context?.fight || sim;
+function refreshResultStatus() {
+  const note = $("sim-result-context");
+  if (!note) return;
+  const changed = !!shownResult?.context?.key && shownResult.context.key !== simKey();
+  note.hidden = !changed;
+  note.textContent = changed ? tr("build or fight changed since") : "";
+}
+
+/// Regeneration belongs to the measured request, including resolved linked builds.
+function resultRequest(r, overrides) {
+  const context = shownResult?.r === r ? shownResult.context : null;
+  if (context?.engine && context.engine !== ENGINE_ID) {
+    throw new Error(tr("Run this configuration again to read its combat record."));
+  }
+  if (context?.request) return { ...taskClone(context.request), ...overrides };
+  if (!context?.key || context.key === simKey()) return { ...buildPayload(), ...theFight(overrides) };
+  throw new Error(tr("Run this configuration again to read its combat record."));
+}
+
 function renderStoredSimResult() {
   const box = $("sim-results");
   if (!box) return;
   if (simulationReport && new URLSearchParams(location.search).get("measurement") === simulationReport.id) {
     show("sim-results-block", true);
     const report = results.find((record) => record.id === simulationReport.id);
-    if (report) renderResults(report.r, report.at, report.build);
+    if (report) renderResults(report.r, report.at, report.build, report);
     else box.innerHTML = `<div class="placeholder">${escHtml(tr("This result is no longer available."))}</div>`;
     return;
   }
@@ -73,13 +105,13 @@ function renderStoredSimResult() {
   const viewing = resultViewing
     && results.find((x) => x.id === resultViewing && x.weapon === presetWeapon() && x.preset === activePreset);
   if (!viewing) resultViewing = null;
-  renderResultHistory(viewing);
+  let shown = resultForPage();
+  renderResultHistory(shown);
   if (viewing) {
     show("sim-results-block", true);
-    renderResults(viewing.r, viewing.at, viewing.build);
+    renderResults(viewing.r, viewing.at, viewing.build, viewing);
     return;
   }
-  let shown = resultLatest(presetWeapon(), activePreset) || simulationResultForPage();
   // WHAT IS ON SCREEN WINS over the record, and only for the build it was
   // measured on — a cache that outlived its build would attach a number to
   // something that never produced it. A RECORD HAS NO REPLAY, so memory is
@@ -90,8 +122,13 @@ function renderStoredSimResult() {
   if (mem && shown && mem.id === shown.id && mem.r.replay) shown = mem;
   const has = !!(shown && shown.r);
   show("sim-results-block", has); // an untested build shows no Result block
-  if (has) renderResults(shown.r, shown.at, shown.build);
-  else box.innerHTML = "";
+  if (has) renderResults(shown.r, shown.at, shown.build, shown);
+  else {
+    shownResult = null;
+    if (replayState?.raf) cancelAnimationFrame(replayState.raf);
+    replayState = null;
+    box.innerHTML = "";
+  }
 }
 
 /// "3 Oct 15:26" in the page's language; a record that never said when is "—".
@@ -102,17 +139,18 @@ const resultTime = (at) => (at ? new Date(at).toLocaleString(LANG === "zh" ? "zh
 /// result block above as the page draws a result today. A row says what no
 /// longer holds — the build or the fight changed since, another engine
 /// measured it — and nothing a record did not record.
-function renderResultHistory(viewing) {
+function renderResultHistory(shown) {
   const box = $("sim-history"), note = $("sim-viewing");
   if (!box || !note) return;
   const recs = resultsFor(presetWeapon(), activePreset);
+  const viewing = resultViewing && recs.find(record => record.id === resultViewing);
   note.hidden = !viewing;
   note.innerHTML = viewing
     ? `<span>${escHtml(tr("showing the run of {t}").replace("{t}", resultTime(viewing.at)))}</span>`
       + `<button type="button" class="pchip" data-rlatest>${escHtml(tr("back to the newest"))}</button>`
     : "";
   if (!recs.length) { box.innerHTML = ""; return; }
-  const on = viewing ? viewing.id : recs[0].id;
+  const on = shown?.id || recs[0].id;
   const key = simKey();
   const rows = recs.map((x) => {
     const m = metricOf((x.fight || {}).metric);
@@ -151,7 +189,7 @@ document.addEventListener("click", (e) => {
   if (keep) {
     const rec = results.find((x) => x.id === keep.dataset.rkeep);
     if (rec) resultKeep(rec.id, !rec.kept);
-    renderResultHistory(resultViewing && results.find((x) => x.id === resultViewing));
+    renderResultHistory(shownResult?.context);
   } else if (del) {
     resultDelete(del.dataset.rdel);
     if (resultViewing === del.dataset.rdel) resultViewing = null;

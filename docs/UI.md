@@ -1211,12 +1211,19 @@ initialized models. Recognized values enter the ordinary saved-riven review.
 as they were (`build`, `fight`, and `key`, which joins them), the engine that
 measured them (`engine`: a digest of the code and data a number is computed
 from, translations, prose and comments excluded — `engine_id` in the site build), which preset and scenario it came
-from, and the summary `r`. A preset holds no result: "this build's number" is
-its newest record (`resultLatest`), so a second run does not erase the first.
+from, the executed `request`, and the summary `r`. The result panel prefers
+the newest record matching the current build and fight. With no match it shows
+the newest record and marks the changed inputs beside the number. Conditions,
+units and arena positions come from that record; changing the editor does not
+relabel a measurement. Switching back to a measured fight restores its result.
 Every run is recorded; each build keeps its newest `RESULT_KEEP` unpinned
 records per scenario, and a pinned one (`kept`) until it is deleted. A run
 without a saved build belongs to its task, and is not attached to another
 blank build. Its result is shown on the page only while the inputs match.
+
+Combat-record reads and following another replay target use the captured
+request. A result from another engine must be measured again. A record without
+a captured request can regenerate only while its recorded inputs still match.
 
 **A RECORD IS NEVER MIGRATED.** A field it lacks was not measured when it was
 written, and a reader says "not recorded" rather than reading 0; a new field
