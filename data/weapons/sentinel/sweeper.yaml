@@ -20,6 +20,7 @@ disposition: 1.2
 polarities: [madurai, madurai]
 riven_family: Sweeper
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/SentShotgun
+weakness_bonus: 0.2
 traits: [tenno]
 noise: alarming
 magazine: 10

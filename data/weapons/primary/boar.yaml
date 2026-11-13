@@ -26,6 +26,7 @@ riven_family: Boar           # module `Family` — SHARED with the Boar Prime, s
 traits: [tenno, incarnon]
 introduced: "Vanilla"        # in the game at launch
 internal_name: /Lotus/Weapons/Tenno/Shotgun/FullAutoShotgun
+weakness_bonus: 0.2
 noise: alarming              # IsSilent false
 ammo_type: primary
 ammo_max: 120

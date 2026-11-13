@@ -23,6 +23,7 @@ riven_family: Daikyu
 traits: [tenno]
 introduced: "16.5"
 internal_name: /Lotus/Weapons/Tenno/Bows/AsymetricalBow/AsymetricalBow
+weakness_bonus: 1.0
 noise: silent
 ammo_type: primary
 ammo_max: 72

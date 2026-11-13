@@ -34,6 +34,7 @@ riven_family: Cernos
 traits: [prime, never_vaulted]
 introduced: "19.0.7"         # Hotfix 19.0.7
 internal_name: /Lotus/Weapons/Tenno/Bows/PrimeCernos/PrimeCernos
+weakness_bonus: 1.0
 noise: silent                # IsSilent on both attacks — it never alerts
 ammo_type: primary
 ammo_max: 72

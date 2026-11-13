@@ -28,6 +28,7 @@ riven_family: Synapse
 traits: [infested, technocyte_coda]
 introduced: "38.5"
 internal_name: /Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSynapse
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 560

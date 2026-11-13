@@ -23,6 +23,7 @@ riven_family: Boltor
 traits: [incarnon, prime, vaulted]
 introduced: "12.4"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeBoltor/PrimeBoltor
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 540

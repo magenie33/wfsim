@@ -25,6 +25,7 @@ riven_family: Zylok
 traits: [incarnon, tenno]
 introduced: "Update 23.6"
 internal_name: /Lotus/Weapons/Tenno/Pistols/ConclaveLeverPistol/ConclaveLeverPistol
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

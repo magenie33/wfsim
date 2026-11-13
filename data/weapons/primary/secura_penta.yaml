@@ -22,6 +22,7 @@ riven_family: Penta
 traits: [syndicate, perrin_sequence]
 introduced: "17.3"
 internal_name: /Lotus/Weapons/Syndicates/PerrinSequence/LongGuns/PSPenta
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 ammo_max: 28

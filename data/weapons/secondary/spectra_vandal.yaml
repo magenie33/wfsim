@@ -21,6 +21,7 @@ riven_family: Spectra
 traits: [corpus, vandal]
 introduced: "25.0"
 internal_name: /Lotus/Weapons/Corpus/Pistols/CorpusModularPistol/Vandal/CrpLaserPistolVandal
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: secondary
 ammo_max: 400

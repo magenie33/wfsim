@@ -26,6 +26,7 @@ riven_family: Ballistica
 traits: [incarnon, syndicate, red_veil]
 introduced: "Update 15.5"
 internal_name: /Lotus/Weapons/Syndicates/RedVeil/Pistols/RVBallistica
+weakness_bonus: 0.5
 noise: silent
 ammo_type: secondary
 ammo_max: 210

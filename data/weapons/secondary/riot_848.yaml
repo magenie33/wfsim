@@ -22,6 +22,7 @@ riven_family: Riot-848
 traits: [tenno, entrati]
 introduced: "38.5"
 internal_name: /Lotus/Weapons/Tenno/Pistols/1999EntHybridPistolWeapon/1999EntHybridPistolWeapon
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 0

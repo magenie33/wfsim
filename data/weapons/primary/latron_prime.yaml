@@ -23,6 +23,7 @@ riven_family: Latron
 traits: [incarnon, prime, vaulted]
 introduced: "8.0"
 internal_name: /Lotus/Weapons/Tenno/Rifle/LatronPrime
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 540

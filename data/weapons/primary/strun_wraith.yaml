@@ -25,6 +25,7 @@ riven_family: Strun
 traits: [incarnon, wraith, tenno, invasion_reward]
 introduced: "Hotfix 9.7.2"
 internal_name: /Lotus/Weapons/Tenno/Shotgun/ShotgunVandal
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 120

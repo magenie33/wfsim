@@ -24,6 +24,7 @@ riven_family: Phantasma
 traits: [prime, sentient]
 introduced: "32.0.9"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimePhantasma/PhantasmaPrimeShotgun
+weakness_bonus: 0.2
 noise: alarming              # IsSilent false
 ammo_type: primary
 ammo_max: 330

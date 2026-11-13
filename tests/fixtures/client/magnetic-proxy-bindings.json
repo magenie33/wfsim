@@ -1,0 +1,17 @@
+{
+  "client_build": "2026.10.28.09.54",
+  "enemy_owners": {
+    "corrupted_heavy_gunner": "/Lotus/Types/Enemies/Orokin/OrokinHeavyFemaleLeaderAvatar",
+    "thrax_centurion": "/Lotus/Types/Enemies/Duviri/Avatars/DuviriMeleeAvatar",
+    "crewman": "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/RifleSpacemanAvatar",
+    "demolisher_devourer": "/Lotus/Types/Enemies/Grineer/Disruption/Avatars/DemoDevourerAvatar",
+    "techrot_babau": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/InfestedBabau1999Avatar",
+    "violence": "/Lotus/Types/Enemies/Acolytes/DuellistAcolyteAvatar",
+    "mania": "/Lotus/Types/Enemies/Acolytes/RogueAcolyteAvatar",
+    "misery": "/Lotus/Types/Enemies/Acolytes/AreaCasterAcolyteAvatar",
+    "angst": "/Lotus/Types/Enemies/Acolytes/StrikerAcolyteAvatar",
+    "malice": "/Lotus/Types/Enemies/Acolytes/HeavyAcolyteAvatar",
+    "torment": "/Lotus/Types/Enemies/Acolytes/ControlAcolyteAvatar",
+    "legacyte": "/Lotus/Types/Enemies/WF1999Infested/InfestedWarframeCapture/InfestedCaptureMutalistAvatar"
+  }
+}

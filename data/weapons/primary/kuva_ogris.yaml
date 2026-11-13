@@ -23,6 +23,7 @@ riven_family: Ogris
 traits: [grineer, kuva_lich]
 introduced: "26"
 internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Ogris/KuvaOgris
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 ammo_max: 7

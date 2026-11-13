@@ -1,0 +1,4677 @@
+{
+  "client_build": "2026.10.28.09.54",
+  "input_manifests": {
+    "20261106T150853Z-client-metadata-offline": "dbeb51209c791af1692f91f087826805b8f99198ee0958ec4606170ab2badea2",
+    "20261112T165824Z-magnetic-pool-proxy": "ccdba60c8d17b97e85010305b3f692640cfc0c9bdce8979f3ab8ae905435b3c6"
+  },
+  "consumed_metadata": {
+    "packages_records.jsonl": "cd2a9c3c282eee2ff23a514dd308ab98088b16b31438cc1799dbd66ee5144267",
+    "packages_owntext.jsonl": "0b4256341c0bc42bd7838ba3c4358a9dc8eabf2d0959758b73b2d0525730f88c"
+  },
+  "weapons": [
+    {
+      "id": "cyngas",
+      "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/ArchBurstGun/ArchBurstGun",
+      "origin": "/Lotus/Weapons/Tenno/Archwing/Primary/ArchBurstGun/ArchBurstGun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "mausolon",
+      "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchLongGun/ThanoTechLongGun",
+      "origin": "/Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchLongGun/ThanoTechLongGun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "acceltra",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/SapientPrimary/SapientPrimaryWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/SapientPrimary/SapientPrimaryWeapon",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "acceltra_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeAcceltra/PrimeAcceltraWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/SapientPrimary/SapientPrimaryWeapon",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "aeolak",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnRifleErsatz/TnRifleErsatzWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "afentis",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnHopliteSpear/TnHopliteSpearGunWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnHopliteSpear/TnHopliteSpearGunWeapon",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "afentis_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeAfentis/PrimeAfentisWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnHopliteSpear/TnHopliteSpearGunWeapon",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "alternox",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/GyreRifle/GyreRifleWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "alternox_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeAlternox/PrimeAlternoxWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "ambassador",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpArSniper/CrpArSniperRifle",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/CrpArSniper/CrpArSniperRifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "amprex",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/ChainLightningGun/ChainLightningRifle",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/ChainLightningGun/ChainLightningRifle",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "arca_plasmor",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpShotgun/CrpShotgun",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/CrpShotgun/CrpShotgun",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "argonak",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/LaserAimRifle/LaserAimRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "astilla",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnGlassShotgun/TnGlassShotgunGun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "astilla_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeAstilla/AstillaPrimeWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "attica",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnoPrmryXbow/TnoPrmryXbowWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnoPrmryXbow/TnoPrmryXbowWeapon",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "ax_52",
+      "owner": "/Lotus/Weapons/Lasria/AK47/TC2024AK47Weapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "basmu",
+      "owner": "/Lotus/Weapons/Sentients/SentRifleNewWar/SentRifleNewWarGun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "battacor",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpSentExperimentRifle/CrpSentExperimentRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "baza",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnSMG/TnSMGWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "baza_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeBaza/PrimeBazaGun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "boar",
+      "owner": "/Lotus/Weapons/Tenno/Shotgun/FullAutoShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "boar_prime",
+      "owner": "/Lotus/Weapons/Tenno/Shotgun/PrimeBoar",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "boltor",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/BoltoRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "boltor_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeBoltor/PrimeBoltor",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "braton",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/Rifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "braton_prime",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/BratonPrime",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "braton_vandal",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/VIPRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "bubonico",
+      "owner": "/Lotus/Weapons/Infested/LongGuns/InfArmCannon/InfArmCannon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "burston",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/BurstRifle",
+      "origin": "/Lotus/Weapons/Tenno/Rifle/BurstRifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "burston_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeBurston/PrimeBurston",
+      "origin": "/Lotus/Weapons/Tenno/Rifle/BurstRifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "buzlok",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrnGorgSniperRifle/GrnGorgSniperRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "carmine_penta",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/CarminePenta",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/GrenadeLauncher",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "cedo",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnAlchemistShotgun/TnAlchemistShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "cedo_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeCedo/PrimeCedoWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "cernos",
+      "owner": "/Lotus/Weapons/Tenno/Bows/AntlerBow/AntlerBow",
+      "origin": "/Lotus/Weapons/Tenno/Bows/AntlerBow/AntlerBow",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "cernos_prime",
+      "owner": "/Lotus/Weapons/Tenno/Bows/PrimeCernos/PrimeCernos",
+      "origin": "/Lotus/Weapons/Tenno/Bows/AntlerBow/AntlerBow",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "cinta",
+      "owner": "/Lotus/Weapons/Tenno/Bows/DaxDuviriAsymetricalBow/DaxDuviriAsymmetricalLongBowPlayerWeapon",
+      "origin": "/Lotus/Weapons/Tenno/Bows/DaxDuviriAsymetricalBow/DaxDuviriAsymmetricalLongBow",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "coda_bassocyst",
+      "owner": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/1999InfShotgun/1999InfShotgunWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "coda_bubonico",
+      "owner": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaBubonico/CodaBubonicoCannon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "coda_hema",
+      "owner": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaHema",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "coda_sporothrix",
+      "owner": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSporothrix",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "coda_synapse",
+      "owner": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSynapse",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "convectrix",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpSplitLaser/CrpSplitLaser",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "corinth",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnHeavyShotgun/TnHeavyShotgunGun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "corinth_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeCorinth/PrimeCorinth",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "daikyu",
+      "owner": "/Lotus/Weapons/Tenno/Bows/AsymetricalBow/AsymetricalBow",
+      "origin": "/Lotus/Weapons/Tenno/Bows/AsymetricalBow/AsymetricalBow",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "daikyu_prime",
+      "owner": "/Lotus/Weapons/Tenno/Bows/PrimeDaikyu/PrimeDaikyuBow",
+      "origin": "/Lotus/Weapons/Tenno/Bows/AsymetricalBow/AsymetricalBow",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "dera",
+      "owner": "/Lotus/Weapons/ClanTech/Energy/EnergyRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "dera_vandal",
+      "owner": "/Lotus/Weapons/ClanTech/Energy/DeraVandal",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "dex_sybaris",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/DexTheThird/DexTheThird",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnoLeverAction/TnoLeverActionRifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "drakgoon",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrineerFlakCannon/FlakCannon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "dread",
+      "owner": "/Lotus/Weapons/Tenno/Bows/StalkerBow",
+      "origin": "/Lotus/Weapons/Tenno/Bows/StalkerBow",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "efv_5_jupiter",
+      "owner": "/Lotus/Weapons/Lasria/LasGooAK/LasGooAKPlayerWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "enkaus",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnInkRifle/TnInkRifleWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "evensong",
+      "owner": "/Lotus/Weapons/Tenno/Bows/TnChoirBow/TnChoirBow",
+      "origin": "/Lotus/Weapons/Tenno/Bows/TnChoirBow/TnChoirBow",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "exergis",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpShapeBlast/CrpShapeBlastShotgun",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/CrpShapeBlast/CrpShapeBlastShotgun",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "felarx",
+      "owner": "/Lotus/Weapons/Tenno/Zariman/LongGuns/PumpShotgun/ZarimanPumpShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "ferrox",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/Spears/Railgun/CorpusRailgun",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/Spears/Railgun/CorpusRailgun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "flux_rifle",
+      "owner": "/Lotus/Weapons/ClanTech/Energy/CrpLaserRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "fulmin",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnWispRifle/TnWispRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "fulmin_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeFulmin/PrimeFulmin",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "glaxion",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpFreezeRay/CrpFreezeRayRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "glaxion_vandal",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpFreezeRay/Vandal/CrpFreezeRayVandalRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "gorgon",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/HeavyRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "gorgon_wraith",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/WraithGorgon/WraithGorgon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "gotva_prime",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrnOrokinRifle/GrnOrokinRifleWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "grakata",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrineerAssaultRifle/GrnAssaultRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "grinlok",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrineerLeverActionRifle/GLARifle",
+      "origin": "/Lotus/Weapons/Grineer/LongGuns/GrineerLeverActionRifle/GLARifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "haalvu",
+      "owner": "/Lotus/Weapons/Sentients/SentOctaMiniGun/SentOctaMiniGun",
+      "origin": "/Lotus/Weapons/Sentients/SentOctaMiniGun/SentOctaMiniGun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "harpak",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrnHarpoonGun/GrnHarpoonGun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "hek",
+      "owner": "/Lotus/Weapons/Tenno/Shotgun/QuadShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "hema",
+      "owner": "/Lotus/Weapons/Infested/LongGuns/InfWFAccompanyingPri/InfestedBurstRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "higasa",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/Gunbrella/ShrineMaidenGunbrellaWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "hind",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/BurstRifle/GrnBurstRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "ignis",
+      "owner": "/Lotus/Weapons/ClanTech/Chemical/FlameThrower",
+      "origin": "/Lotus/Weapons/ClanTech/Chemical/FlameThrower",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "ignis_wraith",
+      "owner": "/Lotus/Weapons/ClanTech/Chemical/FlameThrowerWraith",
+      "origin": "/Lotus/Weapons/ClanTech/Chemical/FlameThrower",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "javlok",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrnFlameSpear/GrnFlameSpear",
+      "origin": "/Lotus/Weapons/Grineer/LongGuns/GrnFlameSpear/GrnFlameSpear",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "karak",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrineerM16Homage/GrineerM16Rifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "karak_wraith",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrineerM16Homage/KarakWraith",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "kohm",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrnSpark/GrnSparkRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "komorex",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpSentAmlgSniper/CrpSentAmlgSniper",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "kuva_bramma",
+      "owner": "/Lotus/Weapons/Grineer/Bows/GrnBow/GrnBowWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "kuva_chakkhurr",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrnKuvaLichRifle/GrnKuvaLichRifleWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "kuva_drakgoon",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Drakgoon/KuvaDrakgoon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "kuva_hek",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Hek/KuvaHekWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "kuva_hind",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Hind/KuvaHind",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "kuva_karak",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Karak/KuvaKarak",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "kuva_kohm",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Kohm/KuvaKohm",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "kuva_ogris",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Ogris/KuvaOgris",
+      "origin": "/Lotus/Weapons/ClanTech/Chemical/RocketLauncher",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "kuva_quartakk",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Quartakk/KuvaQuartakk",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "kuva_sobek",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Sobek/KuvaSobek",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "kuva_tonkor",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Tonkor/KuvaTonkor",
+      "origin": "/Lotus/Weapons/Grineer/LongGuns/GrnGrenadeLauncher/GrnGrenadeLauncher",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "kuva_zarr",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Zarr/KuvaZarr",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "lanka",
+      "owner": "/Lotus/Weapons/ClanTech/Energy/Railgun",
+      "origin": "/Lotus/Weapons/ClanTech/Energy/Railgun",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "latron",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/SemiAutoRifle",
+      "origin": "/Lotus/Weapons/Tenno/Rifle/SemiAutoRifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "latron_prime",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/LatronPrime",
+      "origin": "/Lotus/Weapons/Tenno/Rifle/SemiAutoRifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "latron_wraith",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/WraithLatron/WraithLatron",
+      "origin": "/Lotus/Weapons/Tenno/Rifle/SemiAutoRifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "lenz",
+      "owner": "/Lotus/Weapons/Corpus/Bow/Longbow/CrpBow",
+      "origin": "/Lotus/Weapons/Corpus/Bow/Longbow/CrpBow",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "miter",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrineerSawbladeGun/SawBladeGun",
+      "origin": "/Lotus/Weapons/Grineer/LongGuns/GrineerSawbladeGun/SawBladeGun",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "mk1_braton",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/StartingRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "mk1_paris",
+      "owner": "/Lotus/Weapons/MK1Series/MK1Paris",
+      "origin": "/Lotus/Weapons/Tenno/Bows/HuntingBow",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "mk1_strun",
+      "owner": "/Lotus/Weapons/MK1Series/MK1Strun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "mutalist_cernos",
+      "owner": "/Lotus/Weapons/Infested/Bow/InfCernosBow/InfCernos",
+      "origin": "/Lotus/Weapons/Infested/Bow/InfCernosBow/InfCernos",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "mutalist_quanta",
+      "owner": "/Lotus/Weapons/Infested/LongGuns/InfCrpShockSwarm/InfCrpShockSwarmRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "nagantaka",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/GarudaCrossbow/GarudaCrossbow",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "nagantaka_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeNagantaka/PrimeNagantakaWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "nataruk",
+      "owner": "/Lotus/Weapons/Tenno/Bows/Omicrus/OmicrusPlayerWep",
+      "origin": "/Lotus/Weapons/Tenno/Bows/Omicrus/OmicrusWep",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "nunchasa",
+      "owner": "/Lotus/Weapons/Tenno/Bows/DuelistBow/DuelistBow",
+      "origin": "/Lotus/Weapons/Tenno/Bows/DuelistBow/DuelistBow",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "ogris",
+      "owner": "/Lotus/Weapons/ClanTech/Chemical/RocketLauncher",
+      "origin": "/Lotus/Weapons/ClanTech/Chemical/RocketLauncher",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "opticor",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpBFG/CrpBFG",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/CrpBFG/CrpBFG",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "opticor_vandal",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpBFG/Vandal/VandalCrpBFG",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/CrpBFG/CrpBFG",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "panthera",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/Miter/TnoMiter",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "panthera_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimePanthera/PrimePanthera",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "paracyst",
+      "owner": "/Lotus/Weapons/Infested/LongGuns/QuantaFullyInfested/InfQuantaRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "paris",
+      "owner": "/Lotus/Weapons/Tenno/Bows/HuntingBow",
+      "origin": "/Lotus/Weapons/Tenno/Bows/HuntingBow",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "paris_prime",
+      "owner": "/Lotus/Weapons/Tenno/Bows/PrimeHuntingBow",
+      "origin": "/Lotus/Weapons/Tenno/Bows/HuntingBow",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "penta",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/GrenadeLauncher",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/GrenadeLauncher",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "perigale",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnQuadSniper/TnQuadSniper",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnQuadSniper/TnQuadSniper",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "perigale_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimePerigale/PrimePerigaleSniper",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnQuadSniper/TnQuadSniper",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "phage",
+      "owner": "/Lotus/Weapons/Infested/LongGuns/Tentacluster/InfestedShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "phantasma",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/RevenantShotgun/RevenantShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "phantasma_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimePhantasma/PhantasmaPrimeShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "phenmor",
+      "owner": "/Lotus/Weapons/Tenno/Zariman/LongGuns/SemiAutoRifle/ZarimanSemiAutoRifle",
+      "origin": "/Lotus/Weapons/Tenno/Zariman/LongGuns/SemiAutoRifle/ZarimanSemiAutoRifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "prisma_gorgon",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/VoidTraderGorgon/VTGorgon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "prisma_grakata",
+      "owner": "/Lotus/Weapons/VoidTrader/PrismaGrakata",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "prisma_grinlok",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrineerLeverActionRifle/PrismaGrinlokWeapon",
+      "origin": "/Lotus/Weapons/Grineer/LongGuns/GrineerLeverActionRifle/GLARifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "prisma_lenz",
+      "owner": "/Lotus/Weapons/Corpus/Bow/Longbow/PrismaLenz/PrismaLenzWeapon",
+      "origin": "/Lotus/Weapons/Corpus/Bow/Longbow/CrpBow",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "prisma_tetra",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CorpusUMP/PrismaCorpusUMP",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "proboscis_cernos",
+      "owner": "/Lotus/Weapons/Tenno/Bows/PrimeDerelictCernos/DerelictCernos",
+      "origin": "/Lotus/Weapons/Tenno/Bows/PrimeDerelictCernos/DerelictCernos",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "purgator_1",
+      "owner": "/Lotus/Weapons/Lasria/LasGrenadeLauncher/LasrianNoxPlayerWeapon",
+      "origin": "/Lotus/Weapons/Lasria/LasGrenadeLauncher/LasrianNoxPlayerWeapon",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "quanta",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpShockRifle/CrpShockRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "quanta_vandal",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpShockRifle/QuantaVandal",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "quartakk",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrnFourBarrelRifle/GrnFourBarrelRifleWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "quellor",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnRailjackRifle/RailjackRifleGun",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnRailjackRifle/RailjackRifleGun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "rakta_cernos",
+      "owner": "/Lotus/Weapons/Syndicates/RedVeil/Bows/RVCernos",
+      "origin": "/Lotus/Weapons/Tenno/Bows/AntlerBow/AntlerBow",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "rauta",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PaxDuviricusShotgun/PaxDuviricusShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "reconifex",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnBeltFedRifle/TnBeltFedRifleWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "rubico",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/FiveShotSniper/FiveShotSniper",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/FiveShotSniper/FiveShotSniper",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "rubico_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/RubicoPrime/RubicoPrimeWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/FiveShotSniper/FiveShotSniper",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "sancti_tigris",
+      "owner": "/Lotus/Weapons/Syndicates/NewLoka/LongGuns/NLTigris",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "scourge",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearGun",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearGun",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "scourge_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeScourge/PrimeScourgeWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearGun",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "secura_penta",
+      "owner": "/Lotus/Weapons/Syndicates/PerrinSequence/LongGuns/PSPenta",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/GrenadeLauncher",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "shedu",
+      "owner": "/Lotus/Weapons/Sentients/Shedu/SheduHeavyWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "simulor",
+      "owner": "/Lotus/Weapons/Cephalon/Primary/CephPrimary/CephPrimary",
+      "origin": "/Lotus/Weapons/Cephalon/Primary/CephPrimary/CephPrimary",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "snipetron",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/SniperRifle",
+      "origin": "/Lotus/Weapons/Tenno/Rifle/SniperRifle",
+      "token": "0.40000001",
+      "value": 0.4
+    },
+    {
+      "id": "snipetron_vandal",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/VandalSniperRifle",
+      "origin": "/Lotus/Weapons/Tenno/Rifle/SniperRifle",
+      "token": "0.40000001",
+      "value": 0.4
+    },
+    {
+      "id": "sobek",
+      "owner": "/Lotus/Weapons/Tenno/Shotgun/DoubleBarrelShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "soma",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/TennoAR",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "soma_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeSoma/PrimeSomaRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "sporothrix",
+      "owner": "/Lotus/Weapons/Infested/LongGuns/InfSniperRifle/InfSniperRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "stahlta",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpRubanRifle/CrpRubanRifle",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/CrpRubanRifle/CrpRubanRifle",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "steflos",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnoLotusPodShotgun/TnoLotusPodShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnoLotusPodShotgun/TnoLotusPodShotgun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "steflos_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeSteflos/PrimeSteflosShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnoLotusPodShotgun/TnoLotusPodShotgun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "stradavar",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TennoTommyGun/TennoTommyGunRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "stradavar_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeStradavar/PrimeStradavarGun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "strun",
+      "owner": "/Lotus/Weapons/Tenno/Shotgun/Shotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "strun_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeStrun/PrimeStrunWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "strun_wraith",
+      "owner": "/Lotus/Weapons/Tenno/Shotgun/ShotgunVandal",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "supra",
+      "owner": "/Lotus/Weapons/ClanTech/Energy/CrpHeavyRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "supra_vandal",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/Machinegun/SupraVandal",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "sybaris",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnoLeverAction/TnoLeverActionRifle",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnoLeverAction/TnoLeverActionRifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "sybaris_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeSybaris/PrimeSybarisRifle",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnoLeverAction/TnoLeverActionRifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "synapse",
+      "owner": "/Lotus/Weapons/Infested/LongGuns/InfestedRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "synoid_simulor",
+      "owner": "/Lotus/Weapons/Syndicates/CephalonSuda/LongGuns/CSSimulor",
+      "origin": "/Lotus/Weapons/Cephalon/Primary/CephPrimary/CephPrimary",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "telos_boltor",
+      "owner": "/Lotus/Weapons/Syndicates/ArbitersOfHexis/LongGuns/AHBoltor",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "tenet_arca_plasmor",
+      "owner": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEArcaPlasmor/CrpBEArcaPlasmor",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/CrpShotgun/CrpShotgun",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "tenet_envoy",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpBriefcaseLauncher/CrpBriefcaseLauncher",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/CrpBriefcaseLauncher/CrpBriefcaseLauncher",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "tenet_ferrox",
+      "owner": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEFerrox/CrpBEFerrox",
+      "origin": "/Lotus/Weapons/Corpus/LongGuns/Spears/Railgun/CorpusRailgun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "tenet_flux_rifle",
+      "owner": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEFluxRifle/CrpBEFluxRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "tenet_glaxion",
+      "owner": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEGlaxion/CrpBEGlaxion",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "tenet_quanta",
+      "owner": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEQuanta/CrpBEQuanta",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "tenet_tetra",
+      "owner": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBETetra/CrpBETetra",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "tenora",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnBardRifle/TnBardRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "tenora_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeTenora/TenoraPrimeWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "tetra",
+      "owner": "/Lotus/Weapons/Corpus/LongGuns/CorpusUMP/CorpusUMP",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "thornbak",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnModQuestRifle/TnModQuestRifleWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnModQuestRifle/TnModQuestRifleWeapon",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "tiberon",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/DrakeRifle/DrakeRifle",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/DrakeRifle/DrakeRifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "tiberon_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeTiberon/PrimeTiberonRifle",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/DrakeRifle/DrakeRifle",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "tigris",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/DoubleBarrelShotgun/TennoDoubleBarrelShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "tigris_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeTigris/PrimeTigris",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "tonkor",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrnGrenadeLauncher/GrnGrenadeLauncher",
+      "origin": "/Lotus/Weapons/Grineer/LongGuns/GrnGrenadeLauncher/GrnGrenadeLauncher",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "torid",
+      "owner": "/Lotus/Weapons/ClanTech/Bio/BioWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "trumna",
+      "owner": "/Lotus/Weapons/Thanotech/ThanoRifle/ThanotechRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "trumna_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeTrumna/PrimeTrumnaWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "vadarya_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeLightningGun/PrimeLightningGun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "vaykor_hek",
+      "owner": "/Lotus/Weapons/Syndicates/SteelMeridian/LongGuns/SMHek",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "vectis",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/TennoSniperRifle",
+      "origin": "/Lotus/Weapons/Tenno/Rifle/TennoSniperRifle",
+      "token": "0.40000001",
+      "value": 0.4
+    },
+    {
+      "id": "vectis_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeVectis/PrimeVectisRifle",
+      "origin": "/Lotus/Weapons/Tenno/Rifle/TennoSniperRifle",
+      "token": "0.40000001",
+      "value": 0.4
+    },
+    {
+      "id": "veldt",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnRevolverRifle/TnRevolverRifleGun",
+      "origin": "/Lotus/Weapons/Tenno/LongGuns/TnRevolverRifle/TnRevolverRifleGun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "vinquibus",
+      "owner": "/Lotus/Weapons/Tenno/Bayonet/TnBayonetRifleWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "vulkar",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrineerSniperRifle/GrnSniperRifle",
+      "origin": "/Lotus/Weapons/Grineer/LongGuns/GrineerSniperRifle/GrnSniperRifle",
+      "token": "0.40000001",
+      "value": 0.4
+    },
+    {
+      "id": "vulkar_wraith",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrineerSniperRifle/VulkarWraith",
+      "origin": "/Lotus/Weapons/Grineer/LongGuns/GrineerSniperRifle/GrnSniperRifle",
+      "token": "0.40000001",
+      "value": 0.4
+    },
+    {
+      "id": "zarr",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrnCannon/GrnCannonWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "zenith",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/LoginPrimary/SundialRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "zhuge",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/RepeatingCrossbow/RepeatingCrossbow",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "zhuge_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeZhuge/PrimeZhugeCrossbow",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "acrid",
+      "owner": "/Lotus/Weapons/ClanTech/Bio/AcidDartPistol",
+      "origin": "/Lotus/Weapons/ClanTech/Bio/AcidDartPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "aegrit",
+      "owner": "/Lotus/Weapons/Grineer/ThrowingWeapons/GrnVorStickyBomb/GrnVorStickyBomb",
+      "origin": "/Lotus/Weapons/Grineer/ThrowingWeapons/GrnVorStickyBomb/GrnVorStickyBomb",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "akarius",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/SapientPistol/SapientPistol",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/SapientPistol/SapientPistol",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "akarius_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAkarius/PrimeAkariusWeapon",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/SapientPistol/SapientPistol",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "akbolto",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/AkimboBolto",
+      "origin": "/Lotus/Weapons/Tenno/Akimbo/AkimboBolto",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "akbolto_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAkbolto/PrimeAkBoltoWeapon",
+      "origin": "/Lotus/Weapons/Tenno/Akimbo/AkimboBolto",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "aklato",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/AkimboPistol",
+      "origin": "/Lotus/Weapons/Tenno/Akimbo/AkimboPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "aklex",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/AkLexPistols",
+      "origin": "/Lotus/Weapons/Tenno/Akimbo/AkLexPistols",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "aklex_prime",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/AkLexPrimePistols",
+      "origin": "/Lotus/Weapons/Tenno/Akimbo/AkLexPistols",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "akmagnus",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/DualMagnus",
+      "origin": "/Lotus/Weapons/Tenno/Akimbo/DualMagnus",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "akmagnus_prime",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/DualMagnusPrime",
+      "origin": "/Lotus/Weapons/Tenno/Akimbo/DualMagnus",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "aksondol",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/DuelistPistols/DuelistPistols",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/DuelistPistols/DuelistPistols",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "akvasto",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/DualVastos",
+      "origin": "/Lotus/Weapons/Tenno/Akimbo/DualVastos",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "akvasto_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeVasto/AkPrimeVasto/AkPrimeVastoPistol",
+      "origin": "/Lotus/Weapons/Tenno/Akimbo/DualVastos",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "angstrum",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpHandRL/CorpusHandRocketLauncher",
+      "origin": "/Lotus/Weapons/Corpus/Pistols/CrpHandRL/CorpusHandRocketLauncher",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "arca_scisco",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/SniperPistol/CrpScopeGun",
+      "origin": "/Lotus/Weapons/Corpus/Pistols/SniperPistol/CrpScopeGun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "athodai",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnJetTurbine/TnJetTurbinePistolWeapon",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/TnJetTurbine/TnJetTurbinePistolWeapon",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "athodai_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAthodai/PrimeAthodaiPistolWeapon",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/TnJetTurbine/TnJetTurbinePistolWeapon",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "atomos",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/HeatGun/GrnHeatGun",
+      "origin": "/Lotus/Weapons/Grineer/Pistols/HeatGun/GrnHeatGun",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "ballistica",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/AutomaticHandCrossbow/AutoCrossBow",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/AutomaticHandCrossbow/AutoCrossBow",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "ballistica_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeBallistica/PrimeBallistica",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/AutomaticHandCrossbow/AutoCrossBow",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "bolto",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/CrossBow",
+      "origin": "/Lotus/Weapons/Tenno/Pistol/CrossBow",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "cantare",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/TnChoirframeKunai/TnChoirframeKunai",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/TnChoirframeKunai/TnChoirframeKunai",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "castanas",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/StickyBomb/StickyBombs",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/StickyBomb/StickyBombs",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "catabolyst",
+      "owner": "/Lotus/Weapons/Infested/Pistols/InfBeamPistol/InfBeamPistol",
+      "origin": "/Lotus/Weapons/Infested/Pistols/InfBeamPistol/InfBeamPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "coda_catabolyst",
+      "owner": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaCatabolyst",
+      "origin": "/Lotus/Weapons/Infested/Pistols/InfBeamPistol/InfBeamPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "coda_pox",
+      "owner": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaPox",
+      "origin": "/Lotus/Weapons/Infested/Pistols/InfProximityStars/InfProximityStars",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "coda_tysis",
+      "owner": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaTysis",
+      "origin": "/Lotus/Weapons/Infested/Pistols/InfestedDartPistol/InfestedDartPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "despair",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/StalkerKunai",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/StalkerKunai",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "efv_8_mars",
+      "owner": "/Lotus/Weapons/Lasria/LasGooPistol/LasGooPistolPlayerWeapon",
+      "origin": "/Lotus/Weapons/Lasria/LasGooPistol/LasGooPistolPlayerWeapon",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "embolist",
+      "owner": "/Lotus/Weapons/Infested/Pistols/InfestedPistol",
+      "origin": "/Lotus/Weapons/Infested/Pistols/InfestedPistol",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "fusilai",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/GlassKunai/GlassKunaiWeapon",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/GlassKunai/GlassKunaiWeapon",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "gammacor",
+      "owner": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray",
+      "origin": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "grimoire",
+      "owner": "/Lotus/Weapons/Tenno/Grimoire/TnGrimoire",
+      "origin": "/Lotus/Weapons/Tenno/Grimoire/TnGrimoire",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "hikou",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/TennoStars",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/TennoStars",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "hikou_prime",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/PrimeThrowingStar/PrimeHikou",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/TennoStars",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "knell",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnPriestPistolScope/TnPriestPistolWeapon",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/TnPriestPistolScope/TnPriestPistolWeapon",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "knell_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeKnell/PrimeKnellWeapon",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/TnPriestPistolScope/TnPriestPistolWeapon",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "kompressa",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnYareliPistol/TnYareliPistolWeapon",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/TnYareliPistol/TnYareliPistolWeapon",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "kompressa_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeKompressa/PrimeKompressa",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/TnYareliPistol/TnYareliPistolWeapon",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "kraken",
+      "owner": "/Lotus/Weapons/Grineer/GrineerPistol/GrnHeavyPistol",
+      "origin": "/Lotus/Weapons/Grineer/GrineerPistol/GrnHeavyPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "kulstar",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrnTorpedoPistol/GrnTorpedoPistol",
+      "origin": "/Lotus/Weapons/Grineer/Pistols/GrnTorpedoPistol/GrnTorpedoPistol",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "kunai",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/Kunai",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/Kunai",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "kuva_kraken",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Kraken/KuvaKraken",
+      "origin": "/Lotus/Weapons/Grineer/GrineerPistol/GrnHeavyPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "kuva_nukor",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Nukor/KuvaNukor",
+      "origin": "/Lotus/Weapons/Grineer/Pistols/GrineerMicrowavegun/GrnMicrowavePistol",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "kuva_seer",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Seer/KuvaSeer",
+      "origin": "/Lotus/Weapons/Grineer/GrineerPistol/GrnScopedPistolPlayer",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "laetum",
+      "owner": "/Lotus/Weapons/Tenno/Zariman/Pistols/HeavyPistol/ZarimanHeavyPistol",
+      "origin": "/Lotus/Weapons/Tenno/Zariman/Pistols/HeavyPistol/ZarimanHeavyPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "lato",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/Pistol",
+      "origin": "/Lotus/Weapons/Tenno/Pistol/Pistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "lato_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/LatoPrime",
+      "origin": "/Lotus/Weapons/Tenno/Pistol/Pistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "lato_vandal",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/LatoVandal",
+      "origin": "/Lotus/Weapons/Tenno/Pistol/Pistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "lex",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/HeavyPistol",
+      "origin": "/Lotus/Weapons/Tenno/Pistol/HeavyPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "lex_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeLex/PrimeLex",
+      "origin": "/Lotus/Weapons/Tenno/Pistol/HeavyPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "magnus",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/Magnum/Magnum",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/Magnum/Magnum",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "magnus_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeMagnus/PrimeMagnusWeapon",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/Magnum/Magnum",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "marelok",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrineerLeverActionPistol/GLAPistol",
+      "origin": "/Lotus/Weapons/Grineer/Pistols/GrineerLeverActionPistol/GLAPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "mk1_kunai",
+      "owner": "/Lotus/Weapons/MK1Series/MK1Kunai",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/Kunai",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "nukor",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrineerMicrowavegun/GrnMicrowavePistol",
+      "origin": "/Lotus/Weapons/Grineer/Pistols/GrineerMicrowavegun/GrnMicrowavePistol",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "onos",
+      "owner": "/Lotus/Weapons/Thanotech/EntratiWristGun/EntratiWristGunWeapon",
+      "origin": "/Lotus/Weapons/Thanotech/EntratiWristGun/EntratiWristGunWeapon",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "pandero",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnBardPistol/TnBardPistolGun",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/TnBardPistol/TnBardPistolGun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "pandero_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimePandero/PanderoPrimeWeapon",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/TnBardPistol/TnBardPistolGun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "plinx",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpSonificBlastor/CrpBlastorWeapon",
+      "origin": "/Lotus/Weapons/Corpus/Pistols/CrpSonificBlastor/CrpBlastorWeapon",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "pox",
+      "owner": "/Lotus/Weapons/Infested/Pistols/InfProximityStars/InfProximityStars",
+      "origin": "/Lotus/Weapons/Infested/Pistols/InfProximityStars/InfProximityStars",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "prisma_angstrum",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpHandRL/PrismaAngstrum",
+      "origin": "/Lotus/Weapons/Corpus/Pistols/CrpHandRL/CorpusHandRocketLauncher",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "rakta_ballistica",
+      "owner": "/Lotus/Weapons/Syndicates/RedVeil/Pistols/RVBallistica",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/AutomaticHandCrossbow/AutoCrossBow",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "riot_848",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/1999EntHybridPistolWeapon/1999EntHybridPistolWeapon",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/1999EntHybridPistolWeapon/1999EntHybridPistolWeapon",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "sancti_castanas",
+      "owner": "/Lotus/Weapons/Syndicates/NewLoka/Pistols/NLCastanas",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/StickyBomb/StickyBombs",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "scyotid",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/TnOraxiaFlechette/TnOraxiaFlechette",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/TnOraxiaFlechette/TnOraxiaFlechette",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "seer",
+      "owner": "/Lotus/Weapons/Grineer/GrineerPistol/GrnScopedPistolPlayer",
+      "origin": "/Lotus/Weapons/Grineer/GrineerPistol/GrnScopedPistolPlayer",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "sepulcrum",
+      "owner": "/Lotus/Weapons/Thanotech/ThanoPistol/ThanotechPistol",
+      "origin": "/Lotus/Weapons/Thanotech/ThanoPistol/ThanotechPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "sicarus",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/BurstPistol",
+      "origin": "/Lotus/Weapons/Tenno/Pistol/BurstPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "sicarus_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeSicarus/PrimeSicarusPistol",
+      "origin": "/Lotus/Weapons/Tenno/Pistol/BurstPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "spectra",
+      "owner": "/Lotus/Weapons/ClanTech/Energy/CrpLaserPistol",
+      "origin": "/Lotus/Weapons/ClanTech/Energy/CrpLaserPistol",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "spectra_vandal",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CorpusModularPistol/Vandal/CrpLaserPistolVandal",
+      "origin": "/Lotus/Weapons/ClanTech/Energy/CrpLaserPistol",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "spira",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/LiDagger/LiDagger",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/LiDagger/LiDagger",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "spira_prime",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/PrimeLiDagger/PrimeLiDagger",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/LiDagger/LiDagger",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "staticor",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpElectroMag/CrpElectroMag",
+      "origin": "/Lotus/Weapons/Corpus/Pistols/CrpElectroMag/CrpElectroMag",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "stug",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrineerCrossbow/GrineerGooGun",
+      "origin": "/Lotus/Weapons/Grineer/Pistols/GrineerCrossbow/GrineerGooGun",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "synoid_gammacor",
+      "owner": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSSynoidGammacor",
+      "origin": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "talons",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/U18ThrowingKnives/U18throwingknives",
+      "origin": "/Lotus/Weapons/Tenno/ThrowingWeapons/U18ThrowingKnives/U18throwingknives",
+      "token": "0",
+      "value": 0.0
+    },
+    {
+      "id": "telos_akbolto",
+      "owner": "/Lotus/Weapons/Syndicates/ArbitersOfHexis/Pistols/AHAkbolto",
+      "origin": "/Lotus/Weapons/Tenno/Akimbo/AkimboBolto",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "tenet_plinx",
+      "owner": "/Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBEPlinx/CrpBEPlinxWeapon",
+      "origin": "/Lotus/Weapons/Corpus/Pistols/CrpSonificBlastor/CrpBlastorWeapon",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "tysis",
+      "owner": "/Lotus/Weapons/Infested/Pistols/InfestedDartPistol/InfestedDartPistol",
+      "origin": "/Lotus/Weapons/Infested/Pistols/InfestedDartPistol/InfestedDartPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "vasto",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/RevolverPistol",
+      "origin": "/Lotus/Weapons/Tenno/Pistol/RevolverPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "vasto_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeVasto/PrimeVastoPistol",
+      "origin": "/Lotus/Weapons/Tenno/Pistol/RevolverPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "vaykor_marelok",
+      "owner": "/Lotus/Weapons/Syndicates/SteelMeridian/Pistols/SMMarelok",
+      "origin": "/Lotus/Weapons/Grineer/Pistols/GrineerLeverActionPistol/GLAPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "zakti",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnGuandoPistol/TnGuandoPistolGun",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/TnGuandoPistol/TnGuandoPistolGun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "zakti_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeZakti/PrimeZaktiPistol",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/TnGuandoPistol/TnGuandoPistolGun",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "zylok",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/ConclaveLeverPistol/ConclaveLeverPistol",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/ConclaveLeverPistol/ConclaveLeverPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "zylok_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeZylok/ZylokPrimePistol",
+      "origin": "/Lotus/Weapons/Tenno/Pistols/ConclaveLeverPistol/ConclaveLeverPistol",
+      "token": "0.5",
+      "value": 0.5
+    },
+    {
+      "id": "artax",
+      "owner": "/Lotus/Types/Sentinels/SentinelWeapons/Gremlin",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "cryotra",
+      "owner": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "deth_machine_rifle",
+      "owner": "/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "deth_machine_rifle_prime",
+      "owner": "/Lotus/Types/Sentinels/SentinelWeapons/PrimeDethMachineRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "helstrum",
+      "owner": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "laser_rifle",
+      "owner": "/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "multron",
+      "owner": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "prime_laser_rifle",
+      "owner": "/Lotus/Types/Sentinels/SentinelWeapons/PrimeLaserRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "stinger",
+      "owner": "/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "sweeper",
+      "owner": "/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "sweeper_prime",
+      "owner": "/Lotus/Types/Sentinels/SentinelWeapons/PrimeSentShotgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "tazicor",
+      "owner": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "verglas",
+      "owner": "/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "verglas_prime",
+      "owner": "/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayPrimeRifle",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    },
+    {
+      "id": "vulcax",
+      "owner": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon",
+      "origin": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon",
+      "token": "1",
+      "value": 1.0
+    },
+    {
+      "id": "vulklok",
+      "owner": "/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun",
+      "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon",
+      "token": "0.2",
+      "value": 0.2
+    }
+  ],
+  "unbound_weapon_defaults": [
+    "arbucep",
+    "cortege",
+    "corvas",
+    "corvas_prime",
+    "dual_decurion",
+    "fluctus",
+    "grattler",
+    "imperator",
+    "imperator_vandal",
+    "kuva_ayanga",
+    "kuva_grattler",
+    "larkspur",
+    "larkspur_prime",
+    "mandonel",
+    "morgha",
+    "phaedra",
+    "prisma_dual_decurions",
+    "velocitus",
+    "adarza_claws",
+    "chesa_claws",
+    "crescent_claws",
+    "helminth_claws",
+    "huras_claws",
+    "medjay_claws",
+    "panzer_claws",
+    "pharaoh_claws",
+    "raksa_claws",
+    "sahasa_claws",
+    "sly_claws",
+    "smeeta_claws",
+    "sunika_claws",
+    "vasca_claws",
+    "venari_claws",
+    "venari_prime_claws",
+    "vizier_claws",
+    "garuda_prime_talons",
+    "garuda_talons",
+    "shattered_lash",
+    "valkyr_talons",
+    "ack_and_brunt",
+    "amanata",
+    "amphis",
+    "anku",
+    "ankyros",
+    "ankyros_prime",
+    "arca_titron",
+    "argo_and_vel",
+    "arum_spinosa",
+    "atterax",
+    "azothane",
+    "balla_one_handed",
+    "balla_two_handed",
+    "bo",
+    "bo_prime",
+    "boltace",
+    "broken_scepter",
+    "broken_war",
+    "cadus",
+    "cassowar",
+    "caustacyst",
+    "ceramic_dagger",
+    "cerata",
+    "ceti_lacera",
+    "cobra_and_crane",
+    "cobra_and_crane_prime",
+    "coda_caustacyst",
+    "coda_hirudo",
+    "coda_mire",
+    "coda_motovore",
+    "coda_pathocyst",
+    "corufell",
+    "corufell_prime",
+    "cronus",
+    "cyath_one_handed",
+    "cyath_two_handed",
+    "dakra_prime",
+    "dark_dagger",
+    "dark_split_sword",
+    "dark_sword",
+    "dehtat_one_handed",
+    "dehtat_two_handed",
+    "destreza",
+    "destreza_prime",
+    "dex_dakra",
+    "dex_nikana",
+    "dokrahm_one_handed",
+    "dokrahm_two_handed",
+    "dorrclave",
+    "dragon_nikana",
+    "dual_cleavers",
+    "dual_ether",
+    "dual_heat_swords",
+    "dual_ichor",
+    "dual_kamas",
+    "dual_kamas_prime",
+    "dual_keres",
+    "dual_keres_prime",
+    "dual_raza",
+    "dual_skana",
+    "dual_viciss",
+    "dual_zoren",
+    "dual_zoren_prime",
+    "edun",
+    "ekhein",
+    "endura",
+    "ether_daggers",
+    "ether_reaper",
+    "ether_sword",
+    "falcor",
+    "fang",
+    "fang_prime",
+    "fragor",
+    "fragor_prime",
+    "furax",
+    "furax_wraith",
+    "galariak_prime",
+    "galatine",
+    "galatine_prime",
+    "galvacord",
+    "gazal_machete",
+    "ghoulsaw",
+    "glaive",
+    "glaive_prime",
+    "gram",
+    "gram_prime",
+    "guandao",
+    "guandao_prime",
+    "gunsen",
+    "gunsen_prime",
+    "halikar",
+    "halikar_wraith",
+    "harmony",
+    "hate",
+    "heat_dagger",
+    "heat_sword",
+    "heliocor",
+    "hespar",
+    "hirudo",
+    "innodem",
+    "jat_kittag",
+    "jat_kusar",
+    "jaw_sword",
+    "kama",
+    "karyst",
+    "karyst_prime",
+    "keratinos",
+    "kesheg",
+    "kestrel",
+    "kestrel_prime",
+    "kogake",
+    "kogake_prime",
+    "korrudo",
+    "korumm",
+    "kreska",
+    "krohkur",
+    "kronen",
+    "kronen_prime",
+    "kronsh_one_handed",
+    "kronsh_two_handed",
+    "kuva_ghoulsaw",
+    "kuva_shildeg",
+    "lacera",
+    "lecta",
+    "lesion",
+    "machete",
+    "machete_wraith",
+    "magistar",
+    "masseter",
+    "masseter_prime",
+    "mewan_one_handed",
+    "mewan_two_handed",
+    "mios",
+    "mire",
+    "mk1_bo",
+    "mk1_furax",
+    "nami_skyla",
+    "nami_skyla_prime",
+    "nami_solo",
+    "nepheri",
+    "nikana",
+    "nikana_prime",
+    "ninkondi",
+    "ninkondi_prime",
+    "obex",
+    "ohma",
+    "okina",
+    "okina_prime",
+    "ooltha_one_handed",
+    "ooltha_two_handed",
+    "orthos",
+    "orthos_prime",
+    "orvius",
+    "pangolin_prime",
+    "pangolin_sword",
+    "paracesis",
+    "pathocyst",
+    "pennant",
+    "plague_keewar_one_handed",
+    "plague_keewar_two_handed",
+    "plague_kripath_one_handed",
+    "plague_kripath_two_handed",
+    "plasma_sword",
+    "praedos",
+    "pride",
+    "prisma_dual_cleavers",
+    "prisma_machete",
+    "prisma_obex",
+    "prisma_ohma",
+    "prisma_skana",
+    "prova",
+    "prova_vandal",
+    "pulmonars",
+    "pupacyst",
+    "quassus",
+    "quassus_prime",
+    "rabvee_one_handed",
+    "rabvee_two_handed",
+    "rakta_dark_dagger",
+    "reaper_prime",
+    "redeemer",
+    "redeemer_prime",
+    "ripkas",
+    "rumblejack",
+    "ruvox",
+    "sampotes",
+    "sancti_magistar",
+    "sarofang",
+    "sarofang_prime",
+    "sarpa",
+    "scindo",
+    "scindo_prime",
+    "scoliac",
+    "secura_lecta",
+    "sepfahn_one_handed",
+    "sepfahn_two_handed",
+    "serro",
+    "shaku",
+    "sheev",
+    "sibear",
+    "sigma_and_octantis",
+    "silva_and_aegis",
+    "silva_and_aegis_prime",
+    "skana",
+    "skana_prime",
+    "skiajati",
+    "slaytra",
+    "spinnerex",
+    "stropha",
+    "sun_and_moon",
+    "syam",
+    "sydon",
+    "synoid_heliocor",
+    "tak_and_lug",
+    "tatsu",
+    "tatsu_prime",
+    "tekko",
+    "tekko_prime",
+    "telos_boltace",
+    "tenet_agendus",
+    "tenet_exec",
+    "tenet_grigori",
+    "tenet_livia",
+    "thalys",
+    "tipedo",
+    "tipedo_prime",
+    "tonbo",
+    "tonkkatt",
+    "twin_basolk",
+    "twin_krohkur",
+    "vastilok",
+    "vaykor_sydon",
+    "venato",
+    "venato_prime",
+    "venka",
+    "venka_prime",
+    "verdilac",
+    "vericres",
+    "vitrica",
+    "volnus",
+    "volnus_prime",
+    "war",
+    "war_prime",
+    "wolf_sledge",
+    "wrath",
+    "xoris",
+    "zenistar",
+    "catchmoon_primary",
+    "gaze_primary",
+    "rattleguts_primary",
+    "sporelacer_primary",
+    "tombfinger_primary",
+    "vermisplicer_primary",
+    "afuris",
+    "afuris_prime",
+    "akbronco",
+    "akbronco_prime",
+    "akjagara",
+    "akjagara_prime",
+    "aksomati",
+    "aksomati_prime",
+    "akstiletto",
+    "akstiletto_prime",
+    "akzani",
+    "azima",
+    "brakk",
+    "bronco",
+    "bronco_prime",
+    "catchmoon_secondary",
+    "cestra",
+    "cyanex",
+    "cycron",
+    "detron",
+    "dex_furis",
+    "dual_cestra",
+    "dual_coda_torxica",
+    "dual_toxocyst",
+    "epitaph",
+    "epitaph_prime",
+    "euphona_prime",
+    "furis",
+    "gaze_secondary",
+    "hystrix",
+    "hystrix_prime",
+    "kohmak",
+    "kuva_brakk",
+    "kuva_twin_stubbas",
+    "mara_detron",
+    "mk1_furis",
+    "ocucor",
+    "prisma_twin_gremlins",
+    "pyrana",
+    "pyrana_prime",
+    "quatz",
+    "rattleguts_secondary",
+    "sagek_prime",
+    "secura_dual_cestra",
+    "sonicor",
+    "sporelacer_secondary",
+    "stubba",
+    "tenet_cycron",
+    "tenet_detron",
+    "tenet_diplos",
+    "tenet_spirex",
+    "tombfinger_secondary",
+    "twin_grakatas",
+    "twin_gremlins",
+    "twin_kohmak",
+    "twin_rogga",
+    "twin_vipers",
+    "twin_vipers_wraith",
+    "velox",
+    "velox_prime",
+    "vermisplicer_secondary",
+    "vesper_77",
+    "viper",
+    "viper_wraith",
+    "zymos",
+    "burst_laser",
+    "burst_laser_prime",
+    "deconstructor",
+    "deconstructor_prime",
+    "prisma_burst_laser"
+  ],
+  "enemies": [
+    {
+      "id": "corrupted_heavy_gunner",
+      "owner": "/Lotus/Types/Enemies/Orokin/OrokinHeavyFemaleLeaderAvatar",
+      "controller": "/Lotus/Types/Enemies/Grineer/AIWeek/DamageControllers/BombardDamageController",
+      "proxy_owner": "/Lotus/Types/Enemies/Grineer/AIWeek/DamageControllers/BombardDamageController",
+      "proxies": [
+        {
+          "weakness": 1.0,
+          "damage_multiplier": 2.0
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        }
+      ],
+      "provenance": [
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerHead",
+          "weakness_origin": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerHead",
+          "weakness_token": "1",
+          "damage_origin": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerHead",
+          "damage_token": "2"
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerTorso",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightUpperArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightLowerArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftUpperArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftLowerArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightUpperLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightLowerLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftUpperLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftLowerLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerBackPart",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        }
+      ]
+    },
+    {
+      "id": "thrax_centurion",
+      "owner": "/Lotus/Types/Enemies/Duviri/Avatars/DuviriMeleeAvatar",
+      "controller": "/Lotus/Types/Enemies/Duviri/Avatars/DuviriMeleeTestDamageController",
+      "proxy_owner": "/Lotus/Types/Enemies/Duviri/Avatars/BaseDuviriDamageController",
+      "proxies": [
+        {
+          "weakness": 1.0,
+          "damage_multiplier": 2.0
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        }
+      ],
+      "provenance": [
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerHead",
+          "weakness_origin": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerHead",
+          "weakness_token": "1",
+          "damage_origin": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerHead",
+          "damage_token": "2"
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerTorso",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightUpperArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightLowerArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftUpperArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftLowerArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightUpperLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightLowerLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftUpperLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftLowerLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightShoulder",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftShoulder",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerBackPart",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        }
+      ]
+    },
+    {
+      "id": "crewman",
+      "owner": "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/RifleSpacemanAvatar",
+      "controller": "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/RifleSpacemanDamageController",
+      "proxy_owner": "/Lotus/Types/Enemies/Corpus/Spaceman/AIWeek/RifleSpacemanDamageController",
+      "proxies": [
+        {
+          "weakness": 1.0,
+          "damage_multiplier": 2.0
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        }
+      ],
+      "provenance": [
+        {
+          "owner": "/Lotus/Types/Enemies/Corpus/Spaceman/Head",
+          "weakness_origin": "/Lotus/Types/Enemies/Corpus/Spaceman/Head",
+          "weakness_token": "1",
+          "damage_origin": "/Lotus/Types/Enemies/Corpus/Spaceman/Head",
+          "damage_token": "2"
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerTorso",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightUpperArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightLowerArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftUpperArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftLowerArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightUpperLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightLowerLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftUpperLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftLowerLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        }
+      ]
+    },
+    {
+      "id": "demolisher_devourer",
+      "owner": "/Lotus/Types/Enemies/Grineer/Disruption/Avatars/DemoDevourerAvatar",
+      "controller": "/Lotus/Types/Enemies/Grineer/Disruption/Controllers/DemoDevourerScaledDamageController",
+      "proxy_owner": "/Lotus/Types/Enemies/Grineer/Disruption/Controllers/DemoDevourerScaledDamageController",
+      "proxies": [
+        {
+          "weakness": 0.05,
+          "damage_multiplier": 2.0
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05,
+          "damage_multiplier": 2.0
+        },
+        {
+          "weakness": 0.05,
+          "damage_multiplier": 0.5
+        },
+        {
+          "weakness": 0.05,
+          "damage_multiplier": 0.5
+        },
+        {
+          "weakness": 0.05,
+          "damage_multiplier": 0.5
+        }
+      ],
+      "provenance": [
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerHead",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerHead",
+          "damage_token": "2"
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerTorso",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerRightUpperArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerRightLowerArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerLeftUpperArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerLeftLowerArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerRightUpperLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerRightLowerLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerLeftUpperLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerLeftLowerLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerJetpack",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerWeakPoint",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": "/Lotus/Types/Enemies/Grineer/Ghouls/HitProxies/GrineerGhoulDevourerWeakPoint",
+          "damage_token": "2"
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Disruption/HitProxies/GhoulMineSmallHitProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": "/Lotus/Types/Enemies/Grineer/Disruption/HitProxies/GhoulMineSmallHitProxy",
+          "damage_token": "0.5"
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Disruption/HitProxies/GhoulMineSmallHitProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": "/Lotus/Types/Enemies/Grineer/Disruption/HitProxies/GhoulMineSmallHitProxy",
+          "damage_token": "0.5"
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/Disruption/HitProxies/GhoulMineHitProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": "/Lotus/Types/Enemies/Grineer/Disruption/HitProxies/GhoulMineHitProxy",
+          "damage_token": "0.5"
+        }
+      ]
+    },
+    {
+      "id": "techrot_babau",
+      "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/InfestedBabau1999Avatar",
+      "controller": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/InfestedBabau1999ScaledDamageController",
+      "proxy_owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/InfestedBabau1999ScaledDamageController",
+      "proxies": [
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 1.0
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 1.0
+        },
+        {
+          "weakness": 1.0
+        },
+        {
+          "weakness": 1.0
+        },
+        {
+          "weakness": 1.0
+        }
+      ],
+      "provenance": [
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLowerCenterProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauUpperCenterProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauHeadProxy",
+          "weakness_origin": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauHeadProxy",
+          "weakness_token": "1",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauTorsoSideProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauTorsoSideProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg2aProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg2bProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg2cProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg3aProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg3bProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg3cProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg4aProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg4bProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg4cProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg5aProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg5bProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg5cProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg6aProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg6bProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauLeg6cProxy",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauWeakpoint1Proxy",
+          "weakness_origin": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauWeakpoint1Proxy",
+          "weakness_token": "1",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauWeakpoint2Proxy",
+          "weakness_origin": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauWeakpoint1Proxy",
+          "weakness_token": "1",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauWeakpoint3Proxy",
+          "weakness_origin": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauWeakpoint1Proxy",
+          "weakness_token": "1",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauWeakpoint4Proxy",
+          "weakness_origin": "/Lotus/Types/Enemies/WF1999Infested/InfestedBabau/HitProxies/InfestedBabauWeakpoint1Proxy",
+          "weakness_token": "1",
+          "damage_origin": null,
+          "damage_token": null
+        }
+      ]
+    },
+    {
+      "id": "violence",
+      "owner": "/Lotus/Types/Enemies/Acolytes/DuellistAcolyteAvatar",
+      "controller": "/Lotus/Types/Enemies/Acolytes/AcolyteDamageController",
+      "proxy_owner": "/Lotus/Types/Enemies/Acolytes/AcolyteDamageController",
+      "proxies": [
+        {
+          "weakness": 0.0,
+          "damage_multiplier": 0.666
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        }
+      ],
+      "provenance": [
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/HeadNoCrit",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": "/EE/Types/Npc/Avatars/HitProxies/Head",
+          "damage_token": "0.66600001"
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/Torso",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightUpperArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightLowerArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftUpperArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftLowerArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightUpperLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightLowerLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftUpperLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftLowerLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        }
+      ]
+    },
+    {
+      "id": "mania",
+      "owner": "/Lotus/Types/Enemies/Acolytes/RogueAcolyteAvatar",
+      "controller": "/Lotus/Types/Enemies/Acolytes/AcolyteDamageController",
+      "proxy_owner": "/Lotus/Types/Enemies/Acolytes/AcolyteDamageController",
+      "proxies": [
+        {
+          "weakness": 0.0,
+          "damage_multiplier": 0.666
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        }
+      ],
+      "provenance": [
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/HeadNoCrit",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": "/EE/Types/Npc/Avatars/HitProxies/Head",
+          "damage_token": "0.66600001"
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/Torso",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightUpperArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightLowerArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftUpperArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftLowerArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightUpperLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightLowerLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftUpperLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftLowerLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        }
+      ]
+    },
+    {
+      "id": "misery",
+      "owner": "/Lotus/Types/Enemies/Acolytes/AreaCasterAcolyteAvatar",
+      "controller": "/Lotus/Types/Enemies/Acolytes/AreaCasterAcolyteDamageController",
+      "proxy_owner": "/Lotus/Types/Enemies/Acolytes/AcolyteDamageController",
+      "proxies": [
+        {
+          "weakness": 0.0,
+          "damage_multiplier": 0.666
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        }
+      ],
+      "provenance": [
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/HeadNoCrit",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": "/EE/Types/Npc/Avatars/HitProxies/Head",
+          "damage_token": "0.66600001"
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/Torso",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightUpperArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightLowerArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftUpperArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftLowerArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightUpperLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightLowerLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftUpperLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftLowerLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        }
+      ]
+    },
+    {
+      "id": "angst",
+      "owner": "/Lotus/Types/Enemies/Acolytes/StrikerAcolyteAvatar",
+      "controller": "/Lotus/Types/Enemies/Acolytes/AcolyteDamageController",
+      "proxy_owner": "/Lotus/Types/Enemies/Acolytes/AcolyteDamageController",
+      "proxies": [
+        {
+          "weakness": 0.0,
+          "damage_multiplier": 0.666
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        }
+      ],
+      "provenance": [
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/HeadNoCrit",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": "/EE/Types/Npc/Avatars/HitProxies/Head",
+          "damage_token": "0.66600001"
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/Torso",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightUpperArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightLowerArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftUpperArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftLowerArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightUpperLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightLowerLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftUpperLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftLowerLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        }
+      ]
+    },
+    {
+      "id": "malice",
+      "owner": "/Lotus/Types/Enemies/Acolytes/HeavyAcolyteAvatar",
+      "controller": "/Lotus/Types/Enemies/Acolytes/AcolyteDamageController",
+      "proxy_owner": "/Lotus/Types/Enemies/Acolytes/AcolyteDamageController",
+      "proxies": [
+        {
+          "weakness": 0.0,
+          "damage_multiplier": 0.666
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        }
+      ],
+      "provenance": [
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/HeadNoCrit",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": "/EE/Types/Npc/Avatars/HitProxies/Head",
+          "damage_token": "0.66600001"
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/Torso",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightUpperArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightLowerArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftUpperArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftLowerArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightUpperLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightLowerLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftUpperLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftLowerLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        }
+      ]
+    },
+    {
+      "id": "torment",
+      "owner": "/Lotus/Types/Enemies/Acolytes/ControlAcolyteAvatar",
+      "controller": "/Lotus/Types/Enemies/Acolytes/AcolyteDamageController",
+      "proxy_owner": "/Lotus/Types/Enemies/Acolytes/AcolyteDamageController",
+      "proxies": [
+        {
+          "weakness": 0.0,
+          "damage_multiplier": 0.666
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        },
+        {
+          "weakness": 0.0
+        }
+      ],
+      "provenance": [
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/HeadNoCrit",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": "/EE/Types/Npc/Avatars/HitProxies/Head",
+          "damage_token": "0.66600001"
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/Torso",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightUpperArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightLowerArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftUpperArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftLowerArm",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightUpperLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/RightLowerLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftUpperLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/EE/Types/Npc/Avatars/HitProxies/LeftLowerLeg",
+          "weakness_origin": "/EE/Types/Npc/Avatars/HitProxies/HitProxy",
+          "weakness_token": "0",
+          "damage_origin": null,
+          "damage_token": null
+        }
+      ]
+    },
+    {
+      "id": "legacyte",
+      "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedWarframeCapture/InfestedCaptureMutalistAvatar",
+      "controller": "/Lotus/Types/Enemies/WF1999Infested/InfestedWarframeCapture/CaptureInfestedTargetScaledDamageController",
+      "proxy_owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedWarframeCapture/CaptureInfestedTargetScaledDamageController",
+      "proxies": [
+        {
+          "weakness": 1.0,
+          "damage_multiplier": 2.0
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 0.05
+        },
+        {
+          "weakness": 1.0
+        },
+        {
+          "weakness": 1.0
+        }
+      ],
+      "provenance": [
+        {
+          "owner": "/Lotus/Types/Enemies/Corpus/Spaceman/Head",
+          "weakness_origin": "/Lotus/Types/Enemies/Corpus/Spaceman/Head",
+          "weakness_token": "1",
+          "damage_origin": "/Lotus/Types/Enemies/Corpus/Spaceman/Head",
+          "damage_token": "2"
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerTorso",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightUpperArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightLowerArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftUpperArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftLowerArm",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightUpperLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerRightLowerLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftUpperLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/Grineer/GrineerAvatars/HitProxies/GrineerLeftLowerLeg",
+          "weakness_origin": "/EE/Types/Engine/HitProxy",
+          "weakness_token": "0.050000001",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedWarframeCapture/HitProxies/InfestedCaptureArmWeakpoint",
+          "weakness_origin": "/Lotus/Types/Enemies/WF1999Infested/InfestedWarframeCapture/HitProxies/InfestedCaptureArmWeakpoint",
+          "weakness_token": "1",
+          "damage_origin": null,
+          "damage_token": null
+        },
+        {
+          "owner": "/Lotus/Types/Enemies/WF1999Infested/InfestedWarframeCapture/HitProxies/InfestedCaptureBackHeadWeakpoint",
+          "weakness_origin": "/Lotus/Types/Enemies/WF1999Infested/InfestedWarframeCapture/HitProxies/InfestedCaptureBackHeadWeakpoint",
+          "weakness_token": "1",
+          "damage_origin": null,
+          "damage_token": null
+        }
+      ]
+    }
+  ],
+  "source_cases": [
+    {
+      "pool_maximum": 103623,
+      "count": 10,
+      "source_coefficient": 0.004999999888241291,
+      "raw_source_f32": 5181.14990234375,
+      "integer_source": 5181,
+      "weapon_weakness_bonus": 0.5,
+      "selected_proxy_index": 0,
+      "proxy_weakness": 1,
+      "normalized_packet_source": 3454,
+      "proxy_damage_attenuation": 2.0,
+      "proxy_modifier_enabled": true,
+      "headshot_bonus_entry": 0.0,
+      "packet_part": 6,
+      "source_after_proxy_and_restore_branches": 6908.0,
+      "ordinary_child_input": 6908.0,
+      "full_source_evaluation_entry_replayed": false,
+      "constructed_damage_type": 5,
+      "forced_electrocution_count": 1,
+      "packet_proc_discriminator": 10,
+      "ordinary_critical_discriminator": 30,
+      "final_radial_recipient_not_replayed_here": true
+    },
+    {
+      "pool_maximum": 103623,
+      "count": 10,
+      "source_coefficient": 0.004999999888241291,
+      "raw_source_f32": 5181.14990234375,
+      "integer_source": 5181,
+      "weapon_weakness_bonus": 0.5,
+      "selected_proxy_index": 0,
+      "proxy_weakness": 1,
+      "normalized_packet_source": 3454,
+      "proxy_damage_attenuation": 2.0,
+      "proxy_modifier_enabled": false,
+      "headshot_bonus_entry": 0.0,
+      "packet_part": 6,
+      "source_after_proxy_and_restore_branches": 3454.0,
+      "ordinary_child_input": 3454.0,
+      "full_source_evaluation_entry_replayed": false,
+      "constructed_damage_type": 5,
+      "forced_electrocution_count": 1,
+      "packet_proc_discriminator": 10,
+      "ordinary_critical_discriminator": 30,
+      "final_radial_recipient_not_replayed_here": true
+    },
+    {
+      "pool_maximum": 103623,
+      "count": 10,
+      "source_coefficient": 0.004999999888241291,
+      "raw_source_f32": 5181.14990234375,
+      "integer_source": 5181,
+      "weapon_weakness_bonus": 0.5,
+      "selected_proxy_index": 0,
+      "proxy_weakness": 1,
+      "normalized_packet_source": 3454,
+      "proxy_damage_attenuation": 1,
+      "proxy_modifier_enabled": true,
+      "headshot_bonus_entry": 0.0,
+      "packet_part": 6,
+      "source_after_proxy_and_restore_branches": 3454.0,
+      "ordinary_child_input": 3454.0,
+      "full_source_evaluation_entry_replayed": false,
+      "constructed_damage_type": 5,
+      "forced_electrocution_count": 1,
+      "packet_proc_discriminator": 10,
+      "ordinary_critical_discriminator": 30,
+      "final_radial_recipient_not_replayed_here": true
+    },
+    {
+      "pool_maximum": 103623,
+      "count": 10,
+      "source_coefficient": 0.004999999888241291,
+      "raw_source_f32": 5181.14990234375,
+      "integer_source": 5181,
+      "weapon_weakness_bonus": 0.0,
+      "selected_proxy_index": 0,
+      "proxy_weakness": 1,
+      "normalized_packet_source": 5181,
+      "proxy_damage_attenuation": 2.0,
+      "proxy_modifier_enabled": true,
+      "headshot_bonus_entry": 0.0,
+      "packet_part": 6,
+      "source_after_proxy_and_restore_branches": 10362.0,
+      "ordinary_child_input": 10362.0,
+      "full_source_evaluation_entry_replayed": false,
+      "constructed_damage_type": 5,
+      "forced_electrocution_count": 1,
+      "packet_proc_discriminator": 10,
+      "ordinary_critical_discriminator": 30,
+      "final_radial_recipient_not_replayed_here": true
+    },
+    {
+      "pool_maximum": 103623,
+      "count": 10,
+      "source_coefficient": 0.004999999888241291,
+      "raw_source_f32": 5181.14990234375,
+      "integer_source": 5181,
+      "weapon_weakness_bonus": 0.5,
+      "selected_proxy_index": 0,
+      "proxy_weakness": 1,
+      "normalized_packet_source": 3454,
+      "proxy_damage_attenuation": 2.0,
+      "proxy_modifier_enabled": true,
+      "headshot_bonus_entry": 0.5,
+      "packet_part": 6,
+      "source_after_proxy_and_restore_branches": 6908.0,
+      "ordinary_child_input": 6908.0,
+      "full_source_evaluation_entry_replayed": false,
+      "constructed_damage_type": 5,
+      "forced_electrocution_count": 1,
+      "packet_proc_discriminator": 10,
+      "ordinary_critical_discriminator": 30,
+      "final_radial_recipient_not_replayed_here": true
+    },
+    {
+      "pool_maximum": 103623,
+      "count": 10,
+      "source_coefficient": 0.004999999888241291,
+      "raw_source_f32": 5181.14990234375,
+      "integer_source": 5181,
+      "weapon_weakness_bonus": 0.5,
+      "selected_proxy_index": 0,
+      "proxy_weakness": 1,
+      "normalized_packet_source": 3454,
+      "proxy_damage_attenuation": 2.0,
+      "proxy_modifier_enabled": true,
+      "headshot_bonus_entry": 0.800000011920929,
+      "packet_part": 6,
+      "source_after_proxy_and_restore_branches": 6908.0,
+      "ordinary_child_input": 6908.0,
+      "full_source_evaluation_entry_replayed": false,
+      "constructed_damage_type": 5,
+      "forced_electrocution_count": 1,
+      "packet_proc_discriminator": 10,
+      "ordinary_critical_discriminator": 30,
+      "final_radial_recipient_not_replayed_here": true
+    },
+    {
+      "pool_maximum": 103623,
+      "count": 10,
+      "source_coefficient": 0.004999999888241291,
+      "raw_source_f32": 5181.14990234375,
+      "integer_source": 5181,
+      "weapon_weakness_bonus": 0.5,
+      "selected_proxy_index": 0,
+      "proxy_weakness": 1,
+      "normalized_packet_source": 3454,
+      "proxy_damage_attenuation": 2.0,
+      "proxy_modifier_enabled": true,
+      "headshot_bonus_entry": 0.0,
+      "packet_part": 6,
+      "source_after_proxy_and_restore_branches": 6908.0,
+      "ordinary_child_input": 6908.0,
+      "full_source_evaluation_entry_replayed": true,
+      "constructed_damage_type": 5,
+      "forced_electrocution_count": 1,
+      "packet_proc_discriminator": 10,
+      "ordinary_critical_discriminator": 30,
+      "final_radial_recipient_not_replayed_here": true
+    },
+    {
+      "pool_maximum": 103623,
+      "count": 10,
+      "source_coefficient": 0.004999999888241291,
+      "raw_source_f32": 5181.14990234375,
+      "integer_source": 5181,
+      "weapon_weakness_bonus": 0.5,
+      "selected_proxy_index": 0,
+      "proxy_weakness": 1,
+      "normalized_packet_source": 3454,
+      "proxy_damage_attenuation": 2.0,
+      "proxy_modifier_enabled": false,
+      "headshot_bonus_entry": 0.0,
+      "packet_part": 6,
+      "source_after_proxy_and_restore_branches": 3454.0,
+      "ordinary_child_input": 3454.0,
+      "full_source_evaluation_entry_replayed": true,
+      "constructed_damage_type": 5,
+      "forced_electrocution_count": 1,
+      "packet_proc_discriminator": 10,
+      "ordinary_critical_discriminator": 30,
+      "final_radial_recipient_not_replayed_here": true
+    },
+    {
+      "pool_maximum": 103623,
+      "count": 10,
+      "source_coefficient": 0.004999999888241291,
+      "raw_source_f32": 5181.14990234375,
+      "integer_source": 5181,
+      "weapon_weakness_bonus": 0.5,
+      "selected_proxy_index": 0,
+      "proxy_weakness": 1,
+      "normalized_packet_source": 3454,
+      "proxy_damage_attenuation": 1,
+      "proxy_modifier_enabled": true,
+      "headshot_bonus_entry": 0.0,
+      "packet_part": 6,
+      "source_after_proxy_and_restore_branches": 3454.0,
+      "ordinary_child_input": 3454.0,
+      "full_source_evaluation_entry_replayed": true,
+      "constructed_damage_type": 5,
+      "forced_electrocution_count": 1,
+      "packet_proc_discriminator": 10,
+      "ordinary_critical_discriminator": 30,
+      "final_radial_recipient_not_replayed_here": true
+    },
+    {
+      "pool_maximum": 103623,
+      "count": 10,
+      "source_coefficient": 0.004999999888241291,
+      "raw_source_f32": 5181.14990234375,
+      "integer_source": 5181,
+      "weapon_weakness_bonus": 0.0,
+      "selected_proxy_index": 0,
+      "proxy_weakness": 1,
+      "normalized_packet_source": 5181,
+      "proxy_damage_attenuation": 2.0,
+      "proxy_modifier_enabled": true,
+      "headshot_bonus_entry": 0.0,
+      "packet_part": 6,
+      "source_after_proxy_and_restore_branches": 10362.0,
+      "ordinary_child_input": 10362.0,
+      "full_source_evaluation_entry_replayed": true,
+      "constructed_damage_type": 5,
+      "forced_electrocution_count": 1,
+      "packet_proc_discriminator": 10,
+      "ordinary_critical_discriminator": 30,
+      "final_radial_recipient_not_replayed_here": true
+    },
+    {
+      "pool_maximum": 103623,
+      "count": 10,
+      "source_coefficient": 0.004999999888241291,
+      "raw_source_f32": 5181.14990234375,
+      "integer_source": 5181,
+      "weapon_weakness_bonus": 0.5,
+      "selected_proxy_index": 0,
+      "proxy_weakness": 1,
+      "normalized_packet_source": 3454,
+      "proxy_damage_attenuation": 2.0,
+      "proxy_modifier_enabled": true,
+      "headshot_bonus_entry": 0.5,
+      "packet_part": 6,
+      "source_after_proxy_and_restore_branches": 6908.0,
+      "ordinary_child_input": 6908.0,
+      "full_source_evaluation_entry_replayed": true,
+      "constructed_damage_type": 5,
+      "forced_electrocution_count": 1,
+      "packet_proc_discriminator": 10,
+      "ordinary_critical_discriminator": 30,
+      "final_radial_recipient_not_replayed_here": true
+    },
+    {
+      "pool_maximum": 103623,
+      "count": 10,
+      "source_coefficient": 0.004999999888241291,
+      "raw_source_f32": 5181.14990234375,
+      "integer_source": 5181,
+      "weapon_weakness_bonus": 0.5,
+      "selected_proxy_index": 0,
+      "proxy_weakness": 1,
+      "normalized_packet_source": 3454,
+      "proxy_damage_attenuation": 2.0,
+      "proxy_modifier_enabled": true,
+      "headshot_bonus_entry": 0.800000011920929,
+      "packet_part": 6,
+      "source_after_proxy_and_restore_branches": 6908.0,
+      "ordinary_child_input": 6908.0,
+      "full_source_evaluation_entry_replayed": true,
+      "constructed_damage_type": 5,
+      "forced_electrocution_count": 1,
+      "packet_proc_discriminator": 10,
+      "ordinary_critical_discriminator": 30,
+      "final_radial_recipient_not_replayed_here": true
+    }
+  ],
+  "tick_cases": [
+    {
+      "headshot_bonus": 0,
+      "full_source_entry": false,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 0.0,
+      "magnetic_percentage_array_entry": 0.0,
+      "tick_before_final_recipient": 3454.5,
+      "integer_rounding_boundary": 3455,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0,
+      "full_source_entry": false,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 0.0,
+      "magnetic_percentage_array_entry": 2.0,
+      "tick_before_final_recipient": 3454.5,
+      "integer_rounding_boundary": 3455,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0,
+      "full_source_entry": false,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 1.649999976158142,
+      "magnetic_percentage_array_entry": 0.0,
+      "tick_before_final_recipient": 9154.42578125,
+      "integer_rounding_boundary": 9154,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0,
+      "full_source_entry": false,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 1.649999976158142,
+      "magnetic_percentage_array_entry": 2.0,
+      "tick_before_final_recipient": 9154.42578125,
+      "integer_rounding_boundary": 9154,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.5,
+      "full_source_entry": false,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 0.0,
+      "magnetic_percentage_array_entry": 0.0,
+      "tick_before_final_recipient": 3454.5,
+      "integer_rounding_boundary": 3455,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.5,
+      "full_source_entry": false,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 0.0,
+      "magnetic_percentage_array_entry": 2.0,
+      "tick_before_final_recipient": 3454.5,
+      "integer_rounding_boundary": 3455,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.5,
+      "full_source_entry": false,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 1.649999976158142,
+      "magnetic_percentage_array_entry": 0.0,
+      "tick_before_final_recipient": 9154.42578125,
+      "integer_rounding_boundary": 9154,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.5,
+      "full_source_entry": false,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 1.649999976158142,
+      "magnetic_percentage_array_entry": 2.0,
+      "tick_before_final_recipient": 9154.42578125,
+      "integer_rounding_boundary": 9154,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.8,
+      "full_source_entry": false,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 0.0,
+      "magnetic_percentage_array_entry": 0.0,
+      "tick_before_final_recipient": 3454.5,
+      "integer_rounding_boundary": 3455,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.8,
+      "full_source_entry": false,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 0.0,
+      "magnetic_percentage_array_entry": 2.0,
+      "tick_before_final_recipient": 3454.5,
+      "integer_rounding_boundary": 3455,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.8,
+      "full_source_entry": false,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 1.649999976158142,
+      "magnetic_percentage_array_entry": 0.0,
+      "tick_before_final_recipient": 9154.42578125,
+      "integer_rounding_boundary": 9154,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.8,
+      "full_source_entry": false,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 1.649999976158142,
+      "magnetic_percentage_array_entry": 2.0,
+      "tick_before_final_recipient": 9154.42578125,
+      "integer_rounding_boundary": 9154,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0,
+      "full_source_entry": true,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 0.0,
+      "magnetic_percentage_array_entry": 0.0,
+      "tick_before_final_recipient": 3454.5,
+      "integer_rounding_boundary": 3455,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0,
+      "full_source_entry": true,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 0.0,
+      "magnetic_percentage_array_entry": 2.0,
+      "tick_before_final_recipient": 3454.5,
+      "integer_rounding_boundary": 3455,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0,
+      "full_source_entry": true,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 1.649999976158142,
+      "magnetic_percentage_array_entry": 0.0,
+      "tick_before_final_recipient": 9154.42578125,
+      "integer_rounding_boundary": 9154,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0,
+      "full_source_entry": true,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 1.649999976158142,
+      "magnetic_percentage_array_entry": 2.0,
+      "tick_before_final_recipient": 9154.42578125,
+      "integer_rounding_boundary": 9154,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.5,
+      "full_source_entry": true,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 0.0,
+      "magnetic_percentage_array_entry": 0.0,
+      "tick_before_final_recipient": 3454.5,
+      "integer_rounding_boundary": 3455,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.5,
+      "full_source_entry": true,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 0.0,
+      "magnetic_percentage_array_entry": 2.0,
+      "tick_before_final_recipient": 3454.5,
+      "integer_rounding_boundary": 3455,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.5,
+      "full_source_entry": true,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 1.649999976158142,
+      "magnetic_percentage_array_entry": 0.0,
+      "tick_before_final_recipient": 9154.42578125,
+      "integer_rounding_boundary": 9154,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.5,
+      "full_source_entry": true,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 1.649999976158142,
+      "magnetic_percentage_array_entry": 2.0,
+      "tick_before_final_recipient": 9154.42578125,
+      "integer_rounding_boundary": 9154,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.8,
+      "full_source_entry": true,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 0.0,
+      "magnetic_percentage_array_entry": 0.0,
+      "tick_before_final_recipient": 3454.5,
+      "integer_rounding_boundary": 3455,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.8,
+      "full_source_entry": true,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 0.0,
+      "magnetic_percentage_array_entry": 2.0,
+      "tick_before_final_recipient": 3454.5,
+      "integer_rounding_boundary": 3455,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.8,
+      "full_source_entry": true,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 1.649999976158142,
+      "magnetic_percentage_array_entry": 0.0,
+      "tick_before_final_recipient": 9154.42578125,
+      "integer_rounding_boundary": 9154,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    },
+    {
+      "headshot_bonus": 0.8,
+      "full_source_entry": true,
+      "child_input": 6908.0,
+      "stored_seed": 6908.0,
+      "group_accumulator": 6909.0,
+      "half_after_shared_initializer": 3454.5,
+      "electric_percentage_array_entry": 1.649999976158142,
+      "magnetic_percentage_array_entry": 2.0,
+      "tick_before_final_recipient": 9154.42578125,
+      "integer_rounding_boundary": 9154,
+      "rounding_scope": "No later radial recipient transforms are supplied as recovered"
+    }
+  ]
+}

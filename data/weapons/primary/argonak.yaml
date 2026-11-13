@@ -23,6 +23,7 @@ riven_family: Argonak
 traits: [grineer]
 introduced: "22"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/LaserAimRifle/LaserAimRifle
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 473

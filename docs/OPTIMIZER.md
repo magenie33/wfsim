@@ -279,6 +279,13 @@ Alongside it: `rank`, `regret` (objective given up, as a fraction of the best),
 search can find the winner and still be blind to the field), and `sims` against
 the reference's own cost, because accuracy is only interesting next to its price.
 
+`top_within_noise` grades the distinct top-k list against the exhausted
+reference. It rejects duplicate rows and any omitted reference build that is
+better than the weakest returned row by more than three combined standard
+errors. Strict `recall` remains a diagnostic: statistically tied rows at the
+boundary can change identity across seeds without a measurable loss.
+
+
 **Recall counts DISTINCT builds.** The flat measurement gives every job its own
 seed, so two jobs that are one build to the fight — a utility exilus, an
 evolution the engine does not load — rank apart by noise and a top ten can hold

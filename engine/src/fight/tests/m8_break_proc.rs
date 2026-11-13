@@ -98,6 +98,10 @@ fn m8_break_snapshots_the_magnetic_count_and_keeps_the_common_electric_clock() {
 fn m8_body_break_resets_the_pile_and_a_new_head_electric_proc_restores_it() {
     for restore_head in [false, true] {
         let mut q = Probe::new();
+        q.p.weakness_bonus = Some(0.5);
+        q.p.foe.magnetic_break_proxy = Some(crate::rules::status::HitProxy {
+            weakness: 1.0, damage_multiplier: Some(2.0),
+        });
         q.p.arcane = arc("secondary_deadhead");
         q.arc = ArcRuntime::init(&q.p);
         q.body.debuffs.disrupt = vec![6.0; 10];
@@ -116,6 +120,38 @@ fn m8_body_break_resets_the_pile_and_a_new_head_electric_proc_restores_it() {
         assert_eq!(events.len(), 2);
         assert!(!events[0].head);
         assert_eq!(events[1].head, restore_head);
+    }
+}
+
+#[test]
+fn m8_fixed_target_measured_ticks_follow_the_declared_weapon_and_proxy() {
+    let spec = crate::data::enemies::all().into_iter()
+        .find(|enemy| enemy.id == "corrupted_heavy_gunner").unwrap();
+    let weapon = crate::model::WeaponBase::from_data("laetum", true, &["laetum_caput_mortuum"]);
+    let panel = crate::build::loadout::resolve(&weapon, &[], crate::model::StackPolicy::AssumedMax);
+    for aim in ["body", "head"] {
+        for (electricity, measured) in [(1.0, 3455.0), (2.65, 9154.0)] {
+            let mut arena = crate::arena::Arena::training(10.0);
+            arena.target = spec.target_params(50, true, true, TargetMode::InfiniteHealth).unwrap();
+            arena.body_parts = spec.aim_parts(&[(aim, 1.0)]).unwrap();
+            let mut q = Probe::new();
+            q.p = FightParams::from_panel(&panel, &arena, &arc("secondary_deadhead"));
+            q.arc = ArcRuntime::init(&q.p);
+            assert_eq!(q.p.weakness_bonus, Some(0.5));
+            q.p.elem_dot_bonus = vec![(DamageType::Magnetic, 3.0), (DamageType::Electricity, electricity)];
+            q.body.state = TargetState::spawn(&q.p.foe, q.p.target_at);
+            q.body.state.overguard = 0.0;
+            q.body.state.shield = 0.0;
+            q.body.debuffs.canticle_armor_strip = 1.0;
+            q.body.debuffs.disrupt = vec![6.0; 10];
+            q.break_pool(BrokenPool::Overguard, 0.0);
+            assert_eq!(q.body.debuffs.dots[0].frozen, 3454.0);
+            assert_eq!(q.body.debuffs.dots[0].landing, ProcLanding::default());
+            let parent = q.r.tally.effective();
+            assert_eq!(parent, 6908.0);
+            q.tick(0.01);
+            assert_eq!((q.r.tally.effective() - parent).round(), measured, "{aim}, Electricity{electricity}");
+        }
     }
 }
 

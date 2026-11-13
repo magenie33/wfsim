@@ -18,6 +18,7 @@ exilus_polarity: naramon
 riven_family: Vadarya Prime
 traits: [prime]
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeLightningGun/PrimeLightningGun
+weakness_bonus: 0.2
 noise: alarming
 magazine: 16
 reload_seconds: 2.6

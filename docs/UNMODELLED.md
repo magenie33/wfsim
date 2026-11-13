@@ -1040,14 +1040,20 @@ the posture's apply script. Balanced's moving-only stagger and Elusive's
 incoming-bullet evasion remain unmodelled; the offensive arena has no companion
 movement or incoming attacks. The card descriptions state these limits.
 
-## Magnetic break source normalization
+## Magnetic break source inputs
 
-Magnetic break damage uses the recovered float32 `0.005` pool/count source
-and the owner's two-stage status-damage rule (M8). The native conditional
-weapon/proxy weakness division and rounding are not applied: the simulator
-does not yet bind the live weapon weakness value or effective proxy maximum.
-The owner's isolated 3455/9154 readings are preserved without claiming that
-their live pool and normalized seed have been reconstructed. Native
-faction/Roar operation eligibility and exact same-frame ordering remain
-partial; the existing ordinary proc rules and owner-measured source/landing
-rules apply.
+Magnetic break source normalization and the selected proxy's generic damage
+modifier are applied when the weapon's native WeaknessBonus and that proxy's
+DamageAtten are declared. The importer binds303explicit weapon declarations
+and12targets' ordered proxy lists; weapon forms inherit their weapon's value.
+The fixed Laetum3455/9154 control matches M8. Native class defaults absent from
+the metadata and undeclared generic proxy coefficients are not inferred; a
+missing input retains the pool/count source. Such entries do not claim a
+completed native normalization.
+
+Live mode/103entries, complete spawn ordering, dynamic table/proxy/source
+installation and generic modifier enable changes remain partial. The global
+pool model does not reproduce every native float32 curve/integer writeback
+boundary. Arbitrary faction/status operation eligibility and exact same-frame
+radial/lethal ordering remain unbound; ordinary proc and owner-measured
+source/landing rules apply.

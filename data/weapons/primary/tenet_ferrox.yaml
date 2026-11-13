@@ -24,6 +24,7 @@ riven_family: Ferrox
 traits: [corpus, tenet]
 introduced: "32.2"
 internal_name: /Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEFerrox/CrpBEFerrox
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 100

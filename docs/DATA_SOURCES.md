@@ -80,6 +80,17 @@ carries duplicates that share a display name (the /Beginner/ and /Intermediate/
 tiers of a card). WFCD's `warframe-items` is not a source: it is a second-hand
 copy of this export.
 
+## Magnetic break source inputs
+
+`scripts/import_magnetic_proxy.py --exchange <exchange> --check` verifies the
+pinned metadata and pool/proxy replay, then checks the native WeaknessBonus
+and ordered enemy HitProxies against `magnetic-proxy-inputs.json`. Weapon
+owners join by internal path; enemy/controller paths are explicit bindings.
+Forms inherit the weapon parameter. Original tokens and property ancestors
+remain in the fixture; absent native defaults remain unbound. M8 records the
+in-game controls and source/proxy arithmetic. Native damage ids are mapped
+by name, independently of WFSim's Rust enum order.
+
 ## Pinned primary form and sampler inputs
 
 ### Whole-secondary calibration

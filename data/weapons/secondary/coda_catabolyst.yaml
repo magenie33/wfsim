@@ -22,6 +22,7 @@ riven_family: Catabolyst
 traits: [infested, technocyte_coda]
 introduced: "38.5"
 internal_name: /Lotus/Weapons/Infested/InfestedLich/Pistols/CodaCatabolyst
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 155

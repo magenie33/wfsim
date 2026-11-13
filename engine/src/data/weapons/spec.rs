@@ -68,6 +68,9 @@ pub struct FormRef {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct WeaponSpec {
+    /// Native WeaknessBonus, independent of equipped headshot-damage bonuses (M8).
+    #[serde(default)]
+    pub weakness_bonus: Option<f64>,
     /// A FORM INHERITS ITS WEAPON. The id of the entry this one is a form of —
     /// every WEAPON-LEVEL field this entry does not state is filled in from
     /// there, and only what actually DIFFERS is written down here.

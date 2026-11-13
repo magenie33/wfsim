@@ -23,6 +23,7 @@ riven_family: Ignis
 traits: [grineer]
 introduced: "8.0"
 internal_name: /Lotus/Weapons/ClanTech/Chemical/FlameThrower
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 ammo_max: 150

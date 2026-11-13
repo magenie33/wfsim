@@ -21,6 +21,7 @@ riven_family: Nukor
 traits: [grineer]
 introduced: "14.5"
 internal_name: /Lotus/Weapons/Grineer/Pistols/GrineerMicrowavegun/GrnMicrowavePistol
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

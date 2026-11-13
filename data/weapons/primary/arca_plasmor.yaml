@@ -27,6 +27,7 @@ riven_family: Arca Plasmor
 traits: [corpus]
 introduced: "21.7"
 internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpShotgun/CrpShotgun
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 ammo_max: 50

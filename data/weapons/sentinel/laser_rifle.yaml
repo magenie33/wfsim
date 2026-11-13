@@ -17,6 +17,7 @@ disposition: 1.2
 polarities: []
 riven_family: Laser Rifle
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/LaserRifle
+weakness_bonus: 0.2
 traits: [tenno]
 noise: alarming
 magazine: 20

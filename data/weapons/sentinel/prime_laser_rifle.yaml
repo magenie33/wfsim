@@ -18,6 +18,7 @@ polarities: []
 riven_family: Laser Rifle
 traits: [prime, vaulted]
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/PrimeLaserRifle
+weakness_bonus: 0.2
 noise: alarming
 magazine: 20
 reload_seconds: 1.2

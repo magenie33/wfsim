@@ -25,6 +25,7 @@ riven_family: Pox
 traits: [infested, technocyte_coda]
 introduced: "38.5"
 internal_name: /Lotus/Weapons/Infested/InfestedLich/Pistols/CodaPox
+weakness_bonus: 0.0
 noise: silent               # the THROW is silent; the cloud beside it is alarming
 ammo_type: secondary
 ammo_max: 40

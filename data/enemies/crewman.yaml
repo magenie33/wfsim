@@ -47,6 +47,19 @@ stats:
 # Crewman as "Head (3x)*", where * is "No critical headshot bonus", and says the
 # flag "excludes the heads of all Corpus humanoids". The unit's own page is
 # silent on it.
+
+hit_proxies:
+  - {"weakness": 1.0, "damage_multiplier": 2.0}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+
 body_parts:
   - name: body
     multiplier: 1.0

@@ -22,6 +22,7 @@ riven_family: Quanta
 traits: [corpus]
 introduced: "14.1"
 internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpShockRifle/CrpShockRifle
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 540

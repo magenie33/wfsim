@@ -15,6 +15,7 @@ polarities: []
 exilus_polarity: madurai
 riven_family: Vulkar
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerSniperRifle/GrnSniperRifle
+weakness_bonus: 0.4
 traits: [grineer]
 noise: alarming
 magazine: 6

@@ -22,6 +22,7 @@ riven_family: Afentis
 traits: [tenno]
 introduced: "32"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/TnHopliteSpear/TnHopliteSpearGunWeapon
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 ammo_max: 12

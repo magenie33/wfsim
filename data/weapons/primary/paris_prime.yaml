@@ -23,6 +23,7 @@ riven_family: Paris
 traits: [incarnon, prime, never_vaulted]
 introduced: "Update 9.0"
 internal_name: /Lotus/Weapons/Tenno/Bows/PrimeHuntingBow
+weakness_bonus: 1.0
 noise: silent
 ammo_type: primary
 ammo_max: 72

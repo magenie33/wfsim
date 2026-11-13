@@ -24,6 +24,7 @@ riven_family: Quanta
 traits: [corpus, tenet]
 introduced: "42"
 internal_name: /Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEQuanta/CrpBEQuanta
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 540

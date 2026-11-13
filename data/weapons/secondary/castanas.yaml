@@ -21,6 +21,7 @@ riven_family: Castanas
 traits: [tenno]
 introduced: "12.2"
 internal_name: /Lotus/Weapons/Tenno/ThrowingWeapons/StickyBomb/StickyBombs
+weakness_bonus: 0.0
 noise: silent
 ammo_type: secondary
 ammo_max: 18

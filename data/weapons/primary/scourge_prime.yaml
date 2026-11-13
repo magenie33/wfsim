@@ -26,6 +26,7 @@ polarities: [naramon, madurai, madurai, madurai]
 exilus_polarity: madurai
 riven_family: Scourge
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeScourge/PrimeScourgeWeapon
+weakness_bonus: 0.0
 traits: [tenno, prime]
 introduced: "Update 31.0"
 noise: alarming

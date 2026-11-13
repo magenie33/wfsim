@@ -22,6 +22,7 @@ riven_family: Vasto
 traits: [incarnon, prime, vaulted]
 introduced: "Update 15.7"
 internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeVasto/PrimeVastoPistol
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

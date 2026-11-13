@@ -1805,9 +1805,20 @@ fn form_section(
         "weakpoint_damage",
     ];
     let key_of = |r: &Value| r["key"].as_str().unwrap_or("").to_string();
-    let (direct_rows, weapon_rows): (Vec<Value>, Vec<Value>) = stats
+    let (direct_rows, mut weapon_rows): (Vec<Value>, Vec<Value>) = stats
         .into_iter()
         .partition(|r| ON_PROJECTILE.contains(&key_of(r).as_str()));
+    let weakness = panel.weakness_bonus;
+    let weakness_text = weakness.map_or_else(|| "—".to_string(), |w| format!("{} (×{})", fpct(w), num(1.0 + w.max(0.0))));
+    weapon_rows.insert(0, json!({
+        "key": "weakness_bonus", "label": "Native Weak Point Bonus",
+        "base": weakness_text, "final": weakness_text,
+        "value": weakness,
+        "note": if weakness.is_some() {
+            "The factor shown uses target proxy weakness 1. Magnetic break damage normalizes by 1 + this native bonus × target proxy weakness."
+        } else { "Native weak-point coefficient unavailable for this weapon." },
+        "sources": [],
+    }));
 
     // A damage vector as displayed rows: type, amount, share of the total.
     let vector_rows = |v: &wfsim_engine::rules::damage::DamageVector| {
@@ -2219,6 +2230,19 @@ mod mode_apl_tests {
 #[cfg(test)]
 mod weakpoint_panel_tests {
     use super::*;
+
+    #[test]
+    fn native_weak_point_bonus_is_visible_and_matches_the_weapon_input() {
+        for (weapon, value, factor) in [("phantasma_prime", 0.2, "×1.2"), ("laetum", 0.5, "×1.5"), ("gammacor", 0.0, "×1")] {
+            let result = panel_json(&json!({"weapon":weapon,"mods":[]}));
+            for form in result["forms"].as_array().unwrap() {
+                let row = form["stats"].as_array().unwrap().iter().find(|row| row["key"] == "weakness_bonus").unwrap();
+                assert_eq!(row["value"], json!(value), "{weapon}");
+                assert!(row["final"].as_str().unwrap().contains(factor), "{row}");
+                assert_eq!(row["base"], row["final"]);
+            }
+        }
+    }
 
     fn incarnon_panel(mods: Value) -> Value {
         panel_json(&json!({

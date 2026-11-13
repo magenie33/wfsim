@@ -189,6 +189,10 @@ pub(super) fn push_break_proc(
         BrokenPool::Shield => foe.max_shield(),
     };
     let base = crate::rules::status::magnetic_break_source(pool_max, stacks);
+    let base = match (params.weakness_bonus, foe.magnetic_break_proxy) {
+        (Some(weakness), Some(proxy)) => crate::rules::status::magnetic_break_proxy_source(base, weakness, proxy),
+        _ => base,
+    };
     let status = params.status_damage_multiplier + status_damage_live
         + params.status_damage_of(DamageType::Electricity);
     let mb_live = base * status;

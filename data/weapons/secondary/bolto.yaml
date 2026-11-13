@@ -20,6 +20,7 @@ riven_family: Bolto
 traits: [tenno]
 introduced: "Vanilla"
 internal_name: /Lotus/Weapons/Tenno/Pistol/CrossBow
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

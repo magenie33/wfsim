@@ -25,6 +25,7 @@ riven_family: Burston        # module `Family` — SHARED with the Burston
 traits: [prime, never_vaulted, incarnon]
 introduced: "11.5"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeBurston/PrimeBurston
+weakness_bonus: 0.5
 noise: alarming              # IsSilent false
 ammo_type: primary
 ammo_max: 540

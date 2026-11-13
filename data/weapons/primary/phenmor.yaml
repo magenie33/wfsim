@@ -29,6 +29,7 @@ riven_family: Phenmor
 traits: [zariman, incarnon]
 introduced: "31.5"           # Update 31.5 "Angels of the Zariman"
 internal_name: /Lotus/Weapons/Tenno/Zariman/LongGuns/SemiAutoRifle/ZarimanSemiAutoRifle
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 540

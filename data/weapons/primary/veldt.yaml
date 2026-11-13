@@ -21,6 +21,7 @@ riven_family: Veldt
 traits: []
 introduced: "22.18"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/TnRevolverRifle/TnRevolverRifleGun
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 546

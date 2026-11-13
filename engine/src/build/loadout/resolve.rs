@@ -2068,6 +2068,7 @@ pub fn resolve_for(
         headshot_damage_bonus: base.headshot_damage_bonus
             + headshot_damage
             + zoom.headshot_damage,
+        weakness_bonus: base.weakness_bonus,
         noncrit_bonus,
         stacking_buffs: base
             .stacking_buffs

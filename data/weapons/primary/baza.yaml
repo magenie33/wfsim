@@ -21,6 +21,7 @@ riven_family: Baza
 traits: [tenno]
 introduced: "22.4"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/TnSMG/TnSMGWeapon
+weakness_bonus: 0.2
 noise: silent
 ammo_type: primary
 ammo_max: 800

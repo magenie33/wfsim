@@ -22,6 +22,7 @@ riven_family: Cernos
 traits: [syndicate, red_veil]
 introduced: "17.3"
 internal_name: /Lotus/Weapons/Syndicates/RedVeil/Bows/RVCernos
+weakness_bonus: 1.0
 noise: silent
 ammo_type: primary
 ammo_max: 72

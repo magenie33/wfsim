@@ -19,6 +19,7 @@ polarities: []
 riven_family: Deth Machine Rifle
 traits: [prime]
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/PrimeDethMachineRifle
+weakness_bonus: 0.2
 noise: alarming
 magazine: 100
 reload_seconds: 2.0

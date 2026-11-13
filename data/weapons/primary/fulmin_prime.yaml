@@ -25,6 +25,7 @@ riven_family: Fulmin
 traits: [prime]
 introduced: "33.6"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeFulmin/PrimeFulmin
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 0

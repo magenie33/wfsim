@@ -21,6 +21,7 @@ riven_family: Knell
 traits: [tenno, prime]
 introduced: "31"
 internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeKnell/PrimeKnellWeapon
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 20

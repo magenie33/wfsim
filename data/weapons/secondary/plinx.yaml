@@ -23,6 +23,7 @@ riven_family: Plinx
 traits: [corpus]
 introduced: "24.2"
 internal_name: /Lotus/Weapons/Corpus/Pistols/CrpSonificBlastor/CrpBlastorWeapon
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 # NO AMMO POOL — "Does not use ammo pickups; ammo regenerates over time."

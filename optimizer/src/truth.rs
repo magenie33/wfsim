@@ -153,6 +153,21 @@ impl Truth {
         let hits = other.order[..k].iter().filter(|j| mine.contains(j)).count();
         hits as f64 / k as f64
     }
+
+    /// A distinct top-k that omits no build measurably better than its weakest row.
+    pub fn top_within_noise(&self, leaderboard: &[usize], k: usize, sigmas: f64) -> bool {
+        let needed = self.distinct(&self.order, k).len();
+        if leaderboard.len() < needed || leaderboard.iter().take(needed).any(|&j| j >= self.est.len()) {
+            return false;
+        }
+        let listed = &leaderboard[..needed];
+        let groups: std::collections::HashSet<_> = listed.iter().map(|&j| self.twin[j]).collect();
+        if groups.len() != needed { return false; }
+        let Some(&weakest) = listed.iter().min_by(|&&a, &&b| self.est[a].mean.total_cmp(&self.est[b].mean)) else { return true; };
+        self.order.iter().all(|&j| groups.contains(&self.twin[j])
+            || self.est[j].mean <= self.est[weakest].mean
+            || !self.est[j].separable(&self.est[weakest], sigmas))
+    }
 }
 
 /// What a search strategy's leaderboard is worth against the reference.
@@ -164,6 +179,8 @@ pub struct Verdict {
     pub regret: f64,
     /// The pass/fail: is the winner inside the reference's answer set?
     pub within_noise: bool,
+    /// The list is distinct and omits no significantly better reference build.
+    pub top_within_noise: bool,
     /// Fraction of the reference's top `k` the strategy's own top `k` contains
     /// — a strategy can find the winner and still be blind to the field. Both
     /// sides count DISTINCT builds ([`Truth::twin`]).
@@ -186,8 +203,32 @@ pub fn judge(truth: &Truth, leaderboard: &[usize], k: usize, sims: u64) -> Verdi
         rank: truth.rank_of(winner),
         regret: truth.regret(winner),
         within_noise: answer.contains(&winner),
+        top_within_noise: truth.top_within_noise(leaderboard, k, 3.0),
         recall: hits as f64 / k as f64,
         sims,
         reference_sims: truth.est.len() as u64 * u64::from(truth.runs),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_top_list_accepts_a_boundary_tie_but_rejects_missing_better_builds_and_twins() {
+        let truth = Truth {
+            runs: 40,
+            est: [(4.0, 0.01), (3.0, 0.01), (2.0, 0.1), (1.95, 0.1), (0.2, 0.01)]
+                .into_iter().map(|(mean, se)| Estimate { mean, se }).collect(),
+            order: (0..5).collect(), twin: (0..5).collect(),
+        };
+        assert!(judge(&truth, &[0, 1, 2], 3, 0).top_within_noise);
+        assert!(judge(&truth, &[0, 1, 3], 3, 0).top_within_noise);
+        assert_eq!(judge(&truth, &[0, 1, 3], 3, 0).recall, 2.0 / 3.0);
+        assert!(!judge(&truth, &[0, 1, 4], 3, 0).top_within_noise);
+        assert!(!judge(&truth, &[0, 1, 1], 3, 0).top_within_noise);
+        let mut twins = truth;
+        twins.twin[3] = 1;
+        assert!(!judge(&twins, &[0, 1, 3], 3, 0).top_within_noise);
     }
 }

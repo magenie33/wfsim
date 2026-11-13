@@ -26,6 +26,7 @@ riven_family: Ballistica
 traits: [incarnon, tenno]
 introduced: "Update 10.4"
 internal_name: /Lotus/Weapons/Tenno/Pistols/AutomaticHandCrossbow/AutoCrossBow
+weakness_bonus: 0.5
 noise: silent
 ammo_type: secondary
 ammo_max: 210

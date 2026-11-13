@@ -23,6 +23,7 @@ riven_family: Latron
 traits: [incarnon, wraith, invasion_reward, tenno]
 introduced: "14.5"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/WraithLatron/WraithLatron
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 540

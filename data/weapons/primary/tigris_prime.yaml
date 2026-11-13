@@ -21,6 +21,7 @@ riven_family: Tigris
 traits: [prime, vaulted]
 introduced: "Hotfix: The Silver Grove 3"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeTigris/PrimeTigris
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 120

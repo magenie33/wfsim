@@ -23,6 +23,7 @@ riven_family: Tiberon
 traits: [prime, vaulted]
 introduced: "22.16.4"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeTiberon/PrimeTiberonRifle
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 546

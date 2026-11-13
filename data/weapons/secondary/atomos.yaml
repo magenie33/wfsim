@@ -22,6 +22,7 @@ riven_family: Atomos
 traits: [incarnon, grineer]
 introduced: "Update 16.5"
 internal_name: /Lotus/Weapons/Grineer/Pistols/HeatGun/GrnHeatGun
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: secondary
 ammo_max: 350

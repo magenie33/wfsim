@@ -46,6 +46,14 @@ Torid build, 30 s vs 120 s gave 0.044 vs 0.049 KPM while the totals went 0.022
 vs 0.098 — the residual is ramp-up, reloads and the DoT tail, exactly the
 drift DPS shows over the same pair (18,653 vs 20,551).
 
+## Native weapon weak-point input
+
+The weapon stats panel leads with the native weak-point bonus and the factor
+`1 + max(bonus,0)` at proxy weakness1. It reads the same resolved weapon value
+as Magnetic source normalization, including alternate and Incarnon forms.
+Equipped headshot bonuses remain separate. An unbound native value displays
+an unavailable coefficient rather than zero.
+
 ## Core decisions
 
 Home and non-weapon routes initialize no hidden weapon editor. Simulator and

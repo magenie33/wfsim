@@ -15,6 +15,7 @@ polarities: [madurai]
 exilus_polarity: madurai
 riven_family: Snipetron
 internal_name: /Lotus/Weapons/Tenno/Rifle/SniperRifle
+weakness_bonus: 0.4
 traits: [corpus]
 noise: alarming
 magazine: 4

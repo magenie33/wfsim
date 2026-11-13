@@ -15,6 +15,7 @@ polarities: []
 exilus_polarity: naramon
 riven_family: Komorex
 internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpSentAmlgSniper/CrpSentAmlgSniper
+weakness_bonus: 0.2
 traits: [sentient, corpus]
 noise: alarming
 magazine: 20

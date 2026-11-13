@@ -29,6 +29,7 @@ riven_family: Hind
 traits: [grineer, kuva_lich]
 introduced: "27.1"
 internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Hind/KuvaHind
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 900

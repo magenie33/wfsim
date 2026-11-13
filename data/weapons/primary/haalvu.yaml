@@ -27,6 +27,7 @@ riven_family: Haalvu
 traits: [sentient]
 introduced: "43.0.7"
 internal_name: /Lotus/Weapons/Sentients/SentOctaMiniGun/SentOctaMiniGun
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 0

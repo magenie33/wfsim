@@ -336,6 +336,7 @@ impl ResolvedRadial {
 /// The resolved panel: everything the dummy sim needs from layers [1]+[2].
 #[derive(Debug, Clone)]
 pub struct ResolvedPanel {
+    pub weakness_bonus: Option<f64>,
     pub melee_radius: Option<crate::model::MeleeRadius>,
     pub target_preference: Option<crate::model::TargetPreference>,
     pub overguard_damage_bonus: f64,

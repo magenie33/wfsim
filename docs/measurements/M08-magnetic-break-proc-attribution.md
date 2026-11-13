@@ -42,17 +42,35 @@ Q = trunc_i32(f32(f32(maximum_pool * f32(0.005)) * current_Magnetic_count))
 ```
 
 `rules::status::magnetic_break_source` matches 28 attainable-count Overguard
-vectors from that batch. Normal Electricity applies its own `0.5` coefficient
-to the inherited source. A separate synthetic normalized seed 6909 produces
-`3454.5 → 3455` and, with +165% Electricity, `9154.42578125 → 9154`.
-This consistency case does not establish the owner's live source seed.
+vectors from that batch. The selected proxy is the first strictly greatest
+positive native Weakness. With weapon WeaknessBonus `W`, proxy Weakness `V`
+and generic DamageAtten `A`, the retained source is:
 
-The native producer also conditionally divides by a weapon/proxy weakness
-factor and rounds before constructing the packet. Its live field bindings are
-not reconstructed by the simulator; [UNMODELLED.md](../UNMODELLED.md) records
-that boundary. Native status-upgrade operation state remains partial. The
-status-damage square is the owner's confirmed integration rule, also stated
-by the Magnetic wiki; it is not claimed as a completed native multiplier trace.
+```
+normalized = floor(f32(f32(Q / f32(1 + f32(max(W,0) * V))) + 0.5))
+seed = f32(normalized * A)
+```
+
+Batch `20261112T165824Z-magnetic-pool-proxy`, manifest SHA-256
+`ccdba60c8d17b97e85010305b3f692640cfc0c9bdce8979f3ab8ae905435b3c6`,
+binds the generic modifier before the HEAD-only gate. The actual Magnetic
+packet keeps ANY_PART6 and retains that modifier without becoming a headshot.
+The receiver verified four payloads,580archive members and215native spans;
+portable checks cover57producer result rows, not a receiver emulator rerun.
+
+For the fixed owner target, the native integer pool103623 produces Q5181.
+Laetum W0.5, selected GrineerHead V1 and A2 give normalized3454 and seed6908.
+The fresh ordinary Electric group starts at1: `(6908+1)*0.5=3454.5 ->3455`.
+Own Electricity+165% yields native float32 `9154.42578125 ->9154`. Both body
+and head aim match. Supplied +80%headshot and +200%Magnetic percentage entries
+do not alter this ANY_PART source/own-Electricity route.
+
+The fixture and importer `scripts/import_magnetic_proxy.py` preserve exact
+native weapon owners, ordered target proxies and original tokens. Unknown
+native defaults or generic proxy coefficients remain absent rather than
+receiving an inferred normalization. `UNMODELLED.md` records that coverage
+and the unbound live installation/recipient boundaries. Status damage once
+upstream and once in the child remains the owner's confirmed rule.
 
 ## Gameplay controls
 
@@ -65,5 +83,19 @@ M100 preserves the quantitative controls: Laetum +80% headshot damage, Lavos
 +200% Magnetic, stripped Steel Path level 50 Corrupted Heavy Gunner Eximus,
 10 Magnetic stacks: body/head aim both give 3455; +165% Electricity gives 9154.
 The count at break is snapshotted. Counts for 2764 and tentative 1382 remain
-unconfirmed. The live pool/weakness reconstruction remains open; no target
-stats are adjusted to fit those displayed readings.
+unconfirmed. The bounded native pool/proxy chain above reproduces both controls without
+adjusting target stats or fitting a universal multiplier. Full live spawn,
+mode/proxy installation and radial/lethal reconstruction remain partial.
+
+
+## Historical external cross-check
+
+The [2024 forum report](https://forums.warframe.com/topic/1409188-how-does-magnet-status-work-after-update-36)
+records Crewman maximum shield14789 and Electric ticks38 with Lanka versus74
+with Gammacor, and Elite Crewman maximum18486 with ticks47 versus93.
+With one Magnetic stack, the native pool source truncates to73 or92.
+The independently parsed Lanka WeaknessBonus1 versus Gammacor0, with the
+selected head proxy Weakness1/DamageAtten2, gives exactly those four displayed
+ticks after normalization, generic modification and the ordinary accumulator.
+This is consistency with a historical third-party observation, not new owner
+calibration or a reconstruction of that old live spawn/ability chain.

@@ -19,6 +19,7 @@ disposition: 1.2
 polarities: []
 riven_family: Vulcax
 internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon
+weakness_bonus: 1.0
 traits: [corpus]
 noise: alarming
 magazine: 1

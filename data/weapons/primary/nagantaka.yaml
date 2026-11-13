@@ -23,6 +23,7 @@ riven_family: Nagantaka
 traits: [tenno]
 introduced: "24"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/GarudaCrossbow/GarudaCrossbow
+weakness_bonus: 0.2
 noise: silent
 ammo_type: primary
 ammo_max: 540

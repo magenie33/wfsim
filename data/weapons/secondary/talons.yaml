@@ -21,6 +21,7 @@ riven_family: Talons
 traits: [tenno]
 introduced: "18.0"
 internal_name: /Lotus/Weapons/Tenno/ThrowingWeapons/U18ThrowingKnives/U18throwingknives
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: secondary
 ammo_max: 12

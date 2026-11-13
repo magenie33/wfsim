@@ -23,6 +23,7 @@ riven_family: Tysis
 traits: [infested]
 introduced: "11.7"
 internal_name: /Lotus/Weapons/Infested/Pistols/InfestedDartPistol/InfestedDartPistol
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

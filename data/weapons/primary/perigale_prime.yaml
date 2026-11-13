@@ -16,6 +16,7 @@ exilus_polarity: madurai
 riven_family: Perigale
 traits: [prime, tenno]
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimePerigale/PrimePerigaleSniper
+weakness_bonus: 1.0
 noise: alarming
 magazine: 16
 reload_seconds: 3.0

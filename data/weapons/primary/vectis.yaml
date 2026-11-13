@@ -37,6 +37,7 @@ riven_family: Vectis
 traits: [incarnon, tenno]
 introduced: "Update 10.6"
 internal_name: /Lotus/Weapons/Tenno/Rifle/TennoSniperRifle
+weakness_bonus: 0.4
 noise: alarming
 ammo_type: primary
 ammo_max: 72

@@ -25,6 +25,7 @@ riven_family: Strun
 traits: [incarnon, tenno]
 introduced: "Vanilla"
 internal_name: /Lotus/Weapons/Tenno/Shotgun/Shotgun
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 120

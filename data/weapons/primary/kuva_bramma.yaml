@@ -24,6 +24,7 @@ riven_family: Kuva Bramma
 traits: [grineer, kuva_lich]
 introduced: "27.1"
 internal_name: /Lotus/Weapons/Grineer/Bows/GrnBow/GrnBowWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 5

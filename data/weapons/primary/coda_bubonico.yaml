@@ -32,6 +32,7 @@ riven_family: Bubonico
 traits: [infested, technocyte_coda]
 introduced: "42"
 internal_name: /Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaBubonico/CodaBubonicoCannon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 # NO AMMO POOL — "This weapon does not use ammo pickups; ammo regenerates over

@@ -20,6 +20,7 @@ riven_family: Sobek
 traits: [grineer]
 introduced: "9.0"
 internal_name: /Lotus/Weapons/Tenno/Shotgun/DoubleBarrelShotgun
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 240

@@ -20,6 +20,7 @@ riven_family: Akvasto
 traits: [tenno]
 introduced: "9.7"
 internal_name: /Lotus/Weapons/Tenno/Akimbo/DualVastos
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

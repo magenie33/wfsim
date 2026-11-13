@@ -22,6 +22,7 @@ riven_family: Tonkor
 traits: [grineer]
 introduced: "16.4"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnGrenadeLauncher/GrnGrenadeLauncher
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 ammo_max: 30

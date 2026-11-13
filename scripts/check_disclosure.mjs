@@ -24,6 +24,39 @@ import { openApp } from "./cdp.mjs";
 const app = await openApp({ boot: 12000, base: process.env.WFSIM_BASE });
 const { evaluate, check, send, sleep, BASE } = app;
 
+async function nativeWeakPointPanel(lang) {
+  await evaluate(`history.pushState({}, "", "/weapons/Phantasma_Prime/builder"); route(); true`);
+  await sleep(2500);
+  const rows = JSON.parse(await evaluate(`(async () => {
+    const out = [];
+    for (const weapon of ["phantasma_prime", "laetum", "gammacor"]) {
+      const p = await api("/api/panel", { weapon, mods: [] });
+      if (${JSON.stringify(process.env.WFSIM_BREAK === "native_weakpoint")}) {
+        for (const form of p.forms || []) form.stats = form.stats.filter(row => row.key !== "weakness_bonus");
+      }
+      renderPanel(p);
+      const label = tr("Native Weak Point Bonus");
+      const shown = [...document.querySelectorAll("#stats-rows .srow")]
+        .filter(row => row.querySelector(".sk")?.textContent === label);
+      out.push({ weapon, rows: shown.map(row => ({
+        label: row.querySelector(".sk").textContent,
+        value: row.querySelector(".sv b").textContent,
+        note: row.querySelector(".srownote")?.textContent || "",
+        first: row.parentElement.querySelector(".srow") === row,
+        arrow: !!row.querySelector(".sbase"),
+      })) });
+    }
+    return JSON.stringify(out);
+  })()`));
+  for (const item of rows) {
+    const factor = { phantasma_prime: "×1.2", laetum: "×1.5", gammacor: "×1" }[item.weapon];
+    check(`[${lang}] ${item.weapon} native weak-point input is visible`, item.rows.length > 0, JSON.stringify(item));
+    check(`[${lang}] ${item.weapon} shows its own factor on every form`, item.rows.length > 0 && item.rows.every(row => row.value.includes(factor)), JSON.stringify(item));
+    check(`[${lang}] ${item.weapon} leads with one unchanged native value`, item.rows.length > 0 && item.rows.every(row => row.first && !row.arrow), JSON.stringify(item));
+    check(`[${lang}] ${item.weapon} native explanation uses the display language`, item.rows.length > 0 && item.rows.every(row => /[\u3400-\u9fff]/.test(row.label + row.note) === (lang === "zh")), JSON.stringify(item));
+  }
+}
+
 for (const lang of ["en", "zh"]) {
   // LANG IS READ AT BOOT, so the switch is a reload, not a setting — the
   // pattern check_enemies established.
@@ -32,6 +65,11 @@ for (const lang of ["en", "zh"]) {
   await evaluate(`localStorage.setItem('wfsim-lang', ${JSON.stringify(lang)})`);
   await send("Page.navigate", { url: BASE });
   await sleep(12000);
+
+  if (process.env.WFSIM_NATIVE_ONLY === "1") {
+    await nativeWeakPointPanel(lang);
+    continue;
+  }
 
   const r = await evaluate(`(async () => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -459,6 +497,7 @@ for (const lang of ["en", "zh"]) {
     r.zoomLines[0] || "(no line)");
   check(`[${lang}] …and a form that CAN zoom gets no such line`,
     r.zoomFalsePositives === 0, String(r.zoomFalsePositives));
+  await nativeWeakPointPanel(lang);
 }
 
 await app.finish("what the app does not model is on the page");

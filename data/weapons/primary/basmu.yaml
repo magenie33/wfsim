@@ -27,6 +27,7 @@ riven_family: Basmu
 traits: [sentient]
 introduced: "27.3"
 internal_name: /Lotus/Weapons/Sentients/SentRifleNewWar/SentRifleNewWarGun
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 0

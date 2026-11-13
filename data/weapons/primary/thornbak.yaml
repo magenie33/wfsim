@@ -21,6 +21,7 @@ riven_family: Thornbak
 traits: [tenno]
 introduced: "40"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/TnModQuestRifle/TnModQuestRifleWeapon
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 540

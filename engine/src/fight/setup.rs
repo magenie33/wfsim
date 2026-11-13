@@ -1370,6 +1370,7 @@ impl FightParams {
             combo_count_chance_on_lifted: panel.combo_count_chance_on_lifted + arcane.combo_count_chance_on_lifted,
             arcane,
             headshot_damage_bonus: panel.headshot_damage_bonus,
+            weakness_bonus: panel.weakness_bonus,
             headshot_bonus_multiplicative: panel.headshot_bonus_multiplicative,
             noncrit_bonus: panel.noncrit_bonus,
             stacking_buffs: panel.stacking_buffs.clone(),

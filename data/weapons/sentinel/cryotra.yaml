@@ -20,6 +20,7 @@ disposition: 1.2
 polarities: [madurai]
 riven_family: Cryotra
 internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon
+weakness_bonus: 0.2
 traits: [corpus]
 noise: alarming
 magazine: 3

@@ -21,6 +21,7 @@ riven_family: Battacor
 traits: [corpus]
 introduced: "24"
 internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpSentExperimentRifle/CrpSentExperimentRifle
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 720

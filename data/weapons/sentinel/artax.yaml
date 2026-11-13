@@ -17,6 +17,7 @@ disposition: 1.2
 polarities: []
 riven_family: Artax
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/Gremlin
+weakness_bonus: 0.2
 traits: [tenno]
 noise: alarming
 magazine: 100

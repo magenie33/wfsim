@@ -22,6 +22,7 @@ riven_family: Castanas
 traits: [syndicate, new_loka]
 introduced: "15.5"
 internal_name: /Lotus/Weapons/Syndicates/NewLoka/Pistols/NLCastanas
+weakness_bonus: 0.0
 noise: silent
 ammo_type: secondary
 ammo_max: 18

@@ -16,6 +16,7 @@ exilus_polarity: madurai
 riven_family: Snipetron
 traits: [vandal, corpus, invasion_reward]
 internal_name: /Lotus/Weapons/Tenno/Rifle/VandalSniperRifle
+weakness_bonus: 0.4
 noise: alarming
 magazine: 6
 reload_seconds: 2.0

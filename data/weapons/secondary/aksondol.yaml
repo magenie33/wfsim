@@ -21,6 +21,7 @@ exilus_polarity: naramon
 traits: [tenno]
 introduced: "44.0"
 internal_name: /Lotus/Weapons/Tenno/Pistols/DuelistPistols/DuelistPistols
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

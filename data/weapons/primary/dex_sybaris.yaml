@@ -22,6 +22,7 @@ riven_family: Sybaris
 traits: [incarnon, dex, tenno]
 introduced: "Hotfix 18.6.2"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/DexTheThird/DexTheThird
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 540

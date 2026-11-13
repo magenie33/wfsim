@@ -26,6 +26,7 @@ riven_family: Kuva Chakkhurr
 traits: [grineer, kuva_lich]
 introduced: "26"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnKuvaLichRifle/GrnKuvaLichRifleWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 55

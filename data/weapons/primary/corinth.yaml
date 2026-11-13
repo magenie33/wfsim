@@ -21,6 +21,7 @@ riven_family: Corinth
 traits: [tenno]
 introduced: "22.8"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/TnHeavyShotgun/TnHeavyShotgunGun
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 135

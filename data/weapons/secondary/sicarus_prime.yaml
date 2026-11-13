@@ -22,6 +22,7 @@ riven_family: Sicarus
 traits: [incarnon, prime, vaulted]
 introduced: "Update 11.0"
 internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeSicarus/PrimeSicarusPistol
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

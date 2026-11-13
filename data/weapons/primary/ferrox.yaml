@@ -24,6 +24,7 @@ riven_family: Ferrox
 traits: [corpus]
 introduced: "19.13"
 internal_name: /Lotus/Weapons/Corpus/LongGuns/Spears/Railgun/CorpusRailgun
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 100

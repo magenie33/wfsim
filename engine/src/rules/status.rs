@@ -28,6 +28,38 @@ pub fn magnetic_break_source(maximum_pool: f64, stacks: usize) -> f64 {
     ((maximum_pool as f32 * 0.005_f32) * stacks.min(10) as f32).trunc() as f64
 }
 
+/// Declared proxy values used before Magnetic's body-part classification (M8).
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+pub struct HitProxy {
+    pub weakness: f64,
+    #[serde(default)]
+    pub damage_multiplier: Option<f64>,
+}
+
+/// The first strictly greatest positive weakness wins the native selection.
+#[wfsim_gas_macro::metered]
+pub fn magnetic_break_proxy(proxies: &[HitProxy]) -> Option<HitProxy> {
+    let mut selected = None;
+    let mut greatest = 0.0_f32;
+    for proxy in proxies {
+        let weakness = proxy.weakness as f32;
+        if weakness > greatest {
+            greatest = weakness;
+            selected = Some(*proxy);
+        }
+    }
+    selected
+}
+
+/// M8: normalize and round the packet, then apply the selected generic modifier.
+#[wfsim_gas_macro::metered]
+pub fn magnetic_break_proxy_source(source: f64, weapon_weakness_bonus: f64, proxy: HitProxy) -> f64 {
+    let Some(damage_multiplier) = proxy.damage_multiplier else { return source; };
+    let divisor = 1.0_f32 + (weapon_weakness_bonus as f32).max(0.0) * proxy.weakness as f32;
+    let normalized = ((source as f32 / divisor) + 0.5_f32).floor();
+    (normalized * damage_multiplier as f32) as f64
+}
+
 
 /// Number of rolled (non-forced) procs for one hit at `status_chance`
 /// (fraction; may exceed 1.0).
@@ -370,6 +402,36 @@ mod tests {
 
 #[cfg(test)]
 mod magnetic_native {
+    #[test]
+    fn magnetic_proxy_source_matches_native_entry_and_block_replays() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/client/magnetic-proxy-inputs.json"
+        )).unwrap();
+        for case in fixture["source_cases"].as_array().unwrap() {
+            let multiplier = if case["proxy_modifier_enabled"].as_bool().unwrap() {
+                case["proxy_damage_attenuation"].as_f64().unwrap()
+            } else { 1.0 };
+            let proxy = super::HitProxy {
+                weakness: case["proxy_weakness"].as_f64().unwrap(),
+                damage_multiplier: Some(multiplier),
+            };
+            assert_eq!(super::magnetic_break_proxy_source(
+                case["integer_source"].as_f64().unwrap(),
+                case["weapon_weakness_bonus"].as_f64().unwrap(), proxy),
+                case["ordinary_child_input"].as_f64().unwrap(), "{case}");
+        }
+    }
+
+    #[test]
+    fn magnetic_proxy_selection_keeps_the_first_positive_maximum() {
+        let proxy = |weakness, multiplier| super::HitProxy { weakness, damage_multiplier: Some(multiplier) };
+        assert!(super::magnetic_break_proxy(&[proxy(0.0, 3.0), proxy(-1.0, 4.0)]).is_none());
+        let selected = super::magnetic_break_proxy(&[proxy(0.05, 1.0), proxy(1.0, 2.0), proxy(1.0, 4.0)]).unwrap();
+        assert_eq!(selected.damage_multiplier, Some(2.0));
+        assert_eq!(super::magnetic_break_proxy_source(5181.0, -1.0, selected), 10362.0);
+        assert_eq!(super::magnetic_break_proxy_source(5181.0, 0.2, selected), 8636.0);
+    }
+
     #[test]
     fn magnetic_pool_source_matches_original_byte_replay_vectors() {
         let fixture: serde_json::Value = serde_json::from_str(include_str!(

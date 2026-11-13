@@ -16,6 +16,7 @@ exilus_polarity: madurai
 riven_family: Sporothrix
 traits: [technocyte_coda, adversary, infested]
 internal_name: /Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSporothrix
+weakness_bonus: 0.2
 noise: alarming
 magazine: 11
 reload_seconds: 2.5

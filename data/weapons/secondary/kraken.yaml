@@ -20,6 +20,7 @@ riven_family: Kraken
 traits: [grineer]
 introduced: "6.3"
 internal_name: /Lotus/Weapons/Grineer/GrineerPistol/GrnHeavyPistol
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

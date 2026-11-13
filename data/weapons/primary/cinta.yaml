@@ -25,6 +25,7 @@ riven_family: Cinta
 traits: [duviri]
 introduced: "33"
 internal_name: /Lotus/Weapons/Tenno/Bows/DaxDuviriAsymetricalBow/DaxDuviriAsymmetricalLongBowPlayerWeapon
+weakness_bonus: 1.0
 noise: silent
 ammo_type: primary
 ammo_max: 60

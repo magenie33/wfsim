@@ -24,6 +24,7 @@ riven_family: Tenet Envoy
 traits: [corpus, tenet]
 introduced: "30.5"
 internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpBriefcaseLauncher/CrpBriefcaseLauncher
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 # TWO RELOADS AND THE RESERVE IS GONE — "Extremely low ammo capacity; requires

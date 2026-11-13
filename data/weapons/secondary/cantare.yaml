@@ -23,6 +23,7 @@ riven_family: Cantare
 traits: [tenno]
 introduced: "36"
 internal_name: /Lotus/Weapons/Tenno/ThrowingWeapons/TnChoirframeKunai/TnChoirframeKunai
+weakness_bonus: 0.0
 noise: silent               # the module's IsSilent
 ammo_type: secondary
 # NO AMMO POOL — the module gives this weapon no ammo type and a reserve of

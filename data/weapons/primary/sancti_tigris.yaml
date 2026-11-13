@@ -20,6 +20,7 @@ riven_family: Tigris
 traits: [syndicate, new_loka]
 introduced: "17.3"
 internal_name: /Lotus/Weapons/Syndicates/NewLoka/LongGuns/NLTigris
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 120

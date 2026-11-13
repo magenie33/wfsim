@@ -487,6 +487,8 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
     });
 
     WeaponBase {
+        weakness_bonus: s.weakness_bonus.or_else(|| s.transforms_from.as_deref()
+            .and_then(spec).and_then(|base| base.weakness_bonus)),
         tennokai_can_convert: all().iter().find(|e| e.group() == s.group()
             && e.form_kind() == crate::model::FormKind::Heavy)
             .map_or(s.attack.tennokai_can_convert, |e| e.attack.tennokai_can_convert),

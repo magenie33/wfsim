@@ -22,6 +22,7 @@ riven_family: Pox
 traits: [infested, syndicate]
 introduced: "The Silver Grove"
 internal_name: /Lotus/Weapons/Infested/Pistols/InfProximityStars/InfProximityStars
+weakness_bonus: 0.0
 noise: silent               # SILENT on the throw, and the module says so
 ammo_type: secondary
 ammo_max: 20

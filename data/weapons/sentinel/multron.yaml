@@ -19,6 +19,7 @@ disposition: 1.2
 polarities: [madurai]
 riven_family: Multron
 internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon
+weakness_bonus: 0.2
 traits: [corpus]
 noise: alarming
 magazine: 3

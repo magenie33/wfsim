@@ -25,6 +25,7 @@ riven_family: Strun
 traits: [incarnon, prime]
 introduced: "Update 30.7"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeStrun/PrimeStrunWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 120

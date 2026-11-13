@@ -21,6 +21,7 @@ riven_family: Supra
 traits: [corpus]
 introduced: "8.0"
 internal_name: /Lotus/Weapons/ClanTech/Energy/CrpHeavyRifle
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 1080

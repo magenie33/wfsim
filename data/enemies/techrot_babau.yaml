@@ -47,6 +47,33 @@ stats:
 # Babau's head and tendril bulbs have 2x Critical Damage multiplier", which is
 # `crit_bonus`. Enemy Body Parts' table reads "Phone Head (1x)" that promotes a
 # hit's crit tier; the unit's own page outranks the overview table.
+
+hit_proxies:
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 1.0}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 1.0}
+  - {"weakness": 1.0}
+  - {"weakness": 1.0}
+  - {"weakness": 1.0}
+
 body_parts:
   - name: body
     multiplier: 1.0

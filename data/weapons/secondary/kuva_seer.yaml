@@ -22,6 +22,7 @@ riven_family: Seer
 traits: [grineer, kuva_lich]
 introduced: "26"
 internal_name: /Lotus/Weapons/Grineer/KuvaLich/Secondaries/Seer/KuvaSeer
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: secondary
 ammo_max: 27

@@ -20,6 +20,7 @@ riven_family: Embolist
 traits: [infested]
 introduced: "10.0"
 internal_name: /Lotus/Weapons/Infested/Pistols/InfestedPistol
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

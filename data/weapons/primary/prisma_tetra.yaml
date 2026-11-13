@@ -22,6 +22,7 @@ riven_family: Tetra
 traits: [corpus, prisma, baro]
 introduced: "17.0.5"
 internal_name: /Lotus/Weapons/Corpus/LongGuns/CorpusUMP/PrismaCorpusUMP
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 540

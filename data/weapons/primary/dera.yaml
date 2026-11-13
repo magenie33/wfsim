@@ -22,6 +22,7 @@ riven_family: Dera
 traits: [incarnon, corpus]
 introduced: "Update 8.0"
 internal_name: /Lotus/Weapons/ClanTech/Energy/EnergyRifle
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 540

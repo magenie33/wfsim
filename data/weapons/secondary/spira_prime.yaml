@@ -21,6 +21,7 @@ riven_family: Spira
 traits: [prime, vaulted]
 introduced: "18.4.12"
 internal_name: /Lotus/Weapons/Tenno/ThrowingWeapons/PrimeLiDagger/PrimeLiDagger
+weakness_bonus: 0.5
 noise: silent
 ammo_type: secondary
 ammo_max: 210

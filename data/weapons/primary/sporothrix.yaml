@@ -15,6 +15,7 @@ polarities: [vazarin]
 exilus_polarity: madurai
 riven_family: Sporothrix
 internal_name: /Lotus/Weapons/Infested/LongGuns/InfSniperRifle/InfSniperRifle
+weakness_bonus: 0.2
 traits: [infested]
 noise: alarming
 magazine: 9

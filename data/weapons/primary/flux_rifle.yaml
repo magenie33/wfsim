@@ -26,6 +26,7 @@ riven_family: Flux Rifle
 traits: [corpus]
 introduced: "8.0"
 internal_name: /Lotus/Weapons/ClanTech/Energy/CrpLaserRifle
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 # NO AMMO POOL — "Does not use ammo pickups; ammo regenerates over time", and

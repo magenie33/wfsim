@@ -21,6 +21,7 @@ riven_family: Cedo
 traits: [tenno]
 introduced: "29.6"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/TnAlchemistShotgun/TnAlchemistShotgun
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 200

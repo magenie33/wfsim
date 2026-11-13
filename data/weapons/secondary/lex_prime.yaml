@@ -22,6 +22,7 @@ riven_family: Lex
 traits: [incarnon, prime, never_vaulted]
 introduced: "Update 13.0"
 internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeLex/PrimeLex
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

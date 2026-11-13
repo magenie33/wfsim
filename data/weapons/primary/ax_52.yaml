@@ -23,6 +23,7 @@ riven_family: AX-52
 traits: []
 introduced: "36.0.5"
 internal_name: /Lotus/Weapons/Lasria/AK47/TC2024AK47Weapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 540

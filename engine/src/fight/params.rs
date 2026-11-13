@@ -101,6 +101,7 @@ pub struct Toggle {
 /// Parameters of the dummy engagement.
 #[derive(Debug, Clone)]
 pub struct FightParams {
+    pub weakness_bonus: Option<f64>,
     pub heavy_damage_mods_apply: bool,
     pub combo_damage_applies: bool,
     pub wait_for_lingering: bool,

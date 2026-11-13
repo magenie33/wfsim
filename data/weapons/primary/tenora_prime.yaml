@@ -21,6 +21,7 @@ riven_family: Tenora
 traits: [prime, vaulted]
 introduced: "29.9"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeTenora/TenoraPrimeWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 1000

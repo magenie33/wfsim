@@ -23,6 +23,7 @@ riven_family: Boltor
 traits: [incarnon, syndicate, arbiters_of_hexis]
 introduced: "17.3"
 internal_name: /Lotus/Weapons/Syndicates/ArbitersOfHexis/LongGuns/AHBoltor
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 540

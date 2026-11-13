@@ -30,6 +30,7 @@ riven_family: Flux Rifle
 traits: [corpus, tenet]
 introduced: "30.5"
 internal_name: /Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEFluxRifle/CrpBEFluxRifle
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 1200

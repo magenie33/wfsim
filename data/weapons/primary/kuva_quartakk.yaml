@@ -24,6 +24,7 @@ riven_family: Quartakk
 traits: [grineer, kuva_lich]
 introduced: "26"
 internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Quartakk/KuvaQuartakk
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 880

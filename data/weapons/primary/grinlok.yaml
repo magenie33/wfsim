@@ -20,6 +20,7 @@ riven_family: Grinlok
 traits: [grineer]
 introduced: "12.1"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerLeverActionRifle/GLARifle
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 540

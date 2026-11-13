@@ -21,6 +21,7 @@ riven_family: Akmagnus
 traits: [tenno]
 introduced: "11.9"
 internal_name: /Lotus/Weapons/Tenno/Akimbo/DualMagnus
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

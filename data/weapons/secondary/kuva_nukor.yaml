@@ -29,6 +29,7 @@ riven_family: Nukor
 traits: [kuva_lich, adversary, grineer]
 introduced: "Update 27.1"
 internal_name: /Lotus/Weapons/Grineer/KuvaLich/Secondaries/Nukor/KuvaNukor
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

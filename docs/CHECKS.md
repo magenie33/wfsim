@@ -1595,6 +1595,11 @@ with nothing to admit shows no banner — runs in BOTH languages, and walks the
 BOARD, where weapons are compared and a weapon with unmodelled parts must not
 look like one without them.
 
+The native weak-point row is rendered from real panel responses in English
+and Chinese, including weapon-dependent factors and unchanged form values.
+`WFSIM_NATIVE_ONLY=1` runs that panel scope; `WFSIM_BREAK=native_weakpoint`
+removes its response row as a negative control.
+
 ## `check_fixed_tier`
 
 A tier with one option (every Genesis's tier 1) is installed and never

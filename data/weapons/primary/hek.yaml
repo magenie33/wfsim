@@ -21,6 +21,7 @@ riven_family: Hek
 traits: [grineer]
 introduced: "5.2"
 internal_name: /Lotus/Weapons/Tenno/Shotgun/QuadShotgun
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 120

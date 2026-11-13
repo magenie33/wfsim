@@ -21,6 +21,7 @@ riven_family: Penta
 traits: [corpus]
 introduced: "29.10"
 internal_name: /Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/CarminePenta
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 ammo_max: 40

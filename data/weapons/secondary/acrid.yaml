@@ -21,6 +21,7 @@ riven_family: Acrid
 traits: [grineer]
 introduced: "8.0"
 internal_name: /Lotus/Weapons/ClanTech/Bio/AcidDartPistol
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

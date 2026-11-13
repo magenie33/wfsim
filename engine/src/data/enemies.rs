@@ -127,6 +127,9 @@ fn one() -> f64 {
 /// mechanics, notes, ...) are ignored by the loader.
 #[derive(Debug, Clone, Deserialize)]
 pub struct EnemySpec {
+    /// Ordered native controller proxies; Magnetic selects independently of aim (M8).
+    #[serde(default)]
+    pub hit_proxies: Vec<crate::rules::status::HitProxy>,
     pub id: String,
     pub name: String,
     /// True for hand-made test targets that do not exist in-game.

@@ -21,6 +21,7 @@ riven_family: Akbolto
 traits: [syndicate, arbiters_of_hexis]
 introduced: "15.5"
 internal_name: /Lotus/Weapons/Syndicates/ArbitersOfHexis/Pistols/AHAkbolto
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

@@ -18,6 +18,7 @@ disposition: 1.2
 polarities: []
 riven_family: Vulklok
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun
+weakness_bonus: 0.2
 traits: [grineer]
 noise: alarming
 magazine: 10

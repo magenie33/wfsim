@@ -18,6 +18,7 @@ mod incarnon_timing;
 mod inheritance;
 mod laetum;
 mod metadata;
+mod magnetic_proxy;
 mod modular;
 mod passive;
 mod pellet_element;

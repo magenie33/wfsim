@@ -21,6 +21,7 @@ riven_family: Supra
 traits: [corpus, vandal]
 introduced: "20.4"
 internal_name: /Lotus/Weapons/Corpus/LongGuns/Machinegun/SupraVandal
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 1600

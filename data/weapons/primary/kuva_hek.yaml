@@ -24,6 +24,7 @@ riven_family: Hek
 traits: [grineer, kuva_lich]
 introduced: "30.5"
 internal_name: /Lotus/Weapons/Grineer/KuvaLich/LongGuns/Hek/KuvaHekWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 120

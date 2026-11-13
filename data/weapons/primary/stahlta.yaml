@@ -22,6 +22,7 @@ riven_family: Stahlta
 traits: [corpus]
 introduced: "28"
 internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpRubanRifle/CrpRubanRifle
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 ammo_max: 300

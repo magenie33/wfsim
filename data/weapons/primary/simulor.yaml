@@ -22,6 +22,7 @@ riven_family: Simulor
 traits: [cephalon]
 introduced: "16.10"
 internal_name: /Lotus/Weapons/Cephalon/Primary/CephPrimary/CephPrimary
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 ammo_max: 72

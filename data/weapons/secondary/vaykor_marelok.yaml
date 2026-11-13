@@ -21,6 +21,7 @@ riven_family: Marelok
 traits: [syndicate, steel_meridian]
 introduced: "15.5"
 internal_name: /Lotus/Weapons/Syndicates/SteelMeridian/Pistols/SMMarelok
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

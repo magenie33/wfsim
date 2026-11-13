@@ -38,6 +38,22 @@ stats:
 
 # Module Multis: "Head: 3.0x". Standard humanoid layout; crit_bonus on the head
 # is assumed (no wiki exception listed for Thrax) — unverified.
+
+hit_proxies:
+  - {"weakness": 1.0, "damage_multiplier": 2.0}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+  - {"weakness": 0.05}
+
 body_parts:
   - name: body
     multiplier: 1.0

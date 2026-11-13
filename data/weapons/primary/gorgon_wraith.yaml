@@ -26,6 +26,7 @@ riven_family: Gorgon
 traits: [incarnon, wraith, grineer]
 introduced: "Update 12.4"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/WraithGorgon/WraithGorgon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 900

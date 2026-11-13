@@ -21,6 +21,7 @@ riven_family: Lenz
 traits: [corpus, baro]
 introduced: "33.0.10"
 internal_name: /Lotus/Weapons/Corpus/Bow/Longbow/PrismaLenz/PrismaLenzWeapon
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 8

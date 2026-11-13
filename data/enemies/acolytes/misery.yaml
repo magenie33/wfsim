@@ -22,6 +22,19 @@ status_stack_caps:
   general: 4
   impact: 6
 
+
+hit_proxies:
+  - {"weakness": 0.0, "damage_multiplier": 0.666}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+
 body_parts:
   - name: body
     multiplier: 1.0

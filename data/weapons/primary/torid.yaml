@@ -39,6 +39,7 @@ riven_family: Torid
 traits: [infested, incarnon]
 introduced: "8.0"
 internal_name: /Lotus/Weapons/ClanTech/Bio/BioWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 60

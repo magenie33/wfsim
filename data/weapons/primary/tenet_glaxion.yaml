@@ -23,6 +23,7 @@ riven_family: Glaxion
 traits: [corpus, tenet]
 introduced: "35.6"
 internal_name: /Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEGlaxion/CrpBEGlaxion
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 810

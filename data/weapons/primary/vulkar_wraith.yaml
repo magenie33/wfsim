@@ -16,6 +16,7 @@ exilus_polarity: madurai
 riven_family: Vulkar
 traits: [wraith, baro, grineer]
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerSniperRifle/VulkarWraith
+weakness_bonus: 0.4
 noise: alarming
 magazine: 8
 reload_seconds: 3.0

@@ -20,6 +20,7 @@ riven_family: Grakata
 traits: [grineer]
 introduced: "7.8"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerAssaultRifle/GrnAssaultRifle
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 750

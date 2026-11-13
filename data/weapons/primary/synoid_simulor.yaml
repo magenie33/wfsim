@@ -21,6 +21,7 @@ riven_family: Simulor
 traits: [syndicate, cephalon_suda, cephalon]
 introduced: "17.3"
 internal_name: /Lotus/Weapons/Syndicates/CephalonSuda/LongGuns/CSSimulor
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 ammo_max: 96

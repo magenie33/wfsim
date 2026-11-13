@@ -36,6 +36,19 @@ status_stack_caps:
 # not crit-headshot eligible either (wiki Critical_Hit §Critical Headshots
 # doubles crit damage only above 1x). `is_head` still holds — a mod that gates
 # on a headshot reads the LOCATION, not its multiplier.
+
+hit_proxies:
+  - {"weakness": 0.0, "damage_multiplier": 0.666}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+  - {"weakness": 0.0}
+
 body_parts:
   - name: body
     multiplier: 1.0

@@ -22,6 +22,7 @@ riven_family: Drakgoon
 traits: [grineer]
 introduced: "11.6"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerFlakCannon/FlakCannon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 120

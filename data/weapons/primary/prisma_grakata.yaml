@@ -21,6 +21,7 @@ riven_family: Grakata
 traits: [prisma, baro]
 introduced: "16.8.3"
 internal_name: /Lotus/Weapons/VoidTrader/PrismaGrakata
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 1000

@@ -22,6 +22,7 @@ riven_family: Zakti
 traits: [prime]
 introduced: "29.3"
 internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeZakti/PrimeZaktiPistol
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

@@ -24,6 +24,7 @@ riven_family: Daikyu
 traits: [tenno]
 introduced: "38.6"
 internal_name: /Lotus/Weapons/Tenno/Bows/PrimeDaikyu/PrimeDaikyuBow
+weakness_bonus: 1.0
 noise: silent
 ammo_type: primary
 ammo_max: 72

@@ -84,6 +84,7 @@ impl Default for FightParams {
     /// the engine.
     fn default() -> Self {
         Self {
+            weakness_bonus: None,
             heavy_damage_mods_apply: true,
             combo_damage_applies: true,
             wait_for_lingering: false,
@@ -660,6 +661,7 @@ fn metered() -> FightParams {
 
 fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> Foe {
     Foe {
+        magnetic_break_proxy: None,
         name: "test target".into(),
         spectral: None,
         guardian_aura: false,

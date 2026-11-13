@@ -26,6 +26,7 @@ riven_family: Gorgon
 traits: [incarnon, grineer]
 introduced: "Vanilla"
 internal_name: /Lotus/Weapons/Tenno/Rifle/HeavyRifle
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 540

@@ -20,6 +20,7 @@ riven_family: Marelok
 traits: [grineer]
 introduced: "12.3"
 internal_name: /Lotus/Weapons/Grineer/Pistols/GrineerLeverActionPistol/GLAPistol
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

@@ -23,6 +23,7 @@ riven_family: Staticor
 traits: [corpus]
 introduced: "18.4.7"
 internal_name: /Lotus/Weapons/Corpus/Pistols/CrpElectroMag/CrpElectroMag
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: secondary
 ammo_max: 288

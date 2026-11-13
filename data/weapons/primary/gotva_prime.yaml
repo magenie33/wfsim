@@ -25,6 +25,7 @@ riven_family: Gotva Prime
 traits: [prime]
 introduced: "33.6.6"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnOrokinRifle/GrnOrokinRifleWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 840

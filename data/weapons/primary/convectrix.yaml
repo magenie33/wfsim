@@ -22,6 +22,7 @@ riven_family: Convectrix
 traits: [corpus]
 introduced: "17.5"
 internal_name: /Lotus/Weapons/Corpus/LongGuns/CrpSplitLaser/CrpSplitLaser
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 700

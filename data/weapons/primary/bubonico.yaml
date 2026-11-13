@@ -28,6 +28,7 @@ riven_family: Bubonico
 traits: [infested]
 introduced: "29.5"
 internal_name: /Lotus/Weapons/Infested/LongGuns/InfArmCannon/InfArmCannon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 # NO AMMO POOL — "This weapon does not use ammo pickups; ammo regenerates over

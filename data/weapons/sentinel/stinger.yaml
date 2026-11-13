@@ -18,6 +18,7 @@ disposition: 1.2
 polarities: []
 riven_family: Stinger
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon
+weakness_bonus: 0.2
 traits: [infested]
 noise: alarming
 magazine: 4

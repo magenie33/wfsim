@@ -29,6 +29,7 @@ riven_family: Laetum
 traits: [zariman, incarnon]
 introduced: "31.5"           # Update 31.5 "Angels of the Zariman"
 internal_name: /Lotus/Weapons/Tenno/Zariman/Pistols/HeavyPistol/ZarimanHeavyPistol
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

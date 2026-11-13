@@ -29,6 +29,7 @@ riven_family: Shedu
 traits: [sentient]
 introduced: "27.0"           # Empyrean; the blueprint comes from Erra
 internal_name: /Lotus/Weapons/Sentients/Shedu/SheduHeavyWeapon
+weakness_bonus: 0.2
 noise: alarming
 
 # NO AMMO POOL AT ALL — "Ammo Max: 0", "This weapon does not use ammo pickups;

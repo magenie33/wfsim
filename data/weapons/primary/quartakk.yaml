@@ -22,6 +22,7 @@ riven_family: Quartakk
 traits: [grineer]
 introduced: "22"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnFourBarrelRifle/GrnFourBarrelRifleWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 840

@@ -31,6 +31,7 @@ riven_family: Grimoire
 traits: [entrati]
 introduced: "35"
 internal_name: /Lotus/Weapons/Tenno/Grimoire/TnGrimoire
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 0

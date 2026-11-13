@@ -21,6 +21,7 @@ riven_family: Kulstar
 traits: [grineer]
 introduced: "17.0"
 internal_name: /Lotus/Weapons/Grineer/Pistols/GrnTorpedoPistol/GrnTorpedoPistol
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: secondary
 ammo_max: 15

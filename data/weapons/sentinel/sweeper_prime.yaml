@@ -21,6 +21,7 @@ polarities: [madurai, madurai]
 riven_family: Sweeper
 traits: [prime, vaulted]
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/PrimeSentShotgun
+weakness_bonus: 0.2
 noise: alarming
 magazine: 20
 reload_seconds: 2.0

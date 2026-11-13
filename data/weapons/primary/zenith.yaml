@@ -23,6 +23,7 @@ riven_family: Zenith
 traits: [tenno]
 introduced: "20.2"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/LoginPrimary/SundialRifle
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 540

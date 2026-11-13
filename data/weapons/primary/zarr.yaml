@@ -23,6 +23,7 @@ riven_family: Zarr
 traits: [grineer]
 introduced: "19"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrnCannon/GrnCannonWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 60

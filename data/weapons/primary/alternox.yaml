@@ -22,6 +22,7 @@ riven_family: Alternox
 traits: [tenno]
 introduced: "31.5"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/GyreRifle/GyreRifleWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 540

@@ -30,6 +30,7 @@ riven_family: Stug
 traits: [incarnon, grineer]
 introduced: "Update 11.5"
 internal_name: /Lotus/Weapons/Grineer/Pistols/GrineerCrossbow/GrineerGooGun
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

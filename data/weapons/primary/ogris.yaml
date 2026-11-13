@@ -22,6 +22,7 @@ riven_family: Ogris
 traits: [grineer]
 introduced: "8.0"
 internal_name: /Lotus/Weapons/ClanTech/Chemical/RocketLauncher
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 ammo_max: 20

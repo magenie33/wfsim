@@ -6,6 +6,9 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "Native Weak Point Bonus": "原生弱点加成"
+  "The factor shown uses target proxy weakness 1. Magnetic break damage normalizes by 1 + this native bonus × target proxy weakness.": "所示系数以目标命中代理弱点值为 1 计算。磁力破防电的归一化除数为：1 + 原生弱点加成 × 目标代理弱点值。"
+  "Native weak-point coefficient unavailable for this weapon.": "此武器的原生弱点系数尚未确认。"
   "Native alternative behavior declarations are bound as evidence; their runtime availability and complete attack sequences are not simulated. Only the declared entry modes are used.": "已绑定原生替代攻击状态作为来源证据；尚未模拟其实际启用条件和完整攻击流程，目前只使用条目中声明的模式。"
   "Kitgun statistics use the published assembly tables; native secondary overrides are bound, but the runtime part-composition consumer is unverified.": "组合枪数值使用已公布的组装表；已绑定原生副武器覆盖参数，但尚未核实运行时的部件合成流程。"
   "Charge time and the selected projectile use parsed inputs. The native charge-cap multiplier consumer is unverified; damage uses the declared packet without multiplying it by that cap.": "蓄力时间和所选弹体使用解析参数；尚未核实原生蓄力倍率上限的实际作用，伤害使用声明的组件值，不再乘以上限。"

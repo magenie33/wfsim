@@ -23,6 +23,7 @@ riven_family: Trumna
 traits: [entrati]
 introduced: "29"
 internal_name: /Lotus/Weapons/Thanotech/ThanoRifle/ThanotechRifle
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 400

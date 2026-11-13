@@ -21,6 +21,7 @@ riven_family: Hind
 traits: [grineer]
 introduced: "9.6"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/BurstRifle/GrnBurstRifle
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 540

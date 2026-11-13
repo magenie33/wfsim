@@ -22,6 +22,7 @@ riven_family: Penta
 traits: [corpus]
 introduced: "11.3"
 internal_name: /Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/GrenadeLauncher
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: primary
 ammo_max: 20

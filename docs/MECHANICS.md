@@ -2734,8 +2734,12 @@ component** of the hit vector:
   ordinary proc path. The proc joins the common clock, accumulator and
   landing: its body application resets a head pile's anchor; a subsequent
   head Electricity application restores it without changing stored seeds.
-  Conditional weapon/proxy weakness normalization is not modeled
-  (`UNMODELLED.md` §Magnetic break source normalization).
+  The first greatest-positive native proxy weakness selects a generic modifier.
+  The source is divided by `1 + max(weapon_weakness_bonus,0) * proxy_weakness`,
+  rounded in float32, then multiplied by that proxy's generic damage factor.
+  This precedes the HEAD-only gate and leaves the packet's body anchor intact
+  (M8). Missing native inputs retain the pool/count source; coverage is in
+  `UNMODELLED.md` §Magnetic break source inputs.
 - Shields recharge after a delay when not hit; status DoTs do not reset the
   delay timer.
 - Faction vulnerability/resistance (×1.5/×0.5) applies **per component at

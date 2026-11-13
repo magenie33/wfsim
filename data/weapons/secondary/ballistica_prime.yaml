@@ -31,6 +31,7 @@ riven_family: Ballistica
 traits: [incarnon, prime, vaulted]
 introduced: "Update 21.6"
 internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeBallistica/PrimeBallistica
+weakness_bonus: 0.5
 noise: silent
 ammo_type: secondary
 ammo_max: 320

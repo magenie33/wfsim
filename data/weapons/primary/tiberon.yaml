@@ -20,6 +20,7 @@ riven_family: Tiberon
 traits: [tenno]
 introduced: "14.9"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/DrakeRifle/DrakeRifle
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 540

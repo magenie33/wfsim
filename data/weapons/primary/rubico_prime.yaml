@@ -16,6 +16,7 @@ exilus_polarity: naramon
 riven_family: Rubico
 traits: [prime]
 internal_name: /Lotus/Weapons/Tenno/LongGuns/RubicoPrime/RubicoPrimeWeapon
+weakness_bonus: 1.0
 noise: alarming
 magazine: 5
 reload_seconds: 2.0

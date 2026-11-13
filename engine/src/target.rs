@@ -61,6 +61,7 @@ pub const ANCIENT_PROTECTOR_OVERGUARD: f64 = 8.0;
 /// and the spec brought to a level and ready to be fought.
 #[derive(Debug, Clone)]
 pub struct Foe {
+    pub magnetic_break_proxy: Option<crate::rules::status::HitProxy>,
     pub name: String,
     pub base_level: u32,
     pub level: u32,
@@ -318,6 +319,7 @@ impl Foe {
     pub fn training_dummy() -> Self {
         Self {
             name: "training dummy".into(),
+            magnetic_break_proxy: None,
             // A DUMMY DIES ONCE, like everything but a Thrax.
             spectral: None,
             base_level: 1,
@@ -628,6 +630,7 @@ impl crate::data::enemies::EnemySpec {
             crate::data::factions::columns_for(self.damage_column_key())
         };
         Ok(Foe {
+            magnetic_break_proxy: crate::rules::status::magnetic_break_proxy(&self.hit_proxies),
             name: self.name.clone(),
             base_level: self.stats.base_level,
             level,

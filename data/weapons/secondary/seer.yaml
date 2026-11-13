@@ -20,6 +20,7 @@ riven_family: Seer
 traits: [grineer]
 introduced: "9.0"
 internal_name: /Lotus/Weapons/Grineer/GrineerPistol/GrnScopedPistolPlayer
+weakness_bonus: 0.0
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

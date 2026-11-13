@@ -19,6 +19,7 @@ polarities: []
 exilus_polarity: madurai
 riven_family: Lanka
 internal_name: /Lotus/Weapons/ClanTech/Energy/Railgun
+weakness_bonus: 1.0
 traits: [corpus]
 noise: alarming
 magazine: 10

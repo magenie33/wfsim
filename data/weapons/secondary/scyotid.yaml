@@ -21,6 +21,7 @@ riven_family: Scyotid
 traits: []
 introduced: "39"
 internal_name: /Lotus/Weapons/Tenno/ThrowingWeapons/TnOraxiaFlechette/TnOraxiaFlechette
+weakness_bonus: 0.0
 noise: silent
 ammo_type: secondary
 ammo_max: 320

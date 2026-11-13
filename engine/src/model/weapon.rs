@@ -914,6 +914,7 @@ pub struct ZoomLevel {
 /// weapon's BASE stats before mods).
 #[derive(Debug, Clone)]
 pub struct WeaponBase {
+    pub weakness_bonus: Option<f64>,
     pub melee_radius: Option<MeleeRadius>,
     pub tennokai_can_convert: bool,
     pub heavy_damage_mods_apply: bool,

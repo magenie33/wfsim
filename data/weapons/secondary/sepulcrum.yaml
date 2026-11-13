@@ -23,6 +23,7 @@ riven_family: Sepulcrum
 traits: [entrati]
 introduced: "29"
 internal_name: /Lotus/Weapons/Thanotech/ThanoPistol/ThanotechPistol
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: secondary
 ammo_max: 180

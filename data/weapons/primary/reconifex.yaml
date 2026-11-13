@@ -23,6 +23,7 @@ riven_family: Reconifex
 traits: [tenno]
 introduced: "38.0"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/TnBeltFedRifle/TnBeltFedRifleWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 1000

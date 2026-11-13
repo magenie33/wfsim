@@ -22,6 +22,7 @@ riven_family: Aegrit
 traits: [grineer]
 introduced: "32"
 internal_name: /Lotus/Weapons/Grineer/ThrowingWeapons/GrnVorStickyBomb/GrnVorStickyBomb
+weakness_bonus: 0.0
 noise: silent
 ammo_type: secondary
 ammo_max: 4

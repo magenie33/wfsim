@@ -21,6 +21,7 @@ riven_family: Baza
 traits: [prime]
 introduced: "27.0.4"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeBaza/PrimeBazaGun
+weakness_bonus: 0.2
 noise: silent               # the module's IsSilent, and the page states it
 ammo_type: primary
 ammo_max: 840

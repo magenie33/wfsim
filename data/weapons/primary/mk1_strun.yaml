@@ -25,6 +25,7 @@ riven_family: Strun
 traits: [incarnon, tenno]
 introduced: "Update 14.0"
 internal_name: /Lotus/Weapons/MK1Series/MK1Strun
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 120

@@ -20,6 +20,7 @@ riven_family: Hikou
 traits: [prime, never_vaulted]
 introduced: "14.8"
 internal_name: /Lotus/Weapons/Tenno/ThrowingWeapons/PrimeThrowingStar/PrimeHikou
+weakness_bonus: 0.5
 noise: silent
 ammo_type: secondary
 ammo_max: 210

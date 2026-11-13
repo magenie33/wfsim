@@ -22,6 +22,7 @@ riven_family: Acceltra
 traits: [tenno]
 introduced: "25.7"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/SapientPrimary/SapientPrimaryWeapon
+weakness_bonus: 1.0
 noise: alarming
 ammo_type: primary
 ammo_max: 96

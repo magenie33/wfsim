@@ -25,6 +25,7 @@ riven_family: Vinquibus
 traits: []
 introduced: "41"
 internal_name: /Lotus/Weapons/Tenno/Bayonet/TnBayonetRifleWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 80

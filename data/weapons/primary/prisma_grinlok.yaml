@@ -21,6 +21,7 @@ riven_family: Grinlok
 traits: [prisma, baro]
 introduced: "24.4"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerLeverActionRifle/PrismaGrinlokWeapon
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 540

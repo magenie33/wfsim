@@ -22,6 +22,7 @@ riven_family: Lenz
 traits: [corpus]
 introduced: "21.3"
 internal_name: /Lotus/Weapons/Corpus/Bow/Longbow/CrpBow
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 6

@@ -21,6 +21,7 @@ riven_family: Burston        # module `Family` — SHARED with the Burston Prime
 traits: [tenno, incarnon]
 introduced: "Vanilla"        # in the game at launch
 internal_name: /Lotus/Weapons/Tenno/Rifle/BurstRifle
+weakness_bonus: 0.5
 noise: alarming
 ammo_type: primary
 ammo_max: 540

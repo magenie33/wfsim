@@ -26,6 +26,7 @@ riven_family: Gorgon
 traits: [incarnon, prisma, baro]
 introduced: "Hotfix 15.11.1"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/VoidTraderGorgon/VTGorgon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: primary
 ammo_max: 840
