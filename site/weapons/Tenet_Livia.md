@@ -4,7 +4,7 @@ Chinese name: 信条·莉薇娅
 
 Two Handed Nikana · Melee · Mastery Rank 14. 198 base damage (impact 9.9, puncture 9.9, slash 178.2), 28% crit chance, 2.2x crit multiplier, 28% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-12
+## Best riven-free build on the WFSim board, as of 2026-11-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

@@ -4,7 +4,7 @@ Chinese name: 脉纹
 
 Scythe · Melee · Mastery Rank 9. 220 base damage (impact 33, puncture 110, slash 77), 27% crit chance, 2.1x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-12
+## Best riven-free build on the WFSim board, as of 2026-11-13
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
