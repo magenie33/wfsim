@@ -552,6 +552,10 @@ $$;
 CREATE OR REPLACE FUNCTION factory_record_answers(text) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE p jsonb := $1::jsonb; a jsonb;
 BEGIN
+  IF jsonb_typeof(p) IS DISTINCT FROM 'object' OR jsonb_typeof(p -> 'rows') IS DISTINCT FROM 'array'
+      OR nullif(p ->> 'device','') IS NULL THEN
+    RAISE EXCEPTION 'invalid answer batch envelope' USING ERRCODE='22023';
+  END IF;
   PERFORM pg_advisory_xact_lock(hashtextextended(p ->> 'device', 0));
   FOR a IN SELECT x.a FROM jsonb_array_elements(p -> 'rows') WITH ORDINALITY x(a,k)
       ORDER BY x.a ->> 'question' COLLATE "C", x.k LOOP

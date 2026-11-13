@@ -20,6 +20,11 @@ if (process.argv.includes("--break-procedure-locks")) {
   assert.match(ddl, locks);
   ddl = ddl.replace(locks, "");
 }
+if (process.argv.includes("--break-envelope")) {
+  const guard = /  IF jsonb_typeof\(p\) IS DISTINCT FROM 'object'[\s\S]*?invalid answer batch envelope[\s\S]*?  END IF;\n/;
+  assert.match(ddl, guard);
+  ddl = ddl.replace(guard, "");
+}
 let db, sql, close;
 const transactionErrors = [];
 if (url) {
@@ -78,6 +83,12 @@ const count = async (table, where = "true") => (await db.get(`SELECT count(*) AS
 try {
   const rows = await seed("atomic", 8);
   const original = payload("first", [...rows].reverse());
+  await assert.rejects(receive(JSON.stringify(original)), error => error.code === "22023");
+  check("double-encoded transport fails before recording or acknowledging results", await count("record_candidate_answers") === 0);
+  await assert.rejects(receive({ ...original, rows: null }), error => error.code === "22023");
+  check("an incomplete batch envelope is refused without candidates", await count("record_candidate_answers") === 0);
+  await receive(payload("empty-probe", [], { queue: null, learn: [] }));
+  check("a valid empty transport probe commits no candidate or queue rows", await count("record_candidate_answers") === 0 && await count("state_pending_verifications") === 0);
   const before = { ...db.cost };
   await receive(original);
   check("one database statement accepts an entire reversed result batch", db.cost.statements - before.statements === 1 && await count("record_candidate_answers") === 8);

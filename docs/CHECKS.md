@@ -1038,7 +1038,8 @@ Result reception commits candidates, queue entries and learned producer costs
 together; stale task rounds roll the whole batch back. Reversed submissions
 retain the settler's lock order, and the real worker receives two hundred
 results in bounded database statements. The separate-statement fallback stays
-covered. `--break-order` and `--break-worker-bulk` must fail.
+covered. Double-encoded or incomplete transport envelopes fail before reception.
+`--break-envelope`, `--break-order` and `--break-worker-bulk` must fail.
 
 `WFSIM_ANSWER_TEST_URL` runs the same cases on an isolated localhost PostgreSQL
 database and adds concurrent reversed witnesses, same-device retries and
