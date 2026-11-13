@@ -39,8 +39,14 @@ export function pgDb(client) {
           // EVERY STATEMENT SENT AT ONCE, pipelined on the one connection: sent one
           // round trip at a time, a settlement held its row locks for seconds and
           // every other credit to those devices queued behind it.
-          return await timed(list.length, async () => (await client.transaction(async (tx) => Promise.all(list.map((s) => exec(tx, s)))))
-            .map((r) => ({ results: r.rows, meta: { changes: r.affected } })));
+          return await timed(list.length, async () => {
+            // A statement is atomic on its own; a separate COMMIT round trip
+            // would keep its row and transaction-level advisory locks longer.
+            const rows = list.length === 1
+              ? [await exec(client, list[0])]
+              : await client.transaction(async (tx) => Promise.all(list.map((s) => exec(tx, s))));
+            return rows.map((r) => ({ results: r.rows, meta: { changes: r.affected } }));
+          });
         } catch (e) {
           if (i >= 2 || !["40P01", "40001"].includes(e && e.code)) throw e;
           await new Promise((r) => setTimeout(r, 25 * (i + 1) + Math.random() * 50));

@@ -26,18 +26,20 @@ if (process.argv.includes("--break-envelope")) {
   ddl = ddl.replace(guard, "");
 }
 let db, sql, close;
-const transactionErrors = [];
+const adapterErrors = [], commands = [];
 if (url) {
   assert.ok(["localhost", "127.0.0.1", "[::1]"].includes(new URL(url).hostname), "answer checks require isolated localhost Postgres");
   const { default: postgres } = await import("./pg/node_modules/postgres/src/index.js");
   const schema = "answer_batch_" + randomBytes(6).toString("hex");
-  sql = postgres(url, { max: 8, fetch_types: false, onnotice() {}, connection: { search_path: schema, statement_timeout: 10000, lock_timeout: 2000 },
+  sql = postgres(url, { max: 8, fetch_types: false, onnotice() {}, debug(_id, query) { commands.push(query.trim().toLowerCase()); },
+    connection: { search_path: schema, statement_timeout: 10000, lock_timeout: 2000 },
     types: { bigint: { to: 20, from: [20, 1700], parse: Number, serialize: String } } });
   await sql.unsafe(`CREATE SCHEMA ${schema}`);
   await sql.unsafe(ddl);
   const client = postgresClient(sql);
-  const transaction = client.transaction;
-  client.transaction = fn => transaction(fn).catch(error => { transactionErrors.push(error.code); throw error; });
+  const transaction = client.transaction, query = client.query;
+  client.transaction = fn => transaction(fn).catch(error => { adapterErrors.push(error.code); throw error; });
+  client.query = (text, args) => query(text, args).catch(error => { adapterErrors.push(error.code); throw error; });
   db = Object.assign(pgDb(client), {
     run: async (text, ...args) => (await client.query(placeholders(text), args)).affected,
     all: async (text, ...args) => (await client.query(placeholders(text), args)).rows,
@@ -89,9 +91,19 @@ try {
   check("an incomplete batch envelope is refused without candidates", await count("record_candidate_answers") === 0);
   await receive(payload("empty-probe", [], { queue: null, learn: [] }));
   check("a valid empty transport probe commits no candidate or queue rows", await count("record_candidate_answers") === 0 && await count("state_pending_verifications") === 0);
-  const before = { ...db.cost };
-  await receive(original);
+  const before = { ...db.cost }, observer = sql ? await sql.reserve() : null, commandStart = commands.length;
+  let receptionCommands;
+  try {
+    await receive(original);
+    receptionCommands = commands.slice(commandStart);
+    if (observer) {
+      const visible = await observer.unsafe("SELECT count(*) AS n FROM record_candidate_answers WHERE device='first'");
+      const released = await observer.unsafe("SELECT pg_try_advisory_xact_lock(hashtextextended('first',0)) AS free");
+      check("acknowledgment exposes committed candidates and releases the device lock to another connection", visible[0].n === 8 && released[0].free);
+    }
+  } finally { observer?.release(); }
   check("one database statement accepts an entire reversed result batch", db.cost.statements - before.statements === 1 && await count("record_candidate_answers") === 8);
+  if (sql) check("a singleton reception needs no separate BEGIN or COMMIT exchange", !receptionCommands.some(query => /^(begin|commit)\b/.test(query)));
   check("candidate rows are received in the same id order as settlement", (await db.all("SELECT question FROM record_candidate_answers ORDER BY id")).map(x => x.question).join() === rows.map(x => x.id).join());
   check("results and their settlement queue commit together", await count("state_pending_verifications") === 8);
   const accepted = await db.get("SELECT engine,canon,result,work,compute_ms,lanes,owner,net FROM record_candidate_answers ORDER BY id LIMIT 1");
@@ -115,6 +127,17 @@ try {
   check("failure after candidate insertion rolls its new witnesses back", await count("record_candidate_answers", "device='queue-error'") === 0);
   check("a queue failure preserves all previously committed results and queue rows", await count("state_pending_verifications") === queuesBefore
     && await count("record_candidate_answers") === 12);
+  await db.run("CREATE TABLE answer_atomicity(id integer PRIMARY KEY)");
+  await assert.rejects(db.batch([db.prepare("INSERT INTO answer_atomicity VALUES(1)"), db.prepare("SELECT 1/0")]), error => error.code === "22012");
+  check("a failing multi-statement batch still rolls its earlier write back", await count("answer_atomicity") === 0);
+  await db.run("CREATE SEQUENCE answer_retry_attempt");
+  await db.run(`CREATE FUNCTION retry_single_answer() RETURNS void LANGUAGE plpgsql AS $$ BEGIN
+    INSERT INTO answer_atomicity VALUES(2);
+    IF nextval('answer_retry_attempt')<3 THEN RAISE EXCEPTION 'retry answer' USING ERRCODE='40001'; END IF;
+  END $$`);
+  await db.batch([db.prepare("SELECT retry_single_answer()")]);
+  check("a singleton serialization retry commits exactly one durable effect", await count("answer_atomicity") === 1
+    && (await db.get("SELECT last_value FROM answer_retry_attempt")).last_value === 3);
   await db.run("CREATE TABLE answer_lock_trace(question text, device text, seq bigint GENERATED ALWAYS AS IDENTITY)");
   await db.run(`CREATE FUNCTION trace_answer_lock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
     INSERT INTO answer_lock_trace(question,device) VALUES(NEW.question,NEW.device); RETURN NEW; END $$`);
@@ -138,7 +161,7 @@ try {
     else check("the fallback remains available for a controlled rollout", statements >= 200);
   }
   if (sql) {
-    const errorsBefore = transactionErrors.length;
+    const errorsBefore = adapterErrors.length;
     const collision = await seed("collision", 16);
     await db.run(`CREATE OR REPLACE FUNCTION trace_answer_lock() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
       PERFORM pg_sleep(0.005); INSERT INTO answer_lock_trace(question,device) VALUES(NEW.question,NEW.device); RETURN NEW; END $$`);
@@ -173,7 +196,7 @@ try {
     };
     await parallel([procedure("proc-a", false), procedure("proc-b", true)]);
     check("procedure groups in opposite lease order retain all independent witnesses", await count("record_candidate_answers", "device IN ('proc-a','proc-b')") === 8);
-    check("concurrent batches need no deadlock or serialization retries", transactionErrors.length === errorsBefore);
+    check("concurrent batches need no deadlock or serialization retries", adapterErrors.length === errorsBefore);
   }
   console.log(JSON.stringify({ ok: true, transport: sql ? "tcp" : "pglite", checks }));
 } finally { forgetDials(); await close(); }

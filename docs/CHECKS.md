@@ -1056,6 +1056,10 @@ covered. Double-encoded or incomplete transport envelopes fail before reception.
 `WFSIM_ANSWER_TEST_URL` runs the same cases on an isolated localhost PostgreSQL
 database and adds concurrent reversed witnesses, same-device retries and
 settlement-lock collisions. The default uses PGlite.
+Singleton reception uses the statement transaction without separate BEGIN or
+COMMIT exchanges; an independent connection sees committed candidates and a
+released device lock before acknowledgment. Multi-statement failures still
+roll back, and serialization retries commit one durable effect.
 `--break-procedure-locks` on TCP must expose opposite lease-group lock order.
 
 ## `check_sync_proc`

@@ -853,6 +853,11 @@ Every text column is `COLLATE "C"`, so an ISO instant compares byte by byte
 whatever the server's locale; the last slot's trigger is a function and a
 trigger.
 
+`pgDb.batch` commits one SQL statement in its statement transaction. Multiple
+statements share an explicit transaction and are pipelined together. Both paths
+acknowledge completion after commit. Deadlock and serialization retries repeat
+the whole transaction; a failed statement cannot acknowledge a partial batch.
+
 The storage classes are defined in `docs/NAMING.md`. Computation storage has
 one authority for each responsibility:
 
