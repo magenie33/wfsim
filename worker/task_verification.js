@@ -2,7 +2,8 @@
 // Answer recording and independent-witness verification.
 import { iso } from "./instant.js";
 import { dialsOf } from "./dials.js";
-import { GRACE_SHARE, sansWork, sameAs, newLease, independent, acceptedWitnesses, CLAIM_STALE_MS, inIdOrder, coolDownMs, KEPT_MS } from "./task_contract.js";
+import { answerCosts } from "./task_usage.js";
+import { GRACE_SHARE, sansWork, sameAs, newLease, independent, acceptedWitnesses, CLAIM_STALE_MS, inIdOrder, coolDownMs, KEPT_MS, PRODUCER_MEAN_SHARE } from "./task_contract.js";
 
 export function createVerification({ verbs, producers, producerOf, threshold, spot, recheck, random, on_disproved, on_fact_writes, refusing, learnCost, prepareCredit, credit, deliver, deliverPlan, flush, commit, readyFact, release } = {}) {
   const listOf = (db, p) => `(SELECT value FROM jsonb_array_elements_text((${p}::text)::jsonb))`;
@@ -73,23 +74,36 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     // ONE DEVICE'S SENDS ARE TAKEN ONE AT A TIME, and an answer it already gave on
     // this engine is not written again: a beacon on the way out raced a sync still
     // in flight, both checked before either wrote, and both rows landed.
-    const lock = db.prepare("SELECT pg_advisory_xact_lock(hashtextextended(?1::text, 0))").bind(w.device);
-    const writes = items.map(({ q, a }) => db.prepare(`SELECT factory_answer(?1::text, ?2::text, ?3::text, ?4::text, ?5::text, ?6::bigint, ?7::text,
-        ?8::text, ?9::bigint, ?10::bigint, ?11::text, ?12::bigint, ?13::text, ?14::bigint)`)
-      .bind(q.id, a.engine, w.device, w.owner || w.device, w.net || "", official, verbs[q.verb].canon(a.result, a.work), JSON.stringify(a.result),
-        a.work ?? 0, a.compute_ms ?? null, a.counts ? JSON.stringify(a.counts) : null, a.lanes ?? null, at, q.task_id));
-    const learnt = official ? null : learnCost(db, items);
+    const ordered = [...items].sort((a, b) => a.q.id < b.q.id ? -1 : a.q.id > b.q.id ? 1 : 0);
+    const rows = ordered.map(({ q, a }) => ({ question: q.id, task_id: q.task_id, engine: a.engine,
+      canon: verbs[q.verb].canon(a.result, a.work), result: JSON.stringify(a.result), work: a.work ?? 0,
+      compute_ms: a.compute_ms ?? null, counts: a.counts ? JSON.stringify(a.counts) : null, lanes: a.lanes ?? null }));
     // QUEUED FOR THE SETTLER (dial `settle_async`): a volunteer's answers to a
     // packable verb whose producer is not told each answer (`on_answer` runs in
     // the request), in the answers' own transaction, so one written is one queued.
     // An answer on a row a settler pass holds clears its claim (`settleQueued`).
     const peer = mine !== engine && !join ? mine : null;
-    const queued = !official && items.every(({ q }) => queueable(q)) && (await dialsOf(env, now)).settle_async === 1;
-    const queue = queued ? db.prepare("SELECT factory_queue(?1::text, ?2::text, ?3::text, ?4::bigint, ?5::text)")
-      .bind(JSON.stringify(items.map(({ q }) => q.id)), engine, peer || "", join ? 1 : 0, at) : null;
+    const dials = await dialsOf(env, now);
+    const queued = !official && items.every(({ q }) => queueable(q)) && dials.settle_async === 1;
     // PRODUCER_USE LAST, as `board_sync` takes it: a batch holding it while it
     // waits on a queue row the procedure holds deadlocks against it.
-    await db.batch([lock, ...writes, ...(queue ? [queue] : []), ...(learnt ? [learnt] : [])]);
+    if (dials.answer_bulk === 1) {
+      const body = { device: w.device, owner: w.owner || w.device, net: w.net || "", official, at,
+        rows,
+        queue: queued ? { engine, peer: peer || "", joined: join ? 1 : 0 } : null,
+        learn: official ? [] : answerCosts(items), share: PRODUCER_MEAN_SHARE };
+      await db.batch([db.prepare("SELECT factory_record_answers(?1::text)").bind(JSON.stringify(body))]);
+    } else {
+      const lock = db.prepare("SELECT pg_advisory_xact_lock(hashtextextended(?1::text, 0))").bind(w.device);
+      const writes = rows.map(a => db.prepare(`SELECT factory_answer(?1::text, ?2::text, ?3::text, ?4::text, ?5::text, ?6::bigint, ?7::text,
+          ?8::text, ?9::bigint, ?10::bigint, ?11::text, ?12::bigint, ?13::text, ?14::bigint)`)
+        .bind(a.question, a.engine, w.device, w.owner || w.device, w.net || "", official, a.canon, a.result,
+          a.work, a.compute_ms, a.counts, a.lanes, at, a.task_id));
+      const queue = queued ? db.prepare("SELECT factory_queue(?1::text, ?2::text, ?3::text, ?4::bigint, ?5::text)")
+        .bind(JSON.stringify(rows.map(a => a.question)), engine, peer || "", join ? 1 : 0, at) : null;
+      const learnt = official ? null : learnCost(db, items);
+      await db.batch([lock, ...writes, ...(queue ? [queue] : []), ...(learnt ? [learnt] : [])]);
+    }
     if (!official) {
       // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md
       // §"Contribution") — a statistic, so outside the answers' transaction:

@@ -946,6 +946,15 @@ two paths to the same replies and tables. What stays in the worker, and why:
 
 `sync_proc` at 0 is the statements, and the way back.
 
+`answer_bulk` at 1 records each JavaScript result batch through
+`factory_record_answers`: its candidates, settlement queue and producer cost
+learning commit in one database call. At 0 the separate statements remain
+available. Both paths lock result rows in question-id order, matching the
+settler. `board_sync` locks its existing result, renewal and release rows in
+that order before processing groups. A stale task round aborts its entire
+reception; retrying a committed answer remains one witness. Install `sync.sql`
+before enabling the dial.
+
 #### Expedited board reviews
 
 Simulations of an opened board build use that build's benchmark run count,

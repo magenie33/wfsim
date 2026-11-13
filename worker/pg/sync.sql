@@ -543,8 +543,30 @@ $$;
 CREATE OR REPLACE FUNCTION factory_queue(text, text, text, bigint, text) RETURNS void LANGUAGE sql AS $$
   INSERT INTO state_pending_verifications (question, engine, peer, joined, queued_at)
   SELECT value, $2, $3, $4, $5 FROM jsonb_array_elements_text($1::jsonb)
+  ORDER BY value COLLATE "C"
   ON CONFLICT (question, engine, peer) DO UPDATE SET claim = NULL, claimed_at = NULL
 $$;
+
+-- A result batch holds its locks within one call, in the settler's question order.
+-- Candidate reception, settlement queue and cost learning commit together.
+CREATE OR REPLACE FUNCTION factory_record_answers(text) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE p jsonb := $1::jsonb; a jsonb;
+BEGIN
+  PERFORM pg_advisory_xact_lock(hashtextextended(p ->> 'device', 0));
+  FOR a IN SELECT x.a FROM jsonb_array_elements(p -> 'rows') WITH ORDINALITY x(a,k)
+      ORDER BY x.a ->> 'question' COLLATE "C", x.k LOOP
+    PERFORM factory_answer(a ->> 'question', a ->> 'engine', p ->> 'device', p ->> 'owner', p ->> 'net',
+      (p ->> 'official')::bigint, a ->> 'canon', a ->> 'result', (a ->> 'work')::bigint,
+      (a ->> 'compute_ms')::bigint, a ->> 'counts', (a ->> 'lanes')::bigint, p ->> 'at', (a ->> 'task_id')::bigint);
+  END LOOP;
+  IF jsonb_typeof(p -> 'queue') = 'object' THEN
+    PERFORM factory_queue((SELECT jsonb_agg(x.row ->> 'question') FROM jsonb_array_elements(p -> 'rows') x(row))::text,
+      p #>> '{queue,engine}', p #>> '{queue,peer}', (p #>> '{queue,joined}')::bigint, p ->> 'at');
+  END IF;
+  IF jsonb_array_length(p -> 'learn') > 0 THEN
+    PERFORM factory_learn((p -> 'learn')::text, (p ->> 'share')::double precision);
+  END IF;
+END $$;
 
 -- WHEN A VOLUNTEER LAST ANSWERED and what it spent ($2 ms on $3 tasks), in its hour.
 CREATE OR REPLACE FUNCTION verifier_worked(text, bigint, bigint, text) RETURNS void LANGUAGE sql AS $$
@@ -683,6 +705,13 @@ DECLARE
 BEGIN
   -- ONE DEVICE'S SENDS ARE TAKEN ONE AT A TIME (worker/tasks.js `recordMany`).
   PERFORM pg_advisory_xact_lock(hashtextextended(v_dev, 0));
+  PERFORM 1 FROM state_compute_scheduling q WHERE q.id IN (
+    SELECT a ->> 'question' FROM jsonb_array_elements(COALESCE(p -> 'groups','[]'::jsonb)) g,
+      LATERAL jsonb_array_elements(g -> 'rows') a
+    UNION SELECT h ->> 'question' FROM jsonb_array_elements(COALESCE(p -> 'held','[]'::jsonb)) h
+    UNION SELECT f ->> 'question' FROM jsonb_array_elements(COALESCE(p -> 'refused','[]'::jsonb)) f
+    UNION SELECT s.id FROM state_compute_scheduling s WHERE s.leased_to=v_dev AND s.lease_until>v_at
+  ) AND (q.leased_to=v_dev OR q.leased_to_prev=v_dev) ORDER BY q.id FOR UPDATE;
   IF (p ->> 'seen')::boolean THEN
     PERFORM verifier_seen(v_dev, p ->> 'day', v_at, (p ->> 'consent_v')::bigint, p ->> 'consent_at');
     PERFORM verifier_asked(v_dev, v_at, p #>> '{asked,engine}', (p #>> '{asked,lanes}')::bigint, p #>> '{asked,before}');
@@ -702,7 +731,7 @@ BEGIN
           WHERE NOT (p -> 'packable') ? (i ->> 'verb') OR NOT (p -> 'queueable') ? (i ->> 'producer')) THEN
         RAISE EXCEPTION 'board_sync: an answer the settler may not take' USING ERRCODE = 'WS001';
       END IF;
-      FOR v_x IN SELECT value AS i FROM jsonb_array_elements(v_rows) LOOP
+      FOR v_x IN SELECT value AS i FROM jsonb_array_elements(v_rows) ORDER BY value ->> 'id' COLLATE "C" LOOP
         PERFORM factory_answer(v_x.i ->> 'id', v_engine, v_dev, v_owner, v_net, 0, v_x.i #>> ARRAY['a', 'canons', v_x.i ->> 'verb'],
           v_x.i #>> '{a,result}', (v_x.i #>> '{a,work}')::bigint, (v_x.i #>> '{a,compute_ms}')::bigint, v_x.i #>> '{a,counts}',
           (v_x.i #>> '{a,lanes}')::bigint, v_at,(v_x.i ->> 'task_id')::bigint);

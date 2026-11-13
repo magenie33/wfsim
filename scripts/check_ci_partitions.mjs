@@ -40,6 +40,7 @@ function protocolCases(workflow) {
     assert(['async', 'proc', 'proc-async'].includes(group));
     assert.equal(/WFSIM_SYNC_PROC: "1"/.test(step), group !== 'async', group);
     assert.equal(/WFSIM_SETTLE_ASYNC: "1"/.test(step), group !== 'proc', group);
+    assert.match(step, /WFSIM_ANSWER_BULK: "1"/, 'protocol cases cover bulk result reception');
     cases.push(...commands.map(command => `${group}/${command}`));
   }
   assert.equal(new Set(cases).size, cases.length, 'each command and protocol mode executes once');
@@ -88,6 +89,7 @@ protocolCases(workflow);
 assert.throws(() => protocolCases(workflow.replace('group: [async, proc, proc-async]', 'group: [async, proc]')));
 assert.throws(() => protocolCases(workflow.replace('          node scripts/check_board_family.mjs\n', '')));
 assert.throws(() => protocolCases(workflow.replace('WFSIM_SYNC_PROC: "1"', 'WFSIM_SYNC_PROC: "0"')));
+assert.throws(() => protocolCases(workflow.replace('WFSIM_ANSWER_BULK: "1"', 'WFSIM_ANSWER_BULK: "0"')));
 assert.deepEqual(new Set([...RUST_SUITES, ...Object.keys(DEEP_SCOPE_GROUPS)]), new Set(['workspace', 'webapi', 'accuracy', ...RUST_GROUPS]));
 assert.match(workflow, /matrix:.*fromJSON\(needs\.plan\.outputs\.test_matrix\)/);
 assert.match(workflow, /fleet-work\|deep-descent\|deep-screened\|deep-fleet\) node/);
@@ -105,7 +107,7 @@ assert.throws(() => pageGroups(workflow.replace('fromJSON(\'["fast"]\')', 'fromJ
 const allPages = [...Object.values(pages).flat(), ...Object.values(mainPages).flat()];
 assert.equal(new Set(allPages).size, allPages.length, 'browser commands have one owner');
 assert(pages.account.includes('node scripts/check_browser_db_migration.mjs'),'browser upgrades run in the existing account group');
-for(const command of ['node scripts/check_sqlite_migration.mjs','node scripts/check_compute_storage.mjs']) {
+for(const command of ['node scripts/check_sqlite_migration.mjs','node scripts/check_compute_storage.mjs','node scripts/check_answer_batches.mjs']) {
   assert.equal(workflow.split(command).length-1,1,command+' has one permanent CI entry');
 }
 const parity = workflow.split('\n  parity:')[1].split('\n  page-rest:')[0];
