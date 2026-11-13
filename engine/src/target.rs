@@ -74,6 +74,8 @@ pub struct Foe {
     /// Base shields (mitigation order: Overguard → Shield → Health;
     /// Toxin bypasses shields but NOT overguard).
     pub base_shield: f64,
+    /// M8: player Shield aura bonus, applied only in the post-level maximum query.
+    pub shield_aura_bonus: f64,
     pub health_curve: scaling::Curve,
     pub shield_curve: scaling::Curve,
     /// Boss-type damage attenuation (Acolytes etc.); `None` = none.
@@ -329,6 +331,7 @@ impl Foe {
             base_overguard: 0.0,
             base_affinity: 0.0,
             base_shield: 0.0,
+            shield_aura_bonus: 0.0,
             health_curve: scaling::health::UNAFFILIATED,
             shield_curve: scaling::shield::GRINEER, // unused at 0 shields
             attenuation: None,
@@ -409,15 +412,19 @@ impl Foe {
         (a * self.empowered_mults().1).min(scaling::ARMOR_CAP)
     }
 
-    /// Scaled max shields (Steel Path ×2.5, like health).
+    /// M8: Shield maximum queries round around the level-scaled stored maximum.
     pub fn max_shield(&self) -> f64 {
         let delta = self.level.saturating_sub(self.base_level) as f64;
         let sp = if self.steel_path {
-            scaling::STEEL_PATH_SHIELD_MULT
+            scaling::STEEL_PATH_SHIELD_AURA
         } else {
             1.0
         };
-        self.base_shield * self.shield_curve.multiplier(delta) * sp * self.empowered_mults().0
+        let mode = self.empowered_mults().0 as f32;
+        let aura = (1.0_f32 + self.shield_aura_bonus as f32).max(0.0);
+        // M8: Empowered installation uses the assumed Steel Path ordering.
+        scaling::shield_maximum(self.base_shield, self.shield_curve, delta,
+            &[sp, mode], &[sp, mode, aura])
     }
 
     /// Scaled overguard (uses `level − 1`; no Steel Path bonus documented).
@@ -639,6 +646,7 @@ impl crate::data::enemies::EnemySpec {
             base_overguard: self.stats.overguard,
             base_affinity: self.stats.affinity,
             base_shield: self.stats.shield,
+            shield_aura_bonus: 0.0,
             health_curve: self.scaling_faction.health_curve(),
             shield_curve: self.scaling_faction.shield_curve(),
             attenuation: self.attenuation.map(|a| Attenuation {
@@ -735,6 +743,28 @@ impl crate::data::enemies::EnemySpec {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn empowered_shield_uses_the_assumed_before_level_installation() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../tests/fixtures/client/shield-query-2026-10-28.json"
+        )).unwrap();
+        for (mode, maximum_squad) in [(scaling::Empowered::Archimedea, 4), (scaling::Empowered::Icebind, 6)] {
+            for squad in 1..=maximum_squad {
+                let multiplier = mode.multipliers(squad).0;
+                let case = fixture["pool_cases"].as_array().unwrap().iter().find(|case| {
+                    case["level"] == 100 && case["base_level"] == 1 &&
+                    case["before"].as_array().unwrap().len() == 1 &&
+                    case["before"][0].as_f64() == Some(multiplier) &&
+                    case["after"] == case["before"]
+                }).unwrap();
+                let foe = Foe { base_shield: 120.0, level: 100,
+                    shield_curve: scaling::shield::CORRUPTED,
+                    empowered: Some((mode, squad)), ..Foe::training_dummy() };
+                assert_eq!(foe.max_shield(), case["maximum"].as_f64().unwrap(), "{mode:?}/{squad}");
+            }
+        }
+    }
 
     /// THE ICEBIND MULTIPLIES ARMOR BELOW THE CAP AND NOT PAST IT.
     #[test]

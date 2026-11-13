@@ -543,13 +543,12 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     let Fight {
         arena, enemy_name, level, steel_path, eximus, runs, seed, tenno, ..
     } = fight;
-    // The target's pools, for the report. Read off the arena rather than kept
-    // beside it: one target, one place it lives.
+    // Report the resolved fight's pools, including the squad's Shield auras.
     let (og, sh, hp, ar) = (
-        arena.target.overguard(),
-        arena.target.max_shield(),
-        arena.target.max_health(),
-        arena.target.armor(),
+        params.foe.overguard(),
+        params.foe.max_shield(),
+        params.foe.max_health(),
+        params.foe.armor(),
     );
     // …AND THE MISSION'S EMPOWERMENT beside Steel Path, the one a reader saw.
     let empowered = arena.target.empowered.map(|(e, squad)| json!({ "id": e.id(), "squad_size": squad }));
@@ -1165,6 +1164,21 @@ mod asset_tests {
     use crate::panel::panel_json;
     use crate::registry::{assets, weapons};
     use crate::rivens::riven_class;
+
+    #[test]
+    fn reported_shield_includes_the_resolved_player_aura() {
+        let mut request = serde_json::json!({
+            "weapon": "braton", "enemy": "crewman", "level": 1,
+            "steel_path": false, "eximus": false, "runs": 1, "duration": 1,
+        });
+        let plain = simulate_json(&request);
+        assert!(plain.get("error").is_none(), "{plain}");
+        assert_eq!(plain["target"]["shield"], 120.0);
+        request["auras"] = serde_json::json!([{ "id": "shield_disruption", "count": 1 }]);
+        let reduced = simulate_json(&request);
+        assert!(reduced.get("error").is_none(), "{reduced}");
+        assert_eq!(reduced["target"]["shield"], 98.0);
+    }
 
     /// Every weapon, mod and arcane in `data/` must have an image entry.
     ///

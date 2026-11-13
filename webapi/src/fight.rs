@@ -1436,9 +1436,8 @@ mod the_demolisher_ruler {
 }
 
 /// **EMPOWERED ENEMIES REACH EVERY BODY, AND ARMOR STOPS AT THE CAP.** The
-/// wiki's tables through `parse_fight`: Archimedea moves health and shields and
-/// leaves armor, the Icebind moves all three and still ends at 2,700, and the
-/// formation carries the mission's modifier like the aimed body does.
+/// M8's adopted Shield installation order and existing health/armor policy
+/// through `parse_fight`, including formation bodies and the armor cap.
 #[cfg(test)]
 mod empowered_enemies {
     use serde_json::json;
@@ -1464,8 +1463,8 @@ mod empowered_enemies {
         let (hp, sh, _, _) = pools(&fight("crewman", 1, None, 4));
         let (hp4, sh4, _, _) = pools(&fight("crewman", 1, Some("archimedea"), 4));
         let (hp9, sh9, _, _) = pools(&fight("crewman", 1, Some("icebind"), 6));
-        assert!(sh > 0.0 && (hp4 / hp - 4.0).abs() < 1e-9 && (sh4 / sh - 4.0).abs() < 1e-9);
-        assert!((hp9 / hp - 9.0).abs() < 1e-9 && (sh9 / sh - 9.0).abs() < 1e-9);
+        assert!(sh > 0.0 && (hp4 / hp - 4.0).abs() < 1e-9 && (sh4 / sh - 16.0).abs() < 1e-9);
+        assert!((hp9 / hp - 9.0).abs() < 1e-9 && (sh9 / sh - 81.0).abs() < 1e-9);
 
         let (_, _, ar, og) = pools(&fight("corrupted_heavy_gunner", 40, None, 4));
         let (_, _, ar4, og4) = pools(&fight("corrupted_heavy_gunner", 40, Some("archimedea"), 4));

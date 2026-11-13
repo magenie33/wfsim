@@ -12,6 +12,11 @@
 //! Methods rather than functions, so a call site weighs what the std call did
 //! and the gas meter's counts do not move (docs/WASM.md §"Gas").
 
+/// Native stat curves evaluate their power operation in binary32 (M8).
+pub fn powf_f32(base: f32, exponent: f32) -> f32 {
+    libm::powf(base, exponent)
+}
+
 /// An `f64` method per transcendental the engine uses, each named for the std
 /// method it replaces.
 pub trait Portable {

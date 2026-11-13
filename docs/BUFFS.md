@@ -918,6 +918,10 @@ the wielder's own aura come with the Warframe build the weapon's wielder links
 (docs/WARFRAMES.md §A weapon's wielder). Neither reaches the BOARD, which is
 scored in the Prototype's hands.
 
+Squad Shield aura reductions enter every target's final integer maximum-Shield
+query after level writeback. Spawn pools, Magnetic break sources and the
+simulator's reported Shield maximum read that same resolved value (M8).
+
 THEY ARE OFFERED, NEVER TYPED. The Extra stats grid accepts any number into
 any bucket; what it cannot do is say WHERE the number came from. Three of its
 entries are not buckets and say so in their unit: Final Critical Damage (a

@@ -3,7 +3,7 @@
 //!
 //! Source: wiki `Enemy_Level_Scaling` (community-derived from in-game testing;
 //! DE has never confirmed these — **unverified**, see docs/MECHANICS.md §8) and
-//! `The_Steel_Path`.
+//! `The_Steel_Path`. M8 binds native binary32 Shield curves and integer queries.
 //!
 //! Common structure for health / shields / armor / overguard: two power curves
 //! `f1 = 1 + c1·Δ^e1` (low level) and `f2 = 1 + c2·Δ^e2` (high level) blended
@@ -34,10 +34,10 @@ pub const ARMOR_SPAWN_MIN: f64 = 200.0;
 
 /// Steel Path: enemy level +100 (+50 Archwing/Railjack, +20 Duviri).
 pub const STEEL_PATH_LEVEL_BONUS: u32 = 100;
-/// Steel Path: health ×2.5 and shields ×2.5. Armor is NOT increased (removed
-/// in U36; shields were also accidentally ×6.25 before U36).
+/// Steel Path health multiplier; Shield query operations are separate (M8).
 pub const STEEL_PATH_HEALTH_MULT: f64 = 2.5;
-pub const STEEL_PATH_SHIELD_MULT: f64 = 2.5;
+/// M8: AVATAR_SHIELD_MAX/MULTIPLY applies in maximum queries before and after level writeback.
+pub const STEEL_PATH_SHIELD_AURA: f32 = 1.58114;
 
 /// EMPOWERED ENEMIES — a mission's own multiplier, IN PLACE OF Steel Path's.
 ///
@@ -74,18 +74,15 @@ impl Empowered {
 
     /// `(health and shields, armor)` multipliers for a squad of `squad`.
     ///
-    /// VERBATIM, Archimedea: *"Enemy Health and Shields increased by 100% and
-    /// an additional 50% for each squad member, stacking to a maximum of
-    /// 300%."* The Icebind (Update 44.1.0 notes): *"Enemy Health and Shields
-    /// and Armor increased by 200% and an additional 100% for each squad
-    /// member, stacking to a maximum of 800%."* Armor still ends at
-    /// [`ARMOR_CAP`], which no source raises — see `Foe::armor`.
+    /// M8: native OnAgentCreated supplies full MULTIPLY values without an
+    /// additional count clamp. Mission squad limits are separate. Armor uses
+    /// the represented mission's policy and still ends at [`ARMOR_CAP`].
     pub fn multipliers(self, squad: u32) -> (f64, f64) {
         let n = squad.max(1) as f64;
         match self {
-            Self::Archimedea => (1.0 + (1.0 + 0.5 * n).min(3.0), 1.0),
+            Self::Archimedea => (2.0 + 0.5 * n, 1.0),
             Self::Icebind => {
-                let m = 1.0 + (2.0 + n).min(8.0);
+                let m = 3.0 + n;
                 (m, m)
             }
         }
@@ -106,6 +103,16 @@ pub struct Curve {
 
 #[wfsim_gas_macro::metered]
 impl Curve {
+    /// M8: original binary32 endpoints, smoothstep and interpolation order.
+    pub fn multiplier_f32(&self, delta: f64) -> f32 {
+        let d = (delta as f32).max(0.0);
+        let f1 = 1.0_f32 + self.c1 as f32 * super::math::powf_f32(d, self.e1 as f32);
+        let f2 = 1.0_f32 + self.c2 as f32 * super::math::powf_f32(d, self.e2 as f32);
+        let t = ((d - self.lo as f32) / (self.hi as f32 - self.lo as f32)).clamp(0.0, 1.0);
+        let s = (t * t) * (3.0_f32 - 2.0_f32 * t);
+        f1 + (f2 - f1) * s
+    }
+
     /// Stat multiplier at a level difference `delta` (clamped at 0).
     pub fn multiplier(&self, delta: f64) -> f64 {
         let d = delta.max(0.0);
@@ -115,6 +122,22 @@ impl Curve {
         let s = 3.0 * t * t - 2.0 * t * t * t;
         f1 * (1.0 - s) + f2 * s
     }
+}
+
+/// M8: integer maximum query, level writeback, then the current maximum query.
+#[wfsim_gas_macro::metered]
+pub fn shield_maximum(base: f64, curve: Curve, delta: f64, before: &[f32], after: &[f32]) -> f64 {
+    let initial = shield_query(base as f32, before);
+    let stored = (initial * curve.multiplier_f32(delta) + 0.5_f32).floor();
+    shield_query(stored, after) as f64
+}
+
+#[wfsim_gas_macro::metered]
+fn shield_query(mut value: f32, multipliers: &[f32]) -> f32 {
+    for multiplier in multipliers {
+        value *= multiplier;
+    }
+    (value + 0.5_f32).floor()
 }
 
 /// Health curves per faction (transition 70–80).
@@ -299,13 +322,29 @@ pub fn armor_damage_reduction(armor: f64) -> f64 {
 mod tests {
     use super::*;
 
-    /// The wiki's own tables (`Empowered_Enemies`): 2.5/3.0/3.5/4.0 for one to
-    /// four players in Archimedea, 4.0 to 9.0 for one to six in the Icebind.
+    #[test]
+    fn shield_queries_match_bounded_native_before_and_after_vectors() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/client/shield-query-2026-10-28.json"
+        )).unwrap();
+        for case in fixture["pool_cases"].as_array().unwrap() {
+            let multipliers = |key: &str| -> Vec<f32> {
+                case[key].as_array().unwrap().iter()
+                    .map(|value| value.as_f64().unwrap() as f32).collect()
+            };
+            let delta = case["level"].as_f64().unwrap() - case["base_level"].as_f64().unwrap();
+            let actual = shield_maximum(case["base_shield"].as_f64().unwrap(),
+                shield::CORRUPTED, delta, &multipliers("before"), &multipliers("after"));
+            assert_eq!(actual, case["maximum"].as_f64().unwrap(), "{case}");
+        }
+    }
+
+    /// M8's native callback values, including synthetic counts beyond squad limits.
     #[test]
     fn empowered_multipliers_are_the_published_tables() {
         let hs = |e: Empowered, n| e.multipliers(n).0;
-        assert_eq!([1, 2, 3, 4, 5].map(|n| hs(Empowered::Archimedea, n)), [2.5, 3.0, 3.5, 4.0, 4.0]);
-        assert_eq!([1, 2, 3, 4, 5, 6, 7].map(|n| hs(Empowered::Icebind, n)), [4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 9.0]);
+        assert_eq!([1, 2, 3, 4, 5].map(|n| hs(Empowered::Archimedea, n)), [2.5, 3.0, 3.5, 4.0, 4.5]);
+        assert_eq!([1, 2, 3, 4, 5, 6, 7].map(|n| hs(Empowered::Icebind, n)), [4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]);
         assert_eq!(Empowered::Archimedea.multipliers(4).1, 1.0, "Archimedea leaves armor alone");
         assert_eq!(Empowered::Icebind.multipliers(6).1, 9.0);
     }

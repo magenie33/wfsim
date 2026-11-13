@@ -1080,7 +1080,7 @@ impl FightParams {
             apl: apl_inserted,
             target_id,
             tenno,
-            target,
+            mut target,
             body_parts,
             gauge_charging_body_parts,
             duration_seconds,
@@ -1090,9 +1090,14 @@ impl FightParams {
             ability_strength,
             player_at,
             target_at,
-            others,
+            mut others,
             aim_at,
         } = arena.clone();
+        let squad = tenno.squad(panel.class);
+        target.shield_aura_bonus = squad.enemy_shield_multiplier;
+        for other in &mut others {
+            other.params.shield_aura_bonus = squad.enemy_shield_multiplier;
+        }
         // THE INVOCATIONS MEET THE ABILITIES HERE, and here is the only place
         // they can: a mod belongs to the BUILD and an ability to the FIGHT, and
         // this function is the one that holds both. RE-RESOLVED rather than
@@ -1182,7 +1187,7 @@ impl FightParams {
             // so a pick can never disagree with its effect. The weapon's CLASS
             // is passed because the Amp family pays one class and nothing to
             // any other.
-            squad: tenno.squad(panel.class),
+            squad,
             // Straight off the ARENA — the one place a fight is described.
             abilities: abilities.clone(),
             frame,

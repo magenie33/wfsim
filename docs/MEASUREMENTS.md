@@ -111,7 +111,7 @@ path, so an entry may be renamed but never renumbered.
 | [M5](measurements/M05-heat-inherit-context-sync.md) | Heat Inherit context sync is bidirectional | ✅ 2026-07-24 (informal) |
 | [M6](measurements/M06-frozen-exit-semantics.md) | Frozen exit semantics | ✅ 2026-07-24 (informal) |
 | [M7](measurements/M07-freeze-post-thaw-stacks.md) | Who owns the 3 fresh post-thaw Freeze stacks? | ✅ 2026-07-24 |
-| [M8](measurements/M08-magnetic-break-proc-attribution.md) | Magnetic break Electricity snapshots the current stack count, uses the breaking weapon's context and joins the ordinary Electricity pile with a body landing | ✅ 2026-11-12 (owner) |
+| [M8](measurements/M08-magnetic-break-proc-attribution.md) | Magnetic break Electricity uses the breaking weapon's context and ordinary body-anchored pile; native integer Shield queries match cross-level controls | ✅ 2026-11-13 (owner) |
 | [M9](measurements/M09-incarnon-transition-timings.md) | Incarnon transition timings; per-profile package timer calibration | ✅ 2026-07-26 · package 2026-11-07 |
 | [M10](measurements/M10-incarnon-reload-buff-reach.md) | What does a reload-speed buff reach on an Incarnon weapon? | ✅ 2026-07-30 (informal) |
 | [M11](measurements/M11-on-hit-per-trigger-or-instance.md) | Is an "on hit" perk judged per trigger pull or per damage instance? | ✅ 2026-07-30 (informal) |

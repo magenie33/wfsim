@@ -1052,8 +1052,14 @@ missing input retains the pool/count source. Such entries do not claim a
 completed native normalization.
 
 Live mode/103entries, complete spawn ordering, dynamic table/proxy/source
-installation and generic modifier enable changes remain partial. The global
-pool model does not reproduce every native float32 curve/integer writeback
-boundary. Arbitrary faction/status operation eligibility and exact same-frame
+installation and generic modifier enable changes remain partial. Shield
+maximum queries and level writeback use native binary32/integer boundaries;
+other global pool curves do not claim every native boundary. Steel ordering
+and late Shield Disruption match M8. Empowered modes use the owner's assumed
+before-level installation order; no mode-specific control closes that timing,
+the complete callback lifecycle or live membership updates. The native armor
+callback also depends on mission tier; the represented mission armor policy
+does not resolve arbitrary tier changes. Arbitrary faction/status operation
+eligibility and exact same-frame
 radial/lethal ordering remain unbound; ordinary proc and owner-measured
 source/landing rules apply.

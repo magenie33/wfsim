@@ -127,17 +127,23 @@ fn m8_body_break_resets_the_pile_and_a_new_head_electric_proc_restores_it() {
 fn m8_fixed_target_measured_ticks_follow_the_declared_weapon_and_proxy() {
     let spec = crate::data::enemies::all().into_iter()
         .find(|enemy| enemy.id == "corrupted_heavy_gunner").unwrap();
-    let weapon = crate::model::WeaponBase::from_data("laetum", true, &["laetum_caput_mortuum"]);
-    let panel = crate::build::loadout::resolve(&weapon, &[], crate::model::StackPolicy::AssumedMax);
-    for aim in ["body", "head"] {
-        for (electricity, measured) in [(1.0, 3455.0), (2.65, 9154.0)] {
+    for (id, electricity, measured, weakness, frozen) in [
+        ("laetum", 1.0, 3455.0, 0.5, 3454.0),
+        ("laetum", 2.65, 9154.0, 0.5, 3454.0),
+        ("torid", 1.0, 4319.0, 0.2, 4318.0),
+        ("kuva_nukor", 1.0, 5182.0, 0.0, 5181.0),
+    ] {
+        let evolutions: &[&str] = if id == "laetum" { &["laetum_caput_mortuum"] } else { &[] };
+        let weapon = crate::model::WeaponBase::from_data(id, true, evolutions);
+        let panel = crate::build::loadout::resolve(&weapon, &[], crate::model::StackPolicy::AssumedMax);
+        for aim in ["body", "head"] {
             let mut arena = crate::arena::Arena::training(10.0);
             arena.target = spec.target_params(50, true, true, TargetMode::InfiniteHealth).unwrap();
             arena.body_parts = spec.aim_parts(&[(aim, 1.0)]).unwrap();
             let mut q = Probe::new();
             q.p = FightParams::from_panel(&panel, &arena, &arc("secondary_deadhead"));
             q.arc = ArcRuntime::init(&q.p);
-            assert_eq!(q.p.weakness_bonus, Some(0.5));
+            assert_eq!(q.p.weakness_bonus, Some(weakness));
             q.p.elem_dot_bonus = vec![(DamageType::Magnetic, 3.0), (DamageType::Electricity, electricity)];
             q.body.state = TargetState::spawn(&q.p.foe, q.p.target_at);
             q.body.state.overguard = 0.0;
@@ -145,12 +151,60 @@ fn m8_fixed_target_measured_ticks_follow_the_declared_weapon_and_proxy() {
             q.body.debuffs.canticle_armor_strip = 1.0;
             q.body.debuffs.disrupt = vec![6.0; 10];
             q.break_pool(BrokenPool::Overguard, 0.0);
-            assert_eq!(q.body.debuffs.dots[0].frozen, 3454.0);
+            assert_eq!(q.body.debuffs.dots[0].frozen, frozen);
             assert_eq!(q.body.debuffs.dots[0].landing, ProcLanding::default());
             let parent = q.r.tally.effective();
-            assert_eq!(parent, 6908.0);
+            assert_eq!(parent, 2.0 * frozen);
             q.tick(0.01);
-            assert_eq!((q.r.tally.effective() - parent).round(), measured, "{aim}, Electricity{electricity}");
+            assert_eq!((q.r.tally.effective() - parent).round(), measured, "{id}/{aim}, Electricity{electricity}");
+        }
+    }
+}
+
+#[test]
+fn m8_steel_corrupted_crewman_shield_break_matches_crosslevel_measurements() {
+    let mut spec = crate::data::enemies::all().into_iter()
+        .find(|enemy| enemy.id == "crewman").unwrap();
+    spec.id = "corrupted_crewman".into();
+    spec.name = "Corrupted Crewman".into();
+    spec.combat_faction = Some("corrupted".into());
+    spec.scaling_faction = crate::data::enemies::ScalingFaction::Corrupted;
+    spec.stats.health = 50.0;
+    let weapon = crate::model::WeaponBase::from_data("kuva_nukor", true, &[]);
+    let panel = crate::build::loadout::resolve(&weapon, &[], crate::model::StackPolicy::AssumedMax);
+    for (level, disruption, maximum, measured) in [
+        (80, false, 16128.0, 807.0),
+        (100, false, 19157.0, 958.0),
+        (120, false, 21948.0, 1098.0),
+        (80, true, 13225.0, 662.0),
+    ] {
+        let mut arena = crate::arena::Arena::training(10.0);
+        arena.target = spec.target_params(level, true, false, TargetMode::InfiniteHealth).unwrap();
+        if disruption {
+            arena.tenno.auras = vec![crate::data::auras::AuraPick {
+                id: "shield_disruption".into(), count: 1,
+            }];
+        }
+        arena.others.push(crate::formation::FoeSpec {
+            id: "neighbor".into(), params: arena.target.clone(),
+            body_parts: mono_body(1.0), at: crate::rules::space::Vec2 { x: 2.0, y: 0.0 },
+        });
+        let mut q = Probe::new();
+        q.p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
+        assert_eq!(q.p.foe.max_shield(), maximum);
+        assert_eq!(q.p.others[0].params.max_shield(), maximum);
+        q.p.elem_dot_bonus = vec![(DamageType::Magnetic, 3.0)];
+        q.body.state = TargetState::spawn(&q.p.foe, q.p.target_at);
+        assert_eq!(q.body.state.shield, maximum);
+        q.body.state.shield = 0.0;
+        q.body.debuffs.disrupt = vec![6.0; 10];
+        q.break_pool(BrokenPool::Shield, 0.0);
+        let mut previous = q.r.tally.effective();
+        for until in [0.01, 1.01, 2.01] {
+            q.tick(until);
+            let tick = q.r.tally.effective() - previous;
+            assert_eq!(tick.round(), measured, "level={level}, aura={disruption}, tick={tick}");
+            previous = q.r.tally.effective();
         }
     }
 }

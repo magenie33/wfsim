@@ -91,6 +91,13 @@ remain in the fixture; absent native defaults remain unbound. M8 records the
 in-game controls and source/proxy arithmetic. Native damage ids are mapped
 by name, independently of WFSim's Rust enum order.
 
+`tests/fixtures/client/shield-query-2026-10-28.json` pins three native batches
+for integer Shield maximum queries, level writeback, late player auras and
+full mode operations. Its38conditional vectors preserve operation order and
+the supplied before/after installation state. M8 records the independent
+807/958/1098/662 gameplay controls and distinguishes the adopted mode ordering
+from the verified consumer arithmetic. Full live installer timing is unbound.
+
 ## Pinned primary form and sampler inputs
 
 ### Whole-secondary calibration

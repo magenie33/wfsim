@@ -673,6 +673,7 @@ fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> Foe {
         base_overguard: overguard,
         base_affinity: 0.0,
         base_shield: 0.0,
+        shield_aura_bonus: 0.0,
         health_curve: crate::rules::scaling::health::UNAFFILIATED,
         shield_curve: crate::rules::scaling::shield::GRINEER,
         attenuation: None,

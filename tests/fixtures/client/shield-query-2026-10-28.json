@@ -1,0 +1,531 @@
+{
+  "schema": 1,
+  "client_build": "2026.10.28.09.54",
+  "executable_sha256": "dae100202115919c89440c9ef320f691113ee8dcaf01205cbd180072c35aabdb",
+  "scope": "Conditional native maximum-query vectors; mode installer timing remains an explicit owner-approved assumption.",
+  "batches": [
+    {
+      "batch": "20261113T060047Z-magnetic-shield958",
+      "manifest_sha256": "94ee4b13562d197ce9df284873049a95117e029efcbff064206612b5fd9e9ddc"
+    },
+    {
+      "batch": "20261113T062548Z-shield-aura-crosslevel",
+      "manifest_sha256": "370bb31c91a401efded87e3a08c8fc189ab3ecfaa6feff67ba30a5ae5af3deb6"
+    },
+    {
+      "batch": "20261113T065338Z-mode-enemy-scaling",
+      "manifest_sha256": "c586f197c5534ac1c9ed31974dec0e4fc368bcc4abd17e68190da0ccfceee78b"
+    }
+  ],
+  "pool_cases": [
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        1.5811400413513184
+      ],
+      "after": [
+        1.5811400413513184
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 19157,
+      "stored": 12116
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [],
+      "native_curve": 63.77061462402344,
+      "maximum": 7652,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        1.5811400413513184
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 12099,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        2.5
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 19130,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 8,
+      "base_shield": 120,
+      "before": [
+        1.5811400413513184
+      ],
+      "after": [
+        1.5811400413513184
+      ],
+      "native_curve": 60.41154861450195,
+      "maximum": 18148,
+      "stored": 11478
+    },
+    {
+      "level": 1,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        1.5811400413513184
+      ],
+      "after": [
+        1.5811400413513184
+      ],
+      "native_curve": 1.0,
+      "maximum": 300,
+      "stored": 190
+    },
+    {
+      "level": 50,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        1.5811400413513184
+      ],
+      "after": [
+        1.5811400413513184
+      ],
+      "native_curve": 19.149852752685547,
+      "maximum": 5752,
+      "stored": 3638
+    },
+    {
+      "level": 80,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        1.5811400413513184
+      ],
+      "after": [
+        1.5811400413513184
+      ],
+      "native_curve": 53.68525695800781,
+      "maximum": 16128,
+      "stored": 10200
+    },
+    {
+      "level": 80,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        1.5811400413513184
+      ],
+      "after": [
+        1.5811400413513184,
+        0.8199999928474426
+      ],
+      "native_curve": 53.68525695800781,
+      "maximum": 13225,
+      "stored": 10200
+    },
+    {
+      "level": 80,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        1.5811400413513184,
+        0.8199999928474426
+      ],
+      "after": [
+        1.5811400413513184,
+        0.8199999928474426
+      ],
+      "native_curve": 53.68525695800781,
+      "maximum": 10858,
+      "stored": 8375
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        1.5811400413513184
+      ],
+      "after": [
+        1.5811400413513184,
+        0.8199999928474426
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 15709,
+      "stored": 12116
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        1.5811400413513184,
+        0.8199999928474426
+      ],
+      "after": [
+        1.5811400413513184,
+        0.8199999928474426
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 12898,
+      "stored": 9948
+    },
+    {
+      "level": 120,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        1.5811400413513184
+      ],
+      "after": [
+        1.5811400413513184,
+        0.8199999928474426
+      ],
+      "native_curve": 73.059326171875,
+      "maximum": 17997,
+      "stored": 13881
+    },
+    {
+      "level": 120,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        1.5811400413513184,
+        0.8199999928474426
+      ],
+      "after": [
+        1.5811400413513184,
+        0.8199999928474426
+      ],
+      "native_curve": 73.059326171875,
+      "maximum": 14777,
+      "stored": 11397
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        2.5
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 19130,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        2.5
+      ],
+      "after": [
+        2.5
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 47828,
+      "stored": 19131
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        3.0
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 22956,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        3.0
+      ],
+      "after": [
+        3.0
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 68871,
+      "stored": 22957
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        3.5
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 26782,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        3.5
+      ],
+      "after": [
+        3.5
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 93744,
+      "stored": 26784
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        4.0
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 30608,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        4.0
+      ],
+      "after": [
+        4.0
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 122440,
+      "stored": 30610
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        4.5
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 34434,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        4.5
+      ],
+      "after": [
+        4.5
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 154962,
+      "stored": 34436
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        5.0
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 38260,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        5.0
+      ],
+      "after": [
+        5.0
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 191310,
+      "stored": 38262
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        4
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 30608,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        4
+      ],
+      "after": [
+        4
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 122440,
+      "stored": 30610
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        5
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 38260,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        5
+      ],
+      "after": [
+        5
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 191310,
+      "stored": 38262
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        6
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 45912,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        6
+      ],
+      "after": [
+        6
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 275490,
+      "stored": 45915
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        7
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 53564,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        7
+      ],
+      "after": [
+        7
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 374969,
+      "stored": 53567
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        8
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 61216,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        8
+      ],
+      "after": [
+        8
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 489760,
+      "stored": 61220
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [],
+      "after": [
+        9
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 68868,
+      "stored": 7652
+    },
+    {
+      "level": 100,
+      "base_level": 1,
+      "base_shield": 120,
+      "before": [
+        9
+      ],
+      "after": [
+        9
+      ],
+      "native_curve": 63.77061462402344,
+      "maximum": 619848,
+      "stored": 68872
+    }
+  ]
+}

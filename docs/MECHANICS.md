@@ -2791,6 +2791,14 @@ S = smoothstep between the transition bounds:
 - **Shields** (70–80): Corpus `0.02·Δ^1.76` / `2·Δ^0.76`; Corrupted+Anarchs
   `0.02·Δ^1.75` / `2·Δ^0.75`; Grineer/Sentient `0.02·Δ^1.75` / `1.6·Δ^0.75`;
   Techrot `0.02·Δ^1.76` / `3.5·Δ^0.76`.
+  Shield curves evaluate in binary32, using `f1 + (f2-f1)*smoothstep`.
+  The maximum query rounds to an integer before level scaling, level scaling
+  writes back an integer, and the subsequent maximum query rounds again (M8).
+  With `R(x)=floor(f32(x+0.5))`, mode/Steel operations `A`, and the player
+  Shield aura factor `P`, the chain is `initial=R(base*A)`,
+  `stored=R(initial*curve)`, `maximum=R(stored*A*P)`. Each multiplication is
+  binary32 in operation order. Player auras enter only the final query;
+  squad Shield reductions add in their bucket, bounded at zero capacity.
 - **Armor** (70–80, all factions): `0.005·Δ^1.75` / `0.4·Δ^0.75` (then the
   2,700 cap).
 - **Overguard** (transition **45–50**, uses `x−1` not Δ): `0.0015·(x−1)^4` /
@@ -2850,9 +2858,11 @@ innate). Engine rule: enemy data carries `can_be_eximus`; building an Eximus
 target from a unit without one is an **error**, never a silent acceptance.
 
 **Steel Path** (wiki `The_Steel_Path`). Enemy level **+100** (+50 in
-Archwing/Railjack, +20 in Duviri with no stat bonus), health **×2.5**, shields
-**×2.5**. **Armor is NOT increased** (removed in U36, which also fixed shields
-accidentally double-applying to ×6.25). Caveat for golden tests: the
+Archwing/Railjack, +20 in Duviri with no stat bonus), health **×2.5**. Shield
+maximum queries each apply the native MULTIPLY value `f32(1.58114)` around
+level writeback, approximately ×2.5 before the integer boundaries above.
+**Armor is NOT increased** (removed in U36). M8 verifies the Shield chain at
+levels80/100/120 and the late Shield Disruption aura at level80. The
 Simulacrum's "The Steel Path" toggle was described at introduction (U33.5) as
 "+250% Health, Armor, and Shields" — whether its armor bonus also went away
 with U36 must be **measured**.
@@ -2868,10 +2878,17 @@ and link has always said Steel Path; a mission switches Steel Path off whatever
 the flag says (webapi `empowerment_from`). The page offers one Empowerment
 choice, None, Steel Path, Archimedea or Icebind, and writes those two fields.
 
-| mission | health and shields | armor |
+| mission | health multiplier / Shield stat operation | armor |
 | --- | --- | --- |
-| `archimedea` — Deep and Temporal Archimedea, Netracells, Archon Hunts | ×(2 + 0.5n), at most ×4 | untouched |
-| `icebind` — The Icebind | ×(3 + n), at most ×9 | ×(3 + n), then the 2,700 cap |
+| `archimedea` — Deep and Temporal Archimedea, Netracells, Archon Hunts | 2 + 0.5n | untouched |
+| `icebind` — The Icebind | 3 + n | ×(3 + n), then the 2,700 cap |
+
+The native OnAgentCreated callback installs these full Shield MULTIPLY values;
+it does not take their square root or add another count clamp. Shield mode
+installation is assumed to precede level scaling, as for Steel Path. Thus the
+full mode factor enters both maximum queries, approximately its square before
+rounding. This ordering is the owner's adopted model and lacks a mode-specific
+gameplay control. Mission squad limits and health/armor paths are separate.
 
 Armor is multiplied on the scaled value and still ends at 2,700, which no
 source raises. Overguard is untouched: no source says the modifier reaches it.
