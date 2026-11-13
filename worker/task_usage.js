@@ -2,7 +2,7 @@
 // Compute-cost accounting for fair scheduling.
 import { PRODUCER_MEAN_SHARE } from "./task_contract.js";
 
-export function answerCosts(items) {
+function answerCosts(items) {
   const by = {};
   for (const { q, a } of items) {
     if (!Number.isFinite(a.compute_ms) || a.compute_ms <= 0) continue;
@@ -41,5 +41,5 @@ export function createUsage() {
   }
 
 
-  return { charge, learnCost, liftIdle };
+  return { charge, learnCost, answerCosts, liftIdle };
 }

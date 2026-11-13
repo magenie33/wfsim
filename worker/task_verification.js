@@ -2,10 +2,9 @@
 // Answer recording and independent-witness verification.
 import { iso } from "./instant.js";
 import { dialsOf } from "./dials.js";
-import { answerCosts } from "./task_usage.js";
 import { GRACE_SHARE, sansWork, sameAs, newLease, independent, acceptedWitnesses, CLAIM_STALE_MS, inIdOrder, coolDownMs, KEPT_MS, PRODUCER_MEAN_SHARE } from "./task_contract.js";
 
-export function createVerification({ verbs, producers, producerOf, threshold, spot, recheck, random, on_disproved, on_fact_writes, refusing, learnCost, prepareCredit, credit, deliver, deliverPlan, flush, commit, readyFact, release } = {}) {
+export function createVerification({ verbs, producers, producerOf, threshold, spot, recheck, random, on_disproved, on_fact_writes, refusing, learnCost, answerCosts, prepareCredit, credit, deliver, deliverPlan, flush, commit, readyFact, release } = {}) {
   const listOf = (db, p) => `(SELECT value FROM jsonb_array_elements_text((${p}::text)::jsonb))`;
   const factWrites = (env, q, witnesses, engine, at) => on_fact_writes ? on_fact_writes(env, q, { witnesses, engine, at }) : [];
   const acceptResult = (db, q, state, answer, engine, at, odd, witnesses) => db.prepare(
