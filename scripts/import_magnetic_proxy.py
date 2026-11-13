@@ -82,7 +82,7 @@ def main():
     def reference(owner, token):
         token = token.strip('"')
         path = token if token.startswith('/') else posixpath.normpath(posixpath.join(posixpath.dirname(owner), token))
-        assert path in records, (owner, token)
+        assert path in records, {'source_path': owner, 'reference': token}
         return path
 
     def install(path, key, value, anchor):
