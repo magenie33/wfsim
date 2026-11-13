@@ -1977,6 +1977,10 @@ buttons, whose bottom run blocks remain in the jump index. Results stay in
 their original containers. Disabled controls also disable their shortcuts.
 Compact page tabs stay below the header on desktop and phone; the active phone
 tab and side controls remain inside the viewport.
+Empty library results retain their document height and scroll position while
+the toolbar compacts, return to their expanded layout at the top, and remain
+stable in both languages across desktop and phone dimensions, resizing and
+toolbar updates.
 
 ## `check_riven_pool`
 

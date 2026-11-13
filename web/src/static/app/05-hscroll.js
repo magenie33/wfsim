@@ -105,7 +105,12 @@ hscrollSoon();
 
 // One measured offset keeps page tabs and local sticky controls below the shell.
 let stickyHeaderFrame = 0;
-function refreshStickyHeader() {
+const stickyToolbarSizes = new WeakMap();
+function refreshStickyHeader(records) {
+  if (Array.isArray(records)) for (const record of records) {
+    const toolbar = record.target.closest?.('.library-toolbar');
+    if (toolbar) stickyToolbarSizes.delete(toolbar);
+  }
   if (stickyHeaderFrame) return;
   stickyHeaderFrame = requestAnimationFrame(() => {
     stickyHeaderFrame = 0;
@@ -116,7 +121,24 @@ function refreshStickyHeader() {
     const tabHeight = tabs?.offsetHeight || 0;
     root.style.setProperty('--shell-header-height', height + 'px');
     root.style.setProperty('--page-tabs-height', tabHeight + 'px');
-    root.classList.toggle('page-tabs-stuck', !!tabs && tabs.getBoundingClientRect().top <= height + 1);
+    const stuck = !!tabs && tabs.getBoundingClientRect().top <= height + 1;
+    const wasStuck = root.classList.contains('page-tabs-stuck');
+    const toolbars = [...document.querySelectorAll('.library-toolbar')].filter(el => el.offsetParent !== null);
+    const measure = toolbars.filter(el => stickyToolbarSizes.get(el)?.width !== el.offsetWidth);
+    if (measure.length) {
+      root.classList.remove('page-tabs-stuck');
+      for (const el of measure) stickyToolbarSizes.set(el, {width:el.offsetWidth, height:el.getBoundingClientRect().height});
+    }
+    // Reserve space before shrinking: a shorter document clamps scrollY at its end.
+    if (measure.length || stuck !== wasStuck) for (const el of toolbars) {
+      el.style.setProperty('--library-toolbar-gap', stickyToolbarSizes.get(el).height + 'px');
+    }
+    root.classList.toggle('page-tabs-stuck', stuck);
+    for (const el of toolbars) {
+      const size = stickyToolbarSizes.get(el);
+      if (stuck && size.compact === undefined) size.compact = el.getBoundingClientRect().height;
+      el.style.setProperty('--library-toolbar-gap', (stuck ? Math.max(0, size.height - size.compact) : 0) + 'px');
+    }
     const selected = tabs?.querySelector('.sel');
     if (selected && selected !== tabs.stickySelected) {
       const r = selected.getBoundingClientRect(), host = tabs.getBoundingClientRect();

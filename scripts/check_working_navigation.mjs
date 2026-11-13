@@ -81,6 +81,47 @@ try {
   app.check('card order and dimensions survive reload',JSON.stringify(persisted.order)===JSON.stringify(layout.first)&&persisted.width===layout.width);
   const reset=await app.evaluate(`(()=>{document.querySelector('[data-layout-reset]').click();const n=$('opt-run-block');return [...n.parentElement.children].filter(n=>n.dataset.module==='optimizer').map(n=>n.id).join(',')==='opt-block,opt-fight-block,opt-run-block'&&n.style.width==='';})()`);
   app.check('default layout restores authored order and natural dimensions',reset);
+  for (const lang of ['en','zh']) {
+    if (lang==='zh') await app.setLang(lang,2000);
+    await app.load('/weapons/Laetum?filter=score%20%3E%201e30&view=library',3000);
+    app.check('the scroll fixture has an empty library',await app.evaluate(`!!document.querySelector('#library-results .fd-empty')&&!document.querySelector('#build-finder tr.fr')`));
+    for (const [width,height] of [[1353,919],[864,896],[1440,1000],[1353,959],[864,936],[390,844]]) {
+      await app.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
+      const empty=await app.evaluate(`(async()=>{
+        const wait=async(n)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
+        scrollTo(0,0);await wait(4);
+        const root=document.documentElement,bar=document.querySelector('#library-results .library-toolbar');
+        const fullHeight=root.scrollHeight,expanded=bar.offsetHeight,frames=[];
+        scrollTo(0,1e6);const bottom=scrollY;
+        for(let i=0;i<48;i++){
+          await wait(1);frames.push({y:scrollY,height:root.scrollHeight,stuck:root.classList.contains('page-tabs-stuck')});
+        }
+        const compact=bar.offsetHeight,stuck=root.classList.contains('page-tabs-stuck');
+        const tabs=$('module-tabs').getBoundingClientRect(),header=document.querySelector('.topbar').getBoundingClientRect();
+        scrollTo(0,0);await wait(4);
+        return {fullHeight,bottom,expanded,compact,stuck,pinned:Math.abs(tabs.top-header.bottom)<2,
+          changes:frames.filter((f,i)=>i&&f.stuck!==frames[i-1].stuck).length,
+          stable:frames.every(f=>f.height===fullHeight&&Math.abs(f.y-bottom)<1),
+          top:!root.classList.contains('page-tabs-stuck')&&bar.offsetHeight===expanded&&root.scrollHeight===fullHeight};
+      })()`);
+      const label=lang+' '+width+'x'+height;
+      app.check('empty library preserves page height and scroll position at '+label,empty.stable,JSON.stringify(empty));
+      app.check('empty library settles its sticky state at '+label,empty.changes<=1&&(!empty.stuck||empty.pinned&&empty.compact<empty.expanded),JSON.stringify(empty));
+      app.check('scrolling to the top restores the toolbar at '+label,empty.top,JSON.stringify(empty));
+    }
+    await app.evaluate('scrollTo(0,1e6)');await app.sleep(100);
+    await app.send('Emulation.setDeviceMetricsOverride',{width:1353,height:919,deviceScaleFactor:1,mobile:false});
+    await app.sleep(100);
+    const changed=await app.evaluate(`(async()=>{
+      const root=document.documentElement,status=$('library-stat-status'),bar=document.querySelector('#library-results .library-toolbar');
+      status.textContent='Checking build attributes';status.hidden=false;
+      for(let i=0;i<6;i++)await new Promise(requestAnimationFrame);
+      const stuck=root.classList.contains('page-tabs-stuck'),height=root.scrollHeight,compact=bar.offsetHeight;
+      scrollTo(0,0);for(let i=0;i<6;i++)await new Promise(requestAnimationFrame);
+      return {stuck,height,expandedHeight:root.scrollHeight,compact,expanded:bar.offsetHeight};
+    })()`);
+    app.check('resizing and changing toolbar content preserve its document space',changed.stuck&&changed.height===changed.expandedHeight&&changed.compact<changed.expanded,JSON.stringify(changed));
+  }
   await app.load('/warframes/Prototype/builder',5000);
   await app.evaluate(`(()=>{const state=wfBlank('prototype');storePresetList(WF_BUILDS,[{id:'library-probe',name:'Library probe',savedAt:1,state}],'prototype');})()`);
   await app.load('/warframes/Prototype',4000);
