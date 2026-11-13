@@ -38,7 +38,7 @@ const r = await evaluate(`(async () => {
   // unmodded Laetum body shot is 160 — enough to break the shield and not
   // enough to make the leak hard to read.
   sim.enemy = 'crewman'; sim.level = 1; sim.steel_path = false; sim.eximus = false;
-  sim.duration = 6; sim.runs = 12; sim.headshot_pct = 0;
+  sim.duration = 6; setSimRuns(12); sim.headshot_pct = 0;
   sim.formation = []; sim.aim_at = null;
   markScenarioDirty && markScenarioDirty();
   // A BUILD, and the check needs one. Every assertion below passed for a month
@@ -346,8 +346,8 @@ check(`${tag} the rows add up to the report's own engagement`,
 //
 // Every assertion about misses above passes perfectly on a fight that has none,
 // which is the shape of a vacuous check this repo has been caught by before.
-// So a pellet is MADE to miss: the target is pushed out to 40 m, where the
-// cone is wider than a body, and the same claims are asked of a run that
+// So a pellet is MADE to miss: unaimed fire at 40 m has a wider cone than
+// a body, and the same claims are asked of a run that
 // actually produces them.
 const m = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -355,21 +355,21 @@ const m = await evaluate(`(async () => {
   // FAR ENOUGH THAT THE CONE IS WIDER THAN A BODY. The arena is the only place
   // a position is set, so this moves the body rather than typing a distance.
   sim.target_at = [0, 40];
-  sim.duration = 8; sim.runs = 8;
+  sim.aiming = false;
+  sim.duration = 8; setSimRuns(8);
   markScenarioDirty && markScenarioDirty();
   await sleep(500);
-  document.querySelector('#run-sim').click();
-  for (let i = 0; i < 90 && !document.querySelector('#rec-host'); i++) await sleep(400);
-  await sleep(800);
-  const load = document.querySelector('#rec-load');
-  if (load) load.click();
-  for (let i = 0; i < 60 && !document.querySelector('.rec-t'); i++) await sleep(300);
+  await runSim();
+  if (recWinOpen()) { recWin.close(); await sleep(300); paintRecord(shownResult.r); }
+  await loadRecord(shownResult.r, 0, null);
   await sleep(500);
   const ev = (recordState && recordState.events) || [];
+  out.record = { loading: recordState?.loading, error: recordState?.error, events: ev.length,
+    matches: recordState?.key === recordKey(shownResult.r) };
   const byId = new Map(ev.map((e) => [e.id, e]));
   const misses = ev.filter((e) => e.kind === 'miss');
   out.misses = misses.length;
-  out.pellets = ev.filter((e) => e.kind === 'hit').length + misses.length;
+  out.shots = ev.filter((e) => e.kind === 'shot').length;
   out.reasons = [...new Set(misses.map((e) => e.reason))];
   out.fromShots = misses.every((e) => (byId.get(e.cause) || {}).kind === 'shot');
   out.causeNothing = ev.every((e) => (byId.get(e.cause) || {}).kind !== 'miss');
@@ -384,7 +384,7 @@ const m = await evaluate(`(async () => {
 })()`);
 
 check(`${tag} a wide shot MISSES, and the record says so`, m.misses > 0,
-  `${m.misses} of ${m.pellets} pellets at 40 m`);
+  `${m.misses} misses across ${m.shots} shots at 40 m; ${JSON.stringify(m.record)}`);
 check(`${tag} ...each with a reason`, m.misses > 0 && m.reasons.every(Boolean),
   (m.reasons || []).join(" / "));
 check(`${tag} ...caused by the shot and causing nothing`,
@@ -456,7 +456,7 @@ const live = await evaluate(`(async () => {
   // the fights this panel had to be paged for — and the paging assertions at
   // the bottom of this file pass VACUOUSLY on a record that fits on one page.
   // A real board build over a minute is thousands of rows.
-  sim.duration = 60; sim.runs = 3;
+  sim.duration = 60; setSimRuns(3);
   markScenarioDirty && markScenarioDirty();
   await sleep(400);
   document.getElementById('run-sim').click();

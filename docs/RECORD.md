@@ -144,6 +144,10 @@ keeps "a measurement costs its summary" intact. `/api/simulate` answers with
 the benchmark fight's RNG state as two u32 halves, which is the handle that makes
 the log the report's own fight.
 
+The page sends the measurement's captured request with that RNG state. Editor
+changes do not alter the record's build, fight or identity. Each page of a
+record read uses the same request, including resolved linked builds.
+
 ## A long record is paged, and it can leave this window
 
 **A LONG RECORD IS PAGED, AND IT CAN LEAVE THIS WINDOW.** The densest build

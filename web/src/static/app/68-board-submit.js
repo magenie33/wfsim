@@ -575,7 +575,7 @@ function boardProjection() {
     ensureBoardCell(w.id, body.benchmark, renderMods); return null;
   }
   const p = loadPresetList(BUILDS).find((z) => presetId(z) === activePreset);
-  const r = p && (resultLatest(presetWeapon(), presetId(p)) || {}).r;
+  const r = p && matchingResult()?.r;
   if (!r || !w.id) return null;
   const met = metricOf((scenarioNamed(activeScenario) || {}).metric);
   const mine = metricValue(met, r);

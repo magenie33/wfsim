@@ -17,7 +17,8 @@ let recordState = null;
 /// A record is only meaningful for the run it was taken from, so it is thrown
 /// away whenever the result it explains is.
 function recordKey(r) {
-  return `${simKey()}|${(r.run || []).join(",")}`;
+  const context = shownResult?.r === r ? shownResult.context : null;
+  return `${context?.id || context?.key || simKey()}|${(r.run || []).join(",")}`;
 }
 
 function recordMarkup(r) {
@@ -124,18 +125,18 @@ const RECORD_MAX_PAGES = 40;
 /// stream and a floating number can still name its row across a boundary.
 async function loadRecord(r, from, to, limit = RECORD_LIMIT, pages = 1) {
   const key = recordKey(r);
+  let request;
+  try { request = resultRequest(r, { run: r.run }); }
+  catch (error) {
+    recordState = { key, from, to, limit, loading: false, error: String(error.message || error) };
+    paintRecord(r);
+    return;
+  }
   recordState = { key, from, to, limit, loading: true, body: null, filter: "all", at: 0,
                   page: 0, pages };
   paintRecord(r);
-  // THE BUILD AND THE FIGHT, exactly as `runSim` sends them. `theFight()` is
-  // the SCENARIO — it carries no mods, no mode, no evolutions, no riven — so a
-  // record asked for with it alone was computed for a BLANK build and explained
-  // a fight nobody ran. Worse than wrong: with no `evolutions` the parser hands
-  // the Incarnon form over free, so the record opened already transmuted while
-  // the report beside it had earned the form.
-  //
-  // The pairing is the whole claim this panel makes, so it is written the same
-  // way the run is: `buildPayload()` then the fight, one line apart.
+  // Every page explains the captured build and fight, even if the editor moves
+  // while a previous page is being read.
   // `to` IS OMITTED WHEN THERE IS NONE, never sent as null: the server reads a
   // missing key as "the whole fight" and a null one as zero, which silently
   // truncated the window to nothing after the opening events.
@@ -143,8 +144,7 @@ async function loadRecord(r, from, to, limit = RECORD_LIMIT, pages = 1) {
   const events = [];
   let out = null, dropped = 0;
   for (let page = 0; page < Math.max(1, pages); page++) {
-    out = await api("/api/log",
-      { ...buildPayload(), ...theFight({ run: r.run, ...win, limit, skip: events.length }) });
+    out = await api("/api/log", { ...request, ...win, limit, skip: events.length });
     if (!recordState || recordState.key !== key) return;  // the result moved on
     const got = (out && out.events) || [];
     events.push(...got);

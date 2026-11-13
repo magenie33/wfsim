@@ -304,5 +304,6 @@ function renderSim() {
   renderBoardConsent();
   refreshBoardDoor();
   renderQuickCalc();
+  renderStoredSimResult();
 }
 

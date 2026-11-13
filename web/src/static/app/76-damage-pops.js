@@ -29,8 +29,8 @@ const POP_KIND_CLASS = {
 // call and the heat map use, so a number lands on the body the rest of the
 // panel is talking about.
 const popBodyAt = (i) => (i === 0
-  ? (sim.target_at || [0, 0.5])
-  : (((sim.formation || [])[i - 1] || {}).at || null));
+  ? (resultFight().target_at || [0, 0.5])
+  : (((resultFight().formation || [])[i - 1] || {}).at || null));
 
 /// HOW MANY NUMBERS ONE FRAME MAY SHOW. Twelve, and the BIGGEST win: keeping
 /// the first twelve would be arbitrary — which twelve depends on the order the
@@ -226,8 +226,10 @@ async function startFromResult() {
   return { added, starts: opt.starts.length };
 }
 
-function renderResults(r, testedAt, build) {
-  shownResult = { r, at: testedAt, build };
+function renderResults(r, testedAt, build, context) {
+  context ||= shownResult?.r === r ? shownResult.context : resultContext();
+  shownResult = { r, at: testedAt, build, context };
+  const fight = resultFight();
   // …AND THE BUILD CARD WITH IT: the action priority list it prints is this
   // run's answer, so a new verdict is a new list (`aplHtml`).
   renderSimBuild();
@@ -274,17 +276,17 @@ function renderResults(r, testedAt, build) {
     // these is a knob in the scenario, and every one of them is the reader's
     // claim about their own play rather than this engine's finding.
     const assumed = [
-      chip(sim.aiming ? tr("aiming throughout") : tr("firing from the hip")),
-      chip(`${tr("Headshots")} ${Math.round(sim.headshot_pct || 0)}%`),
-      sim.invisible ? chip(tr("invisible")) : "",
-      sim.airborne ? chip(tr("airborne")) : "",
-      sim.sliding ? chip(tr("sliding")) : "",
-      sim.aim_gliding ? chip(tr("aim gliding")) : "",
-      sim.channeling ? chip(tr("channeling")) : "",
-      sim.infinite_ammo ? chip(tr("ammo pickups keep coming")) : chip(tr("its own reserve, and no pickups")),
-      chip(sim.melee_equipped ? tr("melee drawn") : tr("quick melee")),
-      (sim.abilities || []).length ? chip(trF("{n} abilities held up", { n: sim.abilities.length })) : "",
-      (sim.auras || []).length ? chip(trF("{n} squad auras", { n: sim.auras.length })) : "",
+      chip(fight.aiming ? tr("aiming throughout") : tr("firing from the hip")),
+      chip(`${tr("Headshots")} ${Math.round(fight.headshot_pct || 0)}%`),
+      fight.invisible ? chip(tr("invisible")) : "",
+      fight.airborne ? chip(tr("airborne")) : "",
+      fight.sliding ? chip(tr("sliding")) : "",
+      fight.aim_gliding ? chip(tr("aim gliding")) : "",
+      fight.channeling ? chip(tr("channeling")) : "",
+      fight.infinite_ammo ? chip(tr("ammo pickups keep coming")) : chip(tr("its own reserve, and no pickups")),
+      chip(fight.melee_equipped ? tr("melee drawn") : tr("quick melee")),
+      (fight.abilities || []).length ? chip(trF("{n} abilities held up", { n: fight.abilities.length })) : "",
+      (fight.auras || []).length ? chip(trF("{n} squad auras", { n: fight.auras.length })) : "",
     ].join("");
     const bodies = (r.bodies || []).length || 1;
     const pool = (label, v) => (v > 0
@@ -305,9 +307,9 @@ function renderResults(r, testedAt, build) {
         <div class="fs-h">${escHtml(tr("Being fought — simulated"))}</div>
         <div class="fs-card">
           <div class="fs-who">
-            <div class="fs-wn">${escHtml(t.name || sim.enemy || "")}</div>
+            <div class="fs-wn">${escHtml(t.name || fight.enemy || "")}</div>
             <div class="fs-wb">${escHtml([
-              `${tr("Level")} ${t.level ?? sim.level}`,
+              `${tr("Level")} ${t.level ?? fight.level}`,
               empowermentLabel(t.steel_path, t.empowered),
               t.eximus ? tr("Eximus") : "",
             ].filter(Boolean).join(" · "))}</div>
@@ -376,7 +378,7 @@ function renderResults(r, testedAt, build) {
       `<div class="meter">${rows}</div>${each}`);
   };
 
-  const met = metricOf(sim.metric);
+  const met = metricOf(fight.metric);
   const heroNum = fmtScore(metricValue(met, r));
   // The UNIT belongs beside the number, not under it: "5.29" on one line and
   // "KPM · …" starting the next read as two facts. Set
@@ -405,7 +407,7 @@ function renderResults(r, testedAt, build) {
   const heroSub = alt +
     `${n2(r.score)} kill score in ${n0(r.duration)}s · ` + (killed
     ? `${n2(r.kills)} killed · ~${isFinite(ttk) ? ttk.toFixed(2) : "∞"}s avg per kill`
-    : `${pc(r.score)} of one ${LN("enemies", sim.enemy, t.name || "enemy")}'s EHP drained`)
+    : `${pc(r.score)} of one ${LN("enemies", fight.enemy, t.name || "enemy")}'s EHP drained`)
     + spread;
   // No Forma/capacity here — the simulator reports EFFECTS only; build
   // legality is the Builder's business.
@@ -633,7 +635,8 @@ function renderResults(r, testedAt, build) {
   // that one was an average of a hundred fights and the other was one fight.
   $("sim-results").innerHTML = `
     <div class="results">
-      ${calculationRecordHtml(results.find(record => record.at === testedAt && record.weapon === presetWeapon()) || { at: testedAt, engine: r.computation?.engine, computation: r.computation })}
+      <div class="sim-viewing" id="sim-result-context" role="status" hidden></div>
+      ${calculationRecordHtml(context.id ? context : { at: testedAt, engine: r.computation?.engine, computation: r.computation })}
       ${zone(1, tr("The result"), tr("this build's output in this fight"), `
         <div class="hero"><div><div class="hero-label">${escHtml(trF("Average of {runs} runs", { runs: n0(r.runs) }))}</div><div class="hero-num">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
         <div class="row-label">${escHtml(trF("averaged over {runs} fights", { runs: n0(r.runs) }))} <span class="who-tag">${escHtml(tr("whole fight"))}</span></div>
@@ -727,7 +730,7 @@ function renderResults(r, testedAt, build) {
   const fightScene = $("fight-scene");
   if (fightScene && (r.bodies || []).length) {
     const { heat, idAt } = bodyHeat(r);
-    mountArena(fightScene, sim, allEnemies().find((e) => e.id === sim.enemy) || allEnemies()[0], {
+    mountArena(fightScene, fight, allEnemies().find((e) => e.id === fight.enemy) || allEnemies()[0], {
       readonly: true,
       heat,
       // PICKING HERE OPENS THAT BODY, the same gesture the roll call below
@@ -736,6 +739,7 @@ function renderResults(r, testedAt, build) {
         i === 0 ? tr("the body the weapon was on") : tr("an enemy the shot reached")),
     });
   }
+  refreshResultStatus();
   wireReplay(r);
   // Chart hover: crosshair + tooltip on the nearest time bucket.
   const wrap = $("sim-results").querySelector(".tl-wrap");

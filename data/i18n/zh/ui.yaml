@@ -2325,6 +2325,7 @@ ui:
   "showing the run of {t}": "正在看 {t} 那次运行的结果"
   "back to the newest": 回到最新
   "build or fight changed since": 之后改过配装或场景
+  "Run this configuration again to read its combat record.": "请重新模拟这套配置后再读取战斗记录。"
   "engine not recorded": 未记录引擎
   "older engine": 旧引擎
   "not recorded": 未记录

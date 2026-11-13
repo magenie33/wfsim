@@ -17,11 +17,12 @@ const { evaluate, check, sleep, send } = app;
 const r = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
-  history.pushState({},'','/weapons/Cernos_Prime/builder'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Braton_Prime/builder'); route(); await sleep(3000);
+  if (officialScenarioActive()) copyActiveScenario();
   ['primed_cryo_rounds','serration','point_strike','vital_sense'].forEach((m,i)=>{
     if (modById(m)) { slots[i].mod=m; slots[i].rank=modById(m).max_rank; }});
   arcanes=['primary_frostbite'];
-  sim.level=300; sim.steel_path=true; sim.duration=60; sim.runs=8;
+  sim.level=300; sim.steel_path=true; sim.duration=60; setSimRuns(8);
   markPresetDirty(); markScenarioDirty(); renderMods(); refreshPanel(); await sleep(2500);
   document.querySelectorAll('.tab').forEach(x=>{ if(/Sim/i.test(x.textContent)) x.click(); });
   await sleep(1200);
@@ -283,7 +284,7 @@ check("a meter source expands and collapses for real",
     r.legend.length === r.segs.length && r.legend.every((l) => l.icon),
     JSON.stringify(r.legend));
   // Same colours as the meter: one palette, keyed on the type, used twice.
-  const meterColors = new Set(r.meterRows.filter((x) => x.sub).map((x) => x.color));
+  const meterColors = new Set(r.meterRows.filter((x) => x.icon).map((x) => x.color));
   check("...and its colours are the meter's",
     r.segs.every((x) => meterColors.has(x.color)),
     JSON.stringify([r.segs.map((x) => x.color), [...meterColors]]));
