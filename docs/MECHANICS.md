@@ -2887,7 +2887,7 @@ The native OnAgentCreated callback installs these full Shield MULTIPLY values;
 it does not take their square root or add another count clamp. Shield mode
 installation is assumed to precede level scaling, as for Steel Path. Thus the
 full mode factor enters both maximum queries, approximately its square before
-rounding. This ordering is the owner's adopted model and lacks a mode-specific
+rounding. This ordering is assumed and lacks a mode-specific
 gameplay control. Mission squad limits and health/armor paths are separate.
 
 Armor is multiplied on the scaled value and still ends at 2,700, which no

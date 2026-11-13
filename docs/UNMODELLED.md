@@ -1055,7 +1055,7 @@ Live mode/103entries, complete spawn ordering, dynamic table/proxy/source
 installation and generic modifier enable changes remain partial. Shield
 maximum queries and level writeback use native binary32/integer boundaries;
 other global pool curves do not claim every native boundary. Steel ordering
-and late Shield Disruption match M8. Empowered modes use the owner's assumed
+and late Shield Disruption match M8. Empowered modes assume the
 before-level installation order; no mode-specific control closes that timing,
 the complete callback lifecycle or live membership updates. The native armor
 callback also depends on mission tier; the represented mission armor policy
