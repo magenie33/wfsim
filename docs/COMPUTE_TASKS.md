@@ -310,6 +310,10 @@ acknowledgement commit together, after rechecking the source revision. An
 interrupted claim expires; a changed source remains retryable. Registration
 reuses accepted results and preserves existing task rounds, positions and leases.
 Missing source data and refreshes not yet due remain explicitly deferred.
+With the dial at zero, the API reports `mode=disabled`, `paused=true` and
+`complete=false`. Ordinary maintenance reports retained sources and incomplete
+recovery, then leaves registration paused. This status neither fails a normal
+maintenance run nor claims that pending calculations have finished.
 
 Historical recovery seeks at most 2,000 existing pending keys after a durable
 database cursor. It yields while registration is pending. New writes are captured

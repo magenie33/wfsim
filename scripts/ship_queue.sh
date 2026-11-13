@@ -142,6 +142,10 @@ backfill() {
 
 admit_pending() {
   factory_ask '{"admission":true}' || { backfill_error "registration refused" 1 0 '[]'; return 1; }
+  if jq -se 'length == 1 and (.[0] | .ok == true and .mode == "disabled" and .paused == true and .complete == false)' "$ASK_OUT" >/dev/null; then
+    echo "queue: registration paused; sources retained; recovery incomplete"
+    return 0
+  fi
   if ! jq -se 'length == 1 and (.[0] | .ok == true and .mode == "admission"
       and (.asked | type == "number" and . >= 0 and floor == .)
       and (.pending | type == "boolean") and (.has_deferred | type == "boolean")
@@ -353,6 +357,12 @@ case "${BACKFILL_TEST_MODE:-}" in
   admission)
     printf '{"ok":true,"mode":"admission","asked":250,"pending":true,"has_deferred":false,"recovery":{"complete":false,"scanned":12000000}}' > "$out"
     printf '200'; exit 0 ;;
+  admission-disabled)
+    printf '{"ok":true,"mode":"disabled","paused":true,"complete":false}' > "$out"
+    printf '200'; exit 0 ;;
+  admission-disabled-complete)
+    printf '{"ok":true,"mode":"disabled","paused":true,"complete":true}' > "$out"
+    printf '200'; exit 0 ;;
 esac
 printf '{"result":[{"results":[],"success":true}],"success":true}' > "$out"
 printf '200'
@@ -364,6 +374,13 @@ cat >> "$PWD/sent.log"; echo >> "$PWD/sent.log"
 printf '{"result":[{"results":[],"success":true}],"success":true}'
 OK
   chmod +x "$DIR/bin/db"
+  BACKFILL_TEST_MODE=admission-disabled admit_pending > out.txt 2> err.txt \
+    && grep -q 'registration paused; sources retained; recovery incomplete' out.txt \
+    && say ok "disabled registration reports a retained, incomplete pause without failing maintenance" \
+    || say FAIL "disabled registration: $(cat err.txt)"
+  if BACKFILL_TEST_MODE=admission-disabled-complete admit_pending > out.txt 2> err.txt; then
+    say FAIL "a disabled reply claimed recovery completion"
+  else say ok "disabled registration cannot claim completion";fi
   BACKFILL_TEST_MODE=admission admit_pending > out.txt 2> err.txt \
     && grep -q 'historical scan 12000000, complete=false; pending=true' out.txt \
     && say ok "bounded registration reports durable progress without requiring a complete scan" \

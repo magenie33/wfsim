@@ -210,7 +210,7 @@ const ASK_MAX = 1000;
 const BACKFILL_CHUNK = 20_000;
 export async function recoverBoardTasks(env, engine, now = Date.now(), { recover = true } = {}) {
   const dials = await dialsOf(env, now);
-  if (dials.board_admission !== 1) return { ok: true, mode: "disabled" };
+  if (dials.board_admission !== 1) return { ok: true, mode: "disabled", paused: true, complete: false };
   return advanceBoardAdmission(env, { engine, now, recover, recoveryOpenMax: dials.board_recovery_open_max, rowAsk, register: facts().demandAll });
 }
 async function ask(request, env) {
@@ -223,7 +223,7 @@ async function ask(request, env) {
   if (b.admission === true) {
     if (!engine) return json({ok:false,error:"served engine unavailable"},503);
     const result = await recoverBoardTasks(env, engine, now);
-    return result.mode === "disabled" ? json({ ok: false, error: "board admission is not enabled" }, 409) : json(result);
+    return json(result);
   }
   // EVERY OWED ROW IS ASKED FOR, or the clients are never handed it and only the
   // scorer measures it: a run stopped between the queue's write and the ask

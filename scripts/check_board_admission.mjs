@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { pgDb, placeholders, postgresClient } from "../worker/db.js";
 import { factory, canon } from "../worker/tasks.js";
-import { BOARD_PRODUCERS, rowAsk, recoverBoardTasks } from "../worker/board_tasks.js";
+import { BOARD_PRODUCERS, rowAsk, recoverBoardTasks, boardTasksRoute } from "../worker/board_tasks.js";
 import { forgetDials, setDial, DIAL_DEFAULTS } from "../worker/dials.js";
 import { advanceBoardAdmission } from "../worker/board_admission.js";
 import { officialRoute } from "../worker/factory.js";
@@ -64,6 +64,12 @@ try {
   if (process.env.WFSIM_ANSWER_BULK === "1") await setDial(env,"answer_bulk",1,"fixture",now);
   forgetDials();
   check("registration remains disabled until its rollout dial is enabled", (await recoverBoardTasks(env,"e",now)).mode === "disabled");
+  const pausedResponse = await boardTasksRoute(new Request('https://x/api/board/ask', {
+    method:'POST',headers:{authorization:'Bearer paused'},body:JSON.stringify({admission:true}),
+  }),{...env,FACTORY_TOKEN:'paused',ASSETS:{fetch:async()=>new Response(JSON.stringify({engine:'e'}))}},'/api/board/ask');
+  const paused = await pausedResponse.json();
+  check("disabled registration is an explicit successful pause, never a completed recovery", pausedResponse.status === 200
+    && paused.ok === true && paused.mode === 'disabled' && paused.paused === true && paused.complete === false);
   await assert.rejects(db.prepare("SELECT board_admission_finish(?::text)").bind(JSON.stringify('[]')).run());
   await assert.rejects(db.prepare("SELECT board_admission_retry(?::text,?::text,'retry')").bind(JSON.stringify('[]'),at).run());
   check("double-encoded receipts fail without acknowledging work", await count("state_board_task_admissions") === 0);

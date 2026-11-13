@@ -218,6 +218,9 @@ another candidate or result. `WFSIM_BOARD_ADMISSION_TEST_URL` selects an isolate
 loopback PostgreSQL schema and adds concurrent consumers. Runtime CI runs this
 path with the production driver. `--break-trigger`, `--break-checkpoint`,
 `--break-ack-transaction` and `--break-official-fence` inject distinct failures.
+The disabled API path must return a successful, explicitly incomplete pause;
+the queue script accepts that status and rejects a disabled reply claiming
+completion.
 
 `check_default_parent.mjs` runs the native dry inventory across every ruler
 and mode. A real lower-rank record keeps its frozen identity and waits for
