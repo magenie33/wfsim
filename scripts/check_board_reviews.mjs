@@ -71,7 +71,7 @@ await check('only a current-engine stored row can ask for review',async()=>{
 });
 await check('ordinary scorer receipts never answer a fresh review round',async()=>{
  await tell([{identity,ruler,mode,score:999,metric:'kpm',work:100}],engine,async(action,body)=>{
-  assert.equal(action,'answer');assert.ok(!body.producers.includes('board_review'));return {states:[]};
+  assert.equal(action,'answer');assert.ok(!body.producers.includes('board_review'));return {states:[null]};
  });
 });
 const cached=await questionId('simulate',{record,ruler,mode});

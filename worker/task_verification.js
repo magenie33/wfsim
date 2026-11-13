@@ -54,14 +54,34 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
   }
 
 
-  /// THE OFFICIAL MACHINES ANSWER WITHOUT A LEASE: they are trusted, and what they
-  /// measured is the fact whoever held the question. Returns the question's
-  /// state after it, or null for a question that does not exist.
-  async function answerOfficial(env, w, { question, ...a }, now = Date.now()) {
+  /// Captured official work names its round and claim. Unqualified answers remain
+  /// available to older official clients and independent audit witnesses.
+  async function answerOfficial(env, w, { question, task_id, lease, ...a }, now = Date.now()) {
     const db = env.LIBRARY;
     const q = await db.prepare("SELECT * FROM state_compute_work WHERE id = ?").bind(question).first();
     if (!q) return null;
-    await recordMany(env, { ...w, official: true }, [{ q, a }], now);
+    if (task_id !== undefined) {
+      if (q.task_id !== task_id) return null;
+      const canonical = verbs[q.verb].canon(a.result, a.work);
+      if (["fact", "spot"].includes(q.state) && q.fact_engine === a.engine && q.canon === canonical) {
+        await deliver(env, q, now);
+        return q.state;
+      }
+      const recorded = await db.prepare(`SELECT 1 FROM state_compute_candidate_answers
+        WHERE question=?1::text AND task_id=?2::bigint AND engine=?3::text AND device=?4::text AND official=1 AND canon=?5::text LIMIT 1`)
+        .bind(question,task_id,a.engine,w.device,canonical).first();
+      if (recorded) {
+        await settleMany(env,[question],a.engine,now);
+        return (await db.prepare("SELECT state FROM state_compute_work WHERE id = ?").bind(question).first()).state;
+      }
+      if (q.lease !== lease || q.leased_to !== w.device) return null;
+      q.official_claim = lease;
+    }
+    try { await recordMany(env, { ...w, official: true }, [{ q, a }], now); }
+    catch (error) {
+      if (error.message?.includes("official claim changed before reception")) return null;
+      throw error;
+    }
     return (await db.prepare("SELECT state FROM state_compute_work WHERE id = ?").bind(question).first()).state;
   }
 
@@ -74,6 +94,9 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     // this engine is not written again: a beacon on the way out raced a sync still
     // in flight, both checked before either wrote, and both rows landed.
     const ordered = [...items].sort((a, b) => a.q.id < b.q.id ? -1 : a.q.id > b.q.id ? 1 : 0);
+    const guards = ordered.filter(({ q }) => q.official_claim).map(({ q }) => db.prepare(
+      "SELECT factory_assert_official_claim(?1::text,?2::bigint,?3::text,?4::text)")
+      .bind(q.id, q.task_id, q.official_claim, w.device));
     const rows = ordered.map(({ q, a }) => ({ question: q.id, task_id: q.task_id, engine: a.engine,
       canon: verbs[q.verb].canon(a.result, a.work), result: JSON.stringify(a.result), work: a.work ?? 0,
       compute_ms: a.compute_ms ?? null, counts: a.counts ? JSON.stringify(a.counts) : null, lanes: a.lanes ?? null }));
@@ -91,7 +114,8 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
         rows,
         queue: queued ? { engine, peer: peer || "", joined: join ? 1 : 0 } : null,
         learn: official ? [] : answerCosts(items), share: PRODUCER_MEAN_SHARE };
-      await db.batch([db.prepare("SELECT factory_record_answers(?1::text)").bind(JSON.stringify(body))]);
+      const lock = guards.length ? [db.prepare("SELECT pg_advisory_xact_lock(hashtextextended(?1::text, 0))").bind(w.device)] : [];
+      await db.batch([...lock, ...guards, db.prepare("SELECT factory_record_answers(?1::text)").bind(JSON.stringify(body))]);
     } else {
       const lock = db.prepare("SELECT pg_advisory_xact_lock(hashtextextended(?1::text, 0))").bind(w.device);
       const writes = rows.map(a => db.prepare(`SELECT factory_answer(?1::text, ?2::text, ?3::text, ?4::text, ?5::text, ?6::bigint, ?7::text,
@@ -101,7 +125,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
       const queue = queued ? db.prepare("SELECT factory_queue(?1::text, ?2::text, ?3::text, ?4::bigint, ?5::text)")
         .bind(JSON.stringify(rows.map(a => a.question)), engine, peer || "", join ? 1 : 0, at) : null;
       const learnt = official ? null : learnCost(db, items);
-      await db.batch([lock, ...writes, ...(queue ? [queue] : []), ...(learnt ? [learnt] : [])]);
+      await db.batch([lock, ...guards, ...writes, ...(queue ? [queue] : []), ...(learnt ? [learnt] : [])]);
     }
     if (!official) {
       // …AND WHEN IT LAST ANSWERED and what it spent, in its hour (docs/BOARD.md

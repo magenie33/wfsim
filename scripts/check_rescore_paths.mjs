@@ -260,8 +260,11 @@ const step = (name) => {
 };
 const reconcile = readFileSync(resolve(ROOT, "scripts/reconcile_queue.sh"), "utf8");
 check(passesGate(reconcile), "explicit inventory enumeration obeys the entry line");
-check(!codeOfReconciliation().some(line => /ship_queue\.sh/.test(line) && !/--backfill/.test(line)),
+check(!codeOfReconciliation().some(line => /ship_queue\.sh/.test(line) && !/--admit/.test(line)),
   "ordinary reconciliation never creates missing-coverage batches");
+const ordinary = reconcile.match(/if \[ "\$INVENTORY_ONLY" = 0 \]; then([^]*?)\nfi/)?.[1] || '';
+check(ordinary.includes('--admit') && ordinary.includes('exit 0') && !ordinary.includes('fetch_queue'),
+  "ordinary reconciliation advances bounded registration without exporting the queue");
 function codeOfReconciliation() { return reconcile.split(NL).filter(line => !line.trim().startsWith("#")); }
 check(!/--queue-older/.test(queueWf),
   "no measured row is asked for again on the clock",
@@ -284,18 +287,21 @@ check(rescore !== null && !passesGate(rescore),
 const intakeStep = step("take in what has arrived") ?? "";
 const codeOf = (text) => text.split(NL).filter((l) => !l.trim().startsWith("#")).join(NL);
 const batchIntake = readFileSync(resolve(ROOT, 'scripts/intake_batches.mjs'), 'utf8');
-check(codeOf(intakeStep).includes('node scripts/intake_batches.mjs inbox.ndjson') && batchIntake.includes("'--asked'"),
+const buildBatches = readFileSync(resolve(ROOT,'scripts/build_batches.mjs'),'utf8');
+const buildWorkflows = readFileSync(resolve(ROOT,'worker/pg/build_workflows.sql'),'utf8');
+check(codeOf(intakeStep).includes('node scripts/intake_batches.mjs inbox.ndjson') && buildBatches.includes('build_intake_batch')
+    && buildWorkflows.includes('compute_admit_tasks'),
   "an arrival asks for the fight it named",
   "intake is the only pass that knows it; after it, nothing does");
-check(batchIntake.includes("scripts/ship_queue.sh"),
+check(batchIntake.includes("scripts/ship_builds.sh") && !batchIntake.includes("scripts/ship_queue.sh"),
   "…and the row reaches the queue",
   "a file written and never shipped is a fight nobody asked for, and the "
     + "submitter is told 'sent'");
 // AFTER THE BUILDS, because a queue row naming a build the library does not
 // hold is a row nothing can ever take.
-const asked = batchIntake.indexOf("scripts/ship_queue.sh");
-const builds = batchIntake.indexOf("scripts/ship_builds.sh");
-check(builds >= 0 && asked > builds, "…and the build lands before the row that asks for it",
+const builds = batchIntake.indexOf("path('builds.ndjson'), path('empty')");
+const spent = batchIntake.indexOf("path('empty'), path('done.txt')");
+check(builds >= 0 && spent > builds, "…and the build and captured workflow land before inbox acknowledgement",
   "a queue row naming a build the library does not hold is never taken");
 
 const jobLines = (text, name) => {

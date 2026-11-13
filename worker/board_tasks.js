@@ -19,6 +19,8 @@ import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, SCENE_FIRST_MS, VERBS, factoryAu
 import { servedRelease } from "./verify.js";
 import { retireBoardRows } from "./board_reviews.js";
 import { scoreWitnessWrites } from "./computation_records.js";
+import { advanceBoardAdmission } from "./board_admission.js";
+import { dialsOf } from "./dials.js";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
@@ -49,17 +51,27 @@ const boardProducer = {
     if (!fact.result) return [];
     const { identity, ruler, mode } = d.payload, at = iso(Date.now()), db = env.LIBRARY;
     if (fact.official) {
+      const measurement = fact.result.measurement;
+      const native = measurement && measurement.measured_by === fact.engine
+        && Number.isFinite(measurement.cost_seconds) && measurement.cost_seconds >= 0
+        && Number.isFinite(Date.parse(measurement.started_at)) && Number.isFinite(Date.parse(measurement.finished_at))
+        && measurement.started_at <= measurement.finished_at;
       return [
-        db.prepare(`UPDATE state_board_measurement_selection SET measured_by=CASE WHEN score=?4::double precision THEN measured_by ELSE ?6::text END,
-          cost_seconds=CASE WHEN score=?4::double precision THEN cost_seconds ELSE 0 END,
-          started_at=CASE WHEN score=?4::double precision THEN started_at ELSE ?1::text END,
-          review_id=CASE WHEN score=?4::double precision THEN review_id ELSE NULL END,
-          score=?4::double precision,metric=?7::text,finished_at=?1::text
-          WHERE identity=?2::text AND ruler=?3::text AND mode=?5::text AND finished_at<?1::text
+        db.prepare(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)
+          VALUES(?2::text,?3::text,?5::text,?6::text,?4::double precision,?7::text,?11::double precision,?12::text,?1::text)
+          ON CONFLICT(identity,ruler,mode) DO UPDATE SET
+          measured_by=CASE WHEN state_board_measurement_selection.score=excluded.score THEN state_board_measurement_selection.measured_by ELSE excluded.measured_by END,
+          cost_seconds=CASE WHEN state_board_measurement_selection.score=excluded.score THEN state_board_measurement_selection.cost_seconds ELSE excluded.cost_seconds END,
+          started_at=CASE WHEN state_board_measurement_selection.score=excluded.score THEN state_board_measurement_selection.started_at ELSE excluded.started_at END,
+          review_id=CASE WHEN state_board_measurement_selection.score=excluded.score THEN state_board_measurement_selection.review_id ELSE NULL END,
+          score=excluded.score,metric=excluded.metric,finished_at=excluded.finished_at
+          WHERE state_board_measurement_selection.finished_at<excluded.finished_at
             AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=state_board_measurement_selection.identity AND f.ruler=state_board_measurement_selection.ruler AND f.mode=state_board_measurement_selection.mode AND f.retired_at IS NOT NULL)
             AND (state_board_measurement_selection.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM entity_measurement_reviews r JOIN state_compute_work proof ON proof.id=r.question
               WHERE r.id=state_board_measurement_selection.review_id AND (r.task_id=?10::bigint OR r.completed_at>=?9::text) AND ?8::text IS NOT NULL))`)
-          .bind(at, identity, ruler, fact.result.score, mode,`verified:${fact.engine}`,fact.result.metric,fact.engine,fact.at || at,fact.task_id || null),
+          .bind(native ? measurement.finished_at : at, identity, ruler, fact.result.score, mode,
+            native ? measurement.measured_by : `verified:${fact.engine}`,fact.result.metric,fact.engine,fact.at || at,fact.task_id || null,
+            native ? measurement.cost_seconds : 0,native ? measurement.started_at : at),
         ...scoreWitnessWrites(db, identity, ruler, mode, at, fact),
         db.prepare("DELETE FROM state_board_pending_work WHERE build_id = ? AND ruler = ? AND mode = ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=state_board_pending_work.build_id AND f.ruler=state_board_pending_work.ruler AND f.mode=state_board_pending_work.mode AND f.retired_at IS NOT NULL)").bind(identity, ruler, mode),
       ];
@@ -196,6 +208,11 @@ export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) 
 const ASK_MAX = 1000;
 /// …AND THE QUEUED ROWS ONE BACKFILL CALL READS, each one index probe of `demands`.
 const BACKFILL_CHUNK = 20_000;
+export async function recoverBoardTasks(env, engine, now = Date.now(), { recover = true } = {}) {
+  const dials = await dialsOf(env, now);
+  if (dials.board_admission !== 1) return { ok: true, mode: "disabled" };
+  return advanceBoardAdmission(env, { engine, now, recover, recoveryOpenMax: dials.board_recovery_open_max, rowAsk, register: facts().demandAll });
+}
 async function ask(request, env) {
   if (request.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
   if (!factoryAuthed(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
@@ -203,6 +220,11 @@ async function ask(request, env) {
   try { b = await request.json(); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
   const db = env.LIBRARY, now = Date.now();
   const { engine } = await servedRelease(env);
+  if (b.admission === true) {
+    if (!engine) return json({ok:false,error:"served engine unavailable"},503);
+    const result = await recoverBoardTasks(env, engine, now);
+    return result.mode === "disabled" ? json({ ok: false, error: "board admission is not enabled" }, 409) : json(result);
+  }
   // EVERY OWED ROW IS ASKED FOR, or the clients are never handed it and only the
   // scorer measures it: a run stopped between the queue's write and the ask
   // leaves exactly that. `BACKFILL_CHUNK` queued rows a call, from `after` (the

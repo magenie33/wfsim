@@ -36,7 +36,6 @@ export async function intakeBatches(file, { intake = join(ROOT, 'target/release/
       || !Number.isFinite(deadlineSeconds) || deadlineSeconds < 0) throw new Error('invalid intake batch bounds');
   const scratch = mkdtempSync(join(tmpdir(), 'wfsim-intake-batches-'));
   const path = name => join(scratch, name), started = Date.now(), end = started + deadlineSeconds * 1000;
-  const batch = `arrivals-${new Date(started).toISOString().slice(0, 10)}`;
   const state = new DatabaseSync(path('first-builds.sqlite'));
   state.exec("PRAGMA cache_size=-2048; PRAGMA mmap_size=0; PRAGMA temp_store=FILE; CREATE TABLE state_first_build_submission_times(id TEXT PRIMARY KEY, at TEXT) WITHOUT ROWID");
   const first = state.prepare("INSERT INTO state_first_build_submission_times(id,at) VALUES(?,?) ON CONFLICT DO NOTHING");
@@ -47,7 +46,7 @@ export async function intakeBatches(file, { intake = join(ROOT, 'target/release/
   const ship = async () => {
     if (!pending.length || Date.now() >= end) return false;
     writeFileSync(path('inbox.ndjson'), pending.join('\n') + '\n');
-    await execute(intake, ['--deadline', String(Math.max(0, Math.ceil((end - Date.now()) / 1000))), '--done', path('done.txt'), '--asked', path('asked.ndjson')],
+    await execute(intake, ['--deadline', String(Math.max(0, Math.ceil((end - Date.now()) / 1000))), '--done', path('done.txt')],
       { input: path('inbox.ndjson'), output: path('builds.ndjson') });
     const builds = jsonLines(path('builds.ndjson'));
     state.exec('BEGIN');
@@ -57,10 +56,8 @@ export async function intakeBatches(file, { intake = join(ROOT, 'target/release/
     }
     state.exec('COMMIT');
     writeFileSync(path('builds.ndjson'), builds.map(build => JSON.stringify(build) + '\n').join(''));
-    writeFileSync(path('named.ndjson'), jsonLines(path('asked.ndjson')).map(row => JSON.stringify({ ...row, named: true }) + '\n').join(''));
-    // Source storage, family admission and the named calculation all precede deletion.
+    // Captured workflows admit every sourced computation before inbox acknowledgement.
     await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('builds.ndjson'), path('empty')]);
-    await execute('bash', [join(ROOT, 'scripts/ship_queue.sh'), '--require-asked', batch, 'the fight each arrival was run in', path('named.ndjson')]);
     await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('empty'), path('done.txt')]);
     result.batches++; result.builds += builds.length;
     result.arrivals += readFileSync(path('done.txt'), 'utf8').split('\n').filter(Boolean).length;

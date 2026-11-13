@@ -17,8 +17,7 @@ case "$INVENTORY_ONLY" in 0|1) ;; *) echo "inventory: INVENTORY_ONLY must be 0 o
 unset CLAIMED
 
 if [ "$INVENTORY_ONLY" = 0 ]; then
-  bash scripts/ship_queue.sh --backfill
-  bash scripts/fetch_queue.sh "$OUT"
+  bash scripts/ship_queue.sh --admit
   exit 0
 fi
 

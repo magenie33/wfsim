@@ -279,9 +279,10 @@ check("...it reads exactly what it claimed and what nobody asked for", JSON.stri
 await tell([{ identity: "late", ruler: "standard_single_target", mode: "base", score: 3, metric: "kpm", work: WORK }], "e1",
   (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:scorer" }, TOKEN));
 check("...and its answer is the fact, paying the client whose bits it reproduced", (await question("late")).state === "fact" && await credited(F) === WORK);
-check("...whose number the scorer itself writes to the board", !await fact("late"));
+check("...whose number the task system delivers to the board", (await fact("late"))?.score === 3 && !await owed("late"));
 await L.run(`INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
-  VALUES ('late', 'standard_single_target', 'base', 'abc123', 3, 'kpm', 1, 'x', '2026-01-01T00:00:00.000Z')`);
+  VALUES ('late', 'standard_single_target', 'base', 'abc123', 3, 'kpm', 1, 'x', '2026-01-01T00:00:00.000Z')
+  ON CONFLICT(identity,ruler,mode) DO UPDATE SET measured_by=excluded.measured_by,finished_at=excluded.finished_at`);
 await queue(`refresh-${today}`, "late");
 await ask(`refresh-${today}`, "late");
 const refreshed = await L.get("SELECT * FROM relation_task_consumers WHERE producer = 'refresh' AND ref = ?", "late|standard_single_target|base");

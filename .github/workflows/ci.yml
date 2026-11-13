@@ -155,12 +155,14 @@ jobs:
         env:
           WFSIM_SCORE_INPUTS_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
           WFSIM_CANCEL_QUEUE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
+          WFSIM_BOARD_ADMISSION_TEST_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
         run: |
           sudo systemctl start postgresql.service
           sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE ROLE wfsim_score_test LOGIN PASSWORD 'fixture'"
           sudo -u postgres createdb --owner=wfsim_score_test wfsim_score_inputs
           node scripts/check_score_inputs.mjs --transport-only
           node scripts/check_cancel_queue.mjs
+          WFSIM_ANSWER_BULK=1 node scripts/check_board_admission.mjs
 
   factory-cases:
     needs: [plan, runtime]

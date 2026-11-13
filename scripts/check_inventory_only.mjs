@@ -47,7 +47,7 @@ function phaseTool() {
   } else if (command === "curl") { note("popularity"); process.stdout.write("{}\n"); }
   else if (command === "python3" && args[0].endsWith("scene_rows.py")) { note("pace"); process.stdout.write(fs.readFileSync(args[3])); }
   else if (command === "python3" && args[0].endsWith("popular_order.py")) { note("order"); process.stdout.write(fs.readFileSync(0)); }
-  else if (command === "ship_queue") note(args[0] === "--backfill" ? "backfill" : "dispatch");
+  else if (command === "ship_queue") note(args[0] === "--admit" ? "admission" : "dispatch");
   else if (["purge_queue", "purge_orphans", "fetch_queue"].includes(command)) note(command);
   else throw new Error(`unexpected phase ${command}`);
 }
@@ -115,7 +115,7 @@ try {
   const invalid = ["2", "true", "bogus"].map(mode => reconcile(mode));
   check(invalid.every(result => result.status !== 0 && result.phases.length === 0), "invalid nonempty inventory modes fail before capture");
   const normal = [undefined, "0", ""].map(mode => reconcile(mode));
-  const normalPhases = ["backfill", "fetch_queue"];
+  const normalPhases = ["admission"];
   check(normal.every(result => result.status === 0 && JSON.stringify(result.phases) === JSON.stringify(normalPhases)),
     "ordinary reconciliation only recovers existing work and never enumerates, creates or purges tasks", JSON.stringify(normal.map(result => result.phases)));
 

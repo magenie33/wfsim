@@ -127,6 +127,20 @@ per call in private R2 before pruning; the unarchived daemon call returns zero.
 Both skip locked rows. Delivery, recent activity, credit and current calibration
 proof keep their retention guards.
 
+Board registration uses the same background lane and adaptive execution budget.
+Its `board_admission` dial defaults to zero. Install the additive upgrade printed
+by `node scripts/board_admission_schema.mjs` as the schema owner before deploying
+the matching worker, daemon and scoring workflow. The upgrade retains every
+business row, task, lease, result and credit; it creates no historical tasks at
+installation. Verify its functions, privileges and read-only Hyperdrive parameter
+probes, then enable the dial for a controlled nonempty registration and official
+result pass. Keep it enabled only after the work and its delivery are confirmed.
+Inspect database statement statistics and slow/error logs immediately and again
+after five minutes. PGlite and local TCP checks do not qualify that transport.
+To stop registration, set the dial to zero and retain its durable rows and
+cursor. Rollback must preserve accepted results and pending official receipts;
+the older explicit `--backfill` adapter remains available for recovery.
+
 `WFSIM_BACKGROUND_DUTY_PCT` sets each adaptive job's wall-time budget
 (1–25, default 5), not a CPU utilization limit.
 `WFSIM_BACKGROUND_MAX_MS` bounds sample backoff (60,000–3,600,000, default

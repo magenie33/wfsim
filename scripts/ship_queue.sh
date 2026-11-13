@@ -4,6 +4,7 @@
 #   scripts/ship_queue.sh <batch-id> <why> missing.ndjson
 #   scripts/ship_queue.sh --require-asked <batch-id> <why> missing.ndjson
 #   scripts/ship_queue.sh --backfill                  an order for every owed row that has none
+#   scripts/ship_queue.sh --admit                     advance durable registration once
 #   scripts/ship_queue.sh --self-test
 #
 # The reconciliation's write half. `wfsim-board --queue-missing` walks the
@@ -137,6 +138,17 @@ backfill() {
     after=$(jq -c '.after' < "$ASK_OUT")
   done
   backfill_error "round limit reached" "$i" "$asked" "$after"
+}
+
+admit_pending() {
+  factory_ask '{"admission":true}' || { backfill_error "registration refused" 1 0 '[]'; return 1; }
+  if ! jq -se 'length == 1 and (.[0] | .ok == true and .mode == "admission"
+      and (.asked | type == "number" and . >= 0 and floor == .)
+      and (.pending | type == "boolean") and (.has_deferred | type == "boolean")
+      and (.recovery.complete | type == "boolean") and (.recovery.scanned | type == "number" and . >= 0))' "$ASK_OUT" >/dev/null; then
+    backfill_error "invalid registration reply" 1 0 '[]';return 1
+  fi
+  jq -r '"queue: registered \(.asked) row(s); historical scan \(.recovery.scanned), complete=\(.recovery.complete); pending=\(.pending), deferred=\(.has_deferred); window_full=\(.window_full // false)"' "$ASK_OUT"
 }
 
 # A NEW BUILD'S ROWS ARE ASKED FOR ONLY WHERE NO SCORE IS: a resubmission the
@@ -338,6 +350,9 @@ case "${BACKFILL_TEST_MODE:-}" in
   empty)
     printf '{"ok":true,"asked":0,"left":0,"after":["","",""]}' > "$out"
     printf '200'; exit 0 ;;
+  admission)
+    printf '{"ok":true,"mode":"admission","asked":250,"pending":true,"has_deferred":false,"recovery":{"complete":false,"scanned":12000000}}' > "$out"
+    printf '200'; exit 0 ;;
 esac
 printf '{"result":[{"results":[],"success":true}],"success":true}' > "$out"
 printf '200'
@@ -349,6 +364,16 @@ cat >> "$PWD/sent.log"; echo >> "$PWD/sent.log"
 printf '{"result":[{"results":[],"success":true}],"success":true}'
 OK
   chmod +x "$DIR/bin/db"
+  BACKFILL_TEST_MODE=admission admit_pending > out.txt 2> err.txt \
+    && grep -q 'historical scan 12000000, complete=false; pending=true' out.txt \
+    && say ok "bounded registration reports durable progress without requiring a complete scan" \
+    || say FAIL "admission progress: $(cat err.txt)"
+  for mode in invalid multiple wrong-count; do
+    if BACKFILL_TEST_MODE="$mode" admit_pending > out.txt 2> err.txt; then
+      say FAIL "invalid admission $mode passed"
+    else say ok "invalid admission $mode fails before reporting progress";fi
+  done
+  : > sent.log
   # NOTHING TO ASK FOR IS NOT AN EMPTY BATCH. An hourly reconciliation finds
   # nothing most hours, and a group with no rows in it is a row in a table a
   # person reads — twenty-four of them a day.
@@ -456,6 +481,11 @@ if ! configured; then
 fi
 if [ "${1:-}" = "--backfill" ]; then
   backfill
+  node "$ROOT_DIR/scripts/retire_scores.mjs" --repair
+  exit 0
+fi
+if [ "${1:-}" = "--admit" ]; then
+  admit_pending
   node "$ROOT_DIR/scripts/retire_scores.mjs" --repair
   exit 0
 fi

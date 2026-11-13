@@ -216,7 +216,7 @@ rules and complete-loadout requirements are in `WARFRAMES.md`.
 | which board this is | `site/board.meta.json` | a digest per published file |
 | consent + submit | `web/src/static/app/68-board-submit.js` (`offerBoardSubmit`) | the player's browser |
 | the library | the Postgres database `wfsim` (binding `LIBRARY`, §"Postgres") | written by the endpoint |
-| the facts | the `scores` table in it | written by `ship_facts.sh` |
+| the facts | `state_board_measurement_selection` in it | task acceptance and producer delivery |
 | the deploy | `wrangler.jsonc` | `scripts/deploy.sh`, from a git push |
 | the endpoint | `worker/index.js` | the Cloudflare Worker, same origin |
 | the scorer | `cli/src/board/` (run by `cli/src/bin/wfsim-board.rs`) | the scheduled job |
@@ -1283,15 +1283,13 @@ mode, the demand's `ref` its key. However many rulers and modes there are, a
 machine is handed a minute of rows at a time, so the board's growth is more
 questions, never a heavier client.
 
-- **Asking.** `ship_queue.sh` writes the batch and its queue rows, then asks
-  the factory for each (`/api/board/ask`, the factory's secret) — from the bot
-  server the moment a submission lands (`live_board.sh`: `wfsim-intake
-  --orders`, `ship_builds.sh`) and from `queue.yml` hourly.
-  THE FIGHT AN ARRIVAL NAMED IS WAITED ON: the runner
-  marks that row `named` (`wfsim-intake --asked`) and the worker asks it as a
-  question someone waits on (`rowAsk`), so the row the player just ran goes
-  ahead of the build's other rows and every row nobody waits on; a backfill's
-  re-ask of it is an ordinary row. The worker decides who asks: `new_build` for an
+- **Asking.** Intake captures its workflow and registers its computations in
+  the build transaction before acknowledging arrivals. Legacy `ship_queue.sh`
+  writers retain a registration obligation in the same transaction as each
+  pending business row. Bounded maintenance admits those obligations through
+  the existing task ledger; its acknowledgement rechecks the captured source.
+  `docs/COMPUTE_TASKS.md` owns registration, recovery and queue order.
+  The legacy adapter decides who asks: `new_build` for an
   `arrivals-` batch's row whose build was submitted that day or the one before
   (due in six hours) — `survey_build` when WFSim submitted it, a survey's winner
   (due in three days: a batch of them owes millions of rows) — `refresh` for a `refresh-` batch's (due when its fact is fourteen days old),
@@ -1315,10 +1313,11 @@ questions, never a heavier client.
   a build the library keeps but a ruler refuses — a melee build with an empty
   stance slot — is never a row no client can open. `scripts/sweep_admission.sh`
   names queued rows that door refuses, and deletes them only with `--delete`.
-  EVERY OWED ROW IS ASKED FOR: the
-  backfill (`ship_queue.sh --backfill`) asks for any queue row nobody asked
-  for. A run stopped between writing the queue and asking leaves unregistered
-  work; maintenance repairs it before any witness can lease it.
+  EVERY OWED ROW IS ASKED FOR: `ship_queue.sh --admit` and the daemon consume
+  durable registration. Historical recovery advances a persistent key cursor;
+  new writes enter independently. Routine runs neither export the full queue
+  nor require recovery to finish in one invocation. The explicit `--backfill`
+  adapter remains for older operations.
 - **Leasing, in PACKS.** `/api/board/work` (`worker/verify.js`) hands a client
   the factory's next questions it may answer — a board row as its library
   RECORD, a ruler and a mode, never a number — in the factory's order, as a
@@ -2297,10 +2296,10 @@ front of them. Two consequences:
    but a half-configured one fails loudly, because the alternative is a shipper
    that runs green and sends no rows.
 
-3. **The facts table is already in the schema above.** Nothing else has to be
-   provisioned: the scorer writes a log, `scripts/ship_facts.sh` sends it, and
-   `scripts/fetch_facts.sh` reads it back. Both carry their own self-tests,
-   driven against a stub, so every hop is testable without a network.
+3. **The facts table is already in the schema above.** The scorer writes a log;
+   `scripts/order_credit.mjs` sends it with captured task receipts to official
+   task acceptance, which delivers each measurement and settles its business
+   obligation. `scripts/fetch_facts.sh` reads the measurements back.
 
    ASK IT A QUESTION, which is most of why it is a database. ON ONE LINE: a
    continuation is the one piece of shell syntax that differs between the two

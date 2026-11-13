@@ -214,7 +214,9 @@ jobs:
         if: steps.wired.outputs.yes == 'true'
         with:
           name: queue
-          path: queue.ndjson
+          path: |
+            queue.ndjson
+            claimed-calculations.ndjson
           retention-days: 1
           if-no-files-found: ignore
       - name: what is there to score, and what will it cost
@@ -376,14 +378,13 @@ jobs:
           python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
           ENGINE=$(python3 -c "import sys; sys.path.insert(0, 'scripts'); from build_site_app import engine_id; print(engine_id())")
           ( while sleep 60; do
-              bash scripts/ship_facts.sh facts.ndjson || true
-              node scripts/order_credit.mjs facts.ndjson "$ENGINE" || true
+              node scripts/order_credit.mjs facts.ndjson "$ENGINE" claimed-calculations.ndjson || true
             done ) &
           SHIPPER=$!
           # …AND ONCE MORE AT THE END, whatever happened to the loop: `trap`
           # rather than a line after it, so a scorer that exits non-zero still
           # banks what it managed.
-          trap 'kill $SHIPPER 2>/dev/null || true; bash scripts/ship_facts.sh facts.ndjson || true; node scripts/order_credit.mjs facts.ndjson "$ENGINE" || true' EXIT
+          trap 'kill $SHIPPER 2>/dev/null || true; wait $SHIPPER 2>/dev/null || true; node scripts/order_credit.mjs facts.ndjson "$ENGINE" claimed-calculations.ndjson' EXIT
           # THE SAME BOUNDS THE PLAN COUNTED WITH. A shard that took on a
           # different set from the one the split was sized for is a shard doing
           # somebody else's slice.
@@ -423,6 +424,17 @@ jobs:
         env:
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
           BYRULER: ${{ needs.submissions.outputs.byruler }}
+      - name: retain official results and captured receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: official-results-${{ matrix.shard }}
+          path: |
+            facts.ndjson
+            facts.ndjson.credited
+            claimed-calculations.ndjson
+          retention-days: 7
+          if-no-files-found: ignore
 
   # ---- 3. what this run claimed and did not settle goes back ----------------
   #

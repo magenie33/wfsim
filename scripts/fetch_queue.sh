@@ -48,23 +48,25 @@ configured() { db_configured; }
 # then each one's rows along the primary key. An OFFSET sorts every row it
 # skips, so a read of millions slowed with each page and outran the job.
 batches_body() {
-  jq -n -c '
+  jq -n -c --arg ruler "${QUEUE_RULER:-}" '
     {
       sql: ("SELECT b.id AS batch FROM entity_compute_batches b"
-            + " WHERE EXISTS (SELECT 1 FROM state_board_pending_work q WHERE q.batch = b.id)"
+            + " WHERE EXISTS (SELECT 1 FROM state_board_pending_work q WHERE q.batch = b.id"
+            + (if $ruler == "" then "" else " AND q.ruler = ?" end) + ")"
             + " ORDER BY b.at, b.id"),
-      params: []
+      params: (if $ruler == "" then [] else [$ruler] end)
     }'
 }
 page_body() {
-  jq -n -c --argjson limit "$1" --arg batch "$2" --arg build "${3:-}" --arg ruler "${4:-}" --arg mode "${5:-}" '
+  jq -n -c --argjson limit "$1" --arg batch "$2" --arg build "${3:-}" --arg ruler "${4:-}" --arg mode "${5:-}" --arg only "${QUEUE_RULER:-}" '
     {
       sql: ("SELECT q.batch, q.build_id, q.ruler, q.mode FROM state_board_pending_work q"
             + " JOIN entity_compute_batches b ON b.id = q.batch"
             + " WHERE q.batch = ? AND (q.batch, q.build_id, q.ruler, q.mode) > (?, ?, ?, ?)"
+            + (if $only == "" then "" else " AND q.ruler = ?" end)
             + " ORDER BY q.batch, q.build_id, q.ruler, q.mode"
             + " LIMIT ?"),
-      params: [$batch, $batch, $build, $ruler, $mode, $limit]
+      params: ([$batch, $batch, $build, $ruler, $mode] + (if $only == "" then [] else [$only] end) + [$limit])
     }'
 }
 

@@ -296,6 +296,41 @@ not distinct people, execution devices or complete historical derivation chains.
 Report orders use their current scheduling producer, the earliest live demand,
 so shared computations count once and family searches retain their own category.
 
+### Durable board registration
+
+Native intake commits each build and its captured workflow through
+`build_intake_batch` before acknowledging its inbox rows. Legacy board writers
+retain their existing computation identities. Their pending business rows own
+the obligation; `board_admission_changed` records unfinished registration in
+the same transaction, including source changes and deletion.
+
+With `board_admission=1`, the daemon and `ship_queue.sh --admit` advance the same
+service. Each pass claims at most 250 registrations. Task admission and claim
+acknowledgement commit together, after rechecking the source revision. An
+interrupted claim expires; a changed source remains retryable. Registration
+reuses accepted results and preserves existing task rounds, positions and leases.
+Missing source data and refreshes not yet due remain explicitly deferred.
+
+Historical recovery seeks at most 2,000 existing pending keys after a durable
+database cursor. It yields while registration is pending. New writes are captured
+independently of that cursor, including keys below it after recovery completes.
+`board_recovery_open_max` bounds historical lookahead against an indexed, limited
+read of open scheduling rows. A full window leaves the cursor unchanged until
+execution frees capacity; new-source registration continues. Concurrent live
+admission may exceed this background target, which is not an allocation quota.
+Routine maintenance does not export the pending table or restart a historical
+scan. Recovery completion describes registration progress, not completed fights.
+Full inventory requires an explicit request.
+
+Official scoring exports the exact computation, task round and claim beside
+its captured inputs. Its result goes through official task acceptance and
+producer delivery, retaining native measurement timing and provenance. Receipt
+validation and candidate recording share the scheduling lock. Superseded claims
+and rounds cannot supply a replacement's result; matching acknowledged results
+can be retried. The scorer advances its receipt cursor only after every result
+is acknowledged as a fact or spot check. Older official audit clients retain
+their unqualified answer contract.
+
 Full reconciliation captures builds, scores, queue rows and task lifecycle in one
 read-only repeatable-read transaction. A lost connection aborts the capture;
 partial files never become a published inventory. The engine walks that
@@ -368,8 +403,8 @@ It uses the existing ranker command pipes, with one kernel-held SQLite writer
 lock around a cycle. The ranker starts empty; a full bootstrap requires an
 explicit durable rebuild task. This
 path replaces the ranker's hourly library reload and rolling score
-read with authoritative source updates. Normal queue maintenance retains full
-reconciliation as a fallback. Official scoring reads only its leased inputs.
+read with authoritative source updates. Normal queue maintenance advances
+durable registration. Official scoring reads only its leased inputs.
 
 Live board uploads run in one background process with a per-request timeout.
 Confirmed file hashes are flushed through an atomic checkpoint replacement;
@@ -557,9 +592,9 @@ at the last 24 hours' average compute. Missing cost samples or capacity leave
 that estimate unknown without hiding the order count. The inventory's separate
 clearance observation remains bound to its engine, snapshot and input time.
 
-The queue and scoring pipelines bound their intake step independently of
-reconciliation. A failed or timed-out intake retains unacknowledged arrivals
-and still permits one complete scan of committed data. The workflow reports
+The queue pipeline bounds intake independently of maintenance. A failed or
+timed-out intake retains unacknowledged arrivals and still permits bounded
+registration of committed data. The workflow reports
 the intake failure after reconciliation; a published inventory does not turn
 a failed intake into a successful run.
 

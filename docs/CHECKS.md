@@ -210,6 +210,15 @@ runs through the production `postgres.js` driver in an isolated schema. CI
 runs both backends; the wire path verifies JSON parameter serialization.
 `check_rescore_paths.mjs` rejects full inventory prerequisites in scoring.
 
+`check_board_admission.mjs` verifies atomic registration, source revisions,
+interrupted claims, persistent historical progress, registration backpressure,
+deferred sources and reuse of accepted results. Official results must retain
+their captured round and claim, deliver native provenance, and retry without
+another candidate or result. `WFSIM_BOARD_ADMISSION_TEST_URL` selects an isolated
+loopback PostgreSQL schema and adds concurrent consumers. Runtime CI runs this
+path with the production driver. `--break-trigger`, `--break-checkpoint`,
+`--break-ack-transaction` and `--break-official-fence` inject distinct failures.
+
 `check_default_parent.mjs` runs the native dry inventory across every ruler
 and mode. A real lower-rank record keeps its frozen identity and waits for
 its canonical full-rank parent. Qualifying parents release variants; parents

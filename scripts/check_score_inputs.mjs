@@ -34,9 +34,9 @@ const sql = client ? { begin: (options, fn) => client.begin(options, tx => fn({ 
 } };
 const row = (id, mode = 'base') => ({ producer: 'sweep', ref: `${id}|r|${mode}`,
   payload: { identity: id, ruler: 'r', mode, batch: 'stale-payload-batch' } });
-const tasks = [{ question: 'a', verb: 'simulate', demands: [row('a'), row('a')] },
-  { question: 'b', verb: 'simulate', demands: [row('b'), row('b', 'cycle')] },
-  { question: 'cancelled', verb: 'simulate', demands: [row('cancelled'), row('missing')] }];
+const tasks = [{ question: 'a', task_id: 1, lease: 'claim-a', verb: 'simulate', demands: [row('a'), row('a')] },
+  { question: 'b', task_id: 2, lease: 'claim-b', verb: 'simulate', demands: [row('b'), row('b', 'cycle')] },
+  { question: 'cancelled', task_id: 3, lease: 'claim-c', verb: 'simulate', demands: [row('cancelled'), row('missing')] }];
 const load = name => readFileSync(join(directory, name), 'utf8');
 const lines = name => load(name).trim().split('\n').filter(Boolean).map(JSON.parse);
 try {
@@ -65,6 +65,8 @@ try {
   assert.deepEqual(lines('queue.ndjson').map(r => [r.batch, r.build_id, r.mode]),
     [['old', 'b', 'base'], ['old', 'b', 'cycle'], ['new', 'a', 'base']]);
   assert.equal(lines('facts-known.ndjson')[0].measured_by, 'previous');
+  assert.deepEqual(lines('claimed-calculations.ndjson').map(r => [r.build_id,r.question,r.task_id,r.lease]),
+    [['a','a',1,'claim-a'],['b','b',2,'claim-b'],['b','b',2,'claim-b']]);
   const reads = queries.filter(([s]) => s.includes('jsonb_to_recordset'));
   assert.equal(reads.length, 1); assert.equal(JSON.parse(reads[0][1][0]).length, 5);
   const [text, args] = reads[0];
@@ -79,7 +81,7 @@ try {
     }
   }
   console.log('ok: three claimed questions seek five keys in 20,000 unrelated rows; ordering, deduplication, cancellation and exact source bytes preserved');
-  const names = ['library.json', 'queue.ndjson', 'facts-known.ndjson'];
+  const names = ['library.json', 'queue.ndjson', 'facts-known.ndjson','claimed-calculations.ndjson'];
   for (const name of names) writeFileSync(join(directory, name), 'previous');
   await assert.rejects(captureScoreInputs({ sql: { begin: async () => { throw Error('connection lost'); } },
     claim, directory, engine: 'test', max: 3 }), /connection lost/);
@@ -101,7 +103,7 @@ try {
     assert(builds.every(b => b.candidate));
     const ruler = 'standard_single_target';
     for (const b of builds) await query("INSERT INTO entity_weapon_builds(id,at,record) VALUES($1,'day',$2)", [b.candidate, JSON.stringify(b.record)]);
-    const nativeTasks = builds.slice(0, 2).map(b => ({ question: b.candidate, verb: 'simulate', demands: [{ producer: 'sweep',
+    const nativeTasks = builds.slice(0, 2).map((b,i) => ({ question: b.candidate, task_id: i+1, lease: 'native-'+i, verb: 'simulate', demands: [{ producer: 'sweep',
       ref: `${b.candidate}|${ruler}|base`, payload: { identity: b.candidate, ruler, mode: 'base' } }] }));
     for (const b of builds.slice(0, 2)) await query("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES('old',$1,$2,'base')", [b.candidate, ruler]);
     await captureScoreInputs({ sql, claim: async () => nativeTasks, directory, engine: 'test', max: 2 });

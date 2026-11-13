@@ -14,7 +14,7 @@ export async function captureScoreInputs({ sql, claim, directory, engine, max = 
   const db = new DatabaseSync(join(scratch, 'inputs.sqlite'));
   db.exec(`PRAGMA cache_size=-16384; PRAGMA temp_store=FILE; PRAGMA mmap_size=0;
     CREATE TABLE claimed(id TEXT PRIMARY KEY) WITHOUT ROWID;
-    CREATE TABLE wanted(build_id TEXT,ruler TEXT,mode TEXT,PRIMARY KEY(build_id,ruler,mode)) WITHOUT ROWID;
+    CREATE TABLE wanted(build_id TEXT,ruler TEXT,mode TEXT,question TEXT,task_id INTEGER,lease TEXT,PRIMARY KEY(build_id,ruler,mode)) WITHOUT ROWID;
     CREATE TABLE rows(build_id TEXT,ruler TEXT,mode TEXT,batch TEXT,at TEXT,PRIMARY KEY(build_id,ruler,mode)) WITHOUT ROWID;
     CREATE TABLE records(id TEXT PRIMARY KEY,body TEXT) WITHOUT ROWID;
     CREATE TABLE facts(id TEXT,ruler TEXT,mode TEXT,body TEXT,PRIMARY KEY(id,ruler,mode)) WITHOUT ROWID;`);
@@ -26,14 +26,17 @@ export async function captureScoreInputs({ sql, claim, directory, engine, max = 
         states: ['open'], producers: BOARD_KINDS, max: limit, lease_ms: 43200000 });
       if (!Array.isArray(tasks) || tasks.length > limit) throw Error('invalid factory claim response');
       for (const task of tasks) {
-        if (typeof task.question !== 'string' || task.verb !== 'simulate' || !Array.isArray(task.demands)) throw Error('invalid claimed calculation');
+        if (typeof task.question !== 'string' || task.verb !== 'simulate' || !Array.isArray(task.demands)
+            || !Number.isSafeInteger(task.task_id) || task.task_id <= 0 || typeof task.lease !== 'string' || !task.lease) throw Error('invalid claimed calculation');
         db.prepare('INSERT INTO claimed VALUES(?)').run(task.question);
         for (const demand of task.demands) {
           if (!BOARD_KINDS.includes(demand.producer)) continue;
           const p = demand.payload;
           if (!p || ![p.identity, p.ruler, p.mode].every(x => typeof x === 'string' && x.length > 0)
               || demand.ref !== `${p.identity}|${p.ruler}|${p.mode}`) throw Error('invalid claimed board reference');
-          db.prepare('INSERT OR IGNORE INTO wanted VALUES(?,?,?)').run(p.identity, p.ruler, p.mode);
+          const prior = db.prepare('SELECT question,task_id,lease FROM wanted WHERE build_id=? AND ruler=? AND mode=?').get(p.identity,p.ruler,p.mode);
+          if (prior && (prior.question !== task.question || prior.task_id !== task.task_id || prior.lease !== task.lease)) throw Error('ambiguous claimed board reference');
+          db.prepare('INSERT OR IGNORE INTO wanted VALUES(?,?,?,?,?,?)').run(p.identity, p.ruler, p.mode,task.question,task.task_id,task.lease);
         }
       }
       leased += tasks.length;
@@ -86,8 +89,9 @@ export async function captureScoreInputs({ sql, claim, directory, engine, max = 
     emit('library.json', 'SELECT body FROM records ORDER BY id', (r, i) => (i ? ',' : '') + r.body, '[', ']');
     emit('queue.ndjson', 'SELECT batch,build_id,ruler,mode FROM rows ORDER BY at,batch,build_id,ruler,mode', r => JSON.stringify(r) + '\n');
     emit('facts-known.ndjson', 'SELECT body FROM facts ORDER BY id,ruler,mode', r => r.body + '\n');
+    emit('claimed-calculations.ndjson', 'SELECT w.* FROM wanted w JOIN rows r USING(build_id,ruler,mode) ORDER BY build_id,ruler,mode', r => JSON.stringify(r) + '\n');
     const counts = Object.fromEntries(['wanted', 'rows', 'records', 'facts'].map(table => [table, db.prepare(`SELECT count(*) n FROM ${table}`).get().n]));
-    for (const name of ['library.json', 'queue.ndjson', 'facts-known.ndjson']) renameSync(join(scratch, name), join(directory, name));
+    for (const name of ['library.json', 'queue.ndjson', 'facts-known.ndjson','claimed-calculations.ndjson']) renameSync(join(scratch, name), join(directory, name));
     return { leased, ...counts, snapshot };
   } finally { db.close(); rmSync(scratch, { recursive: true, force: true }); }
 }

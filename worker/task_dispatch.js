@@ -225,7 +225,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
             AND (${wanted.map((state) => `(${stateOf(state)})`).join(" OR ")})
             AND ${takeable}
           ORDER BY q.zone, q.zone_position, q.id LIMIT ${n} FOR UPDATE OF q SKIP LOCKED)
-        RETURNING id, verb, request, state, lease, waits, due_at, zone, zone_position`)
+        RETURNING id, task_id, verb, request, state, lease, waits, due_at, zone, zone_position`)
         .bind(iso(now + lease_ms), w.device, at, engine, JSON.stringify(blocked)).all();
     };
     // AN OPEN ROW NOBODY OWES ANY MORE is withdrawn where it is found and the
@@ -260,7 +260,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
     return results.map((q) => {
       const mine = ds.filter((d) => d.question === q.id);
       const kept = mine.some((d) => d.state !== "withdrawn") ? mine.filter((d) => d.state !== "withdrawn") : mine;
-      return { question: q.id, verb: q.verb, state: q.state, lease: q.lease, request: JSON.parse(q.request),
+      return { question: q.id, task_id: q.task_id, verb: q.verb, state: q.state, lease: q.lease, request: JSON.parse(q.request),
         demands: kept.map((d) => ({ producer: d.producer, ref: d.ref, payload: JSON.parse(d.payload) })) };
     });
   }

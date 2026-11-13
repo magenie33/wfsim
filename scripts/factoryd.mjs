@@ -17,6 +17,7 @@ import { putObject } from "./sigv4.mjs";
 import { iso } from "../worker/instant.js";
 import { KEPT_MS } from "../worker/tasks.js";
 import { BOARD_KINDS } from "../worker/board_kinds.js";
+import { recoverBoardTasks } from "../worker/board_tasks.js";
 import { demandOf, DEMAND_KEY, DEMAND_CACHE, DEMAND_COST_EVERY_MS, tallyOf, tallyBase, scorePace, TALLY_KEY, TALLY_CACHE, TALLY_BASE_MS } from "../worker/contribution.js";
 import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capacity.mjs";
 
@@ -105,7 +106,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   let release = await servedNow();
   const failed = new Map();
   const written = { open: true, urgent: true }, edge = { stale: 0, uncached: 0 };
-  let unconfiguredSaid = false, tallyAt = 0, tallyKept = null, forgotAt = 0;
+  let unconfiguredSaid = false, tallyAt = 0, tallyKept = null, forgotAt = 0, admittedAt = 0;
   // THE SIGNAL FOLLOWS EVERY SNAPSHOT, so it is never older than one.
   const writeSignal = async (snap) => {
     if (!target) {
@@ -133,6 +134,14 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   };
   const jobs = {
     release: async () => { release = await servedNow(); forgetDials(); },
+    admission: async () => {
+      if (!release.engine) return false;
+      const now = Date.now();
+      if (now - admittedAt < budget.interval("admission", SETTLE_MS) - SETTLE_MS / 2) return false;
+      admittedAt = now;
+      const result = await recoverBoardTasks(backgroundEnv, release.engine);
+      return result.mode !== "disabled";
+    },
     // THE HEARTBEAT IS WRITTEN FIRST: a signal that cannot be written fails its
     // own tick and leaves the snapshot, and the daemon_at it carries, current.
     snapshot: async () => writeSignal(await snapshotTick(env, { engine: release.engine, release: release.release, commit })),
@@ -208,7 +217,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     },
   };
   if (once) {
-    for (const name of ["snapshot", "fair", "settle", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
+    for (const name of ["snapshot", "fair", "settle", "admission", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
     log(bad.length ? `once: failed ${bad.join(", ")}` : "once: ok", commit);
@@ -219,7 +228,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   const every = (ms, name) => {
     const loop = async () => {
       if (stopping) return;
-      const p = ["demand", "tally", "forget", "past", "moot"].includes(name)
+      const p = ["admission", "demand", "tally", "forget", "past", "moot"].includes(name)
         ? background(() => stopping ? undefined : tick(name, jobs[name])) : tick(name, jobs[name]);
       inflight.add(p);
       await p;
@@ -229,6 +238,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     timers.set(name, setTimeout(loop, 0));
   };
   every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
+  every(SETTLE_MS, "admission");
   every(WAVE_MS, "wave"); every(SIGNAL_CHECK_MS, "signalCheck");
   log("factoryd up", commit, release.engine);
   await new Promise((resolve) => {

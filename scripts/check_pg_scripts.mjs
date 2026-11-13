@@ -129,6 +129,11 @@ check("a batch counts each inserted calculation once across retries",
   (await query("SELECT count(*) AS n FROM state_board_pending_work"))[0].n === 2 && (await query("SELECT total FROM entity_compute_batches"))[0]?.total === 2);
 check("the queue is read in order", await run("fetch_queue.sh", "queue.ndjson") === 0
   && read("queue.ndjson").map((l) => JSON.parse(l).ruler).join() === "heavy_gunner,standard_single_target");
+process.env.QUEUE_RULER = 'heavy_gunner';
+try {
+  check("an explicit ruler reads only its own queued keys", await run("fetch_queue.sh","ruler-queue.ndjson") === 0
+    && read("ruler-queue.ndjson").length === 1 && JSON.parse(read("ruler-queue.ndjson")[0]).ruler === 'heavy_gunner');
+} finally { delete process.env.QUEUE_RULER; }
 // …OVER ONE CONNECTION (scripts/db.sh `db_send`): a read is two statements at
 // least, the batches and a page, and a process a statement cost seconds a page.
 {

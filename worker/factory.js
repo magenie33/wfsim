@@ -123,11 +123,16 @@ export async function officialRoute(request, env, path) {
     const states = [];
     for (const a of answers) {
       // THE DEMAND IT ANSWERS, by its ref among the named producers — a live one first.
-      const d = a && typeof a.ref === "string" && await db.prepare(`SELECT question FROM relation_task_consumers WHERE ref = ?::text AND producer IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
-          ORDER BY state = 'live' DESC, asked_at DESC LIMIT 1`).bind(a.ref, producers).first();
+      const captured = a && Object.hasOwn(a, "task_id");
+      if (captured && (!Number.isSafeInteger(a.task_id) || a.task_id <= 0 || typeof a.question !== "string"
+          || typeof a.lease !== "string" || !a.lease)) { states.push(null); continue; }
+      const d = a && typeof a.ref === "string" && await db.prepare(`SELECT question FROM relation_task_consumers WHERE ref = ?1::text AND producer IN (SELECT value FROM jsonb_array_elements_text((?2::text)::jsonb))
+          AND (?3::text IS NULL OR question=?3::text)
+          ORDER BY state = 'live' DESC, asked_at DESC LIMIT 1`).bind(a.ref, producers, captured ? a.question : null).first();
       // `work: null` is a witness of the score alone (worker/tasks.js `settleOfficial`).
       if (!d || !(a.work === null || Number.isSafeInteger(a.work)) || !a.result || typeof a.result !== "object") { states.push(null); continue; }
-      states.push(await facts().answerOfficial(env, w, { question: d.question, engine: b.engine, result: a.result, work: a.work }));
+      states.push(await facts().answerOfficial(env, w, { question: d.question, engine: b.engine, result: a.result, work: a.work,
+        ...(captured ? { task_id: a.task_id, lease: a.lease } : {}) }));
     }
     return json({ ok: true, states });
   }

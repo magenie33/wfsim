@@ -182,7 +182,7 @@ jobs:
       # score, so running it every hour asks for nothing twice: the queue's own
       # primary key absorbs a repeat.
       - name: check complete inventory scratch
-        if: steps.wired.outputs.yes == 'true'
+        if: steps.wired.outputs.yes == 'true' && (inputs.inventory_only || inputs.rescore != '')
         env:
           INVENTORY_RUNNER_ENVIRONMENT: ${{ runner.environment }}
           INVENTORY_RUNNER_OS: ${{ runner.os }}
@@ -196,9 +196,9 @@ jobs:
           set -euo pipefail
           python3 -c "import yaml" 2>/dev/null || python3 -m pip install --quiet pyyaml==6.0.3
           bash scripts/reconcile_queue.sh library.json facts-known.ndjson queue.ndjson
-          # WHAT IS OWED, SAID OUT LOUD, because this job publishes nothing and
-          # a reader has to be able to see it did something.
-          echo "::notice::$(grep -c . queue.ndjson || echo 0) row(s) owed after this hour"
+          if [ "$INVENTORY_ONLY" = "1" ]; then
+            echo "::notice::$(grep -c . queue.ndjson || echo 0) row(s) captured for explicit inventory"
+          fi
 
       - name: the databases
         if: steps.wired.outputs.yes == 'true'
@@ -255,6 +255,9 @@ jobs:
           esac
           ./target/release/wfsim-board --rulers | grep -qx "$RULER" \
             || { echo "::error::no such ruler: $RULER"; exit 1; }
+          bash scripts/fetch_library.sh library.json
+          bash scripts/fetch_facts.sh facts-known.ndjson
+          QUEUE_RULER="$RULER" bash scripts/fetch_queue.sh queue.ndjson
           # EVERY WEAPON THE LIBRARY HOLDS, which is what makes `--queue-weapons`
           # list a row that already has a fact — the one path in this tool that
           # asks for something already measured.

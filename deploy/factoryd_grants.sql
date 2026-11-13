@@ -13,6 +13,7 @@ GRANT INSERT ON entity_compute_batches TO wfsim_factoryd;
 GRANT SELECT ON entity_weapon_builds TO wfsim_factoryd;
 GRANT SELECT,INSERT ON state_producer_compute_usage TO wfsim_factoryd;
 GRANT SELECT, UPDATE ON record_candidate_answers, relation_task_consumers, state_compute_work, entity_compute_devices TO wfsim_factoryd;
+GRANT INSERT ON relation_task_consumers TO wfsim_factoryd;
 GRANT SELECT, INSERT, UPDATE ON state_board_measurement_selection, record_hourly_compute_totals TO wfsim_factoryd;
 GRANT SELECT, UPDATE, DELETE ON state_pending_verifications TO wfsim_factoryd;
 GRANT DELETE ON state_board_pending_work TO wfsim_factoryd;
@@ -42,3 +43,5 @@ GRANT USAGE,SELECT ON SEQUENCE entity_compute_tasks_id_seq,entity_compute_result
 GRANT SELECT ON entity_build_workflow_scopes,entity_build_workflows,entity_build_workflow_expansions,record_build_workflow_triggers TO wfsim_factoryd;
 GRANT SELECT,UPDATE ON state_build_workflows,state_build_workflow_nodes TO wfsim_factoryd;
 GRANT EXECUTE ON FUNCTION build_workflow_repair(text,text,text,text) TO wfsim_factoryd;
+GRANT EXECUTE ON FUNCTION board_admission_seed(bigint,text,bigint),board_admission_claim(bigint,text,text),board_admission_finish(text),
+  board_admission_retry(text,text,text),board_admission_status(text),factory_assert_official_claim(text,bigint,text,text) TO wfsim_factoryd;
