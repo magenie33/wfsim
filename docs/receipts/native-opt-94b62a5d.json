@@ -1,0 +1,1126 @@
+{
+  "schema": 1,
+  "calculation_commit": "94b62a5d0ceda4832206521ac28315c031e3d748",
+  "baseline_calculation_commit": "1c2647db21f248c197a05f352511daa6015f3660",
+  "baseline_archive_commit": "fcae701797f39f46031756346544a4db36c8899a",
+  "scope": "Capped status clock/count/oldest lookup and stable eviction; the existing native arithmetic, queries and RNG calls are unchanged.",
+  "whole_game_native_equivalence_certified": false,
+  "native_binding_ledger": "docs/NATIVE_BINDINGS.md",
+  "changes": [
+    "One capped-family traversal selects first live clock, count and oldest record before any eviction",
+    "Single-record eviction uses the original single removal; multiple removals preserve survivor order",
+    "Uncapped path retains its first-live lookup; zero caps retain the existing replacement behavior"
+  ],
+  "baseline_profile": {
+    "baseline": "1c2647db21f248c197a05f352511daa6015f3660",
+    "samples": 2396,
+    "push_dot_capped_inclusive_samples": 1692,
+    "inclusive_percent": 70.61769616026712,
+    "scope": "Phantasma Prime Gas/Electricity, headshots100,25bodies,180s; inclusive samples overlap other callers"
+  },
+  "native_prototype_reused": {
+    "complete": true,
+    "identical_native_executable_hashes": true,
+    "same_calculation_files": true,
+    "qualified_commit": "94b62a5d0ceda4832206521ac28315c031e3d748",
+    "native_measurements": [
+      "prototype/dense",
+      "prototype/held-out",
+      "prototype/short-controls",
+      "prototype/shapes"
+    ]
+  },
+  "checks": {
+    "workspace_passed": 1913,
+    "workspace_ignored": 6,
+    "clippy_all_targets": true,
+    "quick_layers_metering": true,
+    "one_ulp_real_damage_negative_control": true,
+    "native_wasm_gas_work_score_parity": true,
+    "golden_expectations_changed": false
+  },
+  "equivalence": {
+    "roster-migration": {
+      "complete": true,
+      "combat_exact": true,
+      "responses_verified": 9332,
+      "strict_response_changes": 914,
+      "allow_source_accounting": true,
+      "policy": "Only paired nonnegative integer /api/simulate /work and /api/board/runs /shards/<index>/gas values may differ; missing fields, types and all other data remain strict."
+    },
+    "roster-parity": {
+      "complete": true,
+      "combat_exact": true,
+      "responses_verified": 9332,
+      "strict_response_changes": 0,
+      "allow_source_accounting": false,
+      "policy": "Only paired nonnegative integer /api/simulate /work and /api/board/runs /shards/<index>/gas values may differ; missing fields, types and all other data remain strict."
+    },
+    "focused-migration": {
+      "complete": true,
+      "combat_exact": true,
+      "responses_verified": 152,
+      "strict_response_changes": 34,
+      "allow_source_accounting": true,
+      "policy": "Only paired nonnegative integer /api/simulate /work and /api/board/runs /shards/<index>/gas values may differ; missing fields, types and all other data remain strict."
+    },
+    "focused-parity": {
+      "complete": true,
+      "combat_exact": true,
+      "responses_verified": 152,
+      "strict_response_changes": 0,
+      "allow_source_accounting": false,
+      "policy": "Only paired nonnegative integer /api/simulate /work and /api/board/runs /shards/<index>/gas values may differ; missing fields, types and all other data remain strict."
+    },
+    "dense-parity": {
+      "complete": true,
+      "combat_exact": true,
+      "responses_verified": 56,
+      "strict_response_changes": 0,
+      "allow_source_accounting": false,
+      "policy": "Only paired nonnegative integer /api/simulate /work and /api/board/runs /shards/<index>/gas values may differ; missing fields, types and all other data remain strict."
+    },
+    "browser": {
+      "complete": true,
+      "combat_exact": true,
+      "responses_verified": 144,
+      "strict_response_changes": 60,
+      "allow_source_accounting": true,
+      "policy": "Only paired nonnegative integer /api/simulate /work and /api/board/runs /shards/<index>/gas values may differ; missing fields, types and all other data remain strict."
+    },
+    "browser-controls": {
+      "complete": true,
+      "combat_exact": true,
+      "responses_verified": 32,
+      "strict_response_changes": 12,
+      "allow_source_accounting": true,
+      "policy": "Only paired nonnegative integer /api/simulate /work and /api/board/runs /shards/<index>/gas values may differ; missing fields, types and all other data remain strict."
+    }
+  },
+  "accounting_policy": "Only paired nonnegative integer /api/simulate.work and /api/board/runs.shards[].gas changes are excluded across source versions. Damage, events, RNG/run states, node traces, shapes and all other fields remain strict. Cross-platform parity excludes nothing.",
+  "performance": {
+    "dense": {
+      "phantasma_prime_published_0_runs": {
+        "before_ms": 35.460416,
+        "after_ms": 35.203458499999996,
+        "elapsed_reduction_pct": 0.7246319388921063
+      },
+      "phantasma_prime_published_100_runs": {
+        "before_ms": 31.9235415,
+        "after_ms": 31.5156875,
+        "elapsed_reduction_pct": 1.2775963468840135
+      },
+      "phantasma_prime_gas_electric_0_runs": {
+        "before_ms": 213.356979,
+        "after_ms": 160.8436045,
+        "elapsed_reduction_pct": 24.612916224315306
+      },
+      "phantasma_prime_gas_electric_100_runs": {
+        "before_ms": 167.548146,
+        "after_ms": 132.5379795,
+        "elapsed_reduction_pct": 20.8955857380839
+      },
+      "phantasma_prime_toxin_0_runs": {
+        "before_ms": 33.126208,
+        "after_ms": 32.856562499999995,
+        "elapsed_reduction_pct": 0.8139944662546417
+      },
+      "phantasma_prime_toxin_100_runs": {
+        "before_ms": 24.159167000000004,
+        "after_ms": 24.130229,
+        "elapsed_reduction_pct": 0.11978061991956279
+      },
+      "torid_published_0_runs": {
+        "before_ms": 13.0885415,
+        "after_ms": 12.879563000000001,
+        "elapsed_reduction_pct": 1.5966523084332884
+      },
+      "torid_published_100_runs": {
+        "before_ms": 16.543333500000003,
+        "after_ms": 16.395271,
+        "elapsed_reduction_pct": 0.8949979760729754
+      },
+      "kuva_nukor_published_0_runs": {
+        "before_ms": 17.1815205,
+        "after_ms": 16.9201665,
+        "elapsed_reduction_pct": 1.5211342907631487
+      },
+      "kuva_nukor_published_100_runs": {
+        "before_ms": 18.547916,
+        "after_ms": 18.4049795,
+        "elapsed_reduction_pct": 0.7706337466699797
+      }
+    },
+    "held-out": {
+      "phantasma_prime_published_0_runs_held_out": {
+        "before_ms": 104.129334,
+        "after_ms": 104.39939600000001,
+        "elapsed_reduction_pct": -0.2593524702654948
+      },
+      "phantasma_prime_published_100_runs_held_out": {
+        "before_ms": 94.547979,
+        "after_ms": 94.3419585,
+        "elapsed_reduction_pct": 0.21790047992458206
+      },
+      "phantasma_prime_gas_electric_0_runs_held_out": {
+        "before_ms": 658.7008539999999,
+        "after_ms": 500.53300050000007,
+        "elapsed_reduction_pct": 24.012091762067133
+      },
+      "phantasma_prime_gas_electric_100_runs_held_out": {
+        "before_ms": 504.7870835,
+        "after_ms": 402.45689600000003,
+        "elapsed_reduction_pct": 20.271950460871878
+      }
+    },
+    "focused": {
+      "braton_panel": {
+        "before_ms": 0.6042295,
+        "after_ms": 0.5921665,
+        "elapsed_reduction_pct": 1.9964268543657515
+      },
+      "torid_simulation": {
+        "before_ms": 0.679646,
+        "after_ms": 0.7215,
+        "elapsed_reduction_pct": -6.1582058895366165
+      },
+      "torid_record": {
+        "before_ms": 1.3294165000000002,
+        "after_ms": 1.3498335,
+        "elapsed_reduction_pct": -1.5357865650080127
+      },
+      "gotva_prime_simulation": {
+        "before_ms": 0.90625,
+        "after_ms": 0.9100630000000001,
+        "elapsed_reduction_pct": -0.4207448275862058
+      },
+      "gotva_prime_record": {
+        "before_ms": 2.510896,
+        "after_ms": 2.338813,
+        "elapsed_reduction_pct": 6.853449923851873
+      },
+      "scourge_simulation": {
+        "before_ms": 0.618437,
+        "after_ms": 0.616646,
+        "elapsed_reduction_pct": 0.289601042628429
+      },
+      "scourge_record": {
+        "before_ms": 1.236583,
+        "after_ms": 1.1343955000000001,
+        "elapsed_reduction_pct": 8.263699242185918
+      },
+      "braton_prime_simulation": {
+        "before_ms": 0.9102705,
+        "after_ms": 0.8992290000000001,
+        "elapsed_reduction_pct": 1.212991083419701
+      },
+      "braton_prime_record": {
+        "before_ms": 2.484604,
+        "after_ms": 2.377375,
+        "elapsed_reduction_pct": 4.315738041152639
+      },
+      "amprex_gas_electric_0_simulation": {
+        "before_ms": 1.0065624999999998,
+        "after_ms": 0.9708955,
+        "elapsed_reduction_pct": 3.5434461347407464
+      },
+      "amprex_gas_electric_0_record": {
+        "before_ms": 2.9604584999999997,
+        "after_ms": 2.982625,
+        "elapsed_reduction_pct": -0.7487522625296172
+      },
+      "amprex_gas_electric_100_simulation": {
+        "before_ms": 0.955542,
+        "after_ms": 0.976375,
+        "elapsed_reduction_pct": -2.180228603242984
+      },
+      "amprex_gas_electric_100_record": {
+        "before_ms": 3.0187085000000002,
+        "after_ms": 3.0024375,
+        "elapsed_reduction_pct": 0.5390053395351035
+      },
+      "kuva_nukor_shield_simulation": {
+        "before_ms": 0.911729,
+        "after_ms": 0.8861665000000001,
+        "elapsed_reduction_pct": 2.8037388302883826
+      },
+      "kuva_nukor_shield_record": {
+        "before_ms": 2.0476874999999994,
+        "after_ms": 2.0161455,
+        "elapsed_reduction_pct": 1.5403717608277412
+      },
+      "coda_bubonico_battery_simulation": {
+        "before_ms": 2.246396,
+        "after_ms": 2.184229,
+        "elapsed_reduction_pct": 2.7674105545059557
+      },
+      "coda_bubonico_battery_record": {
+        "before_ms": 6.995479,
+        "after_ms": 6.933417,
+        "elapsed_reduction_pct": 0.8871729870105982
+      },
+      "torid_transformed_chain_simulation": {
+        "before_ms": 1.933188,
+        "after_ms": 1.853104,
+        "elapsed_reduction_pct": 4.142587270353415
+      },
+      "torid_transformed_chain_record": {
+        "before_ms": 9.0535205,
+        "after_ms": 8.897604000000001,
+        "elapsed_reduction_pct": 1.7221643227073757
+      },
+      "multiple_actors_simulation": {
+        "before_ms": 1.4556875,
+        "after_ms": 1.439042,
+        "elapsed_reduction_pct": 1.1434803142844951
+      },
+      "multiple_actors_record": {
+        "before_ms": 2.754562,
+        "after_ms": 2.6970625000000004,
+        "elapsed_reduction_pct": 2.087428055712659
+      },
+      "primary_debilitate_callbacks_simulation": {
+        "before_ms": 0.9996039999999999,
+        "after_ms": 1.009521,
+        "elapsed_reduction_pct": -0.99209286877604
+      },
+      "primary_debilitate_callbacks_record": {
+        "before_ms": 2.9669795,
+        "after_ms": 2.950896,
+        "elapsed_reduction_pct": 0.5420832870601133
+      },
+      "secondary_encumber_window_simulation": {
+        "before_ms": 0.9439165,
+        "after_ms": 0.949396,
+        "elapsed_reduction_pct": -0.5805068562738214
+      },
+      "secondary_encumber_window_record": {
+        "before_ms": 2.140521,
+        "after_ms": 2.223458,
+        "elapsed_reduction_pct": -3.8746174412678025
+      },
+      "braton_replay": {
+        "before_ms": 2.025229,
+        "after_ms": 2.0080005,
+        "elapsed_reduction_pct": 0.8506939215268905
+      },
+      "primary_debilitate_callbacks_simulation_no_arcane": {
+        "before_ms": 0.9627295,
+        "after_ms": 1.068333,
+        "elapsed_reduction_pct": -10.969176700204986
+      },
+      "primary_debilitate_callbacks_simulation_mc128": {
+        "before_ms": 16.7613335,
+        "after_ms": 16.841771,
+        "elapsed_reduction_pct": -0.4798991679271891
+      },
+      "primary_debilitate_callbacks_simulation_mc128_no_arcane": {
+        "before_ms": 16.055667,
+        "after_ms": 16.229792,
+        "elapsed_reduction_pct": -1.0845080431725496
+      },
+      "secondary_encumber_window_simulation_no_arcane": {
+        "before_ms": 0.8940625,
+        "after_ms": 0.8883335,
+        "elapsed_reduction_pct": 0.6407829430269074
+      },
+      "secondary_encumber_window_simulation_mc128": {
+        "before_ms": 14.1629165,
+        "after_ms": 14.0042295,
+        "elapsed_reduction_pct": 1.120440129686573
+      },
+      "secondary_encumber_window_simulation_mc128_no_arcane": {
+        "before_ms": 12.737458499999999,
+        "after_ms": 12.6978545,
+        "elapsed_reduction_pct": 0.310925448746302
+      }
+    },
+    "short-controls": {
+      "torid_simulation": {
+        "before_ms": 0.658979,
+        "after_ms": 0.660021,
+        "elapsed_reduction_pct": -0.15812339998695357
+      },
+      "amprex_gas_electric_100_simulation": {
+        "before_ms": 0.9510210000000001,
+        "after_ms": 0.950521,
+        "elapsed_reduction_pct": 0.052575074577765335
+      },
+      "primary_debilitate_callbacks_simulation_no_arcane": {
+        "before_ms": 0.953458,
+        "after_ms": 0.948563,
+        "elapsed_reduction_pct": 0.5133944022704728
+      },
+      "primary_debilitate_callbacks_simulation_mc128_no_arcane": {
+        "before_ms": 16.074333,
+        "after_ms": 16.186374999999998,
+        "elapsed_reduction_pct": -0.6970242559986684
+      }
+    },
+    "chrome": {
+      "phantasma_prime_published_0_runs": {
+        "before_ms": 41.0,
+        "after_ms": 40.450000047683716,
+        "elapsed_reduction_pct": 1.3414632983324015
+      },
+      "phantasma_prime_published_100_runs": {
+        "before_ms": 36.59999990463257,
+        "after_ms": 36.14999985694885,
+        "elapsed_reduction_pct": 1.2295083302083731
+      },
+      "phantasma_prime_gas_electric_0_runs": {
+        "before_ms": 243.19999980926514,
+        "after_ms": 178.59999990463257,
+        "elapsed_reduction_pct": 26.562499981618636
+      },
+      "phantasma_prime_gas_electric_100_runs": {
+        "before_ms": 186.2000002861023,
+        "after_ms": 148.5,
+        "elapsed_reduction_pct": 20.247046309438787
+      },
+      "phantasma_prime_toxin_0_runs": {
+        "before_ms": 43.69999980926514,
+        "after_ms": 43.85000014305115,
+        "elapsed_reduction_pct": -0.34325019322816175
+      },
+      "phantasma_prime_toxin_100_runs": {
+        "before_ms": 31.15000009536743,
+        "after_ms": 31.200000047683716,
+        "elapsed_reduction_pct": -0.1605134900905414
+      },
+      "torid_published_0_runs": {
+        "before_ms": 17.300000190734863,
+        "after_ms": 17.0,
+        "elapsed_reduction_pct": 1.7341051296376864
+      },
+      "torid_published_100_runs": {
+        "before_ms": 22.100000143051147,
+        "after_ms": 22.049999952316284,
+        "elapsed_reduction_pct": 0.2262452054806241
+      },
+      "kuva_nukor_published_0_runs": {
+        "before_ms": 22.699999809265137,
+        "after_ms": 22.700000286102295,
+        "elapsed_reduction_pct": -2.1006042461024776e-06
+      },
+      "kuva_nukor_published_100_runs": {
+        "before_ms": 24.40000009536743,
+        "after_ms": 24.300000190734863,
+        "elapsed_reduction_pct": 0.4098356731217945
+      },
+      "phantasma_prime_published_0_runs_held_out": {
+        "before_ms": 119.54999995231628,
+        "after_ms": 119.19999980926514,
+        "elapsed_reduction_pct": 0.29276465344270086
+      },
+      "phantasma_prime_published_100_runs_held_out": {
+        "before_ms": 108.54999995231628,
+        "after_ms": 107.95000004768372,
+        "elapsed_reduction_pct": 0.5527405848881894
+      },
+      "phantasma_prime_gas_electric_0_runs_held_out": {
+        "before_ms": 743.5500001907349,
+        "after_ms": 542.0499999523163,
+        "elapsed_reduction_pct": 27.099724320722206
+      },
+      "phantasma_prime_gas_electric_100_runs_held_out": {
+        "before_ms": 562.4500000476837,
+        "after_ms": 444.2000000476837,
+        "elapsed_reduction_pct": 21.024091028531412
+      },
+      "torid_simulation": {
+        "before_ms": 0.9000000953674316,
+        "after_ms": 0.9000000953674316,
+        "elapsed_reduction_pct": 0.0
+      },
+      "amprex_gas_electric_100_simulation": {
+        "before_ms": 1.1999998092651367,
+        "after_ms": 1.2999999523162842,
+        "elapsed_reduction_pct": -8.333346578812062
+      },
+      "primary_debilitate_callbacks_simulation_no_arcane": {
+        "before_ms": 1.200000286102295,
+        "after_ms": 1.200000286102295,
+        "elapsed_reduction_pct": 0.0
+      },
+      "primary_debilitate_callbacks_simulation_mc128_no_arcane": {
+        "before_ms": 19.450000047683716,
+        "after_ms": 19.549999952316284,
+        "elapsed_reduction_pct": -0.5141383258992605
+      }
+    },
+    "chrome-controls": {
+      "torid_simulation": {
+        "before_ms": 0.8000001907348633,
+        "after_ms": 0.8000001907348633,
+        "elapsed_reduction_pct": 0.0
+      },
+      "amprex_gas_electric_100_simulation": {
+        "before_ms": 1.1999998092651367,
+        "after_ms": 1.1999998092651367,
+        "elapsed_reduction_pct": 0.0
+      },
+      "primary_debilitate_callbacks_simulation_no_arcane": {
+        "before_ms": 1.1999998092651367,
+        "after_ms": 1.1999998092651367,
+        "elapsed_reduction_pct": 0.0
+      },
+      "primary_debilitate_callbacks_simulation_mc128_no_arcane": {
+        "before_ms": 19.600000381469727,
+        "after_ms": 19.800000190734863,
+        "elapsed_reduction_pct": -1.0204071702683226
+      }
+    },
+    "long_native_fights": {
+      "torid": {
+        "before_ms": 1.024968875,
+        "after_ms": 1.01494725,
+        "change_pct": -0.9777492023842926,
+        "samples": {
+          "A": [
+            1.019141,
+            1.03079675,
+            1.051281375,
+            1.017983042
+          ],
+          "B": [
+            1.017813958,
+            1.03781125,
+            1.012080542,
+            1.010105792
+          ]
+        }
+      },
+      "gotva_prime": {
+        "before_ms": 1.6128704580000002,
+        "after_ms": 1.6175983125,
+        "change_pct": 0.29313293430039966,
+        "samples": {
+          "A": [
+            1.609230375,
+            1.6077978750000002,
+            1.6183312920000001,
+            1.616510541
+          ],
+          "B": [
+            1.615783167,
+            1.619413458,
+            1.6116643750000001,
+            1.62484775
+          ]
+        }
+      },
+      "scourge": {
+        "before_ms": 0.566745396,
+        "after_ms": 0.5664794165,
+        "change_pct": -0.04693103850109681,
+        "samples": {
+          "A": [
+            0.568126667,
+            0.562135458,
+            0.575619167,
+            0.565364125
+          ],
+          "B": [
+            0.568285959,
+            0.566239583,
+            0.564618042,
+            0.56671925
+          ]
+        }
+      },
+      "braton_prime": {
+        "before_ms": 1.3778611664999998,
+        "after_ms": 1.3835599165,
+        "change_pct": 0.4135939192245308,
+        "samples": {
+          "A": [
+            1.3748871249999999,
+            1.374263292,
+            1.384839417,
+            1.380835208
+          ],
+          "B": [
+            1.3839000000000001,
+            1.37378775,
+            1.384196208,
+            1.383219833
+          ]
+        }
+      }
+    }
+  },
+  "truth": {
+    "truth-final-encumber": [
+      "[scope] 43 builds x arcanes = 43 jobs (43 distinct to the fight), exhaustive",
+      "[reference] 128 runs each = 5504 sims | answer set 3 builds | settled across seeds: true | top-10 overlap 1.00",
+      "[search] descent from 4 starts, 53 subsets scored, cut by budget: false | 57 screen evals",
+      "[search] rank 1 | regret 0.000% | within noise: true | top-10 recall 100% | 754 sims (13.7% of the reference)"
+    ],
+    "truth-final-debilitate": [
+      "[scope] 22 builds x arcanes = 22 jobs (22 distinct to the fight), exhaustive",
+      "[reference] 128 runs each = 2816 sims | answer set 1 builds | settled across seeds: true | top-10 overlap 1.00",
+      "[search] descent from 3 starts, 32 subsets scored, cut by budget: false | 32 screen evals",
+      "[search] rank 1 | regret 0.000% | within noise: true | top-10 recall 90% | 704 sims (25.0% of the reference)"
+    ]
+  },
+  "memory": {
+    "chrome": {
+      "A": {
+        "peak_process_rss_bytes": null,
+        "peak_wasm_linear_bytes": 22675456
+      },
+      "B": {
+        "peak_process_rss_bytes": null,
+        "peak_wasm_linear_bytes": 22675456
+      }
+    },
+    "chrome_controls": {
+      "A": {
+        "peak_process_rss_bytes": null,
+        "peak_wasm_linear_bytes": 19726336
+      },
+      "B": {
+        "peak_process_rss_bytes": null,
+        "peak_wasm_linear_bytes": 19726336
+      }
+    },
+    "wasm_artifact_bytes": {
+      "before": 7043935,
+      "after": 7044528
+    }
+  },
+  "method": "ABBAABBA; three measured repeats per call, plus per-call warmup; held-out requests use separate run states; short controls use 300 repeats; 180s/1000-run native shapes use three repeats per invocation.",
+  "qualification_commands": [
+    {
+      "name": "roster-migration",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/native-order/qualified-retained/native",
+        "--candidate",
+        "target/native-opt/final/native",
+        "--calls",
+        "target/native-opt/final/roster-calls.json",
+        "--output",
+        "target/native-opt/final/roster-migration",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 1,
+      "accepted_exits": [
+        0,
+        1
+      ],
+      "seconds": 11.22525691986084
+    },
+    {
+      "name": "roster-migration-gate",
+      "command": [
+        "python3",
+        "scripts/engine_answer_equivalence.py",
+        "target/native-opt/final/roster-migration",
+        "--output",
+        "target/native-opt/final/roster-migration-equivalence.json",
+        "--allow-source-accounting"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 2.3836889266967773
+    },
+    {
+      "name": "roster-parity",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/native-opt/final/native",
+        "--candidate",
+        "target/native-opt/final/wasm",
+        "--calls",
+        "target/native-opt/final/roster-calls.json",
+        "--output",
+        "target/native-opt/final/roster-parity",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 12.661802291870117
+    },
+    {
+      "name": "roster-parity-gate",
+      "command": [
+        "python3",
+        "scripts/engine_answer_equivalence.py",
+        "target/native-opt/final/roster-parity",
+        "--output",
+        "target/native-opt/final/roster-parity-equivalence.json"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 2.369041919708252
+    },
+    {
+      "name": "focused-migration",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/native-order/qualified-retained/native",
+        "--candidate",
+        "target/native-opt/final/native",
+        "--calls",
+        "target/native-opt/final/focused-calls.json",
+        "--output",
+        "target/native-opt/final/focused-migration",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 1,
+      "accepted_exits": [
+        0,
+        1
+      ],
+      "seconds": 3.0782570838928223
+    },
+    {
+      "name": "focused-migration-gate",
+      "command": [
+        "python3",
+        "scripts/engine_answer_equivalence.py",
+        "target/native-opt/final/focused-migration",
+        "--output",
+        "target/native-opt/final/focused-migration-equivalence.json",
+        "--allow-source-accounting"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 3.322571039199829
+    },
+    {
+      "name": "focused-parity",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/native-opt/final/native",
+        "--candidate",
+        "target/native-opt/final/wasm",
+        "--calls",
+        "target/native-opt/final/focused-calls.json",
+        "--output",
+        "target/native-opt/final/focused-parity",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 3.6317288875579834
+    },
+    {
+      "name": "focused-parity-gate",
+      "command": [
+        "python3",
+        "scripts/engine_answer_equivalence.py",
+        "target/native-opt/final/focused-parity",
+        "--output",
+        "target/native-opt/final/focused-parity-equivalence.json"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 3.3761086463928223
+    },
+    {
+      "name": "dense-parity",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/native-opt/final/native",
+        "--candidate",
+        "target/native-opt/final/wasm",
+        "--calls",
+        "target/native-opt/final/dense-calls.json",
+        "--output",
+        "target/native-opt/final/dense-parity",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 15.281736135482788
+    },
+    {
+      "name": "dense-parity-gate",
+      "command": [
+        "python3",
+        "scripts/engine_answer_equivalence.py",
+        "target/native-opt/final/dense-parity",
+        "--output",
+        "target/native-opt/final/dense-parity-equivalence.json"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 0.13009881973266602
+    },
+    {
+      "name": "browser",
+      "command": [
+        "node",
+        "scripts/engine_browser_compare.mjs",
+        "target/native-order/qualified-retained/wasm",
+        "target/native-opt/final/wasm",
+        "target/native-opt/final/browser-calls.json",
+        "target/native-opt/final/browser",
+        "3",
+        "2"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 86.87038898468018
+    },
+    {
+      "name": "browser-gate",
+      "command": [
+        "python3",
+        "scripts/engine_answer_equivalence.py",
+        "target/native-opt/final/browser",
+        "--calls",
+        "target/native-opt/final/browser-calls.json",
+        "--allow-source-accounting",
+        "--output",
+        "target/native-opt/final/browser-equivalence.json"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 0.21283483505249023
+    },
+    {
+      "name": "browser-summary",
+      "command": [
+        "python3",
+        "scripts/engine_impact.py",
+        "target/native-opt/final/browser",
+        "--output",
+        "target/native-opt/final/browser-summary.json"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 0.06063580513000488
+    },
+    {
+      "name": "gas",
+      "command": [
+        "node",
+        "scripts/check_gas.mjs",
+        "native=target/release/wfsim-gas",
+        "pkg=target/native-opt/final/wasm"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 42.22228503227234
+    },
+    {
+      "name": "truth-final-encumber",
+      "command": [
+        "target/release/wfsim-truth",
+        "weapon=kuva_nukor",
+        "pool=hornet_strike,barrel_diffusion,lethal_torrent,convulsion,deep_freeze,heated_charge,pistol_pestilence",
+        "size=3",
+        "min=3",
+        "arcanes=secondary_encumber",
+        "runs=64",
+        "truth_runs=128",
+        "candidate_runs=8",
+        "duration=12",
+        "finalists=10",
+        "threads=1",
+        "max_jobs=5000"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 1.849226951599121
+    },
+    {
+      "name": "truth-final-debilitate",
+      "command": [
+        "target/release/wfsim-truth",
+        "weapon=amprex",
+        "pool=serration,split_chamber,hellfire,infected_clip,stormbringer,rifle_elementalist",
+        "size=3",
+        "min=3",
+        "arcanes=primary_debilitate",
+        "runs=64",
+        "truth_runs=128",
+        "candidate_runs=8",
+        "duration=12",
+        "finalists=10",
+        "threads=1",
+        "max_jobs=5000"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "seconds": 0.7985589504241943
+    }
+  ],
+  "raw_evidence": "target/native-opt",
+  "drive_backup_folder": "engine-native-optimized-20261115-94b62a5d",
+  "remote_drive_sync_verified": false,
+  "limits": [
+    "Performance measurements describe the frozen workloads and this host, not every build or device.",
+    "The 40m browser miss fixture has three pre-existing assertions failing on zero misses in original9a8c,baseline1c and its prior checkpoint; the existing receipt retains that evidence.",
+    "Full native rule coverage remains incomplete at the boundaries named in the binding ledger."
+  ],
+  "pending_release_checks": [
+    "Full CI on the combined integration candidate",
+    "Official engine and all-channel release validation"
+  ],
+  "preview": {
+    "complete": true,
+    "base": "http://127.0.0.1:8831",
+    "calculation_commit": "94b62a5d0ceda4832206521ac28315c031e3d748",
+    "frozen_native_responses_equal": [
+      {
+        "id": "braton_panel",
+        "exact": true,
+        "sha256": "c6e6b07ea53c4bf3d598dacaa037b609bdae20558ae1ab41dd4e3663bb995163"
+      },
+      {
+        "id": "torid_simulation",
+        "exact": true,
+        "sha256": "5fe0183678a52fe767704ae41af650bfb02f646cbe77a76ec8a38a4e5eb75e1d"
+      },
+      {
+        "id": "torid_record",
+        "exact": true,
+        "sha256": "6d63dc5044256cf8dca69b8a93f8ab949cc23660bbd1379549d531325abdec66"
+      },
+      {
+        "id": "gotva_prime_simulation",
+        "exact": true,
+        "sha256": "b26d2ce7c348c6912402cdf95c53593a4f35c709385a1d0bced9b0db72674f7b"
+      },
+      {
+        "id": "gotva_prime_record",
+        "exact": true,
+        "sha256": "d594e5cf40775ebe157398de7b0f54b52d7c0fef3a7348506233a10fcf63423b"
+      },
+      {
+        "id": "scourge_simulation",
+        "exact": true,
+        "sha256": "1dab0987eded6a7507874bc8cbf7775e7c91aae50c687cce06d84813a3f3ed76"
+      },
+      {
+        "id": "scourge_record",
+        "exact": true,
+        "sha256": "a6d463daa098114279112c2c0054039af90d05f9c239600cd8b28b02034865ab"
+      },
+      {
+        "id": "braton_prime_simulation",
+        "exact": true,
+        "sha256": "6340cc04fa5e82215aa52f3d7cf72ee69c3bc77882d577c07f9d203bbaaf6c01"
+      },
+      {
+        "id": "braton_prime_record",
+        "exact": true,
+        "sha256": "87d701a498b2e8b30ff3996340ccb838cfe4209c143f6852151e2028474e6d89"
+      },
+      {
+        "id": "amprex_gas_electric_0_simulation",
+        "exact": true,
+        "sha256": "15794a1e5bfaba3680f80bdcaf41f4dc38893dd79ae4c95f01db88bd5609f3ee"
+      },
+      {
+        "id": "amprex_gas_electric_0_record",
+        "exact": true,
+        "sha256": "cddaec2be8689489293624781b6e3bfcda035c63c4fa37a356d13a9c6d33d24c"
+      },
+      {
+        "id": "amprex_gas_electric_100_simulation",
+        "exact": true,
+        "sha256": "13ea0403ce5eccc172d118fcbaf1765460ceda26ee3bb5307f09737f54061ca9"
+      },
+      {
+        "id": "amprex_gas_electric_100_record",
+        "exact": true,
+        "sha256": "0f484d4b3effbdf3cc1b2e95a69ccecfcb52b450b2308477cf78f481661c357c"
+      },
+      {
+        "id": "kuva_nukor_shield_simulation",
+        "exact": true,
+        "sha256": "6cbabca90fcf8c2eda597687eaa167ce3964d49ab8f27fafa1fc3fc28b250c5c"
+      },
+      {
+        "id": "kuva_nukor_shield_record",
+        "exact": true,
+        "sha256": "6c332be4bd7a6d264c7f9f9391cb4d550bc330e32bf7f365d84f145afffc9475"
+      },
+      {
+        "id": "coda_bubonico_battery_simulation",
+        "exact": true,
+        "sha256": "249d17e939bd7216b467d56cd1b972fc6b615667cd865473fce38481abf87f37"
+      },
+      {
+        "id": "coda_bubonico_battery_record",
+        "exact": true,
+        "sha256": "9268a45ac03516b4a760b2bae26846cbdb673cf29c325ab7d7e10b631c10c766"
+      },
+      {
+        "id": "torid_transformed_chain_simulation",
+        "exact": true,
+        "sha256": "060396b40ced4bec99e11a2ef270026cca6ed7180af8139a73a6ed7d7ae6e6ea"
+      },
+      {
+        "id": "torid_transformed_chain_record",
+        "exact": true,
+        "sha256": "d1a8ec2df8d217029018f472c280bceae70e202d6539f95cd6b4a11020ca4b8e"
+      },
+      {
+        "id": "multiple_actors_simulation",
+        "exact": true,
+        "sha256": "cd864e7b3fc45d035700ff30d5177a2a143f86cb3d41fb06df78f8556beca424"
+      },
+      {
+        "id": "multiple_actors_record",
+        "exact": true,
+        "sha256": "eb0bf61edab6305c214694ec3bfa9be501b5e78987bd28555aa6ce3bd8f1a464"
+      },
+      {
+        "id": "primary_debilitate_callbacks_simulation",
+        "exact": true,
+        "sha256": "a38074fc2f8deed3c430eebe2f3ef4584a5b88f2151f72e84388d4ad0e6b8530"
+      },
+      {
+        "id": "primary_debilitate_callbacks_record",
+        "exact": true,
+        "sha256": "7654025db4bf1c86bd8875cc39949f3aad8739fe68ef83582461df4237511def"
+      },
+      {
+        "id": "secondary_encumber_window_simulation",
+        "exact": true,
+        "sha256": "29c29b409aea305fd3431f7c77b112d863aaf5eb0bf63f8c0115599f666924ec"
+      },
+      {
+        "id": "secondary_encumber_window_record",
+        "exact": true,
+        "sha256": "1cd5f2082625bb990d435376381aefc8d4b0c385ab4725113556b070eb66c23d"
+      },
+      {
+        "id": "braton_replay",
+        "exact": true,
+        "sha256": "4525acaa70fb93fb11e601767c4efed69614b779fac339d2489572dd12a0e562"
+      },
+      {
+        "id": "primary_debilitate_callbacks_simulation_no_arcane",
+        "exact": true,
+        "sha256": "15794a1e5bfaba3680f80bdcaf41f4dc38893dd79ae4c95f01db88bd5609f3ee"
+      },
+      {
+        "id": "primary_debilitate_callbacks_simulation_mc128",
+        "exact": true,
+        "sha256": "3d6984e7343d81d2c96f89cc374871e3f249fa3949c8cd0b45dab0e3fcdae5ec"
+      },
+      {
+        "id": "primary_debilitate_callbacks_simulation_mc128_no_arcane",
+        "exact": true,
+        "sha256": "20993fcd66a5d79920297f8f02d65772546a29a2a9cb4fba9575f92ce8aeaeea"
+      },
+      {
+        "id": "secondary_encumber_window_simulation_no_arcane",
+        "exact": true,
+        "sha256": "6cbabca90fcf8c2eda597687eaa167ce3964d49ab8f27fafa1fc3fc28b250c5c"
+      },
+      {
+        "id": "secondary_encumber_window_simulation_mc128",
+        "exact": true,
+        "sha256": "087ab815be32d8b934c729c0fbfb3aa0e0ded7a9faac2f273dfbe69babcd1fb8"
+      },
+      {
+        "id": "secondary_encumber_window_simulation_mc128_no_arcane",
+        "exact": true,
+        "sha256": "db40c3c5d30a201276fe5735c1d73c92f22c37a695553d7007df9414ee762e3e"
+      },
+      {
+        "id": "kuva_nukor_shield_simulation:elementalist_faction",
+        "exact": true,
+        "sha256": "96d62fba15181ec12ca350f0fcce66bd09b56263d1b0c96b645a4f1c4aec1d4b"
+      },
+      {
+        "id": "kuva_nukor_shield_record:elementalist_faction",
+        "exact": true,
+        "sha256": "99e111f3552123fc709cc71c2921e4a79dc3fe3eae84ecc89ac8d2ddd54b5967"
+      },
+      {
+        "id": "amprex_gas_electric_0_record:native_trace",
+        "exact": true,
+        "sha256": "f3fce09c37db8bdb9798308158576a0520cdbdb2ae0ba2007e8de76fdd597c00"
+      },
+      {
+        "id": "amprex_gas_electric_100_record:native_trace",
+        "exact": true,
+        "sha256": "56cf0b521d50ab54458de9d25a726c627078d6ac0aa194468604f58b63fafc52"
+      },
+      {
+        "id": "kuva_nukor_shield_record:native_trace",
+        "exact": true,
+        "sha256": "ff2d15b7e6e51ddca0ac593725deb01e16aa0db7c650a1b12045f7c2649b0f46"
+      },
+      {
+        "id": "kuva_nukor_shield_record:elementalist_faction:native_trace",
+        "exact": true,
+        "sha256": "6919c1f943f5e5e8085fe162cf75eef9836bed5305097212fbce063dd83a42a2"
+      },
+      {
+        "id": "1",
+        "exact": true,
+        "sha256": "d80341700b4817d85e9d4211ed9934f4ffa49f5bee36d088dd45eb66ffa35ce8"
+      }
+    ],
+    "known_miss_fixture_misses": 0
+  }
+}
