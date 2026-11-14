@@ -71,3 +71,44 @@ fn one_submitted_packet_with_twenty_magnetic_counters_has_one_primary_selection(
         assert_eq!(fight.r.procs, count as u32 + 1);
     }
 }
+
+fn magnetic_beam() -> FightParams {
+    let base = crate::model::WeaponBase::from_data("amprex", false, &[]);
+    let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+    let arena = crate::arena::Arena { body_parts: mono_body(1.0), ..crate::arena::Arena::training(2.0) };
+    let mut p = FightParams::from_panel(&panel, &arena, &arc("primary_debilitate"));
+    assert!(p.continuous);
+    p.damage = DamageVector::new().with(DamageType::Magnetic, 100.0);
+    p.critical_inputs = None;
+    p.base_crit_chance = 0.0;
+    p.status_chance = 0.0;
+    p.forced_procs = vec![DamageType::Magnetic];
+    p.multishot = 1.0;
+    p.infinite_reserve = true;
+    p
+}
+
+#[test]
+fn merged_beam_multishot_changes_damage_without_multiplying_primary_callbacks() {
+    let mut p = magnetic_beam();
+    let single = run_once(&p, &mut Rng::new(42));
+    p.multishot = 5.0;
+    let merged = run_once(&p, &mut Rng::new(42));
+    assert!(single.shots > 10);
+    assert_eq!(single.shots, merged.shots);
+    assert_eq!(single.procs, single.shots * 2 - 9);
+    assert_eq!(single.procs, merged.procs);
+    assert!(merged.tally.raw() > single.tally.raw() * 4.9);
+}
+
+#[test]
+fn a_beam_tick_with_twenty_status_rolls_submits_one_primary_damage_instance() {
+    let mut p = magnetic_beam();
+    p.forced_procs.clear();
+    p.status_chance = 20.0;
+    let split = run_once(&p, &mut Rng::new(42));
+    p.arcane = ArcaneFx::none();
+    let plain = run_once(&p, &mut Rng::new(42));
+    assert_eq!(plain.procs, plain.shots * 20);
+    assert_eq!(split.procs - plain.procs, split.shots);
+}

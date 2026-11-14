@@ -60,6 +60,7 @@ fn dt_on_the_dummy(head: bool) -> FightParams {
     p.frenzy = true;
     p.status_chance = 0.0;
     p.base_status_chance = 0.0;
+    p.critical_inputs = None;
     p.crit_multiplier = 1.0;
     p.body_parts = if head { all_head() } else { mono_body(1.0) };
     p

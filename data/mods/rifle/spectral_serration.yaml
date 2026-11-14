@@ -20,8 +20,11 @@ effects:
   # code change anywhere.
   - kind: base_damage_bonus
     condition: invisible
-    rank0: 0.3
-    rankMax: 3.3
+    UpgradeType: 253
+    OperationType: STACKING_MULTIPLY
+    Value: 0.30000001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 family: serration
 incompatible_with: [amalgam_serration, serration]

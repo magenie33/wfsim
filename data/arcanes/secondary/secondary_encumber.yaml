@@ -12,7 +12,7 @@ effects:
     OperationType: ADD
     Value: 0.04
     FusionPowerStep: 0
-    FusionPowerCurve: QC_NONE
+    FusionPowerCurve: QC_LINEAR
     CanReproc: false
     ReprocTime: 0
     UpgradeDuration: 0

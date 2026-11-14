@@ -18,6 +18,9 @@
 //! defined in `data/debuffs/` — this module only decides *which*
 //! procs a hit produces.
 
+mod packet;
+pub use packet::{ProcCounters, ProcType};
+
 use crate::rules::damage::{DamageType, DamageVector};
 use crate::rules::rng::Rng;
 

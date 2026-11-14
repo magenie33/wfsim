@@ -3,7 +3,7 @@
 //!
 //! One seeded RNG threaded through the whole simulation keeps Monte Carlo runs
 //! and golden tests reproducible (the determinism rule in `docs/BUFFS.md`).
-//! SplitMix64 — small, fast, no dependencies.
+//! Native LCG arithmetic; independent stream installation belongs to the scene.
 
 /// Audited native global generator; stream installation is owned by the scene.
 #[derive(Debug, Clone, Copy, Default)]
@@ -26,40 +26,9 @@ impl NativeRng {
         assert!(length > 0);
         (((self.advance() >> 32) & 0x3fffffff) % length as u64) as usize
     }
-}
-
-/// A seeded SplitMix64 generator.
-#[derive(Debug, Clone)]
-pub struct Rng {
-    state: u64,
-}
-
-#[wfsim_gas_macro::metered]
-impl Rng {
-    /// Create a generator from a seed.
-    pub fn new(seed: u64) -> Self {
-        Self { state: seed }
-    }
-
-    /// The generator's ENTIRE state. SplitMix64 keeps it in one `u64`, so
-    /// `Rng::new(rng.state())` is an exact clone — which is what lets the
-    /// simulator replay one chosen engagement out of thousands without
-    /// storing anything per run but this number.
-    pub fn state(&self) -> u64 {
-        self.state
-    }
-
-    fn next_u64(&mut self) -> u64 {
-        self.state = self.state.wrapping_add(0x9E3779B97F4A7C15);
-        let mut z = self.state;
-        z = (z ^ (z >> 30)).wrapping_mul(0xBF58476D1CE4E5B9);
-        z = (z ^ (z >> 27)).wrapping_mul(0x94D049BB133111EB);
-        z ^ (z >> 31)
-    }
-
-    /// Uniform in `[0, 1)` with 53 bits of precision.
+    /// Native discrete sample, widened only at the existing calculator boundary.
     pub fn next_f64(&mut self) -> f64 {
-        (self.next_u64() >> 11) as f64 / ((1u64 << 53) as f64)
+        self.unit() as f64
     }
 
     /// Return true with probability `p` (clamped to `[0, 1]`).
@@ -67,6 +36,8 @@ impl Rng {
         self.next_f64() < p.clamp(0.0, 1.0)
     }
 }
+
+pub type Rng = NativeRng;
 
 /// ONE ENGAGEMENT'S RANDOMNESS, SPLIT SO THAT UNRELATED DECISIONS DO NOT MOVE
 /// EACH OTHER.
@@ -133,18 +104,10 @@ pub struct Draws {
 impl Draws {
     /// Derive the streams from one engagement seed.
     ///
-    /// Each stream's starting state is the seed MIXED with the stream index,
-    /// not offset by it. Offsetting is the obvious thing and it is wrong here:
-    /// SplitMix64 advances by adding the golden-ratio constant, so seeding
-    /// stream 2 at `seed + 2γ` makes it stream 1 shifted by a single draw —
-    /// the crit roll for one pellet is then literally the status roll for the
-    /// one before it. The streams looked separate and were one sequence read
-    /// at three offsets, which showed up as a status rate 6% off its own
-    /// parameter (`incarnon_procs_at_the_listed_rate_per_pellet`).
-    ///
-    /// Running the index through the same avalanche the generator uses for its
-    /// output puts the three starting states far apart, which is what SplitMix64
-    /// is designed for.
+    /// WFSim installs independently mixed streams using the SplitMix seed
+    /// avalanche; each installed stream advances with the native LCG.
+    /// Game-global installation and cross-consumer stream ownership remain
+    /// separate bindings from this deterministic scene policy.
     pub fn new(seed: u64) -> Self {
         let at = |k: u64| {
             let mut z = seed.wrapping_add(k.wrapping_mul(0x9E37_79B9_7F4A_7C15));
@@ -173,7 +136,7 @@ mod tests {
         let mut a = Rng::new(42);
         let mut b = Rng::new(42);
         for _ in 0..1000 {
-            assert_eq!(a.next_u64(), b.next_u64());
+            assert_eq!(a.unit(), b.unit());
         }
     }
 

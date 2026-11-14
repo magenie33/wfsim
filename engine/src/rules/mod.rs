@@ -10,6 +10,7 @@ pub mod ammo;
 pub mod buffs;
 pub mod capacity;
 pub mod chain;
+pub mod critical;
 pub mod damage;
 pub mod elements;
 pub mod math;

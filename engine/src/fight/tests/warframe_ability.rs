@@ -896,8 +896,10 @@ fn casting_costs_shots_an_assumed_buff_does_not() {
 fn a_flat_crit_damage_lands_after_the_mods_and_before_the_tier() {
     let braton = |abilities: &[(&'static str, Option<f64>)], cc: f64, cd: f64, strength: f64| {
         let mut p = params(abilities, strength);
+        p.critical_inputs = None;
         p.base_crit_chance = cc;
         p.unmodded_crit_damage = 1.6;
+        p.critical_inputs = None;
         p.crit_multiplier = cd;
         // No kill, so no overkill trimmed off the number being compared.
         p.foe.base_health = 1e15;

@@ -31,11 +31,11 @@ fn prelude_of_might_raises_the_base_multiplier_not_the_final_one() {
     // 3.4 base, +3 = 6.4 with no crit-damage mod either way — each base
     // quantized as the game does (MECHANICS §Quantization).
     let q = crate::rules::damage::quantize_base_crit_damage;
-    assert!((cd_with(&[], &evo) - q(6.4)).abs() < 1e-9, "{}", cd_with(&[], &evo));
+    assert!(crate::rules::upgrades::near_f32(cd_with(&[], &evo), q(6.4)), "{}", cd_with(&[], &evo));
     // With +110%: (3.4 + 3.0) x 2.1 = 13.44, NOT 3.4 x 2.1 + 3.0 = 10.14.
     let modded = cd_with(&["primed_target_cracker"], &evo);
-    assert!((modded - q(6.4) * 2.1).abs() < 1e-9, "expected 13.44x, got {modded}");
-    assert!((cd_with(&["primed_target_cracker"], &bare) - q(3.4) * 2.1).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(modded, q(6.4) * 2.1), "expected 13.44x, got {modded}");
+    assert!(crate::rules::upgrades::near_f32(cd_with(&["primed_target_cracker"], &bare), q(3.4) * 2.1));
 }
 
 /// ...and it is CONDITIONAL: the perk pays only while the build's own crit

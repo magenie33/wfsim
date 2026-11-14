@@ -10,8 +10,11 @@ exclusive_to: [convectrix, convectrix_alt]
 
 effects:
   - kind: status_chance_bonus
-    rank0: 0.25
-    rankMax: 1.50
+    UpgradeType: 365
+    OperationType: STACKING_MULTIPLY
+    Value: 0.25
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
   - kind: unmodelled
     clause: "Only consume ammo when dealing damage"

@@ -20,8 +20,11 @@ disables: [fire_rate]    # locks Fire Rate from being modified while equipped
 
 effects:
   - kind: base_damage_bonus
-    rank0: 0.5
-    rankMax: 3.0
+    UpgradeType: 253
+    OperationType: STACKING_MULTIPLY
+    Value: 0.5
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   - kind: punch_through_bonus
     rank0: 0.25
     rankMax: 1.5

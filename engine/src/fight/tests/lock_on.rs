@@ -13,6 +13,7 @@ fn burst_at(gap_m: f64, lock: bool) -> FightParams {
         BodyPart { name: "head".into(), aim_weight: 1.0, multiplier: 1.0, is_head: true, is_weak_point: true, crit_bonus: false },
         BodyPart { name: "body".into(), aim_weight: 0.0, multiplier: 1.0, is_head: false, is_weak_point: false, crit_bonus: false },
     ];
+    p.critical_inputs = None;
     p.crit_multiplier = 1.0;
     p.base_crit_chance = 0.0;
     p.status_chance = 0.0;

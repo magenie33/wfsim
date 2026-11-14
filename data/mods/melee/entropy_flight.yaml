@@ -20,8 +20,11 @@ description: "+X% Projectile Speed\n+X 'Entropy'"
 # The syndicate affinity threshold is simulated only at max rank.
 effects:
 - kind: projectile_speed_bonus
-  rank0: 0.35
-  rankMax: 1.4
+  UpgradeType: 380
+  OperationType: STACKING_MULTIPLY
+  Value: 0.34999999
+  FusionPowerStep: 0.0
+  FusionPowerCurve: QC_LINEAR
 - kind: syndicate_radial
   syndicate: entropy
   rank0: 0.25

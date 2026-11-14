@@ -45,6 +45,7 @@ fn shots_from(
     let mut p = FightParams::from_panel(panel, &crate::arena::Arena::training(30.0), &arcane);
     p.ammo_efficiency_applies = efficiency > 0.0;
     p.foe.base_health = 1e15;
+    p.critical_inputs = None;
     p.base_crit_chance = 0.0;
     p.status_chance = 0.0;
     p.base_status_chance = 0.0;
@@ -112,6 +113,7 @@ fn m117_the_chamber_reaches_the_heat_tick_under_valence_formation() {
             "melee",
         );
         p.foe.base_health = 1e15;
+        p.critical_inputs = None;
         p.base_crit_chance = 0.0;
         p.body_parts = mono_body(1.0);
         // ONE SHOT in the window, so the tick is that shot's stack alone.
@@ -235,9 +237,12 @@ fn incarnon_shot(
     p.foe.base_armor = 0.0;
     // EVERY PART'S OWN ROLL, fixed: the orb and its explosion carry their own.
     let cc = if crit { 1.0 } else { 0.0 };
+    p.critical_inputs = None;
     p.base_crit_chance = cc;
     if let Some(e) = p.embed.as_mut() {
+        e.hit.critical_inputs = None;
         e.hit.crit_chance = cc;
+        e.explosion.critical_inputs = None;
         e.explosion.crit_chance = cc;
     }
     p.status_chance = 0.0;
