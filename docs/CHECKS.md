@@ -321,6 +321,11 @@ protected inputs fail. It does not access PostgreSQL or publish remotely.
 `check_inventory_disk_budget.mjs` verifies whole-page rollback on database
 exhaustion and explicit generated-file allocation, path, link and host-reserve
 limits without exhausting the actual filesystem.
+Explicit whole-allocation replay budgets include sibling captures, backups and
+probe artifacts once. Their root, total and reserve must match the verified
+allocation; independent narrower budgets retain their work-directory scope.
+Work-only accounting, wrong binding, overlap, path escape and linked output
+controls fail before a new replay database is created.
 `check_board_storage.mjs` rejects missing, substituted, remote, system and linked
 data storage before the shell, producer, publisher or rebuild command creates
 state. Valid local ext4/xfs UUID bindings use the configured work root.

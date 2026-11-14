@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Disk exhaustion must preserve the last committed source page and checkpoint.
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, openSync, closeSync, ftruncateSync, symlinkSync, statfsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, openSync, closeSync, ftruncateSync, symlinkSync, statfsSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { openCatalog } from './incremental_inventory.mjs';
@@ -50,6 +50,28 @@ try {
   const fs = statfsSync(root); writeFileSync(allocation, JSON.stringify({ ...limit, minimum_host_free_bytes: fs.bavail * fs.bsize + 1024 ** 3 }));
   assert.throws(() => offlineCapacityGuard(allocation, reserved), /host free-space reserve/);
   assert.throws(() => inventoryDiskBudget({ work, reserveBytes: 1 }), /filesystem reserve/);
+  const scoped = join(root, 'scope'), nested = join(scoped, 'nested'), archives = join(scoped, 'archives');mkdirSync(scoped);mkdirSync(nested);mkdirSync(archives);
+  writeFileSync(join(archives, 'retained'), 'retained-backup');
+  const oldScope = inventoryDiskBudget({work: nested, sources: [source], totalBytes});
+  const fullScope = inventoryDiskBudget({work: nested, scopeRoot: scoped, sources: [source], totalBytes});
+  assert.equal(fullScope.report().budget_scope, scoped);
+  assert.equal(fullScope.report().existing_source_and_work_bytes-oldScope.report().existing_source_and_work_bytes,15);
+  assert.equal(oldScope.report().additional_budget_bytes-fullScope.report().additional_budget_bytes,15);
+  const internal = join(archives, 'captured');writeFileSync(internal, 'scope-input');
+  const scopedSource = inventoryDiskBudget({work: nested, scopeRoot: scoped, sources: [source, internal], totalBytes});
+  assert.equal(scopedSource.report().existing_source_and_work_bytes-fullScope.report().existing_source_and_work_bytes,11,'a sibling capture was billed twice');
+  const external = join(root, 'external');writeFileSync(external, 'external-input');
+  const outsideSource = inventoryDiskBudget({work: nested, scopeRoot: scoped, sources: [source, internal, external], totalBytes});
+  assert.equal(outsideSource.report().existing_source_and_work_bytes-scopedSource.report().existing_source_and_work_bytes,14);
+  const overlap = inventoryDiskBudget({work:nested,scopeRoot:scoped,sources:[source,join(root,'work/../source'),realpathSync(source),internal,realpathSync(internal),external,external],totalBytes});
+  assert.equal(overlap.report().existing_source_and_work_bytes,outsideSource.report().existing_source_and_work_bytes);
+  assert.equal(overlap.report().protected_source_bytes,outsideSource.report().protected_source_bytes);
+  const unowned = join(root, 'unowned');mkdirSync(unowned);assert.throws(()=>inventoryDiskBudget({work:nested,scopeRoot:unowned,totalBytes}),/scope must contain/);
+  symlinkSync(scoped,join(root,'linked-scope'));assert.throws(()=>inventoryDiskBudget({work:nested,scopeRoot:join(root,'linked-scope'),totalBytes}),/scope must contain/);
+  symlinkSync(source,join(archives,'linked-input'));assert.throws(()=>fullScope.check(true),/cannot contain links/);rmSync(join(archives,'linked-input'));
+  const oversize = openSync(join(archives,'oversized'),'w');ftruncateSync(oversize,totalBytes);closeSync(oversize);
+  assert.throws(()=>fullScope.check(true),/exceeded the explicit disk budget/);
   console.log('ok: unchanged live disk default; explicit total budget includes protected source and scratch; SQLITE_FULL rolls back the whole page and restart preserves its prior checkpoint/record');
   console.log('ok: explicit output allocation rejects overflow, linked output, wrong directory and depleted host reserve');
+  console.log('ok: one explicit allocation includes sibling checkpoints/captures once, charges outside sources, retains its reserve and rejects unrelated or linked scopes');
 } finally { catalog?.close(); rmSync(root, { recursive: true, force: true }); }

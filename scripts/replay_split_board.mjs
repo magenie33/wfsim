@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // A protected-source replay qualifies each isolated consumer without a database epoch or remote publication.
-import {existsSync,readFileSync,writeFileSync,mkdirSync,readdirSync,statSync} from 'node:fs';
+import {existsSync,readFileSync,writeFileSync,mkdirSync,readdirSync,statSync,realpathSync} from 'node:fs';
 import {join,resolve,basename} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
@@ -26,7 +26,7 @@ import {validateWorkSpan} from './prepared_work_consumer.mjs';
 const GiB=1024**3,here=fileURLToPath(new URL('.',import.meta.url));
 const hash=body=>createHash('sha256').update(body).digest('hex');
 const load=path=>JSON.parse(readFileSync(path,'utf8'));
-const bytes=paths=>[...new Set(paths)].reduce((n,path)=>n+statSync(path).size,0);
+const bytes=paths=>[...new Set(paths.map(path=>realpathSync(path)))].reduce((n,path)=>n+statSync(path).size,0);
 const command=(program,args,work)=>new Promise((accept,reject)=>{
  const child=spawn(program,args,{stdio:['ignore','inherit','inherit'],env:{...process.env,TMPDIR:join(work,'tmp')}});
  child.once('error',reject);child.once('exit',code=>code===0?accept():reject(Error('offline derived artifact failed: '+program)));
@@ -39,7 +39,7 @@ function allocation(total,protectedBytes,override,reserveBytes) {
  return result;
 }
 export async function replaySplitBoard({capture,bin,work,manifestSha,diskBudgetBytes,reuseSources,allocations,
- minimumFreeBytes=8*GiB,allocationPath,fault=async()=>{},stopAfterPasses=Infinity,report=body=>console.log(JSON.stringify(body))}={}) {
+ minimumFreeBytes=8*GiB,allocationPath,budgetScopeRoot,fault=async()=>{},stopAfterPasses=Infinity,report=body=>console.log(JSON.stringify(body))}={}) {
  capture=resolve(capture);bin=resolve(bin);work=resolve(work);
  if(!/^[a-f0-9]{64}$/.test(manifestSha||'')||!Number.isSafeInteger(diskBudgetBytes))throw Error('protected manifest SHA and explicit total disk bytes are required');
  if(work===capture||work.startsWith(capture+'/')||work===bin||work.startsWith(bin+'/'))throw Error('an isolated replay directory is required');
@@ -61,8 +61,16 @@ export async function replaySplitBoard({capture,bin,work,manifestSha,diskBudgetB
   if(!['describe','facts','gate','render','floor','carry','state'].every(op=>native.contract.operators.includes(op)))throw Error('native projection operations unavailable');
   const base=reuseSources?await inspectNormalizedSourceBase(reuseSources,{engine,manifestSha,native}):null;
   const sources=[manifestPath,...files.map(file=>file.path),...(base?.files.map(file=>file.path)||[])];
-  const quota=allocation(diskBudgetBytes,bytes(sources),allocations,minimumFreeBytes),disk=inventoryDiskBudget({work,sources,totalBytes:diskBudgetBytes,reserveBytes:minimumFreeBytes});
+  const quota=allocation(diskBudgetBytes,bytes(sources),allocations,minimumFreeBytes);
   const capacity=offlineCapacityGuard(allocationPath,work);capacity.check(true);
+  if(budgetScopeRoot) {
+   const bound=capacity.report();
+   if(!bound||resolve(budgetScopeRoot)!==bound.root)throw Error('replay budget allocation scope binding differs');
+   const root=realpathSync(bound.root),outside=sources.map(path=>realpathSync(path)).filter(path=>path!==root&&!path.startsWith(root+'/'));
+   if(diskBudgetBytes!==bytes(outside)+bound.maximum_growth_bytes||minimumFreeBytes!==bound.minimum_host_free_bytes)
+    throw Error('replay budget allocation limit or reserve differs');
+  }
+  const disk=inventoryDiskBudget({work,sources,totalBytes:diskBudgetBytes,reserveBytes:minimumFreeBytes,scopeRoot:budgetScopeRoot});
   const contract={...boardInputContract(engine,native),manifest_sha:manifestSha,...(base?{record_base:base,
    adoption_code:hash(readFileSync(new URL('adopt_prepared_sources.mjs',import.meta.url)))}:{})};
   const sourceId=hash(canon(contract));let state=existsSync(statePath)?load(statePath):null;

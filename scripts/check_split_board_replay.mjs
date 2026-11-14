@@ -39,6 +39,13 @@ try {
  assert.equal(reused.inventory_audit.digest,complete.inventory_audit.digest);assert.equal(reused.board_audit.digest,complete.board_audit.digest);assert.equal(await fileHash(basePath),before);
  for(const file of manifest.files)assert.equal(await fileHash(join(capture,basename(file.path))),file.sha256);
  const stamp=readFileSync(join(work,'verified/meta.json'),'utf8');assert.equal(JSON.parse(stamp).inputs.snapshot,'frozen');
+  const allocationPath=join(root,'allocation.json');writeFileSync(allocationPath,JSON.stringify({directory:root,max_new_bytes:10*1024**3,minimum_host_free_bytes:8*1024**3}));
+  await assert.rejects(replaySplitBoard({...options,work:join(root,'wrong-scope'),allocationPath,budgetScopeRoot:join(root,'other')}),/scope binding differs/);
+  await assert.rejects(replaySplitBoard({...options,work:join(root,'wrong-limit'),allocationPath,budgetScopeRoot:root,diskBudgetBytes:10*1024**3+1024}),/limit or reserve differs/);
+  await assert.rejects(replaySplitBoard({...options,work:join(root,'wrong-reserve'),allocationPath,budgetScopeRoot:root,minimumFreeBytes:8*1024**3+1}),/limit or reserve differs/);
+  const scoped=await replaySplitBoard({...options,work:join(root,'scoped'),allocationPath,budgetScopeRoot:root});
+  assert.equal(scoped.inventory_audit.digest,complete.inventory_audit.digest);assert.equal(scoped.board_audit.digest,complete.board_audit.digest);
+  assert.equal(scoped.disk.budget_scope,root);assert(scoped.disk.measured_source_and_work_bytes>complete.disk.measured_source_and_work_bytes);
  writeFileSync(raw.facts,readFileSync(raw.facts,'utf8')+'\n');await assert.rejects(replaySplitBoard({...options,work}),/protected capture input changed/);
  console.log('ok: independent offline source crash/restart, board package before inventory, complete exact consumer outputs and immutable source reuse; original inputs/cache unchanged and source tampering rejects; no PostgreSQL or remote publication');
 }finally{await native.close();rmSync(root,{recursive:true,force:true});}
