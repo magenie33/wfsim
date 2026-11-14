@@ -905,9 +905,11 @@ fn a_blast_is_one_hit_per_moment_however_many_stacks_share_it() {
 #[test]
 fn a_gas_cloud_survives_the_death_and_nothing_else_does() {
     let dot = |dtype| Dot {
+        native_part: None,
+        native_group: None,
         owner: Seat::WIELDER,
         cause: u32::MAX,
-        next_tick: 5.0, ticks_left: 4, frozen: 100.0, landing: ProcLanding::default(), bracket: 1.0, depth: 0,
+        next_tick: 5.0, ticks_left: 4, retained: crate::model::StoredStatusSeed::supplied(100.0), landing: ProcLanding::default(), bracket: 1.0, depth: 0,
         unit: 0.0, dtype, ignores_armor: false, seed: u32::MAX,
     };
     let mut d = DebuffState::default();

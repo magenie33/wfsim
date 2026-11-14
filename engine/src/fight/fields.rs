@@ -502,7 +502,7 @@ pub(super) fn field_tick_seeded(
         &foe.status_immunities,
         &mut d.status,
     );
-    let scale = InstanceScale {
+    let scale = InstanceScale { native_source: None, native_part: None,
             mb_live,
             crit_multiplier,
             // A STATUS IS STAMPED WITH THE MULTIPLIERS OF THE HIT THAT APPLIED

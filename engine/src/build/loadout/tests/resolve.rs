@@ -2455,7 +2455,7 @@ fn an_elementalist_pays_status_damage_and_leaves_the_hit_alone() {
         let bare = resolve(&base, &[], StackPolicy::AssumedMax);
         let with = resolve(&base, &[pick(card)], StackPolicy::AssumedMax);
         assert!((with.damage.total() - bare.damage.total()).abs() < 1e-9, "{card} moved the hit");
-        assert!((with.status_damage_multiplier - 1.9).abs() < 1e-9, "{card}: {}", with.status_damage_multiplier);
+        assert_eq!(with.status_damage_multiplier, 1.9_f32 as f64, "{card}");
         let both = resolve(&base, &[pick(card), pick(damage)], StackPolicy::AssumedMax);
         let alone = resolve(&base, &[pick(damage)], StackPolicy::AssumedMax);
         assert!((both.damage.total() - alone.damage.total()).abs() < 1e-9, "{card} beside {damage}");

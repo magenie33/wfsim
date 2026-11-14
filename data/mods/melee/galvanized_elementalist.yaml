@@ -10,8 +10,11 @@ description: "+X% Status Damage\nOn Melee Kill:\n+X% Status Chance for 20s. Stac
 # Rank 0: +7.3% Status Damage / On Melee Kill:\n+2.7% Status Chance for 20s. Stacks up to 4x.
 effects:
   - kind: status_damage_bonus
-    rank0: 0.07272
-    rankMax: 0.79992   # see notes: package_rank_value
+    UpgradeType: 367
+    OperationType: STACKING_MULTIPLY
+    Value: 0.072719999
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   # On Melee Kill: +30% Status Chance for 20s, four stacks.
   #
   # `stacking_buff` AND NOT `buff`: the second is not a kind this parser knows,

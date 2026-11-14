@@ -441,6 +441,10 @@ fn the_record_adds_up_to_the_damage_total() {
         let mut at = d.base;
         for l in &d.layers {
             at = match l {
+                crate::record::Layer::Clamp { minimum, out, .. } => {
+                    assert_eq!(at.max(*minimum), *out);
+                    *out
+                }
                 crate::record::Layer::Bracket { terms, sum, out, .. } => {
                     let s: f64 = 1.0 + terms.iter().map(|t| t.value).sum::<f64>();
                     assert!(

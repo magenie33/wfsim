@@ -602,7 +602,7 @@ pub fn resolve_for(
                 // bow x2, which belongs to fire-rate mods and not to this.
                 ModEffect::ChargeRate(v) => cr += v,
                 ModEffect::ReloadSpeed(v) => rl = stacking_add(rl, v),
-                ModEffect::StatusDamage(v) => status_damage += v,
+                ModEffect::StatusDamage(v) => status_damage = stacking_add(status_damage, v),
                 // Independent of everything else: it is its own roll on a
                 // crit, so it is its own bucket rather than joining status.
                 ModEffect::SlashOnCrit(v) => slash_on_crit += v,
@@ -851,7 +851,7 @@ pub fn resolve_for(
                             CondBucket::CritChance => cc += v,
                             CondBucket::CritDamage => cd += v,
                             CondBucket::StatusChance => sc += v,
-                            CondBucket::StatusDamage => status_damage += v,
+                            CondBucket::StatusDamage => status_damage = stacking_add(status_damage, v),
                             CondBucket::FireRate => fr += v,
                             CondBucket::ReloadSpeed => rl += v,
                         }
@@ -2252,7 +2252,8 @@ pub fn resolve_for(
         crit_chance_on_headshot,
         on_weakpoint,
         crit_chance_stack,
-        status_damage_multiplier: 1.0 + status_damage,
+        status_damage_multiplier: relative_for(UpgradeType::WEAPON_PROC_DAMAGE, 1.0, status_damage, 0.0),
+        native_status_damage_bonus: status_damage as f32,
         status_damage_of_type: tenno.shard_status_damage_of_type(base.slot),
         status_duration_multiplier: 1.0 + sdur,
         elem_dot_bonus: elem_bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),
