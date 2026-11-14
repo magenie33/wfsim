@@ -204,9 +204,10 @@ fn m100_gas_body_head_and_critical_readings_match_to_the_digit() {
     ] {
         let mut p = m100_fixture(DamageType::Gas, head, 0);
         p.foe.base_armor = 0.0;
-        p.critical_inputs = None;
         p.base_crit_chance = if crit { 1.0 } else { 0.0 };
+        if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
         p.crit_multiplier = crate::rules::damage::quantize_base_crit_damage(2.2);
+        if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
         p.fire_rate = 0.1;
         let rec = record(&p, 100, 0.0, f64::INFINITY, 10_000, 0);
         let first = |origin| rec.events().iter().find_map(|e| match &e.kind {

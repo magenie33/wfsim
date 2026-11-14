@@ -32,9 +32,10 @@ fn the_debilitate_dot_carries_two_attrition_layers() {
                 p.foe.base_health = 1e15;
                 p.crit_tier_upgrade_chance = 0.0;
                 p.super_crit_on_status = None;
-                p.critical_inputs = None;
                 p.base_crit_chance = if crit { 1.0 } else { 0.0 };
+                if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
                 p.unmodded_crit_chance = 0.0;
+                if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
                 // PUNCTURE IS IMMUNE, so the crit rate is the one this test
                 // sets. Weakened is a flat crit-chance buff on the victim and
                 // a saturating status build keeps it up — a critical instance
@@ -98,9 +99,10 @@ fn the_debilitate_dot_carries_two_attrition_layers() {
                 p.foe.base_health = 1e15;
                 p.crit_tier_upgrade_chance = 0.0;
                 p.super_crit_on_status = None;
-                p.critical_inputs = None;
                 p.base_crit_chance = 0.0;
+                if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
                 p.unmodded_crit_chance = 0.0;
+                if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
                 p.foe.status_immunities = vec![DamageType::Puncture];
                 p.status_chance = 4.0;
                 p.arcane.debilitate_chance = 1.0;
@@ -159,11 +161,12 @@ fn a_crit_costs_the_split_a_coin_and_pays_it_back_in_multiplier() {
                 p.foe.base_health = 1e15;
                 p.crit_tier_upgrade_chance = 0.0;
                 p.super_crit_on_status = None;
-                p.critical_inputs = None;
                 p.base_crit_chance = cc;
+                if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
                 p.unmodded_crit_chance = 0.0;
-                p.critical_inputs = None;
+                if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
                 p.crit_multiplier = cd;
+                if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
                 p.foe.status_immunities = vec![DamageType::Puncture];
                 p.status_chance = 4.0;
                 p.arcane.debilitate_chance = 1.0;
