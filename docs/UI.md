@@ -805,8 +805,8 @@ maximum across rulers; verified player scores use the same tally feed as home,
 without official scores or extrapolation. One visible-page read per minute
 refreshes the tally; a failed read keeps the last confirmed numbers.
 
-Home shows catalog size, player-uploaded builds, verified player scores and
-live computing devices. Official scores and combined evaluation totals are omitted.
+Home shows player-uploaded builds, verified player scores and live computing
+devices. Catalog size, official scores and combined evaluation totals are omitted.
 
 Numbers animate on entering view and when their measured targets change,
 stopping at those targets. Reduced motion displays final values immediately.
