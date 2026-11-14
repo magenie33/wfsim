@@ -23,6 +23,13 @@ one-ULP values, event ordering, repeat drift, truncated records, artifact
 corruption and duplicate case ids fail. `ENGINE_MIGRATION.md` defines the
 separate real-engine frozen-input comparison and performance procedure.
 
+`check_engine_answer_equivalence.py` rejects damage, one-bit values, event order,
+trace and shape changes while explicitly allowing paired source-accounting
+values at `/api/simulate.work` and `/api/board/runs.shards[].gas` only when
+requested. `engine_answer_equivalence.py` checks every retained response and
+its hash; strict comparison outputs remain intact. Supplying a retained board
+comparison to the check also proves the CLI rejects a real one-ULP damage edit.
+
 `check_nona_results.mjs` runs the shared zk/pz selection and witness lookup
 against published builds, actual engine identities and the production account
 projection. It checks one bounded batch, ordered calculation/verification names,
