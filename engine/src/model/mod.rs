@@ -10,6 +10,9 @@
 
 mod arcane;
 mod buff;
+mod damage_data;
+mod native_upgrade;
+mod conditional_upgrade;
 mod effect;
 mod enemy;
 mod evolution;
@@ -21,6 +24,9 @@ mod weapon;
 
 pub use arcane::*;
 pub use buff::*;
+pub use damage_data::*;
+pub use native_upgrade::*;
+pub use conditional_upgrade::*;
 pub use effect::*;
 pub use enemy::*;
 pub use evolution::*;
@@ -29,6 +35,9 @@ pub use melee::*;
 pub use physical_mods::*;
 pub use text::*;
 pub use weapon::*;
+
+#[cfg(test)]
+mod native_upgrade_tests;
 
 // serde defaults shared by the yaml shapes below.
 #[wfsim_gas_macro::metered]

@@ -127,17 +127,32 @@ impl Curve {
 /// M8: integer maximum query, level writeback, then the current maximum query.
 #[wfsim_gas_macro::metered]
 pub fn shield_maximum(base: f64, curve: Curve, delta: f64, before: &[f32], after: &[f32]) -> f64 {
-    let initial = shield_query(base as f32, before);
-    let stored = (initial * curve.multiplier_f32(delta) + 0.5_f32).floor();
-    shield_query(stored, after) as f64
+    shield_queries(base, curve, delta, before, after).maximum as f64
+}
+
+/// Diagnostic boundaries of the native controller's maximum writeback.
+#[derive(Debug, Clone, Copy)]
+pub struct ShieldQueries {
+    pub initial: f32,
+    pub stored: f32,
+    pub maximum: f32,
 }
 
 #[wfsim_gas_macro::metered]
-fn shield_query(mut value: f32, multipliers: &[f32]) -> f32 {
-    for multiplier in multipliers {
-        value *= multiplier;
-    }
-    (value + 0.5_f32).floor()
+pub fn shield_queries(base: f64, curve: Curve, delta: f64, before: &[f32], after: &[f32]) -> ShieldQueries {
+    let initial = shield_query(base as f32, before);
+    let stored = super::upgrades::round_integer(initial * curve.multiplier_f32(delta));
+    ShieldQueries { initial, stored, maximum: shield_query(stored, after) }
+}
+
+#[wfsim_gas_macro::metered]
+fn shield_query(value: f32, multipliers: &[f32]) -> f32 {
+    use super::upgrades::{query, OperationType, UpgradeEntry, UpgradeType};
+    query(UpgradeType::AVATAR_SHIELD_MAX, value, multipliers.iter().map(|&value| UpgradeEntry {
+        UpgradeType: UpgradeType::AVATAR_SHIELD_MAX,
+        OperationType: OperationType::MULTIPLY,
+        Value: value,
+    }), true)
 }
 
 /// Health curves per faction (transition 70–80).
@@ -336,6 +351,10 @@ mod tests {
             let actual = shield_maximum(case["base_shield"].as_f64().unwrap(),
                 shield::CORRUPTED, delta, &multipliers("before"), &multipliers("after"));
             assert_eq!(actual, case["maximum"].as_f64().unwrap(), "{case}");
+            let traced = shield_queries(case["base_shield"].as_f64().unwrap(),
+                shield::CORRUPTED, delta, &multipliers("before"), &multipliers("after"));
+            assert_eq!(traced.maximum as f64, actual);
+            assert_eq!(traced.stored as f64, case["stored"].as_f64().unwrap());
         }
     }
 

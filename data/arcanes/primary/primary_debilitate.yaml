@@ -13,78 +13,11 @@ live_bugs:
   - "The split fires a zero-damage instance that still takes its own multipliers. Faction bonuses carry down the chain as intended; a per-instance bonus such as Devouring Attrition's +2000% carries too, which is not intended (x21 twice = x441). Modelled as it behaves now; a fix would remove it."
 
 effects:
-  # THE 0% MEMBER OF THE EXTRA HIT CATEGORY (wiki `Extra_Hit`, which names this
-  # arcane outright: "adds a 0-damage Extra Hit that applies a guaranteed status
-  # effect based on the triggering 'combined' elemental status"). Everything
-  # below was deduced before that page was read, and the page agrees with all of
-  # it — see docs/EXTRA_HIT.md for the law and the other members.
-  #
-  # Splits a COMBINED element's proc into ONE of its two components (Corrosive
-  # -> Toxin or Electricity) once the target is AT 10 stacks of it, COUNTING the
-  # stack this instance is applying. Rolled per DAMAGE INSTANCE, 50/50 between
-  # the two components.
-  #
-  # THE CARD ABOVE IS DE'S OWN TEXT AND IT READS ONE STEP LATE — "if an enemy
-  # HAS 10 stacks, inflicting the same Status Effect AGAIN". Measured otherwise: at nine, the shot that makes it ten fires it. The
-  # description field stays verbatim, because it is DE's string and not ours
-  # to correct — the behaviour is in the engine and in MEASUREMENTS M34.
-  #
-  # It is also why the arcane works on BLAST at all, and why it is not the rare
-  # case the wiki implies: Blast detonates at ten
-  # and drains every stack, so it never HAS ten and an eleventh application does
-  # not exist. Under the measured rule Blast is an ordinary member.
-  #
-  # IT DEALS NO DAMAGE — it applies a status, and that is all the target ever
-  # feels from it. The Electricity tick that lands the same
-  # instant is the DoT's OWN first tick, which is delay-0 for Electricity and
-  # Gas; nothing here calls `target.apply`.
-  #
-  # There IS an intermediate INSTANCE, and it is a deduction rather than a
-  # reading: the wiki says the status it leaves carries the faction bonus THREE
-  # times, a status always carries it one time more than whatever caused it, and
-  # a hit carries it once — so three is only reachable through one more link in
-  # the chain. That instance is a SCALE, not a damage number — two separate
-  # sentences, because read as one it says the arcane hits you twice.
-  #
-  # AND THAT INSTANCE IS PERMANENTLY NON-CRITICAL — not a zero-damage hit that
-  # rolls crit against a zero. The two readings deal the same nothing and differ
-  # in eligibility: a chance-on-non-crit perk (Devouring / Devastating Attrition)
-  # stays live on the split under the first and dies under the second. ✅
-  # Measured: Phenmor with crit chance pushed to guaranteed,
-  # every hit orange, and the split's DoT still comes out ×21 some of the time.
-  # This is why a critting build's Debilitate DoT is 1×21 rather than 1, and why
-  # `noncrit_mult` is called with a literal tier 0 at the split's own
-  # `InstanceScale`. MEASUREMENTS M37.
-  #
-  # WHAT BASE THE SPLIT'S DoT BURNS OFF IS THE ONE OPEN QUESTION — M33, where
-  # three candidates are laid out. It reads `ModifiedBase` here (elements
-  # excluded), which is DE's documented rule for a status a WEAPON applied and
-  # which this engine matches to the digit on the Toxin page's own worked
-  # example. The likeliest rival is MELEE INFLUENCE's rule, the closest
-  # documented analogue: a derived elemental instance is worth "that element's
-  # damage from the original attack" — here, the COMBINED element's value on the
-  # hit. A third reading, the whole modded hit, shipped for one commit on a
-  # generalisation from an ABILITY chain and was reverted; it moved published
-  # board rows by up to +112%. M33 has the two-mod experiment that separates all
-  # three.
-  #
-  # THE SPLIT PROC IS AN ORDINARY PROC, not a Melee-Influence-style spread. It runs the normal DoT/debuff path and picks up its own
-  # element bracket, so a Corrosive splitting into Toxin scales by the TOXIN mod
-  # bonus — and by 1.0 where the build carries no Toxin mod, which is what
-  # "otherwise you only get the base portion" means. The wiki's "separate damage
-  # instance" is the status APPLICATION; what it buys is the extra faction
-  # layer, and that layer is the only observable it predicts.
-  #
-  # NOTHING HERE IS WAITING ON A MEASUREMENT. The ^3 is the wiki's own stated
-  # value, not a guess to confirm, and the sim MEASURES its own exponent: with
-  # the arcane the only difference between two runs, the damage it adds scales
-  # by exactly f^3 across a faction change (`fight::
-  # a_debilitate_split_lands_at_the_third_faction_layer`). Set the depth to 2
-  # and that test reads 2.399 against f^2 = 2.4025 and fails, which is how it is
-  # known to have teeth.
+  # One fresh scalar-copy packet per accepted callback; M34 and M37 apply.
   - kind: debilitate
-    rank0: 0.5
-    rankMax: 1.0
+    UpgradeChance: 0.5
+    UpgradeChanceScalePerRank: 0.1
+    ChanceScalesWithRank: true
 
 source:
   url: https://wiki.warframe.com/w/Primary_Debilitate

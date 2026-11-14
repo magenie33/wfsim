@@ -21,3 +21,4 @@ pub mod scaling;
 pub mod sim;
 pub mod space;
 pub mod status;
+pub mod upgrades;
