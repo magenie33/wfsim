@@ -55,6 +55,12 @@ its scoped limitations. Its negative control changes a nominal rate and forces
 a rebuild. Component checks distinguish Stug attachment from launch damage,
 Coda grenade fan, metered orbs and fixed full-clip attacks.
 
+`import_kitgun_status.py --exchange <exchange> --check` verifies the pinned
+native counts and loader status overrides. The compiled Kitgun status checks
+cover the M132 reading and all 400 beam assemblies. Removing the native-pellet
+division must fail both checks; the fixture is source evidence, not a proc-rate
+measurement.
+
 `import_primary_calibration.py --exchange <exchange> --check` verifies all primary
 form bindings, pinned archive/member hashes and generated input receipts.
 `every_primary_form_matches_its_adopted_client_fields` compares compiled YAML

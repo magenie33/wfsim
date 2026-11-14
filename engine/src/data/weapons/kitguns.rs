@@ -39,6 +39,7 @@ pub struct Chamber {
     pub slot: String,
     pub crit_chance: f64,
     pub crit_multiplier: f64,
+    /// Shot-wide status budget, before the loader and native pellet division.
     pub status_chance: f64,
     pub multishot: f64,
     pub accuracy: f64,
@@ -506,7 +507,9 @@ pub fn assemble(a: &Assembly) -> Option<Assembled> {
         // -8% crit chance and +14% status.
         crit_chance: c.crit_chance + l.crit_chance,
         crit_multiplier: c.crit_multiplier + l.crit_multiplier,
-        status_chance: c.status_chance + l.status_chance,
+        // Native loader overrides price the whole shot (M132). Add the loader
+        // before sharing that budget across the chamber's original pellets.
+        status_chance: (c.status_chance + l.status_chance) / c.multishot,
         recoil: g.recoil,
         multishot: c.multishot,
         accuracy: c.accuracy,
@@ -863,12 +866,11 @@ mod tests {
             let a = default_assembly(&c.id).unwrap_or_else(|| panic!("{}: no default", c.id));
             let built = assemble(&a).unwrap_or_else(|| panic!("{}: {a:?} does not compose", c.id));
             assert_eq!(built.chamber_record_id, c.id, "{}: default is another record", c.id);
-            // THE LOADER CHANGES NOTHING: the composed crit and status are the
-            // chamber's own, which is what makes the default a statement about
-            // the chamber rather than about somebody's build.
+            // A neutral loader preserves the chamber's crit and whole-shot
+            // status budget, shared across the original projectiles.
             assert_eq!(built.crit_chance, c.crit_chance, "{}", c.id);
             assert_eq!(built.crit_multiplier, c.crit_multiplier, "{}", c.id);
-            assert_eq!(built.status_chance, c.status_chance, "{}", c.id);
+            assert_eq!(built.status_chance * built.multishot, c.status_chance, "{}", c.id);
             // THE GRIP IS THE NEAREST TO THE PREVIEW: no other grip in this
             // slot is closer to the `base` row's total.
             let total = |v: &std::collections::BTreeMap<String, f64>| v.values().sum::<f64>();
