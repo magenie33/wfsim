@@ -9,6 +9,7 @@ mod chamber;
 mod class;
 mod pool_survey;
 mod rank;
+mod native_inputs;
 mod split_flights;
 mod stance;
 mod synth_charge;

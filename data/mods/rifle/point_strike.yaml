@@ -9,8 +9,11 @@ description: "+X% Critical Chance"
 
 effects:
   - kind: crit_chance_bonus
-    rank0: 0.25
-    rankMax: 1.5
+    UpgradeType: 244
+    OperationType: STACKING_MULTIPLY
+    Value: 0.25
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 family: point_strike
 incompatible_with: [critical_delay]

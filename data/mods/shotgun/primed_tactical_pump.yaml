@@ -9,8 +9,11 @@ description: "+X% Reload Speed"
 
 effects:
   - kind: reload_speed_bonus
-    rank0: 0.0909
-    rankMax: 0.9999   # see notes: package_rank_value
+    UpgradeType: 389
+    OperationType: STACKING_MULTIPLY
+    Value: 0.090899996
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 family: tactical_pump
 incompatible_with: [tactical_pump]

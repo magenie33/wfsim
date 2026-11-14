@@ -392,17 +392,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         Some((granted, below)) if effective_cc >= below => granted,
         _ => 0.0,
     };
-    let cd_total = active.crit_multiplier - prelude_lost
-        + active.unmodded_crit_damage * crit_damage_relative
-        + cd_abs
-        // Mauler's Magazine, earned inside the fight — a BASE grant,
-        // already multiplied by the crit-damage mods at `resolve`, the
-        // same conversion `FlatBaseDamage` takes one bracket over.
+    let damage_flat = cd_abs
         + buff_total(active, crate::model::BuffGrant::BaseCritDamage, &mut *buff_stacks, t)
-        // …and the other half of the same condition, decided by the
-        // same shot: an absolute add, already multiplied by the
-        // crit-damage mods at `resolve`.
         + if undamaged { active.crit_damage_on_undamaged } else { 0.0 };
+    let cd_total = active.critical_inputs.map_or_else(
+        || active.crit_multiplier - prelude_lost + active.unmodded_crit_damage * crit_damage_relative + damage_flat,
+        |inputs| inputs.damage(effective_cc, crit_damage_relative, damage_flat),
+    );
     // Live BASE-DAMAGE bucket additions, evaluated per instance:
     //  - arcane stacks (Merciless/Deadhead/Dexterity/Cascadia Flare)
     //  - Overwhelming Attrition's earned stacks — VERBATIM (wiki
@@ -546,19 +542,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             p
         }
     };
-    let cc_pellet = effective_cc
-        + if part.is_weak_point {
-            // THE WEAK POINT, NOT THE HEAD. The wiki lists the weak-point
-            // critical-chance bracket under BOTH categories, so a Bursa's rear
-            // takes it and the Ropalolyst's head does not.
-            //
-            // Weak-point-only crit chance is relative too, and it is
-            // DIRECT-only, so the direct part's base is the right one.
-            active.unmodded_crit_chance
-                * (active.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative)
-        } else {
-            0.0
-        };
+    let weakpoint_relative = if part.is_weak_point {
+        active.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative
+    } else { 0.0 };
+    let cc_pellet = effective_cc + active.unmodded_crit_chance * weakpoint_relative;
     // KING'S GAMBIT, the other half of the same bullet: "x0 Critical
     // Chance on Bodyshots". MULTIPLICATIVE, and the card's own note is
     // why it is applied here rather than folded into a bucket —
@@ -665,7 +652,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     } else {
         cd_total
     };
-    let crit_multiplier = 1.0 + tier as f64 * (cd - 1.0);
+    let crit_multiplier = crate::rules::critical::factor(tier, cd as f32) as f64;
 
     // Faction bonus (System A) is a total-damage multiplier applied
     // once per instance; DoT/status ticks apply it a SECOND time
@@ -1214,7 +1201,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 // Effect damage, so it does not get it — the lingering
                 // field never did, and the radial's copy of this line
                 // was the odd one out.
-                let rcc = r.crit_chance + flat_crit + r.base_crit_chance * crit_chance_relative;
+                let rcc = r.critical_inputs.map_or_else(
+                    || r.crit_chance + flat_crit + r.base_crit_chance * crit_chance_relative,
+                    |inputs| inputs.chance(crit_chance_relative, flat_crit),
+                );
                 // The set promotes a critical hit "from Primary
                 // Weapons" with no qualifier about which attack part
                 // made it, and the direct hit and the lingering field
@@ -1287,14 +1277,17 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         // understated Toxin's shield bypass by exactly that factor.
         let shares = TypeShares::of(&qvec);
         let crit_multiplier = match &rad {
-            None if replay => 1.0 + tier as f64 * (cd - 1.0),
+            None if replay => crate::rules::critical::factor(tier, cd as f32) as f64,
             None => crit_multiplier,
             Some(r) => {
                 // No `part.crit_bonus` doubling: that is the crit-
                 // HEADSHOT rule and an explosion has no hit location.
                 // No Cold either: Area of Effect damage (M117).
-                let rcd = r.crit_damage + r.base_crit_damage * crit_damage_relative + cd_abs - cold_cd;
-                1.0 + tier as f64 * (rcd - 1.0)
+                let rcd = r.critical_inputs.map_or_else(
+                    || r.crit_damage + r.base_crit_damage * crit_damage_relative + cd_abs - cold_cd,
+                    |inputs| inputs.damage(0.0, crit_damage_relative, cd_abs - cold_cd),
+                );
+                crate::rules::critical::factor(tier, rcd as f32) as f64
             }
         };
         let part_factor = if direct { part_factor } else { 1.0 };
@@ -1483,9 +1476,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         } else {
             dt_mult
         };
-        let raw_before_roll = |crit_multiplier, attrition| qtotal
+        let raw_before_roll = |crit_multiplier: f64, attrition: f64|
+            crate::rules::critical::apply_factor(qtotal as f32, crit_multiplier as f32) as f64
             * part_factor
-            * crit_multiplier
             * bucket
             * params.faction_at_time(t)
             * arc_final

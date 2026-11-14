@@ -38,6 +38,16 @@ fn default_assumed_seconds() -> f64 { 1.0 }
 
 #[wfsim_gas_macro::metered]
 impl RefireRule {
+    /// Native weapon rate queries RPM before the state converts it to rounds/second.
+    pub fn modified_rate(self, configured_rps: f64, bonus: f64) -> f64 {
+        if matches!(self, Self::NativeRate | Self::SemiAutomatic { .. }) {
+            let rpm = (configured_rps * 60.0) as f32;
+            let queried = crate::rules::upgrades::relative_for(crate::rules::upgrades::UpgradeType::WEAPON_FIRE_RATE, rpm.max(1.0) as f64, bonus, 0.0) as f32;
+            return (queried * (1.0_f32 / 60.0_f32)) as f64;
+        }
+        crate::rules::upgrades::relative_for(crate::rules::upgrades::UpgradeType::WEAPON_FIRE_RATE, configured_rps, bonus, 0.0)
+    }
+
     /// Default weapon query: input >= 3 RPM floors its result at 3 RPM before
     /// the separate state getter (inverse-speed-2026-10-28.json, RVA 0x74c060).
     pub fn weapon_rate(self, rate: f64, unmodded_rate: f64) -> f64 {
@@ -55,7 +65,7 @@ impl RefireRule {
             return crate::rules::sim::time_divisor(rate);
         }
         const MIN_RATE: f64 = (1.0_f32 / 60.0_f32) as f64;
-        if rate.is_finite() { rate.max(MIN_RATE) } else { MIN_RATE }
+        if rate.is_finite() { (rate as f32).max(MIN_RATE as f32) as f64 } else { MIN_RATE }
     }
 
     /// A stated assumption for attacks whose complete cycle is uncalibrated.
@@ -766,39 +776,8 @@ pub struct Battery {
     pub empty_animation_seconds: Option<f64>,
 }
 
-/// A SPOOL: the rate MOVES the longer the trigger is held, and rebuilds from
-/// the start once firing pauses.
-///
-/// Both directions, one field — six in the roster and five go UP:
-///
-/// | weapon | start | span | full/floor at |
-/// | --- | --- | --- | --- |
-/// | Phenmor (Incarnon) | 100% | 51 | 60% |
-/// | Gorgon | 20% | 7.5 | shot 9 |
-/// | Gorgon Wraith | 20% | 5 | shot 6 |
-/// | Prisma Gorgon | 20% | 6 | shot 7 |
-/// | Soma | 25% | 5 | shot 6 |
-/// | Soma Prime | 25% | 2.5 | shot 4 |
-///
-/// Each page states its spool TWICE — a percentage per shot and a count of
-/// shots to optimal — reconciling exactly on all five risers, which is what
-/// `over_shots` is derived from and why it is not always an integer (the
-/// Gorgon's 10.667% IS 0.8/7.5). The climb is LINEAR. Not `beam_ramp_floor`, a
-/// continuous weapon's DAMAGE ramp in seconds; the Phantasma has both.
-#[derive(Debug, Clone, Copy, serde::Deserialize)]
-pub struct SustainedFireRate {
-    /// Where the rate STARTS, as a fraction of the listed one, on the first
-    /// shot after a pause (1.00 on the Phenmor, 0.20 on a Gorgon).
-    pub start: f64,
-    /// Where it SETTLES (0.60 on the Phenmor, 1.00 on everything that spools
-    /// up). `end < start` is a spool-down; `end > start` a spool-up.
-    pub end: f64,
-    /// The span, in held shots. Strike `n` (0-based, counting from the pause)
-    /// sits at `start + (end − start)·min(n, over_shots)/over_shots`, so a
-    /// riser is at full from shot `ceil(over_shots) + 1` — which is the number
-    /// each page prints.
-    pub over_shots: f64,
-}
+mod continuous_rate;
+pub use continuous_rate::{SustainedFireRate, NativeContinuousRate, ContinuousConsumer};
 
 /// WHAT IS NOT MODELLED, stated because it is a real difference: the sim
 /// spaces rounds EVENLY at the effective rate instead of clumping them into

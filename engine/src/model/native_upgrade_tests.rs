@@ -8,6 +8,81 @@ fn fixture() -> serde_json::Value {
 }
 
 #[wfsim_gas_macro::metered]
+fn rank_fixture() -> serde_json::Value {
+    serde_json::from_str(include_str!("../../../tests/fixtures/client/upgrade-ranks-2026-10-28.json")).unwrap()
+}
+
+#[wfsim_gas_macro::metered]
+fn bits(value: f32) -> String { format!("{:08x}", value.to_bits().swap_bytes()) }
+
+#[test]
+#[wfsim_gas_macro::metered]
+fn all_original_rank_projections_match_their_source_tokens_and_bits() {
+    let data = rank_fixture();
+    let entries = data["entries"].as_array().unwrap();
+    assert_eq!(entries.len(), 4629);
+    let mut count = 0;
+    for entry in entries {
+        let spec: RankedUpgrade = serde_json::from_value(entry["spec"].clone()).unwrap();
+        let original: f32 = entry["raw_value"].as_str().unwrap().parse().unwrap();
+        assert_eq!(spec.entry.Value.to_bits(), original.to_bits());
+        let max_rank = entry["max_rank"].as_u64().unwrap() as u32;
+        let offset = entry["offset"].as_u64().unwrap() as u32;
+        for (rank, expected) in entry["bits"].as_array().unwrap().iter().enumerate() {
+            let value = spec.unlocked_value(rank as u32 + offset, max_rank + offset, offset).unwrap();
+            assert_eq!(bits(value), expected.as_str().unwrap(), "{} {} entry{} rank{}", entry["owner"], entry["array"], entry["index"], rank);
+            count += 1;
+        }
+        for locked in 0..offset { assert!(spec.unlocked_value(locked, max_rank + offset, offset).is_none()); }
+    }
+    assert_eq!(count, 20479);
+    assert_eq!(data["unprojected"].as_array().unwrap().len(), 99);
+}
+
+#[test]
+#[wfsim_gas_macro::metered]
+fn all_native_conditional_chance_duration_and_byte_stack_inputs_match() {
+    let data = rank_fixture();
+    let entries = data["conditional"].as_array().unwrap();
+    assert_eq!(entries.len(), 1324);
+    let mut count = 0;
+    for entry in entries {
+        let spec: ConditionalParameters = serde_json::from_value(entry["inputs"].clone()).unwrap();
+        for (rank, expected) in entry["ranks"].as_array().unwrap().iter().enumerate() {
+            let value = spec.at(rank as u32);
+            assert_eq!(bits(value.chance), expected[0].as_str().unwrap(), "{} chance rank{rank}", entry["owner"]);
+            assert_eq!(bits(value.duration_seconds), expected[1].as_str().unwrap(), "{} duration rank{rank}", entry["owner"]);
+            assert_eq!(u64::from(value.max_stacks), expected[2].as_u64().unwrap(), "{} stacks rank{rank}", entry["owner"]);
+            count += 1;
+        }
+    }
+    assert_eq!(count, 5398);
+}
+
+#[test]
+#[wfsim_gas_macro::metered]
+fn all_native_extra_unlock_cases_preserve_unavailable_values() {
+    let data = rank_fixture();
+    let cases = data["unlocks"].as_array().unwrap();
+    assert_eq!(cases.len(), 697);
+    let mut maxima = std::collections::BTreeMap::new();
+    for case in cases {
+        let key = (case["path"].as_str().unwrap(), case["entry"].as_u64().unwrap());
+        let rank = case["rank"].as_u64().unwrap() as u32;
+        maxima.entry(key).and_modify(|value: &mut u32| *value = (*value).max(rank)).or_insert(rank);
+    }
+    let mut inactive = 0;
+    let spec: RankedUpgrade = serde_json::from_str(r#"{"UpgradeType":253,"OperationType":"STACKING_MULTIPLY","Value":0.15,"FusionPowerStep":0,"FusionPowerCurve":"QC_LINEAR"}"#).unwrap();
+    for case in cases {
+        let key = (case["path"].as_str().unwrap(), case["entry"].as_u64().unwrap());
+        let value = spec.unlocked_value(case["rank"].as_u64().unwrap() as u32, maxima[&key], case["unlock"].as_u64().unwrap() as u32);
+        assert_eq!(value.is_some(), case["active"].as_bool().unwrap(), "{case}");
+        inactive += usize::from(value.is_none());
+    }
+    assert_eq!(inactive, 265);
+}
+
+#[wfsim_gas_macro::metered]
 fn seed(value: &serde_json::Value) -> u64 {
     u64::from_str_radix(value.as_str().unwrap().trim_start_matches("0x"), 16).unwrap()
 }

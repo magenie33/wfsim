@@ -844,21 +844,21 @@ fn an_archgun_charge_answers_to_charge_rate_and_its_interval_to_fire_rate() {
         (p.charge_seconds.expect("a charged form draws"), p.fire_rate)
     };
     let (d0, r0) = with(Vec::new());
-    assert!((d0 - 0.5).abs() < 1e-9 && (r0 - 2.0).abs() < 1e-9, "{d0} {r0}");
+    assert!(crate::rules::upgrades::near_f32(d0, 0.5) && crate::rules::upgrades::near_f32(r0, 2.0), "{d0} {r0}");
 
     // Fire rate moves the INTERVAL only.
     let (d1, r1) = with(vec![ModEffect::FireRate(0.60)]);
-    assert!((d1 - 0.5).abs() < 1e-9, "the draw is untouched: {d1}");
-    assert!((r1 - 3.2).abs() < 1e-9, "2.0 x 1.6: {r1}");
+    assert!(crate::rules::upgrades::near_f32(d1, 0.5), "the draw is untouched: {d1}");
+    assert!(crate::rules::upgrades::near_f32(r1, 3.2), "2.0 x 1.6: {r1}");
 
     // Charge rate moves the DRAW only.
     let (d2, r2) = with(vec![ModEffect::ChargeRate(0.50)]);
-    assert!((d2 - 0.5 / 1.5).abs() < 1e-9, "0.5 / 1.5: {d2}");
-    assert!((r2 - 2.0).abs() < 1e-9, "the rate is untouched: {r2}");
+    assert!(crate::rules::upgrades::near_f32(d2, 0.5 / 1.5), "0.5 / 1.5: {d2}");
+    assert!(crate::rules::upgrades::near_f32(r2, 2.0), "the rate is untouched: {r2}");
 
     // Together: 0.3333 draw + 0.3125 interval = 0.6458 s per shot.
     let (d3, r3) = with(vec![ModEffect::FireRate(0.60), ModEffect::ChargeRate(0.50)]);
-    assert!((d3 - 0.5 / 1.5).abs() < 1e-9, "{d3}");
+    assert!(crate::rules::upgrades::near_f32(d3, 0.5 / 1.5), "{d3}");
     assert!((d3 + 1.0 / r3 - 0.645833333).abs() < 1e-6, "cycle: {}", d3 + 1.0 / r3);
 }
 
@@ -1368,23 +1368,23 @@ fn fire_rate_mods_halve_a_bow_charge_at_double_value() {
     let base = WeaponBase::from_data("cernos_prime", false, &[]);
     let bare = resolve(&base, &[], StackPolicy::AssumedMax);
     assert_eq!(bare.charge_seconds, Some(0.5));
-    assert!((bare.fire_rate - 1.0).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(bare.fire_rate, 1.0));
 
     // Shred: +30% on the card, +60% here.
     let shred = crate::data::mods::class_pool("rifle")
         .into_iter()
         .find(|m| m.id == "shred")
         .expect("shred is in the rifle pool");
-    assert!(shred.effects.iter().any(|e| matches!(e, ModEffect::FireRate(v) if (v - 0.30).abs() < 1e-9)));
+    assert!(shred.effects.iter().any(|e| matches!(e, ModEffect::FireRate(v) if crate::rules::upgrades::near_f32(*v, 0.30))));
     let p = resolve(&base, &[&shred], StackPolicy::AssumedMax);
-    assert!((p.fire_rate - 1.6).abs() < 1e-9, "1.0 x (1 + 2 x 0.30)");
+    assert!(crate::rules::upgrades::near_f32(p.fire_rate, 1.6), "1.0 x (1 + 2 x 0.30)");
     // 0.5 / 1.6 = 0.3125 s of draw — the reciprocal of the same bucket.
-    assert!((p.charge_seconds.expect("still a bow") - 0.3125).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(p.charge_seconds.expect("still a bow"), 0.3125));
 
     // A non-bow spends the bucket the ordinary way: one x, on the rate.
     let torid = WeaponBase::from_data("torid", false, &[]);
     let t = resolve(&torid, &[&shred], StackPolicy::AssumedMax);
-    assert!((t.fire_rate - 1.5 * 1.30).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(t.fire_rate, 1.5 * 1.30));
     assert!(t.charge_seconds.is_none());
 }
 

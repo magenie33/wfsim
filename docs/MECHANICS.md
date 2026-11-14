@@ -479,6 +479,12 @@ different operations:
 ```
 effective_cc = base_cc × (1 + Σ crit_chance_multipliers) + Σ flat_crit_chance
 ```
+The native attribute query preserves negative effective values. The ordinary
+critical consumer returns tier0 without a draw when chance is nonpositive;
+positive integral chances also consume no fractional draw. A fractional
+positive chance uses the native discrete LCG sample and inclusive comparison.
+A supplied positive packet tier bypasses this roll. Scene stream installation
+and special forced-critical consumers have separate bindings.
 Crit chance is **location-independent** — headshots do not raise the roll
 (ability exceptions like Covenant's ×4-on-headshot aside); the head only
 multiplies the outcome (location ×3, and cd doubled in the tier formula
@@ -542,14 +548,23 @@ and headshot formulas below consume `cd_total`.
   critical damage multiplier ("Critical Tier Multiplier").
 - Colors: tier 1 yellow, tier 2 orange (= "big crit"), tier 3+ red; each tier
   above 3 adds an exclamation mark (up to three), the color stays red.
-- Scaling is **purely linear** in `k` and there is **no tier cap** — red crits
-  carry **no** hidden bonus beyond the formula; the color is cosmetic.
+- Red crits carry no hidden bonus beyond the formula. The ordinary roll
+  narrows its guaranteed integer component to a byte before its fractional
+  increment; a preset tier uses its separate input. In the native critical
+  consumer, subtraction, multiplication and addition are binary32, and the
+  resulting factor is floored at zero. A positive-tier hit can be weaker
+  than a noncritical hit when its final multiplier is below1.
 
-**Quantization** (wiki `Critical_Hit` §Quantization). The **base** crit damage
-multiplier is quantized to steps of `32/4095`:
+**Quantization** (native canonical scalar consumer; wiki `Critical_Hit`
+§Quantization). With F denoting a separate binary32 operation:
 ```
-quantized_base_cd = round(base_cd × 4095/32) × 32/4095
+index = int(F(F(clamp(base_cd, 0, 32) × 127.96875) + 0.5))
+quantized_base_cd = F(F(index) × F(32/4095))
 ```
+Nominal0.5 becomes0.5001221299171448; tier2 then has factor
+0.0002442598342895508. Pending scalar-operation transfer and every upstream
+installer are not established by the canonical-state fixture. Exact native
+critical/quantizer vectors are in `tests/fixtures/client/critical-2026-10-28.json`.
 Order matters: **flat/absolute** CD bonuses (e.g. Incarnon "Critical Parallel"
 +0.4) add into `base_cd` **before** quantization; **relative** (%) mods (e.g.
 Vital Sense) multiply **after**. Required for shot-by-shot parity with in-game

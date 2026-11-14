@@ -88,6 +88,7 @@ fn at_the_ceiling_the_heat_combines_last() {
 fn pulls(panel: &crate::build::loadout::ResolvedPanel, n: usize) -> Vec<Vec<(crate::rules::damage::DamageType, f64)>> {
     let mut p = FightParams::from_panel(panel, &crate::arena::Arena::training(30.0), &ArcaneFx::none());
     p.foe.base_health = 1e15;
+    p.critical_inputs = None;
     p.base_crit_chance = 0.0;
     p.status_chance = 0.0;
     p.base_status_chance = 0.0;

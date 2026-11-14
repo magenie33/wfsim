@@ -12,8 +12,11 @@ incompatible_with: [serration, amalgam_serration]
 
 effects:
   - kind: base_damage_bonus
-    rank0: 0.75
-    rankMax: 4.50
+    UpgradeType: 253
+    OperationType: STACKING_MULTIPLY
+    Value: 0.75
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
   - kind: alternate_fire_applies_a_random_status_effect
 

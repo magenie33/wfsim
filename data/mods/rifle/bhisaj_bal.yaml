@@ -43,8 +43,11 @@ effects:
 
   # The ordinary relative status bucket, and the reason the card is equipped.
   - kind: status_chance_bonus
-    rank0: 0.15
-    rankMax: 0.90
+    UpgradeType: 365
+    OperationType: STACKING_MULTIPLY
+    Value: 0.15000001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Bhisaj-Bal

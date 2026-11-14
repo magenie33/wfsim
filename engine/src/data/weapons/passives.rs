@@ -168,17 +168,18 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
     // shot it is finally full on ("from the 9th", the Gorgon's) — rather than
     // one shape forced onto both. Same field, same arithmetic, two sentences.
     if let Some(sp) = s.attack.sustained_fire_rate {
-        out.push(if sp.end < sp.start {
+        let (start, end, over_shots) = sp.display_span();
+        out.push(if end < start {
             format!(
                 "Its fire rate FALLS while the trigger is held — to {:.0}% of the listed rate over {:.0} shots — and rebuilds the moment you stop firing. This is simulated; the sim holds the trigger until the magazine is dry.",
-                sp.end * 100.0,
-                sp.over_shots
+                end * 100.0,
+                over_shots
             )
         } else {
             format!(
                 "Its fire rate SPOOLS UP while the trigger is held — from {:.0}% of the listed rate, full from the {}th shot. This is simulated, and it rebuilds after every reload.",
-                sp.start * 100.0,
-                sp.over_shots.ceil() as i64 + 1
+                start * 100.0,
+                over_shots.ceil() as i64 + 1
             )
         });
     }

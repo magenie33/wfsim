@@ -71,7 +71,7 @@ fn the_two_layers_are_not_worth_the_same() {
                        StackPolicy::AssumedMax);
     // +10 points, flat, whatever the mod did.
     assert!(
-        ((post.crit_chance - plain.crit_chance) - 0.10).abs() < 1e-9,
+        crate::rules::upgrades::near_f32(post.crit_chance - plain.crit_chance, 0.10),
         "flat after mods: {} -> {}", plain.crit_chance, post.crit_chance
     );
 }
