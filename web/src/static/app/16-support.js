@@ -78,7 +78,7 @@ function boardCount(field) {
 }
 
 function projectFacts() {
-  // The home page selects its catalog and upload counts by id.
+  // The home page selects its upload count by id.
   const rows = [
     ["roster", rosterSize(), "items modelled"],
     ["builds", boardCount("submissions"), "builds players have uploaded"],
@@ -87,8 +87,8 @@ function projectFacts() {
   return rows.filter(([, n]) => n > 0).map(([id, n, what]) => ({ id, n, what }));
 }
 
-/// The home page's catalog and upload counts. Missing values stay hidden.
-const HERO_FACTS = ["roster", "builds"];
+/// The home page's upload count. Missing values stay hidden.
+const HERO_FACTS = ["builds"];
 
 function renderHomeFacts() {
   const el = $("home-facts");

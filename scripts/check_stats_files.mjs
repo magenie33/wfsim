@@ -73,7 +73,7 @@ const out = JSON.parse(await evaluate(`(async () => {
   BOARD_META = { boards: { first: { submissions: 123, listed: 789 }, second: { submissions: 123, listed: 456 } } };
   renderHomeFacts();
   o.homeFacts = [...document.querySelectorAll('#home-facts b')].map(node => Number(node.textContent.replace(/[^0-9]/g, '')));
-  o.expectedHomeFacts = [rosterSize(), 123];
+  o.expectedHomeFacts = [123];
   BOARD_META = oldBoard; renderHomeFacts();
   const row = (key, points, week) => ({ key, name: null, points, recent: points, week });
   const ranking = (day) => ({ ok: true, v: 1, at: ago(60_000), day, computing: 4, pool: null,
@@ -128,7 +128,7 @@ check("...and so is one that cannot be reached, or of another version",
 check("home shows player scores alone alongside available live devices for both stats sources",
   [out.fresh, out.stale, out.unreachable, out.version].every(row => row?.shown.keys === "volunteers,devices"
     && Number(row.shown.players) === row.got && row.shown.unknownDevices === "volunteers"), said);
-check("home keeps catalog and uploaded builds without a combined evaluation count",
+check("home shows uploaded builds without catalog or combined evaluation counts",
   JSON.stringify(out.homeFacts) === JSON.stringify(out.expectedHomeFacts), said);
 check("signed out, the ranking is the file's period, sliced to the page, its count the file's",
   JSON.stringify(out.signedOut?.keys) === JSON.stringify(["k2"]) && out.signedOut.total === 2 && only(out.signedOut, "file:contributors"), said);
