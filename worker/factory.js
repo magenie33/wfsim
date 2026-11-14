@@ -231,7 +231,7 @@ export async function watchdog(env, now = Date.now()) {
   if (!beat || Date.parse(beat.daemon_at) <= now - SETTLER_SILENT_MS) await observe("settle", () => settleBatch(env, now, Date.now() + 20_000));
   // EACH REPAIR APART: one that throws never keeps the round from being found
   // and written down.
-  for (const [name, step] of [["redeliver", () => facts().redeliver(env, now)], ["repay", () => facts().repay(env, now)],
+  for (const [name, step] of [["redeliver", () => facts().runStage(env,"delivery",now,{runtime:"edge",legacy:true})], ["repay", () => facts().runStage(env,"contribution",now,{runtime:"edge",legacy:true})],
     ["liftIdle", () => facts().liftIdle(env)]]) {
     await observe(name, step);
   }

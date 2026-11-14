@@ -12,6 +12,7 @@ export function taskSchemaSql() {
   const workflows = readFileSync(new URL("../worker/pg/build_workflows.sql", import.meta.url), "utf8");
   const boardAdmission = readFileSync(new URL("../worker/pg/board_admission.sql", import.meta.url), "utf8");
   const incremental = readFileSync(new URL("../worker/pg/inventory.sql", import.meta.url), "utf8");
+  const pipeline=schema.match(/CREATE TABLE IF NOT EXISTS state_task_pipeline_controls[^]*?EXECUTE FUNCTION task_pipeline_notify\('contribution'\);/)?.[0];
   const columns = ["relation_task_consumers delivery_at", "record_candidate_answers credit_work", "record_candidate_answers credit_at",
     "state_compute_scheduling zone", "state_compute_scheduling zone_position", "state_compute_scheduling required_capability", "state_compute_scheduling required_engine", "relation_task_consumers zone"].map(pair => {
     const [table, column] = pair.split(" ");
@@ -48,14 +49,16 @@ export function taskSchemaSql() {
     sync.match(/CREATE OR REPLACE PROCEDURE board_sync\([^]*?END \$\$;/)?.[0],
     sync.match(/CREATE OR REPLACE FUNCTION factory_restate\([^]*?\$\$;/)?.[0],
   ];
-  if (!zonePrelude || zones.some(sql => !sql)) throw new Error("incomplete queue-zone schema");
+  if (!zonePrelude || !pipeline || zones.some(sql => !sql)) throw new Error("incomplete queue-zone schema");
   if (identity.some(sql => !sql)) throw new Error("incomplete compute identity schema");
   const guard = [...sync.matchAll(/CREATE OR REPLACE FUNCTION factory_delivery_guard\([^]*?\$\$;/g)].map(m=>m[0]).join('\n');
   const retention = sync.match(/CREATE OR REPLACE FUNCTION factory_past_safe\([^]*?\$\$;/)?.[0];
   const inventory = sync.match(/SELECT set_config\('search_path'[^\n]+\nCREATE OR REPLACE FUNCTION factory_inventory_rows\([^]*?\$\$;\nREVOKE[^;]+;/)?.[0];
   if (columns.some(x => !x) || indexes.some(x => !x) || !guard || !retention || !inventory) throw new Error("incomplete task-delivery schema");
-  return `SET ROLE wfsim;\nSET lock_timeout = '5s';\n${zonePrelude}\n${columns.join("\n")}\n${indexes.map(sql => sql.replace("CREATE INDEX ", "CREATE INDEX CONCURRENTLY ")).join("\n")}\n${zones.join("\n")}\n${guard}\n${retention}\n${inventory}\n${incremental}\n${workflows}\n${identity.join("\n")}\n${boardAdmission}\nDO $grant$ BEGIN
+  return `SET ROLE wfsim;\nSET lock_timeout = '5s';\n${zonePrelude}\n${columns.join("\n")}\n${pipeline}\n${indexes.map(sql => sql.replace("CREATE INDEX ", "CREATE INDEX CONCURRENTLY ")).join("\n")}\n${zones.join("\n")}\n${guard}\n${retention}\n${inventory}\n${incremental}\n${workflows}\n${identity.join("\n")}\n${boardAdmission}\nDO $grant$ BEGIN
     IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_factoryd') THEN
+      GRANT SELECT ON state_task_pipeline_controls TO wfsim_factoryd;
+      GRANT SELECT,INSERT,UPDATE ON state_task_pipeline_progress TO wfsim_factoryd;
       GRANT SELECT,INSERT ON relation_compute_task_sources TO wfsim_factoryd;
       GRANT SELECT,INSERT ON state_producer_compute_usage TO wfsim_factoryd;
       GRANT SELECT ON entity_weapon_builds TO wfsim_factoryd;

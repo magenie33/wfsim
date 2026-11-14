@@ -41,7 +41,7 @@ SIGNAL_URL = "https://cdn.wfsim.app/work.json"
 # WRITTEN EVERY TEN SECONDS AND KEPT FIVE AT THE EDGE; older than this, the signal is down.
 SIGNAL_S = 60
 # WHAT THE DAEMON RUNS: the worker, and the two scripts of its own.
-DAEMON_FILES = ["scripts/factoryd.mjs", "scripts/factory_capacity.mjs", "scripts/sigv4.mjs"]
+DAEMON_FILES = ["scripts/factoryd.mjs", "scripts/factory_capacity.mjs", "scripts/sigv4.mjs", "scripts/task_pipeline.mjs", "scripts/pipeline_clock.mjs"]
 REMOTE = "/opt/wfsim-factoryd"
 SERVICE = "wfsim-factoryd"
 UNIT = ROOT / "deploy" / f"{SERVICE}.service"

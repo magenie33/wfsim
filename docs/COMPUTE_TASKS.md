@@ -41,6 +41,7 @@ only the current run's input.
 | `task_credit.js` | Idempotent contribution settlement and repayment |
 | `task_observation.js` | Read-only health observations |
 | `task_inventory.js` | Validation and publication of complete workload snapshots |
+| `task_pipeline.js` | Independent consumer controls, bounded backlog observations and progress |
 
 The modules import common contracts, not business implementations or each
 other. The composition root supplies explicit interfaces. Dispatch receives
@@ -228,6 +229,45 @@ use ordinary submit; retained family-fill outputs retain their special purpose.
 No legacy task is rekeyed, reset or recreated for this classification.
 
 ## Verification and delivery
+
+Registration, deduplication, source binding and lease acquisition remain atomic
+synchronous operations. Candidate answers and verification readiness commit
+together before reception is acknowledged. Local validation and canonicalization
+remain direct calls. A handoff contains durable identifiers rather than another
+copy of the calculation input or result.
+
+Native verification commits accepted output, exact credit decisions and delivery
+readiness, then releases its verification claim. Delivery and contribution
+consumers run independently on dedicated database connections. An unavailable
+consumer retains its readiness marker and does not occupy verification. The
+compatibility settlement API can drain these consumers inline for its callers.
+
+Committed readiness wakes the native consumer through a notification containing
+only its stage name. PostgreSQL combines equal notifications within one
+transaction. Notifications carry no task data and are not acknowledgements;
+periodic indexed reads recover missed wakeups. A wake received during a pass
+requests another pass without overlapping that consumer. Shutdown drains work
+already running.
+
+| Consumer | Durable input | Completion |
+| --- | --- | --- |
+| Verification | `state_pending_verifications` | Accepted result or waiting decision committed; claim acknowledged |
+| Delivery | `relation_task_consumers.delivery_at` | Guarded consumer writes and served acknowledgement committed |
+| Contribution | `record_candidate_answers.credit_work` | Selected credit and hourly totals committed exactly once |
+
+The native delivery consumer executes registered SQL adapters. Edge delivery
+also supplies callback adapters and historical recovery. Producer eligibility
+is applied before the batch limit; handlers retain their own idempotency and
+superseded-generation checks. Current consumers read readiness indexes rather
+than scanning result history. Historical recovery retains its separate cursors.
+
+`node scripts/task_pipeline.mjs status` reports each consumer's control, durable
+backlog, oldest pending item and latest progress. Counts exceeding the observation
+bound carry `at_least`. `pause <consumer>` and `resume <consumer>` change admission
+to that consumer's next pass; in-flight transactions finish. `run <consumer>`
+performs one bounded native pass and respects the control. Commands use the
+configured library owner connection. The daemon can observe controls but cannot
+change them. Pausing a consumer preserves its work and upstream facts.
 
 Verified task state commits before consumer writes or contribution settlement.
 Successful verification remains durable when either fails. Delivery batches

@@ -637,6 +637,40 @@ CREATE TABLE IF NOT EXISTS state_pending_verifications (
 ALTER TABLE state_pending_verifications ADD COLUMN IF NOT EXISTS claim TEXT COLLATE "C";
 ALTER TABLE state_pending_verifications ADD COLUMN IF NOT EXISTS claimed_at TEXT COLLATE "C";
 CREATE INDEX IF NOT EXISTS settle_queue_by_age ON state_pending_verifications (queued_at);
+CREATE TABLE IF NOT EXISTS state_task_pipeline_controls (
+  name TEXT COLLATE "C" PRIMARY KEY,
+  paused BOOLEAN NOT NULL DEFAULT false,
+  changed_at TEXT COLLATE "C" NOT NULL,
+  changed_by TEXT COLLATE "C" NOT NULL
+);
+CREATE TABLE IF NOT EXISTS state_task_pipeline_progress (
+  name TEXT COLLATE "C" PRIMARY KEY,
+  at TEXT COLLATE "C" NOT NULL,
+  processed BIGINT NOT NULL DEFAULT 0,
+  failures BIGINT NOT NULL DEFAULT 0,
+  elapsed_ms DOUBLE PRECISION NOT NULL DEFAULT 0,
+  runtime TEXT COLLATE "C" NOT NULL,
+  error TEXT
+);
+CREATE OR REPLACE FUNCTION task_pipeline_notify() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_NARGS=0 THEN PERFORM pg_notify('wfsim_task_pipeline',NEW.name);
+  ELSE PERFORM pg_notify('wfsim_task_pipeline',TG_ARGV[0]); END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS pipeline_control_resumed ON state_task_pipeline_controls;
+CREATE TRIGGER pipeline_control_resumed AFTER INSERT OR UPDATE OF paused ON state_task_pipeline_controls
+  FOR EACH ROW WHEN(NOT NEW.paused) EXECUTE FUNCTION task_pipeline_notify();
+DROP TRIGGER IF EXISTS pipeline_verification_ready ON state_pending_verifications;
+CREATE TRIGGER pipeline_verification_ready AFTER INSERT OR UPDATE ON state_pending_verifications
+  FOR EACH ROW WHEN(NEW.claim IS NULL) EXECUTE FUNCTION task_pipeline_notify('verification');
+DROP TRIGGER IF EXISTS pipeline_delivery_ready ON relation_task_consumers;
+CREATE TRIGGER pipeline_delivery_ready AFTER INSERT OR UPDATE OF delivery_at,state ON relation_task_consumers
+  FOR EACH ROW WHEN(NEW.state='live' AND NEW.delivery_at IS NOT NULL) EXECUTE FUNCTION task_pipeline_notify('delivery');
+DROP TRIGGER IF EXISTS pipeline_contribution_ready ON record_candidate_answers;
+CREATE TRIGGER pipeline_contribution_ready AFTER INSERT OR UPDATE OF credit_work ON record_candidate_answers
+  FOR EACH ROW WHEN(NEW.credit_work IS NOT NULL AND NEW.credited=0 AND NEW.void=0 AND NEW.official=0)
+  EXECUTE FUNCTION task_pipeline_notify('contribution');
 -- THE FACTORY AT ONE MOMENT, one row: what is open and who is on, and the
 -- daemon's own heartbeat and the commit it runs.
 CREATE TABLE IF NOT EXISTS state_factory_snapshot (

@@ -148,8 +148,9 @@ export function judgeFact(q, answers, threshold) {
     const group = independent([...equal.filter((a) => a.engine === q.fact_engine), ...equal.filter((a) => a.engine !== q.fact_engine)]);
     if (group.length < needs) continue;
     if (lead.canon !== q.canon) return others ? { skip: "peer" } : { differ: "canon" };
-    const unpaid = group.filter((a) => !a.credited);
-    return unpaid.length ? { differ: "uncredited", ids: unpaid.map((a) => a.id) } : { ok: true };
+      const unpaid = group.filter((a) => !a.credited);
+      if(unpaid.length && unpaid.every(a=>a.credit_work!=null))return {skip:"pending_credit"};
+      return unpaid.length ? { differ: "uncredited", ids: unpaid.map((a) => a.id) } : { ok: true };
   }
   return others ? { skip: "peer" } : { differ: "no_group" };
 }
@@ -198,7 +199,7 @@ export async function settleBatch(env, now = Date.now(), until = Date.now() + SE
   const f = facts();
   let total = 0;
   for (;;) {
-    const n = await f.settleQueued(env, now);
+    const {processed:n} = await f.runStage(env,"verification",now);
     total += n;
     if (!n || Date.now() >= until) return total;
     now = Date.now();

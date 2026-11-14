@@ -137,7 +137,9 @@ const opened = await openEnv({ PG_URL: "postgres://local/wfsim", PG_ACCOUNTS_URL
 const waiting = opened.backgroundEnv.LIBRARY.prepare("SELECT 1").all();
 await Promise.resolve();
 await opened.env.LIBRARY.prepare("SELECT 1").all();
-assert.deepEqual(pools.map((p) => p.max), [2, 2, 1]);
+assert.deepEqual(pools.map((p) => p.max), [2, 2, 1, 1, 1, 1]);
+assert.deepEqual(pools.slice(3).map(p=>p.connection.application_name),
+  ["wfsim-factoryd-verification","wfsim-factoryd-delivery","wfsim-factoryd-contribution"]);
 backgroundRelease(); await waiting; await opened.close();
 console.log("ok: a blocked statistics pool does not consume the critical pool");
 

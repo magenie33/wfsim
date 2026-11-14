@@ -6,8 +6,10 @@ import { createDispatch } from "../worker/task_dispatch.js";
 import { testDb } from "./pg/test_db.mjs";
 import { taskSchemaSql } from "./task_schema.mjs";
 import { replaceComputeResult } from "./pg/fixtures.mjs";
+import {taskPipelineCases} from "./check_task_pipeline.mjs";
+import {pipelineClockCases} from "./check_pipeline_clock.mjs";
 
-for (const name of ["contract", "ledger", "dispatch", "verification", "delivery", "credit", "usage", "observation"]) {
+for (const name of ["contract", "ledger", "dispatch", "verification", "delivery", "credit", "usage", "observation", "pipeline"]) {
   const text = readFileSync(new URL(`../worker/task_${name}.js`, import.meta.url), "utf8");
   const imports = [...text.matchAll(/from\s+["']([^"']+)["']/g)].map(m => m[1]);
   assert(imports.every(p => ["./task_contract.js", "./computation_input.js", "./dials.js", "./instant.js"].includes(p)), `${name} imports a business or peer implementation`);
@@ -20,7 +22,7 @@ const now = Date.now(), db = await testDb("library"), env = { LIBRARY: db };
 const upgrade = taskSchemaSql();
 assert.match(upgrade,/CREATE INDEX CONCURRENTLY IF NOT EXISTS demands_producer_question ON relation_task_consumers \(producer, question\)/);
 assert(upgrade.includes("CREATE INDEX CONCURRENTLY IF NOT EXISTS demands_delivery"));
-await db.exec("ALTER TABLE relation_task_consumers DROP COLUMN delivery_at; DROP FUNCTION factory_past_safe(text,text) CASCADE; DROP FUNCTION factory_delivery_guard(text,text,text,text,text,text,text)");
+await db.exec("DROP TRIGGER pipeline_delivery_ready ON relation_task_consumers; ALTER TABLE relation_task_consumers DROP COLUMN delivery_at; DROP FUNCTION factory_past_safe(text,text) CASCADE; DROP FUNCTION factory_delivery_guard(text,text,text,text,text,text,text)");
 const localUpgrade = upgrade.replace("SET ROLE wfsim;", "").replaceAll("CREATE INDEX CONCURRENTLY", "CREATE INDEX");
 await db.exec(localUpgrade);
 await db.exec(localUpgrade);
@@ -197,3 +199,6 @@ for (const count of [1, 24]) {
 assert(costs[1] <= costs[0] + 1 && costs[1] <= 15, `delivery calls scale with task count: ${costs}`);
 console.log(`ok: normal delivery stays batched (${costs.join('/')} database calls for1/24tasks)`);
 await db.close();
+const pipelineDb=await testDb("library");
+try {await taskPipelineCases(pipelineDb);} finally {await pipelineDb.close();}
+await pipelineClockCases();
