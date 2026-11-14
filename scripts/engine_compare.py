@@ -71,6 +71,21 @@ def freeze(args):
                     "file": destination.name, "sha256": digest(destination.read_bytes())}
     dependencies = {}
     if args.runtime == "wasm":
+        if environment.get('WFSIM_DATA_APART') == '1':
+            packs = None
+            for line in build.stdout.decode().splitlines():
+                row = json.loads(line)
+                if row.get('reason') == 'build-script-executed' and 'wfsim-engine' in row.get('package_id', ''):
+                    candidate = Path(row['out_dir']) / 'packs'
+                    if 'wasm32' in str(candidate) and candidate.is_dir():
+                        packs = candidate
+            if packs is None:
+                raise ValueError('the same build must supply its data packs')
+            files = sorted(packs.glob('*.json'))
+            if not files:
+                raise ValueError('data-apart module has no packs')
+            for pack in files:
+                shutil.copy2(pack, output / f'pack.{pack.name}')
         module = root / "target/wasm32-unknown-unknown/release/wfsim_wasm.wasm"
         subprocess.run(["wasm-bindgen", "--target", "no-modules", "--out-dir", str(output), str(module)], check=True)
         for name in ["wasm_engine.mjs", "wasm_compare.mjs"]:
@@ -90,7 +105,7 @@ def freeze(args):
         wrapper.chmod(0o755)
         artifacts = {"simulation_cost": {"file": wrapper.name, "sha256": digest(wrapper.read_bytes())}}
         dependencies = {p.name: digest(p.read_bytes()) for p in output.iterdir()
-                        if p.suffix in (".js", ".mjs", ".wasm")}
+                        if p.suffix in (".js", ".mjs", ".wasm") or p.name.startswith('pack.')}
     elif set(artifacts) != {"simulation_cost", "one_fight"}:
         raise ValueError("missing comparison executables")
     manifest = {

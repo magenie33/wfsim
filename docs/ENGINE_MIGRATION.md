@@ -234,6 +234,10 @@ separate mappings.
 
 `freeze --runtime wasm` saves a standalone Rust release module, matching
 wasm-bindgen glue, immutable dependencies and a number-token-preserving runner.
+With `WFSIM_DATA_APART=1`, it copies the data packs emitted by that exact Cargo
+build and hashes them as required runtime dependencies. Use this variant for
+the product's data installation and lane-memory checks; an embedded-data
+module has a different memory/layout contract.
 `run` uses the same exact response comparison for either runtime and records
 linear-memory high water alongside process RSS. A Node/V8 observation is not
 a browser interaction or shipping compression measurement. No `site/` build is
