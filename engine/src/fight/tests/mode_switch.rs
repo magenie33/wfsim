@@ -7,9 +7,10 @@ fn form(id: &str) -> (crate::build::loadout::ResolvedPanel, FightParams) {
     let base = crate::model::WeaponBase::from_data(id, false, &[]);
     let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
     let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(60.0), &crate::data::arcanes::ArcaneFx::none());
-    p.critical_inputs = None;
     p.crit_multiplier = 1.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
     p.base_crit_chance = 0.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.status_chance = 0.0;
     p.base_status_chance = 0.0;
     p.body_parts = mono_body(1.0);
