@@ -54,13 +54,27 @@ const out = JSON.parse(await evaluate(`(async () => {
     window.__stats.tally = file; window.__calls.length = 0; tallyShown = null;
     $("home-page").hidden = false;
     await loadHomeTally();
-    return { got: tallyTo && tallyTo.volunteers, calls: [...window.__calls] };
+    tallyAt -= TALLY_EVERY_MS;
+    const oldCount = computingCount;
+    computingCount = 7; renderHomeTally();
+    const keys = () => [...document.querySelectorAll('#home-tally-n [data-tally]')].map(node => node.dataset.tally).join(',');
+    const shown = { keys: keys(), players: document.querySelector('#home-tally-n [data-tally="volunteers"]').textContent };
+    computingCount = null; renderHomeTally();
+    shown.unknownDevices = keys();
+    computingCount = oldCount; renderHomeTally();
+    return { got: tallyTo && tallyTo.volunteers, calls: [...window.__calls], shown };
   };
   const o = {};
   o.fresh = await home(tally(ago(60_000)));
   o.stale = await home(tally(ago(20 * 60_000)));
   o.unreachable = await home("fail");
   o.version = await home(tally(ago(0), 2));
+  const oldBoard = BOARD_META;
+  BOARD_META = { boards: { first: { submissions: 123, listed: 789 }, second: { submissions: 123, listed: 456 } } };
+  renderHomeFacts();
+  o.homeFacts = [...document.querySelectorAll('#home-facts b')].map(node => Number(node.textContent.replace(/[^0-9]/g, '')));
+  o.expectedHomeFacts = [rosterSize(), 123];
+  BOARD_META = oldBoard; renderHomeFacts();
   const row = (key, points, week) => ({ key, name: null, points, recent: points, week });
   const ranking = (day) => ({ ok: true, v: 1, at: ago(60_000), day, computing: 4, pool: null,
     rankings: { all: [row("k1", 9, 0), row("k2", 5, 5), row("k3", 2, 1)], recent: [row("k2", 5, 5), row("k3", 2, 1)], week: [row("k2", 5, 5), row("k3", 2, 1)] } });
@@ -111,6 +125,11 @@ check("the home tally reads the CDN's file and asks no worker", out.fresh?.got =
 check("...a file stale by the server's clock is passed over for the worker", out.stale?.got === 222 && only(out.stale, "file:tally", "api:tally"), said);
 check("...and so is one that cannot be reached, or of another version",
   out.unreachable?.got === 222 && only(out.unreachable, "file:tally", "api:tally") && out.version?.got === 222 && only(out.version, "file:tally", "api:tally"), said);
+check("home shows player scores alone alongside available live devices for both stats sources",
+  [out.fresh, out.stale, out.unreachable, out.version].every(row => row?.shown.keys === "volunteers,devices"
+    && Number(row.shown.players) === row.got && row.shown.unknownDevices === "volunteers"), said);
+check("home keeps catalog and uploaded builds without a combined evaluation count",
+  JSON.stringify(out.homeFacts) === JSON.stringify(out.expectedHomeFacts), said);
 check("signed out, the ranking is the file's period, sliced to the page, its count the file's",
   JSON.stringify(out.signedOut?.keys) === JSON.stringify(["k2"]) && out.signedOut.total === 2 && only(out.signedOut, "file:contributors"), said);
 check("...a file of another day, or none, is passed over for the worker",
