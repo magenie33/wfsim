@@ -7,6 +7,7 @@ import { inventoryContext } from './inventory_pipeline.mjs';
 import { relationalInventoryContext } from './inventory_relational_pipeline.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
 import { splitBoardContext } from './split_board_pipeline.mjs';
+import {boardStorage} from './board_storage.mjs';
 
 const [command, ...args] = process.argv.slice(2), options = {};
 for (let i = 0; i < args.length; i += 2) {
@@ -14,6 +15,7 @@ for (let i = 0; i < args.length; i += 2) {
   options[args[i].slice(2)] = args[i + 1];
 }
 if (!options.work || !isAbsolute(options.work)) throw Error('--work requires the absolute live working directory');
+options.work=boardStorage(options.work);
 const root = join(options.work, 'inventory');
 if (command === 'status') {
   console.log(JSON.stringify({ task: inspectInventoryTask(root) }));

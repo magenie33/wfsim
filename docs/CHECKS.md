@@ -290,6 +290,11 @@ protected inputs fail. It does not access PostgreSQL or publish remotely.
 `check_inventory_disk_budget.mjs` verifies whole-page rollback on database
 exhaustion and explicit generated-file allocation, path, link and host-reserve
 limits without exhausting the actual filesystem.
+`check_board_storage.mjs` rejects missing, substituted, remote, system and linked
+data storage before the shell, producer, publisher or rebuild command creates
+state. Valid local ext4/xfs UUID bindings use the configured work root.
+`ship_bot.py --self-test` also checks loaded provenance on a configured data root
+and rejects a lost mount without exposing unrelated process environment.
 `check_split_board_pipeline.mjs` runs native consumers in separate SQLite databases:
 either consumer may pause, board publication survives a full work database,
 incremental inventory retains the complete QID union, and altered modes, missing

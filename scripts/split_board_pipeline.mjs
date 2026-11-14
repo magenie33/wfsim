@@ -21,6 +21,7 @@ import {PreparedBoardProjection} from './prepared_board_projection.mjs';
 import {PreparedWorkInventory} from './prepared_work_inventory.mjs';
 import {PreparedWorkAudit} from './audit_prepared_work.mjs';
 import {BoardPipeline} from './board_pipeline.mjs';
+import {boardStorage} from './board_storage.mjs';
 
 const load=path=>JSON.parse(readFileSync(path,'utf8')),here=dirname(fileURLToPath(import.meta.url));
 const GiB=1024**3;
@@ -46,7 +47,7 @@ export function boardConsumerContract(stage,state) {
  return {v:1,stage,source_generation:state.generation,source:state.contract,record_storage:'interned-deflate-v1',
   code:digest([...consumerFiles[stage],'prepared_board_reader.mjs','prepared_board_consumer.mjs'])};
 }
-const disk=work=>{const s=statfsSync(work);if(s.bavail*s.bsize<8*GiB)throw Error('board pipeline reached the filesystem reserve');};
+const disk=work=>{boardStorage(work);const s=statfsSync(work);if(s.bavail*s.bsize<8*GiB)throw Error('board pipeline reached the filesystem reserve');};
 function acknowledgement(path,name,source) {
  if(!existsSync(path))return null;const db=new DatabaseSync(path,{readOnly:true});
  try {
@@ -58,7 +59,7 @@ function acknowledgement(path,name,source) {
 }
 
 export async function runPrepareBoardCycle({work,bin,sql,operator,budgetMs=1000,report=()=>{},fault=async()=>{}}) {
- const root=join(work,'inventory');mkdirSync(root,{recursive:true});disk(work);
+ work=boardStorage(work);disk(work);const root=join(work,'inventory');mkdirSync(root,{recursive:true});
  const control=new InventoryControl(root),path=join(root,'split-state.json'),context=await splitBoardContext(bin,operator),quota=limits();
  let records;
  try {
@@ -141,6 +142,7 @@ export async function publishPreparedInventory(sql,inventory,state,source,report
  inventory.catalog.db.prepare('INSERT INTO state_work_inventory_delivery VALUES(?,?)').run(audit.cut,canon(receipt));report({cut:audit.cut,delivery:receipt});
 }
 export async function serveBoardStage(stage,work,bin) {
+ work=boardStorage(work);
  if(['normalization','inventory'].includes(stage)&&!process.env.PG_URL)throw Error('PG_URL required');
  const pipeline=new BoardPipeline(work),quota=limits(),statePath=join(work,'inventory/split-state.json');
  const sql=['normalization','inventory'].includes(stage)?postgres(process.env.PG_URL,{max:1,fetch_types:false,connect_timeout:15,onnotice:()=>{},
@@ -196,6 +198,7 @@ export async function serveBoardStage(stage,work,bin) {
  }finally{process.off('SIGTERM',stop);process.off('SIGINT',stop);consumer?.close();audit?.close();await operator?.close();await sql?.end({timeout:5});pipeline.close();lock.exec('ROLLBACK');lock.close();}
 }
 export async function serveSplitBoardPipeline(work,bin) {
+ work=boardStorage(work);
  if(!process.env.PG_URL)throw Error('PG_URL required');
  mkdirSync(join(work,'tmp'),{recursive:true});mkdirSync(join(work,'pub/data'),{recursive:true});
  if(!existsSync(join(work,'pub/data/board_state.yaml')))writeFileSync(join(work,'pub/data/board_state.yaml'),'boards: {}\n');

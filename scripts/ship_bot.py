@@ -137,7 +137,7 @@ def bot_files() -> list:
     return files
 
 
-LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/wasm_witness.mjs", "scripts/order_credit.mjs",
+LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/board_storage.mjs", "scripts/live_orders.mjs", "scripts/wasm_witness.mjs", "scripts/order_credit.mjs",
                 "scripts/live_publish.mjs", "scripts/board_heads.mjs", "scripts/inbox_reader.mjs",
                 "scripts/inventory_pipeline.mjs", "scripts/incremental_inventory.mjs", "scripts/inventory_inputs.mjs",
                 "scripts/inventory_relational_pipeline.mjs", "scripts/inventory_relations.mjs", "scripts/inventory_operator.mjs",
@@ -226,7 +226,7 @@ def file_sha256(path: pathlib.Path) -> str:
 
 
 LIVE_PROBE = r'''
-import hashlib, json, pathlib, re, shlex, subprocess, sys
+import hashlib, json, os, pathlib, re, shlex, subprocess, sys
 request = json.load(sys.stdin)
 bot = request.get("kind") == "bot"
 root = pathlib.Path(request["root"])
@@ -252,7 +252,18 @@ else:
     assert len(args) == 4 and pathlib.Path(args[0]).name == "bash"
     assert (process / "exe").resolve(strict=True).name == "bash"
     assert (root / args[1]) == root / "scripts/live_board.sh" and args[2:] == [str(root / "live"), str(root / "bin")]
-    assert (process / "cwd").resolve(strict=True) == root / "live"
+    allowed = {"WFSIM_BOARD_WORK_ROOT", "WFSIM_BOARD_DATA_MOUNT", "WFSIM_BOARD_DATA_UUID", "WFSIM_BOARD_STORAGE_REQUIRED"}
+    storage = {}
+    for item in (process / "environ").read_bytes().split(b"\0"):
+        key, separator, value = item.partition(b"=")
+        if separator and key.decode() in allowed:
+            storage[key.decode()] = value.decode()
+    work = root / "live"
+    if storage and (storage.get("WFSIM_BOARD_STORAGE_REQUIRED") != "0" or len(storage) > 1):
+        work = pathlib.Path(subprocess.check_output(["node", str(root / "scripts/board_storage.mjs"), str(work)], text=True,
+            timeout=10, env={"PATH": os.environ.get("PATH", os.defpath), **storage}).strip())
+        assert work.is_absolute()
+    assert (process / "cwd").resolve(strict=True) == work
 hashes, latest, observed = {}, 0, {}
 def signature(stat):
     return stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
@@ -330,6 +341,50 @@ def runtime_probe(t: dict, wanted: dict, kind: str = "live") -> dict | None:
     return None
 
 
+LIVE_STORAGE_PROBE = r'''
+import json, os, pathlib, pwd, re, shlex, subprocess, sys
+request = json.load(sys.stdin)
+allowed = {"WFSIM_BOARD_WORK_ROOT", "WFSIM_BOARD_DATA_MOUNT", "WFSIM_BOARD_DATA_UUID"}
+files = subprocess.check_output(["systemctl", "show", "wfsim-live", "--property=EnvironmentFiles", "--value"], text=True)
+paths = re.findall(r"(\S+) \(ignore_errors=(?:yes|no)\)", files)
+assert paths
+selected = {}
+for name in paths:
+    path = pathlib.Path(name)
+    assert path.is_absolute() and path.resolve(strict=True) == path
+    for line in path.read_text().splitlines():
+        key, separator, value = line.strip().partition("=")
+        if separator and key in allowed:
+            parsed = shlex.split(value)
+            assert len(parsed) == 1
+            selected[key] = parsed[0]
+environment = {"PATH": os.environ.get("PATH", os.defpath), **selected, "WFSIM_BOARD_STORAGE_REQUIRED": "1"}
+program = request["script"] + "\nconsole.log(boardStorage(process.argv[1]));\n"
+user = subprocess.check_output(["systemctl", "show", "wfsim-live", "--property=User", "--value"], text=True).strip()
+assert user
+account = pwd.getpwnam(user)
+work = subprocess.check_output(["node", "--input-type=module", "-e", program, request["default_work"]],
+    text=True, timeout=10, env=environment, user=account.pw_uid, group=account.pw_gid,
+    extra_groups=os.getgrouplist(user, account.pw_gid)).strip()
+print(json.dumps({"work": work, **selected}))
+'''
+
+
+def live_storage_preflight(t: dict) -> None:
+    request = {"storage_preflight": True, "script": (ROOT / "scripts/board_storage.mjs").read_text(),
+               "default_work": str(pathlib.PurePosixPath(t["root"]) / "live")}
+    result = subprocess.run(["ssh", *ssh_opts(t), "-o", "ConnectTimeout=10", t["host"],
+                             "sudo -n python3 -B -c " + shlex.quote(LIVE_STORAGE_PROBE)],
+                            input=json.dumps(request), capture_output=True, text=True, timeout=30)
+    if result.returncode:
+        sys.exit("live board storage preflight failed before remote writes or restart: " + result.stderr[-600:])
+    try:
+        work = json.loads(result.stdout)["work"]
+        assert pathlib.PurePosixPath(work).is_absolute()
+    except (ValueError, KeyError, TypeError, AssertionError):
+        sys.exit("live board storage preflight returned no verified work root; deployment stopped")
+
+
 def live_unchanged(t: dict, files: dict, rel: dict, engine: str) -> str | None:
     """Only a complete actual-file and loaded-service proof can preserve VERSION."""
     wanted = {}
@@ -367,6 +422,7 @@ def deploy_live(t: dict) -> None:
     engine = re.search(r'const ENGINE_ID = "([^"]+)"', (ROOT / "site" / "asset" / app).read_text(encoding="utf-8")).group(1)
     rel = json.loads((ROOT / "site" / "release.json").read_text(encoding="utf-8"))
     files = live_files(out, rel)
+    live_storage_preflight(t)
     version = live_unchanged(t, files, rel, engine)
     if version:
         print(f"live board runtime unchanged — keeping the running service and actual VERSION {version}")
@@ -374,7 +430,7 @@ def deploy_live(t: dict) -> None:
     print("live board runtime not proven identical — deploying normally")
     (out / "VERSION").write_bytes((run(["git", "rev-parse", "HEAD"]).strip() + "\n").encode())
     (out / "ENGINE").write_bytes(f"{engine}\n".encode())
-    run(["ssh", *o, host, f"mkdir -p {root}/bin {root}/scripts {root}/live {root}/bin/incoming"])
+    run(["ssh", *o, host, f"mkdir -p {root}/bin {root}/scripts {root}/bin/incoming"])
     # INTO A SPARE DIRECTORY, THEN RENAMED: the live board may be running the
     # binary this replaces, and a running file cannot be written over — but it
     # can be renamed over, which also never leaves half a binary in place.

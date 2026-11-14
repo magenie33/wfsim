@@ -21,6 +21,7 @@ set -euo pipefail
 WORK="${1:?usage: live_board.sh <work-dir> <bin-dir>}"
 BIN="${2:?usage: live_board.sh <work-dir> <bin-dir>}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
+WORK="$(node "$HERE/board_storage.mjs" "$WORK")"
 POLL_SECONDS="${POLL_SECONDS:-20}"
 REFRESH_SECONDS="${REFRESH_SECONDS:-3600}"
 INCREMENTAL_INVENTORY="${INCREMENTAL_INVENTORY:-1}"

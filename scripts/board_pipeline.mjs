@@ -8,6 +8,7 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { canon } from '../worker/task_contract.js';
 import { fileHash, syncDirectory } from './inventory_publication_io.mjs';
+import {boardStorage} from './board_storage.mjs';
 
 const STAGES = ['intake', 'normalization', 'inventory', 'projection', 'publication'], RESERVE = 8 * 1024 ** 3, FILE_LIMIT = 32 * 1024 ** 2;
 const load = path => JSON.parse(readFileSync(path, 'utf8'));
@@ -24,6 +25,7 @@ function files(root, prefix = '') {
 export class BoardPipeline {
   constructor(work, { maxBytes = Number(process.env.WFSIM_BOARD_OUTBOX_BYTES || 2 * 1024 ** 3) } = {}) {
     if (!Number.isSafeInteger(maxBytes) || maxBytes < 1) throw Error('invalid publication outbox disk bound');
+    work=boardStorage(work);this.work=work;
     this.root = join(resolve(work), 'publication'); this.maxBytes = maxBytes;
     this.blobs = join(this.root, 'blobs'); mkdirSync(this.blobs, { recursive: true });
     this.db = new DatabaseSync(join(this.root, 'pipeline.sqlite'));
@@ -46,6 +48,7 @@ export class BoardPipeline {
     }
   }
   transaction(fn) {
+    boardStorage(this.work);
     this.db.exec('BEGIN IMMEDIATE');
     try { const value = fn(); this.db.exec('COMMIT'); return value; }
     catch (error) { this.db.exec('ROLLBACK'); throw error; }
@@ -55,11 +58,13 @@ export class BoardPipeline {
     return !!this.db.prepare('SELECT paused FROM state_board_pipeline_controls WHERE name=?').get(name)?.paused;
   }
   control(name, paused) {
+    boardStorage(this.work);
     this.paused(name);
     this.db.prepare(`INSERT INTO state_board_pipeline_controls VALUES(?,?,?) ON CONFLICT(name)
       DO UPDATE SET paused=excluded.paused,changed_at=excluded.changed_at`).run(name, Number(paused), new Date().toISOString());
   }
   progress(name, body) {
+    boardStorage(this.work);
     this.db.prepare('INSERT OR REPLACE INTO state_board_pipeline_progress VALUES(?,?,?)').run(name,new Date().toISOString(),canon(body));
   }
   status() {
@@ -69,6 +74,7 @@ export class BoardPipeline {
       stored_bytes: this.db.prepare('SELECT coalesce(sum(bytes),0) n FROM entity_board_publication_blobs').get().n, max_bytes: this.maxBytes };
   }
   collect() {
+    boardStorage(this.work);
     for (const name of readdirSync(this.blobs)) if ((/^[a-f0-9]{64}$/.test(name) || /^[a-f0-9]{64}\.partial$/.test(name))
       && !this.db.prepare('SELECT 1 FROM entity_board_publication_blobs WHERE sha=?').get(name)) rmSync(join(this.blobs,name));
     const latest = this.db.prepare('SELECT max(seq) id FROM record_board_publication_packages WHERE delivered_at IS NOT NULL').get().id || 0;
@@ -81,6 +87,7 @@ export class BoardPipeline {
     }
   }
   async enqueue({ epoch, boardDir, receipt, fault = async () => {} }) {
+    boardStorage(this.work);
     if (typeof epoch !== 'string' || !epoch) throw Error('publication epoch is required');
     const held = this.db.prepare('SELECT * FROM record_board_publication_packages WHERE epoch=?').get(epoch);
     if (held) return { seq: held.seq, replay: true };
@@ -126,6 +133,7 @@ export class BoardPipeline {
   }
   async deliver({ send = fetch, site = process.env.WFSIM_SITE || 'https://wfsim.app', maxFiles = 32,
     requestMs = 30000, fault = async () => {}, signal } = {}) {
+    boardStorage(this.work);
     if (!Number.isSafeInteger(maxFiles) || maxFiles < 1 || !Number.isSafeInteger(requestMs) || requestMs < 1)
       throw Error('invalid publication delivery bounds');
     if (this.paused('publication')) return { paused: true };
@@ -138,6 +146,7 @@ export class BoardPipeline {
       let sent = 0;
       for (const file of this.db.prepare(`SELECT * FROM relation_board_publication_files WHERE package=? AND served=0
         ORDER BY (name='meta.json'),name LIMIT ?`).all(pack.seq,maxFiles)) {
+        boardStorage(this.work);
         signal?.throwIfAborted();
         if (this.paused('publication')) return { paused: true, sent };
         if (this.db.prepare('SELECT sha FROM state_board_remote_files WHERE name=?').get(file.name)?.sha !== file.sha) {

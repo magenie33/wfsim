@@ -17,10 +17,10 @@ def exercise(ship, change=None):
         root = pathlib.Path(temporary).resolve()
         local, remote = root / "local", root / "remote"
         out = local / "target/live-linux"
-        scripts = ["scripts/live_board.sh", "scripts/main.mjs"]
+        scripts = ["scripts/live_board.sh", "scripts/board_storage.mjs", "scripts/main.mjs"]
         rel = {"commit": "new-ui", "release": "new-release", "wasm": "abc", "engine": "engine",
                "packs": ["pack.data.def.json"], "data": "def", "protocol": 8, "unknown": {"kept": True}}
-        bodies = {"scripts/live_board.sh": "board", "scripts/main.mjs": 'import "../worker/a.js";\nimport("../mcp/a.js");',
+        bodies = {"scripts/live_board.sh": "board", "scripts/board_storage.mjs": "storage", "scripts/main.mjs": 'import "../worker/a.js";\nimport("../mcp/a.js");',
                   "worker/a.js": 'export { x } from "./nested.js";', "worker/nested.js": "export const x = 1;",
                   "mcp/a.js": "mcp", "worker/deadlines.js": "deadline", "worker/board_tasks.js": "text read",
                   "scripts/pg/package.json": "{}", "scripts/pg/package-lock.json": '{"lock":1}',
@@ -42,12 +42,19 @@ def exercise(ship, change=None):
             ["/bin/bash", "scripts/live_board.sh", remote / "live", remote / "bin"]) + b"\0")
         (proc / "cwd").symlink_to(remote / "live")
         (proc / "exe").symlink_to("/bin/bash")
+        (proc / "environ").write_bytes(b"")
         unit, environment = root / "unit.service", root / "service.env"
         unit.write_text("unit")
         environment.write_text("never read this secret fixture")
 
         def fake_command(command, **kwargs):
-            assert command[0] in ("systemctl", "date")
+            assert command[0] in ("systemctl", "date", "node")
+            if command[0] == "node":
+                assert command[1] == str(remote / "scripts/board_storage.mjs")
+                assert set(kwargs["env"]) <= {"PATH", "WFSIM_BOARD_WORK_ROOT", "WFSIM_BOARD_DATA_MOUNT", "WFSIM_BOARD_DATA_UUID", "WFSIM_BOARD_STORAGE_REQUIRED"}
+                if mode.get("mount_missing"):
+                    raise subprocess.CalledProcessError(1, command)
+                return str(mode["storage_work"]) + "\n"
             if command[0] == "date":
                 return str(mode["start"])
             assert "wfsim-live" in command and "--timestamp=us+utc" in command
@@ -60,6 +67,14 @@ def exercise(ship, change=None):
                 "NeedDaemonReload": mode["reload"]}.items())
 
         def fake_probe(command, **kwargs):
+            request = json.loads(kwargs["input"])
+            if request.get("storage_preflight"):
+                events.append("storage")
+                assert command[0] == "ssh" and kwargs["timeout"] == 30
+                assert "sudo -n python3" in command[-1]
+                if mode.get("preflight_failure"):
+                    return subprocess.CompletedProcess(command, 1, "", "missing data mount")
+                return subprocess.CompletedProcess(command, 0, json.dumps({"work": str(mode.get("storage_work", remote / "live"))}), "")
             events.append("probe")
             assert command[0] == "ssh" and kwargs["timeout"] == 45
             if mode.get("timeout"):
@@ -119,7 +134,7 @@ def exercise(ship, change=None):
                 try:
                     ship.deploy_live(target)
                 except (OSError, SystemExit):
-                    assert events == ["build"], events
+                    assert events in (["build"], ["build", "storage"]), events
                     raise
             assert events[0] == "build", events
             return {"events": events, "output": output.getvalue(), "version_written": (out / "VERSION").exists(),
@@ -151,6 +166,21 @@ def self_test(ship):
         (lambda l, r, m, u, e: e.write_text("changed secret fixture"), False, "environment changes after process start deploy"),
         (lambda l, r, m, u, e: (r / "mcp/a.js").write_text("mcp"), False, "co-host bot rewrite after process start deploys"),
     ]
+    def mounted_storage(local, remote, mode, unit, environment):
+        work = remote.parent / "data/board"
+        work.mkdir(parents=True)
+        process = remote.parent / "proc/123"
+        (process / "cwd").unlink()
+        (process / "cwd").symlink_to(work)
+        (process / "environ").write_bytes(("WFSIM_BOARD_STORAGE_REQUIRED=1\0WFSIM_BOARD_WORK_ROOT=" + str(work)
+            + "\0WFSIM_BOARD_DATA_MOUNT=" + str(work.parent) + "\0WFSIM_BOARD_DATA_UUID=fixture\0UNRELATED_SECRET=not-returned\0").encode())
+        mode.update(storage_work=work)
+        mode["start"] = time.time_ns()
+    cases.append((mounted_storage, True, "configured data root retains actual loaded provenance without exposing unrelated environment"))
+    def missing_storage(local, remote, mode, unit, environment):
+        mounted_storage(local, remote, mode, unit, environment)
+        mode.update(mount_missing=True)
+    cases.append((missing_storage, False, "a lost configured mount cannot qualify the loaded runtime"))
     def release_drift(local, remote, mode, unit, environment):
         path = remote / "bin/witness/release.json"
         value = json.loads(path.read_text())
@@ -181,7 +211,7 @@ def self_test(ship):
     for change, skip, title in cases:
         try:
             result = exercise(ship, change)
-            writes = [event for event in result["events"] if event != "build" and event != "probe"]
+            writes = [event for event in result["events"] if event not in ("build", "probe", "storage")]
             assert (not writes) == skip, result["events"]
             assert result["version_written"] is not skip, result
             if skip:
@@ -193,6 +223,14 @@ def self_test(ship):
         except (AssertionError, OSError, SystemExit) as error:
             print(f"FAIL    {title}: {str(error)[:180]}")
             failures += 1
+    try:
+        exercise(ship, lambda l, r, m, u, e: m.update(preflight_failure=True))
+        raise AssertionError("missing storage allowed deployment")
+    except SystemExit:
+        print("  ok    missing configured storage refuses before any remote write or live restart")
+    except (AssertionError, OSError) as error:
+        print(f"FAIL    storage admission: {str(error)[:180]}")
+        failures += 1
     for name, target, expected in [
         ("scripts/missing.mjs", "./missing.mjs", "LIVE_SCRIPTS"),
         ("other/helper.js", "../other/helper.js", "matching deployed path"),

@@ -703,6 +703,7 @@ jobs:
           node scripts/check_board_projection_replay.mjs
           node scripts/check_board_projection_consumers.mjs
           node scripts/check_board_pipeline.mjs
+          node scripts/check_board_storage.mjs
           node scripts/check_prepared_board_inputs.mjs
           node scripts/check_prepared_board_access.mjs
           node scripts/check_source_adoption.mjs

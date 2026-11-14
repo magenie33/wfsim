@@ -60,6 +60,20 @@ the legacy path builds only when no prepared artifact exists. An invalid prepare
 artifact stops the release. Compilation never establishes that a remote service
 already loaded its files; the remote byte and process-start proof still applies.
 
+Board code and binaries stay under the deployment root. Persistent state uses
+`WFSIM_BOARD_WORK_ROOT`, `WFSIM_BOARD_DATA_MOUNT` and `WFSIM_BOARD_DATA_UUID` from
+`/etc/wfsim-live.env`. The production unit requires that configuration. Before
+creating state, bounded processing and each file delivery check the real work
+path, mounted device, local ext4/xfs type and filesystem UUID. Missing or changed
+mounts fail; no work directory is created on the system disk. Shipping does not
+create a default state directory or replace this environment configuration.
+Before changing live files or restarting intake, shipping runs the new guard
+as the unit's actual service user against its configured environment files.
+Unavailable storage or insufficient access rejects deployment before those writes.
+The loaded-runtime proof checks the selected data root using only these
+allowlisted environment values. Mount provisioning, retained-data copying and
+the corresponding systemd mount dependency require their own reviewed operation.
+
 An unchanged bot keeps its loaded process. Its single deploy inventory includes
 all bot modules, transitive relative imports, generated engine, WASM packs,
 stylesheet and images. The active Node process must use that root and have
