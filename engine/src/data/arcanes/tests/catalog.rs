@@ -505,7 +505,7 @@ fn shiver_fortifier_encumber_empowered_cryogenic_resolve() {
     let en = secondary("secondary_encumber")
         .unwrap()
         .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::data::tenno::default_tenno());
-    assert!((en.encumber_chance - 0.24).abs() < 1e-9);
+    assert_eq!((en.encumber_chance as f32).to_bits(), 0x3e75c28e);
     let em = secondary("cascadia_empowered")
         .unwrap()
         .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::data::tenno::default_tenno());
@@ -657,4 +657,17 @@ fn an_arcane_that_scales_off_a_warframe_reads_the_fights_tenno() {
     // A SENTINEL fires under BaseOnly, where no conditional arms — there is
     // no Tenno standing behind a companion's gun either.
     assert!(bulwark.fx(5, StackPolicy::BaseOnly, NO_TRAITS, &frame(1500.0, 0.0, 1.0)).buffs.is_empty());
+}
+
+#[test]
+fn compiled_arcane_ranks_match_native_state_inputs() {
+    let data: serde_json::Value = serde_json::from_str(include_str!("../../../../../tests/fixtures/client/status-arcanes-2026-10-28.json")).unwrap();
+    for case in data["lifecycle"]["results"]["rank_cases"].as_array().unwrap() {
+        let id = if case["arcane"] == "Secondary Encumber" { "secondary_encumber" } else { "primary_debilitate" };
+        let def = crate::data::arcanes::secondary(id).unwrap();
+        let fx = def.fx(case["rank"].as_u64().unwrap() as u32, crate::model::StackPolicy::Emergent,
+            &[], crate::data::tenno::default_tenno());
+        let actual = if id == "secondary_encumber" { fx.encumber_chance } else { fx.debilitate_chance };
+        assert_eq!((actual as f32).to_bits(), (case["chance"].as_f64().unwrap() as f32).to_bits());
+    }
 }

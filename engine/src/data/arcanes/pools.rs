@@ -28,7 +28,7 @@ pub fn load_pool(prefix: &str) -> Vec<ArcaneDef> {
         let effects = af
             .effects
             .iter()
-            .filter_map(effect)
+            .filter_map(|value| effect(value, af.max_rank))
             .collect();
         out.push(ArcaneDef {
             id: af.id,

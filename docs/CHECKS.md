@@ -1,3 +1,8 @@
+`check_native_upgrade_vectors.py --output <new-directory>` compiles isolated
+copies of the actual fold source against the native vectors. The original must
+pass and an ADD-to-subtract mutation must fail. Metering attributes alone are
+removed from these isolated test copies; production sources remain untouched.
+
 `check_engine_compare.py` runs independent executable fixtures through the
 native migration comparator. Equal results pass; changed damage, signed zero,
 one-ULP values, event ordering, repeat drift, truncated records, artifact

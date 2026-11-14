@@ -31,7 +31,7 @@ impl ArcaneDef {
                 | ArcEffect::AddedElement { scale, .. }
                 | ArcEffect::RechargeableMagazine { scale }
                 | ArcEffect::FlatDamageOnStatus(scale)
-                | ArcEffect::EncumberChance(scale)
+                | ArcEffect::EncumberChance { scale, .. }
                 | ArcEffect::AmmoEfficiency { scale, .. }
                 | ArcEffect::CompressionDamage(scale)
                 | ArcEffect::CompressionAmmoEfficiency(scale)

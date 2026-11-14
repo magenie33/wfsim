@@ -109,10 +109,9 @@ pub struct ArcaneFx {
     /// the proc's type (unaffected by mods/crit/parts; faction once; enemy
     /// mitigation applies).
     pub flat_damage_on_status: f64,
-    /// Secondary Encumber: chance that a proc-carrying trigger pull adds ONE
-    /// extra status of a uniformly random type (13-type pool, wiki), at most
-    /// once per instant (= per trigger pull here).
+    /// Native stat369 query before the active SET0 conditional is installed.
     pub encumber_chance: f64,
+    pub encumber_condition: crate::model::ConditionalUpgrade,
     /// Secondary Cryogenic: Cold statuses applied to the target on each
     /// Puncture status (single-target: the radius burst collapses onto the
     /// main target, which the wiki confirms is also hit).
@@ -183,6 +182,7 @@ impl Default for ArcaneFx {
             cold_cap: 0,
             flat_damage_on_status: 0.0,
             encumber_chance: 0.0,
+            encumber_condition: crate::model::ConditionalUpgrade::default(),
             cold_bursts_on_puncture: 0,
             overguard_multiplier: 1.0,
             frozen_multiplier: 1.0,
@@ -265,6 +265,7 @@ impl ArcaneFx {
                     out.cold_cap = out.cold_cap.max(a.cold_cap);
                     out.flat_damage_on_status += a.flat_damage_on_status;
                     out.encumber_chance += a.encumber_chance;
+                    if a.encumber_chance > 0.0 { out.encumber_condition = a.encumber_condition; }
                     out.cold_bursts_on_puncture += a.cold_bursts_on_puncture;
                     out.ammo_efficiency += a.ammo_efficiency;
                     out.compression_damage_per_m += a.compression_damage_per_m;
