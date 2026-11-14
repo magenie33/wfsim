@@ -95,10 +95,12 @@ async function finish() {
 }
 async function oracle(raw, meta, tag) {
   const dir = join(root, tag); mkdirSync(dir);
+  const library = raw.library || join(dir,'library.json');
+  if (!raw.library) writeFileSync(library,JSON.stringify(readFileSync(raw.builds,'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line).record)));
   const rulers = native.contract.rulers.map(r => r.id);
   execFileSync(binary, ['--each-ruler', '--dry-run', '--gate', '--facts-in', raw.facts, '--queue-in', raw.queue,
     '--inventory-builds', join(dir, 'canonical'), '--queue-missing', join(dir, '{id}.missing'), '--queue-orphans', join(dir, '{id}.orphans')],
-  { input: readFileSync(raw.library), stdio: ['pipe', 'pipe', err], timeout: 60000 });
+  { input: readFileSync(library), stdio: ['pipe', 'pipe', err], timeout: 60000 });
   for (const suffix of ['missing', 'orphans']) writeFileSync(join(dir, suffix), rulers.map(r => readFileSync(join(dir, `${r}.${suffix}`), 'utf8')).join(''));
   const expected = await classifyInventory({ ...raw, meta, rulers, canonical: join(dir, 'canonical'),
     missing: join(dir, 'missing'), orphans: join(dir, 'orphans'), questions: join(dir, 'questions') });

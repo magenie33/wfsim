@@ -11,7 +11,7 @@ import { BOARD_KINDS } from '../worker/board_kinds.js';
 const FETCH_ROWS = 20000;
 
 export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS, report = () => {}) {
-  const outputs = Object.fromEntries(Object.entries(paths).map(([k, p]) => [k, `${p}.partial-${process.pid}`]));
+  const outputs = Object.fromEntries(Object.entries(paths).filter(([,p]) => p != null).map(([k, p]) => [k, `${p}.partial-${process.pid}`]));
   const counts = {};
   try {
     const meta = await sql.begin('isolation level repeatable read read only', async tx => {
@@ -26,11 +26,11 @@ export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS,
       };
       for (const [name, [query, args]] of Object.entries(scans)) {
         report(`capture-${name}`, { rows: 0 });
-        const out = createWriteStream(outputs[name]); let failed = null, n = 0;
+        const out = outputs[name] ? createWriteStream(outputs[name]) : null; let failed = null, n = 0;
         const builds = name === 'library' ? createWriteStream(outputs.builds) : null;
-        out.on('error', error => { failed = error; });
+        out?.on('error', error => { failed = error; });
         builds?.on('error', error => { failed = error; });
-        const write = async text => { if (failed) throw failed; if (!out.write(text)) await once(out, 'drain'); };
+        const write = async text => { if (failed) throw failed; if (out && !out.write(text)) await once(out, 'drain'); };
         try {
           if (name === 'library') await write('[');
           // Separate FETCH statements bound server work without timing the whole transfer.
@@ -51,15 +51,15 @@ export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS,
           }
           await tx.unsafe('CLOSE inventory_scan');
           if (name === 'library') await write(']');
-          out.end(); await once(out, 'finish'); if (failed) throw failed;
+          if (out) { out.end(); await once(out, 'finish'); } if (failed) throw failed;
           if (builds) { builds.end(); await once(builds, 'finish'); if (failed) throw failed; }
-        } catch (error) { out.destroy(); builds?.destroy(); throw error; }
+        } catch (error) { out?.destroy(); builds?.destroy(); throw error; }
         counts[name] = n;
         console.error(`inventory: captured ${name} ${n} rows`);
       }
       return { ...stamp, engine, covers, counts };
     });
-    for (const name of ['library', 'builds', 'facts', 'queue', 'tasks']) renameSync(outputs[name], paths[name]);
+    for (const name of ['library', 'builds', 'facts', 'queue', 'tasks']) if (outputs[name]) renameSync(outputs[name], paths[name]);
     writeFileSync(outputs.meta, JSON.stringify(meta)); renameSync(outputs.meta, paths.meta);
     return meta;
   } finally { for (const p of Object.values(outputs)) rmSync(p, { force: true }); }

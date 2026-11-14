@@ -136,7 +136,7 @@ async function boardInventoryCycle({ work, bin, sql, operator: supplied, context
     if (!state.pending) {
       report('capture');
       const capture = () => captureEpoch({ sql, catalog, generation: state.generation, dir: join(root, `capture-${Date.now()}`),
-        bootstrap: !catalog.meta.complete, relational: true, budgetCheck: () => control.checkTask(state),
+        bootstrap: !catalog.meta.complete, relational: true, recordArray:false, budgetCheck: () => control.checkTask(state),
         report: (stage, fields) => { space.check(); report(stage, fields); } });
       const saved = () => { save(statePath, state); context.verifiedInputs = null; };
       if (!catalog.meta.complete) await control.capture(state, capture, saved);

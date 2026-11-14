@@ -491,6 +491,10 @@ streams the sealed raw inputs and projected membership into a disk classifier,
 then compares every computation identity, category and registration flag. It
 does not create a full membership export. Production and offline replay use
 this same audit before preparing publication.
+Source descriptors retain only the engine metadata their consumers need;
+candidate admission retains its own aggregate and record reference. The disk
+coordinator captures one sourced build stream and omits the duplicate record
+array used by the in-memory adapter.
 
 `worker/pg/inventory.sql` records coalesced build and question invalidations in
 the same transaction as source changes. Revisions are equality tokens, never a

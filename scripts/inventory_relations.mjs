@@ -62,13 +62,14 @@ export class InventoryRelations {
     const old = this.q("SELECT body FROM entity_catalog_candidates WHERE id=?").get(id)?.body;
     let first = null, admit = 0n;
     for (const row of this.q("SELECT body FROM entity_catalog_sources WHERE candidate=? ORDER BY seq").iterate(id)) {
-      const body = JSON.parse(row.body); first ||= body; admit |= mask(body.admit);
+      const body = JSON.parse(this.catalog.bodyText(row.body)); first ||= body; admit |= mask(body.admit);
       if (canon(body.bucket) !== canon(first.bucket) || body.default !== first.default)
         throw Error('canonical identity has conflicting engine dependencies');
     }
-    const next = first ? { ...first, admit: BigInt.asUintN(64, admit).toString(16).padStart(16, '0') } : null;
+    const next = first ? { bucket:first.bucket,default:first.default,
+      ...(first.record_ref ? { record_ref:first.record_ref } : { record:first.record }),
+      admit: BigInt.asUintN(64, admit).toString(16).padStart(16, '0') } : null;
     // Owner aliases do not invalidate their canonical calculation when its inputs agree.
-    if (next) delete next.id;
     const body = next ? canon(next) : null;
     if (body === old || body === null && old === undefined) return;
     this.touchGroups(id);
@@ -97,13 +98,14 @@ export class InventoryRelations {
       for (let i = 0; i < changed.length; i++) {
         const row = changed[i], d = { ...descriptions[i] }, old = this.q('SELECT candidate FROM entity_catalog_sources WHERE id=?').get(row.id);
         if (d.record) { d.record_ref = this.catalog.internRecord(d.record); delete d.record; }
+        const descriptor = { ...d }; delete descriptor.id; delete descriptor.candidate; delete descriptor.publication_modes;
         this.publicationDirty(this.q('SELECT weapon FROM state_catalog_publication_sources WHERE id=?').get(row.id)?.weapon);
         if (old?.candidate) candidates.add(old.candidate);
         this.q(`INSERT INTO entity_inventory_builds(build_id,stored) VALUES(?,?) ON CONFLICT(build_id)
           DO UPDATE SET stored=excluded.stored,fallback=NULL`).run(row.id, row.deleted || row.record == null ? null : this.catalog.internRecord(row.record));
         if (row.deleted || row.record == null) this.q("DELETE FROM entity_catalog_sources WHERE id=?").run(row.id);
         else this.q(`INSERT INTO entity_catalog_sources(id,candidate,body) VALUES(?,?,?) ON CONFLICT(id)
-          DO UPDATE SET candidate=excluded.candidate,body=excluded.body`).run(row.id, d.candidate, canon(d));
+          DO UPDATE SET candidate=excluded.candidate,body=excluded.body`).run(row.id, d.candidate, this.catalog.jsonBody(descriptor));
         this.q('DELETE FROM state_catalog_publication_sources WHERE id=?').run(row.id);
         if (!row.deleted && row.record != null && d.candidate && d.publication) {
           const seq = this.q('SELECT seq FROM entity_catalog_sources WHERE id=?').get(row.id).seq;
@@ -247,7 +249,7 @@ export class InventoryRelations {
         weapon: candidate.bucket[0], riven: candidate.bucket[1] }, {}), prefixes = new Map();
       const variants = this.q("SELECT body FROM entity_catalog_sources WHERE candidate=? ORDER BY seq");
       for (const source of variants.iterate(id)) {
-        const body = JSON.parse(source.body);
+        const body = JSON.parse(this.catalog.bodyText(source.body));
         for (let i = 0; i < targets.length; i++) {
           const target = targets[i];
           if (!allowed(body.admit, target)) continue;

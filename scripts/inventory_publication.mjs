@@ -131,7 +131,7 @@ export class InventoryPublication {
       const key = JSON.stringify([row.identity, row.fact_mode]); if (seen.has(key)) return false; seen.add(key); return true;
     });
     const rendered = await operate('render', unique.map(row => {
-      const d = JSON.parse(row.descriptor), mode = JSON.parse(row.mode);
+      const d = JSON.parse(this.catalog.bodyText(row.descriptor)), mode = JSON.parse(row.mode);
       const record = d.record || JSON.parse(this.catalog.recordBody(d.record_ref));
       return { benchmark: rulers[target].id, mode: mode.mode, row: { ...record, ...d.publication }, fact: JSON.parse(this.catalog.bodyText(row.fact)) };
     }));
