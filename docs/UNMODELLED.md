@@ -1063,3 +1063,14 @@ does not resolve arbitrary tier changes. Arbitrary faction/status operation
 eligibility and exact same-frame
 radial/lethal ordering remain unbound; ordinary proc and owner-measured
 source/landing rules apply.
+
+Native attribute folding is implemented for selected Shield and Arcane queries;
+ordinary build effects do not claim a complete native UpgradeManager. Primary
+Debilitate maps one simulator status submission to one notification. Its real
+weapon notification cadence, source eligibility and external geometry writers
+remain unbound. Encumber's conditional update uses positive elapsed simulation
+event time; the client's actual manager-update phase and complete global RNG
+consumer order remain unbound. The constructor, sampler, operation and rank
+fixtures cover their stated inputs, not the entire live lifecycle. See
+[ENGINE_MIGRATION.md](ENGINE_MIGRATION.md) for the dependency register and
+comparison contract.

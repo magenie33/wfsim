@@ -5,6 +5,11 @@ answer APIs, independent community verification and website publication while
 the durable order cut and general admission pauses remain active. It also checks
 lease recovery, scope refusal, failed-install rollback and runner privileges.
 
+`check_native_upgrade_vectors.py --output <new-directory>` compiles isolated
+copies of the actual fold source against the native vectors. The original must
+pass and an ADD-to-subtract mutation must fail. Metering attributes alone are
+removed from these isolated test copies; production sources remain untouched.
+
 `check_engine_compare.py` runs independent executable fixtures through the
 native migration comparator. Equal results pass; changed damage, signed zero,
 one-ULP values, event ordering, repeat drift, truncated records, artifact
