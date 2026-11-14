@@ -35,7 +35,7 @@ impl Probe {
     fn electric(&mut self, head: bool, at: f64) {
         let part = if head { all_head().remove(0) } else { mono_body(1.0).remove(0) };
         let mit = self.body.debuffs.mitigation(at, 1.0, 0.0, 1.0);
-        settle_procs(vec![DamageType::Electricity], Seat::WIELDER, at, 0, InstanceScale {
+        settle_procs(vec![DamageType::Electricity], Seat::WIELDER, at, 0, InstanceScale { native_source: None, native_part: None,
             mb_live: 160.0, crit_multiplier: 1.0, part_factor: if head { 5.4 } else { 1.0 },
             landing: ProcLanding::at(if head { 1.8 } else { 1.0 }, &part),
             attrition: 1.0, xh_bracket: 1.0, status_damage_live: 0.0,
@@ -46,6 +46,81 @@ impl Probe {
     fn tick(&mut self, until: f64) {
         process_ticks(&mut self.w, &mut self.body, &mut self.gal, &mut self.arc, until,
             &self.p, &self.p, &mut self.r, &mut self.rec, &mut self.rng, &self.p.foe, 0);
+    }
+}
+
+#[test]
+fn native_status_query_preserves_the_bucket_before_its_display_factor_rounds() {
+    let mut q = Probe::new();
+    q.rec.enable_native_trace(1);
+    q.body.debuffs.disrupt = vec![6.0; 10];
+    let native: f32 = "0.15000001".parse().unwrap();
+    q.p.native_status_damage_bonus = Some(native);
+    q.p.status_damage_multiplier = (1.0_f32 + native) as f64;
+    assert_ne!((q.p.status_damage_multiplier - 1.0) as f32, native);
+    q.break_pool(BrokenPool::Overguard, 0.0);
+    assert_eq!(q.rec.native_steps()[0].entries[0].Value.to_bits(), native.to_bits());
+}
+
+#[test]
+fn native_trace_captures_actual_queries_without_changing_the_combat_record() {
+    let mut plain = Probe::new();
+    let mut traced = Probe::new();
+    traced.rec.enable_native_trace(3);
+    for q in [&mut plain, &mut traced] {
+        q.body.debuffs.disrupt = vec![6.0; 10];
+        q.p.status_damage_multiplier = 1.5;
+        q.break_pool(BrokenPool::Overguard, 0.0);
+        q.tick(0.01);
+    }
+    assert_eq!(plain.r.tally.effective(), traced.r.tally.effective());
+    // Untracked expiry timestamps are NaN, which is not equal to itself.
+    assert_eq!(format!("{:?}", plain.rec.events()), format!("{:?}", traced.rec.events()));
+    assert!(plain.rec.native_steps().is_empty());
+    let steps = traced.rec.native_steps();
+    assert_eq!(steps.len(), 3);
+    assert!(traced.rec.native_steps_dropped() > 0);
+    assert_eq!(steps[0].input_bits, [5000.0_f32.to_bits()]);
+    assert_eq!(steps[0].output_bits, 7500.0_f32.to_bits());
+    assert_eq!(steps[0].proc_type, Some(10));
+    assert_eq!(steps[0].part, Some(6));
+    assert_eq!(steps[0].entries[0].UpgradeType.0, 367);
+    assert_eq!(steps[2].input_bits, [7500.0_f32.to_bits()]);
+    assert_eq!(steps[2].output_bits, 11250.0_f32.to_bits());
+    assert_eq!(steps[2].proc_type, Some(5));
+}
+
+#[test]
+fn queued_radial_ticks_preserve_distinct_opaque_groups_at_the_same_time() {
+    use crate::rules::status::radial::GroupKey;
+    let mut q = Probe::new();
+    q.electric(false, 0.0);
+    let template = q.body.debuffs.dots[0];
+    q.body.debuffs.dots = (0..48).map(|index| Dot {
+        native_group: Some(GroupKey { refCellAt28: index % 2,
+            refCellAt30: 0, byteAt18: 0, opaqueIdentityAt38: 0 }), ..template
+    }).collect();
+    q.tick(0.01);
+    assert_eq!(q.r.tally.effective(), 3841.0);
+    assert_eq!(q.r.dot_ticks, 2);
+    assert!(q.body.debuffs.dots.iter().all(|d| d.ticks_left == 5));
+}
+
+#[test]
+fn magnetic_parent_and_electric_child_filter_status_upgrades_independently() {
+    for (dtype, parent, stored) in [
+        (DamageType::Electricity, 5000.0, 7500.0_f32),
+        (DamageType::Magnetic, 7500.0, 7500.0_f32),
+    ] {
+        let mut q = Probe::new();
+        q.body.debuffs.disrupt = vec![6.0; 10];
+        q.p.status_damage_of_type = vec![(dtype, 0.5)];
+        q.break_pool(BrokenPool::Overguard, 0.0);
+        assert_eq!(q.r.tally.effective(), parent);
+        let (retained, coefficient) = q.body.debuffs.dots[0].retained.radial_values().unwrap();
+        assert_eq!(retained.to_bits(), stored.to_bits());
+        assert_eq!(coefficient, 0.5);
+        assert_eq!(q.body.debuffs.dots[0].native_part, Some(crate::model::HitPart::ANY_PART));
     }
 }
 
@@ -66,9 +141,13 @@ fn m8_break_uses_the_breaking_weapons_normal_electric_modifiers_and_duration() {
         assert_eq!(dot.landing, ProcLanding::default());
         let max = match pool { BrokenPool::Overguard => q.p.foe.overguard(), BrokenPool::Shield => q.p.foe.max_shield() };
         let source = 0.005 * 10.0 * max;
-        let parent = source * 1.6 * 1.55;
-        let expected = parent + (0.5 * source * 1.6_f64.powi(2) * 1.55_f64.powi(2)
-            + 0.5 * 1.6 * 1.55) * 2.65;
+        let parent_source = source as f32 * (1.0_f32 + 0.6_f32);
+        let parent = parent_source as f64 * 1.55;
+        let child = parent_source * (1.0_f32 + 0.6_f32);
+        let retained = (child as f64 * 1.55) as f32;
+        let accumulated = 1.0_f32 + retained;
+        let prepared = (0.5_f32 * accumulated).max(1.0) * (1.0_f32 + 1.65_f32);
+        let expected = parent + prepared as f64 * 1.55;
         assert!((q.r.tally.effective() - parent).abs() < 1e-8);
         q.tick(0.01);
         assert!((q.r.tally.effective() - expected).abs() < 1e-7,
@@ -82,13 +161,13 @@ fn m8_break_snapshots_the_magnetic_count_and_keeps_the_common_electric_clock() {
     q.body.debuffs.disrupt = vec![6.0; 10];
     q.break_pool(BrokenPool::Overguard, 0.0);
     let parent = q.r.tally.effective();
-    let frozen = q.body.debuffs.dots[0].frozen;
+    let frozen = q.body.debuffs.dots[0].snapshot_damage();
     q.body.debuffs.disrupt = vec![6.0; 1];
     q.tick(0.01);
     let first = q.r.tally.effective();
     q.body.debuffs.disrupt = vec![6.0; 10];
     q.tick(1.01);
-    assert_eq!(q.body.debuffs.dots[0].frozen, frozen);
+    assert_eq!(q.body.debuffs.dots[0].snapshot_damage(), frozen);
     assert!((q.r.tally.effective() - parent - 2.0 * (first - parent)).abs() < 1e-8);
     q.break_pool(BrokenPool::Overguard, 1.1);
     assert_eq!(q.body.debuffs.dots[1].next_tick, q.body.debuffs.dots[0].next_tick);
@@ -151,7 +230,7 @@ fn m8_fixed_target_measured_ticks_follow_the_declared_weapon_and_proxy() {
             q.body.debuffs.canticle_armor_strip = 1.0;
             q.body.debuffs.disrupt = vec![6.0; 10];
             q.break_pool(BrokenPool::Overguard, 0.0);
-            assert_eq!(q.body.debuffs.dots[0].frozen, frozen);
+            assert_eq!(q.body.debuffs.dots[0].snapshot_damage(), frozen);
             assert_eq!(q.body.debuffs.dots[0].landing, ProcLanding::default());
             let parent = q.r.tally.effective();
             assert_eq!(parent, 2.0 * frozen);
@@ -253,7 +332,7 @@ fn m8_break_uses_the_receiving_bodys_pool_and_ignores_weapon_base_damage() {
     push_break_proc(&mut q.body.debuffs, Seat::WIELDER, &q.p, 0.0,
         BrokenPool::Overguard, &q.p, &receiver, &mut q.body.state, &mut q.gal,
         &mut q.arc, &mut q.r, &mut q.rec, &mut q.rng, 0.0, 0);
-    assert_eq!(q.body.debuffs.dots[0].frozen, 0.0025 * 10.0 * receiver.overguard());
+    assert_eq!(q.body.debuffs.dots[0].snapshot_damage(), 0.0025 * 10.0 * receiver.overguard());
 }
 
 #[test]
@@ -279,14 +358,14 @@ fn m8_break_packet_is_immediate_while_its_proc_waits_for_the_shared_clock() {
     let mut q = Probe::new();
     q.electric(true, 0.0);
     q.tick(0.01);
-    let old_seed = q.body.debuffs.dots[0].frozen;
+    let old_seed = q.body.debuffs.dots[0].snapshot_damage();
     let before = q.r.tally.effective();
     q.body.debuffs.disrupt = vec![6.0; 10];
     q.p.status_damage_multiplier = 1.9;
     q.break_pool(BrokenPool::Overguard, 0.25);
     assert_eq!(q.r.tally.effective() - before, 9500.0);
-    assert_eq!(q.body.debuffs.dots[0].frozen, old_seed);
-    assert!((q.body.debuffs.dots[1].frozen - 9025.0).abs() < 1e-9);
+    assert_eq!(q.body.debuffs.dots[0].snapshot_damage(), old_seed);
+    assert!((q.body.debuffs.dots[1].snapshot_damage() - 9025.0).abs() < 1e-9);
     assert_eq!(q.body.debuffs.dots[1].next_tick, 1.0);
     let after = q.r.tally.effective();
     q.tick(0.26);

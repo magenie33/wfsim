@@ -23,8 +23,10 @@ fn applications(dtype: DamageType, hits: &[(bool, bool)], lethal: bool, dense: b
     if dense {
         for _ in 0..40 {
             body.debuffs.push_dot(Dot {
+        native_part: None,
+        native_group: None,
                 owner: Seat::WIELDER, next_tick: 5.0, ticks_left: 6, cause: u32::MAX,
-                frozen: 0.0, landing: ProcLanding::default(), bracket: 1.0,
+                retained: crate::model::StoredStatusSeed::supplied(0.0), landing: ProcLanding::default(), bracket: 1.0,
                 depth: DEPTH_PROC, unit: 0.0, dtype: DamageType::Toxin,
                 ignores_armor: false, seed: u32::MAX,
             });
@@ -35,7 +37,7 @@ fn applications(dtype: DamageType, hits: &[(bool, bool)], lethal: bool, dense: b
     for &(head, crit) in hits {
         let part = if head { all_head().remove(0) } else { mono_body(1.0).remove(0) };
         let mit = body.debuffs.mitigation(0.0, 1.0, 0.0, 0.0);
-        settle_procs(vec![dtype], Seat::WIELDER, 0.0, 0, InstanceScale {
+        settle_procs(vec![dtype], Seat::WIELDER, 0.0, 0, InstanceScale { native_source: None, native_part: None,
             mb_live: 160.0,
             crit_multiplier: if crit { if head { 2.0 * cd } else { cd } } else { 1.0 },
             part_factor: if head { 5.4 } else { 1.0 },
@@ -85,8 +87,10 @@ fn m100_precision_flags_do_not_depend_on_the_damage_multiplier() {
             let part = BodyPart { name: "weak point".into(), multiplier: 1.0,
                 aim_weight: 1.0, is_head: head, is_weak_point: true, crit_bonus: false };
             body.debuffs.push_dot(Dot {
+        native_part: None,
+        native_group: None,
                 owner: Seat::WIELDER, next_tick: 0.0, ticks_left: 1, cause: u32::MAX,
-                frozen: 10.0, landing: ProcLanding::at(1.0, &part), bracket: 1.0,
+                retained: crate::model::StoredStatusSeed::supplied(10.0), landing: ProcLanding::at(1.0, &part), bracket: 1.0,
                 depth: DEPTH_PROC, unit: 0.0, dtype,
                 ignores_armor: false, seed: u32::MAX,
             });

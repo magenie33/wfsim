@@ -1485,6 +1485,7 @@ impl FightParams {
             weakpoint_open: None,
             crit_chance_stack: panel.crit_chance_stack,
             status_damage_multiplier: panel.status_damage_multiplier,
+            native_status_damage_bonus: Some(panel.native_status_damage_bonus),
             status_damage_of_type: panel.status_damage_of_type.clone(),
             status_duration_multiplier: panel.status_duration_multiplier,
             elem_dot_bonus: panel.elem_dot_bonus.clone(),

@@ -622,6 +622,15 @@ part and faction in it), `C` is 0.5 for Heat / Electricity / Toxin / Gas and
 0.35 for Slash, and `M` is the elemental, faction and status-damage bonuses.
 `Dot::accumulator_unit` is the `1`.
 
+Electricity and Gas retain a binary32 seed before their 0.5 coefficient.
+Their reducer starts at binary32 1, adds each retained seed in visitation
+order, then computes `max(1, f32(0.5 * accumulator))` before multiplying by
+`f32(1 + own_element_percentage)`. The local minimum precedes recipient
+mitigation. Status damage belongs to the stored seed query; it does not scale
+the initial 1 in this reducer. `rules/status/radial.rs` binds the original
+packet-context group and transfer vectors. Other DoT families retain their
+separate measured policy.
+
 - **Once per TICK GROUP.** Heat, Electricity and Gas consolidate, so one `1`
   however many stacks fold in; Slash and Toxin tick independently and each
   carries its own. The page says so outright and says why: it is "neither a

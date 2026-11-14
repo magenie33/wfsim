@@ -3,6 +3,8 @@ use super::*;
 /// One instance's damage scaling, as the status payloads need it.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct InstanceScale {
+    pub(super) native_source: Option<crate::rules::upgrades::NativeScalar>,
+    pub(super) native_part: Option<crate::model::HitPart>,
     /// Live ModifiedBase (base-damage bucket applied).
     pub(super) mb_live: f64,
     /// The instance's crit multiplier (1.0 when it did not crit).
@@ -234,4 +236,19 @@ pub(super) fn live_base_damage_additions(
         + buff_total(active, crate::model::BuffGrant::FlatBaseDamage, stacks, at)
         + heavy_attack_base_damage(active, heavy)
         + arc.rage_bonus(at)
+}
+
+/// The scene supplies selected grants; native proc masks are evaluated at each query.
+#[wfsim_gas_macro::metered]
+pub(super) fn proc_damage_entries(params: &FightParams, live: f64)
+    -> impl Iterator<Item = crate::rules::upgrades::ProcFilteredUpgrade> + '_
+{
+    use crate::rules::upgrades::{UpgradeEntry, UpgradeType, OperationType, ProcFilteredUpgrade};
+    let entry = |value: f64, proc_mask: u32| ProcFilteredUpgrade {
+        entry: UpgradeEntry { UpgradeType: UpgradeType::WEAPON_PROC_DAMAGE,
+            OperationType: OperationType::STACKING_MULTIPLY, Value: value as f32 }, proc_mask,
+    };
+    [entry(params.native_status_damage_bonus.map_or(params.status_damage_multiplier - 1.0, f64::from), 0), entry(live, 0)].into_iter()
+        .chain(params.status_damage_of_type.iter().filter_map(move |(dtype, value)|
+            crate::model::ProcType::from_damage_type(*dtype).map(|kind| entry(*value, 1 << kind.id()))))
 }
