@@ -12,10 +12,11 @@ import { openInventoryOperator } from './inventory_operator.mjs';
 import { readInventoryPage, applyInventoryPage, auditInventoryProjection } from './inventory_projection.mjs';
 import { fileHash } from './inventory_publication_io.mjs';
 import { inventoryDiskBudget } from './inventory_disk_budget.mjs';
+import { BoardPipeline } from './board_pipeline.mjs';
 
 const components = ['replay_board_projection.mjs','inventory_relations.mjs','incremental_inventory.mjs','inventory_operator.mjs',
   'inventory_projection.mjs','inventory_publication.mjs','inventory_publication_io.mjs','inventory_disk_budget.mjs','json_array_stream.mjs',
-  'classify_compute_inventory.mjs','board_heads.mjs','board_meta.py'];
+  'classify_compute_inventory.mjs','board_pipeline.mjs','board_heads.mjs','board_meta.py'];
 function save(path, value) {
   const partial = path + '.partial'; writeFileSync(partial, JSON.stringify(value));
   const fd = openSync(partial, 'r'); try { fsyncSync(fd); } finally { closeSync(fd); }
@@ -138,12 +139,19 @@ export async function replayBoardProjection({ capture, bin, work, manifestSha, d
     await command('python3', [join(here, 'board_meta.py'), join(work, 'verified'), join(work, 'pub/data/board_state.yaml'), join(work, 'verified/meta.json')]);
     const output = artifacts(join(work, 'verified'));
     const oversized = output.filter(file => file.bytes > 32 * 1024 ** 2).map(({ name, bytes }) => ({ name, bytes }));
+    let publicationPackage = null;
+    if (!oversized.length) {
+      const outbox = new BoardPipeline(work);
+      try { publicationPackage = await outbox.enqueue({ epoch:projectionId,boardDir:join(work,'verified'),
+        receipt:{ snapshot:snapshot.snapshot,engine:snapshot.engine,offline:true } }); }
+      finally { outbox.close(); }
+    }
     disk.check(true);
     state = { ...state, phase: 'complete', summary: catalog.summary(), question_digest: catalog.digest(), disk: disk.report(),
       files: output.length, output_bytes: output.reduce((n, file) => n + file.bytes, 0),
       largest_file: output.map(({ name, bytes }) => ({ name, bytes })).sort((a, b) => b.bytes - a.bytes)[0] || null,
       existing_receiver_limit_bytes: 32 * 1024 ** 2, delivery_eligible: !oversized.length, oversized,
-      memory: process.memoryUsage(), published: false };
+      memory: process.memoryUsage(),publication_package:publicationPackage,published: false };
     save(checkpoint, state); report('complete'); return state;
   } finally { context.writer?.close(); catalog?.close(); await operator.close(); }
 }

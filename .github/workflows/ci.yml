@@ -695,6 +695,7 @@ jobs:
           node scripts/check_inventory_ranges.mjs
           node scripts/check_inventory_relational_pipeline.mjs
           node scripts/check_inventory_publication.mjs
+          node scripts/check_inventory_publication_pages.mjs
           node scripts/check_inventory_projection_audit.mjs
           node scripts/check_inventory_board_pipeline.mjs
           node scripts/check_inventory_disk_budget.mjs

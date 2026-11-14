@@ -6,6 +6,14 @@ import { jsonArrayRows } from './json_array_stream.mjs';
 import { outputWriter, fileHash, syncDirectory } from './inventory_publication_io.mjs';
 
 const LIMIT = 256;
+export const PUBLICATION_ROWS_SQL = `SELECT f.identity,f.mode fact_mode,f.body fact,s.seq source,s.id owner,d.body descriptor,
+        CAST(m.key AS INTEGER) mode_order,m.value mode
+      FROM state_catalog_publication_sources s INDEXED BY rel_publication_sources_rows
+      CROSS JOIN state_catalog_publication_measurements f INDEXED BY rel_publication_facts_rows
+      JOIN entity_catalog_sources d ON d.id=s.id JOIN json_each(s.modes) m ON json_extract(m.value,'$.id')=f.mode
+      WHERE s.weapon=? AND (s.admit & ?)<>0 AND f.ruler=? AND f.retired=0 AND f.identity=s.candidate
+        AND s.candidate>=? AND (s.candidate,f.mode,s.seq,CAST(m.key AS INTEGER))>(?,?,?,?)
+      ORDER BY s.candidate,f.mode,s.seq,CAST(m.key AS INTEGER) LIMIT ?`;
 const schema = `
   CREATE TABLE IF NOT EXISTS state_board_publication_files(dir TEXT NOT NULL,weapon TEXT NOT NULL,body TEXT NOT NULL,PRIMARY KEY(dir,weapon)) WITHOUT ROWID;
   CREATE TABLE IF NOT EXISTS state_board_file_history(dir TEXT NOT NULL,weapon TEXT NOT NULL,retain INTEGER NOT NULL,sha TEXT,size INTEGER,
@@ -115,14 +123,8 @@ export class InventoryPublication {
     const empty = this.q(`SELECT 1 FROM state_catalog_publication_sources WHERE weapon=? AND (admit & ?)<>0 AND json_array_length(modes)=0 LIMIT 1`)
       .get(file.weapon, bit);
     if (empty) throw Error('admitted publication source has no mode');
-    const page = this.q(`SELECT f.identity,f.mode fact_mode,f.body fact,s.seq source,s.id owner,d.body descriptor,
-        CAST(m.key AS INTEGER) mode_order,m.value mode
-      FROM state_catalog_publication_measurements f INDEXED BY rel_publication_facts_rows
-      JOIN state_catalog_publication_sources s ON s.candidate=f.identity AND s.weapon=? AND (s.admit & ?)<>0
-      JOIN entity_catalog_sources d ON d.id=s.id JOIN json_each(s.modes) m ON json_extract(m.value,'$.id')=f.mode
-      WHERE f.ruler=? AND f.retired=0 AND (f.identity,f.mode,s.seq,CAST(m.key AS INTEGER))>(?,?,?,?)
-      ORDER BY f.identity,f.mode,s.seq,CAST(m.key AS INTEGER) LIMIT ?`)
-      .all(file.weapon, bit, rulers[target].id, ...state.input, LIMIT);
+    const page = this.q(PUBLICATION_ROWS_SQL)
+      .all(file.weapon, bit, rulers[target].id, state.input[0], ...state.input, LIMIT);
     const pending = page.filter(row => !this.q('SELECT 1 FROM state_board_publication_rows WHERE ruler=? AND identity=? AND mode=?')
       .get(target, row.identity, JSON.parse(row.mode).mode));
     const seen = new Set(), unique = pending.filter(row => {
