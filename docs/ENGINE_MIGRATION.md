@@ -250,6 +250,11 @@ module linear memory; it excludes product transport, rendering and network.
 `engine_shape_cost.py` interleaves the four native `one_fight` shapes.
 `engine_impact.py` reports strict differences, then separately classifies
 top-level work changes. No gameplay field is hidden from the strict report.
+`engine_allocations.py` links a counting System allocator against each
+worktree's already-built native libraries. Warmed request counts, requested
+bytes and additional live-heap peaks are separate from CPU timing and RSS.
+Retain the dependency hashes and verify its API results against the saved
+executables before using those counts.
 
 `scripts/engine_sweep.py --meta <captured-meta> --output <new-file>` freezes
 requests for every declared catalog mode, using a captured baseline catalog
