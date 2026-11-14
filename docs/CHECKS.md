@@ -2584,15 +2584,17 @@ is never read, and the two runs come back byte-identical. It measures kill
 PROGRESS, because dps is what the weapon puts out and armour decides what
 arrives.
 
-## `check_storage`
+## `check_simulation_context`
 
-Its imported `check_simulation_context` drives Kuva Nukor through two saved
+It drives Kuva Nukor through two saved
 fights. Switching restores the matching measurement; edits and history retain
 the measured units, headshot rate and combat-record request. Changed inputs are
 marked beside the result. The context and request assertions fail against the
 prior renderer.
 Saved history without captured inputs or a known engine, and handlers for a
 different displayed result, cannot regenerate from the current editor.
+
+## `check_storage`
 
 How much room the app takes on the reader's machine. It
 measures the RATIO rather than asserting a constant, fills the disk from OTHER

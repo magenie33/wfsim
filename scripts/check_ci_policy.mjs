@@ -64,6 +64,12 @@ for (const path of ['web/src/static/style.css', 'data/i18n/en/ui.yaml', 'web/src
   }
   assert.deepEqual(classify([path, 'unregistered/shared.js']).jobs, PRODUCT_JOBS);
 }
+for (const path of ['scripts/check_storage.mjs', 'scripts/check_simulation_context.mjs',
+  'scripts/check_replay.mjs', 'scripts/check_combat_record.mjs', 'scripts/check_support.mjs']) {
+  const plan = classify([path]);
+  assert.deepEqual(plan.jobs, FRONTEND_JOBS, path + ' has a permanent browser CI owner');
+  assert.equal(plan.deep, false, path + ' does not change search enumeration or scoring');
+}
 for (const path of PARTS.flatMap(part => [part.part].flat())) {
   assert.deepEqual(classify([path]).jobs, BROWSER_JOBS, path + ' feeds generated worker or headless code');
 }

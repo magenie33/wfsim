@@ -805,6 +805,15 @@ jobs:
       - name: Search tasks and saved-riven batches retain their captured inputs
         if: matrix.group == 'calculation'
         run: node scripts/check_task_executors.mjs
+      - name: Simulation measurements retain their captured build and fight
+        if: matrix.group == 'calculation'
+        run: node scripts/check_simulation_context.mjs
+      - name: Replay follows the measured fight
+        if: matrix.group == 'calculation'
+        run: node scripts/check_replay.mjs
+      - name: Combat records regenerate the measured request
+        if: matrix.group == 'calculation'
+        run: node scripts/check_combat_record.mjs
       - name: Exact official simulations request durable independent board reviews
         if: matrix.group == 'community'
         run: node scripts/check_board_review_page.mjs
@@ -828,6 +837,9 @@ jobs:
       - name: The home tally and the ranking are CDN files first, the worker their fallback
         if: matrix.group == 'controls'
         run: node scripts/check_stats_files.mjs
+      - name: Support figures follow their measured sources
+        if: matrix.group == 'controls'
+        run: node scripts/check_support.mjs
       # A WORKER THAT LIVES IN EVERY READER'S BROWSER is wrong for weeks: it falls
       # back on a slow road only, never on a sound one, and its way back works.
       - name: The page cache answers a slow road and never a sound one
@@ -944,6 +956,9 @@ jobs:
       - name: The Build Library filters sorts and streams published builds
         if: matrix.group == 'views'
         run: node scripts/check_build_library.mjs
+      - name: Saved measurements retain bounded history and regenerate replays
+        if: matrix.group == 'account'
+        run: node scripts/check_storage.mjs
       - name: Startup scene work and cache lifetimes stay bounded
         if: matrix.group == 'views'
         run: node scripts/check_frontend_performance.mjs
