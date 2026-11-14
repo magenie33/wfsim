@@ -333,3 +333,9 @@ retains `ContinuousFireRateAtten` and `ContinuousMaxShots`. Its ordinary
 zero-duration consumer advances twice before sampling the next refire rate.
 Other declared ramps remain `Assumed` inputs. Native entry rate, sampled refire
 rate and emitted projectile times are distinct boundaries.
+
+The [evaluation receipt](receipts/native-engine-540eb587.json) records the
+calculation commit, baseline, source pins, measured runtime/memory changes,
+validation scope and remaining implementation/evidence separately. A passing
+cross-runtime comparison certifies the supplied requests; it does not certify
+whole-engine equivalence with the game.
