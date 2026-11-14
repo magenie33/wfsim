@@ -12,8 +12,8 @@ fn panel(weapon: &str, ids: &[&str]) -> crate::build::loadout::ResolvedPanel {
 
 fn params(weapon: &str, ids: &[&str], positions: &[(f64, f64)]) -> FightParams {
     let mut panel = panel(weapon, ids);
-    panel.critical_inputs = None;
     panel.crit_chance = 0.0;
+    if let Some(inputs) = panel.critical_inputs.as_mut() { inputs.set_supplied_chance(panel.crit_chance, panel.base_crit_chance); }
     panel.status_chance = 0.0;
     let mut arena = crate::arena::Arena::training(0.01);
     arena.target_at = Vec2::new(0.0, 10.0);

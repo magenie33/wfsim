@@ -139,8 +139,8 @@ fn harmony_heavy_cashes_its_own_proc_before_the_next_attack() {
     let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
     let arena = crate::arena::Arena::training(0.9);
     let mut p = FightParams::for_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none(), || panel.clone());
-    p.critical_inputs = None;
     p.base_crit_chance = 0.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.status_chance = 0.0;
     p.target_at = p.player_at;
     p.combo_script.iter_mut().for_each(|h| { h.windup_seconds = 0.0; h.hit_delay_seconds = Some(0.0); });
