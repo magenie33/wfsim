@@ -50,12 +50,13 @@ export function boardConsumerContract(stage,state) {
   code:digest([...consumerFiles[stage],'prepared_board_reader.mjs','prepared_board_consumer.mjs'])};
 }
 const disk=work=>{boardStorage(work);const s=statfsSync(work);if(s.bavail*s.bsize<8*GiB)throw Error('board pipeline reached the filesystem reserve');};
-function acknowledgement(path,name,source) {
+function acknowledgement(path,name,source,contract) {
  if(!existsSync(path))return null;const db=new DatabaseSync(path,{readOnly:true});
  try {
   if(!db.prepare("SELECT 1 FROM sqlite_schema WHERE name='state_prepared_input_consumption'").get())return null;
-  const row=db.prepare('SELECT source,audit FROM state_prepared_input_consumption WHERE name=?').get(name);
+  const row=db.prepare('SELECT source,contract,audit FROM state_prepared_input_consumption WHERE name=?').get(name);
   if(row&&row.source!==canon(source))throw Error('consumer acknowledgement source changed');
+  if(row&&row.contract!==canon(contract))throw Error('consumer acknowledgement contract changed');
   return row?.audit?JSON.parse(row.audit):null;
  }finally{db.close();}
 }
@@ -84,7 +85,7 @@ export async function runPrepareBoardCycle({work,bin,sql,operator,budgetMs=1000,
   ensurePreparedReadIndexes(records.db);
   if(create)control.phase(state.rebuild_task,'active',state.generation);
   for(const [name,file] of [['inventory',state.inventory],['projection',state.board]]) {
-   const ack=acknowledgement(file,name,state.contract);if(ack) {
+   const ack=acknowledgement(file,name,state.contract,boardConsumerContract(name,state));if(ack) {
     if(name==='inventory')validateWorkSpan(inputs,ack.input_span,ack.cut,
      {after:ack.cut>inputs.consumer(name).acknowledged?inputs.consumer(name).acknowledged:undefined});
     inputs.observeAcknowledgement(name,ack);

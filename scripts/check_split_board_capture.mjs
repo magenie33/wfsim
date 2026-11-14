@@ -76,6 +76,13 @@ try {
  assert.equal(published.engine,context.engine);assert.equal(published.snapshot,inventory.consumer.acknowledgement().snapshot);
  assert(published.total>0);assert.equal(published.registered,0,'potential QIDs were replaced by registered task rows');
  assert.equal((await runPrepareBoardCycle({work,bin,sql,operator:native})).pending,false);
+ const held=inventory.consumer.state();
+ inventory.catalog.db.prepare('UPDATE state_prepared_input_consumption SET contract=? WHERE name=?').run('foreign-contract','inventory');
+ await assert.rejects(runPrepareBoardCycle({work,bin,sql,operator:native}),/acknowledgement contract changed/);
+ inventory.catalog.db.prepare('UPDATE state_prepared_input_consumption SET contract=? WHERE name=?').run(held.contract,'inventory');
+ inventory.catalog.db.prepare('UPDATE state_prepared_input_consumption SET source=? WHERE name=?').run('foreign-source','inventory');
+ await assert.rejects(runPrepareBoardCycle({work,bin,sql,operator:native}),/acknowledgement source changed/);
+ inventory.catalog.db.prepare('UPDATE state_prepared_input_consumption SET source=? WHERE name=?').run(held.source,'inventory');
  console.log('ok: '+(tcp?'actual TCP PostgreSQL':'PGlite')+' explicit generation, source crash/restart and early durable ACK; independent audited board/outbox; full potential-work publication with original snapshot/engine');
 }finally{board?.close();inventory?.close();audit?.close();pipeline.close();await native.close();
  if(tcp){await tcp.unsafe('RESET search_path;DROP SCHEMA '+schema+' CASCADE').simple();await tcp.end();}else await pg.close();rmSync(root,{recursive:true,force:true});}

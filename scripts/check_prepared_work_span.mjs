@@ -68,6 +68,7 @@ try {
  const bootstrap={bootstrap:true,raw:rawPaths,meta:{engine,snapshot:'snapshot-1',started_at:'2026-11-14T00:00:00.000Z',counts:{library:3,facts:3,queue:0,tasks:0}},receipt:receipt()};
  let first;do{first=await prepareBoardCut(inputs,records,bootstrap,native.call);}while(first.pending);
  reopen();await finish(first.cut);await oracle('cold inclusive entry floor');assert.equal(checked,1);
+ inputs.observeAcknowledgement('inventory',inventory.consumer.acknowledgement());
  const child={weapon:'torid',arcanes:['primary_deadhead'],exilus:'vigilante_supplies',
   evolutions:['torid_evo1_incarnon_form','torid_final_fusillade','torid_swift_deliverance','torid_survivors_edge'],
   mods:['primed_cryo_rounds','malignant_force','hellfire','primary_acuity','galvanized_scope','vital_sense','hunter_track@0','riven'],
@@ -131,7 +132,13 @@ try {
   const next=serial;assert.equal(next,target+1);await finish(next);
   warm.push({initial_span_cuts:4,arrivals_during_processing:1,audits:checked-before,milliseconds:performance.now()-start});await oracle('continuous catch-up round '+round);
  }
- const previous=serial;for(let n=0;n<260;n++)await seal([]);
+ const previous=serial;
+ const unseen=inventory.consumer.acknowledgement();assert.equal(unseen.input_span.after,inputs.consumer('inventory').acknowledged);
+ validateWorkSpan(inputs,unseen.input_span,unseen.cut,{after:inputs.consumer('inventory').acknowledged});
+ assert.throws(()=>validateWorkSpan(inputs,{...unseen.input_span,after:unseen.input_span.after+1},unseen.cut,
+  {after:inputs.consumer('inventory').acknowledged}),/invalid work input span/);
+ inputs.observeAcknowledgement('inventory',unseen);inputs.observeAcknowledgement('inventory',unseen);
+ for(let n=0;n<260;n++)await seal([]);
  assert.equal((await step()).pending,true);assert.equal(inventory.consumer.state().acknowledged,previous,'empty cuts bypassed the bounded span audit');
  await finish(serial);assert.equal(inventory.consumer.acknowledgement().input_span.cuts,260);
  assert.equal(inventory.consumer.acknowledgement().plan.started_at,'2026-11-14T00:00:00.000Z','catch-up fabricated a fresh clock');

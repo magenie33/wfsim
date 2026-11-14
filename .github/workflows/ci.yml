@@ -708,6 +708,7 @@ jobs:
           node scripts/check_prepared_board_access.mjs
           node scripts/check_prepared_read_indexes.mjs
           node scripts/check_prepared_work_span.mjs
+          node scripts/check_work_ack_receipts.mjs
           node scripts/check_source_adoption.mjs
           node scripts/check_split_board_replay.mjs
           node scripts/check_split_board_pipeline.mjs

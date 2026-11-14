@@ -517,6 +517,11 @@ every intervening cut in order, persisting each cut's input count, digest and
 ordinal progress. New arrivals belong to the next span. One complete audit checks
 the pinned snapshot before an atomic cumulative ACK; a crash retains the previous
 audited ACK. The source owner validates the entire span receipt before retention.
+Audit receipts cover every cut since the source owner's last observed ACK,
+including earlier local audits whose replies it missed. Per-cut progress receipts
+remain durable until covered; a source may accept an overlapping audited prefix
+but rejects a gap or a different source/consumer contract. Intermediate replies
+are optional, and source acknowledgement remains monotonic across GC and retry.
 This coalesces repeated full audits without dropping lifecycle transitions or
 registered obligations whose source disappears. Incremental audits retain their
 own input cursor and do not depend on board completion.

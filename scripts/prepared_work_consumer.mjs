@@ -10,19 +10,22 @@ const binding=cut=>({cut:cut.id,input_count:cut.input_count,input_digest:cut.sea
  snapshot:cut.receipt.snapshot,engine:cut.receipt.engine,started_at:cut.receipt.started_at});
 const extend=(digest,cut)=>sha(digest+'\n'+canon(binding(cut)));
 
-export function validateWorkSpan(reader,span,target,{after}={}) {
- if(!span||span.v!==1||!Number.isSafeInteger(span.after)||span.after<0||span.last!==target
-   ||after!==undefined&&span.after!==after)throw Error('invalid work input span');
- let previous=span.after,digest=initial,inputs=0,cuts=0;
+export function workSpanReceipt(reader,after,target) {
+ if(!Number.isSafeInteger(after)||after<0||!Number.isSafeInteger(target)||target<=after)throw Error('invalid work input span');
+ let previous=after,digest=initial,inputs=0,cuts=0;
  while(previous<target) {
   const next=reader.db.prepare("SELECT id FROM record_prepared_board_cuts WHERE id>? AND state='sealed' ORDER BY id LIMIT 1").get(previous);
   const cut=next?reader.cut(next.id):null;
   if(!cut||cut.id!==previous+1||cut.id>target||cut.state!=='sealed')throw Error('work input span has a missing cut');
   digest=extend(digest,cut);inputs+=cut.input_count;cuts++;previous=cut.id;
  }
- if(cuts<1||span.first!==span.after+1||span.cuts!==cuts||span.inputs!==inputs||span.digest!==digest)
-  throw Error('work input span receipt differs');
- return span;
+ return {v:1,after,first:after+1,last:target,cuts,inputs,digest};
+}
+export function validateWorkSpan(reader,span,target,{after}={}) {
+ if(!span||span.v!==1||span.last!==target||after!==undefined&&(span.after>after||after>target))throw Error('invalid work input span');
+ const receipt=workSpanReceipt(reader,span.after,target);
+ if(canon(receipt)!==canon(Object.fromEntries(Object.keys(receipt).map(key=>[key,span[key]]))))throw Error('work input span receipt differs');
+ return receipt;
 }
 
 export class PreparedWorkConsumer extends PreparedBoardConsumer {
@@ -77,12 +80,16 @@ export class PreparedWorkConsumer extends PreparedBoardConsumer {
   this.save({...span,cursor});this.pending=null;this.advance();
  }
  inputsPending(){const span=this.span();return span.cuts!==span.last-span.after;}
+ auditSpan() {
+  const span=this.span(),observed=this.reader.db.prepare('SELECT acknowledged FROM state_prepared_board_consumers WHERE name=?').get(this.name)?.acknowledged;
+  if(!Number.isSafeInteger(observed)||observed>span.after)throw Error('source acknowledgement is ahead of local work');
+  return workSpanReceipt(this.reader,observed,span.last);
+ }
  complete(audit) {
   const span=this.span();
-  if(this.inputsPending()||audit?.input_span?.digest!==span.digest)throw Error('work span audit is incomplete');
-  const receipt={v:span.v,after:span.after,first:span.first,last:span.last,cuts:span.cuts,inputs:span.inputs,digest:span.digest};
-  validateWorkSpan(this.reader,receipt,span.last);
-  for(let cut=span.first;cut<=span.last;cut++) {
+  if(this.inputsPending()||!audit?.input_span)throw Error('work span audit is incomplete');
+  const receipt=validateWorkSpan(this.reader,audit.input_span,span.last,{after:span.after});
+  for(let cut=receipt.first;cut<=receipt.last;cut++) {
    const held=this.db.prepare('SELECT body FROM record_work_input_cuts WHERE name=? AND cut=?').get(this.name,cut);
    if(held?.body!==canon(binding(this.reader.cut(cut))))throw Error('work span progress receipt differs');
   }

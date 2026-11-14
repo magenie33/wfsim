@@ -292,6 +292,11 @@ covers aliases, entry floors, default appearance and retirement, transient sourc
 with persistent registered obligations, lost replies, restart, new arrivals and
 minimum audited retention. Missing members, same-count wrong members, omitted
 invalidations and altered intermediate receipts must fail before cumulative ACK.
+`check_work_ack_receipts.mjs` isolates acknowledgement transport with labelled
+metadata fixtures: missing intermediate replies, concurrent source observation,
+overlapping retries after GC, monotonicity and persisted prefix receipts. Gaps,
+changed digests or lost unobserved progress fail. The source-driver check also
+rejects a different source or consumer contract before accepting its audit.
 `check_source_adoption.mjs` compares explicitly adopted source-only components
 with fresh native normalization, binds every protected raw row, rejects changed
 native contracts and retains the original cache bytes across lost responses.

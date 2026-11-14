@@ -73,7 +73,7 @@ export class PreparedWorkInventory {
     const result=await this.index.step(operate,{budgetMs:Math.max(0,until-performance.now())});
     if(result.pending)return {pending:true,stage:'enumerate',cut:cut.id,metrics:result.metrics};
     if(!audit)throw Error('an independent full work inventory audit is required');
-    const span=this.consumer.span();
+    const span=this.consumer.auditSpan();
     const proof=await audit(this.index,this.reader,cut,{check,inputSpan:span,operate});
     if(proof?.complete!==true||proof.memberships?.complete!==true||proof.memberships.cut!==cut.id
       ||proof.plan?.snapshot!==cut.receipt.snapshot||proof.plan.engine!==cut.receipt.engine)
