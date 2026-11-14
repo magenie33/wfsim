@@ -32,6 +32,9 @@ fn devastating_attrition_multiplies_with_gun_condition_overload() {
     // seed, so the crit rolls and the shot timing are identical.
     let run = |attrition: bool, co: bool| {
         let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
+        p.critical_inputs = None;
+        p.base_crit_chance = 0.0;
+        p.body_parts = mono_body(1.0);
         // Chance 1.0, not the perk's own 0.5: a coin flip inside the
         // measurement would need thousands of runs to say anything, and
         // the question is about the BRACKET, not about the odds.

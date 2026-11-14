@@ -270,7 +270,7 @@ pub(super) fn write_row(
                 // share is already the first term of the ledger below — so the
                 // raw is the instance's either way, and only what happens to it
                 // after it arrives differs.
-                raw: inst.layers.last().map_or(inst.base, layer_out),
+                raw: settled.raw,
                 mitigation: mit,
                 effective: p.effective,
                 before: breakdown.before,

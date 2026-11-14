@@ -8,6 +8,7 @@ fn fixture() -> serde_json::Value {
 fn source_bits(value: f64, row: &serde_json::Value) {
     let bits = (value as f32).to_le_bytes().map(|b| format!("{b:02x}")).join("");
     assert_eq!(bits, row["bits_le"].as_str().unwrap(), "{row}: {value}");
+    assert_eq!(value, (value as f32) as f64, "native result must be widened after its last operation: {row}");
 }
 
 #[test]
@@ -29,17 +30,17 @@ fn inverse_speed_consumers_match_their_scoped_native_vectors() {
                     retained += 1;
                     continue; // A zero configured rate needs state permissions, not an instant loop.
                 }
-                let queried = rpm.max(1.0) * scalar;
+                let configured = f64::from(rpm) / 60.0;
                 let rate = RefireRule::NativeRate.weapon_rate(
-                    f64::from(queried * (1.0_f32 / 60.0)), f64::from(rpm) / 60.0);
+                    RefireRule::NativeRate.modified_rate(configured, f64::from(x)), configured);
                 match case {
                     "state-rps" => rate,
                     "base-interval" => RefireRule::NativeRate.interval(rate, false),
                     _ => RefireRule::SemiAutomatic { skip_wait_on_empty: false }.interval(rate, false),
                 }
             }
-            "reload-duration" => 2.0 / crate::rules::sim::reload_divisor(f64::from(scalar)),
-            "weapon-charge-duration" => 2.0 / crate::rules::sim::charge_divisor(f64::from(scalar)),
+            "reload-duration" => crate::rules::sim::reload_time(2.0, f64::from(x)),
+            "weapon-charge-duration" => crate::rules::sim::charge_time(2.0, f64::from(x)),
             "projectile-initial-speed-clamp" => {
                 let base = row["base_speed"].as_f64().unwrap() as f32;
                 crate::rules::sim::projectile_initial_speed(f64::from(base), f64::from(base * scalar))
@@ -90,11 +91,11 @@ fn a_live_charge_buff_offsets_raw_negative_speed_before_the_charge_floor() {
     let p = FightParams::from_panel(&panel, &crate::arena::Arena::training(45.0), &ArcaneFx::none());
     assert!(p.charge_speed.unwrap().multiplier < 0.0);
     let original = plain.charge_seconds.unwrap();
-    assert!((p.charge_seconds.unwrap() * crate::rules::sim::charge_divisor(-0.5) - original).abs() < 1e-9);
-    assert!((p.reload_seconds * crate::rules::sim::reload_divisor(-0.5) - plain.reload_seconds).abs() < 1e-9);
-    assert!((reload_span(p.reload_seconds, p.reload_bonus, 1.0) - 2.0 * plain.reload_seconds).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(p.charge_seconds.unwrap() * crate::rules::sim::charge_divisor(-0.5), original));
+    assert!(crate::rules::upgrades::near_f32(p.reload_seconds * crate::rules::sim::reload_divisor(-0.5), plain.reload_seconds));
+    assert!(crate::rules::upgrades::near_f32(reload_span(p.reload_seconds, p.reload_bonus, 1.0), 2.0 * plain.reload_seconds));
     assert_eq!(p.projectile_speed_mps, Some(f64::from(plain.projectile_speed_mps.unwrap() as f32 * 0.1_f32)));
     let raw = p.fire_rate + p.unmodded_fire_rate;
     let restored = charge_span_at_rate(&p, raw, p.refire.weapon_rate(raw, p.unmodded_fire_rate));
-    assert!((restored - 2.0 * original).abs() < 1e-9, "raw -50% plus +100% leaves a 50% scalar query");
+    assert!(crate::rules::upgrades::near_f32(restored, 2.0 * original), "raw -50% plus +100% leaves a 50% scalar query");
 }

@@ -12,11 +12,17 @@ description: "+X% Critical Damage\n-X% Damage"
 # modeled as a negative base_damage_bonus (not a separate penalty layer).
 effects:
   - kind: crit_damage_bonus
-    rank0: 0.1
-    rankMax: 0.6
+    UpgradeType: 248
+    OperationType: STACKING_MULTIPLY
+    Value: 0.1
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   - kind: base_damage_bonus
-    rank0: -0.025
-    rankMax: -0.15
+    UpgradeType: 253
+    OperationType: STACKING_MULTIPLY
+    Value: -0.025
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Hollow_Point

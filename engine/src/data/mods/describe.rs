@@ -135,8 +135,9 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
     INFO.get_or_init(|| {
         let mut map = std::collections::HashMap::new();
         for (_, text) in crate::data::files_under("mods/") {
-            let Ok(mf) = serde_norway::from_str::<ModFile>(text) else { continue };
+            let Ok(mut mf) = serde_norway::from_str::<ModFile>(text) else { continue };
             let Some(desc) = mf.description else { continue };
+            mf.effects = mf.effects.iter().map(|e| super::parse::description_inputs(e, mf.max_rank)).collect();
             // Values are matched to placeholders by KIND and by SENTENCE,
             // never by position in a flat queue.
             //

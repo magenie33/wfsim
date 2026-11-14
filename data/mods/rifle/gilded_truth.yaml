@@ -26,8 +26,11 @@ effects:
   # Truth Mod giving higher fire rate than intended, now gives up to 80% when
   # fully maxed". The rank table's 20/40/60/80 is the settled answer.
   - kind: fire_rate_bonus
-    rank0: 0.20
-    rankMax: 0.80
+    UpgradeType: 277
+    OperationType: STACKING_MULTIPLY
+    Value: 0.2
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
   # THE SYNDICATE RADIAL — "+1 Truth" at max rank, and MODELLED.
   #

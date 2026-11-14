@@ -9,8 +9,11 @@ description: "+X% Damage\n+X% Sprint Speed"
 
 effects:
   - kind: base_damage_bonus
-    rank0: 0.141
-    rankMax: 1.551   # see notes: package_rank_value
+    UpgradeType: 253
+    OperationType: STACKING_MULTIPLY
+    Value: 0.141
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   # A WARFRAME stat the weapon carries — which is exactly why this mod cannot
   # go on a companion weapon (see `excludes_weapon` below).
   # "+25% Sprint Speed"

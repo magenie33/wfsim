@@ -866,7 +866,7 @@ pub(super) fn spread_from_punch_through(
                 active.crit_tier_upgrade_chance,
                 &mut d.spine,
             );
-            let crit_multiplier = 1.0 + tier as f64 * (punch.crit_damage - 1.0);
+            let crit_multiplier = crate::rules::critical::factor(tier, punch.crit_damage as f32) as f64;
             let attrition = noncrit_mult(active.noncrit_bonus, tier, &mut d.spine);
             let foe = &mut bodies[s];
             if foe.fallen { break; }
@@ -876,7 +876,7 @@ pub(super) fn spread_from_punch_through(
                 &inst,
                 foe,
                 &spec,
-                raw_per_bucket * crit_multiplier * attrition,
+                crate::rules::critical::apply_factor(raw_per_bucket as f32, crit_multiplier as f32) as f64 * attrition,
                 shares,
                 crit_multiplier,
                 tier,

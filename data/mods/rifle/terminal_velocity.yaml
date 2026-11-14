@@ -10,8 +10,11 @@ description: "+X% Projectile Speed"
 
 effects:
   - kind: projectile_speed_bonus
-    rank0: 0.15
-    rankMax: 0.6
+    UpgradeType: 380
+    OperationType: STACKING_MULTIPLY
+    Value: 0.15000001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Terminal_Velocity

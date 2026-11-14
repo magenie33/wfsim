@@ -401,6 +401,7 @@ fn a_hunter_munitions_bleed_is_indistinguishable_from_any_other_slash() {
     // Red crits: cc 2.0 is tier 2 guaranteed on both.
     let tier2 = same(
         pair(|p| {
+            p.critical_inputs = None;
             p.base_crit_chance = 2.0;
             p.crit_multiplier = 3.0;
         }),
@@ -415,6 +416,7 @@ fn a_hunter_munitions_bleed_is_indistinguishable_from_any_other_slash() {
     let promoted = same(
         pair(|p| {
             p.crit_tier_upgrade_chance = 1.0;
+            p.critical_inputs = None;
             p.crit_multiplier = 3.0;
         }),
         "vigilante-promoted parent",
@@ -481,6 +483,7 @@ fn an_internal_bleeding_bleed_is_indistinguishable_from_any_other_slash() {
 #[test]
 fn the_vigilante_promotion_reaches_an_explosion_too() {
     let radial = crate::build::loadout::ResolvedRadial {
+        critical_inputs: None,
         delay_seconds: 0.0,
         blast_kind: crate::model::BlastKind::Contact,
         damage: {

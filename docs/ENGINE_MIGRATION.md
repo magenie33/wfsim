@@ -150,8 +150,8 @@ questions stay in the shared research queue.
 
 | Domain | Available foundation | Remaining migration dependency |
 | --- | --- | --- |
-| Upgrade queries | Typed native operation entries, float32 fold and bounded Shield/Encumber consumers | Complete filter/context selection and dynamic installation ownership |
-| Numeric precision | Float32 Shield/source/proxy and speed fixtures | Per-consumer boundary map beyond recovered slices |
+| Upgrade queries | Typed entries, pending scalar state, raw-base queries, materialization and proc-mask predicates | Complete owner/type/symbol/posture selection and dynamic installation ownership |
+| Numeric precision | Float32 Shield/source/proxy, rank, critical and speed consumers | Per-consumer boundary map beyond recovered slices |
 | Packet context | Native counted payloads, typed source/weapon handles, fresh scalar-copy geometry | Complete native submission identity and spatial context writers |
 | Electricity and Gas | Per-record seeds and separate latest landings | Complete native insertion, recipient, expiry and lethal lifecycles |
 | Conditional Arcanes | Source-spelled rank fields, one-packet Primary callback and Encumber SET0 lifecycle | Actual notification frequency, source eligibility and effective live update phase |
@@ -160,7 +160,7 @@ questions stay in the shared research queue.
 | Enemy controllers | `Foe`, scaling curves and per-body `TargetState` | Controller instance/query/writeback lifecycle and installed mode operations |
 | Abilities and passives | `data::casting`, active ability windows and handlers | Instance identity, script branch/side-effect coverage and shared upgrades |
 | Companions | Source importers and multi-combatant fight | Complete AI/action/lifecycle scope per recovered mechanism |
-| RNG and replay | Engine deterministic streams and captured run state | Native stream installation, consumer sequence and owned lifetimes |
+| RNG and replay | Native LCG kernel, critical discrete draws and captured run state | Game stream installation, remaining consumer algorithms and owned lifetimes |
 | Build and elements | Shared resolver, forms and configured mod order | Preserve native query sites instead of flattening dynamic properties |
 | Search and outputs | Same simulator, record and route transport | Versioned new-engine identity, caller adaptation and final truth/parity checks |
 
@@ -205,7 +205,9 @@ This primitive needs no search enumeration or scheduling change.
 
 `scripts/import_client_upgrades.py --exchange <exchange> --check` verifies the
 READY/manifest binding, consumed archive hashes, 428 original upgrade ids,
-1115 original-instruction operation vectors and the status Arcane fixtures.
+1115 folds, 20,479 rank values, 5,398 conditional construction inputs and the
+status Arcane fixtures. `--check-mods` also verifies the 150 joined mod inputs;
+`--migrate-mods` replaces their legacy rank endpoints with source fields.
 `rules::upgrades` preserves binary32 bucket order, last SET/SET_BASE selection,
 native bounds, SET bypass and the int32 rounding sentinel. Callers select the
 entries; this primitive does not invent a complete UpgradeManager.
@@ -213,9 +215,36 @@ entries; this primitive does not invent a complete UpgradeManager.
 `RankedUpgrade` retains `UpgradeType`, `OperationType`, `Value`,
 `FusionPowerStep` and `FusionPowerCurve`. `ConditionalChance` retains
 `UpgradeChance`, `UpgradeChanceScalePerRank` and `ChanceScalesWithRank`.
-The two Arcane files use these as their only rank authority. Cold compilation
-derives the existing display/runtime rank table, preserving every native
-binary32 step. Unsupported curves fail deserialization.
+The migrated mod and Arcane effects use these as their only rank authority.
+Cold compilation derives the existing display/runtime representation.
+QC_NONE retains curve input zero; QC_LINEAR computes rank/maxRank before its
+binary32 multiply and add. MULTIPLY values in the bound inverse interval have
+their separate transform. AVATAR_ABILITY returns rank. Extra unlocks remain
+unavailable below their own gate. Unsupported curves fail deserialization.
+
+`ConditionalParameters` retains the original chance, duration and stack-count
+fields. Duration multiplication and wrapping byte stack arithmetic occur at
+construction; they do not establish live trigger/stack installation behavior.
+
+`NativeScalar` owns its base and pending operation state. Mutating application
+can materialize and reset the operations or retain them. The returned-value
+proc query reads the stored base, so an unmaterialized parent operation is not
+silently applied to the child's float input. Proc-mask matching uses native
+proc ids. Other filters are explicitly caller-selected.
+
+`scripts/import_client_critical.py --exchange <exchange> --check` verifies 144
+critical/health-boundary fixtures and 54 parent/child query fixtures against
+their original source archives. The scalar tests compare evaluated parent,
+retained input and stored child seed separately, including both supplied
+canonicalization flags and Magnetic/Electric-only filters.
+
+The ordinary critical consumer skips draws for nonpositive and integral
+chances, uses the native inclusive discrete comparison and preserves the
+integer-to-byte conversion. Positive preset tiers bypass this roll. Critical
+base clamps to 0..32 and quantizes in binary32; the final critical factor has
+a zero guard and its source multiplication is binary32. The standalone
+consumer does not close every upstream scalar installer or forced-critical
+route. Scene stream separation remains WFSim policy.
 
 `ConditionalUpgrade` retains `CanReproc`, `ReprocTime` and `UpgradeDuration`.
 Its generic inherited reproc default is true; Encumber explicitly supplies
@@ -267,3 +296,40 @@ and checks finish, in interleaved order, with complete output retained.
 Parsed declarations and these bounded migrations do not qualify a complete
 native engine. The dependency register remains the completion criterion;
 current snapshots retain the stated scene policies and measured mechanics.
+
+## Client update comparison
+
+`scripts/client_upgrade_changes.py` compares two verified unified exports.
+Supply each batch directory and its independently recorded manifest hash with
+`--before`, `--before-sha256`, `--after` and `--after-sha256`; `--output` names
+a new JSON file. READY, archive and consumed member hashes must match.
+
+The report retains exact owner/array/index identities and every exported field,
+including raw numeric tokens, new fields, filters, rank projections, ancestry,
+enum ids and native span hashes. Archive member hashes also expose changes to
+captured scripts and other resources. Links to current mod inputs use source
+paths and both versions' ancestry. An unlinked change remains a change needing
+review. A native code change requires rebinding its consumer; unchanged display
+values do not establish an unchanged calculation rule.
+
+`scripts/check_client_upgrade_changes.py` requires an empty self-comparison and
+detects controlled value, filter, unknown-field, ancestry, enum, code, script,
+client identity, signed-zero and numeric-type changes. This compares captured
+evidence; it does not certify uncaptured code or silently migrate new filters.
+
+## Live queries and action boundaries
+
+The [binding ledger](NATIVE_BINDINGS.md) records the current engine consumers
+and the remaining native boundary for each of the delivered 46 stages.
+`CriticalInputs` retains static operations until the hit-time query appends
+selected live grants. Conditional base critical damage selects its base before
+folding static and live operations. The supplied-stat adapter is explicit;
+production query state takes precedence over its display fields.
+
+`import_client_spool.py --exchange <exchange> --check` verifies both original
+archives and their 145 members. The continuous-rate fixture binds 84 getter
+vectors and eight coupled FIRE/refire entries. `SustainedFireRate::Native`
+retains `ContinuousFireRateAtten` and `ContinuousMaxShots`. Its ordinary
+zero-duration consumer advances twice before sampling the next refire rate.
+Other declared ramps remain `Assumed` inputs. Native entry rate, sampled refire
+rate and emitted projectile times are distinct boundaries.

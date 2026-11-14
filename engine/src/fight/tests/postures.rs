@@ -12,6 +12,7 @@ fn panel(weapon: &str, ids: &[&str]) -> crate::build::loadout::ResolvedPanel {
 
 fn params(weapon: &str, ids: &[&str], positions: &[(f64, f64)]) -> FightParams {
     let mut panel = panel(weapon, ids);
+    panel.critical_inputs = None;
     panel.crit_chance = 0.0;
     panel.status_chance = 0.0;
     let mut arena = crate::arena::Arena::training(0.01);

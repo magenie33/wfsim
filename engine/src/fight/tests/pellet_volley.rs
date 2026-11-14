@@ -104,7 +104,7 @@ fn multishot_buys_damage_and_not_a_seventh_missile() {
     let split = monte_carlo(&arbucep(&["dual_rounds"]), 30, 5);
 
     assert!(
-        (split.mean_pellets - plain.mean_pellets).abs() < 1e-9,
+        crate::rules::upgrades::near_f32(split.mean_pellets, plain.mean_pellets),
         "the volley is still six: {} against {}",
         split.mean_pellets, plain.mean_pellets
     );
@@ -135,9 +135,9 @@ fn multishot_buys_damage_and_not_a_seventh_missile() {
             // build has no such layer at all and that IS its value.
             .unwrap_or(1.0)
     };
-    assert!((factor(&[]) - 1.0).abs() < 1e-9, "unmodded pays nothing: {}", factor(&[]));
+    assert!(crate::rules::upgrades::near_f32(factor(&[]), 1.0), "unmodded pays nothing: {}", factor(&[]));
     assert!(
-        (factor(&["dual_rounds"]) - 1.6).abs() < 1e-9,
+        crate::rules::upgrades::near_f32(factor(&["dual_rounds"]), 1.6),
         "+60% multishot is exactly +60% on the instance: {}",
         factor(&["dual_rounds"])
     );

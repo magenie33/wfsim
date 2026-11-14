@@ -279,12 +279,15 @@ fn a_kestrel_prime_recall_knocks_down_without_giving_its_collision_that_proc() {
         p.fire_rate = 10.0;
         p.status_chance = 0.0;
         p.base_status_chance = 0.0;
+        p.critical_inputs = None;
         p.base_crit_chance = 0.0;
         for h in &mut p.combo_script { h.windup_seconds = 0.0; }
         if let Some(r) = &mut p.radial {
             r.status_chance = 0.0;
             r.base_status_chance = 0.0;
+            r.critical_inputs = None;
             r.crit_chance = 0.0;
+            r.critical_inputs = None;
             r.base_crit_chance = 0.0;
         }
         monte_carlo(&p, 1, 7).mean_damage
@@ -307,6 +310,7 @@ fn a_glaives_forced_electricity_opens_influence_without_electric_damage() {
         if let Some(r) = &mut p.radial {
             r.status_chance = 0.0;
             r.base_status_chance = 0.0;
+            r.critical_inputs = None;
             r.crit_chance = 0.0;
             assert_eq!(r.damage.get(DamageType::Electricity), 0.0);
         }

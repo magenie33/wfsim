@@ -295,12 +295,12 @@ fn rapid_wrath_is_additive_with_fire_rate_mods() {
     };
     let nominal = 400.0 / 60.0;
     let base = fr(&[], &[]);
-    assert!((base - nominal).abs() < 1e-9, "base fire rate {base}");
-    assert!((fr(&["laetum_rapid_wrath"], &[]) - nominal * 1.20).abs() < 1e-9);
-    assert!((fr(&[], &gunslinger) - nominal * 1.72).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(base, nominal), "base fire rate {base}");
+    assert!(crate::rules::upgrades::near_f32(fr(&["laetum_rapid_wrath"], &[]), nominal * 1.20));
+    assert!(crate::rules::upgrades::near_f32(fr(&[], &gunslinger), nominal * 1.72));
     let both = fr(&["laetum_rapid_wrath"], &gunslinger);
     assert!(
-        (both - nominal * 1.92).abs() < 1e-9,
+        crate::rules::upgrades::near_f32(both, nominal * 1.92),
         "must be additive, got {both} — multiplicative would be {}",
         nominal * 1.72 * 1.20
     );
