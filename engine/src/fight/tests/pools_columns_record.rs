@@ -359,6 +359,7 @@ fn the_damage_meters_parts_add_up_to_the_whole() {
         radial: Some(radial_of(1.0, 0.0)),
         ..bare(DamageType::Slash)
     };
+    p.critical_inputs = None;
     p.base_crit_chance = 0.5;
     p.crit_multiplier = 2.0;
     p.multishot = 2.4;
@@ -392,6 +393,7 @@ fn the_record_adds_up_to_the_damage_total() {
         forced_procs: vec![DamageType::Slash, DamageType::Heat],
         ..bare(DamageType::Slash)
     };
+    p.critical_inputs = None;
     p.base_crit_chance = 0.5;
     p.crit_multiplier = 2.0;
     p.multishot = 2.4;
@@ -708,6 +710,7 @@ fn every_frame_that_took_damage_wrote_a_row() {
         forced_procs: vec![DamageType::Slash, DamageType::Heat],
         ..bare(DamageType::Slash)
     };
+    p.critical_inputs = None;
     p.base_crit_chance = 0.5;
     p.crit_multiplier = 2.0;
     let rep = replay(&p, 0, 60);

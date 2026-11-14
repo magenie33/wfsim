@@ -85,6 +85,7 @@ impl Default for FightParams {
     /// the engine.
     fn default() -> Self {
         Self {
+            critical_inputs: None,
             weakness_bonus: None,
             heavy_damage_mods_apply: true,
             combo_damage_applies: true,
@@ -510,6 +511,7 @@ fn cloud(stacking: crate::model::FieldStacking) -> crate::build::loadout::Resolv
     let mut damage = DamageVector::default();
     damage.set(DamageType::Toxin, 40.0);
     crate::build::loadout::ResolvedLingering {
+        critical_inputs: None,
         heavy_damage_mods_apply: true,
         melee_scaling: None,
         damage,
@@ -576,6 +578,7 @@ fn orb_part(damage: f64) -> crate::build::loadout::ResolvedLingering {
     let mut v = DamageVector::default();
     v.set(DamageType::Electricity, damage);
     crate::build::loadout::ResolvedLingering {
+        critical_inputs: None,
         heavy_damage_mods_apply: true,
         melee_scaling: None,
         damage: v,
@@ -717,6 +720,7 @@ fn radial_of(status_chance: f64, crit_chance: f64) -> crate::build::loadout::Res
     let mut damage = DamageVector::default();
     damage.set(DamageType::Heat, 300.0);
     crate::build::loadout::ResolvedRadial {
+        critical_inputs: None,
         delay_seconds: 0.0,
         blast_kind: crate::model::BlastKind::Contact,
         damage,

@@ -11,8 +11,11 @@ description: "+X% Critical Damage"
 # cd_total (MECHANICS.md #5) - multiplies the quantized base+flat CD.
 effects:
   - kind: crit_damage_bonus
-    rank0: 0.1
-    rankMax: 0.6
+    UpgradeType: 248
+    OperationType: STACKING_MULTIPLY
+    Value: 0.1
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 
 family: target_cracker

@@ -12,8 +12,11 @@ exclusive_to: [tetra, prisma_tetra, tenet_tetra, tenet_tetra_grenade]
 effects:
   - kind: projectile_speed_bonus
     condition: aiming
-    rank0: 0.20
-    rankMax: 0.80
+    UpgradeType: 380
+    OperationType: STACKING_MULTIPLY
+    Value: 0.2
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Focused_Acceleration

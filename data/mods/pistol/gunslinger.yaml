@@ -11,8 +11,11 @@ description: "+X% Fire Rate"
 # table (fusionLimit 5).
 effects:
   - kind: fire_rate_bonus
-    rank0: 0.12
-    rankMax: 0.72
+    UpgradeType: 277
+    OperationType: STACKING_MULTIPLY
+    Value: 0.12
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Gunslinger

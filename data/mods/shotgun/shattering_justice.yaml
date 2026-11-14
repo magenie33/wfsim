@@ -25,8 +25,11 @@ effects:
   # It is NOT the post-mod addition the card once was — "+20 Additive to base
   # Status Chance", which multiplied by nothing and was worth a fifth of this.
   - kind: status_chance_bonus
-    rank0: 0.225
-    rankMax: 0.90
+    UpgradeType: 365
+    OperationType: STACKING_MULTIPLY
+    Value: 0.22499999
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
   # THE SYNDICATE RADIAL — payload in data/syndicates/justice.yaml, and the
   # half of this card that pays a number rather than a bracket.

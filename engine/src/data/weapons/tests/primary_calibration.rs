@@ -23,6 +23,15 @@ fn every_primary_form_matches_its_adopted_client_fields() {
         let original = &raw[id];
         let s = spec(id).unwrap();
         for (key, expected) in row["applied"].as_object().unwrap() {
+            if key == "attack.sustained_fire_rate" {
+                if let Some(crate::model::SustainedFireRate::Native(native)) = s.attack.sustained_fire_rate {
+                    let (start, end, span) = crate::model::SustainedFireRate::Native(native).display_span();
+                    assert_eq!((start as f32).to_bits(), (expected["start"].as_f64().unwrap() as f32).to_bits());
+                    assert_eq!(end, expected["end"].as_f64().unwrap());
+                    assert_eq!(span, expected["over_shots"].as_f64().unwrap());
+                    continue;
+                }
+            }
             let mut actual = key.split('.').fold(original, |v, part| &v[part]);
             if actual.is_null() && ["reload_seconds", "magazine", "ammo_max", "ammo_pickup"].contains(&key.as_str()) {
                 actual = &raw[original["inherits"].as_str().unwrap()][key];

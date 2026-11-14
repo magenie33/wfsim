@@ -396,6 +396,7 @@ fn ablate(weapon: &str, c: &Cfg) {
     no_status.base_status_chance = 0.0;
     no_status.forced_procs.clear();
     let mut no_crit = full.clone();
+    no_crit.critical_inputs = None;
     no_crit.base_crit_chance = 0.0;
     let mut no_radial = full.clone();
     no_radial.radial = None;

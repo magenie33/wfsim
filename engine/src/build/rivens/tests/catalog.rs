@@ -562,7 +562,7 @@ fn a_rivens_damage_joins_serrations_bucket_and_does_not_multiply_it() {
     // would give (1+s)(1+r) - 1 = s + r + s*r, which for these two is
     // ~2.7 higher — not a rounding difference.
     assert!(
-        (both - (s + r)).abs() < 1e-9,
+        crate::rules::upgrades::near_f32(both, s + r),
         "riven + mod must SUM in one bucket: {both} vs {s} + {r} = {}",
         s + r
     );

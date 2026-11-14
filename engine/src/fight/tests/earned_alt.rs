@@ -58,13 +58,13 @@ fn earned_alternate_apl_reloads_then_uses_full_charge_then_fires_primary() {
 fn nunchasa_primary_and_full_charge_arrow_resolve_their_own_stats() {
     let primary = panel("nunchasa");
     let alt = panel("nunchasa_alt");
-    assert_eq!(primary.charge_seconds, Some(0.6));
+    assert_eq!(primary.charge_seconds, Some(f64::from(0.6_f32)));
     assert_eq!(primary.modified_base, 400.0);
     assert_eq!(alt.charge_seconds, Some(1.5));
     assert_eq!(alt.modified_base, 1000.0);
-    assert_eq!(alt.crit_chance, 0.36);
+    assert_eq!(alt.crit_chance, f64::from(0.36_f32));
     assert_eq!(alt.base_crit_damage, crate::rules::damage::quantize_base_crit_damage(3.0));
-    assert_eq!(alt.status_chance, 0.36);
+    assert_eq!(alt.status_chance, f64::from(0.36_f32));
     assert_eq!(alt.projectile_width_m, 2.0);
     assert!(alt.infinite_body_punch_through);
     assert_eq!(alt.forced_procs, vec![DamageType::Cold]);
@@ -91,7 +91,7 @@ fn nunchasa_cycle_needs_ten_body_hits_or_five_weakpoint_hits() {
         assert!(!forms[first_fill + 1]);
         assert!((fired[first_fill].t - fired[first_fill - 1].t - 2.1).abs() < 1e-9,
             "the alternate pays its own 1.5 s draw plus the 0.6 s nock");
-        assert!((fired[first_fill + 1].t - fired[first_fill].t - 1.2).abs() < 1e-9,
+        assert!(crate::rules::upgrades::near_f32(fired[first_fill + 1].t - fired[first_fill].t, 1.2),
             "returning to primary pays its 0.6 s draw plus the nock");
     }
 }

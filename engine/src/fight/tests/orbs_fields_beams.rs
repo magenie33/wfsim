@@ -171,8 +171,11 @@ fn an_unaimed_attack_decides_where_its_own_strikes_land() {
 fn an_orb_strike_on_an_eligible_head_folds_the_crit_in() {
     let run = |crit_bonus: bool| {
         let mut part = orb_part(280.0);
+        part.critical_inputs = None;
         part.crit_chance = 1.0;
+        part.critical_inputs = None;
         part.base_crit_chance = 1.0;
+        part.critical_inputs = None;
         part.crit_damage = 2.0;
         monte_carlo(
             &FightParams {
@@ -805,6 +808,7 @@ fn renewed_horror_doubles_only_the_post_reload_field() {
 fn field_ticks_roll_their_own_crit_and_report_as_field_damage() {
     let mk = |cc: f64| {
         let mut f = cloud(crate::model::FieldStacking::Stack);
+        f.critical_inputs = None;
         f.crit_chance = cc;
         FightParams {
             damage: DamageVector::default(),
@@ -878,6 +882,7 @@ fn a_beam_merges_its_multishot_into_one_instance() {
         crit_multiplier: 1.0,
         base_crit_chance: 0.0,
         duration_seconds: 4.0,
+        arcane: ArcaneFx::none(),
         ..no_status()
     };
     // Doubling multishot doubles the damage either way…

@@ -506,15 +506,15 @@ fn a_crit_card_that_says_x2_on_a_heavy_is_doubled_only_there() {
     };
     // 20% base. `20 x (1 + 1.20)` is 44%, and doubled it is `20 x (1 + 2.40)`
     // = 68% — the card's own arithmetic, on the two forms that spend combo.
-    assert!((cc("magistar", &["true_steel"]) - 0.44).abs() < 1e-9);
-    assert!((cc("magistar_slide", &["true_steel"]) - 0.44).abs() < 1e-9);
-    assert!((cc("magistar_heavy", &["true_steel"]) - 0.68).abs() < 1e-9);
-    assert!((cc("magistar_heavy_slam", &["true_steel"]) - 0.68).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(cc("magistar", &["true_steel"]), 0.44));
+    assert!(crate::rules::upgrades::near_f32(cc("magistar_slide", &["true_steel"]), 0.44));
+    assert!(crate::rules::upgrades::near_f32(cc("magistar_heavy", &["true_steel"]), 0.68));
+    assert!(crate::rules::upgrades::near_f32(cc("magistar_heavy_slam", &["true_steel"]), 0.68));
     // …AND BLOOD RUSH IS NOT DOUBLED. It reads the combo counter live, so
     // the panel shows the weapon's own 20% either way — which is exactly
     // the assertion: whatever the form, this card changed nothing here.
-    assert!((cc("magistar", &["blood_rush"]) - 0.20).abs() < 1e-9);
-    assert!((cc("magistar_heavy", &["blood_rush"]) - 0.20).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(cc("magistar", &["blood_rush"]), 0.20));
+    assert!(crate::rules::upgrades::near_f32(cc("magistar_heavy", &["blood_rush"]), 0.20));
 }
 
 /// MAIMING STRIKE NAMES THE SLIDE, and nothing else is a slide.
@@ -529,10 +529,10 @@ fn maiming_strike_pays_the_slide_and_no_other_swing() {
     };
     // `20 x (1 + 1.50)` = 50% on the slide, and the weapon's own 20%
     // everywhere else.
-    assert!((cc("magistar_slide") - 0.50).abs() < 1e-9, "{}", cc("magistar_slide"));
+    assert!(crate::rules::upgrades::near_f32(cc("magistar_slide"), 0.50), "{}", cc("magistar_slide"));
     for f in ["magistar", "magistar_forward", "magistar_block", "magistar_heavy",
               "magistar_heavy_slam"] {
-        assert!((cc(f) - 0.20).abs() < 1e-9, "{f} took a slide-only card: {}", cc(f));
+        assert!(crate::rules::upgrades::near_f32(cc(f), 0.20), "{f} took a slide-only card: {}", cc(f));
     }
 }
 
@@ -2158,6 +2158,7 @@ fn every_combo_script_ends_on_a_row_that_closes_an_input() {
 fn an_ability_weapon_is_multiplied_by_its_combo_and_never_spends_it() {
     let base = crate::model::WeaponBase::from_data("shattered_lash", true, &[]);
     let mut panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+    panel.critical_inputs = None;
     panel.crit_chance = 0.0;
     panel.status_chance = 0.0;
     let mut arena = crate::arena::Arena::training(60.0);
