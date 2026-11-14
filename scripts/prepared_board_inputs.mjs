@@ -39,6 +39,8 @@ const mask = value => value == null ? null : BigInt.asIntN(64,BigInt('0x' + valu
 const keys = new Set(['source','fact','reset','work']);
 const versionColumns = `id,kind,key,first_cut,last_cut,body,sha,source_order,identity,candidate,weapon,
   CASE WHEN admit IS NULL THEN NULL ELSE printf('%016llx',admit) END admit,modes,ruler,mode,score,at,retired,gate_ruler,scene,publication`;
+export const PREPARED_SOURCE_ORDER_SQL=`SELECT source_order FROM entity_prepared_board_versions INDEXED BY prepared_board_source_order
+  WHERE kind='source' AND source_order>=0 ORDER BY source_order DESC LIMIT 1`;
 
 export class PreparedBoardInputs {
   constructor(db,contract,{ consumers = ['inventory','projection'] } = {}) {
@@ -107,7 +109,7 @@ export class PreparedBoardInputs {
         if(prior.input_sha!==inputSha || prior.count!==items.length)throw Error('prepared input replay changed');
         return cut.input_count;
       }
-      let count=cut.input_count,sources=cut.source_count;
+      let count=cut.input_count,sources=cut.source_count,nextSourceOrder;
       const versions=[];
       for(const item of items) {
         const {kind,key,ordinal,value}=item;
@@ -128,8 +130,14 @@ export class PreparedBoardInputs {
           const at=value?.retired_at ?? value?.finished_at ?? '';
           const stale=kind==='fact' && value && old?.body && (old.at>at || old.at===at && old.retired && !value.retired_at);
           if(!stale && old)this.db.prepare('UPDATE entity_prepared_board_versions SET last_cut=? WHERE id=?').run(id,old.id);
-          const sourceOrder=kind==='source' ? old?.body ? old.source_order
-            : this.db.prepare("SELECT coalesce(max(source_order),0)+1 n FROM entity_prepared_board_versions WHERE kind='source'").get().n : null;
+          let sourceOrder=null;
+          if(kind==='source') {
+            if(old?.body)sourceOrder=old.source_order;
+            else {
+              nextSourceOrder??=(this.db.prepare(PREPARED_SOURCE_ORDER_SQL).get()?.source_order||0)+1;
+              sourceOrder=nextSourceOrder++;
+            }
+          }
           const result=this.db.prepare(`INSERT INTO entity_prepared_board_versions(kind,key,first_cut,last_cut,body,sha,source_order,
             identity,candidate,weapon,admit,modes,ruler,mode,score,at,retired,gate_ruler,scene,publication) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
             .run(kind,key,id,stale?id:null,value==null?null:deflateRawSync(text,{level:1}),sha,sourceOrder,

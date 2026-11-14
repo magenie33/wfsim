@@ -278,6 +278,8 @@ with a large tied weapon file and the existing receiver size limit.
 cursors, slowest-ACK retention and indexed collection with a missing-index control.
 `check_prepared_board_access.mjs` uses the production weapon-page query at
 1,000 and 10,000 unrelated normalized sources; a missing prefix index must fail.
+Source ordinals use one bounded descending index read per batch; the unbounded
+maximum query and a missing ordinal index fail the access-path check.
 `check_source_adoption.mjs` compares explicitly adopted source-only components
 with fresh native normalization, binds every protected raw row, rejects changed
 native contracts and retains the original cache bytes across lost responses.
