@@ -396,8 +396,8 @@ fn ablate(weapon: &str, c: &Cfg) {
     no_status.base_status_chance = 0.0;
     no_status.forced_procs.clear();
     let mut no_crit = full.clone();
-    no_crit.critical_inputs = None;
     no_crit.base_crit_chance = 0.0;
+    if let Some(inputs) = no_crit.critical_inputs.as_mut() { inputs.set_supplied_chance(no_crit.base_crit_chance, no_crit.unmodded_crit_chance); }
     let mut no_radial = full.clone();
     no_radial.radial = None;
     // NOT "one body part": truncating the list does not REMOVE work, it makes

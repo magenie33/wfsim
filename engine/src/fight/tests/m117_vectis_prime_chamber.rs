@@ -45,8 +45,8 @@ fn shots_from(
     let mut p = FightParams::from_panel(panel, &crate::arena::Arena::training(30.0), &arcane);
     p.ammo_efficiency_applies = efficiency > 0.0;
     p.foe.base_health = 1e15;
-    p.critical_inputs = None;
     p.base_crit_chance = 0.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.status_chance = 0.0;
     p.base_status_chance = 0.0;
     p.body_parts = mono_body(1.0);
@@ -113,8 +113,8 @@ fn m117_the_chamber_reaches_the_heat_tick_under_valence_formation() {
             "melee",
         );
         p.foe.base_health = 1e15;
-        p.critical_inputs = None;
         p.base_crit_chance = 0.0;
+        if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
         p.body_parts = mono_body(1.0);
         // ONE SHOT in the window, so the tick is that shot's stack alone.
         p.fire_rate = 0.1;
@@ -237,13 +237,13 @@ fn incarnon_shot(
     p.foe.base_armor = 0.0;
     // EVERY PART'S OWN ROLL, fixed: the orb and its explosion carry their own.
     let cc = if crit { 1.0 } else { 0.0 };
-    p.critical_inputs = None;
     p.base_crit_chance = cc;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     if let Some(e) = p.embed.as_mut() {
-        e.hit.critical_inputs = None;
         e.hit.crit_chance = cc;
-        e.explosion.critical_inputs = None;
+        if let Some(inputs) = e.hit.critical_inputs.as_mut() { inputs.set_supplied_chance(e.hit.crit_chance, e.hit.base_crit_chance); }
         e.explosion.crit_chance = cc;
+        if let Some(inputs) = e.explosion.critical_inputs.as_mut() { inputs.set_supplied_chance(e.explosion.crit_chance, e.explosion.base_crit_chance); }
     }
     p.status_chance = 0.0;
     p.base_status_chance = 0.0;

@@ -1725,8 +1725,8 @@ fn the_half_health_bonus_lands_in_the_weapons_own_co_bracket() {
         p.foe.base_armor = 0.0;
         p.foe.base_shield = 0.0;
         p.body_parts = mono_body(1.0);
-        p.critical_inputs = None;
         p.base_crit_chance = 0.0;
+        if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
         p.status_chance = 0.0;
         p.forced_procs.clear();
         let half = p.foe.max_health() * 0.5;

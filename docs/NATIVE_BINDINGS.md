@@ -23,7 +23,9 @@ A production resolved panel carries pending critical queries into its direct,
 radial and lingering parts. `critical_inputs: Some` is authoritative; numeric
 critical fields are its display projections. `None` selects the explicitly
 supplied resolved-stat adapter used by synthetic fixtures and caller-created
-profiles. Such a profile is not evidence of a native installer. Weakpoint grant
+profiles. A supplied chance override preserves the independently bound damage query;
+fixing a measurement fixture’s tier must not bypass its native damage path.
+Such a profile is not evidence of a native installer. Weakpoint grant
 selection and other unbound eligibility decisions retain the scene model.
 
 | Stage | Connected implementation | Remaining boundary |

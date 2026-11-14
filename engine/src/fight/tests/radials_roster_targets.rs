@@ -895,8 +895,8 @@ fn overwhelming_attrition_takes_the_buff_cards_two_knobs() {
         };
         // No crits and no procs, so EVERY hit is a plain hit and the buff
         // arms on all of them.
-        p.critical_inputs = None;
         p.base_crit_chance = 0.0;
+        if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
         p.status_chance = 0.0;
         p.forced_procs = Vec::new();
         run_once(&p, &mut Rng::new(11)).total_damage()

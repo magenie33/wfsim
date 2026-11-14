@@ -2158,8 +2158,8 @@ fn every_combo_script_ends_on_a_row_that_closes_an_input() {
 fn an_ability_weapon_is_multiplied_by_its_combo_and_never_spends_it() {
     let base = crate::model::WeaponBase::from_data("shattered_lash", true, &[]);
     let mut panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
-    panel.critical_inputs = None;
     panel.crit_chance = 0.0;
+    if let Some(inputs) = panel.critical_inputs.as_mut() { inputs.set_supplied_chance(panel.crit_chance, panel.base_crit_chance); }
     panel.status_chance = 0.0;
     let mut arena = crate::arena::Arena::training(60.0);
     arena.body_parts = vec![crate::target::BodyPart {

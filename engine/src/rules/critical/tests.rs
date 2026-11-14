@@ -92,3 +92,15 @@ fn conditional_base_is_selected_before_static_and_live_damage_operations() {
     assert_eq!(inputs.damage(0.4, 1.0, 0.5), 6.5);
     assert_eq!(inputs.damage(0.5, 1.0, 0.5), 6.5);
 }
+
+#[test]
+#[wfsim_gas_macro::metered]
+fn supplying_chance_preserves_the_independent_pending_damage_query() {
+    let mut inputs = CriticalInputs::selected(0.32, 2.0, 1.5, 1.0, 0.0, 0.0);
+    inputs.set_supplied_chance(1.0, 0.0);
+    assert_eq!(inputs.chance(100.0, 0.0), 1.0);
+    assert_eq!(inputs.damage(1.0, 0.5, 0.25), 5.25);
+    inputs.set_supplied_damage(3.0, 2.0, None);
+    assert_eq!(inputs.chance(0.0, 0.0), 1.0);
+    assert_eq!(inputs.damage(1.0, 0.5, 0.25), 4.25);
+}

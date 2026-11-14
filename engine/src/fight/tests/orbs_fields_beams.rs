@@ -171,12 +171,12 @@ fn an_unaimed_attack_decides_where_its_own_strikes_land() {
 fn an_orb_strike_on_an_eligible_head_folds_the_crit_in() {
     let run = |crit_bonus: bool| {
         let mut part = orb_part(280.0);
-        part.critical_inputs = None;
         part.crit_chance = 1.0;
-        part.critical_inputs = None;
+        if let Some(inputs) = part.critical_inputs.as_mut() { inputs.set_supplied_chance(part.crit_chance, part.base_crit_chance); }
         part.base_crit_chance = 1.0;
-        part.critical_inputs = None;
+        if let Some(inputs) = part.critical_inputs.as_mut() { inputs.set_supplied_chance(part.crit_chance, part.base_crit_chance); }
         part.crit_damage = 2.0;
+        if let Some(inputs) = part.critical_inputs.as_mut() { inputs.set_supplied_damage(part.crit_damage, part.base_crit_damage, None); }
         monte_carlo(
             &FightParams {
                 orb: Some(crate::build::loadout::ResolvedOrb {
@@ -808,8 +808,8 @@ fn renewed_horror_doubles_only_the_post_reload_field() {
 fn field_ticks_roll_their_own_crit_and_report_as_field_damage() {
     let mk = |cc: f64| {
         let mut f = cloud(crate::model::FieldStacking::Stack);
-        f.critical_inputs = None;
         f.crit_chance = cc;
+        if let Some(inputs) = f.critical_inputs.as_mut() { inputs.set_supplied_chance(f.crit_chance, f.base_crit_chance); }
         FightParams {
             damage: DamageVector::default(),
             lingering: Some(f),

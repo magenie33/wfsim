@@ -60,8 +60,8 @@ fn dt_on_the_dummy(head: bool) -> FightParams {
     p.frenzy = true;
     p.status_chance = 0.0;
     p.base_status_chance = 0.0;
-    p.critical_inputs = None;
     p.crit_multiplier = 1.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
     p.body_parts = if head { all_head() } else { mono_body(1.0) };
     p
 }

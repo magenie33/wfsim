@@ -8,9 +8,25 @@ use super::upgrades::{NativeScalar, OperationType, UpgradeType, UpgradeEntry, Sc
 /// These are engineering interfaces; their stat ids retain the client's names.
 #[derive(Debug, Clone, Copy)]
 pub struct CriticalInputs {
-    chance: NativeScalar,
-    damage: NativeScalar,
-    damage_without_gate: Option<(NativeScalar, f32)>,
+    chance: CriticalAttribute,
+    damage: CriticalAttribute,
+    damage_without_gate: Option<(CriticalAttribute, f32)>,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum CriticalAttribute {
+    Selected(NativeScalar),
+    Supplied { resolved: f64, relative_base: f64 },
+}
+
+#[wfsim_gas_macro::metered]
+impl CriticalAttribute {
+    fn query(self, kind: UpgradeType, relative: f64, flat: f64) -> f64 {
+        match self {
+            Self::Selected(scalar) => live_scalar(scalar, kind, relative, flat) as f64,
+            Self::Supplied { resolved, relative_base } => resolved + relative_base * relative + flat,
+        }
+    }
 }
 
 #[wfsim_gas_macro::metered]
@@ -19,19 +35,19 @@ impl CriticalInputs {
         flat_chance: f64, flat_damage: f64) -> Self
     {
         Self {
-            chance: selected_scalar(UpgradeType::WEAPON_CRIT_CHANCE, chance, relative_chance, flat_chance),
-            damage: selected_scalar(UpgradeType::WEAPON_CRIT_DAMAGE, damage, relative_damage, flat_damage),
+            chance: CriticalAttribute::Selected(selected_scalar(UpgradeType::WEAPON_CRIT_CHANCE, chance, relative_chance, flat_chance)),
+            damage: CriticalAttribute::Selected(selected_scalar(UpgradeType::WEAPON_CRIT_DAMAGE, damage, relative_damage, flat_damage)),
             damage_without_gate: None,
         }
     }
 
     pub fn with_damage_gate(mut self, without: f64, below: f64, relative: f64, flat: f64) -> Self {
-        self.damage_without_gate = Some((selected_scalar(UpgradeType::WEAPON_CRIT_DAMAGE, without, relative, flat), below as f32));
+        self.damage_without_gate = Some((CriticalAttribute::Selected(selected_scalar(UpgradeType::WEAPON_CRIT_DAMAGE, without, relative, flat)), below as f32));
         self
     }
 
     pub fn chance(self, relative: f64, flat: f64) -> f64 {
-        live_scalar(self.chance, UpgradeType::WEAPON_CRIT_CHANCE, relative, flat) as f64
+        self.chance.query(UpgradeType::WEAPON_CRIT_CHANCE, relative, flat)
     }
 
     pub fn damage(self, effective_chance: f64, relative: f64, flat: f64) -> f64 {
@@ -39,7 +55,18 @@ impl CriticalInputs {
             Some((without, below)) if effective_chance as f32 >= below => without,
             _ => self.damage,
         };
-        live_scalar(base, UpgradeType::WEAPON_CRIT_DAMAGE, relative, flat) as f64
+        base.query(UpgradeType::WEAPON_CRIT_DAMAGE, relative, flat)
+    }
+
+    /// A caller's supplied chance does not replace the independently bound damage query.
+    pub fn set_supplied_chance(&mut self, resolved: f64, relative_base: f64) {
+        self.chance = CriticalAttribute::Supplied { resolved, relative_base };
+    }
+
+    pub fn set_supplied_damage(&mut self, resolved: f64, relative_base: f64, gate: Option<(f64, f64)>) {
+        self.damage = CriticalAttribute::Supplied { resolved, relative_base };
+        self.damage_without_gate = gate.map(|(granted, below)|
+            (CriticalAttribute::Supplied { resolved: resolved - granted, relative_base }, below as f32));
     }
 }
 

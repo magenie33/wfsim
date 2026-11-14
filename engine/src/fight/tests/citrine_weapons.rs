@@ -54,8 +54,8 @@ fn corufell_energy_crosses_bodies_beyond_melee_reach_without_follow_through() {
         at: crate::rules::space::Vec2::new(0.0, f64::from(y)),
     }).collect();
     let mut p = FightParams::from_panel(&panel("corufell_prime_heavy", &[]), &arena, &ArcaneFx::none());
-    p.critical_inputs = None;
     p.base_crit_chance = 0.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.status_chance = 0.0;
     let all = run_once(&p, &mut Rng::new(3));
     p.others.clear();

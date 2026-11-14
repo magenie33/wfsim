@@ -401,9 +401,10 @@ fn a_hunter_munitions_bleed_is_indistinguishable_from_any_other_slash() {
     // Red crits: cc 2.0 is tier 2 guaranteed on both.
     let tier2 = same(
         pair(|p| {
-            p.critical_inputs = None;
             p.base_crit_chance = 2.0;
+            if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
             p.crit_multiplier = 3.0;
+            if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
         }),
         "tier 2",
     );
@@ -416,8 +417,8 @@ fn a_hunter_munitions_bleed_is_indistinguishable_from_any_other_slash() {
     let promoted = same(
         pair(|p| {
             p.crit_tier_upgrade_chance = 1.0;
-            p.critical_inputs = None;
             p.crit_multiplier = 3.0;
+            if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
         }),
         "vigilante-promoted parent",
     );
