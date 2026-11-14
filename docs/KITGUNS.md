@@ -44,6 +44,13 @@ A request naming no parts is fought with `data::weapons::kitguns::default_assemb
 grip nearest the chamber's own `base` preview and the first loader that changes
 nothing — never with the preview itself, which no player can build.
 
+Chamber and loader status values price the whole shot. Assembly adds the
+loader delta, then divides by the chamber's native multishot before publishing
+the per-projectile status chance. M132 confirms that secondary Vermisplicer's
+39% shot budget is 7.8% per tendril. Additional multishot does not change this
+denominator. `import_kitgun_status.py` binds every chamber's native count and
+every loader's beam status override; compiled checks cover all beam assemblies.
+
 ## WHAT THE MODULE LEAVES OUT
 
 It marks a chamber `AOE` and publishes no radius and no radial damage; it names

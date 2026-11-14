@@ -1,0 +1,9 @@
+{
+  "measurement": "M132",
+  "weapon": "vermisplicer_secondary",
+  "source": "owner-supplied in-game panel reading, 2026-11-14",
+  "tendrils": 5,
+  "combined_status_chance": 0.39,
+  "per_tendril_status_chance": 0.078,
+  "limits": "Images were supplied as opaque tags. Grip, loader and equipped mods are not readable here. The native 39% unmodded beam-loader rows are tested as source-backed reproductions, not as identified screenshot parts."
+}

@@ -58,7 +58,8 @@ attack:
   ammo_cost: 0.5
   crit_chance: 0.25
   crit_multiplier: 2
-  status_chance: 0.25
+  # M132: the neutral loader's 25% budget is shared by five tendrils.
+  status_chance: 0.05
   # "Has innate 1m Punch Through."
   punch_through_m: 1.0
   # NO CHAIN AND NO SPHERE: the tendrils latch rather than chain.
