@@ -15,6 +15,7 @@ export class PreparedBoardProjection {
   try {
    this.reader=new PreparedBoardReader(this.records.db,source);this.records.recordPool=this.reader;
    this.board=new BoardProjectionState(this.records,contract);this.index=this.board.index(native);
+   this.index.sourceCount=()=>this.reader.sourceCount();
    this.audit=new BoardProjectionAudit(this.records.db,this.reader,work);
    context.freezeBaseline=value=>this.audit.freezeBaseline(value);
    this.consumer=new PreparedBoardConsumer(this.records.db,this.reader,'projection',contract);
@@ -24,7 +25,7 @@ export class PreparedBoardProjection {
  async step(operate,{budgetMs=1000,check=()=>{},enqueue}={}) {
   const cut=this.board.transaction(()=>{
    const next=this.consumer.begin();
-   if(next&&this.board.meta.prepared_cut!==next.id)this.board.setMeta({...this.board.meta,complete:false,prepared_cut:next.id});
+   if(next&&this.board.meta.prepared_cut!==next.id)this.board.setMeta({...this.board.meta,complete:false,prepared_cut:next.id,audit_ready:null});
    return next;
   });if(!cut)return {pending:false};
   this.reader.bindViews(cut.id);const until=performance.now()+budgetMs;
@@ -47,11 +48,21 @@ export class PreparedBoardProjection {
    await this.fault('after-board-input-commit',{cut:cut.id});
   }while(performance.now()<until);
   if(this.consumer.state().cursor<cut.input_count)return {pending:true,stage:'inputs',cut:cut.id};
-  check();const output=await this.publication.step(cut.receipt,operate,{budgetMs:Math.max(0,until-performance.now())});
+  check();await this.audit.initialize(this.index,{check});
+  const output=await this.publication.step(cut.receipt,operate,{budgetMs:Math.max(0,until-performance.now())});
   if(output.pending)return {pending:true,stage:'render',cut:cut.id};
-  check();const proof={...await this.audit.run(cut,operate,this.index.contract,{check}),input_digest:cut.sealed_digest,
-   normalizer_sha:createHash('sha256').update(canon(this.reader.contract.normalizer)).digest('hex'),
-   consumer_sha:createHash('sha256').update(canon(this.board.meta.contract)).digest('hex')};
+  check();const normalizerSha=createHash('sha256').update(canon(this.reader.contract.normalizer)).digest('hex'),
+   consumerSha=createHash('sha256').update(canon(this.board.meta.contract)).digest('hex');
+  let proof=this.board.meta.audit_ready;
+  if(proof) {
+   if(proof.cut!==cut.id||proof.input_digest!==cut.sealed_digest||proof.engine!==cut.receipt.engine||proof.snapshot!==cut.receipt.snapshot
+    ||proof.started_at!==cut.receipt.started_at||proof.normalizer_sha!==normalizerSha||proof.consumer_sha!==consumerSha)
+    throw Error('completed board audit contract changed');
+   proof={...proof,...await this.audit.finish(cut,this.index.contract,{check,sources:proof.sources,rendered:proof.rendered})};
+  } else {
+   proof={...await this.audit.run(cut,operate,this.index.contract,{check}),input_digest:cut.sealed_digest,normalizer_sha:normalizerSha,consumer_sha:consumerSha};
+   this.board.setMeta({...this.board.meta,audit_ready:proof});
+  }
   await this.fault('after-board-audit-before-package',{cut:cut.id,proof});
   if(!enqueue)throw Error('board completion requires an immutable publication handoff');
   const publication=await enqueue({epoch:cut.receipt.epoch,work:this.work,receipt:proof});

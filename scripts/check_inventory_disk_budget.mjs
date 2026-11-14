@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Disk exhaustion must preserve the last committed source page and checkpoint.
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, openSync, closeSync, ftruncateSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, openSync, closeSync, ftruncateSync, symlinkSync, statfsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { openCatalog } from './incremental_inventory.mjs';
 import { inventoryDiskBudget } from './inventory_disk_budget.mjs';
+import { offlineCapacityGuard } from './offline_capacity_guard.mjs';
 
 const root = mkdtempSync(join(tmpdir(), 'inventory-disk-')), work = join(root, 'work'), source = join(root, 'source');
 mkdirSync(work); writeFileSync(source, 'protected-input');
@@ -39,5 +40,16 @@ try {
   const insideBudget = inventoryDiskBudget({ work, databasePath: path, sources: [source, inside], totalBytes });
   assert.equal(insideBudget.report().existing_source_and_work_bytes - resumedBudget.report().existing_source_and_work_bytes, 13,
     'sources inside the live work directory must not be counted twice');
+  const allocation = join(root, 'allocation.json'), reserved = join(root, 'allocated'); mkdirSync(reserved);
+  const limit = { directory: reserved, max_new_bytes: 1024, minimum_host_free_bytes: 8 * 1024 ** 3 };
+  writeFileSync(allocation, JSON.stringify(limit));
+  assert.throws(() => offlineCapacityGuard(allocation, work), /outside its explicit capacity/);
+  const guard = offlineCapacityGuard(allocation, reserved); writeFileSync(join(reserved, 'over'), 'x'.repeat(1025));
+  assert.throws(() => guard.check(true), /allocation exceeded/); rmSync(join(reserved, 'over'));
+  symlinkSync(source, join(reserved, 'link')); assert.throws(() => guard.check(true), /cannot contain links/); rmSync(join(reserved, 'link'));
+  const fs = statfsSync(root); writeFileSync(allocation, JSON.stringify({ ...limit, minimum_host_free_bytes: fs.bavail * fs.bsize + 1024 ** 3 }));
+  assert.throws(() => offlineCapacityGuard(allocation, reserved), /host free-space reserve/);
+  assert.throws(() => inventoryDiskBudget({ work, reserveBytes: 1 }), /filesystem reserve/);
   console.log('ok: unchanged live disk default; explicit total budget includes protected source and scratch; SQLITE_FULL rolls back the whole page and restart preserves its prior checkpoint/record');
+  console.log('ok: explicit output allocation rejects overflow, linked output, wrong directory and depleted host reserve');
 } finally { catalog?.close(); rmSync(root, { recursive: true, force: true }); }

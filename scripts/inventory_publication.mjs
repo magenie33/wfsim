@@ -224,7 +224,7 @@ export class InventoryPublication {
       mkdirSync(dirname(this.statePath), { recursive: true });
       const partial = this.statePath + '.inventory-partial';
       writeFileSync(partial, existsSync(this.statePath) ? readFileSync(this.statePath) : 'boards: {}\n');
-      const seen = this.q('SELECT count(*) n FROM entity_catalog_sources').get().n;
+      const seen = this.index.sourceCount ? this.index.sourceCount() : this.q('SELECT count(*) n FROM entity_catalog_sources').get().n;
       const boards = this.index.contract.rulers.map((r, i) => [r.id, seen, this.q('SELECT coalesce(sum(n),0) n FROM state_board_publication_counts WHERE ruler=?').get(i).n]);
       await operate('state', [{ path: partial, boards }]);
       const fd = openSync(partial, 'r'); try { fsyncSync(fd); } finally { closeSync(fd); }

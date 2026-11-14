@@ -9,8 +9,8 @@ import {fileHash} from './inventory_publication_io.mjs';
 import {readFileSync,statSync} from 'node:fs';
 
 export class PreparedWorkAudit {
- constructor(path,{databaseBytes=4*1024**3}={}) {
-  this.databaseBytes=databaseBytes;
+ constructor(path,{databaseBytes=4*1024**3,scratchBytes=databaseBytes}={}) {
+  this.scratchBytes=scratchBytes;
   this.db=new DatabaseSync(path);this.db.exec(`PRAGMA journal_mode=WAL;PRAGMA synchronous=FULL;PRAGMA cache_size=-16384;
    PRAGMA temp_store=FILE;PRAGMA mmap_size=0;PRAGMA wal_autocheckpoint=256;
    CREATE TABLE IF NOT EXISTS state_work_audit_cursor(id INTEGER PRIMARY KEY CHECK(id=1),body TEXT NOT NULL);
@@ -92,7 +92,7 @@ export class PreparedWorkAudit {
    library:reader.raw.prepare('SELECT count(*) n FROM entity_catalog_sources').get().n,
    queue:expected,tasks:this.db.prepare('SELECT count(*) n FROM state_work_audit_tasks').get().n}};
   const plan=await classifyInventory({meta,builds:builds(),canonical:canonical(),tasks:tasks(),queue:queueRows(),
-   missing:members(),orphans:orphans(),rulers:index.contract.rulers.map(row=>row.id),questions:true,check,scratchRoot,databaseBytes:this.databaseBytes});
+   missing:members(),orphans:orphans(),rulers:index.contract.rulers.map(row=>row.id),questions:true,check,scratchRoot,databaseBytes:this.scratchBytes});
   const summary=index.catalog.summary();
   if(summary.rows!==plan.rows||summary.queued!==plan.queued||index.catalog.digest()!==plan.question_digest)throw Error('work audit QID union differs');
   index.catalog.setMeta({...index.catalog.meta,complete:true,snapshot:meta.snapshot,started_at:meta.started_at,audit_digest:plan.question_digest});

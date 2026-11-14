@@ -107,6 +107,11 @@ export class BoardPipeline {
       this.db.prepare('INSERT OR REPLACE INTO state_board_source_files VALUES(?,?,?)').run(name,stamp,sha);
     }
     syncDirectory(join(this.blobs, 'entry'));
+    if(receipt?.artifact_scope==='native-board-v1') {
+      const core=manifest.filter(file=>file.name!=='meta.json'&&!file.name.startsWith('heads/')).map(({name,sha})=>({name,sha}));
+      if(createHash('sha256').update(canon(core)).digest('hex')!==receipt.digest)
+        throw Error('publication files differ from the independent board audit');
+    }
     await fault('after-publication-files-before-commit');
     const body = canon({ epoch,receipt,files: manifest });
     return this.transaction(() => {

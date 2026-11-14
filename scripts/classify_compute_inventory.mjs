@@ -68,9 +68,11 @@ export async function classifyInventory({ queue, missing, orphans, builds, canon
       recordPut.run(r.id, deflateRawSync(canon(r.record), { level: 1 })); if (++n % 256 === 0) check();
     }
     if (n !== meta.counts.library) throw new Error('incomplete inventory builds');
+    let canonicalRows = 0;
     if (canonical) for await (const r of rows(canonical)) {
       if (typeof r.id !== 'string' || !r.record) throw new Error('invalid canonical inventory build');
       if (!recordGet.get(r.id)) canonicalPut.run(r.id, deflateRawSync(canon(r.record), { level: 1 }));
+      if (++canonicalRows % 256 === 0) check();
     }
     n = 0;
     for await (const q of rows(tasks)) {

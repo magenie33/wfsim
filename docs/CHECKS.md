@@ -276,10 +276,25 @@ ordering, disk backpressure and corrupted artifacts against the real receiver.
 with a large tied weapon file and the existing receiver size limit.
 `check_prepared_board_inputs.mjs` checks immutable source cuts, replay, independent
 cursors, slowest-ACK retention and indexed collection with a missing-index control.
+`check_prepared_board_access.mjs` uses the production weapon-page query at
+1,000 and 10,000 unrelated normalized sources; a missing prefix index must fail.
+`check_source_adoption.mjs` compares explicitly adopted source-only components
+with fresh native normalization, binds every protected raw row, rejects changed
+native contracts and retains the original cache bytes across lost responses.
+`check_split_board_replay.mjs` runs protected inputs through all isolated local
+stages, packages audited board files before starting inventory, resumes committed
+checkpoints and compares fresh and source-component-reuse outputs. Altered
+protected inputs fail. It does not access PostgreSQL or publish remotely.
+`check_inventory_disk_budget.mjs` verifies whole-page rollback on database
+exhaustion and explicit generated-file allocation, path, link and host-reserve
+limits without exhausting the actual filesystem.
 `check_split_board_pipeline.mjs` runs native consumers in separate SQLite databases:
 either consumer may pause, board publication survives a full work database,
 incremental inventory retains the complete QID union, and altered modes, missing
-rows or broken source bodies fail the independent board audit.
+rows or broken source bodies fail the independent board audit. Full native bytes
+also match after retirement, source deletion and weapon changes. A deliberately
+missing producer dirty marker and a file changed after audit both prevent
+publication; a warm update does not revisit unrelated weapon sources.
 `check_split_board_capture.mjs` exercises the production source driver, explicit
 generation admission, crash recovery and durable source ACK before consumers
 finish. It verifies inventory publication at the original engine and snapshot;

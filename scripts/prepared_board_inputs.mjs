@@ -7,7 +7,8 @@ import { canon } from '../worker/task_contract.js';
 const schema = `
   CREATE TABLE IF NOT EXISTS state_prepared_board_generation(id INTEGER PRIMARY KEY CHECK(id=1),body TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS record_prepared_board_cuts(id INTEGER PRIMARY KEY,epoch TEXT NOT NULL UNIQUE,
-    receipt TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN('preparing','sealed')),input_count INTEGER NOT NULL DEFAULT 0,checkpoint TEXT,sealed_digest TEXT);
+    receipt TEXT NOT NULL,state TEXT NOT NULL CHECK(state IN('preparing','sealed')),input_count INTEGER NOT NULL DEFAULT 0,checkpoint TEXT,sealed_digest TEXT,
+    source_count INTEGER NOT NULL DEFAULT 0 CHECK(source_count>=0));
   CREATE TABLE IF NOT EXISTS entity_prepared_board_versions(id INTEGER PRIMARY KEY,kind TEXT NOT NULL,key TEXT NOT NULL,
     first_cut INTEGER NOT NULL,last_cut INTEGER,body BLOB,sha TEXT NOT NULL,source_order INTEGER,
     identity TEXT,candidate TEXT,weapon TEXT,admit INTEGER,modes TEXT,ruler TEXT,mode TEXT,
@@ -65,8 +66,9 @@ export class PreparedBoardInputs {
     const prior=this.db.prepare('SELECT * FROM record_prepared_board_cuts WHERE epoch=?').get(String(receipt.epoch));
     if (prior) { if (prior.receipt!==canon(receipt)) throw Error('prepared epoch changed');return prior.id; }
     if (this.db.prepare("SELECT 1 FROM record_prepared_board_cuts WHERE state='preparing'").get()) throw Error('a prepared cut is unfinished');
-    return Number(this.db.prepare("INSERT INTO record_prepared_board_cuts(epoch,receipt,state) VALUES(?,?,'preparing')")
-      .run(String(receipt.epoch),canon(receipt)).lastInsertRowid);
+    const sources=this.db.prepare("SELECT source_count FROM record_prepared_board_cuts WHERE state='sealed' ORDER BY id DESC LIMIT 1").get()?.source_count||0;
+    return Number(this.db.prepare("INSERT INTO record_prepared_board_cuts(epoch,receipt,state,source_count) VALUES(?,?,'preparing',?)")
+      .run(String(receipt.epoch),canon(receipt),sources).lastInsertRowid);
   }
   cut(id) {
     const row=this.db.prepare('SELECT * FROM record_prepared_board_cuts WHERE id=?').get(id);
@@ -105,7 +107,7 @@ export class PreparedBoardInputs {
         if(prior.input_sha!==inputSha || prior.count!==items.length)throw Error('prepared input replay changed');
         return cut.input_count;
       }
-      let count=cut.input_count;
+      let count=cut.input_count,sources=cut.source_count;
       const versions=[];
       for(const item of items) {
         const {kind,key,ordinal,value}=item;
@@ -119,6 +121,7 @@ export class PreparedBoardInputs {
         }
         if(kind==='reset')this.db.prepare("UPDATE entity_prepared_board_versions SET last_cut=? WHERE kind='fact' AND identity=? AND last_cut IS NULL").run(id,value.id);
         const old=this.db.prepare(`SELECT ${versionColumns} FROM entity_prepared_board_versions WHERE kind=? AND key=? AND last_cut IS NULL`).get(kind,key);
+        if(kind==='source')sources+=Number(value!=null)-Number(old?.body!=null);
         let version=old?.id;
         const text=canon(value),sha=hash(text);
         if(old?.sha!==sha) {
@@ -141,7 +144,7 @@ export class PreparedBoardInputs {
       }
       this.db.prepare('INSERT INTO record_prepared_board_changes VALUES(?,?,?,?,?)')
         .run(id,start,items.length,deflateRawSync(canon(versions),{level:1}),inputSha);
-      this.db.prepare('UPDATE record_prepared_board_cuts SET input_count=?,checkpoint=? WHERE id=?').run(count,checkpoint?canon(checkpoint):null,id);
+      this.db.prepare('UPDATE record_prepared_board_cuts SET input_count=?,checkpoint=?,source_count=? WHERE id=?').run(count,checkpoint?canon(checkpoint):null,sources,id);
       return count;
     });
   }
@@ -195,14 +198,15 @@ export class PreparedBoardInputs {
     }
     if(!refs.length)throw Error('prepared input is missing');
     const found=this.db.prepare(`SELECT ${versionColumns} FROM entity_prepared_board_versions WHERE id IN(SELECT value FROM json_each(?))`).all(JSON.stringify(allRefs));
-    const values=new Map(found.map(row=>[row.id,row]));
+    const values=new Map(found.map(row=>[row.id,row])),unpacked=new Map();
     for(const {block,values:ids}of decoded) {
-      const items=ids.map(id=>{const row=values.get(id);if(!row)throw Error('prepared input is missing');return {kind:row.kind,key:row.key,value:unpack(row.body,row.sha)};});
+      const items=ids.map(id=>{const row=values.get(id);if(!row)throw Error('prepared input is missing');
+        if(!unpacked.has(id))unpacked.set(id,unpack(row.body,row.sha));return {kind:row.kind,key:row.key,value:unpacked.get(id)};});
       if(preparedBatchHash(items)!==block.input_sha)throw Error('prepared input block changed');
     }
     return refs.map((ref,n)=>{
       const row=values.get(ref);if(!row)throw Error('prepared input is missing');
-      return {...row,ordinal:cursor+n,version_id:ref,value:unpack(row.body,row.sha)};
+      return {...row,ordinal:cursor+n,version_id:ref,value:unpacked.get(ref)};
     });
   }
   progress(name,id,cursor) {

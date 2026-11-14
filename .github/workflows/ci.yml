@@ -704,6 +704,9 @@ jobs:
           node scripts/check_board_projection_consumers.mjs
           node scripts/check_board_pipeline.mjs
           node scripts/check_prepared_board_inputs.mjs
+          node scripts/check_prepared_board_access.mjs
+          node scripts/check_source_adoption.mjs
+          node scripts/check_split_board_replay.mjs
           node scripts/check_split_board_pipeline.mjs
           node scripts/check_split_board_capture.mjs
           node scripts/check_live_mailbox.mjs

@@ -34,9 +34,13 @@ const limits=()=>({source:bound('WFSIM_BOARD_SOURCE_BYTES',8*GiB),inventory:boun
  audit:bound('WFSIM_BOARD_AUDIT_BYTES',4*GiB),projection:bound('WFSIM_BOARD_PROJECTION_BYTES',4*GiB)});
 export async function splitBoardContext(bin,operator) {
  const engine=readFileSync(join(bin,'ENGINE'),'utf8').trim(),source=readFileSync(join(bin,'VERSION'),'utf8').trim();
- const adapter=await hash(join(bin,'wfsim-board')),normalizer={v:1,adapter,code:digest(sourceFiles),operator:operator.contract};
+ const adapter=await hash(join(bin,'wfsim-board'));
  if(operator.adapter&&operator.adapter!==adapter)throw Object.assign(Error('loaded inventory operator binary changed'),{code:'INVENTORY_OPERATOR_CHANGED'});
- return {engine,source,contract:{v:1,algorithm:'board-inputs-v1',covers:BOARD_KINDS,engine,normalizer,record_storage:'interned-deflate-v1'}};
+ return {engine,source,contract:boardInputContract(engine,operator,adapter)};
+}
+export function boardInputContract(engine,operator,adapter=operator.adapter) {
+ return {v:1,algorithm:'board-inputs-v1',covers:BOARD_KINDS,engine,
+  normalizer:{v:1,adapter,code:digest(sourceFiles),operator:operator.contract},record_storage:'interned-deflate-v1'};
 }
 export function boardConsumerContract(stage,state) {
  return {v:1,stage,source_generation:state.generation,source:state.contract,record_storage:'interned-deflate-v1',

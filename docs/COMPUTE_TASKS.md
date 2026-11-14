@@ -515,6 +515,12 @@ Board projection consumes actual source and measurement versions directly.
 Its independent audit reconstructs native normalization, eligible measured modes,
 first-alias ordering, shape winners, entry floors, carried bytes, weapon files,
 indexes and state counts. It must finish before freezing a publication manifest.
+Its own change cursor derives affected old and current weapons independently
+of the publisher's dirty markers. It reconstructs one weapon at a time and
+reuses unchanged files only within the same pinned source/native/auditor
+contracts and actual file hashes. Source counts advance with committed source
+versions and are checked independently from the source changes. Publication
+compares the frozen core-file manifest with the completed audit digest.
 The stamp includes the audited source engine, snapshot, input time and contract
 hashes. Its assembly clock and each measurement's clock retain their own meanings.
 Board output does not wait for potential-work enumeration or its audit.
@@ -564,6 +570,18 @@ budget plus reserve against current free space. These limits do not establish
 full-population capacity. Cancellation retains partial inputs and task history.
 Blocked preparation reports its required action while already sealed consumers
 and audited publication packages remain independently runnable.
+
+`replay_split_board.mjs` qualifies a complete frozen capture without PostgreSQL
+or remote publication. It verifies every capture hash and binds the native binary,
+normalizer and each consumer contract. An optional read-only normalized-source
+cache must match the native contract and protected capture; adoption checks every
+raw-record binding and inherits no fact, inventory, audit or publication completion.
+All facts, queue pages, potential QIDs and outputs still pass through the new stages.
+This is source-component reuse, rather than a fresh whole-chain normalization run.
+The explicit total budget includes protected external input bytes and generated
+state. The optional allocation file bounds all generated files under one directory
+and selects a host free-space reserve. An independent operator watchdog monitors
+long runs; quota exhaustion retains checkpoints and does not qualify capacity.
 
 Explicit `INCREMENTAL_INVENTORY=0` selects the in-memory adapter. The classic
 command-pipe inventory and relational inventory runners have separate explicit

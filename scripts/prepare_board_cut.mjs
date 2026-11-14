@@ -57,6 +57,7 @@ export async function prepareBoardCut(inputs,records,cut,operate,{budgetMs=1000,
     if(performance.now()>=until)return {pending:true,cut:id,cursor};
   }
   const digest=createHash('sha256');let offset=0;
+  if(cut.bootstrap&&inputs.cut(id).source_count!==cut.meta.counts.library)throw Error('incomplete prepared source identity set');
   for(;;) {
     const page=inputs.db.prepare('SELECT ordinal,count,input_sha FROM record_prepared_board_changes WHERE cut=? AND ordinal>=? ORDER BY ordinal LIMIT 4096').all(id,offset);
     if(!page.length)break;for(const row of page)digest.update(row.input_sha+'\n');offset=page.at(-1).ordinal+page.at(-1).count;

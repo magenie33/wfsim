@@ -31,7 +31,8 @@ export class PreparedWorkInventory {
         index.touchGroups(identity);
         if(item.kind==='reset')index.q('DELETE FROM state_catalog_measurements WHERE identity=?').run(identity);
         else {
-          const value=this.reader.value('fact',item.key,cut)?.value;
+          const visible=item.first_cut<=cut&&(item.last_cut==null||item.last_cut>cut);
+          const value=visible?item.value:this.reader.value('fact',item.key,cut)?.value;
           if(value?.gate_ruler) {
             const bucket=index.q('SELECT bucket FROM entity_catalog_candidates WHERE id=?').get(identity)?.bucket??null;
             index.q('INSERT OR REPLACE INTO state_catalog_measurements VALUES(?,?,?,?,?,?,?,?,?)')
