@@ -260,7 +260,7 @@ pub(super) fn fire_extra_hits(
             owner,
             at,
             0,
-            InstanceScale {
+            InstanceScale { native_source: None, native_part: None,
                 // THE CATEGORY'S RULE, not this function's: an extra hit that
                 // deals damage replaces the base its status burns off, and one
                 // that deals none leaves the level above standing. `raw` is
@@ -564,7 +564,7 @@ pub(super) fn settle_procs(
     // through an extra damage instance.
     depth: u32,
 ) {
-    let InstanceScale { mb_live, crit_multiplier, part_factor, landing, attrition, xh_bracket, status_damage_live } =
+    let InstanceScale { native_source, native_part, mb_live, crit_multiplier, part_factor, landing, attrition, xh_bracket, status_damage_live } =
         scale;
     let status_damage = arc.status_duration(params, at);
     let sdm = params.status_damage_multiplier + status_damage_live;
@@ -655,7 +655,30 @@ pub(super) fn settle_procs(
         let part = if dot_takes_weakpoint(dtype) { part_factor } else { 1.0 };
         // ONE ELEMENT'S OWN STATUS DAMAGE joins the sum for its procs only.
         let sdm = sdm + params.status_damage_of(dtype);
+        let retained = match native_source {
+            Some(source) if matches!(dtype, DamageType::Electricity | DamageType::Gas) => {
+                let packet = crate::model::DamageData::new(source);
+                let kind = crate::model::ProcType::from_damage_type(dtype).expect("ordinary status id");
+                let stored = packet.retained_proc_seed(kind, proc_damage_entries(params, status_damage_live));
+                if rec.native_trace_is_on() {
+                    rec.trace_native(at, || crate::record::NativeStep {
+                        phase: "status_application", proc_type: Some(kind.id()),
+                        part: native_part.map(|part| part.0),
+                        entries: proc_damage_entries(params, status_damage_live).filter_map(|entry| entry.for_proc(kind)).collect(),
+                        materialized: Some(false),
+                        ..crate::record::NativeStep::new(at, body_index, "ALN-MAG-03.child.WEAPON_PROC_DAMAGE",
+                            &[source.base()], stored)
+                    });
+                }
+                crate::model::StoredStatusSeed::Radial { retained_seed: stored, coefficient: coeff as f32 }
+            }
+            _ if matches!(dtype, DamageType::Electricity | DamageType::Gas) =>
+                crate::model::StoredStatusSeed::radial(seed_of(coeff, part, sdm)),
+            _ => crate::model::StoredStatusSeed::from_unbound_source(seed_of(coeff, part, sdm)),
+        };
         let dot = Dot {
+                native_group: None,
+                native_part,
                 owner,
                 next_tick: at + delay,
                 ticks_left: ticks,
@@ -668,9 +691,9 @@ pub(super) fn settle_procs(
                 // THE INSTANCE'S HALF, and ECLIPSE IS IN IT. The element
                 // bracket and the faction bonus are re-read at every tick
                 // (`Dot::live`); the final multiplier is not, measured.
-                frozen: coeff * mb_live * sdm * crit_multiplier * part * attrition * ecl,
+                retained,
                 landing: if lands_on_a_part(dtype) { landing } else { ProcLanding::default() },
-                // …and what the accumulator's initial 1 is worth: the same
+                // Supplied-family accumulator input: the same
                 // chain with the SEED taken out of it. See
                 // `Dot::accumulator_unit`.
                 unit: coeff * sdm * ecl,
@@ -679,7 +702,11 @@ pub(super) fn settle_procs(
 
                 dtype,
                 ignores_armor,
-                seed: rec.seed(seed_of(coeff, part, sdm)),
+                seed: rec.seed(match native_source {
+                    Some(_) if retained.radial_values().is_some() => crate::model::StatusSeed { coefficient: coeff,
+                        ..crate::model::StatusSeed::supplied(retained.radial_values().expect("native radial seed").0 as f64) },
+                    _ => seed_of(coeff, part, sdm),
+                }),
         };
         debuffs.push_dot_capped(dot, dot_cap_of(dtype));
         dot
@@ -833,7 +860,7 @@ pub(super) fn settle_procs(
                     None => u32::MAX,
                 };
                 debuffs.post_area(
-                    Dot { frozen: dot.frozen / part_factor.max(1e-9), landing: ProcLanding::default(), seed, ..dot },
+                    Dot { retained: crate::model::StoredStatusSeed::radial(seed_of(DOT_COEFFICIENT, 1.0, sdm + params.status_damage_of(DamageType::Gas))), landing: ProcLanding::default(), seed, ..dot },
                     radius_m,
                     dot_cap_of(DamageType::Gas),
                 );

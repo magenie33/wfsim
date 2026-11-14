@@ -5,7 +5,7 @@ fn original_mod_rank_inputs_reach_the_loaded_effects_without_interpolation() {
     let fixture: serde_json::Value = serde_json::from_str(include_str!("../../../../../tests/fixtures/client/upgrade-ranks-2026-10-28.json")).unwrap();
     let entries = fixture["entries"].as_array().unwrap();
     let bindings = fixture["mod_inputs"].as_array().unwrap();
-    assert_eq!(bindings.len(), 150);
+    assert_eq!(bindings.len(), 157);
     let mut checked = 0;
     for binding in bindings {
         let path = binding["path"].as_str().unwrap().strip_prefix("data/").unwrap();

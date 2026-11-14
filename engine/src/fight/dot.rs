@@ -22,8 +22,8 @@ impl ProcLanding {
     }
 }
 
-/// A live DoT instance: the proccing hit's deferred damage (provenance
-/// snapshot baked into `value`). Bleed (Cinematic ticks) ignores armor;
+/// A live DoT instance retaining the applying hit's seed and coefficient.
+/// Bleed (Cinematic ticks) ignores armor;
 /// elemental DoTs (Toxin/Electricity/Gas, Disrupt's break-proc Tesla) take
 /// live armor mitigation. `dtype` is the STATUS type (for CO counting).
 ///
@@ -38,6 +38,9 @@ pub(super) struct Dot {
     /// this names the seat for the ledger, and it is there in every run rather
     /// than only the ones being recorded.
     pub(super) owner: Seat,
+    pub(super) native_part: Option<crate::model::HitPart>,
+    /// None retains the scene's measured grouping; native key producers are unbound.
+    pub(super) native_group: Option<crate::rules::status::radial::GroupKey>,
     pub(super) next_tick: f64,
     pub(super) ticks_left: u32,
     /// WHICH SHOT SEEDED THIS, by combat-record event id (`record::Event::id`).
@@ -56,10 +59,10 @@ pub(super) struct Dot {
     /// because those are facts about a hit that has already happened.
     ///
     /// The SOURCE's half is not here: see [`Dot::live`].
-    pub(super) frozen: f64,
+    pub(super) retained: crate::model::StoredStatusSeed,
     /// This application's tick landing: 1.0 on a body, headshot brackets over
     /// a 1x base on a head. The pile keeps its latest one in `proc_landings`
-    /// for the whole tick and accumulator; `frozen` retains the hit's part.
+    /// for the whole tick and accumulator; `retained` keeps the hit's part.
     /// MEASUREMENTS M100.
     pub(super) landing: ProcLanding,
     /// The MOD-side element bracket, `1 + Σ this element's bonuses` — frozen
@@ -76,7 +79,7 @@ pub(super) struct Dot {
     pub(super) unit: f64,
     pub(super) dtype: DamageType,
     pub(super) ignores_armor: bool,
-    /// What `frozen` was made of, as an index into the record's seeds
+    /// Retained input provenance, as an index into the record's seeds
     /// ([`crate::record::Record::seed`]); `u32::MAX` when nothing records.
     pub(super) seed: u32,
 }
@@ -99,6 +102,8 @@ impl Source {
 
 #[wfsim_gas_macro::metered]
 impl Dot {
+    pub(super) fn snapshot_damage(&self) -> f64 { self.retained.snapshot_damage() }
+
     /// WHAT THIS TICK IS WORTH RIGHT NOW.
     ///
     /// A DoT TRACKS ITS SOURCE: a buff the shooter gains while it is burning
@@ -118,7 +123,7 @@ impl Dot {
     /// `s` is the source read at the tick ([`Source::at`]) — once for every
     /// stack of one type at one instant, not once per stack.
     pub(super) fn live(&self, s: &Source) -> f64 {
-        self.frozen * (self.bracket + s.element) * faction_at(s.faction, self.depth)
+        self.snapshot_damage() * (self.bracket + s.element) * faction_at(s.faction, self.depth)
     }
 
     /// **THE ACCUMULATOR STARTS AT 1, NOT AT 0** (wiki `Damage/Calculation`
@@ -187,7 +192,7 @@ impl Dot {
             tail.push(Scale { factor: Factor::TickLanding, value: self.landing.factor });
         }
         let kept = rec.seed_at(self.seed)
-            .filter(|s| (s.value() - self.frozen).abs() <= 1e-9 * self.frozen.abs().max(1.0));
+            .filter(|s| (s.value() - self.snapshot_damage()).abs() <= 1e-9 * self.snapshot_damage().abs().max(1.0));
         match kept {
             Some(s) => Part {
                 factor: Factor::StatusSeeds,
@@ -196,7 +201,7 @@ impl Dot {
                 head_factor: Some(Factor::ModifiedBase),
                 of: s.scales().into_iter().chain(tail).collect(),
             },
-            None => Part { factor: Factor::StatusSeeds, amount, head: self.frozen, head_factor: None, of: tail },
+            None => Part { factor: Factor::StatusSeeds, amount, head: self.snapshot_damage(), head_factor: None, of: tail },
         }
     }
 

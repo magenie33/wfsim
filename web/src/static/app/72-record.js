@@ -606,6 +606,10 @@ function ledgerRows(e) {
     t.o ? `<em>${n2(t.o[0])} × ${n2(t.o[1])}</em>` : ""}</span>`;
 
   return (e.layers || []).map((l) => {
+    if (l.k === "c") {
+      return `<div class="lg"><span class="lg-lbl">${escHtml(tr(F(l.f)))}</span>
+        <span class="lg-body">max(${n2(l.min)})<span class="lg-out">${n(l.o)}</span></span></div>`;
+    }
     if (l.k === "b") {
       return `<div class="lg lg-b">
         <span class="lg-lbl">${escHtml(tr(F(l.f)))}</span>

@@ -10,8 +10,11 @@ precept: false
 description: +X% Status Damage
 effects:
 - kind: status_damage_bonus
-  rank0: 0.125
-  rankMax: 0.5
+  UpgradeType: 367
+  OperationType: STACKING_MULTIPLY
+  Value: 0.125
+  FusionPowerStep: 0.0
+  FusionPowerCurve: QC_LINEAR
   text: +50% Status Damage
 source:
   url: https://wiki.warframe.com/w/Immunity_Resistance

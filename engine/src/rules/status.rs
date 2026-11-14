@@ -19,6 +19,7 @@
 //! procs a hit produces.
 
 mod packet;
+pub mod radial;
 pub use packet::{ProcCounters, ProcType};
 
 use crate::rules::damage::{DamageType, DamageVector};
@@ -58,9 +59,15 @@ pub fn magnetic_break_proxy(proxies: &[HitProxy]) -> Option<HitProxy> {
 #[wfsim_gas_macro::metered]
 pub fn magnetic_break_proxy_source(source: f64, weapon_weakness_bonus: f64, proxy: HitProxy) -> f64 {
     let Some(damage_multiplier) = proxy.damage_multiplier else { return source; };
+    (magnetic_break_normalized_source(source, weapon_weakness_bonus, proxy) * damage_multiplier as f32) as f64
+}
+
+/// The parent query consumes the rounded source before the generic proxy modifier.
+#[wfsim_gas_macro::metered]
+pub fn magnetic_break_normalized_source(source: f64, weapon_weakness_bonus: f64, proxy: HitProxy) -> f32 {
+    if proxy.damage_multiplier.is_none() { return source as f32; }
     let divisor = 1.0_f32 + (weapon_weakness_bonus as f32).max(0.0) * proxy.weakness as f32;
-    let normalized = ((source as f32 / divisor) + 0.5_f32).floor();
-    (normalized * damage_multiplier as f32) as f64
+    ((source as f32 / divisor) + 0.5_f32).floor()
 }
 
 

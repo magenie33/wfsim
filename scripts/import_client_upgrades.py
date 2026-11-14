@@ -15,6 +15,23 @@ MANIFEST = "b35a34aef95fea35f65d356a45790213706654a18df26ab8534b18c0dc394ffa"
 
 def mod_inputs(mappings, ranked, enums, migrate, check):
     index = {(row['owner'], row['array'], row['index']): row for row in ranked}
+    mappings = list(mappings)
+    for path in sorted((ROOT / 'data/mods').rglob('*.yaml')):
+        text = path.read_text()
+        starts = list(re.finditer(r'^( *)- kind: (.+)$', text, re.M))
+        for position, effect in enumerate(starts):
+            if effect.group(2).split('#')[0].strip() != 'status_damage_bonus':
+                continue
+            owner = re.search(r'^internal_name: (.+)$', text, re.M).group(1).strip().strip('"\'')
+            candidates = [r for r in ranked if r['owner'] == owner and r['array'] == 'Upgrades'
+                          and r['spec']['UpgradeType'] == 367]
+            assert len(candidates) == 1, (str(path), candidates)
+            source = {k: candidates[0][k] for k in ('owner', 'array', 'index')}
+            mappings.append({'group': 'mods', 'id': re.search(r'^id: (.+)$', text, re.M).group(1),
+                             'source_file': str(path.relative_to(ROOT)), 'effect_index': position,
+                             'effect_kind': 'status_damage_bonus', 'native_candidates': [source],
+                             'native_roots': [owner],
+                             'expected_attribute_operation': ['WEAPON_PROC_DAMAGE', 'STACKING_MULTIPLY']})
     outputs = []
     skipped = []
     for row in mappings:
@@ -58,7 +75,7 @@ def mod_inputs(mappings, ranked, enums, migrate, check):
             assert not re.search(rf'^{indent}rank(?:0|Max|_values):', block, re.M), row['id']
         outputs.append({'path': row['source_file'], 'effect_index': position,
                         'id': row['id'], 'kind': row['effect_kind'], 'source': source})
-    assert len(outputs) == 150 and not skipped, (len(outputs), skipped)
+    assert len(outputs) == 157 and not skipped, (len(outputs), skipped)
     return outputs
 
 
@@ -172,7 +189,7 @@ def main():
         else:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text)
-    print(f"Verified {len(enums['upgrades'])} native ids, {len(vectors)} folds, 20479 rank values, 5398 conditional inputs and 150 mod consumers")
+    print(f"Verified {len(enums['upgrades'])} native ids, {len(vectors)} folds, 20479 rank values, 5398 conditional inputs and 157 mod consumers")
 
 
 if __name__ == "__main__":

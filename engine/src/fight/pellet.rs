@@ -2476,7 +2476,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // layers — the split instance rolls one, and the other can
             // only be the applying hit's, carried here. A DoT is not a
             // hit, so it never rolls one of its own. MEASUREMENTS M37.
-            InstanceScale {
+            InstanceScale { native_source: None, native_part: None,
                 mb_live,
                 crit_multiplier,
                 part_factor,
@@ -2523,7 +2523,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // also spreads, and assuming it would invent a copy of the
             // swing.
             let open = t < *influence_until;
-            let scale = InstanceScale {
+            let scale = InstanceScale { native_source: None, native_part: None,
                 // THE STATUS IS THE SWING'S OWN, one derivation further
                 // out — so it burns off the base the swing's statuses
                 // burn off, and only the faction rung differs. The wiki
