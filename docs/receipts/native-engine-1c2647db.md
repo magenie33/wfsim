@@ -76,3 +76,9 @@ A bounded production-path probe with source 5,000 and unrestricted status bonus 
 [Machine-readable receipt](native-engine-1c2647db.json) · [Binding ledger](../NATIVE_BINDINGS.md).
 
 Preserved source, binaries, requests, raw outputs and scripts: `target/native-order/qualified-retained`; Drive backup `engine-native-candidate-20261115-1c2647db`. Mounted-file readback does not certify remote sync.
+
+## Preview and browser coverage
+
+The candidate preview at http://127.0.0.1:8831 uses this calculation source. Six actual HTTP answers, including optional traces, match the frozen native binary exactly.
+
+The combat-record browser check passes its arithmetic, status decomposition, pool split and display checks. Three assertions expecting misses at 40m fail: the captured request yields zero misses on the original9a8c, previous540 and current1c2647db engines. This is an existing fixture limitation, retained explicitly rather than counted as a pass. Full release CI remains pending.
