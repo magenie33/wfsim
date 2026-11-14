@@ -771,6 +771,7 @@ pub(super) fn native_upgrade(e: &Value) -> Option<crate::model::RankedUpgrade> {
         "weakpoint_crit_chance_bonus" => U::WEAPON_CRIT_CHANCE_WEAKPOINT,
         "crit_damage_bonus" => U::WEAPON_CRIT_DAMAGE,
         "status_chance_bonus" => U::WEAPON_PROC_CHANCE,
+        "status_damage_bonus" => U::WEAPON_PROC_DAMAGE,
         "fire_rate_bonus" => U::WEAPON_FIRE_RATE,
         "multishot_bonus" => U::WEAPON_FIRE_ITERATIONS,
         "reload_speed_bonus" => U::WEAPON_RELOAD_SPEED,

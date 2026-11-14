@@ -123,16 +123,16 @@ impl DebuffState {
         // under Melee Influence they were 73% of every pop.
         // A handful of groups at most; one that does not fit is queued per
         // stack as before, which costs a stale pop and changes nothing.
-        let mut groups = [(DamageType::Impact, 0.0f64); 8];
+        let mut groups = [(DamageType::Impact, 0.0f64, None); 8];
         let mut n = 0;
         for (i, d) in self.dots.iter().enumerate() {
             if d.ticks_left > 0 {
                 if consolidated(d.dtype) {
-                    if groups[..n].iter().any(|&(t, at)| t == d.dtype && (at - d.next_tick).abs() < 1e-9) {
+                    if groups[..n].iter().any(|&(t, at, key)| t == d.dtype && key == d.native_group && (at - d.next_tick).abs() < 1e-9) {
                         continue;
                     }
                     if n < groups.len() {
-                        groups[n] = (d.dtype, d.next_tick);
+                        groups[n] = (d.dtype, d.next_tick, d.native_group);
                         n += 1;
                     }
                 }
@@ -304,6 +304,7 @@ pub(super) fn process_ticks(
         // exception (wiki `Extra_Hit`, Bugs: "Only Xata's Whisper will be
         // triggered by blast Detonations, no other extra hit will").
         let mut tick_landing = ProcLanding::default();
+        let mut native_layers = None;
         let (value, ignores_armor, is_dot_tick, hit_type, src, xh) = match &ev {
             Ev::Dot(i) => {
                 let dtype = debuffs.dots[*i].dtype;
@@ -328,7 +329,93 @@ pub(super) fn process_ticks(
                 //
                 // wiki `Damage/Electricity Damage`, U33.6: "no longer deal
                 // their respective damage separately ... but once per second".
-                let value = if consolidated(dtype) {
+                let group_key = debuffs.dots[*i].native_group;
+                let native_radial = consolidated(dtype) && debuffs.dots.iter()
+                    .filter(|d| d.dtype == dtype && d.native_group == group_key && d.ticks_left > 0 && (d.next_tick - now).abs() < 1e-9)
+                    .all(|d| d.retained.radial_values().is_some_and(|(_, coefficient)| coefficient == 0.5));
+                let value = if native_radial {
+                    use crate::rules::status::radial::{RadialGroup, RecordContext};
+                    let source = crate::fight::dot::Source::at(params, dtype, now, w);
+                    let mut group = RadialGroup::default();
+                    let mut own_element = 0.0;
+                    let mut inputs = Vec::new();
+                    let trace_native = rec.native_trace_is_on();
+                    for d in debuffs.dots.iter_mut().filter(|d| d.dtype == dtype
+                        && d.native_group == group_key && d.ticks_left > 0 && (d.next_tick - now).abs() < 1e-9)
+                    {
+                        d.next_tick += 1.0;
+                        d.ticks_left -= 1;
+                        let (seed, _) = d.retained.radial_values().expect("native radial record");
+                        // The scene retains its measured live-faction policy until its native writer is bound.
+                        let input = (seed as f64 * faction_at(source.faction, d.depth.saturating_sub(1))) as f32;
+                        let part = d.native_part.unwrap_or(if d.landing.head { crate::model::HitPart::HEAD } else { crate::model::HitPart::BODY });
+                        let before = group.accumulator;
+                        group.visit(input, RecordContext { part74: part.0, ..Default::default() });
+                        if trace_native {
+                            rec.trace_native(now, || crate::record::NativeStep {
+                                phase: "status_tick", group: group_key, part: Some(group.part55),
+                                proc_type: crate::model::ProcType::from_damage_type(dtype).map(|p| p.id()),
+                                context_binding: if group_key.is_some() { "caller_supplied_group" } else { "scene_group" },
+                                ..crate::record::NativeStep::new(now, body_index, "ALN-PROC-03.accumulate",
+                                    &[before, input], group.accumulator)
+                            });
+                        }
+                        if rec.is_on() {
+                            inputs.push(crate::record::Part { factor: crate::record::Factor::StatusSeeds,
+                                amount: input as f64, head: input as f64,
+                                head_factor: Some(crate::record::Factor::StatusSeeds), of: Vec::new() });
+                        }
+                        tick_landing = d.landing;
+                        own_element = d.bracket + source.element - 1.0;
+                        seeded_by = d.cause;
+                        dot_owner = d.owner;
+                    }
+                    let preparation = group.prepare_steps(0.5, own_element as f32);
+                    let prepared = preparation.damage;
+                    if trace_native {
+                        for (stage, inputs, output) in [
+                            ("ALN-PROC-03.coefficient", [group.accumulator, 0.5], preparation.scaled),
+                            ("ALN-PROC-03.minimum", [preparation.scaled, 1.0], preparation.clamped),
+                            ("ALN-PROC-03.own_element", [preparation.clamped, preparation.element], prepared),
+                        ] {
+                            rec.trace_native(now, || crate::record::NativeStep {
+                                phase: "status_tick", group: group_key, part: Some(group.part55),
+                                proc_type: crate::model::ProcType::from_damage_type(dtype).map(|p| p.id()),
+                                context_binding: if group_key.is_some() { "caller_supplied_group" } else { "scene_group" },
+                                ..crate::record::NativeStep::new(now, body_index, stage, &inputs, output)
+                            });
+                        }
+                    }
+                    let value = prepared as f64 * source.faction * tick_landing.factor;
+                    native_layers = rec.is_on().then(|| {
+                        use crate::record::{Factor, Layer, Part};
+                        inputs.insert(0, Part { factor: Factor::StatusAccumulator,
+                            amount: 1.0, head: 1.0, head_factor: None, of: Vec::new() });
+                        let rounding = group.accumulator as f64 - inputs.iter().map(|p| p.amount).sum::<f64>();
+                        if rounding != 0.0 {
+                            inputs.push(Part { factor: Factor::FloatRounding, amount: rounding,
+                                head: rounding, head_factor: None, of: Vec::new() });
+                        }
+                        let half = preparation.scaled;
+                        let mut layers = vec![Layer::Sum { factor: Factor::StatusSeeds,
+                            parts: inputs, out: group.accumulator as f64 },
+                            Layer::Mul { factor: Factor::StatusCoefficient, value: 0.5,
+                                head: 1.0, of: Vec::new(), out: half as f64 }];
+                        if half < 1.0 {
+                            layers.push(Layer::Clamp { factor: Factor::DamageFloor, minimum: 1.0, out: 1.0 });
+                        }
+                        layers.push(Layer::Mul { factor: Factor::ElementBracket,
+                            value: preparation.element as f64,
+                            head: 1.0, of: Vec::new(), out: prepared as f64 });
+                        layers.push(Layer::Mul { factor: Factor::Faction, value: source.faction,
+                            head: 1.0, of: Vec::new(), out: prepared as f64 * source.faction });
+                        layers.push(Layer::Mul { factor: Factor::TickLanding, value: tick_landing.factor,
+                            head: 1.0, of: Vec::new(), out: value });
+                        layers
+                    });
+                    dot_parts = None;
+                    value
+                } else if consolidated(dtype) {
                     let mut sum = 0.0;
                     // ONE ACCUMULATOR FOR THE WHOLE GROUP, taken from whichever
                     // seed joined it first — "they are added to the same
@@ -343,6 +430,7 @@ pub(super) fn process_ticks(
                     let source = crate::fight::dot::Source::at(params, dtype, now, w);
                     for d in debuffs.dots.iter_mut() {
                         if d.dtype == dtype
+                            && d.native_group == group_key
                             && d.ticks_left > 0
                             && (d.next_tick - now).abs() < 1e-9
                         {
@@ -507,8 +595,10 @@ pub(super) fn process_ticks(
                 // THE ACCUMULATOR IS ITS OWN PART: the tick group's own 1
                 // (MEASUREMENTS M58), small, and the thing a reader checking a
                 // closed form will be off by.
-                base: value,
-                layers: dot_parts
+                base: native_layers.as_ref().and_then(|layers| match layers.first() {
+                    Some(crate::record::Layer::Sum { out, .. }) => Some(*out), _ => None,
+                }).unwrap_or(value),
+                layers: native_layers.unwrap_or_else(|| dot_parts
                     .take()
                     .map(|parts| {
                         let out: f64 = parts.iter().map(|x| x.amount).sum();
@@ -518,7 +608,7 @@ pub(super) fn process_ticks(
                             out,
                         }]
                     })
-                    .unwrap_or_default(),
+                    .unwrap_or_default()),
                 ..Instance::default()
             },
         );

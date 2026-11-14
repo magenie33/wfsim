@@ -276,6 +276,8 @@ pub enum Factor {
     TickLanding,
     /// `burn (sum of Heat procs)`
     HeatBurn,
+    /// `binary32 rounding`
+    FloatRounding,
 }
 
 #[wfsim_gas_macro::metered]
@@ -284,7 +286,7 @@ impl Factor {
     /// for as long as a client older than the server can exist — which for a
     /// page served from the same deploy is never, so this is a convention
     /// rather than a ratchet.
-    pub const ALL: [Factor; 48] = [
+    pub const ALL: [Factor; 49] = [
         Factor::BaseDamageBracket,
         Factor::BaseDamageMods,
         Factor::HalfHealth,
@@ -333,6 +335,7 @@ impl Factor {
         Factor::StatusDamage,
         Factor::TickLanding,
         Factor::HeatBurn,
+        Factor::FloatRounding,
     ];
 
     /// What a reader is shown, and the key the i18n overlay is written against.
@@ -378,6 +381,7 @@ impl Factor {
             Factor::Attenuation => "attenuation",
             Factor::PoolRanOut => "the pool ran out",
             Factor::StatusSeeds => "stored damage seeds",
+            Factor::FloatRounding => "binary32 rounding",
             Factor::StatusAccumulator => "accumulator (starts at 1)",
             Factor::TargetMultiplier => "target's own multiplier",
             Factor::DamageFloor => "the 1-damage floor",
@@ -463,32 +467,11 @@ pub struct Part {
     pub of: Vec<Scale>,
 }
 
-/// WHAT ONE STATUS SEED WAS MADE OF, taken the instant the proc landed — the
-/// facts about a hit that is over by the time its seed pays. Held by the
-/// [`Record`] and named by index from the status that carries it, so a fight
-/// nobody records stores nothing.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Seed {
-    pub base: f64,
-    pub coefficient: f64,
-    pub status_damage: f64,
-    pub critical: f64,
-    pub body_part: f64,
-    pub attrition: f64,
-    pub ability_final: f64,
-    /// A Blast stack's faction, frozen at the proc; 1.0 for a tick, which
-    /// re-reads faction live.
-    pub faction: f64,
-}
+/// The record explains the same retained inputs the simulator consumes.
+pub use crate::model::StatusSeed as Seed;
 
 #[wfsim_gas_macro::metered]
 impl Seed {
-    /// The seed itself: the product of every field.
-    pub fn value(&self) -> f64 {
-        self.base * self.coefficient * self.status_damage * self.critical
-            * self.body_part * self.attrition * self.ability_final * self.faction
-    }
-
     /// Its multipliers over `base`, the ones that did nothing left out.
     pub fn scales(&self) -> Vec<Scale> {
         [
@@ -526,27 +509,15 @@ pub struct Snap {
     pub after: f64,
 }
 
-/// ONE LAYER OF THE OFFENSIVE LEDGER, and the shape SAYS which mechanic it is.
-///
-/// A flat list of multipliers makes the panel print things the game does not
-/// have: Condition Overload is an ADDITIVE term in the base-damage bracket on
-/// most weapons, so fitting it into a chain of multipliers means dividing the
-/// bracket by itself and printing the quotient with a `x` in front of it, and
-/// quantization is a per-component snap fitted in as a ratio of totals.
-///
-/// So a layer is one of three shapes and the shape is the information: a
-/// BRACKET lists its terms and adds them, QUANTIZE shows the grid, and only a
-/// MUL gets a multiplication sign. Anything the engine divided out cannot be
-/// drawn at all, because there is no variant for it.
-///
-/// THE ENGINE MAY STILL EVALUATE IN ANY ORDER IT LIKES. A non-elemental base
-/// bonus multiplies the quantization numerator AND its scale, so it commutes
-/// with the snap — which is exactly why the engine can apply Condition Overload
-/// afterwards and still be right. The ledger presents the GAME's order; the two
-/// are not required to match, and the check that the row multiplies out is what
-/// holds them together.
+/// An offensive calculation step: brackets add bonuses, sums add quantities,
+/// quantization snaps components, clamps bound a value, and multiplication
+/// applies a factor. Native radial steps retain their actual binary32 outputs;
+/// their input sum states its binary32 rounding separately. A quotient fitted
+/// to an output is not evidence of a multiplication step.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Layer {
+    /// The consumer's lower bound, applied before subsequent multipliers.
+    Clamp { factor: Factor, minimum: f64, out: f64 },
     /// `x (1 + Σ terms)`. An empty bracket is never emitted — that is where the
     /// pile of `x1.00` went.
     Bracket {
@@ -770,6 +741,32 @@ pub struct Event {
     pub kind: Kind,
 }
 
+/// Optional diagnostics use engineering stage names and exact binary32 bit patterns.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct NativeStep {
+    pub time: f64,
+    pub body: usize,
+    pub stage: &'static str,
+    pub phase: &'static str,
+    pub input_bits: Vec<u32>,
+    pub output_bits: u32,
+    pub entries: Vec<crate::rules::upgrades::UpgradeEntry>,
+    pub proc_type: Option<u8>,
+    pub part: Option<u8>,
+    pub group: Option<crate::rules::status::radial::GroupKey>,
+    pub materialized: Option<bool>,
+    pub context_binding: &'static str,
+}
+
+#[wfsim_gas_macro::metered]
+impl NativeStep {
+    pub fn new(time: f64, body: usize, stage: &'static str, inputs: &[f32], output: f32) -> Self {
+        Self { time, body, stage, phase: "", input_bits: inputs.iter().map(|x| x.to_bits()).collect(),
+            output_bits: output.to_bits(), entries: Vec::new(), proc_type: None, part: None,
+            group: None, materialized: None, context_binding: "scene_adapter" }
+    }
+}
+
 /// THE STREAM, and the window it is being taken over.
 ///
 /// A window rather than the whole fight because the whole fight is usually
@@ -826,10 +823,26 @@ pub struct Record {
     stacks: Vec<(u16, f64)>,
     /// Every status seed laid while recording — see [`Seed`].
     seeds: Vec<Seed>,
+    native_trace_limit: usize,
+    native_steps: Vec<NativeStep>,
+    native_steps_dropped: u64,
 }
 
 #[wfsim_gas_macro::metered]
 impl Record {
+    pub fn enable_native_trace(&mut self, limit: usize) { self.native_trace_limit = limit; }
+    pub fn native_trace_is_on(&self) -> bool { self.native_trace_limit > 0 }
+    pub fn native_steps(&self) -> &[NativeStep] { &self.native_steps }
+    pub fn native_steps_dropped(&self) -> u64 { self.native_steps_dropped }
+
+    pub fn trace_native(&mut self, time: f64, build: impl FnOnce() -> NativeStep) {
+        if self.native_trace_limit == 0 || time < self.from || time >= self.to { return; }
+        if self.native_steps.len() >= self.native_trace_limit {
+            self.native_steps_dropped += 1;
+        } else {
+            self.native_steps.push(build());
+        }
+    }
     /// Not recording. Allocates nothing; every `push` is one branch.
     pub fn off() -> Self {
         Self::default()

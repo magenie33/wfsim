@@ -9,8 +9,11 @@ description: "+X% Status Damage\n+X% Reload Speed"
 
 effects:
   - kind: status_damage_bonus   # double-dips on some payloads (Magnetic break-proc x3.61)
-    rank0: 0.15
-    rankMax: 0.9
+    UpgradeType: 367
+    OperationType: STACKING_MULTIPLY
+    Value: 0.15000001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   - kind: reload_speed_bonus
     UpgradeType: 389
     OperationType: STACKING_MULTIPLY

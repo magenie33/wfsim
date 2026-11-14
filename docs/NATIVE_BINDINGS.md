@@ -28,12 +28,18 @@ fixing a measurement fixture’s tier must not bypass its native damage path.
 Such a profile is not evidence of a native installer. Weakpoint grant
 selection and other unbound eligibility decisions retain the scene model.
 
+Stat 367 carries its selected binary32 stacking bucket through the resolved
+panel and fight parameters. `native_status_damage_bonus: Some` is authoritative
+for native queries; the multiplier is its display projection. `None` selects
+the supplied resolved-multiplier adapter. Subtracting 1 from a rounded display
+factor cannot recover the original bucket bits.
+
 | Stage | Connected implementation | Remaining boundary |
 | --- | --- | --- |
 | ALN-ID-01 | Exact internal-path joins in client importers; per-form data | Complete behavior/action/component and ancestry installation |
 | ALN-ID-02 | Raw native rank inputs; binary32 attribute, critical and speed kernels | Other scalar widths and upstream input precision |
 | ALN-ID-03 | Verified whole-field source composition | Native defaults and partial-struct inheritance |
-| ALN-UP-01 | `rules/upgrades::rank_value`; unlock checks; 150 mod bindings | Unsupported entry classes, Riven rolls and custom overrides |
+| ALN-UP-01 | `rules/upgrades::rank_value`; unlock checks; 157 mod bindings including stat 367 | Unsupported entry classes, Riven rolls and custom overrides |
 | ALN-UP-02 | Eight operation buckets; pending/materialized scalar; proc-mask predicate | Full owner/type/symbol/posture filters and operation traversal order |
 | ALN-UP-03 | Conditional chance/duration/u8 stack construction; Encumber inputs | Other event installers and script-specific overrides |
 | ALN-UP-04 | Typed packet source/weapon handles; selected queries | All equipped-operation owners and eligibility |
@@ -48,11 +54,11 @@ selection and other unbound eligibility decisions retain the scene model.
 | ALN-NPC-02 | Existing mode policies; bounded Shield aura query | Complete mode operation installation timing |
 | ALN-NPC-03 | Bound Overguard getter and source vectors | All Eximus/Thrax variants and live spawn installation |
 | ALN-MAG-01 | Native pool/count snapshot multiply and truncation | Complete live ownership and mode installation |
-| ALN-MAG-02 | Binary32 normalization/rounding and generic proxy multiplier | Additional eligible weakpoint operation and proxy-state writers |
-| ALN-MAG-03 | Fresh parent/forced child context; typed origin and counters | Actual pending scalar/filtered query path through status records |
+| ALN-MAG-02 | Binary32 normalization/rounding, parent query, then generic proxy multiplier | Additional eligible weakpoint operation and proxy-state writers |
+| ALN-MAG-03 | Actual parent mutating and child returned-value stat 367 queries; independent proc masks; retained binary32 child seed | Live operation owner/filter installation and canonicalization flag writer |
 | ALN-PROC-01 | Native counted payload primitives; forced coalescing at arcane submission | Ordinary SC/type selection, multiplicity and immunity dispatch |
 | ALN-PROC-02 | Existing per-family clocks/caps; native Encumber suppression input | Native ordinary insertion/expiry/refresh/decay state |
-| ALN-PROC-03 | Existing measured Electric/Gas simulation | Raw retained seeds, four opaque key inputs, visitation and radial preparation |
+| ALN-PROC-03 | Retained Electric/Gas seeds; sequential binary32 accumulation; local minimum before own element; four-input group reducer | Live key/payload producers and native visitation lifecycle; other DoT families |
 | ALN-PROC-04 | Per-family measured landing retention | Complete native application, moving origin and expiry |
 | ALN-EVT-01 | Primary one-callback type loop, positive counter presence, fresh child | Native notification cadence, beam submission and full VM dispatch |
 | ALN-EVT-02 | Encumber native sampler, SET0 suppression and positive effective update | Earlier eligibility, resource loading and ancillary owner refresh |
@@ -77,8 +83,11 @@ selection and other unbound eligibility decisions retain the scene model.
 | ALN-PROC-06 | Existing debuff/counter/vulnerability/control simulation | Native effect magnitude, icon and receiving order |
 | ALN-RECOIL-01 | Existing scene recoil/aim policy | Native spring, camera, compensation and world coupling |
 
-The combat record uses the actual settled raw damage. Its explanatory layers
-remain views of the scene model. Complete per-node native traces, including
-matched operations, materialization, RNG transitions, record/group identities
-and event phase, require the corresponding live boundary. Final damage equality
-alone cannot certify these stages.
+The combat record uses the actual settled raw damage. Electric/Gas layers
+retain the reducer's binary32 outputs. Optional `native_trace` diagnostics
+capture actual parent/child query entries, materialization and retained seeds,
+and radial accumulation/preparation bits with proc, part, phase and group
+context. Null group keys identify the retained scene grouping adapter.
+Complete traces of every native boundary, including RNG transitions and live
+identity producers, require those bindings. Final damage equality alone cannot
+certify these stages.

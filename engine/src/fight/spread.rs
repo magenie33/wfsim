@@ -566,7 +566,7 @@ pub(super) fn spread_hit(
         seat,
         t,
         inst.target,
-        InstanceScale {
+        InstanceScale { native_source: None, native_part: None,
             // THE HEAD FACTOR IS NOT IN HERE, which is the point of keeping it
             // off `share`: a Slash bleed off a headshot is the same size as one
             // off a bodyshot, because a status effect reads the modded base.
@@ -1619,7 +1619,7 @@ pub(super) fn fire_syndicate_radial(
             seat,
             at,
             0,
-            InstanceScale {
+            InstanceScale { native_source: None, native_part: None,
                 mb_live: sy.damage,
                 crit_multiplier: 1.0,
                 part_factor: 1.0,
