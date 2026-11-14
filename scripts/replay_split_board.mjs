@@ -20,6 +20,8 @@ import {inventoryDiskBudget} from './inventory_disk_budget.mjs';
 import {saveInventoryState as save} from './inventory_pipeline.mjs';
 import {fileHash} from './inventory_publication_io.mjs';
 import {offlineCapacityGuard} from './offline_capacity_guard.mjs';
+import {ensurePreparedReadIndexes} from './prepared_read_indexes.mjs';
+import {validateWorkSpan} from './prepared_work_consumer.mjs';
 
 const GiB=1024**3,here=fileURLToPath(new URL('.',import.meta.url));
 const hash=body=>createHash('sha256').update(body).digest('hex');
@@ -75,6 +77,7 @@ export async function replaySplitBoard({capture,bin,work,manifestSha,diskBudgetB
   const stateYaml=join(work,'pub/data/board_state.yaml');if(!existsSync(stateYaml))writeFileSync(stateYaml,'boards: {}\n');
   records=openCatalog(state.catalog,{engine,contract,generation:sourceId,create:!state.source_initialized,databaseBytes:quota.source});
   const inputs=new PreparedBoardInputs(records.db,contract);state.source_initialized=true;save(statePath,state);
+  ensurePreparedReadIndexes(records.db);
   let passes=0,last=0;
   const progress=(phase,fields={})=>{
    if(Date.now()-last<1000&&phase!=='complete')return;last=Date.now();report({event:'split_replay',phase,...fields,memory:process.memoryUsage(),disk:disk.report(),native_pid:native.pid});
@@ -111,13 +114,15 @@ export async function replaySplitBoard({capture,bin,work,manifestSha,diskBudgetB
   state.phase='inventory';save(statePath,state);await fault('after-independent-board-package',{cut:state.cut});
   inventory=new PreparedWorkInventory(state.inventory,state.catalog,boardConsumerContract('inventory',state),native.contract,
    {engine,generation:sourceId,create:!state.inventory_initialized,databaseBytes:quota.inventory});
-  const auditStateBytes=Math.floor(quota.audit/4);audit=new PreparedWorkAudit(state.audit,{databaseBytes:auditStateBytes,scratchBytes:quota.audit-auditStateBytes});
+  const auditStateBytes=Math.floor(quota.audit/2);audit=new PreparedWorkAudit(state.audit,{databaseBytes:auditStateBytes,scratchBytes:quota.audit-auditStateBytes});
   state.inventory_initialized=true;save(statePath,state);
   let counted;do {
    counted=await inventory.step(native.call,{budgetMs:1000,check,fault,audit:(index,reader,held,options)=>audit.run(index,reader,held,{...options,scratchRoot:join(work,'tmp')})});
    progress('inventory',counted);if(counted.pending&&stopped())return {...state,pending:true};
   }while(counted.pending);
-  state.inventory_complete=true;state.inventory_audit=inventory.consumer.acknowledgement();inputs.observeAcknowledgement('inventory',state.inventory_audit);
+  state.inventory_complete=true;state.inventory_audit=inventory.consumer.acknowledgement();
+  validateWorkSpan(inputs,state.inventory_audit.input_span,state.inventory_audit.cut);
+  inputs.observeAcknowledgement('inventory',state.inventory_audit);
   state.retention=inputs.collect();capacity.check(true);disk.check(true);state.phase='complete';state.pending=false;
   state.disk=disk.report();state.capacity=capacity.report();state.memory=process.memoryUsage();save(statePath,state);progress('complete',state);
   return state;

@@ -280,6 +280,18 @@ cursors, slowest-ACK retention and indexed collection with a missing-index contr
 1,000 and 10,000 unrelated normalized sources; a missing prefix index must fail.
 Source ordinals use one bounded descending index read per batch; the unbounded
 maximum query and a missing ordinal index fail the access-path check.
+The actual publisher/auditor candidate lookup and weapon-first publication query
+must also keep their source and point-measurement prefixes.
+`check_prepared_read_indexes.mjs` uses 1,000 and 10,000 sources of the same weapon.
+Repeated empty-mode validation must use its source-owned exceptional-row index;
+missing or altered definitions fail, invalid modes remain visible, and expired
+or zero-admission rows remain excluded.
+`check_prepared_work_span.mjs` compares continuous multi-cut work spans with the
+independent full native walk and classifier, including exact QID digests. It
+covers aliases, entry floors, default appearance and retirement, transient sources
+with persistent registered obligations, lost replies, restart, new arrivals and
+minimum audited retention. Missing members, same-count wrong members, omitted
+invalidations and altered intermediate receipts must fail before cumulative ACK.
 `check_source_adoption.mjs` compares explicitly adopted source-only components
 with fresh native normalization, binds every protected raw row, rejects changed
 native contracts and retains the original cache bytes across lost responses.

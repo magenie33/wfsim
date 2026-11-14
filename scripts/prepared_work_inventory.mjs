@@ -3,7 +3,7 @@
 import {openCatalog} from './incremental_inventory.mjs';
 import {InventoryRelations} from './inventory_relations.mjs';
 import {PreparedBoardReader} from './prepared_board_reader.mjs';
-import {PreparedBoardConsumer} from './prepared_board_consumer.mjs';
+import {PreparedWorkConsumer} from './prepared_work_consumer.mjs';
 import {preparedWorkRows} from './prepare_board_cut.mjs';
 
 export class PreparedWorkInventory {
@@ -13,7 +13,7 @@ export class PreparedWorkInventory {
       this.index=new InventoryRelations(this.catalog,native);
       this.reader=new PreparedBoardReader(this.catalog.db,source);
       this.catalog.recordPool=this.reader;this.catalog.sourceRecords=this.reader.sourceRecords();
-      this.consumer=new PreparedBoardConsumer(this.catalog.db,this.reader,'inventory',contract);
+      this.consumer=new PreparedWorkConsumer(this.catalog.db,this.reader,'inventory',contract);
     } catch(error){this.catalog.close();throw error;}
   }
   invalidate(items,previous,cut) {
@@ -53,7 +53,7 @@ export class PreparedWorkInventory {
     this.reader.bindViews(cut.id);
     const until=performance.now()+budgetMs;
     do {
-      check();const available=this.consumer.page();if(!available.length)break;
+      check();const available=this.catalog.transaction(()=>this.consumer.page());if(!available.length)break;
       const workAt=available.findIndex(item=>item.kind==='work');
       const page=workAt<0?available:available.slice(0,workAt||1);
       const work=[];
@@ -69,14 +69,17 @@ export class PreparedWorkInventory {
       });
       await fault('after-inventory-input-commit',{cut:cut.id});
     } while(performance.now()<until);
-    if(this.consumer.state().cursor<cut.input_count)return {pending:true,stage:'inputs',cut:cut.id};
+    if(this.consumer.inputsPending())return {pending:true,stage:'inputs',cut:cut.id};
     const result=await this.index.step(operate,{budgetMs:Math.max(0,until-performance.now())});
     if(result.pending)return {pending:true,stage:'enumerate',cut:cut.id,metrics:result.metrics};
     if(!audit)throw Error('an independent full work inventory audit is required');
-    const proof=await audit(this.index,this.reader,cut,{check});
-    if(proof?.complete!==true||proof.plan?.snapshot!==cut.receipt.snapshot||proof.plan.engine!==cut.receipt.engine)
+    const span=this.consumer.span();
+    const proof=await audit(this.index,this.reader,cut,{check,inputSpan:span,operate});
+    if(proof?.complete!==true||proof.memberships?.complete!==true||proof.memberships.cut!==cut.id
+      ||proof.plan?.snapshot!==cut.receipt.snapshot||proof.plan.engine!==cut.receipt.engine)
       throw Error('independent work inventory audit did not complete');
-    this.consumer.complete({...proof,complete:true,cut:cut.id,snapshot:cut.receipt.snapshot,engine:cut.receipt.engine});
+    await fault('after-inventory-audit',{cut:cut.id});
+    this.catalog.transaction(()=>this.consumer.complete({...proof,complete:true,cut:cut.id,snapshot:cut.receipt.snapshot,engine:cut.receipt.engine}));
     return {pending:!!this.reader.next(cut.id),stage:'complete',cut:cut.id,audit:proof};
   }
   close(){this.catalog.close();}

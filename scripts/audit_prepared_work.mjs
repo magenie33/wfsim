@@ -7,6 +7,8 @@ import {classifyInventory} from './classify_compute_inventory.mjs';
 import {readInventoryPage} from './inventory_projection.mjs';
 import {fileHash} from './inventory_publication_io.mjs';
 import {readFileSync,statSync} from 'node:fs';
+import {validateWorkSpan} from './prepared_work_consumer.mjs';
+import {PreparedMembershipAudit} from './audit_prepared_members.mjs';
 
 export class PreparedWorkAudit {
  constructor(path,{databaseBytes=4*1024**3,scratchBytes=databaseBytes}={}) {
@@ -18,6 +20,7 @@ export class PreparedWorkAudit {
    CREATE TABLE IF NOT EXISTS state_work_audit_tasks(id TEXT PRIMARY KEY,body BLOB NOT NULL) WITHOUT ROWID;`);
   const pages=Math.floor(databaseBytes/this.db.prepare('PRAGMA page_size').get().page_size);
   if(!Number.isSafeInteger(pages)||pages<1||this.db.prepare('PRAGMA max_page_count='+pages).get().max_page_count!==pages)throw Error('invalid work audit database bound');
+  this.members=new PreparedMembershipAudit(this.db);
  }
  state(){return JSON.parse(this.db.prepare('SELECT body FROM state_work_audit_cursor WHERE id=1').get()?.body||'{"cut":0,"file":0,"offset":0,"rows":0}');}
  save(state){this.db.prepare('INSERT OR REPLACE INTO state_work_audit_cursor VALUES(1,?)').run(canon(state));}
@@ -62,8 +65,10 @@ export class PreparedWorkAudit {
    this.save({...state,complete:id});
   }
  }
- async run(index,reader,cut,{check=()=>{},scratchRoot}={}) {
+ async run(index,reader,cut,{check=()=>{},scratchRoot,inputSpan,operate}={}) {
+  const input_span=inputSpan?validateWorkSpan(reader,inputSpan,cut.id):undefined;
   await this.prepare(reader,cut,{check});
+  const memberships=await this.members.run(index,reader,cut,operate,check);
   const queue=this.db.prepare('SELECT identity build_id,ruler,mode FROM state_work_audit_queue ORDER BY identity,ruler,mode');
   const queueRows=function*(){for(const row of this.db.prepare('SELECT identity build_id,ruler,mode FROM state_work_audit_queue ORDER BY identity,ruler,mode').iterate())yield row;}.bind(this);
   const builds=function*(){for(const row of reader.rows('source',cut.id))yield {id:row.key,record:JSON.parse(reader.recordBody(row.value.raw_record_ref))};};
@@ -96,7 +101,7 @@ export class PreparedWorkAudit {
   const summary=index.catalog.summary();
   if(summary.rows!==plan.rows||summary.queued!==plan.queued||index.catalog.digest()!==plan.question_digest)throw Error('work audit QID union differs');
   index.catalog.setMeta({...index.catalog.meta,complete:true,snapshot:meta.snapshot,started_at:meta.started_at,audit_digest:plan.question_digest});
-  return {complete:true,plan,digest:plan.question_digest};
+  return {complete:true,plan,digest:plan.question_digest,memberships,...(input_span?{input_span}:{})};
  }
  close(){this.db.close();}
 }

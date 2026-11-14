@@ -89,8 +89,8 @@ try {
  assert.equal((await board.step(native.call,{enqueue})).pending,false);assert.equal(enqueued,1,'restart re-enqueued an acknowledged cut');
  let checked=0;
  for(let tries=0;;tries++) {
-  assert(tries<1000);const step=await inventory.step(native.call,{budgetMs:20,audit:async(index,reader,held)=>{
-   checked++;return workAudit.run(index,reader,held,{scratchRoot:root});
+  assert(tries<1000);const step=await inventory.step(native.call,{budgetMs:20,audit:async(index,reader,held,options)=>{
+   checked++;return workAudit.run(index,reader,held,{...options,scratchRoot:root});
   }});if(!step.pending)break;
  }
  assert.equal(checked,1);
@@ -107,7 +107,7 @@ try {
  let prepared2;do{prepared2=await prepareBoardCut(inputs,records,second,native.call);}while(prepared2.pending);
  const id2=prepared2.cut;
  for(let tries=0;;tries++) {
-  assert(tries<1000);const step=await inventory.step(native.call,{budgetMs:20,audit:(index,reader,held)=>workAudit.run(index,reader,held,{scratchRoot:root})});
+  assert(tries<1000);const step=await inventory.step(native.call,{budgetMs:20,audit:(index,reader,held,options)=>workAudit.run(index,reader,held,{...options,scratchRoot:root})});
   if(!step.pending)break;
  }
  assert.equal(inventory.consumer.state().acknowledged,id2);assert.equal(board.consumer.state().acknowledged,id,'paused board held up inventory');

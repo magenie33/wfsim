@@ -22,12 +22,14 @@ import {PreparedWorkInventory} from './prepared_work_inventory.mjs';
 import {PreparedWorkAudit} from './audit_prepared_work.mjs';
 import {BoardPipeline} from './board_pipeline.mjs';
 import {boardStorage} from './board_storage.mjs';
+import {ensurePreparedReadIndexes} from './prepared_read_indexes.mjs';
+import {validateWorkSpan} from './prepared_work_consumer.mjs';
 
 const load=path=>JSON.parse(readFileSync(path,'utf8')),here=dirname(fileURLToPath(import.meta.url));
 const GiB=1024**3;
 const sourceFiles=['prepared_board_inputs.mjs','prepare_board_cut.mjs','inventory_pipeline.mjs','inventory_projection.mjs',
  'capture_compute_inventory.mjs','incremental_inventory.mjs','inventory_operator.mjs','../worker/task_contract.js'];
-const consumerFiles={inventory:['prepared_work_inventory.mjs','audit_prepared_work.mjs','inventory_relations.mjs','incremental_inventory.mjs','classify_compute_inventory.mjs'],
+const consumerFiles={inventory:['prepared_work_inventory.mjs','prepared_work_consumer.mjs','audit_prepared_work.mjs','audit_prepared_members.mjs','inventory_relations.mjs','incremental_inventory.mjs','classify_compute_inventory.mjs'],
  projection:['prepared_board_projection.mjs','board_projection_state.mjs','audit_board_projection.mjs','inventory_publication.mjs','inventory_publication_io.mjs','board_heads.mjs','board_meta.py']};
 const digest=files=>{const value=createHash('sha256');for(const file of files)value.update(readFileSync(new URL(file,import.meta.url)));return value.digest('hex');};
 const bound=(name,fallback)=>{const value=Number(process.env[name]??fallback);if(!Number.isSafeInteger(value)||value<1024**2)throw Error('invalid '+name);return value;};
@@ -79,9 +81,14 @@ export async function runPrepareBoardCycle({work,bin,sql,operator,budgetMs=1000,
   if(!existsSync(state.catalog)&&!create)needsAction('needs_restore','shared input database is missing; an explicit new rebuild is required');
   records=openCatalog(state.catalog,{...context,generation:state.generation,create,databaseBytes:quota.source});
   const inputs=new PreparedBoardInputs(records.db,state.contract);
+  ensurePreparedReadIndexes(records.db);
   if(create)control.phase(state.rebuild_task,'active',state.generation);
   for(const [name,file] of [['inventory',state.inventory],['projection',state.board]]) {
-   const ack=acknowledgement(file,name,state.contract);if(ack)inputs.observeAcknowledgement(name,ack);
+   const ack=acknowledgement(file,name,state.contract);if(ack) {
+    if(name==='inventory')validateWorkSpan(inputs,ack.input_span,ack.cut,
+     {after:ack.cut>inputs.consumer(name).acknowledged?inputs.consumer(name).acknowledged:undefined});
+    inputs.observeAcknowledgement(name,ack);
+   }
   }
   inputs.collect();
   const complete=records.db.prepare('SELECT min(acknowledged) n FROM state_prepared_board_consumers').get().n;

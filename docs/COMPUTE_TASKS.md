@@ -505,10 +505,22 @@ bounded and indexed. Protected inputs and unrelated generations remain retained.
 Work inventory owns its compact candidate, score, leader, range, pending-work,
 owner, membership and QID tables in a separate database. It retains the complete
 potential question union, alias deduplication and lifecycle precedence. An
-independent raw-input cursor reconstructs queue and task state, then the full
-disk classifier checks every effective QID, category and registration flag.
-Incremental audits retain their own input cursor and do not depend on board
-completion. Workload publication uses the completed source snapshot, engine and
+independent raw-input cursor reconstructs queue and task state. A separate sealed
+input cursor derives candidates, measurement leaders and default dependencies;
+the native gate then checks every expected membership and QID against the work
+store, including registration flags. The full disk classifier checks the resulting
+QID union and lifecycle precedence. Neither audit trusts production dirty markers
+or uses production memberships to restrict its expected enumeration.
+
+Work processing pins the latest sealed snapshot when a new span begins. It folds
+every intervening cut in order, persisting each cut's input count, digest and
+ordinal progress. New arrivals belong to the next span. One complete audit checks
+the pinned snapshot before an atomic cumulative ACK; a crash retains the previous
+audited ACK. The source owner validates the entire span receipt before retention.
+This coalesces repeated full audits without dropping lifecycle transitions or
+registered obligations whose source disappears. Incremental audits retain their
+own input cursor and do not depend on board completion.
+Workload publication uses the completed source snapshot, engine and
 input time; expired output remains historical and cannot claim a fresh goal.
 
 Board projection consumes actual source and measurement versions directly.
@@ -524,6 +536,12 @@ compares the frozen core-file manifest with the completed audit digest.
 The stamp includes the audited source engine, snapshot, input time and contract
 hashes. Its assembly clock and each measurement's clock retain their own meanings.
 Board output does not wait for potential-work enumeration or its audit.
+
+The source owner installs read indexes separately from normalized-value contracts.
+Mode-completeness validation uses a partial covering index of exceptional sources,
+so each publication page does not scan every source of that weapon. Index-only
+maintenance preserves canonical rows, sealed receipts and consumer cursors; an
+unexpected existing index definition requires attention rather than silent reuse.
 
 The publisher consumes immutable packages in order and acknowledges changed
 files durably, with the captured stamp last. Lost replies retry the same bytes.
