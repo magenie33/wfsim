@@ -26,7 +26,7 @@ async function database() {
 }
 import { identityPage, applyIdentityEntry } from "./compute_identity.mjs";
 import { queueSourcePage } from "./compute_queue_sources.mjs";
-import { buildWorkflowCases,workflowProtocolCases } from "./check_build_workflows.mjs";
+import { buildWorkflowCases,workflowProtocolCases,inboxReadPlanCases,queuedReviewAcrossReleaseCases } from "./check_build_workflows.mjs";
 import { queueZoneCases } from "./check_queue_zones.mjs";
 import { factory, questionId as productionQuestionId, canon } from "../worker/tasks.js";
 
@@ -145,6 +145,8 @@ try {
   await queueZoneCases(db);
   await buildWorkflowCases(db);
   await workflowProtocolCases();
+  await inboxReadPlanCases();
+  await queuedReviewAcrossReleaseCases();
   console.log("compute admission: shared identity, queue zones, held execution, all origins, retries and atomic rejection pass");
 } finally { await db.close(); }
 

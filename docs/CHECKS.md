@@ -967,8 +967,14 @@ Intake batches bound both rows and encoded bytes, preserve duplicate input
 order and equipment separation, and replay only idempotent writes after a
 transient connection cut. Permanent refusals and exhausted retries retain
 the arrivals; build and family acknowledgments precede inbox deletion.
-The inbox reader's self-test holds the full-page boundary and repeated reads:
-a bounded prefix remains processable and replaces the previous output.
+`fetch_inbox.sh --self-test` runs `check_inbox_reader.mjs`: bounded keyset pages,
+priority followed by ordinary input when capacity remains, restart persistence,
+partial acknowledgments, file integrity and wrapping for new lower ids.
+A failed later read retains its captured prefix but cannot report success.
+`check_compute_admission.mjs` also checks the indexed scope-enrichment plan and
+source eligibility before the priority limit. Its queued-review case crosses
+a release, accepts two independent fresh witnesses and delivers the corrected
+score while retaining the original observation and accepted result.
 
 `check_cancel_queue.mjs` also runs cancellation through the scripts' actual
 `postgres.js` transport when `WFSIM_CANCEL_QUEUE_PG_URL` names a local test
@@ -989,6 +995,8 @@ requests and unique queue totals. Build, family, queue, factory acknowledgment
 and deletion failures retain retryable arrivals; losing either the factory
 reply or the final delete reply does not duplicate calculations. Row, UTF-8
 byte and deadline bounds prevent new unbounded work.
+The actual CLI commits a captured prefix and reports its subsequent read error;
+a changed capture is refused before any arrival is spent.
 
 ## `check_settle`
 

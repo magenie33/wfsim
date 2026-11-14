@@ -138,7 +138,7 @@ def bot_files() -> list:
 
 
 LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/wasm_witness.mjs", "scripts/order_credit.mjs",
-                "scripts/live_publish.mjs", "scripts/board_heads.mjs",
+                "scripts/live_publish.mjs", "scripts/board_heads.mjs", "scripts/inbox_reader.mjs",
                 "scripts/inventory_pipeline.mjs", "scripts/incremental_inventory.mjs", "scripts/inventory_inputs.mjs",
                 "scripts/inventory_relational_pipeline.mjs", "scripts/inventory_relations.mjs", "scripts/inventory_operator.mjs",
                 "scripts/sqlite_schema.mjs",

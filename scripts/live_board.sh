@@ -39,13 +39,17 @@ touch new-builds.ndjson
 # own key.
 intake_arrivals() {
   # WHO ASKED rides with the record to the rows it owes (docs/BOARD.md §"Who asked").
-  db_query '{"sql":"SELECT id, at, record, initiator, family_source, observation, workflow_scope FROM state_build_inbox_inputs ORDER BY id LIMIT 500"}' \
-    || { echo "live: inbox read refused [HTTP $DB_CODE]" >&2; return 1; }
-  jq -c '.result[0].results[]' < "$DB_OUT" > inbox-new.ndjson
-  [ -s inbox-new.ndjson ] || return 1
+  node "$HERE/inbox_reader.mjs" --out inbox-new.ndjson --receipt inbox-read.json --cursor inbox-cursor.json \
+    --max-rows 100 --max-seconds 15 || { echo "live: inbox read refused" >&2; return 1; }
+  node "$HERE/inbox_reader.mjs" --check inbox-read.json --out inbox-new.ndjson --allow-read-error true || return 1
+  if [ ! -s inbox-new.ndjson ]; then
+    node "$HERE/inbox_reader.mjs" --commit inbox-read.json --out inbox-new.ndjson --cursor inbox-cursor.json
+    return 1
+  fi
   "$BIN/wfsim-intake" --done done.txt --orders orders-new.ndjson --asked asked-new.ndjson \
     < inbox-new.ndjson > builds-new.ndjson 2>> intake.log
   bash "$HERE/ship_builds.sh" builds-new.ndjson done.txt >&2 || return 1
+  node "$HERE/inbox_reader.mjs" --commit inbox-read.json --out inbox-new.ndjson --cursor inbox-cursor.json --done done.txt || return 1
   # …INTO THE MAILBOX the main loop takes them from (`take_arrivals`).
   { flock 9
     jq -c 'select(.record.kind == null)' builds-new.ndjson >> arrived-builds.ndjson
@@ -64,6 +68,7 @@ intake_arrivals() {
     bash "$HERE/ship_queue.sh" "$day" "the rows a new build owes" "$f" >&2 \
       || echo "live: the new rows were not queued; the hourly reconciliation asks for them" >&2
   done
+  node "$HERE/inbox_reader.mjs" --check inbox-read.json --out inbox-new.ndjson
 }
 
 # THE INTAKE LOOP: every `POLL_SECONDS`, whatever the main loop is doing. Its

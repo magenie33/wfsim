@@ -15,6 +15,7 @@ import { initiatorCode, sha256 } from "../worker/accounts.js";
 import worker from "../worker/index.js";
 import { DIAL_DEFAULTS } from "../worker/dials.js";
 import { testDb } from "./pg/test_db.mjs";
+import { inboxSource } from "./inbox_reader.mjs";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -155,9 +156,13 @@ check("a code is its kind and a keyed hash: the same asker the same code, anothe
 // ---- every intake reads it ----
 // A PIPELINE THAT READS THE INBOX WITHOUT IT hands intake a record with no
 // initiator, and every row it ships is unrecorded.
-const readers = ["scripts/fetch_inbox.sh", "scripts/live_board.sh"].map((p) => [p, fs.readFileSync(new URL(`../${p}`, import.meta.url), "utf8")]);
-const blind = readers.flatMap(([p, src]) => [...src.matchAll(/SELECT ([^"]*?) FROM (?:record_build_submissions|state_build_inbox_inputs)/g)].filter((m) => !/\binitiator\b/.test(m[1])).map((m) => `${p}: ${m[0]}`));
-check("every intake's read of the inbox takes who asked", readers.every(([, src]) => /FROM state_build_inbox_inputs/.test(src)) && !blind.length, blind.join("; "));
+const reads=[];
+const reader=inboxSource(async sql=>{reads.push(sql);return [];});
+await reader.byIds(['initiator-check']);await reader.after('',1);
+const blind=reads.filter(sql=>!sql.includes('i.initiator'));
+const entrypoints=["scripts/fetch_inbox.sh","scripts/live_board.sh"].map(p=>fs.readFileSync(new URL(`../${p}`,import.meta.url),'utf8'));
+check("every intake's read of the inbox takes who asked", reads.length===2
+  && entrypoints.every(src=>src.includes('inbox_reader.mjs')) && !blind.length, blind.join("; "));
 
 if (failures) { console.log(`\ncheck_initiator: ${failures} failure(s)`); process.exit(1); }
 console.log("\ncheck_initiator: ok");

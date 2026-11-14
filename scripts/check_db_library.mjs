@@ -18,7 +18,7 @@ const good=(tool,command,...args)=>{
   return result.stdout.trim().split("\n").filter(Boolean).map(line=>JSON.parse(line)).at(-1);
 };
 let checks=0,complete=false;
-const check=(name,value)=>{assert.ok(value,name);console.log("ok "+name);checks++;};
+const check=(name,value,detail='')=>{assert.ok(value,detail ? name+'\n'+detail : name);console.log("ok "+name);checks++;};
 const get=async(text,params=[])=>(await db.unsafe(text,params))[0];
 const fingerprint=async()=>createHash("sha256").update(JSON.stringify(await db.unsafe(`SELECT row_to_json(q)::text AS body FROM
   (SELECT id,verb,request,state,due_at,waits,opened_at,lanes,lease,lease_until,leased_to,leased_at,lease_prev,
@@ -111,7 +111,7 @@ try {
   await db.unsafe("GRANT INSERT ON donors TO wfsim_factoryd");
   const widened=run("db_library","activate",...args);
   check("activation rejects an unexpected widening of existing table permissions",widened.status!==0
-    && widened.stderr.includes("source object identity/privilege changed: donors"));
+    && widened.stderr.includes("source object identity/privilege changed: donors"),widened.stderr);
   await db.unsafe("REVOKE INSERT ON donors FROM wfsim_factoryd");
   good("db_library","activate",...args);
   check("dispatch indexes belong to the new scheduling heap",(await get("SELECT indrelid='state_compute_scheduling'::regclass AS correct FROM pg_index WHERE indexrelid='questions_by_producer'::regclass")).correct

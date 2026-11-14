@@ -11,8 +11,10 @@ if(!/^wfsim_migrate_[a-f0-9]{12}$/.test(stage || ""))throw new Error("an exact p
 const root=new URL("../../",import.meta.url);
 const manifest=JSON.parse(readFileSync(new URL("db-boundaries-2026-11-10.json",import.meta.url),"utf8"));
 const mapping=manifest.databases.find(database=>database.name==="wfsim").tables;
-const files=["schema","library","sync","inventory","build_workflows"];
+const files=["schema","library","sync","inventory","build_workflows","board_admission"];
 const ddl=files.map(name=>readFileSync(new URL("worker/pg/"+name+".sql",root),"utf8"));
+const admissionGrants=ddl.at(-1).match(/DO \$board_admission_grants\$[^]*?END \$board_admission_grants\$;/)?.[0];
+if(!admissionGrants)throw new Error("incomplete board admission grants");
 const signatures=new Set(ddl.flatMap(source=>[...source.matchAll(/CREATE OR REPLACE (?:FUNCTION|PROCEDURE) ([a-z_]+)\(([^)]*)\)/g)]
   .map(match=>match[1]+"("+match[2].split(",").map(arg=>arg.trim().replace(/\s+DEFAULT\s+.*$/i,"")
     .replace(/^(?:INOUT|IN|OUT)\s+/i,"").replace(/^[a-z_]+\s+(jsonb|text|bigint|boolean)$/, "$1").replace(/\s+/g," ")).join(",")+")")));
@@ -29,9 +31,10 @@ const core=["entity_compute_specs","entity_compute_tasks","entity_compute_result
   "entity_calculation_reports","state_calculation_report_selection","relation_calculation_report_access",
   "relation_compute_task_sources","record_compute_queue_removals","record_compute_identity_changes",
   "entity_build_workflow_scopes","entity_build_workflows","entity_build_workflow_expansions",
-  "state_build_workflows","state_build_workflow_nodes","record_build_workflow_triggers"];
-const views=["state_compute_work","state_current_calculation_reports","state_build_inbox_inputs"];
-const sequences=["compute_queue_position"];
+  "state_build_workflows","state_build_workflow_nodes","record_build_workflow_triggers",
+  "state_board_task_admissions","state_board_admission_recovery"];
+const views=["state_compute_work","state_current_calculation_reports","state_build_inbox_inputs","state_build_inbox_priorities"];
+const sequences=["compute_queue_position","board_admission_revision"];
 const legacy=name=>"record_migration_legacy_"+name;
 const names=active=>mapping.map(row=>active ? (transformed.has(row.source) ? legacy(row.source) : row.target) : row.source);
 const sourceRelation=(item,active)=>active && transformed.has(item.source)
@@ -258,7 +261,8 @@ async function activate() {
       const table=mapping.find(table=>table.source===item.table_name);
       await query(tx,`DROP TRIGGER ${quote(item.name)} ON ${sourceRelation(table,true)}`);
     }
-    for(const source of ddl)await query(tx,source);
+    // Intentional runtime grants follow the unchanged-source permission audit.
+    for(const source of ddl)await query(tx,source.replace(admissionGrants,""));
     const owner=p.baseline.tables.find(table=>table.name==="questions").owner;
     const [{name:ownerName}]=await query(tx,"SELECT rolname AS name FROM pg_roles WHERE oid=$1::oid",[owner]);
     for(const name of [...core,...views,...sequences,"state_compute_candidate_answers"])await query(tx,`ALTER ${sequences.includes(name) ? "SEQUENCE" : [...views,"state_compute_candidate_answers"].includes(name) ? "VIEW" : "TABLE"} public.${quote(name)} OWNER TO ${quote(ownerName)}`);
@@ -285,6 +289,7 @@ async function activate() {
           FROM aclexplode(COALESCE($2::aclitem[],acldefault('r',$3::oid)))a) AS same`,[before.acl,table.acl,before.owner]);
       if(!permissions.same)throw new Error("source object identity/privilege changed: "+before.name);
     }
+    await query(tx,admissionGrants);
     const [daemon]=await query(tx,"SELECT rolname FROM pg_roles WHERE rolname='wfsim_factoryd'");
     if(daemon){
       const grants=readFileSync(new URL("deploy/factoryd_grants.sql",root),"utf8");

@@ -10,6 +10,7 @@ import { boardReviewsRoute } from '../worker/board_reviews.js';
 import { BUILD_WORKFLOW_PRODUCER } from '../worker/build_workflows.js';
 import { syncRoute } from '../worker/sync.js';
 import { setDial } from '../worker/dials.js';
+import { captureInbox,inboxSource } from './inbox_reader.mjs';
 
 export async function workflowProtocolCases() {
   for(const proc of [0,1]) {
@@ -111,6 +112,9 @@ export async function buildWorkflowCases(db) {
   assert.equal((await nodes(opt.id))[0].state,'awaiting_intake');
   const inbox=await db.get('SELECT * FROM state_build_inbox_inputs WHERE family_source=?','workflow|'+optNode.workflow+'|'+optNode.id);
   assert.deepEqual(JSON.parse(inbox.workflow_scope),opt.flow.scope);
+  await db.run('UPDATE state_build_workflows SET zone=1 WHERE id=?',optNode.workflow);
+  const continuation=await db.get('SELECT * FROM state_build_inbox_priorities WHERE id=?',inbox.id);
+  assert.equal(continuation.zone,1,'a continuation inherits its active parent workflow priority');
   const derived=await fixture('workflow-derived','',{derived:true,flow_source:{workflow:optNode.workflow,node:optNode.id}});
   derived.flow.scope=opt.flow.scope;await intake(derived);
   assert.equal(await count(derived.id),0,'derived output advances its parent instead of restarting fanout');
@@ -235,7 +239,110 @@ async function coalescedRequirementCases(db) {
   assert.deepEqual(snapshots.map(s=>s.requirements.force),[false,true]);
   console.log('compute coalescing: 24 mixed sources, highest zone, held lease, latest engine, all-source delivery/retry and ID release pass');
 }
+export async function inboxReadPlanCases(database=null) {
+  const db=database||await testDb('library');
+  try {
+    await db.run("INSERT INTO entity_weapon_builds(id,at,record) VALUES('inbox-build','2026-11-14','{}')");
+    await db.run("INSERT INTO entity_build_workflow_scopes(id,definition) VALUES('inbox-scope','{\"boards\":[]}'::jsonb)");
+    await db.run(`INSERT INTO entity_build_workflows(id,build_id,scope_key,kind,scope_id,source,created_at)
+      VALUES('inbox-flow','inbox-build','inbox-key','intake','inbox-scope','{}'::jsonb,'2026-11-14')`);
+    await db.exec(`INSERT INTO record_build_submissions(id,at,record,initiator,family_source,observation)
+      SELECT 'inbox-plan-'||lpad(n::text,6,'0'),'2026-11-14','{"weapon":"braton"}','anonymous',
+        CASE n%4 WHEN 0 THEN 'workflow|inbox-flow|0' WHEN 1 THEN 'workflow|missing-flow|0' WHEN 2 THEN 'legacy-family' END,
+        CASE WHEN n%7=0 THEN '{"review":"retained-observation"}' END FROM generate_series(1,10000) n;
+      INSERT INTO record_equipment_submissions(id,at,record) VALUES('equipment:inbox-plan','2026-11-14','{"kind":"warframe"}');
+      ANALYZE record_build_submissions;ANALYZE record_equipment_submissions;
+      ANALYZE entity_build_workflows;ANALYZE entity_build_workflow_scopes;`);
+    if(process.argv.includes('--break-inbox-plan')) await db.exec(`CREATE OR REPLACE VIEW state_build_inbox_inputs AS
+      SELECT b.id,b.at,b.record,b.initiator,b.family_source,b.observation,s.definition::text AS workflow_scope
+      FROM record_build_submissions b LEFT JOIN entity_build_workflows w
+        ON split_part(b.family_source,'|',1)='workflow' AND w.id=split_part(b.family_source,'|',2)
+      LEFT JOIN entity_build_workflow_scopes s ON s.id=w.scope_id
+      UNION ALL SELECT id,at,record,NULL,NULL,NULL,NULL FROM record_equipment_submissions;`);
+    const actual=await db.all('SELECT * FROM state_build_inbox_inputs ORDER BY id LIMIT 100 OFFSET 50');
+    const expected=await db.all(`WITH prefix AS MATERIALIZED (
+      SELECT * FROM (SELECT id,at,record,initiator,family_source,observation FROM record_build_submissions
+        UNION ALL SELECT id,at,record,NULL,NULL,NULL FROM record_equipment_submissions) arrivals ORDER BY id LIMIT 100 OFFSET 50
+    ) SELECT b.id,b.at,b.record,b.initiator,b.family_source,b.observation,s.definition::text AS workflow_scope
+      FROM prefix b LEFT JOIN entity_build_workflows w
+        ON split_part(b.family_source,'|',1)='workflow' AND w.id=split_part(b.family_source,'|',2)
+      LEFT JOIN entity_build_workflow_scopes s ON s.id=w.scope_id ORDER BY b.id`);
+    assert.deepEqual(actual,expected,'scope enrichment preserves missing parents, observations and exact page membership');
+    assert.equal((await db.get('SELECT id FROM state_build_inbox_inputs ORDER BY id LIMIT 1')).id,'equipment:inbox-plan');
+    const [{['QUERY PLAN']:plan}]=await db.all('EXPLAIN (FORMAT JSON) SELECT * FROM state_build_inbox_inputs ORDER BY id LIMIT 100');
+    const walk=node=>[node,...(node.Plans||[]).flatMap(walk)];
+    const source=walk(plan[0].Plan).find(node=>node['Relation Name']==='record_build_submissions');
+    assert.ok(source?.['Node Type'].includes('Index'),'a bounded inbox read cannot scan the full submission table before its limit');
+    console.log('build workflows: indexed inbox pages preserve scope, equipment and source rows before bounded enrichment');
+  } finally {if(!database)await db.close();}
+}
+
+export async function queuedReviewAcrossReleaseCases(database=null) {
+  const db=database||await testDb('library'),oldEngine='0c3ee2cd6e0a',newEngine='7bd3c7f00f18';
+  const env={LIBRARY:db,ASSETS:{fetch:async()=>Response.json({engine:oldEngine})}};
+  const f=factory({verbs:{simulate:{cap:2,lease_ms:60000,canon:(result,work)=>canon({...result,work})}},
+    producers:{build_workflow:BUILD_WORKFLOW_PRODUCER},spot:0});
+  try {
+    const id='d'.repeat(32),at=new Date().toISOString(),request={weapon:'braton',mods:['serration'],runs:2,seed:9191,duration:2};
+    const input=await prepareIntakeBuild({id,at,record:{weapon:'braton',mods:['serration']},from:['release-review-fixture'],initiator:'anonymous',
+      flow:{schema:1,scope:{boards:[{id:'standard_single_target'}]},builds:[],templates:[request],patches:[{set:{},remove:[]}],
+        nodes:[{kind:'measure',identity:id,ruler:'standard_single_target',mode:'base',template:0,patch:0}]}});
+    await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
+    const first=await db.get('SELECT * FROM state_build_workflow_nodes');
+    await f.answerOfficial(env,{device:'official:before-release',owner:'official:before-release'},
+      {question:first.computation,engine:oldEngine,result:{score:10,metric:'dps'},work:1});
+    const oldResult=await db.get('SELECT id,task_id,canon,engine FROM entity_compute_results WHERE computation=?',first.computation);
+    const response=await boardReviewsRoute(new Request('https://wfsim.test/api/board/review',{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({identity:id,ruler:'standard_single_target',mode:'base',engine:oldEngine,observed_score:15,
+        baseline_score:10,metric:'dps',request})}),env,'/api/board/review');
+    assert.equal(response.status,200);const review=await response.json();
+    const arrival=await db.get('SELECT * FROM record_build_submissions WHERE id=?','review:'+review.id);
+    assert.ok(arrival);
+    await db.exec(`INSERT INTO record_build_submissions(id,at,record)
+      SELECT '000-ordinary-'||lpad(n::text,4,'0'),'2026-11-14','{}' FROM generate_series(1,1000) n;`);
+    await db.run(`INSERT INTO entity_measurement_reviews
+      SELECT (jsonb_populate_record(NULL::entity_measurement_reviews,to_jsonb(r)||jsonb_build_object(
+        'id','missing-review-'||n,'ref','missing-ref-'||n,'created_at','2020-01-01'))).*
+      FROM entity_measurement_reviews r CROSS JOIN generate_series(1,200) n WHERE r.id=?`,review.id);
+    const source=inboxSource((sql,params)=>db.all(sql,...params));
+    if(process.argv.includes('--break-inbox-prefilter')) source.priority=max=>db.all(`SELECT p.* FROM (
+      SELECT * FROM state_build_inbox_priorities ORDER BY zone,position,id LIMIT ?::bigint) p
+      WHERE EXISTS(SELECT 1 FROM state_build_inbox_inputs i WHERE i.id=p.id)`,max);
+    const captured=[];
+    const capture=await captureInbox({source,maxRows:1,emit:(_line,row)=>captured.push(row)});
+    assert.deepEqual(captured.map(row=>row.id),[arrival.id],'eligible review must pass missing earlier sources and the ordinary UUID backlog');
+    assert.equal(capture.next_after,'','priority work does not move the ordinary capture cursor');
+    assert.deepEqual(captured[0],await db.get('SELECT * FROM state_build_inbox_inputs WHERE id=?',arrival.id));
+    await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([{...input,from:[arrival.id],
+      observation:{...JSON.parse(arrival.observation),valid:true}}]));
+    await db.run('SELECT build_spend_submissions(?::text)',JSON.stringify([arrival.id]));
+    const queued=await db.get('SELECT * FROM state_compute_work WHERE id=?',first.computation);
+    assert.notEqual(queued.task_id,oldResult.task_id);
+    env.ASSETS={fetch:async()=>Response.json({engine:newEngine})};
+    for(const suffix of ['one','two']) {
+      const witness={device:'release-review-'+suffix,owner:'release-owner-'+suffix,net:'release-net-'+suffix,
+        siblings:['release-review-'+suffix,'cap:fixed-board-input-v1']};
+      const leased=await f.next(env,witness,newEngine);
+      assert.ok(leased,'an observation version cannot strand a queued review when the served engine advances');
+      assert.equal(leased.question,first.computation);
+      const answered=await f.answer(env,witness,{lease:leased.lease,engine:newEngine,result:{score:15,metric:'dps'},work:1});
+      assert.equal(answered.taken,true);
+    }
+    assert.equal((await db.get('SELECT state FROM entity_measurement_reviews WHERE id=?',review.id)).state,'succeeded');
+    assert.equal((await db.get('SELECT score FROM state_board_measurement_selection WHERE identity=?',id)).score,15);
+    assert.deepEqual(await db.get('SELECT id,task_id,canon,engine FROM entity_compute_results WHERE id=?',oldResult.id),oldResult);
+    const origin=await db.get("SELECT source FROM record_build_workflow_triggers WHERE id=?",review.id);
+    assert.equal(origin.source.observation.engine,oldEngine,'the source observation retains its original version');
+    assert.equal((await db.get('SELECT fact_engine FROM state_compute_work WHERE id=?',first.computation)).fact_engine,newEngine);
+    console.log('build workflows: a queued observation survives a release, two fresh witnesses and guarded score delivery');
+  } finally {if(!database)await db.close();}
+}
+
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href) {
+ if(process.argv.includes('--queued-review-release')) {await queuedReviewAcrossReleaseCases();process.exit(0);}
+ if(process.argv.includes('--inbox-read-plan') || process.argv.includes('--break-inbox-plan')) {await inboxReadPlanCases();process.exit(0);}
  const db=await testDb('library');try{await buildWorkflowCases(db);}finally{await db.close();}
  await workflowProtocolCases();
+ await queuedReviewAcrossReleaseCases();
+ await inboxReadPlanCases();
 }

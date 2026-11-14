@@ -153,6 +153,25 @@ Equal values, stale baselines and different environments create no correction.
 The public review endpoint durably captures an observation in the same inbox;
 it does not implement a second task expansion.
 
+Hourly and live intake share `inbox_reader.mjs`. Existing waiting reviews and
+active higher-priority workflow continuations are read first, using their
+declared queue zones. Missing source rows are excluded before the priority
+limit. Remaining capacity reads ordinary inputs in primary-key pages, with
+scope enrichment limited to each selected input. Read connections enforce a
+five-second statement timeout and are read-only.
+
+The live reader saves its ordinary scan cursor only after every captured input
+is acknowledged and its file hash still matches. Restart retains the cursor;
+reaching the scan's end wraps it so newly arrived lower ids are included in a
+later cycle. A scan ending is not proof that the inbox is empty. A failed later
+read leaves its captured prefix processable and still reports a failed cycle.
+Original source ids and observations remain unchanged through retries.
+
+A correction observation's engine identifies its measurement. It does not pin
+the workflow's future execution engine. Execution uses the factory's current
+compatibility checks; explicit engine requirements and task-round and lease
+guards still apply.
+
 First intake and correction reuse the same expansion: measure the source on
 its captured applicable boards, copy the complete build to current family
 members, and measure legal copies. An incompatible target uses the existing

@@ -769,17 +769,11 @@ sparse producer uses its demand index and common producers use question order.
 Prior-answer checks read each candidate's answers by question before filtering
 device or engine.
 
-- **ORDER** (§"Fair share between producers"). A question a person waits
-  on now first; then the PRODUCER that has used the least compute, among those
-  with a question this witness may answer; inside it, earliest deadline first:
-  a chat's in two minutes, a new build's row in six hours, a survey shape in a
-  day, a refresh in fourteen, a rescore's or a sweep's in a week (`DEADLINE_MS` —
-  the dispatch policy, stated once). A pack takes first, in that order, the
-  questions another volunteer has answered, on whatever engine
-  (`led_questions`): one more agreeing answer makes each a fact and pays its
-  first witness, where a batch due sooner would leave it waiting behind every
-  row of that batch; an older engine's answer joins a served one that
-  reproduces it, so a release leaves none of them behind.
+- **ORDER** (§"Queue zones"). Dispatch uses the earliest executable zone,
+  then its earliest eligible FIFO entry. Producer usage is accounting;
+  deadlines determine official fallback eligibility. Independent witnesses
+  may confirm a prior engine's result by reproducing it under the served
+  engine's existing compatibility rules.
 - **ELIGIBILITY IS ONE QUERY.** What a witness may answer — not its own, its
   owner's other devices', nor its network's, with the cores a waited-on
   question needs at its age — is decided in the SQL that picks it, never by a

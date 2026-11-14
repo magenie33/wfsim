@@ -61,12 +61,22 @@ ALTER TABLE entity_measurement_reviews ADD COLUMN IF NOT EXISTS workflow TEXT CO
 CREATE OR REPLACE FUNCTION build_workflow_system_key(text,text) RETURNS text LANGUAGE sql IMMUTABLE AS $$
   SELECT 'system:'||md5(jsonb_build_array($1,$2)::text)
 $$;
+-- Scope enrichment must preserve the primary-key path used by bounded readers.
 CREATE OR REPLACE VIEW state_build_inbox_inputs AS
-  SELECT b.id,b.at,b.record,b.initiator,b.family_source,b.observation,s.definition::text AS workflow_scope
-    FROM record_build_submissions b LEFT JOIN entity_build_workflows w
-      ON split_part(b.family_source,'|',1)='workflow' AND w.id=split_part(b.family_source,'|',2)
-      LEFT JOIN entity_build_workflow_scopes s ON s.id=w.scope_id
+  SELECT b.id,b.at,b.record,b.initiator,b.family_source,b.observation,
+    (SELECT s.definition::text FROM entity_build_workflows w JOIN entity_build_workflow_scopes s ON s.id=w.scope_id
+      WHERE split_part(b.family_source,'|',1)='workflow' AND w.id=split_part(b.family_source,'|',2)) AS workflow_scope
+    FROM record_build_submissions b
   UNION ALL SELECT id,at,record,NULL,NULL,NULL,NULL FROM record_equipment_submissions;
+
+CREATE OR REPLACE VIEW state_build_inbox_priorities AS
+  SELECT 'review:'||r.id AS id,factory_default_zone('board_review') AS zone,r.created_at AS position
+    FROM entity_measurement_reviews r WHERE r.state='waiting' AND r.workflow IS NULL AND r.task_id IS NULL
+  UNION ALL
+  SELECT 'workflow:'||n.workflow||':'||n.id,s.zone,w.created_at
+    FROM state_build_workflow_nodes n JOIN state_build_workflows s ON s.id=n.workflow
+      JOIN entity_build_workflows w ON w.id=s.id
+    WHERE n.state='awaiting_intake' AND s.state='active' AND s.zone<factory_default_zone('new_build');
 
 CREATE OR REPLACE FUNCTION compute_round_occupied(text,bigint) RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS(SELECT 1 FROM relation_task_consumers WHERE question=$1 AND state='live')
@@ -165,11 +175,13 @@ BEGIN
     demands:=demands||jsonb_build_array(jsonb_build_object('producer','build_workflow','ref',$1||'|'||n.id,'question',question,
       'trigger_id',$1,'ordinal',ordinal,'due_at',f.due_at,'waits',0,'payload',payload::text,'zone',f.zone,'initiator',f.initiator));
     ordinal:=ordinal+1;
+    -- The observation's engine is provenance, not an execution requirement.
+    -- Workflow rounds use the factory's existing executor-compatibility rules.
     IF jsonb_array_length(specs)=250 THEN
-      PERFORM compute_admit_tasks(specs::text,demands::text,coalesce(f.source#>>'{observation,engine}',''),$4);specs:='[]';demands:='[]';
+      PERFORM compute_admit_tasks(specs::text,demands::text,'',$4);specs:='[]';demands:='[]';
     END IF;
   END LOOP;
-  IF jsonb_array_length(specs)>0 THEN PERFORM compute_admit_tasks(specs::text,demands::text,coalesce(f.source#>>'{observation,engine}',''),$4); END IF;
+  IF jsonb_array_length(specs)>0 THEN PERFORM compute_admit_tasks(specs::text,demands::text,'',$4); END IF;
   UPDATE state_build_workflow_nodes node SET computation=q.id,task_id=q.task_id,state='queued'
     FROM state_compute_scheduling q WHERE node.expansion=expansion_id AND node.state='pending' AND q.id=node.definition->>'computation';
   UPDATE entity_measurement_reviews r SET task_id=node.task_id FROM state_build_workflow_nodes node
@@ -264,7 +276,7 @@ BEGIN
     INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload,requirements)
       SELECT n.task_id,'build_workflow',flow_id||'|'||n.id,trigger_key,at,
         jsonb_build_object('workflow',flow_id,'node',n.id,'source',origin)::text,
-        jsonb_build_object('force',reason IN('correction','system'),'zone',priority,'engine',observation->>'engine')
+        jsonb_build_object('force',reason IN('correction','system'),'zone',priority,'engine',NULL)
       FROM state_build_workflow_nodes n WHERE n.workflow=flow_id AND n.task_id IS NOT NULL ON CONFLICT DO NOTHING;
     IF observation->>'review' IS NOT NULL THEN UPDATE entity_measurement_reviews SET workflow=flow_id
       WHERE id=observation->>'review' AND state='waiting'; END IF;

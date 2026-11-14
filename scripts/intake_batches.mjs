@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // A completed intake batch survives a later failure; arrivals are spent last.
-import { createReadStream, closeSync, openSync, readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { createReadStream, closeSync, openSync, readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
+import { checkInboxReceipt } from './inbox_reader.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const INTAKE_BATCH_ROWS = 100, INTAKE_BATCH_BYTES = 1024 * 1024;
@@ -30,7 +31,7 @@ export function runIntakeCommand(command, args, { input, output, signal } = {}) 
   });
 }
 
-export async function intakeBatches(file, { intake = join(ROOT, 'target/release/wfsim-intake'), deadlineSeconds = 900,
+export async function intakeBatches(file, { intake = process.env.WFSIM_INTAKE_BIN || join(ROOT, 'target/release/wfsim-intake'), deadlineSeconds = 900,
   maxRows = INTAKE_BATCH_ROWS, maxBytes = INTAKE_BATCH_BYTES, run = runIntakeCommand, signal } = {}) {
   if (![maxRows, maxBytes].every(n => Number.isSafeInteger(n) && n > 0)
       || !Number.isFinite(deadlineSeconds) || deadlineSeconds < 0) throw new Error('invalid intake batch bounds');
@@ -91,6 +92,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   process.once('SIGINT', stop); process.once('SIGTERM', stop);
   try {
     if (!process.argv[2] || process.argv.length !== 3) throw new Error('usage: intake_batches.mjs <inbox.ndjson>');
+    const inputFile=process.argv[2],receiptFile=inputFile+'.receipt.json';
+    if(existsSync(receiptFile))checkInboxReceipt({receiptFile,inputFile,allowReadError:true});
     await intakeBatches(process.argv[2], { signal: controller.signal });
+    if(existsSync(receiptFile))checkInboxReceipt({receiptFile,inputFile});
   } catch (error) { console.error(`intake: ${error.message}`); process.exitCode = 1; }
 }

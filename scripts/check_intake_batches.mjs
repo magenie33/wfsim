@@ -2,7 +2,7 @@
 // Real intake and shipping retain completed batches and retry unacknowledged arrivals.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync, existsSync } from 'node:fs';
@@ -127,6 +127,27 @@ try {
   await query("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode,initiator) VALUES('existing','legacy','standard_single_target','base','user:original')");
   const before=await owed();await execute(fifo);assert.deepEqual(await owed(),before);
   console.log('ok: intake leaves existing legacy queue rows unchanged');
+
+  await clear();
+  const partialInput=await seed([arrival('captured-prefix')]);
+  const receiptFile=partialInput+'.receipt.json',captured=readFileSync(partialInput);
+  writeFileSync(receiptFile,JSON.stringify({v:1,output_sha256:createHash('sha256').update(captured).digest('hex'),
+    read_error:'bounded ordinary read timeout'}));
+  await close();
+  const partial=spawnSync(process.execPath,[join(root,'scripts/intake_batches.mjs'),partialInput],
+    {env:{...process.env,WFSIM_INTAKE_BIN:intake},encoding:'utf8'});
+  assert.notEqual(partial.status,0);assert.match(partial.stderr,/capture read failed: bounded ordinary read timeout/);
+  assert.deepEqual(await pending(),[]);assert.equal((await saved()).length,1);
+  assert.match(partial.stdout,/committed batch 1/,'a captured prefix commits before its subsequent read error is reported');
+  await clear();await seed([arrival('changed-capture')]);
+  writeFileSync(receiptFile,JSON.stringify({v:1,output_sha256:createHash('sha256').update(captured).digest('hex')}));
+  await close();
+  const changed=spawnSync(process.execPath,[join(root,'scripts/intake_batches.mjs'),partialInput],
+    {env:{...process.env,WFSIM_INTAKE_BIN:intake},encoding:'utf8'});
+  assert.notEqual(changed.status,0);assert.match(changed.stderr,/capture changed before acknowledgement/);
+  assert.deepEqual(await pending(),['changed-capture']);assert.equal((await saved()).length,0);
+  rmSync(receiptFile);
+  console.log('ok: captured prefixes commit while later read failures stay failures; changed captures spend no arrivals');
 
   await clear();
   const boundRows = [arrival('byte-a'), arrival('byte-b'), arrival('byte-c')];
