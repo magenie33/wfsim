@@ -9,7 +9,7 @@ import { pathToFileURL } from 'node:url';
 import { canon } from '../worker/task_contract.js';
 import { fileHash, syncDirectory } from './inventory_publication_io.mjs';
 
-const STAGES = ['intake', 'projection', 'publication'], RESERVE = 8 * 1024 ** 3, FILE_LIMIT = 32 * 1024 ** 2;
+const STAGES = ['intake', 'normalization', 'inventory', 'projection', 'publication'], RESERVE = 8 * 1024 ** 3, FILE_LIMIT = 32 * 1024 ** 2;
 const load = path => JSON.parse(readFileSync(path, 'utf8'));
 function files(root, prefix = '') {
   const result = [];

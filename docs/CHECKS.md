@@ -274,6 +274,19 @@ slow consumers, stage pause, per-file response loss, serial delivery, stamp
 ordering, disk backpressure and corrupted artifacts against the real receiver.
 `check_board_projection_consumers.mjs` tests bounded heads and stamp consumers
 with a large tied weapon file and the existing receiver size limit.
+`check_prepared_board_inputs.mjs` checks immutable source cuts, replay, independent
+cursors, slowest-ACK retention and indexed collection with a missing-index control.
+`check_split_board_pipeline.mjs` runs native consumers in separate SQLite databases:
+either consumer may pause, board publication survives a full work database,
+incremental inventory retains the complete QID union, and altered modes, missing
+rows or broken source bodies fail the independent board audit.
+`check_split_board_capture.mjs` exercises the production source driver, explicit
+generation admission, crash recovery and durable source ACK before consumers
+finish. It verifies inventory publication at the original engine and snapshot;
+`WFSIM_BOARD_PIPELINE_PG_URL` selects the local PostgreSQL transport.
+`check_candidate_lookup.mjs` captures actual source/fact reverse-lookup SQL at
+1,000 and 10,000 unrelated sources. Removing its candidate-prefix index fails;
+opening an existing catalog restores the index without changing rows or cursor.
 
 `check_incremental_inventory.mjs` tests the disk catalog, exact union and audit,
 owner replacement, bounded caches, shadow fencing and crash replay.

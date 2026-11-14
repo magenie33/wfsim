@@ -6,7 +6,7 @@ import { InventoryControl, inspectInventoryTask } from './inventory_control.mjs'
 import { inventoryContext } from './inventory_pipeline.mjs';
 import { relationalInventoryContext } from './inventory_relational_pipeline.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
-import { boardInventoryContext } from './inventory_board_pipeline.mjs';
+import { splitBoardContext } from './split_board_pipeline.mjs';
 
 const [command, ...args] = process.argv.slice(2), options = {};
 for (let i = 0; i < args.length; i += 2) {
@@ -27,7 +27,7 @@ if (command === 'status') {
         throw Error('request requires --mode classic|relational|board, absolute --bin, and PG_URL');
       if (options.mode !== 'classic') operator = await openInventoryOperator(join(options.bin, 'wfsim-board'));
       const context = options.mode === 'classic' ? await inventoryContext(options.bin)
-        : await (options.mode === 'board' ? boardInventoryContext : relationalInventoryContext)(options.bin, operator);
+        : await (options.mode === 'board' ? splitBoardContext : relationalInventoryContext)(options.bin, operator);
       sql = postgres(process.env.PG_URL, { max: 1, fetch_types: false, connect_timeout: 15, onnotice: () => {}, connection: { application_name: 'wfsim-inventory-request', statement_timeout: 10000 } });
       const [{ status }] = await sql.unsafe('SELECT inventory_status() status');
       const task = control.request({ mode: options.mode, ...context, expectedGeneration: status?.generation || null,

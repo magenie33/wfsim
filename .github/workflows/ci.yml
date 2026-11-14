@@ -693,6 +693,7 @@ jobs:
           node scripts/check_inventory_pipeline.mjs
           node scripts/check_inventory_relations.mjs
           node scripts/check_inventory_ranges.mjs
+          node scripts/check_candidate_lookup.mjs
           node scripts/check_inventory_relational_pipeline.mjs
           node scripts/check_inventory_publication.mjs
           node scripts/check_inventory_publication_pages.mjs
@@ -702,6 +703,9 @@ jobs:
           node scripts/check_board_projection_replay.mjs
           node scripts/check_board_projection_consumers.mjs
           node scripts/check_board_pipeline.mjs
+          node scripts/check_prepared_board_inputs.mjs
+          node scripts/check_split_board_pipeline.mjs
+          node scripts/check_split_board_capture.mjs
           node scripts/check_live_mailbox.mjs
           node scripts/check_score_inputs.mjs
           node scripts/check_live_ranker.mjs
@@ -720,6 +724,10 @@ jobs:
         env:
           WFSIM_INTAKE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
         run: node scripts/check_intake_batches.mjs
+      - name: Independent source and board consumers preserve PostgreSQL cut acknowledgements
+        env:
+          WFSIM_BOARD_PIPELINE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
+        run: node scripts/check_split_board_capture.mjs
       - name: Queue cancellation uses the production Postgres driver
         env:
           WFSIM_CANCEL_QUEUE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs

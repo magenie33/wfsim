@@ -683,16 +683,21 @@ current and writes its numbers on top.
 ## The live board
 
 The live board projects verified measurements from the library database.
-`scripts/live_board.sh` runs intake independently from projection. The guarded
-disk coordinator consumes sealed source cuts, applies indexed changes and
-uses the native board operator for normalization, eligibility and rendering.
-Neither intake nor projection simulates fights.
+`scripts/live_board.sh` runs intake, source normalization, workload inventory,
+board projection and publication independently. Source preparation seals
+versioned normalized builds and measurements. Inventory and board consumers
+attach those inputs read-only and write separate databases with separate
+cursors, quotas and audits. Native operators own eligibility and rendering.
+These consumers perform no fights.
 
-Projection checkpoints commit complete input pages and native output chunks.
-A restarted stateless operator resumes the same generation and sealed input.
-Bootstrap requires an explicit rebuild task; startup never replaces a missing
-catalog or authorizes a full source capture. The independent disk classifier
-audits bootstrap before any publication handoff.
+Checkpoints commit complete input pages and native output chunks. Each consumer
+selects its own fixed cut; shared versions remain until both consumers
+acknowledge them. A restarted stateless operator resumes that cut. Bootstrap
+requires an explicit rebuild task; startup never replaces a missing catalog
+or authorizes a full capture. Workload inventory audits the complete potential
+question union. Board projection independently reconstructs actual eligible
+measurement rows and audits their native shape, floor, ordering and aliases
+before publication. Inventory completion does not gate board output.
 
 Completed board files, heads and the `board_meta.py` stamp become an immutable
 publication package. An independent consumer sends changed content through
@@ -713,6 +718,9 @@ last. Upload failures retain their package and never occupy the verifier or
 projection consumer. The outbox has a disk bound; reaching it preserves the
 projection checkpoint for retry. Stage controls and terminal conditions are
 specified in [COMPUTE_TASKS.md](COMPUTE_TASKS.md).
+The stamp's `inputs` identifies the audited source engine, snapshot, input time
+and normalization/consumer contracts. Its `scored_at` remains the assembly time;
+each row retains the measurement's own time and provenance.
 
 Explicit `INCREMENTAL_INVENTORY=0` selects the in-memory `wfsim-board --serve`
 adapter. It restores `library.json`, `new-builds.ndjson` and

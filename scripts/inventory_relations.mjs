@@ -24,6 +24,7 @@ const schema = `
   CREATE TABLE IF NOT EXISTS state_catalog_publication_sources(id TEXT PRIMARY KEY,seq INTEGER NOT NULL UNIQUE,candidate TEXT NOT NULL,
     weapon TEXT NOT NULL,admit INTEGER NOT NULL,modes TEXT NOT NULL) WITHOUT ROWID;
   CREATE INDEX IF NOT EXISTS rel_publication_sources_rows ON state_catalog_publication_sources(weapon,candidate,seq);
+  CREATE INDEX IF NOT EXISTS rel_publication_sources_candidate ON state_catalog_publication_sources(candidate,weapon);
   CREATE TABLE IF NOT EXISTS state_catalog_publication_measurements(identity TEXT NOT NULL,ruler TEXT NOT NULL,mode TEXT NOT NULL,
     at TEXT NOT NULL,retired INTEGER NOT NULL,body TEXT NOT NULL,PRIMARY KEY(identity,ruler,mode)) WITHOUT ROWID;
   CREATE TABLE IF NOT EXISTS state_catalog_publication_dirty(weapon TEXT PRIMARY KEY) WITHOUT ROWID;

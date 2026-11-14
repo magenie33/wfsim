@@ -43,7 +43,7 @@ export class InventoryPublication {
     this.work = work; this.context = context; this.fault = fault;
     this.root = join(work, 'verified'); this.statePath = join(work, 'pub/data/board_state.yaml');
     this.catalog.db.exec(schema);
-    this.catalog.db.exec('CREATE INDEX IF NOT EXISTS rel_publication_facts_rows ON state_catalog_publication_measurements(ruler,retired,identity,mode);');
+    if(!index.prepared)this.catalog.db.exec('CREATE INDEX IF NOT EXISTS rel_publication_facts_rows ON state_catalog_publication_measurements(ruler,retired,identity,mode);');
   }
   save(file, state) {
     this.q('UPDATE state_board_publication_files SET body=? WHERE dir=? AND weapon=?').run(JSON.stringify(state), file.dir, file.weapon);
@@ -79,6 +79,7 @@ export class InventoryPublication {
     const previous = this.q('SELECT retain FROM state_board_file_history WHERE dir=? AND weapon=?').get(file.dir, file.weapon);
     const path = join(this.root, file.dir, file.weapon + '.json');
     const original = !previous && existsSync(path) ? { size: statSync(path).size, sha: await fileHash(path) } : null;
+    if(!previous)await this.context.freezeBaseline?.({dir:file.dir,weapon:file.weapon,path,original});
     this.index.transaction(() => {
       for (const table of ['state_board_publication_rows','state_board_publication_shapes','state_board_publication_maxima','state_board_publication_selection']) this.q(`DELETE FROM ${table}`).run();
       this.q('DELETE FROM state_board_publication_leaders WHERE dir=? AND weapon=?').run(file.dir, file.weapon);

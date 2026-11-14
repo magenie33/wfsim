@@ -80,8 +80,9 @@ export function classifyQuestion(row) {
 }
 
 export class InventoryCatalog {
-  constructor(path, { engine, contract, generation, create = false, databaseBytes = 8 * 1024 ** 3 } = {}) {
+  constructor(path, { engine, contract, generation, create = false, databaseBytes = 8 * 1024 ** 3, recordPool, sourceRecords } = {}) {
     this.path = path;
+    this.recordPool=recordPool;this.sourceRecords=sourceRecords;
     if (!create) statSync(path);
     this.db = new DatabaseSync(path);
     this.statements = new Map();
@@ -150,19 +151,25 @@ export class InventoryCatalog {
   }
   record(build) {
     const row = this.statement("SELECT id,coalesce(stored,fallback) record FROM entity_inventory_builds WHERE build_id=?").get(build);
-    if (!row?.record) throw new Error(`inventory build unavailable: ${build}`);
-    return { ...row, record: this.recordBody(row.record) };
+    const reference=this.sourceRecords ? this.sourceRecords.reference(build) || this.statement('SELECT fallback FROM entity_inventory_builds WHERE build_id=?').get(build)?.fallback : row?.record;
+    if (!row || !reference) throw new Error(`inventory build unavailable: ${build}`);
+    return { ...row, record: this.recordBody(reference) };
   }
   internRecord(record) {
     const body = canon(record);
     if (this.meta.contract.record_storage !== 'interned-deflate-v1') return body;
     const id = createHash('sha256').update(body).digest('hex');
+    if(this.recordPool) {
+      if(this.recordPool.recordBody('@'+id)!==body)throw Error('shared inventory record does not match its reference');
+      return '@'+id;
+    }
     if (!this.statement('SELECT 1 FROM entity_inventory_records WHERE id=?').get(id))
       this.statement('INSERT INTO entity_inventory_records VALUES(?,?)').run(id, deflateRawSync(body, { level: 1 }));
     return '@' + id;
   }
   recordBody(reference) {
     if (!reference?.startsWith('@')) return reference;
+    if(this.recordPool)return this.recordPool.recordBody(reference);
     const body = this.statement('SELECT body FROM entity_inventory_records WHERE id=?').get(reference.slice(1))?.body;
     if (!body) throw Error('inventory record reference is unavailable');
     return this.bodyText(body);
@@ -221,12 +228,17 @@ export class InventoryCatalog {
     const row = this.statement(`SELECT o.owner,c.build_id,o.weapon,o.riven,o.source,o.scope,s.stored stored_record,
       coalesce(c.stored,c.fallback) canonical_record FROM relation_inventory_owners o LEFT JOIN entity_inventory_builds c ON c.id=o.candidate
       LEFT JOIN entity_inventory_builds s ON s.build_id=o.owner WHERE o.owner=?`).get(owner);
+    if(row && this.sourceRecords) {
+      row.stored_record=this.sourceRecords.reference(row.owner);
+      row.canonical_record=row.build_id ? this.sourceRecords.reference(row.build_id) || this.statement('SELECT fallback FROM entity_inventory_builds WHERE build_id=?').get(row.build_id)?.fallback : null;
+    }
     return row ? { ...row, scope: JSON.parse(row.scope), riven: row.riven == null ? null : !!row.riven,
       stored_record: row.stored_record ? JSON.parse(this.recordBody(row.stored_record)) : null,
       canonical_record: row.canonical_record ? JSON.parse(this.recordBody(row.canonical_record)) : null } : null;
   }
   ownerRows(after = null, limit = CHUNK) {
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > CHUNK) throw new Error('invalid inventory owner bound');
+    if(this.sourceRecords)return this.sourceRecords.rows(after,limit);
     return this.statement(`SELECT build_id id,stored record FROM entity_inventory_builds WHERE stored IS NOT NULL AND build_id>?
       ORDER BY build_id LIMIT ?`).all(after || '', limit).map(row => ({ id: row.id, record: JSON.parse(this.recordBody(row.record)) }));
   }
@@ -467,7 +479,7 @@ export class InventoryCatalog {
     if (!Number.isFinite(Date.parse(started_at)) || !expected || this.jobs(1).length || !this.meta.epoch && this.pendingAcks(1).length)
       throw new Error('incomplete inventory bootstrap');
     const actual = { ...this.summary(), owners: this.statement("SELECT count(*) n FROM relation_inventory_owners").get().n,
-      records: this.statement("SELECT count(*) n FROM entity_inventory_builds WHERE stored IS NOT NULL").get().n,
+      records: this.sourceRecords ? this.sourceRecords.count() : this.statement("SELECT count(*) n FROM entity_inventory_builds WHERE stored IS NOT NULL").get().n,
       tasks: this.statement("SELECT count(*) n FROM state_inventory_computations WHERE imported=1").get().n };
     for (const key of ['owners', 'records', 'tasks', 'rows', 'queued'])
       if (integer(expected[key], key) !== actual[key]) throw new Error(`incomplete inventory bootstrap ${key}`);

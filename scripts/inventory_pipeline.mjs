@@ -384,8 +384,8 @@ async function inventoryCycle({ work, bin, instance, sql, call, budgetMs = 15000
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   const [work, bin, instance] = process.argv.slice(2);
   if (instance === '--serve') {
-    const { serveBoardInventory } = await import('./inventory_board_pipeline.mjs');
-    await serveBoardInventory(resolve(work), resolve(bin));
+    const { serveSplitBoardPipeline } = await import('./split_board_pipeline.mjs');
+    await serveSplitBoardPipeline(resolve(work), resolve(bin));
   } else {
   if (!work || !bin || !instance || /\s/.test(work + bin) || !process.env.PG_URL) throw new Error('usage: inventory_pipeline.mjs <work> <bin> <ranker-instance> (PG_URL required; paths without spaces)');
   const sql = postgres(process.env.PG_URL, { max: 1, fetch_types: false, connect_timeout: 15, onnotice: () => {}, connection: { application_name: 'wfsim-inventory-incremental' } });

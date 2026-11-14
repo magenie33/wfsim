@@ -3,8 +3,13 @@
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
 import { once } from 'node:events';
+import {createHash} from 'node:crypto';
+import {createReadStream,statSync} from 'node:fs';
 
 export async function openInventoryOperator(binary, { stderr = 'inherit', timeoutMs = 60000 } = {}) {
+  const before=statSync(binary),digest=createHash('sha256');
+  for await(const bytes of createReadStream(binary))digest.update(bytes);
+  const adapter=digest.digest('hex');
   const child = spawn(binary, ['--inventory-operator'], { stdio: ['pipe', 'pipe', stderr] });
   const reader = createInterface({ input: child.stdout }), replies = reader[Symbol.asyncIterator]();
   let failed = null, closed = false, busy = false;
@@ -33,8 +38,10 @@ export async function openInventoryOperator(binary, { stderr = 'inherit', timeou
   };
   try {
     const contract = await next();
+    const after=statSync(binary);
+    if(before.ino!==after.ino||before.size!==after.size||before.mtimeMs!==after.mtimeMs)throw Error('inventory operator changed while starting');
     if (contract.v !== 1 || !contract.ready || contract.max_items !== 256) throw Error('invalid inventory operator contract');
-    return { contract, close, pid: child.pid, get healthy() { return !closed && !failed; }, call: async (op, items) => {
+    return { contract, adapter, close, pid: child.pid, get healthy() { return !closed && !failed; }, call: async (op, items) => {
       if (busy || closed || failed) throw failed || Error('inventory operator unavailable');
       if (!Array.isArray(items) || items.length > contract.max_items) throw Error('inventory operator item bound');
       const body = JSON.stringify({ op, items }) + '\n';

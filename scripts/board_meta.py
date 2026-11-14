@@ -38,6 +38,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 BOARD = ROOT / "site" / "board"
 STATE = ROOT / "data" / "board_state.yaml"
 OUT = ROOT / "site" / "board.meta.json"
+INPUT = None
 
 # What a board's row in `board_state.yaml` publishes. Named rather than copied
 # wholesale: the yaml is also where fields the page has no business reading
@@ -192,6 +193,12 @@ def build() -> dict:
 
 def main() -> None:
     meta = build()
+    if INPUT is not None:
+        receipt = json.loads(INPUT.read_text(encoding="utf-8"))
+        keys = ("engine", "snapshot", "started_at", "cut", "input_digest", "normalizer_sha", "consumer_sha")
+        if receipt.get("complete") is not True or any(receipt.get(key) is None for key in keys):
+            raise ValueError("board input receipt is incomplete")
+        meta["inputs"] = {key: receipt[key] for key in keys}
     # Compact and key-sorted, the same rule the publisher follows: a stamp that
     # reformats itself leaves the file dirty after every local build, and a
     # careless commit then ships it over a fresher one.
@@ -202,8 +209,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 4:
-        BOARD, STATE, OUT = (pathlib.Path(a).resolve() for a in sys.argv[1:])
+    if len(sys.argv) in (4, 5):
+        BOARD, STATE, OUT = (pathlib.Path(a).resolve() for a in sys.argv[1:4])
+        if len(sys.argv) == 5:
+            INPUT = pathlib.Path(sys.argv[4]).resolve()
     if not BOARD.is_dir():
         sys.exit(f"{BOARD} is missing — nothing to stamp")
     main()

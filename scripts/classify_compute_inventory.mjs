@@ -39,7 +39,7 @@ async function exportQuestions(db, path) {
   } finally { out?.destroy(); if (partial) rmSync(partial, { force: true }); }
 }
 
-export async function classifyInventory({ queue, missing, orphans, builds, canonical, tasks, meta, rulers, questions, cacheKiB = INVENTORY_MIN_CACHE_KIB, check = () => {}, scratchRoot = tmpdir() }) {
+export async function classifyInventory({ queue, missing, orphans, builds, canonical, tasks, meta, rulers, questions, cacheKiB = INVENTORY_MIN_CACHE_KIB, databaseBytes, check = () => {}, scratchRoot = tmpdir() }) {
   if (!Number.isSafeInteger(cacheKiB) || cacheKiB < INVENTORY_MIN_CACHE_KIB || cacheKiB > INVENTORY_MAX_CACHE_KIB)
     throw new Error('invalid inventory cache budget');
   if (!meta?.snapshot || !meta.engine || !meta.started_at || !Array.isArray(rulers) || !rulers.length
@@ -47,6 +47,11 @@ export async function classifyInventory({ queue, missing, orphans, builds, canon
   const roster = new Set(rulers);
   const dir = mkdtempSync(join(scratchRoot, 'compute-classified-')), db = new DatabaseSync(join(dir, 'tasks.db'));
   try {
+    if(databaseBytes!==undefined) {
+      const pageSize=db.prepare('PRAGMA page_size').get().page_size,pages=Math.floor(databaseBytes/pageSize);
+      if(!Number.isSafeInteger(databaseBytes)||pages<1||pages>4294967294
+        ||db.prepare('PRAGMA max_page_count='+pages).get().max_page_count!==pages)throw Error('invalid classifier database bound');
+    }
     db.exec(`PRAGMA journal_mode=OFF;PRAGMA synchronous=OFF;PRAGMA temp_store=FILE;PRAGMA cache_size=-${cacheKiB};
       CREATE TABLE records(id TEXT PRIMARY KEY,record BLOB NOT NULL) WITHOUT ROWID;
       CREATE TABLE states(id BLOB UNIQUE,ordinal INTEGER PRIMARY KEY,state TEXT,fact_engine TEXT,kind TEXT,verb TEXT,served_answered INTEGER);
