@@ -264,7 +264,7 @@ export class InventoryPublication {
       this.catalog.setMeta({ ...this.catalog.meta, publication: { ...publication, indexClosing: receipt } });
       await writer.finish();
       await this.fault('after-index-before-checkpoint', { path });
-      this.catalog.setMeta({ ...this.catalog.meta, publication: { ...publication, index: publication.index + 1 } });
+      this.catalog.setMeta({ ...this.catalog.meta, publication: { round: publication.round, phase: 'files', index: publication.index + 1 } });
     } else {
       const receipt = writer.checkpoint(), last = rows.at(-1);
       this.catalog.setMeta({ ...this.catalog.meta, publication: { ...publication,

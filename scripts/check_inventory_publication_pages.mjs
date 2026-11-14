@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Publication pages must bind a weapon before looking up its measurement keys.
 import assert from 'node:assert/strict';
-import { mkdtempSync,rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdtempSync,rmSync,readFileSync } from 'node:fs';
+import { join,resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
 import { openCatalog } from './incremental_inventory.mjs';
 import { InventoryRelations } from './inventory_relations.mjs';
-import { InventoryPublication,PUBLICATION_ROWS_SQL } from './inventory_publication.mjs';
+const { InventoryPublication,PUBLICATION_ROWS_SQL } = await import(process.env.WFSIM_INVENTORY_PUBLICATION_MODULE
+  ? pathToFileURL(resolve(process.env.WFSIM_INVENTORY_PUBLICATION_MODULE)).href : './inventory_publication.mjs');
 
 const root = mkdtempSync(join(tmpdir(),'publication-pages-'));
 const catalog = openCatalog(join(root,'catalog'),{ engine:'0123456789ab',contract:{ v:1 },create:true });
@@ -37,4 +39,20 @@ try {
     assert.equal(catalog.db.prepare(PUBLICATION_ROWS_SQL).all(...args).length,1);
   }
   console.log('ok: the actual fact-first query fails the access-path check; weapon-first pages retain point measurement lookups with ten times the unrelated history');
+  index.contract = { ...index.contract,rulers:[{ id:'r',scene:'' },{ id:'s',scene:'sp200' },{ id:'t',scene:'sp9999' }] };
+  catalog.setMeta({ ...catalog.meta,publication:{ round:'directories',phase:'files',index:0 } });
+  const publication = new InventoryPublication(index,root,{});
+  try {
+    for (const [dir,benchmark,count] of [['','r',257],['sp200','s',256],['sp9999','t',1]])
+      for (let n = 0; n < count; n++) index.q('INSERT INTO state_board_publication_leaders VALUES(?,?,?,?,?,?,?)')
+        .run(dir,'weapon_' + String(n).padStart(3,'0'),benchmark,'base',0,1,JSON.stringify({ benchmark,score:1 }));
+    await publication.indexes(); assert(catalog.meta.publication.output);
+    await publication.indexes(); assert.equal(catalog.meta.publication.index,1);
+    assert.equal(catalog.meta.publication.output,undefined,'a finished directory must release its output checkpoint');
+    await publication.indexes(); await publication.indexes(); assert.equal(catalog.meta.publication.index,2);
+    await publication.indexes(); assert.equal(catalog.meta.publication.index,3);
+    for (const [dir,count] of [['',257],['sp200',256],['sp9999',1]])
+      assert.equal(Object.keys(JSON.parse(readFileSync(join(root,'verified',dir,'index.json')))).length,count);
+    console.log('ok: normal multi-page directory transitions reset file checkpoints at256 and257 leaders without requiring a crash');
+  } finally { publication.context.writer?.close(); }
 } finally { catalog.close(); rmSync(root,{ recursive:true,force:true }); }
