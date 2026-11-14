@@ -5,10 +5,12 @@ import {InventoryRelations} from './inventory_relations.mjs';
 import {PreparedBoardReader} from './prepared_board_reader.mjs';
 import {PreparedWorkConsumer} from './prepared_work_consumer.mjs';
 import {preparedWorkRows} from './prepare_board_cut.mjs';
+import {sqliteTransactionRecovery} from './sqlite_transaction_recovery.mjs';
 
 export class PreparedWorkInventory {
   constructor(path,source,contract,native,{engine,generation,databaseBytes,create=false}={}) {
     this.catalog=openCatalog(path,{engine,generation,contract,create,databaseBytes});
+    sqliteTransactionRecovery(this.catalog.db);
     try {
       this.index=new InventoryRelations(this.catalog,native);
       this.reader=new PreparedBoardReader(this.catalog.db,source);

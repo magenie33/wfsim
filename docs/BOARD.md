@@ -699,6 +699,23 @@ question union. Board projection independently reconstructs actual eligible
 measurement rows and audits their native shape, floor, ordering and aliases
 before publication. Inventory completion does not gate board output.
 
+The independent board audit materializes one weapon and scene at a time.
+Identity/mode deduplication, shape winners and comparison maxima retain their
+full ruler scope. Scene receipts survive restart; completion requires every
+scene, weapon file, index and state count. A new audit contract requires an
+explicit migration and complete re-audit; existing output cannot become a new
+legacy baseline.
+
+Only temporary captures explicitly reserved by the current source generation
+are eligible for automatic retirement. A sealed creator manifest binds their
+files and inodes. Collection waits for the source ACK cursor and the minimum
+complete audited ACK of all registered consumers. Bootstrap recovery files,
+explicit restore pins and pending references stay retained. Unknown files,
+links and captures from another generation remain untouched. Each bounded pass
+persists an unlink intent and resumes it after interruption; sealed receipts,
+hashes, current canonical state and consumer audit checkpoints remain durable.
+This lifetime rule does not authorize removing external captures or backups.
+
 Completed board files, heads and the `board_meta.py` stamp become an immutable
 publication package. An independent consumer sends changed content through
 `PUT /api/board/live/<file>` (bearer `BOARD_PUSH_TOKEN`), the stamp last, into

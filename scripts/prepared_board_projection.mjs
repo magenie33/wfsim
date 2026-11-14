@@ -8,15 +8,17 @@ import {BoardProjectionAudit} from './audit_board_projection.mjs';
 import {InventoryPublication} from './inventory_publication.mjs';
 import {createHash} from 'node:crypto';
 import {canon} from '../worker/task_contract.js';
+import {sqliteTransactionRecovery} from './sqlite_transaction_recovery.mjs';
 
 export class PreparedBoardProjection {
  constructor(path,source,contract,native,work,{engine,generation,databaseBytes,create=false,context={},fault=async()=>{}}={}) {
   this.records=openCatalog(path,{engine,generation,contract,create,databaseBytes});this.context=context;this.work=work;this.fault=fault;
+  sqliteTransactionRecovery(this.records.db);
   try {
    this.reader=new PreparedBoardReader(this.records.db,source);this.records.recordPool=this.reader;
    this.board=new BoardProjectionState(this.records,contract);this.index=this.board.index(native);
    this.index.sourceCount=()=>this.reader.sourceCount();
-   this.audit=new BoardProjectionAudit(this.records.db,this.reader,work);
+   this.audit=new BoardProjectionAudit(this.records.db,this.reader,work,{fault});
    context.freezeBaseline=value=>this.audit.freezeBaseline(value);
    this.consumer=new PreparedBoardConsumer(this.records.db,this.reader,'projection',contract);
    this.publication=new InventoryPublication(this.index,work,context,fault);

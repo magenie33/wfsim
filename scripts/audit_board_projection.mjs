@@ -20,13 +20,15 @@ const schema=`CREATE TABLE IF NOT EXISTS state_board_audit_baselines(dir TEXT,we
  CREATE TABLE IF NOT EXISTS state_board_audit_dirty(weapon TEXT PRIMARY KEY) WITHOUT ROWID;
  CREATE TABLE IF NOT EXISTS state_board_audit_source_keys(id TEXT PRIMARY KEY) WITHOUT ROWID;
  CREATE TABLE IF NOT EXISTS state_board_audit_round(id INTEGER PRIMARY KEY CHECK(id=1),body TEXT NOT NULL);
- CREATE TABLE IF NOT EXISTS state_board_audit_setup(id INTEGER PRIMARY KEY CHECK(id=1));`;
+ CREATE TABLE IF NOT EXISTS state_board_audit_setup(id INTEGER PRIMARY KEY CHECK(id=1));
+ CREATE TABLE IF NOT EXISTS state_board_audit_weapons(cut INTEGER,weapon TEXT,PRIMARY KEY(cut,weapon)) WITHOUT ROWID;
+ CREATE TABLE IF NOT EXISTS record_board_audit_scenes(cut INTEGER,weapon TEXT,scene TEXT,body TEXT NOT NULL,PRIMARY KEY(cut,weapon,scene)) WITHOUT ROWID;`;
 const allowed=(hex,n)=>(BigInt('0x'+hex)&(1n<<BigInt(n)))!==0n;
 const fail=message=>{throw Error('independent board audit: '+message);};
 const stamp=path=>{const s=statSync(path,{bigint:true});return [s.dev,s.ino,s.size,s.mtimeNs,s.ctimeNs].map(String).join(':');};
 
 export class BoardProjectionAudit {
- constructor(db,reader,work) {this.db=db;this.reader=reader;this.work=work;db.exec(schema);}
+ constructor(db,reader,work,{fault=async()=>{}}={}) {this.db=db;this.reader=reader;this.work=work;this.fault=fault;db.exec(schema);}
  async initialize(index,{check=()=>{}}={}) {
   if(this.db.prepare('SELECT 1 FROM state_board_audit_setup').get())return;
   for(const dir of [...new Set(index.contract.rulers.map(row=>row.scene))]) {
@@ -70,6 +72,10 @@ export class BoardProjectionAudit {
   if(round?.cut>cut.id)fail('audit cut cannot move backwards');
   if(round&&round.cut!==cut.id&&!round.complete)fail('previous audit cut is unfinished');
   if(!round||round.cut!==cut.id||round.complete) {
+   if(round?.cut===cut.id&&round.complete) {
+    this.db.prepare('DELETE FROM record_board_audit_scenes WHERE cut=?').run(cut.id);
+    this.db.prepare('DELETE FROM state_board_audit_weapons WHERE cut=?').run(cut.id);
+   }
    const prior=round?.cut===cut.id?round.prior:round?.cut||0;
    const priorCount=round?.cut===cut.id?round.prior_count:Number(round?.proof?.sources||0);
    round={cut:cut.id,prior,prior_count:priorCount,cursor:0,complete:false,rendered:0,checked_versions:0};
@@ -131,9 +137,33 @@ export class BoardProjectionAudit {
   this.saveRound({...round,complete:true,proof});return {...proof,checked_versions:round.checked_versions};
  }
  async reconstruct(weapon,cut,operate,contract,{check=()=>{}}={}) {
+  if(!this.db.prepare('SELECT 1 FROM state_board_audit_weapons WHERE cut=? AND weapon=?').get(cut.id,weapon)) {
+   this.db.exec('BEGIN IMMEDIATE');try {
+    this.db.prepare('DELETE FROM state_board_audit_leaders WHERE weapon=?').run(weapon);
+    this.db.prepare('DELETE FROM state_board_audit_counts WHERE weapon=?').run(weapon);
+    this.db.prepare('DELETE FROM state_board_audit_files WHERE weapon=?').run(weapon);
+    this.db.prepare('INSERT INTO state_board_audit_weapons VALUES(?,?)').run(cut.id,weapon);this.db.exec('COMMIT');
+   }catch(error){this.db.exec('ROLLBACK');throw error;}
+  }
+  let sources=0,rendered=0;
+  for(const scene of [...new Set(contract.rulers.map(row=>row.scene))]) {
+   check();let receipt=this.db.prepare('SELECT body FROM record_board_audit_scenes WHERE cut=? AND weapon=? AND scene=?').get(cut.id,weapon,scene);
+   if(!receipt) {
+    const result=await this.reconstructScene(weapon,scene,cut,operate,contract,{check});
+    await this.fault('after-board-audit-scene-before-receipt',{cut:cut.id,weapon,scene});
+    const body=canon({...result,cut:cut.id,scene,input_digest:cut.sealed_digest});
+    this.db.prepare('INSERT INTO record_board_audit_scenes VALUES(?,?,?,?)').run(cut.id,weapon,scene,body);receipt={body};
+    await this.fault('after-board-audit-scene-receipt',{cut:cut.id,weapon,scene});
+   }
+   const result=JSON.parse(receipt.body);
+   if(result.cut!==cut.id||result.scene!==scene||result.input_digest!==cut.sealed_digest)fail('scene receipt differs');
+   sources=result.sources;rendered+=result.rendered;
+  }
+  return {sources,rendered};
+ }
+ async reconstructScene(weapon,scene,cut,operate,contract,{check=()=>{}}={}) {
   this.db.exec('DELETE FROM state_board_audit_rows;DELETE FROM state_board_audit_selection');
-  this.db.prepare('DELETE FROM state_board_audit_leaders WHERE weapon=?').run(weapon);
-  this.db.prepare('DELETE FROM state_board_audit_counts WHERE weapon=?').run(weapon);
+  const rulers=contract.rulers.filter(row=>row.scene===scene).map(row=>row.id);
   let sources=0,rendered=0,requests=[];
   const flush=async()=>{
    if(!requests.length)return;const values=await operate('render',requests.map(item=>item.request));
@@ -164,8 +194,9 @@ export class BoardProjectionAudit {
    let after=['',''];
    for(;;) {
     const facts=this.reader.db.prepare(`SELECT key FROM entity_prepared_board_versions WHERE kind='fact' AND identity=?
+      AND ruler IN(SELECT value FROM json_each(?))
       AND body IS NOT NULL AND first_cut<=? AND (last_cut IS NULL OR last_cut>?) AND (ruler,mode)>(?,?)
-      ORDER BY ruler,mode LIMIT 256`).all(d.candidate,cut.id,cut.id,...after);
+      ORDER BY ruler,mode LIMIT 256`).all(d.candidate,JSON.stringify(rulers),cut.id,cut.id,...after);
     if(!facts.length)break;
     const [native]=await operate('describe',[{id:source.key,record:raw}]);
     const expected={...d,record:JSON.parse(this.reader.recordBody(d.record_ref))};delete expected.raw_record_ref;delete expected.record_ref;
@@ -202,7 +233,7 @@ export class BoardProjectionAudit {
   }
   const totals=new Map();
   const files=this.db.prepare(`SELECT dir,weapon FROM (SELECT dir,weapon FROM state_board_audit_baselines UNION SELECT dir,weapon FROM state_board_audit_rows)
-   WHERE weapon=? ORDER BY dir,weapon`).all(weapon);
+   WHERE weapon=? AND dir=? ORDER BY dir,weapon`).all(weapon,scene);
   for(const {dir,weapon} of files) {
    check();const digest=createHash('sha256').update('[');let count=0;
    const append=page=>{digest.update((count++?',':'')+page);};
@@ -233,10 +264,20 @@ export class BoardProjectionAudit {
     this.db.prepare('INSERT OR REPLACE INTO state_board_audit_files VALUES(?,?,?,?)').run(dir,weapon,expected,stamp(path));
    }
   }
-  for(let n=0;n<contract.rulers.length;n++)this.db.prepare('INSERT OR REPLACE INTO state_board_audit_counts VALUES(?,?,?)').run(n,weapon,totals.get(n)||0);
+  for(let n=0;n<contract.rulers.length;n++)if(contract.rulers[n].scene===scene)
+   this.db.prepare('INSERT OR REPLACE INTO state_board_audit_counts VALUES(?,?,?)').run(n,weapon,totals.get(n)||0);
   return {sources,rendered};
  }
  async finish(cut,contract,{check=()=>{},sources,rendered}={}) {
+  const scenes=[...new Set(contract.rulers.map(row=>row.scene))].sort();
+  for(const row of this.db.prepare('SELECT weapon FROM state_board_audit_weapons WHERE cut=? ORDER BY weapon').all(cut.id)) {
+   check();const receipts=this.db.prepare('SELECT scene,body FROM record_board_audit_scenes WHERE cut=? AND weapon=? ORDER BY scene').all(cut.id,row.weapon);
+   if(canon(receipts.map(value=>value.scene))!==canon(scenes))fail('weapon scene audit is incomplete');
+   for(const receipt of receipts) {
+    const value=JSON.parse(receipt.body);
+    if(value.cut!==cut.id||value.scene!==receipt.scene||value.input_digest!==cut.sealed_digest)fail('scene receipt differs');
+   }
+  }
   const manifest=[],totals=new Map(this.db.prepare('SELECT ruler,sum(n) n FROM state_board_audit_counts GROUP BY ruler').all().map(row=>[row.ruler,row.n]));
   for(const file of this.db.prepare('SELECT * FROM state_board_audit_files ORDER BY dir,weapon').all()) {
    check();const path=join(this.work,'verified',file.dir,file.weapon+'.json');

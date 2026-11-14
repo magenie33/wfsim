@@ -297,6 +297,20 @@ metadata fixtures: missing intermediate replies, concurrent source observation,
 overlapping retries after GC, monotonicity and persisted prefix receipts. Gaps,
 changed digests or lost unobserved progress fail. The source-driver check also
 rejects a different source or consumer contract before accepting its audit.
+`check_source_capture_gc.mjs` uses labelled transport fixtures to verify explicit
+creator ownership, all audited consumer watermarks, source completion, recovery
+pins, immutable receipts, bounded deletion and crash-safe unlink intents.
+Unknown files, replaced inodes, links and other generations remain retained.
+`check_sqlite_transaction_recovery.mjs` reproduces actual SQLite FULL, the original
+masked exception, atomic cursor rollback and cold reopen with a larger bound.
+Cleanup tolerates a redundant rollback only after a recorded SQLite FULL error.
+`check_board_audit_scenes.mjs` compares every native weapon/index/state file under
+a small SQLite limit. It resumes a committed scene without re-rendering it;
+missing scenes reject completion and an unpartitioned reconstruction hits FULL.
+`check_board_audit_migration.mjs` requires a separate consumer database with
+the exact source generation and supported contract. Producer output and original
+legacy baseline/setup stay unchanged; prior audit completion cannot advance ACK.
+The new contract must complete a fresh native audit before its handoff.
 `check_source_adoption.mjs` compares explicitly adopted source-only components
 with fresh native normalization, binds every protected raw row, rejects changed
 native contracts and retains the original cache bytes across lost responses.
@@ -323,6 +337,9 @@ publication; a warm update does not revisit unrelated weapon sources.
 generation admission, crash recovery and durable source ACK before consumers
 finish. It verifies inventory publication at the original engine and snapshot;
 `WFSIM_BOARD_PIPELINE_PG_URL` selects the local PostgreSQL transport.
+Its source-created delta capture survives a lost source ACK cursor even after
+both native consumers finish, then retires while bootstrap files and sealed
+receipts remain available.
 `check_candidate_lookup.mjs` captures actual source/fact reverse-lookup SQL at
 1,000 and 10,000 unrelated sources. Removing its candidate-prefix index fails;
 opening an existing catalog restores the index without changing rows or cursor.

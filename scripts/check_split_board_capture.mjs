@@ -22,14 +22,14 @@ copyFileSync(resolve(process.env.WFSIM_INVENTORY_BOARD_BIN||'target/debug/wfsim-
 writeFileSync(join(bin,'ENGINE'),'0123456789ab');writeFileSync(join(bin,'VERSION'),'split-capture-fixture');
 const url=process.env.WFSIM_BOARD_PIPELINE_PG_URL;if(url)assert(['127.0.0.1','localhost'].includes(new URL(url).hostname));
 const tcp=url?postgres(url,{max:1,fetch_types:false,onnotice:()=>{}}):null,pg=tcp?null:new PGlite(),schema='split_'+randomUUID().replaceAll('-','');
-let active=tcp,acks=0;const path=join(work,'inventory/split-state.json');
+let active=tcp,acks=0,initialCapture=true;const path=join(work,'inventory/split-state.json');
 const query=(text,args=[])=>tcp?active.unsafe(text,args):pg.query(text,args).then(result=>result.rows);
 const unsafe=async(text,args=[])=>{
  if(text.includes('inventory_ack(')) {
   const state=JSON.parse(readFileSync(path)),catalog=openCatalog(state.catalog);
   try {
    const latest=catalog.db.prepare("SELECT state FROM record_prepared_board_cuts ORDER BY id DESC LIMIT 1").get();
-   assert.equal(latest.state,'sealed');assert.equal(existsSync(state.inventory),false,'source ACK waited for work consumer');acks++;
+   assert.equal(latest.state,'sealed');if(initialCapture)assert.equal(existsSync(state.inventory),false,'source ACK waited for work consumer');acks++;
   }finally{catalog.close();}
  }
  return query(text,args);
@@ -54,7 +54,7 @@ try {
   if(stage==='after-prepared-input-commit'&&lost){lost=false;throw Error('lost durable source reply');}
  }}),/lost durable source reply/);
  let result;for(let n=0;;n++){assert(n<100);result=await runPrepareBoardCycle({work,bin,sql,operator:native});if(!result.pending)break;}
- assert(acks>0);const state=JSON.parse(readFileSync(path)),generation=state.generation;
+ assert(acks>0);initialCapture=false;const state=JSON.parse(readFileSync(path)),generation=state.generation;
  assert.equal(Number((await query('SELECT count(*) n FROM state_compute_inventory_invalidations'))[0].n),0);
  const context=await splitBoardContext(bin,native);
  inventory=new PreparedWorkInventory(state.inventory,state.catalog,boardConsumerContract('inventory',state),native.contract,{...context,generation,create:true});
@@ -83,6 +83,29 @@ try {
  inventory.catalog.db.prepare('UPDATE state_prepared_input_consumption SET source=? WHERE name=?').run('foreign-source','inventory');
  await assert.rejects(runPrepareBoardCycle({work,bin,sql,operator:native}),/acknowledgement source changed/);
  inventory.catalog.db.prepare('UPDATE state_prepared_input_consumption SET source=? WHERE name=?').run(held.source,'inventory');
+ await query("INSERT INTO entity_weapon_builds(id,at,record) VALUES('new-gc-alias','day',$1)",[JSON.stringify(description.record)]);
+ await assert.rejects(runPrepareBoardCycle({work,bin,sql,operator:native,captureIntervalMs:0,fault:async stage=>{
+  if(stage==='after-source-ack-before-cursor')throw Error('lost source acknowledgement cursor');
+ }}),/lost source acknowledgement cursor/);
+ const pending=JSON.parse(readFileSync(path)).pending;assert(pending&&!pending.bootstrap&&existsSync(pending.capture));
+ for(let n=0;;n++){assert(n<100);if(!(await board.step(native.call,{budgetMs:20,enqueue:async()=>({local_gc_fixture:true})})).pending)break;}
+ for(let n=0;;n++){assert(n<100);if(!(await inventory.step(native.call,{budgetMs:20,audit:(index,reader,cut,options)=>audit.run(index,reader,cut,{...options,scratchRoot:join(work,'tmp')})})).pending)break;}
+ assert.equal(board.consumer.state().acknowledged,2);assert.equal(inventory.consumer.state().acknowledged,2);
+ await assert.rejects(runPrepareBoardCycle({work,bin,sql,operator:native,fault:async stage=>{
+  if(stage==='after-source-ack-before-cursor')throw Error('source cursor still pending');
+ }}),/source cursor still pending/);
+ assert(existsSync(pending.capture),'audited consumers erased source pending ACK capture');
+ for(let n=0;;n++){assert(n<100);if(!(await runPrepareBoardCycle({work,bin,sql,operator:native})).pending)break;}
+ assert(existsSync(pending.capture),'capture retired in the same turn before its source completion was persisted');
+ await runPrepareBoardCycle({work,bin,sql,operator:native});assert(!existsSync(pending.capture),'completed temporary capture was never retired');
+ const retained=new InventoryControl(join(work,'inventory'));
+ try {
+  assert.equal(retained.db.prepare("SELECT count(*) n FROM state_source_capture_gc WHERE phase='retired'").get().n,1);
+  const baseline=retained.db.prepare('SELECT directory FROM record_source_capture_owners o JOIN state_source_capture_gc g USING(id) WHERE g.baseline=1').get();
+  assert(baseline&&existsSync(join(baseline.directory,'capture.json')),'recovery baseline was erased');
+  assert.equal(retained.db.prepare('SELECT count(*) n FROM record_source_capture_manifests').get().n,2);
+ }finally{retained.close();}
  console.log('ok: '+(tcp?'actual TCP PostgreSQL':'PGlite')+' explicit generation, source crash/restart and early durable ACK; independent audited board/outbox; full potential-work publication with original snapshot/engine');
+ console.log('ok: actual source-created temporary delta survives pending source ACK despite both full native audits, retires after source completion, and preserves bootstrap recovery files plus sealed receipts');
 }finally{board?.close();inventory?.close();audit?.close();pipeline.close();await native.close();
  if(tcp){await tcp.unsafe('RESET search_path;DROP SCHEMA '+schema+' CASCADE').simple();await tcp.end();}else await pg.close();rmSync(root,{recursive:true,force:true});}

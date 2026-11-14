@@ -150,6 +150,8 @@ LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/board_storage.mjs", "scripts/l
                 "scripts/prepared_board_reader.mjs", "scripts/prepared_read_indexes.mjs", "scripts/prepared_board_consumer.mjs", "scripts/prepared_work_consumer.mjs", "scripts/prepared_work_inventory.mjs",
                 "scripts/prepared_board_projection.mjs", "scripts/board_projection_state.mjs", "scripts/audit_board_projection.mjs",
                 "scripts/audit_prepared_work.mjs", "scripts/audit_prepared_members.mjs",
+                "scripts/source_capture_gc.mjs", "scripts/sqlite_transaction_recovery.mjs",
+                "scripts/migrate_board_audit.mjs",
                 "scripts/pipeline_monitor.mjs",
                 "scripts/classify_compute_inventory.mjs", "scripts/capture_compute_inventory.mjs",
                 "scripts/board_meta.py", "scripts/fetch_library.sh", "scripts/library_array.mjs", "scripts/fetch_facts.sh",

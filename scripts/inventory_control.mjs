@@ -96,12 +96,12 @@ export class InventoryControl {
     return task?.phase === 'created' && task.generation === status?.generation && task.mode === mode && task.engine === engine
       && canon(task.contract) === canon(contract) ? { task: task.id, generation: task.generation } : null;
   }
-  checkTask(state) {
+  checkTask(state, {budget = true} = {}) {
     if (!state.rebuild_task) return;
     const task = this.current();
     if (!task || task.id !== state.rebuild_task || task.generation !== state.generation || ['starting', 'needs_action', 'cancelled'].includes(task.phase))
       needsAction('needs_resume', 'the durable rebuild task requires operator attention');
-    if (task.phase !== 'complete') this.budget(task);
+    if (budget && task.phase !== 'complete') this.budget(task);
   }
   async begin(context, sql) {
     const task = this.authorize(context); this.phase(task.id, 'starting');

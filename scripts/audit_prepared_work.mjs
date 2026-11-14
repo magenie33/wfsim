@@ -9,11 +9,12 @@ import {fileHash} from './inventory_publication_io.mjs';
 import {readFileSync,statSync} from 'node:fs';
 import {validateWorkSpan} from './prepared_work_consumer.mjs';
 import {PreparedMembershipAudit} from './audit_prepared_members.mjs';
+import {sqliteTransactionRecovery} from './sqlite_transaction_recovery.mjs';
 
 export class PreparedWorkAudit {
  constructor(path,{databaseBytes=4*1024**3,scratchBytes=databaseBytes}={}) {
   this.scratchBytes=scratchBytes;
-  this.db=new DatabaseSync(path);this.db.exec(`PRAGMA journal_mode=WAL;PRAGMA synchronous=FULL;PRAGMA cache_size=-16384;
+  this.db=sqliteTransactionRecovery(new DatabaseSync(path));this.db.exec(`PRAGMA journal_mode=WAL;PRAGMA synchronous=FULL;PRAGMA cache_size=-16384;
    PRAGMA temp_store=FILE;PRAGMA mmap_size=0;PRAGMA wal_autocheckpoint=256;
    CREATE TABLE IF NOT EXISTS state_work_audit_cursor(id INTEGER PRIMARY KEY CHECK(id=1),body TEXT NOT NULL);
    CREATE TABLE IF NOT EXISTS state_work_audit_queue(identity TEXT,ruler TEXT,mode TEXT,PRIMARY KEY(identity,ruler,mode)) WITHOUT ROWID;

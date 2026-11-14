@@ -24,13 +24,15 @@ import {BoardPipeline} from './board_pipeline.mjs';
 import {boardStorage} from './board_storage.mjs';
 import {ensurePreparedReadIndexes} from './prepared_read_indexes.mjs';
 import {validateWorkSpan} from './prepared_work_consumer.mjs';
+import {SourceCaptureGC} from './source_capture_gc.mjs';
+import {sqliteTransactionRecovery} from './sqlite_transaction_recovery.mjs';
 
 const load=path=>JSON.parse(readFileSync(path,'utf8')),here=dirname(fileURLToPath(import.meta.url));
 const GiB=1024**3;
 const sourceFiles=['prepared_board_inputs.mjs','prepare_board_cut.mjs','inventory_pipeline.mjs','inventory_projection.mjs',
  'capture_compute_inventory.mjs','incremental_inventory.mjs','inventory_operator.mjs','../worker/task_contract.js'];
-const consumerFiles={inventory:['prepared_work_inventory.mjs','prepared_work_consumer.mjs','audit_prepared_work.mjs','audit_prepared_members.mjs','inventory_relations.mjs','incremental_inventory.mjs','classify_compute_inventory.mjs'],
- projection:['prepared_board_projection.mjs','board_projection_state.mjs','audit_board_projection.mjs','inventory_publication.mjs','inventory_publication_io.mjs','board_heads.mjs','board_meta.py']};
+const consumerFiles={inventory:['prepared_work_inventory.mjs','prepared_work_consumer.mjs','audit_prepared_work.mjs','audit_prepared_members.mjs','inventory_relations.mjs','incremental_inventory.mjs','classify_compute_inventory.mjs','sqlite_transaction_recovery.mjs'],
+ projection:['prepared_board_projection.mjs','board_projection_state.mjs','audit_board_projection.mjs','inventory_publication.mjs','inventory_publication_io.mjs','board_heads.mjs','board_meta.py','sqlite_transaction_recovery.mjs']};
 const digest=files=>{const value=createHash('sha256');for(const file of files)value.update(readFileSync(new URL(file,import.meta.url)));return value.digest('hex');};
 const bound=(name,fallback)=>{const value=Number(process.env[name]??fallback);if(!Number.isSafeInteger(value)||value<1024**2)throw Error('invalid '+name);return value;};
 const limits=()=>({source:bound('WFSIM_BOARD_SOURCE_BYTES',8*GiB),inventory:bound('WFSIM_BOARD_WORK_BYTES',8*GiB),
@@ -61,8 +63,9 @@ function acknowledgement(path,name,source,contract) {
  }finally{db.close();}
 }
 
-export async function runPrepareBoardCycle({work,bin,sql,operator,budgetMs=1000,report=()=>{},fault=async()=>{}}) {
- work=boardStorage(work);disk(work);const root=join(work,'inventory');mkdirSync(root,{recursive:true});
+export async function runPrepareBoardCycle({work,bin,sql,operator,budgetMs=1000,captureIntervalMs=60000,report=()=>{},fault=async()=>{}}) {
+ if(!Number.isSafeInteger(captureIntervalMs)||captureIntervalMs<0)throw Error('invalid source capture interval');
+ work=boardStorage(work);const root=join(work,'inventory');mkdirSync(root,{recursive:true});
  const control=new InventoryControl(root),path=join(root,'split-state.json'),context=await splitBoardContext(bin,operator),quota=limits();
  let records;
  try {
@@ -76,11 +79,11 @@ export async function runPrepareBoardCycle({work,bin,sql,operator,budgetMs=1000,
     board:join(root,'board-'+begun.generation+'.sqlite'),audit:join(root,'work-audit-'+begun.generation+'.sqlite')};
    save(path,state);
   }
-  control.checkTask(state);
-  control.budget(control.current());
+  control.checkTask(state,{budget:false});
   const create=control.current()?.phase==='created';
   if(!existsSync(state.catalog)&&!create)needsAction('needs_restore','shared input database is missing; an explicit new rebuild is required');
   records=openCatalog(state.catalog,{...context,generation:state.generation,create,databaseBytes:quota.source});
+  sqliteTransactionRecovery(records.db);sqliteTransactionRecovery(control.db);
   const inputs=new PreparedBoardInputs(records.db,state.contract);
   ensurePreparedReadIndexes(records.db);
   if(create)control.phase(state.rebuild_task,'active',state.generation);
@@ -91,13 +94,20 @@ export async function runPrepareBoardCycle({work,bin,sql,operator,budgetMs=1000,
     inputs.observeAcknowledgement(name,ack);
    }
   }
-  inputs.collect();
+  const captureGC=new SourceCaptureGC(control.db,root,state,{guard:()=>boardStorage(work)}),pending=state.pending;
+  const references=pending?[pending.capture,pending.changes,pending.applies,pending.delta,...Object.values(pending.raw||{})].filter(value=>typeof value==='string'):[];
+  const collected=await captureGC.collect(inputs,{normalizedCut:Number(records.meta.normalized_cut||0),references,fault});
+  report('capture-retention',{...collected,state:captureGC.status()});
+  disk(work);control.budget(control.current());inputs.collect();
   const complete=records.db.prepare('SELECT min(acknowledged) n FROM state_prepared_board_consumers').get().n;
   if(complete)control.complete(state);
-  if(!state.pending&&state.normalized_at&&Date.now()-Date.parse(state.normalized_at)<60000)return {pending:false,state};
+  if(!state.pending&&state.normalized_at&&Date.now()-Date.parse(state.normalized_at)<captureIntervalMs)return {pending:false,state};
   if(!state.pending) {
-   const capture=()=>captureEpoch({sql,catalog:records,generation:state.generation,dir:join(root,'capture-'+Date.now()),
-    bootstrap:!records.meta.normalized_cut,relational:true,recordArray:false,budgetCheck:()=>control.checkTask(state),report});
+   const capture=async()=>{
+    const owner=captureGC.reserve(),cut=await captureEpoch({sql,catalog:records,generation:state.generation,dir:owner.directory,
+     bootstrap:!records.meta.normalized_cut,relational:true,recordArray:false,budgetCheck:()=>control.checkTask(state),report});
+    captureGC.seal(owner.id,cut);return cut;
+   };
    if(!records.meta.normalized_cut)await control.capture(state,capture,()=>save(path,state));
    else {state.pending=await capture();save(path,state);}
   }
@@ -107,6 +117,7 @@ export async function runPrepareBoardCycle({work,bin,sql,operator,budgetMs=1000,
   records.beginEpoch(cut.receipt);
   const result=await prepareBoardCut(inputs,records,cut,operator.call,{budgetMs,check:()=>{disk(work);control.checkTask(state);},fault});
   if(result.pending)return result;
+  captureGC.bind(cut.receipt.epoch,result.cut);
   // Source invalidations are acknowledged after their durable handoff, independently of both consumers.
   let offset=records.meta.source_ack?.epoch===cut.receipt.epoch?records.meta.source_ack.offset:0;
   const until=performance.now()+budgetMs;
