@@ -68,6 +68,18 @@ check current applicable coverage through indexed build/ruler/mode keys. Existin
 scores satisfy intake; missing ones join one computation per actual input.
 Storage legality is distinct from eligibility on a specific ruler.
 
+An absent or null captured scope selects the current scope during native
+normalization. A recorded parent scope stays authoritative. Database admission
+requires an object scope, and a correction must include its observed
+measurement. A derived expansion must retain its parent's exact scope.
+
+The storage owner may recover an invalid empty completion through
+`build_workflow_recover` using the original request normalized by the current
+native intake. Recovery retains the original review id, source and immutable
+captures, records the failed completion, and admits the replacement through the
+normal shared computation path. A changed baseline or cancelled workflow
+refuses recovery; a repeated identical recovery reuses its recorded outcome.
+
 The legacy family admission endpoint returns its disabled state. Existing
 recorded family requests continue to compute and deliver, without release-based
 reopening. Trusted derived provenance is outside the build and cannot be

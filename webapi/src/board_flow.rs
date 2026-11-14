@@ -7,7 +7,7 @@ fn decoded(value: Option<&Value>) -> Option<Value> {
     match value? {
         Value::String(text) => serde_json::from_str(text).ok(),
         value => Some(value.clone()),
-    }
+    }.filter(|value| !value.is_null())
 }
 fn record(build: &builds::ValidBuild) -> Value {
     let record=crate::board_rows::canonical_record(build);

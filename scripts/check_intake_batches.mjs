@@ -12,6 +12,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
 import { query, close } from './db.mjs';
+import { captureInbox, inboxSource } from './inbox_reader.mjs';
 
 const { intakeBatches, runIntakeCommand } = await import(process.env.WFSIM_INTAKE_MODULE
   ? pathToFileURL(process.env.WFSIM_INTAKE_MODULE).href : './intake_batches.mjs');
@@ -87,6 +88,19 @@ try {
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   process.env.FACTORY_ORIGIN = `http://127.0.0.1:${server.address().port}`; process.env.FACTORY_TOKEN = 'local-fixture';
   console.log(client ? 'intake batches: postgres.js TCP transport' : 'intake batches: PGlite transport');
+
+  await seed([arrival('database-view')]);
+  let projected='';
+  const capture=await captureInbox({source:inboxSource(),maxRows:1,emit:line=>{projected+=line;}});
+  assert.equal(capture.rows,1);
+  assert.equal(JSON.parse(projected).workflow_scope,null,'the actual view projects an explicit NULL for a new root');
+  assert.equal(JSON.parse(projected).observation,null);
+  await execute(file('database-view.ndjson',projected));
+  assert.deepEqual(await pending(),[]);assert.equal((await saved()).length,1);
+  assert((await query('SELECT count(*) n FROM state_build_workflow_nodes'))[0].n>0,'view → reader → native → SQL retains real work');
+  assert((await query('SELECT count(*) n FROM state_compute_scheduling'))[0].n>0);
+  await clear();
+  console.log('ok: actual nullable inbox view survives the shared reader, native normalization, admission and acknowledgment');
 
   const different = arrival('bb'); different.record.mods = mods.map(mod => mod === 'speed_trigger' ? 'vile_acceleration' : mod);
   const rows = [arrival('a'), different, arrival('ccc', 'braton_prime', { initiator: 'user:first' }),

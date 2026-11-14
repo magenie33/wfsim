@@ -28,6 +28,7 @@ import { identityPage, applyIdentityEntry } from "./compute_identity.mjs";
 import { queueSourcePage } from "./compute_queue_sources.mjs";
 import { buildWorkflowCases,workflowProtocolCases,inboxReadPlanCases,queuedReviewAcrossReleaseCases } from "./check_build_workflows.mjs";
 import { queueZoneCases } from "./check_queue_zones.mjs";
+import { workflowRecoveryCases } from "./check_workflow_recovery.mjs";
 import { factory, questionId as productionQuestionId, canon } from "../worker/tasks.js";
 
 const hashSource = readFileSync(new URL("../worker/computation_input.js", import.meta.url),"utf8");
@@ -147,6 +148,7 @@ try {
   await workflowProtocolCases();
   await inboxReadPlanCases();
   await queuedReviewAcrossReleaseCases();
+  await workflowRecoveryCases();
   console.log("compute admission: shared identity, queue zones, held execution, all origins, retries and atomic rejection pass");
 } finally { await db.close(); }
 

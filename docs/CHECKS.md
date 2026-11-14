@@ -975,6 +975,11 @@ A failed later read retains its captured prefix but cannot report success.
 source eligibility before the priority limit. Its queued-review case crosses
 a release, accepts two independent fresh witnesses and delivers the corrected
 score while retaining the original observation and accepted result.
+`check_workflow_recovery.mjs` covers original review reuse, immutable captures,
+idempotency before and after two fresh witnesses, changed-baseline and cancelled
+workflow refusals, and the owner-only recovery entry. Its baseline guard has a
+failing mutation control. Admission also rejects null scopes, missing observed
+correction measurements and changed parent scopes.
 
 `check_cancel_queue.mjs` also runs cancellation through the scripts' actual
 `postgres.js` transport when `WFSIM_CANCEL_QUEUE_PG_URL` names a local test
@@ -997,6 +1002,8 @@ reply or the final delete reply does not duplicate calculations. Row, UTF-8
 byte and deadline bounds prevent new unbounded work.
 The actual CLI commits a captured prefix and reports its subsequent read error;
 a changed capture is refused before any arrival is spent.
+The actual nullable inbox view passes through the shared reader and native
+binary into SQL admission with nonempty workflow steps and scheduled work.
 
 ## `check_settle`
 

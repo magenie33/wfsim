@@ -61,6 +61,9 @@ ALTER TABLE entity_measurement_reviews ADD COLUMN IF NOT EXISTS workflow TEXT CO
 CREATE OR REPLACE FUNCTION build_workflow_system_key(text,text) RETURNS text LANGUAGE sql IMMUTABLE AS $$
   SELECT 'system:'||md5(jsonb_build_array($1,$2)::text)
 $$;
+CREATE OR REPLACE FUNCTION build_workflow_recovery_key(text) RETURNS text LANGUAGE sql IMMUTABLE AS $$
+  SELECT 'recover-empty:'||$1
+$$;
 -- Scope enrichment must preserve the primary-key path used by bounded readers.
 CREATE OR REPLACE VIEW state_build_inbox_inputs AS
   SELECT b.id,b.at,b.record,b.initiator,b.family_source,b.observation,
@@ -111,6 +114,7 @@ CREATE OR REPLACE FUNCTION build_workflow_expansion(text,text,jsonb,text) RETURN
 DECLARE expansion_id text; b jsonb; held text; n record; f record; request jsonb; patch jsonb;
   specs jsonb:='[]';demands jsonb:='[]';payload jsonb;ordinal bigint:=0;verb text;question text;v_review_id text;v_review_ref text;
 BEGIN
+  IF jsonb_typeof($3->'scope') IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'invalid captured workflow scope'; END IF;
   IF jsonb_typeof($3->'nodes') IS DISTINCT FROM 'array' OR jsonb_typeof($3->'builds') IS DISTINCT FROM 'array' THEN
     RAISE EXCEPTION 'invalid workflow expansion'; END IF;
   expansion_id:=$1||':'||coalesce($2,'root');
@@ -125,6 +129,11 @@ BEGIN
     SELECT $1,coalesce($2||'.','')||(ordinality-1)::text,expansion_id,value,'pending',$4
       FROM jsonb_array_elements($3->'nodes') WITH ORDINALITY;
   SELECT w.kind,w.build_id,w.source,s.zone,s.due_at,s.initiator INTO STRICT f FROM entity_build_workflows w JOIN state_build_workflows s ON s.id=w.id WHERE w.id=$1;
+  IF $2 IS NULL AND f.kind='correction' AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements($3->'nodes') item
+      WHERE item->>'kind'='measure' AND item->>'identity'=f.build_id
+        AND item->>'ruler'=f.source#>>'{observation,ruler}' AND item->>'mode'=f.source#>>'{observation,mode}') THEN
+    RAISE EXCEPTION 'correction expansion is missing the observed measurement';
+  END IF;
   FOR n IN SELECT * FROM state_build_workflow_nodes WHERE expansion=expansion_id ORDER BY position LOOP
     IF n.definition->>'kind'='measure' THEN
       IF f.kind='intake' AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
@@ -193,7 +202,8 @@ END $$;
 CREATE OR REPLACE FUNCTION build_intake_batch(text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE input jsonb; plan jsonb; observation jsonb; inserted text; held text; flow_id text;
   at text:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
-  reason text; priority bigint; origin jsonb; parent text; node_key text; captured_key text; trigger_key text;
+  reason text; priority bigint; origin jsonb; parent text; node_key text; captured_key text; trigger_key text; parent_scope jsonb;
+  recovery text; prior record; review record;
 BEGIN
   IF jsonb_typeof($1::jsonb) IS DISTINCT FROM 'array' OR jsonb_array_length($1::jsonb)>1000 THEN
     RAISE EXCEPTION 'invalid intake batch'; END IF;
@@ -212,12 +222,56 @@ BEGIN
     trigger_key:=coalesce(observation->>'review',CASE WHEN input#>>'{system_source,id}' IS NOT NULL
       THEN build_workflow_system_key(input#>>'{system_source,id}',input->>'id') END,
       'intake:'||(input->>'id')||':'||md5(jsonb_build_array(input->'from',plan->'scope')::text));
+    recovery:=input->>'recovery_of';
+    IF recovery IS NOT NULL THEN
+      IF NOT pg_has_role(session_user,(SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='entity_build_workflows'::regclass),'MEMBER') THEN
+        RAISE EXCEPTION 'workflow recovery requires the storage owner' USING ERRCODE='42501';
+      END IF;
+      trigger_key:=build_workflow_recovery_key(recovery);
+      IF EXISTS(SELECT 1 FROM record_build_workflow_triggers WHERE id=trigger_key) THEN
+        IF NOT EXISTS(SELECT 1 FROM record_build_workflow_triggers t JOIN entity_build_workflows w ON w.id=t.workflow
+            WHERE t.id=trigger_key AND w.build_id=input->>'id' AND t.source#>>'{recovery,plan_md5}'=md5(plan::text)
+              AND t.source->'observation' IS NOT DISTINCT FROM coalesce(observation,'null'::jsonb)) THEN
+          RAISE EXCEPTION 'workflow recovery input changed' USING ERRCODE='40001';
+        END IF;
+        CONTINUE;
+      END IF;
+      SELECT w.build_id,w.kind,w.source,s.state,s.zone,s.due_at,s.completed_at,scope.definition AS scope INTO prior
+        FROM entity_build_workflows w JOIN state_build_workflows s ON s.id=w.id JOIN entity_build_workflow_scopes scope ON scope.id=w.scope_id
+        WHERE w.id=recovery FOR UPDATE OF s;
+      IF NOT FOUND OR prior.state<>'succeeded' OR prior.kind NOT IN('intake','correction') OR prior.build_id IS DISTINCT FROM input->>'id'
+          OR jsonb_typeof(prior.scope)='object' OR EXISTS(SELECT 1 FROM state_build_workflow_nodes WHERE workflow=recovery)
+          OR NOT EXISTS(SELECT 1 FROM entity_build_workflow_expansions e WHERE e.workflow=recovery AND e.parent_node IS NULL AND e.plan->'nodes'='[]'::jsonb)
+          OR coalesce((input->>'derived')::boolean,false) OR input->'flow_source' IS NOT NULL
+          OR (input->'system_source' IS NOT NULL AND input->'system_source'<>'null'::jsonb) THEN
+        RAISE EXCEPTION 'workflow is not an invalid empty completion';
+      END IF;
+      IF prior.kind='correction' THEN
+        IF jsonb_typeof(observation) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'workflow recovery requires its original observation'; END IF;
+        IF observation-'valid' IS DISTINCT FROM (prior.source->'observation')-'valid' OR observation->>'valid' IS DISTINCT FROM 'true' THEN
+          RAISE EXCEPTION 'workflow recovery changed its original observation';
+        END IF;
+        SELECT * INTO review FROM entity_measurement_reviews WHERE id=observation->>'review' FOR UPDATE;
+        IF NOT FOUND OR review.state<>'superseded' OR review.workflow IS DISTINCT FROM recovery OR review.task_id IS NOT NULL
+            OR NOT EXISTS(SELECT 1 FROM state_board_measurement_selection s WHERE s.identity=review.identity AND s.ruler=review.ruler AND s.mode=review.mode
+              AND s.finished_at=observation->>'baseline_finished_at' AND s.score=(observation->>'baseline_score')::double precision AND s.metric=observation->>'metric') THEN
+          RAISE EXCEPTION 'workflow recovery baseline or review changed' USING ERRCODE='40001';
+        END IF;
+        UPDATE entity_measurement_reviews SET state='waiting',completed_at=NULL WHERE id=review.id;
+      END IF;
+      input:=input||jsonb_build_object('from',prior.source->'inbox','initiator','system',
+        'deadlines',coalesce(prior.source->'deadlines','{}'::jsonb)||jsonb_build_object(prior.kind,prior.due_at));
+    END IF;
     IF EXISTS(SELECT 1 FROM record_build_workflow_triggers WHERE id=trigger_key) THEN CONTINUE; END IF;
     parent:=input#>>'{flow_source,workflow}';node_key:=input#>>'{flow_source,node}';
     IF parent IS NOT NULL THEN
       PERFORM 1 FROM state_build_workflow_nodes n JOIN state_build_workflows f ON f.id=n.workflow
         WHERE n.workflow=parent AND n.id=node_key AND n.state='awaiting_intake' AND f.state='active' FOR UPDATE OF n;
       IF FOUND THEN
+        SELECT scope.definition INTO STRICT parent_scope FROM entity_build_workflows f JOIN entity_build_workflow_scopes scope ON scope.id=f.scope_id WHERE f.id=parent;
+        IF jsonb_typeof(parent_scope) IS DISTINCT FROM 'object' OR plan->'scope' IS DISTINCT FROM parent_scope THEN
+          RAISE EXCEPTION 'derived input changed its captured workflow scope';
+        END IF;
         PERFORM build_workflow_expansion(parent,node_key,plan,at);
         UPDATE state_build_workflow_nodes SET state='succeeded' WHERE workflow=parent AND id=node_key;
         PERFORM build_workflow_finish(parent,at);
@@ -226,7 +280,8 @@ BEGIN
     END IF;
     IF coalesce((input->>'derived')::boolean,false) THEN CONTINUE; END IF;
     reason:=NULL;
-    IF jsonb_typeof(input->'system_source')='object' THEN reason:='system';priority:=coalesce((input->>'zone')::bigint,0);
+    IF recovery IS NOT NULL THEN reason:=prior.kind;priority:=prior.zone;
+    ELSIF jsonb_typeof(input->'system_source')='object' THEN reason:='system';priority:=coalesce((input->>'zone')::bigint,0);
     ELSIF observation->>'valid'='true' AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
       JOIN entity_measurement_reviews r ON r.id=observation->>'review'
       WHERE s.identity=input->>'id' AND s.ruler=observation->>'ruler' AND s.mode=observation->>'mode'
@@ -257,6 +312,10 @@ BEGIN
     origin:=jsonb_build_object('kind',reason,'inbox',coalesce(input->'from','[]'::jsonb),'observation',observation,
       'system',input->'system_source','deadlines',input->'deadlines','origin',CASE WHEN reason='system' OR input->>'initiator'='system' THEN 'system'
         WHEN input->>'initiator'='anonymous' OR input->>'initiator' LIKE 'user:%' OR input->>'initiator' LIKE 'bot:%' THEN 'requested' ELSE 'unknown' END);
+    IF recovery IS NOT NULL THEN
+      origin:=origin||jsonb_build_object('recovery',jsonb_build_object('workflow',recovery,'reason','invalid empty captured scope',
+        'prior_state',prior.state,'prior_completed_at',prior.completed_at,'plan_md5',md5(plan::text),'original_source',prior.source));
+    END IF;
     IF flow_id IS NULL THEN
       flow_id:=gen_random_uuid()::text;
       INSERT INTO entity_build_workflow_scopes(id,definition) VALUES(md5((plan->'scope')::text),plan->'scope') ON CONFLICT DO NOTHING;
@@ -280,9 +339,20 @@ BEGIN
       FROM state_build_workflow_nodes n WHERE n.workflow=flow_id AND n.task_id IS NOT NULL ON CONFLICT DO NOTHING;
     IF observation->>'review' IS NOT NULL THEN UPDATE entity_measurement_reviews SET workflow=flow_id
       WHERE id=observation->>'review' AND state='waiting'; END IF;
+    IF recovery IS NOT NULL THEN UPDATE state_build_workflows SET state='failed' WHERE id=recovery; END IF;
     PERFORM build_workflow_finish(flow_id,at);
   END LOOP;
 END $$;
+
+CREATE OR REPLACE FUNCTION build_workflow_recover(text,text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE input jsonb:=$2::jsonb; recovered text;
+BEGIN
+  IF jsonb_typeof(input) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'invalid workflow recovery input'; END IF;
+  PERFORM build_intake_batch(jsonb_build_array(input||jsonb_build_object('recovery_of',$1))::text);
+  SELECT workflow INTO STRICT recovered FROM record_build_workflow_triggers WHERE id=build_workflow_recovery_key($1);
+  RETURN jsonb_build_object('workflow',recovered,'recovery_of',$1,'trigger',build_workflow_recovery_key($1));
+END $$;
+REVOKE ALL ON FUNCTION build_workflow_recover(text,text) FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION build_spend_submissions(text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE input record; at text:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');

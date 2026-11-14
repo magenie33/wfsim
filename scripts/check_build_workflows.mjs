@@ -81,6 +81,9 @@ export async function buildWorkflowCases(db) {
   const untraced=await fixture('untraced-system','',{system_source:{}});
   await assert.rejects(intake(untraced),/explicit source identity/);
   assert.equal(await db.get('SELECT id FROM entity_weapon_builds WHERE id=?',untraced.id),null);
+  const absentScope=await fixture('workflow-null-scope');absentScope.flow.scope=null;absentScope.flow.nodes=[];
+  await assert.rejects(intake(absentScope),/captured workflow scope/);
+  assert.equal(await db.get('SELECT id FROM entity_weapon_builds WHERE id=?',absentScope.id),null,'an invalid scope cannot commit an entity or empty success');
   for(const id of ['system-batch-a','system-batch-b']) {
     const input=await fixture(id,'',{system_source:{id:'one-system-command'},zone:99});await intake(input);
     assert.equal(await count(id),1,'one command can independently target multiple builds');
@@ -116,6 +119,8 @@ export async function buildWorkflowCases(db) {
   const continuation=await db.get('SELECT * FROM state_build_inbox_priorities WHERE id=?',inbox.id);
   assert.equal(continuation.zone,1,'a continuation inherits its active parent workflow priority');
   const derived=await fixture('workflow-derived','',{derived:true,flow_source:{workflow:optNode.workflow,node:optNode.id}});
+  await assert.rejects(intake({...derived,flow:{...derived.flow,scope:{boards:[]}}}),/captured workflow scope/);
+  assert.equal((await nodes(opt.id))[0].state,'awaiting_intake','a mismatched child cannot consume its parent continuation');
   derived.flow.scope=opt.flow.scope;await intake(derived);
   assert.equal(await count(derived.id),0,'derived output advances its parent instead of restarting fanout');
   assert.equal((await nodes(opt.id))[0].state,'succeeded');
@@ -138,6 +143,9 @@ export async function buildWorkflowCases(db) {
   await intake({...corrected,observation:invalidObservation});assert.equal(await count(corrected.id),1,'an unmatching environment cannot trigger correction');
   await db.run("UPDATE entity_measurement_reviews SET created_at='2020-01-01',round_at='2020-01-01' WHERE id=?",review.id);
   const validReview=await observe();const validInbox=await db.get('SELECT * FROM record_build_submissions WHERE id=?','review:'+validReview.id);
+  await assert.rejects(intake({...corrected,flow:{...corrected.flow,nodes:[]},
+    observation:{...JSON.parse(validInbox.observation),valid:true}}),/observed measurement/);
+  assert.equal((await db.get('SELECT state FROM entity_measurement_reviews WHERE id=?',validReview.id)).state,'waiting');
   await intake({...corrected,observation:{...JSON.parse(validInbox.observation),valid:true}});
   assert.equal(await count(corrected.id),2);const latest=(await nodes(corrected.id)).at(-1);
   assert.equal((await db.get('SELECT zone FROM state_compute_work WHERE id=?',latest.computation)).zone,1);

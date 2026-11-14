@@ -234,6 +234,24 @@ mod tests {
         assert_eq!(builds[0]["initiator"],"user:code");assert!(!builds[0]["record"].to_string().contains("user:code"));
     }
     #[test]
+    fn nullable_database_scope_captures_the_same_work_as_an_absent_scope() {
+        let (fresh,..)=run(vec![arrival("fresh",json!({}))]);
+        let (projected,..)=run(vec![arrival("projected",json!({"workflow_scope":null,"observation":null,"family_source":null}))]);
+        assert!(!fresh[0]["flow"]["nodes"].as_array().unwrap().is_empty());
+        assert_eq!(projected[0]["flow"],fresh[0]["flow"],"a database NULL is an absent captured scope");
+        assert_eq!(projected[0]["observation"],Value::Null);
+        let (encoded_null,..)=run(vec![arrival("encoded-null",json!({"workflow_scope":"null","observation":"null"}))]);
+        assert_eq!(encoded_null[0]["flow"],fresh[0]["flow"]);
+        assert_eq!(encoded_null[0]["observation"],Value::Null);
+        let captured=fresh[0]["flow"]["scope"].clone();
+        for scope in [captured.clone(),Value::String(captured.to_string())] {
+            let (continued,..)=run(vec![arrival("continued",json!({"workflow_scope":scope,"family_source":"workflow|parent|1"}))]);
+            assert_eq!(continued[0]["flow"]["scope"],captured,"a captured scope remains authoritative");
+            assert_eq!(continued[0]["flow_source"],json!({"workflow":"parent","node":"1"}));
+            assert!(continued[0]["flow"]["nodes"].as_array().unwrap().iter().all(|n| n["kind"]=="measure"));
+        }
+    }
+    #[test]
     fn legality_and_board_visibility_are_separate() {
         let a=json!({"id":"a","at":"2026-11-11","record":{"weapon":"braton","mods":["serration"]}});
         let bad=json!({"id":"bad","record":{"weapon":"missing","mods":[]}});
