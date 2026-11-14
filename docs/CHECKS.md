@@ -258,6 +258,23 @@ It also checks timing reuse provenance, the payout target and private output.
 `check_live_publish.mjs` verifies bounded upload progress, the final stamp,
 request timeouts, lost replies, atomic checkpoints and corrupt-ledger refusal.
 
+`check_inventory_publication.mjs` compares every disk-generated weapon,
+index and state byte with the full native renderer, including ranks, rolls,
+assembly parts, aliases, ties and metadata-only updates. A forced incorrect
+entry-floor decision must fail this comparison.
+`check_inventory_projection_audit.mjs` requires changed or absent modes in
+actual projected missing-work rows to fail the independent classifier audit.
+`check_inventory_board_pipeline.mjs` tests explicit bootstrap admission,
+sealed captures, native restarts, lost commits, exact acknowledgments and
+expired-cut recovery through the production coordinator.
+`check_board_projection_replay.mjs` runs that audit and renderer from immutable
+offline sources, including process death, restart and source hash rejection.
+`check_board_pipeline.mjs` tests immutable publication handoff, independent
+slow consumers, stage pause, per-file response loss, serial delivery, stamp
+ordering, disk backpressure and corrupted artifacts against the real receiver.
+`check_board_projection_consumers.mjs` tests bounded heads and stamp consumers
+with a large tied weapon file and the existing receiver size limit.
+
 `check_incremental_inventory.mjs` tests the disk catalog, exact union and audit,
 owner replacement, bounded caches, shadow fencing and crash replay.
 `check_incremental_inventory_pg.mjs` tests the real schema, transactional dirty

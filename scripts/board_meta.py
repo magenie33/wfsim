@@ -53,6 +53,71 @@ INDEX = "index"
 HEADS = "heads"
 
 
+def file_hash(path: pathlib.Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def array_rows(path: pathlib.Path):
+    decoder = json.JSONDecoder()
+    with path.open(encoding="utf-8") as source:
+        buffer, ended, opened, comma, eof = "", False, False, False, False
+        while True:
+            buffer = buffer.lstrip()
+            if not buffer and not eof:
+                chunk = source.read(65536)
+                eof = not chunk
+                buffer += chunk
+                continue
+            if ended:
+                if buffer:
+                    raise ValueError("JSON data after board array")
+                if eof:
+                    return
+                continue
+            if not opened:
+                if not buffer.startswith("["):
+                    raise ValueError("board array required")
+                opened, buffer = True, buffer[1:]
+                continue
+            if buffer.startswith("]"):
+                if comma:
+                    raise ValueError("board array trailing comma")
+                ended, buffer = True, buffer[1:]
+                continue
+            try:
+                row, offset = decoder.raw_decode(buffer)
+            except json.JSONDecodeError:
+                if eof:
+                    raise
+                chunk = source.read(65536)
+                eof = not chunk
+                buffer += chunk
+                if len(buffer.encode("utf-8")) > 8 * 1024 * 1024:
+                    raise ValueError("board value exceeds byte bound") from None
+                continue
+            if offset == len(buffer) and not eof:
+                chunk = source.read(65536)
+                eof = not chunk
+                buffer += chunk
+                continue
+            yield row
+            buffer = buffer[offset:].lstrip()
+            while not buffer and not eof:
+                chunk = source.read(65536)
+                eof = not chunk
+                buffer += chunk
+            if buffer.startswith(","):
+                comma, buffer = True, buffer[1:]
+            elif buffer.startswith("]"):
+                comma = False
+            else:
+                raise ValueError("board array separator required")
+
+
 def manifest() -> dict[str, str]:
     """Every published file's own digest, by stem.
 
@@ -61,8 +126,8 @@ def manifest() -> dict[str, str]:
     whole refresh on a nested name (`desktop/src/protocol.rs` `refresh_board`).
     """
     return {
-        f.stem: hashlib.sha256(f.read_bytes()).hexdigest()
-        for f in sorted(BOARD.glob("*.json"))
+        f.stem: file_hash(f)
+        for f in sorted(BOARD.glob("*.json")) if f.resolve() != OUT.resolve()
     }
 
 
@@ -102,10 +167,10 @@ def build() -> dict:
 
     scored = [b["scored_at_epoch_seconds"] for b in boards.values()
               if b.get("scored_at_epoch_seconds")]
-    weapons = [f for f in sorted(BOARD.glob("*.json")) if f.stem != INDEX]
+    weapons = [f for f in sorted(BOARD.glob("*.json")) if f.stem != INDEX and f.resolve() != OUT.resolve()]
     rows = 0
     for f in weapons:
-        rows += len(json.loads(f.read_text(encoding="utf-8")))
+        rows += sum(1 for _ in array_rows(f))
     return {
         # WHICH BOARD THIS IS, in one value — the whole point of the file: a
         # client compares this against the copy it holds and fetches nothing
@@ -114,7 +179,7 @@ def build() -> dict:
         # …AND WHICH PART OF IT MOVED, so a client that disagrees fetches the
         # files that differ rather than the board.
         "files": files,
-        "bytes": sum(f.stat().st_size for f in BOARD.glob("*.json")),
+        "bytes": sum(f.stat().st_size for f in BOARD.glob("*.json") if f.resolve() != OUT.resolve()),
         "weapons": len(weapons),
         "rows": rows,
         # The FRESHEST of the boards, for a page that shows one line. The
@@ -130,8 +195,8 @@ def main() -> None:
     # Compact and key-sorted, the same rule the publisher follows: a stamp that
     # reformats itself leaves the file dirty after every local build, and a
     # careless commit then ships it over a fresher one.
-    OUT.write_text(json.dumps(meta, separators=(",", ":"), sort_keys=True),
-                   encoding="utf-8", newline="\n")
+    with OUT.open("w", encoding="utf-8", newline="\n") as output:
+        output.write(json.dumps(meta, separators=(",", ":"), sort_keys=True))
     print(f"board: stamp {meta['digest'][:12]} — {meta['rows']} rows in "
           f"{meta['weapons']} file(s) -> {OUT}")
 

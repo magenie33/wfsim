@@ -462,17 +462,35 @@ admission rules or ordered outputs. Library normalization retains its shared poo
 `live_board.sh` defaults to the guarded inventory coordinator
 (`INCREMENTAL_INVENTORY=1`). Explicit `INCREMENTAL_INVENTORY=0` selects legacy
 full-library reads.
-It uses the existing ranker command pipes, with one kernel-held SQLite writer
-lock around a cycle. The ranker starts empty; a full bootstrap requires an
+It uses a stateless native board operator and a disk projection, with one
+kernel-held SQLite writer lock around a cycle. A full bootstrap requires an
 explicit durable rebuild task. This
 path replaces the ranker's hourly library reload and rolling score
 read with authoritative source updates. Normal queue maintenance advances
 durable registration. Official scoring reads only its leased inputs.
 
-Live board uploads run in one background process with a per-request timeout.
-Confirmed file hashes are flushed through an atomic checkpoint replacement;
-the captured board stamp is sent after its files. Uploads do not hold the
-inventory loop, and a failed uploader resumes from its confirmed checkpoint.
+Live board uploads run independently from the disk projection. Audited files
+are frozen into content-addressed blobs before their publication manifest
+commits. The publisher consumes manifests in order and acknowledges each file
+durably; the captured stamp is sent last. A lost response retries the same
+bytes. A paused or failed publisher retains pending manifests while projection
+continues within the outbox's disk bound. Reaching that bound retains the
+projection checkpoint and reports backpressure.
+
+`node scripts/board_pipeline.mjs status <work>` reports intake, projection and
+publication controls and progress plus pending publication packages and stored
+bytes. `pause <work> <stage>` and `resume <work> <stage>` control subsequent
+passes. `deliver <work>` performs one bounded publication pass. Each consumer
+owns its retry; pausing projection does not stop delivery of audited packages.
+`WFSIM_BOARD_OUTBOX_BYTES` bounds retained blobs; the filesystem keeps its reserve.
+
+The disk generation contract declares its record codec. Raw and canonical
+records with equal content share a compressed body, referenced by identity.
+Stored records retain precedence over normalized fallbacks. Independent audit
+streams the sealed raw inputs and projected membership into a disk classifier,
+then compares every computation identity, category and registration flag. It
+does not create a full membership export. Production and offline replay use
+this same audit before preparing publication.
 
 `worker/pg/inventory.sql` records coalesced build and question invalidations in
 the same transaction as source changes. Revisions are equality tokens, never a
@@ -528,7 +546,7 @@ The operator records a request with the deployed scripts and binaries:
 ```sh
 node scripts/inventory_rebuild.mjs status --work "$WORK"
 node scripts/inventory_rebuild.mjs request --work "$WORK" --bin "$BIN" \
-  --mode classic --reason "approved full inventory rebuild" \
+  --mode board --reason "approved full inventory rebuild" \
   --max-new-bytes "$INVENTORY_REBUILD_MAX_BYTES"
 node scripts/inventory_rebuild.mjs cancel --work "$WORK" \
   --task "$REBUILD_TASK_ID" --reason "cancel this attempt"
@@ -546,10 +564,10 @@ retains partial inputs, catalogs and the task history. A new attempt needs a
 new request. Use `--mode relational` for the relational coordinator.
 
 Blocked inventory reports `needs_bootstrap`, `needs_restore`, `needs_resume`,
-`request_changed` or `needs_space` in `inventory/status.json`. The live loop
-keeps its ranker process and published files, stops its active uploader, skips
-publication and waits its normal
-poll interval. It does not restart the ranker to resolve a blocked inventory.
+`request_changed` or `needs_space`. The live loop retains its native process
+and published files and waits its normal poll interval. Already audited
+publication packages continue delivery independently. It does not restart the
+native operator to resolve a blocked inventory.
 
 Publication uses the sealed cut's database time and snapshot, even if later
 changes are already pending. It never advances freshness to the publication

@@ -34,7 +34,7 @@ export async function openInventoryOperator(binary, { stderr = 'inherit', timeou
   try {
     const contract = await next();
     if (contract.v !== 1 || !contract.ready || contract.max_items !== 256) throw Error('invalid inventory operator contract');
-    return { contract, close, pid: child.pid, call: async (op, items) => {
+    return { contract, close, pid: child.pid, get healthy() { return !closed && !failed; }, call: async (op, items) => {
       if (busy || closed || failed) throw failed || Error('inventory operator unavailable');
       if (!Array.isArray(items) || items.length > contract.max_items) throw Error('inventory operator item bound');
       const body = JSON.stringify({ op, items }) + '\n';

@@ -682,11 +682,20 @@ current and writes its numbers on top.
 
 ## The live board
 
-**WHAT THE SITE SHOWS IS `scores`, RANKED THE MOMENT IT MOVES.** Every 20 s
-`scripts/live_board.sh` on the board server reads the rows `scores` gained
-(`live_publish.mjs delta` — a verification, the scorer, the server's own
-settling), hands them to the ranker, stamps the result with `board_meta.py`
-and pushes the files that changed through
+The live board projects verified measurements from the library database.
+`scripts/live_board.sh` runs intake independently from projection. The guarded
+disk coordinator consumes sealed source cuts, applies indexed changes and
+uses the native board operator for normalization, eligibility and rendering.
+Neither intake nor projection simulates fights.
+
+Projection checkpoints commit complete input pages and native output chunks.
+A restarted stateless operator resumes the same generation and sealed input.
+Bootstrap requires an explicit rebuild task; startup never replaces a missing
+catalog or authorizes a full source capture. The independent disk classifier
+audits bootstrap before any publication handoff.
+
+Completed board files, heads and the `board_meta.py` stamp become an immutable
+publication package. An independent consumer sends changed content through
 `PUT /api/board/live/<file>` (bearer `BOARD_PUSH_TOKEN`), the stamp last, into
 the bucket `wfsim-public` under their public paths, each kept thirty seconds.
 
@@ -699,32 +708,18 @@ names that address — a desktop shell in the field, the bots, the MCP server,
 the relay. Everything in that bucket is public, so nothing private is ever
 written to it.
 
-**THE RANKER HOLDS THE BOARD; A CYCLE COSTS WHAT IT MOVED.** `wfsim-board
---serve` (§"The assembly") reads the library and every fact once when it
-starts, writes the whole board, and then takes one command a line on stdin:
-the builds the cycle took in, the facts it read, `publish`. A publish re-ranks
-only the (ruler, weapon) pairs those moved and writes only the files whose
-bytes changed, so a cycle's cost follows the facts that arrived and never the
-size of the library. A new build moves a row only once it has a fact.
+The publisher acknowledges each file durably and sends the captured stamp
+last. Upload failures retain their package and never occupy the verifier or
+projection consumer. The outbox has a disk bound; reaching it preserves the
+projection checkpoint for retry. Stage controls and terminal conditions are
+specified in [COMPUTE_TASKS.md](COMPUTE_TASKS.md).
 
-Incremental inventory calls `publish_step 8`, yielding between whole weapon
-files after eight files or a soft second. A round freezes its file list;
-later changes wait for another round. The reply carries files written,
-files removed, whether the round remains and whether later changes wait.
-The client stamps a finished round even when later changes remain, and
-continues those changes without waiting for a new inventory epoch. Legacy
-`publish` drains both the current round and later changes in one call.
-
-**EVERYTHING IT WAS SENT IS ON DISK** (`library.json`, `new-builds.ndjson`,
-`facts-known.ndjson`), so a ranker that stops — a reply other than `ok`, a
-crash, a deploy — is started again from them on the next cycle and loses
-nothing.
-
-**THE HOURLY READ OF THE STORE RUNS BESIDE THE BOARD**, not in front of it: the
-read takes most of an hour, into spares, and once both are whole the ranker
-rebuilds from them (`reload`), which is how a row `scores` lost leaves the
-board. The hour is counted from the end of the last read (`fetch-at.txt`), so a
-restart starts no read the hour does not owe.
+Explicit `INCREMENTAL_INVENTORY=0` selects the in-memory `wfsim-board --serve`
+adapter. It restores `library.json`, `new-builds.ndjson` and
+`facts-known.ndjson`, accepts build and fact commands and publishes affected
+weapon files. Its hourly full-store refresh runs beside intake. The
+`publish_step` command yields between complete files; `publish` drains the
+whole current round and later changes.
 
 **A STALLED BOARD IS ASKED ABOUT EVERY HOUR, off the board server**
 (`board-age.yml`, `scripts/check_board_age.py`). The ranker stamps every ruler

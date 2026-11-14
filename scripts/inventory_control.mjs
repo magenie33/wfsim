@@ -56,7 +56,7 @@ export class InventoryControl {
   request({ mode, engine, contract, expectedGeneration = null, reason, maxNewBytes, reserveBytes = INVENTORY_RESERVE }) {
     const prior = this.current();
     if (prior && !['complete', 'cancelled'].includes(prior.phase)) needsAction('task_exists', 'cancel the existing rebuild task before requesting another');
-    if (!['classic', 'relational'].includes(mode) || !/^[a-f0-9]{12}$/.test(engine) || !contract || !reason?.trim()
+    if (!['classic', 'relational', 'board'].includes(mode) || !/^[a-f0-9]{12}$/.test(engine) || !contract || !reason?.trim()
         || !Number.isSafeInteger(maxNewBytes) || maxNewBytes < 1 || !Number.isSafeInteger(reserveBytes) || reserveBytes < INVENTORY_RESERVE)
       throw Error('an explicit engine, contract, reason and positive disk budget are required');
     const s = statfsSync(this.root), free = s.bavail * s.bsize;

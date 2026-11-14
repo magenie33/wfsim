@@ -6,6 +6,7 @@ use serde_json::value::RawValue;
 use serde_json::{json, Value};
 
 /// One scored row.
+#[derive(serde::Serialize, serde::Deserialize)]
 pub(crate) struct Row {
     pub(crate) weapon: String,
     /// THE BUILD THIS ROW IS, without the mode — `board::builds::build_id`, which is
@@ -37,6 +38,7 @@ pub(crate) struct Row {
     /// BUILD — a grip sets damage, fire rate and the charge — so a row that
     /// dropped them would publish a number for a weapon nobody submitted, and
     /// two assemblies of one chamber would be one row.
+    #[serde(with = "projection_assembly")]
     pub(crate) assembly: Option<wfsim_engine::data::weapons::assembly::Assembly>,
     /// THE RIVEN THIS BUILD CARRIES, as a SHAPE — which stats and which is the
     /// malus, never a roll. A row states a shape and the shape is stored at its
@@ -65,7 +67,7 @@ pub(crate) struct Row {
 /// A row's riven: the SHAPE it states, and the ROLLS this engine found best for
 /// it. The shape is what a player acts on; the rolls are what the number rests
 /// on and what a reader needs to reproduce it.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub(crate) struct RowRiven {
     pub(crate) bonuses: Vec<String>,
     pub(crate) malus: Option<String>,
@@ -73,6 +75,25 @@ pub(crate) struct RowRiven {
     /// is, since the rolls are part of the build's id. Not part of the shape a
     /// reader acts on, which is the two lists above.
     pub(crate) rolls: Vec<f64>,
+}
+
+mod projection_assembly {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use wfsim_engine::data::weapons::{assembly::Assembly, kitguns, zaws};
+    pub fn serialize<S: Serializer>(value: &Option<Assembly>, serializer: S) -> Result<S::Ok, S::Error> {
+        value.as_ref().map(|a| match a {
+            Assembly::Kitgun(a) => ("kitgun", &a.chamber, &a.grip, &a.loader),
+            Assembly::Zaw(a) => ("zaw", &a.record, &a.grip, &a.link),
+        }).serialize(serializer)
+    }
+    pub fn deserialize<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<Assembly>, D::Error> {
+        let value = Option::<(String, String, String, String)>::deserialize(deserializer)?;
+        value.map(|(kind, record, grip, component)| match kind.as_str() {
+            "kitgun" => Ok(Assembly::Kitgun(kitguns::Assembly { chamber: record, grip, loader: component })),
+            "zaw" => Ok(Assembly::Zaw(zaws::Assembly { record, grip, link: component })),
+            _ => Err(serde::de::Error::custom("unknown projection assembly")),
+        }).transpose()
+    }
 }
 
 /// …AND THE PART OF ONE THAT IS READ BACK. Only the four fields the carry and
