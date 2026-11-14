@@ -1504,6 +1504,351 @@
   "remote_drive_sync_verified": false,
   "pending_release_checks": [
     "Combined-candidate full CI",
-    "Official mac engine and all-channel release validation"
-  ]
+    "Official mac engine and all-channel release validation",
+    "Resolve or rebind the pre-existing 40m browser miss fixture; its three assertions fail on a request producing zero misses in all three preserved engines"
+  ],
+  "qualification_commands": [
+    {
+      "name": "roster-native",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/refactor-plan/p0/baseline",
+        "--candidate",
+        "target/native-order/qualified-retained/native",
+        "--calls",
+        "target/native-order/qualified-retained/roster-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/roster-native",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 1,
+      "accepted_exits": [
+        1
+      ],
+      "elapsed_seconds": 12.127871036529541
+    },
+    {
+      "name": "panels-native",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/refactor-plan/p0/baseline",
+        "--candidate",
+        "target/native-order/qualified-retained/native",
+        "--calls",
+        "target/native-order/qualified-retained/panel-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/panels-native",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 1,
+      "accepted_exits": [
+        1
+      ],
+      "elapsed_seconds": 18.53437900543213
+    },
+    {
+      "name": "parity-roster",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/native-order/qualified-retained/native",
+        "--candidate",
+        "target/native-order/qualified-retained/wasm",
+        "--calls",
+        "target/native-order/qualified-retained/roster-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/parity-roster",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 12.681451797485352
+    },
+    {
+      "name": "focused-native",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/refactor-plan/p0/baseline",
+        "--candidate",
+        "target/native-order/qualified-retained/native",
+        "--calls",
+        "target/native-order/qualified-retained/focused-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/focused-native",
+        "--rounds",
+        "2",
+        "--repeats",
+        "3"
+      ],
+      "exit": 1,
+      "accepted_exits": [
+        1
+      ],
+      "elapsed_seconds": 6.677980899810791
+    },
+    {
+      "name": "focused-wasm",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/refactor-plan/full/wasm-baseline-final",
+        "--candidate",
+        "target/native-order/qualified-retained/wasm",
+        "--calls",
+        "target/native-order/qualified-retained/focused-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/focused-wasm",
+        "--rounds",
+        "2",
+        "--repeats",
+        "3"
+      ],
+      "exit": 1,
+      "accepted_exits": [
+        1
+      ],
+      "elapsed_seconds": 9.234163045883179
+    },
+    {
+      "name": "focused-migration",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/native-order/qualified-current/native",
+        "--candidate",
+        "target/native-order/qualified-retained/native",
+        "--calls",
+        "target/native-order/qualified-retained/focused-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/focused-migration",
+        "--rounds",
+        "2",
+        "--repeats",
+        "3"
+      ],
+      "exit": 1,
+      "accepted_exits": [
+        1
+      ],
+      "elapsed_seconds": 7.048410892486572
+    },
+    {
+      "name": "focused-parity",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/native-order/qualified-retained/native",
+        "--candidate",
+        "target/native-order/qualified-retained/wasm",
+        "--calls",
+        "target/native-order/qualified-retained/focused-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/focused-parity",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 3.0581719875335693
+    },
+    {
+      "name": "shapes",
+      "command": [
+        "python3",
+        "scripts/engine_shape_cost.py",
+        "--baseline",
+        "target/refactor-plan/p0/baseline",
+        "--candidate",
+        "target/native-order/qualified-retained/native",
+        "--output",
+        "target/native-order/qualified-retained/shapes",
+        "--rounds",
+        "2",
+        "--runs",
+        "1000"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 109.72364783287048
+    },
+    {
+      "name": "browser",
+      "command": [
+        "node",
+        "scripts/engine_browser_compare.mjs",
+        "target/refactor-plan/full/wasm-baseline-final",
+        "target/native-order/qualified-retained/wasm",
+        "target/native-order/qualified-retained/browser-calls.json",
+        "target/native-order/qualified-retained/browser",
+        "3",
+        "2"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 14.641336917877197
+    },
+    {
+      "name": "allocations",
+      "command": [
+        "python3",
+        "scripts/engine_allocations.py",
+        "--baseline-worktree",
+        "../wfsim-wt-native-engine-refactor-plan-1114-baseline",
+        "--candidate-worktree",
+        ".",
+        "--calls",
+        "target/native-order/qualified-retained/browser-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/allocations"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 3.6988799571990967
+    },
+    {
+      "name": "gas",
+      "command": [
+        "node",
+        "scripts/check_gas.mjs",
+        "native=target/release/wfsim-gas",
+        "pkg=target/native-order/qualified-retained/wasm"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 42.17945194244385
+    },
+    {
+      "name": "truth-final-encumber",
+      "command": [
+        "target/release/wfsim-truth",
+        "weapon=kuva_nukor",
+        "pool=hornet_strike,barrel_diffusion,lethal_torrent,convulsion,deep_freeze,heated_charge,pistol_pestilence",
+        "size=3",
+        "min=3",
+        "arcanes=secondary_encumber",
+        "runs=64",
+        "truth_runs=128",
+        "candidate_runs=8",
+        "duration=12",
+        "finalists=10",
+        "threads=1",
+        "max_jobs=5000"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 1.8809950351715088
+    },
+    {
+      "name": "truth-final-debilitate",
+      "command": [
+        "target/release/wfsim-truth",
+        "weapon=amprex",
+        "pool=serration,split_chamber,hellfire,infected_clip,stormbringer,rifle_elementalist",
+        "size=3",
+        "min=3",
+        "arcanes=primary_debilitate",
+        "runs=64",
+        "truth_runs=128",
+        "candidate_runs=8",
+        "duration=12",
+        "finalists=10",
+        "threads=1",
+        "max_jobs=5000"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 0.7875771522521973
+    }
+  ],
+  "preview": {
+    "complete": true,
+    "base": "http://127.0.0.1:8831",
+    "frozen_native_responses_equal": [
+      {
+        "id": "kuva_nukor_shield_simulation:elementalist_faction",
+        "exact": true,
+        "sha256": "65f76785da745fe690c5a68e2ed6d8f173431dcd038787e8138f8554ce8de247"
+      },
+      {
+        "id": "kuva_nukor_shield_record:elementalist_faction",
+        "exact": true,
+        "sha256": "99e111f3552123fc709cc71c2921e4a79dc3fe3eae84ecc89ac8d2ddd54b5967"
+      },
+      {
+        "id": "amprex_gas_electric_0_record:native_trace",
+        "exact": true,
+        "sha256": "f3fce09c37db8bdb9798308158576a0520cdbdb2ae0ba2007e8de76fdd597c00"
+      },
+      {
+        "id": "amprex_gas_electric_100_record:native_trace",
+        "exact": true,
+        "sha256": "56cf0b521d50ab54458de9d25a726c627078d6ac0aa194468604f58b63fafc52"
+      },
+      {
+        "id": "kuva_nukor_shield_record:native_trace",
+        "exact": true,
+        "sha256": "ff2d15b7e6e51ddca0ac593725deb01e16aa0db7c650a1b12045f7c2649b0f46"
+      },
+      {
+        "id": "kuva_nukor_shield_record:elementalist_faction:native_trace",
+        "exact": true,
+        "sha256": "6919c1f943f5e5e8085fe162cf75eef9836bed5305097212fbce063dd83a42a2"
+      }
+    ]
+  },
+  "browser_combat_record": {
+    "positive_assertions": 36,
+    "failed_assertions": 3,
+    "failed_scope": "40m fixture expected misses but produced zero",
+    "original_9a8c_misses": 0,
+    "previous_540_misses": 0,
+    "current_1c2647db_misses": 0,
+    "same_captured_request_replayed": true,
+    "arithmetic_and_decomposition_passed": true,
+    "raw_evidence": "target/native-order/qualified-retained/miss-fixture-original and miss-fixture-previous"
+  }
 }
