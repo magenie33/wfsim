@@ -1,0 +1,102 @@
+[
+  {
+    "id": "kuva_nukor_shield_simulation:elementalist_faction",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "crewman",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 128,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "kuva_nukor",
+      "mods": [
+        "hornet_strike",
+        "barrel_diffusion",
+        "lethal_torrent",
+        "convulsion",
+        "deep_freeze",
+        "pistol_elementalist",
+        "primed_expel_corpus"
+      ],
+      "valence_element": "magnetic",
+      "valence_bonus": 0.6
+    },
+    "coverage": {
+      "damage_sources": [
+        "Electricity"
+      ]
+    }
+  },
+  {
+    "id": "kuva_nukor_shield_record:elementalist_faction",
+    "path": "/api/log",
+    "body": {
+      "enemy": "crewman",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "kuva_nukor",
+      "mods": [
+        "hornet_strike",
+        "barrel_diffusion",
+        "lethal_torrent",
+        "convulsion",
+        "deep_freeze",
+        "pistol_elementalist",
+        "primed_expel_corpus"
+      ],
+      "valence_element": "magnetic",
+      "valence_bonus": 0.6,
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 8,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  }
+]
