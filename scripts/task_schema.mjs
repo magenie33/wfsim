@@ -17,7 +17,7 @@ export function taskSchemaSql() {
     const [table, column] = pair.split(" ");
     return schema.match(new RegExp(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column}[^;]+;`))?.[0];
   });
-  const indexes = ["demands_delivery", "answers_credit_pending", "compute_scheduling_zone"].map(name =>
+  const indexes = ["demands_delivery", "answers_credit_pending", "compute_scheduling_zone", "demands_producer_question"].map(name =>
     schema.match(new RegExp(`CREATE INDEX IF NOT EXISTS ${name}\\b[^;]+;`))?.[0]);
   const identity = [
     library.match(/CREATE OR REPLACE FUNCTION protect_retired_board_score[^]*?END \$\$;/)?.[0],

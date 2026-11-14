@@ -462,6 +462,7 @@ CREATE TABLE IF NOT EXISTS relation_task_consumers (
   PRIMARY KEY (producer, ref)
 );
 CREATE INDEX IF NOT EXISTS demands_by_question ON relation_task_consumers (question, state);
+CREATE INDEX IF NOT EXISTS demands_producer_question ON relation_task_consumers (producer, question);
 -- A ROW'S DEMAND BY ITS REF ALONE, whichever producer (worker/verify.js `mine`).
 CREATE INDEX IF NOT EXISTS demands_by_ref ON relation_task_consumers (ref);
 CREATE INDEX IF NOT EXISTS demands_live ON relation_task_consumers (state, producer);

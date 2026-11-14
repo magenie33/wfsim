@@ -18,6 +18,7 @@ console.log("ok: modules depend on common contracts; dispatch owns only selectio
 
 const now = Date.now(), db = await testDb("library"), env = { LIBRARY: db };
 const upgrade = taskSchemaSql();
+assert.match(upgrade,/CREATE INDEX CONCURRENTLY IF NOT EXISTS demands_producer_question ON relation_task_consumers \(producer, question\)/);
 assert(upgrade.includes("CREATE INDEX CONCURRENTLY IF NOT EXISTS demands_delivery"));
 await db.exec("ALTER TABLE relation_task_consumers DROP COLUMN delivery_at; DROP FUNCTION factory_past_safe(text,text) CASCADE; DROP FUNCTION factory_delivery_guard(text,text,text,text,text,text,text)");
 const localUpgrade = upgrade.replace("SET ROLE wfsim;", "").replaceAll("CREATE INDEX CONCURRENTLY", "CREATE INDEX");
