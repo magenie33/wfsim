@@ -1,0 +1,256 @@
+{
+  "schema": 1,
+  "calculation_commit": "540eb587d0fe08c849237c8369c25acf5045dffe",
+  "baseline_commit": "9a8c30a2f793cc6d449425d1e57deaae2cae2d48",
+  "status": {
+    "implemented_checkpoint": true,
+    "whole_engine_native_refactor_complete": false,
+    "game_equivalence_certified": false,
+    "merged": false,
+    "released": false
+  },
+  "client_build": "2026.10.28.09.54",
+  "source_bindings": {
+    "native": {
+      "commit": "540eb587d0fe08c849237c8369c25acf5045dffe",
+      "source_sha256": "908f71dae79860df645aa0ffa6534ce3a548b108547cd0f12305728843d9acf6"
+    },
+    "wasm": {
+      "commit": "540eb587d0fe08c849237c8369c25acf5045dffe",
+      "source_sha256": "f64d725c56f8fa0d0f7c292bc7abe2f35c30c5a7aa5a190f2e5ce64dde190ee8"
+    }
+  },
+  "primary_spec": {
+    "batch": "20261114T152215Z-native-calculation-refactor-spec",
+    "manifest_sha256": "71521af8e0a0ea0fbc683b9f98f6669879623dd352df3cdefd23e9fd7b570b1f",
+    "verified_outer_files": 471,
+    "verified_source_members": 364,
+    "all_original_dependency_payloads_reverified": false
+  },
+  "latest_explanatory_delivery": {
+    "batch": "20261114T165812Z-magnetic-electricity-english-guide",
+    "manifest_sha256": "454ac12c7d87eb66881ca571aa973d96a8463bbd055fdd2768e0d4e8eeee2a2a",
+    "verified_outer_files": 3,
+    "new_native_replay": false
+  },
+  "implemented": [
+    "150 mod effects use original native rank fields as their sole rank input",
+    "20479 native rank values and 5398 conditional inputs checked against captured bit patterns",
+    "Pending attribute scalar, materialization and proc-mask primitives",
+    "Ordinary critical LCG/tier/quantization/factor and selected live critical queries",
+    "Native bounded RPM/reload/generic charge calculations and Coda FIRE-to-refire sampling",
+    "Actual settled raw damage in combat records; independent CO explanation bracket",
+    "Verified client export differences linked to known mod and native attribute consumers"
+  ],
+  "checks": {
+    "workspace_passed": 1905,
+    "workspace_ignored": 6,
+    "clippy_all_targets": true,
+    "source_imports": true,
+    "fold_mutation_negative_control": true,
+    "metering_and_layers": true,
+    "native_wasm_gas_parity": true,
+    "measured_integer_expectations_changed": false,
+    "measurement_critical_damage_query_retained_when_chance_is_supplied": true
+  },
+  "catalog": {
+    "weapons": 665,
+    "supported_modes": 2333,
+    "native_wasm_bitwise_equal": true,
+    "before_after_simulation_results": {
+      "exact": 0,
+      "work_only": 0,
+      "answer": 2333
+    },
+    "before_after_panels": {
+      "exact": 2311,
+      "work_only": 0,
+      "answer": 22
+    },
+    "interpretation": "Seeded short-run output differences include the RNG algorithm/draw schedule and binary32 boundaries; they are not balance deltas or independent evidence of in-game accuracy."
+  },
+  "focused": {
+    "cases": 32,
+    "simulation_cases": 19,
+    "order": "ABBAABBA",
+    "repeats_per_request": 3,
+    "native_wasm_bitwise_equal": true,
+    "chrome_native_responses_equal": 256,
+    "allocator_responses_equal": true
+  },
+  "simulation_geomean_elapsed_change_pct": {
+    "focused-native": 1.1071451435014756,
+    "focused-wasm": 2.7341239526655015,
+    "browser": -2.4533084046419518
+  },
+  "one_fight_180_seconds_1000_runs": {
+    "torid": {
+      "before_ms": 0.9130052085,
+      "after_ms": 0.993222687,
+      "change_pct": 8.786092100371622,
+      "samples": {
+        "A": [
+          0.91491,
+          0.911100417,
+          0.909756375,
+          0.931163958
+        ],
+        "B": [
+          1.009715416,
+          0.992639208,
+          0.9908622079999999,
+          0.993806166
+        ]
+      }
+    },
+    "gotva_prime": {
+      "before_ms": 1.525413646,
+      "after_ms": 1.5703395415,
+      "change_pct": 2.945161505392746,
+      "samples": {
+        "A": [
+          1.523164917,
+          1.527662375,
+          1.537180417,
+          1.5037304580000002
+        ],
+        "B": [
+          1.566142417,
+          1.5747505830000001,
+          1.569272167,
+          1.571406916
+        ]
+      }
+    },
+    "scourge": {
+      "before_ms": 0.5360000414999999,
+      "after_ms": 0.551897979,
+      "change_pct": 2.9660328860254603,
+      "samples": {
+        "A": [
+          0.53600025,
+          0.535999833,
+          0.540510292,
+          0.526325375
+        ],
+        "B": [
+          0.551354917,
+          0.552161041,
+          0.551634917,
+          0.552691042
+        ]
+      }
+    },
+    "braton_prime": {
+      "before_ms": 1.2980806045,
+      "after_ms": 1.3403276665,
+      "change_pct": 3.2545792498203774,
+      "samples": {
+        "A": [
+          1.298186625,
+          1.304698916,
+          1.2979745839999999,
+          1.285043583
+        ],
+        "B": [
+          1.33767875,
+          1.342693417,
+          1.340703042,
+          1.339952291
+        ]
+      }
+    }
+  },
+  "memory": {
+    "focused-native": {
+      "A": {
+        "peak_process_rss_bytes": 85737472,
+        "peak_wasm_linear_bytes": null
+      },
+      "B": {
+        "peak_process_rss_bytes": 84606976,
+        "peak_wasm_linear_bytes": null
+      }
+    },
+    "focused-wasm": {
+      "A": {
+        "peak_process_rss_bytes": 230113280,
+        "peak_wasm_linear_bytes": 28639232
+      },
+      "B": {
+        "peak_process_rss_bytes": 232226816,
+        "peak_wasm_linear_bytes": 29360128
+      }
+    },
+    "browser": {
+      "A": {
+        "peak_process_rss_bytes": null,
+        "peak_wasm_linear_bytes": 28639232
+      },
+      "B": {
+        "peak_process_rss_bytes": null,
+        "peak_wasm_linear_bytes": 29360128
+      }
+    }
+  },
+  "wasm_artifact_bytes": {
+    "A": 6965180,
+    "B": 7016022
+  },
+  "allocations": {
+    "aggregate_warmed_requests": {
+      "A": {
+        "allocations": 1295239,
+        "reallocations": 35142,
+        "deallocations": 1295207,
+        "requested_bytes": 177825091
+      },
+      "B": {
+        "allocations": 1258429,
+        "reallocations": 33882,
+        "deallocations": 1258397,
+        "requested_bytes": 174354444
+      }
+    },
+    "maximum_additional_live_bytes": {
+      "A": 12271284,
+      "B": 13162864
+    },
+    "count_vectors_identical": 0,
+    "cases": 32
+  },
+  "truth": {
+    "encumber": [
+      "[scope] 43 builds x arcanes = 43 jobs (43 distinct to the fight), exhaustive",
+      "[reference] 128 runs each = 5504 sims | answer set 3 builds | settled across seeds: true | top-10 overlap 1.00",
+      "[search] descent from 4 starts, 53 subsets scored, cut by budget: false | 57 screen evals",
+      "[search] rank 1 | regret 0.000% | within noise: true | top-10 recall 100% | 754 sims (13.7% of the reference)"
+    ],
+    "debilitate": [
+      "[scope] 22 builds x arcanes = 22 jobs (22 distinct to the fight), exhaustive",
+      "[reference] 128 runs each = 2816 sims | answer set 1 builds | settled across seeds: true | top-10 overlap 1.00",
+      "[search] descent from 3 starts, 32 subsets scored, cut by budget: false | 32 screen evals",
+      "[search] rank 1 | regret 0.000% | within noise: true | top-10 recall 90% | 704 sims (25.0% of the reference)"
+    ]
+  },
+  "remaining_implementation": [
+    "Transfer pending scalar/materialization state through actual damage submission and retained status records",
+    "Replace Electric/Gas weighted frozen values with retained records and native sequential group/radial preparation",
+    "Connect native update/notification phases beyond the current scene scheduling policy",
+    "Expose actual per-node traces with selected operations, materialization, packet/group identity and event phase"
+  ],
+  "remaining_evidence": [
+    "Complete native component/element construction and per-route CO/Compression dispatch",
+    "Full owner/type/symbol/posture/conditional installation and special critical quantizer paths",
+    "Full native resistance/armor/attenuation, pool integer guards/overrides and writers",
+    "Ordinary status count/type generation and other handler-specific inheritance",
+    "Producer/ownership bindings for the four opaque Electric/Gas group-key inputs"
+  ],
+  "pending_release_checks": [
+    "Full CI on the combined integration candidate",
+    "Mac engine and all-channel build/publication verification after authorized release"
+  ],
+  "raw_evidence": "target/native-order/qualified-current",
+  "drive_backup_folder": "engine-native-candidate-20261115-540eb587",
+  "remote_drive_sync_verified": false
+}
