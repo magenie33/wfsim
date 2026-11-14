@@ -640,30 +640,46 @@ impl DebuffState {
         // what moves is WHEN the damage lands. HERE rather than in `push_dot`,
         // because a Gas cloud and a Tesla arc reach NEIGHBOURS through
         // `post_area` and those instances join the neighbour's clock too.
-        if matches!(dot.dtype, DamageType::Electricity | DamageType::Gas) {
-            if let Some(shared) = self
-                .dots
-                .iter()
-                .find(|d| d.dtype == dot.dtype && d.ticks_left > 0)
-                .map(|d| d.next_tick)
-            {
-                if shared > dot.next_tick {
-                    dot.next_tick = shared;
+        let Some(cap) = cap else {
+            if matches!(dot.dtype, DamageType::Electricity | DamageType::Gas) {
+                if let Some(shared) = self.dots.iter()
+                    .find(|d| d.dtype == dot.dtype && d.ticks_left > 0)
+                    .map(|d| d.next_tick)
+                {
+                    if shared > dot.next_tick { dot.next_tick = shared; }
                 }
+            }
+            self.push_dot(dot);
+            return;
+        };
+        let consolidated = matches!(dot.dtype, DamageType::Electricity | DamageType::Gas);
+        let mut count = 0_usize;
+        let mut oldest = 0;
+        let mut shared_clock = None;
+        for (index, existing) in self.dots.iter().enumerate() {
+            if existing.dtype != dot.dtype { continue; }
+            if count == 0 { oldest = index; }
+            count += 1;
+            if consolidated && shared_clock.is_none() && existing.ticks_left > 0 {
+                shared_clock = Some(existing.next_tick);
             }
         }
-        if let Some(cap) = cap {
-            // Count once; FIFO removal preserves every other family's order.
-            let mut count = self.dots.iter().filter(|d| d.dtype == dot.dtype).count();
-            while count >= cap {
-                match self.dots.iter().position(|d| d.dtype == dot.dtype) {
-                    Some(i) => {
-                        self.dots.remove(i);
-                        count -= 1;
-                    }
-                    None => break,
+        // The first live clock belongs to the pre-eviction list, including an evicted stack.
+        if let Some(shared) = shared_clock {
+            if shared > dot.next_tick { dot.next_tick = shared; }
+        }
+        let mut remove = count.saturating_sub(cap.saturating_sub(1));
+        if remove == 1 {
+            self.dots.remove(oldest);
+        } else if remove > 1 {
+            self.dots.retain(|existing| {
+                if existing.dtype == dot.dtype && remove > 0 {
+                    remove -= 1;
+                    false
+                } else {
+                    true
                 }
-            }
+            });
         }
         self.push_dot(dot);
     }
