@@ -199,11 +199,13 @@ fn a_burning_cloud_reads_the_window_at_every_tick() {
     // ONE CLOUD, SEEDED BEFORE ANY OF THIS: its own bracket carries the mods
     // and nothing else, which is what a stored `bracket` is.
     let cloud = Dot {
+        native_part: None,
+        native_group: None,
         owner: Seat::WIELDER,
         cause: u32::MAX,
         next_tick: 0.0,
         ticks_left: 6,
-        frozen: 100.0,
+        retained: crate::model::StoredStatusSeed::supplied(100.0),
         landing: ProcLanding::default(),
         bracket: 1.0,
         depth: 0,

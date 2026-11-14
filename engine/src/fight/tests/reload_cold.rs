@@ -163,7 +163,7 @@ fn aksondol_encumber_uses_the_weapons_status_payload_and_live_buffs() {
                 let mit = here.debuffs.mitigation(2.0, p.status_duration_multiplier,
                     p.armor_strip_per_puncture, p.squad.enemy_armor_multiplier);
                 settle_procs(vec![DamageType::Cold, bonus], Seat::WIELDER, 2.0, 0,
-                    InstanceScale {
+                    InstanceScale { native_source: None, native_part: None,
                         mb_live: base, crit_multiplier: 1.0, part_factor: 1.0, landing: ProcLanding::default(),
                         attrition: 1.0, xh_bracket: p.extra_hit_bracket(2.0, &shot_me.windows), status_damage_live: 0.0,
                     }, &mut here.debuffs, &mut shot_me.gal, &mut shot_me.arc, &mut here.state,
@@ -173,7 +173,7 @@ fn aksondol_encumber_uses_the_weapons_status_payload_and_live_buffs() {
                 assert_eq!(got.dots.len(), want.dots.len());
                 for (a, b) in got.dots.iter().zip(&want.dots) {
                     damaging.insert(a.dtype as usize);
-                    assert!((a.frozen - b.frozen).abs() < 1e-8, "{bonus:?}: {} != {}", a.frozen, b.frozen);
+                    assert!((a.snapshot_damage() - b.snapshot_damage()).abs() < 1e-8, "{bonus:?}: {} != {}", a.snapshot_damage(), b.snapshot_damage());
                     assert_eq!(a.bracket, b.bracket);
                     assert_eq!(a.depth, b.depth);
                 }

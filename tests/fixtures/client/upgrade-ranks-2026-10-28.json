@@ -151236,6 +151236,83 @@
         "array": "Upgrades",
         "index": 1
       }
+    },
+    {
+      "path": "data/mods/beast_claws/immunity_resistance.yaml",
+      "effect_index": 0,
+      "id": "immunity_resistance",
+      "kind": "status_damage_bonus",
+      "source": {
+        "owner": "/Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastWeakenedImmunityMod",
+        "array": "Upgrades",
+        "index": 0
+      }
+    },
+    {
+      "path": "data/mods/melee/galvanized_elementalist.yaml",
+      "effect_index": 0,
+      "id": "galvanized_elementalist",
+      "kind": "status_damage_bonus",
+      "source": {
+        "owner": "/Lotus/Upgrades/Mods/Melee/Expert/WeaponMeleeStatusChanceSPMod",
+        "array": "Upgrades",
+        "index": 0
+      }
+    },
+    {
+      "path": "data/mods/melee/melee_elementalist.yaml",
+      "effect_index": 0,
+      "id": "melee_elementalist",
+      "kind": "status_damage_bonus",
+      "source": {
+        "owner": "/Lotus/Upgrades/Mods/Melee/MeleeStatusDamageDuoMod",
+        "array": "Upgrades",
+        "index": 0
+      }
+    },
+    {
+      "path": "data/mods/pistol/pistol_elementalist.yaml",
+      "effect_index": 0,
+      "id": "pistol_elementalist",
+      "kind": "status_damage_bonus",
+      "source": {
+        "owner": "/Lotus/Upgrades/Mods/Pistol/PistolStatusDamageDuoMod",
+        "array": "Upgrades",
+        "index": 0
+      }
+    },
+    {
+      "path": "data/mods/polearm/boreals_contempt.yaml",
+      "effect_index": 1,
+      "id": "boreals_contempt",
+      "kind": "status_damage_bonus",
+      "source": {
+        "owner": "/Lotus/Upgrades/Mods/Sets/Boreal/BorealMeleeMod",
+        "array": "Upgrades",
+        "index": 1
+      }
+    },
+    {
+      "path": "data/mods/rifle/rifle_elementalist.yaml",
+      "effect_index": 0,
+      "id": "rifle_elementalist",
+      "kind": "status_damage_bonus",
+      "source": {
+        "owner": "/Lotus/Upgrades/Mods/Rifle/RifleStatusDamageDuoMod",
+        "array": "Upgrades",
+        "index": 0
+      }
+    },
+    {
+      "path": "data/mods/shotgun/shotgun_elementalist.yaml",
+      "effect_index": 0,
+      "id": "shotgun_elementalist",
+      "kind": "status_damage_bonus",
+      "source": {
+        "owner": "/Lotus/Upgrades/Mods/Shotgun/ShotgunStatusDamageDuoMod",
+        "array": "Upgrades",
+        "index": 0
+      }
     }
   ],
   "unprojected": [

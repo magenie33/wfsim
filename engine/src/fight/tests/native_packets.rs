@@ -63,7 +63,7 @@ fn one_submitted_packet_with_twenty_magnetic_counters_has_one_primary_selection(
         here.debuffs.disrupt = vec![10.0; 10];
         let mit = here.debuffs.mitigation(0.0, 1.0, 0.0, 1.0);
         settle_procs(vec![DamageType::Magnetic; count], Seat::WIELDER, 0.0, 0,
-            InstanceScale { mb_live: 75.0, crit_multiplier: 1.0, part_factor: 1.0,
+            InstanceScale { native_source: None, native_part: None, mb_live: 75.0, crit_multiplier: 1.0, part_factor: 1.0,
                 landing: ProcLanding::default(), attrition: 1.0, xh_bracket: 1.0,
                 status_damage_live: 0.0 },
             &mut here.debuffs, &mut me.gal, &mut me.arc, &mut here.state, &p, &p, &mit,

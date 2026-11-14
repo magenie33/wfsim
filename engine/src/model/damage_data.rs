@@ -24,6 +24,8 @@ pub struct WeaponId(pub u32);
 #[derive(Debug, Clone, Copy)]
 pub struct DamageData<Scalar: Copy> {
     pub scalar: Scalar,
+    /// None is the constructor's native discriminator30; ordinary counter ids stay0..29.
+    pub origin_proc: Option<ProcType>,
     pub source: Option<SourceId>,
     pub source_weapon: Option<WeaponId>,
     pub part: HitPart,
@@ -35,7 +37,7 @@ pub struct DamageData<Scalar: Copy> {
 #[wfsim_gas_macro::metered]
 impl<Scalar: Copy> DamageData<Scalar> {
     pub fn new(scalar: Scalar) -> Self {
-        Self { scalar, source: None, source_weapon: None,
+        Self { scalar, origin_proc: None, source: None, source_weapon: None,
             part: HitPart::UNSPECIFIED, position: [0.0; 4], selected_proxy: None,
             procs: ProcCounters::default() }
     }
@@ -46,6 +48,24 @@ impl<Scalar: Copy> DamageData<Scalar> {
         packet.source = self.source;
         packet.source_weapon = self.source_weapon;
         packet
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl DamageData<crate::rules::upgrades::NativeScalar> {
+    pub fn apply_proc_upgrades(&mut self, kind: ProcType,
+        entries: impl IntoIterator<Item = crate::rules::upgrades::ProcFilteredUpgrade>,
+        mutation: crate::rules::upgrades::ScalarMutation)
+    {
+        let stat = crate::rules::upgrades::UpgradeType::WEAPON_PROC_DAMAGE;
+        self.scalar.install_selected(stat, entries.into_iter().filter_map(|entry| entry.for_proc(kind)), mutation);
+    }
+
+    pub fn retained_proc_seed(&self, kind: ProcType,
+        entries: impl IntoIterator<Item = crate::rules::upgrades::ProcFilteredUpgrade>) -> f32
+    {
+        self.scalar.query_selected(crate::rules::upgrades::UpgradeType::WEAPON_PROC_DAMAGE,
+            entries.into_iter().filter_map(|entry| entry.for_proc(kind)), false)
     }
 }
 
@@ -122,6 +142,38 @@ mod tests {
                 assert_eq!(child.selected_proxy, None);
                 assert_eq!(child.procs.mask(), 0);
             }
+        }
+    }
+
+    #[test]
+    fn original_parent_and_child_queries_pass_through_the_packet_boundary() {
+        use crate::rules::upgrades::{NativeScalar, OperationType, ProcFilteredUpgrade,
+            ScalarMutation, UpgradeEntry, UpgradeType};
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/client/packet-context-2026-10-28.json")).unwrap();
+        let cases = fixture["two_stage_upgrade_cases"].as_array().unwrap();
+        assert_eq!(cases.len(), 54);
+        for case in cases {
+            let entry = ProcFilteredUpgrade {
+                entry: UpgradeEntry { UpgradeType: UpgradeType::WEAPON_PROC_DAMAGE,
+                    OperationType: OperationType::STACKING_MULTIPLY,
+                    Value: case["supplied_stacking_bonus"].as_f64().unwrap() as f32 },
+                proc_mask: case["supplied_valid_proc_mask"].as_u64().unwrap() as u32,
+            };
+            let parent_proc = ProcType::new(case["parent_proc_type"].as_u64().unwrap() as u8).unwrap();
+            let child_proc = ProcType::new(case["child_proc_type"].as_u64().unwrap() as u8).unwrap();
+            let mut parent = DamageData::new(NativeScalar::new(case["input_parent_source"].as_f64().unwrap() as f32));
+            parent.origin_proc = Some(parent_proc);
+            parent.procs.set_forced(child_proc);
+            let mutation = if case["supplied_canonicalization_flag"] == 0 {
+                ScalarMutation::Materialize
+            } else { ScalarMutation::RetainOperations };
+            parent.apply_proc_upgrades(parent_proc, [entry], mutation);
+            assert_eq!(parent.scalar.value(false).to_bits(), (case["parent_evaluated_source"].as_f64().unwrap() as f32).to_bits(), "{case}");
+            assert_eq!(parent.scalar.base().to_bits(), (case["ordinary_proc_retained_input"].as_f64().unwrap() as f32).to_bits(), "{case}");
+            assert_eq!(parent.retained_proc_seed(child_proc, [entry]).to_bits(),
+                (case["ordinary_proc_stored_seed"].as_f64().unwrap() as f32).to_bits(), "{case}");
+            assert_eq!(parent.procs.count(child_proc), 1);
         }
     }
 }

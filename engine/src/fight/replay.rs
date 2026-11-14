@@ -109,7 +109,15 @@ pub fn record(
     limit: usize,
     skip: usize,
 ) -> crate::record::Record {
+    record_with_native_trace(params, rng_state, from, to, limit, skip, 0)
+}
+
+#[wfsim_gas_macro::metered]
+pub fn record_with_native_trace(params: &FightParams, rng_state: u64, from: f64,
+    to: f64, limit: usize, skip: usize, native_trace_limit: usize) -> crate::record::Record
+{
     let mut rec = crate::record::Record::window(from, to, limit, skip);
+    rec.enable_native_trace(native_trace_limit);
     // WHAT THE ROWS' STACK LISTS ARE CALLED — the buff cards' own ids, because
     // they come from one place, and ONE LIST PER SEAT for the reason the
     // replay's rosters are: a row names the seat that dealt it, and that

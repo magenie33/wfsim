@@ -364,11 +364,13 @@ fn a_heat_pile_reports_its_depth_and_not_just_that_it_is_burning() {
 #[test]
 fn independent_dots_cap_per_type_fifo() {
     let dot = |v: f64, ty| Dot {
+        native_part: None,
+        native_group: None,
         owner: Seat::WIELDER,
         cause: u32::MAX,
         next_tick: 0.0,
         ticks_left: 6,
-        frozen: v,
+        retained: crate::model::StoredStatusSeed::supplied(v),
         landing: ProcLanding::default(),
         bracket: 1.0,
         depth: 0,
@@ -389,13 +391,13 @@ fn independent_dots_cap_per_type_fifo() {
         .dots
         .iter()
         .filter(|x| x.dtype == DamageType::Toxin)
-        .map(|x| x.frozen)
+        .map(|x| x.snapshot_damage())
         .collect();
     let sla: Vec<f64> = d
         .dots
         .iter()
         .filter(|x| x.dtype == DamageType::Slash)
-        .map(|x| x.frozen)
+        .map(|x| x.snapshot_damage())
         .collect();
     assert_eq!(tox, vec![3.0, 4.0]);
     assert_eq!(sla, vec![9.0]);
@@ -403,8 +405,10 @@ fn independent_dots_cap_per_type_fifo() {
 
 fn tagged_dot(tag: u32, dtype: DamageType) -> Dot {
     Dot {
+        native_part: None,
+        native_group: None,
         owner: Seat::WIELDER, cause: tag, next_tick: 0.0, ticks_left: 6,
-        frozen: f64::from(tag), landing: ProcLanding::default(), bracket: 1.0,
+        retained: crate::model::StoredStatusSeed::supplied(f64::from(tag)), landing: ProcLanding::default(), bracket: 1.0,
         depth: 0, unit: 0.0, dtype, ignores_armor: false, seed: tag,
     }
 }

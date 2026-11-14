@@ -539,7 +539,7 @@ impl DebuffState {
             if *r == radius_m
                 && d.dtype == dot.dtype
                 && d.ticks_left == dot.ticks_left
-                && (d.frozen - dot.frozen).abs() < 1e-9
+                && (d.snapshot_damage() - dot.snapshot_damage()).abs() < 1e-9
                 && (d.next_tick - dot.next_tick).abs() < 1e-9
             {
                 *n = (*n + 1).min(lim);
