@@ -78,15 +78,7 @@ function boardCount(field) {
 }
 
 function projectFacts() {
-  // IDENTIFIED, because the home hero states these too. Picking by label would
-  // break the moment a label is reworded, and a hero silently short of a
-  // number is the failure.
-  //
-  // THREE ORDERS OF MAGNITUDE, ON PURPOSE: thousands, thousands, tens of
-  // thousands read as three different facts, where two figures of the same
-  // size read as one fact printed twice. They are also the three modules in
-  // the order a reader meets them — what is modelled, what was built with it,
-  // what came back out.
+  // The home page selects its catalog and upload counts by id.
   const rows = [
     ["roster", rosterSize(), "items modelled"],
     ["builds", boardCount("submissions"), "builds players have uploaded"],
@@ -95,10 +87,8 @@ function projectFacts() {
   return rows.filter(([, n]) => n > 0).map(([id, n, what]) => ({ id, n, what }));
 }
 
-/// THE HERO'S NUMBERS — the same three the support page states, and all of
-/// them. A figure whose source has not landed is DROPPED, so a dev server with
-/// no board draws the roster alone rather than a zero or a placeholder.
-const HERO_FACTS = ["roster", "builds", "evaluations"];
+/// The home page's catalog and upload counts. Missing values stay hidden.
+const HERO_FACTS = ["roster", "builds"];
 
 function renderHomeFacts() {
   const el = $("home-facts");
@@ -110,9 +100,8 @@ function renderHomeFacts() {
   if (!tallyTo) loadHomeTally();
 }
 
-/// THE BOARD'S SCORES BY WHO COMPUTED THEM, under the home hero's claim
-/// (/api/board/tally): the players' machines apart from the official ones, and
-/// the computers at it now. Asked each minute the page is in view; between
+/// The players' verified scores and devices computing now, under the home
+/// hero's claim (/api/board/tally). Asked each minute the page is in view; between
 /// answers a count walks to the new one over the minute.
 const TALLY_EVERY_MS = 60_000;
 let tallyShown = null, tallyFrom = null, tallyTo = null, tallyAt = 0, tallyLoading = null;
@@ -132,11 +121,11 @@ async function loadHomeTally() {
   const r = await statsFile("tally", TALLY_STALE_MS)
     || await fetch("/api/board/tally", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || !r.totals) return;
-  const next = { volunteers: r.totals.volunteers, official: r.totals.official };
+  const next = { volunteers: r.totals.volunteers };
   // THE FIRST ANSWER WALKS FROM A MINUTE BEFORE IT, at the day's pace per hour,
   // so a count moves the moment the page opens and shows only what it held.
   const back = (k) => Math.max(0, next[k] - Math.round((r.per_hour?.[k] | 0) / 60));
-  tallyFrom = tallyShown || { volunteers: back("volunteers"), official: back("official") };
+  tallyFrom = tallyShown || { volunteers: back("volunteers") };
   tallyTo = next;
   tallyAt = Date.now();
   renderHomeTally();
@@ -150,13 +139,12 @@ function renderHomeTally() {
   if (!box || !el || !tallyTo || document.hidden || $("home-page")?.hidden) return;
   const f = Math.min(1, (Date.now() - tallyAt) / TALLY_EVERY_MS);
   const at = (k) => Math.round(tallyFrom[k] + (tallyTo[k] - tallyFrom[k]) * f);
-  tallyShown = { volunteers: at("volunteers"), official: at("official") };
+  tallyShown = { volunteers: at("volunteers") };
   const shape = LANG + ":" + (computingCount !== null);
   if (el.dataset.tallyShape !== shape) {
     const line = (s, key, dot) => `<span class="hf">${dot ? '<span class="online-dot"></span>' : ""}${
       escHtml(tr(s)).replace("{n}", `<b data-tally="${key}"></b>`)}</span>`;
     el.innerHTML = line("{n} scores computed by players' devices, each agreed by two", "volunteers")
-      + line("{n} by the official servers", "official")
       + (computingCount !== null ? line("{n} devices computing together now", "devices", true) : "");
     el.dataset.tallyShape = shape;
   }

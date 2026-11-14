@@ -1306,6 +1306,8 @@ The public stats on the page (docs/BOARD.md §"The public stats"), the CDN and
 the worker stubbed before the app boots. Built site only. The home tally reads
 `stats/tally.json` and asks no worker; a file stale by the server's clock,
 unreachable or of another version is passed over for `/api/board/tally`.
+Both sources show player scores and available live devices on home. Catalog
+and upload counts remain visible; official scores and combined evaluations do not.
 Signed out, the ranking is the file's period sliced to the page; a file of
 another day, or none, is passed over for `/api/contributors`; signed in, the
 worker is asked and the file never read. `WFSIM_BREAK=<name>` sabotages one
