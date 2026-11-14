@@ -81,20 +81,22 @@ fn leaving_the_incarnon_form_clears_hata_satyas_pile() {
     assert!(after >= 15, "the base form has to fire after the revert: {after} shots");
 
     // THE NEGATIVE CONTROL, and it is the card's own setting: "no timeout"
-    // means no event takes the pile, so the same fixture must carry it
-    // through the revert and crit nearly every shot. Without this the
-    // assertion above passes just as well on a build that lost the pile
-    // for some other reason — or never had one.
-    let held = run_once(&build(true), &mut Rng::new(11));
+    // means no event takes the pile. Compare independent streams rather than
+    // requiring one 80%-chance sequence to crit almost every shot.
+    let trials: Vec<_> = (0..32).map(|seed| (
+        run_once(&build(false), &mut Rng::new(seed)),
+        run_once(&build(true), &mut Rng::new(seed)),
+    )).collect();
+    let after: u32 = trials.iter().map(|(r, _)| r.pellets - 40).sum();
+    let held: u32 = trials.iter().map(|(_, r)| r.crits).sum();
+    let cleared: u32 = trials.iter().map(|(r, _)| r.crits).sum();
     assert!(
-        held.crits >= after - 1,
-        "held: the pile must survive the revert at its 80% and crit through, got {} of {after}",
-        held.crits
+        held * 5 >= after * 4,
+        "held: the pile must survive the revert at its 80%, got {held} of {after}"
     );
     assert!(
-        cleared.crits * 3 < held.crits,
-        "the revert must clear the pile: {} crits over {after} base-form shots against {} held",
-        cleared.crits, held.crits
+        cleared * 3 < held,
+        "the revert must clear the pile: {cleared} crits over {after} base-form shots against {held} held"
     );
 }
 
@@ -591,6 +593,7 @@ fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
         let mut damage = DamageVector::default();
         damage.set(DamageType::Heat, 300.0);
         crate::build::loadout::ResolvedRadial {
+        critical_inputs: None,
             delay_seconds: 0.0,
             blast_kind: crate::model::BlastKind::Contact,
             damage,
@@ -662,6 +665,7 @@ fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
 fn the_explosion_arms_an_on_hit_buff_of_its_own() {
     let mk = |with_radial: bool| {
         let radial = with_radial.then(|| crate::build::loadout::ResolvedRadial {
+        critical_inputs: None,
             delay_seconds: 0.0,
             blast_kind: crate::model::BlastKind::Contact,
             damage: DamageVector::default(), // 0 damage: a pure extra INSTANCE
@@ -891,6 +895,7 @@ fn overwhelming_attrition_takes_the_buff_cards_two_knobs() {
         };
         // No crits and no procs, so EVERY hit is a plain hit and the buff
         // arms on all of them.
+        p.critical_inputs = None;
         p.base_crit_chance = 0.0;
         p.status_chance = 0.0;
         p.forced_procs = Vec::new();

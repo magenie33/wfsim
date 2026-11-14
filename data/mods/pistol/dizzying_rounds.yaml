@@ -42,8 +42,11 @@ effects:
 
   # The ordinary relative status bucket, and the half that pays.
   - kind: status_chance_bonus
-    rank0: 0.50
-    rankMax: 2.00
+    UpgradeType: 365
+    OperationType: STACKING_MULTIPLY
+    Value: 0.5
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Dizzying_Rounds

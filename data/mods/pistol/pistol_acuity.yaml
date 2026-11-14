@@ -23,8 +23,11 @@ effects:
   # crit behavior on some weapons was a bug fixed in 38.5. The same rank
   # value as the damage half: the card's table is the same row for row.
   - kind: weakpoint_crit_chance_bonus
-    rank0: 0.318
-    rankMax: 3.498
+    UpgradeType: 246
+    OperationType: STACKING_MULTIPLY
+    Value: 0.31799999
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Pistol_Acuity

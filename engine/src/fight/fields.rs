@@ -302,11 +302,14 @@ pub(super) fn field_tick_seeded(
     // absolute ones land flat (MECHANICS §7).
     // Critical Mutation's pile is a global buff, the reload grenade's too (M107).
     let crit_chance_relative = ctx.crit_chance_relative_mods + params.arcane.crit_chance_relative + gal.mutation.bonus;
-    let cc = f.crit_chance + ctx.flat_crit + f.base_crit_chance * (crit_chance_relative
-        + if ctx.weakpoint_direct {
-            active.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative
-        } else { 0.0 })
-        + if ctx.direct_hit { WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(at) as f64 } else { 0.0 };
+    let relative = crit_chance_relative + if ctx.weakpoint_direct {
+        active.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative
+    } else { 0.0 };
+    let flat = ctx.flat_crit + if ctx.direct_hit { WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(at) as f64 } else { 0.0 };
+    let cc = f.critical_inputs.map_or_else(
+        || f.crit_chance + f.base_crit_chance * relative + flat,
+        |inputs| inputs.chance(relative, flat),
+    );
     let tier = upgrade_crit_tier(roll_crit_tier(cc, &mut d.spine), active.crit_tier_upgrade_chance, &mut d.spine);
     let crit_damage_relative = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, at)
         + arc.cd_bonus(active, at)
@@ -315,10 +318,12 @@ pub(super) fn field_tick_seeded(
         + params.arcane.crit_damage_relative;
     // Ordinary area damage excludes Cold and Puncture. Declared area direct
     // hits take their direct-hit bonuses (Stug, M127); GunCO is a separate gate.
-    let cd = f.crit_damage
-        + f.base_crit_damage * crit_damage_relative
-        + if ctx.direct_hit { debuffs.cold_cd_bonus(at) } else { 0.0 }
+    let flat_damage = if ctx.direct_hit { debuffs.cold_cd_bonus(at) } else { 0.0 }
         + crate::data::abilities::final_crit_damage_at(&params.abilities_now(), at);
+    let cd = f.critical_inputs.map_or_else(
+        || f.crit_damage + f.base_crit_damage * crit_damage_relative + flat_damage,
+        |inputs| inputs.damage(cc, crit_damage_relative, flat_damage),
+    );
     // …AND THE CRIT-HEADSHOT FOLD-IN, on a tick that found an eligible head.
     // No exception is invented for it: a strike that can hit a weak point is a
     // hit on a weak point, and `Critical_Hit` §Critical Headshots is the rule
@@ -328,7 +333,7 @@ pub(super) fn field_tick_seeded(
         _ if ctx.critical_head_direct => 2.0 * cd,
         _ => cd,
     };
-    let crit_multiplier = 1.0 + tier as f64 * (cd - 1.0);
+    let crit_multiplier = crate::rules::critical::factor(tier, cd as f32) as f64;
 
     // Damage buckets: the same live base-damage additions the direct hit reads,
     // then the GunCO bracket off the target's CURRENT status count.
@@ -393,7 +398,8 @@ pub(super) fn field_tick_seeded(
     // `faction_at` like the other two rungs so the ladder is visible at every
     // level rather than only where it compounds.
     let raw =
-        qtotal * crit_multiplier * part_factor * bucket * faction_at(params.faction_at_time(at), DEPTH_HIT)
+        crate::rules::critical::apply_factor(qtotal as f32, crit_multiplier as f32) as f64
+            * part_factor * bucket * faction_at(params.faction_at_time(at), DEPTH_HIT)
             * compression
             * damage_multiplier
             * params.ability_final_at(at)

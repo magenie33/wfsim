@@ -219,7 +219,7 @@ fn a_held_trigger_spools_down_and_costs_most_of_the_magazine() {
     assert_eq!(run_once(&phenmor, &mut Rng::new(1)).shots, 134, "the listed rate, flat");
 
     let spooled = FightParams {
-        sustained_fire_rate: Some(crate::model::SustainedFireRate {
+        sustained_fire_rate: Some(crate::model::SustainedFireRate::Assumed {
             start: 1.00,
             end: 0.60,
             over_shots: 51.0,
@@ -1530,15 +1530,15 @@ fn a_derived_stat_reads_the_crit_chance_the_shot_has() {
     let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::AssumedMax);
     // THE PANEL IS UNCHANGED by making the sim live — a static view still
     // answers with the crit chance it can see.
-    assert!((panel.status_chance - 0.275).abs() < 1e-9, "{}", panel.status_chance);
-    assert!((panel.crit_chance - 0.25).abs() < 1e-9, "{}", panel.crit_chance);
+    assert!(crate::rules::upgrades::near_f32(panel.status_chance, 0.275), "{}", panel.status_chance);
+    assert!(crate::rules::upgrades::near_f32(panel.crit_chance, 0.25), "{}", panel.crit_chance);
 
     let arena = crate::arena::Arena::training(60.0);
     let rate = |crit_chance_relative: f64| {
         let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         p.arcane.crit_chance_relative = crit_chance_relative;
         p.duration_seconds = 60.0;
-        let s = monte_carlo(&p, 12, 4);
+        let s = monte_carlo(&p, 96, 4);
         s.mean_procs / s.mean_pellets.max(1.0)
     };
     let (none, one, three) = (rate(0.0), rate(1.0), rate(3.0));
@@ -1709,55 +1709,45 @@ fn the_half_health_bonus_lands_in_the_weapons_own_co_bracket() {
     assert_eq!(inc.co_behavior, crate::model::CoBehavior::Independent);
     assert!(base.base_damage_below_half_health > 1.0 && inc.base_damage_below_half_health > 1.0);
 
-    // A target that is ALWAYS below half health, so the term is always on,
-    // and a mod bucket big enough to tell the two brackets apart.
-    let arena = crate::arena::Arena::training(60.0);
-    let dmg = |weapon: &str, evo: &[&str], mods: &[&str]| {
-        let b = crate::model::WeaponBase::from_data(weapon, true, evo);
-        // THE POOL IS THE BASE WEAPON'S. An Incarnon FORM entry has none
-        // of its own — a mod is equipped on the weapon, not on the form.
+    let arena = crate::arena::Arena::training(20.0);
+    for weapon in [&base, &inc] {
+      for equipped in [&[][..], &["hornet_strike"][..]] {
         let pool = crate::data::mods::pool_for_weapon("kunai");
-        let multishot: Vec<&crate::model::ModDef> = mods
+        let mods: Vec<_> = equipped
             .iter()
             .map(|m| pool.iter().find(|d| d.id == *m).unwrap_or_else(|| panic!("no mod {m}")))
             .collect();
-        let panel = crate::build::loadout::resolve(&b, &multishot, crate::model::StackPolicy::Emergent);
+        let panel = crate::build::loadout::resolve(weapon, &mods, crate::model::StackPolicy::Emergent);
         let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
-        // A POOL THE RUN CHEWS THROUGH SLOWLY. The condition is a live one
-        // — health below half — so the fixture has to actually get there:
-        // spawning at full and dying instantly would leave it never true,
-        // and an unkillable target would leave it never true either.
+        p.cycle = None;
         p.foe.mode = crate::target::TargetMode::InstantRespawn;
-        p.foe.base_health = 40_000.0;
+        p.foe.base_health = 1000.0;
         p.foe.base_armor = 0.0;
         p.foe.base_shield = 0.0;
-        monte_carlo(&p, 8, 0x4A1F).mean_damage
-    };
-    let perk = ["kunai_swift_conclusion"];
-
-    // THE MEASUREMENT IS A DIFFERENCE OF DIFFERENCES, and it has to be.
-    // Adding Hornet Strike changes how fast the target dies, so it changes
-    // what FRACTION of the run is spent below half health — a contamination
-    // both forms carry equally. What only the ADDING form carries is the
-    // dilution itself, so the claim is that it loses measurably more.
-    let drop = |w: &str| {
-        let bare = dmg(w, &perk, &[]) / dmg(w, &[], &[]);
-        let modded = dmg(w, &perk, &["hornet_strike"]) / dmg(w, &[], &["hornet_strike"]);
-        modded / bare - 1.0
-    };
-    let base_drop = drop("kunai");
-    let inc_drop = drop("kunai_incarnon");
-    assert!(
-        base_drop < inc_drop - 0.04,
-        "the ADDING form is diluted by Hornet Strike and the MULTIPLYING one is not:              base {:.1}% against Incarnon {:.1}% — they should not be the same number",
-        base_drop * 100.0,
-        inc_drop * 100.0
-    );
-    assert!(
-        inc_drop > -0.10,
-        "…and the Incarnon form's small loss is the shared uptime effect, not dilution: {:.1}%",
-        inc_drop * 100.0
-    );
+        p.body_parts = mono_body(1.0);
+        p.critical_inputs = None;
+        p.base_crit_chance = 0.0;
+        p.status_chance = 0.0;
+        p.forced_procs.clear();
+        let half = p.foe.max_health() * 0.5;
+        let rec = record(&p, 0x4a1f, 0.0, 20.0, 10_000, 0);
+        let rows: Vec<_> = rec.events().iter().filter_map(|e| match &e.kind {
+            crate::record::Kind::Damage(d) if d.origin == crate::record::Origin::Own && !d.radial => Some(d),
+            _ => None,
+        }).collect();
+        let above = rows.iter().find(|d| d.before.health >= half).expect("an above-half hit").raw;
+        let below = rows.iter().find(|d| d.before.health < half).expect("a below-half hit").raw;
+        let bonus = panel.base_damage_below_half_health * panel.co_base_fraction();
+        let expected = match panel.co_behavior {
+            crate::model::CoBehavior::AdditiveWithBaseDamage =>
+                1.0 + bonus / (1.0 + panel.base_damage_bonus),
+            crate::model::CoBehavior::Independent => 1.0 + bonus,
+            crate::model::CoBehavior::Inert => panic!("the Kunai fixture needs an active CO bracket"),
+        };
+        assert!(crate::rules::upgrades::near_f32(below / above, expected),
+            "{:?} {equipped:?}: below/above {} vs {expected}", panel.co_behavior, below / above);
+      }
+    }
 }
 
 /// FEIGNED RETREAT: half the fight at a time, and the perk's own flat base

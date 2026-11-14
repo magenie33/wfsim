@@ -552,7 +552,7 @@ fn a_player_state_condition_is_asked_of_the_tenno() {
     assert!(
         ss.effects.iter().any(|e| matches!(e,
             ModEffect::WhileTenno(TennoCondition::Invisible, inner)
-                if matches!(**inner, ModEffect::BaseDamage(v) if (v - 3.3).abs() < 1e-9))),
+                if matches!(**inner, ModEffect::BaseDamage(v) if crate::rules::upgrades::near_f32(v, 3.3)))),
         "spectral_serration is gated on invisibility, got {:?}",
         ss.effects
     );
@@ -573,7 +573,7 @@ fn a_player_state_condition_is_asked_of_the_tenno() {
     let paid =
         resolve_for(&base, &[&ss], StackPolicy::AssumedMax, &hidden).modified_base;
     assert!(
-        (paid - plain * 4.3).abs() < 1e-6,
+        crate::rules::upgrades::near_f32(paid, plain * 4.3),
         "an invisible Tenno collects +330%: {paid} vs {}",
         plain * 4.3
     );
@@ -595,7 +595,7 @@ fn a_derived_stat_reads_the_modded_value_and_lands_on_the_base_one() {
     let hg = "dera_vandal_high_ground";
     let base = WeaponBase::from_data("dera_vandal", false, &[hg]);
     assert!(
-        (base.base_status_chance - 0.30).abs() < 1e-9,
+        crate::rules::upgrades::near_f32(base.base_status_chance, 0.30),
         "the wiki groups the non-Incarnon Vandal at 30% status chance, got {}",
         base.base_status_chance
     );
@@ -607,7 +607,7 @@ fn a_derived_stat_reads_the_modded_value_and_lands_on_the_base_one() {
     // cap is exactly reached, and past it nothing more is bought.
     let (under, at, over) = (cc(3.60), cc(3.667), cc(6.0));
     assert!(under < at - 1e-9, "below +366.7% the bonus still climbs: {under} vs {at}");
-    assert!((at - over).abs() < 1e-9, "+366.7% maxes it out: {at} vs {over}");
+    assert!(crate::rules::upgrades::near_f32(at, over), "+366.7% maxes it out: {at} vs {over}");
 
     // …and it lands on BASE crit chance, so the crit mods multiply it. The
     // two readings of "Base" only differ once a crit mod is on, which is
@@ -618,7 +618,7 @@ fn a_derived_stat_reads_the_modded_value_and_lands_on_the_base_one() {
     let a = resolve(&bare, &[&sm, &cm], StackPolicy::AssumedMax).crit_chance;
     let b = resolve(&base, &[&sm, &cm], StackPolicy::AssumedMax).crit_chance;
     assert!(
-        ((b - a) - 0.35 * 2.5).abs() < 1e-9,
+        crate::rules::upgrades::near_f32(b - a, 0.35 * 2.5),
         "a 35% BASE grant is worth 87.5% through a +150% crit mod, got {}",
         b - a
     );
@@ -1023,14 +1023,14 @@ fn a_fight_bonus_resolves_exactly_like_the_mod_of_that_stat() {
     for (id, set, read) in cases {
         let a = read(&with_mod(id));
         let b = read(&with_bonus(*set));
-        assert!((a - b).abs() < 1e-9,
+        assert!(crate::rules::upgrades::near_f32(a, b),
             "{id}: the mod resolves to {a}, the same number as a fight bonus resolves to {b}");
     }
     // RELOAD IS THE OTHER DIRECTION — a bigger bucket is a SHORTER time —
     // so it is read separately rather than being one more row above.
     let m = with_mod("fast_hands").reload_seconds;
     let f = with_bonus(|b| b.reload_speed = 0.30).reload_seconds;
-    assert!((m - f).abs() < 1e-9, "fast hands {m}s vs a fight bonus {f}s");
+    assert!(crate::rules::upgrades::near_f32(m, f), "fast hands {m}s vs a fight bonus {f}s");
 
     // …AND THEY ADD, which is what "one more mod" means when there is
     // already one: Serration + a +165% fight bonus is one bucket at +330%,
@@ -1039,7 +1039,7 @@ fn a_fight_bonus_resolves_exactly_like_the_mod_of_that_stat() {
     both.bonuses.base_damage = 1.65;
     let stacked = resolve_for(&base, &[by("serration")], StackPolicy::Emergent, &both);
     let plain = resolve_for(&base, &[], StackPolicy::Emergent, neutral);
-    assert!((stacked.modified_base / plain.modified_base - 4.30).abs() < 1e-9,
+    assert!(crate::rules::upgrades::near_f32(stacked.modified_base / plain.modified_base, 4.30),
         "1 + 1.65 + 1.65 = 4.30, got x{}", stacked.modified_base / plain.modified_base);
 
     // …AND A LOCK STILL WINS. "Set to its default ignoring other bonuses"
@@ -1049,7 +1049,7 @@ fn a_fight_bonus_resolves_exactly_like_the_mod_of_that_stat() {
     multishot.bonuses.multishot = 5.0;
     let locked = resolve_for(&base, &[by("primary_acuity")], StackPolicy::Emergent, &multishot);
     let unlocked = resolve_for(&base, &[], StackPolicy::Emergent, neutral);
-    assert!((locked.multishot - unlocked.multishot).abs() < 1e-9,
+    assert!(crate::rules::upgrades::near_f32(locked.multishot, unlocked.multishot),
         "a locked multishot ignores a fight bonus too: {} vs {}",
         locked.multishot, unlocked.multishot);
 
@@ -1058,7 +1058,7 @@ fn a_fight_bonus_resolves_exactly_like_the_mod_of_that_stat() {
     let mut short = neutral.clone();
     short.bonuses.status_duration = -0.875;
     let p = resolve_for(&base, &[by("continuous_misery")], StackPolicy::Emergent, &short);
-    assert!((p.status_duration_multiplier - 1.125).abs() < 1e-9, "{}", p.status_duration_multiplier);
+    assert!(crate::rules::upgrades::near_f32(p.status_duration_multiplier, 1.125), "{}", p.status_duration_multiplier);
 
     // FLAT CRIT IS POINTS AFTER MODS, not a bucket: +25 lands as +0.25 on
     // the bare panel and on Point Strike's alike, and -25 takes it back.
@@ -1069,8 +1069,8 @@ fn a_fight_bonus_resolves_exactly_like_the_mod_of_that_stat() {
     };
     let ps = [by("point_strike")];
     for mods in [&[][..], &ps[..]] {
-        assert!((cc(mods, 0.25) - cc(mods, 0.0) - 0.25).abs() < 1e-9);
-        assert!((cc(mods, -0.25) - (cc(mods, 0.0) - 0.25).max(0.0)).abs() < 1e-9);
+        assert!(crate::rules::upgrades::near_f32(cc(mods, 0.25) - cc(mods, 0.0), 0.25));
+        assert!(crate::rules::upgrades::near_f32(cc(mods, -0.25), cc(mods, 0.0) - 0.25));
     }
 
     // FINAL CRIT DAMAGE IS ADDED AFTER THE MODS, not multiplied by them: +1.6x
@@ -1082,7 +1082,7 @@ fn a_fight_bonus_resolves_exactly_like_the_mod_of_that_stat() {
     };
     let vs = [by("vital_sense")];
     for mods in [&[][..], &vs[..]] {
-        assert!((cd(mods, 1.6) - cd(mods, 0.0) - 1.6).abs() < 1e-9, "{} vs {}", cd(mods, 1.6), cd(mods, 0.0));
+        assert!(crate::rules::upgrades::near_f32(cd(mods, 1.6) - cd(mods, 0.0), 1.6), "{} vs {}", cd(mods, 1.6), cd(mods, 0.0));
     }
 
     // FLAT BASE DAMAGE GROWS THE BASE EITHER WAY, and only the `_co` half grows
@@ -1095,7 +1095,7 @@ fn a_fight_bonus_resolves_exactly_like_the_mod_of_that_stat() {
     let bare = resolve_for(&base, &[], StackPolicy::Emergent, neutral);
     let (into, outside) = (flat(true), flat(false));
     assert!((into.modified_base - bare.modified_base - 30.0).abs() < 1e-6, "{} vs {}", into.modified_base, bare.modified_base);
-    assert!((outside.modified_base - into.modified_base).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(outside.modified_base, into.modified_base));
     assert!(into.co_base_fraction() > outside.co_base_fraction(),
         "CO reads the _co add and not the other: {} vs {}", into.co_base_fraction(), outside.co_base_fraction());
 }
@@ -1255,25 +1255,25 @@ fn a_scopes_three_kinds_land_in_three_buckets() {
     // quantized base, 3.0007x (MECHANICS §Quantization).
     let (aim, no) = pair("rubico");
     let q = crate::rules::damage::quantize_base_crit_damage(3.0);
-    assert!((no.crit_damage - q).abs() < 1e-9, "hip: {}", no.crit_damage);
-    assert!((aim.crit_damage - q * 1.5).abs() < 1e-9, "scoped: {}", aim.crit_damage);
+    assert!(crate::rules::upgrades::near_f32(no.crit_damage, q), "hip: {}", no.crit_damage);
+    assert!(crate::rules::upgrades::near_f32(aim.crit_damage, q * 1.5), "scoped: {}", aim.crit_damage);
 
     // THE LANKA: fifty POINTS of crit chance, not half of its 25%.
     let (aim, no) = pair("lanka");
-    assert!((no.crit_chance - 0.25).abs() < 1e-9, "hip: {}", no.crit_chance);
+    assert!(crate::rules::upgrades::near_f32(no.crit_chance, 0.25), "hip: {}", no.crit_chance);
     assert!(
-        (aim.crit_chance - 0.75).abs() < 1e-9,
+        crate::rules::upgrades::near_f32(aim.crit_chance, 0.75),
         "the Lanka's scope is a FLAT +50 applied after mods, so 25% becomes 75%              and not 37.5%: {}",
         aim.crit_chance
     );
 
     // THE VULKAR: +70% headshot damage, the Vectis family's kind.
     let (aim, no) = pair("vulkar");
-    assert!((aim.headshot_damage_bonus - no.headshot_damage_bonus - 0.7).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(aim.headshot_damage_bonus - no.headshot_damage_bonus, 0.7));
     // ...and none of the three touches a weapon without a scope.
     let (aim, no) = pair("torid");
-    assert!((aim.crit_chance - no.crit_chance).abs() < 1e-9);
-    assert!((aim.crit_damage - no.crit_damage).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(aim.crit_chance, no.crit_chance));
+    assert!(crate::rules::upgrades::near_f32(aim.crit_damage, no.crit_damage));
 }
 
 /// FROM THE HIP: THE COUNTER PAYS AND DOES NOT BUILD, AND THE SCOPE IS GONE.
@@ -1339,12 +1339,12 @@ fn wisemans_regard_reads_each_forms_own_crit_chance() {
         let b = resolve(&bare, &[], StackPolicy::AssumedMax);
         let w = resolve(&with, &[], StackPolicy::AssumedMax);
 
-        assert!((w.crit_chance - base_cc).abs() < 1e-9,
+        assert!(crate::rules::upgrades::near_f32(w.crit_chance, *base_cc),
             "{id}: the wiki's +{:.0}% threshold implies a base crit of {base_cc}, ours is {}",
             threshold * 100.0, w.crit_chance);
         // THE CONVERSION IS OFF THIS FORM'S OWN NUMBER, not the base form's.
         let got = w.status_chance - b.status_chance;
-        assert!((got - 0.30 * base_cc).abs() < 1e-9,
+        assert!(crate::rules::upgrades::near_f32(got, 0.30 * base_cc),
             "{id}: 30% of {base_cc} is {}, the panel moved by {got}", 0.30 * base_cc);
         // …and the threshold reproduces the cap, which is the other half of
         // the sentence: at +X% modded crit the conversion is exactly 40%.
@@ -1418,7 +1418,7 @@ fn requires_gate_disables_and_cond_buff() {
     // requires: a mod needing `beam` is INERT on Dual Toxocyst (no beam);
     // a mod needing `semi_auto` applies.
     let beam_mod = m_req("beam", Some("beam"), vec![], vec![ModEffect::BaseDamage(3.0)]);
-    assert!((resolve(&base, &[&beam_mod], StackPolicy::AssumedMax).modified_base - p0.modified_base).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(resolve(&base, &[&beam_mod], StackPolicy::AssumedMax).modified_base, p0.modified_base));
     let semi = m_req("semi", Some("semi_auto"), vec![], vec![ModEffect::BaseDamage(3.0)]);
     assert!(resolve(&base, &[&semi], StackPolicy::AssumedMax).modified_base > p0.modified_base);
     // disables: a mod locking `multishot` sets it to the weapon's DEFAULT.
@@ -1432,7 +1432,7 @@ fn requires_gate_disables_and_cond_buff() {
     let lock = m_req("acuity", None, vec!["multishot"], vec![]);
     let ms_mod = m("multishot", vec![ModEffect::Multishot(1.0)]);
     let locked = resolve(&base, &[&ms_mod, &lock], StackPolicy::AssumedMax);
-    assert!((locked.multishot - base.base_multishot).abs() < 1e-9, "the weapon's default");
+    assert!(crate::rules::upgrades::near_f32(locked.multishot, base.base_multishot), "the weapon's default");
     // ...and Fevered Frenzy IS worth something without the lock — the panel
     // counts what the precombat list earns — so the line above is not passing
     // because it contributes nothing.
@@ -1442,8 +1442,8 @@ fn requires_gate_disables_and_cond_buff() {
     let cb = m("cond", vec![ModEffect::CondBuff(CondBucket::StatusChance, 0.90)]);
     let amax = resolve(&base, &[&cb], StackPolicy::AssumedMax);
     let emerg = resolve(&base, &[&cb], StackPolicy::Emergent);
-    assert!((amax.status_chance - base.base_status_chance * 1.90).abs() < 1e-9);
-    assert!((emerg.status_chance - base.base_status_chance).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(amax.status_chance, base.base_status_chance * 1.90));
+    assert!(crate::rules::upgrades::near_f32(emerg.status_chance, base.base_status_chance));
 }
 
 /// THE SIX MEASURED CHAIN COUNTS, reproduced from the multishot alone.
@@ -1587,18 +1587,18 @@ fn a_multishot_lock_removes_a_live_multishot_buff_too() {
 fn a_fire_rate_penalty_leaves_a_burst_weapon_s_own_delay_alone() {
     let base = WeaponBase::from_data("burston_prime", false, &[]);
     let listed = base.burst.expect("burston prime declares a burst").delay_seconds;
-    assert!((listed - 0.04).abs() < 1e-9, "the module's BurstDelay");
+    assert!(crate::rules::upgrades::near_f32(listed, 0.04), "the module's BurstDelay");
 
     // Critical Delay: -36% fire rate, and nothing else that matters here.
     let slow = [m("critical_delay", vec![ModEffect::FireRate(-0.36)])];
     let refs: Vec<&ModDef> = slow.iter().collect();
     let p = resolve(&base, &refs, StackPolicy::AssumedMax);
     assert!(
-        (p.burst.unwrap().delay_seconds - listed).abs() < 1e-9,
+        crate::rules::upgrades::near_f32(p.burst.unwrap().delay_seconds, listed),
         "a NET NEGATIVE fire-rate bonus must leave the burst delay alone"
     );
     // ...while the rate itself takes the penalty in full.
-    assert!((p.fire_rate - 5.0 * 0.64).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(p.fire_rate, 5.0 * 0.64));
 
     // A POSITIVE bonus shortens BOTH — "Fire Rate bonuses affect both the
     // speed of the burst as well as the time between bursts" — which is
@@ -1607,8 +1607,8 @@ fn a_fire_rate_penalty_leaves_a_burst_weapon_s_own_delay_alone() {
     let fast = [m("shred", vec![ModEffect::FireRate(0.30)])];
     let refs: Vec<&ModDef> = fast.iter().collect();
     let q = resolve(&base, &refs, StackPolicy::AssumedMax);
-    assert!((q.burst.unwrap().delay_seconds - 0.04 / 1.30).abs() < 1e-9);
-    assert!((q.fire_rate - 5.0 * 1.30).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(q.burst.unwrap().delay_seconds, 0.04 / 1.30));
+    assert!(crate::rules::upgrades::near_f32(q.fire_rate, 5.0 * 1.30));
 }
 
 #[test]
@@ -1671,23 +1671,23 @@ fn dual_toxocyst_panel_resolves_by_hand() {
     );
 
     // ModifiedBase: 125 × 3.2 = 400.
-    assert!((p.modified_base - 400.0).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(p.modified_base, 400.0));
     // Physical keeps its 3.2×; Cold+Electricity (adjacent) -> Magnetic
     // of 2 × 0.6 × 400 = 480; total = 400 + 480 = 880.
-    assert!((p.damage.get(Magnetic) - 480.0).abs() < 1e-9);
-    assert!((p.damage.get(Puncture) - 200.0).abs() < 1e-9);
-    assert!((p.damage.total() - 880.0).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(p.damage.get(Magnetic), 480.0));
+    assert!(crate::rules::upgrades::near_f32(p.damage.get(Puncture), 200.0));
+    assert!(crate::rules::upgrades::near_f32(p.damage.total(), 880.0));
     // cc 0.31 × 2.87; cd 3 (quantized) × 2.1; sc 0.43 × 3.0; fr 4.5 × 1.6.
-    assert!((p.crit_chance - 0.8897).abs() < 1e-9);
-    assert!((p.crit_damage - crate::rules::damage::quantize_base_crit_damage(3.0) * 2.1).abs() < 1e-9);
-    assert!((p.status_chance - 1.29).abs() < 1e-9);
-    assert!((p.fire_rate - 7.2).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(p.crit_chance, 0.8897));
+    assert!(crate::rules::upgrades::near_f32(p.crit_damage, crate::rules::damage::quantize_base_crit_damage(3.0) * 2.1));
+    assert!(crate::rules::upgrades::near_f32(p.status_chance, 1.29));
+    assert!(crate::rules::upgrades::near_f32(p.fire_rate, 7.2));
     // MS: 1 × (1 + 1.0 Fevered + 0.6 + 1.1 + 1.2 stacks) = 4.9 — Fevered
     // Frenzy's twenty stacks are earned before the fight, so the panel has them.
-    assert!((p.multishot - 4.9).abs() < 1e-9, "{}", p.multishot);
+    assert!(crate::rules::upgrades::near_f32(p.multishot, 4.9), "{}", p.multishot);
     // CO assumed max: 0.4 × 3 = 1.2. No status-damage mods.
-    assert!((p.co_per_type - 1.2).abs() < 1e-9);
-    assert!((p.status_damage_multiplier - 1.0).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(p.co_per_type, 1.2));
+    assert!(crate::rules::upgrades::near_f32(p.status_damage_multiplier, 1.0));
     // Elemental DoT brackets: cold 1.6, electricity 1.6.
     assert!(p.elem_dot_bonus.contains(&(Cold, 1.6)));
     assert!(p.elem_dot_bonus.contains(&(Electricity, 1.6)));
@@ -1837,7 +1837,7 @@ fn exclusive_augments_use_their_static_final_buckets() {
         let plain = resolve(&base, &[], StackPolicy::AssumedMax);
         let augmented = resolve(&base, &[&augment], StackPolicy::AssumedMax);
         assert!(
-            (augmented.status_chance - plain.status_chance - final_bonus).abs() < 1e-9,
+            crate::rules::upgrades::near_f32(augmented.status_chance - plain.status_chance, final_bonus),
             "{id} must add {final_bonus} after the relative status bucket"
         );
     }
@@ -1851,7 +1851,7 @@ fn exclusive_augments_use_their_static_final_buckets() {
         let plain = resolve(&base, &[], StackPolicy::AssumedMax);
         let augmented = resolve(&base, &[&augment], StackPolicy::AssumedMax);
         assert!(
-            (augmented.headshot_damage_bonus - plain.headshot_damage_bonus - bonus).abs() < 1e-9
+            crate::rules::upgrades::near_f32(augmented.headshot_damage_bonus - plain.headshot_damage_bonus, bonus)
         );
     }
 }
@@ -2039,9 +2039,9 @@ fn attack_speed_with_the_melee_weapon_equipped_is_a_gate_and_the_base_damage_is_
     let (drawn, radial_drawn) = speed(true);
     let (quick, radial_quick) = speed(false);
     // 0.833 base, +40% drawn.
-    assert!((drawn / quick - 1.4).abs() < 1e-9, "{drawn} against {quick}");
+    assert!(crate::rules::upgrades::near_f32(drawn / quick, 1.4), "{drawn} against {quick}");
     assert!(
-        (radial_drawn - radial_quick).abs() < 1e-9,
+        crate::rules::upgrades::near_f32(radial_drawn, radial_quick),
         "the +100 lands either way: {radial_drawn} against {radial_quick}",
     );
 }
@@ -2065,12 +2065,12 @@ fn the_sacrificial_pair_enhance_each_other_and_neither_alone() {
     };
     let (cc_alone, _) = of(&[pick("sacrificial_steel")]);
     let (_, bd_alone) = of(&[pick("sacrificial_pressure")]);
-    assert!((cc_alone - 2.2).abs() < 1e-9, "alone it is its face: {cc_alone}");
-    assert!((bd_alone - 1.1).abs() < 1e-9, "alone it is its face: {bd_alone}");
+    assert!(crate::rules::upgrades::near_f32(cc_alone, 2.2), "alone it is its face: {cc_alone}");
+    assert!(crate::rules::upgrades::near_f32(bd_alone, 1.1), "alone it is its face: {bd_alone}");
 
     let (cc_pair, bd_pair) = of(&[pick("sacrificial_steel"), pick("sacrificial_pressure")]);
-    assert!((cc_pair - 2.75).abs() < 1e-9, "+220% becomes +275%: {cc_pair}");
-    assert!((bd_pair - 1.375).abs() < 1e-9, "+110% becomes +137.5%: {bd_pair}");
+    assert!(crate::rules::upgrades::near_f32(cc_pair, 2.75), "+220% becomes +275%: {cc_pair}");
+    assert!(crate::rules::upgrades::near_f32(bd_pair, 1.375), "+110% becomes +137.5%: {bd_pair}");
 }
 
 /// …AND EVERY MEMBER OF SUCH A SET HAS EFFECTS THE SCALING CAN REACH.
@@ -2191,7 +2191,7 @@ fn sentinel_base_only_ignores_galvanized_conditional() {
         ],
     );
     let p = resolve(&verglas_prime(), &[&gchamber], StackPolicy::BaseOnly);
-    assert!((p.multishot - 1.55).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(p.multishot, 1.55));
     assert!(p.multishot_stack.is_none());
 }
 /// A BIGGER MAGAZINE COSTS RELOAD TIME on a by-round reloader, and it is
@@ -2227,7 +2227,7 @@ fn a_magazine_mod_lengthens_a_by_round_reload_and_only_that() {
         "{added} more shells at 0.4 s each"
     );
     // The unmodded number is still the published one.
-    assert!((plain.reload_seconds - 3.7).abs() < 1e-9, "{}", plain.reload_seconds);
+    assert!(crate::rules::upgrades::near_f32(plain.reload_seconds, 3.7), "{}", plain.reload_seconds);
 
     // AND THE CONTROL. The Boar is an ordinary shotgun: same mod, same
     // bigger magazine, same reload.
@@ -2235,7 +2235,7 @@ fn a_magazine_mod_lengthens_a_by_round_reload_and_only_that() {
     let a = resolve(&boar, &[], StackPolicy::AssumedMax);
     let b = resolve(&boar, &[&mag_mod], StackPolicy::AssumedMax);
     assert!(b.magazine_size > a.magazine_size);
-    assert!((b.reload_seconds - a.reload_seconds).abs() < 1e-9,
+    assert!(crate::rules::upgrades::near_f32(b.reload_seconds, a.reload_seconds),
         "an ordinary reload is one block: {} vs {}", a.reload_seconds, b.reload_seconds);
 }
 
@@ -2377,7 +2377,7 @@ fn the_kuva_bonus_raises_the_fields_base_and_the_bucket_multiplies_it() {
     // 1.65) = 487.5` — two answers 30% apart, and one reading tells them
     // apart.
     let with = field(0.6, &["serration"]).damage.total();
-    assert!((with - 636.0).abs() < 1e-6, "{with}");
+    assert!(crate::rules::upgrades::near_f32(with, 636.0), "{with}");
     assert!((with - 487.5).abs() > 1.0, "the valence fell into the base-damage bucket");
 }
 
@@ -2633,12 +2633,12 @@ fn the_melee_crit_damage_shards_join_the_crit_damage_bucket() {
     };
     let none = cd(&[], 0.0);
     let ratio = |x: f64| x / none;
-    assert!((ratio(cd(&[("crimson", "melee_crit_damage", false)], 0.0)) - 1.25).abs() < 1e-9);
-    assert!((ratio(cd(&[("crimson", "melee_crit_damage", true)], 0.0)) - 1.375).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(ratio(cd(&[("crimson", "melee_crit_damage", false)], 0.0)), 1.25));
+    assert!(crate::rules::upgrades::near_f32(ratio(cd(&[("crimson", "melee_crit_damage", true)], 0.0)), 1.375));
     let violet = [("violet", "melee_crit_damage", false)];
-    assert!((ratio(cd(&violet, 500.0)) - 1.25).abs() < 1e-9, "500 is not over 500");
-    assert!((ratio(cd(&violet, 501.0)) - 1.5).abs() < 1e-9, "doubled at 501");
-    assert!((ratio(cd(&[("violet", "melee_crit_damage", true)], 501.0)) - 1.75).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(ratio(cd(&violet, 500.0)), 1.25), "500 is not over 500");
+    assert!(crate::rules::upgrades::near_f32(ratio(cd(&violet, 501.0)), 1.5), "doubled at 501");
+    assert!(crate::rules::upgrades::near_f32(ratio(cd(&[("violet", "melee_crit_damage", true)], 501.0)), 1.75));
     // A gun is not a melee weapon.
     let gun = WeaponBase::from_data("braton_prime", false, &[]);
     let crimson = wielding(&[("crimson", "melee_crit_damage", false)], 0.0);

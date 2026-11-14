@@ -267,6 +267,7 @@ fn venato(form: &str, rank: u32) -> FightParams {
         ..crate::arena::Arena::training(4.0)
     };
     let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
+    p.critical_inputs = None;
     p.base_crit_chance = 0.0;
     p.crit_multiplier = 1.0;
     p.status_chance = 0.0;

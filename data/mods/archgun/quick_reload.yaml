@@ -9,8 +9,11 @@ description: "+X% Reload Speed"
 
 effects:
   - kind: reload_speed_bonus
-    rank0: 0.25
-    rankMax: 1.0
+    UpgradeType: 389
+    OperationType: STACKING_MULTIPLY
+    Value: 0.25
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Quick_Reload

@@ -55,8 +55,9 @@ pub(super) struct InstanceScale {
 /// the base bracket to itself — exactly right as arithmetic and the reason a
 /// panel showing it printed `x5.706 Condition Overload`, a number the game does
 /// not have. The terms travel with it, so the ledger shows the sum.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy)]
 pub(super) struct Gunco {
+    pub(super) behavior: crate::model::CoBehavior,
     /// What the engine multiplies by — unchanged, and still a quotient.
     pub(super) bucket: f64,
     /// Condition Overload's own contribution to the base bracket.
@@ -71,6 +72,14 @@ pub(super) struct Gunco {
     /// (MEASUREMENTS M79). Computed here because this is the one place that
     /// holds both the term and the bracket it went into.
     pub(super) co_share: f64,
+}
+
+#[wfsim_gas_macro::metered]
+impl Default for Gunco {
+    fn default() -> Self {
+        Self { behavior: crate::model::CoBehavior::Inert, bucket: 0.0,
+            co: 0.0, rate: 0.0, types: 0.0, half_hp: 0.0, co_share: 0.0 }
+    }
 }
 
 /// ECLIPSE, AS THE FACTOR IT ACTUALLY IS — its bonus on everything the hit is
@@ -168,8 +177,9 @@ pub(super) fn gunco_bucket(
     // inside it.
     let half_hp = half_hp * co_base.fraction();
     let terms = |bucket: f64, numerator: f64| Gunco {
+        behavior,
         bucket,
-        co: gunco_total,
+        co: if behavior == crate::model::CoBehavior::Inert { 0.0 } else { gunco_total },
         rate: co_rate,
         types: f64::from(types),
         half_hp,

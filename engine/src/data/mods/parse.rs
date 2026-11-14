@@ -732,7 +732,11 @@ pub(super) fn effect_at_rank(e: &Value, rank: u32, max_rank: u32) -> Value {
             m.insert(Value::from(k), x);
         }
     };
-    if let Some(values) = e.get("rank_values").and_then(Value::as_sequence) {
+    if let Some(spec) = native_upgrade(e) {
+        assert!(["rank0", "rankMax", "rank_values"].iter().all(|key| e.get(*key).is_none()),
+            "native upgrade fields are the authoritative rank inputs");
+        set("rankMax", Value::from(spec.value(rank.min(max_rank), max_rank) as f64));
+    } else if let Some(values) = e.get("rank_values").and_then(Value::as_sequence) {
         assert_eq!(values.len(), max_rank as usize + 1, "rank_values must cover every rank");
         set("rankMax", values[rank.min(max_rank) as usize].clone());
     } else if let (Some(a), Some(b)) = (n(e, "rank0"), n(e, "rankMax")) {
@@ -755,6 +759,39 @@ pub(super) fn effect_at_rank(e: &Value, rank: u32, max_rank: u32) -> Value {
     out
 }
 
+pub(super) fn native_upgrade(e: &Value) -> Option<crate::model::RankedUpgrade> {
+    e.get("UpgradeType")?;
+    let spec = serde_norway::from_value::<crate::model::RankedUpgrade>(e.clone())
+        .expect("native mod input must retain its complete rank fields");
+    let kind = e.get("kind").and_then(Value::as_str).expect("mod effect kind");
+    use crate::rules::upgrades::{OperationType, UpgradeType as U};
+    let expected = match kind {
+        "base_damage_bonus" => U::WEAPON_DAMAGE_AMOUNT,
+        "crit_chance_bonus" => U::WEAPON_CRIT_CHANCE,
+        "weakpoint_crit_chance_bonus" => U::WEAPON_CRIT_CHANCE_WEAKPOINT,
+        "crit_damage_bonus" => U::WEAPON_CRIT_DAMAGE,
+        "status_chance_bonus" => U::WEAPON_PROC_CHANCE,
+        "fire_rate_bonus" => U::WEAPON_FIRE_RATE,
+        "multishot_bonus" => U::WEAPON_FIRE_ITERATIONS,
+        "reload_speed_bonus" => U::WEAPON_RELOAD_SPEED,
+        "projectile_speed_bonus" => U::WEAPON_PROJECTILE_SPEED,
+        _ => panic!("native rank consumer is not bound for {kind}"),
+    };
+    assert_eq!(spec.entry.UpgradeType, expected, "native mod stat binding for {kind}");
+    assert_eq!(spec.entry.OperationType, OperationType::STACKING_MULTIPLY,
+        "this consumer supplies a relative-mod bucket");
+    Some(spec)
+}
+
+pub(super) fn description_inputs(e: &Value, max_rank: u32) -> Value {
+    let Some(spec) = native_upgrade(e) else { return e.clone() };
+    let mut out = e.clone();
+    let map = out.as_mapping_mut().expect("mod effect mapping");
+    map.insert(Value::from("rank0"), Value::from(spec.value(0, max_rank) as f64));
+    map.insert(Value::from("rankMax"), Value::from(spec.value(max_rank, max_rank) as f64));
+    out
+}
+
 pub(super) fn to_moddef(mf: ModFile) -> ModDef {
     to_moddef_at(mf, None)
 }
@@ -763,9 +800,13 @@ pub(super) fn to_moddef(mf: ModFile) -> ModDef {
 /// card at rank `r` under [`ranked_id`], drawing `base_drain + r`.
 pub(super) fn to_moddef_at(mut mf: ModFile, rank: Option<u32>) -> ModDef {
     let card_id = mf.id.clone();
+    mf.effects = mf.effects.iter().map(|e| {
+        if rank.is_some() || e.get("UpgradeType").is_some() {
+            effect_at_rank(e, rank.unwrap_or(mf.max_rank), mf.max_rank)
+        } else { e.clone() }
+    }).collect();
     if let Some(r) = rank {
         let max_rank = mf.max_rank;
-        mf.effects = mf.effects.iter().map(|e| effect_at_rank(e, r, max_rank)).collect();
         // ONE CARD AT TWO RANKS IS ONE CARD: the family is what every
         // exclusivity check asks, so a variant carries one ([`with_ranks`]).
         mf.family = Some(mf.family.take().unwrap_or_else(|| card_id.clone()));

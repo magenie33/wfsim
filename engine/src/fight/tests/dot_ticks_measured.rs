@@ -204,6 +204,7 @@ fn m100_gas_body_head_and_critical_readings_match_to_the_digit() {
     ] {
         let mut p = m100_fixture(DamageType::Gas, head, 0);
         p.foe.base_armor = 0.0;
+        p.critical_inputs = None;
         p.base_crit_chance = if crit { 1.0 } else { 0.0 };
         p.crit_multiplier = crate::rules::damage::quantize_base_crit_damage(2.2);
         p.fire_rate = 0.1;

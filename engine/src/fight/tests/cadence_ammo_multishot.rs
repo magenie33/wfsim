@@ -580,7 +580,7 @@ fn a_spool_that_climbs_costs_the_first_shots_of_every_magazine() {
     assert_eq!(run_once(&gorgon, &mut Rng::new(1)).shots, 125, "the listed rate, flat");
 
     let spooled = FightParams {
-        sustained_fire_rate: Some(crate::model::SustainedFireRate {
+        sustained_fire_rate: Some(crate::model::SustainedFireRate::Assumed {
             start: 0.20,
             end: 1.00,
             over_shots: 7.5,
@@ -607,7 +607,7 @@ fn a_spool_that_climbs_costs_the_first_shots_of_every_magazine() {
 fn a_fire_rate_bonus_scales_the_spooled_rate_too() {
     let spooled = FightParams {
         fire_rate: 13.33,
-        sustained_fire_rate: Some(crate::model::SustainedFireRate {
+        sustained_fire_rate: Some(crate::model::SustainedFireRate::Assumed {
             start: 1.00,
             end: 0.60,
             over_shots: 51.0,
@@ -1473,6 +1473,7 @@ fn a_field_takes_condition_overload_only_where_the_weapon_declares_it() {
 #[test]
 fn a_radial_takes_condition_overload_only_where_the_weapon_declares_it() {
     let radial = |takes: bool| crate::build::loadout::ResolvedRadial {
+        critical_inputs: None,
         delay_seconds: 0.0,
         blast_kind: crate::model::BlastKind::Contact,
         damage: {

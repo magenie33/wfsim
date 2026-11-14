@@ -53,9 +53,12 @@ fn fight(
     let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(3.0), &arcane);
     p.foe = unit.target_params(8, false, false, TargetMode::InfiniteHealth).expect("a legal unit");
     p.foe.base_armor = 0.0;
+    p.critical_inputs = None;
     p.base_crit_chance = if crits.direct { 1.0 } else { 0.0 };
     if let Some(e) = p.embed.as_mut() {
+        e.hit.critical_inputs = None;
         e.hit.crit_chance = if crits.orb { 1.0 } else { 0.0 };
+        e.explosion.critical_inputs = None;
         e.explosion.crit_chance = if crits.boom { 1.0 } else { 0.0 };
     }
     p.status_chance = 0.0;

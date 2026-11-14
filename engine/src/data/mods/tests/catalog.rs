@@ -623,19 +623,19 @@ fn loads_the_pistol_pool_from_yaml() {
     let by = |id: &str| mods.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("missing {id}"));
 
     // Generic bonus.
-    assert!(matches!(by("hornet_strike").effects[0], ModEffect::BaseDamage(v) if (v - 2.20).abs() < 1e-9));
+    assert!(matches!(by("hornet_strike").effects[0], ModEffect::BaseDamage(v) if crate::rules::upgrades::near_f32(v, 2.20)));
     // Primary vs combined element dispatch.
-    assert!(by("frostbite").effects.iter().any(|e| matches!(e, ModEffect::Element(DamageType::Cold, v) if (*v - 0.60).abs() < 1e-9)));
-    assert!(by("magnetic_might").effects.iter().any(|e| matches!(e, ModEffect::CombinedElement(DamageType::Magnetic, v) if (*v - 0.60).abs() < 1e-9)));
+    assert!(by("frostbite").effects.iter().any(|e| matches!(e, ModEffect::Element(DamageType::Cold, v) if crate::rules::upgrades::near_f32(*v, 0.60))));
+    assert!(by("magnetic_might").effects.iter().any(|e| matches!(e, ModEffect::CombinedElement(DamageType::Magnetic, v) if crate::rules::upgrades::near_f32(*v, 0.60))));
     // Conditional families.
     // …AND WHAT EARNS IT, because the two cards sharing this variant differ
     // by nothing else: the Galvanized one waits for a kill and melee's own
     // waits for nothing, which is the whole of what a fight can deny.
-    assert!(by("galvanized_shot").effects.iter().any(|e| matches!(e, ModEffect::ConditionOverload { per_stack, max_stacks: 3, earned_on: Some("kill"), .. } if (*per_stack - 0.3999996).abs() < 1e-9)));
+    assert!(by("galvanized_shot").effects.iter().any(|e| matches!(e, ModEffect::ConditionOverload { per_stack, max_stacks: 3, earned_on: Some("kill"), .. } if crate::rules::upgrades::near_f32(*per_stack, 0.3999996))));
     let melee = pool_for_weapon("magistar");
     let melee_co = melee.iter().find(|m| m.id == "condition_overload").expect("melee CO");
     assert!(melee_co.effects.iter().any(|e| matches!(e, ModEffect::ConditionOverload { earned_on: None, .. })));
-    assert!(by("galvanized_diffusion").effects.iter().any(|e| matches!(e, ModEffect::OnKillMultishot { per_stack, max_stacks: 4, .. } if (*per_stack - 0.2999997).abs() < 1e-9)));
+    assert!(by("galvanized_diffusion").effects.iter().any(|e| matches!(e, ModEffect::OnKillMultishot { per_stack, max_stacks: 4, .. } if crate::rules::upgrades::near_f32(*per_stack, 0.2999997))));
     // Galvanized Crosshairs is AIM-GATED, so its buffs arrive WRAPPED -
     // asserting the bare variant would pass on a build where the gate had
     // been silently dropped, which is the bug this wrapper exists to stop.
@@ -648,23 +648,23 @@ fn loads_the_pistol_pool_from_yaml() {
     assert!(by("galvanized_diffusion").effects.iter().all(|e| !matches!(e, ModEffect::WhileTenno(crate::model::TennoCondition::Aiming, _))));
     // Faction-damage mod loads with the right faction + bonus (Expel Orokin
     // → Corrupted; +30% at max rank).
-    assert!(by("expel_grineer").effects.iter().any(|e| matches!(e, ModEffect::FactionDamage(Faction::Grineer, v) if (*v - 0.30).abs() < 1e-9)));
+    assert!(by("expel_grineer").effects.iter().any(|e| matches!(e, ModEffect::FactionDamage(Faction::Grineer, v) if crate::rules::upgrades::near_f32(*v, 0.30))));
     assert!(by("expel_orokin").effects.iter().any(|e| matches!(e, ModEffect::FactionDamage(Faction::Corrupted, _))));
     // The formerly-unmodeled kinds now map to real effects.
-    assert!(by("pistol_acuity").effects.iter().any(|e| matches!(e, ModEffect::WeakpointDamage(v) if (*v - 3.498).abs() < 1e-9)));
-    assert!(by("pistol_acuity").effects.iter().any(|e| matches!(e, ModEffect::WeakpointCritChance(v) if (*v - 3.498).abs() < 1e-9)));
+    assert!(by("pistol_acuity").effects.iter().any(|e| matches!(e, ModEffect::WeakpointDamage(v) if crate::rules::upgrades::near_f32(*v, 3.498))));
+    assert!(by("pistol_acuity").effects.iter().any(|e| matches!(e, ModEffect::WeakpointCritChance(v) if crate::rules::upgrades::near_f32(*v, 3.498))));
     assert!(by("hemorrhage").effects.iter().any(|e| matches!(e,
         ModEffect::ProcConversion { from: DamageType::Impact, to: DamageType::Slash, chance, low_rate_threshold, low_rate_multiplier }
-            if (*chance - 0.35).abs() < 1e-9 && (*low_rate_threshold - 2.5).abs() < 1e-9 && (*low_rate_multiplier - 2.0).abs() < 1e-9)));
+            if crate::rules::upgrades::near_f32(*chance, 0.35) && crate::rules::upgrades::near_f32(*low_rate_threshold, 2.5) && crate::rules::upgrades::near_f32(*low_rate_multiplier, 2.0))));
     // Both of these are while-aiming too, so they arrive wrapped.
     assert!(by("sharpened_bullets").effects.iter().any(|e| matches!(e,
         ModEffect::WhileTenno(crate::model::TennoCondition::Aiming, inner)
             if matches!(**inner, ModEffect::OnKillCritDamage { bonus, duration }
-                if (bonus - 0.75).abs() < 1e-9 && (duration - 9.0).abs() < 1e-9))));
+                if crate::rules::upgrades::near_f32(bonus, 0.75) && crate::rules::upgrades::near_f32(duration, 9.0)))));
     assert!(by("pressurized_magazine").effects.iter().any(|e| matches!(e,
         ModEffect::WhileTenno(crate::model::TennoCondition::Aiming, inner)
             if matches!(**inner, ModEffect::OnReloadFireRate { bonus, .. }
-                if (bonus - 0.90).abs() < 1e-9))));
+                if crate::rules::upgrades::near_f32(bonus, 0.90)))));
 }
 
 /// A description's numbers are of two kinds and they must not swap places:

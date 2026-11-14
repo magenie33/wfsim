@@ -13,12 +13,18 @@ effects:
   # crit-chance half only, unconditionally - wrong twice over.
   - kind: crit_chance_bonus
     condition: aiming
-    rank0: 0.1
-    rankMax: 0.6
+    UpgradeType: 244
+    OperationType: STACKING_MULTIPLY
+    Value: 0.1
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   - kind: crit_damage_bonus
     condition: aiming
-    rank0: 0.1
-    rankMax: 0.6
+    UpgradeType: 248
+    OperationType: STACKING_MULTIPLY
+    Value: 0.1
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Critical_Focus

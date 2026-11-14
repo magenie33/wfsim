@@ -19,8 +19,11 @@ description: "+X% Status Chance\n+X 'Blight'"
 # The syndicate affinity threshold is simulated only at max rank.
 effects:
 - kind: status_chance_bonus
-  rank0: 0.25
-  rankMax: 1
+  UpgradeType: 365
+  OperationType: STACKING_MULTIPLY
+  Value: 0.25
+  FusionPowerStep: 0.0
+  FusionPowerCurve: QC_LINEAR
 - kind: syndicate_radial
   syndicate: blight
   rank0: 0.25

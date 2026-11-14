@@ -146,26 +146,26 @@ fn the_catabolyst_family_resolves_its_throw_and_its_augment() {
     let g = one.reload_grenade.expect("the Catabolyst throws");
     assert_eq!(g.count, 1);
     let e = g.from_empty;
-    assert!((e.blast.damage.total() - 1997.0).abs() < 1e-9 && (e.blast.radius_m - 7.0).abs() < 1e-9);
-    assert!((e.contact.damage.total() - 11.0).abs() < 1e-9 && (e.contact.crit_chance - 0.31).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(e.blast.damage.total(), 1997.0) && crate::rules::upgrades::near_f32(e.blast.radius_m, 7.0));
+    assert!(crate::rules::upgrades::near_f32(e.contact.damage.total(), 11.0) && crate::rules::upgrades::near_f32(e.contact.crit_chance, 0.31));
     let p = g.partial;
-    assert!((p.blast.damage.total() - 203.0).abs() < 1e-9 && (p.blast.radius_m - 5.0).abs() < 1e-9);
-    assert!((p.blast.crit_chance - 0.11).abs() < 1e-9 && (p.blast.status_chance - 0.43).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(p.blast.damage.total(), 203.0) && crate::rules::upgrades::near_f32(p.blast.radius_m, 5.0));
+    assert!(crate::rules::upgrades::near_f32(p.blast.crit_chance, 0.11) && crate::rules::upgrades::near_f32(p.blast.status_chance, 0.43));
     // The arsenal's 1.7 s, with the -20% held for a reload from empty.
-    assert!((one.reload_seconds - 1.7).abs() < 1e-9, "{}", one.reload_seconds);
-    assert!((one.reload_from_empty_speed + 0.2).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(one.reload_seconds, 1.7), "{}", one.reload_seconds);
+    assert!(crate::rules::upgrades::near_f32(one.reload_from_empty_speed, -(0.2)));
 
     let three = resolved("coda_catabolyst", &["critical_mutation"]);
     let g = three.reload_grenade.expect("the Coda throws");
     assert_eq!((g.count, g.fan_deg), (3, 30.0));
-    assert!((g.from_empty.blast.damage.total() - 658.0).abs() < 1e-9 && (g.from_empty.blast.radius_m - 5.0).abs() < 1e-9);
-    assert!((g.partial.blast.damage.total() - 74.0).abs() < 1e-9 && (g.partial.blast.radius_m - 3.0).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(g.from_empty.blast.damage.total(), 658.0) && crate::rules::upgrades::near_f32(g.from_empty.blast.radius_m, 5.0));
+    assert!(crate::rules::upgrades::near_f32(g.partial.blast.damage.total(), 74.0) && crate::rules::upgrades::near_f32(g.partial.blast.radius_m, 3.0));
     assert_eq!(g.crit_per_kill, Some((0.3, 3.0, 0.3)));
     // The PANEL carries none of it: the pile is earned in the fight (M107).
-    assert!((three.crit_chance - 0.11).abs() < 1e-9, "{}", three.crit_chance);
+    assert!(crate::rules::upgrades::near_f32(three.crit_chance, 0.11), "{}", three.crit_chance);
     // "Radius is not affected by Fulmination" — the beam's 0.7 m is.
     let fulminated = resolved("coda_catabolyst", &["fulmination"]);
-    assert!((fulminated.reload_grenade.expect("throws").from_empty.blast.radius_m - 5.0).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(fulminated.reload_grenade.expect("throws").from_empty.blast.radius_m, 5.0));
 
     assert!(
         !crate::data::mods::pool_for_build("ocucor", &[]).iter().any(|m| m.id == "critical_mutation"),
@@ -203,12 +203,15 @@ fn critical_mutation_is_a_global_buff_the_beam_takes() {
         p.foe.base_armor = 0.0;
         p.foe.level = 1;
         p.foe.base_level = 1;
-        run_once(&p, &mut crate::rules::rng::Rng::new(3))
+        let trials: Vec<_> = (0..32).map(|seed| run_once(&p, &mut crate::rules::rng::Rng::new(seed))).collect();
+        (trials.iter().map(|r| r.kills).sum::<u32>(),
+         trials.iter().map(|r| r.crit_tier_sum).sum::<u32>(),
+         trials.iter().map(|r| r.sources.direct).sum::<f64>())
     };
     let (off, on) = (run(false), run(true));
-    assert!(off.kills >= 5, "the fixture kills: {}", off.kills);
-    assert!(on.crit_tier_sum > off.crit_tier_sum, "crits: {} with, {} without", on.crit_tier_sum, off.crit_tier_sum);
-    assert!(on.sources.direct > off.sources.direct, "beam damage: {} with, {} without", on.sources.direct, off.sources.direct);
+    assert!(off.0 >= 5 * 32, "the fixture kills: {}", off.0);
+    assert!(on.1 > off.1, "crits: {} with, {} without", on.1, off.1);
+    assert!(on.2 > off.2, "beam damage: {} with, {} without", on.2, off.2);
 }
 
 /// A BLAST ON A NEIGHBOUR IS BOOKED TO THE NEIGHBOUR. The explosion reaches

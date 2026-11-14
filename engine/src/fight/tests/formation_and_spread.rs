@@ -1466,7 +1466,13 @@ fn a_merged_beams_statuses_are_the_same_size_on_the_body_behind() {
         body_parts: BodyPart::humanoid(),
         at: crate::rules::space::Vec2::new(0.0, crate::rules::space::CONTACT_RANGE_M * 2.0),
     }];
-    let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
+    let mut p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
+    p.body_parts = mono_body(1.0);
+    p.others[0].body_parts = mono_body(1.0);
+    p.critical_inputs = None;
+    p.base_crit_chance = 0.0;
+    p.status_chance = 0.0;
+    p.forced_procs = vec![DamageType::Toxin];
     assert!(p.infinite_body_punch_through, "the innate body punch through reaches it");
     let r = run_once(&p, &mut Rng::new(0x5EED));
     let (aimed, behind) = (r.taken.by_body().0[0], r.taken.by_body().0[1]);
@@ -1730,6 +1736,7 @@ fn the_tail_drains_the_crowd_and_not_only_the_aimed_body() {
     // A guaranteed burn isolates tail drainage from random proc distribution.
     p.status_chance = 0.0;
     p.forced_procs = vec![DamageType::Heat];
+    p.critical_inputs = None;
     p.base_crit_chance = 0.0;
 
     let r = run_once(&p, &mut Rng::new(0x5EED));

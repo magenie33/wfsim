@@ -9,8 +9,11 @@ description: "+X% Critical Damage\n+X Punch Through"
 
 effects:
   - kind: crit_damage_bonus
-    rank0: 0.075
-    rankMax: 0.45
+    UpgradeType: 248
+    OperationType: STACKING_MULTIPLY
+    Value: 0.075000003
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   - kind: punch_through_bonus
     rank0: 0.2
     rankMax: 1.2

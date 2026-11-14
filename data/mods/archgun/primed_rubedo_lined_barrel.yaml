@@ -9,8 +9,11 @@ description: "+X% Damage"
 
 effects:
   - kind: base_damage_bonus
-    rank0: 0.17
-    rankMax: 1.87
+    UpgradeType: 253
+    OperationType: STACKING_MULTIPLY
+    Value: 0.17
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 family: rubedo_lined_barrel
 incompatible_with: [rubedo_lined_barrel]

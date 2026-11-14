@@ -2,6 +2,13 @@
 copies of the actual fold source against the native vectors. The original must
 pass and an ADD-to-subtract mutation must fail. Metering attributes alone are
 removed from these isolated test copies; production sources remain untouched.
+The scalar source is copied too; the real engine supplies the proc-id type.
+Parent/child fixtures distinguish pending operations from materialized input.
+
+`check_client_upgrade_changes.py` detects controlled raw-field, filter,
+inheritance, enum, native-code, script and source-identity mutations. The
+read-only `client_upgrade_changes.py` verifies both source exports before
+reporting changes and their current consumers (`ENGINE_MIGRATION.md`).
 
 `check_engine_compare.py` runs independent executable fixtures through the
 native migration comparator. Equal results pass; changed damage, signed zero,

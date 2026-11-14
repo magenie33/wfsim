@@ -9,8 +9,11 @@ description: "+X% Multishot"
 
 effects:
   - kind: multishot_bonus
-    rank0: 0.2
-    rankMax: 1.2
+    UpgradeType: 276
+    OperationType: STACKING_MULTIPLY
+    Value: 0.2
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 family: hells_chamber
 incompatible_with: [galvanized_hell]

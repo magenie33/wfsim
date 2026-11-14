@@ -31,8 +31,11 @@ effects:
   # with a 40% chance to give 30." Seven pellets at 1 + 2.0 is 21, and at
   # 1 + 2.0 + 1.2 is 29.4 — additive, and the fractional pellet is a roll.
   - kind: multishot_bonus
-    rank0: 0.5
-    rankMax: 2.0
+    UpgradeType: 276
+    OperationType: STACKING_MULTIPLY
+    Value: 0.5
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
   # THE SYNDICATE RADIAL — payload in data/syndicates/justice.yaml, the same
   # half its Sobek twin carries.

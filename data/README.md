@@ -109,6 +109,13 @@ sharing requirement: it is a pure move — no referencing entry changes.
 
 ## Directories
 
+Source-bound mod effects retain `UpgradeType`, `OperationType`, `Value`,
+`FusionPowerStep` and `FusionPowerCurve`. Their values are compiled at the
+requested rank in binary32. They cannot also declare `rank0`, `rankMax` or
+`rank_values`. The loader derives description endpoints from the same input;
+those display values are never calculation inputs. Source joins and exact
+rank bits are verified by `scripts/import_client_upgrades.py --check-mods`.
+
 | dir | holds | key fields |
 |---|---|---|
 | `perks/` | grantors (weapon passives; loaded by `engine::data::weapons::perks`) | `trigger`, `scope`, `duration_seconds`, `max_stacks`, `grants` (inline effect block) |

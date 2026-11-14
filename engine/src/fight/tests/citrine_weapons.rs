@@ -12,8 +12,8 @@ fn steflos_prime_keeps_the_family_projectile_and_its_own_falloff() {
     let base = panel("steflos", &[]);
     let prime = panel("steflos_prime", &[]);
     assert_eq!(prime.modified_base, 480.0);
-    assert_eq!(prime.crit_chance, 0.18);
-    assert_eq!(prime.status_chance, 0.28);
+    assert_eq!(prime.crit_chance, f64::from(0.18_f32));
+    assert_eq!(prime.status_chance, f64::from(0.28_f32));
     assert_eq!(prime.projectile_width_m, 2.0);
     assert!(prime.infinite_body_punch_through);
     assert_eq!(prime.co_behavior, base.co_behavior);
@@ -29,7 +29,7 @@ fn corufell_heavy_uses_projectile_stats_and_windup_mods() {
     for (id, damage, status) in [("corufell_heavy", 600.0, 0.14), ("corufell_prime_heavy", 650.0, 0.2)] {
         let p = panel(id, &[]);
         assert_eq!(p.modified_base, damage);
-        assert_eq!(p.status_chance, status);
+        assert_eq!(p.status_chance, f64::from(status as f32));
         assert!(p.spends_combo && p.infinite_body_punch_through);
         assert!(p.follow_through.is_none());
         assert_eq!(p.co_behavior, crate::model::CoBehavior::Independent);
@@ -54,6 +54,7 @@ fn corufell_energy_crosses_bodies_beyond_melee_reach_without_follow_through() {
         at: crate::rules::space::Vec2::new(0.0, f64::from(y)),
     }).collect();
     let mut p = FightParams::from_panel(&panel("corufell_prime_heavy", &[]), &arena, &ArcaneFx::none());
+    p.critical_inputs = None;
     p.base_crit_chance = 0.0;
     p.status_chance = 0.0;
     let all = run_once(&p, &mut Rng::new(3));

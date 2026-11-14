@@ -1,25 +1,4 @@
 
-/// The HELD-TRIGGER SPOOL after `shots` consecutive pulls — a fraction of the
-/// live fire rate, 1.0 where the weapon has none.
-///
-/// BOTH DIRECTIONS, one line: the Phenmor falls from 1.0 to 0.6 and a Gorgon
-/// climbs from 0.2 to 1.0, and nothing here needs to know which. It is linear
-/// because every source gives two ends and a count and nothing in between.
-///
-/// The ramp above is a different animal despite the family resemblance: a beam
-/// climbs in SECONDS and holds, this moves in SHOTS and is a cadence — which is
-/// why a fire-rate mod does not buy its way out of it (the mod raises both ends
-/// together).
-#[wfsim_gas_macro::metered]
-pub(super) fn spool_factor(spec: Option<crate::model::SustainedFireRate>, shots: f64) -> f64 {
-    match spec {
-        Some(s) if s.over_shots > 0.0 => {
-            s.start + (s.end - s.start) * (shots / s.over_shots).min(1.0)
-        }
-        _ => 1.0,
-    }
-}
-
 /// What a KILL gives the weapon that made it, as a fraction of the enemy's
 /// affinity. VERBATIM (wiki Affinity): "Kill with weapons: Half Affinity goes
 /// to the Warframe and half to the killing weapon."

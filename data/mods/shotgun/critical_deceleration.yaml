@@ -9,11 +9,17 @@ description: "+X% Critical Chance\n-X% Fire Rate"
 
 effects:
   - kind: crit_chance_bonus
-    rank0: 0.33333
-    rankMax: 1.99998   # see notes: package_rank_value
+    UpgradeType: 244
+    OperationType: STACKING_MULTIPLY
+    Value: 0.33333001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   - kind: fire_rate_bonus
-    rank0: -0.0333
-    rankMax: -0.1998   # see notes: package_rank_value
+    UpgradeType: 277
+    OperationType: STACKING_MULTIPLY
+    Value: -0.033300001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Critical_Deceleration

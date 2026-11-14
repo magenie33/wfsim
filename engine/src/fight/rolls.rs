@@ -21,7 +21,7 @@ pub(super) fn noncrit_mult(spec: Option<(f64, f64)>, tier: u32, rng: &mut Rng) -
 /// extra tier is worth exactly one more crit-damage step.
 #[wfsim_gas_macro::metered]
 pub(super) fn upgrade_crit_tier(tier: u32, chance: f64, rng: &mut Rng) -> u32 {
-    if tier >= 1 && chance > 0.0 && rng.chance(chance) {
+    if tier >= 1 && chance > 0.0 && rng.unit() <= chance as f32 {
         tier + 1
     } else {
         tier
@@ -31,9 +31,7 @@ pub(super) fn upgrade_crit_tier(tier: u32, chance: f64, rng: &mut Rng) -> u32 {
 /// Roll a critical tier for an effective crit chance that may exceed 1.0.
 #[wfsim_gas_macro::metered]
 pub(super) fn roll_crit_tier(effective_cc: f64, rng: &mut Rng) -> u32 {
-    let guaranteed = effective_cc.floor().max(0.0);
-    let extra_chance = effective_cc - guaranteed;
-    guaranteed as u32 + rng.chance(extra_chance) as u32
+    crate::rules::critical::roll(effective_cc as f32, 0, rng)
 }
 
 /// Pick the body part a shot lands on, by normalized aim weight.

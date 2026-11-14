@@ -13,8 +13,11 @@ excludes_weapon: [no_attack_speed]
 # Rank 0: +5% Attack Speed
 effects:
   - kind: fire_rate_bonus
-    rank0: 0.05
-    rankMax: 0.55
+    UpgradeType: 277
+    OperationType: STACKING_MULTIPLY
+    Value: 0.050000001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 family: fury
 

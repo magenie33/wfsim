@@ -1,0 +1,2017 @@
+{
+  "schema": 1,
+  "batch": "20261112T151305Z-magnetic-proc-context",
+  "manifest_sha256": "c634b163c105bc230695f778dacbcb01edbd96e28e2370268a9847ef143d150e",
+  "scope": "Supplied native scalar/canonicalization/proc-filter and record-group boundaries; live producer/context ownership is separate",
+  "source_members": [
+    {
+      "path": "eximus-script/B.Font--ae6cf3787c3883518171.asm.txt",
+      "bytes": 35114,
+      "sha256": "d65e7eca23dbe0d6bc0bb38e3b3314000a6cc2136e13f2275de0669d63e59039"
+    },
+    {
+      "path": "native/avatar-inventory-getter--00.asm.txt",
+      "bytes": 207,
+      "sha256": "a193269971bd5917ea603f1e9f7da3488093195c5f74f12ec590cad19f6a901f"
+    },
+    {
+      "path": "native/canonicalization-flag--00.asm.txt",
+      "bytes": 137,
+      "sha256": "fbf3b24436cd65b88809023107e06e919514d5a2d16597664024f6bddef34f87"
+    },
+    {
+      "path": "native/controller-bind-proxy--00.asm.txt",
+      "bytes": 698,
+      "sha256": "b21dbb730a1191d9fd47dcb382c65b48182c7a875a55d11523abb12e90bb134c"
+    },
+    {
+      "path": "native/controller-bind-proxy--01.asm.txt",
+      "bytes": 674,
+      "sha256": "8dcc111898763292f5062325a31158adbaccc7f27b637fedce78e3e019267717"
+    },
+    {
+      "path": "native/controller-bind-proxy--02.asm.txt",
+      "bytes": 21784,
+      "sha256": "e775fe483dc42c826d28ffa9ca09876f5a9cfe6d239e9a2c276db550e7ba7a4c"
+    },
+    {
+      "path": "native/controller-bind-proxy--03.asm.txt",
+      "bytes": 9220,
+      "sha256": "3b106e5e03c90863add7011b65aadc69f1dc7a2f28bb552a4e4e09b4d6d1eba3"
+    },
+    {
+      "path": "native/controller-bind-proxy--04.asm.txt",
+      "bytes": 283,
+      "sha256": "bc510b22576f64a8bd41410e3e09b599a6aae369c4a25f3c866ada831335fe73"
+    },
+    {
+      "path": "native/controller-derive-part--00.asm.txt",
+      "bytes": 3747,
+      "sha256": "c75e6fbfda9b9f7128a2e6b28335c5421b8d8f3747062026eff8148d3cc4a24a"
+    },
+    {
+      "path": "native/controller-part-position--00.asm.txt",
+      "bytes": 3761,
+      "sha256": "326d20f1710ce687c6b25f3604830e60d48cbe011133c199eded4ec40c0c1c58"
+    },
+    {
+      "path": "native/controller-part-position--01.asm.txt",
+      "bytes": 4454,
+      "sha256": "f916343d18e4680a99bd4175e19db0fcc308d289c94f6df367168b1492b2588b"
+    },
+    {
+      "path": "native/controller-part-position--02.asm.txt",
+      "bytes": 504,
+      "sha256": "02265774080b7543d9132a174164b3f1e5fdec6c6233703024eca8b36ea9444e"
+    },
+    {
+      "path": "native/controller-part-position--03.asm.txt",
+      "bytes": 1351,
+      "sha256": "4a3ff384ac0cc24b8ccc118aefba89170202fcb08ee70d050426d6394304cf96"
+    },
+    {
+      "path": "native/controller-source-evaluation--00.asm.txt",
+      "bytes": 4583,
+      "sha256": "6128ed4f1ef96aaa2d566f5389354d97468a87f6b70d6cc58aa6c6c6b824069c"
+    },
+    {
+      "path": "native/controller-source-evaluation--01.asm.txt",
+      "bytes": 4148,
+      "sha256": "bff67e726396ae7e6e3c76d6bb69b0e917cc2fe9c4170ff0ebdb8a5b1d1f5035"
+    },
+    {
+      "path": "native/controller-source-evaluation--02.asm.txt",
+      "bytes": 22164,
+      "sha256": "dc8c25891ce71d8c439475070fdb2db367051146a0d516ab2354c5eb1f9ea2b8"
+    },
+    {
+      "path": "native/controller-source-evaluation--03.asm.txt",
+      "bytes": 6313,
+      "sha256": "ffe80b31a80c2067993a2e6160570e41e67066beab43412520af1421b56a4e23"
+    },
+    {
+      "path": "native/inventory-upgrade-manager-getter--00.asm.txt",
+      "bytes": 207,
+      "sha256": "2c4480f32c55621c553b7e200f1624308216b2fe2605b086ebb778876b8e2d1c"
+    },
+    {
+      "path": "native/lua-current-overguard-setter--00.asm.txt",
+      "bytes": 1332,
+      "sha256": "7caecd85eb7453c36ba979821ac0b39c67b3d449513c3e9cb0880b3883550278"
+    },
+    {
+      "path": "native/lua-int32-argument--00.asm.txt",
+      "bytes": 3723,
+      "sha256": "fb2981ff990ef00f87271cb0ec2eebd813d310bdaa77f700ae4e2124bbd1101d"
+    },
+    {
+      "path": "native/lua-overguard-max-getter--00.asm.txt",
+      "bytes": 994,
+      "sha256": "87da28c200e14cd45b6caaee516aa06b465c797d659042e2d780561679618ef4"
+    },
+    {
+      "path": "native/lua-overguard-max-setter--00.asm.txt",
+      "bytes": 1332,
+      "sha256": "57d47e95be9258b3a6059ee7c096be7c91199e350f5be3189c24076b99ce5484"
+    },
+    {
+      "path": "native/magnetic-break-packet--00.asm.txt",
+      "bytes": 22419,
+      "sha256": "47be3da7eb87cea460eac90a00b2eed9fcba88c0b137b22c9c3a03e109dff12a"
+    },
+    {
+      "path": "native/ordinary-proc-application--00.asm.txt",
+      "bytes": 49027,
+      "sha256": "01859de4724e7317fb51d1880dbc4ed90420f7d49321b04c14bd4e966908d7b5"
+    },
+    {
+      "path": "native/ordinary-proc-record-copy--00.asm.txt",
+      "bytes": 3895,
+      "sha256": "d530533fabed86d760e3d378eeebf70a875a1d59f4863e37e4a7d16ed6981221"
+    },
+    {
+      "path": "native/ordinary-proc-tick--00.asm.txt",
+      "bytes": 2620,
+      "sha256": "963e7582fb48fa483801a3807c8025334d654f89fbb661e5487ef1d67ffb2994"
+    },
+    {
+      "path": "native/ordinary-proc-tick--01.asm.txt",
+      "bytes": 81,
+      "sha256": "e4c2e446292b572c0dc62b1a4a46d9216e794410306cbc74b802bf9d97428e05"
+    },
+    {
+      "path": "native/ordinary-proc-tick--02.asm.txt",
+      "bytes": 469,
+      "sha256": "531539df3c2de74f2cadcded4965f2da6f098c50f210ded645d3047f4ebc4531"
+    },
+    {
+      "path": "native/ordinary-proc-tick--03.asm.txt",
+      "bytes": 169,
+      "sha256": "b06c150e10bfce7e5f534db081b892c53a602dd2d127708f3eb2ee41ef098276"
+    },
+    {
+      "path": "native/ordinary-proc-tick--04.asm.txt",
+      "bytes": 320,
+      "sha256": "1617bf1a15a559df372f3fe365d1451252383e184134fe60ab62d3bf152bb1ec"
+    },
+    {
+      "path": "native/ordinary-proc-tick--05.asm.txt",
+      "bytes": 44120,
+      "sha256": "240cd75739d006c7370eb7784e96e5d5316267af0c8434d97dbca3c524ef889f"
+    },
+    {
+      "path": "native/ordinary-proc-tick--06.asm.txt",
+      "bytes": 51419,
+      "sha256": "3a9158f322b92bf5419da7bd880a86b241251e38463872efb7375687130954d0"
+    },
+    {
+      "path": "native/ordinary-proc-tick--07.asm.txt",
+      "bytes": 6394,
+      "sha256": "7171da3a2c57820e284ed55bcb390b27bf52a2a986dd2a45255feeaaea1f8838"
+    },
+    {
+      "path": "native/ordinary-proc-tick--08.asm.txt",
+      "bytes": 2576,
+      "sha256": "0b39227ff2de27bea5507a758864efa55f7dd040fbabce798d1552bc265164a7"
+    },
+    {
+      "path": "native/ordinary-proc-tick--09.asm.txt",
+      "bytes": 1187,
+      "sha256": "0f9edeac2bf0189543784eeb27563de4700a651b74b9eee670d17b5f7064cce5"
+    },
+    {
+      "path": "native/ordinary-proc-tick--10.asm.txt",
+      "bytes": 2135,
+      "sha256": "4db6b94ded72a70bd12087d143e7c8cdacfeb426ed39df53a61ca0f95c56eabb"
+    },
+    {
+      "path": "native/ordinary-proc-tick--11.asm.txt",
+      "bytes": 1130,
+      "sha256": "68c9696ac5bae7600aea4b275f4751a5b692bcba2818534c60566604c3c9b7c0"
+    },
+    {
+      "path": "native/overguard-max-getter--00.asm.txt",
+      "bytes": 2540,
+      "sha256": "7ca3ea334fa0d8e53dfd4accd38a72a756c67b36466080b26025af14b4f0d6c2"
+    },
+    {
+      "path": "native/overguard-max-setter--00.asm.txt",
+      "bytes": 1375,
+      "sha256": "0c24147428cecae723a544f0b1e12e04ccd5a717e7c40ab09fdf89ac678995d0"
+    },
+    {
+      "path": "native/packet-source-object-getter--00.asm.txt",
+      "bytes": 207,
+      "sha256": "9e973d2a653ccaf80b8b40d9b537a8fee72995a45f6bcbae12a1dc724c3ed483"
+    },
+    {
+      "path": "native/packet-source-tag-getter--00.asm.txt",
+      "bytes": 124,
+      "sha256": "e3eb18daf52aacab8f70e5e66fc6db2b3aa4e27fbe1f25e7fcb8c8164d46648b"
+    },
+    {
+      "path": "native/proc-enum--00.asm.txt",
+      "bytes": 8041,
+      "sha256": "d526f79aaf0cb67bbc4d87782ccbd585a70c1e03b13c828704e05523b0183e4f"
+    },
+    {
+      "path": "native/radial-dispatch--00.asm.txt",
+      "bytes": 1005,
+      "sha256": "a4bcb970a73e737cded520f856425e884af183588ed04fa47223f54084aec718"
+    },
+    {
+      "path": "native/radial-dispatch--01.asm.txt",
+      "bytes": 283,
+      "sha256": "b1891a6c335ad8b4ad12e4ecf1753a62cce6da024b65312b82e6a43d0cdb3f1d"
+    },
+    {
+      "path": "native/radial-dispatch--02.asm.txt",
+      "bytes": 2344,
+      "sha256": "1688354f76756620f6a68e3c5e432b6bb6be183d731d637db45d7f84a3466380"
+    },
+    {
+      "path": "native/radial-dispatch--03.asm.txt",
+      "bytes": 10458,
+      "sha256": "69fde0261908f13acee2e3c469b3574fca88e04183dc6f796477d96172e4c866"
+    },
+    {
+      "path": "native/radial-dispatch--04.asm.txt",
+      "bytes": 490,
+      "sha256": "62dd57564cd180442cb25310a749387607ee48a67ff29c0ecc9023cc1d9d49ed"
+    },
+    {
+      "path": "native/radial-group-comparator--00.asm.txt",
+      "bytes": 3071,
+      "sha256": "1f7a7f087a751cf56f9a6d05fe9fb126510ec47a4971e74193d7c6c0f9ac3409"
+    },
+    {
+      "path": "native/radial-group-lookup--00.asm.txt",
+      "bytes": 1569,
+      "sha256": "cfec690382cf3af3ad8c6f6c10d9cdf32937c155b041677c699d74a5f23fc3bc"
+    },
+    {
+      "path": "native/radial-group-lookup--01.asm.txt",
+      "bytes": 3468,
+      "sha256": "810ab01f31f47e6c89aa734f79d125a5d7a16f2ff52c545b1e8cec3c5916e49f"
+    },
+    {
+      "path": "native/radial-group-lookup--02.asm.txt",
+      "bytes": 3869,
+      "sha256": "cde0ffa09269d1d3d3ec8845c07cc981822a1274ff3efcd9c7f79a5be61a1231"
+    },
+    {
+      "path": "native/radial-group-tree-insert--00.asm.txt",
+      "bytes": 12515,
+      "sha256": "0be9d42350ecbe4c8b9bc0cd98745df66cb8ef39c780566eb07198a1d699a265"
+    },
+    {
+      "path": "native/radial-packet-constructor--00.asm.txt",
+      "bytes": 12740,
+      "sha256": "28d3555881e501a9c43020692991247b4234632f771a604ae157227aebe88c7b"
+    },
+    {
+      "path": "native/radial-preparation--00.asm.txt",
+      "bytes": 644,
+      "sha256": "c9e959d39cc28d7ab5870cd8131d8be5eb9896181cdb18fd1a1843006f221ed0"
+    },
+    {
+      "path": "native/radial-preparation--01.asm.txt",
+      "bytes": 141,
+      "sha256": "b64fc6b64e3b6388715018ef90ee7dedf68ceace8a4929b9641f8b3f5a4a3cf3"
+    },
+    {
+      "path": "native/radial-preparation--02.asm.txt",
+      "bytes": 493,
+      "sha256": "ffa50c9cea1f75d911ec1ad3feea6ad116b8f2a1e6e12af5d83e860edfdd2d37"
+    },
+    {
+      "path": "native/radial-preparation--03.asm.txt",
+      "bytes": 13434,
+      "sha256": "931ab4cea58e50f44d3abcfc071f588b188b549d416c972b87fe6616227647aa"
+    },
+    {
+      "path": "native/radial-preparation--04.asm.txt",
+      "bytes": 2195,
+      "sha256": "b4952f9cb069447c336ef602f6d466c39a6dcb8880be03c3edea3d2e8b12a7db"
+    },
+    {
+      "path": "native/radial-preparation--05.asm.txt",
+      "bytes": 2365,
+      "sha256": "6b8a678893fa02dcdd306ef1670f789f7477cea1f26c3957c4e07f03d11789cb"
+    },
+    {
+      "path": "native/radial-preparation--06.asm.txt",
+      "bytes": 781,
+      "sha256": "2ac133dac2d23da2807fb484884354aad4ba58d40510c654f979dc40ead9c27f"
+    },
+    {
+      "path": "native/radial-preparation--07.asm.txt",
+      "bytes": 3395,
+      "sha256": "a6e18eee1004024c43c6fc479d9103dfa0bde82b3872c3cdfa3a884c40e9feb1"
+    },
+    {
+      "path": "native/radial-preparation--08.asm.txt",
+      "bytes": 1755,
+      "sha256": "9733c2dea0a867a76c53cf5ac2147d40ffcddc84d603ebad5df89356ca2ea329"
+    },
+    {
+      "path": "native/record-vector-copy--00.asm.txt",
+      "bytes": 1088,
+      "sha256": "a9d568a76ec703800bd5a9dbfdf5e457047b3a61578a3d91580dd0079168ac32"
+    },
+    {
+      "path": "native/record-vector-copy--01.asm.txt",
+      "bytes": 1533,
+      "sha256": "4206068d8f7eb93aab1c1391a5057f4e4f180405f71c09d820110b68be88267c"
+    },
+    {
+      "path": "native/record-vector-copy--02.asm.txt",
+      "bytes": 331,
+      "sha256": "ca188e5a5d39e8778a5f05b85172f10c8f5014226d24a3be8c5f69111a1b9f13"
+    },
+    {
+      "path": "native/reference-assignment--00.asm.txt",
+      "bytes": 2824,
+      "sha256": "52504af5ef64a216e9c795a78f2a3d99466ff6b9e813b4b59a8a636dfa9a38aa"
+    },
+    {
+      "path": "native/scalar-deferred-fold-predicate--00.asm.txt",
+      "bytes": 64,
+      "sha256": "e36e85fe8a7b1425b15517ac4809ee69d6b29630ac8f5b31c7e306bcf51e557a"
+    },
+    {
+      "path": "native/scalar-evaluation--00.asm.txt",
+      "bytes": 3035,
+      "sha256": "6bb12878bc987b604c1e55b34904a7309342181cf7899630cd0f0f7c41050b1a"
+    },
+    {
+      "path": "native/scalar-operation--00.asm.txt",
+      "bytes": 3385,
+      "sha256": "e794f992c735806a96e62677aee41c2b9385d1dce65389e7eebe7719bec91f99"
+    },
+    {
+      "path": "native/security-cookie-check--00.asm.txt",
+      "bytes": 516,
+      "sha256": "a2691fce4e2e60b27710ffef3dbdf556ae2cd499d9ea27f595145b1870547b69"
+    },
+    {
+      "path": "native/upgrade-damage-type-filter--00.asm.txt",
+      "bytes": 1515,
+      "sha256": "49f453b65a09b956559a9f7a6afffc65fd3cfb268410cdcb2637ffa593804940"
+    },
+    {
+      "path": "native/upgrade-enum--00.asm.txt",
+      "bytes": 69074,
+      "sha256": "df605136847556bdab48ee8f7061dbde9aacafa791d2fa35ae606f70dfb855d1"
+    },
+    {
+      "path": "native/upgrade-manager-constructor--00.asm.txt",
+      "bytes": 4688,
+      "sha256": "3e2cfc07748134c4a9b8b877a5147a2f2b2aa963bacae31c1b3947f8796ea6be"
+    },
+    {
+      "path": "native/upgrade-manager-entry-consumer--00.asm.txt",
+      "bytes": 767,
+      "sha256": "dde51dde7719772e76c593417b7b598daa354b47783581e0310c3ef20c6f4682"
+    },
+    {
+      "path": "native/upgrade-manager-entry-consumer--01.asm.txt",
+      "bytes": 6909,
+      "sha256": "d363fabb2b9490d93b1e3807dc4af73e222a38df50029d072facf8e1eece3001"
+    },
+    {
+      "path": "native/upgrade-manager-entry-consumer--02.asm.txt",
+      "bytes": 283,
+      "sha256": "8fa2b824ebde51f205883029e89d27563bee8d97143348540b24ae6b1a9daddf"
+    },
+    {
+      "path": "native/upgrade-manager-float-application--00.asm.txt",
+      "bytes": 1168,
+      "sha256": "9b92f61d6850e756c7c4d069ce9c5fe9839f7e6dd59d335a9cd785356973adbc"
+    },
+    {
+      "path": "native/upgrade-manager-float-application--01.asm.txt",
+      "bytes": 7222,
+      "sha256": "731d786f67639017b4316b4170dfa94856e86915b3656e750ecb28434901280d"
+    },
+    {
+      "path": "native/upgrade-manager-float-application--02.asm.txt",
+      "bytes": 3304,
+      "sha256": "11cb3df4fae7123acf371ebc0da4b430a468911f29616be6bcb05ef10dc4c6b5"
+    },
+    {
+      "path": "native/upgrade-manager-float-application--03.asm.txt",
+      "bytes": 1507,
+      "sha256": "673879381e60b9b7c9c561301440a58c812a69a271ccdebcb4610bcbea085ff3"
+    },
+    {
+      "path": "native/upgrade-manager-integer-application--00.asm.txt",
+      "bytes": 1231,
+      "sha256": "9859fb4988b157dc8222ca59b36071e19b360714c9a6d92f0c52cbab768bc0b0"
+    },
+    {
+      "path": "native/upgrade-manager-integer-application--01.asm.txt",
+      "bytes": 7347,
+      "sha256": "ea4242636bdf5fad0b85b64044bd41aa3dc62b3c33f1f0196d13648ce340d320"
+    },
+    {
+      "path": "native/upgrade-manager-integer-application--02.asm.txt",
+      "bytes": 3304,
+      "sha256": "91b5f23251d06e5fc6fdc41ff3479193d211320dbff2d5beea4102150c64f99d"
+    },
+    {
+      "path": "native/upgrade-manager-integer-application--03.asm.txt",
+      "bytes": 1679,
+      "sha256": "33dc82e3804b1e21f1208454f92089b8d4103060c1704646ab8c9ec966165764"
+    },
+    {
+      "path": "native/upgrade-manager-registration--00.asm.txt",
+      "bytes": 1606,
+      "sha256": "edb3bc4a5a8f00f15a453dcdb47103b24cb1e8862a2bef9df5541842d8fa0a74"
+    },
+    {
+      "path": "native/upgrade-manager-scalar-application--00.asm.txt",
+      "bytes": 1171,
+      "sha256": "60fcb212f420a15b7eef494eff7530125d8cadbb88e464e3f01c46b8c8f7f371"
+    },
+    {
+      "path": "native/upgrade-manager-scalar-application--01.asm.txt",
+      "bytes": 7092,
+      "sha256": "3476a4db9f5e1e85770e3c784c6bc31b3bbe1de20d081b303d399e98531a56bf"
+    },
+    {
+      "path": "native/upgrade-manager-scalar-application--02.asm.txt",
+      "bytes": 471,
+      "sha256": "10214e89e43ddff659fa9284bbad526c9de0415ad3e7303b0bbab56a2dbf9951"
+    },
+    {
+      "path": "native/upgrade-manager-scalar-application--03.asm.txt",
+      "bytes": 2779,
+      "sha256": "e61ad30c594bbe63362bf8ceb66582b18a174a87405b3583badafd25a3bb4c35"
+    },
+    {
+      "path": "replay.json",
+      "bytes": 44141,
+      "sha256": "8e612ae6b75ed47fbc07ab8460db8e72ffc23dcaf4832c07302adf90c89b1da0"
+    },
+    {
+      "path": "native-evidence.json",
+      "bytes": 39970,
+      "sha256": "16bf56e4912514e28aeffdaa2971c18e6ebb7ad255de2f81e104fcf86d673a87"
+    }
+  ],
+  "magnetic_part_cases": [
+    {
+      "prior_packet_part": 0,
+      "selected_proxy_part": 0,
+      "producer_part": 6,
+      "received_part": 6,
+      "head_gate_destination_rva": "0x1820a9",
+      "application_record_part": 6
+    },
+    {
+      "prior_packet_part": 1,
+      "selected_proxy_part": 0,
+      "producer_part": 6,
+      "received_part": 6,
+      "head_gate_destination_rva": "0x1820a9",
+      "application_record_part": 6
+    },
+    {
+      "prior_packet_part": 6,
+      "selected_proxy_part": 0,
+      "producer_part": 6,
+      "received_part": 6,
+      "head_gate_destination_rva": "0x1820a9",
+      "application_record_part": 6
+    },
+    {
+      "prior_packet_part": 7,
+      "selected_proxy_part": 0,
+      "producer_part": 6,
+      "received_part": 6,
+      "head_gate_destination_rva": "0x1820a9",
+      "application_record_part": 6
+    },
+    {
+      "prior_packet_part": 0,
+      "selected_proxy_part": 1,
+      "producer_part": 6,
+      "received_part": 6,
+      "head_gate_destination_rva": "0x1820a9",
+      "application_record_part": 6
+    },
+    {
+      "prior_packet_part": 1,
+      "selected_proxy_part": 1,
+      "producer_part": 6,
+      "received_part": 6,
+      "head_gate_destination_rva": "0x1820a9",
+      "application_record_part": 6
+    },
+    {
+      "prior_packet_part": 6,
+      "selected_proxy_part": 1,
+      "producer_part": 6,
+      "received_part": 6,
+      "head_gate_destination_rva": "0x1820a9",
+      "application_record_part": 6
+    },
+    {
+      "prior_packet_part": 7,
+      "selected_proxy_part": 1,
+      "producer_part": 6,
+      "received_part": 6,
+      "head_gate_destination_rva": "0x1820a9",
+      "application_record_part": 6
+    },
+    {
+      "prior_packet_part": 0,
+      "selected_proxy_part": 6,
+      "producer_part": 6,
+      "received_part": 6,
+      "head_gate_destination_rva": "0x1820a9",
+      "application_record_part": 6
+    },
+    {
+      "prior_packet_part": 1,
+      "selected_proxy_part": 6,
+      "producer_part": 6,
+      "received_part": 6,
+      "head_gate_destination_rva": "0x1820a9",
+      "application_record_part": 6
+    },
+    {
+      "prior_packet_part": 6,
+      "selected_proxy_part": 6,
+      "producer_part": 6,
+      "received_part": 6,
+      "head_gate_destination_rva": "0x1820a9",
+      "application_record_part": 6
+    },
+    {
+      "prior_packet_part": 7,
+      "selected_proxy_part": 6,
+      "producer_part": 6,
+      "received_part": 6,
+      "head_gate_destination_rva": "0x1820a9",
+      "application_record_part": 6
+    }
+  ],
+  "part_resolution_control_cases": [
+    {
+      "supplied_packet_part": 0,
+      "selected_proxy_part": 1,
+      "received_part": 0
+    },
+    {
+      "supplied_packet_part": 1,
+      "selected_proxy_part": 1,
+      "received_part": 1
+    },
+    {
+      "supplied_packet_part": 6,
+      "selected_proxy_part": 1,
+      "received_part": 6
+    },
+    {
+      "supplied_packet_part": 7,
+      "selected_proxy_part": 1,
+      "received_part": 1
+    }
+  ],
+  "record_group_cases": [
+    {
+      "sequence": "two-body",
+      "position": 0,
+      "input_seed": 100.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 101.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "two-body",
+      "position": 1,
+      "input_seed": 200.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 101.0,
+      "accumulator_after": 301.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "two-head",
+      "position": 0,
+      "input_seed": 100.0,
+      "input_part": 1,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 101.0,
+      "last_visited_part": 1,
+      "group_count": 1
+    },
+    {
+      "sequence": "two-head",
+      "position": 1,
+      "input_seed": 200.0,
+      "input_part": 1,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 101.0,
+      "accumulator_after": 301.0,
+      "last_visited_part": 1,
+      "group_count": 1
+    },
+    {
+      "sequence": "body-head",
+      "position": 0,
+      "input_seed": 100.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 101.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "body-head",
+      "position": 1,
+      "input_seed": 200.0,
+      "input_part": 1,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 101.0,
+      "accumulator_after": 301.0,
+      "last_visited_part": 1,
+      "group_count": 1
+    },
+    {
+      "sequence": "head-body",
+      "position": 0,
+      "input_seed": 100.0,
+      "input_part": 1,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 101.0,
+      "last_visited_part": 1,
+      "group_count": 1
+    },
+    {
+      "sequence": "head-body",
+      "position": 1,
+      "input_seed": 200.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 101.0,
+      "accumulator_after": 301.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "interleaved",
+      "position": 0,
+      "input_seed": 100.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 101.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "interleaved",
+      "position": 1,
+      "input_seed": 200.0,
+      "input_part": 1,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 101.0,
+      "accumulator_after": 301.0,
+      "last_visited_part": 1,
+      "group_count": 1
+    },
+    {
+      "sequence": "interleaved",
+      "position": 2,
+      "input_seed": 300.0,
+      "input_part": 6,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 301.0,
+      "accumulator_after": 601.0,
+      "last_visited_part": 6,
+      "group_count": 1
+    },
+    {
+      "sequence": "interleaved",
+      "position": 3,
+      "input_seed": 400.0,
+      "input_part": 1,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 601.0,
+      "accumulator_after": 1001.0,
+      "last_visited_part": 1,
+      "group_count": 1
+    },
+    {
+      "sequence": "zero-and-small",
+      "position": 0,
+      "input_seed": 0.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 1.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "zero-and-small",
+      "position": 1,
+      "input_seed": 0.125,
+      "input_part": 1,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 1.125,
+      "last_visited_part": 1,
+      "group_count": 1
+    },
+    {
+      "sequence": "zero-and-small",
+      "position": 2,
+      "input_seed": 0.25,
+      "input_part": 6,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 1.125,
+      "accumulator_after": 1.375,
+      "last_visited_part": 6,
+      "group_count": 1
+    },
+    {
+      "sequence": "float32-order",
+      "position": 0,
+      "input_seed": 16777216.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 16777216.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "float32-order",
+      "position": 1,
+      "input_seed": 1.0,
+      "input_part": 1,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 16777216.0,
+      "accumulator_after": 16777216.0,
+      "last_visited_part": 1,
+      "group_count": 1
+    },
+    {
+      "sequence": "float32-order",
+      "position": 2,
+      "input_seed": 0.5,
+      "input_part": 6,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 16777216.0,
+      "accumulator_after": 16777216.0,
+      "last_visited_part": 6,
+      "group_count": 1
+    },
+    {
+      "sequence": "float32-order",
+      "position": 3,
+      "input_seed": 3.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        79225
+      ],
+      "accumulator_before": 16777216.0,
+      "accumulator_after": 16777220.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "different-actor",
+      "position": 0,
+      "input_seed": 100.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 101.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "different-actor",
+      "position": 1,
+      "input_seed": 200.0,
+      "input_part": 1,
+      "supplied_key": [
+        1,
+        0,
+        0,
+        1
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 201.0,
+      "last_visited_part": 1,
+      "group_count": 2
+    },
+    {
+      "sequence": "different-weapon",
+      "position": 0,
+      "input_seed": 100.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 101.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "different-weapon",
+      "position": 1,
+      "input_seed": 200.0,
+      "input_part": 1,
+      "supplied_key": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 201.0,
+      "last_visited_part": 1,
+      "group_count": 2
+    },
+    {
+      "sequence": "different-flag",
+      "position": 0,
+      "input_seed": 100.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 101.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "different-flag",
+      "position": 1,
+      "input_seed": 200.0,
+      "input_part": 1,
+      "supplied_key": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 201.0,
+      "last_visited_part": 1,
+      "group_count": 2
+    },
+    {
+      "sequence": "different-tag",
+      "position": 0,
+      "input_seed": 100.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 101.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "different-tag",
+      "position": 1,
+      "input_seed": 200.0,
+      "input_part": 1,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        2
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 201.0,
+      "last_visited_part": 1,
+      "group_count": 2
+    },
+    {
+      "sequence": "interleaved-groups",
+      "position": 0,
+      "input_seed": 100.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 101.0,
+      "last_visited_part": 0,
+      "group_count": 1
+    },
+    {
+      "sequence": "interleaved-groups",
+      "position": 1,
+      "input_seed": 200.0,
+      "input_part": 1,
+      "supplied_key": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "accumulator_before": 1.0,
+      "accumulator_after": 201.0,
+      "last_visited_part": 1,
+      "group_count": 2
+    },
+    {
+      "sequence": "interleaved-groups",
+      "position": 2,
+      "input_seed": 300.0,
+      "input_part": 6,
+      "supplied_key": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "accumulator_before": 101.0,
+      "accumulator_after": 401.0,
+      "last_visited_part": 6,
+      "group_count": 2
+    },
+    {
+      "sequence": "interleaved-groups",
+      "position": 3,
+      "input_seed": 400.0,
+      "input_part": 0,
+      "supplied_key": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "accumulator_before": 201.0,
+      "accumulator_after": 601.0,
+      "last_visited_part": 0,
+      "group_count": 2
+    }
+  ],
+  "radial_transfer_cases": [
+    {
+      "sequence": "two-body",
+      "position": 0,
+      "group_accumulator": 101.0,
+      "radial_scalar": 101.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 50.5
+    },
+    {
+      "sequence": "two-body",
+      "position": 1,
+      "group_accumulator": 301.0,
+      "radial_scalar": 301.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 150.5
+    },
+    {
+      "sequence": "two-head",
+      "position": 0,
+      "group_accumulator": 101.0,
+      "radial_scalar": 101.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 50.5
+    },
+    {
+      "sequence": "two-head",
+      "position": 1,
+      "group_accumulator": 301.0,
+      "radial_scalar": 301.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 150.5
+    },
+    {
+      "sequence": "body-head",
+      "position": 0,
+      "group_accumulator": 101.0,
+      "radial_scalar": 101.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 50.5
+    },
+    {
+      "sequence": "body-head",
+      "position": 1,
+      "group_accumulator": 301.0,
+      "radial_scalar": 301.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 150.5
+    },
+    {
+      "sequence": "head-body",
+      "position": 0,
+      "group_accumulator": 101.0,
+      "radial_scalar": 101.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 50.5
+    },
+    {
+      "sequence": "head-body",
+      "position": 1,
+      "group_accumulator": 301.0,
+      "radial_scalar": 301.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 150.5
+    },
+    {
+      "sequence": "interleaved",
+      "position": 0,
+      "group_accumulator": 101.0,
+      "radial_scalar": 101.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 50.5
+    },
+    {
+      "sequence": "interleaved",
+      "position": 1,
+      "group_accumulator": 301.0,
+      "radial_scalar": 301.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 150.5
+    },
+    {
+      "sequence": "interleaved",
+      "position": 2,
+      "group_accumulator": 601.0,
+      "radial_scalar": 601.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 300.5
+    },
+    {
+      "sequence": "interleaved",
+      "position": 3,
+      "group_accumulator": 1001.0,
+      "radial_scalar": 1001.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 500.5
+    },
+    {
+      "sequence": "zero-and-small",
+      "position": 0,
+      "group_accumulator": 1.0,
+      "radial_scalar": 1.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 1.0
+    },
+    {
+      "sequence": "zero-and-small",
+      "position": 1,
+      "group_accumulator": 1.125,
+      "radial_scalar": 1.125,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 1.0
+    },
+    {
+      "sequence": "zero-and-small",
+      "position": 2,
+      "group_accumulator": 1.375,
+      "radial_scalar": 1.375,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 1.0
+    },
+    {
+      "sequence": "float32-order",
+      "position": 0,
+      "group_accumulator": 16777216.0,
+      "radial_scalar": 16777216.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 8388608.0
+    },
+    {
+      "sequence": "float32-order",
+      "position": 1,
+      "group_accumulator": 16777216.0,
+      "radial_scalar": 16777216.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 8388608.0
+    },
+    {
+      "sequence": "float32-order",
+      "position": 2,
+      "group_accumulator": 16777216.0,
+      "radial_scalar": 16777216.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 8388608.0
+    },
+    {
+      "sequence": "float32-order",
+      "position": 3,
+      "group_accumulator": 16777220.0,
+      "radial_scalar": 16777220.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 8388610.0
+    },
+    {
+      "sequence": "different-actor",
+      "position": 0,
+      "group_accumulator": 101.0,
+      "radial_scalar": 101.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 50.5
+    },
+    {
+      "sequence": "different-actor",
+      "position": 1,
+      "group_accumulator": 201.0,
+      "radial_scalar": 201.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 100.5
+    },
+    {
+      "sequence": "different-weapon",
+      "position": 0,
+      "group_accumulator": 101.0,
+      "radial_scalar": 101.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 50.5
+    },
+    {
+      "sequence": "different-weapon",
+      "position": 1,
+      "group_accumulator": 201.0,
+      "radial_scalar": 201.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 100.5
+    },
+    {
+      "sequence": "different-flag",
+      "position": 0,
+      "group_accumulator": 101.0,
+      "radial_scalar": 101.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 50.5
+    },
+    {
+      "sequence": "different-flag",
+      "position": 1,
+      "group_accumulator": 201.0,
+      "radial_scalar": 201.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 100.5
+    },
+    {
+      "sequence": "different-tag",
+      "position": 0,
+      "group_accumulator": 101.0,
+      "radial_scalar": 101.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 50.5
+    },
+    {
+      "sequence": "different-tag",
+      "position": 1,
+      "group_accumulator": 201.0,
+      "radial_scalar": 201.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 100.5
+    },
+    {
+      "sequence": "interleaved-groups",
+      "position": 0,
+      "group_accumulator": 101.0,
+      "radial_scalar": 101.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 50.5
+    },
+    {
+      "sequence": "interleaved-groups",
+      "position": 1,
+      "group_accumulator": 201.0,
+      "radial_scalar": 201.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 100.5
+    },
+    {
+      "sequence": "interleaved-groups",
+      "position": 2,
+      "group_accumulator": 401.0,
+      "radial_scalar": 401.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 200.5
+    },
+    {
+      "sequence": "interleaved-groups",
+      "position": 3,
+      "group_accumulator": 601.0,
+      "radial_scalar": 601.0,
+      "supplied_radial_coefficient": 0.5,
+      "prepared_before_other_modifiers": 300.5
+    }
+  ],
+  "two_stage_upgrade_cases": [
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 100.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 100.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 100.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 100.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 100.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 100.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 150.0,
+      "ordinary_proc_retained_input": 150.0,
+      "ordinary_proc_stored_seed": 225.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 100.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 150.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 150.0,
+      "ordinary_proc_retained_input": 150.0,
+      "ordinary_proc_stored_seed": 150.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 225.0,
+      "ordinary_proc_retained_input": 225.0,
+      "ordinary_proc_stored_seed": 506.25
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 100.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 225.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 225.0,
+      "ordinary_proc_retained_input": 225.0,
+      "ordinary_proc_stored_seed": 225.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 123.25,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 123.25
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 123.25,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 123.25
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 123.25,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 123.25
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 184.875,
+      "ordinary_proc_retained_input": 184.875,
+      "ordinary_proc_stored_seed": 277.3125
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 123.25,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 184.875
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 184.875,
+      "ordinary_proc_retained_input": 184.875,
+      "ordinary_proc_stored_seed": 184.875
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 277.3125,
+      "ordinary_proc_retained_input": 277.3125,
+      "ordinary_proc_stored_seed": 623.953125
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 123.25,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 277.3125
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 277.3125,
+      "ordinary_proc_retained_input": 277.3125,
+      "ordinary_proc_stored_seed": 277.3125
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 10000.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 10000.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 10000.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 10000.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 10000.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 10000.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 15000.0,
+      "ordinary_proc_retained_input": 15000.0,
+      "ordinary_proc_stored_seed": 22500.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 10000.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 15000.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 15000.0,
+      "ordinary_proc_retained_input": 15000.0,
+      "ordinary_proc_stored_seed": 15000.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 22500.0,
+      "ordinary_proc_retained_input": 22500.0,
+      "ordinary_proc_stored_seed": 50625.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 10000.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 22500.0
+    },
+    {
+      "supplied_canonicalization_flag": 0,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 22500.0,
+      "ordinary_proc_retained_input": 22500.0,
+      "ordinary_proc_stored_seed": 22500.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 100.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 100.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 100.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 100.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 100.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 100.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 150.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 150.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 100.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 150.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 150.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 100.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 225.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 225.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 100.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 225.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 100.0,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 225.0,
+      "ordinary_proc_retained_input": 100.0,
+      "ordinary_proc_stored_seed": 100.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 123.25,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 123.25
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 123.25,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 123.25
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 123.25,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 123.25
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 184.875,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 184.875
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 123.25,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 184.875
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 184.875,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 123.25
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 277.3125,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 277.3125
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 123.25,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 277.3125
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 123.25,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 277.3125,
+      "ordinary_proc_retained_input": 123.25,
+      "ordinary_proc_stored_seed": 123.25
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 10000.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 10000.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 10000.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 10000.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 0.0,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 10000.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 10000.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 15000.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 15000.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 10000.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 15000.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 0.5,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 15000.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 10000.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 0,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 22500.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 22500.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 32,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 10000.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 22500.0
+    },
+    {
+      "supplied_canonicalization_flag": 1,
+      "input_parent_source": 10000.0,
+      "supplied_stacking_bonus": 1.25,
+      "supplied_valid_proc_mask": 1024,
+      "parent_proc_type": 10,
+      "child_proc_type": 5,
+      "parent_evaluated_source": 22500.0,
+      "ordinary_proc_retained_input": 10000.0,
+      "ordinary_proc_stored_seed": 10000.0
+    }
+  ],
+  "overguard_native_boundary_cases": [
+    {
+      "supplied_lua_numeric_argument": 0.0,
+      "lua_int32_argument": 0,
+      "supplied_overguard_upgrade_multiplier": 1.0,
+      "native_max_overguard_getter_result": 0
+    },
+    {
+      "supplied_lua_numeric_argument": 0.0,
+      "lua_int32_argument": 0,
+      "supplied_overguard_upgrade_multiplier": 2.5,
+      "native_max_overguard_getter_result": 0
+    },
+    {
+      "supplied_lua_numeric_argument": 0.0,
+      "lua_int32_argument": 0,
+      "supplied_overguard_upgrade_multiplier": 100.0,
+      "native_max_overguard_getter_result": 0
+    },
+    {
+      "supplied_lua_numeric_argument": 12.5,
+      "lua_int32_argument": 12,
+      "supplied_overguard_upgrade_multiplier": 1.0,
+      "native_max_overguard_getter_result": 12
+    },
+    {
+      "supplied_lua_numeric_argument": 12.5,
+      "lua_int32_argument": 12,
+      "supplied_overguard_upgrade_multiplier": 2.5,
+      "native_max_overguard_getter_result": 30
+    },
+    {
+      "supplied_lua_numeric_argument": 12.5,
+      "lua_int32_argument": 12,
+      "supplied_overguard_upgrade_multiplier": 100.0,
+      "native_max_overguard_getter_result": 1200
+    },
+    {
+      "supplied_lua_numeric_argument": 13.5,
+      "lua_int32_argument": 13,
+      "supplied_overguard_upgrade_multiplier": 1.0,
+      "native_max_overguard_getter_result": 13
+    },
+    {
+      "supplied_lua_numeric_argument": 13.5,
+      "lua_int32_argument": 13,
+      "supplied_overguard_upgrade_multiplier": 2.5,
+      "native_max_overguard_getter_result": 33
+    },
+    {
+      "supplied_lua_numeric_argument": 13.5,
+      "lua_int32_argument": 13,
+      "supplied_overguard_upgrade_multiplier": 100.0,
+      "native_max_overguard_getter_result": 1300
+    },
+    {
+      "supplied_lua_numeric_argument": 999.9000244140625,
+      "lua_int32_argument": 999,
+      "supplied_overguard_upgrade_multiplier": 1.0,
+      "native_max_overguard_getter_result": 999
+    },
+    {
+      "supplied_lua_numeric_argument": 999.9000244140625,
+      "lua_int32_argument": 999,
+      "supplied_overguard_upgrade_multiplier": 2.5,
+      "native_max_overguard_getter_result": 2498
+    },
+    {
+      "supplied_lua_numeric_argument": 999.9000244140625,
+      "lua_int32_argument": 999,
+      "supplied_overguard_upgrade_multiplier": 100.0,
+      "native_max_overguard_getter_result": 99900
+    }
+  ],
+  "stubs": [
+    "0x298cf0 allocates a zeroed 0x58-byte group node"
+  ],
+  "supplied_boundaries": [
+    "Constructed controller/proxy/reference cells",
+    "Synthetic per-record seeds, parts, source references, flags and opaque identities",
+    "Explicit record visitation order; not application or expiry order",
+    "Empty per-record vector in original copy constructor",
+    "Radial coefficient 0.5 supplied at the already bound field",
+    "Constructed real-vtable Avatar, inventory and UpgradeManager objects; manager owner is null",
+    "Explicit active upgrade entries, no type/object/posture restrictions, empty symbol, optional proc masks",
+    "No intervening receiving transforms between parent construction and child seed read",
+    "Canonicalization global byte supplied as 0 or 1; its runtime writer remains unbound",
+    "Eximus Lua branch is statically decoded; Overguard test multipliers are synthetic and not level/SP values",
+    "No complete source/recipient/upgrade pipeline or final damage/lethal dispatch"
+  ]
+}

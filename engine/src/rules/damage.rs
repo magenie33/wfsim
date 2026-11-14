@@ -314,13 +314,10 @@ impl DamageVector {
 /// Damage quantization denominator (1/32 steps since U40; 1/16 before).
 pub const QUANTIZATION_DENOMINATOR: f64 = 32.0;
 
-/// Base critical-damage-multiplier quantization (wiki `Critical_Hit`
-/// §Quantization): `round(cd × 4095/32) × 32/4095`, applied to
-/// `base_cd + weapon-flat CD` before relative mods (docs/MECHANICS.md §5).
-/// Note even a clean 2.0x is off-grid: it quantizes to ≈2.000488x.
+/// Native canonical base critical quantization before pending relative operations.
 #[wfsim_gas_macro::metered]
 pub fn quantize_base_crit_damage(cd: f64) -> f64 {
-    (cd * 4095.0 / 32.0).round() * 32.0 / 4095.0
+    super::critical::quantize(cd as f32) as f64
 }
 
 #[cfg(test)]
@@ -500,9 +497,9 @@ mod tests {
         // Even a clean 2.0x sits off-grid: 2.0 * 4095/32 = 255.9375 -> 256
         // -> 256 * 32/4095 ≈ 2.000488.
         let q = quantize_base_crit_damage(2.0);
-        assert!((q - 2.0004884004884).abs() < 1e-10, "q = {q}");
+        assert_eq!(q, 2.000488519668579);
         // Grid points round-trip exactly.
-        let grid = 256.0 * 32.0 / 4095.0;
+        let grid = (256.0_f32 * (32.0_f32 / 4095.0_f32)) as f64;
         assert_eq!(quantize_base_crit_damage(grid), grid);
     }
 

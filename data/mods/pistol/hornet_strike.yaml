@@ -10,8 +10,11 @@ description: "+X% Damage"
 # One bucket, linear ranks: +20% base damage per rank, +220% at rank 10.
 effects:
   - kind: base_damage_bonus    # the additive base-damage bucket
-    rank0: 0.2
-    rankMax: 2.2
+    UpgradeType: 253
+    OperationType: STACKING_MULTIPLY
+    Value: 0.2
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 
 source:

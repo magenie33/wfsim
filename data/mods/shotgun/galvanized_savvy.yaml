@@ -9,8 +9,11 @@ description: "+X% Status Chance\nOn Kill:\n+X% Direct Damage per Status Type aff
 
 effects:
   - kind: status_chance_bonus
-    rank0: 0.07273
-    rankMax: 0.80003   # see notes: package_rank_value
+    UpgradeType: 365
+    OperationType: STACKING_MULTIPLY
+    Value: 0.072729997
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   # Condition Overload payload — NOT an unconditional base-damage bonus, which
   # is what the skeleton said. On kill it grants +rankMax per status TYPE on the
   # target, per stack, DIRECT hits only; the arithmetic is per-weapon (the

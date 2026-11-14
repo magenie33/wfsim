@@ -10,8 +10,11 @@ description: "+X% Critical Chance\n-X% Fire Rate (x2 for Bows)"
 # see notes: x2_bows_clause_literal
 effects:
   - kind: crit_chance_bonus
-    rank0: 0.33333
-    rankMax: 1.99998   # see notes: package_rank_value
+    UpgradeType: 244
+    OperationType: STACKING_MULTIPLY
+    Value: 0.33333001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   # DRAWBACK: Critical Delay COSTS fire rate (-20% at max), it does not
   # grant it. This was the placeholder pair (rank0 1/6, rankMax 1.0), so the
   # sim read a penalty as a +100% bonus. The wiki's rank table: -3.3% -> -20%.

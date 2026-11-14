@@ -79,6 +79,8 @@ pub struct ResolvedOrb {
 /// The lingering field after mod resolution.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ResolvedLingering {
+    /// Authoritative pending queries; numeric crit fields are display or supplied-fixture projections.
+    pub critical_inputs: Option<crate::rules::critical::CriticalInputs>,
     pub heavy_damage_mods_apply: bool,
     pub melee_scaling: Option<crate::model::MeleeFieldScaling>,
     pub damage: DamageVector,
@@ -168,6 +170,8 @@ pub struct ResolvedSpectralDagger {
 /// The radial part after mod resolution.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ResolvedRadial {
+    /// Authoritative pending queries; numeric crit fields are display or supplied-fixture projections.
+    pub critical_inputs: Option<crate::rules::critical::CriticalInputs>,
     pub delay_seconds: f64,
     /// Where this explosion goes off — see
     /// [`crate::model::BlastKind`]. `Contact` on every weapon but the
@@ -336,6 +340,8 @@ impl ResolvedRadial {
 /// The resolved panel: everything the dummy sim needs from layers [1]+[2].
 #[derive(Debug, Clone)]
 pub struct ResolvedPanel {
+    /// Authoritative pending queries; numeric crit fields are display or supplied-fixture projections.
+    pub critical_inputs: Option<crate::rules::critical::CriticalInputs>,
     pub weakness_bonus: Option<f64>,
     pub melee_radius: Option<crate::model::MeleeRadius>,
     pub target_preference: Option<crate::model::TargetPreference>,

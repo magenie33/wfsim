@@ -1,0 +1,2099 @@
+{
+  "schema": 1,
+  "batch": "20261112T155444Z-negative-stats",
+  "manifest_sha256": "716f6de875d69cde57420248d2fdd9bfa632ed005878b2b08789b525ae468fe4",
+  "client_build": "2026.10.28.09.54",
+  "source_members": [
+    {
+      "path": "native/0x110a0f0--00.asm.txt",
+      "bytes": 207,
+      "sha256": "2c4480f32c55621c553b7e200f1624308216b2fe2605b086ebb778876b8e2d1c"
+    },
+    {
+      "path": "native/0x11a2d80--00.asm.txt",
+      "bytes": 1848,
+      "sha256": "9f17b9213fd6545fda1cef2c566315649492df8d630bbc8368767343d619aa04"
+    },
+    {
+      "path": "native/0x11a2d80--01.asm.txt",
+      "bytes": 528,
+      "sha256": "eda4dde9ca0df882aeeafe04fb0442ddd615e2024e93485d4f8ca3a2a214fc18"
+    },
+    {
+      "path": "native/0x11a2d80--02.asm.txt",
+      "bytes": 748,
+      "sha256": "3d459936ae37ad34fb5c2b60d7139f14ff3361f3ecc9b0acd7a2cad4f1162664"
+    },
+    {
+      "path": "native/0x11a2d80--03.asm.txt",
+      "bytes": 80,
+      "sha256": "419b997527b2d998c61c2b5b5fe7efca859a8b700288f6bdb003c41dff154ebd"
+    },
+    {
+      "path": "native/0x11a2d80--04.asm.txt",
+      "bytes": 171,
+      "sha256": "0762df33f2bd099e2275087d849c7e8ab9749f25e646b31badd8d57e62c56b79"
+    },
+    {
+      "path": "native/0x12330c0--00.asm.txt",
+      "bytes": 124,
+      "sha256": "e3eb18daf52aacab8f70e5e66fc6db2b3aa4e27fbe1f25e7fcb8c8164d46648b"
+    },
+    {
+      "path": "native/0x1233f10--00.asm.txt",
+      "bytes": 549,
+      "sha256": "410f8a1639b300973b03339d094afeb8ce0eaccc7d15dee76f5cda24e5162614"
+    },
+    {
+      "path": "native/0x1233f10--01.asm.txt",
+      "bytes": 16903,
+      "sha256": "a7b73a0f6d2447c2a95052edf8d057c54431d3bb4ae4cffbb18c1cdce59d792d"
+    },
+    {
+      "path": "native/0x1233f10--02.asm.txt",
+      "bytes": 33967,
+      "sha256": "e5cd8ffbb9c1005e59558cb3dc441e36720c3b5945f1f64cbbde5efa9a24bf09"
+    },
+    {
+      "path": "native/0x1233f10--03.asm.txt",
+      "bytes": 904,
+      "sha256": "59feb6e21d86dc6cd82e54d96beacd33df8df5a6fa6b3946d3b0b4a16668d0f7"
+    },
+    {
+      "path": "native/0x1233f10--04.asm.txt",
+      "bytes": 3424,
+      "sha256": "efa752b41e1df184ffcf92b0410557ab697e4314ea4b791c4691eaaf7b33ab08"
+    },
+    {
+      "path": "native/0x1233f10--05.asm.txt",
+      "bytes": 2832,
+      "sha256": "0b53f4f5b8582f2ce748d0e951a4e2b9c20525b688a9c166477b2edab01cf2cd"
+    },
+    {
+      "path": "native/0x1277c40--00.asm.txt",
+      "bytes": 6781,
+      "sha256": "36f5932400f785fe00abab39e782ddd29584358b1c60bacf5c50ede85312cb99"
+    },
+    {
+      "path": "native/0x1353660--00.asm.txt",
+      "bytes": 1916,
+      "sha256": "aef058efa2ef6fd4594aaa78e7e0faadad7fd9d77ca2f755b874a37cedd1ffc9"
+    },
+    {
+      "path": "native/0x1488e00--00.asm.txt",
+      "bytes": 2245,
+      "sha256": "29c037e96a747381cdc60a26bad0172174f85f220d5a5495a5f43183e8535653"
+    },
+    {
+      "path": "native/0x14add00--00.asm.txt",
+      "bytes": 439,
+      "sha256": "a84fce3651b4092ba4e806871f61a2b9edc570541e4cfcef703d071e55181eb1"
+    },
+    {
+      "path": "native/0x14d3210--00.asm.txt",
+      "bytes": 396,
+      "sha256": "f93f2c9356fd67812baab269c3943cd727ccb9a0034d6b4b6b83b75d115c6962"
+    },
+    {
+      "path": "native/0x14d3210--01.asm.txt",
+      "bytes": 873,
+      "sha256": "b0f299c195e83a905317b5044eaf6e351f72694b99235186aa574ba3f02f3ac2"
+    },
+    {
+      "path": "native/0x14d3210--02.asm.txt",
+      "bytes": 6068,
+      "sha256": "f97c977b250ef7cf757b628e7381bc465fa48317805ce17d0be48b1f8b00ec83"
+    },
+    {
+      "path": "native/0x14d3210--03.asm.txt",
+      "bytes": 776,
+      "sha256": "1b7e4e4bdf61faba69ee868fa38522e517c6ea2b0e4f48b1895cc9b512b1218a"
+    },
+    {
+      "path": "native/0x14d3210--04.asm.txt",
+      "bytes": 1074,
+      "sha256": "2ef37e4dcf95f679cc32c9d53412cbcc6f025c79cf77629ae7b3438d4fbb7ff8"
+    },
+    {
+      "path": "native/0x1633f80--00.asm.txt",
+      "bytes": 64,
+      "sha256": "e36e85fe8a7b1425b15517ac4809ee69d6b29630ac8f5b31c7e306bcf51e557a"
+    },
+    {
+      "path": "native/0x16ee640--00.asm.txt",
+      "bytes": 107987,
+      "sha256": "2fc2e5849507f6fb25641f413a840169447590547e99301dd2404f8084e5e3bf"
+    },
+    {
+      "path": "native/0x1723630--00.asm.txt",
+      "bytes": 6257,
+      "sha256": "c93b6c9ca75e87d655d8aaddd98f17e5e0f32add89e9a1100aac6f70b10cd011"
+    },
+    {
+      "path": "native/0x175a20--00.asm.txt",
+      "bytes": 137,
+      "sha256": "fbf3b24436cd65b88809023107e06e919514d5a2d16597664024f6bddef34f87"
+    },
+    {
+      "path": "native/0x181950--00.asm.txt",
+      "bytes": 4583,
+      "sha256": "6128ed4f1ef96aaa2d566f5389354d97468a87f6b70d6cc58aa6c6c6b824069c"
+    },
+    {
+      "path": "native/0x181950--01.asm.txt",
+      "bytes": 4148,
+      "sha256": "bff67e726396ae7e6e3c76d6bb69b0e917cc2fe9c4170ff0ebdb8a5b1d1f5035"
+    },
+    {
+      "path": "native/0x181950--02.asm.txt",
+      "bytes": 22164,
+      "sha256": "dc8c25891ce71d8c439475070fdb2db367051146a0d516ab2354c5eb1f9ea2b8"
+    },
+    {
+      "path": "native/0x181950--03.asm.txt",
+      "bytes": 6313,
+      "sha256": "ffe80b31a80c2067993a2e6160570e41e67066beab43412520af1421b56a4e23"
+    },
+    {
+      "path": "native/0x18654a0--00.asm.txt",
+      "bytes": 510,
+      "sha256": "5eb93221dd28c8310087bf05500821fcd3ea5e0dfe72447e6f1f7abbd5f00687"
+    },
+    {
+      "path": "native/0x188e7c0--00.asm.txt",
+      "bytes": 1053,
+      "sha256": "00a1b0c84c118c0e4f3ea588c949d07310cc29675d7e364d7c2401b6b00e61ec"
+    },
+    {
+      "path": "native/0x188e7c0--01.asm.txt",
+      "bytes": 143,
+      "sha256": "5b252d4ca0b49434f4f7ba9459eeb42de93784f70ff658147bcfe115a103952a"
+    },
+    {
+      "path": "native/0x188e7c0--02.asm.txt",
+      "bytes": 15665,
+      "sha256": "d20bd7237d346bbb48341ba93d33e1277234b384d1463a30a19815a414a52f4a"
+    },
+    {
+      "path": "native/0x188e7c0--03.asm.txt",
+      "bytes": 4411,
+      "sha256": "f893521a9dba04eb642ec34efa4f6f0ecba8d12f2f0b2f2542206f65b1b83920"
+    },
+    {
+      "path": "native/0x188e7c0--04.asm.txt",
+      "bytes": 376,
+      "sha256": "46ca31d93b439fb6bb229d9b9392415cedd4d1ad552f7b4a3ee02187da1841c1"
+    },
+    {
+      "path": "native/0x1a1b130--00.asm.txt",
+      "bytes": 767,
+      "sha256": "dde51dde7719772e76c593417b7b598daa354b47783581e0310c3ef20c6f4682"
+    },
+    {
+      "path": "native/0x1a1b130--01.asm.txt",
+      "bytes": 6909,
+      "sha256": "d363fabb2b9490d93b1e3807dc4af73e222a38df50029d072facf8e1eece3001"
+    },
+    {
+      "path": "native/0x1a1b130--02.asm.txt",
+      "bytes": 283,
+      "sha256": "8fa2b824ebde51f205883029e89d27563bee8d97143348540b24ae6b1a9daddf"
+    },
+    {
+      "path": "native/0x1baa480--00.asm.txt",
+      "bytes": 12624,
+      "sha256": "199327746a507dfd6c7aad758a0a04d05d35d40ec9b9dacf29d15d05610adb33"
+    },
+    {
+      "path": "native/0x1bf8200--00.asm.txt",
+      "bytes": 516,
+      "sha256": "a2691fce4e2e60b27710ffef3dbdf556ae2cd499d9ea27f595145b1870547b69"
+    },
+    {
+      "path": "native/0x1c1aa20--00.asm.txt",
+      "bytes": 307,
+      "sha256": "0c2358b5ee86385d8c60c4dc88804512c5db9ed7f929699f79e1211d23ef5f92"
+    },
+    {
+      "path": "native/0x272f90--00.asm.txt",
+      "bytes": 207,
+      "sha256": "7433efc450bc49a38d6914e5108d678f2c565141b628e25c7d6c4f6cc5bae8e8"
+    },
+    {
+      "path": "native/0x2d6600--00.asm.txt",
+      "bytes": 287,
+      "sha256": "25163f41f6567ae81beafb90fc0e850a22309e5130f2f6d8b0dcc2f14b7ddc9c"
+    },
+    {
+      "path": "native/0x38a700--00.asm.txt",
+      "bytes": 865,
+      "sha256": "02cfb13b2d33c4fa3a063ddc12c0d06f7104a989c714ed6fde8491583c55a586"
+    },
+    {
+      "path": "native/0x38a700--01.asm.txt",
+      "bytes": 1139,
+      "sha256": "3c9187f14f159e18a15faffb15e54f09556dfac21ca0945da678b48117e1f052"
+    },
+    {
+      "path": "native/0x38a700--02.asm.txt",
+      "bytes": 8771,
+      "sha256": "fe7b5ae43d9a2bfa921553c2daee34b62768fea547ec046826b77b61f8c36308"
+    },
+    {
+      "path": "native/0x38a700--03.asm.txt",
+      "bytes": 1234,
+      "sha256": "02efb44b3c44ae96a2ed43d505dca5db756645c4670365e0b6c3db235f0f9692"
+    },
+    {
+      "path": "native/0x38a700--04.asm.txt",
+      "bytes": 1383,
+      "sha256": "63b907572dcc67d96b3fe2b285223ce46100c21d56c909a6fd7f2e953ae5afa6"
+    },
+    {
+      "path": "native/0x3a51d0--00.asm.txt",
+      "bytes": 37175,
+      "sha256": "ca4151c402a27416f3d9182aeddc2d77539ecd05e17ed69fc0b1f5edefa5c66e"
+    },
+    {
+      "path": "native/0x3a51d0--01.asm.txt",
+      "bytes": 3625,
+      "sha256": "b4e97092fc8cc442c3ae753fbe0876f720f6b75ebf1bfb77e363d4739097a915"
+    },
+    {
+      "path": "native/0x3a51d0--02.asm.txt",
+      "bytes": 16086,
+      "sha256": "a3c60441c3aa93f6f899f65099a0b0e644cc9ea2a2748f06ffdea6b25b93f1ad"
+    },
+    {
+      "path": "native/0x3bdac0--00.asm.txt",
+      "bytes": 1405,
+      "sha256": "757bd96a4cd66df5787f94a2b63cc7fb09ea79848d1ebbd9bcec573d411e94ef"
+    },
+    {
+      "path": "native/0x3bdac0--01.asm.txt",
+      "bytes": 463,
+      "sha256": "4da599e28bffbf71472d7a55a0ae0832c4549e7f2b1dae32a58c46202e3e6bd6"
+    },
+    {
+      "path": "native/0x3bdac0--02.asm.txt",
+      "bytes": 4860,
+      "sha256": "bb281f376f29f9a77a483c8d20bcc8fd9a8868735c3719b7b3d26ee49e7891ba"
+    },
+    {
+      "path": "native/0x3bdac0--03.asm.txt",
+      "bytes": 83,
+      "sha256": "df38b8165b7bd867b60c7b06531b86bb7ec22a70e43f44773b4c8515c34482d1"
+    },
+    {
+      "path": "native/0x3bdac0--04.asm.txt",
+      "bytes": 1093,
+      "sha256": "22aab5d73b7613729721bf84f16284d052955d10d31820131f47a499fa6c8c4b"
+    },
+    {
+      "path": "native/0x476590--00.asm.txt",
+      "bytes": 2980,
+      "sha256": "e57f8560e93642c861d907b39e6b5db08a961115cffbd8192c980658c11cc161"
+    },
+    {
+      "path": "native/0x476590--01.asm.txt",
+      "bytes": 5566,
+      "sha256": "0fd7062b22de77c327f907e8c062f961c3602a1f8e86900f294a3caafdef9c93"
+    },
+    {
+      "path": "native/0x476590--02.asm.txt",
+      "bytes": 3166,
+      "sha256": "0b59c189352c72bf6f75889cc5ac54be30f947b002900c25154673a4240249a6"
+    },
+    {
+      "path": "native/0x476590--03.asm.txt",
+      "bytes": 160,
+      "sha256": "bdfab8d8d9fa508374f7506a980f71055484a11fb53aa9002be8a8ec80778f68"
+    },
+    {
+      "path": "native/0x476590--04.asm.txt",
+      "bytes": 2641,
+      "sha256": "ad28e279a4ccb2906d4e94e916ee1bfe5a46b9b52ca135df2bac492d496d4615"
+    },
+    {
+      "path": "native/0x493f90--00.asm.txt",
+      "bytes": 1268,
+      "sha256": "5fbb60b72a878f93ff4705884332595bb61d7bc4d6a531ae190768f2e13d3491"
+    },
+    {
+      "path": "native/0x493f90--01.asm.txt",
+      "bytes": 9963,
+      "sha256": "4659ce259ad344b318a64b992c4e1de3d971db426ce5809e9317fa8c5dd6badd"
+    },
+    {
+      "path": "native/0x493f90--02.asm.txt",
+      "bytes": 599,
+      "sha256": "37ad9d14032a9a298a05c817b4cc285eec92dc26b4b0492f6720859e996e9a99"
+    },
+    {
+      "path": "native/0x4c9b80--00.asm.txt",
+      "bytes": 1231,
+      "sha256": "9859fb4988b157dc8222ca59b36071e19b360714c9a6d92f0c52cbab768bc0b0"
+    },
+    {
+      "path": "native/0x4c9b80--01.asm.txt",
+      "bytes": 7347,
+      "sha256": "ea4242636bdf5fad0b85b64044bd41aa3dc62b3c33f1f0196d13648ce340d320"
+    },
+    {
+      "path": "native/0x4c9b80--02.asm.txt",
+      "bytes": 3304,
+      "sha256": "91b5f23251d06e5fc6fdc41ff3479193d211320dbff2d5beea4102150c64f99d"
+    },
+    {
+      "path": "native/0x4c9b80--03.asm.txt",
+      "bytes": 1679,
+      "sha256": "33dc82e3804b1e21f1208454f92089b8d4103060c1704646ab8c9ec966165764"
+    },
+    {
+      "path": "native/0x4cb980--00.asm.txt",
+      "bytes": 207,
+      "sha256": "9e973d2a653ccaf80b8b40d9b537a8fee72995a45f6bcbae12a1dc724c3ed483"
+    },
+    {
+      "path": "native/0x597c0--00.asm.txt",
+      "bytes": 69074,
+      "sha256": "df605136847556bdab48ee8f7061dbde9aacafa791d2fa35ae606f70dfb855d1"
+    },
+    {
+      "path": "native/0x5b9b00--00.asm.txt",
+      "bytes": 2237,
+      "sha256": "6ef4cb0686029ed0047c7d24dc2486b2a11d81725dd430c1e640a30e19319d06"
+    },
+    {
+      "path": "native/0x5bfdd0--00.asm.txt",
+      "bytes": 8037,
+      "sha256": "48f0e48d8cda0af9a22e595f3e332571109890ad73b66e09d71af0714ed4a114"
+    },
+    {
+      "path": "native/0x5bfdd0--01.asm.txt",
+      "bytes": 284,
+      "sha256": "c89d301ce781b09798dc3fa0ff3d620ce4cfc7ef141cbfa37c91a9aa6be92d42"
+    },
+    {
+      "path": "native/0x5bfdd0--02.asm.txt",
+      "bytes": 84,
+      "sha256": "97c5a4491d7d3d5882a93c210c154562b3b32bd543632c4a3f8e8c373e073f6f"
+    },
+    {
+      "path": "native/0x5bfdd0--03.asm.txt",
+      "bytes": 23531,
+      "sha256": "c33e883f8867653d75876acc97aa1778785279c72ba0df545e0b6374ea5d3aac"
+    },
+    {
+      "path": "native/0x5bfdd0--04.asm.txt",
+      "bytes": 4339,
+      "sha256": "a3992f8516dce7e7b6582280ada45257dbeb0489d9da37a22a306e6d9514e011"
+    },
+    {
+      "path": "native/0x5bfdd0--05.asm.txt",
+      "bytes": 3771,
+      "sha256": "0d21cc57bc2483a39b2baaf94c5d2867035abf98ea1a4e5385d91ebc9e2e92c6"
+    },
+    {
+      "path": "native/0x5bfdd0--06.asm.txt",
+      "bytes": 20832,
+      "sha256": "6a8ce91551b6abdf6452fe03a8d6ce489a5f21543bcdccc992958fea1e68a154"
+    },
+    {
+      "path": "native/0x7af8f0--00.asm.txt",
+      "bytes": 2946,
+      "sha256": "55c111756e20206595b554b181f72b317647bdd1e74749a7fdcaa95fca593e4f"
+    },
+    {
+      "path": "native/0x7fd700--00.asm.txt",
+      "bytes": 2954,
+      "sha256": "59982bbb0eb0712e8a9d0d4f081f79801f52b22911dd5fed9c1a4791a466fa35"
+    },
+    {
+      "path": "native/0x846dd0--00.asm.txt",
+      "bytes": 333,
+      "sha256": "248efd458eb4cef3bec9e2d4285c56c634ec11131e97c12bb1d31509c0c4688b"
+    },
+    {
+      "path": "native/0x8860e0--00.asm.txt",
+      "bytes": 207,
+      "sha256": "a193269971bd5917ea603f1e9f7da3488093195c5f74f12ec590cad19f6a901f"
+    },
+    {
+      "path": "native/0x88aee0--00.asm.txt",
+      "bytes": 1222,
+      "sha256": "1282c639070f8b5c71a9faa28f1c142729880346ae9d3b643895c613209ae61e"
+    },
+    {
+      "path": "native/0x88aee0--01.asm.txt",
+      "bytes": 954,
+      "sha256": "9ee834884d26dfb1d45a04b540caf37381530ccaca8f5d095ac094a5a9c525d4"
+    },
+    {
+      "path": "native/0x88aee0--02.asm.txt",
+      "bytes": 80,
+      "sha256": "fd33da6a4b3c743407e74baca671da7e7c1adc4c814ccf2f14c92dad3a82b6ee"
+    },
+    {
+      "path": "native/0x88aee0--03.asm.txt",
+      "bytes": 8099,
+      "sha256": "d87118ab11153aadbaa39b99157402d0951a5419f450d82ada0b35d3d78f4c3c"
+    },
+    {
+      "path": "native/0x88aee0--04.asm.txt",
+      "bytes": 8479,
+      "sha256": "3281db35e58f50d21ae0f64e06c980742e15d406d71cb6bd7b962a908ee49e52"
+    },
+    {
+      "path": "native/0x88aee0--05.asm.txt",
+      "bytes": 366,
+      "sha256": "68f6f451b7cc3bedfd6790fec8d9429ef162a9463eadee5aff0cf78ba3d3e445"
+    },
+    {
+      "path": "native/0x88aee0--06.asm.txt",
+      "bytes": 6672,
+      "sha256": "f6e6ed94de213fc8380b1c5e5ff0d79a2f46771f00b033304c4f748538789392"
+    },
+    {
+      "path": "native/0x88aee0--07.asm.txt",
+      "bytes": 81,
+      "sha256": "2f94b7699a0712b5c10bfb1d7f11cf3ce258ec32639eaf3858d39fa87ac3ac8d"
+    },
+    {
+      "path": "native/0x88aee0--08.asm.txt",
+      "bytes": 490,
+      "sha256": "6ffe0e2b92bb5311a2929b4bfe408ec1e52fa84c24c4b1c4676650ad2f87f61a"
+    },
+    {
+      "path": "native/0x895a40--00.asm.txt",
+      "bytes": 1515,
+      "sha256": "49f453b65a09b956559a9f7a6afffc65fd3cfb268410cdcb2637ffa593804940"
+    },
+    {
+      "path": "native/0x919bc0--00.asm.txt",
+      "bytes": 873,
+      "sha256": "728894789015acf7adfc2ae5c895544ac7f788b2ed68dd8006ea893005e45d38"
+    },
+    {
+      "path": "native/0x919bc0--01.asm.txt",
+      "bytes": 1624,
+      "sha256": "1e4c00d5cc5c25d9fc974bf4aa18305cf63e90207d8ffba0ba884a1450bd5629"
+    },
+    {
+      "path": "native/0x919bc0--02.asm.txt",
+      "bytes": 11696,
+      "sha256": "22f2803d4ef16812c049653eff152be18983e00183ecbc0b9f00b612cbfd3764"
+    },
+    {
+      "path": "native/0x919bc0--03.asm.txt",
+      "bytes": 11423,
+      "sha256": "9440816387248158b781418d2be022c1ca610a62805869899abbf06cd964e153"
+    },
+    {
+      "path": "native/0x919bc0--04.asm.txt",
+      "bytes": 1322,
+      "sha256": "336e78c27991d18dda328e2e30d15d7e066ec26e82045f8f7cd506190b264c86"
+    },
+    {
+      "path": "native/0x919bc0--05.asm.txt",
+      "bytes": 25522,
+      "sha256": "2f6ca4562baf2a2d1ab04afbf970a0046eef4a1e6675e0b66f93b62ef827dc99"
+    },
+    {
+      "path": "native/0x919bc0--06.asm.txt",
+      "bytes": 7127,
+      "sha256": "773922608ec4453828a9d3918e0b07c0907eaa4463c7b54841d33f443816674e"
+    },
+    {
+      "path": "native/0x984fc0--00.asm.txt",
+      "bytes": 10203,
+      "sha256": "fb1f52591000ab4d4b34282a93cff99d110637637ebc00988793dac0c221a5de"
+    },
+    {
+      "path": "native/0x9d1090--00.asm.txt",
+      "bytes": 1064,
+      "sha256": "e8b017552e9abcdeac292e8510ea54f2612872e91d94050e5ba7ec55c53a1b17"
+    },
+    {
+      "path": "native/0x9da9d0--00.asm.txt",
+      "bytes": 959,
+      "sha256": "51832e7f57e56d6faf4e1eccd6973f3b4269bb0e3051ac733ca9e9d4b59d8f5f"
+    },
+    {
+      "path": "native/0x9fe470--00.asm.txt",
+      "bytes": 3035,
+      "sha256": "6bb12878bc987b604c1e55b34904a7309342181cf7899630cd0f0f7c41050b1a"
+    },
+    {
+      "path": "native/0xa8a600--00.asm.txt",
+      "bytes": 3385,
+      "sha256": "e794f992c735806a96e62677aee41c2b9385d1dce65389e7eebe7719bec91f99"
+    },
+    {
+      "path": "native/0xaeda50--00.asm.txt",
+      "bytes": 1168,
+      "sha256": "9b92f61d6850e756c7c4d069ce9c5fe9839f7e6dd59d335a9cd785356973adbc"
+    },
+    {
+      "path": "native/0xaeda50--01.asm.txt",
+      "bytes": 7222,
+      "sha256": "731d786f67639017b4316b4170dfa94856e86915b3656e750ecb28434901280d"
+    },
+    {
+      "path": "native/0xaeda50--02.asm.txt",
+      "bytes": 3304,
+      "sha256": "11cb3df4fae7123acf371ebc0da4b430a468911f29616be6bcb05ef10dc4c6b5"
+    },
+    {
+      "path": "native/0xaeda50--03.asm.txt",
+      "bytes": 1507,
+      "sha256": "673879381e60b9b7c9c561301440a58c812a69a271ccdebcb4610bcbea085ff3"
+    },
+    {
+      "path": "native/0xb61d40--00.asm.txt",
+      "bytes": 1171,
+      "sha256": "60fcb212f420a15b7eef494eff7530125d8cadbb88e464e3f01c46b8c8f7f371"
+    },
+    {
+      "path": "native/0xb61d40--01.asm.txt",
+      "bytes": 7092,
+      "sha256": "3476a4db9f5e1e85770e3c784c6bc31b3bbe1de20d081b303d399e98531a56bf"
+    },
+    {
+      "path": "native/0xb61d40--02.asm.txt",
+      "bytes": 471,
+      "sha256": "10214e89e43ddff659fa9284bbad526c9de0415ad3e7303b0bbab56a2dbf9951"
+    },
+    {
+      "path": "native/0xb61d40--03.asm.txt",
+      "bytes": 2779,
+      "sha256": "e61ad30c594bbe63362bf8ceb66582b18a174a87405b3583badafd25a3bb4c35"
+    },
+    {
+      "path": "native/0xbab910--00.asm.txt",
+      "bytes": 2929,
+      "sha256": "c26202f66bd380566c15d691cc3e132f4e0dc735ffcd87d39004154b71c816ff"
+    },
+    {
+      "path": "native/0xc0d760--00.asm.txt",
+      "bytes": 266,
+      "sha256": "9b0546a1bc24e80f4be998e837c84992d3b136c6aed8d3f42fe15a6f7f111c3b"
+    },
+    {
+      "path": "native/0xc3f20--00.asm.txt",
+      "bytes": 114,
+      "sha256": "c06e5126b3cfadf531ffcce5dc3a4350a74a5ad6ef828eea26e9e19e1a2dc314"
+    },
+    {
+      "path": "native/0xed8b50--00.asm.txt",
+      "bytes": 513,
+      "sha256": "63eeba85aa9fb84231c22fae13d428f7483b9e0dc162c74351493ac34666d428"
+    },
+    {
+      "path": "native/0xf4c2d0--00.asm.txt",
+      "bytes": 1171,
+      "sha256": "152de47fef6881f10a0b9315254d2142188181f2478c2562b7c2342f3f656965"
+    },
+    {
+      "path": "native/0xf4c2d0--01.asm.txt",
+      "bytes": 9560,
+      "sha256": "ff7720d63ee7afa9eba2df0c45a42e49124a1ea0f2a9b71f086e811d237444c3"
+    },
+    {
+      "path": "native/0xf4c2d0--02.asm.txt",
+      "bytes": 541,
+      "sha256": "9997e84d76dd933a0a21e5d5a60bdf369f8309f83d9a759dbc5b75ebafe72c26"
+    },
+    {
+      "path": "native/0xf70540--00.asm.txt",
+      "bytes": 5338,
+      "sha256": "a28a81391b87f76a8a981b0545af1675cc20b868ec7aadcbfe73370744031ed8"
+    },
+    {
+      "path": "native/0xf94320--00.asm.txt",
+      "bytes": 1105,
+      "sha256": "af238daf1ad57ed765bddaf6dff35b533702383ebbfee09a75ca8f6bca38a2e6"
+    },
+    {
+      "path": "native/0xf94320--01.asm.txt",
+      "bytes": 1020,
+      "sha256": "559e3c0844af3a35910b247dfb833a7b59789031bb5ee22d33205106400bb767"
+    },
+    {
+      "path": "native/0xf94320--02.asm.txt",
+      "bytes": 913,
+      "sha256": "988d37ab018239fb6bab421e275c3beb829fc250f40431fd54d108076ae6a4d4"
+    },
+    {
+      "path": "replay.json",
+      "bytes": 36162,
+      "sha256": "661fd09d287d4eb807deea8eb32851b3c3af3307b5af65b2ff3e30201d546cfe"
+    },
+    {
+      "path": "provenance.json",
+      "bytes": 2561,
+      "sha256": "c3b9093f66be74ba8ea256277c221c16e77937bb80b00c9d2bcbacdef770ab53"
+    },
+    {
+      "path": "native-evidence.json",
+      "bytes": 49976,
+      "sha256": "55e6e8e4076f18e183b9dd0b51c5f2f8e7a57447a755de8cc6849fbf288e05e0"
+    }
+  ],
+  "scope": "Ordinary critical roll/consumer, canonical scalar quantizer and neutral health guard; installer and pool minimum overrides are separate",
+  "modifier_cases": [
+    {
+      "stat": "WEAPON_CRIT_CHANCE",
+      "stat_id": 244,
+      "recipe": "minus-99",
+      "base": 0.30000001192092896,
+      "operations": [
+        [
+          3,
+          -0.99,
+          0
+        ]
+      ],
+      "protected_scalar_result": 0.0029999972321093082,
+      "float_query_result": 0.0029999972321093082
+    },
+    {
+      "stat": "WEAPON_CRIT_CHANCE",
+      "stat_id": 244,
+      "recipe": "minus-100",
+      "base": 0.30000001192092896,
+      "operations": [
+        [
+          3,
+          -1,
+          0
+        ]
+      ],
+      "protected_scalar_result": 0.0,
+      "float_query_result": 0.0
+    },
+    {
+      "stat": "WEAPON_CRIT_CHANCE",
+      "stat_id": 244,
+      "recipe": "minus-101",
+      "base": 0.30000001192092896,
+      "operations": [
+        [
+          3,
+          -1.01,
+          0
+        ]
+      ],
+      "protected_scalar_result": -0.0029999972321093082,
+      "float_query_result": -0.0029999972321093082
+    },
+    {
+      "stat": "WEAPON_CRIT_CHANCE",
+      "stat_id": 244,
+      "recipe": "minus-150",
+      "base": 0.30000001192092896,
+      "operations": [
+        [
+          3,
+          -1.5,
+          0
+        ]
+      ],
+      "protected_scalar_result": -0.15000000596046448,
+      "float_query_result": -0.15000000596046448
+    },
+    {
+      "stat": "WEAPON_CRIT_CHANCE",
+      "stat_id": 244,
+      "recipe": "minus-200",
+      "base": 0.30000001192092896,
+      "operations": [
+        [
+          3,
+          -2,
+          0
+        ]
+      ],
+      "protected_scalar_result": -0.30000001192092896,
+      "float_query_result": -0.30000001192092896
+    },
+    {
+      "stat": "WEAPON_CRIT_CHANCE",
+      "stat_id": 244,
+      "recipe": "positive-offset",
+      "base": 0.30000001192092896,
+      "operations": [
+        [
+          3,
+          1.65,
+          0
+        ],
+        [
+          3,
+          -1.2,
+          0
+        ]
+      ],
+      "protected_scalar_result": 0.4350000023841858,
+      "float_query_result": 0.4350000023841858
+    },
+    {
+      "stat": "WEAPON_CRIT_CHANCE",
+      "stat_id": 244,
+      "recipe": "flat-after-percent",
+      "base": 0.30000001192092896,
+      "operations": [
+        [
+          3,
+          -1.5,
+          0
+        ],
+        [
+          0,
+          0.2,
+          0
+        ]
+      ],
+      "protected_scalar_result": 0.04999999701976776,
+      "float_query_result": 0.04999999701976776
+    },
+    {
+      "stat": "WEAPON_CRIT_CHANCE",
+      "stat_id": 244,
+      "recipe": "explicit-minimum",
+      "base": 0.30000001192092896,
+      "operations": [
+        [
+          3,
+          -1.5,
+          0
+        ],
+        [
+          6,
+          0.01,
+          0
+        ]
+      ],
+      "protected_scalar_result": 0.009999999776482582,
+      "float_query_result": 0.009999999776482582
+    },
+    {
+      "stat": "WEAPON_CRIT_DAMAGE",
+      "stat_id": 248,
+      "recipe": "minus-99",
+      "base": 2.0,
+      "operations": [
+        [
+          3,
+          -0.99,
+          0
+        ]
+      ],
+      "protected_scalar_result": 0.019999980926513672,
+      "float_query_result": 0.019999980926513672
+    },
+    {
+      "stat": "WEAPON_CRIT_DAMAGE",
+      "stat_id": 248,
+      "recipe": "minus-100",
+      "base": 2.0,
+      "operations": [
+        [
+          3,
+          -1,
+          0
+        ]
+      ],
+      "protected_scalar_result": 0.0,
+      "float_query_result": 0.0
+    },
+    {
+      "stat": "WEAPON_CRIT_DAMAGE",
+      "stat_id": 248,
+      "recipe": "minus-101",
+      "base": 2.0,
+      "operations": [
+        [
+          3,
+          -1.01,
+          0
+        ]
+      ],
+      "protected_scalar_result": -0.019999980926513672,
+      "float_query_result": -0.019999980926513672
+    },
+    {
+      "stat": "WEAPON_CRIT_DAMAGE",
+      "stat_id": 248,
+      "recipe": "minus-150",
+      "base": 2.0,
+      "operations": [
+        [
+          3,
+          -1.5,
+          0
+        ]
+      ],
+      "protected_scalar_result": -1.0,
+      "float_query_result": -1.0
+    },
+    {
+      "stat": "WEAPON_CRIT_DAMAGE",
+      "stat_id": 248,
+      "recipe": "minus-200",
+      "base": 2.0,
+      "operations": [
+        [
+          3,
+          -2,
+          0
+        ]
+      ],
+      "protected_scalar_result": -2.0,
+      "float_query_result": -2.0
+    },
+    {
+      "stat": "WEAPON_CRIT_DAMAGE",
+      "stat_id": 248,
+      "recipe": "positive-offset",
+      "base": 2.0,
+      "operations": [
+        [
+          3,
+          1.65,
+          0
+        ],
+        [
+          3,
+          -1.2,
+          0
+        ]
+      ],
+      "protected_scalar_result": 2.8999998569488525,
+      "float_query_result": 2.8999998569488525
+    },
+    {
+      "stat": "WEAPON_CRIT_DAMAGE",
+      "stat_id": 248,
+      "recipe": "flat-after-percent",
+      "base": 2.0,
+      "operations": [
+        [
+          3,
+          -1.5,
+          0
+        ],
+        [
+          0,
+          0.2,
+          0
+        ]
+      ],
+      "protected_scalar_result": -0.800000011920929,
+      "float_query_result": -0.800000011920929
+    },
+    {
+      "stat": "WEAPON_CRIT_DAMAGE",
+      "stat_id": 248,
+      "recipe": "explicit-minimum",
+      "base": 2.0,
+      "operations": [
+        [
+          3,
+          -1.5,
+          0
+        ],
+        [
+          6,
+          0.01,
+          0
+        ]
+      ],
+      "protected_scalar_result": 0.009999999776482582,
+      "float_query_result": 0.009999999776482582
+    },
+    {
+      "stat": "WEAPON_DAMAGE_AMOUNT",
+      "stat_id": 253,
+      "recipe": "minus-99",
+      "base": 100.0,
+      "operations": [
+        [
+          3,
+          -0.99,
+          0
+        ]
+      ],
+      "protected_scalar_result": 0.9999990463256836,
+      "float_query_result": 0.9999990463256836
+    },
+    {
+      "stat": "WEAPON_DAMAGE_AMOUNT",
+      "stat_id": 253,
+      "recipe": "minus-100",
+      "base": 100.0,
+      "operations": [
+        [
+          3,
+          -1,
+          0
+        ]
+      ],
+      "protected_scalar_result": 0.0,
+      "float_query_result": 0.0
+    },
+    {
+      "stat": "WEAPON_DAMAGE_AMOUNT",
+      "stat_id": 253,
+      "recipe": "minus-101",
+      "base": 100.0,
+      "operations": [
+        [
+          3,
+          -1.01,
+          0
+        ]
+      ],
+      "protected_scalar_result": -0.9999990463256836,
+      "float_query_result": -0.9999990463256836
+    },
+    {
+      "stat": "WEAPON_DAMAGE_AMOUNT",
+      "stat_id": 253,
+      "recipe": "minus-150",
+      "base": 100.0,
+      "operations": [
+        [
+          3,
+          -1.5,
+          0
+        ]
+      ],
+      "protected_scalar_result": -50.0,
+      "float_query_result": -50.0
+    },
+    {
+      "stat": "WEAPON_DAMAGE_AMOUNT",
+      "stat_id": 253,
+      "recipe": "minus-200",
+      "base": 100.0,
+      "operations": [
+        [
+          3,
+          -2,
+          0
+        ]
+      ],
+      "protected_scalar_result": -100.0,
+      "float_query_result": -100.0
+    },
+    {
+      "stat": "WEAPON_DAMAGE_AMOUNT",
+      "stat_id": 253,
+      "recipe": "positive-offset",
+      "base": 100.0,
+      "operations": [
+        [
+          3,
+          1.65,
+          0
+        ],
+        [
+          3,
+          -1.2,
+          0
+        ]
+      ],
+      "protected_scalar_result": 145.0,
+      "float_query_result": 145.0
+    },
+    {
+      "stat": "WEAPON_DAMAGE_AMOUNT",
+      "stat_id": 253,
+      "recipe": "flat-after-percent",
+      "base": 100.0,
+      "operations": [
+        [
+          3,
+          -1.5,
+          0
+        ],
+        [
+          0,
+          0.2,
+          0
+        ]
+      ],
+      "protected_scalar_result": -49.79999923706055,
+      "float_query_result": -49.79999923706055
+    },
+    {
+      "stat": "WEAPON_DAMAGE_AMOUNT",
+      "stat_id": 253,
+      "recipe": "explicit-minimum",
+      "base": 100.0,
+      "operations": [
+        [
+          3,
+          -1.5,
+          0
+        ],
+        [
+          6,
+          0.01,
+          0
+        ]
+      ],
+      "protected_scalar_result": 0.009999999776482582,
+      "float_query_result": 0.009999999776482582
+    }
+  ],
+  "critical_cases": [
+    {
+      "chance": -2,
+      "critical_multiplier": 0.5,
+      "rng_before": 0,
+      "rng_after": 0,
+      "rng_sample": null,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": -0.5,
+      "critical_multiplier": 0.5,
+      "rng_before": 0,
+      "rng_after": 0,
+      "rng_sample": null,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0,
+      "critical_multiplier": 0.5,
+      "rng_before": 0,
+      "rng_after": 0,
+      "rng_sample": null,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0.25,
+      "critical_multiplier": 0.5,
+      "rng_before": 0,
+      "rng_after": 1442695040888963407,
+      "rng_sample": 0.31283456087112427,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0.5,
+      "critical_multiplier": 0.5,
+      "rng_before": 0,
+      "rng_after": 1442695040888963407,
+      "rng_sample": 0.31283456087112427,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 50.0
+    },
+    {
+      "chance": 1,
+      "critical_multiplier": 0.5,
+      "rng_before": 0,
+      "rng_after": 0,
+      "rng_sample": null,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 50.0
+    },
+    {
+      "chance": 1.25,
+      "critical_multiplier": 0.5,
+      "rng_before": 0,
+      "rng_after": 1442695040888963407,
+      "rng_sample": 0.31283456087112427,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 50.0
+    },
+    {
+      "chance": 2,
+      "critical_multiplier": 0.5,
+      "rng_before": 0,
+      "rng_after": 0,
+      "rng_sample": null,
+      "tier": 2,
+      "raw_critical_factor": 0.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 2.5,
+      "critical_multiplier": 0.5,
+      "rng_before": 0,
+      "rng_after": 1442695040888963407,
+      "rng_sample": 0.31283456087112427,
+      "tier": 3,
+      "raw_critical_factor": -0.5,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 3,
+      "critical_multiplier": 0.5,
+      "rng_before": 0,
+      "rng_after": 0,
+      "rng_sample": null,
+      "tier": 3,
+      "raw_critical_factor": -0.5,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": -2,
+      "critical_multiplier": 0.5,
+      "rng_before": 1,
+      "rng_after": 1,
+      "rng_sample": null,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": -0.5,
+      "critical_multiplier": 0.5,
+      "rng_before": 1,
+      "rng_after": 1,
+      "rng_sample": null,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0,
+      "critical_multiplier": 0.5,
+      "rng_before": 1,
+      "rng_after": 1,
+      "rng_sample": null,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0.25,
+      "critical_multiplier": 0.5,
+      "rng_before": 1,
+      "rng_after": 7806831264735756412,
+      "rng_sample": 0.6928366422653198,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0.5,
+      "critical_multiplier": 0.5,
+      "rng_before": 1,
+      "rng_after": 7806831264735756412,
+      "rng_sample": 0.6928366422653198,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 1,
+      "critical_multiplier": 0.5,
+      "rng_before": 1,
+      "rng_after": 1,
+      "rng_sample": null,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 50.0
+    },
+    {
+      "chance": 1.25,
+      "critical_multiplier": 0.5,
+      "rng_before": 1,
+      "rng_after": 7806831264735756412,
+      "rng_sample": 0.6928366422653198,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 50.0
+    },
+    {
+      "chance": 2,
+      "critical_multiplier": 0.5,
+      "rng_before": 1,
+      "rng_after": 1,
+      "rng_sample": null,
+      "tier": 2,
+      "raw_critical_factor": 0.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 2.5,
+      "critical_multiplier": 0.5,
+      "rng_before": 1,
+      "rng_after": 7806831264735756412,
+      "rng_sample": 0.6928366422653198,
+      "tier": 2,
+      "raw_critical_factor": 0.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 3,
+      "critical_multiplier": 0.5,
+      "rng_before": 1,
+      "rng_after": 1,
+      "rng_sample": null,
+      "tier": 3,
+      "raw_critical_factor": -0.5,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": -2,
+      "critical_multiplier": 0.5,
+      "rng_before": 2,
+      "rng_after": 2,
+      "rng_sample": null,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": -0.5,
+      "critical_multiplier": 0.5,
+      "rng_before": 2,
+      "rng_after": 2,
+      "rng_sample": null,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0,
+      "critical_multiplier": 0.5,
+      "rng_before": 2,
+      "rng_after": 2,
+      "rng_sample": null,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0.25,
+      "critical_multiplier": 0.5,
+      "rng_before": 2,
+      "rng_after": 14170967488582549417,
+      "rng_sample": 0.07283872365951538,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 50.0
+    },
+    {
+      "chance": 0.5,
+      "critical_multiplier": 0.5,
+      "rng_before": 2,
+      "rng_after": 14170967488582549417,
+      "rng_sample": 0.07283872365951538,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 50.0
+    },
+    {
+      "chance": 1,
+      "critical_multiplier": 0.5,
+      "rng_before": 2,
+      "rng_after": 2,
+      "rng_sample": null,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 50.0
+    },
+    {
+      "chance": 1.25,
+      "critical_multiplier": 0.5,
+      "rng_before": 2,
+      "rng_after": 14170967488582549417,
+      "rng_sample": 0.07283872365951538,
+      "tier": 2,
+      "raw_critical_factor": 0.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 2,
+      "critical_multiplier": 0.5,
+      "rng_before": 2,
+      "rng_after": 2,
+      "rng_sample": null,
+      "tier": 2,
+      "raw_critical_factor": 0.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 2.5,
+      "critical_multiplier": 0.5,
+      "rng_before": 2,
+      "rng_after": 14170967488582549417,
+      "rng_sample": 0.07283872365951538,
+      "tier": 3,
+      "raw_critical_factor": -0.5,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 3,
+      "critical_multiplier": 0.5,
+      "rng_before": 2,
+      "rng_after": 2,
+      "rng_sample": null,
+      "tier": 3,
+      "raw_critical_factor": -0.5,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": -2,
+      "critical_multiplier": 0.5,
+      "rng_before": 123456789,
+      "rng_after": 123456789,
+      "rng_sample": null,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": -0.5,
+      "critical_multiplier": 0.5,
+      "rng_before": 123456789,
+      "rng_after": 123456789,
+      "rng_sample": null,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0,
+      "critical_multiplier": 0.5,
+      "rng_before": 123456789,
+      "rng_after": 123456789,
+      "rng_sample": null,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0.25,
+      "critical_multiplier": 0.5,
+      "rng_before": 123456789,
+      "rng_after": 18192599831048943872,
+      "rng_sample": 0.9448912143707275,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0.5,
+      "critical_multiplier": 0.5,
+      "rng_before": 123456789,
+      "rng_after": 18192599831048943872,
+      "rng_sample": 0.9448912143707275,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 1,
+      "critical_multiplier": 0.5,
+      "rng_before": 123456789,
+      "rng_after": 123456789,
+      "rng_sample": null,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 50.0
+    },
+    {
+      "chance": 1.25,
+      "critical_multiplier": 0.5,
+      "rng_before": 123456789,
+      "rng_after": 18192599831048943872,
+      "rng_sample": 0.9448912143707275,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 50.0
+    },
+    {
+      "chance": 2,
+      "critical_multiplier": 0.5,
+      "rng_before": 123456789,
+      "rng_after": 123456789,
+      "rng_sample": null,
+      "tier": 2,
+      "raw_critical_factor": 0.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 2.5,
+      "critical_multiplier": 0.5,
+      "rng_before": 123456789,
+      "rng_after": 18192599831048943872,
+      "rng_sample": 0.9448912143707275,
+      "tier": 2,
+      "raw_critical_factor": 0.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 3,
+      "critical_multiplier": 0.5,
+      "rng_before": 123456789,
+      "rng_after": 123456789,
+      "rng_sample": null,
+      "tier": 3,
+      "raw_critical_factor": -0.5,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": -0.5,
+      "critical_multiplier": -1,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": -0.5,
+      "critical_multiplier": 0,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": -0.5,
+      "critical_multiplier": 0.5,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": -0.5,
+      "critical_multiplier": 1,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": -0.5,
+      "critical_multiplier": 2,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0,
+      "critical_multiplier": -1,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0,
+      "critical_multiplier": 0,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0,
+      "critical_multiplier": 0.5,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0,
+      "critical_multiplier": 1,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 0,
+      "critical_multiplier": 2,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 1,
+      "critical_multiplier": -1,
+      "tier": 1,
+      "raw_critical_factor": -1.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 1,
+      "critical_multiplier": 0,
+      "tier": 1,
+      "raw_critical_factor": 0.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 1,
+      "critical_multiplier": 0.5,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 50.0
+    },
+    {
+      "chance": 1,
+      "critical_multiplier": 1,
+      "tier": 1,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 1,
+      "critical_multiplier": 2,
+      "tier": 1,
+      "raw_critical_factor": 2.0,
+      "source_after_critical": 200.0
+    },
+    {
+      "chance": 2,
+      "critical_multiplier": -1,
+      "tier": 2,
+      "raw_critical_factor": -3.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 2,
+      "critical_multiplier": 0,
+      "tier": 2,
+      "raw_critical_factor": -1.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 2,
+      "critical_multiplier": 0.5,
+      "tier": 2,
+      "raw_critical_factor": 0.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 2,
+      "critical_multiplier": 1,
+      "tier": 2,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 2,
+      "critical_multiplier": 2,
+      "tier": 2,
+      "raw_critical_factor": 3.0,
+      "source_after_critical": 300.0
+    },
+    {
+      "chance": 3,
+      "critical_multiplier": -1,
+      "tier": 3,
+      "raw_critical_factor": -5.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 3,
+      "critical_multiplier": 0,
+      "tier": 3,
+      "raw_critical_factor": -2.0,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 3,
+      "critical_multiplier": 0.5,
+      "tier": 3,
+      "raw_critical_factor": -0.5,
+      "source_after_critical": 0.0
+    },
+    {
+      "chance": 3,
+      "critical_multiplier": 1,
+      "tier": 3,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0
+    },
+    {
+      "chance": 3,
+      "critical_multiplier": 2,
+      "tier": 3,
+      "raw_critical_factor": 4.0,
+      "source_after_critical": 400.0
+    },
+    {
+      "chance": -0.5,
+      "critical_multiplier": 2,
+      "preset_tier": 1,
+      "tier": 1,
+      "raw_critical_factor": 2.0,
+      "source_after_critical": 200.0
+    },
+    {
+      "chance": -0.5,
+      "critical_multiplier": 2,
+      "preset_tier": 2,
+      "tier": 2,
+      "raw_critical_factor": 3.0,
+      "source_after_critical": 300.0
+    }
+  ],
+  "damage_cases": [
+    {
+      "supplied_source": -100,
+      "recipient_float": -100.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "supplied_source": -1.5,
+      "recipient_float": -1.5,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "supplied_source": -0.51,
+      "recipient_float": -0.5099999904632568,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "supplied_source": -0.5,
+      "recipient_float": -0.5,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "supplied_source": -0.49,
+      "recipient_float": -0.49000000953674316,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "supplied_source": 0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "supplied_source": 0.49,
+      "recipient_float": 0.49000000953674316,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "supplied_source": 0.5,
+      "recipient_float": 0.5,
+      "health_damage_after_guard": 1,
+      "health_before": 500,
+      "health_after": 499
+    },
+    {
+      "supplied_source": 0.51,
+      "recipient_float": 0.5099999904632568,
+      "health_damage_after_guard": 1,
+      "health_before": 500,
+      "health_after": 499
+    },
+    {
+      "supplied_source": 1.5,
+      "recipient_float": 1.5,
+      "health_damage_after_guard": 2,
+      "health_before": 500,
+      "health_after": 498
+    },
+    {
+      "supplied_source": 100,
+      "recipient_float": 100.0,
+      "health_damage_after_guard": 100,
+      "health_before": 500,
+      "health_after": 400
+    },
+    {
+      "source_bonus": -0.99,
+      "source_after_stat_253": 0.9999990463256836,
+      "recipient_float": 0.9999990463256836,
+      "health_damage_after_guard": 1,
+      "health_before": 500,
+      "health_after": 499
+    },
+    {
+      "source_bonus": -1,
+      "source_after_stat_253": 0.0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_bonus": -1.01,
+      "source_after_stat_253": -0.9999990463256836,
+      "recipient_float": -0.9999990463256836,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_bonus": -1.5,
+      "source_after_stat_253": -50.0,
+      "recipient_float": -50.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_bonus": -2,
+      "source_after_stat_253": -100.0,
+      "recipient_float": -100.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": -100,
+      "chance": 0,
+      "critical_multiplier": -1,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": -100.0,
+      "recipient_float": -100.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": -100,
+      "chance": 1,
+      "critical_multiplier": 0.5,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": -50.0,
+      "recipient_float": -50.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": -100,
+      "chance": 2,
+      "critical_multiplier": 0.5,
+      "tier": 2,
+      "raw_critical_factor": 0.0,
+      "source_after_critical": 0.0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": -100,
+      "chance": 3,
+      "critical_multiplier": 0.5,
+      "tier": 3,
+      "raw_critical_factor": -0.5,
+      "source_after_critical": 0.0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": -100,
+      "chance": 1,
+      "critical_multiplier": -1,
+      "tier": 1,
+      "raw_critical_factor": -1.0,
+      "source_after_critical": 0.0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": 0,
+      "chance": 0,
+      "critical_multiplier": -1,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 0.0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": 0,
+      "chance": 1,
+      "critical_multiplier": 0.5,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 0.0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": 0,
+      "chance": 2,
+      "critical_multiplier": 0.5,
+      "tier": 2,
+      "raw_critical_factor": 0.0,
+      "source_after_critical": 0.0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": 0,
+      "chance": 3,
+      "critical_multiplier": 0.5,
+      "tier": 3,
+      "raw_critical_factor": -0.5,
+      "source_after_critical": 0.0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": 0,
+      "chance": 1,
+      "critical_multiplier": -1,
+      "tier": 1,
+      "raw_critical_factor": -1.0,
+      "source_after_critical": 0.0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": 100,
+      "chance": 0,
+      "critical_multiplier": -1,
+      "tier": 0,
+      "raw_critical_factor": 1.0,
+      "source_after_critical": 100.0,
+      "recipient_float": 100.0,
+      "health_damage_after_guard": 100,
+      "health_before": 500,
+      "health_after": 400
+    },
+    {
+      "source_before_critical": 100,
+      "chance": 1,
+      "critical_multiplier": 0.5,
+      "tier": 1,
+      "raw_critical_factor": 0.5,
+      "source_after_critical": 50.0,
+      "recipient_float": 50.0,
+      "health_damage_after_guard": 50,
+      "health_before": 500,
+      "health_after": 450
+    },
+    {
+      "source_before_critical": 100,
+      "chance": 2,
+      "critical_multiplier": 0.5,
+      "tier": 2,
+      "raw_critical_factor": 0.0,
+      "source_after_critical": 0.0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": 100,
+      "chance": 3,
+      "critical_multiplier": 0.5,
+      "tier": 3,
+      "raw_critical_factor": -0.5,
+      "source_after_critical": 0.0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "source_before_critical": 100,
+      "chance": 1,
+      "critical_multiplier": -1,
+      "tier": 1,
+      "raw_critical_factor": -1.0,
+      "source_after_critical": 0.0,
+      "recipient_float": 0.0,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    }
+  ],
+  "quantization_cases": [
+    {
+      "input_critical_multiplier": -1,
+      "quantized_critical_multiplier": 0.0,
+      "unchanged_source_scalar": -100,
+      "unchanged_critical_chance": -0.5
+    },
+    {
+      "input_critical_multiplier": 0,
+      "quantized_critical_multiplier": 0.0,
+      "unchanged_source_scalar": -100,
+      "unchanged_critical_chance": -0.5
+    },
+    {
+      "input_critical_multiplier": 0.499,
+      "quantized_critical_multiplier": 0.5001221299171448,
+      "unchanged_source_scalar": -100,
+      "unchanged_critical_chance": -0.5
+    },
+    {
+      "input_critical_multiplier": 0.5,
+      "quantized_critical_multiplier": 0.5001221299171448,
+      "unchanged_source_scalar": -100,
+      "unchanged_critical_chance": -0.5
+    },
+    {
+      "input_critical_multiplier": 0.501,
+      "quantized_critical_multiplier": 0.5001221299171448,
+      "unchanged_source_scalar": -100,
+      "unchanged_critical_chance": -0.5
+    },
+    {
+      "input_critical_multiplier": 1,
+      "quantized_critical_multiplier": 1.0002442598342896,
+      "unchanged_source_scalar": -100,
+      "unchanged_critical_chance": -0.5
+    },
+    {
+      "input_critical_multiplier": 2,
+      "quantized_critical_multiplier": 2.000488519668579,
+      "unchanged_source_scalar": -100,
+      "unchanged_critical_chance": -0.5
+    },
+    {
+      "input_critical_multiplier": 2.2,
+      "quantized_critical_multiplier": 2.2036631107330322,
+      "unchanged_source_scalar": -100,
+      "unchanged_critical_chance": -0.5
+    },
+    {
+      "input_critical_multiplier": 32,
+      "quantized_critical_multiplier": 32.0,
+      "unchanged_source_scalar": -100,
+      "unchanged_critical_chance": -0.5
+    },
+    {
+      "input_critical_multiplier": 100,
+      "quantized_critical_multiplier": 32.0,
+      "unchanged_source_scalar": -100,
+      "unchanged_critical_chance": -0.5
+    },
+    {
+      "nominal_critical_multiplier_before_quantization": 0.5,
+      "critical_multiplier_at_roll": 0.5001221299171448,
+      "source_before_critical": 100,
+      "tier": 1,
+      "raw_critical_factor": 0.5001221299171448,
+      "source_after_critical": 50.01221466064453
+    },
+    {
+      "nominal_critical_multiplier_before_quantization": 0.5,
+      "critical_multiplier_at_roll": 0.5001221299171448,
+      "source_before_critical": 100,
+      "tier": 2,
+      "raw_critical_factor": 0.0002442598342895508,
+      "source_after_critical": 0.024425983428955078,
+      "recipient_float": 0.024425983428955078,
+      "health_damage_after_guard": 0,
+      "health_before": 500,
+      "health_after": 500
+    },
+    {
+      "nominal_critical_multiplier_before_quantization": 0.5,
+      "critical_multiplier_at_roll": 0.5001221299171448,
+      "source_before_critical": 100,
+      "tier": 3,
+      "raw_critical_factor": -0.4996335506439209,
+      "source_after_critical": 0.0
+    },
+    {
+      "nominal_critical_multiplier_before_quantization": 0.5,
+      "critical_multiplier_at_roll": 0.5001221299171448,
+      "source_before_critical": 10000,
+      "tier": 1,
+      "raw_critical_factor": 0.5001221299171448,
+      "source_after_critical": 5001.22119140625
+    },
+    {
+      "nominal_critical_multiplier_before_quantization": 0.5,
+      "critical_multiplier_at_roll": 0.5001221299171448,
+      "source_before_critical": 10000,
+      "tier": 2,
+      "raw_critical_factor": 0.0002442598342895508,
+      "source_after_critical": 2.442598342895508,
+      "recipient_float": 2.442598342895508,
+      "health_damage_after_guard": 2,
+      "health_before": 500,
+      "health_after": 498
+    },
+    {
+      "nominal_critical_multiplier_before_quantization": 0.5,
+      "critical_multiplier_at_roll": 0.5001221299171448,
+      "source_before_critical": 10000,
+      "tier": 3,
+      "raw_critical_factor": -0.4996335506439209,
+      "source_after_critical": 0.0
+    }
+  ],
+  "emission_gate_cases": [
+    {
+      "source_damage": -100,
+      "forced_electricity_count": 0,
+      "selected_rva": "0x88b4c4",
+      "scope": "One emission gate only; caller/loadout route not claimed universal"
+    },
+    {
+      "source_damage": -100,
+      "forced_electricity_count": 1,
+      "selected_rva": "0x88b405",
+      "scope": "One emission gate only; caller/loadout route not claimed universal"
+    },
+    {
+      "source_damage": 0,
+      "forced_electricity_count": 0,
+      "selected_rva": "0x88b4c4",
+      "scope": "One emission gate only; caller/loadout route not claimed universal"
+    },
+    {
+      "source_damage": 0,
+      "forced_electricity_count": 1,
+      "selected_rva": "0x88b405",
+      "scope": "One emission gate only; caller/loadout route not claimed universal"
+    },
+    {
+      "source_damage": 100,
+      "forced_electricity_count": 0,
+      "selected_rva": "0x88b405",
+      "scope": "One emission gate only; caller/loadout route not claimed universal"
+    },
+    {
+      "source_damage": 100,
+      "forced_electricity_count": 1,
+      "selected_rva": "0x88b405",
+      "scope": "One emission gate only; caller/loadout route not claimed universal"
+    }
+  ]
+}

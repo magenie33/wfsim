@@ -936,18 +936,20 @@ fn every_spool_reconciles_with_its_own_page() {
             .attack
             .sustained_fire_rate
             .unwrap_or_else(|| panic!("{id} lost its spool"));
-        assert_eq!((s.start, s.end, s.over_shots), (*start, *end, *over), "{id}");
-        assert!(s.start > 0.0 && s.end > 0.0, "{id}");
+        let (s_start, s_end, s_over) = s.display_span();
+        assert!(crate::rules::upgrades::near_f32(s_start, *start), "{id}");
+        assert_eq!((s_end, s_over), (*end, *over), "{id}");
+        assert!(s_start > 0.0 && s_end > 0.0, "{id}");
         if *full_at == 0 {
             continue; // the faller: its page gives a span, not a count
         }
         // THE TWO PUBLISHED FIGURES, both from `over_shots`.
         assert!(
-            ((s.end - s.start) / s.over_shots - per_shot).abs() < 5e-5,
+            ((s_end - s_start) / s_over - per_shot).abs() < 5e-5,
             "{id}: {} a shot, page says {per_shot}",
-            (s.end - s.start) / s.over_shots
+            (s_end - s_start) / s_over
         );
-        assert_eq!(s.over_shots.ceil() as i64 + 1, *full_at, "{id}: full-at shot");
+        assert_eq!(s_over.ceil() as i64 + 1, *full_at, "{id}: full-at shot");
     }
     // …and every one of them owes the reader the play pattern it assumes.
     let mut with = 0;

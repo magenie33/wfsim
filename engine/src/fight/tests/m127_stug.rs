@@ -17,8 +17,10 @@ fn measured(id: &str, shots: u32, hornet: bool, head: bool) -> FightParams {
     p.foe.base_health = 1e15;
     // The reported numbers are non-crits; status ticks are not this reading.
     let b = p.blob.as_mut().expect("both forms carry their entities");
+    b.hit.critical_inputs = None;
     b.hit.crit_chance = 0.0;
     b.hit.status_chance = 0.0;
+    b.explosion.critical_inputs = None;
     b.explosion.crit_chance = 0.0;
     b.explosion.status_chance = 0.0;
     p
@@ -286,7 +288,9 @@ fn m127_acuity_explosion_uses_critical_headshots_without_weakpoint_damage() {
         for part in &mut p.body_parts { part.aim_weight = if part.is_head { 1.0 } else { 0.0 }; }
         let b = p.blob.as_mut().unwrap();
         // Select each reported tier; the reading supplies the tier, not its frequency.
+        b.explosion.critical_inputs = None;
         b.explosion.crit_chance = tier;
+        b.explosion.critical_inputs = None;
         b.explosion.base_crit_chance = 0.0;
         let rec = record(&p, 127, 0.0, f64::INFINITY, 100_000, 0);
         let got: Vec<_> = rec.events().iter().filter_map(|e| match &e.kind {
@@ -330,7 +334,9 @@ fn m127_galvanized_shots_damage_payload_is_excluded_from_both_parts() {
             p.foe.base_health = 1e15;
             p.co_stack.as_mut().unwrap().initial_stacks = if stacked { 3 } else { 0 };
             let b = p.blob.as_mut().unwrap();
+            b.hit.critical_inputs = None;
             b.hit.crit_chance = 0.0;
+            b.explosion.critical_inputs = None;
             b.explosion.crit_chance = 0.0;
             b.hit.status_chance = 0.0;
             b.explosion.status_chance = 0.0;
@@ -350,14 +356,16 @@ fn m127_galvanized_shots_damage_payload_is_excluded_from_both_parts() {
 fn m127_cold_critical_damage_reaches_only_the_main_explosion() {
     let mut p = measured("stug", 1, false, false);
     let b = p.blob.as_mut().unwrap();
+    b.hit.critical_inputs = None;
     b.hit.crit_chance = 1.0;
+    b.explosion.critical_inputs = None;
     b.explosion.crit_chance = 1.0;
     b.hit.forced_procs = crate::rules::damage::ForcedProcs::from_types([DamageType::Cold]);
     let cd = b.explosion.crit_damage;
     let got = numbers(&p);
-    assert!((got[0].2 - 304.0 * cd).abs() < 1e-8);
-    assert!((got[1].2 - got[0].2).abs() < 1e-8, "the attached tick excludes Cold");
-    assert!((got[2].2 - 375.0 * (cd + 0.15)).abs() < 1e-8, "two Cold stacks reach the direct explosion");
+    assert!(crate::rules::upgrades::near_f32(got[0].2, 304.0 * cd));
+    assert!(crate::rules::upgrades::near_f32(got[1].2, got[0].2), "the attached tick excludes Cold");
+    assert!(crate::rules::upgrades::near_f32(got[2].2, 375.0 * (cd + 0.15)), "two Cold stacks reach the direct explosion");
 }
 
 #[test]

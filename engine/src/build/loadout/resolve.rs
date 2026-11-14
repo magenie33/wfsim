@@ -1,5 +1,7 @@
 use super::*;
 use crate::rules::damage::quantize_base_crit_damage;
+use crate::rules::critical::CriticalInputs;
+use crate::rules::upgrades::{relative_for, stacking_add, UpgradeType};
 
 /// HOW MUCH BIGGER A SLAM IS FOR HAVING BEEN DROPPED FROM HEIGHT.
 ///
@@ -464,15 +466,15 @@ pub fn resolve_for(
                 ModEffect::TennoScaled { stat, above, unit, per_unit, cap, grant } => {
                     tenno_scaled.push(TennoScaledTerm { stat, above, unit, per_unit, cap, grant });
                 }
-                ModEffect::BaseDamage(v) => base_damage += v,
+                ModEffect::BaseDamage(v) => base_damage = stacking_add(base_damage, v),
                 ModEffect::BaseDamageIfNoEnemyWithin { bonus, metres } => {
                     base_damage_if_no_enemy_within.push((bonus, metres));
                 }
                 ModEffect::BaseDamageBeyondTargetRange { bonus, metres } => {
                     base_damage_beyond_target_range.push((bonus, metres));
                 }
-                ModEffect::Multishot(v) => multishot += v,
-                ModEffect::CritChance(v) => cc += v,
+                ModEffect::Multishot(v) => multishot = stacking_add(multishot, v),
+                ModEffect::CritChance(v) => cc = stacking_add(cc, v),
                 // The per-tendril halves do NOT join `cc`/`sc` here: their
                 // size depends on how many tendrils are up, which is a fact
                 // about the fight and not about the build. They travel to the
@@ -572,14 +574,14 @@ pub fn resolve_for(
                 ModEffect::SyndicateRadial { syndicate, .. } => {
                     syndicate_radial = crate::data::syndicates::get(syndicate).copied();
                 }
-                ModEffect::CritDamage(v) => cd += v,
-                ModEffect::StatusChance(v) => sc += v,
+                ModEffect::CritDamage(v) => cd = stacking_add(cd, v),
+                ModEffect::StatusChance(v) => sc = stacking_add(sc, v),
                 ModEffect::PostModStatusChance(v) => post_mod_status_chance += v,
                 // "(x2 for Bows)" is on the CARD of every fire-rate mod, so it
                 // is the mod's own bonus that doubles — penalties included
                 // (Critical Delay reads −40% on a bow). Buff-granted fire rate
                 // joins the bucket further down UNDOUBLED: no such card says it.
-                ModEffect::FireRate(v) => fr += v * base.fire_rate_mod_multiplier,
+                ModEffect::FireRate(v) => fr = stacking_add(fr, v * base.fire_rate_mod_multiplier),
                 // ONE CARD, so the last one wins rather than the two adding —
                 // a build cannot hold two Jahus, and a rule for a case that
                 // cannot arise is a rule nobody can check.
@@ -599,7 +601,7 @@ pub fn resolve_for(
                 // The draw's own bucket. `fire_rate_mod_multiplier` is the
                 // bow x2, which belongs to fire-rate mods and not to this.
                 ModEffect::ChargeRate(v) => cr += v,
-                ModEffect::ReloadSpeed(v) => rl += v,
+                ModEffect::ReloadSpeed(v) => rl = stacking_add(rl, v),
                 ModEffect::StatusDamage(v) => status_damage += v,
                 // Independent of everything else: it is its own roll on a
                 // crit, so it is its own bucket rather than joining status.
@@ -978,17 +980,15 @@ pub fn resolve_for(
     // modded values. No weapon carries both — the Dera has one and the
     // Cestra/Sicarus/Vectis the other — so the order cannot matter, and
     // computing them this way means it never will.
-    let modded_cc_pre = (base.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + post_mod_cc_extra)).max(0.0);
-    let modded_sc_pre = (base.base_status_chance * (1.0 + sc)
-        + base.post_mod_status_chance + post_mod_status_chance).max(0.0);
+    let modded_cc_pre = relative_for(UpgradeType::WEAPON_CRIT_CHANCE, base.base_crit_chance, cc, base.post_mod_crit_chance + post_mod_cc_extra);
+    let modded_sc_pre = relative_for(UpgradeType::WEAPON_PROC_CHANCE, base.base_status_chance, sc, base.post_mod_status_chance + post_mod_status_chance);
     let derived = |spec: Option<(f64, f64)>, from: f64| -> f64 {
         spec.map_or(0.0, |(rate, cap)| (rate * from).min(cap))
     };
     let cc_from_sc = derived(base.base_crit_from_status, modded_sc_pre);
     let sc_from_cc = derived(base.base_status_from_crit, modded_cc_pre);
 
-    let resolved_cc =
-        ((base.base_crit_chance + cc_from_sc) * (1.0 + cc) + (base.post_mod_crit_chance + post_mod_cc_extra)).max(0.0);
+    let resolved_cc = relative_for(UpgradeType::WEAPON_CRIT_CHANCE, base.base_crit_chance + cc_from_sc, cc, base.post_mod_crit_chance + post_mod_cc_extra);
     let prelude_cd = match base.crit_multiplier_below_crit_chance {
         Some((bonus, below)) if resolved_cc < below => bonus,
         _ => 0.0,
@@ -1146,8 +1146,9 @@ pub fn resolve_for(
             converted_base.add(to, amount);
             &converted_base
         } else { base_vector };
-        let modified_base = base_vector.total() * (1.0 + base_damage);
-        let scale = 1.0 + base_damage;
+        let original_base = base_vector.total();
+        let modified_base = relative_for(UpgradeType::WEAPON_DAMAGE_AMOUNT, original_base, base_damage, 0.0);
+        let scale = if original_base != 0.0 { modified_base / original_base } else { 1.0 + base_damage };
         let mut physical = DamageVector::new();
         let mut input = ElementalInput::default();
         for (t, v) in base_vector.iter_nonzero() {
@@ -1155,8 +1156,7 @@ pub fn resolve_for(
                 input.innate.push((t, v * scale));
             } else {
                 // Physical (IPS): base_t × (1 + Σ physical mods) × (1 + base dmg).
-                // `scale` carries the base-damage multiplier; the physical bucket is
-                // multiplicative with it (wiki Damage/Calculation).
+                // The physical bucket follows the source damage query.
                 let pb = phys_bonus.iter().find(|(a, _)| *a == t).map_or(0.0, |(_, x)| *x);
                 physical.add(t, v * scale * (1.0 + pb).max(0.0));
             }
@@ -1296,24 +1296,22 @@ pub fn resolve_for(
         // half of it.
         let (rd, rmb) = build_in(&r.base_vector.scale(charge_scale), None, base_damage, true, 0.0);
         ResolvedRadial {
+            critical_inputs: Some(CriticalInputs::selected(r.base_crit_chance, quantize_base_crit_damage(r.base_crit_damage),
+                cc + if r.blast_kind == crate::model::BlastKind::InFlight { cc_heavy_again } else { 0.0 }, cd,
+                base.post_mod_crit_chance + post_mod_cc_extra, fb.final_crit_damage)),
             delay_seconds: r.delay_seconds,
             blast_kind: r.blast_kind,
             damage: rd,
             modified_base: rmb,
             // The post-mod flat layer (Elemental Excess) is a WEAPON stat
             // change, so the explosion takes it too.
-            crit_chance: (r.base_crit_chance
-                * (1.0
-                    + cc
-                    + if r.blast_kind == crate::model::BlastKind::InFlight { cc_heavy_again } else { 0.0 })
-                + (base.post_mod_crit_chance + post_mod_cc_extra))
-                .max(0.0),
-            crit_damage: quantize_base_crit_damage(r.base_crit_damage) * (1.0 + cd) + fb.final_crit_damage,
+            crit_chance: relative_for(UpgradeType::WEAPON_CRIT_CHANCE, r.base_crit_chance,
+                cc + if r.blast_kind == crate::model::BlastKind::InFlight { cc_heavy_again } else { 0.0 },
+                base.post_mod_crit_chance + post_mod_cc_extra),
+            crit_damage: relative_for(UpgradeType::WEAPON_CRIT_DAMAGE, quantize_base_crit_damage(r.base_crit_damage), cd, fb.final_crit_damage),
             base_crit_chance: r.base_crit_chance,
             base_crit_damage: quantize_base_crit_damage(r.base_crit_damage),
-            status_chance: (r.base_status_chance * (1.0 + sc) + base.post_mod_status_chance
-                + post_mod_status_chance)
-                .max(0.0),
+            status_chance: relative_for(UpgradeType::WEAPON_PROC_CHANCE, r.base_status_chance, sc, base.post_mod_status_chance + post_mod_status_chance).max(0.0),
             base_status_chance: r.base_status_chance,
             forced_procs: r.forced_procs,
             // Blast RANGE mods scale the radius; the falloff FLOOR is
@@ -1499,6 +1497,8 @@ pub fn resolve_for(
             (scaled, total)
         };
         ResolvedLingering {
+            critical_inputs: f.can_crit.then(|| CriticalInputs::selected(f.base_crit_chance, quantize_base_crit_damage(f.base_crit_damage),
+                cc, cd, base.post_mod_crit_chance + post_mod_cc_extra, fb.final_crit_damage)),
             heavy_damage_mods_apply: base.heavy_damage_mods_apply,
             melee_scaling: f.melee_scaling,
             damage: fd,
@@ -1508,15 +1508,13 @@ pub fn resolve_for(
             // DAMAGE bucket still multiplied a 1.0 up to 2.2, and a post-mod
             // additive chance would then have something to spend it on.
             crit_chance: if f.can_crit {
-                (f.base_crit_chance * (1.0 + cc) + (base.post_mod_crit_chance + post_mod_cc_extra))
-                    .max(0.0)
+                relative_for(UpgradeType::WEAPON_CRIT_CHANCE, f.base_crit_chance, cc, base.post_mod_crit_chance + post_mod_cc_extra)
             } else {
                 0.0
             },
-            crit_damage: if f.can_crit { quantize_base_crit_damage(f.base_crit_damage) * (1.0 + cd) + fb.final_crit_damage } else { 1.0 },
+            crit_damage: if f.can_crit { relative_for(UpgradeType::WEAPON_CRIT_DAMAGE, quantize_base_crit_damage(f.base_crit_damage), cd, fb.final_crit_damage) } else { 1.0 },
             status_chance: if f.status_mods_apply {
-                (f.base_status_chance * (1.0 + sc) + base.post_mod_status_chance
-                    + post_mod_status_chance).max(0.0)
+                relative_for(UpgradeType::WEAPON_PROC_CHANCE, f.base_status_chance, sc, base.post_mod_status_chance + post_mod_status_chance).max(0.0)
             } else {
                 f.base_status_chance
             },
@@ -1709,6 +1707,14 @@ pub fn resolve_for(
             swing_seconds: first.map(|h| h.delay_seconds).sum(),
         }
     }).or(base.heavy).filter(|_| base.tennokai_can_convert || base.form == crate::model::FormKind::Heavy);
+    let critical_inputs = {
+            let selected = CriticalInputs::selected(base.base_crit_chance + cc_from_sc,
+                quantize_base_crit_damage(base.base_crit_damage + prelude_cd + gate(GatedGrant::BaseCritDamage)),
+                cc, cd, base.post_mod_crit_chance + post_mod_cc_extra, fb.final_crit_damage);
+            if let Some((_, below)) = base.crit_multiplier_below_crit_chance.filter(|_| prelude_cd > 0.0) {
+                selected.with_damage_gate(quantize_base_crit_damage(base.base_crit_damage + gate(GatedGrant::BaseCritDamage)), below, cd, fb.final_crit_damage)
+            } else { selected }
+    };
     ResolvedPanel {
         heavy_damage_mods_apply: base.heavy_damage_mods_apply,
         combo_damage_applies: base.combo_damage_applies,
@@ -1959,15 +1965,14 @@ pub fn resolve_for(
         extra_hit_reads_shift: reads_shift(base.extra_hit_reads),
         // Elemental Excess adds its crit/status FLAT, after the mod
         // multiply (wiki) — a different layer from the base-stat one.
-        crit_chance: resolved_cc,
+        critical_inputs: Some(critical_inputs),
+        crit_chance: critical_inputs.chance(0.0, 0.0),
         // A GATED "+Nx Base Critical Damage Multiplier" joins the BASE, so the
         // crit-damage mods multiply it — which is what "Base" earns on the card.
         // …AND THE FIGHT'S FINAL CRIT DAMAGE after every relative bonus.
         // QUANTIZED where the flat grants have joined and before the relative
         // mods (MECHANICS §Quantization, M117).
-        crit_damage: quantize_base_crit_damage(base.base_crit_damage + prelude_cd + gate(GatedGrant::BaseCritDamage))
-            * (1.0 + cd)
-            + fb.final_crit_damage,
+        crit_damage: critical_inputs.damage(critical_inputs.chance(0.0, 0.0), 0.0, 0.0),
         // What the line above added, in the same post-mod units, so the sim
         // subtracts exactly what was granted — including through a crit-damage
         // LOCK, which zeroes `cd` for both expressions at once.
@@ -1981,13 +1986,12 @@ pub fn resolve_for(
             }),
         // No upper clamp: status chance ABOVE 100% is meaningful (a
         // guaranteed proc plus an extra roll) — DT resolves to 129%.
-        status_chance: ((base.base_status_chance + sc_from_cc) * (1.0 + sc)
-            + base.post_mod_status_chance + post_mod_status_chance)
-            .max(0.0),
+        status_chance: relative_for(UpgradeType::WEAPON_PROC_CHANCE, base.base_status_chance + sc_from_cc, sc,
+            base.post_mod_status_chance + post_mod_status_chance).max(0.0),
         base_crit_chance: base.base_crit_chance,
         base_crit_damage: quantize_base_crit_damage(base.base_crit_damage),
         base_status_chance: base.base_status_chance,
-        fire_rate: base.base_fire_rate * (1.0 + fr + evo_fr_bonus),
+        fire_rate: base.refire.modified_rate(base.base_fire_rate, stacking_add(fr, evo_fr_bonus)),
         base_fire_rate: base.base_fire_rate,
         refire: base.refire,
         // A charged weapon's fire-rate bonuses DIVIDE the draw instead of
@@ -2016,7 +2020,7 @@ pub fn resolve_for(
                 } else {
                     0.0
                 };
-                Some(mag_size / rate / crate::rules::sim::charge_divisor(1.0 + cr + from_rate))
+                Some(crate::rules::sim::charge_time(mag_size / rate, cr + from_rate))
             }
             _ => base.charge_seconds.map(|c| {
             let from_rate = if base.fire_rate_shortens_draw {
@@ -2024,7 +2028,7 @@ pub fn resolve_for(
             } else {
                 0.0
             };
-            c / crate::rules::sim::charge_divisor(1.0 + cr + from_rate)
+            crate::rules::sim::charge_time(c, cr + from_rate)
             }),
         },
         charge_speed: (base.charge_seconds.is_some() || base.charge_ammo_per_second.is_some())
@@ -2140,7 +2144,7 @@ pub fn resolve_for(
                 ..*b
             })
             .collect(),
-        multishot: own_multishot * (1.0 + evo_ms_bonus + multishot),
+        multishot: relative_for(UpgradeType::WEAPON_FIRE_ITERATIONS, own_multishot, stacking_add(evo_ms_bonus, multishot), 0.0),
         base_multishot: own_multishot,
         // Magazine capacity: +% of base, rounded to the nearest whole round.
         // A charge-backed Incarnon magazine is a fixed resource OUTSIDE the
@@ -2223,8 +2227,8 @@ pub fn resolve_for(
         // magazine. `mag_size` is the same number the magazine field above
         // reports, which is what keeps the two from disagreeing.
         reload_seconds: match base.by_round_reload {
-            Some((start, per, end)) => (start + per * mag_size + end) / crate::rules::sim::reload_divisor(1.0 + rl),
-            None => base.base_reload / crate::rules::sim::reload_divisor(1.0 + rl),
+            Some((start, per, end)) => crate::rules::sim::reload_time(start + per * mag_size + end, rl),
+            None => crate::rules::sim::reload_time(base.base_reload, rl),
         },
         reload_bonus: rl,
         reload_from_empty_speed: base.reload_from_empty_speed,

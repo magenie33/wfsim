@@ -13,8 +13,11 @@ effects:
     rank0: 0.15
     rankMax: 0.6
   - kind: reload_speed_bonus
-    rank0: 0.1
-    rankMax: 0.4
+    UpgradeType: 389
+    OperationType: STACKING_MULTIPLY
+    Value: 0.1
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Chilling_Reload

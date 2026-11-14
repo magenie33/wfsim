@@ -9,8 +9,11 @@ description: "+X% Critical Chance"
 
 effects:
   - kind: crit_chance_bonus   # relative: base_cc x (1 + this)
-    rank0: 0.2
-    rankMax: 1.2
+    UpgradeType: 244
+    OperationType: STACKING_MULTIPLY
+    Value: 0.2
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 family: pistol_gambit
 incompatible_with: [creeping_bullseye, primed_pistol_gambit]

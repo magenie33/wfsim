@@ -10,8 +10,11 @@ description: "During a Wall Latch gain +X% Status Chance and Critical Chance."
 
 effects:
   - kind: crit_chance_bonus
-    rank0: 0.3
-    rankMax: 1.2
+    UpgradeType: 244
+    OperationType: STACKING_MULTIPLY
+    Value: 0.30000001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Proton_Jet

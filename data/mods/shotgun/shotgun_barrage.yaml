@@ -9,8 +9,11 @@ description: "+X% Fire Rate"
 
 effects:
   - kind: fire_rate_bonus
-    rank0: 0.15
-    rankMax: 0.9
+    UpgradeType: 277
+    OperationType: STACKING_MULTIPLY
+    Value: 0.15000001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 family: shotgun_barrage
 incompatible_with: [amalgam_shotgun_barrage]

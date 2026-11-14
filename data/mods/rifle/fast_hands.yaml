@@ -9,8 +9,11 @@ description: "+X% Reload Speed"
 
 effects:
   - kind: reload_speed_bonus
-    rank0: 0.05
-    rankMax: 0.3
+    UpgradeType: 389
+    OperationType: STACKING_MULTIPLY
+    Value: 0.050000001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 family: fast_hands
 incompatible_with: [primed_fast_hands]

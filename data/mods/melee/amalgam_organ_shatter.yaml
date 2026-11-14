@@ -16,8 +16,11 @@ excludes_weapon: [sentinel_weapon]
 # Rank 0: +14% Critical Damage / +10% Heavy Attack Wind Up Speed
 effects:
   - kind: crit_damage_bonus
-    rank0: 0.141
-    rankMax: 0.846   # see notes: package_rank_value
+    UpgradeType: 248
+    OperationType: STACKING_MULTIPLY
+    Value: 0.141
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   # THE CHARGE BEFORE A HEAVY SWING, on its own clock — attack speed does not
   # touch it, which is the wiki's own sentence and the reason it is not the
   # fire-rate bucket.

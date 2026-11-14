@@ -39,7 +39,7 @@ fn a_magazine_mod_buys_the_phantasmas_charged_shot_more_damage() {
     let big = shot(&["burdened_magazine"]);
     let k = big.magazine_size / base.magazine_size;
     assert!(k > 1.0, "the mod has to do something: {k}");
-    assert!((big.charge_seconds.unwrap() / base.charge_seconds.unwrap() - k).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(big.charge_seconds.unwrap() / base.charge_seconds.unwrap(), k));
     assert!((big.ammo_cost / base.ammo_cost - k).abs() < 1e-9);
     assert!((big.damage.total() / base.damage.total() - k).abs() < 1e-6, "the direct hit");
     assert!(
@@ -83,5 +83,5 @@ fn an_epitaph_has_no_magazine_and_pays_draw_then_rate() {
     }
     let p = resolve(&WeaponBase::from_data("epitaph", true, &[]), &[], StackPolicy::Emergent);
     assert_eq!(p.charge_cadence, crate::model::ChargeCadence::DrawThenRate);
-    assert!((p.charge_seconds.expect("a draw") - 0.36).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(p.charge_seconds.expect("a draw"), 0.36));
 }

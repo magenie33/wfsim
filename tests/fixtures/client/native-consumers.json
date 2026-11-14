@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "scope": "Recovered stat identities and current Rust query consumers; this registry does not certify live filter eligibility or uncaptured client code",
+  "attributes": [
+    {"UpgradeType": 244, "native_name": "WEAPON_CRIT_CHANCE", "consumers": ["engine/src/build/loadout/resolve.rs", "engine/src/rules/critical.rs", "engine/src/fight/resolve.rs"], "fixture": "tests/fixtures/client/critical-2026-10-28.json"},
+    {"UpgradeType": 246, "native_name": "WEAPON_CRIT_CHANCE_WEAKPOINT", "consumers": ["engine/src/build/loadout/resolve.rs", "engine/src/fight/pellet.rs"], "fixture": "tests/fixtures/client/upgrade-ranks-2026-10-28.json"},
+    {"UpgradeType": 248, "native_name": "WEAPON_CRIT_DAMAGE", "consumers": ["engine/src/build/loadout/resolve.rs", "engine/src/rules/critical.rs", "engine/src/fight/pellet.rs", "engine/src/fight/fields.rs"], "fixture": "tests/fixtures/client/critical-2026-10-28.json"},
+    {"UpgradeType": 253, "native_name": "WEAPON_DAMAGE_AMOUNT", "consumers": ["engine/src/build/loadout/resolve.rs"], "fixture": "tests/fixtures/client/upgrade-ranks-2026-10-28.json"},
+    {"UpgradeType": 276, "native_name": "WEAPON_FIRE_ITERATIONS", "consumers": ["engine/src/build/loadout/resolve.rs"], "fixture": "tests/fixtures/client/upgrade-ranks-2026-10-28.json"},
+    {"UpgradeType": 277, "native_name": "WEAPON_FIRE_RATE", "consumers": ["engine/src/model/weapon.rs", "engine/src/build/loadout/resolve.rs"], "fixture": "tests/fixtures/client/inverse-speed-2026-10-28.json"},
+    {"UpgradeType": 365, "native_name": "WEAPON_PROC_CHANCE", "consumers": ["engine/src/build/loadout/resolve.rs"], "fixture": "tests/fixtures/client/upgrade-ranks-2026-10-28.json"},
+    {"UpgradeType": 380, "native_name": "WEAPON_PROJECTILE_SPEED", "consumers": ["engine/src/rules/sim.rs", "engine/src/build/loadout/resolve.rs"], "fixture": "tests/fixtures/client/inverse-speed-2026-10-28.json"},
+    {"UpgradeType": 389, "native_name": "WEAPON_RELOAD_SPEED", "consumers": ["engine/src/rules/sim.rs", "engine/src/build/loadout/resolve.rs"], "fixture": "tests/fixtures/client/inverse-speed-2026-10-28.json"}
+  ]
+}

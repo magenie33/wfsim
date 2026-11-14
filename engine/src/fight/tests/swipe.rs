@@ -12,6 +12,7 @@ fn params(mods: &[&str], neighbours: &[(f64, f64)]) -> FightParams {
     crate::data::mods::with_ranks(&mut pool, mods.iter().copied());
     let cards: Vec<_> = mods.iter().map(|id| pool.iter().find(|m| m.id == *id).unwrap()).collect();
     let mut panel = crate::build::loadout::resolve(&base, &cards, StackPolicy::Emergent);
+    panel.critical_inputs = None;
     panel.crit_chance = 0.0;
     panel.status_chance = 0.0;
     let mut arena = crate::arena::Arena::training(0.01);

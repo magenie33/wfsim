@@ -70,7 +70,7 @@ mod tests {
     fn mixed_mod_keeps_plain_multishot_without_kill_stacks() {
         let bare = stats(json!({"weapon":"laetum", "mode":"base"}));
         let mixed = stats(json!({"weapon":"laetum", "mode":"base", "mods":["galvanized_diffusion"]}));
-        assert!((n(&mixed,"multishot") / n(&bare,"multishot") - 2.1).abs() < 1e-9);
+        assert_eq!((n(&mixed,"multishot") / n(&bare,"multishot")) as f32, 2.1_f32);
     }
     #[test]
     fn aim_and_hit_buffs_do_not_enter_static_crit_chance() {
@@ -85,7 +85,7 @@ mod tests {
     fn permanent_evolution_and_mod_penalty_remain() {
         let bare = stats(json!({"weapon":"torid", "mode":"base"}));
         let evolved = stats(json!({"weapon":"torid", "mode":"base", "evolutions":["torid_commodores_fortune"]}));
-        assert!((n(&evolved,"crit_chance") - n(&bare,"crit_chance") - 0.2).abs() < 1e-9);
+        assert!((n(&evolved,"crit_chance") - n(&bare,"crit_chance") - 0.2).abs() <= f32::EPSILON as f64);
         let penalized = stats(json!({"weapon":"torid", "mode":"base", "mods":["critical_delay"]}));
         assert!(n(&penalized,"crit_chance") > n(&bare,"crit_chance"));
         assert!(n(&penalized,"fire_rate") < n(&bare,"fire_rate"));

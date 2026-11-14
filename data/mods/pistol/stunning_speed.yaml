@@ -9,11 +9,17 @@ description: "+X% Reload Speed\n+X% Status Chance"
 
 effects:
   - kind: reload_speed_bonus
-    rank0: 0.1
-    rankMax: 0.4
+    UpgradeType: 389
+    OperationType: STACKING_MULTIPLY
+    Value: 0.1
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   - kind: status_chance_bonus
-    rank0: 0.075
-    rankMax: 0.3
+    UpgradeType: 365
+    OperationType: STACKING_MULTIPLY
+    Value: 0.075000003
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Stunning_Speed

@@ -76,6 +76,12 @@ private".
 
 ## A factor is a type, and the wire sends its index
 
+Each damage row's `raw` comes from the settled instance. Explanatory layer
+products are a view of that value; they never replace it. Native binary32
+boundaries and separately bound catalog routes must be checked against their
+actual consumers. An independent CO bracket stays separate from base damage,
+including a below-half-health term sharing that bracket.
+
 **A FACTOR IS A TYPE, AND THE WIRE SENDS ITS INDEX.** `record::Factor` replaces
 a `&'static str` written at each call site: nothing tied the word "critical" to
 the 4.4 beside it, a typo was a new factor nobody would notice, and TWO

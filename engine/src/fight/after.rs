@@ -290,7 +290,7 @@ pub(super) fn next_shot_due(
         // to: a fire-rate mod raises the ceiling and the floor together, so the
         // Phenmor's Incarnon form still spends most of its 408-round magazine
         // at 60% of whatever it was built to.
-        let rate = rate * spool_factor(active.sustained_fire_rate, spool.shots);
+        let rate = active.sustained_fire_rate.map_or(rate, |s| s.refire_rate(rate, spool.shots));
         spool.shots += 1.0;
         // A bow pays its draw before the trigger; its nock is a separate action.
         if active.bow_cycle.is_some() {

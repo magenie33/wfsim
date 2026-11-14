@@ -73,8 +73,8 @@ fn read(pops: &[(u32, bool, f64)], tier: u32, radial: bool) -> Vec<f64> {
 #[test]
 fn m123_pistol_acuity_is_three_point_four_nine_eight() {
     let panel = laetum("laetum", &[], &["pistol_acuity"]);
-    assert!((panel.weakpoint_damage - 3.498).abs() < 1e-9, "{}", panel.weakpoint_damage);
-    assert!((panel.weakpoint_crit_chance_relative - 3.498).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(panel.weakpoint_damage, 3.498), "{}", panel.weakpoint_damage);
+    assert!(crate::rules::upgrades::near_f32(panel.weakpoint_crit_chance_relative, 3.498));
 }
 
 /// BASE FORM, Acuity alone: a yellow head reads `160 x 8.247 x 4.407326 =
