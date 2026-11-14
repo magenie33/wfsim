@@ -118,6 +118,7 @@ function deferred() {
 
 const boardSource = fs.readFileSync(new URL("../web/src/static/app/40-official-builds.js", import.meta.url), "utf8");
 const loaderSource = [
+  block(boardSource, "function setBoardMeta(", "/// THE LIVE BOARD'S OWN ADDRESS"),
   block(boardSource, "const BOARD_HAVE", "/// EVERY WEAPON'S GROUP LEADERS"),
   block(boardSource, "let BOARD_INDEX", "/// ONE WEAPON'S ROWS"),
   block(boardSource, "async function loadWeaponBoard", "function ensureBoardCell"),
@@ -134,8 +135,9 @@ const oldWeapon = deferred(), oldIndex = deferred(), oldSceneIndex = deferred(),
 const asks = [];
 let publicationReload = false;
 const cacheContext = vm.createContext({
+  $: () => null,
   AbortController, AbortSignal, URLSearchParams,
-  BOARD: {}, BOARD_META: { scene_weapons: { night: [weapon] } }, BOARD_ORIGIN: "https://board.invalid", boardOffOrigin: false,
+  BOARD: {}, BOARD_META: { scene_weapons: { night: [weapon] }, digest: "a".repeat(64) }, BOARD_ORIGIN: "https://board.invalid", boardOffOrigin: false,
   window: {}, location: { pathname: "/weapons/Kuva_Nukor/simulator", search: "" },
   finder: {}, raRuler: null,
   benchList: () => [{ id: baseRuler, cell_dir: "" }, { id: sceneRuler, cell_dir: "night" }],
@@ -146,7 +148,7 @@ const cacheContext = vm.createContext({
   timeoutSignal: () => new AbortController().signal,
   async fetchJsonPatient(url) {
     asks.push(url);
-    if (url === "/board.meta.json") return { scene_weapons: { night: [weapon] } };
+    if (url === "/board.meta.json") return { scene_weapons: { night: [weapon] }, digest: "b".repeat(64) };
     if (url === "/board/" + weapon + ".json") return publicationReload ? freshWeapon.promise : oldWeapon.promise;
     if (url === "/board/night/" + weapon + ".json") return publicationReload ? freshScene : oldScene;
     if (url === "/board/index.json") return publicationReload ? { [weapon]: freshBase } : oldIndex.promise;
@@ -182,6 +184,7 @@ const reloaded = await reloading;
 await parallelReader;
 assert.equal(JSON.stringify(reloaded.rows), JSON.stringify([...freshBase, ...freshScene]));
 assert.equal(JSON.stringify(reloaded.indexRows), JSON.stringify(freshScene));
+assert.equal(cacheContext.BOARD_META.digest, "b".repeat(64), "publication reload installs the newly read metadata");
 let snapshot = cacheContext.boardSnapshot();
 assert.equal(snapshot.have, true);
 assert.equal(snapshot.failed.length, 0, "the old failed-scene markers do not survive publication reload");

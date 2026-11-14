@@ -84,11 +84,11 @@ function refreshResultStatus() {
 function resultRequest(r, overrides) {
   const context = shownResult?.r === r ? shownResult.context : null;
   if (context?.engine && context.engine !== ENGINE_ID) {
-    throw new Error(tr("Run this configuration again to read its combat record."));
+    throw new Error(tr("The engine changed. Run this calculation again from its page."));
   }
   if (context?.request && (!context.id || context.engine === ENGINE_ID)) return { ...taskClone(context.request), ...overrides };
   if (context && !context.id && context.key === simKey()) return { ...buildPayload(), ...theFight(overrides) };
-  throw new Error(tr("Run this configuration again to read its combat record."));
+  throw new Error(tr("Run Sim") + " · " + tr("Calculation records are unavailable. Try again."));
 }
 
 function renderStoredSimResult() {

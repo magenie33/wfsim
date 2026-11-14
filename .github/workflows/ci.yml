@@ -817,6 +817,9 @@ jobs:
       - name: Exact official simulations request durable independent board reviews
         if: matrix.group == 'community'
         run: node scripts/check_board_review_page.mjs
+      - name: Board publication retries and metadata installation remain coherent
+        if: matrix.group == 'community'
+        run: node scripts/check_board_review_publication.mjs
       - name: Recommendations stay in the Library and preserve private history
         if: matrix.group == 'community'
         run: node scripts/check_recommendations_page.mjs

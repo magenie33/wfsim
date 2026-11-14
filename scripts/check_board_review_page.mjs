@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { openApp } from "./cdp.mjs";
-import "./check_board_review_publication.mjs";
 
 const app = await openApp({ boot: 13000, lang: "en" });
 try {

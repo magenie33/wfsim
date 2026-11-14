@@ -2886,7 +2886,7 @@ removing that late read must fail these cases.
 The page check uses published Laetum builds, including an actual riven corner.
 It checks the 1000-run default, saved preferences, effective global settings,
 changed-input rejection, durable outbox, score-free admission, hiding during an
-in-flight request and separate verification/publication observation without a local executor. Its imported
+in-flight request and separate verification/publication observation without a local executor. The separate
 `check_board_review_publication.mjs` VM regression holds an old first CDN response,
 bounded retries and same-round rearming, and settles old requests after a fresh
 weapon/scene/index reload. Removing publication retries or cache generations must

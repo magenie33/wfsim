@@ -293,8 +293,8 @@ let BOARD = {};
 let BOARD_META = null;
 function setBoardMeta(meta) {
   BOARD_META = meta;
-  if (!$("home-page")?.hidden) renderHomeFacts();
-  if (!$("support-page")?.hidden) renderSupportCounts();
+  if ($("home-page")?.hidden === false) renderHomeFacts();
+  if ($("support-page")?.hidden === false) renderSupportCounts();
   return meta;
 }
 /// THE LIVE BOARD'S OWN ADDRESS: its bucket, served by the CDN with no worker
