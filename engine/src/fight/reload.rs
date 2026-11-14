@@ -156,7 +156,6 @@ pub(super) fn reload_cold_wave(
         _ => turn.active,
     };
     if turn.params.status_duration_multiplier <= 0.0 { return; }
-    let mut encumber_done = false;
     for (i, here) in bodies.iter_mut().enumerate() {
         let Some(spec) = turn.params.body(i) else { continue };
         if wave.rounds == 0 || !crate::rules::space::caught_by_blast(spec.at.distance(wave.center), wave.radius_m) {
@@ -175,11 +174,9 @@ pub(super) fn reload_cold_wave(
             let applied = here.debuffs.apply_cold_proc(wave.at, turn.params.status_duration_multiplier,
                 here.state.overguard > 0.0, spec.params.stack_caps, spec.params.cannot_be_frozen);
             r.procs += u32::from(applied);
-            if let Some(proc) = encumber_proc(turn.params.arcane.encumber_chance, applied,
-                &mut encumber_done, &mut turn.d.extra)
-            {
-                bonus = Some(proc);
-            }
+            let mut payload = if applied { vec![DamageType::Cold] } else { Vec::new() };
+            turn.arc.encumber(turn.params, wave.at, spec.params, &mut payload);
+            if payload.len() > usize::from(applied) { bonus = payload.last().copied(); }
         }
         if let Some(proc) = bonus.filter(|p| !spec.params.status_immunities.contains(p)) {
             let mit = here.debuffs.mitigation(wave.at, turn.params.status_duration_multiplier,
@@ -241,8 +238,8 @@ pub(super) fn cold_trail_tick(tick: ColdTrailTick, turn: &mut Turn, r: &mut RunR
     let mit = here.debuffs.mitigation(tick.at, turn.params.status_duration_multiplier,
         active.armor_strip_per_puncture, turn.params.squad.enemy_armor_multiplier);
     let mut procs = vec![DamageType::Cold];
-    if let Some(proc) = encumber_proc(turn.params.arcane.encumber_chance, true, &mut false, &mut turn.d.extra)
-        .filter(|p| !spec.params.status_immunities.contains(p)) { procs.push(proc); }
+    turn.arc.encumber(turn.params, tick.at, spec.params, &mut procs);
+    procs.retain(|p| !spec.params.status_immunities.contains(p));
     let scale = weapon_status_scale(turn, active, tick.at);
     settle_procs(procs, tick.owner, tick.at, tick.body, scale, &mut here.debuffs, turn.gal, turn.arc,
         &mut here.state, turn.params, active, &mit, r, rec, &mut turn.d.status, spec.params, DEPTH_PROC);

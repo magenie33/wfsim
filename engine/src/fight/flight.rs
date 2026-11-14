@@ -174,7 +174,6 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     me.arc.next_instance();
     // Secondary Encumber: at most ONE extra proc per instant — pellets of one
     // pull land simultaneously, so one roll per pull.
-    let mut encumber_done = false;
     // DID THIS SHOT HIT ANYTHING AT ALL — the question the SHOT COMBO COUNTER
     // asks, and it is the shot's rather than the pellet's.
     let mut landed_this_shot = false;
@@ -263,7 +262,6 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             any_big: &mut any_big,
             any_head: &mut any_head,
             beam_merge: &mut beam_merge,
-            encumber_done: &mut encumber_done,
             field_duration_boost: &mut me.field_duration_boost,
             influence_until: &mut me.influence_until,
             landed_this_shot: &mut landed_this_shot,

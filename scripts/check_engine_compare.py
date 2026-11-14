@@ -8,7 +8,7 @@ import struct
 import sys
 import tempfile
 
-from engine_compare import compare, digest, first_difference, load_snapshot, write_json
+from engine_compare import compare, digest, first_difference, load_rows, load_snapshot, write_json
 
 
 def check(condition, message):
@@ -26,6 +26,23 @@ check(first_difference({"a/b": {"~": 1}}, {"a/b": {"~": 2}})["pointer"] == "/a~1
 
 with tempfile.TemporaryDirectory(prefix="wfsim-engine-compare-") as temporary:
     root = Path(temporary)
+    coverage_calls = [
+        {'id': 'active', 'path': '/api/simulate', 'coverage': {'more_procs_than': 'control'}},
+        {'id': 'control', 'path': '/api/simulate'},
+    ]
+    coverage_rows = [{'id': name, 'milliseconds': [1], 'result': {'ok': True, 'procs': count}}
+                     for name, count in [('active', 2), ('control', 1)]]
+    coverage_file = root / 'coverage.json'
+    write_json(coverage_file, coverage_rows)
+    load_rows(coverage_file, coverage_calls)
+    coverage_rows[0]['result']['procs'] = 1
+    write_json(coverage_file, coverage_rows)
+    try:
+        load_rows(coverage_file, coverage_calls)
+    except ValueError as error:
+        check('additional procs' in str(error), 'counterfactual coverage diagnostic')
+    else:
+        raise AssertionError('an inactive Arcane passed differential coverage')
     calls = root / "calls.json"
     write_json(calls, [{"id": "record", "path": "/api/log", "body": {}}])
 

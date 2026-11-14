@@ -5,6 +5,29 @@
 //! and golden tests reproducible (the determinism rule in `docs/BUFFS.md`).
 //! SplitMix64 — small, fast, no dependencies.
 
+/// Audited native global generator; stream installation is owned by the scene.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct NativeRng {
+    state: u64,
+}
+
+#[wfsim_gas_macro::metered]
+impl NativeRng {
+    pub fn new(state: u64) -> Self { Self { state } }
+    pub fn state(&self) -> u64 { self.state }
+    fn advance(&mut self) -> u64 {
+        self.state = self.state.wrapping_mul(0x5851f42d4c957f2d).wrapping_add(0x14057b7ef767814f);
+        self.state
+    }
+    pub fn unit(&mut self) -> f32 {
+        ((self.advance() >> 38) & 0xffffff) as f32 * (1.0_f32 / 16777216.0_f32)
+    }
+    pub fn index(&mut self, length: usize) -> usize {
+        assert!(length > 0);
+        (((self.advance() >> 32) & 0x3fffffff) % length as u64) as usize
+    }
+}
+
 /// A seeded SplitMix64 generator.
 #[derive(Debug, Clone)]
 pub struct Rng {

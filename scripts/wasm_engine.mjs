@@ -48,6 +48,7 @@ export function loadEngine({ pkg = "", files = null } = {}) {
   return {
     release,
     api: (p, body) => JSON.parse(ctx.wasm_bindgen.api(p, JSON.stringify(body))),
+    apiText: (p, body) => ctx.wasm_bindgen.api(p, body),
     optimize: body => JSON.parse(ctx.wasm_bindgen.optimize(JSON.stringify(body), () => {}, () => {}, () => {})),
     memoryBytes: () => exports.memory.buffer.byteLength,
     // What the worker hands it (worker.js): called from inside the engine's work.

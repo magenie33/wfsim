@@ -18,6 +18,7 @@ mod inverse_speed;
 mod chill_and_co_base;
 mod cycle_buff_conversion;
 mod debilitate_attrition;
+mod native_packets;
 mod dot_ticks_measured;
 mod m100_latest_proc_part;
 mod m8_break_proc;
@@ -661,6 +662,7 @@ fn metered() -> FightParams {
 
 fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> Foe {
     Foe {
+        valid_double_procs: crate::model::ProcCounters::ORDINARY_MASK,
         magnetic_break_proxy: None,
         name: "test target".into(),
         spectral: None,

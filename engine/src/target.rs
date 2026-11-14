@@ -61,6 +61,7 @@ pub const ANCIENT_PROTECTOR_OVERGUARD: f64 = 8.0;
 /// and the spec brought to a level and ready to be fought.
 #[derive(Debug, Clone)]
 pub struct Foe {
+    pub valid_double_procs: u32,
     pub magnetic_break_proxy: Option<crate::rules::status::HitProxy>,
     pub name: String,
     pub base_level: u32,
@@ -320,6 +321,7 @@ impl Foe {
     /// unmitigated, which keeps raw-damage calibration runs simple.
     pub fn training_dummy() -> Self {
         Self {
+            valid_double_procs: crate::model::ProcCounters::ORDINARY_MASK,
             name: "training dummy".into(),
             magnetic_break_proxy: None,
             // A DUMMY DIES ONCE, like everything but a Thrax.
@@ -637,6 +639,19 @@ impl crate::data::enemies::EnemySpec {
             crate::data::factions::columns_for(self.damage_column_key())
         };
         Ok(Foe {
+            valid_double_procs: match &self.valid_double_procs {
+                None => crate::model::ProcCounters::ORDINARY_MASK,
+                Some(types) => {
+                    let mut mask = 0;
+                    for &kind in types {
+                        let Some(kind) = crate::model::ProcType::new(kind) else {
+                            return Err(format!("invalid ValidDoubleProcs id {kind}"));
+                        };
+                        mask |= 1 << kind.id();
+                    }
+                    mask
+                }
+            },
             magnetic_break_proxy: crate::rules::status::magnetic_break_proxy(&self.hit_proxies),
             name: self.name.clone(),
             base_level: self.stats.base_level,

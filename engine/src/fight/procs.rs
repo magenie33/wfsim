@@ -121,48 +121,6 @@ pub(super) fn has_status(debuffs: &DebuffState, t: DamageType) -> bool {
 /// 10 and states no scaling.
 pub const DEBILITATE_STACKS: usize = 10;
 
-/// PRIMARY DEBILITATE, decided: does this damage instance also inflict one of
-/// the combined status's components, and which one? A pure function on
-/// purpose — the DECISION is testable without a fight, and only the damage
-/// PAYLOAD needs a measurement.
-///
-/// - the status just applied must be a COMBINED element, since a primary or a
-///   physical proc has no components to split into
-/// - the target must be AT [`DEBILITATE_STACKS`] **counting the stack this
-///   instance is applying**: at nine, the shot that makes it ten splits
-/// - roll `chance` (0.5 at rank 0 → 1.0 at rank 5)
-/// - pick between the two components 50/50
-///
-/// **The threshold is why BLAST is not a special case.** Read as "already
-/// holds ten" it is dead on Blast alone — reaching ten DETONATES and drains
-/// every stack, so a pre-application count is 0..=9 forever. The tenth
-/// APPLICATION is the trigger for every combination (M34).
-///
-/// Once per DAMAGE INSTANCE: "only activate once per damage instance, making it
-/// less effective than it 'should' be when used on a Beam weapon, due to how
-/// Multishot affects such weapons."
-#[wfsim_gas_macro::metered]
-pub(super) fn debilitate_split(
-    landed: DamageType,
-    // INCLUDING the one being applied — named so the caller cannot get the
-    // off-by-one back by passing the wrong count.
-    stacks_with_this: usize,
-    chance: f64,
-    rng: &mut Rng,
-) -> Option<DamageType> {
-    if chance <= 0.0 || stacks_with_this < DEBILITATE_STACKS {
-        return None;
-    }
-    let (a, b) = crate::rules::elements::components_of(landed)?;
-    if rng.next_f64() >= chance {
-        return None;
-    }
-    // 50/50, and drawn AFTER the chance roll so a failed roll consumes exactly
-    // one number — a reader comparing two seeds should not have to reason about
-    // how many draws a miss cost.
-    Some(if rng.next_f64() < 0.5 { a } else { b })
-}
-
 /// EXTRA HIT — the second damage instance an ability grants, fired off the one
 /// that triggered it. Returns whether it killed the target.
 ///
@@ -737,10 +695,27 @@ pub(super) fn settle_procs(
     if active.applies_microwave && !procs.is_empty() {
         debuffs.microwave = true;
     }
+    let incoming = if params.arcane.debilitate_chance > 0.0 {
+        let mut packet = crate::model::DamageData::new(scale);
+        packet.source = Some(crate::model::SourceId(owner.0 as u32));
+        packet.source_weapon = Some(crate::model::WeaponId(owner.0 as u32));
+        packet.part = if landing.head { crate::model::HitPart::HEAD } else { crate::model::HitPart::BODY };
+        packet.position = [target.at.x as f32, 0.0, target.at.y as f32, 1.0];
+        packet.procs = crate::model::ProcCounters::from_types(procs.iter().copied());
+        Some(packet)
+    } else { None };
+    let generation = target.generation;
+    let mut qualified = 0_u32;
     for proc in procs {
         r.procs += 1;
         // Read before the match applies it — see the Debilitate hook below.
         let stacks_before = combined_stacks(debuffs, proc);
+        if incoming.is_some() && stacks_before + 1 >= DEBILITATE_STACKS {
+            if let Some(kind) = crate::model::ProcType::from_damage_type(proc) {
+                // M34 observes the tenth application even when Blast drains inline.
+                qualified |= 1 << kind.id();
+            }
+        }
         match proc {
             DamageType::Impact => DebuffState::push_capped(
                 &mut debuffs.stagger,
@@ -1129,88 +1104,6 @@ pub(super) fn settle_procs(
             }
             _ => {}
         }
-        // PRIMARY DEBILITATE: a saturated combined status splits into one of
-        // its components. `stacks_before` is read BEFORE the match applied this
-        // proc, so `+ 1` is the count the target is AT — which is the count the
-        // threshold is about.
-        //
-        // RECURSION is how the faction ladder stays compositional: the split
-        // proc is settled by this same function one DEPTH deeper, so its DoT
-        // carries the bonus a third time without anyone writing a 3. It cannot
-        // recurse further — a component is a primary, and `components_of`
-        // answers None for those — so the ladder ends where the game's does.
-        if params.arcane.debilitate_chance > 0.0 {
-            // THE TENTH APPLICATION IS THE TRIGGER, for every combination —
-            // "at nine, the next shot that makes it ten fires it, rather than
-            // having to reach ten and shoot again". So the
-            // count that goes in is the one the target is AT, and there is no
-            // per-element branch: this line carried an `if proc == Blast` for
-            // two days because Blast is where the off-by-one was VISIBLE
-            // (detonating at ten, it never sits there, so the arcane was
-            // silently dead on it) — and the fix for the visible case was the
-            // rule all along. MEASUREMENTS M34.
-            if let Some(part) =
-                debilitate_split(proc, stacks_before + 1, params.arcane.debilitate_chance, rng)
-            {
-                // THE SPLIT PROC IS AN ORDINARY PROC: same match, same
-                // `push_dot`, its OWN element bracket. Only the DEPTH differs,
-                // so the "separate damage instance" the wiki names is the
-                // status APPLICATION rather than a second number, and the extra
-                // faction layer is the ×f³ the page reports.
-                //
-                // THE BASE IS THE WEAPON'S — `mb_live` is `ModifiedBase`, which
-                // EXCLUDES the elemental portions, DE's rule for a status a
-                // WEAPON's hit applied. The exponent is what is open:
-                // MEASUREMENTS M33.
-                settle_procs(
-                    vec![part],
-                    owner,
-                    at,
-                    body_index,
-                    InstanceScale {
-                        // THE 0% MEMBER OF THE EXTRA HIT CATEGORY. This arcane
-                        // "adds a 0-damage Extra Hit that applies a guaranteed
-                        // status effect" (wiki, Extra_Hit), so the base its
-                        // status burns off is the one nothing replaced — the
-                        // level above, which is this instance's own
-                        // ModifiedBase. Same rule the ability members read from
-                        // the other direction; docs/EXTRA_HIT.md.
-                        mb_live: extra_hit_status_base(0.0, mb_live),
-                        crit_multiplier,
-                        part_factor,
-                        landing,
-                        // A SECOND ATTRITION ROLL ON TOP OF THE HIT'S, and
-                        // a BUG of DE's rather than a design: one instance's
-                        // multipliers left on another instance's magnitude.
-                        // MEASUREMENTS M37 derives it.
-                        //
-                        // IT ROLLS EVEN WHEN THE HIT CRIT — the zero instance
-                        // has no crit of its own, so "on a hit that is not
-                        // critical" holds whatever the parent did. The literal
-                        // `0` is the CLAIM: permanently non-critical, not a
-                        // zero rolling crit.
-                        attrition: attrition * noncrit_mult(active.noncrit_bonus, 0, rng),
-                        // Inherited unchanged: the split is the same weapon's,
-                        // so a Blast it splits out detonates behind the same
-                        // bracket the parent's would have.
-                        xh_bracket,
-                        status_damage_live,
-                    },
-                    debuffs,
-                    gal,
-                    arc,
-                    target,
-                    params,
-                    active,
-                    mit,
-                    r,
-                    rec,
-                    rng,
-                    &params.foe,
-                    DEPTH_DERIVED_PROC,
-                );
-            }
-        }
         // Cascadia Empowered: each applied status adds an EXTRA
         // FLAT damage instance of the proc's type — unaffected by
         // damage/element/crit mods, Galvanized stacks, parts, or
@@ -1261,6 +1154,24 @@ pub(super) fn settle_procs(
                 gal.bump_on_kill(params, at);
                 arc.on_kill(params, at);
                 debuffs.on_death(owner, params.acid_shells, &params.foe);
+            }
+        }
+    }
+    if target.generation == generation && matches!(target.phase, Phase::Physical) {
+        if let Some(incoming) = incoming.filter(|_| qualified & (0x3f << 7) != 0) {
+            // Condition chance is one gate for this submitted packet. The simulator
+            // maps a settle_procs submission to one notification (scope in ENGINE_MIGRATION).
+            if rng.chance(params.arcane.debilitate_chance) {
+                let mut child = incoming.derived_packet();
+                child.procs = arc.split_packet(&incoming.procs, qualified);
+                let mut scalar = child.scalar;
+                scalar.mb_live = extra_hit_status_base(0.0, scalar.mb_live);
+                // M37: upstream scalar factors survive; geometry starts at BODY.
+                scalar.landing = ProcLanding::default();
+                scalar.attrition *= noncrit_mult(active.noncrit_bonus, 0, rng);
+                settle_procs(child.procs.types().collect(), owner, at, body_index, scalar,
+                    debuffs, gal, arc, target, params, active, mit, r, rec, rng, foe,
+                    DEPTH_DERIVED_PROC);
             }
         }
     }
@@ -1342,21 +1253,4 @@ pub(super) fn roll_proc_conversion(
             }
         }
     }
-}
-
-/// Secondary Encumber grants at most one random proc per simultaneous batch.
-#[wfsim_gas_macro::metered]
-pub(super) fn encumber_proc(chance: f64, has_status: bool, done: &mut bool, rng: &mut Rng) -> Option<DamageType> {
-    if chance <= 0.0 || *done || !has_status || !rng.chance(chance) {
-        return None;
-    }
-    const POOL: [DamageType; 13] = [
-        DamageType::Impact, DamageType::Puncture, DamageType::Slash,
-        DamageType::Heat, DamageType::Cold, DamageType::Electricity,
-        DamageType::Toxin, DamageType::Blast, DamageType::Corrosive,
-        DamageType::Magnetic, DamageType::Viral, DamageType::Gas, DamageType::Radiation,
-    ];
-    let idx = (rng.next_f64() * POOL.len() as f64) as usize % POOL.len();
-    *done = true;
-    Some(POOL[idx])
 }

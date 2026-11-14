@@ -156,7 +156,9 @@ fn aksondol_encumber_uses_the_weapons_status_payload_and_live_buffs() {
                     &mut wave_fight.r, &mut rec, &mut wave_fight.bodies);
 
                 let (mut shot_fight, mut shot_me) = open(&p, Seat::WIELDER, &mut Rng::new(seed), &rec, &None);
-                let bonus = encumber_proc(1.0, true, &mut false, &mut shot_me.d.extra).unwrap();
+                let mut payload = vec![DamageType::Cold];
+                shot_me.arc.encumber(&p, 2.0, &p.foe, &mut payload);
+                let bonus = payload[1];
                 let here = &mut shot_fight.bodies[0];
                 let mit = here.debuffs.mitigation(2.0, p.status_duration_multiplier,
                     p.armor_strip_per_puncture, p.squad.enemy_armor_multiplier);

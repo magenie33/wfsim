@@ -1103,6 +1103,14 @@ blast's own damage, not the weapon's. Which of the two Primary Debilitate's
 split falls under is OPEN and is the whole of MEASUREMENTS **M33** — it reads
 `ModifiedBase` here.
 
+Primary Debilitate visits each qualifying compound type once per submitted
+status packet. Its incoming byte counter tests presence, so twenty Magnetic
+counters in one packet give one selection. Chosen basic types coalesce in one
+fresh scalar-copy packet. Fresh body landing is independent of the inherited
+scalar factors and M37's additional Attrition roll. Notification cadence and
+the event-time Encumber condition adapter are scoped in
+[ENGINE_MIGRATION.md](ENGINE_MIGRATION.md).
+
 **A RADIAL BELONGS TO THE FORM THAT DECLARES ONE.** An Incarnon cycle fires two
 weapons in turn, and every per-shot property is read off the ACTIVE form — the
 explosion included. A weapon whose Incarnon detonates does NOT detonate in its

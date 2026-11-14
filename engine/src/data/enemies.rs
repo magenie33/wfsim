@@ -127,6 +127,9 @@ fn one() -> f64 {
 /// mechanics, notes, ...) are ignored by the loader.
 #[derive(Debug, Clone, Deserialize)]
 pub struct EnemySpec {
+    /// Missing uses the audited base controller declaration; empty disables candidates.
+    #[serde(default, rename = "ValidDoubleProcs")]
+    pub valid_double_procs: Option<Vec<u8>>,
     /// Ordered native controller proxies; Magnetic selects independently of aim (M8).
     #[serde(default)]
     pub hit_proxies: Vec<crate::rules::status::HitProxy>,

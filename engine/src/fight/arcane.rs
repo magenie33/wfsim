@@ -51,6 +51,10 @@ impl ArcState {
 /// like [`GalStacks`]), plus the Sharpened Bullets on-kill CD buff clock.
 #[derive(Default)]
 pub(super) struct ArcRuntime {
+    pub(super) native_random: crate::rules::rng::NativeRng,
+    pub(super) shared_native_random: Option<std::rc::Rc<std::cell::RefCell<crate::rules::rng::NativeRng>>>,
+    pub(super) encumber_state: crate::model::ConditionalState,
+    encumber_updated_at: f64,
     pub(super) heavy_status_duration_until: f64,
     pub(super) states: Vec<ArcState>,
     /// Sharpened Bullets' single refreshable on-kill buff expiry.
@@ -80,8 +84,56 @@ pub(super) struct ArcRuntime {
 
 #[wfsim_gas_macro::metered]
 impl ArcRuntime {
+    pub(super) fn split_packet(&mut self, incoming: &crate::model::ProcCounters, qualified: u32)
+        -> crate::model::ProcCounters
+    {
+        match &self.shared_native_random {
+            Some(stream) => incoming.split_combined(qualified, &mut stream.borrow_mut()),
+            None => incoming.split_combined(qualified, &mut self.native_random),
+        }
+    }
+
+    pub(super) fn encumber(&mut self, params: &FightParams, at: f64, foe: &Foe,
+        procs: &mut Vec<DamageType>)
+    {
+        if params.arcane.encumber_chance <= 0.0 { return; }
+        // Event-time adapter: simultaneous submissions share an active condition.
+        // Positive elapsed simulation time supplies the next effective update.
+        if at > self.encumber_updated_at {
+            self.encumber_state.update((at - self.encumber_updated_at) as f32);
+            self.encumber_updated_at = at;
+        }
+        use crate::rules::upgrades::{query, OperationType, UpgradeEntry, UpgradeType};
+        let kind = UpgradeType::WEAPON_PROC_ON_PROC_CHANCE;
+        let root = UpgradeEntry { UpgradeType: kind, OperationType: OperationType::ADD,
+            Value: params.arcane.encumber_chance as f32 };
+        let suppression = self.encumber_state.active.then_some(UpgradeEntry {
+            UpgradeType: kind, OperationType: OperationType::SET, Value: 0.0 });
+        let chance = query(kind, 0.0, std::iter::once(root).chain(suppression), false);
+        let before = crate::model::ProcCounters::from_types(procs.iter().copied());
+        let mut packet = before;
+        let selected = match &self.shared_native_random {
+            Some(stream) => packet.encumber(chance, foe.valid_double_procs, &mut stream.borrow_mut()),
+            None => packet.encumber(chance, foe.valid_double_procs, &mut self.native_random),
+        };
+        if selected {
+            self.encumber_state.activate(params.arcane.encumber_condition);
+            for kind in packet.present() {
+                if let Some(dtype) = kind.damage_type() {
+                    if !foe.status_immunities.contains(&dtype) {
+                        for _ in before.count(kind)..packet.count(kind) { procs.push(dtype); }
+                    }
+                }
+            }
+        }
+    }
+
     pub(super) fn init(params: &FightParams) -> Self {
         Self {
+            native_random: crate::rules::rng::NativeRng::new(0),
+            shared_native_random: None,
+            encumber_state: crate::model::ConditionalState::default(),
+            encumber_updated_at: 0.0,
             heavy_status_duration_until: params.heavy_status.map_or(0.0, |s| if s.initial_active { s.duration_seconds } else { 0.0 }),
             states: params
                 .arcane

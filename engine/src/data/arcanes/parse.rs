@@ -44,7 +44,22 @@ pub(super) fn s<'a>(v: &'a Value, k: &str) -> Option<&'a str> {
     v.get(k).and_then(Value::as_str)
 }
 
-pub(super) fn scale(v: &Value) -> Scale {
+pub(super) fn scale(v: &Value, max_rank: u32) -> Scale {
+    let native_chance = v.get("UpgradeChance").is_some();
+    let native_upgrade = v.get("UpgradeType").is_some();
+    if native_chance || native_upgrade {
+        assert!(!native_chance || !native_upgrade, "one native source per scale");
+        assert!(v.get("rank0").is_none() && v.get("rankMax").is_none() && v.get("ranks").is_none(),
+            "a native scale cannot carry a second rank source");
+        let values: Vec<f64> = if native_chance {
+            let spec: crate::model::ConditionalChance = serde_norway::from_value(v.clone()).expect("native conditional chance");
+            (0..=max_rank).map(|rank| f64::from(spec.at(rank))).collect()
+        } else {
+            let spec: crate::model::RankedUpgrade = serde_norway::from_value(v.clone()).expect("native ranked upgrade");
+            (0..=max_rank).map(|rank| f64::from(spec.query(spec.entry.UpgradeType, 0.0, rank, max_rank))).collect()
+        };
+        return Scale { rank0: Some(values[0]), rank_max: values[max_rank as usize], ranks: Some(values) };
+    }
     let ranks = v.get("ranks").and_then(Value::as_sequence).map(|seq| {
         seq.iter().filter_map(Value::as_f64).collect::<Vec<f64>>()
     });
@@ -76,12 +91,12 @@ pub fn arc_condition(v: &Value) -> Option<ArcCondition> {
     })
 }
 
-pub(super) fn effect(v: &Value) -> Option<ArcEffect> {
+pub(super) fn effect(v: &Value, max_rank: u32) -> Option<ArcEffect> {
     let kind = s(v, "kind")?;
     let inert = |why: &str| Some(ArcEffect::Inert(why.to_string()));
     Some(match kind {
-        "combo_count_chance" => ArcEffect::ComboCountChance(scale(v)),
-        "combo_count_chance_on_lifted" => ArcEffect::ComboCountChanceOnLifted(scale(v)),
+        "combo_count_chance" => ArcEffect::ComboCountChance(scale(v, max_rank)),
+        "combo_count_chance_on_lifted" => ArcEffect::ComboCountChanceOnLifted(scale(v, max_rank)),
         "buff" => {
             let trigger = s(v, "trigger")?;
             let grants = s(v, "grants")?;
@@ -91,7 +106,7 @@ pub(super) fn effect(v: &Value) -> Option<ArcEffect> {
                 // next shot, and MULTIPLICATIVE — "Damage bonus is
                 // multiplicative to mods like Serration". The sim arms it.
                 "weakpoint_hit" if grants == "final_damage" => {
-                    return Some(ArcEffect::WeakpointNextShotDamage(scale(v)))
+                    return Some(ArcEffect::WeakpointNextShotDamage(scale(v, max_rank)))
                 }
                 // NOTHING HERE SWAPS, so the stack count is the card's and it
                 // never times out: the file states no duration for it to have.
@@ -103,7 +118,7 @@ pub(super) fn effect(v: &Value) -> Option<ArcEffect> {
                             "crit_damage" => ArcGrant::CritDamage,
                             other => return inert(&format!("on_swap grant {other}")),
                         },
-                        scale: scale(v),
+                        scale: scale(v, max_rank),
                         max_stacks: u(v, "max_stacks"),
                         duration: crate::model::NO_TIMEOUT,
                         all_drop: false,
@@ -111,13 +126,13 @@ pub(super) fn effect(v: &Value) -> Option<ArcEffect> {
                     })
                 }
                 "roll" if grants == "weakpoint_crit_chance" => {
-                    return Some(ArcEffect::WeakpointCritChance(scale(v)))
+                    return Some(ArcEffect::WeakpointCritChance(scale(v, max_rank)))
                 }
                 "ability_cast" if grants == "final_damage" => {
-                    return Some(ArcEffect::FinalDamageCap(scale(v)))
+                    return Some(ArcEffect::FinalDamageCap(scale(v, max_rank)))
                 }
                 "ability_cast" if grants == "reload_speed" => {
-                    return Some(ArcEffect::CondReloadSpeed(scale(v)))
+                    return Some(ArcEffect::CondReloadSpeed(scale(v, max_rank)))
                 }
                 // Enervate's on_hit buff is implemented by its perk.
                 "hit" => return Some(ArcEffect::Elsewhere("on_hit".into())),
@@ -138,7 +153,7 @@ pub(super) fn effect(v: &Value) -> Option<ArcEffect> {
             ArcEffect::Buff {
                 trigger: trig,
                 grant,
-                scale: scale(v),
+                scale: scale(v, max_rank),
                 max_stacks: u(v, "max_stacks"),
                 duration: f(v, "duration").unwrap_or(0.0),
                 all_drop,
@@ -150,35 +165,38 @@ pub(super) fn effect(v: &Value) -> Option<ArcEffect> {
         }
         // Kinship carries `per: ally_buff` — team-context, uncapped: inert
         // in the sim; the value still renders in the description.
-        "crit_chance_bonus" if s(v, "per").is_some() => ArcEffect::PerAllyCritChance(scale(v)),
-        "crit_chance_bonus" => ArcEffect::CondCritChance(scale(v)),
+        "crit_chance_bonus" if s(v, "per").is_some() => ArcEffect::PerAllyCritChance(scale(v, max_rank)),
+        "crit_chance_bonus" => ArcEffect::CondCritChance(scale(v, max_rank)),
         "headshot_multiplier_bonus" => ArcEffect::HeadshotMultiplier {
             value: f(v, "rankMax").unwrap_or(0.0),
             unlocks_at: u(v, "unlocks_at_rank"),
         },
-        "rechargeable_magazine" => ArcEffect::RechargeableMagazine { scale: scale(v) },
+        "rechargeable_magazine" => ArcEffect::RechargeableMagazine { scale: scale(v, max_rank) },
         "reload_speed_bonus" => ArcEffect::ReloadSpeed {
             value: f(v, "rankMax").unwrap_or(0.0),
             unlocks_at: u(v, "unlocks_at_rank"),
         },
         "per_status_damage_bonus" => ArcEffect::PerColdDamage {
-            scale: scale(v),
+            scale: scale(v, max_rank),
             max_stacks: u(v, "max_stacks"),
         },
         "added_element" => ArcEffect::AddedElement {
             element: crate::rules::damage::DamageType::from_name(s(v, "element")?)?,
-            scale: scale(v),
+            scale: scale(v, max_rank),
             max_stacks: u(v, "max_stacks").max(1),
         },
-        "flat_damage_on_status" => ArcEffect::FlatDamageOnStatus(scale(v)),
-        "proc_conversion" => ArcEffect::EncumberChance(scale(v)),
+        "flat_damage_on_status" => ArcEffect::FlatDamageOnStatus(scale(v, max_rank)),
+        "proc_conversion" => ArcEffect::EncumberChance {
+            scale: scale(v, max_rank),
+            condition: serde_norway::from_value(v.clone()).expect("native Encumber condition"),
+        },
         "proc_burst" => ArcEffect::ColdBurst {
-            scale: scale(v),
+            scale: scale(v, max_rank),
             radius0: f(v, "radius_rank0").unwrap_or(0.0),
             radius1: f(v, "radius_rankMax").unwrap_or(0.0),
         },
         "aoe_echo" => ArcEffect::AoeEcho {
-            scale: scale(v),
+            scale: scale(v, max_rank),
             radius0: f(v, "radius_rank0").unwrap_or(0.0),
             radius1: f(v, "radius_rankMax").unwrap_or(0.0),
             // THE GATE, READ. `arc_condition` refuses a string it does not
@@ -190,29 +208,29 @@ pub(super) fn effect(v: &Value) -> Option<ArcEffect> {
                 _ => 0,
             },
         },
-        "duplicate_on_base_crit" => ArcEffect::DuplicateOnBaseCrit(scale(v)),
+        "duplicate_on_base_crit" => ArcEffect::DuplicateOnBaseCrit(scale(v, max_rank)),
         "heavy_crit_per_input" => ArcEffect::HeavyCritPerInput {
-            scale: scale(v),
+            scale: scale(v, max_rank),
             max_stacks: u(v, "max_stacks").max(1),
         },
         "status_spread" => ArcEffect::StatusSpread {
-            scale: scale(v),
+            scale: scale(v, max_rank),
             radius0: f(v, "radius_rank0").unwrap_or(0.0),
             radius1: f(v, "radius_rankMax").unwrap_or(0.0),
             seconds0: f(v, "duration_rank0").unwrap_or(0.0),
             seconds1: f(v, "duration_rankMax").unwrap_or(0.0),
         },
-        "overguard_damage_bonus" => ArcEffect::OverguardDamage(scale(v)),
-        "damage_vs_frozen" => ArcEffect::DamageVsFrozen(scale(v)),
+        "overguard_damage_bonus" => ArcEffect::OverguardDamage(scale(v, max_rank)),
+        "damage_vs_frozen" => ArcEffect::DamageVsFrozen(scale(v, max_rank)),
         "ammo_efficiency" => ArcEffect::AmmoEfficiency {
-            scale: scale(v),
+            scale: scale(v, max_rank),
             when: match arc_condition(v) {
                 Some(ArcCondition::Tenno(c)) => Some(c),
                 _ => None,
             },
         },
-        "compression_damage" => ArcEffect::CompressionDamage(scale(v)),
-        "compression_ammo_efficiency" => ArcEffect::CompressionAmmoEfficiency(scale(v)),
+        "compression_damage" => ArcEffect::CompressionDamage(scale(v, max_rank)),
+        "compression_ammo_efficiency" => ArcEffect::CompressionAmmoEfficiency(scale(v, max_rank)),
         "tenno_scaled" => ArcEffect::TennoScaled {
             stat: match s(v, "stat")? {
                 "armor" => TennoStat::Armor,
@@ -228,11 +246,11 @@ pub(super) fn effect(v: &Value) -> Option<ArcEffect> {
                 "multishot" => ArcGrant::Multishot,
                 other => return inert(&format!("grant {other}")),
             },
-            cap: scale(v),
+            cap: scale(v, max_rank),
         },
-        "debilitate" => ArcEffect::Debilitate(scale(v)),
-        "unmodelled" => ArcEffect::Unmodeled { scale: scale(v) },
-        "out_of_scope" => ArcEffect::OutOfScope { scale: scale(v) },
+        "debilitate" => ArcEffect::Debilitate(scale(v, max_rank)),
+        "unmodelled" => ArcEffect::Unmodeled { scale: scale(v, max_rank) },
+        "out_of_scope" => ArcEffect::OutOfScope { scale: scale(v, max_rank) },
         other => return inert(other),
     })
 }

@@ -109,7 +109,6 @@ pub(super) struct Live<'a> {
     pub(super) any_big: &'a mut bool,
     pub(super) any_head: &'a mut bool,
     pub(super) beam_merge: &'a mut f64,
-    pub(super) encumber_done: &'a mut bool,
     pub(super) field_duration_boost: &'a mut bool,
     pub(super) influence_until: &'a mut f64,
     pub(super) landed_this_shot: &'a mut bool,
@@ -294,7 +293,6 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     let any_big = &mut *live.any_big;
     let any_head = &mut *live.any_head;
     let beam_merge = &mut *live.beam_merge;
-    let encumber_done = &mut *live.encumber_done;
     let field_duration_boost = &mut *live.field_duration_boost;
     let influence_until = &mut *live.influence_until;
     let landed_this_shot = &mut *live.landed_this_shot;
@@ -2355,26 +2353,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         {
             procs.push(DamageType::Slash);
         }
-    // Secondary Encumber: on a status this pellet applied, roll
-    // ONE extra status of a uniformly random type (13-type pool,
-    // independent of the weapon's vector — wiki), at most once per
-    // instant (= per trigger pull, and the radial STAGE shares the
-    // limit — the wiki names Explosions among the simultaneous
-    // attacks that "only proc up to once on a single target").
-    //
-    // This reproduces the wiki's per-shot rate
-    //   1 − (1 − chance × min(statusChance, 1)) ^ pellets
-    // exactly, without implementing the min() as a cap: a pellet
-    // either applied a status (`!procs.is_empty()`) or it did not, so
-    // status chance above 100% guarantees the first proc but cannot
-    // give a pellet two shots at Encumber. Trigger scope is
-    // health-bar statuses only (U33 patch note) — the only kind a
-    // proc list ever holds.
-    if let Some(proc) = encumber_proc(params.arcane.encumber_chance, !procs.is_empty(),
-        encumber_done, &mut d.extra)
-    {
-        procs.push(proc);
-    }
+    arc.encumber(params, t, &params.foe, &mut procs);
     // Internal Bleeding / Hemorrhage: one roll per damage INSTANCE
     // when a `from` status landed and no `to` status did; chance ×2
     // while the LIVE fire rate is strictly below 2.5.
