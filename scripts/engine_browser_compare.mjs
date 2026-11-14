@@ -55,8 +55,11 @@ try {
     const folder = side === "A" ? baseline : candidate;
     const glue = fs.readFileSync(path.join(folder, "wfsim_wasm.js"), "utf8");
     const module = fs.readFileSync(path.join(folder, "wfsim_wasm_bg.wasm"));
+    const packs = Object.keys(manifests[side].files).filter(name => /^pack\..+\.json$/.test(name)).sort()
+      .map(name => fs.readFileSync(path.join(folder, name)).toString("base64"));
     const init = await evaluate(`(async () => { ${glue}\nconst bytes=Uint8Array.from(atob(${JSON.stringify(module.toString("base64"))}), c=>c.charCodeAt(0));
       const start=performance.now(); const wasm=wasm_bindgen.initSync({module:await WebAssembly.compile(bytes)});
+      for(const pack of ${JSON.stringify(packs)}){const bytes=Uint8Array.from(atob(pack),c=>c.charCodeAt(0));const error=wasm_bindgen.install_data_bytes(bytes);if(error)throw new Error(error);}
       globalThis.compareEngine={api:(p,b)=>wasm_bindgen.api(p,b),memory:()=>wasm.memory.buffer.byteLength};
       return {milliseconds:performance.now()-start,memory_bytes:wasm.memory.buffer.byteLength}; })()`);
     const rows = [];
