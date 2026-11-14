@@ -1,3 +1,9 @@
+`check_engine_compare.py` runs independent executable fixtures through the
+native migration comparator. Equal results pass; changed damage, signed zero,
+one-ULP values, event ordering, repeat drift, truncated records, artifact
+corruption and duplicate case ids fail. `ENGINE_MIGRATION.md` defines the
+separate real-engine frozen-input comparison and performance procedure.
+
 `check_nona_results.mjs` runs the shared zk/pz selection and witness lookup
 against published builds, actual engine identities and the production account
 projection. It checks one bounded batch, ordered calculation/verification names,
