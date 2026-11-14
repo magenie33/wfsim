@@ -1,0 +1,1831 @@
+[
+  {
+    "id": "braton_panel",
+    "path": "/api/panel",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "braton_prime",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ]
+    }
+  },
+  {
+    "id": "torid_simulation",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "torid",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ]
+    },
+    "coverage": {}
+  },
+  {
+    "id": "torid_record",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "torid",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 8,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  },
+  {
+    "id": "gotva_prime_simulation",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "gotva_prime",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ]
+    },
+    "coverage": {}
+  },
+  {
+    "id": "gotva_prime_record",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "gotva_prime",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 8,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  },
+  {
+    "id": "scourge_simulation",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "scourge",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ]
+    },
+    "coverage": {}
+  },
+  {
+    "id": "scourge_record",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "scourge",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 8,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  },
+  {
+    "id": "braton_prime_simulation",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "braton_prime",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ]
+    },
+    "coverage": {}
+  },
+  {
+    "id": "braton_prime_record",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "braton_prime",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 8,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  },
+  {
+    "id": "amprex_gas_electric_0_simulation",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "amprex",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "hellfire",
+        "infected_clip"
+      ],
+      "formation": [
+        {
+          "at": [
+            -3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        }
+      ]
+    },
+    "coverage": {
+      "damage_sources": [
+        "Gas",
+        "Electricity"
+      ]
+    }
+  },
+  {
+    "id": "amprex_gas_electric_0_record",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "amprex",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "hellfire",
+        "infected_clip"
+      ],
+      "formation": [
+        {
+          "at": [
+            -3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 8,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  },
+  {
+    "id": "amprex_gas_electric_100_simulation",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 100,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "amprex",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "hellfire",
+        "infected_clip"
+      ],
+      "formation": [
+        {
+          "at": [
+            -3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        }
+      ]
+    },
+    "coverage": {
+      "damage_sources": [
+        "Gas",
+        "Electricity"
+      ]
+    }
+  },
+  {
+    "id": "amprex_gas_electric_100_record",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 100,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "amprex",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "hellfire",
+        "infected_clip"
+      ],
+      "formation": [
+        {
+          "at": [
+            -3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 8,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  },
+  {
+    "id": "kuva_nukor_shield_simulation",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "crewman",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "kuva_nukor",
+      "mods": [
+        "hornet_strike",
+        "barrel_diffusion",
+        "lethal_torrent",
+        "convulsion",
+        "deep_freeze"
+      ],
+      "valence_element": "magnetic",
+      "valence_bonus": 0.6
+    },
+    "coverage": {
+      "damage_sources": [
+        "Electricity"
+      ]
+    }
+  },
+  {
+    "id": "kuva_nukor_shield_record",
+    "path": "/api/log",
+    "body": {
+      "enemy": "crewman",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "kuva_nukor",
+      "mods": [
+        "hornet_strike",
+        "barrel_diffusion",
+        "lethal_torrent",
+        "convulsion",
+        "deep_freeze"
+      ],
+      "valence_element": "magnetic",
+      "valence_bonus": 0.6,
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 8,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  },
+  {
+    "id": "coda_bubonico_battery_simulation",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 24,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "coda_bubonico",
+      "mods": []
+    },
+    "coverage": {}
+  },
+  {
+    "id": "coda_bubonico_battery_record",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 24,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "coda_bubonico",
+      "mods": [],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 24,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  },
+  {
+    "id": "torid_transformed_chain_simulation",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "transformed",
+      "evolutions": [
+        "torid_evo1_incarnon_form"
+      ],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "torid",
+      "mods": [],
+      "formation": [
+        {
+          "at": [
+            -3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        }
+      ]
+    },
+    "coverage": {}
+  },
+  {
+    "id": "torid_transformed_chain_record",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "transformed",
+      "evolutions": [
+        "torid_evo1_incarnon_form"
+      ],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "torid",
+      "mods": [],
+      "formation": [
+        {
+          "at": [
+            -3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 8,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  },
+  {
+    "id": "multiple_actors_simulation",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "braton_prime",
+      "mods": [],
+      "also_acting": [
+        {
+          "weapon": "gotva_prime",
+          "mods": []
+        }
+      ]
+    },
+    "coverage": {
+      "combatants": 2
+    }
+  },
+  {
+    "id": "multiple_actors_record",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "braton_prime",
+      "mods": [],
+      "also_acting": [
+        {
+          "weapon": "gotva_prime",
+          "mods": []
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 8,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  },
+  {
+    "id": "primary_debilitate_callbacks_simulation",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "primary_debilitate"
+      ],
+      "buffs": {},
+      "weapon": "amprex",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "hellfire",
+        "infected_clip"
+      ],
+      "formation": [
+        {
+          "at": [
+            -3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        }
+      ]
+    },
+    "coverage": {
+      "damage_sources": [
+        "Gas",
+        "Electricity",
+        "Heat",
+        "Toxin"
+      ]
+    }
+  },
+  {
+    "id": "primary_debilitate_callbacks_record",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "primary_debilitate"
+      ],
+      "buffs": {},
+      "weapon": "amprex",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "hellfire",
+        "infected_clip"
+      ],
+      "formation": [
+        {
+          "at": [
+            -3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            10.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            13.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            -3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            0.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        },
+        {
+          "at": [
+            3.0,
+            16.0
+          ],
+          "enemy": "corrupted_heavy_gunner",
+          "level": 100,
+          "steel_path": true,
+          "eximus": false
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 8,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  },
+  {
+    "id": "secondary_encumber_window_simulation",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "crewman",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "secondary_encumber"
+      ],
+      "buffs": {},
+      "weapon": "kuva_nukor",
+      "mods": [
+        "hornet_strike",
+        "barrel_diffusion",
+        "lethal_torrent",
+        "convulsion",
+        "deep_freeze"
+      ],
+      "valence_element": "magnetic",
+      "valence_bonus": 0.6
+    },
+    "coverage": {
+      "damage_sources": [
+        "Gas",
+        "Electricity",
+        "Heat",
+        "Toxin"
+      ]
+    }
+  },
+  {
+    "id": "secondary_encumber_window_record",
+    "path": "/api/log",
+    "body": {
+      "enemy": "crewman",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "secondary_encumber"
+      ],
+      "buffs": {},
+      "weapon": "kuva_nukor",
+      "mods": [
+        "hornet_strike",
+        "barrel_diffusion",
+        "lethal_torrent",
+        "convulsion",
+        "deep_freeze"
+      ],
+      "valence_element": "magnetic",
+      "valence_bonus": 0.6,
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 8,
+      "limit": 200000
+    },
+    "coverage": {
+      "event_kinds": [
+        "shot",
+        "damage"
+      ]
+    }
+  },
+  {
+    "id": "braton_replay",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 100,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 8,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "braton_prime",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ],
+      "replay": true
+    }
+  }
+]
