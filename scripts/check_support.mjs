@@ -83,6 +83,24 @@ check(`${tag} ...and the evaluations figure is every ruler's, added up`,
   facts.scored > 0 && drawn.some((n) => num(n) === facts.scored),
   `on screen ${JSON.stringify(drawn)} vs board ${facts.scored}`);
 
+const late = await evaluate(`(async () => {
+  const oldBoard = BOARD_META, original = fetchJson;
+  const read = () => [...document.querySelectorAll('#support-facts .sup-fact b')]
+    .map(el => Number(el.textContent.replace(/[^0-9]/g, '')));
+  BOARD_META = null; renderSupport();
+  const before = read();
+  fetchJson = async (url, ...args) => String(url).endsWith('/board.meta.json')
+    ? { boards: { a: { submissions: 17, listed: 2 }, b: { submissions: 17, listed: 9 } } }
+    : original(url, ...args);
+  try {
+    await loadBoard(null);
+    return { before, after: read(), builds: Number(document.querySelector('#support-community-facts [data-support-count="builds"]')?.dataset.value) };
+  } finally { fetchJson = original; BOARD_META = oldBoard; renderSupport(); }
+})()`);
+check(`${tag} metadata arriving after first paint refreshes method and community figures`,
+  late.before.length === 1 && late.after.length === 3 && late.after[1] === 17 && late.after[2] === 11 && late.builds === 17,
+  JSON.stringify(late));
+
 // ---------------------------------------------------------------------------
 // 2. THE BUILD-TIME COUNTS. These cannot come from the page at all — they are
 //    about the repository around it — so the only question is whether the

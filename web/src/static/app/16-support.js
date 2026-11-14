@@ -210,11 +210,6 @@ function renderSupport() {
   // WHAT AN EXTENSION ADDS to this page, drawn into its one slot.
   const slot = $("ext-support");
   if (slot) { slot.innerHTML = ""; extHook("support", slot); }
-  const facts = $("support-facts");
-  if (facts) {
-    facts.innerHTML = projectFacts().map((f) => `
-      <div class="sup-fact"><b>${escHtml(f.n.toLocaleString())}</b><span>${escHtml(tr(f.what))}</span></div>`).join("");
-  }
   // WHEN IT STARTED AND HOW MUCH HAS HAPPENED SINCE. One line rather than two
   // more tiles: it is context for the strip above, not a sixth figure.
   const built = $("support-built");
@@ -227,7 +222,6 @@ function renderSupport() {
         .replace("{day}", f.first_commit_day).replace("{n}", f.commits.toLocaleString());
     }
   }
-  identityLines();
   renderSupportCounts();
   loadHomeTally();
   if (["#method", "#usage"].includes(location.hash)) $(location.hash.slice(1)).open = true;
@@ -279,6 +273,12 @@ supportMotion.addEventListener("change", () => {
 });
 
 function renderSupportCounts() {
+  const facts = $("support-facts");
+  if (facts) {
+    facts.innerHTML = projectFacts().map((f) => `
+      <div class="sup-fact"><b>${escHtml(f.n.toLocaleString())}</b><span>${escHtml(tr(f.what))}</span></div>`).join("");
+  }
+  identityLines();
   const use = supportUse(), own = $("support-usage"), shared = $("support-community");
   if (own) own.hidden = !use.sims;
   drawSupportCounts($("support-use-facts"), use.sims ? [

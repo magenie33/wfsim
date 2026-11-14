@@ -291,6 +291,12 @@ let BOARD = {};
 /// ABSENT IS A STATE, not a failure — the dev server has no stamp, and a page
 /// that cannot say when the board was scored says nothing rather than guessing.
 let BOARD_META = null;
+function setBoardMeta(meta) {
+  BOARD_META = meta;
+  if (!$("home-page")?.hidden) renderHomeFacts();
+  if (!$("support-page")?.hidden) renderSupportCounts();
+  return meta;
+}
 /// THE LIVE BOARD'S OWN ADDRESS: its bucket, served by the CDN with no worker
 /// in the way (worker/live_board.js), at the same paths as on the site.
 ///
@@ -579,7 +585,7 @@ function showBenchBoard() {
 /// THE STAMP IS ASKED BESIDE THE ROWS, so its scene lists (`scene_weapons`)
 /// are usually in hand when the weapon's scenes are asked.
 async function loadBoard(weapon) {
-  const stamp = fetchJson(`${boardOffOrigin ? BOARD_ORIGIN : ""}/board.meta.json`).then((m) => (BOARD_META = m));
+  const stamp = fetchJson(`${boardOffOrigin ? BOARD_ORIGIN : ""}/board.meta.json`).then(setBoardMeta);
   if (weapon) await loadWeaponBoard(weapon);
   if (!(await stamp) && !boardOffOrigin) {
     boardOffOrigin = true;
@@ -616,7 +622,7 @@ async function reloadReviewedBoard(weapon, ruler) {
     if (!index || typeof index !== "object" || Array.isArray(index)
       || (index[weapon] != null && !Array.isArray(index[weapon])) || boardFiles.get(weapon) !== state)
       throw new Error("The board is unavailable.");
-    BOARD_META = meta;
+    setBoardMeta(meta);
     BOARD[weapon] = files.flat();
     dirs.forEach(scene => state.loaded.add(scene));
     BOARD_HAVE.add(weapon);
@@ -685,7 +691,7 @@ async function boardFromSite(weapon) {
   const idx = await fetchJson(BOARD_ORIGIN + "/board/index.json");
   if (!idx) return;
   BOARD_INDEX = idx;
-  BOARD_META = await fetchJson(BOARD_ORIGIN + "/board.meta.json");
+  setBoardMeta(await fetchJson(BOARD_ORIGIN + "/board.meta.json"));
   try { renderBenchBoard(); } catch (_) { /* nothing is showing it yet */ }
   await loadWeaponBoard(weapon, BOARD_ORIGIN);
   boardRowsLanded(weapon);

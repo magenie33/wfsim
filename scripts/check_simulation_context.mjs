@@ -60,6 +60,18 @@ export async function checkSimulationContext(app) {
       await loadRecord(shownResult.r, 0, null);
       olderEngineRefused = calls.length === measuredCalls && !!recordState.error;
     } finally { api = originalApi; }
+    const held = shownResult;
+    const refuses = (context, shown = first.r) => {
+      shownResult = { r: shown, context };
+      try { resultRequest(first.r, { run: first.r.run }); return false; } catch { return true; }
+    };
+    const incomplete = [
+      refuses({ ...first, schema: 1, key: undefined, request: undefined }),
+      refuses({ ...first, schema: 1, key: simKey(), request: undefined }),
+      refuses({ ...first, engine: undefined }),
+      refuses(second, second.r),
+    ];
+    shownResult = held;
     const log = calls.at(-1);
     const beforeValence = simKey(), originalValence = { ...valence };
     valence = { ...valence, element: valence.element === 'toxin' ? 'magnetic' : 'toxin' };
@@ -71,7 +83,7 @@ export async function checkSimulationContext(app) {
       recordRequest: !!request && !!log && log.headshot_pct === 100 && log.metric === 'kpm'
         && JSON.stringify(log.mods) === JSON.stringify(request.mods)
         && JSON.stringify(log.formation) === JSON.stringify(request.formation),
-      legacyRefused, olderEngineRefused, valenceIdentity,
+      legacyRefused, olderEngineRefused, valenceIdentity, incomplete,
     };
   })()`);
   app.check('editing the scenario immediately marks the displayed measurement stale', result.immediate.stale, JSON.stringify(result.immediate));
@@ -84,6 +96,7 @@ export async function checkSimulationContext(app) {
   app.check('editing the scenario does not change the displayed combat record identity', result.firstKey === result.keyAfterEdit);
   app.check('reading an older combat record submits its captured build and fight', result.recordRequest);
   app.check('missing historical input and another engine cannot regenerate against the editor', result.legacyRefused && result.olderEngineRefused);
+  app.check('incomplete history and a different displayed result cannot borrow current inputs', result.incomplete.every(Boolean), JSON.stringify(result.incomplete));
   app.check('changing the Kuva progenitor changes the measurement identity', result.valenceIdentity);
   app.check('the agent readout uses the same measurement and units as the page', result.returned.agent.metric === 'kpm'
     && result.returned.agent.fresh && result.historical.agent.metric === 'kpm' && !result.historical.agent.fresh);

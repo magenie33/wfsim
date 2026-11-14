@@ -86,8 +86,8 @@ function resultRequest(r, overrides) {
   if (context?.engine && context.engine !== ENGINE_ID) {
     throw new Error(tr("Run this configuration again to read its combat record."));
   }
-  if (context?.request) return { ...taskClone(context.request), ...overrides };
-  if (!context?.key || context.key === simKey()) return { ...buildPayload(), ...theFight(overrides) };
+  if (context?.request && (!context.id || context.engine === ENGINE_ID)) return { ...taskClone(context.request), ...overrides };
+  if (context && !context.id && context.key === simKey()) return { ...buildPayload(), ...theFight(overrides) };
   throw new Error(tr("Run this configuration again to read its combat record."));
 }
 

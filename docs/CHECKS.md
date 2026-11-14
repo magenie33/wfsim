@@ -1322,7 +1322,7 @@ the worker stubbed before the app boots. Built site only. The home tally reads
 `stats/tally.json` and asks no worker; a file stale by the server's clock,
 unreachable or of another version is passed over for `/api/board/tally`.
 Both sources show player scores and available live devices on home. Upload
-counts remain visible; catalog size, official scores and combined evaluations do not.
+counts update when board metadata arrives; catalog size, official scores and combined evaluations do not.
 Signed out, the ranking is the file's period sliced to the page; a file of
 another day, or none, is passed over for `/api/contributors`; signed in, the
 worker is asked and the file never read. `WFSIM_BREAK=<name>` sabotages one
@@ -2591,6 +2591,8 @@ fights. Switching restores the matching measurement; edits and history retain
 the measured units, headshot rate and combat-record request. Changed inputs are
 marked beside the result. The context and request assertions fail against the
 prior renderer.
+Saved history without captured inputs or a known engine, and handlers for a
+different displayed result, cannot regenerate from the current editor.
 
 How much room the app takes on the reader's machine. It
 measures the RATIO rather than asserting a constant, fills the disk from OTHER
@@ -2656,7 +2658,8 @@ about the READER — how much they have run here — asserted absent on a browse
 that has run nothing, correct after a real run at a run count the check chose,
 and absent from the request that run sent. Shared results are checked against
 a repeated submission pool and a separate verified-player tally; neither may
-change the personal record. Reduced motion must show the final values at once.
+change the personal record. Metadata arriving after first paint must refresh
+both the method figures and community counts. Reduced motion must show the final values at once.
 It forces English rather than inheriting the browser's language, then checks
 the Chinese overlay.
 

@@ -69,9 +69,13 @@ const out = JSON.parse(await evaluate(`(async () => {
   o.stale = await home(tally(ago(20 * 60_000)));
   o.unreachable = await home("fail");
   o.version = await home(tally(ago(0), 2));
-  const oldBoard = BOARD_META;
-  BOARD_META = { boards: { first: { submissions: 123, listed: 789 }, second: { submissions: 123, listed: 456 } } };
+  const oldBoard = BOARD_META, originalBoardFetch = fetchJson;
+  BOARD_META = null;
   renderHomeFacts();
+  fetchJson = async (url, ...args) => String(url).endsWith('/board.meta.json')
+    ? { boards: { first: { submissions: 123, listed: 789 }, second: { submissions: 123, listed: 456 } } }
+    : originalBoardFetch(url, ...args);
+  try { await loadBoard(null); } finally { fetchJson = originalBoardFetch; }
   o.homeFacts = [...document.querySelectorAll('#home-facts b')].map(node => Number(node.textContent.replace(/[^0-9]/g, '')));
   o.expectedHomeFacts = [123];
   BOARD_META = oldBoard; renderHomeFacts();
@@ -128,7 +132,7 @@ check("...and so is one that cannot be reached, or of another version",
 check("home shows player scores alone alongside available live devices for both stats sources",
   [out.fresh, out.stale, out.unreachable, out.version].every(row => row?.shown.keys === "volunteers,devices"
     && Number(row.shown.players) === row.got && row.shown.unknownDevices === "volunteers"), said);
-check("home shows uploaded builds without catalog or combined evaluation counts",
+check("home updates uploaded builds when metadata arrives, without catalog or combined evaluation counts",
   JSON.stringify(out.homeFacts) === JSON.stringify(out.expectedHomeFacts), said);
 check("signed out, the ranking is the file's period, sliced to the page, its count the file's",
   JSON.stringify(out.signedOut?.keys) === JSON.stringify(["k2"]) && out.signedOut.total === 2 && only(out.signedOut, "file:contributors"), said);

@@ -804,6 +804,8 @@ history means no personal figures. Submissions are one shared pool and use the
 maximum across rulers; verified player scores use the same tally feed as home,
 without official scores or extrapolation. One visible-page read per minute
 refreshes the tally; a failed read keeps the last confirmed numbers.
+Board metadata refreshes visible home and support counts when it arrives,
+including the method figures.
 
 Home shows player-uploaded builds, verified player scores and live computing
 devices. Catalog size, official scores and combined evaluation totals are omitted.
