@@ -102,6 +102,13 @@ from the verified consumer arithmetic. Full live installer timing is unbound.
 
 ### Whole-secondary calibration
 
+`scripts/import_kitgun_status.py --exchange <exchange> --check` binds all
+Kitgun chambers' native emission counts and all loaders' beam status overrides
+to `tests/fixtures/client/kitgun-status-2026-10-28.json`. Closed roster and
+metadata archive/member hashes are verified before extraction. Part status is
+a shot budget; composition divides it across native pellets after adding the
+loader. M132 records the independent five-tendril/39%/7.8% panel reading.
+
 `scripts/import_secondary_calibration.py --exchange <exchange> --check` verifies
 `tests/fixtures/client/secondary-bindings.json` and regenerates
 `secondary-calibration-2026-10-28.json`. Every secondary form binds an exact

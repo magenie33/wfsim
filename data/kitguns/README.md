@@ -64,7 +64,7 @@ magazine      = chamber.magazine[loader.magazine] # size class -> a number
 range_m       = chamber.range_m[grip]             # a beam chamber only
 crit_chance   = chamber.crit_chance     + loader.crit_chance
 crit_multiplier = chamber.crit_multiplier + loader.crit_multiplier
-status_chance = chamber.status_chance   + loader.status_chance
+status_chance = (chamber.status_chance + loader.status_chance) / chamber.multishot
 reload_seconds= loader.reload_seconds
 recoil        = grip.recoil
 everything else is the chamber's
@@ -72,6 +72,10 @@ everything else is the chamber's
 
 The three deltas are ADDITIVE and can be negative: Flutterfire is −8% crit
 chance and +14% status. Nothing is a percentage of anything.
+
+Status values on the parts price the whole shot; the assembled value is per
+projectile. M132 confirms secondary Vermisplicer's five-tendril split. Only
+native multishot divides the budget; modded multishot adds opportunities.
 
 ON A BEAM THE GRIP TRADES REACH, not fire rate: Gaze and Vermisplicer tick 12
 times a second on every grip and publish a range per grip instead.
