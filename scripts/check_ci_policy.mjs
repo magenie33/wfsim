@@ -133,7 +133,7 @@ for (const source of ["import './nested.mjs';", "import(process.env.FIXTURE || '
     ? source : "readFileSync(new URL('../web/src/static/app/new-client.js', import.meta.url))", () => true),
     /nested\.mjs must declare/, 'a helper cannot hide an undeclared frontend read');
 }
-for (const path of ['worker/pg/schema.sql', 'scripts/check_board_verify.mjs', 'scripts/check_tasks.mjs']) {
+for (const path of ['worker/pg/schema.sql', 'scripts/check_board_verify.mjs', 'scripts/check_tasks.mjs', 'scripts/check_task_reissue.mjs']) {
   const p = classify([path]);
   assert(p.jobs.includes('site') && p.jobs.includes('pipeline') && p.jobs.includes('parity'), path);
   assert(!p.jobs.includes('test') && !p.jobs.includes('gas'), path);
@@ -176,6 +176,7 @@ const nonSearchTools = [...inventoryControlInputs, 'scripts/check_weapon_search.
   'scripts/build_batches.mjs', 'scripts/ship_family.mjs', 'scripts/ship_bot.py', '.github/workflows/scores.yml',
   'scripts/factoryd.mjs', 'scripts/board_admission_schema.mjs',
   'scripts/fetch_score_inputs.mjs', 'scripts/order_credit.mjs', 'scripts/fetch_queue.sh', '.github/workflows/settle.yml',
+  'scripts/task_reissue.mjs',
   'scripts/pg_task_archive.py', 'scripts/ship_task_archive.py', 'scripts/check_task_archive.py',
   'scripts/ship.py', 'scripts/release_stage.py', 'scripts/check_release_stage.py', 'scripts/check_ship_bot_assets.py',
   'scripts/check_ship_workers.py', 'scripts/check_ship_bot_live.py',
