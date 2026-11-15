@@ -13,7 +13,7 @@ import { facts } from "../worker/factory.js";
 import { initiatorOf, boardTasksRoute } from "../worker/board_tasks.js";
 import { initiatorCode, sha256 } from "../worker/accounts.js";
 import worker from "../worker/index.js";
-import { DIAL_DEFAULTS } from "../worker/dials.js";
+import { DIAL_DEFAULTS, setDial as setFixtureDial } from "../worker/dials.js";
 import { testDb } from "./pg/test_db.mjs";
 import { inboxSource } from "./inbox_reader.mjs";
 
@@ -121,6 +121,7 @@ check("a submission signed in keeps its account's code, one signed out `anonymou
     && r.family_source === null && r.observation === null), JSON.stringify(inbox));
 
 // ---- an arrival asked ----
+await setFixtureDial(env,'board_admission',1,'fixture');
 await L.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES ('arrivals-2026-10-14', 'a', 't', 1), ('backfill-2026-10-14', 'b', 't', 1)");
 await L.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES ('bx', '2026-10-14', ?), ('by', '2026-10-14', ?)",
   JSON.stringify({ weapon: "braton_prime", mods: ["serration"] }), JSON.stringify({ weapon: "braton_prime", mods: ["split_chamber"] }));

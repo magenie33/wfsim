@@ -84,6 +84,7 @@ check("…and from nobody signed in", (await meritRoute(new Request("https://wfs
   const dial = (name, value) => L.run(`INSERT INTO state_factory_parameters (name, value, set_by, set_at) VALUES (?, ?, 'check', ?)
     ON CONFLICT (name) DO UPDATE SET value = excluded.value`, name, value, at);
   await dial("merit_priority", 1);
+  await dial('board_admission',1);
   forgetDials();
   await A.run("INSERT INTO entity_accounts (id, created_at, username) VALUES ('payer', '2026-10-01', 'payer')");
   await A.run("INSERT INTO state_login_sessions (token_hash, account, expires_at) VALUES (?, 'payer', '2099-01-01')", await sha256("tp"));

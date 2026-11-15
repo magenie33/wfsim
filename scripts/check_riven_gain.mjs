@@ -16,6 +16,7 @@ import { canon } from "../worker/tasks.js";
 import { facts } from "../worker/factory.js";
 import { headlessRivenGainRequest } from "../mcp/headless.js";
 import { testDb } from "./pg/test_db.mjs";
+import { setDial } from '../worker/dials.js';
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -182,6 +183,7 @@ await L.run("UPDATE state_compute_work SET state = 'withdrawn'");
     return c;
   };
   // A NEW BUILD'S ROW AND A RESCORE'S, asked of the factory as the queue asks.
+  await setDial(env,'board_admission',1,'fixture');
   const day = new Date().toISOString().slice(0, 10);
   for (const id of ["new1", "old1"]) await L.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES (?, ?, ?)", id, ago(0), JSON.stringify({ weapon: "furis", mods: [id] }));
   await L.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES (?, 'x', 'x', 1), ('rescore-x', 'x', 'x', 1)", `arrivals-${day}`);

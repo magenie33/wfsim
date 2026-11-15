@@ -9,6 +9,7 @@ import { verifyRoute, PACK_PROTOCOL as PROTOCOL } from "../worker/verify.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { RENEW_MS, ROW_CEILING_MS } from "../worker/tasks.js";
 import { testDb } from "./pg/test_db.mjs";
+import { setDial } from '../worker/dials.js';
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -18,6 +19,7 @@ const check = (what, ok, detail = "") => {
 
 const LIBRARY = await testDb("library"), ACCOUNTS = await testDb("accounts"), L = LIBRARY;
 const env = { LIBRARY, ACCOUNTS, ASSETS: { fetch: async () => new Response(JSON.stringify({ engine: "e1", release: "r1" })) }, FACTORY_TOKEN: "ft" };
+await setDial(env,'board_admission',1,'fixture');
 const TOKEN = { authorization: "Bearer ft" };
 const post = async (route, path, body, headers = {}) =>
   (await route(new Request(`https://x${path}`, { method: "POST", headers, body: JSON.stringify(body) }), env, path)).json();

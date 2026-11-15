@@ -52,7 +52,7 @@ async function world(proc, settle) {
   const prepare = L.prepare, counted = (s) => ({ ...s, bind: (...a) => counted(s.bind(...a)),
     first: () => { CALLS.made++; return s.first().catch((e) => { if (e && e.code === "WS001") CALLS.js++; throw e; }); } });
   L.prepare = (sql) => (/^CALL board_sync/.test(sql) ? counted(prepare(sql)) : prepare(sql));
-  for (const [name, v] of [["sync_proc", proc], ["settle_async", settle]]) {
+  for (const [name, v] of [["board_admission", 1], ["sync_proc", proc], ["settle_async", settle]]) {
     await L.run("INSERT INTO state_factory_parameters (name, value, set_by, set_at) VALUES (?, ?, 'check', '2026-01-01T00:00:00.000Z')", name, v);
   }
   await A.run("INSERT INTO entity_accounts (id, created_at) VALUES ('acc1', '2026-01-01T00:00:00.000Z'), ('acc2', '2026-01-01T00:00:00.000Z')");

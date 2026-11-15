@@ -36,6 +36,7 @@ for(const settleAsync of [0,1]) {
   forgetDials();forgetWitnesses();
   const db=await testDb("library"),accounts=await testDb("accounts");
   const env={LIBRARY:db,ACCOUNTS:accounts,ASSETS:{fetch:async()=>Response.json({engine:"e1",release:"r1"})}};
+  await setDial(env,'board_admission',1,'fixture');
   await setDial(env,"sync_proc",1,"check");await setDial(env,"settle_async",settleAsync,"check");
   const batch="arrivals-2026-11-10",A="a".repeat(24),B="b".repeat(24);
   await db.run("INSERT INTO entity_compute_batches(id,at,why,total) VALUES(?,'x','check',0)",batch);
