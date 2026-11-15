@@ -45,6 +45,7 @@ touch new-builds.ndjson
 # order. Twice is harmless: a build is keyed by its hash and a queue row by its
 # own key.
 intake_arrivals() {
+  node "$HERE/board_storage.mjs" "$WORK" >/dev/null || return 1
   # WHO ASKED rides with the record to the rows it owes (docs/BOARD.md §"Who asked").
   node "$HERE/inbox_reader.mjs" --out inbox-new.ndjson --receipt inbox-read.json --cursor inbox-cursor.json \
     --max-rows 100 --max-seconds 15 || { echo "live: inbox read refused" >&2; return 1; }
@@ -53,19 +54,19 @@ intake_arrivals() {
     node "$HERE/inbox_reader.mjs" --commit inbox-read.json --out inbox-new.ndjson --cursor inbox-cursor.json
     return 1
   fi
+  rm -f inbox-new.ndjson.done || return 1
   node --max-old-space-size=96 "$HERE/live_intake.mjs" "$WORK" "$BIN" "$INCREMENTAL_INVENTORY" inbox-new.ndjson \
     >> intake.log 2>&1 || return 1
   node "$HERE/inbox_reader.mjs" --commit inbox-read.json --out inbox-new.ndjson --cursor inbox-cursor.json --done inbox-new.ndjson.done || return 1
   node "$HERE/inbox_reader.mjs" --check inbox-read.json --out inbox-new.ndjson
 }
 
-# THE INTAKE LOOP: every `POLL_SECONDS`, whatever the main loop is doing. Its
+# THE INTAKE LOOP drains acknowledged bounded pages, polling after idle or failure. Its
 # own `DB_OUT`: a variable the main loop set would name the same file.
 intake_loop() {
   DB_OUT=""
   while true; do
-    intake_arrivals || true
-    sleep "$POLL_SECONDS"
+    if ! intake_arrivals; then sleep "$POLL_SECONDS"; fi
   done
 }
 

@@ -720,6 +720,7 @@ jobs:
           node scripts/check_board_operator.mjs
           node scripts/check_split_board_capture.mjs
           node scripts/check_live_mailbox.mjs
+          node scripts/check_live_intake_loop.mjs
           node scripts/check_score_inputs.mjs
           node scripts/check_live_ranker.mjs
           node scripts/check_work_calibration.mjs

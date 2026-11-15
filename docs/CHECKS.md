@@ -346,6 +346,11 @@ must fail. Source and consumer contracts remain unchanged.
 and kills another during a request. The production opener covers both writes
 and replies with one deadline, closes the failed operator and retains successful
 description values. The bare opener must fail the stopped-pipe case.
+`check_live_intake_loop.mjs` executes the production Bash functions with real
+inbox capture receipts and cursor commits. Fully acknowledged bounded pages
+continue immediately; idle, read/admission errors, partial ACK, pause and lost
+storage poll later. A stale done file cannot advance a paused scan. Restoring
+the fixed post-success sleep or retaining the old done file must fail.
 `check_inventory_disk_budget.mjs` also runs `check_capacity_walk.mjs`. A child
 removed after an earlier file was measured invalidates the entire sample; the
 retry must include growth of that earlier file. Repeated disappearance is
