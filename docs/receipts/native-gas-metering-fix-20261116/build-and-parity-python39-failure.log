@@ -1,0 +1,31 @@
+every item on a fight's path is metered
+  ok   458 top-level items carry #[wfsim_gas_macro::metered]
+  ok   every macro_rules! body that loops is a metered_expr!
+  ok   no production code calls the platform's maths, only engine/src/rules/math.rs
+Traceback (most recent call last):
+  File "/Users/magenie33/src/github.com/magenie33/wfsim-wt-native-gas-metering-fix-1116/scripts/data_packs.py", line 31, in <module>
+    def apart(now: datetime | None = None) -> bool:
+TypeError: unsupported operand type(s) for |: 'type' and 'NoneType'
+node:internal/errors:998
+  const err = new Error(message);
+              ^
+
+Error: Command failed: python3 scripts/data_packs.py /Users/magenie33/src/github.com/magenie33/wfsim-wt-native-gas-metering-fix-1116/target/gas-check-pkg
+    at genericNodeError (node:internal/errors:998:15)
+    at wrappedFn (node:internal/errors:543:14)
+    at checkExecSyncError (node:child_process:925:11)
+    at execFileSync (node:child_process:961:15)
+    at run (file:///Users/magenie33/src/github.com/magenie33/wfsim-wt-native-gas-metering-fix-1116/scripts/check_gas.mjs:98:40)
+    at file:///Users/magenie33/src/github.com/magenie33/wfsim-wt-native-gas-metering-fix-1116/scripts/check_gas.mjs:107:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:430:25)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 27575,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v25.8.1

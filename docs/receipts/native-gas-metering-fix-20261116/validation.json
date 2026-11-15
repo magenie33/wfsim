@@ -1,0 +1,163 @@
+{
+  "base": "a36f7e06ffcf7a7f87c09911eef5f6abdfcc8b3e",
+  "failed_ci": "43751418263",
+  "failed_callers": {
+    "gas": "132926245850/step6 build",
+    "checks": "132928318932/step10 plain"
+  },
+  "before_static_exit": 1,
+  "before_items": 467,
+  "before_missing": 11,
+  "test_only_items_moved": 9,
+  "production_items_retained": 458,
+  "new_production_metered_impls": [
+    "Source",
+    "Listener"
+  ],
+  "test_bytes_identical": true,
+  "production_bodies_identical": true,
+  "check_and_macro_and_threshold_and_prices_unchanged": true,
+  "after_plain_exit": 0,
+  "build_entry_exit": 0,
+  "build_entry_checks": 51,
+  "native_wasm_rows": 9,
+  "irradiate_tests": 7,
+  "irradiate_test_failures": 0,
+  "clippy": "wfsim-engine --all-targets --jobs2 -- -D warnings PASS",
+  "negative_controls": [
+    {
+      "removed_production_annotation": "Source",
+      "exit": 1,
+      "missing_impl_reported": true
+    },
+    {
+      "removed_production_annotation": "Listener",
+      "exit": 1,
+      "missing_impl_reported": true
+    },
+    {
+      "removed_production_annotation": "SecondaryIrradiate",
+      "exit": 1,
+      "missing_impl_reported": true
+    }
+  ],
+  "local_build_attempt": "First build entry hit local system Python3.9 data_packs.py annotation incompatibility after binaries built; failure retained. Same source rerun with /opt/homebrew/bin Python3.14 PATH passed. No script change.",
+  "full_ci_dispatched_by_author": false,
+  "evidence": {
+    "before.log": {
+      "sha256": "bf78089df2f170384e2dba92eb697c811c698a9f2b9981fac79ea47b7b8ed43b",
+      "bytes": 1521
+    },
+    "tests-moved-only.log": {
+      "sha256": "e477baf0b9b5a45edb9b161b58220aa63c36cb02a01c4c1c32983d36f266cf84",
+      "bytes": 482
+    },
+    "after.log": {
+      "sha256": "2384683fd70e4a85214191413c59fabfea989d1542050df86d21dfbba18bd314",
+      "bytes": 343
+    },
+    "negative-Source.log": {
+      "sha256": "adba4624b801a306dfce5731a2e3408c7dedd53f4224a00d925c66a03cfe215f",
+      "bytes": 408
+    },
+    "negative-Listener.log": {
+      "sha256": "724bdcf819f7dffff4840d8b484a5cfab7679f1c4dd3d0d48bf9d5c376061f42",
+      "bytes": 410
+    },
+    "negative-SecondaryIrradiate.log": {
+      "sha256": "6847b263e0a02aaaed79075e6d5f5ba2c87bd7f5663c8e6917783ceb2b224dd7",
+      "bytes": 420
+    },
+    "restored.log": {
+      "sha256": "2384683fd70e4a85214191413c59fabfea989d1542050df86d21dfbba18bd314",
+      "bytes": 343
+    },
+    "build-and-parity-python39-failure.log": {
+      "sha256": "0c5d738fe5e9c1697dc6b358a79f0bba2595805f32bc702da21963458e785c98",
+      "bytes": 1548
+    },
+    "build-and-parity.log": {
+      "sha256": "9e878cdff22f0efa244e470c6f7c77d765e393d1c8597955da16da8d4a890258",
+      "bytes": 4924
+    },
+    "irradiate-tests.log": {
+      "sha256": "e199e1b116ea8394ca8ab9fbedb3276dfa0d514d380d395610b3f68bf09e7dc0",
+      "bytes": 1514
+    },
+    "clippy.log": {
+      "sha256": "df7400d562353931c267e725586b6a683a699dab83d55a58b8a58bbaaffb030f",
+      "bytes": 454
+    },
+    "layers.log": {
+      "sha256": "354a0607ad0a4043011c390827a302951fd13fcc81eaa92ce25b64ac754d578a",
+      "bytes": 206
+    },
+    "page-bodies.log": {
+      "sha256": "0e630bdb8ccde3ca79591ba78825240af7e6ae4d88785ecc9f94846e47eba763",
+      "bytes": 31
+    },
+    "comment-style.log": {
+      "sha256": "f9f1c3434e92fbd5c454d6d0e6c3149f58e7fec930fb2a8c61399508ced5ec81",
+      "bytes": 527
+    },
+    "source-audit.json": {
+      "sha256": "b5db292af37b790c853c49286dea3cce07b80d5d787a18dcd4eb64793f7f0e02",
+      "bytes": 381
+    }
+  },
+  "raw_log_preservation": {
+    "before.log": {
+      "raw_file": "before.raw.b64",
+      "raw_sha256": "bf78089df2f170384e2dba92eb697c811c698a9f2b9981fac79ea47b7b8ed43b",
+      "raw_bytes": 1521,
+      "readable_view": "before.log",
+      "view_change": "Only trailing spaces/tabs before newline stripped; original truncated check output is retained exactly in base64."
+    }
+  },
+  "committed_evidence": {
+    "after.log": {
+      "sha256": "2384683fd70e4a85214191413c59fabfea989d1542050df86d21dfbba18bd314",
+      "bytes": 343
+    },
+    "before.log": {
+      "sha256": "f41af1cd31049996c04dbd5ad269741f297547206a78c20ac35030fa5c3f4ad7",
+      "bytes": 1520
+    },
+    "before.raw.b64": {
+      "sha256": "c6031fc40a789daccd4eee80300365630a9812b12697de150658d0dd9d82775c",
+      "bytes": 2055
+    },
+    "build-and-parity-python39-failure.log": {
+      "sha256": "0c5d738fe5e9c1697dc6b358a79f0bba2595805f32bc702da21963458e785c98",
+      "bytes": 1548
+    },
+    "build-and-parity.log": {
+      "sha256": "9e878cdff22f0efa244e470c6f7c77d765e393d1c8597955da16da8d4a890258",
+      "bytes": 4924
+    },
+    "negative-Listener.log": {
+      "sha256": "724bdcf819f7dffff4840d8b484a5cfab7679f1c4dd3d0d48bf9d5c376061f42",
+      "bytes": 410
+    },
+    "negative-SecondaryIrradiate.log": {
+      "sha256": "6847b263e0a02aaaed79075e6d5f5ba2c87bd7f5663c8e6917783ceb2b224dd7",
+      "bytes": 420
+    },
+    "negative-Source.log": {
+      "sha256": "adba4624b801a306dfce5731a2e3408c7dedd53f4224a00d925c66a03cfe215f",
+      "bytes": 408
+    },
+    "restored.log": {
+      "sha256": "2384683fd70e4a85214191413c59fabfea989d1542050df86d21dfbba18bd314",
+      "bytes": 343
+    },
+    "source-audit.json": {
+      "sha256": "b5db292af37b790c853c49286dea3cce07b80d5d787a18dcd4eb64793f7f0e02",
+      "bytes": 381
+    },
+    "tests-moved-only.log": {
+      "sha256": "e477baf0b9b5a45edb9b161b58220aa63c36cb02a01c4c1c32983d36f266cf84",
+      "bytes": 482
+    }
+  }
+}
