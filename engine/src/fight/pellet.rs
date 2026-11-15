@@ -1789,31 +1789,14 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     t,
                 );
             }
-            // …AND THE ECHO, per landing pellet, because the arcane
-            // says each one triggers it.
-            spread_from_echo(
-                seat,
-                windows,
-                bodies,
-                bodies[0].debuffs.confusion.len(),
-                params,
-                active,
-                body_only(raw / bucket),
-                shares,
-                crit_multiplier,
-                tier,
-                attrition,
-                spread_mb,
-                status_chance,
-                forced,
-                &spread_composition,
-                &mut *gal,
-                &mut *arc,
-                &mut *r,
-                rec,
-                d,
-                t,
-            );
+            if params.arcane.echo_share > 0.0 {
+                irradiate::submit_immediate_direct_echo(&mut bodies[0], 0, params, arc, || SpreadStrike {
+                    raw_per_bucket: body_only(raw / bucket), shares, crit_multiplier,
+                    crit_tier: tier, attrition, modded_base: spread_mb, status_chance,
+                    forced: forced.to_vec(), status_vector: spread_composition,
+                });
+                irradiate::drain_echoes(seat, windows, bodies, params, active, gal, arc, r, rec, d, t);
+            }
             // …AND EVERYTHING BEHIND THE TARGET that this pellet
             // punched through to, at full damage. Only where there is
             // no beam: with one, these bodies are the chain's seeds

@@ -1001,6 +1001,22 @@ mod arcane_slot_tests {
         assert!(swapped.id.is_empty(), "wrong pool, wrong slot: {}", swapped.id);
     }
 
+    #[test]
+    fn cortege_keeps_irradiate_when_a_primary_arcane_is_equipped() {
+        let info = weapon("cortege");
+        let base = WeaponBase::from_data("cortege", true, &[]);
+        for request in [
+            json!({ "arcane": ["none", "secondary_irradiate"] }),
+            json!({ "arcane": ["primary_merciless", "secondary_irradiate"] }),
+        ] {
+            let fx = arcane_fx_for(&request, info, &base, StackPolicy::AssumedMax);
+            assert_eq!(
+                (fx.echo_share, fx.echo_radius_m, fx.echo_needs_radiation_stacks),
+                (1.8, 7.0, 10),
+            );
+        }
+    }
+
     /// ONE wire shape: a list, one entry per pool. A bare value is not a
     /// second spelling the server understands — the client rewrites storage
     /// to the list shape once, so nothing here reads two formats.
