@@ -132,6 +132,30 @@ Local and offline queues deduplicate new work within their own store. Their
 IDs remain held through pending completion deliveries; existing legacy local
 entries are not rewritten or cancelled during startup.
 
+### Explicit execution cutover
+
+`task_reissue.mjs` pages unfinished execution rounds under a fixed task-id
+cutoff, retaining queue-zone and FIFO order. The operator fences old writers
+before applying `compute_reissue_task`. Each transaction records the old-to-new
+round mapping, current demand snapshot and pending verification state. Imported
+rounds without source snapshots capture their traceable live consumers first.
+Untraceable work is reported separately; it cannot be silently reissued.
+
+Reissue retains computation inputs, business scope, sources, deadlines and
+capability requirements. It clears both leases, updates active workflow and
+review bindings, and preserves historical candidates and contribution decisions.
+An accepted result excludes a round from reissue. Repeating the same operation
+returns its committed replacement; a failed transaction retains the old round.
+
+Official HTTP answers must name the captured question, task and lease. Internal
+official calls cannot omit that binding for a reissued computation. Old leases
+and stale task ids cannot settle the replacement. Official release compares
+the witness and each captured question, task and lease; a delayed cleanup cannot
+release a later claim. Retained-order adoption registers demand without carrying
+old candidates or leases. A legal retained request
+format still uses the shared modules; its format alone does not select an old
+execution path. Maintenance compensation is a separate adjustment ledger.
+
 ## Build intake and captured scope
 
 All legal submitted builds are retained independently of frontend rankings.

@@ -14,8 +14,7 @@
 //   POST /api/board/adopt  {}                                                      → { adopted, left }   (factory token)
 import { BOARD_KINDS, BOARD_WORK_KINDS } from "./board_kinds.js";
 import { iso, PACE_HOURS } from "./instant.js";
-import { witnessOf } from "./tasks.js";
-import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, SCENE_FIRST_MS, VERBS, factoryAuthed } from "./factory.js";
+import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, SCENE_FIRST_MS, factoryAuthed } from "./factory.js";
 import { servedRelease } from "./verify.js";
 import { retireBoardRows } from "./board_reviews.js";
 import { scoreWitnessWrites } from "./computation_records.js";
@@ -288,18 +287,16 @@ async function ask(request, env) {
   return json({ ok: true, asked: asks.length, skipped: rows.length - asks.length });
 }
 
-/// THE ORDERS OPEN BEFORE THE FACTORY, asked of it once each with the results
-/// clients already sent, carried; a lease held now is kept, so its answer lands.
-/// Called until `left` is 0. Each is asked as of when it was opened.
+/// Retained orders register their business demand without importing executions.
 const ADOPT_BATCH = 100;
 const LIVE = "('todo', 'fresh', 'open', 'dispute', 'spot', 'arbiter', 'scoring:todo', 'scoring:open', 'scoring:fresh')";
 async function adopt(request, env) {
   if (request.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
   if (!factoryAuthed(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
-  const db = env.LIBRARY, now = Date.now();
+  const db = env.LIBRARY;
   const { engine } = await servedRelease(env);
   const { results } = await db.prepare(
-    `SELECT o.*, (SELECT min(q.batch) FROM state_board_pending_work q WHERE q.build_id = o.identity AND q.ruler = o.ruler AND q.mode = o.mode) AS batch
+    `SELECT o.identity,o.ruler,o.mode,o.record,o.at,o.priority, (SELECT min(q.batch) FROM state_board_pending_work q WHERE q.build_id = o.identity AND q.ruler = o.ruler AND q.mode = o.mode) AS batch
        FROM entity_compute_orders o WHERE o.state IN ${LIVE} AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.ref = o.identity || '|' || o.ruler || '|' || o.mode
          AND d.producer IN ${BOARD_KINDS_SQL}) LIMIT ?`).bind(ADOPT_BATCH).all();
   for (const o of results) {
@@ -313,25 +310,6 @@ async function adopt(request, env) {
     const request = { record: JSON.parse(o.record), ruler: o.ruler, mode: o.mode };
     await facts().demand(env, { producer, ref, verb: "simulate", request, due_in_ms: DEADLINE_MS[producer],
       payload: { identity: o.identity, ruler: o.ruler, mode: o.mode, batch: o.batch }, initiator: initiatorOf(o.batch) }, engine, Date.parse(o.at));
-    const id = (await db.prepare("SELECT question FROM relation_task_consumers WHERE producer = ? AND ref = ?").bind(producer, ref).first()).question;
-    // ITS CLIENTS' RESULT, carried: the first and those that agreed with it hold
-    // its number; a disputer's own number is not kept.
-    if (o.score !== null && o.work !== null) {
-      const clients = (o.clients || o.produced_by || "").split(",").filter(Boolean);
-      const keep = o.state === "dispute" ? clients.slice(0, -1) : clients;
-      for (const c of keep) {
-        const who = await witnessOf(env, c);
-        await db.prepare(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at)
-            VALUES (?, ?, ?, ?, '', ?, ?, ?, ?)`)
-          .bind(id, o.carried_from || o.engine || "", c, who.owner, VERBS.simulate.canon({ score: o.score, metric: o.metric }, o.work),
-            JSON.stringify({ score: o.score, metric: o.metric }), o.work, o.at).run();
-      }
-      if (keep.length) await facts().settle(env, id, engine, now);
-    }
-    if (o.lease && o.leased_to && Date.parse(o.lease_until) > now) {
-      await db.prepare("UPDATE state_compute_work SET lease = ?, lease_until = ?, leased_to = ? WHERE id = ? AND lease IS NULL")
-        .bind(o.lease, o.lease_until, o.leased_to, id).run();
-    }
   }
   const left = await db.prepare(
     `SELECT count(*) AS n FROM entity_compute_orders o WHERE o.state IN ${LIVE} AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d

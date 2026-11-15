@@ -548,7 +548,9 @@ CREATE OR REPLACE VIEW state_compute_candidate_answers AS
 CREATE OR REPLACE FUNCTION compute_answer_task() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF TG_OP='INSERT' AND NEW.task_id IS NULL THEN
-    SELECT task_id INTO NEW.task_id FROM state_compute_scheduling WHERE id=NEW.question;
+    SELECT task_id INTO NEW.task_id FROM state_compute_scheduling WHERE id=NEW.question FOR UPDATE;
+    IF EXISTS(SELECT 1 FROM record_compute_task_reissues WHERE computation=NEW.question) THEN
+      RAISE EXCEPTION 'reissued computation requires a captured task' USING ERRCODE='40001'; END IF;
   END IF;
   RETURN NEW;
 END $$;
@@ -1015,3 +1017,50 @@ BEGIN
   RETURN replacement;
 END $$;
 REVOKE ALL ON FUNCTION compute_rekey_active(text,bigint,text,text,text,text) FROM PUBLIC;
+
+CREATE TABLE IF NOT EXISTS record_compute_task_reissues (
+  task_id BIGINT PRIMARY KEY,
+  computation TEXT COLLATE "C" NOT NULL,
+  replacement_task_id BIGINT NOT NULL UNIQUE,
+  operation TEXT COLLATE "C" NOT NULL,
+  changed_at TEXT COLLATE "C" NOT NULL,
+  snapshot JSONB NOT NULL
+);
+CREATE INDEX IF NOT EXISTS compute_reissues_computation ON record_compute_task_reissues(computation);
+CREATE OR REPLACE FUNCTION compute_reissue_task(text,bigint,text,text,text) RETURNS bigint LANGUAGE plpgsql AS $$
+DECLARE q state_compute_scheduling%ROWTYPE; prior record; replacement bigint; consumers jsonb; pending jsonb;
+BEGIN
+  IF coalesce(length(btrim($3)),0)=0 OR coalesce(length(btrim($4)),0)=0 OR $5 IS NULL THEN
+    RAISE EXCEPTION 'invalid task reissue'; END IF;
+  SELECT * INTO q FROM state_compute_scheduling WHERE id=$1 FOR UPDATE;
+  SELECT * INTO prior FROM record_compute_task_reissues WHERE task_id=$2;
+  IF FOUND THEN
+    IF prior.computation<>$1 OR prior.operation<>$3 THEN RAISE EXCEPTION 'different task reissue'; END IF;
+    RETURN prior.replacement_task_id;
+  END IF;
+  IF q.id IS NULL OR q.task_id<>$2 OR q.state NOT IN('open','disputed','nondeterministic') OR q.result_id IS NOT NULL THEN
+    RAISE EXCEPTION 'task is no longer unfinished' USING ERRCODE='40001'; END IF;
+  PERFORM 1 FROM relation_task_consumers WHERE question=q.id AND state='live' ORDER BY producer,ref FOR UPDATE;
+  SELECT coalesce(jsonb_agg(to_jsonb(d) ORDER BY producer,ref),'[]'::jsonb) INTO consumers
+    FROM relation_task_consumers d WHERE question=q.id AND state='live';
+  IF jsonb_array_length(consumers)=0 OR EXISTS(SELECT 1 FROM jsonb_array_elements(consumers) d
+      WHERE NOT compute_source_exists(d->>'producer',d->>'ref',d->>'payload',q.id)) THEN
+    RAISE EXCEPTION 'task reissue requires traceable live sources'; END IF;
+  SELECT coalesce(jsonb_agg(to_jsonb(v) ORDER BY engine,peer),'[]'::jsonb) INTO pending
+    FROM state_pending_verifications v WHERE question=q.id;
+  INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload,requirements)
+    SELECT q.task_id,d->>'producer',d->>'ref','reissue:'||$3||':'||q.task_id::text,d->>'asked_at',d->>'payload',
+      jsonb_build_object('captured_by','task_reissue','operation',$3,'due_at',d->>'due_at','zone',d->'zone')
+    FROM jsonb_array_elements(consumers) d WHERE NOT EXISTS(SELECT 1 FROM relation_compute_task_sources s
+      WHERE s.task_id=q.task_id AND s.producer=d->>'producer' AND s.ref=d->>'ref');
+  replacement:=compute_open_task(q.id,'pipeline_reissue',$4,$5,true);
+  UPDATE state_compute_scheduling SET due_at=q.due_at,waits=q.waits,producer=q.producer,initiator=q.initiator,
+    zone=q.zone,zone_position=coalesce(q.zone_position,q.task_id),required_capability=q.required_capability,required_engine=q.required_engine
+    WHERE id=q.id;
+  UPDATE entity_measurement_reviews SET task_id=replacement WHERE question=q.id AND task_id=q.task_id AND state='waiting';
+  DELETE FROM state_pending_verifications WHERE question=q.id;
+  INSERT INTO record_compute_task_reissues(task_id,computation,replacement_task_id,operation,changed_at,snapshot)
+    VALUES(q.task_id,q.id,replacement,$3,$5,jsonb_build_object('scheduling',to_jsonb(q),'consumers',consumers,'verification',pending));
+  RETURN replacement;
+END $$;
+REVOKE ALL ON FUNCTION compute_reissue_task(text,bigint,text,text,text) FROM PUBLIC;
