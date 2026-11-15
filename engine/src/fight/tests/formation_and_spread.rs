@@ -518,6 +518,42 @@ fn secondary_irradiate_echoes_only_off_an_irradiated_target() {
     assert!(d1 > d0, "irradiated and in a crowd, the echo lands: {d1} against {d0}");
 }
 
+#[test]
+fn cortege_two_arcanes_echo_after_radiation_qualifies() {
+    let base = crate::model::WeaponBase::from_data("cortege", false, &[]);
+    let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+    let tenno = crate::data::tenno::default_tenno();
+    let resolve = |slot: &str, id: &str| {
+        crate::data::arcanes::for_slot(slot, id).unwrap()
+            .fx(5, crate::model::StackPolicy::AssumedMax, &[], tenno)
+    };
+    let secondary = resolve("secondary", "secondary_irradiate");
+    let both = crate::data::arcanes::ArcaneFx::merged(&[
+        resolve("primary", "primary_merciless"), secondary.clone(),
+    ]);
+    let mut arena = crate::arena::Arena::training(2.0);
+    arena.others = vec![crate::formation::FoeSpec {
+        id: String::new(),
+        params: Foe::training_dummy(),
+        body_parts: BodyPart::humanoid(),
+        at: crate::rules::space::Vec2::new(2.0, 0.0),
+    }];
+    for fx in [&secondary, &both] {
+        for qualify in [false, true] {
+            let mut p = FightParams::from_panel(&panel, &arena, fx);
+            // Supply a reliable stack source to test the gate and merge, not mod RNG.
+            p.forced_procs = if qualify { vec![DamageType::Radiation] } else { Vec::new() };
+            let result = run_once(&p, &mut Rng::new(0x5EED));
+            let neighbour = result.taken.by_body().0[1];
+            if qualify {
+                assert!(neighbour > 0.0, "the qualified target must emit an echo");
+            } else {
+                assert_eq!(neighbour, 0.0, "the Radiation gate must survive the merge");
+            }
+        }
+    }
+}
+
 /// A TENDRIL'S OWN KILL SPAWNS NOTHING, which is the one kind of kill in
 /// this engine worth less than another.
 ///

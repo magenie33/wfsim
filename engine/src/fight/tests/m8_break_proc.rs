@@ -20,7 +20,7 @@ impl Probe {
         let mut state = TargetState::spawn(&p.foe, p.target_at);
         state.overguard = 0.0;
         state.shield = 0.0;
-        Self { body: Body { state, debuffs: DebuffState::default(), fallen: false },
+        Self { body: Body { state, debuffs: DebuffState::default(), fallen: false, irradiate: Default::default() },
             gal: GalStacks::default(), arc: ArcRuntime::init(&p), r: RunResult::default(),
             rec: crate::record::Record::window(0.0, 30.0, 10000, 0),
             rng: Rng::new(41), w: windows_for(&p), p }

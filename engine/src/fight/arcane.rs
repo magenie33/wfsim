@@ -51,6 +51,8 @@ impl ArcState {
 /// like [`GalStacks`]), plus the Sharpened Bullets on-kill CD buff clock.
 #[derive(Default)]
 pub(super) struct ArcRuntime {
+    pub(super) irradiate: crate::rules::perks::secondary_irradiate::SecondaryIrradiate,
+    pub(super) ready_echoes: Vec<irradiate::ReadyEcho>,
     pub(super) native_random: crate::rules::rng::NativeRng,
     pub(super) shared_native_random: Option<std::rc::Rc<std::cell::RefCell<crate::rules::rng::NativeRng>>>,
     pub(super) encumber_state: crate::model::ConditionalState,
@@ -130,6 +132,8 @@ impl ArcRuntime {
 
     pub(super) fn init(params: &FightParams) -> Self {
         Self {
+            irradiate: crate::rules::perks::secondary_irradiate::SecondaryIrradiate::default(),
+            ready_echoes: Vec::new(),
             native_random: crate::rules::rng::NativeRng::new(0),
             shared_native_random: None,
             encumber_state: crate::model::ConditionalState::default(),

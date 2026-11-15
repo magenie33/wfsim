@@ -3,7 +3,7 @@
 The primary implementation contract is the immutable Drive batch
 `20261114T152215Z-native-calculation-refactor-spec`, manifest SHA-256
 `71521af8e0a0ea0fbc683b9f98f6669879623dd352df3cdefd23e9fd7b570b1f`.
-Its 46 stages identify calculation boundaries, including unbound interfaces.
+Its stages identify calculation boundaries, including unbound interfaces.
 A recovered numeric kernel does not establish its live producer or filters.
 
 Original `UpgradeType`, `OperationType`, `Value`, `FusionPowerStep` and
@@ -63,6 +63,7 @@ factor cannot recover the original bucket bits.
 | ALN-EVT-01 | Primary one-callback type loop, positive counter presence, fresh child | Native notification cadence, beam submission and full VM dispatch |
 | ALN-EVT-02 | Encumber native sampler, SET0 suppression and positive effective update | Earlier eligibility, resource loading and ancillary owner refresh |
 | ALN-EVT-03 | Existing kill/weakpoint trigger attribution | Native lethal event and ownership dispatch |
+| IRR-01 | Native NumHits count projection; script owner keys and activate/collect/consume rules; shared scene direct-hit adapter | Full native comparator, producer, owner/type/charge binding, callback/Sleep(0) scheduler and echo recipients; [scope](SECONDARY_IRRADIATE.md) |
 | ALN-TIME-01 | Bound RPM/refire, reload and generic charge binary32 consumers | All action routes and dynamic query input installation |
 | ALN-TIME-02 | Native continuous fields; two FIRE updates before ordinary refire query | Mode input, holster and full empty/partial battery lifecycle |
 | ALN-BEAM-01 | Existing shared beam ramp/cache simulation | Native cache membership, first tick and emission cadence |
