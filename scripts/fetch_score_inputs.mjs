@@ -2,7 +2,7 @@
 // A scoring run reads only the calculations its official witness has leased.
 import postgres from './pg/node_modules/postgres/src/index.js';
 import { DatabaseSync } from 'node:sqlite';
-import { mkdtempSync, openSync, writeFileSync, closeSync, renameSync, rmSync } from 'node:fs';
+import { mkdtempSync, openSync, writeFileSync, closeSync, renameSync, rmSync, fsyncSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { BOARD_KINDS } from '../worker/board_kinds.js';
@@ -19,12 +19,19 @@ export async function captureScoreInputs({ sql, claim, directory, engine, max = 
     CREATE TABLE records(id TEXT PRIMARY KEY,body TEXT) WITHOUT ROWID;
     CREATE TABLE facts(id TEXT,ruler TEXT,mode TEXT,body TEXT,PRIMARY KEY(id,ruler,mode)) WITHOUT ROWID;`);
   let leased = 0;
+  const receipts = openSync(join(directory, 'claimed-leases.ndjson'), 'a');
   try {
     while (leased < max) {
       report('claiming', { leased });
       const limit = Math.min(2000, max - leased), tasks = await claim({ witness: 'official:scorer', engine,
         states: ['open'], producers: BOARD_KINDS, max: limit, lease_ms: 43200000 });
       if (!Array.isArray(tasks) || tasks.length > limit) throw Error('invalid factory claim response');
+      for (const task of tasks) {
+        if (typeof task.question !== 'string' || !Number.isSafeInteger(task.task_id) || task.task_id <= 0
+            || typeof task.lease !== 'string' || !task.lease) throw Error('invalid claimed calculation');
+        writeFileSync(receipts, JSON.stringify({ question: task.question, task_id: task.task_id, lease: task.lease }) + '\n');
+      }
+      fsyncSync(receipts);
       for (const task of tasks) {
         if (typeof task.question !== 'string' || task.verb !== 'simulate' || !Array.isArray(task.demands)
             || !Number.isSafeInteger(task.task_id) || task.task_id <= 0 || typeof task.lease !== 'string' || !task.lease) throw Error('invalid claimed calculation');
@@ -93,7 +100,7 @@ export async function captureScoreInputs({ sql, claim, directory, engine, max = 
     const counts = Object.fromEntries(['wanted', 'rows', 'records', 'facts'].map(table => [table, db.prepare(`SELECT count(*) n FROM ${table}`).get().n]));
     for (const name of ['library.json', 'queue.ndjson', 'facts-known.ndjson','claimed-calculations.ndjson']) renameSync(join(scratch, name), join(directory, name));
     return { leased, ...counts, snapshot };
-  } finally { db.close(); rmSync(scratch, { recursive: true, force: true }); }
+  } finally { try { fsyncSync(receipts); } finally { closeSync(receipts); db.close(); rmSync(scratch, { recursive: true, force: true }); } }
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {

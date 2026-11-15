@@ -67,6 +67,8 @@ try {
   assert.equal(lines('facts-known.ndjson')[0].measured_by, 'previous');
   assert.deepEqual(lines('claimed-calculations.ndjson').map(r => [r.build_id,r.question,r.task_id,r.lease]),
     [['a','a',1,'claim-a'],['b','b',2,'claim-b'],['b','b',2,'claim-b']]);
+  assert.deepEqual(lines('claimed-leases.ndjson'),tasks.map(({question,task_id,lease})=>({question,task_id,lease})),
+    'release receipts lost the cancelled or missing source calculations');
   const reads = queries.filter(([s]) => s.includes('jsonb_to_recordset'));
   assert.equal(reads.length, 1); assert.equal(JSON.parse(reads[0][1][0]).length, 5);
   const [text, args] = reads[0];
@@ -86,6 +88,7 @@ try {
   await assert.rejects(captureScoreInputs({ sql: { begin: async () => { throw Error('connection lost'); } },
     claim, directory, engine: 'test', max: 3 }), /connection lost/);
   assert(names.every(name => load(name) === 'previous'));
+  assert.equal(lines('claimed-leases.ndjson').length,6,'failed preparation lost captured leases');
   await assert.rejects(captureScoreInputs({ sql, claim: async () => [...tasks, tasks[0]], directory, engine: 'test', max: 3 }), /claim response/);
   assert(names.every(name => load(name) === 'previous'));
   const empty = await captureScoreInputs({ sql, claim: async () => [], directory, engine: 'test' });

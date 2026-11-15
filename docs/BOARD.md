@@ -1442,7 +1442,9 @@ questions, never a heavier client.
   official machines may settle — `disputed`, `spot`, `nondeterministic` —
   fights each on the volunteers' own engine — the checked-out site's wasm under
   node, along the page's path (`wasm_witness.mjs`), since only that build
-  counts their work — ships the fact and tells the factory. The board server
+  counts their work — submits its captured question, execution round and lease
+  to the factory. Only an accepted round is delivered to its consumers; the
+  settlement script never writes a measurement before acceptance. The board server
   fights nothing. The factory credits whom the fact agrees with and refuses a client a
   dispute or a spot check disproves: its answers stop counting, what it was
   paid within the library's window (`KEPT_MS`) is taken back, and a fact it

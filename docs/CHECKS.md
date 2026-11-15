@@ -1118,8 +1118,15 @@ binary into SQL admission with nonempty workflow steps and scheduled work.
 
 The official cycle and its CLI run against local transport fixtures. An empty
 queue and recovered transient failures succeed; persistent failures stop and
-fail the workflow. A refused shipment preserves its error, sends no official
-acknowledgment and releases its claims. The old loop and CLI fail three checks.
+fail the workflow. The actual settlement and credit scripts submit captured
+question, execution round and lease for board rows, reviews and workflows.
+Missing, partial, refused and stale acknowledgements fail without direct
+measurement writes; claims and the witness are released even on a transport
+failure. The scorer CLI requires its claim file and advances its cursor only
+after acknowledgement.
+Cleanup sends captured rounds and lease tokens in bounded pages; invalid
+receipts fail before any lease is released. Score preparation retains all
+captured leases even when a source disappears or preparation fails.
 
 ## `check_dials`
 

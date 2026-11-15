@@ -97,7 +97,7 @@ claim_body() {
   jq -n -c --arg witness "$WITNESS" --arg engine "${ENGINE:-unknown}" --argjson max "$CLAIM_PAGE" \
     --argjson kinds "$BOARD_KINDS" '{ witness: $witness, engine: $engine, states: ["open"], producers: $kinds, max: $max, lease_ms: 43200000 }'
 }
-release_body() { jq -n -c --arg witness "$WITNESS" '{ witness: $witness }'; }
+release_body() { jq -s -c --arg witness "$WITNESS" '{witness:$witness,claims:map({question,task_id,lease})}' "${1:?captured claims path required}"; }
 
 # THE CLAIM, a page at a time until the factory has nothing past its deadline
 # or `CLAIM_MAX` is reached: every question the run fights is one no client is
@@ -113,8 +113,7 @@ claim() {
   echo "queue: claimed $total question(s) past their deadline"
 }
 release() {
-  factory release "$(release_body)" || { echo "::error::state_board_pending_work: the factory refused the release [HTTP $F_CODE]"; head -c 500 "$F_OUT"; echo; return 1; }
-  echo "queue: released what $WITNESS held"
+  node "$(dirname "${BASH_SOURCE[0]}")/order_credit.mjs" --release "${1:?captured claims path required}"
 }
 
 refused() {
@@ -254,8 +253,7 @@ if [ "${1:-}" = "--body" ]; then "${2:?claim|release|page}_body" "${@:3}"; exit 
 # A RELEASE OR A CLAIM THAT FAILS FAILS THE RUN: a read without its claim is a
 # list the clients are still being handed, which is every row fought twice.
 if [ "${1:-}" = "--release" ]; then
-  [ -n "${FACTORY_TOKEN:-}" ] || { echo "queue: no factory token, nothing to release"; exit 0; }
-  release; exit $?
+  release "${2:?captured claims path required}"; exit $?
 fi
 
 if ! configured; then
@@ -266,7 +264,7 @@ if ! configured; then
   exit 0
 fi
 if [ -n "${CLAIMED:-}" ]; then
-  release
-  claim
+  echo "::error::use fetch_score_inputs.mjs to capture official execution claims"
+  exit 1
 fi
 fetch "${1:?usage: fetch_queue.sh <out.ndjson>}"

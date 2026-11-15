@@ -35,8 +35,7 @@ jobs:
         shard: [0, 1, 2, 3]
     env:
       FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
-      # ONE WITNESS A SHARD: a release frees every claim its witness holds.
-      WITNESS: official:settle-${{ matrix.shard }}
+      WITNESS: official:settle-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
       WITNESS_SITE: site
     steps:
       - uses: actions/checkout@v4
@@ -57,6 +56,6 @@ jobs:
       - name: release the claim
         if: always()
         run: |
-          curl -fsS -X POST "$FACTORY_ORIGIN/api/tasks/official/release" \
-            -H "authorization: Bearer $FACTORY_TOKEN" -H "content-type: application/json" -H "user-agent: wfsim-scorer" \
-            -d "{\"witness\":\"$WITNESS\"}" || true
+          if [ -f work/claimed-leases.ndjson ]; then
+            node scripts/order_credit.mjs --release work/claimed-leases.ndjson
+          fi

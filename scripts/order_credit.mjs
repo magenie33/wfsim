@@ -4,7 +4,7 @@
 // fact alone; a client whose bits it reproduces is credited exactly as if a
 // second client had agreed, and the factory alone decides that and pays it.
 //
-//   node order_credit.mjs <facts.ndjson> <engine>   a scorer run's facts, as answers of `official:scorer`
+//   node order_credit.mjs <facts.ndjson> <engine> <claimed-calculations.ndjson>
 //
 // The run reads from `<facts>.credited` and advances only after acknowledgement.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
@@ -16,6 +16,17 @@ const WITNESS = process.env.WITNESS || "official:scorer";
 /// The board's producers, whose demands a fact line answers.
 export { BOARD_KINDS };
 const PER_CALL = 200;
+
+const capturedClaim = ({ question, task_id, lease }) => {
+  if (typeof question !== 'string' || !question || !Number.isSafeInteger(task_id) || task_id <= 0
+      || typeof lease !== 'string' || !lease) throw Error('invalid captured official claim');
+  return { question, task_id, lease };
+};
+
+export async function releaseClaims(claims, call = official) {
+  const rows = claims.map(capturedClaim);
+  for (let i = 0; i < rows.length; i += PER_CALL) await call('release', { claims: rows.slice(i, i + PER_CALL) });
+}
 
 /// ONE CALL TO THE OFFICIAL WITNESS'S DOOR (worker/factory.js `officialRoute`).
 export async function official(what, body) {
@@ -55,14 +66,21 @@ export async function tell(facts, engine, call = official, claims = null) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  if (process.argv[2] === '--release') {
+    const path = process.argv[3];
+    if (!path || process.argv.length !== 4) throw Error('usage: order_credit.mjs --release <captured-claims.ndjson>');
+    if (!process.env.FACTORY_TOKEN) throw Error('FACTORY_TOKEN required');
+    await releaseClaims(readFileSync(path,'utf8').split('\n').filter(Boolean).map(JSON.parse));
+    process.exit(0);
+  }
   const [path, engine, claimsPath] = process.argv.slice(2);
-  if (!path || !engine) { console.error("usage: order_credit.mjs <facts.ndjson> <engine> [claimed-calculations.ndjson]"); process.exit(2); }
-  if (!process.env.FACTORY_TOKEN) { if (claimsPath) throw Error('FACTORY_TOKEN required'); console.log("credit: no factory token"); process.exit(0); }
-  const claims = claimsPath ? new Map(readFileSync(claimsPath,'utf8').split('\n').filter(Boolean).map(line => {
+  if (!path || !engine || !claimsPath) { console.error("usage: order_credit.mjs <facts.ndjson> <engine> <claimed-calculations.ndjson>"); process.exit(2); }
+  if (!process.env.FACTORY_TOKEN) throw Error('FACTORY_TOKEN required');
+  const claims = new Map(readFileSync(claimsPath,'utf8').split('\n').filter(Boolean).map(line => {
     const { build_id, ruler, mode, question, task_id, lease } = JSON.parse(line);
     if (typeof question !== 'string' || !Number.isSafeInteger(task_id) || task_id <= 0 || typeof lease !== 'string' || !lease) throw Error('invalid captured official claim');
     return [`${build_id}|${ruler}|${mode}`, { question, task_id, lease }];
-  })) : null;
+  }));
   const cursor = `${path}.credited`;
   const from = existsSync(cursor) ? Number(readFileSync(cursor, "utf8")) || 0 : 0;
   const all = existsSync(path) ? readFileSync(path, "utf8").split("\n").filter(Boolean) : [];

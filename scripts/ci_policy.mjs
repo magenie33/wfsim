@@ -36,7 +36,7 @@ const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbo
   'scripts/inventory_pipeline.mjs', 'scripts/inventory_relational_pipeline.mjs',
   'scripts/build_batches.mjs', 'scripts/ship_family.mjs', 'scripts/ship_bot.py', '.github/workflows/scores.yml',
   'scripts/factoryd.mjs', 'scripts/board_admission_schema.mjs',
-  'scripts/fetch_score_inputs.mjs', 'scripts/order_credit.mjs',
+  'scripts/fetch_score_inputs.mjs', 'scripts/order_credit.mjs', 'scripts/fetch_queue.sh', '.github/workflows/settle.yml',
   'scripts/pg_task_archive.py', 'scripts/ship_task_archive.py', 'scripts/check_task_archive.py',
   'scripts/ship.py', 'scripts/release_stage.py', 'scripts/check_release_stage.py', 'scripts/check_ship_bot_assets.py',
   'scripts/check_ship_workers.py', 'scripts/check_ship_bot_live.py',

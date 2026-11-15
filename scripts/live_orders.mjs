@@ -11,19 +11,16 @@
 // second client, and `settle` fights what only they may settle (worker/tasks.js
 // `OFFICIAL_STATES`) as an official witness. It fights on the volunteers' own
 // engine — the site's wasm (scripts/wasm_witness.mjs), the only build that counts their
-// work — ships the fact through `ship_facts.sh`, and tells the factory, which
+// work — submits the captured execution round to the factory, which
 // refuses whichever client the fact disproves, on that engine alone.
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
-import { execFileSync } from "node:child_process";
 import { cpus } from "node:os";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
-import { official, tell } from "./order_credit.mjs";
+import { join } from "node:path";
+import { official, tell, releaseClaims } from "./order_credit.mjs";
 import { BOARD_WORK_KINDS } from "../worker/board_kinds.js";
 import { witness } from "./wasm_witness.mjs";
 
 const SETTLE_PER_CYCLE = 3;
-const HERE = dirname(fileURLToPath(import.meta.url));
 const [mode, work, arg] = process.argv.slice(2);
 const WITNESS = process.env.WITNESS || "official:live";
 
@@ -35,27 +32,48 @@ const LATE = new Error("took too long");
 const LANES = Number(process.env.WITNESS_LANES) || Math.max(1, Math.floor(cpus().length / 2));
 
 /// WHAT ONLY THE SERVER MAY SETTLE, claimed from the factory a few at a time,
-/// fought, shipped to `scores` and told: the factory credits whom the fact
-/// agrees with and refuses whom it disproves. What did not fight is released
-/// for a later cycle.
+/// fought and submitted with their captured round: only an accepted fact is
+/// delivered. The factory credits whom it agrees with and refuses whom it
+/// disproves. What did not fight is released for a later cycle.
 async function settle() {
   const w = await witness({ lanes: LANES, site: process.env.WITNESS_SITE || join(arg, "witness") });
   const dir = join(work, "settle");
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
-  const facts = [], reviews = [], workflows = [];
+  const facts = [], reviews = [], workflows = [], held = [], claims = new Map();
+  const capture = tasks => {
+    let invalid = false;
+    const rows = [];
+    for (const { question, task_id, lease } of tasks) {
+      if (typeof question !== "string" || !question || !Number.isSafeInteger(task_id) || task_id <= 0
+          || typeof lease !== "string" || !lease) { invalid = true; continue; }
+      held.push({ question, task_id, lease });
+      rows.push({ question, task_id, lease });
+    }
+    writeFileSync(join(work, "claimed-leases.ndjson"), rows.map(row => JSON.stringify(row) + "\n").join(""), { flag: "a", flush: true });
+    if (invalid) throw Error("invalid captured official claim");
+  };
+  const answer = async (producer, answers) => {
+    if (!answers.length) return;
+    const { states } = await official("answer", { witness: WITNESS, engine: w.engine, producers: [producer], answers });
+    if (!Array.isArray(states) || states.length !== answers.length || states.some(state => !["fact", "spot"].includes(state)))
+      throw Error("official results not fully acknowledged");
+  };
   let claimed = 0;
   try {
     try {
       const { tasks } = await official("claim", { witness: WITNESS, engine: w.engine, states: ["disputed", "spot", "nondeterministic"],
         producers: [...BOARD_WORK_KINDS,"build_workflow"], capabilities:["fixed-board-input-v1"], max: SETTLE_PER_CYCLE, lease_ms: 2 * SETTLE_FIGHT_MS });
+      capture(tasks);
       if (tasks.length < SETTLE_PER_CYCLE) {
         const fallback = await official("claim", { witness: WITNESS, engine: w.engine, states: ["open"], producers: ["board_review","build_workflow"], capabilities:["fixed-board-input-v1"],
           max: SETTLE_PER_CYCLE - tasks.length, lease_ms: 2 * SETTLE_FIGHT_MS });
+        capture(fallback.tasks);
         tasks.push(...fallback.tasks);
       }
       claimed = tasks.length;
       for (const t of tasks) {
+        const receipt = { question: t.question, task_id: t.task_id, lease: t.lease };
         const d = t.demands[0];
         if (!d) { console.error(`orders: ${t.question.slice(0, 8)} came with no demand — skipped`); continue; }
         const row = d.producer==="build_workflow"
@@ -73,27 +91,27 @@ async function settle() {
         if (!got) continue;
         const done = new Date();
         if (d.producer === "build_workflow") {
-          workflows.push({ref:d.ref,result:{score:got.score,metric:got.metric},work:got.work});
+          workflows.push({ref:d.ref,...receipt,result:{score:got.score,metric:got.metric},work:got.work});
           continue;
         }
         if (d.producer === "board_review") {
-          reviews.push({ ref: d.ref, result: { score: got.score, metric: got.metric }, work: got.work });
+          reviews.push({ ref: d.ref, ...receipt, result: { score: got.score, metric: got.metric }, work: got.work });
           continue;
         }
+        claims.set(`${row.identity}|${row.ruler}|${row.mode}`, receipt);
         facts.push({ identity: row.identity, ruler: row.ruler, metric: got.metric, mode: row.mode, measured_by: w.engine || "",
           score: got.score, cost_seconds: (done - began) / 1000, started_at: began.toISOString(), finished_at: done.toISOString(), work: got.work });
       }
     } finally { await w.close(); }
-    if(workflows.length) await official("answer",{witness:WITNESS,engine:w.engine,producers:["build_workflow"],answers:workflows});
-    if (reviews.length) await official("answer", { witness: WITNESS, engine: w.engine, producers: ["board_review"], answers: reviews });
+    await answer("build_workflow", workflows);
+    await answer("board_review", reviews);
     if (facts.length) {
       writeFileSync(join(dir, "facts.ndjson"), facts.map((f) => `${JSON.stringify(f)}\n`).join(""));
-      execFileSync("bash", [join(HERE, "ship_facts.sh"), join(dir, "facts.ndjson")], { stdio: ["ignore", "inherit", "inherit"] });
-      await tell(facts, w.engine, (what, body) => official(what, { ...body, witness: WITNESS }));
+      await tell(facts, w.engine, (what, body) => official(what, { ...body, witness: WITNESS }), claims);
       console.error(`orders: recorded ${facts.length} facts`);
     }
     return claimed;
-  } finally { await official("release", { witness: WITNESS }); }
+  } finally { await releaseClaims(held, (what, body) => official(what, { ...body, witness: WITNESS })); }
 }
 
 if (mode === "settle") { if (!(await settle())) process.exitCode = 3; }

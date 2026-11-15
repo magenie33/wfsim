@@ -112,7 +112,6 @@ env:
   # A RUN TAKES WHAT IS PAST ITS DEADLINE (docs/BOARD.md §"The fact factory"):
   # it claims those questions from the factory before it reads, so no row goes
   # to both it and a client, and the last job releases what it left.
-  CLAIMED: "1"
   # THE FACTORY IS REACHED AT workers.dev, outside the wfsim.app zone: a zone
   # bot setting challenges datacenter IPs, a runner's among them, and a free-plan
   # rule cannot exempt a path — the challenge answers 403 and the run fails.
@@ -188,6 +187,15 @@ jobs:
           name: score-input-diagnostics
           path: diagnostics/
           retention-days: 14
+          if-no-files-found: ignore
+
+      - name: keep captured leases even when preparation fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: score-claims
+          path: claimed-leases.ndjson
+          retention-days: 1
           if-no-files-found: ignore
 
       - name: keep the leased builds for the scorers
@@ -447,16 +455,20 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: the databases
-        if: needs.submissions.outputs.wired == 'true'
-        uses: ./.github/actions/databases
+      - uses: actions/setup-node@v4
         with:
-          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          pg_url: ${{ secrets.PG_PIPELINE_URL }}
+          node-version: "22.23.4"
+      - name: the captured leases from this run
+        if: needs.submissions.outputs.wired == 'true'
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: score-claims
       - name: release the claim
+        if: needs.submissions.outputs.wired == 'true'
         env:
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
-          bash scripts/fetch_queue.sh --release
+          test -f claimed-leases.ndjson
+          node scripts/order_credit.mjs --release claimed-leases.ndjson
