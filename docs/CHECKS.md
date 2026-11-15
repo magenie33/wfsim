@@ -346,6 +346,11 @@ must fail. Source and consumer contracts remain unchanged.
 and kills another during a request. The production opener covers both writes
 and replies with one deadline, closes the failed operator and retains successful
 description values. The bare opener must fail the stopped-pipe case.
+`check_inventory_disk_budget.mjs` also runs `check_capacity_walk.mjs`. A child
+removed after an earlier file was measured invalidates the entire sample; the
+retry must include growth of that earlier file. Repeated disappearance is
+bounded, while root replacement, links, foreign filesystems and other errors
+reject immediately. A skipped missing child must fail the growth and overflow cases.
 `check_split_board_capture.mjs` exercises the production source driver, explicit
 generation admission, crash recovery and durable source ACK before consumers
 finish. It verifies inventory publication at the original engine and snapshot;

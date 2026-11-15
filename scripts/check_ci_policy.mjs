@@ -31,7 +31,8 @@ assert.equal(classify(['scripts/unregistered_inventory.mjs']).deep, true);
 const boardPipelineInputs = ['deploy/wfsim-live.service', 'scripts/board_operator.mjs', 'scripts/prepared_board_inputs.mjs',
   'scripts/prepared_work_inventory.mjs', 'scripts/audit_prepared_members.mjs', 'scripts/source_capture_gc.mjs',
   'scripts/sqlite_transaction_recovery.mjs', 'scripts/check_task_pipeline.mjs',
-  'scripts/check_pipeline_clock.mjs', 'scripts/check_official_claims.mjs'];
+  'scripts/check_pipeline_clock.mjs', 'scripts/check_official_claims.mjs',
+  'scripts/capacity_directory_bytes.mjs', 'scripts/check_capacity_walk.mjs'];
 for (const path of boardPipelineInputs) {
   assert.deepEqual(classify([path]).jobs, PRODUCT_JOBS, path);
   assert.equal(classify([path]).deep, false, path + ' retains full ordinary CI without unrelated catalog search');
@@ -45,6 +46,7 @@ for (const [parent, helper, calls] of [
   ['scripts/check_task_modules.mjs', 'check_pipeline_clock.mjs', ['await pipelineClockCases(']],
   ['scripts/check_tasks.mjs', 'check_official_claims.mjs',
     ['[officialSourceIndexCases,officialClaimGuardCases]', 'await run(db)']],
+  ['scripts/check_inventory_disk_budget.mjs', 'check_capacity_walk.mjs', ["await import('./check_capacity_walk.mjs')"]],
 ]) {
   assert(checkJobPaths(boardWorkflow).has(parent), parent + ' has a permanent CI owner');
   const source = readFileSync(parent, 'utf8');

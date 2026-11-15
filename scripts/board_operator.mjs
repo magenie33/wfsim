@@ -5,7 +5,7 @@ import {openInventoryOperator} from './inventory_operator.mjs';
 export async function openBoardOperator(binary,options={}) {
  const timeoutMs=options.timeoutMs??60000;
  if(!Number.isSafeInteger(timeoutMs)||timeoutMs<1)throw Error('invalid board operator deadline');
- const operator=await openInventoryOperator(binary,options),call=operator.call;
+ const operator=await openInventoryOperator(binary,{...options,timeoutMs}),call=operator.call;
  operator.call=async(...args)=>{
   let timer;
   try {
