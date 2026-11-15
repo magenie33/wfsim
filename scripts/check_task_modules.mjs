@@ -20,13 +20,23 @@ assert(!/producerOf|on_fact|on_answer|verifier_hours|points_pool|credit\(/.test(
 console.log("ok: modules depend on common contracts; dispatch owns only selection and leases");
 
 const now = Date.now(), db = await testDb("library"), env = { LIBRARY: db };
-const upgrade = taskSchemaSql();
+const upgrade = process.argv.includes('--break-count-upgrade')
+  ? taskSchemaSql().replace(/CREATE OR REPLACE FUNCTION (?:factory_open|board_owed)\([^]*?\$\$;/g,'') : taskSchemaSql();
 assert.match(upgrade,/CREATE INDEX CONCURRENTLY IF NOT EXISTS demands_producer_question ON relation_task_consumers \(producer, question\)/);
 assert(upgrade.includes("CREATE INDEX CONCURRENTLY IF NOT EXISTS demands_delivery"));
 await db.exec("DROP TRIGGER pipeline_delivery_ready ON relation_task_consumers; ALTER TABLE relation_task_consumers DROP COLUMN delivery_at; DROP FUNCTION factory_past_safe(text,text) CASCADE; DROP FUNCTION factory_delivery_guard(text,text,text,text,text,text,text)");
 const localUpgrade = upgrade.replace("SET ROLE wfsim;", "").replaceAll("CREATE INDEX CONCURRENTLY", "CREATE INDEX");
+await db.exec(`CREATE OR REPLACE FUNCTION factory_open(text,bigint,text,bigint) RETURNS TABLE(open bigint,asking bigint)
+  LANGUAGE sql STABLE AS $$ SELECT 999999::bigint,999999::bigint $$;
+  CREATE OR REPLACE FUNCTION board_owed(text,text,text) RETURNS boolean LANGUAGE sql STABLE AS $$ SELECT false $$;
+  INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES('upgrade-probe','upgrade-probe','r','base');`);
+assert.equal((await db.get('SELECT open FROM factory_open(?::text,NULL,?::text,1)',new Date(now).toISOString(),new Date(now).toISOString())).open,999999);
+assert.equal((await db.get("SELECT board_owed('upgrade-probe','r','base') value")).value,false);
 await db.exec(localUpgrade);
 await db.exec(localUpgrade);
+assert.equal((await db.get('SELECT open FROM factory_open(?::text,NULL,?::text,1)',new Date(now).toISOString(),new Date(now).toISOString())).open,0);
+assert.equal((await db.get("SELECT board_owed('upgrade-probe','r','base') value")).value,true);
+await db.run("DELETE FROM state_board_pending_work WHERE build_id='upgrade-probe'");
 console.log("ok: the additive upgrade derives from the schema and can be applied twice before deployment");
 await db.exec("CREATE TABLE received(ref text PRIMARY KEY); CREATE TABLE delayed(ref text PRIMARY KEY)");
 for (const id of ["a", "b", "c"]) await db.run("INSERT INTO entity_compute_devices(id,seen,work) VALUES (?,'x',0)", id);

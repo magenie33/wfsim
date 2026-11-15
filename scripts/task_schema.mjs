@@ -56,6 +56,7 @@ export function taskSchemaSql() {
   const zonePrelude = schema.match(/CREATE OR REPLACE FUNCTION factory_default_zone[^]*?(?=CREATE TABLE IF NOT EXISTS state_compute_scheduling)/)?.[0];
   const zones = [
     sync.match(/CREATE OR REPLACE FUNCTION factory_candidates\([^]*?END \$function\$;/)?.[0],
+    ...['factory_open','board_owed'].map(name=>sync.match(new RegExp('CREATE OR REPLACE FUNCTION '+name+'\\([^]*?\\$\\$;'))?.[0]),
     schema.match(/DO \$queue_zone\$[^]*?END \$queue_zone\$;/)?.[0],
     schema.match(/CREATE OR REPLACE VIEW state_compute_work[^]*?FROM state_compute_scheduling s[^]*?;/)?.[0],
     schema.match(/CREATE OR REPLACE FUNCTION compute_register_tasks[^]*?END \$\$;/)?.[0],
