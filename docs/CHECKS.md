@@ -258,6 +258,97 @@ It also checks timing reuse provenance, the payout target and private output.
 `check_live_publish.mjs` verifies bounded upload progress, the final stamp,
 request timeouts, lost replies, atomic checkpoints and corrupt-ledger refusal.
 
+`check_inventory_publication.mjs` compares every disk-generated weapon,
+index and state byte with the full native renderer, including ranks, rolls,
+assembly parts, aliases, ties and metadata-only updates. A forced incorrect
+entry-floor decision must fail this comparison.
+`check_inventory_projection_audit.mjs` requires changed or absent modes in
+actual projected missing-work rows to fail the independent classifier audit.
+`check_inventory_board_pipeline.mjs` tests explicit bootstrap admission,
+sealed captures, native restarts, lost commits, exact acknowledgments and
+expired-cut recovery through the production coordinator.
+`check_board_projection_replay.mjs` runs that audit and renderer from immutable
+offline sources, including process death, restart and source hash rejection.
+`check_board_pipeline.mjs` tests immutable publication handoff, independent
+slow consumers, stage pause, per-file response loss, serial delivery, stamp
+ordering, disk backpressure and corrupted artifacts against the real receiver.
+`check_board_projection_consumers.mjs` tests bounded heads and stamp consumers
+with a large tied weapon file and the existing receiver size limit.
+`check_prepared_board_inputs.mjs` checks immutable source cuts, replay, independent
+cursors, slowest-ACK retention and indexed collection with a missing-index control.
+`check_prepared_board_access.mjs` uses the production weapon-page query at
+1,000 and 10,000 unrelated normalized sources; a missing prefix index must fail.
+Source ordinals use one bounded descending index read per batch; the unbounded
+maximum query and a missing ordinal index fail the access-path check.
+The actual publisher/auditor candidate lookup and weapon-first publication query
+must also keep their source and point-measurement prefixes.
+`check_prepared_read_indexes.mjs` uses 1,000 and 10,000 sources of the same weapon.
+Repeated empty-mode validation must use its source-owned exceptional-row index;
+missing or altered definitions fail, invalid modes remain visible, and expired
+or zero-admission rows remain excluded.
+`check_prepared_work_span.mjs` compares continuous multi-cut work spans with the
+independent full native walk and classifier, including exact QID digests. It
+covers aliases, entry floors, default appearance and retirement, transient sources
+with persistent registered obligations, lost replies, restart, new arrivals and
+minimum audited retention. Missing members, same-count wrong members, omitted
+invalidations and altered intermediate receipts must fail before cumulative ACK.
+`check_work_ack_receipts.mjs` isolates acknowledgement transport with labelled
+metadata fixtures: missing intermediate replies, concurrent source observation,
+overlapping retries after GC, monotonicity and persisted prefix receipts. Gaps,
+changed digests or lost unobserved progress fail. The source-driver check also
+rejects a different source or consumer contract before accepting its audit.
+`check_source_capture_gc.mjs` uses labelled transport fixtures to verify explicit
+creator ownership, all audited consumer watermarks, source completion, recovery
+pins, immutable receipts, bounded deletion and crash-safe unlink intents.
+Unknown files, replaced inodes, links and other generations remain retained.
+`check_sqlite_transaction_recovery.mjs` reproduces actual SQLite FULL, the original
+masked exception, atomic cursor rollback and cold reopen with a larger bound.
+Cleanup tolerates a redundant rollback only after a recorded SQLite FULL error.
+`check_board_audit_scenes.mjs` compares every native weapon/index/state file under
+a small SQLite limit. It resumes a committed scene without re-rendering it;
+missing scenes reject completion and an unpartitioned reconstruction hits FULL.
+`check_board_audit_migration.mjs` requires a separate consumer database with
+the exact source generation and supported contract. Producer output and original
+legacy baseline/setup stay unchanged; prior audit completion cannot advance ACK.
+The new contract must complete a fresh native audit before its handoff.
+`check_source_adoption.mjs` compares explicitly adopted source-only components
+with fresh native normalization, binds every protected raw row, rejects changed
+native contracts and retains the original cache bytes across lost responses.
+`check_split_board_replay.mjs` runs protected inputs through all isolated local
+stages, packages audited board files before starting inventory, resumes committed
+checkpoints and compares fresh and source-component-reuse outputs. Altered
+protected inputs fail. It does not access PostgreSQL or publish remotely.
+`check_inventory_disk_budget.mjs` verifies whole-page rollback on database
+exhaustion and explicit generated-file allocation, path, link and host-reserve
+limits without exhausting the actual filesystem.
+Explicit whole-allocation replay budgets include sibling captures, backups and
+probe artifacts once. Their root, total and reserve must match the verified
+allocation; independent narrower budgets retain their work-directory scope.
+Work-only accounting, wrong binding, overlap, path escape and linked output
+controls fail before a new replay database is created.
+`check_board_storage.mjs` rejects missing, substituted, remote, system and linked
+data storage before the shell, producer, publisher or rebuild command creates
+state. Valid local ext4/xfs UUID bindings use the configured work root.
+`ship_bot.py --self-test` also checks loaded provenance on a configured data root
+and rejects a lost mount without exposing unrelated process environment.
+`check_split_board_pipeline.mjs` runs native consumers in separate SQLite databases:
+either consumer may pause, board publication survives a full work database,
+incremental inventory retains the complete QID union, and altered modes, missing
+rows or broken source bodies fail the independent board audit. Full native bytes
+also match after retirement, source deletion and weapon changes. A deliberately
+missing producer dirty marker and a file changed after audit both prevent
+publication; a warm update does not revisit unrelated weapon sources.
+`check_split_board_capture.mjs` exercises the production source driver, explicit
+generation admission, crash recovery and durable source ACK before consumers
+finish. It verifies inventory publication at the original engine and snapshot;
+`WFSIM_BOARD_PIPELINE_PG_URL` selects the local PostgreSQL transport.
+Its source-created delta capture survives a lost source ACK cursor even after
+both native consumers finish, then retires while bootstrap files and sealed
+receipts remain available.
+`check_candidate_lookup.mjs` captures actual source/fact reverse-lookup SQL at
+1,000 and 10,000 unrelated sources. Removing its candidate-prefix index fails;
+opening an existing catalog restores the index without changing rows or cursor.
+
 `check_incremental_inventory.mjs` tests the disk catalog, exact union and audit,
 owner replacement, bounded caches, shadow fencing and crash replay.
 `check_incremental_inventory_pg.mjs` tests the real schema, transactional dirty

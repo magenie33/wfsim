@@ -41,6 +41,7 @@ only the current run's input.
 | `task_credit.js` | Idempotent contribution settlement and repayment |
 | `task_observation.js` | Read-only health observations |
 | `task_inventory.js` | Validation and publication of complete workload snapshots |
+| `task_pipeline.js` | Independent consumer controls, bounded backlog observations and progress |
 
 The modules import common contracts, not business implementations or each
 other. The composition root supplies explicit interfaces. Dispatch receives
@@ -228,6 +229,45 @@ use ordinary submit; retained family-fill outputs retain their special purpose.
 No legacy task is rekeyed, reset or recreated for this classification.
 
 ## Verification and delivery
+
+Registration, deduplication, source binding and lease acquisition remain atomic
+synchronous operations. Candidate answers and verification readiness commit
+together before reception is acknowledged. Local validation and canonicalization
+remain direct calls. A handoff contains durable identifiers rather than another
+copy of the calculation input or result.
+
+Native verification commits accepted output, exact credit decisions and delivery
+readiness, then releases its verification claim. Delivery and contribution
+consumers run independently on dedicated database connections. An unavailable
+consumer retains its readiness marker and does not occupy verification. The
+compatibility settlement API can drain these consumers inline for its callers.
+
+Committed readiness wakes the native consumer through a notification containing
+only its stage name. PostgreSQL combines equal notifications within one
+transaction. Notifications carry no task data and are not acknowledgements;
+periodic indexed reads recover missed wakeups. A wake received during a pass
+requests another pass without overlapping that consumer. Shutdown drains work
+already running.
+
+| Consumer | Durable input | Completion |
+| --- | --- | --- |
+| Verification | `state_pending_verifications` | Accepted result or waiting decision committed; claim acknowledged |
+| Delivery | `relation_task_consumers.delivery_at` | Guarded consumer writes and served acknowledgement committed |
+| Contribution | `record_candidate_answers.credit_work` | Selected credit and hourly totals committed exactly once |
+
+The native delivery consumer executes registered SQL adapters. Edge delivery
+also supplies callback adapters and historical recovery. Producer eligibility
+is applied before the batch limit; handlers retain their own idempotency and
+superseded-generation checks. Current consumers read readiness indexes rather
+than scanning result history. Historical recovery retains its separate cursors.
+
+`node scripts/task_pipeline.mjs status` reports each consumer's control, durable
+backlog, oldest pending item and latest progress. Counts exceeding the observation
+bound carry `at_least`. `pause <consumer>` and `resume <consumer>` change admission
+to that consumer's next pass; in-flight transactions finish. `run <consumer>`
+performs one bounded native pass and respects the control. Commands use the
+configured library owner connection. The daemon can observe controls but cannot
+change them. Pausing a consumer preserves its work and upstream facts.
 
 Verified task state commits before consumer writes or contribution settlement.
 Successful verification remains durable when either fails. Delivery batches
@@ -417,127 +457,159 @@ parsed records are temporary, and validated builds are shared across rulers.
 `--inventory-workers 1..8` bounds concurrent ruler walks without changing their
 admission rules or ordered outputs. Library normalization retains its shared pool.
 
-### Incremental inventory
+### Sealed source consumers
 
-`live_board.sh` defaults to the guarded inventory coordinator
-(`INCREMENTAL_INVENTORY=1`). Explicit `INCREMENTAL_INVENTORY=0` selects legacy
-full-library reads.
-It uses the existing ranker command pipes, with one kernel-held SQLite writer
-lock around a cycle. The ranker starts empty; a full bootstrap requires an
-explicit durable rebuild task. This
-path replaces the ranker's hourly library reload and rolling score
-read with authoritative source updates. Normal queue maintenance advances
-durable registration. Official scoring reads only its leased inputs.
+`live_board.sh` defaults to `split_board_pipeline.mjs` through
+`inventory_pipeline.mjs --serve`. Intake, normalization, workload inventory,
+board projection and remote publication have separate processes and controls.
 
-Live board uploads run in one background process with a per-request timeout.
-Confirmed file hashes are flushed through an atomic checkpoint replacement;
-the captured board stamp is sent after its files. Uploads do not hold the
-inventory loop, and a failed uploader resumes from its confirmed checkpoint.
+```mermaid
+flowchart LR
+  A[Atomic admission and source binding] --> L[Lease and candidate persistence]
+  L --> V[Verification commits accepted fact and readiness]
+  V --> D[Business delivery]
+  V --> C[Contribution settlement]
+  D --> S[Sealed normalized source cut]
+  S --> I[Potential-work inventory and full QID audit]
+  S --> B[Native board projection and independent row audit]
+  I --> G[Snapshot-bound workload observation]
+  B --> O[Immutable publication package]
+  O --> P[Upload and file ACKs; stamp last]
+```
 
-`worker/pg/inventory.sql` records coalesced build and question invalidations in
-the same transaction as source changes. Revisions are equality tokens, never a
-commit-order cursor. Lease, heartbeat, delivery and credit updates do not
-materialize task records for inventory. Restricted functions expose source
-inputs; the pipeline receives no direct access to the inventory tables.
+Admission, deduplication, source capture, lease acquisition, candidate persistence
+and each stage's output/readiness commit remain synchronous transactions.
+Cheap validation and canonicalization are direct calls. Durable handoffs divide
+independent retries or resource budgets. A batch carries references to committed
+input versions; queue-only batches reference sealed input pages rather than
+copying their rows into another message store. There is no event per simulated
+hit or per small helper call.
 
-Each update opens one repeatable-read receipt transaction. It captures every
-pending key, changed records and lifecycle states, and complete affected weapon
-cohorts. Canonical aliases join their source identities when reading facts and
-queue membership. The source files are flushed and hashed before the database
-seals the cut. Source writes are forbidden in this receipt transaction.
+The normalizer captures a repeatable-read database receipt, then normalizes
+bounded pages through the native operator before opening its short SQLite write
+transaction. Record interning, version references and the input cursor commit
+together. A sealed cut pins engine, native adapter, normalizer contract, database
+snapshot, input time and content digest. Its source invalidations are acknowledged
+only after that handoff is durable. ACKs compare exact revisions, so later writes
+stay pending. A lost response replays the same persisted receipt. Up to 128
+256-key ACK chunks share one SQL call, targeting 4MiB of UTF-8 input.
 
-The ranker normalizes changed sources through its existing library cache. Its
-cohort command uses the same admission and entry-line helpers as a full walk,
-including each target ruler's admitted identities, default corners and retired
-facts. It emits complete owner replacements in bounded chunks. New source
-changes remain pending for the next cut while the captured cut finishes.
+Raw and canonical records share content-addressed compressed bodies. Source and
+measurement versions retain validity intervals. Each consumer binds its own
+sealed cut through read-only SQLite attachments and reads bounded pages without
+an hours-long read transaction. Neither consumer writes canonical inputs or
+copies their complete record bodies. Retention follows the minimum audited ACK;
+a fast consumer cannot retire a slow consumer's input. History collection is
+bounded and indexed. Protected inputs and unrelated generations remain retained.
 
-The disposable SQLite catalog stores canonical 128-bit question ids and owner
-references. Stored records take precedence over normalized fallbacks. Aliases,
-batches and independent consumers join the same question; verification retains
-the full classifier's precedence. Replacement commits before acknowledgment,
-and acknowledgments compare the captured revision. A persisted token ledger
-makes replay after local acknowledgment idempotent.
-The coordinator sends at most 128 existing 256-key ACK chunks per SQL request,
-targeting 4MiB of UTF-8 input; an existing larger chunk travels alone. Every
-chunk's local receipt is durable before sending. One SQL statement invokes
-the unchanged validator and exact-revision ACK for each chunk, so a failure
-rolls back the whole page. Local acknowledgments follow database success;
-a lost response replays the durable receipts without counting them twice.
+Work inventory owns its compact candidate, score, leader, range, pending-work,
+owner, membership and QID tables in a separate database. It retains the complete
+potential question union, alias deduplication and lifecycle precedence. An
+independent raw-input cursor reconstructs queue and task state. A separate sealed
+input cursor derives candidates, measurement leaders and default dependencies;
+the native gate then checks every expected membership and QID against the work
+store, including registration flags. The full disk classifier checks the resulting
+QID union and lifecycle precedence. Neither audit trusts production dirty markers
+or uses production memberships to restrict its expected enumeration.
 
-A generation is fenced by engine, adapter and classifier contract. Bootstrap
-compares every effective question id, category and registration flag with the
-full classifier before activation. Deployment, process restart, a missing
-catalog and a changed contract never authorize a full rebuild. The classic
-ranker's memory is not restored from its catalog: a different native instance
-reports `needs_restore` and preserves the existing catalog and published files.
-The published goal retains its normal engine and freshness checks.
-Engine changes reuse legitimate score facts and never request a rescore.
+Work processing pins the latest sealed snapshot when a new span begins. It folds
+every intervening cut in order, persisting each cut's input count, digest and
+ordinal progress. New arrivals belong to the next span. One complete audit checks
+the pinned snapshot before an atomic cumulative ACK; a crash retains the previous
+audited ACK. The source owner validates the entire span receipt before retention.
+Audit receipts cover every cut since the source owner's last observed ACK,
+including earlier local audits whose replies it missed. Per-cut progress receipts
+remain durable until covered; a source may accept an overlapping audited prefix
+but rejects a gap or a different source/consumer contract. Intermediate replies
+are optional, and source acknowledgement remains monotonic across GC and retry.
+This coalesces repeated full audits without dropping lifecycle transitions or
+registered obligations whose source disappears. Incremental audits retain their
+own input cursor and do not depend on board completion.
+Workload publication uses the completed source snapshot, engine and
+input time; expired output remains historical and cannot claim a fresh goal.
 
-`inventory/controller.sqlite` separates immutable rebuild requests, mutable
-task state and execution events. A request pins the mode, engine, adapter and
-classifier contract, expected PostgreSQL generation, reason and disk budget.
-Only a matching unconsumed request may call `inventory_begin`. An uncertain
-generation start or interrupted full capture requires explicit attention;
-background retries cannot start another generation or repeat the full capture.
-A sealed pending cut can resume after its receipt, manifest and input hashes
-are verified. Previously verified unchanged files need only metadata checks.
+Board projection consumes actual source and measurement versions directly.
+Its independent audit reconstructs native normalization, eligible measured modes,
+first-alias ordering, shape winners, entry floors, carried bytes, weapon files,
+indexes and state counts. It must finish before freezing a publication manifest.
+Its own change cursor derives affected old and current weapons independently
+of the publisher's dirty markers. It reconstructs one weapon at a time and
+reuses unchanged files only within the same pinned source/native/auditor
+contracts and actual file hashes. Source counts advance with committed source
+versions and are checked independently from the source changes. Publication
+compares the frozen core-file manifest with the completed audit digest.
+The stamp includes the audited source engine, snapshot, input time and contract
+hashes. Its assembly clock and each measurement's clock retain their own meanings.
+Board output does not wait for potential-work enumeration or its audit.
 
-The operator records a request with the deployed scripts and binaries:
+The source owner installs read indexes separately from normalized-value contracts.
+Mode-completeness validation uses a partial covering index of exceptional sources,
+so each publication page does not scan every source of that weapon. Index-only
+maintenance preserves canonical rows, sealed receipts and consumer cursors; an
+unexpected existing index definition requires attention rather than silent reuse.
+
+The publisher consumes immutable packages in order and acknowledges changed
+files durably, with the captured stamp last. Lost replies retry the same bytes.
+Paused or unavailable publication retains packages while projection continues
+within its outbox bound. Reaching a limit preserves the checkpoint and reports
+backpressure; it never marks incomplete work complete.
+
+`node scripts/board_pipeline.mjs status <work>` reports `intake`, `normalization`,
+`inventory`, `projection` and `publication` controls and progress, pending packages
+and retained blob bytes. `pause <work> <stage>` and `resume <work> <stage>` affect
+that stage's next bounded pass. `deliver <work>` performs one publication pass.
+Each consumer owns a kernel-held lock, durable cursor, audit and retry. Pausing
+inventory permits audited board output; pausing projection permits inventory.
+
+The source, work, independent work-audit and board databases have separate
+`max_page_count` bounds. `WFSIM_BOARD_SOURCE_BYTES`, `WFSIM_BOARD_WORK_BYTES`,
+`WFSIM_BOARD_AUDIT_BYTES` and `WFSIM_BOARD_PROJECTION_BYTES` select their bounds.
+The work classifier's scratch database uses its audit bound.
+`WFSIM_BOARD_OUTBOX_BYTES` bounds publication blobs. Work storage cannot allocate
+inside the source or board databases. The filesystem retains an 8GiB reserve,
+and the explicit rebuild growth budget covers its capture and generated state.
+SQLite caches use 16MiB and disable memory mapping. Each native request contains
+at most 256 items and 8MiB; input pages and work-only references keep that bound.
+
+A missing catalog, changed engine, adapter or component contract requires an
+explicit durable rebuild task. Startup cannot authorize a full capture, recreate
+a missing initialized consumer or replace a retained generation. The controller
+pins the expected PostgreSQL generation, filesystem, reason and growth budget.
+An uncertain generation start or interrupted full capture requires operator
+attention; a verified sealed cut resumes after restart.
 
 ```sh
 node scripts/inventory_rebuild.mjs status --work "$WORK"
 node scripts/inventory_rebuild.mjs request --work "$WORK" --bin "$BIN" \
-  --mode classic --reason "approved full inventory rebuild" \
+  --mode board --reason "approved source and consumer rebuild" \
   --max-new-bytes "$INVENTORY_REBUILD_MAX_BYTES"
 node scripts/inventory_rebuild.mjs cancel --work "$WORK" \
   --task "$REBUILD_TASK_ID" --reason "cancel this attempt"
 ```
 
-`WORK` and `BIN` are absolute paths; request also requires `PG_URL`.
-`INVENTORY_REBUILD_MAX_BYTES` is an explicitly assessed growth budget, with no
-default. Admission checks that budget plus an 8GiB reserve against current
-free space and pins the filesystem. These checks do not qualify a full-scale
-bootstrap's storage or time requirements. Request records intent without
-capturing inputs; the next matching controller cycle consumes it. Status is
-readable during a running cycle. Request and cancellation refuse immediately
-while a controller cycle holds its lock. Cancellation
-retains partial inputs, catalogs and the task history. A new attempt needs a
-new request. Use `--mode relational` for the relational coordinator.
+`WORK` and `BIN` are absolute paths; requesting also requires `PG_URL`.
+`INVENTORY_REBUILD_MAX_BYTES` has no default. Admission checks the assessed growth
+budget plus reserve against current free space. These limits do not establish
+full-population capacity. Cancellation retains partial inputs and task history.
+Blocked preparation reports its required action while already sealed consumers
+and audited publication packages remain independently runnable.
 
-Blocked inventory reports `needs_bootstrap`, `needs_restore`, `needs_resume`,
-`request_changed` or `needs_space` in `inventory/status.json`. The live loop
-keeps its ranker process and published files, stops its active uploader, skips
-publication and waits its normal
-poll interval. It does not restart the ranker to resolve a blocked inventory.
+`replay_split_board.mjs` qualifies a complete frozen capture without PostgreSQL
+or remote publication. It verifies every capture hash and binds the native binary,
+normalizer and each consumer contract. An optional read-only normalized-source
+cache must match the native contract and protected capture; adoption checks every
+raw-record binding and inherits no fact, inventory, audit or publication completion.
+All facts, queue pages, potential QIDs and outputs still pass through the new stages.
+This is source-component reuse, rather than a fresh whole-chain normalization run.
+The explicit total budget includes protected external input bytes and generated
+state. The optional allocation file bounds all generated files under one directory
+and selects a host free-space reserve. An independent operator watchdog monitors
+long runs; quota exhaustion retains checkpoints and does not qualify capacity.
 
-Publication uses the sealed cut's database time and snapshot, even if later
-changes are already pending. It never advances freshness to the publication
-time. Interrupted or expired cuts cannot publish. After durable publication,
-cleanup may remove only that completed task's capture directory. Protected
-directories, unrelated captures and historical catalog generations remain;
-startup does not collect them. The last publication manifest remains.
-SQLite uses a 16MiB page cache, bounded
-imports and no memory mapping; the coordinator reserves 8GiB of filesystem
-space and caps initial capture at 45 minutes and delta capture at 15 minutes.
-
-Dirty-token export retains one cursor page at a time, starting at 5,000 rows
-and growing at most fourfold to 80,000. The largest observed UTF-8 row sizes
-the next page toward 8MiB; this is a sizing target, not a hard byte limit for
-unseen rows. Cohort pages retain their 5,000-row ceiling. Each FETCH has its
-own statement timeout within the original capture budget and snapshot. Phase
-diagnostics record page rows, bytes, fetch time and the next requested size.
-The restricted `inventory_epoch_open` function validates the owning receipt
-and opens a transaction-local cursor over the primary-key index. It returns
-the portal name, avoiding a whole-result PL/pgSQL `RETURN QUERY` spool. The
-pipeline receives function execution rights without access to private tables;
-the legacy set-returning API remains available to older callers.
-
-Generation replacement and sealed-cut publication lock the generation state,
-not the dirty table. Source writers can commit during both operations: a cut
-owns its repeatable-read snapshot and later revisions remain pending. The
-legacy empty-dirty publisher retains its table barrier because it promises an
-empty current backlog rather than a sealed snapshot.
+Explicit `INCREMENTAL_INVENTORY=0` selects the in-memory adapter. The classic
+command-pipe inventory and relational inventory runners have separate explicit
+rebuild modes. Select one source owner for a PostgreSQL generation. Engine
+changes reuse legitimate facts and never request a rescore.
 
 ### Relational inventory runner
 

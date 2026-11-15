@@ -161,7 +161,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
   /// rows taken off — but a row an answer re-armed meanwhile, which waits for
   /// the next pass. A pass that dies is claimed again after `CLAIM_STALE_MS`;
   /// every write in a settlement is guarded, so settling twice counts once.
-  async function settleQueued(env, now = Date.now(), max = null) {
+  async function settleQueued(env, now = Date.now(), max = null, { detached = false } = {}) {
     const db = env.LIBRARY, claim = newLease(), n = max ?? (await dialsOf(env, now)).settle_batch;
     const { results: rows } = await db.prepare(`UPDATE state_pending_verifications SET claim = ?1::text, claimed_at = ?2::text
         WHERE (question, engine, peer) IN (SELECT question, engine, peer FROM state_pending_verifications
@@ -176,7 +176,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     }
     for (const g of [...groups.values()].sort((a, b) => (a.engine + a.peer < b.engine + b.peer ? -1 : 1))) {
       const ids = [...new Set(g.ids)].sort(), list = JSON.stringify(ids);
-      await settleMany(env, ids, g.engine, now, { peer: g.peer, after: [
+      await settleMany(env, ids, g.engine, now, { peer: g.peer, detached, after: [
         db.prepare(`UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder(`id IN ${listOf(db, "?")}
             AND leased_to IS NOT NULL AND EXISTS (SELECT 1 FROM state_compute_candidate_answers a WHERE a.question = state_compute_work.id AND a.device = state_compute_work.leased_to)`)}`)
           .bind(list)] });
@@ -197,7 +197,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
   /// is credited only once — so two witnesses settling one question at the same
   /// moment cannot both count. `answered` tells each question's producers of the
   /// answer just recorded (`on_answer`); `after` is written with the rest.
-  async function settleMany(env, ids, engine, now, { answered = null, after = [], peer = null, attempt = 0 } = {}) {
+  async function settleMany(env, ids, engine, now, { answered = null, after = [], peer = null, attempt = 0, detached = false } = {}) {
     const db = env.LIBRARY, list = JSON.stringify([...new Set(ids)]), ids_ = listOf(db, "?");
     const [qs, as, ds] = await db.batch([
       db.prepare(`SELECT * FROM state_compute_work WHERE id IN ${ids_}`).bind(list),
@@ -222,7 +222,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
       const served = all.filter((a) => a.engine === engine);
       const officialSays = served.filter((a) => a.official).at(-1);
       if (officialSays) {
-        try { await settleOfficial(env, q, all, served, officialSays, engine, now); }
+        try { await settleOfficial(env, q, all, served, officialSays, engine, now, { detached }); }
         catch (error) { errors.push(error); }
       }
       else if (q.state === "open") decide(env, q, all, peer ? all.filter((a) => a.engine === engine || a.engine === peer) : served, demands, engine, now, writes, later, credits);
@@ -239,12 +239,14 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     catch(error) {
       // A conflicting settlement invalidates the plan, so retry its reads before any credit or delivery.
       if(error?.code!=="40001" || attempt>=2)throw error;
-      await settleMany(env,ids,engine,now,{after,peer,attempt:attempt+1});
+      await settleMany(env,ids,engine,now,{after,peer,attempt:attempt+1,detached});
       if(errors.length)throw errors[0];
       return;
     }
-    try { await credit(db, credits, now); } catch (error) { errors.push(error); }
-    try { await flush(env, later, now); } catch (error) { errors.push(error); }
+    if (!detached) {
+      try { await credit(db, credits, now); } catch (error) { errors.push(error); }
+      try { await flush(env, later, now); } catch (error) { errors.push(error); }
+    }
     if (errors.length) throw errors[0];
   }
 
@@ -315,7 +317,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
   }
 
 
-  async function settleOfficial(env, q, all, served, officialSays, engine, now) {
+  async function settleOfficial(env, q, all, served, officialSays, engine, now, { detached = false } = {}) {
     const db = env.LIBRARY, id = q.id, priorState=q.state;
     const prepareCorrection=async accepted=>{
       if(q.result_id==null || q.canon===officialSays.canon && q.fact_engine===engine)return;
@@ -336,7 +338,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
         readyFact(db, id, officialSays.canon, engine, iso(now)),
         ...factWrites(env, { ...q, canon: officialSays.canon }, witnesses, engine, iso(now)),
       ]);
-      if (priorState !== "spot") await deliver(env, { ...q, canon: officialSays.canon, fact_at: iso(now), fact_engine: engine, witnesses }, now, officialSays);
+      if (!detached && priorState !== "spot") await deliver(env, { ...q, canon: officialSays.canon, fact_at: iso(now), fact_engine: engine, witnesses }, now, officialSays);
       return;
     }
     // THE OFFICIAL MACHINES' ANSWER IS THE FACT, whatever state it was in. The
@@ -369,7 +371,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
       ...factWrites(env, { ...q, canon: officialSays.canon }, witnesses, engine, iso(now)),
     ]);
     const errors = [];
-    try { await credit(db, agree, now); } catch (error) { errors.push(error); }
+    if (!detached) try { await credit(db, agree, now); } catch (error) { errors.push(error); }
     // ONLY A DISPUTE OR A SPOT CHECK REFUSES: an open question past its deadline
     // that they answered differently is measured again, its answer unpaid —
     // one witness against them is not yet a witness found lying.
@@ -379,7 +381,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
         catch (error) { errors.push(error); }
       }
     }
-    if (priorState !== "spot" || moved) {
+    if (!detached && (priorState !== "spot" || moved)) {
       try { await deliver(env, { ...q, canon: officialSays.canon, fact_at: iso(now), fact_engine: engine, witnesses }, now, officialSays); }
       catch (error) { errors.push(error); }
     }

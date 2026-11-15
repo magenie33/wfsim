@@ -8,6 +8,7 @@ import { createVerification } from "./task_verification.js";
 import { createDelivery } from "./task_delivery.js";
 import { createCredit } from "./task_credit.js";
 import { createObservation } from "./task_observation.js";
+import { createTaskPipeline } from "./task_pipeline.js";
 
 export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck = 0, random = () => Math.random(), on_disproved = null, on_fact_writes = null, refusing = true,
   dispatcher = createDispatch }) {
@@ -39,6 +40,13 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   const verification = createVerification({ verbs, producers, producerOf, threshold, spot, recheck, random, on_disproved, on_fact_writes, refusing, ...usage, ...credit, ...delivery, ...ledger,
     deliverPlan: delivery.schedule, release: dispatch.release });
   const observation = createObservation();
+  const sqlConsumers=Object.keys(producers).filter(name=>producers[name].on_fact_writes);
+  const pipeline=createTaskPipeline({
+    verification:(env,now,options)=>verification.settleQueued(env,now,options.max,{detached:true}),
+    delivery:(env,now,options)=>options.legacy ? delivery.redeliver(env,now,options.max)
+      : delivery.deliverReady(env,now,options.max,{producers:options.runtime==="edge"?null:sqlConsumers}),
+    contribution:(env,now,options)=>options.legacy ? credit.repay(env,now,options.max) : credit.creditReady(env,now,options.max),
+  });
   return {
     demand, demandAll, withdraw: ledger.withdraw,
     next: dispatch.next, nextPack: dispatch.nextPack, headOf: dispatch.headOf, packable: dispatch.packable,
@@ -47,5 +55,6 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     claim: dispatch.claim, answer: verification.answer, answerPack: verification.answerPack, answerOfficial: verification.answerOfficial,
     settle: verification.settle, settleQueued: verification.settleQueued, refuse: verification.refuse, syncRules: verification.syncRules,
     redeliver: delivery.redeliver, repay: credit.repay, liftIdle: usage.liftIdle, audit: observation.audit,
+    runStage:pipeline.run,controlStage:pipeline.control,pipelineStatus:pipeline.status,
   };
 }

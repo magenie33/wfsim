@@ -11,6 +11,7 @@ Wants=network-online.target
 [Service]
 User=ubuntu
 WorkingDirectory=/opt/wfsim-bot
+Environment=WFSIM_BOARD_STORAGE_REQUIRED=1
 EnvironmentFile=/etc/wfsim-live.env
 ExecStart=/bin/bash scripts/live_board.sh /opt/wfsim-bot/live /opt/wfsim-bot/bin
 # THE BOT ANSWERS FIRST: two cores serve both, and a projection can wait.

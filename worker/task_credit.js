@@ -48,8 +48,8 @@ export function createCredit() {
   }
 
 
-  async function repay(env, now = Date.now(), max = 200) {
-    const db = env.LIBRARY, floor = iso(now - REDELIVER_BACK_MS);
+  async function creditReady(env, now = Date.now(), max = 200) {
+    const db = env.LIBRARY;
     const { results: pending } = await db.prepare(`SELECT a.*,a.credit_work AS work FROM record_candidate_answers a
       WHERE a.credit_work IS NOT NULL AND a.credited=0 AND a.void=0 AND a.official=0
       ORDER BY a.credit_at,a.id LIMIT ?::bigint`).bind(max).all();
@@ -58,6 +58,12 @@ export function createCredit() {
       const group = pending.filter(a => a.credit_at === at);
       await credit(db, group, Date.parse(at)); recovered += group.length;
     }
+    return recovered;
+  }
+
+  async function repay(env, now = Date.now(), max = 200) {
+    const db = env.LIBRARY, floor = iso(now - REDELIVER_BACK_MS);
+    const recovered = await creditReady(env, now, max);
     const kept = await db.prepare("SELECT through FROM state_factory_progress WHERE name = 'repay'").first();
     const from = kept ? (kept.through > floor ? kept.through : floor) : iso(now - 10 * 60_000 - REPAY_SLICE_MS);
     const until = iso(Math.min(now - 10 * 60_000, Date.parse(from) + REPAY_SLICE_MS));
@@ -87,5 +93,5 @@ export function createCredit() {
   }
 
 
-  return { prepareCredit, credit, repay };
+  return { prepareCredit, credit, creditReady, repay };
 }

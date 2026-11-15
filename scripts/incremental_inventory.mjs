@@ -5,6 +5,7 @@ import { migrateSqliteTables } from './sqlite_schema.mjs';
 import { createReadStream, statSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { createHash, randomUUID } from 'node:crypto';
+import { deflateRawSync, inflateRawSync } from 'node:zlib';
 import { canon } from '../worker/task_contract.js';
 
 const ENGINE = /^[a-f0-9]{12}$/, QID = /^[a-f0-9]{32}$/;
@@ -13,6 +14,7 @@ const active = new Set(['open', 'disputed', 'nondeterministic']);
 const sql = `
   CREATE TABLE IF NOT EXISTS state_inventory_generation(id INTEGER PRIMARY KEY CHECK(id=1),body TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS entity_inventory_builds(id INTEGER PRIMARY KEY,build_id TEXT NOT NULL UNIQUE,stored TEXT,fallback TEXT);
+  CREATE TABLE IF NOT EXISTS entity_inventory_records(id TEXT PRIMARY KEY,body BLOB NOT NULL) WITHOUT ROWID;
   CREATE TABLE IF NOT EXISTS relation_inventory_owners(id INTEGER PRIMARY KEY,owner TEXT NOT NULL UNIQUE,candidate INTEGER,scope TEXT,weapon TEXT,riven INTEGER,source INTEGER);
   CREATE INDEX IF NOT EXISTS owners_candidate ON relation_inventory_owners(candidate);
   CREATE INDEX IF NOT EXISTS owners_weapon ON relation_inventory_owners(weapon,riven);
@@ -78,8 +80,9 @@ export function classifyQuestion(row) {
 }
 
 export class InventoryCatalog {
-  constructor(path, { engine, contract, generation, create = false } = {}) {
+  constructor(path, { engine, contract, generation, create = false, databaseBytes = 8 * 1024 ** 3, recordPool, sourceRecords } = {}) {
     this.path = path;
+    this.recordPool=recordPool;this.sourceRecords=sourceRecords;
     if (!create) statSync(path);
     this.db = new DatabaseSync(path);
     this.statements = new Map();
@@ -89,8 +92,14 @@ export class InventoryCatalog {
       migrateSqliteTables(this.db);
       this.db.exec(`PRAGMA journal_mode=WAL;PRAGMA synchronous=FULL;PRAGMA cache_size=-16384;
         PRAGMA temp_store=FILE;PRAGMA mmap_size=0;PRAGMA wal_autocheckpoint=256;PRAGMA journal_size_limit=16777216;
-        PRAGMA max_page_count=2097152;PRAGMA busy_timeout=5000;${sql}`);
-      const prior = this.statement("SELECT body FROM state_inventory_generation WHERE id=1").get();
+        PRAGMA busy_timeout=5000;${sql}`);
+      const pageSize = this.db.prepare('PRAGMA page_size').get().page_size;
+      if (!Number.isSafeInteger(databaseBytes) || databaseBytes < pageSize || databaseBytes > pageSize * 4294967294)
+        throw Error('invalid inventory database disk bound');
+      const pages = Math.floor(databaseBytes / pageSize);
+      if (this.db.prepare('PRAGMA max_page_count=' + pages).get().max_page_count !== pages)
+        throw Error('inventory database already exceeds its disk bound');
+      const prior = this.statement('SELECT body FROM state_inventory_generation WHERE id=1').get();
       if (prior) {
         this.meta = JSON.parse(prior.body);
         if (this.meta.v !== 1 || engine && engine !== this.meta.engine || contract && canon(contract) !== canon(this.meta.contract)
@@ -112,9 +121,14 @@ export class InventoryCatalog {
     this.meta = next;
   }
   transaction(fn) {
+    if (this.db.isTransaction) return fn();
+    const prior = this.meta;
     this.db.exec('BEGIN IMMEDIATE');
     try { const value = fn(); this.db.exec('COMMIT'); return value; }
-    catch (error) { this.db.exec('ROLLBACK'); this.symbolIds.clear(); this.symbolNames.clear(); throw error; }
+    catch (error) {
+      if (this.db.isTransaction) this.db.exec('ROLLBACK');
+      this.meta = prior; this.symbolIds.clear(); this.symbolNames.clear(); throw error;
+    }
   }
   symbol(category, name) {
     text(name, category);
@@ -137,8 +151,35 @@ export class InventoryCatalog {
   }
   record(build) {
     const row = this.statement("SELECT id,coalesce(stored,fallback) record FROM entity_inventory_builds WHERE build_id=?").get(build);
-    if (!row?.record) throw new Error(`inventory build unavailable: ${build}`);
-    return row;
+    const reference=this.sourceRecords ? this.sourceRecords.reference(build) || this.statement('SELECT fallback FROM entity_inventory_builds WHERE build_id=?').get(build)?.fallback : row?.record;
+    if (!row || !reference) throw new Error(`inventory build unavailable: ${build}`);
+    return { ...row, record: this.recordBody(reference) };
+  }
+  internRecord(record) {
+    const body = canon(record);
+    if (this.meta.contract.record_storage !== 'interned-deflate-v1') return body;
+    const id = createHash('sha256').update(body).digest('hex');
+    if(this.recordPool) {
+      if(this.recordPool.recordBody('@'+id)!==body)throw Error('shared inventory record does not match its reference');
+      return '@'+id;
+    }
+    if (!this.statement('SELECT 1 FROM entity_inventory_records WHERE id=?').get(id))
+      this.statement('INSERT INTO entity_inventory_records VALUES(?,?)').run(id, deflateRawSync(body, { level: 1 }));
+    return '@' + id;
+  }
+  recordBody(reference) {
+    if (!reference?.startsWith('@')) return reference;
+    if(this.recordPool)return this.recordPool.recordBody(reference);
+    const body = this.statement('SELECT body FROM entity_inventory_records WHERE id=?').get(reference.slice(1))?.body;
+    if (!body) throw Error('inventory record reference is unavailable');
+    return this.bodyText(body);
+  }
+  jsonBody(value) {
+    const body = canon(value);
+    return this.meta.contract.record_storage === 'interned-deflate-v1' ? deflateRawSync(body, { level: 1 }) : body;
+  }
+  bodyText(value) {
+    return typeof value === 'string' ? value : inflateRawSync(value).toString();
   }
   putRecords(rows, { stored = true } = {}) {
     if (!Array.isArray(rows) || rows.length > CHUNK) throw new Error('inventory record batch exceeds bound');
@@ -150,7 +191,7 @@ export class InventoryCatalog {
         const update = stored ? 'stored=excluded.stored,fallback=NULL'
           : 'fallback=CASE WHEN entity_inventory_builds.stored IS NULL THEN excluded.fallback ELSE NULL END';
         this.statement(`INSERT INTO entity_inventory_builds(build_id,${column}) VALUES(?,?) ON CONFLICT(build_id) DO UPDATE SET ${update}`)
-          .run(row.id, row.deleted ? null : canon(row.record));
+          .run(row.id, row.deleted ? null : this.internRecord(row.record));
       }
     });
   }
@@ -187,14 +228,19 @@ export class InventoryCatalog {
     const row = this.statement(`SELECT o.owner,c.build_id,o.weapon,o.riven,o.source,o.scope,s.stored stored_record,
       coalesce(c.stored,c.fallback) canonical_record FROM relation_inventory_owners o LEFT JOIN entity_inventory_builds c ON c.id=o.candidate
       LEFT JOIN entity_inventory_builds s ON s.build_id=o.owner WHERE o.owner=?`).get(owner);
+    if(row && this.sourceRecords) {
+      row.stored_record=this.sourceRecords.reference(row.owner);
+      row.canonical_record=row.build_id ? this.sourceRecords.reference(row.build_id) || this.statement('SELECT fallback FROM entity_inventory_builds WHERE build_id=?').get(row.build_id)?.fallback : null;
+    }
     return row ? { ...row, scope: JSON.parse(row.scope), riven: row.riven == null ? null : !!row.riven,
-      stored_record: row.stored_record ? JSON.parse(row.stored_record) : null,
-      canonical_record: row.canonical_record ? JSON.parse(row.canonical_record) : null } : null;
+      stored_record: row.stored_record ? JSON.parse(this.recordBody(row.stored_record)) : null,
+      canonical_record: row.canonical_record ? JSON.parse(this.recordBody(row.canonical_record)) : null } : null;
   }
   ownerRows(after = null, limit = CHUNK) {
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > CHUNK) throw new Error('invalid inventory owner bound');
+    if(this.sourceRecords)return this.sourceRecords.rows(after,limit);
     return this.statement(`SELECT build_id id,stored record FROM entity_inventory_builds WHERE stored IS NOT NULL AND build_id>?
-      ORDER BY build_id LIMIT ?`).all(after || '', limit).map(row => ({ id: row.id, record: JSON.parse(row.record) }));
+      ORDER BY build_id LIMIT ?`).all(after || '', limit).map(row => ({ id: row.id, record: JSON.parse(this.recordBody(row.record)) }));
   }
   adjustTotal(kind, verb, n, queued) {
     const prior = this.statement("SELECT n,queued FROM state_inventory_totals WHERE kind=? AND verb=?").get(kind, verb);
@@ -272,7 +318,7 @@ export class InventoryCatalog {
       text(header.build_id, 'candidate');
       if (header.record) this.statement(`INSERT INTO entity_inventory_builds(build_id,fallback) VALUES(?,?)
         ON CONFLICT(build_id) DO UPDATE SET fallback=CASE WHEN entity_inventory_builds.stored IS NULL THEN excluded.fallback ELSE NULL END`)
-        .run(header.build_id, canon(header.record));
+        .run(header.build_id, this.internRecord(header.record));
       candidate = this.record(header.build_id).id;
     }
     this.statement(`INSERT INTO relation_inventory_owners(owner,candidate,scope,weapon,riven,source) VALUES(?,?,?,?,?,?)
@@ -433,7 +479,7 @@ export class InventoryCatalog {
     if (!Number.isFinite(Date.parse(started_at)) || !expected || this.jobs(1).length || !this.meta.epoch && this.pendingAcks(1).length)
       throw new Error('incomplete inventory bootstrap');
     const actual = { ...this.summary(), owners: this.statement("SELECT count(*) n FROM relation_inventory_owners").get().n,
-      records: this.statement("SELECT count(*) n FROM entity_inventory_builds WHERE stored IS NOT NULL").get().n,
+      records: this.sourceRecords ? this.sourceRecords.count() : this.statement("SELECT count(*) n FROM entity_inventory_builds WHERE stored IS NOT NULL").get().n,
       tasks: this.statement("SELECT count(*) n FROM state_inventory_computations WHERE imported=1").get().n };
     for (const key of ['owners', 'records', 'tasks', 'rows', 'queued'])
       if (integer(expected[key], key) !== actual[key]) throw new Error(`incomplete inventory bootstrap ${key}`);

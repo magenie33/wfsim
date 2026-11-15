@@ -93,6 +93,13 @@ export async function acknowledgeInventory(sql, catalog, generation, input, repo
   }
   await flush();
 }
+export function inventoryNextFetch(limit, maxRows, largest, fetchMs) {
+  const bytes = Math.min(maxRows, limit * 4, Math.floor(8 * 1024 ** 2 / largest));
+  const latency = Number.isFinite(fetchMs) && fetchMs >= 0
+    ? fetchMs ? Math.floor(limit * 5000 / fetchMs) : limit * 4
+    : limit;
+  return Math.max(1, Math.min(bytes, latency));
+}
 export async function* inventoryCursor(tx, name, query, args = [], { maxRows = 5000, report = () => {} } = {}) {
   if (!/^[a-z][a-z0-9_]*$/.test(name)) throw new Error('invalid inventory cursor name');
   let limit = Math.min(5000, maxRows), largest = 1, total = 0;
@@ -108,7 +115,7 @@ export async function* inventoryCursor(tx, name, query, args = [], { maxRows = 5
       }
       total += rows.length;
       // One page at a time; 8MiB is a sizing target, not a row-size guarantee.
-      const next = Math.max(1, Math.min(maxRows, limit * 4, Math.floor(8 * 1024 ** 2 / largest)));
+      const next = inventoryNextFetch(limit, maxRows, largest, fetchMs);
       report({ rows: total, page_rows: rows.length, page_bytes: bytes, fetch_ms: fetchMs, next_rows: next });
       if (rows.length < limit) break;
       limit = next;
@@ -134,12 +141,12 @@ export function rankerChannel() {
 const common = receipt => ({ v: 1, engine: receipt.engine, contract: receipt.contract,
   generation: receipt.generation, epoch: receipt.epoch, snapshot: receipt.snapshot });
 
-export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, call, baseEpoch, relational = false, report = progress, budgetCheck = () => {} }) {
+export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, call, baseEpoch, relational = false, recordArray = true, report = progress, budgetCheck = () => {} }) {
   mkdirSync(dir, { recursive: true }); disk(dir);
   const paths = [], started = Date.now(), covers = JSON.stringify(BOARD_KINDS), captureMs = bootstrap ? MAX_CAPTURE_MS : 15 * 60000;
   const check = () => { disk(dir); budgetCheck(); if (Date.now() - started > captureMs) throw new Error('inventory input capture exceeded its budget'); };
   const file = name => { const path = join(dir, name); paths.push(path); return path; };
-  const raw = { library: file('library.json'), builds: file('builds.ndjson'), facts: file('facts.ndjson'),
+  const raw = { ...(recordArray ? { library:file('library.json') } : {}), builds: file('builds.ndjson'), facts: file('facts.ndjson'),
     queue: file('queue.ndjson'), tasks: file('tasks.ndjson'), meta: file('snapshot.json') };
   return sql.begin('isolation level repeatable read', async transaction => {
     const tx = { unsafe: async (...args) => { check(); return transaction.unsafe(...args); } };
@@ -261,10 +268,12 @@ export async function inventoryContext(bin) {
   return { source, engine, contract };
 }
 
-export async function runInventoryCycle(options) {
+export async function runLegacyInventoryCycle(options) {
   const control = new InventoryControl(join(options.work, 'inventory'));
   try { return await inventoryCycle({ ...options, control }); } finally { control.close(); }
 }
+
+export {runLegacyInventoryCycle as runInventoryCycle};
 
 async function inventoryCycle({ work, bin, instance, sql, call, budgetMs = 15000, report = progress, control }) {
   const root = join(work, 'inventory'); disk(root);
@@ -374,13 +383,17 @@ async function inventoryCycle({ work, bin, instance, sql, call, budgetMs = 15000
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   const [work, bin, instance] = process.argv.slice(2);
+  if (instance === '--serve') {
+    const { serveSplitBoardPipeline } = await import('./split_board_pipeline.mjs');
+    await serveSplitBoardPipeline(resolve(work), resolve(bin));
+  } else {
   if (!work || !bin || !instance || /\s/.test(work + bin) || !process.env.PG_URL) throw new Error('usage: inventory_pipeline.mjs <work> <bin> <ranker-instance> (PG_URL required; paths without spaces)');
   const sql = postgres(process.env.PG_URL, { max: 1, fetch_types: false, connect_timeout: 15, onnotice: () => {}, connection: { application_name: 'wfsim-inventory-incremental' } });
   const engine = rankerChannel();
   const monitor = pipelineMonitor(join(work, 'diagnostics'), 'inventory', {
     source: readFileSync(join(bin, 'VERSION'), 'utf8').trim(), engine: readFileSync(join(bin, 'ENGINE'), 'utf8').trim() });
   try {
-    const result = await runInventoryCycle({ work: resolve(work), bin: resolve(bin), instance, sql, call: engine.call, report: monitor.report });
+    const result = await runLegacyInventoryCycle({ work: resolve(work), bin: resolve(bin), instance, sql, call: engine.call, report: monitor.report });
     save(join(work, 'inventory/status.json'), result); monitor.finish(result.pending ? 'pending' : 'complete');
   } catch (error) {
     if (error instanceof InventoryActionRequired) {
@@ -389,4 +402,5 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
     } else { monitor.finish('failed', error); process.exitCode = 1; }
   }
   finally { engine.close(); await sql.end({ timeout: 5 }); }
+  }
 }

@@ -11,6 +11,7 @@ import { placeholders } from "../worker/placeholders.js";
 import { writeFileSync } from "node:fs";
 import { testDb, testDbTiming } from "./pg/test_db.mjs";
 import { factoryCases, factorySelection } from "./factory_shards.mjs";
+import { officialSourceIndexCases, officialClaimGuardCases } from "./check_official_claims.mjs";
 
 const selection = factorySelection(process.argv.slice(2));
 const wanted = new Set(selection.cases.map(row => row.id)), known = new Set(factoryCases(selection.trials).map(row => row.id));
@@ -1162,6 +1163,12 @@ await runCase("fixed:lane-answer-plan", async () => {
 });
 
 console.log("\nofficial claims keep bounded index plans when prepared statements are reused");
+await runCase("fixed:official-source-index", async () => {
+  for(const run of [officialSourceIndexCases,officialClaimGuardCases]) {
+    const db=await testDb("library");
+    try {await run(db);check(run.name,true);} finally {await db.close();}
+  }
+});
 await runCase("fixed:official-claim-plans", async () => {
   const db = await testDb("library"), f = factory({ verbs: VERBS, producers: PRODUCERS });
   await seedComputeWorkMany(db,Array.from({length:20000},(_,i)=>({id:'claim-'+(i+1),state:i<1000 ? 'open' : i<1003 ? ['disputed','spot','nondeterministic'][i-1000] : 'fact',due_at:'2026-10-09',opened_at:'2026-10-08'})));

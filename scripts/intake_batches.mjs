@@ -32,9 +32,10 @@ export function runIntakeCommand(command, args, { input, output, signal } = {}) 
 }
 
 export async function intakeBatches(file, { intake = process.env.WFSIM_INTAKE_BIN || join(ROOT, 'target/release/wfsim-intake'), deadlineSeconds = 900,
-  maxRows = INTAKE_BATCH_ROWS, maxBytes = INTAKE_BATCH_BYTES, run = runIntakeCommand, signal } = {}) {
+  maxRows = INTAKE_BATCH_ROWS, maxBytes = INTAKE_BATCH_BYTES, run = runIntakeCommand, signal, onCommitted, doneFile } = {}) {
   if (![maxRows, maxBytes].every(n => Number.isSafeInteger(n) && n > 0)
-      || !Number.isFinite(deadlineSeconds) || deadlineSeconds < 0) throw new Error('invalid intake batch bounds');
+      || !Number.isFinite(deadlineSeconds) || deadlineSeconds < 0
+      || onCommitted !== undefined && typeof onCommitted !== 'function') throw new Error('invalid intake batch bounds');
   const scratch = mkdtempSync(join(tmpdir(), 'wfsim-intake-batches-'));
   const path = name => join(scratch, name), started = Date.now(), end = started + deadlineSeconds * 1000;
   const state = new DatabaseSync(path('first-builds.sqlite'));
@@ -42,6 +43,7 @@ export async function intakeBatches(file, { intake = process.env.WFSIM_INTAKE_BI
   const first = state.prepare("INSERT INTO state_first_build_submission_times(id,at) VALUES(?,?) ON CONFLICT DO NOTHING");
   const clock = state.prepare("SELECT at FROM state_first_build_submission_times WHERE id=?");
   const result = { batches: 0, arrivals: 0, builds: 0 };
+  if (doneFile) writeFileSync(doneFile, '');
   let pending = [], bytes = 0;
   const execute = (command, args, io = {}) => run(command, args, { ...io, signal });
   const ship = async () => {
@@ -59,7 +61,9 @@ export async function intakeBatches(file, { intake = process.env.WFSIM_INTAKE_BI
     writeFileSync(path('builds.ndjson'), builds.map(build => JSON.stringify(build) + '\n').join(''));
     // Captured workflows admit every sourced computation before inbox acknowledgement.
     await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('builds.ndjson'), path('empty')]);
+    if(onCommitted)await onCommitted(path('builds.ndjson'));
     await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('empty'), path('done.txt')]);
+    if (doneFile) writeFileSync(doneFile, readFileSync(path('done.txt')), { flag: 'a' });
     result.batches++; result.builds += builds.length;
     result.arrivals += readFileSync(path('done.txt'), 'utf8').split('\n').filter(Boolean).length;
     console.log(`intake: committed batch ${result.batches}, ${result.arrivals} arrival(s)`);

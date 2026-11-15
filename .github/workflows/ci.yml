@@ -693,7 +693,31 @@ jobs:
           node scripts/check_inventory_pipeline.mjs
           node scripts/check_inventory_relations.mjs
           node scripts/check_inventory_ranges.mjs
+          node scripts/check_candidate_lookup.mjs
           node scripts/check_inventory_relational_pipeline.mjs
+          node scripts/check_inventory_publication.mjs
+          node scripts/check_inventory_publication_pages.mjs
+          node scripts/check_inventory_projection_audit.mjs
+          node scripts/check_inventory_board_pipeline.mjs
+          node scripts/check_inventory_disk_budget.mjs
+          node scripts/check_board_projection_replay.mjs
+          node scripts/check_board_projection_consumers.mjs
+          node scripts/check_board_pipeline.mjs
+          node scripts/check_board_storage.mjs
+          node scripts/check_prepared_board_inputs.mjs
+          node scripts/check_prepared_board_access.mjs
+          node scripts/check_prepared_read_indexes.mjs
+          node scripts/check_prepared_work_span.mjs
+          node scripts/check_work_ack_receipts.mjs
+          node scripts/check_source_capture_gc.mjs
+          node scripts/check_sqlite_transaction_recovery.mjs
+          node scripts/check_board_audit_scenes.mjs
+          node scripts/check_board_audit_migration.mjs
+          node scripts/check_source_adoption.mjs
+          node scripts/check_split_board_replay.mjs
+          node scripts/check_split_board_pipeline.mjs
+          node scripts/check_split_board_capture.mjs
+          node scripts/check_live_mailbox.mjs
           node scripts/check_score_inputs.mjs
           node scripts/check_live_ranker.mjs
           node scripts/check_work_calibration.mjs
@@ -711,6 +735,10 @@ jobs:
         env:
           WFSIM_INTAKE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
         run: node scripts/check_intake_batches.mjs
+      - name: Independent source and board consumers preserve PostgreSQL cut acknowledgements
+        env:
+          WFSIM_BOARD_PIPELINE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
+        run: node scripts/check_split_board_capture.mjs
       - name: Queue cancellation uses the production Postgres driver
         env:
           WFSIM_CANCEL_QUEUE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs

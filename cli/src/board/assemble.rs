@@ -460,25 +460,9 @@ fn assemble(lib: &Library, facts: &Facts, r: usize, bench: &str, weapon: &str) -
                 deferred_ids.insert(b.identity.clone());
                 continue;
             };
-            let v = &b.v;
-            rows.push(Row {
-                identity: b.identity.clone(),
-                weapon: v.weapon.clone(),
-                mode: mode.to_string(),
-                score: f.score,
-                mods: v.mods.clone(),
-                evolutions: v.evolutions.clone(),
-                arcanes: v.arcanes.clone(),
-                valence: v.valence.clone(),
-                exilus: v.exilus.clone().unwrap_or_default(),
-                assembly: v.assembly.clone(),
-                riven: b.riven.clone(),
-                measured_at: match f.minute {
-                    NO_MINUTE => String::new(),
-                    m => facts.minutes.all[m as usize].clone(),
-                },
-                measured_by: facts.by.all[f.by as usize].clone(),
-            });
+            rows.push(publication_row(b, mode, f.score, match f.minute {
+                NO_MINUTE => String::new(), m => facts.minutes.all[m as usize].clone(),
+            }, facts.by.all[f.by as usize].clone()));
         }
     }
     rows.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
@@ -496,6 +480,14 @@ fn assemble(lib: &Library, facts: &Facts, r: usize, bench: &str, weapon: &str) -
         .map(|row| serde_json::value::to_raw_value(&page_row(bench, row)).expect("json"))
         .collect();
     (out, absent)
+}
+
+fn publication_row(b: &Built, mode: &str, score: f64, measured_at: String, measured_by: String) -> Row {
+    let v = &b.v;
+    Row { identity: b.identity.clone(), weapon: v.weapon.clone(), mode: mode.to_string(), score,
+        mods: v.mods.clone(), evolutions: v.evolutions.clone(), arcanes: v.arcanes.clone(), valence: v.valence.clone(),
+        exilus: v.exilus.clone().unwrap_or_default(), assembly: v.assembly.clone(), riven: b.riven.clone(),
+        measured_at, measured_by }
 }
 
 fn digest(s: &str) -> u64 {

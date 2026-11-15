@@ -56,7 +56,7 @@ export class InventoryControl {
   request({ mode, engine, contract, expectedGeneration = null, reason, maxNewBytes, reserveBytes = INVENTORY_RESERVE }) {
     const prior = this.current();
     if (prior && !['complete', 'cancelled'].includes(prior.phase)) needsAction('task_exists', 'cancel the existing rebuild task before requesting another');
-    if (!['classic', 'relational'].includes(mode) || !/^[a-f0-9]{12}$/.test(engine) || !contract || !reason?.trim()
+    if (!['classic', 'relational', 'board'].includes(mode) || !/^[a-f0-9]{12}$/.test(engine) || !contract || !reason?.trim()
         || !Number.isSafeInteger(maxNewBytes) || maxNewBytes < 1 || !Number.isSafeInteger(reserveBytes) || reserveBytes < INVENTORY_RESERVE)
       throw Error('an explicit engine, contract, reason and positive disk budget are required');
     const s = statfsSync(this.root), free = s.bavail * s.bsize;
@@ -96,12 +96,12 @@ export class InventoryControl {
     return task?.phase === 'created' && task.generation === status?.generation && task.mode === mode && task.engine === engine
       && canon(task.contract) === canon(contract) ? { task: task.id, generation: task.generation } : null;
   }
-  checkTask(state) {
+  checkTask(state, {budget = true} = {}) {
     if (!state.rebuild_task) return;
     const task = this.current();
     if (!task || task.id !== state.rebuild_task || task.generation !== state.generation || ['starting', 'needs_action', 'cancelled'].includes(task.phase))
       needsAction('needs_resume', 'the durable rebuild task requires operator attention');
-    if (task.phase !== 'complete') this.budget(task);
+    if (budget && task.phase !== 'complete') this.budget(task);
   }
   async begin(context, sql) {
     const task = this.authorize(context); this.phase(task.id, 'starting');

@@ -33,6 +33,28 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
       demands: demands.filter(d => d.question === q.id) })), now);
   }
 
+  /// Consume current delivery markers only; historical recovery has its own cursor.
+  async function deliverReady(env, now = Date.now(), max = 100, { producers = null } = {}) {
+    if (producers && !producers.length) return 0;
+    const db = env.LIBRARY;
+    const filter = producers ? `AND producer IN ${listOf(db, "?3")}` : "";
+    const { results: demands } = await db.prepare(`SELECT * FROM relation_task_consumers
+      WHERE state='live' AND delivery_at<=?1::text ${filter}
+      ORDER BY delivery_at,question,producer,ref LIMIT ?2::bigint`)
+      .bind(iso(now),max,...(producers ? [JSON.stringify(producers)] : [])).all();
+    if (!demands.length) return 0;
+    const keys = JSON.stringify([...new Set(demands.map(d => d.question))]);
+    const [qs, answers] = await db.batch([
+      db.prepare(`SELECT * FROM state_compute_work WHERE id IN ${listOf(db, "?")} AND state IN('fact','spot')`).bind(keys),
+      db.prepare(`SELECT DISTINCT ON(a.question) a.* FROM state_compute_candidate_answers a
+        JOIN state_compute_work q ON q.id=a.question AND q.canon=a.canon AND q.fact_engine=a.engine
+        WHERE a.question IN ${listOf(db, "?")} ORDER BY a.question,a.official DESC,a.id`).bind(keys),
+    ]);
+    await deliverGroups(env,qs.results.map(q => ({q,answerOf:answers.results.find(a=>a.question===q.id) || null,
+      demands:demands.filter(d=>d.question===q.id)})),now);
+    return demands.length;
+  }
+
   /// A committed fact is delivered in a separate transaction. Failed consumers
   /// leave their demands live; a successful consumer never waits for their retry.
   async function deliverGroups(env, groups, now) {
@@ -147,5 +169,5 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
   }
 
 
-  return { deliver, deliverMany, redeliver, schedule, flush };
+  return { deliver, deliverMany, deliverReady, redeliver, schedule, flush };
 }

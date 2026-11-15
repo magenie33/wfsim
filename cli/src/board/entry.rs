@@ -38,6 +38,25 @@ pub(crate) fn earning(share: Option<f64>, default: Option<Option<f64>>, owed: bo
     }
 }
 
+pub(crate) fn publication_floor_key(r: &Row) -> (String, String, bool) {
+    (r.weapon.clone(), r.mode.clone(), r.riven.is_some())
+}
+
+pub(crate) fn publication_clears(score: f64, leader: f64) -> bool {
+    wfsim_engine::data::boards::clears_entry(score, leader)
+}
+
+pub(crate) fn publication_shape(r: &Row) -> Option<(String, String, Vec<String>, Option<String>)> {
+    r.riven.as_ref().map(|v| (r.weapon.clone(), r.mode.clone(), v.bonuses.clone(), v.malus.clone()))
+}
+
+pub(crate) fn publication_default(r: &Row) -> bool {
+    r.riven.as_ref().is_some_and(|v| {
+        let shape = wfsim_engine::build::rivens::RivenShape { bonuses: v.bonuses.clone(), malus: v.malus.clone() };
+        v.rolls == wfsim_engine::build::rivens::default_rolls(&shape)
+    }) && r.mods.iter().all(|m| !m.contains(wfsim_engine::data::mods::RANK_MARK))
+}
+
 /// THE ENTRY LINE OVER THE ROWS THIS RULER MEASURED, and which builds it left
 /// with none. `kept` comes back holding only rows that clear it.
 ///
@@ -48,15 +67,15 @@ pub(crate) fn earning(share: Option<f64>, default: Option<Option<f64>>, owed: bo
 pub(crate) fn entry_floor(kept: &mut Vec<Row>) -> std::collections::BTreeSet<String> {
     let mut leader: std::collections::HashMap<(String, String, bool), f64> = Default::default();
     for r in kept.iter() {
-        let k = (r.weapon.clone(), r.mode.clone(), r.riven.is_some());
+        let k = publication_floor_key(r);
         let e = leader.entry(k).or_insert(f64::NEG_INFINITY);
         *e = e.max(r.score);
     }
     let before: std::collections::BTreeSet<String> =
         kept.iter().map(|r| r.identity.clone()).collect();
     kept.retain(|r| {
-        let k = (r.weapon.clone(), r.mode.clone(), r.riven.is_some());
-        wfsim_engine::data::boards::clears_entry(r.score, leader[&k])
+        let k = publication_floor_key(r);
+        publication_clears(r.score, leader[&k])
     });
     // WHOSE ROWS ALL FELL UNDER IT. A build that reached no row is a FIFTH
     // outcome beside refused, published, deferred and paused, and the run's
@@ -188,25 +207,11 @@ pub(crate) fn one_row_per_shape(kept: &mut Vec<Row>) -> std::collections::BTreeS
 /// [`one_row_per_shape`] without the report — the assembly's, which runs it a
 /// weapon at a time.
 pub(crate) fn collapse_shapes(kept: &mut Vec<Row>) -> std::collections::BTreeSet<String> {
-    let shape_of = |r: &Row| {
-        r.riven.as_ref().map(|v| (r.weapon.clone(), r.mode.clone(), v.bonuses.clone(), v.malus.clone()))
-    };
-    // THE DEFAULT FIRST AMONG EQUALS: every bonus at its ceiling, the malus at
-    // its floor, and no card dropped below max rank.
-    let is_default = |r: &Row| {
-        r.riven.as_ref().is_some_and(|v| {
-            let shape = wfsim_engine::build::rivens::RivenShape {
-                bonuses: v.bonuses.clone(),
-                malus: v.malus.clone(),
-            };
-            v.rolls == wfsim_engine::build::rivens::default_rolls(&shape)
-        }) && r.mods.iter().all(|m| !m.contains(wfsim_engine::data::mods::RANK_MARK))
-    };
     kept.sort_by(|a, b| {
         a.weapon
             .cmp(&b.weapon)
             .then(b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal))
-            .then(is_default(b).cmp(&is_default(a)))
+            .then(publication_default(b).cmp(&publication_default(a)))
     });
     let mut seen: std::collections::HashSet<_> = Default::default();
     // WHICH BUILDS THIS DROPPED, and it has to say: a corner of a shape is a
@@ -216,7 +221,7 @@ pub(crate) fn collapse_shapes(kept: &mut Vec<Row>) -> std::collections::BTreeSet
     // missing — the fifth outcome, beside listed, deferred, floored and
     // refused. Silence here is what stopped the publisher for a day and a half.
     let mut collapsed: std::collections::BTreeSet<String> = Default::default();
-    kept.retain(|r| match shape_of(r) {
+    kept.retain(|r| match publication_shape(r) {
         None => true,
         Some(k) => {
             let first = seen.insert(k);

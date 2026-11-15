@@ -20,6 +20,8 @@ import { BOARD_KINDS } from "../worker/board_kinds.js";
 import { recoverBoardTasks } from "../worker/board_tasks.js";
 import { demandOf, DEMAND_KEY, DEMAND_CACHE, DEMAND_COST_EVERY_MS, tallyOf, tallyBase, scorePace, TALLY_KEY, TALLY_CACHE, TALLY_BASE_MS } from "../worker/contribution.js";
 import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capacity.mjs";
+import { facts } from "../worker/factory.js";
+import { pipelineClock } from "./pipeline_clock.mjs";
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
 export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, STATS_TICK_MS = 10_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
@@ -57,13 +59,14 @@ const log = (...a) => console.log(new Date().toISOString(), ...a);
 export async function openEnv(env = process.env, connect = postgres) {
   if (!env.PG_URL) throw new Error("PG_URL is required");
   const clients = [];
-  const db = (url, background = false) => {
+  const db = (url, background = false, stage = null) => {
     // PG_SOCKET (a directory) reaches Postgres over its unix socket, as the
     // unit does: peer authentication, no password on the machine.
     // Background batches can contain several bounded statements; the connection stays alive between them.
     const connection = { ...CONNECTION, ...(background ? { transaction_timeout: 0 } : {}),
-      application_name: background ? "wfsim-factoryd-background" : CONNECTION.application_name };
-    const c = postgresClient(connect(url, { ...POSTGRES_OPTIONS, max: background ? 1 : 2, idle_timeout: 0, connection, onnotice: () => {},
+      ...(stage ? {statement_timeout:5000,transaction_timeout:30000} : {}),
+      application_name: stage ? "wfsim-factoryd-"+stage : background ? "wfsim-factoryd-background" : CONNECTION.application_name };
+    const c = postgresClient(connect(url, { ...POSTGRES_OPTIONS, max: background || stage ? 1 : 2, idle_timeout: 0, connection, onnotice: () => {},
       ...(env.PG_SOCKET ? { host: env.PG_SOCKET } : {}) }));
     clients.push(c);
     return pgDb(c);
@@ -77,7 +80,17 @@ export async function openEnv(env = process.env, connect = postgres) {
     owner = await claimDaemon(sql, onLost);
     return owner;
   };
-  return { env: out, backgroundEnv: { LIBRARY: db(env.PG_URL, true) }, claim, close: () => Promise.all(clients.map((c) => c.end())) };
+  const backgroundEnv={LIBRARY:db(env.PG_URL,true)};
+  const stageEnvs=Object.fromEntries(["verification","delivery","contribution"].map(name=>[name,{...out,LIBRARY:db(env.PG_URL,false,name)}]));
+  const listen=async wake=>{
+    const sql=connect(env.PG_URL,{...POSTGRES_OPTIONS,max:1,idle_timeout:0,connect_timeout:5,
+      connection:{...CONNECTION,application_name:"wfsim-factoryd-events"},onnotice:()=>{},
+      ...(env.PG_SOCKET?{host:env.PG_SOCKET}:{})});
+    let handle;
+    clients.push({end:async()=>{await handle?.unlisten();await sql.end({timeout:5});}});
+    handle=await sql.listen("wfsim_task_pipeline",wake);
+  };
+  return {env:out,backgroundEnv,stageEnvs,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
 }
 
 /// THE RELEASE SERVED NOW, read through the worker's own `servedRelease` (a
@@ -90,7 +103,7 @@ async function served() {
 /// check; `put` (one object to R2) and `readEdge` (the signal as the CDN serves it) for R2 and the edge.
 export async function run({ once = false, opened = null, servedNow = served, target = signalTarget(),
   put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge } = {}) {
-  const { env, backgroundEnv = env, claim, close } = opened || await openEnv();
+  const { env, backgroundEnv = env, stageEnvs = {verification:env,delivery:env,contribution:env}, claim, listen, close } = opened || await openEnv();
   let stopping = false, ownershipLost = false, stopRun;
   let owner;
   try {
@@ -168,8 +181,10 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       if (cmp.differ) await findingsTick(env.LIBRARY, "fair_roundtrip", (p) => ({ differ: (p.differ || 0) + 1, last: cmp }));
       await findingsTick(env.LIBRARY, "capacity", () => budget.reading());
     },
-    // THE QUEUE FIRST (dial `settle_async`), then the shadow's judging of what settled.
-    settle: async () => { await settleBatch(env); cursor = (await settleShadow(env, { threshold: CLIENTS_PER_FACT, from: cursor })).cursor; },
+    settle: async () => settleBatch(stageEnvs.verification),
+    delivery: async () => facts().runStage(stageEnvs.delivery,"delivery"),
+    contribution: async () => facts().runStage(stageEnvs.contribution,"contribution"),
+    shadow: async () => {cursor=(await settleShadow(backgroundEnv,{threshold:CLIENTS_PER_FACT,from:cursor})).cursor;},
     // THE COMPUTE PAGE'S PICTURE, one object every reader gets (worker/contribution.js `demandOf`).
     demand: async () => {
       if (!target) return;
@@ -217,38 +232,41 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     },
   };
   if (once) {
-    for (const name of ["snapshot", "fair", "settle", "admission", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
+    for (const name of ["snapshot", "fair", "settle", "delivery", "contribution", "shadow", "admission", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
     log(bad.length ? `once: failed ${bad.join(", ")}` : "once: ok", commit);
     return bad.length ? 1 : 0;
   }
   if (stopping) { await close(); await owner?.release(); return 1; }
-  const timers = new Map(), inflight = new Set();
+  const clock=pipelineClock({onError:(name,error)=>log(name,"clock failed",error.message)});
   const every = (ms, name) => {
-    const loop = async () => {
+    clock.add(name,ms,async()=>{
       if (stopping) return;
-      const p = ["admission", "demand", "tally", "forget", "past", "moot"].includes(name)
-        ? background(() => stopping ? undefined : tick(name, jobs[name])) : tick(name, jobs[name]);
-      inflight.add(p);
-      await p;
-      inflight.delete(p);
-      if (!stopping) timers.set(name, setTimeout(loop, ms));
-    };
-    timers.set(name, setTimeout(loop, 0));
+      await (["admission", "demand", "tally", "forget", "past", "moot", "shadow"].includes(name)
+        ? background(() => stopping ? undefined : tick(name, jobs[name])) : tick(name, jobs[name])
+      );
+    });
   };
   every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
   every(SETTLE_MS, "admission");
+  every(SETTLE_MS,"delivery");every(SETTLE_MS,"contribution");every(FAIR_MS,"shadow");
   every(WAVE_MS, "wave"); every(SIGNAL_CHECK_MS, "signalCheck");
-  log("factoryd up", commit, release.engine);
-  await new Promise((resolve) => {
-    const stop = () => { stopping = true; for (const t of timers.values()) clearTimeout(t); resolve(); };
+  let stop;
+  const stopped=new Promise((resolve) => {
+    stop = () => { stopping = true;clock.stop();resolve(); };
     stopRun = stop;
     process.once("SIGTERM", stop);
     process.once("SIGINT", stop);
   });
+  if(stopping)stop();
+  if(listen && !stopping)try {await listen(stage=>clock.wake({verification:"settle",delivery:"delivery",contribution:"contribution"}[stage]));}
+  catch(error){log("pipeline notification unavailable; polling retained",error.message);}
+  if(!stopping)log("factoryd up",commit,release.engine);
+  await stopped;
+  process.removeListener("SIGTERM",stop);process.removeListener("SIGINT",stop);
   // A TICK UNDER WAY FINISHES, so no transaction is cut by the connection closing.
-  await Promise.allSettled([...inflight]);
+  await clock.drain();
   await close();
   await owner?.release();
   log("factoryd down");
