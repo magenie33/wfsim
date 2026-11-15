@@ -145,7 +145,7 @@ pub(super) struct DebuffState {
     /// second one.
     pub(super) attractor: Vec<f64>,
     /// Status Chance Vulnerability (Tau), one expiry a stack — see
-    /// [`DebuffState::received_status_chance`].
+    /// [`DebuffState::received_proc_chance`].
     pub(super) tau: Vec<f64>,
     pub(super) blast: Vec<BlastStack>,
     /// THE SHOT THAT FILLED THE PILE, as `(RunResult::shots, instant)`. A Blast
@@ -484,13 +484,14 @@ impl DebuffState {
 
 #[wfsim_gas_macro::metered]
 impl DebuffState {
-    /// WHAT A ROLLED STATUS CHANCE IS WORTH ON THIS BODY: `1 + 10%` a live Tau
-    /// stack, a MULTIPLIER — the page's 210% reads 315% at five stacks and 420%
-    /// at ten. Every rolled chance aimed at the body takes it and a forced proc
-    /// does not ("will not create additional procs due to this
-    /// vulnerability"), so the caller multiplies the chance it rolls with.
-    pub(super) fn received_status_chance(&self, now: f64) -> f64 {
-        1.0 + TAU_STATUS_CHANCE_PER_STACK * self.tau.iter().filter(|&&e| e > now).count() as f64
+    /// Scene-selected Tau entries enter the native late target117 query (N07A).
+    pub(super) fn received_proc_chance(&self, packet_chance: f64, now: f64) -> f64 {
+        use crate::rules::upgrades::{OperationType, UpgradeEntry, UpgradeType};
+        let stacks = self.tau.iter().filter(|&&expiry| expiry > now).count();
+        let entry = UpgradeEntry { UpgradeType: UpgradeType::AVATAR_PROC_CHANCE_VULNERABILITY,
+            OperationType: OperationType::STACKING_MULTIPLY,
+            Value: TAU_STATUS_CHANCE_PER_STACK as f32 * stacks as f32 };
+        crate::rules::status::ordinary::target_proc_chance(packet_chance as f32, [entry]) as f64
     }
 
     /// FIFO push with the universal replace-oldest rule (application-time

@@ -122,9 +122,7 @@ impl ArcRuntime {
             self.encumber_state.activate(params.arcane.encumber_condition);
             for kind in packet.present() {
                 if let Some(dtype) = kind.damage_type() {
-                    if !foe.status_immunities.contains(&dtype) {
-                        for _ in before.count(kind)..packet.count(kind) { procs.push(dtype); }
-                    }
+                    for _ in before.count(kind)..packet.count(kind) { procs.push(dtype); }
                 }
             }
         }

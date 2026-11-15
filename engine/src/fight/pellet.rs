@@ -2288,14 +2288,12 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // …and the clouds stay where they were. See `field_tick`.
             continue;
         }
-        // Per-INSTANCE proc roll (wiki Multishot/Status_Effect):
-        // forced ++ SC draws weighted by the QUANTIZED vector, unit
-        // immunities renormalized.
+        // N07A generates counters before final immunity; the scene supplies this instance.
         let mut procs = status::procs_for_hit(
             forced,
-            status_chance * bodies[0].debuffs.received_status_chance(t),
+            bodies[0].debuffs.received_proc_chance(status_chance, t),
             &status_vector,
-            &params.foe.status_immunities,
+            params.foe.proc_handlers(),
             &mut d.status,
         );
         // HUNTER MUNITIONS: a critical hit rolls its OWN Slash status,
@@ -2343,7 +2341,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // `forced_procs`. Hunter Munitions pushes above, so it is already
     // in `procs` here and this roll is skipped, which is exactly
     // "if both proc at the same time, only 1 slash proc is applied".
-    roll_proc_conversion(active, d, live_rate, &mut procs);
+    roll_proc_conversion(active, d, live_rate, &params.foe.status_immunities, &mut procs);
+    let applied_count = status::applied_procs(&procs, &params.foe.status_immunities).count();
     // Overwhelming Attrition's TRIGGER, evaluated once the proc
     // list is final: "On Hit that is neither Critical nor applies
     // a Status Effect" (wiki). PER DAMAGE INSTANCE — measured
@@ -2365,7 +2364,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     if tier > 0 {
         bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::Crit, t, d.extra);
     }
-    if tier == 0 && procs.is_empty() {
+    if tier == 0 && applied_count == 0 {
         bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::PlainHit, t, d.extra);
     }
     // STORMBURST: the condition is on the TARGET, read here where the
@@ -2383,7 +2382,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // above: a pellet that spends the buff can re-arm it with its own
     // status, which is what makes a high-status weapon hold it up.
     if let Some(sc) = params.super_crit_on_status {
-        if !procs.is_empty() && d.extra.chance(sc.chance) {
+        if applied_count > 0 && d.extra.chance(sc.chance) {
             *super_crit_armed = true;
         }
     }
@@ -2394,7 +2393,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // PELLET's own statuses land, and a field tick's or an extra hit's
     // are a different sentence that no card in the roster has written
     // yet.
-    for _ in 0..procs.len() {
+    for _ in 0..applied_count {
         bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::StatusApplied, t, d.extra);
     }
     // INDEPENDENT PROCS land on the HIT, not on the roll — that is what
@@ -2433,13 +2432,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     }
         // …AND THE ORDINARY END OF A PELLET, which does get to name
         // what it applied.
-        log_this_pellet!(procs.clone());
+        log_this_pellet!(status::applied_procs(&procs, &params.foe.status_immunities).collect());
         // …AND WHAT MELEE INFLUENCE WILL COPY, taken before
         // `settle_procs` consumes the list. Cloned only when the arcane
         // is equipped: this is the hot loop and every other build pays
         // an empty `Vec`.
         let aimed_procs = if params.arcane.influence_chance > 0.0 {
-            procs.clone()
+            status::applied_procs(&procs, &params.foe.status_immunities).collect()
         } else {
             Vec::new()
         };

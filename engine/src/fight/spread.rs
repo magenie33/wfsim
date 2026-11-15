@@ -257,7 +257,7 @@ pub(super) fn spread_from_influence(
                 forced,
                 0.0,
                 &DamageVector::new().with(ty, raw),
-                &tparams.status_immunities,
+                tparams.proc_handlers(),
                 &mut d.status,
             );
             settle_procs(
@@ -553,14 +553,14 @@ pub(super) fn spread_hit(
     arc.next_instance();
     let procs = crate::rules::status::procs_for_hit(
         forced,
-        status_chance * foe.debuffs.received_status_chance(t),
+        foe.debuffs.received_proc_chance(status_chance, t),
         &vector,
-        &spec.params.status_immunities,
+        spec.params.proc_handlers(),
         &mut d.status,
     );
     // WHAT THIS INSTANCE LEFT, for Melee Influence — see [`Landed`]. Taken
     // before `settle_procs` consumes the list.
-    let mut landed = Landed { procs: procs.clone(), raw, shares, killed };
+    let mut landed = Landed { procs: crate::rules::status::applied_procs(&procs, &spec.params.status_immunities).collect(), raw, shares, killed };
     settle_procs(
         procs,
         seat,

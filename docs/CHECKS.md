@@ -17,6 +17,14 @@ inheritance, enum, native-code, script and source-identity mutations. The
 read-only `client_upgrade_changes.py` verifies both source exports before
 reporting changes and their current consumers (`ENGINE_MIGRATION.md`).
 
+`import_ordinary_proc_contract.py --exchange <batch> --check` verifies all eight
+files and 223 archive members against the pinned N07A manifest, and reproduces
+the ordinary-proc fixture. Rust source tests compare nine weight vectors,
+1895 sampling traces, 60 selector predicates and 645 real-fight sampler
+controls. Exact U24/state writes, lazy handler evaluation, target117 folding,
+counter saturation and inclusive ties participate; final application and
+Phantasma callback cadence are outside the fixture's native boundary.
+
 `check_engine_compare.py` runs independent executable fixtures through the
 native migration comparator. Equal results pass; changed damage, signed zero,
 one-ULP values, event ordering, repeat drift, truncated records, artifact

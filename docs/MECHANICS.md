@@ -800,16 +800,37 @@ element procs are weighted, not uniform.
   A component quantized to zero has no random draw weight; there is no
   minimum-one-quantum floor. Each attack part owns its composition, including
   projectile variants, stance multipliers, live elemental additions, spread
-  targets and field ticks. Immunity excludes a type and renormalizes the rest.
+  targets and field ticks. The selected handler graph determines eligibility;
+  the final immunity mask does not enter ordinary generation (N07A below).
   The unquantized vector remains the input to quantization and the ledger's
   breakdown; measured pre-quantization Extra Hit brackets also read it (M40).
   It is not a second source of status weights.
   [M130](measurements/M130-status-weights-before-quantization.md) records the
   Focus-controlled observations and their limits; no exact proc frequency was
   measured.
-- **SC > 100%**: `floor(SC)` guaranteed rolls + `frac(SC)` chance of one
-  more; **each roll's type is drawn independently** (the same type can
-  repeat within one hit).
+- **Ordinary generation (N07A)** uses binary32 packet chance and an inclusive
+  chance test on every attempted unit, including guaranteed units. While
+  local `p > 0`, draw native U24 and stop if `u > p`. On success, draw another
+  U24, select a type and subtract float32 one from local `p`. Stored packet
+  chance is unchanged. The first successful chance lazily evaluates weights;
+  every success draws a type even when all weights are zero. Selection is
+  with replacement; existing byte counters increment with saturation at255.
+  Opaque packet byte+0x241 skips this sampler; NumHits+0x244 does not scale it.
+  `ordinary-proc-2026-10-28.json` pins 1895 original-client vectors, including
+  all-immunity complete-return controls and nine late target117 query controls.
+  These bound generation, rather than the subsequent handler applications.
+- **ProcEvaluator weights (N07A)** sum selected positive binary32 damage
+  components in native index order, then multiply by `WeightMultiplier`.
+  `DamageTypes` combines explicit components with physical/base/compound/any
+  selectors, adding a matching component once. A handler takes the maximum
+  evaluator result from positive zero; an absent handler contributes zero.
+  Total and cumulative weights fold in proc-id order, with selection at the
+  first positive weight whose cumulative sum is at least `U24 × total`.
+  The engine's scene adapter accepts an explicit handler selection. Unbound
+  enemies retain the wiki eligibility fallback, excluding scene-immune types
+  from that selection. This policy does not recover native installation or
+  establish that a final immunity bit removes a handler. Void/Tau alternatives
+  remain separate; their native proc ids are unbound.
 - **Stack pools are SHARED per target** (high-confidence model): the pool and its cap live on the target — 10 players'
   Magnetic procs compete for the same 10 slots, FIFO across all sources;
   effect magnitudes (armor strip %, shields amp) read the target's total
@@ -840,18 +861,18 @@ element procs are weighted, not uniform.
   direct hit forces Impact; the radial part does not). Special cases can
   even **bypass stack caps**: Evensong applies 7 Weakened procs on hit
   past the normal 5-stack limit.
-- Per-hit proc set = `forced_list + N typed draws`,
-  `N = floor(SC) + Bernoulli(frac(SC))`. Average procs per trigger pull
-  = `Multishot × (forced_count + SC)` (official formula).
+- Per-hit proc set = `forced_list + N typed draws`, where N follows the
+  ordinary loop above. The statistical approximation for average procs per
+  trigger pull is `Multishot × (forced_count + SC)` (official formula).
   Example (Astilla-like, forced Impact on direct, impact share `w`,
   `SC ≤ 1`): P(1 Stagger stack) = `1 − SC·w`, P(2 stacks) = `SC·w`,
   P(1 stack + another proc type) = `SC·(1−w)`; the explosion instance
   rolls independently with its own vector.
-- **Status immunity renormalizes the type draw** (wiki `Status_Effect`
-  §Status Immunity Interactions): types the target is status-immune to
-  are EXCLUDED from the draw and the remaining weights renormalize (the
-  roll is never wasted). Independent of damage-type immunity.
-  Implemented in `rules::status::draw_proc_type`.
+- **Final status immunity** filters applications after generation. It does
+  not renormalize weights or erase raw counters (N07A). Missing handlers are
+  distinct from final immunity. Landed-status buffs, records and Melee
+  Influence use the application filter; Primary Debilitate reads raw presence.
+  M87 confirms Radiation cannot land, without measuring its generated weight.
 - **Independent procs** exist outside the damage-type system (Knockdown,
   Lifted, Ragdoll, Stun, Sleep, Silence, Slow, Disarmed, Big Stagger,
   Microwave — see `data/debuffs/independent_procs.yaml`); Knockdown /
@@ -884,7 +905,9 @@ element procs are weighted, not uniform.
   receives by `1 + 0.10 × stacks`, ten at most, 8 s each on its own clock,
   the eleventh replacing the oldest. Every rolled chance aimed at the body
   takes it, a forced proc does not, and the hit that lands a stack rolls
-  without it (`DebuffState::received_status_chance`).
+  without it (`DebuffState::received_proc_chance`). The scene selects Tau's
+  `AVATAR_PROC_CHANCE_VULNERABILITY` entries; the native late query folds them
+  in binary32 before ordinary generation. Source365 is not queried again.
 - **Negative status duration** (Riven, past −100%): all duration/DoT procs
   are nullified; instant procs still occur.
 - **DoT** effects are DebuffBar entries with a `dot` sub-block whose stacks
