@@ -822,15 +822,20 @@ fn a_plain_multishot_grant_is_not_multiplied() {
 }
 
 #[test]
-fn status_immunities_renormalize_toward_other_procs() {
-    // Slash-immune target: no bleeds ever, but procs still occur at the
-    // full 37% rate (renormalized onto Impact/Puncture).
+fn final_status_immunity_filters_applications_without_renormalizing() {
+    // N07A keeps generated Slash weight; the final application is rejected.
     let mut p = FightParams::default();
     p.foe.status_immunities = vec![DamageType::Slash];
+    p.foe.proc_handlers = Some(crate::rules::status::SceneProcHandlers::all());
     let s = monte_carlo(&p, 1000, 15);
     assert_eq!(s.mean_dot_damage, 0.0);
     let per_shot = s.mean_procs / s.mean_shots;
-    assert!((per_shot - 0.37).abs() < 0.03, "procs/shot {per_shot}");
+    let expected = p.status_chance * (1.0 - p.damage.get(DamageType::Slash) / p.damage.total());
+    assert!((per_shot - expected).abs() < 0.02, "procs/shot {per_shot}, expected {expected}");
+    p.foe.proc_handlers = None;
+    let fallback = monte_carlo(&p, 1000, 15);
+    let per_shot = fallback.mean_procs / fallback.mean_shots;
+    assert!((per_shot - p.status_chance).abs() < 0.02, "scene fallback {per_shot}");
 }
 
 #[test]
