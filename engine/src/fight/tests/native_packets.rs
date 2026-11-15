@@ -47,7 +47,8 @@ fn encumber_selection_installs_suppression_even_when_the_recipient_is_immune() {
     let mut runtime = ArcRuntime::init(&p);
     let mut payload = vec![DamageType::Cold];
     runtime.encumber(&p, 0.0, &target, &mut payload);
-    assert_eq!(payload, [DamageType::Cold]);
+    assert_eq!(payload.len(), 2, "the raw added counter survives final immunity");
+    assert_eq!(crate::rules::status::applied_procs(&payload, &target.status_immunities).count(), 0);
     assert!(runtime.encumber_state.active);
     assert_ne!(runtime.native_random.state(), 0);
 }

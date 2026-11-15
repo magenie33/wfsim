@@ -261,6 +261,22 @@ separate mappings.
 
 ## Native and WASM impact runs
 
+N07A ordinary generation is bound by
+`tests/fixtures/client/ordinary-proc-2026-10-28.json` and its pinned importer.
+The actual fight sampler shares the original binary32 chance/CDF loop and
+native RNG with the supplied-graph kernel. Source vectors cover weight
+selectors/maxima, lazy evaluation, inclusive boundaries, zero weights,
+saturation, existing counters and target117 folding. NumHits is independent.
+
+The native sampler receives the selected handler graph independently of the
+final immunity mask. `Foe.proc_handlers` supplies an explicit scene selection;
+unbound enemies retain the wiki eligibility fallback. This fallback does not
+establish native graph installation. Ordinary generation retains raw counters;
+application, landed-status buffs, records and Influence filter immunity later.
+Primary reads raw presence and can only qualify an immune compound already at
+the threshold. Scene application order and callback cadence remain separate
+from counter generation. Void/Tau alternatives have no guessed native ids.
+
 `freeze --runtime wasm` saves a standalone Rust release module, matching
 wasm-bindgen glue, immutable dependencies and a number-token-preserving runner.
 With `WFSIM_DATA_APART=1`, it copies the data packs emitted by that exact Cargo

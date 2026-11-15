@@ -1064,6 +1064,14 @@ eligibility and exact same-frame
 radial/lethal ordering remain unbound; ordinary proc and owner-measured
 source/landing rules apply.
 
+N07A ordinary generation uses native evaluator maxima, binary32 chance/CDF
+sampling, counters and the late target117 fold. Runtime per-enemy handler
+installation, upstream source365/scanned366 branches and later handler
+acceptance remain unbound. Explicit scene handler selections are independent
+of final immunity; unbound enemies retain the wiki eligibility fallback.
+Void/Tau alternatives do not claim recovered native proc ids. Supplied NumHits
+controls establish kernel independence, rather than beam-to-callback cadence.
+
 Native attribute folding is implemented for selected Shield and Arcane queries;
 ordinary build effects do not claim a complete native UpgradeManager. Primary
 Debilitate maps one simulator status submission to one notification. Its real

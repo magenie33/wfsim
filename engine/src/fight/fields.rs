@@ -497,9 +497,9 @@ pub(super) fn field_tick_seeded(
     };
     let procs = status::procs_for_hit(
         forced,
-        f.status_chance * debuffs.received_status_chance(at),
+        debuffs.received_proc_chance(f.status_chance, at),
         &status_vector,
-        &foe.status_immunities,
+        foe.proc_handlers(),
         &mut d.status,
     );
     let scale = InstanceScale { native_source: None, native_part: None,
@@ -520,11 +520,9 @@ pub(super) fn field_tick_seeded(
             status_damage_live: 0.0,
         };
     if let Some(s) = seed {
-        let forced_kept = forced.iter().filter(|t| !foe.status_immunities.contains(t)).count();
-        s.electricity = procs.contains(&DamageType::Electricity);
-        s.carried = procs[forced_kept.min(procs.len())..]
-            .iter()
-            .copied()
+        s.electricity = status::applied_procs(&procs, &foe.status_immunities)
+            .any(|ty| ty == DamageType::Electricity);
+        s.carried = status::applied_procs(&procs[forced.len().min(procs.len())..], &foe.status_immunities)
             .filter(|ty| influence_can_spread(*ty))
             .map(|ty| (ty, raw * shares.share(ty)))
             .collect();
