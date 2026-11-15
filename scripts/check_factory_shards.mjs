@@ -72,5 +72,5 @@ if (paths.length) {
       console.log(`ok: actual coverage CLI rejects ${name}`);
     }
   } finally { rmSync(dir, { recursive: true, force: true }); }
-  console.log('factory partitions preserve 400 liveness seeds, 100 termination seeds and 37 fixed groups in each mode');
+  console.log(`factory partitions preserve ${family('liveness').length} liveness seeds, ${family('termination').length} termination seeds and ${family('regressions').length} fixed groups in each mode`);
 }

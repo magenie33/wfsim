@@ -59,7 +59,10 @@ const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbo
   'scripts/prepared_read_indexes.mjs', 'scripts/prepared_work_consumer.mjs', 'scripts/prepared_work_inventory.mjs',
   'scripts/replay_board_projection.mjs', 'scripts/replay_split_board.mjs', 'scripts/ship_factoryd.py',
   'scripts/source_capture_gc.mjs', 'scripts/split_board_pipeline.mjs', 'scripts/sqlite_schema.mjs',
-  'scripts/sqlite_transaction_recovery.mjs', 'scripts/task_pipeline.mjs', 'scripts/task_schema.mjs'];
+  'scripts/sqlite_transaction_recovery.mjs', 'scripts/task_pipeline.mjs', 'scripts/task_schema.mjs',
+  'tests/fixtures/board-consumers-61de/scripts/board_heads.mjs',
+  'tests/fixtures/board-consumers-61de/scripts/board_meta.py',
+  'tests/fixtures/board-consumers-61de/mcp/headless.js', 'tests/fixtures/board-consumers-61de/source.json'];
 
 export function checkJobPaths(workflow) {
   const sections = workflow.split(/^  ([\w-]+):[ \t]*$/m);

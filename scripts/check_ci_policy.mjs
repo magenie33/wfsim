@@ -32,7 +32,10 @@ const boardPipelineInputs = ['deploy/wfsim-live.service', 'scripts/board_operato
   'scripts/prepared_work_inventory.mjs', 'scripts/audit_prepared_members.mjs', 'scripts/source_capture_gc.mjs',
   'scripts/sqlite_transaction_recovery.mjs', 'scripts/check_task_pipeline.mjs',
   'scripts/check_pipeline_clock.mjs', 'scripts/check_official_claims.mjs',
-  'scripts/capacity_directory_bytes.mjs', 'scripts/check_capacity_walk.mjs'];
+  'scripts/capacity_directory_bytes.mjs', 'scripts/check_capacity_walk.mjs',
+  'tests/fixtures/board-consumers-61de/scripts/board_heads.mjs',
+  'tests/fixtures/board-consumers-61de/scripts/board_meta.py',
+  'tests/fixtures/board-consumers-61de/mcp/headless.js', 'tests/fixtures/board-consumers-61de/source.json'];
 for (const path of boardPipelineInputs) {
   assert.deepEqual(classify([path]).jobs, PRODUCT_JOBS, path);
   assert.equal(classify([path]).deep, false, path + ' retains full ordinary CI without unrelated catalog search');
