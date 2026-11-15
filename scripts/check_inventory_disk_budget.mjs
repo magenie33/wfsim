@@ -75,3 +75,5 @@ try {
   console.log('ok: explicit output allocation rejects overflow, linked output, wrong directory and depleted host reserve');
   console.log('ok: one explicit allocation includes sibling checkpoints/captures once, charges outside sources, retains its reserve and rejects unrelated or linked scopes');
 } finally { catalog?.close(); rmSync(root, { recursive: true, force: true }); }
+
+await import('./check_capacity_walk.mjs');
