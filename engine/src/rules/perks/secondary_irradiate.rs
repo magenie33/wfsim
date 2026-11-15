@@ -12,6 +12,7 @@ pub struct Source {
     pub arcane_intermediate: bool,
 }
 
+#[wfsim_gas_macro::metered]
 impl Source {
     fn accepted(self) -> bool { self.source_proc_type == 30 && !self.arcane_intermediate }
 }
@@ -20,6 +21,7 @@ impl Source {
 #[derive(Debug, Default, Clone)]
 pub struct Listener { installed: bool }
 
+#[wfsim_gas_macro::metered]
 impl Listener {
     pub fn installed(&self) -> bool { self.installed }
     pub fn invalidate(&mut self) { self.installed = false; }
@@ -106,4 +108,5 @@ impl SecondaryIrradiate {
 }
 
 #[cfg(test)]
+#[path = "tests/secondary_irradiate.rs"]
 mod tests;

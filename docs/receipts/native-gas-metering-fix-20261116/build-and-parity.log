@@ -1,0 +1,59 @@
+every item on a fight's path is metered
+  ok   458 top-level items carry #[wfsim_gas_macro::metered]
+  ok   every macro_rules! body that loops is a metered_expr!
+  ok   no production code calls the platform's maths, only engine/src/rules/math.rs
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`release` profile [optimized]]8;;\ target(s) in 0.03s
++ pack.data.json
++ pack.site.json
++ pack.text.json
+native and wasm count the same
+  ok   acceltra demolisher base: native and wasm give the same gas, work and score
+  ok   acceltra demolisher base: native, five ways of cutting its runs, the same
+  ok   acceltra demolisher base: wasm, a fresh instance and five ways of cutting its runs, the same
+  ok   acceltra demolisher base: the work is gas.rs's price of the count
+  ok   acceltra demolisher base: a thousand full rows of it is an exact JSON number
+  ok   braton_prime demolisher base: native and wasm give the same gas, work and score
+  ok   braton_prime demolisher base: native, five ways of cutting its runs, the same
+  ok   braton_prime demolisher base: wasm, a fresh instance and five ways of cutting its runs, the same
+  ok   braton_prime demolisher base: the work is gas.rs's price of the count
+  ok   braton_prime demolisher base: a thousand full rows of it is an exact JSON number
+  ok   burston_prime standard_single_target base: native and wasm give the same gas, work and score
+  ok   burston_prime standard_single_target base: native, five ways of cutting its runs, the same
+  ok   burston_prime standard_single_target base: wasm, a fresh instance and five ways of cutting its runs, the same
+  ok   burston_prime standard_single_target base: the work is gas.rs's price of the count
+  ok   burston_prime standard_single_target base: a thousand full rows of it is an exact JSON number
+  ok   fulmin_prime heavy_gunner semi_auto: native and wasm give the same gas, work and score
+  ok   fulmin_prime heavy_gunner semi_auto: native, five ways of cutting its runs, the same
+  ok   fulmin_prime heavy_gunner semi_auto: wasm, a fresh instance and five ways of cutting its runs, the same
+  ok   fulmin_prime heavy_gunner semi_auto: the work is gas.rs's price of the count
+  ok   fulmin_prime heavy_gunner semi_auto: a thousand full rows of it is an exact JSON number
+  ok   kuva_hind standard_multi_target semi_auto: native and wasm give the same gas, work and score
+  ok   kuva_hind standard_multi_target semi_auto: native, five ways of cutting its runs, the same
+  ok   kuva_hind standard_multi_target semi_auto: wasm, a fresh instance and five ways of cutting its runs, the same
+  ok   kuva_hind standard_multi_target semi_auto: the work is gas.rs's price of the count
+  ok   kuva_hind standard_multi_target semi_auto: a thousand full rows of it is an exact JSON number
+  ok   larkspur_prime standard_single_target base: native and wasm give the same gas, work and score
+  ok   larkspur_prime standard_single_target base: native, five ways of cutting its runs, the same
+  ok   larkspur_prime standard_single_target base: wasm, a fresh instance and five ways of cutting its runs, the same
+  ok   larkspur_prime standard_single_target base: the work is gas.rs's price of the count
+  ok   larkspur_prime standard_single_target base: a thousand full rows of it is an exact JSON number
+  ok   phenmor standard_single_target cycle: native and wasm give the same gas, work and score
+  ok   phenmor standard_single_target cycle: native, five ways of cutting its runs, the same
+  ok   phenmor standard_single_target cycle: wasm, a fresh instance and five ways of cutting its runs, the same
+  ok   phenmor standard_single_target cycle: the work is gas.rs's price of the count
+  ok   phenmor standard_single_target cycle: a thousand full rows of it is an exact JSON number
+  ok   torid demolisher cycle: native and wasm give the same gas, work and score
+  ok   torid demolisher cycle: native, five ways of cutting its runs, the same
+  ok   torid demolisher cycle: wasm, a fresh instance and five ways of cutting its runs, the same
+  ok   torid demolisher cycle: the work is gas.rs's price of the count
+  ok   torid demolisher cycle: a thousand full rows of it is an exact JSON number
+  ok   zenith demolisher base: native and wasm give the same gas, work and score
+  ok   zenith demolisher base: native, five ways of cutting its runs, the same
+  ok   zenith demolisher base: wasm, a fresh instance and five ways of cutting its runs, the same
+  ok   zenith demolisher base: the work is gas.rs's price of the count
+  ok   zenith demolisher base: a thousand full rows of it is an exact JSON number
+  ok   acceltra, fought again after every other row in one process: native and wasm count what they did first
+  ok   phenmor: a board fold, which reports no progress, beats from inside the engine
+  ok   ...and a heartbeat changes no bit of score, work or gas
+
+all passed
