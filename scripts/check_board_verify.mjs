@@ -44,6 +44,10 @@ const TOKEN = { authorization: "Bearer ft" };
 const post = async (route, path, body, headers = {}) =>
   (await route(new Request(`https://x${path}`, { method: "POST", headers, body: JSON.stringify(body) }), env, path)).json();
 const WORK = 7_000_000_000, SCORE = 1.1070976928071055;
+const captured = ({ tasks }) => new Map(tasks.flatMap(({ question, task_id, lease, demands }) =>
+  demands.map(({ ref }) => [ref, { question, task_id, lease }])));
+const measured = (identity, score = SCORE) => ({ identity, ruler: "standard_single_target", mode: "base", score, metric: "kpm", work: WORK,
+  measured_by: "e1", cost_seconds: 1, started_at: "2026-10-08T08:00:00.000Z", finished_at: "2026-10-08T08:00:01.000Z" });
 const YES = { v: 1, at: "2026-10-08T08:00:00.000Z" };
 const work = (v, { ip = "", engine = "e1", protocol = PROTOCOL, consent = YES, ahead = false, pace = null } = {}) =>
   post(verifyRoute, "/api/board/work", { verifier: v, engine, protocol, consent, lanes: 4, ...(ahead ? { ahead } : {}), ...(pace ? { pace_ms: pace } : {}) },
@@ -200,8 +204,18 @@ const settle = await post(officialRoute, "/api/tasks/official/claim",
   { witness: "official:live", engine: "e1", states: ["disputed", "spot", "nondeterministic"], producers: ["new_build", "sweep"], max: 3 }, TOKEN);
 check("the live loop claims what only it may settle", settle.tasks.length === 1 && settle.tasks[0].demands[0].payload.identity === "two",
   JSON.stringify(settle));
-const told = await tell([{ identity: "two", ruler: "standard_single_target", mode: "base", score: SCORE, metric: "kpm", work: WORK }], "e1",
-  (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:live" }, TOKEN));
+const settleClaims = captured(settle), receipt = settleClaims.get("two|standard_single_target|base");
+const answersBeforeOfficial = (await L.get("SELECT count(*) AS n FROM record_candidate_answers")).n;
+for (const field of ["question", "task_id", "lease", "identity"]) {
+  const incomplete = { ref: "two|standard_single_target|base", ...receipt, result: { score: SCORE, metric: "kpm" }, work: WORK };
+  for (const key of field === "identity" ? ["question", "task_id", "lease"] : [field]) delete incomplete[key];
+  const refused = await post(officialRoute, "/api/tasks/official/answer",
+    { witness: "official:live", engine: "e1", producers: BOARD_KINDS, answers: [incomplete] }, TOKEN);
+  check(`an official answer missing captured ${field} is refused without recording a candidate`, refused.states?.[0] === null
+    && (await L.get("SELECT count(*) AS n FROM record_candidate_answers")).n === answersBeforeOfficial);
+}
+const told = await tell([measured("two")], "e1",
+  (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:live" }, TOKEN), settleClaims);
 check("its fact settles the dispute", told === 1 && (await question("two")).state === "fact");
 check("...crediting the client it agrees with", await credited(C) === WORK);
 const cooled = await L.get("SELECT banned, refusals, refused_until FROM entity_compute_devices WHERE id = ?", E);
@@ -232,8 +246,8 @@ check("an agreement the dice pick is a spot check: a fact now, the clients paid"
   && await credited(G) === WORK);
 const spot = await post(officialRoute, "/api/tasks/official/claim",
   { witness: "official:live", engine: "e1", states: ["spot"], producers: ["new_build", "sweep"], max: 3 }, TOKEN);
-await tell([{ identity: "three", ruler: "standard_single_target", mode: "base", score: SCORE, metric: "kpm", work: WORK }], "e1",
-  (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:live" }, TOKEN));
+await tell([measured("three")], "e1",
+  (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:live" }, TOKEN), captured(spot));
 check("a spot check that disproves them refuses both and takes back what they were paid",
   spot.tasks.length === 1 && await credited(G) === 0 && await credited(H) === 0
   && (await L.get("SELECT banned FROM entity_compute_devices WHERE id = ?", G)).banned === 1);
@@ -258,8 +272,7 @@ const claim = await post(officialRoute, "/api/tasks/official/claim",
 check("the scorer claims what is past its deadline and leaves a young row to the clients",
   claim.tasks.map((t) => t.demands[0].payload.identity).join() === "late" && (await question("young")).leased_to === null, JSON.stringify(claim.tasks.length));
 check("no client is handed a claimed row", task(await work(C, { ip: "192.0.2.30" })).identity === "young");
-await free();
-await L.run("UPDATE state_compute_work SET lease = 'x', lease_until = '2999-01-01T00:00:00.000Z', leased_to = 'official:scorer' WHERE id = ?", (await question("late")).id);
+await L.run("UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE id <> ?", (await question("late")).id);
 // THE SCORER'S OWN READ, run on the schema: the batches in order, then each
 // one's rows after a cursor along the key.
 const body = (...a) => JSON.parse(execFileSync("bash", ["scripts/fetch_queue.sh", "--body", ...a]).toString());
@@ -276,8 +289,8 @@ const claimedRows = await post(officialRoute, "/api/tasks/official/report",
   { witness: "official:scorer", report: "claimed", rows: queued }, TOKEN);
 const read = claimedRows.rows.map((r) => r.build_id).sort();
 check("...it reads exactly what it claimed and what nobody asked for", JSON.stringify(read) === JSON.stringify(["late", "orphan"]), JSON.stringify(read));
-await tell([{ identity: "late", ruler: "standard_single_target", mode: "base", score: 3, metric: "kpm", work: WORK }], "e1",
-  (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:scorer" }, TOKEN));
+await tell([measured("late", 3)], "e1",
+  (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:scorer" }, TOKEN), captured(claim));
 check("...and its answer is the fact, paying the client whose bits it reproduced", (await question("late")).state === "fact" && await credited(F) === WORK);
 check("...whose number the task system delivers to the board", (await fact("late"))?.score === 3 && !await owed("late"));
 await L.run(`INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
@@ -291,7 +304,24 @@ check("a `refresh-` batch's row is asked by `refresh`, due fourteen days after i
 check("...and one whose official fact is on the served engine costs nothing: the row is measured now, its number kept",
   !await owed("late") && (await fact("late")).finished_at > "2026-01-01T00:00:00.000Z" && (await fact("late")).measured_by === "abc123" && (await fact("late")).score === 3,
   JSON.stringify(await fact("late")));
-await post(officialRoute, "/api/tasks/official/release", { witness: "official:scorer" }, TOKEN);
+await L.run("UPDATE state_compute_work SET due_at = '2000-01-01T00:00:00.000Z' WHERE id = ?", (await question("young")).id);
+const held = await post(officialRoute, "/api/tasks/official/claim",
+  { witness: "official:scorer", engine: "e1", states: ["open"], producers: BOARD_KINDS, max: 100 }, TOKEN);
+const releaseClaims = [...captured(held).values()];
+check("the release fixture holds a real official claim", releaseClaims.length === 1 && releaseClaims[0].question === (await question("young")).id);
+const missingRelease = await officialRoute(new Request("https://x/api/tasks/official/release", {
+  method: "POST", headers: TOKEN, body: JSON.stringify({ witness: "official:scorer" }),
+}), env, "/api/tasks/official/release");
+check("a release without captured claims is rejected", missingRelease.status === 400 && (await question("young")).lease === releaseClaims[0].lease);
+await post(officialRoute, "/api/tasks/official/release", { witness: "official:scorer", claims: [] }, TOKEN);
+check("an empty release preserves the held claim", (await question("young")).lease === releaseClaims[0].lease);
+for (const stale of [{ ...releaseClaims[0], task_id: releaseClaims[0].task_id + 1 }, { ...releaseClaims[0], lease: "obsolete" }]) {
+  await post(officialRoute, "/api/tasks/official/release", { witness: "official:scorer", claims: [stale] }, TOKEN);
+  check("a release with a stale task or lease preserves the current claim", (await question("young")).lease === releaseClaims[0].lease);
+}
+await post(officialRoute, "/api/tasks/official/release", { witness: "official:other", claims: releaseClaims }, TOKEN);
+check("another witness cannot release the captured claim", (await question("young")).lease === releaseClaims[0].lease);
+await post(officialRoute, "/api/tasks/official/release", { witness: "official:scorer", claims: releaseClaims }, TOKEN);
 check("the release hands back what the run held", !await L.get("SELECT 1 FROM state_compute_work WHERE leased_to = 'official:scorer'"));
 
 console.log("\nleases, engines");
@@ -376,25 +406,37 @@ console.log("\npacks");
 
 console.log("\norders open before the factory");
 {
-  const at = "2026-10-09T00:00:00.000Z";
+  const at = "2026-10-09T00:00:00.000Z", oldLease = "e".repeat(32), until = new Date(Date.now() + 600_000).toISOString();
+  const before = await credited(B), beforeC = await credited(C);
   await build("legacy");
   await queue("rescore-y", "legacy");
   await L.run(`INSERT INTO entity_compute_orders (identity, ruler, mode, record, state, engine, slot, at, priority, score, metric, work, produced_by, clients, lease, lease_until, leased_to)
-    VALUES ('legacy', 'standard_single_target', 'base', ?, 'open', 'e1', 1, ?, 1, ?, 'kpm', ?, ?, ?, NULL, NULL, NULL)`, (await L.get("SELECT record FROM entity_weapon_builds WHERE id = 'legacy'")).record, at, SCORE, WORK, B, B);
+    VALUES ('legacy', 'standard_single_target', 'base', ?, 'open', 'e1', 1, ?, 1, ?, 'kpm', ?, ?, ?, ?, ?, ?)`, (await L.get("SELECT record FROM entity_weapon_builds WHERE id = 'legacy'")).record, at, SCORE, WORK, B, B, oldLease, until, B);
   await L.run(`INSERT INTO entity_compute_orders (identity, ruler, mode, record, state, engine, slot, at, priority, lease, lease_until, leased_to)
     VALUES ('gone', 'standard_single_target', 'base', '{}', 'todo', '', 2, ?, 0, NULL, NULL, NULL)`, at);
   check("only the factory's secret adopts", (await post(boardTasksRoute, "/api/board/adopt", {})).ok === false);
   const r = await post(boardTasksRoute, "/api/board/adopt", {}, TOKEN);
   check("an open order is asked of the factory, as of when it was opened, and nothing is left", r.left === 0 && await demand("legacy")
     && (await demand("legacy")).asked_at === at, JSON.stringify(r));
-  check("...its client's result carried", (await L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = ? AND device = ?", (await question("legacy")).id, B)).n === 1);
+  const adopted = await question("legacy");
+  const historical = await L.get("SELECT score,work,produced_by,clients FROM entity_compute_orders WHERE identity = 'legacy'");
+  check("...its historical result remains separate from the new round", !await L.get("SELECT 1 FROM record_candidate_answers WHERE question = ?", adopted.id)
+    && historical.score === SCORE && historical.work === WORK && historical.produced_by === B && historical.clients === B
+    && await credited(B) === before);
+  check("...its old lease does not occupy the new round", adopted.lease === null && adopted.leased_to === null);
+  await answer({ question: adopted.id, lease: oldLease }, B, { ip: "198.51.100.50" });
+  check("...and a late answer under the old lease cannot enter it", !await L.get("SELECT 1 FROM record_candidate_answers WHERE question = ?", adopted.id)
+    && await credited(B) === before);
   check("...and an order nobody owes any more is settled where it is found", (await L.get("SELECT state FROM entity_compute_orders WHERE identity = 'gone'")).state === "settled");
   await free(); await only("legacy");
-  check("its client is not asked again", none(await work(B, { ip: "198.51.100.50" })));
-  const before = await credited(B);
+  const first = task(await work(B, { ip: "198.51.100.50" }));
+  check("its client may obtain a fresh lease for the admitted demand", first?.question === adopted.id && first.lease !== oldLease);
+  await answer(first, B, { ip: "198.51.100.50" });
+  check("a fresh first witness alone makes no fact or credit", !await fact("legacy") && await credited(B) === before && await credited(C) === beforeC);
   const wl = await work(C, { ip: "192.0.2.50" });
   await answer(task(wl), C, { ip: "192.0.2.50" });
-  check("...another agreeing with the carried result makes the fact and credits both", await fact("legacy") && await credited(B) === before + WORK);
+  check("...another independent fresh witness makes the fact and credits both", await fact("legacy") && await credited(B) === before + WORK
+    && await credited(C) === beforeC + WORK);
 }
 
 {

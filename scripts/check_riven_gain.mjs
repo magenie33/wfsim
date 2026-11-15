@@ -239,8 +239,8 @@ await L.run("UPDATE state_compute_work SET state = 'withdrawn'");
 
 console.log("\nfrozen before the factory");
 {
-  // A SHAPE FROZEN AND ONCE ANSWERED under the old tables is asked of the factory
-  // as of when it was opened, its answer carried.
+  // Retained shapes keep their demand and history; fresh independent witnesses
+  // establish the current round without importing an old execution.
   const at = new Date(Date.now() - 2 * 86_400_000).toISOString();
   await L.run(`INSERT INTO entity_appraisal_requests (code, channel, chat, asker, room, weapon, ruler, riven, at, request, engine)
     VALUES ('OLD01', 'survey', '{}', 'wfsim', '', 'furis', 'standard_single_target', '{}', ?, ?, 'e1')`, at, JSON.stringify(frozen("old")));
@@ -251,26 +251,37 @@ console.log("\nfrozen before the factory");
   check("an appraisal frozen before the factory is asked of it, and nothing is left", r.body.adopted === 1 && r.body.left === 0, JSON.stringify(r.body));
   check("...due as of when it was opened",
     (await L.get("SELECT due_at FROM state_compute_work WHERE id = ?", await questionOf("OLD01"))).due_at < new Date().toISOString());
-  check("...its answer carried", (await L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = ? AND device = ?", await questionOf("OLD01"), A)).n === 1);
+  const before = await credited(A), beforeD = await credited(D), beforeC = await credited(C);
+  check("...its historical candidate remains separate from the new round", !await L.get("SELECT 1 FROM record_candidate_answers WHERE question = ?", await questionOf("OLD01"))
+    && !!await L.get("SELECT 1 FROM record_appraisal_candidates WHERE code = 'OLD01' AND verifier = ? AND score = 12.5 AND work = 4000000000", A));
   check("...and a second adoption adds nothing", (await appraise("POST", "/api/appraise/adopt", {}, bot)).body.adopted === 0);
   await freeLeases();
   await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id IN (SELECT question FROM relation_task_consumers WHERE producer IN ('new_build', 'survey_build', 'refresh', 'sweep'))");
-  check("its owner's computers are not asked again", (await work(D, "e1", 8, "198.51.100.77") || {}).code !== "OLD01");
+  const first = await work(D, "e1", 8, "198.51.100.77");
+  check("its owner's computer may obtain a fresh lease", first?.code === "OLD01");
+  await answer(first, D, {}, "198.51.100.77");
+  check("a fresh first witness alone leaves the demand pending and credits nobody", !(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = 'OLD01'")).agreed_at
+    && await credited(A) === before && await credited(D) === beforeD && await credited(C) === beforeC);
   await freeLeases();
   const t = await work(C, "e1", 8, "198.51.100.78");
   check("...another owner's is", t && t.code === "OLD01", JSON.stringify(t));
-  const before = await credited(A);
   await answer(t, C, {}, "198.51.100.78");
-  check("...and agreeing with the carried answer credits both", await credited(A) === before + 4e9
-    && !!(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = 'OLD01'")).agreed_at, `${await credited(A) - before}`);
-  // A SEARCH RUNNING while it is adopted keeps its lease, and its answer lands.
+  check("...and two independent fresh witnesses credit only their current work", await credited(A) === before
+    && await credited(D) === beforeD + 4e9 && await credited(C) === beforeC + 4e9
+    && !!(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = 'OLD01'")).agreed_at);
+  // An old running search retains its history, not a lease on the new round.
   const lease = "f".repeat(32), soon = new Date(Date.now() + 600_000).toISOString();
   await L.run(`INSERT INTO entity_appraisal_requests (code, channel, chat, asker, room, weapon, ruler, riven, at, request, engine, lease, lease_until, leased_to)
     VALUES ('OLD02', 'survey', '{}', 'wfsim', '', 'furis', 'standard_single_target', '{}', ?, ?, 'e1', ?, ?, ?)`, at, JSON.stringify(frozen("running")), lease, soon, B);
   await appraise("POST", "/api/appraise/adopt", {}, bot);
   const landed = await answer({ code: "OLD02", lease }, B);
-  check("a search running while it is adopted keeps its lease, and its answer lands", landed.body.first === true,
-    JSON.stringify(landed.body));
+  check("a search running while it is adopted cannot carry its lease or late answer into the new round", landed.body.first === false
+    && (await L.get("SELECT lease FROM state_compute_work WHERE id = ?", await questionOf("OLD02"))).lease === null
+    && (await L.get("SELECT lease FROM entity_appraisal_requests WHERE code = 'OLD02'")).lease === lease
+    && !await L.get("SELECT 1 FROM record_candidate_answers WHERE question = ?", await questionOf("OLD02")), JSON.stringify(landed.body));
+  const fresh = await work(B, "e1", 8, "198.51.100.79");
+  check("its retained demand is executable under a fresh lease", fresh?.code === "OLD02" && fresh.lease !== lease);
+  check("...and a fresh answer can enter that round", (await answer(fresh, B, {}, "198.51.100.79")).body.first === true);
 }
 
 // THE ASK LOST AFTER THE WRITE: the bot's retry asks it, with what was stored.
