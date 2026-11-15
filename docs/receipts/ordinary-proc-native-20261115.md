@@ -31,10 +31,12 @@ value was changed to fit a new result.
 
 The running dev preview at `http://127.0.0.1:8831` matches the final frozen
 Native binary on all 112 focused HTTP requests. The combat-record page check
-passes36 and retains three existing 40m-miss assertions failing with zero
-pellets; the same three failures are recorded in the earlier native-order
-baseline. They remain visible and prevent describing browser validation as
-fully green. Release integration must account for those failures.
+passes36 and retains three40m-miss assertions failing on the selected run;
+the same failures are recorded in the earlier native-order baseline.
+[The integration handoff](native-integration-handoff-20261116.md) preserves
+each failure, baseline SHA, raw log, controlled request and final attribution.
+Main's existing288e47e7 probe/UI repair passes39/39 against this unchanged
+calculation. That focused repair/engine pairing does not replace combined CI.
 
 ## Gameplay and consumers
 
