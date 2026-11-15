@@ -60,7 +60,7 @@ factor cannot recover the original bucket bits.
 | ALN-PROC-02 | Existing per-family clocks/caps; native Encumber suppression input | Native ordinary insertion/expiry/refresh/decay state |
 | ALN-PROC-03 | Retained Electric/Gas seeds; sequential binary32 accumulation; local minimum before own element; four-input group reducer | Live key/payload producers and native visitation lifecycle; other DoT families |
 | ALN-PROC-04 | Per-family measured landing retention | Complete native application, moving origin and expiry |
-| ALN-EVT-01 | Primary one-callback type loop, positive counter presence, fresh child | Native notification cadence, beam submission and full VM dispatch |
+| ALN-EVT-01 | [Primary callback contract](PRIMARY_DEBILITATE.md): one type loop, positive counter presence, coalescing forced setter and fresh child | Native notification cadence, beam submission and full VM dispatch |
 | ALN-EVT-02 | Encumber native sampler, SET0 suppression and positive effective update | Earlier eligibility, resource loading and ancillary owner refresh |
 | ALN-EVT-03 | Existing kill/weakpoint trigger attribution | Native lethal event and ownership dispatch |
 | IRR-01 | Native NumHits count projection; script owner keys and activate/collect/consume rules; shared scene direct-hit adapter | Full native comparator, producer, owner/type/charge binding, callback/Sleep(0) scheduler and echo recipients; [scope](SECONDARY_IRRADIATE.md) |
