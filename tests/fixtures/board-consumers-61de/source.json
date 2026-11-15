@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "source_commit": "61de56dcda71301bbaefc16b8fcc99baf4cc4fc3",
+  "source_tree": "0fe284615a8863c24a06f18347e8e6934d63ee9a",
+  "purpose": "Frozen full-memory heads consumer and independent whole-board stamp; runtime needs no Git objects or current incremental implementation.",
+  "files": {
+    "scripts/board_heads.mjs": "cce8600a86f35eab3d60294d76b67a3afc8f28057792f3d5b912f16a418704f6",
+    "scripts/board_meta.py": "25c144f6dc43612c7d9618328969e9a17603e2b356f8b0c792923092292cdc01",
+    "mcp/headless.js": "dc05405b0b3dbcfaed353e8fe2e47847ec71793c9c16392d4abeda4373e42dd9"
+  },
+  "sources": {
+    "scripts/board_heads.mjs": {
+      "blob": "39ebdc55192ef94ef32bcbc2efe37bf2715d53db",
+      "sha256": "cce8600a86f35eab3d60294d76b67a3afc8f28057792f3d5b912f16a418704f6",
+      "extraction": "complete original bytes"
+    },
+    "scripts/board_meta.py": {
+      "blob": "e79d5ff589fa9149c4d3672c7e5586b69f31358f",
+      "sha256": "25c144f6dc43612c7d9618328969e9a17603e2b356f8b0c792923092292cdc01",
+      "extraction": "complete original bytes"
+    },
+    "mcp/headless.js": {
+      "blob": "a46bf10327a8d601546834f8d4007f012445478c",
+      "sha256": "c6dde2aa68a603847db941dc8b04703ae4726c1a8970250f7c7c7a0857f65c4c",
+      "extraction": "exact function/constant spans, plus SPDX and boardHeads export; no behavioral edits",
+      "spans": [
+        {
+          "start_line": 1059,
+          "end_line": 1067,
+          "sha256": "cd4b37928f3ebe4b7d7d0bafaa9016e623d82e9d92035ee751f810b9bca7ca6d"
+        },
+        {
+          "start_line": 1197,
+          "end_line": 1227,
+          "sha256": "9aeb32e9d78eba54e2d331d1c3dcb43fcfac1814faf22a07a1c2f85cf8f2105d"
+        },
+        {
+          "start_line": 1848,
+          "end_line": 1848,
+          "sha256": "89f332699e29d4481928ea27d1accfd2a33913f19730bfb0a902be38293f0da0"
+        },
+        {
+          "start_line": 1858,
+          "end_line": 1867,
+          "sha256": "e6149e371c011a30b535d456fb8ac96709542c8fb481db438da93c44cabbe509"
+        }
+      ]
+    }
+  }
+}
