@@ -61,3 +61,7 @@ Source review and raw verified evidence summaries are retained in
 `scripts/import_ordinary_proc_contract.py --exchange <batch> --check`.
 Native sequence agreement closes this bounded kernel. A complete-engine safety
 claim still requires the remaining binding evidence and gameplay measurements.
+
+[The N07A qualification receipt](ordinary-proc-native-20261115.md) records
+source-vector agreement, actual consumer coverage, final calculation impact,
+timings, retained browser failures and current runtime boundaries.
