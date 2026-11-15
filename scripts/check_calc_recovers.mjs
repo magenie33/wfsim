@@ -26,6 +26,7 @@ import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });
 const { evaluate, check, send, sleep, BASE } = app;
+const normalWatchdog = await evaluate(`({ loading: LANE_WATCHDOG.loading, stall: LANE_WATCHDOG.stall })`);
 
 await evaluate(`localStorage.clear(); localStorage.setItem('wfsim-lang', 'en')`);
 // THE PAGE ASKS FOR THE ENGINE ONCE, before app.js has arrived: the preload
@@ -204,8 +205,7 @@ check(
 const f = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const out = {};
-  LANE_WATCHDOG.loading = 1500;
-  LANE_WATCHDOG.stall = 1500;
+  Object.assign(LANE_WATCHDOG, ${JSON.stringify(normalWatchdog)});
   // WEDGED BY HAND into the exact shape the fixes above are for: a scan that
   // believes it is running, over a fight the page still wants.
   resetPool();
@@ -234,6 +234,9 @@ const f = await evaluate(`(async () => {
   }
   out.answersAgain = gainScan.key !== null;
   out.ranked = Object.keys(gainScan.by).length;
+  out.status = { running: gainScan.running, failed: gainScan.failed, note: gainScan.note,
+    lanesLost: gainScan.lanesLost, done: gainScan.done, total: gainScan.total,
+    refused: gainScan.refused, holes: gainScan.holes };
   return out;
 })()`);
 
@@ -250,7 +253,7 @@ check(
 check(
   "…and the calculator produces a complete answer after the rebuild",
   f.answersAgain === true && f.ranked > 0,
-  `key stamped ${f.answersAgain}, ranked ${f.ranked}`,
+  `key stamped ${f.answersAgain}, ranked ${f.ranked}, status ${JSON.stringify(f.status)}`,
 );
 
 // THE SWITCH IS THE OTHER WAY OUT. It is the first thing anyone does to
@@ -262,8 +265,7 @@ const s2 = await evaluate(`(async () => {
   // THE WINDOWS BACK TO NORMAL. The wedge cases above lower them to make a
   // silent worker cheap to prove; a real scan measured under 1.5 s of patience
   // is killed on its own baseline.
-  LANE_WATCHDOG.loading = 90000;
-  LANE_WATCHDOG.stall = 30000;
+  Object.assign(LANE_WATCHDOG, ${JSON.stringify(normalWatchdog)});
   const box = document.getElementById('gp-on');
   out.switchThere = !!box;
   if (!box) return out;
