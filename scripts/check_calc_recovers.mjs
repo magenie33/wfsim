@@ -47,6 +47,37 @@ check("the engine is one download, asked for before app.js has arrived",
   boot.wasm.length === 1 && boot.appEnd !== null && boot.wasm[0] < boot.appEnd,
   `${boot.wasm.length} wasm request(s), first ${boot.wasm.length ? Math.round((boot.wasm[0] - (boot.appEnd ?? 0)) * 1000) : "-"} ms from app.js's end`);
 
+// A slow complete scan is still recovery. Only a newly answered candidate or
+// a distinct baseline step renews the wait; heartbeats and retries cannot.
+// N candidates and R + 2 baseline states bound the number of renewals.
+await evaluate(`window.__waitForCalcRecovery = async (observe) => {
+  const answered = new Set(), phases = new Set(), runs = gainRuns();
+  const started = Date.now(), quietMs = 15000;
+  let progressed = started, ids = null;
+  while (gainScan.key === null) {
+    if (observe) observe();
+    if (!ids && gainScan.total) ids = new Set(gainScan.ids);
+    let advanced = false;
+    for (const id of ids || []) {
+      if (!answered.has(id) && (Object.hasOwn(gainScan.by, id) || Object.hasOwn(gainScan.refused || {}, id))) {
+        answered.add(id); advanced = true;
+      }
+    }
+    const phase = String(gainScan.phase || ''), step = phase.match(/^measuring the baseline ([0-9]+)[/]([0-9]+)$/);
+    const unit = phase === 'measuring the baseline' ? -1
+      : step && Number(step[2]) === runs && Number(step[1]) <= runs ? Number(step[1]) : null;
+    if (unit !== null && !phases.has(unit)) {
+      phases.add(unit); advanced = true;
+    }
+    if (advanced) progressed = Date.now();
+    if (Date.now() - progressed >= quietMs) break;
+    if (Date.now() - started >= ((ids?.size || 0) + runs + 3) * quietMs) break;
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  return { elapsed: Date.now() - started, answered: answered.size, phases: phases.size,
+    quietMs, boundMs: ((ids?.size || 0) + runs + 3) * quietMs };
+}`);
+
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   history.pushState({}, '', '/weapons/Braton/builder'); route(); await sleep(3500);
@@ -107,14 +138,14 @@ const s = await evaluate(`(async () => {
   openPicker(0, document.querySelector('.slot') || document.body);
   // The first baseline request is killed before its worker can answer.
   out.sawStatus = false;
-  for (let i = 0; i < 90; i++) {
+  out.wait = await window.__waitForCalcRecovery(() => {
     if (userTaskItems().some(t => t.id === 'quick')) out.sawStatus = true;
-    if (gainScan.key !== null) break;
-    await sleep(500);
-  }
+  });
   out.recovered = gainScan.key !== null;
   out.ranked = Object.keys(gainScan.by).length;
   out.running = gainScan.running;
+  out.done = gainScan.done;
+  out.total = gainScan.total;
   out.note = String(gainScan.note || '');
   out.killed = killed;
   window.Worker = Real;
@@ -128,8 +159,8 @@ check(
 );
 check(
   "…and the calculator recovers to a COMPLETE answer on its own",
-  s.recovered === true,
-  `key stamped ${s.recovered}, ranked ${s.ranked}, running ${s.running}, note ${JSON.stringify(s.note)}`,
+  s.recovered === true && s.running === false && s.total > 0 && s.done === s.total,
+  `key stamped ${s.recovered}, ranked ${s.ranked}, running ${s.running}, note ${JSON.stringify(s.note)}, wait ${JSON.stringify(s.wait)}`,
 );
 check(
   "…which is a real ranking, not an empty one filed as done",
@@ -170,14 +201,13 @@ const w = await evaluate(`(async () => {
     done: 0, total: 0, note: '', metric: '', failed: false, lanesLost: 0 };
   gainPrefs = { ...gainPrefs, on: true };
   openPicker(0, document.querySelector('.slot') || document.body);
-  for (let i = 0; i < 90; i++) {
-    if (gainScan.key !== null) break;
-    await sleep(500);
-  }
+  out.wait = await window.__waitForCalcRecovery();
   window.Worker = Real;
   out.recovered = gainScan.key !== null;
   out.ranked = Object.keys(gainScan.by).length;
   out.running = gainScan.running;
+  out.done = gainScan.done;
+  out.total = gainScan.total;
   out.wedgedLanes = pool.filter((l) => l && l.dead).length;
   return out;
 })()`);
@@ -189,8 +219,8 @@ check(
 );
 check(
   "…and a lane that goes SILENT is given up on rather than waited on for ever",
-  w.recovered === true && w.running === false,
-  `key stamped ${w.recovered}, running ${w.running}, ranked ${w.ranked}`,
+  w.recovered === true && w.running === false && w.total > 0 && w.done === w.total,
+  `key stamped ${w.recovered}, running ${w.running}, ranked ${w.ranked}, wait ${JSON.stringify(w.wait)}`,
 );
 check(
   "…producing a real ranking on the workers that were left",
@@ -228,10 +258,7 @@ const f = await evaluate(`(async () => {
   await sleep(500);
   // …AND THE CALCULATOR ANSWERS AGAIN AFTERWARDS.
   openPicker(0, document.querySelector('.slot') || document.body);
-  for (let i = 0; i < 80; i++) {
-    if (gainScan.key !== null) break;
-    await sleep(500);
-  }
+  out.wait = await window.__waitForCalcRecovery();
   out.answersAgain = gainScan.key !== null;
   out.ranked = Object.keys(gainScan.by).length;
   out.status = { running: gainScan.running, failed: gainScan.failed, note: gainScan.note,
@@ -252,8 +279,9 @@ check(
 );
 check(
   "…and the calculator produces a complete answer after the rebuild",
-  f.answersAgain === true && f.ranked > 0,
-  `key stamped ${f.answersAgain}, ranked ${f.ranked}, status ${JSON.stringify(f.status)}`,
+  f.answersAgain === true && f.ranked > 0 && f.status.running === false
+    && f.status.total > 0 && f.status.done === f.status.total,
+  `key stamped ${f.answersAgain}, ranked ${f.ranked}, status ${JSON.stringify(f.status)}, wait ${JSON.stringify(f.wait)}`,
 );
 
 // THE SWITCH IS THE OTHER WAY OUT. It is the first thing anyone does to
