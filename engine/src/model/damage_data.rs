@@ -32,6 +32,8 @@ pub struct DamageData<Scalar: Copy> {
     pub position: [f32; 4],
     pub selected_proxy: Option<u32>,
     pub procs: ProcCounters,
+    /// Raw u32 at +0x244. GetNumHits is independent of the status counters.
+    pub num_hits: u32,
 }
 
 #[wfsim_gas_macro::metered]
@@ -39,7 +41,17 @@ impl<Scalar: Copy> DamageData<Scalar> {
     pub fn new(scalar: Scalar) -> Self {
         Self { scalar, origin_proc: None, source: None, source_weapon: None,
             part: HitPart::UNSPECIFIED, position: [0.0; 4], selected_proxy: None,
-            procs: ProcCounters::default() }
+            procs: ProcCounters::default(), num_hits: 1 }
+    }
+
+    #[allow(non_snake_case)]
+    pub fn GetNumHits(&self) -> u32 { self.num_hits }
+
+    /// Count projection only: the caller supplies the native comparator's verdict.
+    /// This does not merge scalars, procs, geometry or notification ownership.
+    pub fn accumulate_num_hits(&mut self, other: &Self, compatible: bool) -> bool {
+        if compatible { self.num_hits = self.num_hits.wrapping_add(other.num_hits); }
+        compatible
     }
 
     /// Primary's scalar copy and explicit source setters leave fresh geometry.
@@ -72,6 +84,55 @@ impl DamageData<crate::rules::upgrades::NativeScalar> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn num_hits_copy_merge_and_fresh_packet_boundaries_are_independent_of_status() {
+        let mut a = DamageData::new(10.0_f32);
+        assert_eq!(a.GetNumHits(), 1);
+        a.num_hits = 20;
+        a.procs.add(ProcType::new(5).unwrap(), 7);
+        let copied = a;
+        assert_eq!(copied.GetNumHits(), 20);
+        assert_eq!(a.derived_packet().GetNumHits(), 1);
+        assert!(!a.accumulate_num_hits(&copied, false));
+        assert_eq!(a.GetNumHits(), 20);
+        assert!(a.accumulate_num_hits(&copied, true));
+        assert_eq!(a.GetNumHits(), 40);
+        assert_eq!(a.procs.count(ProcType::new(5).unwrap()), 7);
+        a.num_hits = u32::MAX;
+        a.accumulate_num_hits(&DamageData::new(0.0), true);
+        assert_eq!(a.GetNumHits(), 0);
+    }
+
+    #[test]
+    fn original_native_count_vectors_with_supplied_compatibility() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/client/irradiate-count-2026-10-28.json")).unwrap();
+        let vectors = fixture["vectors"].as_array().unwrap();
+        assert_eq!(vectors.len(), 14);
+        for vector in vectors {
+            if let Some(n) = vector["native_num_hits"].as_u64() {
+                let mut packet = DamageData::new(1.0_f32);
+                packet.num_hits = n as u32;
+                assert_eq!(u64::from(packet.GetNumHits()), vector["lua_integer"].as_u64().unwrap());
+                continue;
+            }
+            let got: Vec<u32> = vector["supplied_compatible_groups"].as_array().unwrap().iter().map(|group| {
+                let mut packet = DamageData::new(1.0_f32);
+                for _ in 1..group.as_array().unwrap().len() {
+                    packet.accumulate_num_hits(&DamageData::new(1.0), true);
+                }
+                packet.GetNumHits()
+            }).collect();
+            let expected: Vec<u32> = if let Some(values) = vector["notification_num_hits"].as_array() {
+                values.iter().map(|v| v.as_u64().unwrap() as u32).collect()
+            } else {
+                vector["notifications"].as_array().unwrap().iter()
+                    .map(|v| v["num_hits"].as_u64().unwrap() as u32).collect()
+            };
+            assert_eq!(got, expected, "{vector}");
+        }
+    }
 
     #[test]
     fn forced_setters_coalesce_while_counter_increments_saturate() {
