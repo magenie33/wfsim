@@ -22,8 +22,9 @@ if (paths.length) {
   const family = name => cases.filter(row => row.family === name);
   assert.deepEqual(family('liveness').map(row => row.seed), Array.from({ length: 400 }, (_, i) => i + 1));
   assert.deepEqual(family('termination').map(row => row.seed), Array.from({ length: 100 }, (_, i) => i + 10000));
-  assert.equal(family('regressions').length, 37, 'fixed factory groups stay registered');
+  assert.equal(family('regressions').length, 38, 'fixed factory groups stay registered');
   assert(family('regressions').some(row => row.id === 'fixed:lane-answer-plan'), 'the bounded lane-answer regression stays registered');
+  assert(family('regressions').some(row => row.id === 'fixed:official-source-index'), 'the official source-index regression stays registered');
   const matrix = factoryMatrix();
   assert.equal(matrix.length, 18);
   const plans = matrix.map(row => factorySelection(factoryCommand(row).command.slice(2), FACTORY_CHECKS.modes[row.mode]));
@@ -40,7 +41,7 @@ if (paths.length) {
   assert.throws(() => factoryMatrix({ modes: ['missing'] }));
   const receipts = plans.map(plan => ({ ...plan, success: true, failures: 0,
     completed: plan.cases.map(row => ({ id: row.id, ok: true, checks: 0, ms: 1 })) }));
-  assert.deepEqual(assertFactoryCoverage(receipts), { jobs: 18, modes: ['sync', 'async'], cases: 1074 });
+  assert.deepEqual(assertFactoryCoverage(receipts), { jobs: 18, modes: ['sync', 'async'], cases: 1076 });
   const badCase = structuredClone(receipts[0]);
   badCase.completed[0].ok = false;
   assert.throws(() => assertFactoryReceipt(badCase, plans[0]), /did not pass/);
