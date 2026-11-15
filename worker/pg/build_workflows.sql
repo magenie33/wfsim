@@ -82,6 +82,26 @@ CREATE OR REPLACE VIEW state_build_inbox_priorities AS
       JOIN entity_build_workflows w ON w.id=s.id
     WHERE n.state='awaiting_intake' AND s.state='active' AND s.zone<factory_default_zone('new_build');
 
+ALTER TABLE state_build_workflow_nodes ADD COLUMN IF NOT EXISTS queue_position BIGINT;
+-- Pending captured positions and registered rounds use the same durable cut.
+CREATE OR REPLACE FUNCTION compute_order_workflow_node_cancelled(text,text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT EXISTS(SELECT 1 FROM state_build_workflow_nodes n JOIN entity_build_workflows w ON w.id=n.workflow
+    JOIN state_build_workflows f ON f.id=w.id LEFT JOIN state_compute_scheduling q ON q.id=n.computation
+    WHERE n.workflow=$1 AND n.id=$2 AND n.state IN('pending','queued') AND n.result_id IS NULL AND n.delivered_at IS NULL
+      AND CASE WHEN q.id IS NOT NULL AND n.task_id IS NOT NULL THEN
+        q.task_id=n.task_id AND compute_order_cancelled(q.id,q.task_id,coalesce(q.zone,factory_default_zone(q.producer)),coalesce(q.zone_position,q.task_id),q.state) IS NOT NULL
+      ELSE compute_order_pending_cancelled(f.zone,coalesce(n.queue_position,n.position),coalesce(n.definition->>'computation',n.id),w.created_at) END)
+$$;
+CREATE OR REPLACE FUNCTION compute_order_workflow_cancelled(text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT EXISTS(SELECT 1 FROM state_build_workflows f JOIN entity_build_workflows w ON w.id=f.id
+    WHERE f.id=$1 AND f.state='active' AND EXISTS(SELECT 1 FROM compute_order_cut() c WHERE w.created_at<=c.cut_at)
+      AND EXISTS(SELECT 1 FROM state_build_workflow_nodes n WHERE n.workflow=f.id AND compute_order_workflow_node_cancelled(n.workflow,n.id))
+      AND NOT EXISTS(SELECT 1 FROM state_build_workflow_nodes n WHERE n.workflow=f.id AND
+        (n.state='awaiting_intake' OR n.state IN('pending','queued') AND NOT compute_order_workflow_node_cancelled(n.workflow,n.id))))
+$$;
+
 CREATE OR REPLACE FUNCTION compute_round_occupied(text,bigint) RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS(SELECT 1 FROM relation_task_consumers WHERE question=$1 AND state='live')
     OR EXISTS(SELECT 1 FROM state_build_workflow_nodes n JOIN state_build_workflows f ON f.id=n.workflow
@@ -89,12 +109,12 @@ CREATE OR REPLACE FUNCTION compute_round_occupied(text,bigint) RETURNS boolean L
 $$;
 CREATE OR REPLACE FUNCTION build_workflow_wanted(text,text) RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS(SELECT 1 FROM state_build_workflow_nodes n JOIN state_build_workflows f ON f.id=n.workflow
-    WHERE n.workflow=split_part($1,'|',1) AND n.id=split_part($1,'|',2) AND n.computation=$2 AND n.state='queued' AND f.state='active')
+    WHERE n.workflow=split_part($1,'|',1) AND n.id=split_part($1,'|',2) AND n.computation=$2 AND n.state='queued' AND f.state='active' AND NOT compute_order_workflow_node_cancelled(n.workflow,n.id))
 $$;
 CREATE OR REPLACE FUNCTION build_workflow_delivery_guard(text,text,text,bigint) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
   PERFORM 1 FROM state_build_workflow_nodes n JOIN state_build_workflows f ON f.id=n.workflow
-    WHERE n.workflow=$1 AND n.id=$2 AND n.computation=$3 AND n.task_id=$4 AND n.state='queued' AND f.state='active' FOR UPDATE OF n;
+    WHERE n.workflow=$1 AND n.id=$2 AND n.computation=$3 AND n.task_id=$4 AND n.state='queued' AND f.state='active' AND NOT compute_order_workflow_node_cancelled(n.workflow,n.id) FOR UPDATE OF n;
   IF NOT FOUND THEN RAISE EXCEPTION 'workflow node changed before delivery' USING ERRCODE='WS002'; END IF;
 END $$;
 
@@ -102,6 +122,9 @@ CREATE OR REPLACE FUNCTION build_workflow_finish(text,text) RETURNS void LANGUAG
 BEGIN
   PERFORM 1 FROM state_build_workflows WHERE id=$1 AND state='active' FOR UPDATE;
   IF NOT FOUND THEN RETURN; END IF;
+  IF compute_order_workflow_cancelled($1) THEN
+    UPDATE state_build_workflows SET state='cancelled',completed_at=$2,initiator=NULL WHERE id=$1; RETURN;
+  END IF;
   IF NOT EXISTS(SELECT 1 FROM state_build_workflow_nodes WHERE workflow=$1 AND state IN('pending','queued','awaiting_intake')) THEN
     UPDATE state_build_workflows SET state=CASE WHEN EXISTS(
       SELECT 1 FROM state_build_workflow_nodes WHERE workflow=$1 AND state='failed') THEN 'failed' ELSE 'succeeded' END,
@@ -115,11 +138,13 @@ ALTER TABLE state_build_workflow_nodes ADD COLUMN IF NOT EXISTS queue_position B
 CREATE OR REPLACE FUNCTION build_workflow_capture(text,text,jsonb,text,jsonb) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE expansion_id text; b jsonb; held text; f record;
 BEGIN
+  PERFORM compute_order_cut_lock();
   IF jsonb_typeof($3->'scope') IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'invalid captured workflow scope'; END IF;
   IF jsonb_typeof($3->'nodes') IS DISTINCT FROM 'array' OR jsonb_typeof($3->'builds') IS DISTINCT FROM 'array' THEN
     RAISE EXCEPTION 'invalid workflow expansion'; END IF;
   expansion_id:=$1||':'||coalesce($2,'root');
   IF EXISTS(SELECT 1 FROM entity_build_workflow_expansions WHERE id=expansion_id) THEN RETURN; END IF;
+  IF compute_order_workflow_cancelled($1) THEN RETURN; END IF;
   IF $5 IS NOT NULL AND (jsonb_typeof($5)<>'array' OR jsonb_array_length($5)<>jsonb_array_length($3->'nodes')) THEN
     RAISE EXCEPTION 'captured queue positions differ from node count'; END IF;
   FOR b IN SELECT value FROM jsonb_array_elements($3->'builds') ORDER BY value->>'id' LOOP
@@ -165,6 +190,7 @@ DECLARE input jsonb; plan jsonb; observation jsonb; inserted text; held text; fl
   reason text; priority bigint; origin jsonb; parent text; node_key text; captured_key text; trigger_key text; parent_scope jsonb;
   recovery text; prior record; review record;
 BEGIN
+  PERFORM compute_order_cut_lock();
   IF jsonb_typeof($1::jsonb) IS DISTINCT FROM 'array' OR jsonb_array_length($1::jsonb)>1000 THEN
     RAISE EXCEPTION 'invalid intake batch'; END IF;
   FOR input IN SELECT value FROM jsonb_array_elements($1::jsonb) ORDER BY value->>'id' LOOP
@@ -224,6 +250,8 @@ BEGIN
         'deadlines',coalesce(prior.source->'deadlines','{}'::jsonb)||jsonb_build_object(prior.kind,prior.due_at));
     END IF;
     IF EXISTS(SELECT 1 FROM record_build_workflow_triggers WHERE id=trigger_key) THEN CONTINUE; END IF;
+    IF compute_order_pending_cancelled(coalesce((input->>'zone')::bigint,3),coalesce((input#>>'{admission_positions,0}')::bigint,9223372036854775807),input->>'id',coalesce(input->>'admission_at',input->>'at'))
+      AND input#>>'{flow_source,workflow}' IS NULL THEN CONTINUE; END IF;
     parent:=input#>>'{flow_source,workflow}';node_key:=input#>>'{flow_source,node}';
     IF parent IS NOT NULL THEN
       PERFORM 1 FROM state_build_workflow_nodes n JOIN state_build_workflows f ON f.id=n.workflow
@@ -263,6 +291,7 @@ BEGIN
     END IF;
     IF plan IS NULL OR plan->>'schema' IS DISTINCT FROM '1' THEN RAISE EXCEPTION 'first intake requires a captured workflow'; END IF;
     captured_key:=md5((input->>'id')||E'\n'||plan::text||CASE WHEN reason='intake' THEN '' ELSE E'\n'||trigger_key END);
+    UPDATE state_build_workflows SET state='cancelled',completed_at=at WHERE scope_key=captured_key AND state='active' AND compute_order_workflow_cancelled(id);
     SELECT id INTO flow_id FROM state_build_workflows WHERE scope_key=captured_key AND state='active' FOR UPDATE;
     origin:=jsonb_build_object('kind',reason,'inbox',coalesce(input->'from','[]'::jsonb),'observation',observation,
       'system',input->'system_source','deadlines',input->'deadlines','origin',CASE WHEN reason='system' OR input->>'initiator'='system' THEN 'system'
@@ -437,6 +466,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE input jsonb; identity text; held text; intent text; positions jsonb; priority bigint; lane text;parent_scope jsonb;plan_key text;captured_plan jsonb;inserted text;
   at text:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
 BEGIN
+  PERFORM compute_order_cut_lock();
   IF jsonb_typeof($1::jsonb) IS DISTINCT FROM 'array' OR jsonb_array_length($1::jsonb)>1000 THEN
     RAISE EXCEPTION 'invalid intake batch'; END IF;
   FOR input IN SELECT value FROM jsonb_array_elements($1::jsonb) ORDER BY value->>'id' LOOP
@@ -499,10 +529,11 @@ DECLARE expansion_id text:=$1;workflow_id text;plan jsonb;at text:=$3;f record;n
   held text;payload jsonb;verb text;question text;v_review_id text;v_review_ref text;
   specs jsonb:='[]';demands jsonb:='[]';ordinal bigint:=0;processed bigint:=0;touched text[]:='{}';
 BEGIN
+  PERFORM compute_order_cut_lock();
   IF $2 IS NULL OR $2<1 OR $2>128 THEN RAISE EXCEPTION 'node admission limit must be 1..128';END IF;
   SELECT e.workflow,e.plan INTO STRICT workflow_id,plan FROM entity_build_workflow_expansions e WHERE e.id=expansion_id;
   SELECT w.kind,w.build_id,w.source,w.created_at,s.zone,s.due_at,s.initiator INTO STRICT f FROM entity_build_workflows w JOIN state_build_workflows s ON s.id=w.id WHERE w.id=workflow_id AND s.state='active';
-  FOR n IN SELECT * FROM state_build_workflow_nodes WHERE workflow=workflow_id AND expansion=expansion_id AND state='pending' ORDER BY position LIMIT $2 FOR UPDATE SKIP LOCKED LOOP
+  FOR n IN SELECT * FROM state_build_workflow_nodes WHERE workflow=workflow_id AND expansion=expansion_id AND state='pending' AND NOT compute_order_workflow_node_cancelled(workflow,id) ORDER BY position LIMIT $2 FOR UPDATE SKIP LOCKED LOOP
     touched:=array_append(touched,n.id);processed:=processed+1;
     IF n.definition->>'kind'='measure' THEN
       IF f.kind='intake' AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
@@ -545,7 +576,7 @@ BEGIN
   END LOOP;
   IF jsonb_array_length(specs)>0 THEN PERFORM compute_admit_tasks(specs::text,demands::text,'',at); END IF;
   UPDATE state_build_workflow_nodes node SET computation=q.id,task_id=q.task_id,state='queued'
-    FROM state_compute_scheduling q WHERE node.workflow=workflow_id AND node.expansion=expansion_id AND node.id=ANY(touched) AND node.state='pending' AND q.id=node.definition->>'computation';
+    FROM state_compute_work q WHERE node.workflow=workflow_id AND node.expansion=expansion_id AND node.id=ANY(touched) AND node.state='pending' AND q.id=node.definition->>'computation';
   UPDATE entity_measurement_reviews r SET task_id=node.task_id FROM state_build_workflow_nodes node
     WHERE node.workflow=workflow_id AND node.expansion=expansion_id AND node.id=ANY(touched) AND r.id=node.definition->>'review' AND r.task_id IS NULL;
   INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload,requirements)
@@ -558,18 +589,26 @@ BEGIN
   RETURN processed;
 END $$;
 
+CREATE OR REPLACE VIEW state_build_effective_admission_work AS
+  SELECT w.* FROM state_build_admission_work w WHERE NOT EXISTS(SELECT 1 FROM compute_order_cut())
+    OR w.kind='intake' AND NOT compute_order_pending_cancelled(w.zone,w.position,w.key,w.created_at)
+    OR w.kind='expansion' AND EXISTS(SELECT 1 FROM entity_build_workflow_expansions e
+      JOIN state_build_workflow_nodes n ON n.expansion=e.id AND n.workflow=e.workflow
+      WHERE e.id=w.key AND n.state='pending' AND NOT compute_order_workflow_node_cancelled(n.workflow,n.id));
+
 CREATE OR REPLACE FUNCTION build_admission_claim(text,text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE held state_build_admission_work%ROWTYPE;wanted text;token text;expiry text;
 BEGIN
+  PERFORM compute_order_cut_lock();
   IF $1 NOT IN('intake','expansion') OR $2 IS NULL THEN RAISE EXCEPTION 'invalid admission claim';END IF;
   INSERT INTO state_build_admission_turns VALUES($1,'requested') ON CONFLICT DO NOTHING;
   SELECT lane INTO wanted FROM state_build_admission_turns WHERE kind=$1 FOR UPDATE;
   WITH heads AS MATERIALIZED(
-    (SELECT key FROM state_build_admission_work WHERE kind=$1 AND lane='requested' AND retry_at<=$2 AND (lease IS NULL OR lease_until<=$2)
+    (SELECT key FROM state_build_effective_admission_work WHERE kind=$1 AND lane='requested' AND retry_at<=$2 AND (lease IS NULL OR lease_until<=$2)
       ORDER BY zone,position,key LIMIT 1)
     UNION ALL
-    (SELECT key FROM state_build_admission_work WHERE kind=$1 AND lane='bulk' AND retry_at<=$2 AND (lease IS NULL OR lease_until<=$2)
+    (SELECT key FROM state_build_effective_admission_work WHERE kind=$1 AND lane='bulk' AND retry_at<=$2 AND (lease IS NULL OR lease_until<=$2)
       ORDER BY zone,position,key LIMIT 1))
   SELECT w.* INTO held FROM heads h JOIN state_build_admission_work w ON w.kind=$1 AND w.key=h.key
     ORDER BY w.zone,w.lane<>wanted,w.position,w.key LIMIT 1 FOR UPDATE OF w SKIP LOCKED;
@@ -585,9 +624,12 @@ CREATE OR REPLACE FUNCTION build_admission_run(text,text,text,bigint,text) RETUR
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE held state_build_admission_work%ROWTYPE;captured jsonb;processed bigint:=0;pending boolean:=false;
 BEGIN
+  PERFORM compute_order_cut_lock();
   IF $4 IS NULL OR $4<1 OR $4>128 THEN RAISE EXCEPTION 'node admission limit must be 1..128';END IF;
   SELECT * INTO held FROM state_build_admission_work WHERE kind=$1 AND key=$2 AND lease=$3 AND lease_until>$5 FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'admission claim changed' USING ERRCODE='40001';END IF;
+  IF NOT EXISTS(SELECT 1 FROM state_build_effective_admission_work WHERE kind=held.kind AND key=held.key) THEN
+    RETURN jsonb_build_object('kind',held.kind,'key',held.key,'processed',0,'pending',false,'cancelled',true);END IF;
   IF held.kind='intake' THEN
     SELECT i.input||CASE WHEN p.id IS NOT NULL THEN jsonb_build_object('flow',p.definition) ELSE '{}'::jsonb END INTO STRICT captured
       FROM entity_build_intake_intents i LEFT JOIN entity_build_intake_plans p ON p.id=i.plan_id WHERE i.id=held.key;
@@ -595,7 +637,7 @@ BEGIN
   ELSIF EXISTS(SELECT 1 FROM entity_build_workflow_expansions e JOIN state_build_workflows f ON f.id=e.workflow WHERE e.id=held.key AND f.state='active') THEN
     processed:=build_workflow_admit_nodes(held.key,$4,$5);
     SELECT EXISTS(SELECT 1 FROM entity_build_workflow_expansions e JOIN state_build_workflow_nodes n ON n.workflow=e.workflow
-      WHERE e.id=held.key AND n.expansion=e.id AND n.state='pending') INTO pending;
+      WHERE e.id=held.key AND n.expansion=e.id AND n.state='pending' AND NOT compute_order_workflow_node_cancelled(n.workflow,n.id)) INTO pending;
   END IF;
   IF pending THEN UPDATE state_build_admission_work SET lease=NULL,lease_until=NULL,error=NULL WHERE kind=held.kind AND key=held.key;
   ELSE DELETE FROM state_build_admission_work WHERE kind=held.kind AND key=held.key;END IF;

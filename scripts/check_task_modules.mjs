@@ -8,6 +8,7 @@ import { taskSchemaSql } from "./task_schema.mjs";
 import { replaceComputeResult } from "./pg/fixtures.mjs";
 import {taskPipelineCases} from "./check_task_pipeline.mjs";
 import {pipelineClockCases} from "./check_pipeline_clock.mjs";
+import {orderCutCases,orderCutWorkflowCases} from './check_order_cut.mjs';
 
 for (const name of ["contract", "ledger", "dispatch", "verification", "delivery", "credit", "usage", "observation", "pipeline"]) {
   const text = readFileSync(new URL(`../worker/task_${name}.js`, import.meta.url), "utf8");
@@ -202,3 +203,9 @@ await db.close();
 const pipelineDb=await testDb("library");
 try {await taskPipelineCases(pipelineDb);} finally {await pipelineDb.close();}
 await pipelineClockCases();
+
+const cutDb=await testDb('library');
+try {await orderCutCases(cutDb);}finally{await cutDb.close();}
+
+const cutFlows=await testDb('library');
+try {await orderCutWorkflowCases(cutFlows);}finally{await cutFlows.close();}

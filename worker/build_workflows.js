@@ -16,7 +16,7 @@ const linkedReview=d=>({...d,ref:d.payload.review_ref});
 export const BUILD_WORKFLOW_PRODUCER={
   wanted_in_sql:true,
   still_wanted:async(env,d)=>!!await env.LIBRARY.prepare(`SELECT 1 FROM state_build_workflow_nodes n JOIN state_build_workflows f ON f.id=n.workflow
-    WHERE n.workflow=? AND n.id=? AND n.computation=? AND n.state='queued' AND f.state='active'`)
+    WHERE n.workflow=? AND n.id=? AND n.computation=? AND n.state='queued' AND f.state='active' AND NOT compute_order_workflow_node_cancelled(n.workflow,n.id)`)
     .bind(d.payload.workflow,d.payload.node,d.question).first(),
   on_fact_writes(env,d,fact) {
     const p=d.payload,db=env.LIBRARY,at=iso(Date.now()),writes=[

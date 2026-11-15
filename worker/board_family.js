@@ -9,15 +9,15 @@ import { dialsOf } from './dials.js';
 
 const ID = /^[a-f0-9]{32}$/, SLUG = /^[a-z0-9_]{1,128}$/;
 export const FAMILY_PRODUCERS = { family_build: {
-  still_wanted: async (env, demand) => !!await env.LIBRARY.prepare("SELECT id FROM entity_family_search_requests WHERE id = ? AND state = 'waiting'")
+  still_wanted: async (env, demand) => !!await env.LIBRARY.prepare("SELECT id FROM entity_family_search_requests WHERE id = ? AND state = 'waiting' AND compute_order_family_wanted(id)")
     .bind(demand.ref).first(),
   on_fact: async (env, demand, fact) => {
-    const row = await env.LIBRARY.prepare("SELECT * FROM entity_family_search_requests WHERE id = ? AND state = 'waiting'")
+    const row = await env.LIBRARY.prepare("SELECT * FROM entity_family_search_requests WHERE id = ? AND state = 'waiting' AND compute_order_family_wanted(id)")
       .bind(demand.ref).first();
     if (!row) return;
     const best = fact.result?.report?.results?.[0];
     if (!best) {
-      await env.LIBRARY.prepare("UPDATE entity_family_search_requests SET state = 'failed', completed_at = ? WHERE id = ? AND state = 'waiting'")
+      await env.LIBRARY.prepare("UPDATE entity_family_search_requests SET state = 'failed', completed_at = ? WHERE id = ? AND state = 'waiting' AND compute_order_family_wanted(id)")
         .bind(iso(Date.now()), row.id).run();
       return;
     }
@@ -25,7 +25,7 @@ export const FAMILY_PRODUCERS = { family_build: {
     const build = headlessBoardPayloadFromResult(best, JSON.parse(row.context));
     if (!await submitRecord(env, build, "system", { family_source: row.id, id: `family:${row.id}` }))
       throw new Error("family result is not a board record");
-    await env.LIBRARY.prepare("UPDATE entity_family_search_requests SET state = 'succeeded', completed_at = ? WHERE id = ? AND state = 'waiting'")
+    await env.LIBRARY.prepare("UPDATE entity_family_search_requests SET state = 'succeeded', completed_at = ? WHERE id = ? AND state = 'waiting' AND compute_order_family_wanted(id)")
       .bind(iso(Date.now()), row.id).run();
   },
 } };
@@ -38,7 +38,7 @@ export async function askFamilyTransfers(env) {
   const { engine } = await servedRelease(env);
   if (!engine) return;
   const { results } = await env.LIBRARY.prepare(`SELECT t.*,EXISTS(SELECT 1 FROM relation_task_consumers d WHERE d.producer='family_build' AND d.ref=t.id) AS already_asked FROM entity_family_search_requests t
-    WHERE t.state = 'waiting' AND (t.asked_engine IS NULL OR NOT EXISTS
+    WHERE t.state = 'waiting' AND compute_order_family_wanted(t.id) AND (t.asked_engine IS NULL OR NOT EXISTS
       (SELECT 1 FROM relation_task_consumers d WHERE d.producer = 'family_build' AND d.ref = t.id)) ORDER BY t.created_at, t.id LIMIT 100`)
     .all();
   if (!results.length) return;

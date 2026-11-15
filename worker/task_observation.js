@@ -56,7 +56,7 @@ export function createObservation() {
     });
     await observe("nondeterministic", async () => {
       const odd = (await db.prepare(`SELECT SUM(n) AS n FROM (
-      SELECT count(*) AS n FROM state_compute_work WHERE state = 'nondeterministic'
+      SELECT count(*) AS n FROM state_compute_effective_work WHERE state = 'nondeterministic'
       UNION ALL
       SELECT count(*) AS n FROM state_compute_work WHERE odd = 1 AND fact_at > ? AND state != 'nondeterministic'
     ) x`)
@@ -72,7 +72,7 @@ export function createObservation() {
     await observe("unsettled", async () => {
       const cutoff = iso(now - UNSETTLED_MS);
       const unsettled = (await db.prepare(
-      `SELECT count(*) AS n FROM state_compute_work q WHERE q.state IN (${OFFICIAL_STATES.map(() => "?").join(", ")})
+      `SELECT count(*) AS n FROM state_compute_effective_work q WHERE q.state IN (${OFFICIAL_STATES.map(() => "?").join(", ")})
           AND NOT EXISTS (SELECT 1 FROM (SELECT a.at FROM record_candidate_answers a WHERE a.question = q.id OFFSET 0) a WHERE a.at >= ?)
           AND (q.opened_at < ? OR EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.question = q.id OFFSET 0))`)
         .bind(...OFFICIAL_STATES, cutoff, cutoff).first()).n;
@@ -83,7 +83,7 @@ export function createObservation() {
     await observe("overdue", async () => {
       const { results: late } = await db.prepare(
       `WITH overdue AS MATERIALIZED (
-         SELECT q.id,q.due_at FROM state_compute_work q WHERE q.state='open' AND q.waits IN (0,1) AND q.due_at<?1::text
+         SELECT q.id,q.due_at FROM state_compute_effective_work q WHERE q.state='open' AND q.waits IN (0,1) AND q.due_at<?1::text
            AND EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question=q.id AND d.state='live')
          ORDER BY q.waits DESC,q.due_at,q.id LIMIT ?2::bigint)
        SELECT d.producer,count(DISTINCT q.id) AS questions,min(q.due_at) AS oldest_due,

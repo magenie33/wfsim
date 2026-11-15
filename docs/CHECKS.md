@@ -709,6 +709,15 @@ Consumer and contribution failures preserve verified work. Delivery and payment
 retry independently and idempotently. Normal pack delivery uses a bounded
 number of database calls independent of its task count.
 
+`check_task_modules` also runs `check_order_cut` against the real task APIs:
+metadata-only activation, effective business counts, single/pack/official
+selection, current and previous credentials omitted by a stale manifest,
+source replay, fresh user demand, late input without new credit, physical GC
+retention and captured workflow parent chains. `check_order_cut_pg` requires an
+isolated local `WFSIM_ORDER_CUT_TEST_URL`; it holds two actual transactions
+across activation, reloads the schema, rejects a broken write guard and checks
+FIFO plans with a nonempty prefix and a large cancelled tail.
+
 Inventory unions missing and queued task identities, removes orphans and
 retired rulers, and counts undispatched work before admission pacing. A new
 task kind is included automatically. Partial, invalid, expired or older-input

@@ -216,15 +216,40 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
             AND NOT EXISTS (SELECT 1 FROM (SELECT a.device, a.engine FROM state_compute_candidate_answers a
               WHERE a.question = q.id OFFSET 0) a WHERE a.device = ?2::text AND a.engine = ?4::text)`;
     const take = (n) => {
-      const candidates = wanted.map((state) => `(SELECT q.id FROM state_compute_work q WHERE ${stateOf(state)} AND ${takeable}
-            ORDER BY q.zone, q.zone_position, q.id LIMIT ${n * CLAIM_SPARE})`).join(" UNION ALL ");
-      return db.prepare(`WITH c AS (${candidates})
+      const scan=(state,from,range)=>{
+        const raw=from.replaceAll('state_compute_work','state_compute_scheduling').replaceAll(' q',' guard');
+        const terms=text=>text.replaceAll('q.zone_position','coalesce(guard.zone_position,guard.task_id)')
+          .replaceAll('q.zone','coalesce(guard.zone,factory_default_zone(guard.producer))').replaceAll('q.','guard.');
+        const fields='guard.id,coalesce(guard.zone,factory_default_zone(guard.producer)) AS zone,coalesce(guard.zone_position,guard.task_id) AS position';
+        const common=`${terms(stateOf(state))} AND ${terms(range)}`;
+        const limited=metadata=>`(SELECT q.id FROM (${metadata} ORDER BY zone,position,id OFFSET 0) ordered
+          CROSS JOIN LATERAL(SELECT q.id FROM state_compute_work q WHERE q.id=ordered.id AND ${stateOf(state)} AND ${takeable} OFFSET 0) q
+          ORDER BY ordered.zone,ordered.position,ordered.id LIMIT ${n * CLAIM_SPARE})`;
+        if(!selected)return limited(`SELECT ${fields} FROM ${raw} WHERE ${common}`);
+        return `(${limited(`SELECT ${fields} FROM ${raw} WHERE ${common} AND (SELECT dense FROM producer_density)`)}
+          UNION ALL ${limited(`SELECT DISTINCT ${fields} FROM producer_heads h CROSS JOIN LATERAL(SELECT guard.* FROM ${raw}
+            WHERE guard.id=h.question AND ${common} OFFSET 0) guard WHERE NOT (SELECT dense FROM producer_density)`)})`;
+
+      };
+      const boundary='(SELECT keep_zone,keep_position,keep_id FROM order_cut)';
+      const candidates=wanted.flatMap(state=>state==='open'?[
+        scan(state,'state_compute_work q','NOT EXISTS(SELECT 1 FROM order_cut)'),
+        scan(state,'state_compute_work q',`EXISTS(SELECT 1 FROM order_cut) AND (q.zone,q.zone_position,q.id)<=${boundary}`),
+        scan(state,'entity_compute_tasks t CROSS JOIN LATERAL(SELECT * FROM state_compute_work WHERE id=t.computation OFFSET 0) q',
+          `t.id>(SELECT task_cutoff FROM order_cut) AND q.task_id=t.id AND (q.zone,q.zone_position,q.id)>${boundary}`),
+        scan(state,'compute_order_cut_protections() p CROSS JOIN LATERAL(SELECT * FROM state_compute_work WHERE id=p.question OFFSET 0) q',
+          `p.cut_id=(SELECT id FROM order_cut) AND q.task_id<=(SELECT task_cutoff FROM order_cut) AND (q.zone,q.zone_position,q.id)>${boundary}`),
+      ]:[scan(state,'state_compute_work q','TRUE')]).join(' UNION ALL ');
+      // A bounded index probe chooses complete sparse keys or correlated dense lookups.
+      // Both paths apply the same eligibility and FIFO before their candidate limit.
+      const sources=selected?`producer_heads AS MATERIALIZED(SELECT question FROM relation_task_consumers WHERE producer IN (${selected.map(literal).join(',')}) LIMIT 33),
+        producer_density AS MATERIALIZED(SELECT count(*)>32 AS dense FROM producer_heads),`:'';
+      return db.prepare(`WITH ${sources} order_cut AS MATERIALIZED(SELECT * FROM compute_order_cut()),c AS MATERIALIZED (${candidates}),ordered_candidates AS MATERIALIZED(SELECT DISTINCT id FROM c ORDER BY id)
         UPDATE state_compute_work SET lease = replace(gen_random_uuid()::text, '-', ''), lease_until = ?1::text, leased_to = ?2::text, leased_at = NULL
-        WHERE id IN (SELECT q.id FROM state_compute_work q
-          WHERE q.id IN (SELECT id FROM c)
-            AND (${wanted.map((state) => `(${stateOf(state)})`).join(" OR ")})
-            AND ${takeable}
-          ORDER BY q.zone, q.zone_position, q.id LIMIT ${n} FOR UPDATE OF q SKIP LOCKED)
+        WHERE id IN (SELECT q.id FROM ordered_candidates candidate CROSS JOIN LATERAL(
+          SELECT q.id,q.zone,q.zone_position FROM state_compute_work q WHERE q.id=candidate.id
+            AND (${wanted.map((state) => `(${stateOf(state)})`).join(" OR ")}) AND ${takeable}
+            FOR UPDATE OF q SKIP LOCKED) q ORDER BY q.zone,q.zone_position,q.id LIMIT ${n})
         RETURNING id, task_id, verb, request, state, lease, waits, due_at, zone, zone_position`)
         .bind(iso(now + lease_ms), w.device, at, engine, JSON.stringify(blocked)).all();
     };

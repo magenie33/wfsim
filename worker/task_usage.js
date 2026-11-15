@@ -36,8 +36,8 @@ export function createUsage() {
   /// idle. Run by the watchdog's cron.
   async function liftIdle(env) {
     await env.LIBRARY.prepare(`UPDATE state_producer_compute_usage u SET used = m.v
-        FROM (SELECT min(a.used) AS v FROM state_producer_compute_usage a WHERE EXISTS (SELECT 1 FROM state_compute_work q WHERE q.state = 'open' AND q.producer = a.producer)) m
-        WHERE m.v IS NOT NULL AND u.used < m.v AND NOT EXISTS (SELECT 1 FROM state_compute_work q WHERE q.state = 'open' AND q.producer = u.producer)`).run();
+        FROM (SELECT min(a.used) AS v FROM state_producer_compute_usage a WHERE EXISTS (SELECT 1 FROM state_compute_effective_work q WHERE q.state = 'open' AND q.producer = a.producer)) m
+        WHERE m.v IS NOT NULL AND u.used < m.v AND NOT EXISTS (SELECT 1 FROM state_compute_effective_work q WHERE q.state = 'open' AND q.producer = u.producer)`).run();
   }
 
 

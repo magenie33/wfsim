@@ -5,6 +5,20 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { computationSchemaSql } from "./computation_schema.mjs";
 
+export function orderCutSchemaSql() {
+  const schema=readFileSync(new URL("../worker/pg/schema.sql",import.meta.url),"utf8");
+  const start=schema.indexOf("-- A cut keeps its captured order");
+  if(start<0)throw Error("missing order cut schema");
+  return schema.slice(start);
+}
+
+export function orderCutBusinessSql() {
+  const sql=readFileSync(new URL('../worker/pg/library.sql',import.meta.url),'utf8');
+  const start=sql.indexOf('-- Queue ownership remains physical;');
+  if(start<0)throw Error('missing effective business membership schema');
+  return sql.slice(start);
+}
+
 export function taskSchemaSql() {
   const schema = readFileSync(new URL("../worker/pg/schema.sql", import.meta.url), "utf8");
   const library = readFileSync(new URL("../worker/pg/library.sql", import.meta.url), "utf8");
@@ -41,8 +55,9 @@ export function taskSchemaSql() {
   ];
   const zonePrelude = schema.match(/CREATE OR REPLACE FUNCTION factory_default_zone[^]*?(?=CREATE TABLE IF NOT EXISTS state_compute_scheduling)/)?.[0];
   const zones = [
+    sync.match(/CREATE OR REPLACE FUNCTION factory_candidates\([^]*?END \$function\$;/)?.[0],
     schema.match(/DO \$queue_zone\$[^]*?END \$queue_zone\$;/)?.[0],
-    schema.match(/CREATE OR REPLACE VIEW state_compute_work[^]*?FROM state_compute_scheduling s;/)?.[0],
+    schema.match(/CREATE OR REPLACE VIEW state_compute_work[^]*?FROM state_compute_scheduling s[^]*?;/)?.[0],
     schema.match(/CREATE OR REPLACE FUNCTION compute_register_tasks[^]*?END \$\$;/)?.[0],
     ...[...sync.matchAll(/CREATE OR REPLACE FUNCTION factory_head\([^]*?\$\$;/g)].map(m => m[0]),
     sync.match(/CREATE OR REPLACE FUNCTION factory_take\([^]*?\$\$;/)?.[0],
@@ -60,10 +75,10 @@ export function taskSchemaSql() {
   const retention = sync.match(/CREATE OR REPLACE FUNCTION factory_past_safe\([^]*?\$\$;/)?.[0];
   const inventory = sync.match(/SELECT set_config\('search_path'[^\n]+\nCREATE OR REPLACE FUNCTION factory_inventory_rows\([^]*?\$\$;\nREVOKE[^;]+;/)?.[0];
   if (columns.some(x => !x) || indexes.some(x => !x) || !guard || !retention || !inventory) throw new Error("incomplete task-delivery schema");
-  return `SET ROLE wfsim;\nSET lock_timeout = '5s';\n${zonePrelude}\n${columns.join("\n")}\n${pipeline}\n${indexes.map(sql => sql.replace("CREATE INDEX ", "CREATE INDEX CONCURRENTLY ")).join("\n")}\n${zones.join("\n")}\n${guard}\n${retention}\n${inventory}\n${incremental}\n${workflows}\n${identity.join("\n")}\n${boardAdmission}\nDO $grant$ BEGIN
+  return `SET ROLE wfsim;\nSET lock_timeout = '5s';\n${zonePrelude}\n${columns.join("\n")}\n${pipeline}\n${indexes.map(sql => sql.replace("CREATE INDEX ", "CREATE INDEX CONCURRENTLY ")).join("\n")}\n${orderCutSchemaSql()}\n${orderCutBusinessSql()}\n${zones.join("\n")}\n${guard}\n${retention}\n${inventory}\n${incremental}\n${workflows}\n${identity.join("\n")}\n${boardAdmission}\nDO $grant$ BEGIN
     IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_factoryd') THEN
       GRANT SELECT ON state_task_pipeline_controls TO wfsim_factoryd;
-      GRANT SELECT ON state_build_admission_work TO wfsim_factoryd;
+      GRANT SELECT ON state_build_admission_work,state_build_effective_admission_work,state_compute_effective_open,state_compute_effective_work,state_board_effective_pending_work TO wfsim_factoryd;
       GRANT EXECUTE ON FUNCTION build_admission_claim(text,text),build_admission_run(text,text,text,bigint,text),
         build_admission_retry(text,text,text,text,text) TO wfsim_factoryd;
       GRANT SELECT,INSERT,UPDATE ON state_task_pipeline_progress TO wfsim_factoryd;

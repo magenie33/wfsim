@@ -52,10 +52,10 @@ BEGIN
   INSERT INTO state_board_admission_recovery(id,updated_at) VALUES(1,$2) ON CONFLICT DO NOTHING;
   SELECT * INTO STRICT cursor FROM state_board_admission_recovery WHERE id=1 FOR UPDATE;
   IF cursor.complete THEN RETURN to_jsonb(cursor); END IF;
-  SELECT count(*) INTO occupied FROM (SELECT 1 FROM state_compute_scheduling WHERE state='open' LIMIT $3) active;
+  SELECT count(*) INTO occupied FROM (SELECT 1 FROM state_compute_effective_open LIMIT $3) active;
   budget:=least($1,greatest(0,$3-occupied));
   IF budget=0 THEN RETURN to_jsonb(cursor)||jsonb_build_object('window_full',true); END IF;
-  FOR item IN SELECT q.build_id,q.ruler,q.mode FROM state_board_pending_work q
+  FOR item IN SELECT q.build_id,q.ruler,q.mode FROM state_board_effective_pending_work q
       WHERE (q.build_id,q.ruler,q.mode)>(cursor.build_id,cursor.ruler,cursor.mode)
       ORDER BY q.build_id,q.ruler,q.mode LIMIT budget LOOP
     n:=n+1;cursor.build_id:=item.build_id;cursor.ruler:=item.ruler;cursor.mode:=item.mode;
@@ -78,14 +78,14 @@ BEGIN
   IF $1 IS NULL OR $1<1 OR $1>250 OR $2 IS NULL OR $3 IS NULL OR $3<=$2 THEN RAISE EXCEPTION 'invalid board admission claim'; END IF;
   RETURN QUERY WITH candidates AS (
     SELECT a.build_id,a.ruler,a.mode FROM state_board_task_admissions a
-      WHERE a.retry_at<=$2 AND (a.claim_until IS NULL OR a.claim_until<$2)
+      WHERE EXISTS(SELECT 1 FROM state_board_effective_pending_work p WHERE (p.build_id,p.ruler,p.mode)=(a.build_id,a.ruler,a.mode)) AND a.retry_at<=$2 AND (a.claim_until IS NULL OR a.claim_until<$2)
       ORDER BY a.retry_at,a.revision LIMIT $1 FOR UPDATE SKIP LOCKED
   ), claimed AS (
     UPDATE state_board_task_admissions a SET claim=gen_random_uuid()::text,claim_until=$3
       FROM candidates c WHERE (a.build_id,a.ruler,a.mode)=(c.build_id,c.ruler,c.mode)
       RETURNING a.*
   ) SELECT a.build_id,a.ruler,a.mode,a.revision,a.claim,q.batch,q.initiator,b.record,b.at,s.finished_at
-    FROM claimed a LEFT JOIN state_board_pending_work q ON (q.build_id,q.ruler,q.mode)=(a.build_id,a.ruler,a.mode)
+    FROM claimed a LEFT JOIN state_board_effective_pending_work q ON (q.build_id,q.ruler,q.mode)=(a.build_id,a.ruler,a.mode)
     LEFT JOIN entity_compute_batches batch ON batch.id=q.batch
     LEFT JOIN entity_weapon_builds b ON b.id=q.build_id AND batch.id IS NOT NULL
     LEFT JOIN state_board_measurement_selection s ON (s.identity,s.ruler,s.mode)=(a.build_id,a.ruler,a.mode)
@@ -121,7 +121,7 @@ BEGIN
 END $$;
 
 CREATE OR REPLACE FUNCTION board_admission_status(text) RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
-  SELECT jsonb_build_object('pending',EXISTS(SELECT 1 FROM state_board_task_admissions WHERE retry_at<=$1),
+  SELECT jsonb_build_object('pending',EXISTS(SELECT 1 FROM state_board_task_admissions a WHERE retry_at<=$1 AND EXISTS(SELECT 1 FROM state_board_effective_pending_work p WHERE (p.build_id,p.ruler,p.mode)=(a.build_id,a.ruler,a.mode))),
     'recovery',coalesce((SELECT to_jsonb(r) FROM state_board_admission_recovery r WHERE id=1),jsonb_build_object('complete',false,'scanned',0)),
     'deferred',EXISTS(SELECT 1 FROM state_board_task_admissions WHERE error IS NOT NULL))
 $$;

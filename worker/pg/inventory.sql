@@ -228,7 +228,7 @@ BEGIN
   SELECT COALESCE(jsonb_agg(to_jsonb(f) ORDER BY f.identity,f.ruler,f.mode),'[]'::jsonb)
     INTO fact_rows FROM board_facts f WHERE f.identity=ANY(build_keys);
   SELECT COALESCE(jsonb_agg(jsonb_build_object('batch',q.batch,'build_id',q.build_id,'ruler',q.ruler,'mode',q.mode)
-    ORDER BY q.batch,q.build_id,q.ruler,q.mode),'[]'::jsonb) INTO queue_rows FROM state_board_pending_work q
+    ORDER BY q.batch,q.build_id,q.ruler,q.mode),'[]'::jsonb) INTO queue_rows FROM state_board_effective_pending_work q
     WHERE q.build_id=ANY(build_keys) AND EXISTS(SELECT 1 FROM entity_compute_batches b WHERE b.id=q.batch);
   SELECT COALESCE(jsonb_agg(CASE
     WHEN q.id IS NOT NULL AND q.state<>'withdrawn' AND ((q.state IN ('fact','spot') AND q.fact_engine=$1)
@@ -273,7 +273,7 @@ BEGIN
     JOIN LATERAL (SELECT * FROM board_facts f WHERE f.identity=k.id OFFSET 0) f ON true;
   RETURN QUERY WITH selected AS MATERIALIZED (SELECT b.id FROM entity_weapon_builds b WHERE b.weapon=ANY(weapons)
     UNION SELECT unnest(identities)) SELECT 'queue'::text,jsonb_build_object('batch',q.batch,'build_id',q.build_id,'ruler',q.ruler,'mode',q.mode)
-    FROM selected k JOIN LATERAL (SELECT * FROM state_board_pending_work q WHERE q.build_id=k.id OFFSET 0) q ON true
+    FROM selected k JOIN LATERAL (SELECT * FROM state_board_effective_pending_work q WHERE q.build_id=k.id OFFSET 0) q ON true
       WHERE EXISTS(SELECT 1 FROM entity_compute_batches b WHERE b.id=q.batch);
 END $$;
 REVOKE ALL ON FUNCTION inventory_cohort_rows(text,text,text) FROM PUBLIC;

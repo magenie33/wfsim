@@ -764,3 +764,37 @@ full-classifier audit. `check_incremental_inventory_pg` covers transactional
 invalidation, restricted source reads, receipt-only writes and cut publication.
 `check_inventory_pipeline` uses the actual ranker and an independent full engine
 walk across source changes, retirement, alias deletion and durable processing.
+
+
+A durable order cut cancels a captured scheduling tail without rewriting its
+physical rows. `compute_order_cut_stage(jsonb)` records the operation id, source
+receipt, task cutoff, original `(zone, position, id)` keep boundary and cut time.
+Install and verify `worker/pg/order_cut_indexes.sql` separately before activation.
+Its two online index builds read the existing heaps; they never run in worker
+startup, the additive function upgrade or activation.
+
+Stage precedes the fresh protection snapshot. `compute_order_cut_protect(text,
+jsonb)` imports the audited historical and required-parent ids, and
+`compute_order_cut_capture(text)` adds indexed execution, previous-credential,
+answer, result, verification and prior-round evidence. Preparing writes retain
+new execution evidence under the same transaction barrier. Activation checks
+the imported manifest's sorted newline-separated SHA-256 and count, captures
+fresh indexed positives again, then commits one activation record. A missing or
+invalid prerequisite index refuses activation. The imported historical manifest
+is not a substitute for the fresh capture.
+
+`state_compute_work` remains writable and hides cancelled rounds. Indexed
+open ranges and finite protected ids supply effective dispatch and counts;
+the scheduling write trigger checks again after the activation barrier. New
+lease timestamps cannot manufacture protection. Late imported inputs retain
+an irreversible cancellation receipt before insertion, so they cannot revive
+work or create credit. An explicit fresh user source can open a separate round;
+a replay of the cancelled source cannot attach to it. Required issued children
+keep their workflow parent, while cancelled pending nodes cannot register.
+
+Cancelled scheduling, consumer and workflow history may remain physical.
+Garbage collection does not subtract effective counts a second time. Activation
+neither refills work nor changes producer admission controls. Complete workload
+inventory reports are unavailable while a cut is active; effective PostgreSQL
+queue counts remain authoritative. Restoring a full inventory report requires
+separate qualification of its captured cut membership.

@@ -510,3 +510,28 @@ BEGIN
       autovacuum_vacuum_insert_threshold = 50000)', relation);
   END LOOP;
 END $$;
+
+-- Queue ownership remains physical; effective membership follows the captured computation round.
+CREATE OR REPLACE VIEW state_board_effective_pending_work AS
+  WITH cut AS MATERIALIZED(SELECT * FROM compute_order_cut())
+  SELECT q.* FROM state_board_pending_work q WHERE NOT EXISTS(SELECT 1 FROM cut)
+  UNION ALL
+  SELECT DISTINCT b.* FROM cut CROSS JOIN state_compute_effective_work q
+    JOIN relation_task_consumers d ON d.question=q.id AND d.state='live'
+      AND d.producer IN('new_build','survey_build','refresh','sweep')
+    JOIN state_board_pending_work b ON (b.build_id,b.ruler,b.mode)=
+      (split_part(d.ref,'|',1),split_part(d.ref,'|',2),split_part(d.ref,'|',3))
+  UNION ALL
+  SELECT q.* FROM cut c JOIN entity_compute_batches batch ON batch.at>c.cut_at
+    JOIN state_board_pending_work q ON q.batch=batch.id
+    WHERE NOT EXISTS(SELECT 1 FROM relation_task_consumers d JOIN state_compute_work w ON w.id=d.question
+      WHERE d.state='live' AND d.producer IN('new_build','survey_build','refresh','sweep')
+        AND d.ref=q.build_id||'|'||q.ruler||'|'||q.mode);
+
+CREATE OR REPLACE FUNCTION compute_order_family_wanted(text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT EXISTS(SELECT 1 FROM entity_family_search_requests t WHERE t.id=$1 AND t.state='waiting' AND
+    (NOT EXISTS(SELECT 1 FROM compute_order_cut() c WHERE t.created_at<=c.cut_at)
+      OR EXISTS(SELECT 1 FROM relation_task_consumers d JOIN state_compute_work q ON q.id=d.question
+        WHERE d.producer='family_build' AND d.ref=t.id AND d.state='live')))
+$$;

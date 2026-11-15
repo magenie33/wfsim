@@ -693,7 +693,9 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   const db = env.LIBRARY, at = iso(now);
   const { fresh: inventory, lastComplete } = await readInventoryState(db, now);
   const engine = (inventory || lastComplete)?.engine || null;
-  const cached = demandCosts.get(env), kept = cached?.engine === engine ? cached : null;
+  const cut=await db.prepare('SELECT compute_order_cut_epoch() AS at').first();
+  const epoch=cut?.at || null;
+  const cached = demandCosts.get(env), kept = cached?.engine === engine && cached?.epoch === epoch ? cached : null;
   const counts = kept && now >= kept.countsAt && now - kept.countsAt < DEMAND_COST_EVERY_MS ? kept : null;
   const costs = kept && now >= kept.costsAt && now - kept.costsAt < (options.costEveryMs || DEMAND_COST_EVERY_MS) ? kept : null;
   const began = performance.now();
@@ -723,12 +725,12 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
       db.prepare(`WITH d AS MATERIALIZED (SELECT ref FROM relation_task_consumers WHERE state = 'live' AND producer = 'new_build')
                   SELECT CASE WHEN d.ref IS NOT NULL THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END AS k,
                     ${DEMAND_SOURCE} AS source, COUNT(*) AS n
-                  FROM state_board_pending_work q JOIN entity_compute_batches b ON b.id = q.batch
+                  FROM state_board_effective_pending_work q JOIN entity_compute_batches b ON b.id = q.batch
                   LEFT JOIN d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
                   GROUP BY k, source`),
       db.prepare(`SELECT verb, producer, ${DEMAND_SOURCE} AS source, COUNT(*) AS n,
                     COUNT(*) FILTER (WHERE leased_at IS NOT NULL OR lease IS NOT NULL) AS dispatched
-                  FROM state_compute_scheduling q WHERE state = 'open' GROUP BY verb, producer, source`),
+                  FROM state_compute_effective_open q WHERE state = 'open' GROUP BY verb, producer, source`),
     ]),
     ...(costs ? [] : [
       // Bounded samples and indexed lateral lookups avoid a full question-table
@@ -749,7 +751,7 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
       // machine, now or before — is dispatched, by the kind `owed` counts it as.
       db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT x.id, MIN(CASE WHEN d.producer = 'new_build' THEN 0
                       WHEN d.payload::jsonb ->> 'batch' LIKE 'rescore%' THEN 1 WHEN d.producer = 'refresh' THEN 3 ELSE 2 END) AS k
-                    FROM state_compute_work x JOIN relation_task_consumers d ON d.question = x.id AND d.state = 'live' AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
+                    FROM state_compute_effective_work x JOIN relation_task_consumers d ON d.question = x.id AND d.state = 'live' AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
                    WHERE x.state = 'open' AND x.verb = 'simulate' AND (x.leased_at IS NOT NULL OR x.lease IS NOT NULL)
                    GROUP BY x.id) y GROUP BY k`).bind(JSON.stringify(BOARD_KINDS)),
     ]),
@@ -772,7 +774,7 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   const { msOf, factsOf } = costs || { msOf: Object.fromEntries(spent.results.map((r) => [r.verb, Number(r.ms)])),
     factsOf: Object.fromEntries(spent.results.map((r) => [r.verb, Number(r.facts)])) };
   if (!costs || !counts) {
-    demandCosts.set(env, { engine, countsAt: counts ? counts.countsAt : now, costsAt: costs ? costs.costsAt : now,
+    demandCosts.set(env, { engine, epoch, countsAt: counts ? counts.countsAt : now, costsAt: costs ? costs.costsAt : now,
       msOf, factsOf, by, sources: counted.sources, takenBy: counted.takenBy, openOf: counted.openOf });
     if (!costs) options.onCosts?.(performance.now() - began);
   }

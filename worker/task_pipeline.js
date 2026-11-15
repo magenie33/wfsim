@@ -54,7 +54,7 @@ export function createTaskPipeline(handlers) {
       db.prepare("SELECT * FROM state_task_pipeline_controls"),db.prepare("SELECT * FROM state_task_pipeline_progress"),
     ]);
     const sources={
-      admission:"SELECT created_at AS at FROM state_build_admission_work ORDER BY kind,lane,zone,position,key LIMIT ?1::bigint",
+      admission:"SELECT created_at AS at FROM state_build_effective_admission_work ORDER BY kind,lane,zone,position,key LIMIT ?1::bigint",
       verification:"SELECT queued_at AS at FROM state_pending_verifications ORDER BY queued_at LIMIT ?1::bigint",
       delivery:"SELECT delivery_at AS at FROM relation_task_consumers WHERE state='live' AND delivery_at IS NOT NULL ORDER BY delivery_at LIMIT ?1::bigint",
       contribution:"SELECT credit_at AS at FROM record_candidate_answers WHERE credit_work IS NOT NULL AND credited=0 AND void=0 AND official=0 ORDER BY credit_at,id LIMIT ?1::bigint",

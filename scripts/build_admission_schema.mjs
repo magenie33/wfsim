@@ -3,6 +3,7 @@
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {orderCutSchemaSql,orderCutBusinessSql} from './task_schema.mjs';
 
 const workflowSql=()=>readFileSync(new URL('../worker/pg/build_workflows.sql',import.meta.url),'utf8');
 const triggerIndex=()=>{
@@ -43,11 +44,13 @@ DO $prerequisite$ BEGIN
    AND pg_get_indexdef(i.indexrelid,1,true)='workflow' AND pg_get_indexdef(i.indexrelid,2,true)='id') THEN
   RAISE EXCEPTION 'additive workflow trigger index must already be valid; install --indexes output first';END IF;
 END $prerequisite$;
+${orderCutSchemaSql()}
+${orderCutBusinessSql()}
 ${workflows.replace(triggerIndex(),'')}
 ${admission}
 DO $grant$ BEGIN
  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_factoryd') THEN
-  GRANT SELECT ON state_build_admission_work TO wfsim_factoryd;
+  GRANT SELECT ON state_build_admission_work,state_build_effective_admission_work,state_compute_effective_open,state_compute_effective_work,state_board_effective_pending_work TO wfsim_factoryd;
   GRANT EXECUTE ON FUNCTION build_admission_claim(text,text),build_admission_run(text,text,text,bigint,text),
    build_admission_retry(text,text,text,text,text) TO wfsim_factoryd;
  END IF;

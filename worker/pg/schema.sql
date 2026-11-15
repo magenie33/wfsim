@@ -254,24 +254,20 @@ CREATE INDEX IF NOT EXISTS compute_scheduling_dispatched ON state_compute_schedu
 CREATE INDEX IF NOT EXISTS compute_scheduling_withdrawn ON state_compute_scheduling(opened_at) WHERE state='withdrawn';
 ALTER TABLE state_compute_scheduling SET (autovacuum_analyze_scale_factor=0, autovacuum_analyze_threshold=50000);
 
--- One base relation keeps ordinary lease updates and row locks on scheduling alone.
-CREATE OR REPLACE VIEW state_compute_work AS
-  SELECT s.id,s.verb,(SELECT d.request FROM entity_compute_specs d WHERE d.id=s.id) AS request,
-    s.state,s.due_at,s.waits,s.opened_at,s.lanes,s.lease,s.lease_until,s.leased_to,s.leased_at,
-    s.lease_prev,s.leased_to_prev,s.lease_prev_until,s.needs,
-    (SELECT r.canon FROM entity_compute_results r WHERE r.id=s.result_id) AS canon,
-    s.fact_engine,s.fact_at,s.odd,s.withdrawn_at,
-    COALESCE((SELECT p.witnesses FROM record_compute_result_proofs p WHERE p.result_id=s.result_id),'[]') AS witnesses,
-    s.producer,s.initiator,s.task_id,s.result_id,
-    coalesce(s.zone,factory_default_zone(s.producer)) AS zone,coalesce(s.zone_position,s.task_id) AS zone_position,s.required_capability,s.required_engine
-  FROM state_compute_scheduling s;
-
 CREATE OR REPLACE FUNCTION compute_open_task(text,text,text,text,boolean DEFAULT false) RETURNS bigint
 LANGUAGE plpgsql AS $$
-DECLARE held state_compute_scheduling%ROWTYPE; next_task bigint; next_generation bigint;
+DECLARE held state_compute_scheduling%ROWTYPE; next_task bigint; next_generation bigint; cancelled text;
 BEGIN
+  PERFORM compute_order_cut_lock();
   SELECT * INTO held FROM state_compute_scheduling WHERE id=$1 FOR UPDATE;
   IF NOT FOUND THEN RETURN NULL; END IF;
+  cancelled:=compute_order_cancelled(held.id,held.task_id,coalesce(held.zone,factory_default_zone(held.producer)),coalesce(held.zone_position,held.task_id),held.state);
+  IF cancelled IS NOT NULL THEN
+    IF $2<>'new_user_request' THEN RETURN NULL; END IF;
+    INSERT INTO record_compute_order_cancellations VALUES(held.id,held.task_id,cancelled,$4) ON CONFLICT DO NOTHING;
+    UPDATE relation_task_consumers SET state='withdrawn',delivery_at=NULL WHERE question=held.id AND state='live';
+    UPDATE state_build_workflow_nodes SET state='skipped',error='cancelled by order cut' WHERE computation=held.id AND task_id=held.task_id AND state='queued';
+  END IF;
   IF held.state='open' AND NOT $5 THEN RETURN held.task_id; END IF;
   SELECT COALESCE(max(generation),0)+1 INTO next_generation FROM entity_compute_tasks WHERE computation=$1;
   INSERT INTO entity_compute_tasks(computation,generation,created_at,reason,requested_engine)
@@ -284,7 +280,7 @@ BEGIN
     fact_engine=CASE WHEN $5 THEN NULL ELSE fact_engine END,
     fact_at=CASE WHEN $5 THEN NULL ELSE fact_at END WHERE id=$1;
   INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload,requirements)
-    SELECT next_task,producer,ref,trigger_id,asked_at,payload,requirements FROM relation_compute_task_sources WHERE task_id=held.task_id;
+    SELECT next_task,producer,ref,trigger_id,asked_at,payload,requirements FROM relation_compute_task_sources WHERE task_id=held.task_id AND cancelled IS NULL;
   IF $2 IN('official_correction','refused_evidence','input_invalidated') THEN
     INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload)
       VALUES(next_task,'system',$2||':'||$1,$2||':'||held.task_id::text,$4,
@@ -303,6 +299,7 @@ END $$;
 CREATE OR REPLACE FUNCTION compute_register_tasks(text,text,text) RETURNS void LANGUAGE plpgsql AS $$
 DECLARE x record; held state_compute_scheduling%ROWTYPE; next_task bigint; spec entity_compute_specs%ROWTYPE;
 BEGIN
+  PERFORM compute_order_cut_lock();
   FOR x IN SELECT * FROM jsonb_to_recordset($1::jsonb) AS x(id text,verb text,request text,due_at text,
     lanes text,waits bigint,producer text,initiator text,zone bigint,position bigint,capability text) ORDER BY id LOOP
     INSERT INTO entity_compute_specs(id,verb,request) VALUES(x.id,x.verb,x.request) ON CONFLICT(id) DO NOTHING;
@@ -312,6 +309,8 @@ BEGIN
     END IF;
     SELECT * INTO held FROM state_compute_scheduling WHERE id=x.id FOR UPDATE;
     IF NOT FOUND THEN
+      IF EXISTS(SELECT 1 FROM compute_order_cut() c WHERE coalesce(x.zone,factory_default_zone(x.producer))>=c.keep_zone
+        AND EXISTS(SELECT 1 FROM entity_compute_tasks t WHERE t.computation=x.id AND t.id<=c.task_cutoff)) THEN CONTINUE;END IF;
       INSERT INTO entity_compute_tasks(computation,generation,created_at,reason,requested_engine)
         SELECT x.id,COALESCE(max(generation),0)+1,$3,'request',$2 FROM entity_compute_tasks WHERE computation=x.id
         RETURNING id INTO next_task;
@@ -319,6 +318,7 @@ BEGIN
         VALUES(x.id,x.verb,next_task,'open',x.due_at,$3,x.lanes,x.waits,x.producer,x.initiator,
           coalesce(x.zone,factory_default_zone(x.producer)),coalesce(x.position,nextval('compute_queue_position')),x.capability);
     ELSE
+      IF compute_order_cancelled(held.id,held.task_id,coalesce(held.zone,factory_default_zone(held.producer)),coalesce(held.zone_position,held.task_id),held.state) IS NOT NULL THEN CONTINUE; END IF;
       IF held.state='withdrawn' AND NOT EXISTS(SELECT 1 FROM record_refusal_withdrawals WHERE question=x.id AND engine=$2) THEN
         PERFORM compute_open_task(x.id,'renewed_request',$2,$3);
         held.due_at:=x.due_at;
@@ -341,7 +341,7 @@ END $$;
 
 CREATE OR REPLACE FUNCTION compute_admit_tasks(text,text,text,text) RETURNS void
 LANGUAGE plpgsql AS $$
-DECLARE s jsonb; d jsonb; prepared jsonb:='[]'; q record; source record; opened text[]:='{}'; previous_question text; affected text[]:='{}';
+DECLARE s jsonb; d jsonb; prepared jsonb:='[]'; q record; source record; opened text[]:='{}'; previous_question text; affected text[]:='{}'; decision bigint; admitted jsonb:='[]';
 BEGIN
   s := $1::jsonb; d := $2::jsonb;
   IF jsonb_typeof(s)<>'array' OR jsonb_typeof(d)<>'array' OR jsonb_array_length(s)>250
@@ -353,6 +353,23 @@ BEGIN
     OR EXISTS(SELECT 1 FROM jsonb_array_elements(s) x WHERE NOT EXISTS(
       SELECT 1 FROM jsonb_array_elements(d) y WHERE y->>'question'=x->>'id'))
     THEN RAISE EXCEPTION 'a compute task requires a source'; END IF;
+  PERFORM compute_order_cut_lock();
+  IF EXISTS(SELECT 1 FROM record_compute_order_cut_activations) THEN
+  d:=coalesce((SELECT jsonb_agg(value) FROM jsonb_array_elements(d) WHERE NOT compute_order_source_cancelled(
+    value->>'question',value->>'producer',value->>'ref',value->>'trigger_id')),'[]'::jsonb);
+  s:=coalesce((SELECT jsonb_agg(value) FROM jsonb_array_elements(s) x WHERE EXISTS(
+    SELECT 1 FROM jsonb_array_elements(d) y WHERE y->>'question'=x.value->>'id')),'[]'::jsonb);
+  FOR q IN SELECT * FROM jsonb_to_recordset(s) AS x(id text,producer text,zone bigint) ORDER BY id LOOP
+    decision:=compute_order_admission(q.id,d,coalesce(q.zone,factory_default_zone(q.producer)),$4);
+    IF decision=0 THEN CONTINUE; END IF;
+    IF decision=2 THEN PERFORM compute_open_task(q.id,'new_user_request',$3,$4,true); END IF;
+    admitted:=admitted||(SELECT jsonb_agg(value) FROM jsonb_array_elements(s) WHERE value->>'id'=q.id);
+  END LOOP;
+  s:=admitted;
+  d:=coalesce((SELECT jsonb_agg(incoming.data) FROM jsonb_array_elements(d) incoming(data) WHERE EXISTS(
+    SELECT 1 FROM jsonb_array_elements(s) chosen(data) WHERE chosen.data->>'id'=incoming.data->>'question')),'[]'::jsonb);
+  IF jsonb_array_length(s)=0 THEN RETURN; END IF;
+  END IF;
   FOR source IN SELECT value FROM jsonb_array_elements(s) ORDER BY coalesce((value->>'ordinal')::bigint,0) LOOP
     prepared:=prepared||jsonb_build_array(source.value||jsonb_build_object('position',coalesce((source.value->>'position')::bigint,nextval('compute_queue_position'))));
   END LOOP;
@@ -941,7 +958,9 @@ CREATE TABLE IF NOT EXISTS record_compute_queue_removals (
 CREATE OR REPLACE FUNCTION compute_remove_untraced(text,bigint,text) RETURNS boolean LANGUAGE plpgsql AS $$
 DECLARE q state_compute_scheduling%ROWTYPE; detail jsonb;
 BEGIN
+  PERFORM compute_order_cut_lock();
   SELECT * INTO q FROM state_compute_scheduling WHERE id=$1 FOR UPDATE;
+  IF compute_order_cancelled(q.id,q.task_id,coalesce(q.zone,factory_default_zone(q.producer)),coalesce(q.zone_position,q.task_id),q.state) IS NOT NULL THEN RETURN false; END IF;
   IF NOT FOUND OR q.state<>'open' OR q.task_id<>$2 THEN RETURN false; END IF;
   IF compute_task_has_source(q.id) THEN RETURN false; END IF;
   detail:=jsonb_build_object('scheduling',to_jsonb(q)-'initiator'-'leased_to'-'leased_to_prev','consumers',coalesce((SELECT jsonb_agg(to_jsonb(d)-'initiator' ORDER BY d.producer,d.ref)
@@ -967,6 +986,7 @@ CREATE TABLE IF NOT EXISTS record_compute_identity_changes (
 CREATE OR REPLACE FUNCTION compute_rekey_active(text,bigint,text,text,text,text) RETURNS bigint LANGUAGE plpgsql AS $$
 DECLARE q state_compute_scheduling%ROWTYPE; spec jsonb; demand record; target text; replacement bigint; detail jsonb; prior record;
 BEGIN
+  PERFORM compute_order_cut_lock();
   spec:=$3::jsonb->0; target:=spec->>'id';
   SELECT * INTO prior FROM record_compute_identity_changes WHERE task_id=$2;
   IF FOUND THEN
@@ -974,6 +994,7 @@ BEGIN
     RETURN prior.replacement_task_id;
   END IF;
   SELECT * INTO q FROM state_compute_scheduling WHERE id=$1 FOR UPDATE;
+  IF compute_order_cancelled(q.id,q.task_id,coalesce(q.zone,factory_default_zone(q.producer)),coalesce(q.zone_position,q.task_id),q.state) IS NOT NULL THEN RETURN NULL; END IF;
   IF NOT FOUND OR q.task_id<>$2 OR q.state<>'open' OR target IS NULL OR target=q.id THEN
     RAISE EXCEPTION 'compute task changed before identity migration' USING ERRCODE='40001';
   END IF;
@@ -1030,9 +1051,11 @@ CREATE INDEX IF NOT EXISTS compute_reissues_computation ON record_compute_task_r
 CREATE OR REPLACE FUNCTION compute_reissue_task(text,bigint,text,text,text) RETURNS bigint LANGUAGE plpgsql AS $$
 DECLARE q state_compute_scheduling%ROWTYPE; prior record; replacement bigint; consumers jsonb; pending jsonb;
 BEGIN
+  PERFORM compute_order_cut_lock();
   IF coalesce(length(btrim($3)),0)=0 OR coalesce(length(btrim($4)),0)=0 OR $5 IS NULL THEN
     RAISE EXCEPTION 'invalid task reissue'; END IF;
   SELECT * INTO q FROM state_compute_scheduling WHERE id=$1 FOR UPDATE;
+  IF compute_order_cancelled(q.id,q.task_id,coalesce(q.zone,factory_default_zone(q.producer)),coalesce(q.zone_position,q.task_id),q.state) IS NOT NULL THEN RETURN NULL; END IF;
   SELECT * INTO prior FROM record_compute_task_reissues WHERE task_id=$2;
   IF FOUND THEN
     IF prior.computation<>$1 OR prior.operation<>$3 THEN RAISE EXCEPTION 'different task reissue'; END IF;
@@ -1064,3 +1087,313 @@ BEGIN
   RETURN replacement;
 END $$;
 REVOKE ALL ON FUNCTION compute_reissue_task(text,bigint,text,text,text) FROM PUBLIC;
+
+-- A cut keeps its captured order and evidence manifest independently of physical queue rows.
+CREATE TABLE IF NOT EXISTS entity_compute_order_cuts (
+  id TEXT COLLATE "C" PRIMARY KEY,
+  cut_at TEXT COLLATE "C" NOT NULL,
+  task_cutoff BIGINT NOT NULL CHECK(task_cutoff>0),
+  keep_zone BIGINT NOT NULL CHECK(keep_zone BETWEEN 0 AND 99),
+  keep_position BIGINT NOT NULL,
+  keep_id TEXT COLLATE "C" NOT NULL,
+  created_at TEXT COLLATE "C" NOT NULL,
+  source JSONB NOT NULL CHECK(jsonb_typeof(source)='object')
+);
+CREATE TABLE IF NOT EXISTS relation_compute_order_cut_protection (
+  cut_id TEXT COLLATE "C" NOT NULL REFERENCES entity_compute_order_cuts(id),
+  question TEXT COLLATE "C" NOT NULL,
+  kind TEXT COLLATE "C" NOT NULL CHECK(kind IN('manifest','issued')),
+  PRIMARY KEY(cut_id,question)
+);
+CREATE TABLE IF NOT EXISTS record_compute_order_cut_activations (
+  cut_id TEXT COLLATE "C" PRIMARY KEY REFERENCES entity_compute_order_cuts(id),
+  activated_at TEXT COLLATE "C" NOT NULL,
+  manifest_count BIGINT NOT NULL,
+  manifest_sha256 TEXT COLLATE "C" NOT NULL,
+  protected_count BIGINT NOT NULL,
+  protected_sha256 TEXT COLLATE "C" NOT NULL
+);
+CREATE TABLE IF NOT EXISTS record_compute_order_cancellations (
+  question TEXT COLLATE "C" NOT NULL,
+  task_id BIGINT NOT NULL REFERENCES entity_compute_tasks(id),
+  cut_id TEXT COLLATE "C" NOT NULL REFERENCES entity_compute_order_cuts(id),
+  at TEXT COLLATE "C" NOT NULL,
+  PRIMARY KEY(question,task_id)
+);
+
+CREATE OR REPLACE FUNCTION compute_order_cut() RETURNS SETOF entity_compute_order_cuts
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT c.* FROM entity_compute_order_cuts c JOIN record_compute_order_cut_activations a ON a.cut_id=c.id
+$$;
+
+CREATE OR REPLACE FUNCTION compute_order_cut_protections() RETURNS SETOF relation_compute_order_cut_protection
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT p.* FROM relation_compute_order_cut_protection p JOIN record_compute_order_cut_activations a ON a.cut_id=p.cut_id
+$$;
+
+CREATE OR REPLACE FUNCTION compute_order_cut_epoch() RETURNS text LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT max(activated_at) FROM record_compute_order_cut_activations
+$$;
+
+CREATE OR REPLACE FUNCTION compute_order_cut_lock() RETURNS void
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+BEGIN
+  PERFORM pg_advisory_xact_lock_shared(hashtextextended('compute-order-cut:'||current_schema(),0));
+END $$;
+
+CREATE OR REPLACE FUNCTION compute_order_existing_evidence(text,bigint,text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT EXISTS(SELECT 1 FROM state_compute_scheduling q WHERE q.id=$1 AND q.task_id=$2 AND
+    (q.lease IS NOT NULL OR q.leased_at IS NOT NULL OR q.leased_to IS NOT NULL OR q.lease_until IS NOT NULL
+      OR q.lease_prev IS NOT NULL OR q.leased_to_prev IS NOT NULL OR q.lease_prev_until IS NOT NULL
+      OR q.result_id IS NOT NULL OR q.fact_at IS NOT NULL OR q.fact_engine IS NOT NULL))
+    OR EXISTS(SELECT 1 FROM record_candidate_answers WHERE question=$1)
+    OR EXISTS(SELECT 1 FROM entity_compute_results WHERE computation=$1)
+    OR EXISTS(SELECT 1 FROM state_pending_verifications WHERE question=$1)
+    OR EXISTS(SELECT 1 FROM entity_compute_tasks WHERE computation=$1 AND (id<>$2 OR generation<>1))
+    OR EXISTS(SELECT 1 FROM relation_task_consumers WHERE question=$1 AND
+      (delivery_at IS NOT NULL OR served_at IS NOT NULL OR state='served' OR asked_at>$3))
+$$;
+
+CREATE OR REPLACE FUNCTION compute_order_cancelled(text,bigint,bigint,bigint,text) RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT c.id FROM compute_order_cut() c WHERE
+    EXISTS(SELECT 1 FROM record_compute_order_cancellations r WHERE r.question=$1 AND r.task_id=$2 AND r.cut_id=c.id)
+    OR ($5 IN('open','withdrawn') AND $2<=c.task_cutoff AND ($3,$4,$1)>(c.keep_zone,c.keep_position,c.keep_id)
+      AND NOT EXISTS(SELECT 1 FROM relation_compute_order_cut_protection p WHERE p.cut_id=c.id AND p.question=$1)
+      AND NOT compute_order_existing_evidence($1,$2,c.cut_at))
+  LIMIT 1
+$$;
+
+-- Disjoint indexed ranges keep an empty eligible prefix from walking the cancelled tail.
+CREATE OR REPLACE VIEW state_compute_effective_open AS
+  SELECT s.* FROM state_compute_scheduling s WHERE s.state='open' AND NOT EXISTS(SELECT 1 FROM compute_order_cut())
+  UNION ALL
+  SELECT s.* FROM state_compute_scheduling s WHERE s.state='open' AND EXISTS(SELECT 1 FROM compute_order_cut())
+    AND (coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id)
+      <=(SELECT c.keep_zone,c.keep_position,c.keep_id FROM compute_order_cut() c)
+  UNION ALL
+  SELECT s.* FROM entity_compute_tasks t JOIN state_compute_scheduling s ON s.id=t.computation AND s.task_id=t.id AND s.state='open'
+    WHERE t.id>(SELECT task_cutoff FROM compute_order_cut())
+      AND (coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id)
+        >(SELECT c.keep_zone,c.keep_position,c.keep_id FROM compute_order_cut() c)
+  UNION ALL
+  SELECT s.* FROM relation_compute_order_cut_protection p JOIN state_compute_scheduling s ON s.id=p.question AND s.state='open'
+    WHERE p.cut_id=(SELECT id FROM compute_order_cut()) AND s.task_id<=(SELECT task_cutoff FROM compute_order_cut())
+      AND (coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id)
+        >(SELECT c.keep_zone,c.keep_position,c.keep_id FROM compute_order_cut() c);
+
+CREATE OR REPLACE FUNCTION compute_order_pending_cancelled(bigint,bigint,text,text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT EXISTS(SELECT 1 FROM compute_order_cut() c WHERE $4<=c.cut_at
+    AND ($1,$2,$3)>(c.keep_zone,c.keep_position,c.keep_id))
+$$;
+
+CREATE OR REPLACE FUNCTION compute_order_cut_stage(jsonb) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE p jsonb:=$1; b jsonb:=p->'keep_boundary';
+BEGIN
+  PERFORM pg_advisory_xact_lock(hashtextextended('compute-order-cut:'||current_schema(),0));
+  IF EXISTS(SELECT 1 FROM entity_compute_order_cuts) THEN RAISE EXCEPTION 'an order cut already exists'; END IF;
+  IF nullif(p->>'id','') IS NULL OR p->>'cut_at' IS NULL OR (p->>'task_cutoff')::bigint<1
+    OR jsonb_typeof(b) IS DISTINCT FROM 'array' OR jsonb_array_length(b)<>3
+    OR jsonb_typeof(p->'source') IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'invalid order cut'; END IF;
+  INSERT INTO entity_compute_order_cuts VALUES(p->>'id',to_char((p->>'cut_at')::timestamptz AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),(p->>'task_cutoff')::bigint,
+    (b->>0)::bigint,(b->>1)::bigint,b->>2,
+    to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),p->'source');
+END $$;
+
+CREATE OR REPLACE FUNCTION compute_order_cut_protect(text,jsonb) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+BEGIN
+  PERFORM pg_advisory_xact_lock_shared(hashtextextended('compute-order-cut:'||current_schema(),0));
+  IF NOT EXISTS(SELECT 1 FROM entity_compute_order_cuts WHERE id=$1)
+    OR EXISTS(SELECT 1 FROM record_compute_order_cut_activations WHERE cut_id=$1)
+    OR jsonb_typeof($2) IS DISTINCT FROM 'array' OR jsonb_array_length($2)>1000000 THEN
+    RAISE EXCEPTION 'invalid order protection manifest'; END IF;
+  INSERT INTO relation_compute_order_cut_protection(cut_id,question,kind)
+    SELECT $1,value,'manifest' FROM jsonb_array_elements_text($2) ON CONFLICT(cut_id,question) DO UPDATE SET kind='manifest';
+END $$;
+
+CREATE OR REPLACE FUNCTION compute_order_cut_indexes_ready() RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT count(*)=2 FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid JOIN pg_am am ON am.oid=c.relam
+    WHERE c.relnamespace=(SELECT oid FROM pg_namespace WHERE nspname=current_schema()) AND i.indisvalid AND i.indisready
+      AND NOT i.indisunique AND i.indnatts=1 AND i.indnkeyatts=1 AND am.amname='btree' AND (
+      c.relname='compute_order_execution_evidence' AND i.indrelid='state_compute_scheduling'::regclass
+        AND pg_get_indexdef(i.indexrelid,1,true)='id' AND
+        regexp_replace(pg_get_expr(i.indpred,i.indrelid),'[[:space:]()]','','g')=
+        regexp_replace('lease IS NOT NULL OR leased_at IS NOT NULL OR leased_to IS NOT NULL OR lease_until IS NOT NULL
+          OR lease_prev IS NOT NULL OR leased_to_prev IS NOT NULL OR lease_prev_until IS NOT NULL
+          OR result_id IS NOT NULL OR fact_at IS NOT NULL OR fact_engine IS NOT NULL','[[:space:]()]','','g')
+      OR c.relname='compute_order_prior_rounds' AND i.indrelid='entity_compute_tasks'::regclass
+        AND pg_get_indexdef(i.indexrelid,1,true)='computation'
+        AND regexp_replace(pg_get_expr(i.indpred,i.indrelid),'[[:space:]()]','','g')='generation<>1')
+$$;
+
+-- Positive evidence is read through sparse indexes, never through the cancelled tail.
+CREATE OR REPLACE FUNCTION compute_order_cut_capture(text) RETURNS bigint
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE n bigint;
+BEGIN
+  PERFORM compute_order_cut_lock();
+  IF NOT EXISTS(SELECT 1 FROM entity_compute_order_cuts WHERE id=$1) OR EXISTS(
+    SELECT 1 FROM record_compute_order_cut_activations) THEN RAISE EXCEPTION 'order cut capture changed';END IF;
+  IF NOT compute_order_cut_indexes_ready() THEN RAISE EXCEPTION 'order cut online indexes must be installed and valid';END IF;
+  INSERT INTO relation_compute_order_cut_protection(cut_id,question,kind)
+    SELECT c.id,q.id,'issued' FROM entity_compute_order_cuts c JOIN (
+      SELECT id FROM state_compute_scheduling WHERE lease IS NOT NULL OR leased_at IS NOT NULL OR leased_to IS NOT NULL OR lease_until IS NOT NULL
+        OR lease_prev IS NOT NULL OR leased_to_prev IS NOT NULL OR lease_prev_until IS NOT NULL
+        OR result_id IS NOT NULL OR fact_at IS NOT NULL OR fact_engine IS NOT NULL
+      UNION SELECT computation FROM entity_compute_tasks WHERE generation<>1
+      UNION SELECT question FROM record_candidate_answers
+      UNION SELECT computation FROM entity_compute_results
+      UNION SELECT question FROM state_pending_verifications
+      UNION SELECT question FROM relation_task_consumers WHERE state='live' AND delivery_at IS NOT NULL
+      UNION SELECT question FROM relation_task_consumers WHERE state='served'
+    ) positive ON true CROSS JOIN LATERAL(SELECT q.* FROM state_compute_scheduling q WHERE q.id=positive.id OFFSET 0) q
+    WHERE c.id=$1 AND q.task_id<=c.task_cutoff AND q.state IN('open','withdrawn')
+      AND (coalesce(q.zone,factory_default_zone(q.producer)),coalesce(q.zone_position,q.task_id),q.id)>(c.keep_zone,c.keep_position,c.keep_id)
+    ON CONFLICT DO NOTHING;
+  GET DIAGNOSTICS n=ROW_COUNT;RETURN n;
+END $$;
+REVOKE ALL ON FUNCTION compute_order_cut_capture(text) FROM PUBLIC;
+
+CREATE OR REPLACE FUNCTION compute_order_cut_activate(text,bigint,text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE n bigint; digest text;captured bigint;captured_digest text;
+BEGIN
+  PERFORM pg_advisory_xact_lock(hashtextextended('compute-order-cut:'||current_schema(),0));
+  IF NOT EXISTS(SELECT 1 FROM entity_compute_order_cuts WHERE id=$1)
+    OR EXISTS(SELECT 1 FROM record_compute_order_cut_activations) THEN RAISE EXCEPTION 'order cut activation changed'; END IF;
+  IF to_regprocedure('factory_candidates(text,bigint,bigint,text,text,text,text,text,bigint,bigint,text,text,bigint,text,text,text,boolean)') IS NULL
+    OR position('compute_order_cut_lock' IN pg_get_functiondef('compute_open_task(text,text,text,text,boolean)'::regprocedure))=0
+    OR position('compute_order_cut_lock' IN pg_get_functiondef('compute_register_tasks(text,text,text)'::regprocedure))=0
+    OR position('compute_order_cancelled' IN pg_get_functiondef('compute_reissue_task(text,bigint,text,text,text)'::regprocedure))=0
+    OR position('state_board_effective_pending_work' IN pg_get_functiondef('inventory_inputs(text,text,text)'::regprocedure))=0 THEN
+    RAISE EXCEPTION 'complete order cut runtime upgrade required'; END IF;
+  SELECT count(*),encode(sha256(convert_to(coalesce(string_agg(question,E'\n' ORDER BY question),''),'UTF8')),'hex')
+    INTO n,digest FROM relation_compute_order_cut_protection WHERE cut_id=$1 AND kind='manifest';
+  IF n IS DISTINCT FROM $2 OR digest IS DISTINCT FROM $3 THEN RAISE EXCEPTION 'order protection manifest changed'; END IF;
+  PERFORM compute_order_cut_capture($1);
+  SELECT count(*),encode(sha256(convert_to(coalesce(string_agg(question,E'\n' ORDER BY question),''),'UTF8')),'hex')
+    INTO captured,captured_digest FROM relation_compute_order_cut_protection WHERE cut_id=$1;
+  UPDATE state_factory_snapshot SET at='' WHERE id=1;
+  INSERT INTO record_compute_order_cut_activations VALUES($1,
+    to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),n,digest,captured,captured_digest);
+END $$;
+
+CREATE OR REPLACE FUNCTION compute_order_write_guard() RETURNS trigger
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE c record; cancelled text; held state_compute_scheduling%ROWTYPE; key text;
+BEGIN
+  PERFORM compute_order_cut_lock();
+  IF NOT EXISTS(SELECT 1 FROM entity_compute_order_cuts) THEN RETURN NEW; END IF;
+  IF TG_TABLE_NAME='state_compute_scheduling' THEN
+    IF TG_OP='INSERT' THEN held:=NEW;ELSE held:=OLD;END IF;
+  ELSE
+    key:=coalesce(to_jsonb(NEW)->>'computation',to_jsonb(NEW)->>'question');
+    SELECT * INTO held FROM state_compute_scheduling WHERE id=key FOR UPDATE;
+    IF NOT FOUND THEN RETURN NEW; END IF;
+  END IF;
+  cancelled:=compute_order_cancelled(held.id,held.task_id,coalesce(held.zone,factory_default_zone(held.producer)),
+    coalesce(held.zone_position,held.task_id),held.state);
+  IF cancelled IS NOT NULL THEN
+    INSERT INTO record_compute_order_cancellations VALUES(held.id,held.task_id,cancelled,
+      to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')) ON CONFLICT DO NOTHING;
+    IF TG_TABLE_NAME='state_compute_scheduling' THEN
+      IF TG_OP='UPDATE' AND NEW.task_id<>OLD.task_id AND EXISTS(SELECT 1 FROM entity_compute_tasks t
+        WHERE t.id=NEW.task_id AND t.computation=OLD.id AND t.reason='new_user_request') THEN RETURN NEW; END IF;
+      RETURN NULL;
+    END IF;
+  ELSE
+    FOR c IN SELECT cut.* FROM entity_compute_order_cuts cut WHERE NOT EXISTS(
+      SELECT 1 FROM record_compute_order_cut_activations a WHERE a.cut_id=cut.id)
+      AND held.task_id<=cut.task_cutoff
+      AND (coalesce(held.zone,factory_default_zone(held.producer)),coalesce(held.zone_position,held.task_id),held.id)
+        >(cut.keep_zone,cut.keep_position,cut.keep_id) LOOP
+      IF TG_TABLE_NAME<>'state_compute_scheduling' THEN
+        INSERT INTO relation_compute_order_cut_protection VALUES(c.id,held.id,'issued') ON CONFLICT DO NOTHING;
+      ELSIF NEW.lease IS NOT NULL OR NEW.leased_at IS NOT NULL OR NEW.lease_prev IS NOT NULL OR NEW.result_id IS NOT NULL THEN
+        INSERT INTO relation_compute_order_cut_protection VALUES(c.id,held.id,'issued') ON CONFLICT DO NOTHING;
+      END IF;
+    END LOOP;
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS compute_order_write ON state_compute_scheduling;
+CREATE TRIGGER compute_order_write BEFORE INSERT OR UPDATE ON state_compute_scheduling FOR EACH ROW EXECUTE FUNCTION compute_order_write_guard();
+DROP TRIGGER IF EXISTS compute_order_answer ON record_candidate_answers;
+CREATE TRIGGER compute_order_answer BEFORE INSERT ON record_candidate_answers FOR EACH ROW EXECUTE FUNCTION compute_order_write_guard();
+DROP TRIGGER IF EXISTS compute_order_result ON entity_compute_results;
+CREATE TRIGGER compute_order_result BEFORE INSERT ON entity_compute_results FOR EACH ROW EXECUTE FUNCTION compute_order_write_guard();
+
+REVOKE ALL ON FUNCTION compute_order_cut_stage(jsonb),compute_order_cut_protect(text,jsonb),compute_order_cut_activate(text,bigint,text) FROM PUBLIC;
+
+CREATE OR REPLACE FUNCTION compute_order_source_cancelled(text,text,text,text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT EXISTS(SELECT 1 FROM relation_compute_task_sources p JOIN entity_compute_tasks t ON t.id=p.task_id
+    LEFT JOIN state_compute_scheduling q ON q.id=t.computation AND q.task_id=t.id
+    WHERE t.computation=$1 AND (p.producer,p.ref,p.trigger_id)=($2,$3,$4) AND
+      (EXISTS(SELECT 1 FROM record_compute_order_cancellations r WHERE r.question=t.computation AND r.task_id=t.id)
+        OR compute_order_cancelled(q.id,q.task_id,coalesce(q.zone,factory_default_zone(q.producer)),coalesce(q.zone_position,q.task_id),q.state) IS NOT NULL))
+$$;
+
+CREATE OR REPLACE FUNCTION compute_order_admission(text,jsonb,bigint,text) RETURNS bigint
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE c entity_compute_order_cuts%ROWTYPE; q state_compute_scheduling%ROWTYPE; cancelled boolean;
+BEGIN
+  SELECT * INTO c FROM compute_order_cut();
+  IF NOT FOUND THEN RETURN 1; END IF;
+  SELECT * INTO q FROM state_compute_scheduling WHERE id=$1;
+  cancelled:=FOUND AND compute_order_cancelled(q.id,q.task_id,coalesce(q.zone,factory_default_zone(q.producer)),
+    coalesce(q.zone_position,q.task_id),q.state) IS NOT NULL;
+  IF NOT cancelled AND q.id IS NOT NULL THEN RETURN 1; END IF;
+  IF EXISTS(SELECT 1 FROM jsonb_to_recordset($2) d(question text,producer text,ref text,trigger_id text,zone bigint,asked_at text)
+      WHERE d.question=$1 AND coalesce(d.zone,factory_default_zone(d.producer))<c.keep_zone
+        AND coalesce(d.asked_at,$4)>c.cut_at
+        AND NOT EXISTS(SELECT 1 FROM relation_compute_task_sources p JOIN entity_compute_tasks t ON t.id=p.task_id
+          WHERE t.computation=$1 AND (p.producer,p.ref,p.trigger_id)=(d.producer,d.ref,d.trigger_id))) THEN
+    RETURN CASE WHEN q.id IS NULL THEN 1 ELSE 2 END;
+  END IF;
+  IF cancelled OR ($3>=c.keep_zone AND EXISTS(
+    SELECT 1 FROM jsonb_to_recordset($2) d(question text,producer text,ref text,trigger_id text,asked_at text)
+      WHERE d.question=$1 AND (coalesce(d.asked_at,$4)<=c.cut_at OR EXISTS(
+        SELECT 1 FROM relation_compute_task_sources p JOIN entity_compute_tasks t ON t.id=p.task_id
+        WHERE t.computation=$1 AND (p.producer,p.ref,p.trigger_id)=(d.producer,d.ref,d.trigger_id))))) THEN RETURN 0; END IF;
+  RETURN 1;
+END $$;
+
+-- One base relation keeps ordinary lease updates and row locks on scheduling alone.
+CREATE OR REPLACE VIEW state_compute_work AS
+  SELECT s.id,s.verb,(SELECT d.request FROM entity_compute_specs d WHERE d.id=s.id) AS request,
+    s.state,s.due_at,s.waits,s.opened_at,s.lanes,s.lease,s.lease_until,s.leased_to,s.leased_at,
+    s.lease_prev,s.leased_to_prev,s.lease_prev_until,s.needs,
+    (SELECT r.canon FROM entity_compute_results r WHERE r.id=s.result_id) AS canon,
+    s.fact_engine,s.fact_at,s.odd,s.withdrawn_at,
+    COALESCE((SELECT p.witnesses FROM record_compute_result_proofs p WHERE p.result_id=s.result_id),'[]') AS witnesses,
+    s.producer,s.initiator,s.task_id,s.result_id,
+    coalesce(s.zone,factory_default_zone(s.producer)) AS zone,coalesce(s.zone_position,s.task_id) AS zone_position,s.required_capability,s.required_engine
+  FROM state_compute_scheduling s
+  WHERE (SELECT compute_order_cut_epoch()) IS NULL OR compute_order_cancelled(s.id,s.task_id,coalesce(s.zone,factory_default_zone(s.producer)),
+    coalesce(s.zone_position,s.task_id),s.state) IS NULL;
+
+-- Effective reads use indexed open ranges; the original view remains the writable relation.
+CREATE OR REPLACE VIEW state_compute_effective_work AS
+  SELECT w.* FROM state_compute_effective_open live JOIN state_compute_work w ON w.id=live.id
+  UNION ALL SELECT w.* FROM state_compute_work w WHERE w.state<'open'
+  UNION ALL SELECT w.* FROM state_compute_work w WHERE w.state>'open';
+
+CREATE OR REPLACE FUNCTION compute_order_cut_immutable() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+BEGIN
+  IF TG_TABLE_NAME='relation_compute_order_cut_protection' AND NOT EXISTS(
+    SELECT 1 FROM record_compute_order_cut_activations WHERE cut_id=CASE WHEN TG_OP='INSERT' THEN NEW.cut_id ELSE OLD.cut_id END) THEN RETURN NEW;END IF;
+  RAISE EXCEPTION 'activated order cancellation is immutable';
+END $$;
+DROP TRIGGER IF EXISTS order_cut_retained ON entity_compute_order_cuts;
+CREATE TRIGGER order_cut_retained BEFORE UPDATE OR DELETE ON entity_compute_order_cuts FOR EACH ROW EXECUTE FUNCTION compute_order_cut_immutable();
+DROP TRIGGER IF EXISTS order_cut_activation_retained ON record_compute_order_cut_activations;
+CREATE TRIGGER order_cut_activation_retained BEFORE UPDATE OR DELETE ON record_compute_order_cut_activations FOR EACH ROW EXECUTE FUNCTION compute_order_cut_immutable();
+DROP TRIGGER IF EXISTS order_cut_protection_retained ON relation_compute_order_cut_protection;
+CREATE TRIGGER order_cut_protection_retained BEFORE INSERT OR UPDATE OR DELETE ON relation_compute_order_cut_protection FOR EACH ROW EXECUTE FUNCTION compute_order_cut_immutable();

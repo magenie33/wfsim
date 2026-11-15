@@ -113,15 +113,69 @@ RETURNS SETOF state_compute_work LANGUAGE sql STABLE AS $$
 $$;
 
 -- Executable work is selected by zone, then its position within that zone.
+-- Each disjoint range applies eligibility, FIFO and its bound before the final merge.
+CREATE OR REPLACE FUNCTION factory_candidates(text,bigint,bigint,text,text,text,text,text,bigint,bigint,text,text,bigint,text,text,text,boolean)
+RETURNS SETOF state_compute_work LANGUAGE plpgsql SET jit=off AS $function$
+DECLARE pick text:=$pick$
+  WITH cut AS MATERIALIZED(SELECT * FROM compute_order_cut()),
+    eligible AS NOT MATERIALIZED(SELECT q.* FROM /* source */ q
+      WHERE q.state IN(SELECT jsonb_array_elements_text($11::jsonb))
+        AND ($2=0 OR q.state<>'open' OR q.due_at<$1)
+        AND ($12 IS NULL OR q.waits=0 AND q.verb IN(SELECT jsonb_array_elements_text($12::jsonb)))
+        AND ($14 IS NULL OR coalesce(q.request::jsonb#>>'{record,weapon}',q.request::jsonb->>'weapon') NOT IN(SELECT jsonb_array_elements_text($14::jsonb)))
+        AND ($16 IS NULL OR q.producer=$16)
+        AND ($15 IS NULL OR EXISTS(SELECT 1 FROM (SELECT a.engine,a.void,a.owner,a.net FROM state_compute_candidate_answers a WHERE a.question=q.id OFFSET 0) a
+          WHERE a.engine=$15 AND a.void=0 AND a.owner<>$6 AND ($7='' OR a.net<>$7))))
+  SELECT chosen.* FROM (
+    (SELECT candidate.* FROM LATERAL(SELECT q.* FROM state_compute_scheduling guard CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q
+      WHERE /* state */ AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9) AND ($12 IS NULL OR guard.waits=0) AND NOT EXISTS(SELECT 1 FROM cut) ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */) candidate)
+    UNION ALL
+    (SELECT candidate.* FROM LATERAL(SELECT q.* FROM state_compute_scheduling guard CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q
+      WHERE EXISTS(SELECT 1 FROM cut) AND guard.state='open' AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9) AND ($12 IS NULL OR guard.waits=0)
+        AND (coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id)<=(SELECT keep_zone,keep_position,keep_id FROM cut)
+      ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */) candidate)
+    UNION ALL
+    (SELECT candidate.* FROM LATERAL(SELECT q.* FROM entity_compute_tasks t CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=t.computation OFFSET 0) q
+      JOIN state_compute_scheduling guard ON guard.id=q.id
+      WHERE t.id>(SELECT task_cutoff FROM cut) AND q.task_id=t.id AND q.state='open'
+        AND (q.zone,q.zone_position,q.id)>(SELECT keep_zone,keep_position,keep_id FROM cut)
+      ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */) candidate)
+    UNION ALL
+    (SELECT candidate.* FROM LATERAL(SELECT q.* FROM compute_order_cut_protections() p CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=p.question OFFSET 0) q
+      JOIN state_compute_scheduling guard ON guard.id=q.id
+      WHERE p.cut_id=(SELECT id FROM cut) AND q.task_id<=(SELECT task_cutoff FROM cut) AND q.state='open'
+        AND (q.zone,q.zone_position,q.id)>(SELECT keep_zone,keep_position,keep_id FROM cut)
+      ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */) candidate)
+    UNION ALL
+    (SELECT candidate.* FROM LATERAL(SELECT q.* FROM state_compute_scheduling guard CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q
+      WHERE $2=1 AND EXISTS(SELECT 1 FROM cut) AND guard.state<>'open' AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9)
+      ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */) candidate)
+  ) chosen ORDER BY chosen.zone,chosen.zone_position,chosen.id LIMIT $13
+$pick$;
+BEGIN
+  IF $13 IS NULL OR $13<1 OR $13>100000 THEN RAISE EXCEPTION 'invalid candidate bound';END IF;
+  IF compute_order_cut_epoch() IS NULL THEN
+    pick:=split_part(pick,'  SELECT chosen.* FROM (',1)||
+      'SELECT q.* FROM state_compute_scheduling guard CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q WHERE /* state */ AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9) AND ($12 IS NULL OR guard.waits=0) ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */';
+  END IF;
+  pick:=replace(pick,'/* source */',CASE WHEN $15 IS NULL THEN
+    'factory_eligible($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)' ELSE
+    '(SELECT e.* FROM state_task_answer_heads h CROSS JOIN LATERAL(SELECT e.* FROM factory_eligible($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) e WHERE e.id=h.question OFFSET 0) e WHERE h.engine=$15)' END);
+  IF $15 IS NOT NULL THEN
+    pick:=replace(pick,'FROM state_compute_scheduling guard CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q',
+      'FROM eligible q JOIN state_compute_scheduling guard ON guard.id=q.id');
+  END IF;
+  pick:=replace(pick,'/* state */',CASE WHEN $2=0 THEN 'guard.state=''open''' ELSE 'guard.state IN(SELECT jsonb_array_elements_text($11::jsonb))' END);
+  pick:=replace(pick,'/* lock */',CASE WHEN $17 THEN 'FOR UPDATE OF guard SKIP LOCKED' ELSE '' END);
+  RETURN QUERY EXECUTE pick USING $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16;
+END $function$;
+
 CREATE OR REPLACE FUNCTION factory_head(text, bigint, bigint, text, text, text, text, text, bigint, bigint, text, text)
 RETURNS TABLE (id text, verb text, request text, state text, due_at text, waits bigint, producer text)
 LANGUAGE sql STABLE AS $$
   SELECT q.id,q.verb,q.request,q.state,q.due_at,q.waits,q.producer
-    FROM factory_eligible($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) q
-    WHERE ($12 IS NULL OR (q.waits=0 AND q.verb IN(SELECT jsonb_array_elements_text($12::jsonb))))
-      AND (($2=0 AND q.state='open') OR ($2=1 AND
-        ((q.state='open' AND q.due_at<$1) OR q.state IN(SELECT jsonb_array_elements_text($11::jsonb)))))
-    ORDER BY q.zone,q.zone_position,q.id LIMIT 1
+    FROM factory_candidates($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+      CASE WHEN $2=0 THEN '["open"]' ELSE ('["open"]'::jsonb||coalesce($11::jsonb,'[]'::jsonb))::text END,$12,1,NULL,NULL,NULL,false) q
 $$;
 CREATE OR REPLACE FUNCTION factory_head(text, bigint, bigint, text, text, text, text, text, bigint, bigint, text)
 RETURNS TABLE (id text, verb text, request text, state text, due_at text, waits bigint, producer text)
@@ -142,26 +196,7 @@ $$;
 -- both paths retain zone order and FIFO among their eligible candidates.
 CREATE OR REPLACE FUNCTION factory_take(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint)
 RETURNS SETOF text LANGUAGE sql AS $$
-  WITH heads AS MATERIALIZED (SELECT question FROM state_task_answer_heads WHERE $12 IS NOT NULL AND engine=$12)
-  SELECT normal.id FROM (SELECT q.id FROM factory_eligible($1,0,$2,$3,$4,$5,$6,$7,$8,$9) e
-    JOIN state_compute_work q ON q.id=e.id
-    WHERE $12 IS NULL AND e.state='open' AND e.waits=0 AND e.verb IN(SELECT jsonb_array_elements_text($10::jsonb))
-      AND ($11 IS NULL OR coalesce(e.request::jsonb #>> '{record,weapon}',e.request::jsonb->>'weapon') NOT IN(SELECT jsonb_array_elements_text($11::jsonb)))
-      AND ($13 IS NULL OR e.producer=$13)
-      AND q.state='open' AND q.waits=0 AND factory_takeable(q.lease_until,q.leased_at,$1,$8)
-    ORDER BY e.zone,e.zone_position,e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED) normal
-  UNION ALL
-  SELECT joined.id FROM (SELECT q.id FROM heads h CROSS JOIN LATERAL (
-      SELECT e.* FROM factory_eligible($1,0,$2,$3,$4,$5,$6,$7,$8,$9) e WHERE e.id=h.question OFFSET 0) e
-    JOIN state_compute_work q ON q.id=e.id
-    WHERE $12 IS NOT NULL AND e.state='open' AND e.waits=0 AND e.verb IN(SELECT jsonb_array_elements_text($10::jsonb))
-      AND ($11 IS NULL OR coalesce(e.request::jsonb #>> '{record,weapon}',e.request::jsonb->>'weapon') NOT IN(SELECT jsonb_array_elements_text($11::jsonb)))
-      AND ($13 IS NULL OR e.producer=$13)
-      AND EXISTS(SELECT 1 FROM (SELECT s.engine,s.void,s.owner,s.net FROM state_compute_candidate_answers s
-          WHERE s.question=e.id OFFSET 0) s
-        WHERE s.engine=$12 AND s.void=0 AND s.owner<>$5 AND ($6='' OR s.net<>$6))
-      AND q.state='open' AND q.waits=0 AND factory_takeable(q.lease_until,q.leased_at,$1,$8)
-    ORDER BY e.zone,e.zone_position,e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED) joined
+  SELECT q.id FROM factory_candidates($1,0,$2,$3,$4,$5,$6,$7,$8,$9,'["open"]',$10,$14,$11,$12,$13,true) q
 $$;
 
 -- A consumer transaction may apply only the fact and demand it read.
@@ -267,7 +302,7 @@ LANGUAGE sql STABLE AS $$
   a AS (SELECT count(*) AS n FROM factory_asking($3, $1) WHERE NOT EXISTS (SELECT 1 FROM s))
   SELECT s.open, s.asking FROM s
   UNION ALL
-  SELECT (SELECT count(*) FROM (SELECT 1 FROM state_compute_work WHERE state = 'open' AND waits = 0
+  SELECT (SELECT count(*) FROM (SELECT 1 FROM state_compute_effective_open WHERE waits = 0
       AND (lease_until IS NULL OR lease_until < $1)
       LIMIT GREATEST(1, (SELECT n FROM a)) * $4) o), (SELECT n FROM a)
   WHERE NOT EXISTS (SELECT 1 FROM s)
@@ -439,7 +474,7 @@ REVOKE ALL ON FUNCTION factory_calibration_page(text,text,text,bigint,bigint,boo
 
 -- A BOARD ROW STILL OWED (worker/board_tasks.js): `queue` holds it.
 CREATE OR REPLACE FUNCTION board_owed(text, text, text) RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT EXISTS (SELECT 1 FROM state_board_pending_work WHERE build_id = $1 AND ruler = $2 AND mode = $3)
+  SELECT EXISTS (SELECT 1 FROM state_board_effective_pending_work WHERE build_id = $1 AND ruler = $2 AND mode = $3)
 $$;
 
 -- Inventory exposes task identity and lifecycle, never requests or witnesses.
@@ -448,12 +483,12 @@ CREATE OR REPLACE FUNCTION factory_inventory_rows(text, text[])
 RETURNS TABLE(id text, verb text, state text, fact_engine text, kind text, served_answered boolean)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
   WITH other_live AS MATERIALIZED (
-    SELECT d.question,min(d.producer) kind FROM relation_task_consumers d
+    SELECT d.question,min(d.producer) kind FROM state_compute_effective_work current JOIN relation_task_consumers d ON d.question=current.id
     WHERE d.state='live' AND NOT (d.producer=ANY($2)) GROUP BY d.question)
   SELECT q.id,q.verb,q.state,q.fact_engine,l.kind,
     CASE WHEN q.state IN ('disputed','nondeterministic')
       THEN EXISTS(SELECT 1 FROM record_candidate_answers a WHERE a.question=q.id AND a.engine=$1) ELSE false END
-  FROM state_compute_work q LEFT JOIN other_live l ON l.question=q.id
+  FROM state_compute_effective_work q LEFT JOIN other_live l ON l.question=q.id
   WHERE q.state<>'withdrawn' AND ((q.state IN ('fact','spot') AND q.fact_engine=$1)
     OR q.state IN ('disputed','nondeterministic') OR l.question IS NOT NULL)
   UNION ALL SELECT r.question,'','refused',r.engine,NULL,false FROM record_refusal_withdrawals r

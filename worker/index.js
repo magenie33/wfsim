@@ -321,7 +321,7 @@ async function pending(env) {
     // BY RULER, because the page shows one at a time and the three differ
     // sixfold in what they have left.
     const q = await env.LIBRARY.prepare(
-      "SELECT ruler, COUNT(*) AS n FROM state_board_pending_work GROUP BY ruler",
+      "SELECT ruler, COUNT(*) AS n FROM state_board_effective_pending_work GROUP BY ruler",
     ).all();
     owed = {};
     for (const row of (q && q.results) || []) owed[String(row.ruler)] = Number(row.n);

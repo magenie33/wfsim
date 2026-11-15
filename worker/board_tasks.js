@@ -84,7 +84,7 @@ const boardProducer = {
          WHERE NOT EXISTS (SELECT 1 FROM entity_measurement_reviews retired WHERE retired.id=state_board_measurement_selection.review_id AND retired.invalidated_at IS NOT NULL AND retired.state <> 'succeeded')
            AND state_board_measurement_selection.finished_at <= excluded.finished_at
            AND (state_board_measurement_selection.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM entity_measurement_reviews r JOIN state_compute_work proof ON proof.id = r.question
-           WHERE r.id = state_board_measurement_selection.review_id AND (r.task_id=?11::bigint OR r.completed_at>=?10::text) AND ?9::text IS NOT NULL)) AND EXISTS (SELECT 1 FROM state_board_pending_work q WHERE q.build_id = state_board_measurement_selection.identity AND q.ruler = state_board_measurement_selection.ruler AND q.mode = state_board_measurement_selection.mode)`)
+           WHERE r.id = state_board_measurement_selection.review_id AND (r.task_id=?11::bigint OR r.completed_at>=?10::text) AND ?9::text IS NOT NULL)) AND EXISTS (SELECT 1 FROM state_board_effective_pending_work q WHERE q.build_id = state_board_measurement_selection.identity AND q.ruler = state_board_measurement_selection.ruler AND q.mode = state_board_measurement_selection.mode)`)
         .bind(identity, ruler, mode, `verified:${fact.engine}`, fact.result.score, fact.result.metric, at, at, fact.engine, fact.at || at, fact.task_id || null),
       ...scoreWitnessWrites(db, identity, ruler, mode, at, fact),
       db.prepare("DELETE FROM state_board_pending_work WHERE build_id = ? AND ruler = ? AND mode = ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=state_board_pending_work.build_id AND f.ruler=state_board_pending_work.ruler AND f.mode=state_board_pending_work.mode AND f.retired_at IS NOT NULL)").bind(identity, ruler, mode),
@@ -120,7 +120,7 @@ export const BOARD_KINDS_SQL = `(${BOARD_KINDS.map((k) => `'${k}'`).join(", ")})
 export async function cellsFilling(env, now = Date.now(), since_ms = 6 * 3_600_000) {
   const db = env.LIBRARY;
   const { results: owed } = await db.prepare(
-    `SELECT ruler, count(*) AS owed FROM state_board_pending_work WHERE ruler LIKE '%!_!_%' ESCAPE '!' GROUP BY ruler`).all();
+    `SELECT ruler, count(*) AS owed FROM state_board_effective_pending_work WHERE ruler LIKE '%!_!_%' ESCAPE '!' GROUP BY ruler`).all();
   if (!owed.length) return [];
   const { results: measured } = await db.prepare(
     `SELECT ruler, count(*) AS measured, sum(CASE WHEN finished_at > ?1::text THEN 1 ELSE 0 END) AS recent,
@@ -237,7 +237,7 @@ async function ask(request, env) {
   // reads only facts formed since its cursor, so asking again is what tells it.
   if (b.backfill === true) {
     const after = Array.isArray(b.after) && b.after.length === 3 && b.after.every((x) => typeof x === "string") ? b.after : ["", "", ""];
-    const chunk = `WITH k AS (SELECT DISTINCT build_id, ruler, mode FROM state_board_pending_work
+    const chunk = `WITH k AS (SELECT DISTINCT build_id, ruler, mode FROM state_board_effective_pending_work
           WHERE (build_id, ruler, mode) > (?1::text, ?2::text, ?3::text) ORDER BY build_id, ruler, mode LIMIT ?4::bigint)`;
     const [read, { results }] = await db.batch([
       db.prepare(`${chunk} SELECT count(*) AS n, (SELECT jsonb_build_array(build_id, ruler, mode)::text FROM k
@@ -247,7 +247,7 @@ async function ask(request, env) {
                             AND d.producer IN ${BOARD_KINDS_SQL} AND d.state = 'live' AND x.state NOT IN ('fact', 'spot')))
         SELECT q.build_id AS identity, q.ruler, q.mode, min(q.batch) AS batch, (array_agg(q.initiator ORDER BY q.batch))[1] AS initiator, bu.record, bu.at,
               (SELECT s.finished_at FROM state_board_measurement_selection s WHERE s.identity = q.build_id AND s.ruler = q.ruler AND s.mode = q.mode) AS measured
-         FROM owed o JOIN state_board_pending_work q ON q.build_id = o.build_id AND q.ruler = o.ruler AND q.mode = o.mode
+         FROM owed o JOIN state_board_effective_pending_work q ON q.build_id = o.build_id AND q.ruler = o.ruler AND q.mode = o.mode
          JOIN entity_compute_batches t ON t.id = q.batch JOIN entity_weapon_builds bu ON bu.id = q.build_id
         GROUP BY q.build_id, q.ruler, q.mode, bu.record, bu.at`).bind(...after, BACKFILL_CHUNK),
     ]);
@@ -264,7 +264,7 @@ async function ask(request, env) {
     .bind(JSON.stringify([...new Set(rows.map((r) => r.identity))])).all();
   const buildOf = new Map(builds.map((x) => [x.id, x]));
   // WHO ASKED, as the queue row states it: the runner names the rows, never who asked them.
-  const { results: named } = await db.prepare(`SELECT q.build_id, q.ruler, q.mode, q.initiator FROM state_board_pending_work q JOIN jsonb_array_elements((?2::text)::jsonb) j
+  const { results: named } = await db.prepare(`SELECT q.build_id, q.ruler, q.mode, q.initiator FROM state_board_effective_pending_work q JOIN jsonb_array_elements((?2::text)::jsonb) j
         ON q.build_id = j ->> 'identity' AND q.ruler = j ->> 'ruler' AND q.mode = j ->> 'mode' WHERE q.batch = ?1::text AND q.initiator IS NOT NULL`)
     .bind(b.batch, JSON.stringify(rows.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })))).all();
   const whoOf = new Map(named.map((x) => [calculationId(x.build_id, x.ruler, x.mode), x.initiator]));
@@ -300,7 +300,7 @@ async function adopt(request, env) {
   const db = env.LIBRARY;
   const { engine } = await servedRelease(env);
   const { results } = await db.prepare(
-    `SELECT o.identity,o.ruler,o.mode,o.record,o.at,o.priority, (SELECT min(q.batch) FROM state_board_pending_work q WHERE q.build_id = o.identity AND q.ruler = o.ruler AND q.mode = o.mode) AS batch
+    `SELECT o.identity,o.ruler,o.mode,o.record,o.at,o.priority, (SELECT min(q.batch) FROM state_board_effective_pending_work q WHERE q.build_id = o.identity AND q.ruler = o.ruler AND q.mode = o.mode) AS batch
        FROM entity_compute_orders o WHERE o.state IN ${LIVE} AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.ref = o.identity || '|' || o.ruler || '|' || o.mode
          AND d.producer IN ${BOARD_KINDS_SQL}) LIMIT ?`).bind(ADOPT_BATCH).all();
   for (const o of results) {
@@ -318,7 +318,7 @@ async function adopt(request, env) {
   const left = await db.prepare(
     `SELECT count(*) AS n FROM entity_compute_orders o WHERE o.state IN ${LIVE} AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d
        WHERE d.ref = o.identity || '|' || o.ruler || '|' || o.mode AND d.producer IN ${BOARD_KINDS_SQL})
-       AND EXISTS (SELECT 1 FROM state_board_pending_work q WHERE q.build_id = o.identity AND q.ruler = o.ruler AND q.mode = o.mode)`).first();
+       AND EXISTS (SELECT 1 FROM state_board_effective_pending_work q WHERE q.build_id = o.identity AND q.ruler = o.ruler AND q.mode = o.mode)`).first();
   return json({ ok: true, adopted: results.length, left: left.n });
 }
 

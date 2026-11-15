@@ -22,12 +22,12 @@ import { facts } from "./factory.js";
 export async function snapshotTick(env, { engine = null, release = null, commit = "" } = {}, now = Date.now()) {
   const db = env.LIBRARY, at = iso(now), d = await dialsOf(env, now);
   const n = await db.prepare(`WITH a AS (SELECT count(*) AS n FROM ${askingIds(3, 1)} x) SELECT
-      (SELECT count(*) FROM (SELECT 1 FROM state_compute_work WHERE state = 'open' AND waits = 0
+      (SELECT count(*) FROM (SELECT 1 FROM state_compute_effective_work WHERE state = 'open' AND waits = 0
          AND (lease_until IS NULL OR lease_until < ?1::text) LIMIT GREATEST(1, (SELECT n FROM a)) * ?2::bigint) o) AS open,
-      (SELECT count(*) FROM state_compute_work WHERE state = 'open' AND waits > 0) AS urgent,
+      (SELECT count(*) FROM state_compute_effective_work WHERE state = 'open' AND waits > 0) AS urgent,
       (SELECT n FROM a) AS asking,
       (SELECT count(*) FROM entity_compute_devices WHERE banned = 0 AND last_at >= ?4::text) AS computing,
-      (SELECT count(*) FROM state_board_pending_work) AS queue_rows,
+      (SELECT count(*) FROM state_board_effective_pending_work) AS queue_rows,
       (SELECT count(*) FROM state_pending_verifications) AS settle_queue_rows`)
     .bind(at, Math.max(d.pack8_max, d.pack_max), iso(now - 2 * d.asked_every_ms), iso(now - COMPUTING_MS)).first();
   const row = { at, engine, release, open: n.open, urgent: n.urgent, asking: n.asking, computing: n.computing,
@@ -56,8 +56,8 @@ export function signalBody(snap, d, { protocol, protocols }) {
 /// ask every couple of seconds so a wave from nothing is signalled at once.
 export async function workWaiting(db, now = Date.now()) {
   const r = await db.prepare(`SELECT
-      EXISTS (SELECT 1 FROM state_compute_work WHERE state = 'open' AND waits = 0 AND (lease_until IS NULL OR lease_until < ?1::text)) AS open,
-      EXISTS (SELECT 1 FROM state_compute_work WHERE state = 'open' AND waits > 0) AS urgent`).bind(iso(now)).first();
+      EXISTS (SELECT 1 FROM state_compute_effective_work WHERE state = 'open' AND waits = 0 AND (lease_until IS NULL OR lease_until < ?1::text)) AS open,
+      EXISTS (SELECT 1 FROM state_compute_effective_work WHERE state = 'open' AND waits > 0) AS urgent`).bind(iso(now)).first();
   return { open: !!r.open, urgent: !!r.urgent };
 }
 
