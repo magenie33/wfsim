@@ -198,6 +198,23 @@ for (const path of ['Cargo.toml', 'Cargo.lock', 'scripts/ci_rust.mjs', 'tests/fi
   'scripts/check_future.mjs', '.github/workflows/unknown.yml']) assert(classify([path]).deep, path);
 for (const paths of [[], ['optimizer/src/quick.rs'], ['webapi/src/optimize.rs'], ['unknown/file']]) assert(classify(paths).deep);
 assert.equal(classify(['desktop/examples/updatekit.rs']).deep, false, 'independent shell packaging cannot change search enumeration');
+const readyFeatureTools = ['scripts/import_kitgun_status.py', 'tests/fixtures/client/kitgun-status-2026-10-28.json',
+  'tests/golden/M132-vermisplicer-secondary-status.json', 'docs/measurements/M132-vermisplicer-secondary-status.md',
+  'scripts/engine_compare.py', 'scripts/check_engine_compare.py', 'tests/fixtures/engine-compare/calls.json'];
+for (const path of readyFeatureTools) {
+  assert.deepEqual(classify([path]).jobs, PRODUCT_JOBS, path + ' retains every correctness job');
+  assert.equal(classify([path]).deep, false, path + ' cannot change search enumeration');
+  for (const search of ['optimizer/src/quick.rs', 'webapi/src/optimize.rs', 'scripts/unknown_tool.py'])
+    assert.equal(classify([path, search]).deep, true, path + ' mixed with ' + search);
+  assert.equal(classify([path], true).deep, true, path + ' forced deep');
+  assert.equal(classify([path], false, false).deep, true, path + ' without verified baseline');
+}
+assert.deepEqual(classify(readyFeatureTools).jobs, PRODUCT_JOBS);
+assert.equal(classify(readyFeatureTools).deep, false);
+for (const path of ['tests/fixtures/engine-compare/new-calls.json', 'scripts/new_engine_compare.py',
+  'tests/fixtures/client/kitgun-status-other.json', 'tests/golden/M133-other.json', 'docs/measurements/M133-other.md'])
+  assert.equal(classify([path]).deep, true, path + ' is outside the exact registered paths');
+assert.match(readFileSync('.github/workflows/ci.yml', 'utf8'), /- run: python3 scripts\/check_engine_compare\.py/);
 assert(classify(['desktop/examples/updatekit.rs', 'optimizer/src/quick.rs']).deep);
 assert(classify(['mcp/index.js'], true).deep);
 for (const path of ['scripts/check_kitgun_slot.mjs', 'scripts/check_riven_request.mjs']) {
