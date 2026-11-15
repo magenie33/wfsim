@@ -42,7 +42,23 @@ const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbo
   'scripts/check_ship_workers.py', 'scripts/check_ship_bot_live.py',
   'scripts/payload_manifest.py', 'scripts/release_desktop.py', 'scripts/pg/test_db.mjs', 'scripts/intake_batches.mjs',
   'scripts/import_inverse_speed.py', 'tests/fixtures/client/inverse-speed-2026-10-28.json',
-  'deploy/wfsim-task-archive.service', 'deploy/wfsim-task-archive.timer'];
+  'deploy/wfsim-task-archive.service', 'deploy/wfsim-task-archive.timer', 'deploy/wfsim-live.service',
+  'scripts/adopt_prepared_sources.mjs', 'scripts/audit_board_projection.mjs',
+  'scripts/audit_prepared_members.mjs', 'scripts/audit_prepared_work.mjs',
+  'scripts/board_heads.mjs', 'scripts/board_meta.py', 'scripts/board_pipeline.mjs',
+  'scripts/board_projection_state.mjs', 'scripts/board_storage.mjs',
+  'scripts/check_official_claims.mjs', 'scripts/check_pipeline_clock.mjs', 'scripts/check_task_pipeline.mjs',
+  'scripts/classify_compute_inventory.mjs', 'scripts/incremental_inventory.mjs',
+  'scripts/inventory_board_pipeline.mjs', 'scripts/inventory_disk_budget.mjs', 'scripts/inventory_operator.mjs',
+  'scripts/inventory_projection.mjs', 'scripts/inventory_publication.mjs', 'scripts/inventory_publication_io.mjs',
+  'scripts/inventory_relations.mjs', 'scripts/json_array_stream.mjs', 'scripts/live_intake.mjs',
+  'scripts/live_mailbox.mjs', 'scripts/migrate_board_audit.mjs', 'scripts/offline_capacity_guard.mjs',
+  'scripts/pipeline_clock.mjs', 'scripts/prepare_board_cut.mjs', 'scripts/prepared_board_consumer.mjs',
+  'scripts/prepared_board_inputs.mjs', 'scripts/prepared_board_projection.mjs', 'scripts/prepared_board_reader.mjs',
+  'scripts/prepared_read_indexes.mjs', 'scripts/prepared_work_consumer.mjs', 'scripts/prepared_work_inventory.mjs',
+  'scripts/replay_board_projection.mjs', 'scripts/replay_split_board.mjs', 'scripts/ship_factoryd.py',
+  'scripts/source_capture_gc.mjs', 'scripts/split_board_pipeline.mjs', 'scripts/sqlite_schema.mjs',
+  'scripts/sqlite_transaction_recovery.mjs', 'scripts/task_pipeline.mjs', 'scripts/task_schema.mjs'];
 
 export function checkJobPaths(workflow) {
   const sections = workflow.split(/^  ([\w-]+):[ \t]*$/m);

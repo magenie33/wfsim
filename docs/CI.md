@@ -92,7 +92,10 @@ gh workflow run ci.yml --ref <branch> -f full=true
 `full=true` runs every job, including the full-catalog search fixtures, and
 disables result reuse. A weekly scheduled run does the same on main. Solver
 enumeration, scheduling and scoring changes also require those fixtures on
-ordinary dispatches. Unknown inputs fail closed to this coverage. The exact CI
+ordinary dispatches. Declared board projection, ingestion and task-delivery tools
+retain full ordinary correctness coverage without the solver's full-catalog
+fixtures. Imported task and claim checks run through their permanent parent
+checks. Unknown inputs fail closed to this coverage. The exact CI
 wiring and non-search tooling paths declared in `ci_policy.mjs` retain full
 ordinary validation without adding full-catalog search fixtures. Those tools
 cover topbar lookup and library intake/publication. Search test execution

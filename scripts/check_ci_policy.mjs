@@ -28,6 +28,29 @@ for (const path of inventoryControlInputs) {
 }
 assert.equal(classify([...inventoryControlInputs, 'optimizer/src/search.rs']).deep, true);
 assert.equal(classify(['scripts/unregistered_inventory.mjs']).deep, true);
+const boardPipelineInputs = ['deploy/wfsim-live.service', 'scripts/prepared_board_inputs.mjs',
+  'scripts/prepared_work_inventory.mjs', 'scripts/audit_prepared_members.mjs', 'scripts/source_capture_gc.mjs',
+  'scripts/sqlite_transaction_recovery.mjs', 'scripts/check_task_pipeline.mjs',
+  'scripts/check_pipeline_clock.mjs', 'scripts/check_official_claims.mjs'];
+for (const path of boardPipelineInputs) {
+  assert.deepEqual(classify([path]).jobs, PRODUCT_JOBS, path);
+  assert.equal(classify([path]).deep, false, path + ' retains full ordinary CI without unrelated catalog search');
+}
+assert.equal(classify([...boardPipelineInputs, 'optimizer/src/search.rs']).deep, true);
+assert.equal(classify(['scripts/unregistered_board_pipeline.mjs']).deep, true);
+assert.equal(classify(boardPipelineInputs, false, false).deep, true);
+const boardWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8');
+for (const [parent, helper, calls] of [
+  ['scripts/check_task_modules.mjs', 'check_task_pipeline.mjs', ['await taskPipelineCases(']],
+  ['scripts/check_task_modules.mjs', 'check_pipeline_clock.mjs', ['await pipelineClockCases(']],
+  ['scripts/check_tasks.mjs', 'check_official_claims.mjs',
+    ['[officialSourceIndexCases,officialClaimGuardCases]', 'await run(db)']],
+]) {
+  assert(checkJobPaths(boardWorkflow).has(parent), parent + ' has a permanent CI owner');
+  const source = readFileSync(parent, 'utf8');
+  assert(source.includes(helper), parent + ' imports ' + helper);
+  for (const call of calls) assert(source.includes(call), parent + ' runs ' + call);
+}
 const largePlan = classify(Array.from({ length: 4096 }, (_, i) =>
   `data/weapons/melee/${'weapon_'.repeat(10)}${i}.yaml`));
 const { reasons: largeReasons, ...executionPlan } = largePlan;
