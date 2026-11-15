@@ -60,6 +60,8 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     const db = env.LIBRARY;
     const q = await db.prepare("SELECT * FROM state_compute_work WHERE id = ?").bind(question).first();
     if (!q) return null;
+    if (task_id === undefined && await db.prepare("SELECT 1 FROM record_compute_task_reissues WHERE computation=? LIMIT 1")
+      .bind(question).first()) return null;
     if (task_id !== undefined) {
       if (q.task_id !== task_id) return null;
       const canonical = verbs[q.verb].canon(a.result, a.work);

@@ -92,8 +92,8 @@ const ENGINE_ID = /^[A-Za-z0-9._-]{1,40}$/;
 
 /// THE OFFICIAL WITNESS'S DOOR — worker/tasks.js `claim`, `answerOfficial`:
 ///   POST /api/tasks/official/claim    { witness, engine, states?, producers?, max, lease_ms? } → { tasks }
-///   POST /api/tasks/official/answer   { witness, engine, producers, answers: [{ ref, result, work | null }] } → { states }
-///   POST /api/tasks/official/release  { witness } → {}
+///   POST /api/tasks/official/answer   { witness, engine, producers, answers: [{ ref, question, task_id, lease, result, work | null }] } → { states }
+///   POST /api/tasks/official/release  { witness, claims: [{ question, task_id, lease }] } → {}
 /// A witness is `official:<name>`, one per run; its answers are facts alone.
 export async function officialRoute(request, env, path) {
   if (!path.startsWith("/api/tasks/official/")) return null;
@@ -105,7 +105,14 @@ export async function officialRoute(request, env, path) {
   const w = { device: b.witness, owner: b.witness, official: true, capabilities: Array.isArray(b.capabilities) ? b.capabilities.filter(c=>typeof c==='string') : [] };
   const db = env.LIBRARY;
   if (path === "/api/tasks/official/release") {
-    await db.prepare(`UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder("leased_to = ?")}`).bind(b.witness).run();
+    if (!Array.isArray(b.claims) || b.claims.length>5000 || b.claims.some(c=>!c || typeof c.question!=="string"
+        || !Number.isSafeInteger(c.task_id) || c.task_id<=0 || typeof c.lease!=="string" || !c.lease))
+      return json({ok:false,error:"captured claims required"},400);
+    if(b.claims.length) await db.prepare(`UPDATE state_compute_work SET lease=NULL,lease_until=NULL,leased_to=NULL
+      WHERE ${inIdOrder(`leased_to=?1::text AND EXISTS(SELECT 1 FROM jsonb_to_recordset((?2::text)::jsonb)
+        c(question text,task_id bigint,lease text) WHERE c.question=state_compute_work.id
+          AND c.task_id=state_compute_work.task_id AND c.lease=state_compute_work.lease)`)}`)
+      .bind(b.witness,JSON.stringify(b.claims)).run();
     return json({ ok: true });
   }
   if (path === "/api/tasks/official/report") return report(db, b);
@@ -123,16 +130,15 @@ export async function officialRoute(request, env, path) {
     const states = [];
     for (const a of answers) {
       // THE DEMAND IT ANSWERS, by its ref among the named producers — a live one first.
-      const captured = a && Object.hasOwn(a, "task_id");
-      if (captured && (!Number.isSafeInteger(a.task_id) || a.task_id <= 0 || typeof a.question !== "string"
-          || typeof a.lease !== "string" || !a.lease)) { states.push(null); continue; }
+      if (!a || !Number.isSafeInteger(a.task_id) || a.task_id <= 0 || typeof a.question !== "string"
+          || typeof a.lease !== "string" || !a.lease) { states.push(null); continue; }
       const d = a && typeof a.ref === "string" && await db.prepare(`SELECT question FROM relation_task_consumers WHERE ref = ?1::text AND producer IN (SELECT value FROM jsonb_array_elements_text((?2::text)::jsonb))
           AND (?3::text IS NULL OR question=?3::text)
-          ORDER BY state = 'live' DESC, asked_at DESC LIMIT 1`).bind(a.ref, producers, captured ? a.question : null).first();
+          ORDER BY state = 'live' DESC, asked_at DESC LIMIT 1`).bind(a.ref, producers, a.question).first();
       // `work: null` is a witness of the score alone (worker/tasks.js `settleOfficial`).
       if (!d || !(a.work === null || Number.isSafeInteger(a.work)) || !a.result || typeof a.result !== "object") { states.push(null); continue; }
       states.push(await facts().answerOfficial(env, w, { question: d.question, engine: b.engine, result: a.result, work: a.work,
-        ...(captured ? { task_id: a.task_id, lease: a.lease } : {}) }));
+        task_id: a.task_id, lease: a.lease }));
     }
     return json({ ok: true, states });
   }

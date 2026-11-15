@@ -11,7 +11,7 @@ import { iso, msOf } from "./instant.js";
 import { submitRecord } from "./index.js";
 import { netOf, servedRelease, countsOf, unrecognised } from "./verify.js";
 import { canon, questionId, witnessOf } from "./tasks.js";
-import { facts, DEADLINE_MS, VERBS } from "./factory.js";
+import { facts, DEADLINE_MS } from "./factory.js";
 import { initiatorCode } from "./accounts.js";
 import { answerDeliverySource, localDeliverySource, deliveryName } from "./delivery_sources.js";
 
@@ -321,12 +321,7 @@ async function handBack(request, env, code) {
   return json({ ok: true, first: !a.done_at });
 }
 
-/// THE RIVEN GAINS FROZEN BEFORE THE FACTORY, asked of it once each, with the
-/// answers they already had: the bot's relay calls this until `left` is 0. Each
-/// is asked as of when it was opened, so a survey shape opened two days ago is
-/// as overdue as it is; an older engine's answers are carried, for the served
-/// one to reproduce or replace (worker/tasks.js), and a search running now keeps
-/// its lease.
+/// Retained appraisals register their business demand without importing executions.
 const ADOPT_BATCH = 40;
 const UNADOPTED = `request IS NOT NULL AND agreed_at IS NULL AND done_at IS NULL
   AND at > CASE WHEN channel = ? THEN ? ELSE ? END
@@ -337,28 +332,10 @@ async function adopt(request, env) {
   if (!botAuthed(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
   const db = env.LIBRARY, now = Date.now(), since = kept(now);
   const { results } = await db.prepare(
-    `SELECT code, channel, asker, weapon, ruler, at, request, lease, lease_until, leased_to FROM entity_appraisal_requests a
+    `SELECT code, channel, asker, weapon, ruler, at, request FROM entity_appraisal_requests a
       WHERE ${UNADOPTED} ORDER BY at LIMIT ?`).bind(...since, ADOPT_BATCH).all();
-  const { engine } = await servedRelease(env);
   for (const a of results) {
     await askRiven(env, a, JSON.parse(a.request), Date.parse(a.at));
-    const id = await questionId("optimize", JSON.parse(a.request));
-    // A SEARCH RUNNING NOW keeps its lease, so its answer lands and is credited.
-    if (a.lease && Date.parse(a.lease_until) > now) {
-      await db.prepare("UPDATE state_compute_work SET lease = ?, lease_until = ?, leased_to = ? WHERE id = ? AND lease IS NULL")
-        .bind(a.lease, a.lease_until, a.leased_to, id).run();
-    }
-    const { results: old } = await db.prepare(
-      "SELECT verifier, build, score, work, engine, net, at FROM record_appraisal_candidates WHERE code = ? AND verifier IS NOT NULL ORDER BY id").bind(a.code).all();
-    for (const r of old) {
-      const who = await witnessOf(env, r.verifier);
-      const build = JSON.parse(r.build);
-      await db.prepare(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .bind(id, r.engine || "", r.verifier, who.owner, r.net || "", VERBS.optimize.canon({ build, score: r.score }, r.work),
-          JSON.stringify({ build, score: r.score }), r.work, r.at).run();
-    }
-    if (old.length) await facts().settle(env, id, engine, now);
   }
   const left = await db.prepare(`SELECT count(*) AS n FROM entity_appraisal_requests a WHERE ${UNADOPTED}`).bind(...since).first();
   return json({ ok: true, adopted: results.length, left: left.n });
