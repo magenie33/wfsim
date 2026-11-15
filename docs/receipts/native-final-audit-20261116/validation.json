@@ -1,0 +1,143 @@
+{
+  "candidate": "25fbf78272199b5da437e30b26cb4a2be1c085bc",
+  "working_tracked_changes": "",
+  "binary": "own preflight target/debug/wfsim-web",
+  "binary_sha256": "7c07afab7e66c8803d5238bfa98998308af41eecce0607b44a3e77e6880cabca",
+  "build_command": "CARGO_TARGET_DIR=<own preflight>/target cargo build -p wfsim-web --jobs 2",
+  "port": 8843,
+  "http_responses": 128,
+  "strict_http_differences": 0,
+  "phantasma_mc_cases": 16,
+  "runs_per_mc_case": 1024,
+  "native_packet_tests": 9,
+  "native_packet_failures": 0,
+  "browser_checks": 39,
+  "browser_failures": 0,
+  "full_combined_ci_run_by_author": false,
+  "evidence": {
+    "source-audit.json": {
+      "sha256": "07e2c3d79efec6ae9fb803d0573c6dd6a3e0f103e926cc55e651cc17b1c7332c",
+      "bytes": 3137
+    },
+    "http-parity.json": {
+      "sha256": "c66fd3b7c0c51c9f546623554fb438026f3d96f4e8c1c95c5b06f5c7800d67cb",
+      "bytes": 3432
+    },
+    "native-packets.log": {
+      "sha256": "1021f73af9c545cdefe1f45b33700eb40f767b9cb8e6e56c984c064db8cceec0",
+      "bytes": 1662
+    },
+    "combat-record.log": {
+      "sha256": "f871c40335e72874224c853af07c7296b3bfcc00e67b5e87fb1530bca63e42be",
+      "bytes": 2653
+    },
+    "http-responses.json": {
+      "sha256": "0e7d4eae2a683bb4083e99ea00423408382cbd5bd75eace281098e92f36be7b2",
+      "bytes": 26639324
+    },
+    "build.log": {
+      "sha256": "e72b4303ecc002eda954bd80911fc912d052e67312cf4ff42a420e2ffc6fd66b",
+      "bytes": 1472
+    }
+  },
+  "temporary_server": "8843 stopped; resource released",
+  "original_preview": "8831 retained unchanged",
+  "phantasma_mc1024": [
+    {
+      "id": "phantasma_radiation_ms0_simulate_mc1024",
+      "dps": 1563.7512119790206,
+      "procs": 627.1494140625
+    },
+    {
+      "id": "phantasma_radiation_ms1_simulate_mc1024",
+      "dps": 3693.72937964929,
+      "procs": 1199.2421875
+    },
+    {
+      "id": "phantasma_gas_radiation_ms0_simulate_mc1024",
+      "dps": 4311.535938126293,
+      "procs": 689.9765625
+    },
+    {
+      "id": "phantasma_gas_radiation_ms1_simulate_mc1024",
+      "dps": 10811.141480808505,
+      "procs": 1300.5556640625
+    },
+    {
+      "id": "phantasma_corrosive_radiation_ms0_simulate_mc1024",
+      "dps": 7721.833251757377,
+      "procs": 690.509765625
+    },
+    {
+      "id": "phantasma_corrosive_radiation_ms1_simulate_mc1024",
+      "dps": 19536.118217929292,
+      "procs": 1301.0068359375
+    },
+    {
+      "id": "phantasma_gas_magnetic_radiation_ms0_simulate_mc1024",
+      "dps": 6109.265016802857,
+      "procs": 818.5625
+    },
+    {
+      "id": "phantasma_gas_magnetic_radiation_ms1_simulate_mc1024",
+      "dps": 16518.682626826758,
+      "procs": 1546.79296875
+    },
+    {
+      "id": "phantasma_radiation_ms0_simulate_noarc_mc1024",
+      "dps": 97.8296310761993,
+      "procs": 463.072265625
+    },
+    {
+      "id": "phantasma_radiation_ms1_simulate_noarc_mc1024",
+      "dps": 215.2420573576709,
+      "procs": 1019.1396484375
+    },
+    {
+      "id": "phantasma_gas_radiation_ms0_simulate_noarc_mc1024",
+      "dps": 407.7734592833338,
+      "procs": 463.072265625
+    },
+    {
+      "id": "phantasma_gas_radiation_ms1_simulate_noarc_mc1024",
+      "dps": 899.241945491997,
+      "procs": 1019.1396484375
+    },
+    {
+      "id": "phantasma_corrosive_radiation_ms0_simulate_noarc_mc1024",
+      "dps": 2151.7370410545204,
+      "procs": 463.072265625
+    },
+    {
+      "id": "phantasma_corrosive_radiation_ms1_simulate_noarc_mc1024",
+      "dps": 4747.343853967651,
+      "procs": 1019.1396484375
+    },
+    {
+      "id": "phantasma_gas_magnetic_radiation_ms0_simulate_noarc_mc1024",
+      "dps": 685.062662407599,
+      "procs": 508.53515625
+    },
+    {
+      "id": "phantasma_gas_magnetic_radiation_ms1_simulate_noarc_mc1024",
+      "dps": 1508.6196938282317,
+      "procs": 1119.349609375
+    }
+  ],
+  "request_sets": [
+    {
+      "calls_sha256": "8b52d60e37024114f74791e91a3163af81b56c90f3a0711bebd5894d60108a07",
+      "reference_sha256": "aa6dece89732c5d4ca6ea7a1e1e1084857473a474f65d24e0b6a7cf8e27b3f4a",
+      "count": 112,
+      "calls": "focused-calls.json",
+      "reference": "001-B.json"
+    },
+    {
+      "calls_sha256": "3a6965811da8ec815d0b18f4323c21e4ac1df592834657911b6258ea29d75c77",
+      "reference_sha256": "e128f76e0a9ad946de5de48c61275850df074ce46404627b6f6d41463705d10b",
+      "count": 16,
+      "calls": "ordinary-proc-calls.json",
+      "reference": "optimized-mc1024.json"
+    }
+  ]
+}

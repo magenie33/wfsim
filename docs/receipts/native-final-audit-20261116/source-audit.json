@@ -1,0 +1,92 @@
+{
+  "candidate": "25fbf78272199b5da437e30b26cb4a2be1c085bc",
+  "qualified_author": "044ca7d3adf7ba3798bd88e7755df7ac32ff846c",
+  "p0_main": "aa450036c42faafe802c606bcf30944b71a8b306",
+  "tracked_files": 14971,
+  "identical_scoped_files": 5683,
+  "entire_tree_differences": [
+    {
+      "path": "docs/COMPUTE_TASKS.md",
+      "candidate_blob": "100644 blob b29dc3e2441acbb8a8c6e0072b6d4d9301038271",
+      "equals_p0_main": true
+    },
+    {
+      "path": "scripts/check_board_admission.mjs",
+      "candidate_blob": "100644 blob e48d48327136f64f87af9e82333c67c3dcd88371",
+      "equals_p0_main": true
+    },
+    {
+      "path": "scripts/check_board_family.mjs",
+      "candidate_blob": "100644 blob 8e4c924e11e0fc49e4eeb0d50854947c0d21536d",
+      "equals_p0_main": true
+    },
+    {
+      "path": "scripts/check_board_sync.mjs",
+      "candidate_blob": "100644 blob 6d28963314d283c3d66608e26a8ccf7039f7ab5c",
+      "equals_p0_main": true
+    },
+    {
+      "path": "scripts/check_board_verify.mjs",
+      "candidate_blob": "100644 blob 4b78e23af2759aa1611fe6913fea5a6fdb12bd97",
+      "equals_p0_main": true
+    },
+    {
+      "path": "scripts/check_calc_recovers.mjs",
+      "candidate_blob": "100644 blob b314092beecf9dccb068080223d4d80439fa0a36",
+      "equals_p0_main": true
+    },
+    {
+      "path": "scripts/check_fair.mjs",
+      "candidate_blob": "100644 blob 4015af37f48825932fc9af8939d570739e4eb0a7",
+      "equals_p0_main": true
+    },
+    {
+      "path": "scripts/check_initiator.mjs",
+      "candidate_blob": "100644 blob 50f55506d55d616b9829d252578d623f0bce0e7a",
+      "equals_p0_main": true
+    },
+    {
+      "path": "scripts/check_maintenance.mjs",
+      "candidate_blob": "100644 blob 592a77dd58e678581346a3abec30c470412f1982",
+      "equals_p0_main": true
+    },
+    {
+      "path": "scripts/check_merit.mjs",
+      "candidate_blob": "100644 blob e66118a8ebace74dd90d34780b7c3bac136e8a9d",
+      "equals_p0_main": true
+    },
+    {
+      "path": "scripts/check_renew.mjs",
+      "candidate_blob": "100644 blob b22b173adb614316c89fec91584f00d79ffeaf71",
+      "equals_p0_main": true
+    },
+    {
+      "path": "scripts/check_riven_gain.mjs",
+      "candidate_blob": "100644 blob 84d6835773135af1379738fe38a2f3167872bd44",
+      "equals_p0_main": true
+    },
+    {
+      "path": "scripts/check_sync_proc.mjs",
+      "candidate_blob": "100644 blob 46998f70b0eacbdb933d8f5ca1daf620e6a85742",
+      "equals_p0_main": true
+    },
+    {
+      "path": "worker/board_family.js",
+      "candidate_blob": "100644 blob 74bf26ee49009cf13ec8ae4efb88edbf38e6bccc",
+      "equals_p0_main": true
+    },
+    {
+      "path": "worker/board_tasks.js",
+      "candidate_blob": "100644 blob 306d72c90bf2ff231c88d802e6c0b5e440051334",
+      "equals_p0_main": true
+    },
+    {
+      "path": "worker/dials.js",
+      "candidate_blob": "100644 blob a48a693f959e93d639bef5f95cbb05ffa510d5ac",
+      "equals_p0_main": true
+    }
+  ],
+  "goldens_measurements_site_ci_unchanged": true,
+  "probe_blob": "100644 blob 9f65c0e4b51648e5abb139c922123db6fa7dbc2f",
+  "m132_sha256": "5dc761865296b2a48546d4ede511255af1509493601f8da3c07ba65d8b4f3125"
+}
