@@ -89,11 +89,13 @@ console.log("\nfailed checks remain unknown while other findings survive");
 const failAt = NOW + 5 * 3_600_000;
 await db.run("UPDATE entity_compute_devices SET last_at = ?", iso(failAt));
 await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"odd",verb:"simulate",request:"{}",state:"nondeterministic",opened_at:args[0],due_at:args[1]});})(db,[iso(failAt),iso(failAt)]);
+const injections = new Map();
 const fails = (pattern) => new Proxy(db, { get: (o, k) => {
   if (k !== "prepare") return typeof o[k] === "function" ? o[k].bind(o) : o[k];
   return (sql) => {
     if (!pattern.test(sql)) return real(sql);
-    const no = async () => { throw Object.assign(new Error("SQL private-value"), { code: "57014" }); };
+    const no = async () => { injections.set(pattern, (injections.get(pattern) || 0) + 1);
+      throw Object.assign(new Error("SQL private-value"), { code: "57014" }); };
     const statement = { bind: () => statement, first: no, all: no, run: no };
     return statement;
   };
@@ -101,7 +103,7 @@ const fails = (pattern) => new Proxy(db, { get: (o, k) => {
 const brokenChecks = [
   ["stalled", /WITH RECURSIVE producers\(producer\) AS|SELECT d\.producer, count\(DISTINCT d\.question\)/],
   ["nondeterministic", /SELECT SUM\(n\) AS n FROM/],
-  ["unsettled", /SELECT count\(\*\) AS n FROM state_compute_work q WHERE q\.state IN/],
+  ["unsettled", /SELECT count\(\*\) AS n FROM state_compute_effective_work q WHERE q\.state IN/],
   ["overdue", /WITH overdue AS MATERIALIZED/],
   ["disagreeing", /SELECT a\.owner, count\(\*\) AS answers/],
   ["refused_rows", /SELECT question, engine, owners, at FROM record_refusal_withdrawals/],
@@ -114,6 +116,7 @@ for (const [step, sql] of brokenChecks) {
   const round = await watchdog({ ...env, PUBLIC: picture(true), LIBRARY: fails(sql) }, failAt);
   const rows = await db.all("SELECT cause, said FROM record_monitor_findings");
   const failure = round.find(f => f.kind === `watchdog_failed:${step}`);
+  check(`${step} injects the database timeout`, (injections.get(sql) || 0) > 0);
   check(`${step} failure is explicit and preserves another finding`, failure?.code === "timeout"
     && rows.some(r => r.cause === failure.kind && r.said.includes("状态未知") && r.said.includes("🔴"))
     && rows.some(r => r.cause === "starved"), JSON.stringify(round));
