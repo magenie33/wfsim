@@ -84,16 +84,13 @@ pub fn magnetic_break_normalized_source(source: f64, weapon_weakness_bonus: f64,
 /// Native handler installation and special proc ids remain unbound (N07A).
 #[wfsim_gas_macro::metered]
 fn scene_weights(vector: &DamageVector, handlers: SceneProcHandlers) -> [f32; 32] {
-    let mut components = [0.0; 20];
-    for (index, component) in components.iter_mut().enumerate().take(13) {
-        let kind = ProcType::new(index as u8).expect("ordinary index").damage_type().expect("ordinary type");
-        *component = vector.get(kind) as f32;
-    }
     let mut weights = [0.0; 32];
     for (index, weight) in weights.iter_mut().enumerate().take(13) {
         if handlers.ordinary_mask & (1 << index) == 0 { continue; }
-        *weight = ordinary::handler_weight(&[ordinary::ProcEvaluator {
-            DamageTypes: 1 << index, WeightMultiplier: 1.0 }], &components);
+        // One explicit component and unit WeightMultiplier reduce to its positive value.
+        let kind = ProcType::new(index as u8).expect("ordinary index").damage_type().expect("ordinary type");
+        let component = vector.get(kind) as f32;
+        if component > 0.0 { *weight = component; }
     }
     // Scene alternatives stay outside ProcCounters; their native proc ids are unbound.
     if handlers.void { weights[30] = (vector.get(DamageType::Void) as f32).max(0.0); }
