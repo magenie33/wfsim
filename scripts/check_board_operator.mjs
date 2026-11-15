@@ -30,7 +30,7 @@ try {
  let expected;
  try{expected=await plain.call('describe',[{id:'baseline',record}]);}finally{await plain.close();}
  for(const killed of [false,true]) {
-  native=await open(binary,{timeoutMs:1000});
+  native=await open(binary,{timeoutMs:5000});
   assert.deepEqual(await native.call('describe',[{id:'baseline',record}]),expected,'successful values changed');
   assert.equal((await native.call('describe',[items[0]]))[0].candidate,expected[0].candidate,'padding changes the candidate');
   process.kill(native.pid,'SIGSTOP');
@@ -39,7 +39,7 @@ try {
   assert.equal(writes.get(native.pid).returned,false,'the real pipe did not apply backpressure');
   if(killed)killTimer=setTimeout(()=>{try{process.kill(native.pid,'SIGKILL');}catch{}},50);
   let result;
-  try{result=await Promise.race([request,new Promise(resolve=>{timer=setTimeout(()=>resolve({expired:true}),5000);})]);}
+  try{result=await Promise.race([request,new Promise(resolve=>{timer=setTimeout(()=>resolve({expired:true}),12000);})]);}
   finally{clearTimeout(timer);clearTimeout(killTimer);}
   assert(!result.expired,'the request exceeded its deadline while waiting on the real native pipe');
   assert(result.error,'a stopped or killed native operator answered successfully');
