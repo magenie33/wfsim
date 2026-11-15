@@ -73,21 +73,26 @@ pub(super) fn sample<const N: usize>(chance: f32, skip_byte_0x241: u8,
 {
     if skip_byte_0x241 != 0 { return; }
     let mut evaluate = Some(evaluate);
-    let mut weights = [0.0_f32; N];
+    let mut cdf = [(0_usize, 0.0_f32); N];
+    let mut length = 0;
     let mut total = 0.0_f32;
     let mut remaining = chance;
     while remaining > 0.0 {
         if random() > remaining { break; }
         if let Some(evaluate) = evaluate.take() {
-            weights = evaluate();
-            for weight in weights { total += weight; }
+            // Immutable weights give the same ordered binary32 prefixes on every draw.
+            for (index, weight) in evaluate().into_iter().enumerate() {
+                total += weight;
+                if weight > 0.0 {
+                    cdf[length] = (index, total);
+                    length += 1;
+                }
+            }
         }
         let threshold = random() * total;
-        let mut cumulative = 0.0_f32;
         let mut choice = None;
-        for (index, weight) in weights.iter().copied().enumerate() {
-            cumulative += weight;
-            if weight > 0.0 && cumulative >= threshold {
+        for &(index, cumulative) in &cdf[..length] {
+            if cumulative >= threshold {
                 choice = Some(index);
                 break;
             }
