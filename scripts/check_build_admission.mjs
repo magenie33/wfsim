@@ -57,7 +57,9 @@ if(process.argv.includes('--break-first-arrival')) {
   const broken=original.replace(" OR coalesce((input->>'admission_new')::boolean,false)",'');
   assert.notEqual(broken,original);await db.exec(broken);
 }
-const now=Date.parse('2026-11-15T10:00:00.000Z'),at=new Date(now).toISOString();
+const databaseTime=async()=>Number((await db.get('SELECT ceil(extract(epoch FROM clock_timestamp())*1000)::bigint now')).now);
+let now=await databaseTime();
+const at=new Date(now).toISOString();
 let ordinal=0;
 const fixture=async({initiator='anonymous',system_source,...extra}={})=>{
   const id=(++ordinal).toString(16).padStart(32,'0');
@@ -66,7 +68,12 @@ const fixture=async({initiator='anonymous',system_source,...extra}={})=>{
     flow:{schema:1,scope:{boards:[{id:'standard_single_target'},{id:'standard_multi_target'}]},builds:[],templates,patches:[{set:{},remove:[]}],
       nodes:templates.map((_,n)=>({kind:'measure',identity:id,ruler:n<2?'standard_single_target':'standard_multi_target',mode:n%2?'cycle':'base',template:n,patch:0}))}});
 };
-const intake=async input=>db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
+const intake=async input=>{
+  const result=await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
+  const observed=await databaseTime();
+  now=Math.max(now,observed);
+  return result;
+};
 const claim=async(kind,time=now)=>(await db.get('SELECT build_admission_claim(?::text,?::text) claim',kind,new Date(time).toISOString())).claim;
 const run=async(job,max=2,time=now)=>(await db.get('SELECT build_admission_run(?::text,?::text,?::text,?::bigint,?::text) result',job.kind,job.key,job.lease,max,new Date(time).toISOString())).result;
 const count=async table=>Number((await db.get('SELECT count(*) n FROM '+table)).n);
@@ -75,7 +82,7 @@ async function crashAfterClaim() {
   const {schema}=await db.get('SELECT current_schema() schema');assert.match(schema,/^[a-z_][a-z0-9_]*$/);
   const code=`import postgres from ${JSON.stringify(new URL('./pg/node_modules/postgres/src/index.js',import.meta.url).href)};
     const sql=postgres(process.env.WFSIM_BUILD_ADMISSION_TEST_URL,{max:1,fetch_types:false,onnotice(){},connection:{search_path:${JSON.stringify(schema)},statement_timeout:5000}});
-    const [row]=await sql.unsafe("SELECT build_admission_claim('intake',$1::text) claim",[${JSON.stringify(at)}]);
+    const [row]=await sql.unsafe("SELECT build_admission_claim('intake',$1::text) claim",[${JSON.stringify(new Date(now).toISOString())}]);
     console.log(JSON.stringify(row.claim));await new Promise(resolve=>setTimeout(resolve,60000));await sql.end();`;
   const child=spawn(process.execPath,['--input-type=module','-e',code],{stdio:['ignore','pipe','pipe']});
   const lines=createInterface({input:child.stdout});let timer;
@@ -110,6 +117,7 @@ try {
   console.log('ok: canonical build and immutable obligation survive source ACK, pause and concurrent retries before any task exists');
 
   await f.controlStage(env,'admission',{paused:false,by:'fixture'},now);
+  assert.equal(await claim('intake',Date.parse(captured.input.admission_at)-1),null);
   const initial=await claim('intake');await run(initial);
   assert.equal(await count('state_build_workflow_nodes'),4);assert.equal(await count('state_compute_scheduling'),0);
   const expansion=await claim('expansion');assert.equal((await run(expansion)).processed,2);
