@@ -666,6 +666,7 @@ fn metered() -> FightParams {
 
 fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> Foe {
     Foe {
+        proc_handlers: None,
         valid_double_procs: crate::model::ProcCounters::ORDINARY_MASK,
         magnetic_break_proxy: None,
         name: "test target".into(),

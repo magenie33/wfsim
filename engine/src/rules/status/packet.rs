@@ -30,6 +30,9 @@ pub struct ProcCounters([u8; 30]);
 impl ProcCounters {
     pub const ORDINARY_MASK: u32 = 0x1fff;
 
+    pub fn from_bytes(counters: [u8; 30]) -> Self { Self(counters) }
+    pub fn bytes(&self) -> &[u8; 30] { &self.0 }
+
     pub fn from_types(types: impl IntoIterator<Item = crate::rules::damage::DamageType>) -> Self {
         let mut counters = Self::default();
         for kind in types {

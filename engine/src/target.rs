@@ -61,6 +61,7 @@ pub const ANCIENT_PROTECTOR_OVERGUARD: f64 = 8.0;
 /// and the spec brought to a level and ready to be fought.
 #[derive(Debug, Clone)]
 pub struct Foe {
+    pub proc_handlers: Option<crate::rules::status::SceneProcHandlers>,
     pub valid_double_procs: u32,
     pub magnetic_break_proxy: Option<crate::rules::status::HitProxy>,
     pub name: String,
@@ -317,11 +318,17 @@ impl TypeShares {
 
 #[wfsim_gas_macro::metered]
 impl Foe {
+    /// Explicit graphs override the scene eligibility fallback, independently of immunity.
+    pub fn proc_handlers(&self) -> crate::rules::status::SceneProcHandlers {
+        self.proc_handlers.unwrap_or_else(||
+            crate::rules::status::SceneProcHandlers::from_scene_immunity(&self.status_immunities))
+    }
     /// A plain training dummy: no defenses, never dies. Damage passes through
     /// unmitigated, which keeps raw-damage calibration runs simple.
     pub fn training_dummy() -> Self {
         Self {
             valid_double_procs: crate::model::ProcCounters::ORDINARY_MASK,
+            proc_handlers: None,
             name: "training dummy".into(),
             magnetic_break_proxy: None,
             // A DUMMY DIES ONCE, like everything but a Thrax.
@@ -639,6 +646,7 @@ impl crate::data::enemies::EnemySpec {
             crate::data::factions::columns_for(self.damage_column_key())
         };
         Ok(Foe {
+            proc_handlers: None,
             valid_double_procs: match &self.valid_double_procs {
                 None => crate::model::ProcCounters::ORDINARY_MASK,
                 Some(types) => {

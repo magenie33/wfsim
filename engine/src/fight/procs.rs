@@ -250,9 +250,9 @@ pub(super) fn fire_extra_hits(
         let forced: &[DamageType] = if forced_status { std::slice::from_ref(&ty) } else { &[] };
         let procs = status::procs_for_hit(
             forced,
-            if forced_status { 0.0 } else { status_chance * debuffs.received_status_chance(at) },
+            if forced_status { 0.0 } else { debuffs.received_proc_chance(status_chance, at) },
             &DamageVector::new().with(ty, raw),
-            &params.foe.status_immunities,
+            params.foe.proc_handlers(),
             rng,
         );
         settle_procs(
@@ -719,7 +719,7 @@ pub(super) fn settle_procs(
     // page), so the only thing this choice can be wrong about is how soon after
     // each respawn it lands: a fraction of a second out of a 180 s engagement.
     // What it is NOT wrong about is the count, which is the whole payload.
-    if active.applies_microwave && !procs.is_empty() {
+    if active.applies_microwave && status::applied_procs(&procs, &foe.status_immunities).next().is_some() {
         debuffs.microwave = true;
     }
     let incoming = if params.arcane.debilitate_chance > 0.0 {
@@ -734,15 +734,17 @@ pub(super) fn settle_procs(
     let generation = target.generation;
     let mut qualified = 0_u32;
     for proc in procs {
-        r.procs += 1;
         // Read before the match applies it — see the Debilitate hook below.
         let stacks_before = combined_stacks(debuffs, proc);
-        if incoming.is_some() && stacks_before + 1 >= DEBILITATE_STACKS {
+        let accepted = !foe.status_immunities.contains(&proc);
+        if incoming.is_some() && stacks_before + usize::from(accepted) >= DEBILITATE_STACKS {
             if let Some(kind) = crate::model::ProcType::from_damage_type(proc) {
                 // M34 observes the tenth application even when Blast drains inline.
                 qualified |= 1 << kind.id();
             }
         }
+        if !accepted { continue; }
+        r.procs += 1;
         match proc {
             DamageType::Impact => DebuffState::push_capped(
                 &mut debuffs.stagger,
@@ -1265,10 +1267,12 @@ pub(super) fn roll_proc_conversion(
     active: &FightParams,
     d: &mut crate::rules::rng::Draws,
     live_rate: f64,
+    immune: &[DamageType],
     procs: &mut Vec<DamageType>,
 ) {
     if let Some(pc) = active.proc_conversion {
-        if procs.contains(&pc.from) && !procs.contains(&pc.to) {
+        if !immune.contains(&pc.from) && !immune.contains(&pc.to)
+            && procs.contains(&pc.from) && !procs.contains(&pc.to) {
             let chance = pc.chance
                 * if live_rate < pc.low_rate_threshold {
                     pc.low_rate_multiplier

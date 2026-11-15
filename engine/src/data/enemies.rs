@@ -457,7 +457,12 @@ source: { url: "synthetic" }
                 .with(crate::rules::damage::DamageType::Slash, 25.0);
             let mut rng = crate::rules::rng::Rng::new(0xD3E0);
             (0..4000)
-                .filter(|_| crate::rules::status::draw_proc_type(&v, &immune, &mut rng) == Some(ty))
+                .filter(|_| {
+                    let raw = crate::rules::status::procs_for_hit(&[], 1.0, &v,
+                        crate::rules::status::SceneProcHandlers::from_scene_immunity(&immune), &mut rng);
+                    let applied = crate::rules::status::applied_procs(&raw, &immune).any(|kind| kind == ty);
+                    applied
+                })
                 .count()
         };
         // IMPACT IS NULLIFIED AND STILL ROLLS — 3/4 of this vector, which it
@@ -467,8 +472,7 @@ source: { url: "synthetic" }
             (2800..3200).contains(&impacts),
             "Impact still takes its 3/4 of the rolls on this unit: {impacts} of 4000"
         );
-        // …AND RADIATION IS DROPPED, not merely made rarer: the rest
-        // renormalise, so Slash takes every roll rather than its old quarter.
+        // M87: Radiation never lands. N07A separates generation from immunity.
         assert_eq!(share(crate::rules::damage::DamageType::Radiation), 0, "Radiation cannot land");
         let vr = crate::rules::damage::DamageVector::new()
             .with(crate::rules::damage::DamageType::Radiation, 75.0)
@@ -476,11 +480,14 @@ source: { url: "synthetic" }
         let mut rng = crate::rules::rng::Rng::new(0xD3E0);
         let slashes = (0..4000)
             .filter(|_| {
-                crate::rules::status::draw_proc_type(&vr, &immune, &mut rng)
-                    == Some(crate::rules::damage::DamageType::Slash)
+                let raw = crate::rules::status::procs_for_hit(&[], 1.0, &vr,
+                    crate::rules::status::SceneProcHandlers::from_scene_immunity(&immune), &mut rng);
+                let applied = crate::rules::status::applied_procs(&raw, &immune)
+                    .any(|kind| kind == crate::rules::damage::DamageType::Slash);
+                applied
             })
             .count();
-        assert_eq!(slashes, 4000, "…and the rest RENORMALISE onto the roll");
+        assert_eq!(slashes, 4000, "the unbound scene graph retains the wiki eligibility policy");
     }
 
     /// **A SQUAD MAKES THE DEMOLISHER FATTER AND NOTHING ELSE.**
