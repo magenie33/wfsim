@@ -1,5 +1,5 @@
 use super::*;
-use crate::rules::upgrades::OperationType;
+use crate::rules::upgrades::{OperationType, UpgradeEntry, UpgradeType};
 use serde_json::Value;
 use std::cell::Cell;
 
@@ -79,7 +79,7 @@ fn original_client_ordinary_counters_rng_laziness_and_target117() {
         let input_chance = vector["input_chance"].as_f64().unwrap() as f32;
         let chance = if vector["entry_rva"] == "0x151e995" {
             late += 1;
-            target_proc_chance(input_chance, target_entries(&vector["target117_entries"]))
+            crate::rules::upgrades::target_proc_chance(input_chance, target_entries(&vector["target117_entries"]))
         } else { input_chance };
         assert_eq!(chance.to_bits(), (vector["effective_chance"].as_f64().unwrap() as f32).to_bits(), "{label}");
         let skip = vector["packet_flag_0x241"].as_u64().unwrap() as u8;

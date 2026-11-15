@@ -18,9 +18,10 @@ fn golden_m132_vermisplicer_status_is_shared_by_five_tendrils() {
             let base = WeaponBase::from_data_assembled(id, false, &[], Some(&assembly.into()));
             let panel = resolve(&base, &[], StackPolicy::Emergent);
             assert_eq!(panel.multishot, count);
-            assert!((panel.status_chance - per_tendril).abs() < 1e-12,
-                "{loader}/{}: {} != {per_tendril}", grip.id, panel.status_chance);
-            assert!((panel.status_chance * panel.multishot - combined).abs() < 1e-12);
+            assert!((base.base_status_chance - per_tendril).abs() < 1e-12);
+            assert!((base.base_status_chance * count - combined).abs() < 1e-12);
+            // The resolved native query materializes binary32; the measurement stays decimal.
+            assert_eq!(panel.status_chance, f64::from(per_tendril as f32), "{loader}/{}", grip.id);
         }
     }
 }
@@ -36,7 +37,7 @@ fn kitgun_status_mods_keep_the_native_denominator() {
         .map(|id| pool.iter().find(|m| m.id == *id).unwrap()).collect();
     let panel = resolve(&base, &cards, StackPolicy::Emergent);
     assert!((panel.multishot - 11.0).abs() < 1e-12);
-    assert!((panel.status_chance - 0.078 * 1.9).abs() < 1e-12);
+    assert_eq!(panel.status_chance, f64::from(0.078_f32 * (1.0_f32 + 0.9_f32)));
 }
 
 #[test]
