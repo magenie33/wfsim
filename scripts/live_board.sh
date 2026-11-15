@@ -238,7 +238,7 @@ trap 'exit 130' INT
 
 if [ "$INCREMENTAL_INVENTORY" = 1 ]; then
   if [ "${ONCE:-}" = 1 ]; then intake_arrivals || true; fi
-  node --max-old-space-size=192 "$HERE/inventory_pipeline.mjs" "$WORK" "$BIN" --serve
+  node --max-old-space-size=192 "$HERE/split_board_pipeline.mjs" serve "$WORK" "$BIN"
   exit $?
 fi
 

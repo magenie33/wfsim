@@ -1114,6 +1114,15 @@ a changed capture is refused before any arrival is spent.
 The actual nullable inbox view passes through the shared reader and native
 binary into SQL admission with nonempty workflow steps and scheduled work.
 
+## `check_board_cli_entry`
+
+The actual incremental command from `live_board.sh` runs in a separate Node
+process. Its one-pass mode completes with stage pauses and the immutable
+operator request retained. Its supervisor starts four child processes, holds
+the three consumer writer locks and drains them on SIGTERM. Every child exits
+and each lock can then be acquired again. No database, native binary or
+external publication is needed while those stages are paused.
+
 ## `check_settle`
 
 The official cycle and its CLI run against local transport fixtures. An empty

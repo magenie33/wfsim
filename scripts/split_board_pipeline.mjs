@@ -245,6 +245,7 @@ export async function serveSplitBoardPipeline(work,bin) {
  }finally{stop();await Promise.allSettled([...children].map(child=>child.done));process.off('SIGTERM',stop);process.off('SIGINT',stop);}
 }
 if(process.argv[1]&&pathToFileURL(resolve(process.argv[1])).href===import.meta.url) {
- const [stage,work,bin]=process.argv.slice(2);if(!['normalization','inventory','projection'].includes(stage)||!work||!bin)throw Error('usage: split_board_pipeline.mjs normalization|inventory|projection <work> <bin>');
- await serveBoardStage(stage,resolve(work),resolve(bin));
+ const [stage,work,bin]=process.argv.slice(2);if(!['serve','normalization','inventory','projection'].includes(stage)||!work||!bin)throw Error('usage: split_board_pipeline.mjs serve|normalization|inventory|projection <work> <bin>');
+ if(stage==='serve')await serveSplitBoardPipeline(resolve(work),resolve(bin));
+ else await serveBoardStage(stage,resolve(work),resolve(bin));
 }
