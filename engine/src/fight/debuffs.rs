@@ -488,6 +488,7 @@ impl DebuffState {
     pub(super) fn received_proc_chance(&self, packet_chance: f64, now: f64) -> f64 {
         use crate::rules::upgrades::{OperationType, UpgradeEntry, UpgradeType};
         let stacks = self.tau.iter().filter(|&&expiry| expiry > now).count();
+        if stacks == 0 { return packet_chance as f32 as f64; }
         let entry = UpgradeEntry { UpgradeType: UpgradeType::AVATAR_PROC_CHANCE_VULNERABILITY,
             OperationType: OperationType::STACKING_MULTIPLY,
             Value: TAU_STATUS_CHANCE_PER_STACK as f32 * stacks as f32 };
