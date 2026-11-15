@@ -3,6 +3,16 @@
   "scope": "Recovered stat identities and current Rust query consumers; this registry does not certify live filter eligibility or uncaptured client code",
   "attributes": [
     {
+      "UpgradeType": 117,
+      "native_name": "AVATAR_PROC_CHANCE_VULNERABILITY",
+      "consumers": [
+        "engine/src/fight/debuffs.rs",
+        "engine/src/rules/upgrades/scalar.rs",
+        "engine/src/rules/status/ordinary.rs"
+      ],
+      "fixture": "tests/fixtures/client/ordinary-proc-2026-10-28.json"
+    },
+    {
       "UpgradeType": 244,
       "native_name": "WEAPON_CRIT_CHANCE",
       "consumers": [

@@ -6,6 +6,13 @@ The primary implementation contract is the immutable Drive batch
 Its stages identify calculation boundaries, including unbound interfaces.
 A recovered numeric kernel does not establish its live producer or filters.
 
+N07A ordinary generation is additionally bound by batch
+`20261115T065558Z-ordinary-proc-generation`, manifest SHA-256
+`ea4b3815f48d45b79fb63f5fc1af573ee008d2532049778db15852439382a1ec`.
+Its evaluator/chance/CDF/counter vectors and late target117 controls live in
+`ordinary-proc-2026-10-28.json`. The target query belongs to `rules/upgrades`;
+the pure ordinary sampler does not depend on the upgrade system.
+
 Original `UpgradeType`, `OperationType`, `Value`, `FusionPowerStep` and
 `FusionPowerCurve` spellings are retained in mod input records. Numeric stat,
 damage, proc and part identifiers occupy distinct namespaces. `NativeScalar`,
@@ -56,7 +63,7 @@ factor cannot recover the original bucket bits.
 | ALN-MAG-01 | Native pool/count snapshot multiply and truncation | Complete live ownership and mode installation |
 | ALN-MAG-02 | Binary32 normalization/rounding, parent query, then generic proxy multiplier | Additional eligible weakpoint operation and proxy-state writers |
 | ALN-MAG-03 | Actual parent mutating and child returned-value stat 367 queries; independent proc masks; retained binary32 child seed | Live operation owner/filter installation and canonicalization flag writer |
-| ALN-PROC-01 | Native counted payload primitives; forced coalescing at arcane submission | Ordinary SC/type selection, multiplicity and immunity dispatch |
+| ALN-PROC-01 | Native evaluator maxima, binary32 ordinary chance/CDF, saturating counters and late target117 fold; forced coalescing at Arcane submission | Upstream chance/source365/scanned366, live handler installation, emission multiplicity and final acceptance/application order |
 | ALN-PROC-02 | Existing per-family clocks/caps; native Encumber suppression input | Native ordinary insertion/expiry/refresh/decay state |
 | ALN-PROC-03 | Retained Electric/Gas seeds; sequential binary32 accumulation; local minimum before own element; four-input group reducer | Live key/payload producers and native visitation lifecycle; other DoT families |
 | ALN-PROC-04 | Per-family measured landing retention | Complete native application, moving origin and expiry |

@@ -50,11 +50,15 @@ The batch explicitly states that it establishes no Phantasma callback-count
 conclusion or universal per-shot roll count. This limitation must remain
 separate from the fully specified per-callback Primary contract.
 
-The additional Tonfa delivery `20261115T060206Z-tonfa-source-projection`
-provides 49 sampled source clips and an offline inspector. Its own contract
-retains nine unsupported cinematic resources, an unclosed deserializer/runtime
-descriptor bridge and an uncertified final collision mask. It is supporting
-melee evidence, not closure of the Phantasma or full-engine runtime questions.
+Tonfa delivery `20261115T162246Z-tonfa-native-projection`, manifest
+`5e8e5887ad349633bd27365bd730b16410306747e3d9d567bdee3aa4933df747`,
+covers58 resources/69 actor streams, including the nine cinematic resources
+outside the earlier49-clip projection. All12 payloads and866 archive members
+pass size/SHA-256 verification. Its5638 native submissions are query volumes,
+rather than confirmed target hits. Live installation/FSM/clocks, filtering,
+history and cinematic snap/scale remain unbound. This resource-coverage
+closure does not certify final collision or justify replacing measured melee
+behavior with projected query counts.
 
 Source review and raw verified evidence summaries are retained in
 `target/source-review-1115/`. The durable fixture is regenerated with

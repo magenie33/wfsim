@@ -39,6 +39,18 @@ def main():
     assert result['artifact_member_changes']
     assert differences(-0.0, 0.0) and differences(1, 1.0)
     assert differences({'a/b': 1}, {'a/b': 2})[0]['field'] == '/a~1b'
+    for identity in [117, 'AVATAR_PROC_CHANCE_VULNERABILITY']:
+        target = copy.deepcopy(baseline)
+        target['entries'][0]['fields']['UpgradeType'] = identity
+        target_changed = copy.deepcopy(target)
+        target_changed['entries'][0]['fields']['Value'] = '0.25'
+        target_delta = compare(target, target_changed, [], attributes)['entry_changes'][0]
+        assert target_delta['rule_consumers'], 'target117 changes must link to the actual N07A consumer'
+        rule = target_delta['rule_consumers'][0]
+        assert rule['UpgradeType'] == 117
+        assert {'engine/src/rules/status/ordinary.rs', 'engine/src/rules/upgrades/scalar.rs',
+                'engine/src/fight/debuffs.rs'} <= set(rule['consumers'])
+        assert rule['fixture'] == 'tests/fixtures/client/ordinary-proc-2026-10-28.json'
     print('Self-comparison is empty; value/filter/new-field/ancestry/enum/native-code/identity mutations are detected.')
 
 
