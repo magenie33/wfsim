@@ -1113,6 +1113,15 @@ CREATE TABLE IF NOT EXISTS record_compute_order_cut_activations (
   protected_count BIGINT NOT NULL,
   protected_sha256 TEXT COLLATE "C" NOT NULL
 );
+CREATE TABLE IF NOT EXISTS record_compute_order_cut_captures (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  cut_id TEXT COLLATE "C" NOT NULL REFERENCES entity_compute_order_cuts(id),
+  completed_at TEXT COLLATE "C" NOT NULL,
+  snapshot TEXT COLLATE "C" NOT NULL,
+  protected_count BIGINT NOT NULL,
+  protected_sha256 TEXT COLLATE "C" NOT NULL
+);
+CREATE INDEX IF NOT EXISTS order_cut_captures ON record_compute_order_cut_captures(cut_id,id);
 CREATE TABLE IF NOT EXISTS record_compute_order_cancellations (
   question TEXT COLLATE "C" NOT NULL,
   task_id BIGINT NOT NULL REFERENCES entity_compute_tasks(id),
@@ -1234,12 +1243,13 @@ $$;
 -- Positive evidence is read through sparse indexes, never through the cancelled tail.
 CREATE OR REPLACE FUNCTION compute_order_cut_capture(text) RETURNS bigint
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
-DECLARE n bigint;
+DECLARE n bigint;total bigint;digest text;started_snapshot text;
 BEGIN
   PERFORM compute_order_cut_lock();
   IF NOT EXISTS(SELECT 1 FROM entity_compute_order_cuts WHERE id=$1) OR EXISTS(
     SELECT 1 FROM record_compute_order_cut_activations) THEN RAISE EXCEPTION 'order cut capture changed';END IF;
   IF NOT compute_order_cut_indexes_ready() THEN RAISE EXCEPTION 'order cut online indexes must be installed and valid';END IF;
+  started_snapshot:=pg_current_snapshot()::text;
   INSERT INTO relation_compute_order_cut_protection(cut_id,question,kind)
     SELECT c.id,q.id,'issued' FROM entity_compute_order_cuts c JOIN (
       SELECT id FROM state_compute_scheduling WHERE lease IS NOT NULL OR leased_at IS NOT NULL OR leased_to IS NOT NULL OR lease_until IS NOT NULL
@@ -1255,7 +1265,12 @@ BEGIN
     WHERE c.id=$1 AND q.task_id<=c.task_cutoff AND q.state IN('open','withdrawn')
       AND (coalesce(q.zone,factory_default_zone(q.producer)),coalesce(q.zone_position,q.task_id),q.id)>(c.keep_zone,c.keep_position,c.keep_id)
     ON CONFLICT DO NOTHING;
-  GET DIAGNOSTICS n=ROW_COUNT;RETURN n;
+  GET DIAGNOSTICS n=ROW_COUNT;
+  SELECT count(*),encode(sha256(convert_to(coalesce(string_agg(question,E'\n' ORDER BY question),''),'UTF8')),'hex')
+    INTO total,digest FROM relation_compute_order_cut_protection WHERE cut_id=$1;
+  INSERT INTO record_compute_order_cut_captures(cut_id,completed_at,snapshot,protected_count,protected_sha256)
+    VALUES($1,to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),started_snapshot,total,digest);
+  RETURN n;
 END $$;
 REVOKE ALL ON FUNCTION compute_order_cut_capture(text) FROM PUBLIC;
 
@@ -1263,7 +1278,10 @@ CREATE OR REPLACE FUNCTION compute_order_cut_activate(text,bigint,text) RETURNS 
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE n bigint; digest text;captured bigint;captured_digest text;
 BEGIN
-  PERFORM pg_advisory_xact_lock(hashtextextended('compute-order-cut:'||current_schema(),0));
+  IF NOT EXISTS(SELECT 1 FROM record_compute_order_cut_captures WHERE cut_id=$1) THEN
+    RAISE EXCEPTION 'completed preparing capture required';END IF;
+  IF NOT pg_try_advisory_xact_lock(hashtextextended('compute-order-cut:'||current_schema(),0)) THEN
+    RAISE EXCEPTION 'order cut writes in flight; retry activation' USING ERRCODE='55P03';END IF;
   IF NOT EXISTS(SELECT 1 FROM entity_compute_order_cuts WHERE id=$1)
     OR EXISTS(SELECT 1 FROM record_compute_order_cut_activations) THEN RAISE EXCEPTION 'order cut activation changed'; END IF;
   IF to_regprocedure('factory_candidates(text,bigint,bigint,text,text,text,text,text,bigint,bigint,text,text,bigint,text,text,text,boolean)') IS NULL
@@ -1275,9 +1293,11 @@ BEGIN
   SELECT count(*),encode(sha256(convert_to(coalesce(string_agg(question,E'\n' ORDER BY question),''),'UTF8')),'hex')
     INTO n,digest FROM relation_compute_order_cut_protection WHERE cut_id=$1 AND kind='manifest';
   IF n IS DISTINCT FROM $2 OR digest IS DISTINCT FROM $3 THEN RAISE EXCEPTION 'order protection manifest changed'; END IF;
-  PERFORM compute_order_cut_capture($1);
+  IF NOT compute_order_cut_indexes_ready() THEN RAISE EXCEPTION 'order cut online indexes must be installed and valid';END IF;
   SELECT count(*),encode(sha256(convert_to(coalesce(string_agg(question,E'\n' ORDER BY question),''),'UTF8')),'hex')
     INTO captured,captured_digest FROM relation_compute_order_cut_protection WHERE cut_id=$1;
+  IF captured<(SELECT protected_count FROM record_compute_order_cut_captures WHERE cut_id=$1 ORDER BY id DESC LIMIT 1) THEN
+    RAISE EXCEPTION 'captured protection membership shrank';END IF;
   UPDATE state_factory_snapshot SET at='' WHERE id=1;
   INSERT INTO record_compute_order_cut_activations VALUES($1,
     to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),n,digest,captured,captured_digest);
@@ -1387,8 +1407,12 @@ CREATE OR REPLACE VIEW state_compute_effective_work AS
 CREATE OR REPLACE FUNCTION compute_order_cut_immutable() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 BEGIN
-  IF TG_TABLE_NAME='relation_compute_order_cut_protection' AND NOT EXISTS(
-    SELECT 1 FROM record_compute_order_cut_activations WHERE cut_id=CASE WHEN TG_OP='INSERT' THEN NEW.cut_id ELSE OLD.cut_id END) THEN RETURN NEW;END IF;
+  IF TG_TABLE_NAME='relation_compute_order_cut_protection' AND TG_OP<>'DELETE' AND NOT EXISTS(
+    SELECT 1 FROM record_compute_order_cut_activations WHERE cut_id=NEW.cut_id) THEN
+    IF TG_OP='UPDATE' AND (NEW.cut_id,NEW.question) IS DISTINCT FROM (OLD.cut_id,OLD.question) THEN
+      RAISE EXCEPTION 'captured protection identity is immutable';END IF;
+    RETURN NEW;
+  END IF;
   RAISE EXCEPTION 'activated order cancellation is immutable';
 END $$;
 DROP TRIGGER IF EXISTS order_cut_retained ON entity_compute_order_cuts;
@@ -1397,3 +1421,6 @@ DROP TRIGGER IF EXISTS order_cut_activation_retained ON record_compute_order_cut
 CREATE TRIGGER order_cut_activation_retained BEFORE UPDATE OR DELETE ON record_compute_order_cut_activations FOR EACH ROW EXECUTE FUNCTION compute_order_cut_immutable();
 DROP TRIGGER IF EXISTS order_cut_protection_retained ON relation_compute_order_cut_protection;
 CREATE TRIGGER order_cut_protection_retained BEFORE INSERT OR UPDATE OR DELETE ON relation_compute_order_cut_protection FOR EACH ROW EXECUTE FUNCTION compute_order_cut_immutable();
+
+DROP TRIGGER IF EXISTS order_cut_capture_retained ON record_compute_order_cut_captures;
+CREATE TRIGGER order_cut_capture_retained BEFORE UPDATE OR DELETE ON record_compute_order_cut_captures FOR EACH ROW EXECUTE FUNCTION compute_order_cut_immutable();

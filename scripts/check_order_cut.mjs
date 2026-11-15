@@ -32,6 +32,8 @@ export async function orderCutCases(db) {
   await db.run("UPDATE state_compute_scheduling SET lease='already-issued',leased_to='holder',lease_until='2999',leased_at=? WHERE id=?",new Date(now-500).toISOString(),by.preparing);
   assert.equal((await db.get('SELECT kind FROM relation_compute_order_cut_protection WHERE question=?',by.preparing)).kind,'issued');
   const digest=createHash('sha256').update(by.known).digest('hex');
+  await assert.rejects(db.run('SELECT compute_order_cut_activate(?::text,?::bigint,?::text)','fixture-cut',1,digest),/completed preparing capture required/);
+  await db.run('SELECT compute_order_cut_capture(?::text)','fixture-cut');
   await assert.rejects(db.run('SELECT compute_order_cut_activate(?::text,?::bigint,?::text)','fixture-cut',1,'0'.repeat(64)),/manifest changed/);
   assert.equal((await db.get('SELECT count(*) n FROM record_compute_order_cut_activations')).n,0);
   const beforeActivation=await db.all('SELECT to_jsonb(q) data FROM state_compute_scheduling q ORDER BY id');
@@ -159,6 +161,7 @@ export async function orderCutWorkflowCases(db) {
   const cutoff=(await db.get('SELECT max(id) n FROM entity_compute_tasks')).n;
   await db.run('SELECT compute_order_cut_stage((?::text)::jsonb)',JSON.stringify({id:'workflow-cut',cut_at:new Date(now+1000).toISOString(),task_cutoff:cutoff,keep_boundary:[3,nodes[0].queue_position,''],source:{fixture:true}}));
   await db.run('SELECT compute_order_cut_protect(?::text,(?::text)::jsonb)','workflow-cut',JSON.stringify([issued]));
+  await db.run('SELECT compute_order_cut_capture(?::text)','workflow-cut');
   await db.run('SELECT compute_order_cut_activate(?::text,1,?::text)','workflow-cut',createHash('sha256').update(issued).digest('hex'));
   assert.equal((await db.get('SELECT compute_order_workflow_cancelled(?::text) value',flows[0].id)).value,false);
   assert.equal((await db.get('SELECT compute_order_workflow_cancelled(?::text) value',flows[1].id)).value,true);
@@ -177,8 +180,9 @@ if(process.argv[1]===new URL(import.meta.url).pathname) {
   try {
     if(process.argv.includes('--break-prestage-capture')) {
       const source=readFileSync(new URL('../worker/pg/schema.sql',import.meta.url),'utf8');
-      const original=source.match(/CREATE OR REPLACE FUNCTION compute_order_cut_activate\([^]*?END \$\$;/)[0];
-      const broken=original.replace('PERFORM compute_order_cut_capture($1);','');assert.notEqual(broken,original);await db.exec(broken);
+      const original=source.match(/CREATE OR REPLACE FUNCTION compute_order_cut_capture\([^]*?END \$\$;/)[0];
+      const broken=original.replace(/  INSERT INTO relation_compute_order_cut_protection[^]*?ON CONFLICT DO NOTHING;/,'  PERFORM 1;');
+      assert.notEqual(broken,original);await db.exec(broken);
     }
     await orderCutCases(db);
   } finally {await db.close();}

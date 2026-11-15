@@ -716,7 +716,9 @@ source replay, fresh user demand, late input without new credit, physical GC
 retention and captured workflow parent chains. `check_order_cut_pg` requires an
 isolated local `WFSIM_ORDER_CUT_TEST_URL`; it holds two actual transactions
 across activation, reloads the schema, rejects a broken write guard and checks
-FIFO plans with a nonempty prefix and a large cancelled tail.
+FIFO plans with a nonempty prefix and a large cancelled tail. Historical
+answer and result table locks cannot block activation after its preparing
+watermark commits; the retained earlier activation function fails that control.
 
 Inventory unions missing and queued task identities, removes orphans and
 retired rulers, and counts undispatched work before admission pacing. A new

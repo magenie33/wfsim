@@ -777,9 +777,13 @@ Stage precedes the fresh protection snapshot. `compute_order_cut_protect(text,
 jsonb)` imports the audited historical and required-parent ids, and
 `compute_order_cut_capture(text)` adds indexed execution, previous-credential,
 answer, result, verification and prior-round evidence. Preparing writes retain
-new execution evidence under the same transaction barrier. Activation checks
-the imported manifest's sorted newline-separated SHA-256 and count, captures
-fresh indexed positives again, then commits one activation record. A missing or
+new execution evidence under the same transaction barrier. Capture commits an immutable completion receipt and starting snapshot watermark
+before activation. Preparing protection identities cannot be removed or changed;
+new evidence can only grow that set. Activation
+checks that receipt and the imported manifest's sorted newline-separated
+SHA-256 and count, then commits one activation record. It never rereads
+answer or result history. In-flight shared writers make activation refuse
+promptly for retry; activation never queues a global lock behind capture. A missing or
 invalid prerequisite index refuses activation. The imported historical manifest
 is not a substitute for the fresh capture.
 
