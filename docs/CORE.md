@@ -32,23 +32,34 @@ north-star metric.
    simulation — never the core of the computation.
 3. **Data and engine are separate.** Weapon/mod/enemy numbers are **data**
    (importable from game data sources, versioned); damage rules are the
-   **engine** (pure functions, testable). When the game patches, swap the
-   data — don't touch the engine.
+   **engine** (pure functions, testable). Data-only patches update data; a
+   native code change requires rebinding its affected consumers and kernels.
 4. **Every rule is sourced.** Elemental combination order, armor mitigation
    formula, crit tiers, status weighting… every formula in the code carries a
    comment pointing at its source (wiki / datamining / in-game measurement)
-   so it can be verified and corrected.
+   so it can be verified and corrected. On a conflict, in-game measurement
+   outranks the matching client's package/code, then the wiki, then DE's export.
 5. **Verifiable.** Every layer of the engine gets test cases calibrated
    against in-game measurements (golden tests). Without a measurement to
    compare against, it doesn't count as "correct".
+6. **Native calculation is the update path.** Build prepares the native
+   inputs and queries; simulate executes the packet pipeline; solve calls
+   and replays that same execution. Preserve recovered field/id names,
+   operation order, scalar widths, integer/RNG semantics and materialization boundaries.
+   Keep frozen wire names through adapters. Unbound ownership, eligibility,
+   scheduling and scene inputs remain explicit in `NATIVE_BINDINGS.md` and
+   `UNMODELLED.md`. Updates extend this shared path. Historical engines remain
+   immutable for comparisons and work already bound to their versions; their
+   outputs do not override source evidence or create another current formula path.
 
 ---
 
 ## 3. The Damage Pipeline
 
-This is the heart of the project. Damage is not one multiplication — it is a
-pipeline with a **strict order**. Get the order wrong and the result is wrong.
-Layered draft below (each layer is an independent, testable pure function):
+Damage follows the operation and event order of each bound native route.
+The following map groups responsibilities; it is not the native call graph
+and must not reorder real queries, packet writes or callbacks. The binding
+ledger and `MECHANICS.md` own each route's order and precision boundaries.
 
 ```
 Weapon base stats
