@@ -232,7 +232,7 @@ pub(super) fn push_break_proc(
         params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
     let forced: Vec<_> = parent.procs.types().collect();
     let procs = crate::rules::status::procs_for_hit(&forced,
-        0.0, &DamageVector::new(), &foe.status_immunities, rng);
+        0.0, &DamageVector::new(), foe.proc_handlers(), rng);
     let generation = target.generation;
     settle_procs(procs, owner, now, body_index, InstanceScale { native_source: Some(parent.scalar), native_part: Some(parent.part),
         mb_live,
