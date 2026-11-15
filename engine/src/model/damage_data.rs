@@ -173,6 +173,54 @@ mod tests {
     }
 
     #[test]
+    fn primary_forced_counter_matches_original_native_clear_then_increment_cases() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/client/primary-debilitate-contract-2026-10-28.json")).unwrap();
+        let cases = fixture["counter_cases"].as_array().unwrap();
+        assert_eq!(cases.len(), 16);
+        for case in cases {
+            let kind = ProcType::new(case["proc"].as_u64().unwrap() as u8).unwrap();
+            let mut counters = ProcCounters::default();
+            counters.add(kind, case["initial"].as_u64().unwrap() as u8);
+            let mut direct = counters;
+            direct.add(kind, 1);
+            assert_eq!(u64::from(direct.count(kind)), case["direct_increment"].as_u64().unwrap());
+            counters.set_forced(kind);
+            counters.set_forced(kind);
+            assert_eq!(u64::from(counters.count(kind)), case["repeated_wrapper_result"].as_u64().unwrap());
+        }
+    }
+
+    #[test]
+    fn primary_component_choices_match_original_native_random_vectors_and_script_pairs() {
+        use crate::rules::rng::NativeRng;
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/client/primary-debilitate-contract-2026-10-28.json")).unwrap();
+        let mut checked = 0;
+        for pair in fixture["contract"]["pairs"].as_array().unwrap() {
+            let kind = ProcType::new(pair["proc_id"].as_u64().unwrap() as u8).unwrap();
+            for case in fixture["rng_cases"].as_array().unwrap().iter()
+                .filter(|case| case["arguments"] == serde_json::json!([1, 2]))
+            {
+                for count in [1, 20] {
+                    let mut incoming = ProcCounters::default();
+                    incoming.add(kind, count);
+                    let initial = u64::from_str_radix(case["seed"].as_str().unwrap().trim_start_matches("0x"), 16).unwrap();
+                    let final_state = u64::from_str_radix(case["next_seed"].as_str().unwrap().trim_start_matches("0x"), 16).unwrap();
+                    let mut random = NativeRng::new(initial);
+                    let output = incoming.split_combined(1 << kind.id(), &mut random);
+                    let selected = pair["choices"][case["result"].as_u64().unwrap() as usize - 1].as_u64().unwrap() as u8;
+                    assert_eq!(output.present().map(ProcType::id).collect::<Vec<_>>(), [selected]);
+                    assert_eq!(output.count(ProcType::new(selected).unwrap()), 1);
+                    assert_eq!(random.state(), final_state);
+                    checked += 1;
+                }
+            }
+        }
+        assert_eq!(checked, 96);
+    }
+
+    #[test]
     fn each_ordinary_proc_maps_by_native_id_and_retains_its_count() {
         for id in 0..13 {
             let native = ProcType::new(id).unwrap();

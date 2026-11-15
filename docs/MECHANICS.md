@@ -1127,7 +1127,7 @@ blast's own damage, not the weapon's. Which of the two Primary Debilitate's
 split falls under is OPEN and is the whole of MEASUREMENTS **M33** — it reads
 `ModifiedBase` here.
 
-Primary Debilitate visits each qualifying compound type once per submitted
+Primary Debilitate's [client callback contract](PRIMARY_DEBILITATE.md) visits each qualifying compound type once per submitted
 status packet. Its incoming byte counter tests presence, so twenty Magnetic
 counters in one packet give one selection. Chosen basic types coalesce in one
 fresh scalar-copy packet. Fresh body landing is independent of the inherited
