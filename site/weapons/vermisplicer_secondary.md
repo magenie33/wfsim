@@ -2,7 +2,7 @@
 
 Chinese name: 虫置
 
-Pistol · Secondary · Mastery Rank 0. 14 base damage x5 multishot (impact 1.5, puncture 3.5, slash 4.5, toxin 4.5), 25% crit chance, 2x crit multiplier, 25% status chance.
+Pistol · Secondary · Mastery Rank 0. 14 base damage x5 multishot (impact 1.5, puncture 3.5, slash 4.5, toxin 4.5), 25% crit chance, 2x crit multiplier, 5% status chance.
 
 ## Best riven-free build on the WFSim board, as of 2026-11-15
 
