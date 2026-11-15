@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Actual heads, stamp and receiver consume a deliverable largest-weapon fixture.
 import assert from 'node:assert/strict';
-import { spawnSync, execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, openSync, closeSync, writeSync, writeFileSync, readFileSync, statSync, copyFileSync, rmSync, ftruncateSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { jsonArrayRows } from './json_array_stream.mjs';
@@ -14,6 +15,16 @@ import { pushBoard } from './live_publish.mjs';
 import { boardDeliveryPending } from './inventory_board_pipeline.mjs';
 import { pushLive } from '../worker/live_board.js';
 import { boardHeads } from '../mcp/headless.js';
+
+const reference = new URL('../tests/fixtures/board-consumers-61de/', import.meta.url);
+const provenance = JSON.parse(readFileSync(new URL('source.json', reference)));
+assert.equal(provenance.version, 1);
+assert.equal(provenance.source_commit, '61de56dcda71301bbaefc16b8fcc99baf4cc4fc3');
+assert.deepEqual(Object.keys(provenance.files).sort(), ['mcp/headless.js', 'scripts/board_heads.mjs', 'scripts/board_meta.py']);
+for (const [name, sha] of Object.entries(provenance.files)) {
+  assert.equal(createHash('sha256').update(readFileSync(new URL(name, reference))).digest('hex'), sha, `reference fixture hash: ${name}`);
+}
+const referenceHeads = fileURLToPath(new URL('scripts/board_heads.mjs', reference));
 
 const root = mkdtempSync(join(tmpdir(), 'projection-consumers-')), board = join(root, 'verified'); mkdirSync(board);
 const run = (program, args, options = {}) => { const out = spawnSync(program, args, { encoding: 'utf8', timeout: 120000, ...options });
@@ -48,7 +59,8 @@ try {
   assert.equal(readFileSync(output, 'utf8'), 'durable complete');
   console.log('ok: Unicode/chunk/offset/EOF checks, incomplete rows and uncheckpointed tail recovery');
 
-  const rich = join(root, 'rich'); mkdirSync(join(rich, 'sp200'), { recursive: true }); const all = [];
+  const rich = join(root, 'rich'), full = join(root, 'rich-full'); const all = [];
+  for (const dir of [rich, full]) mkdirSync(join(dir, 'sp200'), { recursive: true });
   for (const scene of ['', 'sp200']) {
     const rows = [];
     for (const mode of ['base','automatic']) for (const riven of [false,true]) for (let i = 0; i < 150; i++) rows.push({
@@ -56,11 +68,15 @@ try {
       mods: ['serration@' + i % 10], measured_at: i === 0 ? '2026-11-09T01:00Z' : '2026-11-09T00:00Z',
       ...(riven ? { riven: { bonuses: ['damage','critical_chance'], malus: null, rolls: [1.1,1.1] } } : {}),
     });
-    writeFileSync(join(rich, scene, 'braton_prime.json'), JSON.stringify(rows)); all.push(...rows);
+    for (const dir of [rich, full]) writeFileSync(join(dir, scene, 'braton_prime.json'), JSON.stringify(rows));
+    all.push(...rows);
   }
   run(process.execPath, ['scripts/board_heads.mjs', rich]);
   assert.deepEqual(JSON.parse(readFileSync(join(rich, 'heads/braton_prime.json'))), boardHeads(all),
     'scene/mode/riven thresholds, all ties and newest below the cutoff must match the authoritative boardHeads');
+  run(process.execPath, [referenceHeads, full]);
+  assert.equal(readFileSync(join(rich, 'heads/braton_prime.json'), 'utf8'), readFileSync(join(full, 'heads/braton_prime.json'), 'utf8'),
+    'streaming heads must match the frozen full-memory reference byte for byte');
 
   const path = join(board, 'braton_prime.json'), fd = openSync(path, 'w'); writeSync(fd, '[');
   const ids = ['serration','vital_sense','hellfire','speed_trigger','hammer_shot','vigilante_fervor','magazine_warp','fast_hands'];
@@ -76,15 +92,12 @@ try {
   run(process.execPath, ['--max-old-space-size=32', 'scripts/board_heads.mjs', board]);
   assert.equal(await fileHash(join(board, 'heads/braton_prime.json')), await fileHash(path), 'all 60k first-place ties and their source order survive');
   const broken = join(root, 'broken'); mkdirSync(broken); copyFileSync(path, join(broken, 'braton_prime.json'));
-  const mutant = resolve('target/board_heads_full_memory_mutant.mjs');
-  writeFileSync(mutant, execFileSync('git', ['show','61de56dcda71301bbaefc16b8fcc99baf4cc4fc3:scripts/board_heads.mjs']));
-  const old = spawnSync(process.execPath, ['--max-old-space-size=32', mutant, broken], { encoding: 'utf8', timeout: 120000 });
-  rmSync(mutant);
+  const old = spawnSync(process.execPath, ['--max-old-space-size=32', referenceHeads, broken], { encoding: 'utf8', timeout: 120000 });
   assert.notEqual(old.status, 0, 'the old full-memory consumer must fail under the same heap bound');
   assert.match(old.stderr, /heap out of memory|Allocation failed/);
 
   const state = join(root, 'state.yaml'); writeFileSync(state, 'boards: {}\n');
-  const oldStamp = join(root, 'old_stamp.py'), original = execFileSync('git', ['show','61de56dcda71301bbaefc16b8fcc99baf4cc4fc3:scripts/board_meta.py'], { encoding: 'utf8' });
+  const oldStamp = join(root, 'old_stamp.py'), original = readFileSync(new URL('scripts/board_meta.py', reference), 'utf8');
   writeFileSync(oldStamp, original.replace('encoding="utf-8", newline="\\n")', 'encoding="utf-8")'));
   run('python3', [oldStamp, board, state, join(root, 'old-meta.json')]);
   run('python3', ['scripts/board_meta.py', board, state, join(board, 'meta.json')]);
