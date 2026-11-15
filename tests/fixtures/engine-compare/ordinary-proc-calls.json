@@ -1,0 +1,586 @@
+[
+  {
+    "id": "phantasma_radiation_ms0_simulate_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "primary_debilitate"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "shotgun_savvy",
+        "shotgun_barrage"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_radiation_ms1_simulate_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "primary_debilitate"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "shotgun_savvy",
+        "shotgun_barrage",
+        "hells_chamber"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_gas_radiation_ms0_simulate_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "primary_debilitate"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "incendiary_coat",
+        "contagious_spread",
+        "shotgun_savvy",
+        "shotgun_barrage"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_gas_radiation_ms1_simulate_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "primary_debilitate"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "incendiary_coat",
+        "contagious_spread",
+        "shotgun_savvy",
+        "shotgun_barrage",
+        "hells_chamber"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_corrosive_radiation_ms0_simulate_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "primary_debilitate"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "charged_shell",
+        "contagious_spread",
+        "shotgun_savvy",
+        "shotgun_barrage"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_corrosive_radiation_ms1_simulate_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "primary_debilitate"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "charged_shell",
+        "contagious_spread",
+        "shotgun_savvy",
+        "shotgun_barrage",
+        "hells_chamber"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_gas_magnetic_radiation_ms0_simulate_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "primary_debilitate"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "incendiary_coat",
+        "contagious_spread",
+        "chilling_reload",
+        "charged_shell",
+        "shotgun_savvy",
+        "shotgun_barrage"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_gas_magnetic_radiation_ms1_simulate_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "primary_debilitate"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "incendiary_coat",
+        "contagious_spread",
+        "chilling_reload",
+        "charged_shell",
+        "shotgun_savvy",
+        "shotgun_barrage",
+        "hells_chamber"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_radiation_ms0_simulate_noarc_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "shotgun_savvy",
+        "shotgun_barrage"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_radiation_ms1_simulate_noarc_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "shotgun_savvy",
+        "shotgun_barrage",
+        "hells_chamber"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_gas_radiation_ms0_simulate_noarc_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "incendiary_coat",
+        "contagious_spread",
+        "shotgun_savvy",
+        "shotgun_barrage"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_gas_radiation_ms1_simulate_noarc_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "incendiary_coat",
+        "contagious_spread",
+        "shotgun_savvy",
+        "shotgun_barrage",
+        "hells_chamber"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_corrosive_radiation_ms0_simulate_noarc_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "charged_shell",
+        "contagious_spread",
+        "shotgun_savvy",
+        "shotgun_barrage"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_corrosive_radiation_ms1_simulate_noarc_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "charged_shell",
+        "contagious_spread",
+        "shotgun_savvy",
+        "shotgun_barrage",
+        "hells_chamber"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_gas_magnetic_radiation_ms0_simulate_noarc_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "incendiary_coat",
+        "contagious_spread",
+        "chilling_reload",
+        "charged_shell",
+        "shotgun_savvy",
+        "shotgun_barrage"
+      ]
+    }
+  },
+  {
+    "id": "phantasma_gas_magnetic_radiation_ms1_simulate_noarc_mc1024",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 12,
+      "runs": 1024,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "phantasma_prime",
+      "mods": [
+        "incendiary_coat",
+        "contagious_spread",
+        "chilling_reload",
+        "charged_shell",
+        "shotgun_savvy",
+        "shotgun_barrage",
+        "hells_chamber"
+      ]
+    }
+  }
+]
