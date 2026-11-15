@@ -252,6 +252,12 @@ impl ArcaneFx {
                     ..ArcaneFx::none()
                 };
                 for a in live {
+                    // The catalog has one echo source; keep its range and gate together.
+                    if a.echo_share > 0.0 {
+                        out.echo_share = a.echo_share;
+                        out.echo_radius_m = a.echo_radius_m;
+                        out.echo_needs_radiation_stacks = a.echo_needs_radiation_stacks;
+                    }
                     out.combo_count_chance += a.combo_count_chance;
                     out.combo_count_chance_on_lifted += a.combo_count_chance_on_lifted;
                     out.buffs.extend(a.buffs.iter().cloned());

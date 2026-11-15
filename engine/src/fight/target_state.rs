@@ -14,6 +14,7 @@ use super::*;
 /// which one it reached, and a rule it has to ask `if 0` about is a rule that
 /// can be added to one arm and not the other.
 pub(super) struct Body {
+    pub(super) irradiate: irradiate::SceneListener,
     pub(super) state: TargetState,
     pub(super) debuffs: DebuffState,
     /// KILLED BY THE SHOT BEING SETTLED: the rest of that shot finds nothing

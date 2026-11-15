@@ -315,6 +315,7 @@ pub(super) fn open<'a>(
     let bodies: Vec<Body> = (0..params.body_count())
         .filter_map(|i| params.body(i))
         .map(|b| Body {
+            irradiate: irradiate::SceneListener::default(),
             state: TargetState::spawn(b.params, b.at),
             debuffs: DebuffState::default(),
             fallen: false,

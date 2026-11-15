@@ -62,6 +62,29 @@ use super::*;
 const NO_TRAITS: &[&str] = &[];
 
 #[test]
+fn irradiate_payload_survives_two_arcane_merge() {
+    let tenno = crate::data::tenno::default_tenno();
+    let echo = secondary("secondary_irradiate")
+        .expect("Irradiate exists")
+        .fx(5, crate::model::StackPolicy::AssumedMax, NO_TRAITS, tenno);
+    let primary = for_slot("primary", "primary_merciless")
+        .expect("the Arch-Gun can seat a primary arcane too")
+        .fx(5, crate::model::StackPolicy::AssumedMax, NO_TRAITS, tenno);
+    let payload = |fx: &ArcaneFx| {
+        (fx.echo_share, fx.echo_radius_m, fx.echo_needs_radiation_stacks)
+    };
+    assert_eq!(payload(&echo), (1.8, 7.0, 10));
+    for parts in [
+        vec![echo.clone()],
+        vec![primary.clone(), echo.clone()],
+        vec![echo.clone(), primary.clone()],
+        vec![primary, ArcaneFx::none(), echo.clone()],
+    ] {
+        assert_eq!(payload(&ArcaneFx::merged(&parts)), payload(&echo));
+    }
+}
+
+#[test]
 fn loads_all_26_secondary_arcanes() {
     let pool = secondary_pool();
     // 18 ordinary secondaries plus the EIGHT Kitgun arcanes — four Pax and

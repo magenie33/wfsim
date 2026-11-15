@@ -612,6 +612,14 @@ pub(super) fn spread_hit(
         landed.killed |= detonate_heavy_status(seat, inst.target, foe, spec.params, params, active, w,
             active.spends_combo || tennokai_heavy, t, gal, arc, r, rec, &mut d.status);
     }
+    if params.arcane.echo_share > 0.0 && matches!(by, SpreadBy::Chain | SpreadBy::Tendril
+        | SpreadBy::Ricochet | SpreadBy::PunchThrough | SpreadBy::Contact)
+    {
+        irradiate::submit_immediate_direct_echo(foe, inst.target, params, arc, || SpreadStrike {
+            raw_per_bucket, shares, crit_multiplier, crit_tier, attrition, modded_base,
+            status_chance, forced: forced.to_vec(), status_vector: *status_vector,
+        });
+    }
     landed
 }
 
@@ -1018,23 +1026,9 @@ pub(super) fn spread_from_ricochet(
     }
 }
 
-/// AN ECHO — a fraction of THIS hit dealt to every other body near it.
-///
-/// Secondary Irradiate is the only member: *"deal X% of the hit damage to
-/// enemies within Xm"*, 80% to 180% of it over a 4.5 m to 7 m sphere. It sat in
-/// `data::arcanes` with the TEAM buffs — "no sim payload" — and that was right
-/// while the arena held one body, because an echo needs somebody to echo to.
-///
-/// PER DIRECT HIT, which is per landing PELLET: the arcane's own file says
-/// *"multishot pellets each trigger; beams/AoE don't spread"*. So it is called
-/// from inside the pellet loop and only on the direct stage.
-///
-/// A BODY HIT, never a head, and it *"rolls its own crits"* — which this shares
-/// with every other spread here and which is the one simplification they all
-/// carry (see `spread_hit`).
-///
-/// THE BODY THAT WAS HIT TAKES NOTHING EXTRA: the echo is to *"enemies within
-/// Xm"* of it, not to it.
+/// Settle a consumed echo around its actual source victim, excluding that victim.
+/// Factors and recipient crit/proc projection follow the scene adapter;
+/// docs/SECONDARY_IRRADIATE.md separates it from the recovered count rule.
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn spread_from_echo(
@@ -1044,9 +1038,8 @@ pub(super) fn spread_from_echo(
     // See `process_ticks` — this instance's statuses are settled here.
     w: &mut CardWindows,
     bodies: &mut [Body],
-    // STACKS ON THE BODY THAT WAS HIT, read at the moment of the hit — the
-    // arcane's gate is about the target, not about the shooter.
-    hit_radiation_stacks: usize,
+    origin: usize,
+    share: f64,
     params: &FightParams,
     active: &FightParams,
     raw_per_bucket: f64,
@@ -1065,33 +1058,10 @@ pub(super) fn spread_from_echo(
     d: &mut crate::rules::rng::Draws,
     t: f64,
 ) {
-    // THE ARCANE'S SHARE, TIMES THE WEAPON'S OWN COEFFICIENT — see
-    // `data::weapons::WeaponSpec::echo_multiplier`. It is 1.0 for every entry in
-    // the roster but the Laetum's Incarnon form, where the echo was MEASURED at
-    // 3.6x a 1.8x arcane and nobody knows why.
-    let share = params.arcane.echo_share * params.echo_multiplier;
     let radius = params.arcane.echo_radius_m;
-    if share <= 0.0 || radius <= 0.0 {
-        return;
-    }
-    // THE CARD'S OWN PRICE: *"On hitting enemies afflicted by 10 stacks of
-    // Radiation"*. The hit body has to be WEARING them, and 10 is the cap, so
-    // this is not a rider — it is most of the arcane.
-    //
-    // It fired unconditionally until 2026-08-18, on a target with no Radiation
-    // on it at all, because the loader read `trigger`/`grants` and the per-rank
-    // values and never `condition:` (a player reported it). Radiation's stacks
-    // have been tracked as `confusion` since the engine had statuses, so this
-    // was never a thing the sim could not know.
-    if hit_radiation_stacks < params.arcane.echo_needs_radiation_stacks as usize {
-        return;
-    }
-    // FROM THE BODY THAT WAS HIT, at the surface the round met — the same
-    // epicentre every other sphere in this engine uses.
-    let at = crate::rules::space::detonation_point(params.target_at, params.player_at);
-    // FROM BODY 1: the aimed one takes the Echo on the aimed path, with the
-    // hit that set it off.
-    for (b, foe) in bodies.iter_mut().enumerate().skip(1) {
+    let Some(source) = params.body(origin) else { return; };
+    let at = crate::rules::space::detonation_point(source.at, params.player_at);
+    for (b, foe) in bodies.iter_mut().enumerate().filter(|(b, _)| *b != origin) {
         let Some(spec) = params.body(b) else { continue };
         if !crate::rules::space::caught_by_blast(spec.at.distance(at), radius) {
             continue;
@@ -1779,5 +1749,8 @@ pub(super) fn spread_beyond_the_target(
     //
     // The PLAYER's buff state (`gal`, `arc`) is shared, which is right: a
     // kill is a kill whichever body it was.
+    if params.arcane.echo_share > 0.0 {
+        irradiate::drain_echoes(seat, w, bodies, params, active, gal, arc, r, rec, d, t);
+    }
     settle_crowd_ticks(w, bodies, gal, arc, t + 1e-9, params, active, r, rec, &mut d.status);
 }

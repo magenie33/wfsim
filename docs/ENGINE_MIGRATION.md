@@ -320,7 +320,7 @@ evidence; it does not certify uncaptured code or silently migrate new filters.
 ## Live queries and action boundaries
 
 The [binding ledger](NATIVE_BINDINGS.md) records the current engine consumers
-and the remaining native boundary for each of the delivered 46 stages.
+and the remaining native boundary for each delivered stage.
 `CriticalInputs` retains static operations until the hit-time query appends
 selected live grants. Conditional base critical damage selects its base before
 folding static and live operations. The supplied-stat adapter is explicit;
@@ -339,3 +339,9 @@ calculation commit, baseline, source pins, measured runtime/memory changes,
 validation scope and remaining implementation/evidence separately. A passing
 cross-runtime comparison certifies the supplied requests; it does not certify
 whole-engine equivalence with the game.
+
+Secondary Irradiate uses the original script owner keys and independent native
+NumHits count through activation, collection and explicit resumption. The
+[binding scope](SECONDARY_IRRADIATE.md) identifies the immediate scene adapter,
+retained M59 calibration, source fixture and unbound producer/scheduler/recipient
+boundaries. A scene's count of one is not evidence of native packet multiplicity.
