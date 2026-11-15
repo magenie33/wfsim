@@ -1,5 +1,4 @@
 {
-  "candidate": "25fbf78272199b5da437e30b26cb4a2be1c085bc",
   "working_tracked_changes": "",
   "binary": "own preflight target/debug/wfsim-web",
   "binary_sha256": "7c07afab7e66c8803d5238bfa98998308af41eecce0607b44a3e77e6880cabca",
@@ -139,5 +138,9 @@
       "calls": "ordinary-proc-calls.json",
       "reference": "optimized-mc1024.json"
     }
-  ]
+  ],
+  "execution_candidate": "25fbf78272199b5da437e30b26cb4a2be1c085bc",
+  "final_candidate": "a36f7e06ffcf7a7f87c09911eef5f6abdfcc8b3e",
+  "final_candidate_evidence_binding": "5683 scoped calculation/API/UI/input files and all worker/scripts/workflows identical; only current-main generated site delta. No rebuild or test rerun claimed for final SHA.",
+  "canceled_ci_not_qualification": "43751118386 on25fb"
 }

@@ -1,13 +1,29 @@
 # Native engine final candidate author audit
 
-The exact reviewed candidate is
+The final reviewed publication candidate is
+`a36f7e06ffcf7a7f87c09911eef5f6abdfcc8b3e`, replayed onto generated main
+`1ab84c0d7664e9a4c40de3e8aa60c2a22b5dbe68`.
+Its5683 scoped calculation/API/UI/input files are identical to the execution
+candidate below. Worker, scripts and workflows also remain identical. The
+entire delta is1296 generated site paths, exactly the aa450→1ab baseline
+delta; every resulting blob, addition and removal equals1ab.
+The final Git tree is `5cc9f46939b556a4759437cf5351b5f84b7eb909`.
+
+Fresh execution in this audit used
 `25fbf78272199b5da437e30b26cb4a2be1c085bc`, replayed onto the no-refill main
 `aa450036c42faafe802c606bcf30944b71a8b306`.
+The128 HTTP,9 packet and39 browser results bind to final a36 by complete source
+identity, without claiming that its executable was rebuilt here. The initial
+25fb CI43751118386 was canceled after the publication baseline advanced and
+provides no release qualification. The inherited P0 site snapshot is not a
+Native release artifact: final core CI and shipping must generate and verify
+the new engine and channel identities.
+
 The author verdict is ready for final combined CI: no new calculation or
 functional blocker was found in the audited scope. This is not a full-game
 parity certificate or a substitute for publication and operator checks.
 
-## Source identity
+## Execution candidate identity
 
 All5683 scoped engine, optimizer, API, WASM, CLI, data, UI, tooling and fixture
 files equal the tested author commit

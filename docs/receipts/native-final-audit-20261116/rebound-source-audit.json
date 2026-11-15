@@ -1,0 +1,17 @@
+{
+  "refs": {
+    "executed": "25fbf78272199b5da437e30b26cb4a2be1c085bc",
+    "final": "a36f7e06ffcf7a7f87c09911eef5f6abdfcc8b3e",
+    "old_main": "aa450036c42faafe802c606bcf30944b71a8b306",
+    "generated_main": "1ab84c0d7664e9a4c40de3e8aa60c2a22b5dbe68"
+  },
+  "source_evidence_bound_to_final": true,
+  "identical_scoped_files": 5683,
+  "generated_changed_paths": 1296,
+  "all_generated_changes_equal_current_main": true,
+  "change_prefixes": {
+    "site": 1296
+  },
+  "final_tree": "5cc9f46939b556a4759437cf5351b5f84b7eb909",
+  "publication_note": "Inherited P0 generated snapshot is not a native release artifact. Final core CI/ship must generate and verify current engine/channel identities. Canceled25fb CI is not reused."
+}
