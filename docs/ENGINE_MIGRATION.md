@@ -267,6 +267,10 @@ The actual fight sampler shares the original binary32 chance/CDF loop and
 native RNG with the supplied-graph kernel. Source vectors cover weight
 selectors/maxima, lazy evaluation, inclusive boundaries, zero weights,
 saturation, existing counters and target117 folding. NumHits is independent.
+Immutable cumulative binary32 prefixes are cached after the first successful
+chance. The default single-component unit-weight evaluators use a positive
+component fast path; the general evaluator graph remains independently tested.
+Neither optimization changes RNG draws, counter saturation or source traces.
 
 The native sampler receives the selected handler graph independently of the
 final immunity mask. `Foe.proc_handlers` supplies an explicit scene selection;
