@@ -13,6 +13,7 @@ import postgres from './pg/node_modules/postgres/src/index.js';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
 import { query, close } from './db.mjs';
 import { captureInbox, inboxSource } from './inbox_reader.mjs';
+import {admissionFixtureDb,drainBuildAdmission} from './pg/build_admission_fixture.mjs';
 
 const { intakeBatches, runIntakeCommand } = await import(process.env.WFSIM_INTAKE_MODULE
   ? pathToFileURL(process.env.WFSIM_INTAKE_MODULE).href : './intake_batches.mjs');
@@ -67,7 +68,9 @@ async function clear() {
 }
 async function execute(input, options = {}) {
   await close();
-  return intakeBatches(input, { intake, maxRows: 1, ...options });
+  const result=await intakeBatches(input, { intake, maxRows: 1, ...options });
+  await drainBuildAdmission(admissionFixtureDb(query));
+  return result;
 }
 async function trip(table, enabled) {
   await query(`DROP TRIGGER IF EXISTS reject_batch ON ${table}`);
@@ -118,6 +121,8 @@ try {
   }}),/cut before second batch/);
   assert(!(await pending()).includes('a'));assert((await pending()).includes('bb'));
   assert.equal((await saved()).length,1);
+  assert.equal((await query('SELECT count(*) n FROM entity_build_intake_intents'))[0].n,1);
+  await drainBuildAdmission(admissionFixtureDb(query));
   assert((await query('SELECT count(*) n FROM state_build_workflow_nodes'))[0].n>0);
   await execute(input);assert.deepEqual(await pending(),[]);assert.deepEqual(await saved(),expected);
   const flows=(await query('SELECT count(*) n FROM entity_build_workflows'))[0].n;
@@ -129,9 +134,13 @@ try {
   for(const fault of ['build','compute','delete']) {
     await clear();const source=await seed([family('source')]);
     const table=fault==='build'?'entity_weapon_builds':fault==='compute'?'entity_compute_specs':'record_build_submissions';
-    await trip(table,true);await assert.rejects(execute(source));assert.deepEqual(await pending(),['source']);
-    assert.equal((await saved()).length,fault==='delete'?1:0,'failed admission must roll back the build and its intent');
-    await trip(table,false);await execute(source);assert.deepEqual(await pending(),[]);
+    await trip(table,true);await assert.rejects(execute(source));
+    assert.deepEqual(await pending(),fault==='compute'?[]:['source']);
+    assert.equal((await saved()).length,fault==='build'?0:1,'deferred admission retains the canonical build and its captured obligation');
+    if(fault==='compute')assert.equal((await query('SELECT count(*) n FROM entity_build_intake_intents'))[0].n,1);
+    await trip(table,false);
+    if(fault==='compute')await drainBuildAdmission(admissionFixtureDb(query),Date.now()+31000);
+    await execute(source);assert.deepEqual(await pending(),[]);
     assert.equal((await saved()).length,1);assert.equal((await query('SELECT count(*) n FROM entity_build_workflows'))[0].n,1);
   }
   console.log('ok: build, computation admission and inbox deletion failures preserve retryable arrivals without duplicate workflows');

@@ -32,6 +32,7 @@ const core=["entity_compute_specs","entity_compute_tasks","entity_compute_result
   "relation_compute_task_sources","record_compute_queue_removals","record_compute_identity_changes",
   "entity_build_workflow_scopes","entity_build_workflows","entity_build_workflow_expansions",
   "state_build_workflows","state_build_workflow_nodes","record_build_workflow_triggers",
+  "entity_build_intake_plans","entity_build_intake_intents","relation_build_intake_sources","state_build_admission_work","state_build_admission_turns","state_build_inbox_positions",
   "state_board_task_admissions","state_board_admission_recovery"];
 const views=["state_compute_work","state_current_calculation_reports","state_build_inbox_inputs","state_build_inbox_priorities"];
 const sequences=["compute_queue_position","board_admission_revision"];

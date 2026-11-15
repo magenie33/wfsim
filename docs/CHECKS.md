@@ -1097,6 +1097,26 @@ It covers escaped batch and ruler selectors, dry runs, one-row slices, first
 batch ownership, non-open questions, unrelated user demands and empty queues.
 Direct JSON parameter casts fail on the real driver.
 
+## `check_build_admission`
+
+Canonical builds, interned plans and immutable source obligations survive inbox
+acknowledgement before any task exists. Independent admission covers pause,
+concurrent retry, bounded node slices, reserved FIFO positions, original sources,
+unchanged credits, stale-token refusal and transactional acknowledgement failure.
+Requested and bulk inputs share turns within each zone; new lower-id arrivals
+use indexed FIFO while retained inputs keep their bounded scan. Aliases in one
+correction retain one round across slices and an intervening accepted result.
+
+The default uses PGlite. `WFSIM_BUILD_ADMISSION_TEST_URL` selects an isolated
+schema on localhost PostgreSQL and kills an actual worker after its committed
+claim. Both paths install the additive schema twice over the hashed frozen
+baseline, preserving old rows, leases and heap identity; a missing prerequisite
+index refuses installation. `--break-eager`, `--break-claim` and
+`--break-alias-force` mutate the actual SQL and must fail. Empty applicable
+scopes preserve a first arrival's completion; `--break-first-arrival` removes
+that captured first-arrival flag and must fail. The source-ACK guard
+also has a failing `check_board_reviews --break-source-ack` control.
+
 ## `check_intake_batches`
 
 Run after `cargo build --bin wfsim-intake`. The real binary, Bash shippers and
@@ -1108,7 +1128,9 @@ canonical records, original timestamps, first nonempty initiators, family
 requests and unique queue totals. Build, family, queue, factory acknowledgment
 and deletion failures retain retryable arrivals; losing either the factory
 reply or the final delete reply does not duplicate calculations. Row, UTF-8
-byte and deadline bounds prevent new unbounded work.
+byte and deadline bounds prevent new unbounded work. Deferred computation
+admission failures retain acknowledged canonical inputs and their obligations;
+source deletion failures retain both the inbox and the committed intent.
 The actual CLI commits a captured prefix and reports its subsequent read error;
 a changed capture is refused before any arrival is spent.
 The actual nullable inbox view passes through the shared reader and native

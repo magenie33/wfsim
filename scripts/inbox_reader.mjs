@@ -27,6 +27,8 @@ export function inboxSource(run=query) {
     byIds: ids=>run(`WITH wanted AS MATERIALIZED (
         SELECT value AS id,ordinality FROM jsonb_array_elements_text((?::text)::jsonb) WITH ORDINALITY)
       SELECT ${fields} FROM wanted w JOIN state_build_inbox_inputs i ON i.id=w.id ORDER BY w.ordinality`,[JSON.stringify(ids)]),
+    fresh: max=>run(`SELECT p.id FROM state_build_inbox_positions p
+      WHERE EXISTS(SELECT 1 FROM state_build_inbox_inputs i WHERE i.id=p.id) ORDER BY p.position,p.id LIMIT ?::bigint`,[max]),
     after: (id,max)=>run(`SELECT ${fields} FROM state_build_inbox_inputs i
       WHERE i.id>?::text ORDER BY i.id LIMIT ?::bigint`,[id,max]),
   };
@@ -70,6 +72,16 @@ export async function captureInbox({source=inboxSource(),emit,after='',maxRows=I
     for(const row of rows)if(!await take(row))return finish();
   }
   if(priority.length>maxRows) {receipt.stop='priority_continues';return finish();}
+  if(source.fresh && !timedOut() && receipt.rows<maxRows) {
+    const fresh=await read(()=>source.fresh(Math.ceil((maxRows-receipt.rows)/2)));
+    if(!fresh)return finish();
+    for(let offset=0;offset<fresh.length;offset+=pageRows) {
+      if(timedOut())return finish();
+      const rows=await read(()=>source.byIds(fresh.slice(offset,offset+pageRows).map(row=>row.id)));
+      if(!rows)return finish();
+      for(const row of rows)if(!await take(row))return finish();
+    }
+  }
   while(!timedOut() && receipt.rows<maxRows) {
     const rows=await read(()=>source.after(receipt.next_after,pageRows));
     if(!rows)return finish();

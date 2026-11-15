@@ -63,7 +63,8 @@ restarts family expansion.
 
 Native intake preserves the actual canonical build. Build and intent storage
 commit together before their source inbox rows are spent. A retry reuses both;
-a failed admission leaves the build and workflow absent. Known global builds
+a failed intake transaction leaves neither. Deferred task admission retains
+the build and captured obligation for retry. Known global builds
 check current applicable coverage through indexed build/ruler/mode keys. Existing
 scores satisfy intake; missing ones join one computation per actual input.
 Storage legality is distinct from eligibility on a specific ruler.

@@ -63,6 +63,9 @@ export function taskSchemaSql() {
   return `SET ROLE wfsim;\nSET lock_timeout = '5s';\n${zonePrelude}\n${columns.join("\n")}\n${pipeline}\n${indexes.map(sql => sql.replace("CREATE INDEX ", "CREATE INDEX CONCURRENTLY ")).join("\n")}\n${zones.join("\n")}\n${guard}\n${retention}\n${inventory}\n${incremental}\n${workflows}\n${identity.join("\n")}\n${boardAdmission}\nDO $grant$ BEGIN
     IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_factoryd') THEN
       GRANT SELECT ON state_task_pipeline_controls TO wfsim_factoryd;
+      GRANT SELECT ON state_build_admission_work TO wfsim_factoryd;
+      GRANT EXECUTE ON FUNCTION build_admission_claim(text,text),build_admission_run(text,text,text,bigint,text),
+        build_admission_retry(text,text,text,text,text) TO wfsim_factoryd;
       GRANT SELECT,INSERT,UPDATE ON state_task_pipeline_progress TO wfsim_factoryd;
       GRANT SELECT,INSERT ON relation_compute_task_sources TO wfsim_factoryd;
       GRANT SELECT,INSERT ON state_producer_compute_usage TO wfsim_factoryd;
@@ -77,7 +80,7 @@ export function taskSchemaSql() {
     IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_pipeline') THEN
       REVOKE ALL ON state_compute_inventory_invalidations,state_compute_inventory_generation,record_inventory_captures FROM wfsim_pipeline;
       REVOKE ALL ON SEQUENCE inventory_revision,inventory_generation,inventory_epoch_token FROM wfsim_pipeline;
-      GRANT SELECT ON state_build_inbox_inputs,state_build_inbox_priorities TO wfsim_pipeline;
+      GRANT SELECT ON state_build_inbox_inputs,state_build_inbox_priorities,state_build_inbox_positions TO wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION build_intake_batch(text),build_spend_submissions(text) TO wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION factory_inventory_rows(text,text[]) TO wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION inventory_status(),inventory_begin(text,text,text),inventory_changes(bigint),

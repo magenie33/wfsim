@@ -11,6 +11,7 @@ import { BUILD_WORKFLOW_PRODUCER } from '../worker/build_workflows.js';
 import { syncRoute } from '../worker/sync.js';
 import { setDial } from '../worker/dials.js';
 import { captureInbox,inboxSource } from './inbox_reader.mjs';
+import {drainBuildAdmission} from './pg/build_admission_fixture.mjs';
 
 export async function workflowProtocolCases() {
   for(const proc of [0,1]) {
@@ -23,6 +24,7 @@ export async function workflowProtocolCases() {
         flow:{schema:1,scope:{boards:[{id:'standard_single_target'}]},builds:[],templates:[request],patches:[{set:{},remove:[]}],
           nodes:[{kind:'measure',identity:'b'.repeat(32),ruler:'standard_single_target',mode:'base',template:0,patch:0}]}});
       await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
+      await drainBuildAdmission(db);
       assert.equal((await db.get('SELECT zone FROM state_build_workflows')).zone,0,'system authority applies to a newly registered build too');
       const sync=async(capabilities,digit)=>{
         const response=await syncRoute(new Request('https://wfsim.test/api/board/sync',{method:'POST',headers:{'content-type':'application/json'},
@@ -57,7 +59,7 @@ export async function buildWorkflowCases(db) {
   }
   if(process.argv.includes('--break-scope-gate')) {
     const sql=readFileSync(new URL('../worker/pg/build_workflows.sql',import.meta.url),'utf8');
-    await db.exec(sql.match(/CREATE OR REPLACE FUNCTION build_intake_batch[^]*?END \$\$;/)[0]
+    await db.exec(sql.match(/CREATE OR REPLACE FUNCTION build_intake_register[^]*?END \$\$;/)[0]
       .replace('    IF reason IS NULL THEN',"    IF inserted IS NULL AND reason='intake' THEN reason:=NULL; END IF;\n    IF reason IS NULL THEN"));
   }
   const fixture=async(id,suffix='',extra={})=>prepareIntakeBuild({id,at,record:{weapon:'braton',mods:['serration']},from:['inbox:'+id],initiator:'anonymous',
@@ -65,7 +67,7 @@ export async function buildWorkflowCases(db) {
       templates:[{weapon:'braton',runs:2,seed:100+id.length}],patches:[{set:{},remove:[]},{set:{seed:200+id.length},remove:[]}],
       nodes:[{kind:'measure',identity:id,ruler:'one'+suffix,mode:'base',template:0,patch:0},
         {kind:'measure',identity:id,ruler:'two',mode:'base',template:0,patch:1}]},...extra});
-  const intake=async input=>db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
+  const intake=async input=>{await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));await drainBuildAdmission(db);};
   const nodes=async id=>db.all(`SELECT n.* FROM state_build_workflow_nodes n JOIN entity_build_workflows f ON f.id=n.workflow WHERE f.build_id=? ORDER BY n.position`,id);
   const count=async id=>(await db.get('SELECT count(*) n FROM entity_build_workflows WHERE build_id=?',id)).n;
   const root=await fixture('workflow-root');
@@ -158,6 +160,7 @@ export async function buildWorkflowCases(db) {
   const aliasNode=aliasNodes[0];await BUILD_WORKFLOW_PRODUCER.on_retract(env,{question:aliasNode.computation,payload:{workflow:aliasNode.workflow,node:aliasNode.id}});
   assert.ok((await db.get('SELECT retired_at FROM board_facts WHERE identity=? AND ruler=?',aliases.id,'one')).retired_at);
   assert.equal((await db.get("SELECT count(*) n FROM record_build_workflow_triggers WHERE source#>>'{system,reason}'='retracted measurement proof'")).n,1);
+  await drainBuildAdmission(db);
   console.log('build workflows: exact-environment correction, guarded replacement and explicitly sourced proof repair pass');
   console.log('build workflows: atomic registration, global existence, shared work, full-flow hold and captured continuation pass');
   await currentCoverageCases(db);
@@ -175,7 +178,7 @@ async function currentCoverageCases(db) {
     builds:[],templates:[{weapon:'braton',runs:2}],patches:Array.from({length:count},(_,i)=>({set:{seed:987650+i},remove:[]})),
     nodes:['coverage_old_a','coverage_old_hidden','coverage_new_a','coverage_new_b'].slice(0,count)
       .map((ruler,i)=>({kind:'measure',identity:id,ruler,mode:'base',template:0,patch:i}))}});
-  const intake=async input=>db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
+  const intake=async input=>{await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));await drainBuildAdmission(db);};
   const tasksBefore=(await db.get('SELECT count(*) n FROM entity_compute_tasks')).n;
   await intake(await make(2,'already-covered'));
   assert.equal((await db.get('SELECT count(*) n FROM entity_build_workflows WHERE build_id=?',id)).n,0,'all stored scores count, independently of visible rank');
@@ -296,6 +299,7 @@ export async function queuedReviewAcrossReleaseCases(database=null) {
       flow:{schema:1,scope:{boards:[{id:'standard_single_target'}]},builds:[],templates:[request],patches:[{set:{},remove:[]}],
         nodes:[{kind:'measure',identity:id,ruler:'standard_single_target',mode:'base',template:0,patch:0}]}});
     await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
+    await drainBuildAdmission(db);
     const first=await db.get('SELECT * FROM state_build_workflow_nodes');
     await f.answerOfficial(env,{device:'official:before-release',owner:'official:before-release'},
       {question:first.computation,engine:oldEngine,result:{score:10,metric:'dps'},work:1});
@@ -324,6 +328,7 @@ export async function queuedReviewAcrossReleaseCases(database=null) {
     await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([{...input,from:[arrival.id],
       observation:{...JSON.parse(arrival.observation),valid:true}}]));
     await db.run('SELECT build_spend_submissions(?::text)',JSON.stringify([arrival.id]));
+    await drainBuildAdmission(db);
     const queued=await db.get('SELECT * FROM state_compute_work WHERE id=?',first.computation);
     assert.notEqual(queued.task_id,oldResult.task_id);
     env.ASSETS={fetch:async()=>Response.json({engine:newEngine})};
