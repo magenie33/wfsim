@@ -1,0 +1,42 @@
+  ok  combat record the block is on the result panel
+  ok  combat record it is fetched on demand, not carried
+  ok  combat record it lists damage instances
+  ok  combat record weapon events are rows too
+  ok  combat record every row multiplies out, layer by layer
+  ok  combat record ...and the base-damage bracket is drawn as a BRACKET
+  ok  combat record ...with no quotient wearing a multiplication sign
+  ok  combat record a shielded body pops two numbers
+  ok  combat record the half that got through wears the gate
+  ok  combat record the two halves are one instant
+  ok  combat record each row says what the target was before it
+  ok  combat record the event kinds are the ones a fight actually has
+  ok  combat record a pellet that went nowhere is a row that says why
+  ok  combat record ...and causes nothing
+  ok  combat record a filter shows only what it names
+  ok  combat record the record can be taken away as text
+  ok  combat record the build reached it
+  ok  combat record every status tick on the wire is drawn, and decomposed
+  ok  combat record the rows add up to the report's own engagement
+40m diagnostic {"record":{"loading":false,"error":null,"events":52,"matches":true},"misses":20,"shots":16,"reasons":["outside the cone"],"fromShots":true,"causeNothing":true,"chip":true,"drawn":20,"onlyMisses":true}
+  ok  combat record a wide shot MISSES, and the record says so
+  ok  combat record ...each with a reason
+  ok  combat record ...caused by the shot and causing nothing
+  ok  combat record ...and "only the misses" is a view
+  ok  combat record a result saved before the record still shows the block
+  ok  combat record ...and says why it cannot be read
+  ok  combat record ...and running the fight again brings it back
+  ok  combat record a row says what it set off on the shooter, not just on the target
+  ok  combat record ...and a buff it triggered never goes DOWN on the next row
+  ok  combat record ...and a stack carries an expiry still ahead of its own row
+  ok  combat record ...drawn as a countdown beside the count
+  ok  combat record the table draws one screenful, however long the fight is
+  ok  combat record ...and says which screenful it is
+  ok  combat record ...and the whole record opens in a window of its own
+  ok  combat record ...wearing this page's own stylesheet, LOADED and not merely linked
+  ok  combat record ...and dressed like a page of this site: wordmark, heading, and the fight it explains
+  ok  combat record ...drawn THERE and not here, with the panel saying where it went
+  ok  combat record ...wearing the reader's own light/dark choice, and following it when it changes
+  ok  combat record ...and carrying the same toggle, so the choice can be thrown from either
+  ok  combat record ...and closing it offers the window again rather than inlining the table
+
+every row of the record produces its own number
