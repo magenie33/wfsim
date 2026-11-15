@@ -1,0 +1,436 @@
+{
+  "source_manifest_sha256": "681cc93ffc168138cc39c70742ab271178316ef54cddda3b97c39b8483b5d2db",
+  "client_build": "2026.10.28.09.54",
+  "script_member": "script/B.Font--fa9f3da7532dd587fe91.annotated.json",
+  "script_member_sha256": "a4dc14e66da33412d8a1bc7256a203756453e5e25b67dedd7b54b85f120dcb90",
+  "contract": {
+    "native_path": "/Lotus/Upgrades/CosmeticEnhancers/Offensive/SplitStatusProcsOnStackedStatusHit",
+    "threshold": 10,
+    "pairs": [
+      {
+        "proc_id": 7,
+        "proc_name": "PT_FLASHBANG",
+        "choices": [
+          3,
+          4
+        ],
+        "choice_names": [
+          "PT_IMMOLATION",
+          "PT_CHILLED"
+        ]
+      },
+      {
+        "proc_id": 8,
+        "proc_name": "PT_RAD_TOX",
+        "choices": [
+          3,
+          5
+        ],
+        "choice_names": [
+          "PT_IMMOLATION",
+          "PT_ELECTROCUTION"
+        ]
+      },
+      {
+        "proc_id": 9,
+        "proc_name": "PT_ASPHYXIATION",
+        "choices": [
+          3,
+          6
+        ],
+        "choice_names": [
+          "PT_IMMOLATION",
+          "PT_POISONED"
+        ]
+      },
+      {
+        "proc_id": 10,
+        "proc_name": "PT_MAGNETIZED",
+        "choices": [
+          4,
+          5
+        ],
+        "choice_names": [
+          "PT_CHILLED",
+          "PT_ELECTROCUTION"
+        ]
+      },
+      {
+        "proc_id": 11,
+        "proc_name": "PT_INFECTED",
+        "choices": [
+          4,
+          6
+        ],
+        "choice_names": [
+          "PT_CHILLED",
+          "PT_POISONED"
+        ]
+      },
+      {
+        "proc_id": 12,
+        "proc_name": "PT_CAUSTIC_BURN",
+        "choices": [
+          5,
+          6
+        ],
+        "choice_names": [
+          "PT_ELECTROCUTION",
+          "PT_POISONED"
+        ]
+      }
+    ],
+    "condition": "Non-null event/actor/packet/target; not instantKill; at least one packet compound-proc counter > 0 and corresponding queried target count >= threshold.",
+    "callback": "Host only. One new DamageData, source and source weapon set, packet +0x60 context copied, arcane type set. For each qualifying compound type choose one basic proc by RandomInt(1,2), clear its counter then increment it to 1. Apply the packet once after the loop.",
+    "duplicate_basic_elements": "Repeated selection of the same basic proc leaves one counter, not an additive count. This is the submitted packet; downstream application is a separate consumer.",
+    "multiplicity": "Incoming compound count is tested >0, never used as an iteration count. One choice per qualifying compound type per callback.",
+    "known_script_pcs": {
+      "condition_proto": 1,
+      "condition_count_gate": [
+        49,
+        51,
+        60,
+        63
+      ],
+      "callback_proto": 2,
+      "new_packet": 48,
+      "copy_context": [
+        59,
+        62
+      ],
+      "compound_gate": [
+        80,
+        85,
+        88,
+        91
+      ],
+      "rng": 99,
+      "set_proc": 104,
+      "apply_packet": 110
+    },
+    "unresolved": [
+      "Native event ordering: whether the hit that changes 9 stacks to 10 can pass this query.",
+      "Chance dispatch unit, cooldown/reentrancy and recursive eligibility; rank chance arithmetic alone does not prove them.",
+      "Complete target proc-count virtual implementation and downstream ApplyDamage/proc-creation consumers.",
+      "Meaning and full consumers of the copied +0x60 context; final proc damage base, critical inheritance, faction powers, damage-type bonuses and special damage multipliers.",
+      "Electricity/Gas head/body-part selection and probability. No universal numerical probability extracted."
+    ]
+  },
+  "counter_cases": [
+    {
+      "proc": 3,
+      "initial": 0,
+      "direct_increment": 1,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 3,
+      "initial": 1,
+      "direct_increment": 2,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 3,
+      "initial": 254,
+      "direct_increment": 255,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 3,
+      "initial": 255,
+      "direct_increment": 255,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 4,
+      "initial": 0,
+      "direct_increment": 1,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 4,
+      "initial": 1,
+      "direct_increment": 2,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 4,
+      "initial": 254,
+      "direct_increment": 255,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 4,
+      "initial": 255,
+      "direct_increment": 255,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 5,
+      "initial": 0,
+      "direct_increment": 1,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 5,
+      "initial": 1,
+      "direct_increment": 2,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 5,
+      "initial": 254,
+      "direct_increment": 255,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 5,
+      "initial": 255,
+      "direct_increment": 255,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 6,
+      "initial": 0,
+      "direct_increment": 1,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 6,
+      "initial": 1,
+      "direct_increment": 2,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 6,
+      "initial": 254,
+      "direct_increment": 255,
+      "repeated_wrapper_result": 1
+    },
+    {
+      "proc": 6,
+      "initial": 255,
+      "direct_increment": 255,
+      "repeated_wrapper_result": 1
+    }
+  ],
+  "rng_cases": [
+    {
+      "seed": "0x0",
+      "arguments": [
+        1,
+        2
+      ],
+      "next_seed": "0x14057b7ef767814f",
+      "result": 1
+    },
+    {
+      "seed": "0x0",
+      "arguments": [
+        2,
+        1
+      ],
+      "next_seed": "0x14057b7ef767814f",
+      "result": 1
+    },
+    {
+      "seed": "0x0",
+      "arguments": [
+        1,
+        1
+      ],
+      "next_seed": "0x0",
+      "result": 1
+    },
+    {
+      "seed": "0x1",
+      "arguments": [
+        1,
+        2
+      ],
+      "next_seed": "0x6c576fac43fd007c",
+      "result": 1
+    },
+    {
+      "seed": "0x1",
+      "arguments": [
+        2,
+        1
+      ],
+      "next_seed": "0x6c576fac43fd007c",
+      "result": 1
+    },
+    {
+      "seed": "0x1",
+      "arguments": [
+        1,
+        1
+      ],
+      "next_seed": "0x1",
+      "result": 1
+    },
+    {
+      "seed": "0x2",
+      "arguments": [
+        1,
+        2
+      ],
+      "next_seed": "0xc4a963d990927fa9",
+      "result": 2
+    },
+    {
+      "seed": "0x2",
+      "arguments": [
+        2,
+        1
+      ],
+      "next_seed": "0xc4a963d990927fa9",
+      "result": 2
+    },
+    {
+      "seed": "0x2",
+      "arguments": [
+        1,
+        1
+      ],
+      "next_seed": "0x2",
+      "result": 1
+    },
+    {
+      "seed": "0x3",
+      "arguments": [
+        1,
+        2
+      ],
+      "next_seed": "0x1cfb5806dd27fed6",
+      "result": 1
+    },
+    {
+      "seed": "0x3",
+      "arguments": [
+        2,
+        1
+      ],
+      "next_seed": "0x1cfb5806dd27fed6",
+      "result": 1
+    },
+    {
+      "seed": "0x3",
+      "arguments": [
+        1,
+        1
+      ],
+      "next_seed": "0x3",
+      "result": 1
+    },
+    {
+      "seed": "0xffffffff",
+      "arguments": [
+        1,
+        2
+      ],
+      "next_seed": "0x849067eaad20222",
+      "result": 1
+    },
+    {
+      "seed": "0xffffffff",
+      "arguments": [
+        2,
+        1
+      ],
+      "next_seed": "0x849067eaad20222",
+      "result": 1
+    },
+    {
+      "seed": "0xffffffff",
+      "arguments": [
+        1,
+        1
+      ],
+      "next_seed": "0xffffffff",
+      "result": 1
+    },
+    {
+      "seed": "0x100000000",
+      "arguments": [
+        1,
+        2
+      ],
+      "next_seed": "0x609afaabf767814f",
+      "result": 2
+    },
+    {
+      "seed": "0x100000000",
+      "arguments": [
+        2,
+        1
+      ],
+      "next_seed": "0x609afaabf767814f",
+      "result": 2
+    },
+    {
+      "seed": "0x100000000",
+      "arguments": [
+        1,
+        1
+      ],
+      "next_seed": "0x100000000",
+      "result": 1
+    },
+    {
+      "seed": "0x7fffffffffffffff",
+      "arguments": [
+        1,
+        2
+      ],
+      "next_seed": "0x3bb38751aad20222",
+      "result": 2
+    },
+    {
+      "seed": "0x7fffffffffffffff",
+      "arguments": [
+        2,
+        1
+      ],
+      "next_seed": "0x3bb38751aad20222",
+      "result": 2
+    },
+    {
+      "seed": "0x7fffffffffffffff",
+      "arguments": [
+        1,
+        1
+      ],
+      "next_seed": "0x7fffffffffffffff",
+      "result": 1
+    },
+    {
+      "seed": "0xffffffffffffffff",
+      "arguments": [
+        1,
+        2
+      ],
+      "next_seed": "0xbbb38751aad20222",
+      "result": 2
+    },
+    {
+      "seed": "0xffffffffffffffff",
+      "arguments": [
+        2,
+        1
+      ],
+      "next_seed": "0xbbb38751aad20222",
+      "result": 2
+    },
+    {
+      "seed": "0xffffffffffffffff",
+      "arguments": [
+        1,
+        1
+      ],
+      "next_seed": "0xffffffffffffffff",
+      "result": 1
+    }
+  ],
+  "scope": "Original native helper oracles and decoded callback contract; no Phantasma live cadence or full Luau VM execution"
+}
