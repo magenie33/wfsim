@@ -70,6 +70,20 @@ try {
   const paused = await pausedResponse.json();
   check("disabled registration is an explicit successful pause, never a completed recovery", pausedResponse.status === 200
     && paused.ok === true && paused.mode === 'disabled' && paused.paused === true && paused.complete === false);
+  const pausedEnv={...env,FACTORY_TOKEN:'paused',ASSETS:{fetch:async()=>{throw Error('paused admission read the served release');}}};
+  for(const [path,body,field] of [
+    ['/api/board/ask',{backfill:true},'asked'],
+    ['/api/board/ask',{batch:'retained',rows:[{identity:'kept',ruler:'r',mode:'base'}]},'asked'],
+    ['/api/board/adopt',{},'adopted'],
+  ]) {
+    forgetDials();
+    const response=await boardTasksRoute(new Request('https://x'+path,{method:'POST',headers:{authorization:'Bearer paused'},body:JSON.stringify(body)}),pausedEnv,path);
+    const result=await response.json();
+    check('disabled admission fences '+path+(body.backfill?' backfill':body.rows?' explicit rows':''),
+      response.status===200 && result.ok===true && result.paused===true && result.complete===false && result[field]===0);
+  }
+  check('paused entry points create no task, consumer or business order',await count('state_compute_work')===0
+    && await count('relation_task_consumers')===0 && await count('state_board_pending_work')===0);
   await assert.rejects(db.prepare("SELECT board_admission_finish(?::text)").bind(JSON.stringify('[]')).run());
   await assert.rejects(db.prepare("SELECT board_admission_retry(?::text,?::text,'retry')").bind(JSON.stringify('[]'),at).run());
   check("double-encoded receipts fail without acknowledging work", await count("state_board_task_admissions") === 0);

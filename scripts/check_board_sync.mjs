@@ -25,6 +25,7 @@ const check = (what, ok, detail = "") => {
 const LIBRARY = await testDb("library"), ACCOUNTS = await testDb("accounts"), L = LIBRARY;
 const env = { LIBRARY, ACCOUNTS, FACTORY_TOKEN: "ft",
   ASSETS: { fetch: async () => new Response(JSON.stringify({ engine: "e1", release: "r1" })) } };
+await setDial(env,'board_admission',1,'fixture');
 const post = async (route, path, body, ip = "") =>
   (await route(new Request(`https://x${path}`, { method: "POST", headers: { authorization: "Bearer ft", ...(ip ? { "cf-connecting-ip": ip } : {}) },
     body: JSON.stringify(body) }), env, path)).json();

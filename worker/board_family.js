@@ -5,6 +5,7 @@ import { json, servedRelease } from "./verify.js";
 import { iso } from "./instant.js";
 import { submitRecord } from "./index.js";
 import { headlessBoardPayloadFromResult } from "./board_payload.js";
+import { dialsOf } from './dials.js';
 
 const ID = /^[a-f0-9]{32}$/, SLUG = /^[a-z0-9_]{1,128}$/;
 export const FAMILY_PRODUCERS = { family_build: {
@@ -33,6 +34,7 @@ export const FAMILY_PRODUCERS = { family_build: {
 /// durable write. The source library is never scanned to create historical work.
 export async function askFamilyTransfers(env) {
   if (!env.LIBRARY || env.FACTORY_PAUSED === "1") return;
+  if ((await dialsOf(env)).board_admission !== 1) return;
   const { engine } = await servedRelease(env);
   if (!engine) return;
   const { results } = await env.LIBRARY.prepare(`SELECT t.*,EXISTS(SELECT 1 FROM relation_task_consumers d WHERE d.producer='family_build' AND d.ref=t.id) AS already_asked FROM entity_family_search_requests t

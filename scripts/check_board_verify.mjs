@@ -40,6 +40,7 @@ const LIBRARY = await testDb("library"), ACCOUNTS = await testDb("accounts"), L 
 /// THE SITE'S `release.json`, naming the engine it serves.
 const site = (engine, release = "r1") => ({ fetch: async () => new Response(JSON.stringify({ engine, release })) });
 const env = { LIBRARY, ACCOUNTS, ASSETS: site("e1"), FACTORY_TOKEN: "ft" };
+await setDial(env,'board_admission',1,'fixture');
 const TOKEN = { authorization: "Bearer ft" };
 const post = async (route, path, body, headers = {}) =>
   (await route(new Request(`https://x${path}`, { method: "POST", headers, body: JSON.stringify(body) }), env, path)).json();
@@ -145,6 +146,7 @@ check("a live demand left on a settled question is asked again by the backfill",
 check("...which reuses the accepted fact across deployments", (await question("lost")).state === "fact" && (await question("lost")).task_id === lost.task_id, (await question("lost")).state);
 
 console.log("\nhanded out, answered");
+await setDial(env,'board_admission',0,'fixture');
 check("a page that cannot fill a task is handed none", none(await work(A, { protocol: null })));
 check("a computer that never said yes is handed nothing", none(await work(A, { consent: null })));
 check("a tab of an engine the site does not serve is told it is stale", (await work(A, { engine: "e0" })).stale === true);
@@ -184,6 +186,7 @@ check("...and one that asks is told them in the reply, the fact's work in them",
 check("...and their tasks say confirmed", (await post(verifyRoute, "/api/board/mine",
   { verifier: B, orders: [{ identity: "one", ruler: "standard_single_target", mode: "base" }] })).orders[0].state === "confirmed");
 
+await setDial(env,'board_admission',1,'fixture');
 await build("two");
 await queue(arrivals, "two");
 await ask(arrivals, "two");
@@ -503,6 +506,7 @@ console.log("\nthe database's safety valve");
   await setDial(env, "compute_cap", 0, "check");
   check("...and with no cap it is handed work as before", !(await work("8".repeat(24), { ip: "203.0.113.91" })).busy);
   await L.run("DELETE FROM state_factory_parameters");
+  await setDial(env,'board_admission',1,'fixture');
   forgetDials();
 }
 

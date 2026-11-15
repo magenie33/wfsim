@@ -420,6 +420,11 @@ retain their existing computation identities. Their pending business rows own
 the obligation; `board_admission_changed` records unfinished registration in
 the same transaction, including source changes and deletion.
 
+With `board_admission=0`, registration, explicit board asks, backfill, retained-order
+adoption and family-transfer recovery pause without reading source rows or creating tasks. Existing dispatch,
+answers, verification, delivery and credit continue. The control does not delete
+inputs or pending business orders.
+
 With `board_admission=1`, the daemon and `ship_queue.sh --admit` advance the same
 service. Each pass claims at most 250 registrations. Task admission and claim
 acknowledgement commit together, after rechecking the source revision. An

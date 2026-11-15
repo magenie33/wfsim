@@ -33,6 +33,14 @@ await check("legacy family admission is disabled and cannot scan or create work"
 await db.run("INSERT INTO entity_weapon_builds(id,at,record) VALUES(?,?,?)",source,'2026-11-01',JSON.stringify({weapon:'burston_prime'}));
 await db.run("INSERT INTO entity_family_search_requests(id,source,weapon,ruler,request,context,engine,state,created_at) VALUES('retained-family',?,?,?,?,?,?,'waiting',?)",
  source,job.weapon,job.ruler,JSON.stringify(job.request),JSON.stringify(job.context),engine,new Date().toISOString());
+await check('closed admission preserves the retained family input without watchdog replenishment',async()=>{
+  const before=await db.get('SELECT * FROM entity_family_search_requests');
+  env.FACTORY_DRAINING='1';
+  try {await askFamilyTransfers(env);}finally{delete env.FACTORY_DRAINING;}
+  assert.deepEqual(await db.get('SELECT * FROM entity_family_search_requests'),before);
+  assert.equal(await count('relation_task_consumers'),0);assert.equal(await count('entity_compute_tasks'),0);
+});
+await setDial(env,'board_admission',1,'fixture');
 await check("interrupted admission resumes only its durable transfer", async () => {
   env.FACTORY_PAUSED = "1";
   assert.equal((await call()).status, 200);
@@ -66,6 +74,7 @@ await check("user report retention preserves a live family search", async () => 
   assert.equal(await count('state_compute_work'), 1); assert.equal(await count('relation_task_consumers'), 1);
 });
 await check("only capable clients lease family optimization reports on either sync path", async () => {
+  await setDial(env,'board_admission',0,'fixture');
   for (const proc of [0, 1]) {
     await setDial(env, "sync_proc", proc, "check");
     const sync = async (capabilities, digit) => {

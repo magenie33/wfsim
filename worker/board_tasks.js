@@ -218,6 +218,8 @@ async function ask(request, env) {
   let b;
   try { b = await request.json(); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
   const db = env.LIBRARY, now = Date.now();
+  if ((await dialsOf(env, now)).board_admission !== 1)
+    return json({ ok: true, mode: "disabled", paused: true, complete: false, asked: 0 });
   const { engine } = await servedRelease(env);
   if (b.admission === true) {
     if (!engine) return json({ok:false,error:"served engine unavailable"},503);
@@ -293,6 +295,8 @@ const LIVE = "('todo', 'fresh', 'open', 'dispute', 'spot', 'arbiter', 'scoring:t
 async function adopt(request, env) {
   if (request.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
   if (!factoryAuthed(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
+  if ((await dialsOf(env)).board_admission !== 1)
+    return json({ ok: true, mode: "disabled", paused: true, complete: false, adopted: 0 });
   const db = env.LIBRARY;
   const { engine } = await servedRelease(env);
   const { results } = await db.prepare(

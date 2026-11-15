@@ -64,7 +64,7 @@ export const DIALS = {
   answer_bulk: { default: 0, min: 0, max: 1, unit: "switch",
     says: "1 records each result batch, its settlement queue and producer costs in one database call; 0 uses separate statements" },
   board_admission: { default: 0, min: 0, max: 1, unit: "switch",
-    says: "1 advances durable board registration and historical recovery in bounded batches" },
+    says: "1 admits board work through registration, explicit asks, backfill, retained-order adoption and family recovery" },
   board_recovery_open_max: { default: 50000, min: 250, max: 1000000, unit: "questions",
     says: "historical registration pauses while this many open computations exist; new source registration continues" },
   signal_mode: { default: 0, min: 0, max: 1, unit: "mode",
