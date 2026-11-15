@@ -98,6 +98,94 @@ const drain=async(time=now)=>{
   for(let n=0;n<100 && await count('state_build_admission_work');n++)await f.runStage(env,'admission',time,{max:2,budget_ms:5000});
   assert.equal(await count('state_build_admission_work'),0);
 };
+async function checkQueryBounds(input) {
+  if(process.argv.includes('--break-consumer-bound')) {
+    const original=schemaSource.match(/CREATE OR REPLACE FUNCTION build_intake_register[^]*?END \$\$;/)[0];
+    const broken=original.replace(" AND d.ref>=flow_id AND d.ref<flow_id||'}'\n          ",' ');
+    assert.notEqual(broken,original);await db.exec(broken);
+  }
+  if(process.argv.includes('--break-expansion-bounds')) {
+    for(const name of ['build_workflow_capture','build_workflow_admit_nodes','build_admission_run']) {
+      const original=schemaSource.match(new RegExp('CREATE OR REPLACE FUNCTION '+name+'[^]*?END \\$\\$;'))[0];
+      const broken=original.replace('workflow=$1 AND expansion=expansion_id','expansion=expansion_id')
+        .replaceAll('workflow=workflow_id AND expansion=expansion_id','expansion=expansion_id')
+        .replaceAll('node.workflow=workflow_id AND node.expansion=expansion_id','node.expansion=expansion_id')
+        .replace('FROM entity_build_workflow_expansions e JOIN state_build_workflow_nodes n ON n.workflow=e.workflow\n      WHERE e.id=held.key AND n.expansion=e.id',
+          'FROM state_build_workflow_nodes n WHERE n.expansion=held.key');
+      assert.notEqual(broken,original);await db.exec(broken);
+    }
+  }
+  const {workflow}=await db.get('SELECT id workflow FROM entity_build_workflows WHERE build_id=?',input.id);
+  const literal=value=>"'"+String(value).replaceAll("'","''")+"'";
+  await db.exec(`INSERT INTO entity_build_workflow_scopes VALUES('query-bounds','{}');
+    INSERT INTO entity_build_workflows(id,build_id,scope_key,kind,scope_id,source,created_at)
+      SELECT 'scale-'||n,${literal(input.id)},'scale-'||n,'intake','query-bounds','{}',${literal(at)} FROM generate_series(1,4096) n;
+    INSERT INTO entity_build_workflow_expansions(id,workflow,plan,created_at)
+      SELECT id||':root',id,'{}',created_at FROM entity_build_workflows WHERE scope_id='query-bounds';
+    INSERT INTO state_build_workflow_nodes(workflow,id,expansion,definition,state,retry_at,queue_position)
+      SELECT workflow,'0',id,'{}','pending',created_at,nextval('compute_queue_position') FROM entity_build_workflow_expansions WHERE workflow LIKE 'scale-%';
+    INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,zone)
+      SELECT 'build_workflow',workflow||'|0','scale-'||workflow,'live',created_at,created_at,9
+      FROM entity_build_workflow_expansions WHERE workflow LIKE 'scale-%';`);
+  for(const parent of ['bounded','untouched'])await db.run('SELECT build_workflow_capture(?::text,?::text,(?::text)::jsonb,?::text,NULL)',workflow,parent,JSON.stringify(input.flow),at);
+  const probes=['','ab','x%_','中文','ab|nested',workflow];
+  const refs=probes.flatMap(flow=>['','|','|left|right','|中文','_','a','{','}','}outside'].map(suffix=>({ref:flow+suffix,producer:'build_workflow',state:'live'})));
+  refs.push({ref:workflow+'|served',producer:'build_workflow',state:'served'},{ref:workflow+'|other',producer:'another',state:'live'});
+  await db.run(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,zone)
+    SELECT producer,ref,'query-bounds',state,?2,?2,9 FROM jsonb_to_recordset((?1::text)::jsonb) x(producer text,ref text,state text) ON CONFLICT DO NOTHING`,JSON.stringify(refs),at);
+  await db.exec('ANALYZE relation_task_consumers;ANALYZE state_build_workflow_nodes;ANALYZE entity_build_workflow_expansions;');
+  const body=async signature=>(await db.get('SELECT prosrc body FROM pg_proc WHERE oid=?::regprocedure',signature)).body;
+  const register=await body('build_intake_register(text)');
+  const update=register.match(/UPDATE relation_task_consumers d SET[^;]+;/)[0]
+    .replaceAll("coalesce(input#>>ARRAY['deadlines',reason],at)",'$3').replaceAll(/\bpriority\b/g,'$2').replaceAll(/\bflow_id\b/g,'$1');
+  const predicate=update.slice(update.indexOf('WHERE ')+6).replace(/;$/,'');
+  for(const flow of probes) {
+    const expected=await db.all("SELECT d.producer,d.ref,d.state FROM relation_task_consumers d WHERE d.producer='build_workflow' AND split_part(d.ref,'|',1)=?1 AND d.state='live' ORDER BY d.ref",flow);
+    const actual=await db.all('SELECT d.producer,d.ref,d.state FROM relation_task_consumers d WHERE '+predicate.replaceAll('$1','?1')+' ORDER BY d.ref',flow);
+    assert.deepEqual(actual,expected,'consumer bound must preserve bare, empty, pipe, wildcard, Unicode and neighboring refs');
+  }
+  const flatten=plan=>[plan,...(plan.Plans||[]).flatMap(flatten)];
+  const explain=async(name,sql,types,args)=>{
+    const result=await db.exec(`BEGIN;SET LOCAL plan_cache_mode='force_generic_plan';
+      PREPARE ${name}(${types}) AS ${sql.replace(/;$/,'')};
+      EXPLAIN(FORMAT JSON) EXECUTE ${name}(${args.map(literal).join(',')});DEALLOCATE ${name};ROLLBACK;`);
+    const rows=result.flatMap(part=>part.rows||part),plan=rows.find(row=>row['QUERY PLAN'])?.['QUERY PLAN'];
+    assert(plan,'missing actual prepared query plan: '+name);return flatten(plan[0].Plan);
+  };
+  const consumer=await explain('bounds_consumer',update,'text,bigint,text',[workflow,3,at]);
+  assert(consumer.some(node=>node['Relation Name']==='relation_task_consumers' && /producer/.test(node['Index Cond']||'') && /ref >= \$1/.test(node['Index Cond']||'') && /ref < /.test(node['Index Cond']||'')),
+    'consumer update must seek both reference bounds through the existing index under a generic plan');
+  const capture=await body('build_workflow_capture(text,text,jsonb,text,jsonb)');
+  const admit=await body('build_workflow_admit_nodes(text,bigint,text)');
+  const runBody=await body('build_admission_run(text,text,text,bigint,text)');
+  const queries=[
+    ['capture','SELECT min(queue_position) '+capture.match(/FROM state_build_workflow_nodes WHERE[^;]+? HAVING/)[0].replace(/ HAVING$/,'')],
+    ['slice',admit.match(/FOR n IN (SELECT \* FROM state_build_workflow_nodes[^]+?) LOOP/)[1].replace('LIMIT $2','LIMIT 1')],
+    ['node_update',admit.match(/UPDATE state_build_workflow_nodes node SET[^;]+;/)[0]],
+    ['review_update',admit.match(/UPDATE entity_measurement_reviews r SET[^;]+;/)[0]],
+    ['sources','SELECT node.id '+admit.match(/FROM state_build_workflow_nodes node JOIN record_build_workflow_triggers[^;]+? ON CONFLICT/)[0].replace(/ ON CONFLICT$/,'')],
+    ['pending',runBody.match(/SELECT EXISTS\([^;]+\) INTO pending/)[0].replace(' INTO pending','')],
+  ];
+  for(const [name,source] of queries) {
+    const sql=source.replaceAll('workflow=$1','workflow=workflow_id').replaceAll(/\bworkflow_id\b/g,'$1')
+      .replaceAll(/\bexpansion_id\b/g,'$2').replaceAll('held.key','$2').replaceAll(/\btouched\b/g,'$3');
+    const types=sql.includes('$3')?'text,text,text[]':sql.includes('$2')?'text,text':'text';
+    const args=[workflow,workflow+':bounded','{bounded.0}'].slice(0,types.split(',').length);
+    const nodes=await explain('bounds_'+name,sql,types,args);
+    assert(nodes.some(node=>node['Relation Name']==='state_build_workflow_nodes' && /workflow = /.test(node['Index Cond']||'')),
+      name+' must constrain the node index by the expansion owner workflow');
+  }
+  const before=await db.all('SELECT producer,ref,state,zone,due_at FROM relation_task_consumers ORDER BY producer,ref');
+  const due='2025-01-01T00:00:00.000Z';
+  await db.run('SELECT build_intake_register(?::text)',JSON.stringify([{...input,from:['query-bounds-repeat'],deadlines:{intake:due}}]));
+  const after=await db.all('SELECT producer,ref,state,zone,due_at FROM relation_task_consumers ORDER BY producer,ref');
+  assert.deepEqual(after,before.map(row=>row.producer==='build_workflow' && row.state==='live' && row.ref.split('|')[0]===workflow
+    ? {...row,zone:Math.min(row.zone??3,3),due_at:row.due_at<due?row.due_at:due}:row));
+  const held=await db.all('SELECT workflow,id,state,task_id FROM state_build_workflow_nodes WHERE expansion<>? ORDER BY workflow,id',workflow+':bounded');
+  const processed=await db.get('SELECT build_workflow_admit_nodes(?::text,1,?::text) n',workflow+':bounded',at);assert.equal(Number(processed.n),1);
+  assert.deepEqual(await db.all('SELECT workflow,id,state,task_id FROM state_build_workflow_nodes WHERE expansion<>? ORDER BY workflow,id',workflow+':bounded'),held);
+  console.log('ok: generic plans seek consumer refs and all six workflow node queries amid 4096 unrelated workflows; exact matching, promotion and one-node slice preserve other work');
+}
 try {
   const input=await fixture();
   await db.run('INSERT INTO record_build_submissions(id,at,record,initiator) VALUES(?,?,?,?)',input.from[0],at,JSON.stringify(input.record),input.initiator);
@@ -181,6 +269,7 @@ try {
   const aliasRows=await db.all('SELECT n.task_id FROM state_build_workflow_nodes n JOIN entity_build_workflows w ON w.id=n.workflow WHERE w.build_id=?',aliases.id);
   assert.equal(aliasRows.length,4);assert(aliasRows.every(n=>n.task_id===first.task_id),'a result accepted between slices must not force a second round for an alias of the same captured workflow');
   console.log('ok: aliases admitted in later slices share the captured forced round after its result has already been accepted');
+  await checkQueryBounds(input);
   const baseline=JSON.parse(readFileSync(new URL('../tests/fixtures/build-admission-base5a/source.json',import.meta.url),'utf8'));
   const loadBaseline=name=>{
     const body=readFileSync(new URL('../tests/fixtures/build-admission-base5a/'+name,import.meta.url));

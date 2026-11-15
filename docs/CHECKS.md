@@ -1118,6 +1118,12 @@ unchanged credits, stale-token refusal and transactional acknowledgement failure
 Requested and bulk inputs share turns within each zone; new lower-id arrivals
 use indexed FIFO while retained inputs keep their bounded scan. Aliases in one
 correction retain one round across slices and an intervening accepted result.
+Prepared generic plans over 4,096 unrelated workflows must seek consumer reference
+bounds and the workflow owner in all six expansion queries. Bare and empty
+references, pipe suffixes, wildcard characters, Unicode and adjacent prefixes
+retain the original matching; priority changes and one-node slices preserve
+unrelated work. `--break-consumer-bound` and `--break-expansion-bounds` restore
+the original SQL scans and must fail those plan assertions.
 
 The default uses PGlite. `WFSIM_BUILD_ADMISSION_TEST_URL` selects an isolated
 schema on localhost PostgreSQL and kills an actual worker after its committed

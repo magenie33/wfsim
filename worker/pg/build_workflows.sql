@@ -138,7 +138,7 @@ BEGIN
   END IF;
   INSERT INTO state_build_admission_work(kind,key,zone,lane,position,created_at,retry_at)
     SELECT 'expansion',expansion_id,f.zone,CASE WHEN f.source->>'origin'='requested' THEN 'requested' ELSE 'bulk' END,
-      min(queue_position),$4,$4 FROM state_build_workflow_nodes WHERE expansion=expansion_id HAVING count(*)>0
+      min(queue_position),$4,$4 FROM state_build_workflow_nodes WHERE workflow=$1 AND expansion=expansion_id HAVING count(*)>0
     ON CONFLICT(kind,key) DO NOTHING;
 END $$;
 
@@ -280,8 +280,10 @@ BEGIN
       PERFORM build_workflow_capture(flow_id,NULL,plan,at,input->'admission_positions');
     ELSE
       UPDATE state_build_workflows SET zone=least(zone,priority),due_at=least(due_at,coalesce(input#>>ARRAY['deadlines',reason],at)) WHERE id=flow_id;
+      -- C collation bounds every original match: the bare workflow or its pipe-prefixed refs.
       UPDATE relation_task_consumers d SET zone=least(coalesce(d.zone,3),priority),due_at=least(d.due_at,coalesce(input#>>ARRAY['deadlines',reason],at))
-        WHERE d.producer='build_workflow' AND split_part(d.ref,'|',1)=flow_id AND d.state='live';
+        WHERE d.producer='build_workflow' AND d.ref>=flow_id AND d.ref<flow_id||'}'
+          AND split_part(d.ref,'|',1)=flow_id AND d.state='live';
       PERFORM factory_restate(node.computation) FROM state_build_workflow_nodes node WHERE node.workflow=flow_id AND node.state='queued' ORDER BY node.computation;
     END IF;
     INSERT INTO record_build_workflow_triggers(id,workflow,source,at)
@@ -499,7 +501,7 @@ BEGIN
   IF $2 IS NULL OR $2<1 OR $2>128 THEN RAISE EXCEPTION 'node admission limit must be 1..128';END IF;
   SELECT e.workflow,e.plan INTO STRICT workflow_id,plan FROM entity_build_workflow_expansions e WHERE e.id=expansion_id;
   SELECT w.kind,w.build_id,w.source,w.created_at,s.zone,s.due_at,s.initiator INTO STRICT f FROM entity_build_workflows w JOIN state_build_workflows s ON s.id=w.id WHERE w.id=workflow_id AND s.state='active';
-  FOR n IN SELECT * FROM state_build_workflow_nodes WHERE expansion=expansion_id AND state='pending' ORDER BY position LIMIT $2 FOR UPDATE SKIP LOCKED LOOP
+  FOR n IN SELECT * FROM state_build_workflow_nodes WHERE workflow=workflow_id AND expansion=expansion_id AND state='pending' ORDER BY position LIMIT $2 FOR UPDATE SKIP LOCKED LOOP
     touched:=array_append(touched,n.id);processed:=processed+1;
     IF n.definition->>'kind'='measure' THEN
       IF f.kind='intake' AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
@@ -542,15 +544,15 @@ BEGIN
   END LOOP;
   IF jsonb_array_length(specs)>0 THEN PERFORM compute_admit_tasks(specs::text,demands::text,'',at); END IF;
   UPDATE state_build_workflow_nodes node SET computation=q.id,task_id=q.task_id,state='queued'
-    FROM state_compute_scheduling q WHERE node.expansion=expansion_id AND node.id=ANY(touched) AND node.state='pending' AND q.id=node.definition->>'computation';
+    FROM state_compute_scheduling q WHERE node.workflow=workflow_id AND node.expansion=expansion_id AND node.id=ANY(touched) AND node.state='pending' AND q.id=node.definition->>'computation';
   UPDATE entity_measurement_reviews r SET task_id=node.task_id FROM state_build_workflow_nodes node
-    WHERE node.expansion=expansion_id AND node.id=ANY(touched) AND r.id=node.definition->>'review' AND r.task_id IS NULL;
+    WHERE node.workflow=workflow_id AND node.expansion=expansion_id AND node.id=ANY(touched) AND r.id=node.definition->>'review' AND r.task_id IS NULL;
   INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload,requirements)
     SELECT node.task_id,'build_workflow',workflow_id||'|'||node.id,t.id,t.at,
       jsonb_build_object('workflow',workflow_id,'node',node.id,'source',t.source)::text,
       jsonb_build_object('force',f.kind IN('correction','system'),'zone',f.zone,'engine',NULL)
     FROM state_build_workflow_nodes node JOIN record_build_workflow_triggers t ON t.workflow=node.workflow
-    WHERE node.expansion=expansion_id AND node.id=ANY(touched) AND node.task_id IS NOT NULL ON CONFLICT DO NOTHING;
+    WHERE node.workflow=workflow_id AND node.expansion=expansion_id AND node.id=ANY(touched) AND node.task_id IS NOT NULL ON CONFLICT DO NOTHING;
   PERFORM build_workflow_finish(workflow_id,at);
   RETURN processed;
 END $$;
@@ -591,7 +593,8 @@ BEGIN
     PERFORM build_intake_register(jsonb_build_array(captured)::text);processed:=1;
   ELSIF EXISTS(SELECT 1 FROM entity_build_workflow_expansions e JOIN state_build_workflows f ON f.id=e.workflow WHERE e.id=held.key AND f.state='active') THEN
     processed:=build_workflow_admit_nodes(held.key,$4,$5);
-    SELECT EXISTS(SELECT 1 FROM state_build_workflow_nodes WHERE expansion=held.key AND state='pending') INTO pending;
+    SELECT EXISTS(SELECT 1 FROM entity_build_workflow_expansions e JOIN state_build_workflow_nodes n ON n.workflow=e.workflow
+      WHERE e.id=held.key AND n.expansion=e.id AND n.state='pending') INTO pending;
   END IF;
   IF pending THEN UPDATE state_build_admission_work SET lease=NULL,lease_until=NULL,error=NULL WHERE kind=held.kind AND key=held.key;
   ELSE DELETE FROM state_build_admission_work WHERE kind=held.kind AND key=held.key;END IF;
