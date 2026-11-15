@@ -3719,7 +3719,7 @@ cycle, which is why it is the weapon this was built against.
 | **the explosion** | every body the sphere touches | that body's own falloff, at its nearest point |
 | **the lingering cloud** | every body standing in it, every tick | the same, for as long as the cloud lasts |
 | **tendrils** | one body each, nearest the RETICLE, inside a cone and a reach | a WHOLE instance — they are extra beams, not a spread |
-| **an echo** | every body near the one that was hit | a flat share of THAT hit — Secondary Irradiate's 80% to 180% |
+| **an echo** | other bodies near the body that was hit | queried source seed × configured coefficient × consumed notification count; [scene binding](SECONDARY_IRRADIATE.md) |
 
 The fourth is the odd one and the Ocucor is its only member. A tendril is not a
 share of the shot: *"their base damage equals the primary beam's, and they roll

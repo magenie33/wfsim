@@ -826,7 +826,7 @@ than from memory — 22 spatial kinds across mods, arcanes and evolutions.
 |---|---|---|
 | `punch_through_bonus` | 17 mods + evolutions + rivens | `panel.punch_through_m` (MECHANICS §13) |
 | `blast_radius_bonus` | 4 mods (Firestorm family) | `radial.radius_m` and `lingering.radius_m` |
-| `aoe_echo` | 1 arcane (Secondary Irradiate) | `spread_from_echo` |
+| `aoe_echo` | 1 arcane (Secondary Irradiate) | source-backed count state; immediate direct-hit scene adapter; native producer/window/recipient binding open ([scope](SECONDARY_IRRADIATE.md)) |
 | `multishot_beyond_range` | 2 evolutions (Lone Enforcer) | `panel.multishot_beyond_range` |
 | `beam_range_bonus` / `beam_range_percent` | 3 mods + 3 evolutions | `ap.range_m`, a WALL — `gap_m <= ap.range_m` |
 | `accuracy_bonus` | 28 | the spread cone |

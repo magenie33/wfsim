@@ -14,7 +14,7 @@ fn applications(dtype: DamageType, hits: &[(bool, bool)], lethal: bool, dense: b
     p.crit_chance_stack = Some(crate::model::StackSpec {
         per_stack: 0.4, max_stacks: 5, duration: 12.0, initial_stacks: 0, earned_on: Some("headshot_kill"),
     });
-    let mut body = Body { state: TargetState::spawn(&p.foe, p.target_at), debuffs: DebuffState::default(), fallen: false };
+    let mut body = Body { state: TargetState::spawn(&p.foe, p.target_at), debuffs: DebuffState::default(), fallen: false, irradiate: Default::default() };
     if lethal { body.state.health = 1.0; }
     let mut gal = GalStacks::default();
     let mut arc = ArcRuntime::init(&p);
