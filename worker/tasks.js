@@ -9,6 +9,7 @@ import { createDelivery } from "./task_delivery.js";
 import { createCredit } from "./task_credit.js";
 import { createObservation } from "./task_observation.js";
 import { createTaskPipeline } from "./task_pipeline.js";
+import { admitBuildWork } from "./build_admission.js";
 
 export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck = 0, random = () => Math.random(), on_disproved = null, on_fact_writes = null, refusing = true,
   dispatcher = createDispatch }) {
@@ -42,6 +43,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   const observation = createObservation();
   const sqlConsumers=Object.keys(producers).filter(name=>producers[name].on_fact_writes);
   const pipeline=createTaskPipeline({
+    admission:admitBuildWork,
     verification:(env,now,options)=>verification.settleQueued(env,now,options.max,{detached:true}),
     delivery:(env,now,options)=>options.legacy ? delivery.redeliver(env,now,options.max)
       : delivery.deliverReady(env,now,options.max,{producers:options.runtime==="edge"?null:sqlConsumers}),

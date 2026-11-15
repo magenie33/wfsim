@@ -727,6 +727,7 @@ jobs:
           node scripts/check_live_ranker.mjs
           node scripts/check_work_calibration.mjs
           node scripts/check_task_reissue.mjs
+          node scripts/check_build_admission.mjs
           cargo build --bin wfsim-intake
           node scripts/check_intake_batches.mjs
       - name: Scoring inputs use the production Postgres driver
@@ -745,6 +746,10 @@ jobs:
         env:
           WFSIM_TASK_REISSUE_TEST_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
         run: node scripts/check_task_reissue.mjs
+      - name: Durable build intake survives worker crashes and bounded admission retries
+        env:
+          WFSIM_BUILD_ADMISSION_TEST_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
+        run: node scripts/check_build_admission.mjs
       - name: Independent source and board consumers preserve PostgreSQL cut acknowledgements
         env:
           WFSIM_BOARD_PIPELINE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs

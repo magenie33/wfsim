@@ -354,7 +354,7 @@ BEGIN
       SELECT 1 FROM jsonb_array_elements(d) y WHERE y->>'question'=x->>'id'))
     THEN RAISE EXCEPTION 'a compute task requires a source'; END IF;
   FOR source IN SELECT value FROM jsonb_array_elements(s) ORDER BY coalesce((value->>'ordinal')::bigint,0) LOOP
-    prepared:=prepared||jsonb_build_array(source.value||jsonb_build_object('position',nextval('compute_queue_position')));
+    prepared:=prepared||jsonb_build_array(source.value||jsonb_build_object('position',coalesce((source.value->>'position')::bigint,nextval('compute_queue_position'))));
   END LOOP;
   PERFORM compute_register_tasks(prepared::text,$3,$4);
   FOR q IN SELECT DISTINCT ON(x.id) x.id,x.reason,x.invalidate FROM jsonb_to_recordset(s) AS x(id text,force boolean,invalidate boolean,reason text)

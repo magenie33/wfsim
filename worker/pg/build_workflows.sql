@@ -110,96 +110,55 @@ BEGIN
   END IF;
 END $$;
 
-CREATE OR REPLACE FUNCTION build_workflow_expansion(text,text,jsonb,text) RETURNS void LANGUAGE plpgsql AS $$
-DECLARE expansion_id text; b jsonb; held text; n record; f record; request jsonb; patch jsonb;
-  specs jsonb:='[]';demands jsonb:='[]';payload jsonb;ordinal bigint:=0;verb text;question text;v_review_id text;v_review_ref text;
+ALTER TABLE state_build_workflow_nodes ADD COLUMN IF NOT EXISTS queue_position BIGINT;
+CREATE OR REPLACE FUNCTION build_workflow_capture(text,text,jsonb,text,jsonb) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE expansion_id text; b jsonb; held text; f record;
 BEGIN
   IF jsonb_typeof($3->'scope') IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'invalid captured workflow scope'; END IF;
   IF jsonb_typeof($3->'nodes') IS DISTINCT FROM 'array' OR jsonb_typeof($3->'builds') IS DISTINCT FROM 'array' THEN
     RAISE EXCEPTION 'invalid workflow expansion'; END IF;
   expansion_id:=$1||':'||coalesce($2,'root');
   IF EXISTS(SELECT 1 FROM entity_build_workflow_expansions WHERE id=expansion_id) THEN RETURN; END IF;
+  IF $5 IS NOT NULL AND (jsonb_typeof($5)<>'array' OR jsonb_array_length($5)<>jsonb_array_length($3->'nodes')) THEN
+    RAISE EXCEPTION 'captured queue positions differ from node count'; END IF;
   FOR b IN SELECT value FROM jsonb_array_elements($3->'builds') ORDER BY value->>'id' LOOP
     INSERT INTO entity_weapon_builds(id,at,record) VALUES(b->>'id',left($4,10),(b->'record')::text) ON CONFLICT DO NOTHING;
     SELECT record INTO held FROM entity_weapon_builds WHERE id=b->>'id';
     IF held::jsonb IS DISTINCT FROM b->'record' THEN RAISE EXCEPTION 'build identity has different canonical inputs'; END IF;
   END LOOP;
   INSERT INTO entity_build_workflow_expansions(id,workflow,parent_node,plan,created_at) VALUES(expansion_id,$1,$2,$3-'scope'-'builds',$4);
-  INSERT INTO state_build_workflow_nodes(workflow,id,expansion,definition,state,retry_at)
-    SELECT $1,coalesce($2||'.','')||(ordinality-1)::text,expansion_id,value,'pending',$4
+  INSERT INTO state_build_workflow_nodes(workflow,id,expansion,definition,state,retry_at,queue_position)
+    SELECT $1,coalesce($2||'.','')||(ordinality-1)::text,expansion_id,value,'pending',$4,coalesce(($5->>((ordinality-1)::int))::bigint,nextval('compute_queue_position'))
       FROM jsonb_array_elements($3->'nodes') WITH ORDINALITY;
-  SELECT w.kind,w.build_id,w.source,s.zone,s.due_at,s.initiator INTO STRICT f FROM entity_build_workflows w JOIN state_build_workflows s ON s.id=w.id WHERE w.id=$1;
+  SELECT w.kind,w.build_id,w.source,w.created_at,s.zone,s.due_at,s.initiator INTO STRICT f FROM entity_build_workflows w JOIN state_build_workflows s ON s.id=w.id WHERE w.id=$1;
   IF $2 IS NULL AND f.kind='correction' AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements($3->'nodes') item
       WHERE item->>'kind'='measure' AND item->>'identity'=f.build_id
         AND item->>'ruler'=f.source#>>'{observation,ruler}' AND item->>'mode'=f.source#>>'{observation,mode}') THEN
     RAISE EXCEPTION 'correction expansion is missing the observed measurement';
   END IF;
-  FOR n IN SELECT * FROM state_build_workflow_nodes WHERE expansion=expansion_id ORDER BY position LOOP
-    IF n.definition->>'kind'='measure' THEN
-      IF f.kind='intake' AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
-        WHERE s.identity=n.definition->>'identity' AND s.ruler=n.definition->>'ruler' AND s.mode=n.definition->>'mode') THEN
-        UPDATE state_build_workflow_nodes SET state='skipped',delivered_at=$4 WHERE workflow=$1 AND id=n.id;
-        CONTINUE;
-      END IF;
-      patch:=$3->'patches'->(n.definition->>'patch')::int;
-      request:=(($3->'templates'->(n.definition->>'template')::int)||(patch->'set'))-
-        ARRAY(SELECT jsonb_array_elements_text(patch->'remove'));
-      verb:='simulate';
-      SELECT record INTO STRICT held FROM entity_weapon_builds WHERE id=n.definition->>'identity';
-      payload:=jsonb_build_object('identity',n.definition->>'identity','record',held::jsonb,
-        'ruler',n.definition->>'ruler','mode',n.definition->>'mode','metric',request->>'metric');
-      IF f.kind IN('correction','system') AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
-        WHERE s.identity=n.definition->>'identity' AND s.ruler=n.definition->>'ruler' AND s.mode=n.definition->>'mode') THEN
-        IF n.definition->>'identity'=f.build_id AND n.definition->>'ruler'=f.source#>>'{observation,ruler}'
-          AND n.definition->>'mode'=f.source#>>'{observation,mode}' THEN
-          v_review_id:=f.source#>>'{observation,review}';
-          SELECT ref INTO v_review_ref FROM entity_measurement_reviews WHERE id=v_review_id;
-        ELSE
-          v_review_id:=gen_random_uuid()::text;v_review_ref:=$1||'|'||n.id;
-          INSERT INTO entity_measurement_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
-            baseline_score,baseline_metric,baseline_cost_seconds,baseline_review_id,baseline_by,baseline_started_at,baseline_finished_at,created_at,workflow)
-            SELECT v_review_ref,v_review_id,$4,s.identity,s.ruler,s.mode,coalesce(f.source#>>'{observation,engine}',''),
-              n.definition->>'computation',held,'waiting',s.score,s.metric,s.cost_seconds,s.review_id,s.measured_by,s.started_at,s.finished_at,$4,$1
-              FROM state_board_measurement_selection s WHERE s.identity=n.definition->>'identity' AND s.ruler=n.definition->>'ruler' AND s.mode=n.definition->>'mode';
-        END IF;
-        payload:=payload||jsonb_build_object('review',v_review_id,'review_ref',v_review_ref);
-        UPDATE state_build_workflow_nodes SET definition=definition||jsonb_build_object('review',v_review_id)
-          WHERE workflow=$1 AND id=n.id;
-        UPDATE entity_measurement_reviews SET question=n.definition->>'computation',workflow=$1 WHERE id=v_review_id AND task_id IS NULL;
-      END IF;
-    ELSIF n.definition->>'kind'='optimize' THEN
-      request:=n.definition->'request';verb:='optimize_report';
-      payload:=jsonb_build_object('context',n.definition->'context','weapon',n.definition->>'weapon','kind','optimization');
-    ELSE
-      RAISE EXCEPTION 'unsupported workflow node kind';
-    END IF;
-    question:=n.definition->>'computation';
-    IF question IS NULL OR question!~'^[0-9a-f]{32}$' THEN RAISE EXCEPTION 'workflow node requires a canonical computation identity'; END IF;
-    payload:=payload||jsonb_build_object('workflow',$1,'node',n.id,'node_kind',n.definition->>'kind','purpose',f.kind);
-    specs:=specs||jsonb_build_array(jsonb_build_object('id',question,'verb',verb,'request',request::text,'ordinal',ordinal,
-      'producer','build_workflow','due_at',f.due_at,'waits',0,'zone',f.zone,'initiator',f.initiator,
-      'capability',CASE WHEN verb='simulate' THEN 'fixed-board-input-v1' ELSE 'calculation-reports-v1' END,
-      'invalidate',f.source#>>'{system,reason}'='retracted measurement proof',
-      'force',f.kind IN('correction','system')));
-    demands:=demands||jsonb_build_array(jsonb_build_object('producer','build_workflow','ref',$1||'|'||n.id,'question',question,
-      'trigger_id',$1,'ordinal',ordinal,'due_at',f.due_at,'waits',0,'payload',payload::text,'zone',f.zone,'initiator',f.initiator));
-    ordinal:=ordinal+1;
-    -- The observation's engine is provenance, not an execution requirement.
-    -- Workflow rounds use the factory's existing executor-compatibility rules.
-    IF jsonb_array_length(specs)=250 THEN
-      PERFORM compute_admit_tasks(specs::text,demands::text,'',$4);specs:='[]';demands:='[]';
-    END IF;
-  END LOOP;
-  IF jsonb_array_length(specs)>0 THEN PERFORM compute_admit_tasks(specs::text,demands::text,'',$4); END IF;
-  UPDATE state_build_workflow_nodes node SET computation=q.id,task_id=q.task_id,state='queued'
-    FROM state_compute_scheduling q WHERE node.expansion=expansion_id AND node.state='pending' AND q.id=node.definition->>'computation';
-  UPDATE entity_measurement_reviews r SET task_id=node.task_id FROM state_build_workflow_nodes node
-    WHERE node.expansion=expansion_id AND r.id=node.definition->>'review' AND r.task_id IS NULL;
+  INSERT INTO state_build_admission_work(kind,key,zone,lane,position,created_at,retry_at)
+    SELECT 'expansion',expansion_id,f.zone,CASE WHEN f.source->>'origin'='requested' THEN 'requested' ELSE 'bulk' END,
+      min(queue_position),$4,$4 FROM state_build_workflow_nodes WHERE expansion=expansion_id HAVING count(*)>0
+    ON CONFLICT(kind,key) DO NOTHING;
 END $$;
+
+CREATE OR REPLACE FUNCTION build_workflow_expansion(text,text,jsonb,text) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN PERFORM build_workflow_capture($1,$2,$3,$4,NULL); END $$;
+
 
 -- Each legal arrival checks its captured current coverage through indexed keys.
 -- Existing measurements satisfy intake; explicit correction still requests fresh work.
-CREATE OR REPLACE FUNCTION build_intake_batch(text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+CREATE OR REPLACE FUNCTION build_intake_matches_observation(jsonb) RETURNS boolean LANGUAGE sql STABLE AS $$
+  SELECT $1#>>'{observation,valid}'='true' AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
+    JOIN entity_measurement_reviews r ON r.id=$1#>>'{observation,review}'
+    WHERE s.identity=$1->>'id' AND s.ruler=$1#>>'{observation,ruler}' AND s.mode=$1#>>'{observation,mode}'
+      AND r.identity=s.identity AND r.ruler=s.ruler AND r.mode=s.mode AND r.state='waiting'
+      AND s.finished_at=$1#>>'{observation,baseline_finished_at}' AND s.score=($1#>>'{observation,baseline_score}')::double precision
+      AND s.metric=$1#>>'{observation,metric}' AND abs(s.score-($1#>>'{observation,score}')::double precision)>
+        1e-12*greatest(abs(s.score),abs(($1#>>'{observation,score}')::double precision)))
+$$;
+
+CREATE OR REPLACE FUNCTION build_intake_register(text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE input jsonb; plan jsonb; observation jsonb; inserted text; held text; flow_id text;
   at text:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
   reason text; priority bigint; origin jsonb; parent text; node_key text; captured_key text; trigger_key text; parent_scope jsonb;
@@ -208,6 +167,7 @@ BEGIN
   IF jsonb_typeof($1::jsonb) IS DISTINCT FROM 'array' OR jsonb_array_length($1::jsonb)>1000 THEN
     RAISE EXCEPTION 'invalid intake batch'; END IF;
   FOR input IN SELECT value FROM jsonb_array_elements($1::jsonb) ORDER BY value->>'id' LOOP
+    at:=coalesce(input->>'admission_at',to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
     IF input->'system_source' IS NOT NULL AND input->'system_source'<>'null'::jsonb AND
       (jsonb_typeof(input->'system_source')<>'object' OR coalesce(length(btrim(input#>>'{system_source,id}')),0)=0) THEN
       RAISE EXCEPTION 'system task requires an explicit source identity';
@@ -272,7 +232,7 @@ BEGIN
         IF jsonb_typeof(parent_scope) IS DISTINCT FROM 'object' OR plan->'scope' IS DISTINCT FROM parent_scope THEN
           RAISE EXCEPTION 'derived input changed its captured workflow scope';
         END IF;
-        PERFORM build_workflow_expansion(parent,node_key,plan,at);
+        PERFORM build_workflow_capture(parent,node_key,plan,at,input->'admission_positions');
         UPDATE state_build_workflow_nodes SET state='succeeded' WHERE workflow=parent AND id=node_key;
         PERFORM build_workflow_finish(parent,at);
       END IF;
@@ -282,17 +242,11 @@ BEGIN
     reason:=NULL;
     IF recovery IS NOT NULL THEN reason:=prior.kind;priority:=prior.zone;
     ELSIF jsonb_typeof(input->'system_source')='object' THEN reason:='system';priority:=coalesce((input->>'zone')::bigint,0);
-    ELSIF observation->>'valid'='true' AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
-      JOIN entity_measurement_reviews r ON r.id=observation->>'review'
-      WHERE s.identity=input->>'id' AND s.ruler=observation->>'ruler' AND s.mode=observation->>'mode'
-        AND r.identity=s.identity AND r.ruler=s.ruler AND r.mode=s.mode AND r.state='waiting'
-        AND s.finished_at=observation->>'baseline_finished_at' AND s.score=(observation->>'baseline_score')::double precision
-        AND s.metric=observation->>'metric' AND abs(s.score-(observation->>'score')::double precision)>
-          1e-12*greatest(abs(s.score),abs((observation->>'score')::double precision))) THEN
+    ELSIF build_intake_matches_observation(input) THEN
       reason:='correction';priority:=1;
     ELSE
       captured_key:=md5((input->>'id')||E'\n'||plan::text);
-      IF inserted IS NOT NULL OR EXISTS(SELECT 1 FROM jsonb_array_elements(plan->'nodes') n
+      IF inserted IS NOT NULL OR coalesce((input->>'admission_new')::boolean,false) OR EXISTS(SELECT 1 FROM jsonb_array_elements(plan->'nodes') n
         WHERE n->>'kind'='measure' AND NOT EXISTS(SELECT 1 FROM state_board_measurement_selection s
           WHERE s.identity=n->>'identity' AND s.ruler=n->>'ruler' AND s.mode=n->>'mode'))
         OR EXISTS(SELECT 1 FROM state_build_workflows WHERE scope_key=captured_key AND state='active')
@@ -323,7 +277,7 @@ BEGIN
         VALUES(flow_id,input->>'id',captured_key,reason,md5((plan->'scope')::text),origin,at);
       INSERT INTO state_build_workflows(id,build_id,scope_key,state,zone,due_at,initiator) VALUES(flow_id,input->>'id',captured_key,'active',priority,
         coalesce(input#>>ARRAY['deadlines',reason],at),coalesce(input->>'initiator',CASE WHEN reason='system' THEN 'system' END));
-      PERFORM build_workflow_expansion(flow_id,NULL,plan,at);
+      PERFORM build_workflow_capture(flow_id,NULL,plan,at,input->'admission_positions');
     ELSE
       UPDATE state_build_workflows SET zone=least(zone,priority),due_at=least(due_at,coalesce(input#>>ARRAY['deadlines',reason],at)) WHERE id=flow_id;
       UPDATE relation_task_consumers d SET zone=least(coalesce(d.zone,3),priority),due_at=least(d.due_at,coalesce(input#>>ARRAY['deadlines',reason],at))
@@ -348,7 +302,7 @@ CREATE OR REPLACE FUNCTION build_workflow_recover(text,text) RETURNS jsonb LANGU
 DECLARE input jsonb:=$2::jsonb; recovered text;
 BEGIN
   IF jsonb_typeof(input) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'invalid workflow recovery input'; END IF;
-  PERFORM build_intake_batch(jsonb_build_array(input||jsonb_build_object('recovery_of',$1))::text);
+  PERFORM build_intake_register(jsonb_build_array(input||jsonb_build_object('recovery_of',$1))::text);
   SELECT workflow INTO STRICT recovered FROM record_build_workflow_triggers WHERE id=build_workflow_recovery_key($1);
   RETURN jsonb_build_object('workflow',recovered,'recovery_of',$1,'trigger',build_workflow_recovery_key($1));
 END $$;
@@ -358,6 +312,7 @@ CREATE OR REPLACE FUNCTION build_spend_submissions(text) RETURNS void LANGUAGE p
 DECLARE input record; at text:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
 BEGIN
   FOR input IN SELECT b.* FROM record_build_submissions b JOIN jsonb_array_elements_text($1::jsonb) x ON b.id=x.value ORDER BY b.id FOR UPDATE OF b LOOP
+    IF EXISTS(SELECT 1 FROM relation_build_intake_sources WHERE source_id=input.id) THEN CONTINUE;END IF;
     UPDATE entity_measurement_reviews SET state='failed',completed_at=at
       WHERE id=input.observation::jsonb->>'review' AND state='waiting' AND workflow IS NULL AND task_id IS NULL;
     IF split_part(input.family_source,'|',1)='workflow' THEN
@@ -383,17 +338,18 @@ BEGIN
   IF NOT FOUND THEN RETURN; END IF;
   source_id:='retract:'||$1||':'||$2||':'||coalesce(node.result_id::text,'unknown');
   plan:=node.plan||jsonb_build_object('scope',node.scope,'builds','[]'::jsonb,'nodes',jsonb_build_array(node.definition));
-  PERFORM build_intake_batch(jsonb_build_array(jsonb_build_object('id',s.identity,'at',$4,
+  PERFORM build_intake_register(jsonb_build_array(jsonb_build_object('id',s.identity,'at',$4,
     'record',(SELECT record::jsonb FROM entity_weapon_builds WHERE id=s.identity),'flow',plan,
     'initiator','system','zone',1,'system_source',jsonb_build_object('id',source_id,'reason','retracted measurement proof','computation',$3)))::text);
   SELECT workflow INTO next_flow FROM record_build_workflow_triggers WHERE id=build_workflow_system_key(source_id,s.identity);
+  PERFORM build_workflow_capture_review(next_flow,pending.id,$4) FROM state_build_workflow_nodes pending WHERE pending.workflow=next_flow;
   UPDATE entity_measurement_reviews r SET invalidated_at=$4,invalidation_reason='retracted measurement proof'
     WHERE r.workflow=next_flow AND r.state='waiting';
   UPDATE state_board_measurement_selection current SET review_id=r.id FROM entity_measurement_reviews r
     WHERE r.workflow=next_flow AND r.state='waiting' AND current.identity=r.identity AND current.ruler=r.ruler AND current.mode=r.mode
       AND current.finished_at=s.finished_at;
 END $$;
-REVOKE ALL ON FUNCTION build_intake_batch(text),build_spend_submissions(text),build_workflow_repair(text,text,text,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION build_intake_register(text),build_spend_submissions(text),build_workflow_repair(text,text,text,text) FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION build_workflow_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -408,3 +364,300 @@ BEGIN
     EXECUTE format('CREATE TRIGGER build_workflow_immutable BEFORE UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION build_workflow_immutable()',relation);
   END LOOP;
 END $workflow_immutable$;
+
+
+-- Canonical input and its captured obligation commit before the source inbox can be acknowledged.
+CREATE TABLE IF NOT EXISTS entity_build_intake_plans (
+  id TEXT COLLATE "C" PRIMARY KEY,
+  definition JSONB NOT NULL
+);
+CREATE TABLE IF NOT EXISTS entity_build_intake_intents (
+  id TEXT COLLATE "C" PRIMARY KEY,
+  build_id TEXT COLLATE "C" NOT NULL REFERENCES entity_weapon_builds(id),
+  plan_id TEXT COLLATE "C" REFERENCES entity_build_intake_plans(id),
+  input JSONB NOT NULL,
+  created_at TEXT COLLATE "C" NOT NULL
+);
+CREATE TABLE IF NOT EXISTS relation_build_intake_sources (
+  source_id TEXT COLLATE "C" NOT NULL,
+  intent TEXT COLLATE "C" NOT NULL REFERENCES entity_build_intake_intents(id) ON DELETE CASCADE,
+  PRIMARY KEY(source_id,intent)
+);
+CREATE TABLE IF NOT EXISTS state_build_admission_work (
+  kind TEXT COLLATE "C" NOT NULL CHECK(kind IN('intake','expansion')),
+  key TEXT COLLATE "C" NOT NULL,
+  zone BIGINT NOT NULL CHECK(zone BETWEEN 0 AND 99),
+  lane TEXT COLLATE "C" NOT NULL CHECK(lane IN('requested','bulk')),
+  position BIGINT NOT NULL,
+  created_at TEXT COLLATE "C" NOT NULL,
+  retry_at TEXT COLLATE "C" NOT NULL,
+  lease TEXT COLLATE "C",
+  lease_until TEXT COLLATE "C",
+  attempts BIGINT NOT NULL DEFAULT 0,
+  error TEXT,
+  intake_id TEXT COLLATE "C" GENERATED ALWAYS AS(CASE WHEN kind='intake' THEN key END) STORED
+    REFERENCES entity_build_intake_intents(id) ON DELETE CASCADE,
+  expansion_id TEXT COLLATE "C" GENERATED ALWAYS AS(CASE WHEN kind='expansion' THEN key END) STORED
+    REFERENCES entity_build_workflow_expansions(id) ON DELETE CASCADE,
+  PRIMARY KEY(kind,key)
+);
+CREATE INDEX IF NOT EXISTS build_admission_fifo ON state_build_admission_work(kind,lane,zone,position,key);
+CREATE TABLE IF NOT EXISTS state_build_admission_turns (
+  kind TEXT COLLATE "C" PRIMARY KEY,
+  lane TEXT COLLATE "C" NOT NULL CHECK(lane IN('requested','bulk'))
+);
+DROP TRIGGER IF EXISTS pipeline_build_admission_ready ON state_build_admission_work;
+CREATE TRIGGER pipeline_build_admission_ready AFTER INSERT ON state_build_admission_work
+  FOR EACH ROW EXECUTE FUNCTION task_pipeline_notify('admission');
+
+CREATE OR REPLACE FUNCTION build_intake_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'captured intake obligation is immutable'; END $$;
+DROP TRIGGER IF EXISTS build_intake_intent_retained ON entity_build_intake_intents;
+CREATE TRIGGER build_intake_intent_retained BEFORE UPDATE OR DELETE ON entity_build_intake_intents
+  FOR EACH ROW EXECUTE FUNCTION build_intake_immutable();
+DROP TRIGGER IF EXISTS build_intake_plan_retained ON entity_build_intake_plans;
+CREATE TRIGGER build_intake_plan_retained BEFORE UPDATE OR DELETE ON entity_build_intake_plans
+  FOR EACH ROW EXECUTE FUNCTION build_intake_immutable();
+DROP TRIGGER IF EXISTS build_intake_source_retained ON relation_build_intake_sources;
+CREATE TRIGGER build_intake_source_retained BEFORE UPDATE OR DELETE ON relation_build_intake_sources
+  FOR EACH ROW EXECUTE FUNCTION build_intake_immutable();
+
+CREATE OR REPLACE FUNCTION build_intake_key(jsonb) RETURNS text LANGUAGE sql IMMUTABLE AS $$
+  SELECT CASE WHEN $1->>'recovery_of' IS NOT NULL THEN build_workflow_recovery_key($1->>'recovery_of') ELSE
+    coalesce($1#>>'{observation,review}',CASE WHEN $1#>>'{system_source,id}' IS NOT NULL
+      THEN build_workflow_system_key($1#>>'{system_source,id}',$1->>'id') END,
+      'intake:'||($1->>'id')||':'||md5(jsonb_build_array($1->'from',$1#>'{flow,scope}')::text)) END
+$$;
+
+CREATE OR REPLACE FUNCTION build_intake_batch(text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE input jsonb; identity text; held text; intent text; positions jsonb; priority bigint; lane text;parent_scope jsonb;plan_key text;captured_plan jsonb;inserted text;
+  at text:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+BEGIN
+  IF jsonb_typeof($1::jsonb) IS DISTINCT FROM 'array' OR jsonb_array_length($1::jsonb)>1000 THEN
+    RAISE EXCEPTION 'invalid intake batch'; END IF;
+  FOR input IN SELECT value FROM jsonb_array_elements($1::jsonb) ORDER BY value->>'id' LOOP
+    identity:=input->>'id';
+    IF coalesce(length(identity),0)=0 OR jsonb_typeof(input->'record') IS DISTINCT FROM 'object' THEN
+      RAISE EXCEPTION 'canonical intake requires a build identity and record'; END IF;
+    IF NOT(coalesce((input->>'derived')::boolean,false) AND input#>>'{flow_source,workflow}' IS NULL)
+      AND (input#>>'{flow,schema}' IS DISTINCT FROM '1' OR jsonb_typeof(input#>'{flow,scope}') IS DISTINCT FROM 'object'
+        OR jsonb_typeof(input#>'{flow,nodes}') IS DISTINCT FROM 'array') THEN
+      RAISE EXCEPTION 'canonical intake requires its captured workflow scope'; END IF;
+    IF input->>'recovery_of' IS NOT NULL THEN RAISE EXCEPTION 'use the storage-owner recovery operation' USING ERRCODE='42501'; END IF;
+    IF EXISTS(SELECT 1 FROM jsonb_array_elements(coalesce(input#>'{flow,nodes}','[]'::jsonb)) n
+      WHERE coalesce(n->>'computation','')!~'^[0-9a-f]{32}$') THEN RAISE EXCEPTION 'workflow node requires a canonical computation identity';END IF;
+    IF input#>>'{flow_source,workflow}' IS NOT NULL THEN
+      SELECT scope.definition INTO parent_scope FROM entity_build_workflows w JOIN entity_build_workflow_scopes scope ON scope.id=w.scope_id
+        WHERE w.id=input#>>'{flow_source,workflow}';
+      IF parent_scope IS NOT NULL AND (jsonb_typeof(parent_scope) IS DISTINCT FROM 'object' OR input#>'{flow,scope}' IS DISTINCT FROM parent_scope)
+        THEN RAISE EXCEPTION 'derived input changed its captured workflow scope';END IF;
+    END IF;
+    IF build_intake_matches_observation(input) AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(input#>'{flow,nodes}') n
+      WHERE n->>'kind'='measure' AND n->>'identity'=identity AND n->>'ruler'=input#>>'{observation,ruler}' AND n->>'mode'=input#>>'{observation,mode}') THEN
+      RAISE EXCEPTION 'correction expansion is missing the observed measurement';END IF;
+    IF input->'system_source' IS NOT NULL AND input->'system_source'<>'null'::jsonb AND
+      (jsonb_typeof(input->'system_source')<>'object' OR coalesce(length(btrim(input#>>'{system_source,id}')),0)=0) THEN
+      RAISE EXCEPTION 'system task requires an explicit source identity'; END IF;
+    PERFORM pg_advisory_xact_lock(hashtextextended('build-workflow:'||identity,0));
+    inserted:=NULL;
+    INSERT INTO entity_weapon_builds(id,at,record) VALUES(identity,left(input->>'at',10),(input->'record')::text) ON CONFLICT DO NOTHING RETURNING id INTO inserted;
+    SELECT record INTO held FROM entity_weapon_builds WHERE id=identity;
+    IF held::jsonb IS DISTINCT FROM input->'record' THEN RAISE EXCEPTION 'build identity has different canonical inputs'; END IF;
+    intent:=build_intake_key(input);
+    IF EXISTS(SELECT 1 FROM entity_build_intake_intents WHERE id=intent) THEN CONTINUE; END IF;
+    plan_key:=NULL;
+    IF jsonb_typeof(input->'flow')='object' THEN
+      plan_key:=md5((input->'flow')::text);
+      INSERT INTO entity_build_intake_plans(id,definition) VALUES(plan_key,input->'flow') ON CONFLICT DO NOTHING;
+      SELECT definition INTO captured_plan FROM entity_build_intake_plans WHERE id=plan_key;
+      IF captured_plan IS DISTINCT FROM input->'flow' THEN RAISE EXCEPTION 'captured plan identity conflict';END IF;
+    END IF;
+    SELECT coalesce(jsonb_agg(position ORDER BY ordinal),'[]'::jsonb) INTO positions
+      FROM(SELECT ordinality ordinal,nextval('compute_queue_position') position FROM jsonb_array_elements(input#>'{flow,nodes}') WITH ORDINALITY) reserved;
+    priority:=CASE WHEN jsonb_typeof(input->'system_source')='object' THEN coalesce((input->>'zone')::bigint,0)
+      WHEN input#>>'{observation,valid}'='true' THEN 1 ELSE 3 END;
+    lane:=CASE WHEN input->>'initiator'='anonymous' OR input->>'initiator' LIKE 'user:%' OR input->>'initiator' LIKE 'bot:%'
+      OR input#>>'{observation,valid}'='true' THEN 'requested' ELSE 'bulk' END;
+    INSERT INTO entity_build_intake_intents(id,build_id,plan_id,input,created_at)
+      VALUES(intent,identity,plan_key,(input-'flow')||jsonb_build_object('admission_positions',positions,'admission_lane',lane,'admission_at',at,'admission_new',inserted IS NOT NULL),at);
+    INSERT INTO relation_build_intake_sources(source_id,intent)
+      SELECT value,intent FROM jsonb_array_elements_text(coalesce(input->'from','[]'::jsonb)) ON CONFLICT DO NOTHING;
+    INSERT INTO state_build_admission_work(kind,key,zone,lane,position,created_at,retry_at)
+      VALUES('intake',intent,priority,lane,coalesce((positions->>0)::bigint,nextval('compute_queue_position')),at,at);
+  END LOOP;
+END $$;
+REVOKE ALL ON FUNCTION build_intake_batch(text),build_intake_register(text) FROM PUBLIC;
+
+
+CREATE OR REPLACE FUNCTION build_workflow_admit_nodes(text,bigint,text) RETURNS bigint
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE expansion_id text:=$1;workflow_id text;plan jsonb;at text:=$3;f record;n record;request jsonb;patch jsonb;
+  held text;payload jsonb;verb text;question text;v_review_id text;v_review_ref text;
+  specs jsonb:='[]';demands jsonb:='[]';ordinal bigint:=0;processed bigint:=0;touched text[]:='{}';
+BEGIN
+  IF $2 IS NULL OR $2<1 OR $2>128 THEN RAISE EXCEPTION 'node admission limit must be 1..128';END IF;
+  SELECT e.workflow,e.plan INTO STRICT workflow_id,plan FROM entity_build_workflow_expansions e WHERE e.id=expansion_id;
+  SELECT w.kind,w.build_id,w.source,w.created_at,s.zone,s.due_at,s.initiator INTO STRICT f FROM entity_build_workflows w JOIN state_build_workflows s ON s.id=w.id WHERE w.id=workflow_id AND s.state='active';
+  FOR n IN SELECT * FROM state_build_workflow_nodes WHERE expansion=expansion_id AND state='pending' ORDER BY position LIMIT $2 FOR UPDATE SKIP LOCKED LOOP
+    touched:=array_append(touched,n.id);processed:=processed+1;
+    IF n.definition->>'kind'='measure' THEN
+      IF f.kind='intake' AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
+        WHERE s.identity=n.definition->>'identity' AND s.ruler=n.definition->>'ruler' AND s.mode=n.definition->>'mode') THEN
+        UPDATE state_build_workflow_nodes SET state='skipped',delivered_at=at WHERE workflow=workflow_id AND id=n.id;
+        CONTINUE;
+      END IF;
+      patch:=plan->'patches'->(n.definition->>'patch')::int;
+      request:=((plan->'templates'->(n.definition->>'template')::int)||(patch->'set'))-
+        ARRAY(SELECT jsonb_array_elements_text(patch->'remove'));
+      verb:='simulate';
+      SELECT record INTO STRICT held FROM entity_weapon_builds WHERE id=n.definition->>'identity';
+      payload:=jsonb_build_object('identity',n.definition->>'identity','record',held::jsonb,
+        'ruler',n.definition->>'ruler','mode',n.definition->>'mode','metric',request->>'metric');
+      patch:=build_workflow_capture_review(workflow_id,n.id,at);
+      IF patch IS NOT NULL THEN payload:=payload||jsonb_build_object('review',patch->>'id','review_ref',patch->>'ref');END IF;
+    ELSIF n.definition->>'kind'='optimize' THEN
+      request:=n.definition->'request';verb:='optimize_report';
+      payload:=jsonb_build_object('context',n.definition->'context','weapon',n.definition->>'weapon','kind','optimization');
+    ELSE
+      RAISE EXCEPTION 'unsupported workflow node kind';
+    END IF;
+    question:=n.definition->>'computation';
+    IF question IS NULL OR question!~'^[0-9a-f]{32}$' THEN RAISE EXCEPTION 'workflow node requires a canonical computation identity'; END IF;
+    payload:=payload||jsonb_build_object('workflow',workflow_id,'node',n.id,'node_kind',n.definition->>'kind','purpose',f.kind);
+    specs:=specs||jsonb_build_array(jsonb_build_object('id',question,'verb',verb,'request',request::text,'ordinal',ordinal,
+      'position',n.queue_position,'producer','build_workflow','due_at',f.due_at,'waits',0,'zone',f.zone,'initiator',f.initiator,
+      'capability',CASE WHEN verb='simulate' THEN 'fixed-board-input-v1' ELSE 'calculation-reports-v1' END,
+      'invalidate',f.source#>>'{system,reason}'='retracted measurement proof',
+      'force',f.kind IN('correction','system') AND NOT EXISTS(SELECT 1 FROM state_build_workflow_nodes prior
+        WHERE prior.workflow=workflow_id AND prior.computation=question AND prior.task_id IS NOT NULL)));
+    demands:=demands||jsonb_build_array(jsonb_build_object('producer','build_workflow','ref',workflow_id||'|'||n.id,'question',question,
+      'trigger_id',workflow_id,'ordinal',ordinal,'asked_at',f.created_at,'due_at',f.due_at,'waits',0,'payload',payload::text,'zone',f.zone,'initiator',f.initiator));
+    ordinal:=ordinal+1;
+    -- The observation's engine is provenance, not an execution requirement.
+    -- Workflow rounds use the factory's existing executor-compatibility rules.
+    IF jsonb_array_length(specs)=250 THEN
+      PERFORM compute_admit_tasks(specs::text,demands::text,'',at);specs:='[]';demands:='[]';
+    END IF;
+  END LOOP;
+  IF jsonb_array_length(specs)>0 THEN PERFORM compute_admit_tasks(specs::text,demands::text,'',at); END IF;
+  UPDATE state_build_workflow_nodes node SET computation=q.id,task_id=q.task_id,state='queued'
+    FROM state_compute_scheduling q WHERE node.expansion=expansion_id AND node.id=ANY(touched) AND node.state='pending' AND q.id=node.definition->>'computation';
+  UPDATE entity_measurement_reviews r SET task_id=node.task_id FROM state_build_workflow_nodes node
+    WHERE node.expansion=expansion_id AND node.id=ANY(touched) AND r.id=node.definition->>'review' AND r.task_id IS NULL;
+  INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload,requirements)
+    SELECT node.task_id,'build_workflow',workflow_id||'|'||node.id,t.id,t.at,
+      jsonb_build_object('workflow',workflow_id,'node',node.id,'source',t.source)::text,
+      jsonb_build_object('force',f.kind IN('correction','system'),'zone',f.zone,'engine',NULL)
+    FROM state_build_workflow_nodes node JOIN record_build_workflow_triggers t ON t.workflow=node.workflow
+    WHERE node.expansion=expansion_id AND node.id=ANY(touched) AND node.task_id IS NOT NULL ON CONFLICT DO NOTHING;
+  PERFORM build_workflow_finish(workflow_id,at);
+  RETURN processed;
+END $$;
+
+CREATE OR REPLACE FUNCTION build_admission_claim(text,text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE held state_build_admission_work%ROWTYPE;wanted text;token text;expiry text;
+BEGIN
+  IF $1 NOT IN('intake','expansion') OR $2 IS NULL THEN RAISE EXCEPTION 'invalid admission claim';END IF;
+  INSERT INTO state_build_admission_turns VALUES($1,'requested') ON CONFLICT DO NOTHING;
+  SELECT lane INTO wanted FROM state_build_admission_turns WHERE kind=$1 FOR UPDATE;
+  WITH heads AS MATERIALIZED(
+    (SELECT key FROM state_build_admission_work WHERE kind=$1 AND lane='requested' AND retry_at<=$2 AND (lease IS NULL OR lease_until<=$2)
+      ORDER BY zone,position,key LIMIT 1)
+    UNION ALL
+    (SELECT key FROM state_build_admission_work WHERE kind=$1 AND lane='bulk' AND retry_at<=$2 AND (lease IS NULL OR lease_until<=$2)
+      ORDER BY zone,position,key LIMIT 1))
+  SELECT w.* INTO held FROM heads h JOIN state_build_admission_work w ON w.kind=$1 AND w.key=h.key
+    ORDER BY w.zone,w.lane<>wanted,w.position,w.key LIMIT 1 FOR UPDATE OF w SKIP LOCKED;
+  IF held.key IS NULL THEN RETURN NULL;END IF;
+  token:=gen_random_uuid()::text;
+  expiry:=to_char(($2::timestamptz+interval '2minutes') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+  UPDATE state_build_admission_work SET lease=token,lease_until=expiry,attempts=attempts+1 WHERE kind=held.kind AND key=held.key;
+  UPDATE state_build_admission_turns SET lane=CASE WHEN held.lane='requested' THEN 'bulk' ELSE 'requested' END WHERE kind=$1;
+  RETURN jsonb_build_object('kind',held.kind,'key',held.key,'zone',held.zone,'lane',held.lane,'position',held.position,'lease',token,'lease_until',expiry);
+END $$;
+
+CREATE OR REPLACE FUNCTION build_admission_run(text,text,text,bigint,text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE held state_build_admission_work%ROWTYPE;captured jsonb;processed bigint:=0;pending boolean:=false;
+BEGIN
+  IF $4 IS NULL OR $4<1 OR $4>128 THEN RAISE EXCEPTION 'node admission limit must be 1..128';END IF;
+  SELECT * INTO held FROM state_build_admission_work WHERE kind=$1 AND key=$2 AND lease=$3 AND lease_until>$5 FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'admission claim changed' USING ERRCODE='40001';END IF;
+  IF held.kind='intake' THEN
+    SELECT i.input||CASE WHEN p.id IS NOT NULL THEN jsonb_build_object('flow',p.definition) ELSE '{}'::jsonb END INTO STRICT captured
+      FROM entity_build_intake_intents i LEFT JOIN entity_build_intake_plans p ON p.id=i.plan_id WHERE i.id=held.key;
+    PERFORM build_intake_register(jsonb_build_array(captured)::text);processed:=1;
+  ELSIF EXISTS(SELECT 1 FROM entity_build_workflow_expansions e JOIN state_build_workflows f ON f.id=e.workflow WHERE e.id=held.key AND f.state='active') THEN
+    processed:=build_workflow_admit_nodes(held.key,$4,$5);
+    SELECT EXISTS(SELECT 1 FROM state_build_workflow_nodes WHERE expansion=held.key AND state='pending') INTO pending;
+  END IF;
+  IF pending THEN UPDATE state_build_admission_work SET lease=NULL,lease_until=NULL,error=NULL WHERE kind=held.kind AND key=held.key;
+  ELSE DELETE FROM state_build_admission_work WHERE kind=held.kind AND key=held.key;END IF;
+  IF processed>0 THEN PERFORM pg_notify('wfsim_task_pipeline','admission');END IF;
+  RETURN jsonb_build_object('kind',held.kind,'key',held.key,'processed',processed,'pending',pending);
+END $$;
+
+CREATE OR REPLACE FUNCTION build_admission_retry(text,text,text,text,text) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE changed bigint;
+BEGIN
+  UPDATE state_build_admission_work SET lease=NULL,lease_until=NULL,error=left($4,1000),
+    retry_at=to_char(($5::timestamptz+interval '30seconds') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+    WHERE kind=$1 AND key=$2 AND lease=$3;
+  GET DIAGNOSTICS changed=ROW_COUNT;RETURN changed=1;
+END $$;
+REVOKE ALL ON FUNCTION build_workflow_capture(text,text,jsonb,text,jsonb),build_workflow_admit_nodes(text,bigint,text),
+  build_admission_claim(text,text),build_admission_run(text,text,text,bigint,text),build_admission_retry(text,text,text,text,text) FROM PUBLIC;
+
+-- Future arrivals have an indexed FIFO lane; retained legacy inputs keep their existing bounded scan.
+CREATE TABLE IF NOT EXISTS state_build_inbox_positions (
+  id TEXT COLLATE "C" PRIMARY KEY,
+  position BIGINT NOT NULL DEFAULT nextval('compute_queue_position')
+);
+CREATE INDEX IF NOT EXISTS build_inbox_fifo ON state_build_inbox_positions(position,id);
+CREATE OR REPLACE FUNCTION build_inbox_position() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+BEGIN
+  IF TG_OP='INSERT' THEN INSERT INTO state_build_inbox_positions(id) VALUES(NEW.id) ON CONFLICT DO NOTHING;RETURN NEW;
+  ELSE DELETE FROM state_build_inbox_positions WHERE id=OLD.id;RETURN OLD;END IF;
+END $$;
+DROP TRIGGER IF EXISTS build_inbox_positioned ON record_build_submissions;
+CREATE TRIGGER build_inbox_positioned AFTER INSERT OR DELETE ON record_build_submissions FOR EACH ROW EXECUTE FUNCTION build_inbox_position();
+DROP TRIGGER IF EXISTS equipment_inbox_positioned ON record_equipment_submissions;
+CREATE TRIGGER equipment_inbox_positioned AFTER INSERT OR DELETE ON record_equipment_submissions FOR EACH ROW EXECUTE FUNCTION build_inbox_position();
+
+
+CREATE OR REPLACE FUNCTION build_workflow_capture_review(text,text,text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE workflow_id text:=$1;at text:=$3;n state_build_workflow_nodes%ROWTYPE;f record;held text;v_review_id text;v_review_ref text;
+BEGIN
+  SELECT * INTO STRICT n FROM state_build_workflow_nodes WHERE workflow=workflow_id AND id=$2;
+  SELECT w.kind,w.build_id,w.source INTO STRICT f FROM entity_build_workflows w WHERE w.id=workflow_id;
+  SELECT record INTO STRICT held FROM entity_weapon_builds WHERE id=n.definition->>'identity';
+      IF f.kind IN('correction','system') AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
+        WHERE s.identity=n.definition->>'identity' AND s.ruler=n.definition->>'ruler' AND s.mode=n.definition->>'mode') THEN
+        IF n.definition->>'identity'=f.build_id AND n.definition->>'ruler'=f.source#>>'{observation,ruler}'
+          AND n.definition->>'mode'=f.source#>>'{observation,mode}' THEN
+          v_review_id:=f.source#>>'{observation,review}';
+          SELECT ref INTO v_review_ref FROM entity_measurement_reviews WHERE id=v_review_id;
+        ELSE
+          v_review_ref:=workflow_id||'|'||n.id;
+          SELECT id INTO v_review_id FROM entity_measurement_reviews WHERE ref=v_review_ref AND workflow=workflow_id;
+          IF NOT FOUND THEN
+          v_review_id:=gen_random_uuid()::text;
+          INSERT INTO entity_measurement_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
+            baseline_score,baseline_metric,baseline_cost_seconds,baseline_review_id,baseline_by,baseline_started_at,baseline_finished_at,created_at,workflow)
+            SELECT v_review_ref,v_review_id,at,s.identity,s.ruler,s.mode,coalesce(f.source#>>'{observation,engine}',''),
+              n.definition->>'computation',held,'waiting',s.score,s.metric,s.cost_seconds,s.review_id,s.measured_by,s.started_at,s.finished_at,at,workflow_id
+              FROM state_board_measurement_selection s WHERE s.identity=n.definition->>'identity' AND s.ruler=n.definition->>'ruler' AND s.mode=n.definition->>'mode';
+          END IF;
+        END IF;
+        UPDATE state_build_workflow_nodes SET definition=definition||jsonb_build_object('review',v_review_id)
+          WHERE workflow=workflow_id AND id=n.id;
+        UPDATE entity_measurement_reviews SET question=n.definition->>'computation',workflow=workflow_id WHERE id=v_review_id AND task_id IS NULL;
+        RETURN jsonb_build_object('id',v_review_id,'ref',v_review_ref);
+      END IF;
+  RETURN NULL;
+END $$;
+REVOKE ALL ON FUNCTION build_workflow_capture_review(text,text,text) FROM PUBLIC;

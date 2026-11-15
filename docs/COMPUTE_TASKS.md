@@ -42,6 +42,7 @@ only the current run's input.
 | `task_observation.js` | Read-only health observations |
 | `task_inventory.js` | Validation and publication of complete workload snapshots |
 | `task_pipeline.js` | Independent consumer controls, bounded backlog observations and progress |
+| `build_admission.js` | Leased build registration and bounded workflow-node admission |
 
 The modules import common contracts, not business implementations or each
 other. The composition root supplies explicit interfaces. Dispatch receives
@@ -165,8 +166,14 @@ relationships without simulating a fight. `scope: "library"` on
 `/api/board/check` checks storage legality; ordinary board checks retain each
 ruler's eligibility rules.
 
-`build_intake_batch` commits a build, its immutable captured workflow and all
-sourced computation demands in one transaction. Every legal arrival checks
+`build_intake_batch` commits the canonical build, an immutable intake intent,
+its interned native plan and the original source bindings before acknowledging
+the inbox. This transaction creates no computation tasks. The independent
+`admission` consumer registers the captured workflow, then admits at most 128
+nodes per leased expansion slice. Each slice commits its tasks and source links
+with its acknowledgement. A crash retains the obligation; an expired lease can
+be reclaimed, and a stale token cannot acknowledge another claim.
+Every legal arrival checks
 the build's current applicable coverage through indexed measurement keys.
 Previously stored scores count independently of frontend rank. Only missing
 measurements create ordinary work; an active equivalent computation is shared.
@@ -181,8 +188,10 @@ it does not implement a second task expansion.
 Hourly and live intake share `inbox_reader.mjs`. Existing waiting reviews and
 active higher-priority workflow continuations are read first, using their
 declared queue zones. Missing source rows are excluded before the priority
-limit. Remaining capacity reads ordinary inputs in primary-key pages, with
-scope enrichment limited to each selected input. Read connections enforce a
+limit. Remaining capacity alternates indexed FIFO arrivals with retained
+ordinary inputs in bounded primary-key pages. FIFO metadata is created only
+for new arrivals; installing the stage never backfills the historical inbox.
+Scope enrichment is limited to each selected input. Read connections enforce a
 five-second statement timeout and are read-only.
 
 The live reader saves its ordinary scan cursor only after every captured input
@@ -207,6 +216,12 @@ without advancing the accepted-result continuation.
 
 | Table | Contents |
 | --- | --- |
+| `entity_build_intake_plans` | Interned immutable native expansion plans |
+| `entity_build_intake_intents` | Durable canonical input and captured business obligation |
+| `relation_build_intake_sources` | Original source bindings retained after inbox acknowledgement |
+| `state_build_admission_work` | Retryable intake and bounded expansion claims |
+| `state_build_admission_turns` | Alternating requested and bulk lane selection within a zone |
+| `state_build_inbox_positions` | Indexed FIFO positions for new raw arrivals |
 | `entity_build_workflow_scopes` | Interned immutable board/scenario/mode snapshots |
 | `entity_build_workflows` | One logical expansion, its root build, scope and initial source |
 | `entity_build_workflow_expansions` | Frozen compact node plans, including accepted optimizer continuations |
@@ -219,6 +234,24 @@ library rather than being copied into stored plans. Templates and patches
 avoid repeating a complete fight inside one expansion. Queue admission is
 independent of scope construction: equivalent nodes share the same physical
 computation and deliver separately to every consumer.
+
+Admission reserves computation positions when accepting the intent, preserving
+arrival order through deferred expansion. Requested and bulk lane heads share
+turns within a zone; the declared zone remains authoritative. Aliases in one
+correction share their execution round even when admitted in separate slices.
+Proof retraction retires the affected measurement synchronously; execution of
+its replacement proceeds through the independent admission consumer.
+
+The daemon gives admission its own connection and control alongside verification,
+contribution and delivery. Committed positive progress wakes the next bounded
+pass; timers recover missed notifications. Pauses, retry delays and empty passes
+remain bounded and do not block the other consumers.
+
+`node scripts/build_admission_schema.mjs --tablespace wfsim_data` emits the
+additive installation transaction for an existing task/workflow schema. It
+requires the existing workflow indexes, adds a nullable node position and
+creates new stage tables without scanning historical inputs or rewriting node
+rows. The named tablespace holds the new tables and indexes.
 
 ## Optimization output and retained tasks
 
@@ -381,7 +414,7 @@ so shared computations count once and family searches retain their own category.
 
 ### Durable board registration
 
-Native intake commits each build and its captured workflow through
+Native intake commits each build and its immutable intake intent through
 `build_intake_batch` before acknowledging its inbox rows. Legacy board writers
 retain their existing computation identities. Their pending business rows own
 the obligation; `board_admission_changed` records unfinished registration in

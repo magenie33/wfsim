@@ -9,6 +9,9 @@ GRANT SELECT ON record_candidate_answers, record_engine_refusals, state_factory_
   record_refusal_withdrawals, state_pending_verifications, record_hourly_compute_totals, entity_compute_devices TO wfsim_factoryd;
 GRANT SELECT, INSERT, UPDATE, DELETE ON state_factory_findings, state_factory_snapshot, state_compute_fair_shares TO wfsim_factoryd;
 GRANT SELECT ON state_task_pipeline_controls TO wfsim_factoryd;
+GRANT SELECT ON state_build_admission_work TO wfsim_factoryd;
+GRANT EXECUTE ON FUNCTION build_admission_claim(text,text),build_admission_run(text,text,text,bigint,text),
+  build_admission_retry(text,text,text,text,text) TO wfsim_factoryd;
 GRANT SELECT,INSERT,UPDATE ON state_task_pipeline_progress TO wfsim_factoryd;
 GRANT SELECT (id) ON entity_compute_batches TO wfsim_factoryd;
 GRANT INSERT ON entity_compute_batches TO wfsim_factoryd;

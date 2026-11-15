@@ -117,6 +117,7 @@ check("equipment builds land outside weapon scores before their arrivals are spe
   check("one oversized row fails closed before its arrival can be spent", await run("ship_builds.sh", "oversize.ndjson", "oversize-done.txt") !== 0
     && (await query("SELECT count(*) AS n FROM entity_weapon_builds WHERE id = 'oversize'"))[0].n === 0
     && (await query("SELECT count(*) AS n FROM record_build_submissions WHERE id = 'oversize-arrival'"))[0].n === 1);
+  await query("TRUNCATE entity_build_intake_intents CASCADE");
   await query("DELETE FROM entity_weapon_builds WHERE id LIKE 'bulk-%'");
   await query("DELETE FROM entity_equipment_builds WHERE id LIKE 'bulk-%'");
   await query("DELETE FROM record_build_submissions WHERE id = 'oversize-arrival'");

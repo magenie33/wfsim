@@ -2,6 +2,7 @@ import { prepareIntakeBuild } from './build_batches.mjs';
 import { BUILD_WORKFLOW_PRODUCER } from '../worker/build_workflows.js';
 import { seedComputeWork } from "./pg/fixtures.mjs";
 import assert from 'node:assert/strict';
+import {drainBuildAdmission} from './pg/build_admission_fixture.mjs';
 import { testDb } from './pg/test_db.mjs';
 import { boardReviewsRoute, BOARD_REVIEW_PRODUCER, calibrateBoard } from '../worker/board_reviews.js';
 import { BOARD_PRODUCERS } from '../worker/board_tasks.js';
@@ -17,6 +18,11 @@ import { appraiseRoute } from '../worker/appraise.js';
 
 const realRandom = Math.random; Math.random = () => 0.5;
 const db = await testDb('library');
+if(process.argv.includes('--break-source-ack')) {
+ const original=readFileSync(new URL('../worker/pg/build_workflows.sql',import.meta.url),'utf8').match(/CREATE OR REPLACE FUNCTION build_spend_submissions[^]*?END \$\$;/)[0];
+ const broken=original.replace("    IF EXISTS(SELECT 1 FROM relation_build_intake_sources WHERE source_id=input.id) THEN CONTINUE;END IF;\n",'');
+ assert.notEqual(broken,original);await db.exec(broken);
+}
 let engine = 'e1';
 const env = { LIBRARY: db, ASSETS: { fetch: async () => Response.json({engine}) } };
 const identity='a'.repeat(32), ruler='standard_single_target', mode='cycle';
@@ -40,6 +46,7 @@ const call=async(body,path='/api/board/review')=>{
       nodes:[{kind:'measure',identity,ruler,mode,template:0,patch:0}]}});
   await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
   await db.run('SELECT build_spend_submissions(?::text)',JSON.stringify([inbox.id]));
+  await drainBuildAdmission(db);
  }
  return result;
 };

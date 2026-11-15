@@ -9,22 +9,23 @@ import {prepareIntakeBuild} from './build_batches.mjs';
 import {factory,canon} from '../worker/tasks.js';
 import {boardReviewsRoute} from '../worker/board_reviews.js';
 import {BUILD_WORKFLOW_PRODUCER} from '../worker/build_workflows.js';
+import {drainBuildAdmission} from './pg/build_admission_fixture.mjs';
 
 export async function workflowRecoveryCases(database=null) {
   const db=database||await testDb('library'),env={LIBRARY:db,ASSETS:{fetch:async()=>Response.json({engine:'before'})}};
   const sql=readFileSync(new URL('../worker/pg/build_workflows.sql',import.meta.url),'utf8');
-  const expansion=sql.match(/CREATE OR REPLACE FUNCTION build_workflow_expansion[^]*?END \$\$;/)[0];
+  const expansion=sql.match(/CREATE OR REPLACE FUNCTION build_workflow_capture[^]*?END \$\$;/)[0];
   const legacy=expansion.replace(/  IF jsonb_typeof\(\$3->'scope'\)[^\n]*\n/,'')
     .replace(/  IF \$2 IS NULL AND f.kind='correction'[^]*?  END IF;\n/,'');
   assert.notEqual(legacy,expansion,'the legacy fixture must remove the admission guards');
   if(process.argv.includes('--break-recovery-baseline')) {
-    const admission=sql.match(/CREATE OR REPLACE FUNCTION build_intake_batch[^]*?END \$\$;/)[0];
+    const admission=sql.match(/CREATE OR REPLACE FUNCTION build_intake_register[^]*?END \$\$;/)[0];
     const broken=admission.replace("AND s.finished_at=observation->>'baseline_finished_at' AND s.score=(observation->>'baseline_score')::double precision AND s.metric=observation->>'metric'",'');
     assert.notEqual(broken,admission);await (db.exec?db.exec(broken):db.run(broken));
   }
   const f=factory({verbs:{simulate:{cap:2,lease_ms:60000,canon:(r,w)=>canon({...r,work:w})}},producers:{build_workflow:BUILD_WORKFLOW_PRODUCER},spot:0});
-  const admit=input=>db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
-  const recover=(old,input)=>db.get('SELECT build_workflow_recover(?::text,?::text) AS recovered',old,JSON.stringify(input));
+  const admit=async input=>{await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));await drainBuildAdmission(db);};
+  const recover=async(old,input)=>{const result=await db.get('SELECT build_workflow_recover(?::text,?::text) AS recovered',old,JSON.stringify(input));await drainBuildAdmission(db);return result;};
   let ordinal=0;
   async function fixture() {
     env.ASSETS={fetch:async()=>Response.json({engine:'before'})};
@@ -43,7 +44,7 @@ export async function workflowRecoveryCases(database=null) {
     const arrival=await db.get('SELECT * FROM record_build_submissions WHERE id=?','review:'+review.id);
     const observation={...JSON.parse(arrival.observation),valid:true};
     await db.run(legacy);
-    try {await admit({...input,from:[arrival.id],observation,flow:{...input.flow,scope:null,nodes:[],templates:[],patches:[]}});}
+    try {await db.run('SELECT build_intake_register(?::text)',JSON.stringify([{...input,from:[arrival.id],observation,flow:{...input.flow,scope:null,nodes:[],templates:[],patches:[]}}]));}
     finally {await db.run(expansion);}
     await db.run('SELECT build_spend_submissions(?::text)',JSON.stringify([arrival.id]));
     const bad=await db.get('SELECT * FROM entity_measurement_reviews WHERE id=?',review.id);
@@ -90,7 +91,7 @@ export async function workflowRecoveryCases(database=null) {
       flow:{...first.input.flow,nodes:[...first.input.flow.nodes,{...first.input.flow.nodes[0],identity:'b'.repeat(32),template:1}],
         templates:[...first.input.flow.templates,{...first.input.flow.templates[0],seed:9999}]}});
     await db.run(legacy);
-    try {await admit({...ordinary,flow:{...ordinary.flow,scope:null,nodes:[]}});}finally{await db.run(expansion);}
+    try {await db.run('SELECT build_intake_register(?::text)',JSON.stringify([{...ordinary,flow:{...ordinary.flow,scope:null,nodes:[]}}]));}finally{await db.run(expansion);}
     const ordinaryOld=await db.get("SELECT id FROM entity_build_workflows WHERE build_id=?",ordinary.id);
     const ordinaryRecovery=(await recover(ordinaryOld.id,ordinary)).recovered;
     const ordinaryNodes=await db.all('SELECT state,task_id FROM state_build_workflow_nodes WHERE workflow=? ORDER BY id',ordinaryRecovery.workflow);

@@ -22,6 +22,7 @@ import { demandOf, DEMAND_KEY, DEMAND_CACHE, DEMAND_COST_EVERY_MS, tallyOf, tall
 import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capacity.mjs";
 import { facts } from "../worker/factory.js";
 import { pipelineClock } from "./pipeline_clock.mjs";
+import { TASK_PIPELINE_STAGES } from "../worker/task_pipeline.js";
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
 export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, STATS_TICK_MS = 10_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
@@ -81,7 +82,7 @@ export async function openEnv(env = process.env, connect = postgres) {
     return owner;
   };
   const backgroundEnv={LIBRARY:db(env.PG_URL,true)};
-  const stageEnvs=Object.fromEntries(["verification","delivery","contribution"].map(name=>[name,{...out,LIBRARY:db(env.PG_URL,false,name)}]));
+  const stageEnvs=Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,{...out,LIBRARY:db(env.PG_URL,false,name)}]));
   const listen=async wake=>{
     const sql=connect(env.PG_URL,{...POSTGRES_OPTIONS,max:1,idle_timeout:0,connect_timeout:5,
       connection:{...CONNECTION,application_name:"wfsim-factoryd-events"},onnotice:()=>{},
@@ -182,6 +183,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       await findingsTick(env.LIBRARY, "capacity", () => budget.reading());
     },
     settle: async () => settleBatch(stageEnvs.verification),
+    workflowAdmission: async () => facts().runStage(stageEnvs.admission,"admission"),
     delivery: async () => facts().runStage(stageEnvs.delivery,"delivery"),
     contribution: async () => facts().runStage(stageEnvs.contribution,"contribution"),
     shadow: async () => {cursor=(await settleShadow(backgroundEnv,{threshold:CLIENTS_PER_FACT,from:cursor})).cursor;},
@@ -232,7 +234,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     },
   };
   if (once) {
-    for (const name of ["snapshot", "fair", "settle", "delivery", "contribution", "shadow", "admission", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
+    for (const name of ["snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
     log(bad.length ? `once: failed ${bad.join(", ")}` : "once: ok", commit);
@@ -250,6 +252,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   };
   every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
   every(SETTLE_MS, "admission");
+  every(SETTLE_MS,"workflowAdmission");
   every(SETTLE_MS,"delivery");every(SETTLE_MS,"contribution");every(FAIR_MS,"shadow");
   every(WAVE_MS, "wave"); every(SIGNAL_CHECK_MS, "signalCheck");
   let stop;
@@ -260,7 +263,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     process.once("SIGINT", stop);
   });
   if(stopping)stop();
-  if(listen && !stopping)try {await listen(stage=>clock.wake({verification:"settle",delivery:"delivery",contribution:"contribution"}[stage]));}
+  if(listen && !stopping)try {await listen(stage=>clock.wake({admission:"workflowAdmission",verification:"settle",delivery:"delivery",contribution:"contribution"}[stage]));}
   catch(error){log("pipeline notification unavailable; polling retained",error.message);}
   if(!stopping)log("factoryd up",commit,release.engine);
   await stopped;

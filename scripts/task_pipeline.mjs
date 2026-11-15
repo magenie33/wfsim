@@ -10,7 +10,7 @@ export async function pipelineCommand(env,args,now=Date.now()) {
   const [command,name,...extra]=args;
   if(extra.length || !['status','pause','resume','run'].includes(command)
     || command!=='status' && !Object.hasOwn(TASK_PIPELINE_STAGES,name) || command==='status' && name)
-    throw Error('usage: task_pipeline.mjs status | pause|resume|run verification|delivery|contribution');
+    throw Error('usage: task_pipeline.mjs status | pause|resume|run admission|verification|delivery|contribution');
   const f=facts();
   if(command==='status')return f.pipelineStatus(env,now);
   if(command==='run')return f.runStage(env,name,now,{runtime:'native'});
