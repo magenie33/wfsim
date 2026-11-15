@@ -492,7 +492,7 @@ impl DebuffState {
         let entry = UpgradeEntry { UpgradeType: UpgradeType::AVATAR_PROC_CHANCE_VULNERABILITY,
             OperationType: OperationType::STACKING_MULTIPLY,
             Value: TAU_STATUS_CHANCE_PER_STACK as f32 * stacks as f32 };
-        crate::rules::status::ordinary::target_proc_chance(packet_chance as f32, [entry]) as f64
+        crate::rules::upgrades::target_proc_chance(packet_chance as f32, [entry]) as f64
     }
 
     /// FIFO push with the universal replace-oldest rule (application-time

@@ -14,6 +14,15 @@ pub struct NativeScalar {
     operations: Accumulator,
 }
 
+/// 151e995..151ec06: source365 is upstream; only selected target117 entries enter.
+#[wfsim_gas_macro::metered]
+pub fn target_proc_chance(packet_chance: f32, entries: impl IntoIterator<Item = UpgradeEntry>) -> f32 {
+    let mut scalar = NativeScalar::new(packet_chance);
+    scalar.install_selected(UpgradeType::AVATAR_PROC_CHANCE_VULNERABILITY, entries,
+        ScalarMutation::RetainOperations);
+    scalar.value(false)
+}
+
 #[wfsim_gas_macro::metered]
 impl NativeScalar {
     pub fn new(base: f32) -> Self { Self { base, operations: Accumulator::default() } }
