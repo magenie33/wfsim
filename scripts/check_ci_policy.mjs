@@ -44,6 +44,7 @@ assert.equal(classify(admissionToolInputs).deep, false);
 for (const path of ['tests/fixtures/build-admission-base5a/unknown.sql', 'scripts/migrations/unknown.mjs'])
   assert.equal(classify([path]).deep, true, path + ' is outside the exact declarations');
 const boardPipelineInputs = ['scripts/check_order_cut.mjs', 'scripts/check_order_cut_pg.mjs',
+  'tests/fixtures/order-cut-activation/f3ffb55e.sql',
   'deploy/wfsim-live.service', 'scripts/board_operator.mjs', 'scripts/prepared_board_inputs.mjs',
   'scripts/prepared_work_inventory.mjs', 'scripts/audit_prepared_members.mjs', 'scripts/source_capture_gc.mjs',
   'scripts/sqlite_transaction_recovery.mjs', 'scripts/check_task_pipeline.mjs',
