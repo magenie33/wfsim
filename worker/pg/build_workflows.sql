@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS record_build_workflow_triggers (
   source JSONB NOT NULL,
   at TEXT COLLATE "C" NOT NULL
 );
+CREATE INDEX IF NOT EXISTS build_workflow_triggers_workflow ON record_build_workflow_triggers(workflow,id);
 ALTER TABLE record_build_submissions ADD COLUMN IF NOT EXISTS observation TEXT COLLATE "C";
 ALTER TABLE entity_measurement_reviews ADD COLUMN IF NOT EXISTS workflow TEXT COLLATE "C";
 CREATE OR REPLACE FUNCTION build_workflow_system_key(text,text) RETURNS text LANGUAGE sql IMMUTABLE AS $$

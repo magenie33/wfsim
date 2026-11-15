@@ -10,7 +10,7 @@ import {pgDb,placeholders,postgresClient} from '../worker/db.js';
 import {facts} from '../worker/factory.js';
 import {prepareIntakeBuild} from './build_batches.mjs';
 import {captureInbox,inboxSource} from './inbox_reader.mjs';
-import {buildAdmissionSchemaSql} from './build_admission_schema.mjs';
+import {buildAdmissionSchemaSql,buildAdmissionIndexSql} from './build_admission_schema.mjs';
 
 async function openDatabase() {
   const url=process.env.WFSIM_BUILD_ADMISSION_TEST_URL;
@@ -99,6 +99,7 @@ const drain=async(time=now)=>{
   assert.equal(await count('state_build_admission_work'),0);
 };
 async function checkQueryBounds(input) {
+  if(process.argv.includes('--break-trigger-index'))await db.exec('DROP INDEX build_workflow_triggers_workflow');
   if(process.argv.includes('--break-consumer-bound')) {
     const original=schemaSource.match(/CREATE OR REPLACE FUNCTION build_intake_register[^]*?END \$\$;/)[0];
     const broken=original.replace(" AND d.ref>=flow_id AND d.ref<flow_id||'}'\n          ",' ');
@@ -120,6 +121,8 @@ async function checkQueryBounds(input) {
   await db.exec(`INSERT INTO entity_build_workflow_scopes VALUES('query-bounds','{}');
     INSERT INTO entity_build_workflows(id,build_id,scope_key,kind,scope_id,source,created_at)
       SELECT 'scale-'||n,${literal(input.id)},'scale-'||n,'intake','query-bounds','{}',${literal(at)} FROM generate_series(1,4096) n;
+    INSERT INTO record_build_workflow_triggers(id,workflow,source,at)
+      SELECT id||':scale',id,'{}',created_at FROM entity_build_workflows WHERE scope_id='query-bounds';
     INSERT INTO entity_build_workflow_expansions(id,workflow,plan,created_at)
       SELECT id||':root',id,'{}',created_at FROM entity_build_workflows WHERE scope_id='query-bounds';
     INSERT INTO state_build_workflow_nodes(workflow,id,expansion,definition,state,retry_at,queue_position)
@@ -133,7 +136,7 @@ async function checkQueryBounds(input) {
   refs.push({ref:workflow+'|served',producer:'build_workflow',state:'served'},{ref:workflow+'|other',producer:'another',state:'live'});
   await db.run(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,zone)
     SELECT producer,ref,'query-bounds',state,?2,?2,9 FROM jsonb_to_recordset((?1::text)::jsonb) x(producer text,ref text,state text) ON CONFLICT DO NOTHING`,JSON.stringify(refs),at);
-  await db.exec('ANALYZE relation_task_consumers;ANALYZE state_build_workflow_nodes;ANALYZE entity_build_workflow_expansions;');
+  await db.exec('ANALYZE relation_task_consumers;ANALYZE state_build_workflow_nodes;ANALYZE entity_build_workflow_expansions;ANALYZE record_build_workflow_triggers;');
   const body=async signature=>(await db.get('SELECT prosrc body FROM pg_proc WHERE oid=?::regprocedure',signature)).body;
   const register=await body('build_intake_register(text)');
   const update=register.match(/UPDATE relation_task_consumers d SET[^;]+;/)[0]
@@ -174,6 +177,8 @@ async function checkQueryBounds(input) {
     const nodes=await explain('bounds_'+name,sql,types,args);
     assert(nodes.some(node=>node['Relation Name']==='state_build_workflow_nodes' && /workflow = /.test(node['Index Cond']||'')),
       name+' must constrain the node index by the expansion owner workflow');
+    if(name==='sources')assert(nodes.some(node=>node['Index Name']==='build_workflow_triggers_workflow' && /workflow = /.test(node['Index Cond']||'')),
+      'source bindings must seek captured triggers by workflow instead of scanning their history per node');
   }
   const before=await db.all('SELECT producer,ref,state,zone,due_at FROM relation_task_consumers ORDER BY producer,ref');
   const due='2025-01-01T00:00:00.000Z';
@@ -184,7 +189,19 @@ async function checkQueryBounds(input) {
   const held=await db.all('SELECT workflow,id,state,task_id FROM state_build_workflow_nodes WHERE expansion<>? ORDER BY workflow,id',workflow+':bounded');
   const processed=await db.get('SELECT build_workflow_admit_nodes(?::text,1,?::text) n',workflow+':bounded',at);assert.equal(Number(processed.n),1);
   assert.deepEqual(await db.all('SELECT workflow,id,state,task_id FROM state_build_workflow_nodes WHERE expansion<>? ORDER BY workflow,id',workflow+':bounded'),held);
-  console.log('ok: generic plans seek consumer refs and all six workflow node queries amid 4096 unrelated workflows; exact matching, promotion and one-node slice preserve other work');
+  const sourceQuery=queries.find(([name])=>name==='sources')[1]
+    .replace('SELECT node.id ','SELECT node.id,t.id trigger_id,t.source ')
+    .replaceAll(/\bworkflow_id\b/g,literal(workflow)).replaceAll(/\bexpansion_id\b/g,literal(workflow+':bounded'))
+    .replaceAll(/\btouched\b/g,literal('{bounded.0}')+'::text[]')+' ORDER BY node.id,t.id';
+  const indexed=await db.all(sourceQuery);assert(indexed.length>0,'source equivalence must exercise admitted work');
+  const scanned=await db.exec('BEGIN;SET LOCAL enable_indexscan=off;SET LOCAL enable_bitmapscan=off;'+sourceQuery+';ROLLBACK;');
+  assert.deepEqual(scanned.flatMap(part=>part.rows||part).filter(row=>row.trigger_id),indexed);
+  const bindings=await db.all(`SELECT s.trigger_id,s.payload::jsonb->'source' source FROM relation_compute_task_sources s
+    JOIN state_build_workflow_nodes n ON n.task_id=s.task_id AND s.ref=n.workflow||'|'||n.id
+    WHERE n.workflow=?1 AND n.id='bounded.0' AND s.producer='build_workflow'
+      AND EXISTS(SELECT 1 FROM record_build_workflow_triggers t WHERE t.id=s.trigger_id AND t.workflow=n.workflow) ORDER BY s.trigger_id`,workflow);
+  assert.deepEqual(bindings,indexed.map(({trigger_id,source})=>({trigger_id,source})));
+  console.log('ok: generic plans seek consumer refs, all six workflow node queries and captured triggers amid 4096 unrelated workflows; exact matching, promotion and one-node slice preserve other work');
 }
 try {
   const input=await fixture();
@@ -276,6 +293,7 @@ try {
     assert.equal(createHash('sha256').update(body).digest('hex'),baseline.files[name]);return body.toString();
   };
   await db.exec(`TRUNCATE entity_weapon_builds CASCADE;
+    DROP INDEX build_workflow_triggers_workflow;
     DROP TABLE relation_build_intake_sources,entity_build_intake_intents,entity_build_intake_plans,state_build_admission_work,state_build_admission_turns,state_build_inbox_positions CASCADE;
     DROP TRIGGER build_inbox_positioned ON record_build_submissions;DROP TRIGGER equipment_inbox_positioned ON record_equipment_submissions;
     ALTER TABLE state_build_workflow_nodes DROP COLUMN queue_position;`);
@@ -291,6 +309,17 @@ try {
   await assert.rejects(db.exec(buildAdmissionSchemaSql({role:null})),/indexes must already be valid/);
   await db.exec('ROLLBACK');
   const restore=loadBaseline('build_workflows.sql').match(/CREATE INDEX IF NOT EXISTS build_workflow_nodes_pending[^;]+;/)[0];await db.exec(restore);
+  const upgrade=buildAdmissionSchemaSql({role:null});
+  assert(!upgrade.includes('CREATE INDEX IF NOT EXISTS build_workflow_triggers_workflow'),'minimum upgrade must not build the additive index inside its transaction');
+  await assert.rejects(db.exec(upgrade),/additive workflow trigger index must already be valid/);await db.exec('ROLLBACK');
+  if(process.env.WFSIM_BUILD_ADMISSION_TEST_URL) {
+    await db.exec("INSERT INTO record_build_workflow_triggers SELECT id||':duplicate',workflow,source,at FROM record_build_workflow_triggers");
+    await assert.rejects(db.exec('CREATE UNIQUE INDEX CONCURRENTLY build_workflow_triggers_workflow ON record_build_workflow_triggers(workflow)'),/duplicate|could not create unique/i);
+    assert.equal((await db.get("SELECT indisvalid FROM pg_index WHERE indexrelid='build_workflow_triggers_workflow'::regclass")).indisvalid,false);
+  }else await db.exec('CREATE INDEX build_workflow_triggers_workflow ON record_build_workflow_triggers(id,workflow)');
+  await assert.rejects(db.exec(upgrade),/additive workflow trigger index must already be valid/);await db.exec('ROLLBACK');
+  await db.exec('DROP INDEX '+(process.env.WFSIM_BUILD_ADMISSION_TEST_URL?'CONCURRENTLY ':'')+'build_workflow_triggers_workflow');
+  await db.exec(buildAdmissionIndexSql({concurrently:!!process.env.WFSIM_BUILD_ADMISSION_TEST_URL}));
   await db.exec(buildAdmissionSchemaSql({role:null}));await db.exec(buildAdmissionSchemaSql({role:null}));
   if(process.argv.includes('--break-first-arrival')) {
     const original=schemaSource.match(/CREATE OR REPLACE FUNCTION build_intake_register[^]*?END \$\$;/)[0];
@@ -301,7 +330,7 @@ try {
   assert.equal((await db.get("SELECT relfilenode::text storage FROM pg_class WHERE oid='state_build_workflow_nodes'::regclass")).storage,storage);
   const next=await fixture();await intake(next);assert.equal(await count('entity_build_intake_intents'),1);
   await drain();
-  console.log('ok: exact frozen baseline upgrades twice without rewriting old nodes, leases, accepted results or positions; missing historical indexes refuse before any rebuild');
+  console.log('ok: exact frozen baseline upgrades twice without rewriting old nodes, leases, accepted results or positions; missing historical and missing/invalid additive indexes refuse before any rebuild');
   const empty=await fixture();empty.flow.nodes=[];
   await intake(empty);await drain();
   const completion=await db.get('SELECT s.state FROM entity_build_workflows w JOIN state_build_workflows s ON s.id=w.id WHERE w.build_id=?',empty.id);

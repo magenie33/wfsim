@@ -1124,12 +1124,22 @@ references, pipe suffixes, wildcard characters, Unicode and adjacent prefixes
 retain the original matching; priority changes and one-node slices preserve
 unrelated work. `--break-consumer-bound` and `--break-expansion-bounds` restore
 the original SQL scans and must fail those plan assertions.
+The trigger source join also needs a workflow index among those unrelated
+captures; `--break-trigger-index` removes the real index and must fail.
+An admitted slice compares indexed and forced sequential source reads and
+checks every resulting source payload against its durable task binding.
 
 The default uses PGlite. `WFSIM_BUILD_ADMISSION_TEST_URL` selects an isolated
 schema on localhost PostgreSQL and kills an actual worker after its committed
 claim. Both paths install the additive schema twice over the hashed frozen
 baseline, preserving old rows, leases and heap identity; a missing prerequisite
-index refuses installation. `--break-eager`, `--break-claim` and
+index refuses installation. The three historical indexes stay prerequisites.
+`build_admission_schema.mjs --indexes` emits the separate concurrent metadata
+index statement; the minimum schema transaction requires that index to be valid
+and never builds it. PostgreSQL leaves a real invalid concurrent index after a
+forced uniqueness failure; installation must refuse it until explicit cleanup
+and correct concurrent creation. PGlite checks a wrong index layout instead.
+`--break-eager`, `--break-claim` and
 `--break-alias-force` mutate the actual SQL and must fail. Empty applicable
 scopes preserve a first arrival's completion; `--break-first-arrival` removes
 that captured first-arrival flag and must fail. The source-ACK guard
