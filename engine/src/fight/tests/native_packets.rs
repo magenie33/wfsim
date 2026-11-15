@@ -112,3 +112,82 @@ fn a_beam_tick_with_twenty_status_rolls_submits_one_primary_damage_instance() {
     assert_eq!(plain.procs, plain.shots * 20);
     assert_eq!(split.procs - plain.procs, split.shots);
 }
+
+fn phantasma_primary_packet(ordinary_status_chance: f64, force_radiation: bool) -> FightParams {
+    let base = crate::model::WeaponBase::from_data("phantasma_prime", false, &[]);
+    let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+    let arena = crate::arena::Arena { body_parts: mono_body(1.0), ..crate::arena::Arena::training(2.0) };
+    let mut p = FightParams::from_panel(&panel, &arena, &arc("primary_debilitate"));
+    assert!(p.continuous);
+    assert_eq!(p.base_multishot, 6.0);
+    assert_eq!(p.multishot, 6.0);
+    p.status_chance = ordinary_status_chance;
+    p.forced_procs = if force_radiation { vec![DamageType::Radiation] } else { Vec::new() };
+    p.infinite_reserve = true;
+    p
+}
+
+#[test]
+fn phantasma_prime_scene_merges_six_and_twenty_four_beams_before_primary_callbacks() {
+    for multishot in [6.0, 24.0] {
+        let mut p = phantasma_primary_packet(0.0, true);
+        p.multishot = multishot;
+        let split = run_once(&p, &mut Rng::new(42));
+        p.arcane = ArcaneFx::none();
+        let plain = run_once(&p, &mut Rng::new(42));
+        assert_eq!(split.shots, plain.shots);
+        assert_eq!(plain.pellets, plain.shots);
+        assert_eq!(plain.procs, plain.shots);
+        assert_eq!(split.procs - plain.procs, split.shots - 9,
+            "one selection from the tenth Radiation application, multishot={multishot}");
+    }
+}
+
+#[test]
+fn phantasma_prime_scene_many_radiation_counters_have_one_primary_selection_per_tick() {
+    for multishot in [6.0, 24.0] {
+        let mut p = phantasma_primary_packet(20.0 / multishot, false);
+        p.multishot = multishot;
+        let split = run_once(&p, &mut Rng::new(42));
+        p.arcane = ArcaneFx::none();
+        let plain = run_once(&p, &mut Rng::new(42));
+        assert_eq!(split.shots, plain.shots);
+        assert_eq!(plain.pellets, plain.shots);
+        assert_eq!(plain.procs, plain.shots * 20);
+        assert_eq!(split.procs - plain.procs, split.shots,
+            "repeated Radiation counters select once, multishot={multishot}");
+    }
+}
+
+#[test]
+fn one_primary_callback_can_select_multiple_compound_types_and_coalesce_shared_components() {
+    let mut seen = std::collections::BTreeSet::new();
+    for seed in 0..128 {
+        let mut results = Vec::new();
+        for count in [1, 20] {
+            let mut p = flat_base();
+            p.arcane = arc("primary_debilitate");
+            let mut rec = crate::record::Record::off();
+            let (mut fight, mut me) = open(&p, Seat::WIELDER, &mut Rng::new(42), &rec, &None);
+            me.arc.shared_native_random = None;
+            me.arc.native_random = crate::rules::rng::NativeRng::new(seed);
+            let here = &mut fight.bodies[0];
+            here.debuffs.confusion = vec![10.0; 10];
+            here.debuffs.disrupt = vec![10.0; 10];
+            let mit = here.debuffs.mitigation(0.0, 1.0, 0.0, 1.0);
+            let procs = [vec![DamageType::Radiation; count], vec![DamageType::Magnetic; count]].concat();
+            settle_procs(procs, Seat::WIELDER, 0.0, 0,
+                InstanceScale { native_source: None, native_part: None, mb_live: 75.0,
+                    crit_multiplier: 1.0, part_factor: 1.0, landing: ProcLanding::default(),
+                    attrition: 1.0, xh_bracket: 1.0, status_damage_live: 0.0 },
+                &mut here.debuffs, &mut me.gal, &mut me.arc, &mut here.state, &p, &p, &mit,
+                &mut fight.r, &mut rec, &mut me.d.status, &p.foe, DEPTH_PROC);
+            let extra = fight.r.procs - (2 * count) as u32;
+            assert!((1..=2).contains(&extra));
+            results.push(extra);
+            seen.insert(extra);
+        }
+        assert_eq!(results[0], results[1], "counter multiplicity must not multiply selections");
+    }
+    assert_eq!(seen.into_iter().collect::<Vec<_>>(), [1, 2]);
+}

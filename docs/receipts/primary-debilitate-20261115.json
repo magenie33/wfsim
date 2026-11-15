@@ -1,0 +1,211 @@
+{
+  "schema": 1,
+  "date_utc": "2026-11-15T05:14:07.350401+00:00",
+  "conclusion": "Retain source-backed per-callback type loop and forced-counter coalescing; do not restore per-status splitting to match an older simulator.",
+  "priority": "In-game measurements where available, matching-client native/script evidence, wiki, then simulator implementation/output. Existing WFSim is not an independent mechanics oracle.",
+  "source": {
+    "batch": "20261109T095946Z-primary-debilitate-client-only",
+    "manifest_sha256": "681cc93ffc168138cc39c70742ab271178316ef54cddda3b97c39b8483b5d2db",
+    "script_member_sha256": "a4dc14e66da33412d8a1bc7256a203756453e5e25b67dedd7b54b85f120dcb90",
+    "fixture_sha256": "19d414572bfb1fd3c914414325939c2d0121095e67db045511161c8f49d97a08",
+    "original_script_pcs": {
+      "condition_proto": 1,
+      "condition_count_gate": [
+        49,
+        51,
+        60,
+        63
+      ],
+      "callback_proto": 2,
+      "new_packet": 48,
+      "copy_context": [
+        59,
+        62
+      ],
+      "compound_gate": [
+        80,
+        85,
+        88,
+        91
+      ],
+      "rng": 99,
+      "set_proc": 104,
+      "apply_packet": 110
+    },
+    "original_counter_cases": 16,
+    "original_rng_cases": 24
+  },
+  "verified_contract": [
+    "One fresh child allocation and one submission per accepted callback",
+    "Each qualifying compound type selects once; incoming counter is tested >0",
+    "Target count >=10 and incoming presence are both required",
+    "Multiple qualifying compounds can contribute together",
+    "Repeated forced selection of the same basic type leaves one submitted counter"
+  ],
+  "tests": {
+    "primary_filtered_tests": 27,
+    "controlled_packet_suite": 9,
+    "native_counter_cases_checked": 16,
+    "native_component_vector_combinations_checked": 96,
+    "importer_changed_fixture": "FAIL as intended; original bytes restored and --check PASS",
+    "scope": "Synthetic controlled scene/helper tests; not an in-game Phantasma callback-frequency capture"
+  },
+  "published": {
+    "accepted": [
+      {
+        "engine": "3b0a3bf58113",
+        "join": true,
+        "until": "2026-11-15T02:36:33.000Z"
+      },
+      {
+        "engine": "878af33a059e",
+        "join": true,
+        "until": "2026-11-15T06:48:23.000Z"
+      },
+      {
+        "engine": "a9c10545ebdd",
+        "join": true,
+        "until": "2026-11-15T09:17:46.000Z"
+      },
+      {
+        "engine": "5ddb771d2cb1",
+        "join": true,
+        "until": "2026-11-15T13:40:10.000Z"
+      },
+      {
+        "engine": "687fcd195da2",
+        "join": true,
+        "until": "2026-11-16T02:11:42.000Z"
+      },
+      {
+        "engine": "45c72a39833c",
+        "join": true,
+        "until": "2026-11-16T07:43:19.000Z"
+      },
+      {
+        "engine": "0c3ee2cd6e0a",
+        "join": true,
+        "until": "2026-11-17T01:34:28.000Z"
+      },
+      {
+        "engine": "7bd3c7f00f18",
+        "join": true,
+        "until": "2026-11-17T06:28:15.000Z"
+      }
+    ],
+    "commit": "d55acc31+",
+    "data": "dc95a7dd35c2",
+    "data_format": 1,
+    "engine": "84dd66d22de7",
+    "packs": [
+      "pack.data.dc95a7dd35c2.json",
+      "pack.site.02c3991e41ac.json",
+      "pack.text.ccf8279225d2.json"
+    ],
+    "protocol": 8,
+    "protocols_served": [
+      8,
+      7,
+      6
+    ],
+    "release": "ba3d14dbc316",
+    "wasm": "975c1db4f970"
+  },
+  "candidate_calculation_commit": "32686c89efa",
+  "actual_published_bundle_sha256": "deb394fd272deb996d6211f8663e81e85d72cb514490d0df1a3f7d4886f9df78",
+  "comparison": {
+    "with_arcane_cases": 16,
+    "with_arcane_retained_responses": 64,
+    "control_cases": 24,
+    "control_retained_responses": 96,
+    "metrics": [
+      {
+        "id": "phantasma_radiation_ms0_simulate",
+        "published_dps": 2612.622648294353,
+        "candidate_dps": 1583.588029333917,
+        "published_procs": 765.5,
+        "candidate_procs": 623.5,
+        "published_no_arcane_dps": 98.41170887235366,
+        "candidate_no_arcane_dps": 98.08380926848145,
+        "no_arcane_difference_pct": -0.3331916574048299
+      },
+      {
+        "id": "phantasma_radiation_ms1_simulate",
+        "published_dps": 11739.003911893496,
+        "candidate_dps": 3725.3147674629836,
+        "published_procs": 1684.75,
+        "candidate_procs": 1203.25,
+        "published_no_arcane_dps": 215.24149633225815,
+        "candidate_no_arcane_dps": 215.18950653639055,
+        "no_arcane_difference_pct": -0.024154169504264633
+      },
+      {
+        "id": "phantasma_gas_radiation_ms0_simulate",
+        "published_dps": 6581.221213111734,
+        "candidate_dps": 4347.283561634642,
+        "published_procs": 854.25,
+        "candidate_procs": 691.0,
+        "published_no_arcane_dps": 409.2866901619659,
+        "candidate_no_arcane_dps": 408.91694480382245,
+        "no_arcane_difference_pct": -0.09033896460135526
+      },
+      {
+        "id": "phantasma_gas_radiation_ms1_simulate",
+        "published_dps": 28596.345746669132,
+        "candidate_dps": 10837.882486496748,
+        "published_procs": 1882.5,
+        "candidate_procs": 1301.75,
+        "published_no_arcane_dps": 892.0584281066812,
+        "candidate_no_arcane_dps": 900.2399502548082,
+        "no_arcane_difference_pct": 0.9171509276014067
+      },
+      {
+        "id": "phantasma_corrosive_radiation_ms0_simulate",
+        "published_dps": 11747.117930772036,
+        "candidate_dps": 7624.966025589915,
+        "published_procs": 854.25,
+        "candidate_procs": 687.0,
+        "published_no_arcane_dps": 2162.630040043503,
+        "candidate_no_arcane_dps": 2158.414054794021,
+        "no_arcane_difference_pct": -0.19494713249230688
+      },
+      {
+        "id": "phantasma_corrosive_radiation_ms1_simulate",
+        "published_dps": 49918.87114839481,
+        "candidate_dps": 19475.09114574634,
+        "published_procs": 1882.5,
+        "candidate_procs": 1306.5,
+        "published_no_arcane_dps": 4745.879660374304,
+        "candidate_no_arcane_dps": 4747.43893805372,
+        "no_arcane_difference_pct": 0.032855398598408136
+      },
+      {
+        "id": "phantasma_gas_magnetic_radiation_ms0_simulate",
+        "published_dps": 7901.549904304497,
+        "candidate_dps": 6043.22538750442,
+        "published_procs": 956.0,
+        "candidate_procs": 820.5,
+        "published_no_arcane_dps": 688.7837646766778,
+        "candidate_no_arcane_dps": 684.2494626413336,
+        "no_arcane_difference_pct": -0.6583055913741975
+      },
+      {
+        "id": "phantasma_gas_magnetic_radiation_ms1_simulate",
+        "published_dps": 32055.68986374745,
+        "candidate_dps": 16386.830441394795,
+        "published_procs": 2122.25,
+        "candidate_procs": 1544.25,
+        "published_no_arcane_dps": 1509.434891689014,
+        "candidate_no_arcane_dps": 1503.2569421119388,
+        "no_arcane_difference_pct": -0.409288907464056
+      }
+    ],
+    "interpretation": "Observed version differences, not a new in-game damage oracle. No-arcane controls do not reproduce the large arcane-dependent drop."
+  },
+  "legacy_issue": "Release-lineage simulator logic calls the split hook inside the ordinary proc loop. This does not implement the parsed callback body, which tests per-type presence and submits once.",
+  "remaining": "Exact Phantasma beam submissions, challenge event-count writers and accepted-callback cadence remain EG-01-M3/M4. A counter total does not establish that cadence.",
+  "runtime_formulas_changed_by_this_audit": false,
+  "golden_measurements_changed": false,
+  "preview": "Existing candidate preview 8831 retained; no official deployment",
+  "raw_artifacts": "target/debilitate-audit"
+}
