@@ -191,7 +191,10 @@ export async function serveBoardStage(stage,work,bin) {
        consumer=stage==='inventory'?new PreparedWorkInventory(file,state.catalog,contract,operator.contract,{...context,generation:state.generation,
         create:!existsSync(marker),databaseBytes:quota.inventory}):new PreparedBoardProjection(file,state.catalog,contract,operator.contract,work,
         {...context,generation:state.generation,create:!existsSync(marker),databaseBytes:quota.projection});
-       if(stage==='inventory')audit=new PreparedWorkAudit(state.audit,{databaseBytes:quota.audit});
+       if(stage==='inventory') {
+        const auditStateBytes=Math.floor(quota.audit/2);
+        audit=new PreparedWorkAudit(state.audit,{databaseBytes:auditStateBytes,scratchBytes:quota.audit-auditStateBytes});
+       }
        writeFileSync(marker,canon({generation:state.generation,contract}));selected=state.generation;
       }
       const check=()=>{disk(work);if(stopping||pipeline.paused(stage))throw Error(stage+' paused during its bounded pass');};

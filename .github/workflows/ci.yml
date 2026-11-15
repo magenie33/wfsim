@@ -716,6 +716,7 @@ jobs:
           node scripts/check_source_adoption.mjs
           node scripts/check_split_board_replay.mjs
           node scripts/check_split_board_pipeline.mjs
+          node scripts/check_serve_board_audit.mjs
           node scripts/check_split_board_capture.mjs
           node scripts/check_live_mailbox.mjs
           node scripts/check_score_inputs.mjs

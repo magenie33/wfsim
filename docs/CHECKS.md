@@ -338,6 +338,10 @@ rows or broken source bodies fail the independent board audit. Full native bytes
 also match after retirement, source deletion and weapon changes. A deliberately
 missing producer dirty marker and a file changed after audit both prevent
 publication; a warm update does not revisit unrelated weapon sources.
+`check_serve_board_audit.mjs` runs the production inventory caller once with a real
+native operator and reads its SQLite state limit and scratch allowance. Both a
+24GiB total and an odd byte total share one cap; restoring the unsplit caller
+must fail. Source and consumer contracts remain unchanged.
 `check_split_board_capture.mjs` exercises the production source driver, explicit
 generation admission, crash recovery and durable source ACK before consumers
 finish. It verifies inventory publication at the original engine and snapshot;
