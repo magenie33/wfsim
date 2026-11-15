@@ -3,7 +3,6 @@
 
 use super::{ProcCounters, ProcType};
 use crate::rules::rng::NativeRng;
-use crate::rules::upgrades::{NativeScalar, ScalarMutation, UpgradeEntry, UpgradeType};
 
 /// Native damage-component indices, independent of the proc-id namespace.
 pub type DamageComponents = [f32; 20];
@@ -53,15 +52,6 @@ pub fn handler_weight(evaluators: &[ProcEvaluator], components: &DamageComponent
         if weight > maximum { maximum = weight; }
     }
     maximum
-}
-
-/// 151e995..151ec06: source365 is upstream; only selected target117 entries enter.
-#[wfsim_gas_macro::metered]
-pub fn target_proc_chance(packet_chance: f32, entries: impl IntoIterator<Item = UpgradeEntry>) -> f32 {
-    let mut scalar = NativeScalar::new(packet_chance);
-    scalar.install_selected(UpgradeType::AVATAR_PROC_CHANCE_VULNERABILITY, entries,
-        ScalarMutation::RetainOperations);
-    scalar.value(false)
 }
 
 /// Shared chance/CDF loop. Weights are lazy; every successful chance draws a type.
@@ -115,4 +105,5 @@ pub fn generate(chance: f32, skip_byte_0x241: u8, components: &DamageComponents,
 }
 
 #[cfg(test)]
+#[path = "tests/ordinary.rs"]
 mod tests;
