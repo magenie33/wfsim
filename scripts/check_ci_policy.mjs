@@ -28,7 +28,7 @@ for (const path of inventoryControlInputs) {
 }
 assert.equal(classify([...inventoryControlInputs, 'optimizer/src/search.rs']).deep, true);
 assert.equal(classify(['scripts/unregistered_inventory.mjs']).deep, true);
-const boardPipelineInputs = ['deploy/wfsim-live.service', 'scripts/prepared_board_inputs.mjs',
+const boardPipelineInputs = ['deploy/wfsim-live.service', 'scripts/board_operator.mjs', 'scripts/prepared_board_inputs.mjs',
   'scripts/prepared_work_inventory.mjs', 'scripts/audit_prepared_members.mjs', 'scripts/source_capture_gc.mjs',
   'scripts/sqlite_transaction_recovery.mjs', 'scripts/check_task_pipeline.mjs',
   'scripts/check_pipeline_clock.mjs', 'scripts/check_official_claims.mjs'];

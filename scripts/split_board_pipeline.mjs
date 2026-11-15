@@ -14,7 +14,7 @@ import {openCatalog} from './incremental_inventory.mjs';
 import {InventoryControl,needsAction} from './inventory_control.mjs';
 import {captureEpoch,acknowledgeInventory,saveInventoryState as save,hashInventoryFile as hash} from './inventory_pipeline.mjs';
 import {readInventoryPage} from './inventory_projection.mjs';
-import {openInventoryOperator} from './inventory_operator.mjs';
+import {openBoardOperator as openInventoryOperator} from './board_operator.mjs';
 import {PreparedBoardInputs} from './prepared_board_inputs.mjs';
 import {prepareBoardCut} from './prepare_board_cut.mjs';
 import {PreparedBoardProjection} from './prepared_board_projection.mjs';

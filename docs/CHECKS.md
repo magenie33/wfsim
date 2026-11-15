@@ -342,6 +342,10 @@ publication; a warm update does not revisit unrelated weapon sources.
 native operator and reads its SQLite state limit and scratch allowance. Both a
 24GiB total and an odd byte total share one cap; restoring the unsplit caller
 must fail. Source and consumer contracts remain unchanged.
+`check_board_operator.mjs` stops a real native process with a backpressured pipe
+and kills another during a request. The production opener covers both writes
+and replies with one deadline, closes the failed operator and retains successful
+description values. The bare opener must fail the stopped-pipe case.
 `check_split_board_capture.mjs` exercises the production source driver, explicit
 generation admission, crash recovery and durable source ACK before consumers
 finish. It verifies inventory publication at the original engine and snapshot;

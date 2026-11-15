@@ -46,7 +46,7 @@ const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbo
   'scripts/adopt_prepared_sources.mjs', 'scripts/audit_board_projection.mjs',
   'scripts/audit_prepared_members.mjs', 'scripts/audit_prepared_work.mjs',
   'scripts/board_heads.mjs', 'scripts/board_meta.py', 'scripts/board_pipeline.mjs',
-  'scripts/board_projection_state.mjs', 'scripts/board_storage.mjs',
+  'scripts/board_projection_state.mjs', 'scripts/board_storage.mjs', 'scripts/board_operator.mjs',
   'scripts/check_official_claims.mjs', 'scripts/check_pipeline_clock.mjs', 'scripts/check_task_pipeline.mjs',
   'scripts/classify_compute_inventory.mjs', 'scripts/incremental_inventory.mjs',
   'scripts/inventory_board_pipeline.mjs', 'scripts/inventory_disk_budget.mjs', 'scripts/inventory_operator.mjs',
