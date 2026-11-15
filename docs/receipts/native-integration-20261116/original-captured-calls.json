@@ -1,0 +1,84 @@
+[
+  {
+    "id": "1",
+    "path": "/api/log",
+    "body": {
+      "aiming": true,
+      "scope_zoom": 0,
+      "invisible": false,
+      "airborne": false,
+      "sliding": false,
+      "aim_gliding": false,
+      "overshields": false,
+      "channeling": false,
+      "melee_equipped": true,
+      "solo_weapon": false,
+      "extra_stats": {},
+      "auras": [],
+      "weapon": "laetum",
+      "evolutions": [
+        "laetum_evo1_incarnon_form",
+        "laetum_marksmans_hand",
+        "laetum_lethal_rearmament",
+        "laetum_caput_mortuum",
+        "laetum_devouring_attrition"
+      ],
+      "arcane": [
+        "none"
+      ],
+      "arcane_rank": [
+        null
+      ],
+      "mods": [
+        "hornet_strike",
+        "barrel_diffusion"
+      ],
+      "mode": "cycle",
+      "valence_element": "",
+      "valence_bonus": 0,
+      "rivens": [],
+      "enemy": "crewman",
+      "level": 1,
+      "steel_path": false,
+      "guardian_aura": false,
+      "ancient_protector_aura": false,
+      "eximus": false,
+      "squad_size": 1,
+      "headshot_pct": 0,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        40
+      ],
+      "formation": [],
+      "also_acting": [],
+      "aim_at": null,
+      "buff_triggers_off": [],
+      "frame": "",
+      "infinite_ammo": true,
+      "metric": "kpm",
+      "seed": 12648430,
+      "duration": 8,
+      "buffs": {},
+      "ability_strength": null,
+      "abilities": [],
+      "apl": [],
+      "shards": [],
+      "spectral_form": false,
+      "wf_energy_pct": 1,
+      "__weapon": "laetum",
+      "runs": 1000,
+      "custom_enemies": [],
+      "run": [
+        2149058048,
+        2809998059
+      ],
+      "from": 0,
+      "limit": 300,
+      "skip": 0
+    }
+  }
+]
