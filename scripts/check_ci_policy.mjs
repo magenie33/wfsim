@@ -28,6 +28,21 @@ for (const path of inventoryControlInputs) {
 }
 assert.equal(classify([...inventoryControlInputs, 'optimizer/src/search.rs']).deep, true);
 assert.equal(classify(['scripts/unregistered_inventory.mjs']).deep, true);
+const admissionToolInputs = ['scripts/check_build_workflows.mjs', 'scripts/check_factory_deploy.py',
+  'scripts/check_workflow_recovery.mjs', 'scripts/inbox_reader.mjs', 'scripts/migrations/db_library.mjs',
+  'tests/fixtures/build-admission-base5a/build_workflows.sql',
+  'tests/fixtures/build-admission-base5a/compute_admit_tasks.sql', 'tests/fixtures/build-admission-base5a/source.json'];
+for (const path of admissionToolInputs) {
+  assert.deepEqual(classify([path]).jobs, PRODUCT_JOBS, path + ' retains ordinary correctness jobs');
+  assert.equal(classify([path]).deep, false, path + ' does not change search enumeration or scoring');
+  for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'scripts/unregistered_admission.mjs'])
+    assert.equal(classify([path, extra]).deep, true, path + ' mixed with ' + extra);
+  assert.equal(classify([path], true).deep, true, path + ' forced deep');
+  assert.equal(classify([path], false, false).deep, true, path + ' without a verified baseline');
+}
+assert.equal(classify(admissionToolInputs).deep, false);
+for (const path of ['tests/fixtures/build-admission-base5a/unknown.sql', 'scripts/migrations/unknown.mjs'])
+  assert.equal(classify([path]).deep, true, path + ' is outside the exact declarations');
 const boardPipelineInputs = ['deploy/wfsim-live.service', 'scripts/board_operator.mjs', 'scripts/prepared_board_inputs.mjs',
   'scripts/prepared_work_inventory.mjs', 'scripts/audit_prepared_members.mjs', 'scripts/source_capture_gc.mjs',
   'scripts/sqlite_transaction_recovery.mjs', 'scripts/check_task_pipeline.mjs',

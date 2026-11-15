@@ -64,6 +64,10 @@ const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbo
   'scripts/source_capture_gc.mjs', 'scripts/split_board_pipeline.mjs', 'scripts/sqlite_schema.mjs',
   'scripts/sqlite_transaction_recovery.mjs', 'scripts/task_pipeline.mjs', 'scripts/task_schema.mjs',
   'scripts/task_reissue.mjs', 'scripts/build_admission_schema.mjs', 'scripts/pg/build_admission_fixture.mjs',
+  'scripts/check_build_workflows.mjs', 'scripts/check_factory_deploy.py', 'scripts/check_workflow_recovery.mjs',
+  'scripts/inbox_reader.mjs', 'scripts/migrations/db_library.mjs',
+  'tests/fixtures/build-admission-base5a/build_workflows.sql',
+  'tests/fixtures/build-admission-base5a/compute_admit_tasks.sql', 'tests/fixtures/build-admission-base5a/source.json',
   'tests/fixtures/board-consumers-61de/scripts/board_heads.mjs',
   'tests/fixtures/board-consumers-61de/scripts/board_meta.py',
   'tests/fixtures/board-consumers-61de/mcp/headless.js', 'tests/fixtures/board-consumers-61de/source.json'];
