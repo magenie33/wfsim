@@ -52,6 +52,7 @@ const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbo
   'scripts/board_projection_state.mjs', 'scripts/board_storage.mjs', 'scripts/board_operator.mjs',
   'scripts/capacity_directory_bytes.mjs', 'scripts/check_capacity_walk.mjs',
   'scripts/check_official_claims.mjs', 'scripts/check_pipeline_clock.mjs', 'scripts/check_task_pipeline.mjs',
+  'scripts/check_order_cut.mjs', 'scripts/check_order_cut_pg.mjs',
   'scripts/classify_compute_inventory.mjs', 'scripts/incremental_inventory.mjs',
   'scripts/inventory_board_pipeline.mjs', 'scripts/inventory_disk_budget.mjs', 'scripts/inventory_operator.mjs',
   'scripts/inventory_projection.mjs', 'scripts/inventory_publication.mjs', 'scripts/inventory_publication_io.mjs',
