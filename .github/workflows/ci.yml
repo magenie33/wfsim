@@ -715,6 +715,7 @@ jobs:
           node scripts/check_board_audit_migration.mjs
           node scripts/check_source_adoption.mjs
           node scripts/check_split_board_replay.mjs
+          node scripts/check_board_cli_entry.mjs
           node scripts/check_split_board_pipeline.mjs
           node scripts/check_serve_board_audit.mjs
           node scripts/check_board_operator.mjs

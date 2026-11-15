@@ -230,7 +230,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     } catch (e) { console.log(`Cannot verify the comparison base; running full CI: ${e.message}`); }
   }
   const plan = hotfix ? { ...hotfixPlan(paths, { verifiedBase: verified, reason: event.inputs?.reason || '',
-    event: process.env.GITHUB_EVENT_NAME, force }), base: changedBase(event, process.env) } : classify(paths, force, verified);
+    event: process.env.GITHUB_EVENT_NAME, force, base: changedBase(event, process.env), head: process.env.GITHUB_SHA }),
+    base: changedBase(event, process.env) } : classify(paths, force, verified);
   if (fast) {
     plan.fast = fastScope(paths, { base: changedBase(event, process.env), verifiedBase: verified,
       force, hotfix, reason: event.inputs?.reason || '' });
