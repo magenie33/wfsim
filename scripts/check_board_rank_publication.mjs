@@ -1,0 +1,95 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// Interrupted staged generations cannot expose partial pages or advance public clocks.
+import assert from 'node:assert/strict';
+import {readFileSync,writeFileSync,mkdtempSync,rmSync} from 'node:fs';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import {randomBytes,createHash} from 'node:crypto';
+import postgres from './pg/node_modules/postgres/src/index.js';
+import {openInventoryOperator} from './inventory_operator.mjs';
+import {createRankPartition,prepareRankSources,applyRankSources,prepareRankSnapshot} from './board_rank_index.mjs';
+import {putRankPublication} from './board_rank_work.mjs';
+import {claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankGeneration,publishRankGeneration,reuseRankGeneration} from './board_rank_publication.mjs';
+import {collectRankStorage} from './board_rank_gc.mjs';
+const url=process.env.WFSIM_BOARD_RANK_TEST_URL;assert(url&&['localhost','127.0.0.1'].includes(new URL(url).hostname));
+const schema='rank_pages_'+randomBytes(6).toString('hex'),source='00000000-0000-4000-8000-000000000043';
+const sql=postgres(url,{max:4,fetch_types:false,onnotice(){},connection:{search_path:schema,statement_timeout:10000}});
+const native=await openInventoryOperator(process.env.WFSIM_INVENTORY_BOARD_BIN||'target/debug/wfsim-board');
+const work=mkdtempSync(join(tmpdir(),'rank-pages-')),engine='8ce96e275dc2',ruler='standard_single_target';
+const base=JSON.parse(readFileSync(new URL('../tests/gas/rows.json',import.meta.url)))[1].record,weapon=base.weapon;
+const context={work,source,engine,native:native.adapter,verified:new Map(),prefixes:new Map()};
+const oldRevision='a'.repeat(64),oldClock='2026-01-01T00:00:00.000Z';
+const records=Array.from({length:150},(_,i)=>({...base,mods:['serration@'+i%10,'vital_sense@'+Math.floor(i/10)%5,'hellfire@'+Math.floor(i/50),
+ 'speed_trigger','galvanized_aptitude','hammer_shot','vigilante_fervor','magnetic_capacity']}));
+const descriptors=await native.call('describe',records.map((record,i)=>({id:'fixture-'+i,record})));
+const input=records.map((record,i)=>({identity:descriptors[i].candidate,record,facts:descriptors[i].modes.map(mode=>({identity:descriptors[i].candidate,ruler,mode,
+ score:100+i,metric:'kpm',measured_by:'verified:'+engine,finished_at:'2026-11-16T00:00:01.123Z',retired_at:null}))}));
+const page=async(revision=null,after=0)=>(await sql.unsafe('SELECT board_read_page($1,$2,$3,$4::bigint,128::bigint) page',[weapon,ruler,revision,after]))[0].page;
+const clock=async()=>(await sql.unsafe('SELECT published_at FROM record_board_read_snapshots s JOIN state_board_read_partitions p USING(weapon,ruler,revision) WHERE weapon=$1 AND ruler=$2',[weapon,ruler]))[0].published_at;
+try{
+ await sql.unsafe('CREATE SCHEMA '+schema);
+ for(const name of ['board_mailbox','board_pages','board_rank','board_rank_pages'])await sql.unsafe(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
+ await sql.unsafe('UPDATE state_board_input_source SET source=$1',[source]);
+ let part=await createRankPartition(sql,{weapon,ruler,source,native:native.adapter,cut:'fixture'});
+ for(let i=0;i<input.length;i+=64){const prepared=await prepareRankSources(native,{weapon,ruler,inputs:input.slice(i,i+64)});part=await sql.begin(tx=>applyRankSources(tx,part,prepared));}
+ await sql.unsafe('UPDATE state_board_rank_partitions SET complete=true,seeded=true,reconciled=true WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
+ await sql.unsafe('INSERT INTO state_board_read_partitions VALUES($1,$2,$3,true,true,$4)',[weapon,ruler,native.contract.rulers.find(row=>row.id===ruler).scene,oldRevision]);
+ await sql.unsafe("INSERT INTO record_board_read_snapshots VALUES($1,$2,$3,$4,$5,$6,1,'[]',$7,$7)",[weapon,ruler,oldRevision,source,engine,'b'.repeat(64),oldClock]);
+ await sql.unsafe('INSERT INTO state_board_read_rows VALUES($1,$2,$3,1,$4)',[weapon,ruler,oldRevision,JSON.stringify({score:99,mode:'base'})]);
+ await sql.begin(tx=>putRankPublication(tx,{weapon,ruler}));
+ const claim=await claimRankPublication(sql,{source,native:native.adapter});assert(claim);
+ let generation=await startRankGeneration(sql,native,claim,context);
+ await assert.rejects(floorRankGeneration(sql,native,claim,generation,{...context,fault:async()=>{throw Error('injected output interruption');}}),/injected/);
+ assert.equal((await page()).revision,oldRevision);assert.equal(await clock(),oldClock);
+ assert.equal((await sql.unsafe('SELECT output_rows FROM state_board_rank_generations WHERE token=$1::uuid',[generation.token]))[0].output_rows,'0');
+ while(generation.phase==='floor')generation=await floorRankGeneration(sql,native,claim,generation,context);
+ assert.equal(Number(generation.output_rows),300,'every sustainable mode is retained');
+ assert.equal((await page()).revision,oldRevision,'floor completion alone is private');
+ await assert.rejects(uploadRankGeneration(sql,claim,generation,{...context,fault:async()=>{throw Error('injected upload interruption');}}),/injected/);
+ assert.equal(Number((await sql.unsafe('SELECT count(*) n FROM state_board_rank_snapshot_rows WHERE token=$1::uuid',[generation.token]))[0].n),0);
+ generation=await uploadRankGeneration(sql,claim,generation,{...context,verified:new Map()});
+ assert.equal(Number(generation.uploaded_rows),256);assert.equal((await page()).revision,oldRevision);
+ await assert.rejects(publishRankGeneration(sql,native,claim,generation,context),/not completely uploaded/);
+ assert.equal(await clock(),oldClock,'partial upload cannot advance the clock');
+ while(!generation.uploaded)generation=await uploadRankGeneration(sql,claim,generation,context);
+ await sql.begin(tx=>putRankPublication(tx,{weapon,ruler}));
+ const published=await publishRankGeneration(sql,native,claim,generation,context);assert.equal(published.status,'published');
+ const expected=await prepareRankSnapshot(sql,native,{weapon,ruler,source,work}),rows=[];
+ let cursor=0;
+ do{const response=await page(published.revision,cursor);rows.push(...response.rows);cursor=response.next;}while(cursor!==null);
+ assert.deepEqual(rows,expected.rows,'all immutable pages retain the complete Native order and values');
+ assert.equal((await page(oldRevision)).rows[0].score,99,'the prior complete reference remains readable');
+ const currentClock=await clock();
+ const [ready]=await sql.unsafe('SELECT * FROM state_board_rank_publication_ready WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
+ assert(BigInt(ready.version)>BigInt(ready.applied_version),'an update arriving during publication remains ready');
+ const next=await claimRankPublication(sql,{source,native:native.adapter});
+ let same=await startRankGeneration(sql,native,next,context);
+ while(same.phase==='floor')same=await floorRankGeneration(sql,native,next,same,context);
+ assert.equal((await reuseRankGeneration(sql,next,same,context)).status,'unchanged');
+ assert.equal(await clock(),currentClock,'identical output retains its public clock');
+ assert.equal(Number((await sql.unsafe('SELECT count(*) n FROM state_board_rank_snapshot_rows WHERE token=$1::uuid',[same.token]))[0].n),0);
+ await sql.begin(tx=>putRankPublication(tx,{weapon,ruler}));
+ const badClaim=await claimRankPublication(sql,{source,native:native.adapter});
+ let bad=await startRankGeneration(sql,native,badClaim,context);bad=await floorRankGeneration(sql,native,badClaim,bad,context);
+ const path=join(bad.directory,'rows.ndjson'),bytes=readFileSync(path);bytes[1]^=1;writeFileSync(path,bytes);
+ await assert.rejects(floorRankGeneration(sql,native,badClaim,bad,context),/prefix changed/);
+ assert.equal(await clock(),currentClock);assert.deepEqual((await page(published.revision)).rows,rows.slice(0,128));
+ for(let i=0;i<5;i++){
+  const revision=String(i).repeat(64);
+  await sql.unsafe(`INSERT INTO record_board_read_snapshots SELECT weapon,ruler,$3,source,engine,inputs_sha256,rows,leaders,captured_at,
+   board_input_timestamp(clock_timestamp()) FROM record_board_read_snapshots WHERE weapon=$1 AND ruler=$2 AND revision=$4`,[weapon,ruler,revision,published.revision]);
+  await sql.unsafe('INSERT INTO record_board_rank_snapshot_refs VALUES($1,$2,$3,$4::uuid)',[weapon,ruler,revision,generation.token]);
+ }
+ assert.notEqual((await collectRankStorage(sql,context))?.status,'retired-reference','recent pinned pages retain ten minutes');
+ await sql.unsafe(`UPDATE record_board_read_snapshots SET published_at='2026-10-01T00:00:00.000Z' WHERE revision<>$1 AND revision<>$2`,[published.revision,oldRevision]);
+ for(let i=0;i<8;i++)await collectRankStorage(sql,context);
+ assert.equal(Number((await sql.unsafe('SELECT count(*) n FROM record_board_rank_snapshot_refs'))[0].n),3,'current plus newer retained versions survive collection');
+ assert.deepEqual((await page(published.revision)).rows,rows.slice(0,128));
+ await sql.unsafe("UPDATE state_board_rank_generations SET phase='abandoned' WHERE token=$1::uuid",[bad.token]);
+ await sql.unsafe("INSERT INTO state_board_rank_snapshot_rows SELECT $1::uuid,n,'{}' FROM generate_series(1,1201)n",[bad.token]);
+ const gc=await collectRankStorage(sql,context);assert.equal(gc.status,'collected-rows');assert.equal(gc.rows,1000);
+ assert.equal(Number((await sql.unsafe('SELECT count(*) n FROM state_board_rank_snapshot_rows WHERE token=$1::uuid',[bad.token]))[0].n),201);
+ for(let i=0;i<4;i++)await collectRankStorage(sql,context);
+ assert.equal(Number((await sql.unsafe('SELECT count(*) n FROM state_board_rank_generations WHERE token=$1::uuid',[bad.token]))[0].n),0);
+ console.log('ok — real staged append/upload rollback, prefix recovery, complete atomic pages, preserved old refs, concurrent readiness and unchanged clocks');
+}finally{await native.close();await sql.unsafe('DROP SCHEMA IF EXISTS '+schema+' CASCADE');await sql.end();rmSync(work,{recursive:true,force:true});}

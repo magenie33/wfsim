@@ -171,10 +171,19 @@ Unqualified historical aliases must be resolved before their partition is
 enabled. A partition exceeding the input or output byte budget retains its
 previous publication.
 
+`WFSIM_BOARD_READ_INDEXED=1` selects the incremental reader described in
+[BOARD_RANKING.md](BOARD_RANKING.md). It captures canonical coverage once,
+normalizes changed identities into Native-derived indexes and stages complete
+immutable versions in bounded pages. The source UUID, Native digest and baseline
+cut define one recovery boundary. It uses the same public queries and keeps the
+previous complete view until the replacement is ready.
+
 `GET /api/board/pages/catalog` pages through complete partition metadata and
 leaders. `GET /api/board/pages` reads at most 128 rows using a revision and
 ordinal cursor. Public responses use a ten-second page cache. Publication
-retains two immutable snapshots; an unavailable older revision requires a new
+retains two immutable snapshots in the complete-input reader. The incremental
+reader retains at least three and every revision younger than ten minutes.
+An unavailable older revision requires a new
 complete read. These reads create no compute orders.
 
 **DERIVED IS NOT A SECOND SOURCE, and the difference is whether it can

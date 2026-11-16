@@ -678,6 +678,7 @@ jobs:
           --health-retries 10
     env:
       WFSIM_BOARD_MAILBOX_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5433/wfsim_checks
+      WFSIM_BOARD_RANK_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5433/wfsim_checks
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -724,6 +725,10 @@ jobs:
           node scripts/check_board_capture.mjs
           node scripts/check_board_mailbox_pg.mjs
           node scripts/check_board_result_flow.mjs
+          node scripts/check_board_rank_index.mjs
+          node scripts/check_board_rank_publication.mjs
+          node scripts/check_board_rank_flow.mjs
+          node scripts/check_board_rank_schema.mjs
           node scripts/check_board_storage.mjs
           node scripts/check_prepared_board_inputs.mjs
           node scripts/check_prepared_board_access.mjs

@@ -2981,6 +2981,29 @@ identity changes, deletion/recreation, no queue dependency and safe reinstall.
 `check_board_capture.mjs --break-capture` removes the actual build trigger and
 must fail the source handoff assertion.
 
+## `check_board_rank_index`, `check_board_rank_publication`, `check_board_rank_flow`, `check_board_rank_schema`
+
+These checks require `WFSIM_BOARD_RANK_TEST_URL` on localhost and the built
+`wfsim-board` executable. Each owns an isolated PostgreSQL schema and removes
+only its own temporary files. CI supplies PostgreSQL 18.
+
+The index check compares complete rows and leaders with the unchanged full
+Native projector, including entry floors, ties, ranked mods and clocks. A
+fact-only update must reuse its descriptor and render only that identity.
+`--break-floor` must fail on the excluded row. The publication check injects
+interruptions after file append and row upload, verifies durable prefix replay,
+rejects premature publication and checks complete pinned pages, concurrent
+readiness, unchanged-output clock reuse and bounded retained-version collection.
+
+The flow check follows canonical data through the actual mailbox, resumed
+baseline, dependency closure, Native index, staged publication and Worker GET
+route. It includes source removal, a review deleted before dependency
+registration, stale Native preparation, source/adapter changes and durable
+missing-cut refusal. Coherent baseline headers must prevent a complete second
+normalization of historical seeds. The schema check covers atomic installation,
+restricted roles, temporary-schema shadowing, source identity preservation,
+reinstall refusal and guarded rollback with legacy references intact.
+
 ## `check_comment_style`
 
 No attribution and no dated decision survives in the

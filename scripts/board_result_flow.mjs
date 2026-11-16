@@ -214,8 +214,10 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  let running=true,flow;
  process.once('SIGTERM',()=>{running=false;});process.once('SIGINT',()=>{running=false;});
  try{
-  flow=await openBoardResultFlow({sql,source,engine,binary:join(bin,'wfsim-board'),work,nativeSha,
-   requestedPartitions:process.env.WFSIM_BOARD_READ_REQUESTED_PARTITIONS==='1'});
+  const options={sql,source,engine,binary:join(bin,'wfsim-board'),work,nativeSha,
+   requestedPartitions:process.env.WFSIM_BOARD_READ_REQUESTED_PARTITIONS==='1'};
+  flow=process.env.WFSIM_BOARD_READ_INDEXED==='1'
+   ?await(await import('./board_rank_flow.mjs')).openBoardRankFlow(options):await openBoardResultFlow(options);
   while(running){
    try{const step=await flow.step();if(step.status==='idle')await new Promise(resolve=>setTimeout(resolve,1000));
     else console.log(JSON.stringify({event:'board_read',at:new Date().toISOString(),...step}));
