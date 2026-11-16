@@ -190,7 +190,7 @@ export async function publishRankGeneration(sql,native,claim,generation,{source,
   const [selected]=await tx.unsafe('SELECT * FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2 FOR UPDATE',[claim.weapon,claim.ruler]);
   if(!selected||(!selected.enabled&&(selected.canonical_sources||selected.revision)))throw new BoardRankQualificationError('ranking partition selection changed');
   const revision=rankOutputRevision({source,engine,native:native.adapter,output_sha256:current.output_sha256});
-  if(Number(delivery.delivered_revision)>Number(current.index_revision)){
+  if(BigInt(delivery.delivered_revision)>BigInt(current.index_revision)){
    await tx.unsafe("UPDATE state_board_rank_generations SET phase='abandoned' WHERE token=$1::uuid",[current.token]);
    await acknowledge(tx,claim,current.ready_version);return {status:'superseded'};
   }

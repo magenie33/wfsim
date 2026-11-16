@@ -52,6 +52,15 @@ try{
  await assert.rejects(publishRankGeneration(sql,native,claim,generation,context),/not completely uploaded/);
  assert.equal(await clock(),oldClock,'partial upload cannot advance the clock');
  while(!generation.uploaded)generation=await uploadRankGeneration(sql,claim,generation,context);
+ const originalRevision=generation.index_revision;
+ await sql.unsafe("UPDATE state_board_rank_generations SET index_revision=9007199254740992 WHERE token=$1::uuid",[generation.token]);
+ await sql.unsafe('UPDATE state_board_rank_publication_ready SET delivered_revision=9007199254740993');
+ assert.equal((await publishRankGeneration(sql,native,claim,generation,context)).status,'superseded','consecutive revisions beyond safe integer range cannot regress publication');
+ assert.equal((await page()).revision,oldRevision);assert.equal(await clock(),oldClock);
+ await sql.unsafe("UPDATE state_board_rank_generations SET phase='upload',index_revision=$2 WHERE token=$1::uuid",[generation.token,originalRevision]);
+ await sql.unsafe('UPDATE state_board_rank_publication_ready SET delivered_revision=0,applied_version=-1,available_at=board_input_timestamp(clock_timestamp())');
+ const resumed=await claimRankPublication(sql,{source,native:native.adapter});assert(resumed);
+ Object.assign(claim,resumed);
  await sql.begin(tx=>putRankPublication(tx,{weapon,ruler}));
  const published=await publishRankGeneration(sql,native,claim,generation,context);assert.equal(published.status,'published');
  const expected=await prepareRankSnapshot(sql,native,{weapon,ruler,source,work}),rows=[];
