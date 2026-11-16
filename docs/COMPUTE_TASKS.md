@@ -3,6 +3,11 @@
 `worker/tasks.js` preserves the factory API and composes independent modules.
 Business types register verbs and producers in `worker/factory.js`.
 
+The target queue fields and module boundaries are specified in
+[COMPUTE_QUEUE_CONTRACT.md](COMPUTE_QUEUE_CONTRACT.md). This file describes the
+installed interfaces; target-only rules require separate implementation and
+rollout qualification.
+
 Ordinary queue reconciliation recovers only work already recorded in the
 pending queue. Missing scores, newly added boards and library coverage do not
 create tasks through reconciliation. It does not purge pending work. Complete
