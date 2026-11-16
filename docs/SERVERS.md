@@ -123,11 +123,14 @@ and `CF_WORKERS_TOKEN` in order; publishing Workers alone does not grant DNS edi
 
 The online ranking reader runs independently as `wfsim-board-read.service`.
 `node scripts/board_read_schema.mjs --http-role <existing-role>` prints its
-first-install transaction. Run it as the library schema owner before deploying
-the HTTP reader; an existing mailbox or ranking schema refuses this installer.
+first-install transaction. Use an administrative session for role creation,
+then `SET LOCAL ROLE` to the library schema owner before the schema DDL in that
+transaction. An existing mailbox or ranking schema refuses this installer.
 It adds no historical mailbox rows or compute orders. The separate
 `wfsim_board_read` role can read canonical inputs and update derived ranking
-state. Its login credentials are provisioned outside the artifact.
+state. Its login credentials are provisioned outside the artifact. Before
+startup, an administrator grants `SET ON PARAMETER temp_file_limit` to the
+configured reader role; each reader connection sets this limit to `16MB`.
 
 The immutable reader runtime includes `board_result_flow.mjs`, its relative
 imports and the locked Postgres client. `/etc/wfsim-board-read.env` supplies
