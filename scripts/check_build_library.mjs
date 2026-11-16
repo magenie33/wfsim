@@ -189,7 +189,9 @@ try {
     for(const sort of ['score-asc','recent','drain','score']) {
       const el=document.querySelector('[data-library-sort]');
       if(!el.matches('[data-dd]')){out[sort]=false;continue;}
-      el.click();$('dd-menu').querySelector('[data-v="'+sort+'"]').click();await sleep(100);
+      el.click();$('dd-menu').querySelector('[data-v="'+sort+'"]').click();
+      const until=Date.now()+5000;
+      while(read().length<2&&Date.now()<until)await sleep(50);
       const rows=read();
       const value=p=>sort==='recent'?(Date.parse(p.board.measured_at)||0):sort==='drain'?libraryBaseDrain(p):Number(p.board.shown??p.board.score);
       const ok=rows.length>1 && rows.every((p,i)=>i===0||(sort==='score-asc'||sort==='drain'?value(rows[i-1])<=value(p):value(rows[i-1])>=value(p)));
