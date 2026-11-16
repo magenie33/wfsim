@@ -10,12 +10,18 @@ exclusive_to: [marelok, vaykor_marelok]
 
 effects:
   - kind: multishot_bonus
-    rank0: 2.00
-    rankMax: 2.00
+    UpgradeType: 276
+    OperationType: STACKING_MULTIPLY
+    Value: 2
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
   - kind: base_damage_bonus
-    rank0: -0.66
-    rankMax: -0.66
+    UpgradeType: 253
+    OperationType: STACKING_MULTIPLY
+    Value: -0.66000003
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Shrapnel_Rounds

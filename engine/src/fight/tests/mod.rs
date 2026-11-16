@@ -18,6 +18,7 @@ mod inverse_speed;
 mod chill_and_co_base;
 mod cycle_buff_conversion;
 mod debilitate_attrition;
+mod native_packets;
 mod dot_ticks_measured;
 mod m100_latest_proc_part;
 mod m8_break_proc;
@@ -84,6 +85,7 @@ impl Default for FightParams {
     /// the engine.
     fn default() -> Self {
         Self {
+            critical_inputs: None,
             weakness_bonus: None,
             heavy_damage_mods_apply: true,
             combo_damage_applies: true,
@@ -208,6 +210,7 @@ impl Default for FightParams {
             weakpoint_open: None,
             crit_chance_stack: None,
             status_damage_multiplier: 1.0,
+            native_status_damage_bonus: None,
             status_damage_of_type: Vec::new(),
             elem_dot_bonus: Vec::new(),
             faction_multiplier: 1.0,
@@ -509,6 +512,7 @@ fn cloud(stacking: crate::model::FieldStacking) -> crate::build::loadout::Resolv
     let mut damage = DamageVector::default();
     damage.set(DamageType::Toxin, 40.0);
     crate::build::loadout::ResolvedLingering {
+        critical_inputs: None,
         heavy_damage_mods_apply: true,
         melee_scaling: None,
         damage,
@@ -575,6 +579,7 @@ fn orb_part(damage: f64) -> crate::build::loadout::ResolvedLingering {
     let mut v = DamageVector::default();
     v.set(DamageType::Electricity, damage);
     crate::build::loadout::ResolvedLingering {
+        critical_inputs: None,
         heavy_damage_mods_apply: true,
         melee_scaling: None,
         damage: v,
@@ -661,6 +666,8 @@ fn metered() -> FightParams {
 
 fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> Foe {
     Foe {
+        proc_handlers: None,
+        valid_double_procs: crate::model::ProcCounters::ORDINARY_MASK,
         magnetic_break_proxy: None,
         name: "test target".into(),
         spectral: None,
@@ -715,6 +722,7 @@ fn radial_of(status_chance: f64, crit_chance: f64) -> crate::build::loadout::Res
     let mut damage = DamageVector::default();
     damage.set(DamageType::Heat, 300.0);
     crate::build::loadout::ResolvedRadial {
+        critical_inputs: None,
         delay_seconds: 0.0,
         blast_kind: crate::model::BlastKind::Contact,
         damage,

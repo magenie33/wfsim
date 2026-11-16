@@ -315,6 +315,7 @@ pub(super) fn open<'a>(
     let bodies: Vec<Body> = (0..params.body_count())
         .filter_map(|i| params.body(i))
         .map(|b| Body {
+            irradiate: irradiate::SceneListener::default(),
             state: TargetState::spawn(b.params, b.at),
             debuffs: DebuffState::default(),
             fallen: false,
@@ -431,7 +432,8 @@ pub(super) fn open<'a>(
 
     // Stacking arcanes start FULL (user setting) with a fresh timer; the
     // states run each spec's own decay family from there.
-    let arc = ArcRuntime::init(params);
+    let mut arc = ArcRuntime::init(params);
+    arc.native_random = crate::rules::rng::NativeRng::new(started_at);
     let windows = CardWindows {
         frenzy: f64::NEG_INFINITY,
         fire_rate_after_reload: params

@@ -4,6 +4,19 @@ The record is the only output of this app that can be laid beside a
 recording and checked number for number. AGENTS.md carries the constraints;
 this file carries the design and the measurements behind them.
 
+Electricity and Gas rows show the retained seed sum, its binary32 rounding,
+coefficient, local minimum, own element and receiving multipliers in calculation
+order. The minimum is a clamp layer (`k: "c"`), not a fitted multiplier.
+
+`/api/log` accepts `native_trace: true` and an optional `native_trace_limit`
+(default 10,000, maximum 200,000). Its additional `native_trace` object contains
+exact binary32 input/output bits for captured Magnetic parent/child queries
+and Electric/Gas reduction steps, selected query entries, proc and part tags,
+phase and an explicit context binding. It reports its own dropped-step count.
+Group keys remain null where the scene's measured grouping supplies the context.
+These diagnostics cover the named stages; they do not certify an entire native
+fight or fill unrecovered producers. Ordinary simulation allocates no trace.
+
 ## A fight pops numbers, they are events, and there is one list of them
 
 **A FIGHT POPS NUMBERS, THEY ARE EVENTS, AND THERE IS ONE LIST OF THEM.**
@@ -75,6 +88,12 @@ Verified to bite means the sabotage must fail to COMPILE: a tenth site writing
 private".
 
 ## A factor is a type, and the wire sends its index
+
+Each damage row's `raw` comes from the settled instance. Explanatory layer
+products are a view of that value; they never replace it. Native binary32
+boundaries and separately bound catalog routes must be checked against their
+actual consumers. An independent CO bracket stays separate from base damage,
+including a below-half-health term sharing that bracket.
 
 **A FACTOR IS A TYPE, AND THE WIRE SENDS ITS INDEX.** `record::Factor` replaces
 a `&'static str` written at each call site: nothing tied the word "critical" to

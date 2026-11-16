@@ -1,8 +1,35 @@
+`check_native_upgrade_vectors.py --output <new-directory>` compiles isolated
+copies of the actual fold source against the native vectors. The original must
+pass and an ADD-to-subtract mutation must fail. Metering attributes alone are
+removed from these isolated test copies; production sources remain untouched.
+The scalar source is copied too; the real engine supplies the proc-id type.
+Parent/child fixtures distinguish pending operations from materialized input.
+
+`check_client_upgrade_changes.py` detects controlled raw-field, filter,
+inheritance, enum, native-code, script and source-identity mutations. The
+read-only `client_upgrade_changes.py` verifies both source exports before
+reporting changes and their current consumers (`ENGINE_MIGRATION.md`).
+
+`import_ordinary_proc_contract.py --exchange <batch> --check` verifies all eight
+files and 223 archive members against the pinned N07A manifest, and reproduces
+the ordinary-proc fixture. Rust source tests compare nine weight vectors,
+1895 sampling traces, 60 selector predicates and 645 real-fight sampler
+controls. Exact U24/state writes, lazy handler evaluation, target117 folding,
+counter saturation and inclusive ties participate; final application and
+Phantasma callback cadence are outside the fixture's native boundary.
+
 `check_engine_compare.py` runs independent executable fixtures through the
 native migration comparator. Equal results pass; changed damage, signed zero,
 one-ULP values, event ordering, repeat drift, truncated records, artifact
 corruption and duplicate case ids fail. `ENGINE_MIGRATION.md` defines the
 separate real-engine frozen-input comparison and performance procedure.
+
+`check_engine_answer_equivalence.py` rejects damage, one-bit values, event order,
+trace and shape changes while explicitly allowing paired source-accounting
+values at `/api/simulate.work` and `/api/board/runs.shards[].gas` only when
+requested. `engine_answer_equivalence.py` checks every retained response and
+its hash; strict comparison outputs remain intact. Supplying a retained board
+comparison to the check also proves the CLI rejects a real one-ULP damage edit.
 
 `check_nona_results.mjs` runs the shared zk/pz selection and witness lookup
 against published builds, actual engine identities and the production account

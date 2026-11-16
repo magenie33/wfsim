@@ -1055,3 +1055,22 @@ fn gotva_super_crit_arms_on_status_and_only_on_status() {
         "armed crit share differs by body part: head {h}, body {b} — the SET is              supposed to replace the weak-point bonus, not stack with it"
     );
 }
+
+pub(super) fn debilitate_split(
+    landed: DamageType,
+    // INCLUDING the one being applied — named so the caller cannot get the
+    // off-by-one back by passing the wrong count.
+    stacks_with_this: usize,
+    chance: f64,
+    rng: &mut Rng,
+) -> Option<DamageType> {
+    if chance <= 0.0 || stacks_with_this < DEBILITATE_STACKS {
+        return None;
+    }
+    let kind = crate::model::ProcType::from_damage_type(landed)?;
+    crate::rules::elements::components_of(landed)?;
+    if !rng.chance(chance) { return None; }
+    let mut native = crate::rules::rng::NativeRng::new(rng.state());
+    let incoming = crate::model::ProcCounters::from_types([landed]);
+    incoming.split_combined(1 << kind.id(), &mut native).types().next()
+}

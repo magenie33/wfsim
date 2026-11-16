@@ -353,12 +353,12 @@ pub(super) fn resolve_the_shot(
             }
             None => 0.0,
         };
-        let effective_cc = active.base_crit_chance
-            + flat_crit
-            + weakened_cc
-            + active.unmodded_crit_chance * crit_chance_relative
-            + derived_cc
+        let direct_flat_crit = flat_crit + weakened_cc + derived_cc
             + if undamaged { active.crit_chance_on_undamaged } else { 0.0 };
+        let effective_cc = active.critical_inputs.map_or_else(
+            || active.base_crit_chance + active.unmodded_crit_chance * crit_chance_relative + direct_flat_crit,
+            |inputs| inputs.chance(crit_chance_relative, direct_flat_crit),
+        );
 
         // Live fire rate (base + Pressurized Magazine's on-reload buff, ×
         // the BuffBar multiplier) — schedules shots below and gates

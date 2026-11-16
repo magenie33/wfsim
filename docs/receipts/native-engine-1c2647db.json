@@ -1,0 +1,1854 @@
+{
+  "schema": 1,
+  "calculation_commit": "1c2647db21f248c197a05f352511daa6015f3660",
+  "original_commit": "9a8c30a2f793cc6d449425d1e57deaae2cae2d48",
+  "previous_calculation_commit": "540eb587d0fe08c849237c8369c25acf5045dffe",
+  "full_native_equivalence_certified": false,
+  "release_ready": false,
+  "client_build": "2026.10.28.09.54",
+  "spec_manifest_sha256": "71521af8e0a0ea0fbc683b9f98f6669879623dd352df3cdefd23e9fd7b570b1f",
+  "connected": [
+    "157 exact-owner raw-rank mod bindings including all seven status-damage cards",
+    "Authoritative binary32 stat367 bonus bucket retained independently of its rounded display factor",
+    "Actual Magnetic parent mutating and Electric child returned-value queries with independent proc masks",
+    "Retained Electric/Gas seeds, ordered binary32 group accumulation and coefficient/minimum/own-element preparation",
+    "Four opaque key fields supported by the reducer and scheduler; native live producers remain unbound",
+    "Combat-record layers retain native outputs; opt-in bounded bit-level query and reduction traces"
+  ],
+  "checks": {
+    "workspace_passed": 1913,
+    "workspace_failed": 0,
+    "workspace_ignored": 6,
+    "final_raw_bucket_test_passed": true,
+    "clippy_all_targets": true,
+    "source_imports_and_change_detector": true,
+    "layers_and_metering": true,
+    "quick_checks": true,
+    "native_wasm_gas_parity": true,
+    "measured_integer_expectations_changed": false,
+    "original_scalar_cases_through_actual_packet": 54,
+    "original_group_cases": 31,
+    "original_radial_transfer_cases": 31,
+    "trace_preserves_combat_response": true,
+    "native_trace_runtime_parity_cases": 4,
+    "additional_status_damage_runtime_parity_cases": 2
+  },
+  "catalog": {
+    "weapons": 665,
+    "supported_modes": 2333,
+    "native_wasm_bitwise_equal": true,
+    "before_after_simulation": {
+      "exact": 0,
+      "work_only": 0,
+      "answer": 2333
+    },
+    "before_after_panels": {
+      "exact": 2311,
+      "work_only": 0,
+      "answer": 22
+    }
+  },
+  "interpretation": "Original-to-current seeded samples include earlier native RNG/draw-order changes. They are not balance changes or proof of in-game accuracy. The previous-to-current comparison holds that RNG migration fixed.",
+  "previous_to_current": {
+    "classification": {
+      "exact": 1,
+      "work_only": 8,
+      "answer": 23
+    },
+    "changes": {
+      "torid_simulation": {
+        "first_strict_difference": {
+          "pointer": "/work",
+          "kind": "value",
+          "before": 1882910,
+          "after": 1883311
+        },
+        "first_answer_difference": null,
+        "work": {
+          "before": 1882910,
+          "after": 1883311
+        },
+        "dps": {
+          "before": 36195.23648539921,
+          "after": 36195.23648539921,
+          "change_pct": 0.0
+        },
+        "score": {
+          "before": 0.6933552281088269,
+          "after": 0.6933552281088269,
+          "change_pct": 0.0
+        },
+        "procs": {
+          "before": 30.25,
+          "after": 30.25,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 10.0,
+          "after": 10.0,
+          "change_pct": 0.0
+        }
+      },
+      "torid_record": {
+        "first_strict_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "first_answer_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "work": {
+          "before": null,
+          "after": null
+        }
+      },
+      "gotva_prime_simulation": {
+        "first_strict_difference": {
+          "pointer": "/work",
+          "kind": "value",
+          "before": 2176023,
+          "after": 2176881
+        },
+        "first_answer_difference": null,
+        "work": {
+          "before": 2176023,
+          "after": 2176881
+        },
+        "dps": {
+          "before": 14760.865521604772,
+          "after": 14760.865521604772,
+          "change_pct": 0.0
+        },
+        "score": {
+          "before": 0.2827588454890897,
+          "after": 0.2827588454890897,
+          "change_pct": 0.0
+        },
+        "procs": {
+          "before": 42.5,
+          "after": 42.5,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 84.0,
+          "after": 84.0,
+          "change_pct": 0.0
+        }
+      },
+      "gotva_prime_record": {
+        "first_strict_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "first_answer_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "work": {
+          "before": null,
+          "after": null
+        }
+      },
+      "scourge_simulation": {
+        "first_strict_difference": {
+          "pointer": "/work",
+          "kind": "value",
+          "before": 1842734,
+          "after": 1843155
+        },
+        "first_answer_difference": null,
+        "work": {
+          "before": 1842734,
+          "after": 1843155
+        },
+        "dps": {
+          "before": 3237.3391924332786,
+          "after": 3237.3391924332786,
+          "change_pct": 0.0
+        },
+        "score": {
+          "before": 0.062014404993338906,
+          "after": 0.062014404993338906,
+          "change_pct": 0.0
+        },
+        "procs": {
+          "before": 22.0,
+          "after": 22.0,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 22.0,
+          "after": 22.0,
+          "change_pct": 0.0
+        }
+      },
+      "scourge_record": {
+        "first_strict_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "first_answer_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "work": {
+          "before": null,
+          "after": null
+        }
+      },
+      "braton_prime_simulation": {
+        "first_strict_difference": {
+          "pointer": "/work",
+          "kind": "value",
+          "before": 2134317,
+          "after": 2135990
+        },
+        "first_answer_difference": null,
+        "work": {
+          "before": 2134317,
+          "after": 2135990
+        },
+        "dps": {
+          "before": 16186.70056932279,
+          "after": 16186.70056932279,
+          "change_pct": 0.0
+        },
+        "score": {
+          "before": 0.3100721132212931,
+          "after": 0.3100721132212931,
+          "change_pct": 0.0
+        },
+        "procs": {
+          "before": 34.5,
+          "after": 34.5,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 75.0,
+          "after": 75.0,
+          "change_pct": 0.0
+        }
+      },
+      "braton_prime_record": {
+        "first_strict_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "first_answer_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "work": {
+          "before": null,
+          "after": null
+        }
+      },
+      "amprex_gas_electric_0_simulation": {
+        "first_strict_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 951.5143296899312,
+          "after": 951.5143370649547,
+          "before_bits": "408dbc1d58e26cee",
+          "after_bits": "408dbc1d5cc048cf"
+        },
+        "first_answer_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 951.5143296899312,
+          "after": 951.5143370649547,
+          "before_bits": "408dbc1d58e26cee",
+          "after_bits": "408dbc1d5cc048cf"
+        },
+        "work": {
+          "before": 2189750,
+          "after": 2201601
+        },
+        "dps": {
+          "before": 352.7901566230105,
+          "after": 352.7901635857423,
+          "change_pct": 1.9736184908580867e-06
+        },
+        "score": {
+          "before": 0.0022783986898980424,
+          "after": 0.002278398707557361,
+          "change_pct": 7.750758701519089e-07
+        },
+        "procs": {
+          "before": 28.75,
+          "after": 28.75,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 97.0,
+          "after": 97.0,
+          "change_pct": 0.0
+        }
+      },
+      "amprex_gas_electric_0_record": {
+        "first_strict_difference": {
+          "pointer": "/events/19/base",
+          "kind": "float64",
+          "before": 29.7,
+          "after": 59.3,
+          "before_bits": "403db33333333333",
+          "after_bits": "404da66666666666"
+        },
+        "first_answer_difference": {
+          "pointer": "/events/19/base",
+          "kind": "float64",
+          "before": 29.7,
+          "after": 59.3,
+          "before_bits": "403db33333333333",
+          "after_bits": "404da66666666666"
+        },
+        "work": {
+          "before": null,
+          "after": null
+        }
+      },
+      "amprex_gas_electric_100_simulation": {
+        "first_strict_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 3890.6436027936134,
+          "after": 3890.643600222268,
+          "before_bits": "40ae6549864e2c5e",
+          "after_bits": "40ae654985f7e4ae"
+        },
+        "first_answer_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 3890.6436027936134,
+          "after": 3890.643600222268,
+          "before_bits": "40ae6549864e2c5e",
+          "after_bits": "40ae654985f7e4ae"
+        },
+        "work": {
+          "before": 2189654,
+          "after": 2201506
+        },
+        "dps": {
+          "before": 849.7082997984072,
+          "after": 849.7083087751599,
+          "change_pct": 1.0564511043753555e-06
+        },
+        "score": {
+          "before": 0.009316136405799091,
+          "after": 0.009316136399642017,
+          "change_pct": -6.60904331262202e-08
+        },
+        "procs": {
+          "before": 28.75,
+          "after": 28.75,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 97.0,
+          "after": 97.0,
+          "change_pct": 0.0
+        }
+      },
+      "amprex_gas_electric_100_record": {
+        "first_strict_difference": {
+          "pointer": "/events/19/base",
+          "kind": "float64",
+          "before": 29.7,
+          "after": 59.3,
+          "before_bits": "403db33333333333",
+          "after_bits": "404da66666666666"
+        },
+        "first_answer_difference": {
+          "pointer": "/events/19/base",
+          "kind": "float64",
+          "before": 29.7,
+          "after": 59.3,
+          "before_bits": "403db33333333333",
+          "after_bits": "404da66666666666"
+        },
+        "work": {
+          "before": null,
+          "after": null
+        }
+      },
+      "kuva_nukor_shield_simulation": {
+        "first_strict_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 248561.08334241874,
+          "after": 248561.0831989861,
+          "before_bits": "410e5788aaaf6e17",
+          "after_bits": "410e5788aa643ae3"
+        },
+        "first_answer_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 248561.08334241874,
+          "after": 248561.0831989861,
+          "before_bits": "410e5788aaaf6e17",
+          "after_bits": "410e5788aa643ae3"
+        },
+        "work": {
+          "before": 2210612,
+          "after": 2213488
+        },
+        "dps": {
+          "before": 31070.135417802343,
+          "after": 31070.135399873263,
+          "change_pct": -5.770518507475231e-08
+        },
+        "score": {
+          "before": 4.153947900795688,
+          "after": 4.153947900480331,
+          "change_pct": -7.591749451307805e-09
+        },
+        "procs": {
+          "before": 177.5,
+          "after": 177.5,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 3.75,
+          "after": 3.75,
+          "change_pct": 0.0
+        },
+        "shots": {
+          "before": 128.0,
+          "after": 128.0,
+          "change_pct": 0.0
+        }
+      },
+      "kuva_nukor_shield_record": {
+        "first_strict_difference": {
+          "pointer": "/events/17/base",
+          "kind": "float64",
+          "before": 1802.0,
+          "after": 901.0,
+          "before_bits": "409c280000000000",
+          "after_bits": "408c280000000000"
+        },
+        "first_answer_difference": {
+          "pointer": "/events/17/base",
+          "kind": "float64",
+          "before": 1802.0,
+          "after": 901.0,
+          "before_bits": "409c280000000000",
+          "after_bits": "408c280000000000"
+        },
+        "work": {
+          "before": null,
+          "after": null
+        }
+      },
+      "coda_bubonico_battery_simulation": {
+        "first_strict_difference": {
+          "pointer": "/work",
+          "kind": "value",
+          "before": 3386074,
+          "after": 3392993
+        },
+        "first_answer_difference": null,
+        "work": {
+          "before": 3386074,
+          "after": 3392993
+        },
+        "dps": {
+          "before": 377.1594730136914,
+          "after": 377.1594730136914,
+          "change_pct": 0.0
+        },
+        "score": {
+          "before": 0.021674578024952706,
+          "after": 0.021674578024952706,
+          "change_pct": 0.0
+        },
+        "procs": {
+          "before": 56.75,
+          "after": 56.75,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 80.0,
+          "after": 80.0,
+          "change_pct": 0.0
+        }
+      },
+      "coda_bubonico_battery_record": {
+        "first_strict_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "first_answer_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "work": {
+          "before": null,
+          "after": null
+        }
+      },
+      "torid_transformed_chain_simulation": {
+        "first_strict_difference": {
+          "pointer": "/work",
+          "kind": "value",
+          "before": 2788724,
+          "after": 2810756
+        },
+        "first_answer_difference": null,
+        "work": {
+          "before": 2788724,
+          "after": 2810756
+        },
+        "dps": {
+          "before": 973.2487072353055,
+          "after": 973.2487072353055,
+          "change_pct": 0.0
+        },
+        "score": {
+          "before": 0.005951707005957901,
+          "after": 0.005951707005957901,
+          "change_pct": 0.0
+        },
+        "procs": {
+          "before": 160.25,
+          "after": 160.25,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 64.0,
+          "after": 64.0,
+          "change_pct": 0.0
+        }
+      },
+      "torid_transformed_chain_record": {
+        "first_strict_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "first_answer_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "work": {
+          "before": null,
+          "after": null
+        }
+      },
+      "multiple_actors_simulation": {
+        "first_strict_difference": {
+          "pointer": "/work",
+          "kind": "value",
+          "before": 2339434,
+          "after": 2341576
+        },
+        "first_answer_difference": null,
+        "work": {
+          "before": 2339434,
+          "after": 2341576
+        },
+        "dps": {
+          "before": 244.64145915173017,
+          "after": 244.64145915173017,
+          "change_pct": 0.0
+        },
+        "score": {
+          "before": 0.004686346911520173,
+          "after": 0.004686346911520173,
+          "change_pct": 0.0
+        },
+        "procs": {
+          "before": 40.75,
+          "after": 40.75,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 159.0,
+          "after": 159.0,
+          "change_pct": 0.0
+        }
+      },
+      "multiple_actors_record": {
+        "first_strict_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "first_answer_difference": {
+          "pointer": "/factors",
+          "kind": "length",
+          "before": 48,
+          "after": 49
+        },
+        "work": {
+          "before": null,
+          "after": null
+        }
+      },
+      "primary_debilitate_callbacks_simulation": {
+        "first_strict_difference": {
+          "pointer": "/armor_left",
+          "kind": "float64",
+          "before": 0.8483913363827239,
+          "after": 0.8483913365606336,
+          "before_bits": "3feb2605967f2731",
+          "after_bits": "3feb260596979ad5"
+        },
+        "first_answer_difference": {
+          "pointer": "/armor_left",
+          "kind": "float64",
+          "before": 0.8483913363827239,
+          "after": 0.8483913365606336,
+          "before_bits": "3feb2605967f2731",
+          "after_bits": "3feb260596979ad5"
+        },
+        "work": {
+          "before": 2212067,
+          "after": 2224193
+        },
+        "dps": {
+          "before": 481.4980607313544,
+          "after": 481.4980683255294,
+          "change_pct": 1.577197417113041e-06
+        },
+        "score": {
+          "before": 0.00304829970665102,
+          "after": 0.003048299716022912,
+          "change_pct": 3.0744653489733764e-07
+        },
+        "procs": {
+          "before": 36.25,
+          "after": 36.25,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 97.0,
+          "after": 97.0,
+          "change_pct": 0.0
+        }
+      },
+      "primary_debilitate_callbacks_record": {
+        "first_strict_difference": {
+          "pointer": "/events/19/base",
+          "kind": "float64",
+          "before": 29.7,
+          "after": 59.3,
+          "before_bits": "403db33333333333",
+          "after_bits": "404da66666666666"
+        },
+        "first_answer_difference": {
+          "pointer": "/events/19/base",
+          "kind": "float64",
+          "before": 29.7,
+          "after": 59.3,
+          "before_bits": "403db33333333333",
+          "after_bits": "404da66666666666"
+        },
+        "work": {
+          "before": null,
+          "after": null
+        }
+      },
+      "secondary_encumber_window_simulation": {
+        "first_strict_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 313710.1437543605,
+          "after": 313710.14366772375,
+          "before_bits": "411325b8933457d4",
+          "after_bits": "411325b8931da1bc"
+        },
+        "first_answer_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 313710.1437543605,
+          "after": 313710.14366772375,
+          "before_bits": "411325b8933457d4",
+          "after_bits": "411325b8931da1bc"
+        },
+        "work": {
+          "before": 2272811,
+          "after": 2276722
+        },
+        "dps": {
+          "before": 39213.76796929506,
+          "after": 39213.76795846547,
+          "change_pct": -2.761681994201126e-08
+        },
+        "score": {
+          "before": 5.112355560471419,
+          "after": 5.112355560197868,
+          "change_pct": -5.3507864805624195e-09
+        },
+        "procs": {
+          "before": 206.75,
+          "after": 206.75,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 4.75,
+          "after": 4.75,
+          "change_pct": 0.0
+        },
+        "shots": {
+          "before": 128.0,
+          "after": 128.0,
+          "change_pct": 0.0
+        }
+      },
+      "secondary_encumber_window_record": {
+        "first_strict_difference": {
+          "pointer": "/events/17/base",
+          "kind": "float64",
+          "before": 1802.0,
+          "after": 901.0,
+          "before_bits": "409c280000000000",
+          "after_bits": "408c280000000000"
+        },
+        "first_answer_difference": {
+          "pointer": "/events/17/base",
+          "kind": "float64",
+          "before": 1802.0,
+          "after": 901.0,
+          "before_bits": "409c280000000000",
+          "after_bits": "408c280000000000"
+        },
+        "work": {
+          "before": null,
+          "after": null
+        }
+      },
+      "braton_replay": {
+        "first_strict_difference": {
+          "pointer": "/work",
+          "kind": "value",
+          "before": 2134317,
+          "after": 2135990
+        },
+        "first_answer_difference": null,
+        "work": {
+          "before": 2134317,
+          "after": 2135990
+        },
+        "dps": {
+          "before": 16186.70056932279,
+          "after": 16186.70056932279,
+          "change_pct": 0.0
+        },
+        "score": {
+          "before": 0.3100721132212931,
+          "after": 0.3100721132212931,
+          "change_pct": 0.0
+        },
+        "procs": {
+          "before": 34.5,
+          "after": 34.5,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 75.0,
+          "after": 75.0,
+          "change_pct": 0.0
+        }
+      },
+      "primary_debilitate_callbacks_simulation_no_arcane": {
+        "first_strict_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 951.5143296899312,
+          "after": 951.5143370649547,
+          "before_bits": "408dbc1d58e26cee",
+          "after_bits": "408dbc1d5cc048cf"
+        },
+        "first_answer_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 951.5143296899312,
+          "after": 951.5143370649547,
+          "before_bits": "408dbc1d58e26cee",
+          "after_bits": "408dbc1d5cc048cf"
+        },
+        "work": {
+          "before": 2189750,
+          "after": 2201601
+        },
+        "dps": {
+          "before": 352.7901566230105,
+          "after": 352.7901635857423,
+          "change_pct": 1.9736184908580867e-06
+        },
+        "score": {
+          "before": 0.0022783986898980424,
+          "after": 0.002278398707557361,
+          "change_pct": 7.750758701519089e-07
+        },
+        "procs": {
+          "before": 28.75,
+          "after": 28.75,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 97.0,
+          "after": 97.0,
+          "change_pct": 0.0
+        }
+      },
+      "primary_debilitate_callbacks_simulation_mc128": {
+        "first_strict_difference": {
+          "pointer": "/armor_left",
+          "kind": "float64",
+          "before": 0.8284985943711057,
+          "after": 0.8284985940448895,
+          "before_bits": "3fea830f7bf36347",
+          "after_bits": "3fea830f7bc68d90"
+        },
+        "first_answer_difference": {
+          "pointer": "/armor_left",
+          "kind": "float64",
+          "before": 0.8284985943711057,
+          "after": 0.8284985940448895,
+          "before_bits": "3fea830f7bf36347",
+          "after_bits": "3fea830f7bc68d90"
+        },
+        "work": {
+          "before": 71206775,
+          "after": 71599835
+        },
+        "dps": {
+          "before": 571.2271061034311,
+          "after": 571.2271148001238,
+          "change_pct": 1.5224579819062e-06
+        },
+        "score": {
+          "before": 0.003914503964016022,
+          "after": 0.003914504001100387,
+          "change_pct": 9.473579698493495e-07
+        },
+        "procs": {
+          "before": 39.8515625,
+          "after": 39.8515625,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 97.0,
+          "after": 97.0,
+          "change_pct": 0.0
+        }
+      },
+      "primary_debilitate_callbacks_simulation_mc128_no_arcane": {
+        "first_strict_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 1098.8173665581276,
+          "after": 1098.8173752807247,
+          "before_bits": "40912b44fbbd3002",
+          "after_bits": "40912b44fe068d16"
+        },
+        "first_answer_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 1098.8173665581276,
+          "after": 1098.8173752807247,
+          "before_bits": "40912b44fbbd3002",
+          "after_bits": "40912b44fe068d16"
+        },
+        "work": {
+          "before": 70534716,
+          "after": 70915723
+        },
+        "dps": {
+          "before": 398.76894010258627,
+          "after": 398.7689460458566,
+          "change_pct": 1.4904045109176423e-06
+        },
+        "score": {
+          "before": 0.002631115444387551,
+          "after": 0.002631115465273763,
+          "change_pct": 7.938158796960693e-07
+        },
+        "procs": {
+          "before": 31.3515625,
+          "after": 31.3515625,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 0.0,
+          "after": 0.0,
+          "change_pct": null
+        },
+        "shots": {
+          "before": 97.0,
+          "after": 97.0,
+          "change_pct": 0.0
+        }
+      },
+      "secondary_encumber_window_simulation_no_arcane": {
+        "first_strict_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 248561.08334241874,
+          "after": 248561.0831989861,
+          "before_bits": "410e5788aaaf6e17",
+          "after_bits": "410e5788aa643ae3"
+        },
+        "first_answer_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 248561.08334241874,
+          "after": 248561.0831989861,
+          "before_bits": "410e5788aaaf6e17",
+          "after_bits": "410e5788aa643ae3"
+        },
+        "work": {
+          "before": 2210612,
+          "after": 2213488
+        },
+        "dps": {
+          "before": 31070.135417802343,
+          "after": 31070.135399873263,
+          "change_pct": -5.770518507475231e-08
+        },
+        "score": {
+          "before": 4.153947900795688,
+          "after": 4.153947900480331,
+          "change_pct": -7.591749451307805e-09
+        },
+        "procs": {
+          "before": 177.5,
+          "after": 177.5,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 3.75,
+          "after": 3.75,
+          "change_pct": 0.0
+        },
+        "shots": {
+          "before": 128.0,
+          "after": 128.0,
+          "change_pct": 0.0
+        }
+      },
+      "secondary_encumber_window_simulation_mc128": {
+        "first_strict_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 295856.05239835597,
+          "after": 295856.0523383727,
+          "before_bits": "41120ec035a7ea25",
+          "after_bits": "41120ec0359830bc"
+        },
+        "first_answer_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 295856.05239835597,
+          "after": 295856.0523383727,
+          "before_bits": "41120ec035a7ea25",
+          "after_bits": "41120ec0359830bc"
+        },
+        "work": {
+          "before": 72754530,
+          "after": 72878498
+        },
+        "dps": {
+          "before": 36982.006549794496,
+          "after": 36982.006542296585,
+          "change_pct": -2.0274482093185497e-08
+        },
+        "score": {
+          "before": 4.95085070472912,
+          "after": 4.950850704592207,
+          "change_pct": -2.7654545320388024e-09
+        },
+        "procs": {
+          "before": 207.8203125,
+          "after": 207.8203125,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 4.4296875,
+          "after": 4.4296875,
+          "change_pct": 0.0
+        },
+        "shots": {
+          "before": 128.0,
+          "after": 128.0,
+          "change_pct": 0.0
+        }
+      },
+      "secondary_encumber_window_simulation_mc128_no_arcane": {
+        "first_strict_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 252795.0659800789,
+          "after": 252795.06583306994,
+          "before_bits": "410edbd887209049",
+          "after_bits": "410edbd886d37d13"
+        },
+        "first_answer_difference": {
+          "pointer": "/bodies/0/damage",
+          "kind": "float64",
+          "before": 252795.0659800789,
+          "after": 252795.06583306994,
+          "before_bits": "410edbd887209049",
+          "after_bits": "410edbd886d37d13"
+        },
+        "work": {
+          "before": 70752444,
+          "after": 70847524
+        },
+        "dps": {
+          "before": 31599.383247509864,
+          "after": 31599.383229133742,
+          "change_pct": -5.815341541648422e-08
+        },
+        "score": {
+          "before": 4.269479483710159,
+          "after": 4.269479483481033,
+          "change_pct": -5.366607158663328e-09
+        },
+        "procs": {
+          "before": 178.390625,
+          "after": 178.390625,
+          "change_pct": 0.0
+        },
+        "kills": {
+          "before": 3.828125,
+          "after": 3.828125,
+          "change_pct": 0.0
+        },
+        "shots": {
+          "before": 128.0,
+          "after": 128.0,
+          "change_pct": 0.0
+        }
+      }
+    }
+  },
+  "elementalist_faction_before_after": {
+    "kuva_nukor_shield_simulation:elementalist_faction": {
+      "first_strict_difference": {
+        "pointer": "/bodies/0/damage",
+        "kind": "float64",
+        "before": 445530.56471776054,
+        "after": 445519.007589582,
+        "before_bits": "411b316a42455f64",
+        "after_bits": "411b313c07c5903a"
+      },
+      "first_answer_difference": {
+        "pointer": "/bodies/0/damage",
+        "kind": "float64",
+        "before": 445530.56471776054,
+        "after": 445519.007589582,
+        "before_bits": "411b316a42455f64",
+        "after_bits": "411b313c07c5903a"
+      },
+      "work": {
+        "before": 70847085,
+        "after": 70987200
+      },
+      "dps": {
+        "before": 55691.32058972007,
+        "after": 55689.87594869775,
+        "change_pct": -0.002594014663359623
+      },
+      "score": {
+        "before": 7.406032995250409,
+        "after": 7.406015873718784,
+        "change_pct": -0.0002311835720414379
+      },
+      "procs": {
+        "before": 178.6328125,
+        "after": 178.6328125,
+        "change_pct": 0.0
+      },
+      "kills": {
+        "before": 6.8203125,
+        "after": 6.8203125,
+        "change_pct": 0.0
+      },
+      "shots": {
+        "before": 128.0,
+        "after": 128.0,
+        "change_pct": 0.0
+      }
+    },
+    "kuva_nukor_shield_record:elementalist_faction": {
+      "first_strict_difference": {
+        "pointer": "/events/13/base",
+        "kind": "float64",
+        "before": 1402.0,
+        "after": 701.0,
+        "before_bits": "4095e80000000000",
+        "after_bits": "4085e80000000000"
+      },
+      "first_answer_difference": {
+        "pointer": "/events/13/base",
+        "kind": "float64",
+        "before": 1402.0,
+        "after": 701.0,
+        "before_bits": "4095e80000000000",
+        "after_bits": "4085e80000000000"
+      },
+      "work": {
+        "before": null,
+        "after": null
+      }
+    }
+  },
+  "performance": {
+    "complete": true,
+    "native_matches_chrome_bitwise": true,
+    "chrome_responses_verified": 256,
+    "allocator_responses_match_frozen_native": true,
+    "allocations": {
+      "aggregate_warmed_requests": {
+        "A": {
+          "allocations": 1295239,
+          "reallocations": 35142,
+          "deallocations": 1295207,
+          "requested_bytes": 177825091
+        },
+        "B": {
+          "allocations": 1247876,
+          "reallocations": 34671,
+          "deallocations": 1247844,
+          "requested_bytes": 178091287
+        }
+      },
+      "maximum_additional_live_bytes": {
+        "A": 12271284,
+        "B": 13162913
+      },
+      "count_vectors_identical": 0,
+      "cases": 32
+    },
+    "focused-native": {
+      "all_requests_geomean_elapsed_change_pct": -0.25730118798467094,
+      "simulation_geomean_elapsed_change_pct": 2.3663388398188934,
+      "simulation_cases": 19,
+      "per_case_elapsed_change_pct": {
+        "braton_panel": -1.0486978919807766,
+        "torid_simulation": 2.7572748811965475,
+        "torid_record": -0.6365965317919109,
+        "gotva_prime_simulation": 1.9289189782549787,
+        "gotva_prime_record": -0.7576832128540767,
+        "scourge_simulation": 2.1729449851338734,
+        "scourge_record": -0.81065698392917,
+        "braton_prime_simulation": 2.049961253962662,
+        "braton_prime_record": -2.5366218617773884,
+        "amprex_gas_electric_0_simulation": -5.044295136534538,
+        "amprex_gas_electric_0_record": -11.701605806046055,
+        "amprex_gas_electric_100_simulation": -2.6009316178670416,
+        "amprex_gas_electric_100_record": -15.667468187245781,
+        "kuva_nukor_shield_simulation": 3.427064319773554,
+        "kuva_nukor_shield_record": 0.5224338757022107,
+        "coda_bubonico_battery_simulation": 1.0575659472171317,
+        "coda_bubonico_battery_record": -6.12792653149663,
+        "torid_transformed_chain_simulation": -2.593064133724765,
+        "torid_transformed_chain_record": 9.285195743620257,
+        "multiple_actors_simulation": 2.685781435630785,
+        "multiple_actors_record": -5.54796820776895,
+        "primary_debilitate_callbacks_simulation": 2.059729135430821,
+        "primary_debilitate_callbacks_record": -15.236338722341248,
+        "secondary_encumber_window_simulation": 8.634200490793287,
+        "secondary_encumber_window_record": 1.8188992652999891,
+        "braton_replay": 1.062846637515702,
+        "primary_debilitate_callbacks_simulation_no_arcane": -0.9242221586864052,
+        "primary_debilitate_callbacks_simulation_mc128": 7.171890103741685,
+        "primary_debilitate_callbacks_simulation_mc128_no_arcane": 6.287094194521425,
+        "secondary_encumber_window_simulation_no_arcane": 1.6627953581258792,
+        "secondary_encumber_window_simulation_mc128": 10.0801820996685,
+        "secondary_encumber_window_simulation_mc128_no_arcane": 4.360413824939036
+      },
+      "memory": {
+        "A": {
+          "peak_process_rss_bytes": 85278720,
+          "peak_wasm_linear_bytes": null
+        },
+        "B": {
+          "peak_process_rss_bytes": 86458368,
+          "peak_wasm_linear_bytes": null
+        }
+      }
+    },
+    "focused-wasm": {
+      "all_requests_geomean_elapsed_change_pct": -0.5683068121800305,
+      "simulation_geomean_elapsed_change_pct": 2.2926841461187175,
+      "simulation_cases": 19,
+      "per_case_elapsed_change_pct": {
+        "braton_panel": -5.144753501132837,
+        "torid_simulation": -3.0974103135695596,
+        "torid_record": -0.8736175044526062,
+        "gotva_prime_simulation": 4.189359028070827,
+        "gotva_prime_record": -6.862785923727177,
+        "scourge_simulation": 0.8504212788215337,
+        "scourge_record": 2.1142300724918073,
+        "braton_prime_simulation": 2.47345414067921,
+        "braton_prime_record": 2.7019408486626206,
+        "amprex_gas_electric_0_simulation": -1.3912162793250582,
+        "amprex_gas_electric_0_record": -12.584884834510135,
+        "amprex_gas_electric_100_simulation": -0.33928007486841993,
+        "amprex_gas_electric_100_record": -11.245144955392284,
+        "kuva_nukor_shield_simulation": 2.623102352290907,
+        "kuva_nukor_shield_record": 4.457719344616229,
+        "coda_bubonico_battery_simulation": 4.510693454309189,
+        "coda_bubonico_battery_record": -6.286657860176826,
+        "torid_transformed_chain_simulation": 1.2701350216112628,
+        "torid_transformed_chain_record": 6.350992747952033,
+        "multiple_actors_simulation": 5.088624478087689,
+        "multiple_actors_record": -6.4325374123112455,
+        "primary_debilitate_callbacks_simulation": -7.215258656446377,
+        "primary_debilitate_callbacks_record": -18.991718763702558,
+        "secondary_encumber_window_simulation": 8.040237268277739,
+        "secondary_encumber_window_record": -3.6631176713792124,
+        "braton_replay": -0.6196514345361726,
+        "primary_debilitate_callbacks_simulation_no_arcane": -3.1374524363406153,
+        "primary_debilitate_callbacks_simulation_mc128": 6.326726294573715,
+        "primary_debilitate_callbacks_simulation_mc128_no_arcane": 5.384464162580893,
+        "secondary_encumber_window_simulation_no_arcane": 7.176732451289092,
+        "secondary_encumber_window_simulation_mc128": 8.93932099827277,
+        "secondary_encumber_window_simulation_mc128_no_arcane": 4.11032049124247
+      },
+      "memory": {
+        "A": {
+          "peak_process_rss_bytes": 230408192,
+          "peak_wasm_linear_bytes": 28639232
+        },
+        "B": {
+          "peak_process_rss_bytes": 233226240,
+          "peak_wasm_linear_bytes": 29360128
+        }
+      }
+    },
+    "browser": {
+      "all_requests_geomean_elapsed_change_pct": -2.488556475080672,
+      "simulation_geomean_elapsed_change_pct": -0.03853845109772491,
+      "simulation_cases": 19,
+      "per_case_elapsed_change_pct": {
+        "braton_panel": -9.090901209302482,
+        "torid_simulation": -13.79310628321726,
+        "torid_record": -4.651168722148691,
+        "gotva_prime_simulation": -2.941201219917544,
+        "gotva_prime_record": -7.012310954124246e-06,
+        "scourge_simulation": -9.999990463256836,
+        "scourge_record": 0.0,
+        "braton_prime_simulation": -6.451622330807794,
+        "braton_prime_record": -2.941173583166079,
+        "amprex_gas_electric_0_simulation": -13.333320617675781,
+        "amprex_gas_electric_0_record": -13.333336512247717,
+        "amprex_gas_electric_100_simulation": 3.703682118484841,
+        "amprex_gas_electric_100_record": -11.111111111111116,
+        "kuva_nukor_shield_simulation": 9.090944558138814,
+        "kuva_nukor_shield_record": -3.44828068146934,
+        "coda_bubonico_battery_simulation": 8.669767259661398e-06,
+        "coda_bubonico_battery_record": -6.951872748633736,
+        "torid_transformed_chain_simulation": 4.44444020589192,
+        "torid_transformed_chain_record": 7.425745004953677,
+        "multiple_actors_simulation": 2.5096697586768357e-05,
+        "multiple_actors_record": -5.405400529057303,
+        "primary_debilitate_callbacks_simulation": -7.142849844329713,
+        "primary_debilitate_callbacks_record": -18.749993170300716,
+        "secondary_encumber_window_simulation": 4.1666832235150775,
+        "secondary_encumber_window_record": -6.451606948963507,
+        "braton_replay": -8.514948668381095e-06,
+        "primary_debilitate_callbacks_simulation_no_arcane": -1.833989137223213e-05,
+        "primary_debilitate_callbacks_simulation_mc128": 7.216495301470327,
+        "primary_debilitate_callbacks_simulation_mc128_no_arcane": 5.600001017252598,
+        "secondary_encumber_window_simulation_no_arcane": 9.090901209302494,
+        "secondary_encumber_window_simulation_mc128": 10.062894071988882,
+        "secondary_encumber_window_simulation_mc128_no_arcane": 4.651163122269519
+      },
+      "memory": {
+        "A": {
+          "peak_process_rss_bytes": null,
+          "peak_wasm_linear_bytes": 28639232
+        },
+        "B": {
+          "peak_process_rss_bytes": null,
+          "peak_wasm_linear_bytes": 29360128
+        }
+      }
+    },
+    "one_fight": {
+      "torid": {
+        "before_ms": 0.9269925625,
+        "after_ms": 1.020812125,
+        "change_pct": 10.120853855286471,
+        "samples": {
+          "A": [
+            0.915692417,
+            0.93079575,
+            0.925858042,
+            0.928127083
+          ],
+          "B": [
+            1.015769917,
+            1.029341792,
+            1.021282458,
+            1.020341792
+          ]
+        }
+      },
+      "gotva_prime": {
+        "before_ms": 1.5467820415,
+        "after_ms": 1.6128677915,
+        "change_pct": 4.272466852273071,
+        "samples": {
+          "A": [
+            1.528799667,
+            1.5476885,
+            1.545875583,
+            1.5496750000000001
+          ],
+          "B": [
+            1.611712125,
+            1.6197098749999999,
+            1.607225416,
+            1.6140234580000001
+          ]
+        }
+      },
+      "scourge": {
+        "before_ms": 0.543842208,
+        "after_ms": 0.567352854,
+        "change_pct": 4.323063869290555,
+        "samples": {
+          "A": [
+            0.537447292,
+            0.545060375,
+            0.544203333,
+            0.543481083
+          ],
+          "B": [
+            0.565217791,
+            0.567747333,
+            0.570863292,
+            0.566958375
+          ]
+        }
+      },
+      "braton_prime": {
+        "before_ms": 1.316175729,
+        "after_ms": 1.3769153955,
+        "change_pct": 4.61485994321964,
+        "samples": {
+          "A": [
+            1.319315125,
+            1.315573,
+            1.303956875,
+            1.316778458
+          ],
+          "B": [
+            1.3765535,
+            1.377277291,
+            1.372448,
+            1.380250459
+          ]
+        }
+      }
+    },
+    "wasm_artifact_bytes": {
+      "A": 6965180,
+      "B": 7043935
+    },
+    "catalog": {
+      "roster-native": {
+        "exact": 0,
+        "work_only": 0,
+        "answer": 2333
+      },
+      "panels-native": {
+        "exact": 2311,
+        "work_only": 0,
+        "answer": 22
+      }
+    }
+  },
+  "truth": {
+    "truth-final-encumber": [
+      "[scope] 43 builds x arcanes = 43 jobs (43 distinct to the fight), exhaustive",
+      "[reference] 128 runs each = 5504 sims | answer set 3 builds | settled across seeds: true | top-10 overlap 1.00",
+      "[search] descent from 4 starts, 53 subsets scored, cut by budget: false | 57 screen evals",
+      "[search] rank 1 | regret 0.000% | within noise: true | top-10 recall 100% | 754 sims (13.7% of the reference)"
+    ],
+    "truth-final-debilitate": [
+      "[scope] 22 builds x arcanes = 22 jobs (22 distinct to the fight), exhaustive",
+      "[reference] 128 runs each = 2816 sims | answer set 1 builds | settled across seeds: true | top-10 overlap 1.00",
+      "[search] descent from 3 starts, 32 subsets scored, cut by budget: false | 32 screen evals",
+      "[search] rank 1 | regret 0.000% | within noise: true | top-10 recall 90% | 704 sims (25.0% of the reference)"
+    ]
+  },
+  "native_trace": [
+    {
+      "id": "amprex_gas_electric_0_record:native_trace",
+      "steps": 512,
+      "dropped": 263
+    },
+    {
+      "id": "amprex_gas_electric_100_record:native_trace",
+      "steps": 512,
+      "dropped": 263
+    },
+    {
+      "id": "kuva_nukor_shield_record:native_trace",
+      "steps": 44,
+      "dropped": 0
+    },
+    {
+      "id": "kuva_nukor_shield_record:elementalist_faction:native_trace",
+      "steps": 57,
+      "dropped": 0
+    }
+  ],
+  "remaining": [
+    "Ordinary status count/type RNG and complete per-family handler inheritance",
+    "Complete live operation ownership, type/symbol/posture filters and receiving transforms",
+    "Native component construction, complete recipient armor/resistance/attenuation/pool dispatch",
+    "Live four-key group producers, visitation lifecycle and full event notification scheduling",
+    "Other explicit stages and evidence gaps in docs/NATIVE_BINDINGS.md"
+  ],
+  "raw_evidence": "target/native-order/qualified-retained",
+  "binding_ledger": "docs/NATIVE_BINDINGS.md",
+  "drive_backup_folder": "engine-native-candidate-20261115-1c2647db",
+  "remote_drive_sync_verified": false,
+  "pending_release_checks": [
+    "Combined-candidate full CI",
+    "Official mac engine and all-channel release validation",
+    "Resolve or rebind the pre-existing 40m browser miss fixture; its three assertions fail on a request producing zero misses in all three preserved engines"
+  ],
+  "qualification_commands": [
+    {
+      "name": "roster-native",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/refactor-plan/p0/baseline",
+        "--candidate",
+        "target/native-order/qualified-retained/native",
+        "--calls",
+        "target/native-order/qualified-retained/roster-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/roster-native",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 1,
+      "accepted_exits": [
+        1
+      ],
+      "elapsed_seconds": 12.127871036529541
+    },
+    {
+      "name": "panels-native",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/refactor-plan/p0/baseline",
+        "--candidate",
+        "target/native-order/qualified-retained/native",
+        "--calls",
+        "target/native-order/qualified-retained/panel-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/panels-native",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 1,
+      "accepted_exits": [
+        1
+      ],
+      "elapsed_seconds": 18.53437900543213
+    },
+    {
+      "name": "parity-roster",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/native-order/qualified-retained/native",
+        "--candidate",
+        "target/native-order/qualified-retained/wasm",
+        "--calls",
+        "target/native-order/qualified-retained/roster-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/parity-roster",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 12.681451797485352
+    },
+    {
+      "name": "focused-native",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/refactor-plan/p0/baseline",
+        "--candidate",
+        "target/native-order/qualified-retained/native",
+        "--calls",
+        "target/native-order/qualified-retained/focused-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/focused-native",
+        "--rounds",
+        "2",
+        "--repeats",
+        "3"
+      ],
+      "exit": 1,
+      "accepted_exits": [
+        1
+      ],
+      "elapsed_seconds": 6.677980899810791
+    },
+    {
+      "name": "focused-wasm",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/refactor-plan/full/wasm-baseline-final",
+        "--candidate",
+        "target/native-order/qualified-retained/wasm",
+        "--calls",
+        "target/native-order/qualified-retained/focused-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/focused-wasm",
+        "--rounds",
+        "2",
+        "--repeats",
+        "3"
+      ],
+      "exit": 1,
+      "accepted_exits": [
+        1
+      ],
+      "elapsed_seconds": 9.234163045883179
+    },
+    {
+      "name": "focused-migration",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/native-order/qualified-current/native",
+        "--candidate",
+        "target/native-order/qualified-retained/native",
+        "--calls",
+        "target/native-order/qualified-retained/focused-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/focused-migration",
+        "--rounds",
+        "2",
+        "--repeats",
+        "3"
+      ],
+      "exit": 1,
+      "accepted_exits": [
+        1
+      ],
+      "elapsed_seconds": 7.048410892486572
+    },
+    {
+      "name": "focused-parity",
+      "command": [
+        "python3",
+        "scripts/engine_compare.py",
+        "run",
+        "--baseline",
+        "target/native-order/qualified-retained/native",
+        "--candidate",
+        "target/native-order/qualified-retained/wasm",
+        "--calls",
+        "target/native-order/qualified-retained/focused-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/focused-parity",
+        "--rounds",
+        "1",
+        "--repeats",
+        "1"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 3.0581719875335693
+    },
+    {
+      "name": "shapes",
+      "command": [
+        "python3",
+        "scripts/engine_shape_cost.py",
+        "--baseline",
+        "target/refactor-plan/p0/baseline",
+        "--candidate",
+        "target/native-order/qualified-retained/native",
+        "--output",
+        "target/native-order/qualified-retained/shapes",
+        "--rounds",
+        "2",
+        "--runs",
+        "1000"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 109.72364783287048
+    },
+    {
+      "name": "browser",
+      "command": [
+        "node",
+        "scripts/engine_browser_compare.mjs",
+        "target/refactor-plan/full/wasm-baseline-final",
+        "target/native-order/qualified-retained/wasm",
+        "target/native-order/qualified-retained/browser-calls.json",
+        "target/native-order/qualified-retained/browser",
+        "3",
+        "2"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 14.641336917877197
+    },
+    {
+      "name": "allocations",
+      "command": [
+        "python3",
+        "scripts/engine_allocations.py",
+        "--baseline-worktree",
+        "../wfsim-wt-native-engine-refactor-plan-1114-baseline",
+        "--candidate-worktree",
+        ".",
+        "--calls",
+        "target/native-order/qualified-retained/browser-calls.json",
+        "--output",
+        "target/native-order/qualified-retained/allocations"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 3.6988799571990967
+    },
+    {
+      "name": "gas",
+      "command": [
+        "node",
+        "scripts/check_gas.mjs",
+        "native=target/release/wfsim-gas",
+        "pkg=target/native-order/qualified-retained/wasm"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 42.17945194244385
+    },
+    {
+      "name": "truth-final-encumber",
+      "command": [
+        "target/release/wfsim-truth",
+        "weapon=kuva_nukor",
+        "pool=hornet_strike,barrel_diffusion,lethal_torrent,convulsion,deep_freeze,heated_charge,pistol_pestilence",
+        "size=3",
+        "min=3",
+        "arcanes=secondary_encumber",
+        "runs=64",
+        "truth_runs=128",
+        "candidate_runs=8",
+        "duration=12",
+        "finalists=10",
+        "threads=1",
+        "max_jobs=5000"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 1.8809950351715088
+    },
+    {
+      "name": "truth-final-debilitate",
+      "command": [
+        "target/release/wfsim-truth",
+        "weapon=amprex",
+        "pool=serration,split_chamber,hellfire,infected_clip,stormbringer,rifle_elementalist",
+        "size=3",
+        "min=3",
+        "arcanes=primary_debilitate",
+        "runs=64",
+        "truth_runs=128",
+        "candidate_runs=8",
+        "duration=12",
+        "finalists=10",
+        "threads=1",
+        "max_jobs=5000"
+      ],
+      "exit": 0,
+      "accepted_exits": [
+        0
+      ],
+      "elapsed_seconds": 0.7875771522521973
+    }
+  ],
+  "preview": {
+    "complete": true,
+    "base": "http://127.0.0.1:8831",
+    "frozen_native_responses_equal": [
+      {
+        "id": "kuva_nukor_shield_simulation:elementalist_faction",
+        "exact": true,
+        "sha256": "65f76785da745fe690c5a68e2ed6d8f173431dcd038787e8138f8554ce8de247"
+      },
+      {
+        "id": "kuva_nukor_shield_record:elementalist_faction",
+        "exact": true,
+        "sha256": "99e111f3552123fc709cc71c2921e4a79dc3fe3eae84ecc89ac8d2ddd54b5967"
+      },
+      {
+        "id": "amprex_gas_electric_0_record:native_trace",
+        "exact": true,
+        "sha256": "f3fce09c37db8bdb9798308158576a0520cdbdb2ae0ba2007e8de76fdd597c00"
+      },
+      {
+        "id": "amprex_gas_electric_100_record:native_trace",
+        "exact": true,
+        "sha256": "56cf0b521d50ab54458de9d25a726c627078d6ac0aa194468604f58b63fafc52"
+      },
+      {
+        "id": "kuva_nukor_shield_record:native_trace",
+        "exact": true,
+        "sha256": "ff2d15b7e6e51ddca0ac593725deb01e16aa0db7c650a1b12045f7c2649b0f46"
+      },
+      {
+        "id": "kuva_nukor_shield_record:elementalist_faction:native_trace",
+        "exact": true,
+        "sha256": "6919c1f943f5e5e8085fe162cf75eef9836bed5305097212fbce063dd83a42a2"
+      }
+    ]
+  },
+  "browser_combat_record": {
+    "positive_assertions": 36,
+    "failed_assertions": 3,
+    "failed_scope": "40m fixture expected misses but produced zero",
+    "original_9a8c_misses": 0,
+    "previous_540_misses": 0,
+    "current_1c2647db_misses": 0,
+    "same_captured_request_replayed": true,
+    "arithmetic_and_decomposition_passed": true,
+    "raw_evidence": "target/native-order/qualified-retained/miss-fixture-original and miss-fixture-previous"
+  }
+}

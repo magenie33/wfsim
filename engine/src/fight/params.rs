@@ -101,6 +101,8 @@ pub struct Toggle {
 /// Parameters of the dummy engagement.
 #[derive(Debug, Clone)]
 pub struct FightParams {
+    /// Native pending queries take precedence over the supplied resolved-stat adapter.
+    pub critical_inputs: Option<crate::rules::critical::CriticalInputs>,
     pub weakness_bonus: Option<f64>,
     pub heavy_damage_mods_apply: bool,
     pub combo_damage_applies: bool,
@@ -408,6 +410,8 @@ pub struct FightParams {
     pub crit_chance_stack: Option<crate::model::StackSpec>,
     /// (1 + status-damage bonuses): scales every status payload value.
     pub status_damage_multiplier: f64,
+    /// Some is authoritative for native stat 367; None supplies the resolved multiplier.
+    pub native_status_damage_bonus: Option<f32>,
     /// Added to it for one element's procs (`ResolvedPanel::status_damage_of_type`).
     pub status_damage_of_type: Vec<(DamageType, f64)>,
     /// (element, 1 + Σ its bonuses) brackets for elemental DoT ticks.

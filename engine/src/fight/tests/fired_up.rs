@@ -89,6 +89,7 @@ fn pulls(panel: &crate::build::loadout::ResolvedPanel, n: usize) -> Vec<Vec<(cra
     let mut p = FightParams::from_panel(panel, &crate::arena::Arena::training(30.0), &ArcaneFx::none());
     p.foe.base_health = 1e15;
     p.base_crit_chance = 0.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.status_chance = 0.0;
     p.base_status_chance = 0.0;
     p.body_parts = mono_body(1.0);

@@ -432,6 +432,7 @@ pub fn run_once_traced(
     };
     // THE ENGAGEMENT AS IT OPENS — see [`open`]. Destructured by value, so
     // every name below is the one the setup gave it.
+    let native_seed = rng.state();
     let (fight, mut me) = open(params, Seat::WIELDER, rng, rec, &trace);
     // …AND THE OTHER MODE, opened the same way on a stream of its own that is
     // thrown away, so holding it moves no draw of the fight's. Only what it
@@ -485,6 +486,15 @@ pub fn run_once_traced(
         }
         let (_, other) = open(also, Seat(i + 1), rng, rec, &None);
         seats.push(other);
+    }
+
+    // Scene adapter: one native status stream, seeded from the replay state.
+    // Live seed installation and unrelated native consumers are outside this contract.
+    if seats.iter().any(|seat| seat.params.arcane.encumber_chance > 0.0
+        || seat.params.arcane.debilitate_chance > 0.0)
+    {
+        let stream = std::rc::Rc::new(std::cell::RefCell::new(crate::rules::rng::NativeRng::new(native_seed)));
+        for seat in &mut seats { seat.arc.shared_native_random = Some(stream.clone()); }
     }
 
     /// WHO ACTS NEXT — the earliest `next_t`, and a TIE GOES TO THE LOWER

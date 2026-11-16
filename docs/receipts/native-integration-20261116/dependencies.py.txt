@@ -1,0 +1,73 @@
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+root = Path(__file__).resolve().parents[3]
+p = root/'target/n07a/handoff'
+def git(*args): return subprocess.check_output(['git',*args],cwd=root)
+base = '16002f6c3dea127464afcbdb1518041c93d28039'
+tip = '00367efa4e2562a3613db70ee5b4effb05c9cb25'
+ordered = git('rev-list','--reverse',base+'..'+tip).decode().splitlines()
+scope = ('engine/','optimizer/','webapi/','wasm/','cli/','data/','tests/fixtures/client/')
+def selected(path): return path.startswith(scope) or path in ('Cargo.toml','Cargo.lock')
+def tree(sha):
+    result = {}
+    for raw in git('ls-tree','-r','-z',sha).split(b'\0'):
+        if not raw: continue
+        meta,path = raw.decode().split('\t',1)
+        mode,kind,blob = meta.split()
+        if selected(path): result[path] = (mode,blob)
+    return result
+current = tree(base)
+required = []
+for sha in ordered:
+    deltas = []
+    for raw in git('diff-tree','--no-commit-id','--raw','--abbrev=40','--no-renames','-r',sha).decode().splitlines():
+        meta,path = raw.split('\t',1)
+        if not selected(path): continue
+        old_mode,new_mode,old_blob,new_blob,status = meta[1:].split()
+        prior = current.get(path)
+        assert (prior is None and old_blob=='0'*40) or prior==(old_mode,old_blob), (sha,path,prior,old_blob)
+        deltas.append(path)
+        if status=='D': del current[path]
+        else: current[path]=(new_mode,new_blob)
+    if deltas: required.append(dict(sha=sha,paths=deltas))
+final = tree(tip)
+differences = [path for path in sorted(set(current)|set(final)) if current.get(path)!=final.get(path)]
+assert not differences
+main = git('rev-parse','origin/main').decode().strip()
+p0 = {}
+for path in ['scripts/engine_compare.py','scripts/check_engine_compare.py','tests/fixtures/engine-compare/calls.json']:
+    before = git('rev-parse',base+':'+path).decode().strip()
+    after = git('rev-parse',main+':'+path).decode().strip()
+    assert before==after,path
+    p0[path]=after
+
+manifest = json.loads((root/'target/irradiate/final-native/manifest.json').read_text())
+calculation = '32686c89efad3c06d1ee95fea1b2706f5ad094c4'
+blobs = {}
+for raw in git('ls-tree','-r','-z',calculation).split(b'\0'):
+    if raw:
+        meta,path=raw.decode().split('\t',1)
+        blobs[path]=meta.split()[2]
+proc = subprocess.Popen(['git','cat-file','--batch'],cwd=root,stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+source_mismatches=[]
+for path,expected in manifest['source_files'].items():
+    if path not in blobs:
+        source_mismatches.append(path)
+        continue
+    proc.stdin.write((blobs[path]+'\n').encode()); proc.stdin.flush()
+    header=proc.stdout.readline().decode().split()
+    size=int(header[-1]); content=proc.stdout.read(size); assert proc.stdout.read(1)==b'\n'
+    if hashlib.sha256(content).hexdigest()!=expected: source_mismatches.append(path)
+proc.stdin.close(); assert proc.wait()==0
+report=dict(base=base,tip=tip,observed_main=main,core_scope=list(scope)+['Cargo.toml','Cargo.lock'],
+    minimal_source_and_oracle_sequence=required,core_file_count=len(final),core_tree_exact=True,
+    core_scope_differences=differences,complete_envelope=ordered,p0_tools_identical_to_main=p0,
+    irradiate_baseline=dict(calculation_commit=calculation,snapshot_commit=manifest['commit'],
+        source_sha256=manifest['source_sha256'],source_file_count=len(manifest['source_files']),
+        source_map_exact=not source_mismatches,source_mismatches=source_mismatches))
+(p/'dependencies.json').write_text(json.dumps(report,indent=2)+'\n')
+print(json.dumps(dict(required=[r['sha'] for r in required],core_files=len(final),exact=True,
+    irradiate_source_map_exact=not source_mismatches,irradiate_source_mismatches=source_mismatches)))

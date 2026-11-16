@@ -62,6 +62,29 @@ use super::*;
 const NO_TRAITS: &[&str] = &[];
 
 #[test]
+fn irradiate_payload_survives_two_arcane_merge() {
+    let tenno = crate::data::tenno::default_tenno();
+    let echo = secondary("secondary_irradiate")
+        .expect("Irradiate exists")
+        .fx(5, crate::model::StackPolicy::AssumedMax, NO_TRAITS, tenno);
+    let primary = for_slot("primary", "primary_merciless")
+        .expect("the Arch-Gun can seat a primary arcane too")
+        .fx(5, crate::model::StackPolicy::AssumedMax, NO_TRAITS, tenno);
+    let payload = |fx: &ArcaneFx| {
+        (fx.echo_share, fx.echo_radius_m, fx.echo_needs_radiation_stacks)
+    };
+    assert_eq!(payload(&echo), (1.8, 7.0, 10));
+    for parts in [
+        vec![echo.clone()],
+        vec![primary.clone(), echo.clone()],
+        vec![echo.clone(), primary.clone()],
+        vec![primary, ArcaneFx::none(), echo.clone()],
+    ] {
+        assert_eq!(payload(&ArcaneFx::merged(&parts)), payload(&echo));
+    }
+}
+
+#[test]
 fn loads_all_26_secondary_arcanes() {
     let pool = secondary_pool();
     // 18 ordinary secondaries plus the EIGHT Kitgun arcanes — four Pax and
@@ -505,7 +528,7 @@ fn shiver_fortifier_encumber_empowered_cryogenic_resolve() {
     let en = secondary("secondary_encumber")
         .unwrap()
         .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::data::tenno::default_tenno());
-    assert!((en.encumber_chance - 0.24).abs() < 1e-9);
+    assert_eq!((en.encumber_chance as f32).to_bits(), 0x3e75c28e);
     let em = secondary("cascadia_empowered")
         .unwrap()
         .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::data::tenno::default_tenno());
@@ -657,4 +680,17 @@ fn an_arcane_that_scales_off_a_warframe_reads_the_fights_tenno() {
     // A SENTINEL fires under BaseOnly, where no conditional arms — there is
     // no Tenno standing behind a companion's gun either.
     assert!(bulwark.fx(5, StackPolicy::BaseOnly, NO_TRAITS, &frame(1500.0, 0.0, 1.0)).buffs.is_empty());
+}
+
+#[test]
+fn compiled_arcane_ranks_match_native_state_inputs() {
+    let data: serde_json::Value = serde_json::from_str(include_str!("../../../../../tests/fixtures/client/status-arcanes-2026-10-28.json")).unwrap();
+    for case in data["lifecycle"]["results"]["rank_cases"].as_array().unwrap() {
+        let id = if case["arcane"] == "Secondary Encumber" { "secondary_encumber" } else { "primary_debilitate" };
+        let def = crate::data::arcanes::secondary(id).unwrap();
+        let fx = def.fx(case["rank"].as_u64().unwrap() as u32, crate::model::StackPolicy::Emergent,
+            &[], crate::data::tenno::default_tenno());
+        let actual = if id == "secondary_encumber" { fx.encumber_chance } else { fx.debilitate_chance };
+        assert_eq!((actual as f32).to_bits(), (case["chance"].as_f64().unwrap() as f32).to_bits());
+    }
 }

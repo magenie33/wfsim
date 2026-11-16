@@ -26,8 +26,11 @@ effects:
   # 150%) critical chance." That is the same bracket Point Strike lands in, so
   # nothing new is needed to hold it.
   - kind: crit_chance_bonus
-    rank0: 0.50
-    rankMax: 2.00
+    UpgradeType: 244
+    OperationType: STACKING_MULTIPLY
+    Value: 0.5
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
   # THE SYNDICATE RADIAL. The payload lives in data/syndicates/sequence.yaml —
   # defined once, named here, exactly as Gilded Truth names Truth.

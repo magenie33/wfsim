@@ -23,6 +23,7 @@ use wfsim_engine::rules::scaling;
 
 fn dual_toxocyst_baseline() -> FightParams {
     FightParams {
+        critical_inputs: None,
         weakness_bonus: None,
         target_preference: None,
         overguard_damage_bonus: 0.0,
@@ -229,6 +230,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         weakpoint_open: None,
         crit_chance_stack: None,
         status_damage_multiplier: 1.0,
+        native_status_damage_bonus: None,
         status_damage_of_type: Vec::new(),
         elem_dot_bonus: Vec::new(),
         faction_multiplier: 1.0,

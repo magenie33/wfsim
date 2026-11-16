@@ -185,6 +185,7 @@ pub(super) fn lingering_of(
         melee_scaling: None,
         damage: r.damage,
         modified_base: r.modified_base,
+        critical_inputs: r.critical_inputs,
         crit_chance: r.crit_chance,
         crit_damage: r.crit_damage,
         status_chance: r.status_chance,

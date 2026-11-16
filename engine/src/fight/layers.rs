@@ -27,28 +27,9 @@ pub(super) fn watching<'a>(
     rec.is_on().then_some(breakdown)
 }
 
-/// What a layer leaves the running total at.
-#[wfsim_gas_macro::metered]
-pub(super) fn layer_out(l: &crate::record::Layer) -> f64 {
-    use crate::record::Layer::*;
-    match l {
-        Bracket { out, .. } | Quantize { out, .. } | Mul { out, .. } | Sum { out, .. } => *out,
-    }
-}
-
-/// THE FULL LEDGER OF A PELLET, in the GAME's order rather than the engine's.
-///
-/// The engine evaluates in a cheaper order and is entitled to: a non-elemental
-/// base bonus multiplies the quantization numerator AND its scale, so it
-/// commutes with the snap — which is exactly why Condition Overload can be
-/// applied after quantization and still be right. What that licence does NOT
-/// license is printing the rearrangement as if it were the formula, and that is
-/// what `x5.706 Condition Overload` was: `(1 + base + co) / (1 + base)`, a
-/// quotient with a multiplication sign in front of it.
-///
-/// So the bracket is a BRACKET here, with its terms, and the engine's quotient
-/// never reaches the page. The two agree on the product, which is the property
-/// `check_combat_record` already asserts of every row.
+/// Offensive explanation of the represented packet. Native stage traces and
+/// settled raw damage are authoritative; rearranged catalog equations do not
+/// establish a missing native consumer or its floating-point order.
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn pellet_layers(
@@ -93,9 +74,11 @@ pub(super) fn pellet_layers(
     // …and NAMED, because this one is exact: Condition Overload is the
     // mechanic, and the two numbers behind it are its rate and the count it
     // read.
-    push(Some(Factor::ConditionOverload), gunco.co, Some((gunco.rate, gunco.types)));
+    if gunco.behavior != crate::model::CoBehavior::Independent {
+        push(Some(Factor::ConditionOverload), gunco.co, Some((gunco.rate, gunco.types)));
+    }
     push(None, arcane_base_damage, None);
-    push(None, gunco.half_hp, None);
+    if gunco.behavior != crate::model::CoBehavior::Independent { push(None, gunco.half_hp, None); }
 
     let mut at = base;
     let mut out: Vec<Layer> = Vec::new();
@@ -146,7 +129,21 @@ pub(super) fn pellet_layers(
         // CONDITION OVERLOAD IS NOT HERE — it is a term of the bracket above,
         // and a weapon whose catalog row says `Multiplying` gets its own layer
         // rather than sharing this one.
-        if *factor == Factor::ConditionOverload || (v - 1.0).abs() <= 1e-12 {
+        if *factor == Factor::ConditionOverload {
+            if gunco.behavior == crate::model::CoBehavior::Independent {
+                let terms: Vec<_> = [
+                    Term { factor: Some(Factor::ConditionOverload), value: gunco.co, of: Some((gunco.rate, gunco.types)) },
+                    Term { factor: None, value: gunco.half_hp, of: None },
+                ].into_iter().filter(|term| term.value.abs() > 1e-12).collect();
+                if !terms.is_empty() {
+                    let sum = 1.0 + terms.iter().map(|term| term.value).sum::<f64>();
+                    at *= sum;
+                    out.push(Layer::Bracket { factor: Factor::ConditionOverload, terms, sum, out: at });
+                }
+            }
+            continue;
+        }
+        if (v - 1.0).abs() <= 1e-12 {
             continue;
         }
         at *= v;

@@ -826,7 +826,7 @@ than from memory — 22 spatial kinds across mods, arcanes and evolutions.
 |---|---|---|
 | `punch_through_bonus` | 17 mods + evolutions + rivens | `panel.punch_through_m` (MECHANICS §13) |
 | `blast_radius_bonus` | 4 mods (Firestorm family) | `radial.radius_m` and `lingering.radius_m` |
-| `aoe_echo` | 1 arcane (Secondary Irradiate) | `spread_from_echo` |
+| `aoe_echo` | 1 arcane (Secondary Irradiate) | source-backed count state; immediate direct-hit scene adapter; native producer/window/recipient binding open ([scope](SECONDARY_IRRADIATE.md)) |
 | `multishot_beyond_range` | 2 evolutions (Lone Enforcer) | `panel.multishot_beyond_range` |
 | `beam_range_bonus` / `beam_range_percent` | 3 mods + 3 evolutions | `ap.range_m`, a WALL — `gap_m <= ap.range_m` |
 | `accuracy_bonus` | 28 | the spread cone |
@@ -1063,3 +1063,22 @@ does not resolve arbitrary tier changes. Arbitrary faction/status operation
 eligibility and exact same-frame
 radial/lethal ordering remain unbound; ordinary proc and owner-measured
 source/landing rules apply.
+
+N07A ordinary generation uses native evaluator maxima, binary32 chance/CDF
+sampling, counters and the late target117 fold. Runtime per-enemy handler
+installation, upstream source365/scanned366 branches and later handler
+acceptance remain unbound. Explicit scene handler selections are independent
+of final immunity; unbound enemies retain the wiki eligibility fallback.
+Void/Tau alternatives do not claim recovered native proc ids. Supplied NumHits
+controls establish kernel independence, rather than beam-to-callback cadence.
+
+Native attribute folding is implemented for selected Shield and Arcane queries;
+ordinary build effects do not claim a complete native UpgradeManager. Primary
+Debilitate maps one simulator status submission to one notification. Its real
+weapon notification cadence, source eligibility and external geometry writers
+remain unbound. Encumber's conditional update uses positive elapsed simulation
+event time; the client's actual manager-update phase and complete global RNG
+consumer order remain unbound. The constructor, sampler, operation and rank
+fixtures cover their stated inputs, not the entire live lifecycle. See
+[ENGINE_MIGRATION.md](ENGINE_MIGRATION.md) for the dependency register and
+comparison contract.

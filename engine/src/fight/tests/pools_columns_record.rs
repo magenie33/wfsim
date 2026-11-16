@@ -360,7 +360,9 @@ fn the_damage_meters_parts_add_up_to_the_whole() {
         ..bare(DamageType::Slash)
     };
     p.base_crit_chance = 0.5;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.crit_multiplier = 2.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
     p.multishot = 2.4;
 
     let r = run_once(&p, &mut Rng::new(0x5EED));
@@ -393,7 +395,9 @@ fn the_record_adds_up_to_the_damage_total() {
         ..bare(DamageType::Slash)
     };
     p.base_crit_chance = 0.5;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.crit_multiplier = 2.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
     p.multishot = 2.4;
     // SOMETHING IN THE BASE-DAMAGE BRACKET. An unmodded weapon's ledger is
     // legitimately EMPTY — every factor is 1.0 and the base IS the raw —
@@ -437,6 +441,10 @@ fn the_record_adds_up_to_the_damage_total() {
         let mut at = d.base;
         for l in &d.layers {
             at = match l {
+                crate::record::Layer::Clamp { minimum, out, .. } => {
+                    assert_eq!(at.max(*minimum), *out);
+                    *out
+                }
                 crate::record::Layer::Bracket { terms, sum, out, .. } => {
                     let s: f64 = 1.0 + terms.iter().map(|t| t.value).sum::<f64>();
                     assert!(
@@ -709,7 +717,9 @@ fn every_frame_that_took_damage_wrote_a_row() {
         ..bare(DamageType::Slash)
     };
     p.base_crit_chance = 0.5;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.crit_multiplier = 2.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
     let rep = replay(&p, 0, 60);
     let rec = record(&p, 0, 0.0, f64::INFINITY, 1_000_000, 0);
     assert_eq!(rec.dropped(), 0, "the cap is not what this is measuring");

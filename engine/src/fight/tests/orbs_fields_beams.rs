@@ -172,8 +172,11 @@ fn an_orb_strike_on_an_eligible_head_folds_the_crit_in() {
     let run = |crit_bonus: bool| {
         let mut part = orb_part(280.0);
         part.crit_chance = 1.0;
+        if let Some(inputs) = part.critical_inputs.as_mut() { inputs.set_supplied_chance(part.crit_chance, part.base_crit_chance); }
         part.base_crit_chance = 1.0;
+        if let Some(inputs) = part.critical_inputs.as_mut() { inputs.set_supplied_chance(part.crit_chance, part.base_crit_chance); }
         part.crit_damage = 2.0;
+        if let Some(inputs) = part.critical_inputs.as_mut() { inputs.set_supplied_damage(part.crit_damage, part.base_crit_damage, None); }
         monte_carlo(
             &FightParams {
                 orb: Some(crate::build::loadout::ResolvedOrb {
@@ -806,6 +809,7 @@ fn field_ticks_roll_their_own_crit_and_report_as_field_damage() {
     let mk = |cc: f64| {
         let mut f = cloud(crate::model::FieldStacking::Stack);
         f.crit_chance = cc;
+        if let Some(inputs) = f.critical_inputs.as_mut() { inputs.set_supplied_chance(f.crit_chance, f.base_crit_chance); }
         FightParams {
             damage: DamageVector::default(),
             lingering: Some(f),
@@ -878,6 +882,7 @@ fn a_beam_merges_its_multishot_into_one_instance() {
         crit_multiplier: 1.0,
         base_crit_chance: 0.0,
         duration_seconds: 4.0,
+        arcane: ArcaneFx::none(),
         ..no_status()
     };
     // Doubling multishot doubles the damage either way…

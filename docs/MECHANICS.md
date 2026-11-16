@@ -479,6 +479,12 @@ different operations:
 ```
 effective_cc = base_cc × (1 + Σ crit_chance_multipliers) + Σ flat_crit_chance
 ```
+The native attribute query preserves negative effective values. The ordinary
+critical consumer returns tier0 without a draw when chance is nonpositive;
+positive integral chances also consume no fractional draw. A fractional
+positive chance uses the native discrete LCG sample and inclusive comparison.
+A supplied positive packet tier bypasses this roll. Scene stream installation
+and special forced-critical consumers have separate bindings.
 Crit chance is **location-independent** — headshots do not raise the roll
 (ability exceptions like Covenant's ×4-on-headshot aside); the head only
 multiplies the outcome (location ×3, and cd doubled in the tier formula
@@ -542,14 +548,23 @@ and headshot formulas below consume `cd_total`.
   critical damage multiplier ("Critical Tier Multiplier").
 - Colors: tier 1 yellow, tier 2 orange (= "big crit"), tier 3+ red; each tier
   above 3 adds an exclamation mark (up to three), the color stays red.
-- Scaling is **purely linear** in `k` and there is **no tier cap** — red crits
-  carry **no** hidden bonus beyond the formula; the color is cosmetic.
+- Red crits carry no hidden bonus beyond the formula. The ordinary roll
+  narrows its guaranteed integer component to a byte before its fractional
+  increment; a preset tier uses its separate input. In the native critical
+  consumer, subtraction, multiplication and addition are binary32, and the
+  resulting factor is floored at zero. A positive-tier hit can be weaker
+  than a noncritical hit when its final multiplier is below1.
 
-**Quantization** (wiki `Critical_Hit` §Quantization). The **base** crit damage
-multiplier is quantized to steps of `32/4095`:
+**Quantization** (native canonical scalar consumer; wiki `Critical_Hit`
+§Quantization). With F denoting a separate binary32 operation:
 ```
-quantized_base_cd = round(base_cd × 4095/32) × 32/4095
+index = int(F(F(clamp(base_cd, 0, 32) × 127.96875) + 0.5))
+quantized_base_cd = F(F(index) × F(32/4095))
 ```
+Nominal0.5 becomes0.5001221299171448; tier2 then has factor
+0.0002442598342895508. Pending scalar-operation transfer and every upstream
+installer are not established by the canonical-state fixture. Exact native
+critical/quantizer vectors are in `tests/fixtures/client/critical-2026-10-28.json`.
 Order matters: **flat/absolute** CD bonuses (e.g. Incarnon "Critical Parallel"
 +0.4) add into `base_cd` **before** quantization; **relative** (%) mods (e.g.
 Vital Sense) multiply **after**. Required for shot-by-shot parity with in-game
@@ -606,6 +621,15 @@ Unrounded Tick Damage = (Σ Sᵢ + 1) × C × M
 part and faction in it), `C` is 0.5 for Heat / Electricity / Toxin / Gas and
 0.35 for Slash, and `M` is the elemental, faction and status-damage bonuses.
 `Dot::accumulator_unit` is the `1`.
+
+Electricity and Gas retain a binary32 seed before their 0.5 coefficient.
+Their reducer starts at binary32 1, adds each retained seed in visitation
+order, then computes `max(1, f32(0.5 * accumulator))` before multiplying by
+`f32(1 + own_element_percentage)`. The local minimum precedes recipient
+mitigation. Status damage belongs to the stored seed query; it does not scale
+the initial 1 in this reducer. `rules/status/radial.rs` binds the original
+packet-context group and transfer vectors. Other DoT families retain their
+separate measured policy.
 
 - **Once per TICK GROUP.** Heat, Electricity and Gas consolidate, so one `1`
   however many stacks fold in; Slash and Toxin tick independently and each
@@ -776,16 +800,37 @@ element procs are weighted, not uniform.
   A component quantized to zero has no random draw weight; there is no
   minimum-one-quantum floor. Each attack part owns its composition, including
   projectile variants, stance multipliers, live elemental additions, spread
-  targets and field ticks. Immunity excludes a type and renormalizes the rest.
+  targets and field ticks. The selected handler graph determines eligibility;
+  the final immunity mask does not enter ordinary generation (N07A below).
   The unquantized vector remains the input to quantization and the ledger's
   breakdown; measured pre-quantization Extra Hit brackets also read it (M40).
   It is not a second source of status weights.
   [M130](measurements/M130-status-weights-before-quantization.md) records the
   Focus-controlled observations and their limits; no exact proc frequency was
   measured.
-- **SC > 100%**: `floor(SC)` guaranteed rolls + `frac(SC)` chance of one
-  more; **each roll's type is drawn independently** (the same type can
-  repeat within one hit).
+- **Ordinary generation (N07A)** uses binary32 packet chance and an inclusive
+  chance test on every attempted unit, including guaranteed units. While
+  local `p > 0`, draw native U24 and stop if `u > p`. On success, draw another
+  U24, select a type and subtract float32 one from local `p`. Stored packet
+  chance is unchanged. The first successful chance lazily evaluates weights;
+  every success draws a type even when all weights are zero. Selection is
+  with replacement; existing byte counters increment with saturation at255.
+  Opaque packet byte+0x241 skips this sampler; NumHits+0x244 does not scale it.
+  `ordinary-proc-2026-10-28.json` pins 1895 original-client vectors, including
+  all-immunity complete-return controls and nine late target117 query controls.
+  These bound generation, rather than the subsequent handler applications.
+- **ProcEvaluator weights (N07A)** sum selected positive binary32 damage
+  components in native index order, then multiply by `WeightMultiplier`.
+  `DamageTypes` combines explicit components with physical/base/compound/any
+  selectors, adding a matching component once. A handler takes the maximum
+  evaluator result from positive zero; an absent handler contributes zero.
+  Total and cumulative weights fold in proc-id order, with selection at the
+  first positive weight whose cumulative sum is at least `U24 × total`.
+  The engine's scene adapter accepts an explicit handler selection. Unbound
+  enemies retain the wiki eligibility fallback, excluding scene-immune types
+  from that selection. This policy does not recover native installation or
+  establish that a final immunity bit removes a handler. Void/Tau alternatives
+  remain separate; their native proc ids are unbound.
 - **Stack pools are SHARED per target** (high-confidence model): the pool and its cap live on the target — 10 players'
   Magnetic procs compete for the same 10 slots, FIFO across all sources;
   effect magnitudes (armor strip %, shields amp) read the target's total
@@ -816,18 +861,18 @@ element procs are weighted, not uniform.
   direct hit forces Impact; the radial part does not). Special cases can
   even **bypass stack caps**: Evensong applies 7 Weakened procs on hit
   past the normal 5-stack limit.
-- Per-hit proc set = `forced_list + N typed draws`,
-  `N = floor(SC) + Bernoulli(frac(SC))`. Average procs per trigger pull
-  = `Multishot × (forced_count + SC)` (official formula).
+- Per-hit proc set = `forced_list + N typed draws`, where N follows the
+  ordinary loop above. The statistical approximation for average procs per
+  trigger pull is `Multishot × (forced_count + SC)` (official formula).
   Example (Astilla-like, forced Impact on direct, impact share `w`,
   `SC ≤ 1`): P(1 Stagger stack) = `1 − SC·w`, P(2 stacks) = `SC·w`,
   P(1 stack + another proc type) = `SC·(1−w)`; the explosion instance
   rolls independently with its own vector.
-- **Status immunity renormalizes the type draw** (wiki `Status_Effect`
-  §Status Immunity Interactions): types the target is status-immune to
-  are EXCLUDED from the draw and the remaining weights renormalize (the
-  roll is never wasted). Independent of damage-type immunity.
-  Implemented in `rules::status::draw_proc_type`.
+- **Final status immunity** filters applications after generation. It does
+  not renormalize weights or erase raw counters (N07A). Missing handlers are
+  distinct from final immunity. Landed-status buffs, records and Melee
+  Influence use the application filter; Primary Debilitate reads raw presence.
+  M87 confirms Radiation cannot land, without measuring its generated weight.
 - **Independent procs** exist outside the damage-type system (Knockdown,
   Lifted, Ragdoll, Stun, Sleep, Silence, Slow, Disarmed, Big Stagger,
   Microwave — see `data/debuffs/independent_procs.yaml`); Knockdown /
@@ -860,7 +905,9 @@ element procs are weighted, not uniform.
   receives by `1 + 0.10 × stacks`, ten at most, 8 s each on its own clock,
   the eleventh replacing the oldest. Every rolled chance aimed at the body
   takes it, a forced proc does not, and the hit that lands a stack rolls
-  without it (`DebuffState::received_status_chance`).
+  without it (`DebuffState::received_proc_chance`). The scene selects Tau's
+  `AVATAR_PROC_CHANCE_VULNERABILITY` entries; the native late query folds them
+  in binary32 before ordinary generation. Source365 is not queried again.
 - **Negative status duration** (Riven, past −100%): all duration/DoT procs
   are nullified; instant procs still occur.
 - **DoT** effects are DebuffBar entries with a `dot` sub-block whose stacks
@@ -1102,6 +1149,14 @@ its proc ticks for 39, half of 78; a syndicate blast's Gas cloud burns off the
 blast's own damage, not the weapon's. Which of the two Primary Debilitate's
 split falls under is OPEN and is the whole of MEASUREMENTS **M33** — it reads
 `ModifiedBase` here.
+
+Primary Debilitate's [client callback contract](PRIMARY_DEBILITATE.md) visits each qualifying compound type once per submitted
+status packet. Its incoming byte counter tests presence, so twenty Magnetic
+counters in one packet give one selection. Chosen basic types coalesce in one
+fresh scalar-copy packet. Fresh body landing is independent of the inherited
+scalar factors and M37's additional Attrition roll. Notification cadence and
+the event-time Encumber condition adapter are scoped in
+[ENGINE_MIGRATION.md](ENGINE_MIGRATION.md).
 
 **A RADIAL BELONGS TO THE FORM THAT DECLARES ONE.** An Incarnon cycle fires two
 weapons in turn, and every per-shot property is read off the ACTIVE form — the
@@ -3687,7 +3742,7 @@ cycle, which is why it is the weapon this was built against.
 | **the explosion** | every body the sphere touches | that body's own falloff, at its nearest point |
 | **the lingering cloud** | every body standing in it, every tick | the same, for as long as the cloud lasts |
 | **tendrils** | one body each, nearest the RETICLE, inside a cone and a reach | a WHOLE instance — they are extra beams, not a spread |
-| **an echo** | every body near the one that was hit | a flat share of THAT hit — Secondary Irradiate's 80% to 180% |
+| **an echo** | other bodies near the body that was hit | queried source seed × configured coefficient × consumed notification count; [scene binding](SECONDARY_IRRADIATE.md) |
 
 The fourth is the odd one and the Ocucor is its only member. A tendril is not a
 share of the shot: *"their base damage equals the primary beam's, and they roll

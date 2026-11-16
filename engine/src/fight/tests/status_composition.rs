@@ -19,7 +19,9 @@ fn ocucor(amount: f64, crowd: bool) -> FightParams {
     p.damage = residual(amount);
     p.status_chance = 10.0;
     p.base_crit_chance = 0.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.crit_multiplier = 1.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
     if crowd {
         p.others = vec![crate::formation::FoeSpec {
             id: "other".into(), params: Foe::training_dummy(), body_parts: mono_body(1.0),
@@ -160,6 +162,7 @@ fn explosion_and_its_spread_use_the_explosions_quantized_composition() {
     p.damage = residual(0.0);
     p.status_chance = 0.0;
     p.base_crit_chance = 0.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.others = vec![crate::formation::FoeSpec {
         id: "other".into(), params: Foe::training_dummy(), body_parts: mono_body(1.0),
         at: crate::rules::space::Vec2::new(1.0, 1.0),
@@ -169,6 +172,7 @@ fn explosion_and_its_spread_use_the_explosions_quantized_composition() {
     rad.modified_base = 11.0;
     rad.status_chance = 10.0;
     rad.crit_chance = 0.0;
+    if let Some(inputs) = rad.critical_inputs.as_mut() { inputs.set_supplied_chance(rad.crit_chance, rad.base_crit_chance); }
     rad.radius_m = 10.0;
     let (r, rec) = traced(&p);
     assert_eq!(proc_count(&rec, DamageType::Puncture, 0), 0);
@@ -191,6 +195,7 @@ fn field_ticks_use_the_fields_quantized_composition() {
     field.modified_base = 11.0;
     field.status_chance = 10.0;
     field.crit_chance = 0.0;
+    if let Some(inputs) = field.critical_inputs.as_mut() { inputs.set_supplied_chance(field.crit_chance, field.base_crit_chance); }
     field.tick_rate = 100.0;
     field.duration_seconds = 30.0;
     let (r, rec) = traced(&p);
@@ -222,7 +227,9 @@ fn melee_swings_use_quantized_status_weights() {
     p.dot_modified_base = Some(11.0);
     p.status_chance = 100.0;
     p.base_crit_chance = 0.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.crit_multiplier = 1.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
     let (r, rec) = traced(&p);
     assert_eq!(proc_count(&rec, DamageType::Puncture, 0), 0);
     assert!(r.procs > 0, "other quantized types still proc");
@@ -246,6 +253,7 @@ fn laetum_direct_damage_matches_all_three_measurements_without_a_component_floor
             p.dot_modified_base = Some(160.0 * b);
             p.base_damage_bonus = base_bonus;
             p.base_crit_chance = cc;
+            if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
             p.status_chance = 0.0;
             let (_, rec) = traced(&p);
             let hits: Vec<_> = rec.events().iter().filter_map(|e| match &e.kind {

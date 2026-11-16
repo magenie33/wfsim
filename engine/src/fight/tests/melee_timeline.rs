@@ -64,7 +64,7 @@ fn all_six_gemini_cross_modes_follow_the_package_events_and_recovery() {
         near(&own_contacts(&p), &repeated);
         let faster = fixture(form, &["fury"]);
         if form != "heavy" {
-            near(&own_contacts(&faster), &repeated.iter().map(|t| t / 1.3).collect::<Vec<_>>());
+            near(&own_contacts(&faster), &repeated.iter().map(|t| t / f64::from(1.3_f32)).collect::<Vec<_>>());
         }
         assert_eq!(p.combo_script.iter().filter(|h| h.ends_input()).count(), tree["contexts"][context].as_sequence().unwrap().len());
     }

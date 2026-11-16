@@ -28,8 +28,11 @@ effects:
   # — but the lock is then not modelled at all, and the mod
   # kept paying its damage on a full-auto weapon it cannot go on.
   - kind: base_damage_bonus
-    rank0: 0.4
-    rankMax: 2.4          # DE's card at max rank: +240% Damage
+    UpgradeType: 253
+    OperationType: STACKING_MULTIPLY
+    Value: 0.40000001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   - kind: punch_through_bonus
     rank0: 0.25
     rankMax: 1.5          # +1.5 Punch Through

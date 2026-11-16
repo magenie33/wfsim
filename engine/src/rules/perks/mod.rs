@@ -13,6 +13,7 @@
 
 pub mod frenzy;
 pub mod secondary_enervate;
+pub mod secondary_irradiate;
 
 use crate::rules::buffs::BuffBar;
 use crate::rules::sim::Event;

@@ -2068,7 +2068,7 @@ mod form_tests {
         let base_of = |r: &Value| r["panel"]["total"].as_f64().expect("a base damage");
         assert!((base_of(&bow) - 184.0).abs() < 1e-6, "{}", base_of(&bow));
         assert_eq!(bow["panel"]["multishot"], json!(3.0));
-        assert_eq!(bow["panel"]["crit_chance"], json!(0.35));
+        assert_eq!(bow["panel"]["crit_chance"], json!(f64::from(0.35_f32)));
 
         // Both bow forms are the same weapon: half the base damage per arrow,
         // and the tap fires more often for it (no draw, wiki Fire Rate's bow

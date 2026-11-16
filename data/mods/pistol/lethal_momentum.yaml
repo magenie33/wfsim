@@ -12,8 +12,11 @@ description: "+X% Projectile Speed"
 # as instant-hit at a fixed range, so flight time is unmodeled.
 effects:
   - kind: projectile_speed_bonus
-    rank0: 0.1
-    rankMax: 0.4
+    UpgradeType: 380
+    OperationType: STACKING_MULTIPLY
+    Value: 0.1
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Lethal_Momentum

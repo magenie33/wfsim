@@ -219,11 +219,17 @@ fn the_new_element_participates_in_the_status_weight_draw() {
         ..fixture("anarchs")
     };
     boosted.foe.status_immunities.push(DamageType::Impact);
+    boosted.foe.proc_handlers = Some(crate::rules::status::SceneProcHandlers::all());
     let plain = FightParams { adaptive_element: None, ..boosted.clone() };
     let (_, before) = traced(&plain);
-    let (_, after) = traced(&boosted);
     assert!(!procs(&before, 0).contains(&DamageType::Electricity));
-    assert_eq!(procs(&after, 0), [DamageType::Electricity]);
+    let mut electric = 0;
+    for seed in 0..256 {
+        let mut after = Record::window(0.0, boosted.duration_seconds, 10_000, 0);
+        run_once_traced(&boosted, &mut Rng::new(seed), None, &mut after);
+        electric += usize::from(procs(&after, 0).contains(&DamageType::Electricity));
+    }
+    assert!((100..156).contains(&electric), "new element keeps its half of generated weight: {electric}");
 }
 
 #[test]
@@ -268,7 +274,9 @@ fn venato(form: &str, rank: u32) -> FightParams {
     };
     let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
     p.base_crit_chance = 0.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.crit_multiplier = 1.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
     p.status_chance = 0.0;
     p.base_status_chance = 0.0;
     p.forced_procs.clear();

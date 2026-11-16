@@ -1,25 +1,38 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Status / proc layer — pipeline layer [5], first slice: proc **selection**.
-//!
-//! Rules (wiki `Status_Effect`; docs/MECHANICS.md §6 — unverified until
-//! golden-tested):
-//! - The listed status chance `SC` rolls **per pellet/hit**. `SC > 100%`
-//!   gives `floor(SC)` guaranteed rolls plus a `fraction(SC)` chance of one more.
-//! - Only a successful roll draws a **type**, weighted by the hit's (modded)
-//!   quantized damage vector: `P(type) = damage / total` (MECHANICS §6).
-//!   Draws are independent — the same type can repeat within one hit.
-//! - **Forced procs** are weapon-data attributes declared per attack part.
-//!   They are independent of both `SC` and the distribution, and are appended
-//!   **outside** the rolling pipeline ("not the same as 100% status chance").
-//!
-//! Official average: `procs per trigger pull = multishot × (forced + SC)`.
-//!
-//! What a proc *does* (the debuff applied to the target's DebuffBar) is
-//! defined in `data/debuffs/` — this module only decides *which*
-//! procs a hit produces.
+//! Ordinary proc generation and scene application projections (MECHANICS §6).
+//! N07A binds chance/CDF arithmetic and counters; the scene supplies handlers.
+
+mod packet;
+pub mod ordinary;
+pub mod radial;
+pub use packet::{ProcCounters, ProcType};
 
 use crate::rules::damage::{DamageType, DamageVector};
 use crate::rules::rng::Rng;
+
+/// Scene-selected handlers; Void/Tau alternatives do not carry guessed native ids.
+#[derive(Debug, Clone, Copy)]
+pub struct SceneProcHandlers {
+    pub ordinary_mask: u32,
+    pub void: bool,
+    pub tau: bool,
+}
+
+#[wfsim_gas_macro::metered]
+impl SceneProcHandlers {
+    pub fn all() -> Self { Self { ordinary_mask: ProcCounters::ORDINARY_MASK, void: true, tau: true } }
+
+    /// Wiki scene eligibility fallback, pending native per-enemy graph bindings.
+    pub fn from_scene_immunity(immune: &[DamageType]) -> Self {
+        let mut handlers = Self::all();
+        for &kind in immune {
+            if let Some(kind) = ProcType::from_damage_type(kind) { handlers.ordinary_mask &= !(1 << kind.id()); }
+        }
+        handlers.void = !immune.contains(&DamageType::Void);
+        handlers.tau = !immune.contains(&DamageType::Tau);
+        handlers
+    }
+}
 
 /// MagneticDamageProc's effective child coefficient is float32(0.005).
 /// M8 native pool fixtures: multiply pool then count in f32, truncate once.
@@ -55,348 +68,126 @@ pub fn magnetic_break_proxy(proxies: &[HitProxy]) -> Option<HitProxy> {
 #[wfsim_gas_macro::metered]
 pub fn magnetic_break_proxy_source(source: f64, weapon_weakness_bonus: f64, proxy: HitProxy) -> f64 {
     let Some(damage_multiplier) = proxy.damage_multiplier else { return source; };
+    (magnetic_break_normalized_source(source, weapon_weakness_bonus, proxy) * damage_multiplier as f32) as f64
+}
+
+/// The parent query consumes the rounded source before the generic proxy modifier.
+#[wfsim_gas_macro::metered]
+pub fn magnetic_break_normalized_source(source: f64, weapon_weakness_bonus: f64, proxy: HitProxy) -> f32 {
+    if proxy.damage_multiplier.is_none() { return source as f32; }
     let divisor = 1.0_f32 + (weapon_weakness_bonus as f32).max(0.0) * proxy.weakness as f32;
-    let normalized = ((source as f32 / divisor) + 0.5_f32).floor();
-    (normalized * damage_multiplier as f32) as f64
+    ((source as f32 / divisor) + 0.5_f32).floor()
 }
 
 
-/// Number of rolled (non-forced) procs for one hit at `status_chance`
-/// (fraction; may exceed 1.0).
+/// Scene projection: selected default13 graph plus separate Void and Tau statuses.
+/// Native handler installation and special proc ids remain unbound (N07A).
 #[wfsim_gas_macro::metered]
-pub fn roll_proc_count(status_chance: f64, rng: &mut Rng) -> u32 {
-    let sc = status_chance.max(0.0);
-    sc.floor() as u32 + rng.chance(sc.fract()) as u32
-}
-
-/// Draw one proc type, weighted by damage share. Types the target is
-/// status-immune to are EXCLUDED and the remaining weights renormalize
-/// (wiki `Status_Effect` §Status Immunity Interactions) - immunity shifts
-/// probability onto the other types instead of wasting the roll.
-/// `None` if no eligible type has positive damage.
-#[wfsim_gas_macro::metered]
-pub fn draw_proc_type(
-    vector: &DamageVector,
-    immune: &[DamageType],
-    rng: &mut Rng,
-) -> Option<DamageType> {
-    let eligible = |t: DamageType| !immune.contains(&t);
-    let total: f64 = vector
-        .iter_nonzero()
-        .filter(|&(t, _)| eligible(t))
-        .map(|(_, a)| a)
-        .sum();
-    if total <= 0.0 {
-        return None;
+fn scene_weights(vector: &DamageVector, handlers: SceneProcHandlers) -> [f32; 32] {
+    let mut weights = [0.0; 32];
+    for (index, weight) in weights.iter_mut().enumerate().take(13) {
+        if handlers.ordinary_mask & (1 << index) == 0 { continue; }
+        // One explicit component and unit WeightMultiplier reduce to its positive value.
+        let kind = ProcType::new(index as u8).expect("ordinary index").damage_type().expect("ordinary type");
+        let component = vector.get(kind) as f32;
+        if component > 0.0 { *weight = component; }
     }
-    let mut x = rng.next_f64() * total;
-    let mut last = None;
-    for (t, amount) in vector.iter_nonzero().filter(|&(t, _)| eligible(t)) {
-        x -= amount;
-        last = Some(t);
-        if x < 0.0 {
-            break;
+    // Scene alternatives stay outside ProcCounters; their native proc ids are unbound.
+    if handlers.void { weights[30] = (vector.get(DamageType::Void) as f32).max(0.0); }
+    if handlers.tau { weights[31] = (vector.get(DamageType::Tau) as f32).max(0.0); }
+    weights
+}
+
+/// Raw generated statuses. Immunity is checked at application, after counters exist.
+/// Forced entries retain scene order; accepted ordinary draws saturate per type.
+#[wfsim_gas_macro::metered]
+pub fn procs_for_hit(forced: &[DamageType], status_chance: f64,
+    vector: &DamageVector, handlers: SceneProcHandlers, rng: &mut Rng) -> Vec<DamageType>
+{
+    let mut procs = forced.to_vec();
+    let mut counters = ProcCounters::from_types(forced.iter().copied());
+    let special = [DamageType::Void, DamageType::Tau];
+    let mut special_counts = special.map(|kind| forced.iter().filter(|&&ty| ty == kind).count().min(255));
+    ordinary::sample(status_chance as f32, 0, || scene_weights(vector, handlers), || rng.unit(), |index| {
+        let Some(index) = index else { return; };
+        if index >= 30 {
+            let count = &mut special_counts[index - 30];
+            if *count < 255 { procs.push(special[index - 30]); *count += 1; }
+        } else {
+            let kind = ProcType::new(index as u8).expect("proc index");
+            if counters.count(kind) < 255 {
+                counters.add(kind, 1);
+                if let Some(dtype) = kind.damage_type() { procs.push(dtype); }
+            }
         }
-    }
-    last
-}
-
-/// The full proc set of one hit: forced procs first (declared by the weapon's
-/// attack part), then `roll_proc_count` weighted draws.
-///
-/// AN IMMUNITY BEATS A GUARANTEE. A forced proc of a type the target cannot
-/// take does not land — the game shows the proc icon on the damage number and
-/// the status never appears on the enemy (with Valence
-/// Formation's forced Radiation on a Radiation-immune unit). Only the DISPLAY
-/// is fooled; nothing is applied, and the random draws below renormalise
-/// exactly as they already did.
-///
-/// Filtered here rather than at each caller because "forced" arrives from three
-/// places — the attack part, an extra hit, a syndicate radial — and an immunity
-/// that held for two of them would be the worst kind of half-rule.
-#[wfsim_gas_macro::metered]
-pub fn procs_for_hit(
-    forced: &[DamageType],
-    status_chance: f64,
-    vector: &DamageVector,
-    immune: &[DamageType],
-    rng: &mut Rng,
-) -> Vec<DamageType> {
-    let mut procs: Vec<DamageType> =
-        forced.iter().copied().filter(|t| !immune.contains(t)).collect();
-    for _ in 0..roll_proc_count(status_chance, rng) {
-        if let Some(t) = draw_proc_type(vector, immune, rng) {
-            procs.push(t);
-        }
-    }
+    });
     procs
+}
+
+/// Scene consumers that react to landed statuses share the final-immunity filter.
+#[wfsim_gas_macro::metered]
+pub fn applied_procs<'a>(generated: &'a [DamageType], immune: &'a [DamageType])
+    -> impl Iterator<Item = DamageType> + 'a
+{
+    generated.iter().copied().filter(|kind| !immune.contains(kind))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// The worked example from MECHANICS.md §6: SC 40%, vector
-    /// Impact 20 / Slash 30 / Heat 25 / Toxin 15 / Corrosive 10,
-    /// forced Stagger (Impact) on every hit.
-    fn example_vector() -> DamageVector {
-        DamageVector::new()
-            .with(DamageType::Impact, 20.0)
-            .with(DamageType::Slash, 30.0)
-            .with(DamageType::Heat, 25.0)
-            .with(DamageType::Toxin, 15.0)
-            .with(DamageType::Corrosive, 10.0)
-    }
-
-    /// THE WIKI'S OWN WORKED EXAMPLE for a status immunity, reproduced to the
-    /// digit. VERBATIM (`Status_Effect` §Status Immunity Interactions):
-    ///
-    /// > Proc type chances are not altered by enemy resistances or weaknesses
-    /// > to the damage components used in their computation; however, they are
-    /// > modified by enemy status immunities. When an attack procs a status
-    /// > effect on an enemy which is immune to a particular proc type, the
-    /// > respective damage type is excluded from proc type chance calculations
-    /// > for status effects on that enemy.
-    ///
-    /// Its table, for Impact 20 / Puncture 5 / Slash 10 / Heat 25 / Corrosive
-    /// 50 against a unit immune to the Corrosion STATUS:
-    ///
-    /// | Impact | Puncture | Slash | Heat | Corrosive |
-    /// | 33.33% | 8.33% | 16.67% | 41.67% | N/A |
-    ///
-    /// i.e. the denominator loses the 50 and becomes 60. And the clause that
-    /// keeps the two mechanics apart is in the same paragraph: this holds
-    /// "regardless of whether that enemy is also immune to Corrosive damage".
     #[test]
-    fn the_wikis_worked_example_for_a_status_immunity_reproduces() {
-        let v = DamageVector::new()
-            .with(DamageType::Impact, 20.0)
-            .with(DamageType::Puncture, 5.0)
-            .with(DamageType::Slash, 10.0)
-            .with(DamageType::Heat, 25.0)
-            .with(DamageType::Corrosive, 50.0);
-        let immune = [DamageType::Corrosive];
-
-        let n = 400_000;
-        let mut rng = Rng::new(0xC0FFEE);
-        let (mut imp, mut pun, mut sla, mut hea, mut cor) = (0u32, 0u32, 0u32, 0u32, 0u32);
-        for _ in 0..n {
-            match draw_proc_type(&v, &immune, &mut rng) {
-                Some(DamageType::Impact) => imp += 1,
-                Some(DamageType::Puncture) => pun += 1,
-                Some(DamageType::Slash) => sla += 1,
-                Some(DamageType::Heat) => hea += 1,
-                Some(DamageType::Corrosive) => cor += 1,
-                _ => {}
-            }
-        }
-        assert_eq!(cor, 0, "N/A means it never draws, not that it draws rarely");
-        let pct = |k: u32| k as f64 / n as f64 * 100.0;
-        for (got, want, name) in [
-            (pct(imp), 33.33, "Impact"),
-            (pct(pun), 8.33, "Puncture"),
-            (pct(sla), 16.67, "Slash"),
-            (pct(hea), 41.67, "Heat"),
-        ] {
-            assert!(
-                (got - want).abs() < 0.3,
-                "{name}: {got:.2}% against the wiki's {want}%"
-            );
-        }
-
-        // …AND THE DAMAGE COLUMN DOES NOT TOUCH ANY OF IT. The same vector
-        // against no immunity is the unrenormalised table, which is what makes
-        // the two mechanics separable: a x0 Corrosive column would change what
-        // the hit DEALS and leave these five numbers exactly as they are.
-        let mut rng = Rng::new(0xC0FFEE);
-        let mut cor_free = 0u32;
-        for _ in 0..n {
-            if draw_proc_type(&v, &[], &mut rng) == Some(DamageType::Corrosive) {
-                cor_free += 1;
-            }
-        }
-        assert!(
-            (pct(cor_free) - 45.45).abs() < 0.3,
-            "without the immunity Corrosive is 50/110 = 45.45%, got {:.2}%",
-            pct(cor_free)
-        );
-    }
-
-    /// AN IMMUNITY BEATS A GUARANTEE, and the random draws are untouched by it.
-    ///
-    /// Valence Formation forces a Radiation proc on every hit. Against a
-    /// Radiation-immune unit the game still draws the proc icon beside the
-    /// damage number and the status never lands — so the
-    /// forced list is filtered by the same immunity the draw already obeys.
-    ///
-    /// The second half is the one worth pinning: the ordinary rolls behave
-    /// exactly as they do without a forced proc at all. An implementation that
-    /// "used up" the forced proc, or that let it through and then removed the
-    /// status later, would move the other types' frequencies.
-    #[test]
-    fn a_forced_proc_of_an_immune_type_never_lands() {
-        let v = DamageVector::new()
-            .with(DamageType::Radiation, 50.0)
-            .with(DamageType::Slash, 50.0);
-        let forced = [DamageType::Radiation];
-        let immune = [DamageType::Radiation];
-
-        let mut rng = Rng::new(0x7A1E);
-        let (mut rads, mut slashes, mut total) = (0u32, 0u32, 0u32);
-        for _ in 0..20_000 {
-            let procs = procs_for_hit(&forced, 0.40, &v, &immune, &mut rng);
-            total += procs.len() as u32;
-            rads += procs.iter().filter(|&&t| t == DamageType::Radiation).count() as u32;
-            slashes += procs.iter().filter(|&&t| t == DamageType::Slash).count() as u32;
-        }
-        assert_eq!(rads, 0, "the guarantee does not beat the immunity");
-        assert_eq!(slashes, total, "…and Slash takes every roll, renormalised");
-
-        // THE CONTROL: the same hit on a unit that CAN take it gets the forced
-        // proc on every single hit, so the count is at least one per hit.
-        let mut rng = Rng::new(0x7A1E);
-        let mut rads = 0u32;
-        for _ in 0..20_000 {
-            rads += procs_for_hit(&forced, 0.40, &v, &[], &mut rng)
-                .iter()
-                .filter(|&&t| t == DamageType::Radiation)
-                .count() as u32;
-        }
-        assert!(rads >= 20_000, "forced means every hit: {rads}");
-    }
-
-    #[test]
-    fn worked_example_frequencies_match_hand_computation() {
-        let v = example_vector();
-        let forced = [DamageType::Impact];
-        let mut rng = Rng::new(0xE1E);
-        let n = 200_000;
-        let (mut two_impact, mut slash, mut heat, mut toxin, mut corr, mut only_forced) =
-            (0u32, 0u32, 0u32, 0u32, 0u32, 0u32);
-        let mut total_procs = 0u64;
-
-        for _ in 0..n {
-            let procs = procs_for_hit(&forced, 0.40, &v, &[], &mut rng);
-            total_procs += procs.len() as u64;
-            // The forced Impact is always present.
-            assert_eq!(procs[0], DamageType::Impact);
-            match procs.len() {
-                1 => only_forced += 1,
-                2 => match procs[1] {
-                    DamageType::Impact => two_impact += 1,
-                    DamageType::Slash => slash += 1,
-                    DamageType::Heat => heat += 1,
-                    DamageType::Toxin => toxin += 1,
-                    DamageType::Corrosive => corr += 1,
-                    other => panic!("impossible proc type {other:?}"),
-                },
-                l => panic!("impossible proc count {l}"),
-            }
-        }
-
-        let f = |c: u32| c as f64 / n as f64;
-        // Hand-computed: 60% forced-only; rolled = SC × share:
-        // 8% double-Stagger, 12% Bleed, 10% Ignite, 6% Poison, 4% Corrosion.
-        assert!((f(only_forced) - 0.60).abs() < 0.01, "{}", f(only_forced));
-        assert!((f(two_impact) - 0.08).abs() < 0.01, "{}", f(two_impact));
-        assert!((f(slash) - 0.12).abs() < 0.01, "{}", f(slash));
-        assert!((f(heat) - 0.10).abs() < 0.01, "{}", f(heat));
-        assert!((f(toxin) - 0.06).abs() < 0.01, "{}", f(toxin));
-        assert!((f(corr) - 0.04).abs() < 0.01, "{}", f(corr));
-        // Official average: forced + SC = 1.4 procs per hit.
-        let avg = total_procs as f64 / n as f64;
-        assert!((avg - 1.4).abs() < 0.01, "avg {avg}");
-    }
-
-    #[test]
-    fn status_chance_over_100_percent_rolls_floor_plus_fraction() {
+    fn scene_counts_have_the_native_mean_and_replacement() {
+        let vector = DamageVector::new().with(DamageType::Heat, 1.0);
         let mut rng = Rng::new(7);
-        let n = 100_000;
-        let mut sum = 0u64;
-        for _ in 0..n {
-            let c = roll_proc_count(1.4, &mut rng);
-            assert!(c == 1 || c == 2, "count {c}");
-            sum += c as u64;
+        let mut count = 0;
+        for _ in 0..100_000 {
+            let procs = procs_for_hit(&[], 1.4, &vector, SceneProcHandlers::all(), &mut rng);
+            assert!(procs.len() == 1 || procs.len() == 2);
+            assert!(procs.iter().all(|&kind| kind == DamageType::Heat));
+            count += procs.len();
         }
-        let avg = sum as f64 / n as f64;
-        assert!((avg - 1.4).abs() < 0.01, "avg {avg}");
+        assert!((count as f64 / 100_000.0 - 1.4).abs() < 0.01);
     }
 
     #[test]
-    fn forced_procs_ignore_status_chance_and_distribution() {
-        // SC 0 and an empty damage vector: the forced proc still happens,
-        // nothing else does.
+    fn final_immunity_does_not_renormalize_generated_weights() {
+        let vector = DamageVector::new().with(DamageType::Radiation, 75.0).with(DamageType::Slash, 25.0);
+        let mut rng = Rng::new(0xd3e0);
+        let (mut accepted, mut radiation) = (0, 0);
+        for _ in 0..40_000 {
+            let raw = procs_for_hit(&[], 1.0, &vector, SceneProcHandlers::all(), &mut rng);
+            radiation += usize::from(raw.contains(&DamageType::Radiation));
+            accepted += applied_procs(&raw, &[DamageType::Radiation]).count();
+        }
+        assert!((29_500..30_500).contains(&radiation));
+        assert!((9_500..10_500).contains(&accepted));
+    }
+
+    #[test]
+    fn forced_raw_counters_survive_immunity_without_consuming_rng() {
         let mut rng = Rng::new(1);
-        let procs = procs_for_hit(
-            &[DamageType::Impact],
-            0.0,
-            &DamageVector::new(),
-            &[],
-            &mut rng,
-        );
-        assert_eq!(procs, vec![DamageType::Impact]);
+        let raw = procs_for_hit(&[DamageType::Radiation], 0.0, &DamageVector::new(), SceneProcHandlers::all(), &mut rng);
+        assert_eq!(raw, [DamageType::Radiation]);
+        assert_eq!(rng.state(), 1);
+        assert_eq!(applied_procs(&raw, &[DamageType::Radiation]).count(), 0);
     }
 
     #[test]
-    fn rolled_procs_need_positive_damage_to_be_typed() {
-        // 100% SC but an all-zero vector: the roll succeeds but there is no
-        // type to draw -> no rolled proc.
-        let mut rng = Rng::new(2);
-        let procs = procs_for_hit(&[], 1.0, &DamageVector::new(), &[], &mut rng);
-        assert!(procs.is_empty());
+    fn zero_weights_still_consume_the_successful_type_draw() {
+        let mut actual = Rng::new(1);
+        assert!(procs_for_hit(&[], 2.0, &DamageVector::new(), SceneProcHandlers::all(), &mut actual).is_empty());
+        let mut expected = Rng::new(1);
+        for _ in 0..4 { expected.unit(); }
+        assert_eq!(actual.state(), expected.state());
     }
 
     #[test]
-    fn immunity_renormalizes_the_type_draw() {
-        // Wiki example: I20/P5/S10/H25/C50 vs a Corrosion-status-immune
-        // enemy -> Corrosive excluded, weights renormalize over 60:
-        // Impact 33.33%, Puncture 8.33%, Slash 16.67%, Heat 41.67%.
-        let v = DamageVector::new()
-            .with(DamageType::Impact, 20.0)
-            .with(DamageType::Puncture, 5.0)
-            .with(DamageType::Slash, 10.0)
-            .with(DamageType::Heat, 25.0)
-            .with(DamageType::Corrosive, 50.0);
-        let immune = [DamageType::Corrosive];
-        let mut rng = Rng::new(0xC0DE);
-        let n = 120_000;
-        let (mut i, mut p, mut sl, mut h) = (0u32, 0u32, 0u32, 0u32);
-        for _ in 0..n {
-            match draw_proc_type(&v, &immune, &mut rng).unwrap() {
-                DamageType::Impact => i += 1,
-                DamageType::Puncture => p += 1,
-                DamageType::Slash => sl += 1,
-                DamageType::Heat => h += 1,
-                DamageType::Corrosive => panic!("immune type drawn"),
-                other => panic!("impossible type {other:?}"),
-            }
-        }
-        let f = |c: u32| c as f64 / n as f64;
-        assert!((f(i) - 1.0 / 3.0).abs() < 0.01);
-        assert!((f(p) - 1.0 / 12.0).abs() < 0.01);
-        assert!((f(sl) - 1.0 / 6.0).abs() < 0.01);
-        assert!((f(h) - 5.0 / 12.0).abs() < 0.01);
-        // All-immune vector: no proc possible.
-        assert_eq!(
-            draw_proc_type(
-                &DamageVector::new().with(DamageType::Viral, 9.0),
-                &[DamageType::Viral],
-                &mut rng
-            ),
-            None
-        );
-    }
-
-    #[test]
-    fn single_type_vector_always_draws_that_type() {
-        let v = DamageVector::new().with(DamageType::Radiation, 5.0);
+    fn void_uses_a_separate_scene_alternative() {
         let mut rng = Rng::new(3);
-        for _ in 0..1000 {
-            assert_eq!(
-                draw_proc_type(&v, &[], &mut rng),
-                Some(DamageType::Radiation)
-            );
-        }
+        let raw = procs_for_hit(&[], 1.0, &DamageVector::new().with(DamageType::Void, 5.0), SceneProcHandlers::all(), &mut rng);
+        assert_eq!(raw, [DamageType::Void]);
+        assert_eq!(ProcCounters::from_types(raw).mask(), 0);
     }
 }
 

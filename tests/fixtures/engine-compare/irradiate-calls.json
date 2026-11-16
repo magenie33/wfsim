@@ -1,0 +1,2535 @@
+[
+  {
+    "id": "cortege_base_none_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none",
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "cortege",
+      "mods": [
+        "electrified_barrel",
+        "magma_chamber",
+        "combustion_rounds",
+        "dual_rounds",
+        "automatic_trigger",
+        "sabot_rounds"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "cortege_base_none_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none",
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "cortege",
+      "mods": [
+        "electrified_barrel",
+        "magma_chamber",
+        "combustion_rounds",
+        "dual_rounds",
+        "automatic_trigger",
+        "sabot_rounds"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "cortege_base_one_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none",
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "cortege",
+      "mods": [
+        "electrified_barrel",
+        "magma_chamber",
+        "combustion_rounds",
+        "dual_rounds",
+        "automatic_trigger",
+        "sabot_rounds"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "cortege_base_one_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none",
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "cortege",
+      "mods": [
+        "electrified_barrel",
+        "magma_chamber",
+        "combustion_rounds",
+        "dual_rounds",
+        "automatic_trigger",
+        "sabot_rounds"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "cortege_base_two_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "primary_merciless",
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "cortege",
+      "mods": [
+        "electrified_barrel",
+        "magma_chamber",
+        "combustion_rounds",
+        "dual_rounds",
+        "automatic_trigger",
+        "sabot_rounds"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "cortege_base_two_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "primary_merciless",
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "cortege",
+      "mods": [
+        "electrified_barrel",
+        "magma_chamber",
+        "combustion_rounds",
+        "dual_rounds",
+        "automatic_trigger",
+        "sabot_rounds"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "laetum_base_none_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "laetum",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "laetum_base_none_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "laetum",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "laetum_base_one_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "laetum",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "laetum_base_one_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "laetum",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "laetum_incarnon_none_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "incarnon",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "laetum",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "laetum_incarnon_none_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "incarnon",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "laetum",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "laetum_incarnon_one_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "incarnon",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "laetum",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "laetum_incarnon_one_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "incarnon",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "laetum",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "dual_toxocyst_base_none_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "dual_toxocyst",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "dual_toxocyst_base_none_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "dual_toxocyst",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "dual_toxocyst_base_one_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "dual_toxocyst",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "dual_toxocyst_base_one_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "dual_toxocyst",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "dual_toxocyst_incarnon_none_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "incarnon",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "dual_toxocyst",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "dual_toxocyst_incarnon_none_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "incarnon",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "dual_toxocyst",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "dual_toxocyst_incarnon_one_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "incarnon",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "dual_toxocyst",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "dual_toxocyst_incarnon_one_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "incarnon",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "dual_toxocyst",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "tenet_cycron_base_none_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "tenet_cycron",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "tenet_cycron_base_none_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "tenet_cycron",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "tenet_cycron_base_one_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "tenet_cycron",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "tenet_cycron_base_one_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "tenet_cycron",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "ocucor_base_none_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "ocucor",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "ocucor_base_none_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "ocucor",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "ocucor_base_one_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "ocucor",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "ocucor_base_one_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "base",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "ocucor",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "sicarus_prime_incarnon_none_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "incarnon",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "sicarus_prime",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "sicarus_prime_incarnon_none_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "incarnon",
+      "evolutions": [],
+      "arcane": [
+        "none"
+      ],
+      "buffs": {},
+      "weapon": "sicarus_prime",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  },
+  {
+    "id": "sicarus_prime_incarnon_one_simulate",
+    "path": "/api/simulate",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "incarnon",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "sicarus_prime",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "sicarus_prime_incarnon_one_log",
+    "path": "/api/log",
+    "body": {
+      "enemy": "corrupted_heavy_gunner",
+      "level": 300,
+      "steel_path": true,
+      "eximus": false,
+      "duration": 20,
+      "runs": 4,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        10
+      ],
+      "mode": "incarnon",
+      "evolutions": [],
+      "arcane": [
+        "secondary_irradiate"
+      ],
+      "buffs": {},
+      "weapon": "sicarus_prime",
+      "mods": [
+        "primed_heated_charge",
+        "primed_convulsion",
+        "sure_shot",
+        "stunning_speed",
+        "gunslinger",
+        "barrel_diffusion",
+        "lethal_torrent"
+      ],
+      "formation": [
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            -1,
+            10
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            0,
+            12
+          ]
+        },
+        {
+          "enemy": "corrupted_heavy_gunner",
+          "level": 300,
+          "steel_path": true,
+          "eximus": false,
+          "at": [
+            1,
+            11
+          ]
+        }
+      ],
+      "run": [
+        0,
+        24301
+      ],
+      "from": 0,
+      "to": 20,
+      "limit": 200000
+    }
+  }
+]

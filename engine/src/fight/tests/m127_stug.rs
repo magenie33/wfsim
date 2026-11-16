@@ -18,8 +18,10 @@ fn measured(id: &str, shots: u32, hornet: bool, head: bool) -> FightParams {
     // The reported numbers are non-crits; status ticks are not this reading.
     let b = p.blob.as_mut().expect("both forms carry their entities");
     b.hit.crit_chance = 0.0;
+    if let Some(inputs) = b.hit.critical_inputs.as_mut() { inputs.set_supplied_chance(b.hit.crit_chance, b.hit.base_crit_chance); }
     b.hit.status_chance = 0.0;
     b.explosion.crit_chance = 0.0;
+    if let Some(inputs) = b.explosion.critical_inputs.as_mut() { inputs.set_supplied_chance(b.explosion.crit_chance, b.explosion.base_crit_chance); }
     b.explosion.status_chance = 0.0;
     p
 }
@@ -287,7 +289,9 @@ fn m127_acuity_explosion_uses_critical_headshots_without_weakpoint_damage() {
         let b = p.blob.as_mut().unwrap();
         // Select each reported tier; the reading supplies the tier, not its frequency.
         b.explosion.crit_chance = tier;
+        if let Some(inputs) = b.explosion.critical_inputs.as_mut() { inputs.set_supplied_chance(b.explosion.crit_chance, b.explosion.base_crit_chance); }
         b.explosion.base_crit_chance = 0.0;
+        if let Some(inputs) = b.explosion.critical_inputs.as_mut() { inputs.set_supplied_chance(b.explosion.crit_chance, b.explosion.base_crit_chance); }
         let rec = record(&p, 127, 0.0, f64::INFINITY, 100_000, 0);
         let got: Vec<_> = rec.events().iter().filter_map(|e| match &e.kind {
             Kind::Damage(d) if d.origin == Origin::Blob => Some((d.radial, d.raw.round(), d.crit_tier)),
@@ -300,7 +304,9 @@ fn m127_acuity_explosion_uses_critical_headshots_without_weakpoint_damage() {
 #[test]
 fn m127_attached_ticks_roll_their_own_critical_hits() {
     let mut p = measured("stug", 1, true, true);
-    p.blob.as_mut().unwrap().hit.crit_chance = 0.5;
+    let hit = &mut p.blob.as_mut().unwrap().hit;
+    hit.crit_chance = 0.5;
+    if let Some(inputs) = hit.critical_inputs.as_mut() { inputs.set_supplied_chance(hit.crit_chance, hit.base_crit_chance); }
     let mut pairs = std::collections::BTreeSet::new();
     for seed in 0..100 {
         let rec = record(&p, seed, 0.0, f64::INFINITY, 100_000, 0);
@@ -331,7 +337,9 @@ fn m127_galvanized_shots_damage_payload_is_excluded_from_both_parts() {
             p.co_stack.as_mut().unwrap().initial_stacks = if stacked { 3 } else { 0 };
             let b = p.blob.as_mut().unwrap();
             b.hit.crit_chance = 0.0;
+            if let Some(inputs) = b.hit.critical_inputs.as_mut() { inputs.set_supplied_chance(b.hit.crit_chance, b.hit.base_crit_chance); }
             b.explosion.crit_chance = 0.0;
+            if let Some(inputs) = b.explosion.critical_inputs.as_mut() { inputs.set_supplied_chance(b.explosion.crit_chance, b.explosion.base_crit_chance); }
             b.hit.status_chance = 0.0;
             b.explosion.status_chance = 0.0;
             if stacked {
@@ -351,13 +359,15 @@ fn m127_cold_critical_damage_reaches_only_the_main_explosion() {
     let mut p = measured("stug", 1, false, false);
     let b = p.blob.as_mut().unwrap();
     b.hit.crit_chance = 1.0;
+    if let Some(inputs) = b.hit.critical_inputs.as_mut() { inputs.set_supplied_chance(b.hit.crit_chance, b.hit.base_crit_chance); }
     b.explosion.crit_chance = 1.0;
+    if let Some(inputs) = b.explosion.critical_inputs.as_mut() { inputs.set_supplied_chance(b.explosion.crit_chance, b.explosion.base_crit_chance); }
     b.hit.forced_procs = crate::rules::damage::ForcedProcs::from_types([DamageType::Cold]);
     let cd = b.explosion.crit_damage;
     let got = numbers(&p);
-    assert!((got[0].2 - 304.0 * cd).abs() < 1e-8);
-    assert!((got[1].2 - got[0].2).abs() < 1e-8, "the attached tick excludes Cold");
-    assert!((got[2].2 - 375.0 * (cd + 0.15)).abs() < 1e-8, "two Cold stacks reach the direct explosion");
+    assert!(crate::rules::upgrades::near_f32(got[0].2, 304.0 * cd));
+    assert!(crate::rules::upgrades::near_f32(got[1].2, got[0].2), "the attached tick excludes Cold");
+    assert!(crate::rules::upgrades::near_f32(got[2].2, 375.0 * (cd + 0.15)), "two Cold stacks reach the direct explosion");
 }
 
 #[test]

@@ -36,6 +36,11 @@ run states. Extend a suite without rewriting archived request bytes.
 Optional `coverage` requirements name positive damage sources, event kinds or
 the minimum combatant count, so a case cannot silently stop exercising its
 declared mechanism.
+`more_procs_than` names a matched no-Arcane control and requires additional
+applications. Damage-source rows describe a representative run; a random
+selection need not appear in that particular run even when it appears in the
+population. Native sequence fixtures and matched controls verify the Arcane
+path without treating one representative run as every run.
 
 The tool runs ABBA rounds and compares each side with itself and with the
 other side. It verifies binary/input hashes around execution. Failed endpoints,
@@ -114,12 +119,28 @@ outside hot loops; runtime specifications carry their content identity.
 | Conditional timer | Activated condition instance | Active operation, effective dt and cleanup |
 | RNG | Recovered stream owner | Comparisons, state, skipped draws and consumption order |
 
-The current Primary Debilitate implementation splits inside `settle_procs`'s
-proc loop. Its replacement boundary is one accepted callback and one fresh
-packet with per-type presence checks. Proc count cannot define callback count.
-The current Encumber path's mutable `encumber_done` batch flag cannot express
-arbitrary condition updates between arrivals; its replacement owns weapon
-upgrade state and synchronous suppression installation/removal.
+Primary Debilitate constructs one fresh packet after a `settle_procs`
+submission, checks each compound's presence once and coalesces repeated basic
+selections with the native forced setter. Proc count does not define callback
+count. The qualification view preserves M34's tenth-application observation
+before an inline Blast detonation drains its pile. A recipient generation
+change rejects the pending callback. M37's inherited scalar factors and second
+Attrition roll remain; the fresh packet starts with body landing context.
+
+Encumber owns one conditional state per weapon, including both forms and all
+targets. Success synchronously installs stat369 SET0 over the root ADD. Zero
+effective dt retains it; positive effective dt removes the zero-duration
+condition. Candidate selection uses the target's `ValidDoubleProcs` mask and
+the native LCG, modulo index, swap removal and saturating byte counters.
+
+Two scene adapters remain explicit approximations. One status submission maps
+to one Primary notification; weapon cache/notification cadence is unbound.
+Encumber receives an effective update when simulation event time advances;
+the live condition-manager phase is unbound. This allows delayed arrivals to
+reactivate without equating a trigger pull with an update. A scene shares one
+native status-selection stream seeded from its replay state. Other decisions
+retain the simulator's split streams; live global seed installation and the
+complete native consumer sequence are unbound.
 
 These are representation boundaries. They do not establish missing live
 notification cadence or authorize changing measured values. Unanswered native
@@ -129,17 +150,17 @@ questions stay in the shared research queue.
 
 | Domain | Available foundation | Remaining migration dependency |
 | --- | --- | --- |
-| Upgrade queries | Scalar build effects and bounded Shield consumers | Native operation/filter entries and dynamic installation ownership |
-| Numeric precision | Float32 Shield/source/proxy and speed fixtures | Per-consumer boundary map beyond recovered slices |
-| Packet context | `InstanceScale`, status vectors, seat and cause | Native packet identity, counted procs, part/proxy and fresh-copy semantics |
+| Upgrade queries | Typed entries, pending scalar state, raw-base queries, materialization and proc-mask predicates | Complete owner/type/symbol/posture selection and dynamic installation ownership |
+| Numeric precision | Float32 Shield/source/proxy, rank, critical and speed consumers | Per-consumer boundary map beyond recovered slices |
+| Packet context | Native counted payloads, typed source/weapon handles, fresh scalar-copy geometry | Complete native submission identity and spatial context writers |
 | Electricity and Gas | Per-record seeds and separate latest landings | Complete native insertion, recipient, expiry and lethal lifecycles |
-| Conditional Arcanes | Existing proc handlers and configured opening state | Callback unit, operation installation and effective update phase |
+| Conditional Arcanes | Source-spelled rank fields, one-packet Primary callback and Encumber SET0 lifecycle | Actual notification frequency, source eligibility and effective live update phase |
 | Weapon behaviors | Shared action scheduler, pending flight and battery state | Complete transition/reset contract and native ordering by behavior |
 | Spatial consumers | Planar `Arena`, chain, radial and flight primitives | Versioned spatial policy; recovered contact/cover and target-selection branches |
 | Enemy controllers | `Foe`, scaling curves and per-body `TargetState` | Controller instance/query/writeback lifecycle and installed mode operations |
 | Abilities and passives | `data::casting`, active ability windows and handlers | Instance identity, script branch/side-effect coverage and shared upgrades |
 | Companions | Source importers and multi-combatant fight | Complete AI/action/lifecycle scope per recovered mechanism |
-| RNG and replay | Engine deterministic streams and captured run state | Native stream installation, consumer sequence and owned lifetimes |
+| RNG and replay | Native LCG kernel, critical discrete draws and captured run state | Game stream installation, remaining consumer algorithms and owned lifetimes |
 | Build and elements | Shared resolver, forms and configured mod order | Preserve native query sites instead of flattening dynamic properties |
 | Search and outputs | Same simulator, record and route transport | Versioned new-engine identity, caller adaptation and final truth/parity checks |
 
@@ -179,3 +200,168 @@ Exit requires original-byte node agreement, matching gameplay controls, exact
 unchanged-path comparisons and measured additional query cost. Folding the
 queries together or changing truncation to rounding must fail a real check.
 This primitive needs no search enumeration or scheduling change.
+
+## Source compilation and verification
+
+`scripts/import_client_upgrades.py --exchange <exchange> --check` verifies the
+READY/manifest binding, consumed archive hashes, 428 original upgrade ids,
+1115 folds, 20,479 rank values, 5,398 conditional construction inputs and the
+status Arcane fixtures. `--check-mods` also verifies the 150 joined mod inputs;
+`--migrate-mods` replaces their legacy rank endpoints with source fields.
+`rules::upgrades` preserves binary32 bucket order, last SET/SET_BASE selection,
+native bounds, SET bypass and the int32 rounding sentinel. Callers select the
+entries; this primitive does not invent a complete UpgradeManager.
+
+`RankedUpgrade` retains `UpgradeType`, `OperationType`, `Value`,
+`FusionPowerStep` and `FusionPowerCurve`. `ConditionalChance` retains
+`UpgradeChance`, `UpgradeChanceScalePerRank` and `ChanceScalesWithRank`.
+The migrated mod and Arcane effects use these as their only rank authority.
+Cold compilation derives the existing display/runtime representation.
+QC_NONE retains curve input zero; QC_LINEAR computes rank/maxRank before its
+binary32 multiply and add. MULTIPLY values in the bound inverse interval have
+their separate transform. AVATAR_ABILITY returns rank. Extra unlocks remain
+unavailable below their own gate. Unsupported curves fail deserialization.
+
+`ConditionalParameters` retains the original chance, duration and stack-count
+fields. Duration multiplication and wrapping byte stack arithmetic occur at
+construction; they do not establish live trigger/stack installation behavior.
+
+`NativeScalar` owns its base and pending operation state. Mutating application
+can materialize and reset the operations or retain them. The returned-value
+proc query reads the stored base, so an unmaterialized parent operation is not
+silently applied to the child's float input. Proc-mask matching uses native
+proc ids. Other filters are explicitly caller-selected.
+
+`scripts/import_client_critical.py --exchange <exchange> --check` verifies 144
+critical/health-boundary fixtures and 54 parent/child query fixtures against
+their original source archives. The scalar tests compare evaluated parent,
+retained input and stored child seed separately, including both supplied
+canonicalization flags and Magnetic/Electric-only filters.
+
+The ordinary critical consumer skips draws for nonpositive and integral
+chances, uses the native inclusive discrete comparison and preserves the
+integer-to-byte conversion. Positive preset tiers bypass this roll. Critical
+base clamps to 0..32 and quantizes in binary32; the final critical factor has
+a zero guard and its source multiplication is binary32. The standalone
+consumer does not close every upstream scalar installer or forced-critical
+route. Scene stream separation remains WFSim policy.
+
+`ConditionalUpgrade` retains `CanReproc`, `ReprocTime` and `UpgradeDuration`.
+Its generic inherited reproc default is true; Encumber explicitly supplies
+false. Native tests cover 90 sampler cases, 380 sequential packets, 12 rank
+inputs and nine separately bounded constructor/copy/resolution cases. Primary
+type-loop tests additionally cover counter multiplicity and forced coalescing;
+they do not execute the client's Lua VM or establish live event frequency.
+
+`EnemySpec.ValidDoubleProcs` distinguishes missing, empty and declared ids.
+Missing uses the represented base-controller policy, ordinary ids0..12; empty
+disables candidates. This does not establish arbitrary unrepresented controller
+inheritance. Proc ids, upgrade ids and Rust `DamageType` discriminants have
+separate mappings.
+
+## Native and WASM impact runs
+
+N07A ordinary generation is bound by
+`tests/fixtures/client/ordinary-proc-2026-10-28.json` and its pinned importer.
+The actual fight sampler shares the original binary32 chance/CDF loop and
+native RNG with the supplied-graph kernel. Source vectors cover weight
+selectors/maxima, lazy evaluation, inclusive boundaries, zero weights,
+saturation, existing counters and target117 folding. NumHits is independent.
+Immutable cumulative binary32 prefixes are cached after the first successful
+chance. The default single-component unit-weight evaluators use a positive
+component fast path; the general evaluator graph remains independently tested.
+Neither optimization changes RNG draws, counter saturation or source traces.
+
+The native sampler receives the selected handler graph independently of the
+final immunity mask. `Foe.proc_handlers` supplies an explicit scene selection;
+unbound enemies retain the wiki eligibility fallback. This fallback does not
+establish native graph installation. Ordinary generation retains raw counters;
+application, landed-status buffs, records and Influence filter immunity later.
+Primary reads raw presence and can only qualify an immune compound already at
+the threshold. Scene application order and callback cadence remain separate
+from counter generation. Void/Tau alternatives have no guessed native ids.
+
+`freeze --runtime wasm` saves a standalone Rust release module, matching
+wasm-bindgen glue, immutable dependencies and a number-token-preserving runner.
+With `WFSIM_DATA_APART=1`, it copies the data packs emitted by that exact Cargo
+build and hashes them as required runtime dependencies. Use this variant for
+the product's data installation and lane-memory checks; an embedded-data
+module has a different memory/layout contract.
+`run` uses the same exact response comparison for either runtime and records
+linear-memory high water alongside process RSS. A Node/V8 observation is not
+a browser interaction or shipping compression measurement. No `site/` build is
+needed. Native-versus-WASM parity is checked separately from version changes.
+
+`engine_browser_compare.mjs` loads those same immutable modules in a fresh
+owned headless Chrome process, asynchronously compiles the module and retains
+raw response number tokens. It times warmed direct API calls and records
+module linear memory; it excludes product transport, rendering and network.
+`engine_shape_cost.py` interleaves the four native `one_fight` shapes.
+`engine_impact.py` reports strict differences, then separately classifies
+top-level work changes. No gameplay field is hidden from the strict report.
+`engine_allocations.py` links a counting System allocator against each
+worktree's already-built native libraries. Warmed request counts, requested
+bytes and additional live-heap peaks are separate from CPU timing and RSS.
+Retain the dependency hashes and verify its API results against the saved
+executables before using those counts.
+
+`scripts/engine_sweep.py --meta <captured-meta> --output <new-file>` freezes
+requests for every declared catalog mode, using a captured baseline catalog
+and an available stance. Preflight rejections remain evidence; exclude them
+explicitly rather than counting them as simulated coverage. The focused suite
+adds complete records, seeds, scene geometry, multiple actors and active
+Arcane/damage-source requirements. Performance comparisons run after builds
+and checks finish, in interleaved order, with complete output retained.
+
+Parsed declarations and these bounded migrations do not qualify a complete
+native engine. The dependency register remains the completion criterion;
+current snapshots retain the stated scene policies and measured mechanics.
+
+## Client update comparison
+
+`scripts/client_upgrade_changes.py` compares two verified unified exports.
+Supply each batch directory and its independently recorded manifest hash with
+`--before`, `--before-sha256`, `--after` and `--after-sha256`; `--output` names
+a new JSON file. READY, archive and consumed member hashes must match.
+
+The report retains exact owner/array/index identities and every exported field,
+including raw numeric tokens, new fields, filters, rank projections, ancestry,
+enum ids and native span hashes. Archive member hashes also expose changes to
+captured scripts and other resources. Links to current mod inputs use source
+paths and both versions' ancestry. An unlinked change remains a change needing
+review. A native code change requires rebinding its consumer; unchanged display
+values do not establish an unchanged calculation rule.
+
+`scripts/check_client_upgrade_changes.py` requires an empty self-comparison and
+detects controlled value, filter, unknown-field, ancestry, enum, code, script,
+client identity, signed-zero and numeric-type changes. This compares captured
+evidence; it does not certify uncaptured code or silently migrate new filters.
+
+## Live queries and action boundaries
+
+The [binding ledger](NATIVE_BINDINGS.md) records the current engine consumers
+and the remaining native boundary for each delivered stage.
+`CriticalInputs` retains static operations until the hit-time query appends
+selected live grants. Conditional base critical damage selects its base before
+folding static and live operations. The supplied-stat adapter is explicit;
+production query state takes precedence over its display fields.
+
+`import_client_spool.py --exchange <exchange> --check` verifies both original
+archives and their 145 members. The continuous-rate fixture binds 84 getter
+vectors and eight coupled FIRE/refire entries. `SustainedFireRate::Native`
+retains `ContinuousFireRateAtten` and `ContinuousMaxShots`. Its ordinary
+zero-duration consumer advances twice before sampling the next refire rate.
+Other declared ramps remain `Assumed` inputs. Native entry rate, sampled refire
+rate and emitted projectile times are distinct boundaries.
+
+The [evaluation receipt](receipts/native-engine-540eb587.json) records the
+calculation commit, baseline, source pins, measured runtime/memory changes,
+validation scope and remaining implementation/evidence separately. A passing
+cross-runtime comparison certifies the supplied requests; it does not certify
+whole-engine equivalence with the game.
+
+Secondary Irradiate uses the original script owner keys and independent native
+NumHits count through activation, collection and explicit resumption. The
+[binding scope](SECONDARY_IRRADIATE.md) identifies the immediate scene adapter,
+retained M59 calibration, source fixture and unbound producer/scheduler/recipient
+boundaries. A scene's count of one is not evidence of native packet multiplicity.
