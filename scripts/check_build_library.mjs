@@ -191,12 +191,13 @@ try {
       if(!el.matches('[data-dd]')){out[sort]=false;continue;}
       el.click();$('dd-menu').querySelector('[data-v="'+sort+'"]').click();await sleep(100);
       const rows=read();
-      const value=p=>sort==='recent'?(Date.parse(p.board.measured_at)||0):sort==='drain'?libraryBaseDrain(p):p.board.score;
-      out[sort]=rows.length>1 && rows.every((p,i)=>i===0||(sort==='score-asc'||sort==='drain'?value(rows[i-1])<=value(p):value(rows[i-1])>=value(p)));
+      const value=p=>sort==='recent'?(Date.parse(p.board.measured_at)||0):sort==='drain'?libraryBaseDrain(p):Number(p.board.shown??p.board.score);
+      const ok=rows.length>1 && rows.every((p,i)=>i===0||(sort==='score-asc'||sort==='drain'?value(rows[i-1])<=value(p):value(rows[i-1])>=value(p)));
+      out[sort]={ok,selected:finder.sort,order:finder.query.orderBy,values:rows.map(value)};
     }
     return out;
   })()`);
-  for (const [sort, ok] of Object.entries(sorts)) check("published results sort correctly: " + sort, ok);
+  for (const [sort, result] of Object.entries(sorts)) check("published results sort correctly: " + sort, result.ok, result.ok ? "" : JSON.stringify(result));
 
   const filtering = await evaluate(`(async () => {
     const sleep=ms=>new Promise(r=>setTimeout(r,ms));
