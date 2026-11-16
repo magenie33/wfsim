@@ -283,7 +283,8 @@ async function requestBoardReview(task, result, record) {
   const id = "board-review-request:" + record.id;
   boardReviewTrackers.set(id, { id, identity: matched.identity, weapon: matched.weapon, ruler: matched.ruler, mode: matched.mode,
     engine: task.engine, observed_score: measured, baseline_score: old, metric: metric.id,
-    request: structuredClone(task.request), source: record.id, sources: [record.id], state: "submitting", phase: "Requesting board calibration" });
+    request: structuredClone(task.request), record: boardReviewRecord(matched.weapon, matched.row),
+    source: record.id, sources: [record.id], state: "submitting", phase: "Requesting board calibration" });
   await saveBoardReviewTrackers(); renderBoardReviewNote(); scheduleUserTasks(); scheduleBoardReviews(0);
 }
 async function acceptBoardReview(task) {
@@ -292,6 +293,14 @@ async function acceptBoardReview(task) {
       observed_score: task.observed_score, baseline_score: task.baseline_score, metric: task.metric, request: task.request }), signal: timeoutSignal(15_000) });
   const accepted = await response.json().catch(() => null);
   if (!boardReviewTrackers.has(task.id)) return;
+  if (response.status === 404 && task.record) {
+    const submitted = await fetch("/api/board/submit", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ ...task.record, benchmark: task.ruler, mode: task.mode, requested: true }), signal: timeoutSignal(15_000) });
+    const result = await submitted.json().catch(() => null);
+    if (submitted.ok && result?.ok && /^[a-f0-9-]{36}$/.test(result.request || "") && boardReviewTrackers.has(task.id))
+      boardReviewTrackers.set(task.id, { ...task, board_request: result.request, state: "waiting", phase: "Waiting for community compute", publication: "waiting", publication_attempts: 0 });
+    return;
+  }
   if (response.ok && accepted?.ok && accepted.skipped) {
     boardReviewTrackers.delete(task.id); await saveBoardReviewTrackers(); return;
   }
@@ -313,7 +322,7 @@ async function saveBoardReviewTrackers() {
     const discarded = [...boardReviewTrackers.values()].find(task => !boardReviewActive(task)) || boardReviewTrackers.values().next().value;
     boardReviewTrackers.delete(discarded.id);
   }
-  const list = [...boardReviewTrackers.values()].slice(-50).map(({ id, review, identity, weapon, ruler, mode, engine, observed_score, baseline_score, metric, request, source, sources, state, publication, publication_attempts }) => ({ id, review, identity, weapon, ruler, mode, engine, observed_score, baseline_score, metric, request, source, sources, state, publication, publication_attempts }));
+  const list = [...boardReviewTrackers.values()].slice(-50).map(({ id, review, board_request, record, identity, weapon, ruler, mode, engine, observed_score, baseline_score, metric, request, source, sources, state, publication, publication_attempts }) => ({ id, review, board_request, record, identity, weapon, ruler, mode, engine, observed_score, baseline_score, metric, request, source, sources, state, publication, publication_attempts }));
   await queue.store.value("board-review-trackers", list);
 }
 function scheduleBoardReviews(ms = 10_000) {
@@ -323,7 +332,7 @@ function scheduleBoardReviews(ms = 10_000) {
 async function pollBoardReviews() {
   if (boardReviewPolling) return;
   const pending = [...boardReviewTrackers.values()].filter(task => task.state === "submitting");
-  const tracks = [...boardReviewTrackers.values()].filter(task => !!task.review && boardReviewActive(task));
+  const tracks = [...boardReviewTrackers.values()].filter(task => !!(task.review || task.board_request) && boardReviewActive(task));
   if (!tracks.length && !pending.length) return;
   boardReviewPolling = true;
   try {
@@ -332,14 +341,22 @@ async function pollBoardReviews() {
       await saveBoardReviewTrackers(); renderBoardReviewNote(); scheduleUserTasks();
     }
     if (!tracks.length) return;
-    const response = await fetch("/api/board/review/status", { method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ ids: tracks.map(task => task.review) }), signal: timeoutSignal(15_000) });
-    const payload = await response.json();
-    if (!response.ok || !payload.ok) throw new Error("Board review is unavailable.");
+    const rows = [];
+    for (const [field, path, name] of [["review", "/api/board/review/status", "reviews"], ["board_request", "/api/board/requests/status", "requests"]]) {
+      const ids = tracks.map(task => task[field]).filter(Boolean);
+      if (!ids.length) continue;
+      const response = await fetch(path, { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ids }), signal: timeoutSignal(15_000) });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error("Board review is unavailable.");
+      rows.push(...(payload[name] || []).map(row => field === "review" ? row : { ...row,
+        state: ["rejected", "cancelled"].includes(row.phase) || ["failed", "cancelled"].includes(row.workflow_state) ? "failed" : row.workflow_state === "succeeded"
+          || (row.phase === "admitted" && !row.workflow && row.current_by) ? "succeeded" : "waiting" }));
+    }
     for (const task of tracks) {
       const current = boardReviewTrackers.get(task.id);
       if (!current) continue;
-      const row = payload.reviews?.find(row => row.id === task.review);
+      const row = rows.find(row => row.id === (task.review || task.board_request));
       const next = row ? { ...current, ...row, id: task.id, review: task.review } : { ...current, state: "unavailable" };
       if (boardReviewNeedsPublication(next)) {
         next.publication_attempts = (next.publication_attempts || 0) + 1;

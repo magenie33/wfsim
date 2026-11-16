@@ -15,8 +15,8 @@ const track = {
   source: "retest", sources: ["retest"], state: "waiting",
 };
 
-function observer(outcomes = [false, true]) {
-  const scheduled = new Map(), host = { checks: 0, outcomes, requests: [] };
+function observer(outcomes = [false, true], missing = false) {
+  const scheduled = new Map(), host = { checks: 0, outcomes, requests: [], missing, submitFailure: false };
   let timer = 0;
   const context = vm.createContext({
     USER_TASK_TYPES: new Map(), userTaskSources: new Map(),
@@ -27,10 +27,13 @@ function observer(outcomes = [false, true]) {
     clearTimeout(id) { scheduled.delete(id); }, timeoutSignal() {},
     async fetch(path) {
       host.requests.push(path);
-      const body = path === "/api/board/review" ? { ok: true, accepted: false, id: remote }
+      const body = path === "/api/board/submit" ? { ok: !host.submitFailure, request: remote }
+        : path === "/api/board/requests/status" ? { ok: true, requests: [{ id: remote, phase: "admitted", workflow: "new", workflow_state: "succeeded", current_score: 12, current_by: "verified:e" }] }
+        : path === "/api/board/review" ? { ok: !host.missing, accepted: false, id: remote }
         : { ok: true, reviews: [{ ...track, id: remote, state: "succeeded",
           current_score: 10.76757631, current_by: "verified:9e4647c46c76" }] };
-      return { ok: true, async json() { return body; } };
+      const status = path === "/api/board/review" && host.missing ? 404 : path === "/api/board/submit" && host.submitFailure ? 503 : 200;
+      return { ok: status === 200, status, async json() { return body; } };
     },
     host, track,
   });
@@ -103,6 +106,24 @@ await repeated.poll();
 assert.equal(repeated.host.checks, 2, "a repeated completed round must check the board again");
 assert.equal(repeated.context.observed().publication, "published");
 console.log("  ok  retrying the same completed round observes publication again");
+
+const missing = observer([true], true);
+vm.runInContext(`
+  boardReviewTrackers.clear();
+  globalThis.pending = { ...track, id: 'board-review-request:missing', review: undefined,
+    record: { weapon: track.weapon, mods: ['serration'] }, state: 'submitting' };
+  boardReviewTrackers.set(pending.id, pending);
+`, missing.context);
+missing.host.submitFailure = true;
+await vm.runInContext("acceptBoardReview(pending)", missing.context);
+assert.equal(vm.runInContext("boardReviewTrackers.get(pending.id).state", missing.context), "submitting", "an unavailable missing-build entry retains its durable retry");
+missing.host.submitFailure = false;
+await vm.runInContext("acceptBoardReview(pending)", missing.context);
+assert.equal(vm.runInContext("boardReviewTrackers.get(pending.id).board_request", missing.context), remote);
+await missing.poll();
+assert.equal(vm.runInContext("boardReviewTrackers.get(pending.id).publication", missing.context), "published");
+assert(missing.host.requests.includes("/api/board/requests/status"));
+console.log("  ok  an absent database baseline uses requested coverage, retries failure and observes publication");
 
 function block(text, from, until) {
   const first = text.indexOf(from), last = text.indexOf(until, first + from.length);

@@ -11,7 +11,7 @@ for(const delta of [0,1e-13,1]) {
   const trackers=new Map(),ruler='standard_single_target';
   const matched={identity:'a'.repeat(32),weapon:'laetum',ruler,mode:'cycle',row:{score:10,measured_by:'old-engine'}};
   const context={structuredClone,matchingBoardReview:async()=>matched,metricValue:(_,result)=>result.score,metricOf:x=>({id:x}),
-    benchList:()=>[{id:ruler,scenario:{metric:'kpm'}}],boardReviewTrackers:trackers,
+    benchList:()=>[{id:ruler,scenario:{metric:'kpm'}}],boardReviewTrackers:trackers,boardReviewRecord:(weapon,row)=>({weapon,...row}),
     saveBoardReviewTrackers:async()=>{},renderBoardReviewNote(){},scheduleUserTasks(){},scheduleBoardReviews(){}};
   const run=runInNewContext(fn+'requestBoardReview',context);
   await run({engine:'e2',request:{weapon:'laetum'}},{score:10+delta},{id:'local'});

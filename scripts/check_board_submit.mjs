@@ -28,12 +28,25 @@ import { testDb } from "./pg/test_db.mjs";
 import { seedComputeWork } from "./pg/fixtures.mjs";
 import fs from "node:fs";
 import { appSource } from "./app_source.mjs";
+import { runInNewContext } from "node:vm";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
   console.log(`  ${ok ? "ok " : "FAIL"}  ${what}${ok || !detail ? "" : `   ${detail}`}`);
   if (!ok) failures++;
 };
+
+{
+  const src = appSource(), first = src.indexOf('async function submitBoardPayload('), last = src.indexOf('async function offerBoardSubmit(', first);
+  const sent = [], existing = { score: 10 };
+  const submit = runInNewContext(src.slice(first,last)+'submitBoardPayload', {
+    presetWeapon: () => 'acceltra', boardRowMatching: async () => existing,
+    boardVerdict: async () => ({ok:true,accepted:true,boards:1,of:1}), track() {},
+    fetch: async (path,init) => {sent.push({path,body:JSON.parse(init.body)});return {ok:true};},
+  });
+  const outcome = await submit({weapon:'acceltra',benchmark:'standard_single_target',mode:'base'});
+  check('a published build still requests missing database coverage',sent.length===1 && sent[0].body.requested===true && outcome.state==='onboard');
+}
 
 // A LIBRARY STUB, AND IT IS THE WHOLE STORE NOW. `prepare(sql).bind(...).run()` and
 // `.first()` are the whole surface the worker touches.

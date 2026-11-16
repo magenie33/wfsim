@@ -20,7 +20,7 @@
 
 import { decodeShare, useShareHost } from "./share_codec.js";
 import { equipmentLibraryRoute } from "./equipment_library.js";
-import { accountRoute, purgeDeleted, sessionAccount, initiatorCode } from "./accounts.js";
+import { accountRoute, purgeDeleted, sessionAccount, initiatorCode, sameSite, limited } from "./accounts.js";
 import { cloudPath, cloudRoute, READ_ONLY_CLOUD } from "./cloud.js";
 import { agentRoute } from "./agents.js";
 import { BOT_AUTH_DIRECTORY, botAuthDirectory } from "./bot_auth.js";
@@ -40,6 +40,7 @@ import { familyRoute } from "./board_family.js";
 import { boardTasksRoute } from "./board_tasks.js";
 import { boardInventoryRoute } from "./board_inventory.js";
 import { boardPagesRoute } from "./board_pages.js";
+import { boardRequestsRoute } from "./board_requests.js";
 import { verifyRoute } from "./verify.js";
 import { syncRoute } from "./sync.js";
 import { noteFactoryCall } from "./factory_calls.js";
@@ -221,6 +222,8 @@ async function submit(request, env) {
   const { b, err, bytes } = await body(request, BOARD_SUBMIT_BATCH_BYTES, true);
   if (err) return bad(err, err === "payload too large" ? 413 : 400);
   const many = !!b && typeof b === "object" && Object.hasOwn(b, "builds");
+  if (b?.requested === true && (many || !sameSite(request))) return bad("invalid requested board input");
+  if (b?.requested === true && await limited(env, request, "board-request")) return bad("too many board requests", 429);
   if (many && (!Array.isArray(b.builds) || (!b.builds.length && !b.harvest))) return bad("bad builds");
   if (many && b.builds.length > BOARD_SUBMIT_BATCH_MAX) return bad("too many builds", 413);
   if (!many && bytes > MAX_BYTES) return bad("payload too large");
@@ -271,6 +274,14 @@ async function submit(request, env) {
   // write, and telling somebody "sent" when it was not is the one answer a
   // submission endpoint may never give.
   try {
+    if (b.requested === true) {
+      const rec = records[0];
+      if (!ID_PLAIN.test(rec.benchmark || "") || !ID_PLAIN.test(rec.mode || "base")) return bad("a requested board calculation requires a ruler and mode");
+      const id = crypto.randomUUID();
+      await env.LIBRARY.prepare("SELECT board_request_submit(?::text,?::text,?::text,?::text)")
+        .bind(id, rec.at, JSON.stringify(rec), initiator).run();
+      return Response.json({ ok: true, request: id });
+    }
     const family = harvest?.claims.family_source;
     const columns = family ? "id, at, record, initiator, family_source" : "id, at, record, initiator";
     const values = records.map(() => family ? "(?, ?, ?, ?, ?)" : "(?, ?, ?, ?)").join(", ");
@@ -872,6 +883,7 @@ async function serve(request, env, ctx) {
     if (path === "/api/board/ask" || path === "/api/board/adopt") return boardTasksRoute(request, env, path);
     if (path === "/api/board/inventory") return boardInventoryRoute(request, env);
     if (path === "/api/board/pages" || path === "/api/board/pages/catalog") return boardPagesRoute(request, env, ctx);
+    if (path === "/api/board/requests/status") return boardRequestsRoute(request, env);
     if (path.startsWith("/api/tasks/official/")) return officialRoute(request, env, path);
     if (path.startsWith("/api/board/live/")) return pushLive(request, env, path.slice("/api/board/live/".length));
     {

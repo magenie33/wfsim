@@ -1,0 +1,21 @@
+# Only explicit requested sources may advance while general intake remains paused.
+[Unit]
+Description=WFSim requested board intake
+After=network-online.target postgresql.service
+Wants=network-online.target
+RequiresMountsFor=/srv/wfsim-data
+
+[Service]
+User=wfsim-board
+WorkingDirectory=/opt/wfsim-board-requested
+Environment=WFSIM_BOARD_STORAGE_REQUIRED=1
+EnvironmentFile=/etc/wfsim-board-requested.env
+ExecStart=/usr/bin/node scripts/board_requested_intake.mjs
+Nice=15
+CPUWeight=20
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=40
+
+[Install]
+WantedBy=multi-user.target
