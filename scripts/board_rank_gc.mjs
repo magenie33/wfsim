@@ -53,10 +53,10 @@ export async function collectRankStorage(sql,{work,source}) {
    AND NOT EXISTS(SELECT 1 FROM record_board_rank_snapshot_refs r WHERE r.token=g.token)`,[generation.token]);
   return {status:'collected-generation'};
  }
- const [part]=await sql.unsafe(`SELECT * FROM state_board_rank_partitions WHERE(complete OR available_at IS NULL) AND path<>'' ORDER BY weapon,ruler LIMIT 1`);
+ const [part]=await sql.unsafe(`SELECT * FROM state_board_rank_partitions WHERE complete AND path<>'' ORDER BY weapon,ruler LIMIT 1`);
  if(part){
   await removeArtifacts(dirname(part.path),work,'rank-cut-',['inputs.ndjson']);
-  await sql.unsafe("UPDATE state_board_rank_partitions SET path='' WHERE weapon=$1 AND ruler=$2 AND path=$3 AND(complete OR available_at IS NULL)",[part.weapon,part.ruler,part.path]);
+  await sql.unsafe("UPDATE state_board_rank_partitions SET path='' WHERE weapon=$1 AND ruler=$2 AND path=$3 AND complete",[part.weapon,part.ruler,part.path]);
   return {status:'collected-baseline'};
  }
  return null;

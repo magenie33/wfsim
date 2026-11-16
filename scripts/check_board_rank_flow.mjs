@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Exercise the complete canonical-mailbox to staged-page path through actual Native and PostgreSQL.
 import assert from 'node:assert/strict';
-import {readFileSync,writeFileSync,chmodSync,mkdtempSync,rmSync} from 'node:fs';
+import {readFileSync,writeFileSync,chmodSync,mkdtempSync,rmSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {randomBytes} from 'node:crypto';
@@ -79,7 +79,18 @@ try{
  const original=readFileSync(partial.path),corrupt=Buffer.from(original);corrupt[1]^=1;
  chmodSync(partial.path,0o640);writeFileSync(partial.path,corrupt);
  await assert.rejects(prepareRankBaselinePage(sql,native,partial,{work}),/digest changed/);
+ await until(row=>row.status==='baseline_error'&&row.blocked,'corrupt incomplete baseline blocked');
+ const [blocked]=await sql.unsafe('SELECT * FROM state_board_rank_partitions');
+ assert.equal(blocked.available_at,null);assert.equal(blocked.complete,false);
+ assert(Number(blocked.loaded)>0&&Number(blocked.loaded)<Number(blocked.total));
+ assert(Number(blocked.cursor)>0&&Number(blocked.cursor)<Number(blocked.bytes));
+ await collectRankStorage(sql,context);
+ assert(existsSync(partial.path),'GC must retain the recovery cut for an incomplete blocked baseline');
+ const [retained]=await sql.unsafe('SELECT * FROM state_board_rank_partitions');
+ for(const key of ['path','cut','cursor','loaded','total'])assert.equal(retained[key],blocked[key],'blocked baseline retains '+key);
+ assert.equal(readFileSync(partial.path).equals(corrupt),true,'GC must not rewrite the retained cut');
  writeFileSync(partial.path,original);chmodSync(partial.path,0o440);
+ await sql.unsafe('UPDATE state_board_rank_partitions SET available_at=board_input_timestamp(clock_timestamp()),error=NULL WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
  await flow.close();flow=await open();
  const changed=inputs[0];await sql.unsafe('UPDATE board_facts SET score=500,finished_at=$2 WHERE identity=$1',[changed.identity,'2026-11-17T00:01:02.123Z']);
  for(const fact of changed.facts)await put('measurement','['+[changed.identity,ruler,fact.mode].map(JSON.stringify).join(', ')+']',{identity:changed.identity,ruler,mode:fact.mode,score:500});
@@ -88,6 +99,9 @@ try{
  const version=await put('review','review-before-registration',null);
  await sql.begin(tx=>routeRankInput(tx,{scope:'review',key:'review-before-registration',version,body:null,deleted:true},source));
  await until(row=>row.status==='published','resumed complete publication');
+ const [recovered]=await sql.unsafe('SELECT cut,total,loaded,cursor,bytes,complete FROM state_board_rank_partitions');
+ assert.equal(recovered.cut,partial.cut,'explicit recovery resumes the same immutable cut');
+ assert.equal(recovered.loaded,recovered.total);assert.equal(recovered.cursor,recovered.bytes);assert(recovered.complete);
  const first=await exact('resumed baseline plus dirty closure retains every exact row');
  assert(first.rows.some(row=>row.score===500));
  assert.equal(first.rows.length,178,'both modes of the deleted review are removed');
