@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto';
 import {readFileSync,writeFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 import {BOARD_PRODUCERS} from '../worker/board_tasks.js';
+import {placeholders} from '../worker/db.js';
 import {seedComputeWork} from './pg/fixtures.mjs';
 import {taskSchemaSql,orderCutSchemaSql,orderCutBusinessSql} from './task_schema.mjs';
 import {buildAdmissionSchemaSql} from './build_admission_schema.mjs';
@@ -40,6 +41,59 @@ function bounded(m,n) {
   assert.equal(m.temp_blocks,0,'key spills temporary blocks');
   assert(!m.consumer_scans.includes('Seq Scan'),'key scans unrelated consumers');
   assert(!m.indexes.includes('demands_live_due'),'key combines the whole live-due index');
+}
+
+export async function boardFactWriteKeyCases(db,{effectiveKey,cancelledKey,receiptFile=null}) {
+  const oldGate='EXISTS (SELECT 1 FROM state_board_effective_pending_work q WHERE q.build_id = state_board_measurement_selection.identity AND q.ruler = state_board_measurement_selection.ruler AND q.mode = state_board_measurement_selection.mode)';
+  const newGate='board_owed(state_board_measurement_selection.identity,state_board_measurement_selection.ruler,state_board_measurement_selection.mode)';
+  const observations=[],timeout=(await db.get('SHOW statement_timeout')).statement_timeout;
+  const credit=()=>db.get('SELECT (SELECT coalesce(sum(work),0) FROM entity_compute_devices) device_work,(SELECT count(*) FROM record_candidate_answers) answers,(SELECT coalesce(sum(credit_work),0) FROM record_candidate_answers) credited');
+  const beforeCredit=await credit();
+  const witness={owner:'keyed-fact-owner',device:'keyed-fact-device',official:0,completed_at:'2026-11-16T00:00:01.000Z',credited_at:'2026-11-16T00:00:02.000Z',position:1};
+  try {
+    await db.exec("SET statement_timeout='5s'");
+    for(const [kind,key,wanted,newer] of [['effective',effectiveKey,true,false],['cancelled',cancelledKey,false,false],['newer-score',effectiveKey,true,true]]) {
+      const task=await db.get('SELECT task_id FROM state_compute_scheduling WHERE id=?',key);
+      const writes=BOARD_PRODUCERS.sweep.on_fact_writes({LIBRARY:db},{payload:{identity:key,ruler:'r',mode:'base'}},
+        {engine:'111111111111',at:'2026-11-16T00:00:01.000Z',task_id:task.task_id,result:{score:7,metric:'kpm'},witnesses:[witness]});
+      assert.equal(writes.length,4,'real producer score, witness and pending delivery plan');
+      assert(writes[0].sql.includes(newGate),'real producer must use the bounded canonical key predicate');
+      const states=[];
+      for(const label of ['old','new']) {
+        const statement=label==='old'?writes[0].sql.replace(newGate,oldGate):writes[0].sql;
+        assert(label==='new'||statement!==writes[0].sql,'negative must restore the actual old pending-view predicate');
+        await db.exec('PREPARE fact_write(text,text,text,text,double precision,text,text,text,text,text,bigint) AS '+placeholders(statement));
+        for(const mode of ['force_generic_plan','force_custom_plan']) {
+          await db.exec('BEGIN;SET LOCAL plan_cache_mode='+mode);
+          try {
+            const finished=newer?'2999-01-01T00:00:00.000Z':'2020-01-01T00:00:00.000Z';
+            await db.run(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)
+              VALUES(?,'r','base','retained',1,'kpm',5,?,?) ON CONFLICT(identity,ruler,mode) DO UPDATE SET measured_by='retained',score=1,metric='kpm',cost_seconds=5,started_at=excluded.started_at,finished_at=excluded.finished_at,review_id=NULL`,key,finished,finished);
+            await db.run("DELETE FROM relation_measurement_witnesses WHERE identity=? AND ruler='r' AND mode='base'",key);
+            const command='EXECUTE fact_write('+writes[0].args.map(literal).join(',')+')';
+            const plan=(await db.get('EXPLAIN(ANALYZE,BUFFERS,FORMAT JSON,TIMING OFF) '+command))['QUERY PLAN'][0],metrics=measured(plan);
+            if(!newer&&label==='old')assert.throws(()=>bounded(metrics,1),/key/,'actual old fact conflict write must fail its executed read budget');
+            else bounded(metrics,1);
+            for(const write of writes.slice(1))await write.run();
+            const score=await db.get("SELECT measured_by,score,metric,cost_seconds,started_at,finished_at,review_id FROM state_board_measurement_selection WHERE identity=? AND ruler='r' AND mode='base'",key);
+            assert.equal(score.score,wanted&&!newer?7:1,'same owed and finished-at CAS gate');
+            const witnesses=await db.all("SELECT owner,device,official,completed_at,credited_at,position FROM relation_measurement_witnesses WHERE identity=? AND ruler='r' AND mode='base' ORDER BY device",key);
+            assert.deepEqual(witnesses,wanted&&!newer?[witness]:[],'witnesses keep their accepted completion and credit timestamps');
+            assert.equal((await db.get("SELECT count(*) n FROM state_board_pending_work WHERE build_id=? AND ruler='r' AND mode='base'",key)).n,0,'real producer settles physical pending delivery');
+            assert.deepEqual(await credit(),beforeCredit,'business delivery must not credit accepted work twice');
+            states.push({score,witnesses});observations.push({kind,label,mode,metrics,plan});
+            if(receiptFile)writeFileSync(receiptFile,JSON.stringify({observations,complete:false},null,2)+'\n');
+            console.log(JSON.stringify({kind,label,mode,metrics}));
+          } finally {await db.exec('ROLLBACK');}
+        }
+        await db.exec('DEALLOCATE fact_write');
+      }
+      for(const state of states.slice(1))assert.deepEqual(state,states[0],'old and new real producer plans must retain complete score and witness rows');
+    }
+  } finally {await db.run("SELECT set_config('statement_timeout',?::text,false)",timeout);}
+  if(receiptFile)writeFileSync(receiptFile,JSON.stringify({observations,complete:true,rows_equal:true,credit_unchanged:true},null,2)+'\n');
+  console.log('ok actual community fact conflict writes fail on the old view walk and pass indexed keys; score CAS, pending settlement, witnesses and accepted credit are unchanged');
+  return observations;
 }
 
 export async function orderCutKeyCases(db,{prefix=512,cancelled=100001,protectedCount=1024,idPrefix='key-',seed=true,
@@ -170,6 +224,7 @@ export async function orderCutKeyCases(db,{prefix=512,cancelled=100001,protected
   }
   assert(orderCutSchemaSql().includes(view(current,'state_compute_effective_open')));
   assert(orderCutBusinessSql().includes(owed(source('sync'))));
+  await boardFactWriteKeyCases(db,{effectiveKey:id(total),cancelledKey:id(prefix+1)});
   save();console.log('ok keyed board_owed and real wanted_many fail on frozen ef61, use bounded indexed keys, retain canonical fact/delivery/ref/ledger semantics and types/grants after two nonempty upgrades');
   return observations;
 }
