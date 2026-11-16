@@ -82,3 +82,5 @@ together under the mailbox claim. Existing partitions retain their operator
 selection, including an explicit rollback. Unknown aliases, oversized inputs
 and failed preparation retain the complete static view and a retry receipt;
 they cannot select an incomplete online partition.
+Deterministic qualification failures leave the ready queue until explicit repair.
+Temporary database, lease and process failures keep the ordinary retry delay.

@@ -238,6 +238,10 @@ try{
  const unsafe=await db.get('SELECT * FROM state_board_read_partitions WHERE weapon=? AND ruler=?',record.weapon,otherRuler);
  assert(!unsafe.enabled&&!unsafe.canonical_sources&&unsafe.revision===null);
  assert((await db.get("SELECT last_error FROM state_board_input_mailbox WHERE scope='partition' AND key=?",JSON.stringify([record.weapon,otherRuler]))).last_error);
+ const blocked=await db.get("SELECT available_at,last_failed_at FROM state_board_input_mailbox WHERE scope='partition' AND key=?",JSON.stringify([record.weapon,otherRuler]));
+ assert.equal(blocked.available_at,null,'deterministic qualification failures must leave the retry queue until explicit repair');
+ for(let i=0;i<100;i++){const step=await flow.step();if(step.status==='idle')break;assert(i<99);}
+ assert.equal((await db.get("SELECT last_failed_at FROM state_board_input_mailbox WHERE scope='partition' AND key=?",JSON.stringify([record.weapon,otherRuler]))).last_failed_at,blocked.last_failed_at,'an idle pass cannot repeat the failed full qualification');
  const fallback=await worker.fetch(new Request('https://wfsim.app/api/board/pages?'+new URLSearchParams({weapon:record.weapon,ruler:otherRuler})),env,{waitUntil(){}});
  assert.equal(fallback.status,404,'an unqualified partition retains the complete static view');
  await db.run('UPDATE state_board_read_partitions SET enabled=false WHERE weapon=? AND ruler=?',record.weapon,ruler);
