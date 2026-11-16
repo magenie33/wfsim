@@ -513,20 +513,35 @@ END $$;
 
 -- Queue ownership remains physical; effective membership follows the captured computation round.
 CREATE OR REPLACE VIEW state_board_effective_pending_work AS
-  WITH cut AS MATERIALIZED(SELECT * FROM compute_order_cut())
+  WITH cut AS MATERIALIZED(SELECT * FROM compute_order_cut()),
+  current_ids AS (
+    SELECT id FROM state_compute_effective_open
+    UNION ALL SELECT id FROM state_compute_scheduling WHERE state<'open'
+    UNION ALL SELECT id FROM state_compute_scheduling WHERE state>'open'
+  ),
+  live_keys AS (
+    SELECT DISTINCT k.build_id,k.ruler,k.mode FROM cut CROSS JOIN current_ids q
+    CROSS JOIN LATERAL (
+      SELECT d.question,b.build_id,b.ruler,b.mode FROM relation_task_consumers d
+      JOIN state_board_pending_work b ON (b.build_id,b.ruler,b.mode)=
+        (split_part(d.ref,'|',1),split_part(d.ref,'|',2),split_part(d.ref,'|',3))
+      WHERE d.question=q.id AND d.state='live' AND d.producer IN('new_build','survey_build','refresh','sweep') OFFSET 0
+    ) k
+    CROSS JOIN LATERAL (
+      SELECT 1 FROM state_compute_work w WHERE w.id=k.question OFFSET 0
+    ) live
+  )
   SELECT q.* FROM state_board_pending_work q WHERE NOT EXISTS(SELECT 1 FROM cut)
   UNION ALL
-  SELECT DISTINCT b.* FROM cut CROSS JOIN state_compute_effective_work q
-    JOIN relation_task_consumers d ON d.question=q.id AND d.state='live'
-      AND d.producer IN('new_build','survey_build','refresh','sweep')
-    JOIN state_board_pending_work b ON (b.build_id,b.ruler,b.mode)=
-      (split_part(d.ref,'|',1),split_part(d.ref,'|',2),split_part(d.ref,'|',3))
+  SELECT b.* FROM live_keys k JOIN state_board_pending_work b USING(build_id,ruler,mode)
   UNION ALL
   SELECT q.* FROM cut c JOIN entity_compute_batches batch ON batch.at>c.cut_at
-    JOIN state_board_pending_work q ON q.batch=batch.id
-    WHERE NOT EXISTS(SELECT 1 FROM relation_task_consumers d JOIN state_compute_work w ON w.id=d.question
+    CROSS JOIN LATERAL (SELECT q.* FROM state_board_pending_work q WHERE q.batch=batch.id OFFSET 0) q
+    WHERE NOT EXISTS(SELECT 1 FROM relation_task_consumers d CROSS JOIN LATERAL (
+        SELECT 1 FROM state_compute_work w WHERE w.id=d.question OFFSET 0
+      ) live
       WHERE d.state='live' AND d.producer IN('new_build','survey_build','refresh','sweep')
-        AND d.ref=q.build_id||'|'||q.ruler||'|'||q.mode);
+        AND d.ref=q.build_id||'|'||q.ruler||'|'||q.mode OFFSET 0);
 
 CREATE OR REPLACE FUNCTION compute_order_family_wanted(text) RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
