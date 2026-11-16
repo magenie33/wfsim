@@ -6,6 +6,7 @@ import {createReadStream} from 'node:fs';
 import {createInterface} from 'node:readline';
 import {join} from 'node:path';
 import {boardStorage} from './board_storage.mjs';
+import {lockRankInputs} from './board_rank_keys.mjs';
 const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const MAX_SOURCES=64,MAX_BYTES=4*1024*1024;
 export class BoardRankConflict extends Error {}
@@ -68,7 +69,17 @@ export async function createRankPartition(sql,{weapon,ruler,source,native,cut}) 
 }
 
 export async function applyRankSources(tx,part,prepared,{live=false,cursor=null,loaded=null}={}) {
- const [locked]=await tx.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 FOR UPDATE',[part.weapon,part.ruler]);
+ await tx.unsafe('SELECT board_rank_source_lock($1::text)',[part.source]);
+ await lockRankInputs(tx,part.source,{identities:prepared.sources.map(row=>row.identity),
+  reviews:prepared.sources.flatMap(row=>row.dependencies.filter(d=>d.scope==='review').map(d=>d.key))});
+ const dependencies=prepared.sources.flatMap(row=>row.dependencies);
+ if(live&&dependencies.length){
+  const ahead=await tx.unsafe(`SELECT i.scope,i.key FROM state_board_rank_route_inputs i
+   JOIN jsonb_to_recordset(($1::text)::jsonb)d(scope text,key text,version bigint) USING(scope,key)
+   WHERE d.version IS NULL OR i.version>d.version LIMIT 1`,[JSON.stringify(dependencies)]);
+  if(ahead.length)throw new BoardRankConflict('source routing advanced during native preparation');
+ }
+ const [locked]=await tx.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 FOR NO KEY UPDATE',[part.weapon,part.ruler]);
  if(!locked||locked.source!==part.source||locked.native!==part.native||locked.cut!==part.cut)
   throw new BoardRankQualificationError('ranking projection source changed');
  if(String(locked.revision)!==String(part.revision))throw new BoardRankConflict('ranking projection changed during native preparation');
@@ -105,12 +116,10 @@ export async function applyRankSources(tx,part,prepared,{live=false,cursor=null,
  return updated;
 }
 
-export async function prepareRankSnapshot(sql,native,{weapon,ruler,source,work}) {
- boardStorage(work);
- const directory=await mkdtemp(join(work,'board-rank-')),path=join(directory,'winners.ndjson');
+export async function captureRankWinners(sql,native,{weapon,ruler,source,path}) {
  let file;
  try{
-  file=await open(path,'wx');let diskBytes=0;
+  file=await open(path,'wx');let diskBytes=0;const checksum=createHash('sha256');
   const captured=await sql.begin('isolation level repeatable read read only',async tx=>{
    const [part]=await tx.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
    if(!part?.complete||part.source!==source||part.native!==native.adapter)throw new BoardRankQualificationError('ranking baseline is incomplete or changed');
@@ -125,14 +134,22 @@ export async function prepareRankSnapshot(sql,native,{weapon,ruler,source,work})
     for(const row of page){
      const body=JSON.stringify(row)+'\n';diskBytes+=Buffer.byteLength(body);
      if(diskBytes>256*1024*1024)throw new BoardRankQualificationError('ranking index staging exceeds its disk budget');
-     await file.write(body);
+     checksum.update(body);await file.writeFile(body);
     }
     if(page.length<256)break;
    }
    await tx.unsafe('CLOSE board_rank_output');
    return {...part,captured_at};
   });
-  await file.sync();await file.close();file=null;
+  await file.sync();return {...captured,winners_sha256:checksum.digest('hex'),disk_bytes:diskBytes};
+ }finally{await file?.close();}
+}
+
+export async function prepareRankSnapshot(sql,native,{weapon,ruler,source,work}) {
+ boardStorage(work);
+ const directory=await mkdtemp(join(work,'board-rank-')),path=join(directory,'winners.ndjson');
+ try{
+  const captured=await captureRankWinners(sql,native,{weapon,ruler,source,path});
   const rows=[],pages=[],leaders=new Map();let pending=[],bytes=0;
   const consume=async()=>{
    const decisions=await native.call('floor',pending.map(row=>({score:Number(row.score),leader:Number(row.leader)})));
@@ -151,5 +168,5 @@ export async function prepareRankSnapshot(sql,native,{weapon,ruler,source,work})
   const heads=[...leaders.values()].sort((a,b)=>a.mode<b.mode?-1:a.mode>b.mode?1:Number(a.riven)-Number(b.riven)).map(row=>row.body);
   return {weapon,ruler,rows,pages,leaders:heads,captured_at:captured.captured_at,index_revision:captured.revision,
    inputs_sha256:digest({source,cut:captured.cut,generation:captured.revision,inputs:captured.input_sha256,native:native.adapter})};
- }finally{await file?.close();await rm(directory,{recursive:true,force:true});}
+ }finally{await rm(directory,{recursive:true,force:true});}
 }

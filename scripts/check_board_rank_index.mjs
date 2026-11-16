@@ -51,7 +51,9 @@ async function oracle(label){
 try{
  await sql.unsafe('CREATE SCHEMA '+schema);
  await sql.unsafe(readFileSync(new URL('../worker/pg/board_mailbox.sql',import.meta.url),'utf8'));
+ await sql.unsafe(readFileSync(new URL('../worker/pg/board_pages.sql',import.meta.url),'utf8'));
  await sql.unsafe(readFileSync(new URL('../worker/pg/board_rank.sql',import.meta.url),'utf8'));
+ await sql.unsafe('UPDATE state_board_input_source SET source=$1',[source]);
  part=await createRankPartition(sql,{weapon,ruler,source,native:native.adapter,cut:'fixture-cut'});
  await apply(inputs,{cursor:32,loaded:32});
  await sql.unsafe('UPDATE state_board_rank_partitions SET complete=true WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
