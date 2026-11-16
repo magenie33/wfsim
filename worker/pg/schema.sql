@@ -1131,7 +1131,7 @@ CREATE TABLE IF NOT EXISTS record_compute_order_cancellations (
 );
 
 CREATE OR REPLACE FUNCTION compute_order_cut() RETURNS SETOF entity_compute_order_cuts
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+LANGUAGE sql STABLE SECURITY DEFINER ROWS 1 SET search_path FROM CURRENT AS $$
   SELECT c.* FROM entity_compute_order_cuts c JOIN record_compute_order_cut_activations a ON a.cut_id=c.id
 $$;
 
@@ -1182,12 +1182,16 @@ CREATE OR REPLACE VIEW state_compute_effective_open AS
     AND (coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id)
       <=(SELECT c.keep_zone,c.keep_position,c.keep_id FROM compute_order_cut() c)
   UNION ALL
-  SELECT s.* FROM entity_compute_tasks t JOIN state_compute_scheduling s ON s.id=t.computation AND s.task_id=t.id AND s.state='open'
+  SELECT s.* FROM entity_compute_tasks t CROSS JOIN LATERAL (
+    SELECT s.* FROM state_compute_scheduling s WHERE s.id=t.computation AND s.task_id=t.id AND s.state='open' OFFSET 0
+  ) s
     WHERE t.id>(SELECT task_cutoff FROM compute_order_cut())
       AND (coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id)
         >(SELECT c.keep_zone,c.keep_position,c.keep_id FROM compute_order_cut() c)
   UNION ALL
-  SELECT s.* FROM relation_compute_order_cut_protection p JOIN state_compute_scheduling s ON s.id=p.question AND s.state='open'
+  SELECT s.* FROM relation_compute_order_cut_protection p CROSS JOIN LATERAL (
+    SELECT s.* FROM state_compute_scheduling s WHERE s.id=p.question AND s.state='open' OFFSET 0
+  ) s
     WHERE p.cut_id=(SELECT id FROM compute_order_cut()) AND s.task_id<=(SELECT task_cutoff FROM compute_order_cut())
       AND (coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id)
         >(SELECT c.keep_zone,c.keep_position,c.keep_id FROM compute_order_cut() c);
@@ -1400,7 +1404,13 @@ CREATE OR REPLACE VIEW state_compute_work AS
 
 -- Effective reads use indexed open ranges; the original view remains the writable relation.
 CREATE OR REPLACE VIEW state_compute_effective_work AS
-  SELECT w.* FROM state_compute_effective_open live JOIN state_compute_work w ON w.id=live.id
+  SELECT live.id,w.verb,w.request,live.state,w.due_at,live.waits,w.opened_at,w.lanes,w.lease,live.lease_until,
+    w.leased_to,w.leased_at,w.lease_prev,w.leased_to_prev,w.lease_prev_until,w.needs,w.canon,w.fact_engine,w.fact_at,
+    w.odd,w.withdrawn_at,w.witnesses,w.producer,w.initiator,w.task_id,w.result_id,w.zone,w.zone_position,
+    w.required_capability,w.required_engine
+  FROM state_compute_effective_open live CROSS JOIN LATERAL (
+    SELECT w.* FROM state_compute_work w WHERE w.id=live.id OFFSET 0
+  ) w
   UNION ALL SELECT w.* FROM state_compute_work w WHERE w.state<'open'
   UNION ALL SELECT w.* FROM state_compute_work w WHERE w.state>'open';
 

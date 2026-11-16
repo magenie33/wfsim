@@ -7,6 +7,7 @@ import {hmac} from '../worker/accounts.js';
 import {factory,canon} from '../worker/tasks.js';
 import {prepareIntakeBuild} from './build_batches.mjs';
 import {readInventoryState,inventoryWrite} from '../worker/task_inventory.js';
+import {orderCutReadCases} from './check_order_cut_reads.mjs';
 
 export async function orderCutCases(db) {
   await db.exec(readFileSync(new URL('../worker/pg/order_cut_indexes.sql',import.meta.url),'utf8').replaceAll('INDEX CONCURRENTLY','INDEX'));
@@ -187,4 +188,5 @@ if(process.argv[1]===new URL(import.meta.url).pathname) {
     await orderCutCases(db);
   } finally {await db.close();}
   const flows=await testDb('library');try {await orderCutWorkflowCases(flows);}finally{await flows.close();}
+  const reads=await testDb('library');try {await orderCutReadCases(reads);}finally{await reads.close();}
 }

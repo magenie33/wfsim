@@ -5,6 +5,7 @@ import {readFileSync} from 'node:fs';
 import {randomBytes,createHash} from 'node:crypto';
 import {pgDb,postgresClient,placeholders} from '../worker/db.js';
 import {orderCutCases} from './check_order_cut.mjs';
+import {orderCutReadCases} from './check_order_cut_reads.mjs';
 import {factory,canon} from '../worker/tasks.js';
 
 const url=process.env.WFSIM_ORDER_CUT_TEST_URL;
@@ -44,6 +45,7 @@ try {
   await sql.unsafe(ddl);await sql.unsafe(ddl);
   assert.equal((await db.get('SELECT count(*) n FROM state_compute_effective_open')).n,effectiveBefore);
   console.log('ok actual PostgreSQL retains activated cut and protected history across two schema reloads');
+  await reset();await orderCutReadCases(db);
 
   await reset();await fixture();
   await db.run('SELECT compute_order_cut_capture(?::text)','race');
