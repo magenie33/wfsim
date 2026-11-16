@@ -121,6 +121,30 @@ and `CF_WORKERS_TOKEN` in order; publishing Workers alone does not grant DNS edi
 
 ## Factory capacity and deployment
 
+The online ranking reader runs independently as `wfsim-board-read.service`.
+`node scripts/board_read_schema.mjs --http-role <existing-role>` prints its
+first-install transaction. Run it as the library schema owner before deploying
+the HTTP reader; an existing mailbox or ranking schema refuses this installer.
+It adds no historical mailbox rows or compute orders. The separate
+`wfsim_board_read` role can read canonical inputs and update derived ranking
+state. Its login credentials are provisioned outside the artifact.
+
+The immutable reader runtime includes `board_result_flow.mjs`, its relative
+imports and the locked Postgres client. `/etc/wfsim-board-read.env` supplies
+`PG_URL`, `WFSIM_BOARD_READ_SOURCE`, `WFSIM_BOARD_READ_BIN`,
+`WFSIM_BOARD_READ_NATIVE_SHA` and the three board data-storage settings. The
+source UUID comes from `state_board_input_source`; the native SHA pins the
+existing board binary. Give this reader its own work root on the configured
+data mount. It does not replace the live board's runtime or state.
+
+Enable only a weapon/ruler partition whose source identities and complete
+historical coverage have been qualified. Set `canonical_sources` explicitly
+and enqueue its partition key through `board_input_put`. Verify the resulting
+complete pages, leaders, actual website and one subsequent source update.
+Disabling that partition restores its existing static rows on the next read.
+Stopping the reader leaves the last complete snapshot available. Neither
+operation changes task admission or computation controls.
+
 The unique daemon pulses `daemon_at` and `daemon_commit` every ten seconds
 through its reserved owner session, independently of statistics and their
 connection queue. Losing ownership stops the pulse. A heartbeat updates only

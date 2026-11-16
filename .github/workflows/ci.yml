@@ -723,6 +723,7 @@ jobs:
           node scripts/check_board_mailbox.mjs
           node scripts/check_board_capture.mjs
           node scripts/check_board_mailbox_pg.mjs
+          node scripts/check_board_result_flow.mjs
           node scripts/check_board_storage.mjs
           node scripts/check_prepared_board_inputs.mjs
           node scripts/check_prepared_board_access.mjs

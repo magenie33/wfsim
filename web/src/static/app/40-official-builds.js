@@ -306,6 +306,63 @@ function setBoardMeta(meta) {
 /// one this exists to keep; on wfsim.app it is asked first (`boardOffOrigin`).
 const BOARD_ORIGIN = "https://cdn.wfsim.app";
 
+async function readBoardPartitionCatalog(scene, weapon = null, signal) {
+  const base = window.__WFSIM_DESKTOP__ ? LIVE_ORIGIN : "";
+  const partitions = []; let after = "";
+  for (;;) {
+    const query = new URLSearchParams({ scene, after });
+    if (weapon) query.set("weapon", weapon);
+    const page = await fetchJsonPatient(`${base}/api/board/pages/catalog?${query}`, 1, signal);
+    if (!page?.ok || !Array.isArray(page.partitions)) throw new Error("The board is unavailable.");
+    partitions.push(...page.partitions);
+    if (!page.next) return partitions;
+    if (typeof page.next !== "string" || page.next <= after) throw new Error("Invalid board page.");
+    after = page.next;
+  }
+}
+
+async function readBoardPartitionRows(partition, signal) {
+  const base = window.__WFSIM_DESKTOP__ ? LIVE_ORIGIN : "";
+  const rows = []; let after = 0;
+  for (;;) {
+    const query = new URLSearchParams({ weapon: partition.weapon, ruler: partition.ruler, revision: partition.revision, after: String(after) });
+    const page = await fetchJsonPatient(`${base}/api/board/pages?${query}`, 1, signal);
+    if (!page?.ok || page.revision !== partition.revision || page.after !== after || page.count !== partition.rows
+        || !Array.isArray(page.rows) || page.rows.some(row => row.benchmark !== partition.ruler)) throw new Error("Invalid board page.");
+    rows.push(...page.rows);
+    if (page.next == null) {
+      if (rows.length !== page.count) throw new Error("Incomplete board page.");
+      return rows;
+    }
+    if (!Number.isSafeInteger(page.next) || page.next <= after || !page.rows.length) throw new Error("Invalid board page.");
+    after = page.next;
+  }
+}
+
+async function readCurrentBoardRows(weapon, scene, previous, signal) {
+  try {
+    const partitions = await readBoardPartitionCatalog(scene, weapon, signal);
+    if (!partitions.length) return previous;
+    const rows = (await Promise.all(partitions.map(partition => readBoardPartitionRows(partition, signal)))).flat();
+    const replaced = new Set(partitions.map(partition => partition.ruler));
+    return (previous || []).filter(row => !replaced.has(row.benchmark)).concat(rows);
+  } catch (_) { return previous; }
+}
+
+async function readCurrentBoardIndex(scene, previous, signal) {
+  if (!previous || typeof previous !== "object" || Array.isArray(previous)) return previous;
+  try {
+    const partitions = await readBoardPartitionCatalog(scene, null, signal);
+    const result = { ...previous };
+    for (const partition of partitions) {
+      if (!Array.isArray(partition.leaders) || partition.leaders.some(row => row.benchmark !== partition.ruler))
+        throw new Error("Invalid board leaders.");
+      result[partition.weapon] = (result[partition.weapon] || []).filter(row => row.benchmark !== partition.ruler).concat(partition.leaders);
+    }
+    return result;
+  } catch (_) { return previous; }
+}
+
 /// `res.ok` is not the whole test: a shell that falls back to its SPA answers
 /// `index.html` with a 200, so what decides is whether the body PARSES.
 async function fetchJson(url) {
@@ -416,6 +473,7 @@ async function readWeaponBoard(id, base, state) {
   if (/\/card\/?$/.test(location.pathname) && cardParams().kind === "pz") {
     try { rows = await fetchJsonPatient(`${base}/board/heads/${id}.json`); } catch (_) { /* every row, below */ }
     if (rows) {
+      for (const scene of benchScenes()) rows = await readCurrentBoardRows(id, scene, rows, boardFileSignal(state));
       if (boardFiles.get(id) !== state) return;
       BOARD[id] = rows;
       BOARD_HAVE.add(id);
@@ -430,6 +488,7 @@ async function readWeaponBoard(id, base, state) {
     const source = dir && window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : base;
     rows = await fetchJsonPatient(`${source}/board/${dir ? dir + "/" : ""}${id}.json`, 3, boardFileSignal(state));
   } catch (_) { /* unreachable */ }
+  rows = await readCurrentBoardRows(id, dir, rows, boardFileSignal(state));
   // NULL IS NOT AN EMPTY BOARD. A dev server has no `board/` at all, and a
   // weapon left unloaded is what `boardProjection` refuses to speak about.
   if (!rows || boardFiles.get(id) !== state) return;
@@ -452,13 +511,13 @@ async function loadSceneRows(id, base, dirs = boardRequestedDirs(id)) {
   await Promise.all([...new Set(dirs)].map((dir) => {
     if (state.loaded.has(dir) || state.failed.has(dir)) return null;
     if (state.pending.has(dir)) return state.pending.get(dir);
-    if (Array.isArray(listed[dir]) && !listed[dir].includes(id)) { state.loaded.add(dir); return null; }
-    const pending = fetch(`${sceneBase}/board/${dir ? dir + "/" : ""}${id}.json`, { cache: "no-cache", signal: boardFileSignal(state) })
+    const absent = Array.isArray(listed[dir]) && !listed[dir].includes(id);
+    const pending = (absent ? Promise.resolve([]) : fetch(`${sceneBase}/board/${dir ? dir + "/" : ""}${id}.json`, { cache: "no-cache", signal: boardFileSignal(state) })
       .then(async (r) => {
         if (r.status === 404) return [];
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
-      }).then((more) => {
+      })).then(more => readCurrentBoardRows(id, dir, more, boardFileSignal(state))).then((more) => {
         if (boardFiles.get(id) !== state || !BOARD[id]) return;
         if (!Array.isArray(more)) throw new Error("invalid board rows");
         const cells = new Set(benchList().filter((b) => benchSceneOf(b) === dir).map((b) => b.id));
@@ -530,7 +589,7 @@ function loadFullBoard() {
     const generation = boardIndexGeneration;
     boardIndexUnreachable = false;
     boardIndexAsk = fetchJsonPatient(`${boardOffOrigin ? BOARD_ORIGIN : ""}/board/index.json`)
-      .then((idx) => { if (generation === boardIndexGeneration) BOARD_INDEX = idx; },
+      .then(idx => readCurrentBoardIndex("", idx)).then((idx) => { if (generation === boardIndexGeneration) BOARD_INDEX = idx; },
         () => { if (generation === boardIndexGeneration) boardIndexUnreachable = true; })
       .finally(() => { if (generation === boardIndexGeneration) boardIndexAsk = null; });
   }
@@ -554,7 +613,7 @@ function loadSceneIndex(dir) {
     const generation = sceneIndexGeneration[dir] || 0;
     sceneIndexUnreachable[dir] = false;
     sceneIndexAsk[dir] = fetchJsonPatient(`${boardOffOrigin || window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : ""}/board/${dir}/index.json`)
-      .then((idx) => { if (generation === (sceneIndexGeneration[dir] || 0)) SCENE_INDEX[dir] = idx || {}; },
+      .then(idx => readCurrentBoardIndex(dir, idx || {})).then((idx) => { if (generation === (sceneIndexGeneration[dir] || 0)) SCENE_INDEX[dir] = idx || {}; },
         () => { if (generation === (sceneIndexGeneration[dir] || 0)) sceneIndexUnreachable[dir] = true; })
       .finally(() => { if (generation === (sceneIndexGeneration[dir] || 0)) delete sceneIndexAsk[dir]; });
   }
@@ -613,12 +672,13 @@ async function reloadReviewedBoard(weapon, ruler) {
   const work = (async () => {
     const files = await Promise.all(dirs.map(async scene => {
       const listed = meta.scene_weapons?.[scene];
-      if (scene && Array.isArray(listed) && !listed.includes(weapon)) return [];
-      const rows = await fetchJsonPatient(`${base}/board/${scene ? scene + "/" : ""}${weapon}.json`, 3, boardFileSignal(state));
+      const absent = scene && Array.isArray(listed) && !listed.includes(weapon);
+      const rows = absent ? [] : await fetchJsonPatient(`${base}/board/${scene ? scene + "/" : ""}${weapon}.json`, 3, boardFileSignal(state));
       if (!Array.isArray(rows)) throw new Error("The board is unavailable.");
-      return rows;
+      return readCurrentBoardRows(weapon, scene, rows, boardFileSignal(state));
     }));
-    const index = await fetchJsonPatient(`${base}/board/${dir ? dir + "/" : ""}index.json`, 3, boardFileSignal(state));
+    const priorIndex = await fetchJsonPatient(`${base}/board/${dir ? dir + "/" : ""}index.json`, 3, boardFileSignal(state));
+    const index = await readCurrentBoardIndex(dir, priorIndex, boardFileSignal(state));
     if (!index || typeof index !== "object" || Array.isArray(index)
       || (index[weapon] != null && !Array.isArray(index[weapon])) || boardFiles.get(weapon) !== state)
       throw new Error("The board is unavailable.");

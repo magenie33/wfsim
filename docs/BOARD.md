@@ -142,6 +142,37 @@ second source.
 | a row's score | the `scores` row for what the build READS | everything below |
 | what is published | `site/board/<weapon>.json` | `board/index.json`, `board.meta.json`, `data/board_state.yaml` |
 
+### Online ranking reads
+
+An enabled online partition is one weapon and ruler. Its complete current
+snapshot in `state_board_read_partitions` replaces that partition's static
+rows and leaders together. Other partitions retain their published files.
+The page replaces a partition only after fetching every page of its pinned
+revision; a failed read retains the previous complete view.
+
+`scripts/board_result_flow.mjs` consumes canonical source changes through the
+board input mailbox. Routing and the next partition handoff commit with the
+source acknowledgement. The existing native assembly applies legality,
+deduplication and entry floors without running fights. Snapshot rows, leaders,
+the current revision and the partition acknowledgement commit together.
+Older captured input cannot replace a newer handoff.
+
+Partition activation requires a qualified canonical source identity contract.
+The first capture reads source headers in bounded cursor batches and loads
+records only when that ruler has a fact. Subsequent captures use the indexed
+measurement routes. Source routing maintains those references; a removal
+rebuilds the partition from current facts. The routes are a derived lookup,
+and never supply a score. A changed native identity refuses publication.
+Unqualified historical aliases must be resolved before their partition is
+enabled. A partition exceeding the input or output byte budget retains its
+previous publication.
+
+`GET /api/board/pages/catalog` pages through complete partition metadata and
+leaders. `GET /api/board/pages` reads at most 128 rows using a revision and
+ordinal cursor. Public responses use a ten-second page cache. Publication
+retains two immutable snapshots; an unavailable older revision requires a new
+complete read. These reads create no compute orders.
+
 **DERIVED IS NOT A SECOND SOURCE, and the difference is whether it can
 DISAGREE.** `index.json` is computed FROM the weapon files in the same pass that
 writes them, so no state of the world makes the two differ. A cross-weapon file

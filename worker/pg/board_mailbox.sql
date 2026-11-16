@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS state_board_input_mailbox (
   last_error_version BIGINT,
   last_failed_at TEXT COLLATE "C",
   PRIMARY KEY(scope,key),
-  CHECK (scope IN ('build','measurement','review')),
+  CHECK (scope IN ('build','measurement','review','partition')),
   CHECK (octet_length(key) BETWEEN 1 AND 512),
   CHECK (version>=0 AND applied_version>=-1 AND applied_version<=version),
   CHECK (body IS NULL OR jsonb_typeof(body)='object'),
@@ -50,7 +50,7 @@ CREATE OR REPLACE FUNCTION board_input_put(text,text,text) RETURNS bigint
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE value jsonb:=$3::jsonb; revision bigint; digest text;
 BEGIN
-  IF $1 IS NULL OR $1 NOT IN ('build','measurement','review') OR $2 IS NULL OR octet_length($2) NOT BETWEEN 1 AND 512
+  IF $1 IS NULL OR $1 NOT IN ('build','measurement','review','partition') OR $2 IS NULL OR octet_length($2) NOT BETWEEN 1 AND 512
     OR (value IS NOT NULL AND jsonb_typeof(value)<>'object') THEN RAISE EXCEPTION 'invalid board input'; END IF;
   digest:=encode(sha256(convert_to(coalesce(value::text,'null'),'UTF8')),'hex');
   INSERT INTO state_board_input_mailbox(scope,key,version,body,removed,body_hash,available_at)
@@ -69,7 +69,7 @@ CREATE OR REPLACE FUNCTION board_input_seed(text,text,text) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE value jsonb:=$3::jsonb; inserted bigint;
 BEGIN
-  IF $1 IS NULL OR $1 NOT IN ('build','measurement','review') OR $2 IS NULL OR octet_length($2) NOT BETWEEN 1 AND 512
+  IF $1 IS NULL OR $1 NOT IN ('build','measurement','review','partition') OR $2 IS NULL OR octet_length($2) NOT BETWEEN 1 AND 512
     OR (value IS NOT NULL AND jsonb_typeof(value)<>'object') THEN RAISE EXCEPTION 'invalid board input'; END IF;
   INSERT INTO state_board_input_mailbox(scope,key,version,body,removed,body_hash,available_at)
     VALUES($1,$2,0,value,value IS NULL,encode(sha256(convert_to(coalesce(value::text,'null'),'UTF8')),'hex'),board_input_timestamp(clock_timestamp()))

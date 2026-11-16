@@ -45,7 +45,8 @@ for (const path of ['tests/fixtures/build-admission-base5a/unknown.sql', 'script
   assert.equal(classify([path]).deep, true, path + ' is outside the exact declarations');
 const boardPipelineInputs = ['scripts/check_order_cut.mjs', 'scripts/check_order_cut_pg.mjs', 'scripts/check_order_cut_reads.mjs', 'scripts/check_order_cut_keyed.mjs',
   'scripts/check_inventory_inputs_keyed.mjs', 'tests/fixtures/inventory-inputs-keyed/broad-inputs.sql',
-  'scripts/board_input_mailbox.mjs',
+  'scripts/board_input_mailbox.mjs', 'scripts/board_result_flow.mjs', 'scripts/board_result_browser.mjs', 'scripts/board_read_schema.mjs',
+  'deploy/wfsim-board-read.service', 'deploy/board_read_grants.sql',
   'tests/fixtures/order-cut-activation/f3ffb55e.sql', 'tests/fixtures/order-cut-effective-reads/501b4458.sql',
   'tests/fixtures/order-cut-effective-reads/ef61dd588.sql',
   'scripts/factory_capacity.mjs', 'scripts/pg_health.py', 'scripts/check_pg_health.py',
@@ -107,7 +108,7 @@ assert.equal(classify(['docs/UI.md', 'README.md']).jobs.length, 0);
 for (const paths of [['docs/UI.md'], ['worker/index.js'], ['web/src/static/style.css'], ['site/release.json']]) {
   assert.deepEqual(classify(paths, false, false).jobs, PRODUCT_JOBS, 'an unverified base cannot justify skipping tests');
 }
-for (const path of ['web/src/static/style.css', 'data/i18n/en/ui.yaml', 'web/src/static/app/40-official-builds.js']) {
+for (const path of ['web/src/static/style.css', 'data/i18n/en/ui.yaml', 'web/src/static/app/41-fissures.js']) {
   const p = classify([path]);
   assert.equal(p.scope, 'frontend');
   assert.deepEqual(p.jobs, FRONTEND_JOBS);
