@@ -11,6 +11,7 @@ import worker from '../worker/index.js';
 import {normalizeBoardRequest,requestedBoardPass} from './board_requested_intake.mjs';
 import {openBoardResultFlow} from './board_result_flow.mjs';
 import {boardRequestedSchema} from './board_requested_schema.mjs';
+import {calculationId} from '../worker/board_tasks.js';
 
 const url=process.env.WFSIM_REQUESTED_INTAKE_TEST_URL||process.env.WFSIM_BOARD_MAILBOX_TEST_URL;
 assert(url&&['127.0.0.1','localhost','[::1]'].includes(new URL(url).hostname),'use an isolated local PostgreSQL');
@@ -39,9 +40,11 @@ try{
  for(const name of ['schema','library','sync','inventory','build_workflows','board_admission'])
   await sql.unsafe(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
  await db.run("INSERT INTO record_build_submissions(id,at,record,initiator) VALUES('old-inbox',?,'{}','anonymous')",at);
+ for(const name of ['board_mailbox','board_capture','board_pages'])
+  await sql.unsafe(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
  await sql.unsafe('CREATE ROLE '+runnerRole+' NOLOGIN');
  const [{current_user:owner}]=await sql.unsafe('SELECT current_user');
- const install=httpRole=>boardRequestedSchema({httpRole,runnerRole}).replace("default_tablespace='wfsim_data'","default_tablespace='pg_default'");
+ const install=httpRole=>boardRequestedSchema({httpRole,runnerRole,readerRole:owner}).replace("default_tablespace='wfsim_data'","default_tablespace='pg_default'");
  const setup=await sql.reserve();
  const runInstall=async text=>{try{return await setup.unsafe(text);}catch(error){await setup.unsafe('ROLLBACK');throw error;}};
  try{
@@ -55,8 +58,6 @@ try{
  await assert.rejects(runner.unsafe('UPDATE state_board_request_control SET enabled=true'),error=>error.code==='42501');
  await assert.rejects(runner.unsafe('DELETE FROM entity_weapon_builds WHERE false'),error=>error.code==='42501');
  await assert.rejects(runner.unsafe("SELECT board_request_submit('bad','date','{}','anonymous')"),error=>error.code==='42501');
- for(const name of ['board_mailbox','board_capture','board_pages'])
-  await sql.unsafe(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
  await db.run("INSERT INTO state_task_pipeline_controls(name,paused,changed_at,changed_by) VALUES('admission',true,?,'check') ON CONFLICT(name) DO UPDATE SET paused=true",at);
  await db.run("INSERT INTO state_factory_parameters(name,value,set_at,set_by) VALUES('board_admission',0,?,'check') ON CONFLICT(name) DO UPDATE SET value=0",at);
  const fences=await db.all("SELECT * FROM state_task_pipeline_controls WHERE name='admission'");
@@ -125,12 +126,33 @@ try{
  const selected=await db.get('SELECT * FROM state_board_measurement_selection WHERE identity=?',normalized.id);
  assert.equal(selected.score,10);assert.equal(selected.measured_by,'verified:'+engine);
  assert.equal((await db.get('SELECT state FROM state_build_workflows WHERE id=?',(await requestRow(id)).workflow)).state,'succeeded');
+ const legacy='0fd706f8-7da9-4bca-8f93-3dbf7eaee322';
+ const legacyInput={id:'review:'+legacy,at:old,record:JSON.stringify({...normalized.record,benchmark:ruler,mode}),initiator:'anonymous',
+  observation:JSON.stringify({score:12,metric:'kpm',engine,baseline_score:10,baseline_finished_at:selected.finished_at,
+   request:calculation,ruler,mode,review:legacy})};
+ await sql.begin(async tx=>{
+  await tx.unsafe(`INSERT INTO entity_measurement_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
+   baseline_score,baseline_metric,baseline_cost_seconds,baseline_by,baseline_started_at,baseline_finished_at,created_at)
+   VALUES($1,$2,$3,$4,$5,$6,$7,'legacy-question',$8,'waiting',10,'kpm',0,$9,$10,$10,$3)`,
+   [calculationId(normalized.id,ruler,mode),legacy,old,normalized.id,ruler,mode,engine,JSON.stringify(normalized.record),selected.measured_by,selected.finished_at]);
+  await tx.unsafe('ALTER TABLE record_build_submissions DISABLE TRIGGER board_requested_review');
+  await tx.unsafe('INSERT INTO record_build_submissions(id,at,record,initiator,observation) VALUES($1,$2,$3,$4,$5)',Object.values(legacyInput));
+  await tx.unsafe('ALTER TABLE record_build_submissions ENABLE TRIGGER board_requested_review');
+ });
+ const legacyNormalized=await normalizeBoardRequest(binary,{kind:'correction',input:legacyInput,ruler,mode});
+ await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([legacyNormalized]));
+ const legacyIntent=await db.get('SELECT to_jsonb(i) body FROM entity_build_intake_intents i WHERE id=?',legacy);
  const reviewResponse=await post('/api/board/review',{identity:normalized.id,ruler,mode,engine,
   observed_score:12,baseline_score:10,metric:'kpm',request:calculation});
  assert.equal(reviewResponse.status,200,await reviewResponse.clone().text());
  const review=await reviewResponse.json();assert(review.accepted);
+ assert.notEqual(review.id,legacy,'a new click replaces the stranded legacy review with a fresh source');
+ assert.equal((await db.get('SELECT state FROM entity_measurement_reviews WHERE id=?',legacy)).state,'superseded');
+ assert(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',legacyInput.id),'the old inbox is retained');
  const correction='review:'+review.id;assert.equal((await requestRow(correction)).kind,'correction');
  assert((await pass()).staged);assert(!(await pass()).pending);
+ assert.deepEqual(await db.get('SELECT to_jsonb(i) body FROM entity_build_intake_intents i WHERE id=?',legacy),legacyIntent,'fresh admission never changes the old intent');
+ assert(await db.get("SELECT 1 FROM state_build_admission_work WHERE kind='intake' AND key=?",legacy),'the old staged work is not admitted');
  assert.equal(await count('state_compute_work'),1,'correction retains the computation identity and opens its execution round');
  await answer('3',12);
  assert.equal((await db.get('SELECT score FROM state_board_measurement_selection WHERE identity=?',normalized.id)).score,10);
@@ -145,26 +167,66 @@ try{
  const status=await (await post('/api/board/requests/status',{ids:[id,duplicate.request]})).json();
  assert(status.ok);assert.equal(status.requests[0].current_score,12);
  const [{source:publicationSource}]=await sql.unsafe('SELECT source FROM state_board_input_source');
- flow=await openBoardResultFlow({sql,source:publicationSource,engine,binary:boardBinary,work:root});
+ flow=await openBoardResultFlow({sql,source:publicationSource,engine,binary:boardBinary,work:root,requestedPartitions:true});
  const scene=flow.contract.rulers.find(row=>row.id===ruler).scene;
- await db.run('INSERT INTO state_board_read_partitions(weapon,ruler,scene,enabled,canonical_sources) VALUES(?,?,?,true,true)',record.weapon,ruler,scene);
- await db.run('SELECT board_input_put(?,?,NULL)', 'partition',JSON.stringify([record.weapon,ruler]));
+ assert.equal((await db.get('SELECT count(*) n FROM state_board_read_partitions')).n,0,'a source cannot activate its own partition');
  for(let i=0;i<100;i++){const step=await flow.step();if(step.status==='idle')break;assert(i<99);}
  const page=await worker.fetch(new Request('https://wfsim.app/api/board/pages?'+new URLSearchParams({weapon:record.weapon,ruler})),env,{waitUntil(){}});
  assert.equal(page.status,200);const published=await page.json();
  assert(published.rows.some(row=>row.score===12),'the website query must contain the independently accepted correction');
- await db.run('UPDATE entity_measurement_reviews SET created_at=?,round_at=? WHERE id=?',old,old,review.id);
+ const partition=await db.get('SELECT * FROM state_board_read_partitions WHERE weapon=? AND ruler=?',record.weapon,ruler);
+ assert(partition.enabled&&partition.canonical_sources&&partition.revision,'complete native preparation atomically selects the new requested partition');
+ assert((await db.get('SELECT activated_at FROM state_board_requested_partitions WHERE weapon=? AND ruler=?',record.weapon,ruler)).activated_at);
+ const retired='1690e865-7898-4ca5-a76c-eaa159867a16';
+ const cancelledTask=(await db.get('SELECT task_id FROM state_compute_scheduling WHERE id=?',cancelled)).task_id;
+ const cancelledBefore=await db.get('SELECT to_jsonb(q) body FROM state_compute_scheduling q WHERE id=?',cancelled);
+ await db.run(`INSERT INTO entity_measurement_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
+   baseline_score,baseline_metric,baseline_cost_seconds,baseline_by,baseline_started_at,baseline_finished_at,created_at,task_id)
+   SELECT ?,?,'2026-01-03T00:00:00.000Z',s.identity,s.ruler,s.mode,?,?,b.record,'waiting',s.score,s.metric,0,
+     s.measured_by,s.started_at,s.finished_at,?,? FROM state_board_measurement_selection s JOIN entity_weapon_builds b ON b.id=s.identity
+     WHERE s.identity=? AND s.ruler=? AND s.mode=?`,calculationId(normalized.id,ruler,mode),retired,engine,cancelled,old,cancelledTask,normalized.id,ruler,mode);
+ const fresh=await(await post('/api/board/review',{identity:normalized.id,ruler,mode,engine,
+  observed_score:13,baseline_score:12,metric:'kpm',request:calculation})).json();
+ assert(fresh.accepted&&fresh.id!==retired,'a new click cannot coalesce to a cancelled old execution');
+ assert((await pass()).staged);await pass();await answer('5',13);await answer('6',13);
+ assert.equal((await db.get('SELECT state FROM entity_measurement_reviews WHERE id=?',fresh.id)).state,'succeeded');
+ assert.deepEqual(await db.get('SELECT to_jsonb(q) body FROM state_compute_scheduling q WHERE id=?',cancelled),cancelledBefore,'a fresh request never reopens or rewrites the cancelled task');
+ for(let i=0;i<100;i++){const step=await flow.step();if(step.status==='idle')break;assert(i<99);}
+ const newest=await worker.fetch(new Request('https://wfsim.app/api/board/pages?'+new URLSearchParams({weapon:record.weapon,ruler})),env,{waitUntil(){}});
+ assert((await newest.json()).rows.some(row=>row.score===13));
+ await db.run("UPDATE entity_measurement_reviews SET created_at=?,round_at='2026-01-02T00:00:00.000Z' WHERE id=?",old,review.id);
+ await db.run("UPDATE entity_measurement_reviews SET created_at=?,round_at='2026-01-04T00:00:00.000Z' WHERE id=?",old,fresh.id);
  const invalid=await(await post('/api/board/review',{identity:normalized.id,ruler,mode,engine,
-  observed_score:13,baseline_score:12,metric:'kpm',request:{...calculation,duration:calculation.duration+1}})).json();
+  observed_score:14,baseline_score:13,metric:'kpm',request:{...calculation,duration:calculation.duration+1}})).json();
  assert(invalid.accepted);assert((await pass()).rejected,'an inexact observation must not enter execution');
  assert.equal((await db.get('SELECT state FROM entity_measurement_reviews WHERE id=?',invalid.id)).state,'failed');
  assert.equal((await requestRow('review:'+invalid.id)).phase,'rejected');
- assert.equal((await db.get('SELECT score FROM state_board_measurement_selection WHERE identity=?',normalized.id)).score,12);
+ assert.equal((await db.get('SELECT score FROM state_board_measurement_selection WHERE identity=?',normalized.id)).score,13);
+ const otherRuler='demolisher';
+ await db.run('INSERT INTO entity_weapon_builds(id,at,record) VALUES(?,?,?)','legacy-alias',old,JSON.stringify(normalized.record));
+ await db.run(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,score,metric,measured_by,cost_seconds,started_at,finished_at)
+   VALUES('legacy-alias',?,'base',1,'kpm',?,0,?,?)`,otherRuler,'verified:'+engine,old,old);
+ await post('/api/board/submit',{...body,benchmark:otherRuler});assert((await pass()).staged);
+ let refused=false;
+ for(let i=0;i<100;i++){
+  try{const step=await flow.step();if(step.status==='idle')break;}
+  catch(error){assert.match(error.message,/source identities require qualification/);refused=true;break;}
+ }
+ assert(refused,'an unknown legacy alias must prevent partition selection');
+ const unsafe=await db.get('SELECT * FROM state_board_read_partitions WHERE weapon=? AND ruler=?',record.weapon,otherRuler);
+ assert(!unsafe.enabled&&!unsafe.canonical_sources&&unsafe.revision===null);
+ assert((await db.get("SELECT last_error FROM state_board_input_mailbox WHERE scope='partition' AND key=?",JSON.stringify([record.weapon,otherRuler]))).last_error);
+ const fallback=await worker.fetch(new Request('https://wfsim.app/api/board/pages?'+new URLSearchParams({weapon:record.weapon,ruler:otherRuler})),env,{waitUntil(){}});
+ assert.equal(fallback.status,404,'an unqualified partition retains the complete static view');
+ await db.run('UPDATE state_board_read_partitions SET enabled=false WHERE weapon=? AND ruler=?',record.weapon,ruler);
+ try{await flow.step();}catch(error){assert.match(error.message,/qualification|selection changed/);}
+ assert.equal((await db.get('SELECT enabled FROM state_board_read_partitions WHERE weapon=? AND ruler=?',record.weapon,ruler)).enabled,false,'requested preparation cannot undo an operator rollback');
  assert.deepEqual(await db.all("SELECT * FROM state_task_pipeline_controls WHERE name='admission'"),fences);
  assert.deepEqual(await db.all('SELECT * FROM entity_compute_order_cuts'),cut);
  assert.deepEqual(await db.all('SELECT * FROM relation_compute_order_cut_protection'),protectedRows,'fresh leases cannot change the retained protection manifest');
- console.log(JSON.stringify({ok:true,source_kinds:2,canonical_identity:normalized.id,community_witnesses:4,
-  published_score:12,old_inbox_retained:true,bulk_admission_paused:true,active_cut_preserved:true,public_work_and_answers:true}));
+ console.log(JSON.stringify({ok:true,source_kinds:2,canonical_identity:normalized.id,community_witnesses:6,
+  published_score:13,old_inbox_retained:true,bulk_admission_paused:true,active_cut_preserved:true,public_work_and_answers:true,
+  automatic_partition:true,legacy_unadmitted_replaced:true,cancelled_execution_preserved:true,unqualified_static_retained:true}));
 }catch(error){console.error({query:error.query,parameters:error.parameters,where:error.where});throw error;}finally{
  await flow?.close();await runner?.end();await sql.unsafe('DROP SCHEMA '+schema+' CASCADE');
  await sql.unsafe('DROP ROLE IF EXISTS '+runnerRole);await sql.end();rmSync(root,{recursive:true,force:true});Math.random=realRandom;
