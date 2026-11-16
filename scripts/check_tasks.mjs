@@ -1121,6 +1121,7 @@ await runCase("fixed:eligibility-plan", async () => {
   check("a new engine still offers every eligible open question", plan["Actual Rows"] === open, JSON.stringify(plan));
   check("eligibility reads answers for the open field, not the engine's other answers", read <= 4 * open, `${read} answers for ${open} questions`);
   await db.close();
+  await checkCutGuardFirst();
 });
 
 console.log("\nlane eligibility reads only the selected questions' answers");
@@ -1296,7 +1297,7 @@ await runCase("fixed:official-claim-books", async () => {
   }
 });
 
-await runCase("fixed:cut-guard-first", async () => {
+async function checkCutGuardFirst() {
   const {readFileSync}=await import('node:fs');
   const db=await testDb('library'),at='2026-10-10T12:00:00.000Z',count=60764;
   const caps=JSON.stringify(['guard-reader','cap:fixed-board-input-v1','cap:calculation-reports-v1']);
@@ -1385,7 +1386,7 @@ await runCase("fixed:cut-guard-first", async () => {
     const rows=await empty.all(candidateSql,...args());
     check('an active cut with zero protection rows has no eligible old tail',rows.length===0);
   } finally {await empty.close();}
-});
+}
 
 console.log("\nlocks: every statement that gives back many leases takes their rows in id order");
 await runCase("fixed:lease-locks", async () => {
