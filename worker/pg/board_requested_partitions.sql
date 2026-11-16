@@ -4,7 +4,7 @@ CREATE TABLE state_board_requested_partitions (
   ruler TEXT COLLATE "C" NOT NULL,
   position BIGINT NOT NULL DEFAULT nextval('compute_queue_position'),
   enqueued BOOLEAN NOT NULL DEFAULT false,
-  activated_at TIMESTAMPTZ,
+  activated_at TEXT COLLATE "C",
   PRIMARY KEY(weapon,ruler)
 );
 CREATE INDEX board_requested_partitions_ready ON state_board_requested_partitions(position) WHERE NOT enqueued;
@@ -66,7 +66,7 @@ BEGIN
     OR NOT EXISTS(SELECT 1 FROM record_board_read_snapshots WHERE weapon=$1 AND ruler=$2 AND revision=$3 AND source=$4::text) THEN
     RAISE EXCEPTION 'requested partition has no committed projection';END IF;
   UPDATE state_board_read_partitions SET enabled=true,canonical_sources=true,revision=$3 WHERE weapon=$1 AND ruler=$2;
-  UPDATE state_board_requested_partitions SET activated_at=clock_timestamp() WHERE weapon=$1 AND ruler=$2;
+  UPDATE state_board_requested_partitions SET activated_at=board_input_timestamp(clock_timestamp()) WHERE weapon=$1 AND ruler=$2;
 END $$;
 REVOKE ALL ON FUNCTION board_requested_partition_capture(),board_requested_partition_enqueue(text,uuid),
   board_requested_partition_selected(text,text,boolean),board_requested_partition_activate(text,text,text,uuid) FROM PUBLIC;

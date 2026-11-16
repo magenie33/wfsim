@@ -66,12 +66,12 @@ try{
  try{
   await probe.unsafe(`CREATE TEMP TABLE state_board_request_control(id integer,source uuid,enabled boolean);
    CREATE TEMP TABLE state_board_requests(id text,position bigint,phase text,intent text,workflow text,lease uuid,
-     lease_until timestamptz,retry_at timestamptz,attempts bigint,error text);
-   CREATE TEMP TABLE entity_board_requests(id text,kind text,input jsonb,ruler text,mode text,created_at timestamptz);`);
+     lease_until text,retry_at text,attempts bigint,error text);
+   CREATE TEMP TABLE entity_board_requests(id text,kind text,input jsonb,ruler text,mode text,created_at text);`);
   const [{source:realSource}]=await sql.unsafe('SELECT source FROM state_board_request_control');
   await probe.unsafe('INSERT INTO pg_temp.state_board_request_control VALUES(1,$1::uuid,true)',[realSource]);
-  await probe.unsafe(`INSERT INTO pg_temp.state_board_requests VALUES('namespace-probe',1,'pending',NULL,NULL,NULL,NULL,clock_timestamp(),0,NULL);
-   INSERT INTO pg_temp.entity_board_requests VALUES('namespace-probe','missing','{}','r','base',clock_timestamp());`);
+  await probe.unsafe(`INSERT INTO pg_temp.state_board_requests VALUES('namespace-probe',1,'pending',NULL,NULL,NULL,NULL,'2026-01-01T00:00:00.000Z',0,NULL);
+   INSERT INTO pg_temp.entity_board_requests VALUES('namespace-probe','missing','{}','r','base','2026-01-01T00:00:00.000Z');`);
   const invoke=async()=>(await probe.unsafe('SELECT board_request_claim($1::uuid) claim',[realSource]))[0].claim;
   assert.equal(await invoke(),null,'temporary shadows cannot enable the real paused consumer');
   try{
@@ -128,6 +128,8 @@ try{
  const accepted=await response.json();assert.match(accepted.request,/^[a-f0-9-]{36}$/);
  const id=accepted.request;
  const [{claim}]=await sql.unsafe('SELECT board_request_claim($1::uuid) claim',[source]);
+ const instant=/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/;
+ for(const value of [claim.created_at,claim.retry_at,claim.lease_until])assert.match(value,instant);
  assert.equal(claim.id,id);assert((await pass()).idle,'an active claim cannot be stolen');
  const normalized=await normalizeBoardRequest(binary,claim);
  assert.equal(normalized.flow.nodes.length,1,'a player request has no family or optimizer fanout');
@@ -136,7 +138,7 @@ try{
  await assert.rejects(db.run('SELECT board_request_stage(?::text,?::uuid,?::text)',id,claim.lease,JSON.stringify(bad)),/changed its captured scope/);
  assert.equal(await count('entity_build_intake_intents'),2,'a rejected stage cannot add an intent');
  assert(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',id));
- await db.run("UPDATE state_board_requests SET lease_until=clock_timestamp()-interval '1second' WHERE id=?",id);
+ await db.run("UPDATE state_board_requests SET lease_until=board_input_timestamp(clock_timestamp()-interval '1second') WHERE id=?",id);
  await assert.rejects(db.run('SELECT board_request_stage(?::text,?::uuid,?::text)',id,claim.lease,JSON.stringify(normalized)),/lease changed/);
  assert((await pass()).staged,'expired claims recover through the same source');
  assert.equal(await count('state_compute_work'),2,'canonical intake does not create or replace the held computation');
@@ -150,7 +152,7 @@ try{
  assert.equal((await db.get('SELECT zone FROM state_compute_scheduling WHERE id=?',retained[1])).zone,3,'an ambiguous legacy scope cannot promote existing work');
  assert.equal((await requestRow(id)).phase,'staged');
  await db.run("DELETE FROM state_build_workflow_nodes WHERE workflow=? AND id='unrelated-fixture'",sharedNode.workflow);
- await db.run('UPDATE state_board_requests SET retry_at=clock_timestamp() WHERE id=?',id);
+ await db.run('UPDATE state_board_requests SET retry_at=board_input_timestamp(clock_timestamp()) WHERE id=?',id);
  assert(!(await pass()).pending);assert.equal((await requestRow(id)).phase,'admitted');
  assert.equal(await count('state_compute_work'),2,'the existing shared calculation is reused');
  const sharedAfter=await db.get('SELECT * FROM state_compute_scheduling WHERE id=?',retained[1]);
@@ -232,7 +234,7 @@ try{
  assert(published.rows.some(row=>row.score===12),'the website query must contain the independently accepted correction');
  const partition=await db.get('SELECT * FROM state_board_read_partitions WHERE weapon=? AND ruler=?',record.weapon,ruler);
  assert(partition.enabled&&partition.canonical_sources&&partition.revision,'complete native preparation atomically selects the new requested partition');
- assert((await db.get('SELECT activated_at FROM state_board_requested_partitions WHERE weapon=? AND ruler=?',record.weapon,ruler)).activated_at);
+ assert.match((await db.get('SELECT activated_at FROM state_board_requested_partitions WHERE weapon=? AND ruler=?',record.weapon,ruler)).activated_at,instant);
  const retired='1690e865-7898-4ca5-a76c-eaa159867a16';
  const cancelledTask=(await db.get('SELECT task_id FROM state_compute_scheduling WHERE id=?',cancelled)).task_id;
  const cancelledBefore=await db.get('SELECT to_jsonb(q) body FROM state_compute_scheduling q WHERE id=?',cancelled);

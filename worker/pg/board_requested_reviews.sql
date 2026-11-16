@@ -23,7 +23,7 @@ BEGIN
   UPDATE entity_measurement_reviews SET state='superseded',completed_at=at WHERE id=prior.id;
   INSERT INTO entity_measurement_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
     baseline_score,baseline_metric,baseline_cost_seconds,baseline_review_id,baseline_by,baseline_started_at,baseline_finished_at,created_at)
-    VALUES(prior.ref,$2,to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),prior.identity,prior.ruler,prior.mode,
+    VALUES(prior.ref,$2,at,prior.identity,prior.ruler,prior.mode,
       body->>'engine',$3,held,'waiting',selected.score,selected.metric,selected.cost_seconds,selected.review_id,
       selected.measured_by,selected.started_at,selected.finished_at,at);
   observation:=jsonb_build_object('score',body->'observed_score','metric',body->>'metric','engine',body->>'engine',
