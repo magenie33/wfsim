@@ -49,7 +49,7 @@ export async function captureBoardPartition(sql,{weapon,ruler}) {
   facts.sort((a,b)=>a.identity.localeCompare(b.identity)||a.mode.localeCompare(b.mode));
   const reviews=[],ids=[...new Set(facts.map(row=>row.review_id).filter(Boolean))];
   for(let i=0;i<ids.length;i+=256){
-   const rows=await tx.unsafe("SELECT to_jsonb(r)-'task_id' body FROM entity_measurement_reviews r WHERE id=ANY($1::text[]) ORDER BY id",[ids.slice(i,i+256)]);
+   const rows=await tx.unsafe("SELECT to_jsonb(r)-'task_id' body FROM entity_measurement_reviews r WHERE id IN(SELECT jsonb_array_elements_text(($1::text)::jsonb)) ORDER BY id",[JSON.stringify(ids.slice(i,i+256))]);
    for(const row of rows){bytes+=Buffer.byteLength(JSON.stringify(row.body));if(bytes>MAX_INPUT_BYTES)throw Error('partition review inputs exceed byte budget');reviews.push(row.body);}
   }
   return {weapon,ruler,captured_at,snapshot,bootstrap:!selected.revision,builds,facts,reviews,inputs_sha256:hash(JSON.stringify({builds,facts,reviews}))};
