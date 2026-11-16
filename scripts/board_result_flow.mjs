@@ -9,20 +9,23 @@ import {pathToFileURL} from 'node:url';
 import {BoardInputMailbox} from './board_input_mailbox.mjs';
 import {openInventoryOperator} from './inventory_operator.mjs';
 import {boardStorage} from './board_storage.mjs';
+import {enqueueRequestedPartition} from './board_requested_partitions.mjs';
 
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const name=value=>typeof value==='string'&&/^[a-z0-9_]{1,160}$/.test(value);
 const MAX_BYTES=8*1024*1024;
 const MAX_INPUT_BYTES=8*1024*1024;
 
-export async function captureBoardPartition(sql,{weapon,ruler}) {
+export async function captureBoardPartition(sql,{weapon,ruler,qualify_requested=false}) {
  if(!name(weapon)||!name(ruler))throw Error('invalid board partition');
  return sql.begin('isolation level repeatable read read only',async tx=>{
   const [{captured_at,snapshot}]=await tx.unsafe(`SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC',
     'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') captured_at,pg_current_snapshot()::text snapshot`);
-  const [selected]=await tx.unsafe('SELECT revision,canonical_sources FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2 AND enabled',[weapon,ruler]);
-  if(!selected?.canonical_sources)throw Error('board source identities require qualification');
-  const builds=[],facts=[];let bytes=0;
+  const selected=qualify_requested
+   ?(await tx.unsafe('SELECT board_requested_partition_selected($1,$2,false) part',[weapon,ruler]))[0].part
+   :(await tx.unsafe('SELECT revision,canonical_sources FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2 AND enabled',[weapon,ruler]))[0];
+  if(!selected||(!selected.canonical_sources&&!qualify_requested))throw Error('board source identities require qualification');
+  const builds=[],facts=[],started=Date.now();let bytes=0;
   const query=selected.revision?`WITH identities AS MATERIALIZED (
      SELECT DISTINCT key::jsonb->>0 id FROM state_board_read_routes WHERE scope='measurement' AND weapon=$1 AND ruler=$2)
     SELECT b.id,b.at,b.record,f.rows facts FROM identities i JOIN entity_weapon_builds b ON b.id=i.id
@@ -35,6 +38,7 @@ export async function captureBoardPartition(sql,{weapon,ruler}) {
     )f ON true WHERE b.weapon=$1`;
   await tx.unsafe('DECLARE board_source_capture NO SCROLL CURSOR FOR '+query,[weapon,ruler]);
   for(;;){
+   if(Date.now()-started>120000)throw Error('partition capture exceeded its time budget; current published view retained');
    const page=await tx.unsafe('FETCH FORWARD 256 FROM board_source_capture');
    for(const row of page){
     if(!row.facts)continue;
@@ -73,7 +77,7 @@ async function nativeProject(binary,input,directory) {
  return board;
 }
 
-export async function openBoardResultFlow({sql,source,engine,binary,work=tmpdir(),nativeSha}) {
+export async function openBoardResultFlow({sql,source,engine,binary,work=tmpdir(),nativeSha,requestedPartitions=false}) {
  if(typeof engine!=='string'||!engine)throw Error('board engine required');
  work=boardStorage(work);
  const mailbox=new BoardInputMailbox(sql,{source}),operator=await openInventoryOperator(binary);
@@ -121,7 +125,8 @@ export async function openBoardResultFlow({sql,source,engine,binary,work=tmpdir(
   const {weapon,ruler}=input.body,scene=rulers.get(ruler);
   if(scene===undefined)throw Error('unknown board partition ruler');
   await sameNative();
-  const snapshot=await captureBoardPartition(sql,{weapon,ruler});
+  const qualifying=requestedPartitions&&input.body.qualify_requested===true;
+  const snapshot=await captureBoardPartition(sql,{weapon,ruler,qualify_requested:qualifying});
   for(let i=0;i<snapshot.builds.length;i+=256){
    const sources=snapshot.builds.slice(i,i+256);
    const described=await operator.call('describe',sources.map(row=>({id:row.id,record:row.record})));
@@ -142,18 +147,21 @@ export async function openBoardResultFlow({sql,source,engine,binary,work=tmpdir(
     throw Error('native partition output exceeds byte budget');
    const leaders=(index[weapon]??[]).filter(row=>row.benchmark===ruler);
    const revision=hash(JSON.stringify({source,engine,adapter:operator.adapter,inputs:snapshot.inputs_sha256,rows,leaders}));
-   return {...snapshot,scene,rows,leaders,revision};
+   return {...snapshot,scene,rows,leaders,revision,qualifying};
   }finally{await rm(directory,{recursive:true,force:true});}
  };
  const publish=async(tx,input,prepared)=>{
   const {weapon,ruler,scene,revision,rows,leaders}=prepared;
-  const [part]=await tx.unsafe('SELECT * FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2 AND enabled FOR UPDATE',[weapon,ruler]);
+  const part=prepared.qualifying
+   ?(await tx.unsafe('SELECT board_requested_partition_selected($1,$2,true) part',[weapon,ruler]))[0].part
+   :(await tx.unsafe('SELECT * FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2 AND enabled FOR UPDATE',[weapon,ruler]))[0];
   if(!part||part.scene!==scene)throw Error('board partition selection changed');
   await tx.unsafe(`INSERT INTO record_board_read_snapshots VALUES($1,$2,$3,$4,$5,$6,$7,($8::text)::jsonb,$9,$10)
     ON CONFLICT DO NOTHING`,[weapon,ruler,revision,source,engine,prepared.inputs_sha256,rows.length,JSON.stringify(leaders),prepared.captured_at,new Date().toISOString()]);
   const body=rows.map((row,i)=>({ordinal:i+1,body:JSON.stringify(row)}));
   await tx.unsafe(`INSERT INTO state_board_read_rows SELECT $1,$2,$3,x.ordinal,x.body
     FROM jsonb_to_recordset(($4::text)::jsonb)x(ordinal bigint,body text) ON CONFLICT DO NOTHING`,[weapon,ruler,revision,JSON.stringify(body)]);
+  if(prepared.qualifying)await tx.unsafe('SELECT board_requested_partition_activate($1,$2,$3,$4::uuid)',[weapon,ruler,revision,source]);
   const routes=prepared.builds.map(row=>({scope:'build',key:row.id,weapon,ruler:''}));
   for(const fact of prepared.facts){
    routes.push({scope:'measurement',key:'['+[fact.identity,fact.ruler,fact.mode].map(value=>JSON.stringify(value)).join(', ')+']',weapon,ruler});
@@ -170,6 +178,7 @@ export async function openBoardResultFlow({sql,source,engine,binary,work=tmpdir(
   return {weapon,ruler,revision,rows:rows.length,inputs_sha256:prepared.inputs_sha256};
  };
  return {close:()=>operator.close(),contract:operator.contract,async step(){
+  if(requestedPartitions)await enqueueRequestedPartition(sql,source,operator.contract.rulers);
   const claim=await mailbox.claim({items:1,leaseSeconds:300});
   const item=claim.inputs[0];if(!item)return {status:'idle'};
   try{
@@ -199,7 +208,8 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  let running=true,flow;
  process.once('SIGTERM',()=>{running=false;});process.once('SIGINT',()=>{running=false;});
  try{
-  flow=await openBoardResultFlow({sql,source,engine,binary:join(bin,'wfsim-board'),work,nativeSha});
+  flow=await openBoardResultFlow({sql,source,engine,binary:join(bin,'wfsim-board'),work,nativeSha,
+   requestedPartitions:process.env.WFSIM_BOARD_READ_REQUESTED_PARTITIONS==='1'});
   while(running){
    try{const step=await flow.step();if(step.status==='idle')await new Promise(resolve=>setTimeout(resolve,1000));
     else console.log(JSON.stringify({event:'board_read',at:new Date().toISOString(),...step}));

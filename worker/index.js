@@ -41,6 +41,7 @@ import { boardTasksRoute } from "./board_tasks.js";
 import { boardInventoryRoute } from "./board_inventory.js";
 import { boardPagesRoute } from "./board_pages.js";
 import { boardRequestsRoute } from "./board_requests.js";
+import { boardRequestedReview } from "./board_requested_reviews.js";
 import { verifyRoute } from "./verify.js";
 import { syncRoute } from "./sync.js";
 import { noteFactoryCall } from "./factory_calls.js";
@@ -878,7 +879,8 @@ async function serve(request, env, ctx) {
     if (path.startsWith("/api/appraise/")) return appraiseRoute(request, env, path, ctx);
     if (["/api/board/work", "/api/board/answers", "/api/board/verify", "/api/board/release", "/api/board/renew", "/api/board/mine", "/api/board/ping"].includes(path)) return verifyRoute(request, env, path);
     if (path === "/api/board/family") return familyRoute(request, env);
-    if (["/api/board/review", "/api/board/review/status", "/api/board/calibrate", "/api/board/retire"].includes(path)) return boardReviewsRoute(request, env, path, ctx);
+    if (path === "/api/board/review") return boardRequestedReview(request, env, ctx);
+    if (["/api/board/review/status", "/api/board/calibrate", "/api/board/retire"].includes(path)) return boardReviewsRoute(request, env, path, ctx);
     if (path === "/api/board/sync") return noteFactoryCall(request, env, path, () => syncRoute(request, env));
     if (path === "/api/board/ask" || path === "/api/board/adopt") return boardTasksRoute(request, env, path);
     if (path === "/api/board/inventory") return boardInventoryRoute(request, env);

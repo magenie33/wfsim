@@ -58,6 +58,7 @@ const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbo
   'scripts/board_input_mailbox.mjs', 'scripts/board_result_flow.mjs', 'scripts/board_result_browser.mjs', 'scripts/board_read_schema.mjs',
   'deploy/wfsim-board-read.service', 'deploy/board_read_grants.sql',
   'scripts/board_requested_intake.mjs', 'scripts/board_requested_schema.mjs', 'scripts/check_board_requested_intake.mjs',
+  'scripts/board_requested_partitions.mjs',
   'deploy/wfsim-board-requested.service',
   'tests/fixtures/order-cut-activation/f3ffb55e.sql', 'tests/fixtures/order-cut-effective-reads/501b4458.sql',
   'tests/fixtures/order-cut-effective-reads/ef61dd588.sql',

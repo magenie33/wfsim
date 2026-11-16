@@ -21,6 +21,12 @@ game legality and exact observed environment. The requested policy selects the
 native plan's single build, ruler and sustainable mode, retaining its official
 fight. It does not start family copies or searches.
 
+A new explicit click that coalesces with an unadmitted legacy review or a
+cancelled execution captures a fresh review against the current baseline.
+The stranded review becomes superseded. Its old inbox, captured intent and
+cancelled computation remain intact. A live admitted review keeps its existing
+work. This replacement never enumerates or resumes the old backlog.
+
 | Stage | Durable input | Commit |
 | --- | --- | --- |
 | Capture | Immutable source and requested environment | Ready request, in the source transaction |
@@ -63,3 +69,13 @@ Source installation does not qualify a board partition. End-to-end activation
 also requires the affected partition's complete historical coverage, current
 source capture, native projection, website API and browser read. A queue ACK
 or accepted result alone does not prove publication.
+
+With `WFSIM_BOARD_READ_REQUESTED_PARTITIONS=1`, newly staged requests capture
+their weapon/ruler targets for the independent reader. A missing target starts
+disabled. The reader takes a complete coherent cut of its measured source data,
+bounded by 8 MiB and two minutes, validates the current native identities and
+uses the unchanged native publisher. Its snapshot and first selection commit
+together under the mailbox claim. Existing partitions retain their operator
+selection, including an explicit rollback. Unknown aliases, oversized inputs
+and failed preparation retain the complete static view and a retry receipt;
+they cannot select an incomplete online partition.
