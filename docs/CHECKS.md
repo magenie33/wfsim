@@ -2955,6 +2955,25 @@ player built is the pairing that is stored while the ORDER is the canonical one.
 Each end has its own check; this one looks at what comes out the far end, which
 no per-end check sees.
 
+## `check_board_mailbox`, `check_board_capture`, `check_board_mailbox_pg`
+
+The keyed board delivery checks run the actual SQL functions on PGlite and
+PostgreSQL. They hold coalescing, stale claims, tombstones, baseline precedence,
+bounded payload reads, durable failures and replay-safe acknowledgement. Ready
+claims stay within the same buffer budget beside completed and delayed history;
+dropping the ready index must fail that budget.
+
+The real PostgreSQL check requires `WFSIM_BOARD_MAILBOX_TEST_URL` on localhost
+and creates an isolated schema and role. It exercises the production adapter's
+atomic projection/readiness/ACK, rollback on lease expiry, lost replies,
+out-of-order transaction commits, concurrent claims, restricted grants, search
+path forgery and exact versions above JavaScript's safe integer range. CI owns
+an ephemeral PostgreSQL service for this check. Source tests apply canonical
+schemas and hold build, measurement and review capture, transactional rollback,
+identity changes, deletion/recreation, no queue dependency and safe reinstall.
+`check_board_capture.mjs --break-capture` removes the actual build trigger and
+must fail the source handoff assertion.
+
 ## `check_comment_style`
 
 No attribution and no dated decision survives in the

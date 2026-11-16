@@ -185,6 +185,58 @@ cannot expand into an unbounded official production fallback.
 
 ## Publication and qualification
 
+The implemented captured-input boundary is specified in
+[BOARD_DELIVERY.md](BOARD_DELIVERY.md); its production selection remains separate.
+
+Ordinary result delivery processes captured changes with a bounded item and byte
+budget. It does not wait for every dirty key or a full-library snapshot. Full
+snapshots and historical imports have their own completion and integrity proofs;
+a capped subset cannot stand for a complete snapshot.
+
+An occurrence consumer preserves every accepted result needed for accounting or
+audit. A state projection instead receives the latest captured value per key.
+It can coalesce superseded values, retaining explicit removal values and a
+monotonic key version. These delivery semantics are distinct from computation
+zone/FIFO scheduling.
+
+The source change and its durable state handoff commit in one local transaction.
+A projection claims a bounded set of ready keys and applies each captured
+version. A newer source value can arrive during a claim; acknowledging the old
+version leaves the newer value ready. Expired credentials cannot acknowledge a
+replacement claim. Failed inputs retain their version, reason and retry state.
+Global sequence gaps and out-of-order transaction commits cannot hide ready work.
+
+The destination rejects values older than its applied key version. Historical
+imports insert a baseline only where a live value or removal is absent. A
+removal keeps its version watermark, so a late import cannot resurrect it.
+
+Ranking and publication have partition identities, covering the weapon and
+scenario they describe. Each partition names its applied input versions and
+coverage. A partition publishes only after its own completeness proof; unrelated
+partitions, workload statistics and historical imports do not block it. Read
+artifacts have bounded pages or chunks, and a new result cannot require
+rewriting an unbounded partition. A cross-partition index is a separate
+versioned projection with an observable update clock.
+
+The online read model has indexed partition rankings, a bounded paginated query
+API and a cache for frequently read pages. A page identifies its partition and
+revision. Cache keys include both; publication commits the new revision with
+its rows, so an old cached page cannot become a new revision's answer. Pagination
+cannot silently combine different revisions. The calculator remains local/WASM.
+
+Historical import runs beside ordinary result delivery. A partition continues
+serving its complete committed view until its replacement has imported the
+baseline and applied concurrent changes. Baseline receipts and live removal
+watermarks prevent lost history or resurrected rows. Cutover changes the served
+partition atomically and preserves a usable prior view for rollback. The page
+shows the current board normally; migration state belongs in operation records.
+
+Each processing step commits its output and durable handoff before acknowledging
+its input. Same-store application and acknowledgement can share a transaction.
+Cross-store acknowledgement follows the destination's durable version receipt;
+a lost acknowledgement causes an idempotent replay. Backpressure retains inputs
+and limits concurrency. A helper call does not create another asynchronous job.
+
 Online board publication consumes accepted measurements. Its source snapshot,
 projection audit, immutable package and remote acknowledgement have separate
 proofs. A completed input cursor is not a completed projection or an uploaded

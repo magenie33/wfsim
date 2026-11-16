@@ -45,6 +45,7 @@ for (const path of ['tests/fixtures/build-admission-base5a/unknown.sql', 'script
   assert.equal(classify([path]).deep, true, path + ' is outside the exact declarations');
 const boardPipelineInputs = ['scripts/check_order_cut.mjs', 'scripts/check_order_cut_pg.mjs', 'scripts/check_order_cut_reads.mjs', 'scripts/check_order_cut_keyed.mjs',
   'scripts/check_inventory_inputs_keyed.mjs', 'tests/fixtures/inventory-inputs-keyed/broad-inputs.sql',
+  'scripts/board_input_mailbox.mjs',
   'tests/fixtures/order-cut-activation/f3ffb55e.sql', 'tests/fixtures/order-cut-effective-reads/501b4458.sql',
   'tests/fixtures/order-cut-effective-reads/ef61dd588.sql',
   'scripts/factory_capacity.mjs', 'scripts/pg_health.py', 'scripts/check_pg_health.py',

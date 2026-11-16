@@ -663,6 +663,21 @@ jobs:
     needs: [plan, quick, runtime]
     if: needs.plan.outputs.pipeline == 'true' && needs.plan.outputs.reuse == ''
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.7-bookworm
+        env:
+          POSTGRES_PASSWORD: mailbox_check
+          POSTGRES_DB: wfsim_checks
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d wfsim_checks"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      WFSIM_BOARD_MAILBOX_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5432/wfsim_checks
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -705,6 +720,9 @@ jobs:
           node scripts/check_board_projection_replay.mjs
           node scripts/check_board_projection_consumers.mjs
           node scripts/check_board_pipeline.mjs
+          node scripts/check_board_mailbox.mjs
+          node scripts/check_board_capture.mjs
+          node scripts/check_board_mailbox_pg.mjs
           node scripts/check_board_storage.mjs
           node scripts/check_prepared_board_inputs.mjs
           node scripts/check_prepared_board_access.mjs
