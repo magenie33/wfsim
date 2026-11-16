@@ -56,6 +56,9 @@ uses the data tablespace and a bounded transaction; existing tables require an
 explicit upgrade. The role can execute only request claim, stage, admission and
 retry functions. It cannot submit requests, change controls or write canonical
 tables directly. The HTTP role receives submission execution and status reads.
+Installation requires the canonical table owner and pins its own trusted schema,
+`pg_catalog`, then `pg_temp` before creating definer functions. Temporary tables
+cannot replace source metadata, controls or request work.
 
 The independent service pins its immutable native binary hash and source UUID.
 Its environment supplies `WFSIM_REQUESTED_DATABASE_URL`,

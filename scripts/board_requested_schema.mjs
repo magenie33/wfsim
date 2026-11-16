@@ -10,7 +10,10 @@ export function boardRequestedSchema({httpRole='wfsim',runnerRole='wfsim_board_r
 SET LOCAL lock_timeout='1s';
 SET LOCAL statement_timeout='30s';
 SET LOCAL default_tablespace='wfsim_data';
+SELECT pg_catalog.set_config('search_path',pg_catalog.quote_ident(pg_catalog.current_schema())||',pg_catalog,pg_temp',true);
 DO $$ BEGIN
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='entity_weapon_builds'::regclass) IS DISTINCT FROM current_user THEN
+  RAISE EXCEPTION 'requested board installation requires the canonical storage owner'; END IF;
  IF to_regclass('entity_board_requests') IS NOT NULL OR to_regclass('state_board_requests') IS NOT NULL THEN
   RAISE EXCEPTION 'requested board schema exists; an explicit upgrade is required'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='${runnerRole}') THEN
