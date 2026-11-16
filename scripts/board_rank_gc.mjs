@@ -21,6 +21,7 @@ async function removeArtifacts(directory,work,prefix,names) {
 }
 
 export async function collectRankStorage(sql,{work,source}) {
+ work=boardStorage(work);
  const retired=await sql.begin(async tx=>{
   await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
   const [row]=await tx.unsafe(`SELECT s.weapon,s.ruler,s.revision FROM record_board_read_snapshots s
@@ -62,7 +63,8 @@ export async function collectRankStorage(sql,{work,source}) {
 }
 
 export async function collectRankOrphan(sql,{work}) {
- for(const name of await readdir(boardStorage(work))){
+ work=boardStorage(work);
+ for(const name of await readdir(work)){
   if(!/^rank-(cut|generation)-[a-f0-9-]{36}$/.test(name))continue;
   const directory=join(work,name),entry=await lstat(directory);
   if(entry.mtimeMs>Date.now()-600000)continue;

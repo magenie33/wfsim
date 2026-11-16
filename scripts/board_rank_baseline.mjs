@@ -10,7 +10,8 @@ import {createRankPartition,prepareRankSources,applyRankSources,BoardRankQualifi
 const measurementKey=(identity,ruler,mode)=>'['+[identity,ruler,mode].map(JSON.stringify).join(', ')+']';
 
 export async function captureRankBaseline(sql,{weapon,ruler,source,native,work,signal}) {
- const directory=join(boardStorage(work),'rank-cut-'+randomUUID());await mkdir(directory,{mode:0o750});
+ work=boardStorage(work);
+ const directory=join(work,'rank-cut-'+randomUUID());await mkdir(directory,{mode:0o750});
  const path=join(directory,'inputs.ndjson'),file=await open(path,'wx'),checksum=createHash('sha256');
  let bytes=0,total=0,facts=0;
  const append=async row=>{

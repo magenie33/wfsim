@@ -76,7 +76,8 @@ export async function retryRankPublication(sql,claim,error) {
 }
 
 export async function startRankGeneration(sql,native,claim,{source,work,engine}) {
- const token=randomUUID(),directory=join(boardStorage(work),'rank-generation-'+token);await mkdir(directory,{mode:0o750});
+ work=boardStorage(work);
+ const token=randomUUID(),directory=join(work,'rank-generation-'+token);await mkdir(directory,{mode:0o750});
  const captured=await captureRankWinners(sql,native,{weapon:claim.weapon,ruler:claim.ruler,source,path:join(directory,'winners.ndjson')});
  const file=await open(join(directory,'rows.ndjson'),'wx');await file.sync();await file.close();
  syncRankDirectory(directory);syncRankDirectory(work);
