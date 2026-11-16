@@ -20,6 +20,7 @@ riven_family: Twin Gremlins
 traits: [grineer]
 introduced: "9.5"
 internal_name: /Lotus/Weapons/Grineer/GrineerPistol/GrineerAkimboPistol
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

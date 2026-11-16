@@ -19,6 +19,7 @@ polarities: [madurai]
 stance_polarity: madurai
 introduced: "Update 14.8"
 internal_name: /Lotus/Weapons/Tenno/Melee/Axe/PrimeScindo/PrimeScindoWeapon
+weakness_bonus: 0.0
 traits: [prime, never_vaulted]
 
 ammo_max: ~

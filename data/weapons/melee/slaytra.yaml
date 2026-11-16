@@ -18,6 +18,7 @@ polarities: [madurai, madurai]
 stance_polarity: zenurik
 introduced: "Update 32"
 internal_name: /Lotus/Weapons/Grineer/Melee/GrnSharbola/GrnSharbolaWeapon
+weakness_bonus: 0.0
 traits: [grineer]
 
 ammo_max: ~

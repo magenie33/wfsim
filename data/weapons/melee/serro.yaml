@@ -18,6 +18,7 @@ polarities: [madurai]
 stance_polarity: naramon
 introduced: "Update 13.4"
 internal_name: /Lotus/Weapons/Corpus/Melee/Polearm/CorpusPolearm01/CorpusPolearmWeapon
+weakness_bonus: 0.0
 traits: [corpus]
 
 ammo_max: ~

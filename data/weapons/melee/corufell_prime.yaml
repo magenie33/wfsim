@@ -18,6 +18,7 @@ polarities: [madurai, naramon]
 stance_polarity: madurai
 introduced: "Update 44.0"
 internal_name: /Lotus/Weapons/Tenno/Archwing/Melee/PrimeCorufell/PrimeCorufellScytheWeapon
+weakness_bonus: 0.0
 traits: [tenno, prime]
 
 ammo_max: ~

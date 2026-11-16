@@ -19,6 +19,7 @@ polarities: [madurai, naramon]
 stance_polarity: naramon
 introduced: "Update 15.0"
 internal_name: /Lotus/Weapons/Grineer/Melee/GrnBoomerang/GrnBoomerang
+weakness_bonus: 0.0
 traits: [grineer]
 
 ammo_max: ~

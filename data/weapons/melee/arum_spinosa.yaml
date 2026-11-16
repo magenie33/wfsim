@@ -20,6 +20,7 @@ polarities:
 stance_polarity: naramon
 introduced: Update 29.5
 internal_name: /Lotus/Weapons/Infested/Melee/InfWarfan/InfWarfanWeapon
+weakness_bonus: 0.0
 traits:
 - infested
 ammo_max: null

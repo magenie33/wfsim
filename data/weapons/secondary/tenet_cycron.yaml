@@ -20,6 +20,7 @@ riven_family: Cycron
 traits: [corpus, tenet]
 introduced: "30.5"
 internal_name: /Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBECycron/CrpBECycron
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 # NO AMMO POOL AT ALL — "Does not use ammo pickups; ammo regenerates over time",

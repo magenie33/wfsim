@@ -18,6 +18,7 @@ polarities: [naramon]
 stance_polarity: universal
 introduced: "Update 6.2"
 internal_name: /Lotus/Weapons/Tenno/Melee/DualShortSword/DualHeatSwords
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

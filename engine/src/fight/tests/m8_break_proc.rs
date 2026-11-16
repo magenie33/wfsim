@@ -241,6 +241,41 @@ fn m8_fixed_target_measured_ticks_follow_the_declared_weapon_and_proxy() {
 }
 
 #[test]
+fn source_bound_ocucor_weakness_reaches_the_existing_magnetic_consumer() {
+    let probe = |id: &str, unbound: bool| {
+        let enemy = crate::data::enemies::all().into_iter()
+            .find(|enemy| enemy.id == "corrupted_heavy_gunner").unwrap();
+        let base = crate::model::WeaponBase::from_data(id, true, &[]);
+        let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+        let mut arena = crate::arena::Arena::training(10.0);
+        arena.target = enemy.target_params(50, true, true, TargetMode::InfiniteHealth).unwrap();
+        arena.body_parts = enemy.aim_parts(&[("body", 1.0)]).unwrap();
+        let mut q = Probe::new();
+        q.p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
+        assert_eq!(q.p.weakness_bonus, Some(0.2));
+        if unbound { q.p.weakness_bonus = None; }
+        q.arc = ArcRuntime::init(&q.p);
+        q.body.state = TargetState::spawn(&q.p.foe, q.p.target_at);
+        q.body.state.overguard = 0.0;
+        q.body.state.shield = 0.0;
+        q.body.debuffs.canticle_armor_strip = 1.0;
+        q.body.debuffs.disrupt = vec![6.0; 10];
+        q.break_pool(BrokenPool::Overguard, 0.0);
+        let frozen = q.body.debuffs.dots[0].snapshot_damage();
+        let parent = q.r.tally.effective();
+        assert_eq!(q.body.debuffs.dots[0].landing, ProcLanding::default());
+        q.tick(0.01);
+        (frozen, parent, q.r.tally.effective() - parent)
+    };
+    let ocucor = probe("ocucor", false);
+    let reference = probe("torid", false);
+    let unbound = probe("ocucor", true);
+    assert_eq!(ocucor, reference);
+    assert_ne!(ocucor, unbound);
+    println!("WB-01 Ocucor (seed,parent,tick): unbound={unbound:?}, source_bound={ocucor:?}");
+}
+
+#[test]
 fn m8_steel_corrupted_crewman_shield_break_matches_crosslevel_measurements() {
     let mut spec = crate::data::enemies::all().into_iter()
         .find(|enemy| enemy.id == "crewman").unwrap();

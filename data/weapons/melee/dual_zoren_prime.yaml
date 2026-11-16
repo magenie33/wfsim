@@ -19,6 +19,7 @@ polarities: [vazarin, naramon, naramon]
 stance_polarity: zenurik
 introduced: "Update 38.0.10"
 internal_name: /Lotus/Weapons/Tenno/Melee/Axe/PrimeZoren/PrimeZorenAxeWeapon
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

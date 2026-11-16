@@ -21,6 +21,7 @@ riven_family: Akbronco
 traits: [tenno]
 introduced: "8.0"
 internal_name: /Lotus/Weapons/Tenno/Akimbo/AkimboShotGun
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

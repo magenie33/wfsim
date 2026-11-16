@@ -19,6 +19,7 @@ polarities: [madurai, naramon]
 stance_polarity: madurai
 introduced: "Update 22.16.4"
 internal_name: /Lotus/Weapons/Tenno/Melee/Tonfa/TonfaContestWinnerPrime/TonfaContestWinnerPrimeWeapon
+weakness_bonus: 0.0
 traits: [prime, vaulted]
 
 ammo_max: ~

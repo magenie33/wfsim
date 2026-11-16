@@ -18,6 +18,7 @@ polarities: [naramon, madurai]
 stance_polarity: naramon
 introduced: "Update 19.0"
 internal_name: /Lotus/Weapons/Tenno/Melee/Glaives/TeshinGlaive/TnTeshinGlaiveWep
+weakness_bonus: 0.0
 traits: []
 
 ammo_max: ~

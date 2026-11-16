@@ -21,6 +21,7 @@ riven_family: Dual Cestra
 traits: [syndicate, perrin_sequence]
 introduced: "15.5"
 internal_name: /Lotus/Weapons/Syndicates/PerrinSequence/Pistols/PSDualCestra
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 480

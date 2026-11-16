@@ -19,6 +19,7 @@ polarities: [vazarin, madurai]
 stance_polarity: unairu
 introduced: "Update 13.7"
 internal_name: /Lotus/Weapons/Tenno/Melee/Staff/PrimeBo/PrimeBoWeapon
+weakness_bonus: 0.0
 traits: [prime, vaulted, incarnon]
 
 ammo_max: ~

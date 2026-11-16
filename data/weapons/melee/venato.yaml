@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: zenurik
 introduced: "Update 31"
 internal_name: /Lotus/Weapons/Sentients/SentJointedScythe/SentJointedScytheWeapon
+weakness_bonus: 0.0
 traits: [tenno, sentient]
 
 ammo_max: ~

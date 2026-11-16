@@ -21,6 +21,7 @@ riven_family: Viper
 traits: [grineer, wraith, baro]
 introduced: "22.8.4"
 internal_name: /Lotus/Weapons/Grineer/Pistols/WraithSingleViper/WraithSingleViper
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 420

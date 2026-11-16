@@ -20,6 +20,7 @@ riven_family: Akstiletto
 traits: [prime]
 introduced: "18.12"
 internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeAkstiletto/PrimeAkstiletto
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 400

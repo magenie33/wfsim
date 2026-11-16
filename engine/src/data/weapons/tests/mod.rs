@@ -19,6 +19,7 @@ mod inheritance;
 mod laetum;
 mod metadata;
 mod magnetic_proxy;
+mod weapon_weakness;
 mod modular;
 mod kitgun_status;
 mod passive;

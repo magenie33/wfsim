@@ -19,6 +19,7 @@ polarities: [madurai]
 stance_polarity: naramon
 introduced: "Update 22"
 internal_name: /Lotus/Weapons/Tenno/Melee/Warfan/WarfanWeapon
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

@@ -19,6 +19,7 @@ polarities: [madurai, naramon]
 stance_polarity: madurai
 introduced: "Update 5.0"
 internal_name: /Lotus/Weapons/Tenno/Melee/LongSword/SkanaPrime
+weakness_bonus: 0.0
 traits: [prime, vaulted, founder, incarnon]
 
 ammo_max: ~

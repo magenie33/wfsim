@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: zenurik
 introduced: "Update 10.5"
 internal_name: /Lotus/Weapons/ClanTech/Energy/VandalElectroProd
+weakness_bonus: 0.0
 traits: [corpus, vandal]
 
 ammo_max: ~

@@ -21,6 +21,7 @@ riven_family: Dual Cestra
 traits: [corpus]
 introduced: "12.0"
 internal_name: /Lotus/Weapons/Corpus/Pistols/CorpusMinigun/DualCorpusMinigun
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 480

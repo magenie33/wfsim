@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: naramon
 introduced: "Update 20.4.2"
 internal_name: /Lotus/Weapons/Corpus/Melee/KickAndPunch/PrismaObex
+weakness_bonus: 0.0
 traits: [prisma, baro, incarnon]
 
 ammo_max: ~

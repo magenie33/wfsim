@@ -36,6 +36,7 @@ polarities: [naramon]
 riven_family: Kuva Ayanga
 traits: [kuva_lich, adversary, grineer]
 internal_name: /Lotus/Weapons/Grineer/HeavyWeapons/GrnHeavyGrenadeLauncher
+weakness_bonus: 0.0
 noise: alarming
 magazine: 33
 reload_seconds: 3.0

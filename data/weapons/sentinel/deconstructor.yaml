@@ -27,6 +27,7 @@ disposition: 1.2
 polarities: []
 riven_family: Deconstructor
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon
+weakness_bonus: 0.0
 traits: [tenno]
 noise: alarming
 magazine: 6

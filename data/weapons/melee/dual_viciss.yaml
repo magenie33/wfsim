@@ -18,6 +18,7 @@ polarities: []
 stance_polarity: naramon
 introduced: "Update 38.5"
 internal_name: /Lotus/Weapons/Lasria/LasGooSickle/LasGooSicklePlayerWeapon
+weakness_bonus: 0.0
 traits: [scaldra]
 
 ammo_max: ~

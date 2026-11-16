@@ -21,6 +21,7 @@ riven_family: Kohmak
 traits: [grineer]
 introduced: "16.0"
 internal_name: /Lotus/Weapons/Grineer/Pistols/GrnKohmPistol/GrnKohmPistol
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

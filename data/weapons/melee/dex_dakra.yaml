@@ -18,6 +18,7 @@ polarities: [naramon]
 stance_polarity: zenurik
 introduced: "Update 16.1.2"
 internal_name: /Lotus/Weapons/Tenno/Melee/Swords/DexTheSecond/DexTheSecond
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

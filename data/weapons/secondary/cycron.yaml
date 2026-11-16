@@ -22,6 +22,7 @@ riven_family: Cycron
 traits: [corpus]
 introduced: "20.3"
 internal_name: /Lotus/Weapons/Corpus/Pistols/CrpChargeGun/CrpChargeGun
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 # NO AMMO POOL — "Does not use ammo pickups; ammo regenerates over time", and
