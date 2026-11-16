@@ -19,6 +19,7 @@ polarities: [madurai, madurai]
 stance_polarity: unairu
 introduced: "Update 12.4"
 internal_name: /Lotus/Weapons/Tenno/Melee/Gauntlet/PrimeAnkyros/PrimeAnkyros
+weakness_bonus: 0.0
 traits: [prime, vaulted]
 
 ammo_max: ~

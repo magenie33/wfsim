@@ -18,6 +18,7 @@ polarities: [vazarin]
 stance_polarity: unairu
 introduced: "Update 30.5"
 internal_name: /Lotus/Weapons/Tenno/Melee/Staff/SingleStaff
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

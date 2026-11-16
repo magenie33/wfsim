@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: naramon
 introduced: "Update 8.2"
 internal_name: /Lotus/Weapons/Tenno/Melee/BrassKnuckles/BrassKnuckles
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

@@ -19,6 +19,7 @@ polarities: [madurai, madurai]
 stance_polarity: vazarin
 introduced: "Update 25.8"
 internal_name: /Lotus/Weapons/Tenno/Melee/PrimeTekko/PrimeTekko
+weakness_bonus: 0.0
 traits: [prime]
 
 ammo_max: ~

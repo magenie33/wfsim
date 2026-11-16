@@ -30,6 +30,7 @@ riven_family: Furis          # module `Family` — SHARED with the MK1-Furis
 traits: [tenno, incarnon]
 introduced: "Vanilla"        # in the game at launch
 internal_name: /Lotus/Weapons/Tenno/Pistol/AutoPistol
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

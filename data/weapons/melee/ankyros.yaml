@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: vazarin
 introduced: "Update 7.8"
 internal_name: /Lotus/Weapons/Tenno/Melee/Gauntlet/Gauntlet
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

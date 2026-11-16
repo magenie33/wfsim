@@ -1,0 +1,97 @@
+{
+  "source_batch": "20261116T025053Z-weapon-innate-weakness",
+  "manifest_sha256": "3a564b0e1b4a42655e7f1a25501b7a98d4057c1daaef857395bf1dbdf5c5746f",
+  "payloads_verified": 8,
+  "archive_members_verified": 256,
+  "ancestry_rows_independently_checked": 3102,
+  "native_types_checked": 20,
+  "source_owners": 631,
+  "bound_forms": 2141,
+  "unbound_component_forms": 166,
+  "data_files_changed": 328,
+  "zero_inputs_added": 266,
+  "point_two_inputs_added": 62,
+  "engine_tests": {
+    "passed": 1610,
+    "failed": 0
+  },
+  "ocucor_control": {
+    "enemy": "corrupted_heavy_gunner",
+    "level": 50,
+    "steel_path": true,
+    "eximus": true,
+    "magnetic_stacks": 10,
+    "pool": "Overguard",
+    "aim": "body",
+    "mods": [],
+    "arcane": null,
+    "unbound": {
+      "seed": 2590.5,
+      "parent": 5181.0,
+      "first_tick": 2591.0
+    },
+    "source_bound": {
+      "seed": 4318.0,
+      "parent": 8636.0,
+      "first_tick": 4318.5
+    },
+    "scope": "Actual existing M8 consumer test, not a new gameplay measurement or total DPS prediction."
+  },
+  "plain_source_check_before_exit": 1,
+  "actual_ocucor_zero_corruption_exit": 1,
+  "restored_source_check_exit": 0,
+  "clippy": "engine all-targets -D warnings PASS",
+  "full_ci_dispatched": false,
+  "native_base": "68d49eadd2fe6dbfbcc005329c16a108b1cd1097",
+  "branch_support_merge": "2974f25c884c028fdffddbf24faea8557cf81ace",
+  "release_scope": "Deferred Native supplement; not a blocker for current8ce maintenance. Final combined CI/artifacts remain release-owner work.",
+  "evidence": {
+    "weakness-before.log": {
+      "sha256": "67584f150a37e1036455b1b50452a39d46bbf2eecfb078f782cb5d5e0d41c352",
+      "bytes": 617
+    },
+    "ocucor-negative.log": {
+      "sha256": "af0c560f7f072fcb5d0f573156319336af107e3b539fdbf94f82906dcfeee1c5",
+      "bytes": 615
+    },
+    "check-final.log": {
+      "sha256": "0dd1691ff263a7ad13ee63cdc915bef215e818b2c170687278b5c3f760cc38c8",
+      "bytes": 77
+    },
+    "magnetic-source-check-final.log": {
+      "sha256": "68a0d5aa4c290048c877e4853f2bb6e92e3a1f5129ae58c65121bbde513217e6",
+      "bytes": 89
+    },
+    "engine-tests.log": {
+      "sha256": "c0394b8a5922d5e2feb837da9dc2e30c43252a7c2f023aa43526180d882a5e49",
+      "bytes": 152841
+    },
+    "engine-tests-final.log": {
+      "sha256": "5c354d338a245368f0f63b8df241c290fc278c20f808b01157524b3fd2819755",
+      "bytes": 151114
+    },
+    "ocucor-consumer.log": {
+      "sha256": "a0b83e978ff9859874c7671552a44d916b40b8bf104cc04da5bd8bece4daa18d",
+      "bytes": 813
+    },
+    "clippy.log": {
+      "sha256": "9629d7daf7bf74e3b1b8cf8c0c22ab2708e1c8ed3eb5f7d8f34f83ef0b6b9199",
+      "bytes": 456
+    },
+    "gas-static.log": {
+      "sha256": "2384683fd70e4a85214191413c59fabfea989d1542050df86d21dfbba18bd314",
+      "bytes": 343
+    },
+    "layers.log": {
+      "sha256": "354a0607ad0a4043011c390827a302951fd13fcc81eaa92ce25b64ac754d578a",
+      "bytes": 206
+    },
+    "comment-style.log": {
+      "sha256": "776af56747c5cf4fc47132716ff3afc930f2a59970ec1183ca3e03aa4145fea2",
+      "bytes": 527
+    }
+  },
+  "goldens_and_measurement_documents_unchanged": true,
+  "live_production_changes": false,
+  "runtime_data_inputs_changed": true
+}

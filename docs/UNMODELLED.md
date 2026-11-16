@@ -1044,12 +1044,13 @@ movement or incoming attacks. The card descriptions state these limits.
 
 Magnetic break source normalization and the selected proxy's generic damage
 modifier are applied when the weapon's native WeaknessBonus and that proxy's
-DamageAtten are declared. The importer binds303explicit weapon declarations
-and12targets' ordered proxy lists; weapon forms inherit their weapon's value.
-The fixed Laetum3455/9154 control matches M8. Native class defaults absent from
-the metadata and undeclared generic proxy coefficients are not inferred; a
-missing input retains the pool/count source. Such entries do not claim a
-completed native normalization.
+DamageAtten are bound. Weapon inputs use exact package/native ancestry and
+the audited LotusWeapon constructor zero; forms retain their declared weapon
+inheritance. The fixed Laetum3455/9154 control matches M8. Modular component
+paths without a bound complete weapon owner, abstract classes without the
+LotusWeapon field binding and undeclared generic proxy coefficients remain
+unbound. A missing input retains the pool/count source. Scalar declarations
+do not establish impact/radial/script routing or a universal headshot factor.
 
 Live mode/103entries, complete spawn ordering, dynamic table/proxy/source
 installation and generic modifier enable changes remain partial. Shield

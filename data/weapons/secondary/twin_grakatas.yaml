@@ -22,6 +22,7 @@ riven_family: Twin Grakatas
 traits: [grineer]
 introduced: "17.0"
 internal_name: /Lotus/Weapons/Grineer/LongGuns/GrineerAssaultRifle/TwinGrakatas
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 1200

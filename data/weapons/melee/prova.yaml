@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: zenurik
 introduced: "Update 8.0"
 internal_name: /Lotus/Weapons/ClanTech/Energy/ElectroProd
+weakness_bonus: 0.0
 traits: [corpus]
 
 ammo_max: ~

@@ -24,6 +24,7 @@ riven_family: Tenet Diplos
 traits: [corpus, tenet]
 introduced: "30.5"
 internal_name: /Lotus/Weapons/Corpus/Pistols/CrpBriefcaseAkimbo/CrpBriefcaseAkimboPistol
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 460

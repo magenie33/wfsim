@@ -18,6 +18,7 @@ polarities: [madurai]
 stance_polarity: zenurik
 introduced: "Update 16.7"
 internal_name: /Lotus/Weapons/Tenno/Melee/Scythe/ParisScythe/ParisScythe
+weakness_bonus: 0.0
 traits: [tenno, incarnon]
 
 ammo_max: ~

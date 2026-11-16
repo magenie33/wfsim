@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: vazarin
 introduced: "Update 11.0"
 internal_name: /Lotus/Weapons/Corpus/Melee/Whip/CorpusWhipWeapon
+weakness_bonus: 0.0
 traits: [corpus]
 
 ammo_max: ~

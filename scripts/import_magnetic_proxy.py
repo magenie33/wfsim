@@ -143,7 +143,7 @@ def main():
     with zipfile.ZipFile(path) as archive:
         replay = json.loads(member(archive, manifest, 'client-evidence.zip', 'replay.json'))
     result = dict(client_build=bindings['client_build'], input_manifests=PINS, consumed_metadata=consumed,
-                  weapons=weapons, unbound_weapon_defaults=unresolved, enemies=enemies,
+                  weapons=weapons, package_only_missing_weakness_declarations=unresolved, enemies=enemies,
                   source_cases=replay['source_cases'], tick_cases=replay['tick_cases'])
     output = FIXTURES / 'magnetic-proxy-inputs.json'
     rendered = json.dumps(result, indent=2) + '\n'
@@ -151,7 +151,8 @@ def main():
         assert output.read_text() == rendered, 'Magnetic proxy fixture differs from native inputs'
     else:
         output.write_text(rendered)
-    print(json.dumps(dict(weapons=len(weapons), unbound_defaults=len(unresolved), enemies=len(enemies), check=args.check)))
+    print(json.dumps(dict(weapons=len(weapons), package_only_missing_declarations=len(unresolved),
+                          enemies=len(enemies), check=args.check)))
 
 
 if __name__ == '__main__':

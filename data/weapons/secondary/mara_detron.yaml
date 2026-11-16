@@ -23,6 +23,7 @@ riven_family: Detron
 traits: [corpus, baro]
 introduced: "15.6.3"
 internal_name: /Lotus/Weapons/VoidTrader/VTDetron
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

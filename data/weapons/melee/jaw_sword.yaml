@@ -18,6 +18,7 @@ polarities: [madurai]
 stance_polarity: unairu
 introduced: "Update 5.0"
 internal_name: /Lotus/Weapons/Tenno/Melee/Swords/JawSword/JawLongSword
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

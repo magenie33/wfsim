@@ -21,6 +21,7 @@ polarities:
 stance_polarity: zenurik
 introduced: Update 33
 internal_name: /Lotus/Weapons/Tenno/Melee/Polearms/DaxDuviriPolearm/DaxDuviriPolearmWeapon
+weakness_bonus: 0.0
 traits:
 - duviri
 ammo_max: null

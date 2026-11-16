@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: vazarin
 introduced: "Update 18.10"
 internal_name: /Lotus/Weapons/Tenno/Melee/Fist/FuraxWraith
+weakness_bonus: 0.0
 traits: [incarnon]
 
 ammo_max: ~

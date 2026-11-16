@@ -19,6 +19,7 @@ polarities: [vazarin, madurai]
 stance_polarity: zenurik
 introduced: "Update 21.1"
 internal_name: /Lotus/Weapons/Tenno/Melee/Polearms/TnGuandaoPolearm/TnGuandaoPolearmWeapon
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

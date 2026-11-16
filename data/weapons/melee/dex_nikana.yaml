@@ -19,6 +19,7 @@ polarities: [madurai, naramon]
 stance_polarity: madurai
 introduced: "Update 35.5"
 internal_name: /Lotus/Weapons/Tenno/Melee/Swords/KatanaAndWakizashi/Dex2023Nikana/Dex2023Nikana
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

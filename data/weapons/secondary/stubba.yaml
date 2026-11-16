@@ -20,6 +20,7 @@ riven_family: Stubba
 traits: [grineer]
 introduced: "22"
 internal_name: /Lotus/Weapons/Grineer/Pistols/GrnUzi/GrnUziWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 399

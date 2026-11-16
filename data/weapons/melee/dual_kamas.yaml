@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: naramon
 introduced: "Update 11.1"
 internal_name: /Lotus/Weapons/Tenno/Melee/DualKamas/DualKamas
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

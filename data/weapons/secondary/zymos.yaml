@@ -20,6 +20,7 @@ riven_family: Zymos
 traits: [infested]
 introduced: "29"
 internal_name: /Lotus/Weapons/Infested/Pistols/InfUzi/InfUziWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 51

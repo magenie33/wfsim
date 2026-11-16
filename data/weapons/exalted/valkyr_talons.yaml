@@ -45,6 +45,7 @@ polarities: [madurai, naramon, naramon]
 stance_polarity: zenurik
 introduced: "Update 23"
 internal_name: /Lotus/Powersuits/Berserker/BerserkerMelee
+weakness_bonus: 0.0
 traits: [tenno]
 
 # NO AMMO AT ALL: a melee weapon has no magazine, no reserve and no reload.

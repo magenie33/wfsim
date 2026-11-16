@@ -18,6 +18,7 @@ polarities: [vazarin]
 stance_polarity: madurai
 introduced: "The Silver Grove"
 internal_name: /Lotus/Weapons/Tenno/Melee/Gunblade/GunbladeAutomatic/TnoGunbladeAutomatic
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

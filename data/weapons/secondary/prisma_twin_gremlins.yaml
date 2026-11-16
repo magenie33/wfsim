@@ -20,6 +20,7 @@ riven_family: Twin Gremlins
 traits: [grineer]
 introduced: "23.4.2"
 internal_name: /Lotus/Weapons/Grineer/Pistols/GrineerBulbousSMG/Prisma/PrismaTwinGremlinsWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 600

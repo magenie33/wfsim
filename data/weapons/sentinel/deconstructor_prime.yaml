@@ -28,6 +28,7 @@ polarities: []
 riven_family: Deconstructor
 traits: [prime, vaulted]
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon
+weakness_bonus: 0.0
 noise: alarming
 magazine: 6
 reload_seconds: 3.0

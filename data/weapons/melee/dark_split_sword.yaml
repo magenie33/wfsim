@@ -19,6 +19,7 @@ stance_polarity: zenurik
 introduced: "Update 18.14"
 # DE's export keys this item as below; the wiki module writes /Lotus/Weapons/Tenno/Melee/Swords/DarkSword/DarkSwordDaggerSingle
 internal_name: /Lotus/Weapons/Tenno/Melee/Swords/DarkSword/DarkSwordDaggerHybridWeapon
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

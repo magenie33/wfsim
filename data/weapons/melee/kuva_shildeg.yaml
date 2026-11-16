@@ -18,6 +18,7 @@ polarities: [madurai]
 stance_polarity: madurai
 introduced: "Update 26"
 internal_name: /Lotus/Weapons/Grineer/Melee/GrnKuvaLichScythe/GrnKuvaLichScytheWeapon
+weakness_bonus: 0.0
 traits: [grineer, kuva_lich]
 
 ammo_max: ~

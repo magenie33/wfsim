@@ -18,6 +18,7 @@ polarities: [madurai, naramon]
 stance_polarity: madurai
 introduced: "Update 21.7"
 internal_name: /Lotus/Weapons/Corpus/Melee/Hammer/CorpusHammerWeapon
+weakness_bonus: 0.0
 traits: [corpus]
 
 ammo_max: ~

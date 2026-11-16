@@ -18,6 +18,7 @@ polarities: []
 stance_polarity: vazarin
 introduced: "Update 14.7"
 internal_name: /Lotus/Weapons/Grineer/Melee/GrineerWhip/GrineerWhip
+weakness_bonus: 0.0
 traits: [grineer]
 
 ammo_max: ~

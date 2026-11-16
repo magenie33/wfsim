@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: madurai
 introduced: "Vanilla"
 internal_name: /Lotus/Weapons/Tenno/Melee/LongSword/LongSword
+weakness_bonus: 0.0
 traits: [tenno, incarnon]
 
 ammo_max: ~

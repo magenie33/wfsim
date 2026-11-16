@@ -19,6 +19,7 @@ polarities: [madurai]
 stance_polarity: naramon
 introduced: "Update 38.5"
 internal_name: /Lotus/Weapons/Infested/InfestedLich/Melee/CodaHirudo
+weakness_bonus: 0.0
 traits: [infested, technocyte_coda]
 
 ammo_max: ~

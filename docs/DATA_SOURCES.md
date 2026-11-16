@@ -87,9 +87,24 @@ pinned metadata and pool/proxy replay, then checks the native WeaknessBonus
 and ordered enemy HitProxies against `magnetic-proxy-inputs.json`. Weapon
 owners join by internal path; enemy/controller paths are explicit bindings.
 Forms inherit the weapon parameter. Original tokens and property ancestors
-remain in the fixture; absent native defaults remain unbound. M8 records the
+remain in this package-only subset fixture. Its missing declarations are not
+the current runtime coverage. M8 records the
 in-game controls and source/proxy arithmetic. Native damage ids are mapped
 by name, independently of WFSim's Rust enum order.
+
+`scripts/import_weapon_weakness.py --exchange <exchange> --check` owns complete
+weapon WeaknessBonus adoption from closed batch
+`20261116T025053Z-weapon-innate-weakness`. It verifies READY, all payloads and
+archive members, independently walks captured package/native parents and
+selects the nearest scalar declaration or audited LotusWeapon constructor
+zero. Explicit zeros win. `weapon-weakness-2026-10-28.json` retains source
+paths, tokens, binary32 bytes, native type edges and initializer/getter cases.
+Runtime values live once in weapon YAML; forms use the existing inheritance
+and transformed-weapon adapters. Abstract unbound classes and modular component
+owners remain unknown. Behavior gate declarations in the fixture are source
+evidence, not inferred impact/radial/script routing or a universal headshot
+multiplier. The existing Magnetic consumer uses these parameters; direct-hit
+headshot rules are separate.
 
 `tests/fixtures/client/shield-query-2026-10-28.json` pins three native batches
 for integer Shield maximum queries, level writeback, late player auras and

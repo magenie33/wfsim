@@ -25,6 +25,7 @@ riven_family: Dual Coda Torxica
 traits: [infested, technocyte_coda]
 introduced: "38.5"
 internal_name: /Lotus/Weapons/Infested/InfestedLich/Pistols/1999InfSporePistol/1999InfSporePistolWeapon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 480

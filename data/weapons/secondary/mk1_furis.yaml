@@ -33,6 +33,7 @@ traits: [tenno, incarnon]
 introduced: "14.0"           # Update 14.0 — the MK1 line arrived
                              # long after the weapon it downgrades.
 internal_name: /Lotus/Weapons/MK1Series/MK1Furis
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

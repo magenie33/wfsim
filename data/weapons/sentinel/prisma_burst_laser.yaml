@@ -21,6 +21,7 @@ polarities: []
 riven_family: Burst Laser
 traits: [prisma, tenno]
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/PrismaBurstLaserPistol
+weakness_bonus: 0.2
 noise: alarming
 magazine: 15
 reload_seconds: 0.01

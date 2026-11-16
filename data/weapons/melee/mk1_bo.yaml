@@ -19,6 +19,7 @@ polarities: [vazarin]
 stance_polarity: unairu
 introduced: "Update 14.0"
 internal_name: /Lotus/Weapons/MK1Series/MK1Bo
+weakness_bonus: 0.0
 traits: [tenno, incarnon]
 
 ammo_max: ~
