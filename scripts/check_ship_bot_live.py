@@ -144,6 +144,34 @@ def exercise(ship, change=None):
 def self_test(ship):
     failures = 0
     cases = [(None, True, "matching runtime and UI-only metadata retain the actual old VERSION")]
+    expired = {"engine": "45c72a39833c", "until": "1970-01-01T00:00:00.000Z", "join": True}
+    active = {"engine": "0c3ee2cd6e0a", "until": "9999-01-01T00:00:00.000Z", "join": True}
+    def acceptance(local_rows, remote_rows):
+        def change(local, remote, mode, unit, environment):
+            for path, rows in [(local / "site/release.json", local_rows), (remote / "bin/witness/release.json", remote_rows)]:
+                value = json.loads(path.read_text())
+                value["accepted"] = rows
+                path.write_text(json.dumps(value))
+            mode["start"] = time.time_ns()
+        return change
+    cases += [
+        (acceptance([], [expired]), True, "removing an expired acceptance preserves the loaded runtime and VERSION"),
+        (acceptance([active], [expired, active]), True, "expired cleanup retains identical active acceptance and all loaded bytes"),
+        (acceptance([], [{"engine": "45c72a39833c", "until": expired["until"], "changed": ["torid"]}]), True,
+         "expired per-weapon acceptance also has no remaining runtime effect"),
+        (acceptance([], [active]), False, "removing a still-active acceptance deploys"),
+        (acceptance([{**active, "join": False}], [active]), False, "changing active join semantics deploys"),
+        (acceptance([{**active, "until": "9998-01-01T00:00:00.000Z"}], [active]), False, "changing an active deadline deploys"),
+        (acceptance([{**active, "engine": "7bd3c7f00f18"}], [active]), False, "changing an active engine deploys"),
+        (acceptance([], [{**expired, "unknown": True}]), False, "unknown expired policy fields cannot bypass deployment"),
+        (acceptance([], [{**expired, "join": 1}]), False, "numeric join is not a valid boolean acceptance"),
+        (acceptance([], [{**expired, "join": False}]), False, "false join without per-weapon rules is not an accepted policy"),
+        (acceptance([], [{**expired, "until": "not-a-date"}]), False, "invalid expiration cannot bypass deployment"),
+        (acceptance([], [{**expired, "until": "1970-02-30T00:00:00.000Z"}]), False, "an impossible calendar date cannot bypass deployment"),
+        (acceptance([], [{**expired, "until": None}]), False, "missing expiration cannot bypass deployment"),
+        (acceptance({}, {}), False, "a malformed acceptance container prevents skip even when equal"),
+        (acceptance([], [expired, expired]), False, "duplicate engine policies prevent skip"),
+    ]
     for path in ["bin/wfsim-board", "bin/wfsim-intake", "scripts/main.mjs", "worker/nested.js", "mcp/a.js",
                  "worker/deadlines.js", "worker/board_tasks.js", "scripts/pg/package.json", "scripts/pg/package-lock.json",
                  "scripts/pg/.installed-lock", "bin/witness/pkg/wfsim_wasm.abc.js", "bin/witness/pkg/wfsim_wasm_bg.abc.wasm",
@@ -187,7 +215,7 @@ def self_test(ship):
         value["unknown"]["kept"] = False
         path.write_text(json.dumps(value))
         mode["start"] = time.time_ns()
-    cases.append((release_drift, False, "release semantics exclude only commit and release"))
+    cases.append((release_drift, False, "unknown runtime release field changes deploy"))
     def release_type_drift(local, remote, mode, unit, environment):
         path = remote / "bin/witness/release.json"
         value = json.loads(path.read_text())

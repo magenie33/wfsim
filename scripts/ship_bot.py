@@ -23,6 +23,7 @@ THE LIVE BOARD SHIPS WITH IT (`deploy/wfsim-live.service`): `wfsim-intake` and
 drive them. Without Docker the bot still ships and the live board keeps the
 binaries it had, which is said out loud — a stale intake refuses new weapons.
 """
+import datetime
 import hashlib
 import json
 import pathlib
@@ -387,6 +388,29 @@ def live_storage_preflight(t: dict) -> None:
         sys.exit("live board storage preflight returned no verified work root; deployment stopped")
 
 
+def runtime_release(release: dict, now: datetime.datetime) -> str:
+    """Expired entries have no effect under worker/verify.js graceOf."""
+    value = {key: item for key, item in release.items() if key not in ("commit", "release")}
+    if "accepted" in value:
+        if not isinstance(value["accepted"], list):
+            raise ValueError("acceptance entries must be a list")
+        active, seen = [], set()
+        for entry in value["accepted"]:
+            if not isinstance(entry, dict) or not isinstance(entry.get("engine"), str) or not entry["engine"] or entry["engine"] in seen:
+                raise ValueError("acceptance engine is missing or duplicated")
+            seen.add(entry["engine"])
+            valid_join = set(entry) == {"engine", "until", "join"} and entry["join"] is True
+            valid_changed = set(entry) == {"engine", "until", "changed"} and isinstance(entry["changed"], list) and all(isinstance(item, str) for item in entry["changed"])
+            until = entry.get("until")
+            if not (valid_join or valid_changed) or not isinstance(until, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z", until):
+                raise ValueError("invalid acceptance policy")
+            deadline = datetime.datetime.strptime(until, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=datetime.timezone.utc)
+            if deadline > now:
+                active.append(entry)
+        value["accepted"] = active
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False)
+
+
 def live_unchanged(t: dict, files: dict, rel: dict, engine: str) -> str | None:
     """Only a complete actual-file and loaded-service proof can preserve VERSION."""
     wanted = {}
@@ -399,13 +423,12 @@ def live_unchanged(t: dict, files: dict, rel: dict, engine: str) -> str | None:
     wanted["scripts/pg/.installed-lock"] = wanted["scripts/pg/package-lock.json"]
     try:
         current = runtime_probe(t, wanted)
-        runtime = lambda release: json.dumps({k: v for k, v in release.items() if k not in ("commit", "release")},
-                                             sort_keys=True, separators=(",", ":"), allow_nan=False)
+        now = datetime.datetime.now(datetime.timezone.utc)
         if (isinstance(current, dict) and isinstance(current.get("release"), dict)
                 and current["active"] is True and type(current["pid"]) is int and current["pid"] > 0
                 and type(current["latest_change_ns"]) is int and type(current["started_ns"]) is int
                 and 0 < current["latest_change_ns"] <= current["started_ns"]
-                and current["files"] == wanted and runtime(current["release"]) == runtime(rel)
+                and current["files"] == wanted and runtime_release(current["release"], now) == runtime_release(rel, now)
                 and re.fullmatch(r"[0-9a-f]{40}", current["version"])):
             return current["version"]
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):

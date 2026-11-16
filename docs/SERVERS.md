@@ -50,7 +50,9 @@ after changes to its worker or scripts; `--verify` checks its commit and heartbe
 
 An unchanged live board keeps its process and actual `VERSION`. Shipping compares
 both checked CI binaries and the complete runtime inventory, including witness
-packs and release fields other than `commit` and `release`. A stable active process
+packs and runtime release fields. Commit/release labels and already expired,
+valid acceptance entries do not change the running engine; active acceptance
+entries and every other field must match. A stable active process
 must have started after every runtime, unit and environment-file change; missing,
 changed or unknown state uses the normal deployment path.
 
