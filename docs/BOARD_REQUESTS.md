@@ -5,6 +5,11 @@ player correction. Both use the same canonical build intake, captured workflow,
 computation identity, community verification and result delivery. Its control is
 independent of general intake and admission. Enabling it does not resume bulk
 generation, inventory recovery, old submissions or official computation.
+Explicit missing-measurement requests declare zone `00`; matching corrections
+declare `01`. Targeted admission resolves the participating workflow and live
+consumer priority through the common queue restatement. A shared calculation
+keeps its execution round and held lease; promotion joins the destination tail.
+The retained ordinary `03` prefix is not reprioritized.
 
 ## Source and handoffs
 
