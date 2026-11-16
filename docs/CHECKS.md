@@ -1,3 +1,10 @@
+`check_board_requested_intake.mjs` uses isolated PostgreSQL, the shipping native
+intake and board projector, and actual Worker routes. Both missing coverage and
+numeric correction cross leased intake, targeted admission, public work and
+answer APIs, independent community verification and website publication while
+the durable order cut and general admission pauses remain active. It also checks
+lease recovery, scope refusal, failed-install rollback and runner privileges.
+
 `check_engine_compare.py` runs independent executable fixtures through the
 native migration comparator. Equal results pass; changed damage, signed zero,
 one-ULP values, event ordering, repeat drift, truncated records, artifact

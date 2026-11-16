@@ -53,6 +53,10 @@ added. The daily full projection still reads the authoritative facts.
 
 ## Build workflows
 
+The independently controlled [explicit request entry](BOARD_REQUESTS.md)
+captures missing measurements and player corrections without resuming general
+intake or replaying the old inbox.
+
 Legal arrivals and matching-environment numeric corrections use the shared
 captured expansion. Its rules, storage and queue boundaries are specified in
 [COMPUTE_TASKS.md](COMPUTE_TASKS.md). The original build and complete legal family

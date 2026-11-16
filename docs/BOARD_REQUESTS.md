@@ -1,0 +1,65 @@
+# Explicit board requests
+
+The requested intake accepts a missing board measurement and an exact-environment
+player correction. Both use the same canonical build intake, captured workflow,
+computation identity, community verification and result delivery. Its control is
+independent of general intake and admission. Enabling it does not resume bulk
+generation, inventory recovery, old submissions or official computation.
+
+## Source and handoffs
+
+A single `/api/board/submit` with `requested:true`, `benchmark` and `mode` captures
+one build request. Scores are absent. Batch submissions remain ordinary inputs.
+The page also sends this coverage request when the published board already has
+the build; a published row does not prove database coverage. An absent review
+baseline follows the same missing-measurement entry.
+
+The normal `/api/board/review` captures its stored baseline and local observation.
+A transactional trigger captures only newly inserted review submissions. It
+does not import the old inbox. The native intake validates canonical identity,
+game legality and exact observed environment. The requested policy selects the
+native plan's single build, ruler and sustainable mode, retaining its official
+fight. It does not start family copies or searches.
+
+| Stage | Durable input | Commit |
+| --- | --- | --- |
+| Capture | Immutable source and requested environment | Ready request, in the source transaction |
+| Normalize | Leased source, pinned native intake | Canonical build, captured intent and staged request; spend only this input |
+| Admit | Staged intent | Targeted existing admission and common computation; acknowledge the request |
+| Execute and verify | Common queue and execution round | Existing independent community acceptance and workflow delivery |
+| Publish | Selected canonical measurement | Existing board mailbox, native projection and website pages |
+
+Native work occurs outside database transactions. A two-minute lease guards
+normalization and admission separately. An expired or replaced lease cannot
+acknowledge work. A failed transaction retains the previous stage; retry never
+scans the general requested lane or recovers unrelated workflows. Existing
+measurements satisfy coverage without another execution. Corrections retain
+their original baseline until independent verification succeeds.
+
+Semantic native refusals retain a rejected source receipt. Temporary process,
+database and lease failures retry after thirty seconds. Rejection also closes
+an unadmitted review, so it cannot remain waiting without an executable task.
+The source status reports committed workflow state and the selected measurement;
+the page observes website publication separately after verification.
+
+## Installation and operation
+
+Provision a dedicated NOLOGIN runner role and restricted login before installing
+with `board_requested_schema.mjs` as the canonical storage owner. The installer
+uses the data tablespace and a bounded transaction; existing tables require an
+explicit upgrade. The role can execute only request claim, stage, admission and
+retry functions. It cannot submit requests, change controls or write canonical
+tables directly. The HTTP role receives submission execution and status reads.
+
+The independent service pins its immutable native binary hash and source UUID.
+Its environment supplies `WFSIM_REQUESTED_DATABASE_URL`,
+`WFSIM_REQUESTED_INTAKE_BIN`, `WFSIM_REQUESTED_INTAKE_SHA256` and
+`WFSIM_REQUESTED_SOURCE`, plus the existing data-disk guard variables.
+`state_board_request_control.enabled` starts false. Activation and rollback
+change only this control and the new service. General intake/admission controls
+remain paused while this scoped consumer owns these requests.
+
+Source installation does not qualify a board partition. End-to-end activation
+also requires the affected partition's complete historical coverage, current
+source capture, native projection, website API and browser read. A queue ACK
+or accepted result alone does not prove publication.

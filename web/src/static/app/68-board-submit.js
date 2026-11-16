@@ -442,7 +442,7 @@ const boardRowLabel = (r) =>
 async function submitBoardPayload(body) {
   const outcome = { state: "failed", onBoard: null, boards: null, door: null, refusal: "" };
   if (body.weapon === presetWeapon()) outcome.onBoard = await boardRowMatching(body);
-  if (outcome.onBoard) return { ...outcome, state: "onboard" };
+  if (outcome.onBoard && !body.benchmark) return { ...outcome, state: "onboard" };
   const verdict = await boardVerdict(body);
   outcome.boards = verdict && verdict.ok ? { n: verdict.boards, of: verdict.of } : null;
   outcome.door = verdict && verdict.ok && verdict.accepted === false ? verdict.reason || "" : null;
@@ -451,9 +451,9 @@ async function submitBoardPayload(body) {
   }
   try {
     const response = await fetch("/api/board/submit", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, ...(body.benchmark ? { requested: true } : {}) }),
     });
-    outcome.state = response.ok ? "sent" : "failed";
+    outcome.state = response.ok ? outcome.onBoard ? "onboard" : "sent" : "failed";
     if (response.ok) track("board.submit", body.weapon);
   } catch (_) { /* a board upload does not invalidate a measurement */ }
   return outcome;
