@@ -207,7 +207,7 @@ let auditSql, auditArgs, unsettledSql, unsettledArgs;
 const observed = { ...A, prepare(sql) {
   const statement = A.prepare(sql);
   if (/count\(DISTINCT d\.question\)/i.test(sql)) return { bind(...args) { auditSql = sql; auditArgs = args; return statement.bind(...args); } };
-  if (/SELECT count\(\*\) AS n FROM state_compute_work q WHERE q\.state IN/.test(sql)) return { bind(...args) { unsettledSql = sql; unsettledArgs = args; return statement.bind(...args); } };
+  if (/SELECT count\(\*\) AS n FROM state_compute_effective_work q WHERE q\.state IN/.test(sql)) return { bind(...args) { unsettledSql = sql; unsettledArgs = args; return statement.bind(...args); } };
   return statement;
 } };
 const findings = await f.audit({ LIBRARY: observed }, now);
@@ -282,9 +282,10 @@ await C.exec(`INSERT INTO state_board_pending_work (batch,build_id,ruler,mode)
     CASE WHEN (i-1)%2000 < 1000 THEN 'base' ELSE 'cycle' END FROM generate_series(1,20000) i;
   ANALYZE state_board_pending_work;`);
 let cellsSql;
-const cellsDb = { ...C, prepare(sql) { if (/FROM state_board_pending_work WHERE ruler LIKE/.test(sql)) cellsSql=sql; return C.prepare(sql); } };
+const cellsDb = { ...C, prepare(sql) { if (/FROM state_board_effective_pending_work WHERE ruler LIKE/.test(sql)) cellsSql=sql; return C.prepare(sql); } };
 const cells = await cellsFilling({ LIBRARY: cellsDb }, now);
 assert.equal(cells.find(x => x.ruler === "test__cell")?.owed, 2000);
+assert.ok(cellsSql, "capture the effective board cell count");
 const cellPlan = await C.get(`EXPLAIN (ANALYZE,FORMAT JSON,TIMING OFF) ${cellsSql}`);
 let sortRows=0;
 const countSort = node => {
