@@ -444,7 +444,9 @@ case set while sharing the extra rulers between jobs.
 The actual Chrome startup helper runs with isolated child-process fixtures:
 immediate readiness, crash then recovery, repeated crashes, timeout and profile
 cleanup. Readiness polling ends early; a boot error or timeout still fails.
-Only startup is retried. Functional page assertions remain final.
+Only startup is retried. Functional page assertions remain final. An isolated
+TEMP fixture preserves aged captures and another running browser's profile
+while failed attempts remove their own profiles.
 
 ## `check_native_artifact`
 
@@ -3044,10 +3046,8 @@ the app — the simulator tab, /compute, and Torid again — takes
 throwaway profile under `%TEMP%`. `finish` kills the whole process tree
 (`taskkill /T` on win32), waits for it, and retries the removal; on Windows
 `kill()` reaches only the node that was spawned and Chrome's children hold the
-directory. `sweepStaleProfiles` deletes any `wfsim-*` older than an hour ON
-
-THE WAY IN, which is the only cleanup a run that throws, is interrupted, or
-never calls `finish()` can get.
+directory. Cleanup removes only the profile created by that run. Starting a
+check never scans TEMP or deletes another run's profile or captures.
 
 ## UI verification over CDP
 

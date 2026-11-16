@@ -21,7 +21,7 @@
 import { launchChrome, stopChrome, waitForBoot } from './cdp_boot.mjs';
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { readFileSync, readdirSync, rmSync, existsSync, statSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { extname, join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from 'node:crypto';
@@ -81,24 +81,6 @@ export async function serveSite(root, delay = {}) {
   return srv;
 }
 
-/// Interrupted checks can leave profiles behind, and Windows briefly holds
-/// handles after Chrome exits. Sweep only profiles older than an hour so a
-/// concurrent check retains its directory.
-function sweepStaleProfiles() {
-  const tmp = process.env.TEMP || "/tmp";
-  const cutoff = Date.now() - 60 * 60 * 1000;
-  let names = [];
-  try { names = readdirSync(tmp); } catch { return; }
-  for (const n of names) {
-    if (!n.startsWith("wfsim-")) continue;
-    const p = join(tmp, n);
-    try {
-      if (statSync(p).mtimeMs > cutoff) continue;
-      rmSync(p, { recursive: true, force: true });
-    } catch { /* someone else's, or still held — the next run tries again */ }
-  }
-}
-
 /**
  * Boot the shipping build in headless Chrome and hand back the handles a check
  * needs.
@@ -126,7 +108,6 @@ export async function openApp(o = {}) {
   // the directory's lock when the next check claimed it. Neither can happen to
   // a directory nobody else has ever used.
   const profileBase = join(process.env.TEMP || "/tmp", `${name}-${process.pid}-${randomUUID()}`);
-  sweepStaleProfiles();
   // An EXTERNAL base skips the server entirely, so a check can be pointed at
   // wfsim.app, a preview deploy, or the dev server (`WFSIM_BASE`, for every
   // check that serves `site/`: testing a change never waits on a site build).
