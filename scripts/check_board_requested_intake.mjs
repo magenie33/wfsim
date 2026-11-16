@@ -58,6 +58,28 @@ try{
  await assert.rejects(runner.unsafe('UPDATE state_board_request_control SET enabled=true'),error=>error.code==='42501');
  await assert.rejects(runner.unsafe('DELETE FROM entity_weapon_builds WHERE false'),error=>error.code==='42501');
  await assert.rejects(runner.unsafe("SELECT board_request_submit('bad','date','{}','anonymous')"),error=>error.code==='42501');
+ const configs=await sql.unsafe(`SELECT proname,array_to_string(proconfig,E'\n') config FROM pg_proc
+   WHERE pronamespace=$1::regnamespace AND proname LIKE 'board_request%' AND prosecdef`,[schema]);
+ assert(configs.length>=10);
+ assert(configs.every(row=>row.config.includes('search_path='+schema+',pg_catalog,pg_temp')),'every requested definer function pins its own trusted namespace');
+ const probe=await runner.reserve();
+ try{
+  await probe.unsafe(`CREATE TEMP TABLE state_board_request_control(id integer,source uuid,enabled boolean);
+   CREATE TEMP TABLE state_board_requests(id text,position bigint,phase text,intent text,workflow text,lease uuid,
+     lease_until timestamptz,retry_at timestamptz,attempts bigint,error text);
+   CREATE TEMP TABLE entity_board_requests(id text,kind text,input jsonb,ruler text,mode text,created_at timestamptz);`);
+  const [{source:realSource}]=await sql.unsafe('SELECT source FROM state_board_request_control');
+  await probe.unsafe('INSERT INTO pg_temp.state_board_request_control VALUES(1,$1::uuid,true)',[realSource]);
+  await probe.unsafe(`INSERT INTO pg_temp.state_board_requests VALUES('namespace-probe',1,'pending',NULL,NULL,NULL,NULL,clock_timestamp(),0,NULL);
+   INSERT INTO pg_temp.entity_board_requests VALUES('namespace-probe','missing','{}','r','base',clock_timestamp());`);
+  const invoke=async()=>(await probe.unsafe('SELECT board_request_claim($1::uuid) claim',[realSource]))[0].claim;
+  assert.equal(await invoke(),null,'temporary shadows cannot enable the real paused consumer');
+  try{
+   await sql.unsafe('ALTER FUNCTION board_request_claim(uuid) SET search_path TO '+schema);
+   assert.equal((await invoke())?.id,'namespace-probe','the negative control must actually exploit an implicit temporary namespace');
+  }finally{await sql.unsafe('ALTER FUNCTION board_request_claim(uuid) SET search_path TO '+schema+',pg_catalog,pg_temp');}
+  assert.equal(await invoke(),null,'the restored pin refuses the same temporary-table bypass');
+ }finally{probe.release();}
  await db.run("INSERT INTO state_task_pipeline_controls(name,paused,changed_at,changed_by) VALUES('admission',true,?,'check') ON CONFLICT(name) DO UPDATE SET paused=true",at);
  await db.run("INSERT INTO state_factory_parameters(name,value,set_at,set_by) VALUES('board_admission',0,?,'check') ON CONFLICT(name) DO UPDATE SET value=0",at);
  const fences=await db.all("SELECT * FROM state_task_pipeline_controls WHERE name='admission'");
@@ -226,7 +248,7 @@ try{
  assert.deepEqual(await db.all('SELECT * FROM relation_compute_order_cut_protection'),protectedRows,'fresh leases cannot change the retained protection manifest');
  console.log(JSON.stringify({ok:true,source_kinds:2,canonical_identity:normalized.id,community_witnesses:6,
   published_score:13,old_inbox_retained:true,bulk_admission_paused:true,active_cut_preserved:true,public_work_and_answers:true,
-  automatic_partition:true,legacy_unadmitted_replaced:true,cancelled_execution_preserved:true,unqualified_static_retained:true}));
+  automatic_partition:true,legacy_unadmitted_replaced:true,cancelled_execution_preserved:true,unqualified_static_retained:true,namespace_isolation:true}));
 }catch(error){console.error({query:error.query,parameters:error.parameters,where:error.where});throw error;}finally{
  await flow?.close();await runner?.end();await sql.unsafe('DROP SCHEMA '+schema+' CASCADE');
  await sql.unsafe('DROP ROLE IF EXISTS '+runnerRole);await sql.end();rmSync(root,{recursive:true,force:true});Math.random=realRandom;
