@@ -43,8 +43,8 @@ for (const path of admissionToolInputs) {
 assert.equal(classify(admissionToolInputs).deep, false);
 for (const path of ['tests/fixtures/build-admission-base5a/unknown.sql', 'scripts/migrations/unknown.mjs'])
   assert.equal(classify([path]).deep, true, path + ' is outside the exact declarations');
-const boardPipelineInputs = ['scripts/check_order_cut.mjs', 'scripts/check_order_cut_pg.mjs',
-  'tests/fixtures/order-cut-activation/f3ffb55e.sql',
+const boardPipelineInputs = ['scripts/check_order_cut.mjs', 'scripts/check_order_cut_pg.mjs', 'scripts/check_order_cut_reads.mjs',
+  'tests/fixtures/order-cut-activation/f3ffb55e.sql', 'tests/fixtures/order-cut-effective-reads/501b4458.sql',
   'deploy/wfsim-live.service', 'scripts/board_operator.mjs', 'scripts/prepared_board_inputs.mjs',
   'scripts/prepared_work_inventory.mjs', 'scripts/audit_prepared_members.mjs', 'scripts/source_capture_gc.mjs',
   'scripts/sqlite_transaction_recovery.mjs', 'scripts/check_task_pipeline.mjs',
@@ -59,12 +59,14 @@ for (const path of boardPipelineInputs) {
 }
 assert.equal(classify([...boardPipelineInputs, 'optimizer/src/search.rs']).deep, true);
 assert.equal(classify(['scripts/unregistered_board_pipeline.mjs']).deep, true);
+assert.equal(classify(['tests/fixtures/order-cut-effective-reads/unknown.sql']).deep, true);
 assert.equal(classify(boardPipelineInputs, false, false).deep, true);
 const boardWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 for (const [parent, helper, calls] of [
   ['scripts/check_task_modules.mjs', 'check_task_pipeline.mjs', ['await taskPipelineCases(']],
   ['scripts/check_task_modules.mjs', 'check_pipeline_clock.mjs', ['await pipelineClockCases(']],
   ['scripts/check_task_modules.mjs', 'check_order_cut.mjs', ['await orderCutCases(', 'await orderCutWorkflowCases(']],
+  ['scripts/check_task_modules.mjs', 'check_order_cut_reads.mjs', ['await orderCutReadCases(']],
   ['scripts/check_tasks.mjs', 'check_official_claims.mjs',
     ['[officialSourceIndexCases,officialClaimGuardCases]', 'await run(db)']],
   ['scripts/check_inventory_disk_budget.mjs', 'check_capacity_walk.mjs', ["await import('./check_capacity_walk.mjs')"]],
