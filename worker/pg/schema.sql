@@ -1182,14 +1182,20 @@ CREATE OR REPLACE VIEW state_compute_effective_open AS
     AND (coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id)
       <=(SELECT c.keep_zone,c.keep_position,c.keep_id FROM compute_order_cut() c)
   UNION ALL
-  SELECT s.* FROM entity_compute_tasks t CROSS JOIN LATERAL (
+  SELECT t.computation AS id,s.verb,s.task_id,s.state,s.due_at,s.waits,s.opened_at,s.lanes,s.lease,s.lease_until,
+    s.leased_to,s.leased_at,s.lease_prev,s.leased_to_prev,s.lease_prev_until,s.needs,s.odd,s.producer,s.initiator,
+    s.withdrawn_at,s.result_id,s.fact_engine,s.fact_at,s.zone,s.zone_position,s.required_capability,s.required_engine
+  FROM entity_compute_tasks t CROSS JOIN LATERAL (
     SELECT s.* FROM state_compute_scheduling s WHERE s.id=t.computation AND s.task_id=t.id AND s.state='open' OFFSET 0
   ) s
     WHERE t.id>(SELECT task_cutoff FROM compute_order_cut())
       AND (coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id)
         >(SELECT c.keep_zone,c.keep_position,c.keep_id FROM compute_order_cut() c)
   UNION ALL
-  SELECT s.* FROM relation_compute_order_cut_protection p CROSS JOIN LATERAL (
+  SELECT p.question AS id,s.verb,s.task_id,s.state,s.due_at,s.waits,s.opened_at,s.lanes,s.lease,s.lease_until,
+    s.leased_to,s.leased_at,s.lease_prev,s.leased_to_prev,s.lease_prev_until,s.needs,s.odd,s.producer,s.initiator,
+    s.withdrawn_at,s.result_id,s.fact_engine,s.fact_at,s.zone,s.zone_position,s.required_capability,s.required_engine
+  FROM relation_compute_order_cut_protection p CROSS JOIN LATERAL (
     SELECT s.* FROM state_compute_scheduling s WHERE s.id=p.question AND s.state='open' OFFSET 0
   ) s
     WHERE p.cut_id=(SELECT id FROM compute_order_cut()) AND s.task_id<=(SELECT task_cutoff FROM compute_order_cut())
