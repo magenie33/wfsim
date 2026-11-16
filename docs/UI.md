@@ -1413,6 +1413,28 @@ it lasts.
 
 Where the names come from: `docs/DATA_SOURCES.md` §"The world state".
 
+## A wide window
+
+**A DESKTOP WINDOW GETS TWO COLUMNS; A PHONE KEEPS ITS ONE.** From 1280px a
+weapon, Warframe or companion page widens to 1560px, less the room the
+execution dock stands in. What a reader edits floats left and what reports on
+it stays in flow on the right: the builder's steps beside its stats, the
+scenario editor beside the run and its results, the search plan beside the
+optimizer's run, a frame's mods beside its stats and abilities. Build Library
+turns its conditions, filters and sort into a side column of the results. A tab
+that is one block keeps the 760px measure under the wide header. Below 1280px
+none of it applies.
+
+**IT IS STYLE ALONE** (`style.css`, the last rule set): no wrapper is added, so
+folds, the jump menu and the layout preferences read the same children. Floats
+rather than a grid, because two columns of unrelated heights must not share a
+row and the sticky tab strip needs the whole page as its range. The cost is an
+order rule: a block kept in flow has to follow the floated ones in the markup,
+or it starts below them — a card reordered ahead of its column's floats through
+Edit layout does exactly that. The builder's stats block is sticky under the
+tabs and scrolls inside the window's height, so the numbers stay beside the mod
+being changed.
+
 ## The page is three modules, plus editors
 
 **THE PAGE IS THREE MODULES — Builder | Simulator | Optimizer** — with one
