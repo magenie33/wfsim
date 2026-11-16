@@ -15,6 +15,7 @@ const hash=value=>createHash('sha256').update(value).digest('hex');
 const name=value=>typeof value==='string'&&/^[a-z0-9_]{1,160}$/.test(value);
 const MAX_BYTES=8*1024*1024;
 const MAX_INPUT_BYTES=8*1024*1024;
+class BoardPartitionQualificationError extends Error {}
 
 export async function captureBoardPartition(sql,{weapon,ruler,qualify_requested=false}) {
  if(!name(weapon)||!name(ruler))throw Error('invalid board partition');
@@ -38,12 +39,12 @@ export async function captureBoardPartition(sql,{weapon,ruler,qualify_requested=
     )f ON true WHERE b.weapon=$1`;
   await tx.unsafe('DECLARE board_source_capture NO SCROLL CURSOR FOR '+query,[weapon,ruler]);
   for(;;){
-   if(Date.now()-started>120000)throw Error('partition capture exceeded its time budget; current published view retained');
+   if(Date.now()-started>120000)throw new BoardPartitionQualificationError('partition capture exceeded its time budget; current published view retained');
    const page=await tx.unsafe('FETCH FORWARD 256 FROM board_source_capture');
    for(const row of page){
     if(!row.facts)continue;
     bytes+=Buffer.byteLength(row.record)+Buffer.byteLength(JSON.stringify(row.facts));
-    if(bytes>MAX_INPUT_BYTES)throw Error(`computed partition requires incremental preparation (${builds.length} builds, ${facts.length} facts, ${bytes} bytes); current published view retained`);
+    if(bytes>MAX_INPUT_BYTES)throw new BoardPartitionQualificationError(`computed partition requires incremental preparation (${builds.length} builds, ${facts.length} facts, ${bytes} bytes); current published view retained`);
     builds.push({id:row.id,at:row.at,record:JSON.parse(row.record)});facts.push(...row.facts);
    }
    if(page.length<256)break;
@@ -54,7 +55,7 @@ export async function captureBoardPartition(sql,{weapon,ruler,qualify_requested=
   const reviews=[],ids=[...new Set(facts.map(row=>row.review_id).filter(Boolean))];
   for(let i=0;i<ids.length;i+=256){
    const rows=await tx.unsafe("SELECT to_jsonb(r)-'task_id' body FROM entity_measurement_reviews r WHERE id IN(SELECT jsonb_array_elements_text(($1::text)::jsonb)) ORDER BY id",[JSON.stringify(ids.slice(i,i+256))]);
-   for(const row of rows){bytes+=Buffer.byteLength(JSON.stringify(row.body));if(bytes>MAX_INPUT_BYTES)throw Error('partition review inputs exceed byte budget');reviews.push(row.body);}
+   for(const row of rows){bytes+=Buffer.byteLength(JSON.stringify(row.body));if(bytes>MAX_INPUT_BYTES)throw new BoardPartitionQualificationError('partition review inputs exceed byte budget');reviews.push(row.body);}
   }
   return {weapon,ruler,captured_at,snapshot,bootstrap:!selected.revision,builds,facts,reviews,inputs_sha256:hash(JSON.stringify({builds,facts,reviews}))};
  });
@@ -64,7 +65,7 @@ async function nativeProject(binary,input,directory) {
  const facts=join(directory,'facts.ndjson'),board=join(directory,'board');
  await writeFile(facts,input.facts.map(row=>JSON.stringify(row)).join('\n')+'\n');
  const body=JSON.stringify(input.builds.map(row=>row.record));
- if(Buffer.byteLength(body)>MAX_INPUT_BYTES)throw Error('native board input exceeds byte budget');
+ if(Buffer.byteLength(body)>MAX_INPUT_BYTES)throw new BoardPartitionQualificationError('native board input exceeds byte budget');
  await new Promise((resolve,reject)=>{
   const child=spawn(binary,['--project',board,'--facts-in',facts,'--state',join(directory,'state.yaml')],{stdio:['pipe','ignore','pipe']});
   let tail='',done=false;const timer=setTimeout(()=>{child.kill('SIGKILL');},60000);
@@ -130,7 +131,7 @@ export async function openBoardResultFlow({sql,source,engine,binary,work=tmpdir(
   for(let i=0;i<snapshot.builds.length;i+=256){
    const sources=snapshot.builds.slice(i,i+256);
    const described=await operator.call('describe',sources.map(row=>({id:row.id,record:row.record})));
-   if(described.some(row=>row.candidate!==null&&row.candidate!==row.id))throw Error('board source identities require qualification');
+   if(described.some(row=>row.candidate!==null&&row.candidate!==row.id))throw new BoardPartitionQualificationError('board source identities require qualification');
   }
   boardStorage(work);
   const directory=await mkdtemp(join(work,'board-result-'));
@@ -144,7 +145,7 @@ export async function openBoardResultFlow({sql,source,engine,binary,work=tmpdir(
    catch(error){if(error.code!=='ENOENT')throw error;}
    rows=rows.filter(row=>row.benchmark===ruler);
    if(rows.some(row=>Buffer.byteLength(JSON.stringify(row))>65536)||Buffer.byteLength(JSON.stringify(rows))>MAX_BYTES)
-    throw Error('native partition output exceeds byte budget');
+    throw new BoardPartitionQualificationError('native partition output exceeds byte budget');
    const leaders=(index[weapon]??[]).filter(row=>row.benchmark===ruler);
    const revision=hash(JSON.stringify({source,engine,adapter:operator.adapter,inputs:snapshot.inputs_sha256,rows,leaders}));
    return {...snapshot,scene,rows,leaders,revision,qualifying};
@@ -181,6 +182,7 @@ export async function openBoardResultFlow({sql,source,engine,binary,work=tmpdir(
   if(requestedPartitions)await enqueueRequestedPartition(sql,source,operator.contract.rulers);
   const claim=await mailbox.claim({items:1,leaseSeconds:300});
   const item=claim.inputs[0];if(!item)return {status:'idle'};
+  let qualifying=false;
   try{
    const input=await mailbox.read(item,claim.token);
    if(input.status==='superseded'){
@@ -188,12 +190,16 @@ export async function openBoardResultFlow({sql,source,engine,binary,work=tmpdir(
     return {status:'superseded'};
    }
    if(input.status!=='input')throw Error('board input '+input.status);
+   qualifying=requestedPartitions&&input.body?.qualify_requested===true;
    if(input.scope==='partition'){
     const prepared=await prepare(input);
     return {...await mailbox.apply(input,claim.token,(tx,packet)=>publish(tx,packet,prepared)),stage:'publication'};
    }
    return {...await mailbox.apply(input,claim.token,route),stage:'routing'};
-  }catch(error){await mailbox.retry(item,claim.token,{error:error.message,delaySeconds:5});throw error;}
+  }catch(error){
+   const delaySeconds=qualifying&&error instanceof BoardPartitionQualificationError?null:5;
+   await mailbox.retry(item,claim.token,{error:error.message,delaySeconds});throw error;
+  }
  }};
 }
 
