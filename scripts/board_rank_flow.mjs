@@ -13,7 +13,7 @@ import {claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankG
 import {collectRankStorage,collectRankOrphan} from './board_rank_gc.mjs';
 
 export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha,requestedPartitions=false,fault=async()=>{}}) {
- boardStorage(work);await mkdir(work,{recursive:true});
+ work=boardStorage(work);await mkdir(work,{recursive:true});
  const [boundary]=await sql.unsafe('SELECT weapon,ruler FROM state_board_rank_partitions WHERE source<>$1 OR native<>$2 LIMIT 1',[source,nativeSha]);
  if(boundary)throw new BoardRankQualificationError('ranking projection recovery boundary changed');
  const identity=await stat(binary),native=await openInventoryOperator(binary);

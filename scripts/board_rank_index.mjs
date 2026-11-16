@@ -146,7 +146,7 @@ export async function captureRankWinners(sql,native,{weapon,ruler,source,path}) 
 }
 
 export async function prepareRankSnapshot(sql,native,{weapon,ruler,source,work}) {
- boardStorage(work);
+ work=boardStorage(work);
  const directory=await mkdtemp(join(work,'board-rank-')),path=join(directory,'winners.ndjson');
  try{
   const captured=await captureRankWinners(sql,native,{weapon,ruler,source,path});
