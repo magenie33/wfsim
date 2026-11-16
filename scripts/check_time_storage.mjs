@@ -24,7 +24,7 @@ function schema(path) {
   // functions alone (worker/pg/sync.sql) has none to read.
   if (!/CREATE TABLE/.test(s)) return;
   let columns = 0;
-  for (const t of s.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)\s*\(([\s\S]*?)\n\);/g)) {
+  for (const t of s.matchAll(/CREATE TABLE (?:IF NOT EXISTS )?(\w+)\s*\(([\s\S]*?)\n\);/g)) {
     for (const line of t[2].split("\n")) {
       const c = line.replace(/--.*/, "").trim()
         .match(/^(\w+)\s+(TEXT|BIGINT|INTEGER|SMALLINT|DOUBLE PRECISION|REAL|NUMERIC|BOOLEAN|TIMESTAMPTZ|TIMESTAMP|DATE|JSONB|JSON|BYTEA)\b/i);

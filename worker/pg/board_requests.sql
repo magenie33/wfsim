@@ -6,7 +6,7 @@ CREATE TABLE entity_board_requests (
   input JSONB NOT NULL CHECK(jsonb_typeof(input)='object'),
   ruler TEXT COLLATE "C" NOT NULL,
   mode TEXT COLLATE "C" NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+  created_at TEXT COLLATE "C" NOT NULL DEFAULT board_input_timestamp(clock_timestamp())
 );
 CREATE TABLE state_board_request_control (
   id INTEGER PRIMARY KEY CHECK(id=1),
@@ -21,8 +21,8 @@ CREATE TABLE state_board_requests (
   intent TEXT COLLATE "C",
   workflow TEXT COLLATE "C",
   lease UUID,
-  lease_until TIMESTAMPTZ,
-  retry_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(),
+  lease_until TEXT COLLATE "C",
+  retry_at TEXT COLLATE "C" NOT NULL DEFAULT board_input_timestamp(clock_timestamp()),
   attempts BIGINT NOT NULL DEFAULT 0,
   error TEXT
 );
@@ -69,10 +69,10 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE held state_board_requests%ROWTYPE;
 BEGIN
   IF NOT EXISTS(SELECT 1 FROM state_board_request_control WHERE id=1 AND source=$1 AND enabled) THEN RETURN NULL; END IF;
-  SELECT * INTO held FROM state_board_requests WHERE phase IN('pending','staged') AND retry_at<=clock_timestamp()
-    AND (lease IS NULL OR lease_until<=clock_timestamp()) ORDER BY position,id LIMIT 1 FOR UPDATE SKIP LOCKED;
+  SELECT * INTO held FROM state_board_requests WHERE phase IN('pending','staged') AND retry_at<=board_input_timestamp(clock_timestamp())
+    AND (lease IS NULL OR lease_until<=board_input_timestamp(clock_timestamp())) ORDER BY position,id LIMIT 1 FOR UPDATE SKIP LOCKED;
   IF NOT FOUND THEN RETURN NULL; END IF;
-  UPDATE state_board_requests SET lease=gen_random_uuid(),lease_until=clock_timestamp()+interval '2minutes',attempts=attempts+1
+  UPDATE state_board_requests SET lease=gen_random_uuid(),lease_until=board_input_timestamp(clock_timestamp()+interval '2minutes'),attempts=attempts+1
     WHERE id=held.id RETURNING * INTO held;
   RETURN to_jsonb(held)||(SELECT to_jsonb(r) FROM entity_board_requests r WHERE r.id=held.id);
 END $$;
@@ -83,7 +83,7 @@ DECLARE request entity_board_requests%ROWTYPE; input jsonb:=$3::jsonb; plan json
 BEGIN
   PERFORM 1 FROM state_board_request_control WHERE id=1 AND enabled FOR SHARE;
   IF NOT FOUND THEN RAISE EXCEPTION 'requested board intake is paused' USING ERRCODE='55000'; END IF;
-  PERFORM 1 FROM state_board_requests WHERE id=$1 AND phase='pending' AND lease=$2 AND lease_until>clock_timestamp() FOR UPDATE;
+  PERFORM 1 FROM state_board_requests WHERE id=$1 AND phase='pending' AND lease=$2 AND lease_until>board_input_timestamp(clock_timestamp()) FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'requested input lease changed' USING ERRCODE='40001'; END IF;
   SELECT * INTO STRICT request FROM entity_board_requests WHERE id=$1;
   IF input->'from' IS DISTINCT FROM jsonb_build_array($1) OR input->>'derived' IS DISTINCT FROM 'false'
@@ -112,7 +112,7 @@ DECLARE held state_board_requests%ROWTYPE; at text; work record; flow text; pend
 BEGIN
   PERFORM 1 FROM state_board_request_control WHERE id=1 AND enabled FOR SHARE;
   IF NOT FOUND THEN RAISE EXCEPTION 'requested board intake is paused' USING ERRCODE='55000'; END IF;
-  SELECT * INTO held FROM state_board_requests WHERE id=$1 AND phase='staged' AND lease=$2 AND lease_until>clock_timestamp() FOR UPDATE;
+  SELECT * INTO held FROM state_board_requests WHERE id=$1 AND phase='staged' AND lease=$2 AND lease_until>board_input_timestamp(clock_timestamp()) FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'requested admission lease changed' USING ERRCODE='40001'; END IF;
   at:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
   IF EXISTS(SELECT 1 FROM state_build_admission_work WHERE kind='intake' AND key=held.intent) THEN
@@ -152,8 +152,8 @@ CREATE FUNCTION board_request_retry(text,uuid,text,boolean) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 BEGIN
   UPDATE state_board_requests SET phase=CASE WHEN $4 THEN 'rejected' ELSE phase END,
-    lease=NULL,lease_until=NULL,error=left($3,1000),retry_at=clock_timestamp()+interval '30seconds'
-    WHERE id=$1 AND lease=$2 AND lease_until>clock_timestamp();
+    lease=NULL,lease_until=NULL,error=left($3,1000),retry_at=board_input_timestamp(clock_timestamp()+interval '30seconds')
+    WHERE id=$1 AND lease=$2 AND lease_until>board_input_timestamp(clock_timestamp());
   IF NOT FOUND THEN RETURN false; END IF;
   IF $4 THEN
     UPDATE entity_measurement_reviews r SET state='failed',completed_at=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
