@@ -29,6 +29,7 @@ const CI_WIRING = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
   'scripts/factory_shards.mjs', 'scripts/check_factory_shards.mjs',
   'scripts/release_readiness.py', 'scripts/check_release_readiness.py'];
 const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh', 'scripts/cancel_queue.sh',
+  'scripts/check_time_storage.mjs',
   'scripts/import_kitgun_status.py', 'tests/fixtures/client/kitgun-status-2026-10-28.json',
   'tests/golden/M132-vermisplicer-secondary-status.json', 'docs/measurements/M132-vermisplicer-secondary-status.md',
   'scripts/engine_compare.py', 'scripts/check_engine_compare.py', 'tests/fixtures/engine-compare/calls.json',

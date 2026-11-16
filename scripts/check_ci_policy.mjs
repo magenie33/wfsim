@@ -203,6 +203,7 @@ const ciWiring = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
   'scripts/check_ci_policy.mjs', 'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs',
   'scripts/check_ci_partitions.mjs', 'scripts/check_site_setup.mjs'];
 const nonSearchTools = [...inventoryControlInputs, 'scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh', 'scripts/cancel_queue.sh',
+  'scripts/check_time_storage.mjs',
   'scripts/live_board.sh', 'scripts/live_orders.mjs', 'scripts/ship_builds.sh', 'scripts/retire_scores.mjs', 'scripts/ship_queue.sh',
   'scripts/fetch_facts.sh', 'scripts/ship_facts.sh', 'scripts/live_publish.mjs', '.github/workflows/queue.yml',
   'deploy/factoryd_grants.sql', 'scripts/check_rescore_paths.mjs', 'scripts/capture_compute_inventory.mjs',
