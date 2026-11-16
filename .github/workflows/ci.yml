@@ -670,14 +670,14 @@ jobs:
           POSTGRES_PASSWORD: mailbox_check
           POSTGRES_DB: wfsim_checks
         ports:
-          - 5432:5432
+          - 5433:5432
         options: >-
           --health-cmd "pg_isready -U postgres -d wfsim_checks"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
-      WFSIM_BOARD_MAILBOX_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5432/wfsim_checks
+      WFSIM_BOARD_MAILBOX_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5433/wfsim_checks
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
