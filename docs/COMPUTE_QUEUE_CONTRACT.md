@@ -185,12 +185,16 @@ cannot expand into an unbounded official production fallback.
 
 ## Publication and qualification
 
-Board publication consumes accepted measurements. Its source snapshot,
+Online board publication consumes accepted measurements. Its source snapshot,
 projection audit, immutable package and remote acknowledgement have separate
 proofs. A completed input cursor is not a completed projection or an uploaded
 package. Potential-work inventory is an independent consumer and cannot gate
 audited board publication. A paused publisher retains its packages; accepted
 results, delivery and contributions remain valid.
+
+The GitHub-committed board snapshot is a separate optional archival consumer.
+The website reads the online board, independently of that snapshot. Disabling
+the repository snapshot workflow does not pause online projection or delivery.
 
 Every module exposes its controls, bounded backlog, oldest pending item,
 successful progress, failure and observation time. A fresh daemon heartbeat
@@ -204,5 +208,5 @@ sampling, exact replay and publication with inventory paused. Each changed
 behavior needs an actual failing control and a passing implementation fixture.
 Runtime/schema changes retain existing identities, issued credentials, accepted
 outputs and contribution history. They require their own migration and release
-evidence; this specification does not authorize reissue, refill, public publication
-or an official executor restart.
+evidence; this specification does not authorize reissue, refill, workflow changes
+or service control operations.
