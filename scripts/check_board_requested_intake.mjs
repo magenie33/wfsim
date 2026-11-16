@@ -85,19 +85,37 @@ try{
  const fences=await db.all("SELECT * FROM state_task_pipeline_controls WHERE name='admission'");
  await sql.unsafe(readFileSync(new URL('../worker/pg/order_cut_indexes.sql',import.meta.url),'utf8').replaceAll('INDEX CONCURRENTLY','INDEX'));
  const cancelled='c'.repeat(32),old='2026-01-01T00:00:00.000Z';
+ const record=JSON.parse(readFileSync(new URL('../tests/gas/rows.json',import.meta.url),'utf8'))[0].record;
+ const ruler='standard_single_target',mode='base';
+ const body={...record,benchmark:ruler,mode,requested:true};
+ const retained=[];
+ for(const benchmark of ['demolisher',ruler]){
+  const input=await normalizeBoardRequest(binary,{kind:'missing',ruler:benchmark,mode,
+   input:{id:'retained-'+benchmark,at:old,record:JSON.stringify({...record,benchmark,mode}),initiator:'anonymous'}});
+  await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
+  for(const kind of ['intake','expansion']){
+   const {job}=await db.get('SELECT build_admission_claim(?::text,board_input_timestamp(clock_timestamp())) job',kind);assert(job);
+   await db.run('SELECT build_admission_run(?::text,?::text,?::text,1,board_input_timestamp(clock_timestamp()))',job.kind,job.key,job.lease);
+  }
+  retained.push(input.flow.nodes[0].computation);
+ }
+ const heldResponse=await post('/api/board/work',{verifier:'1'.repeat(24),engine,protocol:7,capabilities:['fixed-board-input-v1'],consent:{v:3,at},lanes:8},{'cf-connecting-ip':'192.0.2.1'});
+ const held=await heldResponse.json();assert.equal(held.pack?.tasks.length,2);
+ assert.equal(held.pack.tasks[0].question,retained[0],'ordinary retained work is really ahead before promotion');
+ const sharedBefore=await db.get('SELECT * FROM state_compute_scheduling WHERE id=?',retained[1]);
+ assert.equal(sharedBefore.zone,3);assert.equal(sharedBefore.lease,held.pack.lease);
  await db.run('SELECT compute_register_tasks(?::text,?::text,?::text)',JSON.stringify([
-  {id:cancelled,verb:'simulate',request:'{}',due_at:old,producer:'new_build',waits:0}]),engine,old);
+  {id:cancelled,verb:'simulate',request:'{}',due_at:old,producer:'new_build',waits:0,zone:99}]),engine,old);
  const cutoff=(await db.get('SELECT max(id) n FROM entity_compute_tasks')).n;
+ const cutAt=(await db.get('SELECT board_input_timestamp(clock_timestamp()) at')).at;
  await db.run('SELECT compute_order_cut_stage((?::text)::jsonb)',JSON.stringify({id:'requested-active-cut',
-  cut_at:new Date(Date.now()-1000).toISOString(),task_cutoff:cutoff,keep_boundary:[1,0,''],source:{fixture:true}}));
+  cut_at:cutAt,task_cutoff:cutoff,keep_boundary:[3,sharedBefore.zone_position,sharedBefore.id],source:{fixture:true}}));
  await db.run('SELECT compute_order_cut_capture(?::text)','requested-active-cut');
  await db.run('SELECT compute_order_cut_activate(?::text,?::bigint,?::text)','requested-active-cut',0,createHash('sha256').update('').digest('hex'));
  const cut=await db.all('SELECT * FROM entity_compute_order_cuts');
  const protectedRows=await db.all('SELECT * FROM relation_compute_order_cut_protection');
- assert.equal(await count('state_compute_work'),0,'the old task remains cancelled under an active durable cut');
- const record=JSON.parse(readFileSync(new URL('../tests/gas/rows.json',import.meta.url),'utf8'))[0].record;
- const ruler='standard_single_target',mode='base';
- const body={...record,benchmark:ruler,mode,requested:true};
+ assert.equal(await count('state_compute_work'),2,'the durable cut retains the old prefix and excludes the cancelled task');
+ assert(!(await db.get('SELECT 1 FROM state_compute_work WHERE id=?',cancelled)));
  assert.equal((await post('/api/board/submit',body)).status,503,'disabled requested admission must not report acceptance');
  assert.equal(await count('entity_board_requests'),0,'installation never captures the old inbox');
  await db.run('UPDATE state_board_request_control SET enabled=true');
@@ -116,16 +134,31 @@ try{
  assert.equal(normalized.flow.nodes[0].identity,normalized.id);
  const bad=structuredClone(normalized);bad.flow.nodes.push(bad.flow.nodes[0]);
  await assert.rejects(db.run('SELECT board_request_stage(?::text,?::uuid,?::text)',id,claim.lease,JSON.stringify(bad)),/changed its captured scope/);
- assert.equal(await count('entity_build_intake_intents'),0,'a rejected stage is atomic');
+ assert.equal(await count('entity_build_intake_intents'),2,'a rejected stage cannot add an intent');
  assert(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',id));
  await db.run("UPDATE state_board_requests SET lease_until=clock_timestamp()-interval '1second' WHERE id=?",id);
  await assert.rejects(db.run('SELECT board_request_stage(?::text,?::uuid,?::text)',id,claim.lease,JSON.stringify(normalized)),/lease changed/);
  assert((await pass()).staged,'expired claims recover through the same source');
- assert.equal(await count('state_compute_work'),0,'canonical intake commits before independent task admission');
+ assert.equal(await count('state_compute_work'),2,'canonical intake does not create or replace the held computation');
  assert(!(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',id)));
  assert(await db.get("SELECT 1 FROM record_build_submissions WHERE id='old-inbox'"));
+ const sharedNode=await db.get('SELECT workflow FROM state_build_workflow_nodes WHERE computation=? AND task_id=?',retained[1],sharedBefore.task_id);
+ await db.run(`INSERT INTO state_build_workflow_nodes(workflow,id,expansion,definition,state,retry_at,queue_position)
+   SELECT workflow,'unrelated-fixture',expansion,definition||'{"kind":"optimize"}'::jsonb,'pending',retry_at,nextval('compute_queue_position')
+   FROM state_build_workflow_nodes WHERE workflow=? LIMIT 1`,sharedNode.workflow);
+ await assert.rejects(pass(),/requested workflow includes unrelated computations/);
+ assert.equal((await db.get('SELECT zone FROM state_compute_scheduling WHERE id=?',retained[1])).zone,3,'an ambiguous legacy scope cannot promote existing work');
+ assert.equal((await requestRow(id)).phase,'staged');
+ await db.run("DELETE FROM state_build_workflow_nodes WHERE workflow=? AND id='unrelated-fixture'",sharedNode.workflow);
+ await db.run('UPDATE state_board_requests SET retry_at=clock_timestamp() WHERE id=?',id);
  assert(!(await pass()).pending);assert.equal((await requestRow(id)).phase,'admitted');
- assert.equal(await count('state_compute_work'),1,'the existing queue holds one requested calculation');
+ assert.equal(await count('state_compute_work'),2,'the existing shared calculation is reused');
+ const sharedAfter=await db.get('SELECT * FROM state_compute_scheduling WHERE id=?',retained[1]);
+ assert.equal(sharedAfter.zone,0,'explicit missing measurement requests use the human calculation zone');
+ assert(sharedAfter.zone_position>sharedBefore.zone_position,'promotion joins the new zone tail');
+ for(const key of ['task_id','lease','lease_until','leased_to','leased_at','lease_prev','leased_to_prev','lease_prev_until'])
+  assert.equal(sharedAfter[key],sharedBefore[key],'priority resolution preserves the held '+key);
+ assert.equal((await db.get('SELECT zone FROM state_compute_scheduling WHERE id=?',retained[0])).zone,3,'the older ordinary prefix keeps its priority');
  assert.deepEqual(await db.all("SELECT * FROM state_task_pipeline_controls WHERE name='admission'"),fences);
  assert.equal((await db.get("SELECT value FROM state_factory_parameters WHERE name='board_admission'")).value,0);
  const inputNode=normalized.flow.nodes[0],patch=normalized.flow.patches[inputNode.patch];
@@ -133,10 +166,11 @@ try{
  for(const key of patch.remove)delete calculation[key];
  async function answer(d,score){
   const verifier=d.repeat(24),headers={'cf-connecting-ip':'192.0.2.'+d};
-  const got=await post('/api/board/work',{verifier,engine,protocol:7,capabilities:['fixed-board-input-v1'],consent:{v:3,at},lanes:8},headers);
-  assert.equal(got.status,200);const dispatched=await got.json();
+  const got=d==='1'?null:await post('/api/board/work',{verifier,engine,protocol:7,capabilities:['fixed-board-input-v1'],consent:{v:3,at},lanes:8},headers);
+  if(got)assert.equal(got.status,200);const dispatched=got?await got.json():held;
   assert(dispatched.pack?.tasks?.length,'a fresh request must reach actual public work dispatch under the active cut: '+JSON.stringify(dispatched));
-  const work=dispatched.pack.tasks.find(task=>task.identity===normalized.id);assert(work);
+  const work=dispatched.pack.tasks.find(task=>task.identity===normalized.id&&task.ruler===ruler);assert(work);
+  if(got)assert.equal(dispatched.pack.tasks[0].question,work.question,'the new requested task advances ahead of retained zone03 work');
   assert(dispatched.pack.tasks.every(task=>task.question!==cancelled));
   const replied=await post('/api/board/answers',{verifier,engine,lease:dispatched.pack.lease,done:true,
    answers:[{question:work.question,score,metric:'kpm',work:100}]},headers);
@@ -175,7 +209,7 @@ try{
  assert((await pass()).staged);assert(!(await pass()).pending);
  assert.deepEqual(await db.get('SELECT to_jsonb(i) body FROM entity_build_intake_intents i WHERE id=?',legacy),legacyIntent,'fresh admission never changes the old intent');
  assert(await db.get("SELECT 1 FROM state_build_admission_work WHERE kind='intake' AND key=?",legacy),'the old staged work is not admitted');
- assert.equal(await count('state_compute_work'),1,'correction retains the computation identity and opens its execution round');
+ assert.equal(await count('state_compute_work'),2,'correction retains the computation identity and opens its execution round');
  await answer('3',12);
  assert.equal((await db.get('SELECT score FROM state_board_measurement_selection WHERE identity=?',normalized.id)).score,10);
  await answer('4',12);
@@ -185,7 +219,7 @@ try{
  const duplicate=await (await post('/api/board/submit',body)).json();
  assert((await pass()).staged);await pass();
  assert.equal((await requestRow(duplicate.request)).phase,'admitted');
- assert.equal(await count('state_compute_work'),1,'existing coverage never creates another task');
+ assert.equal(await count('state_compute_work'),2,'existing coverage never creates another task');
  const status=await (await post('/api/board/requests/status',{ids:[id,duplicate.request]})).json();
  assert(status.ok);assert.equal(status.requests[0].current_score,12);
  const [{source:publicationSource}]=await sql.unsafe('SELECT source FROM state_board_input_source');
@@ -252,7 +286,8 @@ try{
  assert.deepEqual(await db.all('SELECT * FROM relation_compute_order_cut_protection'),protectedRows,'fresh leases cannot change the retained protection manifest');
  console.log(JSON.stringify({ok:true,source_kinds:2,canonical_identity:normalized.id,community_witnesses:6,
   published_score:13,old_inbox_retained:true,bulk_admission_paused:true,active_cut_preserved:true,public_work_and_answers:true,
-  automatic_partition:true,legacy_unadmitted_replaced:true,cancelled_execution_preserved:true,unqualified_static_retained:true,namespace_isolation:true}));
+  automatic_partition:true,legacy_unadmitted_replaced:true,cancelled_execution_preserved:true,unqualified_static_retained:true,namespace_isolation:true,
+  retained_prefix_priority_preserved:true,shared_held_lease_preserved:true,explicit_missing_zone:0}));
 }catch(error){console.error({query:error.query,parameters:error.parameters,where:error.where});throw error;}finally{
  await flow?.close();await runner?.end();await sql.unsafe('DROP SCHEMA '+schema+' CASCADE');
  await sql.unsafe('DROP ROLE IF EXISTS '+runnerRole);await sql.end();rmSync(root,{recursive:true,force:true});Math.random=realRandom;

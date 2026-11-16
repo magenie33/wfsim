@@ -2,6 +2,7 @@
 CREATE TABLE entity_board_requests (
   id TEXT COLLATE "C" PRIMARY KEY,
   kind TEXT NOT NULL CHECK(kind IN('missing','correction')),
+  zone BIGINT GENERATED ALWAYS AS(CASE kind WHEN 'missing' THEN 0 ELSE 1 END) STORED,
   input JSONB NOT NULL CHECK(jsonb_typeof(input)='object'),
   ruler TEXT COLLATE "C" NOT NULL,
   mode TEXT COLLATE "C" NOT NULL,
@@ -99,6 +100,7 @@ BEGIN
       OR input#>>'{observation,review}' IS DISTINCT FROM (request.input->>'observation')::jsonb->>'review'))
     OR (request.kind='missing' AND input->'observation' IS DISTINCT FROM 'null'::jsonb) THEN
     RAISE EXCEPTION 'requested input changed its captured scope'; END IF;
+  input:=input||jsonb_build_object('zone',request.zone);
   PERFORM build_intake_batch(jsonb_build_array(input)::text);
   UPDATE state_board_requests SET phase='staged',intent=build_intake_key(input),lease=NULL,lease_until=NULL,error=NULL WHERE id=$1;
   PERFORM build_spend_submissions(jsonb_build_array($1)::text);
@@ -106,7 +108,7 @@ END $$;
 
 CREATE FUNCTION board_request_admit(text,uuid) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
-DECLARE held state_board_requests%ROWTYPE; at text; work record; flow text; pending boolean;
+DECLARE held state_board_requests%ROWTYPE; at text; work record; flow text; pending boolean; requested_zone bigint;
 BEGIN
   PERFORM 1 FROM state_board_request_control WHERE id=1 AND enabled FOR SHARE;
   IF NOT FOUND THEN RAISE EXCEPTION 'requested board intake is paused' USING ERRCODE='55000'; END IF;
@@ -123,6 +125,15 @@ BEGIN
     PERFORM build_admission_run('intake',held.intent,$2::text,1,at);
   END IF;
   SELECT workflow INTO flow FROM record_build_workflow_triggers WHERE id=held.intent;
+  IF flow IS NOT NULL AND ((SELECT count(*) FROM(SELECT 1 FROM state_build_workflow_nodes WHERE workflow=flow LIMIT 2) bounded)<>1
+    OR NOT EXISTS(SELECT 1 FROM state_build_workflow_nodes n JOIN entity_build_intake_intents i ON i.id=held.intent
+      JOIN entity_build_intake_plans p ON p.id=i.plan_id WHERE n.workflow=flow AND n.definition->>'computation'=p.definition#>>'{nodes,0,computation}')) THEN
+    RAISE EXCEPTION 'requested workflow includes unrelated computations';END IF;
+  SELECT zone INTO STRICT requested_zone FROM entity_board_requests WHERE id=$1;
+  UPDATE state_build_workflows SET zone=least(zone,requested_zone) WHERE id=flow;
+  UPDATE relation_task_consumers SET zone=least(coalesce(zone,3),requested_zone)
+    WHERE producer='build_workflow' AND ref>=flow AND ref<flow||'}' AND split_part(ref,'|',1)=flow AND state='live';
+  PERFORM factory_restate(n.computation) FROM state_build_workflow_nodes n WHERE n.workflow=flow AND n.state='queued' ORDER BY n.computation;
   FOR work IN SELECT w.kind,w.key FROM entity_build_workflow_expansions e JOIN state_build_effective_admission_work w
     ON w.kind='expansion' AND w.key=e.id WHERE e.workflow=flow ORDER BY w.zone,w.position,w.key LIMIT 2 LOOP
     UPDATE state_build_admission_work SET lease=$2::text,lease_until=to_char((clock_timestamp()+interval '2minutes') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
