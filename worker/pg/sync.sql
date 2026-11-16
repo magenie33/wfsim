@@ -474,7 +474,28 @@ REVOKE ALL ON FUNCTION factory_calibration_page(text,text,text,bigint,bigint,boo
 
 -- A BOARD ROW STILL OWED (worker/board_tasks.js): `queue` holds it.
 CREATE OR REPLACE FUNCTION board_owed(text, text, text) RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT EXISTS (SELECT 1 FROM state_board_effective_pending_work WHERE build_id = $1 AND ruler = $2 AND mode = $3)
+  WITH cut AS MATERIALIZED(SELECT * FROM compute_order_cut())
+  SELECT EXISTS(SELECT 1 FROM state_board_pending_work b WHERE (b.build_id,b.ruler,b.mode)=($1,$2,$3)
+    AND (NOT EXISTS(SELECT 1 FROM cut) OR EXISTS(
+      SELECT 1 FROM LATERAL (
+        SELECT d.question,d.ref,d.state FROM relation_task_consumers d
+          WHERE d.producer IN('new_build','survey_build','refresh','sweep') AND d.ref=b.build_id||'|'||b.ruler||'|'||b.mode
+        UNION ALL SELECT d.question,d.ref,d.state FROM relation_task_consumers d
+          WHERE d.producer IN('new_build','survey_build','refresh','sweep')
+            AND d.ref>=b.build_id||'|'||b.ruler||'|'||b.mode||'|' AND d.ref<b.build_id||'|'||b.ruler||'|'||b.mode||'}'
+        UNION ALL SELECT d.question,d.ref,d.state FROM relation_task_consumers d
+          WHERE d.producer IN('new_build','survey_build','refresh','sweep') AND b.mode='' AND d.ref=b.build_id||'|'||b.ruler
+        UNION ALL SELECT d.question,d.ref,d.state FROM relation_task_consumers d
+          WHERE d.producer IN('new_build','survey_build','refresh','sweep') AND b.ruler='' AND b.mode='' AND d.ref=b.build_id
+        OFFSET 0
+      ) d CROSS JOIN LATERAL(SELECT 1 FROM state_compute_effective_work w WHERE w.id=d.question OFFSET 0) current
+      WHERE d.state='live' AND (split_part(d.ref,'|',1),split_part(d.ref,'|',2),split_part(d.ref,'|',3))=(b.build_id,b.ruler,b.mode)
+    ) OR (EXISTS(SELECT 1 FROM cut c JOIN entity_compute_batches batch ON batch.id=b.batch AND batch.at>c.cut_at)
+      AND NOT EXISTS(SELECT 1 FROM LATERAL (
+        SELECT d.question,d.state FROM relation_task_consumers d
+          WHERE d.producer IN('new_build','survey_build','refresh','sweep') AND d.ref=b.build_id||'|'||b.ruler||'|'||b.mode OFFSET 0
+      ) d CROSS JOIN LATERAL(SELECT 1 FROM state_compute_work w WHERE w.id=d.question OFFSET 0) current
+        WHERE d.state='live'))))
 $$;
 
 -- Inventory exposes task identity and lifecycle, never requests or witnesses.

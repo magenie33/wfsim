@@ -14,9 +14,11 @@ export function orderCutSchemaSql() {
 
 export function orderCutBusinessSql() {
   const sql=readFileSync(new URL('../worker/pg/library.sql',import.meta.url),'utf8');
+  const sync=readFileSync(new URL('../worker/pg/sync.sql',import.meta.url),'utf8');
+  const owed=sync.match(/CREATE OR REPLACE FUNCTION board_owed\([^]*?\$\$;/)?.[0];
   const start=sql.indexOf('-- Queue ownership remains physical;');
-  if(start<0)throw Error('missing effective business membership schema');
-  return sql.slice(start);
+  if(start<0||!owed)throw Error('missing effective business membership schema');
+  return sql.slice(start)+'\n'+owed;
 }
 
 export function taskSchemaSql() {
@@ -56,7 +58,7 @@ export function taskSchemaSql() {
   const zonePrelude = schema.match(/CREATE OR REPLACE FUNCTION factory_default_zone[^]*?(?=CREATE TABLE IF NOT EXISTS state_compute_scheduling)/)?.[0];
   const zones = [
     sync.match(/CREATE OR REPLACE FUNCTION factory_candidates\([^]*?END \$function\$;/)?.[0],
-    ...['factory_open','board_owed'].map(name=>sync.match(new RegExp('CREATE OR REPLACE FUNCTION '+name+'\\([^]*?\\$\\$;'))?.[0]),
+    sync.match(/CREATE OR REPLACE FUNCTION factory_open\([^]*?\$\$;/)?.[0],
     schema.match(/DO \$queue_zone\$[^]*?END \$queue_zone\$;/)?.[0],
     schema.match(/CREATE OR REPLACE VIEW state_compute_work[^]*?FROM state_compute_scheduling s[^]*?;/)?.[0],
     schema.match(/CREATE OR REPLACE FUNCTION compute_register_tasks[^]*?END \$\$;/)?.[0],
@@ -78,6 +80,7 @@ export function taskSchemaSql() {
   if (columns.some(x => !x) || indexes.some(x => !x) || !guard || !retention || !inventory) throw new Error("incomplete task-delivery schema");
   return `SET ROLE wfsim;\nSET lock_timeout = '5s';\n${zonePrelude}\n${columns.join("\n")}\n${pipeline}\n${indexes.map(sql => sql.replace("CREATE INDEX ", "CREATE INDEX CONCURRENTLY ")).join("\n")}\n${orderCutSchemaSql()}\n${orderCutBusinessSql()}\n${zones.join("\n")}\n${guard}\n${retention}\n${inventory}\n${incremental}\n${workflows}\n${identity.join("\n")}\n${boardAdmission}\nDO $grant$ BEGIN
     IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_factoryd') THEN
+      GRANT SELECT(at) ON entity_compute_batches TO wfsim_factoryd;
       GRANT SELECT ON state_task_pipeline_controls TO wfsim_factoryd;
       GRANT SELECT ON state_build_admission_work,state_build_effective_admission_work,state_compute_effective_open,state_compute_effective_work,state_board_effective_pending_work TO wfsim_factoryd;
       GRANT EXECUTE ON FUNCTION build_admission_claim(text,text),build_admission_run(text,text,text,bigint,text),

@@ -12,6 +12,7 @@ import { writeFileSync } from "node:fs";
 import { testDb, testDbTiming } from "./pg/test_db.mjs";
 import { factoryCases, factorySelection } from "./factory_shards.mjs";
 import { officialSourceIndexCases, officialClaimGuardCases } from "./check_official_claims.mjs";
+import {orderCutKeyCases} from './check_order_cut_keyed.mjs';
 
 const selection = factorySelection(process.argv.slice(2));
 const wanted = new Set(selection.cases.map(row => row.id)), known = new Set(factoryCases(selection.trials).map(row => row.id));
@@ -1121,6 +1122,8 @@ await runCase("fixed:eligibility-plan", async () => {
   check("a new engine still offers every eligible open question", plan["Actual Rows"] === open, JSON.stringify(plan));
   check("eligibility reads answers for the open field, not the engine's other answers", read <= 4 * open, `${read} answers for ${open} questions`);
   await db.close();
+  const keyed=await testDb('library');
+  try {await orderCutKeyCases(keyed);}finally{await keyed.close();}
 });
 
 console.log("\nlane eligibility reads only the selected questions' answers");

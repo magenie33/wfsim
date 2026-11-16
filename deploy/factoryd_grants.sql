@@ -13,7 +13,7 @@ GRANT SELECT ON state_build_admission_work,state_build_effective_admission_work,
 GRANT EXECUTE ON FUNCTION build_admission_claim(text,text),build_admission_run(text,text,text,bigint,text),
   build_admission_retry(text,text,text,text,text) TO wfsim_factoryd;
 GRANT SELECT,INSERT,UPDATE ON state_task_pipeline_progress TO wfsim_factoryd;
-GRANT SELECT (id) ON entity_compute_batches TO wfsim_factoryd;
+GRANT SELECT (id,at) ON entity_compute_batches TO wfsim_factoryd;
 GRANT INSERT ON entity_compute_batches TO wfsim_factoryd;
 GRANT SELECT ON entity_weapon_builds TO wfsim_factoryd;
 GRANT SELECT,INSERT ON state_producer_compute_usage TO wfsim_factoryd;

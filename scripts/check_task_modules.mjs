@@ -9,6 +9,7 @@ import { replaceComputeResult } from "./pg/fixtures.mjs";
 import {taskPipelineCases} from "./check_task_pipeline.mjs";
 import {pipelineClockCases} from "./check_pipeline_clock.mjs";
 import {orderCutCases,orderCutWorkflowCases} from './check_order_cut.mjs';
+import {orderCutKeyCases} from './check_order_cut_keyed.mjs';
 
 for (const name of ["contract", "ledger", "dispatch", "verification", "delivery", "credit", "usage", "observation", "pipeline"]) {
   const text = readFileSync(new URL(`../worker/task_${name}.js`, import.meta.url), "utf8");
@@ -219,3 +220,6 @@ try {await orderCutCases(cutDb);}finally{await cutDb.close();}
 
 const cutFlows=await testDb('library');
 try {await orderCutWorkflowCases(cutFlows);}finally{await cutFlows.close();}
+
+const cutKeys=await testDb('library');
+try {await orderCutKeyCases(cutKeys);}finally{await cutKeys.close();}
