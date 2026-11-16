@@ -110,6 +110,7 @@ jobs:
       - run: python3 scripts/check_engine_compare.py
       - run: python3 scripts/check_release_readiness.py
       - run: python3 scripts/check_ship_workers.py
+      - run: python3 scripts/check_pg_health.py
       - run: python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml==6.0.3
       - run: python3 scripts/check_release_stage.py
       - run: python3 scripts/check_ship_bot_assets.py
