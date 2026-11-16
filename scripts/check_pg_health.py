@@ -12,7 +12,7 @@ class Health(unittest.TestCase):
     def fixture(self):
         now = 1800000000
         return now, {name: {'ok': True, 'value': value} for name, value in {
-            'database': {'snapshot': {'daemon_at': health.instant(now), 'engine': 'engine', 'settle_queue_rows': 0},
+            'database': {'snapshot': {'daemon_at': health.instant(now), 'at': health.instant(now), 'engine': 'engine', 'settle_queue_rows': 0},
                          'inventory': {'started_at': health.instant(now), 'engine': 'engine'}, 'sessions': []},
             'board': {'newest_epoch': now},
             'services': {'wfsim-factoryd.service': {'ActiveState': 'active'},
@@ -36,6 +36,21 @@ class Health(unittest.TestCase):
         recovered = health.assess(self.fixture()[1], repeated, now + 60)
         self.assertEqual(recovered['event'], 'recovered')
         self.assertEqual(recovered['incident_id'], report['incident_id'])
+
+    def test_daemon_liveness_and_snapshot_freshness_are_independent(self):
+        now, probes = self.fixture()
+        snapshot = probes['database']['value']['snapshot']
+        snapshot['at'] = health.instant(now - 601)
+        self.assertEqual(health.assess(probes, now=now)['alerts'], ['snapshot_stale'])
+        snapshot['at'] = health.instant(now)
+        snapshot['daemon_at'] = health.instant(0)
+        snapshot['daemon_commit'] = ''
+        self.assertEqual(health.assess(probes, now=now)['alerts'], ['daemon_stale'])
+        snapshot['at'] = ''
+        self.assertEqual(health.assess(probes, now=now)['alerts'], ['daemon_stale', 'snapshot_stale'])
+        probes['database']['value']['snapshot'] = None
+        self.assertEqual(health.assess(probes, now=now)['alerts'],
+                         ['daemon_stale', 'inventory_engine_mismatch', 'snapshot_stale'])
 
     def test_long_capture_with_recent_activity_is_not_an_idle_stall(self):
         now, probes = self.fixture()

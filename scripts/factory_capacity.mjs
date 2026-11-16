@@ -81,22 +81,31 @@ export function paceCache(readPace, ttl = 60_000) {
 
 /// A reserved session owns the daemon across hosts; losing it stops the owner.
 export async function claimDaemon(sql, onLost) {
-  let session;
+  let session, ownerPid;
   try {
     // With fetch_types:false the driver needs a query before reserving a cold pool.
     await sql.unsafe("SELECT 1");
     session = await sql.reserve();
-    const [row] = await session.unsafe("SELECT pg_try_advisory_lock(hashtextextended('wfsim-factoryd', 0)) AS held");
+    const [row] = await session.unsafe("SELECT pg_try_advisory_lock(hashtextextended('wfsim-factoryd', 0)) AS held,pg_backend_pid() AS pid");
     if (!row.held) throw Error("another factory daemon owns this database");
+    ownerPid = row.pid;
+    if (!Number.isInteger(ownerPid) || ownerPid < 1) throw Error("daemon owner backend identity is missing");
   } catch (e) {
     session?.release(); await sql.end(); throw e;
   }
   let released = false, lost = false;
   return {
     lost() { if (!released && !lost) { lost = true; onLost(); } },
+    async pulse(commit, now = Date.now()) {
+      if (released || lost) return false;
+      const rows = await session.unsafe(`UPDATE state_factory_snapshot SET daemon_at=$1::text,daemon_commit=$2::text
+        WHERE id=1 AND daemon_at<=$1::text AND pg_backend_pid()=$3::integer RETURNING daemon_at`,
+        [new Date(now).toISOString(), commit, ownerPid]);
+      return rows.length > 0;
+    },
     async release() {
       released = true;
-      await session.unsafe("SELECT pg_advisory_unlock(hashtextextended('wfsim-factoryd', 0))").catch(() => {});
+      if (!lost) await session.unsafe("SELECT pg_advisory_unlock(hashtextextended('wfsim-factoryd', 0))").catch(() => {});
       session.release(); await sql.end();
     },
   };

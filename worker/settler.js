@@ -19,7 +19,7 @@ import { facts } from "./factory.js";
 /// COULD NEED: the asking times the largest pack either protocol hands out, all
 /// that `factory_open` (which every hand-out reads this row through) compares
 /// it to — a fixed ceiling read work as short once enough computers asked.
-export async function snapshotTick(env, { engine = null, release = null, commit = "" } = {}, now = Date.now()) {
+export async function snapshotTick(env, { engine = null, release = null } = {}, now = Date.now()) {
   const db = env.LIBRARY, at = iso(now), d = await dialsOf(env, now);
   const n = await db.prepare(`WITH a AS (SELECT count(*) AS n FROM ${askingIds(3, 1)} x) SELECT
       (SELECT count(*) FROM (SELECT 1 FROM state_compute_effective_work WHERE state = 'open' AND waits = 0
@@ -31,13 +31,13 @@ export async function snapshotTick(env, { engine = null, release = null, commit 
       (SELECT count(*) FROM state_pending_verifications) AS settle_queue_rows`)
     .bind(at, Math.max(d.pack8_max, d.pack_max), iso(now - 2 * d.asked_every_ms), iso(now - COMPUTING_MS)).first();
   const row = { at, engine, release, open: n.open, urgent: n.urgent, asking: n.asking, computing: n.computing,
-    queue_rows: n.queue_rows, settle_queue_rows: n.settle_queue_rows, daemon_at: at, daemon_commit: commit };
+    queue_rows: n.queue_rows, settle_queue_rows: n.settle_queue_rows };
   await db.prepare(`INSERT INTO state_factory_snapshot (id, at, engine, release, open, urgent, asking, computing, queue_rows, settle_queue_rows, daemon_at, daemon_commit)
-      VALUES (1, ?1::text, ?2::text, ?3::text, ?4::bigint, ?5::bigint, ?6::bigint, ?7::bigint, ?8::bigint, ?9::bigint, ?1::text, ?10::text)
+      VALUES (1, ?1::text, ?2::text, ?3::text, ?4::bigint, ?5::bigint, ?6::bigint, ?7::bigint, ?8::bigint, ?9::bigint, '1970-01-01T00:00:00.000Z', '')
       ON CONFLICT (id) DO UPDATE SET at = excluded.at, engine = excluded.engine, release = excluded.release, open = excluded.open,
         urgent = excluded.urgent, asking = excluded.asking, computing = excluded.computing, queue_rows = excluded.queue_rows,
-        settle_queue_rows = excluded.settle_queue_rows, daemon_at = excluded.daemon_at, daemon_commit = excluded.daemon_commit`)
-    .bind(at, engine, release, row.open, row.urgent, row.asking, row.computing, row.queue_rows, row.settle_queue_rows, commit).run();
+        settle_queue_rows = excluded.settle_queue_rows`)
+    .bind(at, engine, release, row.open, row.urgent, row.asking, row.computing, row.queue_rows, row.settle_queue_rows).run();
   return row;
 }
 

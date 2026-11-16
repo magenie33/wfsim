@@ -120,6 +120,9 @@ def assess(probes, previous=None, now=None):
     if probes.get('database', {}).get('ok'):
         if heartbeat is None or heartbeat > 300:
             alerts.append('daemon_stale')
+        captured_snapshot = age(snapshot.get('at'), now)
+        if captured_snapshot is None or captured_snapshot > 300:
+            alerts.append('snapshot_stale')
         inventory = db.get('inventory') or {}
         captured = age(inventory.get('started_at'), now)
         if captured is None or captured > 10800:

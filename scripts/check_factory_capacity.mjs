@@ -68,7 +68,7 @@ let failedClosed = 0;
 await assert.rejects(claimDaemon({ unsafe: async () => { throw Error("connect failed"); },
   end: async () => { failedClosed++; } }, () => {}), /connect failed/);
 assert.equal(failedClosed, 1);
-const connection = (held) => ({ unsafe: async () => [], reserve: async () => ({ unsafe: async () => [{ held }], release: () => { released++; } }), end: async () => { closed++; } });
+const connection = (held) => ({ unsafe: async () => [], reserve: async () => ({ unsafe: async () => [{ held, pid:123 }], release: () => { released++; } }), end: async () => { closed++; } });
 await assert.rejects(claimDaemon(connection(false), () => {}), /another factory daemon/);
 assert.equal(closed, 1); assert.equal(released, 1);
 const owner = await claimDaemon(connection(true), () => { lost++; });
@@ -76,6 +76,40 @@ owner.lost(); owner.lost(); assert.equal(lost, 1);
 await owner.release(); owner.lost(); assert.equal(lost, 1);
 assert.equal(closed, 2); assert.equal(released, 2);
 console.log("ok: a second daemon is refused, lost ownership stops once, shutdown releases it");
+
+const pulseDb=await testDb("library");
+let pulseQueries=0,pulseLost=0,lostSessionQueries=0;
+const {pid:pulsePid}=await pulseDb.get('SELECT pg_backend_pid() pid');
+const pulseSession={unsafe:async(sql,args=[])=>{
+  if(pulseLost){lostSessionQueries++;throw Error('lost connection');}
+  if(sql.startsWith('UPDATE state_factory_snapshot')){pulseQueries++;return pulseDb.all(sql,...args);}
+  return [{held:true,pid:pulsePid}];
+},release:()=>{}};
+const pulsing=await claimDaemon({unsafe:async()=>[],reserve:async()=>pulseSession,end:async()=>{}},()=>{pulseLost++;});
+assert.equal(await pulsing.pulse('owner',1000),false);
+assert.equal(await pulseDb.get('SELECT 1 FROM state_factory_snapshot'),null);
+await pulseDb.run(`INSERT INTO state_factory_snapshot(id,at,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit)
+  VALUES(1,'old-statistics',7,2,3,4,5,6,'1970-01-01T00:00:00.000Z','')`);
+assert.equal(await pulsing.pulse('owner',2000),true);
+const pulseRow=await pulseDb.get('SELECT * FROM state_factory_snapshot WHERE id=1');
+assert.equal(pulseRow.daemon_at,new Date(2000).toISOString());assert.equal(pulseRow.daemon_commit,'owner');
+const wrongSession={...pulseSession,unsafe:async(sql,args=[])=>sql.includes('pg_try_advisory_lock')
+  ? [{held:true,pid:pulsePid+1}] : pulseSession.unsafe(sql,args)};
+const wrongOwner=await claimDaemon({unsafe:async()=>[],reserve:async()=>wrongSession,end:async()=>{}},()=>{});
+assert.equal(await wrongOwner.pulse('wrong-backend',3000),false);
+assert.equal((await pulseDb.get('SELECT daemon_at FROM state_factory_snapshot')).daemon_at,pulseRow.daemon_at);
+await wrongOwner.release();
+assert.deepEqual([pulseRow.at,pulseRow.open,pulseRow.urgent,pulseRow.asking,pulseRow.computing,pulseRow.queue_rows,pulseRow.settle_queue_rows],
+  ['old-statistics',7,2,3,4,5,6]);
+assert.equal(await pulsing.pulse('old-clock',1000),false);
+assert.equal((await pulseDb.get('SELECT daemon_at FROM state_factory_snapshot')).daemon_at,pulseRow.daemon_at);
+pulsing.lost();const stoppedQueries=pulseQueries;
+assert.equal(await pulsing.pulse('lost',3000),false);assert.equal(pulseQueries,stoppedQueries);assert.equal(pulseLost,1);
+await pulsing.release();assert.equal(lostSessionQueries,0);
+assert.equal(await pulsing.pulse('released',4000),false);assert.equal(pulseQueries,stoppedQueries);
+await pulseDb.close();
+console.log('ok: only a live reserved owner pulses existing rows, preserves counts, never regresses and stops on loss/release');
+
 
 // The real driver must reserve a cold pool with the daemon's fetch_types setting.
 const packet = (tag, body) => {
@@ -99,8 +133,9 @@ const server = createServer((socket) => {
         const column = Buffer.alloc(18);
         column.writeInt32BE(16, 6); column.writeInt16BE(1, 10); column.writeInt32BE(-1, 12);
         socket.write(Buffer.concat([
-          packet("T", Buffer.concat([Buffer.from([0, 1]), Buffer.from("held\0"), column])),
-          packet("D", Buffer.from([0, 1, 0, 0, 0, 1, 116])),
+          packet("T", Buffer.concat([Buffer.from([0, 2]), Buffer.from("held\0"), column,
+            Buffer.from("pid\0"), (()=>{const pid=Buffer.from(column);pid.writeInt32BE(23,6);pid.writeInt16BE(4,10);return pid;})()])),
+          packet("D", Buffer.concat([Buffer.from([0, 2, 0, 0, 0, 1, 116, 0, 0, 0, 4]),Buffer.from('4242')])) ,
           packet("C", Buffer.from("SELECT 1\0")), ready,
         ]));
       } else if (tag === "X") socket.end();

@@ -156,9 +156,8 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       const result = await recoverBoardTasks(backgroundEnv, release.engine);
       return result.mode !== "disabled";
     },
-    // THE HEARTBEAT IS WRITTEN FIRST: a signal that cannot be written fails its
-    // own tick and leaves the snapshot, and the daemon_at it carries, current.
-    snapshot: async () => writeSignal(await snapshotTick(env, { engine: release.engine, release: release.release, commit })),
+    heartbeat: async () => owner ? owner.pulse(commit) : false,
+    snapshot: async () => writeSignal(await snapshotTick(env, { engine: release.engine, release: release.release })),
     // A WAVE FROM NOTHING is signalled now, not at the next snapshot.
     wave: async () => {
       const w = await workWaiting(env.LIBRARY);
@@ -250,6 +249,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       );
     });
   };
+  every(SNAPSHOT_MS, "heartbeat");
   every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
   every(SETTLE_MS, "admission");
   every(SETTLE_MS,"workflowAdmission");

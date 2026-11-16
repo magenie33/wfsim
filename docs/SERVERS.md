@@ -119,8 +119,13 @@ and `CF_WORKERS_TOKEN` in order; publishing Workers alone does not grant DNS edi
 
 ## Factory capacity and deployment
 
-The heartbeat, fair table and settlement use a separate database pool from
-statistics and maintenance. Background jobs run one at a time and use
+The unique daemon pulses `daemon_at` and `daemon_commit` every ten seconds
+through its reserved owner session, independently of statistics and their
+connection queue. Losing ownership stops the pulse. A heartbeat updates only
+an existing snapshot row; it never invents statistics. Successful statistics
+alone update the snapshot's `at` and counts, preserving any newer heartbeat.
+A first snapshot without a daemon owner carries an expired heartbeat.
+The fair table and settlement use separate pools from background maintenance. Background jobs run one at a time and use
 per-statement and idle-transaction timeouts. The home tally and demand picture
 share one rolling score read for a minute; scores remain
 the source, and a failed read is retried rather than cached as zero.
@@ -186,7 +191,7 @@ Move the active daemon by stopping the old service before starting the new one.
 explicit target options as the daemon deploy. It runs `scripts/pg_health.py`
 each minute on the data core.
 It uses bounded read-only SQL and one bounded board metadata read. It records
-daemon and inventory age, engine mismatch, actual board score age, settlement
+daemon heartbeat, snapshot and inventory age separately, engine mismatch, actual board score age, settlement
 backlog, archive failure, lock holders, idle transactions and resource pressure.
 An unsuccessful probe is unknown and degraded, never an empty healthy result.
 The monitor neither repairs services nor changes work or credit.

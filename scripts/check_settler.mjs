@@ -10,6 +10,7 @@ import { factory, canon, nearAnswer } from "../worker/tasks.js";
 import { contributionRoute } from "../worker/contribution.js";
 import { snapshotTick, fairTick, readFair, compareFair, settleShadow, judgeFact, SETTLE_SHADOW_LAG_MS } from "../worker/settler.js";
 import { testDb } from "./pg/test_db.mjs";
+import { SETTLER_SILENT_MS } from "../worker/factory.js";
 import { DIAL_DEFAULTS } from "../worker/dials.js";
 
 let failures = 0;
@@ -50,7 +51,7 @@ console.log("the snapshot");
   await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"o1",verb:"simulate",request:"{}",state:"open",due_at:args[0],opened_at:args[1],waits:0});await seedComputeWork(fixtureDb,{id:"o2",verb:"simulate",request:"{}",state:"open",due_at:args[2],opened_at:args[3],waits:0});await seedComputeWork(fixtureDb,{id:"u1",verb:"simulate",request:"{}",state:"open",due_at:args[4],opened_at:args[5],waits:1});})(L,[iso(now + 1),iso(now),iso(now + 1),iso(now),iso(now + 1),iso(now)]);
   await L.run("UPDATE state_compute_work SET lease = 'l', lease_until = ?, leased_to = 'x' WHERE id = 'o2'", iso(now + 60_000));
   await L.run("UPDATE entity_compute_devices SET last_at = ? WHERE id = ?", iso(now - 60_000), "b".repeat(24));
-  const s = await snapshotTick(env, { engine: "e1", release: "r1", commit: "abc" }, now);
+  const s = await snapshotTick(env, { engine: "e1", release: "r1" }, now);
   const served = await (await contributionRoute(new Request("https://x/api/board/computing"), env, "/api/board/computing")).json();
   check("computing is the count /api/board/computing serves", s.computing === served.computing && s.computing === 1, JSON.stringify({ s, served }));
   // ASKING IS WHO ASKED LATELY OR HOLDS A LIVE LEASE (worker/tasks.js `askingIds`):
@@ -58,7 +59,38 @@ console.log("the snapshot");
   check("open counts what may be taken now, urgent what someone waits on, asking who asked lately or holds a lease",
     s.open === 1 && s.urgent === 1 && s.asking === 4, JSON.stringify(s));
   const row = await L.get("SELECT * FROM state_factory_snapshot WHERE id = 1");
-  check("the heartbeat names the commit the daemon runs", row && row.daemon_commit === "abc" && row.daemon_at === iso(now), JSON.stringify(row));
+  check("statistics without an owner retain an expired valid heartbeat and cannot suppress fallback settlement",
+    row && row.daemon_commit === "" && Number.isFinite(Date.parse(row.daemon_at))
+      && Date.parse(row.daemon_at) <= now - SETTLER_SILENT_MS, JSON.stringify(row));
+  const beat=iso(now+1000);
+  let releaseCount;
+  const delayed={LIBRARY:{...L,prepare(sql){
+    const stmt=L.prepare(sql);
+    if(!sql.startsWith('WITH a AS'))return stmt;
+    return {...stmt,bind(...args){const bound=stmt.bind(...args);return {...bound,first:async()=>{
+      await new Promise(resolve=>{releaseCount=resolve;});return bound.first();
+    }};}};
+  }}};
+  const late=snapshotTick(delayed,{engine:'e1',release:'r1'},now-1000);
+  while(!releaseCount)await new Promise(resolve=>setTimeout(resolve,1));
+  await L.run("UPDATE state_factory_snapshot SET daemon_at=?,daemon_commit='actual-owner' WHERE id=1",beat);
+  releaseCount();await late;
+  const retained=await L.get("SELECT daemon_at,daemon_commit FROM state_factory_snapshot WHERE id=1");
+  check("a snapshot completing after a newer owner pulse cannot roll its heartbeat back",
+    retained.daemon_at===beat&&retained.daemon_commit==='actual-owner',JSON.stringify(retained));
+  const before=await L.get("SELECT * FROM state_factory_snapshot WHERE id=1");
+  const countFailure=db=>({...db,prepare(sql){
+    const stmt=db.prepare(sql);if(!sql.startsWith('WITH a AS'))return stmt;
+    return {...stmt,bind(){return {first:async()=>{throw Error('count failed');}};}};
+  }});
+  const failed={LIBRARY:countFailure(L)};
+  let rejected=false;try{await snapshotTick(failed,{},now+2000);}catch(error){rejected=error.message==='count failed';}
+  check("failed counts remain a failure and change neither statistics nor heartbeat",rejected&&
+    JSON.stringify(await L.get("SELECT * FROM state_factory_snapshot WHERE id=1"))===JSON.stringify(before));
+  const empty=await testDb('library');
+  let absentFailed=false;try{await snapshotTick({LIBRARY:countFailure(empty)}, {},now);}catch{absentFailed=true;}
+  check("a first failed count invents neither a snapshot nor a heartbeat",absentFailed&&!(await empty.get("SELECT 1 FROM state_factory_snapshot")));
+  await empty.close();
 }
 
 console.log("settling, in shadow");
@@ -110,9 +142,11 @@ console.log("the daemon");
 {
   const { run } = await import("./factoryd.mjs");
   process.env.DAEMON_COMMIT = "c0ffee";
+  const prior=await L.get("SELECT daemon_at,daemon_commit FROM state_factory_snapshot WHERE id=1");
   const code = await run({ once: true, opened: { env, close: async () => {} }, servedNow: async () => ({ engine: "e1", release: "r1" }), target: null });
-  const row = await L.get("SELECT daemon_commit, engine FROM state_factory_snapshot WHERE id = 1");
-  check("one pass of every tick runs clean and the heartbeat names its commit", code === 0 && row.daemon_commit === "c0ffee" && row.engine === "e1",
+  const row = await L.get("SELECT daemon_at,daemon_commit, engine FROM state_factory_snapshot WHERE id = 1");
+  check("one pass without ownership runs clean and cannot replace the real owner's heartbeat", code === 0
+    && row.daemon_at===prior.daemon_at&&row.daemon_commit===prior.daemon_commit&&row.engine === "e1",
     JSON.stringify({ code, row }));
   check("without an R2 token the signal is skipped and said so, the other ticks unharmed",
     code === 0 && !!(await L.get("SELECT 1 AS x FROM state_factory_findings WHERE kind = 'signal_unconfigured'")));
