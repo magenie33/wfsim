@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { execFileSync, spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
+import { factoryMatrix, factoryCommand } from './factory_shards.mjs';
+
+const factoryGroups = Object.fromEntries(factoryMatrix().map(row =>
+  [`factory-${row.mode}-${row.group}-${row.shard.replace('/', '-of-')}`, row]));
+export const HOTFIX_FACTORY_GROUPS = Object.keys(factoryGroups);
 
 const ordinaryDocs = path => /^docs\/.*\.md$/.test(path) && !/^docs\/(CLIENTS\.md$|measurements\/)/.test(path);
 
@@ -14,7 +19,7 @@ export const HOTFIX_PROFILES = {
       'scripts/check_board_verify.mjs', 'scripts/check_sync_proc.mjs', 'scripts/check_fair.mjs',
       'scripts/check_settler.mjs', 'scripts/check_settler_async.mjs', 'scripts/check_initiator.mjs',
       'scripts/check_moot_checks.mjs', 'scripts/check_forget_past.mjs', 'scripts/check_idle_devices.mjs'],
-    groups: ['factory', 'async'],
+    groups: ['factory', 'async', ...HOTFIX_FACTORY_GROUPS],
   },
   ci: {
     paths: ['.github/workflows/ci.yml', 'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs',
@@ -27,11 +32,11 @@ export const HOTFIX_PROFILES = {
 export const HOTFIX_CHECKS = {
   'board-entry': ['check_board_cli_entry'],
   policy: ['check_ci_policy', 'check_ci_partitions', 'check_ci_hotfix'],
-  factory: ['check_tasks', 'check_board_verify', 'check_board_sync', 'check_sync_proc',
+  factory: ['check_board_verify', 'check_board_sync', 'check_sync_proc',
     'check_fair', 'check_settler', 'check_settler_async', 'check_initiator',
     'check_moot_checks', 'check_forget_past', 'check_idle_devices', 'check_contribution',
     'check_ledger', 'check_dials', 'check_clients_doc', 'check_appraise'],
-  async: ['check_tasks', 'check_board_verify', 'check_board_sync', 'check_fair'],
+  async: ['check_board_verify', 'check_board_sync', 'check_fair'],
 };
 
 export const BOARD_ENTRY_CHANGE = {
@@ -110,13 +115,20 @@ export function assertHotfixProof(proof, sha, policy, paths) {
   return plan;
 }
 
+export function hotfixCommands(group) {
+  if (Object.hasOwn(factoryGroups, group)) {
+    const row = factoryGroups[group], command = factoryCommand(row);
+    return [{ ...command, env: { ...command.env, WFSIM_SYNC_PROC: row.mode === 'async' ? '1' : '0' } }];
+  }
+  if (!Object.hasOwn(HOTFIX_CHECKS, group)) throw new Error(`Unknown hotfix check group: ${group}`);
+  const env = group === 'async' ? { WFSIM_SETTLE_ASYNC: '1', WFSIM_SYNC_PROC: '1' } : {};
+  return HOTFIX_CHECKS[group].map(name => ({ command: ['node', `scripts/${name}.mjs`], env }));
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const group = process.argv[2], checks = HOTFIX_CHECKS[group];
-  if (!checks) throw new Error(`Unknown hotfix check group: ${group}`);
-  const env = { ...process.env, ...(group === 'async' ? { WFSIM_SETTLE_ASYNC: '1', WFSIM_SYNC_PROC: '1' } : {}) };
-  for (const name of checks) {
-    console.log(`\n${group}: ${name}`);
-    const result = spawnSync(process.execPath, [`scripts/${name}.mjs`], { env, stdio: 'inherit' });
+  for (const { command, env } of hotfixCommands(process.argv[2])) {
+    console.log(`\n${process.argv[2]}: ${command.join(' ')}`);
+    const result = spawnSync(process.execPath, command.slice(1), { env: { ...process.env, ...env }, stdio: 'inherit' });
     if (result.error) throw result.error;
     if (result.status !== 0) process.exit(result.status || 1);
   }

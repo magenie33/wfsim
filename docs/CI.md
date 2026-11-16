@@ -162,6 +162,12 @@ or `full=true` reject the request. Renames include both paths.
 | `factory-sql` | `worker/pg/sync.sql` and its registered regression checks | Factory, eligibility, fairness, settlement, retention and protocol checks; queued settlement and the sync procedure also run together |
 | `ci` | CI selection, gates, partitions and the hotfix workflow/runner | Selection, partitions and hotfix boundary/proof regressions |
 
+The factory profile partitions each mode's complete 400 liveness seeds,
+100 termination seeds and fixed regressions through the ordinary factory
+matrix. Its async partitions enable queued settlement and the sync procedure
+together. The remaining factory and async checks run in separate groups;
+every group retains the hotfix job's 20-minute limit and required aggregate.
+
 Quick checks, commit checks and coordination checks always run. Documentation
 may accompany a supported change; the client contract and measurements do not
 qualify. Engine, game data, UI, database table schemas and unknown tooling

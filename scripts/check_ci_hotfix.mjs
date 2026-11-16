@@ -1,19 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import assert from 'node:assert/strict';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { ALL_CI_JOBS, assertGate, checkJobPaths, OPTIONAL_NATIVE_JOBS, PRODUCT_JOBS } from './ci_policy.mjs';
-import { assertHotfixProof, BOARD_ENTRY_CHANGE, HOTFIX_CHECKS, HOTFIX_PROFILES, hotfixPlan } from './ci_hotfix.mjs';
+import { assertHotfixProof, BOARD_ENTRY_CHANGE, HOTFIX_CHECKS, HOTFIX_PROFILES, HOTFIX_FACTORY_GROUPS, hotfixCommands, hotfixPlan } from './ci_hotfix.mjs';
 import { trustedRun, validProof } from './ci_runs.mjs';
 import { COMPANION_JOBS } from './full_work.mjs';
+import { factoryCases, factoryMatrix, factoryCommand, factorySelection, assertFactoryCoverage } from './factory_shards.mjs';
 
 const reason = 'Devices finish their packs and time out while asking for the next';
 const paths = ['worker/pg/sync.sql', 'scripts/check_tasks.mjs', 'docs/CHECKS.md'];
 const plan = hotfixPlan(paths, { reason });
 assert.deepEqual(plan.profiles, ['factory-sql']);
-assert.deepEqual(plan.matrix.group, ['async', 'factory', 'policy']);
+assert.deepEqual(plan.matrix.group, ['async', 'factory', 'policy', ...HOTFIX_FACTORY_GROUPS].sort());
+assert.equal(HOTFIX_FACTORY_GROUPS.length, 18);
+assert.equal(plan.matrix.group.length, 21);
 assert.deepEqual(hotfixPlan(['scripts/ci_runs.mjs'], { reason }).matrix.group, ['policy']);
 assert.deepEqual(hotfixPlan([...paths, 'scripts/ci_runs.mjs'], { reason }).profiles, ['ci', 'factory-sql']);
 for (const path of ['engine/src/fight.rs', 'optimizer/src/quick.rs', 'webapi/src/fight.rs',
@@ -29,13 +33,81 @@ for (const options of [{ reason: '' }, { reason: ' '.repeat(3) }, { reason: 'x'.
 }
 for (const diff of [[], ['docs/CI.md']]) assert.throws(() => hotfixPlan(diff, { reason }));
 for (const profile of Object.values(HOTFIX_PROFILES)) {
-  for (const group of profile.groups) assert(HOTFIX_CHECKS[group]?.length, group);
+  for (const group of profile.groups) assert(hotfixCommands(group).length, group);
   for (const path of profile.paths) assert(existsSync(path), path);
 }
 for (const checks of Object.values(HOTFIX_CHECKS)) {
   assert.equal(new Set(checks).size, checks.length);
   for (const check of checks) assert(existsSync(`scripts/${check}.mjs`), check);
 }
+
+const extras = ['check_board_verify', 'check_board_sync', 'check_sync_proc', 'check_fair',
+  'check_settler', 'check_settler_async', 'check_initiator', 'check_moot_checks', 'check_forget_past',
+  'check_idle_devices', 'check_contribution', 'check_ledger', 'check_dials', 'check_clients_doc', 'check_appraise'];
+assert.deepEqual(HOTFIX_CHECKS.factory, extras);
+assert.deepEqual(HOTFIX_CHECKS.async, ['check_board_verify', 'check_board_sync', 'check_fair']);
+const commands = mkdtempSync(join(tmpdir(), 'wfsim-hotfix-commands-'));
+try {
+  const preload = join(commands, 'capture.mjs'), output = join(commands, 'calls.jsonl');
+  writeFileSync(preload, `import {appendFileSync} from 'node:fs';
+import cp from 'node:child_process';import {syncBuiltinESMExports} from 'node:module';
+cp.spawnSync=(exe,args,options)=>{appendFileSync(process.env.HOTFIX_CAPTURE,JSON.stringify({args,env:{
+WFSIM_SETTLE_ASYNC:options.env.WFSIM_SETTLE_ASYNC,WFSIM_SYNC_PROC:options.env.WFSIM_SYNC_PROC}})+'\\n');
+return {status:Number(process.env.HOTFIX_CAPTURE_EXIT||0)};};syncBuiltinESMExports();`);
+  const invoke = (group, extra = {}) => spawnSync(process.execPath,
+    ['--import', pathToFileURL(preload).href, 'scripts/ci_hotfix.mjs', group], {
+      encoding: 'utf8', env: { ...process.env, WFSIM_SETTLE_ASYNC: '0', WFSIM_SYNC_PROC: '0', HOTFIX_CAPTURE: output, ...extra },
+    });
+  const receipts = [], called = [];
+  for (const group of plan.matrix.group) {
+    writeFileSync(output, '');
+    const result = invoke(group);
+    assert.equal(result.status, 0, result.stderr);
+    const rows = readFileSync(output, 'utf8').trim().split('\n').map(JSON.parse);
+    assert.deepEqual(rows, hotfixCommands(group).map(({command,env}) => ({args:command.slice(1),env:{
+      WFSIM_SETTLE_ASYNC:'0',WFSIM_SYNC_PROC:'0',...env}})), group);
+    called.push(...rows);
+    for (const row of rows.filter(row => row.args[0] === 'scripts/check_tasks.mjs')) {
+      const selected = factorySelection(row.args.slice(1), row.env), mode = selected.mode === 'async-proc' ? 'async' : selected.mode;
+      assert.equal(row.env.WFSIM_SYNC_PROC, mode === 'async' ? '1' : '0');
+      receipts.push({ ...selected, mode, success: true, failures: 0,
+        completed: selected.cases.map(item => ({id:item.id,ok:true,checks:0,ms:1})) });
+    }
+  }
+  assert.equal(called.filter(row => row.args[0] === 'scripts/check_tasks.mjs').length, 18);
+  assert.deepEqual(assertFactoryCoverage(receipts), {jobs:18,modes:['sync','async'],cases:1076});
+  for (const mode of ['sync','async']) {
+    const all = receipts.filter(row => row.mode === mode).flatMap(row => row.cases.map(item => item.id));
+    assert.equal(new Set(all).size, all.length, mode + ' executes each case once');
+    assert.deepEqual([...all].sort(), factoryCases().map(item => item.id).sort());
+  }
+  for (const row of factoryMatrix()) {
+    const expected = factoryCommand(row), group = `factory-${row.mode}-${row.group}-${row.shard.replace('/', '-of-')}`;
+    assert.deepEqual(hotfixCommands(group)[0].command, expected.command);
+    assert.equal(hotfixCommands(group)[0].env.WFSIM_SETTLE_ASYNC, row.mode === 'async' ? '1' : '0');
+  }
+  for (const group of [HOTFIX_FACTORY_GROUPS[0], 'async', 'factory'])
+    assert.equal(invoke(group, {HOTFIX_CAPTURE_EXIT:'7'}).status, 7, group + ' preserves a failed child');
+  for (const group of ['factory-wrong-random-0-of-8', 'factory-sync-random-8-of-8', 'factory-sync-regressions-1-of-1']) {
+    const result = invoke(group);
+    assert.notEqual(result.status, 0);assert.match(result.stderr, /Unknown hotfix check group/);
+  }
+  const mutations = {
+    missing_group: rows => rows.pop(),
+    duplicate_group: rows => rows.push(rows[0]),
+    wrong_mode: rows => { rows[0].mode = 'wrong'; },
+    wrong_case: rows => { rows[0].completed[0].id = 'fixed:wrong-case'; },
+  };
+  for (const [name, mutate] of Object.entries(mutations)) {
+    const rows = structuredClone(receipts);mutate(rows);
+    const files = rows.map((row,i) => {const path=join(commands, name+'-'+i+'.json');writeFileSync(path,JSON.stringify(row));return path;});
+    const result = spawnSync(process.execPath, ['scripts/check_factory_shards.mjs', ...files], {encoding:'utf8'});
+    assert.notEqual(result.status, 0, name + ' must fail actual factory coverage');
+    assert.match(result.stderr, /factory/);
+    console.log('Hotfix actual factory coverage rejects ' + name);
+  }
+  console.log('Hotfix CLI retains all 400+100+38 cases once per mode in 18 factory shards, both async flags and every extra check.');
+} finally {rmSync(commands,{recursive:true,force:true});}
 
 const needs = Object.fromEntries(['plan', 'quick', 'commits', 'coordination', ...ALL_CI_JOBS]
   .map(job => [job, { result: PRODUCT_JOBS.includes(job) ? 'skipped' : 'success' }])
@@ -58,6 +130,16 @@ for (const patch of [{ sha: 'wrong' }, { policy: 'old' }, { scope: 'full' }, { r
   assert.throws(() => assertHotfixProof({ ...proof, ...patch }, sha, 'p', paths));
 }
 assert.throws(() => assertHotfixProof(proof, sha, 'p', [...paths, 'scripts/ci_policy.mjs']));
+for (const [name, mutate] of Object.entries({
+  missing_group: rows => rows.pop(), duplicate_group: rows => rows.push(rows[0]),
+  wrong_mode: rows => { rows[0] = 'factory-wrong-random-0-of-8'; },
+  wrong_case_group: rows => { rows[0] = 'factory-sync-regressions-1-of-1'; },
+})) {
+  const group = [...plan.matrix.group];mutate(group);
+  assert.throws(() => assertHotfixProof({ ...proof, hotfix: { ...proof.hotfix, matrix: {group} } }, sha, 'p', paths), /matrix/);
+  console.log('Hotfix proof rejects ' + name);
+}
+
 assert(!validProof(proof, sha, 'p'), 'a hotfix never supplies a site release');
 assert(!validProof({ ...proof, jobs: PRODUCT_JOBS }, sha, 'p'), 'a hotfix cannot relabel itself as full coverage');
 const run = { id: 1, head_sha: sha, conclusion: 'success', status: 'completed', event: 'workflow_dispatch',
@@ -133,6 +215,7 @@ const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 assert.match(workflow, /run-name:.*inputs\.hotfix.*hotfix:/);
 assert.match(workflow, /hotfix:\s+description:.*\n\s+type: boolean\n\s+default: false/);
 assert.match(workflow, /FORCE_FULL:.*inputs\.full \|\| inputs\.hotfix/);
+assert.match(workflow.split('\n  hotfix:\n')[1].split(/\n  [\w-]+:\n/)[0], /timeout-minutes: 20\b/);
 assert.match(workflow, /hotfix:\n\s+needs: \[plan, quick\]\n\s+if: needs\.plan\.outputs\.hotfix == 'true'/);
 assert.match(workflow, /matrix:.*fromJSON\(needs\.plan\.outputs\.hotfix_matrix\)/);
 assert.match(workflow, /run: node scripts\/ci_hotfix\.mjs "\$GROUP"/);
