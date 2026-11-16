@@ -118,6 +118,7 @@ function deferred() {
 
 const boardSource = fs.readFileSync(new URL("../web/src/static/app/40-official-builds.js", import.meta.url), "utf8");
 const loaderSource = [
+  block(boardSource, "async function readBoardPartitionCatalog(", "async function fetchJson("),
   block(boardSource, "function setBoardMeta(", "/// THE LIVE BOARD'S OWN ADDRESS"),
   block(boardSource, "const BOARD_HAVE", "/// EVERY WEAPON'S GROUP LEADERS"),
   block(boardSource, "let BOARD_INDEX", "/// ONE WEAPON'S ROWS"),
@@ -148,6 +149,7 @@ const cacheContext = vm.createContext({
   timeoutSignal: () => new AbortController().signal,
   async fetchJsonPatient(url) {
     asks.push(url);
+    if (url.startsWith("/api/board/pages/catalog?")) return { ok: true, partitions: [] };
     if (url === "/board.meta.json") return { scene_weapons: { night: [weapon] }, digest: "b".repeat(64) };
     if (url === "/board/" + weapon + ".json") return publicationReload ? freshWeapon.promise : oldWeapon.promise;
     if (url === "/board/night/" + weapon + ".json") return publicationReload ? freshScene : oldScene;
