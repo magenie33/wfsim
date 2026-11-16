@@ -44,6 +44,7 @@ assert.equal(classify(admissionToolInputs).deep, false);
 for (const path of ['tests/fixtures/build-admission-base5a/unknown.sql', 'scripts/migrations/unknown.mjs'])
   assert.equal(classify([path]).deep, true, path + ' is outside the exact declarations');
 const boardPipelineInputs = ['scripts/check_order_cut.mjs', 'scripts/check_order_cut_pg.mjs', 'scripts/check_order_cut_reads.mjs', 'scripts/check_order_cut_keyed.mjs',
+  'scripts/check_inventory_inputs_keyed.mjs', 'tests/fixtures/inventory-inputs-keyed/broad-inputs.sql',
   'tests/fixtures/order-cut-activation/f3ffb55e.sql', 'tests/fixtures/order-cut-effective-reads/501b4458.sql',
   'tests/fixtures/order-cut-effective-reads/ef61dd588.sql',
   'scripts/factory_capacity.mjs', 'scripts/pg_health.py', 'scripts/check_pg_health.py',
@@ -71,6 +72,7 @@ for (const [parent, helper, calls] of [
   ['scripts/check_task_modules.mjs', 'check_order_cut.mjs', ['await orderCutCases(', 'await orderCutWorkflowCases(']],
   ['scripts/check_task_modules.mjs', 'check_order_cut_reads.mjs', ['await orderCutReadCases(']],
   ['scripts/check_task_modules.mjs', 'check_order_cut_keyed.mjs', ['await orderCutKeyCases(']],
+  ['scripts/check_incremental_inventory_pg.mjs', 'check_inventory_inputs_keyed.mjs', ['await inventoryInputKeyCases(']],
   ['scripts/check_tasks.mjs', 'check_official_claims.mjs',
     ['[officialSourceIndexCases,officialClaimGuardCases]', 'await run(db)']],
   ['scripts/check_inventory_disk_budget.mjs', 'check_capacity_walk.mjs', ["await import('./check_capacity_walk.mjs')"]],

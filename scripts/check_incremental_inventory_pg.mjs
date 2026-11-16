@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
 import { seedComputeWork } from './pg/fixtures.mjs';
 import { placeholders } from '../worker/placeholders.js';
+import { inventoryInputKeyCases } from './check_inventory_inputs_keyed.mjs';
 
 const pg = new PGlite();
 const ddl = name => readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta.url), 'utf8');
@@ -342,6 +343,16 @@ try {
     assert.notEqual(unchecked, inventorySql); await pg.exec(unchecked); await build('unchecked');
     await assert.rejects(async () => assert.rejects(publish(), /changes remain/), /Missing expected rejection/);
     await pg.exec(inventorySql); await assert.rejects(publish(), /changes remain/); await ack();
+  });
+  await check('captured keys bound effective reads at an active order cut', async () => {
+    await pg.exec('CREATE SCHEMA input_key_check;SET search_path TO input_key_check');
+    await pg.exec(['schema','library','sync','inventory','build_workflows','board_admission'].map(ddl).join('\n'));
+    await inventoryInputKeyCases({
+      exec: sql => pg.exec(sql),
+      run: (sql,...args) => query(placeholders(sql),args),
+      all: (sql,...args) => query(placeholders(sql),args),
+      get: async (sql,...args) => (await query(placeholders(sql),args))[0],
+    });
   });
   console.log(`\n${passed} incremental inventory PG checks passed`);
 } finally { await pg.close(); }

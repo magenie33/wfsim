@@ -226,10 +226,46 @@ BEGIN
     ELSE jsonb_build_object('id',b.id,'at',b.at,'record',b.record::jsonb) END ORDER BY k.id),'[]'::jsonb)
     INTO build_rows FROM unnest(build_keys) k(id) LEFT JOIN entity_weapon_builds b ON b.id=k.id;
   SELECT COALESCE(jsonb_agg(to_jsonb(f) ORDER BY f.identity,f.ruler,f.mode),'[]'::jsonb)
-    INTO fact_rows FROM board_facts f WHERE f.identity=ANY(build_keys);
+    INTO fact_rows FROM unnest(build_keys) k(id) CROSS JOIN LATERAL (
+      SELECT f.* FROM board_facts f WHERE f.identity=k.id OFFSET 0
+    ) f;
+  -- Bind captured keys before effective membership; retain each canonical UNION ALL branch.
+  WITH cut AS MATERIALIZED(SELECT * FROM compute_order_cut()),
+  selected AS MATERIALIZED(
+    SELECT b.* FROM unnest(build_keys) k(id) CROSS JOIN LATERAL (
+      SELECT b.* FROM state_board_pending_work b WHERE b.build_id=k.id OFFSET 0
+    ) b
+  ),
+  live_keys AS (
+    SELECT DISTINCT b.build_id,b.ruler,b.mode FROM cut CROSS JOIN selected b CROSS JOIN LATERAL (
+      SELECT d.question,d.ref,d.state FROM relation_task_consumers d
+        WHERE d.producer IN('new_build','survey_build','refresh','sweep') AND d.ref=b.build_id||'|'||b.ruler||'|'||b.mode
+      UNION ALL SELECT d.question,d.ref,d.state FROM relation_task_consumers d
+        WHERE d.producer IN('new_build','survey_build','refresh','sweep')
+          AND d.ref>=b.build_id||'|'||b.ruler||'|'||b.mode||'|' AND d.ref<b.build_id||'|'||b.ruler||'|'||b.mode||'}'
+      UNION ALL SELECT d.question,d.ref,d.state FROM relation_task_consumers d
+        WHERE d.producer IN('new_build','survey_build','refresh','sweep') AND b.mode='' AND d.ref=b.build_id||'|'||b.ruler
+      UNION ALL SELECT d.question,d.ref,d.state FROM relation_task_consumers d
+        WHERE d.producer IN('new_build','survey_build','refresh','sweep') AND b.ruler='' AND b.mode='' AND d.ref=b.build_id
+      OFFSET 0
+    ) d CROSS JOIN LATERAL (
+      SELECT 1 FROM state_compute_effective_work w WHERE w.id=d.question OFFSET 0
+    ) current
+    WHERE d.state='live' AND (split_part(d.ref,'|',1),split_part(d.ref,'|',2),split_part(d.ref,'|',3))=(b.build_id,b.ruler,b.mode)
+  ),
+  pending AS (
+    SELECT b.* FROM selected b WHERE NOT EXISTS(SELECT 1 FROM cut)
+    UNION ALL SELECT b.* FROM live_keys k JOIN selected b USING(build_id,ruler,mode)
+    UNION ALL SELECT b.* FROM selected b JOIN entity_compute_batches batch ON batch.id=b.batch
+      JOIN cut c ON batch.at>c.cut_at
+      WHERE NOT EXISTS(SELECT 1 FROM relation_task_consumers d CROSS JOIN LATERAL (
+        SELECT 1 FROM state_compute_work w WHERE w.id=d.question OFFSET 0
+      ) current WHERE d.state='live' AND d.producer IN('new_build','survey_build','refresh','sweep')
+        AND d.ref=b.build_id||'|'||b.ruler||'|'||b.mode OFFSET 0)
+  )
   SELECT COALESCE(jsonb_agg(jsonb_build_object('batch',q.batch,'build_id',q.build_id,'ruler',q.ruler,'mode',q.mode)
-    ORDER BY q.batch,q.build_id,q.ruler,q.mode),'[]'::jsonb) INTO queue_rows FROM state_board_effective_pending_work q
-    WHERE q.build_id=ANY(build_keys) AND EXISTS(SELECT 1 FROM entity_compute_batches b WHERE b.id=q.batch);
+    ORDER BY q.batch,q.build_id,q.ruler,q.mode),'[]'::jsonb) INTO queue_rows FROM pending q
+    WHERE EXISTS(SELECT 1 FROM entity_compute_batches b WHERE b.id=q.batch);
   SELECT COALESCE(jsonb_agg(CASE
     WHEN q.id IS NOT NULL AND q.state<>'withdrawn' AND ((q.state IN ('fact','spot') AND q.fact_engine=$1)
       OR q.state IN ('disputed','nondeterministic') OR live.kind IS NOT NULL)
@@ -239,7 +275,9 @@ BEGIN
     WHEN refused.question IS NOT NULL AND (q.id IS NULL OR q.state='withdrawn')
       THEN jsonb_build_object('id',k.id,'verb','','state','refused','fact_engine',refused.engine,'kind',NULL,'served_answered',false)
     ELSE jsonb_build_object('id',k.id,'deleted',true) END ORDER BY k.id),'[]'::jsonb) INTO task_rows
-    FROM unnest(question_keys) k(id) LEFT JOIN state_compute_work q ON q.id=k.id
+    FROM unnest(question_keys) k(id) LEFT JOIN LATERAL (
+      SELECT q.id,q.verb,q.state,q.fact_engine FROM state_compute_work q WHERE q.id=k.id OFFSET 0
+    ) q ON true
     LEFT JOIN LATERAL (SELECT min(d.producer) kind FROM relation_task_consumers d WHERE d.question=k.id AND d.state='live'
       AND NOT(d.producer=ANY(ARRAY(SELECT jsonb_array_elements_text($2::jsonb))))) live ON true
     LEFT JOIN record_refusal_withdrawals refused ON refused.question=k.id AND refused.engine=$1;

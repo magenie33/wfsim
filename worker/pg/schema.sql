@@ -1298,7 +1298,9 @@ BEGIN
     OR position('compute_order_cut_lock' IN pg_get_functiondef('compute_open_task(text,text,text,text,boolean)'::regprocedure))=0
     OR position('compute_order_cut_lock' IN pg_get_functiondef('compute_register_tasks(text,text,text)'::regprocedure))=0
     OR position('compute_order_cancelled' IN pg_get_functiondef('compute_reissue_task(text,bigint,text,text,text)'::regprocedure))=0
-    OR position('state_board_effective_pending_work' IN pg_get_functiondef('inventory_inputs(text,text,text)'::regprocedure))=0 THEN
+    OR (position('state_board_effective_pending_work' IN pg_get_functiondef('inventory_inputs(text,text,text)'::regprocedure))=0
+      AND (position('FROM state_board_pending_work b WHERE b.build_id=k.id OFFSET 0' IN pg_get_functiondef('inventory_inputs(text,text,text)'::regprocedure))=0
+        OR position('FROM state_compute_work q WHERE q.id=k.id OFFSET 0' IN pg_get_functiondef('inventory_inputs(text,text,text)'::regprocedure))=0)) THEN
     RAISE EXCEPTION 'complete order cut runtime upgrade required'; END IF;
   SELECT count(*),encode(sha256(convert_to(coalesce(string_agg(question,E'\n' ORDER BY question),''),'UTF8')),'hex')
     INTO n,digest FROM relation_compute_order_cut_protection WHERE cut_id=$1 AND kind='manifest';

@@ -54,6 +54,7 @@ const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbo
   'scripts/capacity_directory_bytes.mjs', 'scripts/check_capacity_walk.mjs',
   'scripts/check_official_claims.mjs', 'scripts/check_pipeline_clock.mjs', 'scripts/check_task_pipeline.mjs',
   'scripts/check_order_cut.mjs', 'scripts/check_order_cut_pg.mjs', 'scripts/check_order_cut_reads.mjs', 'scripts/check_order_cut_keyed.mjs',
+  'scripts/check_inventory_inputs_keyed.mjs', 'tests/fixtures/inventory-inputs-keyed/broad-inputs.sql',
   'tests/fixtures/order-cut-activation/f3ffb55e.sql', 'tests/fixtures/order-cut-effective-reads/501b4458.sql',
   'tests/fixtures/order-cut-effective-reads/ef61dd588.sql',
   'scripts/classify_compute_inventory.mjs', 'scripts/incremental_inventory.mjs',
