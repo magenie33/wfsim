@@ -59,6 +59,12 @@ try{
    identity:canonical.id,ruler:'standard_single_target',mode:'base',score:10,metric:'kpm',cost_seconds:1,
    measured_by:'verified:000000000000',started_at:at,finished_at:at,review_id:null}],
    target:{identity:canonical.id,weapon:record.weapon,ruler:'standard_single_target',mode:'base',score:10}};
+  const review='4d1de37e-c95d-482f-a7b2-6bb01a846885';
+  fixture.facts[0].review_id=review;
+  fixture.reviews=[{id:review,ref:JSON.stringify([canonical.id,'standard_single_target','base']),round_at:at,
+   identity:canonical.id,ruler:'standard_single_target',mode:'base',engine:'000000000000',question:'fixture',
+   record:JSON.stringify(record),state:'succeeded',baseline_score:9,baseline_metric:'kpm',baseline_cost_seconds:0,
+   baseline_by:'old',baseline_started_at:at,baseline_finished_at:at,created_at:at,completed_at:at}];
  }
  const target=fixture.target;
  const [{source}]=await sql.unsafe('SELECT source FROM state_board_input_source WHERE id=1');
@@ -176,7 +182,7 @@ try{
  assert(!(await completeRows(removed)).some(row=>row.score===target.score+1&&row.mode===target.mode),'a removed fact must disappear from the current ranking');
  assert.equal((await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler,revision:page.revision}))).status,409,
   'a collected revision must require a fresh complete partition');
- console.log('ok: uncomputed inputs stay outside publication; indexed updates, immutable pages and removals reach the real query route');
+ console.log('ok: review-backed accepted facts publish on the production driver; indexed updates, immutable pages and removals reach the query route');
  console.log(JSON.stringify({status:'RESULT_TO_PAGE_READER_PASSED',input:process.env.WFSIM_BOARD_FLOW_INPUT?'captured authoritative result':'fixture',
   target,routed,published,revision:page.revision,rows:page.count,requests:requests.length,production_writes:false}));
 }finally{
