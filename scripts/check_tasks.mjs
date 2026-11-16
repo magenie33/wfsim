@@ -1296,6 +1296,97 @@ await runCase("fixed:official-claim-books", async () => {
   }
 });
 
+await runCase("fixed:cut-guard-first", async () => {
+  const {readFileSync}=await import('node:fs');
+  const db=await testDb('library'),at='2026-10-10T12:00:00.000Z',count=60764;
+  const caps=JSON.stringify(['guard-reader','cap:fixed-board-input-v1','cap:calculation-reports-v1']);
+  const args=(extra={})=>[at,extra.official??0,1,extra.engine??'e1',caps,'guard-reader','',null,600,0,
+    JSON.stringify(extra.states??['open']),null,extra.n??1,null,extra.join??null,null,extra.locked??false];
+  const candidateSql=`SELECT id,zone,zone_position,state FROM factory_candidates(?::text,?::bigint,?::bigint,?::text,?::text,?::text,?::text,?::text,
+    ?::bigint,?::bigint,?::text,?::text,?::bigint,?::text,?::text,?::text,?::boolean)`;
+  const selected=async extra=>(await db.all(candidateSql,...args(extra))).map(q=>q.id);
+  const measure=async extra=>{
+    const plan=(await db.get('EXPLAIN(ANALYZE,BUFFERS,FORMAT JSON) '+candidateSql,...args(extra)))['QUERY PLAN'][0];
+    return {rows:plan.Plan['Actual Rows'],blocks:Number(plan.Plan['Shared Hit Blocks']||0)+Number(plan.Plan['Shared Read Blocks']||0),ms:plan['Execution Time']};
+  };
+  try {
+    await db.exec(readFileSync(new URL('../worker/pg/order_cut_indexes.sql',import.meta.url),'utf8').replaceAll('INDEX CONCURRENTLY','INDEX'));
+    await db.exec(`INSERT INTO entity_compute_specs(id,verb,request)
+        SELECT md5('guard-'||i::text),'simulate','{}' FROM generate_series(1,${count}) i;
+      INSERT INTO entity_compute_tasks(computation,generation,created_at,reason)
+        SELECT md5('guard-'||i::text),1,'2026-01-01','request' FROM generate_series(1,${count}) i;
+      INSERT INTO entity_compute_results(computation,task_id,canon,engine,accepted_at)
+        SELECT t.computation,t.id,'{}','e1','2026-01-01' FROM generate_series(40001,60760) i
+          JOIN entity_compute_tasks t ON t.computation=md5('guard-'||i::text);
+      INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,producer,zone,zone_position,result_id,fact_engine,fact_at,
+        required_capability,required_engine,lease,leased_to,lease_until,leased_at)
+        SELECT t.computation,'simulate',t.id,CASE i WHEN 50001 THEN 'spot' WHEN 50002 THEN 'disputed' WHEN 50003 THEN 'nondeterministic'
+          ELSE CASE WHEN i BETWEEN 40001 AND 60760 THEN 'fact' ELSE 'open' END END,'2026-01-01','2026-01-01','sweep',
+          CASE WHEN i IN(50001,50002,50003) THEN 0 ELSE 3 END,i,r.id,r.engine,r.accepted_at,
+          CASE WHEN i=60763 THEN 'tail-only' ELSE 'fixed-board-input-v1' END,CASE WHEN i=60761 THEN 'other-engine' END,
+          CASE WHEN i=60762 THEN 'busy' END,CASE WHEN i=60762 THEN 'busy' END,CASE WHEN i=60762 THEN '2999' END,
+          CASE WHEN i=60762 THEN '${at}' END
+        FROM generate_series(1,${count}) i JOIN entity_compute_tasks t ON t.computation=md5('guard-'||i::text)
+          LEFT JOIN entity_compute_results r ON r.task_id=t.id;
+      ANALYZE state_compute_scheduling;ANALYZE entity_compute_tasks;ANALYZE entity_compute_results;`);
+    const id=async n=>(await db.get("SELECT md5('guard-'||?::text) id",n)).id;
+    const first=await id(1),second=await id(2),last=await id(60764);
+    check('no-cut ordinary selection retains its first eligible FIFO row',JSON.stringify(await selected())===JSON.stringify([first]));
+    await db.run('SELECT compute_order_cut_stage((?::text)::jsonb)',JSON.stringify({id:'guard-cut',cut_at:at,task_cutoff:count,keep_boundary:[3,40000,'z'],source:{fixture:'guard-first'}}));
+    await db.run("SELECT compute_order_cut_protect('guard-cut',(SELECT jsonb_agg(id ORDER BY id) FROM state_compute_scheduling))");
+    await db.run("SELECT compute_order_cut_capture('guard-cut')");
+    const manifest=await db.get("SELECT count(*) n,encode(sha256(convert_to(string_agg(question,E'\n' ORDER BY question),'UTF8')),'hex') digest FROM relation_compute_order_cut_protection WHERE cut_id='guard-cut' AND kind='manifest'");
+    await db.run("SELECT compute_order_cut_activate('guard-cut',?::bigint,?::text)",manifest.n,manifest.digest);
+    check('the regression uses all 60,764 captured protection ids',manifest.n===count);
+    const prefix=await measure();
+    check('a full eligible prefix does not visit the 60,764-id protected tail',prefix.rows===1&&prefix.blocks>0&&prefix.blocks<=4000,JSON.stringify(prefix));
+    check('the prefix returns the same exact FIFO head after activation',JSON.stringify(await selected())===JSON.stringify([first]));
+    for(let seed=1;seed<=5;seed++) {
+      const states=['open','spot','disputed','nondeterministic'].filter((_,i)=>(seed>>i)&1);
+      const n=1+seed%3;
+      const expected=await db.all(`SELECT id FROM state_compute_scheduling WHERE state IN(SELECT jsonb_array_elements_text((?::text)::jsonb))
+        AND (required_engine IS NULL OR required_engine='e1') AND (lease_until IS NULL OR lease_until<'${at}')
+        ORDER BY coalesce(zone,factory_default_zone(producer)),coalesce(zone_position,task_id),id LIMIT ?::bigint`,JSON.stringify(states),n);
+      check('official mixed-state ordering retains all nonopen candidates '+seed,
+        JSON.stringify(await selected({official:1,states,n}))===JSON.stringify(expected.map(q=>q.id)));
+    }
+    await db.exec("INSERT INTO record_candidate_answers(question,task_id,engine,device,owner,net,canon,result,work,at) SELECT id,task_id,'served-join','other','other','other-net','{}','{}',1,'2026-01-01' FROM state_compute_scheduling WHERE zone_position IN(2,60764) AND zone=3");
+    check('witness-filtered prefix keeps the sparse served-head path',JSON.stringify(await selected({join:'served-join'}))===JSON.stringify([second]));
+    check('witness-filtered prefix retains its row-locking path',JSON.stringify(await selected({join:'served-join',locked:true}))===JSON.stringify([second]));
+    await db.run("UPDATE state_compute_scheduling SET state='withdrawn',withdrawn_at=? WHERE state='open' AND zone=3 AND zone_position BETWEEN 2 AND 40000",at);
+    check('a short prefix fills from the later eligible protected tail without duplicates',JSON.stringify(await selected({n:2}))===JSON.stringify([first,last]));
+    check('the locking path preserves short-prefix and protected-tail FIFO',JSON.stringify(await selected({n:2,locked:true}))===JSON.stringify([first,last]));
+    await db.run("UPDATE state_compute_scheduling SET state='withdrawn',withdrawn_at=? WHERE id=?",at,first);
+    check('ineligible protected entries do not hide a later eligible candidate',JSON.stringify(await selected())===JSON.stringify([last]));
+    await db.run("UPDATE state_compute_scheduling SET required_engine='not-served' WHERE id=?",last);
+    const empty=await measure();
+    check('zero eligible protected tail terminates without touching the retired prefix eligibility',empty.rows===0&&empty.blocks>0&&empty.blocks<=400000,JSON.stringify(empty));
+    await db.exec(`INSERT INTO entity_compute_specs(id,verb,request) SELECT md5('new-guard-'||i::text),'simulate','{}' FROM generate_series(1,4) i;
+      INSERT INTO entity_compute_tasks(computation,generation,created_at,reason) SELECT md5('new-guard-'||i::text),1,'2026-10-11','request' FROM generate_series(1,4) i;
+      INSERT INTO entity_compute_tasks(computation,generation,created_at,reason) VALUES(md5('new-guard-2'),2,'2026-10-11','renewed_request');
+      INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,producer,zone,zone_position,required_engine,required_capability)
+        SELECT s.id,'simulate',(SELECT max(t.id) FROM entity_compute_tasks t WHERE t.computation=s.id),'open','2026-01-01','2026-10-11','sweep',3,70000+i,
+          CASE WHEN i<4 THEN 'not-served' END,'fixed-board-input-v1' FROM generate_series(1,4) i JOIN entity_compute_specs s ON s.id=md5('new-guard-'||i::text);
+      ANALYZE entity_compute_tasks;ANALYZE state_compute_scheduling;`);
+    const newLast=(await db.get("SELECT md5('new-guard-4') id")).id;
+    check('new-task scans reject old generations and continue beyond ineligible heads',JSON.stringify(await selected())===JSON.stringify([newLast]));
+    check('the new-task guard retains its row-locking path',JSON.stringify(await selected({locked:true}))===JSON.stringify([newLast]));
+    await db.run("UPDATE state_compute_scheduling SET required_engine='not-served' WHERE id=?",newLast);
+    check('a new-task scan with no eligible row terminates',JSON.stringify(await selected())==='[]');
+  } finally {await db.close();}
+  const empty=await testDb('library');
+  try {
+    await empty.exec(readFileSync(new URL('../worker/pg/order_cut_indexes.sql',import.meta.url),'utf8').replaceAll('INDEX CONCURRENTLY','INDEX'));
+    await seedComputeWork(empty,{id:'no-protection',verb:'simulate',request:'{}',state:'open',opened_at:'2026-01-01',due_at:'2026-01-01',zone:3,zone_position:1});
+    const cutoff=(await empty.get('SELECT max(id) n FROM entity_compute_tasks')).n;
+    await empty.run('SELECT compute_order_cut_stage((?::text)::jsonb)',JSON.stringify({id:'empty-guard-cut',cut_at:at,task_cutoff:cutoff,keep_boundary:[1,0,''],source:{fixture:'empty-protection'}}));
+    await empty.run("SELECT compute_order_cut_capture('empty-guard-cut')");
+    await empty.run("SELECT compute_order_cut_activate('empty-guard-cut',0,encode(sha256(convert_to('','UTF8')),'hex'))");
+    const rows=await empty.all(candidateSql,...args());
+    check('an active cut with zero protection rows has no eligible old tail',rows.length===0);
+  } finally {await empty.close();}
+});
+
 console.log("\nlocks: every statement that gives back many leases takes their rows in id order");
 await runCase("fixed:lease-locks", async () => {
   // A DEADLOCK NEEDS TWO ORDERS: a lease given back over many rows, and a

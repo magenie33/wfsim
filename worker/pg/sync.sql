@@ -116,7 +116,7 @@ $$;
 -- Each disjoint range applies eligibility, FIFO and its bound before the final merge.
 CREATE OR REPLACE FUNCTION factory_candidates(text,bigint,bigint,text,text,text,text,text,bigint,bigint,text,text,bigint,text,text,text,boolean)
 RETURNS SETOF state_compute_work LANGUAGE plpgsql SET jit=off AS $function$
-DECLARE pick text:=$pick$
+DECLARE prefix_pick text;found_count bigint;remaining bigint:=$13;active_cut text;pick text:=$pick$
   WITH cut AS MATERIALIZED(SELECT * FROM compute_order_cut()),
     eligible AS NOT MATERIALIZED(SELECT q.* FROM /* source */ q
       WHERE q.state IN(SELECT jsonb_array_elements_text($11::jsonb))
@@ -131,21 +131,37 @@ DECLARE pick text:=$pick$
       WHERE /* state */ AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9) AND ($12 IS NULL OR guard.waits=0) AND NOT EXISTS(SELECT 1 FROM cut) ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */) candidate)
     UNION ALL
     (SELECT candidate.* FROM LATERAL(SELECT q.* FROM state_compute_scheduling guard CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q
-      WHERE EXISTS(SELECT 1 FROM cut) AND guard.state='open' AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9) AND ($12 IS NULL OR guard.waits=0)
+      WHERE /* prefix enabled */ true AND EXISTS(SELECT 1 FROM cut) AND guard.state='open' AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9) AND ($12 IS NULL OR guard.waits=0)
         AND (coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id)<=(SELECT keep_zone,keep_position,keep_id FROM cut)
       ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */) candidate)
     UNION ALL
-    (SELECT candidate.* FROM LATERAL(SELECT q.* FROM entity_compute_tasks t CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=t.computation OFFSET 0) q
-      JOIN state_compute_scheduling guard ON guard.id=q.id
-      WHERE t.id>(SELECT task_cutoff FROM cut) AND q.task_id=t.id AND q.state='open'
+    (SELECT candidate.* FROM LATERAL(SELECT q.* FROM (
+        SELECT guard.id,guard.task_id,coalesce(guard.zone,factory_default_zone(guard.producer)) AS zone,
+          coalesce(guard.zone_position,guard.task_id) AS position FROM entity_compute_tasks t
+          JOIN state_compute_scheduling guard ON guard.id=t.computation AND guard.task_id=t.id
+        WHERE t.id>(SELECT task_cutoff FROM cut) AND guard.state='open'
+          AND (coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id)
+            >(SELECT keep_zone,keep_position,keep_id FROM cut)
+        ORDER BY zone,position,guard.id OFFSET 0) ordered
+      CROSS JOIN LATERAL(SELECT g.* FROM state_compute_scheduling g WHERE g.id=ordered.id OFFSET 0) guard
+      CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q
+      WHERE q.task_id=ordered.task_id AND q.state='open'
         AND (q.zone,q.zone_position,q.id)>(SELECT keep_zone,keep_position,keep_id FROM cut)
-      ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */) candidate)
+      ORDER BY ordered.zone,ordered.position,ordered.id LIMIT $13 /* lock */) candidate)
     UNION ALL
-    (SELECT candidate.* FROM LATERAL(SELECT q.* FROM compute_order_cut_protections() p CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=p.question OFFSET 0) q
-      JOIN state_compute_scheduling guard ON guard.id=q.id
-      WHERE p.cut_id=(SELECT id FROM cut) AND q.task_id<=(SELECT task_cutoff FROM cut) AND q.state='open'
+    (SELECT candidate.* FROM LATERAL(SELECT q.* FROM (
+        SELECT guard.id,guard.task_id,coalesce(guard.zone,factory_default_zone(guard.producer)) AS zone,
+          coalesce(guard.zone_position,guard.task_id) AS position FROM compute_order_cut_protections() p
+          JOIN state_compute_scheduling guard ON guard.id=p.question
+        WHERE p.cut_id=(SELECT id FROM cut) AND guard.task_id<=(SELECT task_cutoff FROM cut) AND guard.state='open'
+          AND (coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id)
+            >(SELECT keep_zone,keep_position,keep_id FROM cut)
+        ORDER BY zone,position,guard.id OFFSET 0) ordered
+      CROSS JOIN LATERAL(SELECT g.* FROM state_compute_scheduling g WHERE g.id=ordered.id OFFSET 0) guard
+      CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q
+      WHERE q.task_id<=(SELECT task_cutoff FROM cut) AND q.task_id=ordered.task_id AND q.state='open'
         AND (q.zone,q.zone_position,q.id)>(SELECT keep_zone,keep_position,keep_id FROM cut)
-      ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */) candidate)
+      ORDER BY ordered.zone,ordered.position,ordered.id LIMIT $13 /* lock */) candidate)
     UNION ALL
     (SELECT candidate.* FROM LATERAL(SELECT q.* FROM state_compute_scheduling guard CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q
       WHERE $2=1 AND EXISTS(SELECT 1 FROM cut) AND guard.state<>'open' AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9)
@@ -154,7 +170,8 @@ DECLARE pick text:=$pick$
 $pick$;
 BEGIN
   IF $13 IS NULL OR $13<1 OR $13>100000 THEN RAISE EXCEPTION 'invalid candidate bound';END IF;
-  IF compute_order_cut_epoch() IS NULL THEN
+  active_cut:=compute_order_cut_epoch();
+  IF active_cut IS NULL THEN
     pick:=split_part(pick,'  SELECT chosen.* FROM (',1)||
       'SELECT q.* FROM state_compute_scheduling guard CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q WHERE /* state */ AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9) AND ($12 IS NULL OR guard.waits=0) ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */';
   END IF;
@@ -167,7 +184,30 @@ BEGIN
   END IF;
   pick:=replace(pick,'/* state */',CASE WHEN $2=0 THEN 'guard.state=''open''' ELSE 'guard.state IN(SELECT jsonb_array_elements_text($11::jsonb))' END);
   pick:=replace(pick,'/* lock */',CASE WHEN $17 THEN 'FOR UPDATE OF guard SKIP LOCKED' ELSE '' END);
-  RETURN QUERY EXECUTE pick USING $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16;
+  IF $2=0 AND active_cut IS NOT NULL THEN
+    prefix_pick:=split_part(pick,'  SELECT chosen.* FROM (',1)||$prefix$
+      SELECT q.* FROM state_compute_scheduling guard
+        CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q
+      WHERE guard.state='open' AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9)
+        AND ($12 IS NULL OR guard.waits=0)
+        AND (coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id)
+          <=(SELECT keep_zone,keep_position,keep_id FROM cut)
+      ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id
+      LIMIT $13 /* lock */
+$prefix$;
+    IF $15 IS NOT NULL THEN
+      prefix_pick:=replace(prefix_pick,'FROM state_compute_scheduling guard
+        CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q',
+        'FROM eligible q JOIN state_compute_scheduling guard ON guard.id=q.id');
+    END IF;
+    prefix_pick:=replace(prefix_pick,'/* lock */',CASE WHEN $17 THEN 'FOR UPDATE OF guard SKIP LOCKED' ELSE '' END);
+    RETURN QUERY EXECUTE prefix_pick USING $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16;
+    GET DIAGNOSTICS found_count=ROW_COUNT;
+    IF found_count=$13 THEN RETURN;END IF;
+    remaining:=$13-found_count;
+    pick:=replace(pick,'/* prefix enabled */ true','false');
+  END IF;
+  RETURN QUERY EXECUTE pick USING $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,remaining,$14,$15,$16;
 END $function$;
 
 CREATE OR REPLACE FUNCTION factory_head(text, bigint, bigint, text, text, text, text, text, bigint, bigint, text, text)
