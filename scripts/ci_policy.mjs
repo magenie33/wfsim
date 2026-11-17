@@ -36,6 +36,8 @@ const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbo
   'scripts/live_board.sh', 'scripts/live_orders.mjs', 'scripts/ship_builds.sh', 'scripts/retire_scores.mjs', 'scripts/ship_queue.sh',
   'scripts/fetch_facts.sh', 'scripts/ship_facts.sh', 'scripts/live_publish.mjs', '.github/workflows/queue.yml',
   'deploy/factoryd_grants.sql', 'scripts/check_rescore_paths.mjs', 'scripts/capture_compute_inventory.mjs',
+  'deploy/statistics_grants.sql', 'scripts/statistics_schema.mjs',
+  'scripts/fixtures/statistics_work_421.mjs', 'scripts/pg/fixtures.mjs',
   'scripts/inventory_control.mjs', 'scripts/inventory_rebuild.mjs',
   'scripts/inventory_pipeline.mjs', 'scripts/inventory_relational_pipeline.mjs',
   'scripts/build_batches.mjs', 'scripts/ship_family.mjs', 'scripts/ship_bot.py', '.github/workflows/scores.yml',

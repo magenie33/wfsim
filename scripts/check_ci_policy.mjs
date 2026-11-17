@@ -41,6 +41,28 @@ for (const path of websiteTools) {
 }
 assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get('scripts/check_factory_availability.mjs') || []],
   ['pipeline'], 'the complete availability regression has one pipeline CI owner');
+const statisticsTools = ['deploy/statistics_grants.sql', 'scripts/statistics_schema.mjs',
+  'scripts/fixtures/statistics_work_421.mjs', 'scripts/pg/fixtures.mjs'];
+for (const path of statisticsTools) {
+  assert.deepEqual(classify([path]).jobs, PRODUCT_JOBS, path + ' retains all ordinary correctness jobs');
+  assert.equal(classify([path]).deep, false, path + ' cannot change search enumeration or scoring');
+  for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'scripts/statistics_unknown.mjs'])
+    assert.equal(classify([path, extra]).deep, true);
+  assert.equal(classify([path], true).deep, true);
+  assert.equal(classify([path], false, false).deep, true);
+}
+for (const path of ['deploy/statistics_unknown.sql', 'scripts/fixtures/statistics_unknown.mjs', 'scripts/pg/unknown.mjs'])
+  assert.equal(classify([path]).deep, true, path + ' has no declared coverage');
+const statisticsWorkflow = readFileSync('.github/workflows/ci.yml', 'utf8');
+for (const name of ['projection', 'provider'])
+  assert.deepEqual([...checkJobPaths(statisticsWorkflow).get('scripts/check_statistics_' + name + '.mjs') || []],
+    ['pipeline'], 'the statistics ' + name + ' regression has one pipeline CI owner');
+const statisticsNative = statisticsWorkflow.match(/      - name: Persistent statistics preserve canonical counts and runtime ownership\n([\s\S]*?)(?=      - )/);
+assert(statisticsNative, 'native statistics checks are mandatory');
+for (const text of ['WFSIM_STATISTICS_TEST_PORT: 5433', 'PGUSER: postgres', 'PGPASSWORD: mailbox_check',
+  'node scripts/check_statistics_projection.mjs', 'node scripts/check_statistics_provider.mjs --native'])
+  assert(statisticsNative[1].includes(text), 'native statistics runner includes ' + text);
+assert(!statisticsNative[1].includes('if:'), 'native statistics checks cannot be skipped');
 const admissionToolInputs = ['scripts/check_build_workflows.mjs', 'scripts/check_factory_deploy.py',
   'scripts/check_workflow_recovery.mjs', 'scripts/inbox_reader.mjs', 'scripts/migrations/db_library.mjs',
   'tests/fixtures/build-admission-base5a/build_workflows.sql',

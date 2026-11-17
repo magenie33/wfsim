@@ -799,6 +799,14 @@ jobs:
         run: node scripts/check_settler.mjs
       - name: Available work stays current while complete statistics are paused
         run: node scripts/check_factory_availability.mjs
+      - name: Persistent statistics preserve canonical counts and runtime ownership
+        env:
+          WFSIM_STATISTICS_TEST_PORT: 5433
+          PGUSER: postgres
+          PGPASSWORD: mailbox_check
+        run: |
+          node scripts/check_statistics_projection.mjs
+          node scripts/check_statistics_provider.mjs --native
       - name: Background capacity yields to requests and shares the same public counts
         run: node scripts/check_factory_capacity.mjs
       - name: The factory deploy carries its dependencies and keeps credentials outside the artifact
