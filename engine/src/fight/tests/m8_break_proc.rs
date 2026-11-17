@@ -441,6 +441,17 @@ fn m8_break_packet_credits_the_receiving_body_and_matches_the_record() {
     assert_eq!(events[0].0.subject, Some(3));
     assert_eq!(events[0].1.effective, q.r.tally.effective());
     assert_eq!(events[0].1.part.as_deref(), Some("body"));
+    assert_eq!(events[0].1.origin, crate::record::Origin::MagneticBreak);
+    assert_eq!(events[0].1.dtype, DamageType::Electricity);
+    assert_eq!(events[0].1.kind, PopKind::Direct);
+    assert_eq!(q.r.sources.magnetic_break, 5000.0);
+    assert_eq!(q.r.sources.status[DamageType::Electricity as usize], 0.0);
+    assert_eq!(q.r.tally.dot(), 0.0);
+    q.tick(0.01);
+    let dot = q.r.sources.status[DamageType::Electricity as usize];
+    assert!(dot > 0.0);
+    assert_eq!(q.r.sources.magnetic_break + dot, q.r.tally.effective());
+    assert_eq!(q.r.tally.dot(), dot);
 }
 
 #[test]

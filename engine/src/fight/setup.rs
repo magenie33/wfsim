@@ -1906,8 +1906,11 @@ impl RunResult {
     /// leaves a pack nobody collects. Counting kills without that question
     /// could only ever model an infinite reach.
     pub(super) fn note_kills(&mut self, killed: u32, at: f64, in_reach: bool) {
-        if killed > 0 && self.first_kill_at.is_none() {
-            self.first_kill_at = Some(at);
+        if killed > 0 {
+            if self.first_kill_at.is_none() {
+                self.first_kill_at = Some(at);
+            }
+            self.kill_timeline.0[(at.max(0.0) as usize).min(TIMELINE_BUCKETS - 1)] += killed;
         }
         self.kills += killed;
         if self.kill_clock_on && !self.kill_clock_paused {

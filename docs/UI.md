@@ -106,6 +106,14 @@ beside the average and a line saying it is one sample and differs from it.
 The Simulator's result carries that fight frame by frame: the target's pools,
 its counters, the damage meter's own composition, and **live stacks per buff**.
 
+The fight's chart has peer tabs for DPS, KPM, cumulative kills and cumulative
+effective damage. Rates use one-second buckets; a final partial bucket uses
+its actual duration. Chart KPM counts completed kills per minute in that
+bucket; the scenario's headline KPM includes partial kill progress. Every tab
+follows the same replay cursor. Magnetic's pool-break packet has its own
+source row, typed Electricity; its forced Electricity DoT remains in the
+ordinary Electricity row.
+
 **The replay sits at the TOP of that block and drives all of it**.
 The block renders once at its finished state — its number, KPIs, damage meter,
 DPS curve — and the replay re-reads all of it at whatever instant the

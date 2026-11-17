@@ -553,19 +553,7 @@ function replayApply(rp, i) {
     if (lv) lv.textContent = pct2(share);
   });
 
-  // The DPS curve: everything past `t` is greyed rather than removed, so the
-  // shape you are walking through stays legible.
-  const svg = $("tl-svg");
-  if (svg) {
-    const w = Number(svg.viewBox.baseVal.width) || 600;
-    const now = $("tl-now"), ahead = $("tl-ahead");
-    if (now) { now.hidden = false; now.setAttribute("x1", w * frac); now.setAttribute("x2", w * frac); }
-    if (ahead) {
-      ahead.hidden = false;
-      ahead.setAttribute("x", w * frac);
-      ahead.setAttribute("width", w * (1 - frac));
-    }
-  }
+  replayTimelineAt(frac);
 
   // The buff curves, same treatment, plus the live count in each header.
   document.querySelectorAll("[data-cur]").forEach((el) => {

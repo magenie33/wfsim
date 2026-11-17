@@ -194,6 +194,11 @@ body.on-wbench [data-module="builder"],body.on-build-library [data-module="build
 .mrow.sub .mbar{height:8px}
 /* Sim results: damage-over-time curve */
 .tl-wrap{position:relative;margin-top:4px}
+.curve-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:12px}
+.curve-tabs .mtab{cursor:pointer;background:none;font-family:inherit}
+.curve-tabs .mtab.sel{background:var(--panel2)}
+.curve-tabs .mtab:disabled{opacity:.45;cursor:default}
+.curve-tabs .mtab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .tl-wrap svg{width:100%;height:170px;display:block}
 .tl-line{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke}
 .tl-grid{stroke:var(--line);stroke-width:1;vector-effect:non-scaling-stroke}

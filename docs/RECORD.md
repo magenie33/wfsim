@@ -71,6 +71,9 @@ appears in no ledger does not compile.
 THE RAW TRAVELS ON `Settled`: `apply` carries it back, so a site cannot book
 one figure and settle another.
 
+Magnetic's pool-break packet is a direct Electricity instance with origin
+`magnetic_break`. Its forced Electricity proc produces separate status rows.
+
 THE ARGUMENTS ARE A CLOSURE, which is what lets the per-site gate go: an
 `Instance` is a dozen locals, three Vecs and a String, and a `TargetAt` re-runs
 the armour scaling curve — +4.0% on `one_fight` if the 999 runs nobody reads

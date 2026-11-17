@@ -2503,6 +2503,11 @@ The benchmark fight plays back on screen while the average above it holds
 still: the buff curves
 draw, scrubbing drains the pools, and play advances the clock at the chosen
 multiplier.
+Peer DPS, KPM, kills and total-damage tabs use the same fight and cursor.
+Bucket totals reconcile with the sample; fractional final seconds retain
+their actual rate denominator. Companion Magnetic-break Rust regressions
+keep its damage separate from Electricity DoT in the meter, replay and
+combat record.
 
 ## `check_preset_independence`
 

@@ -99,6 +99,8 @@ pub enum Origin {
     Splash,
     /// A status effect settling: a bleed, a burn, a tick.
     Status,
+    /// Magnetic's independent Electricity hit when Shield or Overguard breaks.
+    MagneticBreak,
     /// A DEPLOYED ORB'S strike, or its detonation — an entity acting from
     /// wherever it has drifted to, on a clock of its own.
     ///
@@ -147,6 +149,7 @@ impl Origin {
             Origin::Echo => "echo",
             Origin::Splash => "splash",
             Origin::Status => "status",
+            Origin::MagneticBreak => "magnetic_break",
             Origin::Orb => "orb",
             Origin::Field => "field",
             Origin::ExtraHit => "extra_hit",
