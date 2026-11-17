@@ -175,6 +175,9 @@ await Promise.resolve();
 await opened.env.LIBRARY.prepare("SELECT 1").all();
 assert.deepEqual(pools.map((p) => p.max), [1, 2, 1, 1, 1, 1, 1, 1]);
 assert.equal(pools.reduce((n,p)=>n+p.max,0),9);
+assert.equal(typeof opened.statisticsTransaction,'function','production openEnv must inject the existing primary transaction into shared statistics');
+assert.equal(typeof opened.statisticsReadTransaction,'function');
+assert.equal(pools[3].connection.transaction_timeout,0,'statistics must keep the existing background transaction budget');
 assert.equal(pools[2].connection.statement_timeout,30000);
 assert.deepEqual(pools.slice(4).map(p=>p.connection.application_name),
   ["wfsim-factoryd-admission","wfsim-factoryd-verification","wfsim-factoryd-delivery","wfsim-factoryd-contribution"]);

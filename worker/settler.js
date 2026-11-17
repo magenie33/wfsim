@@ -10,8 +10,9 @@ import { iso } from "./instant.js";
 import { tableOf, FAIR_KEEP_MS } from "./fair.js";
 import { independent, sameAs, askingIds } from "./tasks.js";
 import { dialsOf } from "./dials.js";
-import { COMPUTING_MS } from "./contribution.js";
+import { COMPUTING_MS, DEMAND_COST_EVERY_MS } from "./contribution.js";
 import { facts } from "./factory.js";
+import { STATISTICS_TOTAL_MS, STATISTICS_FINDING } from "./statistics_counts.js";
 import { STATISTICS_OPEN, STATISTICS_WORK } from "./statistics_work.js";
 
 /// THE FACTORY NOW, written as the one `factory_snapshot` row. `asking` and
@@ -36,15 +37,23 @@ async function sample(env, { engine = null, release = null }, now, complete) {
 
 export const signalTick = (env, release = {}, now = Date.now()) => sample(env, release, now, false);
 
-export async function snapshotTick(env, release = {}, now = Date.now()) {
-  const row = await sample(env, release, now, true), db = env.LIBRARY;
+export async function snapshotTick(env, release = {}, now = Date.now(), options = {}) {
+  const row = options.counts?options.counts.snapshot:await sample(env, release, now, true), db = env.LIBRARY;
   const {at, engine, release: served} = row;
-  await db.prepare(`INSERT INTO state_factory_snapshot (id, at, engine, release, open, urgent, asking, computing, queue_rows, settle_queue_rows, daemon_at, daemon_commit)
+  const statement=db.prepare(`INSERT INTO state_factory_snapshot (id, at, engine, release, open, urgent, asking, computing, queue_rows, settle_queue_rows, daemon_at, daemon_commit)
       VALUES (1, ?1::text, ?2::text, ?3::text, ?4::bigint, ?5::bigint, ?6::bigint, ?7::bigint, ?8::bigint, ?9::bigint, '1970-01-01T00:00:00.000Z', '')
       ON CONFLICT (id) DO UPDATE SET at = excluded.at, engine = excluded.engine, release = excluded.release, open = excluded.open,
         urgent = excluded.urgent, asking = excluded.asking, computing = excluded.computing, queue_rows = excluded.queue_rows,
-        settle_queue_rows = excluded.settle_queue_rows`)
-    .bind(at, engine, served, row.open, row.urgent, row.asking, row.computing, row.queue_rows, row.settle_queue_rows).run();
+        settle_queue_rows = excluded.settle_queue_rows
+      WHERE state_factory_snapshot.at IS NULL OR state_factory_snapshot.at<=excluded.at`)
+    .bind(at, engine, served, row.open, row.urgent, row.asking, row.computing, row.queue_rows, row.settle_queue_rows);
+  if(options.counts){
+    const {key}=options.counts,pollMs=options.pollMs??0;
+    const body=JSON.stringify({at,engine,epoch:key.epoch,source:key.source,snapshot:key.snapshot,poll_ms:pollMs,refresh_at:iso(Date.parse(at)+DEMAND_COST_EVERY_MS),next_at:iso(Date.parse(at)+DEMAND_COST_EVERY_MS+STATISTICS_TOTAL_MS+pollMs)});
+    await options.commit([statement,db.prepare(`INSERT INTO state_factory_findings(kind,body,at)
+      SELECT '${STATISTICS_FINDING}',?1::text,?2::text WHERE EXISTS(SELECT 1 FROM state_factory_snapshot WHERE id=1 AND at=?2::text AND engine IS NOT DISTINCT FROM ?3::text)
+      ON CONFLICT(kind) DO UPDATE SET body=excluded.body,at=excluded.at`).bind(body,at,engine)]);
+  }else await statement.run();
   return row;
 }
 

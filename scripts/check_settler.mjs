@@ -12,8 +12,9 @@ import { signalTick, snapshotTick, fairTick, readFair, compareFair, settleShadow
 import { testDb } from "./pg/test_db.mjs";
 import { SETTLER_SILENT_MS } from "../worker/factory.js";
 import { mock } from "node:test";
+import { STATISTICS_KEY_SQL } from "../worker/statistics_counts.js";
 import { DIAL_DEFAULTS, dialsOf, forgetDials } from "../worker/dials.js";
-import { statisticsReadCases } from "./check_order_cut_reads.mjs";
+import { statisticsReadCases, statisticsBatchCases, statisticsBatchOracle } from "./check_order_cut_reads.mjs";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -290,6 +291,15 @@ console.log("signing for R2");
 }
 
 const statisticsDb=await testDb('library');
-try{await statisticsReadCases(statisticsDb);}finally{await statisticsDb.close();}
+const statisticsTransaction=async fn=>{
+  await statisticsDb.run('BEGIN');
+  try{const result=await fn({query:async(sql,args=[])=>({rows:await statisticsDb.all(sql,...args)})});await statisticsDb.run('COMMIT');return result;}
+  catch(error){await statisticsDb.run('ROLLBACK');throw error;}
+};
+const statisticsKey=async()=>({...await statisticsDb.get(STATISTICS_KEY_SQL),engine:'fixture',release:'fixture',dials:DIAL_DEFAULTS});
+try{
+  await statisticsReadCases(statisticsDb,{onStage:label=>statisticsBatchOracle(statisticsDb,{transaction:statisticsTransaction,keyOf:statisticsKey,label})});
+  await statisticsBatchCases(statisticsDb,{transaction:statisticsTransaction});
+}finally{await statisticsDb.close();}
 console.log(failures ? `\n${failures} failure(s)` : "\nthe settler in shadow agrees with the request path, and says where it does not");
 process.exit(failures ? 1 : 0);

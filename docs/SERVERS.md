@@ -154,6 +154,13 @@ connection queue. Losing ownership stops the pulse. A heartbeat updates only
 an existing snapshot row; it never invents statistics. Successful statistics
 alone update the snapshot's `at` and counts, preserving any newer heartbeat.
 A first snapshot without a daemon owner carries an expired heartbeat.
+
+Full statistics reuse their original sample clock for ten minutes. Their
+`statistics_counts` finding is written atomically with the snapshot and binds
+its engine, source and cut epoch to the next full-read obligation. Health accepts
+that bounded obligation instead of treating a valid cached sample as a failed
+five-minute refresh. Failed reads do not extend it. Heartbeat, idle-transaction
+and public work-signal guards retain their own clocks and limits.
 The fair table and settlement use separate pools from background maintenance. Background jobs run one at a time and use
 per-statement and idle-transaction timeouts. The home tally and demand picture
 share one rolling score read for a minute; scores remain

@@ -1233,6 +1233,14 @@ The signal's `at` records its own sample. Full `factory_snapshot.at` and demand
 `counts_at` advance only after their complete statistical reads succeed; a fresh
 signal does not make old queue counts fresh.
 
+Full snapshots and demand totals share a ten-minute complete result. A
+repeatable-read, read-only transaction enumerates finite raw input pages before
+eligibility and aggregation: each statement has three seconds, the whole read
+two minutes. Active cuts enumerate new batches before their pending rows.
+Cross-page references use the global representative; source, engine or cut
+changes discard the old read. Failure keeps the previous counts and sample time,
+and the same source key waits until its next ten-minute retry window.
+
 `poll_ms`, `jitter_ms` and `urgent_jitter_ms` are dials (§"The dials"), and so
 is `mode`: `signal_mode` 1 makes it `ask`, sending every computer back to the
 worker. Without the R2 token the signal is skipped and `signal_unconfigured`

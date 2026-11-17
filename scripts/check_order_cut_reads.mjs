@@ -6,7 +6,9 @@ import {pathToFileURL} from 'node:url';
 import {seedComputeWork} from './pg/fixtures.mjs';
 import {orderCutSchemaSql,orderCutBusinessSql,taskSchemaSql} from './task_schema.mjs';
 import {buildAdmissionSchemaSql} from './build_admission_schema.mjs';
-import {STATISTICS_WORK} from '../worker/statistics_work.js';
+import {DEMAND_SOURCE,STATISTICS_WORK} from '../worker/statistics_work.js';
+import {createStatisticsCounts,STATISTICS_KEY_SQL,STATISTICS_QUESTION_PAGE,statisticsCandidate} from '../worker/statistics_counts.js';
+import {DIAL_DEFAULTS} from '../worker/dials.js';
 import {snapshotTick} from '../worker/settler.js';
 import {demandOf} from '../worker/contribution.js';
 
@@ -183,7 +185,7 @@ export async function orderCutReadCases(db,{n=100001,receiptFile=process.env.WFS
   console.log('ok effective reads preserve full fact/delivery/pending ownership and source exports; old read bounds fail, indexed reads pass after two nonempty upgrades');
 }
 
-export async function statisticsReadCases(db,{n=512,receiptFile=null}={}) {
+export async function statisticsReadCases(db,{n=512,receiptFile=null,onStage=null}={}) {
   const at='2026-11-15T00:00:00.000Z',cutAt='2026-11-16T00:00:00.000Z',now=Date.parse('2026-11-16T01:00:00.000Z');
   assert(Number.isSafeInteger(n)&&n>=512);
   await db.exec(source('order_cut_indexes').replaceAll('INDEX CONCURRENTLY','INDEX'));
@@ -217,7 +219,7 @@ export async function statisticsReadCases(db,{n=512,receiptFile=null}={}) {
     INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at)
       VALUES('sweep','stats-empty-withdrawn|r|base','stats-empty-withdrawn','live','${at}','${at}');`);
   await db.run("INSERT INTO entity_compute_tasks(computation,generation,created_at,reason) VALUES(?,2,?,'fixture-prior-round')",'stats-'+(n+2),at);
-  await db.run("UPDATE state_compute_scheduling SET lease='held',leased_at=?,leased_to='fixture',lease_until='2999' WHERE id IN('stats-2',?)",at,'stats-'+(n+5));
+  await db.run("UPDATE state_compute_scheduling SET lease='held',leased_at=?,leased_to='fixture',lease_until='2999' WHERE id IN('stats-2','stats-4',?)",at,'stats-'+(n+5));
   await db.exec(`INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES
     ('stats-old-0','stats-old-unregistered','r','base'),('stats-new-0','stats-new-unregistered','r','base'),
     ('stats-new-0','stats-suffix','r','base');
@@ -236,6 +238,14 @@ export async function statisticsReadCases(db,{n=512,receiptFile=null}={}) {
   await db.run("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES('new_build','stats-unicode_%[]|汉_%[]|base|a','absent-earlier','live',?,?)",at,at);
   await db.exec(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at)
     SELECT 'new_build','historical-ref-'||i,'absent-history-'||i,'live','${at}','${at}' FROM generate_series(1,${8*n})i;`);
+  await db.run("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES('absent-batch','stats-orphan','r','base'),('absent-batch','stats-orphan-unregistered','r','base')");
+  await db.run("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES('refresh','stats-orphan|r|base','stats-1','live',?,?)",at,at);
+  for(const id of ['', '\ue000', '\u{10000}']){
+    await seedComputeWork(db,{id,state:'open',request:'{}',due_at:at,opened_at:at});
+    await db.run('UPDATE state_compute_scheduling SET zone=0,zone_position=NULL WHERE id=?',id);
+  }
+  await db.run("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES('stats-old-0','cross-page','r','base')");
+  await db.run("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES('refresh','cross-page|r|base|z','stats-1','live',?,?),('refresh','cross-page|r|base|a',?,'live',?,?)",at,at,'stats-'+Math.floor(n/2),at,at);
   await db.exec('ANALYZE state_compute_scheduling;ANALYZE entity_compute_tasks;ANALYZE relation_task_consumers;ANALYZE state_board_pending_work;ANALYZE entity_compute_batches;');
   const cols='id,verb,task_id,state,waits,lease,lease_until,leased_to,leased_at,producer,initiator';
   const equal=async(label,statement=STATISTICS_WORK)=>{
@@ -250,11 +260,11 @@ export async function statisticsReadCases(db,{n=512,receiptFile=null}={}) {
       assert.equal(row.n,0,label+' '+actual+' changes exact membership, duplicates, NULLs or provenance');
     }
   };
-  await equal('no cut');
+  await equal('no cut');if(onStage)await onStage('no cut');
   const env={LIBRARY:db},before=await demandOf(env,now);
   const cutoff=(await db.get('SELECT max(id) n FROM entity_compute_tasks')).n;
   await db.run('SELECT compute_order_cut_stage((?::text)::jsonb)',JSON.stringify({id:'stats-cut',cut_at:cutAt,task_cutoff:cutoff,keep_boundary:[3,n,'z'],source:{fixture:'statistics'}}));
-  await equal('preparing cut');
+  await equal('preparing cut');if(onStage)await onStage('preparing cut');
   await db.run("SELECT compute_order_cut_capture('stats-cut')");
   await db.run("SELECT compute_order_cut_activate('stats-cut',0,?::text)",createHash('sha256').update('').digest('hex'));
   await db.exec(`INSERT INTO record_compute_order_cancellations(question,task_id,cut_id,at)
@@ -262,7 +272,7 @@ export async function statisticsReadCases(db,{n=512,receiptFile=null}={}) {
       ('stats-report-prefix',${reportPrefix},'stats-cut','${cutAt}'),('stats-report-protected',${reportProtected},'stats-cut','${cutAt}'),
       ('stats-${n+5}',${n+5},'stats-cut','${cutAt}');`);
   await db.exec('ANALYZE record_compute_order_cancellations;ANALYZE relation_compute_order_cut_protection;');
-  await equal('active cut and explicit task cancellation');
+  await equal('active cut and explicit task cancellation');if(onStage)await onStage('active cut');
   for(const [label,broken]of [
     ['missing explicit cancellation',STATISTICS_WORK.replaceAll('r.question=q.id AND r.task_id=q.task_id','false')],
     ['question without task identity',STATISTICS_WORK.replaceAll('r.question=q.id AND r.task_id=q.task_id','r.question=q.id')],
@@ -280,7 +290,7 @@ export async function statisticsReadCases(db,{n=512,receiptFile=null}={}) {
   assert.notDeepEqual(after.orders,before.orders);
   assert(!after.orders.some(row=>['user_calculation','family_build'].includes(row.kind)),'report totals cannot retain explicitly cancelled effective work');
   assert(after.orders.every(row=>Object.values(row.sources).reduce((sum,n)=>sum+n,0)===row.total));
-  assert(after.orders.every(row=>row.dispatched===0),'cancelled leased simulations and reports cannot remain dispatched totals');
+  assert.equal(after.orders.reduce((n,row)=>n+row.dispatched,0),1,'only the uncancelled held simulation may remain dispatched');
   assert.equal(snapshot.queue_rows,(await db.get('SELECT count(*) n FROM state_board_effective_pending_work')).n);
   assert.equal(snapshot.urgent,(await db.get("SELECT count(*) n FROM state_compute_effective_work WHERE state='open' AND waits>0")).n);
   assert.equal(snapshot.at,new Date(now+1000).toISOString());
@@ -314,6 +324,123 @@ export async function statisticsReadCases(db,{n=512,receiptFile=null}={}) {
   if(receiptFile)writeFileSync(receiptFile,JSON.stringify({n,complete_rows_equal:true,snapshot,orders:after.orders,observations},null,2)+'\n');
   await db.exec('DROP TABLE pg_temp.statistics_expected_work,pg_temp.statistics_expected_pending');
   console.log('ok exact statistics preserve no/preparing/active cut, cancellation task identity, NULL FIFO, task-only evidence, all nonopen and pending source rows');
+}
+
+export async function statisticsBatchOracle(db,{transaction,keyOf,pageRows=32,label='batch'}={}){
+ const now=Date.parse('2026-11-16T01:00:01.000Z');
+ const reader=createStatisticsCounts({transaction,keyOf,pageRows,now:()=>now});
+ const [bundle,shared]=await Promise.all([reader.get(),reader.get()]);assert.strictEqual(bundle,shared,'snapshot and demand must share one flight');
+ assert.deepEqual(bundle.snapshot,await snapshotTick({LIBRARY:db},{engine:'fixture',release:'fixture'},now),label+' complete snapshot');
+ assert.deepEqual(await demandOf({LIBRARY:db},now,undefined,{counts:bundle}),await demandOf({LIBRARY:db},now),label+' complete demand');
+ console.log('ok bounded full counts match canonical '+label+' including orphan batch provenance');
+ return bundle;
+}
+
+export async function statisticsBatchCases(db,{transaction,keyOf:providedKey,pageRows=32,writerFactory=createStatisticsCounts,concurrentMutation=null,concurrentSource=null}={}){
+  assert(transaction,'batch qualification requires a real transaction adapter');
+  const now=Date.parse('2026-11-16T01:00:01.000Z'),env={LIBRARY:db};
+  const keyOf=providedKey||(async()=>({...await db.get(STATISTICS_KEY_SQL),engine:'fixture',release:'fixture',dials:DIAL_DEFAULTS}));
+  const options={transaction,keyOf,now:()=>now,pageRows};
+  const expectedSnapshot=await snapshotTick(env,{engine:'fixture',release:'fixture'},now);
+  const expectedDemand=await demandOf({LIBRARY:db},now);
+  let pages=0,maxRows=0;
+  const reader=createStatisticsCounts({...options,onPage:(_,rows)=>{pages++;maxRows=Math.max(maxRows,rows.length);}});
+  const bundle=await reader.get();
+  assert.deepEqual(bundle.snapshot,expectedSnapshot,'bounded snapshot differs from complete canonical counts');
+  const expectedOpen=await db.all(`WITH ${STATISTICS_WORK} SELECT verb,producer,${DEMAND_SOURCE} source,count(*) n,
+    count(*) FILTER(WHERE leased_at IS NOT NULL OR lease IS NOT NULL) dispatched FROM stats_open q GROUP BY verb,producer,source`);
+  const sortOpen=rows=>rows.map(row=>({...row,n:Number(row.n),dispatched:Number(row.dispatched)})).sort((a,b)=>JSON.stringify([a.verb,a.producer,a.source]).localeCompare(JSON.stringify([b.verb,b.producer,b.source])));
+  assert.deepEqual(sortOpen(bundle.openOf),sortOpen(expectedOpen),'empty and nonhex identities must retain complete open membership');
+  assert.deepEqual(await demandOf({LIBRARY:db},now,undefined,{counts:bundle}),expectedDemand,'bounded demand changes complete wire output');
+  assert(pages>2&&maxRows<=pageRows,'raw input must cross finite page boundaries');
+  const before=pages;assert.strictEqual(await reader.get(),bundle);assert.equal(pages,before,'cached counts must not rescan');
+  if(concurrentMutation){
+    let changed=false;
+    const concurrent=createStatisticsCounts({...options,onPage:async name=>{
+      if(name==='statistics_questions'&&!changed){changed=true;await concurrentMutation.change();}
+    }});
+    try{
+      const stable=await concurrent.get();assert.deepEqual(stable.snapshot,bundle.snapshot,'all raw pages must share one RR snapshot');
+      assert.notEqual((await db.get('SELECT count(*) n FROM state_board_effective_pending_work')).n,stable.snapshot.queue_rows,'the concurrent mutation must actually change current effective rows');
+    }finally{await concurrentMutation.restore();}
+  }
+  if(concurrentSource){
+    let changed=false;
+    const changing=createStatisticsCounts({...options,onPage:async name=>{
+      if(name==='statistics_questions'&&!changed){changed=true;await concurrentSource.change();}
+    }});
+    const previous=await db.get('SELECT * FROM state_factory_snapshot');
+    try{await assert.rejects(changing.get(),/source changed/);assert.deepEqual(await db.get('SELECT * FROM state_factory_snapshot'),previous,'source drift must discard the complete old snapshot');}
+    finally{await concurrentSource.restore();}
+  }
+
+  const obligationBefore=await db.get('SELECT at FROM state_factory_snapshot WHERE id=1');
+  for(const mode of ['throw','stop','deadline']){
+    let steps=0,stopped=false,elapsed=0;
+    const failed=createStatisticsCounts({...options,stopped:()=>stopped,clock:()=>elapsed,onPage:()=>{
+      if(++steps!==2)return;if(mode==='throw')throw Error('injected statistics page failure');
+      if(mode==='stop')stopped=true;else elapsed=120001;
+    }});
+    await assert.rejects(failed.get(),/page failure|stopped|deadline/);
+    assert.equal(steps,2,'failed statistics must stop at the next finite step');
+    assert.deepEqual(await db.get('SELECT at FROM state_factory_snapshot WHERE id=1'),obligationBefore,'partial statistics must not write a timestamp');
+  }
+  let cooldownNow=now,attempts=0,failAgain=true,cooldownEngine='fixture';
+  const cooling=createStatisticsCounts({...options,now:()=>cooldownNow,
+    keyOf:async()=>({...await keyOf(),engine:cooldownEngine}),
+    transaction:fn=>{attempts++;return transaction(fn);},onPage:()=>{if(failAgain)throw Error('statistics cooldown failure');}});
+  await assert.rejects(cooling.get(),/cooldown failure/);
+  for(let i=0;i<3;i++)await assert.rejects(cooling.get(),/retry due/);
+  assert.equal(attempts,1,'repeated same-key failures must not restart a full scan');
+  assert.equal(cooling.status().failure.at,new Date(now).toISOString());
+  failAgain=false;cooldownNow=Date.parse(cooling.status().failure.retry_at)+1;
+  assert.equal((await cooling.get()).snapshot.queue_rows,bundle.snapshot.queue_rows);assert.equal(attempts,2,'expiry permits one fresh complete scan');
+  failAgain=true;cooldownNow+=600001;
+  await assert.rejects(cooling.get(),/cooldown failure/);assert.equal(attempts,3);
+  failAgain=false;cooldownEngine='new-source-engine';
+  assert.equal((await cooling.get()).snapshot.queue_rows,bundle.snapshot.queue_rows);assert.equal(attempts,4,'a new source key must bypass the old retry window');
+  // This mutation changes only the earlier representative's scope.
+  const scoped=STATISTICS_QUESTION_PAGE.replace('SELECT 1 FROM stats_work w WHERE w.id=e.question OFFSET 0','SELECT 1 FROM page_work w WHERE w.id=e.question OFFSET 0');
+  assert.notEqual(scoped,STATISTICS_QUESTION_PAGE);
+  const broken=createStatisticsCounts({...options,transaction:fn=>transaction(tx=>fn({...tx,query:(sql,args)=>tx.query(sql===STATISTICS_QUESTION_PAGE?scoped:sql,args)}))});
+  await assert.rejects((async()=>assert.equal((await broken.get()).snapshot.queue_rows,bundle.snapshot.queue_rows,'page-local representative duplicates a cross-page key'))(),/duplicates a cross-page key/);
+  const common={state:'open',task_id:'9007199254740992',zone:'3',position:'9007199254740992',id:'\u{10000}'};
+  const cut={task_cutoff:'9007199254740992',keep_zone:'3',keep_position:'9007199254740992',keep_id:'\ue000'};
+  assert.equal(statisticsCandidate(common,cut,new Set()),false,'C/UTF8 ordering must not use UTF16');
+  assert.equal(statisticsCandidate({...common,task_id:'9007199254740993'},cut,new Set()),true,'raw integer text must retain values beyond Number precision');
+  assert.throws(()=>statisticsCandidate({...common,task_id:Number('9007199254740993')},cut,new Set()),/must be text/,'a lossy driver Number must fail closed');
+  await db.run("DELETE FROM state_factory_findings WHERE kind='statistics_counts'");
+  let stopWriting=false;
+  const delayedWriter=writerFactory({...options,stopped:()=>stopWriting,transaction:fn=>transaction(tx=>fn({...tx,query:async(sql,args)=>{
+    const result=await tx.query(sql,args);
+    if(sql.includes('INSERT INTO state_factory_findings'))await new Promise(resolve=>setImmediate(()=>{stopWriting=true;resolve();}));
+    return result;
+  }}))});
+  const delayedBundle=await delayedWriter.get();
+  await assert.rejects(snapshotTick(env,{},now,{counts:delayedBundle,commit:list=>delayedWriter.commit(delayedBundle,list)}),/stopped/,
+    'a stop observed during the final awaited write must roll back');
+  assert.equal(await db.get("SELECT body FROM state_factory_findings WHERE kind='statistics_counts'"),null,'a stopped final write must not commit its obligation');
+  let stopAfterKey=false,armed=false;
+  const keyWriter=writerFactory({...options,stopped:()=>stopAfterKey,keyOf:async()=>{
+    const key=await keyOf();if(armed)stopAfterKey=true;return key;
+  }});
+  const keyBundle=await keyWriter.get();armed=true;
+  await assert.rejects(keyWriter.assert(keyBundle),/stopped/,'stop must be rechecked after awaited key validation');
+  let versionArmed=false,versionWriter;
+  versionWriter=createStatisticsCounts({...options,keyOf:async()=>{
+    const key=await keyOf();if(versionArmed){versionArmed=false;await versionWriter.get({engine:'superseded'}).catch(()=>{});}return key;
+  }});
+  const versionBundle=await versionWriter.get();versionArmed=true;
+  await assert.rejects(versionWriter.assert(versionBundle),/stopped|changed/,'a new source request during key validation must invalidate the old bundle');
+  assert.equal((await versionWriter.get()).snapshot.queue_rows,bundle.snapshot.queue_rows,'a superseded request must release the reader for a fresh complete scan');
+  const markerReader=createStatisticsCounts(options),marked=await markerReader.get();
+  await snapshotTick(env,{},now+5000,{counts:marked,pollMs:10000,commit:list=>markerReader.commit(marked,list)});
+  const marker=JSON.parse((await db.get("SELECT body FROM state_factory_findings WHERE kind='statistics_counts'")).body);
+  assert.equal(marker.at,marked.countsAt);assert.equal(marker.engine,marked.key.engine);
+  assert.equal(marker.poll_ms,10000);assert.equal(Date.parse(marker.next_at)-Date.parse(marker.refresh_at),130000);
+  assert.equal((await db.get('SELECT at FROM state_factory_snapshot')).at,marked.countsAt,'cache reuse cannot restamp full statistics');
+  console.log('ok bounded raw pages preserve complete snapshot/demand, global representatives, integer/C boundaries and discard failed partial work');
+  return {bundle,pages,maxRows};
 }
 
 if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url) {

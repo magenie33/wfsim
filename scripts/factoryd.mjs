@@ -22,6 +22,7 @@ import { demandOf, DEMAND_KEY, DEMAND_CACHE, DEMAND_COST_EVERY_MS, tallyOf, tall
 import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capacity.mjs";
 import { facts } from "../worker/factory.js";
 import { pipelineClock } from "./pipeline_clock.mjs";
+import { createStatisticsCounts, STATISTICS_KEY_SQL } from "../worker/statistics_counts.js";
 import { TASK_PIPELINE_STAGES } from "../worker/task_pipeline.js";
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
@@ -60,6 +61,7 @@ const log = (...a) => console.log(new Date().toISOString(), ...a);
 export async function openEnv(env = process.env, connect = postgres) {
   if (!env.PG_URL) throw new Error("PG_URL is required");
   const clients = [];
+  let statisticsTransaction,statisticsReadTransaction;
   const db = (url, background = false, stage = null, max = 1, signal = false) => {
     // PG_SOCKET (a directory) reaches Postgres over its unix socket, as the
     // unit does: peer authentication, no password on the machine.
@@ -70,6 +72,8 @@ export async function openEnv(env = process.env, connect = postgres) {
     const c = postgresClient(connect(url, { ...POSTGRES_OPTIONS, max, idle_timeout: 0, connection, onnotice: () => {},
       ...(env.PG_SOCKET ? { host: env.PG_SOCKET } : {}) }));
     clients.push(c);
+    if(!background&&!stage&&!signal&&url===env.PG_URL&&!statisticsTransaction)statisticsTransaction=fn=>c.transaction(fn);
+    if(background&&url===env.PG_URL&&!statisticsReadTransaction)statisticsReadTransaction=fn=>c.transaction(fn);
     return pgDb(c);
   };
   const out = { LIBRARY: db(env.PG_URL), ...(env.PG_ACCOUNTS_URL ? { ACCOUNTS: db(env.PG_ACCOUNTS_URL,false,null,2) } : {}) };
@@ -92,7 +96,7 @@ export async function openEnv(env = process.env, connect = postgres) {
     clients.push({end:async()=>{await handle?.unlisten();await sql.end({timeout:5});}});
     handle=await sql.listen("wfsim_task_pipeline",wake);
   };
-  return {env:out,signalEnv,backgroundEnv,stageEnvs,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
+  return {env:out,signalEnv,backgroundEnv,stageEnvs,statisticsTransaction,statisticsReadTransaction,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
 }
 
 /// THE RELEASE SERVED NOW, read through the worker's own `servedRelease` (a
@@ -105,7 +109,7 @@ async function served() {
 /// check; `put` (one object to R2) and `readEdge` (the signal as the CDN serves it) for R2 and the edge.
 export async function run({ once = false, opened = null, servedNow = served, target = signalTarget(),
   put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge } = {}) {
-  const { env, signalEnv = env, backgroundEnv = env, stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
+  const { env, signalEnv = env, backgroundEnv = env, statisticsTransaction, statisticsReadTransaction=statisticsTransaction, stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
   let stopping = false, ownershipLost = false, stopRun;
   let owner;
   try {
@@ -119,8 +123,12 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   let cursor = { at: iso(Date.now() - 10 * 60_000), id: "" };
   try { if (kept) cursor = JSON.parse(kept.body).cursor || cursor; } catch { /* from ten minutes ago */ }
   let release = await servedNow();
+  const statistics=statisticsTransaction?createStatisticsCounts({transaction:statisticsReadTransaction,writeTransaction:statisticsTransaction,stopped:()=>stopping,
+    keyOf:async()=>({...await signalEnv.LIBRARY.prepare(STATISTICS_KEY_SQL).first(),engine:release.engine,dials:await dialsOf(signalEnv)})}):null;
+  const fullCounts=async()=>statistics?statistics.get({release:release.release}):null;
   const failed = new Map();
   const written = { open: true, urgent: true }, edge = { stale: 0, uncached: 0 };
+  let statisticsStatus=null;
   let unconfiguredSaid = false, tallyAt = 0, tallyKept = null, forgotAt = 0, admittedAt = 0;
   // Only the signal clock and wave probe share this writer.
   const writeSignal = async (snap) => {
@@ -147,6 +155,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     } catch (e) {
       budget.observe(name, performance.now() - began, true);
       const n = (failed.get(name) || 0) + 1; failed.set(name, n); if (n === 1 || n % 30 === 0) log(name, "failed", n, e && e.message);
+      if(n===1&&statistics?.status())log("statistics retry",statistics.status());
     }
   };
   let signalFlight=null;
@@ -167,7 +176,10 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       return result.mode !== "disabled";
     },
     heartbeat: async () => owner ? owner.pulse(commit) : false,
-    snapshot: async () => snapshotTick(env, { engine: release.engine, release: release.release }),
+    snapshot: async () => {
+      const counts=await fullCounts();if(stopping)return false;
+      return snapshotTick(env,{engine:release.engine,release:release.release},Date.now(),counts?{counts,pollMs:SNAPSHOT_MS,commit:statements=>statistics.commit(counts,statements)}:{});
+    },
     signal,
     // A WAVE FROM NOTHING is signalled now, not at the next snapshot.
     wave: async () => {
@@ -184,6 +196,10 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       if (edge.uncached === SIGNAL_BAD_RUNS) await findingsTick(env.LIBRARY, "signal_uncached", (p) => ({ runs: (p.runs || 0) + 1, last: seen }));
     },
     fair: async () => {
+      const status=statistics?.status(),encoded=JSON.stringify(status);
+      if(status&&encoded!==statisticsStatus&&!stopping){
+        await findingsTick(env.LIBRARY,'statistics_counts_failure',()=>status);statisticsStatus=encoded;
+      }
       if (!release.engine) return;
       // WHAT WAS WRITTEN READS BACK AS WHAT WAS WORKED OUT: the round trip
       // through Postgres's doubles is itself a shadow check, at no tolerance.
@@ -200,10 +216,12 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     // THE COMPUTE PAGE'S PICTURE, one object every reader gets (worker/contribution.js `demandOf`).
     demand: async () => {
       if (!target) return;
+      const counts=await fullCounts();if(stopping)return false;
       const now = Date.now();
-      const body = await demandOf(backgroundEnv, now, undefined, { pace: await pace(now),
+      const body = await demandOf(backgroundEnv, now, undefined, { counts, pace: await pace(now),
         costEveryMs: budget.interval("demandCosts", DEMAND_COST_EVERY_MS),
         onCosts: (ms) => budget.observe("demandCosts", ms) });
+      if(counts)await statistics.assert(counts);if(stopping)return false;
       await put(target, { key: DEMAND_KEY, body: JSON.stringify(body), contentType: "application/json", cacheControl: DEMAND_CACHE });
     },
     // THE HOME PAGE'S COUNT (worker/contribution.js `tallyOf`), every `stats_tally_ms`;

@@ -47,7 +47,8 @@ import { dialsOf } from "./dials.js";
 import { BOARD_KINDS } from "./board_kinds.js";
 import { readInventoryState } from "./task_inventory.js";
 import { contributorAccounts, contributorMarks } from "./contributor_identity.js";
-import { STATISTICS_WORK, statisticsNotCancelled } from "./statistics_work.js";
+import { COMPUTING_MS, DEMAND_COST_EVERY_MS, DEMAND_SOURCE, STATISTICS_WORK, statisticsNotCancelled } from "./statistics_work.js";
+export { COMPUTING_MS, DEMAND_COST_EVERY_MS, DEMAND_SOURCE };
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
 const WORK_PER_POINT = 1e9;
@@ -476,7 +477,6 @@ const ordered = (list, key) => list.filter((e) => e[key] > 0)
 
 /// HOW MANY BROWSERS ARE COMPUTING NOW: those that answered an order within
 /// this long, refused ones aside — a count, never who.
-export const COMPUTING_MS = 10 * 60_000;
 async function computingNow(env) {
   if (!env.LIBRARY) return 0;
   const from = iso(Date.now() - COMPUTING_MS);
@@ -639,7 +639,6 @@ export const DEMAND_COST_SCAN = 20_000;
 /// owed rows and the open questions are counted on the same clock: each reads
 /// a table that does not fit in memory, and once a minute it pushed the
 /// volunteers' own rows out of the cache until their syncs timed out on locks.
-export const DEMAND_COST_EVERY_MS = 10 * 60_000;
 /// …EACH OF ITS STATEMENTS GIVEN THIS LONG, past the daemon's thirty seconds: on
 /// a board of a million and a half open questions the day's join and counts read
 /// for tens of seconds, read-only, once in `DEMAND_COST_EVERY_MS`.
@@ -649,9 +648,6 @@ const demandCosts = new WeakMap();
 /// owed rows are counted under. A kind is added here and named on the page
 /// (73-compute.js `ORDER_KIND_NAMES`); a page that does not know it yet shows it by its id.
 export const ORDER_KINDS = [["rescore", 1], ["sweep", 2], ["new_build", 0], ["refresh", 3]];
-const DEMAND_SOURCE = `CASE WHEN q.initiator = 'system' THEN 'system'
-  WHEN q.initiator = 'anonymous' OR q.initiator LIKE 'user:%' OR q.initiator LIKE 'bot:%' THEN 'requested'
-  ELSE 'unattributed' END`;
 const emptyDemandSources = () => ({ requested: 0, system: 0, unattributed: 0 });
 /// THE FLEET THIS MOMENT (`now`): who asked, what they hold and what they
 /// answered over the last `NOW_WINDOW_MS`. Every speed above is a day's, and
@@ -698,7 +694,9 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   const cut=await db.prepare('SELECT compute_order_cut_epoch() AS at').first();
   const epoch=cut?.at || null;
   const cached = demandCosts.get(env), kept = cached?.engine === engine && cached?.epoch === epoch ? cached : null;
-  const counts = kept && now >= kept.countsAt && now - kept.countsAt < DEMAND_COST_EVERY_MS ? kept : null;
+  const provided=options.counts;
+  if(provided&&(provided.key.epoch!==epoch||(engine&&provided.key.engine!==engine)))throw Error('statistics source changed');
+  const counts = provided?{...provided,countsAt:Date.parse(provided.countsAt)}:kept && now >= kept.countsAt && now - kept.countsAt < DEMAND_COST_EVERY_MS ? kept : null;
   const costs = kept && now >= kept.costsAt && now - kept.costsAt < (options.costEveryMs || DEMAND_COST_EVERY_MS) ? kept : null;
   const began = performance.now();
   const reads = await db.batch([

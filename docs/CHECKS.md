@@ -1635,6 +1635,12 @@ expired dials cannot block its reserved connection; timer and wave share one
 writer, and ownership loss or shutdown prevents a late publication. A fresh
 signal neither creates a full snapshot nor restamps failed queue counts.
 
+Bounded raw-input pages match the complete snapshot and demand object before,
+during and after a cut, including orphan batches and cross-page representatives.
+Raw integer text and UTF-8 ordering preserve exceptional identities. Partial
+failures, deadline expiry, source changes and a stop during the final write
+cannot commit a result; repeated failed reads respect the same-key retry window.
+
 ## `check_factory_capacity`
 
 Plain Node and PGlite: stronger and weaker host readings, bounded background

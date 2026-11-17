@@ -52,6 +52,33 @@ class Health(unittest.TestCase):
         self.assertEqual(health.assess(probes, now=now)['alerts'],
                          ['daemon_stale', 'inventory_engine_mismatch', 'snapshot_stale'])
 
+    def test_full_statistics_obligation_is_bound_to_the_real_sample(self):
+        now, probes = self.fixture()
+        db = probes['database']['value']
+        snapshot = db['snapshot']
+        captured = now - 601
+        snapshot['at'] = health.instant(captured)
+        db['statistics'] = {'at': snapshot['at'], 'engine': snapshot['engine'],
+                            'epoch': None, 'source': None, 'snapshot': None,
+                            'refresh_at': health.instant(captured + 600),
+                            'next_at': health.instant(captured + 720)}
+        self.assertNotIn('snapshot_stale', health.assess(probes, now=now)['alerts'])
+        for key, value in [('at', health.instant(now)), ('engine', 'wrong'),
+                           ('epoch', 'wrong'), ('source', 'wrong'), ('snapshot', 'wrong'),
+                           ('next_at', health.instant(captured + 721)),
+                           ('refresh_at', health.instant(captured + 601))]:
+            changed = copy.deepcopy(probes)
+            changed['database']['value']['statistics'][key] = value
+            self.assertIn('snapshot_stale', health.assess(changed, now=now)['alerts'], key)
+        self.assertIn('snapshot_stale', health.assess(probes, now=captured + 721)['alerts'])
+        scheduled = copy.deepcopy(probes)
+        scheduled['database']['value']['statistics'].update(poll_ms=10000, next_at=health.instant(captured + 730))
+        self.assertNotIn('snapshot_stale', health.assess(scheduled, now=captured + 725)['alerts'])
+        scheduled['database']['value']['statistics']['poll_ms'] = 10001
+        self.assertIn('snapshot_stale', health.assess(scheduled, now=captured + 725)['alerts'])
+        db['snapshot']['daemon_at'] = health.instant(now - 301)
+        self.assertIn('daemon_stale', health.assess(probes, now=now)['alerts'])
+
     def test_long_capture_with_recent_activity_is_not_an_idle_stall(self):
         now, probes = self.fixture()
         probes['database']['value']['sessions'] = [{'state': 'idle in transaction', 'transaction_seconds': 1800, 'idle_seconds': 2}]

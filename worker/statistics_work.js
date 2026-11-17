@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Statistical reads project membership without loading requests, results or proofs.
+export const COMPUTING_MS=10*60_000,DEMAND_COST_EVERY_MS=10*60_000;
+export const DEMAND_SOURCE = `CASE WHEN q.initiator = 'system' THEN 'system'
+  WHEN q.initiator = 'anonymous' OR q.initiator LIKE 'user:%' OR q.initiator LIKE 'bot:%' THEN 'requested'
+  ELSE 'unattributed' END`;
 const columns='id,verb,task_id,state,waits,lease,lease_until,leased_to,leased_at,producer,initiator';
 const projection=alias=>columns.split(',').map(name=>alias+'.'+name).join(',');
 export const statisticsNotCancelled=alias=>`NOT EXISTS(SELECT 1 FROM stats_cancelled r WHERE r.question=${alias}.id AND r.task_id=${alias}.task_id)`;

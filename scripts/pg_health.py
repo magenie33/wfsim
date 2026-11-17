@@ -21,9 +21,12 @@ SET LOCAL application_name='wfsim-health';
 SELECT json_build_object(
  'snapshot',(SELECT row_to_json(s) FROM (SELECT daemon_at,daemon_commit,engine,at,
    open,computing,queue_rows,settle_queue_rows FROM state_factory_snapshot WHERE id=1)s),
+ 'statistics',(SELECT body::jsonb FROM state_factory_findings WHERE kind='statistics_counts'),
+ 'cut_epoch',compute_order_cut_epoch(),
  'inventory',(SELECT json_build_object('at',body::jsonb->>'at','started_at',body::jsonb->>'started_at',
    'expires_at',body::jsonb->>'expires_at','generation',body::jsonb->>'generation',
-   'epoch',body::jsonb->>'epoch','engine',body::jsonb->>'engine') FROM state_factory_findings WHERE kind='task_inventory'),
+   'epoch',body::jsonb->>'epoch','engine',body::jsonb->>'engine',
+   'source',body::jsonb->>'source','snapshot',body::jsonb->>'snapshot') FROM state_factory_findings WHERE kind='task_inventory'),
  'generation',inventory_status(),
  'dirty',(SELECT json_build_object('estimated',n_live_tup,'dead',n_dead_tup,'last_analyze',last_autoanalyze)
    FROM pg_stat_user_tables WHERE relname='state_compute_inventory_invalidations'),
@@ -121,7 +124,24 @@ def assess(probes, previous=None, now=None):
         if heartbeat is None or heartbeat > 300:
             alerts.append('daemon_stale')
         captured_snapshot = age(snapshot.get('at'), now)
-        if captured_snapshot is None or captured_snapshot > 300:
+        obligation = db.get('statistics') or {}
+        due_age = age(obligation.get('next_at'), now)
+        try:
+            captured_at = datetime.datetime.fromisoformat(snapshot.get('at').replace('Z', '+00:00')).timestamp()
+            due_at = datetime.datetime.fromisoformat(obligation.get('next_at').replace('Z', '+00:00')).timestamp()
+            refresh_at = datetime.datetime.fromisoformat(obligation.get('refresh_at').replace('Z', '+00:00')).timestamp()
+            poll_ms = obligation.get('poll_ms', 0)
+            bound = isinstance(poll_ms, int) and not isinstance(poll_ms, bool) and 0 <= poll_ms <= 10000 \
+                and 0 < refresh_at - captured_at <= 600 and 0 <= due_at - refresh_at <= 120 + poll_ms / 1000
+        except (TypeError, ValueError, AttributeError):
+            bound = False
+        inventory_contract = db.get('inventory') or {}
+        obligated = bound and due_age == 0 and now < due_at and obligation.get('at') == snapshot.get('at') \
+            and obligation.get('engine') == snapshot.get('engine') \
+            and obligation.get('epoch') == db.get('cut_epoch') \
+            and obligation.get('source') == inventory_contract.get('source') \
+            and obligation.get('snapshot') == inventory_contract.get('snapshot')
+        if captured_snapshot is None or (captured_snapshot > 300 and not obligated):
             alerts.append('snapshot_stale')
         inventory = db.get('inventory') or {}
         captured = age(inventory.get('started_at'), now)
