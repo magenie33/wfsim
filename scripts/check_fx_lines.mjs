@@ -232,12 +232,16 @@ for (const weapons of [modularWeapons, [...modularWeapons].reverse()]) {
       const peers = weapons.filter((x) => x.assembly.kind === w.assembly.kind && x.assembly.family === w.assembly.family);
       const speaker = headless.headlessSpeaker(modularMeta, { zh }, "zh");
       check(`bare modular name lists its complete candidates: ${command} ${name}`, calls.length === before
-        && peers.every((p) => reply.text.includes(headless.headlessWeaponEntryName(speaker.meta, speaker.meta.weapons.find((x) => x.id === p.id), speaker.t)))
-        && reply.text.includes(w.assembly.kind === "kitgun" ? "主手／副手" : "武器类型"), reply.text);
+        && peers.every((p) => reply.text.includes(`${command} ${headless.headlessWeaponEntryName(speaker.meta, speaker.meta.weapons.find((x) => x.id === p.id), speaker.t)} …`)), reply.text);
     }
   }
+  const before = calls.length;
   const unknown = await answer("fx 不存在的武器 100暴击几率 150暴伤");
-  check("unknown FX weapon explains Kitgun and Zaw qualifiers", unknown.text.includes("主手／副手") && unknown.text.includes("Zaw") && unknown.text.includes("武器类型"));
+  const speaker = headless.headlessSpeaker(modularMeta, { zh }, "zh");
+  const examples = speaker.meta.weapons.filter((w) => unknown.text.includes(`fx ${headless.headlessWeaponEntryName(speaker.meta, w, speaker.t)} …`));
+  check("unknown FX weapon gives qualified Kitgun and Zaw examples without submission", calls.length === before
+    && ["primary", "secondary"].every((slot) => examples.some((w) => w.assembly.kind === "kitgun" && w.slot === slot))
+    && ["one_handed", "two_handed"].every((handedness) => examples.some((w) => w.assembly.kind === "zaw" && w.assembly.handedness === handedness)), unknown.text);
 }
 for (const lang of ["en", "zh"]) {
   const say = headless.headlessSpeaker(modularMeta, { zh }, lang);

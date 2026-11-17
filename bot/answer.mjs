@@ -116,20 +116,21 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   ].join("\n");
   const UNREAD = "I could not read “{word}”. Use the card's stat name, or an alias such as 双暴, 暴伤 or 负任意. (・_・;)";
   const NO_WEAPON = "Which weapon? Add its name, like {e}. (・_・;)";
-  const NOT_FOUND = "I could not find that weapon. Chinese and English both work. Include Primary/Secondary for a Kitgun, or the weapon type for a Zaw. (・_・;)";
+  const NOT_FOUND = "I could not find that weapon. Check the name; Chinese and English both work. (・_・;)";
   const NOT_MEASURED = "There are no published results for this weapon under that ruler yet. (・_・;)";
   const weaponPrompt = (hit, command) => {
-    const list = hit.choices.map((w) => `${command} ${weaponName(w)} …`).join(" / ");
-    const kind = hit.choices.find((w) => w.assembly?.kind)?.assembly.kind;
-    return t(kind === "kitgun" ? "Include Primary/Secondary, for example: {list}. (・_・;)"
-      : kind === "zaw" ? "Include the weapon type for this Zaw, for example: {list}. (・_・;)"
-      : "Several weapons match. Use a complete name, for example: {list}. (・_・;)", { list });
+    return t(NO_WEAPON, { e: hit.choices.map((w) => `${command} ${weaponName(w)} …`).join(" / ") });
+  };
+  const unknownWeapon = (command) => {
+    const choices = [...new Map((meta.weapons || []).filter((w) => w.assembly)
+      .map((w) => [`${w.assembly.kind}:${w.slot}:${w.assembly.handedness || ""}`, w])).values()].slice(0, 4);
+    return [t(NOT_FOUND), ...(choices.length ? [weaponPrompt({ choices }, command)] : [])].join("\n");
   };
 
   async function pz(rest) {
     if (!rest) return t(NO_WEAPON, { e: "pz 托里德 3" });
     const hit = weaponOf(rest);
-    if (!hit) return t(NOT_FOUND);
+    if (!hit) return unknownWeapon("pz");
     if (hit.choices) return weaponPrompt(hit, "pz");
     const { n, left: afterCount } = countOf(hit.left);
     // "紫卡" anywhere after the weapon asks for riven builds; what is left names the ruler.
@@ -158,7 +159,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   async function zk(rest) {
     if (!rest) return t(NO_WEAPON, { e: "zk 托里德 双暴" });
     const hit = weaponOf(rest);
-    if (!hit) return t(NOT_FOUND);
+    if (!hit) return unknownWeapon("zk");
     if (hit.choices) return weaponPrompt(hit, "zk");
     const { n, left: afterCount } = countOf(hit.left);
     const cls = hit.w.riven_class;
@@ -228,7 +229,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const example = "fx 托里德 148.5暴伤 111.3多重 111.3腐蚀 -40.5弹匣";
     if (!rest) return t(NO_WEAPON, { e: example });
     const hit = weaponOf(rest);
-    if (!hit) return t(NOT_FOUND);
+    if (!hit) return unknownWeapon("fx");
     if (hit.choices) return weaponPrompt(hit, "fx");
     const named = rulerIn(hit.left);
     const ruler = named.ruler || defaultRuler();
