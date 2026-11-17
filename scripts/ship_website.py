@@ -94,7 +94,7 @@ if release['release']!=manifest['release']: raise SystemExit('release mismatch')
 print('verified',len(manifest['files']),'website files, release',manifest['release'])
 '''
 
-REMOTE_ACTIVATE = '''import json,os,pathlib,runpy,shutil,sys,urllib.request
+REMOTE_ACTIVATE = '''import json,os,pathlib,runpy,shutil,sys,time,urllib.error,urllib.request
 base=pathlib.Path(sys.argv[2]) if len(sys.argv)>2 else pathlib.Path('/srv/wfsim')
 target=pathlib.Path(sys.argv[1])/'site'
 current=base/'current'
@@ -114,10 +114,24 @@ point(current,target)
 try:
  if configuration: configuration.apply()
  health=sys.argv[3] if len(sys.argv)>3 else 'http://127.0.0.1/__health/release'
- req=urllib.request.Request(health,headers={'Host':hostname})
- with urllib.request.urlopen(req,timeout=15) as response: live=json.load(response)
  expected=json.loads((target/'release.json').read_text())
- if live!=expected: raise ValueError('website health mismatch')
+ opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
+ deadline=time.monotonic()+8
+ ready=0
+ while True:
+  remaining=deadline-time.monotonic()
+  if remaining<=0: raise ValueError('website health route did not become ready')
+  req=urllib.request.Request(health,headers={'Host':hostname,'Connection':'close'})
+  try:
+   with opener.open(req,timeout=min(2,remaining)) as response: live=json.load(response)
+  except urllib.error.HTTPError as error:
+   if error.code!=404: raise
+   ready=0
+  else:
+   if live!=expected: raise ValueError('website health mismatch')
+   ready+=1
+   if ready==2: break
+  time.sleep(min(0.1,max(0,deadline-time.monotonic())))
  if configuration: configuration.check_bot()
 except Exception:
  if old: point(current,old)

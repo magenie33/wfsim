@@ -106,9 +106,13 @@ derives its static locations and discovery maps from `deploy/website.nginx`.
 The installer backs up managed configuration, checks nginx before a graceful
 reload, and restores its own files and the release pointer after failed health.
 The existing bot must keep its active process during this configuration step.
-Published board files and the work signal go to the public CDN directly;
+Published board files, public statistics and the work signal go to the public CDN directly;
 they do not add placed Worker requests. The anonymous relay keeps its original
 origin whitelist and strips cookies.
+
+Local website health ignores environment proxies and waits up to eight seconds
+for two fresh connections to read the complete checked release. Only a missing
+route may wait for nginx's asynchronous reload; a wrong release fails at once.
 
 A failed mirror keeps publication failed even if the main entrance advanced.
 Recovery uses the same qualified source and CI site artifact: rerun the failed

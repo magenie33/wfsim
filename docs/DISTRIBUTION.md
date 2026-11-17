@@ -397,8 +397,9 @@ account, board or calculation state.
   `RELAY_PATHS`, the same list in its nginx site). This cross-origin contract
   stays anonymous and cookie-free. The complete entrance serves its own pages
   and files; its same-origin API forwards to the existing backend. Published
-  board files and `work.json` are carried from the public CDN without a placed
-  Worker or a browser connection to the CDN.
+  board files, `stats/` and `work.json` are carried from the public CDN without
+  a placed Worker or a browser connection to the CDN. Their common
+  `BOARD_ORIGIN` also supplies the navigation count's signal URL.
 
 - **The page chooses the road** (69-board-work.js `chooseRoute`): it times
   `/api/board/ping` both ways every ten minutes and takes the quicker, on

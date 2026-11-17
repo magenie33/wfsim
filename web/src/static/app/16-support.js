@@ -109,9 +109,8 @@ let tallyShown = null, tallyFrom = null, tallyTo = null, tallyAt = 0, tallyLoadi
 /// minute and served by the CDN), and asked of the worker only when the file is
 /// unreachable or older than this — docs/BOARD.md §"The public stats".
 const TALLY_STALE_MS = 10 * 60_000;
-const STATS_ORIGIN = "https://cdn.wfsim.app";
 async function statsFile(name, staleMs) {
-  const s = await fetch(`${STATS_ORIGIN}/stats/${name}.json`, { cache: "no-cache", signal: timeoutSignal(15_000) }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+  const s = await fetch(`${BOARD_ORIGIN}/stats/${name}.json`, { cache: "no-cache", signal: timeoutSignal(15_000) }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   return s && s.v === 1 && serverNow() - Date.parse(s.at) <= staleMs ? s : null;
 }
 async function loadHomeTally() {

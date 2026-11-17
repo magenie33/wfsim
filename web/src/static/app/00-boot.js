@@ -4,6 +4,7 @@
 // official polarity icons from the wiki, art from DE's Public Export.
 
 const $ = (id) => document.getElementById(id);
+const BOARD_ORIGIN = location.hostname === "cn.wfsim.app" ? "" : "https://cdn.wfsim.app";
 /// A SIGNAL THAT ABORTS AFTER `ms`, for every fetch with a clock. Never
 /// `AbortSignal.timeout` bare: it is Chrome 103 / Safari 16, and an older phone
 /// threw on it during boot, which the page reports as "could not start".

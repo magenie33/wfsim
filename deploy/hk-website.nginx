@@ -57,6 +57,7 @@ server {
     location = /work.json { include /etc/nginx/wfsim-website-public.conf; }
     location = /board.meta.json { include /etc/nginx/wfsim-website-public.conf; }
     location ^~ /board/ { include /etc/nginx/wfsim-website-public.conf; }
+    location ^~ /stats/ { include /etc/nginx/wfsim-website-public.conf; }
 
     # The anonymous relay keeps its existing cookie-free, origin-limited contract.
     location ~ ^/api/board/(work|answers|renew|release|mine|points|ping|sync)$ {

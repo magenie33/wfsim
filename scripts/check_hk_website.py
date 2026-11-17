@@ -119,11 +119,18 @@ def activation():
             ' def apply(self):(self.stage/"applied").touch()\n'
             ' def check_bot(self):pass\n'
             ' def rollback(self):(self.stage/"rolled-back").touch()\n')
-        served = [expected]
+        served, pending, failure, observed = [expected], [0], [None], []
 
         class Handler(http.server.BaseHTTPRequestHandler):
             def do_GET(self):
-                self.send_response(200 if self.headers.get('Host') == 'cn.wfsim.app' else 421)
+                status = 421 if self.headers.get('Host') != 'cn.wfsim.app' else 200
+                if pending[0] or served[0] is None:
+                    pending[0] = max(0, pending[0] - 1)
+                    status = 404
+                if failure[0] is not None:
+                    status = failure[0]
+                observed.append(status)
+                self.send_response(status)
                 self.end_headers()
                 self.wfile.write(json.dumps(served[0]).encode())
 
@@ -135,15 +142,34 @@ def activation():
         try:
             args = ['python3', '-c', ship_website.REMOTE_ACTIVATE, str(release), str(base),
                     'http://127.0.0.1:' + str(server.server_address[1]), 'cn.wfsim.app']
-            assert subprocess.run(args, capture_output=True).returncode == 0
+            env = {**os.environ, 'http_proxy': 'http://127.0.0.1:1', 'HTTP_PROXY': 'http://127.0.0.1:1',
+                   'no_proxy': '', 'NO_PROXY': ''}
+            assert subprocess.run(args, capture_output=True, env=env).returncode == 0
             assert (base / 'current').resolve() == (release / 'site').resolve()
             assert (release / 'nginx/applied').exists()
+            (base / 'current').unlink()
+            (base / 'current').symlink_to(old)
+            pending[0] = 2
+            start = len(observed)
+            delayed = subprocess.run(args, capture_output=True)
+            assert delayed.returncode == 0, 'old nginx workers still answer 404 after reload: ' + delayed.stderr.decode()
+            assert observed[start:] == [404, 404, 200, 200]
+            assert (base / 'current').resolve() == (release / 'site').resolve()
             (base / 'current').unlink()
             (base / 'current').symlink_to(old)
             served[0] = {**expected, 'commit': 'old'}
             assert subprocess.run(args, capture_output=True).returncode != 0
             assert (base / 'current').resolve() == old.resolve()
             assert (release / 'nginx/rolled-back').exists()
+            failure[0] = 503
+            start = len(observed)
+            assert subprocess.run(args, capture_output=True).returncode != 0
+            assert observed[start:] == [503]
+            assert (base / 'current').resolve() == old.resolve()
+            failure[0] = None
+            served[0] = None
+            assert subprocess.run(args, capture_output=True).returncode != 0
+            assert (base / 'current').resolve() == old.resolve()
         finally:
             server.shutdown()
             server.server_close()

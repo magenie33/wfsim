@@ -417,7 +417,7 @@ function giveBack(beacon = false) {
 /// said `fallback: 7`; otherwise the protocol 7 loop below runs unchanged.
 /// `boardProtocol`: 0 not yet decided, then 8 or 7 for the rest of the page.
 let boardProtocol = 0;
-const SIGNAL_URL = "https://cdn.wfsim.app/work.json";
+const SIGNAL_URL = `${BOARD_ORIGIN}/work.json`;
 /// THE DIALS IN FORCE are the server's (`dials` in every reply, `work.json`);
 /// these are its stated defaults, used only until the first reply says otherwise.
 const syncDials = { pack8_ms: 600_000, sync_low_ms: 120_000, sync_lease_ms: 1_500_000, flush_ms: 600_000,
@@ -691,8 +691,7 @@ async function readSignal() {
     await fetch("/release.json", { method: "HEAD", cache: "no-store" }).then(learnServerClock).catch(() => {});
   }
   try {
-    const r = await fetch(location.hostname === "cn.wfsim.app" ? "/work.json" : SIGNAL_URL,
-      { cache: "no-cache", signal: boardSignal() });
+    const r = await fetch(SIGNAL_URL, { cache: "no-cache", signal: boardSignal() });
     const s = r.ok ? await r.json() : null;
     if (!s || s.v !== 1 || serverNow() - Date.parse(s.at) > SIGNAL_STALE_MS || s.mode === "ask") return null;
     for (const k of ["poll_ms", "jitter_ms", "urgent_jitter_ms"]) if (Number.isFinite(s[k])) syncDials[k] = s[k];
