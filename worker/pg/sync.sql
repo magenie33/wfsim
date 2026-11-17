@@ -329,15 +329,31 @@ CREATE OR REPLACE FUNCTION factory_asking(text, text) RETURNS SETOF text LANGUAG
   UNION SELECT leased_to FROM state_compute_work WHERE leased_to IS NOT NULL AND lease_until > $2
 $$;
 
--- THE OPEN ROWS NOBODY WAITS ON and the computers asking, at $1: the settler's
--- snapshot (worker/settler.js `snapshotTick`, every ten seconds, open counted as
--- far as any pack could need), read while under a minute old — six missed ticks
--- mean the daemon is down. Only then counted here: the open past the asking
--- since $3 times $4, the rows this pack would hold (worker/verify.js `packRows`).
+-- Availability has its own clock; both caches expire after one minute. A cut
+-- invalidates its epoch; a changed pack ceiling may require the original count.
 -- $2 is unused, kept so the procedure that calls this stays as it is.
 CREATE OR REPLACE FUNCTION factory_open(text, bigint, text, bigint) RETURNS TABLE (open bigint, asking bigint)
 LANGUAGE sql STABLE AS $$
-  WITH s AS (SELECT f.open, f.asking FROM state_factory_snapshot f WHERE f.id = 1
+  WITH epoch AS MATERIALIZED(SELECT compute_order_cut_epoch() AS at),
+  raw AS MATERIALIZED(SELECT at,CASE WHEN pg_input_is_valid(body,'jsonb') AND body IS JSON OBJECT THEN body::jsonb END AS body
+    FROM state_factory_findings WHERE kind='factory_availability'),
+  parsed AS MATERIALIZED(SELECT at,
+    body->>'v'='1' AND jsonb_typeof(body->'v')='number'
+      AND jsonb_typeof(body->'epoch') IN('null','string') AS valid,
+    body->>'epoch' AS epoch,
+    CASE WHEN jsonb_typeof(body->'open')='number' AND body->>'open' ~ '^[0-9]{1,16}$' THEN(body->>'open')::bigint END AS open,
+    CASE WHEN jsonb_typeof(body->'asking')='number' AND body->>'asking' ~ '^[0-9]{1,16}$' THEN(body->>'asking')::bigint END AS asking,
+    CASE WHEN jsonb_typeof(body->'pack_max')='number' AND body->>'pack_max' ~ '^[0-9]{1,16}$' THEN(body->>'pack_max')::bigint END AS pack_max
+    FROM raw),
+  fast AS MATERIALIZED(SELECT f.open,f.asking FROM parsed f,epoch e WHERE f.valid
+    AND f.epoch IS NOT DISTINCT FROM e.at AND f.open BETWEEN 0 AND 9007199254740991
+    AND f.asking BETWEEN 0 AND 9007199254740991 AND f.pack_max BETWEEN 1 AND 9007199254740991 AND f.pack_max >= $4
+    AND f.at ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$'
+    AND pg_input_is_valid(f.at,'timestamp with time zone') AND f.at <= $1
+    AND f.at >= to_char(($1::timestamptz AT TIME ZONE 'UTC') - interval '60 seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+  s AS (SELECT * FROM fast UNION ALL
+    SELECT f.open,f.asking FROM state_factory_snapshot f,epoch e WHERE f.id=1 AND NOT EXISTS(SELECT 1 FROM fast)
+      AND f.at<= $1 AND f.at>=coalesce(e.at,'')
       AND f.at >= to_char(($1::timestamptz AT TIME ZONE 'UTC') - interval '60 seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
   a AS (SELECT count(*) AS n FROM factory_asking($3, $1) WHERE NOT EXISTS (SELECT 1 FROM s))
   SELECT s.open, s.asking FROM s

@@ -23,6 +23,7 @@ import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capa
 import { facts } from "../worker/factory.js";
 import { pipelineClock } from "./pipeline_clock.mjs";
 import { TASK_PIPELINE_STAGES, readPipelineControl } from "../worker/task_pipeline.js";
+import { availabilityWriter, publishAvailability } from "../worker/factory_availability.js";
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
 export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, STATS_TICK_MS = 10_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
@@ -60,7 +61,7 @@ const log = (...a) => console.log(new Date().toISOString(), ...a);
 export async function openEnv(env = process.env, connect = postgres) {
   if (!env.PG_URL) throw new Error("PG_URL is required");
   const clients = [];
-  let writeSnapshot;
+  let writeSnapshot,writeAvailability;
   const db = (url, background = false, stage = null, max = 1, signal = false) => {
     // PG_SOCKET (a directory) reaches Postgres over its unix socket, as the
     // unit does: peer authentication, no password on the machine.
@@ -71,6 +72,7 @@ export async function openEnv(env = process.env, connect = postgres) {
     const c = postgresClient(connect(url, { ...POSTGRES_OPTIONS, max, idle_timeout: 0, connection, onnotice: () => {},
       ...(env.PG_SOCKET ? { host: env.PG_SOCKET } : {}) }));
     clients.push(c);
+    if(signal)writeAvailability=availabilityWriter(c);
     if(!background&&!stage&&!signal&&!writeSnapshot&&url===env.PG_URL)writeSnapshot=async(statement,allowed)=>{
       const stopped=new Error('statistics stopped or paused');
       try{return await c.transaction(async tx=>{
@@ -102,7 +104,7 @@ export async function openEnv(env = process.env, connect = postgres) {
     clients.push({end:async()=>{await handle?.unlisten();await sql.end({timeout:5});}});
     handle=await sql.listen("wfsim_task_pipeline",wake);
   };
-  return {env:out,signalEnv,backgroundEnv,stageEnvs,writeSnapshot,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
+  return {env:out,signalEnv,backgroundEnv,stageEnvs,writeSnapshot,writeAvailability,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
 }
 
 /// THE RELEASE SERVED NOW, read through the worker's own `servedRelease` (a
@@ -115,7 +117,7 @@ async function served() {
 /// check; `put` (one object to R2) and `readEdge` (the signal as the CDN serves it) for R2 and the edge.
 export async function run({ once = false, opened = null, servedNow = served, target = signalTarget(),
   put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge } = {}) {
-  const { env, signalEnv = env, backgroundEnv = env, writeSnapshot, stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
+  const { env, signalEnv = env, backgroundEnv = env, writeSnapshot, writeAvailability, stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
   let stopping = false, ownershipLost = false, stopRun;
   let owner;
   try {
@@ -143,6 +145,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   // Only the signal clock and wave probe share this writer.
   const writeSignal = async (snap) => {
     if(stopping)return null;
+    return publishAvailability(signalEnv.LIBRARY,snap,{write:writeAvailability,allowed:()=>!stopping,publish:async()=>{
     if (!target) {
       if (!unconfiguredSaid) { unconfiguredSaid = true; await findingsTick(signalEnv.LIBRARY, "signal_unconfigured", () => ({ at: snap.at })); }
       return null;
@@ -152,6 +155,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     await put(target, { key: SIGNAL_KEY, body: JSON.stringify(body), contentType: "application/json", cacheControl: SIGNAL_CACHE });
     written.open = body.open > 0; written.urgent = body.urgent > 0;
     return body;
+    }});
   };
   // EVERY TICK ON ITS OWN CLOCK, and one that throws only logs: a bad minute of
   // the fair table must not stop the heartbeat.

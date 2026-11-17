@@ -1612,6 +1612,16 @@ deadlines, leases and prior answers with the eligible head.
 
 ## `check_settler`
 
+`check_factory_availability.mjs` checks the independent findings-row cache,
+unchanged complete-statistics clock, original fallback, pack ceiling, invalid
+JSON and numbers, expiry, future clocks, current-cut invalidation and delayed
+writes. Real transactions roll back owner stops at every write boundary.
+Independent R2/cache failures and the actual daemon writer preserve the other
+path without adding a pool. The previous `sync.sql` supplied through
+`WFSIM_AVAILABILITY_SYNC_SQL` must fail the paused-statistics cache assertion;
+removing the final stop or epoch guard must fail their assertions.
+`--sql` emits only `factory_open` from its authoritative definition in `sync.sql`.
+
 Plain node on PGlite: the settler in shadow (`worker/settler.js`,
 `scripts/factoryd.mjs`, docs/BOARD.md §"The settler"). Its fair table is the
 worker's `tableOf` and reads back from `fair_shares` to the last digit; a target
