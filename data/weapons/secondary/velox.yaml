@@ -21,6 +21,7 @@ riven_family: Velox
 traits: [tenno]
 introduced: "28"
 internal_name: /Lotus/Weapons/Tenno/Pistols/TnOdaliskSmg/TnOdaliskSmgPistol
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 434

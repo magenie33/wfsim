@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: naramon
 introduced: "Update 30.7"
 internal_name: /Lotus/Weapons/Grineer/Melee/GrnGhoulSaw/GrnGhoulSawPlayer
+weakness_bonus: 0.0
 traits: [grineer]
 
 ammo_max: ~

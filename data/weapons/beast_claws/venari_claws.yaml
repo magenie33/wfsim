@@ -13,6 +13,7 @@ mastery_rank: 0
 max_rank: 30
 polarities: []
 internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/VenariPetWeapon
+weakness_bonus: 0.0
 co_behavior: additive_with_base_damage
 attack:
   trigger: melee

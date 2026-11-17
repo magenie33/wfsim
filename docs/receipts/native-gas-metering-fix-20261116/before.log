@@ -1,0 +1,17 @@
+every item on a fight's path is metered
+  FAIL  467 top-level items carry #[wfsim_gas_macro::metered]   engine/src/rules/perks/secondary_irradiate/tests.rs:7: fn start<C>(state: &mut SecondaryIrradiate, listener: &mut L
+        engine/src/rules/perks/secondary_irradiate/tests.rs:11: fn add(state: &mut SecondaryIrradiate, listener: &Listener,
+        engine/src/rules/perks/secondary_irradiate/tests.rs:16: fn merged_and_separate_notifications_pay_the_same_count_once
+        engine/src/rules/perks/secondary_irradiate/tests.rs:39: fn activation_preserves_collected_hits_and_resets_shared_cha
+        engine/src/rules/perks/secondary_irradiate/tests.rs:55: fn activation_hit_filter_does_not_restrict_installed_collect
+        engine/src/rules/perks/secondary_irradiate/tests.rs:75: fn low_radiation_clears_only_its_victim_and_preserves_charge
+        engine/src/rules/perks/secondary_irradiate/tests.rs:88: fn source_filters_and_supplied_type_relation_are_independent
+        engine/src/rules/perks/secondary_irradiate/tests.rs:106: fn invalid_context_returns_before_query_or_consume() {
+        engine/src/rules/perks/secondary_irradiate/tests.rs:123: fn keyed_victim_listener_services_separate_owners() {
+        engine/src/rules/perks/secondary_irradiate.rs:15: impl Source {
+  ok   every macro_rules! body that loops is a metered_expr!
+  ok   no production code calls the platform's maths, only engine/src/rules/math.rs
+native and wasm count the same
+  --   not run: give native=<bin> pkg=<dir>, or build
+
+1 failed

@@ -1,0 +1,1932 @@
+{
+  "schema": 1,
+  "batch": "20261111T063217Z-coda-bubonico-spool-client-only",
+  "manifest_sha256": "285234fac1d5c352dff6a479a34d91ba92d075bf3e4bf4f0a23f62f9e82ab27d",
+  "client_build": "2026.10.28.09.54",
+  "source_members": [
+    {
+      "archive": "client-evidence.zip",
+      "path": "metadata.json",
+      "bytes": 106038,
+      "sha256": "e5ac40660c718cfc24a8ffaa8a1c625cdfecd98cd67d04d17e15974762f65472"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-constructor--00.asm.txt",
+      "bytes": 937,
+      "sha256": "b6b4e87240d9e965369328af932370f3649a6361b411ceac5497b66005ace2fd"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-constructor--00.hex.txt",
+      "bytes": 142,
+      "sha256": "36a5a73b1175613ff8878ab03582eb34b65173f3d44660a6328eb77e41101cf5"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-fire-input-handler--00.asm.txt",
+      "bytes": 1960,
+      "sha256": "49d1ae3994966a1f1743c27efd13b4d5543b5b134ca836d0738e0850baee6085"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-fire-input-handler--00.hex.txt",
+      "bytes": 250,
+      "sha256": "a3252db74d0d79bc097133a6d5991ae5b040164fb1dc9cd50263ab57aad2815b"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-fire-iteration-update--00.asm.txt",
+      "bytes": 2235,
+      "sha256": "44b08f7930841608f2aa395820f9bc3cdd1dead4e2262d737a58147ce1fb8b13"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-fire-iteration-update--00.hex.txt",
+      "bytes": 272,
+      "sha256": "b11cdf0dfdbb4507f5f5406e15c34d058d53bb33d03aedb4cf2b59c3e2b5cb89"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-ready-handler--00.asm.txt",
+      "bytes": 816,
+      "sha256": "0715ec80f5995f7740b13476862b71cac4407215e995e9caa931d97108ea0e64"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-ready-handler--00.hex.txt",
+      "bytes": 88,
+      "sha256": "16bfa58093b3ab009a0e4e779ad5b738ecb846c66dd858c83aebb338b98c60c7"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-reflection--00.asm.txt",
+      "bytes": 2131,
+      "sha256": "107b5d2873021149cb7fcef830caa8be299396b69697b9e27983eb67c4f124d5"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-reflection--00.hex.txt",
+      "bytes": 262,
+      "sha256": "44c68738c68acfbd5629b342f60ec90223a618362879c2b1568eaa2b44b45b0f"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-reflection--01.asm.txt",
+      "bytes": 1236,
+      "sha256": "23ce5cbe51806eb7b175737d6bd44e761500fb039916801c89ae68b47c29b128"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-reflection--01.hex.txt",
+      "bytes": 160,
+      "sha256": "fda6983da519fdf231ee0d38697f00c6f25ad29f668ab7394c5590577c6bb2d5"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-reflection--02.asm.txt",
+      "bytes": 409,
+      "sha256": "7ff14ae508d9e2fbcd670e568655565de26b3122139aadd4a51727fc2b667980"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-reflection--02.hex.txt",
+      "bytes": 46,
+      "sha256": "7807bd301c28631a4f8a0970e44e592f63bc03d7d56667d0e31c2d3bb8e4baeb"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-state-transition--00.asm.txt",
+      "bytes": 1292,
+      "sha256": "63147c98af40fa5563083b0c83aaed55c0dd8554fb149634ae0ec10262469268"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-burst-state-transition--00.hex.txt",
+      "bytes": 144,
+      "sha256": "0ac5d59134879568515a19e2b6691a579c5c225e75f206ccd4c8919e8c5724f1"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-constructor--00.asm.txt",
+      "bytes": 1265,
+      "sha256": "5e07d6183aaed42724d69f3b65634106a8eae38da20a72ca6a940b0e80a925af"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-constructor--00.hex.txt",
+      "bytes": 186,
+      "sha256": "65c10b9ac8c48118044b343fcdb9f88632a8242b66fee0d1d24004f88bca6364"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-fire-input-handler--00.asm.txt",
+      "bytes": 5798,
+      "sha256": "bfeb2a3e0d004a37ab7d15ca2dee6e0847a69978bb1202b761417c7a537b585b"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-fire-input-handler--00.hex.txt",
+      "bytes": 628,
+      "sha256": "51cbc02c8ebbb612e7c9d80d7fd7fb98a9b35cee0d00b5c86217870e4965d000"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-normalized-progress--00.asm.txt",
+      "bytes": 1986,
+      "sha256": "ec575172c06a26b773e572d096fe87699b8c554f698c5b8d05c8ce347c11c33e"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-normalized-progress--00.hex.txt",
+      "bytes": 238,
+      "sha256": "3bac43c7b3ce7e50efb4aa20f6afbe509bea98796e360318dcbbc1a8e9953177"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-rate--00.asm.txt",
+      "bytes": 2616,
+      "sha256": "7a8b0c5eb6488ac60f0a93187714266e35673bca4f27ec2ca1b052bf7f9eb0b0"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-rate--00.hex.txt",
+      "bytes": 326,
+      "sha256": "dcf509191bbbc3f4ebe0cffc6c051c1e17fbcce4449815d8c54cfc4e994662a7"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-ready-handler--00.asm.txt",
+      "bytes": 2263,
+      "sha256": "58e78f042dc2c17aa454c2272a3d547a5482a55a0103459a8e24c0d0eda9cc61"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-ready-handler--00.hex.txt",
+      "bytes": 218,
+      "sha256": "791ebeb29d0e03b63234936aa5a197af26a59b01bb244d2a3eae74c3cefaeb2c"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-reflection--00.asm.txt",
+      "bytes": 3887,
+      "sha256": "86b1d026d6e17d590833fbb3123f0c582a70dc245deddcd15eb084828b3a112f"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-reflection--00.hex.txt",
+      "bytes": 514,
+      "sha256": "b544893d57974aae373519eb57cb85ea956fb52ed9401d5a07f2a6bd03a3e0e9"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-shot-counter-increment--00.asm.txt",
+      "bytes": 640,
+      "sha256": "2bf1103ff1f7998b5b57a9c62c13072020cfb0f7121e66c8ab935a2087c7f245"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-shot-counter-increment--00.hex.txt",
+      "bytes": 108,
+      "sha256": "645734124d6ede2863987720489ff4db521e79b857d03603c0079ed711af3ab4"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-change-wrapper--00.asm.txt",
+      "bytes": 4787,
+      "sha256": "fb01eb2e4c0aefd2cf640fc72d1859ed96250ff680dc931bd9a1907144d6ddc3"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-change-wrapper--00.hex.txt",
+      "bytes": 574,
+      "sha256": "abd42455ab6b2234859c91bfb5903f1b03f7aacd7f727bd737b44979d796da14"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--00.asm.txt",
+      "bytes": 179,
+      "sha256": "012be6c566e4b67a5c6b6b3dbfb6f34e2d239243195d0c50a0775b945fd0c828"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--00.hex.txt",
+      "bytes": 18,
+      "sha256": "57fba320ea6299dba6b8ea5581f7f4348c1b1b54b472a666051ea95094d28688"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--01.asm.txt",
+      "bytes": 141,
+      "sha256": "317ed36a9fdeb939403fb6e44c3db8801e3fd2efb850381bdb0e68cb4381edac"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--01.hex.txt",
+      "bytes": 16,
+      "sha256": "836f9ea485cd9705fa7fc8a9de5195f244756e03bb4bbfe5afd3bc0b6564f83a"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--02.asm.txt",
+      "bytes": 302,
+      "sha256": "a83a071498a13d36ea22df794cb977e6772ea34a566e3577322458f3c3d98514"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--02.hex.txt",
+      "bytes": 34,
+      "sha256": "f527ff5984443b6dfb0eae4f8fc63bd0f53b36fea20074515e67d42d4217028f"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--03.asm.txt",
+      "bytes": 3775,
+      "sha256": "ff615827ecee0364f30f559b73e6c639e7b7b4af43d358c6d243fe092ea7a11e"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--03.hex.txt",
+      "bytes": 478,
+      "sha256": "ea589b7b3b049f7ef0c84634fe0cb0a233d8b32d2be85d1c6e592d369e27b294"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--04.asm.txt",
+      "bytes": 8948,
+      "sha256": "e820d80d245e663f96498fa36cc0f5dc5a649e811ca9498173fa44f1b03a3adf"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--04.hex.txt",
+      "bytes": 1126,
+      "sha256": "04020b1c26605136d597469ab0fa65cbdb9b845264674c200611154189cc62e6"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--05.asm.txt",
+      "bytes": 668,
+      "sha256": "e535ba6a639967e00a12577fe9f1de009229442d108974820d80913a13482384"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--05.hex.txt",
+      "bytes": 66,
+      "sha256": "4a7cdba93963cc34bd048a4b5c795e2bc770d95ab0997b128c5ca5d7bd3238fc"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--06.asm.txt",
+      "bytes": 589,
+      "sha256": "74eff5cbb9663a23d5480962b778e776a14f884454555ef22fbdca11a4295ae8"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--06.hex.txt",
+      "bytes": 52,
+      "sha256": "debb5346a86f6980f725a9fb3f13516da1021b434c01afa24a4f8af404130447"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--07.asm.txt",
+      "bytes": 436,
+      "sha256": "be7c5f8dea5f8349d6950650cb81079f1b0ca2c5634da73e845a79729907d3a8"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--07.hex.txt",
+      "bytes": 42,
+      "sha256": "7c02d72e2f44440c5b4bcbe332365c411ef9da5883b8cc5e9356c376bd5cd98e"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--08.asm.txt",
+      "bytes": 264,
+      "sha256": "6ce1cc37a3ccd426891faf8828274e3ec2e2b22e00cd845ab03b458679457a1b"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--08.hex.txt",
+      "bytes": 32,
+      "sha256": "5ace0c20f8fe652b3044d9b96b16ab808b9af86ab66cc6a21482491976d4ff1d"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--09.asm.txt",
+      "bytes": 980,
+      "sha256": "edde213d83ebe3697177a464ae9725d056212554827bbbd55ed3463f747cf2b4"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--09.hex.txt",
+      "bytes": 108,
+      "sha256": "ad646003c843af5fdb454e406952f7e0e226de9dd847382211afdd1a10b5f9d0"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--10.asm.txt",
+      "bytes": 248,
+      "sha256": "976b566c31d82bbc88b62ef90baabff3311870921d51d2d19ef4cd101d24b816"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--10.hex.txt",
+      "bytes": 22,
+      "sha256": "224c5c97ec754fd2e46ddaedb98330a3c1649dbc817874e775e7216b8ff42d07"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--11.asm.txt",
+      "bytes": 1408,
+      "sha256": "90f2f4ccbdc026ac354916e8f8c3a110907df1f88e13863d6557c97dd2c23f03"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-state-transition-base--11.hex.txt",
+      "bytes": 246,
+      "sha256": "3a83256cf130a314347b65db69066a2a1e387e4153f35932c77d24e49fa53e6d"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-update-reset-and-decay--00.asm.txt",
+      "bytes": 611,
+      "sha256": "e465a837d1f0c267f79d985720c7134669847fd367b433c1dd35b52f3342e5bb"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-update-reset-and-decay--00.hex.txt",
+      "bytes": 80,
+      "sha256": "a8536460856b441dc76316e9cba01805de7ed2fbea49b3283ba85438300b76d5"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-update-reset-and-decay--01.asm.txt",
+      "bytes": 2087,
+      "sha256": "77f59f86d81552649aa4385b48db907f897eb2e297e0ce9123b1c16af81cb242"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-update-reset-and-decay--01.hex.txt",
+      "bytes": 238,
+      "sha256": "58273958fd4b3626ce059fb00f77ad2cba50c6daed2b248b711a758342c337c7"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-update-reset-and-decay--02.asm.txt",
+      "bytes": 3191,
+      "sha256": "2cf932eff72d1dacf7a3e0bff0d2951a0624f93db871de7c5427bcff5049dee2"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-update-reset-and-decay--02.hex.txt",
+      "bytes": 394,
+      "sha256": "e8045d124b7eab976153e19736fb5583ebab1127edaf4402c313622b4478bc76"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-update-reset-and-decay--03.asm.txt",
+      "bytes": 254,
+      "sha256": "49283861c35e9fb961210727ee539968bae2f2e6ae7347eca029e242001f837d"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/auto-update-reset-and-decay--03.hex.txt",
+      "bytes": 24,
+      "sha256": "9d3f025a3539a70a7ce585f8a49798fd05b20425c4467f0437c67559671fa51c"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/base-refire-interval--00.asm.txt",
+      "bytes": 745,
+      "sha256": "98549bf18f7d73a2f38dba4720fe260d21ec3321af7a575974bcc8c8f97c4610"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/base-refire-interval--00.hex.txt",
+      "bytes": 86,
+      "sha256": "05657479f162f30ceeae75db05c035f2d76522fff3f11e2d256d69f6b353794b"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/base-state-constructor--00.asm.txt",
+      "bytes": 4776,
+      "sha256": "ff1177ab669c045640042a5258aec6c652a77004fe857cf523d2e67ee41f298c"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/base-state-constructor--00.hex.txt",
+      "bytes": 738,
+      "sha256": "4e445cb617f4bcd15eda1adacdda29dd9e680aa143860f8b4279e78715d5e82d"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/base-state-duration--00.asm.txt",
+      "bytes": 9217,
+      "sha256": "3c47f8f093ba0c4ec3de628338cdaeb0df76f17219ebf76d25c576ebfae647e4"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/base-state-duration--00.hex.txt",
+      "bytes": 1146,
+      "sha256": "0559c8954b7ebfc5acde02152454879e2570b6dd922144d4068fdbefc0a1a2c9"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/base-state-duration--01.asm.txt",
+      "bytes": 846,
+      "sha256": "0b10b1aa75a5a2adc02e3c9ac5980ca6b554abe86f69c53f5d2d540d27e310e1"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/base-state-duration--01.hex.txt",
+      "bytes": 94,
+      "sha256": "0168ffafb8a315a8dda1410204d3edef2eed14a4a3275bc74e6b4ceed70245c7"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/base-state-duration--02.asm.txt",
+      "bytes": 771,
+      "sha256": "5af7615e7c1e6ddafd81b6cdb86327315864bba970e77b5418ea612ce987b797"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/base-state-duration--02.hex.txt",
+      "bytes": 94,
+      "sha256": "41c1c93a6209f293c7537897dd06a00933270260cef125fa526f472778f1b631"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/base-state-rpm-to-rps--00.asm.txt",
+      "bytes": 932,
+      "sha256": "775490beb0ff8f799c13b7c24c4703792acb7ccbbfcf0352ba9a1f6ac8382fb3"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/base-state-rpm-to-rps--00.hex.txt",
+      "bytes": 120,
+      "sha256": "0029cac04699f017c712daf62927d9a0cb4887c56b26f2d56dba397ed96c9b80"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-auxiliary-channel-update--00.asm.txt",
+      "bytes": 898,
+      "sha256": "e0c3aca5f24738431bd4e6fb0316f41a34db6106004f5374b968d06b8edb7282"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-auxiliary-channel-update--00.hex.txt",
+      "bytes": 108,
+      "sha256": "ecb9ecfcb75ef23627cfbe2fd16cced6392d2d75e23afe2d262ab986fb86b01e"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-auxiliary-channel-update--01.asm.txt",
+      "bytes": 11481,
+      "sha256": "135d6a83714d18a5b153dfd68db3a3f800950b41c1c1d99dc1388c46d868b181"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-auxiliary-channel-update--01.hex.txt",
+      "bytes": 1514,
+      "sha256": "cd8672335c51b818d6a6b9705a0143ad2e580290f1e4d72255aaa10c642bc101"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-auxiliary-channel-update--02.asm.txt",
+      "bytes": 417,
+      "sha256": "f45169711cfd9edc785e1febfa632e565c0f68aa26d9e62dd5784e8e53280a20"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-auxiliary-channel-update--02.hex.txt",
+      "bytes": 56,
+      "sha256": "13cd617de6ebde7cb533e89110e1149041f751d1e1921436ac334ec079fe9330"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-pre-update--00.asm.txt",
+      "bytes": 542,
+      "sha256": "bfe2a31a79d95f3d1e9ad9f5d37d63ddff8e8798af76b336a37eaa74cf329e9a"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-pre-update--00.hex.txt",
+      "bytes": 68,
+      "sha256": "59bedaba721a3ab3ade1c12cd9dd1f59a1391b1fc685aafb88e34c554975bff3"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-pre-update--01.asm.txt",
+      "bytes": 1244,
+      "sha256": "cefd258289c6ae8b6652820e0356549f59037bd2797c7be2e7a95843ebf76173"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-pre-update--01.hex.txt",
+      "bytes": 134,
+      "sha256": "daa8043af5ae845ef1bfbeaced5b8463f9513244951dc657e44c874ee3365d97"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-pre-update--02.asm.txt",
+      "bytes": 3156,
+      "sha256": "7eb6230ebac07b1f81f97fe7ae3001d14ea91bbd45bfab3007411b83d11d5385"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-pre-update--02.hex.txt",
+      "bytes": 410,
+      "sha256": "5afc98f9f3545fab00e3e06f75a9f564e5df9ddc05f0bbb5f9e78b2b489437d5"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-pre-update--03.asm.txt",
+      "bytes": 758,
+      "sha256": "343a15bb424371b0bc0d3beb8ec06658590b71521e0dba6d1601091e7c37ce62"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-pre-update--03.hex.txt",
+      "bytes": 108,
+      "sha256": "4447c06f0f1c22210be2ac7f808c23f76e93b76ea0cb8474601678cf5a2bfae7"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-pre-update--04.asm.txt",
+      "bytes": 171,
+      "sha256": "f10e1a7b1ad7c4e27d1dc3977e53980c159cd144e722148367854d0a4c99de9d"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-pre-update--04.hex.txt",
+      "bytes": 14,
+      "sha256": "436d20f15c417e8a387dd8aa2bd582f57d9c40cbe463b7862529a2bbd3668e31"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-update-with-dispatch-table--00.asm.txt",
+      "bytes": 36156,
+      "sha256": "ebb385ed23a5efdc4f0df793da46c0ab2970b1042cb4be024fd175bee92acdc5"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/common-update-with-dispatch-table--00.hex.txt",
+      "bytes": 3890,
+      "sha256": "821c65106f80a1a9a444f7e730584fe969d78f47198cef99877a690416f8d957"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/lotus-fire-input-wrapper--00.asm.txt",
+      "bytes": 319,
+      "sha256": "d891e509986b940cdb14255398c7ebf913ed9940a4d8a6f203ac45bd660d9cb6"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/lotus-fire-input-wrapper--00.hex.txt",
+      "bytes": 36,
+      "sha256": "2371344ed599e29362a4007729a7de60cc84cd326a89da2baa3e094ce51c04f3"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/lotus-weapon-constructor-prefix--00.asm.txt",
+      "bytes": 923,
+      "sha256": "836af7c4b7c9a2dbd6ed149f138f886764bc1c1fe17600fe30c18d350d68c48a"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/lotus-weapon-constructor-prefix--00.hex.txt",
+      "bytes": 118,
+      "sha256": "39f06fd8ffed8f37dee49cd48dfd40e8be30c763cd7dd38bd59daf3b6a46b188"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/refire-state-handler--00.asm.txt",
+      "bytes": 5525,
+      "sha256": "decbd8cdca7602e1dd000e693c55f038a2a204ea1a8d08326c216c2d05830347"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/refire-state-handler--00.hex.txt",
+      "bytes": 610,
+      "sha256": "9eb5623aa3a6ea864f1a3eff77a635ee8ea04b0a512ed77bd354a68ea8d640a3"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/refire-timer-gate--00.asm.txt",
+      "bytes": 934,
+      "sha256": "b6b9fa3f5b5b5c72db54d39c7f554e06e9431401cc48a0c2801f88388b68ccc9"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/refire-timer-gate--00.hex.txt",
+      "bytes": 102,
+      "sha256": "7bd5172c7660582bf34c507d4538c83119c268017ec8fdeed0172ec2f5ee4d82"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/refire-timer-gate--01.asm.txt",
+      "bytes": 3322,
+      "sha256": "d2fed80a4f73743da4c6faa9e365d5567bf6672810e3f1a3a1f943f33914f463"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/refire-timer-gate--01.hex.txt",
+      "bytes": 388,
+      "sha256": "366b267aa472bd1b26c8889140fa98f4536772c16541d04fe54fcb8d5863cc37"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/refire-timer-gate--02.asm.txt",
+      "bytes": 483,
+      "sha256": "2d01eac944dbd5e23db22bbad9400229734673884a18725263918fb118a08cf0"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/refire-timer-gate--02.hex.txt",
+      "bytes": 48,
+      "sha256": "19cb13280c004e275c0f9e1f24f7f74de288827efa0500d1eff5b6a342b468a5"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/shot-completion-refire-transition--00.asm.txt",
+      "bytes": 2665,
+      "sha256": "bcf7110c058a630bcdd2ee409daf23fcd47e672d43605a1256112056df97c7c1"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/shot-completion-refire-transition--00.hex.txt",
+      "bytes": 264,
+      "sha256": "3640252aefc849fe4564833dd858939b371b51e65cdbaa3f81ae350046a2369a"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/state-enum-constructor--00.asm.txt",
+      "bytes": 5993,
+      "sha256": "a400c83ad112a2ee954774d430d732859595cd28cbf908ba0cfb4581591bf57f"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/state-enum-constructor--00.hex.txt",
+      "bytes": 864,
+      "sha256": "22de39f541c1a150479b7bb3d08e895e342de7cffc9a95d8d6086b83f36c2cb8"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-fire-input-query--00.asm.txt",
+      "bytes": 5897,
+      "sha256": "95103ab5c08910831423b4d9602f8149c6f9e64474a9aae7205209d10cf614ed"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-fire-input-query--00.hex.txt",
+      "bytes": 656,
+      "sha256": "7eba333aa1de02b88b12e1eee80464ee3e6757a7df2d659c208f57019d6629bf"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-fire-or-refire-predicate--00.asm.txt",
+      "bytes": 547,
+      "sha256": "e00165ff35be456bb135dd32f2fa9662d7ceff02f973437f23c0922c7c8721e0"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-fire-or-refire-predicate--00.hex.txt",
+      "bytes": 44,
+      "sha256": "4c5b7d364852b268abbe2f67abe420faf75d3b58675120c8031506cdafbb86d2"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-set-state-prefix--00.asm.txt",
+      "bytes": 4617,
+      "sha256": "ca3c87672eb46ae91f0aa06a07f337f87c401c6e3e446d06f6e13e48b8e657b1"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-set-state-prefix--00.hex.txt",
+      "bytes": 562,
+      "sha256": "076749d7613ff905298f7605674264438d517b1bc10c5268dec8b982a63fdcdf"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-set-state-with-dispatch-table--00.asm.txt",
+      "bytes": 4617,
+      "sha256": "ca3c87672eb46ae91f0aa06a07f337f87c401c6e3e446d06f6e13e48b8e657b1"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-set-state-with-dispatch-table--00.hex.txt",
+      "bytes": 562,
+      "sha256": "076749d7613ff905298f7605674264438d517b1bc10c5268dec8b982a63fdcdf"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-set-state-with-dispatch-table--01.asm.txt",
+      "bytes": 31073,
+      "sha256": "bfb909e39f141bdc1e17ff066711bd647e6bf48303fa9648bcd21fb358b7ba7a"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-set-state-with-dispatch-table--01.hex.txt",
+      "bytes": 3586,
+      "sha256": "7a9714575414df119a3536efe8caba769bedd7fc1b7c9ae046e36814af0bd64d"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-state-getter--00.asm.txt",
+      "bytes": 133,
+      "sha256": "f3e6119f9a06295cfb1f9158a1f33d4ded327e33ab34b7b14f0f10912fc2f6a2"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-state-getter--00.hex.txt",
+      "bytes": 18,
+      "sha256": "c81216cf698663306533a100de50c3723a2a1ffd06cd157ee6a432cdf46e4dc4"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-state-timer-add--00.asm.txt",
+      "bytes": 217,
+      "sha256": "b657a5e4c84ca069a7e03bea47a9e02a42822e20dc19c0cd83733ef8f5fcd3f8"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-state-timer-add--00.hex.txt",
+      "bytes": 36,
+      "sha256": "80c9a818b85642d50c6fd6eef975349a87a1f15d45488ba50a291f51f113e5b9"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-state-timer-getter--00.asm.txt",
+      "bytes": 135,
+      "sha256": "3f055db244d9468632e37fa6f5fd8e91ff732d0546e99786ac56ddc3bcaa3fbe"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native/weapon-state-timer-getter--00.hex.txt",
+      "bytes": 20,
+      "sha256": "d20bfeeb55dc9a01581bbc281387b808834440227e0c06c2f57c094e695d7e4e"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native-bindings.json",
+      "bytes": 29725,
+      "sha256": "03893ad94f7653c0def342e4d518ff6c78181686817ca638934e763baaf366ec"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "native-replay.json",
+      "bytes": 327697,
+      "sha256": "e0c4026ee32816871e26faa2119979495c57fcc2df7a01c41da4a942e61593c7"
+    },
+    {
+      "archive": "client-evidence.zip",
+      "path": "outputs.json",
+      "bytes": 22116,
+      "sha256": "de5997d690e988dd681932fa555240b03981b8d7c31bda3d53769ff825e30209"
+    },
+    {
+      "archive": "source.zip",
+      "path": "AGENTS.md",
+      "bytes": 4931,
+      "sha256": "d1e646f259fa2712df5c76480908132ff1734449a40bc61ce24b9a35d17e6c74"
+    },
+    {
+      "archive": "source.zip",
+      "path": "docs/EXCHANGE.md",
+      "bytes": 3747,
+      "sha256": "110948e296347adb88f46a3e2372f59f6ee05365ccfef5cee9c8c1f35c7eb577"
+    },
+    {
+      "archive": "source.zip",
+      "path": "docs/OFFLINE-EXTRACTION.md",
+      "bytes": 3795,
+      "sha256": "ec20cc79fb257ee937970bd0181507d7b50483e6c0e9eca7d9c6738668b1cb30"
+    },
+    {
+      "archive": "source.zip",
+      "path": "docs/CLIENT-ONLY-QUERIES.md",
+      "bytes": 5715,
+      "sha256": "1a283e0d76c3c7e1a4c1a9ed4fec87c047bbb14ff3106bfbcd02ef096ef14de4"
+    },
+    {
+      "archive": "source.zip",
+      "path": "docs/CODA-BUBONICO-SPOOL.md",
+      "bytes": 6874,
+      "sha256": "734da25267f253ddbe6a331b636025aa534dd57754ebd165bc788d34bc558db1"
+    },
+    {
+      "archive": "source.zip",
+      "path": "scripts/audit_coda_bubonico_spool.py",
+      "bytes": 27551,
+      "sha256": "55a67230a7ed1eb5cf1dcdc3446f27fca5f14afcb746ea8ca575c66856b5bc62"
+    },
+    {
+      "archive": "source.zip",
+      "path": "scripts/publish_coda_bubonico_spool.py",
+      "bytes": 7884,
+      "sha256": "95afa765df3d316ba23a67a9705034ac0544e16aeeafad5ff6589bc64641890d"
+    },
+    {
+      "archive": "source.zip",
+      "path": "scripts/query_client.py",
+      "bytes": 8923,
+      "sha256": "8ecf31c15b3fabea29e9633247759e19dad9ebc23c61348e3e8440dd3c5bcb2e"
+    },
+    {
+      "archive": "source.zip",
+      "path": "scripts/read_dossier.py",
+      "bytes": 17514,
+      "sha256": "76e437561306c9e30d8994d9d8ef82bc01edfcca73a382f8fdbed1b43b6c2c53"
+    },
+    {
+      "archive": "source.zip",
+      "path": "scripts/native_evidence.py",
+      "bytes": 4826,
+      "sha256": "d358578981b15a06500dbce5597718712b4f37c7a2637345a554e1eec5d6475a"
+    },
+    {
+      "archive": "source.zip",
+      "path": "scripts/extract_client.py",
+      "bytes": 15829,
+      "sha256": "f9e25f463024ef5a96e7c70d9b6d383b769e24b4547814c4c54ab2aedb5528f8"
+    },
+    {
+      "archive": "source.zip",
+      "path": "scripts/trace_native_timing.py",
+      "bytes": 8942,
+      "sha256": "046664b51869d636afb1b7a60a6f6c89d4fa9f8622545c9342669a735c792b32"
+    },
+    {
+      "archive": "source.zip",
+      "path": "scripts/publish_batch.py",
+      "bytes": 19253,
+      "sha256": "31f3abe58b2f4ea9db8f1357ebd8b0d03292246a7d6abe6058be18673e5eb1e7"
+    },
+    {
+      "archive": "source.zip",
+      "path": "scripts/verify_exchange_batches.py",
+      "bytes": 3300,
+      "sha256": "869c09e840a6ccabcb89e3b6396ab9651f972f32c680ad3081d9254162be1b2a"
+    },
+    {
+      "archive": "source.zip",
+      "path": "reports/coda-bubonico-spool-2026-11-11.json",
+      "bytes": 18486,
+      "sha256": "0fe52cba5be6c2a65a278e03440f819a33327731aec9ed151bbe488a0ae71bc4"
+    }
+  ],
+  "declared_state_fields": [
+    {
+      "member": "Behaviors[0].state:Type",
+      "token": "/EE/Types/Game/WeaponAutomaticBurstStateBehavior"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.fireRate",
+      "token": "320"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.DoPreFire",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.ShareFireRateWithPrefire",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.SkipRefireOnEmpty",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.AnimWeaponType",
+      "token": "WEAPONTYPE_NORMAL"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.UseReloadTimeBetweenShots",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.OverheatTime",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.ContinuousFireRateAtten",
+      "token": "{0.30000001,1}"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.ContinuousMaxShots",
+      "token": "12"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.Overspin",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.SpindownTime",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.ReverseFireRateAtten",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.RechargeAtten",
+      "token": "1"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.InitialFireIterations",
+      "token": "7"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.MaximumFireIterations",
+      "token": "7"
+    },
+    {
+      "member": "Behaviors[0].state:WeaponAutomaticBurstStateBehavior.FireIterationMode",
+      "token": "INCREMENT"
+    },
+    {
+      "member": "Behaviors[1].state:Type",
+      "token": "/EE/Types/Game/WeaponBurstStateBehavior"
+    },
+    {
+      "member": "Behaviors[1].state:WeaponBurstStateBehavior.fireRate",
+      "token": "420"
+    },
+    {
+      "member": "Behaviors[1].state:WeaponBurstStateBehavior.DoPreFire",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[1].state:WeaponBurstStateBehavior.ShareFireRateWithPrefire",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[1].state:WeaponBurstStateBehavior.SkipRefireOnEmpty",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[1].state:WeaponBurstStateBehavior.AnimWeaponType",
+      "token": "WEAPONTYPE_NORMAL"
+    },
+    {
+      "member": "Behaviors[1].state:WeaponBurstStateBehavior.UseReloadTimeBetweenShots",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[1].state:WeaponBurstStateBehavior.OverheatTime",
+      "token": "0"
+    },
+    {
+      "member": "Behaviors[1].state:WeaponBurstStateBehavior.NumShots",
+      "token": "3"
+    },
+    {
+      "member": "Behaviors[1].state:WeaponBurstStateBehavior.BurstDelay",
+      "token": "0.23"
+    }
+  ],
+  "scope": "Ordinary zero-duration automatic FIRE entry and sampled refire rate; emission/frame scheduling and full battery/holster lifecycle remain separate",
+  "successive_fire_entries": [
+    {
+      "fire_entry_ordinal": 1,
+      "entry": {
+        "state": 1,
+        "counter": 0,
+        "entry_flag": 1,
+        "state_timer": 0.0
+      },
+      "rate_at_entry_per_second_float32": 1.6000001430511475,
+      "first_update": {
+        "state": 1,
+        "counter": 1,
+        "entry_flag": 0,
+        "state_timer": 0.0
+      },
+      "second_update": {
+        "state": 7,
+        "counter": 2,
+        "entry_flag": 0,
+        "state_timer": 0.44999998807907104
+      }
+    },
+    {
+      "fire_entry_ordinal": 2,
+      "entry": {
+        "state": 1,
+        "counter": 2,
+        "entry_flag": 1,
+        "state_timer": 0.0
+      },
+      "rate_at_entry_per_second_float32": 2.222222328186035,
+      "first_update": {
+        "state": 1,
+        "counter": 3,
+        "entry_flag": 0,
+        "state_timer": 0.0
+      },
+      "second_update": {
+        "state": 7,
+        "counter": 4,
+        "entry_flag": 0,
+        "state_timer": 0.3515624701976776
+      }
+    },
+    {
+      "fire_entry_ordinal": 3,
+      "entry": {
+        "state": 1,
+        "counter": 4,
+        "entry_flag": 1,
+        "state_timer": 0.0
+      },
+      "rate_at_entry_per_second_float32": 2.844444751739502,
+      "first_update": {
+        "state": 1,
+        "counter": 5,
+        "entry_flag": 0,
+        "state_timer": 0.0
+      },
+      "second_update": {
+        "state": 7,
+        "counter": 6,
+        "entry_flag": 0,
+        "state_timer": 0.2884615361690521
+      }
+    },
+    {
+      "fire_entry_ordinal": 4,
+      "entry": {
+        "state": 1,
+        "counter": 6,
+        "entry_flag": 1,
+        "state_timer": 0.0
+      },
+      "rate_at_entry_per_second_float32": 3.4666666984558105,
+      "first_update": {
+        "state": 1,
+        "counter": 7,
+        "entry_flag": 0,
+        "state_timer": 0.0
+      },
+      "second_update": {
+        "state": 7,
+        "counter": 8,
+        "entry_flag": 0,
+        "state_timer": 0.2445652037858963
+      }
+    },
+    {
+      "fire_entry_ordinal": 5,
+      "entry": {
+        "state": 1,
+        "counter": 8,
+        "entry_flag": 1,
+        "state_timer": 0.0
+      },
+      "rate_at_entry_per_second_float32": 4.088889122009277,
+      "first_update": {
+        "state": 1,
+        "counter": 9,
+        "entry_flag": 0,
+        "state_timer": 0.0
+      },
+      "second_update": {
+        "state": 7,
+        "counter": 10,
+        "entry_flag": 0,
+        "state_timer": 0.21226415038108826
+      }
+    },
+    {
+      "fire_entry_ordinal": 6,
+      "entry": {
+        "state": 1,
+        "counter": 10,
+        "entry_flag": 1,
+        "state_timer": 0.0
+      },
+      "rate_at_entry_per_second_float32": 4.711111068725586,
+      "first_update": {
+        "state": 1,
+        "counter": 11,
+        "entry_flag": 0,
+        "state_timer": 0.0
+      },
+      "second_update": {
+        "state": 7,
+        "counter": 12,
+        "entry_flag": 0,
+        "state_timer": 0.1875
+      }
+    },
+    {
+      "fire_entry_ordinal": 7,
+      "entry": {
+        "state": 1,
+        "counter": 12,
+        "entry_flag": 1,
+        "state_timer": 0.0
+      },
+      "rate_at_entry_per_second_float32": 5.333333492279053,
+      "first_update": {
+        "state": 1,
+        "counter": 12,
+        "entry_flag": 0,
+        "state_timer": 0.0
+      },
+      "second_update": {
+        "state": 7,
+        "counter": 12,
+        "entry_flag": 0,
+        "state_timer": 0.1875
+      }
+    },
+    {
+      "fire_entry_ordinal": 8,
+      "entry": {
+        "state": 1,
+        "counter": 12,
+        "entry_flag": 1,
+        "state_timer": 0.0
+      },
+      "rate_at_entry_per_second_float32": 5.333333492279053,
+      "first_update": {
+        "state": 1,
+        "counter": 12,
+        "entry_flag": 0,
+        "state_timer": 0.0
+      },
+      "second_update": {
+        "state": 7,
+        "counter": 12,
+        "entry_flag": 0,
+        "state_timer": 0.1875
+      }
+    }
+  ],
+  "rate_vectors": [
+    {
+      "count": 0,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 0.0,
+      "rate_per_second_float32": 0.8000000715255737,
+      "rate_bits_le": "cecc4c3f",
+      "interval_seconds_float32": 1.2499998807907104
+    },
+    {
+      "count": 0,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 0.0,
+      "rate_per_second_float32": 1.6000001430511475,
+      "rate_bits_le": "cecccc3f",
+      "interval_seconds_float32": 0.6249999403953552
+    },
+    {
+      "count": 0,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 0.0,
+      "rate_per_second_float32": 3.200000286102295,
+      "rate_bits_le": "cecc4c40",
+      "interval_seconds_float32": 0.3124999701976776
+    },
+    {
+      "count": 0,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 0.0,
+      "rate_per_second_float32": 5.000000476837158,
+      "rate_bits_le": "0100a040",
+      "interval_seconds_float32": 0.19999998807907104
+    },
+    {
+      "count": 1,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 0.0833333358168602,
+      "rate_per_second_float32": 0.9555556178092957,
+      "rate_bits_le": "4b9f743f",
+      "interval_seconds_float32": 1.0465115308761597
+    },
+    {
+      "count": 1,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 0.0833333358168602,
+      "rate_per_second_float32": 1.9111112356185913,
+      "rate_bits_le": "4b9ff43f",
+      "interval_seconds_float32": 0.5232557654380798
+    },
+    {
+      "count": 1,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 0.0833333358168602,
+      "rate_per_second_float32": 3.8222224712371826,
+      "rate_bits_le": "4b9f7440",
+      "interval_seconds_float32": 0.2616278827190399
+    },
+    {
+      "count": 1,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 0.0833333358168602,
+      "rate_per_second_float32": 5.972222805023193,
+      "rate_bits_le": "731cbf40",
+      "interval_seconds_float32": 0.16744184494018555
+    },
+    {
+      "count": 2,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 0.1666666716337204,
+      "rate_per_second_float32": 1.1111111640930176,
+      "rate_bits_le": "e4388e3f",
+      "interval_seconds_float32": 0.8999999761581421
+    },
+    {
+      "count": 2,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 0.1666666716337204,
+      "rate_per_second_float32": 2.222222328186035,
+      "rate_bits_le": "e4380e40",
+      "interval_seconds_float32": 0.44999998807907104
+    },
+    {
+      "count": 2,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 0.1666666716337204,
+      "rate_per_second_float32": 4.44444465637207,
+      "rate_bits_le": "e4388e40",
+      "interval_seconds_float32": 0.22499999403953552
+    },
+    {
+      "count": 2,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 0.1666666716337204,
+      "rate_per_second_float32": 6.9444451332092285,
+      "rate_bits_le": "e538de40",
+      "interval_seconds_float32": 0.14399997889995575
+    },
+    {
+      "count": 3,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 0.25,
+      "rate_per_second_float32": 1.2666667699813843,
+      "rate_bits_le": "2322a23f",
+      "interval_seconds_float32": 0.7894735932350159
+    },
+    {
+      "count": 3,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 0.25,
+      "rate_per_second_float32": 2.5333335399627686,
+      "rate_bits_le": "23222240",
+      "interval_seconds_float32": 0.39473679661750793
+    },
+    {
+      "count": 3,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 0.25,
+      "rate_per_second_float32": 5.066667079925537,
+      "rate_bits_le": "2322a240",
+      "interval_seconds_float32": 0.19736839830875397
+    },
+    {
+      "count": 3,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 0.25,
+      "rate_per_second_float32": 7.916667461395264,
+      "rate_bits_le": "5755fd40",
+      "interval_seconds_float32": 0.12631577253341675
+    },
+    {
+      "count": 4,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 0.3333333432674408,
+      "rate_per_second_float32": 1.422222375869751,
+      "rate_bits_le": "620bb63f",
+      "interval_seconds_float32": 0.7031249403953552
+    },
+    {
+      "count": 4,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 0.3333333432674408,
+      "rate_per_second_float32": 2.844444751739502,
+      "rate_bits_le": "620b3640",
+      "interval_seconds_float32": 0.3515624701976776
+    },
+    {
+      "count": 4,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 0.3333333432674408,
+      "rate_per_second_float32": 5.688889503479004,
+      "rate_bits_le": "620bb640",
+      "interval_seconds_float32": 0.1757812350988388
+    },
+    {
+      "count": 4,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 0.3333333432674408,
+      "rate_per_second_float32": 8.888890266418457,
+      "rate_bits_le": "e5380e41",
+      "interval_seconds_float32": 0.11249998211860657
+    },
+    {
+      "count": 5,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 0.4166666567325592,
+      "rate_per_second_float32": 1.5777778625488281,
+      "rate_bits_le": "a0f4c93f",
+      "interval_seconds_float32": 0.6338027715682983
+    },
+    {
+      "count": 5,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 0.4166666567325592,
+      "rate_per_second_float32": 3.1555557250976562,
+      "rate_bits_le": "a0f44940",
+      "interval_seconds_float32": 0.31690138578414917
+    },
+    {
+      "count": 5,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 0.4166666567325592,
+      "rate_per_second_float32": 6.3111114501953125,
+      "rate_bits_le": "a0f4c940",
+      "interval_seconds_float32": 0.15845069289207458
+    },
+    {
+      "count": 5,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 0.4166666567325592,
+      "rate_per_second_float32": 9.861112594604492,
+      "rate_bits_le": "1ec71d41",
+      "interval_seconds_float32": 0.10140843689441681
+    },
+    {
+      "count": 6,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 0.5,
+      "rate_per_second_float32": 1.7333333492279053,
+      "rate_bits_le": "dedddd3f",
+      "interval_seconds_float32": 0.5769230723381042
+    },
+    {
+      "count": 6,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 0.5,
+      "rate_per_second_float32": 3.4666666984558105,
+      "rate_bits_le": "dedd5d40",
+      "interval_seconds_float32": 0.2884615361690521
+    },
+    {
+      "count": 6,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 0.5,
+      "rate_per_second_float32": 6.933333396911621,
+      "rate_bits_le": "dedddd40",
+      "interval_seconds_float32": 0.14423076808452606
+    },
+    {
+      "count": 6,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 0.5,
+      "rate_per_second_float32": 10.833333969116211,
+      "rate_bits_le": "56552d41",
+      "interval_seconds_float32": 0.0923076868057251
+    },
+    {
+      "count": 7,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 0.5833333134651184,
+      "rate_per_second_float32": 1.8888888359069824,
+      "rate_bits_le": "1cc7f13f",
+      "interval_seconds_float32": 0.529411792755127
+    },
+    {
+      "count": 7,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 0.5833333134651184,
+      "rate_per_second_float32": 3.777777671813965,
+      "rate_bits_le": "1cc77140",
+      "interval_seconds_float32": 0.2647058963775635
+    },
+    {
+      "count": 7,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 0.5833333134651184,
+      "rate_per_second_float32": 7.55555534362793,
+      "rate_bits_le": "1cc7f140",
+      "interval_seconds_float32": 0.13235294818878174
+    },
+    {
+      "count": 7,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 0.5833333134651184,
+      "rate_per_second_float32": 11.805556297302246,
+      "rate_bits_le": "8fe33c41",
+      "interval_seconds_float32": 0.08470587432384491
+    },
+    {
+      "count": 8,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 0.6666666865348816,
+      "rate_per_second_float32": 2.0444445610046387,
+      "rate_bits_le": "2ed80240",
+      "interval_seconds_float32": 0.4891304075717926
+    },
+    {
+      "count": 8,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 0.6666666865348816,
+      "rate_per_second_float32": 4.088889122009277,
+      "rate_bits_le": "2ed88240",
+      "interval_seconds_float32": 0.2445652037858963
+    },
+    {
+      "count": 8,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 0.6666666865348816,
+      "rate_per_second_float32": 8.177778244018555,
+      "rate_bits_le": "2ed80241",
+      "interval_seconds_float32": 0.12228260189294815
+    },
+    {
+      "count": 8,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 0.6666666865348816,
+      "rate_per_second_float32": 12.777778625488281,
+      "rate_bits_le": "c8714c41",
+      "interval_seconds_float32": 0.0782608613371849
+    },
+    {
+      "count": 9,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 0.75,
+      "rate_per_second_float32": 2.200000047683716,
+      "rate_bits_le": "cdcc0c40",
+      "interval_seconds_float32": 0.45454543828964233
+    },
+    {
+      "count": 9,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 0.75,
+      "rate_per_second_float32": 4.400000095367432,
+      "rate_bits_le": "cdcc8c40",
+      "interval_seconds_float32": 0.22727271914482117
+    },
+    {
+      "count": 9,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 0.75,
+      "rate_per_second_float32": 8.800000190734863,
+      "rate_bits_le": "cdcc0c41",
+      "interval_seconds_float32": 0.11363635957241058
+    },
+    {
+      "count": 9,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 0.75,
+      "rate_per_second_float32": 13.750000953674316,
+      "rate_bits_le": "01005c41",
+      "interval_seconds_float32": 0.072727270424366
+    },
+    {
+      "count": 10,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 0.8333333134651184,
+      "rate_per_second_float32": 2.355555534362793,
+      "rate_bits_le": "6cc11640",
+      "interval_seconds_float32": 0.4245283007621765
+    },
+    {
+      "count": 10,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 0.8333333134651184,
+      "rate_per_second_float32": 4.711111068725586,
+      "rate_bits_le": "6cc19640",
+      "interval_seconds_float32": 0.21226415038108826
+    },
+    {
+      "count": 10,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 0.8333333134651184,
+      "rate_per_second_float32": 9.422222137451172,
+      "rate_bits_le": "6cc11641",
+      "interval_seconds_float32": 0.10613207519054413
+    },
+    {
+      "count": 10,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 0.8333333134651184,
+      "rate_per_second_float32": 14.722223281860352,
+      "rate_bits_le": "3a8e6b41",
+      "interval_seconds_float32": 0.06792452186346054
+    },
+    {
+      "count": 11,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 0.9166666865348816,
+      "rate_per_second_float32": 2.511111259460449,
+      "rate_bits_le": "0cb62040",
+      "interval_seconds_float32": 0.39823007583618164
+    },
+    {
+      "count": 11,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 0.9166666865348816,
+      "rate_per_second_float32": 5.022222518920898,
+      "rate_bits_le": "0cb6a040",
+      "interval_seconds_float32": 0.19911503791809082
+    },
+    {
+      "count": 11,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 0.9166666865348816,
+      "rate_per_second_float32": 10.044445037841797,
+      "rate_bits_le": "0cb62041",
+      "interval_seconds_float32": 0.09955751895904541
+    },
+    {
+      "count": 11,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 0.9166666865348816,
+      "rate_per_second_float32": 15.694445610046387,
+      "rate_bits_le": "731c7b41",
+      "interval_seconds_float32": 0.06371680647134781
+    },
+    {
+      "count": 12,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 2.6666667461395264,
+      "rate_bits_le": "abaa2a40",
+      "interval_seconds_float32": 0.375
+    },
+    {
+      "count": 12,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 5.333333492279053,
+      "rate_bits_le": "abaaaa40",
+      "interval_seconds_float32": 0.1875
+    },
+    {
+      "count": 12,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 10.666666984558105,
+      "rate_bits_le": "abaa2a41",
+      "interval_seconds_float32": 0.09375
+    },
+    {
+      "count": 12,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 16.666667938232422,
+      "rate_bits_le": "56558541",
+      "interval_seconds_float32": 0.059999994933605194
+    },
+    {
+      "count": 13,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 2.6666667461395264,
+      "rate_bits_le": "abaa2a40",
+      "interval_seconds_float32": 0.375
+    },
+    {
+      "count": 13,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 5.333333492279053,
+      "rate_bits_le": "abaaaa40",
+      "interval_seconds_float32": 0.1875
+    },
+    {
+      "count": 13,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 10.666666984558105,
+      "rate_bits_le": "abaa2a41",
+      "interval_seconds_float32": 0.09375
+    },
+    {
+      "count": 13,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 16.666667938232422,
+      "rate_bits_le": "56558541",
+      "interval_seconds_float32": 0.059999994933605194
+    },
+    {
+      "count": 14,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 2.6666667461395264,
+      "rate_bits_le": "abaa2a40",
+      "interval_seconds_float32": 0.375
+    },
+    {
+      "count": 14,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 5.333333492279053,
+      "rate_bits_le": "abaaaa40",
+      "interval_seconds_float32": 0.1875
+    },
+    {
+      "count": 14,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 10.666666984558105,
+      "rate_bits_le": "abaa2a41",
+      "interval_seconds_float32": 0.09375
+    },
+    {
+      "count": 14,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 16.666667938232422,
+      "rate_bits_le": "56558541",
+      "interval_seconds_float32": 0.059999994933605194
+    },
+    {
+      "count": 15,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 2.6666667461395264,
+      "rate_bits_le": "abaa2a40",
+      "interval_seconds_float32": 0.375
+    },
+    {
+      "count": 15,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 5.333333492279053,
+      "rate_bits_le": "abaaaa40",
+      "interval_seconds_float32": 0.1875
+    },
+    {
+      "count": 15,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 10.666666984558105,
+      "rate_bits_le": "abaa2a41",
+      "interval_seconds_float32": 0.09375
+    },
+    {
+      "count": 15,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 16.666667938232422,
+      "rate_bits_le": "56558541",
+      "interval_seconds_float32": 0.059999994933605194
+    },
+    {
+      "count": 16,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 2.6666667461395264,
+      "rate_bits_le": "abaa2a40",
+      "interval_seconds_float32": 0.375
+    },
+    {
+      "count": 16,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 5.333333492279053,
+      "rate_bits_le": "abaaaa40",
+      "interval_seconds_float32": 0.1875
+    },
+    {
+      "count": 16,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 10.666666984558105,
+      "rate_bits_le": "abaa2a41",
+      "interval_seconds_float32": 0.09375
+    },
+    {
+      "count": 16,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 16.666667938232422,
+      "rate_bits_le": "56558541",
+      "interval_seconds_float32": 0.059999994933605194
+    },
+    {
+      "count": 17,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 2.6666667461395264,
+      "rate_bits_le": "abaa2a40",
+      "interval_seconds_float32": 0.375
+    },
+    {
+      "count": 17,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 5.333333492279053,
+      "rate_bits_le": "abaaaa40",
+      "interval_seconds_float32": 0.1875
+    },
+    {
+      "count": 17,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 10.666666984558105,
+      "rate_bits_le": "abaa2a41",
+      "interval_seconds_float32": 0.09375
+    },
+    {
+      "count": 17,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 16.666667938232422,
+      "rate_bits_le": "56558541",
+      "interval_seconds_float32": 0.059999994933605194
+    },
+    {
+      "count": 18,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 2.6666667461395264,
+      "rate_bits_le": "abaa2a40",
+      "interval_seconds_float32": 0.375
+    },
+    {
+      "count": 18,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 5.333333492279053,
+      "rate_bits_le": "abaaaa40",
+      "interval_seconds_float32": 0.1875
+    },
+    {
+      "count": 18,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 10.666666984558105,
+      "rate_bits_le": "abaa2a41",
+      "interval_seconds_float32": 0.09375
+    },
+    {
+      "count": 18,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 16.666667938232422,
+      "rate_bits_le": "56558541",
+      "interval_seconds_float32": 0.059999994933605194
+    },
+    {
+      "count": 19,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 2.6666667461395264,
+      "rate_bits_le": "abaa2a40",
+      "interval_seconds_float32": 0.375
+    },
+    {
+      "count": 19,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 5.333333492279053,
+      "rate_bits_le": "abaaaa40",
+      "interval_seconds_float32": 0.1875
+    },
+    {
+      "count": 19,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 10.666666984558105,
+      "rate_bits_le": "abaa2a41",
+      "interval_seconds_float32": 0.09375
+    },
+    {
+      "count": 19,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 16.666667938232422,
+      "rate_bits_le": "56558541",
+      "interval_seconds_float32": 0.059999994933605194
+    },
+    {
+      "count": 20,
+      "supplied_modified_rpm": 160,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 2.6666667461395264,
+      "rate_bits_le": "abaa2a40",
+      "interval_seconds_float32": 0.375
+    },
+    {
+      "count": 20,
+      "supplied_modified_rpm": 320,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 5.333333492279053,
+      "rate_bits_le": "abaaaa40",
+      "interval_seconds_float32": 0.1875
+    },
+    {
+      "count": 20,
+      "supplied_modified_rpm": 640,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 10.666666984558105,
+      "rate_bits_le": "abaa2a41",
+      "interval_seconds_float32": 0.09375
+    },
+    {
+      "count": 20,
+      "supplied_modified_rpm": 1000,
+      "progress_float32": 1.0,
+      "rate_per_second_float32": 16.666667938232422,
+      "rate_bits_le": "56558541",
+      "interval_seconds_float32": 0.059999994933605194
+    }
+  ],
+  "increment_vectors": [
+    {
+      "before": 0,
+      "after": 1,
+      "decay_fraction_after": 0.0
+    },
+    {
+      "before": 1,
+      "after": 2,
+      "decay_fraction_after": 0.0
+    },
+    {
+      "before": 6,
+      "after": 7,
+      "decay_fraction_after": 0.0
+    },
+    {
+      "before": 11,
+      "after": 12,
+      "decay_fraction_after": 0.0
+    },
+    {
+      "before": 12,
+      "after": 12,
+      "decay_fraction_after": 0.0
+    },
+    {
+      "before": 13,
+      "after": 12,
+      "decay_fraction_after": 0.0
+    },
+    {
+      "before": 100,
+      "after": 12,
+      "decay_fraction_after": 0.0
+    }
+  ],
+  "fixed_fire_iteration_vectors": [
+    {
+      "count": 0,
+      "fire_iterations": 7
+    },
+    {
+      "count": 1,
+      "fire_iterations": 7
+    },
+    {
+      "count": 2,
+      "fire_iterations": 7
+    },
+    {
+      "count": 3,
+      "fire_iterations": 7
+    },
+    {
+      "count": 4,
+      "fire_iterations": 7
+    },
+    {
+      "count": 5,
+      "fire_iterations": 7
+    },
+    {
+      "count": 6,
+      "fire_iterations": 7
+    },
+    {
+      "count": 7,
+      "fire_iterations": 7
+    },
+    {
+      "count": 8,
+      "fire_iterations": 7
+    },
+    {
+      "count": 9,
+      "fire_iterations": 7
+    },
+    {
+      "count": 10,
+      "fire_iterations": 7
+    },
+    {
+      "count": 11,
+      "fire_iterations": 7
+    },
+    {
+      "count": 12,
+      "fire_iterations": 7
+    }
+  ]
+}

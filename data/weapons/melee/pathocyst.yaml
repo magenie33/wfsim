@@ -19,6 +19,7 @@ polarities: [madurai, vazarin]
 stance_polarity: naramon
 introduced: "Update 25.7.7"
 internal_name: /Lotus/Weapons/Infested/Melee/InfBoomerang/InfBoomerangWeapon
+weakness_bonus: 0.0
 traits: [infested]
 
 ammo_max: ~

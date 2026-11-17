@@ -42,6 +42,7 @@ polarities: [madurai]
 stance_polarity: vazarin
 introduced: "Update: The Silver Grove 2.0"
 internal_name: /Lotus/Weapons/Syndicates/NewLoka/Melee/NLMagistar
+weakness_bonus: 0.0
 traits: [new_loka, syndicate]
 
 # NO AMMO AT ALL. A melee weapon has no magazine, no reserve and no reload, so

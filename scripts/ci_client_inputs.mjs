@@ -9,6 +9,7 @@ export const CLIENT_INPUTS = {
   'scripts/check_board_reviews.mjs': ['web/src/static/app/83-headless-card.js', 'web/src/static/app/87-headless.js'],
   'scripts/check_board_review_trigger.mjs': ['web/src/static/app/57-optimization-tasks.js', 'web/src/static/app/59-simulation-tasks.js', 'web/src/static/app/80-optimizer-preset.js'],
   'scripts/check_nona_results.mjs': ['data/i18n/zh/ui.yaml'],
+  'scripts/check_nona_help.mjs': ['data/i18n/zh/ui.yaml'],
 };
 export function clientSource(check) {
   if (!CLIENT_INPUTS[check]) throw Error('undeclared protocol client fixture: ' + check);

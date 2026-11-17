@@ -1,0 +1,67 @@
+import copy
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+root = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(root/'scripts'))
+from engine_compare import load_snapshot
+p = root/'target/n07a/handoff'
+def git(*args): return subprocess.check_output(['git',*args],cwd=root)
+base = '16002f6c3dea127464afcbdb1518041c93d28039'
+tip = '00367efa4e2562a3613db70ee5b4effb05c9cb25'
+chain = git('rev-list','--reverse',base+'..'+tip).decode().splitlines()
+production_prefixes = ('engine/','optimizer/','webapi/','wasm/','cli/','data/')
+commits = []
+for sha in chain:
+    paths = git('diff-tree','--no-commit-id','--name-only','-r',sha).decode().splitlines()
+    commits.append(dict(sha=sha, subject=git('show','-s','--format=%s',sha).decode().strip(),
+        production_or_test_paths=[x for x in paths if x.startswith(production_prefixes)], paths=paths))
+request = json.loads((root/'target/native-order/qualified-retained/miss-fixture-calls.json').read_text())[0]
+request['id'] = 'captured_aimed_40m'
+hip = copy.deepcopy(request)
+hip['id'] = 'controlled_hip_40m'
+hip['body']['aiming'] = False
+calls = p/'miss-calls.json'
+calls.write_text(json.dumps([request,hip],indent=2)+'\n')
+snapshots = [root/'target/refactor-plan/p0/baseline', root/'target/native-order/qualified-current/native',
+    root/'target/native-order/qualified-retained/native', root/'target/native-opt/final/native',
+    root/'target/irradiate/final-native', root/'target/n07a/optimized-native']
+evidence = []
+for i, folder in enumerate(snapshots):
+    manifest, binary = load_snapshot(folder)
+    out = p/f'engine-{i}.json'
+    with (p/f'engine-{i}.log').open('wb') as log:
+        subprocess.run([str(binary),str(calls),str(out),'1'],cwd=root,stdout=log,stderr=subprocess.STDOUT,check=True)
+    cases = []
+    for row in json.loads(out.read_text()):
+        result = row['result']
+        assert result['ok'] and result['dropped'] == 0
+        events = result['events']
+        misses = [e for e in events if e['kind']=='miss']
+        by_id = {e['id']:e for e in events}
+        counts = {kind:sum(e['kind']==kind for e in events) for kind in sorted({e['kind'] for e in events})}
+        cases.append(dict(case=row['id'], kinds=counts, events=len(events), dropped=result['dropped'],
+            misses=len(misses), reasons=sorted({e.get('reason','') for e in misses}),
+            misses_have_reasons=bool(misses) and all(e.get('reason') for e in misses),
+            misses_from_shots=all(by_id.get(e.get('cause'),{}).get('kind')=='shot' for e in misses),
+            shot_pellets=sum(e.get('pellets',0) for e in events if e['kind']=='shot')))
+    evidence.append(dict(snapshot=str(folder.relative_to(root)), commit=manifest['commit'],
+        source_sha256=manifest['source_sha256'], binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+        output=str(out.relative_to(root)), output_sha256=hashlib.sha256(out.read_bytes()).hexdigest(), cases=cases))
+main = git('rev-parse','origin/main').decode().strip()
+source = git('show',main+':scripts/check_combat_record.mjs').decode()
+source_blob = git('rev-parse',main+':scripts/check_combat_record.mjs').decode().strip()
+runner = source.replace('import { openApp } from "./cdp.mjs";',
+    'import { openApp } from '+json.dumps(str(root/'scripts/cdp.mjs'))+';')
+needle = 'check(`${tag} a wide shot MISSES, and the record says so`'
+assert needle in runner
+runner = runner.replace(needle, 'console.log("40m diagnostic",JSON.stringify(m));\n'+needle,1)
+(p/'check_combat_record-current-main.mjs').write_text(runner)
+report = dict(base=base, tip=tip, observed_main=main, commits=commits,
+    current_main_check_blob=source_blob, current_main_check_sha256=hashlib.sha256(source.encode()).hexdigest(),
+    calls_sha256=hashlib.sha256(calls.read_bytes()).hexdigest(), snapshots=evidence)
+(p/'evidence.json').write_text(json.dumps(report,indent=2)+'\n')
+print(json.dumps(dict(commits=len(commits),snapshots=[dict(commit=e['commit'], cases=e['cases']) for e in evidence]),indent=2))

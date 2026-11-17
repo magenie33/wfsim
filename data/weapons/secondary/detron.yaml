@@ -22,6 +22,7 @@ riven_family: Detron
 traits: [corpus, baro]
 introduced: "11.5.5"
 internal_name: /Lotus/Weapons/Corpus/Pistols/CorpusHandShotgun/CorpusHandCannon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

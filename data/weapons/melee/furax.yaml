@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: vazarin
 introduced: "Vanilla"
 internal_name: /Lotus/Weapons/Tenno/Melee/Fist/Fist
+weakness_bonus: 0.0
 traits: [grineer, incarnon]
 
 ammo_max: ~

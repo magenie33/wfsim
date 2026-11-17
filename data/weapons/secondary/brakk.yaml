@@ -20,6 +20,7 @@ riven_family: Brakk
 traits: [grineer]
 introduced: "10.6"
 internal_name: /Lotus/Weapons/Grineer/Pistols/GrineerHandShotgun/GrineerHandCannon
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

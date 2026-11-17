@@ -90,19 +90,67 @@ function projectFacts() {
 /// The home page's upload count. Missing values stay hidden.
 const HERO_FACTS = ["builds"];
 
+const HOME_VALUE_MS = 380;
+const homeConfirmedValues = new Map();
+const homeValueMotion = matchMedia("(prefers-reduced-motion: reduce)");
+function paintConfirmedHomeValues(groups) {
+  const start = document.timeline.currentTime;
+  for (const [kind, value, nodes] of groups) {
+    if (!Number.isSafeInteger(value) || value < 0) continue;
+    const changed = homeConfirmedValues.get(kind) !== value;
+    const text = value.toLocaleString(accountLocale());
+    for (const node of nodes) {
+      if (!node) continue;
+      if (node.firstChild?.nodeType === 3) {
+        if (node.firstChild.nodeValue !== text) node.firstChild.nodeValue = text;
+      } else node.textContent = text;
+      node.dataset.confirmedValue = String(value);
+      if (changed && !homeValueMotion.matches && !document.hidden && node.getClientRects().length) {
+        node.getAnimations().forEach(animation => animation.cancel());
+        const animation = node.animate([
+          { transform: "translateY(.12em)", opacity: .65 },
+          { transform: "translateY(-.025em)", opacity: 1, offset: .7 },
+          { transform: "translateY(0)", opacity: 1 }
+        ], { duration: HOME_VALUE_MS, easing: "cubic-bezier(.2,.75,.3,1)" });
+        animation.startTime = start;
+      }
+    }
+    homeConfirmedValues.set(kind, value);
+  }
+}
+homeValueMotion.addEventListener("change", () => {
+  if (homeValueMotion.matches) for (const node of document.querySelectorAll('.home-stats b,[data-live-device-number]')) {
+    node.getAnimations().forEach(animation => animation.cancel());
+  }
+});
 function renderHomeFacts() {
   const el = $("home-facts");
-  if (!el) return;
+  if (!el || document.hidden || $("home-page")?.hidden) return;
+  const title = $("h-home"), lead = "The real ";
+  if (LANG === "en" && title && !title.querySelector(".home-title-line")) {
+    const text = tr(title.dataset.i18nSrc || title.textContent.trim());
+    if (text.startsWith(lead)) title.innerHTML = `<span class="home-title-line">${escHtml(lead)}</span><span class="home-title-line">${
+      escHtml(text.slice(lead.length)).replace("Prime", '<span class="prime">Prime</span>')}</span>`;
+  }
   const rows = projectFacts().filter((f) => HERO_FACTS.includes(f.id));
+  if (!BOARD_META && el.querySelector(".hf")) {
+    for (const label of el.querySelectorAll(".metric-label")) label.textContent = tr(label.dataset.i18nSrc);
+    paintConfirmedHomeValues([["builds", homeConfirmedValues.get("builds"), [el.querySelector("b")]]]);
+    return;
+  }
   el.hidden = !rows.length;
-  el.innerHTML = rows.map((f) => `<span class="hf"><b>${
-    escHtml(f.n.toLocaleString())}</b> ${escHtml(tr(f.what))}</span>`).join("");
+  const shape = LANG + ":" + rows.map(f => f.id).join(":");
+  if (el.dataset.homeFactsShape !== shape) {
+    el.innerHTML = rows.map(f => `<span class="hf" data-home-stat="${f.id}"><b></b><span class="metric-label" data-i18n-src="${escHtml(f.what)}">${escHtml(tr(f.what))}</span></span>`).join("");
+    el.dataset.homeFactsShape = shape;
+  }
+  paintConfirmedHomeValues(rows.map(f => [f.id, f.n, [el.querySelector(`[data-home-stat="${f.id}"] b`)]]));
   if (!tallyTo) loadHomeTally();
 }
 
 /// The players' verified scores and devices computing now, under the home
-/// hero's claim (/api/board/tally). Asked each minute the page is in view; between
-/// answers a count walks to the new one over the minute.
+/// hero's claim (/api/board/tally). Asked each minute the page is in view;
+/// confirmed values appear immediately and only their presentation moves.
 const TALLY_EVERY_MS = 60_000;
 let tallyShown = null, tallyFrom = null, tallyTo = null, tallyAt = 0, tallyLoading = null;
 /// THE COUNT IS A FILE first (`stats/tally.json`, written by the settler each
@@ -120,11 +168,9 @@ async function loadHomeTally() {
   const r = await statsFile("tally", TALLY_STALE_MS)
     || await fetch("/api/board/tally", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || !r.totals) return;
+  if (!Number.isSafeInteger(r.totals.volunteers) || r.totals.volunteers < 0) return;
   const next = { volunteers: r.totals.volunteers };
-  // THE FIRST ANSWER WALKS FROM A MINUTE BEFORE IT, at the day's pace per hour,
-  // so a count moves the moment the page opens and shows only what it held.
-  const back = (k) => Math.max(0, next[k] - Math.round((r.per_hour?.[k] | 0) / 60));
-  tallyFrom = tallyShown || { volunteers: back("volunteers") };
+  tallyFrom = tallyShown || next;
   tallyTo = next;
   tallyAt = Date.now();
   renderHomeTally();
@@ -134,30 +180,41 @@ async function loadHomeTally() {
   return tallyLoading;
 }
 function renderHomeTally() {
-  const box = $("home-tally"), el = $("home-tally-n");
-  if (!box || !el || !tallyTo || document.hidden || $("home-page")?.hidden) return;
-  const f = Math.min(1, (Date.now() - tallyAt) / TALLY_EVERY_MS);
-  const at = (k) => Math.round(tallyFrom[k] + (tallyTo[k] - tallyFrom[k]) * f);
-  tallyShown = { volunteers: at("volunteers") };
-  const shape = LANG + ":" + (computingCount !== null);
-  if (el.dataset.tallyShape !== shape) {
-    const line = (s, key, dot) => `<span class="hf">${dot ? '<span class="online-dot"></span>' : ""}${
-      escHtml(tr(s)).replace("{n}", `<b data-tally="${key}"></b>`)}</span>`;
-    el.innerHTML = line("{n} scores computed by players' devices, each agreed by two", "volunteers")
-      + (computingCount !== null ? line("{n} devices computing together now", "devices", true) : "");
-    el.dataset.tallyShape = shape;
+  if (document.hidden) return;
+  const box = $("home-tally"), el = $("home-tally-n"), count = $("compute-count");
+  const known = Number.isSafeInteger(computingCount) && computingCount >= 0;
+  if (count) count.hidden = !known;
+  let navValue = count?.querySelector("[data-live-device-number]");
+  if (known && count) {
+    if (!navValue) {
+      const dot = count.querySelector(".online-dot") || document.createElement("span");
+      dot.className = "online-dot";
+      navValue = document.createElement("span"); navValue.dataset.liveDeviceNumber = "";
+      count.replaceChildren(dot, navValue);
+    }
+    count.hidden = false;
   }
-  for (const node of el.querySelectorAll("[data-tally]")) {
-    const n = node.dataset.tally === "devices" ? computingCount : tallyShown[node.dataset.tally];
-    const text = Number(n).toLocaleString(accountLocale());
-    if (node.firstChild) { if (node.firstChild.nodeValue !== text) node.firstChild.nodeValue = text; }
-    else node.append(document.createTextNode(text));
+  const visible = box && el && tallyTo && !$("home-page")?.hidden;
+  if (visible) {
+    const shape = LANG + ":" + known;
+    if (el.dataset.tallyShape !== shape) {
+      const line = (kind, label) => `<span class="hf" data-home-stat="${kind}"><b data-tally="${kind}"></b><span class="metric-label">${label}</span></span>`;
+      el.innerHTML = line("volunteers", escHtml(tr("scores computed by players' devices")))
+        + (known ? line("devices", `<span class="online-dot"></span><a href="/compute">${escHtml(tr("devices computing together now"))}</a>`) : "");
+      el.dataset.tallyShape = shape;
+    }
+    box.hidden = false;
+    $("home-community").hidden = false;
+    tallyShown = { volunteers: tallyTo.volunteers };
   }
-  box.hidden = false;
+  paintConfirmedHomeValues([
+    ["volunteers", tallyTo?.volunteers, visible ? [el.querySelector('[data-tally="volunteers"]')] : []],
+    ["devices", computingCount, [...(visible ? [el.querySelector('[data-tally="devices"]')] : []), navValue]]
+  ]);
+  computeLinkPaint();
 }
 loadHomeTally();
 setInterval(loadHomeTally, TALLY_EVERY_MS);
-setInterval(() => { if (!document.hidden && !$("home-page")?.hidden && tallyTo && Date.now() - tallyAt < TALLY_EVERY_MS + 1000) renderHomeTally(); }, 250);
 addEventListener("visibilitychange", loadHomeTally);
 
 /// WHAT THIS CLIENT IS RUNNING, in the three identifiers of

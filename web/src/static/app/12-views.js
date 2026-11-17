@@ -71,6 +71,12 @@ async function route() {
   // A RIVEN APPRAISAL'S LINK (81-appraisal.js) becomes its weapon's optimizer.
   const appraiseCode = location.pathname.match(/^\/appraise\/([A-Za-z0-9]{3,12})\/?$/);
   if (appraiseCode) { await openAppraisal(appraiseCode[1], new URLSearchParams(location.search).has("freeze")); return; }
+  if (/^\/nona\/help\/card\/?$/.test(location.pathname)) {
+    document.body.classList.add("on-card");
+    document.documentElement.dataset.theme = "light";
+    await renderNonaHelpCard(new URLSearchParams(location.search).get("topic"));
+    return;
+  }
   // THE CONTRIBUTORS' LONG IMAGE (45-card-page.js), a card of no weapon.
   if (/^\/contributors\/card\/?$/.test(location.pathname)) {
     document.body.classList.add("on-card");
@@ -223,6 +229,7 @@ async function route() {
     if (ask) ask.then(() => route());
   }
   $("home-page").hidden = !!w || support || bench || dl || util || !!wfHit || opRoute || !!compHit || !!stub || !!authKind;
+  placeHomeSearch();
   $("support-page").hidden = !support;
   $("bench-page").hidden = !bench;
   $("download-page").hidden = !dl;
@@ -455,6 +462,20 @@ let homeQuery = "";
 /// open chips would push the cards below the fold; a reader's own toggle wins.
 const homeOpen = {};
 const homeFiltersOpen = (id) => homeOpen[id] ?? !matchMedia("(max-width: 700px)").matches;
+
+function placeHomeSearch() {
+  const search = $("wsearch-input")?.closest(".wsearch");
+  const entry = $("home-search"), anchor = $("topbar-search-anchor");
+  if (!search || !entry || !anchor) return;
+  if (!$("home-page").hidden) {
+    if (search.parentNode !== entry) entry.prepend(search);
+  } else if (search.parentNode !== anchor.parentNode) anchor.after(search);
+}
+document.addEventListener("keydown", (event) => {
+  if ($("home-page")?.hidden || event.key !== "/" || event.ctrlKey || event.altKey || event.metaKey || event.isComposing
+    || event.target.closest?.("input,textarea,select,[contenteditable]")) return;
+  event.preventDefault(); $("wsearch-input").focus();
+});
 
 function renderHome() {
   renderHomeFacts();

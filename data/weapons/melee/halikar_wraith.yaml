@@ -19,6 +19,7 @@ polarities: [madurai, naramon, madurai]
 stance_polarity: naramon
 introduced: "Update 29.10.10"
 internal_name: /Lotus/Weapons/Grineer/Melee/GrnBoomerang/HalikarWraithWeapon
+weakness_bonus: 0.0
 traits: [grineer, wraith, baro]
 
 ammo_max: ~

@@ -19,6 +19,7 @@ polarities: [madurai, naramon]
 stance_polarity: naramon
 introduced: "Update 8.1"
 internal_name: /Lotus/Weapons/Tenno/Melee/Glaives/Boomerang/BoomerangWeapon
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

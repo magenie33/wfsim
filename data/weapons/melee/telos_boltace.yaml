@@ -19,6 +19,7 @@ polarities: [naramon]
 stance_polarity: madurai
 introduced: "The Silver Grove 2.0"
 internal_name: /Lotus/Weapons/Syndicates/ArbitersOfHexis/Melee/AHBoltace
+weakness_bonus: 0.0
 traits: [syndicate, arbiters_of_hexis]
 
 ammo_max: ~

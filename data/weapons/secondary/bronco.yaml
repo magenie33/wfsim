@@ -23,6 +23,7 @@ riven_family: Bronco
 traits: [incarnon, tenno]
 introduced: "Vanilla"
 internal_name: /Lotus/Weapons/Tenno/Pistol/HandShotGun
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

@@ -11,11 +11,17 @@ description: "+X% Fire Rate\n-X% Damage"
 # (additive with Hornet Strike, so it also lowers ModifiedBase).
 effects:
   - kind: fire_rate_bonus
-    rank0: 0.15
-    rankMax: 0.9
+    UpgradeType: 277
+    OperationType: STACKING_MULTIPLY
+    Value: 0.15000001
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
   - kind: base_damage_bonus
-    rank0: -0.025
-    rankMax: -0.15
+    UpgradeType: 253
+    OperationType: STACKING_MULTIPLY
+    Value: -0.025
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 source:
   url: https://wiki.warframe.com/w/Anemic_Agility

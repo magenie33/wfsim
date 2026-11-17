@@ -19,6 +19,7 @@ polarities: [madurai, naramon]
 stance_polarity: naramon
 introduced: "Update 41"
 internal_name: /Lotus/Weapons/Tenno/Melee/Glaives/PrimeKestrel/PrimeKestrel
+weakness_bonus: 0.0
 traits: [tenno, prime]
 
 ammo_max: ~

@@ -190,18 +190,51 @@ pub(super) fn push_break_proc(
     };
     let base = crate::rules::status::magnetic_break_source(pool_max, stacks);
     let base = match (params.weakness_bonus, foe.magnetic_break_proxy) {
-        (Some(weakness), Some(proxy)) => crate::rules::status::magnetic_break_proxy_source(base, weakness, proxy),
+        (Some(weakness), Some(proxy)) => crate::rules::status::magnetic_break_normalized_source(base, weakness, proxy) as f64,
         _ => base,
     };
-    let status = params.status_damage_multiplier + status_damage_live
-        + params.status_damage_of(DamageType::Electricity);
-    let mb_live = base * status;
+    use crate::rules::upgrades::{NativeScalar, ScalarMutation};
+    let magnetic = crate::model::ProcType::new(10).expect("native Magnetic id");
+    let electric = crate::model::ProcType::new(5).expect("native Electric id");
+    let mut parent = crate::model::DamageData::new(NativeScalar::new(base as f32));
+    parent.origin_proc = Some(magnetic);
+    parent.part = crate::model::HitPart::ANY_PART;
+    parent.source = Some(crate::model::SourceId(owner.0 as u32));
+    parent.source_weapon = Some(crate::model::WeaponId(owner.0 as u32));
+    parent.procs.set_forced(electric);
+    parent.apply_proc_upgrades(magnetic, proc_damage_entries(params, status_damage_live), ScalarMutation::Materialize);
+    if rec.native_trace_is_on() {
+        rec.trace_native(now, || crate::record::NativeStep {
+            phase: "pool_break", proc_type: Some(magnetic.id()), part: Some(parent.part.0),
+            entries: proc_damage_entries(params, status_damage_live).filter_map(|entry| entry.for_proc(magnetic)).collect(),
+            materialized: Some(true),
+            ..crate::record::NativeStep::new(now, body_index, "ALN-MAG-03.parent.WEAPON_PROC_DAMAGE",
+                &[base as f32], parent.scalar.base())
+        });
+    }
+    let generic_proxy = match (params.weakness_bonus, foe.magnetic_break_proxy) {
+        (Some(_), Some(proxy)) => proxy.damage_multiplier.unwrap_or(1.0) as f32,
+        _ => 1.0,
+    };
+    let before_proxy = parent.scalar.base();
+    parent.scalar = NativeScalar::new(before_proxy * generic_proxy);
+    if rec.native_trace_is_on() {
+        rec.trace_native(now, || crate::record::NativeStep {
+            phase: "pool_break", proc_type: Some(magnetic.id()), part: Some(parent.part.0),
+            ..crate::record::NativeStep::new(now, body_index, "ALN-MAG-02.generic_proxy",
+                &[before_proxy, generic_proxy], parent.scalar.base())
+        });
+    }
+    // The remaining receiving-source adapter supplies the existing final-buff policy.
+    parent.scalar = NativeScalar::new(parent.scalar.base() * params.ability_final_at(now) as f32);
+    let mb_live = parent.scalar.base() as f64;
     let mit = debuffs.mitigation(now, params.status_duration_multiplier,
         params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
-    let procs = crate::rules::status::procs_for_hit(&[DamageType::Electricity],
-        0.0, &DamageVector::new(), &foe.status_immunities, rng);
+    let forced: Vec<_> = parent.procs.types().collect();
+    let procs = crate::rules::status::procs_for_hit(&forced,
+        0.0, &DamageVector::new(), foe.proc_handlers(), rng);
     let generation = target.generation;
-    settle_procs(procs, owner, now, body_index, InstanceScale {
+    settle_procs(procs, owner, now, body_index, InstanceScale { native_source: Some(parent.scalar), native_part: Some(parent.part),
         mb_live,
         crit_multiplier: 1.0,
         part_factor: 1.0,
@@ -213,20 +246,23 @@ pub(super) fn push_break_proc(
     if target.generation != generation {
         return true;
     }
+    let status_factor = crate::rules::upgrades::query(crate::rules::upgrades::UpgradeType::WEAPON_PROC_DAMAGE, 1.0,
+        proc_damage_entries(params, status_damage_live).filter_map(|entry| entry.for_proc(magnetic)), false) as f64;
     let layers = [
-        (crate::record::Factor::StatusDamage, status),
+        (crate::record::Factor::StatusDamage, status_factor),
+        (crate::record::Factor::BodyPart, generic_proxy as f64),
+        (crate::record::Factor::WarframeAbility, params.ability_final_at(now)),
         (crate::record::Factor::Faction, params.faction_bracket_at(now)),
         (crate::record::Factor::TargetMultiplier, foe.faction_bracket_multiplier),
-        (crate::record::Factor::WarframeAbility, params.ability_final_at(now)),
     ];
-    let raw = layers.iter().fold(base, |value, (_, factor)| value * factor);
+    let raw = parent.scalar.value(false) as f64 * params.faction_bracket_at(now) * foe.faction_bracket_multiplier;
     let mut breakdown = Breakdown::default();
     let settled = target.apply(raw, TypeShares::single(DamageType::Electricity), false,
         now, foe, false, &mit, params.overguard_multiplier(), watching(rec, &mut breakdown));
-    r.sources.add_status(DamageType::Electricity, settled.effective);
-    ledger::settle(r, rec, now, owner, body_index, DamageType::Electricity, PopKind::Status,
+    r.sources.magnetic_break += settled.effective;
+    ledger::settle(r, rec, now, owner, body_index, DamageType::Electricity, PopKind::Direct,
         &breakdown, settled, Some(debuffs), ledger::Clock::Hit,
-        || Instance { origin: crate::record::Origin::Status, base,
+        || Instance { origin: crate::record::Origin::MagneticBreak, base,
             part: Some("body".into()), layers: mul_layers(base, &layers), ..Instance::default() });
     r.note_kills(u32::from(settled.killed), now, params.drop_is_in_reach(target.at));
     if settled.killed {

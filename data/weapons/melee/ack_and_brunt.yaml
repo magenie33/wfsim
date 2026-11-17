@@ -18,6 +18,7 @@ polarities: []
 stance_polarity: madurai
 introduced: "Update 17"
 internal_name: /Lotus/Weapons/Grineer/Melee/GrineerTylAxeAndBoar/RegorAxeShield
+weakness_bonus: 0.0
 traits: [grineer, incarnon]
 
 ammo_max: ~

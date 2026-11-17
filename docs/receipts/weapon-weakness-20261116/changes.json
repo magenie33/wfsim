@@ -1,0 +1,2626 @@
+[
+  {
+    "id": "arbucep",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/NokkoArchGun/NokkoArchGun",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "cortege",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchGun/ThanoTechArchGun",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "corvas",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/LaunchGrenade/ArchCannon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "corvas_prime",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/PrimeCorvas/PrimeCorvasWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_decurion",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/ArchwingHeavyPistols/ArchHeavyPistols",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "fluctus",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/RocketArtillery/ArchRocketCrossbow",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "grattler",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/RepurposedGrineerAntiAircraftGun/ArchGRNAAGun",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "imperator",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/FoldingMachineGun/ArchMachineGun",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "imperator_vandal",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/FoldingMachineGun/ArchMachineGunVandal",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kuva_ayanga",
+    "owner": "/Lotus/Weapons/Grineer/HeavyWeapons/GrnHeavyGrenadeLauncher",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kuva_grattler",
+    "owner": "/Lotus/Weapons/Grineer/KuvaLich/HeavyWeapons/Grattler/KuvaGrattler",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "larkspur",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/TnShieldframeArchGun/TnShieldFrameArchGun",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "larkspur_prime",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/PrimeLarkspur/PrimeLarkspurWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "mandonel",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/TnConcreteArchgun/TnConcreteArchgunWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "morgha",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechGrenadeLaunch/ThanoTechGrenadeLauncher",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "phaedra",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/ArchLongRifle/ArchLongRifle",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "prisma_dual_decurions",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/ArchwingHeavyPistols/Prisma/PrismaArchHeavyPistols",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "velocitus",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/Railgun/ArchRailgun",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "adarza_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/AdarzaPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "chesa_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/ChesaPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "crescent_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/CrescentVulpaphylaPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "helminth_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/HelminthPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "huras_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/HurasPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "medjay_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/MedjayPredasitePetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "panzer_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/PanzerVulpaphylaPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "pharaoh_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/PharaohPredasitePetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "raksa_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/RaksaPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sahasa_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/SahasaPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sly_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/SlyVulpaphylaPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "smeeta_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/SmeetaPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sunika_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/SunikaPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "vasca_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/VascaPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "venari_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "venari_prime_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPrimePetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "vizier_claws",
+    "owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/VizierPredasitePetWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "garuda_prime_talons",
+    "owner": "/Lotus/Powersuits/Garuda/GarudaPrimeClaws",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "garuda_talons",
+    "owner": "/Lotus/Powersuits/Garuda/GarudaClaws",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "shattered_lash",
+    "owner": "/Lotus/Powersuits/Glass/GaraShankWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "valkyr_talons",
+    "owner": "/Lotus/Powersuits/Berserker/BerserkerMelee",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ack_and_brunt",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrineerTylAxeAndBoar/RegorAxeShield",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "amanata",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Polearms/Naginata/ShrineMaidenNaginataWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "amphis",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Staff/GrnStaff",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "anku",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Scythe/ParisScythe/ParisScythe",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ankyros",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Gauntlet/Gauntlet",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ankyros_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Gauntlet/PrimeAnkyros/PrimeAnkyros",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "arca_titron",
+    "owner": "/Lotus/Weapons/Corpus/Melee/Hammer/CorpusHammerWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "argo_and_vel",
+    "owner": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/DaxDuviriMaceShieldWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "arum_spinosa",
+    "owner": "/Lotus/Weapons/Infested/Melee/InfWarfan/InfWarfanWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "atterax",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrineerWhip/GrineerWhip",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "azothane",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/DaxDuviriTwoHandedKatana/DaxDuviriTwoHandedKatanaWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "bo",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Staff/Staff",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "bo_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Staff/PrimeBo/PrimeBoWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "boltace",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Tonfa/Boltonfa/Boltonfa",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "broken_scepter",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrnQueenSceptre/GrnQueenSceptreWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "broken_war",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/StalkerTwo/StalkerTwoSmallSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "cadus",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Staff/SingleStaff",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "cassowar",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Polearms/TnHalberdPolearm/TnHalberdPolearmWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "caustacyst",
+    "owner": "/Lotus/Weapons/Infested/Melee/InfEmbolistScythe/InfestedScythe",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ceramic_dagger",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Dagger/CeramicDagger",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "cerata",
+    "owner": "/Lotus/Weapons/Infested/Melee/Glaives/PunctureGlaive/PunctureGlaiveWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ceti_lacera",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/StalkerMios/OperationsLacera",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "cobra_and_crane",
+    "owner": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/PacifistShieldAndSword/PacifistShieldSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "cobra_and_crane_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/PrimeCobraAndCrane/PrimeCobraAndCraneWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "coda_caustacyst",
+    "owner": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaCaustacyst/CodaCaustacyst",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "coda_hirudo",
+    "owner": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaHirudo",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "coda_mire",
+    "owner": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaMire",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "coda_motovore",
+    "owner": "/Lotus/Weapons/Infested/InfestedLich/Melee/InfestedHammer/InfLichHammerWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "coda_pathocyst",
+    "owner": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaPathocyst/CodaPathocyst",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "corufell",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Melee/ExaltedArchScythe/ExaltedAWScytheWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "corufell_prime",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Melee/PrimeCorufell/PrimeCorufellScytheWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "cronus",
+    "owner": "/Lotus/Weapons/Tenno/Melee/CronusSword/CronusLongSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dakra_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/CronusSword/PrimeCronusLongSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dark_dagger",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Dagger/DarkDagger",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dark_split_sword",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/DarkSword/DarkSwordDaggerHybridWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dark_sword",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/DarkSword/DarkLongSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "destreza",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/TnoRapier/TnoRapier",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "destreza_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PRapier/DestrezaPrime",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dex_dakra",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/DexTheSecond/DexTheSecond",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dex_nikana",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/KatanaAndWakizashi/Dex2023Nikana/Dex2023Nikana",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dorrclave",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/TnDagathBladeWhip/TnDagathBladeWhip",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dragon_nikana",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/KatanaAndWakizashi/LowKatana",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_cleavers",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrineerMachetteAndCleaver/DualCleaverWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_ether",
+    "owner": "/Lotus/Weapons/Tenno/Melee/DualShortSword/DualEtherSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_heat_swords",
+    "owner": "/Lotus/Weapons/Tenno/Melee/DualShortSword/DualHeatSwords",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_ichor",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Axe/DualInfestedAxesWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_kamas",
+    "owner": "/Lotus/Weapons/Tenno/Melee/DualKamas/DualKamas",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_kamas_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/PrimeDualKamas/PrimeDualKamas",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_keres",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/QuillSword/QuillDualSwords",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_keres_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeDualKeres/PrimeDualKeresWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_raza",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Soma/SomaDualKamas",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_skana",
+    "owner": "/Lotus/Weapons/Tenno/Melee/DualShortSword/DualShortSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_viciss",
+    "owner": "/Lotus/Weapons/Lasria/LasGooSickle/LasGooSicklePlayerWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_zoren",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Axe/DualAxeWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "dual_zoren_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Axe/PrimeZoren/PrimeZorenAxeWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "edun",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Polearms/DaxDuviriPolearm/DaxDuviriPolearmWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ekhein",
+    "owner": "/Lotus/Weapons/Thanotech/EntSphereHammer/EntSphereHammer",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "endura",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/ThreeLeaf/ThreeLeaf",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ether_daggers",
+    "owner": "/Lotus/Weapons/Tenno/Melee/DualDagger/DualEtherDagger",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ether_reaper",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Scythe/EtherScytheWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ether_sword",
+    "owner": "/Lotus/Weapons/Tenno/Melee/LongSword/EtherSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "falcor",
+    "owner": "/Lotus/Weapons/Corpus/Melee/Glaive/CrpGlaive/CrpGlaive",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "fang",
+    "owner": "/Lotus/Weapons/Tenno/Melee/DualDagger/DualDagger",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "fang_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/DualDagger/FangPrimeDagger",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "fragor",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Hammer/HammerWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "fragor_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/PrimeFragor/PrimeFragor",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "furax",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Fist/Fist",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "furax_wraith",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Fist/FuraxWraith",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "galariak_prime",
+    "owner": "/Lotus/Weapons/Grineer/Melee/Scythe/GrnDrillScythe/GrnDrillScythe",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "galatine",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/GreatSword/TennoGreatSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "galatine_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeGalatine/PrimeGalatine",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "galvacord",
+    "owner": "/Lotus/Weapons/Corpus/Melee/Whips/CrpShockGrip/CrpShockGripWhipWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "gazal_machete",
+    "owner": "/Lotus/Weapons/Tenno/Melee/PersianMachete/DjinnMachete",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ghoulsaw",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrnGhoulSaw/GrnGhoulSawPlayer",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "glaive",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Glaives/LightGlaive/LightGlaiveWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "glaive_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Glaives/PrimeGlaive/PrimeGlaiveWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "gram",
+    "owner": "/Lotus/Weapons/Tenno/Melee/GreatSword/GreatSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "gram_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeGram/PrimeGram",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "guandao",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Polearms/TnGuandaoPolearm/TnGuandaoPolearmWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "guandao_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Polearms/PrimeGuandao/PrimeGuandaoWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "gunsen",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Warfan/WarfanWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "gunsen_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Warfan/PrimeGunsen/PrimeGunsenWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "halikar",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrnBoomerang/GrnBoomerang",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "halikar_wraith",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrnBoomerang/HalikarWraithWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "harmony",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Scythe/TnChoirScythe/TnChoirScythe",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "hate",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Scythe/StalkerScytheWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "heat_dagger",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Dagger/Dagger",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "heat_sword",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/HeatSword/HeatLongSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "heliocor",
+    "owner": "/Lotus/Weapons/Cephalon/Melee/Hammer/CephHammerWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "hespar",
+    "owner": "/Lotus/Weapons/Tenno/Melee/HeavyScythe/DuviriScythe/DuviriHeavyScytheWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "hirudo",
+    "owner": "/Lotus/Weapons/Infested/Melee/InfWFAccompanyingSparring/InfestedKogake",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "innodem",
+    "owner": "/Lotus/Weapons/Tenno/Zariman/Melee/Dagger/ZarimanDaggerWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "jat_kittag",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrineerJetPoweredPolearm/GrineerJetPolearm",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "jat_kusar",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrnKusarigama/GrnKusarigamaWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "jaw_sword",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/JawSword/JawLongSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kama",
+    "owner": "/Lotus/Weapons/Tenno/Melee/DualKamas/SingleKama",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "karyst",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/KrisDagger/KrisDagger",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "karyst_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeKaryst/PrimeKrisDagger",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "keratinos",
+    "owner": "/Lotus/Weapons/Infested/Melee/InfTransformClaw/InfTransformClawsWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kesheg",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrineerHalberd/GrnHalberd",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kestrel",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Glaives/Boomerang/BoomerangWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kestrel_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Glaives/PrimeKestrel/PrimeKestrel",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kogake",
+    "owner": "/Lotus/Weapons/Tenno/Melee/BrassKnuckles/BrassKnuckles",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kogake_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/PrimeKogake/KogakePrimeKnuckles",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "korrudo",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrnSparring/GrnSpiderSparring/GrnSpiderSparring",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "korumm",
+    "owner": "/Lotus/Weapons/Archon/Melee/Trident/ArchonTridentPlayerWep",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kreska",
+    "owner": "/Lotus/Weapons/Corpus/Melee/CrpVenusHatchet/CrpVenusHatchet",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "krohkur",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrnEgyptSwd/GrnEgyptSwdWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kronen",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Tonfa/TonfaContestWinner/TennoTonfa",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kronen_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Tonfa/TonfaContestWinnerPrime/TonfaContestWinnerPrimeWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kuva_ghoulsaw",
+    "owner": "/Lotus/Weapons/Grineer/KuvaLich/Melee/Ghoulsaw/KuvaGhoulSaw",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "kuva_shildeg",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrnKuvaLichScythe/GrnKuvaLichScytheWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "lacera",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/StalkerMios/StalkerMios",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "lecta",
+    "owner": "/Lotus/Weapons/Corpus/Melee/Whip/CorpusWhipWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "lesion",
+    "owner": "/Lotus/Weapons/Infested/Melee/TipedoStaff/InfTipedoStaff",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "machete",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrineerMachetteAndCleaver/Machete",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "machete_wraith",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrineerMachetteAndCleaver/WraithMacheteWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "magistar",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Maces/PaladinMace/PaladinMaceWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "masseter",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/TnChiselKanabo/TnChiselKanabo",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "masseter_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeMasseter/PrimeMasseter",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "mios",
+    "owner": "/Lotus/Weapons/Infested/Melee/Swords/Mios/Mios",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "mire",
+    "owner": "/Lotus/Weapons/Infested/Melee/Swords/Mire/MireSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "mk1_bo",
+    "owner": "/Lotus/Weapons/MK1Series/MK1Bo",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "mk1_furax",
+    "owner": "/Lotus/Weapons/MK1Series/MK1Furax",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "nami_skyla",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/CutlassAndPoignard/CutlassPoignardSwords",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "nami_skyla_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeNamiSkyla/PrimeNamiSkyla",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "nami_solo",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/CutlassAndPoignard/TennoCutlass",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "nepheri",
+    "owner": "/Lotus/Weapons/Archon/Melee/DualDaggers/ArchonDualDaggersPlayerWep",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "nikana",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/KatanaAndWakizashi/Katana",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "nikana_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeKatana/PrimeNikana",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ninkondi",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Nunchaku/Nunchaku/Nunchaku",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ninkondi_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/PrimeNinkondi/PrimeNikondi",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "obex",
+    "owner": "/Lotus/Weapons/Corpus/Melee/KickAndPunch/KickPunchWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ohma",
+    "owner": "/Lotus/Weapons/Corpus/Melee/CrpTonfa/CrpTonfa",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "okina",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/TennoSai/TennoSais",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "okina_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeOkina/PrimeOkina",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "orthos",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Polearms/PolearmWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "orthos_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Polearms/PrimePolearmWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "orvius",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Glaives/TeshinGlaive/TnTeshinGlaiveWep",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "pangolin_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PrimePangolinSword/PrimePangolinSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "pangolin_sword",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PangolinSword/PangolinLongSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "paracesis",
+    "owner": "/Lotus/Weapons/Orokin/BallasSword/BallasSwordWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "pathocyst",
+    "owner": "/Lotus/Weapons/Infested/Melee/InfBoomerang/InfBoomerangWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "pennant",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/TnRailjackGreatKatana/TnRailJackGreatKatanaWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "plasma_sword",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PlasmaSword/PlasmaLongSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "praedos",
+    "owner": "/Lotus/Weapons/Tenno/Zariman/Melee/Tonfas/ZarimanTonfaWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "pride",
+    "owner": "/Lotus/Weapons/Tenno/Melee/HeavyScythe/TnOrionSiriusScythe/TnSiriusScytheWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "prisma_dual_cleavers",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrineerMachetteAndCleaver/PrismaDualCleavers",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "prisma_machete",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrineerMachetteAndCleaver/PrismaMachete",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "prisma_obex",
+    "owner": "/Lotus/Weapons/Corpus/Melee/KickAndPunch/PrismaObex",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "prisma_ohma",
+    "owner": "/Lotus/Weapons/Corpus/Melee/CrpTonfa/CrpPrismaTonfa",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "prisma_skana",
+    "owner": "/Lotus/Weapons/VoidTrader/PrismaSkana",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "prova",
+    "owner": "/Lotus/Weapons/ClanTech/Energy/ElectroProd",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "prova_vandal",
+    "owner": "/Lotus/Weapons/ClanTech/Energy/VandalElectroProd",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "pulmonars",
+    "owner": "/Lotus/Weapons/Infested/Melee/Nunchaku/InfNunchuck/InfNunchuck",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "pupacyst",
+    "owner": "/Lotus/Weapons/Infested/Melee/Staff/InfStaff/InfStaff",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "quassus",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Warfan/TnBrokenFrameWarfan/TnBrokenFrameWarfanWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "quassus_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Warfan/PrimeQuassus/PrimeQuassusWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "rakta_dark_dagger",
+    "owner": "/Lotus/Weapons/Syndicates/RedVeil/Melee/RVDarkDagger",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "reaper_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Scythe/ReaperWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "redeemer",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Gunblade/TnoGunblade",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "redeemer_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Gunblade/RedeemerPrime/RedeemerPrimeWep",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ripkas",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrineerClaws/GrnClaws",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "rumblejack",
+    "owner": "/Lotus/Weapons/Operator/Melee/DrifterTazer/DrifterTazerPlayerWep",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "ruvox",
+    "owner": "/Lotus/Weapons/Thanotech/EntFistIncarnon/EntFistIncarnon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sampotes",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Hammer/DaxDuviriHammer/DaxDuviriHammerWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sancti_magistar",
+    "owner": "/Lotus/Weapons/Syndicates/NewLoka/Melee/NLMagistar",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sarofang",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Axe/WolfFrameAxeWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sarofang_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Axe/PrimeVorunaAxeWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sarpa",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Gunblade/GunbladeAutomatic/TnoGunbladeAutomatic",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "scindo",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Axe/AxeWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "scindo_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Axe/PrimeScindo/PrimeScindoWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "scoliac",
+    "owner": "/Lotus/Weapons/Infested/Melee/Whip/InfestedWhip/InfestedWhipWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "secura_lecta",
+    "owner": "/Lotus/Weapons/Syndicates/PerrinSequence/Melee/PSLecta",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "serro",
+    "owner": "/Lotus/Weapons/Corpus/Melee/Polearm/CorpusPolearm01/CorpusPolearmWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "shaku",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Nunchaku/TnoNunchaku/TnoNunchaku",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sheev",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrineerCombatKnife/GrineerCombatKnife",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sibear",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Hammer/IceHammer/IceHammer",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sigma_and_octantis",
+    "owner": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/SundialSwordBoard/SundialBoardSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "silva_and_aegis",
+    "owner": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/MeleeContestWinnerOne/TennoSwordShield",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "silva_and_aegis_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/PrimeSilvaAegis/PrimeSilvaAegis",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "skana",
+    "owner": "/Lotus/Weapons/Tenno/Melee/LongSword/LongSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "skana_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/LongSword/SkanaPrime",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "skiajati",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/UmbraKatana/UmbraKatana",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "slaytra",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrnSharbola/GrnSharbolaWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "spinnerex",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Whips/SpiderWhip/SpiderWhipWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "stropha",
+    "owner": "/Lotus/Weapons/Corpus/Melee/Gunblade/CrpGunBlade/CrpGunbladeWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sun_and_moon",
+    "owner": "/Lotus/Types/Friendly/PlayerControllable/Weapons/DuviriDualSwordsWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "syam",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/DaxDuviriKatana/DaxDuviriKatanaWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "sydon",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrnTrident/GrnTridentWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "synoid_heliocor",
+    "owner": "/Lotus/Weapons/Syndicates/CephalonSuda/Melee/CSHeliocor",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tak_and_lug",
+    "owner": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/MortiforShieldAndSword/MortiforShieldAndSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tatsu",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/TnTwoHandedKatana/TnTwoHandedKatana",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tatsu_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeTatsu/PrimeTatsuWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tekko",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Gauntlet/BrawlerKnuckles/BrawlerKnuckles",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tekko_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/PrimeTekko/PrimeTekko",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "telos_boltace",
+    "owner": "/Lotus/Weapons/Syndicates/ArbitersOfHexis/Melee/AHBoltace",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tenet_agendus",
+    "owner": "/Lotus/Weapons/Corpus/Melee/ShieldAndSword/CrpHammerShield/CrpHammerShield",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tenet_exec",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/CrpBigSlash/CrpBigSlash",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tenet_grigori",
+    "owner": "/Lotus/Weapons/Corpus/Melee/CrpBriefcaseScythe/CrpBriefcaseScythe",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tenet_livia",
+    "owner": "/Lotus/Weapons/Corpus/Melee/CrpBriefcase2HKatana/CrpBriefcase2HKatana",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "thalys",
+    "owner": "/Lotus/Weapons/Tenno/Zariman/Melee/HeavyScythe/ZarimanHeavyScythe/ZarimanHeavyScytheWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tipedo",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Staff/MonkSpade/TnoMonkStaff",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tipedo_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Staff/TipedoPrime/TipedoPrimeWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tonbo",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Polearms/FlowerPowerPolearm/FlowerPowerPolearmWep",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "tonkkatt",
+    "owner": "/Lotus/Weapons/Grineer/Melee/Tonfa/GrnChainSawTonfa/GrnChainSawTonfaWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "twin_basolk",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrnDualFireAxe/GrnDualFireAxe",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "twin_krohkur",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GrnEgyptSwd/DualGrnEgyptSwdWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "vastilok",
+    "owner": "/Lotus/Weapons/Grineer/Melee/GunBlade/GrnGunBlade/GrnGunblade",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "vaykor_sydon",
+    "owner": "/Lotus/Weapons/Syndicates/SteelMeridian/Melee/SMSydon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "venato",
+    "owner": "/Lotus/Weapons/Sentients/SentJointedScythe/SentJointedScytheWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "venato_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Scythe/PrimeVento/PrimeVentoScythe",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "venka",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Claws/TennoClaws",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "venka_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/PrimeVenKa/PrimeVenkaClaws",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "verdilac",
+    "owner": "/Lotus/Weapons/Archon/Melee/Whip/ArchonWhipPlayerWep",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "vericres",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Warfan/TnMoonWarfan/MoonWarfanWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "vitrica",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/NWIIIOrokinSword/NWOrokinSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "volnus",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Hammer/GlassHammer/GlassHammer",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "volnus_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/PrimeVolnus/VolnusPrimeWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "war",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/StalkerTwo/StalkerTwoGreatSword",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "war_prime",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeWar/PrimeWarWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "wolf_sledge",
+    "owner": "/Lotus/Weapons/Tenno/Melee/Hammer/ThrowingHammer",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "wrath",
+    "owner": "/Lotus/Weapons/Tenno/Melee/HeavyScythe/TnOrionSiriusScythe/TnOrionScytheWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "xoris",
+    "owner": "/Lotus/Weapons/Corpus/Melee/Glaive/CrpGhostCatcherGlaive/CrpGhostCatcherGlaive",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "zenistar",
+    "owner": "/Lotus/Weapons/Tenno/Melee/SunDialAxe/SundialAxeWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "afuris",
+    "owner": "/Lotus/Weapons/Tenno/Akimbo/AkimboAutoPistols",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "afuris_prime",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAfuris/PrimeAFurisWeapon",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "akbronco",
+    "owner": "/Lotus/Weapons/Tenno/Akimbo/AkimboShotGun",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "akbronco_prime",
+    "owner": "/Lotus/Weapons/Tenno/Akimbo/PrimeAkimboShotGun",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "akjagara",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/TigrisRedeemerSetPistol/TnoBladedPistols",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "akjagara_prime",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAkjagara/AkJagaraPrime",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "aksomati",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/SomaSidearm/AkimboSomaPistols",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "aksomati_prime",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAksomati/PrimeAksomati",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "akstiletto",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/TennoUzi/TennoUzi",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "akstiletto_prime",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAkstiletto/PrimeAkstiletto",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "akzani",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/HarlequinGun/HarlequinPistols",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "azima",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/SundialGun/SundialPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "brakk",
+    "owner": "/Lotus/Weapons/Grineer/Pistols/GrineerHandShotgun/GrineerHandCannon",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "bronco",
+    "owner": "/Lotus/Weapons/Tenno/Pistol/HandShotGun",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "bronco_prime",
+    "owner": "/Lotus/Weapons/Tenno/Pistol/BroncoPrime",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "cestra",
+    "owner": "/Lotus/Weapons/Corpus/Pistols/CorpusMinigun/CorpusMinigun",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "cyanex",
+    "owner": "/Lotus/Weapons/Corpus/Pistols/CrpSentAmalgPistol/CrpSentAmalgPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "cycron",
+    "owner": "/Lotus/Weapons/Corpus/Pistols/CrpChargeGun/CrpChargeGun",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "detron",
+    "owner": "/Lotus/Weapons/Corpus/Pistols/CorpusHandShotgun/CorpusHandCannon",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "dex_furis",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/DexFuris/DexFuris",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "dual_cestra",
+    "owner": "/Lotus/Weapons/Corpus/Pistols/CorpusMinigun/DualCorpusMinigun",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "dual_coda_torxica",
+    "owner": "/Lotus/Weapons/Infested/InfestedLich/Pistols/1999InfSporePistol/1999InfSporePistolWeapon",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "dual_toxocyst",
+    "owner": "/Lotus/Weapons/Infested/Pistols/InfVomitGun/InfVomitGunWep",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "epitaph",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/TnWraitheSidearm/TnWraitheSidearmWeapon",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "epitaph_prime",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeEpitaph/PrimeEpitaphSidearmWeapon",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "euphona_prime",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/AllNew1hSG/AllNew1hSG",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "furis",
+    "owner": "/Lotus/Weapons/Tenno/Pistol/AutoPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "hystrix",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/QuillDartgun/QuillDartGunWeapon",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "hystrix_prime",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeHystrix/PrimeHystrixWeapon",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "kohmak",
+    "owner": "/Lotus/Weapons/Grineer/Pistols/GrnKohmPistol/GrnKohmPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "kuva_brakk",
+    "owner": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Brakk/KuvaBrakk",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "kuva_twin_stubbas",
+    "owner": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Stubba/KuvaStubba",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "mara_detron",
+    "owner": "/Lotus/Weapons/VoidTrader/VTDetron",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "mk1_furis",
+    "owner": "/Lotus/Weapons/MK1Series/MK1Furis",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "ocucor",
+    "owner": "/Lotus/Weapons/Corpus/Pistols/CrpSentExperimentPistol/CrpSentExperimentPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "prisma_twin_gremlins",
+    "owner": "/Lotus/Weapons/Grineer/Pistols/GrineerBulbousSMG/Prisma/PrismaTwinGremlinsWeapon",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "pyrana",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/SawnOffShotgun/TennoHandShotgun",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "pyrana_prime",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/PrimePyrana/PrimePyranaPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "quatz",
+    "owner": "/Lotus/Weapons/Grineer/Pistols/GrnAmphisPistol/GrnAmphisPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "sagek_prime",
+    "owner": "/Lotus/Weapons/Grineer/Pistols/GrnOrokinPistol/GrnOrokinPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "secura_dual_cestra",
+    "owner": "/Lotus/Weapons/Syndicates/PerrinSequence/Pistols/PSDualCestra",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "sonicor",
+    "owner": "/Lotus/Weapons/Corpus/Pistols/CrpAirPistol/CrpAirPistolArray",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "stubba",
+    "owner": "/Lotus/Weapons/Grineer/Pistols/GrnUzi/GrnUziWeapon",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "tenet_cycron",
+    "owner": "/Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBECycron/CrpBECycron",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "tenet_detron",
+    "owner": "/Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBEDetron/CrpBEDetron",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "tenet_diplos",
+    "owner": "/Lotus/Weapons/Corpus/Pistols/CrpBriefcaseAkimbo/CrpBriefcaseAkimboPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "tenet_spirex",
+    "owner": "/Lotus/Weapons/Corpus/Pistols/CrpIgniterPistol/CrpIgniterPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "twin_grakatas",
+    "owner": "/Lotus/Weapons/Grineer/LongGuns/GrineerAssaultRifle/TwinGrakatas",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "twin_gremlins",
+    "owner": "/Lotus/Weapons/Grineer/GrineerPistol/GrineerAkimboPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "twin_kohmak",
+    "owner": "/Lotus/Weapons/Grineer/Pistols/GrnDWUniques/GrnTwinKohmaks",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "twin_rogga",
+    "owner": "/Lotus/Weapons/Grineer/Pistols/GrnQueenGuardDualPistol/GrnQueenGuardDualPistols",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "twin_vipers",
+    "owner": "/Lotus/Weapons/Tenno/Akimbo/AkimboViperPistols",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "twin_vipers_wraith",
+    "owner": "/Lotus/Weapons/Grineer/Pistols/WraithTwinVipers/WraithTwinVipers",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "velox",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/TnOdaliskSmg/TnOdaliskSmgPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "velox_prime",
+    "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeVelox/PrimeVeloxPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "vesper_77",
+    "owner": "/Lotus/Weapons/Lasria/LasSilencedPistol/LasSilencedPistolWeapon",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "viper",
+    "owner": "/Lotus/Weapons/Grineer/GrineerPistol/GrineerLightPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "viper_wraith",
+    "owner": "/Lotus/Weapons/Grineer/Pistols/WraithSingleViper/WraithSingleViper",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "zymos",
+    "owner": "/Lotus/Weapons/Infested/Pistols/InfUzi/InfUziWeapon",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "burst_laser",
+    "owner": "/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "burst_laser_prime",
+    "owner": "/Lotus/Types/Sentinels/SentinelWeapons/PrimeBurstLaserPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  },
+  {
+    "id": "deconstructor",
+    "owner": "/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "deconstructor_prime",
+    "owner": "/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon",
+    "value": 0.0,
+    "token": "0",
+    "bits": "00000000",
+    "origin": "0xf1a863"
+  },
+  {
+    "id": "prisma_burst_laser",
+    "owner": "/Lotus/Types/Sentinels/SentinelWeapons/PrismaBurstLaserPistol",
+    "value": 0.2,
+    "token": "0.2",
+    "bits": "cdcc4c3e",
+    "origin": "/Lotus/Weapons/Tenno/LotusBulletWeapon"
+  }
+]

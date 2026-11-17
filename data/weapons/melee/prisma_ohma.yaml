@@ -19,6 +19,7 @@ polarities: [naramon, madurai]
 stance_polarity: naramon
 introduced: "Update 33.6.3"
 internal_name: /Lotus/Weapons/Corpus/Melee/CrpTonfa/CrpPrismaTonfa
+weakness_bonus: 0.0
 traits: [prisma, baro]
 
 ammo_max: ~

@@ -18,6 +18,7 @@ polarities: []
 stance_polarity: madurai
 introduced: "Update 30.5"
 internal_name: /Lotus/Weapons/Corpus/Melee/CrpBriefcase2HKatana/CrpBriefcase2HKatana
+weakness_bonus: 0.0
 traits: [corpus, tenet]
 
 ammo_max: ~

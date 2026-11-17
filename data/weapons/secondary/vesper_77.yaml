@@ -22,6 +22,7 @@ riven_family: Vesper 77
 traits: []
 introduced: "38.0"
 internal_name: /Lotus/Weapons/Lasria/LasSilencedPistol/LasSilencedPistolWeapon
+weakness_bonus: 0.2
 noise: silent               # the module's IsSilent, and the page's suppressor
 ammo_type: secondary
 ammo_max: 210

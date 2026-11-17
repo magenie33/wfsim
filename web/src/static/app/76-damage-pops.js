@@ -226,6 +226,123 @@ async function startFromResult() {
   return { added, starts: opt.starts.length };
 }
 
+const FIGHT_CURVES = [
+  { id: "dps", label: "DPS", unit: "DPS" },
+  { id: "kpm", label: "KPM", unit: "KPM" },
+  { id: "kills", label: "Kills", unit: "kills" },
+  { id: "damage", label: "Total damage", unit: "damage" },
+];
+let fightCurveId = "dps";
+
+function fightCurveData(r, id) {
+  const damage = r.timeline || [];
+  const kills = r.kill_timeline;
+  if ((id === "kills" || id === "kpm") && !Array.isArray(kills)) return null;
+  const duration = Number(r.duration) || 0;
+  const buckets = id === "kills" || id === "kpm" ? kills : damage;
+  let total = 0;
+  return [{ t: 0, value: 0 }, ...buckets.map((value, i) => {
+    const t = Math.min(i + 1, duration);
+    const seconds = Math.min(1, Math.max(0, duration - i));
+    total += value;
+    return { t, value: id === "damage" || id === "kills" ? total
+      : seconds > 0 ? value * (id === "kpm" ? 60 : 1) / seconds : 0 };
+  })];
+}
+
+function fightCurveMarkup(r) {
+  if (!(r.timeline || []).length) return "";
+  return `<div class="fight-curves">
+    <div class="curve-tabs" role="tablist" aria-label="${escHtml(tr("Fight over time"))}">
+      ${FIGHT_CURVES.map(c => `<button type="button" class="mtab" id="curve-tab-${c.id}"
+        role="tab" data-curve="${c.id}" aria-controls="curve-panel" aria-selected="false" tabindex="-1"
+        ${fightCurveData(r, c.id) ? "" : `disabled title="${escHtml(tr("Run again to view this curve"))}"`}>${escHtml(tr(c.label))}</button>`).join("")}
+    </div>
+    <div id="curve-panel" role="tabpanel" tabindex="0"><div class="tl-wrap"></div></div>
+  </div>`;
+}
+
+function replayTimelineAt(frac) {
+  const svg = $("tl-svg");
+  if (!svg) return;
+  const x = 8 + 584 * frac;
+  const now = $("tl-now"), ahead = $("tl-ahead");
+  now.hidden = false;
+  now.setAttribute("x1", x); now.setAttribute("x2", x);
+  ahead.hidden = false;
+  ahead.setAttribute("x", x); ahead.setAttribute("width", 600 - x);
+}
+
+function wireFightCurve(r) {
+  const root = $("sim-results").querySelector(".fight-curves");
+  if (!root) return;
+  const wrap = root.querySelector(".tl-wrap");
+  const tabs = [...root.querySelectorAll("[data-curve]")];
+  const n0 = x => Math.round(x || 0).toLocaleString();
+  let points = [], current;
+  const select = id => {
+    const values = fightCurveData(r, id);
+    if (!values) return;
+    fightCurveId = id;
+    points = values;
+    current = FIGHT_CURVES.find(c => c.id === id);
+    const max = Math.max(1, ...points.map(p => p.value));
+    const px = t => 8 + 584 * t / Math.max(r.duration, 1e-9);
+    const py = v => 8 + 156 * (1 - v / max);
+    const xy = (p, v = p.value) => `${px(p.t)},${py(v)}`;
+    const path = points.map((p, i) => id === "kills" && i > 0
+      ? `${xy(p, points[i - 1].value)} ${xy(p)}` : xy(p)).join(" ");
+    tabs.forEach(tab => {
+      const active = tab.dataset.curve === id;
+      tab.classList.toggle("sel", active);
+      tab.setAttribute("aria-selected", String(active));
+      tab.tabIndex = active ? 0 : -1;
+    });
+    root.querySelector("#curve-panel").setAttribute("aria-labelledby", `curve-tab-${id}`);
+    wrap.innerHTML = `<svg id="tl-svg" viewBox="0 0 600 170" preserveAspectRatio="none" role="img" aria-label="${escHtml(tr(current.label))}">
+      ${[0.25, 0.5, 0.75].map(f => `<line class="tl-grid" x1="8" x2="592" y1="${py(max * f)}" y2="${py(max * f)}"/>`).join("")}
+      <polyline class="tl-line" points="${path}"/>
+      <rect id="tl-ahead" class="tl-ahead" x="600" y="0" width="0" height="170" hidden/>
+      <line id="tl-now" class="tl-now" y1="0" y2="170" hidden/>
+      <line id="tl-cross" class="tl-cross" y1="8" y2="164" hidden/>
+      </svg><div class="tl-x"><span>0s</span><span>${r.duration}s</span></div>
+      <div class="tl-ymax">${n0(max)} ${escHtml(tr(current.unit))}</div>
+      <div id="tl-tip" class="tl-tip" hidden></div>`;
+    if (replayState && replayState.data === r.replay) {
+      const rp = r.replay;
+      replayTimelineAt(replayState.i / Math.max(rp.t.length - 1, 1));
+    }
+  };
+  tabs.forEach(tab => {
+    tab.onclick = () => select(tab.dataset.curve);
+    tab.onkeydown = event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const enabled = tabs.filter(t => !t.disabled);
+      const i = enabled.indexOf(tab);
+      const next = event.key === "Home" ? 0 : event.key === "End" ? enabled.length - 1
+        : (i + (event.key === "ArrowRight" ? 1 : -1) + enabled.length) % enabled.length;
+      enabled[next].click(); enabled[next].focus();
+    };
+  });
+  wrap.addEventListener("pointermove", event => {
+    const b = $("tl-svg").getBoundingClientRect();
+    const time = Math.max(0, Math.min(1, ((event.clientX - b.left) / b.width * 600 - 8) / 584)) * r.duration;
+    let i = points.findIndex(p => p.t >= time);
+    if (i < 0) i = points.length - 1;
+    if (i > 0 && time - points[i - 1].t < points[i].t - time) i--;
+    const p = points[i], x = 8 + 584 * p.t / Math.max(r.duration, 1e-9);
+    const cross = $("tl-cross"), tip = $("tl-tip");
+    cross.hidden = false; cross.setAttribute("x1", x); cross.setAttribute("x2", x);
+    tip.hidden = false;
+    const value = current.id === "kpm" ? p.value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : n0(p.value);
+    tip.textContent = `${p.t.toFixed(1)}s · ${value} ${tr(current.unit)}`;
+    tip.style.left = `${Math.max(0, Math.min(b.width - tip.offsetWidth, event.clientX - b.left + 10))}px`;
+  });
+  wrap.addEventListener("pointerleave", () => { $("tl-cross").hidden = true; $("tl-tip").hidden = true; });
+  select(fightCurveData(r, fightCurveId) ? fightCurveId : "dps");
+}
+
 function renderResults(r, testedAt, build, context) {
   context ||= shownResult?.r === r ? shownResult.context : resultContext();
   shownResult = { r, at: testedAt, build, context };
@@ -462,7 +579,8 @@ function renderResults(r, testedAt, build, context) {
   // they printed their raw wire key in every language.
   const SRC_LABEL = { direct: "Direct hits", radial: "Radial (AoE)",
     field: "Lingering field", arcane: "Arcane (on status)",
-    syndicate: "Syndicate radial", "extra hit": "Extra hit (ability)" };
+    syndicate: "Syndicate radial", "extra hit": "Extra hit (ability)",
+    "magnetic break": "Magnetic break" };
   const srcLabel = (k) => (SRC_LABEL[k] ? tr(SRC_LABEL[k]) : DT(k));
   // A WEAPON-damage row EXPANDS into the damage types it was dealt as — a
   // status row already IS one type, which is what a proc is. Both levels use
@@ -475,12 +593,8 @@ function renderResults(r, testedAt, build, context) {
   // quantization snaps each component to a multiple of total/32.
   // A BAR IS COLOURED BY WHAT IT IS, not by where it sits.
   //
-  // A damage TYPE gets DE's own colour (style.css, from the wiki's
-  // `Module:DamageTypes/data`); a SOURCE — "Direct hits", "Radial (AoE)" — is
-  // not a damage type and has no official colour, so it keeps a positional one
-  // from the `--s1..8` ramp. That is the split the meter was missing: it
-  // coloured everything positionally, so Heat was one colour under a direct hit
-  // and another under a field, and neither was Heat's.
+  // A single-type source gets that type's official colour and glyph.
+  // Mixed sources use the positional ramp; their expanded rows use type colours.
   const mbar = (w, ty, c, dim) => {
     const col = dtColor(ty) || `var(--s${c})`;
     return `<div class="mbar"><i style="width:${w.toFixed(1)}%;background:${col}${dim ? ";opacity:.65" : ""}"></i></div>`;
@@ -490,11 +604,12 @@ function renderResults(r, testedAt, build, context) {
   const mkey = (s, ty) => ` data-mk="${escHtml(ty ? `${s}::${ty}` : s)}"`;
   const meter = srcs.map((x, i) => {
     const c = (i % 8) + 1;
+    const type = x.by_type?.length === 1 ? x.by_type[0].type : x.source;
     const parts = x.by_type && x.by_type.length > 1 ? x.by_type : null;
     const open = !!parts && simMeterOpen.has(x.source);
     const head = `<div class="mrow${parts ? " exp" : ""}" data-src="${escHtml(x.source)}"${mkey(x.source)} data-c="${c}">
-      <span class="mname">${parts ? `<span class="mcaret">${open ? "▾" : "▸"}</span>` : ""}${dtIcon(x.source)}${srcLabel(x.source)}</span>
-      ${mbar(x.dmg / srcMax * 100, x.source, c, false)}
+      <span class="mname" title="${escHtml(srcLabel(x.source))}">${parts ? `<span class="mcaret">${open ? "▾" : "▸"}</span>` : ""}${dtIcon(type)}${srcLabel(x.source)}</span>
+      ${mbar(x.dmg / srcMax * 100, type, c, false)}
       <span class="mval">${n0(x.dmg)} · ${pct2(x.dmg / srcTotal)}</span>
     </div>`;
     if (!parts) return head;
@@ -539,32 +654,7 @@ function renderResults(r, testedAt, build, context) {
       <div class="legend">${typeRows.map(([ty, v]) =>
         `<span class="li" data-dk="${escHtml(ty)}">${dtIcon(ty)}${escHtml(DT(ty))} <span class="lv">${pct2(v / typeSum)}</span></span>`).join("")}</div>` : "";
 
-  // DPS-over-time curve: the MEDIAN run's per-bucket
-  // EFFECTIVE dps. One series — the accent line, recessive grid, hover
-  // crosshair + tooltip; no legend needed.
-  const tl = r.timeline || [];
-  const bucketSecs = (r.duration || 1) / (tl.length || 1);
-  const dpsPts = tl.map((v) => v / bucketSecs);
-  const tlMax = Math.max(1, ...dpsPts);
-  const W = 600, H = 170, PADL = 8, PADR = 8, PADT = 8, PADB = 6;
-  const px = (i) => PADL + ((i + 1) / tl.length) * (W - PADL - PADR);
-  const py = (v) => PADT + (1 - v / tlMax) * (H - PADT - PADB);
-  const pts = dpsPts.map((v, i) => `${px(i)},${py(v)}`).join(" ");
-  const tlGrid = [0.25, 0.5, 0.75].map((f) =>
-    `<line class="tl-grid" x1="${PADL}" x2="${W - PADR}" y1="${py(tlMax * f)}" y2="${py(tlMax * f)}"/>`).join("");
-  const chart = tl.length ? `
-      <div class="tl-wrap">
-        <svg id="tl-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-          ${tlGrid}
-          <polyline class="tl-line" points="${pts}"/>
-          <rect id="tl-ahead" class="tl-ahead" x="${W}" y="0" width="0" height="${H}" hidden/>
-          <line id="tl-now" class="tl-now" y1="0" y2="${H}" x1="0" x2="0" hidden/>
-          <line id="tl-cross" class="tl-cross" y1="${PADT}" y2="${H - PADB}" hidden/>
-        </svg>
-        <div class="tl-x"><span>0s</span><span>${n0(r.duration)}s</span></div>
-        <div class="tl-ymax">${n0(tlMax)}</div>
-        <div id="tl-tip" class="tl-tip" hidden></div>
-      </div>` : "";
+  const chart = fightCurveMarkup(r);
   const { bar: replayBar, where: whereBlock, curves: curveBlocks } = replayMarkup(r);
   // THE BENCHMARK FIGHT — one of the runs, the middle one by the metric
   // (`Summary::median_run`). Everything above it is a MEAN and holds still;
@@ -651,7 +741,7 @@ function renderResults(r, testedAt, build, context) {
         ${combatantBlock(r)}
         ${foldBlock("meter", tr("Damage by source"), tr("where it came from"),
           `<div class="meter">${meter.length ? meter : `<div class="sb-empty">${tr("no damage dealt")}</div>`}</div>${composition}`)}
-        ${foldBlock("curve", tr("DPS over time"), tr("this fight, one bucket a second"), chart)}
+        ${foldBlock("curve", tr("Fight over time"), tr("this fight, one bucket a second"), chart)}
         ${whereBlock}`)}
       ${zone(5, tr("Details"), tr("every damage instance, each checkable against in-game footage"), `
         ${recordMarkup(r)}
@@ -741,24 +831,5 @@ function renderResults(r, testedAt, build, context) {
   }
   refreshResultStatus();
   wireReplay(r);
-  // Chart hover: crosshair + tooltip on the nearest time bucket.
-  const wrap = $("sim-results").querySelector(".tl-wrap");
-  if (wrap) {
-    const svg = wrap.querySelector("#tl-svg");
-    const tip = wrap.querySelector("#tl-tip");
-    const cross = wrap.querySelector("#tl-cross");
-    wrap.addEventListener("mousemove", (ev) => {
-      const b = svg.getBoundingClientRect();
-      const fx = (ev.clientX - b.left) / b.width;
-      const i = Math.max(0, Math.min(tl.length - 1, Math.round(fx * tl.length) - 1));
-      cross.hidden = false;
-      cross.setAttribute("x1", px(i)); cross.setAttribute("x2", px(i));
-      tip.hidden = false;
-      tip.textContent = `${(((i + 1) / tl.length) * r.duration).toFixed(1)}s · ${n0(dpsPts[i])} DPS`;
-      tip.style.left = Math.min(b.width - 120, Math.max(0, ev.clientX - b.left + 10)) + "px";
-    });
-    wrap.addEventListener("mouseleave", () => { cross.hidden = true; tip.hidden = true; });
-  }
+  wireFightCurve(r);
 }
-
-

@@ -2131,7 +2131,7 @@
       "value": 0.2
     }
   ],
-  "unbound_weapon_defaults": [
+  "package_only_missing_weakness_declarations": [
     "arbucep",
     "cortege",
     "corvas",

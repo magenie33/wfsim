@@ -1255,6 +1255,7 @@ impl FightParams {
                 melee_scaling: None,
                 damage: panel.damage,
                 modified_base: panel.modified_base,
+                critical_inputs: panel.critical_inputs,
                 crit_chance: panel.crit_chance,
                 crit_damage: panel.crit_damage,
                 status_chance: panel.status_chance,
@@ -1289,6 +1290,7 @@ impl FightParams {
                 melee_scaling: None,
                 damage: r.damage,
                 modified_base: r.modified_base,
+                critical_inputs: r.critical_inputs,
                 crit_chance: r.crit_chance,
                 crit_damage: r.crit_damage,
                 status_chance: r.status_chance,
@@ -1317,10 +1319,11 @@ impl FightParams {
             spectral_dagger: panel.spectral_dagger.map(|g| {
                 let part = |r: crate::build::loadout::ResolvedRadial,
                             strike: bool| crate::build::loadout::ResolvedLingering {
-                heavy_damage_mods_apply: true,
-                melee_scaling: None,
+                    heavy_damage_mods_apply: true,
+                    melee_scaling: None,
                     damage: r.damage,
                     modified_base: r.modified_base,
+                    critical_inputs: r.critical_inputs,
                     crit_chance: r.crit_chance,
                     crit_damage: r.crit_damage,
                     status_chance: r.status_chance,
@@ -1379,6 +1382,7 @@ impl FightParams {
             headshot_bonus_multiplicative: panel.headshot_bonus_multiplicative,
             noncrit_bonus: panel.noncrit_bonus,
             stacking_buffs: panel.stacking_buffs.clone(),
+            critical_inputs: panel.critical_inputs,
             base_crit_chance: panel.crit_chance,
             crit_multiplier: panel.crit_damage,
             crit_multiplier_below_crit_chance: panel.crit_multiplier_below_crit_chance,
@@ -1481,6 +1485,7 @@ impl FightParams {
             weakpoint_open: None,
             crit_chance_stack: panel.crit_chance_stack,
             status_damage_multiplier: panel.status_damage_multiplier,
+            native_status_damage_bonus: Some(panel.native_status_damage_bonus),
             status_damage_of_type: panel.status_damage_of_type.clone(),
             status_duration_multiplier: panel.status_duration_multiplier,
             elem_dot_bonus: panel.elem_dot_bonus.clone(),
@@ -1901,8 +1906,11 @@ impl RunResult {
     /// leaves a pack nobody collects. Counting kills without that question
     /// could only ever model an infinite reach.
     pub(super) fn note_kills(&mut self, killed: u32, at: f64, in_reach: bool) {
-        if killed > 0 && self.first_kill_at.is_none() {
-            self.first_kill_at = Some(at);
+        if killed > 0 {
+            if self.first_kill_at.is_none() {
+                self.first_kill_at = Some(at);
+            }
+            self.kill_timeline.0[(at.max(0.0) as usize).min(TIMELINE_BUCKETS - 1)] += killed;
         }
         self.kills += killed;
         if self.kill_clock_on && !self.kill_clock_paused {

@@ -382,6 +382,20 @@ moved) to the server, restarts it and checks the engine it holds
 IT READS THE PUBLISHED BOARD, the one the card page draws from, so the words
 and the image of one answer stand on the same rows.
 
+`zk`, `pz` and `fx` accept a ruler's full cell id, full display name or a base
+ruler's short name. Short names and an omitted ruler use the base conditions;
+omission selects the primary ruler. Resolve the ruler before the trailing
+result count, since scene ids can end in digits. Read the chosen cell's
+`cell_dir` file; top-build heads contain all cells and must be filtered.
+`builder.board.read` accepts the same optional exact `ruler` id.
+
+`help` sends a shared illustrated guide plus copyable command examples;
+`help rulers` lists every cell id and its complete conditions. Chinese aliases
+are `帮助` and `帮助 标尺`. The standalone page is `/nona/help/card`, with
+`?topic=rulers` for the index. The guide derives its rulers from metadata and
+its four-stat FX example from `/api/riven`; if that lookup fails, it asks for
+the reader's card values. Bot documents and page cards draw the same guide.
+
 Fixed chat copy distinguishes board lookup, submitted search and replayed
 result delivery. Waiting messages promise no completion time. The result names
 its delivery author; it does not announce independent consensus or claim the

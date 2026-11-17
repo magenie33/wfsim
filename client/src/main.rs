@@ -6,6 +6,9 @@ mod net;
 mod runner;
 mod state;
 mod supervisor;
+#[path = "../../desktop/src/trust.rs"]
+mod trust;
+mod update;
 
 use clap::{Parser, Subcommand};
 use fs2::FileExt;
@@ -95,9 +98,18 @@ enum Service {
 }
 
 fn main() {
-    if let Err(e) = run() {
+    let result = update::delegate().and_then(|code| {
+        if let Some(code) = code {
+            std::process::exit(code);
+        }
+        run()
+    });
+    if let Err(e) = result {
         if e.downcast_ref::<runner::EngineChanged>().is_some() {
             std::process::exit(supervisor::ENGINE_CHANGED);
+        }
+        if e.downcast_ref::<update::HostChanged>().is_some() {
+            std::process::exit(update::HOST_CHANGED);
         }
         eprintln!("WFSim: {e}");
         std::process::exit(1);
@@ -204,13 +216,15 @@ fn run() -> Result<()> {
             result?;
         }
         Action::Start { .. } => {
+            let supervisor = instance_lock(&dir, "supervisor.lock")?;
             let running = instance(&dir)?;
             drop(running);
+            drop(supervisor);
             let log = state::private_options()
                 .create(true)
                 .append(true)
                 .open(dir.join("client.log"))?;
-            let mut cmd = Command::new(std::env::current_exe()?);
+            let mut cmd = Command::new(update::launcher(&dir)?);
             cmd.arg("--data-dir")
                 .arg(&dir)
                 .arg("join")
@@ -260,6 +274,8 @@ fn run() -> Result<()> {
             }
             status["config"] = serde_json::to_value(&config)?;
             status["directory"] = json!(dir);
+            status["host_update"] =
+                state::read::<Value>(&dir.join("hosts/update.json")).unwrap_or(Value::Null);
             if refresh {
                 let id = fs::read_to_string(dir.join("identity"))?;
                 status["contribution"] = net::Net::new(&config.server)
@@ -337,11 +353,15 @@ fn consent(config: &mut Config, yes: bool) -> Result<()> {
 }
 
 fn instance(dir: &Path) -> Result<fs::File> {
+    instance_lock(dir, "running.lock")
+}
+
+fn instance_lock(dir: &Path, name: &str) -> Result<fs::File> {
     let file = state::private_options()
         .read(true)
         .create(true)
         .truncate(false)
-        .open(dir.join("running.lock"))?;
+        .open(dir.join(name))?;
     file.try_lock_exclusive()
         .map_err(|_| "a client already runs for this device; use wfsim status/pause/stop")?;
     Ok(file)
@@ -436,7 +456,7 @@ fn service(dir: &Path, config: &Config, action: Service) -> Result<()> {
                             .replace('$', "$$")
                     ))
                 };
-                fs::write(&unit,format!("[Unit]\nDescription=WFSim volunteer computing\nAfter=network-online.target\n\n[Service]\nExecStart={} --data-dir {} join\nRestart=on-failure\nRestartSec=15\nTimeoutStopSec=60\n\n[Install]\nWantedBy=default.target\n",quote(&std::env::current_exe()?)?,quote(dir)?))?;
+                fs::write(&unit,format!("[Unit]\nDescription=WFSim volunteer computing\nAfter=network-online.target\n\n[Service]\nExecStart={} --data-dir {} join\nRestart=on-failure\nRestartSec=15\nTimeoutStopSec=60\n\n[Install]\nWantedBy=default.target\n",quote(&update::launcher(dir)?)?,quote(dir)?))?;
                 systemctl(&["daemon-reload"])?;
                 systemctl(&["enable", "--now", "wfsim-compute.service"])?;
                 println!("User service installed. For operation after logout/reboot, enable user lingering with: loginctl enable-linger {}",std::env::var("USER").unwrap_or_default());

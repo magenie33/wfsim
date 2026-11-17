@@ -1,6 +1,27 @@
 use super::*;
 
 #[test]
+fn kill_timeline_matches_the_record_and_the_fights_total() {
+    let mut p = bare(DamageType::Impact);
+    p.duration_seconds = 2.5;
+    p.foe.mode = TargetMode::InstantRespawn;
+    p.foe.base_health = 1.0;
+    p.fire_rate = 4.0;
+    let r = run_once(&p, &mut Rng::new(17));
+    let rec = record(&p, r.rng_state, 0.0, 2.5, 10000, 0);
+    let mut expected = [0_u32; 3];
+    for e in rec.events() {
+        match &e.kind {
+            crate::record::Kind::Damage(d) if d.killed => expected[e.t as usize] += 1,
+            _ => {}
+        }
+    }
+    assert!(expected.iter().all(|&n| n > 0), "the fixture kills in every bucket");
+    assert_eq!(&r.kill_timeline.0[..3], &expected);
+    assert_eq!(r.kill_timeline.0.iter().sum::<u32>(), r.kills);
+}
+
+#[test]
 fn thrax_9999_takes_everything_on_overguard_neutrally() {
     // THE ULTIMATE STRESS TEST benchmark: Thrax @9999 STEEL PATH
     // (9.67M health behind 15.5M overguard) - every instance (direct
@@ -360,7 +381,9 @@ fn the_damage_meters_parts_add_up_to_the_whole() {
         ..bare(DamageType::Slash)
     };
     p.base_crit_chance = 0.5;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.crit_multiplier = 2.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
     p.multishot = 2.4;
 
     let r = run_once(&p, &mut Rng::new(0x5EED));
@@ -371,6 +394,7 @@ fn the_damage_meters_parts_add_up_to_the_whole() {
         + s.arcane_on_status
         + s.extra_hit
         + s.syndicate
+        + s.magnetic_break
         + s.status.iter().sum::<f64>();
     let whole = r.effective_damage();
     assert!(whole > 0.0, "the fixture deals damage");
@@ -393,7 +417,9 @@ fn the_record_adds_up_to_the_damage_total() {
         ..bare(DamageType::Slash)
     };
     p.base_crit_chance = 0.5;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.crit_multiplier = 2.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
     p.multishot = 2.4;
     // SOMETHING IN THE BASE-DAMAGE BRACKET. An unmodded weapon's ledger is
     // legitimately EMPTY — every factor is 1.0 and the base IS the raw —
@@ -437,6 +463,10 @@ fn the_record_adds_up_to_the_damage_total() {
         let mut at = d.base;
         for l in &d.layers {
             at = match l {
+                crate::record::Layer::Clamp { minimum, out, .. } => {
+                    assert_eq!(at.max(*minimum), *out);
+                    *out
+                }
                 crate::record::Layer::Bracket { terms, sum, out, .. } => {
                     let s: f64 = 1.0 + terms.iter().map(|t| t.value).sum::<f64>();
                     assert!(
@@ -709,7 +739,9 @@ fn every_frame_that_took_damage_wrote_a_row() {
         ..bare(DamageType::Slash)
     };
     p.base_crit_chance = 0.5;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
     p.crit_multiplier = 2.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
     let rep = replay(&p, 0, 60);
     let rec = record(&p, 0, 0.0, f64::INFINITY, 1_000_000, 0);
     assert_eq!(rec.dropped(), 0, "the cap is not what this is measuring");

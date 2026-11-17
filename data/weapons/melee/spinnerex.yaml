@@ -18,6 +18,7 @@ polarities: [madurai]
 stance_polarity: zenurik
 introduced: "Update 39"
 internal_name: /Lotus/Weapons/Tenno/Melee/Whips/SpiderWhip/SpiderWhipWeapon
+weakness_bonus: 0.0
 traits: []
 
 ammo_max: ~

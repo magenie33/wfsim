@@ -21,6 +21,7 @@ riven_family: Cyanex
 traits: [corpus, sentient]
 introduced: "25.0"
 internal_name: /Lotus/Weapons/Corpus/Pistols/CrpSentAmalgPistol/CrpSentAmalgPistol
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 210

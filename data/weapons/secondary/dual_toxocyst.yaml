@@ -32,6 +32,7 @@ traits: [infested, incarnon]
 conclave: true
 introduced: "18.5"           # Update 18.5
 internal_name: /Lotus/Weapons/Infested/Pistols/InfVomitGun/InfVomitGunWep
+weakness_bonus: 0.2
 ammo_type: secondary
 ammo_max: 60
 ammo_pickup: 40

@@ -402,7 +402,9 @@ fn a_hunter_munitions_bleed_is_indistinguishable_from_any_other_slash() {
     let tier2 = same(
         pair(|p| {
             p.base_crit_chance = 2.0;
+            if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
             p.crit_multiplier = 3.0;
+            if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
         }),
         "tier 2",
     );
@@ -416,6 +418,7 @@ fn a_hunter_munitions_bleed_is_indistinguishable_from_any_other_slash() {
         pair(|p| {
             p.crit_tier_upgrade_chance = 1.0;
             p.crit_multiplier = 3.0;
+            if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_damage(p.crit_multiplier, p.unmodded_crit_damage, p.crit_multiplier_below_crit_chance); }
         }),
         "vigilante-promoted parent",
     );
@@ -481,6 +484,7 @@ fn an_internal_bleeding_bleed_is_indistinguishable_from_any_other_slash() {
 #[test]
 fn the_vigilante_promotion_reaches_an_explosion_too() {
     let radial = crate::build::loadout::ResolvedRadial {
+        critical_inputs: None,
         delay_seconds: 0.0,
         blast_kind: crate::model::BlastKind::Contact,
         damage: {
@@ -818,15 +822,20 @@ fn a_plain_multishot_grant_is_not_multiplied() {
 }
 
 #[test]
-fn status_immunities_renormalize_toward_other_procs() {
-    // Slash-immune target: no bleeds ever, but procs still occur at the
-    // full 37% rate (renormalized onto Impact/Puncture).
+fn final_status_immunity_filters_applications_without_renormalizing() {
+    // N07A keeps generated Slash weight; the final application is rejected.
     let mut p = FightParams::default();
     p.foe.status_immunities = vec![DamageType::Slash];
+    p.foe.proc_handlers = Some(crate::rules::status::SceneProcHandlers::all());
     let s = monte_carlo(&p, 1000, 15);
     assert_eq!(s.mean_dot_damage, 0.0);
     let per_shot = s.mean_procs / s.mean_shots;
-    assert!((per_shot - 0.37).abs() < 0.03, "procs/shot {per_shot}");
+    let expected = p.status_chance * (1.0 - p.damage.get(DamageType::Slash) / p.damage.total());
+    assert!((per_shot - expected).abs() < 0.02, "procs/shot {per_shot}, expected {expected}");
+    p.foe.proc_handlers = None;
+    let fallback = monte_carlo(&p, 1000, 15);
+    let per_shot = fallback.mean_procs / fallback.mean_shots;
+    assert!((per_shot - p.status_chance).abs() < 0.02, "scene fallback {per_shot}");
 }
 
 #[test]

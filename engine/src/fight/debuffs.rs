@@ -145,7 +145,7 @@ pub(super) struct DebuffState {
     /// second one.
     pub(super) attractor: Vec<f64>,
     /// Status Chance Vulnerability (Tau), one expiry a stack — see
-    /// [`DebuffState::received_status_chance`].
+    /// [`DebuffState::received_proc_chance`].
     pub(super) tau: Vec<f64>,
     pub(super) blast: Vec<BlastStack>,
     /// THE SHOT THAT FILLED THE PILE, as `(RunResult::shots, instant)`. A Blast
@@ -484,13 +484,15 @@ impl DebuffState {
 
 #[wfsim_gas_macro::metered]
 impl DebuffState {
-    /// WHAT A ROLLED STATUS CHANCE IS WORTH ON THIS BODY: `1 + 10%` a live Tau
-    /// stack, a MULTIPLIER — the page's 210% reads 315% at five stacks and 420%
-    /// at ten. Every rolled chance aimed at the body takes it and a forced proc
-    /// does not ("will not create additional procs due to this
-    /// vulnerability"), so the caller multiplies the chance it rolls with.
-    pub(super) fn received_status_chance(&self, now: f64) -> f64 {
-        1.0 + TAU_STATUS_CHANCE_PER_STACK * self.tau.iter().filter(|&&e| e > now).count() as f64
+    /// Scene-selected Tau entries enter the native late target117 query (N07A).
+    pub(super) fn received_proc_chance(&self, packet_chance: f64, now: f64) -> f64 {
+        use crate::rules::upgrades::{OperationType, UpgradeEntry, UpgradeType};
+        let stacks = self.tau.iter().filter(|&&expiry| expiry > now).count();
+        if stacks == 0 { return packet_chance as f32 as f64; }
+        let entry = UpgradeEntry { UpgradeType: UpgradeType::AVATAR_PROC_CHANCE_VULNERABILITY,
+            OperationType: OperationType::STACKING_MULTIPLY,
+            Value: TAU_STATUS_CHANCE_PER_STACK as f32 * stacks as f32 };
+        crate::rules::upgrades::target_proc_chance(packet_chance as f32, [entry]) as f64
     }
 
     /// FIFO push with the universal replace-oldest rule (application-time
@@ -539,7 +541,7 @@ impl DebuffState {
             if *r == radius_m
                 && d.dtype == dot.dtype
                 && d.ticks_left == dot.ticks_left
-                && (d.frozen - dot.frozen).abs() < 1e-9
+                && (d.snapshot_damage() - dot.snapshot_damage()).abs() < 1e-9
                 && (d.next_tick - dot.next_tick).abs() < 1e-9
             {
                 *n = (*n + 1).min(lim);
@@ -640,30 +642,46 @@ impl DebuffState {
         // what moves is WHEN the damage lands. HERE rather than in `push_dot`,
         // because a Gas cloud and a Tesla arc reach NEIGHBOURS through
         // `post_area` and those instances join the neighbour's clock too.
-        if matches!(dot.dtype, DamageType::Electricity | DamageType::Gas) {
-            if let Some(shared) = self
-                .dots
-                .iter()
-                .find(|d| d.dtype == dot.dtype && d.ticks_left > 0)
-                .map(|d| d.next_tick)
-            {
-                if shared > dot.next_tick {
-                    dot.next_tick = shared;
+        let Some(cap) = cap else {
+            if matches!(dot.dtype, DamageType::Electricity | DamageType::Gas) {
+                if let Some(shared) = self.dots.iter()
+                    .find(|d| d.dtype == dot.dtype && d.ticks_left > 0)
+                    .map(|d| d.next_tick)
+                {
+                    if shared > dot.next_tick { dot.next_tick = shared; }
                 }
+            }
+            self.push_dot(dot);
+            return;
+        };
+        let consolidated = matches!(dot.dtype, DamageType::Electricity | DamageType::Gas);
+        let mut count = 0_usize;
+        let mut oldest = 0;
+        let mut shared_clock = None;
+        for (index, existing) in self.dots.iter().enumerate() {
+            if existing.dtype != dot.dtype { continue; }
+            if count == 0 { oldest = index; }
+            count += 1;
+            if consolidated && shared_clock.is_none() && existing.ticks_left > 0 {
+                shared_clock = Some(existing.next_tick);
             }
         }
-        if let Some(cap) = cap {
-            // Count once; FIFO removal preserves every other family's order.
-            let mut count = self.dots.iter().filter(|d| d.dtype == dot.dtype).count();
-            while count >= cap {
-                match self.dots.iter().position(|d| d.dtype == dot.dtype) {
-                    Some(i) => {
-                        self.dots.remove(i);
-                        count -= 1;
-                    }
-                    None => break,
+        // The first live clock belongs to the pre-eviction list, including an evicted stack.
+        if let Some(shared) = shared_clock {
+            if shared > dot.next_tick { dot.next_tick = shared; }
+        }
+        let mut remove = count.saturating_sub(cap.saturating_sub(1));
+        if remove == 1 {
+            self.dots.remove(oldest);
+        } else if remove > 1 {
+            self.dots.retain(|existing| {
+                if existing.dtype == dot.dtype && remove > 0 {
+                    remove -= 1;
+                    false
+                } else {
+                    true
                 }
-            }
+            });
         }
         self.push_dot(dot);
     }

@@ -20,6 +20,7 @@ stance_polarity: naramon
 introduced: "Update 42"
 # DE's export keys this item as below; the wiki module writes /Lotus/Weapons/Grineer/Melee/GrnGhoulSaw/GrnKuvaGhoulSawPlayer
 internal_name: /Lotus/Weapons/Grineer/KuvaLich/Melee/Ghoulsaw/KuvaGhoulSaw
+weakness_bonus: 0.0
 traits: [grineer, kuva_lich]
 
 ammo_max: ~

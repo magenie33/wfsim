@@ -21,6 +21,7 @@ riven_family: Akzani
 traits: [tenno]
 introduced: "14.0"
 internal_name: /Lotus/Weapons/Tenno/Pistols/HarlequinGun/HarlequinPistols
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 400

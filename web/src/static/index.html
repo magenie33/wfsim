@@ -124,6 +124,7 @@
       <a class="brand" href="/">WF<span>Sim</span></a>
       <!-- Global weapon search (filter + sort). The hidden #weapon select
            stays as the router's internal source of truth. -->
+      <template id="topbar-search-anchor"></template>
       <div class="wsearch">
         <input id="wsearch-input" type="text" autocomplete="off" />
         <div id="wsearch-panel" class="wsearch-panel" hidden>
@@ -371,31 +372,19 @@
 
   <!-- Home: the weapon list. Click a card → that weapon's config page. -->
   <main id="home-page" class="home-page" hidden>
-    <!-- ONE i18n key for the whole sentence; the gold on "Prime" is applied
-         after translation (applyI18n), because those four letters are the
-         same in every language. Splitting it into two keys is what made the
-         old "The Simulacrum. / The Primed One." pair awkward to translate. -->
-    <h1 id="h-home" class="hero-h" data-i18n-gold="Prime">The real Simulacrum Prime.</h1>
-    <!-- A STANCE, NOT A SELF-ASSESSMENT. It says what this tool does that a
-         static calculation does not: every hit is run and counted, and every
-         one can be read in the record. "The ultimate calculator" was a grade
-         awarded by the thing being graded, and a reader discounts one of
-         those to nothing. Nothing on this screen may praise the tool.
-
-         WHAT FOLLOWS IT IS COUNTED, NOT ADJECTIVAL (`renderHomeFacts`), and
-         the accountability line under the numbers is DEMOTED on purpose: the
-         terms are a footnote to a figure, the way a chart carries its data
-         source. /support argues the whole case; the hero states it once. -->
-    <p class="hero-stance" data-i18n>Every hit counts.</p>
-    <p class="hero-sub hero-lead" data-i18n>Builder, simulator, optimizer.</p>
-    <!-- THE CLAIM IS DRAWN ONLY WITH ITS COUNT (`renderHomeTally`): where
-         /api/board/tally does not answer, neither is shown. -->
-    <div id="home-tally" hidden>
-      <p class="hero-stance" data-i18n>The first build leaderboard computed by its players.</p>
-      <div class="hero-facts" id="home-tally-n"></div>
-    </div>
-    <div class="hero-facts" id="home-facts" hidden></div>
-    <p class="hero-note"><span data-i18n>Every formula cites its source, and every golden test is calibrated against a real in-game run.</span> <a href="/support#method" data-i18n>How to check it</a></p>
+    <section class="home-hero" aria-labelledby="h-home">
+      <p class="hero-stance" data-i18n>Every hit counts.</p>
+      <!-- One translated sentence; Prime keeps its game colour. -->
+      <h1 id="h-home" class="hero-h" data-i18n-gold="Prime">The real Simulacrum Prime.</h1>
+      <p class="hero-sub hero-lead" data-i18n>Builder, simulator, optimizer.</p>
+      <p id="home-community" class="home-community" data-i18n hidden>The first build leaderboard computed by its players.</p>
+      <div class="home-stats">
+        <div class="hero-facts" id="home-facts" hidden></div>
+        <div id="home-tally" hidden><div class="hero-facts" id="home-tally-n"></div></div>
+      </div>
+      <div id="home-search" class="home-entry"><kbd aria-hidden="true">/</kbd></div>
+      <p class="hero-note"><span data-i18n>Every formula cites its source, and every golden test is calibrated against a real in-game run.</span> <a href="/support#method" data-i18n>How to check it</a></p>
+    </section>
     <!-- ONE SECTION PER EQUIPMENT SLOT, in `META.equipment_slots` order
          (data/equipment_slots.yaml) — the page names no slot of its own. -->
     <div id="home-nav" class="snav"></div>

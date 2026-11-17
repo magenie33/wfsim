@@ -19,6 +19,7 @@ polarities: [madurai]
 stance_polarity: naramon
 introduced: "Update 8.0"
 internal_name: /Lotus/Weapons/Grineer/Melee/GrineerMachetteAndCleaver/DualCleaverWeapon
+weakness_bonus: 0.0
 traits: [grineer]
 
 ammo_max: ~

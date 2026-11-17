@@ -109,7 +109,6 @@ pub(super) struct Live<'a> {
     pub(super) any_big: &'a mut bool,
     pub(super) any_head: &'a mut bool,
     pub(super) beam_merge: &'a mut f64,
-    pub(super) encumber_done: &'a mut bool,
     pub(super) field_duration_boost: &'a mut bool,
     pub(super) influence_until: &'a mut f64,
     pub(super) landed_this_shot: &'a mut bool,
@@ -294,7 +293,6 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     let any_big = &mut *live.any_big;
     let any_head = &mut *live.any_head;
     let beam_merge = &mut *live.beam_merge;
-    let encumber_done = &mut *live.encumber_done;
     let field_duration_boost = &mut *live.field_duration_boost;
     let influence_until = &mut *live.influence_until;
     let landed_this_shot = &mut *live.landed_this_shot;
@@ -394,17 +392,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         Some((granted, below)) if effective_cc >= below => granted,
         _ => 0.0,
     };
-    let cd_total = active.crit_multiplier - prelude_lost
-        + active.unmodded_crit_damage * crit_damage_relative
-        + cd_abs
-        // Mauler's Magazine, earned inside the fight — a BASE grant,
-        // already multiplied by the crit-damage mods at `resolve`, the
-        // same conversion `FlatBaseDamage` takes one bracket over.
+    let damage_flat = cd_abs
         + buff_total(active, crate::model::BuffGrant::BaseCritDamage, &mut *buff_stacks, t)
-        // …and the other half of the same condition, decided by the
-        // same shot: an absolute add, already multiplied by the
-        // crit-damage mods at `resolve`.
         + if undamaged { active.crit_damage_on_undamaged } else { 0.0 };
+    let cd_total = active.critical_inputs.map_or_else(
+        || active.crit_multiplier - prelude_lost + active.unmodded_crit_damage * crit_damage_relative + damage_flat,
+        |inputs| inputs.damage(effective_cc, crit_damage_relative, damage_flat),
+    );
     // Live BASE-DAMAGE bucket additions, evaluated per instance:
     //  - arcane stacks (Merciless/Deadhead/Dexterity/Cascadia Flare)
     //  - Overwhelming Attrition's earned stacks — VERBATIM (wiki
@@ -548,19 +542,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             p
         }
     };
-    let cc_pellet = effective_cc
-        + if part.is_weak_point {
-            // THE WEAK POINT, NOT THE HEAD. The wiki lists the weak-point
-            // critical-chance bracket under BOTH categories, so a Bursa's rear
-            // takes it and the Ropalolyst's head does not.
-            //
-            // Weak-point-only crit chance is relative too, and it is
-            // DIRECT-only, so the direct part's base is the right one.
-            active.unmodded_crit_chance
-                * (active.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative)
-        } else {
-            0.0
-        };
+    let weakpoint_relative = if part.is_weak_point {
+        active.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative
+    } else { 0.0 };
+    let cc_pellet = effective_cc + active.unmodded_crit_chance * weakpoint_relative;
     // KING'S GAMBIT, the other half of the same bullet: "x0 Critical
     // Chance on Bodyshots". MULTIPLICATIVE, and the card's own note is
     // why it is applied here rather than folded into a bucket —
@@ -667,7 +652,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     } else {
         cd_total
     };
-    let crit_multiplier = 1.0 + tier as f64 * (cd - 1.0);
+    let crit_multiplier = crate::rules::critical::factor(tier, cd as f32) as f64;
 
     // Faction bonus (System A) is a total-damage multiplier applied
     // once per instance; DoT/status ticks apply it a SECOND time
@@ -1216,7 +1201,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 // Effect damage, so it does not get it — the lingering
                 // field never did, and the radial's copy of this line
                 // was the odd one out.
-                let rcc = r.crit_chance + flat_crit + r.base_crit_chance * crit_chance_relative;
+                let rcc = r.critical_inputs.map_or_else(
+                    || r.crit_chance + flat_crit + r.base_crit_chance * crit_chance_relative,
+                    |inputs| inputs.chance(crit_chance_relative, flat_crit),
+                );
                 // The set promotes a critical hit "from Primary
                 // Weapons" with no qualifier about which attack part
                 // made it, and the direct hit and the lingering field
@@ -1289,14 +1277,17 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         // understated Toxin's shield bypass by exactly that factor.
         let shares = TypeShares::of(&qvec);
         let crit_multiplier = match &rad {
-            None if replay => 1.0 + tier as f64 * (cd - 1.0),
+            None if replay => crate::rules::critical::factor(tier, cd as f32) as f64,
             None => crit_multiplier,
             Some(r) => {
                 // No `part.crit_bonus` doubling: that is the crit-
                 // HEADSHOT rule and an explosion has no hit location.
                 // No Cold either: Area of Effect damage (M117).
-                let rcd = r.crit_damage + r.base_crit_damage * crit_damage_relative + cd_abs - cold_cd;
-                1.0 + tier as f64 * (rcd - 1.0)
+                let rcd = r.critical_inputs.map_or_else(
+                    || r.crit_damage + r.base_crit_damage * crit_damage_relative + cd_abs - cold_cd,
+                    |inputs| inputs.damage(0.0, crit_damage_relative, cd_abs - cold_cd),
+                );
+                crate::rules::critical::factor(tier, rcd as f32) as f64
             }
         };
         let part_factor = if direct { part_factor } else { 1.0 };
@@ -1485,9 +1476,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         } else {
             dt_mult
         };
-        let raw_before_roll = |crit_multiplier, attrition| qtotal
+        let raw_before_roll = |crit_multiplier: f64, attrition: f64|
+            crate::rules::critical::apply_factor(qtotal as f32, crit_multiplier as f32) as f64
             * part_factor
-            * crit_multiplier
             * bucket
             * params.faction_at_time(t)
             * arc_final
@@ -1798,31 +1789,14 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     t,
                 );
             }
-            // …AND THE ECHO, per landing pellet, because the arcane
-            // says each one triggers it.
-            spread_from_echo(
-                seat,
-                windows,
-                bodies,
-                bodies[0].debuffs.confusion.len(),
-                params,
-                active,
-                body_only(raw / bucket),
-                shares,
-                crit_multiplier,
-                tier,
-                attrition,
-                spread_mb,
-                status_chance,
-                forced,
-                &spread_composition,
-                &mut *gal,
-                &mut *arc,
-                &mut *r,
-                rec,
-                d,
-                t,
-            );
+            if params.arcane.echo_share > 0.0 {
+                irradiate::submit_immediate_direct_echo(&mut bodies[0], 0, params, arc, || SpreadStrike {
+                    raw_per_bucket: body_only(raw / bucket), shares, crit_multiplier,
+                    crit_tier: tier, attrition, modded_base: spread_mb, status_chance,
+                    forced: forced.to_vec(), status_vector: spread_composition,
+                });
+                irradiate::drain_echoes(seat, windows, bodies, params, active, gal, arc, r, rec, d, t);
+            }
             // …AND EVERYTHING BEHIND THE TARGET that this pellet
             // punched through to, at full damage. Only where there is
             // no beam: with one, these bodies are the chain's seeds
@@ -2314,14 +2288,12 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // …and the clouds stay where they were. See `field_tick`.
             continue;
         }
-        // Per-INSTANCE proc roll (wiki Multishot/Status_Effect):
-        // forced ++ SC draws weighted by the QUANTIZED vector, unit
-        // immunities renormalized.
+        // N07A generates counters before final immunity; the scene supplies this instance.
         let mut procs = status::procs_for_hit(
             forced,
-            status_chance * bodies[0].debuffs.received_status_chance(t),
+            bodies[0].debuffs.received_proc_chance(status_chance, t),
             &status_vector,
-            &params.foe.status_immunities,
+            params.foe.proc_handlers(),
             &mut d.status,
         );
         // HUNTER MUNITIONS: a critical hit rolls its OWN Slash status,
@@ -2355,26 +2327,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         {
             procs.push(DamageType::Slash);
         }
-    // Secondary Encumber: on a status this pellet applied, roll
-    // ONE extra status of a uniformly random type (13-type pool,
-    // independent of the weapon's vector — wiki), at most once per
-    // instant (= per trigger pull, and the radial STAGE shares the
-    // limit — the wiki names Explosions among the simultaneous
-    // attacks that "only proc up to once on a single target").
-    //
-    // This reproduces the wiki's per-shot rate
-    //   1 − (1 − chance × min(statusChance, 1)) ^ pellets
-    // exactly, without implementing the min() as a cap: a pellet
-    // either applied a status (`!procs.is_empty()`) or it did not, so
-    // status chance above 100% guarantees the first proc but cannot
-    // give a pellet two shots at Encumber. Trigger scope is
-    // health-bar statuses only (U33 patch note) — the only kind a
-    // proc list ever holds.
-    if let Some(proc) = encumber_proc(params.arcane.encumber_chance, !procs.is_empty(),
-        encumber_done, &mut d.extra)
-    {
-        procs.push(proc);
-    }
+    arc.encumber(params, t, &params.foe, &mut procs);
     // Internal Bleeding / Hemorrhage: one roll per damage INSTANCE
     // when a `from` status landed and no `to` status did; chance ×2
     // while the LIVE fire rate is strictly below 2.5.
@@ -2388,7 +2341,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // `forced_procs`. Hunter Munitions pushes above, so it is already
     // in `procs` here and this roll is skipped, which is exactly
     // "if both proc at the same time, only 1 slash proc is applied".
-    roll_proc_conversion(active, d, live_rate, &mut procs);
+    roll_proc_conversion(active, d, live_rate, &params.foe.status_immunities, &mut procs);
+    let applied_count = status::applied_procs(&procs, &params.foe.status_immunities).count();
     // Overwhelming Attrition's TRIGGER, evaluated once the proc
     // list is final: "On Hit that is neither Critical nor applies
     // a Status Effect" (wiki). PER DAMAGE INSTANCE — measured
@@ -2410,7 +2364,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     if tier > 0 {
         bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::Crit, t, d.extra);
     }
-    if tier == 0 && procs.is_empty() {
+    if tier == 0 && applied_count == 0 {
         bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::PlainHit, t, d.extra);
     }
     // STORMBURST: the condition is on the TARGET, read here where the
@@ -2428,7 +2382,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // above: a pellet that spends the buff can re-arm it with its own
     // status, which is what makes a high-status weapon hold it up.
     if let Some(sc) = params.super_crit_on_status {
-        if !procs.is_empty() && d.extra.chance(sc.chance) {
+        if applied_count > 0 && d.extra.chance(sc.chance) {
             *super_crit_armed = true;
         }
     }
@@ -2439,7 +2393,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // PELLET's own statuses land, and a field tick's or an extra hit's
     // are a different sentence that no card in the roster has written
     // yet.
-    for _ in 0..procs.len() {
+    for _ in 0..applied_count {
         bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::StatusApplied, t, d.extra);
     }
     // INDEPENDENT PROCS land on the HIT, not on the roll — that is what
@@ -2478,13 +2432,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     }
         // …AND THE ORDINARY END OF A PELLET, which does get to name
         // what it applied.
-        log_this_pellet!(procs.clone());
+        log_this_pellet!(status::applied_procs(&procs, &params.foe.status_immunities).collect());
         // …AND WHAT MELEE INFLUENCE WILL COPY, taken before
         // `settle_procs` consumes the list. Cloned only when the arcane
         // is equipped: this is the hot loop and every other build pays
         // an empty `Vec`.
         let aimed_procs = if params.arcane.influence_chance > 0.0 {
-            procs.clone()
+            status::applied_procs(&procs, &params.foe.status_immunities).collect()
         } else {
             Vec::new()
         };
@@ -2504,7 +2458,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // layers — the split instance rolls one, and the other can
             // only be the applying hit's, carried here. A DoT is not a
             // hit, so it never rolls one of its own. MEASUREMENTS M37.
-            InstanceScale {
+            InstanceScale { native_source: None, native_part: None,
                 mb_live,
                 crit_multiplier,
                 part_factor,
@@ -2551,7 +2505,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // also spreads, and assuming it would invent a copy of the
             // swing.
             let open = t < *influence_until;
-            let scale = InstanceScale {
+            let scale = InstanceScale { native_source: None, native_part: None,
                 // THE STATUS IS THE SWING'S OWN, one derivation further
                 // out — so it burns off the base the swing's statuses
                 // burn off, and only the faction rung differs. The wiki

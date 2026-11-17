@@ -19,6 +19,7 @@ exilus_polarity: madurai
 stance_polarity: vazarin
 introduced: "Update 35.5"
 internal_name: /Lotus/Weapons/Thanotech/EntFistIncarnon/EntFistIncarnon
+weakness_bonus: 0.0
 traits: [incarnon, entrati]
 
 ammo_max: ~

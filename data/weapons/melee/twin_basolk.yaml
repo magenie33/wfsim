@@ -18,6 +18,7 @@ polarities: [madurai]
 stance_polarity: zenurik
 introduced: "Update 17.8"
 internal_name: /Lotus/Weapons/Grineer/Melee/GrnDualFireAxe/GrnDualFireAxe
+weakness_bonus: 0.0
 traits: [grineer]
 
 ammo_max: ~

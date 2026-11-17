@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: zenurik
 introduced: "Update 18.2"
 internal_name: /Lotus/Weapons/Grineer/Melee/GrnTrident/GrnTridentWeapon
+weakness_bonus: 0.0
 traits: [grineer]
 
 ammo_max: ~

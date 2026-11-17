@@ -34,6 +34,7 @@ polarities: [madurai]
 riven_family: Imperator
 traits: [vandal, tenno]
 internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/FoldingMachineGun/ArchMachineGunVandal
+weakness_bonus: 0.0
 noise: alarming
 magazine: 300
 # The Atmosphere column. Archwing reloads in 4.25 s instead.

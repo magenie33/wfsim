@@ -95,7 +95,11 @@ enumeration, scheduling and scoring changes also require those fixtures on
 ordinary dispatches. Declared board projection, ingestion and task-delivery tools
 retain full ordinary correctness coverage without the solver's full-catalog
 fixtures. Imported task and claim checks run through their permanent parent
-checks. Unknown inputs fail closed to this coverage. The exact CI
+checks. Unknown inputs fail closed to this coverage.
+Native calibration tools, fixed response fixtures and retained evidence in
+`scripts/ci_native_inputs.mjs` retain every ordinary correctness job without
+adding optimizer catalog fixtures. Unknown siblings and mixed search changes
+still require the deep fixtures. The exact CI
 wiring and non-search tooling paths declared in `ci_policy.mjs` retain full
 ordinary validation without adding full-catalog search fixtures. Those tools
 cover topbar lookup and library intake/publication. Search test execution

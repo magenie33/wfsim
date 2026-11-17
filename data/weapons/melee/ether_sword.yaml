@@ -18,6 +18,7 @@ polarities: []
 stance_polarity: unairu
 introduced: "Update 8.0"
 internal_name: /Lotus/Weapons/Tenno/Melee/LongSword/EtherSword
+weakness_bonus: 0.0
 traits: []
 
 ammo_max: ~

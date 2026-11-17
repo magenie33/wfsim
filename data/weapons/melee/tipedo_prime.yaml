@@ -19,6 +19,7 @@ polarities: [vazarin, madurai]
 stance_polarity: unairu
 introduced: "Update 24.5.8"
 internal_name: /Lotus/Weapons/Tenno/Melee/Staff/TipedoPrime/TipedoPrimeWeapon
+weakness_bonus: 0.0
 traits: [prime, vaulted]
 
 ammo_max: ~

@@ -89,7 +89,7 @@ pub enum ArcEffect {
     /// [`ArcaneFx::added_elements`].
     AddedElement { element: crate::rules::damage::DamageType, scale: Scale, max_stacks: u32 },
     FlatDamageOnStatus(Scale),
-    EncumberChance(Scale),
+    EncumberChance { scale: Scale, condition: crate::model::ConditionalUpgrade },
     ColdBurst { scale: Scale, radius0: f64, radius1: f64 },
     OverguardDamage(Scale),
     /// MELEE CAREEN — a damage MULTIPLIER on a target at ten Cold stacks.

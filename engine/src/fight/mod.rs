@@ -27,6 +27,7 @@ use crate::record::PopKind;
 
 mod locks;
 mod arcane;
+mod irradiate;
 mod params;
 mod pools;
 mod target_state;

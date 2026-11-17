@@ -18,6 +18,7 @@ polarities: []
 stance_polarity: naramon
 introduced: "Update 8.0"
 internal_name: /Lotus/Weapons/Tenno/Melee/Scythe/StalkerScytheWeapon
+weakness_bonus: 0.0
 traits: [stalker, incarnon]
 
 ammo_max: ~

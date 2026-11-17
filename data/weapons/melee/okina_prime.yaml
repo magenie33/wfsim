@@ -28,6 +28,7 @@ polarities: [madurai, madurai]
 stance_polarity: vazarin
 introduced: "35.5.9"
 internal_name: /Lotus/Weapons/Tenno/Melee/Swords/PrimeOkina/PrimeOkina
+weakness_bonus: 0.0
 traits: [tenno]
 
 # NO AMMO AT ALL. A melee weapon has no magazine, no reserve and no reload.

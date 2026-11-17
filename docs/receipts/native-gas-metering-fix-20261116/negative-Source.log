@@ -1,0 +1,8 @@
+every item on a fight's path is metered
+  FAIL  458 top-level items carry #[wfsim_gas_macro::metered]   engine/src/rules/perks/secondary_irradiate.rs:15: impl Source {
+  ok   every macro_rules! body that loops is a metered_expr!
+  ok   no production code calls the platform's maths, only engine/src/rules/math.rs
+native and wasm count the same
+  --   not run: give native=<bin> pkg=<dir>, or build
+
+1 failed

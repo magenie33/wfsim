@@ -18,6 +18,7 @@ polarities: [madurai]
 stance_polarity: zenurik
 introduced: "Update 31"
 internal_name: /Lotus/Weapons/Archon/Melee/Trident/ArchonTridentPlayerWep
+weakness_bonus: 0.0
 traits: [sentient]
 
 ammo_max: ~

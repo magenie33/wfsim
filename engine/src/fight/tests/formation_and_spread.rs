@@ -35,6 +35,7 @@ fn the_damage_meter_accounts_for_the_whole_formation() {
     let bodies: f64 = r.taken.by_body().0.iter().sum();
     let meter = r.sources.direct + r.sources.radial + r.sources.field
         + r.sources.arcane_on_status + r.sources.extra_hit + r.sources.syndicate
+        + r.sources.magnetic_break
         + r.sources.status.iter().sum::<f64>();
     assert!(bodies > 0.0, "the crowd took nothing at all");
     assert!(
@@ -518,6 +519,42 @@ fn secondary_irradiate_echoes_only_off_an_irradiated_target() {
     assert!(d1 > d0, "irradiated and in a crowd, the echo lands: {d1} against {d0}");
 }
 
+#[test]
+fn cortege_two_arcanes_echo_after_radiation_qualifies() {
+    let base = crate::model::WeaponBase::from_data("cortege", false, &[]);
+    let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+    let tenno = crate::data::tenno::default_tenno();
+    let resolve = |slot: &str, id: &str| {
+        crate::data::arcanes::for_slot(slot, id).unwrap()
+            .fx(5, crate::model::StackPolicy::AssumedMax, &[], tenno)
+    };
+    let secondary = resolve("secondary", "secondary_irradiate");
+    let both = crate::data::arcanes::ArcaneFx::merged(&[
+        resolve("primary", "primary_merciless"), secondary.clone(),
+    ]);
+    let mut arena = crate::arena::Arena::training(2.0);
+    arena.others = vec![crate::formation::FoeSpec {
+        id: String::new(),
+        params: Foe::training_dummy(),
+        body_parts: BodyPart::humanoid(),
+        at: crate::rules::space::Vec2::new(2.0, 0.0),
+    }];
+    for fx in [&secondary, &both] {
+        for qualify in [false, true] {
+            let mut p = FightParams::from_panel(&panel, &arena, fx);
+            // Supply a reliable stack source to test the gate and merge, not mod RNG.
+            p.forced_procs = if qualify { vec![DamageType::Radiation] } else { Vec::new() };
+            let result = run_once(&p, &mut Rng::new(0x5EED));
+            let neighbour = result.taken.by_body().0[1];
+            if qualify {
+                assert!(neighbour > 0.0, "the qualified target must emit an echo");
+            } else {
+                assert_eq!(neighbour, 0.0, "the Radiation gate must survive the merge");
+            }
+        }
+    }
+}
+
 /// A TENDRIL'S OWN KILL SPAWNS NOTHING, which is the one kind of kill in
 /// this engine worth less than another.
 ///
@@ -905,9 +942,11 @@ fn a_blast_is_one_hit_per_moment_however_many_stacks_share_it() {
 #[test]
 fn a_gas_cloud_survives_the_death_and_nothing_else_does() {
     let dot = |dtype| Dot {
+        native_part: None,
+        native_group: None,
         owner: Seat::WIELDER,
         cause: u32::MAX,
-        next_tick: 5.0, ticks_left: 4, frozen: 100.0, landing: ProcLanding::default(), bracket: 1.0, depth: 0,
+        next_tick: 5.0, ticks_left: 4, retained: crate::model::StoredStatusSeed::supplied(100.0), landing: ProcLanding::default(), bracket: 1.0, depth: 0,
         unit: 0.0, dtype, ignores_armor: false, seed: u32::MAX,
     };
     let mut d = DebuffState::default();
@@ -1466,7 +1505,13 @@ fn a_merged_beams_statuses_are_the_same_size_on_the_body_behind() {
         body_parts: BodyPart::humanoid(),
         at: crate::rules::space::Vec2::new(0.0, crate::rules::space::CONTACT_RANGE_M * 2.0),
     }];
-    let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
+    let mut p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
+    p.body_parts = mono_body(1.0);
+    p.others[0].body_parts = mono_body(1.0);
+    p.base_crit_chance = 0.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
+    p.status_chance = 0.0;
+    p.forced_procs = vec![DamageType::Toxin];
     assert!(p.infinite_body_punch_through, "the innate body punch through reaches it");
     let r = run_once(&p, &mut Rng::new(0x5EED));
     let (aimed, behind) = (r.taken.by_body().0[0], r.taken.by_body().0[1]);
@@ -1731,6 +1776,7 @@ fn the_tail_drains_the_crowd_and_not_only_the_aimed_body() {
     p.status_chance = 0.0;
     p.forced_procs = vec![DamageType::Heat];
     p.base_crit_chance = 0.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() { inputs.set_supplied_chance(p.base_crit_chance, p.unmodded_crit_chance); }
 
     let r = run_once(&p, &mut Rng::new(0x5EED));
     let (aimed, behind) = (r.taken.by_body().0[0], r.taken.by_body().0[1]);

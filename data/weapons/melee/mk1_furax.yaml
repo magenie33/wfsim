@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: vazarin
 introduced: "Update 14.0"
 internal_name: /Lotus/Weapons/MK1Series/MK1Furax
+weakness_bonus: 0.0
 traits: [grineer, incarnon]
 
 ammo_max: ~

@@ -32,6 +32,7 @@ polarities: [madurai]
 stance_polarity: vazarin
 introduced: "Specters of the Rail 0.0"
 internal_name: /Lotus/Weapons/Tenno/Melee/Swords/TennoSai/TennoSais
+weakness_bonus: 0.0
 traits: [tenno]
 
 # NO AMMO AT ALL. A melee weapon has no magazine, no reserve and no reload.

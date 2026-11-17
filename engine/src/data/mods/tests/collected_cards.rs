@@ -35,19 +35,19 @@ fn collected_weapon_cards_apply_their_supported_clauses() {
 #[test]
 fn collected_card_package_values_keep_their_actual_precision_and_bucket() {
     assert!(card("no_return").effects.iter().any(|e| matches!(e,
-        ModEffect::Physical(DamageType::Puncture, x) if (*x - 0.90000006).abs() < 1e-12)));
+        ModEffect::Physical(DamageType::Puncture, x) if crate::rules::upgrades::near_f32(*x, 0.90000006))));
     assert!(card("amalgam_ripkas_true_steel").effects.iter().any(|e| matches!(e,
-        ModEffect::CritChanceHeavyDoubled(x) if (*x - 1.8696).abs() < 1e-12)));
+        ModEffect::CritChanceHeavyDoubled(x) if crate::rules::upgrades::near_f32(*x, 1.8696))));
     assert!(card("boreals_contempt").effects.iter().any(|e| matches!(e,
-        ModEffect::StatusDamage(x) if (*x - 0.6).abs() < 1e-12)));
+        ModEffect::StatusDamage(x) if crate::rules::upgrades::near_f32(*x, 0.6))));
     assert!(card("niras_contempt").effects.iter().any(|e| matches!(e,
-        ModEffect::StatusChance(x) if (*x - 0.6).abs() < 1e-12)));
+        ModEffect::StatusChance(x) if crate::rules::upgrades::near_f32(*x, 0.6))));
     for (id, max) in [("arrow_mutation", 0.504), ("sniper_ammo_mutation", 0.504),
         ("primed_sniper_ammo_mutation", 0.924)] {
         assert!(card(id).effects.iter().any(|e| matches!(e,
-            ModEffect::Indirect(IndirectStat::AmmoConversion, x) if (*x - max).abs() < 1e-12)), "{id}");
+            ModEffect::Indirect(IndirectStat::AmmoConversion, x) if crate::rules::upgrades::near_f32(*x, max))), "{id}");
         assert!(at_rank(&format!("{id}@0")).unwrap().effects.iter().any(|e| matches!(e,
-            ModEffect::Indirect(IndirectStat::AmmoConversion, x) if (*x - 0.084).abs() < 1e-12)), "{id}");
+            ModEffect::Indirect(IndirectStat::AmmoConversion, x) if crate::rules::upgrades::near_f32(*x, 0.084))), "{id}");
     }
 }
 
@@ -74,9 +74,9 @@ fn ordinary_new_card_ranks_are_available_and_signed_penalties_survive() {
         assert!(at_rank(&format!("{id}@0")).is_some(), "{id}: its linear rank ladder is supported");
     }
     assert!(card("tainted_clip").effects.iter().any(|e| matches!(e,
-        ModEffect::ReloadSpeed(x) if (*x + 0.3).abs() < 1e-12)));
+        ModEffect::ReloadSpeed(x) if crate::rules::upgrades::near_f32(*x, -(0.3)))));
     assert!(card("depleted_reload").effects.iter().any(|e| matches!(e,
-        ModEffect::MagazineCapacity(x) if (*x + 0.6).abs() < 1e-12)));
+        ModEffect::MagazineCapacity(x) if crate::rules::upgrades::near_f32(*x, -(0.6)))));
 }
 
 #[test]

@@ -15,6 +15,16 @@ pub const TIMELINE_BUCKETS: usize = 600;
 #[derive(Debug, Clone, Copy)]
 pub struct Timeline(pub [f64; TIMELINE_BUCKETS]);
 
+#[derive(Debug, Clone, Copy)]
+pub struct KillTimeline(pub [u32; TIMELINE_BUCKETS]);
+
+#[wfsim_gas_macro::metered]
+impl Default for KillTimeline {
+    fn default() -> Self {
+        Self([0; TIMELINE_BUCKETS])
+    }
+}
+
 #[wfsim_gas_macro::metered]
 impl Default for Timeline {
     fn default() -> Self {
@@ -144,6 +154,9 @@ pub struct SourceDamage {
     /// damage on its own clock, and on that weapon it is most of the output.
     pub field: f64,
     pub arcane_on_status: f64,
+    /// Magnetic's independent pure-Electricity packet when a pool breaks (M8).
+    #[serde(default)]
+    pub magnetic_break: f64,
     /// EXTRA HITS (Xata's Whisper's Void instance) — wiki `Extra_Hit`. Its own
     /// bucket for the same reason the field has one: it is neither the weapon's
     /// hit nor a status tick, and on a build running the ability it is a fifth
@@ -270,7 +283,7 @@ pub(super) fn write_row(
                 // share is already the first term of the ledger below — so the
                 // raw is the instance's either way, and only what happens to it
                 // after it arrives differs.
-                raw: inst.layers.last().map_or(inst.base, layer_out),
+                raw: settled.raw,
                 mitigation: mit,
                 effective: p.effective,
                 before: breakdown.before,
@@ -437,6 +450,8 @@ pub struct RunResult {
     pub kill_progress: f64,
     /// Effective damage by source (direct / per-proc-type / arcane).
     pub sources: SourceDamage,
+    /// Completed kills in the same one-second buckets as the damage curve.
+    pub kill_timeline: KillTimeline,
     /// SECONDS THE WEAPON WAS NOT FIRING because it was reloading or mid
     /// transform. Burst DPS is the damage over the time that is left, which is
     /// what a room-clear is actually paced by — a weapon that reloads for a

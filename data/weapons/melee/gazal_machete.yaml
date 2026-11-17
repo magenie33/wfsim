@@ -18,6 +18,7 @@ polarities: [madurai]
 stance_polarity: zenurik
 introduced: "The Vacuum Within"
 internal_name: /Lotus/Weapons/Tenno/Melee/PersianMachete/DjinnMachete
+weakness_bonus: 0.0
 traits: [tenno]
 
 ammo_max: ~

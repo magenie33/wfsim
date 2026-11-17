@@ -397,6 +397,7 @@ function recordBodies(events) {
 const REC_KINDS = [
   ["all", "everything"], ["own", "own"], ["multishot", "multishot"],
   ["punch_through", "punch through"], ["status", "status"],
+  ["magnetic_break", "magnetic break"],
   // A SHOT, AN ARRIVAL AND A MISS are weapon events rather than numbers, so
   // they sit under one chip with the reloads and the transmutes — and "only
   // the misses" is its own question, because a pellet that went nowhere is
@@ -606,6 +607,10 @@ function ledgerRows(e) {
     t.o ? `<em>${n2(t.o[0])} × ${n2(t.o[1])}</em>` : ""}</span>`;
 
   return (e.layers || []).map((l) => {
+    if (l.k === "c") {
+      return `<div class="lg"><span class="lg-lbl">${escHtml(tr(F(l.f)))}</span>
+        <span class="lg-body">max(${n2(l.min)})<span class="lg-out">${n(l.o)}</span></span></div>`;
+    }
     if (l.k === "b") {
       return `<div class="lg lg-b">
         <span class="lg-lbl">${escHtml(tr(F(l.f)))}</span>

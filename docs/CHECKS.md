@@ -5,11 +5,46 @@ answer APIs, independent community verification and website publication while
 the durable order cut and general admission pauses remain active. It also checks
 lease recovery, scope refusal, failed-install rollback and runner privileges.
 
+`check_native_upgrade_vectors.py --output <new-directory>` compiles isolated
+copies of the actual fold source against the native vectors. The original must
+pass and an ADD-to-subtract mutation must fail. Metering attributes alone are
+removed from these isolated test copies; production sources remain untouched.
+The scalar source is copied too; the real engine supplies the proc-id type.
+Parent/child fixtures distinguish pending operations from materialized input.
+
+`check_client_upgrade_changes.py` detects controlled raw-field, filter,
+inheritance, enum, native-code, script and source-identity mutations. The
+read-only `client_upgrade_changes.py` verifies both source exports before
+reporting changes and their current consumers (`ENGINE_MIGRATION.md`).
+
+`import_ordinary_proc_contract.py --exchange <batch> --check` verifies all eight
+files and 223 archive members against the pinned N07A manifest, and reproduces
+the ordinary-proc fixture. Rust source tests compare nine weight vectors,
+1895 sampling traces, 60 selector predicates and 645 real-fight sampler
+controls. Exact U24/state writes, lazy handler evaluation, target117 folding,
+counter saturation and inclusive ties participate; final application and
+Phantasma callback cadence are outside the fixture's native boundary.
+
 `check_engine_compare.py` runs independent executable fixtures through the
 native migration comparator. Equal results pass; changed damage, signed zero,
 one-ULP values, event ordering, repeat drift, truncated records, artifact
 corruption and duplicate case ids fail. `ENGINE_MIGRATION.md` defines the
 separate real-engine frozen-input comparison and performance procedure.
+`check_nona_help.mjs` executes every illustrated example through the real bot
+parser in both locales. It checks every metadata ruler through zk/pz/fx,
+numeric-ending ids with and without counts, primary defaults, unknown suffixes,
+three bonus filters, any/specific maluses and a legal four-stat numeric FX
+request. A local HTTP fixture proves exact scene-file routing and all-cell
+heads filtering. Image snapshots, copyable captions and complete ruler-index
+fallbacks share the guide. The previous bot module selected through
+`WFSIM_BOT_ANSWER_MODULE` must fail the full-id example.
+
+`check_engine_answer_equivalence.py` rejects damage, one-bit values, event order,
+trace and shape changes while explicitly allowing paired source-accounting
+values at `/api/simulate.work` and `/api/board/runs.shards[].gas` only when
+requested. `engine_answer_equivalence.py` checks every retained response and
+its hash; strict comparison outputs remain intact. Supplying a retained board
+comparison to the check also proves the CLI rejects a real one-ULP damage edit.
 
 `check_nona_results.mjs` runs the shared zk/pz selection and witness lookup
 against published builds, actual engine identities and the production account
@@ -35,6 +70,12 @@ The private extension checks actual label eligibility and
 rendering.
 
 # The browser and node checks
+
+`check_start_edit.mjs` covers start editing and restoration of the player's
+build, including stance card and empty-slot pins. The optimize request carries
+each start's stance without fixing it to the player's current build. Rust
+stance tests cover native/fleet search parity, exclusions, final requirements,
+fixed weapon stances and exact simulator replay.
 
 `import_inverse_speed.py --exchange <root> --check` verifies the pinned inverse
 speed packet and its generated source fixture. Compiled tests distinguish the
@@ -869,6 +910,8 @@ platforms. `check_client_release.mjs` checks the upload list derived from native
 manifest entries and the single `npm pack --json` result, including scoped and
 unscoped tarballs, duplicate names, missing files and stale or stray artifacts.
 It also checks that the workflow uses this list, without overlapping globs.
+The immutable CLI manifest signature is included exactly once and is created
+with the existing release signing key before publication.
 Trusted publishing checks require a supported npm version, the exact repository
 URL, workflow identity permissions and the existing main/release protection.
 `check_client_cors.py` checks additive website GET access, all prior rules and
@@ -882,6 +925,15 @@ Normal CLI publication does not require bucket-management permissions.
 `cargo test --manifest-path client/Cargo.toml` covers range parsing,
 persistent identity, corrupt identity refusal, global fractional CPU budgets,
 cancellation, outbox acknowledgments and shared result-payload fixtures.
+Host-update unit cases cover raw signature/launch/platform/version bindings,
+corrupted or partial downloads, unsigned legacy locators and pointer mismatch.
+`check_client_update.mjs` checks signing and pre-upload refusal, then invokes
+the ignored native lifecycle fixture with test-only keys and loopback traffic.
+It verifies a real worker's update, startup acknowledgment, unchanged identity,
+config and durable outbox, crash fallback and failed-version suppression.
+Its npm fixture removes the cached bootstrap while background work continues;
+on Linux it inspects the startup unit with an isolated systemctl stub.
+Fixture keys never enter a production CLI or release trust store.
 `check_client_launcher.mjs` exercises native consent, zero-budget operation,
 lost replies, durable acknowledgments, single-instance exclusion, background
 stop/resume and the verified npm entry. It uses a loopback fake server and
@@ -920,7 +972,8 @@ reads; permanent 404 and a wrong release restore the prior pointer.
 
 ## `check_card_document`
 
-The bot's card is the page's, pixel for pixel: each fixture — a plain gun,
+The bot's card is the page's, pixel for pixel: each fixture — command help,
+the complete ruler index, a plain gun,
 riven builds, the analyst with and without a filter, a melee, a weapon with
 modes, an Incarnon, a kitgun, an appraisal's way in and its answer — is taken
 from `/weapons/<Name>/card` and from the document `bot/card.mjs` writes, in
@@ -2092,7 +2145,7 @@ Its sharpest pair is the ROUND TRIP — `buildPayload` into
 slot 9. A complete bare Praedos input runs with no stance on the wire;
 Magistar's bare input produces a different fight from either stance. The mode explanation
 also resolves the heavy's weapon-specific charge alongside its motion time.
-The optimizer sends an empty stance slot unchanged, and the board accepts a
+The optimizer leaves the stance searchable, and the board accepts a
 complete stanceless result while still refusing seven main mods.
 
 ## `check_stance_capacity`
@@ -2250,8 +2303,15 @@ Both checks require actual published rows; an empty fixture is a failure.
 Intercepted board files provide a large complete scene fixture under fourfold
 CPU throttling. Home must become usable without a hidden weapon editor, frame
 catalog or weapon board download. Concurrent frame catalog readers share a
-promise and retry failures. Tally digits animate through stable text nodes and
-stop repainting while hidden. Every scene remains reachable, opening downloads
+promise and retry failures. The home hero checks Chinese and English, both
+themes and desktop/mobile widths, real equipment art, and the shared search's
+shortcut, visible results and return route. Its three counts read the upload
+pool, player-score tally and live work independently. Every animation frame
+retains exact confirmed values; header and hero device values share a clock.
+Zero, failed reads, unchanged targets and reduced motion retain their defined
+states. `--home-hero` runs these focused cases; the default also runs the scene
+fixture. Confirmed values keep stable text nodes and stop repainting while
+hidden. Every scene remains reachable, opening downloads
 only the selected scene, rendering stays bounded, and switching away releases
 public rows and derived caches. Timing observations contain page kinds and
 numeric durations only. `WFSIM_PERF_EAGER=1` deliberately restores eager scene
@@ -2486,6 +2546,11 @@ The benchmark fight plays back on screen while the average above it holds
 still: the buff curves
 draw, scrubbing drains the pools, and play advances the clock at the chosen
 multiplier.
+Peer DPS, KPM, kills and total-damage tabs use the same fight and cursor.
+Bucket totals reconcile with the sample; fractional final seconds retain
+their actual rate denominator. Companion Magnetic-break Rust regressions
+keep its damage separate from Electricity DoT in the meter, replay and
+combat record.
 
 ## `check_preset_independence`
 

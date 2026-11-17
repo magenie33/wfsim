@@ -1,0 +1,12 @@
+{
+  "base": "a36f7e06ffcf7a7f87c09911eef5f6abdfcc8b3e",
+  "production_body_text_unchanged": true,
+  "new_metered_impls": [
+    "Source",
+    "Listener"
+  ],
+  "existing_annotations_preserved": true,
+  "moved_test_bytes_identical": true,
+  "moved_test_sha256": "8ba6b3c991c3a0d1bc0ec64aa2719933dd627b5ae6d882e2b9203bbbd7e30cb2",
+  "scanner_macro_threshold_prices_unchanged": true
+}

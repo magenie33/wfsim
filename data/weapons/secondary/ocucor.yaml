@@ -24,6 +24,7 @@ riven_family: Ocucor
 traits: [corpus, sentient]   # a Corpus weapon built around Sentient tech
 introduced: "24"
 internal_name: /Lotus/Weapons/Corpus/Pistols/CrpSentExperimentPistol/CrpSentExperimentPistol
+weakness_bonus: 0.2
 noise: alarming              # IsSilent false
 ammo_type: secondary
 ammo_max: 300

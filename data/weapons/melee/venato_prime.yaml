@@ -19,6 +19,7 @@ polarities: [madurai]
 stance_polarity: zenurik
 introduced: "Update 39.1"
 internal_name: /Lotus/Weapons/Tenno/Melee/Scythe/PrimeVento/PrimeVentoScythe
+weakness_bonus: 0.0
 traits: [tenno, sentient, prime]
 
 ammo_max: ~

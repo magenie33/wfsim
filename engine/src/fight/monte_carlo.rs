@@ -507,6 +507,7 @@ pub(super) fn add_sources(acc: &mut SourceDamage, r: &SourceDamage) {
     acc.radial += r.radial;
     acc.field += r.field;
     acc.arcane_on_status += r.arcane_on_status;
+    acc.magnetic_break += r.magnetic_break;
     acc.extra_hit += r.extra_hit;
     acc.syndicate += r.syndicate;
     for (a, v) in acc.status.iter_mut().zip(r.status) {
@@ -796,6 +797,7 @@ impl Shard {
         source_damage: {
             let mut s = sources;
             s.direct /= n;
+            s.magnetic_break /= n;
             s.radial /= n;
             s.field /= n;
             s.arcane_on_status /= n;

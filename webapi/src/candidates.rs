@@ -21,6 +21,7 @@ use wfsim_engine::model::ModDef;
 use crate::registry::{evo_forbids, evo_group, form_unlock_evo, WeaponInfo};
 
 const EXILUS: usize = 8;
+const STANCE: usize = 9;
 
 /// The build a position belongs to, as the page holds it: slots rather than
 /// the wire's flat mod list, because which slot is the exilus is a fact the
@@ -135,6 +136,9 @@ fn mods(b: &Build, idx: usize) -> Vec<Value> {
     let cur: Vec<Option<String>> = b.slots.clone();
     let mut out = Vec::new();
     for m in &pool {
+        if m.stance.is_some() != (idx == STANCE) { continue; }
+        if idx == STANCE && wfsim_engine::data::weapons::spec(&b.info.id)
+            .and_then(|s| s.fixed_stance.as_deref()).is_some_and(|id| id != m.id) { continue; }
         // The card at max rank, then each lower rank the every-rank list asks for.
         let mut ids = vec![m.id.to_string()];
         if b.every_mods.iter().any(|e| e == m.id) {
@@ -159,6 +163,11 @@ fn mods(b: &Build, idx: usize) -> Vec<Value> {
             }
             out.push(json!({ "id": id, "payload": { "mods": list } }));
         }
+    }
+    if idx == STANCE && cur.get(STANCE).is_some_and(Option::is_some)
+        && wfsim_engine::data::weapons::spec(&b.info.id).is_none_or(|s| s.fixed_stance.is_none()) {
+        let list: Vec<_> = cur.iter().enumerate().filter(|(i, _)| *i != STANCE).filter_map(|(_, m)| m.as_ref()).collect();
+        out.push(json!({"id":"none", "payload":{"mods":list}}));
     }
     out
 }

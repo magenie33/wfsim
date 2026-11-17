@@ -279,8 +279,9 @@ impl ArcaneDef {
                 ArcEffect::FlatDamageOnStatus(sc) => {
                     fx.flat_damage_on_status = sc.at(rank, self.max_rank);
                 }
-                ArcEffect::EncumberChance(sc) => {
+                ArcEffect::EncumberChance { scale: sc, condition } => {
                     fx.encumber_chance = sc.at(rank, self.max_rank);
+                    fx.encumber_condition = *condition;
                 }
                 ArcEffect::ColdBurst { scale, .. } => {
                     fx.cold_bursts_on_puncture = scale.at(rank, self.max_rank).round() as u32;
@@ -471,7 +472,7 @@ impl ArcaneDef {
                     "On Status: +{:.0} flat damage of the proc's type",
                     at(sc)
                 )),
-                ArcEffect::EncumberChance(sc) => out.push(format!(
+                ArcEffect::EncumberChance { scale: sc, .. } => out.push(format!(
                     "On Status: {} chance of one extra random status",
                     pct(at(sc))
                 )),

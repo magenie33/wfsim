@@ -1,0 +1,1100 @@
+{
+  "schema": 1,
+  "date_utc": "2026-11-15T04:34:21.978994+00:00",
+  "stage": "ready for integration; not live",
+  "calculation_commit": "32686c89efad3c06d1ee95fea1b2706f5ad094c4",
+  "baseline_calculation_commit": "94b62a5d0ceda4832206521ac28315c031e3d748",
+  "source": {
+    "manifest_sha256": "d0266d52e23aaece03c1654190c2a7f75c252b67754fe22c3116c9a1a970176f",
+    "client_build": "2026.10.28.09.54",
+    "executable_sha256": "dae100202115919c89440c9ef320f691113ee8dcaf01205cbd180072c35aabdb",
+    "native_count_vectors": 14,
+    "preserved_original_addresses": 816,
+    "outer_files_verified": 5,
+    "archive_members_verified": 1292
+  },
+  "artifact_binding": {
+    "native_source_sha256": "4e6c28f73ffeecd725e512f11a1cd5864b03d4b4571c4ee4fa2c053c6c1706b7",
+    "wasm_source_sha256": "484ebd76ce4e5dd4949a4629ee717692fc6a653142b92cbd981745200fef8944",
+    "native_manifest_commit": "66bf35238521dad46749890ea6f786fae337eaae",
+    "wasm_manifest_commit": "66bf35238521dad46749890ea6f786fae337eaae",
+    "note": "Built from dirty parent metadata; all compiled source-file hashes match calculation_commit exactly",
+    "current_sources_match": true,
+    "build_environments_match_baseline": true,
+    "data_packs_match_baseline": true,
+    "native_manifest_sha256": "7e19d38b996a69e7deedba8429034b45eab7d7547f13f61f10aaf4e13f7f4c47",
+    "wasm_manifest_sha256": "7bf42d14bab76f627d4ff4dcdc3ad02ae68ed65021e36e89edb3dce350e4fbd8"
+  },
+  "validation": {
+    "rust_tests_passed": 1928,
+    "rust_tests_ignored": 6,
+    "clippy": "workspace/all-targets -D warnings PASS",
+    "original_count_projection": "14 vectors PASS; supplied comparator verdicts, not full native queue execution",
+    "optimizer": {
+      "jobs": 12,
+      "truth_runs": 128,
+      "rank": 1,
+      "regret_pct": 0.0,
+      "within_noise": true
+    },
+    "production_native_wasm": {
+      "cases": 2419,
+      "retained_responses": 9676,
+      "strict_exact": true
+    },
+    "migration_controls": {
+      "roster_cases": 2333,
+      "focused_cases": 38,
+      "combat_exact": true,
+      "exceptions": "Only paired nonnegative integer simulate.work and board/runs shards[].gas"
+    },
+    "irradiate": {
+      "cases": 34,
+      "preserved": 26,
+      "expected_changed": [
+        "cortege_base_one_log",
+        "cortege_base_one_simulate",
+        "cortege_base_two_log",
+        "cortege_base_two_simulate",
+        "dual_toxocyst_incarnon_one_log",
+        "dual_toxocyst_incarnon_one_simulate",
+        "tenet_cycron_base_one_log",
+        "tenet_cycron_base_one_simulate"
+      ],
+      "dps": [
+        {
+          "id": "cortege_base_one_simulate",
+          "before_dps": 1689.942126151314,
+          "after_dps": 3383.022203617367,
+          "change_pct": 100.18568395131288
+        },
+        {
+          "id": "cortege_base_two_simulate",
+          "before_dps": 648.5344020599373,
+          "after_dps": 3644.2712543597954,
+          "change_pct": 461.92412349823087
+        },
+        {
+          "id": "dual_toxocyst_incarnon_one_simulate",
+          "before_dps": 12196.249154774128,
+          "after_dps": 20728.57838663391,
+          "change_pct": 69.95863337639234
+        },
+        {
+          "id": "tenet_cycron_base_one_simulate",
+          "before_dps": 3664.976073107514,
+          "after_dps": 12279.264497032864,
+          "change_pct": 235.0435105738996
+        }
+      ],
+      "aimed_echoes": [
+        {
+          "id": "cortege_base_one_log",
+          "old_aimed_echoes": 0,
+          "new_aimed_echoes": 72
+        },
+        {
+          "id": "cortege_base_two_log",
+          "old_aimed_echoes": 0,
+          "new_aimed_echoes": 73
+        },
+        {
+          "id": "dual_toxocyst_incarnon_one_log",
+          "old_aimed_echoes": 0,
+          "new_aimed_echoes": 319
+        },
+        {
+          "id": "tenet_cycron_base_one_log",
+          "old_aimed_echoes": 0,
+          "new_aimed_echoes": 1622
+        }
+      ]
+    },
+    "browser": {
+      "product": "Chrome/157.0.8103.52",
+      "cases": 52,
+      "observations": 8,
+      "responses": 416,
+      "preserved": 44,
+      "expected_changed": [
+        "cortege_base_one_log",
+        "cortege_base_one_simulate",
+        "cortege_base_two_log",
+        "cortege_base_two_simulate",
+        "dual_toxocyst_incarnon_one_log",
+        "dual_toxocyst_incarnon_one_simulate",
+        "tenet_cycron_base_one_log",
+        "tenet_cycron_base_one_simulate"
+      ],
+      "same_version_repetitions_exact": true
+    },
+    "browser_controls": {
+      "cases": 44,
+      "responses": 352,
+      "combat_exact": true
+    },
+    "actual_http": {
+      "host": "http://127.0.0.1:8831",
+      "responses": 72,
+      "strict_exact": true
+    },
+    "negative_controls": {
+      "source": {
+        "mutations": [
+          {
+            "path": "engine/src/model/damage_data.rs",
+            "before": "procs: ProcCounters::default(), num_hits: 1",
+            "broken": "procs: ProcCounters::default(), num_hits: 2"
+          },
+          {
+            "path": "engine/src/data/arcanes/fx.rs",
+            "before": "if a.echo_share > 0.0 {",
+            "broken": "if false && a.echo_share > 0.0 {"
+          },
+          {
+            "path": "engine/src/fight/spread.rs",
+            "before": "if matches!(by, SpreadBy::Chain | SpreadBy::Tendril",
+            "broken": "if false && matches!(by, SpreadBy::Chain | SpreadBy::Tendril"
+          }
+        ],
+        "results": [
+          {
+            "test": "irradiate",
+            "exit": 101,
+            "failed": [
+              "test data::arcanes::tests::catalog::irradiate_payload_survives_two_arcane_merge ... FAILED",
+              "test fight::irradiate::tests::secondary_direct_bodies_can_echo_back_to_aimed_body ... FAILED",
+              "test fight::irradiate::tests::m59_echo_damage_readings_keep_the_measured_seed_calibration ... FAILED",
+              "test result: FAILED. 9 passed; 3 failed; 0 ignored; 0 measured; 1587 filtered out; finished in 0.13s"
+            ]
+          },
+          {
+            "test": "original_native_count_vectors",
+            "exit": 101,
+            "failed": [
+              "test model::damage_data::tests::original_native_count_vectors_with_supplied_compatibility ... FAILED",
+              "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 1598 filtered out; finished in 0.00s"
+            ]
+          }
+        ],
+        "restored": {
+          "engine/src/model/damage_data.rs": "32c89902cdf0bb28a3567ec2bc91e38b7b473081dec7e94c626f6c3cd0ee5606",
+          "engine/src/data/arcanes/fx.rs": "a9a1ffb45ce11329be859dde7ec192af46efe5687b6365a78b4f75a9dd5bfa79",
+          "engine/src/fight/spread.rs": "3e34624e68ef5c3fe2f1f638a2399bc4767e037f0b789dc68d34fdf4c865ae56"
+        }
+      },
+      "altered_final_record": "FAIL as intended",
+      "scope": "Source mutations preceded final no-arc guards and calibration placement; final output mutation checks the qualified responses"
+    },
+    "quick_checks": "comment style, page bodies, whitespace and commit trailers PASS"
+  },
+  "performance": {
+    "native_samples_per_side_per_case": 30,
+    "native": {
+      "no_irradiate": {
+        "minimum_change_pct": -1.0319186208221032,
+        "maximum_change_pct": 2.3111807327430567,
+        "median_change_pct": 0.08827100306147972,
+        "cases": [
+          {
+            "id": "cortege_base_none_simulate",
+            "before_ms": 8.1181665,
+            "after_ms": 8.305792,
+            "change_pct": 2.3111807327430567
+          },
+          {
+            "id": "laetum_base_none_simulate",
+            "before_ms": 7.5178335,
+            "after_ms": 7.5252704999999995,
+            "change_pct": 0.09892477666604282
+          },
+          {
+            "id": "laetum_incarnon_none_simulate",
+            "before_ms": 7.622291499999999,
+            "after_ms": 7.659041500000001,
+            "change_pct": 0.4821384750242297
+          },
+          {
+            "id": "dual_toxocyst_base_none_simulate",
+            "before_ms": 3.8218129999999997,
+            "after_ms": 3.782375,
+            "change_pct": -1.0319186208221032
+          },
+          {
+            "id": "dual_toxocyst_incarnon_none_simulate",
+            "before_ms": 23.915437499999996,
+            "after_ms": 23.933999999999997,
+            "change_pct": 0.07761722945691663
+          },
+          {
+            "id": "tenet_cycron_base_none_simulate",
+            "before_ms": 55.386021,
+            "after_ms": 55.55200000000001,
+            "change_pct": 0.2996767000106537
+          },
+          {
+            "id": "ocucor_base_none_simulate",
+            "before_ms": 18.6544795,
+            "after_ms": 18.622750500000002,
+            "change_pct": -0.17008783332710387
+          },
+          {
+            "id": "sicarus_prime_incarnon_none_simulate",
+            "before_ms": 18.6092705,
+            "after_ms": 18.420042000000002,
+            "change_pct": -1.0168507142716776
+          }
+        ]
+      },
+      "preserved_irradiate": {
+        "minimum_change_pct": 3.4742544945986165,
+        "maximum_change_pct": 4.931423218859177,
+        "median_change_pct": 4.305423874679559,
+        "cases": [
+          {
+            "id": "laetum_base_one_simulate",
+            "before_ms": 17.9507915,
+            "after_ms": 18.836021000000002,
+            "change_pct": 4.931423218859177
+          },
+          {
+            "id": "laetum_incarnon_one_simulate",
+            "before_ms": 17.9571665,
+            "after_ms": 18.7349375,
+            "change_pct": 4.331256827183738
+          },
+          {
+            "id": "dual_toxocyst_base_one_simulate",
+            "before_ms": 8.937853999999998,
+            "after_ms": 9.3226665,
+            "change_pct": 4.305423874679559
+          },
+          {
+            "id": "ocucor_base_one_simulate",
+            "before_ms": 42.771729,
+            "after_ms": 44.2623955,
+            "change_pct": 3.485167737783046
+          },
+          {
+            "id": "sicarus_prime_incarnon_one_simulate",
+            "before_ms": 47.8178125,
+            "after_ms": 49.479124999999996,
+            "change_pct": 3.4742544945986165
+          }
+        ]
+      },
+      "corrected_irradiate": {
+        "minimum_change_pct": 29.695773935491452,
+        "maximum_change_pct": 128.51369898774223,
+        "median_change_pct": 56.015082154991326,
+        "cases": [
+          {
+            "id": "cortege_base_one_simulate",
+            "before_ms": 9.940667,
+            "after_ms": 12.892625,
+            "change_pct": 29.695773935491452
+          },
+          {
+            "id": "cortege_base_two_simulate",
+            "before_ms": 8.2919585,
+            "after_ms": 12.927396,
+            "change_pct": 55.90280631529934
+          },
+          {
+            "id": "dual_toxocyst_incarnon_one_simulate",
+            "before_ms": 48.5935415,
+            "after_ms": 75.8678125,
+            "change_pct": 56.127357994683315
+          },
+          {
+            "id": "tenet_cycron_base_one_simulate",
+            "before_ms": 78.6912705,
+            "after_ms": 179.820333,
+            "change_pct": 128.51369898774223
+          }
+        ]
+      },
+      "dense_status": {
+        "minimum_change_pct": -2.2430193129340026,
+        "maximum_change_pct": 0.2022235586568888,
+        "median_change_pct": -0.4395833256074344,
+        "cases": [
+          {
+            "id": "phantasma_prime_published_0_runs",
+            "before_ms": 34.7390415,
+            "after_ms": 34.7018125,
+            "change_pct": -0.10716760852482743
+          },
+          {
+            "id": "phantasma_prime_published_100_runs",
+            "before_ms": 31.2614585,
+            "after_ms": 31.2335415,
+            "change_pct": -0.08930165558334036
+          },
+          {
+            "id": "phantasma_prime_gas_electric_0_runs",
+            "before_ms": 161.57225,
+            "after_ms": 160.93093750000003,
+            "change_pct": -0.39691995376679445
+          },
+          {
+            "id": "phantasma_prime_gas_electric_100_runs",
+            "before_ms": 132.45720849999998,
+            "after_ms": 132.48422849999997,
+            "change_pct": 0.02039904079662591
+          },
+          {
+            "id": "phantasma_prime_toxin_0_runs",
+            "before_ms": 32.75470849999999,
+            "after_ms": 32.59675,
+            "change_pct": -0.48224669744807436
+          },
+          {
+            "id": "phantasma_prime_toxin_100_runs",
+            "before_ms": 24.244729500000002,
+            "after_ms": 23.831416500000003,
+            "change_pct": -1.7047540167441255
+          },
+          {
+            "id": "torid_published_0_runs",
+            "before_ms": 13.018167000000002,
+            "after_ms": 12.726167,
+            "change_pct": -2.2430193129340026
+          },
+          {
+            "id": "torid_published_100_runs",
+            "before_ms": 16.459999500000002,
+            "after_ms": 16.291875,
+            "change_pct": -1.02141254621545
+          },
+          {
+            "id": "kuva_nukor_published_0_runs",
+            "before_ms": 17.1912295,
+            "after_ms": 17.0022505,
+            "change_pct": -1.0992756509940138
+          },
+          {
+            "id": "kuva_nukor_published_100_runs",
+            "before_ms": 18.378917,
+            "after_ms": 18.4160835,
+            "change_pct": 0.2022235586568888
+          },
+          {
+            "id": "phantasma_prime_published_0_runs_held_out",
+            "before_ms": 103.47004150000001,
+            "after_ms": 103.5596875,
+            "change_pct": 0.08663957093317798
+          },
+          {
+            "id": "phantasma_prime_published_100_runs_held_out",
+            "before_ms": 93.597854,
+            "after_ms": 93.11583350000001,
+            "change_pct": -0.5149909740451819
+          },
+          {
+            "id": "phantasma_prime_gas_electric_0_runs_held_out",
+            "before_ms": 494.115104,
+            "after_ms": 491.00874999999996,
+            "change_pct": -0.6286701165079123
+          },
+          {
+            "id": "phantasma_prime_gas_electric_100_runs_held_out",
+            "before_ms": 399.92625,
+            "after_ms": 399.304583,
+            "change_pct": -0.15544541024751224
+          }
+        ]
+      }
+    },
+    "browser_samples_per_side_per_case": 12,
+    "browser_case_timings": {
+      "A": {
+        "cortege_base_none_simulate": {
+          "median_ms": 3.6499998569488525,
+          "minimum_ms": 1.6000003814697266,
+          "maximum_ms": 4.5,
+          "samples": 12
+        },
+        "cortege_base_none_log": {
+          "median_ms": 3.5,
+          "minimum_ms": 3,
+          "maximum_ms": 4,
+          "samples": 12
+        },
+        "cortege_base_one_simulate": {
+          "median_ms": 3.200000286102295,
+          "minimum_ms": 2,
+          "maximum_ms": 3.5,
+          "samples": 12
+        },
+        "cortege_base_one_log": {
+          "median_ms": 4.6499998569488525,
+          "minimum_ms": 4.099999904632568,
+          "maximum_ms": 5,
+          "samples": 12
+        },
+        "cortege_base_two_simulate": {
+          "median_ms": 1.8999998569488525,
+          "minimum_ms": 1.6999998092651367,
+          "maximum_ms": 2.200000286102295,
+          "samples": 12
+        },
+        "cortege_base_two_log": {
+          "median_ms": 3.1000003814697266,
+          "minimum_ms": 3,
+          "maximum_ms": 3.3999996185302734,
+          "samples": 12
+        },
+        "laetum_base_none_simulate": {
+          "median_ms": 1.5999999046325684,
+          "minimum_ms": 1.5,
+          "maximum_ms": 1.799999713897705,
+          "samples": 12
+        },
+        "laetum_base_none_log": {
+          "median_ms": 4.25,
+          "minimum_ms": 4,
+          "maximum_ms": 4.5,
+          "samples": 12
+        },
+        "laetum_base_one_simulate": {
+          "median_ms": 2.8999998569488525,
+          "minimum_ms": 2.6999998092651367,
+          "maximum_ms": 3,
+          "samples": 12
+        },
+        "laetum_base_one_log": {
+          "median_ms": 12.5,
+          "minimum_ms": 12.200000286102295,
+          "maximum_ms": 12.899999618530273,
+          "samples": 12
+        },
+        "laetum_incarnon_none_simulate": {
+          "median_ms": 1.5999999046325684,
+          "minimum_ms": 1.5,
+          "maximum_ms": 1.700000286102295,
+          "samples": 12
+        },
+        "laetum_incarnon_none_log": {
+          "median_ms": 4.199999809265137,
+          "minimum_ms": 4,
+          "maximum_ms": 4.400000095367432,
+          "samples": 12
+        },
+        "laetum_incarnon_one_simulate": {
+          "median_ms": 2.9000000953674316,
+          "minimum_ms": 2.6999998092651367,
+          "maximum_ms": 3,
+          "samples": 12
+        },
+        "laetum_incarnon_one_log": {
+          "median_ms": 12.700000047683716,
+          "minimum_ms": 12.5,
+          "maximum_ms": 13,
+          "samples": 12
+        },
+        "dual_toxocyst_base_none_simulate": {
+          "median_ms": 1.0999999046325684,
+          "minimum_ms": 0.8999996185302734,
+          "maximum_ms": 1.1999998092651367,
+          "samples": 12
+        },
+        "dual_toxocyst_base_none_log": {
+          "median_ms": 2.049999952316284,
+          "minimum_ms": 1.9000000953674316,
+          "maximum_ms": 2.3000001907348633,
+          "samples": 12
+        },
+        "dual_toxocyst_base_one_simulate": {
+          "median_ms": 1.5499999523162842,
+          "minimum_ms": 1.4000000953674316,
+          "maximum_ms": 1.700000286102295,
+          "samples": 12
+        },
+        "dual_toxocyst_base_one_log": {
+          "median_ms": 5.100000381469727,
+          "minimum_ms": 4.900000095367432,
+          "maximum_ms": 5.400000095367432,
+          "samples": 12
+        },
+        "dual_toxocyst_incarnon_none_simulate": {
+          "median_ms": 3.4000000953674316,
+          "minimum_ms": 3.3999996185302734,
+          "maximum_ms": 3.700000286102295,
+          "samples": 12
+        },
+        "dual_toxocyst_incarnon_none_log": {
+          "median_ms": 17.200000286102295,
+          "minimum_ms": 16.800000190734863,
+          "maximum_ms": 17.5,
+          "samples": 12
+        },
+        "dual_toxocyst_incarnon_one_simulate": {
+          "median_ms": 6.3500001430511475,
+          "minimum_ms": 6.299999713897705,
+          "maximum_ms": 6.599999904632568,
+          "samples": 12
+        },
+        "dual_toxocyst_incarnon_one_log": {
+          "median_ms": 37.549999952316284,
+          "minimum_ms": 37,
+          "maximum_ms": 38.40000009536743,
+          "samples": 12
+        },
+        "tenet_cycron_base_none_simulate": {
+          "median_ms": 6.849999904632568,
+          "minimum_ms": 6.699999809265137,
+          "maximum_ms": 7,
+          "samples": 12
+        },
+        "tenet_cycron_base_none_log": {
+          "median_ms": 21.350000143051147,
+          "minimum_ms": 20.800000190734863,
+          "maximum_ms": 22,
+          "samples": 12
+        },
+        "tenet_cycron_base_one_simulate": {
+          "median_ms": 9.799999952316284,
+          "minimum_ms": 9.599999904632568,
+          "maximum_ms": 10.400000095367432,
+          "samples": 12
+        },
+        "tenet_cycron_base_one_log": {
+          "median_ms": 32.24999976158142,
+          "minimum_ms": 31.799999713897705,
+          "maximum_ms": 32.700000286102295,
+          "samples": 12
+        },
+        "ocucor_base_none_simulate": {
+          "median_ms": 2.9000000953674316,
+          "minimum_ms": 2.799999713897705,
+          "maximum_ms": 3,
+          "samples": 12
+        },
+        "ocucor_base_none_log": {
+          "median_ms": 6.599999904632568,
+          "minimum_ms": 6.400000095367432,
+          "maximum_ms": 6.800000190734863,
+          "samples": 12
+        },
+        "ocucor_base_one_simulate": {
+          "median_ms": 5.900000095367432,
+          "minimum_ms": 5.699999809265137,
+          "maximum_ms": 6.099999904632568,
+          "samples": 12
+        },
+        "ocucor_base_one_log": {
+          "median_ms": 20.199999809265137,
+          "minimum_ms": 19.59999990463257,
+          "maximum_ms": 20.699999809265137,
+          "samples": 12
+        },
+        "sicarus_prime_incarnon_none_simulate": {
+          "median_ms": 3.0,
+          "minimum_ms": 2.8000001907348633,
+          "maximum_ms": 3.299999713897705,
+          "samples": 12
+        },
+        "sicarus_prime_incarnon_none_log": {
+          "median_ms": 9.5,
+          "minimum_ms": 9.099999904632568,
+          "maximum_ms": 9.799999713897705,
+          "samples": 12
+        },
+        "sicarus_prime_incarnon_one_simulate": {
+          "median_ms": 6.700000047683716,
+          "minimum_ms": 6.599999904632568,
+          "maximum_ms": 6.900000095367432,
+          "samples": 12
+        },
+        "sicarus_prime_incarnon_one_log": {
+          "median_ms": 30.84999990463257,
+          "minimum_ms": 30.299999713897705,
+          "maximum_ms": 31.699999809265137,
+          "samples": 12
+        },
+        "phantasma_prime_published_0_runs": {
+          "median_ms": 40.09999990463257,
+          "minimum_ms": 39.799999713897705,
+          "maximum_ms": 40.80000019073486,
+          "samples": 12
+        },
+        "phantasma_prime_published_100_runs": {
+          "median_ms": 36.25,
+          "minimum_ms": 35.69999980926514,
+          "maximum_ms": 36.89999961853027,
+          "samples": 12
+        },
+        "phantasma_prime_gas_electric_0_runs": {
+          "median_ms": 175.04999995231628,
+          "minimum_ms": 173.5,
+          "maximum_ms": 178.80000019073486,
+          "samples": 12
+        },
+        "phantasma_prime_gas_electric_100_runs": {
+          "median_ms": 146.34999990463257,
+          "minimum_ms": 143.89999961853027,
+          "maximum_ms": 148.90000009536743,
+          "samples": 12
+        },
+        "phantasma_prime_toxin_0_runs": {
+          "median_ms": 43.450000047683716,
+          "minimum_ms": 42.5,
+          "maximum_ms": 43.799999713897705,
+          "samples": 12
+        },
+        "phantasma_prime_toxin_100_runs": {
+          "median_ms": 30.799999952316284,
+          "minimum_ms": 30.199999809265137,
+          "maximum_ms": 31.699999809265137,
+          "samples": 12
+        },
+        "torid_published_0_runs": {
+          "median_ms": 16.84999990463257,
+          "minimum_ms": 16.5,
+          "maximum_ms": 17.399999618530273,
+          "samples": 12
+        },
+        "torid_published_100_runs": {
+          "median_ms": 21.549999952316284,
+          "minimum_ms": 21.100000381469727,
+          "maximum_ms": 22.200000286102295,
+          "samples": 12
+        },
+        "kuva_nukor_published_0_runs": {
+          "median_ms": 22.450000047683716,
+          "minimum_ms": 22,
+          "maximum_ms": 23.199999809265137,
+          "samples": 12
+        },
+        "kuva_nukor_published_100_runs": {
+          "median_ms": 24.15000009536743,
+          "minimum_ms": 23.700000286102295,
+          "maximum_ms": 24.5,
+          "samples": 12
+        },
+        "phantasma_prime_published_0_runs_held_out": {
+          "median_ms": 118.45000004768372,
+          "minimum_ms": 116.19999980926514,
+          "maximum_ms": 126.59999990463257,
+          "samples": 12
+        },
+        "phantasma_prime_published_100_runs_held_out": {
+          "median_ms": 106.55000019073486,
+          "minimum_ms": 105,
+          "maximum_ms": 109.19999980926514,
+          "samples": 12
+        },
+        "phantasma_prime_gas_electric_0_runs_held_out": {
+          "median_ms": 535.0000002384186,
+          "minimum_ms": 532.9000000953674,
+          "maximum_ms": 554,
+          "samples": 12
+        },
+        "phantasma_prime_gas_electric_100_runs_held_out": {
+          "median_ms": 440.9500000476837,
+          "minimum_ms": 435.40000009536743,
+          "maximum_ms": 448.19999980926514,
+          "samples": 12
+        },
+        "torid_simulation": {
+          "median_ms": 0.8000001907348633,
+          "minimum_ms": 0.7000002861022949,
+          "maximum_ms": 1,
+          "samples": 12
+        },
+        "amprex_gas_electric_100_simulation": {
+          "median_ms": 1.3000001907348633,
+          "minimum_ms": 1.1999998092651367,
+          "maximum_ms": 1.3000001907348633,
+          "samples": 12
+        },
+        "primary_debilitate_callbacks_simulation_no_arcane": {
+          "median_ms": 1.25,
+          "minimum_ms": 1.1999998092651367,
+          "maximum_ms": 1.5,
+          "samples": 12
+        },
+        "primary_debilitate_callbacks_simulation_mc128_no_arcane": {
+          "median_ms": 19.549999952316284,
+          "minimum_ms": 19.299999713897705,
+          "maximum_ms": 20.09999990463257,
+          "samples": 12
+        }
+      },
+      "B": {
+        "cortege_base_none_simulate": {
+          "median_ms": 2.6000001430511475,
+          "minimum_ms": 1.5999999046325684,
+          "maximum_ms": 4.600000381469727,
+          "samples": 12
+        },
+        "cortege_base_none_log": {
+          "median_ms": 3.3500001430511475,
+          "minimum_ms": 2.8999996185302734,
+          "maximum_ms": 3.9000000953674316,
+          "samples": 12
+        },
+        "cortege_base_one_simulate": {
+          "median_ms": 3.1999998092651367,
+          "minimum_ms": 2.200000286102295,
+          "maximum_ms": 3.9000000953674316,
+          "samples": 12
+        },
+        "cortege_base_one_log": {
+          "median_ms": 6.099999904632568,
+          "minimum_ms": 6,
+          "maximum_ms": 6.800000190734863,
+          "samples": 12
+        },
+        "cortege_base_two_simulate": {
+          "median_ms": 2.5,
+          "minimum_ms": 2.3999996185302734,
+          "maximum_ms": 2.799999713897705,
+          "samples": 12
+        },
+        "cortege_base_two_log": {
+          "median_ms": 6.25,
+          "minimum_ms": 6,
+          "maximum_ms": 6.400000095367432,
+          "samples": 12
+        },
+        "laetum_base_none_simulate": {
+          "median_ms": 1.5999999046325684,
+          "minimum_ms": 1.4000000953674316,
+          "maximum_ms": 1.700000286102295,
+          "samples": 12
+        },
+        "laetum_base_none_log": {
+          "median_ms": 4.100000381469727,
+          "minimum_ms": 3.9000000953674316,
+          "maximum_ms": 4.400000095367432,
+          "samples": 12
+        },
+        "laetum_base_one_simulate": {
+          "median_ms": 2.9000000953674316,
+          "minimum_ms": 2.5999999046325684,
+          "maximum_ms": 3.1000003814697266,
+          "samples": 12
+        },
+        "laetum_base_one_log": {
+          "median_ms": 12.449999809265137,
+          "minimum_ms": 12.099999904632568,
+          "maximum_ms": 12.600000381469727,
+          "samples": 12
+        },
+        "laetum_incarnon_none_simulate": {
+          "median_ms": 1.5499999523162842,
+          "minimum_ms": 1.5,
+          "maximum_ms": 1.700000286102295,
+          "samples": 12
+        },
+        "laetum_incarnon_none_log": {
+          "median_ms": 4.299999952316284,
+          "minimum_ms": 4,
+          "maximum_ms": 4.599999904632568,
+          "samples": 12
+        },
+        "laetum_incarnon_one_simulate": {
+          "median_ms": 2.8999998569488525,
+          "minimum_ms": 2.6999998092651367,
+          "maximum_ms": 3.200000286102295,
+          "samples": 12
+        },
+        "laetum_incarnon_one_log": {
+          "median_ms": 12.699999809265137,
+          "minimum_ms": 12.5,
+          "maximum_ms": 13,
+          "samples": 12
+        },
+        "dual_toxocyst_base_none_simulate": {
+          "median_ms": 1.0,
+          "minimum_ms": 0.8999996185302734,
+          "maximum_ms": 1.1000003814697266,
+          "samples": 12
+        },
+        "dual_toxocyst_base_none_log": {
+          "median_ms": 2.1000001430511475,
+          "minimum_ms": 1.8999996185302734,
+          "maximum_ms": 2.200000286102295,
+          "samples": 12
+        },
+        "dual_toxocyst_base_one_simulate": {
+          "median_ms": 1.5999999046325684,
+          "minimum_ms": 1.5,
+          "maximum_ms": 1.8000001907348633,
+          "samples": 12
+        },
+        "dual_toxocyst_base_one_log": {
+          "median_ms": 5.049999952316284,
+          "minimum_ms": 4.900000095367432,
+          "maximum_ms": 5.400000095367432,
+          "samples": 12
+        },
+        "dual_toxocyst_incarnon_none_simulate": {
+          "median_ms": 3.4000000953674316,
+          "minimum_ms": 3.3000001907348633,
+          "maximum_ms": 3.5,
+          "samples": 12
+        },
+        "dual_toxocyst_incarnon_none_log": {
+          "median_ms": 17.199999809265137,
+          "minimum_ms": 16.799999713897705,
+          "maximum_ms": 17.799999713897705,
+          "samples": 12
+        },
+        "dual_toxocyst_incarnon_one_simulate": {
+          "median_ms": 9.5,
+          "minimum_ms": 9.299999713897705,
+          "maximum_ms": 9.899999618530273,
+          "samples": 12
+        },
+        "dual_toxocyst_incarnon_one_log": {
+          "median_ms": 58.0,
+          "minimum_ms": 57.200000286102295,
+          "maximum_ms": 59.19999980926514,
+          "samples": 12
+        },
+        "tenet_cycron_base_none_simulate": {
+          "median_ms": 7.1499998569488525,
+          "minimum_ms": 6.799999713897705,
+          "maximum_ms": 7.399999618530273,
+          "samples": 12
+        },
+        "tenet_cycron_base_none_log": {
+          "median_ms": 21.200000047683716,
+          "minimum_ms": 20.899999618530273,
+          "maximum_ms": 22.09999990463257,
+          "samples": 12
+        },
+        "tenet_cycron_base_one_simulate": {
+          "median_ms": 22.200000047683716,
+          "minimum_ms": 21.90000009536743,
+          "maximum_ms": 23,
+          "samples": 12
+        },
+        "tenet_cycron_base_one_log": {
+          "median_ms": 72.85000014305115,
+          "minimum_ms": 72.09999990463257,
+          "maximum_ms": 75,
+          "samples": 12
+        },
+        "ocucor_base_none_simulate": {
+          "median_ms": 2.8000001907348633,
+          "minimum_ms": 2.6999998092651367,
+          "maximum_ms": 3,
+          "samples": 12
+        },
+        "ocucor_base_none_log": {
+          "median_ms": 6.699999809265137,
+          "minimum_ms": 6.5,
+          "maximum_ms": 6.899999618530273,
+          "samples": 12
+        },
+        "ocucor_base_one_simulate": {
+          "median_ms": 6.049999952316284,
+          "minimum_ms": 5.900000095367432,
+          "maximum_ms": 6.400000095367432,
+          "samples": 12
+        },
+        "ocucor_base_one_log": {
+          "median_ms": 19.899999856948853,
+          "minimum_ms": 19.59999990463257,
+          "maximum_ms": 21.200000286102295,
+          "samples": 12
+        },
+        "sicarus_prime_incarnon_none_simulate": {
+          "median_ms": 2.950000047683716,
+          "minimum_ms": 2.8000001907348633,
+          "maximum_ms": 3.4000000953674316,
+          "samples": 12
+        },
+        "sicarus_prime_incarnon_none_log": {
+          "median_ms": 9.349999904632568,
+          "minimum_ms": 9,
+          "maximum_ms": 9.900000095367432,
+          "samples": 12
+        },
+        "sicarus_prime_incarnon_one_simulate": {
+          "median_ms": 6.900000095367432,
+          "minimum_ms": 6.699999809265137,
+          "maximum_ms": 7.299999713897705,
+          "samples": 12
+        },
+        "sicarus_prime_incarnon_one_log": {
+          "median_ms": 31.049999952316284,
+          "minimum_ms": 30,
+          "maximum_ms": 32.09999990463257,
+          "samples": 12
+        },
+        "phantasma_prime_published_0_runs": {
+          "median_ms": 39.80000019073486,
+          "minimum_ms": 39.19999980926514,
+          "maximum_ms": 40.5,
+          "samples": 12
+        },
+        "phantasma_prime_published_100_runs": {
+          "median_ms": 36.35000014305115,
+          "minimum_ms": 35.299999713897705,
+          "maximum_ms": 37.299999713897705,
+          "samples": 12
+        },
+        "phantasma_prime_gas_electric_0_runs": {
+          "median_ms": 174.85000014305115,
+          "minimum_ms": 173.09999990463257,
+          "maximum_ms": 176.69999980926514,
+          "samples": 12
+        },
+        "phantasma_prime_gas_electric_100_runs": {
+          "median_ms": 146.19999980926514,
+          "minimum_ms": 144.80000019073486,
+          "maximum_ms": 149.40000009536743,
+          "samples": 12
+        },
+        "phantasma_prime_toxin_0_runs": {
+          "median_ms": 43.75,
+          "minimum_ms": 42.69999980926514,
+          "maximum_ms": 45,
+          "samples": 12
+        },
+        "phantasma_prime_toxin_100_runs": {
+          "median_ms": 30.899999856948853,
+          "minimum_ms": 30.300000190734863,
+          "maximum_ms": 31.90000009536743,
+          "samples": 12
+        },
+        "torid_published_0_runs": {
+          "median_ms": 16.90000009536743,
+          "minimum_ms": 16.59999990463257,
+          "maximum_ms": 17.199999809265137,
+          "samples": 12
+        },
+        "torid_published_100_runs": {
+          "median_ms": 21.549999952316284,
+          "minimum_ms": 21.300000190734863,
+          "maximum_ms": 22.200000286102295,
+          "samples": 12
+        },
+        "kuva_nukor_published_0_runs": {
+          "median_ms": 22.450000047683716,
+          "minimum_ms": 22,
+          "maximum_ms": 23.199999809265137,
+          "samples": 12
+        },
+        "kuva_nukor_published_100_runs": {
+          "median_ms": 24.09999990463257,
+          "minimum_ms": 23.799999713897705,
+          "maximum_ms": 25.100000381469727,
+          "samples": 12
+        },
+        "phantasma_prime_published_0_runs_held_out": {
+          "median_ms": 118.04999995231628,
+          "minimum_ms": 115.7000002861023,
+          "maximum_ms": 121.89999961853027,
+          "samples": 12
+        },
+        "phantasma_prime_published_100_runs_held_out": {
+          "median_ms": 106.84999990463257,
+          "minimum_ms": 105.59999990463257,
+          "maximum_ms": 107.80000019073486,
+          "samples": 12
+        },
+        "phantasma_prime_gas_electric_0_runs_held_out": {
+          "median_ms": 536.6500000953674,
+          "minimum_ms": 531.9000000953674,
+          "maximum_ms": 544.4000000953674,
+          "samples": 12
+        },
+        "phantasma_prime_gas_electric_100_runs_held_out": {
+          "median_ms": 436.7000000476837,
+          "minimum_ms": 435.59999990463257,
+          "maximum_ms": 442.40000009536743,
+          "samples": 12
+        },
+        "torid_simulation": {
+          "median_ms": 0.8500001430511475,
+          "minimum_ms": 0.7000002861022949,
+          "maximum_ms": 1,
+          "samples": 12
+        },
+        "amprex_gas_electric_100_simulation": {
+          "median_ms": 1.299999713897705,
+          "minimum_ms": 1.1999998092651367,
+          "maximum_ms": 1.4000000953674316,
+          "samples": 12
+        },
+        "primary_debilitate_callbacks_simulation_no_arcane": {
+          "median_ms": 1.3000001907348633,
+          "minimum_ms": 1.1999998092651367,
+          "maximum_ms": 1.5999999046325684,
+          "samples": 12
+        },
+        "primary_debilitate_callbacks_simulation_mc128_no_arcane": {
+          "median_ms": 19.40000009536743,
+          "minimum_ms": 19,
+          "maximum_ms": 19.800000190734863,
+          "samples": 12
+        }
+      }
+    },
+    "native_simulation_peak_rss": {
+      "A": {
+        "peak_process_rss_bytes": 43696128,
+        "peak_wasm_linear_bytes": null
+      },
+      "B": {
+        "peak_process_rss_bytes": 43204608,
+        "peak_wasm_linear_bytes": null
+      }
+    },
+    "browser_linear_peak_with_changed_records": {
+      "A": {
+        "peak_process_rss_bytes": null,
+        "peak_wasm_linear_bytes": 54067200
+      },
+      "B": {
+        "peak_process_rss_bytes": null,
+        "peak_wasm_linear_bytes": 93782016
+      }
+    },
+    "browser_linear_peak_preserved_controls": {
+      "A": {
+        "peak_process_rss_bytes": null,
+        "peak_wasm_linear_bytes": 48955392
+      },
+      "B": {
+        "peak_process_rss_bytes": null,
+        "peak_wasm_linear_bytes": 48955392
+      }
+    },
+    "memory_scope": "52-case sequence with newly emitted echo records versus fresh 44-case sequence whose gameplay/records are preserved; WebAssembly linear memory high-water, not a leak measurement",
+    "wasm_module_bytes": {
+      "before": 7044528,
+      "after": 7049154,
+      "change": 4626
+    },
+    "interpretation": "Positive timing percentage is slower. Corrected echo workloads perform additional damage/status/record work. Short Chrome calls are timer/JIT sensitive."
+  },
+  "remaining_native_bindings": [
+    "Full pending-packet comparator and producer selection",
+    "GetType/IsA owner resolution, charged getter and keyed listener lifetime",
+    "Collision/controller/Luau Sleep(0) resumption ordering",
+    "Complete echo recipient crit/Attrition/proc/faction/Tornado dispatch"
+  ],
+  "calibration": "M59 base 1.8/incarnon 3.6 remains a separately labelled recipient calibration; it never fabricates NumHits=2",
+  "preserved": [
+    "original 9a8c and 540 snapshots",
+    "retained 1c and optimized 94 snapshots",
+    "all existing golden measurements",
+    "research queue and source exchanges"
+  ],
+  "known_prior_failure": "check_combat_record.mjs has three 40m-miss assertions failing in original/540/1c/94; retained prior evidence, not rerun or claimed passing here",
+  "release_pending": [
+    "Final combined-candidate CI",
+    "New Mac engine and normal coordinated channel release",
+    "Merger-owned scoring/publication follow-up"
+  ],
+  "production_changes": false,
+  "preview": "http://127.0.0.1:8831",
+  "backup_folder": "WFSim/secondary-irradiate-20261115-32686c89"
+}

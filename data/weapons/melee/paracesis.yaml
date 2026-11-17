@@ -18,6 +18,7 @@ polarities: []
 stance_polarity: vazarin
 introduced: "Update 23.10"
 internal_name: /Lotus/Weapons/Orokin/BallasSword/BallasSwordWeapon
+weakness_bonus: 0.0
 traits: [orokin]
 
 ammo_max: ~

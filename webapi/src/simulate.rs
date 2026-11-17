@@ -636,6 +636,8 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             .collect::<Vec<Value>>()))
     };
     let mut sources: Vec<(String, f64, Option<Value>)> = vec![
+        ("magnetic break".to_string(), status_damage.magnetic_break,
+            Some(json!([{ "type": "Electricity", "dmg": status_damage.magnetic_break }]))),
         ("direct".to_string(), status_damage.direct, by_type(&status_damage.direct_by_type)),
         ("radial".to_string(), status_damage.radial, by_type(&status_damage.radial_by_type)),
         // The lingering FIELD is its own bucket — on the Torid it is most of the
@@ -777,6 +779,11 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
                 "arcane" => (f.sources.arcane_on_status, f.sources.arcane_by_type),
                 "syndicate" => (f.sources.syndicate, f.sources.syndicate_by_type),
                 "extra hit" => (f.sources.extra_hit, f.sources.extra_hit_by_type),
+                "magnetic break" => {
+                    let mut split = [0.0; wfsim_engine::rules::damage::DamageType::ALL.len()];
+                    split[wfsim_engine::rules::damage::DamageType::Electricity as usize] = f.sources.magnetic_break;
+                    (f.sources.magnetic_break, split)
+                }
                 other => {
                     let i = (0..wfsim_engine::rules::damage::DamageType::ALL.len())
                         .position(|i| type_name(i) == other)
@@ -1046,6 +1053,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         "field_ticks": s.mean_field_ticks,
         "damage_sources": damage_sources,
         "timeline": m.curve.buckets()[..nb].to_vec(),
+        "kill_timeline": m.kill_timeline.0[..nb].to_vec(),
         "replay": replay,
         "transforms": s.mean_transforms,
         // COUNTED, NOT FOUGHT — `data::weapons::SpawnOnKillSpec`. Absent on
@@ -1164,6 +1172,35 @@ mod asset_tests {
     use crate::panel::panel_json;
     use crate::registry::{assets, weapons};
     use crate::rivens::riven_class;
+
+    #[test]
+    fn magnetic_break_has_its_own_electric_source_in_report_and_replay() {
+        let report = simulate_json(&json!({
+            "weapon": "kuva_nukor", "mods": ["convulsion", "deep_freeze"],
+            "enemy": "crewman", "level": 100, "steel_path": true, "eximus": false,
+            "duration": 30.5, "runs": 1, "seed": 17, "replay": true,
+        }));
+        assert!(report.get("error").is_none(), "{report}");
+        let sources = report["damage_sources"].as_array().unwrap();
+        let packet = sources.iter().find(|s| s["source"] == "magnetic break").expect("a pool breaks under Magnetic");
+        let dot = sources.iter().find(|s| s["source"] == "Electricity").expect("the forced Electricity ticks");
+        assert!(packet["dmg"].as_f64().unwrap() > 0.0);
+        assert!(dot["dmg"].as_f64().unwrap() > 0.0);
+        assert_eq!(packet["by_type"][0]["type"], "Electricity");
+        assert_eq!(packet["by_type"][0]["dmg"], packet["dmg"]);
+        let replay = report["replay"]["sources"].as_array().unwrap();
+        for source in [packet, dot] {
+            let series = replay.iter().find(|s| s["source"] == source["source"]).unwrap();
+            let last = series["dmg"].as_array().unwrap().last().unwrap().as_f64().unwrap();
+            assert_eq!(last, source["dmg"].as_f64().unwrap().round());
+        }
+        let total: f64 = sources.iter().map(|s| s["dmg"].as_f64().unwrap()).sum();
+        let expected = report["sample"]["dps"].as_f64().unwrap() * 30.5;
+        assert!((total - expected).abs() < expected * 1e-9);
+        assert_eq!(report["kill_timeline"].as_array().unwrap().len(), 31);
+        let kills: u64 = report["kill_timeline"].as_array().unwrap().iter().map(|n| n.as_u64().unwrap()).sum();
+        assert_eq!(kills, report["sample"]["kills"].as_u64().unwrap());
+    }
 
     #[test]
     fn reported_shield_includes_the_resolved_player_aura() {
@@ -2068,7 +2105,7 @@ mod form_tests {
         let base_of = |r: &Value| r["panel"]["total"].as_f64().expect("a base damage");
         assert!((base_of(&bow) - 184.0).abs() < 1e-6, "{}", base_of(&bow));
         assert_eq!(bow["panel"]["multishot"], json!(3.0));
-        assert_eq!(bow["panel"]["crit_chance"], json!(0.35));
+        assert_eq!(bow["panel"]["crit_chance"], json!(f64::from(0.35_f32)));
 
         // Both bow forms are the same weapon: half the base damage per arrow,
         // and the tap fires more often for it (no draw, wiki Fire Rate's bow

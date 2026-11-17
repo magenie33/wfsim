@@ -59,8 +59,11 @@ an unavailable coefficient rather than zero.
 Home and non-weapon routes initialize no hidden weapon editor. Simulator and
 optimizer controls render on their own routes; the shared scenario bar remains
 available to the weapon's modules. Frame catalog readers share one pending
-request, with a failed request retryable. Home's rolling totals retain their
-text nodes and repaint only while home is visible. Overflow measurements are
+request, with a failed request retryable. Home's confirmed totals retain their
+text nodes and repaint only while home is visible. A changed value is shown
+exactly at once, with 380ms of visual
+motion; reduced motion keeps it still. The home search and topbar share one
+control, placed on the visible page. Overflow measurements are
 limited to changed visible section bodies, with a full pass on resize.
 
 - **Two surfaces**:
@@ -105,6 +108,14 @@ beside the average and a line saying it is one sample and differs from it.
 
 The Simulator's result carries that fight frame by frame: the target's pools,
 its counters, the damage meter's own composition, and **live stacks per buff**.
+
+The fight's chart has peer tabs for DPS, KPM, cumulative kills and cumulative
+effective damage. Rates use one-second buckets; a final partial bucket uses
+its actual duration. Chart KPM counts completed kills per minute in that
+bucket; the scenario's headline KPM includes partial kill progress. Every tab
+follows the same replay cursor. Magnetic's pool-break packet has its own
+source row, typed Electricity; its forced Electricity DoT remains in the
+ordinary Electricity row.
 
 **The replay sits at the TOP of that block and drives all of it**.
 The block renders once at its finished state — its number, KPIs, damage meter,

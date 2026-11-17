@@ -19,6 +19,7 @@ polarities: []
 stance_polarity: naramon
 introduced: "Update 19.7"
 internal_name: /Lotus/Weapons/Corpus/Melee/CrpTonfa/CrpTonfa
+weakness_bonus: 0.0
 traits: [corpus]
 
 ammo_max: ~

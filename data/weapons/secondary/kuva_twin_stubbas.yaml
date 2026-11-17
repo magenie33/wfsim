@@ -21,6 +21,7 @@ riven_family: Kuva Twin Stubbas
 traits: [grineer, kuva_lich]
 introduced: "26"
 internal_name: /Lotus/Weapons/Grineer/KuvaLich/Secondaries/Stubba/KuvaStubba
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 684

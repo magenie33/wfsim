@@ -35,6 +35,7 @@ polarities: [madurai, madurai]
 riven_family: Dual Decurion
 traits: [prisma, baro]
 internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/ArchwingHeavyPistols/Prisma/PrismaArchHeavyPistols
+weakness_bonus: 0.0
 noise: alarming
 magazine: 64
 # The Atmosphere column. Archwing reloads in 1.53 s instead.

@@ -13,8 +13,11 @@ effects:
     rank0: 2.5
     rankMax: 10.0
   - kind: status_chance_bonus
-    rank0: 0.1
-    rankMax: 0.4
+    UpgradeType: 365
+    OperationType: STACKING_MULTIPLY
+    Value: 0.1
+    FusionPowerStep: 0.0
+    FusionPowerCurve: QC_LINEAR
 
 family: combo_duration
 

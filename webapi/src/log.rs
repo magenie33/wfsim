@@ -50,7 +50,10 @@ pub fn log_json(v: &Value) -> Value {
     // several reads cover a stream no single one can hold, and the whole fight
     // is then a matter of asking again.
     let skip = get_f64(v, "skip", 0.0).max(0.0) as usize;
-    let rec = wfsim_engine::fight::record(&params, state, from, to, limit, skip);
+    let trace_limit = if v.get("native_trace").and_then(Value::as_bool).unwrap_or(false) {
+        get_f64(v, "native_trace_limit", 10000.0).clamp(1.0, 200000.0) as usize
+    } else { 0 };
+    let rec = wfsim_engine::fight::record_with_native_trace(&params, state, from, to, limit, skip, trace_limit);
 
     // ONE BODY'S VIEW IS A FILTER, never a different query: a weapon event
     // belongs to nobody, so it belongs in every body's timeline.
@@ -68,7 +71,7 @@ pub fn log_json(v: &Value) -> Value {
         .filter(|e| only.is_none_or(|b| e.subject.is_none_or(|s| s == b)))
         .map(|e| event_json(e, &mut carry))
         .collect();
-    json!({
+    let mut answer = json!({
         "ok": true,
         "run": [(state >> 32) as u32, (state & 0xffff_ffff) as u32],
         "from": from,
@@ -98,7 +101,12 @@ pub fn log_json(v: &Value) -> Value {
         "debuffs": wfsim_engine::fight::DEBUFF_ROSTER
             .iter().map(|(id, _)| *id).collect::<Vec<_>>(),
         "events": events,
-    })
+    });
+    if trace_limit > 0 {
+        answer["native_trace"] = json!({ "steps": rec.native_steps(), "dropped": rec.native_steps_dropped(),
+            "scope": "Captured native numeric boundaries; context_binding identifies remaining scene adapters" });
+    }
+    answer
 }
 
 /// One event, on the wire. Written by hand rather than derived: the enum's
@@ -285,6 +293,9 @@ fn event_json(e: &wfsim_engine::record::Event, carry: &mut Carry) -> Value {
 fn layer_json(l: &wfsim_engine::record::Layer) -> Value {
     use wfsim_engine::record::Layer;
     match l {
+        Layer::Clamp { factor, minimum, out } => json!({
+            "k": "c", "f": factor.index(), "min": minimum, "o": r3(*out),
+        }),
         Layer::Bracket { factor, terms, sum, out } => json!({
             "k": "b",
             "f": factor.index(),
@@ -361,4 +372,27 @@ fn term_json(t: &wfsim_engine::record::Term) -> Value {
 /// applies them, and a JSON object does not promise one.
 fn steps_json(steps: &[&wfsim_engine::record::Step]) -> Vec<Value> {
     steps.iter().map(|(k, v)| json!([k.index(), r3(*v)])).collect()
+}
+
+#[cfg(test)]
+mod native_trace_tests {
+    use super::*;
+
+    #[test]
+    fn optional_native_trace_is_bounded_and_keeps_the_response_identical() {
+        let calls: Value = serde_json::from_str(include_str!(
+            "../../tests/fixtures/engine-compare/native-calls.json")).unwrap();
+        let mut request = calls.as_array().unwrap().iter()
+            .find(|row| row["id"] == "amprex_gas_electric_0_record").unwrap()["body"].clone();
+        let plain = log_json(&request);
+        assert_eq!(plain["ok"], true);
+        request["native_trace"] = json!(true);
+        request["native_trace_limit"] = json!(2);
+        let mut traced = log_json(&request);
+        let trace = traced.as_object_mut().unwrap().remove("native_trace").unwrap();
+        assert_eq!(plain, traced);
+        assert_eq!(trace["steps"].as_array().unwrap().len(), 2);
+        assert!(trace["dropped"].as_u64().unwrap() > 0);
+        assert!(trace["steps"][0]["output_bits"].as_u64().is_some());
+    }
 }

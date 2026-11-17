@@ -23,6 +23,7 @@ riven_family: Tenet Spirex
 traits: [corpus, tenet]
 introduced: "30.5"
 internal_name: /Lotus/Weapons/Corpus/Pistols/CrpIgniterPistol/CrpIgniterPistol
+weakness_bonus: 0.2
 noise: alarming
 ammo_type: secondary
 ammo_max: 80

@@ -108,20 +108,20 @@ fn claw_cards_apply_damage_crit_and_conversion_without_a_second_damage_formula()
     let pick = |id: &str| pool.iter().find(|m| m.id == id).unwrap();
     let base = base_panel("adarza_claws", false);
     let p = resolve(&base, &[pick("maul"), pick("bite")], StackPolicy::BaseOnly);
-    assert!((p.damage.total() - 90.0 * 4.3).abs() < 1e-8);
-    assert!((p.crit_chance - 0.3 * 4.3).abs() < 1e-8);
-    assert!((p.crit_damage - crate::rules::damage::quantize_base_crit_damage(2.5) * 3.2).abs() < 1e-8);
+    assert!(crate::rules::upgrades::near_f32(p.damage.total(), 90.0 * 4.3));
+    assert!(crate::rules::upgrades::near_f32(p.crit_chance, 0.3 * 4.3));
+    assert!(crate::rules::upgrades::near_f32(p.crit_damage, crate::rules::damage::quantize_base_crit_damage(2.5) * 3.2));
     let p = resolve(&base, &[pick("brute_conditioning")], StackPolicy::BaseOnly);
-    assert!((p.damage.get(D::Impact) - 90.0 * 4.85).abs() < 1e-8);
+    assert!(crate::rules::upgrades::near_f32(p.damage.get(D::Impact), 90.0 * 4.85));
     assert_eq!(p.damage.get(D::Slash), 0.0);
     assert_eq!(p.damage.get(D::Puncture), 0.0);
     let base = base_panel("panzer_claws", false);
     let p = resolve(&base, &[pick("frost_jaw"), pick("burning_claws")], StackPolicy::BaseOnly);
     assert_eq!(p.damage.get(D::Viral), 0.0, "both elemental masks convert after coalescing");
-    assert!((p.damage.get(D::Heat) - (45.0 + 90.0 * 0.6 + 90.0 * 3.3)).abs() < 1e-8);
+    assert!(crate::rules::upgrades::near_f32(p.damage.get(D::Heat), 45.0 + 90.0 * 0.6 + 90.0 * 3.3));
     assert_eq!(p.damage.get(D::Slash), 45.0);
     let p = resolve(&base, &[pick("cull_the_weak"), pick("immunity_resistance")], StackPolicy::BaseOnly);
     assert_eq!(p.noncrit_bonus, Some((1.0, 2.4)));
-    assert!((p.co_per_type - 0.6).abs() < 1e-9);
+    assert!(crate::rules::upgrades::near_f32(p.co_per_type, 0.6));
     assert_eq!(p.status_damage_multiplier, 1.5);
 }

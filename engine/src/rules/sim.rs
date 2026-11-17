@@ -20,6 +20,20 @@ pub fn reload_divisor(speed: f64) -> f64 {
     if speed.is_finite() { speed.max(minimum) } else { minimum }
 }
 
+/// WS_RELOAD divides the queried binary32 numerator by the bounded speed query.
+#[wfsim_gas_macro::metered]
+pub fn reload_time(numerator: f64, bonus: f64) -> f64 {
+    let speed = super::upgrades::relative_for(super::upgrades::UpgradeType::WEAPON_RELOAD_SPEED, 1.0, bonus, 0.0) as f32;
+    (numerator as f32 / speed.max(0.01_f32)) as f64
+}
+
+/// Generic weapon charge uses its selected query at the binary32 divide.
+#[wfsim_gas_macro::metered]
+pub fn charge_time(numerator: f64, bonus: f64) -> f64 {
+    let speed = super::upgrades::relative(1.0, bonus, 0.0) as f32;
+    (numerator as f32 / speed.max(0.1_f32)) as f64
+}
+
 /// Generic selected charge-speed query at RVA 0x159c988, not heavy melee charge.
 #[wfsim_gas_macro::metered]
 pub fn charge_divisor(speed: f64) -> f64 {
@@ -30,7 +44,7 @@ pub fn charge_divisor(speed: f64) -> f64 {
 /// Initial-speed setter at RVA 0xb95608; impulse and maximum speed are distinct.
 #[wfsim_gas_macro::metered]
 pub fn projectile_initial_speed(base: f64, modified: f64) -> f64 {
-    modified.max(f64::from(base as f32 * 0.1_f32))
+    (modified as f32).max(base as f32 * 0.1_f32) as f64
 }
 
 /// Simulation configuration.

@@ -35,6 +35,7 @@ polarities: [madurai, madurai, madurai]
 riven_family: Grattler
 traits: [kuva_lich, adversary, grineer]
 internal_name: /Lotus/Weapons/Grineer/KuvaLich/HeavyWeapons/Grattler/KuvaGrattler
+weakness_bonus: 0.0
 noise: alarming
 magazine: 60
 reload_seconds: 2.5

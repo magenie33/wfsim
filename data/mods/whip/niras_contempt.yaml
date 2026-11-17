@@ -11,8 +11,11 @@ effects:
   rank0: 0.15000001
   rankMax: 0.90000006
 - kind: status_chance_bonus
-  rank0: 0.1
-  rankMax: 0.6
+  UpgradeType: 365
+  OperationType: STACKING_MULTIPLY
+  Value: 0.1
+  FusionPowerStep: 0.0
+  FusionPowerCurve: QC_LINEAR
 source:
   url: "https://wiki.warframe.com/w/Nira%27s_Contempt"
 set: nira
