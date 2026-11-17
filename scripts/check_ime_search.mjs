@@ -46,9 +46,13 @@ async function ime(name, route, selector, prepare, text, filtered) {
   check(`${name}: the results answer it`, after.filtered === true, JSON.stringify(after.filtered));
 }
 
-await ime("home search", "/", "#home-q", "", "绝路", `
-  const cards = [...document.querySelectorAll("#home-grid .wcard, .wgrid .wcard")];
-  return cards.length > 0 && cards.every((c) => c.textContent.includes("绝路"));`);
+await ime("home search", "/", "#home-search #wsearch-input", "", "绝路", `
+  const panel = document.getElementById("wsearch-panel");
+  const rows = [...document.querySelectorAll("#wsearch-list .opt")];
+  const expected = META.weapons.filter((w) => w.name.includes("绝路")).map((w) => w.id);
+  return !panel.hidden && expected.length > 0 && rows.length === expected.length
+    && rows.every((row) => row.dataset.kind === "weapon" && expected.includes(row.dataset.id)
+      && row.textContent.includes("绝路"));`);
 
 await ime("board search", "/benchmark", "#bench-q", "", "绝路", `
   const t = (document.getElementById("bench-board") || {}).textContent || "";
