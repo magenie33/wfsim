@@ -34,6 +34,12 @@ export async function routeRankInput(tx,input,source) {
   const [build]=await tx.unsafe('SELECT weapon FROM entity_weapon_builds WHERE id=$1',[identity]);
   const weapon=build?.weapon||(input.scope==='build'?input.body?.weapon:null);
   if(weapon){
+   if(input.scope==='build'||input.scope==='measurement'){
+    const [capturing]=await tx.unsafe(`SELECT 1 FROM state_board_read_partitions p WHERE p.weapon=$1
+     AND ($2::text IS NULL OR p.ruler=$2) AND(p.enabled OR(NOT p.canonical_sources AND p.revision IS NULL))
+     AND NOT EXISTS(SELECT 1 FROM state_board_rank_partitions r WHERE r.weapon=p.weapon AND r.ruler=p.ruler) LIMIT 1`,[weapon,ruler||null]);
+    if(capturing)throw new BoardRankConflict('ranking partition capture is not registered');
+   }
    const parts=await tx.unsafe('SELECT weapon,ruler FROM state_board_rank_partitions WHERE weapon=$1 AND ($2::text IS NULL OR ruler=$2)',[weapon,ruler||null]);
    for(const part of parts){
     const [covered]=await tx.unsafe(`SELECT 1 FROM state_board_rank_dependencies WHERE weapon=$1 AND ruler=$2 AND identity=$3
