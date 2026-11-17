@@ -110,6 +110,15 @@ Published board files and the work signal go to the public CDN directly;
 they do not add placed Worker requests. The anonymous relay keeps its original
 origin whitelist and strips cookies.
 
+A failed mirror keeps publication failed even if the main entrance advanced.
+Recovery uses the same qualified source and CI site artifact: rerun the failed
+ship job, or load the reviewed mirror target and its SSH files and run
+`WEBSITE_TARGET="" python scripts/ship_website.py --site "$CHECKED_SITE"`.
+This mirror-only command builds nothing and leaves the main entrance and bot
+alone. A fresh ship dispatch can skip an already generated build; that skip
+does not recover the mirror. Publication is complete only after both entrances
+and the backend serve the qualified release.
+
 `deploy/website.nginx` serves the static release, retains the previous hashed
 assets and forwards dynamic routes through `/etc/nginx/wfsim-backend.conf`.
 That private include names the backend's HTTPS host, verifies its certificate,

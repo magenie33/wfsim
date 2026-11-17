@@ -70,6 +70,9 @@ server {
             return 204;
         }
         proxy_hide_header Access-Control-Allow-Origin;
+        proxy_hide_header Alt-Svc;
+        proxy_hide_header NEL;
+        proxy_hide_header Report-To;
         add_header Access-Control-Allow-Origin $wfsim_cors always;
         add_header Vary Origin always;
         proxy_pass https://wfsim_edge;
