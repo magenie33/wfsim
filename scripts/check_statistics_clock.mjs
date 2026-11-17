@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {createContext,runInContext} from 'node:vm';
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
+import {clientSource} from './ci_client_inputs.mjs';
 import {contributionRoute} from '../worker/contribution.js';
 import {currentStatistics,statisticsExpiresAt,STATISTICS_FRESH_MS} from '../worker/statistics_clock.js';
 
@@ -22,7 +23,7 @@ export async function statisticsClockCases(){
  assert(!currentStatistics({...fresh,at:new Date(sampled+STATISTICS_FRESH_MS).toISOString()},sampled+STATISTICS_FRESH_MS));
  assert(!currentStatistics({...fresh,expires_at:new Date(sampled+2*STATISTICS_FRESH_MS).toISOString()},sampled));
  assert.equal(statisticsExpiresAt('invalid'),null);
- const source=readFileSync(process.env.WFSIM_STATISTICS_CLOCK_UI_SOURCE??new URL('../web/src/static/app/73-compute.js',import.meta.url),'utf8');
+ const source=process.env.WFSIM_STATISTICS_CLOCK_UI_SOURCE?readFileSync(process.env.WFSIM_STATISTICS_CLOCK_UI_SOURCE,'utf8'):clientSource('scripts/check_statistics_clock.mjs');
  const begin=source.indexOf('let computeDemand = null;'),end=source.indexOf("/// THE NAV'S COUNT:",begin);
  assert(begin>=0&&end>begin);
  let time=sampled+85000,redraws=0,next=0,cdn=fresh,fallback=null,apiCalls=0;
