@@ -18,11 +18,12 @@ import { iso } from "../worker/instant.js";
 import { KEPT_MS } from "../worker/tasks.js";
 import { BOARD_KINDS } from "../worker/board_kinds.js";
 import { recoverBoardTasks } from "../worker/board_tasks.js";
-import { demandOf, DEMAND_KEY, DEMAND_CACHE, DEMAND_COST_EVERY_MS, tallyOf, tallyBase, scorePace, TALLY_KEY, TALLY_CACHE, TALLY_BASE_MS } from "../worker/contribution.js";
+import { DEMAND_KEY, DEMAND_CACHE, tallyOf, tallyBase, scorePace, TALLY_KEY, TALLY_CACHE, TALLY_BASE_MS } from "../worker/contribution.js";
 import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capacity.mjs";
 import { facts } from "../worker/factory.js";
 import { pipelineClock } from "./pipeline_clock.mjs";
 import { TASK_PIPELINE_STAGES, readPipelineControl } from "../worker/task_pipeline.js";
+import {createStatisticsProvider,STATISTICS_PUMP_MS} from '../worker/statistics_provider.js';
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
 export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, STATS_TICK_MS = 10_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
@@ -60,7 +61,16 @@ const log = (...a) => console.log(new Date().toISOString(), ...a);
 export async function openEnv(env = process.env, connect = postgres) {
   if (!env.PG_URL) throw new Error("PG_URL is required");
   const clients = [];
-  let writeSnapshot;
+  let writeSnapshot,statisticsTransaction,statisticsQuery,statisticsControlQuery;
+  const boundedQuery=c=>async(sql,args=[],{signal,remainingMs=1000}={})=>{
+    let expired=false,timer;
+    const check=()=>{if(expired||signal?.aborted)throw Error('statistics lookup stopped');};
+    const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{expired=true;reject(Error('statistics lookup deadline'));},Math.max(1,Math.min(1000,remainingMs)));});
+    try{return await Promise.race([c.transaction(async tx=>{
+      check();await tx.query('SET LOCAL statement_timeout='+Math.max(1,Math.min(1000,Math.floor(remainingMs))),[]);
+      check();const result=await tx.query(sql,args);check();return result.rows;
+    }),timeout]);}finally{clearTimeout(timer);}
+  };
   const db = (url, background = false, stage = null, max = 1, signal = false) => {
     // PG_SOCKET (a directory) reaches Postgres over its unix socket, as the
     // unit does: peer authentication, no password on the machine.
@@ -71,15 +81,27 @@ export async function openEnv(env = process.env, connect = postgres) {
     const c = postgresClient(connect(url, { ...POSTGRES_OPTIONS, max, idle_timeout: 0, connection, onnotice: () => {},
       ...(env.PG_SOCKET ? { host: env.PG_SOCKET } : {}) }));
     clients.push(c);
+    if(background&&!statisticsTransaction)statisticsTransaction=fn=>c.transaction(fn);
+    if(signal&&!statisticsControlQuery)statisticsControlQuery=boundedQuery(c);
     if(!background&&!stage&&!signal&&!writeSnapshot&&url===env.PG_URL)writeSnapshot=async(statement,allowed)=>{
       const stopped=new Error('statistics stopped or paused');
-      try{return await c.transaction(async tx=>{
-        if(!await allowed())throw stopped;
-        await tx.query(placeholders(statement.sql),statement.args);
-        if(!await allowed())throw stopped;
+      const began=performance.now();let expired=false,timer;
+      const guard=()=>{if(expired||performance.now()-began>=3000)throw stopped;};
+      const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{expired=true;reject(stopped);},3000);});
+      try{return await Promise.race([c.transaction(async tx=>{
+        guard();
+        const limited={query:async(sql,args=[])=>{
+          guard();await tx.query('SET LOCAL statement_timeout='+Math.max(1,Math.min(1000,Math.floor(3000-(performance.now()-began)))),[]);
+          const result=await tx.query(sql,args);guard();return result;
+        }};
+        if(!await allowed(limited))throw stopped;
+        await limited.query(placeholders(statement.sql),statement.args);
+        if(!await allowed(limited))throw stopped;
+        guard();
         return true;
-      });}catch(error){if(error===stopped)return false;throw error;}
+      }),timeout]);}catch(error){if(error===stopped)return false;throw error;}finally{clearTimeout(timer);}
     };
+    if(!background&&!stage&&!signal&&!statisticsQuery&&url===env.PG_URL)statisticsQuery=boundedQuery(c);
     return pgDb(c);
   };
   const out = { LIBRARY: db(env.PG_URL), ...(env.PG_ACCOUNTS_URL ? { ACCOUNTS: db(env.PG_ACCOUNTS_URL,false,null,2) } : {}) };
@@ -102,7 +124,7 @@ export async function openEnv(env = process.env, connect = postgres) {
     clients.push({end:async()=>{await handle?.unlisten();await sql.end({timeout:5});}});
     handle=await sql.listen("wfsim_task_pipeline",wake);
   };
-  return {env:out,signalEnv,backgroundEnv,stageEnvs,writeSnapshot,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
+  return {env:out,signalEnv,backgroundEnv,stageEnvs,writeSnapshot,statisticsTransaction,statisticsQuery,statisticsControlQuery,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
 }
 
 /// THE RELEASE SERVED NOW, read through the worker's own `servedRelease` (a
@@ -114,8 +136,8 @@ async function served() {
 /// `opened` and `servedNow` stand in for the databases and the release in a
 /// check; `put` (one object to R2) and `readEdge` (the signal as the CDN serves it) for R2 and the edge.
 export async function run({ once = false, opened = null, servedNow = served, target = signalTarget(),
-  put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge } = {}) {
-  const { env, signalEnv = env, backgroundEnv = env, writeSnapshot, stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
+  put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge, statisticsFactory=createStatisticsProvider } = {}) {
+  const { env, signalEnv = env, backgroundEnv = env, writeSnapshot,statisticsTransaction,statisticsQuery,statisticsControlQuery,stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
   let stopping = false, ownershipLost = false, stopRun;
   let owner;
   try {
@@ -129,10 +151,17 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   let cursor = { at: iso(Date.now() - 10 * 60_000), id: "" };
   try { if (kept) cursor = JSON.parse(kept.body).cursor || cursor; } catch { /* from ten minutes ago */ }
   let release = await servedNow();
-  let statisticsControl=null;
+  const statistics=statisticsFactory({env,controlEnv:signalEnv,transaction:statisticsTransaction,query:statisticsQuery,controlQuery:statisticsControlQuery,
+    release:()=>release,stopped:()=>stopping});
+  let statisticsAt=0;
+  let wakeStatistics=()=>{};
+  const publishSnapshot=counts=>snapshotTick(env,{engine:release.engine,release:release.release},Date.now(),{counts,allowed:statistics.allowed,
+    ...(writeSnapshot?{write:statement=>writeSnapshot(statement,async tx=>{
+      try{return await statistics.assert(counts,{lookup:async(sql,args)=>(await tx.query(placeholders(sql),args)).rows});}catch{return false;}
+    })}:{})});
   const allowStatistics=async name=>{
     if(stopping)return false;
-    const control=await readPipelineControl(signalEnv,'statistics');statisticsControl=control;
+    const control=await readPipelineControl(signalEnv,'statistics');
     if(stopping)return false;
     if(control.paused){log(name,'paused','statistics',control.changed_at,control.changed_by);return false;}
     return true;
@@ -161,9 +190,9 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       const ran = await fn();
       if (ran === false) return;
       if (failed.get(name)) log(name, "recovered"); failed.set(name, 0);
-      budget.observe(name, performance.now() - began);
+      if(name!=='statistics')budget.observe(name, performance.now() - began);
     } catch (e) {
-      budget.observe(name, performance.now() - began, true);
+      if(name!=='statistics')budget.observe(name, performance.now() - began, true);
       const n = (failed.get(name) || 0) + 1; failed.set(name, n); if (n === 1 || n % 30 === 0) log(name, "failed", n, e && e.message);
     }
   };
@@ -175,7 +204,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     return signalFlight;
   };
   const jobs = {
-    release: async () => { release = await servedNow(); forgetDials(); },
+    release: async () => {const next=await servedNow();if(next.engine!==release.engine)statistics.changed();release=next;forgetDials();},
     admission: async () => {
       if (!release.engine) return false;
       const now = Date.now();
@@ -188,8 +217,14 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     snapshot: async () => {
       const allowed=()=>allowStatistics('snapshot');
       if(!await allowed())return false;
-      return snapshotTick(env,{engine:release.engine,release:release.release},Date.now(),{allowed,
-        ...(writeSnapshot?{write:statement=>writeSnapshot(statement,allowed)}:{})});
+      const counts=await statistics.get();if(!counts)return false;
+      return publishSnapshot(counts);
+    },
+    statistics: async()=>{
+      if(Date.now()<statisticsAt)return false;
+      const began=performance.now();let failed=true;
+      try{const result=await statistics.advance();failed=false;if(result.sealed)wakeStatistics();return result;}
+      finally{const elapsed=performance.now()-began;budget.observe('statistics',elapsed,failed);statisticsAt=Date.now()+budget.interval('statistics',STATISTICS_PUMP_MS);}
     },
     signal,
     // A WAVE FROM NOTHING is signalled now, not at the next snapshot.
@@ -224,11 +259,11 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     demand: async () => {
       if(!await allowStatistics('demand'))return false;
       if (!target) return;
-      const now = Date.now();
-      const body = await demandOf(backgroundEnv, now, undefined, { pace: await pace(now),
-        costEveryMs: budget.interval("demandCosts", DEMAND_COST_EVERY_MS),
-        onCosts: (ms) => budget.observe("demandCosts", ms) });
+      const counts=await statistics.get();if(!counts)return false;
+      const body=counts.demand;if(!body)return false;
+      if(!await publishSnapshot(counts))return false;
       if(!await allowStatistics('demand'))return false;
+      await statistics.assert(counts);if(stopping)return false;
       await put(target, { key: DEMAND_KEY, body: JSON.stringify(body), contentType: "application/json", cacheControl: DEMAND_CACHE });
     },
     // THE HOME PAGE'S COUNT (worker/contribution.js `tallyOf`), every `stats_tally_ms`;
@@ -269,23 +304,26 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     },
   };
   if (once) {
-    for (const name of ["signal", "snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
+    for (const name of ["signal","statistics", "snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
+    statistics.stop();
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
-    log(bad.length ? `once: failed ${bad.join(", ")}` : "once: ok", commit,statisticsControl?(statisticsControl.paused?"statistics=paused":"statistics=enabled"):"statistics=unknown");
+    log(bad.length ? `once: failed ${bad.join(", ")}` : "once: ok", commit,'statistics='+statistics.state().state);
     return bad.length ? 1 : 0;
   }
   if (stopping) { await close(); await owner?.release(); return 1; }
   const clock=pipelineClock({onError:(name,error)=>log(name,"clock failed",error.message)});
+  wakeStatistics=()=>{clock.wake('snapshot');clock.wake('demand');};
   const every = (ms, name) => {
     clock.add(name,ms,async()=>{
       if (stopping) return;
-      await (["admission", "demand", "tally", "forget", "past", "moot", "shadow"].includes(name)
+      await (["statistics","admission", "demand", "tally", "forget", "past", "moot", "shadow"].includes(name)
         ? background(() => stopping ? undefined : tick(name, jobs[name])) : tick(name, jobs[name])
       );
     });
   };
   every(SNAPSHOT_MS, "heartbeat");
+  every(STATISTICS_PUMP_MS,'statistics');
   every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "signal"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
   every(SETTLE_MS, "admission");
   every(SETTLE_MS,"workflowAdmission");
@@ -293,13 +331,14 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   every(WAVE_MS, "wave"); every(SIGNAL_CHECK_MS, "signalCheck");
   let stop;
   const stopped=new Promise((resolve) => {
-    stop = () => { stopping = true;clock.stop();resolve(); };
+    stop = () => { stopping = true;statistics.stop();clock.stop();resolve(); };
     stopRun = stop;
     process.once("SIGTERM", stop);
     process.once("SIGINT", stop);
   });
   if(stopping)stop();
-  if(listen && !stopping)try {await listen(stage=>clock.wake({admission:"workflowAdmission",verification:"settle",delivery:"delivery",contribution:"contribution"}[stage]));}
+  if(listen && !stopping)try {await listen(stage=>{if(stage==='statistics'){statistics.changed();statisticsAt=0;clock.wake('statistics');}
+    else clock.wake({admission:"workflowAdmission",verification:"settle",delivery:"delivery",contribution:"contribution"}[stage]);});}
   catch(error){log("pipeline notification unavailable; polling retained",error.message);}
   if(!stopping)log("factoryd up",commit,release.engine);
   await stopped;
