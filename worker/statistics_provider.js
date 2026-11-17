@@ -91,12 +91,14 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
   indexOid=deps.index_oid;return allowed();
  };
  const assert=async(value,{lookup=query}={})=>{
+  const observedVersion=version,engine=release().engine;
   if(!await allowed({lookup}))throw Error('statistics paused or stopped');
   const deps=await dependenciesOf(lookup);if(!deps.ready)throw Error('statistics dependencies changed');
-  const key=await statisticsProjectionIdentity(lookup,release().engine);
+  const key=await statisticsProjectionIdentity(lookup,engine);
   const [head]=await lookup('SELECT h.namespace,n.counts_at FROM state_statistics_head h JOIN state_statistics_namespaces n ON n.id=h.namespace WHERE h.id=1',[]);
   if(key.blocked||head?.namespace!==value.namespace||head.counts_at!==value.countsAt||!identical(key,value.key))throw Error('statistics source changed');
-  if(!await allowed({lookup}))throw Error('statistics paused or stopped');return true;
+  if(!await allowed({lookup}))throw Error('statistics paused or stopped');
+  if(observedVersion!==version||engine!==release().engine)throw Error('statistics source changed');return true;
  };
  return{
   async advance(){

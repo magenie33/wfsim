@@ -40,6 +40,28 @@ export async function statisticsProviderCases(){
  engine='changed';assert.equal(await provider.get(),null,'changed source published cached counts');engine='fixture';
  stopped=true;const before={queries,writes};await provider.advance();assert.equal(await provider.get(),null);assert.deepEqual({queries,writes},before,'stopped owner performed a late lookup/write');
  console.log('PASS provider fail-closed, bounded multi-step/singleflight, cached clock, restart and owner-stop controls');
+ await statisticsProviderSourceRaceCases();
+}
+
+export async function statisticsProviderSourceRaceCases(){
+ for(const change of ['engine','notification','both']){
+  const at='2026-11-17T00:00:00.000Z',identity={epoch:'no-cut',generation:'1',blocked:null,inventory:null,fingerprint:'fixture'};
+  const counts={namespace:'fixture-head',countsAt:at,key:{contract:'statistics-projection-1',engine:'fixture',...identity}};
+  let engine='fixture',checks=0,entered,finish;
+  const waiting=new Promise(resolve=>{entered=resolve;}),held=new Promise(resolve=>{finish=resolve;});
+  const query=async sql=>{
+   if(sql.includes('index_ready')){if(++checks===2){entered();await held;}return[{paused:false,index_ready:true}];}
+   if(sql.startsWith('SELECT compute_order_cut_epoch'))return[identity];
+   if(sql.includes('SELECT h.namespace,n.counts_at'))return[{namespace:counts.namespace,counts_at:at}];
+   throw Error('unexpected source-race lookup: '+sql);
+  };
+  const provider=createStatisticsProvider({env:{},query,controlQuery:query,release:()=>({engine}),
+   dependenciesOf:async()=>({ready:true})});
+  const asserting=provider.assert(counts),rejected=assert.rejects(asserting,/statistics source changed/);
+  await waiting;if(change!=='notification')engine='changed';if(change!=='engine')provider.changed();finish();
+  await rejected;
+ }
+ console.log('PASS source change during final control await rejects observed engine and same-engine notification races');
 }
 
 export async function nativeStatisticsProviderCases({runDaemon=run}={}){
