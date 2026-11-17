@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE PAGE CACHE — a service worker for wfsim.app alone (docs/DISTRIBUTION.md
+// THE PAGE CACHE — a service worker for the public entrances (docs/DISTRIBUTION.md
 // §"The page cache"). A page is asked of the network first and answered from
 // the copy kept here once the network has taken PAGE_WAIT_MS; a content-
 // addressed file is answered from here first. Nothing else is touched: the api,
