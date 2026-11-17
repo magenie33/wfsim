@@ -1627,8 +1627,11 @@ JSON and numbers, expiry, future clocks, current-cut invalidation and delayed
 writes. Real transactions roll back owner stops at every write boundary.
 Independent R2/cache failures and the actual daemon writer preserve the other
 path without adding a pool. The previous `sync.sql` supplied through
-`WFSIM_AVAILABILITY_SYNC_SQL` must fail the paused-statistics cache assertion;
+`WFSIM_AVAILABILITY_SYNC_SQL` must fail its cache or fallback-planning assertion;
 removing the final stop or epoch guard must fail their assertions.
+An immutable planning error in the canonical view must remain unplanned on
+cache and complete-snapshot hits. The authoritative fast statement is extracted
+for EXPLAIN, which must actually read the findings key and no business heap.
 `--sql` emits only `factory_open` from its authoritative definition in `sync.sql`.
 
 Plain node on PGlite: the settler in shadow (`worker/settler.js`,

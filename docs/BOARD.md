@@ -1237,6 +1237,9 @@ seconds. The cached pack ceiling must cover the requested pack, its numbers
 must be safe nonnegative integers, and its cut epoch must match the current
 activation. A pre-cut complete snapshot is also invalid. A missing, expired,
 invalid or insufficient cache retains the original canonical count fallback.
+Cache, complete-snapshot and canonical reads are separate statements in the
+stable function. A successful read returns before the next statement is
+planned, keeping canonical planning and JIT costs out of a cache hit.
 Writes reject obsolete epochs and older samples. They use the reserved signal
 connection in a short transaction with owner-stop checks before and after SQL.
 The cache and R2 publication attempt independently; either failure leaves the
