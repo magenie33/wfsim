@@ -18,12 +18,12 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Stahlta","description":"Stahlta (钢刃步枪) — Rifle · Primary · Mastery Rank 10. 52 base damage (impact 7.28, puncture 16.64, slash 28.08), 24% crit chance, 1.8x crit multiplier, 22% status chance. Best riven-free build on the board: 6.3397 under Standard Single Target · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM, as of 2026-11-18.","url":"https://wfsim.app/weapons/Stahlta","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Stahlta","item":"https://wfsim.app/weapons/Stahlta"}]},"dateModified":"2026-11-18","about":{"@type":"Thing","name":"Stahlta","alternateName":"钢刃步枪"}}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.ae43af81aa48.css" />
+  <link rel="stylesheet" href="/asset/style.160ff5452f57.css" />
   
-  <link rel="preload" href="/pkg/wfsim_wasm_bg.2e2516a2f41d.wasm" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/wfsim_wasm_bg.d64db9a2d6d4.wasm" as="fetch" crossorigin />
   <link rel="preload" href="/pkg/meta.1180c3875f39.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/i18n.95224b44d4d2.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/pack.data.95ae3fe8a95e.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/i18n.e1efcae5ad91.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/pack.data.de991eeca142.json" as="fetch" crossorigin />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
   
@@ -98,6 +98,7 @@
     <div class="topbar-inner">
       <a class="brand" href="/">WF<span>Sim</span></a>
       
+      <template id="topbar-search-anchor"></template>
       <div class="wsearch">
         <input id="wsearch-input" type="text" autocomplete="off" />
         <div id="wsearch-panel" class="wsearch-panel" hidden>
@@ -207,18 +208,19 @@
   <main id="download-page" class="dl-page" hidden></main>
 
   <main id="home-page" class="home-page" hidden>
-    
-    <h2 id="h-home" class="hero-h" data-i18n-gold="Prime">The real Simulacrum Prime.</h2>
-    
-    <p class="hero-stance" data-i18n>Every hit counts.</p>
-    <p class="hero-sub hero-lead" data-i18n>Builder, simulator, optimizer.</p>
-    
-    <div id="home-tally" hidden>
-      <p class="hero-stance" data-i18n>The first build leaderboard computed by its players.</p>
-      <div class="hero-facts" id="home-tally-n"></div>
-    </div>
-    <div class="hero-facts" id="home-facts" hidden></div>
-    <p class="hero-note"><span data-i18n>Every formula cites its source, and every golden test is calibrated against a real in-game run.</span> <a href="/support#method" data-i18n>How to check it</a></p>
+    <section class="home-hero" aria-labelledby="h-home">
+      <p class="hero-stance" data-i18n>Every hit counts.</p>
+      
+      <h2 id="h-home" class="hero-h" data-i18n-gold="Prime">The real Simulacrum Prime.</h2>
+      <p class="hero-sub hero-lead" data-i18n>Builder, simulator, optimizer.</p>
+      <p id="home-community" class="home-community" data-i18n hidden>The first build leaderboard computed by its players.</p>
+      <div class="home-stats">
+        <div class="hero-facts" id="home-facts" hidden></div>
+        <div id="home-tally" hidden><div class="hero-facts" id="home-tally-n"></div></div>
+      </div>
+      <div id="home-search" class="home-entry"><kbd aria-hidden="true">/</kbd></div>
+      <p class="hero-note"><span data-i18n>Every formula cites its source, and every golden test is calibrated against a real in-game run.</span> <a href="/support#method" data-i18n>How to check it</a></p>
+    </section>
     
     <div id="home-nav" class="snav"></div>
     
@@ -735,7 +737,7 @@
     
     <a href="/method" data-native data-i18n>Method</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">0aaa0cfc</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">451e5da6</span>
     </div>
   </footer>
 
@@ -750,7 +752,7 @@
   </div>
 </div>
   <script>window.WFSIM_WASM = true;</script>
-  <script src="/asset/app.4181b3c3b620.js"></script>
+  <script src="/asset/app.3ca25b78f0f5.js"></script>
   <script type="module" src="/asset/nona.5e44c99776eb/index.js"></script>
 </body>
 </html>
