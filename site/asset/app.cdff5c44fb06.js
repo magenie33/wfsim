@@ -4,6 +4,7 @@
 // official polarity icons from the wiki, art from DE's Public Export.
 
 const $ = (id) => document.getElementById(id);
+const BOARD_ORIGIN = location.hostname === "cn.wfsim.app" ? "" : "https://cdn.wfsim.app";
 /// A SIGNAL THAT ABORTS AFTER `ms`, for every fetch with a clock. Never
 /// `AbortSignal.timeout` bare: it is Chrome 103 / Safari 16, and an older phone
 /// threw on it during boot, which the page reports as "could not start".
@@ -68,18 +69,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "8e6eba9f";
+const BUILD_ID = "9e95144f";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "b680789b+";
+const BUILD_SHA = "536b66b7+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "32714d90a66a";
+const RELEASE_ID = "095648642824";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -4646,9 +4647,8 @@ let tallyShown = null, tallyFrom = null, tallyTo = null, tallyAt = 0, tallyLoadi
 /// minute and served by the CDN), and asked of the worker only when the file is
 /// unreachable or older than this — docs/BOARD.md §"The public stats".
 const TALLY_STALE_MS = 10 * 60_000;
-const STATS_ORIGIN = "https://cdn.wfsim.app";
 async function statsFile(name, staleMs) {
-  const s = await fetch(`${STATS_ORIGIN}/stats/${name}.json`, { cache: "no-cache", signal: timeoutSignal(15_000) }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+  const s = await fetch(`${BOARD_ORIGIN}/stats/${name}.json`, { cache: "no-cache", signal: timeoutSignal(15_000) }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   return s && s.v === 1 && serverNow() - Date.parse(s.at) <= staleMs ? s : null;
 }
 async function loadHomeTally() {
@@ -16024,7 +16024,6 @@ function setBoardMeta(meta) {
 /// nothing to serve — and a shell answering same-origin cannot invent it. On a
 /// shell it is asked second and never first, the local copy being the offline
 /// one this exists to keep; on wfsim.app it is asked first (`boardOffOrigin`).
-const BOARD_ORIGIN = location.hostname === "cn.wfsim.app" ? "" : "https://cdn.wfsim.app";
 
 async function readBoardPartitionCatalog(scene, weapon = null, signal) {
   const base = window.__WFSIM_DESKTOP__ ? LIVE_ORIGIN : "";
@@ -28585,7 +28584,7 @@ function giveBack(beacon = false) {
 /// said `fallback: 7`; otherwise the protocol 7 loop below runs unchanged.
 /// `boardProtocol`: 0 not yet decided, then 8 or 7 for the rest of the page.
 let boardProtocol = 0;
-const SIGNAL_URL = "https://cdn.wfsim.app/work.json";
+const SIGNAL_URL = `${BOARD_ORIGIN}/work.json`;
 /// THE DIALS IN FORCE are the server's (`dials` in every reply, `work.json`);
 /// these are its stated defaults, used only until the first reply says otherwise.
 const syncDials = { pack8_ms: 600_000, sync_low_ms: 120_000, sync_lease_ms: 1_500_000, flush_ms: 600_000,
@@ -28859,8 +28858,7 @@ async function readSignal() {
     await fetch("/release.json", { method: "HEAD", cache: "no-store" }).then(learnServerClock).catch(() => {});
   }
   try {
-    const r = await fetch(location.hostname === "cn.wfsim.app" ? "/work.json" : SIGNAL_URL,
-      { cache: "no-cache", signal: boardSignal() });
+    const r = await fetch(SIGNAL_URL, { cache: "no-cache", signal: boardSignal() });
     const s = r.ok ? await r.json() : null;
     if (!s || s.v !== 1 || serverNow() - Date.parse(s.at) > SIGNAL_STALE_MS || s.mode === "ask") return null;
     for (const k of ["poll_ms", "jitter_ms", "urgent_jitter_ms"]) if (Number.isFinite(s[k])) syncDials[k] = s[k];
