@@ -35,7 +35,9 @@ try {
       request.onsuccess=()=>ok(request.result);request.onerror=()=>no(request.error);
     });
     const all=(db,name)=>new Promise((ok,no)=>{
-      const request=db.transaction(name).objectStore(name).getAll();request.onsuccess=()=>ok(request.result);request.onerror=()=>no(request.error);
+      const tx=db.transaction(name),request=tx.objectStore(name).getAll();
+      ${process.argv.includes("--break-read-completion")?"request.onsuccess":"tx.oncomplete"}=()=>ok(request.result);
+      tx.onabort=tx.onerror=()=>no(tx.error);
     });
     const state={tasks:[{id:"second",request:{text:"原文"},state:"succeeded",result_ref:"report"},{id:"first",request:{text:"immutable"},state:"queued"}],
       events:[{id:"z-completion",task:"second",delivered_at:null},{id:"a-completion",task:"first",delivered_at:null}],
@@ -53,12 +55,30 @@ try {
     let rejected=false;
     try{await new Function(broken+";return UserTaskBrowserStore;")().open();}catch{rejected=true;}
     db=await open("wfsim-user-tasks",1);
+    const lifecycle={complete:false,requests:0},transaction=db.transaction.bind(db);
+    db.transaction=(...args)=>{
+      db.transaction=transaction;
+      const tx=transaction(...args),store=tx.objectStore("queue");
+      const pending=()=>{if(++lifecycle.requests<64)store.get("state").onsuccess=pending;};
+      store.get("state").onsuccess=pending;
+      tx.addEventListener("complete",()=>{lifecycle.complete=true;});
+      return tx;
+    };
     const old=await all(db,"queue");
+    const completedBeforeClose=lifecycle.complete;
     assert("a failed upgrade retains the complete original database and version",rejected && db.version===1
       && equal([...db.objectStoreNames],["queue"]) && old.length===6 && old.some(row=>equal(row,state)) && old.some(row=>equal(row,artifact)));
     db.close();
     const BrowserStore=new Function(code+";return UserTaskBrowserStore;")();
     let saved=await BrowserStore.open();
+    assert("fixture reads complete their active readonly transaction before close and upgrade",completedBeforeClose && lifecycle.requests===64);
+    const blockedName="wfsim-blocked-user-tasks",blocker=await open(blockedName,1,db=>db.createObjectStore("queue"));
+    const blockedCode=code.replace('"wfsim-user-tasks", 2','"'+blockedName+'", 2');
+    let blocked=false;
+    try{await new Function(blockedCode+";return UserTaskBrowserStore;")().open();}catch(error){blocked=error.message==="Task storage is unavailable.";}
+    assert("a genuinely open legacy connection still rejects the production upgrade as blocked",blocked);
+    blocker.close();
+    const drained=await open(blockedName,2);drained.close();
     assert("tasks, completion events and pending commands survive with their ordering",equal(await saved.read(),state));
     assert("artifacts and upload payloads retain their original content and identity",equal(await saved.value("artifact:report"),artifact)
       && equal((await saved.takeValues("optimization-build-upload:",10))[0].value,upload)

@@ -193,7 +193,11 @@ PostgreSQL driver in an isolated local schema.
 `check_browser_db_migration.mjs` runs real IndexedDB upgrades for reports,
 task commands and completion records, pending answers and conversations. It
 preserves raw documents and delivery identities and proves that a failed
-cross-store write aborts every earlier write. It runs in the account page group.
+cross-store write aborts every earlier write. A live readonly request chain
+requires fixture reads to await transaction completion before close and upgrade;
+`--break-read-completion` restores the premature read result and must fail.
+A genuinely open legacy connection still rejects the production upgrade as
+blocked. It runs in the account page group.
 `check_sqlite_migration.mjs` runs in quick checks and verifies transactional
 catalog renames, unchanged BLOBs/revisions/foreign keys, collision and future
 version refusal, and byte preservation of the source capture.
