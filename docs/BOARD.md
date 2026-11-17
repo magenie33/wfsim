@@ -1230,6 +1230,19 @@ worker call. An idle computer reads it instead of asking:
 
 The signal uses its own sampling time and reserved connection, including dial
 reads. It does not write the complete snapshot or refresh demand counts.
+The same sample stores `factory_availability` in `state_factory_findings`,
+using its existing primary key and role grants. Its separate clock is valid
+for sixty seconds for `factory_open`; CDN signal freshness remains thirty
+seconds. The cached pack ceiling must cover the requested pack, its numbers
+must be safe nonnegative integers, and its cut epoch must match the current
+activation. A pre-cut complete snapshot is also invalid. A missing, expired,
+invalid or insufficient cache retains the original canonical count fallback.
+Writes reject obsolete epochs and older samples. They use the reserved signal
+connection in a short transaction with owner-stop checks before and after SQL.
+The cache and R2 publication attempt independently; either failure leaves the
+other path available. The complete statistics clock stays unchanged.
+`node scripts/check_factory_availability.mjs --sql` emits only the authoritative
+`factory_open` replacement for a separately authorized runtime upgrade.
 `statistics` in the existing task-pipeline controls pauses both complete
 snapshot reads and demand publication; the work signal, heartbeat, fairness,
 verification, delivery, contribution and maintenance continue. A paused

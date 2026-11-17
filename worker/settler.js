@@ -52,9 +52,10 @@ export async function signalTick(env,{engine=null,release=null}={},now=Date.now(
          AND (lease_until IS NULL OR lease_until < $1::text) LIMIT GREATEST(1, (SELECT n FROM a)) * $2::bigint) o) AS open,
       (SELECT count(*) FROM stats_open WHERE waits > 0) AS urgent,
       (SELECT n FROM a) AS asking,
-      (SELECT count(*) FROM entity_compute_devices WHERE banned = 0 AND last_at >= $4::text) AS computing`)
+      (SELECT count(*) FROM entity_compute_devices WHERE banned = 0 AND last_at >= $4::text) AS computing,
+      compute_order_cut_epoch() AS epoch`)
     .bind(at,Math.max(d.pack8_max,d.pack_max),iso(now-2*d.asked_every_ms),iso(now-COMPUTING_MS)).first();
-  return {at,engine,release,...n};
+  return {at,engine,release,...n,pack_max:Math.max(d.pack8_max,d.pack_max)};
 }
 
 // ---- The work signal ---------------------------------------------------------------
