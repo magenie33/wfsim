@@ -76,13 +76,12 @@ function renderFissures() {
 
 /// A REMINDER MADE FROM NOTHING, for a fissure that is not open now: its list,
 /// era, planet, mission and node, each Any until picked. EACH OFFERS ONLY what
-/// some fissure the game has opened holds beside the other picks
-/// (`/api/world/names` `fissures`), so no reminder waits for a fissure that
-/// never comes. A Void Storm has no mission to match on.
+/// a fissure recorded in the retained calendar year holds beside the other
+/// picks (`/api/world/names` `fissures`). A Void Storm has no mission to match on.
 const FISSURE_NEW_KEYS = ["list", "tier", "mission", "planet", "node"];
 const fissureNewEmpty = () => Object.fromEntries(FISSURE_NEW_KEYS.map((k) => [k, null]));
 let fissureNew = fissureNewEmpty();
-/// EVERY COMBINATION SEEN, as `{list, tier, mission, planet, node, recent,
+/// EVERY RETAINED COMBINATION, as `{list, tier, mission, planet, node, recent,
 /// last_ms}`: the worker sends `[list, tier, mission, node, recent, last_ms]`,
 /// and a node's planet is the node's own.
 let fissureSeenOf = null, fissureSeenRows = [];
@@ -117,8 +116,9 @@ function fissureStats(r, open) {
   if (!seen.length || !worldNames.window_ms) return null;
   const recent = seen.reduce((s, c) => s + c.recent, 0);
   const last = Math.max(...seen.map((c) => c.last_ms));
-  const often = recent ? trF("About every {every} in the last 7 days", { every: utilitySpan(worldNames.window_ms / recent) })
-    : tr("None in the last 7 days");
+  const days = worldNames.window_ms / 86400_000;
+  const often = recent ? trF("About every {every} in the last {days} days", { every: utilitySpan(worldNames.window_ms / recent), days })
+    : trF("None in the last {days} days", { days });
   return open || !last ? often : `${often} · ${trF("last {ago}", { ago: utilityAgo(last) })}`;
 }
 function fissureBuild(box) {

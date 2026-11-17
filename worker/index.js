@@ -30,7 +30,7 @@ import { EXT_DOCUMENTS, extDocument } from "./ext_documents.js";
 import { ocrSample } from "./ocr_samples.js";
 import { popularity } from "./popularity.js";
 import { qqRoute } from "./qq.js";
-import { worldRoute } from "./world.js";
+import { worldRoute, purgeFissures } from "./world.js";
 import { userTasksRoute } from "./user_tasks.js";
 import { contributorProfilesRoute } from "./contributor_profiles.js";
 import { appraiseRoute } from "./appraise.js";
@@ -734,7 +734,7 @@ export default {
         // databases close only once every one has finished.
         const jobs = event.cron === WATCHDOG_CRON
           ? [watchdog(f.env), publishContributors(f.env), mintMerit(f.env), settleMerit(f.env)]
-          : [rollupUsage(f.env), purgeDeleted(f.env), purgeNotices(f.env)];
+          : [rollupUsage(f.env), purgeDeleted(f.env), purgeNotices(f.env), purgeFissures(f.env)];
         (await Promise.allSettled(jobs)).forEach((r) => r.status === "rejected" && console.error("cron", event.cron, r.reason));
       } finally {
         await f.close();

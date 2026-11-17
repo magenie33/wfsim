@@ -387,12 +387,13 @@ CREATE INDEX IF NOT EXISTS appraisal_results_by_code ON record_appraisal_candida
 CREATE INDEX IF NOT EXISTS appraisal_results_by_verifier ON record_appraisal_candidates (verifier, at);
 ALTER TABLE record_appraisal_candidates ADD COLUMN IF NOT EXISTS source TEXT COLLATE "C";
 
--- EVERY VOID FISSURE THE GAME OPENS, from the world state the bot server relays
+-- THE RETAINED YEAR'S VOID FISSURES, from the world state the bot server relays
 -- each minute (worker/world.js `fissureLog`). `id` is DE's own, so the minutes
 -- that see one again write nothing. `list` is normal, steel_path or railjack;
 -- `mission` is NULL for a Void Storm. Which combinations a reminder may hold,
 -- and how often each comes, is read from here; a node's planet is not stored,
--- it is the node's own (worker/world_names.json).
+-- it is the node's own (worker/world_names.json). Reads and daily cleanup share
+-- the rolling UTC calendar-year cutoff in worker/world.js.
 CREATE TABLE IF NOT EXISTS record_world_fissures (
   id         TEXT COLLATE "C" PRIMARY KEY,
   list       TEXT COLLATE "C" NOT NULL,
