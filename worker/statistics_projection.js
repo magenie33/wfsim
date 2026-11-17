@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Baselines never publish. Only a bounded, complete RR tail seals a sample.
 import { iso } from './instant.js';
+import {statisticsSourceSql} from './statistics_source.js';
+export {statisticsSourceSql} from './statistics_source.js';
 
 export const STATISTICS_PROJECTION_CONTRACT='statistics-projection-1';
 export const STATISTICS_PROJECTION_LIMITS={pageRows:128,maxRows:8192,maxBytes:2097152,maxQueries:1024,maxMs:3000,maxWork:4096,maxStorageBytes:1073741824};
-export const statisticsSourceSql=alias=>`CASE WHEN ${alias}.initiator='system' THEN 'system' WHEN ${alias}.initiator='anonymous' OR ${alias}.initiator LIKE 'user:%' OR ${alias}.initiator LIKE 'bot:%' THEN 'requested' ELSE 'unattributed' END`;
 const kinds=['new_build','survey_build','refresh','sweep'],kindSql="('new_build','survey_build','refresh','sweep')";
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b),encoded=value=>JSON.stringify(value),decoded=key=>JSON.parse(key);
 const keyText=key=>'['+key.map(encoded).join(', ')+']';
@@ -30,19 +31,20 @@ export async function statisticsProjectionIdentity(query,engine){
 }
 export class StatisticsProjectionBudget extends Error {}
 
-export function createStatisticsProjection({transaction,currentIdentity,stopped=()=>false,clock=()=>performance.now(),now=()=>Date.now(),limits={},onQuery=()=>{}}){
+export function createStatisticsProjection({transaction,currentIdentity,stopped=()=>false,allowed=async()=>true,complete=async(_q,counts)=>counts,clock=()=>performance.now(),now=()=>Date.now(),limits={},onQuery=()=>{}}){
  const bound={...STATISTICS_PROJECTION_LIMITS,...limits};
  for(const [name,value] of Object.entries(bound))if(!Number.isSafeInteger(value)||value<1)throw Error('invalid statistics limit '+name);
  if(bound.pageRows>4096)throw Error('statistics page exceeds input bound');
  if(typeof currentIdentity!=='function')throw Error('statistics current identity is required');
  const check=()=>{if(stopped())throw Error('statistics stopped');};
+ const permit=async context=>{context.guard();if(!await allowed({signal:context.signal,remainingMs:Math.max(1,bound.maxMs-(clock()-context.began))}))throw Error('statistics paused or stopped');context.guard();};
  const operation=async work=>{
   const began=clock(),controller=new AbortController();let expired=false,timer;
   const guard=()=>{check();if(expired||clock()-began>=bound.maxMs)throw new StatisticsProjectionBudget('statistics time budget');};
   const timeout=new Promise((_,reject)=>{timer=setTimeout(()=>{expired=true;const error=new StatisticsProjectionBudget('statistics time budget');controller.abort(error);reject(error);},bound.maxMs);});
   try{return await Promise.race([Promise.resolve().then(()=>work({began,guard,signal:controller.signal,identityBytes:0})),timeout]);}finally{clearTimeout(timer);}
  };
- const identity=async context=>{context.guard();const key=await currentIdentity({signal:context.signal,remainingMs:Math.max(1,bound.maxMs-(clock()-context.began))});context.guard();
+ const identity=async context=>{await permit(context);const key=await currentIdentity({signal:context.signal,remainingMs:Math.max(1,bound.maxMs-(clock()-context.began))});await permit(context);
   context.identityBytes+=new TextEncoder().encode(encoded(key)).length;if(context.identityBytes>bound.maxBytes)throw new StatisticsProjectionBudget('statistics identity byte budget');
   if(key.blocked)throw Error(key.blocked);return key;};
  const assert=async(key,context)=>{if(!same(await identity(context),key))throw Error('statistics namespace changed');};
@@ -50,10 +52,10 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
   const {began,guard}=context,usage={rows:0,bytes:0,queries:0};
   return transaction(async tx=>{
    const query=async(sql,args=[])=>{
-    guard();if(++usage.queries>bound.maxQueries)throw new StatisticsProjectionBudget('statistics query budget');
+    await permit(context);if(++usage.queries>bound.maxQueries)throw new StatisticsProjectionBudget('statistics query budget');
     const remaining=Math.max(1,Math.min(1000,Math.floor(bound.maxMs-(clock()-began))));
     await tx.query('SET LOCAL statement_timeout='+remaining,[]);
-    const {rows}=await tx.query(sql,args);guard();usage.rows+=rows.length;usage.bytes+=new TextEncoder().encode(encoded(rows)+encoded(args)).length;
+    const {rows}=await tx.query(sql,args);await permit(context);usage.rows+=rows.length;usage.bytes+=new TextEncoder().encode(encoded(rows)+encoded(args)).length;
     if(usage.rows>bound.maxRows||usage.bytes+context.identityBytes>bound.maxBytes)throw new StatisticsProjectionBudget('statistics input budget');
     await onQuery({sql,args,rows,rr,usage:{...usage}});guard();return rows;
    };
@@ -239,7 +241,8 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
     if(due.length){for(const row of due)await readyQuestion(q,ns,row.question,at);continue;}
     if(await pendingImports(q,ns))continue;break;
    }
-   await storage(q,ns);const counts=await reading(q,ns,at);
+   await storage(q,ns);const counts=await complete(q,{...await reading(q,ns,at),key},{at,key});
+   if(counts.countsAt!==at||counts.namespace!==ns||!same(counts.key,key)||counts.snapshot.at!==at)throw Error('statistics completion changed sample identity');
    await q('UPDATE state_statistics_namespaces SET counts_at=$2,published=($3::text)::jsonb WHERE id=$1',[ns,at,encoded(counts)]);
    return{counts,usage};
   },{rr:true,key,context});});},

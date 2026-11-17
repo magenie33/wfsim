@@ -13,6 +13,7 @@ import { dialsOf } from "./dials.js";
 import { COMPUTING_MS } from "./contribution.js";
 import { facts } from "./factory.js";
 import { STATISTICS_OPEN } from "./statistics_open.js";
+import {placeholders} from './placeholders.js';
 
 /// THE FACTORY NOW, written as the one `factory_snapshot` row. `asking` and
 /// `computing` are the worker's own definitions (worker/verify.js `work`,
@@ -21,28 +22,32 @@ import { STATISTICS_OPEN } from "./statistics_open.js";
 /// that `factory_open` (which every hand-out reads this row through) compares
 /// it to — a fixed ceiling read work as short once enough computers asked.
 export async function snapshotTick(env, { engine = null, release = null } = {}, now = Date.now(), options = {}) {
-  const db = env.LIBRARY, at = iso(now), d = await dialsOf(env, now);
+  const db = env.LIBRARY;
   if(options.allowed&&!await options.allowed())return false;
-  const n = await db.prepare(`WITH a AS (SELECT count(*) AS n FROM ${askingIds(3, 1)} x) SELECT
-      (SELECT count(*) FROM (SELECT 1 FROM state_compute_effective_work WHERE state = 'open' AND waits = 0
-         AND (lease_until IS NULL OR lease_until < ?1::text) LIMIT GREATEST(1, (SELECT n FROM a)) * ?2::bigint) o) AS open,
-      (SELECT count(*) FROM state_compute_effective_work WHERE state = 'open' AND waits > 0) AS urgent,
-      (SELECT n FROM a) AS asking,
-      (SELECT count(*) FROM entity_compute_devices WHERE banned = 0 AND last_at >= ?4::text) AS computing,
-      (SELECT count(*) FROM state_board_effective_pending_work) AS queue_rows,
-      (SELECT count(*) FROM state_pending_verifications) AS settle_queue_rows`)
-    .bind(at, Math.max(d.pack8_max, d.pack_max), iso(now - 2 * d.asked_every_ms), iso(now - COMPUTING_MS)).first();
-  const row = { at, engine, release, open: n.open, urgent: n.urgent, asking: n.asking, computing: n.computing,
-    queue_rows: n.queue_rows, settle_queue_rows: n.settle_queue_rows };
+  const counts=await(typeof options.counts==='function'?options.counts():options.counts),row=counts?.snapshot;
+  if(!row||!options.write)return false;
+  if(row.at!==counts.countsAt||row.engine!==engine)throw Error('statistics sample identity changed');
+  const {at}=row;
   if(options.allowed&&!await options.allowed())return false;
   const statement=db.prepare(`INSERT INTO state_factory_snapshot (id, at, engine, release, open, urgent, asking, computing, queue_rows, settle_queue_rows, daemon_at, daemon_commit)
       VALUES (1, ?1::text, ?2::text, ?3::text, ?4::bigint, ?5::bigint, ?6::bigint, ?7::bigint, ?8::bigint, ?9::bigint, '1970-01-01T00:00:00.000Z', '')
       ON CONFLICT (id) DO UPDATE SET at = excluded.at, engine = excluded.engine, release = excluded.release, open = excluded.open,
         urgent = excluded.urgent, asking = excluded.asking, computing = excluded.computing, queue_rows = excluded.queue_rows,
-        settle_queue_rows = excluded.settle_queue_rows`)
-    .bind(at, engine, release, row.open, row.urgent, row.asking, row.computing, row.queue_rows, row.settle_queue_rows);
-  if(options.write){if(!await options.write(statement))return false;}else await statement.run();
+        settle_queue_rows = excluded.settle_queue_rows WHERE state_factory_snapshot.at IS NULL OR state_factory_snapshot.at<=excluded.at`)
+    .bind(at, row.engine, row.release, row.open, row.urgent, row.asking, row.computing, row.queue_rows, row.settle_queue_rows);
+  if(!await options.write(statement))return false;
   return row;
+}
+
+export async function statisticsSnapshot(query,counts,{engine=null,release=null},d,now){
+  const at=counts.at;
+  const [n]=await query(placeholders(`SELECT
+    (SELECT count(*) FROM ${askingIds(1,2)} x)::text asking,
+    (SELECT count(*) FROM entity_compute_devices WHERE banned=0 AND last_at>=?3::text)::text computing,
+    (SELECT count(*) FROM state_pending_verifications)::text settle_queue_rows`),[iso(now-2*d.asked_every_ms),at,iso(now-COMPUTING_MS)]);
+  const asking=Number(n.asking);
+  return{...counts,engine,release,open:Math.min(counts.open,Math.max(1,asking)*Math.max(d.pack8_max,d.pack_max)),asking,
+    computing:Number(n.computing),settle_queue_rows:Number(n.settle_queue_rows)};
 }
 
 export async function signalTick(env,{engine=null,release=null}={},now=Date.now()) {

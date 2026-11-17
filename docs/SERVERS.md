@@ -197,11 +197,15 @@ A first snapshot without a daemon owner carries an expired heartbeat.
 The work signal has its own connection and sampling clock; complete snapshot
 and demand failures cannot block it or refresh its statistics. The primary and
 signal pools each have one connection, preserving the combined connection budget.
-`node scripts/task_pipeline.mjs status statistics` reads the statistics control
-and last complete snapshot time without counting queues. `pause statistics`
+`node scripts/task_pipeline.mjs status statistics` reads the statistics control,
+dependency readiness, cursor, last complete time and pending-work existence
+without counting queues. `pause statistics`
 skips complete snapshot and demand reads, including ordinary `--once`, while
-all other required ticks continue. `resume statistics` enables those reads on
-their existing ten-second snapshot and minute demand clocks.
+all other required ticks continue. `resume statistics` resumes its durable
+projection through the existing background connection. Its one-second pump
+advances several bounded steps per turn and yields through the existing
+capacity duty budget. [COMPUTE_STATISTICS.md](COMPUTE_STATISTICS.md) specifies
+sealing, explicit installation and halt recovery.
 Controls use the configured library owner connection; the daemon only reads
 them. A pause preserves old counts and timestamps and remains visible in status
 and daemon logs. Apply the daemon's cancellation-ledger SELECT grant before
@@ -215,8 +219,9 @@ the source, and a failed read is retried rather than cached as zero.
 quotas, host load and Linux memory/I/O pressure. Expensive demand samples and
 the tally back off according to elapsed time and pressure, then recover
 gradually. This changes execution budgets, never fairness, witness counts or
-credit. Demand's live reading still refreshes each minute and its queue totals
-refresh every ten minutes. Its compute-cost estimate is kept between ten minutes
+credit. Complete statistics attempt a seal after catching up and when their
+last sample is ten seconds old; repeated publication retains that sample's
+clock. Its compute-cost estimate is kept between ten minutes
 and one hour. The tally refreshes
 up to ten minutes, preserving a longer configured interval. The daemon records the
 resources and measured durations in `factory_findings.capacity`.
