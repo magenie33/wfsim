@@ -41,11 +41,12 @@ async function checkHomeHero(app) {
     await app.send("Network.setCacheDisabled", { cacheDisabled: true });
     await app.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
     let currentLang;
-    for (const [name, lang, theme, width, height] of [
+    for (const [name, lang, theme, width, height, font] of [
       ["desktop-dark", "zh", "dark", 1440, 1080],
       ["desktop-light", "zh", "light", 1440, 1080],
       ["mobile-dark", "zh", "dark", 390, 1000],
       ["small-english", "en", "light", 320, 1000],
+      ["small-english-wide-header", "en", "light", 320, 1000, "Verdana, sans-serif"],
       ["desktop-english", "en", "dark", 1440, 1080]
     ]) {
       await app.send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 500 });
@@ -53,6 +54,7 @@ async function checkHomeHero(app) {
       const ready = await waitFor("window.__wfsimReady && document.querySelectorAll('#home-facts .hf,#home-tally-n .hf').length === 3");
       app.check(name + " hero and three sourced counters arrive", ready && await app.evaluate("!!document.querySelector('.home-hero')"));
       await app.evaluate("document.documentElement.dataset.theme = " + JSON.stringify(theme));
+      await app.evaluate("document.querySelector('.topbar-inner').style.fontFamily = " + JSON.stringify(font || ""));
       await app.sleep(100);
       const state = await app.evaluate(`(() => {
         const stats = [...document.querySelectorAll('#home-facts .hf,#home-tally-n .hf')];
@@ -141,7 +143,7 @@ try {
   const meta=await evaluate("({benchmarks:META.benchmarks,weapons:META.weapons.map(w=>({id:w.id,modes:w.modes,mods:w.mods}))})");
   const primary=meta.benchmarks.find(b=>b.primary)||meta.benchmarks[0];
   const dirs=[...new Set(meta.benchmarks.map(b=>b.cell_dir||""))];
-  const requests=[],rowsPerCell=1800;
+  const requests=[],missingHeads=[],rowsPerCell=1800;
   const payloads=new Map();
   function rows(weapon,dir) {
     const key=weapon+":"+dir;
@@ -157,6 +159,7 @@ try {
   app.on("Fetch.requestPaused",async event=>{
     const path=new URL(event.request.url).pathname;
     if(path.startsWith('/board/heads/')) {
+      missingHeads.push(path);
       await app.send("Fetch.fulfillRequest",{requestId:event.requestId,responseCode:404,body:""});return;
     }
     let body;
@@ -165,6 +168,7 @@ try {
       const parts=path.slice("/board/".length).split("/"),weapon=parts.at(-1).replace(/\.json$/,"");
       const dir=parts.length>1?parts[0]:"";
       requests.push({weapon,dir});body=rows(weapon,dir);
+      if(process.env.WFSIM_PERF_DROP_CARD_ROW && missingHeads.length) body=JSON.stringify(JSON.parse(body).slice(1));
     }
     await app.send("Fetch.fulfillRequest",{requestId:event.requestId,responseCode:200,
       responseHeaders:[{name:"Content-Type",value:"application/json"}],body:Buffer.from(body).toString("base64")});
@@ -225,8 +229,22 @@ try {
   await app.send("Emulation.setCPUThrottlingRate",{rate:1});
   const complete=await evaluate("(async()=>{await loadAllWeaponBoard('torid');return BOARD.torid.length;})()");
   check("whole-board tools can explicitly read every scene",complete===rowsPerCell*meta.benchmarks.length,String(complete));
-  const fallback=await evaluate("(async()=>{releaseBoardCache(null);history.pushState(null,'','/weapons/Torid/card?kind=pz');await loadWeaponBoard('torid');return BOARD.torid.length;})()");
-  check("a card without heads falls back to complete scene files",fallback===rowsPerCell*meta.benchmarks.length,String(fallback));
+  for(const requested of [null,...dirs]) {
+    const dir=requested??(primary.cell_dir||"");
+    const cells=meta.benchmarks.filter(b=>(b.cell_dir||"")===dir).map(b=>b.id),before=requests.length,headsBefore=missingHeads.length;
+    const address='/weapons/Torid/card?kind=pz'+(requested===null?'':'&ruler='+encodeURIComponent(cells[0]));
+    const fallback=await evaluate(`(async()=>{
+      releaseBoardCache(null);history.pushState(null,'',${JSON.stringify(address)});await loadWeaponBoard('torid');
+      const rows=BOARD.torid||[];
+      return {rows:rows.length,loaded:[...boardFiles.get('torid').loaded],
+        cells:Object.fromEntries([...new Set(rows.map(row=>row.benchmark))].map(id=>[id,rows.filter(row=>row.benchmark===id).length]))};
+    })()`);
+    const reads=requests.slice(before);
+    check("a card without heads reads its complete requested scene: "+(requested===null?'default':dir||"base"),missingHeads.length>headsBefore
+      && reads.length===1&&reads[0].weapon==='torid'&&reads[0].dir===dir
+      && fallback.rows===rowsPerCell*cells.length&&Object.keys(fallback.cells).length===cells.length
+      && cells.every(id=>fallback.cells[id]===rowsPerCell)&&fallback.loaded.length===1&&fallback.loaded[0]===dir,JSON.stringify({fallback,reads}));
+  }
   await evaluate("clearInterval(window.perfCheckTimer);history.pushState(null,'','/weapons/Furis/builder');route()");
   check("switching weapon releases the previous public board",await waitFor("routeWeaponId()==='furis'&&BOARD_HAVE.has('furis')&&!BOARD.torid&&finderDataMemo===null"));
   await evaluate("history.pushState(null,'','/');route()");

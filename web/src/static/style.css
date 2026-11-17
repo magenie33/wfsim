@@ -1295,6 +1295,7 @@ body.on-home #home-nav .slotf-search{display:none}
   .home-hero .hero-note{font-size:12px;margin-top:12px;max-width:590px}
 }
 @media(max-width:360px){
+  body.on-home .topbar-inner{gap:8px}
   .home-stats .hf>b{font-size:20px}
   .home-stats #home-tally-n>.hf{padding-left:14px}
   .home-hero .hero-h{font-size:39px}

@@ -2316,6 +2316,10 @@ only the selected scene, rendering stays bounded, and switching away releases
 public rows and derived caches. Timing observations contain page kinds and
 numeric durations only. `WFSIM_PERF_EAGER=1` deliberately restores eager scene
 fetching; the request-scope and cache-lifetime assertions must fail.
+At 320px a wider installed header font must keep every control in the viewport.
+With heads returning 404, each ruler's card reads its complete selected scene;
+every ruler retains all 1,800 fixture rows. Whole-board readers still require
+every scene. `WFSIM_PERF_DROP_CARD_ROW=1` removes one fallback row and must fail.
 
 ## `check_global_conditions`
 
