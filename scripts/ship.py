@@ -233,7 +233,7 @@ def main() -> None:
     # …AND `latest.json` NAMES IT once the site serves it.
     subprocess.run([sys.executable, str(ROOT / "scripts" / "release_engine_lib.py")])
     run(shutil.which("npx") or "npx", "--yes", WRANGLER, "deploy", "-c", str(ROOT / "wrangler.edge.jsonc"))
-    if os.environ.get("WEBSITE_TARGET"):
+    if os.environ.get("WEBSITE_TARGET") or os.environ.get("WEBSITE_MIRROR_TARGET"):
         run(sys.executable, str(ROOT / "scripts" / "ship_website.py"))
     # THE MCP SERVER AFTER THE PUSH, from the same tree: its engine is the one
     # just published, and a server deployed ahead of the site answers with it.

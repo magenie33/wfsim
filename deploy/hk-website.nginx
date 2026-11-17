@@ -1,0 +1,93 @@
+include /etc/nginx/wfsim-website-maps.conf;
+
+upstream wfsim_edge {
+    server wfsim.mgnmz1999.workers.dev:443;
+    keepalive 32;
+}
+
+upstream wfsim_public {
+    server cdn.wfsim.app:443;
+    keepalive 16;
+}
+
+map $http_origin $wfsim_cors {
+    default "";
+    "https://wfsim.app" $http_origin;
+    "http://wfsim.localhost" $http_origin;
+    "https://wfsim.localhost" $http_origin;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name cn.wfsim.app;
+    access_log off;
+    error_log /dev/null;
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/html;
+        try_files $uri =404;
+    }
+    location = /__health/release {
+        alias /srv/wfsim/current/release.json;
+        default_type application/json;
+        add_header Cache-Control no-store;
+    }
+    location / { return 308 https://cn.wfsim.app$request_uri; }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name cn.wfsim.app;
+    ssl_certificate /etc/letsencrypt/live/cn.wfsim.app/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cn.wfsim.app/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    root /srv/wfsim/current;
+    access_log off;
+    error_log /dev/null;
+    client_max_body_size 32m;
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_comp_level 4;
+    gzip_types application/javascript application/json application/wasm text/css text/javascript text/markdown image/svg+xml;
+    error_page 418 = @backend;
+
+    location = /work.json { include /etc/nginx/wfsim-website-public.conf; }
+    location = /board.meta.json { include /etc/nginx/wfsim-website-public.conf; }
+    location ^~ /board/ { include /etc/nginx/wfsim-website-public.conf; }
+
+    # The anonymous relay keeps its existing cookie-free, origin-limited contract.
+    location ~ ^/api/board/(work|answers|renew|release|mine|points|ping|sync)$ {
+        client_max_body_size 300k;
+        if ($request_method = OPTIONS) {
+            add_header Access-Control-Allow-Origin $wfsim_cors always;
+            add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Content-Type" always;
+            add_header Access-Control-Max-Age 86400 always;
+            add_header Vary Origin always;
+            return 204;
+        }
+        proxy_hide_header Access-Control-Allow-Origin;
+        add_header Access-Control-Allow-Origin $wfsim_cors always;
+        add_header Vary Origin always;
+        proxy_pass https://wfsim_edge;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host wfsim.mgnmz1999.workers.dev;
+        proxy_ssl_server_name on;
+        proxy_ssl_name wfsim.mgnmz1999.workers.dev;
+        proxy_ssl_verify on;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+        proxy_set_header Cookie "";
+        proxy_set_header X-WFSim-Website "";
+        proxy_set_header X-WFSim-Website-Host "";
+        proxy_set_header X-WFSim-Website-IP "";
+        proxy_set_header X-WFSim-Client-IP $remote_addr;
+        include /etc/nginx/wfsim-relay-secret.conf;
+        proxy_connect_timeout 10s;
+        proxy_read_timeout 60s;
+    }
+    include /etc/nginx/wfsim-website-locations.conf;
+}

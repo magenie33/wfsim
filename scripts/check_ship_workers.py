@@ -14,7 +14,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 
-def exercise(script, failure=False, readiness_failure=False):
+def exercise(script, failure=False, readiness_failure=False, mirror_only=False):
     spec = importlib.util.spec_from_file_location("ship_workers", script)
     ship = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(ship)
@@ -60,7 +60,8 @@ def exercise(script, failure=False, readiness_failure=False):
                 patch.object(ship.subprocess, "run", fake_run), \
                 patch.object(ship.shutil, "which", return_value="npx"), \
                 patch.object(ship, "verify", verify), patch.dict(sys.modules, modules), \
-                patch.dict(os.environ, {"WEBSITE_TARGET": "{}"}), \
+                patch.dict(os.environ, {"WEBSITE_TARGET": "" if mirror_only else "{}",
+                                        "WEBSITE_MIRROR_TARGET": "{}" if mirror_only else ""}), \
                 patch.object(sys, "argv", [str(script), "--built"]), \
                 contextlib.redirect_stdout(io.StringIO()):
             try:
@@ -123,6 +124,7 @@ def main():
     exercise(args.ship_script)
     exercise(args.ship_script, failure=True)
     exercise(args.ship_script, readiness_failure=True)
+    exercise(args.ship_script, mirror_only=True)
     print("publication checks passed: one build, backend before channel and edge, backend failure stops release")
 
 

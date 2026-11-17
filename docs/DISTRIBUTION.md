@@ -388,14 +388,17 @@ which is the whole failure this plane exists to prevent.
 ## The relay
 
 The site's api has one home, and a relay is a second road to it, not a second
-home. `cn.wfsim.app` is a server in Hong Kong that carries the board's work to
-the placed backend directly, for readers whose road from mainland China to the edge is poor. It
-stores nothing and decides nothing.
+home. `cn.wfsim.app` is the Hong Kong website entrance and carries the board's
+work to the placed backend for readers whose road to the edge is poor. Its
+static website is the same checked release as the main entrance; it owns no
+account, board or calculation state.
 
 - **It carries a list, not a prefix**: the board's work (69-board-work.js
-  `RELAY_PATHS`, the same list in its nginx site) and `board.meta.json`, which
-  the probe below times. Anything else is a 404 there. What joins the list is
-  public, signed out, and costs a reader a lot when one road drops it.
+  `RELAY_PATHS`, the same list in its nginx site). This cross-origin contract
+  stays anonymous and cookie-free. The complete entrance serves its own pages
+  and files; its same-origin API forwards to the existing backend. Published
+  board files and `work.json` are carried from the public CDN without a placed
+  Worker or a browser connection to the CDN.
 
 - **The page chooses the road** (69-board-work.js `chooseRoute`): it times
   `/api/board/ping` both ways every ten minutes and takes the quicker, on
@@ -419,12 +422,14 @@ stores nothing and decides nothing.
   written nowhere.
 - **The server** is `private/hk/` (ssh key, host keys, the secret); its nginx
   site is `wfsim-relay`, the secret in `/etc/nginx/wfsim-relay-secret.conf`.
-  Anything signed in — accounts, the ledger, sync — stays on the direct road,
-  so no cookie crosses it.
+  Cross-origin relay calls carry no cookie. On the Hong Kong website itself,
+  account requests use the authenticated website proxy, keep their browser
+  `Origin`, and require the user's own session cookie. An OAuth provider must
+  register that entrance's callback as well as the main site's callback.
 
 ## The page cache
 
-`/page_cache.js` is a service worker on wfsim.app alone, for readers whose road
+`/page_cache.js` is a service worker on both public website entrances, for readers whose road
 to the edge drops packets: most of mainland China reaches Cloudflare in
 Amsterdam or Seattle, and a returning reader with every file cached still
 waited seconds for the page itself.

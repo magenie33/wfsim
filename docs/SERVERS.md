@@ -39,7 +39,7 @@ Asked in this order; the first answer that settles it wins.
 | website | configured website host | nginx, the checked static release, same-origin API forwarding and certificate renewal | a direct website entrance; the data core and placed API remain together |
 | data core | netcup, Manassas | Postgres, `wfsim-factoryd` over its unix socket, the database tunnel, verified task archives and database backups | the library, and the settler that writes it every second |
 | board server | Tencent, mainland | `wfsim-live` (docs/BOARD.md §"The live board"), `wfsim-pg-tunnel` | background: it pulls the facts that moved and pushes the files that did, so a lost push is sent on the next cycle; the data core's disk has none to spare |
-| China door | Tencent, Hong Kong | the QQ bot (`wfsim-bot`, its Chrome kept current by `update-chrome.timer`), `cn.wfsim.app`, the relay that carries the board's work for readers in mainland China (docs/DISTRIBUTION.md §"The relay") | QQ's whitelist, Discord and the site are all near it; a card is a page load of the site, which from the mainland crosses a link that drops at peak hours |
+| China door | Tencent, Hong Kong | the QQ bot (`wfsim-bot`, its Chrome kept current by `update-chrome.timer`), the complete website entrance at `cn.wfsim.app` and its anonymous board relay (docs/DISTRIBUTION.md §"The relay") | a checked website mirror and API road for mainland readers, beside the bot's fixed address |
 | official batch | GitHub Actions | CI, `ship.yml`, and the clock: `queue`, `scores`, `settle`, `survey`, `publish`, `backup`, `mirrors` | long work with no standing machine |
 | distribution | Tencent COS, mirrors | the desktop channel (docs/DISTRIBUTION.md) | reachable from the mainland |
 
@@ -94,6 +94,22 @@ nothing. Every file is verified before an atomic directory switch. Failed health
 checks restore the previous directory. Live board files are excluded and remain
 served from their authoritative bucket through the backend.
 
+`WEBSITE_MIRROR_TARGET` adds the Hong Kong entrance to the same publication.
+It has the same connection fields, with `hostname` set to `cn.wfsim.app`;
+the release environment's `WEBSITE_MIRROR_SSH_KEY` and
+`WEBSITE_MIRROR_KNOWN_HOSTS` populate `private/hk/website_key` and `known_hosts`.
+Both entrances receive the same checked artifact. The mirror uses the existing
+COS courier when `BOT_VIA_COS=1`; its temporary object is deleted after transfer.
+
+The mirror installs `deploy/hk-website.nginx`. `scripts/website_config.py`
+derives its static locations and discovery maps from `deploy/website.nginx`.
+The installer backs up managed configuration, checks nginx before a graceful
+reload, and restores its own files and the release pointer after failed health.
+The existing bot must keep its active process during this configuration step.
+Published board files and the work signal go to the public CDN directly;
+they do not add placed Worker requests. The anonymous relay keeps its original
+origin whitelist and strips cookies.
+
 `deploy/website.nginx` serves the static release, retains the previous hashed
 assets and forwards dynamic routes through `/etc/nginx/wfsim-backend.conf`.
 That private include names the backend's HTTPS host, verifies its certificate,
@@ -103,6 +119,12 @@ visitor's forwarded address. The worker restores the canonical URL and address
 only with the valid secret, preserving same-origin checks, OAuth callbacks,
 cookies and network independence. Proxy geography is unknown rather than the
 website server's country.
+
+The Hong Kong include additionally replaces `X-WFSim-Website-Host` with
+`cn.wfsim.app`, authenticated with its existing `RELAY_SECRET`. That credential
+cannot restore the main site's hostname. The browser's `Origin` and account
+cookie pass through unchanged; the backend still authenticates the user's
+session and checks same-origin writes against the restored entrance.
 
 The private include's body allowance covers the backend's upload limits;
 `worker/live_board.js` owns the board upload limit. It clears upstream `Alt-Svc`

@@ -8,7 +8,8 @@
 /// server or a check (127.0.0.1) is neither, so no test ever reaches a live
 /// store — the short-link store and this one both ask here.
 const LIVE_ORIGIN = "https://wfsim.app";
-const LIVE_HOSTS = ["wfsim.app", "wfsim.localhost"];
+const LIVE_HOSTS = ["wfsim.app", "cn.wfsim.app", "wfsim.localhost"];
+const liveSiteBase = () => location.hostname === "cn.wfsim.app" || location.origin === LIVE_ORIGIN ? "" : LIVE_ORIGIN;
 
 // Timings carry page kinds and durations only; no target, input or event text.
 let pageTiming = { started: 0, kind: "boot", usable: null, longest: 0, blocking: 0, interaction: 0 };
@@ -115,7 +116,7 @@ async function usageForget(btn, said) {
   btn.disabled = true;
   said.textContent = "";
   try {
-    const at = location.origin === LIVE_ORIGIN ? "" : LIVE_ORIGIN;
+    const at = liveSiteBase();
     const r = await fetch(`${at}/api/e/forget`, { method: "POST", body: JSON.stringify({ cid: usageVisitor() }) });
     if (!r.ok) throw new Error(String(r.status));
     const { deleted } = await r.json();
@@ -236,7 +237,7 @@ function usageSend(event, subject, n) {
       release: RELEASE_ID,
       ...(typeof n === "number" ? { n } : {}),
     };
-    const at = location.origin === LIVE_ORIGIN ? "" : LIVE_ORIGIN;
+    const at = liveSiteBase();
     fetch(`${at}/api/e`, { method: "POST", body: JSON.stringify(point), keepalive: true })
       .catch(() => {});
   } catch (_) { /* never the page's problem */ }

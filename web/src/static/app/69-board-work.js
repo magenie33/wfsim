@@ -691,7 +691,8 @@ async function readSignal() {
     await fetch("/release.json", { method: "HEAD", cache: "no-store" }).then(learnServerClock).catch(() => {});
   }
   try {
-    const r = await fetch(SIGNAL_URL, { cache: "no-cache", signal: boardSignal() });
+    const r = await fetch(location.hostname === "cn.wfsim.app" ? "/work.json" : SIGNAL_URL,
+      { cache: "no-cache", signal: boardSignal() });
     const s = r.ok ? await r.json() : null;
     if (!s || s.v !== 1 || serverNow() - Date.parse(s.at) > SIGNAL_STALE_MS || s.mode === "ask") return null;
     for (const k of ["poll_ms", "jitter_ms", "urgent_jitter_ms"]) if (Number.isFinite(s[k])) syncDials[k] = s[k];

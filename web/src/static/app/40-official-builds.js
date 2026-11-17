@@ -304,7 +304,7 @@ function setBoardMeta(meta) {
 /// nothing to serve — and a shell answering same-origin cannot invent it. On a
 /// shell it is asked second and never first, the local copy being the offline
 /// one this exists to keep; on wfsim.app it is asked first (`boardOffOrigin`).
-const BOARD_ORIGIN = "https://cdn.wfsim.app";
+const BOARD_ORIGIN = location.hostname === "cn.wfsim.app" ? "" : "https://cdn.wfsim.app";
 
 async function readBoardPartitionCatalog(scene, weapon = null, signal) {
   const base = window.__WFSIM_DESKTOP__ ? LIVE_ORIGIN : "";

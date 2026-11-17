@@ -903,6 +903,15 @@ The account rules run against the real schema in PGlite with provider and mail
 responses stubbed. The page's sign-in links produce a fresh authorization URL
 for each attempt, preserving the provider, intent and return path; authorization
 and callback redirects carry `no-store`.
+The Hong Kong proxy authenticates only its entrance and preserves the browser's
+Origin. Its credential alone signs in nobody; email sessions and each provider's
+signed round trip use the same account store, while foreign-origin writes fail.
+
+`check_website_proxy.mjs` also checks the Hong Kong frontend's same-origin usage,
+board files and work signal, and registration of the page cache on both entrances.
+`ship_website.py --self-test` includes the Hong Kong configuration transaction:
+health and syntax failures restore owned files, independent drift stops rollback,
+the bot remains active, and two entrances cannot overwrite the same server.
 
 ## `check_card_document`
 

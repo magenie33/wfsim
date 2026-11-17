@@ -14,6 +14,7 @@ import { accountRoute, purgeDeleted } from "../worker/accounts.js";
 import { cloudRoute, cloudPath } from "../worker/cloud.js";
 import { agentRoute, MCP_LIMITS } from "../worker/agents.js";
 import { clanRoute } from "../worker/clan.js";
+import { websiteRequest } from "../worker/website_proxy.js";
 import { testDb } from "./pg/test_db.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -67,7 +68,7 @@ for (const provider of ["google", "discord", "github"]) {
 
 // ---- a browser: a cookie jar and the calls the page makes ----------------------------
 
-function browser() {
+function browser(origin = SITE) {
   const jar = {};
   const keep = (res) => {
     for (const c of res.headers.getSetCookie ? res.headers.getSetCookie() : []) {
@@ -79,10 +80,18 @@ function browser() {
   };
   const cookie = () => Object.entries(jar).map(([k, v]) => `${k}=${v}`).join("; ");
   const call = async (method, path, body, headers = {}) => {
-    const req = new Request(SITE + path, {
-      method, headers: { cookie: cookie(), ...(body ? { "content-type": "application/json", origin: SITE } : {}), ...headers },
+    let req = new Request(origin + path, {
+      method, headers: { cookie: cookie(), ...(body ? { "content-type": "application/json", origin } : {}), ...headers },
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
+    if (origin === "https://cn.wfsim.app") {
+      const headers = new Headers(req.headers);
+      headers.set("x-wfsim-website-host", "cn.wfsim.app");
+      headers.set("x-wfsim-website", "hk-test-secret");
+      headers.set("x-wfsim-website-ip", "203.0.113.9");
+      req = websiteRequest(new Request("https://backend.example.workers.dev" + path,
+        new Request(req, { headers })), { ...env, RELAY_SECRET: "hk-test-secret" });
+    }
     return keep(await accountRoute(req, env, new URL(req.url).pathname));
   };
   return {
@@ -612,6 +621,22 @@ const lim = (name) => Number((new RegExp(`"name": "${name}"[^}]*"limit": (\\d+)`
 check("the MCP allowance auth.md states is the one its limiters enforce",
   lim("ADDRESS_LIMIT") === MCP_LIMITS.per_address && lim("KEY_LIMIT") === MCP_LIMITS.per_key,
   JSON.stringify([lim("ADDRESS_LIMIT"), lim("KEY_LIMIT"), MCP_LIMITS]));
+}
+
+const hk = browser("https://cn.wfsim.app");
+check("the HK proxy credential alone signs in nobody", await hk.me() === null);
+const hkEmail = await hk.email("hk-entry@example.com");
+check("HK email registration uses the same account store and its own session cookie", hkEmail.ok && !!(await hk.me())?.id);
+const hkForeign = await hk.post("/api/account/profile", { username: "hk_cross_site" }, { origin: SITE });
+check("HK cookie writes still refuse a different browser Origin", hkForeign.status === 403);
+for (const provider of ["google", "discord", "github"]) {
+  const reader = browser("https://cn.wfsim.app");
+  const started = await reader.get(`/api/auth/${provider}/start?return=/account`);
+  check(`${provider}: HK authorization names its own callback`,
+    new URL(started.headers.get("location")).searchParams.get("redirect_uri") === `https://cn.wfsim.app/api/auth/${provider}/callback`);
+  const back = await reader.oauth(provider, { id: provider === "github" ? "987654321" : `hk-${provider}`, name: "hk@example.com" });
+  check(`${provider}: the signed HK round trip returns to HK and authenticates its session`,
+    back.origin === "https://cn.wfsim.app" && back.searchParams.get("auth") === "created" && !!(await reader.me())?.id);
 }
 
 console.log(failed ? `\n${failed} failed` : "\nthe account rules hold");

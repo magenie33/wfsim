@@ -2,11 +2,11 @@
 //
 // `/page_cache.js` keeps this page and its content-addressed files, and answers
 // with them once the network has taken too long (docs/DISTRIBUTION.md §"The page
-// cache"). Registered on wfsim.app alone: the desktop shell serves its own files
+// cache"). Registered on the public entrances: the desktop shell serves its own files
 // and a dev server or a check must always see the files on disk.
 
 addEventListener("load", () => {
-  if (location.hostname !== "wfsim.app" || window.__WFSIM_DESKTOP__ || !navigator.serviceWorker) return;
+  if (!["wfsim.app", "cn.wfsim.app"].includes(location.hostname) || window.__WFSIM_DESKTOP__ || !navigator.serviceWorker) return;
   navigator.serviceWorker.register("/page_cache.js").catch(() => {});
 });
 

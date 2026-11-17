@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 const { websiteRequest } = await import(process.env.WFSIM_WEBSITE_PROXY_MODULE || "../worker/website_proxy.js");
 import { sameSite } from "../worker/accounts.js";
 import { clientIp, viaRelay } from "../worker/verify.js";
+import { checkHkFrontend } from "./check_hk_website.mjs";
 
 const env = { WEBSITE_PROXY_SECRET: "website-test-secret", RELAY_SECRET: "relay-test-secret" };
 const request = (extra = {}) => new Request("https://wfsim.example.workers.dev/api/recommendations?day=1", {
@@ -32,6 +33,22 @@ const relay = websiteRequest(request({ "x-wfsim-relay": env.RELAY_SECRET,
   "x-wfsim-client-ip": "192.0.2.8", "x-wfsim-website-ip": "2001:db8::9" }), env);
 assert.equal(clientIp(relay, env), "2001:db8::9");
 assert(!viaRelay(relay, env));
+const cnHeaders = { origin: "https://cn.wfsim.app", "x-wfsim-website-host": "cn.wfsim.app",
+  "x-wfsim-website": env.RELAY_SECRET };
+const cn = websiteRequest(request(cnHeaders), env);
+assert.equal(cn.url, "https://cn.wfsim.app/api/recommendations?day=1");
+assert.equal(cn.headers.get("cookie"), "wfsim_session=test");
+assert.equal(cn.headers.get("origin"), "https://cn.wfsim.app");
+assert(sameSite(cn));
+assert(!cn.headers.has("x-wfsim-website-host"));
+assert.equal(clientIp(cn, env), "203.0.113.9");
+assert(!sameSite(websiteRequest(request({ ...cnHeaders, origin: "https://wfsim.app" }), env)));
+for (const extra of [
+  { "x-wfsim-website-host": "foreign.example" },
+  { "x-wfsim-website-host": "cn.wfsim.app" },
+  { "x-wfsim-website": env.RELAY_SECRET },
+  { "x-wfsim-website-host": "cn.wfsim.app:443", "x-wfsim-website": env.RELAY_SECRET },
+]) assert.equal(websiteRequest(request(extra), env).status, 403);
 const nginx = readFileSync(process.env.WFSIM_WEBSITE_NGINX
   || new URL("../deploy/website.nginx", import.meta.url), "utf8");
 let listeners = 0;
@@ -55,3 +72,4 @@ assert(limit && board, "the website and board upload limits are readable");
 const bytes = Number(limit[1]) * 1024 ** ({ "": 0, k: 1, m: 2, g: 3 }[limit[2].toLowerCase()]);
 assert(bytes === 0 || bytes >= Number(board[1]) * 1024 ** 2, "website accepts every legal board upload");
 console.log("website proxy: origin, cookies, client identity, request privacy and upload limits checked");
+await checkHkFrontend();

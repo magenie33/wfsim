@@ -421,6 +421,11 @@ What the owner does once, and what each gives:
 | Google | Google Cloud console, OAuth client, redirect `https://wfsim.app/api/auth/google/callback` | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` |
 | Discord | Discord developer portal, OAuth2, redirect `…/api/auth/discord/callback` | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` |
 | GitHub | GitHub OAuth app, callback `…/api/auth/github/callback` | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` |
+
+Each existing provider application also registers
+`https://cn.wfsim.app/api/auth/<provider>/callback` for the Hong Kong entrance,
+while retaining its main-site callback. Authorization and token exchange use
+the origin of the authenticated entrance; cookies remain local to that origin.
 | Email | Cloudflare Email Service: onboard `wfsim.app`, preview off | a `send_email` binding named `EMAIL` in `wrangler.jsonc`, sender `login@wfsim.app` |
 
 A way in whose secrets are absent is simply not offered.
