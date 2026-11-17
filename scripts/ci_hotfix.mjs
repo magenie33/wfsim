@@ -17,7 +17,7 @@ export const HOTFIX_PROFILES = {
   'factory-sql': {
     paths: ['worker/pg/sync.sql', 'scripts/check_tasks.mjs', 'scripts/check_board_sync.mjs',
       'scripts/check_board_verify.mjs', 'scripts/check_sync_proc.mjs', 'scripts/check_fair.mjs',
-      'scripts/check_settler.mjs', 'scripts/check_settler_async.mjs', 'scripts/check_initiator.mjs',
+      'scripts/check_settler.mjs', 'scripts/check_factory_availability.mjs', 'scripts/check_settler_async.mjs', 'scripts/check_initiator.mjs',
       'scripts/check_moot_checks.mjs', 'scripts/check_forget_past.mjs', 'scripts/check_idle_devices.mjs'],
     groups: ['factory', 'async', ...HOTFIX_FACTORY_GROUPS],
   },
@@ -33,7 +33,7 @@ export const HOTFIX_CHECKS = {
   'board-entry': ['check_board_cli_entry'],
   policy: ['check_ci_policy', 'check_ci_partitions', 'check_ci_hotfix'],
   factory: ['check_board_verify', 'check_board_sync', 'check_sync_proc',
-    'check_fair', 'check_settler', 'check_settler_async', 'check_initiator',
+    'check_fair', 'check_settler', 'check_factory_availability', 'check_settler_async', 'check_initiator',
     'check_moot_checks', 'check_forget_past', 'check_idle_devices', 'check_contribution',
     'check_ledger', 'check_dials', 'check_clients_doc', 'check_appraise'],
   async: ['check_board_verify', 'check_board_sync', 'check_fair'],

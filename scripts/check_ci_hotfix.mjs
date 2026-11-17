@@ -20,6 +20,8 @@ assert.equal(HOTFIX_FACTORY_GROUPS.length, 18);
 assert.equal(plan.matrix.group.length, 21);
 assert.deepEqual(hotfixPlan(['scripts/ci_runs.mjs'], { reason }).matrix.group, ['policy']);
 assert.deepEqual(hotfixPlan([...paths, 'scripts/ci_runs.mjs'], { reason }).profiles, ['ci', 'factory-sql']);
+assert.deepEqual(hotfixPlan(['scripts/check_factory_availability.mjs'], { reason }).profiles, ['factory-sql']);
+assert.throws(() => hotfixPlan(['scripts/check_factory_availability_unregistered.mjs'], { reason }), /Outside hotfix coverage/);
 for (const path of ['engine/src/fight.rs', 'optimizer/src/quick.rs', 'webapi/src/fight.rs',
   'data/weapons/torid.yaml', 'web/src/static/app/69-board-work.js', 'worker/index.js',
   'worker/pg/schema.sql', 'scripts/pg/test_db.mjs', 'scripts/pg/package-lock.json',
@@ -42,7 +44,7 @@ for (const checks of Object.values(HOTFIX_CHECKS)) {
 }
 
 const extras = ['check_board_verify', 'check_board_sync', 'check_sync_proc', 'check_fair',
-  'check_settler', 'check_settler_async', 'check_initiator', 'check_moot_checks', 'check_forget_past',
+  'check_settler', 'check_factory_availability', 'check_settler_async', 'check_initiator', 'check_moot_checks', 'check_forget_past',
   'check_idle_devices', 'check_contribution', 'check_ledger', 'check_dials', 'check_clients_doc', 'check_appraise'];
 assert.deepEqual(HOTFIX_CHECKS.factory, extras);
 assert.deepEqual(HOTFIX_CHECKS.async, ['check_board_verify', 'check_board_sync', 'check_fair']);
