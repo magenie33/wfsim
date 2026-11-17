@@ -68,18 +68,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "c4c0d219";
+const BUILD_ID = "04f44c7e";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "3aab5854+";
+const BUILD_SHA = "a207d64b+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "b5708b6dbbf4";
+const RELEASE_ID = "83100288c433";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -39745,9 +39745,10 @@ const HEADLESS_QUERIES = [
     },
     run({ query, limit = 12 }, host) {
       const locales = host.names();
+      const normalized = query.normalize("NFKC");
       const hits = (host.meta().weapons || []).filter((w) => {
         const names = headlessWeaponAliases(w, locales);
-        return headlessHit(names.complete.concat(names.incomplete), query);
+        return headlessHit(names.complete.concat(names.incomplete).map((s) => s.normalize("NFKC")), normalized);
       });
       return {
         found: hits.length,
