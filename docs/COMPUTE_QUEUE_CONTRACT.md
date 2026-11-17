@@ -262,3 +262,100 @@ Runtime/schema changes retain existing identities, issued credentials, accepted
 outputs and contribution history. They require their own migration and release
 evidence; this specification does not authorize reissue, refill, workflow changes
 or service control operations.
+
+## Growth and bounded progress
+
+Each consumer declares its actual input unit, maximum input and output bytes,
+transaction and lock durations, temporary storage, and concurrency. Limits
+apply before expanding dependencies or joining history; limiting returned rows
+alone does not bound intermediate work. These budgets belong to the installed
+consumer and its database role, not only its qualification probe. Exhaustion
+retains the obligation and its last committed progress; it does not repeatedly
+restart an entire scan or refresh a success clock.
+
+Ordinary processing uses indexed current readiness and changes since committed
+progress. Retaining more completed history must not require reading that history
+for each dispatch, status refresh or changed result. Backpressure bounds pending
+preparation and storage creation. Independent consumers retain their own budgets;
+a failed statistics read cannot occupy the execution, acceptance, delivery or
+contribution lane.
+
+### Work signals and statistical projections
+
+The work signal answers whether eligible work is available using a bounded
+indexed sample of current scheduling state. It has its own short read budget
+and publication clock. It does not require a complete queue census, workload
+inventory or statistical rebuild. A single version-aware publisher prevents
+an older completed sample from replacing a newer one.
+
+Statistical totals are derived projections. Their units distinguish source
+orders, unique shared computations, execution attempts and accepted results.
+One authoritative membership definition determines eligibility, cancellation,
+deduplication and representative selection. Several live orders sharing a task
+do not multiply its computation count; withdrawing one source preserves the
+others. A bulk logical cancellation changes eligibility without requiring
+physical deletion or repeated exclusions over all historical rows.
+
+A source change commits durable readiness with its authoritative state. For
+each affected logical key, the statistical consumer retains the applied source
+version and that key's previous contribution. Applying a newer contribution,
+updating affected totals and acknowledging the captured version share one short
+transaction. Duplicates and superseded versions have no second effect. Keys
+whose contribution depends on another key retain that dependency so a change
+cannot leave a previously counted representative effective by accident.
+
+Live-device and lease-expiry observations use bounded indexed time windows or
+scheduled expiry readiness. An elapsed-time condition cannot rely solely on
+new source writes to make an expired observation disappear. Observation clocks
+remain distinct from the input coverage of durable statistical totals.
+
+### Rebuilds and completeness
+
+A rebuild names its source identity, membership contract, captured boundary and
+destination generation. It persists confirmed input chunks, derived effects and
+progress across bounded transactions. Restart resumes committed progress even
+when a later chunk fails. A database cursor whose progress exists only inside
+one full-history transaction does not satisfy this restart contract.
+
+Concurrent source changes remain durable while the baseline is prepared.
+Reconciliation applies them using the same key-version and removal rules as
+ordinary projection. An allocated sequence maximum alone does not prove all
+earlier transactions committed or were consumed. Source coverage must account
+for pending keys and committed changes at the captured boundary.
+
+Partial output stays private. Only complete baseline coverage plus reconciled
+changes allows an atomic replacement of the served generation. The previous
+complete view remains usable while preparation is paused or retried. Source,
+membership-policy or cancellation-epoch changes explicitly select another
+generation; old partial totals cannot be relabelled as current complete totals.
+
+### Storage lifecycle
+
+Each artifact records its owner, generation, allocated or bounded planned bytes,
+durable completion receipt and recovery references. Active inputs, unacknowledged
+handoffs, current proofs, pinned public versions and rollback dependencies
+protect the artifacts they require. Creation, acknowledgement and retirement
+are separate states; a successful upload alone does not remove those references.
+
+The collector retires only owner-qualified artifacts after their remaining
+consumers and recovery references permit it. It enforces bounded files, bytes
+and time per pass. Required off-host backup must be durably confirmed before
+retirement. Unqualified directories or apparent age alone do not authorize
+deletion. Canonical records and another module's work remain outside its scope.
+
+Admission checks preserve filesystem reserve for foreground transactions, WAL
+and recovery. Preparation bounds its temporary and staged output before creating
+it, and stops when its allowance is exhausted. Observations distinguish durable
+database allocation, WAL, query temporary files and pipeline artifacts. Deleting
+database rows makes pages reusable; it does not promise filesystem free space.
+
+### Growth qualification
+
+Qualification increases retained history while holding active work and new
+changes fixed, measuring scanned input, temporary bytes, memory and latency.
+It kills a rebuild after a committed chunk and verifies resumed progress,
+complete output and preserved concurrent changes. Duplicate changes, reordered
+commits, late baselines, removals, shared-source cancellation and expiry must
+preserve exact membership and totals. A forced statistics failure must leave
+work signals and independent result consumers advancing. Resource-limit tests
+must preserve pending work, recovery files and true last-success clocks.
