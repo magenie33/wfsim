@@ -152,7 +152,10 @@ An enabled online partition is one weapon and ruler. Its complete current
 snapshot in `state_board_read_partitions` replaces that partition's static
 rows and leaders together. Other partitions retain their published files.
 The page replaces a partition only after fetching every page of its pinned
-revision; a failed read retains the previous complete view.
+revision; a failed read retains the previous complete view. Page requests share
+a four-request limit across the selected partitions. Each request has its own
+eight-second deadline, and the complete read has a sixty-second budget.
+Changing weapons cancels the read without replacing the previous view.
 
 `scripts/board_result_flow.mjs` consumes canonical source changes through the
 board input mailbox. Routing and the next partition handoff commit with the
