@@ -26,20 +26,24 @@ export async function captureRankBaseline(sql,{weapon,ruler,source,native,work,s
     to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') captured_at,pg_current_snapshot()::text snapshot`);
    if(actual!==source)throw new BoardRankQualificationError('board source changed');
    const meta={kind:'meta',v:1,weapon,ruler,source,native,captured_at,snapshot};await append(meta);
-   await tx.unsafe(`DECLARE board_rank_baseline NO SCROLL CURSOR FOR SELECT b.id,b.at,b.record,f.rows facts,h.rows headers
+   await tx.unsafe(`DECLARE board_rank_baseline NO SCROLL CURSOR FOR SELECT b.id,b.at,
+    CASE WHEN f.rows IS NOT NULL THEN b.record END record,f.rows facts,h.rows headers
     FROM entity_weapon_builds b CROSS JOIN LATERAL(SELECT jsonb_agg(to_jsonb(s) ORDER BY s.mode) rows
      FROM board_facts s WHERE s.identity=b.id AND s.ruler=$2)f CROSS JOIN LATERAL(
       SELECT coalesce(jsonb_agg(jsonb_build_object('scope',m.scope,'key',m.key,'version',m.version::text)),'[]') rows
-      FROM(SELECT 'build'::text scope,b.id key UNION
+      FROM(SELECT 'build'::text scope,b.id key WHERE f.rows IS NOT NULL UNION
        SELECT 'measurement',jsonb_build_array(b.id,$2::text,x->>'mode')::text FROM jsonb_array_elements(f.rows)x UNION
        SELECT 'review',x->>'review_id' FROM jsonb_array_elements(f.rows)x WHERE x->>'review_id' IS NOT NULL
       )k CROSS JOIN LATERAL(SELECT scope,key,version FROM state_board_input_mailbox
-       WHERE scope=k.scope AND key=k.key OFFSET 0)m)h WHERE b.weapon=$1 AND f.rows IS NOT NULL`,[weapon,ruler]);
+       WHERE scope=k.scope AND key=k.key OFFSET 0)m)h WHERE b.weapon=$1`,[weapon,ruler]);
    const started=Date.now();
    for(;;){
     signal?.throwIfAborted();if(Date.now()-started>120000)throw new BoardRankQualificationError('baseline capture exceeded its time budget');
     const page=await tx.unsafe('FETCH FORWARD 256 FROM board_rank_baseline');
-    for(const row of page){total++;facts+=row.facts.length;await append({kind:'source',source:{id:row.id,at:row.at,record:row.record},facts:row.facts,headers:row.headers});}
+    for(const row of page){
+     if(!row.facts)continue;
+     total++;facts+=row.facts.length;await append({kind:'source',source:{id:row.id,at:row.at,record:row.record},facts:row.facts,headers:row.headers});
+    }
     if(page.length<256)break;
    }
    await tx.unsafe('CLOSE board_rank_baseline');await append({kind:'complete',total,facts,snapshot});
