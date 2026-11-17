@@ -1,0 +1,29 @@
+{
+  "weapon": "magistar",
+  "strategy": "quick",
+  "mods": {
+    "primed_pressure_point": "fixed",
+    "organ_shatter": "search",
+    "primed_fury": "search"
+  },
+  "build_size": 2,
+  "build_min": 2,
+  "modes": {
+    "base": "search",
+    "forward": "search",
+    "block": "search",
+    "block_forward": "search"
+  },
+  "starts": [
+    {
+      "slots": []
+    }
+  ],
+  "enemy": "thrax_centurion",
+  "level": 100,
+  "duration": 5,
+  "runs": 50,
+  "candidate_runs": 10,
+  "finalists": 5,
+  "threads": 1
+}
