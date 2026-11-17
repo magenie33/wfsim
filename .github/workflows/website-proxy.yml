@@ -1,0 +1,46 @@
+name: website proxy recovery
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: validate, apply or roll back the reviewed root record
+        type: choice
+        options: [plan, apply, rollback]
+        default: plan
+      plan:
+        description: reviewed DNS record and release identity JSON
+        type: string
+      receipt:
+        description: before receipt JSON for rollback
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: website-dns
+  cancel-in-progress: false
+jobs:
+  root-proxy:
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: verify or recover the root record
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_WORKERS_TOKEN }}
+          WEBSITE_PROXY_PLAN: ${{ inputs.plan }}
+          WEBSITE_PROXY_RECEIPT: ${{ inputs.receipt }}
+          ACTION: ${{ inputs.action }}
+        run: |
+          set -euo pipefail
+          case "$ACTION" in
+            plan) python3 scripts/website_proxy.py ;;
+            apply) python3 scripts/website_proxy.py --apply ;;
+            rollback) python3 scripts/website_proxy.py --rollback ;;
+            *) exit 1 ;;
+          esac
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: website-proxy-receipt
+          path: website-proxy-*.json
+          if-no-files-found: ignore

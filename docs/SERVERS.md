@@ -119,6 +119,15 @@ before changing the two website names. It saves the existing mappings and restor
 the Worker domains if a change fails. It checks `CF_DNS_TOKEN`, `CF_API_TOKEN`
 and `CF_WORKERS_TOKEN` in order; publishing Workers alone does not grant DNS edit access.
 
+The `website proxy recovery` workflow uses a reviewed root A record receipt to
+enable the existing Cloudflare entrance while retaining its origin address.
+Its plan checks the release, complete app digest and API before any DNS write.
+Apply changes only that record's proxy flag and TTL, and verifies every other
+root/www record, Worker route and custom domain is unchanged. Failed health
+checks restore the original proxy flag and TTL only while the record still
+matches this operation. The before receipt also supports a guarded rollback.
+Both DNS workflows share one concurrency group and the release environment.
+
 ## Factory capacity and deployment
 
 The online ranking reader runs independently as `wfsim-board-read.service`.
