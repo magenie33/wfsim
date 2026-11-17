@@ -797,6 +797,8 @@ jobs:
         run: node scripts/check_fair.mjs
       - name: The settler in shadow judges as the request path does, and says where it does not
         run: node scripts/check_settler.mjs
+      - name: Available work stays current while complete statistics are paused
+        run: node scripts/check_factory_availability.mjs
       - name: Background capacity yields to requests and shares the same public counts
         run: node scripts/check_factory_capacity.mjs
       - name: The factory deploy carries its dependencies and keeps credentials outside the artifact

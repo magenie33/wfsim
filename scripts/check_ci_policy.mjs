@@ -28,6 +28,19 @@ for (const path of inventoryControlInputs) {
 }
 assert.equal(classify([...inventoryControlInputs, 'optimizer/src/search.rs']).deep, true);
 assert.equal(classify(['scripts/unregistered_inventory.mjs']).deep, true);
+const websiteTools = ['deploy/hk-website.nginx', 'deploy/website-public.conf',
+  'scripts/check_hk_website.mjs', 'scripts/check_hk_website.py', 'scripts/check_website_proxy.mjs',
+  'scripts/ship_website.py', 'scripts/website_config.py', 'scripts/website_hk.py'];
+for (const path of websiteTools) {
+  assert.deepEqual(classify([path]).jobs, PRODUCT_JOBS, path + ' retains all ordinary correctness checks');
+  assert.equal(classify([path]).deep, false, path + ' cannot change search enumeration');
+  for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'scripts/website_unknown.py'])
+    assert.equal(classify([path, extra]).deep, true, path + ' mixed with ' + extra);
+  assert.equal(classify([path], true).deep, true);
+  assert.equal(classify([path], false, false).deep, true);
+}
+assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get('scripts/check_factory_availability.mjs') || []],
+  ['pipeline'], 'the complete availability regression has one pipeline CI owner');
 const admissionToolInputs = ['scripts/check_build_workflows.mjs', 'scripts/check_factory_deploy.py',
   'scripts/check_workflow_recovery.mjs', 'scripts/inbox_reader.mjs', 'scripts/migrations/db_library.mjs',
   'tests/fixtures/build-admission-base5a/build_workflows.sql',
