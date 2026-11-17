@@ -223,6 +223,7 @@ async function route() {
     if (ask) ask.then(() => route());
   }
   $("home-page").hidden = !!w || support || bench || dl || util || !!wfHit || opRoute || !!compHit || !!stub || !!authKind;
+  placeHomeSearch();
   $("support-page").hidden = !support;
   $("bench-page").hidden = !bench;
   $("download-page").hidden = !dl;
@@ -455,6 +456,20 @@ let homeQuery = "";
 /// open chips would push the cards below the fold; a reader's own toggle wins.
 const homeOpen = {};
 const homeFiltersOpen = (id) => homeOpen[id] ?? !matchMedia("(max-width: 700px)").matches;
+
+function placeHomeSearch() {
+  const search = $("wsearch-input")?.closest(".wsearch");
+  const entry = $("home-search"), anchor = $("topbar-search-anchor");
+  if (!search || !entry || !anchor) return;
+  if (!$("home-page").hidden) {
+    if (search.parentNode !== entry) entry.prepend(search);
+  } else if (search.parentNode !== anchor.parentNode) anchor.after(search);
+}
+document.addEventListener("keydown", (event) => {
+  if ($("home-page")?.hidden || event.key !== "/" || event.ctrlKey || event.altKey || event.metaKey || event.isComposing
+    || event.target.closest?.("input,textarea,select,[contenteditable]")) return;
+  event.preventDefault(); $("wsearch-input").focus();
+});
 
 function renderHome() {
   renderHomeFacts();

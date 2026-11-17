@@ -59,8 +59,11 @@ an unavailable coefficient rather than zero.
 Home and non-weapon routes initialize no hidden weapon editor. Simulator and
 optimizer controls render on their own routes; the shared scenario bar remains
 available to the weapon's modules. Frame catalog readers share one pending
-request, with a failed request retryable. Home's rolling totals retain their
-text nodes and repaint only while home is visible. Overflow measurements are
+request, with a failed request retryable. Home's confirmed totals retain their
+text nodes and repaint only while home is visible. A changed value is shown
+exactly at once, with 380ms of visual
+motion; reduced motion keeps it still. The home search and topbar share one
+control, placed on the visible page. Overflow measurements are
 limited to changed visible section bodies, with a full pass on resize.
 
 - **Two surfaces**:

@@ -2240,8 +2240,15 @@ Both checks require actual published rows; an empty fixture is a failure.
 Intercepted board files provide a large complete scene fixture under fourfold
 CPU throttling. Home must become usable without a hidden weapon editor, frame
 catalog or weapon board download. Concurrent frame catalog readers share a
-promise and retry failures. Tally digits animate through stable text nodes and
-stop repainting while hidden. Every scene remains reachable, opening downloads
+promise and retry failures. The home hero checks Chinese and English, both
+themes and desktop/mobile widths, real equipment art, and the shared search's
+shortcut, visible results and return route. Its three counts read the upload
+pool, player-score tally and live work independently. Every animation frame
+retains exact confirmed values; header and hero device values share a clock.
+Zero, failed reads, unchanged targets and reduced motion retain their defined
+states. `--home-hero` runs these focused cases; the default also runs the scene
+fixture. Confirmed values keep stable text nodes and stop repainting while
+hidden. Every scene remains reachable, opening downloads
 only the selected scene, rendering stays bounded, and switching away releases
 public rows and derived caches. Timing observations contain page kinds and
 numeric durations only. `WFSIM_PERF_EAGER=1` deliberately restores eager scene
