@@ -65,6 +65,33 @@ check("a weapon is found by its Chinese name", found.rows && found.rows.some((r)
 check("...with the address its page lives at", found.rows && found.rows.every((r) => r.url.startsWith("https://wfsim.app/weapons/")),
   JSON.stringify(found.rows));
 
+for (const [query, id, name] of [
+  ["捕月主手", "catchmoon_primary", "Catchmoon (Primary)"],
+  ["捕月副手", "catchmoon_secondary", "Catchmoon (Secondary)"],
+  ["捕月（主要武器）", "catchmoon_primary", "Catchmoon (Primary)"],
+  ["捕月（次要武器）", "catchmoon_secondary", "Catchmoon (Secondary)"],
+  ["捕月 (主要武器)", "catchmoon_primary", "Catchmoon (Primary)"],
+  ["捕月 (次要武器)", "catchmoon_secondary", "Catchmoon (Secondary)"],
+  ["Catchmoon Primary", "catchmoon_primary", "Catchmoon (Primary)"],
+  ["Catchmoon Secondary", "catchmoon_secondary", "Catchmoon (Secondary)"],
+  ["Ｃａｔｃｈｍｏｏｎ（Ｐｒｉｍａｒｙ）", "catchmoon_primary", "Catchmoon (Primary)"],
+  ["瑟普梵侍刃", "sepfahn_one_handed", "Sepfahn (Nikana)"],
+  ["瑟普梵（侍刃）", "sepfahn_one_handed", "Sepfahn (Nikana)"],
+  ["瑟普梵（长棍）", "sepfahn_two_handed", "Sepfahn (Staff)"],
+  ["Sepfahn Nikana", "sepfahn_one_handed", "Sepfahn (Nikana)"],
+  ["Sepfahn Staff", "sepfahn_two_handed", "Sepfahn (Staff)"],
+  ["Ｓｅｐｆａｈｎ（Ｓｔａｆｆ）", "sepfahn_two_handed", "Sepfahn (Staff)"],
+]) {
+  const result = await run("builder.weapons.find", { query });
+  check(`a complete modular name finds its entry: ${query}`, result.found === 1
+    && result.rows?.[0]?.id === id && result.rows[0].name === name, JSON.stringify(result));
+}
+
+if (process.argv.includes("--weapons-find")) {
+  console.log(failed ? `\n${failed} failed` : "\nthe installed MCP engine finds complete weapon names in either width");
+  process.exit(failed ? 1 : 0);
+}
+
 const board = await run("builder.board.read", { weapon: "soma_prime", limit: 1 });
 const top = (board.rows || []).find((r) => r.build);
 check("a board reads with no weapon on screen", !!top, JSON.stringify(board).slice(0, 300));

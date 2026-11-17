@@ -953,9 +953,10 @@ const HEADLESS_QUERIES = [
     },
     run({ query, limit = 12 }, host) {
       const locales = host.names();
+      const normalized = query.normalize("NFKC");
       const hits = (host.meta().weapons || []).filter((w) => {
         const names = headlessWeaponAliases(w, locales);
-        return headlessHit(names.complete.concat(names.incomplete), query);
+        return headlessHit(names.complete.concat(names.incomplete).map((s) => s.normalize("NFKC")), normalized);
       });
       return {
         found: hits.length,
