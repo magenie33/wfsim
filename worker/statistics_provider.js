@@ -7,13 +7,15 @@ import {demandOf} from './contribution.js';
 import {statisticsSnapshot} from './settler.js';
 import {placeholders} from './placeholders.js';
 import {iso} from './instant.js';
+import {currentStatistics,statisticsExpiresAt} from './statistics_clock.js';
 
 export const STATISTICS_PUMP_MS=1000,STATISTICS_REFRESH_MS=10000,STATISTICS_SLICE_MS=250,STATISTICS_SLICE_STEPS=128;
 export const STATISTICS_BUNDLE_FORMAT='statistics-provider-1';
 const ordered=value=>Array.isArray(value)?value.map(ordered):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,ordered(value[key])])):value;
 const identical=(a,b)=>JSON.stringify(ordered(a))===JSON.stringify(ordered(b));
 const completeBundle=value=>value?.format===STATISTICS_BUNDLE_FORMAT&&value.key&&value.countsAt===value.snapshot?.at
- &&value.countsAt===value.demand?.counts_at&&value.demand?.at===value.countsAt;
+ &&value.countsAt===value.demand?.counts_at&&value.demand?.at===value.countsAt
+ &&value.demand?.expires_at===statisticsExpiresAt(value.countsAt)&&value.demand?.order_epoch===value.key.epoch;
 export const statisticsQuery=db=>async(sql,args=[])=>(await db.prepare(sql).bind(...args).all()).results;
 
 export function statisticsQueryDb(query){
@@ -91,6 +93,7 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
   indexOid=deps.index_oid;return allowed();
  };
  const assert=async(value,{lookup=query}={})=>{
+  if(!currentStatistics(value.demand,now()))throw Error('statistics sample expired');
   const observedVersion=version,engine=release().engine;
   if(!await allowed({lookup}))throw Error('statistics paused or stopped');
   const deps=await dependenciesOf(lookup);if(!deps.ready)throw Error('statistics dependencies changed');
@@ -98,7 +101,8 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
   const [head]=await lookup('SELECT h.namespace,n.counts_at FROM state_statistics_head h JOIN state_statistics_namespaces n ON n.id=h.namespace WHERE h.id=1',[]);
   if(key.blocked||head?.namespace!==value.namespace||head.counts_at!==value.countsAt||!identical(key,value.key))throw Error('statistics source changed');
   if(!await allowed({lookup}))throw Error('statistics paused or stopped');
-  if(observedVersion!==version||engine!==release().engine)throw Error('statistics source changed');return true;
+  if(observedVersion!==version||engine!==release().engine)throw Error('statistics source changed');
+  if(!currentStatistics(value.demand,now()))throw Error('statistics sample expired');return true;
  };
  return{
   async advance(){
@@ -136,7 +140,7 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
   async get(){
    if(!await ready())return null;
    if(!bundle){const [row]=await query(`SELECT n.published FROM state_statistics_head h JOIN state_statistics_namespaces n ON n.id=h.namespace WHERE h.id=1`,[]);bundle=row?.published??null;}
-   if(!completeBundle(bundle))return null;try{await assert(bundle);return bundle;}catch{bundle=null;return null;}
+   if(!completeBundle(bundle)||!currentStatistics(bundle.demand,now()))return null;try{await assert(bundle);return bundle;}catch{bundle=null;return null;}
   },assert,
   changed(){version++;if(active)active.cancelled=true;bundle=null;},
   stop(){closed=true;version++;if(active)active.cancelled=true;},

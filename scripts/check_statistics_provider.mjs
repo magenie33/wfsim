@@ -12,23 +12,28 @@ import {setPipelineControl} from '../worker/task_pipeline.js';
 import {openEnv,run} from './factoryd.mjs';
 import {statisticsSchemaSql} from './statistics_schema.mjs';
 import {seedComputeWork,statisticsCounts} from './pg/fixtures.mjs';
+import {statisticsExpiresAt} from '../worker/statistics_clock.js';
+import {statisticsClockCases} from './check_statistics_clock.mjs';
+
 
 export async function statisticsProviderCases(){
+ await statisticsClockCases();
  assert.throws(()=>statisticsSchemaSql('schema'),/tablespace/);assert.throws(()=>statisticsSchemaSql('index'),/tablespace/);
  assert.match(statisticsSchemaSql('index',{tablespace:'pg_default'}),/CREATE INDEX CONCURRENTLY/);
  const unread={LIBRARY:{prepare(){throw Error('historical input read');}}};
  assert.equal(await snapshotTick(unread,{engine:'fixture'}),false,'snapshot without provider reads history');
  await assert.rejects(demandOf(unread),/complete statistics counts/);
- const at='2026-11-17T00:00:00.000Z',key={contract:'statistics-projection-1',engine:'fixture',epoch:'no-cut',generation:'1',blocked:null,inventory:null,fingerprint:'fixture'};
- const complete={format:STATISTICS_BUNDLE_FORMAT,key,namespace:'fixture-head',countsAt:at,snapshot:{at},demand:{at,counts_at:at}};
- let paused=false,stopped=false,engine='fixture',installed=true,starts=0,steps=0,seals=0,queries=0,writes=0,kept=null;
+ const at='2026-11-17T00:00:00.000Z',key={contract:'statistics-projection-1',engine:'fixture',epoch:null,generation:'1',blocked:null,inventory:null,fingerprint:'fixture'};
+ const complete={format:STATISTICS_BUNDLE_FORMAT,key,namespace:'fixture-head',countsAt:at,snapshot:{at},
+  demand:{ok:true,v:1,at,counts_at:at,expires_at:statisticsExpiresAt(at),order_epoch:key.epoch}};
+ let paused=false,stopped=false,engine='fixture',installed=true,starts=0,steps=0,seals=0,queries=0,writes=0,kept=null,time=Date.parse(at)+5000;
  const query=async sql=>{queries++;if(sql.includes('index_ready'))return[{paused,index_ready:true}];
   if(sql.startsWith('SELECT compute_order_cut_epoch')){const {contract,engine,...identity}=key;return[identity];}
   if(sql.includes('SELECT h.namespace,n.counts_at'))return[{namespace:complete.namespace,counts_at:at}];
   if(sql.includes('SELECT n.published'))return[{published:kept}];throw Error('unexpected provider query: '+sql);};
  const env={LIBRARY:{prepare:()=>({bind:()=>({run:async()=>{writes++;}})})}};
  const make=()=>createStatisticsProvider({env,query,controlQuery:query,transaction:()=>{},release:()=>({engine}),stopped:()=>stopped,
-  now:()=>Date.parse(at)+5000,dependenciesOf:async()=>({ready:installed,state:'missing_index',index_oid:'7'}),
+  now:()=>time,dependenciesOf:async()=>({ready:installed,state:'missing_index',index_oid:'7'}),
   projectionFactory:()=>({start:async()=>{starts++;return{namespace:complete.namespace};},
    step:async()=>({baseline:++steps>=3,worked:false}),read:async()=>kept,
    seal:async()=>{seals++;kept=complete;return{counts:complete};}})});
@@ -37,6 +42,7 @@ export async function statisticsProviderCases(){
  await Promise.all([provider.advance(),provider.advance()]);assert.equal(starts,1,'duplicate pump');assert.equal(steps,3,'pump advances only one page');assert.equal(seals,1);
  assert.deepEqual(await provider.get(),complete);assert.equal((await provider.get()).countsAt,at,'cached counts re-stamped');
  provider=make();await provider.advance();assert.equal(seals,1,'restart rebuilt a complete sample');
+ time=Date.parse(complete.demand.expires_at);assert.equal(await provider.get(),null,'expired provider sample served');time=Date.parse(at)+5000;
  engine='changed';assert.equal(await provider.get(),null,'changed source published cached counts');engine='fixture';
  stopped=true;const before={queries,writes};await provider.advance();assert.equal(await provider.get(),null);assert.deepEqual({queries,writes},before,'stopped owner performed a late lookup/write');
  console.log('PASS provider fail-closed, bounded multi-step/singleflight, cached clock, restart and owner-stop controls');
@@ -44,10 +50,11 @@ export async function statisticsProviderCases(){
 }
 
 export async function statisticsProviderSourceRaceCases(){
- for(const change of ['engine','notification','both']){
-  const at='2026-11-17T00:00:00.000Z',identity={epoch:'no-cut',generation:'1',blocked:null,inventory:null,fingerprint:'fixture'};
-  const counts={namespace:'fixture-head',countsAt:at,key:{contract:'statistics-projection-1',engine:'fixture',...identity}};
-  let engine='fixture',checks=0,entered,finish;
+ for(const change of ['engine','notification','both','deadline']){
+  const at='2026-11-17T00:00:00.000Z',identity={epoch:null,generation:'1',blocked:null,inventory:null,fingerprint:'fixture'};
+  const counts={namespace:'fixture-head',countsAt:at,key:{contract:'statistics-projection-1',engine:'fixture',...identity},
+   demand:{ok:true,v:1,at,counts_at:at,expires_at:statisticsExpiresAt(at),order_epoch:identity.epoch}};
+  let engine='fixture',checks=0,entered,finish,time=Date.parse(at);
   const waiting=new Promise(resolve=>{entered=resolve;}),held=new Promise(resolve=>{finish=resolve;});
   const query=async sql=>{
    if(sql.includes('index_ready')){if(++checks===2){entered();await held;}return[{paused:false,index_ready:true}];}
@@ -55,10 +62,12 @@ export async function statisticsProviderSourceRaceCases(){
    if(sql.includes('SELECT h.namespace,n.counts_at'))return[{namespace:counts.namespace,counts_at:at}];
    throw Error('unexpected source-race lookup: '+sql);
   };
-  const provider=createStatisticsProvider({env:{},query,controlQuery:query,release:()=>({engine}),
+  const provider=createStatisticsProvider({env:{},query,controlQuery:query,release:()=>({engine}),now:()=>time,
    dependenciesOf:async()=>({ready:true})});
-  const asserting=provider.assert(counts),rejected=assert.rejects(asserting,/statistics source changed/);
-  await waiting;if(change!=='notification')engine='changed';if(change!=='engine')provider.changed();finish();
+  const asserting=provider.assert(counts),rejected=assert.rejects(asserting,change==='deadline'?/statistics sample expired/:/statistics source changed/);
+  await waiting;
+  if(change==='deadline')time=Date.parse(counts.demand.expires_at);
+  else{if(change!=='notification')engine='changed';if(change!=='engine')provider.changed();}finish();
   await rejected;
  }
  console.log('PASS source change during final control await rejects observed engine and same-engine notification races');
