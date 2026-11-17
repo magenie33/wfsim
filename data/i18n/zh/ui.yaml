@@ -963,6 +963,11 @@ ui:
   "Critical Precision, the Tiberon-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Critical Precision」，Tiberon 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Ctrl+Z undoes the last change": Ctrl+Z 撤销上一步改动
   "DPS over time": DPS 曲线
+  "Fight over time": 战斗曲线
+  "Total damage": 累计伤害
+  "Run again to view this curve": 重新模拟以查看此曲线
+  "Magnetic break": 磁异常破盾／破防护
+  "magnetic break": 磁异常破盾／破防护
   "DPS": DPS
   "damage per second": 每秒伤害
   "Damage (combined)": 伤害（合成后）

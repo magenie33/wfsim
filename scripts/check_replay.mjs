@@ -127,6 +127,23 @@ const r = await evaluate(`(async () => {
   // the panel does not draw, so an anchor has to be one the results carry.
   const iChart = pos('.tl-wrap');
   const iRow = pos('.rp-row');
+  const result = shownResult.r;
+  const chartTabs = [...document.querySelectorAll('[data-curve]')].map(tab => {
+    tab.click();
+    const wrap = document.querySelector('.tl-wrap');
+    const b = document.getElementById('tl-svg').getBoundingClientRect();
+    wrap.dispatchEvent(new PointerEvent('pointermove', { clientX: b.right, clientY: b.top + 30 }));
+    return { id: tab.dataset.curve, selected: tab.getAttribute('aria-selected'),
+      points: document.querySelector('.tl-line').getAttribute('points'),
+      tip: document.getElementById('tl-tip').textContent };
+  });
+  document.querySelector('[data-curve="dps"]').click();
+  const chartTotals = { kills: (result.kill_timeline || []).reduce((a, b) => a + b, 0),
+    damage: result.timeline.reduce((a, b) => a + b, 0), sample: result.sample,
+    expectedDamageTip: Math.round(result.sample.dps * result.duration).toLocaleString() + ' ' + tr('damage'),
+    expectedKillTip: result.sample.kills.toLocaleString() + ' ' + tr('kills') };
+  const fractional = Object.fromEntries(['dps', 'kpm', 'kills', 'damage'].map(id =>
+    [id, fightCurveData({ duration: 2.5, timeline: [10, 20, 15], kill_timeline: [0, 1, 1] }, id).map(p => p.value)]));
 
   // Rewind to the very start: the panel must read as a fight that has not
   // happened yet.
@@ -135,6 +152,11 @@ const r = await evaluate(`(async () => {
   // ends every scheme agrees, and only the middle says whether the bars grow.
   sc.value=Math.floor(Number(sc.max)/2); sc.dispatchEvent(new Event('input')); await sleep(300);
   const atMid = read();
+  const chartCursor = { x: Number(document.getElementById('tl-now').getAttribute('x1')) };
+  document.querySelector('[data-curve="kills"]').click();
+  chartCursor.afterSwitch = Number(document.getElementById('tl-now').getAttribute('x1'));
+  chartCursor.ahead = Number(document.getElementById('tl-ahead').getAttribute('width'));
+  document.querySelector('[data-curve="dps"]').click();
   sc.value=0; sc.dispatchEvent(new Event('input')); await sleep(300);
   const atZero = read();
   // ...and back to the end restores it exactly.
@@ -209,10 +231,26 @@ const r = await evaluate(`(async () => {
     meterByType[ty] = (meterByType[ty] || 0) + v;
   }
   return { rows, atEnd, atMid, atZero, restored, afterStop, playLabel, rail, cuts, nowAtOpen, nowAtEnd, movedTo, iBar, iMeter, iChart, iRow, kids,
+           chartTabs, chartTotals, fractional, chartCursor,
            meterRows, segs, legend, collapse, meterTypes: Object.keys(meterByType).sort(),
            clock: document.getElementById('rp-clock').textContent };
 })()`);
 if (r.fail) { console.log("FAIL  no replay section — sim-results:", r.resultsHtml); process.exit(1); }
+check("DPS, KPM, kills and total damage are peer chart tabs",
+  r.chartTabs.map(t => t.id).join() === "dps,kpm,kills,damage" && r.chartTabs.every(t => t.selected === "true"), JSON.stringify(r.chartTabs));
+check("chart totals match this benchmark fight",
+  r.chartTotals.kills === r.chartTotals.sample.kills &&
+  Math.abs(r.chartTotals.damage - r.chartTotals.sample.dps * 60) < Math.max(1, r.chartTotals.damage) * 1e-9,
+  JSON.stringify(r.chartTotals));
+check("hover reads the selected cumulative curve",
+  r.chartTabs.find(t => t.id === "damage").tip.endsWith(r.chartTotals.expectedDamageTip) &&
+  r.chartTabs.find(t => t.id === "kills").tip.endsWith(r.chartTotals.expectedKillTip), JSON.stringify(r.chartTabs));
+check("switching curves preserves the replay cursor and future shading",
+  Math.abs(r.chartCursor.x - r.chartCursor.afterSwitch) < 0.01 && r.chartCursor.ahead > 0 && r.chartCursor.ahead < 600,
+  JSON.stringify(r.chartCursor));
+check("partial final seconds use their actual duration",
+  JSON.stringify(r.fractional) === JSON.stringify({ dps: [0, 10, 20, 30], kpm: [0, 0, 60, 120], kills: [0, 0, 1, 2], damage: [0, 10, 30, 45] }),
+  JSON.stringify(r.fractional));
 check("one row per buff, drawn and open by default",
   r.rows.length === 1 && r.rows[0].open && r.rows[0].pts === 600, JSON.stringify(r.rows[0]));
 // Language-agnostic: this check runs in whatever locale the browser picks, so

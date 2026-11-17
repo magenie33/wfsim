@@ -1,6 +1,27 @@
 use super::*;
 
 #[test]
+fn kill_timeline_matches_the_record_and_the_fights_total() {
+    let mut p = bare(DamageType::Impact);
+    p.duration_seconds = 2.5;
+    p.foe.mode = TargetMode::InstantRespawn;
+    p.foe.base_health = 1.0;
+    p.fire_rate = 4.0;
+    let r = run_once(&p, &mut Rng::new(17));
+    let rec = record(&p, r.rng_state, 0.0, 2.5, 10000, 0);
+    let mut expected = [0_u32; 3];
+    for e in rec.events() {
+        match &e.kind {
+            crate::record::Kind::Damage(d) if d.killed => expected[e.t as usize] += 1,
+            _ => {}
+        }
+    }
+    assert!(expected.iter().all(|&n| n > 0), "the fixture kills in every bucket");
+    assert_eq!(&r.kill_timeline.0[..3], &expected);
+    assert_eq!(r.kill_timeline.0.iter().sum::<u32>(), r.kills);
+}
+
+#[test]
 fn thrax_9999_takes_everything_on_overguard_neutrally() {
     // THE ULTIMATE STRESS TEST benchmark: Thrax @9999 STEEL PATH
     // (9.67M health behind 15.5M overguard) - every instance (direct
@@ -371,6 +392,7 @@ fn the_damage_meters_parts_add_up_to_the_whole() {
         + s.arcane_on_status
         + s.extra_hit
         + s.syndicate
+        + s.magnetic_break
         + s.status.iter().sum::<f64>();
     let whole = r.effective_damage();
     assert!(whole > 0.0, "the fixture deals damage");

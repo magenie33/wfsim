@@ -397,6 +397,7 @@ function recordBodies(events) {
 const REC_KINDS = [
   ["all", "everything"], ["own", "own"], ["multishot", "multishot"],
   ["punch_through", "punch through"], ["status", "status"],
+  ["magnetic_break", "magnetic break"],
   // A SHOT, AN ARRIVAL AND A MISS are weapon events rather than numbers, so
   // they sit under one chip with the reloads and the transmutes — and "only
   // the misses" is its own question, because a pellet that went nowhere is

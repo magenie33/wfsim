@@ -35,6 +35,7 @@ fn the_damage_meter_accounts_for_the_whole_formation() {
     let bodies: f64 = r.taken.by_body().0.iter().sum();
     let meter = r.sources.direct + r.sources.radial + r.sources.field
         + r.sources.arcane_on_status + r.sources.extra_hit + r.sources.syndicate
+        + r.sources.magnetic_break
         + r.sources.status.iter().sum::<f64>();
     assert!(bodies > 0.0, "the crowd took nothing at all");
     assert!(
