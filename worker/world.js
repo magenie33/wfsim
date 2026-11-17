@@ -16,25 +16,35 @@ const KEY = "world/items.json";
 /// The relay runs each minute; a reader is never more than this behind it.
 const FRESH_S = 30;
 const MAX_BYTES = 4 * 1024 * 1024;
-/// HOW OFTEN A FISSURE COMES is counted over this, the last week: long enough
-/// that each planet's 7-11 a day settle, short enough to follow DE's changes.
-const SEEN_WINDOW_MS = 7 * 24 * 3600 * 1000;
 const OPEN = { "access-control-allow-origin": "*" };
 
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json; charset=utf-8", ...OPEN, ...extra } });
 const msOf = (d) => Number(d && d.$date && d.$date.$numberLong) || 0;
 
+/// The same UTC date and time one year earlier; February 29 clamps to February 28.
+function fissureWindow(now) {
+  const start = new Date(now), month = start.getUTCMonth();
+  start.setUTCFullYear(start.getUTCFullYear() - 1);
+  if (start.getUTCMonth() !== month) start.setUTCDate(0);
+  return { since: start.toISOString(), window_ms: now - start.getTime() };
+}
+
+export async function purgeFissures(env) {
+  if (!env.LIBRARY) return;
+  const { since } = fissureWindow(Date.now());
+  await env.LIBRARY.prepare("DELETE FROM record_world_fissures WHERE started_at < ?1").bind(since).run();
+}
+
 export async function worldRoute(request, env, ctx, path) {
   // WHAT A REMINDER CAN NAME BEFORE IT IS OPEN: the table the items are named
-  // from, every combination of list, era, mission and node seen so far — how
-  // many opened in the last `SEEN_WINDOW_MS` and when the last one did — and
-  // the nodes and planets those combinations name.
+  // from, every combination of list, era, mission and node in the retained
+  // calendar year, its count and last opening, and the nodes and planets it names.
   if (path === "/api/world/names") {
-    const since = new Date(Date.now() - SEEN_WINDOW_MS).toISOString();
+    const { since, window_ms } = fissureWindow(Date.now());
     const seen = env.LIBRARY && await env.LIBRARY.prepare(`SELECT list, tier, mission, node,
-        count(*) FILTER (WHERE started_at >= ?1) AS recent, max(started_at) AS last
-        FROM record_world_fissures GROUP BY list, tier, mission, node`).bind(since).all()
+        count(*) AS recent, max(started_at) AS last
+        FROM record_world_fissures WHERE started_at >= ?1 GROUP BY list, tier, mission, node`).bind(since).all()
       .then((r) => r.results.map((x) => [x.list, x.tier, x.mission, x.node, Number(x.recent), Date.parse(x.last)]))
       .catch(() => null);
     const nodes = {};
@@ -43,7 +53,7 @@ export async function worldRoute(request, env, ctx, path) {
       if (n) nodes[node] = { name: n.name, planet: n.planet };
     }
     return json({ ok: true, tiers: NAMES.tiers, missions: NAMES.missions, planets: NAMES.planets, nodes,
-      fissures: seen || [], window_ms: SEEN_WINDOW_MS }, 200, { "cache-control": "public, max-age=600" });
+      fissures: seen || [], window_ms }, 200, { "cache-control": "public, max-age=600" });
   }
   if (path === "/api/world/arbitrations") return arbitrationRoute(request, ctx, path);
   if (path !== "/api/world") return json({ ok: false, error: "not found" }, 404);

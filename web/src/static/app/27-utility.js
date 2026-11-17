@@ -266,12 +266,12 @@ function reminderLabel(r) {
 }
 
 /// UNDER A REMINDER: how many it matches open now, or, for a kind known ahead
-/// and nothing open, when it fires next. A reminder nothing can match says so
-/// instead — one an older page saved, before its editor offered only what occurs.
+/// and nothing open, when it fires next. Missing from the available data is
+/// reported without claiming that the game has never opened such a mission.
 function reminderStatus(r) {
   const open = (worldOf(r.kind) || []).filter((x) => reminderMatches(r, x)).length;
   const kind = UTILITY_KINDS[r.kind];
-  if (!open && kind && kind.possible && kind.possible(r) === false) return { text: tr("The game has never opened one like this"), never: true };
+  if (!open && kind && kind.possible && kind.possible(r) === false) return { text: tr("No matching mission found"), never: true };
   const next = !open && kind && kind.next ? kind.next(r) : null;
   const stats = kind && kind.stats ? kind.stats(r, open) : null;
   return { text: [next || trF("{n} open now", { n: open }), stats].filter(Boolean).join(" · "), never: false };
