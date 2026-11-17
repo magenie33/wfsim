@@ -9,6 +9,24 @@ export const TASK_PIPELINE_STAGES = Object.freeze({
   contribution: { input: "record_candidate_answers.credit_work", output: "idempotent credit and hourly totals" },
 });
 
+export const TASK_PIPELINE_CONTROLS=Object.freeze({...TASK_PIPELINE_STAGES,
+  statistics:{input:'effective computation work and pending board work',output:'factory snapshot and demand.json'},
+});
+const controlOf=name=>{if(!Object.hasOwn(TASK_PIPELINE_CONTROLS,name))throw Error('unknown task pipeline control');};
+export async function readPipelineControl(env,name){
+  controlOf(name);
+  return await env.LIBRARY.prepare('SELECT * FROM state_task_pipeline_controls WHERE name=?').bind(name).first()
+    || {name,paused:false,changed_at:null,changed_by:null};
+}
+export async function setPipelineControl(env,name,{paused,by},now=Date.now()){
+  controlOf(name);
+  if(typeof paused!=='boolean'||typeof by!=='string'||!by.trim())throw Error('invalid pipeline control');
+  await env.LIBRARY.prepare(`INSERT INTO state_task_pipeline_controls(name,paused,changed_at,changed_by)
+    VALUES(?1::text,?2::boolean,?3::text,?4::text) ON CONFLICT(name) DO UPDATE SET
+    paused=excluded.paused,changed_at=excluded.changed_at,changed_by=excluded.changed_by`)
+    .bind(name,paused,iso(now),by).run();
+}
+
 const stageOf = name => {
   if (!Object.hasOwn(TASK_PIPELINE_STAGES,name)) throw Error("unknown task pipeline stage");
   return TASK_PIPELINE_STAGES[name];
@@ -18,14 +36,7 @@ export function createTaskPipeline(handlers) {
   for (const name of Object.keys(TASK_PIPELINE_STAGES))
     if (typeof handlers[name] !== "function") throw Error("missing task pipeline handler: "+name);
 
-  async function control(env,name,{paused,by},now=Date.now()) {
-    stageOf(name);
-    if (typeof paused !== "boolean" || typeof by !== "string" || !by.trim()) throw Error("invalid pipeline control");
-    await env.LIBRARY.prepare(`INSERT INTO state_task_pipeline_controls(name,paused,changed_at,changed_by)
-      VALUES(?1::text,?2::boolean,?3::text,?4::text) ON CONFLICT(name) DO UPDATE SET
-      paused=excluded.paused,changed_at=excluded.changed_at,changed_by=excluded.changed_by`)
-      .bind(name,paused,iso(now),by).run();
-  }
+  const control=setPipelineControl;
 
   async function run(env,name,now=Date.now(),options={}) {
     stageOf(name);

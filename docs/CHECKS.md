@@ -1623,6 +1623,12 @@ none twice, none before the lag; a fact whose bits no group gave and a witness
 left unpaid are each a difference, kept in the finding with the question. An
 official answer and an older engine's peer are counted apart; two answers of
 one owner are one witness. One pass of the daemon's every tick runs clean.
+A paused complete-statistics node skips its heavy reads in ordinary `--once`
+while every other required tick and the independently sampled signal run;
+another required tick's failure still rejects the pass. Pausing during a count
+prevents its late write. Blocked counts, primary-pool dial reads and failed
+statistics cannot stall the signal clock or wave probe, share a duplicate
+writer, restamp old goals, or publish after owner loss or shutdown.
 
 ## `check_factory_capacity`
 
@@ -1632,7 +1638,10 @@ reads and cache expiry. A shared rolling pace read leaves demand and tally
 byte-equivalent to separate reads. Critical work proceeds while a background
 operation waits. The actual Postgres driver opens singleton ownership from a
 cold pool against a local wire-protocol fixture, with the daemon's connection
-options; failed initialization closes its client. The deployment check is
+options; failed initialization closes its client. Blocked primary and background
+pools leave the reserved signal connection available without increasing the
+total budget. A real snapshot INSERT rolls back when pause or owner loss is
+observed during its final statement or control check. The deployment check is
 `python scripts/check_factory_deploy.py`:
 target configuration, schema-derived concurrent indexes, credential boundaries
 and the artifact's dependency closure.

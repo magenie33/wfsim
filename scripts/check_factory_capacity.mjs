@@ -7,7 +7,7 @@ import { createServer } from "node:net";
 import postgres from "./pg/node_modules/postgres/src/index.js";
 import { POSTGRES_OPTIONS, placeholders } from "../worker/db.js";
 import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capacity.mjs";
-import { openEnv } from "./factoryd.mjs";
+const {openEnv}=await import(process.env.WFSIM_FACTORYD_MODULE||"./factoryd.mjs");
 import { demandOf, scorePace, tallyBase, tallyOf } from "../worker/contribution.js";
 import { testDb } from "./pg/test_db.mjs";
 import { factory } from "../worker/tasks.js";
@@ -160,23 +160,52 @@ try {
 }
 console.log("ok: the actual Postgres driver starts singleton ownership from a cold pool");
 
-const pools = [];
-let backgroundRelease;
+const pools = [],blockedPools=new Map();
 const opened = await openEnv({ PG_URL: "postgres://local/wfsim", PG_ACCOUNTS_URL: "postgres://local/accounts" }, (_, options) => {
   pools.push(options);
   return { unsafe: async () => {
-    if (options.connection.application_name.endsWith("background")) await new Promise((r) => { backgroundRelease = r; });
+    if (["wfsim-factoryd-background","wfsim-factoryd"].includes(options.connection.application_name))
+      await new Promise(resolve=>blockedPools.set(options.connection.application_name,resolve));
     return [];
   }, end: async () => {} };
 });
 const waiting = opened.backgroundEnv.LIBRARY.prepare("SELECT 1").all();
-await Promise.resolve();
-await opened.env.LIBRARY.prepare("SELECT 1").all();
-assert.deepEqual(pools.map((p) => p.max), [2, 2, 1, 1, 1, 1, 1]);
-assert.deepEqual(pools.slice(3).map(p=>p.connection.application_name),
+const primary = opened.env.LIBRARY.prepare("SELECT 1").all();
+await Promise.resolve();await opened.signalEnv.LIBRARY.prepare("SELECT 1").all();
+assert.deepEqual(pools.map((p) => p.max), [1, 2, 1, 1, 1, 1, 1, 1]);
+assert.equal(pools.reduce((n,p)=>n+p.max,0),9);
+assert.equal(pools[2].connection.application_name,"wfsim-factoryd-signal");
+assert.equal(pools[2].connection.statement_timeout,30000);
+assert.deepEqual(pools.slice(4).map(p=>p.connection.application_name),
   ["wfsim-factoryd-admission","wfsim-factoryd-verification","wfsim-factoryd-delivery","wfsim-factoryd-contribution"]);
-backgroundRelease(); await waiting; await opened.close();
-console.log("ok: a blocked statistics pool does not consume the critical pool");
+for(const resolve of blockedPools.values())resolve();await Promise.all([waiting,primary]);await opened.close();
+console.log("ok: blocked primary and background pools cannot consume the reserved signal connection; total budget stays nine");
+
+const writeDb=await testDb('library');
+for(const stopAt of ['before','last-sql','last-check']){
+  let active=stopAt!=='before',wrote=false,checks=0;
+  const live=await openEnv({PG_URL:'postgres://isolated/write'},(_,options)=>{
+    const unsafe=async(sql,args)=>{
+      const rows=await writeDb.all(sql,...args);
+      if(sql.startsWith('INSERT INTO state_factory_snapshot')){wrote=true;if(stopAt==='last-sql')active=false;}
+      return rows;
+    };
+    return {unsafe,end:async()=>{},begin:async fn=>{
+      await writeDb.exec('BEGIN');
+      try{const value=await fn({unsafe});await writeDb.exec('COMMIT');return value;}
+      catch(error){await writeDb.exec('ROLLBACK');throw error;}
+    }};
+  });
+  try{
+    const statement=writeDb.prepare("INSERT INTO state_factory_snapshot(id,at,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES(1,'late',0,0,0,0,0,0,'1970-01-01T00:00:00.000Z','')");
+    const result=await live.writeSnapshot(statement,async()=>{checks++;await Promise.resolve();if(stopAt==='last-check'&&checks===2)active=false;return active;});
+    assert.equal(result,false,stopAt+' must reject a stopped snapshot');
+    assert.equal(wrote,stopAt!=='before');
+    assert.equal(await writeDb.get('SELECT at FROM state_factory_snapshot'),null,stopAt+' committed late statistics');
+  }finally{await live.close();}
+}
+await writeDb.close();
+console.log('ok: observed pause or owner loss rolls back a real snapshot INSERT, including stop during its final SQL/check await');
 
 const L = await testDb("library"), now = Date.now(), at = new Date(now).toISOString();
 for (const [id, by] of [["a", "verified:e1"], ["b", "official"]]) {

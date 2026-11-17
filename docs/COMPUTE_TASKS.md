@@ -330,6 +330,11 @@ to that consumer's next pass; in-flight transactions finish. `run <consumer>`
 performs one bounded native pass and respects the control. Commands use the
 configured library owner connection. The daemon can observe controls but cannot
 change them. Pausing a consumer preserves its work and upstream facts.
+`status statistics` reports the complete-statistics pause and last snapshot
+without a backlog count. `pause statistics` and `resume statistics` control
+snapshot and demand publication independently of the four consumers; statistics
+is not a runnable consumer. The work signal and heartbeat continue while its
+old counts and timestamps remain unchanged.
 
 Verified task state commits before consumer writes or contribution settlement.
 Successful verification remains durable when either fails. Delivery batches

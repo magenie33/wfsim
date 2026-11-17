@@ -8,21 +8,25 @@ import { seedComputeWork } from "./pg/fixtures.mjs";
 import { tableOf } from "../worker/fair.js";
 import { factory, canon, nearAnswer } from "../worker/tasks.js";
 import { contributionRoute } from "../worker/contribution.js";
-import { snapshotTick, fairTick, readFair, compareFair, settleShadow, judgeFact, SETTLE_SHADOW_LAG_MS } from "../worker/settler.js";
+import { signalTick, snapshotTick, fairTick, readFair, compareFair, settleShadow, judgeFact, SETTLE_SHADOW_LAG_MS } from "../worker/settler.js";
 import { testDb } from "./pg/test_db.mjs";
 import { SETTLER_SILENT_MS } from "../worker/factory.js";
-import { DIAL_DEFAULTS } from "../worker/dials.js";
+import { mock } from "node:test";
+import { DIAL_DEFAULTS, forgetDials, dialsOf } from "../worker/dials.js";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
   console.log(`  ${ok ? "ok " : "FAIL"}  ${what}${ok || !detail ? "" : `   ${detail}`}`);
   if (!ok) failures++;
 };
+const daemonModule=process.env.WFSIM_FACTORYD_MODULE||"./factoryd.mjs";
 const iso = (ms) => new Date(ms).toISOString();
 const now = Date.now();
 
 const LIBRARY = await testDb("library"), ACCOUNTS = await testDb("accounts"), L = LIBRARY;
 const env = { LIBRARY, ACCOUNTS };
+
+if(process.argv.includes("--phase1-only")){await phase1Cases();process.exit(failures?1:0);}
 
 console.log("the fair table");
 {
@@ -140,7 +144,7 @@ console.log("settling, in shadow");
 
 console.log("the daemon");
 {
-  const { run } = await import("./factoryd.mjs");
+  const { run } = await import(daemonModule);
   process.env.DAEMON_COMMIT = "c0ffee";
   const prior=await L.get("SELECT daemon_at,daemon_commit FROM state_factory_snapshot WHERE id=1");
   const code = await run({ once: true, opened: { env, close: async () => {} }, servedNow: async () => ({ engine: "e1", release: "r1" }), target: null });
@@ -154,7 +158,7 @@ console.log("the daemon");
 
 console.log("the work signal");
 {
-  const { run, SIGNAL_KEY, SIGNAL_CACHE } = await import("./factoryd.mjs");
+  const { run, SIGNAL_KEY, SIGNAL_CACHE } = await import(daemonModule);
   const puts = [];
   const target = { endpoint: "https://acct.r2.cloudflarestorage.com", bucket: "wfsim-public", accessKey: "k", secretKey: "s" };
   const go = () => run({ once: true, opened: { env, close: async () => {} }, servedNow: async () => ({ engine: "e1", release: "r1" }),
@@ -177,8 +181,8 @@ console.log("the work signal");
     o.key === SIGNAL_KEY && SIGNAL_KEY === "work.json" && o.cacheControl === "public, max-age=5" && SIGNAL_CACHE === o.cacheControl && o.contentType === "application/json", JSON.stringify(o));
   const { PROTOCOL, PROTOCOLS_SERVED } = await import("../worker/verify.js");
   const snap = await L.get("SELECT * FROM state_factory_snapshot WHERE id = 1");
-  check("its fields are the snapshot's counts, the served engine and protocols, and the dials in force",
-    body.v === 1 && body.at === snap.at && body.open === 1 && body.urgent === 1 && body.computing === Number(snap.computing)
+  check("its independent sample retains the live counts, served engine, protocols and dials",
+    body.v === 1 && Number.isFinite(Date.parse(body.at)) && body.at !== "old-statistics" && body.open === 1 && body.urgent === 1 && body.computing === Number(snap.computing)
     && body.engine === "e1" && body.release === "r1" && body.protocol === PROTOCOL && body.protocols.length === PROTOCOLS_SERVED.size
     && body.poll_ms === DIAL_DEFAULTS.poll_ms && body.jitter_ms === DIAL_DEFAULTS.jitter_ms
     && body.urgent_jitter_ms === DIAL_DEFAULTS.urgent_jitter_ms && body.mode === "signal"
@@ -196,6 +200,120 @@ console.log("the work signal");
   await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id IN ('o1', 'u1')");
   const none = await workWaiting(L);
   check("…and none when nothing may be taken", none.open === false && none.urgent === false, JSON.stringify(none));
+}
+
+await phase1Cases();
+
+async function phase1Cases(){
+  const {run,SIGNAL_KEY}=await import(daemonModule);
+  const {pipelineCommand}=await import('./task_pipeline.mjs');
+  const {DEMAND_KEY,TALLY_KEY}=await import('../worker/contribution.js');
+  const db=await testDb('library'),env={LIBRARY:db};
+  const wrap=(before)=>({...db,prepare(sql){
+    const stmt=s=>({...s,bind(...args){return stmt(s.bind(...args));},
+      first:async()=>{await before(sql);return s.first();},all:async()=>{await before(sql);return s.all();},run:async()=>{await before(sql);return s.run();}});
+    return stmt(db.prepare(sql));
+  }});
+  try{
+    await db.run(`INSERT INTO state_factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit)
+      VALUES(1,'old-statistics','e1',7,2,3,4,5,6,'1970-01-01T00:00:00.000Z','')`);
+    await pipelineCommand(env,['pause','statistics']);
+    const before=await db.get('SELECT * FROM state_factory_snapshot');
+    const seen=[],puts=[];
+    const guarded=wrap(async sql=>{seen.push(sql);if(sql.includes('state_board_effective_pending_work'))throw Error('paused full count executed');});
+    forgetDials();
+    const began=Date.now();
+    const code=await run({once:true,opened:{env:{LIBRARY:guarded},signalEnv:env,backgroundEnv:{LIBRARY:guarded},close:async()=>{}},
+      servedNow:async()=>({engine:'e1',release:'r1'}),target:{bucket:'isolated'},put:async(_,object)=>puts.push(object)});
+    const signal=puts.find(o=>o.key===SIGNAL_KEY);
+    check('ordinary --once honors statistics pause before heavy reads and publishes a real fresh signal',code===0&&
+      !seen.some(sql=>sql.includes('state_board_effective_pending_work'))&&signal&&Date.parse(JSON.parse(signal.body).at)>=began&&Date.parse(JSON.parse(signal.body).at)<=Date.now());
+    check('paused statistics preserve the old full snapshot and demand object while tally still publishes',
+      JSON.stringify(before)===JSON.stringify(await db.get('SELECT * FROM state_factory_snapshot'))&&!puts.some(o=>o.key===DEMAND_KEY)&&puts.some(o=>o.key===TALLY_KEY));
+    check('paused --once still executes fair, shadow, maintenance and all four required consumers',
+      seen.some(sql=>sql.includes('state_compute_fair_shares'))&&seen.some(sql=>sql.includes("kind = 'settle_shadow'"))&&
+      seen.some(sql=>sql.includes('factory_forget_codes'))&&seen.some(sql=>sql.includes('factory_forget_past'))&&seen.some(sql=>sql.includes('factory_moot_checks'))&&
+      seen.some(sql=>sql.includes('build_admission_claim'))&&seen.some(sql=>sql.includes('UPDATE state_pending_verifications'))&&
+      seen.some(sql=>sql.includes('SELECT * FROM relation_task_consumers'))&&seen.some(sql=>sql.includes('a.credit_work AS work')),JSON.stringify(seen));
+    const broken=wrap(async sql=>{if(sql.includes('factory_forget_codes'))throw Error('required maintenance failed');});
+    check('a required non-statistics failure still rejects the paused --once preflight',await run({once:true,
+      opened:{env:{LIBRARY:broken},signalEnv:env,backgroundEnv:{LIBRARY:broken},close:async()=>{}},servedNow:async()=>({engine:'e1'}),target:null})===1);
+    await pipelineCommand(env,['resume','statistics']);
+    let release;const started=new Promise(resolve=>{release=resolve;});let finish;
+    const slow=wrap(async sql=>{if(sql.startsWith('WITH a AS')){release();await new Promise(resolve=>{finish=resolve;});}});
+    const late=snapshotTick({LIBRARY:slow},{engine:'e1'},now,{allowed:async()=>!(await pipelineCommand(env,['status','statistics'])).paused});
+    await started;await pipelineCommand(env,['pause','statistics']);finish();
+    check('a pause observed during counts prevents the late snapshot write',await late===false&&JSON.stringify(before)===JSON.stringify(await db.get('SELECT * FROM state_factory_snapshot')));
+    const pure=await testDb('library');
+    try{const sample=await signalTick({LIBRARY:pure},{engine:'e1'},now);
+      check('a first fast sample invents neither a full snapshot nor a heartbeat',sample.open===0&&!(await pure.get('SELECT 1 FROM state_factory_snapshot')));
+    }finally{await pure.close();}
+  }finally{forgetDials();await db.close();}
+console.log("independent signal sampling");
+for(const stopMode of ['lost','stop']){
+  const {run,SIGNAL_KEY}=await import(daemonModule);
+  const {DEMAND_KEY}=await import('../worker/contribution.js');
+  const db=await testDb('library'),defer=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
+  const started=defer(),releaseSlow=defer(),firstPut=defer(),sampleHeld=defer(),releaseSample=defer(),listening=defer();
+  let blocked=false,samples=0,fastDials=0,pulses=0,lost,closed=false;
+  const puts=[];
+  const wrap=(base,before)=>({...base,prepare(sql){
+    const wrapStatement=stmt=>({...stmt,bind(...args){return wrapStatement(stmt.bind(...args));},
+      first:async()=>{await before(sql);return stmt.first();},all:async()=>{await before(sql);return stmt.all();},
+      run:async()=>{await before(sql);return stmt.run();}});
+    return wrapStatement(base.prepare(sql));
+  }});
+  const slow=wrap(db,async sql=>{
+    if(sql.startsWith('WITH a AS')){blocked=true;started.resolve();await releaseSlow.promise;throw Error('full count failed');}
+    if(blocked)await releaseSlow.promise;
+  });
+  const fast=wrap(db,async sql=>{
+    if(sql==='SELECT name, value FROM state_factory_parameters')fastDials++;
+    if(sql.startsWith('WITH a AS')){
+      samples++;await started.promise;
+      if(samples===2){sampleHeld.resolve();await releaseSample.promise;}
+      if(sql.includes('state_board_effective_pending_work')||sql.includes('state_pending_verifications'))throw Error('signal read includes full counts');
+    }
+  });
+  await db.run(`INSERT INTO state_factory_snapshot(id,at,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit)
+    VALUES(1,'old-statistics',7,2,3,4,5,6,'1970-01-01T00:00:00.000Z','')`);
+  const before=await db.get('SELECT * FROM state_factory_snapshot');
+  const timeout=setTimeout,clear=clearTimeout;
+  const wait=async(promise,label)=>{let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=timeout(()=>reject(Error(label)),5000);})]);}finally{clear(timer);}};
+  forgetDials();mock.timers.enable({apis:['setTimeout']});
+  let running;
+  try{
+    running=run({opened:{env:{LIBRARY:slow},signalEnv:{LIBRARY:fast},backgroundEnv:{LIBRARY:slow},
+      stageEnvs:Object.fromEntries(['admission','verification','delivery','contribution'].map(name=>[name,{LIBRARY:slow}])),
+      claim:async fn=>{lost=fn;return {pulse:async()=>{pulses++;return true;},release:async()=>{}};},
+      listen:async()=>listening.resolve(),close:async()=>{closed=true;}},
+      servedNow:async()=>({engine:null,release:'signal-release'}),target:{bucket:'isolated-fixture'},
+      put:async(_,object)=>{puts.push(object);if(object.key===SIGNAL_KEY)firstPut.resolve();},
+      readEdge:async()=>({at:iso(Date.now()),cache:'HIT'})});
+    await wait(listening.promise,'daemon clocks did not start');mock.timers.tick(0);await wait(firstPut.promise,'blocked full counts prevented the independent work signal');
+    check('blocked full counts do not block a real fresh work signal or owner pulse',
+      blocked&&pulses>0&&puts.filter(p=>p.key===SIGNAL_KEY).length===1&&
+      Number.isFinite(Date.parse(JSON.parse(puts[0].body).at)));
+    check('a fast sample never restamps old goal counts or the complete snapshot',
+      JSON.stringify(await db.get('SELECT * FROM state_factory_snapshot'))===JSON.stringify(before)&&
+      !puts.some(p=>p.key===DEMAND_KEY));
+    await seedComputeWork(db,{id:'signal-wave',verb:'simulate',state:'open',request:'{}',opened_at:iso(now),due_at:iso(now)});
+    forgetDials();const staleDials=dialsOf({LIBRARY:slow});
+    mock.timers.tick(2000);await wait(sampleHeld.promise,'blocked main-pool dials prevented the wave sample');
+    check('a wave reads expired dials on the reserved fast pool while the main pool is blocked',fastDials>=2);
+    mock.timers.tick(10000);await new Promise(resolve=>setImmediate(resolve));
+    check('timer and wave share one in-flight sample and one writer',samples===2&&puts.filter(p=>p.key===SIGNAL_KEY).length===1);
+    const heldPulses=pulses;if(stopMode==='lost')lost();else process.emit('SIGTERM');releaseSample.resolve();releaseSlow.resolve();await staleDials;
+    check(stopMode+' drains the sample without publishing it or pulsing again',(await running)===(stopMode==='lost'?1:0)&&closed&&
+      puts.filter(p=>p.key===SIGNAL_KEY).length===1&&pulses===heldPulses);
+    check('failed full counts remain visibly stale after the fast signal succeeds',
+      (await db.get('SELECT at FROM state_factory_snapshot')).at==='old-statistics');
+  }finally{
+    releaseSample.resolve();releaseSlow.resolve();if(running&&!closed)process.emit('SIGTERM');
+    if(running)await running;mock.timers.reset();forgetDials();await db.close();
+  }
+}
+
 }
 
 console.log("signing for R2");

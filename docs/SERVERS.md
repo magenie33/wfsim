@@ -163,6 +163,18 @@ connection queue. Losing ownership stops the pulse. A heartbeat updates only
 an existing snapshot row; it never invents statistics. Successful statistics
 alone update the snapshot's `at` and counts, preserving any newer heartbeat.
 A first snapshot without a daemon owner carries an expired heartbeat.
+The work signal has its own connection and sampling clock; complete snapshot
+and demand failures cannot block it or refresh its statistics. The primary and
+signal pools each have one connection, preserving the combined connection budget.
+`node scripts/task_pipeline.mjs status statistics` reads the statistics control
+and last complete snapshot time without counting queues. `pause statistics`
+skips complete snapshot and demand reads, including ordinary `--once`, while
+all other required ticks continue. `resume statistics` enables those reads on
+their existing ten-second snapshot and minute demand clocks.
+Controls use the configured library owner connection; the daemon only reads
+them. A pause preserves old counts and timestamps and remains visible in status
+and daemon logs. Apply the daemon's cancellation-ledger SELECT grant before
+using its effective-open work signal.
 The fair table and settlement use separate pools from background maintenance. Background jobs run one at a time and use
 per-statement and idle-transaction timeouts. The home tally and demand picture
 share one rolling score read for a minute; scores remain

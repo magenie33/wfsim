@@ -1183,8 +1183,8 @@ judge by different rules, and it ships from the same commit as the worker
 the copy in). It writes:
 
 - `factory_snapshot`, every ten seconds: what is open and waited on, who is
-  asking and computing (the worker's own definitions), the queue, and its
-  heartbeat with the commit it runs;
+  asking and computing (the worker's own definitions), and the queue. The
+  reserved owner session pulses its heartbeat and commit independently;
 - `fair_shares`, every minute: the fair-share table for the served engine;
 - an official check of another engine undone, every minute
   (`factory_moot_checks`, §"A release carries a result");
@@ -1216,9 +1216,10 @@ The grants are defined in `deploy/factoryd_grants.sql` and
 `deploy/factoryd_accounts_grants.sql`, applied by
 `python scripts/ship_factoryd.py --bootstrap` (docs/SERVERS.md).
 
-**THE WORK SIGNAL** is the snapshot published: after every snapshot, and at
-once when open or waited-on work appears from none (a two-second probe), the
-daemon writes `work.json` to the public bucket, which `cdn.wfsim.app` serves
+**THE WORK SIGNAL** samples effective open work independently every ten seconds,
+and at once when open or waited-on work appears from none (a two-second probe).
+Both paths share one sample and writer. The daemon writes `work.json` to the
+public bucket, which `cdn.wfsim.app` serves
 with `max-age=5` — written straight to R2's S3 API (`scripts/sigv4.mjs`), no
 worker call. An idle computer reads it instead of asking:
 
@@ -1226,6 +1227,15 @@ worker call. An idle computer reads it instead of asking:
 { v: 1, at, open, urgent, engine, release, protocol, protocols, computing,
   poll_ms, jitter_ms, urgent_jitter_ms, mode }
 ```
+
+The signal uses its own sampling time and reserved connection, including dial
+reads. It does not write the complete snapshot or refresh demand counts.
+`statistics` in the existing task-pipeline controls pauses both complete
+snapshot reads and demand publication; the work signal, heartbeat, fairness,
+verification, delivery, contribution and maintenance continue. A paused
+`--once` still runs every other required tick and fails if any fails. Resuming
+statistics restores their existing sampling paths; a pause does not refresh
+old counts or their timestamps.
 
 `poll_ms`, `jitter_ms` and `urgent_jitter_ms` are dials (§"The dials"), and so
 is `mode`: `signal_mode` 1 makes it `ask`, sending every computer back to the
