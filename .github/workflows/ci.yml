@@ -262,6 +262,15 @@ jobs:
             accuracy) cargo test -p wfsim-webapi --lib optimize::quick_descent_tests:: -- --nocapture ;;
             *) echo "unknown Rust suite: $SUITE" >&2; exit 2 ;;
           esac
+      - name: Stance search agrees with a settled exhaustive reference
+        if: matrix.suite == 'accuracy'
+        run: node scripts/check_stance_truth.mjs
+      - name: Retain stance truth evidence
+        if: always() && matrix.suite == 'accuracy'
+        uses: actions/upload-artifact@v4
+        with:
+          name: stance-truth-${{ github.sha }}
+          path: target/stance-truth/
 
   # NATIVE AND WASM COUNT THE SAME WORK (docs/WASM.md §"Gas"): both built from
   # this commit, a fixed set of rows fought by each must give the same gas,
