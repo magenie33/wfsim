@@ -117,8 +117,9 @@ function fissureStats(r, open) {
   if (!seen.length || !worldNames.window_ms) return null;
   const recent = seen.reduce((s, c) => s + c.recent, 0);
   const last = Math.max(...seen.map((c) => c.last_ms));
-  const often = recent ? trF("About every {every} in the last 7 days", { every: utilitySpan(worldNames.window_ms / recent) })
-    : tr("None in the last 7 days");
+  const days = worldNames.window_ms / 86400_000;
+  const often = recent ? trF("About every {every} in the last {days} days", { every: utilitySpan(worldNames.window_ms / recent), days })
+    : trF("None in the last {days} days", { days });
   return open || !last ? often : `${often} · ${trF("last {ago}", { ago: utilityAgo(last) })}`;
 }
 function fissureBuild(box) {

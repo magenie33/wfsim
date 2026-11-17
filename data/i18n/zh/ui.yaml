@@ -862,8 +862,8 @@ ui:
   "Relic era": 纪元
   "Planet": 星球
   "Mission": 任务
-  "About every {every} in the last 7 days": "近 7 天平均每 {every}一次"
-  "None in the last 7 days": 近 7 天没有出现
+  "About every {every} in the last {days} days": "近 {days} 天平均每 {every}一次"
+  "None in the last {days} days": "近 {days} 天没有出现"
   "last {ago}": "上次 {ago}"
   "{n} d ago": "{n} 天前"
   "Reminder saved": 提醒已保存

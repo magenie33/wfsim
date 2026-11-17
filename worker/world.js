@@ -16,9 +16,8 @@ const KEY = "world/items.json";
 /// The relay runs each minute; a reader is never more than this behind it.
 const FRESH_S = 30;
 const MAX_BYTES = 4 * 1024 * 1024;
-/// HOW OFTEN A FISSURE COMES is counted over this, the last week: long enough
-/// that each planet's 7-11 a day settle, short enough to follow DE's changes.
-const SEEN_WINDOW_MS = 7 * 24 * 3600 * 1000;
+/// Recent fissure frequency uses a rolling four-week window.
+const SEEN_WINDOW_MS = 28 * 24 * 3600 * 1000;
 const OPEN = { "access-control-allow-origin": "*" };
 
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {

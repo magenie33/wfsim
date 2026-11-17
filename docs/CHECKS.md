@@ -661,8 +661,9 @@ success. The website's name and notification helper is exercised too.
 The fissure log (`worker/world.js`) on PGlite, no network: a relayed fissure
 carries its node's planet (a Void Storm its Proxima's), is logged once however
 often it is relayed, and `/api/world/names` hands back each combination with
-how many opened inside the window — an older one on the same node is not
-counted — when the last did, and the nodes and planets they name.
+how many opened inside the rolling four-week window — one two weeks ago and
+one just inside the boundary count, while older ones on the same node do not —
+when the last did, and the nodes and planets they name.
 
 ## `check_notices`
 
