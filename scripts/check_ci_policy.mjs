@@ -12,6 +12,7 @@ import { releaseArtifactsAvailable, trustedRun, validProof, verifiedBase } from 
 import { COMPANION_JOBS, companionJobs } from './full_work.mjs';
 import { CLIENT_INPUTS, clientSource } from './ci_client_inputs.mjs';
 import { PARTS } from './gen_worker_parts.mjs';
+import { NATIVE_NON_SEARCH_INPUTS } from './ci_native_inputs.mjs';
 
 for (const path of ['engine/src/fight.rs', 'optimizer/src/search.rs', 'webapi/src/optimize.rs',
   'data/weapons/braton.yaml', 'Cargo.lock', '.github/workflows/ci.yml', 'scripts/ci_policy.mjs',
@@ -19,6 +20,20 @@ for (const path of ['engine/src/fight.rs', 'optimizer/src/search.rs', 'webapi/sr
   assert.equal(classify([path]).scope, 'full', path);
 }
 assert.deepEqual(classify([]).jobs, PRODUCT_JOBS);
+assert.equal(NATIVE_NON_SEARCH_INPUTS.length, 75, 'the reviewed Native declaration is complete');
+assert.equal(new Set(NATIVE_NON_SEARCH_INPUTS).size, 75);
+assert.equal(NATIVE_NON_SEARCH_INPUTS.filter(p => p.startsWith('scripts/')).length, 21);
+assert.equal(NATIVE_NON_SEARCH_INPUTS.filter(p => p.startsWith('tests/fixtures/')).length, 18);
+assert.equal(NATIVE_NON_SEARCH_INPUTS.filter(p => p.startsWith('docs/receipts/')).length, 36);
+for (const path of NATIVE_NON_SEARCH_INPUTS) {
+  assert.deepEqual(classify([path]).jobs, PRODUCT_JOBS, path + ' retains every ordinary correctness job');
+  assert.equal(classify([path]).deep, false, path + ' cannot alter optimizer enumeration, scheduling or scoring policy');
+}
+for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs',
+  'scripts/import_native_unknown.py', 'tests/fixtures/client/native_unknown.json', 'docs/receipts/native_unknown.json'])
+  assert.equal(classify([...NATIVE_NON_SEARCH_INPUTS, extra]).deep, true, extra + ' requires deep coverage');
+assert.equal(classify(NATIVE_NON_SEARCH_INPUTS, true).deep, true);
+assert.equal(classify(NATIVE_NON_SEARCH_INPUTS, false, false).deep, true);
 const inventoryControlInputs = ['scripts/inventory_control.mjs', 'scripts/inventory_rebuild.mjs',
   'scripts/inventory_pipeline.mjs', 'scripts/inventory_relational_pipeline.mjs'];
 for (const path of inventoryControlInputs) {

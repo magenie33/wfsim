@@ -10,6 +10,7 @@ import { COMPANION_JOBS, companionJobs } from './full_work.mjs';
 import { FACTORY_CHECKS, factoryMatrix } from './factory_shards.mjs';
 import { CLIENT_INPUTS } from './ci_client_inputs.mjs';
 import { PARTS } from './gen_worker_parts.mjs';
+import { NATIVE_NON_SEARCH_INPUTS } from './ci_native_inputs.mjs';
 
 export const BROWSER_JOBS = ['site', 'checks', 'services', 'pipeline', 'page', 'parity', 'page-rest', 'mcp', 'bot'];
 export const FRONTEND_JOBS = BROWSER_JOBS.filter(job => !['services', 'pipeline'].includes(job));
@@ -23,12 +24,13 @@ const CI_WIRING = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
   '.github/actions/site-tools/install.sh', 'scripts/check_site_setup.mjs',
   'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs', 'scripts/check_ci_policy.mjs',
   'scripts/ci_client_inputs.mjs', 'scripts/gen_worker_parts.mjs',
+  'scripts/ci_native_inputs.mjs',
   'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs', 'scripts/check_ci_partitions.mjs',
   'scripts/ci_fast.mjs', 'scripts/check_ci_fast.mjs', 'scripts/full_work.mjs',
   'scripts/check_full_work.mjs', 'scripts/check_edge_runtime.mjs', 'scripts/ci_metrics.mjs',
   'scripts/factory_shards.mjs', 'scripts/check_factory_shards.mjs',
   'scripts/release_readiness.py', 'scripts/check_release_readiness.py'];
-const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh', 'scripts/cancel_queue.sh',
+const NON_SEARCH_TOOLS = [...NATIVE_NON_SEARCH_INPUTS, 'scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh', 'scripts/cancel_queue.sh',
   'scripts/check_time_storage.mjs',
   'scripts/import_kitgun_status.py', 'tests/fixtures/client/kitgun-status-2026-10-28.json',
   'tests/golden/M132-vermisplicer-secondary-status.json', 'docs/measurements/M132-vermisplicer-secondary-status.md',
