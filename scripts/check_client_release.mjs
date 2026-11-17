@@ -81,6 +81,13 @@ try {
   assert(publish.includes('UPDATE_KEY: ${{ secrets.UPDATE_KEY }}'));
   assert(publish.indexOf('node scripts/sign_client_release.mjs') < publish.indexOf('gh release create'));
   ok('CLI signing reuses the existing protected key before publication');
+  assert(publish.includes('id: engine-proof'), 'retain the qualified exact-source engine run');
+  assert(publish.includes('name: site-built'), 'read the qualified site-built artifact');
+  assert(publish.includes('run-id: ${{ steps.engine-proof.outputs.run }}'), 'download the exact qualified run');
+  assert(publish.includes("os.environ['GITHUB_SHA'].startswith(commit)"), 'verify the engine artifact source before using it');
+  assert(publish.indexOf('Use the engine checked on this exact source') < publish.indexOf('node scripts/check_client_live_engine.mjs'));
+  assert(publish.indexOf('node scripts/check_client_live_engine.mjs') < publish.indexOf('node scripts/sign_client_release.mjs'));
+  ok('signed host publication keeps the qualified exact-source engine artifact and native API check');
   console.log(`CLI release assets: ${checks} checks passed; no upload or native rebuild.`);
 } finally {
   rmSync(temporary, { recursive: true, force: true });

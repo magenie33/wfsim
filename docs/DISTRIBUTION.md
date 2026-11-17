@@ -62,6 +62,12 @@ Checks run at startup and hourly with jitter, even at zero CPU budget. A
 stopped client does not restart for an update. A stable host ignores prerelease
 updates. Network or verification failures leave the current host running.
 
+The installed bootstrap supervisor keeps its own polling, verification and
+rollback code. Worker updates do not replace that supervisor or the persistent
+launcher. Bootstrap-only changes need an explicit installation and restart;
+an existing 0.1.0 host needs this initial manual transition. Publishing a host
+does not start stopped clients, resume paused services or activate board work.
+
 ### CLI host versions
 
 CLI host versions follow [SemVer](https://semver.org/). Before `1.0.0`,
