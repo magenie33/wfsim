@@ -214,6 +214,37 @@ try{
  assert.equal((await sql.unsafe('SELECT enabled FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2',[weapon,unknown]))[0].enabled,false);
  for(let i=0;i<15;i++)assert.notEqual((await flow.step()).status,'baseline_error');
  await flow.close();flow=null;
+ // A real cold-capture statement timeout must retain its claim without five-second rescans.
+ const timeoutRuler=native.contract.rulers.find(row=>![ruler,other,unknown].includes(row.id));assert(timeoutRuler);
+ await sql.unsafe(`ALTER TABLE entity_weapon_builds RENAME TO timeout_capture_builds;
+  CREATE FUNCTION capture_timeout_delay(text) RETURNS boolean LANGUAGE plpgsql VOLATILE AS $$
+   BEGIN IF current_setting('wfsim.capture_timeout',true)='1' THEN PERFORM pg_sleep(0.1);END IF;RETURN true;END $$;
+  CREATE VIEW entity_weapon_builds AS SELECT * FROM timeout_capture_builds WHERE capture_timeout_delay(id)`);
+ await sql.unsafe('GRANT SELECT ON entity_weapon_builds TO '+role);
+ let timeoutCaptures=0;const timeoutCodes=[];
+ flowSql={...reader,begin:(...args)=>args[0]!=='isolation level repeatable read read only'?reader.begin(...args):reader.begin(args[0],async tx=>{
+  let timeoutCapture=false;
+  return args[1]({...tx,unsafe:async(text,values=[])=>{
+   if(text.startsWith('DECLARE board_rank_baseline ')&&values[1]===timeoutRuler.id){
+    timeoutCapture=true;timeoutCaptures++;await tx.unsafe("SET LOCAL wfsim.capture_timeout='1'");
+    await tx.unsafe("SET LOCAL statement_timeout='20ms'");
+   }
+   try{return await tx.unsafe(text,values);}catch(error){if(timeoutCapture&&error.code==='57014')timeoutCodes.push(error.code);throw error;}
+  }});
+ })};
+ await sql.unsafe('INSERT INTO state_board_read_partitions VALUES($1,$2,$3,true,true,NULL)',[weapon,timeoutRuler.id,timeoutRuler.scene]);
+ flow=await open();await until(row=>row.status==='baseline_error','actual capture statement timeout');
+ assert.deepEqual(timeoutCodes,['57014'],'the actual PostgreSQL capture statement times out');
+ const timeoutKey=JSON.stringify([weapon,timeoutRuler.id]);
+ const [timedOut]=await sql.unsafe("SELECT * FROM state_board_input_mailbox WHERE scope='partition' AND key=$1",[timeoutKey]);
+ assert.equal(timedOut.available_at,null,'a cold capture SQL timeout blocks its mailbox claim');
+ assert.equal(timedOut.lease_token,null);assert(BigInt(timedOut.applied_version)<BigInt(timedOut.version));
+ assert.match(timedOut.last_error,/baseline capture exceeded its SQL statement budget/);
+ assert(timedOut.body,'the timed-out partition input is retained');
+ await pause(5100);
+ for(let i=0;i<15;i++)assert.notEqual((await flow.step()).status,'capturing');
+ assert.equal(timeoutCaptures,1,'a blocked cold capture cannot restart after the ordinary retry delay');
+ await flow.close();flow=null;
  await sql.unsafe("UPDATE state_board_rank_partitions SET native='changed-native'");
  await assert.rejects(open(),error=>error instanceof BoardRankQualificationError);
  console.log('ok — actual Native/PG complete flow, resumable baseline, late facts/deleted reviews, exact immutable pages, source deletion, epoch guards and durable missing-cut refusal');

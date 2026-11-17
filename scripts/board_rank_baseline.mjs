@@ -51,7 +51,11 @@ export async function captureRankBaseline(sql,{weapon,ruler,source,native,work,s
   });
   await file.sync();await file.close();await chmod(path,0o440);syncRankDirectory(directory);syncRankDirectory(work);
   return {...metadata,path,bytes,total,facts,sha256:checksum.digest('hex')};
- }catch(error){await file.close();throw error;}
+ }catch(error){
+  await file.close();
+  if(error.code==='57014')throw new BoardRankQualificationError('baseline capture exceeded its SQL statement budget: '+error.message,{cause:error});
+  throw error;
+ }
 }
 
 export async function beginRankBaseline(tx,manifest) {

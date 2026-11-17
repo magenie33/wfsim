@@ -20,7 +20,9 @@ try{
   CREATE INDEX ON board_facts(identity,ruler);
   CREATE TABLE state_board_input_mailbox(scope text,key text,version bigint,PRIMARY KEY(scope,key));
   CREATE FUNCTION candidate_delay(text) RETURNS boolean LANGUAGE plpgsql VOLATILE AS $$
-   BEGIN IF $1 LIKE 'empty-%' THEN PERFORM pg_sleep(0.001);END IF;RETURN true;END $$;
+   BEGIN IF $1 LIKE 'empty-%' THEN
+    IF split_part($1,'-',2)::integer%64=0 THEN PERFORM pg_sleep(0.1);END IF;
+   END IF;RETURN true;END $$;
   CREATE VIEW entity_weapon_builds AS SELECT * FROM capture_builds WHERE candidate_delay(id)`);
  await sql.unsafe('INSERT INTO state_board_input_source VALUES(1,$1)',[source]);
  await sql.unsafe(`INSERT INTO capture_builds VALUES('first',$1,'2026-11-17T00:00:00Z','{"weapon":"capture_fixture"}')`,[weapon]);

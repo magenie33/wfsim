@@ -2983,11 +2983,15 @@ identity changes, deletion/recreation, no queue dependency and safe reinstall.
 `check_board_capture.mjs --break-capture` removes the actual build trigger and
 must fail the source handoff assertion.
 
-## `check_board_rank_index`, `check_board_rank_publication`, `check_board_rank_flow`, `check_board_rank_schema`
+## `check_board_rank_capture`, `check_board_rank_index`, `check_board_rank_publication`, `check_board_rank_flow`, `check_board_rank_schema`
 
 These checks require `WFSIM_BOARD_RANK_TEST_URL` on localhost and the built
 `wfsim-board` executable. Each owns an isolated PostgreSQL schema and removes
 only its own temporary files. CI supplies PostgreSQL 18.
+
+The capture check bounds each candidate fetch across empty measurement gaps.
+A real cold-capture statement timeout blocks its mailbox claim and preserves
+the input until explicit recovery, without repeated complete scans.
 
 The index check compares complete rows and leaders with the unchanged full
 Native projector, including entry floors, ties, ranked mods and clocks. A
