@@ -3145,7 +3145,7 @@ bounded retries and same-round rearming, and settles old requests after a fresh
 weapon/scene/index reload. Removing publication retries or cache generations must
 fail those cases. Only
 review transport is stubbed; engine parsing and published row matching are real.
-It also runs `check_board_page_reader.mjs`: sixty-four delayed pages must finish
+The community CI job runs `check_board_page_reader.mjs` directly: sixty-four delayed pages must finish
 in revision order beyond a single page deadline, with four requests shared
 across partitions. Revision/count changes, cursor gaps, missing rows, page and
 whole-read deadlines, and weapon cancellation retain the prior complete view.

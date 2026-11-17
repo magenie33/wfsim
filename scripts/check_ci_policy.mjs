@@ -135,6 +135,16 @@ for (const path of ['scripts/check_storage.mjs', 'scripts/check_simulation_conte
   assert.deepEqual(plan.jobs, FRONTEND_JOBS, path + ' has a permanent browser CI owner');
   assert.equal(plan.deep, false, path + ' does not change search enumeration or scoring');
 }
+const boardReaderCheck = 'scripts/check_board_page_reader.mjs';
+assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get(boardReaderCheck) || []],
+  ['page'], 'the complete page reader has a direct browser CI owner');
+assert.deepEqual(classify([boardReaderCheck]).jobs, FRONTEND_JOBS);
+assert.equal(classify([boardReaderCheck]).deep, false);
+for (const extra of ['optimizer/src/search.rs', 'scripts/check_board_page_reader_unknown.mjs']) {
+  assert.equal(classify([boardReaderCheck, extra]).deep, true, 'browser ownership cannot hide ' + extra);
+}
+assert.equal(classify([boardReaderCheck], true).deep, true);
+assert.equal(classify([boardReaderCheck], false, false).deep, true);
 for (const path of PARTS.flatMap(part => [part.part].flat())) {
   assert.deepEqual(classify([path]).jobs, BROWSER_JOBS, path + ' feeds generated worker or headless code');
 }
