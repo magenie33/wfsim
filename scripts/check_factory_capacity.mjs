@@ -161,10 +161,11 @@ try {
 console.log("ok: the actual Postgres driver starts singleton ownership from a cold pool");
 
 const pools = [];
-let backgroundRelease;
+let backgroundRelease,mainRelease;
 const opened = await openEnv({ PG_URL: "postgres://local/wfsim", PG_ACCOUNTS_URL: "postgres://local/accounts" }, (_, options) => {
   pools.push(options);
-  return { unsafe: async () => {
+  return { unsafe: async (query) => {
+    if(query==='SELECT blocked')await new Promise(resolve=>{mainRelease=resolve;});
     if (options.connection.application_name.endsWith("background")) await new Promise((r) => { backgroundRelease = r; });
     return [];
   }, end: async () => {} };
@@ -172,10 +173,16 @@ const opened = await openEnv({ PG_URL: "postgres://local/wfsim", PG_ACCOUNTS_URL
 const waiting = opened.backgroundEnv.LIBRARY.prepare("SELECT 1").all();
 await Promise.resolve();
 await opened.env.LIBRARY.prepare("SELECT 1").all();
-assert.deepEqual(pools.map((p) => p.max), [2, 2, 1, 1, 1, 1, 1]);
-assert.deepEqual(pools.slice(3).map(p=>p.connection.application_name),
+assert.deepEqual(pools.map((p) => p.max), [1, 2, 1, 1, 1, 1, 1, 1]);
+assert.equal(pools.reduce((n,p)=>n+p.max,0),9);
+assert.equal(pools[2].connection.statement_timeout,30000);
+assert.deepEqual(pools.slice(4).map(p=>p.connection.application_name),
   ["wfsim-factoryd-admission","wfsim-factoryd-verification","wfsim-factoryd-delivery","wfsim-factoryd-contribution"]);
-backgroundRelease(); await waiting; await opened.close();
+let mainDone=false;
+const mainWaiting=opened.env.LIBRARY.prepare('SELECT blocked').all().then(()=>{mainDone=true;});
+await Promise.resolve();await opened.signalEnv.LIBRARY.prepare('SELECT 1').all();
+assert.equal(mainDone,false,'the fast signal connection cannot queue behind the blocked primary connection');
+mainRelease();backgroundRelease();await mainWaiting; await waiting; await opened.close();
 console.log("ok: a blocked statistics pool does not consume the critical pool");
 
 const L = await testDb("library"), now = Date.now(), at = new Date(now).toISOString();

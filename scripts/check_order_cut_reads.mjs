@@ -222,6 +222,19 @@ export async function statisticsReadCases(db,{n=512,receiptFile=null}={}) {
     ('stats-new-0','stats-suffix','r','base');
     INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at)
       VALUES('refresh','stats-suffix|r|base|suffix','stats-1','live','${at}','${at}');`);
+  for(const [build,ruler,mode,refs]of [
+    ['stats-empty','r','',['stats-empty|r','stats-empty|r|','stats-empty|r||suffix']],
+    ['stats-short','','',['stats-short','stats-short|','stats-short||suffix']],
+    ['stats-unicode_%[]','汉_%[]','base',['stats-unicode_%[]|汉_%[]|base|z','stats-unicode_%[]|汉_%[]|base|a']],
+    ['stats-multiple','r','base',['stats-multiple|r|base','stats-multiple|r|base|suffix']],
+  ]){
+    await db.run("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES('stats-new-0',?,?,?)",build,ruler,mode);
+    for(const [i,ref]of refs.entries())await db.run("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES('refresh',?,?,'live',?,?)",ref,'stats-'+(i+1),at,at);
+  }
+  await db.run("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES('new_build','stats-multiple|r|base',?,'live',?,?)",'stats-'+(n+1),at,at);
+  await db.run("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES('new_build','stats-unicode_%[]|汉_%[]|base|a','absent-earlier','live',?,?)",at,at);
+  await db.exec(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at)
+    SELECT 'new_build','historical-ref-'||i,'absent-history-'||i,'live','${at}','${at}' FROM generate_series(1,${8*n})i;`);
   await db.exec('ANALYZE state_compute_scheduling;ANALYZE entity_compute_tasks;ANALYZE relation_task_consumers;ANALYZE state_board_pending_work;ANALYZE entity_compute_batches;');
   const cols='id,verb,task_id,state,waits,lease,lease_until,leased_to,leased_at,producer,initiator';
   const equal=async(label,statement=STATISTICS_WORK)=>{
@@ -278,10 +291,12 @@ export async function statisticsReadCases(db,{n=512,receiptFile=null}={}) {
     observations[label]={metrics:measured(plan),plan};
   }
   const visit=node=>{
-    if(node['Node Type']==='Append')assert(node['Actual Loops']<=1,'statistics must not repeat the complete active partition per consumer');
+    if(node['Node Type']==='Append'&&node['Actual Loops']>1)assert(node['Actual Rows']<=16,'statistics must not repeat the complete active partition per consumer');
     for(const child of node.Plans||[])visit(child);
   };
+  if(receiptFile)writeFileSync(receiptFile,JSON.stringify({n,complete_rows_equal:true,snapshot,orders:after.orders,observations},null,2)+'\n');
   visit(observations.current.plan.Plan);
+  assert.equal(observations.current.metrics.temp_blocks,0,'exact statistics must not spill historical consumer sets');
   const unsorted=metrics=>assert(metrics.sort_rows<=256,'statistics must not globally sort the complete live key set');
   assert.throws(()=>unsorted(observations.old.metrics),/must not globally sort/,'the actual legacy queue aggregate must fail the same work bound');
   unsorted(observations.current.metrics);

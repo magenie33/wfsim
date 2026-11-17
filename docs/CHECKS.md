@@ -1628,8 +1628,12 @@ Statistical reads match the complete canonical effective rows before, during
 and after cut activation, including NULL FIFO fields, task-only evidence,
 nonopen deliveries, pending provenance and current-task cancellations. Actual
 mutations must break these comparisons. The legacy pending aggregate fails the
-same bounded-sort check that the statistical semijoin passes; publication keeps
+same bounded-sort check that indexed statistical reads pass; publication keeps
 the original count sampling time and refreshes it when the cut epoch changes.
+The work signal samples separately from full statistics. Blocked counts and
+expired dials cannot block its reserved connection; timer and wave share one
+writer, and ownership loss or shutdown prevents a late publication. A fresh
+signal neither creates a full snapshot nor restamps failed queue counts.
 
 ## `check_factory_capacity`
 

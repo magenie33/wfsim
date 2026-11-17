@@ -1216,9 +1216,11 @@ The grants are defined in `deploy/factoryd_grants.sql` and
 `deploy/factoryd_accounts_grants.sql`, applied by
 `python scripts/ship_factoryd.py --bootstrap` (docs/SERVERS.md).
 
-**THE WORK SIGNAL** is the snapshot published: after every snapshot, and at
-once when open or waited-on work appears from none (a two-second probe), the
-daemon writes `work.json` to the public bucket, which `cdn.wfsim.app` serves
+**THE WORK SIGNAL** samples open, waited-on and computing work every ten seconds,
+and at once when work appears from none (a two-second probe). Its reserved
+connection shares the existing connection budget; full queue statistics cannot
+block its sample or dial reads. Timer and wave share one writer. The daemon
+writes `work.json` to the public bucket, which `cdn.wfsim.app` serves
 with `max-age=5` — written straight to R2's S3 API (`scripts/sigv4.mjs`), no
 worker call. An idle computer reads it instead of asking:
 
@@ -1226,6 +1228,10 @@ worker call. An idle computer reads it instead of asking:
 { v: 1, at, open, urgent, engine, release, protocol, protocols, computing,
   poll_ms, jitter_ms, urgent_jitter_ms, mode }
 ```
+
+The signal's `at` records its own sample. Full `factory_snapshot.at` and demand
+`counts_at` advance only after their complete statistical reads succeed; a fresh
+signal does not make old queue counts fresh.
 
 `poll_ms`, `jitter_ms` and `urgent_jitter_ms` are dials (§"The dials"), and so
 is `mode`: `signal_mode` 1 makes it `ask`, sending every computer back to the

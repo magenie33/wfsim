@@ -721,14 +721,12 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
                 FROM record_hourly_compute_totals WHERE hour >= ?3::text AND hour < ?2::text`)
       .bind(iso(now - PACE_HOURS * 3_600_000).slice(0, 13), iso(now).slice(0, 13), iso(now - 2 * PACE_HOURS * 3_600_000).slice(0, 13)),
     ...(counts ? [] : [
-      // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
-      // demands are read once and joined whole: looked up a queue row at a time,
-      // every row cost an index walk for the few that have one.
-      db.prepare(`WITH ${STATISTICS_WORK},d AS MATERIALIZED (SELECT ref FROM relation_task_consumers WHERE state = 'live' AND producer = 'new_build')
-                  SELECT CASE WHEN d.ref IS NOT NULL THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END AS k,
+      // Classification probes the exact ref, without hashing unrelated historical demands.
+      db.prepare(`WITH ${STATISTICS_WORK}
+                  SELECT CASE WHEN EXISTS(SELECT 1 FROM relation_task_consumers d WHERE d.state='live' AND d.producer='new_build'
+                    AND d.ref=q.build_id||'|'||q.ruler||'|'||q.mode OFFSET 0) THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END AS k,
                     ${DEMAND_SOURCE} AS source, COUNT(*) AS n
                   FROM stats_pending q JOIN entity_compute_batches b ON b.id = q.batch
-                  LEFT JOIN d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
                   GROUP BY k, source`),
       db.prepare(`WITH ${STATISTICS_WORK} SELECT verb, producer, ${DEMAND_SOURCE} AS source, COUNT(*) AS n,
                     COUNT(*) FILTER (WHERE leased_at IS NOT NULL OR lease IS NOT NULL) AS dispatched

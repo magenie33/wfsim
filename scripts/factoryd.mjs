@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import postgres from "./pg/node_modules/postgres/src/index.js";
 import { pgDb, postgresClient, POSTGRES_OPTIONS } from "../worker/db.js";
-import { snapshotTick, fairTick, readFair, compareFair, settleShadow, settleBatch, findingsTick, signalBody, workWaiting } from "../worker/settler.js";
+import { signalTick, snapshotTick, fairTick, readFair, compareFair, settleShadow, settleBatch, findingsTick, signalBody, workWaiting } from "../worker/settler.js";
 import { servedRelease, CLIENTS_PER_FACT, PROTOCOL, PROTOCOLS_SERVED } from "../worker/verify.js";
 import { dialsOf, forgetDials } from "../worker/dials.js";
 import { putObject } from "./sigv4.mjs";
@@ -60,19 +60,20 @@ const log = (...a) => console.log(new Date().toISOString(), ...a);
 export async function openEnv(env = process.env, connect = postgres) {
   if (!env.PG_URL) throw new Error("PG_URL is required");
   const clients = [];
-  const db = (url, background = false, stage = null) => {
+  const db = (url, background = false, stage = null, max = 1, signal = false) => {
     // PG_SOCKET (a directory) reaches Postgres over its unix socket, as the
     // unit does: peer authentication, no password on the machine.
     // Background batches can contain several bounded statements; the connection stays alive between them.
     const connection = { ...CONNECTION, ...(background ? { transaction_timeout: 0 } : {}),
       ...(stage ? {statement_timeout:5000,transaction_timeout:30000} : {}),
-      application_name: stage ? "wfsim-factoryd-"+stage : background ? "wfsim-factoryd-background" : CONNECTION.application_name };
-    const c = postgresClient(connect(url, { ...POSTGRES_OPTIONS, max: background || stage ? 1 : 2, idle_timeout: 0, connection, onnotice: () => {},
+      application_name: signal ? "wfsim-factoryd-signal" : stage ? "wfsim-factoryd-"+stage : background ? "wfsim-factoryd-background" : CONNECTION.application_name };
+    const c = postgresClient(connect(url, { ...POSTGRES_OPTIONS, max, idle_timeout: 0, connection, onnotice: () => {},
       ...(env.PG_SOCKET ? { host: env.PG_SOCKET } : {}) }));
     clients.push(c);
     return pgDb(c);
   };
-  const out = { LIBRARY: db(env.PG_URL), ...(env.PG_ACCOUNTS_URL ? { ACCOUNTS: db(env.PG_ACCOUNTS_URL) } : {}) };
+  const out = { LIBRARY: db(env.PG_URL), ...(env.PG_ACCOUNTS_URL ? { ACCOUNTS: db(env.PG_ACCOUNTS_URL,false,null,2) } : {}) };
+  const signalEnv={LIBRARY:db(env.PG_URL,false,null,1,true)};
   const claim = async (onLost) => {
     let owner;
     const sql = connect(env.PG_URL, { ...POSTGRES_OPTIONS, max: 1, idle_timeout: 0,
@@ -91,7 +92,7 @@ export async function openEnv(env = process.env, connect = postgres) {
     clients.push({end:async()=>{await handle?.unlisten();await sql.end({timeout:5});}});
     handle=await sql.listen("wfsim_task_pipeline",wake);
   };
-  return {env:out,backgroundEnv,stageEnvs,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
+  return {env:out,signalEnv,backgroundEnv,stageEnvs,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
 }
 
 /// THE RELEASE SERVED NOW, read through the worker's own `servedRelease` (a
@@ -104,7 +105,7 @@ async function served() {
 /// check; `put` (one object to R2) and `readEdge` (the signal as the CDN serves it) for R2 and the edge.
 export async function run({ once = false, opened = null, servedNow = served, target = signalTarget(),
   put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge } = {}) {
-  const { env, backgroundEnv = env, stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
+  const { env, signalEnv = env, backgroundEnv = env, stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
   let stopping = false, ownershipLost = false, stopRun;
   let owner;
   try {
@@ -121,13 +122,15 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   const failed = new Map();
   const written = { open: true, urgent: true }, edge = { stale: 0, uncached: 0 };
   let unconfiguredSaid = false, tallyAt = 0, tallyKept = null, forgotAt = 0, admittedAt = 0;
-  // THE SIGNAL FOLLOWS EVERY SNAPSHOT, so it is never older than one.
+  // Only the signal clock and wave probe share this writer.
   const writeSignal = async (snap) => {
+    if(stopping)return null;
     if (!target) {
-      if (!unconfiguredSaid) { unconfiguredSaid = true; await findingsTick(env.LIBRARY, "signal_unconfigured", () => ({ at: snap.at })); }
+      if (!unconfiguredSaid) { unconfiguredSaid = true; await findingsTick(signalEnv.LIBRARY, "signal_unconfigured", () => ({ at: snap.at })); }
       return null;
     }
-    const body = signalBody(snap, await dialsOf(env), { protocol: PROTOCOL, protocols: PROTOCOLS_SERVED });
+    const body = signalBody(snap, await dialsOf(signalEnv), { protocol: PROTOCOL, protocols: PROTOCOLS_SERVED });
+    if(stopping)return null;
     await put(target, { key: SIGNAL_KEY, body: JSON.stringify(body), contentType: "application/json", cacheControl: SIGNAL_CACHE });
     written.open = body.open > 0; written.urgent = body.urgent > 0;
     return body;
@@ -146,6 +149,13 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       const n = (failed.get(name) || 0) + 1; failed.set(name, n); if (n === 1 || n % 30 === 0) log(name, "failed", n, e && e.message);
     }
   };
+  let signalFlight=null;
+  const signal=()=>{
+    if(stopping)return Promise.resolve(false);
+    if(!signalFlight)signalFlight=signalTick(signalEnv,{engine:release.engine,release:release.release})
+      .then(writeSignal).finally(()=>{signalFlight=null;});
+    return signalFlight;
+  };
   const jobs = {
     release: async () => { release = await servedNow(); forgetDials(); },
     admission: async () => {
@@ -157,11 +167,12 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       return result.mode !== "disabled";
     },
     heartbeat: async () => owner ? owner.pulse(commit) : false,
-    snapshot: async () => writeSignal(await snapshotTick(env, { engine: release.engine, release: release.release })),
+    snapshot: async () => snapshotTick(env, { engine: release.engine, release: release.release }),
+    signal,
     // A WAVE FROM NOTHING is signalled now, not at the next snapshot.
     wave: async () => {
-      const w = await workWaiting(env.LIBRARY);
-      if ((w.open && !written.open) || (w.urgent && !written.urgent)) await jobs.snapshot();
+      const w = await workWaiting(signalEnv.LIBRARY);
+      if ((w.open && !written.open) || (w.urgent && !written.urgent)) await jobs.signal();
     },
     signalCheck: async () => {
       if (!target) return;
@@ -233,7 +244,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     },
   };
   if (once) {
-    for (const name of ["snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
+    for (const name of ["signal", "snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
     log(bad.length ? `once: failed ${bad.join(", ")}` : "once: ok", commit);
@@ -250,7 +261,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     });
   };
   every(SNAPSHOT_MS, "heartbeat");
-  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
+  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "signal"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
   every(SETTLE_MS, "admission");
   every(SETTLE_MS,"workflowAdmission");
   every(SETTLE_MS,"delivery");every(SETTLE_MS,"contribution");every(FAIR_MS,"shadow");

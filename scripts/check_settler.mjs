@@ -8,10 +8,11 @@ import { seedComputeWork } from "./pg/fixtures.mjs";
 import { tableOf } from "../worker/fair.js";
 import { factory, canon, nearAnswer } from "../worker/tasks.js";
 import { contributionRoute } from "../worker/contribution.js";
-import { snapshotTick, fairTick, readFair, compareFair, settleShadow, judgeFact, SETTLE_SHADOW_LAG_MS } from "../worker/settler.js";
+import { signalTick, snapshotTick, fairTick, readFair, compareFair, settleShadow, judgeFact, SETTLE_SHADOW_LAG_MS } from "../worker/settler.js";
 import { testDb } from "./pg/test_db.mjs";
 import { SETTLER_SILENT_MS } from "../worker/factory.js";
-import { DIAL_DEFAULTS } from "../worker/dials.js";
+import { mock } from "node:test";
+import { DIAL_DEFAULTS, dialsOf, forgetDials } from "../worker/dials.js";
 import { statisticsReadCases } from "./check_order_cut_reads.mjs";
 
 let failures = 0;
@@ -60,6 +61,12 @@ console.log("the snapshot");
   check("open counts what may be taken now, urgent what someone waits on, asking who asked lately or holds a lease",
     s.open === 1 && s.urgent === 1 && s.asking === 4, JSON.stringify(s));
   const row = await L.get("SELECT * FROM state_factory_snapshot WHERE id = 1");
+  const signal=await signalTick(env,{engine:'e1',release:'r1'},now);
+  check('a separate fast sample has the same live counts and writes no complete statistics',
+    ['at','engine','release','open','urgent','asking','computing'].every(key=>signal[key]===s[key])&&
+    !('queue_rows' in signal)&&!('settle_queue_rows' in signal)&&
+    JSON.stringify(await L.get('SELECT * FROM state_factory_snapshot WHERE id=1'))===JSON.stringify(row));
+
   check("statistics without an owner retain an expired valid heartbeat and cannot suppress fallback settlement",
     row && row.daemon_commit === "" && Number.isFinite(Date.parse(row.daemon_at))
       && Date.parse(row.daemon_at) <= now - SETTLER_SILENT_MS, JSON.stringify(row));
@@ -91,6 +98,8 @@ console.log("the snapshot");
   const empty=await testDb('library');
   let absentFailed=false;try{await snapshotTick({LIBRARY:countFailure(empty)}, {},now);}catch{absentFailed=true;}
   check("a first failed count invents neither a snapshot nor a heartbeat",absentFailed&&!(await empty.get("SELECT 1 FROM state_factory_snapshot")));
+  const firstSignal=await signalTick({LIBRARY:empty},{},now);
+  check('a first fast sample creates no full snapshot or heartbeat',firstSignal.open===0&&!(await empty.get('SELECT 1 FROM state_factory_snapshot')));
   await empty.close();
 }
 
@@ -178,8 +187,8 @@ console.log("the work signal");
     o.key === SIGNAL_KEY && SIGNAL_KEY === "work.json" && o.cacheControl === "public, max-age=5" && SIGNAL_CACHE === o.cacheControl && o.contentType === "application/json", JSON.stringify(o));
   const { PROTOCOL, PROTOCOLS_SERVED } = await import("../worker/verify.js");
   const snap = await L.get("SELECT * FROM state_factory_snapshot WHERE id = 1");
-  check("its fields are the snapshot's counts, the served engine and protocols, and the dials in force",
-    body.v === 1 && body.at === snap.at && body.open === 1 && body.urgent === 1 && body.computing === Number(snap.computing)
+  check("its independently sampled counts, served engine, protocols and dials are current",
+    body.v === 1 && Number.isFinite(Date.parse(body.at)) && Date.parse(body.at) <= Date.parse(snap.at) && body.open === 1 && body.urgent === 1 && body.computing === Number(snap.computing)
     && body.engine === "e1" && body.release === "r1" && body.protocol === PROTOCOL && body.protocols.length === PROTOCOLS_SERVED.size
     && body.poll_ms === DIAL_DEFAULTS.poll_ms && body.jitter_ms === DIAL_DEFAULTS.jitter_ms
     && body.urgent_jitter_ms === DIAL_DEFAULTS.urgent_jitter_ms && body.mode === "signal"
@@ -197,6 +206,71 @@ console.log("the work signal");
   await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id IN ('o1', 'u1')");
   const none = await workWaiting(L);
   check("…and none when nothing may be taken", none.open === false && none.urgent === false, JSON.stringify(none));
+}
+
+console.log("independent signal sampling");
+for(const stopMode of ['lost','stop']){
+  const {run,SIGNAL_KEY}=await import('./factoryd.mjs');
+  const {DEMAND_KEY}=await import('../worker/contribution.js');
+  const db=await testDb('library'),defer=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
+  const started=defer(),releaseSlow=defer(),firstPut=defer(),sampleHeld=defer(),releaseSample=defer(),listening=defer();
+  let blocked=false,samples=0,fastDials=0,pulses=0,lost,closed=false;
+  const puts=[];
+  const wrap=(base,before)=>({...base,prepare(sql){
+    const wrapStatement=stmt=>({...stmt,bind(...args){return wrapStatement(stmt.bind(...args));},
+      first:async()=>{await before(sql);return stmt.first();},all:async()=>{await before(sql);return stmt.all();},
+      run:async()=>{await before(sql);return stmt.run();}});
+    return wrapStatement(base.prepare(sql));
+  }});
+  const slow=wrap(db,async sql=>{
+    if(sql.startsWith('WITH a AS')){blocked=true;started.resolve();await releaseSlow.promise;throw Error('full count failed');}
+    if(blocked)await releaseSlow.promise;
+  });
+  const fast=wrap(db,async sql=>{
+    if(sql==='SELECT name, value FROM state_factory_parameters')fastDials++;
+    if(sql.startsWith('WITH a AS')){
+      samples++;await started.promise;
+      if(samples===2){sampleHeld.resolve();await releaseSample.promise;}
+      if(sql.includes('stats_pending')||sql.includes('state_pending_verifications'))throw Error('signal read includes full counts');
+    }
+  });
+  await db.run(`INSERT INTO state_factory_snapshot(id,at,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit)
+    VALUES(1,'old-statistics',7,2,3,4,5,6,'1970-01-01T00:00:00.000Z','')`);
+  const before=await db.get('SELECT * FROM state_factory_snapshot');
+  const timeout=setTimeout,clear=clearTimeout;
+  const wait=async(promise,label)=>{let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=timeout(()=>reject(Error(label)),5000);})]);}finally{clear(timer);}};
+  forgetDials();mock.timers.enable({apis:['setTimeout']});
+  let running;
+  try{
+    running=run({opened:{env:{LIBRARY:slow},signalEnv:{LIBRARY:fast},backgroundEnv:{LIBRARY:slow},
+      stageEnvs:Object.fromEntries(['admission','verification','delivery','contribution'].map(name=>[name,{LIBRARY:slow}])),
+      claim:async fn=>{lost=fn;return {pulse:async()=>{pulses++;return true;},release:async()=>{}};},
+      listen:async()=>listening.resolve(),close:async()=>{closed=true;}},
+      servedNow:async()=>({engine:null,release:'signal-release'}),target:{bucket:'isolated-fixture'},
+      put:async(_,object)=>{puts.push(object);if(object.key===SIGNAL_KEY)firstPut.resolve();},
+      readEdge:async()=>({at:iso(Date.now()),cache:'HIT'})});
+    await wait(listening.promise,'daemon clocks did not start');mock.timers.tick(0);await wait(firstPut.promise,'blocked full counts prevented the independent work signal');
+    check('blocked full counts do not block a real fresh work signal or owner pulse',
+      blocked&&pulses>0&&puts.filter(p=>p.key===SIGNAL_KEY).length===1&&
+      Number.isFinite(Date.parse(JSON.parse(puts[0].body).at)));
+    check('a fast sample never restamps old goal counts or the complete snapshot',
+      JSON.stringify(await db.get('SELECT * FROM state_factory_snapshot'))===JSON.stringify(before)&&
+      !puts.some(p=>p.key===DEMAND_KEY));
+    await seedComputeWork(db,{id:'signal-wave',verb:'simulate',state:'open',request:'{}',opened_at:iso(now),due_at:iso(now)});
+    forgetDials();const staleDials=dialsOf({LIBRARY:slow});
+    mock.timers.tick(2000);await wait(sampleHeld.promise,'blocked main-pool dials prevented the wave sample');
+    check('a wave reads expired dials on the reserved fast pool while the main pool is blocked',fastDials>=2);
+    mock.timers.tick(10000);await new Promise(resolve=>setImmediate(resolve));
+    check('timer and wave share one in-flight sample and one writer',samples===2&&puts.filter(p=>p.key===SIGNAL_KEY).length===1);
+    const heldPulses=pulses;if(stopMode==='lost')lost();else process.emit('SIGTERM');releaseSample.resolve();releaseSlow.resolve();await staleDials;
+    check(stopMode+' drains the sample without publishing it or pulsing again',(await running)===(stopMode==='lost'?1:0)&&closed&&
+      puts.filter(p=>p.key===SIGNAL_KEY).length===1&&pulses===heldPulses);
+    check('failed full counts remain visibly stale after the fast signal succeeds',
+      (await db.get('SELECT at FROM state_factory_snapshot')).at==='old-statistics');
+  }finally{
+    releaseSample.resolve();releaseSlow.resolve();if(running&&!closed)process.emit('SIGTERM');
+    if(running)await running;mock.timers.reset();forgetDials();await db.close();
+  }
 }
 
 console.log("signing for R2");

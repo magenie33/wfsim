@@ -12,7 +12,7 @@ import { independent, sameAs, askingIds } from "./tasks.js";
 import { dialsOf } from "./dials.js";
 import { COMPUTING_MS } from "./contribution.js";
 import { facts } from "./factory.js";
-import { STATISTICS_WORK } from "./statistics_work.js";
+import { STATISTICS_OPEN, STATISTICS_WORK } from "./statistics_work.js";
 
 /// THE FACTORY NOW, written as the one `factory_snapshot` row. `asking` and
 /// `computing` are the worker's own definitions (worker/verify.js `work`,
@@ -20,25 +20,31 @@ import { STATISTICS_WORK } from "./statistics_work.js";
 /// COULD NEED: the asking times the largest pack either protocol hands out, all
 /// that `factory_open` (which every hand-out reads this row through) compares
 /// it to — a fixed ceiling read work as short once enough computers asked.
-export async function snapshotTick(env, { engine = null, release = null } = {}, now = Date.now()) {
+async function sample(env, { engine = null, release = null }, now, complete) {
   const db = env.LIBRARY, at = iso(now), d = await dialsOf(env, now);
-  const n = await db.prepare(`WITH a AS (SELECT count(*) AS n FROM ${askingIds(3, 1)} x),${STATISTICS_WORK} SELECT
+  const n = await db.prepare(`WITH a AS (SELECT count(*) AS n FROM ${askingIds(3, 1)} x),${complete ? STATISTICS_WORK : STATISTICS_OPEN} SELECT
       (SELECT count(*) FROM (SELECT 1 FROM stats_open WHERE waits = 0
          AND (lease_until IS NULL OR lease_until < ?1::text) LIMIT GREATEST(1, (SELECT n FROM a)) * ?2::bigint) o) AS open,
       (SELECT count(*) FROM stats_open WHERE waits > 0) AS urgent,
       (SELECT n FROM a) AS asking,
-      (SELECT count(*) FROM entity_compute_devices WHERE banned = 0 AND last_at >= ?4::text) AS computing,
+      (SELECT count(*) FROM entity_compute_devices WHERE banned = 0 AND last_at >= ?4::text) AS computing${complete ? `,
       (SELECT count(*) FROM stats_pending) AS queue_rows,
-      (SELECT count(*) FROM state_pending_verifications) AS settle_queue_rows`)
+      (SELECT count(*) FROM state_pending_verifications) AS settle_queue_rows` : ''}`)
     .bind(at, Math.max(d.pack8_max, d.pack_max), iso(now - 2 * d.asked_every_ms), iso(now - COMPUTING_MS)).first();
-  const row = { at, engine, release, open: n.open, urgent: n.urgent, asking: n.asking, computing: n.computing,
-    queue_rows: n.queue_rows, settle_queue_rows: n.settle_queue_rows };
+  return { at, engine, release, ...n };
+}
+
+export const signalTick = (env, release = {}, now = Date.now()) => sample(env, release, now, false);
+
+export async function snapshotTick(env, release = {}, now = Date.now()) {
+  const row = await sample(env, release, now, true), db = env.LIBRARY;
+  const {at, engine, release: served} = row;
   await db.prepare(`INSERT INTO state_factory_snapshot (id, at, engine, release, open, urgent, asking, computing, queue_rows, settle_queue_rows, daemon_at, daemon_commit)
       VALUES (1, ?1::text, ?2::text, ?3::text, ?4::bigint, ?5::bigint, ?6::bigint, ?7::bigint, ?8::bigint, ?9::bigint, '1970-01-01T00:00:00.000Z', '')
       ON CONFLICT (id) DO UPDATE SET at = excluded.at, engine = excluded.engine, release = excluded.release, open = excluded.open,
         urgent = excluded.urgent, asking = excluded.asking, computing = excluded.computing, queue_rows = excluded.queue_rows,
         settle_queue_rows = excluded.settle_queue_rows`)
-    .bind(at, engine, release, row.open, row.urgent, row.asking, row.computing, row.queue_rows, row.settle_queue_rows).run();
+    .bind(at, engine, served, row.open, row.urgent, row.asking, row.computing, row.queue_rows, row.settle_queue_rows).run();
   return row;
 }
 
@@ -56,9 +62,9 @@ export function signalBody(snap, d, { protocol, protocols }) {
 /// IS THERE WORK AT ALL, open or waited on — two indexed probes, cheap enough to
 /// ask every couple of seconds so a wave from nothing is signalled at once.
 export async function workWaiting(db, now = Date.now()) {
-  const r = await db.prepare(`SELECT
-      EXISTS (SELECT 1 FROM state_compute_effective_work WHERE state = 'open' AND waits = 0 AND (lease_until IS NULL OR lease_until < ?1::text)) AS open,
-      EXISTS (SELECT 1 FROM state_compute_effective_work WHERE state = 'open' AND waits > 0) AS urgent`).bind(iso(now)).first();
+  const r = await db.prepare(`WITH ${STATISTICS_OPEN} SELECT
+      EXISTS (SELECT 1 FROM stats_open WHERE state = 'open' AND waits = 0 AND (lease_until IS NULL OR lease_until < ?1::text)) AS open,
+      EXISTS (SELECT 1 FROM stats_open WHERE state = 'open' AND waits > 0) AS urgent`).bind(iso(now)).first();
   return { open: !!r.open, urgent: !!r.urgent };
 }
 
