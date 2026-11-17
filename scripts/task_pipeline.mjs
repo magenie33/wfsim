@@ -3,8 +3,9 @@
 import {pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {facts} from '../worker/factory.js';
-import {TASK_PIPELINE_STAGES,TASK_PIPELINE_CONTROLS,readPipelineControl,setPipelineControl} from '../worker/task_pipeline.js';
+import {TASK_PIPELINE_STAGES,TASK_PIPELINE_CONTROLS,setPipelineControl} from '../worker/task_pipeline.js';
 import {openEnv} from './factoryd.mjs';
+import {statisticsStatus} from '../worker/statistics_provider.js';
 
 export async function pipelineCommand(env,args,now=Date.now()) {
   const [command,name,...extra]=args;
@@ -14,9 +15,7 @@ export async function pipelineCommand(env,args,now=Date.now()) {
     || command==='run'&&!Object.hasOwn(TASK_PIPELINE_STAGES,name))
     throw Error('usage: task_pipeline.mjs status [statistics] | pause|resume admission|verification|delivery|contribution|statistics | run admission|verification|delivery|contribution');
   if(command==='status'&&name==='statistics'){
-    const control=await readPipelineControl(env,name);
-    const snapshot=await env.LIBRARY.prepare('SELECT at,engine FROM state_factory_snapshot WHERE id=1').first();
-    return {name,...TASK_PIPELINE_CONTROLS[name],paused:control.paused,control,snapshot:snapshot||null,pending:null};
+    return {...TASK_PIPELINE_CONTROLS[name],...await statisticsStatus(env,now)};
   }
   if(command==='status')return facts().pipelineStatus(env,now);
   if(command==='run')return facts().runStage(env,name,now,{runtime:'native'});

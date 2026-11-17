@@ -1250,8 +1250,9 @@ other path available. The complete statistics clock stays unchanged.
 snapshot reads and demand publication; the work signal, heartbeat, fairness,
 verification, delivery, contribution and maintenance continue. A paused
 `--once` still runs every other required tick and fails if any fails. Resuming
-statistics restores their existing sampling paths; a pause does not refresh
-old counts or their timestamps.
+statistics resumes the persistent bounded projection described in
+[COMPUTE_STATISTICS.md](COMPUTE_STATISTICS.md). Only a complete sealed sample
+updates the snapshot and demand; a pause preserves their counts and clocks.
 
 `poll_ms`, `jitter_ms` and `urgent_jitter_ms` are dials (§"The dials"), and so
 is `mode`: `signal_mode` 1 makes it `ask`, sending every computer back to the
@@ -1748,15 +1749,17 @@ and compiler recipe match; raw paid work stays inside the fitting job.
 
 ### Demand
 
-**THE COMPUTE PAGE'S PICTURE IS ONE OBJECT EVERY READER GETS.** Each minute
-the daemon works it out (`demandOf`, worker/contribution.js) and writes
+**THE COMPUTE PAGE'S PICTURE IS ONE OBJECT EVERY READER GETS.** The daemon
+formats it from a complete sealed statistics sample (`demandOf`,
+worker/contribution.js), and publishes it each minute or after a new seal as
 `demand.json` to the public bucket beside the signal, kept 30 s at the edge;
 the page reads it from `cdn.wfsim.app`, and `/api/board/demand` serves the
 same object from the bucket, never working it out. Worked out per request,
 each isolate and each edge would keep its own minute, and two readers would
-see two. `counts_at` retains the actual count sample time when cached counts
-are reused. `expires_at` is 120 seconds after `counts_at`; publication never
-extends it. Expired samples retain their original clocks.
+see two. Its `at` and `counts_at` retain the actual sealed sampling time when
+the same object is published again. `expires_at` is 120 seconds after `counts_at`;
+publication never extends it. Missing projection dependencies or a partial
+baseline preserve the last complete object without renewing its validity.
 
 ```text
 { ok, v: 1, at, computing, owed: { new_builds, rescores, sweeps, refreshes },

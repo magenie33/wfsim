@@ -36,6 +36,7 @@
 // so a newcomer can lead somewhere; `ranks` is the account's place on each of the
 // three, for the showcase a share card draws (`31-share-card.js`).
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
+import {statisticsSourceSql} from './statistics_source.js';
 import { iso, PACE_HOURS } from "./instant.js";
 import { clearanceOf } from "./clearance.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
@@ -650,9 +651,7 @@ const demandCosts = new WeakMap();
 /// owed rows are counted under. A kind is added here and named on the page
 /// (73-compute.js `ORDER_KIND_NAMES`); a page that does not know it yet shows it by its id.
 export const ORDER_KINDS = [["rescore", 1], ["sweep", 2], ["new_build", 0], ["refresh", 3]];
-const DEMAND_SOURCE = `CASE WHEN q.initiator = 'system' THEN 'system'
-  WHEN q.initiator = 'anonymous' OR q.initiator LIKE 'user:%' OR q.initiator LIKE 'bot:%' THEN 'requested'
-  ELSE 'unattributed' END`;
+export const DEMAND_SOURCE = statisticsSourceSql('q');
 const emptyDemandSources = () => ({ requested: 0, system: 0, unattributed: 0 });
 /// THE FLEET THIS MOMENT (`now`): who asked, what they hold and what they
 /// answered over the last `NOW_WINDOW_MS`. Every speed above is a day's, and
@@ -674,7 +673,8 @@ async function nowOf(db, now) {
   const since = iso(now - NOW_WINDOW_MS);
   const [asking, held, answered] = await db.batch([
     db.prepare("SELECT COUNT(*) AS n FROM entity_compute_devices WHERE asked_at > ? AND banned = 0").bind(since),
-    db.prepare("SELECT COUNT(*) AS n FROM state_compute_work WHERE leased_to IS NOT NULL AND lease_until > ?").bind(iso(now)),
+    db.prepare(`WITH held AS MATERIALIZED(SELECT id FROM state_compute_scheduling WHERE leased_to IS NOT NULL AND lease_until > ?)
+      SELECT count(*) AS n FROM held h CROSS JOIN LATERAL(SELECT 1 FROM state_compute_work q WHERE q.id=h.id OFFSET 0)q`).bind(iso(now)),
     db.prepare("SELECT COUNT(*) AS n FROM record_candidate_answers WHERE at > ? AND official = 0").bind(since),
   ]);
   const n = (r) => Number((r.results[0] || {}).n || 0);
@@ -693,12 +693,16 @@ async function nowOf(db, now) {
 /// and how much of it a device has taken — the rest waits on the server.
 export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, options = {}) {
   const db = env.LIBRARY, at = iso(now);
+  const supplied=options.counts,countsAt=Date.parse(supplied?.countsAt);
+  if(!supplied?.key||!supplied.by||!supplied.sources||!supplied.takenBy||!Array.isArray(supplied.openOf)||!Number.isFinite(countsAt)||countsAt>now)
+    throw Error('complete statistics counts required');
   const { fresh: inventory, lastComplete } = await readInventoryState(db, now);
   const engine = (inventory || lastComplete)?.engine || null;
   const cut=await db.prepare('SELECT compute_order_cut_epoch() AS at').first();
   const epoch=cut?.at || null;
   const cached = demandCosts.get(env), kept = cached?.engine === engine && cached?.epoch === epoch ? cached : null;
-  const counts = kept && now >= kept.countsAt && now - kept.countsAt < DEMAND_COST_EVERY_MS ? kept : null;
+  if(supplied.key.epoch!==epoch||(engine&&supplied.key.engine!==engine))throw Error('statistics source changed');
+  const counts={...supplied,countsAt};
   const costs = kept && now >= kept.costsAt && now - kept.costsAt < (options.costEveryMs || DEMAND_COST_EVERY_MS) ? kept : null;
   const began = performance.now();
   const reads = await db.batch([
@@ -720,20 +724,6 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
                   COALESCE(SUM(CASE WHEN hour < ?1::text THEN ms ELSE 0 END), 0) AS previous_ms
                 FROM record_hourly_compute_totals WHERE hour >= ?3::text AND hour < ?2::text`)
       .bind(iso(now - PACE_HOURS * 3_600_000).slice(0, 13), iso(now).slice(0, 13), iso(now - 2 * PACE_HOURS * 3_600_000).slice(0, 13)),
-    ...(counts ? [] : [
-      // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
-      // demands are read once and joined whole: looked up a queue row at a time,
-      // every row cost an index walk for the few that have one.
-      db.prepare(`WITH d AS MATERIALIZED (SELECT ref FROM relation_task_consumers WHERE state = 'live' AND producer = 'new_build')
-                  SELECT CASE WHEN d.ref IS NOT NULL THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END AS k,
-                    ${DEMAND_SOURCE} AS source, COUNT(*) AS n
-                  FROM state_board_effective_pending_work q JOIN entity_compute_batches b ON b.id = q.batch
-                  LEFT JOIN d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
-                  GROUP BY k, source`),
-      db.prepare(`SELECT verb, producer, ${DEMAND_SOURCE} AS source, COUNT(*) AS n,
-                    COUNT(*) FILTER (WHERE leased_at IS NOT NULL OR lease IS NOT NULL) AS dispatched
-                  FROM state_compute_effective_open q WHERE state = 'open' GROUP BY verb, producer, source`),
-    ]),
     ...(costs ? [] : [
       // Bounded samples and indexed lateral lookups avoid a full question-table
       // join chosen from an underestimated engine population.
@@ -748,37 +738,18 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
                     (SELECT verb,fact_at,fact_engine FROM state_compute_work WHERE id=s.question OFFSET 0) q GROUP BY q.verb`)
         .bind(iso(now - DEMAND_COST_MS), scan, engine),
     ]),
-    ...(counts ? [] : [
-      // A ROW A DEVICE HAS TAKEN — leased, by a volunteer or an official
-      // machine, now or before — is dispatched, by the kind `owed` counts it as.
-      db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT x.id, MIN(CASE WHEN d.producer = 'new_build' THEN 0
-                      WHEN d.payload::jsonb ->> 'batch' LIKE 'rescore%' THEN 1 WHEN d.producer = 'refresh' THEN 3 ELSE 2 END) AS k
-                    FROM state_compute_effective_work x JOIN relation_task_consumers d ON d.question = x.id AND d.state = 'live' AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
-                   WHERE x.state = 'open' AND x.verb = 'simulate' AND (x.leased_at IS NOT NULL OR x.lease IS NOT NULL)
-                   GROUP BY x.id) y GROUP BY k`).bind(JSON.stringify(BOARD_KINDS)),
-    ]),
   ]);
   const [, done, gains, surveys, answered, ...rest] = options.pace
     ? [reads[0], { results: [options.pace] }, ...reads.slice(1)] : reads;
-  let cursor = 0;
-  const owed = counts ? null : rest[cursor++], open = counts ? null : rest[cursor++];
-  const spent = costs ? null : rest[cursor++], taken = counts ? null : rest[cursor++];
-  const counted = counts || { by: {}, sources: {},
-    takenBy: Object.fromEntries(taken.results.map((r) => [r.k, Number(r.n)])),
-    openOf: open.results.map((r) => ({ verb: r.verb, producer: r.producer, source: r.source, n: Number(r.n), dispatched: Number(r.dispatched) })) };
-  if (!counts) for (const row of owed.results) {
-    counted.by[row.k] = (counted.by[row.k] || 0) + Number(row.n);
-    (counted.sources[row.k] ||= emptyDemandSources())[row.source] += Number(row.n);
-  }
+  const spent=costs?null:rest[0],counted=counts;
   const by = counted.by;
   const h = done.results[0] || {};
   const perHour = (x) => Math.round(Number(x || 0) / PACE_HOURS);
   const { msOf, factsOf } = costs || { msOf: Object.fromEntries(spent.results.map((r) => [r.verb, Number(r.ms)])),
     factsOf: Object.fromEntries(spent.results.map((r) => [r.verb, Number(r.facts)])) };
-  if (!costs || !counts) {
-    demandCosts.set(env, { engine, epoch, countsAt: counts ? counts.countsAt : now, costsAt: costs ? costs.costsAt : now,
-      msOf, factsOf, by, sources: counted.sources, takenBy: counted.takenBy, openOf: counted.openOf });
-    if (!costs) options.onCosts?.(performance.now() - began);
+  if (!costs) {
+    demandCosts.set(env,{engine,epoch,costsAt:now,msOf,factsOf});
+    options.onCosts?.(performance.now()-began);
   }
   const msPerHour = Number((answered.results[0] || {}).ms || 0) / PACE_HOURS;
   // THE BOARD'S ROWS are the queue's; every other verb's open questions are its work.
