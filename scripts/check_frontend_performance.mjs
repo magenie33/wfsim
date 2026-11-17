@@ -1,8 +1,143 @@
 import {openApp} from "./cdp.mjs";
+import {mkdirSync, writeFileSync} from "node:fs";
+import {join} from "node:path";
 
-const app=await openApp({base:process.env.WFSIM_BASE,lang:"en",boot:8000});
+async function checkHomeHero(app) {
+  const waitFor = async expression => {
+    for (let i = 0; i < 200; i++) { if (await app.evaluate(expression)) return true; await app.sleep(100); }
+    return false;
+  };
+  const errors = [];
+  app.on("Runtime.exceptionThrown", event => errors.push(event.exceptionDetails.exception?.description || event.exceptionDetails.text));
+  const previousConsent = await app.evaluate("localStorage.getItem('wfsim-compute-consent')");
+  const fixture = await app.send("Page.addScriptToEvaluateOnNewDocument", { source: `
+    localStorage.setItem("wfsim-compute-consent", JSON.stringify({ v: 3, on: false, at: new Date().toISOString() }));
+    window.__homeFixture = { builds: 54321987, scores: 123456789, devices: 123, snapshotDevices: 9999 };
+    window.__homeReads = [];
+    window.__homeRealFetch = window.fetch;
+    window.fetch = async (address, options) => {
+      const url = new URL(typeof address === 'string' ? address : address.url, location.origin);
+      const f = window.__homeFixture;
+      const reply = body => new Response(JSON.stringify(body), { status: f.fail ? 503 : 200, headers: { 'content-type': 'application/json' } });
+      if (url.pathname === '/board.meta.json') {
+        window.__homeReads.push(['builds', url.href]);
+        return reply({ boards: { a: { submissions: f.builds, listed: 777 }, b: { submissions: f.builds, listed: 999 } } });
+      }
+      if (url.pathname === '/api/board/pages/catalog') return reply({ ok: true, partitions: [], next: null });
+      if (url.pathname.startsWith('/board/')) return reply(url.pathname.endsWith('/index.json') ? {} : []);
+      if (url.pathname === '/stats/tally.json' || url.pathname === '/api/board/tally') {
+        window.__homeReads.push(['scores', url.href]);
+        return reply({ ok: true, v: 1, at: new Date().toISOString(), totals: { volunteers: f.scores, official: 20 }, per_hour: { volunteers: 60000 }, computing: f.snapshotDevices });
+      }
+      if (url.pathname === '/work.json') {
+        window.__homeReads.push(['devices', url.href]);
+        return reply({ v: 1, at: new Date().toISOString(), computing: f.devices, mode: 'wait' });
+      }
+      return window.__homeRealFetch(address, options);
+    };
+  ` });
+  try {
+    await app.send("Network.enable");
+    await app.send("Network.setCacheDisabled", { cacheDisabled: true });
+    await app.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+    let currentLang;
+    for (const [name, lang, theme, width, height] of [
+      ["desktop-dark", "zh", "dark", 1440, 1080],
+      ["desktop-light", "zh", "light", 1440, 1080],
+      ["mobile-dark", "zh", "dark", 390, 1000],
+      ["small-english", "en", "light", 320, 1000],
+      ["desktop-english", "en", "dark", 1440, 1080]
+    ]) {
+      await app.send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: width < 500 });
+      if (currentLang !== lang) { await app.setLang(lang, 100); currentLang = lang; }
+      const ready = await waitFor("window.__wfsimReady && document.querySelectorAll('#home-facts .hf,#home-tally-n .hf').length === 3");
+      app.check(name + " hero and three sourced counters arrive", ready && await app.evaluate("!!document.querySelector('.home-hero')"));
+      await app.evaluate("document.documentElement.dataset.theme = " + JSON.stringify(theme));
+      await app.sleep(100);
+      const state = await app.evaluate(`(() => {
+        const stats = [...document.querySelectorAll('#home-facts .hf,#home-tally-n .hf')];
+        return { lang: LANG, width: innerWidth, scroll: document.documentElement.scrollWidth,
+          overflow: stats.filter(node => node.scrollWidth > node.clientWidth + 1).map(node => node.dataset.homeStat),
+          labels: stats.map(node => node.querySelector('.metric-label')?.textContent || ''),
+          search: !!document.querySelector('.home-entry #wsearch-input'), cards: document.querySelectorAll('#home-sections .wcard').length };
+      })()`);
+      app.check(name + " has no horizontal overflow or clipped counters", state.scroll <= width && state.width <= width && state.overflow.length === 0, JSON.stringify(state));
+      app.check(name + " keeps the real search, equipment and localized labels", state.search && state.cards > 0 && state.lang === lang
+        && state.labels.every(label => lang === "zh" ? /[一-鿿]/.test(label) : /^[\x00-\x7f]+$/.test(label)), JSON.stringify(state));
+      app.check(name + " loads the actual equipment art", await waitFor("[...document.querySelectorAll('#home-sections .wcard img')].some(img => img.naturalWidth > 0)"));
+      if (process.env.WFSIM_HOME_SCREENSHOTS) {
+        mkdirSync(process.env.WFSIM_HOME_SCREENSHOTS, { recursive: true });
+        const image = await app.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
+        writeFileSync(join(process.env.WFSIM_HOME_SCREENSHOTS, name + ".png"), Buffer.from(image.result.data, "base64"));
+      }
+    }
+    for (const width of [1024, 768, 700, 360]) {
+      await app.send("Emulation.setDeviceMetricsOverride", { width, height: 1000, deviceScaleFactor: 1, mobile: width < 500 });
+      await app.sleep(100);
+      const bounds = await app.evaluate("({ width: innerWidth, scroll: document.documentElement.scrollWidth, clipped: [...document.querySelectorAll('.home-stats .hf')].some(node => node.scrollWidth > node.clientWidth + 1) })");
+      app.check(width + "px home stays inside the viewport", bounds.scroll <= width && bounds.width <= width && !bounds.clipped, JSON.stringify(bounds));
+    }
+    await app.evaluate("document.activeElement.blur()");
+    await app.send("Input.dispatchKeyEvent", { type: "keyDown", key: "/", code: "Slash", text: "/" });
+    await app.send("Input.dispatchKeyEvent", { type: "keyUp", key: "/", code: "Slash" });
+    const focused = await app.evaluate("document.activeElement.id === 'wsearch-input'");
+    await app.evaluate("document.getElementById('wsearch-input').focus(); document.getElementById('wsearch-input').value='Torid'; document.getElementById('wsearch-input').dispatchEvent(new Event('input',{bubbles:true}))");
+    const resultsVisible = await waitFor("(() => {const row=document.querySelector('#wsearch-list [data-id=torid]');if(!row||document.getElementById('wsearch-panel').hidden)return false;const r=row.getBoundingClientRect();return row.contains(document.elementFromPoint(r.x+5,r.y+Math.min(r.height/2,10)));})()");
+    app.check("hero shortcut opens the real visible search results", focused && resultsVisible);
+    await app.evaluate("document.querySelector('#wsearch-list [data-id=torid]').click()");
+    app.check("a result opens the weapon and returns search to the header", await waitFor("location.pathname.includes('/weapons/Torid') && !!document.querySelector('.topbar-inner #wsearch-input')"));
+    await app.evaluate("nav('/')");
+    const returnedHome = await waitFor("location.pathname==='/' && !document.getElementById('home-page').hidden");
+    app.check("returning home restores the single real search", returnedHome && await app.evaluate("!!document.querySelector('.home-entry #wsearch-input') && document.querySelectorAll('#wsearch-input').length===1"));
+    app.check("home design raises no page exceptions", errors.length === 0, JSON.stringify(errors));
+    await app.evaluate(`(() => {
+      window.__homeRefresh = async () => {
+        await tallyLoading; computingAskedAt = 0;
+        await Promise.all([loadBoard(), loadHomeTally(), navComputing()]);
+      };
+      window.__homeState = () => {
+        const nodes = [document.querySelector('#home-facts .hf b'), document.querySelector('[data-tally="volunteers"]'), document.querySelector('[data-tally="devices"]')];
+        const nav = document.querySelector('[data-live-device-number]') || document.getElementById('compute-count'), hero = nodes[2];
+        const value = node => node ? Number(node.textContent.replace(/[^0-9]/g,'')) : null;
+        return { values: nodes.map(value), nav: value(nav), hero: value(hero), active: nodes.map(node => node?.getAnimations().length || 0),
+          navActive: nav?.getAnimations().length || 0, sameClock: hero?.getAnimations()[0]?.startTime === nav?.getAnimations()[0]?.startTime,
+          duration: hero?.getAnimations()[0]?.effect.getTiming().duration,
+          visible: !document.getElementById('compute-count').hidden && !document.getElementById('compute-link').hidden };
+      };
+      window.__homeFixture = { builds: 54321, scores: 123456, devices: 47, snapshotDevices: 9999 };
+    })()`);
+    const changed = await app.evaluate(`(async () => {
+      await window.__homeRefresh(); const first = window.__homeState(), samples = [];
+      for (let i=0;i<30;i++) { await new Promise(requestAnimationFrame); samples.push(window.__homeState()); }
+      return { first, samples, reads: window.__homeReads };
+    })()`);
+    app.check("home displays three confirmed targets immediately", JSON.stringify(changed.first.values) === JSON.stringify([54321,123456,47]), JSON.stringify(changed.first));
+    app.check("header and hero use live work rather than tally devices", changed.first.visible && changed.first.nav === 47 && changed.first.hero === 47
+      && ["builds","scores","devices"].every(kind => changed.reads.some(row => row[0] === kind)), JSON.stringify(changed));
+    app.check("all three confirmations animate for 380ms and device displays share a clock", changed.first.active.every(n => n > 0) && changed.first.navActive > 0 && changed.first.sameClock && changed.first.duration === 380, JSON.stringify(changed.first));
+    app.check("every motion frame keeps confirmed text and identical device values", changed.samples.every(s => s.nav === s.hero && JSON.stringify(s.values) === JSON.stringify([54321,123456,47])), JSON.stringify(changed.samples));
+    const same = await app.evaluate("(async()=>{await window.__homeRefresh();return window.__homeState();})()");
+    app.check("unchanged reads leave all counters still", same.active.every(n => n === 0) && same.navActive === 0, JSON.stringify(same));
+    const zero = await app.evaluate("(async()=>{window.__homeFixture.devices=0;window.__homeFixture.scores+=100;window.__homeFixture.builds+=10;await window.__homeRefresh();return window.__homeState();})()");
+    app.check("zero live devices is visible and shared immediately", zero.visible && zero.nav === 0 && zero.hero === 0 && JSON.stringify(zero.values) === JSON.stringify([54331,123556,0]), JSON.stringify(zero));
+    const failed = await app.evaluate("(async()=>{window.__homeFixture.fail=true;await new Promise(r=>setTimeout(r,450));await window.__homeRefresh();return window.__homeState();})()");
+    app.check("failed reads retain last confirmations without motion", JSON.stringify(failed.values) === JSON.stringify([54331,123556,0]) && failed.nav === 0 && failed.active.every(n => n === 0) && failed.navActive === 0, JSON.stringify(failed));
+    await app.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+    const reduced = await app.evaluate("(async()=>{window.__homeFixture={builds:54330,scores:123555,devices:32};await window.__homeRefresh();return window.__homeState();})()");
+    app.check("reduced motion shows exact increases and decreases immediately", JSON.stringify(reduced.values) === JSON.stringify([54330,123555,32]) && reduced.nav === 32 && reduced.active.every(n => n === 0) && reduced.navActive === 0, JSON.stringify(reduced));
+  } finally {
+    await app.send("Page.removeScriptToEvaluateOnNewDocument", { identifier: fixture.result.identifier });
+    await app.evaluate("if(window.__homeRealFetch)window.fetch=window.__homeRealFetch");
+    await app.evaluate("if (" + JSON.stringify(previousConsent) + " === null) localStorage.removeItem('wfsim-compute-consent'); else localStorage.setItem('wfsim-compute-consent'," + JSON.stringify(previousConsent) + ")");
+    await app.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+  }
+}
+
+const app=await openApp({base:process.env.WFSIM_BASE,boot:8000});
 const {evaluate,check,sleep}=app;
 try {
+  await checkHomeHero(app);
+  if (process.argv.includes("--home-hero")) await app.finish("home hero layout and confirmed-value motion preserve the real sources");
   const meta=await evaluate("({benchmarks:META.benchmarks,weapons:META.weapons.map(w=>({id:w.id,modes:w.modes,mods:w.mods}))})");
   const primary=meta.benchmarks.find(b=>b.primary)||meta.benchmarks[0];
   const dirs=[...new Set(meta.benchmarks.map(b=>b.cell_dir||""))];
@@ -63,9 +198,9 @@ try {
     await new Promise(r=>setTimeout(r,50));observer.disconnect();
     const stable=node===$('home-tally-n').querySelector('[data-tally="volunteers"]')&&text===node.firstChild&&mutations===0;
     const before=node.textContent;$('home-page').hidden=true;tallyAt-=1000;renderHomeTally();const hidden=before===node.textContent;$('home-page').hidden=false;
-    return {stable,moving:Number(node.textContent)>100,hidden};
+    return {stable,confirmed:Number(node.textContent)===200,hidden};
   })()`);
-  check("animated tally numbers move without rebuilding their DOM",animation.stable&&animation.moving);
+  check("confirmed tally values retain their DOM while presentation moves",animation.stable&&animation.confirmed);
   check("a hidden home tally does not repaint",animation.hidden);
   await app.send("Emulation.setCPUThrottlingRate",{rate:4});
   if(process.env.WFSIM_PERF_EAGER)await evaluate("window.perfEagerRead=loadSceneRows;loadSceneRows=(id,base)=>window.perfEagerRead(id,base,benchScenes())");
