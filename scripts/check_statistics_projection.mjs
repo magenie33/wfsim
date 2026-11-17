@@ -5,8 +5,15 @@ import {createHash} from 'node:crypto';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import {postgresClient,POSTGRES_OPTIONS,placeholders} from '../worker/db.js';
 import {seedComputeWork} from './pg/fixtures.mjs';
-import {createStatisticsProjection,statisticsProjectionIdentity,StatisticsProjectionBudget,statisticsSourceSql,statisticsConsumerPageSql} from '../worker/statistics_projection.js';
+import {statisticsProjectionIdentity,statisticsSourceSql,statisticsConsumerPageSql} from '../worker/statistics_projection.js';
 import {STATISTICS_WORK} from './fixtures/statistics_work_421.mjs';
+const projectionFile=new URL('../worker/statistics_projection.js',import.meta.url),generationBudget='export const STATISTICS_RETAINED_GENERATIONS=2;';
+let projectionSource=readFileSync(projectionFile,'utf8');assert.equal(projectionSource.split(generationBudget).length,2);
+projectionSource=projectionSource.replace(generationBudget,'export const STATISTICS_RETAINED_GENERATIONS=16;')
+ .replace(/from (["'])(\.[^"']+)\1/g,(_,quote,path)=>'from '+JSON.stringify(new URL(path,projectionFile).href));
+const fixtureRoot=new URL('../target/statistics-projection/',import.meta.url);mkdirSync(fixtureRoot,{recursive:true});
+const fixtureModule=new URL('membership-'+process.pid+'.mjs',fixtureRoot);writeFileSync(fixtureModule,projectionSource);
+const {createStatisticsProjection,StatisticsProjectionBudget}=await import(fixtureModule.href);
 
 const port=Number(process.env.WFSIM_STATISTICS_TEST_PORT||55535);
 assert(Number.isSafeInteger(port)&&port>=1024&&port<=65535,'explicit local test port');
@@ -21,7 +28,8 @@ const ddl=readFileSync(new URL('../worker/pg/statistics_projection.sql',import.m
 const consumerIndex=ddl.match(/^-- (CREATE INDEX CONCURRENTLY[^\n]+);$/m)[1].replace('INDEX CONCURRENTLY','INDEX');
 let at=Date.parse('2026-11-17T00:00:00.000Z'),engine='fixture',stopped=false,hook=async()=>{};
 const stamp=()=>new Date(at).toISOString(),currentIdentity=()=>statisticsProjectionIdentity(query,engine);
-const limits={pageRows:8,maxMs:10000,maxQueries:2048,maxRows:20000};
+// Membership keeps its fixture incarnations in a source copy; production refuses this budget.
+const limits={pageRows:8,maxMs:10000,maxQueries:2048,maxRows:20000,maxNamespaces:16};
 const projection=(extra={})=>createStatisticsProjection({transaction:client.transaction,currentIdentity,stopped:()=>stopped,now:()=>at,
  limits,...extra,onQuery:async event=>{await hook(event);await extra.onQuery?.(event);}});
 let unit=projection();

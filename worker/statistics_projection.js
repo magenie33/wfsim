@@ -5,7 +5,8 @@ import {statisticsSourceSql} from './statistics_source.js';
 export {statisticsSourceSql} from './statistics_source.js';
 
 export const STATISTICS_PROJECTION_CONTRACT='statistics-projection-1';
-export const STATISTICS_PROJECTION_LIMITS={pageRows:128,maxRows:8192,maxBytes:2097152,maxQueries:1024,maxMs:3000,maxWork:4096,maxStorageBytes:1073741824};
+export const STATISTICS_RETAINED_GENERATIONS=2;
+export const STATISTICS_PROJECTION_LIMITS={pageRows:128,maxRows:8192,maxBytes:2097152,maxQueries:1024,maxMs:3000,maxWork:4096,maxStorageBytes:1073741824,maxNamespaces:STATISTICS_RETAINED_GENERATIONS};
 const kinds=['new_build','survey_build','refresh','sweep'],kindSql="('new_build','survey_build','refresh','sweep')";
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b),encoded=value=>JSON.stringify(value),decoded=key=>JSON.parse(key);
 const keyText=key=>'['+key.map(encoded).join(', ')+']';
@@ -34,6 +35,7 @@ export class StatisticsProjectionBudget extends Error {}
 export function createStatisticsProjection({transaction,currentIdentity,stopped=()=>false,allowed=async()=>true,complete=async(_q,counts)=>counts,clock=()=>performance.now(),now=()=>Date.now(),limits={},onQuery=()=>{}}){
  const bound={...STATISTICS_PROJECTION_LIMITS,...limits};
  for(const [name,value] of Object.entries(bound))if(!Number.isSafeInteger(value)||value<1)throw Error('invalid statistics limit '+name);
+ if(bound.maxNamespaces>STATISTICS_RETAINED_GENERATIONS)throw Error('invalid statistics generation budget');
  if(bound.pageRows>4096)throw Error('statistics page exceeds input bound');
  if(typeof currentIdentity!=='function')throw Error('statistics current identity is required');
  const check=()=>{if(stopped())throw Error('statistics stopped');};
@@ -218,6 +220,8 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
     const [current]=await q(`SELECT h.namespace FROM state_statistics_head h JOIN state_statistics_namespaces n ON n.id=h.namespace
      WHERE h.id=1 AND n.identity=($1::text)::jsonb`,[encoded(key)]);
     if(current){await assert(key,context);return{key,namespace:current.namespace};}
+    const retained=await q('SELECT id FROM state_statistics_namespaces ORDER BY id LIMIT $1::bigint',[bound.maxNamespaces]);
+    if(retained.length>=bound.maxNamespaces)throw new StatisticsProjectionBudget('statistics retained generation budget');
     const [version]=await q("SELECT nextval('statistics_revision')::text incarnation"),ns=await namespaceOf(key)+'-'+version.incarnation;
     await q('INSERT INTO state_statistics_namespaces(id,identity) VALUES($1,($2::text)::jsonb)',[ns,encoded(key)]);
     await q('INSERT INTO state_statistics_head(id,namespace) VALUES(1,$1) ON CONFLICT(id) DO UPDATE SET namespace=excluded.namespace',[ns]);await assert(key,context);return{key,namespace:ns};},{context});});

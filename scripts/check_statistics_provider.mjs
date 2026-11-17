@@ -14,10 +14,47 @@ import {statisticsSchemaSql} from './statistics_schema.mjs';
 import {seedComputeWork,statisticsCounts} from './pg/fixtures.mjs';
 import {statisticsExpiresAt} from '../worker/statistics_clock.js';
 import {statisticsClockCases} from './check_statistics_clock.mjs';
+import {createStatisticsProjection,statisticsProjectionIdentity,STATISTICS_PROJECTION_LIMITS} from '../worker/statistics_projection.js';
+
+export async function statisticsGenerationCases(){
+ const {PGlite}=await import('./pg/node_modules/@electric-sql/pglite/dist/index.js');
+ const pg=new PGlite();let activeTx;
+ const q=async(text,args=[])=>(await(activeTx??pg).query(text,args)).rows;
+ let engine='generation-a',create=createStatisticsProjection;
+ if(process.argv.includes('--break-generation-guard')){
+  const file=new URL('../worker/statistics_projection.js',import.meta.url),guard="    const retained=await q('SELECT id FROM state_statistics_namespaces ORDER BY id LIMIT $1::bigint',[bound.maxNamespaces]);\n    if(retained.length>=bound.maxNamespaces)throw new StatisticsProjectionBudget('statistics retained generation budget');\n";
+  let text=readFileSync(file,'utf8');assert.equal(text.split(guard).length,2);text=text.replace(guard,'');
+  text=text.replace(/from (["'])(\.[^"']+)\1/g,(_,quote,path)=>'from '+JSON.stringify(new URL(path,file).href));
+  ({createStatisticsProjection:create}=await import('data:text/javascript;base64,'+Buffer.from(text).toString('base64')));
+ }
+ try{
+  for(const name of ['schema','library','sync','inventory','build_workflows','board_admission','statistics_projection'])
+   await pg.exec(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
+  const make=(limits={})=>create({transaction:fn=>pg.transaction(async tx=>{
+   activeTx=tx;try{return await fn({query:(text,args)=>tx.query(text,args)});}finally{activeTx=null;}}),
+   currentIdentity:()=>statisticsProjectionIdentity(q,engine),limits});
+  assert.equal(STATISTICS_PROJECTION_LIMITS.maxNamespaces,2);
+  assert.throws(()=>make({maxNamespaces:16}),/invalid statistics generation budget/,'test fixture budget entered production');
+  const first=await make().start();assert.equal((await make({maxNamespaces:1}).start()).namespace,first.namespace,'full budget blocked identical head');
+  await q("UPDATE state_statistics_namespaces SET phase=1,cursor='[\"retained-failure-cursor\"]',counts_at='2026-11-17T00:00:00.000Z',published='{\"evidence\":\"retained\"}' WHERE id=$1",[first.namespace]);
+  engine='generation-b';const second=await make().start();assert.notEqual(first.namespace,second.namespace);
+  const retained=()=>q('SELECT to_jsonb(n) body FROM state_statistics_namespaces n ORDER BY id');
+  const before=await retained(),revision=(await q('SELECT last_value::text n FROM statistics_revision'))[0].n;
+  for(const nextEngine of ['generation-c','generation-a']){
+   engine=nextEngine;await assert.rejects(make().start(),/statistics retained generation budget/);
+   assert.deepEqual(await retained(),before,'generation hold changed retained failure/baseline evidence');
+   assert.equal((await q('SELECT namespace FROM state_statistics_head'))[0].namespace,second.namespace,'generation hold changed head');
+   assert.equal((await q('SELECT last_value::text n FROM statistics_revision'))[0].n,revision,'generation hold allocated a revision');
+  }
+  engine='generation-b';assert.equal((await make().start()).namespace,second.namespace,'restart could not resume at full budget');
+  console.log('PASS two-generation boundary: identical/restarted head resumes; third identity and retired reentry HOLD without revision/head/evidence changes');
+ }finally{await pg.close();}
+}
 
 
 export async function statisticsProviderCases(){
  await statisticsClockCases();
+ await statisticsGenerationCases();
  assert.throws(()=>statisticsSchemaSql('schema'),/tablespace/);assert.throws(()=>statisticsSchemaSql('index'),/tablespace/);
  assert.match(statisticsSchemaSql('index',{tablespace:'pg_default'}),/CREATE INDEX CONCURRENTLY/);
  const unread={LIBRARY:{prepare(){throw Error('historical input read');}}};
@@ -182,6 +219,16 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
    [new Date().toISOString(),new Date(Date.now()-120000).toISOString(),availability.body.pack_max]);
   assert.deepEqual(openedFromCache,{open:availability.body.open,asking:availability.body.asking},'factory_open lost the independent cache');
   assert.equal((await q('SELECT at FROM state_factory_snapshot WHERE id=1'))[0].at,bundle.countsAt,'fast cache restamped sealed statistics');
+  await setPipelineControl(env,'statistics',{paused:false,by:'generation-boundary'},now);
+  const retained=JSON.stringify(await q('SELECT to_jsonb(n) body FROM state_statistics_namespaces n ORDER BY id'));
+  assert.equal((await q('SELECT count(*)::int n FROM state_statistics_namespaces'))[0].n,2);
+  const oldEngine=served.engine;served={...served,engine:'cccccccccccc'};provider.changed();
+  await assert.rejects(provider.advance(),/statistics retained generation budget/);
+  assert.equal(provider.state().state,'capacity_hold');assert.equal((await statisticsStatus(env,now)).state,'capacity_hold');
+  assert.equal(JSON.stringify(await q('SELECT to_jsonb(n) body FROM state_statistics_namespaces n ORDER BY id')),retained);
+  assert.equal((await q('SELECT namespace FROM state_statistics_head'))[0].namespace,currentNamespace);
+  assert.equal(await provider.get(),null,'generation hold exposed another engine counts');
+  served={...served,engine:oldEngine};provider.changed();await provider.advance();assert.equal((await provider.get()).namespace,currentNamespace);
   console.log('PASS native provider full wire, missing dependencies, pause/owner last-write, minimal ACL, halted writer fence/new baseline and two upgrades',schema);
   const receipt={schema,port,database,namespace:currentNamespace,firstSteps:first.steps,countsAt:bundle.countsAt,fullWire:true,legacyFallback:false,recoveryWriterFence:true,haltFreshIncarnation:true,twoNonemptyUpgrades:true,beforePutPause:true,availability:{at:availability.at,...openedFromCache},minimalAcl:acl};
   writeFileSync(new URL('native-'+schema+'.json',root),JSON.stringify(receipt,null,2)+'\n');
