@@ -66,7 +66,9 @@ export async function statisticsProviderSourceRaceCases(){
 
 export async function nativeStatisticsProviderCases({runDaemon=run}={}){
  const port=Number(process.env.WFSIM_STATISTICS_TEST_PORT||55535);assert(Number.isInteger(port)&&port>=1024&&port<=65535);
- const schema='statistics_provider_'+Date.now(),sql=postgres('postgres://127.0.0.1:'+port+'/postgres',{...POSTGRES_OPTIONS,max:1,onnotice:()=>{}});
+ const database=process.env.WFSIM_STATISTICS_TEST_DATABASE||'postgres';assert(/^[a-z_][a-z0-9_]*$/.test(database));
+ const localUrl='postgres://127.0.0.1:'+port+'/'+database;
+ const schema='statistics_provider_'+Date.now(),sql=postgres(localUrl,{...POSTGRES_OPTIONS,max:1,onnotice:()=>{}});
  const owner=postgresClient(sql),env={LIBRARY:pgDb(owner)},q=async(text,args=[])=>[...await sql.unsafe(text,args)];
  const db={run:async(text,...args)=>(await sql.unsafe(placeholders(text),args)).count,get:async(text,...args)=>(await q(placeholders(text),args))[0],all:(text,...args)=>q(placeholders(text),args)};
  let opened,hook=async()=>{},stopped=false,now=Date.now(),served={engine:'aaaaaaaaaaaa',release:'ui-first'};
@@ -76,7 +78,7 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
   await q('CREATE SCHEMA '+schema);await q('SET search_path TO '+schema+',pg_catalog');
   for(const name of ['schema','library','sync','inventory','build_workflows','board_admission'])await sql.unsafe(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
   await sql.unsafe(readFileSync(new URL('../worker/pg/order_cut_indexes.sql',import.meta.url),'utf8').replaceAll('INDEX CONCURRENTLY','INDEX'));
-  const baseGrants=readFileSync(new URL('../deploy/factoryd_grants.sql',import.meta.url),'utf8').replace('GRANT CONNECT ON DATABASE wfsim TO','GRANT CONNECT ON DATABASE postgres TO');
+  const baseGrants=readFileSync(new URL('../deploy/factoryd_grants.sql',import.meta.url),'utf8').replace('GRANT CONNECT ON DATABASE wfsim TO','GRANT CONNECT ON DATABASE '+database+' TO');
   await sql.unsafe(baseGrants);await q('GRANT USAGE ON SCHEMA '+schema+' TO wfsim_factoryd');
   for(let i=0;i<24;i++){
    const id='provider-'+String(i).padStart(3,'0');await seedComputeWork(db,{id,verb:i===1?'optimize_report':'simulate',producer:i===1?'user_calculation':'sweep',initiator:i%2?'user:fixture':'system',waits:i===2?1:0});
@@ -86,7 +88,7 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
   await q("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,payload) SELECT 'sweep',id||'|r|base',id,'live',$1,$1,'{}' FROM state_compute_scheduling",[new Date(now).toISOString()]);
   await q("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES('new_build','provider-012|r|base','provider-012','live',$1,$1)",[new Date(now).toISOString()]);
   await q("UPDATE state_compute_scheduling SET lease='held',leased_at=$1,lease_until=$2,leased_to='provider-device' WHERE id='provider-012'",[new Date(now).toISOString(),new Date(now+60000).toISOString()]);
-  opened=await openEnv({PG_URL:'postgres://wfsim_factoryd@127.0.0.1:'+port+'/postgres'},connect);
+  opened=await openEnv({PG_URL:'postgres://wfsim_factoryd@127.0.0.1:'+port+'/'+database},connect);
   const lookup=async(text,args=[],options)=>{seen.push(text);return opened.statisticsQuery(text,args,options);};
   const transaction=fn=>opened.statisticsTransaction(tx=>fn({query:async(text,args)=>{seen.push(text);const out=await tx.query(text,args);await hook(text,args,out);return out;}}));
   let provider=createStatisticsProvider({env:opened.env,controlEnv:opened.signalEnv,query:lookup,controlQuery:opened.statisticsControlQuery,transaction,
@@ -139,7 +141,7 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
   await setPipelineControl(env,'statistics',{paused:true,by:'recovery'},now);
   const oldHead=(await q('SELECT namespace FROM state_statistics_head WHERE id=1'))[0].namespace;
   const oldGeneration=(await q('SELECT revision::text FROM state_statistics_generation'))[0].revision;
-  const writer=postgres('postgres://127.0.0.1:'+port+'/postgres',{...POSTGRES_OPTIONS,max:1,onnotice:()=>{},connection:{search_path:schema+',pg_catalog'}});
+  const writer=postgres(localUrl,{...POSTGRES_OPTIONS,max:1,onnotice:()=>{},connection:{search_path:schema+',pg_catalog'}});
   let releaseWriter,writerReady;const writerHeld=new Promise(resolve=>{writerReady=resolve;}),releaseHeld=new Promise(resolve=>{releaseWriter=resolve;});
   const writing=writer.begin(async tx=>{await tx.unsafe("UPDATE state_compute_scheduling SET waits=waits WHERE id='provider-000'");writerReady();await releaseHeld;});
   try{
@@ -165,8 +167,14 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
   assert.equal(code,0);assert.equal(snapshotWrites,2,'real daemon demand path did not write its matching snapshot');
   assert(!puts.some(object=>object.key==='demand.json'),'pause after matching SQL write permitted late R2 publication');
   assert(puts.some(object=>object.key==='work.json'),'statistics pause blocked independent fast signal');
+  const [availability]=await q("SELECT body::jsonb body,at FROM state_factory_findings WHERE kind='factory_availability'");
+  assert(availability,'combined daemon lost the formal availability writer');
+  const [openedFromCache]=await q('SELECT * FROM factory_open($1::text,NULL,$2::text,$3::bigint)',
+   [new Date().toISOString(),new Date(Date.now()-120000).toISOString(),availability.body.pack_max]);
+  assert.deepEqual(openedFromCache,{open:availability.body.open,asking:availability.body.asking},'factory_open lost the independent cache');
+  assert.equal((await q('SELECT at FROM state_factory_snapshot WHERE id=1'))[0].at,bundle.countsAt,'fast cache restamped sealed statistics');
   console.log('PASS native provider full wire, missing dependencies, pause/owner last-write, minimal ACL, halted writer fence/new baseline and two upgrades',schema);
-  const receipt={schema,port,namespace:currentNamespace,firstSteps:first.steps,countsAt:bundle.countsAt,fullWire:true,legacyFallback:false,recoveryWriterFence:true,haltFreshIncarnation:true,twoNonemptyUpgrades:true,beforePutPause:true,minimalAcl:acl};
+  const receipt={schema,port,database,namespace:currentNamespace,firstSteps:first.steps,countsAt:bundle.countsAt,fullWire:true,legacyFallback:false,recoveryWriterFence:true,haltFreshIncarnation:true,twoNonemptyUpgrades:true,beforePutPause:true,availability:{at:availability.at,...openedFromCache},minimalAcl:acl};
   writeFileSync(new URL('native-'+schema+'.json',root),JSON.stringify(receipt,null,2)+'\n');
   return receipt;
  }finally{await opened?.close();await sql.end();}
