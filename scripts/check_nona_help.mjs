@@ -4,11 +4,12 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+import { clientSource } from "./ci_client_inputs.mjs";
 import { loadEngine } from "../bot/engine.mjs";
 import { cardDocument } from "../bot/card.mjs";
 const {makeAnswer} = await import(process.env.WFSIM_BOT_ANSWER_MODULE || "../bot/answer.mjs");
 const ui=JSON.parse(execFileSync(process.env.PYTHON || "python3",["-c",
-  "import yaml,json;print(json.dumps(yaml.safe_load(open('data/i18n/zh/ui.yaml'))['ui']))"],{encoding:"utf8"}));
+  "import yaml,json,sys;print(json.dumps(yaml.safe_load(sys.stdin.read())['ui']))"],{encoding:"utf8",input:clientSource("scripts/check_nona_help.mjs")}));
 const published=JSON.parse(readFileSync("site/board/torid.json","utf8"));
 const requested=[];
 let fixtures=new Map(), checks=0;

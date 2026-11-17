@@ -56,6 +56,8 @@ for (const path of websiteTools) {
 }
 assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get('scripts/check_factory_availability.mjs') || []],
   ['pipeline'], 'the complete availability regression has one pipeline CI owner');
+assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get('scripts/check_nona_help.mjs') || []],
+  ['services'], 'illustrated help parsing and ruler selection must run in ordinary service CI');
 const admissionToolInputs = ['scripts/check_build_workflows.mjs', 'scripts/check_factory_deploy.py',
   'scripts/check_workflow_recovery.mjs', 'scripts/inbox_reader.mjs', 'scripts/migrations/db_library.mjs',
   'tests/fixtures/build-admission-base5a/build_workflows.sql',
