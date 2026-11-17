@@ -49,6 +49,12 @@ contract. Inventory `source` names its producer version, not the daemon's
 current release. A UI or daemon commit alone does not invalidate counts.
 The current identical head resumes on restart; reentering a retired identity
 creates a new incarnation and baseline. Unknown canonical SQL fails closed.
+The production default retains at most two namespaces. The identical current
+head can resume when that budget is full; a third incarnation stops before
+allocating a revision, changing head or modifying retained evidence. Status
+reports `capacity_hold`. Runtime options may lower this budget; they cannot
+raise it. Membership tests retain their fixture incarnations through an explicit
+source copy; the unmodified module rejects that test budget.
 Pause, owner stop, source change, head/clock change, capture halt and dependency
 loss are checked around awaits, at the last SQL write and before the R2 PUT.
 
@@ -83,6 +89,9 @@ fence over every captured relation before rotating generation and clearing
 head/markers. An active writer causes the entire recovery to roll back; retry
 only after it commits. Retired namespace state is retained for separately
 qualified cleanup.
+No namespace is deleted to satisfy the generation budget. Logical row deletion
+from shared heaps is not a physical-space recovery guarantee. An exhausted
+budget requires a separately qualified lifecycle or capacity decision.
 
 `task_pipeline.mjs status statistics` reads dependency flags, phase/cursor,
 last sealed clock, halt reason and existence of work. It does not count the

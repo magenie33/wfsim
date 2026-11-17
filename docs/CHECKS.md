@@ -1631,6 +1631,12 @@ refreshes, response ordering, idle-page expiry and true zero counts. The demand
 endpoint preserves sealed bytes and bounds edge caching by remaining validity.
 `WFSIM_STATISTICS_CLOCK_UI_SOURCE` selects an older page source as a negative
 control; its stale total must fail the display assertion.
+The provider check exercises the production two-generation boundary on real
+in-memory SQL: current-head restart succeeds at capacity, while a third identity
+or retired reentry preserves head, revision and retained state. Removing that
+guard with `--break-generation-guard` must fail. Runtime options cannot raise
+the limit. The Native membership check uses an explicit source copy with a
+larger fixture budget; Native provider checks retain the production limit.
 
 `check_factory_availability.mjs` checks the independent findings-row cache,
 unchanged complete-statistics clock, original fallback, pack ceiling, invalid

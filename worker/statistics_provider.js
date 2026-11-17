@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // One bounded consumer and one sealed source for snapshot and demand publication.
-import {createStatisticsProjection,statisticsProjectionIdentity,STATISTICS_PROJECTION_CONTRACT} from './statistics_projection.js';
+import {createStatisticsProjection,statisticsProjectionIdentity,STATISTICS_PROJECTION_CONTRACT,StatisticsProjectionBudget} from './statistics_projection.js';
 import {readPipelineControl} from './task_pipeline.js';
 import {dialsOf} from './dials.js';
 import {demandOf} from './contribution.js';
@@ -44,6 +44,8 @@ export async function statisticsStatus(env,now=Date.now(),role='wfsim_factoryd')
  const snapshot=await env.LIBRARY.prepare('SELECT at,engine FROM state_factory_snapshot WHERE id=1').first();
  const progress=await env.LIBRARY.prepare("SELECT * FROM state_task_pipeline_progress WHERE name='statistics'").first();
  const dependencies=await statisticsDependencies(query,role);
+ const held=await env.LIBRARY.prepare("SELECT body FROM state_factory_findings WHERE kind='statistics_provider'").first();
+ let providerState;try{providerState=JSON.parse(held?.body??'null');}catch{providerState=null;}
  let projection=null;
  if(dependencies.schema&&dependencies.grants)[projection]=await query(`SELECT h.namespace,n.phase::text,n.cursor,n.counts_at,
   coalesce(g.blocked,(SELECT reason FROM state_statistics_invalidations LIMIT 1)) blocked,
@@ -51,7 +53,7 @@ export async function statisticsStatus(env,now=Date.now(),role='wfsim_factoryd')
   EXISTS(SELECT 1 FROM state_statistics_obligations o WHERE o.namespace=h.namespace LIMIT 1) work
   FROM state_statistics_generation g LEFT JOIN state_statistics_head h ON h.id=1 LEFT JOIN state_statistics_namespaces n ON n.id=h.namespace WHERE g.id=1`,[]);
  return{name:'statistics',paused:control.paused,control,snapshot:snapshot??null,pending:null,progress:progress??null,
-  dependencies,projection:projection??null,state:control.paused?'paused':!dependencies.ready?dependencies.state:projection?.blocked?'halted':!projection?.namespace?'not_started':projection.phase!=='2'?'baseline':projection.work||projection.captured_changes?'catchup':projection.counts_at?'sealed':'unsealed',observed_at:iso(now)};
+  dependencies,projection:projection??null,provider:providerState,state:control.paused?'paused':!dependencies.ready?dependencies.state:projection?.blocked?'halted':providerState?.state==='capacity_hold'?'capacity_hold':!projection?.namespace?'not_started':projection.phase!=='2'?'baseline':projection.work||projection.captured_changes?'catchup':projection.counts_at?'sealed':'unsealed',observed_at:iso(now)};
 }
 
 export function createStatisticsProvider({env,controlEnv=env,transaction,query=statisticsQuery(env.LIBRARY),controlQuery=statisticsQuery(controlEnv.LIBRARY),release,stopped=()=>false,
@@ -131,7 +133,8 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
      await state({state:bundle?'sealed':'advancing',namespace:started.namespace,counts_at:bundle?.countsAt??null});
      return{steps,processed,sealed};
     }catch(error){
-     if(!stopping())await state({state:'held',error:'statistics operation failed'});
+     if(!stopping())await state(error instanceof StatisticsProjectionBudget&&error.message==='statistics retained generation budget'
+      ?{state:'capacity_hold',error:'statistics retained generation budget'}:{state:'held',error:'statistics operation failed'});
      throw error;
     }
    })().finally(()=>{if(active===token)active=null;flight=null;});
