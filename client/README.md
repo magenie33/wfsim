@@ -71,7 +71,13 @@ Linux startup services use a persistent launcher in the device directory, so
 clearing npm's cache does not remove their executable. `status` includes the
 running host version and latest update outcome. Keep the device directory on
 writable storage. A host without an automatic updater needs one manual upgrade
-to a version that includes it.
+to a version that includes it, including an existing 0.1.0 installation.
+
+Automatic updates replace the executable worker and delegated commands. The
+installed bootstrap supervisor and persistent launcher do not replace
+themselves. A change to their updater, signing keys or launch contract needs
+an explicit bootstrap installation and restart. Publishing a CLI release does
+not start a stopped client or resume a paused service.
 
 The default data directory is:
 
