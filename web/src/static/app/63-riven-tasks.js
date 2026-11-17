@@ -9,7 +9,7 @@ USER_TASK_TYPES.set("appraisal", {
   },
   describe(task) {
     return { title: `${task.origin.riven_name || tr("Riven")} · ${tr("Riven analysis")}`,
-      note: [weaponInfo(task.request.weapon)?.name, benchmarkName(task.origin.ruler), tr(USER_TASK_EXECUTORS.get(task.destination)?.label || "This device")].filter(Boolean).join(" · ") };
+      note: [weaponEntryName(weaponInfo(task.request.weapon)), benchmarkName(task.origin.ruler), tr(USER_TASK_EXECUTORS.get(task.destination)?.label || "This device")].filter(Boolean).join(" · ") };
   },
   resultLink(task) { return `${weaponPath(task.request.weapon)}/riven-analyst?analysis-result=${encodeURIComponent(task.result_ref)}`; },
   async execute(task, execution) {

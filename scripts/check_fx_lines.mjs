@@ -7,7 +7,7 @@ import { execFileSync } from "node:child_process";
 import { readRivenLines, makeAnswer } from "../bot/answer.mjs";
 import * as headless from "../mcp/headless.js";
 
-const { pools, zh } = JSON.parse(execFileSync(process.env.PYTHON || "python3", ["-c", `
+const { pools, zh, modularWeapons } = JSON.parse(execFileSync(process.env.PYTHON || "python3", ["-c", `
 import json
 from pathlib import Path
 import yaml
@@ -21,7 +21,22 @@ for path in sorted(Path("data/rivens").glob("*.yaml")):
     pools[table["class"]] = table["stats"]
 zh = yaml.safe_load(Path("data/i18n/zh/ui.yaml").read_text())
 zh.update(yaml.safe_load(Path("data/i18n/zh/riven_words.yaml").read_text()))
-print(json.dumps({"pools": pools, "zh": zh}))
+zh["weapons"] = {}
+for source in ["names", "zaws"]:
+    zh["weapons"].update(yaml.safe_load(Path(f"data/i18n/zh/{source}.yaml").read_text()).get("weapons", {}))
+weapons = []
+for path in sorted(Path("data/weapons").rglob("*.yaml")):
+    w = yaml.safe_load(path.read_text())
+    if not w.get("default_form") or not (w.get("kitgun") or w.get("zaw")):
+        continue
+    if w.get("kitgun"):
+        chamber = yaml.safe_load(Path(f"data/kitguns/chambers/{w['kitgun']}.yaml").read_text())
+        assembly = {"kind": "kitgun", "family": chamber["chamber"]}
+    else:
+        assembly = {"kind": "zaw", "family": w["zaw"]["strike"], "handedness": w["zaw"]["handedness"]}
+    weapons.append({"id": w["id"], "name": w["name"], "slot": w["slot"], "assembly": assembly,
+        "riven_class": "melee" if w.get("zaw") else "pistol"})
+print(json.dumps({"pools": pools, "zh": zh, "modularWeapons": weapons}))
 `], { cwd: new URL("..", import.meta.url), encoding: "utf8" }));
 const tf = (s) => headless.headlessSpeaker({}, { zh }, "zh").tf(s);
 const read = (s, pool = pools.rifle, locales = [zh]) => readRivenLines(s, pool, locales);
@@ -177,6 +192,81 @@ for (const name of ["冰凇p", "冰凇 P", "Verglas p", "VERGLASP", "verglas_pri
     await answer(command);
     check(`Prime shorthand ${command}`, calls.length === before + 1 && calls.at(-1)?.weapon === "verglas_prime", JSON.stringify(calls));
   }
+}
+
+const modularMeta = { weapons: modularWeapons, benchmarks: [{ id: "test", name: "Test", primary: true }], riven_stats: pools };
+check("all modular roster identities are exercised", modularWeapons.length === 34);
+check("English has no active locale overlay", JSON.stringify(headless.headlessWeaponAliases(modularWeapons[0], [null]))
+  === JSON.stringify(headless.headlessWeaponAliases(modularWeapons[0])));
+for (const weapons of [modularWeapons, [...modularWeapons].reverse()]) {
+  const calls = [];
+  const answer = makeAnswer({ meta: { ...modularMeta, weapons }, zh, headless,
+    run: async (id, args) => { calls.push(args); return { ok: false }; },
+    host: { api: async (path, body) => { calls.push(body); return { ok: false }; } } });
+  for (const [input, expected] of [
+    ["捕月主手", "catchmoon_primary"], ["捕月 主武器", "catchmoon_primary"], ["捕月（主要武器）", "catchmoon_primary"],
+    ["捕月副手", "catchmoon_secondary"], ["捕月 副武器", "catchmoon_secondary"], ["捕月（次要武器）", "catchmoon_secondary"],
+    ["Catchmoon (Primary)", "catchmoon_primary"], ["Catchmoon Secondary", "catchmoon_secondary"],
+    ["瑟普梵侍刃", "sepfahn_one_handed"], ["瑟普梵（长棍）", "sepfahn_two_handed"],
+    ["Sepfahn (Nikana)", "sepfahn_one_handed"], ["Sepfahn Staff", "sepfahn_two_handed"],
+  ]) {
+    const before = calls.length;
+    await answer(`fx ${input} 100暴击几率 150暴伤`);
+    check(`literal modular input ${input}`, calls.length === before + 1 && calls.at(-1)?.weapon === expected, JSON.stringify(calls.at(-1)));
+  }
+  for (const w of weapons) {
+    const names = headless.headlessWeaponAliases(w, [zh]);
+    for (const name of names.complete) for (const command of ["fx", "zk", "pz"]) {
+      const before = calls.length;
+      await answer(`${command} ${name} ${command === "fx" ? "100暴击几率 150暴伤" : command === "zk" ? "双暴" : ""}`);
+      check(`complete modular name ${command} ${name}`, calls.length === before + 1 && calls.at(-1)?.weapon === w.id, JSON.stringify(calls.at(-1)));
+      if (command === "fx") {
+        const found = headless.HEADLESS_QUERIES.find((q) => q.id === "builder.weapons.find").run({ query: name },
+          { meta: () => modularMeta, names: () => [zh], tr: (s) => s, origin: "https://wfsim.test" });
+        check(`modular alias finds one tool result ${name}`, found.found === 1 && found.rows[0]?.id === w.id, JSON.stringify(found));
+      }
+    }
+    for (const name of names.incomplete) for (const command of ["fx", "zk", "pz"]) {
+      const before = calls.length;
+      const reply = await answer(`${command} ${name} 100暴击几率 150暴伤`);
+      const peers = weapons.filter((x) => x.assembly.kind === w.assembly.kind && x.assembly.family === w.assembly.family);
+      const speaker = headless.headlessSpeaker(modularMeta, { zh }, "zh");
+      check(`bare modular name lists its complete candidates: ${command} ${name}`, calls.length === before
+        && peers.every((p) => reply.text.includes(headless.headlessWeaponEntryName(speaker.meta, speaker.meta.weapons.find((x) => x.id === p.id), speaker.t)))
+        && reply.text.includes(w.assembly.kind === "kitgun" ? "主手／副手" : "武器类型"), reply.text);
+    }
+  }
+  const unknown = await answer("fx 不存在的武器 100暴击几率 150暴伤");
+  check("unknown FX weapon explains Kitgun and Zaw qualifiers", unknown.text.includes("主手／副手") && unknown.text.includes("Zaw") && unknown.text.includes("武器类型"));
+}
+for (const lang of ["en", "zh"]) {
+  const say = headless.headlessSpeaker(modularMeta, { zh }, lang);
+  for (const w of say.meta.weapons) {
+    const label = headless.headlessWeaponEntryName(say.meta, w, say.t);
+    const expected = w.assembly.kind === "kitgun" ? `${w.name} (${say.t(w.slot === "primary" ? "Primary" : "Secondary")})` : w.name;
+    check(`official modular display ${lang} ${w.id}`, label === expected && headless.headlessWeaponEntryName(say.meta, { ...w, name: label }, say.t) === label, label);
+    const doc = headless.headlessLongCard(say, w, { kind: "appraise", code: "TEST" }, { origin: "https://wfsim.test", rows: [] });
+    check(`FX image title identifies its modular entry ${lang} ${w.id}`, doc.draw("").includes(`<h1 class="lc-title">${label} · ${say.t("Riven gain")}</h1>`), label);
+    const found = headless.HEADLESS_QUERIES.find((q) => q.id === "builder.weapons.find").run({ query: label },
+      { meta: () => say.meta, names: () => [zh], tr: say.t, origin: "https://wfsim.test" });
+    check(`complete modular name finds one tool result ${lang} ${w.id}`, found.found === 1 && found.rows[0]?.id === w.id && found.rows[0]?.name === label, JSON.stringify(found));
+  }
+}
+for (const w of modularWeapons) {
+  const stats = [
+    { slot: "0", id: "critical_chance", shown: 100, min: 90, max: 110, unit: "%", text: "+100% Critical Chance", roll: 1 },
+    { slot: "1", id: "critical_damage", shown: 150, min: 135, max: 165, unit: "%", text: "+150% Critical Damage", roll: 1 },
+  ];
+  const opened = [];
+  const answer = makeAnswer({ meta: modularMeta, zh, headless,
+    host: { api: async () => ({ ok: true, stats, illegal: [] }) } });
+  const say = headless.headlessSpeaker(modularMeta, { zh }, "zh");
+  const label = headless.headlessWeaponEntryName(say.meta, say.meta.weapons.find((x) => x.id === w.id), say.t);
+  const reply = await answer(`fx ${label} 100暴击几率 150暴伤`, { openAppraisal: async (job) => { opened.push(job); return { code: "TEST" }; } });
+  check(`FX receipt keeps complete identity ${w.id}`, opened.length === 1 && opened[0].weapon === w.id
+    && reply.text?.startsWith(label) && reply.line?.startsWith(label), JSON.stringify(reply));
+  check(`FX progress and delivery keep complete identity ${w.id}`, answer.started({ weapon: w.id, code: "TEST" }).includes(label)
+    && answer.told({ weapon: w.id, verdict: { shown: "10", gain: 0.1 }, calculator: { official: true } }).includes(label));
 }
 
 // The command delegates printed-value inversion to the engine, including x0.xx

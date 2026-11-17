@@ -11,7 +11,7 @@ const SITE = "https://wfsim.app";
 const squash = (s) => String(s || "").normalize("NFKC").toLowerCase().replace(/\s+/g, "");
 /// A WEAPON'S NAME as people type it: no spaces, hyphens or dots, any width —
 /// "mk-1盗贼" and "MK1 盗贼" are both MK1-盗贼.
-const nameFold = (s) => squash(s).replace(/[-_.·・'’]/g, "");
+const nameFold = (s) => squash(s).replace(/[-_.·・'’()]/g, "");
 
 import { readRivenLines } from "../mcp/headless.js";
 export { readRivenLines };
@@ -33,16 +33,20 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     ...(attribution.boardRows ? {cardData:{rows:attribution.boardRows,witnesses:attribution.names}} : {}),
   });
   const attributionText = (attribution, row) => headless.headlessWitnessesText(say, attribution.names.get(row));
-  const weaponName = (w) => (zh.weapons && zh.weapons[w.id]) || w.name;
+  const weaponName = (w) => headless.headlessWeaponEntryName(say.meta,
+    { ...w, name: zh.weapons?.[w.id] || w.name }, say.t);
   const modName = (id) => { const c = String(id).split("@")[0]; return (zh.mods && zh.mods[c]) || c; };
   const arcaneName = (id) => (zh.arcanes && zh.arcanes[id]) || id;
   const evoName = (id) => (zh.evolutions && zh.evolutions[id]) || id;
   // EVERY NAME A WEAPON GOES BY, longest first, so "Boar Prime" wins over "Boar".
-  const weaponNames = (meta.weapons || []).flatMap((w) => [w.id, w.name, w.name_en, zh.weapons && zh.weapons[w.id]]
-    .filter(Boolean).flatMap((n) => {
-      const full = nameFold(n);
-      return (full.endsWith("prime") ? [full, full.slice(0, -5) + "p"] : [full]).map((n) => ({ w, n }));
-    })).sort((a, b) => b.n.length - a.n.length);
+  const weaponNames = (meta.weapons || []).flatMap((w) => {
+    const names = headless.headlessWeaponAliases(w, [zh]);
+    return Object.entries(names).flatMap(([kind, words]) => words.flatMap((word) => {
+      const full = nameFold(word);
+      return (full.endsWith("prime") ? [full, full.slice(0, -5) + "p"] : [full])
+        .map((n) => ({ w, n, incomplete: kind === "incomplete" }));
+    }));
+  }).sort((a, b) => b.n.length - a.n.length);
   const rulerShort = (b) => t(b.name).split(" · ")[0];
   const statNames = (cls) => headless.rivenStatNames((meta.riven_stats || {})[cls] || [], [zh]);
   const statZh = (cls, id) => {
@@ -76,12 +80,17 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   /// The weapon the words start with, and what is left after it.
   function weaponOf(rest) {
     const q = nameFold(rest);
-    const hit = weaponNames.find((x) => x.n && q.startsWith(x.n));
+    const matches = weaponNames.filter((x) => x.n && q.startsWith(x.n));
+    const hit = matches[0];
     if (!hit) return null;
+    const longest = matches.filter((x) => x.n.length === hit.n.length);
+    const choices = [...new Map(longest.map((x) => [x.w.id, x.w])).values()];
+    if (choices.length > 1 || longest.some((x) => x.incomplete)) return { choices };
     // WHAT FOLLOWS THE NAME keeps its signs ("-变焦" is a malus): walk the words
     // until as much of them as the name has been consumed.
     let i = 0;
     while (i < rest.length && nameFold(rest.slice(0, i)).length < hit.n.length) i += 1;
+    while (i < rest.length && /[)）\s]/.test(rest[i])) i += 1;
     return { w: hit.w, left: squash(rest.slice(i)) };
   }
 
@@ -107,13 +116,21 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   ].join("\n");
   const UNREAD = "I could not read “{word}”. Use the card's stat name, or an alias such as 双暴, 暴伤 or 负任意. (・_・;)";
   const NO_WEAPON = "Which weapon? Add its name, like {e}. (・_・;)";
-  const NOT_FOUND = "I could not find that weapon. Check the name; Chinese and English both work. (・_・;)";
+  const NOT_FOUND = "I could not find that weapon. Chinese and English both work. Include Primary/Secondary for a Kitgun, or the weapon type for a Zaw. (・_・;)";
   const NOT_MEASURED = "There are no published results for this weapon under that ruler yet. (・_・;)";
+  const weaponPrompt = (hit, command) => {
+    const list = hit.choices.map((w) => `${command} ${weaponName(w)} …`).join(" / ");
+    const kind = hit.choices.find((w) => w.assembly?.kind)?.assembly.kind;
+    return t(kind === "kitgun" ? "Include Primary/Secondary, for example: {list}. (・_・;)"
+      : kind === "zaw" ? "Include the weapon type for this Zaw, for example: {list}. (・_・;)"
+      : "Several weapons match. Use a complete name, for example: {list}. (・_・;)", { list });
+  };
 
   async function pz(rest) {
     if (!rest) return t(NO_WEAPON, { e: "pz 托里德 3" });
     const hit = weaponOf(rest);
     if (!hit) return t(NOT_FOUND);
+    if (hit.choices) return weaponPrompt(hit, "pz");
     const { n, left: afterCount } = countOf(hit.left);
     // "紫卡" anywhere after the weapon asks for riven builds; what is left names the ruler.
     const rivenWords = ((zh.riven_query_words || {}).with_riven || []).map(squash).sort((a, b) => b.length - a.length);
@@ -142,6 +159,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     if (!rest) return t(NO_WEAPON, { e: "zk 托里德 双暴" });
     const hit = weaponOf(rest);
     if (!hit) return t(NOT_FOUND);
+    if (hit.choices) return weaponPrompt(hit, "zk");
     const { n, left: afterCount } = countOf(hit.left);
     const cls = hit.w.riven_class;
     const named = rulerIn(afterCount);
@@ -211,6 +229,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     if (!rest) return t(NO_WEAPON, { e: example });
     const hit = weaponOf(rest);
     if (!hit) return t(NOT_FOUND);
+    if (hit.choices) return weaponPrompt(hit, "fx");
     const named = rulerIn(hit.left);
     const ruler = named.ruler || defaultRuler();
     const cls = hit.w.riven_class;
@@ -264,12 +283,13 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=appraise&code=${opened.code}`;
     const say = headless.headlessSpeaker({}, { zh }, "zh");
     const line = slots.map((sl) => say.tf(resolved.stats.find((s) => s.slot === sl.slot).text)).join(" ");
-    return { line: t("Nona has your riven, code {code}. I will replay the result and post it here when it passes. (๑•̀ㅂ•́)و✧", { code: opened.code }),
+    return { line: weaponName(hit.w) + " · " + t("Nona has your riven, code {code}. I will replay the result and post it here when it passes. (๑•̀ㅂ•́)و✧", { code: opened.code }),
       card, text: `${weaponName(hit.w)} · ${rulerShort(ruler)} · ${line}\n${SITE}/appraise/${opened.code}` };
   }
 
   /// …AND WHILE IT WAITS: a computer has taken it.
-  const started = (s) => t("A device has started riven gain {code}. Nona will post the result after replay. (｀・ω・´)", { code: s.code });
+  const started = (s) => [weaponName((meta.weapons || []).find((w) => w.id === s.weapon) || { id: s.weapon, name: s.weapon || "" }),
+    t("A device has started riven gain {code}. Nona will post the result after replay. (｀・ω・´)", { code: s.code })].filter(Boolean).join(" · ");
 
   /// `{ text }`, or `{ line, card, text }` — the long image at `card` with
   /// `line` under it, and `text` the answer in words if the image cannot be made.

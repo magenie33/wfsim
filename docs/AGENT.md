@@ -451,6 +451,12 @@ comparison. Executor disclosure and queue ownership are in `docs/TASKS.md`.
    own note of where to answer, which nothing else reads.
    Replies use the engine's printed stat lines, value before name. Prime
    weapon names also accept a trailing `P` or `p`, with or without a space.
+   Modular weapon inputs identify one roster entry: Kitguns include Primary or
+   Secondary; Zaws include their declared weapon class. Chinese slot input also
+   accepts 主手/副手 and 主武器/副武器. A bare chamber or strike returns complete
+   candidates before any calculation or task submission. FX receipts, progress,
+   delivery, tasks and card titles use the shared complete weapon label. The
+   selected grip and loader/link remain separate build parts.
 2. `/appraise/<code>` opens that weapon's optimizer under the official ruler
    with the appraisal's own BUILT-IN search and searches at once
    (`81-appraisal.js`): `riven_appraisal` in `data/search/presets.yaml` — one

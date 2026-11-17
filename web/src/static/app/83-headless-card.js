@@ -32,6 +32,43 @@ function headlessBoardPayloadFromResult(res, ctx) {
 /// A locale's NAME for `id` in table `table`, or the English one.
 const headlessLN = (i18n, table, id, en) => (i18n && i18n[table] && i18n[table][id]) || en;
 
+/// A modular weapon's label identifies its slot or declared Zaw class.
+function headlessWeaponEntryName(meta, w, translate = (s) => s) {
+  if (!w) return "";
+  const shared = w.assembly?.kind === "kitgun" || (meta?.weapons || []).some((x) => x.name === w.name && x.slot !== w.slot);
+  const slot = { primary: "Primary", secondary: "Secondary" }[w.slot] || w.slot;
+  const suffix = shared ? ` (${translate(slot)})` : "";
+  return suffix && !w.name.endsWith(suffix) ? w.name + suffix : w.name;
+}
+
+/// Bare modular family names are candidates, never complete weapon inputs.
+function headlessWeaponAliases(w, locales = []) {
+  const names = [...new Set([w.name, w.name_en, ...locales.map((l) => l?.weapons?.[w.id])].filter(Boolean))];
+  const kind = w.assembly?.kind;
+  const stem = (n) => n.split(/\s*[(（]/)[0];
+  const incomplete = kind ? [...new Set([...names.map(stem), w.assembly.family || w.assembly.chamber].filter(Boolean))] : [];
+  const complete = new Set([w.id]);
+  if (kind === "kitgun") {
+    const slot = w.slot === "secondary" ? "Secondary" : "Primary";
+    const aliases = slot === "Secondary" ? ["副手", "副武器", "次要武器"] : ["主手", "主武器", "主要武器"];
+    const qualifiers = [slot, `${slot} Weapon`, ...aliases, ...locales.map((l) => l?.ui?.[slot]).filter(Boolean)];
+    for (const name of names) for (const suffix of qualifiers) {
+      complete.add(`${stem(name)} ${suffix}`);
+      complete.add(`${stem(name)} (${suffix})`);
+    }
+  } else {
+    for (const name of names) {
+      complete.add(name);
+      if (kind === "zaw") complete.add(name.replace(/[()（）]/g, ""));
+    }
+    if (kind === "zaw") {
+      const suffix = w.assembly.handedness === "two_handed" ? ["Two Handed", "双手"] : ["One Handed", "单手"];
+      for (const name of names) for (const q of suffix) complete.add(`${stem(name)} ${q}`);
+    }
+  }
+  return { complete: [...complete], incomplete };
+}
+
 /// NAMES IN THE READER'S LANGUAGE, written into `meta` in place: every entity
 /// keeps its English one as `name_en`, which URLs and wiki links are built from.
 function headlessApplyNames(meta, i18n) {
@@ -662,9 +699,10 @@ function headlessLongCard(say, w, ask, got) {
   const ofRow = (row) => headlessCardOfState(say, headlessBoardRowAxes(say, w, row, defs), w, rivenOf)
     + `<p class="lc-note">${headlessWitnessesHtml(say, got.witnesses?.get(row), origin)}</p>`;
   const path = headlessWeaponPath(meta.weapons || [], w.id);
+  const name = headlessWeaponEntryName(meta, w, say.t);
   let title = "", link = "", body = () => "";
   if (verdict) {
-    title = trF("{w} · Riven gain", { w: w.name });
+    title = trF("{w} · Riven gain", { w: name });
     link = `${origin}${path}/riven-analyst`;
     const who = headlessContributorText(say, job.result.calculator);
     body = () => !verdict.ok ? `<p class="sim-empty">${esc(verdict.reason || "")}</p>`
@@ -679,7 +717,7 @@ function headlessLongCard(say, w, ask, got) {
         + `<p class="sb-empty">${esc(trF("Delivered by {who}. Thank you!", { who }))}</p>`);
   } else if (kind === "appraise") {
     // The submitted riven while the community search is running.
-    title = trF("{w} · Riven gain", { w: w.name });
+    title = trF("{w} · Riven gain", { w: name });
     link = `${origin}/appraise/${code}`;
     body = () => {
       if (!job) return "";
@@ -692,13 +730,13 @@ function headlessLongCard(say, w, ask, got) {
   } else if (kind === "pz") {
     const shown = selected.entries;
     const mode = (shown[0] || {}).mode;
-    title = trF(withRiven ? "{w} · top {n} riven builds" : "{w} · top {n} builds", { w: w.name, n: shown.length });
+    title = trF(withRiven ? "{w} · top {n} riven builds" : "{w} · top {n} builds", { w: name, n: shown.length });
     link = `${origin}${path}?bench=${encodeURIComponent(ruler)}&mode=${encodeURIComponent(mode || "base")}&riven=${withRiven ? 1 : 0}`;
     body = () => shown.map((x) => headlessCardBox(`<b class="lc-rank">#${x.rank}</b><b class="lc-score">${esc(headlessCardShown(x.row))}</b><span class="sb-empty">${esc(metric)}${
       x.tied > 1 ? ` · ${esc(trF("{n} builds tie", { n: x.tied }))}` : ""}</span>${record(x.row)}`, ofRow(x.row))).join("");
   } else {
     const g = selected;
-    title = trF("{w} · Riven Analyst", { w: w.name });
+    title = trF("{w} · Riven Analyst", { w: name });
     link = `${origin}${path}/riven-analyst`;
     body = () => !g.hasRivens ? "" : (g.top ? headlessCardBox(`<span class="sb-h">${esc(say.t("The board's best riven-free build"))}</span><b class="lc-score">${esc(headlessCardShown(g.top.row))}</b>${record(g.top.row)}`,
       ofRow(g.top.row)) : "")
