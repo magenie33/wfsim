@@ -11,4 +11,3 @@ export const STATISTICS_OPEN = `stats_cut AS MATERIALIZED(SELECT * FROM compute_
   SELECT ${projection('q')} FROM state_compute_effective_open q
   WHERE ${statisticsNotCancelled('q')}
  )`;
-
