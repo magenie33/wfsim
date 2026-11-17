@@ -1,4 +1,4 @@
-import { seedComputeWork } from "./pg/fixtures.mjs";
+import {seedComputeWork,statisticsCounts,fixtureSnapshotWrite,fixtureDaemon} from './pg/fixtures.mjs';
 // THE SETTLER IN SHADOW (worker/settler.js, scripts/factoryd.mjs): its fair table
 // is the worker's `tableOf` to the last digit through Postgres, its snapshot
 // counts what the worker's own answers count, its judgement of a settled
@@ -8,11 +8,12 @@ import { seedComputeWork } from "./pg/fixtures.mjs";
 import { tableOf } from "../worker/fair.js";
 import { factory, canon, nearAnswer } from "../worker/tasks.js";
 import { contributionRoute } from "../worker/contribution.js";
-import { signalTick, snapshotTick, fairTick, readFair, compareFair, settleShadow, judgeFact, SETTLE_SHADOW_LAG_MS } from "../worker/settler.js";
+import { signalTick, snapshotTick as writeSnapshotTick, fairTick, readFair, compareFair, settleShadow, judgeFact, SETTLE_SHADOW_LAG_MS } from "../worker/settler.js";
 import { testDb } from "./pg/test_db.mjs";
 import { SETTLER_SILENT_MS } from "../worker/factory.js";
 import { mock } from "node:test";
 import { DIAL_DEFAULTS, forgetDials, dialsOf } from "../worker/dials.js";
+import {statisticsProviderCases} from './check_statistics_provider.mjs';
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -22,6 +23,8 @@ const check = (what, ok, detail = "") => {
 const daemonModule=process.env.WFSIM_FACTORYD_MODULE||"./factoryd.mjs";
 const iso = (ms) => new Date(ms).toISOString();
 const now = Date.now();
+const snapshotTick=(env,served={},at=Date.now(),options={})=>writeSnapshotTick(env,served,at,
+ {counts:()=>statisticsCounts(env,at,served),write:fixtureSnapshotWrite(env),...options});
 
 const LIBRARY = await testDb("library"), ACCOUNTS = await testDb("accounts"), L = LIBRARY;
 const env = { LIBRARY, ACCOUNTS };
@@ -144,7 +147,7 @@ console.log("settling, in shadow");
 
 console.log("the daemon");
 {
-  const { run } = await import(daemonModule);
+  const { run:daemonRun } = await import(daemonModule),run=options=>fixtureDaemon(daemonRun,options);
   process.env.DAEMON_COMMIT = "c0ffee";
   const prior=await L.get("SELECT daemon_at,daemon_commit FROM state_factory_snapshot WHERE id=1");
   const code = await run({ once: true, opened: { env, close: async () => {} }, servedNow: async () => ({ engine: "e1", release: "r1" }), target: null });
@@ -158,7 +161,7 @@ console.log("the daemon");
 
 console.log("the work signal");
 {
-  const { run, SIGNAL_KEY, SIGNAL_CACHE } = await import(daemonModule);
+  const { run:daemonRun, SIGNAL_KEY, SIGNAL_CACHE } = await import(daemonModule),run=options=>fixtureDaemon(daemonRun,options);
   const puts = [];
   const target = { endpoint: "https://acct.r2.cloudflarestorage.com", bucket: "wfsim-public", accessKey: "k", secretKey: "s" };
   const go = () => run({ once: true, opened: { env, close: async () => {} }, servedNow: async () => ({ engine: "e1", release: "r1" }),
@@ -202,10 +205,11 @@ console.log("the work signal");
   check("…and none when nothing may be taken", none.open === false && none.urgent === false, JSON.stringify(none));
 }
 
+await statisticsProviderCases();
 await phase1Cases();
 
 async function phase1Cases(){
-  const {run,SIGNAL_KEY}=await import(daemonModule);
+  const {run:daemonRun,SIGNAL_KEY}=await import(daemonModule),run=options=>fixtureDaemon(daemonRun,options);
   const {pipelineCommand}=await import('./task_pipeline.mjs');
   const {DEMAND_KEY,TALLY_KEY}=await import('../worker/contribution.js');
   const db=await testDb('library'),env={LIBRARY:db};
@@ -251,7 +255,7 @@ async function phase1Cases(){
   }finally{forgetDials();await db.close();}
 console.log("independent signal sampling");
 for(const stopMode of ['lost','stop']){
-  const {run,SIGNAL_KEY}=await import(daemonModule);
+  const {run:daemonRun,SIGNAL_KEY}=await import(daemonModule),run=options=>fixtureDaemon(daemonRun,options);
   const {DEMAND_KEY}=await import('../worker/contribution.js');
   const db=await testDb('library'),defer=()=>{let resolve;const promise=new Promise(r=>{resolve=r;});return {promise,resolve};};
   const started=defer(),releaseSlow=defer(),firstPut=defer(),sampleHeld=defer(),releaseSample=defer(),listening=defer();

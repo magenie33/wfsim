@@ -1654,6 +1654,14 @@ another required tick's failure still rejects the pass. Pausing during a count
 prevents its late write. Blocked counts, primary-pool dial reads and failed
 statistics cannot stall the signal clock or wave probe, share a duplicate
 writer, restamp old goals, or publish after owner loss or shutdown.
+The entry also runs `check_statistics_provider`'s fail-closed, singleflight,
+multi-step, cached-clock and stopped-owner controls. The scheduling fixtures
+supply independent frozen full-read counts; production accepts only a sealed
+provider bundle. `node scripts/check_statistics_provider.mjs --native` requires
+an explicitly owned local PostgreSQL port (`WFSIM_STATISTICS_TEST_PORT`). It
+checks the actual factoryd role and RR transport against the full wire oracle,
+missing schema/index/grants, last-write pause and owner loss, the final R2 pause
+guard, halted-writer fencing, fresh recovery baseline and two nonempty upgrades.
 
 ## `check_factory_capacity`
 

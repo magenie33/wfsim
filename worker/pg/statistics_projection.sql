@@ -118,17 +118,23 @@ BEGIN
   END IF;
   RETURN NULL;
 END $$;
-DO $capture$ DECLARE name text; BEGIN
-  FOREACH name IN ARRAY ARRAY['state_compute_scheduling','relation_task_consumers','state_board_pending_work',
+CREATE OR REPLACE FUNCTION statistics_capture_relations() RETURNS text[] LANGUAGE sql IMMUTABLE AS $$
+ SELECT ARRAY['state_compute_scheduling','relation_task_consumers','state_board_pending_work',
     'entity_compute_batches','entity_compute_tasks','entity_compute_results','record_candidate_answers',
     'state_pending_verifications','record_compute_order_cancellations','relation_compute_order_cut_protection',
-    'entity_compute_order_cuts','record_compute_order_cut_activations','state_factory_findings'] LOOP
+    'entity_compute_order_cuts','record_compute_order_cut_activations','state_factory_findings']::text[]
+$$;
+DO $capture$ DECLARE name text; BEGIN
+  FOREACH name IN ARRAY statistics_capture_relations() LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS statistics_capture ON %I',name);
     EXECUTE format('CREATE TRIGGER statistics_capture AFTER INSERT OR UPDATE OR DELETE ON %I FOR EACH ROW EXECUTE FUNCTION statistics_capture()',name);
     EXECUTE format('DROP TRIGGER IF EXISTS statistics_truncate ON %I',name);
     EXECUTE format('CREATE TRIGGER statistics_truncate AFTER TRUNCATE ON %I FOR EACH STATEMENT EXECUTE FUNCTION statistics_capture()',name);
   END LOOP;
 END $capture$;
+DROP TRIGGER IF EXISTS pipeline_statistics_paused ON state_task_pipeline_controls;
+CREATE TRIGGER pipeline_statistics_paused AFTER INSERT OR UPDATE OF paused ON state_task_pipeline_controls
+ FOR EACH ROW WHEN(NEW.name='statistics' AND NEW.paused) EXECUTE FUNCTION task_pipeline_notify();
 
 CREATE OR REPLACE FUNCTION statistics_replace(text,text,text,jsonb) RETURNS void
 LANGUAGE plpgsql AS $$
@@ -155,7 +161,52 @@ BEGIN
   END IF;
 END $$;
 
-REVOKE ALL ON FUNCTION statistics_invalidate(text),statistics_touch(text,jsonb,text),statistics_ref(text,text),statistics_capture(),statistics_replace(text,text,text,jsonb) FROM PUBLIC;
+CREATE OR REPLACE FUNCTION statistics_preflight(text DEFAULT current_user) RETURNS jsonb LANGUAGE plpgsql STABLE AS $$
+DECLARE tables text[]:=ARRAY['state_statistics_generation','state_statistics_journal','state_statistics_invalidations',
+ 'state_statistics_namespaces','state_statistics_head','state_statistics_obligations','state_statistics_checkpoints',
+ 'state_statistics_contributions','state_statistics_rollup','state_statistics_expiry'];
+schema_ready boolean; capture_ready boolean; index_ready boolean; grants_ready boolean; index_oid oid;
+BEGIN
+ SELECT bool_and(to_regclass(name) IS NOT NULL) INTO schema_ready FROM unnest(tables)name;
+ schema_ready:=coalesce(schema_ready,false) AND EXISTS(SELECT 1 FROM pg_attribute
+  WHERE attrelid=to_regclass('state_statistics_journal') AND attname='owner' AND NOT attisdropped);
+ SELECT NOT EXISTS(SELECT 1 FROM unnest(statistics_capture_relations())r(name) WHERE
+  NOT EXISTS(SELECT 1 FROM pg_trigger t WHERE t.tgrelid=to_regclass(r.name) AND t.tgname='statistics_capture'
+    AND t.tgenabled IN('O','A') AND t.tgfoid=to_regprocedure('statistics_capture()')) OR
+  NOT EXISTS(SELECT 1 FROM pg_trigger t WHERE t.tgrelid=to_regclass(r.name) AND t.tgname='statistics_truncate'
+    AND t.tgenabled IN('O','A') AND t.tgfoid=to_regprocedure('statistics_capture()'))) INTO capture_ready;
+ SELECT i.indexrelid INTO index_oid FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid JOIN pg_am am ON am.oid=c.relam
+  WHERE i.indexrelid=to_regclass('statistics_consumer_pages') AND i.indrelid=to_regclass('relation_task_consumers')
+   AND i.indisready AND i.indisvalid AND NOT i.indisunique AND i.indnatts=3 AND i.indnkeyatts=3 AND am.amname='btree'
+   AND pg_get_indexdef(i.indexrelid,1,true)='question' AND pg_get_indexdef(i.indexrelid,2,true)='producer' AND pg_get_indexdef(i.indexrelid,3,true)='ref'
+   AND regexp_replace(pg_get_expr(i.indpred,i.indrelid),'[[:space:]()]','','g')=
+    regexp_replace($predicate$(state='live'::text) AND(producer=ANY(ARRAY['new_build'::text,'survey_build'::text,'refresh'::text,'sweep'::text]))$predicate$,'[[:space:]()]','','g');
+ index_ready:=index_oid IS NOT NULL;
+ IF schema_ready AND EXISTS(SELECT 1 FROM pg_roles WHERE rolname=$1::name) THEN
+  SELECT bool_and(has_table_privilege($1::name,to_regclass(name),'SELECT')) INTO grants_ready FROM unnest(tables)name;
+  grants_ready:=grants_ready AND has_table_privilege($1::name,'state_statistics_namespaces','INSERT')
+   AND has_table_privilege($1::name,'state_statistics_namespaces','UPDATE')
+   AND has_table_privilege($1::name,'state_statistics_head','INSERT')
+   AND has_table_privilege($1::name,'state_statistics_head','UPDATE')
+   AND has_table_privilege($1::name,'state_statistics_journal','DELETE')
+   AND has_sequence_privilege($1::name,'statistics_revision','USAGE')
+   AND has_function_privilege($1::name,'statistics_replace(text,text,text,jsonb)','EXECUTE')
+   AND has_function_privilege($1::name,'statistics_capture_relations()','EXECUTE');
+  SELECT grants_ready AND bool_and(has_table_privilege($1::name,to_regclass(name),privilege)) INTO grants_ready
+   FROM unnest(ARRAY['state_statistics_obligations','state_statistics_checkpoints','state_statistics_contributions','state_statistics_rollup','state_statistics_expiry'])name
+   CROSS JOIN unnest(ARRAY['INSERT','UPDATE','DELETE'])privilege;
+  grants_ready:=grants_ready AND has_table_privilege($1::name,'state_compute_scheduling','SELECT')
+   AND has_table_privilege($1::name,'relation_task_consumers','SELECT')
+   AND has_table_privilege($1::name,'state_board_pending_work','SELECT')
+   AND has_column_privilege($1::name,'entity_compute_batches','id','SELECT')
+   AND has_column_privilege($1::name,'entity_compute_batches','at','SELECT');
+ ELSE grants_ready:=false; END IF;
+ RETURN jsonb_build_object('contract','statistics-projection-1','role',$1,'schema',schema_ready,'capture',capture_ready,
+  'index',index_ready,'index_oid',index_oid,'grants',coalesce(grants_ready,false),
+  'ready',schema_ready AND capture_ready AND index_ready AND coalesce(grants_ready,false));
+END $$;
+
+REVOKE ALL ON FUNCTION statistics_invalidate(text),statistics_touch(text,jsonb,text),statistics_ref(text,text),statistics_capture(),statistics_replace(text,text,text,jsonb),statistics_capture_relations(),statistics_preflight(text) FROM PUBLIC;
 
 -- Install this separately with CONCURRENTLY in a reviewed production window.
 -- Runtime/bootstrap does not create an index on a canonical source relation.
