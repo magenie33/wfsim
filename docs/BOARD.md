@@ -1754,11 +1754,13 @@ the daemon works it out (`demandOf`, worker/contribution.js) and writes
 the page reads it from `cdn.wfsim.app`, and `/api/board/demand` serves the
 same object from the bucket, never working it out. Worked out per request,
 each isolate and each edge would keep its own minute, and two readers would
-see two.
+see two. `counts_at` retains the actual count sample time when cached counts
+are reused. `expires_at` is 120 seconds after `counts_at`; publication never
+extends it. Expired samples retain their original clocks.
 
 ```text
 { ok, v: 1, at, computing, owed: { new_builds, rescores, sweeps, refreshes },
-  riven_gains, counts_at, orders: [{ kind, total, dispatched, sources }],
+  riven_gains, counts_at, expires_at, order_epoch, orders: [{ kind, total, dispatched, sources }],
   surveys: [{ weapon, ruler, shapes, agreed, started, clear_hours }],
   per_hour: { volunteers, official }, clear_hours,
   now: { window_seconds, asking, held, answered, starved },
@@ -1767,10 +1769,16 @@ see two.
 ```
 
 The community goal sums `orders`, the actual queued work, and displays this
-count's sampling time (`counts_at`, falling back to `at`) and optional `clear_hours`. Queue admission owns which
+count's sampling time (`counts_at`) and optional `clear_hours`. Queue admission owns which
 work enters the total. Full-library `goal` snapshots remain separate workload
 observations; their absence, expiry or engine version does not hide the queue.
 `COMPUTE_TASKS.md` defines the inventory's freshness and publication rules.
+Expired or malformed statistics show unknown totals and pace, without a clearance
+estimate. An idle open page expires its reading at the declared deadline; failed
+refreshes do not extend it. Fresh zero remains zero. The independent work signal
+still supplies the device count and carries `order_epoch`; a changed epoch retires
+the page's older statistics. The fallback endpoint refuses expired bucket objects
+and bounds its cache lifetime by their remaining validity, without querying work.
 
 - `owed`: pending calculation keys by why. A repeated request retains the
   existing owning batch; a new build's live demand still identifies its work.

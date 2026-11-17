@@ -47,6 +47,7 @@ import { dialsOf } from "./dials.js";
 import { BOARD_KINDS } from "./board_kinds.js";
 import { readInventoryState } from "./task_inventory.js";
 import { contributorAccounts, contributorMarks } from "./contributor_identity.js";
+import {currentStatistics,statisticsExpiresAt} from './statistics_clock.js';
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
 const WORK_PER_POINT = 1e9;
@@ -627,7 +628,8 @@ async function publishedContributors(env, now = Date.now()) {
 /// the public bucket as `DEMAND_KEY` (scripts/factoryd.mjs); the page reads that
 /// object and `/api/board/demand` serves the same bytes. Worked out per request,
 /// each isolate and each edge would keep its own minute, and readers disagree.
-export const DEMAND_KEY = "demand.json", DEMAND_CACHE = "public, max-age=30";
+const DEMAND_CACHE_SECONDS=30;
+export const DEMAND_KEY = "demand.json", DEMAND_CACHE = `public, max-age=${DEMAND_CACHE_SECONDS}`;
 /// Answer costs and completed facts share the same bounded current-engine
 /// sample and its first timestamp; unrelated official facts cannot dilute it.
 export const DEMAND_COST_MS = 86_400_000;
@@ -813,7 +815,9 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
     }
     goal = { ...inventory, clear_hours: work !== null && msPerHour > 0 ? work / msPerHour : null };
   }
-  return { ok: true, v: 1, at, counts_at: iso(counts ? counts.countsAt : now), computing: await computingNow(env),
+  const sampledAt=iso(counts ? counts.countsAt : now);
+  return { ok: true, v: 1, at, counts_at: sampledAt, expires_at: statisticsExpiresAt(sampledAt), order_epoch: epoch,
+    computing: await computingNow(env),
     owed: { new_builds: by[0] || 0, rescores: by[1] || 0, sweeps: by[2] || 0, refreshes: by[3] || 0 },
     riven_gains: Number((gains.results[0] || {}).n || 0),
     orders,
@@ -835,7 +839,11 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
 async function demand(env) {
   const obj = env.PUBLIC && await env.PUBLIC.get(DEMAND_KEY).catch(() => null);
   if (!obj) return json({ ok: false, error: "no_demand" }, 503);
-  return new Response(obj.body, { headers: { "content-type": "application/json", "cache-control": DEMAND_CACHE } });
+  const response=new Response(obj.body);
+  let value;try{value=await response.clone().json();}catch{return json({ok:false,error:'invalid_demand'},503);}
+  if(!currentStatistics(value))return json({ok:false,error:'stale_demand'},503);
+  const seconds=Math.max(0,Math.min(DEMAND_CACHE_SECONDS,Math.floor((Date.parse(value.expires_at)-Date.now())/1000)));
+  return new Response(response.body, { headers: { "content-type": "application/json", "cache-control": `public, max-age=${seconds}` } });
 }
 
 /// THE HOME HERO'S TALLY: every score the board holds, by who computed it, and

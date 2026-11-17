@@ -866,14 +866,37 @@ async function openComputeTask(w, key) {
 
 /// THE WHOLE PICTURE, above this browser's own: what the board asks for and
 /// what is answering it, asked when the page opens and on every refresh, signed
-/// in or not. Nothing is drawn until it has answered.
+/// in or not. Missing or expired counts remain unknown.
 /// ONE OBJECT FOR EVERY READER (docs/BOARD.md §"Demand"): the bucket's own
 /// address first, and the worker's copy of the same object where it is not reached.
 let computeDemand = null;
+let computeDemandExpiry = null;
+function currentComputeDemand(d, at = serverNow()) {
+  if (!d?.ok || d.v !== 1 || ![d.at, d.counts_at, d.expires_at].every(value => typeof value === "string"
+    && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value)
+    || !(d.order_epoch === null || typeof d.order_epoch === "string" && Number.isFinite(Date.parse(d.order_epoch))
+      && new Date(d.order_epoch).toISOString() === d.order_epoch)) return false;
+  return Date.parse(d.counts_at) <= Date.parse(d.at) && Date.parse(d.at) <= at && at < Date.parse(d.expires_at)
+    && (computingEpoch === undefined || computingEpoch === d.order_epoch);
+}
+function scheduleComputeDemandExpiry() {
+  clearTimeout(computeDemandExpiry);
+  computeDemandExpiry = null;
+  if (!computeDemand) return;
+  const remaining = Date.parse(computeDemand.expires_at) - serverNow();
+  computeDemandExpiry = setTimeout(() => {
+    computeDemandExpiry = null;
+    if (!currentComputeDemand(computeDemand)) { computeDemand = null; computeRedraw(); }
+    else scheduleComputeDemandExpiry();
+  }, Math.max(1, remaining));
+}
 async function loadComputeDemand() {
   let r = await fetchJson(`${BOARD_ORIGIN}/demand.json`);
-  if (!(r && r.ok)) r = await accountCall("GET", "/api/board/demand");
-  if (r && r.ok) computeDemand = r;
+  if (!currentComputeDemand(r)) r = await accountCall("GET", "/api/board/demand");
+  if (currentComputeDemand(r) && (!currentComputeDemand(computeDemand)
+    || Date.parse(r.counts_at) >= Date.parse(computeDemand.counts_at))) computeDemand = r;
+  else if (!currentComputeDemand(computeDemand)) computeDemand = null;
+  scheduleComputeDemandExpiry();
 }
 /// HOURS AS A COUNTDOWN: days, hours and minutes, to the minute, the larger
 /// units dropped while they are zero. The pace beside it says what it rests on.
@@ -891,15 +914,15 @@ const ORDER_KIND_NAMES = { rescore: "rescores after a model change {n}", sweep: 
   board: "leaderboard calculations {n}", board_review: "leaderboard reviews {n}", chat: "riven analyses {n}", survey: "survey searches {n}",
   family_build: "related weapon searches {n}", verification: "result checks {n}", unattributed_calculation: "unattributed calculations {n}" };
 function computeDemandHtml() {
-  const d = computeDemand;
-  if (!d) return "";
+  const fresh = currentComputeDemand(computeDemand), d = fresh ? computeDemand : {};
   const n = (x) => Number(x || 0).toLocaleString(accountLocale());
   const big = (x) => `<b style="font-size:16px">${escHtml(x)}</b>`;
   const orders = Array.isArray(d.orders) && d.orders.every(o => o && typeof o.kind === "string"
     && Number.isSafeInteger(o.total) && o.total >= 0) ? d.orders : null;
   const owed = orders?.reduce((sum, o) => sum + o.total, 0);
   const counted = Number.isSafeInteger(owed) && owed >= 0;
-  const done = d.per_hour.volunteers + d.per_hour.official;
+  const pace = fresh && [d.per_hour?.volunteers, d.per_hour?.official].every(value => Number.isSafeInteger(value) && value >= 0);
+  const done = pace ? d.per_hour.volunteers + d.per_hour.official : null;
   const share = done ? Math.round((100 * d.per_hour.volunteers) / done) : 0;
   const sourceNames = { requested: "from user requests {n}", system: "system generated {n}", unattributed: "source unknown {n}" };
   const list = (counted ? orders : []).filter(o => o.total).map(o => {
@@ -934,11 +957,11 @@ function computeDemandHtml() {
     <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(counted ? n(owed) : "—")} ${aT("tasks")}${
       list ? `<ul class="order-list">${list}</ul>` : ""}</dd></div>
     ${goals ? `<div class="kv"><dt>${aT("Goals")}</dt><dd style="min-width:0">${goals}</dd></div>` : ""}
-    <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(n(done))} ${aT("rows of scores")}
+    <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(done === null ? "—" : n(done))} ${aT("rows of scores")}${pace ? `
       <div class="demand-bar"><div style="width:${share}%"></div></div>
       <div class="set-note"><span class="demand-key on">■</span> ${escHtml(tr("volunteers {n} ({p}%)").replace("{n}", n(d.per_hour.volunteers)).replace("{p}", share))}
         &nbsp; <span class="demand-key">■</span> ${escHtml(tr("official machines {n} ({p}%)").replace("{n}", n(d.per_hour.official)).replace("{p}", 100 - share))}
-        · ${aT("the last 24 hours' average")}</div></dd></div>
+        · ${aT("the last 24 hours' average")}</div>` : ""}</dd></div>
     ${clearance}
   </dl></div></div>`;
 }
@@ -950,6 +973,7 @@ function computeDemandHtml() {
 /// too, and nothing where it cannot be read.
 /// Home, support, the bar and the compute page draw this same live count.
 let computingCount = null;
+let computingEpoch;
 let computingAskedAt = 0;
 const COMPUTING_EVERY_MS = 60_000;
 const COMPUTING_AWAY_EVERY_MS = 5 * 60_000;
@@ -964,6 +988,9 @@ async function navComputing() {
   const r = await fetch(SIGNAL_URL, { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || !Number.isSafeInteger(r.computing) || r.computing < 0) return;
   computingCount = r.computing;
+  computingEpoch = r.order_epoch === null || typeof r.order_epoch === "string" && Number.isFinite(Date.parse(r.order_epoch))
+    ? r.order_epoch : undefined;
+  if (computeDemand && !currentComputeDemand(computeDemand)) { computeDemand = null; scheduleComputeDemandExpiry(); }
   const n = computingCount.toLocaleString(accountLocale());
   el.innerHTML = `<span class="online-dot"></span>${escHtml(n)}`;
   el.title = tr("{n} devices computing WFSim together now").replace("{n}", n);

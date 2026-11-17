@@ -1626,6 +1626,14 @@ deadlines, leases and prior answers with the eligible head.
 
 ## `check_settler`
 
+`check_statistics_clock.mjs` exercises the actual compute-page functions with a
+fake clock. It covers the normal 85-second delivery
+chain, the exact expiry deadline, order-cut changes, CDN/API fallback, failed
+refreshes, response ordering, idle-page expiry and true zero counts. The demand
+endpoint preserves sealed bytes and bounds edge caching by remaining validity.
+`WFSIM_STATISTICS_CLOCK_UI_SOURCE` selects an older page source as a negative
+control; its stale total must fail the display assertion.
+
 `check_factory_availability.mjs` checks the independent findings-row cache,
 unchanged complete-statistics clock, original fallback, pack ceiling, invalid
 JSON and numbers, expiry, future clocks, current-cut invalidation and delayed

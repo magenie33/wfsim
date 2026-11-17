@@ -1,5 +1,6 @@
 // The community goal reads the current queue, without a library census.
 import { openApp } from "./cdp.mjs";
+import { statisticsExpiresAt } from "../worker/statistics_clock.js";
 
 const app = await openApp({ boot: 11000, base: process.env.WFSIM_BASE, lang: "en" });
 try {
@@ -7,10 +8,12 @@ try {
   const goal = { v: 1, at: new Date(now - 60_000).toISOString(), started_at: new Date(now - 3600000).toISOString(),
     expires_at: new Date(now + 2 * 3600000).toISOString(), snapshot: '100:100:', engine, total: 1000, registered: 20,
     orders: [{ kind: "board", total: 1000 }], verbs: { simulate: 1000 }, clear_hours: 7.7 };
-  const demand = { ok: true, at: new Date(now - 30_000).toISOString(), owed: { new_builds: 20 },
+  const at = new Date(now - 30_000).toISOString();
+  const demand = { ok: true, v: 1, at, counts_at: at, expires_at: statisticsExpiresAt(at), order_epoch: null, owed: { new_builds: 20 },
     orders: [{ kind: "new_build", total: 20, dispatched: 10 }, { kind: "future_scope", total: 3, dispatched: 0 }],
     goal, per_hour: { volunteers: 100, official: 10 }, clear_hours: 0.1, surveys: [] };
   const draw = async d => app.evaluate(`(() => {
+    computingEpoch = null;
     computeDemand = ${JSON.stringify(d)};
     const box = document.createElement('div'); box.innerHTML = computeDemandHtml();
     const row = [...box.querySelectorAll('.kv')].find(k => k.querySelector('dt').textContent === 'Total orders');
@@ -27,8 +30,8 @@ try {
   const updated = await app.evaluate(`new Date(${JSON.stringify(demand.at)}).toLocaleString(accountLocale())`);
   app.check("the queue reading supplies its update time and clearance estimate",
     state.note === 'Updated ' + updated && state.estimate?.includes('6 min'), JSON.stringify(state));
-  const counts_at = new Date(now - 9 * 60000).toISOString();
-  state = await draw({ ...demand, counts_at, orders: [
+  const counts_at = new Date(now - 45000).toISOString();
+  state = await draw({ ...demand, counts_at, expires_at: statisticsExpiresAt(counts_at), orders: [
     { kind: 'user_calculation', total: 2 }, { kind: 'family_build', total: 3 },
     { kind: 'unattributed_calculation', total: 1 },
   ] });
@@ -36,6 +39,11 @@ try {
   app.check("cached queue counts show their sampling time and separate player, family and unattributed sources",
     state.total === '6' && state.note === 'Updated ' + sampled
     && state.rows.join('|') === 'player calculations 2|related weapon searches 3|unattributed calculations 1', JSON.stringify(state));
+  for (const bad of [{ ...demand, expires_at: new Date(now - 1).toISOString() }, { ...demand, expires_at: undefined },
+    { ...demand, counts_at: undefined }, { ...demand, order_epoch: undefined }]) {
+    state = await draw(bad);
+    app.check("expired and legacy statistics show unknown counts without a clearance estimate", state.total === '—' && !state.estimate && !state.rows.length, JSON.stringify(state));
+  }
   state = await draw({ ...demand, orders: [{ kind: 'sweep', total: 9, sources: { requested: 2, system: 3, unattributed: 4 } }] });
   app.check("a background order shows disjoint recorded origins", state.rows[0] === 'background leaderboard measurements 9'
     && state.sources[0] === 'from user requests 2 · system generated 3 · source unknown 4', JSON.stringify(state));
