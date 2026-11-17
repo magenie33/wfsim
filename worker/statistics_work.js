@@ -3,7 +3,7 @@
 const columns='id,verb,task_id,state,waits,lease,lease_until,leased_to,leased_at,producer,initiator';
 const projection=alias=>columns.split(',').map(name=>alias+'.'+name).join(',');
 export const statisticsNotCancelled=alias=>`NOT EXISTS(SELECT 1 FROM stats_cancelled r WHERE r.question=${alias}.id AND r.task_id=${alias}.task_id)`;
-const nonopen=`q.state<>'open' AND ${statisticsNotCancelled('q')}
+const nonopen=`${statisticsNotCancelled('q')}
  AND(q.state<>'withdrawn' OR NOT EXISTS(SELECT 1 FROM stats_cut)
   OR compute_order_cancelled(q.id,q.task_id,coalesce(q.zone,factory_default_zone(q.producer)),coalesce(q.zone_position,q.task_id),q.state) IS NULL)`;
 
@@ -20,7 +20,9 @@ export const STATISTICS_WORK = `${STATISTICS_OPEN},
  stats_work AS NOT MATERIALIZED(
   SELECT * FROM stats_open
   UNION ALL
-  SELECT ${projection('q')} FROM state_compute_scheduling q WHERE ${nonopen}
+  SELECT ${projection('q')} FROM state_compute_scheduling q WHERE q.state<'open' AND ${nonopen}
+  UNION ALL
+  SELECT ${projection('q')} FROM state_compute_scheduling q WHERE q.state>'open' AND ${nonopen}
  ),
  stats_live_refs AS NOT MATERIALIZED(
   SELECT q.id,d.ref,d.producer FROM stats_work q CROSS JOIN LATERAL(
@@ -51,7 +53,7 @@ export const STATISTICS_WORK = `${STATISTICS_OPEN},
     AND (e.question=d.id OR EXISTS(SELECT 1 FROM stats_work w WHERE w.id=e.question OFFSET 0)) OFFSET 0)
   UNION ALL
   SELECT q.* FROM stats_cut c JOIN entity_compute_batches batch ON batch.at>c.cut_at
-  JOIN state_board_pending_work q ON q.batch=batch.id
+  CROSS JOIN LATERAL(SELECT q.* FROM state_board_pending_work q WHERE q.batch=batch.id OFFSET 0) q
   WHERE NOT EXISTS(SELECT 1 FROM relation_task_consumers d CROSS JOIN LATERAL(
    SELECT 1 FROM state_compute_work w WHERE w.id=d.question OFFSET 0) live
    WHERE d.state='live' AND d.producer IN('new_build','survey_build','refresh','sweep')

@@ -19,13 +19,14 @@ const cutFunction=source('schema').match(/CREATE OR REPLACE FUNCTION compute_ord
 const current=[cutFunction,...names.map(name=>view(source(name.startsWith('state_board')?'library':'schema'),name))].join('\n');
 
 function measured(plan) {
-  const root=plan.Plan,out={scheduling:0,consumers:0,sort_rows:0,temp_blocks:0,blocks:0};
+  const root=plan.Plan,out={scheduling:0,consumers:0,pending:0,sort_rows:0,temp_blocks:0,blocks:0};
   out.blocks=(root['Shared Hit Blocks']||0)+(root['Shared Read Blocks']||0);
   out.temp_blocks=(root['Temp Read Blocks']||0)+(root['Temp Written Blocks']||0);
   const walk=node=>{
     const read=((node['Actual Rows']||0)+(node['Rows Removed by Filter']||0))*(node['Actual Loops']||0);
     if(node['Relation Name']==='state_compute_scheduling')out.scheduling+=read;
     if(node['Relation Name']==='relation_task_consumers')out.consumers+=read;
+    if(node['Relation Name']==='state_board_pending_work')out.pending+=read;
     if(node['Node Type']==='Sort')out.sort_rows=Math.max(out.sort_rows,(node.Plans?.[0]?.['Actual Rows']||0)*(node.Plans?.[0]?.['Actual Loops']||0));
     for(const child of node.Plans||[])walk(child);
   };
@@ -285,7 +286,11 @@ export async function statisticsReadCases(db,{n=512,receiptFile=null}={}) {
   assert.equal(snapshot.at,new Date(now+1000).toISOString());
   await db.exec('ANALYZE state_compute_scheduling;ANALYZE entity_compute_tasks;ANALYZE relation_task_consumers;ANALYZE state_board_pending_work;ANALYZE entity_compute_batches;');
   const observations={};
+  const unsplit=STATISTICS_WORK.replace("q.state<'open' AND","q.state<>'open' AND").replace("q.state>'open' AND","false AND");
+  const unboundedPending=STATISTICS_WORK.replace('CROSS JOIN LATERAL(SELECT q.* FROM state_board_pending_work q WHERE q.batch=batch.id OFFSET 0) q','JOIN(SELECT q.* FROM state_board_pending_work q OFFSET 0) q ON q.batch=batch.id');
   for(const [label,query]of Object.entries({old:'SELECT count(*) n FROM state_board_effective_pending_work',
+    unsplit:`WITH ${unsplit} SELECT count(*) n FROM stats_pending`,
+    unboundedPending:`WITH ${unboundedPending} SELECT count(*) n FROM stats_pending`,
     current:`WITH ${STATISTICS_WORK} SELECT count(*) n FROM stats_pending`})) {
     const plan=(await db.get('EXPLAIN(ANALYZE,BUFFERS,FORMAT JSON,TIMING OFF) '+query))['QUERY PLAN'][0];
     observations[label]={metrics:measured(plan),plan};
@@ -300,7 +305,12 @@ export async function statisticsReadCases(db,{n=512,receiptFile=null}={}) {
   const unsorted=metrics=>assert(metrics.sort_rows<=256,'statistics must not globally sort the complete live key set');
   assert.throws(()=>unsorted(observations.old.metrics),/must not globally sort/,'the actual legacy queue aggregate must fail the same work bound');
   unsorted(observations.current.metrics);
-  assert(observations.current.metrics.scheduling<=n*8+256,'statistical scheduling reads must remain linear in the exact fixture');
+  const ranges=metrics=>assert(metrics.scheduling<=n*2+256,'nonopen reads must not walk the cancelled open heap');
+  assert.throws(()=>ranges(observations.unsplit.metrics),/must not walk/,'the actual unsplit nonopen predicate must fail the same read bound');
+  ranges(observations.current.metrics);
+  const pendingRanges=metrics=>assert(metrics.pending<=n*2+256,'postcut reads must narrow batches before reading pending rows');
+  assert.throws(()=>pendingRanges(observations.unboundedPending.metrics),/must narrow batches/,'the observed global pending-read order must fail the same read bound');
+  pendingRanges(observations.current.metrics);
   if(receiptFile)writeFileSync(receiptFile,JSON.stringify({n,complete_rows_equal:true,snapshot,orders:after.orders,observations},null,2)+'\n');
   await db.exec('DROP TABLE pg_temp.statistics_expected_work,pg_temp.statistics_expected_pending');
   console.log('ok exact statistics preserve no/preparing/active cut, cancellation task identity, NULL FIFO, task-only evidence, all nonopen and pending source rows');
