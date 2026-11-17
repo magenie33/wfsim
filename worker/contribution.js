@@ -47,6 +47,7 @@ import { dialsOf } from "./dials.js";
 import { BOARD_KINDS } from "./board_kinds.js";
 import { readInventoryState } from "./task_inventory.js";
 import { contributorAccounts, contributorMarks } from "./contributor_identity.js";
+import { STATISTICS_WORK, statisticsNotCancelled } from "./statistics_work.js";
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
 const WORK_PER_POINT = 1e9;
@@ -672,7 +673,8 @@ async function nowOf(db, now) {
   const since = iso(now - NOW_WINDOW_MS);
   const [asking, held, answered] = await db.batch([
     db.prepare("SELECT COUNT(*) AS n FROM entity_compute_devices WHERE asked_at > ? AND banned = 0").bind(since),
-    db.prepare("SELECT COUNT(*) AS n FROM state_compute_work WHERE leased_to IS NOT NULL AND lease_until > ?").bind(iso(now)),
+    db.prepare(`WITH held AS MATERIALIZED(SELECT id FROM state_compute_scheduling WHERE leased_to IS NOT NULL AND lease_until > ?)
+      SELECT COUNT(*) AS n FROM held h JOIN state_compute_work q ON q.id=h.id`).bind(iso(now)),
     db.prepare("SELECT COUNT(*) AS n FROM record_candidate_answers WHERE at > ? AND official = 0").bind(since),
   ]);
   const n = (r) => Number((r.results[0] || {}).n || 0);
@@ -722,15 +724,15 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
       // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
       // demands are read once and joined whole: looked up a queue row at a time,
       // every row cost an index walk for the few that have one.
-      db.prepare(`WITH d AS MATERIALIZED (SELECT ref FROM relation_task_consumers WHERE state = 'live' AND producer = 'new_build')
+      db.prepare(`WITH ${STATISTICS_WORK},d AS MATERIALIZED (SELECT ref FROM relation_task_consumers WHERE state = 'live' AND producer = 'new_build')
                   SELECT CASE WHEN d.ref IS NOT NULL THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END AS k,
                     ${DEMAND_SOURCE} AS source, COUNT(*) AS n
-                  FROM state_board_effective_pending_work q JOIN entity_compute_batches b ON b.id = q.batch
+                  FROM stats_pending q JOIN entity_compute_batches b ON b.id = q.batch
                   LEFT JOIN d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
                   GROUP BY k, source`),
-      db.prepare(`SELECT verb, producer, ${DEMAND_SOURCE} AS source, COUNT(*) AS n,
+      db.prepare(`WITH ${STATISTICS_WORK} SELECT verb, producer, ${DEMAND_SOURCE} AS source, COUNT(*) AS n,
                     COUNT(*) FILTER (WHERE leased_at IS NOT NULL OR lease IS NOT NULL) AS dispatched
-                  FROM state_compute_effective_open q WHERE state = 'open' GROUP BY verb, producer, source`),
+                  FROM stats_open q WHERE state = 'open' GROUP BY verb, producer, source`),
     ]),
     ...(costs ? [] : [
       // Bounded samples and indexed lateral lookups avoid a full question-table
@@ -749,10 +751,10 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
     ...(counts ? [] : [
       // A ROW A DEVICE HAS TAKEN — leased, by a volunteer or an official
       // machine, now or before — is dispatched, by the kind `owed` counts it as.
-      db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT x.id, MIN(CASE WHEN d.producer = 'new_build' THEN 0
+      db.prepare(`WITH ${STATISTICS_WORK} SELECT k, COUNT(*) AS n FROM (SELECT x.id, MIN(CASE WHEN d.producer = 'new_build' THEN 0
                       WHEN d.payload::jsonb ->> 'batch' LIKE 'rescore%' THEN 1 WHEN d.producer = 'refresh' THEN 3 ELSE 2 END) AS k
-                    FROM state_compute_effective_work x JOIN relation_task_consumers d ON d.question = x.id AND d.state = 'live' AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
-                   WHERE x.state = 'open' AND x.verb = 'simulate' AND (x.leased_at IS NOT NULL OR x.lease IS NOT NULL)
+                    FROM state_compute_effective_open x JOIN relation_task_consumers d ON d.question = x.id AND d.state = 'live' AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
+                   WHERE x.state = 'open' AND x.verb = 'simulate' AND (x.leased_at IS NOT NULL OR x.lease IS NOT NULL) AND ${statisticsNotCancelled('x')}
                    GROUP BY x.id) y GROUP BY k`).bind(JSON.stringify(BOARD_KINDS)),
     ]),
   ]);

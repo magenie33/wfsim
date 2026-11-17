@@ -1624,6 +1624,13 @@ left unpaid are each a difference, kept in the finding with the question. An
 official answer and an older engine's peer are counted apart; two answers of
 one owner are one witness. One pass of the daemon's every tick runs clean.
 
+Statistical reads match the complete canonical effective rows before, during
+and after cut activation, including NULL FIFO fields, task-only evidence,
+nonopen deliveries, pending provenance and current-task cancellations. Actual
+mutations must break these comparisons. The legacy pending aggregate fails the
+same bounded-sort check that the statistical semijoin passes; publication keeps
+the original count sampling time and refreshes it when the cut epoch changes.
+
 ## `check_factory_capacity`
 
 Plain Node and PGlite: stronger and weaker host readings, bounded background

@@ -6,6 +6,9 @@ import {pathToFileURL} from 'node:url';
 import {seedComputeWork} from './pg/fixtures.mjs';
 import {orderCutSchemaSql,orderCutBusinessSql,taskSchemaSql} from './task_schema.mjs';
 import {buildAdmissionSchemaSql} from './build_admission_schema.mjs';
+import {STATISTICS_WORK} from '../worker/statistics_work.js';
+import {snapshotTick} from '../worker/settler.js';
+import {demandOf} from '../worker/contribution.js';
 
 const source=name=>readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8');
 const view=(sql,name)=>sql.match(new RegExp('CREATE OR REPLACE VIEW '+name+' AS[^]*?;'))?.[0];
@@ -177,6 +180,115 @@ export async function orderCutReadCases(db,{n=100001,receiptFile=process.env.WFS
   await db.exec('RESET plan_cache_mode; RESET work_mem');
   if(receiptFile)writeFileSync(receiptFile,JSON.stringify({n,before,observations,complete_rows_equal:true,nonempty_upgrades:2},null,2)+'\n');
   console.log('ok effective reads preserve full fact/delivery/pending ownership and source exports; old read bounds fail, indexed reads pass after two nonempty upgrades');
+}
+
+export async function statisticsReadCases(db,{n=512,receiptFile=null}={}) {
+  const at='2026-11-15T00:00:00.000Z',cutAt='2026-11-16T00:00:00.000Z',now=Date.parse('2026-11-16T01:00:00.000Z');
+  assert(Number.isSafeInteger(n)&&n>=512);
+  await db.exec(source('order_cut_indexes').replaceAll('INDEX CONCURRENTLY','INDEX'));
+  await db.exec(`INSERT INTO entity_compute_specs SELECT 'stats-'||i,'simulate','{}' FROM generate_series(1,${2*n})i;
+    INSERT INTO entity_compute_tasks(id,computation,generation,created_at,reason)
+      SELECT i,'stats-'||i,1,'${at}','fixture' FROM generate_series(1,${2*n})i;
+    INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,producer,initiator,zone,zone_position,waits)
+      SELECT computation,'simulate',id,'open','${at}','${at}','sweep',CASE WHEN id%3=0 THEN 'anonymous' WHEN id%3=1 THEN 'system' END,
+        CASE WHEN id IN(1,${n+1}) THEN NULL ELSE 3 END,CASE WHEN id IN(1,${n+1}) THEN NULL ELSE id END,CASE WHEN id%17=0 THEN 1 ELSE 0 END FROM entity_compute_tasks;
+    SELECT setval('entity_compute_tasks_id_seq',${2*n},true);
+    INSERT INTO entity_compute_batches(id,at,total) SELECT 'stats-old-'||i,'${at}',1 FROM generate_series(0,63)i
+      UNION ALL SELECT 'stats-new-'||i,'2026-11-16T00:00:01.000Z',1 FROM generate_series(0,63)i;
+    INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at)
+      SELECT 'sweep','stats-'||i||'|r|base','stats-'||i,'live','${at}','${at}' FROM generate_series(1,${2*n})i
+      UNION ALL SELECT 'new_build','stats-'||i||'|r|base','stats-'||i,'live','${at}','${at}' FROM generate_series(1,16)i;`);
+  for(let from=1;from<=2*n;from+=128)await db.exec(`INSERT INTO state_board_pending_work(batch,build_id,ruler,mode,initiator)
+    SELECT CASE WHEN i%4=0 THEN 'stats-new-' ELSE 'stats-old-' END||(i%64),'stats-'||i,'r','base',
+      CASE WHEN i%3=0 THEN 'anonymous' WHEN i%3=1 THEN 'system' END FROM generate_series(${from},${Math.min(from+127,2*n)})i;`);
+  for(const state of ['fact','spot','dispute','withdrawn']) {
+    await seedComputeWork(db,{id:'stats-'+state,state,request:'{}',due_at:at,opened_at:at,canon:'{}',fact_engine:'fixture',fact_at:at});
+    await db.run("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES('stats-old-0',?,'r','base')",'stats-'+state);
+    await db.run("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,delivery_at) VALUES('sweep',?,?,'live',?,?,?)",
+      'stats-'+state+'|r|base','stats-'+state,at,at,at);
+  }
+  const reportPrefix=await seedComputeWork(db,{id:'stats-report-prefix',verb:'simulate_report',producer:'user_calculation',request:'{}',due_at:at,opened_at:at,waits:1});
+  const reportProtected=await seedComputeWork(db,{id:'stats-report-protected',verb:'optimize_report',producer:'family_build',request:'{}',due_at:at,opened_at:at,waits:1,
+    lease:'held',lease_until:'2999',leased_to:'fixture',leased_at:at});
+  await seedComputeWork(db,{id:'stats-empty-withdrawn',state:'withdrawn',request:'{}',due_at:at,opened_at:at});
+  await db.run("UPDATE state_compute_scheduling SET zone=NULL,zone_position=NULL WHERE id='stats-empty-withdrawn'");
+  await db.exec(`INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES('stats-old-0','stats-empty-withdrawn','r','base');
+    INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at)
+      VALUES('sweep','stats-empty-withdrawn|r|base','stats-empty-withdrawn','live','${at}','${at}');`);
+  await db.run("INSERT INTO entity_compute_tasks(computation,generation,created_at,reason) VALUES(?,2,?,'fixture-prior-round')",'stats-'+(n+2),at);
+  await db.run("UPDATE state_compute_scheduling SET lease='held',leased_at=?,leased_to='fixture',lease_until='2999' WHERE id IN('stats-2',?)",at,'stats-'+(n+5));
+  await db.exec(`INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES
+    ('stats-old-0','stats-old-unregistered','r','base'),('stats-new-0','stats-new-unregistered','r','base'),
+    ('stats-new-0','stats-suffix','r','base');
+    INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at)
+      VALUES('refresh','stats-suffix|r|base|suffix','stats-1','live','${at}','${at}');`);
+  await db.exec('ANALYZE state_compute_scheduling;ANALYZE entity_compute_tasks;ANALYZE relation_task_consumers;ANALYZE state_board_pending_work;ANALYZE entity_compute_batches;');
+  const cols='id,verb,task_id,state,waits,lease,lease_until,leased_to,leased_at,producer,initiator';
+  const equal=async(label,statement=STATISTICS_WORK)=>{
+    for(const [actual,expected,fields] of [['stats_work','state_compute_effective_work',cols],
+      ['stats_pending','state_board_effective_pending_work','*']]) {
+      console.log('statistics exact rows:',label,actual);
+      const reference=actual==='stats_work'?'statistics_expected_work':'statistics_expected_pending';
+      if(statement===STATISTICS_WORK)await db.exec(`DROP TABLE IF EXISTS pg_temp.${reference};CREATE TEMP TABLE ${reference} AS SELECT ${fields} FROM ${expected}`);
+      const row=await db.get(`WITH ${statement} SELECT count(*) n FROM(
+        (SELECT ${fields} FROM ${actual} EXCEPT ALL SELECT * FROM pg_temp.${reference}) UNION ALL
+        (SELECT * FROM pg_temp.${reference} EXCEPT ALL SELECT ${fields} FROM ${actual})) difference`);
+      assert.equal(row.n,0,label+' '+actual+' changes exact membership, duplicates, NULLs or provenance');
+    }
+  };
+  await equal('no cut');
+  const env={LIBRARY:db},before=await demandOf(env,now);
+  const cutoff=(await db.get('SELECT max(id) n FROM entity_compute_tasks')).n;
+  await db.run('SELECT compute_order_cut_stage((?::text)::jsonb)',JSON.stringify({id:'stats-cut',cut_at:cutAt,task_cutoff:cutoff,keep_boundary:[3,n,'z'],source:{fixture:'statistics'}}));
+  await equal('preparing cut');
+  await db.run("SELECT compute_order_cut_capture('stats-cut')");
+  await db.run("SELECT compute_order_cut_activate('stats-cut',0,?::text)",createHash('sha256').update('').digest('hex'));
+  await db.exec(`INSERT INTO record_compute_order_cancellations(question,task_id,cut_id,at)
+    VALUES('stats-2',2,'stats-cut','${cutAt}'),('stats-3',4,'stats-cut','${cutAt}'),
+      ('stats-report-prefix',${reportPrefix},'stats-cut','${cutAt}'),('stats-report-protected',${reportProtected},'stats-cut','${cutAt}'),
+      ('stats-${n+5}',${n+5},'stats-cut','${cutAt}');`);
+  await db.exec('ANALYZE record_compute_order_cancellations;ANALYZE relation_compute_order_cut_protection;');
+  await equal('active cut and explicit task cancellation');
+  for(const [label,broken]of [
+    ['missing explicit cancellation',STATISTICS_WORK.replaceAll('r.question=q.id AND r.task_id=q.task_id','false')],
+    ['question without task identity',STATISTICS_WORK.replaceAll('r.question=q.id AND r.task_id=q.task_id','r.question=q.id')],
+    ['NULL FIFO without fallback',STATISTICS_WORK.replaceAll('coalesce(q.zone,factory_default_zone(q.producer))','q.zone').replaceAll('coalesce(q.zone_position,q.task_id)','q.zone_position')],
+    ['inactive cut after activation',STATISTICS_WORK.replace('SELECT * FROM compute_order_cut()','SELECT * FROM compute_order_cut() WHERE false')],
+  ])await assert.rejects(equal(label,broken),/changes exact membership/,label+' must fail on actual stored rows');
+  const ids=(await db.all(`WITH ${STATISTICS_WORK} SELECT id FROM stats_work`)).map(row=>row.id);
+  assert(!ids.includes('stats-2')&&ids.includes('stats-3'),'cancellation matches both question and current task');
+  assert(!ids.includes('stats-report-prefix')&&!ids.includes('stats-report-protected'),'explicit cancellation also excludes prefix and protected reports');
+  assert(!ids.includes('stats-'+(n+5)),'protection cannot override an explicit current-task cancellation');
+  assert(ids.includes('stats-1')&&!ids.includes('stats-'+(n+1))&&ids.includes('stats-'+(n+2)),'NULL FIFO fields and task-only protection retain their existing meaning');
+  for(const state of ['fact','spot','dispute','withdrawn'])assert(ids.includes('stats-'+state),'legal nonopen '+state+' remains visible');
+  const after=await demandOf(env,now+1000),snapshot=await snapshotTick(env,{engine:'fixture',release:'fixture'},now+1000);
+  assert.equal(after.counts_at,new Date(now+1000).toISOString(),'cut epoch invalidates cached pre-cut counts');
+  assert.notDeepEqual(after.orders,before.orders);
+  assert(!after.orders.some(row=>['user_calculation','family_build'].includes(row.kind)),'report totals cannot retain explicitly cancelled effective work');
+  assert(after.orders.every(row=>Object.values(row.sources).reduce((sum,n)=>sum+n,0)===row.total));
+  assert(after.orders.every(row=>row.dispatched===0),'cancelled leased simulations and reports cannot remain dispatched totals');
+  assert.equal(snapshot.queue_rows,(await db.get('SELECT count(*) n FROM state_board_effective_pending_work')).n);
+  assert.equal(snapshot.urgent,(await db.get("SELECT count(*) n FROM state_compute_effective_work WHERE state='open' AND waits>0")).n);
+  assert.equal(snapshot.at,new Date(now+1000).toISOString());
+  await db.exec('ANALYZE state_compute_scheduling;ANALYZE entity_compute_tasks;ANALYZE relation_task_consumers;ANALYZE state_board_pending_work;ANALYZE entity_compute_batches;');
+  const observations={};
+  for(const [label,query]of Object.entries({old:'SELECT count(*) n FROM state_board_effective_pending_work',
+    current:`WITH ${STATISTICS_WORK} SELECT count(*) n FROM stats_pending`})) {
+    const plan=(await db.get('EXPLAIN(ANALYZE,BUFFERS,FORMAT JSON,TIMING OFF) '+query))['QUERY PLAN'][0];
+    observations[label]={metrics:measured(plan),plan};
+  }
+  const visit=node=>{
+    if(node['Node Type']==='Append')assert(node['Actual Loops']<=1,'statistics must not repeat the complete active partition per consumer');
+    for(const child of node.Plans||[])visit(child);
+  };
+  visit(observations.current.plan.Plan);
+  const unsorted=metrics=>assert(metrics.sort_rows<=256,'statistics must not globally sort the complete live key set');
+  assert.throws(()=>unsorted(observations.old.metrics),/must not globally sort/,'the actual legacy queue aggregate must fail the same work bound');
+  unsorted(observations.current.metrics);
+  assert(observations.current.metrics.scheduling<=n*8+256,'statistical scheduling reads must remain linear in the exact fixture');
+  if(receiptFile)writeFileSync(receiptFile,JSON.stringify({n,complete_rows_equal:true,snapshot,orders:after.orders,observations},null,2)+'\n');
+  await db.exec('DROP TABLE pg_temp.statistics_expected_work,pg_temp.statistics_expected_pending');
+  console.log('ok exact statistics preserve no/preparing/active cut, cancellation task identity, NULL FIFO, task-only evidence, all nonopen and pending source rows');
 }
 
 if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url) {

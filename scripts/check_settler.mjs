@@ -12,6 +12,7 @@ import { snapshotTick, fairTick, readFair, compareFair, settleShadow, judgeFact,
 import { testDb } from "./pg/test_db.mjs";
 import { SETTLER_SILENT_MS } from "../worker/factory.js";
 import { DIAL_DEFAULTS } from "../worker/dials.js";
+import { statisticsReadCases } from "./check_order_cut_reads.mjs";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -214,5 +215,7 @@ console.log("signing for R2");
     s.authorization);
 }
 
+const statisticsDb=await testDb('library');
+try{await statisticsReadCases(statisticsDb);}finally{await statisticsDb.close();}
 console.log(failures ? `\n${failures} failure(s)` : "\nthe settler in shadow agrees with the request path, and says where it does not");
 process.exit(failures ? 1 : 0);
