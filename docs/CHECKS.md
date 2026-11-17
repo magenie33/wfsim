@@ -179,7 +179,7 @@ an artifact. A deliberately changed gas count must fail the wasm comparison.
 
 `check_search_strategy.mjs` exercises the shared headless preset and request
 builders: one user start, explicit immutable strategy selection, pinned-riven
-appraisal, and legacy saved-start compatibility. Rust quick-search tests cover
+appraisal, fixed-stance request parity with the page, and legacy saved-start compatibility. Rust quick-search tests cover
 internal branches, protected slots, exclusions and native/fleet provenance.
 
 `check_recommendations.mjs` runs the real account schema and recommendation

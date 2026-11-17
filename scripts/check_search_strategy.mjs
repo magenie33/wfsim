@@ -79,6 +79,22 @@ assert.equal(read(`optimizeBody().runs`), 1000);
 runInContext('activeScenario = null;', scope);
 console.log("  ok  built-ins and headless appraisal supply one user start, retaining its riven and evolutions");
 
+runInContext(`
+  META.weapons.push({ ...META.weapons[0], id: "valkyr_talons", fixed_stance: "hysteria" });
+  elements.weapon.value = "valkyr_talons";
+`, scope);
+const fixedAppraisal = read(`headlessRivenGainRequest(META, { weapon: "valkyr_talons", ruler: "test_ruler", card: {}, rivenId: "R" })`);
+const fixedPage = read("optimizeBody()");
+assert.equal(fixedPage.weapon, fixedAppraisal.request.weapon);
+assert.equal(Object.hasOwn(fixedAppraisal.request, "stance"), Object.hasOwn(fixedPage, "stance"),
+  "fixed-stance appraisals must send the same stance axis as the actual page");
+assert.equal(fixedAppraisal.request.stance, fixedPage.stance);
+assert.equal(fixedAppraisal.context.stance, "hysteria", "fixed stance remains part of the build context");
+assert.deepEqual(JSON.parse(JSON.stringify(headlessRivenGainRequest(read("META"),
+  { weapon: "valkyr_talons", ruler: "test_ruler", card: {}, rivenId: "R" }))), fixedAppraisal);
+runInContext('META.weapons.pop(); elements.weapon.value = "test";', scope);
+console.log("  ok  fixed Hysteria appraisals match the page request and retain their fixed build context");
+
 const card = { bonuses: [{ id: "critical_damage", roll: 1.07 }, { id: "multishot", roll: 0.94 }],
   malus: { id: "status_duration", roll: 1.03 }, rank: 8, polarity: "madurai" };
 scope.identityCard = card;
