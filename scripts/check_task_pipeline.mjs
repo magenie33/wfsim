@@ -92,7 +92,7 @@ export async function taskPipelineCases(db,{brokenInline=false}={}) {
   await pipelineCommand(env,['resume','statistics'],later);
   assert.equal((await pipelineCommand(env,['status','statistics'],later)).paused,false);
   assert.equal((await pipelineCommand(env,['status'],later)).length,4);
-  const cheap={LIBRARY:{prepare(sql){assert(/^(SELECT \* FROM state_task_pipeline_controls|SELECT at,engine FROM state_factory_snapshot)/.test(sql));return db.prepare(sql);}}};
+  const cheap={LIBRARY:{prepare(sql){assert(/^(SELECT \* FROM state_task_pipeline_controls|SELECT at,engine FROM state_factory_snapshot|SELECT \* FROM state_task_pipeline_progress|SELECT to_regprocedure)/.test(sql));return db.prepare(sql);}}};
   assert.equal((await pipelineCommand(cheap,['status','statistics'],later)).pending,null);
   console.log('ok: statistics pause/resume/status is durable and cheap, with no runnable fifth consumer or fabricated pending count');
   await assert.rejects(f.controlStage(env,'unknown',{paused:true,by:'check'},now),/unknown/);

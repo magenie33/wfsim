@@ -1,4 +1,4 @@
-import { seedComputeWork, replaceComputeResult } from "./pg/fixtures.mjs";
+import {seedComputeWork,replaceComputeResult,fixtureDemand} from './pg/fixtures.mjs';
 // THE CONTRIBUTION RANKING (worker/contribution.js), with no network — docs/BOARD.md
 // §"Contribution". A signed-in browser claims its device and the first claim owns
 // it; an account's points are its devices' credited work, a refused device's
@@ -9,10 +9,11 @@ import { seedComputeWork, replaceComputeResult } from "./pg/fixtures.mjs";
 // ask what it earned by its own id; nothing works signed out or from another
 // site; deleting the account releases its devices.
 //   node scripts/check_contribution.mjs
-import { contributionRoute, contributorRank, demandOf, DEMAND_KEY, publishContributors, CONTRIBUTORS_KEY, tallyOf, tallyBase, periodStarts, periodWindows, NOW_WINDOW_MS, starvedOf } from "../worker/contribution.js";
+import { contributionRoute, contributorRank, demandOf as renderDemand, DEMAND_KEY, publishContributors, CONTRIBUTORS_KEY, tallyOf, tallyBase, periodStarts, periodWindows, NOW_WINDOW_MS, starvedOf } from "../worker/contribution.js";
 import { accountRoute, sha256 } from "../worker/accounts.js";
 import { testDb } from "./pg/test_db.mjs";
 import { PACE_HOURS } from "../worker/instant.js";
+const demandOf=fixtureDemand(renderDemand);
 import { inventoryWrite, INVENTORY_MAX_MS } from "../worker/task_inventory.js";
 import "./check_clearance.mjs";
 

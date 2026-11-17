@@ -1,4 +1,4 @@
-import { seedComputeWork, seedComputeWorkMany } from "./pg/fixtures.mjs";
+import {seedComputeWork,seedComputeWorkMany,fixtureDemand} from './pg/fixtures.mjs';
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Capacity backs off background reads while the same facts, fairness and
 // public counts survive; failures cannot wedge a cache or the background lane.
@@ -8,10 +8,11 @@ import postgres from "./pg/node_modules/postgres/src/index.js";
 import { POSTGRES_OPTIONS, placeholders } from "../worker/db.js";
 import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capacity.mjs";
 const {openEnv}=await import(process.env.WFSIM_FACTORYD_MODULE||"./factoryd.mjs");
-import { demandOf, scorePace, tallyBase, tallyOf } from "../worker/contribution.js";
+import {demandOf as renderDemand,scorePace,tallyBase,tallyOf} from '../worker/contribution.js';
 import { testDb } from "./pg/test_db.mjs";
 import { factory } from "../worker/tasks.js";
 import { cellsFilling } from "../worker/board_tasks.js";
+const demandOf=fixtureDemand(renderDemand);
 
 const host = { cpus: 4, load: 1, io_pct: 0, memory_pct: 0 };
 const fast = capacity({ env: {}, sample: () => host });
@@ -239,7 +240,7 @@ await demandOf(sampled, now + 60_000, undefined, options);
 assert.equal(budgets.at(-1), "SET LOCAL statement_timeout = DEFAULT", "both warm caches use the normal budget");
 await L.run("INSERT INTO state_board_pending_work (batch,build_id,ruler,mode) VALUES ('rescore-capacity','two','r','m')");
 assert.equal((await demandOf(sampled, now + 11 * 60_000, undefined, options)).owed.rescores, 2);
-assert.equal(budgets.at(-1), "SET LOCAL statement_timeout = 120000", "expired queue counts need the full budget while cost estimates stay cached");
+assert.equal(budgets.at(-1), "SET LOCAL statement_timeout = DEFAULT", "a newly sealed count does not re-enable historical count reads");
 assert.equal(samples, 1, "slowing price estimates must not slow queue counts");
 await demandOf(sampled, now + 12 * 60_000, undefined, options);
 assert.equal(budgets.at(-1), "SET LOCAL statement_timeout = DEFAULT", "refreshed counts and cached costs return to the normal budget");

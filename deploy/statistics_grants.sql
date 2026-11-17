@@ -1,0 +1,10 @@
+-- Explicit statistics installation only; ordinary daemon bootstrap does not apply this file.
+GRANT SELECT ON state_statistics_generation,state_statistics_journal,state_statistics_invalidations,
+ state_statistics_namespaces,state_statistics_head,state_statistics_obligations,state_statistics_checkpoints,
+ state_statistics_contributions,state_statistics_rollup,state_statistics_expiry TO wfsim_factoryd;
+GRANT INSERT,UPDATE ON state_statistics_namespaces,state_statistics_head TO wfsim_factoryd;
+GRANT INSERT,UPDATE,DELETE ON state_statistics_obligations,state_statistics_checkpoints,
+ state_statistics_contributions,state_statistics_rollup,state_statistics_expiry TO wfsim_factoryd;
+GRANT DELETE ON state_statistics_journal TO wfsim_factoryd;
+GRANT USAGE ON SEQUENCE statistics_revision TO wfsim_factoryd;
+GRANT EXECUTE ON FUNCTION statistics_replace(text,text,text,jsonb),statistics_capture_relations(),statistics_preflight(text) TO wfsim_factoryd;
