@@ -64,7 +64,7 @@ export async function signalTick(env,{engine=null,release=null}={},now=Date.now(
 /// force: what an idle computer reads instead of asking the worker. `v` changes
 /// only when a field changes meaning.
 export function signalBody(snap, d, { protocol, protocols }) {
-  return { v: 1, at: snap.at, open: Number(snap.open), urgent: Number(snap.urgent), engine: snap.engine, release: snap.release,
+  return { v: 1, at: snap.at, order_epoch: snap.epoch??null, open: Number(snap.open), urgent: Number(snap.urgent), engine: snap.engine, release: snap.release,
     protocol, protocols: [...protocols].sort((a, b) => b - a), computing: Number(snap.computing),
     poll_ms: d.poll_ms, jitter_ms: d.jitter_ms, urgent_jitter_ms: d.urgent_jitter_ms, mode: d.signal_mode === 1 ? "ask" : "signal" };
 }

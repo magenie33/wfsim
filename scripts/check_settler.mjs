@@ -186,7 +186,8 @@ console.log("the work signal");
     && body.engine === "e1" && body.release === "r1" && body.protocol === PROTOCOL && body.protocols.length === PROTOCOLS_SERVED.size
     && body.poll_ms === DIAL_DEFAULTS.poll_ms && body.jitter_ms === DIAL_DEFAULTS.jitter_ms
     && body.urgent_jitter_ms === DIAL_DEFAULTS.urgent_jitter_ms && body.mode === "signal"
-    && Object.keys(body).join() === "v,at,open,urgent,engine,release,protocol,protocols,computing,poll_ms,jitter_ms,urgent_jitter_ms,mode", JSON.stringify(body));
+    && body.order_epoch === null
+    && Object.keys(body).join() === "v,at,order_epoch,open,urgent,engine,release,protocol,protocols,computing,poll_ms,jitter_ms,urgent_jitter_ms,mode", JSON.stringify(body));
   const { setDial, forgetDials } = await import("../worker/dials.js");
   await setDial(env, "signal_mode", 1, "check");
   await setDial(env, "poll_ms", 30_000, "check");

@@ -1,6 +1,7 @@
 // Compute layout, pagination and the shared live device count.
 // WFSIM_BASE points at the native dev server; CI also runs against the built site.
 import { openApp } from "./cdp.mjs";
+import { statisticsExpiresAt } from "../worker/statistics_clock.js";
 
 const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE, lang: "en" });
 const { evaluate, check } = app;
@@ -9,7 +10,10 @@ const ui = await evaluate(`(async () => {
   const wait = () => new Promise(resolve => setTimeout(resolve, 150));
   const demandLoader = loadComputeDemand;
   loadComputeDemand = async () => {};
-  computeDemand = { at: new Date().toISOString(), orders: [{ kind: 'new_build', total: 20, dispatched: 20 }],
+  const sampled = new Date(Date.now() - 1000).toISOString();
+  computingEpoch = undefined;
+  computeDemand = { ok: true, v: 1, at: sampled, counts_at: sampled, expires_at: ${JSON.stringify(statisticsExpiresAt(new Date().toISOString()))},
+    order_epoch: null, orders: [{ kind: 'new_build', total: 20, dispatched: 20 }],
     owed: {}, per_hour: { volunteers: 5, official: 1 }, clear_hours: 1, surveys: [] };
   clearInterval(computeTimer); computeTimer = setInterval(() => {}, 60000);
   accountState.loaded = true; accountState.providers = ["email"]; accountState.account = { id: "paged-account" };
@@ -107,16 +111,17 @@ const initial = await evaluate(`(async () => {
   navComputing = loadTaskStates = loadLedgers = loadHomeTally = async () => {};
   try {
     renderAuthPage('compute');
-    const absent = !document.getElementById('compute-demand');
+    const waiting = document.getElementById('compute-demand');
+    const unknown = !!waiting && waiting.textContent.includes('—') && !waiting.querySelector('.order-list');
     await new Promise(resolve => setTimeout(resolve, 400));
     const goal = document.getElementById('compute-demand');
     const live = document.getElementById('rt-live');
     computeRedraw(true);
-    return { absent, shown: !!goal && goal.textContent.includes('new builds 20'), liveKept: document.getElementById('rt-live') === live };
+    return { unknown, shown: !!goal && goal.textContent.includes('new builds 20'), liveKept: document.getElementById('rt-live') === live };
   } finally {
     [loadComputeDemand, navComputing, loadTaskStates, loadLedgers, loadHomeTally] = loaders;
   }
 })()`);
-check("initial demand arriving after the page renders displays the goal without waiting for periodic refresh", initial.absent && initial.shown && initial.liveKept, JSON.stringify(initial));
+check("initial demand replaces unknown counts without waiting for periodic refresh", initial.unknown && initial.shown && initial.liveKept, JSON.stringify(initial));
 
 await app.finish("compute cards, pages and live counts agree");

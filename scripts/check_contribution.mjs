@@ -368,7 +368,7 @@ await library.run("UPDATE entity_compute_devices SET last_at = '2020-01-01T00:00
   env.PUBLIC = { get: async (k) => (k === DEMAND_KEY ? { body: JSON.stringify(d) } : null) };
   check("...byte for byte", JSON.stringify(await call("/api/board/demand")) === JSON.stringify({ status: 200, ...d }));
   env.PUBLIC = { get: async (k) => (k === DEMAND_KEY ? { body: JSON.stringify(expired) } : null) };
-  check("...including the unchanged original-time display snapshot", JSON.stringify(await call("/api/board/demand")) === JSON.stringify({ status: 200, ...expired }));
+  check("...refusing an expired sample without refreshing its clock", (await call("/api/board/demand")).error === 'stale_demand');
   delete env.PUBLIC;
 }
 check("the nav asks the same count alone", (await call("/api/board/computing")).computing === 1);
