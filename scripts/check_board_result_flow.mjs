@@ -143,8 +143,8 @@ try{
 
  const ui=clientSource('scripts/check_board_result_flow.mjs');
  const part=ui.slice(ui.indexOf('async function readBoardPartitionCatalog('),ui.indexOf('/// `res.ok`'));
- const context=vm.createContext({URLSearchParams,window:{},LIVE_ORIGIN:base,
-  fetchJsonPatient:async path=>{const r=await fetch(new URL(path,base));if(!r.ok)throw Error('HTTP '+r.status);return r.json();}});
+ const context=vm.createContext({URLSearchParams,AbortController,AbortSignal,SCENE_ROWS_WITHIN_MS:8000,timeoutSignal:ms=>AbortSignal.timeout(ms),window:{},LIVE_ORIGIN:base,
+  fetchJsonPatient:async(path,tries,signal)=>{const r=await fetch(new URL(path,base),{signal});if(!r.ok)throw Error('HTTP '+r.status);return r.json();}});
  vm.runInContext(part,context);
  const old={benchmark:target.ruler,mode:target.mode,score:0.001,mods:['old']};
  const untouched={benchmark:'retained_other_ruler',mode:'base',score:123};

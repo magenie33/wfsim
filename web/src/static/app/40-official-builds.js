@@ -312,7 +312,7 @@ async function readBoardPartitionCatalog(scene, weapon = null, signal) {
   for (;;) {
     const query = new URLSearchParams({ scene, after });
     if (weapon) query.set("weapon", weapon);
-    const page = await fetchJsonPatient(`${base}/api/board/pages/catalog?${query}`, 1, signal);
+    const page = await fetchJsonPatient(`${base}/api/board/pages/catalog?${query}`, 1, boardReadSignal(signal));
     if (!page?.ok || !Array.isArray(page.partitions)) throw new Error("The board is unavailable.");
     partitions.push(...page.partitions);
     if (!page.next) return partitions;
@@ -321,32 +321,83 @@ async function readBoardPartitionCatalog(scene, weapon = null, signal) {
   }
 }
 
-async function readBoardPartitionRows(partition, signal) {
+function boardReadSignal(signal, within = SCENE_ROWS_WITHIN_MS) {
+  const timer = timeoutSignal(within);
+  if (!signal) return timer;
+  if (AbortSignal.any) return AbortSignal.any([signal, timer]);
+  const controller = new AbortController();
+  for (const input of [signal, timer]) {
+    if (input.aborted) controller.abort();
+    else input.addEventListener("abort", () => controller.abort(), { once: true });
+  }
+  return controller.signal;
+}
+
+function boardPagePool(signal) {
+  const waiting = []; let active = 0;
+  const cancel = () => { for (const job of waiting.splice(0)) job.reject(signal.reason); };
+  const pump = () => {
+    while (active < 4 && waiting.length && !signal.aborted) {
+      const job = waiting.shift(); active++;
+      Promise.resolve().then(job.read).then(job.resolve, job.reject).finally(() => { active--; pump(); });
+    }
+  };
+  signal.addEventListener("abort", cancel, { once: true });
+  return {
+    read: (read) => new Promise((resolve, reject) => {
+      if (signal.aborted) { reject(signal.reason); return; }
+      waiting.push({ read, resolve, reject }); pump();
+    }),
+    close: () => signal.removeEventListener("abort", cancel),
+  };
+}
+
+async function readBoardPartitionRows(partition, signal, read = (work) => work()) {
   const base = window.__WFSIM_DESKTOP__ ? LIVE_ORIGIN : "";
-  const rows = []; let after = 0;
-  for (;;) {
+  if (!Number.isSafeInteger(partition.rows) || partition.rows < 0) throw new Error("Invalid board count.");
+  const pageAt = async (after) => read(async () => {
     const query = new URLSearchParams({ weapon: partition.weapon, ruler: partition.ruler, revision: partition.revision, after: String(after) });
-    const page = await fetchJsonPatient(`${base}/api/board/pages?${query}`, 1, signal);
+    const page = await fetchJsonPatient(`${base}/api/board/pages?${query}`, 1, boardReadSignal(signal));
     if (!page?.ok || page.revision !== partition.revision || page.after !== after || page.count !== partition.rows
         || !Array.isArray(page.rows) || page.rows.some(row => row.benchmark !== partition.ruler)) throw new Error("Invalid board page.");
-    rows.push(...page.rows);
-    if (page.next == null) {
-      if (rows.length !== page.count) throw new Error("Incomplete board page.");
-      return rows;
+    const end = after + page.rows.length;
+    if (end > partition.rows || (end === partition.rows ? page.next != null
+      : !page.rows.length || page.next !== end)) throw new Error("Incomplete board page.");
+    return page;
+  });
+  const first = await pageAt(0);
+  if (first.next == null) return first.rows;
+  const step = first.rows.length, pages = new Map([[0, first.rows]]);
+  let next = first.next;
+  await Promise.all(Array.from({ length: 4 }, async () => {
+    while (next < partition.rows) {
+      const after = next; next += step;
+      const page = await pageAt(after);
+      if (page.rows.length !== Math.min(step, partition.rows - after)) throw new Error("Incomplete board page.");
+      pages.set(after, page.rows);
     }
-    if (!Number.isSafeInteger(page.next) || page.next <= after || !page.rows.length) throw new Error("Invalid board page.");
-    after = page.next;
+  }));
+  const rows = [];
+  for (let after = 0; after < partition.rows; after += step) {
+    if (!pages.has(after)) throw new Error("Incomplete board page.");
+    rows.push(...pages.get(after));
   }
+  return rows;
 }
 
 async function readCurrentBoardRows(weapon, scene, previous, signal) {
+  const controller = new AbortController(), within = boardReadSignal(signal, 60000);
+  const cancel = () => controller.abort(within.reason);
+  if (within.aborted) cancel(); else within.addEventListener("abort", cancel, { once: true });
+  const pool = boardPagePool(controller.signal);
   try {
-    const partitions = await readBoardPartitionCatalog(scene, weapon, signal);
+    const partitions = await readBoardPartitionCatalog(scene, weapon, controller.signal);
     if (!partitions.length) return previous;
-    const rows = (await Promise.all(partitions.map(partition => readBoardPartitionRows(partition, signal)))).flat();
+    const rows = (await Promise.all(partitions.map(partition => readBoardPartitionRows(partition, controller.signal, pool.read)))).flat();
     const replaced = new Set(partitions.map(partition => partition.ruler));
     return (previous || []).filter(row => !replaced.has(row.benchmark)).concat(rows);
-  } catch (_) { return previous; }
+  } catch (_) { controller.abort(); return previous; }
+  finally { within.removeEventListener("abort", cancel); pool.close(); }
 }
 
 async function readCurrentBoardIndex(scene, previous, signal) {
@@ -396,14 +447,7 @@ const boardFileState = (id) => {
 };
 const boardCellDir = (benchmark) => benchSceneOf(benchList().find((b) => b.id === benchmark));
 function boardFileSignal(state) {
-  const timer = timeoutSignal(SCENE_ROWS_WITHIN_MS);
-  if (AbortSignal.any) return AbortSignal.any([state.controller.signal, timer]);
-  const controller = new AbortController();
-  for (const signal of [state.controller.signal, timer]) {
-    if (signal.aborted) controller.abort();
-    else signal.addEventListener("abort", () => controller.abort(), { once: true });
-  }
-  return controller.signal;
+  return boardReadSignal(state.controller.signal);
 }
 const boardHasCell = (id, benchmark) => BOARD_HAVE.has(id) && (!boardFiles.has(id) || boardFiles.get(id).loaded.has(boardCellDir(benchmark)));
 function boardRequestedDirs(id) {
@@ -473,7 +517,7 @@ async function readWeaponBoard(id, base, state) {
   if (/\/card\/?$/.test(location.pathname) && cardParams().kind === "pz") {
     try { rows = await fetchJsonPatient(`${base}/board/heads/${id}.json`); } catch (_) { /* every row, below */ }
     if (rows) {
-      for (const scene of benchScenes()) rows = await readCurrentBoardRows(id, scene, rows, boardFileSignal(state));
+      for (const scene of benchScenes()) rows = await readCurrentBoardRows(id, scene, rows, state.controller.signal);
       if (boardFiles.get(id) !== state) return;
       BOARD[id] = rows;
       BOARD_HAVE.add(id);
@@ -488,7 +532,7 @@ async function readWeaponBoard(id, base, state) {
     const source = dir && window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : base;
     rows = await fetchJsonPatient(`${source}/board/${dir ? dir + "/" : ""}${id}.json`, 3, boardFileSignal(state));
   } catch (_) { /* unreachable */ }
-  rows = await readCurrentBoardRows(id, dir, rows, boardFileSignal(state));
+  rows = await readCurrentBoardRows(id, dir, rows, state.controller.signal);
   // NULL IS NOT AN EMPTY BOARD. A dev server has no `board/` at all, and a
   // weapon left unloaded is what `boardProjection` refuses to speak about.
   if (!rows || boardFiles.get(id) !== state) return;
@@ -517,7 +561,7 @@ async function loadSceneRows(id, base, dirs = boardRequestedDirs(id)) {
         if (r.status === 404) return [];
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
-      })).then(more => readCurrentBoardRows(id, dir, more, boardFileSignal(state))).then((more) => {
+      })).then(more => readCurrentBoardRows(id, dir, more, state.controller.signal)).then((more) => {
         if (boardFiles.get(id) !== state || !BOARD[id]) return;
         if (!Array.isArray(more)) throw new Error("invalid board rows");
         const cells = new Set(benchList().filter((b) => benchSceneOf(b) === dir).map((b) => b.id));
@@ -675,7 +719,7 @@ async function reloadReviewedBoard(weapon, ruler) {
       const absent = scene && Array.isArray(listed) && !listed.includes(weapon);
       const rows = absent ? [] : await fetchJsonPatient(`${base}/board/${scene ? scene + "/" : ""}${weapon}.json`, 3, boardFileSignal(state));
       if (!Array.isArray(rows)) throw new Error("The board is unavailable.");
-      return readCurrentBoardRows(weapon, scene, rows, boardFileSignal(state));
+      return readCurrentBoardRows(weapon, scene, rows, state.controller.signal);
     }));
     const priorIndex = await fetchJsonPatient(`${base}/board/${dir ? dir + "/" : ""}index.json`, 3, boardFileSignal(state));
     const index = await readCurrentBoardIndex(dir, priorIndex, boardFileSignal(state));

@@ -274,3 +274,5 @@ assert.equal(published({ ...reviewed, current_score: 1 }, [leader], []), false);
 assert.equal(published({ ...reviewed, current_score: 1 }, [leader], [{ ...publicRow, score: 1411 }]), false,
   "a trimmed weapon row is still pending while its old index row survives");
 console.log("  ok  a missing row confirms only a supported entry-line removal");
+
+await import("./check_board_page_reader.mjs");
