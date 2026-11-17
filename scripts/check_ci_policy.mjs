@@ -41,6 +41,16 @@ for (const path of websiteTools) {
 }
 assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get('scripts/check_factory_availability.mjs') || []],
   ['pipeline'], 'the complete availability regression has one pipeline CI owner');
+assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get('scripts/check_statistics_clock.mjs') || []],
+  ['pipeline'], 'sampled statistics expiration must run in ordinary pipeline CI');
+for (const path of ['scripts/check_statistics_clock.mjs', 'worker/statistics_clock.js']) {
+  assert.deepEqual(classify([path]).jobs, BROWSER_JOBS, path + ' retains every service and browser job');
+  assert.equal(classify([path]).deep, false, path + ' cannot change search enumeration');
+  for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'scripts/check_statistics_unknown.mjs'])
+    assert.equal(classify([path, extra]).deep, true);
+  assert.equal(classify([path], true).deep, true);
+  assert.equal(classify([path], false, false).deep, true);
+}
 const admissionToolInputs = ['scripts/check_build_workflows.mjs', 'scripts/check_factory_deploy.py',
   'scripts/check_workflow_recovery.mjs', 'scripts/inbox_reader.mjs', 'scripts/migrations/db_library.mjs',
   'tests/fixtures/build-admission-base5a/build_workflows.sql',
