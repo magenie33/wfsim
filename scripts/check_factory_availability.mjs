@@ -12,6 +12,7 @@ import {openEnv,run} from './factoryd.mjs';
 
 const canonical=readFileSync(new URL('../worker/pg/sync.sql',import.meta.url),'utf8');
 const functionSql=source=>source.match(/CREATE OR REPLACE FUNCTION factory_open\(text, bigint, text, bigint\)[\s\S]*?\$\$;/)?.[0];
+const selected=process.env.WFSIM_AVAILABILITY_SYNC_SQL?readFileSync(process.env.WFSIM_AVAILABILITY_SYNC_SQL,'utf8'):canonical;
 assert(functionSql(canonical));
 if(process.argv.includes('--sql')){process.stdout.write(functionSql(canonical)+'\n');process.exit(0);}
 const module=process.env.WFSIM_AVAILABILITY_MODULE;
@@ -19,7 +20,7 @@ const {availabilityWriter,cacheAvailability,publishAvailability,AVAILABILITY_KEY
 const pg=new PGlite({parsers:{20:Number,1700:Number}});await pg.waitReady;
 for(const file of ['schema.sql','library.sql','sync.sql','inventory.sql','build_workflows.sql','board_admission.sql'])
   await pg.exec(readFileSync(new URL('../worker/pg/'+file,import.meta.url),'utf8'));
-if(process.env.WFSIM_AVAILABILITY_SYNC_SQL)await pg.exec(functionSql(readFileSync(process.env.WFSIM_AVAILABILITY_SYNC_SQL,'utf8')));
+if(selected!==canonical)await pg.exec(functionSql(selected));
 const result=rows=>({rows:rows.rows,affected:rows.affectedRows??0});
 const client={query:async(sql,args)=>result(await pg.query(sql,args)),transaction:fn=>pg.transaction(tx=>fn({query:async(sql,args)=>result(await tx.query(sql,args))}))};
 const db=Object.assign(pgDb(client),{
@@ -33,6 +34,17 @@ const opened=async(at=iso(0),pack=200)=>db.get('SELECT * FROM factory_open(?1::t
 const body=async()=>db.get('SELECT body,at FROM state_factory_findings WHERE kind=?',AVAILABILITY_KEY);
 const sample=(offset=0,extra={})=>({at:iso(offset),open:5000,asking:7,pack_max:200,epoch:null,...extra});
 const write=availabilityWriter(client);
+const withoutFallbackPlan=async(run)=>{
+  const {definition}=await db.get("SELECT pg_get_viewdef('state_compute_effective_open'::regclass,true) AS definition");
+  await pg.exec(`CREATE FUNCTION availability_plan_poison() RETURNS boolean LANGUAGE sql IMMUTABLE AS $$SELECT 1/0=0$$;
+    CREATE OR REPLACE VIEW state_compute_effective_open AS SELECT q.* FROM (${definition.trim().replace(/;$/,'')}) q WHERE availability_plan_poison()`);
+  try{
+    await assert.rejects(()=>client.query('EXPLAIN SELECT * FROM state_compute_effective_open',[]),/division by zero/);
+    await run();
+  }finally{
+    await pg.exec(`CREATE OR REPLACE VIEW state_compute_effective_open AS ${definition};DROP FUNCTION availability_plan_poison()`);
+  }
+};
 try{
   await seedComputeWork(db,{id:'available',verb:'simulate',state:'open',request:'{}',opened_at:iso(-1000)});
   await db.run(`INSERT INTO state_factory_snapshot(id,at,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit)
@@ -41,7 +53,10 @@ try{
   assert.equal((await opened()).open,1);
   await cacheAvailability(db,sample(),{write});
   check('a fresh independent availability row is used while complete statistics stay paused',(await opened()).open===5000&&(await opened()).asking===7);
-  const plan=(await client.query('EXPLAIN(ANALYZE,BUFFERS,FORMAT JSON)SELECT * FROM factory_open($1::text,NULL,$2::text,$3::bigint)',[iso(0),iso(-120000),200])).rows[0]['QUERY PLAN'];
+  await withoutFallbackPlan(async()=>check('a cache hit returns before the canonical fallback is planned',(await opened()).open===5000));
+  const fastSql=functionSql(selected).match(/RETURN QUERY\s+([\s\S]*?);/)?.[1];
+  assert(fastSql&&!/\$[23]\b/.test(fastSql),'the authoritative fast statement has only time and pack inputs');
+  const plan=(await client.query('EXPLAIN(ANALYZE,BUFFERS,FORMAT JSON)'+fastSql.replaceAll('$4','$2'),[iso(0),200])).rows[0]['QUERY PLAN'];
   if(process.env.WFSIM_AVAILABILITY_PLAN_FILE)writeFileSync(process.env.WFSIM_AVAILABILITY_PLAN_FILE,JSON.stringify(plan,null,2)+'\n');
   const nodes=[];const walk=value=>{if(!value||typeof value!=='object')return;if(value['Relation Name'])nodes.push(value);for(const child of Object.values(value))if(typeof child==='object')Array.isArray(child)?child.forEach(walk):walk(child);};walk(plan);
   check('the fresh cache plan reads no question, consumer, device or snapshot heap',nodes.some(node=>node['Relation Name']==='state_factory_findings'&&node['Actual Loops']>0)
@@ -62,6 +77,7 @@ try{
   await db.run('DELETE FROM state_factory_findings WHERE kind=?',AVAILABILITY_KEY);
   await db.run('UPDATE state_factory_snapshot SET at=? WHERE id=1',iso(0));
   check('the original fresh snapshot remains a compatibility fallback',(await opened()).open===99);
+  await withoutFallbackPlan(async()=>check('a full snapshot returns before the canonical fallback is planned',(await opened()).open===99));
   await cacheAvailability(db,sample(),{write});
   await db.run("INSERT INTO entity_compute_order_cuts VALUES('availability-cut',?,1,99,999999999,'z',?,'{}')",iso(1000),iso(1000));
   await db.run("INSERT INTO record_compute_order_cut_activations VALUES('availability-cut',?,0,'',0,'')",iso(1000));

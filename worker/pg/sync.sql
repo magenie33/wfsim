@@ -333,7 +333,9 @@ $$;
 -- invalidates its epoch; a changed pack ceiling may require the original count.
 -- $2 is unused, kept so the procedure that calls this stays as it is.
 CREATE OR REPLACE FUNCTION factory_open(text, bigint, text, bigint) RETURNS TABLE (open bigint, asking bigint)
-LANGUAGE sql STABLE AS $$
+LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  RETURN QUERY
   WITH epoch AS MATERIALIZED(SELECT compute_order_cut_epoch() AS at),
   raw AS MATERIALIZED(SELECT at,CASE WHEN pg_input_is_valid(body,'jsonb') AND body IS JSON OBJECT THEN body::jsonb END AS body
     FROM state_factory_findings WHERE kind='factory_availability'),
@@ -350,18 +352,22 @@ LANGUAGE sql STABLE AS $$
     AND f.asking BETWEEN 0 AND 9007199254740991 AND f.pack_max BETWEEN 1 AND 9007199254740991 AND f.pack_max >= $4
     AND f.at ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$'
     AND pg_input_is_valid(f.at,'timestamp with time zone') AND f.at <= $1
-    AND f.at >= to_char(($1::timestamptz AT TIME ZONE 'UTC') - interval '60 seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
-  s AS (SELECT * FROM fast UNION ALL
-    SELECT f.open,f.asking FROM state_factory_snapshot f,epoch e WHERE f.id=1 AND NOT EXISTS(SELECT 1 FROM fast)
-      AND f.at<= $1 AND f.at>=coalesce(e.at,'')
-      AND f.at >= to_char(($1::timestamptz AT TIME ZONE 'UTC') - interval '60 seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
-  a AS (SELECT count(*) AS n FROM factory_asking($3, $1) WHERE NOT EXISTS (SELECT 1 FROM s))
-  SELECT s.open, s.asking FROM s
-  UNION ALL
+    AND f.at >= to_char(($1::timestamptz AT TIME ZONE 'UTC') - interval '60 seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+  SELECT f.open,f.asking FROM fast f;
+  IF FOUND THEN RETURN; END IF;
+
+  RETURN QUERY
+  SELECT f.open,f.asking FROM state_factory_snapshot f WHERE f.id=1
+    AND f.at<= $1 AND f.at>=coalesce(compute_order_cut_epoch(),'')
+    AND f.at >= to_char(($1::timestamptz AT TIME ZONE 'UTC') - interval '60 seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+  IF FOUND THEN RETURN; END IF;
+
+  RETURN QUERY
+  WITH a AS (SELECT count(*) AS n FROM factory_asking($3, $1))
   SELECT (SELECT count(*) FROM (SELECT 1 FROM state_compute_effective_open WHERE waits = 0
       AND (lease_until IS NULL OR lease_until < $1)
-      LIMIT GREATEST(1, (SELECT n FROM a)) * $4) o), (SELECT n FROM a)
-  WHERE NOT EXISTS (SELECT 1 FROM s)
+      LIMIT GREATEST(1, (SELECT n FROM a)) * $4) o), (SELECT n FROM a);
+END;
 $$;
 
 -- Current source intent owns zone; a zone change joins the destination tail.
