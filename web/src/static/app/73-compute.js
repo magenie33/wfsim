@@ -583,6 +583,9 @@ function computeDraw(main) {
         if (identity.innerHTML !== next) identity.innerHTML = next;
         continue;
       }
+      if (el.id === "compute-demand") {
+        old.querySelector(".bh .set-note").textContent = el.querySelector(".bh .set-note").textContent;
+      }
       if (el.classList.contains("block")) old.querySelector(":scope > .bb").replaceChildren(...el.querySelector(":scope > .bb").childNodes);
     }
   } else main.replaceChildren(t.content);
@@ -968,7 +971,7 @@ function computeDemandHtml() {
   const countedAt = d.counts_at ?? d.at;
   const updated = Number.isFinite(Date.parse(countedAt))
     ? tr("Updated {time}").replace("{time}", new Date(countedAt).toLocaleString(accountLocale())) : "";
-  return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT(d.queue ? "Task queue" : "Community goal")}</h2><span class="set-note" style="margin-left:auto">${
+  return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Task queue")}</h2><span class="set-note" style="margin-left:auto">${
     escHtml(updated)}</span></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
     <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(counted ? n(owed) : "—")} ${aT("tasks")}${

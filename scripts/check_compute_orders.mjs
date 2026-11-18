@@ -28,6 +28,21 @@ try {
   app.check("queued task kinds are listed and unknown kinds retain their ids",
     state.rows.join('|') === "new builds 20|future_scope 3", JSON.stringify(state));
   const zones = [[0, 2], [3, 21]];
+  const refresh = await app.evaluate(`(() => {
+    computingEpoch = null;
+    computeDemand = null;
+    nav('/compute');
+    const box = document.getElementById('compute-demand'), header = box.querySelector('.bh');
+    const title = header.querySelector('h2').textContent;
+    computeDemand = ${JSON.stringify({ ...demand, queue: { total: 23, zones } })};
+    computeRedraw();
+    const expected = document.createElement('template');
+    expected.innerHTML = computeDemandHtml();
+    return { title, sameHeader: document.querySelector('#compute-demand .bh') === header,
+      time: header.querySelector('.set-note').textContent, expected: expected.content.querySelector('.bh .set-note').textContent };
+  })()`);
+  app.check("the queue opens by name and updates its timestamp on the existing card",
+    refresh.title === "Task queue" && refresh.sameHeader && refresh.time && refresh.time === refresh.expected, JSON.stringify(refresh));
   state = await draw({ ...demand, per_hour: null, clear_hours: null, queue: { total: 23, zones },
     orders: zones.map(([zone, total]) => ({ zone, kind: String(zone).padStart(2, '0'), total })) });
   app.check("each nonempty queue zone appears in FIFO priority order without needing pace",
