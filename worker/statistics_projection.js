@@ -18,8 +18,11 @@ export const statisticsConsumerPageSql=after=>`WITH input AS MATERIALIZED(SELECT
   CASE WHEN producer='new_build' THEN 0 WHEN payload::jsonb->>'batch' LIKE 'rescore%' THEN 1 WHEN producer='refresh' THEN 3 ELSE 2 END k
   FROM relation_task_consumers WHERE question=i.question AND state='live' AND producer IN${kindSql} ${after?'AND(producer,ref)>(i.producer,i.ref)':''}
   ORDER BY producer,ref LIMIT i.cap OFFSET 0)d`;
+const retainedQuestion=id=>`EXISTS(SELECT 1 FROM state_compute_work w WHERE w.id=${id} OFFSET 0)`;
+const effectiveOpen=id=>`EXISTS(SELECT 1 FROM state_compute_effective_open w WHERE w.id=${id} OFFSET 0)
+ AND ${retainedQuestion(id)}`;
 const point=(id='$1::text')=>`SELECT s.id,s.verb,s.state,s.producer,${statisticsSourceSql('s')} source,s.waits::text,s.lease_until,s.lease,s.leased_at,
- EXISTS(SELECT 1 FROM state_compute_effective_work w WHERE w.id=s.id OFFSET 0) effective
+ CASE WHEN s.state='open' THEN ${effectiveOpen('s.id')} ELSE false END effective
  FROM state_compute_scheduling s WHERE s.id=${id}`;
 const definitions=`SELECT string_agg(def,E'\n' ORDER BY name) FROM(
  SELECT c.relname name,pg_get_viewdef(c.oid,true) def FROM pg_class c WHERE c.oid IN('state_compute_effective_open'::regclass,'state_compute_work'::regclass,'state_compute_effective_work'::regclass,'state_board_effective_pending_work'::regclass)
@@ -42,6 +45,9 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
  if(bound.pageRows>4096)throw Error('statistics page exceeds input bound');
  if(typeof currentIdentity!=='function')throw Error('statistics current identity is required');
  let scanRows=bound.pageRows;
+ const batchRows={q:128,p:32,k:64,r:64};
+ const pageBudgetError=error=>error?.code==='57014'||error instanceof StatisticsProjectionBudget
+  && /statistics (time|input|query) budget/.test(error.message);
  const check=()=>{if(stopped())throw Error('statistics stopped');};
  const permit=async context=>{context.guard();if(!await allowed({signal:context.signal,remainingMs:Math.max(1,bound.maxMs-(clock()-context.began))}))throw Error('statistics paused or stopped');context.guard();};
  const operation=async work=>{
@@ -89,8 +95,36 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
     ON CONFLICT(namespace,kind,key) DO UPDATE SET cursor='{}'::jsonb`,[ns,kind,encoded(keys)]);
  };
  const replace=async(q,ns,kind,key,body)=>q('SELECT statistics_replace($1,$2,$3,($4::text)::jsonb)',[ns,kind,key,encoded(body)]);
- const replacePage=(q,ns,changes)=>q(`SELECT statistics_replace($1,c.kind,c.key,c.body)
-   FROM jsonb_to_recordset(($2::text)::jsonb) AS c(kind text,key text,body jsonb)`,[ns,encoded(changes)]);
+ const replacePage=(q,ns,changes)=>q(`WITH changed AS MATERIALIZED (
+    SELECT next.kind,next.key,next.body,prior.body before
+    FROM jsonb_to_recordset(($2::text)::jsonb) AS next(kind text,key text,body jsonb)
+    LEFT JOIN state_statistics_contributions prior
+      ON prior.namespace=$1 AND prior.kind=next.kind AND prior.key=next.key
+    WHERE (next.body<>'[]' OR prior.body IS NOT NULL) AND next.body IS DISTINCT FROM prior.body
+   ), deltas AS (
+    SELECT (piece->0)::text key,(piece->>1)::bigint n
+    FROM changed CROSS JOIN LATERAL jsonb_array_elements(body) piece
+    UNION ALL
+    SELECT (piece->0)::text,-(piece->>1)::bigint
+    FROM changed CROSS JOIN LATERAL jsonb_array_elements(before) piece
+   ), totals AS MATERIALIZED (
+    SELECT d.key,(coalesce(r.n,0)+d.n)::bigint n
+    FROM (SELECT key,sum(n) n FROM deltas GROUP BY key HAVING sum(n)<>0) d
+    LEFT JOIN state_statistics_rollup r ON r.namespace=$1 AND r.key=d.key
+   ), retained AS (
+    INSERT INTO state_statistics_contributions(namespace,kind,key,body)
+    SELECT $1,kind,key,body FROM changed WHERE body<>'[]'
+    ON CONFLICT(namespace,kind,key) DO UPDATE SET body=excluded.body
+   ), removed AS (
+    DELETE FROM state_statistics_contributions c USING changed x
+    WHERE c.namespace=$1 AND (c.kind,c.key)=(x.kind,x.key) AND x.body='[]'
+   ), rolled AS (
+    INSERT INTO state_statistics_rollup(namespace,key,n)
+    SELECT $1,key,n FROM totals WHERE n<>0
+    ON CONFLICT(namespace,key) DO UPDATE SET n=excluded.n
+   )
+   DELETE FROM state_statistics_rollup r USING totals t
+   WHERE r.namespace=$1 AND r.key=t.key AND t.n=0`,[ns,encoded(changes)]);
  const finish=async(q,ns,work)=>q('DELETE FROM state_statistics_obligations WHERE namespace=$1 AND kind=$2 AND key=$3',[ns,work.kind,work.key]);
  const finishPage=(q,ns,kind,keys)=>q(`DELETE FROM state_statistics_obligations WHERE namespace=$1 AND kind=$2
    AND key IN(SELECT jsonb_array_elements_text(($3::text)::jsonb))`,[ns,kind,encoded(keys)]);
@@ -134,7 +168,7 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
  // Deep consumer lists continue through the existing one-question cursor.
  const questionPage=async(q,ns,at)=>{
   const consumerLimit=Math.min(16,bound.pageRows);
-  const questionLimit=Math.min(128,Math.floor(4096/(consumerLimit+1)));
+  const questionLimit=Math.min(batchRows.q,Math.floor(4096/(consumerLimit+1)));
   const [workCount]=await q('SELECT count(*) n FROM state_statistics_obligations WHERE namespace=$1',[ns]);
   const remaining=bound.maxWork-Number(workCount.n);
   const sources=await q(`SELECT work.key,work.key::jsonb->>0 question,to_jsonb(s) state,consumers.rows
@@ -193,7 +227,7 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
  const pendingPage=async(q,ns,epoch)=>{
   const rows=await q(`WITH keys AS MATERIALIZED (
     SELECT key,key::jsonb->>0 batch,key::jsonb->>1 build,key::jsonb->>2 ruler,key::jsonb->>3 mode
-    FROM state_statistics_obligations WHERE namespace=$1 AND kind='p' AND cursor='{}' ORDER BY key LIMIT 32
+    FROM state_statistics_obligations WHERE namespace=$1 AND kind='p' AND cursor='{}' ORDER BY key LIMIT $3::bigint
    )
    SELECT keys.key,keys.batch,to_jsonb(p) row,
     CASE WHEN $2::boolean AND p.exact THEN
@@ -213,7 +247,7 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
    FROM keys
    CROSS JOIN LATERAL (SELECT keys.build||'|'||keys.ruler||'|'||keys.mode value) ref
    LEFT JOIN LATERAL (${pendingPoint('(keys.batch,keys.build,keys.ruler,keys.mode)')} OFFSET 0) p ON true
-   ORDER BY keys.key`,[ns,epoch!==null]);
+   ORDER BY keys.key`,[ns,epoch!==null,batchRows.p]);
   const complete=rows.filter(value=>!value.row || epoch===null || value.direct || value.may_alias===false);
   if(complete[0]?.key!==rows[0]?.key || !complete.length)return 0;
   await replacePage(q,ns,complete.map(({key,batch,row,direct})=>({kind:'p',key,body:pendingBody(row,batch,!!direct,epoch)})));
@@ -226,7 +260,7 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
   const remaining=bound.maxWork-Number(workCount.n);
   const rows=await q(`WITH keys AS MATERIALIZED (
     SELECT key,key::jsonb value FROM state_statistics_obligations
-    WHERE namespace=$1 AND kind=$2 AND cursor='{}' ORDER BY key LIMIT 64
+    WHERE namespace=$1 AND kind=$2 AND cursor='{}' ORDER BY key LIMIT $4::bigint
    ), resolved AS (
     SELECT key,CASE WHEN $2='k' THEN value ELSE to_jsonb(string_to_array(value->>0,'|')) END identity
     FROM keys
@@ -238,7 +272,7 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
       WHERE(build_id,ruler,mode)=(r.identity->>0,r.identity->>1,r.identity->>2)
       ORDER BY batch LIMIT $3::bigint OFFSET 0
     ) p
-   ) m ON jsonb_array_length(r.identity)=3 ORDER BY r.key`,[ns,kind,pendingLimit+1]);
+   ) m ON jsonb_array_length(r.identity)=3 ORDER BY r.key`,[ns,kind,pendingLimit+1,batchRows[kind]]);
   const completed=[],keys=[];
   for(const row of rows){
    if(row.parts!==3||row.pending.length>pendingLimit||keys.length+row.pending.length>remaining)break;
@@ -309,10 +343,15 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
  };
  const consume=async(q,ns,work,key,at)=>{
   if(!work)return 0;
-  let processed=0;
-  if(work.kind==='q'&&!work.cursor.started)processed=await questionPage(q,ns,at);
-  if(work.kind==='p'&&!work.cursor.started)processed=await pendingPage(q,ns,key.epoch);
-  if((work.kind==='k'||work.kind==='r')&&Object.keys(work.cursor).length===0)processed=await referencePage(q,ns,work.kind);
+  const kind=work.kind;let processed=0;
+  try{
+   if(kind==='q'&&!work.cursor.started)processed=await questionPage(q,ns,at);
+   if(kind==='p'&&!work.cursor.started)processed=await pendingPage(q,ns,key.epoch);
+   if((kind==='k'||kind==='r')&&Object.keys(work.cursor).length===0)processed=await referencePage(q,ns,kind);
+  }catch(error){
+   if(pageBudgetError(error)&&batchRows[kind]>1)batchRows[kind]=Math.max(1,Math.floor(batchRows[kind]/2));
+   throw error;
+  }
   if(processed)return processed;
   if(work.kind==='p')await pending(q,ns,work,key);
   else await fanout(q,ns,work,at);
@@ -321,18 +360,26 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
  const baseline=async(q,ns,state,key)=>{
   const cursor=state.cursor;let rows;
   if(Number(state.phase)===0){
+   const started=clock(),minimum=Math.min(16,bound.pageRows);
    const args=[...cursor,scanRows];rows=await q(`WITH page AS MATERIALIZED(SELECT id,state FROM state_compute_scheduling ${cursor.length?'WHERE id>$1':''} ORDER BY id LIMIT $${args.length}::bigint)
-    SELECT p.id,CASE WHEN p.state='open' OR EXISTS(SELECT 1 FROM relation_task_consumers d
+    SELECT p.id,CASE WHEN p.state='open' THEN ${effectiveOpen('p.id')}
+    WHEN EXISTS(SELECT 1 FROM relation_task_consumers d
       WHERE d.question=p.id AND d.state='live' AND d.producer IN${kindSql} LIMIT 1 OFFSET 0)
-    THEN EXISTS(SELECT 1 FROM state_compute_effective_work w WHERE w.id=p.id OFFSET 0) ELSE false END candidate
-    FROM page p ORDER BY p.id`,args).catch(error=>{scanRows=bound.pageRows;throw error;});
+    THEN ${retainedQuestion('p.id')} ELSE false END candidate
+    FROM page p ORDER BY p.id`,args).catch(error=>{
+     if(pageBudgetError(error))scanRows=Math.max(minimum,Math.floor(scanRows/2));
+     throw error;
+    });
    const candidates=rows.filter(row=>row.candidate),page=candidates.slice(0,bound.pageRows);
    const limited=candidates.length>page.length;
    const last=limited?page.at(-1):rows.at(-1),done=!limited&&rows.length<scanRows;
    await enqueuePage(q,ns,'q',page.map(row=>[row.id]));
    await q('UPDATE state_statistics_namespaces SET phase=$2::bigint,cursor=($3::text)::jsonb WHERE id=$1',
     [ns,done?1:0,encoded(done?[]:[last.id])]);
-   scanRows=limited?bound.pageRows:Math.max(bound.pageRows,Math.min(scanRows*2,1024,Math.floor(bound.maxRows/2)));
+   const elapsed=clock()-started;
+   if(elapsed>400)scanRows=Math.max(minimum,Math.floor(scanRows/2));
+   else if(limited)scanRows=bound.pageRows;
+   else if(elapsed<160)scanRows=Math.max(minimum,Math.min(scanRows*2,1024,Math.floor(bound.maxRows/2)));
   }else if(Number(state.phase)===1&&key.epoch!==null){
    const args=[...cursor,bound.pageRows];rows=await q(`SELECT id,at>(SELECT cut_at FROM compute_order_cut()) post FROM entity_compute_batches ${cursor.length?'WHERE id>$1':''} ORDER BY id LIMIT $${args.length}::bigint`,args);
    await enqueuePage(q,ns,'b',rows.filter(row=>row.post).map(row=>[row.id]));

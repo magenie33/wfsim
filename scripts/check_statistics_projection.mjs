@@ -237,6 +237,16 @@ try{
  hook=async event=>{if(crash&&event.sql.startsWith('UPDATE state_statistics_namespaces SET phase=')){crash=false;throw Error('injected baseline crash');}};
  await exec('SELECT statistics_invalidate()');await unit.start();await assert.rejects(unit.step(),/injected baseline crash/);hook=async()=>{};
  const afterCrash=await derived();for(const name of ['obligations','checkpoints','contributions','rollup','expiry'])assert.deepEqual(afterCrash[name],beforeCrash[name],'atomic crash '+name);
+ const adaptive=projection({limits:{...limits,pageRows:128}}),widths=[];
+ hook=async event=>{
+  if(!event.sql.startsWith('WITH page AS MATERIALIZED(SELECT id,state FROM state_compute_scheduling'))return;
+  widths.push(Number(event.args.at(-1)));
+  if(widths.length===1)throw Object.assign(new Error('fixture statement timeout'),{code:'57014'});
+ };
+ await assert.rejects(adaptive.step(),{code:'57014'});
+ assert.deepEqual(await derived(),afterCrash,'timed-out page committed');
+ await adaptive.step();hook=async()=>{};
+ assert.deepEqual(widths,[128,64],'timed-out page did not retry at a smaller width');
  unit=projection();await qualify('new process resumes interrupted baseline');
  const stable=await unit.read();await new Promise(r=>setTimeout(r,5));assert.equal((await unit.read()).countsAt,stable.countsAt,'cache never restamps');
  at+=2000;await equivalent((await unit.seal()).counts);console.log('ok lease expiry obligation without source update');
