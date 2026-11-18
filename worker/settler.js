@@ -172,19 +172,33 @@ export function judgeFact(q, answers, threshold) {
   return others ? { skip: "peer" } : { differ: "no_group" };
 }
 
+const SHADOW_PAGE_MAX = 200;
+
 /// ONE BATCH OF SETTLED QUESTIONS judged in shadow, after `from` (a `{ at, id }`
 /// keyset cursor), and folded into the `settle_shadow` finding. Read-only on
 /// every table the request path writes. Returns the next cursor and the counts.
-export async function settleShadow(env, { threshold, from, max = 200 }, now = Date.now()) {
+export async function settleShadow(env, { threshold, from, max = SHADOW_PAGE_MAX }, now = Date.now()) {
+  if (!Number.isInteger(max) || max < 1 || max > SHADOW_PAGE_MAX) throw new Error("invalid settlement shadow page size");
   const db = env.LIBRARY, until = iso(now - SETTLE_SHADOW_LAG_MS);
-  const { results: qs } = await db.prepare(`SELECT id, state, canon, needs, fact_engine, fact_at FROM state_compute_work
-      WHERE state IN ('fact', 'spot') AND fact_at <= ?1::text AND (fact_at, id) > (?2::text, ?3::text)
-      ORDER BY fact_at, id LIMIT ?4::bigint`).bind(until, from.at, from.id, max).all();
+  const { results: page } = await db.prepare(`WITH page AS MATERIALIZED (
+      SELECT id, fact_at FROM state_compute_scheduling
+      WHERE state IN ('fact', 'spot') AND fact_at IS NOT NULL AND fact_at <= ?1::text
+        AND (fact_at, id) > (?2::text, ?3::text)
+      ORDER BY fact_at, id LIMIT ?4::bigint
+    )
+    SELECT p.id, p.fact_at, q.id IS NOT NULL AS effective, q.state, q.canon, q.needs, q.fact_engine
+    FROM page p LEFT JOIN LATERAL (
+      SELECT id, state, canon, needs, fact_engine FROM state_compute_work WHERE id = p.id OFFSET 0
+    ) q ON true
+    ORDER BY p.fact_at, p.id`).bind(until, from.at, from.id, max).all();
   const out = { cursor: from, checked: 0, ok: 0, skipped: {}, differ: {}, samples: [] };
-  if (!qs.length) return out;
-  const { results: as } = await db.prepare(`SELECT id, question, engine, owner, net, official, canon, credited, at FROM record_candidate_answers
-      WHERE question IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb)) AND void = 0 ORDER BY id`)
-    .bind(JSON.stringify(qs.map((q) => q.id))).all();
+  if (!page.length) return out;
+  const qs = page.filter(q => q.effective);
+  const { results: as } = qs.length ? await db.prepare(`SELECT a.* FROM jsonb_array_elements_text((?::text)::jsonb) q(id)
+      CROSS JOIN LATERAL (
+        SELECT id, question, engine, owner, net, official, canon, credited, at
+        FROM record_candidate_answers WHERE question = q.id AND void = 0 OFFSET 0
+      ) a ORDER BY a.id`).bind(JSON.stringify(qs.map(q => q.id))).all() : { results: [] };
   const byQ = new Map(qs.map((q) => [q.id, []]));
   for (const a of as) byQ.get(a.question).push(a);
   for (const q of qs) {
@@ -194,7 +208,7 @@ export async function settleShadow(env, { threshold, from, max = 200 }, now = Da
     else if (v.skip) out.skipped[v.skip] = (out.skipped[v.skip] || 0) + 1;
     else { out.differ[v.differ] = (out.differ[v.differ] || 0) + 1; out.samples.push({ question: q.id, why: v.differ }); }
   }
-  const last = qs[qs.length - 1];
+  const last = page[page.length - 1];
   out.cursor = { at: last.fact_at, id: last.id };
   await findingsTick(db, "settle_shadow", (prev) => {
     const add = (a = {}, b) => Object.fromEntries([...new Set([...Object.keys(a), ...Object.keys(b)])].map((k) => [k, (a[k] || 0) + (b[k] || 0)]));

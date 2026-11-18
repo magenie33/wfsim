@@ -1293,6 +1293,11 @@ finding:
   `needs` independent witnesses, and each of them credited. A question an
   official answer settled, or one where an older engine was a peer, is the
   official path's or the grace's and is counted apart, not judged.
+  The shadow reads at most 200 fact and spot keys in `(fact_at, id)` order
+  before looking up effective work and answer evidence. Its checkpoint covers
+  the complete selected page, including keys hidden by the order cut. On an
+  existing database, qualify and install the `compute_scheduling_shadow_page`
+  partial index before deploying this reader.
 - `fair_shadow`: the worker's ten-minute cron (`watchdog`) compares the
   daemon's table with its own `tableOf` now, within 0.05 of a target or a
   share, since asks and answers land between the two readings.

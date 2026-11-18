@@ -142,6 +142,65 @@ console.log("settling, in shadow");
     [{ engine: "e1", owner: "a", canon: "k", at: "a", credited: 1 }, { engine: "e1", owner: "a", canon: "k", at: "a", credited: 1 }], 2).differ === "no_group");
 }
 
+{
+  const db = await testDb("library");
+  const factAt = iso(now - SETTLE_SHADOW_LAG_MS - 1);
+  const from = { at: iso(now - SETTLE_SHADOW_LAG_MS - 2), id: "" };
+  const keys = ["page-first", "page-next", "page-third"];
+  for (const id of keys) {
+    await seedComputeWork(db, { id, state: "fact", verb: "simulate", request: {}, canon: "{}", fact_at: factAt,
+      fact_engine: "e1", opened_at: factAt, due_at: factAt });
+  }
+  await db.run("INSERT INTO entity_compute_order_cuts VALUES ('shadow-cut',?,1,1,1,'',?,'{}')", factAt, factAt);
+  await db.run("INSERT INTO record_compute_order_cut_activations VALUES ('shadow-cut',?,0,'',0,'')", factAt);
+  await db.run(`INSERT INTO record_compute_order_cancellations(question,task_id,cut_id,at)
+    SELECT id,task_id,'shadow-cut',? FROM state_compute_scheduling WHERE id = 'page-first'`, factAt);
+  const request = { threshold: 2, max: 1, from };
+  let pageQuery;
+  const traced = { ...db, prepare(sql) {
+    if (sql.startsWith("WITH page AS MATERIALIZED")) pageQuery = sql;
+    return db.prepare(sql);
+  } };
+  const first = await settleShadow({ LIBRARY: traced }, request, now);
+  const stored = JSON.parse((await db.get("SELECT body FROM state_factory_findings WHERE kind='settle_shadow'")).body);
+  check("a page hidden by the cut advances its physical cursor without recording a judgment",
+    first.checked === 0 && first.cursor.id === keys[0] && stored.cursor.id === keys[0]);
+  const withoutEvidence = { ...db, prepare(sql) {
+    if (sql.includes("FROM record_candidate_answers")) throw new Error("fixture evidence unavailable");
+    return db.prepare(sql);
+  } };
+  let evidenceFailed = false;
+  try {
+    await settleShadow({ LIBRARY: withoutEvidence }, { ...request, from: first.cursor }, now);
+  } catch (error) {
+    evidenceFailed = error.message === "fixture evidence unavailable";
+  }
+  const afterFailure = JSON.parse((await db.get("SELECT body FROM state_factory_findings WHERE kind='settle_shadow'")).body);
+  check("an evidence read failure leaves the stored cursor ready to retry", evidenceFailed && afterFailure.cursor.id === first.cursor.id);
+  const next = await settleShadow({ LIBRARY: db }, { ...request, from: first.cursor }, now);
+  const third = await settleShadow({ LIBRARY: db }, { ...request, from: next.cursor }, now);
+  const end = await settleShadow({ LIBRARY: db }, { ...request, from: third.cursor }, now);
+  check("the physical cursor visits every tied fact exactly once", next.checked === 1 && next.cursor.id === keys[1]
+    && third.checked === 1 && third.cursor.id === keys[2] && end.checked === 0);
+  let rejected = false;
+  try { await settleShadow({ LIBRARY: db }, { ...request, max: 201 }, now); } catch { rejected = true; }
+  check("the shadow rejects a page larger than its fixed budget", rejected);
+  if (pageQuery) {
+    await db.exec("SET enable_seqscan=off; SET enable_bitmapscan=off");
+    try {
+      const { "QUERY PLAN": [explained] } = await db.get("EXPLAIN (FORMAT JSON) " + pageQuery, factAt, from.at, from.id, 1);
+      const limited = explained.Plan.Plans?.find(node => node["Subplan Name"] === "CTE page");
+      const seek = limited?.Plans?.[0];
+      check("the physical page limit sits directly above the composite indexed seek",
+        limited?.["Node Type"] === "Limit" && seek?.["Index Name"] === "compute_scheduling_shadow_page"
+        && seek["Index Cond"]?.includes("ROW(fact_at, id)"), JSON.stringify(limited));
+    } finally {
+      await db.exec("RESET enable_seqscan; RESET enable_bitmapscan");
+    }
+  } else check("the physical page is separately planned", false);
+  await db.close();
+}
+
 console.log("the daemon");
 {
   const { run } = await import(daemonModule);
