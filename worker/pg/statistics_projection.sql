@@ -71,6 +71,28 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE prior jsonb; following jsonb; old_owner text; new_owner text;
 BEGIN
   IF TG_OP='TRUNCATE' THEN PERFORM statistics_invalidate(); RETURN NULL; END IF;
+  IF TG_OP='UPDATE' THEN
+    CASE TG_TABLE_NAME
+      WHEN 'record_candidate_answers' THEN
+        IF (OLD.id,OLD.question) IS NOT DISTINCT FROM (NEW.id,NEW.question) THEN RETURN NULL; END IF;
+      WHEN 'state_pending_verifications' THEN
+        IF (OLD.question,OLD.engine,OLD.peer) IS NOT DISTINCT FROM (NEW.question,NEW.engine,NEW.peer) THEN RETURN NULL; END IF;
+      WHEN 'entity_compute_results' THEN
+        IF (OLD.id,OLD.computation) IS NOT DISTINCT FROM (NEW.id,NEW.computation) THEN RETURN NULL; END IF;
+      WHEN 'entity_compute_tasks' THEN
+        IF (OLD.id,OLD.computation,OLD.generation) IS NOT DISTINCT FROM (NEW.id,NEW.computation,NEW.generation) THEN RETURN NULL; END IF;
+      WHEN 'entity_compute_batches' THEN
+        IF (OLD.id,OLD.at) IS NOT DISTINCT FROM (NEW.id,NEW.at) THEN RETURN NULL; END IF;
+      WHEN 'state_board_pending_work' THEN
+        IF (OLD.batch,OLD.build_id,OLD.ruler,OLD.mode,OLD.initiator)
+           IS NOT DISTINCT FROM (NEW.batch,NEW.build_id,NEW.ruler,NEW.mode,NEW.initiator) THEN RETURN NULL; END IF;
+      WHEN 'relation_task_consumers' THEN
+        IF (OLD.producer,OLD.ref,OLD.question,OLD.state,OLD.asked_at,OLD.served_at,OLD.delivery_at,OLD.payload)
+           IS NOT DISTINCT FROM (NEW.producer,NEW.ref,NEW.question,NEW.state,NEW.asked_at,NEW.served_at,NEW.delivery_at,NEW.payload)
+        THEN RETURN NULL; END IF;
+      ELSE NULL;
+    END CASE;
+  END IF;
   IF TG_TABLE_NAME IN('entity_compute_order_cuts','record_compute_order_cut_activations') THEN
     PERFORM statistics_invalidate(); RETURN NULL;
   ELSIF TG_TABLE_NAME='state_factory_findings' THEN

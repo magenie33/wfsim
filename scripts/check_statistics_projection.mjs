@@ -184,6 +184,15 @@ try{
   assert(!baseline.blocked&&baseline.results.every(x=>x.ok),'canonical baseline blocked');
   assert(captured.blocked&&captured.results.some(x=>x.error==='40P01'),'old shared capture did not exercise the actual cycle');
   assert(!fixed.blocked&&fixed.results.every(x=>x.ok),'owner capture still blocks a distinct source row');
+  const [answer]=await exec("INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,at) VALUES('lock-a','fixture','peer','peer','{}','{}',1,$1) RETURNING id",[stamp()]);
+  await exec("INSERT INTO state_pending_verifications(question,engine,queued_at) VALUES('lock-a','fixture',$1)",[stamp()]);
+  const [beforeMetadata]=await exec('SELECT last_value::text revision FROM statistics_revision');
+  await exec("UPDATE record_candidate_answers SET credited=1,credit_at=$1 WHERE id=$2",[stamp(),answer.id]);
+  await exec("UPDATE state_pending_verifications SET claim='worker',claimed_at=$1 WHERE question='lock-a'",[stamp()]);
+  assert.deepEqual((await exec('SELECT last_value::text revision FROM statistics_revision'))[0],beforeMetadata,'credit and claim metadata created statistics replay');
+  await exec('DELETE FROM record_candidate_answers WHERE id=$1',[answer.id]);
+  assert.notDeepEqual((await exec('SELECT last_value::text revision FROM statistics_revision'))[0],beforeMetadata,'evidence deletion did not schedule replay');
+  console.log('PASS answer credit and verification claims avoid membership replay');
   await exec('DELETE FROM state_statistics_invalidations');
   const long='long-'+('x'.repeat(1100))+'|r|base';await exec('UPDATE relation_task_consumers SET ref=$1 WHERE ref=$2',[long,'shared|r|base']);
   await exec('DELETE FROM state_statistics_invalidations');
