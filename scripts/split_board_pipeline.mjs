@@ -26,6 +26,7 @@ import {ensurePreparedReadIndexes} from './prepared_read_indexes.mjs';
 import {validateWorkSpan} from './prepared_work_consumer.mjs';
 import {SourceCaptureGC} from './source_capture_gc.mjs';
 import {sqliteTransactionRecovery} from './sqlite_transaction_recovery.mjs';
+import {runBoardInputMaintenance} from './board_input_maintenance.mjs';
 
 const load=path=>JSON.parse(readFileSync(path,'utf8')),here=dirname(fileURLToPath(import.meta.url));
 const GiB=1024**3;
@@ -169,11 +170,16 @@ export async function serveBoardStage(stage,work,bin) {
  const lock=new DatabaseSync(join(work,stage+'-consumer-lock.sqlite'));let operator,consumer,audit,selected,stopping=false;
  lock.exec('PRAGMA busy_timeout=0;BEGIN IMMEDIATE');
  const stop=()=>{stopping=true;};process.on('SIGTERM',stop);process.on('SIGINT',stop);
- const report=body=>pipeline.progress(stage,body);
+ let maintenance;
+ const report=body=>pipeline.progress(stage,{...body,...(maintenance?{maintenance}:{})});
  try {
   while(!stopping) {
    let pending=false;
    try {
+    if(stage==='normalization') {
+     try {maintenance=await runBoardInputMaintenance({work,owner:lock,check:()=>{if(stopping)throw Error('normalization stopping');}});}
+     catch(error){maintenance={held:true,reason:error.message,code:error.code||null};}
+    }
     if(pipeline.paused(stage)){report({paused:true});}
     else if(stage==='normalization') {
      operator||=await openInventoryOperator(join(bin,'wfsim-board'));

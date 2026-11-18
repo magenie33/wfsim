@@ -1,20 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Only explicitly owned transfers covered by audited consumers may retire; recovery baselines remain pinned.
 import {createHash,randomUUID} from 'node:crypto';
-import {existsSync,lstatSync,mkdirSync,readFileSync,readdirSync,realpathSync,unlinkSync,rmdirSync} from 'node:fs';
+import {existsSync,lstatSync,mkdirSync,readFileSync,realpathSync,unlinkSync,rmdirSync,opendirSync} from 'node:fs';
 import {join,dirname,resolve} from 'node:path';
 import {canon} from '../worker/task_contract.js';
 
 const hash=body=>createHash('sha256').update(body).digest('hex');
 const fileStamp=path=>{
  const value=lstatSync(path,{bigint:true});
- if(!value.isFile()||value.isSymbolicLink())throw Error('capture file is not a regular owned file');
+  if(!value.isFile()||value.isSymbolicLink()||value.nlink!==1n)throw Error('capture file is not a regular owned file');
  return [value.dev,value.ino,value.size,value.mtimeNs,value.ctimeNs,value.uid].map(String);
 };
 const dirStamp=path=>{
  const value=lstatSync(path,{bigint:true});
  if(!value.isDirectory()||value.isSymbolicLink())throw Error('capture directory is linked or unavailable');
  return [value.dev,value.ino,value.uid].map(String);
+};
+const directoryNames=(path,limit)=>{
+ const directory=opendirSync(path),names=[];
+ try{for(let entry;(entry=directory.readSync());){if(names.length===limit)throw Error('capture directory exceeds metadata bound');names.push(entry.name);}}
+ finally{directory.closeSync();}return names;
 };
 const schema=`CREATE TABLE IF NOT EXISTS record_source_capture_owners(id TEXT PRIMARY KEY,generation TEXT NOT NULL,directory TEXT NOT NULL UNIQUE,body TEXT NOT NULL);
  CREATE TRIGGER IF NOT EXISTS source_capture_owner_immutable BEFORE UPDATE ON record_source_capture_owners BEGIN SELECT RAISE(ABORT,'immutable capture owner');END;
@@ -30,6 +35,14 @@ const schema=`CREATE TABLE IF NOT EXISTS record_source_capture_owners(id TEXT PR
  CREATE INDEX IF NOT EXISTS source_capture_refs ON state_source_capture_refs(capture);`;
 
 export class SourceCaptureGC {
+ static openExisting(db,root,context,{guard=()=>{}}={}) {
+  if(!context?.generation||!context.engine||!context.contract)throw Error('capture ownership context is missing');
+  const value=Object.create(SourceCaptureGC.prototype);
+  dirStamp(root);value.db=db;value.root=realpathSync(root);value.context=context;value.guard=guard;value.rootStamp=canon(dirStamp(value.root));
+  for(const name of ['record_source_capture_owners','record_source_capture_manifests','state_source_capture_gc','state_source_capture_refs'])
+   db.prepare('SELECT 1 FROM '+name+' LIMIT 0').all();
+  return value;
+ }
  constructor(db,root,context,{guard=()=>{}}={}) {
   if(!context?.generation||!context.engine||!context.contract)throw Error('capture ownership context is missing');
   dirStamp(root);this.db=db;this.root=realpathSync(root);this.context=context;this.guard=guard;this.rootStamp=canon(dirStamp(this.root));
@@ -83,11 +96,12 @@ export class SourceCaptureGC {
  }
  unpin(reference){this.q('DELETE FROM state_source_capture_refs WHERE reference=?').run(reference);}
  status(){return this.q('SELECT phase,count(*) n,sum(removed_bytes) removed_bytes FROM state_source_capture_gc WHERE generation=? GROUP BY phase ORDER BY phase').all(this.context.generation);}
- async collect(inputs,{normalizedCut,references=[],maxCaptures=4,maxFiles=8,maxBytes=8*1024**3,fault=async()=>{}}={}) {
-  if(!Number.isSafeInteger(normalizedCut)||normalizedCut<0||![maxCaptures,maxFiles,maxBytes].every(value=>Number.isSafeInteger(value)&&value>0))throw Error('invalid capture collection bound');
+ async collect(inputs,{normalizedCut,references=[],maxCaptures=4,maxFiles=8,maxBytes=8*1024**3,maxManifestBytes=1024**2,maxDirectoryEntries=64,fault=async()=>{}}={}) {
+  if(!Number.isSafeInteger(normalizedCut)||normalizedCut<0||![maxCaptures,maxFiles,maxBytes,maxManifestBytes,maxDirectoryEntries].every(value=>Number.isSafeInteger(value)&&value>0))throw Error('invalid capture collection bound');
   this.checkRoot();
   if(canon(inputs.contract)!==canon(this.context.contract))throw Error('capture collection source contract differs');
-  const consumers=inputs.db.prepare('SELECT * FROM state_prepared_board_consumers ORDER BY name').all();
+  const consumers=inputs.db.prepare('SELECT * FROM state_prepared_board_consumers ORDER BY name LIMIT 65').all();
+  if(consumers.length>64)throw Error('capture consumer count exceeds metadata bound');
   if(!['inventory','projection'].every(name=>consumers.some(row=>row.name===name)))throw Error('capture consumers are missing');
   for(const row of consumers)if(row.acknowledged) {
    const audit=JSON.parse(row.audit||'null'),cut=inputs.cut(row.acknowledged);
@@ -95,12 +109,14 @@ export class SourceCaptureGC {
     ||audit.input_count!==cut.input_count||audit.input_digest!==cut.sealed_digest)throw Error('capture acknowledgement was not audited');
   }
   const floor=Math.min(normalizedCut,...consumers.map(row=>row.acknowledged)),result={floor,files:0,bytes:0,retired:0,blocked:[]};
-  const rows=this.q(`SELECT o.directory,o.body owner,g.*,m.epoch,m.body manifest FROM state_source_capture_gc g JOIN record_source_capture_owners o USING(id)
+  const rows=this.q(`SELECT o.directory,CASE WHEN length(CAST(o.body AS BLOB))<=? THEN o.body END owner,g.*,m.epoch,CASE WHEN length(CAST(m.body AS BLOB))<=? THEN m.body END manifest FROM state_source_capture_gc g JOIN record_source_capture_owners o USING(id)
    JOIN record_source_capture_manifests m USING(id) WHERE g.generation=? AND g.phase IN('sealed','deleting') AND g.baseline=0 AND g.cut<=?
-   AND NOT EXISTS(SELECT 1 FROM state_source_capture_refs r WHERE r.capture=g.id) ORDER BY g.cut,g.id LIMIT ?`).all(this.context.generation,floor,maxCaptures);
+   AND NOT EXISTS(SELECT 1 FROM state_source_capture_refs r WHERE r.capture=g.id) ORDER BY g.cut,g.id LIMIT ?`).all(maxManifestBytes,maxManifestBytes,this.context.generation,floor,maxCaptures);
   for(const row of rows) {
-   const manifest=JSON.parse(row.manifest),owner=JSON.parse(row.owner),cut=inputs.cut(row.cut),directory=row.directory;
    const blocked=reason=>{result.blocked.push({id:row.id,reason});this.q('UPDATE state_source_capture_gc SET error=? WHERE id=?').run(reason,row.id);};
+   if(!row.manifest||!row.owner){blocked('capture manifest exceeds metadata bound');continue;}
+   const manifest=JSON.parse(row.manifest),owner=JSON.parse(row.owner),cut=inputs.cut(row.cut),directory=row.directory;
+   if(!Array.isArray(manifest.files)||manifest.files.length>maxDirectoryEntries){blocked('capture file count exceeds metadata bound');continue;}
    if(owner.v!==1||owner.producer!=='normalization'||owner.root!==this.root||owner.root_stamp!==this.rootStamp
     ||owner.generation!==this.context.generation||dirname(directory)!==this.root||cut.state!=='sealed'||cut.receipt.epoch!==row.epoch
     ||cut.receipt.generation!==this.context.generation||cut.receipt.engine!==this.context.engine||canon(cut.receipt.contract)!==canon(this.context.contract)
@@ -115,7 +131,7 @@ export class SourceCaptureGC {
    try {
     if(canon(dirStamp(directory))!==row.directory_stamp)throw Error('capture directory identity differs');
     const names=new Set(manifest.files.map(file=>file.path));
-    if(readdirSync(directory).some(name=>!names.has(join(directory,name))))throw Error('capture contains an unknown file');
+    if(directoryNames(directory,maxDirectoryEntries).some(name=>!names.has(join(directory,name))))throw Error('capture contains an unknown file');
     for(let n=row.cursor;n<manifest.files.length;n++) {
      const file=manifest.files[n];
      if(!existsSync(file.path)) {if(n===row.cursor&&row.phase==='deleting'&&row.intent)continue;throw Error('capture file is missing');}
@@ -131,6 +147,7 @@ export class SourceCaptureGC {
     this.checkRoot();
     if(this.q('SELECT 1 FROM state_source_capture_refs WHERE capture=?').get(row.id))throw Error('capture gained a reference after collection claim');
     this.q('UPDATE state_source_capture_gc SET intent=1 WHERE id=?').run(row.id);await fault('before-capture-file-unlink',{id:row.id,path:file.path});
+    this.checkRoot();
     if(existsSync(file.path)) {
      if(canon(dirStamp(directory))!==row.directory_stamp||canon(fileStamp(file.path))!==canon(file.stamp))throw Error('capture identity changed before unlink');
      unlinkSync(file.path);
@@ -139,7 +156,7 @@ export class SourceCaptureGC {
     this.q('UPDATE state_source_capture_gc SET cursor=?,intent=0,removed_bytes=removed_bytes+?,error=NULL WHERE id=?').run(n+1,file.bytes,row.id);
     result.files++;result.bytes+=file.bytes;
    }
-   if(readdirSync(directory).length){blocked('capture contains an unknown file');continue;}
+   if(directoryNames(directory,maxDirectoryEntries).length){blocked('capture contains an unknown file');continue;}
    this.q('UPDATE state_source_capture_gc SET intent=1 WHERE id=?').run(row.id);this.checkRoot();
    if(canon(dirStamp(directory))!==row.directory_stamp)throw Error('capture directory identity changed before removal');
    rmdirSync(directory);await fault('after-capture-directory-remove',{id:row.id});
