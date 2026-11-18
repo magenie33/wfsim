@@ -136,7 +136,7 @@ function gainScenario() {
   // THE COUNT IS THE ONLY THING THIS SCAN OWNS. It is the reader's precision,
   // not an edit to the fight — which is what makes "the quick calc is the
   // simulator run many times" true rather than aspirational.
-  return { name: p ? p.name : "—", refine: 0,
+  return { name: p ? p.name : "—",
     // THE RUNS THEMSELVES, because this scan PAIRS with them. See `gainOver`.
     scenario: theFight({ runs: gainRuns(), seed: GAIN_SEED, run_series: true }) };
 }
@@ -152,8 +152,14 @@ let gainAxis = { kind: "mods", idx: 0 };
 // current. Any
 // hand-maintained list of "the fields that matter" grows a hole the moment a
 // field is added; deriving the key from the payload cannot.
-const gainKey = () => JSON.stringify([gainAxis, buildPayload(), gainPrefs.on,
-  gainScenario().scenario, everyRank()]);
+function gainInputs(axis, scenario) {
+  const build = buildPayload();
+  const body = JSON.stringify({ ...build, ...scenario });
+  const list = JSON.stringify(gainCandidateRequest(axis, build));
+  // JSON escapes embedded newlines, so the wire strings stay unambiguous.
+  return { body, list, key: `${gainPrefs.on}\n${body}\n${list}` };
+}
+const gainKey = () => gainInputs(gainAxis, gainScenario().scenario).key;
 
 /// Every candidate for an axis position, as `{ id, payload }` — the payload
 /// being what to OVERRIDE on `buildPayload()` to try it.
@@ -162,8 +168,8 @@ const gainKey = () => JSON.stringify([gainAxis, buildPayload(), gainPrefs.on,
 /// the optimizer alike, so a rule added there reaches both. The request is the
 /// build as the page holds it — SLOTS rather than the wire's flat mod list,
 /// because which slot is the exilus is a fact a flat list cannot carry.
-async function gainCandidates(axis) {
-  const r = await api("/api/candidates", {
+function gainCandidateRequest(axis, build = buildPayload()) {
+  return {
     weapon: $("weapon").value,
     slots: slots.map(slotModId),
     evo_sel: evoSel,
@@ -173,14 +179,15 @@ async function gainCandidates(axis) {
     valence_element: valence.element,
     valence_bonus: valence.bonus,
     assembly: assembly ? { ...assembly } : null,
-    rivens: rivenPayload(),
+    rivens: build.rivens,
     every_rank: everyRank(),
     axis,
-  });
-  return (r && r.candidates) || [];
+  };
 }
 
-// How many of the leaders AUTO looks at twice. Small on purpose: the second
-// pass exists to settle an ORDER, and an order is decided at the top.
-const GAIN_REFINE_TOP = 12;
+async function gainCandidates(axis, request = gainCandidateRequest(axis), live) {
+  const r = await api("/api/candidates", request, null, { live });
+  if (!r?.ok || !Array.isArray(r.candidates)) throw new Error(r?.error || "no candidate list returned");
+  return r.candidates;
+}
 

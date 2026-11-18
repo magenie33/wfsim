@@ -1,6 +1,6 @@
 // ---- the quick calc runs WIDE ------------------------------------------
 //
-// A scan is one simulate per candidate and a mod slot has ~80 candidates once
+// A cold scan can need one simulate per candidate; a mod slot has ~80 once
 // family conflicts are dropped, each at 10 runs — so ~810 full engagements.
 //
 // A nearly-full build is far worse than a bare one because the candidate COUNT
@@ -8,8 +8,7 @@
 // and elements all live, so one fight generates several times the procs, DoT
 // stacks and ticks. The per-sim cost is a function of how much is HAPPENING.
 //
-// The lever is PARALLELISM and only that — the run count is 10 by decision and
-// the engagement DURATION is never the lever. A lane is THE PAGE'S POOL, the
+// Each distinct request still gets the full run count and duration. A lane is THE PAGE'S POOL, the
 // same lanes the simulator shards across and `api` picks from; on the native
 // server there is no worker to own, so a lane is plain `api` and the fetches
 // parallelise by themselves.
@@ -65,6 +64,16 @@ const replaySeatIdx = (rp) =>
   Math.min(replaySeat, Math.max(0, ((rp && rp.buffs) || [[]]).length - 1));
 
 let gainGen = 0;
+// Page-local only. The list depends on slots and eligibility, not the fight.
+// Measurements belong to one exact baseline and are keyed by the wire override
+// within it. Never sort a mod array or strip ranks/riven definitions here.
+const gainLists = new Map();
+let gainMemo = null;
+function gainRemember(map, key, value, limit) {
+  map.set(key, value);
+  if (map.size > limit) map.delete(map.keys().next().value);
+  return value;
+}
 // An axis whose scan was dropped because another axis was mid-flight. One slot:
 // the newest asker wins, and it is consumed when the running scan finishes.
 let gainPending = null;
@@ -135,9 +144,10 @@ function gainStop(why) {
 
 async function scanGains(axis, repaint) {
   const gen = ++gainGen;
-  const live = () => gen === gainGen;
   gainAxis = axis;
-  const { name, scenario, refine } = gainScenario();
+  const { name, scenario } = gainScenario();
+  const input = gainInputs(axis, scenario);
+  const body = JSON.parse(input.body);
   // The note is WHICH FIGHT this was measured in, and nothing else: each
   // chip's tooltip states its own run count, which is the only place the
   // number changes how a reading should be taken.
@@ -150,23 +160,46 @@ async function scanGains(axis, repaint) {
   //
   // CLAIMED BEFORE ANYTHING IS AWAITED, so an edit mid-scan supersedes it at
   // once rather than queueing behind the candidate request.
-  gainScan = { key: null, want: gainKey(), axis, running: true, base: 0, floor: 0,
-    phase: "", by: {}, refused: {}, done: 0, repaint, beat: Date.now(),
+  const st = gainScan = { key: null, want: input.key, axis, running: true, base: 0, floor: 0,
+    phase: "", by: Object.create(null), refused: Object.create(null), done: 0, repaint, beat: Date.now(),
     total: 0, ids: new Set(), note: name, metric: "", lanesLost: 0 };
+  const live = () => gen === gainGen && st.running;
   quickTask.replace(gainScan.want, { weapon: $("weapon").value, scenario_name: name });
+  calcDirty();
   // THE CANDIDATES ARE ENUMERATED BEFORE THE FIRST RUN, so a list drawn while
   // the base fight is still going already knows how many of ITS OWN rows are
   // coming. One request, no simulation — it costs a round trip and no runs.
   let cands;
   try {
-    cands = await gainCandidates(axis);
+    cands = gainLists.get(input.list);
+    if (!cands) {
+      cands = await gainCandidates(axis, JSON.parse(input.list), live);
+      if (!live()) return;
+      gainRemember(gainLists, input.list, cands, 24);
+    }
   } catch (e) {
     if (live()) gainStop(`${tr("could not list the candidates")}: ${e}`);
     return;
   }
   if (!live()) return;
-  gainScan.total = cands.length + (refine ? Math.min(GAIN_REFINE_TOP, cands.length) + 1 : 0);
-  gainScan.ids = new Set(cands.map((c) => c.id));
+  const work = new Map(), rows = new Map();
+  for (const c of cands) {
+    const key = JSON.stringify(c.payload);
+    if (rows.has(c.id)) {
+      if (rows.get(c.id) !== key) throw new Error(`conflicting candidate id: ${c.id}`);
+      continue;
+    }
+    rows.set(c.id, key);
+    if (!work.has(key)) work.set(key, { key, payload: c.payload, ids: [] });
+    work.get(key).ids.push(c.id);
+  }
+  st.ids = new Set(rows.keys());
+  st.total = st.ids.size;
+  if (!st.total) {
+    st.key = st.want;
+    gainStop("");
+    return;
+  }
   // THE BAR APPEARS WHEN THE WORK STARTS, not when the first candidate lands.
   // The BASE fight runs before any candidate does, and on a crowd at a real run
   // count that is tens of seconds — throughout which `running` is already true
@@ -203,9 +236,11 @@ async function scanGains(axis, repaint) {
   // `simulateFleet` falls back to one call where sharding would not pay, and
   // the merge is `simulate_merged` — exactly what one worker would have
   // produced — so this is the same answer, sooner.
-  const run = async (override, phase) => {
-    const label = phase || "";
-    gainScan.phase = label;
+  const memo = gainMemo?.body === input.body ? gainMemo
+    : (gainMemo = { body: input.body, base: null, gains: new Map() });
+  if (!memo.base) {
+    const label = tr("measuring the baseline");
+    st.phase = label;
     calcDirty();
     // THE BASELINE SAYS HOW FAR IT HAS GOT. Every candidate waits on this one
     // call, so a scan sitting at 0/77 is not stuck — it is measuring the thing
@@ -213,18 +248,19 @@ async function scanGains(axis, repaint) {
     // made that read as a hang. The beat is also what keeps `scanIsLive` true
     // across a long fight, so this is load-bearing rather than decoration.
     const r = await simulateFleet(
-      { ...buildPayload(), ...scenario, ...override },
+      body,
       (d, total) => {
-        gainScan.phase = label ? `${label} ${d}/${total}` : `${d}/${total}`;
+        if (!live()) return;
+        st.phase = `${label} ${d}/${total}`;
         calcDirty();
       },
       { background: true, live });
-    if (!r || !r.ok) return null;
-    return readGain(r, useKills);
-  };
-  let base = await run({}, tr("measuring the baseline"));
-  if (!live()) return;
-  if (!base?.v) { gainStop("the base fight did not measure"); return; }
+    if (!live()) return;
+    const base = r?.cancelled || r?.worker_dead ? null : readGain(r, useKills);
+    if (!base?.v) { gainStop("the base fight did not measure"); return; }
+    memo.base = base;
+  }
+  const base = memo.base;
   gainScan.base = base.v;
   gainScan.metric = useKills ? tr("kill rate") : tr("DPS");
   // HOW LONG THE REST WILL TAKE, from the rate this scan is actually going.
@@ -238,10 +274,11 @@ async function scanGains(axis, repaint) {
   //
   // AFTER A FEW, because one candidate's wall time is mostly the round trip.
   const candAt = Date.now();
+  let simulated = 0;
   const reckon = () => {
-    if (gainScan.done < 3) return;
-    const per = (Date.now() - candAt) / gainScan.done;
-    gainScan.etaMs = Math.round(per * Math.max(0, gainScan.total - gainScan.done));
+    if (simulated < 3) return;
+    const per = (Date.now() - candAt) / simulated;
+    st.etaMs = Math.round(per * work.size);
   };
   // ...and how far this same build moves on luck alone — the RESOLUTION the
   // server measured across the runs it was already paid for, not a second run
@@ -249,12 +286,40 @@ async function scanGains(axis, repaint) {
   gainScan.floor = base.se / base.v;
   // …AND THE CANDIDATES ARE THE COUNTER'S OWN, so the phase line steps aside.
   gainScan.phase = "";
+  const settle = (c, gain, refused) => {
+    if (!work.delete(c.key)) return;
+    for (const id of c.ids) {
+      if (gain) st.by[id] = { ...gain };
+      else st.refused[id] = refused;
+    }
+    st.done += c.ids.length;
+    calcDirty();
+  };
+  for (const c of work.values()) {
+    const gain = memo.gains.get(c.key);
+    if (gain) settle(c, gain);
+  }
+  const measure = async (lane, c) => {
+    const r = await laneSimulate(lane, { ...body, ...c.payload }, live);
+    if (!live()) return false;
+    if (!r || r.cancelled || r.worker_dead) { st.lanesLost++; return false; }
+    const g = readGain(r, useKills);
+    // A refusal is an answer for this scan, but not a reusable measurement.
+    if (g || r.error) {
+      const gain = g && gainRemember(memo.gains, c.key, { ...gainOver(g, base), runs: scenario.runs }, 1024);
+      simulated++;
+      settle(c, gain, r.error && String(r.error));
+      reckon();
+    }
+    return true;
+  };
   // One shared cursor, every lane pulling the next candidate as it frees up —
   // so a slow candidate delays itself and nothing else. `live()` is checked
   // after each await, which is what bounds an interrupted scan to one
   // outstanding sim per lane rather than the whole queue.
+  const pending = [...work.values()];
   let cursor = 0;
-  await Promise.all((await gainLanes()).map(async (lane) => {
+  if (pending.length) await Promise.all((await gainLanes()).map(async (lane) => {
     for (;;) {
       if (!live()) return;
       // A PERSON'S SIMULATE GOES FIRST. Checked before the candidate is taken,
@@ -262,75 +327,12 @@ async function scanGains(axis, repaint) {
       // a lane through one.
       await yieldToForeground(live);
       if (!live()) return;
-      const c = cands[cursor++];
+      const c = pending[cursor++];
       if (!c) return;
-      const r = await laneSimulate(lane,
-        { ...buildPayload(), ...scenario, ...c.payload }, live);
-      if (!live()) return;               // the fight moved — this answer is stale
-      // THE POOL REFUSED TWICE. Counted rather than silent: this lane's share
-      // of the candidates goes unmeasured, and a ranking with holes in it has
-      // to say so — the sweep below re-asks for them on a fresh worker.
-      if (r === null) { gainScan.lanesLost++; return; }
-      const g = readGain(r, useKills);
-      gainScan.done++;
-      reckon();
-      if (g) {
-        gainScan.by[c.id] = { ...gainOver(g, base), runs: scenario.runs };
-      } else if (r.error) {
-        // THE ENGINE ANSWERED, AND THE ANSWER IS NO — which is not a failure.
-        //
-        // A mod the weapon cannot take with these evolutions ("it needs the
-        // same trigger on every firing mode") was counted as a HOLE, so the
-        // scan could never be complete, never stamped its key, and re-ran on
-        // every request for the life of the page. One legal refusal in eighty
-        // was enough: the Torid's list never settled.
-        //
-        // Recorded rather than dropped, because the reader asked what this
-        // option is worth and "you cannot equip it" is the answer.
-        gainScan.refused[c.id] = String(r.error);
-      }
-      calcDirty();
+      if (!await measure(lane, c)) return;
     }
   }));
   if (!live()) return;
-  // SECOND PASS. One run ranks the field cheaply but cannot separate its top
-  // few — so the leaders are asked again with more, against a baseline
-  // measured the same way. Everything below them keeps its first answer,
-  // which is all a position near the bottom needs to be right about.
-  if (refine) {
-    const deep = { ...scenario, runs: refine };
-    // …AND THE SECOND PASS IS SHARDED FOR THE SAME REASON, at a HIGHER run
-    // count than the first: one lane there is the slowest call in the scan.
-    const runDeep = async (override) => {
-      const r = await simulateFleet(
-        { ...buildPayload(), ...deep, ...override },
-        () => { calcDirty(); },
-        { background: true });
-      if (!r || !r.ok) return null;
-      return readGain(r, useKills);
-    };
-    gainScan.phase = tr("re-measuring the leaders");
-    calcDirty();
-    const deepBase = await runDeep({});
-    if (!live()) return;
-    gainScan.done++;
-    calcDirty();
-    if (deepBase?.v) {
-      const top = cands
-        .filter((c) => gainScan.by[c.id])
-        .sort((a, b) => gainScan.by[b.id].pct - gainScan.by[a.id].pct)
-        .slice(0, GAIN_REFINE_TOP);
-      for (const c of top) {
-        const v = await runDeep(c.payload);
-        if (!live()) return;
-        gainScan.done++;
-        if (v) {
-          gainScan.by[c.id] = { ...gainOver(v, deepBase), runs: refine };
-        }
-        calcDirty();
-      }
-    }
-  }
   // WHAT THE LOST LANES NEVER ASKED, asked once more.
   //
   // A lane stands down when the pool refuses it twice, and every candidate it
@@ -339,32 +341,28 @@ async function scanGains(axis, repaint) {
   // somewhere to run; ONCE, because a second refusal means the pool is not
   // coming back and a loop against that is a hang rather than a recovery.
   if (gainScan.lanesLost) {
-    for (const c of cands.filter((x) => !gainScan.by[x.id] && !gainScan.refused[x.id])) {
+    for (const c of work.values()) {
       if (!live()) return;
-      const r = await laneSimulate(freeLane(),
-        { ...buildPayload(), ...scenario, ...c.payload }, live);
+      await yieldToForeground(live);
       if (!live()) return;
-      if (r === null) break;             // still gone: stop rather than spin
-      const g = readGain(r, useKills);
-      if (g) gainScan.by[c.id] = { ...gainOver(g, base), runs: scenario.runs };
-      else if (r.error) gainScan.refused[c.id] = String(r.error);
-      calcDirty();
+      if (!await measure(freeLane(), c)) break;
     }
   }
+  if (!live()) return;
   // A SCAN WITH HOLES IS NOT AN ANSWER, so the key stays null and the next
   // request re-asks. The reader is told how many are missing rather than shown
   // a ranking that is quietly short.
   // AN ANSWER OF "NO" IS STILL AN ANSWER, so a refused option is not a hole.
   // Only a candidate nobody ever heard back about is.
-  const holes = cands.filter((c) => !gainScan.by[c.id] && !gainScan.refused[c.id]).length;
+  const holes = st.total - st.done;
   if (holes) {
     // …AND THE REASON GIVEN IS THE REASON. Blaming a lost worker when none was
     // lost sends the reader to rebuild a pool that was never the problem.
     gainStop(gainScan.lanesLost
       ? tr("{n} of {total} could not be measured — the calculator lost a worker")
-        .replace("{n}", holes).replace("{total}", cands.length)
+        .replace("{n}", holes).replace("{total}", st.total)
       : tr("{n} of {total} could not be measured")
-        .replace("{n}", holes).replace("{total}", cands.length));
+        .replace("{n}", holes).replace("{total}", st.total));
     return;
   }
   // FINISHED, so the fight it answers is recorded — and only now.
@@ -495,11 +493,8 @@ function scanStrip(st, axis, rows) {
         tr("all {n} measured — none of them changes this fight")
           .replace("{n}", got.length))}</span></div>`;
   }
-  // THE COUNT IS THE LIST'S OWN, and it is DERIVED FROM THE ROWS ON SCREEN. `st.total` is how many SIMULATIONS this scan will run,
-  // which is a different number from how many options the reader is looking at
-  // — it carries the refine pass, and on an axis whose candidates are split
-  // across several lists it carries the other lists too. Both cases read as a
-  // denominator that does not match what is in front of you: a Kitgun's grip
+  // THE COUNT IS THE LIST'S OWN. An axis split across lists counts other rows
+  // in `st.total` too. That is not what is in front of you: a Kitgun's grip
   // list is five rows and said `12/23`, because one scan covers the grip and
   // the loader and only one of the two is ever open.
   //
@@ -511,7 +506,8 @@ function scanStrip(st, axis, rows) {
     ? rows.filter((k) => k && st.ids.has(k)) : null;
   const total = mine ? Math.max(1, mine.length)
     : Math.max(1, st.total || 1);
-  const done = mine ? mine.filter((k) => gainOf(k)).length
+  const current = mine && gainAbout() === gainKey();
+  const done = mine ? (current ? mine.filter((k) => st.by?.[k] || st.refused?.[k]).length : 0)
     : Math.min(st.done || 0, total);
   const pct = Math.round((done / total) * 100);
   return `<div class="scan-strip" role="status" aria-live="polite" title="${escHtml(

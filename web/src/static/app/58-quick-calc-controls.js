@@ -356,6 +356,8 @@ function quickCalculationDetails() {
 function restartCalc() {
   gainGen += 1;
   gainPending = null;
+  gainLists.clear();
+  gainMemo = null;
   resetPool();
   gainScan = { key: null, want: null, running: false, base: 0, floor: 0, by: {},
     done: 0, total: 0, note: "", metric: "", failed: false, lanesLost: 0 };
@@ -431,16 +433,20 @@ function ensureGains(axis, repaint, user) {
   if (gainPrefs.on === false) return;
   if (!scenarioList().length) return;
   gainAxis = axis;                       // so the key describes what we want
+  const want = gainKey();
+  // An automatic repaint must not undo Cancel. Opening the picker again is
+  // intentional and can reuse the completed measurements for this request.
+  if (!user && quickTask.current?.state === "cancelled" && quickTask.current.request === want) return;
   // Is what we have MEASURED the fight on screen now? The key is stamped on
   // completion, so this means answered and nothing else — a scan that died
   // half way leaves it null and the next request re-asks, which is the whole
   // point of moving it there.
-  if (gainScan.key === gainKey()) return;
+  if (gainScan.key === want) return;
   // …AND IS ONE ALREADY IN FLIGHT FOR IT? A separate question from the line
   // above, and it has to be: one check covering both cannot tell "answering"
   // from "answered", and a scan that never finishes is then filed for ever as
   // one that did.
-  if (scanIsLive() && gainScan.want === gainKey()
+  if (scanIsLive() && gainScan.want === want
       && JSON.stringify(gainScan.axis) === JSON.stringify(axis)) return;
   // A running scan is STALE and gives way — but only to its own axis. The mod
   // picker and the evolution rows both ask on every refresh (`refreshGains`
@@ -478,8 +484,9 @@ function ensureGains(axis, repaint, user) {
   // true and the counter frozen. The scan is handed the LIST'S REPAINT and
   // draws nothing itself — `paintCalc` owns every surface, including the queue
   // taking its turn, so a new exit path cannot forget one of them.
-  scanGains(axis, repaint).catch((e) => {
-    gainStop(`${tr("the calculator stopped")}: ${(e && e.message) || e}`);
+  const next = scanGains(axis, repaint), gen = gainGen;
+  next.catch((e) => {
+    if (gen === gainGen) gainStop(`${tr("the calculator stopped")}: ${(e && e.message) || e}`);
   });
 }
 
