@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 use super::{Affine, Shape, Vec3};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Proxy {
     pub cache_index: usize,
     pub bone_token: u32,
@@ -52,6 +53,7 @@ pub enum Refinement {
 
 /// Portable reference for native10434e0/1068210, under supplied cache/world.
 /// Affine inversion and primitive arithmetic use binary64; see positional tolerance.
+#[wfsim_gas_macro::metered]
 pub fn refine(owner: u64, proxies: &[Proxy], ray: Ray, gate: Gate) -> Refinement {
     match gate {
         Gate::Inactive => return Refinement::Bypassed { accepted: false },

@@ -1,116 +1,156 @@
-# Explicit 3D geometry
+# Explicit 3D combat
 
-`engine::rules::geometry` provides an explicit-pose geometric reference.
-It is exercised by native component fixtures and `geometry_probe`, and is
-not installed in the production fight. The fight's scene policy remains
-MECHANICS §11. Native component agreement is not gameplay calibration.
+An optional `scene_3d` request drives the shared simulator and optimizer with
+supplied player and enemy models. Without it, the planar policy in MECHANICS
+§11 applies. This is an experimental scene adapter, not a calibrated replacement
+for the live game's pose, emission, world-query and explosion providers.
 
-## Body queries
+## Aim and actors
 
-Inputs are the owner identity, current proxy cache, world transforms, ray,
-maximum/current-best parameters, excluded-part mask and outer refinement gate.
-Each proxy keeps its cache index, bone token and native part id separately.
-Ray enable and part exclusion precede intersection. The nearest candidate must
-be strictly before both limits; equality does not hit. Missing animation or an
-empty body list can return native acceptance without establishing contact.
+`headshot_pct` is reticle intent in this scene. At 100 the player keeps aiming
+at the selected head proxy and completely compensates recoil. Intrinsic spread,
+camera/muzzle parallax, homing and intervening bodies still determine contact.
+Only an actual head contact receives head damage, head triggers and weakpoint
+charge. `gauge_charging_headshots` selects head intent while charging; it does
+not bypass collision. Saved field names retain their wire spelling.
 
-Y is up in these client coordinates. Transforms are row-major 3x4 matrices
-applied to column vectors. A capsule's inner segment lies on local Y and its
-height excludes its caps. Spheres and capsules are distinct primitives.
-The caller supplies world * current bone * local attachment. No mesh scale,
-pose, physical-controller radius or rendering triangle is inferred.
+The player supplies avatar world transform and controller dimensions, current
+avatar-local bone transforms, camera and muzzle mounts, and the independent
+reference-point input used by the native eye-basis projection. Each mount is
+`world * posed bone * local attachment`. Physical-controller height does not
+stand in for head or muzzle height. Enemy models supply their world transform,
+posed bone/attachment proxies, acquisition anchor and steering center. Enemy
+order matches the arena: aimed enemy first, then `formation`.
 
-The analytic reference uses binary64 geometry. Imported source float32 values
-retain their represented values, but this is not an instruction-exact native
-float32 port. The exported source-default queries permit 0.0003 coordinate
-units of positional error and the recorded tied-nearest set. Those tolerances
-are test comparisons, not expanded hitboxes or relaxed endpoint predicates.
-Degenerate transforms/directions produce no contact.
+The request is rejected if a model is missing, a transform is nonfinite,
+singular or nonuniformly scaled, controller/world scales disagree, or a selected
+mount/proxy is absent. The resolved faction bracket currently requires one combat faction per scene. The prepared scene is immutable. The shared `parse_fight`
+projects its actor roots into the arena for existing target/status consumers;
+a search's replay retains the complete original scene.
 
-## Penetration fragment
+`placement.kind` is `supplied`, `contact` or `center_distance` with `distance`.
+Automatic placement translates the entire formation along its horizontal aim
+axis. Contact supports upright controllers on one floor with overlapping inner
+segments: the float32 installed radii sum plus the **moving player's** skin.
+Height enters the capsule-segment overlap check. Other contact arrangements
+need supplied positions; this is not a general character-controller solver.
 
-`geometry::penetration` consumes supplied reverse-hit records and their
-reference identities. It selects the last matching reference, computes the
-entry/exit length and accumulated budget in the recovered float32 order,
-and accepts equality. A refused crossing stores the maximum budget; a missing
-match preserves the prior accumulation. Infinite traversal keeps accumulating.
-The fragment does not generate the reverse query or sum overlapping proxies
-as separate bodies. It is a trace-gun fragment, not a projectile/beam rule.
+## Collision and settlement
+
+Each physical round samples the weapon's resolved intrinsic spread once in 3D.
+Multishot instances share its physical path; each receiving body independently
+rolls the round's multishot share. The path is queried against every enemy's
+posed sphere/capsule proxies, ordered by nearest contact. Range, part, flight
+length and arrival time belong to that contact. Every receiving body uses the
+ordinary pellet damage, critical, status, buff and ledger code with its own
+state. A penetrated body independently resolves its part.
+
+The analytic query uses binary64 geometry. Y is up; transforms are row-major
+3x4 matrices applied to column vectors. Capsule height describes its inner
+local-Y segment and excludes its caps. The supplied world scale is applied
+once. AABB pruning encloses the posed primitives. Ray enable and part exclusion
+are respected by the component query; contact is strictly before the ray limit.
+
+For the experimental ordinary-gun penetration adapter, one body's nearest entry
+and farthest intersected proxy exit provide a reverse record. Overlapping
+proxies do not spend the budget multiple times. This envelope is an explicit
+world-query approximation, not a recovered native reverse-world query. The
+recovered penetration fragment consumes those entry/exit records in float32
+operation order, accumulates material length and accepts budget equality.
+Per-body damage loss and range falloff are then applied at each actual contact.
+
+A collision-triggered explosion starts at the actual first impact and measures
+3D distance to each posed body's closest sphere/capsule surface. A trajectory
+that hits nobody does not explode at its nominal target. This radial eligibility
+adapter has no terrain, visibility/cover query, destruction route, player stagger
+or native explosion dispatch. Status-area propagation retains the arena's
+existing planar policy.
+
+The scene refuses delivery routes it does not implement: continuous beams,
+ricochets, melee, blobs, orbs, lingering fields, lock-on, tendrils, attractors,
+reload grenades, corpse/spawn/dagger routes, extra ability actors, ability grants,
+frame casting and echo/influence arcanes. Guided-projectile penetration and speed
+modifiers are also refused until their native consumers are bound. It does not
+silently run those through planar direct collision. No production default or board ruler selects this scene.
+
+## Homing
+
+The Akarius entries carry the source Glaive inputs: initial speed 40, maximum
+80, acceleration 40, turn duration 0.079999998, seek range 30, cone 10 degrees,
+strict flight-distance-greater-than-zero acquisition gate, and blade radius
+0.02. These fields are consumed by the explicit scene. The default planar
+scene retains its declared projectile-flight convention.
+
+Steering retains float32 yaw/pitch angular velocity across frames, damps toward
+the supplied target center, accelerates, then advances position. The polynomial
+coefficients are constrained by the exported native angle/velocity transitions;
+raw RIP constant bytes and the full quaternion/bank route are unbound. The
+reference agrees with all 36 exported empty-world position sequences within
+0.0003 supplied units at 30/60/120 Hz, including no-target, acquisition after
+launch and preselected-target starts. This is bounded numerical agreement,
+not instruction-exact live homing equivalence.
+
+Acquisition uses supplied alive state, anchor, cone, range and body visibility,
+with deterministic nearest-candidate selection. Steering uses the separate
+center. Body visibility has no terrain. The collider expands the analytic
+primitives by the projectile radius and queries each traveled segment. The
+native live sweep/filter/overlap path, target-list ordering, target installation,
+helix/emission state, armed impact callbacks and destruction/explosion routes
+remain unbound. Fixed scene actors do not animate or move during flight.
 
 ## Evidence and verification
 
 Client build 2026.10.28.09.54, executable SHA-256
 `dae100202115919c89440c9ef320f691113ee8dcaf01205cbd180072c35aabdb`.
-Batch `20261116T084610Z-enemy-3d-gun-foundation`, manifest SHA-256
-`86a258275bdce5cf21c5bee885cc6768a57066c20efcb7bb5ff786a1f8c26374`.
-The public fixture retains the consumed source hashes, 24 declared proxies,
-eight supplied pose/world caches, 618 ray cases and 121 penetration cases.
-Bone tokens are the fixture's supplied identity labels, not live interned ids.
+
+- `20261116T084610Z-enemy-3d-gun-foundation`, manifest SHA-256
+  `86a258275bdce5cf21c5bee885cc6768a57066c20efcb7bb5ff786a1f8c26374`:
+  24 proxies, eight supplied world/pose caches, 618 ray cases and 121
+  instruction-exact float32 penetration fragments. Position tolerance is
+  0.0003 and the supplied tied-nearest set, not inflated hitboxes.
+- `20261116T094904Z-shooter-3d-origins`, manifest SHA-256
+  `c938a7e8ef08d58fba86bd3c1c8fea18062015000bee7cc8fed9c6e521b0dc13`:
+  83 Excalibur source-default bone transforms and controller dimensions.
+  Source-default pose is not an equipped firing animation.
+- `20261117T083330Z-native-contact-movement`: capsule construction and
+  conditional upright contact. Its broader native movement cases are not
+  replaced by the supported axial contact condition.
+- `20261117T114909Z-akarius-homing-close-range`: steering inputs and the 36
+  exported empty-world motion sequences, retained in `native-motion.json`.
+- `20261117T132810Z-reticle-3d-homing-materials`: full reticle-to-impact
+  verification and execution of its complete acceptance matrix are false.
 
 ```sh
 cargo test -p wfsim-engine --lib rules::geometry
-cargo run --release -p wfsim-engine --example geometry_probe -- output.json
-cargo run --release -p wfsim-engine --example homing_probe -- homing.json
+cargo test -p wfsim-engine --lib scene::tests
+cargo test -p wfsim-webapi --lib scene_tests
+cargo run --release -p wfsim-webapi --example scene_fights -- fights.json
+cargo run --release -p wfsim-webapi --example geometry_builds -- calls.json builds.json
+cargo run --release -p wfsim-webapi --example scene_controls -- calls.json controls.json
 ```
 
-The probe supplies a head-directed launch, muzzle, pose and scale explicitly.
-It calls the build resolver and spread sampler, then queries the posed body.
-Both supplied yaw orientations are retained; a back proxy intercepting a
-head-directed ray from behind is not discarded to manufacture a head hit.
-Its head/body/miss counts are conditional geometry diagnostics. They do not
-establish native screen-reticle aim, actual equipped muzzle positions, Akarius
-homing or gameplay headshot probabilities. The old planar hit count is retained
-under its own geometry, including that model's independent headshot input.
+`scene_fights` runs 5x5 supplied models at 3-unit spacing for both source enemy
+scales, contact and named center separation 5, with real intrinsic spread.
+It retains every request, simulation and combat record. Two explicit muzzle
+controls are used: the native empty-world trace's `(0,1.5,0.3)` and a muzzle
+placed on the camera ray. The latter isolates homing from parallax; neither is
+a claim about an equipped Akarius/Laetum animation or attachment writer.
 
-`homing_probe` queries segment rays along the 36 recorded native empty-world
-motion sequences from batch `20261117T114909Z-akarius-homing-close-range`.
-The source member hash and the supplied pose/scale/yaw remain in its output.
-These are component overlays, not an implementation of native projectile
-sweeps, emission, live collision or explosion dispatch.
+The `/api/log` response carries `scene_3d.flights`: shot/round, camera, muzzle,
+aim anchor, camera-query target, actual direction, selected homing target and
+contacts with part, entry/exit, travel time, thickness and remaining budget.
+This diagnostic is bounded separately by the requested record limit and reports
+its dropped count. Damage stays in the existing combat stream and ledger.
 
-## Build sensitivity
+The build harness exhausts each declared scope with two reference seeds, reports
+settling/rank/list recall separately and asserts ranked replay score, DPS and
+kills exactly. Existing `build-calls.json` without a scene is an aim-weight
+sensitivity experiment; it does not measure geometric headshot probability.
+Full gameplay calibration still needs live equipped poses/origins, world-query
+bindings and independent in-game measurements. No golden value is changed by
+these supplied-state experiments.
 
-The public request fixture fixes six cards, searches two more from six cards,
-and compares 0% versus 100% configured headshot weights. It covers both pistols'
-base modes and Laetum's complete gauge cycle. Enemy, duration, ammunition,
-center coordinates, seed and default evolution choices are explicit inputs.
-This is a constrained sensitivity experiment; geometric diagnostics are not
-silently converted into gameplay headshot probabilities.
-
-```sh
-cargo run --release -p wfsim-webapi --example geometry_builds -- tests/fixtures/geometry/build-calls.json build-comparison.json
-```
-
-The harness retains independent two-seed exhaustive reference results and each
-ranked build's simulator replay. It requires exact replay score, DPS and kill
-count agreement. Reference settling, answer rank and list recall remain
-separate reported results; a correct winner does not certify the entire list.
-
-## Connecting the fight
-
-The shared arena must own the explicit scene before build, simulate and solve
-consume it. Keep placement/controller contact, posed body proxies, screen aim,
-selected-hand muzzle, emission/spread, flight, first contact and explosion as
-separate stages. Preserve frozen request names through adapters.
-
-1. Bind the current pose/scale and world-query inputs. Replay the existing
-   native contact/movement cases without replacing them with one radius sum.
-2. Bind camera/target/reference-point providers and current attachment tables.
-   Port the 1,476 shooter cases, preserving eye basis versus returned origin.
-3. Bind both weapons' emission, spread state and seed ownership. A reticle on
-   the head does not prescribe a muzzle-to-head velocity.
-4. Port native Akarius steering with retained angular state and verified update
-   order. Its 123 bounded controls do not establish its first live collision.
-5. Bind projectile sweep/filter/overlap, damage dispatch and explosion center,
-   then drive the existing damage/status/Incarnon path from those events.
-6. Compare complete fixed-state traces, calibrate against game measurements,
-   then compare paired builds and measure scene/pose/pellet costs.
-
-The reticle contract in batch
-`20261117T132810Z-reticle-3d-homing-materials` requires both Akarius variants,
-both source enemies, physical contact and 5 m named center separation, both
-hands, burst order, fixed seeds and intrinsic spread. Its
-`full_reticle_to_impact_verified` and `acceptance_cases_executed_in_this_batch`
-are false. Launch-time target installation, live Akarius muzzle/pose, projectile
-sweep and complete explosion dispatch remain unbound. No universal head/body
-outcome follows from distance alone.
+`scene_controls` projects every actor root from the prepared engine scene into
+a planar control request. It preserves the complete formation, including bodies
+that took zero damage. A simulation report lists damaged bodies and cannot
+serve as the formation source. The explicit scene remains the authority.

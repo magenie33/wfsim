@@ -179,3 +179,6 @@ pub fn route_text(path: &str, body: &str) -> String {
     let v: Value = serde_json::from_str(body).unwrap_or(Value::Null);
     route(path, &v).unwrap_or_else(|| err_json(format!("unknown endpoint: {path}"))).to_string()
 }
+
+#[cfg(test)]
+mod scene_tests;

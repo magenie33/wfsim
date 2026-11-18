@@ -486,6 +486,7 @@ mod tests {
         let arcanes = vec![wfsim_engine::data::arcanes::ArcaneFx::none()];
         let scenario = Scenario::from_panels(
             Arena {
+                scene_3d: None,
                 body_parts: vec![BodyPart {
                     name: "body".into(), aim_weight: 1.0, multiplier: 1.0,
                     is_head: false,

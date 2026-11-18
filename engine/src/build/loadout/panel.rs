@@ -391,6 +391,7 @@ pub struct ResolvedPanel {
     /// — `None` on an attack that does not fly. See
     /// [`WeaponBase::projectile_speed_mps`].
     pub projectile_speed_mps: Option<f64>,
+    pub homing: Option<crate::model::Homing>,
     /// HOW FAR THIS ATTACK REACHES, metres — `INFINITY` when the weapon
     /// declares none. See [`crate::data::weapons::AttackSpec::range_m`]: past it
     /// there is nothing, which is a different fact from `falloff`, a ramp.

@@ -268,6 +268,7 @@ fn venato(form: &str, rank: u32) -> FightParams {
     let card = pool.get(&id).expect("the supported rank belongs to Venato");
     let panel = crate::build::loadout::resolve(&base, &[card], StackPolicy::Emergent);
     let arena = crate::arena::Arena {
+        scene_3d: None,
         target: target("corpus", 0.0),
         body_parts: mono_body(1.0),
         ..crate::arena::Arena::training(4.0)

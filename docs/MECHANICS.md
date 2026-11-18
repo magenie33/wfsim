@@ -4338,3 +4338,10 @@ its two grants want the same treatment `OnReloadFireRate` already has — a
 
 **Status:** known gap, not a wrong number — the Stats panel's reading is right
 for what that panel is.
+
+## Experimental supplied 3D scene
+
+An explicit `scene_3d` request uses the shared collision and flight adapter in
+[GEOMETRY](GEOMETRY.md). In this scene, headshot percentage controls reticle
+intent and recoil compensation; intrinsic spread, player/enemy models and
+homing determine the actual part. The default planar policy remains §11.

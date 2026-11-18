@@ -142,6 +142,8 @@ pub struct AttackSpec {
     /// after the trigger (docs/MECHANICS.md §"Projectile flight").
     #[serde(default)]
     pub projectile_speed_mps: Option<f64>,
+    #[serde(default)]
+    pub homing: Option<crate::model::Homing>,
     pub fire_rate: f64,
     #[serde(default)]
     pub refire: crate::model::RefireRule,

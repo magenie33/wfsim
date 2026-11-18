@@ -53,6 +53,15 @@ pub(super) struct Rounds {
 
 #[wfsim_gas_macro::metered]
 impl Rounds {
+    pub(super) fn groups(&self, instances: u32) -> Vec<u32> {
+        if self.total() == instances { self.copies[..self.n].iter().map(|v|u32::from(*v)).collect() }
+        else { vec![1; instances as usize] }
+    }
+
+    pub(super) fn single(instances: u32, multishot: f64) -> Self {
+        let mut copies=[0;Self::MAX]; copies[0]=instances.min(u32::from(u16::MAX)) as u16;
+        Self{n:1,each:multishot,copies}
+    }
     /// More rounds than any weapon has (the roster's most is 28).
     const MAX: usize = 32;
 

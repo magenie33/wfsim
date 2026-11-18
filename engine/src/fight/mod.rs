@@ -37,6 +37,7 @@ mod cycle;
 mod debuffs;
 mod melee;
 mod targeting;
+mod spatial;
 mod heavy_status;
 mod trace;
 mod setup;

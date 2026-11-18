@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 use super::Vec3;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Shape {
     Sphere {
         radius: f64,
@@ -13,6 +14,7 @@ pub enum Shape {
     },
 }
 
+#[wfsim_gas_macro::metered]
 fn roots(a: f64, b: f64, c: f64) -> [Option<f64>; 2] {
     let discriminant = b * b - 4.0 * a * c;
     if a == 0.0 || discriminant < 0.0 {
@@ -22,7 +24,33 @@ fn roots(a: f64, b: f64, c: f64) -> [Option<f64>; 2] {
     [Some((-b - root) / (2.0 * a)), Some((-b + root) / (2.0 * a))]
 }
 
+#[wfsim_gas_macro::metered]
 impl Shape {
+    /// Entry and exit of one convex primitive, in the original ray parameter.
+    pub fn interval(self, origin: Vec3, direction: Vec3) -> Option<(f64, f64)> {
+        let enter = self.intersect(origin, direction)?;
+        let (radius, half) = match self {
+            Self::Sphere { radius } => (radius, 0.0),
+            Self::Capsule { radius, height } => (radius, height * 0.5),
+        };
+        let [x, y, z] = origin.0;
+        let [dx, dy, dz] = direction.0;
+        let mut exit = enter;
+        if half > 0.0 {
+            for t in roots(dx * dx + dz * dz, 2.0 * (x * dx + z * dz), x * x + z * z - radius * radius).into_iter().flatten() {
+                if t >= enter && (y + dy * t).abs() <= half { exit = exit.max(t); }
+            }
+        }
+        for cap in [-half, half] {
+            let p = Vec3([x, y - cap, z]);
+            for t in roots(direction.dot(direction), 2.0 * p.dot(direction), p.dot(p) - radius * radius).into_iter().flatten() {
+                let py = y + dy * t;
+                if t >= enter && (half == 0.0 || (cap < 0.0 && py <= -half) || (cap >= 0.0 && py >= half)) { exit = exit.max(t); }
+            }
+        }
+        Some((enter, exit))
+    }
+
     /// Analytic reference for the native sphere/capsule query (EGEO-01).
     /// An origin already inside returns zero. Direction retains its ray parameter.
     pub fn intersect(self, origin: Vec3, direction: Vec3) -> Option<f64> {

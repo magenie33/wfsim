@@ -106,6 +106,10 @@ pub fn log_json(v: &Value) -> Value {
         answer["native_trace"] = json!({ "steps": rec.native_steps(), "dropped": rec.native_steps_dropped(),
             "scope": "Captured native numeric boundaries; context_binding identifies remaining scene adapters" });
     }
+    if params.scene_3d.is_some() {
+        answer["scene_3d"] = json!({"flights":rec.spatial_flights(),"dropped":rec.spatial_flights_dropped(),
+            "scope":"Explicit supplied poses and state; see docs/GEOMETRY.md for unbound native providers"});
+    }
     answer
 }
 

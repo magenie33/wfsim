@@ -21,6 +21,7 @@ mod melee;
 mod physical_mods;
 mod text;
 mod weapon;
+mod scene;
 
 pub use arcane::*;
 pub use buff::*;
@@ -35,6 +36,7 @@ pub use melee::*;
 pub use physical_mods::*;
 pub use text::*;
 pub use weapon::*;
+pub use scene::*;
 
 #[cfg(test)]
 mod native_upgrade_tests;

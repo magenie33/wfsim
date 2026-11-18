@@ -22,6 +22,7 @@ pub mod build;
 pub mod target;
 pub mod formation;
 pub mod arena;
+pub mod scene;
 pub mod record;
 pub mod alive;
 pub mod fight;

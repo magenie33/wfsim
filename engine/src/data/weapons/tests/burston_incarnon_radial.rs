@@ -202,6 +202,7 @@ fn multishot_multiplies_the_direct_hit_and_not_the_explosion() {
         let params = FightParams::from_panel(
             &p,
             &crate::arena::Arena {
+                scene_3d: None,
                 body_parts: body(),
                 ..crate::arena::Arena::training(30.0)
             },

@@ -24,7 +24,7 @@ const LAYERS = [
   // BUILD: a loadout resolved into the numbers a fight reads.
   ["build", ""],
   // FIGHT: who is shot, where, the simulation itself and what it recorded.
-  ["fight", "target formation arena record fight"],
+  ["fight", "target formation arena scene record fight"],
   // BOARD: build identity and the rulers every row is measured by.
   ["board", ""],
 ];

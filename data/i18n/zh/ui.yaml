@@ -1918,7 +1918,7 @@ ui:
   "req pins the slot — the pool marks give way": 必带会钉死这个槽位 —— 候选标记随之清除
   "req pins the tier — the pool marks give way": 必带会钉死这一层 —— 候选标记随之清除
   "req": 必带
-  "The rockets aim for the torso, so a high headshot rate is not reachable in play, though this entry uses whatever is set.": "火箭瞄准躯干，所以实战中达不到高爆头率，但本条目会按设定的数值计算。"
+  "Live equipped muzzle/pose, target installation and projectile sweep are unbound; the experimental scene consumes supplied state.": "尚未绑定实战装备的枪口、姿态、目标安装及弹丸扫掠；实验场景使用显式提供的状态。"
   "rolls": 区间
   "running {n} simulations…": 正在跑 {n} 次模拟…
   "running": 个生效中
@@ -2230,7 +2230,7 @@ ui:
   "The rocket flies at 60 m/s and can be shot down; nothing shoots back here, so every rocket arrives.": "火箭以 60 米/秒飞行，可以被打掉；这里没有东西会还击，所以每枚火箭都会命中。"
   "The rockets can be guided by aiming and fired from behind cover, at half speed while guided (20 m/s against 40). The target here does not move, so guidance changes nothing.": "火箭可以通过瞄准来引导，也能从掩体后发射，引导时速度减半（20 米/秒对 40 米/秒）。这里的目标不会移动，所以引导没有影响。"
   "The rockets arm only after 7 m (wiki); closer, they hit without exploding. The sim applies the explosion at every range, so a fight set inside 7 m reads high by the whole explosion, most of the weapon.": "火箭飞行 7 米后才会解除保险（wiki）；距离更近时只命中、不爆炸。模拟在任何距离都计算爆炸，所以设定在 7 米内的战斗数字偏高，偏高的量就是整次爆炸，也就是这把武器的大部分伤害。"
-  "The rockets home within 15 degrees; every shot here hits anyway, so homing adds nothing.": "火箭会追踪 15 度内的目标；这里本来就每发都命中，所以追踪不产生收益。"
+  "Homing is resolved only with an explicit scene_3d; the default planar scene assumes its configured hit parts.": "仅在显式 scene_3d 场景中计算追踪；默认平面场景沿用设定的命中部位。"
   "An Enkaus hit that leaves an ink-stained enemy below 35% health kills it outright, as one hit at 600% critical chance, 1x critical multiplier and a forced Corrosive status (wiki); the stain comes from the alternate fire or Follie's passive, and bosses and enemies with special states are spared. Nothing is ink-stained here, so every enemy is shot down to zero and the number reads low.": "Enkaus 的命中若让被墨迹沾染的敌人血量低于 35%，会直接将其击杀，这一击为 600% 暴击率、1 倍暴击伤害并必定触发腐蚀异况（wiki）；墨迹来自替代射击或 Follie 的被动，首领和处于特殊状态的敌人不受影响。这里没有任何敌人被墨迹沾染，所以每个敌人都要打到零血，数字偏低。"
   "Primary fire on an ink-stained enemy spends no ammo and restores 0.33 rounds per enemy hit (wiki). Nothing is ink-stained here, so every tick spends a round and the beam reloads on its usual schedule; the number reads low.": "主射击命中被墨迹沾染的敌人时不消耗弹药，且每命中一个敌人返还 0.33 发（wiki）。这里没有任何敌人被墨迹沾染，所以每跳都消耗一发，光束按平常的节奏换弹；数字偏低。"
   "Unmeasured: the page gives the beam a 30 m range and the weapon module 36 m. The sim uses 36 m, so a fight set between 30 m and 36 m reads high if the page is right.": "未实测：页面写光束射程 30 米，武器模块写 36 米。模拟用 36 米，所以如果页面是对的，设定在 30 到 36 米之间的战斗数字偏高。"

@@ -711,6 +711,8 @@ pub struct FightParams {
     /// FLIGHT SPEED with its bonuses, metres a second — `None` is a shot that
     /// lands the instant it is fired. See [`Self::flight_seconds`].
     pub projectile_speed_mps: Option<f64>,
+    pub homing: Option<crate::model::Homing>,
+    pub scene_3d: Option<std::sync::Arc<crate::scene::Scene>>,
     /// HOW FAR THIS WEAPON REACHES, metres — `INFINITY` when it declares none.
     /// See [`crate::data::weapons::AttackSpec::range_m`].
     pub range_m: f64,
