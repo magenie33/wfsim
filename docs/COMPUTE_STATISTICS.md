@@ -42,6 +42,11 @@ Ordinary questions, references and pending rows use bounded set operations
 with the same contribution replacements as their resumable cursors. Wide
 fanout and ambiguous references retain their individual cursor. A timed-out
 operation retries a smaller page from its last committed position.
+With an active cut, the question scan seeks the retained queue prefix, tasks
+after the cut, protected questions and the two non-open state ranges. It
+converts the former question cursor into a lower bound so a rolling upgrade
+can keep the work already committed. Each range checkpoints its own ordered
+key, while contributions apply the canonical eligibility views.
 
 A baseline is never published. A repeatable-read tail seals only after every
 baseline page is checkpointed, every visible revision is transferred, all

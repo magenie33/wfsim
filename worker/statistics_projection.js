@@ -2,6 +2,7 @@
 // Baselines never publish. Only a bounded, complete RR tail seals a sample.
 import { iso } from './instant.js';
 import {statisticsSourceSql} from './statistics_source.js';
+import {questionRangeCursor,questionRangePage,advanceQuestionRange} from './statistics_baseline.js';
 export {statisticsSourceSql} from './statistics_source.js';
 
 export const STATISTICS_PROJECTION_CONTRACT='statistics-projection-1';
@@ -188,8 +189,9 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
    const {body,expires,taken}=questionState(source.state,at);
    let minimum=null;
    for(const row of source.rows){
-    const [build='',ruler='',mode='']=row.ref.split('|');
-    keys.push([build,ruler,mode]);refs.push([row.ref]);
+    const parts=row.ref.split('|'),[build='',ruler='',mode='']=parts;
+    keys.push([build,ruler,mode]);
+    if(parts.length!==3)refs.push([row.ref]);
     if(taken)minimum=minimum===null?row.k:Math.min(minimum,row.k);
    }
    completed.push(source.key);expiries.push({question:source.question,at:expires});
@@ -291,8 +293,9 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
    const rows=await q(statisticsConsumerPageSql(!!cursor.after),args);
    const keys=[],refs=[];
    for(const row of rows)if(ordinary(row.producer)){
-    const [build='',ruler='',mode='']=row.ref.split('|');
-    keys.push([build,ruler,mode]);refs.push([row.ref]);
+    const parts=row.ref.split('|'),[build='',ruler='',mode='']=parts;
+    keys.push([build,ruler,mode]);
+    if(parts.length!==3)refs.push([row.ref]);
     if(cursor.taken&&row.state==='live')cursor.min=cursor.min===null?Number(row.k):Math.min(cursor.min,Number(row.k));
    }
    await enqueuePage(q,ns,'k',keys);await enqueuePage(q,ns,'r',refs);
@@ -361,21 +364,26 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
   const cursor=state.cursor;let rows;
   if(Number(state.phase)===0){
    const started=clock(),minimum=Math.min(16,bound.pageRows);
-   const args=[...cursor,scanRows];rows=await q(`WITH page AS MATERIALIZED(SELECT id,state FROM state_compute_scheduling ${cursor.length?'WHERE id>$1':''} ORDER BY id LIMIT $${args.length}::bigint)
+   const indexed=key.epoch===null?null:questionRangeCursor(cursor);
+   const query=indexed?questionRangePage(indexed,scanRows):{
+    args:[...cursor,scanRows],
+    sql:`WITH page AS MATERIALIZED(SELECT id,state FROM state_compute_scheduling ${cursor.length?'WHERE id>$1':''} ORDER BY id LIMIT $${cursor.length+1}::bigint)
     SELECT p.id,CASE WHEN p.state='open' THEN ${effectiveOpen('p.id')}
     WHEN EXISTS(SELECT 1 FROM relation_task_consumers d
       WHERE d.question=p.id AND d.state='live' AND d.producer IN${kindSql} LIMIT 1 OFFSET 0)
     THEN ${retainedQuestion('p.id')} ELSE false END candidate
-    FROM page p ORDER BY p.id`,args).catch(error=>{
+    FROM page p ORDER BY p.id`};
+   rows=await q(query.sql,query.args).catch(error=>{
      if(pageBudgetError(error))scanRows=Math.max(minimum,Math.floor(scanRows/2));
      throw error;
     });
    const candidates=rows.filter(row=>row.candidate),page=candidates.slice(0,bound.pageRows);
    const limited=candidates.length>page.length;
    const last=limited?page.at(-1):rows.at(-1),done=!limited&&rows.length<scanRows;
+   const after=indexed?advanceQuestionRange(indexed,last,done):done?null:[last.id];
    await enqueuePage(q,ns,'q',page.map(row=>[row.id]));
    await q('UPDATE state_statistics_namespaces SET phase=$2::bigint,cursor=($3::text)::jsonb WHERE id=$1',
-    [ns,done?1:0,encoded(done?[]:[last.id])]);
+    [ns,after?0:1,encoded(after??[])]);
    const elapsed=clock()-started;
    if(elapsed>400)scanRows=Math.max(minimum,Math.floor(scanRows/2));
    else if(limited)scanRows=bound.pageRows;

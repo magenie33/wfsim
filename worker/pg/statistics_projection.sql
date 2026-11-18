@@ -64,7 +64,9 @@ CREATE OR REPLACE FUNCTION statistics_ref(text,text DEFAULT 'manual') RETURNS vo
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path FROM CURRENT AS $$
 BEGIN
   PERFORM statistics_touch('k',jsonb_build_array(split_part($1,'|',1),split_part($1,'|',2),split_part($1,'|',3)),$2);
-  PERFORM statistics_touch('r',jsonb_build_array($1),$2);
+  IF length($1)-length(replace($1,'|',''))<>2 THEN
+    PERFORM statistics_touch('r',jsonb_build_array($1),$2);
+  END IF;
 END $$;
 CREATE OR REPLACE FUNCTION statistics_capture() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
@@ -221,7 +223,9 @@ BEGIN
    AND has_table_privilege($1::name,'relation_task_consumers','SELECT')
    AND has_table_privilege($1::name,'state_board_pending_work','SELECT')
    AND has_column_privilege($1::name,'entity_compute_batches','id','SELECT')
-   AND has_column_privilege($1::name,'entity_compute_batches','at','SELECT');
+   AND has_column_privilege($1::name,'entity_compute_batches','at','SELECT')
+   AND has_column_privilege($1::name,'relation_compute_order_cut_protection','cut_id','SELECT')
+   AND has_column_privilege($1::name,'relation_compute_order_cut_protection','question','SELECT');
  ELSE grants_ready:=false; END IF;
  RETURN jsonb_build_object('contract','statistics-projection-1','role',$1,'schema',schema_ready,'capture',capture_ready,
   'index',index_ready,'index_oid',index_oid,'grants',coalesce(grants_ready,false),

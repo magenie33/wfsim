@@ -150,14 +150,17 @@ try{
   await exec('ANALYZE state_compute_scheduling; ANALYZE relation_task_consumers; ANALYZE entity_compute_tasks; ANALYZE state_board_pending_work');
   const bench=async label=>{
    const began=performance.now(),metrics={steps:0,logicalQueries:0,returnedRows:0,rawQuestionRows:0,questionPages:0,restarted:false};
+   const previousCursor='00000000000000000000000000050000';
    const make=()=>projection({limits:{...limits,pageRows:128,maxMs:3000,maxRows:8192,maxQueries:1024},onQuery:async event=>{
     metrics.logicalQueries++;metrics.returnedRows+=event.rows.length;
-    if(event.sql.startsWith('WITH page AS MATERIALIZED(SELECT id,state FROM state_compute_scheduling')){metrics.rawQuestionRows+=event.rows.length;metrics.questionPages++;}
+    if(event.sql.startsWith('/* statistics question range */')){metrics.rawQuestionRows+=event.rows.length;metrics.questionPages++;}
    }});
    unit=make();const start=await unit.start();assert.equal(await unit.read(),null);
+   await exec('UPDATE state_statistics_namespaces SET cursor=$2::text::jsonb WHERE id=$1',[start.namespace,JSON.stringify([previousCursor])]);
    for(;;){await unit.step();metrics.steps++;
-    if(!metrics.restarted&&metrics.rawQuestionRows>=50000){const [saved]=await exec('SELECT phase::text,cursor,counts_at FROM state_statistics_namespaces WHERE id=$1',[start.namespace]);
-     assert.equal(saved.counts_at,null);unit=make();assert.equal((await unit.start()).namespace,start.namespace);const [after]=await exec('SELECT phase::text,cursor FROM state_statistics_namespaces WHERE id=$1',[start.namespace]);
+    if(!metrics.restarted){const [saved]=await exec('SELECT phase::text,cursor,counts_at FROM state_statistics_namespaces WHERE id=$1',[start.namespace]);
+     assert.equal(saved.counts_at,null);assert.equal(saved.cursor.lower,previousCursor);
+     unit=make();assert.equal((await unit.start()).namespace,start.namespace);const [after]=await exec('SELECT phase::text,cursor FROM state_statistics_namespaces WHERE id=$1',[start.namespace]);
      assert.deepEqual(after,{phase:saved.phase,cursor:saved.cursor});metrics.restarted=true;metrics.restartCursor=saved.cursor;}
     const [state]=await exec(`SELECT n.phase::text,(SELECT count(*) FROM state_statistics_obligations WHERE namespace=n.id)::text work,
      EXISTS(SELECT 1 FROM state_statistics_journal j WHERE NOT EXISTS(SELECT 1 FROM state_statistics_checkpoints c WHERE c.namespace=n.id AND(c.owner,c.kind,c.key,c.revision)=(j.owner,j.kind,j.key,j.revision))) dirty FROM state_statistics_namespaces n WHERE n.id=$1`,[start.namespace]);
@@ -168,9 +171,11 @@ try{
    console.log('BASELINE',label,JSON.stringify(metrics));return metrics;
   };
   const zero=await bench('100k-zero-eligible');assert.equal(zero.queueRows,0);assert.equal(zero.contributions,0);
-  assert(zero.questionPages<=150,'sparse baseline must advance beyond the per-page enqueue capacity');
+  assert.equal(zero.rawQuestionRows,0,'cancelled open orders entered the baseline scan');
+  assert.equal(zero.questionPages,5,'the empty eligibility ranges did not close');
   for(let i=0;i<256;i++){const id='new-'+String(i).padStart(5,'0');await seedComputeWork(db,{id});await pending('new',id);await ref('sweep',id+'|r|base',id);}
   await exec('SELECT statistics_invalidate()');const positive=await bench('100k-tail-plus-256-positive');assert.equal(positive.queueRows,256);
+  assert.equal(positive.rawQuestionRows,256,'the baseline scanned outside current order ranges');
   mkdirSync(new URL('../target/statistics-projection/',import.meta.url),{recursive:true});writeFileSync(new URL('../target/statistics-projection/baseline-'+schema+'.json',import.meta.url),JSON.stringify({schema,port,zero,positive,noProductionEta:true,limits:{pageRows:128,maxMs:3000}},null,2)+'\n');
   console.log('PASS cold baseline restart and sparse positive contributions');
  }else if(process.argv.includes('--locking-only')){
@@ -248,8 +253,8 @@ try{
  const afterCrash=await derived();for(const name of ['obligations','checkpoints','contributions','rollup','expiry'])assert.deepEqual(afterCrash[name],beforeCrash[name],'atomic crash '+name);
  const adaptive=projection({limits:{...limits,pageRows:128}}),widths=[];
  hook=async event=>{
-  if(!event.sql.startsWith('WITH page AS MATERIALIZED(SELECT id,state FROM state_compute_scheduling'))return;
-  widths.push(Number(event.args.at(-1)));
+  if(!event.sql.startsWith('/* statistics question range */'))return;
+  widths.push(Number(event.args[1]));
   if(widths.length===1)throw Object.assign(new Error('fixture statement timeout'),{code:'57014'});
  };
  await assert.rejects(adaptive.step(),{code:'57014'});
