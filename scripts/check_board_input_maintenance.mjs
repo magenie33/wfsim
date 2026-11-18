@@ -60,6 +60,23 @@ try {
  assert.deepEqual(await run({paused:true}),{paused:true});assert.equal(inputs.consumer('inventory').acknowledged,0);
  assert((await run({bindingFile:null})).held);assert.equal(inputs.consumer('inventory').acknowledged,0);
  await assert.rejects(run({owner:null}),/owner lock/);
+ const controllerFile=join(root,'controller.sqlite'),metadataController=new DatabaseSync(controllerFile);
+ const originalBody=metadataController.prepare('SELECT body FROM entity_inventory_rebuild_tasks WHERE id=?').get(task).body;
+ const immutable=metadataController.prepare("SELECT sql FROM sqlite_schema WHERE name='inventory_task_immutable'").get().sql;
+ const largeMetadata=async(field)=>{
+  if(field==='body') {
+   metadataController.exec('DROP TRIGGER inventory_task_immutable');
+   metadataController.prepare('UPDATE entity_inventory_rebuild_tasks SET body=? WHERE id=?').run(canon({mode:'board',engine,contract,reason:'x'.repeat(65536)}),task);
+   metadataController.exec(immutable);
+  } else metadataController.prepare('UPDATE state_inventory_rebuild_tasks SET error=? WHERE task=?').run('x'.repeat(65536),task);
+  try{await assert.rejects(run(),error=>error.code==='INVENTORY_ACTION_REQUIRED'&&error.stage==='maintenance_metadata_bound');}
+  finally {
+   if(field==='body'){metadataController.exec('DROP TRIGGER inventory_task_immutable');metadataController.prepare('UPDATE entity_inventory_rebuild_tasks SET body=? WHERE id=?').run(originalBody,task);metadataController.exec(immutable);}
+   else metadataController.prepare('UPDATE state_inventory_rebuild_tasks SET error=NULL WHERE task=?').run(task);
+  }
+ };
+ try{for(const field of process.env.WFSIM_MAINTENANCE_METADATA_FIELD?[process.env.WFSIM_MAINTENANCE_METADATA_FIELD]:['body','error'])await largeMetadata(field);}
+ finally{metadataController.close();}
  const schemaBefore=canon(binding.files),result=await run();
  assert.deepEqual(result.acknowledged.map(x=>x.name),['inventory','projection']);assert.equal(inputs.consumer('inventory').acknowledged,cut);
  assert.equal(result.retention.floor,cut);assert.equal(result.retiredFileBytes,0);assert.equal(result.filesystemBytesReclaimed,null);
