@@ -96,8 +96,11 @@ The comparison includes position, velocity, quaternion, all angular velocities,
 bank and flight distance. Another 765 angular controls and 4,931 distinct math
 controls qualify the numerical stages. The state domain is the default clock,
 state 0, no gravity, an empty native +1a10 reference, and empty-world movement. Other
-state/clock branches remain unbound. The scene's supplied-direction initializer
-and target installation are not native emission producers.
+state/clock branches remain unbound. The scene follows its retained quaternion
+for the projectile world rotation between steps; `step_with_world` accepts a
+separately supplied world quaternion. Live transform ownership remains unbound.
+The scene's supplied-direction initializer and target installation are not
+native emission producers.
 
 These original-byte controls execute under the pinned Unicorn environment.
 Its RSQRTPS seed is reproduced before the native refinement steps; physical CPU
