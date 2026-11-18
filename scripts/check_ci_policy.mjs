@@ -68,6 +68,31 @@ for (const path of ['scripts/check_statistics_clock.mjs', 'worker/statistics_clo
 }
 assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get('scripts/check_nona_help.mjs') || []],
   ['services'], 'illustrated help parsing and ruler selection must run in ordinary service CI');
+const statisticsToolInputs = ['deploy/statistics_grants.sql', 'scripts/check_statistics_projection.mjs',
+  'scripts/check_statistics_provider.mjs', 'scripts/fixtures/statistics_work_421.mjs',
+  'scripts/pg/fixtures.mjs', 'scripts/statistics_schema.mjs'];
+for (const path of statisticsToolInputs) {
+  assert.deepEqual(classify([path]).jobs, PRODUCT_JOBS, path + ' retains every ordinary correctness job');
+  assert.equal(classify([path]).deep, false, path + ' cannot change search enumeration or scoring');
+  for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs',
+    'deploy/statistics_unknown.sql', 'scripts/check_statistics_unknown.mjs',
+    'scripts/fixtures/statistics_unknown.mjs', 'scripts/pg/statistics_unknown.mjs'])
+    assert.equal(classify([path, extra]).deep, true, path + ' mixed with ' + extra);
+  assert.equal(classify([path], true).deep, true, path + ' forced deep');
+  assert.equal(classify([path], false, false).deep, true, path + ' without a verified baseline');
+}
+assert.deepEqual(classify(statisticsToolInputs).jobs, PRODUCT_JOBS);
+assert.equal(classify(statisticsToolInputs).deep, false);
+assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get('scripts/check_settler.mjs') || []],
+  ['pipeline'], 'statistics regressions retain their ordinary pipeline parent');
+const settlerCheck = readFileSync('scripts/check_settler.mjs', 'utf8');
+assert.match(settlerCheck, /^import \{statisticsProviderCases\} from ['"]\.\/check_statistics_provider\.mjs['"];$/m);
+assert.match(settlerCheck, /^await statisticsProviderCases\(\);$/m);
+const providerCheck = readFileSync('scripts/check_statistics_provider.mjs', 'utf8');
+assert.match(providerCheck, /^import \{statisticsStorageCases\} from ['"]\.\/check_statistics_projection\.mjs['"];$/m);
+const providerCases = providerCheck.match(/export async function statisticsProviderCases\(\)\s*\{[\s\S]*?\n\}/)?.[0];
+assert.ok(providerCases, 'the pipeline provider regression entry exists');
+assert.match(providerCases, /^ await statisticsStorageCases\(\);$/m);
 const admissionToolInputs = ['scripts/check_build_workflows.mjs', 'scripts/check_factory_deploy.py',
   'scripts/check_workflow_recovery.mjs', 'scripts/inbox_reader.mjs', 'scripts/migrations/db_library.mjs',
   'tests/fixtures/build-admission-base5a/build_workflows.sql',
