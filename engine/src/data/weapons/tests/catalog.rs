@@ -1208,6 +1208,18 @@ fn a_weapons_forms_are_its_transform_group() {
     assert_eq!(FormKind::Charged.id(), "charged");
 }
 
+#[test]
+fn weapon_index_retains_catalog_lookup_and_group_order() {
+    for s in all() {
+        let old = all().iter().find(|e| e.id == s.id).unwrap();
+        assert!(std::ptr::eq(spec(&s.id).unwrap(), old));
+        let expected = all().iter().filter(|e| e.group() == s.group());
+        assert!(s.group_entries().map(std::ptr::from_ref).eq(expected.map(std::ptr::from_ref)), "{}", s.id);
+    }
+    assert!(spec("not-a-weapon-in-the-catalog").is_none());
+    assert!(forms_of("not-a-weapon-in-the-catalog").is_empty());
+}
+
 /// A WEAPON'S FORCED PROCS REACH THE SIM.
 ///
 /// `FightParams::forced_procs` has existed since the Astilla was written up

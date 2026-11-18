@@ -66,11 +66,7 @@ pub(super) fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
         // whose alternate is not — the Tenet Detron and the Tenet Plinx. Everywhere
         // else `pool_for_build` had already refused the mod, so nothing could reach
         // this gate to change.
-        let group = s.transform_group.as_deref().unwrap_or(&s.id);
-        let base = all()
-            .iter()
-            .find(|x| x.transform_group.as_deref().unwrap_or(&x.id) == group && x.default_form)
-            .unwrap_or(s);
+        let base = s.group_default().unwrap_or(s);
         let mut out: Vec<&'static str> = Vec::new();
         match base.attack.trigger.as_str() {
             "semi_auto" => out.push("semi_auto"),

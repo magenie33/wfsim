@@ -133,9 +133,7 @@ pub fn spec_assembled<'a>(
 /// heavies in it (a row with a charge opens one). Zero where the group has no
 /// heavy form — a weapon whose heavy is not a swing.
 pub fn heavy_swing_seconds(s: &WeaponSpec) -> f64 {
-    let Some(heavy) = all()
-        .iter()
-        .find(|e| e.group() == s.group() && e.form_kind() == crate::model::FormKind::Heavy)
+    let Some(heavy) = s.group_entries().find(|e| e.form_kind() == crate::model::FormKind::Heavy)
     else {
         return 0.0;
     };
@@ -321,10 +319,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         .slam
         .as_deref()
         .or_else(|| {
-            all()
-                .iter()
-                .find(|e| e.group() == s.group() && e.default_form)
-                .and_then(|e| e.attack.slam.as_deref())
+            s.group_default().and_then(|e| e.attack.slam.as_deref())
         })
         .map(&a_radial);
     // THE BLOB'S EXPLOSION is one stack's, and a pile is a count of them —
@@ -489,8 +484,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
     WeaponBase {
         weakness_bonus: s.weakness_bonus.or_else(|| s.transforms_from.as_deref()
             .and_then(spec).and_then(|base| base.weakness_bonus)),
-        tennokai_can_convert: all().iter().find(|e| e.group() == s.group()
-            && e.form_kind() == crate::model::FormKind::Heavy)
+        tennokai_can_convert: s.group_entries().find(|e| e.form_kind() == crate::model::FormKind::Heavy)
             .map_or(s.attack.tennokai_can_convert, |e| e.attack.tennokai_can_convert),
         heavy_damage_mods_apply: s.attack.heavy_damage_mods_apply,
         combo_damage_applies: s.attack.combo_damage_applies,
@@ -765,15 +759,15 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             if let Some(head) = attack.headshot_multiplier { child.headshot_multiplier = Some(head); }
             (name.clone(), panel_for_spec(&child, metadata, frenzy_active, assembly))
         }).collect(),
-        melee_heavy: (s.form_kind() != crate::model::FormKind::Heavy).then(|| all().iter()
-            .find(|e| e.group() == s.group() && e.form_kind() == crate::model::FormKind::Heavy
+        melee_heavy: (s.form_kind() != crate::model::FormKind::Heavy).then(|| s.group_entries()
+            .find(|e| e.form_kind() == crate::model::FormKind::Heavy
                 && e.attack.tennokai_can_convert
                 && e.attack.combo_script.iter().any(|h| h.event_timing.is_some_and(|t|
                     matches!(t.kind, crate::model::MeleeEventKind::Ranged))))
             .map(|e| Box::new(base_panel_assembled(&e.id, frenzy_active, assembly))))
             .flatten(),
-        heavy_script: all().iter()
-            .find(|e| e.group() == s.group() && e.form_kind() == crate::model::FormKind::Heavy)
+        heavy_script: s.group_entries()
+            .find(|e| e.form_kind() == crate::model::FormKind::Heavy)
             .filter(|e| e.attack.tennokai_can_convert)
             .map(|e| &e.attack.combo_script)
             .filter(|h| !h.is_empty() && h.iter().all(|r| r.event_timing.is_some()))

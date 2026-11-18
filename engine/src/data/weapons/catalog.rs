@@ -299,8 +299,30 @@ impl WeaponSpec {
     }
 }
 
+struct WeaponIndex {
+    ids: std::collections::HashMap<&'static str, &'static WeaponSpec>,
+    groups: std::collections::HashMap<&'static str, Vec<&'static WeaponSpec>>,
+}
+
+fn weapon_index() -> &'static WeaponIndex {
+    static INDEX: OnceLock<WeaponIndex> = OnceLock::new();
+    INDEX.get_or_init(|| {
+        let mut index = WeaponIndex {
+            ids: std::collections::HashMap::with_capacity(all().len()),
+            groups: std::collections::HashMap::new(),
+        };
+        // Preserve the first match by id and catalog order within every group.
+        // The index borrows only the installed catalog, never a request string.
+        for s in all() {
+            index.ids.entry(&s.id).or_insert(s);
+            index.groups.entry(s.group()).or_default().push(s);
+        }
+        index
+    })
+}
+
 pub fn spec(id: &str) -> Option<&'static WeaponSpec> {
-    all().iter().find(|s| s.id == id)
+    weapon_index().ids.get(id).copied()
 }
 
 /// Every perk entry in `data/perks/` (embedded), parsed once.
@@ -375,6 +397,14 @@ impl WeaponSpec {
     pub fn group(&self) -> &str {
         self.transform_group.as_deref().unwrap_or(&self.id)
     }
+
+    pub(super) fn group_entries(&self) -> impl Iterator<Item = &'static WeaponSpec> {
+        weapon_index().groups.get(self.group()).into_iter().flatten().copied()
+    }
+
+    pub(crate) fn group_default(&self) -> Option<&'static WeaponSpec> {
+        self.group_entries().find(|s| s.default_form)
+    }
 }
 
 /// The forms a weapon REGISTERS, default first.
@@ -386,10 +416,7 @@ impl WeaponSpec {
 /// and it is a real registration (`form: base`), not an absence.
 pub fn forms_of(weapon_id: &str) -> Vec<FormRef> {
     let Some(spec) = spec(weapon_id) else { return Vec::new() };
-    let group = spec.group();
-    let mut out: Vec<FormRef> = all()
-        .iter()
-        .filter(|s| s.group() == group)
+    let mut out: Vec<FormRef> = spec.group_entries()
         .map(|s| FormRef {
             weapon_id: &s.id,
             kind: s.form_kind(),
