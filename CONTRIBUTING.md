@@ -147,11 +147,11 @@ and the app states them on the page.
 
 ## Ground rules
 
-- **Contributor License Agreement.** All contributions — code, data,
-  translations and measurement reports — require agreement to
-  [`CLA.md`](CLA.md). Comment `I have read the CLA and I hereby sign the CLA`
-  on your pull request. For measurements submitted as issues, the same line in
-  the issue body.
+- **Contributor License Agreement.** Follow [CLA §7](CLA.md#7-how-to-sign) when
+  you submit code, data, translations, documentation or measurement reports
+  for inclusion. For an optimizer idea, start with the approach and a
+  reproducible comparison in an issue. The maintainer decides how to implement
+  the change.
 - **Before a PR:** `cargo test --workspace` green and
   `cargo clippy --workspace --all-targets -- -D warnings` clean (CI enforces
   both). Toolchain is pinned via `mise install`.
@@ -164,3 +164,25 @@ and the app states them on the page.
   not boilerplate.
 - Working with an AI coding agent? The condensed repo rulebook lives in
   [`AGENTS.md`](AGENTS.md) — point your agent at it.
+
+## Accepting contributions
+
+Before incorporating outside work from a pull request, issue or other channel,
+the maintainer verifies who can grant rights to each part. Verify the signature
+and exact agreement version for each contributor. When an entity holds the
+rights, retain the agreement signed by its authorized representative as
+required by CLA §1. Review identified third-party material under its own terms
+for the intended distribution.
+
+Keep the submission or patch revision and the signature permalink with the
+acceptance record. Add the contributor's numeric GitHub account ID, the full
+commit of the signed `CLA.md`, and the permalink to
+[`.github/cla-signed.txt`](.github/cla-signed.txt). For a separately signed
+entity agreement, retain the agreement privately and link the maintainer's
+public confirmation of its scope. Ask the contributor to confirm the
+applicable agreement when an older signature or its scope is unclear.
+
+Require a successful `cla` status on the current pull request commit before
+accepting it. After recording a signature on `main`, recheck the pull request
+with `gh workflow run cla.yml --ref main -f pull_request=<number>`. For a
+manual import, record the same provenance in the accepting commit.

@@ -1,12 +1,4 @@
-# WHO HAS SIGNED THE CLA — one GitHub login a line, lowercase.
-#
-# THIS FILE IS THE RECORD, and the only one. `CLA.md` §7 says the signature is
-# recorded against a GitHub account and covers every later contribution, so a
-# name here is what "signed" means; the comment on a pull request is how
-# somebody ASKS to be added, not the record itself.
-#
-# ADDING A NAME IS A DELIBERATE ACT. `cla.yml` refuses a pull request from
-# anybody not listed, and a name added without the signature comment on the
-# pull request is a contribution nobody agreed to license — which is exactly
-# the thing that cannot be repaired later.
-magenie33
+# One verified outside account per line.
+# GitHub account ID, full commit of the signed CLA.md, signature permalink.
+# For a separately signed entity agreement, use the public confirmation link.
+# See CONTRIBUTING.md for how the maintainer verifies and records an agreement.
