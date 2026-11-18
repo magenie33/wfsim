@@ -12,6 +12,7 @@ import {setPipelineControl} from '../worker/task_pipeline.js';
 import {openEnv,run,statisticsLimitsFromEnv} from './factoryd.mjs';
 import {statisticsSchemaSql} from './statistics_schema.mjs';
 import {seedComputeWork,statisticsCounts} from './pg/fixtures.mjs';
+import {inventoryWrite} from '../worker/task_inventory.js';
 import {statisticsExpiresAt} from '../worker/statistics_clock.js';
 import {statisticsClockCases} from './check_statistics_clock.mjs';
 import {statisticsStorageCases} from './check_statistics_projection.mjs';
@@ -215,10 +216,17 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
   assert.equal((await statisticsStatus(env,now)).state,'missing_grants');await provider.advance();noLegacy();
   await sql.unsafe(statisticsSchemaSql('grants'));
   assert.equal((await statisticsStatus(env,now)).dependencies.ready,true);
+  const inventorySource='fixture-inventory',inventorySnapshot='inventory-run';
+  const inventory=inventoryWrite({v:2,started_at:new Date(now-1000).toISOString(),
+   source:inventorySource,snapshot:inventorySnapshot,engine:served.engine,rows:24,queued:24,
+   orders:[{kind:'sweep',total:24}],verbs:{simulate:24}},now);
+  await q(placeholders(inventory.sql),inventory.params);
   const first=await provider.advance();assert(first.steps>1,'one turn advances only one small page');
   let bundle;
   for(let i=0;i<100&&!bundle;i++){await provider.advance();bundle=await provider.get();}
   assert(bundle,'bounded provider did not seal a complete source');
+  assert.deepEqual(bundle.key.inventory,[served.engine,inventorySource,inventorySnapshot]);
+  assert.equal(bundle.demand.goal?.snapshot,inventorySnapshot,'complete no-cut inventory was lost');
   const expected=await statisticsCounts(env,Date.parse(bundle.countsAt),served),oracle=await demandOf({LIBRARY:env.LIBRARY},Date.parse(bundle.countsAt),undefined,{counts:expected});
   assert.deepEqual(bundle.snapshot,expected.snapshot,'full snapshot parity');assert.deepEqual(bundle.demand,oracle,'complete demand wire parity');noLegacy();
   const applied=await snapshotTick(opened.env,served,now,{counts:bundle,allowed:provider.allowed,

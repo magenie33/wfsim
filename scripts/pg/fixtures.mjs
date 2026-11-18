@@ -29,8 +29,10 @@ export async function statisticsCounts(env,now=Date.now(),served={}){
   WHERE q.state='open' AND q.verb='simulate' AND(q.leased_at IS NOT NULL OR q.lease IS NOT NULL) GROUP BY q.id)x GROUP BY k`);
  const by={},sources={};for(const row of owed){by[row.k]=(by[row.k]??0)+Number(row.n);(sources[row.k]??={requested:0,system:0,unattributed:0})[row.source]+=Number(row.n);}
  const epoch=(await first('SELECT compute_order_cut_epoch() epoch')).epoch;
- const inventory=await readInventoryState(db,now),engine=served.engine??(inventory.fresh||inventory.lastComplete)?.engine??(await first('SELECT engine FROM state_factory_snapshot WHERE id=1'))?.engine??'fixture';
- return{countsAt:at,key:{engine,epoch},by,sources,openOf,takenBy:Object.fromEntries(taken.map(row=>[row.k,Number(row.n)])),
+ const inventory=await readInventoryState(db,now),inventorySample=inventory.fresh||inventory.lastComplete;
+ const engine=served.engine??inventorySample?.engine??(await first('SELECT engine FROM state_factory_snapshot WHERE id=1'))?.engine??'fixture';
+ const identity=inventorySample?[inventorySample.engine,inventorySample.source??null,inventorySample.snapshot]:null;
+ return{countsAt:at,key:{inventory:identity,epoch},by,sources,openOf,takenBy:Object.fromEntries(taken.map(row=>[row.k,Number(row.n)])),
   snapshot:{at,engine,release:served.release??null,...Object.fromEntries(Object.entries(sample).map(([k,v])=>[k,Number(v)]))}};
 }
 
@@ -47,7 +49,7 @@ export function fixtureDaemon(run,options){
   let closed=false,bundle=null;
   const allowed=async()=>!closed&&!stopped()&&!(await readPipelineControl(controlEnv,'statistics')).paused;
   return{allowed,state:()=>({state:bundle?'sealed':'unknown'}),stop(){closed=true;},changed(){bundle=null;},
-   async assert(value){if(!await allowed()||value.key.engine!==release().engine)throw Error('statistics paused or changed');return true;},
+   async assert(value){if(!await allowed()||value.snapshot.engine!==release().engine)throw Error('statistics paused or changed');return true;},
    async advance(){if(!await allowed())return{steps:0};const served=release(),counts=await statisticsCounts(env,Date.now(),served);
     if(!await allowed())return{steps:1};bundle={...counts,demand:await demandOf(env,Date.parse(counts.countsAt),undefined,{counts})};return{steps:1,sealed:true};},
    async get(){return await allowed()?bundle:null;}};

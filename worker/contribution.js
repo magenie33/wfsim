@@ -697,11 +697,14 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   if(!supplied?.key||!supplied.by||!supplied.sources||!supplied.takenBy||!Array.isArray(supplied.openOf)||!Number.isFinite(countsAt)||countsAt>now)
     throw Error('complete statistics counts required');
   const { fresh: inventory, lastComplete } = await readInventoryState(db, now);
-  const engine = (inventory || lastComplete)?.engine || null;
+  const inventorySample = inventory || lastComplete;
+  const engine = inventorySample?.engine || null;
   const cut=await db.prepare('SELECT compute_order_cut_epoch() AS at').first();
   const epoch=cut?.at || null;
   const cached = demandCosts.get(env), kept = cached?.engine === engine && cached?.epoch === epoch ? cached : null;
-  if(supplied.key.epoch!==epoch||(engine&&supplied.key.engine!==engine))throw Error('statistics source changed');
+  if(supplied.key.epoch!==epoch || (inventorySample &&
+    JSON.stringify(supplied.key.inventory)!==JSON.stringify([engine,inventorySample.source??null,inventorySample.snapshot])))
+    throw Error('statistics source changed');
   const counts={...supplied,countsAt};
   const costs = kept && now >= kept.costsAt && now - kept.costsAt < (options.costEveryMs || DEMAND_COST_EVERY_MS) ? kept : null;
   const began = performance.now();
