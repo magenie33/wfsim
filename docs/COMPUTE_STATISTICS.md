@@ -38,8 +38,9 @@ primary keys own capture revisions; transactions on different source rows do
 not share a ref journal lock. A bounded transfer atomically registers logical
 work and its owner/revision checkpoint. Fanout cursors and contribution changes
 commit together. Short cleanup uses exact revision CAS.
-Updating an evidence row captures only changes to its membership, attribution
-or consumer inputs. Settlement details remain available to the sealed pace read.
+Evidence changes capture keys only when they can affect membership. Inserts
+for already-retained work use the order write guard to skip redundant replay.
+Settlement details remain available to the sealed pace read.
 The baseline advances while replay has room for another page of keys.
 Ordinary questions, references and pending rows use bounded set operations
 with the same contribution replacements as their resumable cursors. Wide

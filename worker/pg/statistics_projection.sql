@@ -70,9 +70,19 @@ BEGIN
 END $$;
 CREATE OR REPLACE FUNCTION statistics_capture() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
-DECLARE prior jsonb; following jsonb; old_owner text; new_owner text;
+DECLARE prior jsonb; following jsonb; old_owner text; new_owner text; evidence_question text;
 BEGIN
   IF TG_OP='TRUNCATE' THEN PERFORM statistics_invalidate(); RETURN NULL; END IF;
+  IF TG_OP='INSERT' AND TG_TABLE_NAME IN('record_candidate_answers','entity_compute_results') THEN
+    -- The order write guard holds the cut fence and locks the affected question.
+    evidence_question:=coalesce(to_jsonb(NEW)->>'question',to_jsonb(NEW)->>'computation');
+    IF NOT EXISTS(SELECT 1 FROM compute_order_cut()) OR EXISTS(
+      SELECT 1 FROM state_compute_scheduling s CROSS JOIN compute_order_cut() c
+      WHERE s.id=evidence_question AND (s.state NOT IN('open','withdrawn') OR s.task_id>c.task_cutoff
+        OR (coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id)
+          <=(c.keep_zone,c.keep_position,c.keep_id))) THEN RETURN NULL;
+    END IF;
+  END IF;
   IF TG_OP='UPDATE' THEN
     CASE TG_TABLE_NAME
       WHEN 'record_candidate_answers' THEN
@@ -122,7 +132,9 @@ BEGIN
     IF TG_OP<>'INSERT' THEN PERFORM statistics_touch('q',jsonb_build_array(OLD.computation),TG_TABLE_NAME||':'||OLD.id); END IF;
     IF TG_OP<>'DELETE' THEN PERFORM statistics_touch('q',jsonb_build_array(NEW.computation),TG_TABLE_NAME||':'||NEW.id); END IF;
   ELSIF TG_TABLE_NAME='state_compute_scheduling' THEN
-    IF TG_OP<>'INSERT' THEN PERFORM statistics_touch('q',jsonb_build_array(OLD.id),TG_TABLE_NAME||':'||OLD.id); END IF;
+    IF TG_OP='DELETE' OR (TG_OP='UPDATE' AND OLD.id IS DISTINCT FROM NEW.id) THEN
+      PERFORM statistics_touch('q',jsonb_build_array(OLD.id),TG_TABLE_NAME||':'||OLD.id);
+    END IF;
     IF TG_OP<>'DELETE' THEN PERFORM statistics_touch('q',jsonb_build_array(NEW.id),TG_TABLE_NAME||':'||NEW.id); END IF;
   ELSE
     IF TG_OP<>'INSERT' THEN

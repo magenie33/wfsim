@@ -189,7 +189,9 @@ try{
   assert(!baseline.blocked&&baseline.results.every(x=>x.ok),'canonical baseline blocked');
   assert(captured.blocked&&captured.results.some(x=>x.error==='40P01'),'old shared capture did not exercise the actual cycle');
   assert(!fixed.blocked&&fixed.results.every(x=>x.ok),'owner capture still blocks a distinct source row');
+  const [beforeAnswer]=await exec('SELECT last_value::text revision FROM statistics_revision');
   const [answer]=await exec("INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,at) VALUES('lock-a','fixture','peer','peer','{}','{}',1,$1) RETURNING id",[stamp()]);
+  assert.deepEqual((await exec('SELECT last_value::text revision FROM statistics_revision'))[0],beforeAnswer,'no-cut evidence insert created membership replay');
   await exec("INSERT INTO state_pending_verifications(question,engine,queued_at) VALUES('lock-a','fixture',$1)",[stamp()]);
   const [beforeMetadata]=await exec('SELECT last_value::text revision FROM statistics_revision');
   await exec("UPDATE record_candidate_answers SET credited=1,credit_at=$1 WHERE id=$2",[stamp(),answer.id]);
@@ -230,6 +232,17 @@ try{
  await db.run("SELECT compute_order_cut_activate('projection-cut',?::bigint,?::text)",protect.length,createHash('sha256').update(protect.join('\n')).digest('hex'));
  await assert.rejects(unit.step(),/target changed|baseline not started/);await unit.start();assert.equal(await unit.read(),null);
  await qualify('cut exact bag, suffix double, missing/empty/pipe, nonopen and orphan');
+ const answer=question=>exec("INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,at) VALUES($1,'fixture','sample','sample','{}','{}',1,$2) RETURNING id",[question,stamp()]);
+ await db.exec('BEGIN');
+ try{
+  const [kept]=await answer('q00');
+  const [beyond]=await answer('q15');
+  const captured=await exec("SELECT owner FROM state_statistics_journal WHERE owner IN($1,$2) ORDER BY owner",
+   ['record_candidate_answers:['+kept.id+']','record_candidate_answers:['+beyond.id+']']);
+  assert.deepEqual(captured,[{owner:'record_candidate_answers:['+beyond.id+']'}]);
+ }finally{await db.exec('ROLLBACK');}
+ console.log('ok guarded evidence replay follows the active cut boundary');
+
  const [suffix]=await exec("SELECT count(*)::text n FROM state_board_effective_pending_work WHERE build_id='suffix'");assert.equal(suffix.n,'2','suffix retains independent postcut arm');
  const cancelled=await exec("SELECT id FROM state_compute_scheduling WHERE state='open' AND NOT EXISTS(SELECT 1 FROM state_compute_effective_work w WHERE w.id=state_compute_scheduling.id) ORDER BY id");assert(cancelled.length>0,'fixture has an actually cancelled tail');
  await db.run("UPDATE relation_task_consumers SET asked_at='2026-11-17T00:00:00.000Z' WHERE question='q05'");await qualify('withdrawn late consumer evidence requalifies original guard');
