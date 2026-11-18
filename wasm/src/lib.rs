@@ -13,9 +13,9 @@
 
 use std::sync::atomic::Ordering;
 
+use wfsim_webapi::PreparedSimulationReport;
 use wasm_bindgen::prelude::*;
 use wfsim_optimizer::FunnelState;
-use wfsim_webapi::PreparedSimulationReport;
 
 /// HAND THE ENGINE ONE DATA PACK (docs/CLIENTS.md §"The official data pack"):
 /// every pack goes in before the first call; returns "" or what was wrong.
