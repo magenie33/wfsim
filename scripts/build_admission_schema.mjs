@@ -23,7 +23,7 @@ export function buildAdmissionSchemaSql({role='wfsim',tablespace=null}={}) {
   const admission=schema.match(/CREATE OR REPLACE FUNCTION compute_admit_tasks[^]*?END \$\$;/)?.[0];
   if(!admission?.includes("coalesce((source.value->>'position')::bigint"))throw Error('missing captured queue position support');
   const indexes=[...workflows.matchAll(/CREATE (?:UNIQUE )?INDEX IF NOT EXISTS ([a-z_]+) ON ([a-z_]+)/g)]
-    .filter(match=>!['state_build_admission_work','state_build_inbox_positions','record_build_workflow_triggers'].includes(match[2])).map(match=>match[1]);
+    .filter(match=>!['state_build_admission_work','state_build_inbox_positions','record_build_workflow_triggers','state_build_inbox_expiry'].includes(match[2])).map(match=>match[1]);
   if(indexes.length!==3)throw Error('workflow index prerequisite set changed');
   const names=indexes.map(name=>`('${name}')`).join(',');
   return `BEGIN;
@@ -53,11 +53,12 @@ DO $grant$ BEGIN
   GRANT SELECT(at) ON entity_compute_batches TO wfsim_factoryd;
   GRANT SELECT ON state_build_admission_work,state_build_effective_admission_work,state_compute_effective_open,state_compute_effective_work,state_board_effective_pending_work TO wfsim_factoryd;
   GRANT EXECUTE ON FUNCTION build_admission_claim(text,text),build_admission_run(text,text,text,bigint,text),
-   build_admission_retry(text,text,text,text,text) TO wfsim_factoryd;
+   build_admission_retry(text,text,text,text,text),build_expire_inbox(integer) TO wfsim_factoryd;
  END IF;
  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_pipeline') THEN
   GRANT SELECT ON state_build_inbox_positions TO wfsim_pipeline;
-  GRANT EXECUTE ON FUNCTION build_intake_batch(text),build_spend_submissions(text) TO wfsim_pipeline;
+  GRANT EXECUTE ON FUNCTION build_intake_batch(text),build_spend_submissions(text),build_inbox_expired_ids(text),
+    build_equipment_intake_batch(text) TO wfsim_pipeline;
  END IF;
 END $grant$;
 COMMIT;

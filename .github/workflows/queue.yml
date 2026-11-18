@@ -163,6 +163,7 @@ jobs:
         continue-on-error: true
         env:
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
+          WFSIM_INBOX_RETENTION: ${{ vars.WFSIM_INBOX_RETENTION }}
         run: |
           set -euo pipefail
           bash scripts/fetch_inbox.sh inbox.ndjson

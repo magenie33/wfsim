@@ -12,7 +12,7 @@ GRANT SELECT ON state_task_pipeline_controls TO wfsim_factoryd;
 GRANT SELECT ON record_compute_order_cancellations TO wfsim_factoryd;
 GRANT SELECT ON state_build_admission_work,state_build_effective_admission_work,state_compute_effective_open,state_compute_effective_work,state_board_effective_pending_work TO wfsim_factoryd;
 GRANT EXECUTE ON FUNCTION build_admission_claim(text,text),build_admission_run(text,text,text,bigint,text),
-  build_admission_retry(text,text,text,text,text) TO wfsim_factoryd;
+  build_admission_retry(text,text,text,text,text),build_expire_inbox(integer) TO wfsim_factoryd;
 GRANT SELECT,INSERT,UPDATE ON state_task_pipeline_progress TO wfsim_factoryd;
 GRANT SELECT (id,at) ON entity_compute_batches TO wfsim_factoryd;
 GRANT INSERT ON entity_compute_batches TO wfsim_factoryd;

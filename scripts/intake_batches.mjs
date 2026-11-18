@@ -8,6 +8,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { checkInboxReceipt } from './inbox_reader.mjs';
+import { query, close as closeDatabase } from './db.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const INTAKE_BATCH_ROWS = 100, INTAKE_BATCH_BYTES = 1024 * 1024;
@@ -32,7 +33,9 @@ export function runIntakeCommand(command, args, { input, output, signal } = {}) 
 }
 
 export async function intakeBatches(file, { intake = process.env.WFSIM_INTAKE_BIN || join(ROOT, 'target/release/wfsim-intake'), deadlineSeconds = 900,
-  maxRows = INTAKE_BATCH_ROWS, maxBytes = INTAKE_BATCH_BYTES, run = runIntakeCommand, signal, onCommitted, doneFile } = {}) {
+  maxRows = INTAKE_BATCH_ROWS, maxBytes = INTAKE_BATCH_BYTES, run = runIntakeCommand, signal, onCommitted, doneFile,
+  retention = process.env.WFSIM_INBOX_RETENTION === '1',
+  expiredIds = ids => query('SELECT id FROM build_inbox_expired_ids(?::text)', [JSON.stringify(ids)]) } = {}) {
   if (![maxRows, maxBytes].every(n => Number.isSafeInteger(n) && n > 0)
       || !Number.isFinite(deadlineSeconds) || deadlineSeconds < 0
       || onCommitted !== undefined && typeof onCommitted !== 'function') throw new Error('invalid intake batch bounds');
@@ -48,6 +51,19 @@ export async function intakeBatches(file, { intake = process.env.WFSIM_INTAKE_BI
   const execute = (command, args, io = {}) => run(command, args, { ...io, signal });
   const ship = async () => {
     if (!pending.length || Date.now() >= end) return false;
+    let expired = [];
+    if (retention) {
+      const inputs = pending.map(line => ({ line, id: JSON.parse(line).id }));
+      const closed = new Set((await expiredIds(inputs.map(input => input.id))).map(row => row.id));
+      expired = inputs.filter(input => closed.has(input.id)).map(input => input.id);
+      pending = inputs.filter(input => !closed.has(input.id)).map(input => input.line);
+      if (!pending.length) {
+        if (doneFile) writeFileSync(doneFile, expired.join('\n') + '\n', { flag: 'a' });
+        result.arrivals += expired.length;
+        bytes = 0;
+        return true;
+      }
+    }
     writeFileSync(path('inbox.ndjson'), pending.join('\n') + '\n');
     await execute(intake, ['--deadline', String(Math.max(0, Math.ceil((end - Date.now()) / 1000))), '--done', path('done.txt')],
       { input: path('inbox.ndjson'), output: path('builds.ndjson') });
@@ -63,9 +79,10 @@ export async function intakeBatches(file, { intake = process.env.WFSIM_INTAKE_BI
     await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('builds.ndjson'), path('empty')]);
     if(onCommitted)await onCommitted(path('builds.ndjson'));
     await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('empty'), path('done.txt')]);
-    if (doneFile) writeFileSync(doneFile, readFileSync(path('done.txt')), { flag: 'a' });
+    const done = readFileSync(path('done.txt'), 'utf8');
+    if (doneFile) writeFileSync(doneFile, done + (expired.length ? expired.join('\n') + '\n' : ''), { flag: 'a' });
     result.batches++; result.builds += builds.length;
-    result.arrivals += readFileSync(path('done.txt'), 'utf8').split('\n').filter(Boolean).length;
+    result.arrivals += done.split('\n').filter(Boolean).length + expired.length;
     console.log(`intake: committed batch ${result.batches}, ${result.arrivals} arrival(s)`);
     pending = []; bytes = 0;
     return true;
@@ -101,4 +118,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     await intakeBatches(process.argv[2], { signal: controller.signal });
     if(existsSync(receiptFile))checkInboxReceipt({receiptFile,inputFile});
   } catch (error) { console.error(`intake: ${error.message}`); process.exitCode = 1; }
+  finally { await closeDatabase(); }
 }

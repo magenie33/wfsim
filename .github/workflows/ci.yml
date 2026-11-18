@@ -764,6 +764,7 @@ jobs:
           node scripts/check_work_calibration.mjs
           node scripts/check_task_reissue.mjs
           node scripts/check_build_admission.mjs
+          node scripts/check_build_inbox_retention.mjs
           cargo build --bin wfsim-intake
           node scripts/check_intake_batches.mjs
           node scripts/check_board_requested_intake.mjs

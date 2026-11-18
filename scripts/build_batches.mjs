@@ -8,9 +8,10 @@ import { computationId } from "../worker/computation_input.js";
 import { DEADLINE_MS } from "../worker/deadlines.js";
 
 export const BUILD_BATCH_ROWS = 1000, BUILD_BATCH_BYTES = 1024 * 1024;
-const statement = (table, deleting) => deleting
+const statement = (table, deleting, retention) => deleting
   ? table === 'record_build_submissions' ? `SELECT build_spend_submissions(?::text)` : `DELETE FROM ${table} WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))`
-  : table === 'entity_weapon_builds' ? `SELECT build_intake_batch(?::text)` : `INSERT INTO ${table} (id, at, record)
+  : table === 'entity_weapon_builds' ? `SELECT build_intake_batch(?::text)`
+  : retention ? `SELECT build_equipment_intake_batch(?::text)` : `INSERT INTO ${table} (id, at, record)
      SELECT DISTINCT ON (id) id, at, record FROM jsonb_to_recordset((?::text)::jsonb)
        AS rows(id text, at text, record text, position bigint) ORDER BY id, position DESC
      ON CONFLICT (id) DO UPDATE SET at = excluded.at, record = excluded.record`;
@@ -29,7 +30,8 @@ export async function prepareIntakeBuild(build) {
   return build;
 }
 
-export async function* buildBatches(file, { deleting = false, maxRows = BUILD_BATCH_ROWS, maxBytes = BUILD_BATCH_BYTES } = {}) {
+export async function* buildBatches(file, { deleting = false, maxRows = BUILD_BATCH_ROWS, maxBytes = BUILD_BATCH_BYTES,
+  retention=process.env.WFSIM_INBOX_RETENTION==='1' } = {}) {
   if (!Number.isSafeInteger(maxRows) || maxRows < 1 || !Number.isSafeInteger(maxBytes) || maxBytes < 1)
     throw new Error("invalid intake batch bounds");
   const batches = new Map();
@@ -49,10 +51,13 @@ export async function* buildBatches(file, { deleting = false, maxRows = BUILD_BA
         await prepareIntakeBuild(build);
         value={...build,position:++position};
         delete value.family;
-      } else value = { id: build.id, at: build.at, record: JSON.stringify(build.record ?? null), position: ++position };
+      } else {
+        value = { id: build.id, at: build.at, record: JSON.stringify(build.record ?? null), position: ++position };
+        if(retention)value.from=build.from??[];
+      }
     }
     if (!batches.has(table)) {
-      const sql = statement(table, deleting);
+      const sql = statement(table, deleting, retention);
       batches.set(table, { sql, rows: [], bytes: 0, base: Buffer.byteLength(JSON.stringify({ sql, params: ["[]"] })) });
     }
     const batch = batches.get(table), row = JSON.stringify(value);
