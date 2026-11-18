@@ -318,7 +318,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       let body=await queueDemandOf(env,{fleet:queueFleet,detail:statistics.cachedDemand?.()});
       if(body===undefined){
         const counts=await statistics.get();if(!counts?.demand)return false;
-        if(!await publishSnapshot(counts))return false;
+        if(!await publishSnapshot(counts)||!await allowStatistics('demand'))return false;
         await statistics.assert(counts);body=counts.demand;
       }
       if(!body||!await allowStatistics('demand')||stopping)return false;
