@@ -33,6 +33,33 @@ pub trait Portable {
     fn hypot_portable(self, y: f64) -> f64;
 }
 
+pub(super) trait LevelPower {
+    fn level_power(self, exponent: f64) -> f64;
+}
+
+impl LevelPower for f64 {
+    /// Level curves repeatedly ask for the same powers on every hit and status tick.
+    /// Both operands are keyed by bits; a collision only evicts a previous result.
+    #[inline]
+    fn level_power(self, exponent: f64) -> f64 {
+        use std::cell::Cell;
+        type Entry = (u64, u64, f64);
+        thread_local! {
+            static POWERS: [Cell<Entry>; 32] = const { [const { Cell::new((0, 0, 1.0)) }; 32] };
+        }
+        let (x, e) = (self.to_bits(), exponent.to_bits());
+        let hash = e ^ (e >> 32) ^ x.rotate_left(17);
+        let index = (hash.wrapping_mul(0x9e37_79b9_7f4a_7c15) >> 59) as usize;
+        POWERS.with(|table| {
+            let (a, b, value) = table[index].get();
+            if (a, b) == (x, e) { return value; }
+            let value = libm::pow(self, exponent);
+            table[index].set((x, e, value));
+            value
+        })
+    }
+}
+
 impl Portable for f64 {
     fn powf_portable(self, e: f64) -> f64 {
         libm::pow(self, e)
@@ -85,8 +112,20 @@ impl Portable for f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::Portable;
+    use super::{LevelPower, Portable};
 
+    #[test]
+    fn repeated_level_powers_are_the_same_bits_even_after_eviction() {
+        for _ in 0..2 {
+            for level in (0..=140).map(f64::from).chain([9998.0, -0.0, f64::INFINITY]) {
+                for exponent in [-1.0, 0.0, 0.5, 0.72, 0.75, 1.75, 2.0, 2.12] {
+                    for _ in 0..2 {
+                        assert_eq!(level.level_power(exponent).to_bits(), libm::pow(level, exponent).to_bits());
+                    }
+                }
+            }
+        }
+    }
     #[test]
     fn powi_is_repeated_squaring_and_agrees_with_std_where_std_is_exact() {
         for n in -6..=6 {

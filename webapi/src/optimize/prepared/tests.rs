@@ -52,6 +52,18 @@ fn trace(mut req: Value, cached: bool) -> Vec<Value> {
 }
 
 #[test]
+fn parallel_native_finalists_match_one_worker_for_the_entire_report() {
+    let mut req = request();
+    req.as_object_mut().unwrap().remove("quick_fleet");
+    req["finalists"] = json!(4);
+    let serial = run(parse_optimize(&req).unwrap());
+    assert!(serial["jobs"].as_u64().unwrap() >= 4);
+    let mut parallel = parse_optimize(&req).unwrap();
+    parallel.threads = 4; // Keep the wire request inside each replay identical.
+    assert_eq!(run(parallel), serial);
+}
+
+#[test]
 fn prepared_fleet_matches_every_cold_batch_and_new_search() {
     let req = request();
     let cold = trace(req.clone(), false);

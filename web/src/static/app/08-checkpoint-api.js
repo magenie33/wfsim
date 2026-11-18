@@ -228,7 +228,8 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     show();
   };
   // One call to one worker; its progress, if any, to `onProgress`.
-  const call = (i, b, onProgress, resting = false) => new Promise((resolve) => {
+  const call = (i, message, onProgress) => new Promise((resolve) => {
+    const resting = message.kind === "rest";
     const w = job.workers[i];
     if (!w) { resolve(null); return; }
     const wd = watchSilence(() => fail("worker stopped answering"));
@@ -267,19 +268,19 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     show();
     try {
       wd.start();
-      w.postMessage(resting ? { kind: "rest", ms: b } : { kind: "optimize", body: b });
+      w.postMessage(message);
     } catch (error) { fail(String(error?.message || error)); }
   });
   const pause = (i, ms) => {
     const r = rest(ms);
     if (!(r > 0) || !job.workers[i]) return Promise.resolve();
-    return call(i, r, null, true);
+    return call(i, { kind: "rest", ms: r }, null);
   };
-  const timed = async (i, b, onProgress) => {
+  const timed = async (i, message, onProgress) => {
     let ms = 0;
     const o = await computeRun(kind, async () => {
       const t = performance.now();
-      const result = await call(i, b, onProgress);
+      const result = await call(i, message, onProgress);
       ms = performance.now() - t;
       done.cpu_ms += ms;
       return result;
@@ -294,6 +295,35 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       job.workers.push(held || spawnEngine());
     }
   };
+  // Each replay stays whole: worker count cannot regroup floating-point sums or reroll a seed.
+  const verify = async ({ verify: requests, generation, runs }) => {
+    const total = requests.length;
+    const k = Math.min(lanesNow(), total);
+    if (!total || !Number.isInteger(generation) || !Number.isInteger(runs) || runs < 1) throw Error("Invalid finalist round.");
+    grow(k);
+    activity = "final_simulation";
+    finalStatus = { phase: "running", jobs: total, round: 1, rounds: 1, sims_done: 0, sims_planned: total * runs };
+    round = emptyRound();
+    const receipts = new Array(total);
+    let next = 0;
+    await Promise.all(Array.from({ length: k }, async (_, i) => {
+      while (!job.cancelled && !job.result && next < total) {
+        const index = next++;
+        await pace();
+        if (job.cancelled || job.result) return;
+        const out = await timed(i, { kind: "verify_final", generation, index, replay: requests[index] },
+          st => { live[i] = st; show(); });
+        live[i] = null;
+        if (!out) return;
+        if (!out.receipt) throw Error("Missing finalist measurement.");
+        receipts[index] = out.receipt;
+        finalStatus.sims_done += runs;
+        show();
+      }
+    }));
+    if (job.cancelled || job.result) return null;
+    return timed(0, { kind: "finish_finals", generation, receipts });
+  };
   (async () => {
     grow(job.shards);
     show();
@@ -305,11 +335,15 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       await pace();
       if (job.cancelled || job.result) return;
       activity = "planning";
-      const r = await timed(0, { ...body, quick_fleet: { lead: true, fresh: step === 0, scores } },
+      let r = await timed(0, { kind: "optimize", body: { ...body, quick_fleet: { lead: true, fresh: step === 0, scores, split_finals: job.workers.length > 1 } } },
         (p) => {
           if (p.phase === "running" && p.jobs != null) { finalStatus = p; activity = "final_simulation"; }
         });
       if (!r || job.cancelled) return;
+      if (Array.isArray(r.verify)) {
+        r = await verify(r);
+        if (!r || job.cancelled) return;
+      }
       if (!r.pending) {
         job.result = { ...r, work: done.work + (r.final_work || 0), fights: done.fights, builds: done.builds, steps: step, cpu_ms: Math.round(done.cpu_ms) };
         stop(true);
@@ -342,7 +376,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       await Promise.all(Array.from({ length: k }, async (_, i) => {
         while (!broken && !job.cancelled && next < slices.length) {
           const at = next++;
-          const o = await timed(i, { ...body, quick_fleet: { score: slices[at] } }, (st) => { live[i] = st; show(); });
+          const o = await timed(i, { kind: "optimize", body: { ...body, quick_fleet: { score: slices[at] } } }, (st) => { live[i] = st; show(); });
           live[i] = null;
           if (!o) { broken = true; return; }
           if (!Array.isArray(o.scores) || o.scores.length !== slices[at].length) {

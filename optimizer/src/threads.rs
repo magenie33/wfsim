@@ -33,7 +33,11 @@ pub(crate) fn batch_width() -> usize {
 
 #[cfg(not(target_arch = "wasm32"))] // wasm is single-threaded; the budget is native-only
 pub(crate) fn worker_threads() -> usize {
-    let n = WORKER_THREADS.load(Ordering::Relaxed);
+    resolve_threads(WORKER_THREADS.load(Ordering::Relaxed))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn resolve_threads(n: usize) -> usize {
     if n > 0 {
         return n;
     }

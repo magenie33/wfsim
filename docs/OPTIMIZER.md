@@ -735,6 +735,12 @@ the first build and its dispatch position.
 The browser stops a search if a worker returns an incomplete score batch or
 if the leader requests an empty or identical consecutive batch.
 
+Final verification distributes whole contenders across the available workers,
+using the same simulator, seed and run count for each replay. The screen's
+order breaks a tie after kill progress and DPS. Every verified contender counts
+toward work, including those below the displayed finalists or retained only
+as the answer from a start.
+
 A leader waiting for scores returns its pending batch and start progress.
 Result identities, the merged pool and contender reports are constructed
 once no scores are pending; every start still advances to its next missing

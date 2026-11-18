@@ -24,8 +24,10 @@ mod final_constraints;
 mod builds;
 mod prepared;
 mod stance;
+mod final_round;
 
 pub use builds::BuildStream;
+pub use final_round::{FinalRound, FinalScore};
 
 pub(crate) fn task_request(v: &Value) -> Result<Value, Value> {
     let plan = parse_optimize(v)?;
@@ -309,6 +311,8 @@ type Prepared = std::sync::Mutex<std::collections::HashMap<(u32, usize), Option<
 
 /// Everything the heavy phase needs, validated up front.
 pub struct OptimizePlan {
+    /// Only a transport with independent finalist workers installs a dispatcher.
+    pub dispatch_finals: Option<fn(FinalRound) -> Value>,
     weapon_id: String,
     pool: Vec<ModDef>,
     stances: Vec<Option<usize>>,
@@ -1058,6 +1062,7 @@ fn parse_uncached(v: &Value) -> Result<OptimizePlan, Value> {
 
     let starts = parse_starts(v, &pool, &arcane_sets).map_err(err_json)?;
     Ok(OptimizePlan {
+        dispatch_finals: None,
         weapon_id: info.id.clone(),
         pool,
         stances,
@@ -1208,49 +1213,6 @@ fn parse_starts(
         });
     }
     Ok(out)
-}
-
-/// THE FINAL ROUND IS A SIMULATION. Each contender's `replay` goes through
-/// `simulate_json` — the simulator's own function, runs and seed — and the
-/// rows are ranked by what it answers, so a reader who simulates a row's build
-/// gets the row's number to the last digit. A row the simulator refuses keeps
-/// the reason and ranks last.
-fn measured_by_the_simulator(rows: Vec<Value>, state: &FunnelState) -> (Vec<Value>, u64) {
-    use std::sync::atomic::Ordering::Relaxed;
-    let mut rows: Vec<Value> = rows
-        .into_iter()
-        .map(|mut row| {
-            let sim = crate::simulate::simulate_json_reporting(&row["replay"], &mut |_, _| {
-                state.sims_done.fetch_add(1, Relaxed);
-                wfsim_optimizer::tick();
-            });
-            if sim.get("ok").and_then(Value::as_bool) == Some(false) {
-                row["simulator_error"] = sim.get("error").cloned().unwrap_or(Value::Null);
-                row["kill_progress"] = Value::Null;
-                return row;
-            }
-            for (to, from) in [
-                ("kill_progress", "score"),
-                ("kill_progress_se", "score_se"),
-                ("kills", "kills"),
-                ("kills_min", "kills_min"),
-                ("kills_max", "kills_max"),
-                ("dps", "dps"),
-                ("work", "work"),
-            ] {
-                row[to] = sim.get(from).cloned().unwrap_or(Value::Null);
-            }
-            row
-        })
-        .collect();
-    // WHAT THE ROUND COST, every contender counted — the ones cut below too.
-    let work = rows.iter().fold(0u64, |a, r| a.saturating_add(r.get("work").and_then(Value::as_u64).unwrap_or(0)));
-    let at = |r: &Value, k: &str| r.get(k).and_then(Value::as_f64).unwrap_or(f64::NEG_INFINITY);
-    rows.sort_by(|a, b| at(b, "kill_progress").total_cmp(&at(a, "kill_progress")).then(at(b, "dps").total_cmp(&at(a, "dps"))));
-    for (i, r) in rows.iter_mut().enumerate() {
-        r["rank"] = json!(i + 1);
-    }
-    (rows, work)
 }
 
 /// GRADE the search against ground truth — the same request, the same plan,
@@ -1746,6 +1708,7 @@ pub fn run_optimize_resumable(
         starts,
         candidate_runs,
         fleet,
+        dispatch_finals,
         shard,
         shards,
         replay_base,
@@ -1817,7 +1780,7 @@ pub fn run_optimize_resumable(
             "kills": s.mean_kills,
             "kill_progress": s.mean_kill_progress,
             // HOW WELL THE ROW KNOWS ITS OWN NUMBER: the simulator's own
-            // `score_se` once `measured_by_the_simulator` has run.
+            // `score_se` once the simulator has measured the row.
             "kill_progress_se": s.std_kill_progress / f64::from(final_runs.max(1)).sqrt(),
             "dps": s.effective_dps,
             "kills_min": s.min_kills,
@@ -2132,7 +2095,7 @@ pub fn run_optimize_resumable(
             (sc, slast, true, n)
         } else if strategy.as_deref() == Some("quick") {
             // THE DESCENT'S CONTENDERS GO STRAIGHT TO THE SIMULATOR
-            // (`measured_by_the_simulator`), which is the final round.
+            // (`FinalScore::simulate`), which is the final round.
             let n = slast.len();
             on_enumerated(sc.len(), n);
             (sc, slast, false, n)
@@ -2199,16 +2162,6 @@ pub fn run_optimize_resumable(
             row
         })
         .collect();
-    let (mut results, final_work) = if measure { measured_by_the_simulator(results, state) } else { (results, 0) };
-    let mut start_results = std::collections::BTreeMap::new();
-    for row in &results {
-        for lane in row["from_starts"].as_array().into_iter().flatten() {
-            if let Some(i) = lane["start"].as_u64() { start_results.entry(i).or_insert_with(|| row.clone()); }
-        }
-    }
-    let start_results: Vec<Value> = start_results.into_iter().map(|(start, result)| json!({"start":start,"result":result})).collect();
-    results.truncate(finalists);
-
     // WHAT THE SEARCH ACTUALLY COVERED. A run that did not reach the end of
     // its space has not searched the scope it was given, and it must not read
     // like one that did. `cancelled` cannot carry this — that means "you
@@ -2238,7 +2191,7 @@ pub fn run_optimize_resumable(
         Some(_) => ("walk", 0, false),
         None => ("resume", 0, false),
     };
-    json!({
+    let report = json!({
         "ok": true,
         "candidates": cands.len(),
         "jobs": n_jobs,
@@ -2260,17 +2213,24 @@ pub fn run_optimize_resumable(
         "shards": shards,
         "final_runs": final_runs,
         "finalists": finalists,
-        // THE FINAL ROUND'S WORK, every contender's simulation summed — a fleet
-        // adds its scorers' `work` to it (08-checkpoint-api.js).
-        "final_work": final_work,
         "headshot_pct": headshot_pct,
         "duration": duration,
-        "results": results,
-        "start_results": start_results,
         "failed_branches": quick_report.as_ref().map(|r| &r.branch_failures).cloned().unwrap_or_default(),
         "failed_starts": quick_report.map(|r| r.failures).unwrap_or_default(),
         "target": { "name": target_name, "level": level, "steel_path": steel_path },
-    })
+    });
+    let round = FinalRound { report, rows: results };
+    if !measure { return round.report(0); }
+    if let Some(dispatch) = dispatch_finals.filter(|_| round.rows.len() > 1) { return dispatch(round); }
+    let measure_row = |row: &Value| FinalScore::simulate(&row["replay"], &mut |_, _| {
+        state.sims_done.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        wfsim_optimizer::tick();
+    });
+    #[cfg(not(target_arch = "wasm32"))]
+    let scores = wfsim_optimizer::descent::map_ordered(&round.rows, threads, measure_row);
+    #[cfg(target_arch = "wasm32")]
+    let scores = round.rows.iter().map(measure_row).collect();
+    round.measured(scores)
 }
 
 /// A SEARCH'S PROGRESS, as both transports report it: the native

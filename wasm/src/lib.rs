@@ -15,6 +15,7 @@ use std::sync::atomic::Ordering;
 
 use wasm_bindgen::prelude::*;
 use wfsim_optimizer::FunnelState;
+mod finals;
 
 /// HAND THE ENGINE ONE DATA PACK (docs/CLIENTS.md §"The official data pack"):
 /// every pack goes in before the first call; returns "" or what was wrong.
@@ -195,10 +196,15 @@ fn optimize_inner(
         return e;
     }
     let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
-    let plan = match wfsim_webapi::parse_optimize(&v) {
+    let mut plan = match wfsim_webapi::parse_optimize(&v) {
         Ok(p) => p,
         Err(e) => return e.to_string(),
     };
+    let fleet = &v["quick_fleet"];
+    if fleet["lead"] == true {
+        if fleet["fresh"] == true { finals::clear(); }
+        if fleet["split_finals"] == true { plan.dispatch_finals = Some(finals::dispatch); }
+    }
     let builds = plan.build_stream();
     let builds_after = std::rc::Rc::new(std::cell::Cell::new(0));
     let state = std::rc::Rc::new(FunnelState::default());
