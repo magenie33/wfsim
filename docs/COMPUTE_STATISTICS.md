@@ -1,7 +1,7 @@
 # Compute statistics
 
 `statistics_provider.js` supplies one sealed source to the complete factory
-snapshot and `demand.json`. It never falls back to historical queue scans.
+snapshot and its detailed measurements. The public queue count has its own clock.
 The fast work signal and owner heartbeat have independent clocks and connections.
 
 `pause statistics` gates the provider before reading source state and before
@@ -15,6 +15,28 @@ for active unsealed projection work. It uses the normal duty until the critical
 jobs have reported, under pressure or after failure. The higher duty expires
 when the first complete sample seals. The provider has a one-connection control lane, independent of the fast
 signal. It verifies remote control before and after each bounded transaction.
+
+## Public queue counts
+
+The queue owns the total shown by the compute page. `worker/pg/queue_counts.sql`
+captures changes to effective open membership and explicit cancellation in the
+source transaction. Each database connection updates its own small per-zone
+balance. Completed transactions become visible immediately, including when
+the publishing process restarts. Inactive writer balances fold into one row
+per zone in bounded batches. Leases and shared consumer changes leave the
+total intact.
+
+An activation selects a new baseline. `queue_counts.js` reads disjoint
+indexed pages in one repeatable-read snapshot and subtracts the changes
+visible to that snapshot before saving its offset. The sum of offsets and
+committed balances gives the current zones in a single short read. A failed
+initialization retries and an incomplete sample stays private. Install the
+schema in the target tablespace and apply `deploy/queue_counts_grants.sql`;
+the existing factory maintenance clock seeds a missing epoch. The public
+reader and optional fleet readings use independent clocks. The existing
+`demand.json` carries `queue.total`, ascending `queue.zones` pairs and
+one compatible `orders` item per zone. Its total and timestamp continue to
+refresh while throughput or detailed measurements are unavailable.
 
 ## Membership and sampling
 

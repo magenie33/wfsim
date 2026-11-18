@@ -1319,6 +1319,12 @@ or dependency does not block the next eligible entry. Adding a source to an
 occupied computation may promote it, preserving its lease and joining the
 new zone's tail. Sustained early-zone arrivals can delay later zones.
 
+The public total counts one effective open execution round per queue entry.
+A lease or dependency keeps it in its zone. Completion, withdrawal and
+cancellation remove it. A promotion transfers one item between zones, and
+additional requests for the same round share its one place. The public
+snapshot lists nonempty zones in dispatch order.
+
 Producer usage remains accounting and observation. It does not change queue
 order. Deadlines continue to determine eligibility for official fallback.
 

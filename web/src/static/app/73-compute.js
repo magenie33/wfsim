@@ -930,7 +930,10 @@ function computeDemandHtml() {
     const valid = sources.every(value => Number.isSafeInteger(value) && value >= 0) && sources.reduce((sum, value) => sum + value, 0) === o.total;
     const source = valid ? Object.entries(sourceNames).filter(([key]) => o.sources[key]).map(([key, name]) =>
       tr(name).replace("{n}", n(o.sources[key]))).join(" · ") : "";
-    return `<li><span>${escHtml(tr(ORDER_KIND_NAMES[o.kind] || `${o.kind} {n}`).replace("{n}", n(o.total)))}</span>${
+    const label = d.queue && Number.isInteger(o.zone) && o.zone >= 0 && o.zone <= 99
+      ? tr("Zone {zone} · {n}").replace("{zone}", String(o.zone).padStart(2, "0"))
+      : tr(ORDER_KIND_NAMES[o.kind] || `${o.kind} {n}`);
+    return `<li><span>${escHtml(label.replace("{n}", n(o.total)))}</span>${
       source ? `<span class="set-note">${escHtml(source)}</span>` : ""}</li>`;
   }).join("");
   // EACH SURVEY IS A GOAL the reader can watch close: every riven shape of one
@@ -951,7 +954,7 @@ function computeDemandHtml() {
   const countedAt = d.counts_at ?? d.at;
   const updated = Number.isFinite(Date.parse(countedAt))
     ? tr("Updated {time}").replace("{time}", new Date(countedAt).toLocaleString(accountLocale())) : "";
-  return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Community goal")}</h2><span class="set-note" style="margin-left:auto">${
+  return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT(d.queue ? "Task queue" : "Community goal")}</h2><span class="set-note" style="margin-left:auto">${
     escHtml(updated)}</span></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
     <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(counted ? n(owed) : "—")} ${aT("tasks")}${

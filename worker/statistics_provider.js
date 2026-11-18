@@ -193,6 +193,7 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
   changed(){version++;if(active)active.cancelled=true;bundle=null;},
   stop(){closed=true;version++;if(active)active.cancelled=true;},
   allowed,
+  cachedDemand:()=>bundle?.demand??null,
   state:()=>lastState??{state:'unknown'},
  };
 }

@@ -216,6 +216,8 @@ ui:
   "Too many requests. Try again shortly.": "请求过于频繁，请稍后重试。"
   "The UTC day changed. Try again.": "UTC 日期已切换，请重试。"
   "Board standard: {n} runs. Your own setting is kept.": "榜单标准：{n} 次。你的个人次数设置仍然保留。"
+  "Zone {zone} · {n}": "{zone} 区 · {n}"
+  "Task queue": "任务队列"
   "Community goal": "全服目标"
   "Your contribution today": "今日贡献"
   "Compute settings": "计算设置"
