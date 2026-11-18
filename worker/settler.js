@@ -173,6 +173,28 @@ export function judgeFact(q, answers, threshold) {
 }
 
 const SHADOW_PAGE_MAX = 200;
+const SHADOW_INDEX_HOLD = "settlement shadow requires a ready compute_scheduling_shadow_page index";
+const SHADOW_INDEX_READY = `SELECT EXISTS (
+    SELECT 1 FROM pg_catalog.pg_index i
+    JOIN pg_catalog.pg_class c ON c.oid = i.indexrelid
+    JOIN pg_catalog.pg_am am ON am.oid = c.relam
+    JOIN pg_catalog.pg_opclass op ON op.oid = i.indclass[0] AND op.oid = i.indclass[1]
+    JOIN pg_catalog.pg_attribute f ON f.attrelid = i.indrelid AND f.attnum = i.indkey[0] AND f.attname = 'fact_at'
+    JOIN pg_catalog.pg_attribute k ON k.attrelid = i.indrelid AND k.attnum = i.indkey[1] AND k.attname = 'id'
+    WHERE i.indrelid = pg_catalog.to_regclass('state_compute_scheduling')
+      AND i.indexrelid = pg_catalog.to_regclass('compute_scheduling_shadow_page')
+      AND c.relkind = 'i' AND am.amname = 'btree' AND op.opcname = 'text_ops'
+      AND op.opcnamespace = 'pg_catalog'::regnamespace AND i.indisvalid AND i.indisready AND i.indislive
+      AND NOT i.indisunique AND i.indexprs IS NULL AND i.indnkeyatts = 2 AND i.indnatts = 2
+      AND i.indoption[0] = 0 AND i.indoption[1] = 0
+      AND i.indcollation[0] = f.attcollation AND i.indcollation[1] = k.attcollation
+      AND pg_catalog.pg_get_expr(i.indpred, i.indrelid) =
+        '((state = ANY (ARRAY[''fact''::text, ''spot''::text])) AND (fact_at IS NOT NULL))'
+      AND pg_catalog.has_schema_privilege(c.relnamespace, 'USAGE')
+      AND pg_catalog.has_table_privilege(i.indrelid, 'SELECT')
+      AND pg_catalog.has_table_privilege(pg_catalog.to_regclass('state_compute_work'), 'SELECT')
+      AND pg_catalog.has_table_privilege(pg_catalog.to_regclass('record_candidate_answers'), 'SELECT')
+  ) AS index_ready`;
 
 /// ONE BATCH OF SETTLED QUESTIONS judged in shadow, after `from` (a `{ at, id }`
 /// keyset cursor), and folded into the `settle_shadow` finding. Read-only on
@@ -180,17 +202,24 @@ const SHADOW_PAGE_MAX = 200;
 export async function settleShadow(env, { threshold, from, max = SHADOW_PAGE_MAX }, now = Date.now()) {
   if (!Number.isInteger(max) || max < 1 || max > SHADOW_PAGE_MAX) throw new Error("invalid settlement shadow page size");
   const db = env.LIBRARY, until = iso(now - SETTLE_SHADOW_LAG_MS);
-  const { results: page } = await db.prepare(`WITH page AS MATERIALIZED (
+  const held = () => ({ status: "held", reason: SHADOW_INDEX_HOLD, cursor: from });
+  if (!(await db.prepare(SHADOW_INDEX_READY).first())?.index_ready) return held();
+  // A concurrent index change must also stop the page inside its own statement.
+  const { results: page } = await db.prepare(`WITH shadow_index AS MATERIALIZED (${SHADOW_INDEX_READY}), page AS MATERIALIZED (
       SELECT id, fact_at FROM state_compute_scheduling
-      WHERE state IN ('fact', 'spot') AND fact_at IS NOT NULL AND fact_at <= ?1::text
+      WHERE (SELECT index_ready FROM shadow_index)
+        AND state IN ('fact', 'spot') AND fact_at IS NOT NULL AND fact_at <= ?1::text
         AND (fact_at, id) > (?2::text, ?3::text)
       ORDER BY fact_at, id LIMIT ?4::bigint
     )
-    SELECT p.id, p.fact_at, q.id IS NOT NULL AS effective, q.state, q.canon, q.needs, q.fact_engine
+    SELECT true AS index_ready, p.id, p.fact_at, q.id IS NOT NULL AS effective, q.state, q.canon, q.needs, q.fact_engine
     FROM page p LEFT JOIN LATERAL (
       SELECT id, state, canon, needs, fact_engine FROM state_compute_work WHERE id = p.id OFFSET 0
     ) q ON true
-    ORDER BY p.fact_at, p.id`).bind(until, from.at, from.id, max).all();
+    UNION ALL
+    SELECT false, NULL, NULL, false, NULL, NULL, NULL, NULL FROM shadow_index WHERE NOT index_ready
+    ORDER BY fact_at, id`).bind(until, from.at, from.id, max).all();
+  if (page[0]?.index_ready === false) return held();
   const out = { cursor: from, checked: 0, ok: 0, skipped: {}, differ: {}, samples: [] };
   if (!page.length) return out;
   const qs = page.filter(q => q.effective);

@@ -223,7 +223,11 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     workflowAdmission: async () => facts().runStage(stageEnvs.admission,"admission"),
     delivery: async () => facts().runStage(stageEnvs.delivery,"delivery"),
     contribution: async () => facts().runStage(stageEnvs.contribution,"contribution"),
-    shadow: async () => {cursor=(await settleShadow(backgroundEnv,{threshold:CLIENTS_PER_FACT,from:cursor})).cursor;},
+    shadow: async () => {
+      const result=await settleShadow(backgroundEnv,{threshold:CLIENTS_PER_FACT,from:cursor});
+      if(result.status==="held"){log("shadow","held",result.reason);return false;}
+      cursor=result.cursor;
+    },
     // THE COMPUTE PAGE'S PICTURE, one object every reader gets (worker/contribution.js `demandOf`).
     demand: async () => {
       if(!await allowStatistics('demand'))return false;
