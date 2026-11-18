@@ -168,6 +168,7 @@ try{
    console.log('BASELINE',label,JSON.stringify(metrics));return metrics;
   };
   const zero=await bench('100k-zero-eligible');assert.equal(zero.queueRows,0);assert.equal(zero.contributions,0);
+  assert(zero.questionPages<=150,'sparse baseline must advance beyond the per-page enqueue capacity');
   for(let i=0;i<256;i++){const id='new-'+String(i).padStart(5,'0');await seedComputeWork(db,{id});await pending('new',id);await ref('sweep',id+'|r|base',id);}
   engine='benchmark-positive';const positive=await bench('100k-tail-plus-256-positive');assert.equal(positive.queueRows,256);
   mkdirSync(new URL('../target/statistics-projection/',import.meta.url),{recursive:true});writeFileSync(new URL('../target/statistics-projection/baseline-'+schema+'.json',import.meta.url),JSON.stringify({schema,port,zero,positive,noProductionEta:true,limits:{pageRows:128,maxMs:3000}},null,2)+'\n');

@@ -159,7 +159,7 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
      const started=await projection.start();if(bundle?.namespace!==started.namespace)bundle=null;
      do{
       const progress=await projection.step();steps++;
-      if(progress.worked||!progress.baseline)processed++;
+      if(progress.worked||!progress.baseline)processed+=progress.processed||1;
       if(progress.baseline&&!progress.worked){
        const kept=await projection.read();
        if(!completeBundle(kept)||now()-Date.parse(kept.countsAt)>=STATISTICS_REFRESH_MS){bundle=(await projection.seal()).counts;sealed=true;}
