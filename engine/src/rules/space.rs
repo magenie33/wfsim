@@ -19,7 +19,7 @@
 //! otherwise; a hitbox's height lives in [`crate::target::BodyPart`], which is a
 //! question about where on a body a pellet landed rather than where the body is.
 
-use crate::rules::math::Portable;
+use crate::rules::math::{ComponentMath, Portable};
 
 /// A point on the arena floor, in metres.
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -39,7 +39,7 @@ impl Vec2 {
     /// Metres between two points.
     pub fn distance(self, other: Self) -> f64 {
         let (dx, dy) = (self.x - other.x, self.y - other.y);
-        dx.hypot_portable(dy)
+        dx.plane_distance(dy)
     }
 
     /// This point moved `metres` of the way toward `toward`. The direction is

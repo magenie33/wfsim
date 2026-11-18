@@ -25,6 +25,7 @@ mod builds;
 mod prepared;
 mod stance;
 mod final_round;
+mod carry;
 
 pub use builds::BuildStream;
 pub use final_round::{FinalRound, FinalScore};
@@ -237,6 +238,8 @@ pub(crate) struct Replay {
     /// Per variant: mode, evolutions, progenitor element and modular parts.
     variants: Vec<(String, Vec<String>, Option<String>, Value)>,
     builds: BuildStream,
+    /// Only a retained fleet plan enables this small cross-batch input cache.
+    entrants: std::sync::Arc<std::sync::OnceLock<Prepared>>,
     riven_specs: std::collections::HashMap<&'static str, wfsim_engine::build::rivens::RivenSpec>,
 }
 
@@ -1049,6 +1052,7 @@ fn parse_uncached(v: &Value) -> Result<OptimizePlan, Value> {
             .map(|&(mi, ei, li, ai)| (modes[mi].id.clone(), evo_sets[ei].clone(), valences.get(li).cloned(), assemblies[ai].clone()))
             .collect(),
         builds: BuildStream::default(),
+        entrants: Default::default(),
         riven_specs: crate::rivens::riven_specs_from(&replay_base, info).into_iter().collect(),
     });
     // THE OPTIMIZER BUILDS NO FIGHT: a candidate is scored in the fight the
@@ -1832,7 +1836,8 @@ pub fn run_optimize_resumable(
     // The bases each VARIANT resolves to, built ONCE. `forms_for` reads data
     // and applies the deployment, which is far too expensive to repeat per
     // proposal.
-    let forms = forms.get_or_init(|| variants
+    let form_cache = forms;
+    let forms = form_cache.get_or_init(|| variants
         .iter()
         .enumerate()
         .map(|(vi, &(_, ei, _, _))| {
@@ -2021,11 +2026,11 @@ pub fn run_optimize_resumable(
         };
             // A FLEET WORKER'S SHARE: score these builds and nothing else.
             if let Some(builds) = fleet.get("score").and_then(Value::as_array) {
-                return ctx.score_json(builds, &replay.builds);
+                return ctx.score_json(builds, &replay.builds, fleet["compact_shards"] == 1);
             }
             if ctx.lead {
-                let scores = fleet.get("scores").and_then(Value::as_array).cloned().unwrap_or_default();
-                quick::QuickCtx::lead_take(&scores, fleet.get("fresh").and_then(Value::as_bool).unwrap_or(false));
+                let scores = fleet.get("scores").and_then(Value::as_array).map_or(&[][..], Vec::as_slice);
+                quick::QuickCtx::lead_take(scores, fleet.get("fresh").and_then(Value::as_bool).unwrap_or(false), &form_cache);
             }
             let st = ctx.starts(&starts, wfsim_optimizer::descent::seeds(&space, &pool));
             let (sj, stats, report) =

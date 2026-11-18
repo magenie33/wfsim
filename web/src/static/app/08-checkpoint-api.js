@@ -376,7 +376,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       await Promise.all(Array.from({ length: k }, async (_, i) => {
         while (!broken && !job.cancelled && next < slices.length) {
           const at = next++;
-          const o = await timed(i, { kind: "optimize", body: { ...body, quick_fleet: { score: slices[at] } } }, (st) => { live[i] = st; show(); });
+          const o = await timed(i, { kind: "optimize", body: { ...body, quick_fleet: { score: slices[at], compact_shards: 1 } } }, (st) => { live[i] = st; show(); });
           live[i] = null;
           if (!o) { broken = true; return; }
           if (!Array.isArray(o.scores) || o.scores.length !== slices[at].length) {

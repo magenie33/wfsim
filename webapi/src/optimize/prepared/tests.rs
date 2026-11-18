@@ -140,6 +140,27 @@ fn cache_is_bounded_and_never_keeps_failed_or_large_requests() {
 }
 
 #[test]
+fn frozen_entrants_are_reused_only_for_the_same_fight() {
+    let mut req = request();
+    let first = parse_optimize(&req).unwrap();
+    let cache = first.replay.entrants.clone();
+    let pending = run(first)["pending"].clone();
+    req["quick_fleet"] = json!({"score":pending});
+    let expected = trace_output(run(parse_uncached(&req).unwrap()));
+    assert_eq!(trace_output(run(parse_optimize(&req).unwrap())), expected);
+    let entrant = cache.get().unwrap().lock().unwrap().values().flatten().next().unwrap().clone();
+    let second = parse_optimize(&req).unwrap();
+    assert!(std::sync::Arc::ptr_eq(&cache, &second.replay.entrants));
+    assert_eq!(trace_output(run(second)), expected);
+    assert!(cache.get().unwrap().lock().unwrap().values().flatten().any(|v| std::sync::Arc::ptr_eq(v, &entrant)));
+    req["headshot_pct"] = json!(25);
+    let changed = parse_optimize(&req).unwrap();
+    assert!(!std::sync::Arc::ptr_eq(&cache, &changed.replay.entrants));
+    assert!(changed.replay.entrants.get().unwrap().lock().unwrap().is_empty());
+    assert!(parse_uncached(&req).unwrap().replay.entrants.get().is_none());
+}
+
+#[test]
 fn prepared_plans_keep_independent_build_streams_after_cancel_and_concurrent_parse() {
     // Each stream preserves its own cursor order; parallel encounters can arrive
     // in a different order across invocations while retaining identical builds.

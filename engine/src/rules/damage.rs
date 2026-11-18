@@ -3,6 +3,8 @@
 //!
 //! Every hit is a vector over these types, not a scalar. Names follow the wiki.
 
+use super::math::ComponentMath;
+
 /// A single damage type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DamageType {
@@ -305,7 +307,7 @@ impl DamageVector {
         for a in &mut out.amounts {
             // `sign(x) × floor(|x| × 32 + 0.5) / 32`, verbatim: f64::round is
             // half-away-from-zero, which is that rule on both signs.
-            *a = (*a / scale).round() * scale;
+            *a = (*a).component_ratio(scale).round() * scale;
         }
         out
     }

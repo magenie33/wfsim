@@ -17,6 +17,8 @@
 //! its distinct allowed element orders and keeps the best.
 
 use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+use super::carry::Carry;
 
 use serde_json::{json, Value};
 use wfsim_engine::model::ModDef;
@@ -97,9 +99,9 @@ pub(crate) struct Fleet {
     pending_rough_keys: HashSet<String>,
     /// The screen's runs per element order, by key, as a worker sent them —
     /// handed out again with the build's full measurement.
-    screened_runs: HashMap<String, Vec<Option<Shard>>>,
+    screened_runs: HashMap<String, Vec<Option<Carry>>>,
     /// Each fully scored build's shard at its best order, by key.
-    best_runs: HashMap<String, Shard>,
+    best_runs: HashMap<String, Carry>,
     missed: bool,
     /// Where each start stood when the last call ended.
     progress: Value,
@@ -107,6 +109,33 @@ pub(crate) struct Fleet {
 
 thread_local! {
     pub(crate) static FLEET: std::cell::RefCell<Fleet> = std::cell::RefCell::new(Fleet::default());
+    // A replay revisits the same builds. Keep this separate: score() already borrows FLEET.
+    static LEAD_MEMO: std::cell::RefCell<LeadMemo> = std::cell::RefCell::new(LeadMemo::default());
+}
+
+#[derive(Default)]
+struct LeadMemo {
+    scope: std::sync::Weak<ScopeForms>,
+    keys: HashMap<QBuild, String>,
+    preferences: HashMap<QBuild, std::rc::Rc<wfsim_engine::board::builds::Preference<'static>>>,
+}
+
+type ScopeForms = std::sync::OnceLock<Vec<wfsim_engine::model::WeaponBase>>;
+
+impl LeadMemo {
+    fn bind(&mut self, scope: &Arc<ScopeForms>, fresh: bool) {
+        let scope = Arc::downgrade(scope);
+        if fresh || !self.scope.ptr_eq(&scope) { *self = Self { scope, ..Self::default() }; }
+    }
+}
+
+// As in the Simfleet leader, a miss after eviction only recomputes metadata, never a fight.
+fn memoized<T: Clone>(map: &mut HashMap<QBuild, T>, b: &QBuild, make: impl FnOnce() -> T) -> T {
+    if let Some(v) = map.get(b) { return v.clone(); }
+    if map.len() >= 4096 { map.clear(); }
+    let value = make();
+    map.insert(b.clone(), value.clone());
+    value
 }
 
 pub(crate) struct QuickCtx<'a> {
@@ -136,7 +165,7 @@ pub(crate) struct QuickCtx<'a> {
     pub(crate) runs: u32,
     pub(crate) seed: u64,
     /// Each scored build's best element order, by key.
-    pub(crate) best: std::sync::Mutex<std::collections::HashMap<String, Candidate>>,
+    pub(crate) best: std::sync::Mutex<std::collections::HashMap<String, usize>>,
     /// Each scored build's per-run σ of kill progress at that order, by key —
     /// what the band around the N-th contender is sized from.
     pub(crate) spread: std::sync::Mutex<std::collections::HashMap<String, f64>>,
@@ -159,7 +188,7 @@ pub(crate) struct QuickCtx<'a> {
     pub(crate) keep_ratio: f64,
     /// Each build's element orders, by key: legality asks for them and so does
     /// every measurement.
-    pub(crate) orders_of: std::sync::Mutex<HashMap<String, Vec<Candidate>>>,
+    pub(crate) orders_of: std::sync::Mutex<HashMap<String, Arc<Vec<Candidate>>>>,
     /// The screen's runs, per element order, by key — what the full
     /// measurement continues rather than fights again.
     pub(crate) screened_runs: std::sync::Mutex<HashMap<String, Vec<Option<Shard>>>>,
@@ -195,14 +224,15 @@ impl QuickCtx<'_> {
     /// Every distinct element order of the build that can exist — empty when
     /// none can: no such variant, a card its evolutions refuse, or Forma
     /// cannot fit it.
-    fn orders(&self, b: &QBuild) -> Vec<Candidate> {
-        let key = self.key(b);
-        if let Some(os) = self.orders_of.lock().ok().and_then(|m| m.get(&key).cloned()) {
+    fn orders(&self, b: &QBuild) -> Arc<Vec<Candidate>> { self.orders_by_key(b, &self.key(b)) }
+
+    fn orders_by_key(&self, b: &QBuild, key: &str) -> Arc<Vec<Candidate>> {
+        if let Some(os) = self.orders_of.lock().ok().and_then(|m| m.get(key).cloned()) {
             return os;
         }
-        let os = self.orders_now(b);
+        let os = Arc::new(self.orders_now(b));
         if let Ok(mut m) = self.orders_of.lock() {
-            m.insert(key, os.clone());
+            m.insert(key.to_owned(), os.clone());
         }
         os
     }
@@ -257,18 +287,22 @@ impl QuickCtx<'_> {
     /// The build at its best element order, once scored; before that, the
     /// first order that can exist.
     pub(crate) fn materialize(&self, b: &QBuild) -> Option<Candidate> {
-        if let Some(c) = self.best.lock().ok().and_then(|m| m.get(&self.key(b)).cloned()) {
-            return Some(c);
-        }
-        let at = if self.lead { FLEET.with(|f| f.borrow().scores.get(&self.key(b)).map(|x| x.1)) } else { None };
-        self.orders(b).into_iter().nth(at.unwrap_or(0))
+        let (orders, index) = self.selected_order(b);
+        orders.get(index).cloned()
+    }
+
+    fn selected_order(&self, b: &QBuild) -> (Arc<Vec<Candidate>>, usize) {
+        let key = self.key(b);
+        let at = if self.lead { FLEET.with(|f| f.borrow().scores.get(&key).map(|x| x.1)) }
+            else { self.best.lock().ok().and_then(|m| m.get(&key).copied()) };
+        (self.orders_by_key(b, &key), at.unwrap_or(0))
     }
 
     /// The runs a full score fought at the build's best order, wherever they
     /// were fought.
     fn kept_runs(&self, key: &str) -> Option<Shard> {
         if self.lead {
-            return FLEET.with(|f| f.borrow().best_runs.get(key).cloned());
+            return FLEET.with(|f| f.borrow().best_runs.get(key).cloned()?.open());
         }
         self.best_runs.lock().ok().and_then(|m| m.get(key).cloned())
     }
@@ -785,9 +819,15 @@ impl QuickSpace for QuickCtx<'_> {
     /// The board's own order (`wfsim_engine::board::builds::preferred`), then
     /// the mode and the valence as the plan lists them.
     fn prefer(&self, a: &QBuild, b: &QBuild) -> std::cmp::Ordering {
-        wfsim_engine::board::builds::preferred(&self.preference(a), &self.preference(b))
-            .then(a.mode.cmp(&b.mode))
-            .then(a.val.cmp(&b.val))
+        let order = if self.lead {
+            LEAD_MEMO.with_borrow_mut(|memo| {
+                let mut pref = |q| memoized(&mut memo.preferences, q, || std::rc::Rc::new(self.preference(q)));
+                wfsim_engine::board::builds::preferred(&pref(a), &pref(b))
+            })
+        } else {
+            wfsim_engine::board::builds::preferred(&self.preference(a), &self.preference(b))
+        };
+        order.then(a.mode.cmp(&b.mode)).then(a.val.cmp(&b.val))
     }
 
     /// Each free card slot, costliest card first, takes the costliest card
@@ -850,16 +890,20 @@ impl QuickSpace for QuickCtx<'_> {
 
     /// Cards as a set, with prescribed physical slots kept in the identity.
     fn key(&self, b: &QBuild) -> String {
-        let mut mods: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
-        mods.sort_unstable();
-        let slots: Vec<_> = (0..8).filter(|&i| b.fixed_slots & (1 << i) != 0).map(|i| (i, b.mods[i])).collect();
-        format!("{mods:?} x{} a{} e{} m{} v{} p{} t{} s{slots:?}", b.exilus, b.arcane, b.evo, b.mode, b.val, b.assembly, b.stance)
+        let make = || {
+            let mut mods: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
+            mods.sort_unstable();
+            let slots: Vec<_> = (0..8).filter(|&i| b.fixed_slots & (1 << i) != 0).map(|i| (i, b.mods[i])).collect();
+            format!("{mods:?} x{} a{} e{} m{} v{} p{} t{} s{slots:?}", b.exilus, b.arcane, b.evo, b.mode, b.val, b.assembly, b.stance)
+        };
+        if self.lead { LEAD_MEMO.with_borrow_mut(|m| memoized(&mut m.keys, b, make)) } else { make() }
     }
 
     /// The canonical form: the same cards whatever their slots, the same
     /// combined elements, the same exilus, arcane and variant.
     fn identity(&self, b: &QBuild) -> String {
-        let Some(c) = self.materialize(b) else { return self.key(b) };
+        let (orders, index) = self.selected_order(b);
+        let Some(c) = orders.get(index) else { return self.key(b) };
         let mut cards: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
         cards.sort_unstable();
         let elements: Vec<String> = c
@@ -930,11 +974,10 @@ impl QuickCtx<'_> {
         if p.kind == "mods" && p.idx < 8 && b.mods[p.idx].is_none()
             && b.mods.iter().flatten().count() >= self.mod_slots { return Vec::new(); }
         let res = crate::candidates::candidates_json(&self.candidate_request(b, p));
-        let list = res.get("candidates").and_then(Value::as_array).cloned().unwrap_or_default();
         let mut out = Vec::new();
-        for c in list {
+        for c in res["candidates"].as_array().into_iter().flatten() {
             let id = c.get("id").and_then(Value::as_str).unwrap_or("");
-            let payload = c.get("payload").cloned().unwrap_or(Value::Null);
+            let payload = &c["payload"];
             let mut n = b.clone();
             let kept = match p.kind {
                 "mods" if p.idx < 8 => {
@@ -958,9 +1001,9 @@ impl QuickCtx<'_> {
                     None => false,
                 },
                 "arcane" => {
-                    let ids = payload.get("arcane").and_then(Value::as_array).cloned().unwrap_or_default();
-                    let ranks = payload.get("arcane_rank").and_then(Value::as_array).cloned().unwrap_or_default();
-                    match self.arcane_set_of(&ids, &ranks) {
+                    let ids = payload["arcane"].as_array().map_or(&[][..], Vec::as_slice);
+                    let ranks = payload["arcane_rank"].as_array().map_or(&[][..], Vec::as_slice);
+                    match self.arcane_set_of(ids, ranks) {
                         Some(a) => {
                             n.arcane = a;
                             true
@@ -1027,15 +1070,16 @@ impl QuickCtx<'_> {
     /// [`Self::score_orders`] at `runs` fights a candidate, on the same seed —
     /// the screen's short count is the first `runs` of the full paired stream.
     fn score_orders_at(&self, bs: &[QBuild], runs: u32) -> Vec<(Score, usize, f64)> {
-        let orders: Vec<Vec<Candidate>> = bs.iter().map(|b| self.orders(b)).collect();
+        let keys: Vec<_> = bs.iter().map(|b| self.key(b)).collect();
+        let orders: Vec<_> = bs.iter().zip(&keys).map(|(b,k)| self.orders_by_key(b,k)).collect();
         // A FULL MEASUREMENT KEEPS THE SCREEN'S RUNS: they are the first runs
         // of the same stream, so continuing them is the full count to the bit.
         let screened = runs != self.runs;
-        let priors: Vec<Vec<Option<Shard>>> = bs
+        let priors: Vec<Vec<Option<Shard>>> = keys
             .iter()
             .zip(&orders)
-            .map(|(b, os)| {
-                let kept = if screened { None } else { self.screened_runs.lock().ok().and_then(|mut m| m.remove(&self.key(b))) };
+            .map(|(key, os)| {
+                let kept = if screened { None } else { self.screened_runs.lock().ok().and_then(|mut m| m.remove(key)) };
                 kept.filter(|k| k.len() == os.len()).unwrap_or_else(|| vec![None; os.len()])
             })
             .collect();
@@ -1070,7 +1114,7 @@ impl QuickCtx<'_> {
         }
         let mut it = sums.into_iter();
         let mut out = Vec::with_capacity(bs.len());
-        for (b, os) in bs.iter().zip(&orders) {
+        for (key, os) in keys.into_iter().zip(&orders) {
             let mut best: Option<(usize, (f64, f64), f64)> = None;
             let mut shards: Vec<Option<Shard>> = Vec::with_capacity(os.len());
             for (oi, _) in os.iter().enumerate() {
@@ -1082,20 +1126,20 @@ impl QuickCtx<'_> {
                 }
             }
             if let (Some((oi, _, _)), Ok(mut m)) = (best, self.best.lock()) {
-                m.insert(self.key(b), os[oi].clone());
+                m.insert(key.clone(), oi);
             }
             if screened {
                 if let Ok(mut m) = self.screened_runs.lock() {
-                    m.insert(self.key(b), shards);
+                    m.insert(key.clone(), shards);
                 }
             } else if let Some(sh) = best.and_then(|(oi, _, _)| shards.get_mut(oi)?.take()) {
                 if let Ok(mut m) = self.best_runs.lock() {
-                    m.insert(self.key(b), sh);
+                    m.insert(key.clone(), sh);
                 }
             }
             let sd = best.map_or(0.0, |(_, _, sd)| sd);
             if let Ok(mut m) = self.spread.lock() {
-                m.insert(self.key(b), sd);
+                m.insert(key, sd);
             }
             out.push((best.map(|(_, s, _)| s), best.map_or(0, |(oi, _, _)| oi), sd));
         }
@@ -1107,7 +1151,7 @@ impl QuickCtx<'_> {
     /// screen's short measurement, answered with `rough: true` and its runs
     /// per element order (`shards`) — or `{build, shards}`, a full measurement
     /// that continues them, answered with its best order's runs (`shard`).
-    pub(crate) fn score_json(&self, builds: &[Value], stream: &super::BuildStream) -> Value {
+    pub(crate) fn score_json(&self, builds: &[Value], stream: &super::BuildStream, pack: bool) -> Value {
         stream.enable();
         let mut groups: Vec<(u32, Vec<QBuild>)> = Vec::new();
         for item in builds {
@@ -1116,9 +1160,14 @@ impl QuickCtx<'_> {
                 None => (item, self.runs),
             };
             let Some(b) = QBuild::from_json(b) else { continue };
-            if let Some(Ok(kept)) = item.get("shards").map(|v| serde_json::from_value::<Vec<Option<Shard>>>(v.clone())) {
-                if let Ok(mut m) = self.screened_runs.lock() {
-                    m.insert(self.key(&b), kept);
+            if let Some(v) = item.get("shards") {
+                let kept = Carry::list(v).and_then(|rows| rows.into_iter().map(|s| match s {
+                    Some(s) => s.open().map(Some), None => Some(None),
+                }).collect::<Option<Vec<_>>>());
+                if let Some(kept) = kept {
+                    if let Ok(mut m) = self.screened_runs.lock() { m.insert(self.key(&b), kept); }
+                } else if v.as_array().is_some_and(|a| a.iter().any(Value::is_string)) {
+                    return crate::err_json("invalid carried search shard");
                 }
             }
             match groups.iter_mut().find(|(r, _)| *r == runs) {
@@ -1137,10 +1186,10 @@ impl QuickCtx<'_> {
                 if *runs != self.runs {
                     row["rough"] = json!(true);
                     if let Some(kept) = self.screened_runs.lock().ok().and_then(|mut m| m.remove(&key)) {
-                        row["shards"] = json!(kept);
+                        row["shards"] = json!(kept.into_iter().map(|s| s.map(|s| Carry::new(s, pack))).collect::<Vec<_>>());
                     }
                 } else if let Some(sh) = self.best_runs.lock().ok().and_then(|mut m| m.remove(&key)) {
-                    row["shard"] = json!(sh);
+                    row["shard"] = json!(Carry::new(sh, pack));
                 }
                 row
             }));
@@ -1153,7 +1202,8 @@ impl QuickCtx<'_> {
 
     /// The leader takes the scores the fleet returned; `fresh` begins a new
     /// search and forgets the last one's.
-    pub(crate) fn lead_take(scores: &[Value], fresh: bool) {
+    pub(crate) fn lead_take(scores: &[Value], fresh: bool, forms: &Arc<ScopeForms>) {
+        LEAD_MEMO.with_borrow_mut(|m| m.bind(forms, fresh));
         FLEET.with(|f| {
             let mut f = f.borrow_mut();
             if fresh {
@@ -1168,13 +1218,13 @@ impl QuickCtx<'_> {
                 let s = r.get("score").and_then(Value::as_array).and_then(|a| Some((a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
                 if r.get("rough").and_then(Value::as_bool) == Some(true) {
                     f.rough.insert(key.to_string(), s);
-                    if let Some(Ok(kept)) = r.get("shards").map(|v| serde_json::from_value(v.clone())) {
+                    if let Some(kept) = r.get("shards").and_then(Carry::list) {
                         f.screened_runs.insert(key.to_string(), kept);
                     }
                     continue;
                 }
                 f.screened_runs.remove(key);
-                if let Some(Ok(sh)) = r.get("shard").map(|v| serde_json::from_value::<Shard>(v.clone())) {
+                if let Some(sh) = r.get("shard").and_then(Carry::read) {
                     f.best_runs.insert(key.to_string(), sh);
                 }
                 let oi = r.get("order").and_then(Value::as_u64).unwrap_or(0) as usize;
@@ -1602,6 +1652,25 @@ pub(super) fn arcane_matches(ids: &[Value], ranks: &[Value], i: usize, option: &
 mod tests {
     use super::*;
 
+    #[test]
+    fn leader_metadata_is_bounded_and_never_reuses_another_scopes_indices() {
+        let (old, new) = (Arc::new(ScopeForms::new()), Arc::new(ScopeForms::new()));
+        let b = QBuild::from_json(&json!([-1,-1,-1,-1,-1,-1,-1,-1,0,0,0,0,0,0,0,0])).unwrap();
+        let mut m = LeadMemo::default();
+        m.bind(&old, false);
+        for mode in 0..4097 {
+            memoized(&mut m.keys, &QBuild { mode, ..b.clone() }, || mode.to_string());
+        }
+        assert_eq!(m.keys.len(), 1);
+        m.bind(&old, false);
+        assert_eq!(m.keys.len(), 1);
+        m.bind(&new, false);
+        assert!(m.keys.is_empty());
+        memoized(&mut m.keys, &b, || String::from("new scope"));
+        m.bind(&new, true);
+        assert!(m.keys.is_empty());
+    }
+
     fn request() -> Value {
         json!({
             "weapon": "braton", "enemy": "thrax_centurion", "level": 100,
@@ -1766,6 +1835,24 @@ mod tests {
         let replay = run(&req, Some(json!({ "lead": true, "scores": [] })));
         assert_eq!(replay["pending"][0]["shards"], expected, "another leader replay keeps every order intact");
         assert!(replay["pending"][0]["shards"][1].is_null());
+    }
+
+    #[test]
+    fn packed_screen_promotes_to_identical_dense_rows_without_refighting() {
+        let req = request();
+        let (build, dense) = screened(&req);
+        let packed = run(&req, Some(json!({"score":[{"build":build,"runs":2}],"compact_shards":1})));
+        assert_eq!(dense["work"], packed["work"]);
+        assert!(packed["scores"][0]["shards"][0].is_string());
+        let promote = |short: &Value| {
+            let lead = run(&req, Some(json!({"lead":true,"fresh":true,"scores":short["scores"]})));
+            let mut full = run(&req, Some(json!({"score":lead["pending"]})));
+            // Independent native scorers can publish their encounter log in either order.
+            full["builds"].as_array_mut().unwrap().sort_by_key(Value::to_string);
+            let finish = run(&req, Some(json!({"lead":true,"scores":full["scores"]})));
+            (full,finish)
+        };
+        assert_eq!(promote(&packed), promote(&dense));
     }
 
     #[test]

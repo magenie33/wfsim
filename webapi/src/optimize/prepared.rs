@@ -13,6 +13,7 @@ thread_local! {
 // One request per worker; large scopes run normally without a retained copy.
 const MAX_KEY_BYTES: usize = 65_536;
 const MAX_OPTIONS: usize = 1024;
+const MAX_FROZEN_ENTRANTS: usize = 8;
 
 pub(super) fn parse(v: &Value) -> Result<OptimizePlan, Value> {
     if v["strategy"] != "quick" || !v["quick_fleet"].is_object() {
@@ -31,6 +32,7 @@ pub(super) fn parse(v: &Value) -> Result<OptimizePlan, Value> {
             if plan.pool.len() <= MAX_OPTIONS && plan.variants.len() <= MAX_OPTIONS
                 && plan.arcanes.len() <= MAX_OPTIONS && serde_json::to_vec(&key).is_ok_and(|s| s.len() <= MAX_KEY_BYTES)
             {
+                plan.replay.entrants.get_or_init(Prepared::default);
                 LAST.with(|last| *last.borrow_mut() = Some((key, plan.clone())));
             }
             plan
@@ -48,7 +50,15 @@ pub(super) fn params(scoring: Arc<Replay>) -> Arc<wfsim_optimizer::ParamsFn> {
         let entrant = match held {
             Some(e) => e?,
             None => {
-                let e = crate::simulate::Entrant::new(&scoring.shape(c.variant, ai), false).ok().map(Arc::new);
+                let frozen = scoring.entrants.get();
+                let hit = frozen.and_then(|cache| cache.lock().ok()?.get(&key).cloned());
+                let e = hit.unwrap_or_else(|| {
+                    let e = crate::simulate::Entrant::new(&scoring.shape(c.variant, ai), false).ok().map(Arc::new);
+                    if let Some(mut cache) = frozen.and_then(|cache| cache.lock().ok()) {
+                        if cache.len() < MAX_FROZEN_ENTRANTS { cache.insert(key, e.clone()); }
+                    }
+                    e
+                });
                 prepared.lock().ok()?.insert(key, e.clone());
                 e?
             }
@@ -60,8 +70,8 @@ pub(super) fn params(scoring: Arc<Replay>) -> Arc<wfsim_optimizer::ParamsFn> {
     })
 }
 
-// A clone owns its build stream and entrant preparation. Only immutable tables
-// and the lazily resolved weapon bases can outlive one invocation.
+// The build stream and per-invocation cache are private. Only immutable inputs
+// (including the first few prepared entrants of a retained plan) cross calls.
 impl Clone for OptimizePlan {
     fn clone(&self) -> Self {
         let replay = Arc::new(Replay { builds: BuildStream::default(), ..(*self.replay).clone() });
