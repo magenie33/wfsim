@@ -4,7 +4,7 @@ Upstream `b4f94e0960`, incremental baseline `fa816d569d`. The earlier [Torid / S
 
 ## Scope
 
-The public `/api/popularity` `tested` snapshot covers 30 complete UTC days (2026-10-19 through 2026-11-17), not in-game usage. We froze the homepage's top 40: 21 primaries, 11 secondaries, five melee, two archguns and one sentinel, from Torid (396) to Tenet Cycron (25). For each weapon we admitted a published board build through `/api/board/order` and held its identity, seed and equipment fixed across aim and formation. Thirty-nine were non-Riven; Bo Prime retained its published Riven. See the [per-weapon results and hashes](popular-search-20261118.json).
+The public `/api/popularity` `tested` snapshot covers 30 complete UTC days, 2026-10-19 through 2026-11-17, not in-game usage. We froze the homepage's top 40: 21 primaries, 11 secondaries, five melee, two archguns and one sentinel, from Torid (396) to Tenet Cycron (25). For each weapon we admitted a published board build through `/api/board/order` and held its identity, seed and equipment fixed across aim and formation. Thirty-nine were non-Riven; Bo Prime retained its published Riven. See the [per-weapon results and hashes](popular-search-20261118.json).
 
 | Test | What is held constant | What it establishes |
 | --- | --- | --- |

@@ -25,16 +25,8 @@ from engine_compare import first_difference
 
 ROOT = Path(__file__).resolve().parents[1]
 FROZEN = ROOT / 'target/popular-perf'
-SIMFLEET = ROOT.parent / 'simfleet'
-PGO = SIMFLEET / '.bench-upstream-20261116/engine-downloads/8ce96e275dc2-sfe2-v3.dll.build.json'
-OFFICIAL = SIMFLEET / 'target/upstream-audit-20261116/desktop/payload/native/engine.json'
-OLD = ROOT / 'desktop/payload/native/engine.json'
 PGO_HASH = 'e151124790854be03e8c905b6f4486c26cab68ee181abed38cee8850033d3b2e'
 PACK_8CE = '95ae3fe8a95e2df003a70d4c48f5037bacb6939922fb70ed06c7c2cca95c963d'
-LOCAL = {
-    'before': ('before-native.dll', 'BC685D944E2CE2E4BD4C1196B450D0199FB4975EC3A30C8EB88A1D0CA1D99FC7'),
-    'v2': ('v2-native.dll', '0309AB43321B26C2B05BB3323F133A9A6EDFD5A86BFBE3C7D2D3BB925AB76F1A'),
-}
 RUNS = b'/api/board/runs'
 RULER = '__frozen_explicit_metric__'
 SIZE = c.POINTER(c.c_size_t)
@@ -85,10 +77,10 @@ def mapped(pool, fn, items):
 
 
 class Native:
-    def __init__(self, name, kind, path, expected=None):
+    def __init__(self, name, kind, path):
         self.name, self.group, self.board = name, None, None
         path = path.resolve(strict=True)
-        meta = {}
+        meta, expected = {}, None
         if kind != 'embedded':
             manifest = path.read_bytes()
             spec = json.loads(manifest)
@@ -107,9 +99,6 @@ class Native:
                 path = sibling(path, spec['file'])
                 meta.update(pack=str(pack), data_sha256=spec['data_sha256'])
                 self.group = (spec['engine'], spec['data_sha256'])
-        elif expected:
-            self.group = ('frozen-before-v2', 'same toolchain/data per operator; distinct builds')
-            meta.update(build='fa816d5' if name == 'before' else 'V2')
         meta.update(path=str(path), sha256=sha(verified(path, expected)), kind=kind)
         self.lib = c.CDLL(str(path))
         prefix = 'sfe' if kind == 'sfe' else 'wfsim'
@@ -257,7 +246,6 @@ def main():
     p.add_argument('--smoke', action='store_true', help='two default cases, no timed repeats')
     p.add_argument('--check-only', action='store_true', help='check all selected cases without timed repeats')
     p.add_argument('--case', action='append', help='select exact frozen case ID (repeatable)')
-    p.add_argument('--local', action='store_true', help='use pinned embedded before/V2 pair')
     for kind in ('official', 'sfe', 'embedded'):
         p.add_argument('--' + kind, action='append', default=[], metavar='NAME=PATH')
     p.add_argument('--require-equal', action='append', default=[], metavar='A=B',
@@ -296,17 +284,11 @@ def main():
     for kind in ('official', 'sfe', 'embedded'):
         for spec in getattr(args, kind):
             name, sep, path = spec.partition('=')
-            if not sep or not name or ':' in name or name in specs or (args.local and name in LOCAL):
+            if not sep or not name or ':' in name or name in specs:
                 p.error('use unique NAME=PATH labels without colons')
-            specs[name] = (kind, Path(path), None)
-    if args.local:
-        specs.update({name: ('embedded', FROZEN / file, expected) for name, (file, expected) in LOCAL.items()})
+            specs[name] = (kind, Path(path))
     if not specs:
-        if json.loads(PGO.read_bytes())['sha256'] != PGO_HASH:
-            raise ValueError('default Simfleet manifest does not name the accepted DLL')
-        specs = {'official-8ce': ('official', OFFICIAL, None), 'pgo-8ce': ('sfe', PGO, None)}
-        if args.mode == 'api':
-            specs['official-old'] = ('official', OLD, None)
+        p.error('supply --official NAME=manifest, --sfe NAME=manifest or --embedded NAME=DLL')
     libs = {name: Native(name, *spec) for name, spec in specs.items()}
     doors = ('api',) if args.mode == 'api' else ('generic-row', 'prepared')
     variants = [(f'{name}:{door}', lib, door) for name, lib in libs.items() for door in doors
@@ -405,7 +387,7 @@ def main():
     print(f'{len(cases)} cases, {len(variants)} variants: {out}')
     for row in comparisons:
         print(f"{row['A']} vs {row['B']}: {row['verdict']}; {len(row['first_difference_by_case'])} differing cases")
-    return int(mismatch)
+    return int(mismatch or bool(ref and any(ref['differences'].values())))
 
 
 if __name__ == '__main__':
