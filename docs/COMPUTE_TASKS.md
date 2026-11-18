@@ -190,6 +190,35 @@ Equal values, stale baselines and different environments create no correction.
 The public review endpoint durably captures an observation in the same inbox;
 it does not implement a second task expansion.
 
+### Raw submission retention
+
+Standalone player and equipment submissions expire at the first UTC day
+boundary after seven days in the inbox. Standalone system-derived weapon
+submissions expire after 24 hours. The database stamps the deadline at
+insertion, using day precision for player inputs. An accepted intake intent,
+requested review or registered workflow owns its input until its normal
+acknowledgement. Compute orders retain their own position and lease rules.
+
+The independent expiration turn takes a due index page of at most 128
+inputs and an 8 MiB body budget. It shares per-source locks with canonical
+intake. Ownership and the raw input are checked again under that lock.
+Deletion and the compact expiration receipt commit together. An earlier
+capture is filtered by its exact receipt before normalization, and an
+expiry racing that filter rejects the intake transaction before canonical
+writes. The next intake turn sees the committed receipt. An input beyond the
+byte budget requires a separately bounded disposition.
+
+The existing workflow schema installer creates the expiry index on a new
+table. Earlier arrivals retain their original path until an explicit,
+bounded legacy disposition qualifies them. After installing the schema, set
+`WFSIM_INBOX_RETENTION=1` on the live intake runner and for the hourly queue
+workflow's repository variable. Enable the same flag on factoryd once
+both intake paths read expiration receipts and use the fenced equipment
+writer. The independent expiration turn can still advance during intake
+pauses.
+
+### Inbox processing
+
 Hourly and live intake share `inbox_reader.mjs`. Existing waiting reviews and
 active higher-priority workflow continuations are read first, using their
 declared queue zones. Missing source rows are excluded before the priority

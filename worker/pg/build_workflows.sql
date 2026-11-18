@@ -461,6 +461,60 @@ CREATE OR REPLACE FUNCTION build_intake_key(jsonb) RETURNS text LANGUAGE sql IMM
       'intake:'||($1->>'id')||':'||md5(jsonb_build_array($1->'from',$1#>'{flow,scope}')::text)) END
 $$;
 
+CREATE TABLE IF NOT EXISTS state_build_inbox_expiry (
+  kind TEXT COLLATE "C" NOT NULL CHECK(kind IN('weapon','equipment')),
+  id TEXT COLLATE "C" NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  body_bytes BIGINT NOT NULL CHECK(body_bytes>=0),
+  PRIMARY KEY(kind,id)
+);
+CREATE INDEX IF NOT EXISTS build_inbox_expiry_due ON state_build_inbox_expiry(expires_at,kind,id) WHERE body_bytes<=8388608;
+CREATE TABLE IF NOT EXISTS record_build_inbox_expirations (
+  kind TEXT COLLATE "C" NOT NULL,
+  id TEXT COLLATE "C" NOT NULL,
+  expired_at TIMESTAMPTZ NOT NULL,
+  PRIMARY KEY(kind,id)
+);
+
+CREATE OR REPLACE FUNCTION build_inbox_input_locks(text, jsonb) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE source text;
+BEGIN
+  FOR source IN SELECT DISTINCT x.id FROM jsonb_array_elements_text($2) x(id)
+    WHERE EXISTS(SELECT 1 FROM state_build_inbox_expiry e WHERE e.kind=$1 AND e.id=x.id)
+       OR EXISTS(SELECT 1 FROM record_build_inbox_expirations e WHERE e.kind=$1 AND e.id=x.id)
+    ORDER BY x.id LOOP
+    PERFORM pg_advisory_xact_lock(hashtextextended('build-inbox:'||$1||':'||source,0));
+    IF EXISTS(SELECT 1 FROM record_build_inbox_expirations WHERE kind=$1 AND id=source) THEN
+      RAISE EXCEPTION 'raw inbox submission expired during intake' USING ERRCODE='40001';
+    END IF;
+  END LOOP;
+END $$;
+
+CREATE OR REPLACE FUNCTION build_inbox_expired_ids(text) RETURNS TABLE(id text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT r.id FROM jsonb_array_elements_text($1::jsonb) x(id)
+    JOIN record_build_inbox_expirations r ON r.id=x.id
+      AND r.kind=CASE WHEN left(x.id,10)='equipment:' THEN 'equipment' ELSE 'weapon' END
+$$;
+
+CREATE OR REPLACE FUNCTION build_equipment_intake_batch(text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE inputs jsonb:=$1::jsonb; sources jsonb;
+BEGIN
+  IF jsonb_typeof(inputs) IS DISTINCT FROM 'array' OR jsonb_array_length(inputs)>1000 THEN
+    RAISE EXCEPTION 'invalid equipment intake batch';END IF;
+  SELECT coalesce(jsonb_agg(f.id),'[]') INTO sources FROM jsonb_array_elements(inputs)i
+    CROSS JOIN LATERAL jsonb_array_elements_text(coalesce(i->'from','[]')) f(id);
+  PERFORM build_inbox_input_locks('equipment',sources);
+  INSERT INTO entity_equipment_builds(id,at,record)
+    SELECT DISTINCT ON (id) id, at, record FROM jsonb_to_recordset(inputs)
+      AS rows(id text,at text,record text,position bigint) ORDER BY id,position DESC
+    ON CONFLICT(id) DO UPDATE SET at=excluded.at,record=excluded.record;
+  DELETE FROM state_build_inbox_expiry
+    WHERE kind='equipment' AND id IN(SELECT jsonb_array_elements_text(sources));
+END $$;
+
 CREATE OR REPLACE FUNCTION build_intake_batch(text) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE input jsonb; identity text; held text; intent text; positions jsonb; priority bigint; lane text;parent_scope jsonb;plan_key text;captured_plan jsonb;inserted text;
@@ -469,6 +523,9 @@ BEGIN
   PERFORM compute_order_cut_lock();
   IF jsonb_typeof($1::jsonb) IS DISTINCT FROM 'array' OR jsonb_array_length($1::jsonb)>1000 THEN
     RAISE EXCEPTION 'invalid intake batch'; END IF;
+  PERFORM build_inbox_input_locks('weapon',coalesce((
+    SELECT jsonb_agg(f.id) FROM jsonb_array_elements($1::jsonb)i
+    CROSS JOIN LATERAL jsonb_array_elements_text(coalesce(i->'from','[]')) f(id)),'[]'));
   FOR input IN SELECT value FROM jsonb_array_elements($1::jsonb) ORDER BY value->>'id' LOOP
     identity:=input->>'id';
     IF coalesce(length(identity),0)=0 OR jsonb_typeof(input->'record') IS DISTINCT FROM 'object' THEN
@@ -664,15 +721,86 @@ CREATE TABLE IF NOT EXISTS state_build_inbox_positions (
 );
 CREATE INDEX IF NOT EXISTS build_inbox_fifo ON state_build_inbox_positions(position,id);
 CREATE OR REPLACE FUNCTION build_inbox_position() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE inbox_kind text:=CASE WHEN TG_TABLE_NAME='record_equipment_submissions' THEN 'equipment' ELSE 'weapon' END;
+  deadline timestamptz:=date_trunc('day',clock_timestamp(),'UTC')+interval '192 hours';
 BEGIN
-  IF TG_OP='INSERT' THEN INSERT INTO state_build_inbox_positions(id) VALUES(NEW.id) ON CONFLICT DO NOTHING;RETURN NEW;
-  ELSE DELETE FROM state_build_inbox_positions WHERE id=OLD.id;RETURN OLD;END IF;
+  IF TG_OP='DELETE' THEN
+    DELETE FROM state_build_inbox_positions WHERE id=OLD.id;
+    DELETE FROM state_build_inbox_expiry WHERE kind=inbox_kind AND id=OLD.id;
+    RETURN OLD;
+  END IF;
+  INSERT INTO state_build_inbox_positions(id) VALUES(NEW.id) ON CONFLICT DO NOTHING;
+  IF inbox_kind='weapon' THEN
+    IF NEW.observation IS NOT NULL OR NEW.family_source LIKE 'workflow|%' THEN RETURN NEW;END IF;
+    IF NEW.initiator='system' OR NEW.initiator LIKE 'system:%' THEN deadline:=clock_timestamp()+interval '24 hours';END IF;
+  END IF;
+  INSERT INTO state_build_inbox_expiry VALUES(inbox_kind,NEW.id,deadline,octet_length(NEW.record))
+    ON CONFLICT DO NOTHING;
+  RETURN NEW;
 END $$;
 DROP TRIGGER IF EXISTS build_inbox_positioned ON record_build_submissions;
 CREATE TRIGGER build_inbox_positioned AFTER INSERT OR DELETE ON record_build_submissions FOR EACH ROW EXECUTE FUNCTION build_inbox_position();
 DROP TRIGGER IF EXISTS equipment_inbox_positioned ON record_equipment_submissions;
 CREATE TRIGGER equipment_inbox_positioned AFTER INSERT OR DELETE ON record_equipment_submissions FOR EACH ROW EXECUTE FUNCTION build_inbox_position();
 
+CREATE OR REPLACE FUNCTION build_expire_inbox(integer) RETURNS integer
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE candidate record;as_of timestamptz:=clock_timestamp();removed text;total integer:=0;bytes bigint:=0;
+BEGIN
+  IF $1 IS NULL OR $1<1 OR $1>128 THEN RAISE EXCEPTION 'inbox expiration limit must be 1..128';END IF;
+  FOR candidate IN SELECT * FROM state_build_inbox_expiry WHERE expires_at<=as_of AND body_bytes<=8388608
+    ORDER BY expires_at,kind,id LIMIT $1 LOOP
+    EXIT WHEN bytes+candidate.body_bytes>8388608;
+    IF NOT pg_try_advisory_xact_lock(hashtextextended('build-inbox:'||candidate.kind||':'||candidate.id,0))
+       OR NOT EXISTS(SELECT 1 FROM state_build_inbox_expiry WHERE kind=candidate.kind AND id=candidate.id
+         AND expires_at=candidate.expires_at) THEN CONTINUE;END IF;
+    IF candidate.kind='weapon' THEN
+      IF EXISTS(SELECT 1 FROM relation_build_intake_sources WHERE source_id=candidate.id) THEN
+        DELETE FROM state_build_inbox_expiry WHERE kind=candidate.kind AND id=candidate.id;
+        CONTINUE;
+      END IF;
+      IF to_regclass('entity_board_requests') IS NOT NULL THEN
+        IF EXISTS(SELECT 1 FROM entity_board_requests WHERE id=candidate.id) THEN
+          DELETE FROM state_build_inbox_expiry WHERE kind=candidate.kind AND id=candidate.id;
+          CONTINUE;
+        END IF;
+      END IF;
+      DELETE FROM record_build_submissions WHERE id=candidate.id AND octet_length(record)=candidate.body_bytes AND observation IS NULL
+        AND coalesce(family_source,'') NOT LIKE 'workflow|%' RETURNING id INTO removed;
+    ELSE
+      DELETE FROM record_equipment_submissions WHERE id=candidate.id AND octet_length(record)=candidate.body_bytes RETURNING id INTO removed;
+    END IF;
+    IF removed IS NOT NULL THEN
+      INSERT INTO record_build_inbox_expirations VALUES(candidate.kind,removed,as_of) ON CONFLICT DO NOTHING;
+      bytes:=bytes+candidate.body_bytes;
+      total:=total+1;
+    ELSE
+      DELETE FROM state_build_inbox_expiry WHERE kind=candidate.kind AND id=candidate.id;
+    END IF;
+  END LOOP;
+  RETURN total;
+END $$;
+
+CREATE OR REPLACE FUNCTION build_reject_expired_replay() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE inbox_kind text:=CASE WHEN TG_TABLE_NAME='record_equipment_submissions' THEN 'equipment' ELSE 'weapon' END;
+BEGIN
+  IF EXISTS(SELECT 1 FROM state_build_inbox_expiry WHERE kind=inbox_kind AND id=NEW.id) THEN
+    PERFORM pg_advisory_xact_lock(hashtextextended('build-inbox:'||inbox_kind||':'||NEW.id,0));
+  END IF;
+  IF EXISTS(SELECT 1 FROM record_build_inbox_expirations WHERE kind=inbox_kind AND id=NEW.id) THEN RETURN NULL;END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS build_inbox_reject_expired ON record_build_submissions;
+CREATE TRIGGER build_inbox_reject_expired BEFORE INSERT ON record_build_submissions
+  FOR EACH ROW EXECUTE FUNCTION build_reject_expired_replay();
+DROP TRIGGER IF EXISTS equipment_inbox_reject_expired ON record_equipment_submissions;
+CREATE TRIGGER equipment_inbox_reject_expired BEFORE INSERT ON record_equipment_submissions
+  FOR EACH ROW EXECUTE FUNCTION build_reject_expired_replay();
+
+REVOKE ALL ON TABLE state_build_inbox_expiry,record_build_inbox_expirations FROM PUBLIC;
+REVOKE ALL ON FUNCTION build_inbox_input_locks(text,jsonb),build_inbox_expired_ids(text),
+  build_equipment_intake_batch(text),build_expire_inbox(integer),build_reject_expired_replay() FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION build_workflow_capture_review(text,text,text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$

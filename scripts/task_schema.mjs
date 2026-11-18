@@ -84,7 +84,7 @@ export function taskSchemaSql() {
       GRANT SELECT ON state_task_pipeline_controls TO wfsim_factoryd;
       GRANT SELECT ON state_build_admission_work,state_build_effective_admission_work,state_compute_effective_open,state_compute_effective_work,state_board_effective_pending_work TO wfsim_factoryd;
       GRANT EXECUTE ON FUNCTION build_admission_claim(text,text),build_admission_run(text,text,text,bigint,text),
-        build_admission_retry(text,text,text,text,text) TO wfsim_factoryd;
+        build_admission_retry(text,text,text,text,text),build_expire_inbox(integer) TO wfsim_factoryd;
       GRANT SELECT,INSERT,UPDATE ON state_task_pipeline_progress TO wfsim_factoryd;
       GRANT SELECT,INSERT ON relation_compute_task_sources TO wfsim_factoryd;
       GRANT SELECT,INSERT ON state_producer_compute_usage TO wfsim_factoryd;
@@ -100,7 +100,8 @@ export function taskSchemaSql() {
       REVOKE ALL ON state_compute_inventory_invalidations,state_compute_inventory_generation,record_inventory_captures FROM wfsim_pipeline;
       REVOKE ALL ON SEQUENCE inventory_revision,inventory_generation,inventory_epoch_token FROM wfsim_pipeline;
       GRANT SELECT ON state_build_inbox_inputs,state_build_inbox_priorities,state_build_inbox_positions TO wfsim_pipeline;
-      GRANT EXECUTE ON FUNCTION build_intake_batch(text),build_spend_submissions(text) TO wfsim_pipeline;
+      GRANT EXECUTE ON FUNCTION build_intake_batch(text),build_spend_submissions(text),build_inbox_expired_ids(text),
+        build_equipment_intake_batch(text) TO wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION factory_inventory_rows(text,text[]) TO wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION inventory_status(),inventory_begin(text,text,text),inventory_changes(bigint),
         inventory_inputs(text,text,text),inventory_cohort_rows(text,text,text),inventory_ack(text,text),inventory_publish(text),

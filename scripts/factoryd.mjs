@@ -344,6 +344,10 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       await put(target, { key: TALLY_KEY, body: JSON.stringify(await tallyOf(backgroundEnv, tallyKept, now, await pace(now))), contentType: "application/json", cacheControl: TALLY_CACHE });
       tallyAt = now;
     },
+    inboxRetention: async () => {
+      if(process.env.WFSIM_INBOX_RETENTION!=="1")return false;
+      await backgroundEnv.LIBRARY.prepare("SELECT build_expire_inbox(128) AS n").first();
+    },
     // AN ASK THAT IS OVER KEEPS NO CODE (worker/pg/sync.sql `factory_forget_codes`), every `initiator_forget_ms`.
     forget: async () => {
       const now = Date.now();
@@ -372,7 +376,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     },
   };
   if (once) {
-    for (const name of ["signal","statistics", "snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "queueMaintenance", "queueCosts", "queueFleet", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
+    for (const name of ["signal","statistics", "snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "queueMaintenance", "queueCosts", "queueFleet", "demand", "tally", "forget", "past", "moot", "inboxRetention"]) await tick(name, jobs[name]);
     statistics.stop();
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
@@ -385,7 +389,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   const every = (ms, name) => {
     clock.add(name,ms,async()=>{
       if (stopping) return;
-      await (["statistics","admission", "queueMaintenance", "queueCosts", "queueFleet", "tally", "forget", "past", "moot", "shadow"].includes(name)
+      await (["statistics","admission", "queueMaintenance", "queueCosts", "queueFleet", "tally", "forget", "past", "moot", "shadow", "inboxRetention"].includes(name)
         ? background(() => stopping ? undefined : tick(name, jobs[name])) : tick(name, jobs[name])
       );
     });
@@ -394,6 +398,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   every(STATISTICS_PUMP_MS,'statistics');
   every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "signal"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(FAIR_MS,"queueMaintenance"); every(DEMAND_MS,"queueCosts"); every(DEMAND_MS,"queueFleet"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
   every(SETTLE_MS, "admission");
+  if(process.env.WFSIM_INBOX_RETENTION==="1")every(STATS_TICK_MS,"inboxRetention");
   every(SETTLE_MS,"workflowAdmission");
   every(SETTLE_MS,"delivery");every(SETTLE_MS,"contribution");every(FAIR_MS,"shadow");
   every(WAVE_MS, "wave"); every(SIGNAL_CHECK_MS, "signalCheck");
