@@ -21,6 +21,9 @@ export function maintenanceIdentity(path,directory=false) {
  return [String(s.dev),String(s.ino),String(s.uid)];
 }
 export function maintenanceSchema(db) {
+ const bound=db.prepare(`SELECT count(*) n,coalesce(sum(octet_length(type)+octet_length(name)+octet_length(tbl_name)+octet_length(sql)),0) bytes
+  FROM (SELECT type,name,tbl_name,sql FROM held.sqlite_schema WHERE sql IS NOT NULL LIMIT 257)`).get();
+ if(bound.n>256||bound.bytes>256*1024)fail('maintenance schema exceeds metadata bound');
  const rows=db.prepare("SELECT type,name,tbl_name,sql FROM held.sqlite_schema WHERE sql IS NOT NULL ORDER BY type,name LIMIT 257").all();
  if(rows.length>256||Buffer.byteLength(canon(rows))>256*1024)fail('maintenance schema exceeds metadata bound');
  return sha(canon(rows));
@@ -51,7 +54,8 @@ function sourceAdapter(db,contract) {
  const value={db,contract};
  for(const name of methods)value[name]=PreparedBoardInputs.prototype[name].bind(value);
  const cut=value.cut;value.cut=id=>{
-  const size=db.prepare('SELECT length(CAST(receipt AS BLOB)) bytes FROM record_prepared_board_cuts WHERE id=?').get(id)?.bytes;
+  const size=db.prepare(`SELECT coalesce(octet_length(receipt),0)+coalesce(octet_length(epoch),0)+coalesce(octet_length(state),0)
+   +coalesce(octet_length(checkpoint),0)+coalesce(octet_length(sealed_digest),0) bytes FROM record_prepared_board_cuts WHERE id=?`).get(id)?.bytes;
   if(size>64*1024)fail('prepared cut exceeds maintenance metadata bound');return cut(id);
  };
  const consumer=value.consumer;value.consumer=name=>{
@@ -112,12 +116,13 @@ export async function runBoardInputMaintenance({work,owner,bindingFile=process.e
  };
  try {
   guard();control=InventoryControl.openExisting(root,path=>open(path));
-  const selected=control.current();if(selected?.id!==binding.task||selected.generation!==binding.generation||!['active','complete'].includes(selected.phase))fail('selected maintenance task changed');
-  source=open(state.catalog);const held=source.prepare('SELECT body FROM state_prepared_board_generation WHERE id=1').get();
+  const selected=control.current({maxBytes:65536});if(selected?.id!==binding.task||selected.generation!==binding.generation||!['active','complete'].includes(selected.phase))fail('selected maintenance task changed');
+  source=open(state.catalog);const held=source.prepare('SELECT CASE WHEN octet_length(body)<=65536 THEN body END body FROM state_prepared_board_generation WHERE id=1').get();
   if(held?.body!==canon(state.contract))fail('prepared source contract differs');
   const rows=source.prepare('SELECT name FROM state_prepared_board_consumers ORDER BY name LIMIT 3').all();
   if(canon(rows.map(row=>row.name))!==canon(['inventory','projection']))fail('registered maintenance consumers differ');
   const inputs=sourceAdapter(source,state.contract),result={acknowledged:[],retention:null,retiredFileBytes:0,filesystemBytesReclaimed:null};
+  for(const row of rows)inputs.consumer(row.name);
   const gc=SourceCaptureGC.openExisting(control.db,root,state,{guard});
   const meta=source.prepare('SELECT CASE WHEN length(CAST(body AS BLOB))<=65536 THEN body END body FROM state_inventory_generation WHERE id=1').get();
   if(!meta?.body)fail('normalized source metadata is missing or oversized');

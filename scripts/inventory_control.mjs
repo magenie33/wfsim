@@ -17,7 +17,17 @@ const hash = async path => {
 const stamp = path => { const s = statSync(path, { bigint: true }); return [s.dev, s.ino, s.size, s.mtimeNs, s.ctimeNs].map(String); };
 const selected = `SELECT t.id,t.body,s.phase,s.generation,s.error FROM state_inventory_rebuild_selection p
   JOIN entity_inventory_rebuild_tasks t ON t.id=p.task JOIN state_inventory_rebuild_tasks s ON s.task=t.id WHERE p.id=1`;
-const current = db => { const row = db.prepare(selected).get(); return row ? { ...JSON.parse(row.body), id: row.id, phase: row.phase, generation: row.generation, error: row.error } : null; };
+const current = (db, maxBytes) => {
+  if (maxBytes != null && (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > 65536))
+    throw Error('invalid inventory metadata bound');
+  const size = ['t.id', 't.body', 's.phase', 's.generation', 's.error'].map(name => 'coalesce(octet_length(' + name + '),0)').join('+');
+  const columns = ['id', 'body', 'phase', 'generation', 'error'].map(name => 'CASE WHEN metadata_bytes<=?1 THEN ' + name + ' END ' + name).join(',');
+  const query = maxBytes == null ? selected : 'SELECT metadata_bytes,' + columns + ' FROM (' + selected.replace(' FROM ', ',' + size + ' metadata_bytes FROM ') + ')';
+  const row = db.prepare(query).get(...(maxBytes == null ? [] : [maxBytes]));
+  if (maxBytes != null && row?.metadata_bytes > maxBytes)
+    needsAction('maintenance_metadata_bound', 'inventory controller metadata exceeds maintenance bound');
+  return row ? { ...JSON.parse(row.body), id: row.id, phase: row.phase, generation: row.generation, error: row.error } : null;
+};
 export function inspectInventoryTask(root) {
   const path = join(root, 'controller.sqlite'); if (!existsSync(path)) return null;
   const db = new DatabaseSync(path, { readOnly: true }); try { return current(db); } finally { db.close(); }
@@ -32,7 +42,7 @@ export class InventoryControl {
       value.db = open(join(value.root, 'controller.sqlite'));
       if (value.db.prepare('PRAGMA held.user_version').get().user_version !== 1)
         throw Error('unsupported existing inventory controller version');
-      value.current(); return value;
+      value.current({maxBytes: 65536}); return value;
     } catch (error) {
       try { value.db?.close(); } catch {}
       try { value.lock?.exec('ROLLBACK'); } catch {}
@@ -61,8 +71,8 @@ export class InventoryControl {
     } catch (error) { this.close(); throw error; }
   }
   transaction(fn) { this.db.exec('BEGIN IMMEDIATE'); try { const result = fn(); this.db.exec('COMMIT'); return result; } catch (error) { this.db.exec('ROLLBACK'); throw error; } }
-  current() {
-    return current(this.db);
+  current({maxBytes} = {}) {
+    return current(this.db, maxBytes);
   }
   event(id, event, body = {}) { this.db.prepare('INSERT INTO record_inventory_rebuild_events(task,event,at,body) VALUES(?,?,?,?)').run(id, event, new Date().toISOString(), canon(body)); }
   phase(id, phase, generation = null, error = null) {
