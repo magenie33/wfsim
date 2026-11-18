@@ -114,9 +114,10 @@ $$;
 
 -- Executable work is selected by zone, then its position within that zone.
 -- Each disjoint range applies eligibility, FIFO and its bound before the final merge.
+-- The post-cut task index drives point lookups on the scheduling primary key.
 CREATE OR REPLACE FUNCTION factory_candidates(text,bigint,bigint,text,text,text,text,text,bigint,bigint,text,text,bigint,text,text,text,boolean)
 RETURNS SETOF state_compute_work LANGUAGE plpgsql SET jit=off AS $function$
-DECLARE prefix_pick text;found_count bigint;remaining bigint:=$13;active_cut text;pick text:=$pick$
+DECLARE prefix_pick text;found_count bigint;remaining bigint:=$13;cutoff bigint;pick text:=$pick$
   WITH cut AS MATERIALIZED(SELECT * FROM compute_order_cut()),
     eligible AS NOT MATERIALIZED(SELECT q.* FROM /* source */ q
       WHERE q.state IN(SELECT jsonb_array_elements_text($11::jsonb))
@@ -138,8 +139,9 @@ DECLARE prefix_pick text;found_count bigint;remaining bigint:=$13;active_cut tex
     (SELECT candidate.* FROM LATERAL(SELECT q.* FROM (
         SELECT guard.id,guard.task_id,coalesce(guard.zone,factory_default_zone(guard.producer)) AS zone,
           coalesce(guard.zone_position,guard.task_id) AS position FROM entity_compute_tasks t
-          JOIN state_compute_scheduling guard ON guard.id=t.computation AND guard.task_id=t.id
-        WHERE t.id>(SELECT task_cutoff FROM cut) AND guard.state='open'
+          CROSS JOIN LATERAL (SELECT g.* FROM state_compute_scheduling g
+            WHERE g.id=t.computation AND g.task_id=t.id AND g.state='open' OFFSET 0) guard
+        WHERE t.id>$17::bigint
           AND (coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id)
             >(SELECT keep_zone,keep_position,keep_id FROM cut)
         ORDER BY zone,position,guard.id OFFSET 0) ordered
@@ -170,8 +172,8 @@ DECLARE prefix_pick text;found_count bigint;remaining bigint:=$13;active_cut tex
 $pick$;
 BEGIN
   IF $13 IS NULL OR $13<1 OR $13>100000 THEN RAISE EXCEPTION 'invalid candidate bound';END IF;
-  active_cut:=compute_order_cut_epoch();
-  IF active_cut IS NULL THEN
+  SELECT c.task_cutoff INTO cutoff FROM compute_order_cut() c;
+  IF cutoff IS NULL THEN
     pick:=split_part(pick,'  SELECT chosen.* FROM (',1)||
       'SELECT q.* FROM state_compute_scheduling guard CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q WHERE /* state */ AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9) AND ($12 IS NULL OR guard.waits=0) ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */';
   END IF;
@@ -184,7 +186,7 @@ BEGIN
   END IF;
   pick:=replace(pick,'/* state */',CASE WHEN $2=0 THEN 'guard.state=''open''' ELSE 'guard.state IN(SELECT jsonb_array_elements_text($11::jsonb))' END);
   pick:=replace(pick,'/* lock */',CASE WHEN $17 THEN 'FOR UPDATE OF guard SKIP LOCKED' ELSE '' END);
-  IF $2=0 AND active_cut IS NOT NULL THEN
+  IF $2=0 AND cutoff IS NOT NULL THEN
     prefix_pick:=split_part(pick,'  SELECT chosen.* FROM (',1)||$prefix$
       SELECT q.* FROM state_compute_scheduling guard
         CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q
@@ -207,7 +209,7 @@ $prefix$;
     remaining:=$13-found_count;
     pick:=replace(pick,'/* prefix enabled */ true','false');
   END IF;
-  RETURN QUERY EXECUTE pick USING $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,remaining,$14,$15,$16;
+  RETURN QUERY EXECUTE pick USING $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,remaining,$14,$15,$16,cutoff;
 END $function$;
 
 CREATE OR REPLACE FUNCTION factory_head(text, bigint, bigint, text, text, text, text, text, bigint, bigint, text, text)

@@ -37,6 +37,7 @@
 // three, for the showcase a share card draws (`31-share-card.js`).
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import {statisticsSourceSql} from './statistics_source.js';
+import {queueOrders,queueZonesSql} from './queue_counts.js';
 import { iso, PACE_HOURS } from "./instant.js";
 import { clearanceOf } from "./clearance.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
@@ -697,11 +698,14 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   if(!supplied?.key||!supplied.by||!supplied.sources||!supplied.takenBy||!Array.isArray(supplied.openOf)||!Number.isFinite(countsAt)||countsAt>now)
     throw Error('complete statistics counts required');
   const { fresh: inventory, lastComplete } = await readInventoryState(db, now);
-  const engine = (inventory || lastComplete)?.engine || null;
+  const inventorySample = inventory || lastComplete;
+  const engine = inventorySample?.engine || null;
   const cut=await db.prepare('SELECT compute_order_cut_epoch() AS at').first();
   const epoch=cut?.at || null;
   const cached = demandCosts.get(env), kept = cached?.engine === engine && cached?.epoch === epoch ? cached : null;
-  if(supplied.key.epoch!==epoch||(engine&&supplied.key.engine!==engine))throw Error('statistics source changed');
+  if(supplied.key.epoch!==epoch || (inventorySample &&
+    JSON.stringify(supplied.key.inventory)!==JSON.stringify([engine,inventorySample.source??null,inventorySample.snapshot])))
+    throw Error('statistics source changed');
   const counts={...supplied,countsAt};
   const costs = kept && now >= kept.costsAt && now - kept.costsAt < (options.costEveryMs || DEMAND_COST_EVERY_MS) ? kept : null;
   const began = performance.now();
@@ -803,6 +807,39 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
     }),
     per_hour: { volunteers: perHour(h.volunteers), official: perHour(h.official) }, clear_hours: clearHours,
     now: { ...reading, starved: starvedOf(reading, orders) } };
+}
+
+// One queue entry contributes to one zone, including while leased. Independent
+// fleet and throughput readings can be missing without hiding the zone counts.
+export async function queueFleetOf(env,pace,now=Date.now()) {
+  const db=env.LIBRARY,at=iso(now);
+  const cut=await db.prepare('SELECT compute_order_cut_epoch() AS epoch').first();
+  const [flow,devices,held,reading]=await Promise.all([
+    pace(now).catch(()=>null),computingNow(env).catch(()=>null),
+    db.prepare(`WITH held AS MATERIALIZED (SELECT s.id FROM state_compute_scheduling s
+       WHERE s.leased_to IS NOT NULL AND s.lease_until>? AND s.state='open')
+      SELECT q.zone,count(*) n FROM held h CROSS JOIN LATERAL
+       (SELECT w.zone FROM state_compute_effective_work w WHERE w.id=h.id OFFSET 0) q GROUP BY q.zone`).bind(at).all().then(r=>r.results).catch(()=>null),
+    nowOf(db,now).catch(()=>null),
+  ]);
+  const per_hour=flow ? {volunteers:Math.round(Number(flow.volunteers)/PACE_HOURS),official:Math.round(Number(flow.official)/PACE_HOURS)} : null;
+  return {at,expires_at:statisticsExpiresAt(at),order_epoch:cut.epoch,per_hour,devices:devices===null?null:Number(devices),held,reading};
+}
+
+export async function queueDemandOf(env,{fleet=null,detail=null,now=Date.now}={}) {
+  const db=env.LIBRARY;
+  const installed=await db.prepare("SELECT to_regclass('state_queue_zone_seed') IS NOT NULL installed").first();
+  if(!installed?.installed)return undefined;
+  const row=await db.prepare(queueZonesSql).first();
+  if(!row)return null;
+  const active=fleet && Date.parse(fleet.expires_at)>now() && fleet.order_epoch===row.order_epoch ? fleet : null;
+  const {orders,total}=queueOrders(row.zones,active?.held??[]);
+  if(!active?.held)for(const order of orders)delete order.dispatched;
+  const current=detail && currentStatistics(detail,now()) && detail.order_epoch===row.order_epoch ? detail : null;
+  return {...(current??{}),ok:true,v:1,at:row.counts_at,counts_at:row.counts_at,expires_at:statisticsExpiresAt(row.counts_at),
+    order_epoch:row.order_epoch,queue:{total,zones:row.zones},orders,per_hour:active?.per_hour??null,computing:active?.devices??null,
+    clear_hours:null,now:active?.reading ? {...active.reading,starved:active.held?starvedOf(active.reading,orders):null} : null,
+    fleet_at:active?.at??null,...(current?{details_at:current.counts_at}:{})};
 }
 
 /// THE PAGE'S FALLBACK, where the bucket's own address is not reached: the

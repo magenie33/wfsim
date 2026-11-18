@@ -6,5 +6,6 @@ GRANT INSERT,UPDATE ON state_statistics_namespaces,state_statistics_head TO wfsi
 GRANT INSERT,UPDATE,DELETE ON state_statistics_obligations,state_statistics_checkpoints,
  state_statistics_contributions,state_statistics_rollup,state_statistics_expiry TO wfsim_factoryd;
 GRANT DELETE ON state_statistics_journal TO wfsim_factoryd;
+GRANT SELECT(cut_id,question) ON relation_compute_order_cut_protection TO wfsim_factoryd;
 GRANT USAGE ON SEQUENCE statistics_revision TO wfsim_factoryd;
 GRANT EXECUTE ON FUNCTION statistics_replace(text,text,text,jsonb),statistics_capture_relations(),statistics_preflight(text) TO wfsim_factoryd;

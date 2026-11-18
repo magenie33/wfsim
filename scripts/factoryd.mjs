@@ -13,12 +13,14 @@ import { pgDb, postgresClient, POSTGRES_OPTIONS, placeholders } from "../worker/
 import { signalTick, snapshotTick, fairTick, readFair, compareFair, settleShadow, settleBatch, findingsTick, signalBody, workWaiting } from "../worker/settler.js";
 import { servedRelease, CLIENTS_PER_FACT, PROTOCOL, PROTOCOLS_SERVED } from "../worker/verify.js";
 import { dialsOf, forgetDials } from "../worker/dials.js";
+import {seedQueueZones} from '../worker/queue_counts.js';
+import {currentStatistics} from '../worker/statistics_clock.js';
 import { putObject } from "./sigv4.mjs";
 import { iso } from "../worker/instant.js";
 import { KEPT_MS } from "../worker/tasks.js";
 import { BOARD_KINDS } from "../worker/board_kinds.js";
 import { recoverBoardTasks } from "../worker/board_tasks.js";
-import { DEMAND_KEY, DEMAND_CACHE, tallyOf, tallyBase, scorePace, TALLY_KEY, TALLY_CACHE, TALLY_BASE_MS } from "../worker/contribution.js";
+import { DEMAND_KEY, DEMAND_CACHE, queueDemandOf, queueFleetOf, tallyOf, tallyBase, scorePace, TALLY_KEY, TALLY_CACHE, TALLY_BASE_MS } from "../worker/contribution.js";
 import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capacity.mjs";
 import { facts } from "../worker/factory.js";
 import { pipelineClock } from "./pipeline_clock.mjs";
@@ -28,6 +30,19 @@ import {createStatisticsProvider,STATISTICS_PUMP_MS} from '../worker/statistics_
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
 export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, STATS_TICK_MS = 10_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
+
+export function statisticsLimitsFromEnv(env) {
+  const maximum = env.FACTORY_STATISTICS_MAX_BYTES;
+  const reserve = env.FACTORY_STATISTICS_RESERVE_BYTES;
+  if (maximum === undefined && reserve === undefined) return {};
+  const maxStorageBytes = Number(maximum), storageReserveBytes = Number(reserve);
+  if (![maximum, reserve].every(value => /^[1-9][0-9]*$/.test(value))
+      || ![maxStorageBytes, storageReserveBytes].every(Number.isSafeInteger)
+      || storageReserveBytes >= maxStorageBytes) {
+    throw Error("set valid FACTORY_STATISTICS_MAX_BYTES and FACTORY_STATISTICS_RESERVE_BYTES");
+  }
+  return { maxStorageBytes, storageReserveBytes };
+}
 /// Bounded maintenance passes; archived task pruning runs separately through
 /// scripts/pg_task_archive.py and the unarchived retention call returns zero.
 export const PAST_MS = 60_000, PAST_BATCH = 100, PAST_CALLS = 5;
@@ -84,7 +99,7 @@ export async function openEnv(env = process.env, connect = postgres) {
     clients.push(c);
     if(signal)writeAvailability=availabilityWriter(c);
     if(background&&!statisticsTransaction)statisticsTransaction=fn=>c.transaction(fn);
-    if(signal&&!statisticsControlQuery)statisticsControlQuery=boundedQuery(c);
+    if(stage==='statistics-control')statisticsQuery=statisticsControlQuery=boundedQuery(c);
     if(!background&&!stage&&!signal&&!writeSnapshot&&url===env.PG_URL)writeSnapshot=async(statement,allowed)=>{
       const stopped=new Error('statistics stopped or paused');
       const began=performance.now();let expired=false,timer;
@@ -103,11 +118,11 @@ export async function openEnv(env = process.env, connect = postgres) {
         return true;
       }),timeout]);}catch(error){if(error===stopped)return false;throw error;}finally{clearTimeout(timer);}
     };
-    if(!background&&!stage&&!signal&&!statisticsQuery&&url===env.PG_URL)statisticsQuery=boundedQuery(c);
     return pgDb(c);
   };
   const out = { LIBRARY: db(env.PG_URL), ...(env.PG_ACCOUNTS_URL ? { ACCOUNTS: db(env.PG_ACCOUNTS_URL,false,null,2) } : {}) };
   const signalEnv={LIBRARY:db(env.PG_URL,false,null,1,true)};
+  const statisticsEnv={LIBRARY:db(env.PG_URL,false,'statistics-control')};
   const claim = async (onLost) => {
     let owner;
     const sql = connect(env.PG_URL, { ...POSTGRES_OPTIONS, max: 1, idle_timeout: 0,
@@ -126,7 +141,7 @@ export async function openEnv(env = process.env, connect = postgres) {
     clients.push({end:async()=>{await handle?.unlisten();await sql.end({timeout:5});}});
     handle=await sql.listen("wfsim_task_pipeline",wake);
   };
-  return {env:out,signalEnv,backgroundEnv,stageEnvs,writeSnapshot,writeAvailability,statisticsTransaction,statisticsQuery,statisticsControlQuery,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
+  return {env:out,signalEnv,statisticsEnv,backgroundEnv,stageEnvs,writeSnapshot,writeAvailability,statisticsTransaction,statisticsQuery,statisticsControlQuery,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
 }
 
 /// THE RELEASE SERVED NOW, read through the worker's own `servedRelease` (a
@@ -138,8 +153,9 @@ async function served() {
 /// `opened` and `servedNow` stand in for the databases and the release in a
 /// check; `put` (one object to R2) and `readEdge` (the signal as the CDN serves it) for R2 and the edge.
 export async function run({ once = false, opened = null, servedNow = served, target = signalTarget(),
-  put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge, statisticsFactory=createStatisticsProvider } = {}) {
-  const { env, signalEnv = env, backgroundEnv = env, writeSnapshot,writeAvailability,statisticsTransaction,statisticsQuery,statisticsControlQuery,stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
+  put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge, statisticsFactory=createStatisticsProvider,
+  statisticsLimits = statisticsLimitsFromEnv(process.env) } = {}) {
+  const { env, signalEnv = env, statisticsEnv = signalEnv, backgroundEnv = env, writeSnapshot,writeAvailability,statisticsTransaction,statisticsQuery,statisticsControlQuery,stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
   let stopping = false, ownershipLost = false, stopRun;
   let owner;
   try {
@@ -153,9 +169,9 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   let cursor = { at: iso(Date.now() - 10 * 60_000), id: "" };
   try { if (kept) cursor = JSON.parse(kept.body).cursor || cursor; } catch { /* from ten minutes ago */ }
   let release = await servedNow();
-  const statistics=statisticsFactory({env,controlEnv:signalEnv,transaction:statisticsTransaction,query:statisticsQuery,controlQuery:statisticsControlQuery,
-    release:()=>release,stopped:()=>stopping});
-  let statisticsAt=0;
+  const statistics=statisticsFactory({env,controlEnv:statisticsEnv,transaction:statisticsTransaction,query:statisticsQuery,controlQuery:statisticsControlQuery,
+    release:()=>release,stopped:()=>stopping,limits:statisticsLimits});
+  let statisticsAt=0, queueFleet=null;
   let wakeStatistics=()=>{};
   const publishSnapshot=counts=>snapshotTick(env,{engine:release.engine,release:release.release},Date.now(),{counts,allowed:statistics.allowed,
     ...(writeSnapshot?{write:statement=>writeSnapshot(statement,async tx=>{
@@ -163,7 +179,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     })}:{})});
   const allowStatistics=async name=>{
     if(stopping)return false;
-    const control=await readPipelineControl(signalEnv,'statistics');
+    const control=await readPipelineControl(statisticsEnv,'statistics');
     if(stopping)return false;
     if(control.paused){log(name,'paused','statistics',control.changed_at,control.changed_by);return false;}
     return true;
@@ -226,9 +242,18 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     },
     statistics: async()=>{
       if(Date.now()<statisticsAt)return false;
-      const began=performance.now();let failed=true;
-      try{const result=await statistics.advance();failed=false;if(result.sealed)wakeStatistics();return result;}
-      finally{const elapsed=performance.now()-began;budget.observe('statistics',elapsed,failed);statisticsAt=Date.now()+budget.interval('statistics',STATISTICS_PUMP_MS);}
+      const began=performance.now();
+      let failed=true,catchup=false;
+      try{
+        const result=await statistics.advance();
+        failed=false;
+        catchup=result.processed>0&&statistics.state().state==='advancing';
+        if(result.sealed)wakeStatistics();
+        return result;
+      }finally{
+        budget.observe('statistics',performance.now()-began,failed);
+        statisticsAt=Date.now()+budget.interval('statistics',STATISTICS_PUMP_MS,undefined,{catchup});
+      }
     },
     signal,
     // A WAVE FROM NOTHING is signalled now, not at the next snapshot.
@@ -264,14 +289,43 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       cursor=result.cursor;
     },
     // THE COMPUTE PAGE'S PICTURE, one object every reader gets (worker/contribution.js `demandOf`).
+    queueMaintenance: async () => {
+      if(!statisticsTransaction||!await allowStatistics('queue maintenance'))return false;
+      const present=await env.LIBRARY.prepare("SELECT to_regclass('state_queue_zone_seed') IS NOT NULL installed").first();
+      if(!present?.installed)return false;
+      await statisticsTransaction(async tx=>{
+        await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ",[]);
+        await tx.query("SET LOCAL statement_timeout='1800ms'",[]);
+        await tx.query("SET LOCAL transaction_timeout='90s'",[]);
+        await tx.query("SET LOCAL lock_timeout='250ms'",[]);
+        await tx.query('SET LOCAL jit=off',[]);
+        const query=async(sql,args=[])=>{
+          if(stopping)throw Error('queue maintenance stopped');
+          return (await tx.query(sql,args)).rows;
+        };
+        await query('SELECT queue_count_fold()');
+        const [seeded]=await query("SELECT 1 FROM state_queue_zone_seed WHERE epoch=coalesce(compute_order_cut_epoch(),'')");
+        if(!seeded)await seedQueueZones(query,{pageRows:4096});
+      });
+    },
+    queueFleet: async () => {
+      if(!await allowStatistics('queue fleet'))return false;
+      queueFleet=await queueFleetOf(backgroundEnv,pace);
+    },
     demand: async () => {
       if(!await allowStatistics('demand'))return false;
       if (!target) return;
-      const counts=await statistics.get();if(!counts)return false;
-      const body=counts.demand;if(!body)return false;
-      if(!await publishSnapshot(counts))return false;
-      if(!await allowStatistics('demand'))return false;
-      await statistics.assert(counts);if(stopping)return false;
+      let body=await queueDemandOf(env,{fleet:queueFleet,detail:statistics.cachedDemand?.()});
+      if(body===undefined){
+        const counts=await statistics.get();if(!counts?.demand)return false;
+        if(!await publishSnapshot(counts)||!await allowStatistics('demand'))return false;
+        await statistics.assert(counts);body=counts.demand;
+      }
+      if(!body||!await allowStatistics('demand')||stopping)return false;
+      if(body.queue){
+        const cut=await env.LIBRARY.prepare('SELECT compute_order_cut_epoch() AS epoch').first();
+        if(!cut||body.order_epoch!==cut.epoch||!currentStatistics(body)||stopping)return false;
+      }
       await put(target, { key: DEMAND_KEY, body: JSON.stringify(body), contentType: "application/json", cacheControl: DEMAND_CACHE });
     },
     // THE HOME PAGE'S COUNT (worker/contribution.js `tallyOf`), every `stats_tally_ms`;
@@ -312,7 +366,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     },
   };
   if (once) {
-    for (const name of ["signal","statistics", "snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
+    for (const name of ["signal","statistics", "snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "queueMaintenance", "queueFleet", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
     statistics.stop();
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
@@ -325,14 +379,14 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   const every = (ms, name) => {
     clock.add(name,ms,async()=>{
       if (stopping) return;
-      await (["statistics","admission", "demand", "tally", "forget", "past", "moot", "shadow"].includes(name)
+      await (["statistics","admission", "queueMaintenance", "queueFleet", "tally", "forget", "past", "moot", "shadow"].includes(name)
         ? background(() => stopping ? undefined : tick(name, jobs[name])) : tick(name, jobs[name])
       );
     });
   };
   every(SNAPSHOT_MS, "heartbeat");
   every(STATISTICS_PUMP_MS,'statistics');
-  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "signal"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
+  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "signal"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(FAIR_MS,"queueMaintenance"); every(DEMAND_MS,"queueFleet"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
   every(SETTLE_MS, "admission");
   every(SETTLE_MS,"workflowAdmission");
   every(SETTLE_MS,"delivery");every(SETTLE_MS,"contribution");every(FAIR_MS,"shadow");

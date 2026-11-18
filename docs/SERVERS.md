@@ -199,8 +199,8 @@ an existing snapshot row; it never invents statistics. Successful statistics
 alone update the snapshot's `at` and counts, preserving any newer heartbeat.
 A first snapshot without a daemon owner carries an expired heartbeat.
 The work signal has its own connection and sampling clock; complete snapshot
-and demand failures cannot block it or refresh its statistics. The primary and
-signal pools each have one connection, preserving the combined connection budget.
+and demand failures cannot block it or refresh its statistics. The primary,
+signal and statistics control pools each have one connection.
 `node scripts/task_pipeline.mjs status statistics` reads the statistics control,
 dependency readiness, cursor, last complete time and pending-work existence
 without counting queues. `pause statistics`

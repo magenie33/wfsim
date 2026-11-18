@@ -64,13 +64,47 @@ CREATE OR REPLACE FUNCTION statistics_ref(text,text DEFAULT 'manual') RETURNS vo
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path FROM CURRENT AS $$
 BEGIN
   PERFORM statistics_touch('k',jsonb_build_array(split_part($1,'|',1),split_part($1,'|',2),split_part($1,'|',3)),$2);
-  PERFORM statistics_touch('r',jsonb_build_array($1),$2);
+  IF length($1)-length(replace($1,'|',''))<>2 THEN
+    PERFORM statistics_touch('r',jsonb_build_array($1),$2);
+  END IF;
 END $$;
 CREATE OR REPLACE FUNCTION statistics_capture() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
-DECLARE prior jsonb; following jsonb; old_owner text; new_owner text;
+DECLARE prior jsonb; following jsonb; old_owner text; new_owner text; evidence_question text;
 BEGIN
   IF TG_OP='TRUNCATE' THEN PERFORM statistics_invalidate(); RETURN NULL; END IF;
+  IF TG_OP='INSERT' AND TG_TABLE_NAME IN('record_candidate_answers','entity_compute_results') THEN
+    -- The order write guard holds the cut fence and locks the affected question.
+    evidence_question:=coalesce(to_jsonb(NEW)->>'question',to_jsonb(NEW)->>'computation');
+    IF NOT EXISTS(SELECT 1 FROM compute_order_cut()) OR EXISTS(
+      SELECT 1 FROM state_compute_scheduling s CROSS JOIN compute_order_cut() c
+      WHERE s.id=evidence_question AND (s.state NOT IN('open','withdrawn') OR s.task_id>c.task_cutoff
+        OR (coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id)
+          <=(c.keep_zone,c.keep_position,c.keep_id))) THEN RETURN NULL;
+    END IF;
+  END IF;
+  IF TG_OP='UPDATE' THEN
+    CASE TG_TABLE_NAME
+      WHEN 'record_candidate_answers' THEN
+        IF (OLD.id,OLD.question) IS NOT DISTINCT FROM (NEW.id,NEW.question) THEN RETURN NULL; END IF;
+      WHEN 'state_pending_verifications' THEN
+        IF (OLD.question,OLD.engine,OLD.peer) IS NOT DISTINCT FROM (NEW.question,NEW.engine,NEW.peer) THEN RETURN NULL; END IF;
+      WHEN 'entity_compute_results' THEN
+        IF (OLD.id,OLD.computation) IS NOT DISTINCT FROM (NEW.id,NEW.computation) THEN RETURN NULL; END IF;
+      WHEN 'entity_compute_tasks' THEN
+        IF (OLD.id,OLD.computation,OLD.generation) IS NOT DISTINCT FROM (NEW.id,NEW.computation,NEW.generation) THEN RETURN NULL; END IF;
+      WHEN 'entity_compute_batches' THEN
+        IF (OLD.id,OLD.at) IS NOT DISTINCT FROM (NEW.id,NEW.at) THEN RETURN NULL; END IF;
+      WHEN 'state_board_pending_work' THEN
+        IF (OLD.batch,OLD.build_id,OLD.ruler,OLD.mode,OLD.initiator)
+           IS NOT DISTINCT FROM (NEW.batch,NEW.build_id,NEW.ruler,NEW.mode,NEW.initiator) THEN RETURN NULL; END IF;
+      WHEN 'relation_task_consumers' THEN
+        IF (OLD.producer,OLD.ref,OLD.question,OLD.state,OLD.asked_at,OLD.served_at,OLD.delivery_at,OLD.payload)
+           IS NOT DISTINCT FROM (NEW.producer,NEW.ref,NEW.question,NEW.state,NEW.asked_at,NEW.served_at,NEW.delivery_at,NEW.payload)
+        THEN RETURN NULL; END IF;
+      ELSE NULL;
+    END CASE;
+  END IF;
   IF TG_TABLE_NAME IN('entity_compute_order_cuts','record_compute_order_cut_activations') THEN
     PERFORM statistics_invalidate(); RETURN NULL;
   ELSIF TG_TABLE_NAME='state_factory_findings' THEN
@@ -98,7 +132,9 @@ BEGIN
     IF TG_OP<>'INSERT' THEN PERFORM statistics_touch('q',jsonb_build_array(OLD.computation),TG_TABLE_NAME||':'||OLD.id); END IF;
     IF TG_OP<>'DELETE' THEN PERFORM statistics_touch('q',jsonb_build_array(NEW.computation),TG_TABLE_NAME||':'||NEW.id); END IF;
   ELSIF TG_TABLE_NAME='state_compute_scheduling' THEN
-    IF TG_OP<>'INSERT' THEN PERFORM statistics_touch('q',jsonb_build_array(OLD.id),TG_TABLE_NAME||':'||OLD.id); END IF;
+    IF TG_OP='DELETE' OR (TG_OP='UPDATE' AND OLD.id IS DISTINCT FROM NEW.id) THEN
+      PERFORM statistics_touch('q',jsonb_build_array(OLD.id),TG_TABLE_NAME||':'||OLD.id);
+    END IF;
     IF TG_OP<>'DELETE' THEN PERFORM statistics_touch('q',jsonb_build_array(NEW.id),TG_TABLE_NAME||':'||NEW.id); END IF;
   ELSE
     IF TG_OP<>'INSERT' THEN
@@ -199,7 +235,9 @@ BEGIN
    AND has_table_privilege($1::name,'relation_task_consumers','SELECT')
    AND has_table_privilege($1::name,'state_board_pending_work','SELECT')
    AND has_column_privilege($1::name,'entity_compute_batches','id','SELECT')
-   AND has_column_privilege($1::name,'entity_compute_batches','at','SELECT');
+   AND has_column_privilege($1::name,'entity_compute_batches','at','SELECT')
+   AND has_column_privilege($1::name,'relation_compute_order_cut_protection','cut_id','SELECT')
+   AND has_column_privilege($1::name,'relation_compute_order_cut_protection','question','SELECT');
  ELSE grants_ready:=false; END IF;
  RETURN jsonb_build_object('contract','statistics-projection-1','role',$1,'schema',schema_ready,'capture',capture_ready,
   'index',index_ready,'index_oid',index_oid,'grants',coalesce(grants_ready,false),

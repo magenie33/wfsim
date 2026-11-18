@@ -27,6 +27,12 @@ try {
   app.check("total orders sums actual queued work, excluding prospective inventory", state.total === "23", JSON.stringify(state));
   app.check("queued task kinds are listed and unknown kinds retain their ids",
     state.rows.join('|') === "new builds 20|future_scope 3", JSON.stringify(state));
+  const zones = [[0, 2], [3, 21]];
+  state = await draw({ ...demand, per_hour: null, clear_hours: null, queue: { total: 23, zones },
+    orders: zones.map(([zone, total]) => ({ zone, kind: String(zone).padStart(2, '0'), total })) });
+  app.check("each nonempty queue zone appears in FIFO priority order without needing pace",
+    state.total === '23' && state.rows.join('|') === 'Zone 00 · 2|Zone 03 · 21' && !state.estimate, JSON.stringify(state));
+  state = await draw(demand);
   const updated = await app.evaluate(`new Date(${JSON.stringify(demand.at)}).toLocaleString(accountLocale())`);
   app.check("the queue reading supplies its update time and clearance estimate",
     state.note === 'Updated ' + updated && state.estimate?.includes('6 min'), JSON.stringify(state));

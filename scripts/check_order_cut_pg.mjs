@@ -115,9 +115,9 @@ try {
   await reset();
   await db.exec("INSERT INTO entity_compute_specs(id,verb,request) SELECT md5(i::text),'simulate','{}' FROM generate_series(1,100000) i; INSERT INTO entity_compute_tasks(id,computation,generation,created_at,reason) OVERRIDING SYSTEM VALUE SELECT i,md5(i::text),1,'2026-01-01','request' FROM generate_series(1,100000) i; INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,producer,zone,zone_position) SELECT md5(i::text),'simulate',i,'open','2026-01-01','2026-01-01','sweep',3,i FROM generate_series(1,100000) i; ANALYZE state_compute_scheduling; ANALYZE entity_compute_tasks;");
   const source=readFileSync(new URL('../worker/pg/sync.sql',import.meta.url),'utf8');
-  const types=['text','bigint','bigint','text','text','text','text','text','bigint','bigint','text','text','bigint','text','text','text'];
-  const inner=source.match(/DECLARE pick text:=\$pick\$([^]*?)\$pick\$;/)[1].replaceAll('/* lock */','').replaceAll('/* state */',"guard.state='open'").replace('/* source */','factory_eligible($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)').replace(/\$(\d+)\b/g,(_,n)=>`($${n}::${types[Number(n)-1]})`);
-  const args=['2026-11-17T00:00:00.000Z',0,1,'e','["w"]','w','n',null,600,0,'["open"]',null,1,null,null,null];
+  const types=['text','bigint','bigint','text','text','text','text','text','bigint','bigint','text','text','bigint','text','text','text','bigint'];
+  const inner=source.match(/pick text:=\$pick\$([^]*?)\$pick\$;/)[1].replaceAll('/* lock */','').replaceAll('/* state */',"guard.state='open'").replace('/* source */','factory_eligible($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)').replace(/\$(\d+)\b/g,(_,n)=>`($${n}::${types[Number(n)-1]})`);
+  const args=['2026-11-17T00:00:00.000Z',0,1,'e','["w"]','w','n',null,600,0,'["open"]',null,1,null,null,null,100000];
   for(const active of [false,true]) {
     if(active) {
       await db.run('SELECT compute_order_cut_stage((?::text)::jsonb)',JSON.stringify({id:'prefix-perf',cut_at:'2026-11-16',task_cutoff:100000,keep_boundary:[3,50000,'z'],source:{fixture:true}}));
@@ -125,14 +125,31 @@ try {
       await db.run('SELECT compute_order_cut_activate(?::text,?::bigint,?::text)','prefix-perf',0,digest([]));
     }
     const actual=active?inner:inner.split('  SELECT chosen.* FROM (')[0]+"SELECT q.* FROM state_compute_scheduling guard CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q WHERE guard.state='open' AND factory_takeable(guard.lease_until,guard.leased_at,($1::text),($9::bigint)) AND (($12::text) IS NULL OR guard.waits=0) ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT ($13::bigint)";
-    const [before]=await sql.unsafe('EXPLAIN (FORMAT JSON) '+actual,args);console.log(JSON.stringify({head_estimate:{active,plan:before['QUERY PLAN'][0]}}));
-    const [item]=await sql.unsafe('EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) '+actual,args),plan=item['QUERY PLAN'][0];
+    const binds=active?args:args.slice(0,-1);
+    const [before]=await sql.unsafe('EXPLAIN (FORMAT JSON) '+actual,binds);console.log(JSON.stringify({head_estimate:{active,plan:before['QUERY PLAN'][0]}}));
+    const [item]=await sql.unsafe('EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) '+actual,binds),plan=item['QUERY PLAN'][0];
     console.log(JSON.stringify({head_plan:{active,plan}}));
     assert.equal(plan.Plan['Actual Rows'],1);assert(plan.Plan['Shared Hit Blocks']<500);
     const head=await db.get('SELECT id FROM factory_head(?::text,0,1,?::text,?::text,?::text,?::text,NULL,600,0,?::text)',args[0],'e','["w"]','w','n','[]');
     assert.equal(head.id,createHash('md5').update('1').digest('hex'));
   }
   console.log('ok actual bounded head query uses FIFO index for one of 100000 rows with no cut and a 50000-row prefix after cut');
+  const [tailPlan]=await sql.unsafe('EXPLAIN (FORMAT JSON) '+inner.replace('/* prefix enabled */ true','false'),args);
+  const planNodes=node=>[node,...(node.Plans??[]).flatMap(planNodes)];
+  const tailNodes=planNodes(tailPlan['QUERY PLAN'][0].Plan);
+  assert(tailNodes.some(n=>n['Index Name']==='entity_compute_tasks_pkey'&&/id >.*100000/.test(n['Index Cond']??'')));
+  assert(!tailNodes.some(n=>n['Relation Name']==='state_compute_scheduling'&&n['Node Type']==='Seq Scan'));
+  console.log('ok post-cut dispatch plans the real cutoff and probes scheduling by task identity');
+  await db.exec(`INSERT INTO entity_compute_specs(id,verb,request) VALUES ('post-cut-dispatch','simulate','{}');
+    INSERT INTO entity_compute_tasks(id,computation,generation,created_at,reason) OVERRIDING SYSTEM VALUE
+      VALUES (100001,'post-cut-dispatch',1,'2026-11-17','request');
+    INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,producer,zone,zone_position)
+      VALUES ('post-cut-dispatch','simulate',100001,'open','2026-11-17','2026-11-17','post-cut-fixture',3,100001)`);
+  const postCutLease=await db.all(`SELECT id FROM factory_lease_pack_zoned(?::text,1,'e','["w"]','w','n',NULL,600,0,
+    '["simulate"]',NULL,NULL,'post-cut-fixture',1,'post-cut-lease','2026-11-18','w',1)`,args[0]);
+  assert.deepEqual(postCutLease.map(row=>row.id),['post-cut-dispatch']);
+  console.log('ok packed dispatch leases an eligible post-cut task across the normal write and lock path');
+
 
   await reset();
   await db.exec(`INSERT INTO entity_compute_specs(id,verb,request)

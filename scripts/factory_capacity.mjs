@@ -34,6 +34,7 @@ export function backgroundLane() {
 
 export function capacity({ env = process.env, sample = resources, critical = {} } = {}) {
   const duty = bounded(Number(env.WFSIM_BACKGROUND_DUTY_PCT), 1, 25, 5) / 100;
+  const statisticsCatchupDuty = bounded(Number(env.FACTORY_STATISTICS_CATCHUP_DUTY_PCT), 1, 25, 0) / 100;
   const ceiling = bounded(Number(env.WFSIM_BACKGROUND_MAX_MS), 60_000, 3_600_000, 3_600_000);
   const fixed = env.WFSIM_BACKGROUND_AUTO !== "0";
   const jobs = new Map();
@@ -44,7 +45,7 @@ export function capacity({ env = process.env, sample = resources, critical = {} 
       jobs.set(name, { ms: old ? Math.max(elapsed, old.ms * .8 + elapsed * .2) : elapsed,
         failures: failed ? (old?.failures || 0) + 1 : 0 });
     },
-    interval(name, base, maximum = ceiling) {
+    interval(name, base, maximum = ceiling, { catchup = false } = {}) {
       if (!fixed) return base;
       host = sample();
       const job = jobs.get(name);
@@ -55,8 +56,10 @@ export function capacity({ env = process.env, sample = resources, critical = {} 
           const c = jobs.get(name);
           return c ? Math.max(c.failures ? 1 : 0, c.ms / ms - 1) : 0;
         }));
+      const hasHeadroom = pressure <= .05 && !job.failures && Object.keys(critical).every(name => jobs.has(name));
+      const allowedDuty = name === "statistics" && catchup && hasHeadroom ? Math.max(duty, statisticsCatchupDuty) : duty;
       return Math.round(Math.max(base, Math.min(ceiling, maximum,
-        job.ms / duty * (1 + pressure) * 2 ** Math.min(3, job.failures))));
+        job.ms / allowedDuty * (1 + pressure) * 2 ** Math.min(3, job.failures))));
     },
     reading() {
       return { auto: fixed, duty_pct: duty * 100, host,

@@ -109,18 +109,26 @@ try{
   check('the real fast sample reads the active cut epoch and its actual pack ceiling',snap.epoch===iso(1000)&&Number.isSafeInteger(snap.pack_max)&&snap.pack_max>=200);
   check('the cache reuses the existing findings role grant',/GRANT SELECT, INSERT, UPDATE, DELETE ON state_factory_findings,/.test(readFileSync(new URL('../deploy/factoryd_grants.sql',import.meta.url),'utf8')));
   await db.run("INSERT INTO state_task_pipeline_controls VALUES('statistics',true,?,'check')",iso(0));
-  const connections=[];
+  const connections=[],availabilityWrites=[];
   const native=async(target,sql,args=[])=>{const out=await target.query(sql,args);return Object.assign(out.rows,{count:out.affectedRows});};
   const openedEnv=await openEnv({PG_URL:'fixture'},(_url,options)=>{
-    connections.push(options);
-    return {unsafe:(sql,args)=>native(pg,sql,args),begin:fn=>pg.transaction(tx=>fn({unsafe:(sql,args)=>native(tx,sql,args)})),end:async()=>{}};
+    const name=options.connection.application_name;
+    connections.push({name,max:options.max});
+    const query=(target,sql,args)=>{
+      if(sql.startsWith('INSERT INTO state_factory_findings')&&args?.[0]===AVAILABILITY_KEY)availabilityWrites.push(name);
+      return native(target,sql,args);
+    };
+    return {unsafe:(sql,args)=>query(pg,sql,args),begin:fn=>pg.transaction(tx=>fn({unsafe:(sql,args)=>query(tx,sql,args)})),end:async()=>{}};
   });
-  check('the cache writer uses the existing signal connection without another pool',connections.length===7&&connections.every(value=>value.max===1)&&typeof openedEnv.writeAvailability==='function');
+  check('the signal and statistics control each have one independent connection',
+    ['wfsim-factoryd-signal','wfsim-factoryd-statistics-control'].every(name=>
+      JSON.stringify(connections.filter(connection=>connection.name===name))===JSON.stringify([{name,max:1}])));
   await db.run('DELETE FROM state_factory_findings WHERE kind=?',AVAILABILITY_KEY);
   const fullBefore=await db.get('SELECT * FROM state_factory_snapshot');let attempted=0;
   const code=await run({once:true,opened:openedEnv,servedNow:async()=>({engine:null,release:null}),target:{bucket:'fixture'},
     put:async(_target,object)=>{if(object.key==='work.json'){attempted++;throw Error('R2 integration failure');}}});
   check('the actual daemon commits availability even when its R2 attempt fails',code===1&&attempted===1&&JSON.parse((await body()).body).epoch===iso(1000));
+  check('the availability cache is written on the fast signal connection',availabilityWrites.length===1&&availabilityWrites[0]==='wfsim-factoryd-signal');
   check('the actual paused daemon preserves complete statistics',JSON.stringify(await db.get('SELECT * FROM state_factory_snapshot'))===JSON.stringify(fullBefore));
   console.log(cases+' availability checks passed');
 }finally{forgetDials();await pg.close();}
