@@ -13,7 +13,7 @@ if(!url)throw Error('set WFSIM_ORDER_CUT_TEST_URL to an isolated local PostgreSQ
 assert(['127.0.0.1','localhost','[::1]'].includes(new URL(url).hostname));
 const {default:postgres}=await import('./pg/node_modules/postgres/src/index.js');
 const schema='order_cut_'+randomBytes(6).toString('hex');
-const options={max:5,fetch_types:false,onnotice(){},connection:{search_path:`${schema},pg_catalog,pg_temp`,statement_timeout:15000},
+const options={max:5,fetch_types:false,onnotice(){},connection:{search_path:schema,statement_timeout:15000},
   types:{bigint:{to:20,from:[20,1700],parse:Number,serialize:String}}};
 const sql=postgres(url,options),ddl=['schema','library','sync','inventory','build_workflows','board_admission']
   .map(name=>readFileSync(new URL(`../worker/pg/${name}.sql`,import.meta.url),'utf8')).join('\n');

@@ -43,7 +43,7 @@ export async function orderCutReadCases(db,{n=100001,receiptFile=process.env.WFS
   assert(Number.isSafeInteger(n)&&n>=100001);
   const at='2026-11-15T00:00:00.000Z',now='2026-11-16T00:00:00.000Z';
   const schemaPath=(await db.get('SELECT current_schema() value')).value;
-  const install=async text=>{await db.run("SELECT set_config('search_path',?::text,false)",schemaPath);await db.exec(text);};
+  const install=async text=>{await db.run("SELECT set_config('search_path',?::text,false)",schemaPath+',pg_catalog,pg_temp');await db.exec(text);};
   await db.exec(readFileSync(new URL('../worker/pg/order_cut_indexes.sql',import.meta.url),'utf8').replaceAll('INDEX CONCURRENTLY','INDEX'));
   await db.exec(`
     INSERT INTO entity_compute_specs(id,verb,request)
