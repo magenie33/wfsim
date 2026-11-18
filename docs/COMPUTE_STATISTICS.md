@@ -48,8 +48,10 @@ operation retries a smaller page from its last committed position.
 With an active cut, the question scan seeks the retained queue prefix, tasks
 after the cut, protected questions and the two non-open state ranges. It
 converts the former question cursor into a lower bound so a rolling upgrade
-can keep the work already committed. Each range checkpoints its own ordered
-key, while contributions apply the canonical eligibility views.
+can keep the work already committed. Ordinary retained questions commit their
+contributions and downstream keys with the range checkpoint. Deep consumer
+lists become obligations for the existing fanout cursor. Each range follows
+its own indexed order, and contributions apply the canonical eligibility views.
 
 A baseline is never published. A repeatable-read tail seals only after every
 baseline page is checkpointed, every visible revision is transferred, all

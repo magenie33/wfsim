@@ -46,7 +46,7 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
  if(bound.pageRows>4096)throw Error('statistics page exceeds input bound');
  if(typeof currentIdentity!=='function')throw Error('statistics current identity is required');
  let scanRows=bound.pageRows;
- const batchRows={q:128,p:32,k:64,r:64};
+ const batchRows={q:128,p:128,k:128,r:64};
  const pageBudgetError=error=>error?.code==='57014'||error instanceof StatisticsProjectionBudget
   && /statistics (time|input|query) budget/.test(error.message);
  const check=()=>{if(stopped())throw Error('statistics stopped');};
@@ -167,25 +167,28 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
  };
  // A question page commits contributions and its downstream keys together.
  // Deep consumer lists continue through the existing one-question cursor.
- const questionPage=async(q,ns,at)=>{
+ // The retained baseline can commit the same page with its range checkpoint.
+ const questionPage=async(q,ns,at,baselineKeys=null)=>{
   const consumerLimit=Math.min(16,bound.pageRows);
   const questionLimit=Math.min(batchRows.q,Math.floor(4096/(consumerLimit+1)));
   const [workCount]=await q('SELECT count(*) n FROM state_statistics_obligations WHERE namespace=$1',[ns]);
-  const remaining=bound.maxWork-Number(workCount.n);
+  const remaining=bound.maxWork-Number(workCount.n)-(baselineKeys?.length??0);
+  const input=baselineKeys
+   ? `SELECT key FROM jsonb_array_elements_text(($1::text)::jsonb) incoming(key) ORDER BY key LIMIT $2::bigint`
+   : `SELECT key FROM state_statistics_obligations WHERE namespace=$1 AND kind='q' AND cursor='{}' ORDER BY key LIMIT $2::bigint`;
   const sources=await q(`SELECT work.key,work.key::jsonb->>0 question,to_jsonb(s) state,consumers.rows
-   FROM (SELECT key FROM state_statistics_obligations WHERE namespace=$1 AND kind='q' AND cursor='{}'
-    ORDER BY key LIMIT $2::bigint) work
+   FROM (${input}) work
    LEFT JOIN LATERAL (${point("(work.key::jsonb->>0)")} OFFSET 0) s ON true
    CROSS JOIN LATERAL (SELECT coalesce(jsonb_agg(to_jsonb(d)),'[]') rows FROM
      (SELECT ref,producer,CASE WHEN producer='new_build' THEN 0
        WHEN payload::jsonb->>'batch' LIKE 'rescore%' THEN 1 WHEN producer='refresh' THEN 3 ELSE 2 END k
       FROM relation_task_consumers WHERE question=work.key::jsonb->>0 AND state='live' AND producer IN${kindSql}
-      ORDER BY producer,ref LIMIT $3::bigint OFFSET 0) d) consumers ORDER BY work.key`,[ns,questionLimit,consumerLimit+1]);
-  if(sources[0]?.rows.length>consumerLimit)return 0;
+      ORDER BY producer,ref LIMIT $3::bigint OFFSET 0) d) consumers ORDER BY work.key`,[baselineKeys?encoded(baselineKeys):ns,questionLimit,consumerLimit+1]);
+  if(!baselineKeys&&sources[0]?.rows.length>consumerLimit)return [];
   const completed=[],changes=[],expiries=[],keys=[],refs=[];
   for(const source of sources){
    if(source.rows.length>consumerLimit)continue;
-   if(2*(refs.length+source.rows.length)>remaining)break;
+   if(keys.length+refs.length+2*source.rows.length>remaining)break;
    const {body,expires,taken}=questionState(source.state,at);
    let minimum=null;
    for(const row of source.rows){
@@ -197,7 +200,7 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
    completed.push(source.key);expiries.push({question:source.question,at:expires});
    changes.push({kind:'q',key:source.key,body},{kind:'t',key:source.key,body:minimum===null?[]:[dimension(['taken',minimum])]});
   }
-  if(!completed.length)return 0;
+  if(!completed.length)return [];
   await replacePage(q,ns,changes);
   await q(`DELETE FROM state_statistics_expiry WHERE namespace=$1 AND question IN
    (SELECT question FROM jsonb_to_recordset(($2::text)::jsonb) AS e(question text,at text))`,[ns,encoded(expiries)]);
@@ -205,8 +208,8 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
    SELECT $1,question,at FROM jsonb_to_recordset(($2::text)::jsonb) AS e(question text,at text) WHERE at IS NOT NULL`,[ns,encoded(expiries)]);
   await enqueuePage(q,ns,'k',keys);
   await enqueuePage(q,ns,'r',refs);
-  await finishPage(q,ns,'q',completed);
-  return completed.length;
+  if(!baselineKeys)await finishPage(q,ns,'q',completed);
+  return completed;
  };
  const pendingPoint=tuple=>`SELECT p.initiator,${statisticsSourceSql('p')} source,b.id IS NOT NULL has_batch,b.at,
   (SELECT cut_at FROM compute_order_cut()) cut_at,
@@ -348,7 +351,7 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
   if(!work)return 0;
   const kind=work.kind;let processed=0;
   try{
-   if(kind==='q'&&!work.cursor.started)processed=await questionPage(q,ns,at);
+   if(kind==='q'&&!work.cursor.started)processed=(await questionPage(q,ns,at)).length;
    if(kind==='p'&&!work.cursor.started)processed=await pendingPage(q,ns,key.epoch);
    if((kind==='k'||kind==='r')&&Object.keys(work.cursor).length===0)processed=await referencePage(q,ns,kind);
   }catch(error){
@@ -360,7 +363,7 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
   else await fanout(q,ns,work,at);
   return 1;
  };
- const baseline=async(q,ns,state,key)=>{
+ const baseline=async(q,ns,state,key,at)=>{
   const cursor=state.cursor;let rows;
   if(Number(state.phase)===0){
    const started=clock(),minimum=Math.min(16,bound.pageRows);
@@ -381,13 +384,21 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
    const limited=candidates.length>page.length;
    const last=limited?page.at(-1):rows.at(-1),done=!limited&&rows.length<scanRows;
    const after=indexed?advanceQuestionRange(indexed,last,done):done?null:[last.id];
-   await enqueuePage(q,ns,'q',page.map(row=>[row.id]));
+   const keys=page.map(row=>[row.id]);
+   let completed=[];
+   if(indexed?.range==='kept'&&keys.length){
+    try{completed=await questionPage(q,ns,at,keys.map(keyText));}
+    catch(error){if(pageBudgetError(error))batchRows.q=Math.max(1,Math.floor(batchRows.q/2));throw error;}
+   }
+   const written=new Set(completed);
+   await enqueuePage(q,ns,'q',keys.filter(value=>!written.has(keyText(value))));
    await q('UPDATE state_statistics_namespaces SET phase=$2::bigint,cursor=($3::text)::jsonb WHERE id=$1',
     [ns,after?0:1,encoded(after??[])]);
    const elapsed=clock()-started;
    if(elapsed>400)scanRows=Math.max(minimum,Math.floor(scanRows/2));
    else if(limited)scanRows=bound.pageRows;
    else if(elapsed<160)scanRows=Math.max(minimum,Math.min(scanRows*2,1024,Math.floor(bound.maxRows/2)));
+   return completed.length;
   }else if(Number(state.phase)===1&&key.epoch!==null){
    const args=[...cursor,bound.pageRows];rows=await q(`SELECT id,at>(SELECT cut_at FROM compute_order_cut()) post FROM entity_compute_batches ${cursor.length?'WHERE id>$1':''} ORDER BY id LIMIT $${args.length}::bigint`,args);
    await enqueuePage(q,ns,'b',rows.filter(row=>row.post).map(row=>[row.id]));
@@ -444,9 +455,10 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
    const [state]=await q('SELECT phase::text,cursor FROM state_statistics_namespaces WHERE id=$1',[ns]);
    if(!state)throw Error('statistics baseline not started');
    await storage(q,ns,{admit:true});
+   let seeded=0;
    if(Number(state.phase)<2 && Number((await q('SELECT count(*) n FROM state_statistics_obligations WHERE namespace=$1',[ns]))[0].n)<2*bound.pageRows)
-    await baseline(q,ns,state,key);
-   await importJournal(q,ns);const processed=await consume(q,ns,await nextWork(q,ns),key,at);
+    seeded=await baseline(q,ns,state,key,at)??0;
+   await importJournal(q,ns);const processed=seeded+await consume(q,ns,await nextWork(q,ns),key,at);
    await storage(q,ns);return{baseline:Number(state.phase)===2,worked:processed>0,processed,usage};
   },{key,context});
    await run(async(q,_usage,ns)=>{await storage(q,ns,{admit:true});const value=await cleanup(q,ns);await storage(q,ns);return value;},{key,context,validateAfter:false});return progress;});},
