@@ -159,9 +159,12 @@ console.log("settling, in shadow");
   await db.run(`INSERT INTO record_compute_order_cancellations(question,task_id,cut_id,at)
     SELECT id,task_id,'shadow-cut',? FROM state_compute_scheduling WHERE id = 'page-first'`, factAt);
   const request = { threshold: 2, max: 1, from };
+  const index = "compute_scheduling_shadow_page";
+  const { ddl: installIndex } = await db.get("SELECT pg_get_indexdef(to_regclass(?)) AS ddl", index);
+  const planNodes = plan => [plan, ...(plan.Plans || []).flatMap(planNodes)];
   let pageQuery;
   const traced = { ...db, prepare(sql) {
-    if (sql.startsWith("WITH page AS MATERIALIZED")) pageQuery = sql;
+    if (sql.includes("page AS MATERIALIZED")) pageQuery = sql;
     return db.prepare(sql);
   } };
   const first = await settleShadow({ LIBRARY: traced }, request, now);
@@ -192,15 +195,54 @@ console.log("settling, in shadow");
     await db.exec("SET enable_seqscan=off; SET enable_bitmapscan=off");
     try {
       const { "QUERY PLAN": [explained] } = await db.get("EXPLAIN (FORMAT JSON) " + pageQuery, factAt, from.at, from.id, 1);
-      const limited = explained.Plan.Plans?.find(node => node["Subplan Name"] === "CTE page");
-      const seek = limited?.Plans?.[0];
-      check("the physical page limit sits directly above the composite indexed seek",
-        limited?.["Node Type"] === "Limit" && seek?.["Index Name"] === "compute_scheduling_shadow_page"
+      const limited = planNodes(explained.Plan).find(node => node["Subplan Name"] === "CTE page");
+      const guard = limited?.Plans?.find(node => node["One-Time Filter"]);
+      const seek = guard?.Plans?.find(node => node["Parent Relationship"] === "Outer");
+      check("the physical page uses a one-time guard and the limited composite indexed seek",
+        limited?.["Node Type"] === "Limit" && seek?.["Index Name"] === index
         && seek["Index Cond"]?.includes("ROW(fact_at, id)"), JSON.stringify(limited));
     } finally {
       await db.exec("RESET enable_seqscan; RESET enable_bitmapscan");
     }
   } else check("the physical page is separately planned", false);
+  const saved = (await db.get("SELECT body FROM state_factory_findings WHERE kind='settle_shadow'")).body;
+  const holdBeforeReads = async reason => {
+    const statements = [];
+    const observe = { ...db, prepare(sql) { statements.push(sql); return db.prepare(sql); } };
+    const result = await settleShadow({ LIBRARY: observe }, request, now);
+    check(`${reason} holds before page, evidence or findings access`, result.status === "held" && result.cursor === from
+      && statements.length === 1 && statements[0].includes("pg_catalog.pg_index")
+      && (await db.get("SELECT body FROM state_factory_findings WHERE kind='settle_shadow'")).body === saved);
+  };
+  await db.exec(`DROP INDEX ${index}`);
+  await holdBeforeReads("a missing index");
+  if (pageQuery) {
+    const { "QUERY PLAN": [explained] } = await db.get("EXPLAIN (ANALYZE, FORMAT JSON) " + pageQuery, factAt, from.at, from.id, 1);
+    const scans = planNodes(explained.Plan).filter(node => node["Relation Name"] === "state_compute_scheduling");
+    const { results } = await db.prepare(pageQuery).bind(factAt, from.at, from.id, 1).all();
+    check("loss after qualification still stops the physical and effective scans", scans.length > 0
+      && scans.every(scan => scan["Actual Loops"] === 0) && results.length === 1 && results[0].index_ready === false);
+  }
+  await db.exec(`CREATE INDEX ${index} ON state_compute_scheduling(id,fact_at) WHERE state IN ('fact','spot') AND fact_at IS NOT NULL`);
+  await holdBeforeReads("reversed keys");
+  await db.exec(`DROP INDEX ${index}; CREATE INDEX ${index} ON state_compute_scheduling(fact_at,id) WHERE fact_at IS NOT NULL`);
+  await holdBeforeReads("a different predicate");
+  await db.exec(`DROP INDEX ${index}; CREATE TABLE shadow_index_other (LIKE state_compute_scheduling);
+    CREATE INDEX ${index} ON shadow_index_other(fact_at,id) WHERE state IN ('fact','spot') AND fact_at IS NOT NULL`);
+  await holdBeforeReads("an index bound to another table");
+  await db.exec(`DROP INDEX ${index}; ${installIndex}`);
+  await db.exec(`UPDATE pg_catalog.pg_index SET indisvalid=false WHERE indexrelid=to_regclass('${index}')`);
+  await holdBeforeReads("an invalid index");
+  await db.exec(`UPDATE pg_catalog.pg_index SET indisvalid=true, indisready=false WHERE indexrelid=to_regclass('${index}')`);
+  await holdBeforeReads("an index that is not ready");
+  await db.exec(`DROP INDEX ${index}; ${installIndex}`);
+  const { schema } = await db.get("SELECT current_schema() AS schema");
+  await db.exec(`CREATE ROLE shadow_check_reader; GRANT USAGE ON SCHEMA ${schema} TO shadow_check_reader;
+    GRANT SELECT ON state_factory_findings TO shadow_check_reader; SET ROLE shadow_check_reader`);
+  try { await holdBeforeReads("missing read privileges"); }
+  finally { await db.exec("RESET ROLE; DROP OWNED BY shadow_check_reader; DROP ROLE shadow_check_reader"); }
+  const recovered = await settleShadow({ LIBRARY: db }, { ...request, from: third.cursor }, now);
+  check("the restored index lets the shadow resume from its saved cursor", recovered.status !== "held" && recovered.cursor === third.cursor);
   await db.close();
 }
 
@@ -295,10 +337,17 @@ async function phase1Cases(){
     check('paused statistics preserve the old full snapshot and demand object while tally still publishes',
       JSON.stringify(before)===JSON.stringify(await db.get('SELECT * FROM state_factory_snapshot'))&&!puts.some(o=>o.key===DEMAND_KEY)&&puts.some(o=>o.key===TALLY_KEY));
     check('paused --once still executes fair, shadow, maintenance and all four required consumers',
-      seen.some(sql=>sql.includes('state_compute_fair_shares'))&&seen.some(sql=>sql.includes("kind = 'settle_shadow'"))&&
+      seen.some(sql=>sql.includes('state_compute_fair_shares'))&&seen.some(sql=>sql.includes('page AS MATERIALIZED'))&&
       seen.some(sql=>sql.includes('factory_forget_codes'))&&seen.some(sql=>sql.includes('factory_forget_past'))&&seen.some(sql=>sql.includes('factory_moot_checks'))&&
       seen.some(sql=>sql.includes('build_admission_claim'))&&seen.some(sql=>sql.includes('UPDATE state_pending_verifications'))&&
       seen.some(sql=>sql.includes('SELECT * FROM relation_task_consumers'))&&seen.some(sql=>sql.includes('a.credit_work AS work')),JSON.stringify(seen));
+    await db.exec('DROP INDEX compute_scheduling_shadow_page');
+    seen.length=0;
+    const held=await run({once:true,opened:{env:{LIBRARY:guarded},signalEnv:env,backgroundEnv:{LIBRARY:guarded},close:async()=>{}},
+      servedNow:async()=>({engine:'e1'}),target:null});
+    check('ordinary --once holds the unqualified shadow and still runs maintenance',held===0&&
+      seen.some(sql=>sql.includes('pg_catalog.pg_index'))&&!seen.some(sql=>sql.includes('page AS MATERIALIZED'))&&
+      seen.some(sql=>sql.includes('factory_forget_codes')));
     const broken=wrap(async sql=>{if(sql.includes('factory_forget_codes'))throw Error('required maintenance failed');});
     check('a required non-statistics failure still rejects the paused --once preflight',await run({once:true,
       opened:{env:{LIBRARY:broken},signalEnv:env,backgroundEnv:{LIBRARY:broken},close:async()=>{}},servedNow:async()=>({engine:'e1'}),target:null})===1);

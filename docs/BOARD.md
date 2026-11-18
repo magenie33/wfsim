@@ -1298,7 +1298,9 @@ finding:
   before looking up effective work and answer evidence. Its checkpoint covers
   the complete selected page, including keys hidden by the order cut. On an
   existing database, qualify and install the `compute_scheduling_shadow_page`
-  partial index before deploying this reader.
+  partial index before deploying this reader. With an absent or unqualified
+  index, the shadow holds its checkpoint and reports the hold. Other daemon
+  ticks continue on their existing schedules.
 - `fair_shadow`: the worker's ten-minute cron (`watchdog`) compares the
   daemon's table with its own `tableOf` now, within 0.05 of a target or a
   share, since asks and answers land between the two readings.
