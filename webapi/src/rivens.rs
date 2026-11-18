@@ -2,6 +2,7 @@
 //! The rivens a request carries, and `/api/riven`.
 
 use serde_json::{json, Value};
+use wfsim_engine::data::mods::{with_ranks, NamedPool};
 use wfsim_engine::model::ModDef;
 use crate::registry::{WeaponInfo, mod_pool_for};
 use crate::request::{get_str, get_u32};
@@ -130,23 +131,31 @@ pub(crate) fn riven_class(info: &WeaponInfo) -> String {
     wfsim_engine::build::rivens::class_for_weapon(&info.id).unwrap_or_default().to_string()
 }
 
+/// Names may be slot ids, a build list, or the keys of a search scope.
+fn named_mod_ids(v: &Value) -> impl Iterator<Item = &str> {
+    ["mods", "exilus", "stance"].into_iter().filter_map(|key| v.get(key)).flat_map(|value| {
+        value.as_str().into_iter()
+            .chain(value.as_array().into_iter().flatten().filter_map(Value::as_str))
+            .chain(value.as_object().into_iter().flat_map(|o| o.keys().map(String::as_str)))
+    })
+}
+
 /// The build's pool PLUS the request's own rivens.
 pub(crate) fn mod_pool_with_rivens(v: &Value, info: &WeaponInfo, evos: &[&str]) -> Vec<ModDef> {
     let mut p = mod_pool_for(&info.id, evos);
-    // …AND EVERY LOWER RANK THE REQUEST NAMES, as a list (a build) or as the
-    // keys of a scope (a search), in whichever block carries mods.
-    let mut named: Vec<&str> = Vec::new();
-    for key in ["mods", "exilus", "stance"] {
-        match v.get(key) {
-            Some(Value::String(id)) => named.push(id),
-            Some(Value::Array(a)) => named.extend(a.iter().filter_map(Value::as_str)),
-            Some(Value::Object(o)) => named.extend(o.keys().map(String::as_str)),
-            _ => {}
-        }
-    }
-    wfsim_engine::data::mods::with_ranks(&mut p, named);
+    with_ranks(&mut p, named_mod_ids(v));
     p.extend(rivens_from(v, info));
     p
+}
+
+/// The same pool for readers that only look up cards by id.
+pub(crate) fn named_pool_with_rivens(v: &Value, info: &WeaponInfo, evos: &[&str]) -> NamedPool {
+    let mut pool = NamedPool::for_build(&info.id, evos);
+    pool.with_ranks(named_mod_ids(v));
+    for riven in rivens_from(v, info) {
+        pool.push(riven);
+    }
+    pool
 }
 
 pub fn riven_json(v: &Value) -> Value {

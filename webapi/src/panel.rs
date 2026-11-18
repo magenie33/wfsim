@@ -18,7 +18,7 @@ use crate::buffs::{arcane_choices, arcane_fx_for, buffs_json, enumerate_buffs, e
 use crate::fight::chosen_evolutions;
 use crate::registry::{WeaponInfo, attack_desc, base_for, form_unlock_evo, mod_not_here, wspec};
 use crate::request::{err_json, prettify};
-use crate::rivens::{mod_pool_with_rivens, riven_stat_ids_ok};
+use crate::rivens::{named_pool_with_rivens, riven_stat_ids_ok};
 use crate::tenno::{floor_json, tenno_from, wielder_from};
 
 /// A NUMBER AS A PANEL SHOWS IT — trimmed, not rounded to a fixed width.
@@ -106,10 +106,10 @@ pub fn panel_json(v: &Value) -> Value {
     if let Err(e) = riven_stat_ids_ok(v, info) {
         return err_json(e);
     }
-    let p = mod_pool_with_rivens(v, info, &evo_refs);
+    let p = named_pool_with_rivens(v, info, &evo_refs);
     let mut refs: Vec<&ModDef> = Vec::with_capacity(mod_ids.len());
     for id in &mod_ids {
-        match p.iter().find(|m| m.id == id) {
+        match p.get(id) {
             Some(m) => refs.push(m),
             None => return err_json(mod_not_here(id, info, &evo_refs)),
         }
