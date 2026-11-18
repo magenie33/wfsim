@@ -24,6 +24,21 @@ export function inspectInventoryTask(root) {
 }
 
 export class InventoryControl {
+  static openExisting(root, open) {
+    const value = Object.create(InventoryControl.prototype); value.root = resolve(root);
+    try {
+      value.lock = open(join(value.root, 'controller-lock.sqlite'));
+      value.lock.exec('BEGIN IMMEDIATE');
+      value.db = open(join(value.root, 'controller.sqlite'));
+      if (value.db.prepare('PRAGMA held.user_version').get().user_version !== 1)
+        throw Error('unsupported existing inventory controller version');
+      value.current(); return value;
+    } catch (error) {
+      try { value.db?.close(); } catch {}
+      try { value.lock?.exec('ROLLBACK'); } catch {}
+      value.lock?.close(); throw error;
+    }
+  }
   constructor(root) {
     this.root = resolve(root); mkdirSync(this.root, { recursive: true });
     this.lock = new DatabaseSync(join(this.root, 'controller-lock.sqlite'));

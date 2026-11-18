@@ -38,6 +38,8 @@ try {
  assert.equal((await collect(pending.cut)).retired,0);
 
  const limited=capture();ack('inventory',limited.cut);ack('projection',limited.cut);
+ const metadataLimited=await collect(limited.cut,{maxDirectoryEntries:1});
+ assert(metadataLimited.blocked.some(row=>row.reason.includes('file count exceeds')));assert(existsSync(limited.raw));
  const tooSmall=await collect(limited.cut,{maxBytes:1});assert.equal(tooSmall.files,0);assert(tooSmall.blocked.some(row=>row.reason.includes('byte bound')));assert(existsSync(limited.raw));
  const originalReceipt=source.prepare('SELECT receipt FROM record_prepared_board_cuts WHERE id=?').get(limited.cut).receipt;
  source.prepare('UPDATE record_prepared_board_cuts SET receipt=? WHERE id=?').run(canon({...JSON.parse(originalReceipt),generation:'wrong-generation'}),limited.cut);
@@ -48,6 +50,12 @@ try {
  let result=await collect(bounded.cut,{maxFiles:1,maxBytes:128});assert.equal(result.files,1);assert.equal(result.retired,0);assert(existsSync(bounded.capture));
  assert.throws(()=>gc.pin('too-late',bounded.id),/unavailable/);
  result=await collect(bounded.cut,{maxFiles:1,maxBytes:8192});assert.equal(result.retired,1);
+
+ const stopped=capture();ack('inventory',stopped.cut);ack('projection',stopped.cut);let stop=false;
+ const maintenanceGC=SourceCaptureGC.openExisting(db,owned,context,{guard:()=>{if(stop)throw Error('maintenance stopped');}});
+ await assert.rejects(maintenanceGC.collect(inputs,{normalizedCut:stopped.cut,fault:async stage=>{if(stage==='before-capture-file-unlink')stop=true;}}),/maintenance stopped/);
+ assert(existsSync(stopped.raw),'stop after durable intent must prevent the next unlink');
+ assert.equal((await collect(stopped.cut)).retired,1);
 
  for(const stage of ['after-capture-gc-claim','before-capture-file-unlink','after-capture-file-unlink','after-capture-directory-remove']) {
   const victim=capture();ack('inventory',victim.cut);ack('projection',victim.cut);let crashed=false;
