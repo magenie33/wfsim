@@ -566,7 +566,7 @@ together missed none, for 2.3× the evaluations of neither.
 official rulers: never stored, never edited, ⧉ copies one into a search of your
 own (`80-optimizer-preset.js`). Appraisal opens its own built-in search.
 Ordinary optimization opens an editable draft with one blank build start and
-the Four elements strategy, without a default preset. Users may save searches.
+the Regular strategy. Users may save searches.
 Presets choose user starts and run terms; strategies choose how starts are
 processed. Neither exposes an editable search program.
 ## The quick descent — the quick calc, repeated
@@ -586,10 +586,11 @@ above runs only when a tool asks for it by name.
 The immutable strategies are declared in `data/search/presets.yaml` and exposed
 through `/api/meta.search_presets.strategies`. A quick request selects one with
 `search_strategy`; `strategy: "quick"` still names the descent algorithm.
-The selector displays the selected strategy's `description` beside it; starts
+The selector displays the selected strategy's `description` beside it. Starts
 remain a separate input and always contain at least one build, including blank.
-The only strategy is `four_elements`. Requests omitting `search_strategy` keep
-their existing start semantics.
+The default `regular` descends from each supplied start. Saved searches without
+a strategy use `regular`. The `four_elements` strategy adds elemental branches
+and is selected by the riven appraisal preset.
 
 Four elements retains each user build and makes internal branches with the
 weapon's Heat, Cold, Electricity and Toxin 60/60 cards. Each branch preserves
@@ -731,6 +732,8 @@ accumulated moments, run indices and ranking statistics.
 The fleet queues each pending build key once per batch. Membership sets
 deduplicate full and short measurements separately; ordered queues retain
 the first build and its dispatch position.
+The browser stops a search if a worker returns an incomplete score batch or
+if the leader requests an empty or identical consecutive batch.
 
 A leader waiting for scores returns its pending batch and start progress.
 Result identities, the merged pool and contender reports are constructed

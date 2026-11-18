@@ -1613,10 +1613,10 @@ since two volunteers' answers are confirmed only to the bit. A search run to kee
 and the next one starts on them.
 
 Source-driven worker fixtures cover partial creation, dispatch, scheduling and
-rest failures after completed work: the search must fail and release every
-worker and watchdog. A slow call that keeps reporting remains live and returns
-its full answer and work counts. `--signals-only` runs these fixtures without a
-browser.
+rest failures after completed work. Empty or repeated batches and incomplete
+score replies also end the search and release every worker and watchdog. A
+slow call that keeps reporting remains live and returns its full answer and
+work counts. `--signals-only` runs these fixtures without a browser.
 
 ## `check_idle_devices`
 
@@ -2451,12 +2451,11 @@ would.
 ## `check_search_presets`
 
 Ordinary optimization starts with an editable draft, one blank start and
-the Four elements strategy, without a default built-in preset. Its controls
-are live and Run sends that draft. Users can create saved searches; deleting
-the last returns to the editable draft, and removing the last start retains
-one blank start. The selected strategy explains its process beside the control.
-Another weapon has the same draft contract. Runs in CI's
-`page-rest` job.
+the Regular strategy. Four elements is selectable on the same draft. Run
+sends the selected strategy. Deleting the last saved search returns to the
+editable draft, and removing the last start retains one blank start. The
+selected strategy explains its process beside the control. Another weapon
+has the same draft contract. Runs in CI's `page-rest` job.
 
 ## `check_ime_keys`
 

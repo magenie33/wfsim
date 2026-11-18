@@ -124,6 +124,7 @@ pub fn every_rank() -> &'static EveryRank {
 /// Built-in immutable strategies, elemental carriers and search preset terms.
 #[derive(Debug, Clone, Default, Deserialize, serde::Serialize)]
 pub struct SearchPresets {
+    pub default_strategy: String,
     pub strategies: Vec<SearchStrategy>,
     pub element_starts: Vec<Vec<String>>,
     pub presets: Vec<SearchPreset>,

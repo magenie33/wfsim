@@ -85,7 +85,7 @@ function snapshotOpt() {
 
 // A new search: one blank start, the run settings left alone.
 const blankOpt = () => ({ starts: [blankStart()], final: null, limits: normalizeLimits(null),
-  search_strategy: "four_elements",
+  search_strategy: defaultOptStrategy(),
   candidate_runs: optRun.candidate_runs, finalists: optRun.finalists });
 
 /// How many builds a search answers with: 1–100, the server's own clamp.
@@ -99,8 +99,7 @@ function applyOptState(st) {
   // A preset from before the quick descent also carries a scope (`mods`,
   // `arcanes`, …); nothing reads it now, and the next save drops it.
   const w = $("weapon").value;
-  // Absence is a legacy search, not permission to branch its saved starts.
-  opt.search_strategy = st.search_strategy || "";
+  opt.search_strategy = st.search_strategy || defaultOptStrategy();
   optRun.candidate_runs = st.candidate_runs === 1 ? 1 : 10;
   optRun.finalists = finalistsOf(st.finalists);
   const cr = $("opt-cand-runs");

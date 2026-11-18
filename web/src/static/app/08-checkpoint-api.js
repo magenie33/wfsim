@@ -298,6 +298,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     grow(job.shards);
     show();
     let scores = [];
+    let lastBatch = null;
     for (let step = 0; ; step++) {
       activity = "resting";
       show();
@@ -314,6 +315,17 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
         stop(true);
         return;
       }
+      if (!Array.isArray(r.pending) || !r.pending.length) {
+        fail("The optimizer requested an empty batch.", true);
+        return;
+      }
+      // The build and run count identify a measurement. Carried runs are evidence.
+      const batch = JSON.stringify(r.pending.map(item => [item.build ?? item, item.runs ?? null]));
+      if (batch === lastBatch) {
+        fail("The optimizer requested the same batch twice.", true);
+        return;
+      }
+      lastBatch = batch;
       starts = r.progress || starts;
       const k = Math.min(lanesNow(), r.pending.length);
       grow(k);
@@ -333,8 +345,13 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
           const o = await timed(i, { ...body, quick_fleet: { score: slices[at] } }, (st) => { live[i] = st; show(); });
           live[i] = null;
           if (!o) { broken = true; return; }
+          if (!Array.isArray(o.scores) || o.scores.length !== slices[at].length) {
+            broken = true;
+            fail("The optimizer worker returned an incomplete batch.", true);
+            return;
+          }
           outs[at] = o;
-          round.builds += (o.scores || []).length;
+          round.builds += o.scores.length;
           round.fights += o.fights || 0;
           round.slices_done += 1;
           show();

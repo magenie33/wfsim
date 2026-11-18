@@ -67,6 +67,8 @@ fn with_ranks_adds_the_variant_beside_its_card() {
 fn the_built_in_searches_start_from_each_elements_dual_cards() {
     use crate::model::ModEffect;
     let p = search_presets();
+    assert_eq!(p.default_strategy, "regular");
+    assert!(p.strategies.iter().any(|strategy| strategy.id == p.default_strategy));
     assert_eq!(p.element_starts.len(), 4, "one start per primary element");
     let mut seen = Vec::new();
     for row in &p.element_starts {

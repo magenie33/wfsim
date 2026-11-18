@@ -428,7 +428,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
 
 fn parse_uncached(v: &Value) -> Result<OptimizePlan, Value> {
     if let Some(strategy) = v.get("search_strategy") {
-        if strategy != "four_elements" || v["strategy"] != "quick" {
+        if !matches!(strategy.as_str(), Some("regular" | "four_elements")) || v["strategy"] != "quick" {
             return Err(err_json("unknown search strategy or incompatible search algorithm"));
         }
     }

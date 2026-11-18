@@ -150,7 +150,8 @@ async function checkFailures() {
   const rejected = error => unhandled.push(String(error.message || error));
   process.on("unhandledRejection", rejected);
   try {
-    for (const fault of ["partial spawn", "leader post", "scorer post", "rest post", "pace", "null rejection", "rest callback", "rest silence", "worker error", "worker silence", "slow alive"]) {
+    for (const fault of ["partial spawn", "leader post", "scorer post", "rest post", "pace", "null rejection", "rest callback", "rest silence",
+      "worker error", "worker silence", "empty batch", "same batch", "incomplete batch", "slow alive"]) {
       let now = 1000, timerId = 0, lead = 0, paced = 0, spawns = 0;
       const timers = new Map(), workers = [], held = [];
       const fail = () => { throw new Error(fault); };
@@ -173,14 +174,16 @@ async function checkFailures() {
               if (q.lead) {
                 lead++;
                 if (lead === 2 && fault === "leader post") fail();
+                const pending = lead === 1 || fault === "same batch" ? ["a", "b"] : fault === "empty batch" ? [] : ["c", "d"];
                 queueMicrotask(() => this.emit({ kind: "result", payload: lead > 2
-                  ? { ok: true, results: [], final_work: 0 } : { pending: ["a", "b"] } }));
+                  ? { ok: true, results: [], final_work: 0 } : { pending } }));
               } else {
                 if (lead === 2) {
                   if (fault === "scorer post") fail();
                   if (fault === "worker error") { queueMicrotask(() => this.onerror?.({ message: fault, preventDefault() {} })); return; }
                   if (fault === "worker silence") return;
                   if (fault === "slow alive") { held.push({ worker: this, score: q.score }); return; }
+                  if (fault === "incomplete batch") { queueMicrotask(() => this.emit({ kind: "result", payload: { scores: [] } })); return; }
                 }
                 queueMicrotask(() => this.emit({ kind: "result", payload: { scores: q.score, fights: q.score.length * 10, work: 1 } }));
               }

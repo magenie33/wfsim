@@ -10,7 +10,6 @@ function renderOpt() {
   // A weapon's first visit: one blank start, then the active preset.
   if (!optSeeded) {
     opt.starts = [blankStart()];
-    opt.search_strategy = "four_elements";
     opt.limits = normalizeLimits(null);
     optSeeded = true;
     bootstrapOptPresets();
@@ -26,10 +25,13 @@ function renderOpt() {
   renderOptimizationBuildConsent();
 }
 
+const optStrategies = () => META.search_presets?.strategies || [{ id: "regular", name: "Regular strategy" }];
+const defaultOptStrategy = () => META.search_presets?.default_strategy || "regular";
+
 function renderOptStrategy() {
   const select = $("opt-search-strategy");
   if (!select) return;
-  const strategies = META.search_presets?.strategies || [{ id: "four_elements", name: "Four elements strategy" }];
+  const strategies = optStrategies();
   const current = opt.search_strategy || "";
   const missing = !strategies.some(s => s.id === current);
   select.innerHTML = (missing ? `<option value="${escHtml(current)}" selected disabled>${escHtml(current || tr("Saved starts only"))}</option>` : "")
@@ -42,8 +44,7 @@ function renderOptStrategy() {
 }
 
 function setOptStrategy(id) {
-  const strategies = META.search_presets?.strategies || [{ id: "four_elements", name: "Four elements strategy" }];
-  if (!strategies.some(s => s.id === id)) return;
+  if (!optStrategies().some(s => s.id === id)) return;
   opt.search_strategy = id;
   renderOptStrategy();
   updateOptEstimate();

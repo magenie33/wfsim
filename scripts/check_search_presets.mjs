@@ -6,7 +6,7 @@ const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE });
 const { evaluate, check, finish } = app;
 const blankDraft = `!activeOptPreset && loadOptPresets().length === 0
   && opt.starts.length === 1 && startPayload(opt.starts[0]).slots.every(s => !s)
-  && opt.search_strategy === "four_elements" && $("opt-builtin").hidden`;
+  && opt.search_strategy === "regular" && $("opt-builtin").hidden`;
 
 await app.load("/weapons/Torid/optimizer", 7000);
 check("without saved searches, the editor has a blank draft, not a built-in preset",
@@ -18,7 +18,15 @@ check("the draft's starts, limits and run settings are editable", await evaluate
 check("the strategy selector explains the selected strategy", await evaluate(`(() => {
   const strategy = META.search_presets.strategies.find(s => s.id === $("opt-search-strategy").value);
   return !!strategy.description && $("opt-strategy-description").textContent === tr(strategy.description)
-    && $("opt-search-strategy").options.length === 1;
+    && $("opt-search-strategy").options.length === 2;
+})()`));
+check("four elements remains selectable without replacing the draft", await evaluate(`(() => {
+  const select = $("opt-search-strategy");
+  select.value = "four_elements"; select.onchange();
+  const four = optimizeBody();
+  select.value = "regular"; select.onchange();
+  return four.search_strategy === "four_elements" && four.starts.length === 1
+    && optimizeBody().search_strategy === "regular";
 })()`));
 const sent = JSON.parse(await evaluate(`(async () => {
   const real = api;
@@ -35,7 +43,7 @@ const sent = JSON.parse(await evaluate(`(async () => {
   return JSON.stringify(body && { strategy: body.strategy, search_strategy: body.search_strategy, starts: body.starts.length });
 })()`));
 check("the editable draft runs with one start and the selected strategy",
-  sent?.strategy === "quick" && sent.search_strategy === "four_elements" && sent.starts === 1, JSON.stringify(sent));
+  sent?.strategy === "quick" && sent.search_strategy === "regular" && sent.starts === 1, JSON.stringify(sent));
 check("deleting the last start retains one blank start", await evaluate(`(() => {
   $("opt-starts").querySelector("[data-del]").click();
   return opt.starts.length === 1 && startPayload(opt.starts[0]).slots.every(s => !s);
@@ -45,7 +53,7 @@ await evaluate(`$("preset-bar-optimizer").querySelector(".pchip.add").click()`);
 await sleep(800);
 check("users can still create their own saved searches", await evaluate(`
   !!activeOptPreset && !builtinSearchActive() && loadOptPresets().length === 1
-  && snapshotOpt().search_strategy === "four_elements"`));
+  && snapshotOpt().search_strategy === "regular"`));
 await evaluate(`(() => {
   const del = $("preset-bar-optimizer").querySelector(".pop.del");
   del.click(); if (loadOptPresets().length) del.click();

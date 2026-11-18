@@ -7,7 +7,11 @@
 # A preset with `riven` puts the asker's riven, pinned, in that start; one
 # not `listed` is applied by its own page (`riven_appraisal`, docs/AGENT.md
 # §"Riven appraisal") and never shown in the search bar.
+default_strategy: regular
 strategies:
+  - id: regular
+    name: Regular strategy
+    description: "Improve each start until no change helps. Keep the start's pins and search limits."
   - id: four_elements
     name: Four elements strategy
     description: "Keep each original start and explore branches with Heat, Cold, Electricity and Toxin 60/60 mods. Fill available slots or replace unpinned, non-required mods, then improve each branch until no change helps. Respect exclusions and pins; the added elemental mod is not pinned."

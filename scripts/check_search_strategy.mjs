@@ -13,7 +13,11 @@ runInContext(`
     weapons: [{ id: "test", modes: ["base"], mods: ["heat_card", "cold_card", "electric_card", "toxin_card"],
       evolutions: [{ tier: 1, options: [{ id: "first" }, { id: "second" }] }] }],
     search_presets: {
-      strategies: [{ id: "four_elements", name: "Four elements strategy" }],
+      default_strategy: "regular",
+      strategies: [
+        { id: "regular", name: "Regular strategy" },
+        { id: "four_elements", name: "Four elements strategy" }
+      ],
       element_starts: [["heat_card"], ["cold_card"], ["electric_card"], ["toxin_card"]],
       presets: [{ id: "riven_appraisal", riven: true, finalists: 1, candidate_runs: 10, search_strategy: "four_elements" }]
     },
@@ -152,12 +156,12 @@ runInContext(`
   renderOptStrategy();
 `, scope);
 assert.equal(read(`optimizeBody().strategy`), "quick");
-assert.equal(read(`"search_strategy" in optimizeBody()`), false);
-assert.equal(read(`"search_strategy" in snapshotOpt()`), false);
+assert.equal(read(`optimizeBody().search_strategy`), "regular");
+assert.equal(read(`snapshotOpt().search_strategy`), "regular");
 assert.deepEqual(read(`snapshotOpt().starts`), read(`legacy.starts`));
 assert.deepEqual(read(`snapshotOpt().final`), read(`legacy.final`));
 assert.deepEqual(read(`optimizeBody().limits`), read(`legacy.limits`));
-assert.match(read(`select.innerHTML`), /value="" selected disabled>Saved starts only/);
+assert.match(read(`select.innerHTML`), /value="regular" selected>Regular strategy/);
 runInContext(`select.value = "four_elements"; select.onchange();`, scope);
 assert.equal(read(`optimizeBody().search_strategy`), "four_elements");
 assert.equal(read(`snapshotOpt().search_strategy`), "four_elements");
@@ -166,10 +170,10 @@ assert.deepEqual(read(`snapshotOpt().final`), read(`legacy.final`));
 assert.deepEqual(read(`optimizeBody().limits`), read(`legacy.limits`));
 runInContext(`applyOptState(blankOpt()); renderOptStrategy();`, scope);
 assert.equal(read(`optimizeBody().starts.length`), 1);
-assert.equal(read(`optimizeBody().search_strategy`), "four_elements");
-assert.match(read(`select.innerHTML`), /value="four_elements" selected>Four elements strategy/);
+assert.equal(read(`optimizeBody().search_strategy`), "regular");
+assert.match(read(`select.innerHTML`), /value="regular" selected>Regular strategy/);
 assert.equal(read(`select.innerHTML.includes("Saved starts only")`), false);
-console.log("  ok  legacy searches stay legacy; selecting a strategy preserves starts, pins and final constraints");
+console.log("  ok  regular is the default and switching strategies preserves saved starts, pins and constraints");
 
 runInContext(`renderOptProgress({ phase: "running", rounds: 0, starts: [
   { start: 0, branch: "original", branch_index: 0, settled: true },

@@ -1679,6 +1679,20 @@ mod tests {
         let legacy = run(&req, None);
         assert_eq!(legacy["starts"], 2);
         assert_eq!(legacy["branches"], 2);
+        req["search_strategy"] = json!("regular");
+        let mut regular = run(&req, None);
+        assert_eq!(regular["starts"], legacy["starts"]);
+        assert_eq!(regular["branches"], legacy["branches"]);
+        for row in regular["results"].as_array_mut().unwrap() {
+            assert_eq!(row["replay"].as_object_mut().unwrap().remove("search_strategy"), Some(json!("regular")));
+        }
+        for answer in regular["start_results"].as_array_mut().unwrap() {
+            if let Some(replay) = answer.get_mut("result").and_then(|row| row.get_mut("replay")).and_then(Value::as_object_mut) {
+                replay.remove("search_strategy");
+            }
+        }
+        assert_eq!(regular["results"], legacy["results"]);
+        assert_eq!(regular["start_results"], legacy["start_results"]);
         for strategy in [json!("unknown"), json!(null), json!(4)] {
             req["search_strategy"] = strategy;
             assert!(super::super::parse_optimize(&req).is_err());
