@@ -148,6 +148,7 @@ LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/board_storage.mjs", "scripts/l
                 "scripts/inventory_publication_io.mjs", "scripts/inventory_disk_budget.mjs", "scripts/capacity_directory_bytes.mjs", "scripts/json_array_stream.mjs",
                 "scripts/board_pipeline.mjs", "scripts/live_mailbox.mjs", "scripts/live_intake.mjs", "scripts/intake_batches.mjs",
                 "scripts/split_board_pipeline.mjs", "scripts/prepared_board_inputs.mjs", "scripts/prepare_board_cut.mjs",
+                "scripts/board_input_maintenance.mjs",
                 "scripts/prepared_board_reader.mjs", "scripts/prepared_read_indexes.mjs", "scripts/prepared_board_consumer.mjs", "scripts/prepared_work_consumer.mjs", "scripts/prepared_work_inventory.mjs",
                 "scripts/prepared_board_projection.mjs", "scripts/board_projection_state.mjs", "scripts/audit_board_projection.mjs",
                 "scripts/audit_prepared_work.mjs", "scripts/audit_prepared_members.mjs",
