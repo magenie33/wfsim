@@ -32,6 +32,12 @@ try {
     orders: zones.map(([zone, total]) => ({ zone, kind: String(zone).padStart(2, '0'), total })) });
   app.check("each nonempty queue zone appears in FIFO priority order without needing pace",
     state.total === '23' && state.rows.join('|') === 'Zone 00 · 2|Zone 03 · 21' && !state.estimate, JSON.stringify(state));
+  state = await draw({ ...demand, orders: [{ kind: 'sweep', total: 999 }], queue: { total: 23, zones } });
+  app.check("the queue owns the total when compatibility rows differ", state.total === '23', JSON.stringify(state));
+  for (const queue of [{ total: 24, zones }, { total: 23, zones: [[3, 10], [3, 13]] }, { total: 1, zones: [[100, 1]] }]) {
+    state = await draw({ ...demand, queue });
+    app.check("a broken zone sum or identity cannot become a public total", state.total === '—' && !state.rows.length, JSON.stringify(state));
+  }
   state = await draw(demand);
   const updated = await app.evaluate(`new Date(${JSON.stringify(demand.at)}).toLocaleString(accountLocale())`);
   app.check("the queue reading supplies its update time and clearance estimate",

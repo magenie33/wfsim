@@ -913,11 +913,25 @@ const ORDER_KIND_NAMES = { rescore: "rescores after a model change {n}", sweep: 
   new_build: "new builds {n}", refresh: "requested score refreshes {n}", riven_gain: "riven gains {n}", user_calculation: "player calculations {n}",
   board: "leaderboard calculations {n}", board_review: "leaderboard reviews {n}", chat: "riven analyses {n}", survey: "survey searches {n}",
   family_build: "related weapon searches {n}", verification: "result checks {n}", unattributed_calculation: "unattributed calculations {n}" };
+function computeZoneOrders(queue) {
+  if (!queue || !Number.isSafeInteger(queue.total) || queue.total < 0 || !Array.isArray(queue.zones)) return null;
+  let sum = 0, previous = -1;
+  const orders = [];
+  for (const pair of queue.zones) {
+    if (!Array.isArray(pair) || pair.length !== 2) return null;
+    const [zone, total] = pair;
+    if (!Number.isInteger(zone) || zone <= previous || zone > 99 || !Number.isSafeInteger(total) || total < 1) return null;
+    previous = zone;
+    sum += total;
+    orders.push({ zone, total });
+  }
+  return sum === queue.total ? orders : null;
+}
 function computeDemandHtml() {
   const fresh = currentComputeDemand(computeDemand), d = fresh ? computeDemand : {};
   const n = (x) => Number(x || 0).toLocaleString(accountLocale());
   const big = (x) => `<b style="font-size:16px">${escHtml(x)}</b>`;
-  const orders = Array.isArray(d.orders) && d.orders.every(o => o && typeof o.kind === "string"
+  const orders = d.queue !== undefined ? computeZoneOrders(d.queue) : Array.isArray(d.orders) && d.orders.every(o => o && typeof o.kind === "string"
     && Number.isSafeInteger(o.total) && o.total >= 0) ? d.orders : null;
   const owed = orders?.reduce((sum, o) => sum + o.total, 0);
   const counted = Number.isSafeInteger(owed) && owed >= 0;
