@@ -188,7 +188,7 @@ pub(crate) struct QuickCtx<'a> {
     pub(crate) keep_ratio: f64,
     /// Each build's element orders, by key: legality asks for them and so does
     /// every measurement.
-    pub(crate) orders_of: std::sync::Mutex<HashMap<String, Arc<Vec<Candidate>>>>,
+    pub(crate) orders_of: std::sync::Mutex<OrderCache>,
     /// The screen's runs, per element order, by key — what the full
     /// measurement continues rather than fights again.
     pub(crate) screened_runs: std::sync::Mutex<HashMap<String, Vec<Option<Shard>>>>,
@@ -209,6 +209,37 @@ pub(crate) const KEEP_RATIO: f64 = 0.2;
 /// browser worker reports every few seconds, large enough to keep cores busy.
 const PROGRESS_CHUNK: usize = 32;
 
+/// Legality is cheap to retain for the whole solve. Resolved panels are large:
+/// keep the last two batches of orders rather than every panel ever examined.
+#[derive(Default)]
+pub(crate) struct OrderCache {
+    legal: HashMap<String, bool>,
+    recent: HashMap<String, Arc<Vec<Candidate>>>,
+    previous: HashMap<String, Arc<Vec<Candidate>>>,
+    panels: usize,
+}
+
+impl OrderCache {
+    const GENERATION: usize = 512;
+
+    fn get(&self, key: &str) -> Option<Arc<Vec<Candidate>>> {
+        self.recent.get(key).or_else(|| self.previous.get(key)).cloned()
+    }
+
+    fn insert(&mut self, key: &str, orders: Arc<Vec<Candidate>>) {
+        self.legal.insert(key.to_owned(), !orders.is_empty());
+        let size = orders.len().max(1);
+        if size > Self::GENERATION { return; }
+        if self.panels + size > Self::GENERATION {
+            std::mem::swap(&mut self.recent, &mut self.previous);
+            self.recent.clear();
+            self.panels = 0;
+        }
+        self.panels += size;
+        self.recent.insert(key.to_owned(), orders);
+    }
+}
+
 fn split_rank(s: &str) -> (&str, Option<u64>) {
     match s.rsplit_once('@') {
         Some((c, r)) if r.bytes().all(|b| b.is_ascii_digit()) => (c, r.parse().ok()),
@@ -224,15 +255,13 @@ impl QuickCtx<'_> {
     /// Every distinct element order of the build that can exist — empty when
     /// none can: no such variant, a card its evolutions refuse, or Forma
     /// cannot fit it.
-    fn orders(&self, b: &QBuild) -> Arc<Vec<Candidate>> { self.orders_by_key(b, &self.key(b)) }
-
     fn orders_by_key(&self, b: &QBuild, key: &str) -> Arc<Vec<Candidate>> {
-        if let Some(os) = self.orders_of.lock().ok().and_then(|m| m.get(key).cloned()) {
+        if let Some(os) = self.orders_of.lock().ok().and_then(|m| m.get(key)) {
             return os;
         }
         let os = Arc::new(self.orders_now(b));
         if let Ok(mut m) = self.orders_of.lock() {
-            m.insert(key.to_owned(), os.clone());
+            m.insert(key, os.clone());
         }
         os
     }
@@ -1058,11 +1087,14 @@ impl QuickCtx<'_> {
     }
 
     fn legal_now(&self, b: &QBuild) -> bool {
-        b.mods.iter().flatten().count() <= self.mod_slots && self.has_required(b) && !self.orders(b).is_empty()
+        if b.mods.iter().flatten().count() > self.mod_slots || !self.has_required(b) { return false; }
+        let key = self.key(b);
+        let held = self.orders_of.lock().ok().and_then(|m| m.legal.get(&key).copied());
+        held.unwrap_or_else(|| !self.orders_by_key(b, &key).is_empty())
     }
 
     /// Every build's score at its best element order, and WHICH order that is
-    /// (its index in [`Self::orders`]) — what a fleet worker hands back.
+    /// (its index in [`Self::orders_by_key`]) — what a fleet worker hands back.
     fn score_orders(&self, bs: &[QBuild]) -> Vec<(Score, usize, f64)> {
         self.score_orders_at(bs, self.runs)
     }
@@ -1651,6 +1683,16 @@ pub(super) fn arcane_matches(ids: &[Value], ranks: &[Value], i: usize, option: &
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn expired_panels_do_not_forget_legality() {
+        let mut cache = OrderCache::default();
+        for i in 0..(2 * OrderCache::GENERATION + 1) { cache.insert(&i.to_string(), Arc::new(Vec::new())); }
+        assert!(cache.get("0").is_none());
+        assert_eq!(cache.legal.get("0"), Some(&false));
+        assert!(cache.get(&OrderCache::GENERATION.to_string()).is_some());
+        assert_eq!(cache.recent.len() + cache.previous.len(), OrderCache::GENERATION + 1);
+    }
 
     #[test]
     fn leader_metadata_is_bounded_and_never_reuses_another_scopes_indices() {
