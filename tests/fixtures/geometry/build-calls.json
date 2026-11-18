@@ -1,0 +1,308 @@
+[
+  {
+    "id": "laetum-head0",
+    "path": "/api/optimize",
+    "body": {
+      "weapon": "laetum",
+      "mods": {
+        "hornet_strike": "fixed",
+        "primed_heated_charge": "fixed",
+        "pistol_pestilence": "fixed",
+        "frostbite": "fixed",
+        "pistol_elementalist": "fixed",
+        "primed_target_cracker": "fixed",
+        "galvanized_diffusion": "search",
+        "lethal_torrent": "search",
+        "pistol_acuity": "search",
+        "primed_pistol_gambit": "search",
+        "anemic_agility": "search",
+        "magnum_force": "search"
+      },
+      "build_min": 8,
+      "build_size": 8,
+      "enemy": "corrupted_heavy_gunner",
+      "level": 225,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 200,
+      "candidate_runs": 10,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        5
+      ],
+      "mode": "base",
+      "strategy": "quick",
+      "finalists": 5,
+      "threads": 2,
+      "arcane": [
+        "none"
+      ],
+      "gauge_charging_headshots": false,
+      "modes": {
+        "base": "fixed"
+      }
+    }
+  },
+  {
+    "id": "laetum-head100",
+    "path": "/api/optimize",
+    "body": {
+      "weapon": "laetum",
+      "mods": {
+        "hornet_strike": "fixed",
+        "primed_heated_charge": "fixed",
+        "pistol_pestilence": "fixed",
+        "frostbite": "fixed",
+        "pistol_elementalist": "fixed",
+        "primed_target_cracker": "fixed",
+        "galvanized_diffusion": "search",
+        "lethal_torrent": "search",
+        "pistol_acuity": "search",
+        "primed_pistol_gambit": "search",
+        "anemic_agility": "search",
+        "magnum_force": "search"
+      },
+      "build_min": 8,
+      "build_size": 8,
+      "enemy": "corrupted_heavy_gunner",
+      "level": 225,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 200,
+      "candidate_runs": 10,
+      "seed": 24301,
+      "headshot_pct": 100,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        5
+      ],
+      "mode": "base",
+      "strategy": "quick",
+      "finalists": 5,
+      "threads": 2,
+      "arcane": [
+        "none"
+      ],
+      "gauge_charging_headshots": false,
+      "modes": {
+        "base": "fixed"
+      }
+    }
+  },
+  {
+    "id": "akarius_prime-head0",
+    "path": "/api/optimize",
+    "body": {
+      "weapon": "akarius_prime",
+      "mods": {
+        "hornet_strike": "fixed",
+        "primed_heated_charge": "fixed",
+        "pistol_pestilence": "fixed",
+        "frostbite": "fixed",
+        "pistol_elementalist": "fixed",
+        "primed_target_cracker": "fixed",
+        "galvanized_diffusion": "search",
+        "lethal_torrent": "search",
+        "pistol_acuity": "search",
+        "primed_pistol_gambit": "search",
+        "anemic_agility": "search",
+        "magnum_force": "search"
+      },
+      "build_min": 8,
+      "build_size": 8,
+      "enemy": "corrupted_heavy_gunner",
+      "level": 225,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 200,
+      "candidate_runs": 10,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        5
+      ],
+      "mode": "base",
+      "strategy": "quick",
+      "finalists": 5,
+      "threads": 2,
+      "arcane": [
+        "none"
+      ],
+      "gauge_charging_headshots": false,
+      "modes": {
+        "base": "fixed"
+      }
+    }
+  },
+  {
+    "id": "akarius_prime-head100",
+    "path": "/api/optimize",
+    "body": {
+      "weapon": "akarius_prime",
+      "mods": {
+        "hornet_strike": "fixed",
+        "primed_heated_charge": "fixed",
+        "pistol_pestilence": "fixed",
+        "frostbite": "fixed",
+        "pistol_elementalist": "fixed",
+        "primed_target_cracker": "fixed",
+        "galvanized_diffusion": "search",
+        "lethal_torrent": "search",
+        "pistol_acuity": "search",
+        "primed_pistol_gambit": "search",
+        "anemic_agility": "search",
+        "magnum_force": "search"
+      },
+      "build_min": 8,
+      "build_size": 8,
+      "enemy": "corrupted_heavy_gunner",
+      "level": 225,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 200,
+      "candidate_runs": 10,
+      "seed": 24301,
+      "headshot_pct": 100,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        5
+      ],
+      "mode": "base",
+      "strategy": "quick",
+      "finalists": 5,
+      "threads": 2,
+      "arcane": [
+        "none"
+      ],
+      "gauge_charging_headshots": false,
+      "modes": {
+        "base": "fixed"
+      }
+    }
+  },
+  {
+    "id": "laetum-cycle-head0",
+    "path": "/api/optimize",
+    "body": {
+      "weapon": "laetum",
+      "mods": {
+        "hornet_strike": "fixed",
+        "primed_heated_charge": "fixed",
+        "pistol_pestilence": "fixed",
+        "frostbite": "fixed",
+        "pistol_elementalist": "fixed",
+        "primed_target_cracker": "fixed",
+        "galvanized_diffusion": "search",
+        "lethal_torrent": "search",
+        "pistol_acuity": "search",
+        "primed_pistol_gambit": "search",
+        "anemic_agility": "search",
+        "magnum_force": "search"
+      },
+      "build_min": 8,
+      "build_size": 8,
+      "enemy": "corrupted_heavy_gunner",
+      "level": 225,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 200,
+      "candidate_runs": 10,
+      "seed": 24301,
+      "headshot_pct": 0,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        5
+      ],
+      "mode": "cycle",
+      "strategy": "quick",
+      "finalists": 5,
+      "threads": 2,
+      "arcane": [
+        "none"
+      ],
+      "gauge_charging_headshots": false,
+      "modes": {
+        "cycle": "fixed"
+      }
+    }
+  },
+  {
+    "id": "laetum-cycle-head100",
+    "path": "/api/optimize",
+    "body": {
+      "weapon": "laetum",
+      "mods": {
+        "hornet_strike": "fixed",
+        "primed_heated_charge": "fixed",
+        "pistol_pestilence": "fixed",
+        "frostbite": "fixed",
+        "pistol_elementalist": "fixed",
+        "primed_target_cracker": "fixed",
+        "galvanized_diffusion": "search",
+        "lethal_torrent": "search",
+        "pistol_acuity": "search",
+        "primed_pistol_gambit": "search",
+        "anemic_agility": "search",
+        "magnum_force": "search"
+      },
+      "build_min": 8,
+      "build_size": 8,
+      "enemy": "corrupted_heavy_gunner",
+      "level": 225,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 200,
+      "candidate_runs": 10,
+      "seed": 24301,
+      "headshot_pct": 100,
+      "infinite_ammo": true,
+      "player_at": [
+        0,
+        0
+      ],
+      "target_at": [
+        0,
+        5
+      ],
+      "mode": "cycle",
+      "strategy": "quick",
+      "finalists": 5,
+      "threads": 2,
+      "arcane": [
+        "none"
+      ],
+      "gauge_charging_headshots": false,
+      "modes": {
+        "cycle": "fixed"
+      }
+    }
+  }
+]

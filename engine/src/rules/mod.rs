@@ -13,6 +13,7 @@ pub mod chain;
 pub mod critical;
 pub mod damage;
 pub mod elements;
+pub mod geometry;
 pub mod math;
 pub mod mercy;
 pub mod metrics;
