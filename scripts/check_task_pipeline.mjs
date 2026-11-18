@@ -92,8 +92,27 @@ export async function taskPipelineCases(db,{brokenInline=false}={}) {
   await pipelineCommand(env,['resume','statistics'],later);
   assert.equal((await pipelineCommand(env,['status','statistics'],later)).paused,false);
   assert.equal((await pipelineCommand(env,['status'],later)).length,4);
-  const cheap={LIBRARY:{prepare(sql){assert(/^(SELECT \* FROM state_task_pipeline_controls|SELECT at,engine FROM state_factory_snapshot|SELECT \* FROM state_task_pipeline_progress|SELECT to_regprocedure)/.test(sql));return db.prepare(sql);}}};
-  assert.equal((await pipelineCommand(cheap,['status','statistics'],later)).pending,null);
+  const providerSql="SELECT body FROM state_factory_findings WHERE kind='statistics_provider'";
+  const providerState={state:'capacity_hold',reason:'fixture reserve'};
+  await db.run("INSERT INTO state_factory_findings(kind,body,at) VALUES('statistics_provider',?,?) ON CONFLICT(kind) DO UPDATE SET body=excluded.body,at=excluded.at",JSON.stringify(providerState),at);
+  let providerReads=0;
+  const cheap={LIBRARY:{prepare(sql){
+    if(sql===providerSql){
+      const statement={
+        bind(...args){assert.deepEqual(args,[],'provider status has no bound parameters');return statement;},
+        first(...args){assert.deepEqual(args,[],'provider status has no bound parameters');providerReads++;return db.prepare(sql).first();}
+      };
+      return statement;
+    }
+    assert(/^(SELECT \* FROM state_task_pipeline_controls|SELECT at,engine FROM state_factory_snapshot|SELECT \* FROM state_task_pipeline_progress|SELECT to_regprocedure)/.test(sql),'cheap status read outside its bounded queries: '+sql);
+    return db.prepare(sql);
+  }}};
+  const cheapStatus=await pipelineCommand(cheap,['status','statistics'],later);
+  assert.equal(cheapStatus.pending,null);assert.deepEqual(cheapStatus.provider,providerState);assert.equal(providerReads,1);
+  for(const sql of ['SELECT body FROM state_factory_findings',providerSql+' OR true',
+    "SELECT body FROM state_factory_findings WHERE kind='statistics_storage_hold'"])
+    assert.throws(()=>cheap.LIBRARY.prepare(sql),/cheap status read outside its bounded queries/);
+  assert.throws(()=>cheap.LIBRARY.prepare(providerSql).bind('statistics_provider'),/no bound parameters/);
   console.log('ok: statistics pause/resume/status is durable and cheap, with no runnable fifth consumer or fabricated pending count');
   await assert.rejects(f.controlStage(env,'unknown',{paused:true,by:'check'},now),/unknown/);
   console.log('ok: independent stages preserve rounds, cross-engine witnesses, durable retry, pause, restart and slow-consumer isolation');
