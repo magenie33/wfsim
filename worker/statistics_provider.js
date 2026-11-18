@@ -13,7 +13,7 @@ export const STATISTICS_PUMP_MS=1000,STATISTICS_REFRESH_MS=10000,STATISTICS_SLIC
 export const STATISTICS_BUNDLE_FORMAT='statistics-provider-1';
 const ordered=value=>Array.isArray(value)?value.map(ordered):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(key=>[key,ordered(value[key])])):value;
 const identical=(a,b)=>JSON.stringify(ordered(a))===JSON.stringify(ordered(b));
-const completeBundle=value=>value?.format===STATISTICS_BUNDLE_FORMAT&&value.key&&value.countsAt===value.snapshot?.at
+const completeBundle=value=>value?.format===STATISTICS_BUNDLE_FORMAT&&value.key&&!Object.hasOwn(value.key,'engine')&&value.countsAt===value.snapshot?.at
  &&value.countsAt===value.demand?.counts_at&&value.demand?.at===value.countsAt
  &&value.demand?.expires_at===statisticsExpiresAt(value.countsAt)&&value.demand?.order_epoch===value.key.epoch;
 export const statisticsQuery=db=>async(sql,args=[])=>(await db.prepare(sql).bind(...args).all()).results;
@@ -70,16 +70,17 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
  };
  const keyOf=async options=>{
   if(!await allowed(options))throw Error('statistics paused or stopped');
-  return statisticsProjectionIdentity((sql,args)=>query(sql,args,options),release().engine);
+  return statisticsProjectionIdentity((sql,args)=>query(sql,args,options));
  };
  const projection=transaction?projectionFactory({transaction,currentIdentity:keyOf,allowed,stopped:stopping,now,clock,limits,
   complete:async(q,counts,{at,key})=>{
-   const served=release();if(served.engine!==key.engine)throw Error('statistics source changed');
+   const served=release();
    sealQuery=q;
    try{
     const sampled=Date.parse(at),dials=await dialsOf(sampleEnv,sampled);
     const snapshot=await statisticsSnapshot(q,counts.snapshot,served,dials,sampled);
     const demand=await demandOf(sampleEnv,sampled,undefined,{counts});
+    if(release().engine!==served.engine)throw Error('statistics source changed');
     return{...counts,format:STATISTICS_BUNDLE_FORMAT,snapshot,demand};
    }finally{sealQuery=null;}
   }}):null;
@@ -137,9 +138,10 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
  const assert=async(value,{lookup=query}={})=>{
   if(!currentStatistics(value.demand,now()))throw Error('statistics sample expired');
   const observedVersion=version,engine=release().engine;
+  if(value.snapshot?.engine!==engine)throw Error('statistics source changed');
   if(!await allowed({lookup}))throw Error('statistics paused or stopped');
   const deps=await dependenciesOf(lookup);if(!deps.ready)throw Error('statistics dependencies changed');
-  const key=await statisticsProjectionIdentity(lookup,engine);
+  const key=await statisticsProjectionIdentity(lookup);
   const [head]=await lookup('SELECT h.namespace,n.counts_at FROM state_statistics_head h JOIN state_statistics_namespaces n ON n.id=h.namespace WHERE h.id=1',[]);
   if(key.blocked||head?.namespace!==value.namespace||head.counts_at!==value.countsAt||!identical(key,value.key))throw Error('statistics source changed');
   if(!await allowed({lookup}))throw Error('statistics paused or stopped');
@@ -162,7 +164,7 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
       if(progress.worked||!progress.baseline)processed+=progress.processed||1;
       if(progress.baseline&&!progress.worked){
        const kept=await projection.read();
-       if(!completeBundle(kept)||now()-Date.parse(kept.countsAt)>=STATISTICS_REFRESH_MS){bundle=(await projection.seal()).counts;sealed=true;}
+       if(!completeBundle(kept)||kept.snapshot.engine!==release().engine||now()-Date.parse(kept.countsAt)>=STATISTICS_REFRESH_MS){bundle=(await projection.seal()).counts;sealed=true;}
        else bundle=kept;
        break;
       }

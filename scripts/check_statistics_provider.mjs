@@ -21,7 +21,7 @@ export async function statisticsGenerationCases(){
  const {PGlite}=await import('./pg/node_modules/@electric-sql/pglite/dist/index.js');
  const pg=new PGlite();let activeTx;
  const q=async(text,args=[])=>(await(activeTx??pg).query(text,args)).rows;
- let engine='generation-a',create=createStatisticsProjection;
+ let create=createStatisticsProjection;
  if(process.argv.includes('--break-generation-guard')){
   const file=new URL('../worker/statistics_projection.js',import.meta.url),guard="    const retained=await q('SELECT id FROM state_statistics_namespaces ORDER BY id LIMIT $1::bigint',[bound.maxNamespaces]);\n    if(retained.length>=bound.maxNamespaces)throw new StatisticsProjectionBudget('statistics retained generation budget');\n";
   let text=readFileSync(file,'utf8');assert.equal(text.split(guard).length,2);text=text.replace(guard,'');
@@ -33,21 +33,25 @@ export async function statisticsGenerationCases(){
    await pg.exec(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
   const make=(limits={})=>create({transaction:fn=>pg.transaction(async tx=>{
    activeTx=tx;try{return await fn({query:(text,args)=>tx.query(text,args)});}finally{activeTx=null;}}),
-   currentIdentity:()=>statisticsProjectionIdentity(q,engine),limits:{storageReserveBytes:1048576,...limits}});
+   currentIdentity:()=>statisticsProjectionIdentity(q),limits:{storageReserveBytes:1048576,...limits}});
   assert.equal(STATISTICS_PROJECTION_LIMITS.maxNamespaces,2);
   assert.throws(()=>make({maxNamespaces:16}),/invalid statistics generation budget/,'test fixture budget entered production');
   const first=await make().start();assert.equal((await make({maxNamespaces:1}).start()).namespace,first.namespace,'full budget blocked identical head');
+  await q("UPDATE state_statistics_namespaces SET identity=identity||jsonb_build_object('engine','legacy-engine') WHERE id=$1",[first.namespace]);
+  assert.equal((await make({maxNamespaces:1}).start()).namespace,first.namespace,'legacy engine in the head forced a new baseline');
   await q("UPDATE state_statistics_namespaces SET phase=1,cursor='[\"retained-failure-cursor\"]',counts_at='2026-11-17T00:00:00.000Z',published='{\"evidence\":\"retained\"}' WHERE id=$1",[first.namespace]);
-  engine='generation-b';const second=await make().start();assert.notEqual(first.namespace,second.namespace);
+  await q('UPDATE state_statistics_generation SET revision=1');const second=await make().start();assert.notEqual(first.namespace,second.namespace);
   const retained=()=>q('SELECT to_jsonb(n) body FROM state_statistics_namespaces n ORDER BY id');
   const before=await retained(),revision=(await q('SELECT last_value::text n FROM statistics_revision'))[0].n;
-  for(const nextEngine of ['generation-c','generation-a']){
-   engine=nextEngine;await assert.rejects(make().start(),/statistics retained generation budget/);
+  for(const generation of [2,0]){
+   await q('UPDATE state_statistics_generation SET revision=$1::bigint',[generation]);
+   await assert.rejects(make().start(),/statistics retained generation budget/);
    assert.deepEqual(await retained(),before,'generation hold changed retained failure/baseline evidence');
    assert.equal((await q('SELECT namespace FROM state_statistics_head'))[0].namespace,second.namespace,'generation hold changed head');
    assert.equal((await q('SELECT last_value::text n FROM statistics_revision'))[0].n,revision,'generation hold allocated a revision');
   }
-  engine='generation-b';assert.equal((await make().start()).namespace,second.namespace,'restart could not resume at full budget');
+  await q('UPDATE state_statistics_generation SET revision=1');
+  assert.equal((await make().start()).namespace,second.namespace,'restart could not resume at full budget');
   console.log('PASS two-generation boundary: identical/restarted head resumes; third identity and retired reentry HOLD without revision/head/evidence changes');
  }finally{await pg.close();}
 }
@@ -69,12 +73,12 @@ export async function statisticsProviderCases(){
  const unread={LIBRARY:{prepare(){throw Error('historical input read');}}};
  assert.equal(await snapshotTick(unread,{engine:'fixture'}),false,'snapshot without provider reads history');
  await assert.rejects(demandOf(unread),/complete statistics counts/);
- const at='2026-11-17T00:00:00.000Z',key={contract:'statistics-projection-1',engine:'fixture',epoch:null,generation:'1',blocked:null,inventory:null,fingerprint:'fixture'};
- const complete={format:STATISTICS_BUNDLE_FORMAT,key,namespace:'fixture-head',countsAt:at,snapshot:{at},
+ const at='2026-11-17T00:00:00.000Z',key={contract:'statistics-projection-1',epoch:null,generation:'1',blocked:null,inventory:null,fingerprint:'fixture'};
+ const complete={format:STATISTICS_BUNDLE_FORMAT,key,namespace:'fixture-head',countsAt:at,snapshot:{at,engine:'fixture'},
   demand:{ok:true,v:1,at,counts_at:at,expires_at:statisticsExpiresAt(at),order_epoch:key.epoch}};
  let paused=false,stopped=false,engine='fixture',installed=true,starts=0,steps=0,seals=0,queries=0,writes=0,kept=null,time=Date.parse(at)+5000;
  const query=async sql=>{queries++;if(sql.includes("kind='statistics_storage_hold'"))return[];if(sql.includes('index_ready'))return[{paused,index_ready:true}];
-  if(sql.startsWith('SELECT compute_order_cut_epoch')){const {contract,engine,...identity}=key;return[identity];}
+  if(sql.startsWith('SELECT compute_order_cut_epoch')){const {contract,...identity}=key;return[identity];}
   if(sql.includes('SELECT h.namespace,n.counts_at'))return[{namespace:complete.namespace,counts_at:at}];
   if(sql.includes('SELECT n.published'))return[{published:kept}];throw Error('unexpected provider query: '+sql);};
  const env={LIBRARY:{prepare:()=>({bind:()=>({run:async()=>{writes++;}})})}};
@@ -137,7 +141,7 @@ export async function statisticsStorageProviderCases({create=createStatisticsPro
 export async function statisticsProviderSourceRaceCases(){
  for(const change of ['engine','notification','both','deadline']){
   const at='2026-11-17T00:00:00.000Z',identity={epoch:null,generation:'1',blocked:null,inventory:null,fingerprint:'fixture'};
-  const counts={namespace:'fixture-head',countsAt:at,key:{contract:'statistics-projection-1',engine:'fixture',...identity},
+  const counts={namespace:'fixture-head',countsAt:at,key:{contract:'statistics-projection-1',...identity},snapshot:{at,engine:'fixture'},
    demand:{ok:true,v:1,at,counts_at:at,expires_at:statisticsExpiresAt(at),order_epoch:identity.epoch}};
   let engine='fixture',checks=0,entered,finish,time=Date.parse(at);
   const waiting=new Promise(resolve=>{entered=resolve;}),held=new Promise(resolve=>{finish=resolve;});
@@ -289,15 +293,21 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
   assert.equal((await q('SELECT at FROM state_factory_snapshot WHERE id=1'))[0].at,bundle.countsAt,'fast cache restamped sealed statistics');
   await setPipelineControl(env,'statistics',{paused:false,by:'generation-boundary'},now);
   provider=makeProvider();
-  const retained=JSON.stringify(await q('SELECT to_jsonb(n) body FROM state_statistics_namespaces n ORDER BY id'));
   assert.equal((await q('SELECT count(*)::int n FROM state_statistics_namespaces'))[0].n,2);
-  const oldEngine=served.engine;served={...served,engine:'cccccccccccc'};provider.changed();
+  now+=1000;served={...served,engine:'cccccccccccc'};provider.changed();
+  await provider.advance();const refreshed=await provider.get();
+  assert.equal(refreshed?.namespace,currentNamespace,'served engine switch rebuilt the projection');
+  assert.equal(refreshed.snapshot.engine,served.engine,'served switch published an old engine');
+  const retained=JSON.stringify(await q('SELECT to_jsonb(n) body FROM state_statistics_namespaces n ORDER BY id'));
+  const [generation]=await q('SELECT revision::text FROM state_statistics_generation WHERE id=1');
+  await q('SELECT statistics_invalidate()');provider.changed();
   await assert.rejects(provider.advance(),/statistics retained generation budget/);
   assert.equal(provider.state().state,'capacity_hold');assert.equal((await statisticsStatus(env,now)).state,'capacity_hold');
   assert.equal(JSON.stringify(await q('SELECT to_jsonb(n) body FROM state_statistics_namespaces n ORDER BY id')),retained);
   assert.equal((await q('SELECT namespace FROM state_statistics_head'))[0].namespace,currentNamespace);
-  assert.equal(await provider.get(),null,'generation hold exposed another engine counts');
-  served={...served,engine:oldEngine};provider.changed();await provider.advance();assert.equal((await provider.get()).namespace,currentNamespace);
+  assert.equal(await provider.get(),null,'generation hold exposed a stale count source');
+  await q('UPDATE state_statistics_generation SET revision=$1::bigint WHERE id=1',[generation.revision]);
+  provider.changed();await provider.advance();assert.equal((await provider.get()).namespace,currentNamespace);
   console.log('PASS native provider full wire, missing dependencies, pause/owner last-write, minimal ACL, halted writer fence/new baseline and two upgrades',schema);
   const receipt={schema,port,database,namespace:currentNamespace,firstSteps:first.steps,countsAt:bundle.countsAt,fullWire:true,legacyFallback:false,recoveryWriterFence:true,haltFreshIncarnation:true,twoNonemptyUpgrades:true,beforePutPause:true,availability:{at:availability.at,...openedFromCache},minimalAcl:acl};
   writeFileSync(new URL('native-'+schema+'.json',root),JSON.stringify(receipt,null,2)+'\n');

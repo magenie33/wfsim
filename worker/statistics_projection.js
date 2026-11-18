@@ -24,11 +24,11 @@ const point=(id='$1::text')=>`SELECT s.id,s.verb,s.state,s.producer,${statistics
 const definitions=`SELECT string_agg(def,E'\n' ORDER BY name) FROM(
  SELECT c.relname name,pg_get_viewdef(c.oid,true) def FROM pg_class c WHERE c.oid IN('state_compute_effective_open'::regclass,'state_compute_work'::regclass,'state_compute_effective_work'::regclass,'state_board_effective_pending_work'::regclass)
  UNION ALL SELECT p.proname,pg_get_functiondef(p.oid) FROM pg_proc p WHERE p.oid IN('compute_order_cut()'::regprocedure,'compute_order_cut_epoch()'::regprocedure,'compute_order_cancelled(text,bigint,bigint,bigint,text)'::regprocedure,'compute_order_existing_evidence(text,bigint,text)'::regprocedure,'factory_default_zone(text)'::regprocedure)) d`;
-export async function statisticsProjectionIdentity(query,engine){
+export async function statisticsProjectionIdentity(query){
  const rows=await query(`SELECT compute_order_cut_epoch() epoch,g.revision::text generation,coalesce(g.blocked,(SELECT reason FROM state_statistics_invalidations LIMIT 1)) blocked,
   (SELECT jsonb_build_array(body::jsonb->>'engine',body::jsonb->>'source',body::jsonb->>'snapshot') FROM state_factory_findings WHERE kind='task_inventory') inventory,
   md5((${definitions})) fingerprint FROM state_statistics_generation g WHERE id=1`,[]);
- return {contract:STATISTICS_PROJECTION_CONTRACT,engine,...rows[0]};
+ return {contract:STATISTICS_PROJECTION_CONTRACT,...rows[0]};
 }
 export class StatisticsProjectionBudget extends Error {}
 export class StatisticsStorageCapacityHold extends StatisticsProjectionBudget {
@@ -72,9 +72,9 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
    if(!lock.held)throw Error('another statistics projector owns this transaction');
    let namespace=null;
    if(key){
-    const actual=await statisticsProjectionIdentity(query,key.engine);if(!same(actual,key))throw Error('statistics namespace changed');
+    const actual=await statisticsProjectionIdentity(query);if(!same(actual,key))throw Error('statistics namespace changed');
     const [head]=await query(`SELECT h.namespace FROM state_statistics_head h JOIN state_statistics_namespaces n ON n.id=h.namespace
-     WHERE h.id=1 AND n.identity=($1::text)::jsonb`,[encoded(key)]);
+     WHERE h.id=1 AND n.identity-'engine'=($1::text)::jsonb`,[encoded(key)]);
     if(!head)throw Error('statistics target changed');namespace=head.namespace;
    }
    const value=await fn(query,usage,namespace);
@@ -376,7 +376,7 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
     const [previous]=await q('SELECT n.identity FROM state_statistics_head h JOIN state_statistics_namespaces n ON n.id=h.namespace WHERE h.id=1');
     if(previous?.identity.contract===key.contract&&previous.identity.fingerprint!==key.fingerprint)throw Error('statistics membership contract requires upgrade');
     const [current]=await q(`SELECT h.namespace FROM state_statistics_head h JOIN state_statistics_namespaces n ON n.id=h.namespace
-     WHERE h.id=1 AND n.identity=($1::text)::jsonb`,[encoded(key)]);
+     WHERE h.id=1 AND n.identity-'engine'=($1::text)::jsonb`,[encoded(key)]);
     if(current){await storage(q,current.namespace,{admit:true});await assert(key,context);return{key,namespace:current.namespace};}
     const retained=await q('SELECT id FROM state_statistics_namespaces ORDER BY id LIMIT $1::bigint',[bound.maxNamespaces]);
     if(retained.length>=bound.maxNamespaces)throw new StatisticsProjectionBudget('statistics retained generation budget');

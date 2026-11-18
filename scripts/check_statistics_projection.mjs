@@ -11,13 +11,13 @@ import {STATISTICS_WORK} from './fixtures/statistics_work_421.mjs';
 
 export async function statisticsStorageCases({create=productionProjection,only=null}={}){
  const {PGlite}=await import('./pg/node_modules/@electric-sql/pglite/dist/index.js');
- const pg=new PGlite();let activeTx,engine='storage-a';const writes=[];
+ const pg=new PGlite();let activeTx;const writes=[];
  const q=async(text,args=[])=>(await(activeTx??pg).query(text,args)).rows;
  const make=(limits={})=>create({transaction:fn=>pg.transaction(async tx=>{
   activeTx=tx;try{return await fn({query:async(text,args)=>{
    if(/INSERT INTO|UPDATE state_statistics|DELETE FROM|nextval\(|SELECT statistics_replace/.test(text))writes.push(text);
    return tx.query(text,args);
-  }});}finally{activeTx=null;}}),currentIdentity:()=>statisticsProjectionIdentity(q,engine),
+  }});}finally{activeTx=null;}}),currentIdentity:()=>statisticsProjectionIdentity(q),
   limits:{storageReserveBytes:1048576,...limits}});
  try{
   for(const name of ['schema','library','sync','inventory','build_workflows','board_admission','statistics_projection'])
@@ -33,12 +33,12 @@ export async function statisticsStorageCases({create=productionProjection,only=n
    writes.length=0;await assert.rejects(make({maxStorageBytes:1,storageReserveBytes:1})[operation](),/retained storage budget/);
    assert.deepEqual(writes,[],operation+' wrote before admission');assert.equal(await snapshot(),before,operation+' changed cursor/head/counts clock');
   }
-  if(!only||only==='new-head'){engine='storage-new';writes.length=0;
+  if(!only||only==='new-head'){await q('UPDATE state_statistics_generation SET revision=1');writes.length=0;
   await assert.rejects(make({maxStorageBytes:1,storageReserveBytes:1}).start(),/retained storage budget/);
   assert.deepEqual(writes,[],'new head allocated before admission');assert.equal(await snapshot(),before);
   assert.equal((await q('SELECT last_value::text n FROM statistics_revision'))[0].n,revision,'storage hold consumed incarnation');}
   if(only)return;
-  engine='storage-a';writes.length=0;
+  await q('UPDATE state_statistics_generation SET revision=0');writes.length=0;
   await assert.rejects(make({storageReserveBytes:0}).start(),/storage reservation unqualified/);
   assert.deepEqual(writes,[],'unqualified reserve wrote');
   const [size]=await q(`SELECT sum(pg_total_relation_size(c.oid))::text bytes FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=current_schema() AND c.relkind='r' AND c.relname LIKE 'state_statistics_%'`);
@@ -69,8 +69,8 @@ const db={exec:text=>sql.unsafe(text),run:async(text,...args)=>(await sql.unsafe
  get:async(text,...args)=>(await exec(placeholders(text),args))[0]??null,all:(text,...args)=>exec(placeholders(text),args)};
 const ddl=readFileSync(new URL('../worker/pg/statistics_projection.sql',import.meta.url),'utf8');
 const consumerIndex=ddl.match(/^-- (CREATE INDEX CONCURRENTLY[^\n]+);$/m)[1].replace('INDEX CONCURRENTLY','INDEX');
-let at=Date.parse('2026-11-17T00:00:00.000Z'),engine='fixture',stopped=false,hook=async()=>{};
-const stamp=()=>new Date(at).toISOString(),currentIdentity=()=>statisticsProjectionIdentity(query,engine);
+let at=Date.parse('2026-11-17T00:00:00.000Z'),stopped=false,hook=async()=>{};
+const stamp=()=>new Date(at).toISOString(),currentIdentity=()=>statisticsProjectionIdentity(query);
 // Membership keeps its fixture incarnations in a source copy; production refuses this budget.
 const limits={pageRows:8,maxMs:10000,maxQueries:2048,maxRows:20000,maxNamespaces:16,storageReserveBytes:1048576};
 const projection=(extra={})=>createStatisticsProjection({transaction:client.transaction,currentIdentity,stopped:()=>stopped,now:()=>at,
@@ -170,7 +170,7 @@ try{
   const zero=await bench('100k-zero-eligible');assert.equal(zero.queueRows,0);assert.equal(zero.contributions,0);
   assert(zero.questionPages<=150,'sparse baseline must advance beyond the per-page enqueue capacity');
   for(let i=0;i<256;i++){const id='new-'+String(i).padStart(5,'0');await seedComputeWork(db,{id});await pending('new',id);await ref('sweep',id+'|r|base',id);}
-  engine='benchmark-positive';const positive=await bench('100k-tail-plus-256-positive');assert.equal(positive.queueRows,256);
+  await exec('SELECT statistics_invalidate()');const positive=await bench('100k-tail-plus-256-positive');assert.equal(positive.queueRows,256);
   mkdirSync(new URL('../target/statistics-projection/',import.meta.url),{recursive:true});writeFileSync(new URL('../target/statistics-projection/baseline-'+schema+'.json',import.meta.url),JSON.stringify({schema,port,zero,positive,noProductionEta:true,limits:{pageRows:128,maxMs:3000}},null,2)+'\n');
   console.log('PASS cold baseline restart and sparse positive contributions');
  }else if(process.argv.includes('--locking-only')){
@@ -235,7 +235,7 @@ try{
  console.log('ok fanout page insertion behind cursor and pending deletion');
  const beforeCrash=await derived();let crash=true;
  hook=async event=>{if(crash&&event.sql.startsWith('UPDATE state_statistics_namespaces SET phase=')){crash=false;throw Error('injected baseline crash');}};
- engine='restart-fixture';await unit.start();await assert.rejects(unit.step(),/injected baseline crash/);hook=async()=>{};
+ await exec('SELECT statistics_invalidate()');await unit.start();await assert.rejects(unit.step(),/injected baseline crash/);hook=async()=>{};
  const afterCrash=await derived();for(const name of ['obligations','checkpoints','contributions','rollup','expiry'])assert.deepEqual(afterCrash[name],beforeCrash[name],'atomic crash '+name);
  unit=projection();await qualify('new process resumes interrupted baseline');
  const stable=await unit.read();await new Promise(r=>setTimeout(r,5));assert.equal((await unit.read()).countsAt,stable.countsAt,'cache never restamps');
@@ -251,16 +251,17 @@ try{
  await unit.step();if(newRevision)assert((await exec("SELECT revision::text FROM state_statistics_journal WHERE kind='q' AND key='[\"q01\"]'"))[0]?.revision===newRevision||!(await exec("SELECT 1 FROM state_statistics_checkpoints WHERE kind='q' AND key='[\"q01\"]'" )).length,'CAS removed a newer source revision');
  await qualify('hot dirty during RR checkpoint retained for next sample');
  // Reproduce the retired-identity reuse policy against an actual cleaned journal.
- const originalEngine=engine,originalHead=(await exec('SELECT namespace FROM state_statistics_head'))[0].namespace;
- engine='other-engine';await unit.start();await qualify('second engine baseline');
- await db.run("UPDATE state_compute_scheduling SET waits=1 WHERE id='q03'");await qualify('second engine consumes changed input');
+ const originalIdentity=await currentIdentity(),originalHead=(await exec('SELECT namespace FROM state_statistics_head'))[0].namespace;
+ await exec('SELECT statistics_invalidate()');await unit.start();await qualify('second generation baseline');
+ await db.run("UPDATE state_compute_scheduling SET waits=1 WHERE id='q03'");await qualify('second generation consumes changed input');
  for(let i=0;i<20&&(await exec('SELECT 1 FROM state_statistics_journal LIMIT 1')).length;i++)await unit.step();
- assert.equal((await exec('SELECT 1 FROM state_statistics_journal LIMIT 1')).length,0,'engine fixture journal not cleaned');
- const secondHead=(await exec('SELECT namespace FROM state_statistics_head'))[0].namespace;engine=originalEngine;at+=1000;
+ assert.equal((await exec('SELECT 1 FROM state_statistics_journal LIMIT 1')).length,0,'generation fixture journal not cleaned');
+ const secondHead=(await exec('SELECT namespace FROM state_statistics_head'))[0].namespace;
+ await exec('UPDATE state_statistics_generation SET revision=$1::bigint',[originalIdentity.generation]);at+=1000;
  await exec('UPDATE state_statistics_head SET namespace=$1',[originalHead]);
  const badReuse=(await unit.seal()).counts;await assert.rejects(equivalent(badReuse),/snapshot exact|openOf/);
  await exec('UPDATE state_statistics_head SET namespace=$1',[secondHead]);const restarted=await unit.start();assert.notEqual(restarted.namespace,originalHead);
- assert.equal(await unit.read(),null);await assert.rejects(unit.seal(),/baseline incomplete/);await qualify('retired engine identity actual reuse FAIL fresh incarnation PASS');
+ assert.equal(await unit.read(),null);await assert.rejects(unit.seal(),/baseline incomplete/);await qualify('retired identity actual reuse FAIL fresh incarnation PASS');
  let changed=false;const oldAt=(await unit.read()).countsAt;
  hook=async event=>{if(event.rr&&!changed&&event.sql.startsWith('UPDATE state_statistics_namespaces SET counts_at=')){
   changed=true;await write("INSERT INTO state_factory_findings(kind,body,at) VALUES('task_inventory','{\"engine\":\"fixture\",\"source\":\"new-source\",\"snapshot\":\"new-snapshot\"}', $1) ON CONFLICT(kind) DO UPDATE SET body=excluded.body",[stamp()]);

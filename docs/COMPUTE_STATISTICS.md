@@ -48,10 +48,12 @@ inventory, cost estimates and the complete demand wire are read in that same
 snapshot. Snapshot `at`, demand `at` and `counts_at` all retain its sampling
 time. Publishing the cached object never refreshes them.
 
-Identity consists of the engine, cut epoch, generation, explicitly published
+Projection identity consists of the cut epoch, generation, explicitly published
 inventory `(engine,source,snapshot)`, canonical SQL fingerprint and derived
 contract. Inventory `source` names its producer version, not the daemon's
-current release. A UI or daemon commit alone does not invalidate counts.
+current release. The served engine is sampled in the published snapshot. A new
+served engine can seal again from the same projection, including legacy
+namespaces with an engine in their stored identity.
 The current identical head resumes on restart; reentering a retired identity
 creates a new incarnation and baseline. Unknown canonical SQL fails closed.
 The production default retains at most two namespaces. The identical current
