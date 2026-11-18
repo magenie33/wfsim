@@ -2,11 +2,54 @@
 import assert from 'node:assert/strict';
 import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
 import {createHash} from 'node:crypto';
+import {pathToFileURL} from 'node:url';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import {postgresClient,POSTGRES_OPTIONS,placeholders} from '../worker/db.js';
 import {seedComputeWork} from './pg/fixtures.mjs';
-import {statisticsProjectionIdentity,statisticsSourceSql,statisticsConsumerPageSql} from '../worker/statistics_projection.js';
+import {statisticsProjectionIdentity,statisticsSourceSql,statisticsConsumerPageSql,createStatisticsProjection as productionProjection} from '../worker/statistics_projection.js';
 import {STATISTICS_WORK} from './fixtures/statistics_work_421.mjs';
+
+export async function statisticsStorageCases({create=productionProjection,only=null}={}){
+ const {PGlite}=await import('./pg/node_modules/@electric-sql/pglite/dist/index.js');
+ const pg=new PGlite();let activeTx,engine='storage-a';const writes=[];
+ const q=async(text,args=[])=>(await(activeTx??pg).query(text,args)).rows;
+ const make=(limits={})=>create({transaction:fn=>pg.transaction(async tx=>{
+  activeTx=tx;try{return await fn({query:async(text,args)=>{
+   if(/INSERT INTO|UPDATE state_statistics|DELETE FROM|nextval\(|SELECT statistics_replace/.test(text))writes.push(text);
+   return tx.query(text,args);
+  }});}finally{activeTx=null;}}),currentIdentity:()=>statisticsProjectionIdentity(q,engine),
+  limits:{storageReserveBytes:1048576,...limits}});
+ try{
+  for(const name of ['schema','library','sync','inventory','build_workflows','board_admission','statistics_projection'])
+   await pg.exec(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
+  const kept=await make().start();
+  const db={run:(text,...args)=>q(placeholders(text),args),get:async(text,...args)=>(await q(placeholders(text),args))[0]};
+  await seedComputeWork(db,{id:'storage-question',producer:'sweep'});
+  await q(`UPDATE state_statistics_namespaces SET phase=2,cursor='["kept"]',counts_at='2026-11-17T00:00:00.000Z',published='{"old":"clock"}' WHERE id=$1`,[kept.namespace]);
+  const snapshot=async()=>JSON.stringify(await q('SELECT to_jsonb(n) body FROM state_statistics_namespaces n ORDER BY id'));
+  const before=await snapshot(),revision=(await q('SELECT last_value::text n FROM statistics_revision'))[0].n;
+  for(const operation of ['start','step','seal']){
+   if(only&&only!==operation)continue;
+   writes.length=0;await assert.rejects(make({maxStorageBytes:1,storageReserveBytes:1})[operation](),/retained storage budget/);
+   assert.deepEqual(writes,[],operation+' wrote before admission');assert.equal(await snapshot(),before,operation+' changed cursor/head/counts clock');
+  }
+  if(!only||only==='new-head'){engine='storage-new';writes.length=0;
+  await assert.rejects(make({maxStorageBytes:1,storageReserveBytes:1}).start(),/retained storage budget/);
+  assert.deepEqual(writes,[],'new head allocated before admission');assert.equal(await snapshot(),before);
+  assert.equal((await q('SELECT last_value::text n FROM statistics_revision'))[0].n,revision,'storage hold consumed incarnation');}
+  if(only)return;
+  engine='storage-a';writes.length=0;
+  await assert.rejects(make({storageReserveBytes:0}).start(),/storage reservation unqualified/);
+  assert.deepEqual(writes,[],'unqualified reserve wrote');
+  const [size]=await q(`SELECT sum(pg_total_relation_size(c.oid))::text bytes FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=current_schema() AND c.relkind='r' AND c.relname LIKE 'state_statistics_%'`);
+  await assert.rejects(make({maxStorageBytes:Number(size.bytes)+1023,storageReserveBytes:1024}).start(),/retained storage budget/,'reserve was not included');
+  await make().start();assert.equal(await snapshot(),before,'admitted same head restart changed evidence');
+  console.log('PASS actual PGlite same/new-head, step/seal prewrite admission, qualified reserve, unchanged revision/cursor/old clock');
+ }finally{await pg.close();}
+}
+
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
+ if(process.argv.includes('--storage-only'))await statisticsStorageCases();else{
 const projectionFile=new URL('../worker/statistics_projection.js',import.meta.url),generationBudget='export const STATISTICS_RETAINED_GENERATIONS=2;';
 let projectionSource=readFileSync(projectionFile,'utf8');assert.equal(projectionSource.split(generationBudget).length,2);
 projectionSource=projectionSource.replace(generationBudget,'export const STATISTICS_RETAINED_GENERATIONS=16;')
@@ -29,7 +72,7 @@ const consumerIndex=ddl.match(/^-- (CREATE INDEX CONCURRENTLY[^\n]+);$/m)[1].rep
 let at=Date.parse('2026-11-17T00:00:00.000Z'),engine='fixture',stopped=false,hook=async()=>{};
 const stamp=()=>new Date(at).toISOString(),currentIdentity=()=>statisticsProjectionIdentity(query,engine);
 // Membership keeps its fixture incarnations in a source copy; production refuses this budget.
-const limits={pageRows:8,maxMs:10000,maxQueries:2048,maxRows:20000,maxNamespaces:16};
+const limits={pageRows:8,maxMs:10000,maxQueries:2048,maxRows:20000,maxNamespaces:16,storageReserveBytes:1048576};
 const projection=(extra={})=>createStatisticsProjection({transaction:client.transaction,currentIdentity,stopped:()=>stopped,now:()=>at,
  limits,...extra,onQuery:async event=>{await hook(event);await extra.onQuery?.(event);}});
 let unit=projection();
@@ -286,3 +329,5 @@ try{
  console.log('PASS statistics projection native PostgreSQL',process.argv.includes('--performance-only')?'performance-only':'complete',schema);
  }
 }finally{await Promise.all([sql.end(),writer.end(),peek.end()]);}
+
+}}

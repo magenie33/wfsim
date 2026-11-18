@@ -14,7 +14,8 @@ import {statisticsSchemaSql} from './statistics_schema.mjs';
 import {seedComputeWork,statisticsCounts} from './pg/fixtures.mjs';
 import {statisticsExpiresAt} from '../worker/statistics_clock.js';
 import {statisticsClockCases} from './check_statistics_clock.mjs';
-import {createStatisticsProjection,statisticsProjectionIdentity,STATISTICS_PROJECTION_LIMITS} from '../worker/statistics_projection.js';
+import {statisticsStorageCases} from './check_statistics_projection.mjs';
+import {createStatisticsProjection,statisticsProjectionIdentity,STATISTICS_PROJECTION_LIMITS,StatisticsStorageCapacityHold,StatisticsProjectionBudget} from '../worker/statistics_projection.js';
 
 export async function statisticsGenerationCases(){
  const {PGlite}=await import('./pg/node_modules/@electric-sql/pglite/dist/index.js');
@@ -32,7 +33,7 @@ export async function statisticsGenerationCases(){
    await pg.exec(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
   const make=(limits={})=>create({transaction:fn=>pg.transaction(async tx=>{
    activeTx=tx;try{return await fn({query:(text,args)=>tx.query(text,args)});}finally{activeTx=null;}}),
-   currentIdentity:()=>statisticsProjectionIdentity(q,engine),limits});
+   currentIdentity:()=>statisticsProjectionIdentity(q,engine),limits:{storageReserveBytes:1048576,...limits}});
   assert.equal(STATISTICS_PROJECTION_LIMITS.maxNamespaces,2);
   assert.throws(()=>make({maxNamespaces:16}),/invalid statistics generation budget/,'test fixture budget entered production');
   const first=await make().start();assert.equal((await make({maxNamespaces:1}).start()).namespace,first.namespace,'full budget blocked identical head');
@@ -55,6 +56,8 @@ export async function statisticsGenerationCases(){
 export async function statisticsProviderCases(){
  await statisticsClockCases();
  await statisticsGenerationCases();
+ await statisticsStorageCases();
+ await statisticsStorageProviderCases();
  assert.throws(()=>statisticsSchemaSql('schema'),/tablespace/);assert.throws(()=>statisticsSchemaSql('index'),/tablespace/);
  assert.match(statisticsSchemaSql('index',{tablespace:'pg_default'}),/CREATE INDEX CONCURRENTLY/);
  const unread={LIBRARY:{prepare(){throw Error('historical input read');}}};
@@ -64,7 +67,7 @@ export async function statisticsProviderCases(){
  const complete={format:STATISTICS_BUNDLE_FORMAT,key,namespace:'fixture-head',countsAt:at,snapshot:{at},
   demand:{ok:true,v:1,at,counts_at:at,expires_at:statisticsExpiresAt(at),order_epoch:key.epoch}};
  let paused=false,stopped=false,engine='fixture',installed=true,starts=0,steps=0,seals=0,queries=0,writes=0,kept=null,time=Date.parse(at)+5000;
- const query=async sql=>{queries++;if(sql.includes('index_ready'))return[{paused,index_ready:true}];
+ const query=async sql=>{queries++;if(sql.includes("kind='statistics_storage_hold'"))return[];if(sql.includes('index_ready'))return[{paused,index_ready:true}];
   if(sql.startsWith('SELECT compute_order_cut_epoch')){const {contract,engine,...identity}=key;return[identity];}
   if(sql.includes('SELECT h.namespace,n.counts_at'))return[{namespace:complete.namespace,counts_at:at}];
   if(sql.includes('SELECT n.published'))return[{published:kept}];throw Error('unexpected provider query: '+sql);};
@@ -84,6 +87,45 @@ export async function statisticsProviderCases(){
  stopped=true;const before={queries,writes};await provider.advance();assert.equal(await provider.get(),null);assert.deepEqual({queries,writes},before,'stopped owner performed a late lookup/write');
  console.log('PASS provider fail-closed, bounded multi-step/singleflight, cached clock, restart and owner-stop controls');
  await statisticsProviderSourceRaceCases();
+}
+
+export async function statisticsStorageProviderCases({create=createStatisticsProvider}={}){
+ const {PGlite}=await import('./pg/node_modules/@electric-sql/pglite/dist/index.js');
+ const pg=new PGlite();const q=async(text,args=[])=>(await pg.query(text,args)).rows;
+ const env={LIBRARY:{prepare:(sql)=>{let args=[];return{bind(...values){args=values;return this;},run:()=>{findingWrites++;return q(placeholders(sql),args);}};}}};
+ let starts=0,steps=0,preflights=0,findingWrites=0,fault='storage',capacity=false;
+ const capacityError=()=>new StatisticsStorageCapacityHold('retained storage budget',{bytes:'200',limitBytes:100,reserveBytes:10});
+ const query=async(sql,args=[])=>sql.includes('index_ready')
+  ?[{paused:(await q("SELECT paused FROM state_task_pipeline_controls WHERE name='statistics'"))[0]?.paused??false,index_ready:true}]:q(sql,args);
+ const make=()=>create({env,query,controlQuery:query,transaction:()=>{},release:()=>({engine:'fixture'}),
+  dependenciesOf:async()=>({ready:true,index_oid:'7'}),projectionFactory:()=>({
+   start:async()=>{starts++;if(fault==='storage')throw capacityError();return{namespace:'kept'};},
+   checkStorage:async()=>{preflights++;if(!capacity)throw capacityError();},
+   step:async()=>{steps++;throw new StatisticsProjectionBudget('statistics '+fault+' budget');},
+  })});
+ const control=async(paused,stamp)=>q(`INSERT INTO state_task_pipeline_controls(name,paused,changed_at,changed_by) VALUES('statistics',$1,$2,'fixture-operator')
+  ON CONFLICT(name) DO UPDATE SET paused=excluded.paused,changed_at=excluded.changed_at,changed_by=excluded.changed_by`,[paused,stamp]);
+ const body=async()=>(await q("SELECT body FROM state_factory_findings WHERE kind='statistics_storage_hold'"))[0]?.body;
+ try{
+  await pg.exec(readFileSync(new URL('../worker/pg/schema.sql',import.meta.url),'utf8'));
+  let provider=make();await assert.rejects(provider.advance(),/retained storage budget/);
+  assert(await body(),'storage hold was not persisted');const held=await body(),before={starts,steps,preflights,findingWrites};
+  await provider.advance();provider=make();await provider.advance();
+  assert.deepEqual({starts,steps,preflights,findingWrites},before,'held/restarted provider retried writes');assert.equal(await body(),held);
+  await control(true,'2026-11-18T01:00:00.000Z');await provider.advance();await provider.get();
+  assert.equal(await body(),held,'paused generic state overwrote typed storage hold');
+  assert.deepEqual({starts,steps,preflights,findingWrites},before,'pause cleared storage hold');
+  await control(false,'2026-11-18T01:00:01.000Z');await assert.rejects(provider.advance(),/retained storage budget/);
+  assert.equal(starts,before.starts,'failed resume preflight wrote projection');const failed=await body();
+  await provider.advance();provider=make();await provider.advance();assert.equal(preflights,1,'failed resume was blindly retried');assert.equal(await body(),failed);
+  capacity=true;fault='time';await control(false,'2026-11-18T01:00:02.000Z');
+  await assert.rejects(provider.advance(),/statistics time budget/);assert.equal(JSON.parse(await body()).state,'cleared');
+  const retry=starts;await assert.rejects(provider.advance(),/statistics time budget/);assert.equal(starts,retry+1,'ordinary time budget became persistent hold');
+  fault='query';await assert.rejects(provider.advance(),/statistics query budget/);const again=starts;
+  provider=make();await assert.rejects(provider.advance(),/statistics query budget/);assert.equal(starts,again+1,'ordinary query budget became persistent hold');
+  assert.equal(JSON.parse(await body()).state,'cleared');
+  console.log('PASS actual persisted storage hold: advance/restart/pause no retry; explicit resume rechecks; time/query remain retryable');
+ }finally{await pg.close();}
 }
 
 export async function statisticsProviderSourceRaceCases(){
@@ -138,7 +180,7 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
   const lookup=async(text,args=[],options)=>{seen.push(text);return opened.statisticsQuery(text,args,options);};
   const transaction=fn=>opened.statisticsTransaction(tx=>fn({query:async(text,args)=>{seen.push(text);const out=await tx.query(text,args);await hook(text,args,out);return out;}}));
   let provider=createStatisticsProvider({env:opened.env,controlEnv:opened.signalEnv,query:lookup,controlQuery:opened.statisticsControlQuery,transaction,
-   release:()=>served,stopped:()=>stopped,now:()=>now,limits:{pageRows:8}});
+   release:()=>served,stopped:()=>stopped,now:()=>now,limits:{pageRows:8,storageReserveBytes:1048576}});
   const noLegacy=()=>assert(!seen.some(text=>/count\(\*\)\s+FROM state_board_effective_pending_work/i.test(text)),'historical pending COUNT fallback');
   await provider.advance();assert.equal(await provider.get(),null);assert.equal((await statisticsStatus(env,now)).state,'not_installed');noLegacy();
   await sql.unsafe(statisticsSchemaSql('schema',{tablespace:'pg_default'}));
@@ -158,7 +200,7 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
   assert(applied);assert.equal((await q('SELECT at FROM state_factory_snapshot WHERE id=1'))[0].at,bundle.countsAt);
   const initial=bundle,ns=initial.namespace;
   served={...served,release:'ui-only-second'};provider=createStatisticsProvider({env:opened.env,controlEnv:opened.signalEnv,query:lookup,controlQuery:opened.statisticsControlQuery,transaction,
-   release:()=>served,stopped:()=>stopped,now:()=>now,limits:{pageRows:8}});
+   release:()=>served,stopped:()=>stopped,now:()=>now,limits:{pageRows:8,storageReserveBytes:1048576}});
   await provider.advance();assert.equal((await provider.get()).namespace,ns,'UI release rebuilds membership');
   assert.equal((await provider.get()).countsAt,initial.countsAt,'cache re-stamps full data');
   await setPipelineControl(env,'statistics',{paused:true,by:'fixture'},now);

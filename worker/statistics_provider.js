@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // One bounded consumer and one sealed source for snapshot and demand publication.
-import {createStatisticsProjection,statisticsProjectionIdentity,STATISTICS_PROJECTION_CONTRACT,StatisticsProjectionBudget} from './statistics_projection.js';
+import {createStatisticsProjection,statisticsProjectionIdentity,STATISTICS_PROJECTION_CONTRACT,StatisticsProjectionBudget,StatisticsStorageCapacityHold} from './statistics_projection.js';
 import {readPipelineControl} from './task_pipeline.js';
 import {dialsOf} from './dials.js';
 import {demandOf} from './contribution.js';
@@ -58,7 +58,7 @@ export async function statisticsStatus(env,now=Date.now(),role='wfsim_factoryd')
 
 export function createStatisticsProvider({env,controlEnv=env,transaction,query=statisticsQuery(env.LIBRARY),controlQuery=statisticsQuery(controlEnv.LIBRARY),release,stopped=()=>false,
  now=()=>Date.now(),clock=()=>performance.now(),limits={},projectionFactory=createStatisticsProjection,dependenciesOf=statisticsDependencies}){
- let active=null,flight=null,bundle=null,indexOid=null,version=0,closed=false,sealQuery=null,lastState=null;
+ let active=null,flight=null,bundle=null,indexOid=null,version=0,closed=false,sealQuery=null,lastState=null,storageHold=null,holdText=null,holdLoaded=false;
  const sampleEnv={LIBRARY:statisticsQueryDb(async(sql,args)=>{if(!sealQuery)throw Error('statistics sample is not active');return sealQuery(sql,args);})};
  const stopping=()=>closed||stopped()||!!active?.cancelled;
  const allowed=async({ignoreIndex=false,lookup=controlQuery,signal,remainingMs}={})=>{
@@ -84,9 +84,49 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
    }finally{sealQuery=null;}
   }}):null;
  const state=async value=>{
+  if(storageHold)value=storageHold;
   if(identical(value,lastState))return;lastState=value;
   await env.LIBRARY.prepare(`INSERT INTO state_factory_findings(kind,body,at) VALUES('statistics_provider',?1::text,?2::text)
    ON CONFLICT(kind) DO UPDATE SET body=excluded.body,at=excluded.at`).bind(JSON.stringify(value),iso(now())).run();
+ };
+ // A storage hold outlives provider restart and cannot be cleared by generic state.
+ const controlRevision=async()=>{
+  const [row]=await controlQuery(`SELECT paused,changed_at IS NOT NULL AND coalesce(btrim(changed_by),'')<>'' explicit,
+   md5(jsonb_build_array(paused,changed_at,changed_by)::text) token FROM state_task_pipeline_controls WHERE name='statistics'`,[]);
+  return row??{paused:false,explicit:false,token:null};
+ };
+ const loadStorageHold=async()=>{
+  if(!holdLoaded){
+   const [row]=await query("SELECT body FROM state_factory_findings WHERE kind='statistics_storage_hold'",[]);
+   if(row){const value=JSON.parse(row.body);if(value.state==='capacity_hold'){storageHold=value;holdText=row.body;lastState=value;}}
+   holdLoaded=true;
+  }
+  return storageHold;
+ };
+ const retainStorageHold=async error=>{
+  const control=await controlRevision();if(stopping())return;
+  const value={state:'capacity_hold',type:'statistics_storage',capacity:error.capacity,control};
+  const text=JSON.stringify(value);
+  if(text!==holdText){
+   await env.LIBRARY.prepare(`INSERT INTO state_factory_findings(kind,body,at) VALUES('statistics_storage_hold',?1::text,?2::text)
+    ON CONFLICT(kind) DO UPDATE SET body=excluded.body,at=excluded.at`).bind(text,iso(now())).run();
+  }
+  storageHold=value;holdText=text;holdLoaded=true;await state(value);
+ };
+ const resumeStorage=async()=>{
+  if(!await loadStorageHold())return true;
+  const control=await controlRevision();
+  if(control.paused||!control.explicit||control.token===storageHold.control.token)return false;
+  // Only a fresh explicit resume through the existing control ACL can recheck.
+  await projection.checkStorage();if(!await allowed())return false;
+  const cleared={state:'cleared',type:'statistics_storage',control,previous:storageHold.capacity};
+  const rows=await query(`UPDATE state_factory_findings SET body=$2::text,at=$3::text
+   WHERE kind='statistics_storage_hold' AND body=$1::text AND EXISTS(SELECT 1 FROM state_task_pipeline_controls
+    WHERE name='statistics' AND NOT paused AND changed_at IS NOT NULL AND coalesce(btrim(changed_by),'')<>''
+     AND md5(jsonb_build_array(paused,changed_at,changed_by)::text)=$4::text) RETURNING kind`,
+  [holdText,JSON.stringify(cleared),iso(now()),control.token]);
+  if(!rows.length)return false;
+  storageHold=null;holdText=null;lastState=null;return true;
  };
  const ready=async()=>{
   if(stopping())return false;
@@ -113,6 +153,8 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
    flight=(async()=>{
     const began=clock();let steps=0,processed=0,sealed=false;
     try{
+     if(stopping())return{steps:0,sealed:false};
+     if(!await resumeStorage())return{steps:0,sealed:false,capacity_hold:true};
      if(!await ready())return{steps:0,sealed:false};
      const started=await projection.start();if(bundle?.namespace!==started.namespace)bundle=null;
      do{
@@ -133,6 +175,7 @@ export function createStatisticsProvider({env,controlEnv=env,transaction,query=s
      await state({state:bundle?'sealed':'advancing',namespace:started.namespace,counts_at:bundle?.countsAt??null});
      return{steps,processed,sealed};
     }catch(error){
+     if(error instanceof StatisticsStorageCapacityHold){if(!stopping())await retainStorageHold(error);throw error;}
      if(!stopping())await state(error instanceof StatisticsProjectionBudget&&error.message==='statistics retained generation budget'
       ?{state:'capacity_hold',error:'statistics retained generation budget'}:{state:'held',error:'statistics operation failed'});
      throw error;

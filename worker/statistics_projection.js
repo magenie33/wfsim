@@ -6,7 +6,7 @@ export {statisticsSourceSql} from './statistics_source.js';
 
 export const STATISTICS_PROJECTION_CONTRACT='statistics-projection-1';
 export const STATISTICS_RETAINED_GENERATIONS=2;
-export const STATISTICS_PROJECTION_LIMITS={pageRows:128,maxRows:8192,maxBytes:2097152,maxQueries:1024,maxMs:3000,maxWork:4096,maxStorageBytes:1073741824,maxNamespaces:STATISTICS_RETAINED_GENERATIONS};
+export const STATISTICS_PROJECTION_LIMITS={pageRows:128,maxRows:8192,maxBytes:2097152,maxQueries:1024,maxMs:3000,maxWork:4096,maxStorageBytes:1073741824,storageReserveBytes:0,maxNamespaces:STATISTICS_RETAINED_GENERATIONS};
 const kinds=['new_build','survey_build','refresh','sweep'],kindSql="('new_build','survey_build','refresh','sweep')";
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b),encoded=value=>JSON.stringify(value),decoded=key=>JSON.parse(key);
 const keyText=key=>'['+key.map(encoded).join(', ')+']';
@@ -31,10 +31,13 @@ export async function statisticsProjectionIdentity(query,engine){
  return {contract:STATISTICS_PROJECTION_CONTRACT,engine,...rows[0]};
 }
 export class StatisticsProjectionBudget extends Error {}
+export class StatisticsStorageCapacityHold extends StatisticsProjectionBudget {
+ constructor(reason,capacity){super('statistics '+reason);this.capacity={kind:'statistics_storage',reason,...capacity};}
+}
 
 export function createStatisticsProjection({transaction,currentIdentity,stopped=()=>false,allowed=async()=>true,complete=async(_q,counts)=>counts,clock=()=>performance.now(),now=()=>Date.now(),limits={},onQuery=()=>{}}){
  const bound={...STATISTICS_PROJECTION_LIMITS,...limits};
- for(const [name,value] of Object.entries(bound))if(!Number.isSafeInteger(value)||value<1)throw Error('invalid statistics limit '+name);
+ for(const [name,value] of Object.entries(bound))if(!Number.isSafeInteger(value)||value<(name==='storageReserveBytes'?0:1))throw Error('invalid statistics limit '+name);
  if(bound.maxNamespaces>STATISTICS_RETAINED_GENERATIONS)throw Error('invalid statistics generation budget');
  if(bound.pageRows>4096)throw Error('statistics page exceeds input bound');
  if(typeof currentIdentity!=='function')throw Error('statistics current identity is required');
@@ -195,11 +198,17 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
   removed AS(DELETE FROM state_statistics_journal j USING page p WHERE(j.owner,j.kind,j.key,j.revision)=(p.owner,p.kind,p.key,p.revision) RETURNING 1)
   DELETE FROM state_statistics_checkpoints c USING page p,(SELECT count(*) FROM removed)gate
    WHERE c.namespace=$1 AND(c.owner,c.kind,c.key,c.revision)=(p.owner,p.kind,p.key,p.revision) RETURNING c.revision::text`,[ns,bound.pageRows]);
- const storage=async(q,ns)=>{
+ // This is qualified admission headroom, not a PostgreSQL allocation or WAL cap.
+ // Zero refuses writes until the operator supplies a measured capacity reservation.
+ const storage=async(q,ns,{admit=false}={})=>{
   const [row]=await q(`SELECT(SELECT count(*) FROM state_statistics_obligations WHERE namespace=$1)::text work,
    (SELECT sum(pg_total_relation_size(c.oid)) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
     WHERE n.nspname=current_schema() AND c.relkind='r' AND c.relname LIKE 'state_statistics_%')::text bytes`,[ns]);
-  if(BigInt(row.work)>BigInt(bound.maxWork)||BigInt(row.bytes)>BigInt(bound.maxStorageBytes))throw new StatisticsProjectionBudget('statistics retained storage budget');
+  const capacity={bytes:row.bytes,work:row.work,limitBytes:bound.maxStorageBytes,reserveBytes:bound.storageReserveBytes};
+  if(admit&&!bound.storageReserveBytes)throw new StatisticsStorageCapacityHold('storage reservation unqualified',capacity);
+  if(BigInt(row.work)>BigInt(bound.maxWork)||BigInt(row.bytes)+BigInt(admit?bound.storageReserveBytes:0)>BigInt(bound.maxStorageBytes))
+   throw new StatisticsStorageCapacityHold('retained storage budget',capacity);
+  return capacity;
  };
  const reading=async(q,ns,at)=>{
   const rows=await q('SELECT key,n::text FROM state_statistics_rollup WHERE namespace=$1 ORDER BY key',[ns]);
@@ -219,26 +228,29 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
     if(previous?.identity.contract===key.contract&&previous.identity.fingerprint!==key.fingerprint)throw Error('statistics membership contract requires upgrade');
     const [current]=await q(`SELECT h.namespace FROM state_statistics_head h JOIN state_statistics_namespaces n ON n.id=h.namespace
      WHERE h.id=1 AND n.identity=($1::text)::jsonb`,[encoded(key)]);
-    if(current){await assert(key,context);return{key,namespace:current.namespace};}
+    if(current){await storage(q,current.namespace,{admit:true});await assert(key,context);return{key,namespace:current.namespace};}
     const retained=await q('SELECT id FROM state_statistics_namespaces ORDER BY id LIMIT $1::bigint',[bound.maxNamespaces]);
     if(retained.length>=bound.maxNamespaces)throw new StatisticsProjectionBudget('statistics retained generation budget');
+    await storage(q,null,{admit:true});
     const [version]=await q("SELECT nextval('statistics_revision')::text incarnation"),ns=await namespaceOf(key)+'-'+version.incarnation;
     await q('INSERT INTO state_statistics_namespaces(id,identity) VALUES($1,($2::text)::jsonb)',[ns,encoded(key)]);
-    await q('INSERT INTO state_statistics_head(id,namespace) VALUES(1,$1) ON CONFLICT(id) DO UPDATE SET namespace=excluded.namespace',[ns]);await assert(key,context);return{key,namespace:ns};},{context});});
+    await q('INSERT INTO state_statistics_head(id,namespace) VALUES(1,$1) ON CONFLICT(id) DO UPDATE SET namespace=excluded.namespace',[ns]);await storage(q,ns);await assert(key,context);return{key,namespace:ns};},{context});});
   },
   async step(){return operation(async context=>{const key=await identity(context),at=iso(now());const progress=await run(async(q,usage,ns)=>{
    const [state]=await q('SELECT phase::text,cursor FROM state_statistics_namespaces WHERE id=$1',[ns]);
    if(!state)throw Error('statistics baseline not started');
+   await storage(q,ns,{admit:true});
    if(!(await nextWork(q,ns)))await baseline(q,ns,state,key);
    await importJournal(q,ns);const work=await nextWork(q,ns);
    if(work){if(work.kind==='p')await pending(q,ns,work,key);else await fanout(q,ns,work,at);}
    await storage(q,ns);return{baseline:Number(state.phase)===2,worked:!!work,usage};
   },{key,context});
-   await run((q,_usage,ns)=>cleanup(q,ns),{key,context,validateAfter:false});return progress;});},
+   await run(async(q,_usage,ns)=>{await storage(q,ns,{admit:true});const value=await cleanup(q,ns);await storage(q,ns);return value;},{key,context,validateAfter:false});return progress;});},
   async seal(){return operation(async context=>{const key=await identity(context),at=iso(now());return run(async(q,usage,ns)=>{
    await q('SELECT compute_order_cut_lock()');
    const [state]=await q('SELECT phase::text FROM state_statistics_namespaces WHERE id=$1',[ns]);
    if(Number(state?.phase)!==2)throw Error('statistics baseline incomplete');
+   await storage(q,ns,{admit:true});
    for(;;){await importJournal(q,ns);const work=await nextWork(q,ns);
     if(work){if(work.kind==='p')await pending(q,ns,work,key);else await fanout(q,ns,work,at);continue;}
     const due=await q('SELECT question FROM state_statistics_expiry WHERE namespace=$1 AND at<$2 ORDER BY at,question LIMIT $3::bigint',[ns,at,bound.pageRows]);
@@ -248,8 +260,9 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
    await storage(q,ns);const counts=await complete(q,{...await reading(q,ns,at),key},{at,key});
    if(counts.countsAt!==at||counts.namespace!==ns||!same(counts.key,key)||counts.snapshot.at!==at)throw Error('statistics completion changed sample identity');
    await q('UPDATE state_statistics_namespaces SET counts_at=$2,published=($3::text)::jsonb WHERE id=$1',[ns,at,encoded(counts)]);
-   return{counts,usage};
+   await storage(q,ns);return{counts,usage};
   },{rr:true,key,context});});},
+  async checkStorage(){return operation(async context=>{await identity(context);return run(q=>storage(q,null,{admit:true}),{context});});},
   async read(){return operation(async context=>{const key=await identity(context);return run(async(q,_usage,ns)=>(await q('SELECT published FROM state_statistics_namespaces WHERE id=$1',[ns]))[0]?.published??null,{key,context});});}
  };
 }
