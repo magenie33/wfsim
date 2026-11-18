@@ -173,14 +173,16 @@ const opened = await openEnv({ PG_URL: "postgres://local/wfsim", PG_ACCOUNTS_URL
 const waiting = opened.backgroundEnv.LIBRARY.prepare("SELECT 1").all();
 const primary = opened.env.LIBRARY.prepare("SELECT 1").all();
 await Promise.resolve();await opened.signalEnv.LIBRARY.prepare("SELECT 1").all();
-assert.deepEqual(pools.map((p) => p.max), [1, 2, 1, 1, 1, 1, 1, 1]);
-assert.equal(pools.reduce((n,p)=>n+p.max,0),9);
+await opened.statisticsEnv.LIBRARY.prepare("SELECT 1").all();
+assert.deepEqual(pools.map((p) => p.max), [1, 2, 1, 1, 1, 1, 1, 1, 1]);
+assert.equal(pools.reduce((n,p)=>n+p.max,0),10);
 assert.equal(pools[2].connection.application_name,"wfsim-factoryd-signal");
 assert.equal(pools[2].connection.statement_timeout,30000);
-assert.deepEqual(pools.slice(4).map(p=>p.connection.application_name),
+assert.equal(pools[3].connection.application_name,"wfsim-factoryd-statistics-control");
+assert.deepEqual(pools.slice(5).map(p=>p.connection.application_name),
   ["wfsim-factoryd-admission","wfsim-factoryd-verification","wfsim-factoryd-delivery","wfsim-factoryd-contribution"]);
 for(const resolve of blockedPools.values())resolve();await Promise.all([waiting,primary]);await opened.close();
-console.log("ok: blocked primary and background pools cannot consume the reserved signal connection; total budget stays nine");
+console.log("ok: signal and statistics control stay independent while primary and background pools are busy");
 
 const writeDb=await testDb('library');
 for(const stopAt of ['before','last-sql','last-check']){
