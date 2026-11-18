@@ -28,6 +28,19 @@ import {createStatisticsProvider,STATISTICS_PUMP_MS} from '../worker/statistics_
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
 export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, STATS_TICK_MS = 10_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
+
+export function statisticsLimitsFromEnv(env) {
+  const maximum = env.FACTORY_STATISTICS_MAX_BYTES;
+  const reserve = env.FACTORY_STATISTICS_RESERVE_BYTES;
+  if (maximum === undefined && reserve === undefined) return {};
+  const maxStorageBytes = Number(maximum), storageReserveBytes = Number(reserve);
+  if (![maximum, reserve].every(value => /^[1-9][0-9]*$/.test(value))
+      || ![maxStorageBytes, storageReserveBytes].every(Number.isSafeInteger)
+      || storageReserveBytes >= maxStorageBytes) {
+    throw Error("set valid FACTORY_STATISTICS_MAX_BYTES and FACTORY_STATISTICS_RESERVE_BYTES");
+  }
+  return { maxStorageBytes, storageReserveBytes };
+}
 /// Bounded maintenance passes; archived task pruning runs separately through
 /// scripts/pg_task_archive.py and the unarchived retention call returns zero.
 export const PAST_MS = 60_000, PAST_BATCH = 100, PAST_CALLS = 5;
@@ -138,7 +151,8 @@ async function served() {
 /// `opened` and `servedNow` stand in for the databases and the release in a
 /// check; `put` (one object to R2) and `readEdge` (the signal as the CDN serves it) for R2 and the edge.
 export async function run({ once = false, opened = null, servedNow = served, target = signalTarget(),
-  put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge, statisticsFactory=createStatisticsProvider } = {}) {
+  put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge, statisticsFactory=createStatisticsProvider,
+  statisticsLimits = statisticsLimitsFromEnv(process.env) } = {}) {
   const { env, signalEnv = env, backgroundEnv = env, writeSnapshot,writeAvailability,statisticsTransaction,statisticsQuery,statisticsControlQuery,stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
   let stopping = false, ownershipLost = false, stopRun;
   let owner;
@@ -154,7 +168,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   try { if (kept) cursor = JSON.parse(kept.body).cursor || cursor; } catch { /* from ten minutes ago */ }
   let release = await servedNow();
   const statistics=statisticsFactory({env,controlEnv:signalEnv,transaction:statisticsTransaction,query:statisticsQuery,controlQuery:statisticsControlQuery,
-    release:()=>release,stopped:()=>stopping});
+    release:()=>release,stopped:()=>stopping,limits:statisticsLimits});
   let statisticsAt=0;
   let wakeStatistics=()=>{};
   const publishSnapshot=counts=>snapshotTick(env,{engine:release.engine,release:release.release},Date.now(),{counts,allowed:statistics.allowed,

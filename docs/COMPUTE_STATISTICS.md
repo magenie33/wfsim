@@ -73,6 +73,13 @@ Schema and index rendering require an explicit tablespace. Index creation is
 outside a transaction and does not replace any source index. Repeated schema
 and grant installation preserves nonempty progress.
 
+The daemon reads the qualified statistics allocation from
+`FACTORY_STATISTICS_MAX_BYTES` and the reserved physical growth per operation
+from `FACTORY_STATISTICS_RESERVE_BYTES`. Set both in its environment as
+positive integer byte counts, with the reserve smaller than the allocation.
+Absent values keep statistics writes on capacity hold. The operator budgets
+WAL and the filesystem floors independently of the derived relation limit.
+
 `statistics_preflight` validates the source paging index's keys, predicate and
 readiness, all capture triggers, schema and required runtime privileges.
 Missing dependencies leave counts unknown or at their previous complete clock;

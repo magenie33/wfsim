@@ -9,7 +9,7 @@ import {createStatisticsProvider,statisticsStatus,STATISTICS_BUNDLE_FORMAT} from
 import {demandOf} from '../worker/contribution.js';
 import {snapshotTick} from '../worker/settler.js';
 import {setPipelineControl} from '../worker/task_pipeline.js';
-import {openEnv,run} from './factoryd.mjs';
+import {openEnv,run,statisticsLimitsFromEnv} from './factoryd.mjs';
 import {statisticsSchemaSql} from './statistics_schema.mjs';
 import {seedComputeWork,statisticsCounts} from './pg/fixtures.mjs';
 import {statisticsExpiresAt} from '../worker/statistics_clock.js';
@@ -54,6 +54,12 @@ export async function statisticsGenerationCases(){
 
 
 export async function statisticsProviderCases(){
+ const budgets=(max,reserve)=>({FACTORY_STATISTICS_MAX_BYTES:max,FACTORY_STATISTICS_RESERVE_BYTES:reserve});
+ assert.deepEqual(statisticsLimitsFromEnv({}),{});
+ assert.deepEqual(statisticsLimitsFromEnv(budgets('1073741824','33554432')),
+  {maxStorageBytes:1073741824,storageReserveBytes:33554432});
+ for(const input of [budgets('1073741824'),budgets('1048576','1048576'),budgets('1e9','4096'),
+  budgets('9007199254740992','4096'),budgets('4096','0')])assert.throws(()=>statisticsLimitsFromEnv(input),/set valid FACTORY_STATISTICS/);
  await statisticsClockCases();
  await statisticsGenerationCases();
  await statisticsStorageCases();
@@ -179,8 +185,9 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
   opened=await openEnv({PG_URL:'postgres://wfsim_factoryd@127.0.0.1:'+port+'/'+database},connect);
   const lookup=async(text,args=[],options)=>{seen.push(text);return opened.statisticsQuery(text,args,options);};
   const transaction=fn=>opened.statisticsTransaction(tx=>fn({query:async(text,args)=>{seen.push(text);const out=await tx.query(text,args);await hook(text,args,out);return out;}}));
-  let provider=createStatisticsProvider({env:opened.env,controlEnv:opened.signalEnv,query:lookup,controlQuery:opened.statisticsControlQuery,transaction,
+  const makeProvider=()=>createStatisticsProvider({env:opened.env,controlEnv:opened.signalEnv,query:lookup,controlQuery:opened.statisticsControlQuery,transaction,
    release:()=>served,stopped:()=>stopped,now:()=>now,limits:{pageRows:8,storageReserveBytes:1048576}});
+  let provider=makeProvider();
   const noLegacy=()=>assert(!seen.some(text=>/count\(\*\)\s+FROM state_board_effective_pending_work/i.test(text)),'historical pending COUNT fallback');
   await provider.advance();assert.equal(await provider.get(),null);assert.equal((await statisticsStatus(env,now)).state,'not_installed');noLegacy();
   await sql.unsafe(statisticsSchemaSql('schema',{tablespace:'pg_default'}));
@@ -251,7 +258,11 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
   const code=await runDaemon({once:true,opened:{...opened,close:async()=>{},writeSnapshot:async(...args)=>{
    const applied=await opened.writeSnapshot(...args);
    if(applied&&++snapshotWrites===2)await setPipelineControl(env,'statistics',{paused:true,by:'before-put'},now);return applied;
-  }},statisticsFactory:()=>provider,servedNow:async()=>served,target:{bucket:'provider-fixture'},put:async(_,object)=>puts.push(object)});
+  }},statisticsLimits:{maxStorageBytes:1073741824,storageReserveBytes:1048576},
+  statisticsFactory:({limits})=>{
+   assert.deepEqual(limits,{maxStorageBytes:1073741824,storageReserveBytes:1048576});
+   return provider;
+  },servedNow:async()=>served,target:{bucket:'provider-fixture'},put:async(_,object)=>puts.push(object)});
   assert.equal(code,0);assert.equal(snapshotWrites,2,'real daemon demand path did not write its matching snapshot');
   assert(!puts.some(object=>object.key==='demand.json'),'pause after matching SQL write permitted late R2 publication');
   assert(puts.some(object=>object.key==='work.json'),'statistics pause blocked independent fast signal');
@@ -262,6 +273,7 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
   assert.deepEqual(openedFromCache,{open:availability.body.open,asking:availability.body.asking},'factory_open lost the independent cache');
   assert.equal((await q('SELECT at FROM state_factory_snapshot WHERE id=1'))[0].at,bundle.countsAt,'fast cache restamped sealed statistics');
   await setPipelineControl(env,'statistics',{paused:false,by:'generation-boundary'},now);
+  provider=makeProvider();
   const retained=JSON.stringify(await q('SELECT to_jsonb(n) body FROM state_statistics_namespaces n ORDER BY id'));
   assert.equal((await q('SELECT count(*)::int n FROM state_statistics_namespaces'))[0].n,2);
   const oldEngine=served.engine;served={...served,engine:'cccccccccccc'};provider.changed();
