@@ -1,65 +1,60 @@
-# EVERY CONTRIBUTION IS LICENSED BEFORE IT LANDS, OR IT NEVER CAN BE.
-#
-# The project is offered under AGPL-3.0-or-later AND under separate terms the
-# copyright holder may grant. That second half rests on the copyright being
-# whole: one merged line from somebody who never signed `CLA.md` removes the
-# ability to license the project as one piece, and it cannot be repaired
-# afterwards except by finding that person and asking them to sign.
-#
-# A CHECKBOX IN A TEMPLATE IS NOT A GATE. This is, and it is the reason the
-# template's checkbox can be trusted.
+# SPDX-License-Identifier: AGPL-3.0-or-later
 name: CLA
 
 on:
-  # `pull_request_target` runs the BASE branch's copy of this file, with a
-  # token — which is what lets a fork's pull request be checked at all. It
-  # never checks out the fork's code, so there is nothing here for a pull
-  # request to influence.
   pull_request_target:
-    types: [opened, reopened, synchronize]
+    branches: [main]
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: Pull request number to recheck against the current signature record
+        required: true
+        type: number
 
 permissions:
   contents: read
   pull-requests: read
+  statuses: write
+
+concurrency:
+  group: cla-${{ github.event.pull_request.number || inputs.pull_request }}
+  cancel-in-progress: true
 
 jobs:
   signed:
+    if: github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: is the author on the list?
+      # The script and signature record come from the trusted base.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.23.4'
+      - name: Check recorded consent for the pull request and its authors
+        id: cla
         env:
-          AUTHOR: ${{ github.event.pull_request.user.login }}
-          KIND: ${{ github.event.pull_request.user.type }}
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.pull_request.number || inputs.pull_request }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/check_cla.mjs "$NUMBER" "$EXPECTED_HEAD"
+      - name: Record the result on the exact pull request commit
+        if: ${{ !cancelled() && (steps.cla.outputs.head_sha || github.event.pull_request.head.sha) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ steps.cla.outputs.head_sha || github.event.pull_request.head.sha }}
+          OUTCOME: ${{ steps.cla.outcome }}
         run: |
-          set -euo pipefail
-          # A BOT IS NOT A PERSON AND CANNOT SIGN. The scoring and publishing
-          # workflows push through one, so a gate that refused it would refuse
-          # the project's own machinery.
-          if [ "$KIND" = "Bot" ]; then
-            echo "::notice::$AUTHOR is a bot — nothing to sign"
-            exit 0
+          if [ "$OUTCOME" = success ]; then
+            state=success
+            description='Contribution rights are recorded'
+          else
+            state=failure
+            description='Contribution rights need review'
           fi
-          who=$(printf '%s' "$AUTHOR" | tr '[:upper:]' '[:lower:]')
-          # COMMENTS AND BLANKS ARE NOT NAMES, and a trailing space is not a
-          # different person: the file is read the way it is written.
-          if sed 's/#.*//' .github/cla-signed.txt \
-               | tr -d '\r' | tr '[:upper:]' '[:lower:]' \
-               | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' \
-               | grep -qx "$who"; then
-            echo "$AUTHOR has signed the CLA"
-            exit 0
-          fi
-          echo "::error::$AUTHOR is not on .github/cla-signed.txt"
-          cat <<EOF
-          This pull request cannot be merged until its author has signed the CLA.
-
-          To sign, comment on this pull request with exactly this line:
-
-            I have read the CLA and I hereby sign the CLA
-
-          A maintainer then adds your GitHub login to .github/cla-signed.txt,
-          which is the record — CLA.md §7. You sign once, not per pull request.
-          EOF
-          exit 1
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$HEAD_SHA" \
+            -f state="$state" -f context=cla -f description="$description" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null
