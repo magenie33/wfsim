@@ -15,6 +15,7 @@ use std::sync::atomic::Ordering;
 
 use wasm_bindgen::prelude::*;
 use wfsim_optimizer::FunnelState;
+use wfsim_webapi::PreparedSimulationReport;
 
 /// HAND THE ENGINE ONE DATA PACK (docs/CLIENTS.md §"The official data pack"):
 /// every pack goes in before the first call; returns "" or what was wrong.
@@ -105,11 +106,10 @@ pub fn simulate_progress(body: &str, on_progress: &js_sys::Function) -> String {
 /// Returns the shard, which carries SUMS rather than runs: about 24 KB at a
 /// thousand runs against the 8 MB a thousand `RunResult`s would be.
 #[wasm_bindgen]
-pub fn simulate_shard(body: &str, from: u32, count: u32, on_progress: &js_sys::Function) -> String {
+pub fn simulate_shard(body: &str, from: u32, count: u32, on_progress: &js_sys::Function, prepared: Option<bool>) -> String {
     if let Some(e) = wfsim_webapi::packs_missing("") {
         return e;
     }
-    let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
     let mut last = u32::MAX;
     let mut tick = |done: u32, total: u32| {
         let pct = (done * 100).checked_div(total).unwrap_or(100);
@@ -122,7 +122,35 @@ pub fn simulate_shard(body: &str, from: u32, count: u32, on_progress: &js_sys::F
             );
         }
     };
-    wfsim_webapi::simulate_shard_json(&v, from, count, &mut tick).to_string()
+    if prepared == Some(true) {
+        let (key, fight) = match take_prepared(body) {
+            Some(entry) => entry,
+            None => match PreparedSimulationReport::new(parse_simulation(body)) {
+                Ok(fight) => (body.to_owned(), fight),
+                Err(e) => return e.to_string(),
+            },
+        };
+        let shard = fight.shard_json(from, count, &mut tick);
+        PREPARED_SIMULATION.set(Some((key, fight)));
+        return shard.to_string();
+    }
+    wfsim_webapi::simulate_shard_json(&parse_simulation(body), from, count, &mut tick).to_string()
+}
+
+thread_local! {
+    // A lane keeps only its last candidate's preparation, never its results.
+    // A replacement, a merge or termination drops it; retries carry the full body.
+    static PREPARED_SIMULATION: std::cell::Cell<Option<(String, PreparedSimulationReport)>> = const { std::cell::Cell::new(None) };
+}
+
+fn take_prepared(body: &str) -> Option<(String, PreparedSimulationReport)> {
+    // Compare every byte (including mod order and hidden configuration), not a
+    // hand-maintained list of inputs. No borrow crosses a progress callback.
+    PREPARED_SIMULATION.take().filter(|(key, _)| key == body)
+}
+
+fn parse_simulation(body: &str) -> serde_json::Value {
+    serde_json::from_str(body).unwrap_or(serde_json::Value::Null)
 }
 
 /// …AND THE MERGE, which turns the fleet's shards into the ordinary response.
@@ -131,13 +159,17 @@ pub fn simulate_shard(body: &str, from: u32, count: u32, on_progress: &js_sys::F
 /// implementation of the arithmetic rather than a Rust one and a JavaScript one
 /// that drift — the page only schedules and collects.
 #[wasm_bindgen]
-pub fn simulate_merged(body: &str, shards: &str) -> String {
+pub fn simulate_merged(body: &str, shards: &str, prepared: Option<bool>) -> String {
     if let Some(e) = wfsim_webapi::packs_missing("") {
         return e;
     }
-    let v: serde_json::Value = serde_json::from_str(body).unwrap_or(serde_json::Value::Null);
     let parts: Vec<serde_json::Value> = serde_json::from_str(shards).unwrap_or_default();
-    wfsim_webapi::simulate_merged_json(&v, &parts).to_string()
+    if prepared == Some(true) {
+        if let Some((_, fight)) = take_prepared(body) {
+            return fight.merged_json(&parts).to_string();
+        }
+    }
+    wfsim_webapi::simulate_merged_json(&parse_simulation(body), &parts).to_string()
 }
 
 /// Snapshot `FunnelState` into the native /api/optimize/status shape (minus

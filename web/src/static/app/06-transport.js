@@ -715,11 +715,12 @@ async function laneSimulate(lane, body, live) {
     if (live && !live()) return null;
     const n = Math.min(count, runs - from);
     const t0 = performance.now();
-    let r = await lane.send({ kind: "shard", body, from, count: n }, null, false, live);
+    const piece = { kind: "shard", body, from, count: n, prepared: true };
+    let r = await lane.send(piece, null, false, live);
     if (gone(r)) {
       if (live && !live()) return null;
       lane = freeLane();
-      r = await lane.send({ kind: "shard", body, from, count: n }, null, false, live);
+      r = await lane.send(piece, null, false, live);
       if (gone(r)) return null;
     }
     // THE ENGINE'S REFUSAL IS AN ANSWER — passed on whole, as one call's would be.
@@ -728,7 +729,7 @@ async function laneSimulate(lane, body, live) {
     from += n;
     count = Math.max(1, Math.round((n * 250) / Math.max(1, performance.now() - t0)));
   }
-  const m = await lane.send({ kind: "merge", body, shards: parts }, null, false, live);
+  const m = await lane.send({ kind: "merge", body, shards: parts, prepared: true }, null, false, live);
   return gone(m) ? laneAsk(freeLane(), "/api/simulate", body, live) : m;
 }
 
