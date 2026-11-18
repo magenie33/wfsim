@@ -49,6 +49,7 @@ const receiptSize = r => (r.shards||[r.shard]).reduce((n,x)=>n+(x==null?0:Buffer
 function compareReceipt(actual,expected) {
   if (actual==null) return assert.equal(expected,null);
   assert.equal(typeof actual,'string');
+  if(typeof expected==='string') return assert.equal(actual,expected);
   const [version,widths,v]=JSON.parse(actual); assert.equal(version,1);
   for(const [i,k] of ['by_body','by_combatant'].entries()){
     assert.equal(widths[i],expected[k].length);while(v[k].length<widths[i])v[k].push(0);
@@ -101,7 +102,7 @@ for(const [ci,c] of cases.entries()){
       const count=mode==='opening'?Math.min(4,a.pending.length):a.pending.length;
       metrics.batch0??=a.pending.length;
       for(let i=0;i<count;i+=32){const stop=Math.min(count,i+32);
-        const aa=req({score:a.pending.slice(i,stop)},'score','A');
+        const aa=req({score:a.pending.slice(i,stop),...(process.env.BENCH_MATCHED_COMPACT==='1'?{compact_shards:1}:{})},'score','A');
         const bb=req({score:b.pending.slice(i,stop),compact_shards:1},'score','B');
         compareBatch(aa,bb);sa.push(...aa.scores);sb.push(...bb.scores);
         metrics.fights+=aa.fights;metrics.work+=aa.work;metrics.builds+=aa.scores.length;

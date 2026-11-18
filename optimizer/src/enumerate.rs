@@ -11,6 +11,10 @@ use wfsim_engine::rules::damage::DamageType;
 
 use crate::{tick, FunnelState};
 
+mod order_classes;
+#[cfg(test)]
+mod order_tests;
+
 /// Prescribed-mods constraints: forced inclusions/exclusions by mod id.
 #[derive(Debug, Clone, Default)]
 pub struct Constraints {
@@ -304,6 +308,8 @@ fn enumerate_rec<S: FnMut(&mut Vec<Candidate>) -> bool>(
             policy,
             stats,
             scratch,
+            #[cfg(test)]
+            None,
         );
         if let Some(st) = state {
             // fetch_add keeps the counter a TOTAL across evo-set calls.
@@ -385,6 +391,8 @@ pub fn expand_one(
     expand_subset(
         pool, base, second_form, variant, cap, innate, exilus_opts, subset, tenno, policy,
         &mut stats, out,
+        #[cfg(test)]
+        None,
     );
 }
 
@@ -402,6 +410,7 @@ fn expand_subset(
     policy: StackPolicy,
     stats: &mut EnumStats,
     out: &mut Vec<Candidate>,
+    #[cfg(test)] mut probe: Option<&mut order_tests::Probe>,
 ) {
     // Legalization is order-independent (drain/polarity multiset only), so
     // it happens once per exilus option, outside the order loop.
@@ -425,6 +434,14 @@ fn expand_subset(
     }
     let mut orders = Vec::new();
     permutations(&elems, &mut Vec::new(), &mut orders);
+    let allow_classes = true;
+    #[cfg(test)]
+    let allow_classes = !probe.as_ref().is_some_and(|p| p.legacy) && allow_classes;
+    let anchor = if allow_classes {
+        order_classes::anchor(&elems, pool, subset, base)
+    } else {
+        None
+    };
 
     for (xi, xopt) in exilus_opts.iter().enumerate() {
         // Equip-once + family exclusivity across the 8+1 slots (future-proof;
@@ -458,8 +475,15 @@ fn expand_subset(
         // same build, but the same vector under a different exilus option is
         // a different build (drain/Forma differ).
         let mut seen_vectors: Vec<Vec<(DamageType, i64)>> = Vec::new();
+        let anchor = anchor.filter(|_| xopt.is_none_or(order_classes::fixed_tail));
+        let mut seen_classes = 0;
         for order in &orders {
             stats.order_variants += 1;
+            let class = anchor.map_or(0, |t| order_classes::pair_class(order, t));
+            if seen_classes & class != 0 {
+                stats.deduped += 1;
+                continue;
+            }
             // Canonical form: element mods first, grouped by the chosen
             // element order; the (order-free) rest after.
             let mut ordered: Vec<usize> = Vec::with_capacity(subset.len());
@@ -486,14 +510,17 @@ fn expand_subset(
                 refs.push(x);
             }
             // On-kill stacks start at ZERO and are earned live (user policy).
+            #[cfg(test)]
+            if let Some(p) = probe.as_deref_mut() {
+                p.primary_resolves += 1;
+            }
             let panel = resolve_for(base, &refs, policy, tenno);
 
-            // Second-level dedup: orders resolving to the same combined
-            // vector are the same build (docs/OPTIMIZER.md §1). Deduping on
-            // the PRIMARY form's vector is safe for the second form too:
-            // both are functions of the element partition, which the vector
-            // determines (an injected element pairs with the partition's
-            // leftover).
+            // The legacy key still decides across classes, in DFS order. Even
+            // a class head that collides with an earlier key covers its class.
+            if class != 0 && order_classes::finite_damage(&panel) {
+                seen_classes |= class;
+            }
             let key: Vec<(DamageType, i64)> = panel
                 .damage
                 .iter_nonzero()
@@ -504,6 +531,10 @@ fn expand_subset(
                 continue;
             }
             seen_vectors.push(key);
+            #[cfg(test)]
+            if let Some(p) = probe.as_deref_mut() {
+                p.second_resolves += usize::from(second_form.is_some());
+            }
             out.push(Candidate {
                 ordered: ordered.clone(),
                 slots: None,

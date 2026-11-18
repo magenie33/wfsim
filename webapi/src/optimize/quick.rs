@@ -931,6 +931,9 @@ impl QuickSpace for QuickCtx<'_> {
     /// The canonical form: the same cards whatever their slots, the same
     /// combined elements, the same exilus, arcane and variant.
     fn identity(&self, b: &QBuild) -> String {
+        // Without a pinned slot the sorted cards and axes identify the whole order table,
+        // including its shared winning index. No other table can share this identity.
+        if b.fixed_slots == 0 { return self.key(b); }
         let (orders, index) = self.selected_order(b);
         let Some(c) = orders.get(index) else { return self.key(b) };
         let mut cards: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
@@ -1445,24 +1448,23 @@ pub(crate) fn run_quick(
         scored.iter().map(|(b, s)| (s.map_or(0.0, |(kp, _)| kp), ctx.spread_of(b))).collect();
     let keep = wfsim_optimizer::tied_at_the_line(&field, finalists, ctx.runs);
     let mut contenders: Vec<&QBuild> = scored[..keep].iter().map(|(b, _)| b).collect();
-    for a in answers.iter().filter(|a| a.score.is_some()) {
-        if !contenders.iter().any(|b| ctx.identity(b) == ctx.identity(&a.build)) { contenders.push(&a.build); }
+    let answer_ids: Vec<_> = answers.iter().map(|a| ctx.identity(&a.build)).collect();
+    let mut ids: Vec<_> = contenders.iter().map(|b| ctx.identity(b)).collect();
+    for (a, id) in answers.iter().zip(&answer_ids).filter(|(a, _)| a.score.is_some()) {
+        if !ids.contains(id) { contenders.push(&a.build); ids.push(id.clone()); }
     }
-    let answer_of = |b: &QBuild| {
-        let id = ctx.identity(b);
-        answers.iter().position(|a| ctx.identity(&a.build) == id)
-    };
     // A runner-up is described against an answer ON THE LIST, so the row it
     // names is one the reader can see. The best answer always is: a sweep that
     // scored a better build would have moved to it.
-    let listed: Vec<usize> = contenders.iter().filter_map(|b| answer_of(b)).collect();
+    let owners: Vec<_> = ids.iter().map(|id| answer_ids.iter().position(|a| a == id)).collect();
+    let listed: Vec<_> = owners.iter().flatten().copied().collect();
     let mut built: Vec<(Candidate, usize)> = Vec::new();
     let mut built_keys: Vec<String> = Vec::new();
-    for &b in &contenders {
+    for (&b, owner) in contenders.iter().zip(owners) {
         let Some(c) = ctx.materialize(b) else { continue };
         built_keys.push(ctx.key(b));
         let job = ((c.ordered.clone(), c.variant, c.exilus, b.arcane), c.slots);
-        match answer_of(b) {
+        match owner {
             Some(ai) => {
                 let a = &answers[ai];
                 let lanes: Vec<Value> = a
