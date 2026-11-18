@@ -41,6 +41,26 @@ delayed.observe("costs", 20_000); delayed.observe("settle", 10_000);
 assert.ok(delayed.interval("costs", 600_000) > fast.interval("costs", 600_000));
 console.log("ok: host pressure, bounded backoff, gradual recovery and operator override");
 
+let recoveryHost = { ...host, io_pct: 1 };
+const recovery = capacity({ env: { FACTORY_STATISTICS_CATCHUP_DUTY_PCT: "20" }, sample: () => recoveryHost,
+  critical: { settle: 2000 } });
+const catchupInterval = () => recovery.interval("statistics", 1000, undefined, { catchup: true });
+recovery.observe("statistics", 1000);
+assert.equal(catchupInterval(), 20200);
+recovery.observe("settle", 100);
+assert.equal(catchupInterval(), 5050);
+assert.equal(recovery.interval("statistics", 1000), 20200);
+recovery.observe("tally", 1000);
+assert.equal(recovery.interval("tally", 1000, undefined, { catchup: true }), 20200);
+recoveryHost = { ...host, io_pct: 23 };
+assert.equal(catchupInterval(), 24600);
+recoveryHost = { ...host };
+recovery.observe("settle", 4000, true);
+assert.equal(catchupInterval(), 40000);
+recovery.observe("statistics", 1000, true);
+assert.equal(catchupInterval(), 80000);
+console.log("ok: an explicit catch-up duty applies only to unsealed statistics with observed foreground headroom");
+
 let calls = 0, fail = false;
 const pace = paceCache(async () => { calls++; if (fail) throw Error("cut"); return { volunteers: calls }; });
 const [a, b] = await Promise.all([pace(1000), pace(1000)]);

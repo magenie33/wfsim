@@ -240,9 +240,18 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     },
     statistics: async()=>{
       if(Date.now()<statisticsAt)return false;
-      const began=performance.now();let failed=true;
-      try{const result=await statistics.advance();failed=false;if(result.sealed)wakeStatistics();return result;}
-      finally{const elapsed=performance.now()-began;budget.observe('statistics',elapsed,failed);statisticsAt=Date.now()+budget.interval('statistics',STATISTICS_PUMP_MS);}
+      const began=performance.now();
+      let failed=true,catchup=false;
+      try{
+        const result=await statistics.advance();
+        failed=false;
+        catchup=result.processed>0&&statistics.state().state==='advancing';
+        if(result.sealed)wakeStatistics();
+        return result;
+      }finally{
+        budget.observe('statistics',performance.now()-began,failed);
+        statisticsAt=Date.now()+budget.interval('statistics',STATISTICS_PUMP_MS,undefined,{catchup});
+      }
     },
     signal,
     // A WAVE FROM NOTHING is signalled now, not at the next snapshot.

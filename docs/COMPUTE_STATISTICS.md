@@ -10,7 +10,10 @@ The existing background connection runs a single flight, advancing at most 128
 steps or 250 ms before yielding. Each projection operation retains its input,
 byte, query, storage and three-second transaction budgets. The existing capacity
 duty controller schedules its next turn and other background jobs retain their
-turns. The provider has a one-connection control lane, independent of the fast
+turns. `FACTORY_STATISTICS_CATCHUP_DUTY_PCT` optionally allows a higher duty
+for active unsealed projection work. It uses the normal duty until the critical
+jobs have reported, under pressure or after failure. The higher duty expires
+when the first complete sample seals. The provider has a one-connection control lane, independent of the fast
 signal. It verifies remote control before and after each bounded transaction.
 
 ## Membership and sampling
