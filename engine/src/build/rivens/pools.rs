@@ -30,6 +30,10 @@ pub(super) struct PoolFile {
 /// stays out.
 pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
     let Some(s) = crate::data::weapons::spec(weapon_id) else { return Vec::new() };
+    derive(s)
+}
+
+fn derive(s: &'static crate::data::weapons::WeaponSpec) -> Vec<&'static str> {
     // A RIVEN BELONGS TO A FAMILY, so the pool is the family's. One card equips on every member — a Ballistica riven is a
     // Ballistica Prime riven and a Rakta Ballistica riven — so a pool derived
     // from ONE member describes a card that does not exist. Fifteen families
@@ -126,21 +130,7 @@ pub fn derived_for(weapon_id: &str) -> Vec<&'static str> {
 /// Puncture and does not), so it never refuses a card on its own: what it
 /// would have refused and nobody has looked at is [`unconfirmed_for`].
 pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
-    let Some(s) = crate::data::weapons::spec(weapon_id) else { return Vec::new() };
-    let mut out = derived_for(weapon_id);
-    out.retain(|id| !PHYSICAL.contains(id));
-    if let Some(fam) = s.riven_family.as_deref() {
-        let ex = exceptions(fam);
-        out.retain(|id| !ex.rolls.contains(id));
-        for id in &ex.never {
-            if !out.contains(id) {
-                out.push(*id);
-            }
-        }
-    }
-    // Evidence uses the market's vocabulary, which can name stats outside
-    // this class. Callers intersect these exclusions with the class pool.
-    out
+    PoolEvidence::for_weapon(weapon_id).excluded()
 }
 
 /// The three physical stats — the ones whose pool no rule predicts.
@@ -151,13 +141,44 @@ pub const PHYSICAL: [&str; 3] = ["impact", "puncture", "slash"];
 /// whether they roll. Legal until a survey says otherwise, and shown as
 /// unconfirmed so a visitor knows the answer is not ours to give yet.
 pub fn unconfirmed_for(weapon_id: &str) -> Vec<&'static str> {
-    let Some(s) = crate::data::weapons::spec(weapon_id) else { return Vec::new() };
-    let ex = s.riven_family.as_deref().map(exceptions);
-    derived_for(weapon_id)
-        .into_iter()
-        .filter(|id| PHYSICAL.contains(id))
-        .filter(|id| ex.is_none_or(|e| !e.rolls.contains(id) && !e.never.contains(id)))
-        .collect()
+    PoolEvidence::for_weapon(weapon_id).unconfirmed()
+}
+
+pub(super) struct PoolEvidence {
+    derived: Vec<&'static str>,
+    exceptions: Option<&'static Exceptions>,
+}
+
+impl PoolEvidence {
+    pub(super) fn for_weapon(weapon_id: &str) -> Self {
+        let weapon = crate::data::weapons::spec(weapon_id);
+        Self {
+            derived: weapon.map_or_else(Vec::new, derive),
+            exceptions: weapon.and_then(|w| w.riven_family.as_deref()).map(exceptions),
+        }
+    }
+
+    pub(super) fn excluded(self) -> Vec<&'static str> {
+        let mut out = self.derived;
+        out.retain(|id| !PHYSICAL.contains(id));
+        if let Some(ex) = self.exceptions {
+            out.retain(|id| !ex.rolls.contains(id));
+            for id in &ex.never {
+                if !out.contains(id) {
+                    out.push(*id);
+                }
+            }
+        }
+        // Evidence can name stats outside this class; callers intersect with the pool.
+        out
+    }
+
+    pub(super) fn unconfirmed(&self) -> Vec<&'static str> {
+        self.derived.iter().copied()
+            .filter(|id| PHYSICAL.contains(id))
+            .filter(|id| self.exceptions.is_none_or(|e| !e.rolls.contains(id) && !e.never.contains(id)))
+            .collect()
+    }
 }
 
 /// DE's OWN riven family names — `data/rivens/de_families.yaml`, written by

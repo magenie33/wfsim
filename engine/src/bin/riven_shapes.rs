@@ -6,6 +6,7 @@
 //!   cargo run --release --bin riven_shapes -- ocucor burston_prime
 //!   cargo run --release --bin riven_shapes -- torid --bonus=toxin,multishot,critical_chance
 //!   cargo run --release --bin riven_shapes -- torid --malus=none,status_duration@1.1
+use std::fmt::Write;
 use wfsim_engine::build::rivens::{class_for_weapon, excluded_for, pool, unconfirmed_for};
 
 /// Stats that move no number under the survey's single-target ruler: a shape
@@ -74,8 +75,7 @@ fn shapes(weapon: &str, chosen: Option<&[String]>, malus_spec: &str) -> Result<S
             }
         }
     }
-    let mut normal: Vec<&str> = Vec::new();
-    let mut spliced: Vec<&str> = Vec::new();
+    let mut all = Vec::new();
     for s in stats {
         let id = s.id.as_str();
         let wanted = match chosen {
@@ -86,63 +86,67 @@ fn shapes(weapon: &str, chosen: Option<&[String]>, malus_spec: &str) -> Result<S
         if !s.bonus || !wanted || !legal(id) {
             continue;
         }
-        if s.spliced {
-            spliced.push(id)
-        } else {
-            normal.push(id)
-        }
+        all.push(Bonus { id, spliced: s.spliced });
     }
     let maluses = maluses(malus_spec, |m| {
         stats.iter().any(|s| s.id == m && s.malus) && legal(m)
     })?;
-    let mut all: Vec<&str> = normal.iter().chain(spliced.iter()).copied().collect();
-    all.sort_unstable();
-    let mut cards = Vec::new();
-    for k in [2usize, 3] {
-        for combo in combinations(&all, k) {
-            // ONE SPLICED STAT TO A CARD (engine `too_many_spliced`).
-            if combo.iter().filter(|id| spliced.contains(id)).count() > 1 {
-                continue;
-            }
-            // A MALUS IS NEVER ONE OF THE CARD'S OWN BONUSES.
-            for m in maluses.iter().filter(|m| {
-                m.as_ref()
-                    .is_none_or(|(id, _)| !combo.contains(&id.as_str()))
-            }) {
-                let bonuses: Vec<String> = combo
-                    .iter()
-                    .map(|id| format!(r#"{{"id":"{id}","roll":{BONUS_ROLL}}}"#))
-                    .collect();
-                let b = bonuses.join(",");
-                let malus = m.as_ref().map_or("null".to_string(), |(id, roll)| {
-                    format!(r#"{{"id":"{id}","roll":{roll}}}"#)
-                });
-                cards.push(format!(
-                    r#"{{"bonuses":[{b}],"malus":{malus},"rank":{RANK}}}"#
-                ));
-            }
+    all.sort_unstable_by_key(|s| s.id);
+    let mut line = String::new();
+    write!(line, r#"{{"weapon":"{weapon}","class":"{class}","stats":["#).unwrap();
+    for (i, s) in all.iter().enumerate() {
+        if i != 0 {
+            line.push(',');
         }
+        write!(line, r#""{}""#, s.id).unwrap();
     }
-    let quote = |v: &[String]| {
-        v.iter()
-            .map(|s| format!("\"{s}\""))
-            .collect::<Vec<_>>()
-            .join(",")
+    line.push_str(r#"],"malus":["#);
+    let mut rendered_maluses = Vec::with_capacity(maluses.len());
+    for (i, m) in maluses.iter().enumerate() {
+        if i != 0 {
+            line.push(',');
+        }
+        rendered_maluses.push(match m {
+            None => {
+                line.push_str(r#""none""#);
+                None
+            }
+            Some((id, roll)) => {
+                write!(line, r#""{id}@{roll}""#).unwrap();
+                Some((id.as_str(), format!(r#"{{"id":"{id}","roll":{roll}}}"#)))
+            }
+        });
+    }
+    line.push_str(r#"],"shapes":["#);
+    let mut positive = String::new();
+    let mut comma = "";
+    let mut emit = |combo: &[&str]| {
+        // A malus is never one of the card's own bonuses.
+        let mut compatible = rendered_maluses.iter().filter(|m| {
+            m.as_ref().is_none_or(|(id, _)| !combo.contains(id))
+        }).peekable();
+        if compatible.peek().is_none() {
+            return;
+        }
+        positive.clear();
+        for (i, id) in combo.iter().enumerate() {
+            if i != 0 {
+                positive.push(',');
+            }
+            write!(positive, r#"{{"id":"{id}","roll":{BONUS_ROLL}}}"#).unwrap();
+        }
+        for m in compatible {
+            let malus = m.as_ref().map_or("null", |(_, json)| json.as_str());
+            write!(line, r#"{comma}{{"bonuses":[{positive}],"malus":{malus},"rank":{RANK}}}"#).unwrap();
+            comma = ",";
+        }
     };
-    let named: Vec<String> = maluses
-        .iter()
-        .map(|m| {
-            m.as_ref()
-                .map_or("none".to_string(), |(id, roll)| format!("{id}@{roll}"))
-        })
-        .collect();
-    let stats: Vec<String> = all.iter().map(|s| s.to_string()).collect();
-    Ok(format!(
-        r#"{{"weapon":"{weapon}","class":"{class}","stats":[{}],"malus":[{}],"shapes":[{}]}}"#,
-        quote(&stats),
-        quote(&named),
-        cards.join(",")
-    ))
+    let mut prefix = Vec::with_capacity(3);
+    for k in [2, 3] {
+        visit_combinations(&all, k, false, &mut prefix, &mut emit);
+    }
+    line.push_str("]}");
+    Ok(line)
 }
 
 /// `none`, `harmless`, `<id>` or `<id>@<roll>`, comma-separated, as the cards'
@@ -186,16 +190,30 @@ fn maluses(spec: &str, rolls: impl Fn(&str) -> bool) -> Result<Vec<Option<(Strin
     Ok(out)
 }
 
-fn combinations<'a>(items: &[&'a str], k: usize) -> Vec<Vec<&'a str>> {
-    if k == 0 {
-        return vec![Vec::new()];
+struct Bonus<'a> {
+    id: &'a str,
+    spliced: bool,
+}
+
+fn visit_combinations<'a>(
+    items: &[Bonus<'a>],
+    remaining: usize,
+    has_spliced: bool,
+    prefix: &mut Vec<&'a str>,
+    visit: &mut impl FnMut(&[&'a str]),
+) {
+    if remaining == 0 {
+        visit(prefix);
+        return;
     }
-    let mut out = Vec::new();
-    for (i, first) in items.iter().enumerate() {
-        for mut rest in combinations(&items[i + 1..], k - 1) {
-            rest.insert(0, first);
-            out.push(rest);
+    let Some(last) = items.len().checked_sub(remaining) else { return };
+    for (i, s) in items[..=last].iter().enumerate() {
+        // One spliced stat per card; nothing under a second can be emitted.
+        if has_spliced && s.spliced {
+            continue;
         }
+        prefix.push(s.id);
+        visit_combinations(&items[i + 1..], remaining - 1, has_spliced || s.spliced, prefix, visit);
+        prefix.pop();
     }
-    out
 }

@@ -88,8 +88,21 @@ impl RivenSpec {
     /// board's validation read, so the card, the picker and the board give one
     /// answer — a second rule here refused real Ocucor cards the picker offered.
     pub fn illegal_for(&self, weapon_id: &str) -> Vec<String> {
+        self.illegal_with_exclusions(&excluded_for(weapon_id))
+    }
+
+    /// Card diagnostics from one family/form derivation, in slot order.
+    pub fn legality_and_unconfirmed_for(&self, weapon_id: &str) -> (Vec<String>, Vec<&str>) {
+        let evidence = PoolEvidence::for_weapon(weapon_id);
+        let open = evidence.unconfirmed();
+        let illegal = self.illegal_with_exclusions(&evidence.excluded());
+        let unconfirmed = self.bonuses.iter().chain(self.malus.iter())
+            .map(|s| s.id.as_str()).filter(|id| open.contains(id)).collect();
+        (illegal, unconfirmed)
+    }
+
+    fn illegal_with_exclusions(&self, excluded: &[&str]) -> Vec<String> {
         let mut out = self.illegal();
-        let excluded = excluded_for(weapon_id);
         for s in self.bonuses.iter().chain(self.malus.iter()) {
             if excluded.contains(&s.id.as_str()) {
                 out.push(format!("this weapon's riven does not roll {}", s.id));
