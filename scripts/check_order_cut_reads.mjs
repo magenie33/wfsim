@@ -42,8 +42,11 @@ function bounded(kind,m) {
 export async function orderCutReadCases(db,{n=100001,receiptFile=process.env.WFSIM_ORDER_CUT_READ_RECEIPT||null}={}) {
   assert(Number.isSafeInteger(n)&&n>=100001);
   const at='2026-11-15T00:00:00.000Z',now='2026-11-16T00:00:00.000Z';
-  const schemaPath=(await db.get('SELECT current_schema() value')).value;
-  const install=async text=>{await db.run("SELECT set_config('search_path',?::text,false)",schemaPath+',pg_catalog,pg_temp');await db.exec(text);};
+  const {path:schemaPath}=await db.get(`SELECT substring(value FROM 13) path
+    FROM pg_proc p CROSS JOIN unnest(p.proconfig) value
+    WHERE p.oid='compute_order_cancelled(text,bigint,bigint,bigint,text)'::regprocedure
+      AND starts_with(value,'search_path=')`);
+  const install=async text=>{await db.run("SELECT set_config('search_path',?::text,false)",schemaPath);await db.exec(text);};
   await db.exec(readFileSync(new URL('../worker/pg/order_cut_indexes.sql',import.meta.url),'utf8').replaceAll('INDEX CONCURRENTLY','INDEX'));
   await db.exec(`
     INSERT INTO entity_compute_specs(id,verb,request)
