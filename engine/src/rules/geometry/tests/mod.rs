@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 use super::*;
 use serde_json::Value;
+mod rotation;
 
 fn fixture() -> Value {
     serde_json::from_str(include_str!("../fixtures/native.json")).unwrap()

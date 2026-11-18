@@ -81,14 +81,29 @@ strict flight-distance-greater-than-zero acquisition gate, and blade radius
 0.02. These fields are consumed by the explicit scene. The default planar
 scene retains its declared projectile-flight convention.
 
-Steering retains float32 yaw/pitch angular velocity across frames, damps toward
-the supplied target center, accelerates, then advances position. The polynomial
-coefficients are constrained by the exported native angle/velocity transitions;
-raw RIP constant bytes and the full quaternion/bank route are unbound. The
-reference agrees with all 36 exported empty-world position sequences within
-0.0003 supplied units at 30/60/120 Hz, including no-target, acquisition after
-launch and preselected-target starts. This is bounded numerical agreement,
-not instruction-exact live homing equivalence.
+The numerical step retains the quaternion, three angular velocities and bank
+state. It uses the native look-at, Euler/quaternion conversions, angle wrapping,
+polynomial sine/cosine and CRT asin/atan2 consumers, including their original
+binary32/binary64 boundaries and atan2 table. Turning duration is multiplied by
+five without a retained target and floored at binary32(1e-6). The original
+0.235/0.48 encodings are `0x3e70a3d7`/`0x3ef5c28f`. Bank steering uses the
+supplied world quaternion separately from the retained rotation. Flight distance
+accumulates bounded speed times the time step, independently of rounded position.
+
+The default numerical route agrees bit-for-bit with 429 retained native steps
+across 60 continuous supplied-state sequences and 120 additional 3D controls.
+The comparison includes position, velocity, quaternion, all angular velocities,
+bank and flight distance. Another 765 angular controls and 4,931 distinct math
+controls qualify the numerical stages. The state domain is the default clock,
+state 0, no gravity, an empty native +1a10 reference, and empty-world movement. Other
+state/clock branches remain unbound. The scene's supplied-direction initializer
+and target installation are not native emission producers.
+
+These original-byte controls execute under the pinned Unicorn environment.
+Its RSQRTPS seed is reproduced before the native refinement steps; physical CPU
+approximation differences have not been calibrated. The proof is exact to that
+retained execution, not a guarantee of identical hardware floating-point state
+or complete live-game homing equivalence.
 
 Acquisition uses supplied alive state, anchor, cone, range and body visibility,
 with deterministic nearest-candidate selection. Steering uses the separate
@@ -119,6 +134,22 @@ Client build 2026.10.28.09.54, executable SHA-256
   exported empty-world motion sequences, retained in `native-motion.json`.
 - `20261117T132810Z-reticle-3d-homing-materials`: full reticle-to-impact
   verification and execution of its complete acceptance matrix are false.
+- `20261118T083810Z-native-3d-homing-replay-retention`, manifest SHA-256
+  `5f57e9c7c377f16b7571b2900a6f7ab8f9c76d9fa584e316b0c16fb7eb72aea3`:
+  full matching executable/modules, original RIP data and call-state pages.
+  `native-flight.json` retains numerical states from the original 705-call
+  capture. `native-steering.json` adds observed native math boundaries and
+  explicitly supplied 3D controls. `rotation_tables.rs` is imported from PE
+  RVA `0x241ee70`; its hash is pinned in the fixture. No live acceptance trace
+  or independent game measurement is supplied by this batch.
+
+`scripts/import_native_flight.py` imports the original captured state pages.
+`scripts/import_native_steering.py` executes the matching original consumers
+through the retained research scripts. The importer pins the executable and
+original result index, reruns the 123 source controls, then adds explicit
+boundary/3D inputs. Reproduction uses the batch's Python3.14.0 and locked
+dependencies; `--atan-table` writes the production table from the original PE.
+Expected states never come from the Rust implementation.
 
 ```sh
 cargo test -p wfsim-engine --lib rules::geometry
