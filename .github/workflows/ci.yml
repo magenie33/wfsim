@@ -746,6 +746,7 @@ jobs:
           node scripts/check_prepared_work_span.mjs
           node scripts/check_work_ack_receipts.mjs
           node scripts/check_source_capture_gc.mjs
+          node scripts/check_board_input_maintenance.mjs
           node scripts/check_sqlite_transaction_recovery.mjs
           node scripts/check_board_audit_scenes.mjs
           node scripts/check_board_audit_migration.mjs

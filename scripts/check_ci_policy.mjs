@@ -83,6 +83,19 @@ for (const path of statisticsToolInputs) {
 }
 assert.deepEqual(classify(statisticsToolInputs).jobs, PRODUCT_JOBS);
 assert.equal(classify(statisticsToolInputs).deep, false);
+const inputMaintenance = 'scripts/board_input_maintenance.mjs';
+assert.deepEqual(classify([inputMaintenance]).jobs, PRODUCT_JOBS);
+assert.equal(classify([inputMaintenance]).deep, false);
+for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs',
+  'scripts/board_input_maintenance_unknown.mjs'])
+  assert.equal(classify([inputMaintenance, extra]).deep, true);
+assert.equal(classify([inputMaintenance], true).deep, true);
+assert.equal(classify([inputMaintenance], false, false).deep, true);
+assert.equal(classify(['scripts/board_input_maintenance_unknown.mjs']).deep, true);
+assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get('scripts/check_board_input_maintenance.mjs') || []],
+  ['pipeline'], 'existing-input maintenance has one ordinary pipeline CI owner');
+assert.match(readFileSync('.github/workflows/ci.yml', 'utf8'),
+  /node scripts\/check_source_capture_gc\.mjs\s+node scripts\/check_board_input_maintenance\.mjs/);
 assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get('scripts/check_settler.mjs') || []],
   ['pipeline'], 'statistics regressions retain their ordinary pipeline parent');
 const settlerCheck = readFileSync('scripts/check_settler.mjs', 'utf8');
