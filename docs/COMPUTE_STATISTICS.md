@@ -9,8 +9,9 @@ publishing. `resume statistics` continues the current baseline or dirty cursor.
 The existing background connection runs a single flight, advancing at most 128
 steps or 250 ms before yielding. Each projection operation retains its input,
 byte, query, storage and three-second transaction budgets. The existing capacity
-duty controller schedules its next turn; other background jobs retain their
-turns. No additional pool or business stage is created.
+duty controller schedules its next turn and other background jobs retain their
+turns. The provider has a one-connection control lane, independent of the fast
+signal. It verifies remote control before and after each bounded transaction.
 
 ## Membership and sampling
 

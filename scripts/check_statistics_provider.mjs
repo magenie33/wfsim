@@ -183,6 +183,21 @@ export async function nativeStatisticsProviderCases({runDaemon=run}={}){
   await q("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES('new_build','provider-012|r|base','provider-012','live',$1,$1)",[new Date(now).toISOString()]);
   await q("UPDATE state_compute_scheduling SET lease='held',leased_at=$1,lease_until=$2,leased_to='provider-device' WHERE id='provider-012'",[new Date(now).toISOString(),new Date(now+60000).toISOString()]);
   opened=await openEnv({PG_URL:'postgres://wfsim_factoryd@127.0.0.1:'+port+'/'+database},connect);
+  await q('SELECT pg_advisory_lock(hashtextextended($1::text,0))',[schema]);
+  const signalWait=opened.signalEnv.LIBRARY.prepare("SELECT pg_advisory_xact_lock(hashtextextended(?::text,0))").bind(schema).first();
+  try {
+   let waiting=false;
+   for(let attempt=0;attempt<50&&!waiting;attempt++){
+    [{waiting}]=await q("SELECT EXISTS(SELECT 1 FROM pg_locks WHERE locktype='advisory' AND NOT granted) waiting");
+    if(!waiting)await new Promise(resolve=>setTimeout(resolve,10));
+   }
+   assert(waiting,'fast signal fixture must occupy its connection');
+   assert.deepEqual(await opened.statisticsControlQuery("SELECT current_setting('application_name') AS lane"),
+    [{lane:'wfsim-factoryd-statistics-control'}]);
+  } finally {
+   await q('SELECT pg_advisory_unlock(hashtextextended($1::text,0))',[schema]);
+   await signalWait;
+  }
   const lookup=async(text,args=[],options)=>{seen.push(text);return opened.statisticsQuery(text,args,options);};
   const transaction=fn=>opened.statisticsTransaction(tx=>fn({query:async(text,args)=>{seen.push(text);const out=await tx.query(text,args);await hook(text,args,out);return out;}}));
   const makeProvider=()=>createStatisticsProvider({env:opened.env,controlEnv:opened.signalEnv,query:lookup,controlQuery:opened.statisticsControlQuery,transaction,

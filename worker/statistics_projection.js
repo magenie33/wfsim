@@ -56,12 +56,13 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
  const assert=async(key,context)=>{if(!same(await identity(context),key))throw Error('statistics namespace changed');};
  const run=async(fn,{rr=false,key=null,context,validateAfter=true}={})=>{
   const {began,guard}=context,usage={rows:0,bytes:0,queries:0};
+  await permit(context);
   return transaction(async tx=>{
    const query=async(sql,args=[])=>{
-    await permit(context);if(++usage.queries>bound.maxQueries)throw new StatisticsProjectionBudget('statistics query budget');
+    guard();if(++usage.queries>bound.maxQueries)throw new StatisticsProjectionBudget('statistics query budget');
     const remaining=Math.max(1,Math.min(1000,Math.floor(bound.maxMs-(clock()-began))));
-    await tx.query('SET LOCAL statement_timeout='+remaining,[]);
-    const {rows}=await tx.query(sql,args);await permit(context);usage.rows+=rows.length;usage.bytes+=new TextEncoder().encode(encoded(rows)+encoded(args)).length;
+    await tx.query('SET LOCAL statement_timeout='+remaining,[]);guard();
+    const {rows}=await tx.query(sql,args);guard();usage.rows+=rows.length;usage.bytes+=new TextEncoder().encode(encoded(rows)+encoded(args)).length;
     if(usage.rows>bound.maxRows||usage.bytes+context.identityBytes>bound.maxBytes)throw new StatisticsProjectionBudget('statistics input budget');
     await onQuery({sql,args,rows,rr,usage:{...usage}});guard();return rows;
    };
@@ -76,7 +77,9 @@ export function createStatisticsProjection({transaction,currentIdentity,stopped=
      WHERE h.id=1 AND n.identity=($1::text)::jsonb`,[encoded(key)]);
     if(!head)throw Error('statistics target changed');namespace=head.namespace;
    }
-   const value=await fn(query,usage,namespace);guard();if(key&&validateAfter)await assert(key,context);guard();return value;
+   const value=await fn(query,usage,namespace);
+   if(key&&validateAfter)await assert(key,context);else await permit(context);
+   return value;
   });
  };
  const enqueuePage=async(q,ns,kind,keys)=>{

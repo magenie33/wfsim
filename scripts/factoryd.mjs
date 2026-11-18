@@ -97,7 +97,7 @@ export async function openEnv(env = process.env, connect = postgres) {
     clients.push(c);
     if(signal)writeAvailability=availabilityWriter(c);
     if(background&&!statisticsTransaction)statisticsTransaction=fn=>c.transaction(fn);
-    if(signal&&!statisticsControlQuery)statisticsControlQuery=boundedQuery(c);
+    if(stage==='statistics-control')statisticsQuery=statisticsControlQuery=boundedQuery(c);
     if(!background&&!stage&&!signal&&!writeSnapshot&&url===env.PG_URL)writeSnapshot=async(statement,allowed)=>{
       const stopped=new Error('statistics stopped or paused');
       const began=performance.now();let expired=false,timer;
@@ -116,11 +116,11 @@ export async function openEnv(env = process.env, connect = postgres) {
         return true;
       }),timeout]);}catch(error){if(error===stopped)return false;throw error;}finally{clearTimeout(timer);}
     };
-    if(!background&&!stage&&!signal&&!statisticsQuery&&url===env.PG_URL)statisticsQuery=boundedQuery(c);
     return pgDb(c);
   };
   const out = { LIBRARY: db(env.PG_URL), ...(env.PG_ACCOUNTS_URL ? { ACCOUNTS: db(env.PG_ACCOUNTS_URL,false,null,2) } : {}) };
   const signalEnv={LIBRARY:db(env.PG_URL,false,null,1,true)};
+  const statisticsEnv={LIBRARY:db(env.PG_URL,false,'statistics-control')};
   const claim = async (onLost) => {
     let owner;
     const sql = connect(env.PG_URL, { ...POSTGRES_OPTIONS, max: 1, idle_timeout: 0,
@@ -139,7 +139,7 @@ export async function openEnv(env = process.env, connect = postgres) {
     clients.push({end:async()=>{await handle?.unlisten();await sql.end({timeout:5});}});
     handle=await sql.listen("wfsim_task_pipeline",wake);
   };
-  return {env:out,signalEnv,backgroundEnv,stageEnvs,writeSnapshot,writeAvailability,statisticsTransaction,statisticsQuery,statisticsControlQuery,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
+  return {env:out,signalEnv,statisticsEnv,backgroundEnv,stageEnvs,writeSnapshot,writeAvailability,statisticsTransaction,statisticsQuery,statisticsControlQuery,claim,listen,close:()=>Promise.all(clients.map(c=>c.end()))};
 }
 
 /// THE RELEASE SERVED NOW, read through the worker's own `servedRelease` (a
@@ -153,7 +153,7 @@ async function served() {
 export async function run({ once = false, opened = null, servedNow = served, target = signalTarget(),
   put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge, statisticsFactory=createStatisticsProvider,
   statisticsLimits = statisticsLimitsFromEnv(process.env) } = {}) {
-  const { env, signalEnv = env, backgroundEnv = env, writeSnapshot,writeAvailability,statisticsTransaction,statisticsQuery,statisticsControlQuery,stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
+  const { env, signalEnv = env, statisticsEnv = signalEnv, backgroundEnv = env, writeSnapshot,writeAvailability,statisticsTransaction,statisticsQuery,statisticsControlQuery,stageEnvs = Object.fromEntries(Object.keys(TASK_PIPELINE_STAGES).map(name=>[name,env])), claim, listen, close } = opened || await openEnv();
   let stopping = false, ownershipLost = false, stopRun;
   let owner;
   try {
@@ -167,7 +167,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   let cursor = { at: iso(Date.now() - 10 * 60_000), id: "" };
   try { if (kept) cursor = JSON.parse(kept.body).cursor || cursor; } catch { /* from ten minutes ago */ }
   let release = await servedNow();
-  const statistics=statisticsFactory({env,controlEnv:signalEnv,transaction:statisticsTransaction,query:statisticsQuery,controlQuery:statisticsControlQuery,
+  const statistics=statisticsFactory({env,controlEnv:statisticsEnv,transaction:statisticsTransaction,query:statisticsQuery,controlQuery:statisticsControlQuery,
     release:()=>release,stopped:()=>stopping,limits:statisticsLimits});
   let statisticsAt=0;
   let wakeStatistics=()=>{};
@@ -177,7 +177,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     })}:{})});
   const allowStatistics=async name=>{
     if(stopping)return false;
-    const control=await readPipelineControl(signalEnv,'statistics');
+    const control=await readPipelineControl(statisticsEnv,'statistics');
     if(stopping)return false;
     if(control.paused){log(name,'paused','statistics',control.changed_at,control.changed_by);return false;}
     return true;
