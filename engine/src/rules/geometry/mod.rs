@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Explicit-pose body queries. Native bindings and adoption scope: docs/GEOMETRY.md.
 pub mod penetration;
+pub mod guided;
 mod query;
 mod shape;
 mod vector;

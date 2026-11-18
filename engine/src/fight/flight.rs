@@ -16,6 +16,7 @@ use super::*;
 /// read when it lands, which is when the game reads it.
 #[derive(Clone)]
 pub(super) struct Landing {
+    pub(super) spatial: Option<spatial::SpatialLanding>,
     /// The collision already settled; only its delayed explosion remains.
     pub(super) radial_only: bool,
     pub(super) pellet_aims: Vec<RoundAim>,
@@ -140,6 +141,8 @@ pub(super) struct Ground<'w> {
 #[wfsim_gas_macro::metered]
 pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> f64 {
     let t = l.t;
+    let pellets_before = if l.spatial.is_some() {g.r.pellets} else {l.pellets_before};
+    let headshots_before = if l.spatial.is_some() {g.r.weakpoint_hits+g.r.headshots_on_others} else {l.headshots_before};
     let active = l.active(me.params);
     // …AND WHO IS ON THE LINE IS THE FIRING FORM'S ANSWER TOO: a form's punch
     // through is its own (`open`). A live grant's metres walk the line again
@@ -171,7 +174,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     }
     // ONE INSTANCE for a per-instance arcane cap: the whole pull, pellets and
     // radial included.
-    me.arc.next_instance();
+    if l.spatial.as_ref().is_none_or(|s|s.first) {me.arc.next_instance();}
     // Secondary Encumber: at most ONE extra proc per instant — pellets of one
     // pull land simultaneously, so one roll per pull.
     // DID THIS SHOT HIT ANYTHING AT ALL — the question the SHOT COMBO COUNTER
@@ -183,12 +186,24 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let mut strike_spread: Option<SpreadStrike> = None;
     let (mut any_head, mut any_big) = (false, false);
     let mut beam_merge = l.beam_merge;
-    let radial_delay = active.radial.filter(|_| !l.radial_only).map_or(0.0, |r| r.delay_seconds);
+    let radial_delay = active.radial.filter(|_| !l.radial_only && l.spatial.is_none()).map_or(0.0, |r| r.delay_seconds);
     let mut pellet_aims = Vec::new();
     {
+        let recipient = l.spatial.as_ref().map_or(0, |s| s.impact.body);
+        let recipient_params = l.spatial.as_ref().map(|_| {
+            let mut p = me.params.clone();
+            let spec = me.params.body(recipient).expect("prepared spatial recipient");
+            p.foe = spec.params.clone();
+            p.body_parts = spec.body_parts.to_vec();
+            p.gauge_charging_body_parts.clear();
+            p.target_at = spec.at;
+            p
+        });
         let shot = Strike {
+            body_index: recipient,
+            spatial: l.spatial.as_ref(),
             radial_only: l.radial_only,
-            skip_radial: radial_delay > 0.0,
+            skip_radial: radial_delay > 0.0 || l.spatial.as_ref().is_some_and(|s| !s.impact.radial),
             round_multishot: l.rounds.per_round(l.n_pellets),
             seat: me.seat,
             active,
@@ -238,7 +253,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             bar: &me.bar,
             rec_roster: &me.fixed.rec_roster,
             rec_buff_index: &me.fixed.rec_buff_index,
-            params: me.params,
+            params: recipient_params.as_ref().unwrap_or(me.params),
         };
         let mut round_aim = RoundAim::default();
         let mut live = Live {
@@ -270,10 +285,11 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             round_aim: &mut round_aim,
         };
         for (pellet_idx, follows) in (0..l.n_pellets).zip(l.rounds.follows(l.n_pellets)) {
-            if l.radial_only {
+            if l.radial_only && l.spatial.is_none() {
                 *live.round_aim = l.pellet_aims[pellet_idx as usize];
             }
-            settle_pellet(pellet_idx, follows || l.radial_only, &shot, &mut live);
+            let (instance,follows)=l.spatial.as_ref().map_or((pellet_idx,follows || l.radial_only),|s|(s.instance,s.follows));
+            if l.spatial.as_ref().is_none_or(|s|!s.miss) {settle_pellet(instance, follows, &shot, &mut live);}
             if radial_delay > 0.0 { pellet_aims.push(*live.round_aim); }
         }
     }
@@ -312,7 +328,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     }
 
     // NO FORMATION, NOTHING TO REACH — see [`spread_beyond_the_target`].
-    if g.bodies.len() > 1 {
+    if g.bodies.len() > 1 && l.spatial.is_none() {
         spread_beyond_the_target(
             me.seat,
             &mut me.windows,
@@ -334,7 +350,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     // …AND ENDS THAT WAY, for whatever settles before the next one — once
     // its burst is done.
     let burst_len = active.burst.map_or(1, |b| b.count.max(1));
-    if l.burst_completed.unwrap_or_else(|| me.ammo.rounds_this_mag.is_multiple_of(burst_len)) {
+    if l.spatial.as_ref().is_none_or(|s|s.last) && l.burst_completed.unwrap_or_else(|| me.ammo.rounds_this_mag.is_multiple_of(burst_len)) {
         for b in g.bodies.iter_mut() {
             b.fallen = false;
         }
@@ -364,10 +380,15 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     // form that makes them was up when it swung.
     make_daggers(me.seat, me.params, active, t, g.r, &mut me.dagger_kill_mark, g.entities);
 
-    if l.radial_only { return t; }
+    if l.spatial.is_none() && l.radial_only { return t; }
+    if let Some(s)=&l.spatial {
+        s.aggregate(&mut landed_this_shot,&mut any_big,&mut any_head);
+        me.weakpoint_next_shot_armed=any_head;
+    }
 
     let mut t = t;
     after_the_landing(
+        l.spatial.as_ref().is_none_or(|s|s.last),
         me.params,
         &me.apl,
         l.flash,
@@ -379,8 +400,8 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         landed_this_shot,
         any_big,
         any_head,
-        l.pellets_before,
-        l.headshots_before,
+        pellets_before,
+        headshots_before,
         l.burst_completed,
         &l.swing,
         l.combo_now,

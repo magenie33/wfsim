@@ -22,6 +22,7 @@ pub struct Traversal {
     pub accumulated: f32,
 }
 
+#[wfsim_gas_macro::metered]
 pub fn traverse(
     entry: [f32; 3],
     reference: u64,

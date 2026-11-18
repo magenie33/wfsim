@@ -2,6 +2,41 @@ use super::*;
 
 #[wfsim_gas_macro::metered]
 impl FightParams {
+    pub fn scene_3d_error(&self) -> Option<&'static str> {
+        let scene=self.scene_3d.as_ref()?;
+        if scene.input().enemies.len()!=self.others.len()+1 {
+            return Some("scene_3d needs one model per arena enemy");
+        }
+        if self.others.iter().any(|body|body.params.faction!=self.foe.faction) {
+            return Some("scene_3d currently requires one combat faction for the resolved faction bracket");
+        }
+        if let Some(h)=self.homing {
+            if ![h.initial_speed,h.maximum_speed,h.acceleration,h.turning_seconds,h.seek_distance,h.seek_cone_deg,
+                h.minimum_flight_before_seek,h.collision_radius].iter().all(|v|v.is_finite())
+                || h.initial_speed<=0. || h.maximum_speed<h.initial_speed || h.acceleration<0. || h.turning_seconds<=0.
+                || h.seek_distance<0. || !(0.0..=180.0).contains(&h.seek_cone_deg) || h.minimum_flight_before_seek<0. || h.collision_radius<0. {
+                return Some("invalid scene_3d homing inputs");
+            }
+            if self.punch_through_m>0. || self.infinite_body_punch_through {
+                return Some("scene_3d guided penetration needs a bound projectile traversal route");
+            }
+            if self.projectile_speed_mps.is_some_and(|speed|(speed-f64::from(h.maximum_speed)).abs()>0.00001) {
+                return Some("scene_3d guided speed modifiers need a bound native speed consumer");
+            }
+        }
+        if self.continuous || self.beam.is_some() || self.ricochet.is_some() || self.thrown_bounce.is_some()
+            || self.melee_radius.is_some() || !self.combo_script.is_empty() || self.target_preference.is_some()
+            || self.blob.is_some() || self.orb.is_some() || self.lingering.is_some() || self.lock_on.is_some()
+            || self.tendril_max>0 || self.attractor_seconds.is_some() || self.reload_grenade.is_some()
+            || self.acid_shells.is_some() || self.spawn_on_kill.is_some() || self.spectral_dagger.is_some()
+            || !self.abilities.is_empty() || self.frame.is_some() || !self.also_acting.is_empty() || self.arcane.echo_share>0.
+            || self.arcane.influence_chance>0. {
+            return Some("scene_3d currently supports ordinary gun collisions and radial impacts; this build needs an unsupported delivery or secondary scene route");
+        }
+        if let Some(cycle)=&self.cycle {if let Some(error)=cycle.base_form.scene_3d_error(){return Some(error);}}
+        if let Some(toggle)=&self.toggle {if let Some(error)=toggle.other.scene_3d_error(){return Some(error);}}
+        None
+    }
     /// CAN WHAT THIS BODY DROPPED BE COLLECTED? The pack lands where the body
     /// fell and the Tenno does not walk, so the answer is a distance and
     /// nothing else — the flight time a real pickup takes is idealised away
@@ -1077,6 +1112,7 @@ impl FightParams {
         let recharging = arcane.rechargeable_magazine;
         let arc_reload_bonus = arcane.reload_bonus;
         let crate::arena::Arena {
+            scene_3d,
             apl: apl_inserted,
             target_id,
             tenno,
@@ -1582,6 +1618,8 @@ impl FightParams {
             infinite_body_punch_through: panel.infinite_body_punch_through,
             projectile_width_m: panel.projectile_width_m,
             projectile_speed_mps: panel.projectile_speed_mps,
+            homing: panel.homing,
+            scene_3d,
             range_m: panel.range_m,
             tendril_range_m: panel.tendril_range_m,
             tendril_acquire_deg: panel.tendril_acquire_deg,

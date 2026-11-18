@@ -1084,6 +1084,7 @@ pub fn run_once_traced(
             me.melee.combo_spent_t = t;
         }
         let landing = Landing {
+            spatial: None,
             radial_only: false,
             pellet_aims: Vec::new(),
             t,
@@ -1146,16 +1147,18 @@ pub fn run_once_traced(
         lay_cold_trail(me.seat, active, t, &mut entities);
         // Contact follows charge and the animation event, then projectile
         // travel where present. The next input has its own completion clock.
-        let arrival_delay = active.flight_seconds(me.params.gap())
-            + swing_contact_delay(active, landing.swing.as_ref(), live_rate, tennokai, tennokai_heavy);
-        if arrival_delay > 0.0 {
+        let spatial = me.params.scene_3d.is_some();
+        if spatial { spatial::launch(&landing, active, me, &bodies, rec); }
+        let arrival_delay = if spatial { 0.0 } else { active.flight_seconds(me.params.gap())
+            + swing_contact_delay(active, landing.swing.as_ref(), live_rate, tennokai, tennokai_heavy) };
+        if spatial || arrival_delay > 0.0 {
             let swing = landing.swing.clone();
             let burst_len = active.burst.map_or(1, |b| b.count.max(1));
-            me.in_flight.push(Landing {
+            if !spatial { me.in_flight.push(Landing {
                 t: t + arrival_delay,
                 burst_completed: Some(me.ammo.rounds_this_mag.is_multiple_of(burst_len)),
                 ..landing
-            });
+            }); }
             if single_shot {
                 me.incarnon.in_base_form = true;
                 me.incarnon.base_magazine = me.ammo.loaded;

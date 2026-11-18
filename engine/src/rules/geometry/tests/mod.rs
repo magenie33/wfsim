@@ -3,7 +3,7 @@ use super::*;
 use serde_json::Value;
 
 fn fixture() -> Value {
-    serde_json::from_str(include_str!("fixtures/native.json")).unwrap()
+    serde_json::from_str(include_str!("../fixtures/native.json")).unwrap()
 }
 
 fn vector(value: &Value) -> Vec3 {
@@ -214,4 +214,24 @@ fn an_invalid_transform_or_ray_has_no_contact() {
     assert!(Shape::Sphere { radius: 1. }
         .intersect(Vec3([f64::NAN, 0., 0.]), ray.direction)
         .is_none());
+}
+
+#[test]
+fn guided_motion_matches_the_36_native_empty_world_sequences() {
+    let data: Value = serde_json::from_str(include_str!("../fixtures/native-motion.json")).unwrap();
+    let cases=data["motion_cases"].as_array().unwrap();assert_eq!(cases.len(),36);
+    for (i,case) in cases.iter().enumerate() {
+        let origin=vector(&case["muzzle"]);
+        let direction=vector(&case["initial_aim_point"]).minus(origin).normalized().unwrap();
+        let mut state=guided::Guided::new(origin.0.map(|v|v as f32),direction.0.map(|v|v as f32),40.);
+        for (j,step) in case["trace"].as_array().unwrap().iter().enumerate() {
+            let acquired=case["target_mode"]=="preselected"||(case["target_mode"]=="acquire-after-launch"&&state.flight>0.);
+            let target=acquired.then(||vector(&case["steering_center"]).0.map(|v|v as f32));
+            state.step(target,1./case["hz"].as_f64().unwrap() as f32,0.08,40.,80.);
+            for k in 0..3 {
+                let expected=step["new"][k].as_f64().unwrap();
+                assert!((f64::from(state.position[k])-expected).abs()<0.0003,"case {i} step {j} axis{k}: {} != {expected}",state.position[k]);
+            }
+        }
+    }
 }

@@ -1732,6 +1732,7 @@ pub fn resolve_for(
         infinite_body_punch_through: base.infinite_body_punch_through,
         projectile_width_m: base.projectile_width_m,
         projectile_speed_mps,
+        homing: base.homing,
         // A THROWN GLAIVE FLIES FURTHER AS IT FLIES FASTER — Whirlwind's page:
         // *"As a direct result, this mod also increases throwing distance."*
         range_m: if base.form.is_throw() { beam_range_m * ps } else { beam_range_m },

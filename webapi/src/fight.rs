@@ -739,12 +739,25 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
                 a[1].as_f64().unwrap_or(0.0),
             )
         });
-    let (target, body_parts, target_at, others, aimed_id) =
+    let (target, body_parts, mut target_at, mut others, aimed_id) =
         aimed_body(v, aim_at, player_at, target, body_parts, target_at, formation);
+    let scene_3d = v.get("scene_3d").map(|raw| {
+        if aim_at.is_some() { return Err("scene_3d uses its head/body reticle anchor; aim_at is not supported".to_string()); }
+        let scene = serde_json::from_value(raw.clone()).map_err(|e| format!("scene_3d: {e}"))?;
+        wfsim_engine::scene::Scene::new(scene, 1 + others.len()).map(std::sync::Arc::new)
+    }).transpose().map_err(err_json)?;
+    let mut player_at = player_at;
+    if let Some(scene) = &scene_3d {
+        let planar = |p: wfsim_engine::rules::geometry::Vec3| wfsim_engine::rules::space::Vec2::new(p.0[0], p.0[2]);
+        player_at = planar(scene.input().player.world.point(wfsim_engine::rules::geometry::Vec3([0.; 3])));
+        target_at = planar(scene.root(0));
+        for (i, other) in others.iter_mut().enumerate() { other.at = planar(scene.root(i + 1)); }
+    }
     // ---- the ARENA: both actors, and how long they are at it. Assembled
     // once and handed whole to whichever constructor runs, so the two forms
     // of a cycle cannot end up fighting two different fights.
     let arena = wfsim_engine::arena::Arena {
+        scene_3d,
         apl,
         // THE SQUAD THE SCENARIO NAMED. It rides on the arena so the optimizer
         // inherits it from the same constructor rather than re-deriving it.

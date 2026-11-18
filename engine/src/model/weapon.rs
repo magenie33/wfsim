@@ -919,6 +919,7 @@ pub struct WeaponBase {
     /// [`crate::data::weapons::AttackSpec::projectile_speed_mps`], before any
     /// bonus — `None` is a shot that arrives the instant it is fired.
     pub projectile_speed_mps: Option<f64>,
+    pub homing: Option<crate::model::Homing>,
     /// [`crate::data::weapons::AttackSpec::range_m`] — `INFINITY` when the
     /// weapon declares none, which is what every weapon did before 2026-08-19.
     pub range_m: f64,

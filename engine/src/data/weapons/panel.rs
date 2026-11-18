@@ -721,6 +721,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         // A HIT-SCAN OR BEAM ATTACK HAS NO FLIGHT whatever it states, and an
         // ORB attack's trigger deploys the orb, which flies at its own
         // `OrbSpec::speed_mps`.
+        homing: s.attack.homing,
         projectile_speed_mps: s
             .attack
             .projectile_speed_mps

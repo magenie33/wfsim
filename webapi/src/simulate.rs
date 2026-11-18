@@ -355,6 +355,7 @@ impl Entrant {
         // …then what the fight refuses to hand out: the cards say where a run
         // OPENS, this says what it can EARN.
         params.deny_buff_triggers(&self.fight.denied_buff_triggers);
+        if let Some(error)=params.scene_3d_error(){return Err(err_json(error));}
         Ok((panel, params))
     }
 }

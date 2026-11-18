@@ -20,10 +20,10 @@ max_rank: 30
 unmodeled:
   - reason: client_projectile_acceleration
   - reason: client_accuracy_runtime
-  - "The rockets home within 15 degrees; every shot here hits anyway, so homing adds nothing."
+  - "Homing is resolved only with an explicit scene_3d; the default planar scene assumes its configured hit parts."
   - "The +50% reload speed while sprinting is not modelled: the player stands still here (Gauss and Gauss Prime double it to +100%)."
   - "Self-stagger is not modelled: an explosion at the wielder's feet can interrupt the 2-round burst so only one rocket fires (wiki)."
-  - "The rockets aim for the torso, so a high headshot rate is not reachable in play, though this entry uses whatever is set."
+  - "Live equipped muzzle/pose, target installation and projectile sweep are unbound; the experimental scene consumes supplied state."
 accuracy: 26.7
 disposition: 1.2
 polarities: [naramon, naramon, madurai]
@@ -70,6 +70,16 @@ attack:
     delay_seconds: 0.12
   shot_type: projectile
   projectile_speed_mps: 80
+  # Native Glaive inputs: 20261117T114909Z-akarius-homing-close-range.
+  homing:
+    collision_radius: 0.02
+    initial_speed: 40
+    maximum_speed: 80
+    acceleration: 40
+    turning_seconds: 0.079999998
+    seek_distance: 30
+    seek_cone_deg: 10
+    minimum_flight_before_seek: 0
   fire_rate: 3.66666666666667
   multishot: 1.0
   ammo_cost: 1

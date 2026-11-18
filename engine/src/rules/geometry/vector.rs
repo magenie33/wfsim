@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 /// Client coordinates: Y is up. Unit conversion belongs to the supplied scene.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Vec3(pub [f64; 3]);
 
+#[wfsim_gas_macro::metered]
 impl Vec3 {
     pub fn dot(self, b: Self) -> f64 {
         (self.0[0] * b.0[0] + self.0[1] * b.0[1]) + self.0[2] * b.0[2]
@@ -30,9 +31,10 @@ impl Vec3 {
 }
 
 /// Row-major 3x4 affine transform, applied to a column vector.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Affine(pub [f64; 12]);
 
+#[wfsim_gas_macro::metered]
 impl Affine {
     pub const IDENTITY: Self = Self([1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0.]);
 
