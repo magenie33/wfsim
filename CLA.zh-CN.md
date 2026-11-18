@@ -6,7 +6,7 @@
 本协议规定了 WFSim 接受贡献的条件。它的作用是让项目能够把自己的成果作为一个
 整体来授权，并让仓库里的每个文件都有清晰的权利来源。
 
-签署不花钱，只需要一行字，见 §7。
+签署方式见第 7 条。
 
 ## 1. 定义
 
@@ -99,11 +99,12 @@
 
 ## 7. 如何签署
 
-在你的 pull request 下评论，内容就是下面这一行（请用英文原文）：
+请在 pull request 下评论以下两行，或把它们放进实测或数据 issue 的正文。
+请保留英文原文，并将占位文字替换为你已阅读的 `CLA.md` 版本的固定链接。
 
-> I have read the CLA and I hereby sign the CLA
+```text
+I have read the CLA and I hereby sign the CLA
+CLA version: <指向 CLA.md 具体提交的固定链接>
+```
 
-如果你是以 **issue** 形式提交实测或数据报告，请把同样这行放进 issue 正文。
-
-该签署记录在你的 GitHub 账号下，同样覆盖你之后的贡献，因此只需签署一次，
-不必每个 pull request 都签。
+维护者记录你的 GitHub 账号、协议版本和签署链接。你签署的版本按第 5 条适用于后续贡献。

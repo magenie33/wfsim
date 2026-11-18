@@ -4,7 +4,7 @@ This agreement sets the terms under which contributions are accepted into
 WFSim. It exists so the project can keep licensing its own work as one whole,
 and so every file in it has a clear chain of rights behind it.
 
-Signing costs you nothing and takes one line. §7 is how.
+See §7 for how to sign.
 
 A Chinese translation is at [`CLA.zh-CN.md`](CLA.zh-CN.md). **The English text
 below governs**; the translation is provided for convenience.
@@ -128,12 +128,15 @@ in `data/`, which are nobody's property to begin with. Both are set out in
 
 ## 7. How to sign
 
-Comment on your pull request with exactly this line:
+Post these two lines as a comment on your pull request or in the body of your
+measurement or data issue. Replace the placeholder with a permalink to the
+revision of `CLA.md` that you read.
 
-> I have read the CLA and I hereby sign the CLA
+```text
+I have read the CLA and I hereby sign the CLA
+CLA version: <permalink to CLA.md at a specific commit>
+```
 
-For a measurement or data report submitted as an **issue**, put the same line
-in the issue body.
-
-The line is recorded against your GitHub account and covers your later
-contributions too, so you sign once rather than per pull request.
+The maintainer records your GitHub account, the agreement revision and the
+signature link. The version you sign covers later contributions as described
+in §5.

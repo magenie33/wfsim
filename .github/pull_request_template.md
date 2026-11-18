@@ -11,8 +11,8 @@
 
 ## Checklist
 
-- [ ] I have read and agree to the [CLA](../CLA.md), and have signed it by
-      commenting `I have read the CLA and I hereby sign the CLA` below
+- [ ] I signed using [CLA §7](https://github.com/magenie33/wfsim/blob/main/CLA.md#7-how-to-sign), or my existing signature covers this contribution.
+- [ ] I have identified any co-authors and the source and licence of any third-party material.
 - [ ] `cargo test --workspace` passes
 - [ ] `cargo clippy --workspace --all-targets -- -D warnings` is clean
 - [ ] Golden values are unchanged, or a measurement justifying the change is

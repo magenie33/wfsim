@@ -50,4 +50,6 @@ labels: measurement
 
 ## Agreement
 
-- [ ] I have read the [CLA](../../CLA.md) and I hereby sign the CLA
+<!-- Follow https://github.com/magenie33/wfsim/blob/main/CLA.md#7-how-to-sign.
+     Put your signature and the agreement permalink here,
+     or link your existing signature if it covers this report. -->
