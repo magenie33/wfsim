@@ -24,7 +24,7 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
  const identity=await stat(binary),native=await openInventoryOperator(binary);
  if(native.adapter!==nativeSha){await native.close();throw new BoardRankQualificationError('board native contract changed');}
  const mailbox=new BoardInputMailbox(sql,{source}),abort=new AbortController();
- const context={source,engine,native:native.adapter,work,verified:new Map(),prefixes:new Map(),fault};
+ const context={source,engine,native:native.adapter,work,catalog,verified:new Map(),prefixes:new Map(),fault};
  const captures=new Map();let publication=null,turn=0,closed=false,orphanAfter=0;
  const sameNative=async()=>{
   const current=await stat(binary);

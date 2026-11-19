@@ -70,8 +70,9 @@ export async function reconcileRankBaseline(tx,{weapon,ruler,source}) {
  if(!part.seeded||part.reconciled)return;
  const catalog=part.catalog_phase==='replay';
  const seeded='SELECT identity FROM state_board_rank_sources WHERE weapon=$1 AND ruler=$2 AND identity>$3 ORDER BY identity LIMIT 64';
- const scan=catalog?`SELECT identity FROM ((${seeded}) UNION
-  (SELECT id FROM entity_weapon_builds WHERE weapon=$1 AND id>$3 ORDER BY id LIMIT 64)) ids ORDER BY identity LIMIT 64`:seeded;
+ const changes="SELECT identity FROM state_board_rank_catalog_inputs WHERE weapon=$1 AND identity>$3 AND ruler=";
+ const scan=catalog?`SELECT identity FROM ((${seeded}) UNION (${changes}$2 ORDER BY identity LIMIT 64)
+  UNION (${changes}'' ORDER BY identity LIMIT 64)) ids ORDER BY identity LIMIT 64`:seeded;
  const ids=await tx.unsafe(scan,[weapon,ruler,part.reconcile_cursor]);
  const rows=await tx.unsafe(`SELECT k.identity FROM jsonb_array_elements_text($3::text::jsonb) k(identity)
   WHERE EXISTS(SELECT 1 FROM LATERAL (SELECT scope,key,version FROM state_board_rank_dependencies
@@ -79,6 +80,7 @@ export async function reconcileRankBaseline(tx,{weapon,ruler,source}) {
    CROSS JOIN LATERAL (SELECT version FROM state_board_input_mailbox WHERE scope=d.scope AND key=d.key OFFSET 0) m
    WHERE d.version IS DISTINCT FROM m.version)
   ${catalog?`OR(NOT EXISTS(SELECT 1 FROM state_board_rank_sources s WHERE (s.weapon,s.ruler,s.identity)=($1,$2,k.identity))
+   AND EXISTS(SELECT 1 FROM entity_weapon_builds b WHERE b.id=k.identity AND b.weapon=$1)
    AND EXISTS(SELECT 1 FROM board_facts f WHERE f.identity=k.identity AND f.ruler=$2))`:''}`,[weapon,ruler,JSON.stringify(ids.map(row=>row.identity))]);
  await lockRankInputs(tx,source,{identities:rows.map(row=>row.identity)});
  for(const {identity} of rows){

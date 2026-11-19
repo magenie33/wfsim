@@ -11,7 +11,7 @@ import {rankFilePage,syncRankDirectory} from './board_rank_files.mjs';
 import {createRankPartition,prepareRankSources,applyRankSources,BoardRankQualificationError} from './board_rank_index.mjs';
 
 
-export async function captureRankBaseline(sql,{weapon,ruler,source,native,work,signal}) {
+export async function captureRankBaseline(sql,{weapon,ruler,source,native,work,signal,mailboxFloor}) {
  work=boardStorage(work);
  const directory=join(work,'rank-cut-'+randomUUID());await mkdir(directory,{mode:0o750});
  const path=join(directory,'inputs.ndjson'),file=await open(path,'wx'),checksum=createHash('sha256');
@@ -27,7 +27,7 @@ export async function captureRankBaseline(sql,{weapon,ruler,source,native,work,s
    const [{actual,captured_at,snapshot}]=await tx.unsafe(`SELECT (SELECT source FROM state_board_input_source WHERE id=1) actual,
     to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') captured_at,pg_current_snapshot()::text snapshot`);
    if(actual!==source)throw new BoardRankQualificationError('board source changed');
-   const meta={kind:'meta',v:1,weapon,ruler,source,native,captured_at,snapshot};await append(meta);
+   const meta={kind:'meta',v:1,weapon,ruler,source,native,captured_at,snapshot,...(mailboxFloor==null?{}:{mailbox_floor:String(mailboxFloor)})};await append(meta);
    await tx.unsafe(`DECLARE board_rank_baseline NO SCROLL CURSOR FOR SELECT b.id,b.at,
     CASE WHEN f.rows IS NOT NULL THEN b.record END record,f.rows facts,h.rows headers
     FROM entity_weapon_builds b CROSS JOIN LATERAL(SELECT jsonb_agg(to_jsonb(s) ORDER BY s.mode) rows

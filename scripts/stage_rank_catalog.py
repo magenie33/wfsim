@@ -245,7 +245,8 @@ def manifest(store, directory, weapon, ruler):
     if not cut:
         raise ValueError("coherent replay required")
     meta = {"kind": "meta", "v": 1, "weapon": weapon, "ruler": ruler, "source": spec["source"],
-            "native": spec["native"], "snapshot": cut["snapshot"], "captured_at": cut["captured_at"]}
+            "native": spec["native"], "snapshot": cut["snapshot"], "captured_at": cut["captured_at"],
+            "mailbox_floor": str(receipt(store, "floor") or receipt(store, "start")["version"])}
     return write_manifest(directory, meta, inputs(store, weapon, ruler))
 
 

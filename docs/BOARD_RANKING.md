@@ -166,29 +166,40 @@ storage reserves throughout the staged write.
 
 ### Registering a qualified catalog scope
 
-Install the ordered build index with `node scripts/board_rank_catalog_schema.mjs
---index` and then the additive schema with the same command without arguments.
-Apply their SQL as the canonical storage owner and restart the indexed reader
-with the matching payload before registering scopes. Keep the original archive,
-coherent capture, qualification ledger and protected public revisions pinned.
+Apply the SQL emitted by `node scripts/board_rank_catalog_schema.mjs` as
+the storage owner. Restart the indexed reader with the matching payload.
+Pin the original archive, coherent capture, qualification ledger and public
+revisions. With the owner's `PG_URL`, run
+`node scripts/board_rank_catalog_scan.mjs CAPTURE_DB`. The command installs
+change capture at a writer boundary and scans retained mailbox headers once
+from the cut's drained floor. Each page persists its cursor together with the
+affected build and measurement keys. A build binding covers all its rulers.
 
-Save the JSON returned by the catalog `manifest` command. With the owner's
-`PG_URL` and the same work-directory access as the reader, run
-`node scripts/adopt_rank_catalog.mjs LEDGER MANIFEST_JSON NATIVE WORK
-[PINNED_REVISION]`. A retained active head stays selected. An advanced head
-returns its actual revision for comparison with the protected publication.
-A disabled or unrelated reservation holds the scope.
+Save the JSON returned by the catalog `manifest` command. With the same work
+volume as the reader, run `node scripts/adopt_rank_catalog.mjs LEDGER
+MANIFEST_JSON NATIVE WORK [PINNED_REVISION] [--requested INVENTORY_JSON]`.
+A published head stays selected. An advanced head returns its actual revision
+for comparison. An existing player reservation needs its pinned request
+position and mailbox version. A paused partial cut also needs its original
+file digest, index position, coverage and quiescent state. Its typed indices
+and referenced Native descriptions are copied into a separate recovery schema
+in the index tablespace. The original cut file stays pinned. The request and
+its dirty work keep their identities. Budget these scoped copies and their WAL
+before transferring an occupied cut.
 
-A fresh scope starts hidden. The reader stages the sealed Native index and
-compares every 128-row PostgreSQL page with the independent qualification
-digest. Incoming changes remain queued. After the comparison, the reader
-walks the union of captured identities and current weapon builds in bounded
-primary-key order. It checks captured dependency versions and discovers first
-measurements on identities absent from the cut. The cursor and outstanding
-identity work commit together. The reader publishes the current generation
-only after these obligations have been applied. A changed public selection
-holds the handoff. The catalog and all clients keep serving the selected
-revision during preparation.
+The reader stages a new scope privately and compares each PostgreSQL page
+with the independent qualification digest. It checks the captured dependency
+versions and the coalesced changes for that weapon and ruler, including first
+measurements absent from the cut. A checkpoint commits its outstanding work
+and cursor together. Once those changes are applied, the reader verifies
+the current staged bytes and atomically selects the generation and activates
+any retained player request. A changed public selection holds the transfer.
+
+After the full catalog has been selected, run
+`node scripts/board_rank_catalog_scan.mjs CAPTURE_DB --finish ARCHIVE_DB LEDGER_DB`.
+It verifies global historical coverage and each current public selection before
+retiring the temporary change capture. The canonical mailbox continues to feed
+the ordinary reader.
 
 ## Activation and recovery
 

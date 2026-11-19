@@ -81,6 +81,7 @@ export async function applyRankSources(tx,part,prepared,{live=false,cursor=null,
   if(ahead.length)throw new BoardRankConflict('source routing advanced during native preparation');
  }
  const [locked]=await tx.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 FOR NO KEY UPDATE',[part.weapon,part.ruler]);
+ if(live&&locked?.catalog_phase==='frozen')throw new BoardRankConflict('catalog is staging its frozen inputs');
  if(!locked||locked.source!==part.source||locked.native!==part.native||locked.cut!==part.cut)
   throw new BoardRankQualificationError('ranking projection source changed');
  if(String(locked.revision)!==String(part.revision))throw new BoardRankConflict('ranking projection changed during native preparation');

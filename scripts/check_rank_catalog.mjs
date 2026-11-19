@@ -179,6 +179,8 @@ try{
  assert.equal(negative.eligible,false);assert.equal(negative.unresolved,1);bad.close();ledger.close();cache.close();
  const step=cmd(initialize+"from pathlib import Path;import json;print(json.dumps(c.manifest(s,Path(sys.argv[1]),sys.argv[4],sys.argv[5])));d.close()",records[0].weapon,rulers[0]);
  const result=JSON.parse(success(step));assert.equal(result.facts,1);assert.equal(result.sha256,sha(readFileSync(result.path)));
+ assert.equal(result.mailbox_floor,JSON.parse(readFileSync(result.path,'utf8').split('\n')[0]).mailbox_floor);
+ assert.match(result.mailbox_floor,/^[0-9]+$/);
  console.log(JSON.stringify({archive_members:checked+rankArchive.length,scopes:5,ranked_destinations:statuses,score:newer.score,prior:fs[0].score,real_case:!!real,
   restart:true,writer_fence:true,build_move:true,review_retirement:true,deletion:true,manifest_verified:true}));
 }finally{

@@ -62,14 +62,15 @@ export async function collectRankStorage(sql,{work,source}) {
  return null;
 }
 
-export async function collectRankOrphan(sql,{work}) {
+export async function collectRankOrphan(sql,{work,catalog=false}) {
  work=boardStorage(work);
  for(const name of await readdir(work)){
   if(!/^rank-(cut|generation)-[a-f0-9-]{36}$/.test(name))continue;
   const directory=join(work,name),entry=await lstat(directory);
   if(entry.mtimeMs>Date.now()-600000)continue;
   const [retained]=name.startsWith('rank-cut-')
-   ?await sql.unsafe('SELECT weapon FROM state_board_rank_partitions WHERE path=$1 LIMIT 1',[join(directory,'inputs.ndjson')])
+   ?await sql.unsafe(`SELECT weapon FROM state_board_rank_partitions WHERE path=$1
+    ${catalog?"OR(catalog_proof ? 'previous' AND catalog_proof#>>'{previous,path}'=$1)":''} LIMIT 1`,[join(directory,'inputs.ndjson')])
    :await sql.unsafe('SELECT token FROM state_board_rank_generations WHERE directory=$1 LIMIT 1',[directory]);
   if(retained)continue;
   const cut=name.startsWith('rank-cut-');
