@@ -220,12 +220,7 @@ const agentFind = { query: { kind: "string", what: "name or effect words, in any
 const HEADLESS_PAGE_HOST = {
   meta: () => META,
   names: () => (ALT_NAMES || []).concat(I18N ? [I18N] : []),
-  async board(id, ruler) {
-    const base = boardOffOrigin ? BOARD_ORIGIN : "";
-    await loadWeaponBoard(id, base);
-    if (ruler) await loadSceneRows(id, base, [boardCellDir(ruler)]);
-    return BOARD[id] || null;
-  },
+  board: (id, ruler) => pageBoardReader().weapon(META, id, ruler).catch(() => null),
   api: (path, body) => api(path, body),
   tr: (s) => tr(s),
   origin: LIVE_ORIGIN,

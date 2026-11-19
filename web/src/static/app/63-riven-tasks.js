@@ -72,14 +72,8 @@ async function submitSavedAppraisals(ids, ruler, destination = "local", capture 
   const tasks = await queue.createMany(entries);
   return tasks;
 }
-async function appraisalBoardNow(weapon, ruler) {
-  const bench = benchList().find(item => item.id === ruler);
-  const base = boardOffOrigin || window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : "";
-  const path = `${base}/board/${bench?.cell_dir ? bench.cell_dir + "/" : ""}${weapon}.json`;
-  const response = await fetch(path, { cache: "no-cache", signal: timeoutSignal(15_000) });
-  if (response.status === 404) return [];
-  if (!response.ok) throw new Error("The board could not be reached.");
-  return response.json();
+function appraisalBoardNow(weapon, ruler) {
+  return pageBoardReader().weapon(META, weapon, ruler).catch(() => null);
 }
 function renderSavedAppraisal(record) {
   const verdict = record.result.verdict, box = $("opt-results");

@@ -8,7 +8,7 @@
 // person's saved builds (docs/AGENT.md §"The MCP server").
 import { wasm_bindgen, module, ENGINE_DIGEST, ENGINE_PACKS } from "./engine.js";
 import { HEADLESS_ABOUT, HEADLESS_QUERIES, HEADLESS_RETIRED, headlessCheckArgs, headlessNo, headlessSchema, headlessToolName,
-  headlessUnknown, headlessBoardFile } from "./headless.js";
+  headlessUnknown, publishedBoardReader } from "./headless.js";
 import { ACCOUNT_TOOLS, callAccount } from "./account.js";
 import { a2aAnswer, agentCard } from "./a2a.js";
 
@@ -72,31 +72,23 @@ function api(path, body) {
 
 let meta = null;
 let names = null;
-const boardFile = async (env, url) => {
-  const r = await (env.SITE ? env.SITE.fetch(url) : fetch(url));
-  return r.ok && !r.headers.get("content-type")?.includes("text/html") ? r.json() : null;
+const host = (env) => {
+  const reader = publishedBoardReader(async (path, signal) => {
+    const request = new Request(SITE + path, { signal });
+    const response = await (env.SITE ? env.SITE.fetch(request) : fetch(request));
+    return response.ok ? response.json() : null;
+  });
+  return {
+    meta: () => meta ??= api("/api/meta"),
+    names: () => names ??= Object.values(api("/api/i18n")),
+    board: (id, ruler) => reader.weapon(meta ??= api("/api/meta"), id, ruler).catch(() => null),
+    api: async (path, body) => api(path, body),
+    tr: (s) => s,
+    origin: SITE,
+    screen_weapon: () => null,
+    screen_build: () => null,
+  };
 };
-
-/// The worker as a headless host: the engine's own meta and names, the board
-/// as the site publishes it right now, English, and no screen.
-const host = (env) => ({
-  meta: () => (meta ??= api("/api/meta")),
-  names: () => (names ??= Object.values(api("/api/i18n"))),
-  async board(id, ruler) {
-    const path = headlessBoardFile((meta ??= api("/api/meta")),id,ruler);
-    return path ? boardFile(env,SITE+path) : null;
-  },
-  // THE HEADS, for a top-N answer (docs/BOARD.md §"The heads"); every row
-  // where a weapon has none yet.
-  async boardHeads(id, ruler) {
-    return (await boardFile(env, `${SITE}/board/heads/${encodeURIComponent(id)}.json`)) || this.board(id, ruler);
-  },
-  api: async (path, body) => api(path, body),
-  tr: (s) => s,
-  origin: SITE,
-  screen_weapon: () => null,
-  screen_build: () => null,
-});
 
 const TOOLS = HEADLESS_QUERIES.map((q) => ({ q, name: headlessToolName(q.id) }));
 

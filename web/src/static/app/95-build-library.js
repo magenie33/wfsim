@@ -198,12 +198,22 @@ function libraryAfterRender(w, all, list, groups, drawList) {
   renderLibrarySummary(w, all);
   const box = $("build-finder");
   if (!boardHasCell(w.id, finder.b)) {
-    const state = boardFileState(w.id), failed = state.failed.has(boardCellDir(finder.b));
+    const state = boardFileState(w.id), dir = boardCellDir(finder.b);
+    const failed = boardCellUnavailable(w.id, finder.b);
     const count = box.querySelector(".library-result-count");
     count.innerHTML = failed ? escHtml(tr("The board could not be reached.")) : loadingHtml();
     if (failed) {
       const retry = document.createElement("button"); retry.className = "ghost-btn small"; retry.textContent = tr("Retry");
-      retry.onclick = () => { state.failed.delete(boardCellDir(finder.b)); loadWeaponBoard(w.id).then(renderBuildFinder); }; count.append(" ", retry);
+      retry.onclick = () => { state.failed.delete(dir); state.loaded.delete(dir); loadSceneRows(w.id, [dir]).then(renderBuildFinder); };
+      count.append(" ", retry);
+      const archived = headlessBoardFile(META, w.id, finder.b), stamp = BOARD_META?.scored_at;
+      if (archived && Number.isFinite(stamp) && stamp > 0) {
+        const link = document.createElement("a");
+        link.href = archivedBoardOrigin() + archived;
+        link.target = "_blank"; link.rel = "noopener";
+        link.textContent = trF("Archived board file · {date}", { date: new Date(stamp * 1000).toISOString().slice(0, 10) });
+        count.append(" ", link);
+      }
     }
   }
   if (changed && finder.shown !== FINDER_FIRST) {

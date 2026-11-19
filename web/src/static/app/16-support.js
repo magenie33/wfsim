@@ -236,7 +236,7 @@ function identityLines() {
     lines.push(trF("release {r} · commit {c}", { r: RELEASE_ID, c: BUILD_SHA }));
   }
   if (BOARD_META && BOARD_META.digest) {
-    lines.push(trF("board {d} · scored {t} · {n} rows", {
+    lines.push(trF("archived board {d} · scored {t} · {n} rows", {
       d: BOARD_META.digest.slice(0, 12),
       t: BOARD_META.scored_at
         ? new Date(BOARD_META.scored_at * 1000).toLocaleString()
@@ -329,6 +329,7 @@ supportMotion.addEventListener("change", () => {
 });
 
 function renderSupportCounts() {
+  if (!META) return;
   const facts = $("support-facts");
   if (facts) {
     facts.innerHTML = projectFacts().map((f) => `

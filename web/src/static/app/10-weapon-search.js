@@ -415,8 +415,9 @@ async function init() {
   arcanes = arcanesFor(bootWeapon, d.arcane);
   sim = defaultScenario();
   if (routeWeaponId()) {
-    await boardBoot;
+    await Promise.race([boardBoot, new Promise(resolve => setTimeout(resolve, 4000))]);
     applyWeapon(bootWeapon, d.mods);
+    boardBoot.then(() => boardRowsLanded(bootWeapon));
   }
 
   // THROUGH THE DOOR, like every other consumer — see "The agent door". The

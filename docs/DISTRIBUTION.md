@@ -368,55 +368,17 @@ shell may stream it and cache. They are running the same release.
 
 ## The data plane
 
-**The board is fetched, not released.** It is the output of a pipeline that runs
-on a schedule, and it moves at its own rate.
+**Current board data is fetched independently of software releases.** The
+main and CN entrances forward the publication catalog and revision-bound
+pages to the same board service. The desktop page uses the main entrance for
+the same data. A saved build and its measurement may still be opened as a
+historical record while the current board is unavailable.
 
-- `board/<weapon>.json` and `board/index.json` are served at stable URLs and
-  fetched at runtime.
-- `board.meta.json` beside them is small and carries the stamp: **a digest per
-  published file**, one digest over that manifest, which generation the rows
-  were measured under, when each board was scored, how many rows, and which
-  weapons each scene has a file for (`scene_weapons`, so a page never asks a
-  scene for a file it does not have). A client
-  reads the stamp to learn whether the copy it holds is current **without
-  fetching the board to find out** — and, when it is not, learns WHICH files
-  moved, so an hourly rescore that touched twenty weapons costs twenty small
-  files rather than 4.8 MB. That is the whole economy of the plane.
-- The payload is served mutably rather than by digest **because there is exactly
-  one live board and no client ever wants an older one.** The stamp is what
-  makes staleness detectable; content-addressing it would buy caching this plane
-  does not need.
-- `scripts/board_meta.py` writes the stamp, and **both the scoring job and the
-  site build call it** — the first every hour, the second so a local tree is
-  never left holding a stamp for a board it does not have. Only the scoring job
-  writes ROWS; the site build's whole job in `site/board/` is to guarantee one
-  file per roster weapon, because a weapon nobody has submitted for reaches the
-  publisher in no form at all.
-
-**A shell serves live data through its own protocol.** The page asks for
-`/board/<weapon>.json` and gets the freshest copy the shell has, which the shell
-refreshes in the background — file by file, against the stamp's manifest —
-and keeps on disk beside the release rather than inside it. It also deletes what
-the manifest no longer names, so a weapon dropped from the roster does not leave
-a file the shell goes on serving rows from. The page is identical on every shell
-and no cross-origin configuration is involved.
-
-**THE STAMP LANDS LAST, and only if every file it named landed.** A refresh that
-dies partway leaves the shell holding some files from before and some from
-after, with a stamp still naming the board it had — so the next check fetches
-the rest. Writing the stamp first would make that gap invisible for ever.
-
-**A client that has not fetched one yet asks the site.** `fetchJson` tries the
-same origin and then `wfsim.app`, which is why `/board/*` carries
-`Access-Control-Allow-Origin`. On the web the first answer always wins; on a
-shell the local copy is the offline one, and the fallback is what a fresh
-install reads before its first refresh. A shell that has neither answers **404,
-never its SPA fallback** — `index.html` with a 200 is what `res.ok` reads as
-success.
-
-There is deliberately **no seed in the payload**. A seed is stale on arrival and
-it puts a file that moves every hour inside an artefact that must not,
-which is the whole failure this plane exists to prevent.
+The historical `/board/` files and `board.meta.json` carry their own date and
+manifest. The desktop shell's existing refresh checks each file against the
+manifest and installs the stamp last. These files remain accessible as a
+dated archive. Current ranks use the revision selected in the publication
+catalog.
 
 ## The relay
 
@@ -500,14 +462,9 @@ promote()    swap the directory
 data(name)   serve the freshest live data this shell holds, else the seed
 ```
 
-**THE PAGE MAY NOT REQUIRE A SHELL FEATURE THE FIELD DOES NOT HAVE.** Content
-replaces itself and a shell does not, so a shell that predates a capability goes
-on predating it for as long as its reader never downloads again — and it keeps
-receiving releases the whole time. A release that begins depending on one has to
-degrade to the site for the shells without it: `fetchJson` and
-`loadWeaponBoard` ask this origin and then `cdn.wfsim.app`, which is why
-`board.meta.json` not answering is read as "this origin holds no board" rather
-than as a failure.
+**THE PAGE MAY NOT REQUIRE A SHELL FEATURE THE FIELD DOES NOT HAVE.**
+The current ranking uses the same HTTPS catalog and pages in a shell and in a
+browser. Archived files may be held by the shell's existing data refresh.
 
 **Verification lives in the shell, never in the page.** The page is the thing
 being replaced; asking it to verify its own replacement is circular. Policy and
