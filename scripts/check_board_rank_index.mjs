@@ -59,6 +59,25 @@ try{
  await sql.unsafe('UPDATE state_board_rank_partitions SET complete=true WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
  part=(await sql.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[weapon,ruler]))[0];
  await oracle('baseline');
+ const probe=await prepareRankSources(operate,{weapon,ruler,inputs});
+ await sql.unsafe('ANALYZE state_board_rank_rows');
+ part=await sql.begin(async tx=>{
+  await tx.unsafe('SET LOCAL enable_seqscan=off');
+  let checked=false;
+  const traced={unsafe:async(query,params)=>{
+   if(query.startsWith('INSERT INTO state_board_rank_winners')){
+    const [{ 'QUERY PLAN': plan }]=await tx.unsafe('EXPLAIN (FORMAT JSON) '+query,params);
+    function bounded(node){
+     return (node['Node Type']==='Limit'&&node.Plans?.some(p=>p['Index Name']==='board_rank_shape_order'))||
+      (node.Plans||[]).some(bounded);
+    }
+    assert(bounded(plan[0].Plan),'each affected shape must read its first row from the ordering index');
+    checked=true;
+   }
+   return tx.unsafe(query,params);
+  }};
+  const updated=await applyRankSources(traced,part,probe);assert(checked);return updated;
+ });
  const changed=structuredClone(inputs[3]);changed.facts=changed.facts.map(row=>({...row,score:10,finished_at:'2026-11-16T01:00:00.000Z'}));
  counts.describe=0;counts.render=0;await apply([changed],{live:true});current.set(changed.identity,changed);
  assert.equal(counts.describe,0,'a fact-only update reuses its Native descriptor');

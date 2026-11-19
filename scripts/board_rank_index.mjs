@@ -107,9 +107,9 @@ export async function applyRankSources(tx,part,prepared,{live=false,cursor=null,
   [part.weapon,part.ruler,JSON.stringify(rows.map(row=>({...row,def:row.default})))]);
  const shapes=JSON.stringify([...new Set([...old.map(row=>row.shape),...rows.map(row=>row.shape)])]);
  await tx.unsafe(`DELETE FROM state_board_rank_winners WHERE weapon=$1 AND ruler=$2 AND shape IN(SELECT jsonb_array_elements_text(($3::text)::jsonb))`,[part.weapon,part.ruler,shapes]);
- await tx.unsafe(`INSERT INTO state_board_rank_winners SELECT DISTINCT ON(shape) * FROM state_board_rank_rows
-  WHERE weapon=$1 AND ruler=$2 AND shape IN(SELECT jsonb_array_elements_text(($3::text)::jsonb))
-  ORDER BY shape,score DESC,def DESC,identity,mode_order`,[part.weapon,part.ruler,shapes]);
+ await tx.unsafe(`INSERT INTO state_board_rank_winners SELECT winner.* FROM jsonb_array_elements_text(($3::text)::jsonb) AS affected(shape)
+  CROSS JOIN LATERAL (SELECT r.* FROM state_board_rank_rows r WHERE r.weapon=$1 AND r.ruler=$2 AND r.shape=affected.shape
+   ORDER BY r.score DESC,r.def DESC,r.identity,r.mode_order LIMIT 1) winner`,[part.weapon,part.ruler,shapes]);
  const [updated]=await tx.unsafe(`UPDATE state_board_rank_partitions SET revision=nextval('board_rank_generation'),input_sha256=$3,
   cursor=coalesce($4::bigint,cursor),loaded=coalesce($5::bigint,loaded) WHERE weapon=$1 AND ruler=$2 RETURNING *`,
   [part.weapon,part.ruler,digest({previous:locked.input_sha256,sources,rows,live,cursor,loaded}),cursor,loaded]);
