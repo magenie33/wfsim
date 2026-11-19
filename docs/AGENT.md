@@ -572,7 +572,8 @@ serves it:
 | `/.well-known/ai-catalog.json` | ARD's catalog (ai-catalog 1.0): the MCP server card, the A2A card and the skill, each by the url it is served at; `Agentmap:` in robots.txt and `<link rel="ai-catalog">` in the page's head point at it |
 | `/auth.md` | how an agent registers, claims a key for its person and uses it — drawn by the worker (`worker/agents.js`) |
 | `/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server` | RFC 9728 and RFC 8414, the second with auth.md's `agent_auth` block, from the same constants as `/auth.md` |
-| `/robots.txt` | each AI crawler named, `Content-Signal` granting search, ai-input, ai-train |
+| `/robots.txt` | search and on-demand AI retrieval allowed, training reserved; named training and corpus tokens receive `Disallow: /` |
+| `/reuse` | the English creator grant, citation instructions, crawler preferences and commercial licensing contact |
 | `/.well-known/http-message-signatures-directory` | the Web Bot Auth key directory (§"Web Bot Auth"), drawn by `worker/bot_auth.js` |
 
 A page with a twin (`markdownTwin` in `worker/index.js`) answers

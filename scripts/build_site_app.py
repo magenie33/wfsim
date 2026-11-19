@@ -1909,18 +1909,18 @@ def prerender(flagged: str, catalog: Path) -> None:
           f"{WROTE[0]} written, {WROTE[1]} already current")
 
 
-# THE CRAWLERS NAMED ONE BY ONE, because a reader of robots.txt cannot tell a
-# wildcard that means "everyone, AI included" from one nobody thought about —
-# the agent-readiness scan (docs/AGENT.md §Machine-readable) fails the second.
-AI_CRAWLERS = (
-    "GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-SearchBot",
-    "Claude-User", "Claude-Web", "anthropic-ai", "Google-Extended", "Applebot-Extended",
-    "Amazonbot", "PerplexityBot", "Perplexity-User", "meta-externalagent", "Bytespider",
-    "CCBot",
+# Search and on-demand retrieval stay open. Google bundles Gemini grounding
+# with training under Google-Extended; ordinary Google Search uses Googlebot.
+DISCOVERY_CRAWLERS = (
+    "OAI-SearchBot", "ChatGPT-User", "Claude-SearchBot", "Claude-User",
+    "Amzn-SearchBot", "Amzn-User", "PerplexityBot", "Perplexity-User",
+    "meta-externalfetcher",
 )
-# contentsignals.org: search, answering from the page, and training are all
-# granted. A group a crawler matches REPLACES `*`, so each carries its own copy.
-CONTENT_SIGNAL = "Content-Signal: search=yes, ai-input=yes, ai-train=yes"
+TRAINING_AND_CORPUS_CRAWLERS = (
+    "GPTBot", "ClaudeBot", "Applebot-Extended", "Google-Extended", "Amazonbot",
+    "meta-externalagent", "Bytespider", "CCBot",
+)
+CONTENT_SIGNAL = "Content-Signal: search=yes, ai-input=yes, ai-train=no"
 
 # WHERE AN AGENT CALLS WFSIM, and what it is told WFSim is: the MCP server
 # (`mcp/`) and the table it runs, read through `scripts/dump_headless.mjs` so
@@ -1946,9 +1946,12 @@ def agent_summary() -> str:
 
 
 def robots_txt() -> str:
-    agents = "".join(f"User-agent: {a}\n" for a in AI_CRAWLERS)
-    return (f"User-agent: *\n{CONTENT_SIGNAL}\nAllow: /\n\n"
-            f"{agents}{CONTENT_SIGNAL}\nAllow: /\n\n"
+    discovery = "".join(f"User-agent: {a}\n" for a in DISCOVERY_CRAWLERS)
+    training = "".join(f"User-agent: {a}\n" for a in TRAINING_AND_CORPUS_CRAWLERS)
+    return (f"# Creator and crawler policy: {SITE}/reuse\n\n"
+            f"User-agent: *\n{CONTENT_SIGNAL}\nAllow: /\n\n"
+            f"{discovery}{CONTENT_SIGNAL}\nAllow: /\n\n"
+            f"{training}{CONTENT_SIGNAL}\nDisallow: /\n\n"
             f"Sitemap: {SITE}/sitemap.xml\n"
             f"Agentmap: {SITE}/.well-known/ai-catalog.json\n")
 
@@ -1981,6 +1984,7 @@ def weapon_md(spec, name, cn, facts, stats, board_rows, caveats) -> str:
     out += f"## In WFSim\n\n- Build, simulate and optimize it: {url}\n"
     if (APP / "board" / f"{spec['id']}.json").exists():
         out += f"- Every published board row, as JSON: {SITE}/board/{spec['id']}.json\n"
+    out += f"- [Using and citing WFSim]({SITE}/reuse)\n"
     return out
 
 
@@ -2021,6 +2025,7 @@ description: Look up a Warframe weapon's stats and its best measured riven-free 
 
 - A score belongs to its ruler. Compare scores only under the same ruler, and
   quote the ruler's name with the number.
+- Credit [WFSim]({SITE}/reuse) with a link to the weapon page or shared build.
 - Quote the "as of" date the page states; the board is rescored as builds arrive.
 
 ## Judging a build
@@ -2293,7 +2298,7 @@ def ship_legal(flagged: str, slug: str, title: str, description: str, body: str)
 </head>
 <body>
 <main class="legal">
-<p><a href="/">WFSim</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/refunds">Refunds</a></p>
+<p><a href="/">WFSim</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/reuse">Using and citing WFSim</a> · <a href="/refunds">Refunds</a></p>
 {body.strip()}
 </main>
 </body>
@@ -2302,6 +2307,9 @@ def ship_legal(flagged: str, slug: str, title: str, description: str, body: str)
 
 
 def ship_privacy(flagged: str) -> None:
+    ship_legal(flagged, "reuse", "Using and citing WFSim",
+               "Permissions for creator quotations, automated access and commercial reuse.",
+               (ROOT / "docs/creator-use.html").read_text(encoding="utf-8"))
     ship_legal(flagged, "privacy", "Privacy",
                "What WFSim keeps about a person, with and without an account, and how to remove it.", PRIVACY_BODY)
     # THE BODY IS AN EXTENSION'S, filled in by the site's worker
@@ -2443,6 +2451,7 @@ def ship_agent_files(by_slot: dict) -> None:
     links = (f"- [Method]({SITE}/method.md): how WFSim judges a build, and the in-game readings behind each rule\n"
              f"- [MCP server]({MCP_URL}): these lookups as tools, read-only, no sign-in\n"
              f"- [All weapons]({SITE}/weapons.md): every weapon WFSim models, by slot\n"
+             f"- [Using and citing WFSim]({SITE}/reuse): creator quotations, AI retrieval and licensing\n"
              f"- [Weapon lookup skill]({SITE}/.well-known/agent-skills/{SKILL_NAME}/SKILL.md): "
              "how to read a weapon's page and the board\n"
              f"- [Board index]({SITE}/board/index.json): board rows for every weapon, as JSON\n"

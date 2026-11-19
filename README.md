@@ -76,6 +76,12 @@ footer of every page. Measurements, engine
 outputs and game art each carry terms of their own:
 [`LICENSE-DATA.md`](LICENSE-DATA.md) sets out all four categories. DE's
 Public Export is fetched locally rather than redistributed here.
+
+Creators can quote results in original guides, videos and streams, including
+ad-supported and sponsored work. The [creator policy](https://wfsim.app/reuse)
+explains how to credit sources, how automated services can retrieve results
+and where to ask about commercial data licensing.
+
 Unofficial fan project, not affiliated with Digital Extremes; Warframe
 is a trademark of Digital Extremes Ltd.
 

@@ -6,7 +6,11 @@ it is calibrated against, the figures its engine produces, or the Digital
 Extremes material it shows — and those have different owners and different
 terms.
 
-This file draws that line. Four categories, and a file belongs to exactly one.
+The [creator policy](https://wfsim.app/reuse) gives worldwide permission for
+editorial quotations in guides, videos and streams, including work supported
+by ads or sponsors. It also states the site's search, AI and training policy.
+The [policy text in this distribution](docs/creator-use.html) is the source
+published on the site.
 
 ## 1. Game data — `data/`, excluding generated outputs
 
@@ -58,12 +62,6 @@ entry names. Each accepted measurement is a numbered `M<n>` entry, and that
 number is permanent; its heading credits whoever ran it, and `owner` there is
 the Maintainer, attributed as WFSim.
 
-The NonCommercial term matches §3 and is deliberate. Reading a measurement,
-reproducing it in game, citing it, arguing with it, building on it — all free,
-and the reason for publishing it at all. What it reserves is lifting the
-calibration corpus wholesale into a commercial product, which is the one use
-that takes the work without doing any of it.
-
 Contributors grant these rights through [`CLA.md`](CLA.md).
 
 ## 3. Benchmark outputs — scores, rankings, and any engine figure
@@ -71,19 +69,15 @@ Contributors grant these rights through [`CLA.md`](CLA.md).
 KPM scores, leaderboard rankings, optimizer results, simulated damage figures,
 and anything else produced by **running the WFSim engine**.
 
-**These are not derived from any upstream source.** They are computed by this
-project's own code from its own model of the game. A wiki page states a
-weapon's base damage; it does not state what that weapon achieves in a
-sixty-second engagement against a level 165 Thrax under a given build. That
-figure exists because this engine was written and run, which makes it original
-to this project.
+WFSim calculates these results from the engine and the chosen fight settings.
+The selection and presentation of the results and any other protected elements
+that WFSim may license are available under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/),
+with attribution to WFSim, and under the additional creator permission above.
+Applicable exceptions and uses of unprotected facts remain available.
 
-Licensed **CC BY-NC-SA 4.0**, attribution to WFSim required.
-
-Quote a number, cite it, link it, read it out in a video, compare your own
-build against it — all free, and all welcome. What the NonCommercial term
-reserves is redistribution as part of a commercial product or service. **Bulk
-scraping of wfsim.app for redistribution is not permitted** in any case.
+For commercial redistribution of a protected collection beyond an existing
+grant, contact <magenie33@moginlabs.com>. Bulk clients using the live site
+should cache published files and respect service rate limits.
 
 ## 4. Digital Extremes' material — art and card text
 
@@ -130,8 +124,8 @@ and so are the textures `site/img/` is built from; both belong to §4.
 | --- | --- | --- |
 | code | everything outside the rows below | AGPL-3.0-or-later |
 | game data | `data/` | facts; the wiki is credited, and declares CC BY-NC-SA 3.0 for its own content |
-| measurements | `docs/MEASUREMENTS.md`, `docs/measurements/` | CC BY-NC-SA 4.0 |
-| engine outputs | scores, rankings, simulated figures | CC BY-NC-SA 4.0 |
+| measurements | `docs/MEASUREMENTS.md`, `docs/measurements/` | CC BY-NC-SA 4.0 and the creator permission above |
+| engine outputs | scores, rankings, simulated figures | CC BY-NC-SA 4.0 and the creator permission above |
 | DE's material | `site/img/`, card text | Digital Extremes' copyright — no grant made |
 
 ## Commercial licensing
