@@ -73,46 +73,56 @@ def initialise(db, store, weapon, ruler, native):
         CREATE TABLE IF NOT EXISTS inputs(id TEXT PRIMARY KEY,body TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS reviews(review TEXT NOT NULL,id TEXT NOT NULL,PRIMARY KEY(review,id));
         CREATE INDEX IF NOT EXISTS reviews_by_build ON reviews(id);""")
+    return start_capture(db, store, {"weapon": weapon, "ruler": ruler, "native": native},
+                         "(SELECT id FROM entity_weapon_builds ORDER BY id DESC LIMIT 1)", "")
+
+
+def drained_fence(db, store, spec, key):
+    # INSERT locks the mailbox before nextval. Drain only the transactions
+    # already holding writer locks after reading the uncached sequence.
+    # Later writers receive higher versions, even if they commit first.
+    fence = receipt(store, key)
+    lock_sql = """SELECT coalesce(json_agg(DISTINCT virtualtransaction),'[]'::json)
+      FROM pg_locks WHERE locktype='relation' AND database=(SELECT oid FROM pg_database WHERE datname=current_database())
+      AND relation='state_board_input_mailbox'::regclass AND granted AND mode IN
+      ('RowExclusiveLock','ShareRowExclusiveLock','ExclusiveLock','AccessExclusiveLock')"""
+    if fence is None:
+        version = db.run("SELECT last_value FROM board_input_revision")[0]
+        fence = {
+            "version": version,
+            "writers": db.run(lock_sql)[0],
+            "source": spec["source"],
+            "cluster": spec["cluster"],
+        }
+        with store:
+            receipt(store, key, fence)
+    if (
+        fence.get("source", spec["source"]) != spec["source"]
+        or fence.get("cluster", spec["cluster"]) != spec["cluster"]
+    ):
+        raise ValueError("source changed while waiting for the capture fence")
+    pending = set(fence["writers"]).intersection(db.run(lock_sql)[0])
+    prepared = db.run("SELECT count(*) FROM pg_prepared_xacts WHERE database=current_database()")[0]
+    if pending or prepared:
+        raise RuntimeError("start fence waiting for existing writers or prepared transactions")
+    return fence
+
+
+def start_capture(db, store, contract, upper_sql, cursor):
     state = identity(db)
     if state["cache"] != 1 or state["triggers"] != 3:
         raise ValueError(
             "source change capture needs all three producer triggers and an uncached revision sequence"
         )
-    spec = {**state, "weapon": weapon, "ruler": ruler, "native": native}
+    spec = {**state, **contract}
     if receipt(store, "spec") is None:
-        # INSERT locks the mailbox before nextval. Drain only the transactions
-        # already holding writer locks after reading the uncached sequence.
-        # Later writers receive higher versions, even if they commit first.
-        fence = receipt(store, "fence")
-        lock_sql = """SELECT coalesce(json_agg(DISTINCT virtualtransaction),'[]'::json)
-          FROM pg_locks WHERE locktype='relation' AND database=(SELECT oid FROM pg_database WHERE datname=current_database())
-          AND relation='state_board_input_mailbox'::regclass AND granted AND mode IN
-          ('RowExclusiveLock','ShareRowExclusiveLock','ExclusiveLock','AccessExclusiveLock')"""
-        if fence is None:
-            version = db.run("SELECT last_value FROM board_input_revision")[0]
-            fence = {
-                "version": version,
-                "writers": db.run(lock_sql)[0],
-                "source": spec["source"],
-                "cluster": spec["cluster"],
-            }
-            with store:
-                receipt(store, "fence", fence)
-        if (
-            fence.get("source", spec["source"]) != spec["source"]
-            or fence.get("cluster", spec["cluster"]) != spec["cluster"]
-        ):
-            raise ValueError("source changed while waiting for the capture fence")
-        pending = set(fence["writers"]).intersection(db.run(lock_sql)[0])
-        prepared = db.run("SELECT count(*) FROM pg_prepared_xacts WHERE database=current_database()")[0]
-        if pending or prepared:
-            raise RuntimeError("start fence waiting for existing writers or prepared transactions")
-        header = db.run("""SELECT json_build_object('upper',(SELECT id FROM entity_weapon_builds ORDER BY id DESC LIMIT 1),
+        fence = drained_fence(db, store, spec, "fence")
+        header = db.run(f"""SELECT json_build_object('upper',{upper_sql},
                       'at',clock_timestamp())""")[0]
         with store:
             receipt(store, "spec", spec)
             receipt(store, "start", {**header, "version": fence["version"]})
-            receipt(store, "cursor", "")
+            receipt(store, "cursor", cursor)
     if receipt(store, "spec") != spec:
         raise ValueError("partition, source or Native contract changed")
     return receipt(store, "start")
@@ -275,6 +285,13 @@ def manifest(store, stage):
         "snapshot": cut["snapshot"],
         "captured_at": cut["captured_at"],
     }
+    result = write_manifest(stage, meta, (body for (body,) in store.execute("SELECT body FROM inputs ORDER BY id")))
+    with store:
+        receipt(store, "manifest", result)
+    return result
+
+
+def write_manifest(stage, meta, bodies):
     path = stage / "inputs.ndjson"
     partial = stage / "inputs.partial"
     digest = hashlib.sha256()
@@ -289,13 +306,13 @@ def manifest(store, stage):
             digest.update(data)
 
         add(json.dumps(meta, separators=(",", ":")))
-        for (body,) in store.execute("SELECT body FROM inputs ORDER BY id"):
+        for body in bodies:
             add(body)
             count += 1
             facts += len(json.loads(body)["facts"])
         add(
             json.dumps(
-                {"kind": "complete", "total": count, "facts": facts, "snapshot": cut["snapshot"]},
+                {"kind": "complete", "total": count, "facts": facts, "snapshot": meta["snapshot"]},
                 separators=(",", ":"),
             )
         )
@@ -315,8 +332,6 @@ def manifest(store, stage):
         "sha256": digest.hexdigest(),
         "bytes": path.stat().st_size,
     }
-    with store:
-        receipt(store, "manifest", result)
     return result
 
 
