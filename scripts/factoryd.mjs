@@ -13,6 +13,7 @@ import { pgDb, postgresClient, POSTGRES_OPTIONS, placeholders } from "../worker/
 import { signalTick, snapshotTick, fairTick, readFair, compareFair, settleShadow, settleBatch, findingsTick, signalBody, workWaiting } from "../worker/settler.js";
 import { servedRelease, CLIENTS_PER_FACT, PROTOCOL, PROTOCOLS_SERVED } from "../worker/verify.js";
 import { dialsOf, forgetDials } from "../worker/dials.js";
+import {measureQueueCosts,recordQueueDay} from '../worker/queue_clearance.js';
 import {seedQueueZones} from '../worker/queue_counts.js';
 import {currentStatistics} from '../worker/statistics_clock.js';
 import { putObject } from "./sigv4.mjs";
@@ -171,7 +172,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   let release = await servedNow();
   const statistics=statisticsFactory({env,controlEnv:statisticsEnv,transaction:statisticsTransaction,query:statisticsQuery,controlQuery:statisticsControlQuery,
     release:()=>release,stopped:()=>stopping,limits:statisticsLimits});
-  let statisticsAt=0, queueFleet=null;
+  let statisticsAt=0, queueFleet=null, queuePrices=null;
   let wakeStatistics=()=>{};
   const publishSnapshot=counts=>snapshotTick(env,{engine:release.engine,release:release.release},Date.now(),{counts,allowed:statistics.allowed,
     ...(writeSnapshot?{write:statement=>writeSnapshot(statement,async tx=>{
@@ -304,9 +305,14 @@ export async function run({ once = false, opened = null, servedNow = served, tar
           return (await tx.query(sql,args)).rows;
         };
         await query('SELECT queue_count_fold()');
-        const [seeded]=await query("SELECT 1 FROM state_queue_zone_seed WHERE epoch=coalesce(compute_order_cut_epoch(),'')");
+        const [seeded]=await query("SELECT 1 FROM state_queue_zone_seed WHERE epoch=coalesce(compute_order_cut_epoch(),'') AND workload IS NOT NULL");
         if(!seeded)await seedQueueZones(query,{pageRows:4096});
       });
+    },
+    queueCosts: async () => {
+      if(!await allowStatistics('queue costs'))return false;
+      queuePrices=await measureQueueCosts(backgroundEnv.LIBRARY,queuePrices);
+      await recordQueueDay(backgroundEnv.LIBRARY,queuePrices);
     },
     queueFleet: async () => {
       if(!await allowStatistics('queue fleet'))return false;
@@ -315,7 +321,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     demand: async () => {
       if(!await allowStatistics('demand'))return false;
       if (!target) return;
-      let body=await queueDemandOf(env,{fleet:queueFleet,detail:statistics.cachedDemand?.()});
+      let body=await queueDemandOf(env,{fleet:queueFleet,prices:queuePrices,detail:statistics.cachedDemand?.()});
       if(body===undefined){
         const counts=await statistics.get();if(!counts?.demand)return false;
         if(!await publishSnapshot(counts)||!await allowStatistics('demand'))return false;
@@ -366,7 +372,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     },
   };
   if (once) {
-    for (const name of ["signal","statistics", "snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "queueMaintenance", "queueFleet", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
+    for (const name of ["signal","statistics", "snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "queueMaintenance", "queueCosts", "queueFleet", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
     statistics.stop();
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
@@ -379,14 +385,14 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   const every = (ms, name) => {
     clock.add(name,ms,async()=>{
       if (stopping) return;
-      await (["statistics","admission", "queueMaintenance", "queueFleet", "tally", "forget", "past", "moot", "shadow"].includes(name)
+      await (["statistics","admission", "queueMaintenance", "queueCosts", "queueFleet", "tally", "forget", "past", "moot", "shadow"].includes(name)
         ? background(() => stopping ? undefined : tick(name, jobs[name])) : tick(name, jobs[name])
       );
     });
   };
   every(SNAPSHOT_MS, "heartbeat");
   every(STATISTICS_PUMP_MS,'statistics');
-  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "signal"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(FAIR_MS,"queueMaintenance"); every(DEMAND_MS,"queueFleet"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
+  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "signal"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(FAIR_MS,"queueMaintenance"); every(DEMAND_MS,"queueCosts"); every(DEMAND_MS,"queueFleet"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
   every(SETTLE_MS, "admission");
   every(SETTLE_MS,"workflowAdmission");
   every(SETTLE_MS,"delivery");every(SETTLE_MS,"contribution");every(FAIR_MS,"shadow");

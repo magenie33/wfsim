@@ -35,6 +35,7 @@
 // `recent` is this calendar month and `week` this calendar week (`periodStarts`),
 // so a newcomer can lead somewhere; `ranks` is the account's place on each of the
 // three, for the showcase a share card draws (`31-share-card.js`).
+import {queueHours} from './queue_clearance.js';
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import {statisticsSourceSql} from './statistics_source.js';
 import {queueOrders,queueZonesSql} from './queue_counts.js';
@@ -826,7 +827,7 @@ export async function queueFleetOf(env,pace,now=Date.now()) {
   return {at,expires_at:statisticsExpiresAt(at),order_epoch:cut.epoch,per_hour,devices:devices===null?null:Number(devices),held,reading};
 }
 
-export async function queueDemandOf(env,{fleet=null,detail=null,now=Date.now}={}) {
+export async function queueDemandOf(env,{fleet=null,detail=null,prices=null,now=Date.now}={}) {
   const db=env.LIBRARY;
   const installed=await db.prepare("SELECT to_regclass('state_queue_zone_seed') IS NOT NULL installed").first();
   if(!installed?.installed)return undefined;
@@ -838,7 +839,7 @@ export async function queueDemandOf(env,{fleet=null,detail=null,now=Date.now}={}
   const current=detail && currentStatistics(detail,now()) && detail.order_epoch===row.order_epoch ? detail : null;
   return {...(current??{}),ok:true,v:1,at:row.counts_at,counts_at:row.counts_at,expires_at:statisticsExpiresAt(row.counts_at),
     order_epoch:row.order_epoch,queue:{total,zones:row.zones},orders,per_hour:active?.per_hour??null,computing:active?.devices??null,
-    clear_hours:null,now:active?.reading ? {...active.reading,starved:active.held?starvedOf(active.reading,orders):null} : null,
+    clear_hours:queueHours(row,total,prices,now()),now:active?.reading ? {...active.reading,starved:active.held?starvedOf(active.reading,orders):null} : null,
     fleet_at:active?.at??null,...(current?{details_at:current.counts_at}:{})};
 }
 

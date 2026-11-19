@@ -1814,17 +1814,18 @@ and bounds its cache lifetime by their remaining validity, without querying work
   computed them. One hour swings five-fold between two quiet ones and a
   stopped hour reads as never; anything under a day reads the time of day,
   since who is online follows the clock round the world.
-- `clear_hours`: the open work priced in compute. Each verb's work (the
-  queue's rows for `simulate`, its open questions for any other) times what
-  one of its facts cost over the last day — every volunteer answer's fight
-  over the facts formed since the first answer the read reaches, so the usual
-  rechecks and losses are in the price and a day of more answers than the read
-  takes is priced over the hours it covered — over the compute the volunteers answered per hour
-  in the last six whole hours (`verifier_hours`). A day, because a few hours
-  of one bad release would price every row at what that release wasted; the
-  compute, because it holds within a fifth hour to hour while rows per hour
-  swing from nothing to thousands as the work moves between verbs. Null where
-  a verb with work formed no fact that day.
+- `clear_hours`: the effective queue keeps signed balances by zone and execution
+  verb in the same transaction as membership changes. An indexed, paginated
+  snapshot initializes those balances. Each verb's price is the mean volunteer
+  compute time spent on a completed round, including its independent answers.
+  The publisher samples up to 256 recent matched rounds per verb from the
+  preceding seven days. Remaining counts times their respective prices give
+  remaining compute milliseconds. The divisor is volunteer compute milliseconds
+  per hour over the last 24 complete UTC hours. Missing prices, stale readings
+  and zero capacity leave the estimate unknown. The queue total remains visible.
+  One forecast per UTC day stores its prices and cumulative actual completions
+  for 35 days. Successive samples of the same queue epoch compare expected and
+  completed work at the earlier prices. Withdrawals only change remaining work.
 - a survey's `clear_hours`: its shapes left over its shapes agreed per hour
   in the last 24 hours; null when none were.
 - `now`: the fleet over the last `window_seconds` (`NOW_WINDOW_MS`), a

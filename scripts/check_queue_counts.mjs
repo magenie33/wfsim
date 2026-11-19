@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import {seedComputeWork} from './pg/fixtures.mjs';
-import {placeholders} from '../worker/db.js';
+import {compareQueueDay,measureQueueCosts,queueHours,recordQueueDay} from '../worker/queue_clearance.js';
+import {pgDb,postgresClient,placeholders} from '../worker/db.js';
 import {seedQueueZones,queueZonesSql} from '../worker/queue_counts.js';
 
 const port=Number(process.env.WFSIM_STATISTICS_TEST_PORT);
@@ -16,7 +17,13 @@ const seedData={run:(s,...args)=>query(placeholders(s),args),get:async(s,...args
 const read=async()=>JSON.parse(JSON.stringify((await query(queueZonesSql))[0]?.zones??null));
 const oracle=async()=>JSON.parse(JSON.stringify(await query(`SELECT w.zone::int z,count(*)::int n
   FROM state_compute_effective_work w WHERE w.state='open' GROUP BY w.zone ORDER BY w.zone`))).map(r=>[r.z,r.n]);
-const check=async label=>{assert.deepEqual(await read(),await oracle(),label);console.log('ok',label);};
+const check=async label=>{
+  assert.deepEqual(await read(),await oracle(),label);
+  const [{verbs}]=await query(queueZonesSql);
+  const expected=await query("SELECT verb,count(*)::int n FROM state_compute_effective_work WHERE state='open' GROUP BY verb");
+  assert.deepEqual(verbs,Object.fromEntries(expected.map(r=>[r.verb,r.n])),label);
+  console.log('ok',label);
+};
 const seed=async(during=async()=>{})=>sql.begin('isolation level repeatable read',async tx=>{
   let changed=false;
   return seedQueueZones(async(s,args=[])=>{
@@ -31,9 +38,14 @@ try{
   for(const name of ['schema','library','sync','inventory','build_workflows','board_admission'])
     await query(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
   await query(readFileSync(new URL('../worker/pg/order_cut_indexes.sql',import.meta.url),'utf8').replaceAll('INDEX CONCURRENTLY','INDEX'));
-  for(const id of ['a','b','c','d','e'])await seedComputeWork(seedData,{id,producer:'sweep'});
+  for(const id of ['a','b','c','d','e'])await seedComputeWork(seedData,{id,verb:id==='b'?'optimize':'simulate',producer:'sweep'});
+  await query(`CREATE TABLE state_queue_zone_changes(epoch text NOT NULL,writer int NOT NULL,zone smallint NOT NULL,n bigint NOT NULL,PRIMARY KEY(epoch,writer,zone));
+    CREATE TABLE state_queue_zone_seed(epoch text PRIMARY KEY,zones jsonb NOT NULL,sampled_at timestamptz NOT NULL);
+    INSERT INTO state_queue_zone_changes VALUES('',0,3,2);
+    INSERT INTO state_queue_zone_seed VALUES('','[[3,3]]',now());`);
   await query(readFileSync(new URL('../worker/pg/queue_counts.sql',import.meta.url),'utf8'));
-  assert.equal(await read(),null);
+  assert.deepEqual(await read(),[[3,5]]);
+  assert.equal((await query(queueZonesSql))[0].verbs,null);
   await seed(()=>writer.unsafe("UPDATE state_compute_scheduling SET zone=0 WHERE id='c'"));
   await check('zone promotion committed during bootstrap appears exactly once');
   await query("UPDATE state_compute_scheduling SET lease='held',waits=2 WHERE id='a'");
@@ -57,6 +69,37 @@ try{
   await check('explicit cancellation removes its current round');
   await query("DELETE FROM record_compute_order_cancellations WHERE question='post'");
   await check('removing a cancellation restores current eligibility');
+  await seedComputeWork(seedData,{id:'post-opt',verb:'optimize',producer:'sweep'});
+  await check('mixed verbs in one zone retain their own workload');
+  const db=pgDb(postgresClient(sql)), now=Date.now(), at=new Date(now-60000).toISOString();
+  await query(readFileSync(new URL('../deploy/queue_cost_index.sql',import.meta.url),'utf8').replace('INDEX CONCURRENTLY','INDEX'));
+  for(const [verb,ms] of [['simulate',100],['optimize',900]]) {
+    const id='measured-'+verb;
+    await seedComputeWork(seedData,{id,verb,opened_at:at});
+    await query(`INSERT INTO record_candidate_answers(question,task_id,engine,device,owner,official,canon,result,work,compute_ms,at)
+      SELECT id,task_id,'fixture',device,device,0,'{}','{}',1,$2::bigint,$3 FROM state_compute_scheduling
+      CROSS JOIN (VALUES('first'),('second')) a(device) WHERE id=$1`,[id,ms,at]);
+    await query("SELECT compute_accept_result(id,task_id,'open','fact','{}','fixture',$2,0,'[]') FROM state_compute_scheduling WHERE id=$1",[id,at]);
+  }
+  await query("INSERT INTO record_hourly_compute_totals(verifier,hour,ms) VALUES('first',$1,2400)",
+    [new Date(now-3600000).toISOString().slice(0,13)]);
+  const prices=await measureQueueCosts(db,null,now);
+  const [row]=await query(queueZonesSql);
+  assert.deepEqual(row.completed,{simulate:1,optimize:1});
+  assert.equal(prices.msOf.simulate,200);
+  const count=Object.values(row.verbs).reduce((a,b)=>a+b,0);
+  assert.equal(queueHours(row,count,prices,now),2*row.verbs.simulate+18*(row.verbs.optimize||0));
+  assert.equal(prices.msOf.optimize,1800);
+  assert.equal(queueHours(row,count,{...prices,factsOf:{simulate:1}},now),null);
+  assert.equal(queueHours(row,count+1,prices,now),null);
+  assert.equal(queueHours(row,count,prices,prices.expires),null);
+  assert.equal(queueHours(row,count,{...prices,perHour:0},now),null);
+  await recordQueueDay(db,prices,now);await recordQueueDay(db,prices,now);
+  const days=await query('SELECT forecast FROM state_queue_clearance_days');
+  assert.equal(days.length,1);
+  const prior={...days[0].forecast,at:new Date(Date.parse(row.counts_at)-3600000).toISOString()};
+  assert.equal(compareQueueDay(prior,{...row,completed:{...row.completed,simulate:2}}).completed_ms,200);
+  console.log('ok measured confirmed rounds, complete-hour capacity, daily checkpoint and cancellation-safe comparison');
   await writer.end();await query('SELECT queue_count_fold()');
   await check('folding a disconnected writer preserves the complete read');
   const again=await seed();assert.equal(again.installed,false);await check('retry cannot overwrite a seed');
