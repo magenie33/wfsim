@@ -203,6 +203,18 @@ pub fn ambiguous_stats(shape: &RivenShape, weapon: &str) -> BTreeSet<String> {
         .collect()
 }
 
+/// The default corner first, then the other standard rolls for this weapon.
+pub fn standard_rolls(shape: &RivenShape, weapon: &str) -> Vec<Vec<f64>> {
+    corners(shape, &ambiguous_stats(shape, weapon))
+}
+
+/// A legacy record without explicit rolls is measured at the default corner.
+pub fn is_standard_roll(shape: &RivenShape, weapon: &str, rolls: &[f64]) -> bool {
+    rolls.is_empty()
+        || default_rolls(shape) == rolls
+        || standard_rolls(shape, weapon).iter().any(|corner| corner == rolls)
+}
+
 /// THE ROLLS TO STORE THIS SHAPE WITH, asked of the fight only where the sign
 /// cannot answer: [`perfect`] over its [`corners`], the god roll the default.
 pub fn best_roll(

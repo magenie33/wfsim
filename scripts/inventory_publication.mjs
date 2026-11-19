@@ -102,7 +102,7 @@ export class InventoryPublication {
     for await (const row of jsonArrayRows(path, { offset: state.legacyOffset, withOffsets: true })) {
       rows.push(row); if (rows.length === LIMIT) break;
     }
-    const values = await operate('carry', rows.map(row => ({ dir: file.dir, raw: row.raw })));
+    const values = await operate('carry', rows.map(row => ({ dir: file.dir, weapon: file.weapon, raw: row.raw })));
     this.index.transaction(() => {
       for (let i = 0; i < rows.length; i++) if (values[i].keep) {
         const metadata = values[i].index;

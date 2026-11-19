@@ -100,12 +100,14 @@ fn execute(request: Request, rulers: &[Ruler]) -> Result<Vec<Value>, String> {
         "carry" => request.items.into_iter().map(|item| {
             let raw=item.get("raw").and_then(Value::as_str).ok_or("publication bytes required")?;
             let dir=item.get("dir").and_then(Value::as_str).ok_or("publication directory required")?;
+            let weapon=item.get("weapon").and_then(Value::as_str).ok_or("publication weapon required")?;
             let raw: Box<serde_json::value::RawValue>=serde_json::from_str(raw).map_err(|e|e.to_string())?;
             let value=published(&raw);
             let keep=value.as_ref().is_none_or(|p| {
                 let family=wfsim_engine::board::benchmarks::family(p.benchmark);
                 rulers.iter().any(|r|wfsim_engine::board::benchmarks::family(&r.id)==family)
                     && !rulers.iter().any(|r|r.dir==dir&&wfsim_engine::board::benchmarks::family(&r.id)==family)
+                    && p.has_standard_riven(weapon)
             });
             Ok(json!({"keep":keep,"index":value.as_ref().map(|p|json!({"benchmark":p.benchmark,
                 "mode":p.mode.unwrap_or("base"),"riven":p.riven.is_some(),
