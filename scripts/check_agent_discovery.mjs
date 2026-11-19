@@ -74,5 +74,22 @@ check("...and each of its pages names every language's", tongues.every((t) =>
 check("llms.txt and the skill point at the method", read("llms.txt").includes(`${SITE}/method.md`)
   && read(".well-known/agent-skills/wfsim-weapon-builds/SKILL.md").includes(`${SITE}/method#ruler`));
 
+const boardCatalog = `${SITE}/api/board/pages/catalog`;
+const weaponCatalog = `${boardCatalog}?weapon=braton`;
+const weaponMd = read("weapons/Braton.md");
+const weaponHtml = read("weapons/Braton/index.html");
+const discoveryPaths = ["index.md", "llms.txt", ".well-known/api-catalog", ".well-known/agent-skills/wfsim-weapon-builds/SKILL.md"];
+check("board discovery points to the current revision catalog",
+  discoveryPaths.every((path) => {
+    const content = read(path);
+    return content.includes(boardCatalog) && !content.includes(SITE + "/board/index.json");
+  }) && weaponMd.includes(weaponCatalog) && weaponHtml.includes(`href="${weaponCatalog}"`));
+if (weaponHtml.includes("data-library-lead") || weaponMd.includes("/board/braton.json")) {
+  const publishedAt = new Date(JSON.parse(read("board.meta.json")).scored_at * 1000).toISOString().slice(0, 10);
+  check("static build summaries and files identify their archive date",
+    weaponHtml.includes(`aria-label="Archived WFSim board, ${publishedAt}"`) &&
+    weaponMd.includes(`Archived board file (${publishedAt}):`));
+}
+
 console.log(failed ? `\n${failed} failed` : "\nwhat an agent reads to find WFSim is what the site serves");
 process.exit(failed ? 1 : 0);
