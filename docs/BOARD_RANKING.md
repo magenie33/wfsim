@@ -75,6 +75,25 @@ cut/generation directories may be removed. Unregistered directories require a
 ten-minute age guard before collection. Canonical rows and other consumers'
 working directories are outside this collector.
 
+### Restartable input for a large partition
+
+An operator can stage one weapon/ruler with `scripts/stage_rank_baseline.py`
+on the board Data mount. The scan stores its last canonical library ID with
+each page. The input sequence uses a cache of one. The scanner reads its
+position, then waits for transactions already holding mailbox write locks to
+finish before reading builds. This establishes which committed inputs the
+scan must replay without blocking producers. The source UUID, cluster identity,
+Native digest and enabled capture triggers guard the stage across restarts.
+
+The `replay` action opens a single repeatable-read snapshot, enumerates
+coalesced mailbox keys in bounded pages, and reloads every changed build,
+ruler measurement and affected review from that snapshot. A later commit
+cannot displace an earlier transaction at the start boundary. The `manifest`
+action seals the resulting inputs in the existing bounded ranking format.
+The operator validates Native selection and complete page coverage, then hands
+the cut to the reserved reader. The reader retains its normal per-key change
+routing, reconciliation and atomic publication.
+
 ## Activation and recovery
 
 Installing this additive schema does not start a consumer or change task
