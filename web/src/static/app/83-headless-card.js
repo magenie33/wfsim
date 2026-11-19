@@ -160,6 +160,121 @@ function headlessBoardFile(meta, weapon, ruler) {
   if (ruler && !selected) return null;
   return `/board/${selected?.cell_dir ? selected.cell_dir+"/" : ""}${encodeURIComponent(weapon)}.json`;
 }
+const publishedBoardRevisions = new WeakMap();
+const publishedBoardRevisionOf = rows => publishedBoardRevisions.get(rows) || "";
+
+/// Every reader pins the revision selected by the public catalog before it
+/// reads a partition. An unavailable revision cannot be replaced by older rows.
+function publishedBoardReader(read) {
+  const deadline = (signal, ms) => {
+    const timeout = typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(ms) : (() => {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), ms);
+      return controller.signal;
+    })();
+    if (!signal) return timeout;
+    if (AbortSignal.any) return AbortSignal.any([signal, timeout]);
+    const controller = new AbortController();
+    for (const source of [signal, timeout]) {
+      if (source.aborted) controller.abort(source.reason);
+      else source.addEventListener("abort", () => controller.abort(source.reason), { once: true, signal: controller.signal });
+    }
+    return controller.signal;
+  };
+  const fail = () => { throw new Error("The board could not be reached."); };
+  const query = (path, params, signal) => read(path + "?" + new URLSearchParams(params), deadline(signal, 8000));
+
+  async function catalog(scene, weapon, signal) {
+    const entries = [];
+    for (let after = ""; ;) {
+      const params = { scene, after, ...(weapon ? { weapon } : {}) };
+      const page = await query("/api/board/pages/catalog", params, signal);
+      if (!page?.ok || !Array.isArray(page.partitions)) fail();
+      for (const entry of page.partitions) {
+        const key = entry?.weapon + "/" + entry?.ruler;
+        if (!entry || entry.scene !== scene || (weapon && entry.weapon !== weapon) ||
+            typeof entry.weapon !== "string" || typeof entry.ruler !== "string" || key <= after ||
+            !/^[a-f0-9]{64}$/.test(entry.revision) || !Number.isSafeInteger(entry.rows) || entry.rows < 0) fail();
+        entries.push(entry);
+        after = key;
+      }
+      if (page.next === null) return entries;
+      if (!page.partitions.length || page.next !== after) fail();
+    }
+  }
+
+  async function rows(entries, signal) {
+    const controller = new AbortController();
+    const within = deadline(signal, 60000);
+    if (within.aborted) controller.abort(within.reason);
+    else within.addEventListener("abort", () => controller.abort(within.reason), { once: true, signal: controller.signal });
+
+    const waiting = [];
+    let active = 0;
+    const cancel = () => {
+      for (const job of waiting.splice(0)) job.reject(controller.signal.reason);
+    };
+    controller.signal.addEventListener("abort", cancel, { once: true });
+    const pump = () => {
+      const job = waiting.shift();
+      if (!job) return;
+      active++;
+      Promise.resolve().then(job.read).then(job.resolve, job.reject).finally(() => { active--; pump(); });
+    };
+    const limited = (read) => new Promise((resolve, reject) => {
+      if (controller.signal.aborted) { reject(controller.signal.reason); return; }
+      waiting.push({ read, resolve, reject });
+      if (active < 4) pump();
+    });
+
+    async function partition({ weapon, ruler, revision, rows: count }) {
+      const at = (after) => limited(async () => {
+        const page = await query("/api/board/pages", { weapon, ruler, revision, after }, controller.signal);
+        if (!page?.ok || page.weapon !== weapon || page.ruler !== ruler || page.revision !== revision ||
+            page.after !== after || page.count !== count || !Array.isArray(page.rows) ||
+            page.rows.some(row => row.benchmark !== ruler)) fail();
+        const end = after + page.rows.length;
+        if (end > count || (end === count ? page.next !== null : !page.rows.length || page.next !== end)) fail();
+        return page;
+      });
+      const first = await at(0);
+      if (first.next === null) return first.rows;
+      const step = first.rows.length, pages = new Map([[0, first.rows]]);
+      let next = first.next;
+      await Promise.all(Array.from({ length: 4 }, async () => {
+        while (next < count) {
+          const after = next;
+          next += step;
+          const page = await at(after);
+          if (page.rows.length !== Math.min(step, count - after)) fail();
+          pages.set(after, page.rows);
+        }
+      }));
+      const result = [];
+      for (let after = 0; after < count; after += step) {
+        if (!pages.has(after)) fail();
+        result.push(...pages.get(after));
+      }
+      return result;
+    }
+    try {
+      const result = (await Promise.all(entries.map(partition))).flat();
+      publishedBoardRevisions.set(result, entries.map(entry => entry.revision).join(","));
+      return result;
+    } finally { controller.abort(); }
+  }
+
+  async function weapon(meta, id, ruler, signal) {
+    const selected = (meta.benchmarks || []).find(b => b.id === ruler);
+    if (ruler && !selected) return null;
+    const entries = await catalog(selected?.cell_dir || "", id, signal);
+    const partitions = ruler ? entries.filter(entry => entry.ruler === ruler) : entries;
+    return partitions.length ? rows(partitions, signal) : null;
+  }
+
+  return { catalog, rows, weapon };
+}
+
 function headlessNonaHelp(say, riven, topic = "commands") {
   const t=say.t, all=say.meta.benchmarks || [], primary=all.find(b=>b.primary) || all[0];
   const request=headlessNonaHelpRequest(say.meta), weapon=say.meta.weapons?.find(w=>w.id===request?.weapon), name=weapon?.name || "weapon";
@@ -728,6 +843,10 @@ const headlessVerdictRecord = ({ ok, score, shown, gain, top, of, rank, reason, 
   candidate_runs, board_at, at });
 
 /// Display selection is shared by the image, text fallback and attribution batch.
+function headlessUnavailableBoardCard(say) {
+  return `<p class="lc-sub">${headlessEsc(say.t("The board could not be reached."))}</p>`;
+}
+
 function headlessCardBoard(say, w, ask, rows) {
   const benches = say.meta.benchmarks || [];
   const bench = benches.find(b => b.id === ask.ruler) || benches.find(b => b.primary) || benches[0], ruler = bench?.id || "";

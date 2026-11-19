@@ -53,6 +53,24 @@ an unadmitted review, so it cannot remain waiting without an executable task.
 The source status reports committed workflow state and the selected measurement;
 the page observes website publication separately after verification.
 
+## Verified results on a published partition
+
+Each admitted explicit request retains a receipt in `state_board_requested_results`.
+The indexed reader checks one due receipt per turn alongside ordinary input
+routing, ranking and publication. An active workflow waits for verification.
+A correction must match its successful review and the current selected fact.
+Existing coverage can satisfy a missing-measurement request. Only a complete,
+selected partition on the same source and Native version can receive the handoff.
+The receipt retires in the transaction that queues the canonical identity for
+the existing rank index. Native shape selection, entry thresholds and immutable
+pages apply to these results.
+
+The canonical storage owner installs an existing database upgrade with
+`node scripts/board_requested_result_schema.mjs`. The reader discovers the
+installed handoff at startup. The owner can pass up to 64 exact request IDs to
+`board_requested_result_recover(text[])` for scoped recovery. The function
+selects admitted requests by primary key and preserves pending receipts.
+
 ## Installation and operation
 
 Provision a dedicated NOLOGIN runner role and restricted login before installing

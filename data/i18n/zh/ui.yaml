@@ -1217,7 +1217,7 @@ ui:
   "The two beams converge on the crosshair and deal full damage only once aligned (wiki); here both land on the target from the first tick, so the number is the ceiling.": "两道光束向准星汇聚，对齐后才打出全额伤害（wiki）；这里从第一跳起两道都打在目标上，所以数字是上限。"
   "this run measured {v} — #{n} of {of} in {group}, against the board as it stands": 这次跑出 {v} —— 以当前榜单为参照，在 {group} 里排第 {n}，同组共 {of} 套
   "release {r} · commit {c}": 版本 {r} · 提交 {c}
-  "board {d} · scored {t} · {n} rows": 榜单 {d} · 结算于 {t} · 共 {n} 行
+  "archived board {d} · scored {t} · {n} rows": 历史榜单 {d} · 结算于 {t} · 共 {n} 行
   "shell {v}": 客户端 {v}
   "{a}–{b} of {n}": 第 {a}–{b} 行，共 {n} 行
   "A stance decides what the weapon actually swings: it publishes a combo per mode, and installing one replaces the weapon's own. It also GRANTS capacity instead of costing it — 10 on a slot of its own polarity, 5 on a bare one, 4 on the wrong colour.": "架势决定这把武器实际挥出的是什么：它按 mode 各发布一套连段，装上就会顶掉武器自己的那套。它还**给予**容量而不是消耗容量——同极性槽位 10 点，无极性 5 点，极性不对 4 点。"
@@ -1315,6 +1315,7 @@ ui:
   "Not offered here: the launcher-exclusive Adhesive Blast, which sticks the rocket to what it hits and moves where it explodes.": "这里不提供：发射器专属的 Adhesive Blast，它会把火箭粘在命中物上，改变爆炸位置。"
   "No matches": 无匹配
   "Loading the board…": 正在加载榜单…
+  "Archived board file · {date}": "历史榜单文件 · {date}"
   "The board could not be reached.": 榜单加载失败。
   "Retry": 重试
   "Nobody submits a number. A submission is a BUILD, and its score is computed here by this engine under the pinned seed above — so any row can be reproduced exactly by anyone with the repo.": 没有人提交数字。提交的是一套配装，分数由本引擎在上面钉死的随机种子下算出——所以任何一行，任何拿到仓库的人都能一模一样地复现。

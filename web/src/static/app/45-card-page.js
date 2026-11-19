@@ -47,6 +47,15 @@ async function renderCardPage(w, ask) {
   // number a chat is told is this page's, never the searcher's.
   const verdict = kind === "appraise" && job && job.result ? await appraisalReplay(w, job) : null;
   if (verdict) document.body.dataset.verdict = JSON.stringify(headlessVerdictRecord(verdict));
+  const target = headlessCardBoard(pageSay(), w, ask, []).ruler;
+  if (kind !== "appraise" && !boardHasCell(w.id, target)) {
+    await loadSceneRows(w.id, [boardCellDir(target)]);
+    if (!boardHasCell(w.id, target)) {
+      box.innerHTML = headlessUnavailableBoardCard(pageSay());
+      document.body.dataset.cardReady = "1";
+      return;
+    }
+  }
   const rows = BOARD[w.id] || [], selected = headlessCardBoard(pageSay(), w, ask, rows);
   const witnesses = kind === "appraise" ? new Map() : await headlessMeasurementWitnesses(w.id, selected.rows, {api,
     names: body => computationCall("/api/computations/names", body)});

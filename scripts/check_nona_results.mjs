@@ -62,7 +62,8 @@ try {
   await check("zk fallback text retains both actual witnesses and makes no personal-computation claim",async()=>{
     const reply=await answer("zk Laetum 2");firstCardVersion=reply.cardVersion;
     assert.ok(reply.text.includes("计算: first") && reply.text.includes("验证: second"),JSON.stringify(reply));
-    assert.ok(reply.cardData.witnesses instanceof Map && reply.cardData.rows === published);
+    assert.ok(reply.cardData.witnesses instanceof Map);
+    assert.deepEqual(reply.cardData.rows, published.filter(row=>row.benchmark===ask.ruler || row.benchmark===selected.ruler));
     assert.ok(!/每张都跑|I ran every/i.test(reply.line));
   });
   await check("all fixed reply and menu keys have Chinese copy and preserve template variables",()=>{
@@ -105,12 +106,14 @@ try {
     const source=readFileSync("bot/qq.mjs","utf8"),start=source.indexOf("async function cardFor("),end=source.indexOf("\n}\n",start)+2;
     assert.ok(start>=0 && end>start);
     let draws=0;
-    const cached=new Function("boardDigest","cards","drawCard","CARD_KEEP_MS","CARD_KEEP_MAX",source.slice(start,end)+";return cardFor;")(
-      async()=>"same-board",new Map(),async(url,snapshot)=>({png:JSON.stringify({number:++draws,snapshot})}),600000,64);
+    const cached=new Function("cards","drawCard","CARD_KEEP_MS","CARD_KEEP_MAX",source.slice(start,end)+";return cardFor;")(
+      new Map(),async(url,snapshot)=>({png:JSON.stringify({number:++draws,snapshot})}),600000,64);
     const first=await cached("card","public-name",{label:"first"});
     assert.equal(await cached("card","public-name",{label:"first"}),first);assert.equal(draws,1);
     const hidden=await cached("card","anonymous",{label:"hidden"});
     assert.notEqual(hidden,first);assert.equal(draws,2);assert.ok(hidden.includes("hidden"));
+    const published=await cached("card","new-revision:anonymous",{label:"updated score"});
+    assert.notEqual(published,hidden);assert.equal(draws,3);assert.ok(published.includes("updated score"));
   });
   await check("command failures return a short retry message without internal details",async()=>{
     const broken=makeAnswer({...engine,zh:{...engine.zh,ui},run:async()=>{throw new Error("internal fixture detail");}});

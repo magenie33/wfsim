@@ -1,4 +1,5 @@
 import {openApp} from "./cdp.mjs";
+import { boardFixture } from "./board_fixture_publication.mjs";
 import {mkdirSync, writeFileSync} from "node:fs";
 import {join} from "node:path";
 
@@ -143,37 +144,24 @@ try {
   const meta=await evaluate("({benchmarks:META.benchmarks,weapons:META.weapons.map(w=>({id:w.id,modes:w.modes,mods:w.mods}))})");
   const primary=meta.benchmarks.find(b=>b.primary)||meta.benchmarks[0];
   const dirs=[...new Set(meta.benchmarks.map(b=>b.cell_dir||""))];
-  const requests=[],missingHeads=[],rowsPerCell=1800;
-  const payloads=new Map();
-  function rows(weapon,dir) {
-    const key=weapon+":"+dir;
-    if(!payloads.has(key)) {
-      const w=meta.weapons.find(w=>w.id===weapon)||meta.weapons[0];
-      const mods=w.mods.slice(0,8);
-      payloads.set(key,JSON.stringify(meta.benchmarks.filter(b=>(b.cell_dir||"")===dir).flatMap(b=>
-        Array.from({length:rowsPerCell},(_,i)=>({benchmark:b.id,mode:w.modes[0],score:rowsPerCell-i,
-          mods,arcanes:[],evolutions:[],fixture:i})))));
-    }
-    return payloads.get(key);
-  }
-  app.on("Fetch.requestPaused",async event=>{
-    const path=new URL(event.request.url).pathname;
-    if(path.startsWith('/board/heads/')) {
-      missingHeads.push(path);
-      await app.send("Fetch.fulfillRequest",{requestId:event.requestId,responseCode:404,body:""});return;
-    }
-    let body;
-    if(path==="/board.meta.json")body=JSON.stringify({scene_weapons:Object.fromEntries(dirs.filter(Boolean).map(dir=>[dir,["torid","furis"]]))});
-    else {
-      const parts=path.slice("/board/".length).split("/"),weapon=parts.at(-1).replace(/\.json$/,"");
-      const dir=parts.length>1?parts[0]:"";
-      requests.push({weapon,dir});body=rows(weapon,dir);
-      if(process.env.WFSIM_PERF_DROP_CARD_ROW && missingHeads.length) body=JSON.stringify(JSON.parse(body).slice(1));
-    }
-    await app.send("Fetch.fulfillRequest",{requestId:event.requestId,responseCode:200,
-      responseHeaders:[{name:"Content-Type",value:"application/json"}],body:Buffer.from(body).toString("base64")});
+  const requests=[],rowsPerCell=1800;
+  const publication=boardFixture((dir,weapon)=>{
+    const w=meta.weapons.find(w=>w.id===weapon);
+    if(!w)return {};
+    const mods=w.mods.slice(0,8);
+    return {[weapon]:meta.benchmarks.filter(b=>(b.cell_dir||"")===dir).flatMap(b=>
+      Array.from({length:rowsPerCell},(_,i)=>({benchmark:b.id,mode:w.modes[0],score:rowsPerCell-i,
+        mods,arcanes:[],evolutions:[],fixture:i})))};
   });
-  await app.send("Fetch.enable",{patterns:[{urlPattern:"*/board/*.json",requestStage:"Request"},
+  app.on("Fetch.requestPaused",async event=>{
+    const url=new URL(event.request.url);
+    if(url.pathname.endsWith("/catalog"))requests.push({weapon:url.searchParams.get("weapon"),dir:url.searchParams.get("scene")});
+    const answer=url.pathname==="/board.meta.json"?{}:await publication(url);
+    if(process.env.WFSIM_PERF_DROP_CARD_ROW && url.pathname==="/api/board/pages" && requests.some(r=>r.card))answer.rows.shift();
+    await app.send("Fetch.fulfillRequest",{requestId:event.requestId,responseCode:answer.ok===false?409:200,
+      responseHeaders:[{name:"Content-Type",value:"application/json"}],body:Buffer.from(JSON.stringify(answer)).toString("base64")});
+  });
+  await app.send("Fetch.enable",{patterns:[{urlPattern:"*/api/board/pages*",requestStage:"Request"},
     {urlPattern:"*/board.meta.json",requestStage:"Request"}]});
   await app.load("/",4000);
   const cold=await evaluate("({ready:window.__wfsimReady,editor:weaponEditorReady,catalog:WFCAT,rows:Object.keys(BOARD).length,usable:window.__wfsimPerformance?.usable})");
@@ -207,7 +195,7 @@ try {
   check("confirmed tally values retain their DOM while presentation moves",animation.stable&&animation.confirmed);
   check("a hidden home tally does not repaint",animation.hidden);
   await app.send("Emulation.setCPUThrottlingRate",{rate:4});
-  if(process.env.WFSIM_PERF_EAGER)await evaluate("window.perfEagerRead=loadSceneRows;loadSceneRows=(id,base)=>window.perfEagerRead(id,base,benchScenes())");
+  if(process.env.WFSIM_PERF_EAGER)await evaluate("window.perfEagerRead=loadSceneRows;loadSceneRows=id=>window.perfEagerRead(id,benchScenes())");
   await evaluate("window.perfCheckLag=0;window.perfCheckLast=performance.now();window.perfCheckTimer=setInterval(()=>{const now=performance.now();window.perfCheckLag=Math.max(window.perfCheckLag,now-window.perfCheckLast-25);window.perfCheckLast=now;},25)");
   await evaluate("history.pushState(null,'','/weapons/Torid/');route()");
   const waitFor=async expression=>{
@@ -231,17 +219,17 @@ try {
   check("whole-board tools can explicitly read every scene",complete===rowsPerCell*meta.benchmarks.length,String(complete));
   for(const requested of [null,...dirs]) {
     const dir=requested??(primary.cell_dir||"");
-    const cells=meta.benchmarks.filter(b=>(b.cell_dir||"")===dir).map(b=>b.id),before=requests.length,headsBefore=missingHeads.length;
+    const cells=meta.benchmarks.filter(b=>(b.cell_dir||"")===dir).map(b=>b.id),before=requests.length;
+    requests.push({card:true});
     const address='/weapons/Torid/card?kind=pz'+(requested===null?'':'&ruler='+encodeURIComponent(cells[0]));
     const fallback=await evaluate(`(async()=>{
       releaseBoardCache(null);history.pushState(null,'',${JSON.stringify(address)});await loadWeaponBoard('torid');
       const rows=BOARD.torid||[];
-      return {rows:rows.length,loaded:[...boardFiles.get('torid').loaded],
+      return {rows:rows.length,loaded:[...boardFiles.get('torid').loaded.keys()],
         cells:Object.fromEntries([...new Set(rows.map(row=>row.benchmark))].map(id=>[id,rows.filter(row=>row.benchmark===id).length]))};
     })()`);
-    const reads=requests.slice(before);
-    check("a card without heads reads its complete requested scene: "+(requested===null?'default':dir||"base"),missingHeads.length>headsBefore
-      && reads.length===1&&reads[0].weapon==='torid'&&reads[0].dir===dir
+    const reads=requests.slice(before).filter(r=>!r.card);
+    check("a card reads its complete requested scene: "+(requested===null?'default':dir||"base"),reads.length===1&&reads[0].weapon==='torid'&&reads[0].dir===dir
       && fallback.rows===rowsPerCell*cells.length&&Object.keys(fallback.cells).length===cells.length
       && cells.every(id=>fallback.cells[id]===rowsPerCell)&&fallback.loaded.length===1&&fallback.loaded[0]===dir,JSON.stringify({fallback,reads}));
   }

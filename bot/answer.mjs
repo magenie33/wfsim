@@ -20,17 +20,21 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   const t = (s, p = {}) => Object.entries(p).reduce((x, [k, v]) => x.split(`{${k}}`).join(String(v)),
     (zh.ui && zh.ui[s]) || s);
   const say = headless.headlessSpeaker(meta, { zh }, "zh");
-  const boardAttribution = async (weapon, url) => {
-    try {
-      if (!host?.board || !host?.computationNames) return {entries:[],names:new Map()};
-      const ask = headless.headlessCardAsk(new URL(url).search);
-      const boardRows = await (ask.kind === "pz" && host.boardHeads ? host.boardHeads(weapon.id, ask.ruler) : host.board(weapon.id, ask.ruler)) || [];
-      const selected = headless.headlessCardBoard(say, weapon, ask, boardRows);
-      return {...selected,boardRows,names:await host.computationNames(weapon.id,selected.rows)};
-    } catch (_) { return {entries:[],names:new Map()}; }
+  const boardAttribution = async (weapon, url, readBoard) => {
+    const ask = headless.headlessCardAsk(new URL(url).search);
+    const boardRows = await readBoard(weapon.id, ask.ruler);
+    if (!boardRows) return {entries: [], names: new Map()};
+    const selected = headless.headlessCardBoard(say, weapon, ask, boardRows);
+    const names = await host.computationNames?.(weapon.id, selected.rows).catch(() => new Map()) || new Map();
+    return { ...selected, boardRows, names };
+  };
+  const pinnedBoard = () => {
+    let rows;
+    return (weapon, ruler) => rows ??= host.board(weapon, ruler);
   };
   const cardAttribution = attribution => ({
-    cardVersion: (attribution.rows || []).map(row => headless.headlessWitnessesHtml(say,attribution.names.get(row),SITE)).join("\n"),
+    cardVersion: JSON.stringify([headless.publishedBoardRevisionOf(attribution.boardRows),
+      (attribution.rows || []).map(row => headless.headlessWitnessesHtml(say, attribution.names.get(row), SITE))]),
     ...(attribution.boardRows ? {cardData:{rows:attribution.boardRows,witnesses:attribution.names}} : {}),
   });
   const attributionText = (attribution, row) => headless.headlessWitnessesText(say, attribution.names.get(row));
@@ -143,13 +147,14 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const unread = said ? afterCount.replace(said, "") : afterCount;
     if (unread) return t("I could not read “{word}”. Choose a ruler from {list}; add riven for a build with one. (・_・;)", {word:unread,list:rulerList()});
     const ruler = named.ruler || defaultRuler();
-    const r = await run("builder.board.read", { weapon: hit.w.id, ruler: ruler.id, riven: said ? "with" : "without", limit: n || 3, distinct: true, pooled: true });
-    if (r.ok === false) return t(NOT_MEASURED);
+    const readBoard = pinnedBoard();
+    const r = await run("builder.board.read", { weapon: hit.w.id, ruler: ruler.id, riven: said ? "with" : "without", limit: n || 3, distinct: true, pooled: true }, readBoard);
+    if (r.ok === false) return t("The board could not be reached.");
     const rows = r.rows.filter((x) => x.ruler_id === ruler.id);
     if (!rows.length) return t(NOT_MEASURED);
     const shown = rows.length;
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=pz&ruler=${encodeURIComponent(ruler.id)}&n=${shown}${said ? "&rv=1" : ""}`;
-    const attribution = await boardAttribution(hit.w, card);
+    const attribution = await boardAttribution(hit.w, card, readBoard);
     const text = [`${weaponName(hit.w)} · ${rulerName(ruler)}`]
       .concat(rows.map((x, i) => `#${x.rank}${x.tied > 1 ? `（${t("{n} builds tie", { n: x.tied })}）` : ""} ${x.score}  ${(x.build ? x.build.mods.map(modName) : x.mods).join("、")}${
         x.build && x.build.arcane.length ? ` | ${t("Arcane")}: ${x.build.arcane.map(arcaneName).join("、")}` : ""}${
@@ -168,9 +173,11 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const { n, left } = countOf(named.left), cls = hit.w.riven_class;
     const ask = headless.rivenQuery((meta.riven_stats || {})[cls] || [], [zh], left);
     if (ask.unread.length) return t(UNREAD, { word: ask.unread[0] });
+    const readBoard = pinnedBoard();
     const r = await run("builder.rivens.read", { weapon: hit.w.id, bonuses: ask.bonuses, malus: ask.malus, pooled: true,
-      ruler: ruler.id });
-    if (r.ok === false || !r.groups.length) return t(NOT_MEASURED);
+      ruler: ruler.id }, readBoard);
+    if (r.ok === false) return t("The board could not be reached.");
+    if (!r.groups.length) return t(NOT_MEASURED);
     const g = r.groups.find((x) => x.rivens.length);
     if (!g) return t("The board has no riven matching these stats yet. Try fewer filters. (・_・;)");
     const top = headless.distinctTop(g.rivens, n || 3, () => "", meta);
@@ -178,7 +185,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=zk&ruler=${encodeURIComponent(g.ruler_id)}&n=${shown}`
       + (ask.bonuses.length ? `&has=${ask.bonuses.map(encodeURIComponent).join(",")}` : "")
       + (ask.malus ? `&malus=${encodeURIComponent(ask.malus)}` : "");
-    const attribution = await boardAttribution(hit.w, card);
+    const attribution = await boardAttribution(hit.w, card, readBoard);
     const line = (x) => `#${x.rank} ${x.stat_ids.bonuses.map((id) => signedStatZh(cls, id)).join(" ")}${
       x.stat_ids.malus ? " " + signedStatZh(cls, x.stat_ids.malus, true) : ""}  ${x.score}${x.gain == null ? "" : `（${x.gain >= 0 ? "+" : "−"}${Math.abs(x.gain * 100).toFixed(1)}%）`}`;
     const text = [`${weaponName(hit.w)} · ${rulerName(ruler)}`,

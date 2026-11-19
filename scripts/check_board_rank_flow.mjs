@@ -17,6 +17,7 @@ import {prepareRankIdentity,routeRankInput,putRankPublication} from './board_ran
 import {claimRankPublication} from './board_rank_publication.mjs';
 import {collectRankStorage} from './board_rank_gc.mjs';
 import {prepareRankBaselinePage} from './board_rank_baseline.mjs';
+import {boardRequestedResultUpgrade} from './board_requested_result_schema.mjs';
 import {boardRankSchema} from './board_rank_schema.mjs';
 const url=process.env.WFSIM_BOARD_RANK_TEST_URL;assert(url&&['localhost','127.0.0.1'].includes(new URL(url).hostname));
 const schema='rank_flow_'+randomBytes(6).toString('hex'),role=schema+'_reader',source='00000000-0000-4000-8000-000000000044';
@@ -54,19 +55,25 @@ try{
  for(const name of ['board_mailbox','board_pages'])await sql.unsafe(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
  await sql.unsafe('UPDATE state_board_input_source SET source=$1',[source]);
  await sql.unsafe(`CREATE SEQUENCE compute_queue_position;
-  CREATE TABLE state_board_requests(id text,phase text,intent text);
+  CREATE TABLE state_board_requests(id text PRIMARY KEY,phase text,intent text,workflow text);
+  CREATE TABLE entity_board_requests(id text PRIMARY KEY,kind text,ruler text,mode text);
+  CREATE TABLE entity_build_intake_intents(id text PRIMARY KEY,build_id text,input jsonb);
+  CREATE TABLE state_build_workflows(id text PRIMARY KEY,state text);
   CREATE TABLE state_board_request_control(id integer,enabled boolean);
   INSERT INTO state_board_request_control VALUES(1,true)`);
  await sql.unsafe(readFileSync(new URL('../worker/pg/board_requested_partitions.sql',import.meta.url),'utf8'));
  await sql.unsafe(`CREATE TABLE entity_weapon_builds(id text PRIMARY KEY,weapon text,at text,record text);
   CREATE TABLE board_facts(identity text,ruler text,mode text,score float8,metric text,measured_by text,finished_at text,retired_at text,review_id text);
-  CREATE TABLE entity_measurement_reviews(id text);
+  CREATE TABLE entity_measurement_reviews(id text,state text);
   CREATE INDEX ON board_facts(identity,ruler,mode)`);
  const database=new URL(url).pathname.slice(1);assert(/^[a-z0-9_]+$/.test(database));
  await sql.unsafe(readFileSync(new URL('../deploy/board_read_grants.sql',import.meta.url),'utf8').replaceAll('wfsim_board_read',role).replace('ON DATABASE wfsim','ON DATABASE '+database));
  const [{current_user:owner}]=await sql.unsafe('SELECT current_user');
  const installer=await sql.reserve();
- try{await installer.unsafe(boardRankSchema({schema,readerRole:role,httpRole:owner,tablespace:'pg_default'}));}finally{installer.release();}
+ try{
+  await installer.unsafe(boardRankSchema({schema,readerRole:role,httpRole:owner,tablespace:'pg_default'}));
+  await installer.unsafe(boardRequestedResultUpgrade({schema,readerRole:role,tablespace:'pg_default'}));
+ }finally{installer.release();}
  await sql.unsafe('GRANT USAGE ON SCHEMA '+schema+' TO '+role);
  await sql.unsafe('GRANT EXECUTE ON FUNCTION board_requested_partition_enqueue(text,uuid),board_requested_partition_selected(text,text,boolean),board_requested_partition_activate(text,text,text,uuid) TO '+role);
  reader=postgres(url,{max:4,fetch_types:false,onnotice(){},connection:{search_path:schema,role,statement_timeout:10000,lock_timeout:2000}});
@@ -190,6 +197,43 @@ try{
  for(let i=0;i<10;i++)await collectRankStorage(sql,context);
  assert.equal((await sql.unsafe('SELECT path FROM state_board_rank_partitions'))[0].path,'');
  await flow.close();flow=await open();assert.deepEqual((await read()).rows,second.rows.slice(0,128));
+ const player=inputs[10],mode=player.facts[0].mode;
+ await sql.unsafe("INSERT INTO entity_board_requests VALUES('review:player','correction',$1,$2)",[ruler,mode]);
+ await sql.unsafe("INSERT INTO entity_build_intake_intents VALUES('player-intent',$1,'{}')",[player.identity]);
+ await sql.unsafe("INSERT INTO state_build_workflows VALUES('player-flow','active');INSERT INTO entity_measurement_reviews VALUES('player','waiting');"+
+  "INSERT INTO state_board_requests VALUES('review:player','staged','player-intent','player-flow');UPDATE state_board_requests SET phase='admitted' WHERE id='review:player'");
+ await assert.rejects(sql.unsafe("SELECT board_requested_result_recover(array_fill('x'::text,ARRAY[65]))"),/1 to 64/);
+ assert.equal((await sql.unsafe("SELECT board_requested_result_recover(ARRAY['review:player','old-unrequested']) n"))[0].n,0);
+ await assert.rejects(reader.unsafe("SELECT board_requested_result_recover(ARRAY['review:player'])"),e=>e.code==='42501');
+ const take=tx=>tx.unsafe('SELECT board_requested_result_take($1::uuid,$2) target',[source,native.adapter]);
+ assert.equal((await take(reader))[0].target,null,'admission alone cannot promote the previous score');
+ assert((await sql.unsafe('SELECT request FROM state_board_requested_results')).length);
+ await sql.unsafe("UPDATE state_build_workflows SET state='succeeded'; UPDATE state_board_requested_results SET available_at=board_input_timestamp(now())");
+ assert.equal((await take(reader))[0].target,null,'a different review cannot satisfy the correction');
+ assert.equal((await sql.unsafe('SELECT request FROM state_board_requested_results')).length,1,'a waiting review stays recoverable');
+ await sql.unsafe("UPDATE state_build_workflows SET state='succeeded';UPDATE entity_measurement_reviews SET state='succeeded'");
+ await sql.unsafe("UPDATE board_facts SET score=777,review_id='player' WHERE identity=$1 AND mode=$2",[player.identity,mode]);
+ await sql.unsafe("UPDATE state_board_requested_results SET available_at=board_input_timestamp(now())");
+ await assert.rejects(reader.begin(async tx=>{
+  assert.equal((await take(tx))[0].target.identity,player.identity);throw Error('interrupted handoff');
+ }),/interrupted handoff/);
+ const fake='queued-ordinary-';
+ await sql.unsafe("SELECT board_input_put('build',$1||g::text,NULL) FROM generate_series(1,96) g",[fake]);
+ const measurementKey='['+[player.identity,ruler,mode].map(JSON.stringify).join(', ')+']';
+ await put('measurement',measurementKey,{identity:player.identity,ruler,mode,score:777});
+ await flow.close();flow=await open();
+ let handed=false;
+ await until(async step=>{
+  if(step.status==='requested-result')handed=true;
+  if(step.status!=='published')return false;
+  return (await read()).rows.some(row=>row.score===777);
+ },'verified request publishes before the ordinary backlog drains');
+ assert(handed);assert.equal((await sql.unsafe('SELECT request FROM state_board_requested_results')).length,0);
+ const [fifo]=await sql.unsafe("SELECT count(*) FILTER(WHERE version=applied_version) done,count(*) FILTER(WHERE version>applied_version) todo FROM state_board_input_mailbox WHERE key LIKE $1",[fake+'%']);
+ assert(Number(fifo.done)>0&&Number(fifo.todo)>0,'ordinary routing progresses during player delivery');
+ const [slow]=await sql.unsafe("SELECT version,applied_version FROM state_board_input_mailbox WHERE scope='measurement' AND key=$1",[measurementKey]);
+ assert(BigInt(slow.version)>BigInt(slow.applied_version),'player handoff keeps the ordinary mailbox acknowledgement intact');
+ assert.deepEqual((await read(second.revision)).rows,second.rows.slice(0,128),'preceding snapshot stays readable');
  // A missing incomplete cut is durably blocked instead of rescanning every loop.
  await sql.unsafe("UPDATE state_board_rank_partitions SET complete=false,seeded=false,path=$1,available_at=board_input_timestamp(clock_timestamp())",[join(work,'rank-cut-00000000-0000-4000-8000-000000000000','inputs.ndjson')]);
  await until(row=>row.status==='baseline_error','missing cut refusal');

@@ -18,6 +18,7 @@
 //   const v = await app.evaluate(`(async () => { ... })()`);
 //   app.check("it says so", v.ok === true, JSON.stringify(v));
 //   await app.finish("the thing holds");   // exits non-zero if anything failed
+import { boardFixture } from "./board_fixture_publication.mjs";
 import { launchChrome, stopChrome, waitForBoot } from './cdp_boot.mjs';
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
@@ -61,8 +62,31 @@ const SITE = resolve(dirname(fileURLToPath(import.meta.url)), "..", "site");
 /// `delay` holds a file back by its extension — `{ ".wasm": 9000 }` is a slow
 /// line, which nothing in Chrome can impose on a worker's own fetch.
 export async function serveSite(root, delay = {}) {
+  const officialBoard = boardFixture(async (scene, weapon) => {
+    if (!/^[a-z0-9_]*$/.test(scene) || (weapon && !/^[a-z0-9_]+$/.test(weapon))) return {};
+    const dir = join(root, "board", scene);
+    if (weapon) {
+      const rows = await readFile(join(dir, weapon + ".json"), "utf8").then(JSON.parse, () => []);
+      return { [weapon]: rows };
+    }
+    const index = await readFile(join(dir, "index.json"), "utf8").then(JSON.parse, () => ({}));
+    const ids = Object.keys(index), rows = {};
+    for (let offset = 0; offset < ids.length; offset += 8) {
+      await Promise.all(ids.slice(offset, offset + 8).map(async id => {
+        rows[id] = await readFile(join(dir, id + ".json"), "utf8").then(JSON.parse, () => []);
+      }));
+    }
+    return rows;
+  }, { immutable: true });
   const srv = createServer(async (q, s) => {
-    const p = decodeURIComponent(q.url.split("?")[0]);
+    const url = new URL(q.url, "http://127.0.0.1"), p = decodeURIComponent(url.pathname);
+    if (p === "/api/board/pages" || p === "/api/board/pages/catalog") {
+      try {
+        const body = await officialBoard(url);
+        s.writeHead(body.ok ? 200 : 409, { "content-type": MIME[".json"], "cache-control": "no-store" });
+        return s.end(JSON.stringify(body));
+      } catch (_) { s.writeHead(503); return s.end(); }
+    }
     for (const c of [p, join(p, "index.html")]) {
       try {
         const b = await readFile(join(root, c));

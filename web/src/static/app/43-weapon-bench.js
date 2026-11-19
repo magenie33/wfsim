@@ -1,9 +1,8 @@
 // ---- Benchmark: this weapon's own board -------------------------------
 // WHAT THIS WEAPON HAS BEEN MEASURED AT, one row per ruler and mode, and the
 // build behind the row the reader picks. Nothing here computes a score: every
-// number is a published row, and the only thing derived is a RANK, which is
-// counted off `site/board/index.json` at read time rather than stored — a
-// second copy of a ranking is a second answer to one question.
+// number is from a published partition. Across-weapon rank compares the
+// leaders in the publication directory.
 //
 // TWO LEVELS, BECAUSE THE GRID IS NOT SMALL. A melee carries seven modes and
 // the roster carries three rulers; twenty-one blocks is not a page. So the
@@ -83,7 +82,8 @@ function renderWeaponBench() {
   // this tab should not pay for it — and the table redraws when it lands.
   if (!benchList().some((b) => b.id === wbenchRuler)) wbenchRuler = benchList()[0]?.id;
   if (!ensureBoardCell(w.id, wbenchRuler, renderWeaponBench)) {
-    box.innerHTML = benchSelectorHtml(wbenchRuler) + `<p class="wb-empty">${loadingHtml()}</p>`;
+    const failed = boardCellUnavailable(w.id, wbenchRuler);
+    box.innerHTML = benchSelectorHtml(wbenchRuler) + `<p class="wb-empty">${failed ? escHtml(tr("The board could not be reached.")) : loadingHtml()}</p>`;
     wireBenchSelector(box, (id) => { wbenchRuler = id; renderWeaponBench(); }); return;
   }
   const cells = wbenchCells(w.id).filter((c) => c.benchmark === wbenchRuler);

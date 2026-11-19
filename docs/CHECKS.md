@@ -3290,11 +3290,18 @@ bounded retries and same-round rearming, and settles old requests after a fresh
 weapon/scene/index reload. Removing publication retries or cache generations must
 fail those cases. Only
 review transport is stubbed; engine parsing and published row matching are real.
-The community CI job runs `check_board_page_reader.mjs` directly: sixty-four delayed pages must finish
-in revision order beyond a single page deadline, with four requests shared
-across partitions. Revision/count changes, cursor gaps, missing rows, page and
-whole-read deadlines, and weapon cancellation retain the prior complete view.
-`WFSIM_BOARD_READER_SOURCE` selects an older loader for the failing control.
+The community CI job runs `check_board_page_reader.mjs` directly. Sixty-four
+delayed pages finish in revision order beyond a single page deadline. At most
+four requests run concurrently across partitions. A revision or count
+mismatch, cursor gap, missing row, timeout or cancellation makes the ranking
+unavailable. The old loader selected by `WFSIM_BOARD_READER_SOURCE` reads the
+poisoned archived file and fails. The actual MCP entry and bot checks compare
+the selected revision's ranking and exercise failed reads and card invalidation.
+`check_board_result_flow.mjs` restarts publication with a new engine identifier,
+checks the existing ranking revision, then replaces one measured build. A
+second valid build retains its score and original measurement provenance. The
+canonical library retains the same records, including a build awaiting its
+first measurement, through the update and removal of a score.
 
 ## `check_task_executors`, `check_user_task_service`, `check_task_service_browser`
 
