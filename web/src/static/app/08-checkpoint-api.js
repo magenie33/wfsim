@@ -221,12 +221,19 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     job.workers = [];
     if (finished && keep) fleetKeep(ws); else ws.forEach((w) => w && w.terminate());
   };
-  const fail = (why, engine = false) => {
-    if (job.result) return;
-    job.result = { ok: false, error: why, worker_dead: !engine };
+  job.cancel = () => {
+    if (job.cancelled || job.result) return;
+    job.cancelled = true;
     stop(false);
     show();
   };
+  const fail = (why, workerDead = true) => {
+    if (job.cancelled || job.result) return;
+    job.result = { ok: false, error: why, worker_dead: workerDead };
+    stop(false);
+    show();
+  };
+  const saveFailed = error => fail(String(error?.message || error), false);
   // One call to one worker; its progress, if any, to `onProgress`.
   const call = (i, message, onProgress) => new Promise((resolve) => {
     const resting = message.kind === "rest";
@@ -237,6 +244,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     const finish = payload => { if (finished) return; finished = true; pendingCalls.delete(finish); wd.clear(); signals.finish(i); resolve(payload); };
     pendingCalls.add(finish);
     w.onmessage = (e) => {
+      if (finished) return;
       try {
         wd.heard();
         signals.heard(i, e.data);
@@ -245,19 +253,22 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
           const builds = Array.isArray(e.data.payload) ? e.data.payload : e.data.payload?.builds;
           if (builds?.length) {
             deliveries = (deliveries || Promise.resolve()).then(() => onBuilds(builds));
-            deliveries.catch(error => fail(String(error?.message || error)));
+            deliveries.catch(saveFailed);
           }
         }
         if (e.data.kind === (resting ? "rested" : "result")) {
+          // The worker has answered even if saving its builds is still pending.
+          wd.clear();
+          signals.finish(i);
           const payload = e.data.payload;
           if (Array.isArray(payload?.builds)) {
             const builds = payload.builds; delete payload.builds;
             if (builds.length) deliveries = (deliveries || Promise.resolve()).then(() => onBuilds(builds));
           }
           if (payload?.ok === false) {
-            if (deliveries) deliveries.catch(error => fail(String(error?.message || error)));
-            fail(payload.error || "The worker could not finish.", true);
-          } else if (deliveries) deliveries.then(() => finish(payload), error => fail(String(error?.message || error)));
+            if (deliveries) deliveries.catch(saveFailed);
+            fail(payload.error || "The worker could not finish.", false);
+          } else if (deliveries) deliveries.then(() => finish(payload), saveFailed);
           else finish(payload);
         }
         show();
@@ -350,13 +361,13 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
         return;
       }
       if (!Array.isArray(r.pending) || !r.pending.length) {
-        fail("The optimizer requested an empty batch.", true);
+        fail("The optimizer requested an empty batch.", false);
         return;
       }
       // The build and run count identify a measurement. Carried runs are evidence.
       const batch = JSON.stringify(r.pending.map(item => [item.build ?? item, item.runs ?? null]));
       if (batch === lastBatch) {
-        fail("The optimizer requested the same batch twice.", true);
+        fail("The optimizer requested the same batch twice.", false);
         return;
       }
       lastBatch = batch;
@@ -381,7 +392,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
           if (!o) { broken = true; return; }
           if (!Array.isArray(o.scores) || o.scores.length !== slices[at].length) {
             broken = true;
-            fail("The optimizer worker returned an incomplete batch.", true);
+            fail("The optimizer worker returned an incomplete batch.", false);
             return;
           }
           outs[at] = o;
@@ -393,7 +404,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       }));
       if (broken || outs.some((o) => !o) || job.cancelled) return;
       const bad = outs.find((o) => o.ok === false);
-      if (bad) { fail(bad.error || "a worker could not score its share", true); return; }
+      if (bad) { fail(bad.error || "a worker could not score its share", false); return; }
       scores = outs.flatMap((o) => o.scores || []);
       done.builds += scores.length;
       done.fights += outs.reduce((a, o) => a + (o.fights || 0), 0);
@@ -562,7 +573,8 @@ function woptCancel() {
   if (!wopt) return { ok: false, error: "no such optimize job" };
   // Cancel kills the WHOLE fleet. Each worker's last pushed board is already
   // here and merged, which is what a cancel has to show.
-  if (wopt.workers && wopt.workers.length) {
+  if (wopt.cancel) wopt.cancel();
+  else if (wopt.workers && wopt.workers.length) {
     wopt.workers.forEach((w) => w && w.terminate());
     wopt.workers = [];
     wopt.cancelled = true;
