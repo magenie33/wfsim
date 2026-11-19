@@ -210,15 +210,20 @@ await check("a background board upload uses its captured build without repaintin
   const context = vm.createContext({
     presetWeapon: () => "another-weapon", activePreset: "another-build", simKey: () => "another-key",
     boardConsent: () => "yes", boardState: "unchanged", boardOnBoard: null, boardBoards: null, boardDoor: null, boardRefusal: "",
-    boardVerdict: async () => ({ ok: true, accepted: true, boards: 1, of: 1 }),
+    boardVerdict: async () => ({ ok: true, accepted: true, boards: 1, of: 1, target: "standard_single_target" }),
+    timeoutSignal: AbortSignal.timeout,
     boardRowMatching: () => { throw new Error("The other weapon's rows must not be read"); },
     boardPayload: () => { throw new Error("The current build must not be read"); },
-    fetch: async (url, options) => { sent = JSON.parse(options.body); return { ok: true }; }, track: () => {},
+    fetch: async (url, options) => {
+      sent = JSON.parse(options.body);
+      return Response.json({ ok: true, request: "00000000-0000-4000-8000-000000000044" });
+    }, track: () => {},
     renderBoardConsent: () => { renders++; }, renderBoardOutcome: () => { renders++; },
   });
   vm.runInContext(boardSource.slice(from, until) + "\nglobalThis.offer = offerBoardSubmit;", context);
   await context.offer({ body: { weapon: "original", mods: ["original-mod"] }, context: origin.context });
   assert.equal(sent.weapon, "original");
+  assert.equal(sent.requested, true);
   assert.equal(sent.mods[0], "original-mod");
   assert.equal(context.boardState, "unchanged");
   assert.equal(renders, 0);
