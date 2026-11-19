@@ -277,10 +277,13 @@ async function submit(request, env) {
   try {
     if (b.requested === true) {
       const rec = records[0];
-      if (!ID_PLAIN.test(rec.benchmark || "") || !ID_PLAIN.test(rec.mode || "base")) return bad("a requested board calculation requires a ruler and mode");
+      const ruler = b.requested_ruler ?? rec.benchmark;
+      if (typeof ruler !== "string" || !ID_PLAIN.test(ruler) || !ID_PLAIN.test(rec.mode || "base")) return bad("a requested board calculation requires a ruler and mode");
       const id = crypto.randomUUID();
-      await env.LIBRARY.prepare("SELECT board_request_submit(?::text,?::text,?::text,?::text)")
-        .bind(id, rec.at, JSON.stringify(rec), initiator).run();
+      const args = [id, rec.at, JSON.stringify(rec), initiator];
+      if (ruler !== rec.benchmark) args.push(ruler);
+      await env.LIBRARY.prepare("SELECT board_request_submit(" + args.map(() => "?::text").join(",") + ")")
+        .bind(...args).run();
       return Response.json({ ok: true, request: id });
     }
     const family = harvest?.claims.family_source;

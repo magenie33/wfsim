@@ -3306,7 +3306,9 @@ fail those cases. Only
 review transport is stubbed; engine parsing and published row matching are real.
 The community CI job runs `check_board_page_reader.mjs` directly. Sixty-four
 delayed pages finish in revision order beyond a single page deadline. At most
-four requests run concurrently across partitions. A revision or count
+four requests run concurrently across partitions. An open library and ranking
+observe a new build and a corrected score, including recovery from a failed
+page, without downloading unchanged partition rows. A revision or count
 mismatch, cursor gap, missing row, timeout or cancellation makes the ranking
 unavailable. The old loader selected by `WFSIM_BOARD_READER_SOURCE` reads the
 poisoned archived file and fails. The actual MCP entry and bot checks compare

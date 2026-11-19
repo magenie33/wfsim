@@ -165,7 +165,10 @@ same verified measurement source. Every reader uses the same catalog afterwards.
 
 An online partition covers one weapon and ruler. The catalog selects its current
 revision. A reader waits for the complete revision before showing its ranks.
-A failed read exposes the scope as unavailable. Page requests share a
+A visible weapon library or ranking checks its catalog every thirty seconds.
+The library reads the pages of new or changed partitions and replaces their
+rows after the complete revision arrives. An interrupted refresh keeps the
+last complete view until the next attempt. Page requests share a
 four-request limit across the selected partitions. Each page has an eight-second
 deadline, and the page assembly has a sixty-second budget. Changing weapons
 cancels the read.

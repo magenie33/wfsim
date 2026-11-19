@@ -14,7 +14,13 @@ The retained ordinary `03` prefix is not reprioritized.
 ## Source and handoffs
 
 A single `/api/board/submit` with `requested:true`, `benchmark` and `mode` captures
-one build request. Scores are absent. Batch submissions remain ordinary inputs.
+one build request. A single eligible player upload from a custom fight names
+its official measurement target in `requested_ruler`. The original submission
+keeps the player's benchmark when present. The page prefers the selected
+eligible ruler, then the primary eligible ruler, then the first admitted ruler.
+It confirms delivery from the request receipt. Existing installations apply
+`board_requested_schema.mjs --upgrade-submit` before deploying this client.
+Scores are absent. Batch submissions remain ordinary inputs.
 The page also sends this coverage request when the published board already has
 the build; a published row does not prove database coverage. An absent review
 baseline follows the same missing-measurement entry.

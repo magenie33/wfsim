@@ -30,24 +30,6 @@ CREATE INDEX board_requests_ready ON state_board_requests(position,id) WHERE pha
 CREATE TRIGGER board_request_retained BEFORE UPDATE OR DELETE ON entity_board_requests
   FOR EACH ROW EXECUTE FUNCTION build_intake_immutable();
 
-CREATE FUNCTION board_request_submit(text,text,text,text) RETURNS text
-LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
-DECLARE record jsonb:=$3::jsonb; raw jsonb;
-BEGIN
-  IF NOT EXISTS(SELECT 1 FROM state_board_request_control WHERE id=1 AND enabled) THEN
-    RAISE EXCEPTION 'requested board intake is paused' USING ERRCODE='55000'; END IF;
-  IF jsonb_typeof(record) IS DISTINCT FROM 'object' OR octet_length($3)>4096
-    OR coalesce(record->>'benchmark','')!~'^[a-z0-9_]{1,128}$'
-    OR coalesce(record->>'mode','base')!~'^[a-z0-9_]{1,128}$' THEN
-    RAISE EXCEPTION 'requested board input requires a ruler and mode'; END IF;
-  raw:=jsonb_build_object('id',$1,'at',$2,'record',record,'initiator',$4);
-  INSERT INTO record_build_submissions(id,at,record,initiator) VALUES($1,$2,$3,$4);
-  INSERT INTO entity_board_requests(id,kind,input,ruler,mode)
-    VALUES($1,'missing',raw,record->>'benchmark',coalesce(record->>'mode','base'));
-  INSERT INTO state_board_requests(id) VALUES($1);
-  RETURN $1;
-END $$;
-
 CREATE FUNCTION board_request_capture_review() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE observation jsonb; review entity_measurement_reviews%ROWTYPE;
@@ -162,5 +144,5 @@ BEGIN
   END IF;
   RETURN true;
 END $$;
-REVOKE ALL ON FUNCTION board_request_submit(text,text,text,text),board_request_capture_review(),board_request_claim(uuid),
+REVOKE ALL ON FUNCTION board_request_capture_review(),board_request_claim(uuid),
   board_request_stage(text,uuid,text),board_request_admit(text,uuid),board_request_retry(text,uuid,text,boolean) FROM PUBLIC;

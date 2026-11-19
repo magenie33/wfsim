@@ -373,18 +373,29 @@ function refreshBoardDoor() {
 }
 
 /// Library legality controls retention; ruler eligibility only counts its boards.
-async function boardVerdict(body) {
+async function boardVerdict(body, findTarget = false) {
   const legal=await api("/api/board/check",{...body,scope:"library"});
   if(!legal?.ok || legal.accepted===false)return legal;
-  const ids = body.benchmark ? [body.benchmark] : benchList().map((b) => b.id);
-  if (!ids.length) return { ok: true, accepted: true, boards: 0, of: 0 };
-  let accepted = 0;
+  const boards = benchList(), primary = boards.find(b => b.primary)?.id;
+  const ids = body.benchmark ? [body.benchmark] : boards.map(b => b.id);
+  let accepted = 0, target = null;
   for (const id of ids) {
     const v = await api("/api/board/check", { ...body, benchmark: id });
-    if (!v || !v.ok) return { ok: false };
-    if (v.accepted !== false) accepted += 1;
+    if (!v?.ok) return { ok: false };
+    if (v.accepted !== false) {
+      accepted++;
+      if (!target || id === primary) target = id;
+    }
   }
-  return { ok: true, accepted: true, reason: "", boards: accepted, of: ids.length };
+  if (findTarget && body.benchmark && !target) {
+    for (const id of new Set([primary, ...boards.map(b => b.id)])) {
+      if (!id || id === body.benchmark) continue;
+      const v = await api("/api/board/check", { ...body, benchmark: id });
+      if (!v?.ok) return { ok: false };
+      if (v.accepted !== false) { target = id; break; }
+    }
+  }
+  return { ok: true, accepted: true, reason: "", boards: accepted, of: ids.length, target };
 }
 
 /// **IS THIS BUILD ALREADY A ROW?** — asked of the ENGINE, in one call.
@@ -442,19 +453,24 @@ const boardRowLabel = (r) =>
 async function submitBoardPayload(body) {
   const outcome = { state: "failed", onBoard: null, boards: null, door: null, refusal: "" };
   if (body.weapon === presetWeapon()) outcome.onBoard = await boardRowMatching(body);
-  if (outcome.onBoard && !body.benchmark) return { ...outcome, state: "onboard" };
-  const verdict = await boardVerdict(body);
+  const verdict = await boardVerdict(body, true);
+  if (!verdict?.ok) return outcome;
   outcome.boards = verdict && verdict.ok ? { n: verdict.boards, of: verdict.of } : null;
   outcome.door = verdict && verdict.ok && verdict.accepted === false ? verdict.reason || "" : null;
   if (verdict && verdict.ok && verdict.accepted === false) {
     return { ...outcome, state: "refused", refusal: verdict.reason || "" };
   }
   try {
+    const target = verdict.target;
+    const coverage = target ? { requested: true, ...(target !== body.benchmark ? { requested_ruler: target } : {}) } : {};
     const response = await fetch("/api/board/submit", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, ...(body.benchmark ? { requested: true } : {}) }),
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, ...coverage }),
+      signal: timeoutSignal(30_000),
     });
-    outcome.state = response.ok ? outcome.onBoard ? "onboard" : "sent" : "failed";
-    if (response.ok) track("board.submit", body.weapon);
+    const receipt = response.ok && await response.json();
+    if (receipt?.ok !== true || (target && !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(receipt.request || ""))) return outcome;
+    outcome.state = outcome.onBoard ? "onboard" : "sent";
+    track("board.submit", body.weapon);
   } catch (_) { /* a board upload does not invalidate a measurement */ }
   return outcome;
 }

@@ -90,7 +90,7 @@ try{
      const response=await recommendationsRoute(new Request('http://127.0.0.1'+req.url),env,path,{waitUntil:p=>p.catch(()=>{})});
      if(response){res.writeHead(response.status,Object.fromEntries(response.headers));res.end(await response.text());return;}
    }
-   const pending=[],response=await worker.fetch(new Request('http://127.0.0.1'+req.url),env,{waitUntil:p=>pending.push(p)});
+   const pending=[],response=await worker.fetch(new Request('http://127.0.0.1'+req.url,{headers:req.headers}),env,{waitUntil:p=>pending.push(p)});
    res.writeHead(response.status,Object.fromEntries(response.headers));res.end(await response.text());await Promise.all(pending);
   }catch(error){res.writeHead(500);res.end(String(error));}
  });
@@ -168,6 +168,12 @@ try{
  assert.deepEqual(JSON.parse(JSON.stringify(rows.filter(row=>row.benchmark===target.ruler))),complete);
  const index=await vm.runInContext('readCurrentBoardIndex(scene)',context);
  assert(index[target.weapon].some(row=>row.score===target.score&&row.mode===target.mode));
+ const catalogUrl=base+'/api/board/pages/catalog?'+new URLSearchParams({weapon:target.weapon,scene});
+ const catalogTag=(await fetch(catalogUrl)).headers.get('etag');
+ assert(catalogTag,'a current catalog has a conditional refresh validator');
+ const refreshCatalog=()=>fetch(catalogUrl,{headers:{'if-none-match':catalogTag}});
+ const sameCatalog=await refreshCatalog();
+ assert.equal(sameCatalog.status,304);assert.equal(await sameCatalog.text(),'');
  const indexed=await captureBoardPartition(sql,target);
  assert.equal(indexed.bootstrap,false,'subsequent publication must use the measured-source index');
  assert.equal(indexed.facts.length,fixture.facts.length,'the indexed cut retains every historical fact');
@@ -193,6 +199,9 @@ try{
    WHERE identity=$1 AND ruler=$2 AND mode=$3`,[target.identity,target.ruler,target.mode,target.score+1,'2026-11-17T00:00:00.000Z',retainedRow?'verified:'+nextEngine:null]);
  await drain();cacheEntries.clear();
  const updated=await(await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler}))).json();
+ const newCatalog=await refreshCatalog();
+ assert.equal(newCatalog.status,200);assert.notEqual(newCatalog.headers.get('etag'),catalogTag);
+ assert((await newCatalog.json()).partitions.some(p=>p.revision===updated.revision));
  const currentRows=await completeRows(updated);
  const replacement=currentRows.find(row=>row.score===target.score+1&&row.mode===target.mode);
  assert(replacement,'a subsequent accepted result must use the indexed path');

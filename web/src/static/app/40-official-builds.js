@@ -302,15 +302,26 @@ const pageBoardReader = () => publishedBoardReader((path, signal) => {
   return fetchJsonPatient(base + path, 1, signal);
 });
 
-async function readCurrentBoardRows(weapon, scene, signal) {
+async function readCurrentBoardRows(weapon, scene, signal, previous) {
   const reader = pageBoardReader();
   const partitions = await reader.catalog(scene, weapon, signal);
-  return { rows: await reader.rows(partitions, signal), rulers: partitions.map(partition => partition.ruler) };
+  const versions = new Map(partitions.map(p => [p.ruler, p.revision]));
+  const changed = partitions.filter(p => previous?.get(p.ruler) !== p.revision);
+  if (!changed.length && previous?.size === versions.size) return null;
+  const rows = await reader.rows(changed, signal);
+  const retained = new Set(versions.keys());
+  for (const p of changed) retained.delete(p.ruler);
+  return { rows, versions, rulers: [...versions.keys()], retained };
 }
 
-async function readCurrentBoardIndex(scene, signal) {
+const boardIndexRevisions = new WeakMap();
+async function readCurrentBoardIndex(scene, signal, previous) {
+  const partitions = await pageBoardReader().catalog(scene, null, signal);
+  const signature = JSON.stringify(partitions.map(p => [p.weapon, p.ruler, p.revision]));
+  if (boardIndexRevisions.get(previous) === signature) return previous;
   const index = Object.create(null);
-  for (const partition of await pageBoardReader().catalog(scene, null, signal)) {
+  boardIndexRevisions.set(index, signature);
+  for (const partition of partitions) {
     if (!Array.isArray(partition.leaders) || partition.leaders.some(row => row.benchmark !== partition.ruler))
       throw new Error("The board could not be reached.");
     (index[partition.weapon] ||= []).push(...partition.leaders);
@@ -350,7 +361,7 @@ const boardFileState = (id) => {
   return boardFiles.get(id);
 };
 const boardCellDir = (benchmark) => benchSceneOf(benchList().find((b) => b.id === benchmark));
-const boardHasCell = (id, benchmark) => BOARD_HAVE.has(id) && (!boardFiles.has(id) || boardFiles.get(id).loaded.get(boardCellDir(benchmark))?.includes(benchmark));
+const boardHasCell = (id, benchmark) => BOARD_HAVE.has(id) && (!boardFiles.has(id) || boardFiles.get(id).loaded.get(boardCellDir(benchmark))?.has(benchmark));
 function boardCellUnavailable(id, benchmark) {
   const dir = boardCellDir(benchmark), state = boardFileState(id);
   return state.failed.has(dir) || (state.loaded.has(dir) && !boardHasCell(id, benchmark));
@@ -399,16 +410,19 @@ async function loadWeaponBoard(id) {
   if (id) await loadSceneRows(id);
 }
 
-async function loadSceneRows(id, dirs = boardRequestedDirs(id)) {
+async function loadSceneRows(id, dirs = boardRequestedDirs(id), refresh = false) {
   const state = boardFileState(id);
   await Promise.all([...new Set(dirs)].map((dir) => {
-    if (state.loaded.has(dir) || state.failed.has(dir)) return null;
+    if (!refresh && (state.loaded.has(dir) || state.failed.has(dir))) return null;
     if (state.pending.has(dir)) return state.pending.get(dir);
-    const pending = readCurrentBoardRows(id, dir, state.controller.signal)
-      .then(({ rows, rulers }) => {
+    const pending = readCurrentBoardRows(id, dir, state.controller.signal, state.loaded.get(dir))
+      .then(update => {
         if (boardFiles.get(id) !== state) return;
-        BOARD[id] = (BOARD[id] || []).filter(row => boardCellDir(row.benchmark) !== dir).concat(rows);
-        state.loaded.set(dir, rulers);
+        state.failed.delete(dir);
+        if (!update) return;
+        const { rows, versions, retained } = update;
+        BOARD[id] = (BOARD[id] || []).filter(row => boardCellDir(row.benchmark) !== dir || retained.has(row.benchmark)).concat(rows);
+        state.loaded.set(dir, versions);
         BOARD_HAVE.add(id);
       })
       .catch(() => { if (boardFiles.get(id) === state) state.failed.add(dir); })
@@ -416,10 +430,12 @@ async function loadSceneRows(id, dirs = boardRequestedDirs(id)) {
     state.pending.set(dir, pending);
     return pending;
   }));
-  if (boardFiles.get(id) !== state || !BOARD[id]) return;
+  if (refresh || boardFiles.get(id) !== state || !BOARD[id]) return;
   const keep = new Set([...dirs, ...boardRequestedDirs(id)]);
-  for (const dir of state.loaded.keys()) if (!keep.has(dir)) state.loaded.delete(dir);
-  BOARD[id] = BOARD[id].filter(row => keep.has(boardCellDir(row.benchmark)));
+  for (const dir of state.loaded.keys()) if (!keep.has(dir)) {
+    state.loaded.delete(dir);
+    BOARD[id] = BOARD[id].filter(row => boardCellDir(row.benchmark) !== dir);
+  }
 }
 
 function ensureBoardCell(id, benchmark, redraw) {
@@ -467,12 +483,12 @@ async function fetchJsonPatient(url, tries = 3, signal) {
 let boardIndexAsk = null;
 let boardIndexUnreachable = false;
 let boardIndexGeneration = 0;
-function loadFullBoard() {
-  if (BOARD_INDEX) return Promise.resolve();
+function loadFullBoard(refresh = false) {
+  if (!refresh && BOARD_INDEX) return Promise.resolve();
   if (!boardIndexAsk) {
     const generation = boardIndexGeneration;
     boardIndexUnreachable = false;
-    boardIndexAsk = readCurrentBoardIndex("").then((idx) => { if (generation === boardIndexGeneration) BOARD_INDEX = idx; },
+    boardIndexAsk = readCurrentBoardIndex("", undefined, BOARD_INDEX).then((idx) => { if (generation === boardIndexGeneration) BOARD_INDEX = idx; },
         () => { if (generation === boardIndexGeneration) boardIndexUnreachable = true; })
       .finally(() => { if (generation === boardIndexGeneration) boardIndexAsk = null; });
   }
@@ -490,12 +506,12 @@ const SCENE_INDEX = {};
 const sceneIndexAsk = {};
 const sceneIndexUnreachable = {};
 const sceneIndexGeneration = {};
-function loadSceneIndex(dir) {
-  if (SCENE_INDEX[dir]) return Promise.resolve();
+function loadSceneIndex(dir, refresh = false) {
+  if (!refresh && SCENE_INDEX[dir]) return Promise.resolve();
   if (!sceneIndexAsk[dir]) {
     const generation = sceneIndexGeneration[dir] || 0;
     sceneIndexUnreachable[dir] = false;
-    sceneIndexAsk[dir] = readCurrentBoardIndex(dir).then((idx) => { if (generation === (sceneIndexGeneration[dir] || 0)) SCENE_INDEX[dir] = idx || {}; },
+    sceneIndexAsk[dir] = readCurrentBoardIndex(dir, undefined, SCENE_INDEX[dir]).then((idx) => { if (generation === (sceneIndexGeneration[dir] || 0)) SCENE_INDEX[dir] = idx || {}; },
         () => { if (generation === (sceneIndexGeneration[dir] || 0)) sceneIndexUnreachable[dir] = true; })
       .finally(() => { if (generation === (sceneIndexGeneration[dir] || 0)) delete sceneIndexAsk[dir]; });
   }
@@ -504,7 +520,7 @@ function loadSceneIndex(dir) {
 /// THE LEADERS A RULER'S RANKING READS, and the state of asking for them.
 const benchIndexOf = (cur) => (cur && cur.cell_dir
   ? { index: SCENE_INDEX[cur.cell_dir] || null, asking: !!sceneIndexAsk[cur.cell_dir],
-    lost: !!sceneIndexUnreachable[cur.cell_dir], load: () => loadSceneIndex(cur.cell_dir) }
+    lost: !!sceneIndexUnreachable[cur.cell_dir], load: refresh => loadSceneIndex(cur.cell_dir, refresh) }
   : { index: BOARD_INDEX, asking: !!boardIndexAsk, lost: boardIndexUnreachable, load: loadFullBoard });
 
 /// The benchmark page: ask first, so the first draw already knows a request is
@@ -529,18 +545,20 @@ async function loadBoard(weapon) {
 async function reloadReviewedBoard(weapon, ruler) {
   if (!benchList().some(item => item.id === ruler)) throw new Error("The board could not be reached.");
   const dir = boardCellDir(ruler);
-  boardFiles.get(weapon)?.controller.abort();
-  boardFiles.delete(weapon); BOARD_HAVE.delete(weapon); delete BOARD[weapon];
-  BOARD_INDEX = null; delete SCENE_INDEX[dir];
+  const previous = boardFiles.get(weapon);
+  previous?.controller.abort();
+  boardFiles.delete(weapon);
+  const state = boardFileState(weapon);
+  if (previous) state.loaded = new Map(previous.loaded);
   const indexGeneration = ++boardIndexGeneration;
   const sceneGeneration = (sceneIndexGeneration[dir] || 0) + 1;
   sceneIndexGeneration[dir] = sceneGeneration;
   boardIndexAsk = null; delete sceneIndexAsk[dir];
-  const state = boardFileState(weapon);
-  await loadSceneRows(weapon, [...new Set([...boardRequestedDirs(weapon), dir])]);
+  if (dir) BOARD_INDEX = null;
+  await loadSceneRows(weapon, [...new Set([...boardRequestedDirs(weapon), dir])], true);
   if (boardFiles.get(weapon) !== state || state.failed.size || !boardHasCell(weapon, ruler))
     throw new Error("The board could not be reached.");
-  const index = await readCurrentBoardIndex(dir, state.controller.signal);
+  const index = await readCurrentBoardIndex(dir, state.controller.signal, dir ? SCENE_INDEX[dir] : BOARD_INDEX);
   if (boardFiles.get(weapon) !== state) throw new Error("The board could not be reached.");
   if (dir) { if (sceneGeneration === (sceneIndexGeneration[dir] || 0)) SCENE_INDEX[dir] = index; }
   else if (indexGeneration === boardIndexGeneration) BOARD_INDEX = index;
@@ -576,6 +594,34 @@ function ensureWeaponBoard(id) {
   if (!id || BOARD_HAVE.has(id)) return;
   loadWeaponBoard(id).then(() => boardRowsLanded(id));
 }
+
+/// Visible public views check the catalog. Only changed partitions download rows.
+const boardRefreshMs = 30000;
+let boardRefreshView = "", boardRefreshAt = 0;
+async function refreshVisibleBoard() {
+  if (document.hidden || !META) return;
+  const bench = $("bench-page")?.hidden === false;
+  const weapon = !bench && modSuffix() === "build-library" && routeWeaponId();
+  if (!bench && !weapon) return;
+  const ruler = bench ? benchCurrent() : null;
+  const view = bench ? "bench/" + (ruler?.cell_dir || "") : weapon + "/" + finder.b;
+  const now = Date.now();
+  if (boardRefreshView === view && now - boardRefreshAt < boardRefreshMs) return;
+  boardRefreshView = view; boardRefreshAt = now;
+  if (bench) {
+    const index = benchIndexOf(ruler);
+    await index.load(true);
+    if (!document.hidden && $("bench-page")?.hidden === false && benchIndexOf(benchCurrent()).index !== index.index)
+      renderBenchBoard();
+  } else {
+    const before = BOARD[weapon];
+    await loadSceneRows(weapon, boardRequestedDirs(weapon), true);
+    if (!document.hidden && routeWeaponId() === weapon && modSuffix() === "build-library" && BOARD[weapon] !== before)
+      boardRowsLanded(weapon);
+  }
+}
+setInterval(refreshVisibleBoard, boardRefreshMs);
+document.addEventListener("visibilitychange", refreshVisibleBoard);
 
 /// THE BOARD'S ROWS, as read-only builds you can open.
 ///

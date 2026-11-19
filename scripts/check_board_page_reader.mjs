@@ -108,3 +108,70 @@ assert.deepEqual(absent.result, []); assert.equal(absent.state.pages, 0); assert
 const empty = await run({ empty: true });
 assert.deepEqual(empty.result, []); assert.equal(empty.state.pages, 1); assert.equal(empty.cell, true);
 console.log("  ok  absent and complete-empty partitions remain distinct");
+
+const live = { partitions: new Map(), reads: 0, pages: [], draws: 0, now: 0, bench: false, failPage: false };
+const document = { hidden: false, addEventListener(type, handler) { if (type === "visibilitychange") live.visible = handler; } };
+const tab = vm.createContext({
+  URLSearchParams, AbortController, AbortSignal, document, window: {}, META: {}, BOARD: {}, LIVE_ORIGIN: "",
+  Date: { now: () => live.now }, setInterval(handler, ms) { live.tick = handler; live.interval = ms; },
+  location: { pathname: "/weapons/Furis", search: "" }, finder: { weapon, b: ruler },
+  benchList: () => [ruler, "other"].map(id => ({ id })), benchSceneOf: () => "", libraryDefaultBenchmark: () => ruler,
+  localStorage: { getItem: () => null }, boardActiveKey: () => "", openedBoardKey: () => "",
+  modSuffix: () => "build-library", routeWeaponId: () => weapon, boardRowsLanded: () => live.draws++,
+  $: () => ({ hidden: !live.bench }), benchCurrent: () => ({ id: ruler }), renderBenchBoard: () => live.draws++,
+  async fetchJsonPatient(path) {
+    const url = new URL(path, "https://wfsim.invalid");
+    if (url.pathname.endsWith("/catalog")) {
+      live.reads++;
+      return { ok: true, next: null, partitions: [...live.partitions.values()].map(p => ({
+        weapon, scene: "", ruler: p.ruler, revision: p.revision, rows: p.rows.length, leaders: p.rows.slice(0, 1)
+      })) };
+    }
+    const p = live.partitions.get(url.searchParams.get("ruler"));
+    assert.equal(url.searchParams.get("revision"), p.revision);
+    live.pages.push(p.ruler);
+    if (live.failPage) throw Error("temporary page failure");
+    return { ok: true, weapon, ruler: p.ruler, revision: p.revision, after: 0, next: null, rows: p.rows, count: p.rows.length };
+  },
+});
+vm.runInContext([loader, cut(source, "let BOARD_INDEX", "/// A scene is visible"),
+  cut(source, "let boardIndexAsk", "/// The benchmark page:"),
+  cut(source, "/// Visible public views check", "/// THE BOARD'S ROWS,")].join("\n"), tab);
+assert.equal(typeof live.tick, "function", "an open library observes later publications");
+const update = (r, rev, scores) => live.partitions.set(r, { ruler: r, revision: rev.repeat(64),
+  rows: scores.map(score => ({ benchmark: r, score })) });
+const scores = () => JSON.parse(vm.runInContext("JSON.stringify(BOARD.furis.map(r => r.score).sort((a,b)=>a-b))", tab));
+const tick = async () => { live.now += live.interval; await live.tick(); };
+update("other", "a", [5]);
+await vm.runInContext("loadWeaponBoard('furis')", tab);
+document.hidden = true;
+await tick();
+assert.equal(live.reads, 1, "a hidden library does not poll");
+document.hidden = false;
+await live.visible();
+assert.equal(live.draws, 0);
+assert.deepEqual(live.pages, ["other"]);
+update(ruler, "b", [10]);
+await tick();
+assert.deepEqual(scores(), [5, 10], "a first qualified build appears in the open library");
+update(ruler, "c", [31]);
+live.failPage = true;
+await tick();
+assert.deepEqual(scores(), [5, 10], "a partial refresh preserves the prior complete partition");
+live.failPage = false;
+await tick();
+assert.deepEqual(scores(), [5, 31], "a correction replaces the previous score");
+const pages = live.pages.length, draws = live.draws;
+await tick();
+assert.equal(live.draws, draws);
+assert.equal(live.pages.length, pages);
+assert.equal(live.pages.filter(r => r === "other").length, 1, "unchanged partitions stay local");
+live.bench = true;
+await tick();
+const leader = () => vm.runInContext("BOARD_INDEX.furis.find(r => r.benchmark === 'standard_single_target').score", tab);
+assert.equal(leader(), 31);
+update(ruler, "d", [34]);
+await tick();
+assert.equal(leader(), 34, "the open ranking observes the same catalog");
+assert.equal(live.pages.length, pages, "leaders need only the catalog");
+console.log("  ok  visible views follow new and updated partitions, retain complete rows on failure, and skip unchanged pages");
