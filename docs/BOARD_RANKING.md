@@ -141,7 +141,9 @@ closing timeout leaves the last committed cut available. Another catchup can
 reduce the work in that window.
 
 `qualify_rank_catalog.mjs CAPTURE_DB ARCHIVE_DB SCOPE_DB NATIVE WEAPON RULER`
-resumes Native ranking from the shared cut. A descriptor is reusable under
+resumes Native ranking from the shared cut. The operator can set
+`WFSIM_BOARD_SCOPE_DB_BYTES` to cap its temporary SQLite database and budget
+a separate copy for its rollback journal. A descriptor is reusable under
 the same Native and source-record hashes. The scope database records the
 destination of each archived row and SHA-256 hashes of the ranked pages.
 A retained fact under a retired ruler is counted separately. Only a selected,

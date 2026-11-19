@@ -20,3 +20,12 @@ export function guardCatalogFile(path){
       (existsSync(file)&&!lstatSync(file).isFile())))throw Error('catalog file outside guarded ranking work directory');
  return file;
 }
+
+// SQLite can roll back up to one copy of its main file during a scope write.
+export function limitRankScratch(db,bytes=process.env.WFSIM_BOARD_SCOPE_DB_BYTES){
+ if(bytes==null)return;
+ const cap=Number(bytes),page=db.prepare('PRAGMA page_size').get().page_size;
+ if(!Number.isSafeInteger(cap)||cap<page)throw Error('invalid ranking scope database budget');
+ const pages=Math.floor(cap/page);
+ if(db.prepare('PRAGMA max_page_count='+pages).get().max_page_count>pages)throw Error('existing ranking scope exceeds its database budget');
+}
