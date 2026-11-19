@@ -1,7 +1,7 @@
 -- An admitted player request wakes one canonical ranking identity after verification.
 CREATE TABLE state_board_requested_results (
   request TEXT COLLATE "C" PRIMARY KEY REFERENCES entity_board_requests(id) ON DELETE CASCADE,
-  available_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
+  available_at TEXT COLLATE "C" NOT NULL DEFAULT board_input_timestamp(clock_timestamp())
 );
 CREATE INDEX board_requested_results_ready ON state_board_requested_results(available_at,request);
 REVOKE ALL ON state_board_requested_results FROM PUBLIC;
@@ -23,7 +23,7 @@ DECLARE chosen text; item record; delay interval; target jsonb;
 BEGIN
   PERFORM board_rank_source_lock($1::text);
   IF NOT EXISTS(SELECT FROM state_board_request_control WHERE id=1 AND enabled) THEN RETURN NULL; END IF;
-  SELECT request INTO chosen FROM state_board_requested_results WHERE available_at<=statement_timestamp()
+  SELECT request INTO chosen FROM state_board_requested_results WHERE available_at<=board_input_timestamp(statement_timestamp())
     ORDER BY available_at,request LIMIT 1 FOR UPDATE SKIP LOCKED;
   IF NOT FOUND THEN RETURN NULL; END IF;
   SELECT s.phase,s.workflow,w.state AS work_state,r.kind,r.ruler,r.mode,i.build_id,b.weapon,
@@ -47,7 +47,7 @@ BEGIN
     END IF;
   END IF;
   IF delay IS NULL THEN DELETE FROM state_board_requested_results WHERE request=chosen;
-  ELSE UPDATE state_board_requested_results SET available_at=clock_timestamp()+delay WHERE request=chosen; END IF;
+  ELSE UPDATE state_board_requested_results SET available_at=board_input_timestamp(clock_timestamp()+delay) WHERE request=chosen; END IF;
   RETURN target;
 END $$;
 REVOKE ALL ON FUNCTION board_requested_result_take(uuid,text) FROM PUBLIC;

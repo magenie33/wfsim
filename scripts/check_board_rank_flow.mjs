@@ -208,12 +208,12 @@ try{
  const take=tx=>tx.unsafe('SELECT board_requested_result_take($1::uuid,$2) target',[source,native.adapter]);
  assert.equal((await take(reader))[0].target,null,'admission alone cannot promote the previous score');
  assert((await sql.unsafe('SELECT request FROM state_board_requested_results')).length);
- await sql.unsafe("UPDATE state_build_workflows SET state='succeeded'; UPDATE state_board_requested_results SET available_at=now()");
+ await sql.unsafe("UPDATE state_build_workflows SET state='succeeded'; UPDATE state_board_requested_results SET available_at=board_input_timestamp(now())");
  assert.equal((await take(reader))[0].target,null,'a different review cannot satisfy the correction');
  assert.equal((await sql.unsafe('SELECT request FROM state_board_requested_results')).length,1,'a waiting review stays recoverable');
  await sql.unsafe("UPDATE state_build_workflows SET state='succeeded';UPDATE entity_measurement_reviews SET state='succeeded'");
  await sql.unsafe("UPDATE board_facts SET score=777,review_id='player' WHERE identity=$1 AND mode=$2",[player.identity,mode]);
- await sql.unsafe("UPDATE state_board_requested_results SET available_at=now()");
+ await sql.unsafe("UPDATE state_board_requested_results SET available_at=board_input_timestamp(now())");
  await assert.rejects(reader.begin(async tx=>{
   assert.equal((await take(tx))[0].target.identity,player.identity);throw Error('interrupted handoff');
  }),/interrupted handoff/);
