@@ -2572,6 +2572,16 @@ a.user-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px;tex
 .frem.frem-new{margin-left:0}
 @media(max-width:520px){.frem{margin-left:0}}
 #utility-reminders .wgroup-h{margin-top:20px}
+.dictionary-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,25%);gap:12px}
+.dictionary-controls input,.dictionary-controls select{box-sizing:border-box;height:41px;width:100%;min-width:0}
+.dictionary-feedback{display:flex;align-items:center;gap:8px;margin-top:12px;color:var(--text-2);font-size:13px}
+#dictionary-results{list-style:none;margin:6px 0 12px;padding:0}
+.brow.dictionary-row{padding:9px 4px;border-bottom:1px solid var(--line);border-radius:0}
+.brow.dictionary-row:hover{background:transparent}
+.dictionary-names{flex:1;min-width:0;overflow-wrap:anywhere}
+.dictionary-names span{display:block;color:var(--text-2);font-size:13px}
+.dictionary-kind{color:var(--text-2);font-size:12px}
+@media(max-width:520px){.dictionary-controls{grid-template-columns:minmax(0,1fr)}}
 /* UNREAD REMINDERS, on the bell and the Reminders tab. */
 .tbadge{display:inline-block;min-width:16px;margin-left:5px;padding:0 4px;border-radius:8px;
   background:var(--accent);color:var(--surface);font-size:10.5px;font-weight:600;line-height:16px;text-align:center}

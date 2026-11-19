@@ -870,6 +870,26 @@ ui:
   "Utility": 工具
   "Void Fissures": 虚空裂缝
   "Reminders": 提醒
+  "Dictionary": 词典
+  "Warframe name or chat message": 游戏名称或聊天消息
+  "Search names or paste chat…": 搜索名称或粘贴聊天消息…
+  "Translation language": 译文语言
+  "{n} matching names": "找到 {n} 个名称"
+  "No matching game names.": 没有找到匹配的游戏名称。
+  "The dictionary could not be loaded.": 词典加载失败。
+  "Name unavailable": 暂无该语言名称
+  "Copy": 复制
+  "Blueprint": 蓝图
+  "Relic": 遗物
+  "Codex": 资料库
+  "Cosmetic": 外观
+  "Resource": 资源
+  "Item": 物品
+  "Location": 地点
+  "Intrinsic": 内源之力
+  "Quest": 系列任务
+  "Challenge": 挑战
+  "Wildlife": 野生动物
   "Normal": 普通
   "Railjack": 航道星舰
   "The world state could not be reached.": 世界状态加载失败。

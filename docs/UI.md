@@ -1393,14 +1393,17 @@ fallback previews and indexes as the home page.
 
 ## Utility
 
-**/UTILITY IS THE GAME'S LIVE STATE AND THE READER'S REMINDERS ON IT**, and
-none of it feeds the builder, the simulator or the optimizer (`docs/CORE.md`
-§4). One tab per kind the worker lists, then Reminders.
+Utility holds the game's live state, reminders, and the Dictionary. Each
+kind the worker lists has its own tab. The Dictionary loads its localization
+index when opened and searches names in the browser. It recognizes names in
+pasted chat, including linked items in brackets, and displays the chosen
+language next to English. English results show Simplified Chinese beside
+them. See `docs/DATA_SOURCES.md` for the source and refresh command.
 
 | rule | where it is held |
 | --- | --- |
-| everything listed is an item `{kind, id, attributes, names, started_at_ms, ends_at_ms}`; a new kind is a parser in the worker and a tab registered in `UTILITY_KINDS` | `worker/world.js` `KINDS`, `27-utility.js` |
-| DE's file is relayed by the bot server each minute (DE refuses the worker) and served from R2; the feed is the live site's, from every origin, asked each minute while a Utility page shows and every two minutes elsewhere while a reminder waits | `worldLoad`, `utilityClock` |
+| each live-state item is `{kind, id, attributes, names, started_at_ms, ends_at_ms}`; a new kind is a parser in the worker and a tab registered in `UTILITY_KINDS` | `worker/world.js` `KINDS`, `27-utility.js` |
+| DE's file is relayed by the bot server each minute (DE refuses the worker) and served from R2; the feed is the live site's, from every origin, asked each minute while a live-state tab shows and every two minutes elsewhere while a reminder waits | `worldLoad`, `utilityClock` |
 | Void Fissures shows all of the game's three lists, or one — star chart, Steel Path, Void Storms, in that order on every chip row — by relic era, then list, then time left | `41-fissures.js` |
 | Arbitrations are in no DE file: the worker reads a schedule computed ahead, puts the hour open now in the feed, and serves the next fourteen days apart (`/api/world/arbitrations`), which the page lists by day, filtered by mission type and faction | `arbitrationsOf`, `47-arbitrations.js` |
 | a reminder is a kind and some attributes; it matches an item of that kind holding every one | `reminderMatches` |

@@ -603,6 +603,9 @@ def publish_hashed(html: str) -> str:
     (APP / "pages.json").write_text(json.dumps(PAGE_BODIES, ensure_ascii=False),
                                     encoding="utf-8", newline=chr(10))
     pages_url = place(APP / "pages.json", "pages", ".json")
+    dictionary = "warframe-dictionary.json"
+    shutil.copyfile(STATIC / dictionary, APP / dictionary)
+    dictionary_url = place(APP / dictionary, "warframe-dictionary", ".json")
 
     app_src = (APP / "app.js").read_text(encoding="utf-8")
     wired = app_src.replace('new Worker("/worker.js")', f'new Worker("{worker_url}")')
@@ -611,7 +614,11 @@ def publish_hashed(html: str) -> str:
     voiced = wired.replace('PAGE_BODIES_URL = "/pages.json"', f'PAGE_BODIES_URL = "{pages_url}"')
     if voiced == wired:
         sys.exit('app.js: PAGE_BODIES_URL not found — four pages would draw empty')
-    (APP / "app.js").write_text(voiced, encoding="utf-8", newline=chr(10))
+    with_dictionary = voiced.replace('DICTIONARY_URL = "/warframe-dictionary.json"',
+                                     f'DICTIONARY_URL = "{dictionary_url}"')
+    if with_dictionary == voiced:
+        sys.exit("app.js: DICTIONARY_URL not found")
+    (APP / "app.js").write_text(with_dictionary, encoding="utf-8", newline=chr(10))
 
     app_url = place(APP / "app.js", "app", ".js")
     css_url = place(APP / "style.css", "style", ".css")
@@ -951,7 +958,7 @@ def release_id() -> str:
     h = hashlib.sha256()
     h.update((STATIC / "index.html").read_bytes())
     h.update(app_source().encode("utf-8"))
-    for name in ("style.css", "worker.js", "page_cache.js"):
+    for name in ("style.css", "worker.js", "page_cache.js", "warframe-dictionary.json"):
         h.update((STATIC / name).read_bytes())
     for f in nona_files():
         h.update(f.read_bytes())
@@ -1801,6 +1808,12 @@ def prerender(flagged: str, catalog: Path) -> None:
             "Warframe's Arbitration this hour and every hour of the next fourteen days: "
             "mission, node and faction, filtered to the ones you play, with reminders "
             "when the one you want opens.",
+        ),
+        (
+            "utility/dictionary", titled_page(f"Warframe Dictionary · {zh_ui('Dictionary')}",
+                                              "Official game names"), "h-utility", "Utility",
+            "Look up Warframe names across 15 languages, including Simplified Chinese, "
+            "or paste a chat message to find the items and terms it mentions.",
         ),
         (
             "operator", titled_page(f"Operator {zh_ui('Operator')}", "Focus school for a Warframe build"),

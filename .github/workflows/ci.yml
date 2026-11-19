@@ -863,6 +863,9 @@ jobs:
       - name: Every search box takes a Chinese input method
         if: matrix.group == 'controls'
         run: node scripts/check_ime_search.mjs
+      - name: The Dictionary finds localized game names and pasted chat links
+        if: matrix.group == 'controls'
+        run: node scripts/check_dictionary.mjs
       # NONA RUNS ON THE DOOR, against a local stand-in provider: her tools are
       # the door's table at request time, and her first change branches the
       # reader's build. Neither is visible until a reader loses a build.

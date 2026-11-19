@@ -27,6 +27,7 @@ const INDEX_HTML: &str = include_str!("static/index.html");
 include!(concat!(env!("OUT_DIR"), "/app_js.rs"));
 const STYLE_CSS: &str = include_str!("static/style.css");
 const LOGO_SVG: &str = include_str!("static/logo.svg");
+const DICTIONARY_JSON: &[u8] = include_bytes!("static/warframe-dictionary.json");
 const NONA_SVG: &str = include_str!("static/nona.svg");
 
 /// NONA'S MODULES, served at `/nona/<path>`. Every file under `static/nona/` is
@@ -343,6 +344,12 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
             "200 OK",
             "text/javascript; charset=utf-8",
             APP_JS.as_bytes(),
+        ),
+        ("GET", "/warframe-dictionary.json") => respond(
+            &mut stream,
+            "200 OK",
+            "application/json; charset=utf-8",
+            DICTIONARY_JSON,
         ),
         ("GET", "/style.css") => respond(&mut stream, "200 OK", "text/css; charset=utf-8", STYLE_CSS.as_bytes()),
         ("GET", "/logo.svg") => respond(&mut stream, "200 OK", "image/svg+xml", LOGO_SVG.as_bytes()),

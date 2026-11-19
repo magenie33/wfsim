@@ -24,7 +24,7 @@ const SERVED = { "index.html": 1, "weapons/index.html": 1, "weapons/Torid/index.
   "warframes/Valkyr/index.html": 1, "companions/Prototype_Companion/index.html": 1,
   "support/index.html": 1, "download/index.html": 1, "operator/index.html": 1,
   "utility/fissures/index.html": 1, "utility/arbitrations/index.html": 1,
-  "benchmark/index.html": 1, "compute/index.html": 0, "contributors/index.html": 0 };
+  "utility/dictionary/index.html": 1, "benchmark/index.html": 1, "compute/index.html": 0, "contributors/index.html": 0 };
 
 const app = await openApp({ boot: 14000 });
 for (const [file, h1s] of Object.entries(SERVED)) {

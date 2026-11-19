@@ -689,6 +689,20 @@ gives each hour its node's mission type and faction from `ExportRegions.json`.
 It is the only source, so it is checked against the game: the hour shown must be
 the one the game's Navigation shows.
 
+### Warframe dictionary
+
+`/utility/dictionary` uses the game's localization strings and named records
+from [Public Export Plus](https://browse.wf/warframe-public-export-plus/).
+Each record identifies its name by a localization key shared across languages.
+Blueprints use the recipe's result id and the client's blueprint-name template.
+Relic names come from [DE's Public Export](https://origin.warframe.com/PublicExport/index_en.txt.lzma)
+and are joined by `uniqueName`. An unresolved localization is omitted.
+
+`python scripts/warframe_dictionary.py --fetch` refreshes the snapshot.
+Without `--fetch` it rebuilds from the local export files. The checked-in
+index carries names and their categories. The site build serves it as a
+content-addressed asset and requires no upstream request.
+
 ### RIVEN POOLS: class data and per-family evidence
 
 Which stats a weapon's riven can roll is DE's own per-weapon table. It is in no
