@@ -8,7 +8,7 @@ import {guardRankSpace} from './board_rank_storage.mjs';
 import {enqueueRequestedPartition} from './board_requested_partitions.mjs';
 import {BoardRankConflict,BoardRankQualificationError} from './board_rank_index.mjs';
 import {captureRankBaseline,beginRankBaseline,prepareRankBaselinePage,applyRankBaselinePage} from './board_rank_baseline.mjs';
-import {routeRankInput,reconcileRankBaseline,finishRankBaseline,claimRankDirty,prepareRankIdentity,applyRankDirty,retryRankDirty} from './board_rank_work.mjs';
+import {putRankDirty,routeRankInput,reconcileRankBaseline,finishRankBaseline,claimRankDirty,prepareRankIdentity,applyRankDirty,retryRankDirty} from './board_rank_work.mjs';
 import {claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankGeneration,publishRankGeneration,reuseRankGeneration,retryRankPublication} from './board_rank_publication.mjs';
 import {collectRankStorage,collectRankOrphan} from './board_rank_gc.mjs';
 
@@ -136,6 +136,15 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
   if(Date.now()<orphanAfter)return null;orphanAfter=Date.now()+60000;return collectRankOrphan(sql,context);
  };
  const stages=[route,baseline,dirty,publish,collect];
+ if(requestedPartitions){
+  const [installed]=await sql.unsafe("SELECT to_regprocedure('board_requested_result_take(uuid,text)') IS NOT NULL AS ready");
+  if(installed.ready)stages.push(()=>sql.begin(async tx=>{
+   const [{target}]=await tx.unsafe('SELECT board_requested_result_take($1::uuid,$2::text) AS target',[source,native.adapter]);
+   if(!target)return null;
+   await putRankDirty(tx,target);
+   return {status:'requested-result',...target};
+  }));
+ }
  return {contract:native.contract,step:async()=>{
   if(closed)throw Error('ranking reader is closed');guardRankSpace(work);await sameNative();
   for(let i=0;i<stages.length;i++){const result=await stages[turn++%stages.length]();if(result)return result;}
