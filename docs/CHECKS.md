@@ -3132,6 +3132,12 @@ must fail the source handoff assertion.
 
 `check_staged_rank_baseline.py` restarts a keyed capture, holds an older transaction open across a newer commit, and verifies insertions on either side of the cursor, corrections, removals and the sealed input digest.
 
+`check_rank_catalog.mjs` exercises multi-partition capture and a resumed
+change replay in local PostgreSQL. It compares the ordered output with Native
+projection of the same facts, accounts for every archive member, and rejects
+unfinished coverage, unknown identities and stale cuts.
+
+
 These checks require `WFSIM_BOARD_RANK_TEST_URL` on localhost and the built
 `wfsim-board` executable. Each owns an isolated PostgreSQL schema and removes
 only its own temporary files. CI supplies PostgreSQL 18.
