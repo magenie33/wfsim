@@ -69,13 +69,13 @@ const out = JSON.parse(await evaluate(`(async () => {
   o.stale = await home(tally(ago(20 * 60_000)));
   o.unreachable = await home("fail");
   o.version = await home(tally(ago(0), 2));
-  const oldBoard = BOARD_META, originalBoardFetch = fetchJson;
+  const oldBoard = BOARD_META, originalBoardFetch = fetchJsonPatient;
   BOARD_META = null;
   renderHomeFacts();
-  fetchJson = async (url, ...args) => String(url).endsWith('/board.meta.json')
+  fetchJsonPatient = async (url, ...args) => String(url).endsWith('/board.meta.json')
     ? { boards: { first: { submissions: 123, listed: 789 }, second: { submissions: 123, listed: 456 } } }
     : originalBoardFetch(url, ...args);
-  try { await loadBoard(null); } finally { fetchJson = originalBoardFetch; }
+  try { await loadBoard(null); } finally { fetchJsonPatient = originalBoardFetch; }
   o.homeFacts = [...document.querySelectorAll('#home-facts b')].map(node => Number(node.textContent.replace(/[^0-9]/g, '')));
   o.expectedHomeFacts = [123];
   BOARD_META = oldBoard; renderHomeFacts();
