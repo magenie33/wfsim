@@ -6,7 +6,8 @@ import {pathToFileURL} from 'node:url';
 export function boardRankRecentDDL(role){
  if(!/^[a-z_][a-z0-9_]{0,62}$/.test(role))throw Error('invalid ranking reader role');
  return readFileSync(new URL('../worker/pg/board_rank_recent.sql',import.meta.url),'utf8')+
-  'GRANT SELECT,DELETE,UPDATE(queued_at) ON state_board_rank_recent_inputs TO '+role+';\n';
+  'GRANT SELECT,DELETE,UPDATE(queued_at) ON state_board_rank_recent_inputs TO '+role+';\n'+
+  'GRANT EXECUTE ON FUNCTION board_rank_discover_scope(uuid,text,text) TO '+role+';\n';
 }
 export function boardRankRecentUpgrade({schema='public',readerRole='wfsim_board_read',tablespace='wfsim_data'}={}){
  for(const name of [schema,tablespace])if(!/^[a-z_][a-z0-9_]{0,62}$/.test(name))throw Error('invalid ranking installation name');
