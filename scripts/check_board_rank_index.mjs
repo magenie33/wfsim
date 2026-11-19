@@ -8,6 +8,7 @@ import {execFileSync} from 'node:child_process';
 import {randomBytes} from 'node:crypto';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import {openInventoryOperator} from './inventory_operator.mjs';
+import {cachedRankInputs} from './board_rank_inputs.mjs';
 import {prepareRankSources,createRankPartition,applyRankSources,prepareRankSnapshot,BoardRankConflict} from './board_rank_index.mjs';
 const url=process.env.WFSIM_BOARD_RANK_TEST_URL;
 assert(url&&['127.0.0.1','localhost','[::1]'].includes(new URL(url).hostname),'use an isolated local PostgreSQL');
@@ -28,7 +29,7 @@ const inputs=records.map((record,i)=>({identity:described[i].candidate,record,fa
 const weapon=base.weapon;let part;
 const current=new Map(inputs.map(row=>[row.identity,structuredClone(row)]));
 async function apply(batch,options={}){
- const cached=await sql.unsafe('SELECT * FROM state_board_rank_sources WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
+ const cached=await cachedRankInputs(sql,part,batch);
  const prepared=await prepareRankSources(operate,{weapon,ruler,inputs:batch,cached});
  part=await sql.begin(tx=>applyRankSources(tx,part,prepared,options));
  return prepared;
@@ -52,7 +53,7 @@ try{
  await sql.unsafe('CREATE SCHEMA '+schema);
  await sql.unsafe(readFileSync(new URL('../worker/pg/board_mailbox.sql',import.meta.url),'utf8'));
  await sql.unsafe(readFileSync(new URL('../worker/pg/board_pages.sql',import.meta.url),'utf8'));
- await sql.unsafe(readFileSync(new URL('../worker/pg/board_rank.sql',import.meta.url),'utf8'));
+ for(const file of ['board_rank','board_rank_compact'])await sql.unsafe(readFileSync(new URL('../worker/pg/'+file+'.sql',import.meta.url),'utf8'));
  await sql.unsafe('UPDATE state_board_input_source SET source=$1',[source]);
  part=await createRankPartition(sql,{weapon,ruler,source,native:native.adapter,cut:'fixture-cut'});
  await apply(inputs,{cursor:32,loaded:32});

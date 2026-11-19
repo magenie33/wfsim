@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // The canonical owner installs derived storage without changing producer identities or controls.
+import {boardRankCompactDDL} from './board_rank_compact_schema.mjs';
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 export function boardRankSchema({schema='public',readerRole='wfsim_board_read',httpRole='wfsim',tablespace='wfsim_data'}={}) {
  for(const value of [schema,readerRole,httpRole,tablespace])if(!/^[a-z_][a-z0-9_]{0,62}$/.test(value))throw Error('invalid ranking installation name');
- const tables=['state_board_rank_partitions','state_board_rank_sources','state_board_rank_dependencies','state_board_rank_route_inputs',
+ const tables=['state_board_rank_partitions','state_board_rank_sources','state_board_rank_route_inputs',
   'state_board_rank_rows','state_board_rank_winners','state_board_rank_dirty','state_board_rank_baseline_obligations','state_board_rank_publication_ready',
   'state_board_rank_generations','state_board_rank_snapshot_rows','record_board_rank_snapshot_refs'];
  return `BEGIN;
@@ -19,6 +20,7 @@ DO $$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='${readerRole}') THEN RAISE EXCEPTION 'provision ranking reader first';END IF;
 END $$;
 ${readFileSync(new URL('../worker/pg/board_rank.sql',import.meta.url),'utf8')}
+${boardRankCompactDDL(readerRole)}
 ${readFileSync(new URL('../worker/pg/board_rank_pages.sql',import.meta.url),'utf8')}
 GRANT SELECT,INSERT,UPDATE,DELETE ON ${tables.join(',')} TO ${readerRole};
 GRANT SELECT(scope,key,version,removed) ON state_board_input_mailbox TO ${readerRole};
@@ -46,9 +48,12 @@ DO $$ BEGIN
 END $$;
 ${original}
 GRANT EXECUTE ON FUNCTION board_read_page(text,text,text,bigint,bigint) TO ${httpRole};
+DROP FUNCTION board_rank_expand_inputs(integer);
+DROP VIEW state_board_rank_dependencies;
+DROP TABLE state_board_rank_input_sets,state_board_rank_descriptions;
 DROP TABLE record_board_rank_snapshot_refs,state_board_rank_snapshot_rows,state_board_rank_generations,
  state_board_rank_publication_ready,state_board_rank_baseline_obligations,state_board_rank_dirty,
- state_board_rank_winners,state_board_rank_rows,state_board_rank_dependencies,state_board_rank_sources,
+ state_board_rank_winners,state_board_rank_rows,state_board_rank_legacy_dependencies,state_board_rank_sources,
  state_board_rank_route_inputs,state_board_rank_partitions;
 DROP SEQUENCE board_rank_generation;
 DROP FUNCTION board_rank_source_lock(text);

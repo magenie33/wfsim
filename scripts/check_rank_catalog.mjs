@@ -154,7 +154,11 @@ try{
  assert.deepEqual(published,expected);
  const statuses=ranks.prepare('SELECT DISTINCT destination FROM dispositions ORDER BY destination').all().map(x=>x.destination);
  assert.deepEqual(statuses,['below_floor','shape_winner','visible']);
- coverage(capture,archive,ledger,ranks);ranks.close();
+ coverage(capture,archive,ledger,ranks);
+ assert.equal(ledger.prepare('SELECT count(*) n FROM outcomes WHERE weapon=? AND ruler=?').get(rankWeapon,rankRuler).n,rankArchive.length);
+ assert.equal(ledger.prepare('SELECT sha FROM page_hashes WHERE weapon=? AND ruler=? AND first=1').get(rankWeapon,rankRuler).sha,
+   ranks.prepare('SELECT sha FROM pages WHERE first=1').get().sha);
+ ranks.close();
  const missing=coverage(capture,archive,ledger);assert.equal(missing.eligible,false);assert.equal(missing.qualified,5);assert.equal(missing.missing,1);
  const currentOnly=new DatabaseSync(join(dir,'current-only.sqlite'));
  const extra=await qualify(capture,archive,currentOnly,cache,cachedNative,'after',rulers[0],10);

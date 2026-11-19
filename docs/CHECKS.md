@@ -3130,6 +3130,11 @@ must fail the source handoff assertion.
 
 ## `check_board_rank_capture`, `check_board_rank_index`, `check_board_rank_publication`, `check_board_rank_flow`, `check_board_rank_schema`
 
+`check_board_rank_inputs.mjs` upgrades a populated schema, compares the
+logical subscriptions across old and compact storage, exercises shared and
+changed descriptions, and expands the exact original headers on rollback.
+The check preserves null and large versions and exercises reader restart.
+
 `check_staged_rank_baseline.py` restarts a keyed capture, holds an older transaction open across a newer commit, and verifies insertions on either side of the cursor, corrections, removals and the sealed input digest.
 
 `check_rank_catalog.mjs` exercises multi-partition capture and a resumed

@@ -6,6 +6,7 @@ import {createReadStream} from 'node:fs';
 import {createInterface} from 'node:readline';
 import {join} from 'node:path';
 import {boardStorage} from './board_storage.mjs';
+import {storeRankInputs} from './board_rank_inputs.mjs';
 import {lockRankInputs} from './board_rank_keys.mjs';
 const digest=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const MAX_SOURCES=64,MAX_BYTES=4*1024*1024;
@@ -91,16 +92,7 @@ export async function applyRankSources(tx,part,prepared,{live=false,cursor=null,
  const keys=JSON.stringify([...keep]);
  const old=await tx.unsafe(`SELECT DISTINCT shape FROM state_board_rank_rows WHERE weapon=$1 AND ruler=$2
   AND identity IN(SELECT jsonb_array_elements_text(($3::text)::jsonb))`,[part.weapon,part.ruler,keys]);
- const sourceBody=JSON.stringify(sources);
- await tx.unsafe(`INSERT INTO state_board_rank_sources SELECT $1,$2,x.identity,x.record_sha256,x.descriptor,x.input_sha256,$4
-  FROM jsonb_to_recordset(($3::text)::jsonb)x(identity text,record_sha256 text,descriptor jsonb,input_sha256 text)
-  ON CONFLICT(weapon,ruler,identity) DO UPDATE SET record_sha256=excluded.record_sha256,descriptor=excluded.descriptor,
-   input_sha256=excluded.input_sha256,live=excluded.live`,[part.weapon,part.ruler,sourceBody,live]);
- await tx.unsafe(`DELETE FROM state_board_rank_dependencies WHERE weapon=$1 AND ruler=$2
-  AND identity IN(SELECT jsonb_array_elements_text(($3::text)::jsonb))`,[part.weapon,part.ruler,keys]);
- await tx.unsafe(`INSERT INTO state_board_rank_dependencies SELECT $1,$2,s->>'identity',d.scope,d.key,d.version
-  FROM jsonb_array_elements(($3::text)::jsonb)s CROSS JOIN LATERAL jsonb_to_recordset(s->'dependencies')d(scope text,key text,version bigint)`,
-  [part.weapon,part.ruler,sourceBody]);
+ await storeRankInputs(tx,part,sources,live);
  await tx.unsafe(`DELETE FROM state_board_rank_rows WHERE weapon=$1 AND ruler=$2 AND identity IN(SELECT jsonb_array_elements_text(($3::text)::jsonb))`,[part.weapon,part.ruler,keys]);
  await tx.unsafe(`INSERT INTO state_board_rank_rows SELECT $1,$2,x.identity,x.mode,x.mode_order,x.shape,x.floor,x.def,x.score,x.riven,x.page
   FROM jsonb_to_recordset(($3::text)::jsonb)x(identity text,mode text,mode_order bigint,shape text,floor text,def boolean,score double precision,riven boolean,page text)`,
