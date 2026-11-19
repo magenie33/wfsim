@@ -910,6 +910,9 @@ jobs:
       - name: Whole finalist replays retain their serial results across worker counts
         if: matrix.group == 'calculation'
         run: node scripts/check_quick_fleet.mjs
+      - name: Browser workers report execution errors and retire trapped instances
+        if: matrix.group == 'calculation'
+        run: node scripts/check_worker_execution_errors.mjs
       - name: Gain scans retain their measured axes
         if: matrix.group == 'calculation'
         run: node scripts/check_gain_axes.mjs
