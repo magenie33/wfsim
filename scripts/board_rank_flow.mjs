@@ -20,6 +20,7 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
  if(!storage.ready)throw new BoardRankQualificationError('install the compact ranking storage upgrade before starting the reader');
  const [boundary]=await sql.unsafe('SELECT weapon,ruler FROM state_board_rank_partitions WHERE source<>$1 OR native<>$2 LIMIT 1',[source,nativeSha]);
  if(boundary)throw new BoardRankQualificationError('ranking projection recovery boundary changed');
+ const [{catalog}]=await sql.unsafe("SELECT to_regprocedure('board_rank_catalog_activate(text,text,text,text)') IS NOT NULL AS catalog");
  const identity=await stat(binary),native=await openInventoryOperator(binary);
  if(native.adapter!==nativeSha){await native.close();throw new BoardRankQualificationError('board native contract changed');}
  const mailbox=new BoardInputMailbox(sql,{source}),abort=new AbortController();
@@ -95,7 +96,12 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
     const page=await prepareRankBaselinePage(sql,native,part,context);await fault('after-baseline-native-before-commit');
     await applyRankBaselinePage(sql,part,page);return {status:'baseline-page',weapon:part.weapon,loaded:page.loaded};
    }
-   await sql.begin(async tx=>{await reconcileRankBaseline(tx,part);await finishRankBaseline(tx,part);});
+   await sql.begin(async tx=>{
+    if(part.catalog_phase==='frozen'){
+     await tx.unsafe("UPDATE state_board_rank_partitions SET reconciled=true WHERE weapon=$1 AND ruler=$2 AND catalog_phase='frozen'",[part.weapon,part.ruler]);
+    }else await reconcileRankBaseline(tx,part);
+    await finishRankBaseline(tx,part);
+   });
    return {status:'baseline-reconciliation',weapon:part.weapon};
   }catch(error){
    if(error instanceof BoardRankConflict)return {status:'baseline-conflict'};
@@ -106,7 +112,7 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
   }
  };
  const dirty=async(recent=false)=>{
-  const claim=await claimRankDirty(sql,{source,native:native.adapter,recent});if(!claim)return null;
+  const claim=await claimRankDirty(sql,{source,native:native.adapter,recent,catalog});if(!claim)return null;
   try{
    const [part]=await sql.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[claim.weapon,claim.ruler]);
    const prepared=await prepareRankIdentity(sql,native,part,claim.identity);await fault('after-dirty-native-before-commit');
@@ -118,7 +124,7 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
  let preferRecent=true;
  const publish=async()=>{
   if(!publication){
-   const boundary={source,native:native.adapter};
+   const boundary={source,native:native.adapter,catalog};
    if(recentInstalled&&preferRecent)publication=await claimRankPublication(sql,{...boundary,recent:true});
    publication ||= await claimRankPublication(sql,boundary);
    if(!publication)return null;

@@ -68,13 +68,18 @@ export async function routeRankInput(tx,input,source) {
 export async function reconcileRankBaseline(tx,{weapon,ruler,source}) {
  const [part]=await tx.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
  if(!part.seeded||part.reconciled)return;
- const ids=await tx.unsafe(`SELECT identity FROM state_board_rank_sources WHERE weapon=$1 AND ruler=$2 AND identity>$3
-  ORDER BY identity LIMIT 64`,[weapon,ruler,part.reconcile_cursor]);
+ const catalog=part.catalog_phase==='replay';
+ const seeded='SELECT identity FROM state_board_rank_sources WHERE weapon=$1 AND ruler=$2 AND identity>$3 ORDER BY identity LIMIT 64';
+ const scan=catalog?`SELECT identity FROM ((${seeded}) UNION
+  (SELECT id FROM entity_weapon_builds WHERE weapon=$1 AND id>$3 ORDER BY id LIMIT 64)) ids ORDER BY identity LIMIT 64`:seeded;
+ const ids=await tx.unsafe(scan,[weapon,ruler,part.reconcile_cursor]);
  const rows=await tx.unsafe(`SELECT k.identity FROM jsonb_array_elements_text($3::text::jsonb) k(identity)
   WHERE EXISTS(SELECT 1 FROM LATERAL (SELECT scope,key,version FROM state_board_rank_dependencies
     WHERE weapon=$1 AND ruler=$2 AND identity=k.identity OFFSET 0) d
    CROSS JOIN LATERAL (SELECT version FROM state_board_input_mailbox WHERE scope=d.scope AND key=d.key OFFSET 0) m
-   WHERE d.version IS DISTINCT FROM m.version)`,[weapon,ruler,JSON.stringify(ids.map(row=>row.identity))]);
+   WHERE d.version IS DISTINCT FROM m.version)
+  ${catalog?`OR(NOT EXISTS(SELECT 1 FROM state_board_rank_sources s WHERE (s.weapon,s.ruler,s.identity)=($1,$2,k.identity))
+   AND EXISTS(SELECT 1 FROM board_facts f WHERE f.identity=k.identity AND f.ruler=$2))`:''}`,[weapon,ruler,JSON.stringify(ids.map(row=>row.identity))]);
  await lockRankInputs(tx,source,{identities:rows.map(row=>row.identity)});
  for(const {identity} of rows){
   const version=await putRankDirty(tx,{weapon,ruler,identity});
@@ -95,10 +100,11 @@ export async function finishRankBaseline(tx,{weapon,ruler}) {
  return !!row;
 }
 
-export async function claimRankDirty(sql,{source,native,recent=false}) {
+export async function claimRankDirty(sql,{source,native,recent=false,catalog=false}) {
  const token=randomUUID();
  const [row]=await sql.unsafe(`WITH chosen AS MATERIALIZED(SELECT d.weapon,d.ruler,d.identity FROM state_board_rank_dirty d
   JOIN state_board_rank_partitions p USING(weapon,ruler) WHERE p.source=$1 AND p.native=$2
+   ${catalog?"AND p.catalog_phase IS DISTINCT FROM 'frozen'":''}
    ${recent?'AND d.recent_version>d.applied_version':''} AND d.version>d.applied_version AND d.available_at<=${now} ORDER BY d.available_at,d.weapon,d.ruler,d.identity
   LIMIT 1 FOR UPDATE OF d SKIP LOCKED)
   UPDATE state_board_rank_dirty d SET lease=$3,lease_until=${until},available_at=${until} FROM chosen c

@@ -164,6 +164,32 @@ before switching the catalog. Capacity planning includes the captured inputs,
 archive and descriptor indexes, durable rank tables, transient WAL and existing
 storage reserves throughout the staged write.
 
+### Registering a qualified catalog scope
+
+Install the ordered build index with `node scripts/board_rank_catalog_schema.mjs
+--index` and then the additive schema with the same command without arguments.
+Apply their SQL as the canonical storage owner and restart the indexed reader
+with the matching payload before registering scopes. Keep the original archive,
+coherent capture, qualification ledger and protected public revisions pinned.
+
+Save the JSON returned by the catalog `manifest` command. With the owner's
+`PG_URL` and the same work-directory access as the reader, run
+`node scripts/adopt_rank_catalog.mjs LEDGER MANIFEST_JSON NATIVE WORK
+[PINNED_REVISION]`. A retained active head stays selected. An advanced head
+returns its actual revision for comparison with the protected publication.
+A disabled or unrelated reservation holds the scope.
+
+A fresh scope starts hidden. The reader stages the sealed Native index and
+compares every 128-row PostgreSQL page with the independent qualification
+digest. Incoming changes remain queued. After the comparison, the reader
+walks the union of captured identities and current weapon builds in bounded
+primary-key order. It checks captured dependency versions and discovers first
+measurements on identities absent from the cut. The cursor and outstanding
+identity work commit together. The reader publishes the current generation
+only after these obligations have been applied. A changed public selection
+holds the handoff. The catalog and all clients keep serving the selected
+revision during preparation.
+
 ## Activation and recovery
 
 The public board keeps its weapon and ruler keys through engine releases and

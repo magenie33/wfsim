@@ -762,6 +762,7 @@ jobs:
           node scripts/check_board_rank_inputs.mjs
           node scripts/check_board_rank_publication.mjs
           node scripts/check_board_rank_flow.mjs
+          node scripts/check_board_rank_flow.mjs --catalog
           node scripts/check_board_rank_schema.mjs
           node scripts/check_board_storage.mjs
           node scripts/check_prepared_board_inputs.mjs

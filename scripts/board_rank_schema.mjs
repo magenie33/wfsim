@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // The canonical owner installs derived storage without changing producer identities or controls.
+import {boardRankCatalogDDL,catalogBuildIndex} from './board_rank_catalog_schema.mjs';
 import {boardRankRecentDDL} from './board_rank_recent_schema.mjs';
 import {boardRankCompactDDL} from './board_rank_compact_schema.mjs';
 import {readFileSync} from 'node:fs';
@@ -22,6 +23,8 @@ DO $$ BEGIN
 END $$;
 ${readFileSync(new URL('../worker/pg/board_rank.sql',import.meta.url),'utf8')}
 ${boardRankCompactDDL(readerRole)}
+${catalogBuildIndex()}
+${boardRankCatalogDDL(readerRole)}
 ${boardRankRecentDDL(readerRole)}
 ${readFileSync(new URL('../worker/pg/board_rank_pages.sql',import.meta.url),'utf8')}
 GRANT SELECT,INSERT,UPDATE,DELETE ON ${tables.join(',')} TO ${readerRole};
@@ -53,6 +56,8 @@ GRANT EXECUTE ON FUNCTION board_read_page(text,text,text,bigint,bigint) TO ${htt
 DROP TRIGGER IF EXISTS board_rank_recent_measurement ON state_board_input_mailbox;
 DROP FUNCTION IF EXISTS board_rank_capture_recent_measurement();
 DROP FUNCTION IF EXISTS board_rank_discover_scope(uuid,text,text);
+DROP INDEX IF EXISTS board_catalog_build_order;
+DROP FUNCTION IF EXISTS board_rank_catalog_activate(text,text,text,text);
 DROP TABLE IF EXISTS state_board_rank_recent_inputs,state_board_rank_new_scopes,state_board_rank_scope_discovery;
 DROP FUNCTION board_rank_expand_inputs(integer);
 DROP VIEW state_board_rank_dependencies;

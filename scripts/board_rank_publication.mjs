@@ -6,6 +6,7 @@ import {mkdir,open} from 'node:fs/promises';
 import {join,resolve,dirname,basename} from 'node:path';
 import {boardStorage} from './board_storage.mjs';
 import {rankFilePage,syncRankDirectory} from './board_rank_files.mjs';
+import {catalogSelection,catalogPageDigest,replayCatalogCut} from './board_rank_catalog_replay.mjs';
 import {captureRankWinners,BoardRankConflict,BoardRankQualificationError} from './board_rank_index.mjs';
 const now="board_input_timestamp(clock_timestamp())";
 const until="board_input_timestamp(clock_timestamp()+interval '3minutes')";
@@ -55,11 +56,12 @@ async function acknowledge(tx,claim,version) {
   WHERE weapon=$1 AND ruler=$2 AND lease=$3 AND lease_version=$4`,[claim.weapon,claim.ruler,claim.lease,claim.lease_version,version]);
 }
 
-export async function claimRankPublication(sql,{source,native,recent=false}) {
+export async function claimRankPublication(sql,{source,native,recent=false,catalog=false}) {
  const [row]=await sql.unsafe(`WITH chosen AS MATERIALIZED(SELECT d.weapon,d.ruler FROM state_board_rank_publication_ready d
   JOIN state_board_rank_partitions p USING(weapon,ruler) WHERE p.complete AND p.source=$1 AND p.native=$2
    AND EXISTS(SELECT 1 FROM state_board_read_partitions s WHERE s.weapon=p.weapon AND s.ruler=p.ruler
-    AND(s.enabled OR(NOT s.canonical_sources AND s.revision IS NULL)))
+    AND(s.enabled OR(NOT s.canonical_sources AND s.revision IS NULL)
+    ${catalog?"OR(p.catalog_phase IN('frozen','replay') AND NOT s.enabled AND s.canonical_sources AND s.revision IS NULL)":''}))
    ${recent?'AND d.recent_version>d.applied_version':''} AND d.version>d.applied_version AND d.available_at<=${now} ORDER BY d.available_at,d.weapon,d.ruler
   LIMIT 1 FOR UPDATE OF d SKIP LOCKED)
   UPDATE state_board_rank_publication_ready d SET lease=$3,lease_version=d.version,lease_until=${until},available_at=${until}
@@ -188,21 +190,34 @@ export async function publishRankGeneration(sql,native,claim,generation,{source,
   const [{rows,last}]=await tx.unsafe('SELECT count(*) rows,max(ordinal) last FROM state_board_rank_snapshot_rows WHERE token=$1::uuid',[current.token]);
   if(Number(rows)!==Number(current.output_rows)||(Number(rows)>0&&Number(last)!==Number(rows)))throw new BoardRankQualificationError('ranking output coverage changed');
   const [selected]=await tx.unsafe('SELECT * FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2 FOR UPDATE',[claim.weapon,claim.ruler]);
-  if(!selected||(!selected.enabled&&(selected.canonical_sources||selected.revision)))throw new BoardRankQualificationError('ranking partition selection changed');
+  const adopting=part.catalog_phase==='frozen'||part.catalog_phase==='replay';
+  if(adopting)catalogSelection(part,selected);
+  if(part.catalog_phase==='frozen'){
+   const checked=await catalogPageDigest(tx,current);
+   const result=await replayCatalogCut(tx,part,current,checked);
+   await acknowledge(tx,claim,current.ready_version);return result;
+  }
+  if(!adopting&&(!selected||(!selected.enabled&&(selected.canonical_sources||selected.revision))))throw new BoardRankQualificationError('ranking partition selection changed');
   const revision=rankOutputRevision({source,engine,native:native.adapter,output_sha256:current.output_sha256});
-  if(BigInt(delivery.delivered_revision)>BigInt(current.index_revision)){
+  const frozenOutput=adopting&&part.catalog_proof.generation===current.token;
+  if(BigInt(delivery.delivered_revision)>BigInt(current.index_revision)||(frozenOutput&&String(part.revision)!==String(current.index_revision))){
    await tx.unsafe("UPDATE state_board_rank_generations SET phase='abandoned' WHERE token=$1::uuid",[current.token]);
    await acknowledge(tx,claim,current.ready_version);return {status:'superseded'};
+  }
+  if(adopting){
+   const checked=await catalogPageDigest(tx,current);
+   if(frozenOutput&&checked!==part.catalog_proof.checked)throw new BoardRankQualificationError('verified catalog pages changed');
   }
   const heads=[...current.leaders].sort((a,b)=>a.mode<b.mode?-1:a.mode>b.mode?1:Number(a.riven)-Number(b.riven)).map(row=>row.body);
   await tx.unsafe(`INSERT INTO record_board_read_snapshots VALUES($1,$2,$3,$4,$5,$6,$7,($8::text)::jsonb,$9,${now}) ON CONFLICT DO NOTHING`,
    [claim.weapon,claim.ruler,revision,source,engine,current.input_sha256,current.output_rows,JSON.stringify(heads),current.captured_at]);
   await tx.unsafe(`INSERT INTO record_board_rank_snapshot_refs VALUES($1,$2,$3,$4::uuid) ON CONFLICT DO NOTHING`,[claim.weapon,claim.ruler,revision,current.token]);
-  if(!selected.enabled)await tx.unsafe('SELECT board_requested_partition_activate($1,$2,$3,$4::uuid)',[claim.weapon,claim.ruler,revision,source]);
+  if(adopting)await tx.unsafe('SELECT board_rank_catalog_activate($1,$2,$3,$4)',[claim.weapon,claim.ruler,revision,source]);
+  else if(!selected.enabled)await tx.unsafe('SELECT board_requested_partition_activate($1,$2,$3,$4::uuid)',[claim.weapon,claim.ruler,revision,source]);
   else await tx.unsafe('UPDATE state_board_read_partitions SET revision=$3 WHERE weapon=$1 AND ruler=$2',[claim.weapon,claim.ruler,revision]);
   await tx.unsafe(`UPDATE state_board_rank_generations SET phase='published',published_at=${now} WHERE token=$1::uuid`,[current.token]);
   await tx.unsafe('UPDATE state_board_rank_publication_ready SET delivered_revision=$3,delivered_output=$4 WHERE weapon=$1 AND ruler=$2',[claim.weapon,claim.ruler,current.index_revision,revision]);
-  await acknowledge(tx,claim,current.ready_version);
+  await acknowledge(tx,claim,frozenOutput?claim.lease_version:current.ready_version);
   return {status:'published',revision,rows:Number(current.output_rows)};
  });
 }

@@ -18,6 +18,7 @@ import {claimRankPublication} from './board_rank_publication.mjs';
 import {collectRankStorage} from './board_rank_gc.mjs';
 import {prepareRankBaselinePage} from './board_rank_baseline.mjs';
 import {boardRequestedResultUpgrade} from './board_requested_result_schema.mjs';
+import {checkCatalogHandoff} from './check_board_catalog_handoff.mjs';
 import {boardRankSchema} from './board_rank_schema.mjs';
 const url=process.env.WFSIM_BOARD_RANK_TEST_URL;assert(url&&['localhost','127.0.0.1'].includes(new URL(url).hostname));
 const schema='rank_flow_'+randomBytes(6).toString('hex'),role=schema+'_reader',source='00000000-0000-4000-8000-000000000044';
@@ -91,6 +92,13 @@ try{
  await sql.unsafe(`INSERT INTO board_facts SELECT x.* FROM jsonb_to_recordset(($1::text)::jsonb)x(identity text,ruler text,mode text,score float8,metric text,measured_by text,finished_at text,retired_at text,review_id text)`,[JSON.stringify(inputs.flatMap(row=>row.facts))]);
  await sql.unsafe(`SELECT board_input_seed('build',id,jsonb_build_object('identity',id,'weapon',weapon)::text) FROM entity_weapon_builds`);
  await sql.unsafe(`SELECT board_input_seed('measurement',jsonb_build_array(identity,ruler,mode)::text,jsonb_build_object('identity',identity,'ruler',ruler,'mode',mode)::text) FROM board_facts`);
+ if(process.argv.includes('--catalog')){
+  flowSql=reader;flow=await open();
+  await checkCatalogHandoff({sql,native,work,weapon,ruler,source,inputs,late,read,put,until,restart:async()=>{await flow.close();flow=await open();}});
+ }else await checkOrdinaryFlow(late);
+}finally{releaseCapture();await flow?.close();await native.close();await reader?.end();await sql.unsafe('DROP SCHEMA IF EXISTS '+schema+' CASCADE');await sql.unsafe('DROP OWNED BY '+role).catch(()=>{});await sql.unsafe('DROP ROLE IF EXISTS '+role);await sql.end();rmSync(work,{recursive:true,force:true});}
+
+async function checkOrdinaryFlow(late){
  await sql.unsafe('INSERT INTO state_board_read_partitions VALUES($1,$2,$3,true,true,NULL)',[weapon,ruler,native.contract.rulers.find(row=>row.id===ruler).scene]);
  flow=await open();
  await until(row=>row.status==='capturing','capture started');await captured;
@@ -329,4 +337,4 @@ try{
  await sql.unsafe("UPDATE state_board_rank_partitions SET native='changed-native'");
  await assert.rejects(open(),error=>error instanceof BoardRankQualificationError);
  console.log('ok — actual Native/PG complete flow, resumable baseline, late facts/deleted reviews, exact immutable pages, source deletion, epoch guards and durable missing-cut refusal');
-}finally{releaseCapture();await flow?.close();await native.close();await reader?.end();await sql.unsafe('DROP SCHEMA IF EXISTS '+schema+' CASCADE');await sql.unsafe('DROP OWNED BY '+role).catch(()=>{});await sql.unsafe('DROP ROLE IF EXISTS '+role);await sql.end();rmSync(work,{recursive:true,force:true});}
+}
