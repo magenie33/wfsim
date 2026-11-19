@@ -76,7 +76,7 @@ const NON_SEARCH_TOOLS = [...NATIVE_NON_SEARCH_INPUTS, 'scripts/check_weapon_sea
   'scripts/board_rank_storage.mjs',
   'deploy/wfsim-board-read.service', 'deploy/board_read_grants.sql',
   'scripts/board_requested_intake.mjs', 'scripts/board_requested_schema.mjs', 'scripts/check_board_requested_intake.mjs',
-  'scripts/board_requested_partitions.mjs',
+  'scripts/board_requested_partitions.mjs', 'scripts/board_requested_result_schema.mjs',
   'deploy/wfsim-board-requested.service',
   'tests/fixtures/order-cut-activation/f3ffb55e.sql', 'tests/fixtures/order-cut-effective-reads/501b4458.sql',
   'tests/fixtures/order-cut-effective-reads/ef61dd588.sql',
