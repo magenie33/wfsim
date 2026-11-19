@@ -20,6 +20,35 @@ const { evaluate, check, sleep, send } = app;
 
 const r = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  const waitForFreshScan = async () => {
+    const started = Date.now(), quietMs = 15000;
+    const answered = new Set(), phases = new Set();
+    let progressed = started, total = 0;
+    for (;;) {
+      const state = gainScan, key = gainKey(), matching = state.want === key;
+      if (matching) {
+        total = Math.max(total, state.total || 0);
+        let advanced = false;
+        for (const id of [...Object.keys(state.by || {}), ...Object.keys(state.refused || {})]) {
+          if (!answered.has(id)) { answered.add(id); advanced = true; }
+        }
+        const phase = String(state.phase || '');
+        if (/^measuring the baseline(?: [0-9]+[/][0-9]+)?$/.test(phase) && !phases.has(phase)) {
+          phases.add(phase); advanced = true;
+        }
+        if (advanced) progressed = Date.now();
+      }
+      const elapsed = Date.now() - started;
+      const boundMs = (total + gainRuns() + 3) * quietMs;
+      const complete = !state.running && state.key === key;
+      if (complete || (matching && state.failed) || Date.now() - progressed >= quietMs || elapsed >= boundMs) {
+        return { complete, elapsed, quietMs, boundMs, done: state.done, total: state.total,
+          running: state.running, failed: !!state.failed, wantMatches: matching,
+          keyMatches: state.key === key, phase: state.phase || '', note: state.note || '' };
+      }
+      await sleep(250);
+    }
+  };
   localStorage.clear();
   history.pushState({},'','/weapons/Torid/builder'); route(); await sleep(3500);
   // The default scenario is the official one and it cannot be edited, so this
@@ -66,7 +95,7 @@ const r = await evaluate(`(async () => {
   // Edit the fight and touch NOTHING else — no reopening, no clicking.
   sim.level = sim.level === 500 ? 600 : 500;
   markScenarioDirty();
-  for (let i = 0; i < 60; i++) { await sleep(500); if (!gainScan.running && gainScan.key === gainKey()) break; }
+  out.editWait = await waitForFreshScan();
   out.freshAgain = gainScan.key === gainKey();
   // ...and it is a NEW scan under the NEW fight, not the old one still sitting
   // there because the key never noticed. This is the assertion that fails if
@@ -248,7 +277,7 @@ check("its key matched the fight it measured", r.freshBefore === true);
 // until 2026-08-24 and this assertion passed anyway, because refreshGains
 // ended in renderEvo() and the EVOLUTION scan made the key catch up while the
 // open mod picker still showed the old fight answers.
-check("editing the fight re-runs it without reopening anything", r.freshAgain === true);
+check("editing the fight re-runs it without reopening anything", r.freshAgain === true, JSON.stringify(r.editWait));
 check("and what is on screen was measured under the NEW fight", r.rescanned === true);
 check(`the scan runs over ${r.laneCount} lanes, not one`, r.laneCount > 1, String(r.laneCount));
 check("a scan was caught mid-flight to interrupt", r.caughtMidScan === true);
