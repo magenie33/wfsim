@@ -49,20 +49,26 @@ try{
  reader=postgres(url,{max:3,fetch_types:false,onnotice(){},connection:{search_path:schema,role,statement_timeout:10000,lock_timeout:3000}});
  await assert.rejects(reader.unsafe("UPDATE entity_weapon_builds SET at='2026-11-16' WHERE false"),error=>error.code==='42501');
  await assert.rejects(reader.unsafe('UPDATE state_board_read_partitions SET enabled=false WHERE false'),error=>error.code==='42501');
- const at='2026-11-16T00:00:00.000Z';
+ const at='2026-11-16T00:00:00.000Z', nextEngine='111111111111';
  let fixture;
  if(process.env.WFSIM_BOARD_FLOW_INPUT)fixture=JSON.parse(readFileSync(process.env.WFSIM_BOARD_FLOW_INPUT,'utf8'));
  else{
   const record=JSON.parse(readFileSync(new URL('../tests/gas/rows.json',import.meta.url),'utf8'))[0].record;
-  const canonical=JSON.parse(execFileSync(binary,['--inventory-builds'],{input:JSON.stringify([record]),encoding:'utf8',timeout:30000}).trim());
-  fixture={builds:[{id:canonical.id,at:'2026-11-16',record:JSON.stringify(record)}],facts:[{
-   identity:canonical.id,ruler:'standard_single_target',mode:'base',score:10,metric:'kpm',cost_seconds:1,
-   measured_by:'verified:000000000000',started_at:at,finished_at:at,review_id:null}],
-   target:{identity:canonical.id,weapon:record.weapon,ruler:'standard_single_target',mode:'base',score:10}};
+  const identityOf=build=>JSON.parse(execFileSync(binary,['--inventory-builds'],{input:JSON.stringify([build]),encoding:'utf8',timeout:30000}).trim()).id;
+  const identity=identityOf(record);
+  const other={...record,mods:record.mods.map(mod=>mod==='serration'?'serration@8':mod)};
+  const retained=identityOf(other);
+  assert.notEqual(identity,retained,'the old-engine control must be a distinct legal build');
+  const fact={identity,ruler:'standard_single_target',mode:'base',score:10,metric:'kpm',cost_seconds:1,
+   measured_by:'verified:000000000000',started_at:at,finished_at:at,review_id:null};
+  fixture={builds:[{id:identity,at:'2026-11-16',record:JSON.stringify(record)},
+   {id:retained,at:'2026-11-16',record:JSON.stringify(other)}],
+   facts:[fact,{...fact,identity:retained,score:9}],
+   target:{identity,weapon:record.weapon,ruler:fact.ruler,mode:'base',score:10},retainedScore:9};
   const review='4d1de37e-c95d-482f-a7b2-6bb01a846885';
   fixture.facts[0].review_id=review;
-  fixture.reviews=[{id:review,ref:JSON.stringify([canonical.id,'standard_single_target','base']),round_at:at,
-   identity:canonical.id,ruler:'standard_single_target',mode:'base',engine:'000000000000',question:'fixture',
+  fixture.reviews=[{id:review,ref:JSON.stringify([identity,'standard_single_target','base']),round_at:at,
+   identity,ruler:'standard_single_target',mode:'base',engine:'000000000000',question:'fixture',
    record:JSON.stringify(record),state:'succeeded',baseline_score:9,baseline_metric:'kpm',baseline_cost_seconds:0,
    baseline_by:'old',baseline_started_at:at,baseline_finished_at:at,created_at:at,completed_at:at}];
  }
@@ -136,6 +142,8 @@ try{
  assert.equal((await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler}))).status,200);
  assert.equal(env.LIBRARY.cost.calls,queryCalls,'a hot page must be served without another database query');
  const visible=complete.find(row=>row.mode===target.mode&&row.score===target.score);
+ const retainedRow=fixture.retainedScore==null?null:complete.find(row=>row.score===fixture.retainedScore);
+ if(fixture.retainedScore!=null)assert.equal(retainedRow?.measured_by,"000000000000");
  assert(visible,'the accepted score must retain its exact mode and value among '+page.count+' native rows');
  if(fixture.recent_target)assert(complete.some(row=>row.mode===fixture.recent_target.mode&&row.score===fixture.recent_target.score),
   'the current-engine community result must remain visible alongside historical scores');
@@ -164,11 +172,28 @@ try{
   for(let n=0;n<1000;n++){const step=await flow.step();if(step.status==='idle')return;}
   assert.fail('updated input did not drain');
  };
- await sql.unsafe(`UPDATE state_board_measurement_selection SET score=$4,finished_at=$5
-   WHERE identity=$1 AND ruler=$2 AND mode=$3`,[target.identity,target.ruler,target.mode,target.score+1,'2026-11-17T00:00:00.000Z']);
+ if(retainedRow){
+  await flow.close();
+  flow=await openBoardResultFlow({sql:reader,source,engine:nextEngine,binary,work:root});
+  await drain();cacheEntries.clear();
+  const unchanged=await(await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler}))).json();
+  assert.equal(unchanged.revision,page.revision,'an engine release does not republish or clear the board');
+  assert.deepEqual(await completeRows(unchanged),complete);
+ }
+ await sql.unsafe(`UPDATE state_board_measurement_selection SET score=$4,finished_at=$5,measured_by=coalesce($6,measured_by)
+   WHERE identity=$1 AND ruler=$2 AND mode=$3`,[target.identity,target.ruler,target.mode,target.score+1,'2026-11-17T00:00:00.000Z',retainedRow?'verified:'+nextEngine:null]);
  await drain();cacheEntries.clear();
  const updated=await(await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler}))).json();
- assert((await completeRows(updated)).some(row=>row.score===target.score+1&&row.mode===target.mode),'a subsequent accepted result must use the indexed path');
+ const currentRows=await completeRows(updated);
+ const replacement=currentRows.find(row=>row.score===target.score+1&&row.mode===target.mode);
+ assert(replacement,'a subsequent accepted result must use the indexed path');
+ if(retainedRow){
+  assert.equal(replacement.measured_by,nextEngine);
+  assert.deepEqual(currentRows.find(row=>row.score===fixture.retainedScore),retainedRow,
+   'a different valid build retains its score, provenance and public row when the engine changes');
+  assert(!currentRows.some(row=>row.score===target.score),'the replacement supersedes only its own former selected fact');
+  console.log('ok: an engine release preserves the published board, and new and old measured results rank together');
+ }
  const immutable=await(await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler,revision:page.revision}))).json();
  assert((await completeRows(immutable)).some(row=>row.score===target.score&&row.mode===target.mode),'a pinned page must retain its immutable score');
  await sql.unsafe('DELETE FROM state_board_measurement_selection WHERE identity=$1 AND ruler=$2 AND mode=$3',[target.identity,target.ruler,target.mode]);

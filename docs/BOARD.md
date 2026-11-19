@@ -148,6 +148,17 @@ second source.
 
 ### Online ranking reads
 
+There is one continuing board. Its ranking partitions are keyed by weapon and
+ruler. A selected measurement is keyed by build, ruler and mode. An accepted
+replacement updates that key. Unchanged valid measurements keep their scores,
+measurement times and engine identifiers alongside newer results. An engine
+release by itself leaves the selected measurements and public rankings in place.
+
+A publisher migration starts from the complete published board. The replacement
+catalog covers each existing scope with its retained eligible measurements before
+consumers switch. Changes committed during preparation are applied through the
+same verified measurement source. Every reader uses the same catalog afterwards.
+
 An online partition covers one weapon and ruler. The catalog selects its current
 revision. A reader waits for the complete revision before showing its ranks.
 A failed read exposes the scope as unavailable. Page requests share a
