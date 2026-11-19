@@ -112,6 +112,14 @@ try{
   assert.equal(days.length,1);
   const prior={...days[0].forecast,at:new Date(Date.parse(row.counts_at)-3600000).toISOString()};
   assert.equal(compareQueueDay(prior,{...row,completed:{...row.completed,simulate:2}}).completed_ms,200);
+  const newVerb={...row,completed:{...row.completed,simulate:2,followup:2}};
+  const partial=compareQueueDay(prior,newVerb);
+  assert.equal(partial?.completed_ms,null);
+  assert.equal(partial.priced_ms,200);
+  assert.equal(partial.priced_rounds,1);
+  assert.deepEqual(partial.unpriced_rounds,{followup:2});
+  assert.equal(compareQueueDay(prior,{...row,completed:{simulate:2}}),null);
+  assert.equal(compareQueueDay(prior,{...row,completed:{...row.completed,followup:0}}).completed_ms,0);
   console.log('ok measured confirmed rounds, complete-hour capacity, daily checkpoint and cancellation-safe comparison');
   await writer.end();await query('SELECT queue_count_fold()');
   await check('folding a disconnected writer preserves the complete read');
