@@ -43,6 +43,50 @@ CREATE TABLE IF NOT EXISTS state_board_read_rows (
 REVOKE ALL ON state_board_read_partitions,state_board_read_routes,record_board_read_snapshots,state_board_read_rows FROM PUBLIC;
 SELECT set_config('search_path',quote_ident(current_schema())||',pg_catalog,pg_temp',false);
 
+-- Every public reader resolves this one revision. A null revision records a withdrawal.
+CREATE TABLE IF NOT EXISTS state_board_public_heads (
+  weapon TEXT COLLATE "C" NOT NULL,
+  ruler TEXT COLLATE "C" NOT NULL,
+  scene TEXT COLLATE "C" NOT NULL,
+  revision TEXT COLLATE "C",
+  PRIMARY KEY(weapon,ruler),
+  FOREIGN KEY(weapon,ruler,revision) REFERENCES record_board_read_snapshots
+    DEFERRABLE INITIALLY DEFERRED
+);
+CREATE INDEX IF NOT EXISTS board_public_heads_scene ON state_board_public_heads(scene,weapon,ruler)
+  WHERE revision IS NOT NULL;
+CREATE TABLE IF NOT EXISTS state_board_public_import (
+  id INTEGER PRIMARY KEY CHECK(id=1),
+  archive TEXT COLLATE "C" NOT NULL CHECK(archive ~ '^[0-9a-f]{64}$')
+);
+REVOKE ALL ON state_board_public_heads,state_board_public_import FROM PUBLIC;
+
+CREATE OR REPLACE FUNCTION board_select_native_head() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE w text; r text; scene_id text; selected text;
+BEGIN
+  IF TG_OP <> 'DELETE' AND NEW.enabled AND NEW.revision IS NOT NULL THEN
+    w:=NEW.weapon; r:=NEW.ruler; scene_id:=NEW.scene; selected:=NEW.revision;
+  ELSIF TG_OP <> 'INSERT' AND OLD.enabled AND OLD.revision IS NOT NULL THEN
+    w:=OLD.weapon; r:=OLD.ruler; scene_id:=OLD.scene;
+  ELSE
+    RETURN NULL;
+  END IF;
+  INSERT INTO state_board_public_heads VALUES(w,r,scene_id,selected)
+  ON CONFLICT(weapon,ruler) DO UPDATE SET scene=excluded.scene, revision=excluded.revision
+  WHERE (state_board_public_heads.scene,state_board_public_heads.revision)
+    IS DISTINCT FROM (excluded.scene,excluded.revision);
+  RETURN NULL;
+END $$;
+REVOKE ALL ON FUNCTION board_select_native_head() FROM PUBLIC;
+CREATE OR REPLACE TRIGGER board_select_native_head
+  AFTER INSERT OR UPDATE OF enabled,revision,scene OR DELETE ON state_board_read_partitions
+  FOR EACH ROW EXECUTE FUNCTION board_select_native_head();
+INSERT INTO state_board_public_heads
+  SELECT weapon,ruler,scene,CASE WHEN enabled THEN revision END
+  FROM state_board_read_partitions WHERE revision IS NOT NULL
+  ON CONFLICT(weapon,ruler) DO NOTHING;
+
 CREATE OR REPLACE FUNCTION board_read_catalog(text,text,text,bigint) RETURNS jsonb
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE items jsonb;
@@ -50,8 +94,8 @@ BEGIN
   IF $4 IS NULL OR $4<1 OR $4>128 THEN RAISE EXCEPTION 'invalid board catalog page size'; END IF;
   SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.weapon,x.ruler),'[]') INTO items FROM (
     SELECT p.weapon,p.ruler,p.scene,p.revision,s.leaders,s.rows,s.captured_at,s.published_at
-    FROM state_board_read_partitions p JOIN record_board_read_snapshots s USING(weapon,ruler,revision)
-    WHERE p.enabled AND p.scene=$2 AND ($1 IS NULL OR p.weapon=$1)
+    FROM state_board_public_heads p JOIN record_board_read_snapshots s USING(weapon,ruler,revision)
+    WHERE p.revision IS NOT NULL AND p.scene=$2 AND ($1 IS NULL OR p.weapon=$1)
       AND (p.weapon||'/'||p.ruler)>coalesce($3,'')
     ORDER BY p.weapon,p.ruler LIMIT $4+1
   )x;
@@ -63,9 +107,9 @@ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE held record; requested text; pages jsonb; last_ordinal bigint;
 BEGIN
   IF $4 IS NULL OR $4<0 OR $5 IS NULL OR $5<1 OR $5>128 THEN RAISE EXCEPTION 'invalid board row page'; END IF;
-  SELECT * INTO held FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2 AND enabled;
-  IF NOT FOUND OR held.revision IS NULL THEN RETURN jsonb_build_object('ok',false,'error','not_ready'); END IF;
-  requested:=coalesce($3,held.revision);
+  SELECT revision INTO requested FROM state_board_public_heads WHERE weapon=$1 AND ruler=$2;
+  IF requested IS NULL THEN RETURN jsonb_build_object('ok',false,'error','not_ready'); END IF;
+  requested:=coalesce($3,requested);
   SELECT * INTO held FROM record_board_read_snapshots WHERE weapon=$1 AND ruler=$2 AND revision=requested;
   IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'error','revision_unavailable'); END IF;
   SELECT coalesce(jsonb_agg(body::jsonb ORDER BY ordinal),'[]'),coalesce(max(ordinal),$4) INTO pages,last_ordinal

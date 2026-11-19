@@ -4,9 +4,9 @@ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE held record; requested text; pages jsonb; last_ordinal bigint; generation uuid;
 BEGIN
  IF $4 IS NULL OR $4<0 OR $5 IS NULL OR $5<1 OR $5>128 THEN RAISE EXCEPTION 'invalid board row page';END IF;
- SELECT * INTO held FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2 AND enabled;
- IF NOT FOUND OR held.revision IS NULL THEN RETURN jsonb_build_object('ok',false,'error','not_ready');END IF;
- requested:=coalesce($3,held.revision);
+ SELECT revision INTO requested FROM state_board_public_heads WHERE weapon=$1 AND ruler=$2;
+ IF requested IS NULL THEN RETURN jsonb_build_object('ok',false,'error','not_ready');END IF;
+ requested:=coalesce($3,requested);
  SELECT * INTO held FROM record_board_read_snapshots WHERE weapon=$1 AND ruler=$2 AND revision=requested;
  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'error','revision_unavailable');END IF;
  SELECT token INTO generation FROM record_board_rank_snapshot_refs WHERE weapon=$1 AND ruler=$2 AND revision=requested;

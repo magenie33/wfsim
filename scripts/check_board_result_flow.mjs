@@ -24,7 +24,14 @@ const role=schema+'_reader';
 const sql=postgres(url,{max:5,fetch_types:false,onnotice(){},connection:{search_path:schema,statement_timeout:10000,lock_timeout:3000}});
 let flow,server,reader;
 const priorCaches=globalThis.caches,cacheEntries=new Map();
-globalThis.caches={default:{async match(request){return cacheEntries.get(request.url)?.clone();},async put(request,response){cacheEntries.set(request.url,response.clone());}}};
+let cacheTime=0;
+globalThis.caches={default:{
+ async match(request){const hit=cacheEntries.get(request.url);if(hit&&cacheTime<hit.expires)return hit.response.clone();},
+ async put(request,response){
+  const maxAge=response.headers.get('cache-control')?.match(/max-age=(\d+)/);
+  if(maxAge)cacheEntries.set(request.url,{response:response.clone(),expires:cacheTime+Number(maxAge[1])});
+ }
+}};
 const browser=process.env.WFSIM_BOARD_FLOW_BROWSER==='1';
 
 try{
@@ -146,9 +153,15 @@ try{
  const libraryBefore=await readLibrary();
  if(fixture.unmeasuredId)assert(libraryBefore.some(row=>row.id===fixture.unmeasuredId),
   "the library holds the canonical build before its first measurement");
+ const currentUrl=base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler});
+ const pinnedUrl=currentUrl+'&revision='+page.revision;
  const queryCalls=env.LIBRARY.cost.calls;
- assert.equal((await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler}))).status,200);
- assert.equal(env.LIBRARY.cost.calls,queryCalls,'a hot page must be served without another database query');
+ assert.equal((await fetch(currentUrl)).status,200);
+ assert.equal(env.LIBRARY.cost.calls,queryCalls+1,'an unversioned page must confirm the current selection');
+ assert.equal((await fetch(pinnedUrl)).status,200);
+ const pinnedCalls=env.LIBRARY.cost.calls;
+ assert.equal((await fetch(pinnedUrl)).status,200);
+ assert.equal(env.LIBRARY.cost.calls,pinnedCalls,'an immutable hot page must avoid another database query');
  const visible=complete.find(row=>row.mode===target.mode&&row.score===target.score);
  const retainedRow=fixture.retainedScore==null?null:complete.find(row=>row.score===fixture.retainedScore);
  if(fixture.retainedScore!=null)assert.equal(retainedRow?.measured_by,"000000000000");
@@ -190,14 +203,14 @@ try{
  if(retainedRow){
   await flow.close();
   flow=await openBoardResultFlow({sql:reader,source,engine:nextEngine,binary,work:root});
-  await drain();cacheEntries.clear();
+  await drain();
   const unchanged=await(await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler}))).json();
   assert.equal(unchanged.revision,page.revision,'an engine release does not republish or clear the board');
   assert.deepEqual(await completeRows(unchanged),complete);
  }
  await sql.unsafe(`UPDATE state_board_measurement_selection SET score=$4,finished_at=$5,measured_by=coalesce($6,measured_by)
    WHERE identity=$1 AND ruler=$2 AND mode=$3`,[target.identity,target.ruler,target.mode,target.score+1,'2026-11-17T00:00:00.000Z',retainedRow?'verified:'+nextEngine:null]);
- await drain();cacheEntries.clear();
+ await drain();
  const updated=await(await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler}))).json();
  const newCatalog=await refreshCatalog();
  assert.equal(newCatalog.status,200);assert.notEqual(newCatalog.headers.get('etag'),catalogTag);
@@ -215,11 +228,12 @@ try{
  const immutable=await(await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler,revision:page.revision}))).json();
  assert((await completeRows(immutable)).some(row=>row.score===target.score&&row.mode===target.mode),'a pinned page must retain its immutable score');
  await sql.unsafe('DELETE FROM state_board_measurement_selection WHERE identity=$1 AND ruler=$2 AND mode=$3',[target.identity,target.ruler,target.mode]);
- await drain();cacheEntries.clear();
+ await drain();
  const removed=await(await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler}))).json();
  assert(!(await completeRows(removed)).some(row=>row.score===target.score+1&&row.mode===target.mode),'a removed fact must disappear from the current ranking');
- assert.equal((await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler,revision:page.revision}))).status,409,
-  'a collected revision must require a fresh complete partition');
+ assert.equal((await fetch(pinnedUrl)).status,200,'a cached immutable response retains its own revision');
+ cacheTime+=11;
+ assert.equal((await fetch(pinnedUrl)).status,409,'after cache expiry a retired revision requires a fresh complete partition');
  assert.deepEqual(await readLibrary(),libraryBefore,'engine changes, new scores and removals preserve the same canonical build records');
  console.log('ok: review-backed accepted facts publish on the production driver; indexed updates, immutable pages and removals reach the query route');
  console.log(JSON.stringify({status:'RESULT_TO_PAGE_READER_PASSED',input:process.env.WFSIM_BOARD_FLOW_INPUT?'captured authoritative result':'fixture',

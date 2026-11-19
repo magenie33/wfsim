@@ -144,7 +144,7 @@ second source.
 | a build's axes | `engine::board::builds::BUILD_AXES` | every surface's fields, `/api/meta` |
 | a ruler's terms | `data/benchmarks/*.yaml` | the picker, the arena, the scenario bar |
 | a row's score | the verified measurement selected in `state_board_measurement_selection` | published rows and their summaries |
-| the current public revision | `state_board_read_partitions` | the catalog, leaders and revision-bound pages |
+| the current public revision | `state_board_public_heads` | the catalog, leaders and revision-bound pages |
 
 ### Online ranking reads
 
@@ -158,10 +158,11 @@ replacement updates that key. Unchanged valid measurements keep their scores,
 measurement times and engine identifiers alongside newer results. An engine
 release by itself leaves the selected measurements and public rankings in place.
 
-A publisher migration starts from the complete published board. The replacement
-catalog covers each existing scope with its retained eligible measurements before
-consumers switch. Changes committed during preparation are applied through the
-same verified measurement source. Every reader uses the same catalog afterwards.
+The initial public catalog preserves each original weapon file's rows and the
+corresponding leaders from its index. An existing verified publication takes
+precedence. A newly verified partition replaces its own public revision in one
+transaction, independently of qualification work for other weapons and rulers.
+Every channel reads the same current catalog.
 
 An online partition covers one weapon and ruler. The catalog selects its current
 revision. A reader waits for the complete revision before showing its ranks.
@@ -199,7 +200,8 @@ previous complete view until the replacement is ready.
 
 `GET /api/board/pages/catalog` pages through complete partition metadata and
 leaders. `GET /api/board/pages` reads at most 128 rows using a revision and
-ordinal cursor. Public responses use a ten-second page cache. Publication
+ordinal cursor. Readers revalidate the current catalog and unversioned pages against the database.
+Only revision-bound pages use the ten-second response cache. Publication
 retains two immutable snapshots in the complete-input reader. The incremental
 reader retains at least three and every revision younger than ten minutes.
 An unavailable older revision requires a new
@@ -782,7 +784,7 @@ This lifetime rule does not authorize removing external captures or backups.
 
 **The verified library is the source of board facts.** The ranking publisher
 commits a complete, immutable partition for each weapon and ruler, then selects
-its revision in `state_board_read_partitions` in the same transaction. The
+its revision in `state_board_public_heads` in the same transaction. The
 public catalog at `GET /api/board/pages/catalog` exposes that selection and its
 leaders. Readers bind every page to the selected revision. The main site, CN
 site, desktop, Nona, bots and MCP use the shared reader in

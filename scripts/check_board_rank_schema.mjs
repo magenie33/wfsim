@@ -6,6 +6,7 @@ import {randomBytes} from 'node:crypto';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import {boardReadSchema} from './board_read_schema.mjs';
 import {boardRankSchema,boardRankRollbackSchema} from './board_rank_schema.mjs';
+import {checkPublicHeads} from './check_board_public_heads.mjs';
 import {guardRankSpace} from './board_rank_storage.mjs';
 const url=process.env.WFSIM_BOARD_RANK_TEST_URL;assert(url&&['localhost','127.0.0.1'].includes(new URL(url).hostname));
 const schema='rank_schema_'+randomBytes(6).toString('hex'),role=schema+'_reader',http=schema+'_http';
@@ -32,6 +33,7 @@ try{
  await assert.rejects(run(boardRankSchema(options)),/explicit upgrade required/);
  reader=postgres(url,{max:1,fetch_types:false,onnotice(){},connection:{search_path:schema,role,statement_timeout:10000}});
  web=postgres(url,{max:1,fetch_types:false,onnotice(){},connection:{search_path:schema,role:http,statement_timeout:10000}});
+ await checkPublicHeads({sql,web,options,run});
  for(const statement of ["UPDATE entity_weapon_builds SET at='2000-01-01' WHERE false",'UPDATE state_board_input_source SET source=source WHERE false',
   'UPDATE state_board_input_mailbox SET version=version WHERE false','SELECT body FROM state_board_input_mailbox','UPDATE state_board_read_partitions SET enabled=false WHERE false'])
   await assert.rejects(reader.unsafe(statement),error=>error.code==='42501');

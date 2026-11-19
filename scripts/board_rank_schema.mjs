@@ -21,6 +21,7 @@ DO $$ BEGIN
  IF to_regclass('state_board_rank_partitions') IS NOT NULL THEN RAISE EXCEPTION 'ranking projection exists; explicit upgrade required';END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='${readerRole}') THEN RAISE EXCEPTION 'provision ranking reader first';END IF;
 END $$;
+${readFileSync(new URL('../worker/pg/board_pages.sql',import.meta.url),'utf8')}
 ${readFileSync(new URL('../worker/pg/board_rank.sql',import.meta.url),'utf8')}
 ${boardRankCompactDDL(readerRole)}
 ${boardRankCatalogDDL(readerRole)}
@@ -39,7 +40,6 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)proces
 export function boardRankRollbackSchema({schema='public',httpRole='wfsim'}={}) {
  for(const value of [schema,httpRole])if(!/^[a-z_][a-z0-9_]{0,62}$/.test(value))throw Error('invalid ranking rollback name');
  const pages=readFileSync(new URL('../worker/pg/board_pages.sql',import.meta.url),'utf8');
- const original=pages.slice(pages.indexOf('CREATE OR REPLACE FUNCTION board_read_page('));
  return `BEGIN;
 SET LOCAL lock_timeout='1s';SET LOCAL statement_timeout='30s';
 SELECT pg_catalog.set_config('search_path','${schema},pg_catalog,pg_temp',true);
@@ -53,7 +53,7 @@ DO $$ BEGIN
  IF EXISTS(SELECT 1 FROM state_board_rank_partitions) OR EXISTS(SELECT 1 FROM state_board_rank_route_inputs WHERE scope<>'partition') THEN
   RAISE EXCEPTION 'ranking inputs already transferred; preserve recovery boundary';END IF;
 END $$;
-${original}
+${pages}
 GRANT EXECUTE ON FUNCTION board_read_page(text,text,text,bigint,bigint) TO ${httpRole};
 DROP TRIGGER IF EXISTS board_rank_recent_measurement ON state_board_input_mailbox;
 DROP FUNCTION IF EXISTS board_rank_capture_recent_measurement();

@@ -164,6 +164,19 @@ before switching the catalog. Capacity planning includes the captured inputs,
 archive and descriptor indexes, durable rank tables, transient WAL and existing
 storage reserves throughout the staged write.
 
+### Preserving the published board
+
+The storage owner installs the current public directory with the SQL emitted by
+`node scripts/board_public_head_schema.mjs` on an existing indexed installation.
+With the same database in `PG_URL`, run
+`node scripts/import_board_publication.mjs SITE_ROOT INVENTORY_JSON INVENTORY_SHA256`
+against the sealed copy of the served files. The digest identifies the inventory
+of actual published bytes, including the scene indexes and publication stamp.
+The importer checks each file and preserves its original ranks and leaders.
+Each weapon and ruler commits independently. The first import pins the inventory
+for recovery. Repeating the command fills only missing selections. A verified
+native revision or an explicit withdrawal takes precedence over the import.
+
 ### Registering a qualified catalog scope
 
 Apply the SQL emitted by `node scripts/board_rank_catalog_schema.mjs` as

@@ -33,9 +33,11 @@ try{
  let part=await createRankPartition(sql,{weapon,ruler,source,native:native.adapter,cut:'fixture'});
  for(let i=0;i<input.length;i+=64){const prepared=await prepareRankSources(native,{weapon,ruler,inputs:input.slice(i,i+64)});part=await sql.begin(tx=>applyRankSources(tx,part,prepared));}
  await sql.unsafe('UPDATE state_board_rank_partitions SET complete=true,seeded=true,reconciled=true WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
- await sql.unsafe('INSERT INTO state_board_read_partitions VALUES($1,$2,$3,true,true,$4)',[weapon,ruler,native.contract.rulers.find(row=>row.id===ruler).scene,oldRevision]);
- await sql.unsafe("INSERT INTO record_board_read_snapshots VALUES($1,$2,$3,$4,$5,$6,1,'[]',$7,$7)",[weapon,ruler,oldRevision,source,engine,'b'.repeat(64),oldClock]);
- await sql.unsafe('INSERT INTO state_board_read_rows VALUES($1,$2,$3,1,$4)',[weapon,ruler,oldRevision,JSON.stringify({score:99,mode:'base'})]);
+ await sql.begin(async tx=>{
+  await tx.unsafe('INSERT INTO state_board_read_partitions VALUES($1,$2,$3,true,true,$4)',[weapon,ruler,native.contract.rulers.find(row=>row.id===ruler).scene,oldRevision]);
+  await tx.unsafe("INSERT INTO record_board_read_snapshots VALUES($1,$2,$3,$4,$5,$6,1,'[]',$7,$7)",[weapon,ruler,oldRevision,source,engine,'b'.repeat(64),oldClock]);
+  await tx.unsafe('INSERT INTO state_board_read_rows VALUES($1,$2,$3,1,$4)',[weapon,ruler,oldRevision,JSON.stringify({score:99,mode:'base'})]);
+ });
  await sql.begin(tx=>putRankPublication(tx,{weapon,ruler}));
  const claim=await claimRankPublication(sql,{source,native:native.adapter});assert(claim);
  let generation=await startRankGeneration(sql,native,claim,context);

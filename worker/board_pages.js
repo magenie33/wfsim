@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Public reads expose only complete native partitions and immutable page versions.
+// Catalog reads resolve the current selection. Cached rows are bound to one complete revision.
 import {sha256} from './accounts.js';
 const name=value=>typeof value==='string'&&/^[a-z0-9_]{1,160}$/.test(value);
-const reply=(body,status=200)=>Response.json(body,{status,headers:{'cache-control':status===200?'public, max-age=10':'no-store','access-control-allow-origin':'*'}});
+const reply=(body,status=200,pinned=false)=>Response.json(body,{status,headers:{'cache-control':status!==200?'no-store':pinned?'public, max-age=10':'no-cache, must-revalidate','access-control-allow-origin':'*'}});
 
 function conditionalCatalog(request,response) {
  const tag=response.headers.get('etag'),condition=request.headers.get('if-none-match');
@@ -18,9 +18,9 @@ export async function boardPagesRoute(request,env,ctx) {
  const after=params.get('after')??'',revision=params.get('revision');
  if((weapon!==null&&!name(weapon))||(ruler!==null&&!name(ruler))
    ||(revision!==null&&!/^[a-f0-9]{64}$/.test(revision)))return reply({ok:false,error:'invalid board partition'},400);
- const cache=globalThis.caches?.default,hit=cache&&await cache.match(request);
- if(hit)return conditionalCatalog(request,hit);
- const catalog=url.pathname==='/api/board/pages/catalog';
+ const catalog=url.pathname==='/api/board/pages/catalog',pinned=!catalog&&revision!==null;
+ const cache=pinned&&globalThis.caches?.default,hit=cache&&await cache.match(request);
+ if(hit)return hit;
  let data;
  try {
   if(catalog) {
@@ -36,7 +36,7 @@ export async function boardPagesRoute(request,env,ctx) {
    data=result.page;
   }
  }catch(_){return reply({ok:false,error:'board query unavailable'},503);}
- const response=reply(data,data.ok?200:data.error==='revision_unavailable'?409:404);
+ const response=reply(data,data.ok?200:data.error==='revision_unavailable'?409:404,pinned);
  if(data.ok&&catalog)response.headers.set('etag','"'+await sha256(JSON.stringify(data))+'"');
  if(data.ok&&cache&&ctx?.waitUntil)ctx.waitUntil(cache.put(request,response.clone()));
  return conditionalCatalog(request,response);
