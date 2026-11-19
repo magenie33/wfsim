@@ -697,6 +697,13 @@ Forms and receipts stay private; corrections retain the name and mark the
 owner notification; invalid names, limits and failed delivery cannot report
 success. The website's name and notification helper is exercised too.
 
+## `check_dictionary`
+
+The Dictionary loads the multilingual index on demand. Its browser check
+covers Chinese input composition, names pasted from chat, all names grouped
+into entity cards, and share links opened in the recipient's page language.
+The check runs against the dev server or the shipping build.
+
 ## `check_world_fissures`
 
 The fissure log (`worker/world.js`) on PGlite, no network: a relayed fissure

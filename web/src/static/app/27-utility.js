@@ -1,13 +1,11 @@
 // ---- UTILITY ----------------------------------------------------------------
 //
-// The game's live state and the reader's reminders on it — docs/UI.md
-// §"Utility". Nothing here feeds the builder, the simulator or the optimizer.
-// A kind the worker lists (worker/world.js) has a tab of its own and registers
-// itself in `UTILITY_KINDS`; this file is what every kind shares: the feed, the
-// clock, the reminders and their tab.
+// The game's live state, reminders and multilingual dictionary (docs/UI.md).
+// Each live-state tab registers in `UTILITY_KINDS` (worker/world.js).
 
-/// THE TABS, in order: each kind's list, then the reminders. `[path, title]`.
-const UTILITY_TABS = [["fissures", "Void Fissures"], ["arbitrations", "Arbitrations"], ["reminders", "Reminders"]];
+/// Each tab is `[path, title]`.
+const UTILITY_TABS = [["fissures", "Void Fissures"], ["arbitrations", "Arbitrations"],
+  ["reminders", "Reminders"], ["dictionary", "Dictionary"]];
 const utilityTitle = (tab) => (UTILITY_TABS.find(([t]) => t === tab) || UTILITY_TABS[0])[1];
 /// EACH KIND, by the worker's `kind`: `{ tab, render(), describe(item),
 /// nameOf(key, names, value), attributes: [[key]], build(box), next(r),
@@ -36,7 +34,7 @@ function showUtility(tab) {
   for (const [t] of UTILITY_TABS) $(`utility-${t}`).hidden = t !== tab;
   if (tab === "reminders") { reminderRead(); if ($("rem-toasts")) $("rem-toasts").replaceChildren(); }
   renderUtility();
-  if (Date.now() - worldAt >= WORLD_ON_PAGE_MS) worldLoad().then(renderUtility);
+  if (tab !== "dictionary" && Date.now() - worldAt >= WORLD_ON_PAGE_MS) worldLoad().then(renderUtility);
   utilityClock();
 }
 
@@ -46,7 +44,8 @@ function renderUtility() {
   if (!utilityTab || $("utility-page").hidden) return;
   $("utility-tabs").innerHTML = UTILITY_TABS.map(([t, title]) => `<a class="mtab${t === utilityTab ? " sel" : ""}" href="/utility/${t}">${
     escHtml(tr(title))}${t === "reminders" && unread ? ` <span class="tbadge">${unread}</span>` : ""}</a>`).join("");
-  if (utilityTab === "reminders") renderReminders();
+  if (utilityTab === "dictionary") showDictionary();
+  else if (utilityTab === "reminders") renderReminders();
   else Object.values(UTILITY_KINDS).forEach((k) => { if (k.tab === utilityTab) k.render(); });
 }
 
@@ -130,7 +129,9 @@ function utilityClock() {
   utilityTimer = setInterval(() => {
     const onPage = !$("utility-page").hidden;
     if (!onPage && !reminders().length) { clearInterval(utilityTimer); utilityTimer = null; return; }
-    if (!worldAsk && Date.now() - worldAt >= (onPage ? WORLD_ON_PAGE_MS : WORLD_ELSEWHERE_MS)) worldLoad().then(renderUtility);
+    const onWorldTab = onPage && utilityTab !== "dictionary";
+    if ((onWorldTab || reminders().length) && !worldAsk
+      && Date.now() - worldAt >= (onWorldTab ? WORLD_ON_PAGE_MS : WORLD_ELSEWHERE_MS)) worldLoad().then(renderUtility);
     const now = Date.now();
     let ended = false;
     document.querySelectorAll(`${onPage ? "#utility-page [data-ends], " : ""}#rem-bell.open [data-ends], #rem-toasts [data-ends]`).forEach((el) => {
@@ -405,4 +406,204 @@ function renderReminders() {
     el.onclick = () => { reminderNewKind = el.dataset.rkind; renderUtility(); };
   });
   if (reminderNewKind) UTILITY_KINDS[reminderNewKind].build(fresh.lastElementChild);
+}
+
+// ---- DICTIONARY -------------------------------------------------------------
+
+const DICTIONARY_URL = "/warframe-dictionary.json";
+const DICTIONARY_PAGE_SIZE = 8;
+let openDictionaryRoute;
+
+function dictionaryKey(text) {
+  return text.normalize("NFKD").toLowerCase()
+    .replace(/(\p{Script=Latin})\p{M}+/gu, "$1").normalize("NFC")
+    .replace(/['’]/g, "").replace(/[^\p{L}\p{N}\p{M}]+/gu, " ").trim();
+}
+
+function dictionaryIndex(rows) {
+  const index = new Map(), byId = new Map();
+  let maxWords = 1;
+  for (const row of rows) {
+    byId.set(row[0], row);
+    const keys = new Set(row.slice(2).filter(Boolean).map(dictionaryKey));
+    keys.delete("");
+    for (const key of keys) {
+      if (!index.has(key)) index.set(key, []);
+      index.get(key).push(row);
+      maxWords = Math.max(maxWords, key.split(" ").length);
+    }
+  }
+  return { index, byId, maxWords };
+}
+
+function dictionaryMatches(text, { index, maxWords }) {
+  const key = dictionaryKey(text);
+  if (!key) return [];
+  if (index.has(key)) return index.get(key);
+
+  const linked = [...text.matchAll(/[\[［]([^\]］]+)[\]］]/g)]
+    .flatMap((match) => index.get(dictionaryKey(match[1])) || []);
+  if (linked.length) return [...new Set(linked)];
+
+  const prefixes = new Set(), contains = new Set();
+  const compact = /\p{Script=Han}/u.test(key);
+  const needle = compact ? key.replaceAll(" ", "") : key;
+  for (const [name, rows] of index) {
+    const searchable = compact ? name.replaceAll(" ", "") : name;
+    const bucket = searchable.startsWith(needle) ? prefixes : searchable.includes(needle) ? contains : null;
+    if (bucket) for (const row of rows) bucket.add(row);
+  }
+  if (prefixes.size || contains.size) return [...new Set([...prefixes, ...contains])];
+
+  // Take the longest nonoverlapping names from pasted chat. Short individual
+  // words create false matches in prices, abbreviations and player names.
+  const words = key.split(" "), embedded = new Set();
+  for (let start = 0; start < words.length; start += 1) {
+    for (let end = Math.min(words.length, start + maxWords); end > start; end -= 1) {
+      if (end === start + 1 && words[start].length < 4) continue;
+      const rows = index.get(words.slice(start, end).join(" "));
+      if (!rows) continue;
+      for (const row of rows) embedded.add(row);
+      start = end - 1;
+      break;
+    }
+  }
+  return [...embedded];
+}
+
+function dictionaryLanguage(code) {
+  return { zh: "zh-Hans", tc: "zh-Hant" }[code] || code;
+}
+
+function dictionaryCopyName(name, code) {
+  const label = escHtml(trF("Copy {name}", { name }));
+  return `<button type="button" class="dictionary-copy-name" data-dictionary-copy
+    aria-label="${label}" title="${label}"><span lang="${escHtml(dictionaryLanguage(code))}">${escHtml(name)}</span>
+    <span class="dictionary-copy-icon" aria-hidden="true">⧉</span></button>`;
+}
+
+function showDictionary() {
+  if (openDictionaryRoute) { openDictionaryRoute(); return; }
+  const input = $("dictionary-search"), status = $("dictionary-status");
+  const results = $("dictionary-results"), more = $("dictionary-more"), retry = $("dictionary-retry");
+  let data, pageLanguage, english, openEntry, matches = [], shown = DICTIONARY_PAGE_SIZE;
+
+  function primaryColumn(row) {
+    return pageLanguage >= 0 && row[pageLanguage + 2] ? pageLanguage : english;
+  }
+
+  function card(row) {
+    const [id, kind] = row;
+    const primary = primaryColumn(row);
+    const names = data.languages.map(([code, label], index) => {
+      const name = row[index + 2];
+      return name && index !== primary ? `<div class="dictionary-translation">
+        <dt lang="${escHtml(dictionaryLanguage(code))}">${escHtml(label)}</dt>
+        <dd>${dictionaryCopyName(name, code)}</dd>
+      </div>` : "";
+    }).join("");
+    return `<li class="dictionary-card" data-dictionary-entry="${id}">
+      <div class="dictionary-card-head">
+        <div>
+          <span class="dictionary-kind">${escHtml(tr(kind))}</span>
+          <h2>${dictionaryCopyName(row[primary + 2], data.languages[primary][0])}</h2>
+        </div>
+        <button type="button" class="ghost-btn small" data-dictionary-share="${id}">${escHtml(tr("copy link"))}</button>
+      </div>
+      <input class="dictionary-share-link" type="url" readonly hidden aria-label="${escHtml(tr("copy link"))}" />
+      <dl class="dictionary-translations">${names}</dl>
+    </li>`;
+  }
+
+  function renderResults() {
+    results.innerHTML = matches.slice(0, shown).map(card).join("");
+    more.hidden = matches.length <= shown;
+  }
+
+  function showResults(rows, message) {
+    matches = rows;
+    shown = DICTIONARY_PAGE_SIZE;
+    status.textContent = message;
+    renderResults();
+  }
+
+  function search() {
+    const rows = dictionaryMatches(input.value, data);
+    showResults(rows, !dictionaryKey(input.value) ? "" : rows.length
+      ? trF("{n} dictionary entries", { n: rows.length })
+      : tr("No matching game names."));
+  }
+
+  openDictionaryRoute = () => {
+    if (!data) return;
+    const entry = new URLSearchParams(location.search).get("entry");
+    if (entry === openEntry) return;
+    openEntry = entry;
+    if (entry === null) { search(); return; }
+    const row = data.byId.get(entry);
+    input.value = row ? row[primaryColumn(row) + 2] : "";
+    showResults(row ? [row] : [], row ? "" : tr("This dictionary entry could not be found."));
+  };
+
+  async function load() {
+    retry.hidden = true;
+    status.textContent = tr("Loading…");
+    try {
+      const response = await fetch(DICTIONARY_URL, { signal: timeoutSignal(20000) });
+      if (!response.ok) throw new Error("dictionary unavailable");
+      const { languages, rows } = await response.json();
+      data = { languages, ...dictionaryIndex(rows) };
+      pageLanguage = languages.findIndex(([code]) => code === LANG);
+      english = languages.findIndex(([code]) => code === "en");
+      openDictionaryRoute();
+    } catch (_) {
+      status.textContent = tr("The dictionary could not be loaded.");
+      retry.hidden = false;
+    }
+  }
+
+  onTyped(input, () => {
+    const url = new URL(location.href);
+    if (url.searchParams.has("entry")) {
+      url.searchParams.delete("entry");
+      history.replaceState(history.state, "", url);
+      openEntry = data ? null : undefined;
+    }
+    if (data) search();
+  });
+  retry.onclick = load;
+  more.onclick = () => { shown += DICTIONARY_PAGE_SIZE; renderResults(); };
+  results.onclick = async (event) => {
+    const share = event.target.closest("[data-dictionary-share]");
+    if (share) {
+      const origin = window.__WFSIM_DESKTOP__ || location.hostname === "wfsim.localhost" ? LIVE_ORIGIN : location.origin;
+      const url = new URL("/utility/dictionary", origin);
+      url.searchParams.set("entry", share.dataset.dictionaryShare);
+      try {
+        await navigator.clipboard.writeText(url.href);
+        presetToast(tr("link copied"));
+      } catch (_) {
+        const link = share.closest("li").querySelector(".dictionary-share-link");
+        link.value = url.href;
+        link.hidden = false;
+        link.select();
+        presetToast(tr("Copy the selected text"));
+      }
+      return;
+    }
+
+    const name = event.target.closest("[data-dictionary-copy]")?.firstElementChild;
+    if (!name) return;
+    try {
+      await navigator.clipboard.writeText(name.textContent);
+      presetToast(tr("text copied"));
+    } catch (_) {
+      const range = document.createRange(), selection = getSelection();
+      range.selectNodeContents(name);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      presetToast(tr("Copy the selected text"));
+    }
+  };
+  load();
 }

@@ -125,7 +125,7 @@ async function route() {
   const support = /^\/support\/?$/.test(location.pathname);
   const bench = /^\/benchmark\/?$/.test(location.pathname);
   const dl = /^\/download\/?$/.test(location.pathname);
-  // `/utility/<tab>` — the game's live state and the reader's reminders on it.
+  // `/utility/<tab>` — live state, reminders and the game dictionary.
   // Bare `/utility` is its first tab.
   const utilRoute = location.pathname.match(/^\/utility(?:\/([a-z]+))?\/?$/);
   const util = utilRoute && UTILITY_TABS.some(([t]) => t === (utilRoute[1] || UTILITY_TABS[0][0]))

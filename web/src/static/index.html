@@ -394,10 +394,7 @@
     <div id="home-sections"></div>
   </main>
 
-  <!-- UTILITY — the game's live state, and reminders on it. A page of the
-       SHELL like /benchmark: it belongs to no weapon, and nothing on it feeds
-       the builder, the simulator or the optimizer (docs/UI.md §"Utility").
-       One tab per kind it lists, plus the reader's reminders. -->
+  <!-- UTILITY — live state, reminders and the game's multilingual dictionary. -->
   <main id="utility-page" class="home-page" hidden>
     <h1 id="h-utility" class="home-h">Void Fissures</h1>
     <nav id="utility-tabs" class="module-tabs"></nav>
@@ -412,6 +409,18 @@
       <p class="bench-note" data-i18n>The schedule is computed ahead from the game's rotation and published by browse.wf; DE does not publish it. Times are in your time zone.</p>
     </section>
     <section id="utility-reminders" hidden></section>
+    <section id="utility-dictionary" hidden>
+      <div class="field dictionary-search">
+        <label for="dictionary-search" data-i18n>Warframe name or chat message</label>
+        <input id="dictionary-search" type="search" maxlength="500" placeholder="Search names or paste chat…" data-i18n-ph autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="dictionary-feedback">
+        <span id="dictionary-status" role="status"></span>
+        <button type="button" id="dictionary-retry" class="ghost-btn small" data-i18n hidden>Retry</button>
+      </div>
+      <ul id="dictionary-results"></ul>
+      <button type="button" id="dictionary-more" class="ghost-btn small" data-i18n hidden>Show more</button>
+    </section>
   </main>
 
   <!-- THE BOARD — what is strong under a given ruler, and what nobody has
