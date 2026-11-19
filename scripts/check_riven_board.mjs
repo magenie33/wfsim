@@ -14,8 +14,9 @@ const setup = `
   await new Promise(r => setTimeout(r, 4500));
   const id = $('weapon').value;
   const rows = (BOARD[id] || []).filter(r => r.benchmark === 'standard_single_target');
-  if (!rows.length) return { error: 'no standard_single_target rows for ' + id };
-  const best = rows.reduce((a, r) => (r.score > a.score ? r : a), rows[0]);
+  const plainRows = rows.filter(r => !r.riven);
+  if (!plainRows.length) return { error: 'no riven-free standard_single_target rows for ' + id };
+  const best = plainRows.reduce((a, r) => (r.score > a.score ? r : a), plainRows[0]);
   // A RIVEN ROW BEATING THE PLAIN LEADER, which is the case the "no riven"
   // view exists for: under "all builds" it hides the plain one.
   const synth = {
@@ -37,15 +38,21 @@ const setup = `
 
 const views = await evaluate(`(async () => {
   ${setup}
+  const priorIndex = BOARD_INDEX, priorView = benchRivenView;
+  BOARD_INDEX = { ...BOARD_INDEX, [id]: [synth, best] };
   const seen = {};
-  for (const v of ['all', 'plain', 'riven']) {
-    benchRivenView = v;
-    const entries = benchEntries({ id: 'standard_single_target' }, META.weapons || []);
-    const e = entries.find(x => x.w.id === id && x.mode === 'cycle')
-           || entries.find(x => x.w.id === id);
-    seen[v] = e && e.row ? { score: e.row.score, riven: !!e.row.riven } : null;
+  try {
+    for (const v of ['all', 'plain', 'riven']) {
+      benchRivenView = v;
+      const entries = benchEntries({ id: 'standard_single_target' }, META.weapons || []);
+      const e = entries.find(x => x.w.id === id && x.mode === 'cycle')
+             || entries.find(x => x.w.id === id);
+      seen[v] = e && e.row ? { score: e.row.score, riven: !!e.row.riven } : null;
+    }
+  } finally {
+    BOARD_INDEX = priorIndex;
+    benchRivenView = priorView;
   }
-  benchRivenView = 'all';
   return { id, seen, plainTop: best.score, synthTop: best.score * 1.5 };
 })()`);
 
