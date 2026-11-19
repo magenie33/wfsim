@@ -77,6 +77,11 @@ working directories are outside this collector.
 
 ## Activation and recovery
 
+The public board keeps its weapon and ruler keys through engine releases and
+rank index replacement. Valid measurements retain their original engine
+provenance. The selected publication stays available while the replacement
+index builds against the same verified measurements.
+
 Installing this additive schema does not start a consumer or change task
 admission, official computation, generation controls or static publication.
 Stop the existing reader before switching its immutable payload and enabling
