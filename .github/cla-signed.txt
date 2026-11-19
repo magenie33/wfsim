@@ -2,3 +2,4 @@
 # GitHub account ID, full commit of the signed CLA.md, signature permalink.
 # For a separately signed entity agreement, use the public confirmation link.
 # See CONTRIBUTING.md for how the maintainer verifies and records an agreement.
+54000348 f4504b001632843c514a93b7d51f0b40cd602533 https://github.com/magenie33/wfsim/pull/15#issuecomment-6999007925
