@@ -16,6 +16,9 @@ const utilityTitle = (tab) => (UTILITY_TABS.find(([t]) => t === tab) || UTILITY_
 /// (null: not known yet); `stats` says how often one like it comes.
 const UTILITY_KINDS = {};
 let utilityTab = null;
+let utilityShortcutAccount = null;
+let utilityShortcutRequest = null;
+let utilityShortcuts = [];
 
 /// A NAME FROM THE WORKER is `{en, zh}`; a missing one is the id it names.
 const worldName = (n, id) => (n && (n[LANG] || n.en)) || id || "";
@@ -34,16 +37,47 @@ function showUtility(tab) {
   for (const [t] of UTILITY_TABS) $(`utility-${t}`).hidden = t !== tab;
   if (tab === "reminders") { reminderRead(); if ($("rem-toasts")) $("rem-toasts").replaceChildren(); }
   renderUtility();
+  refreshUtilityShortcuts();
   if (tab !== "dictionary" && Date.now() - worldAt >= WORLD_ON_PAGE_MS) worldLoad().then(renderUtility);
   utilityClock();
 }
 
+function renderUtilityTabs() {
+  const unread = reminderHits().filter((h) => !h.read).length;
+  const tabs = UTILITY_TABS.map(([t, title]) => `<a class="mtab${t === utilityTab ? " sel" : ""}" href="/utility/${t}">${
+    escHtml(tr(title))}${t === "reminders" && unread ? ` <span class="tbadge">${unread}</span>` : ""}</a>`);
+  const links = accountState.account?.id === utilityShortcutAccount ? utilityShortcuts : [];
+  const shortcuts = links.map((item) =>
+    `<a class="mtab" data-native href="${escHtml(item.path)}">${escHtml(worldName(item.names))}</a>`);
+  $("utility-tabs").innerHTML = tabs.concat(shortcuts).join("");
+}
+
+function refreshUtilityShortcuts() {
+  const account = accountState.account?.id ?? null;
+  const changed = account !== utilityShortcutAccount;
+  if (changed) {
+    utilityShortcutAccount = account;
+    utilityShortcutRequest = null;
+    utilityShortcuts = [];
+  }
+  if (!utilityTab || $("utility-page").hidden) return;
+  if (changed) renderUtilityTabs();
+  if (!account || utilityShortcutRequest) return;
+  const request = accountCall("GET", "/api/cloud/tools");
+  utilityShortcutRequest = request;
+  request.then((result) => {
+    if (utilityShortcutRequest !== request || accountState.account?.id !== account) return;
+    if (!result?.ok || !Array.isArray(result.tools)) { utilityShortcutRequest = null; return; }
+    utilityShortcuts = result.tools.filter((item) => typeof item?.path === "string" &&
+      /^\/api\/cloud\/[a-z0-9-]+(?:\/[a-z0-9-]+)*$/.test(item.path) && typeof item.names?.en === "string");
+    if (!$("utility-page").hidden) renderUtilityTabs();
+  });
+}
+
 function renderUtility() {
   renderBell();
-  const unread = reminderHits().filter((h) => !h.read).length;
   if (!utilityTab || $("utility-page").hidden) return;
-  $("utility-tabs").innerHTML = UTILITY_TABS.map(([t, title]) => `<a class="mtab${t === utilityTab ? " sel" : ""}" href="/utility/${t}">${
-    escHtml(tr(title))}${t === "reminders" && unread ? ` <span class="tbadge">${unread}</span>` : ""}</a>`).join("");
+  renderUtilityTabs();
   if (utilityTab === "dictionary") showDictionary();
   else if (utilityTab === "reminders") renderReminders();
   else Object.values(UTILITY_KINDS).forEach((k) => { if (k.tab === utilityTab) k.render(); });

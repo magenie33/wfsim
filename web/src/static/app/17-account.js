@@ -166,6 +166,7 @@ function loadAccount() {
     await extHook("accountLoaded", accountState.account);
     authArrival = { kind: at, ready: true };
     renderAccountEntry();
+    refreshUtilityShortcuts();
     refreshLibraryRecommendations();
     if (location.pathname.replace(/\/$/, "") === "/support") renderSupport();
     const kind = authKindOf(location.pathname);
@@ -286,6 +287,7 @@ function setAccountPanel(open, restore = true) {
       await accountCall("POST", "/api/auth/logout", {});
       presetToast(tr("Signed out."));
       accountState = { ...accountState, account: null };
+      refreshUtilityShortcuts();
       if (leave) nav("/");
       await loadAccount();
       return;
