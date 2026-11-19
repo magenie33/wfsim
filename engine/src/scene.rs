@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Posed player/weapon/enemy geometry consumed by the shared fight.
 use crate::model::{Homing, Placement, Scene3d};
-use crate::rules::geometry::{guided::Guided, Affine, Proxy, Vec3};
+use crate::rules::geometry::{eye::eye_aim, glaive, guided::Guided, rotation, Affine, Proxy, Vec3};
 
 #[derive(Debug, Clone)]
 pub struct Scene {
     input: Scene3d,
     muzzle: Vec3,
-    camera: Vec3,
+    camera: Affine,
     bodies: Vec<Body>,
 }
 
@@ -62,15 +62,6 @@ pub struct FlightTrace {
 }
 
 #[wfsim_gas_macro::metered]
-fn cross(a: Vec3, b: Vec3) -> Vec3 {
-    Vec3([
-        a.0[1] * b.0[2] - a.0[2] * b.0[1],
-        a.0[2] * b.0[0] - a.0[0] * b.0[2],
-        a.0[0] * b.0[1] - a.0[1] * b.0[0],
-    ])
-}
-
-#[wfsim_gas_macro::metered]
 fn controller_radius(c: crate::model::Controller) -> f32 {
     c.radius.max(0.0025) * c.scale
 }
@@ -112,7 +103,7 @@ impl Scene {
         self.muzzle
     }
     pub fn camera(&self) -> Vec3 {
-        self.camera
+        self.camera.point(Vec3([0.; 3]))
     }
     pub fn new(mut input: Scene3d, count: usize) -> Result<Self, String> {
         if input.enemies.len() != count || count == 0 || count > 361 {
@@ -202,20 +193,15 @@ impl Scene {
                 }
             }
         }
-        let mount = |m: &crate::model::Mount| -> Result<Vec3, String> {
+        let mount = |m: &crate::model::Mount| -> Result<Affine, String> {
             let bone = input
                 .player
                 .bones
                 .get(m.bone)
                 .ok_or("player mount bone is missing")?;
-            Ok(input
-                .player
-                .world
-                .compose(*bone)
-                .compose(m.local)
-                .point(Vec3([0.; 3])))
+            Ok(input.player.world.compose(*bone).compose(m.local))
         };
-        let muzzle = mount(&input.player.muzzle)?;
+        let muzzle = mount(&input.player.muzzle)?.point(Vec3([0.; 3]));
         let camera = mount(&input.camera)?;
         let mut bodies = Vec::new();
         for body in &input.enemies {
@@ -410,180 +396,229 @@ impl Scene {
             .proxy
             .world
             .point(Vec3([0.; 3]));
+        let camera = self.camera();
         let camera_direction = head_anchor
-            .minus(self.camera)
+            .minus(camera)
             .normalized()
             .unwrap_or(Vec3([0., 0., 1.]));
-        let aim_target = self
+        let target = self
             .hits(
-                self.camera,
+                camera,
                 camera_direction,
-                head_anchor.minus(self.camera).length() + 1e-6,
+                head_anchor.minus(camera).length() + 1e-6,
                 0.,
             )
-            .first()
-            .map_or(head_anchor, |h| self.camera.along(camera_direction, h.3));
-        let d = aim_target.minus(self.camera);
-        let denom = d.dot(d);
-        let reference = self.input.reference_point;
-        let fraction = if denom > 0. {
-            reference.minus(self.camera).dot(d) / denom
-        } else {
-            0.
+            .into_iter()
+            .find(|h| eligible.get(h.0) == Some(&true))
+            .map_or(head_anchor, |h| camera.along(camera_direction, h.3));
+        let axis = |transform: Affine, direction| {
+            transform
+                .direction(Vec3(direction))
+                .normalized()
+                .unwrap_or(Vec3(direction))
+                .0
+                .map(|v| v as f32)
         };
-        let eye = self.camera.along(d, fraction.clamp(0., 1.));
-        let forward = aim_target
-            .minus(eye)
-            .normalized()
-            .unwrap_or(camera_direction);
-        let right = cross(Vec3([0., 1., 0.]), forward)
-            .normalized()
-            .unwrap_or(Vec3([1., 0., 0.]));
-        let up = cross(forward, right);
+        let avatar_up = axis(self.input.player.world, [0., 1., 0.]);
+        let aim = eye_aim(
+            camera.0.map(|v| v as f32),
+            axis(self.camera, [0., 0., 1.]),
+            target.0.map(|v| v as f32),
+            self.input.reference_point.0.map(|v| v as f32),
+            axis(self.input.player.world, [0., 0., 1.]),
+            [avatar_up[0], avatar_up[1], avatar_up[2], 0.],
+        );
         let (s, c) = libm::sincos(deviation.to_radians());
         let (sp, cp) = libm::sincos(phase * std::f64::consts::TAU);
         let direction = Vec3(std::array::from_fn(|i| {
-            forward.0[i] * c + right.0[i] * s * cp + up.0[i] * s * sp
+            f64::from(aim.basis[8 + i]) * c
+                + f64::from(aim.basis[i]) * s * cp
+                + f64::from(aim.basis[4 + i]) * s * sp
         }));
         let mut flight = Flight {
             muzzle: self.muzzle,
-            camera: self.camera,
+            camera,
             head_anchor,
-            aim_target,
+            aim_target: Vec3(aim.target.map(f64::from)),
             direction,
             steering_target: self.input.preselected_target,
             impacts: Vec::new(),
         };
+        if let Some(homing) = homing {
+            self.trace_guided(&mut flight, homing, range, eligible);
+            return flight;
+        }
+
         let maximum = pierce.max(0.) as f32;
         let mut accumulated = 0.0_f32;
-        let mut visited = vec![false; self.bodies.len()];
-        let mut traveled = 0.;
-        let frame_seconds = self.input.frame_seconds;
-        let initial = homing.map_or(speed.unwrap_or(100_000.) as f32, |h| h.initial_speed);
-        let mut state = Guided::new(
-            self.muzzle.0.map(|v| v as f32),
-            direction.0.map(|v| v as f32),
-            initial,
-        );
-        let limit = if homing.is_some() {
-            (self.input.maximum_flight_seconds / frame_seconds).ceil() as usize
-        } else {
-            1
-        };
-        for step in 0..limit {
-            let origin = Vec3(state.position.map(f64::from));
-            let (line, length, elapsed) = if let Some(h) = homing {
-                if flight
-                    .steering_target
-                    .is_some_and(|i| eligible.get(i) != Some(&true))
-                {
-                    flight.steering_target = None;
-                }
-                if flight.steering_target.is_none() && state.flight > h.minimum_flight_before_seek {
-                    let current = Vec3(state.velocity.map(f64::from))
-                        .normalized()
-                        .unwrap_or(direction);
-                    flight.steering_target = self
-                        .bodies
-                        .iter()
-                        .enumerate()
-                        .filter(|(i, _)| eligible.get(*i) == Some(&true))
-                        .filter_map(|(i, b)| {
-                            let to = b.anchor.minus(origin);
-                            let distance = to.length();
-                            let angle = libm::acos(current.dot(to.normalized()?).clamp(-1., 1.))
-                                .to_degrees();
-                            let visible = self
-                                .hits(origin, to.normalized()?, distance + 1e-6, 0.)
-                                .first()
-                                .is_none_or(|hit| hit.0 == i);
-                            (visible
-                                && distance <= f64::from(h.seek_distance)
-                                && angle <= f64::from(h.seek_cone_deg))
-                            .then_some((i, distance))
-                        })
-                        .min_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)))
-                        .map(|v| v.0);
-                }
-                let target = flight
-                    .steering_target
-                    .map(|i| self.bodies[i].center.0.map(|v| v as f32));
-                state.step(
-                    target,
-                    frame_seconds as f32,
-                    h.turning_seconds,
-                    h.acceleration,
-                    h.maximum_speed,
-                );
-                let delta = Vec3(state.position.map(f64::from)).minus(origin);
-                let length = delta.length();
-                (
-                    delta.normalized().unwrap_or(direction),
-                    length,
-                    step as f64 * frame_seconds,
-                )
-            } else {
-                (
-                    direction,
-                    range.min(speed.unwrap_or(100_000.) * self.input.maximum_flight_seconds),
-                    0.,
-                )
-            };
-            let query_max = length.min((range - traveled).max(0.));
-            let radius = homing
-                .map_or(0., |h| f64::from(h.collision_radius))
-                .max(width * 0.5);
-            for (body, proxy, part, enter, exit) in self.hits(origin, line, query_max, radius) {
-                if visited[body] || eligible.get(body) != Some(&true) {
-                    continue;
-                }
-                visited[body] = true;
-                let point = origin.along(line, enter);
-                let end = origin.along(line, exit);
-                let material = end.minus(point).length();
-                let seconds = if homing.is_some() {
-                    elapsed + frame_seconds * enter / length
-                } else {
-                    speed.map_or(0., |v| enter / v)
-                };
-                let crossing = crate::rules::geometry::penetration::traverse(
-                    point.0.map(|v| v as f32),
-                    body as u64 + 1,
-                    &[crate::rules::geometry::penetration::ReverseHit {
-                        reference: body as u64 + 1,
-                        point: end.0.map(|v| v as f32),
-                    }],
-                    crate::rules::geometry::penetration::Budget {
-                        maximum,
-                        accumulated,
-                        infinite: every_body,
-                    },
-                );
-                accumulated = crossing.accumulated;
-                let remaining = (maximum - accumulated).max(0.);
-                flight.impacts.push(Impact {
-                    body,
-                    proxy,
-                    part,
-                    point,
-                    exit: end,
-                    seconds,
-                    travel: traveled + enter,
-                    material,
-                    remaining,
-                    radial: false,
-                    radial_distance: 0.,
-                });
-                if !crossing.continues {
-                    return flight;
-                }
+        let max_distance = range.min(speed.unwrap_or(100_000.) * self.input.maximum_flight_seconds);
+        let line = direction.normalized().unwrap_or(camera_direction);
+        for (body, proxy, part, enter, exit) in
+            self.hits(self.muzzle, line, max_distance, width * 0.5)
+        {
+            if eligible.get(body) != Some(&true) {
+                continue;
             }
-            traveled += query_max;
-            if traveled >= range || homing.is_none() {
+            let point = self.muzzle.along(line, enter);
+            let end = self.muzzle.along(line, exit);
+            let material = end.minus(point).length();
+            let seconds = speed.map_or(0., |v| enter / v);
+            let crossing = crate::rules::geometry::penetration::traverse(
+                point.0.map(|v| v as f32),
+                body as u64 + 1,
+                &[crate::rules::geometry::penetration::ReverseHit {
+                    reference: body as u64 + 1,
+                    point: end.0.map(|v| v as f32),
+                }],
+                crate::rules::geometry::penetration::Budget {
+                    maximum,
+                    accumulated,
+                    infinite: every_body,
+                },
+            );
+            accumulated = crossing.accumulated;
+            let remaining = (maximum - accumulated).max(0.);
+            flight.impacts.push(Impact {
+                body,
+                proxy,
+                part,
+                point,
+                exit: end,
+                seconds,
+                travel: enter,
+                material,
+                remaining,
+                radial: false,
+                radial_distance: 0.,
+            });
+            if !crossing.continues {
                 break;
             }
         }
         flight
+    }
+
+    fn trace_guided(&self, flight: &mut Flight, homing: Homing, range: f64, eligible: &[bool]) {
+        let direction = flight.direction.normalized().unwrap_or(Vec3([0., 0., 1.]));
+        let mut state = Guided::new(
+            self.muzzle.0.map(|v| v as f32),
+            direction.0.map(|v| v as f32),
+            homing.initial_speed,
+        );
+        let dt = self.input.frame_seconds;
+        let limit = (self.input.maximum_flight_seconds / dt).ceil() as usize;
+        let cone_dot = libm::cosf(homing.seek_cone_deg * f32::from_bits(0x3c8efa35));
+        for step in 0..limit {
+            let start = state.position;
+            let orientation = state.orientation;
+            if flight
+                .steering_target
+                .is_some_and(|i| eligible.get(i) != Some(&true))
+            {
+                flight.steering_target = None;
+            }
+            if flight.steering_target.is_none() && state.flight > homing.minimum_flight_before_seek
+            {
+                let [x, y, z, _] = rotation::quaternion_direction(orientation);
+                let scores = self.bodies.iter().enumerate().filter_map(|(i, body)| {
+                    if eligible.get(i) != Some(&true) {
+                        return None;
+                    }
+                    glaive::candidate_score(
+                        start,
+                        [x, y, z],
+                        self.root(i).0.map(|v| v as f32),
+                        body.anchor.0.map(|v| v as f32),
+                        homing.seek_distance,
+                        cone_dot,
+                    )
+                    .map(|score| (i, score))
+                });
+                let origin = Vec3(start.map(f64::from));
+                flight.steering_target = glaive::select_candidate(scores, |i| {
+                    let offset = self.bodies[i].anchor.minus(origin);
+                    offset.normalized().is_none_or(|ray| {
+                        self.hits(origin, ray, offset.length() + 1e-6, 0.)
+                            .into_iter()
+                            .find(|hit| eligible.get(hit.0) == Some(&true))
+                            .is_none_or(|hit| hit.0 == i)
+                    })
+                });
+            }
+            let target = flight
+                .steering_target
+                .map(|i| self.bodies[i].center.0.map(|v| v as f32));
+            let traveled = f64::from(state.flight);
+            let displacement = state.step(
+                target,
+                dt as f32,
+                homing.turning_seconds,
+                homing.acceleration,
+                homing.maximum_speed,
+            );
+            if let Some(mut impact) = self.guided_contact(
+                start,
+                displacement,
+                orientation,
+                homing.collision_radius,
+                (range - traveled).max(0.),
+                eligible,
+            ) {
+                impact.seconds = (step + 1) as f64 * dt;
+                impact.travel += traveled;
+                flight.impacts.push(impact);
+                return;
+            }
+            if f64::from(state.flight) >= range {
+                break;
+            }
+        }
+    }
+
+    fn guided_contact(
+        &self,
+        start: [f32; 3],
+        displacement: [f32; 3],
+        orientation: [f32; 4],
+        radius: f32,
+        remaining_range: f64,
+        eligible: &[bool],
+    ) -> Option<Impact> {
+        let origin = Vec3(start.map(f64::from));
+        for endpoint in glaive::query_ends(start, displacement, orientation, radius, false) {
+            let delta = Vec3(endpoint.map(f64::from)).minus(origin);
+            let Some(line) = delta.normalized() else {
+                continue;
+            };
+            let line = Vec3(line.0.map(|v| f64::from(v as f32)));
+            let limit = f64::from(delta.length() as f32).min(remaining_range);
+            // The posed-body adapter supplies distance order and an opposing normal.
+            let records = self.hits(origin, line, limit, 0.);
+            let normal = line.0.map(|v| -v as f32);
+            let success = !records.is_empty();
+            let accepted = records.into_iter().map(|hit| {
+                let eligible = eligible.get(hit.0) == Some(&true);
+                (hit, eligible, normal)
+            });
+            if let Some((body, proxy, part, enter, exit)) =
+                glaive::impact_record(displacement, success, accepted)
+            {
+                return Some(Impact {
+                    body,
+                    proxy,
+                    part,
+                    point: origin.along(line, enter),
+                    exit: origin.along(line, exit),
+                    seconds: 0.,
+                    travel: enter,
+                    material: exit - enter,
+                    remaining: 0.,
+                    radial: false,
+                    radial_distance: 0.,
+                });
+            }
+        }
+        None
     }
 }
 

@@ -24,7 +24,7 @@ fn angles(direction: [f32; 3]) -> [f32; 3] {
 }
 
 #[wfsim_gas_macro::metered]
-fn unit(vector: [f32; 3]) -> Option<[f32; 3]> {
+pub(super) fn unit(vector: [f32; 3]) -> Option<[f32; 3]> {
     let threshold = f32::from_bits(0x358637bd);
     let norm = length(vector);
     if norm > threshold {
@@ -62,7 +62,7 @@ impl Guided {
         turning: f32,
         acceleration: f32,
         maximum: f32,
-    ) {
+    ) -> [f32; 3] {
         self.step_with_world(
             target,
             frame_seconds,
@@ -70,7 +70,7 @@ impl Guided {
             acceleration,
             maximum,
             self.orientation,
-        );
+        )
     }
 
     /// Default clock/state, no gravity and an empty native +1a10 reference. Movement is the
@@ -83,7 +83,7 @@ impl Guided {
         acceleration: f32,
         maximum: f32,
         world_orientation: [f32; 4],
-    ) {
+    ) -> [f32; 3] {
         let direction = target.map_or_else(
             || {
                 let forward = rotation::quaternion_direction(self.orientation);
@@ -111,7 +111,7 @@ impl Guided {
         self.flight += distance;
         self.position = std::array::from_fn(|i| displacement[i] + self.position[i]);
         let Some(direction) = unit(displacement) else {
-            return;
+            return displacement;
         };
         let inverse = [
             -world_orientation[0],
@@ -123,7 +123,7 @@ impl Guided {
         let local =
             std::array::from_fn(|i| cross[i] + (world_orientation[3] * turn[i] + direction[i]));
         let Some(local) = unit(local) else {
-            return;
+            return displacement;
         };
         let mut euler = angles(direction);
         let target_bank = (local[0] * -1000.).clamp(-70., 70.);
@@ -136,5 +136,6 @@ impl Guided {
         );
         euler[2] = self.bank;
         self.orientation = rotation::euler_to_quaternion(euler);
+        displacement
     }
 }

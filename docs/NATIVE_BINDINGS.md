@@ -76,7 +76,7 @@ factor cannot recover the original bucket bits.
 | ALN-BEAM-01 | Existing shared beam ramp/cache simulation | Native cache membership, first tick and emission cadence |
 | ALN-SPREAD-01 | Existing scene spread and aim simulation | Native channel update, smoothing and movement writers |
 | ALN-SPREAD-02 | Separate scene streams and supplied multishot model | Native spread u32 generator, draw ownership and emission multiplicity |
-| ALN-PHYS-01 | Projectile speed clamp; supplied-state native homing numerical stages (`GEOMETRY.md`); shared scene collision/piercing | Live homing installation/clock/providers; world collision and general punchthrough |
+| ALN-PHYS-01 | Projectile speed clamp; supplied-state homing numerical stages, ordinary score and nonsweep ordered query consumer (`GEOMETRY.md`) | Live homing installation/clock/providers, world query and impact continuation, general punchthrough |
 | ALN-PHYS-02 | Shared scene bounce/blast/radius/falloff | Complete native cover and blast branches |
 | ALN-AMMO-01 | Shared ammo, battery, gauge and transform simulation | Complete native lifecycle and action-state transitions |
 | ALN-MELEE-01 | Shared data-driven stance/combo/heavy simulation | Native per-stance coefficients, permissions and finishers |

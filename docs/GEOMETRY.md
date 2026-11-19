@@ -22,6 +22,13 @@ stand in for head or muzzle height. Enemy models supply their world transform,
 posed bone/attachment proxies, acquisition anchor and steering center. Enemy
 order matches the arena: aimed enemy first, then `formation`.
 
+The scene supplies its camera-ray result to the native player eye projection
+(`0x149c340`). The projection uses binary32, extends the target by camera
+forward when the reference projects beyond the target, and uses avatar forward
+for the coincident fallback. The muzzle mount supplies the firing origin
+independently of the resulting basis. The live target service, current hand
+mount, emission cursor and spread-state producers remain supplied or unbound.
+
 The request is rejected if a model is missing, a transform is nonfinite,
 singular or nonuniformly scaled, controller/world scales disagree, or a selected
 mount/proxy is absent. The resolved faction bracket currently requires one combat faction per scene. The prepared scene is immutable. The shared `parse_fight`
@@ -59,12 +66,14 @@ recovered penetration fragment consumes those entry/exit records in float32
 operation order, accumulates material length and accepts budget equality.
 Per-body damage loss and range falloff are then applied at each actual contact.
 
-A collision-triggered explosion starts at the actual first impact and measures
-3D distance to each posed body's closest sphere/capsule surface. A trajectory
-that hits nobody does not explode at its nominal target. This radial eligibility
-adapter has no terrain, visibility/cover query, destruction route, player stagger
-or native explosion dispatch. Status-area propagation retains the arena's
-existing planar policy.
+The reference radial adapter uses the modeled first-contact point and distance
+to each posed body's closest sphere/capsule surface. The native Glaive impact
+branch tests its independent accumulator against a strict threshold and passes
+an impacted object handle. The radial submission reads projectile transform
+translation at `+0xd0` after its arming and scene gates. The transform's value
+at radial submission depends on the as-yet unbound impact receiver and position
+writers. Recipient geometry, cover, destruction routes and accepted direct and
+radial packets remain unbound. Status areas retain their planar policy.
 
 The scene refuses delivery routes it does not implement: continuous beams,
 ricochets, melee, blobs, orbs, lingering fields, lock-on, tendrils, attractors,
@@ -103,18 +112,30 @@ The scene's supplied-direction initializer and target installation are not
 native emission producers.
 
 These original-byte controls execute under the pinned Unicorn environment.
-Its RSQRTPS seed is reproduced before the native refinement steps; physical CPU
-approximation differences have not been calibrated. The proof is exact to that
-retained execution, not a guarantee of identical hardware floating-point state
-or complete live-game homing equivalence.
+The isolated i7-14700KF hardware controls produce different RSQRTPS and
+look-at outputs. A supplied sphere ray at the exclusive float32 limit
+`0x40600001` hits with the Unicorn direction and misses with the hardware
+direction. Real game hardware/profile binding remains open.
 
-Acquisition uses supplied alive state, anchor, cone, range and body visibility,
-with deterministic nearest-candidate selection. Steering uses the separate
-center. Body visibility has no terrain. The collider expands the analytic
-primitives by the projectile radius and queries each traveled segment. The
-native live sweep/filter/overlap path, target-list ordering, target installation,
-helix/emission state, armed impact callbacks and destruction/explosion routes
-remain unbound. Fixed scene actors do not animate or move during flight.
+The ordinary empty-history acquisition branch tests candidate-root range and
+ranks eligible candidates by candidate-anchor distance divided by cone dot.
+A smaller visible score can replace the current winner. Equal scores keep the
+earlier enumerated actor. The scene supplies the ordered list, eligibility,
+anchor visibility and separate steering center. The client refresh owner,
+launch state, alternate scoring/history and runtime clock remain unbound.
+
+The nonsweep movement branch (`0x1246b90`) queries the center, positive side
+and negative side segments in order. They share the retained start; the
+center endpoint uses 1.2 times the physical displacement, and side endpoints
+add or subtract blade radius along the supplied world quaternion's right
+axis. Empty movement advances by the physical displacement. The record
+consumer considers backend order, preacceptance and the first eligible record's
+normal. A back-facing result advances to another segment. For modeled combat
+the posed-body adapter supplies nearest-actor ordering, an opposing normal and
+settlement at the supplied step boundary. Its binary64 proxy arithmetic can
+choose a different member of an original nearest set. Real PhysX records,
+world surfaces, impact continuation, contact timing and dynamic poses remain
+unbound.
 
 ## Evidence and verification
 
@@ -145,6 +166,19 @@ Client build 2026.10.28.09.54, executable SHA-256
   explicitly supplied 3D controls. `rotation_tables.rs` is imported from PE
   RVA `0x241ee70`; its hash is pinned in the fixture. No live acceptance trace
   or independent game measurement is supplied by this batch.
+- `20261118T145138Z-native-homing-ownership`: 15 supplied-state selection
+  controls, including eligibility, competing scores and enumeration order.
+  The importer executes one additional original-byte control where the
+  winning target has the larger Euclidean distance.
+- `20261119T043220Z-glaive-motion-queries`: 68 original descriptor and
+  backend-record controls, including nine first impact-call boundaries.
+- `20261119T055143Z-native-3d-answers-hardware`: 38 supplied-state flights,
+  3,099 ordered segment descriptors, two full 25-actor scenes and hardware
+  controls. The portable scene compares contact step, actor and point against
+  the supplied-state original replay. It preserves the supplied nearest-proxy
+  tolerance set and checks point error below 0.0003 source units.
+- `20261118T145815Z-akarius-radial-dispatch`: corrected impacted-handle ABI
+  and separately observed transform translation at the radial submission.
 
 `scripts/import_native_flight.py` imports the original captured state pages.
 `scripts/import_native_steering.py` executes the matching original consumers
@@ -153,6 +187,8 @@ original result index, reruns the 123 source controls, then adds explicit
 boundary/3D inputs. Reproduction uses the batch's Python3.14.0 and locked
 dependencies; `--atan-table` writes the production table from the original PE.
 Expected states never come from the Rust implementation.
+`scripts/import_native_queries.py` projects the source-pinned eye, selector
+and movement results into `native-queries.json`.
 
 ```sh
 cargo test -p wfsim-engine --lib rules::geometry
@@ -171,7 +207,7 @@ placed on the camera ray. The latter isolates homing from parallax; neither is
 a claim about an equipped Akarius/Laetum animation or attachment writer.
 
 The `/api/log` response carries `scene_3d.flights`: shot/round, camera, muzzle,
-aim anchor, camera-query target, actual direction, selected homing target and
+aim anchor, the eye projection's target, launch direction, selected homing target and
 contacts with part, entry/exit, travel time, thickness and remaining budget.
 This diagnostic is bounded separately by the requested record limit and reports
 its dropped count. Damage stays in the existing combat stream and ledger.

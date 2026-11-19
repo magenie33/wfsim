@@ -236,3 +236,5 @@ fn guided_motion_matches_the_36_native_empty_world_sequences() {
         }
     }
 }
+
+mod queries;
