@@ -84,18 +84,18 @@ check(`${tag} ...and the evaluations figure is every ruler's, added up`,
   `on screen ${JSON.stringify(drawn)} vs board ${facts.scored}`);
 
 const late = await evaluate(`(async () => {
-  const oldBoard = BOARD_META, original = fetchJson;
+  const oldBoard = BOARD_META, original = fetchJsonPatient;
   const read = () => [...document.querySelectorAll('#support-facts .sup-fact b')]
     .map(el => Number(el.textContent.replace(/[^0-9]/g, '')));
   BOARD_META = null; renderSupport();
   const before = read();
-  fetchJson = async (url, ...args) => String(url).endsWith('/board.meta.json')
+  fetchJsonPatient = async (url, ...args) => String(url).endsWith('/board.meta.json')
     ? { boards: { a: { submissions: 17, listed: 2 }, b: { submissions: 17, listed: 9 } } }
     : original(url, ...args);
   try {
     await loadBoard(null);
     return { before, after: read(), builds: Number(document.querySelector('#support-community-facts [data-support-count="builds"]')?.dataset.value) };
-  } finally { fetchJson = original; BOARD_META = oldBoard; renderSupport(); }
+  } finally { fetchJsonPatient = original; BOARD_META = oldBoard; renderSupport(); }
 })()`);
 check(`${tag} metadata arriving after first paint refreshes method and community figures`,
   late.before.length === 1 && late.after.length === 3 && late.after[1] === 17 && late.after[2] === 11 && late.builds === 17,
