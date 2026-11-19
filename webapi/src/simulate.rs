@@ -145,7 +145,10 @@ pub fn simulate_shard_json(
     count: u32,
     on_run: &mut impl FnMut(u32, u32),
 ) -> Value {
-    simulate_from(v, Work::Shard(from, count), on_run)
+    match ready(v, false) {
+        Ok(r) => shard_json(v, &r, from, count, on_run),
+        Err(e) => e,
+    }
 }
 
 /// …AND THE MERGE, which produces the ordinary simulate response.
@@ -154,24 +157,27 @@ pub fn simulate_shard_json(
 /// computed HERE, so there is one implementation of the arithmetic rather than
 /// a Rust one and a JavaScript one that drift.
 pub fn simulate_merged_json(v: &Value, shards: &[Value]) -> Value {
+    match merge_shards(shards) {
+        Ok(merged) => simulate_from(v, Work::Merged(Box::new(merged)), &mut |_, _| {}),
+        Err(e) => e,
+    }
+}
+
+fn merge_shards(shards: &[Value]) -> Result<wfsim_engine::fight::Shard, Value> {
     let mut merged = wfsim_engine::fight::Shard::default();
     for s in shards {
         match serde_json::from_value::<wfsim_engine::fight::Shard>(s.clone()) {
             Ok(part) => merged.merge(&part),
-            Err(e) => return err_json(format!("shard: {e}")),
+            Err(e) => return Err(err_json(format!("shard: {e}"))),
         }
     }
-    simulate_from(v, Work::Merged(Box::new(merged)), &mut |_, _| {})
+    Ok(merged)
 }
 
-/// WHAT THIS CALL IS DOING — the three ways a simulation is run, sharing one
-/// path so a shard and a whole run cannot build different params.
+/// Where the complete report gets its runs.
 enum Work {
     /// The ordinary call: run every run here.
     All,
-    /// A slice of the runs, for a worker. Returns the shard rather than a
-    /// report.
-    Shard(u32, u32),
     /// Already run by a fleet; this call only finishes it.
     Merged(Box<wfsim_engine::fight::Shard>),
 }
@@ -417,7 +423,13 @@ pub(crate) fn seat_from(v: &Value, arena: &wfsim_engine::arena::Arena) -> Result
 /// WHAT THE BUILD COSTS IN CAPACITY AND FORMA — a report about the build, and
 /// nothing the fight reads. Separated from the resolution above so a seat the
 /// answer is not about does not compute it.
-fn forma_of(info: &'static WeaponInfo, refs: &[&ModDef]) -> Value {
+struct FormaPlan {
+    info: &'static WeaponInfo,
+    planned: Vec<PlannedMod>,
+    stance: Option<wfsim_engine::rules::capacity::StanceSlot>,
+}
+
+fn plan_forma(info: &'static WeaponInfo, refs: &[&ModDef]) -> FormaPlan {
     // ---- forma legality (order-independent; needs only the mod multiset) ----
     // THE STANCE IS NOT ONE OF THE NINE. It has a slot of its own — that is the
     // whole reason it hands capacity back rather than taking it — so counting
@@ -434,11 +446,6 @@ fn forma_of(info: &'static WeaponInfo, refs: &[&ModDef]) -> Value {
             polarity: m.polarity,
         })
         .collect();
-    // CAPACITY IS NOT A CONSTANT. It follows the weapon's rank, and a rank-40
-    // weapon reaches 80 — the literal 60 here was a rank-30 answer standing in
-    // for the rule (docs/INVESTMENT.md). `fit` owns the whole question: the
-    // rank the Forma buy, the capacity that gives, and the bill by item.
-    let inv = wfsim_engine::rules::capacity::Investment::default();
     // …AND THE STANCE HANDS CAPACITY BACK rather than taking it, which is why
     // the panel's own bill has to ask for it too: a melee build reads five to
     // ten points of headroom the weapon's rank did not buy.
@@ -448,6 +455,12 @@ fn forma_of(info: &'static WeaponInfo, refs: &[&ModDef]) -> Value {
             slot_polarity: wfsim_engine::data::weapons::stance_polarity(&info.id),
         }
     });
+    FormaPlan { info, planned, stance }
+}
+
+fn forma_of(FormaPlan { info, planned, stance }: FormaPlan) -> Value {
+    // `fit` owns the capacity, rank and Forma bill (docs/INVESTMENT.md).
+    let inv = wfsim_engine::rules::capacity::Investment::default();
     match wfsim_engine::rules::capacity::fit(
         wspec(&info.id).max_rank,
         &innate_slots_for(&info.id),
@@ -477,8 +490,7 @@ pub(crate) struct Ready {
     pub(crate) panel: ResolvedPanel,
     pub(crate) params: FightParams,
     pub(crate) seat_weapons: Vec<String>,
-    /// What the build costs — the report's, so only asked for with `report`.
-    pub(crate) forma: Value,
+    forma: Option<FormaPlan>,
 }
 
 /// One immutable request, prepared for independent indexed runs. Each run owns
@@ -520,6 +532,31 @@ impl PreparedSimulation {
     }
 }
 
+/// One candidate's complete input, shared by its indexed shards and report.
+/// The transport owns its lifetime; no runs or reports are retained here.
+pub struct PreparedSimulationReport {
+    request: Value,
+    ready: Ready,
+}
+
+impl PreparedSimulationReport {
+    pub fn new(request: Value) -> Result<Self, Value> {
+        let ready = ready(&request, true)?;
+        Ok(Self { request, ready })
+    }
+
+    pub fn shard_json(&self, from: u32, count: u32, on_run: &mut impl FnMut(u32, u32)) -> Value {
+        shard_json(&self.request, &self.ready, from, count, on_run)
+    }
+
+    pub fn merged_json(self, shards: &[Value]) -> Value {
+        match merge_shards(shards) {
+            Ok(merged) => simulate_report(&self.request, self.ready, Work::Merged(Box::new(merged)), &mut |_, _| {}),
+            Err(e) => e,
+        }
+    }
+}
+
 /// THE ONE CONSTRUCTION OF A FIGHT FROM A REQUEST. `simulate` runs what it
 /// returns, and the optimizer scores every candidate through it — a candidate
 /// IS a request (`replay`) — so the search and the replay cannot fight two
@@ -529,17 +566,29 @@ pub(crate) fn ready(v: &Value, report: bool) -> Result<Ready, Value> {
     let refs = e.seat(&mod_ids(v))?;
     // WHAT THE BUILD COSTS — a REPORT, not a resolution. Nothing the fight does
     // depends on it, which is why it is a function of its own.
-    let forma = if report { forma_of(e.fight.info, &refs) } else { Value::Null };
+    let forma = report.then(|| plan_forma(e.fight.info, &refs));
     let (panel, params) = e.params(&refs)?;
     drop(refs);
     Ok(Ready { fight: e.fight, panel, params, seat_weapons: e.seat_weapons, forma })
 }
 
 fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Value {
-    let Ready { fight, panel: report_panel, params, seat_weapons, forma } = match ready(v, true) {
-        Ok(r) => r,
-        Err(e) => return e,
-    };
+    match ready(v, true) {
+        Ok(r) => simulate_report(v, r, work, on_run),
+        Err(e) => e,
+    }
+}
+
+fn shard_json(v: &Value, r: &Ready, from: u32, count: u32, on_run: &mut impl FnMut(u32, u32)) -> Value {
+    let s = wfsim_engine::fight::shard(
+        &r.params, from, count, r.fight.seed, get_bool(v, "run_series", false),
+        &mut |done| on_run(done, count),
+    );
+    serde_json::to_value(&s).unwrap_or_else(|e| err_json(format!("shard: {e}")))
+}
+
+fn simulate_report(v: &Value, ready: Ready, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Value {
+    let Ready { fight, panel: report_panel, params, seat_weapons, forma } = ready;
     let Fight {
         arena, enemy_name, level, steel_path, eximus, runs, seed, tenno, ..
     } = fight;
@@ -562,22 +611,13 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
     // describe each build alone. The quick calc is the caller; nobody else pays
     // the length.
     let want_series = get_bool(v, "run_series", false);
-    // A SHARD STOPS HERE. Everything above is the fight; everything below is
-    // the report, and a worker running an eighth of the runs has no business
-    // producing one.
-    if let Work::Shard(from, count) = work {
-        let mut tick = |done: u32| on_run(done, count);
-        let s =
-            wfsim_engine::fight::shard(&params, from, count, seed, want_series, &mut tick);
-        return serde_json::to_value(&s).unwrap_or_else(|e| err_json(format!("shard: {e}")));
-    }
     let (s, series) = match work {
         // ALREADY RUN, by a fleet of workers — this call only finishes it.
         Work::Merged(m) => {
             let n = m.runs;
             m.finish(&params, n)
         }
-        _ => {
+        Work::All => {
             let mut tick = |done: u32| on_run(done, runs);
             if want_series {
                 wfsim_engine::fight::monte_carlo_series_reporting(&params, runs, seed, &mut tick)
@@ -1078,7 +1118,7 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
             "modified_base": report_panel.modified_base,
             "co_per_type": report_panel.co_per_type,
         },
-        "forma": forma,
+        "forma": forma.map(forma_of),
         // WHO TOOK WHAT, by NAME. `damage_by_body` has been per body since the
         // formation landed and had no way to say WHOSE — the index into a list
         // is not a name, and a reader deleting the body in front would renumber

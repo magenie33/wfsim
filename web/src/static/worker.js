@@ -70,11 +70,12 @@ onmessage = async (e) => {
     const out = wasm_bindgen.simulate_shard(
       JSON.stringify(msg.body ?? {}), msg.from, msg.count,
       (done, total) => postMessage({ id: msg.id, kind: "progress", done, total }),
+      msg.prepared === true,
     );
     postMessage({ id: msg.id, payload: JSON.parse(out) });
   } else if (msg.kind === "merge") {
     const out = wasm_bindgen.simulate_merged(
-      JSON.stringify(msg.body ?? {}), JSON.stringify(msg.shards ?? []));
+      JSON.stringify(msg.body ?? {}), JSON.stringify(msg.shards ?? []), msg.prepared === true);
     postMessage({ id: msg.id, payload: JSON.parse(out) });
   } else if (msg.kind === "api") {
     // A SIMULATE SAYS HOW FAR IT HAS GOT — ALWAYS, whether or not anyone asked
