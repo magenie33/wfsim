@@ -106,6 +106,7 @@ jobs:
       - run: node scripts/check_ci_policy.mjs
       - run: node scripts/check_ci_hotfix.mjs
       - run: node scripts/check_ci_partitions.mjs
+      - run: node --test scripts/check_cla.test.mjs
       - run: node scripts/check_full_work.mjs
       - run: python3 scripts/check_engine_compare.py
       - run: python3 scripts/check_release_readiness.py
@@ -994,6 +995,9 @@ jobs:
       - name: The Tenno reaches the panel, the sim and a share link
         if: matrix.group == 'account'
         run: node scripts/check_tenno.mjs
+      - name: Published build shares cite the measured row and preserve its build
+        if: matrix.group == 'account'
+        run: node scripts/check_share_entries.mjs
       - name: Existing browser stores upgrade without losing reports or delivery state
         if: matrix.group == 'account'
         run: node scripts/check_browser_db_migration.mjs

@@ -65,6 +65,15 @@ for (const path of ['LICENSE-DATA.md', 'docs/creator-use.html']) {
   assert.equal(classify([path], true).deep, true);
   assert.equal(classify([path], false, false).deep, true);
 }
+assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get('scripts/check_share_entries.mjs') || []],
+  ['page-rest'], 'published-build citations run against the built candidate in ordinary browser CI');
+assert.equal(classify(['scripts/check_share_entries.mjs']).deep, false);
+for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'Cargo.lock',
+  'scripts/ci_rust.mjs', 'scripts/check_share_entries_unknown.mjs'])
+  assert.equal(classify(['scripts/check_share_entries.mjs', extra]).deep, true);
+assert.equal(classify(['scripts/check_share_entries.mjs'], true).deep, true);
+assert.equal(classify(['scripts/check_share_entries.mjs'], false, false).deep, true);
+assert.match(readFileSync('.github/workflows/ci.yml', 'utf8'), /run: node --test scripts\/check_cla\.test\.mjs/);
 const inventoryControlInputs = ['scripts/inventory_control.mjs', 'scripts/inventory_rebuild.mjs',
   'scripts/inventory_pipeline.mjs', 'scripts/inventory_relational_pipeline.mjs'];
 for (const path of inventoryControlInputs) {

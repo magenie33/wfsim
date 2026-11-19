@@ -107,6 +107,7 @@ assert.throws(() => pageGroups(workflow.replace('fromJSON(\'["fast"]\')', 'fromJ
 const allPages = [...Object.values(pages).flat(), ...Object.values(mainPages).flat()];
 assert.equal(new Set(allPages).size, allPages.length, 'browser commands have one owner');
 assert(pages.account.includes('node scripts/check_browser_db_migration.mjs'),'browser upgrades run in the existing account group');
+assert(pages.account.includes('node scripts/check_share_entries.mjs'), 'published-build citations run in the account and sharing group');
 for(const command of ['node scripts/check_sqlite_migration.mjs','node scripts/check_compute_storage.mjs','node scripts/check_answer_batches.mjs']) {
   assert.equal(workflow.split(command).length-1,1,command+' has one permanent CI entry');
 }
