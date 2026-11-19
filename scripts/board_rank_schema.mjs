@@ -52,7 +52,8 @@ ${original}
 GRANT EXECUTE ON FUNCTION board_read_page(text,text,text,bigint,bigint) TO ${httpRole};
 DROP TRIGGER IF EXISTS board_rank_recent_measurement ON state_board_input_mailbox;
 DROP FUNCTION IF EXISTS board_rank_capture_recent_measurement();
-DROP TABLE IF EXISTS state_board_rank_recent_inputs;
+DROP FUNCTION IF EXISTS board_rank_discover_scope(uuid,text,text);
+DROP TABLE IF EXISTS state_board_rank_recent_inputs,state_board_rank_new_scopes,state_board_rank_scope_discovery;
 DROP FUNCTION board_rank_expand_inputs(integer);
 DROP VIEW state_board_rank_dependencies;
 DROP TABLE state_board_rank_input_sets,state_board_rank_descriptions;

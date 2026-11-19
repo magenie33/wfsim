@@ -113,7 +113,8 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
    return {...await applyRankDirty(sql,claim,part,prepared),stage:'indexing'};
   }catch(error){await retryRankDirty(sql,claim,error);if(!native.healthy)throw error;return {status:'index_error',error:error.message};}
  };
- const [{recent:recentInstalled}]=await sql.unsafe("SELECT to_regclass('state_board_rank_recent_inputs') IS NOT NULL AS recent");
+ const [{recent:recentInstalled,discovery}]=await sql.unsafe(`SELECT to_regclass('state_board_rank_recent_inputs') IS NOT NULL AS recent,
+  to_regprocedure('board_rank_discover_scope(uuid,text,text)') IS NOT NULL AS discovery`);
  let preferRecent=true;
  const publish=async()=>{
   if(!publication){
@@ -163,6 +164,13 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
   }),()=>dirty(true));
  }
  if(requestedPartitions){
+  if(discovery){
+   const rulers=JSON.stringify(native.contract.rulers.map(row=>row.id));
+   stages.push(async()=>{
+    const [{scope}]=await sql.unsafe('SELECT board_rank_discover_scope($1::uuid,$2,$3) AS scope',[source,native.adapter,rulers]);
+    return scope?{status:'discovered-scope',...scope}:null;
+   });
+  }
   const [installed]=await sql.unsafe("SELECT to_regprocedure('board_requested_result_take(uuid,text)') IS NOT NULL AS ready");
   if(installed.ready)stages.push(()=>sql.begin(async tx=>{
    const [{target}]=await tx.unsafe('SELECT board_requested_result_take($1::uuid,$2::text) AS target',[source,native.adapter]);
