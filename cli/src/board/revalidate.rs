@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! Remove unequippable rows from a committed snapshot without reading scores.
+//! Remove ineligible rows from a committed snapshot without reading scores.
 
 use std::collections::BTreeMap;
 use std::path::Path;
 
 use serde_json::{value::RawValue, Value};
 
-use super::publish::INDEX_STEM;
+use super::publish::{RowRiven, INDEX_STEM};
 
 fn strings(row: &Value, key: &str) -> Vec<String> {
     row.get(key).and_then(Value::as_array).map(|a| {
@@ -19,10 +19,11 @@ pub(super) fn legal(weapon: &str, row: &Value) -> Result<(), String> {
     if wfsim_engine::board::benchmarks::get(text("benchmark")).is_none() {
         return Err("unknown benchmark".into());
     }
-    let riven = row.get("riven").map(|rv| wfsim_engine::build::rivens::RivenShape {
-        bonuses: strings(rv, "bonuses"),
-        malus: rv.get("malus").and_then(Value::as_str).map(str::to_owned),
-    });
+    let riven = row.get("riven").filter(|rv| !rv.is_null()).map(|rv| {
+        serde_json::from_value::<RowRiven>(rv.clone()).ok()
+            .and_then(|riven| riven.standard_shape(weapon))
+            .ok_or("nonstandard riven rolls")
+    }).transpose()?;
     let assembly = wfsim_engine::data::weapons::assembly::of(
         weapon, text("grip"), text("loader"), text("link"));
     let mods = strings(row, "mods");

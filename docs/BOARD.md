@@ -2038,21 +2038,23 @@ Two copies with the same stats and different rolls are different builds.
 Personal item names and editable card metadata remain outside build identity.
 
 First intake captures the current boards and family and creates the shared
-workflow described in [COMPUTE_TASKS.md](COMPUTE_TASKS.md). It does not generate
-additional riven corners or mod ranks. Repeated intake of an existing build
-creates no work. Explicit system requests own additional coverage.
+workflow described in [COMPUTE_TASKS.md](COMPUTE_TASKS.md). It generates the
+standard riven corners with the submitted mod ranks and other equipment.
+Intake measures the default corner and an explicitly submitted standard
+alternative. Other corners are available to the board's coverage rules.
+Each corner has its own identity and reuses any existing measurements for
+that identity, ruler and mode.
 
-Publication groups the measured corners of one shape into one row
-(`one_row_per_shape`), selecting its best score and preferring the default
-corner on a tie. This presentation does not merge their stored build identities.
+Publication admits only standard riven rolls. It groups the measured corners
+of one shape into one row (`one_row_per_shape`), selecting its best score and
+preferring the default corner on a tie. Each corner keeps its stored identity.
 A near-tie follows the stored score until per-measurement spread is available.
 
 Intake runs no fights. The workflow sends every required measurement or
 incompatible-family search through normal computation admission and verification.
 
-The engine's search candidates use `build::rivens::ambiguous_stats` to identify
-stats whose best bound depends on the fight. This is a search rule; it does not
-create intake work. Its defined cases follow.
+Search and board intake use `build::rivens::ambiguous_stats` to identify
+stats whose best bound depends on the fight. Its defined cases follow.
 
 **WHICH STATS GET MORE THAN ONE CORNER AT ALL** is
 `build::rivens::ambiguous_stats`. Three sources and no fourth:

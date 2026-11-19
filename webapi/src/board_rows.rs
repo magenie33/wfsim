@@ -156,6 +156,12 @@ pub fn admitted(rec: &Value, bench_id: &str, v: &ValidBuild) -> Result<(), Strin
     wfsim_engine::board::builds::admit_for_board(bench_id, get_str(rec, "weapon", ""), v)
 }
 
+pub fn has_standard_riven(v: &ValidBuild) -> bool {
+    v.riven.as_ref().is_none_or(|shape| {
+        wfsim_engine::build::rivens::is_standard_roll(shape, &v.weapon, &v.riven_rolls)
+    })
+}
+
 /// THE CARD A BUILD NAMES — its own rolls, or the god roll if it names none
 /// (what the library held before intake resolved them, and what it would
 /// resolve to today).
