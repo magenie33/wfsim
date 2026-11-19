@@ -35,6 +35,7 @@ const NON_SEARCH_TOOLS = [...NATIVE_NON_SEARCH_INPUTS, 'scripts/check_weapon_sea
   '.github/workflows/cla.yml', 'CLA.md', 'CLA.zh-CN.md', 'CONTRIBUTING.md',
   'scripts/check_cla.mjs', 'scripts/check_cla.test.mjs',
   'scripts/build_site_app.py',
+  'LICENSE-DATA.md', 'docs/creator-use.html',
   'scripts/check_time_storage.mjs',
   'scripts/import_kitgun_status.py', 'tests/fixtures/client/kitgun-status-2026-10-28.json',
   'tests/golden/M132-vermisplicer-secondary-status.json', 'docs/measurements/M132-vermisplicer-secondary-status.md',
