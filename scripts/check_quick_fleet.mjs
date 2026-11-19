@@ -271,31 +271,155 @@ if (process.argv.includes("--signals-only")) process.exit(0);
 // A FROZEN SURVEY QUESTION, cut short: its fight shorter and fewer runs and starts.
 const REQUEST = {"weapon":"furis","rivens":[{"id":"rmv0r8x1z402","name":"riven 1","spec":{"bonuses":[{"id":"cold","roll":1.1},{"id":"critical_chance","roll":1.1}],"malus":null,"rank":8,"polarity":"madurai","shape":"2","drafts":{"2":{"bonuses":[{"id":"cold","roll":1.1},{"id":"critical_chance","roll":1.1}],"malus":null},"3":{"bonuses":[{"id":null,"roll":1},{"id":null,"roll":1},{"id":null,"roll":1}],"malus":null},"3+1":{"bonuses":[{"id":null,"roll":1},{"id":null,"roll":1},{"id":null,"roll":1}],"malus":{"id":null,"roll":1}},"2+1":{"bonuses":[{"id":null,"roll":1},{"id":null,"roll":1}],"malus":{"id":null,"roll":1}}}}}],"every_rank":{"arcanes":[],"mods":["hunter_track","continuous_misery","lingering_torment","perpetual_agony","augur_seeker","lasting_sting"]},"mode":"cycle","valence_element":"","valence_bonus":0,"stance":"","enemy":"thrax_centurion","level":9999,"steel_path":true,"guardian_aura":false,"ancient_protector_aura":false,"eximus":null,"squad_size":1,"headshot_pct":100,"aiming":true,"player_at":[0,0],"target_at":[0,0.5],"formation":[],"also_acting":[],"aim_at":null,"invisible":false,"airborne":false,"sliding":false,"aim_gliding":false,"overshields":false,"channeling":false,"melee_equipped":true,"solo_weapon":false,"buff_triggers_off":[],"frame":"","infinite_ammo":true,"metric":"kpm","duration":20,"buffs":{},"ability_strength":null,"abilities":[],"apl":[],"extra_stats":{},"auras":[],"shards":[],"seed":12648430,"spectral_form":false,"wf_energy_pct":1,"__weapon":"furis","runs":4,"custom_enemies":[],"finalists":1,"strategy":"quick","starts":[{"slots":["riven:rmv0r8x1z402","scorch",null,null,null,null,null,null,null,null],"evolutions":["furis_evo1_incarnon_form","furis_haven_foray","furis_practiced_grip","furis_headcracker"],"arcane":["none"],"arcane_rank":[null],"mode":null,"valence_element":null,"fixed":[{"kind":"mods","idx":0}]},{"slots":["riven:rmv0r8x1z402","frostbite",null,null,null,null,null,null,null,null],"evolutions":["furis_evo1_incarnon_form","furis_haven_foray","furis_practiced_grip","furis_headcracker"],"arcane":["none"],"arcane_rank":[null],"mode":null,"valence_element":null,"fixed":[{"kind":"mods","idx":0}]}],"candidate_runs":2,"limits":{"exclude":{"mods":[],"arcanes":[],"evolutions":[],"modes":[],"valence":[]},"mods":8,"exilus":true,"arcane_seats":[true]}};
 
-const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE });
-const { evaluate, check } = app;
-const r = await evaluate(`(async () => {
-  const body = ${JSON.stringify(REQUEST)};
-  const run = async (n, opts) => {
-    const job = quickFleet(body, n, async () => {}, opts);
-    while (!job.result) await new Promise((ok) => setTimeout(ok, 200));
-    const best = (job.result.results || [])[0] || {};
-    return { ok: job.result.ok !== false, error: job.result.error || null, work: job.result.work,
-      kill: best.kill_progress, mods: JSON.stringify(best.mods), arcanes: JSON.stringify(best.arcanes), workers: job.workers.length };
-  };
-  const one = await run(1);
-  const three = await run(3, { keep: true });
-  const kept = fleetKept.length;
-  let flip = 0;
-  const changing = await run(() => (flip++ % 2 ? 4 : 1), { keep: true });
-  const keptAfter = fleetKept.length;
-  const rested = await run(2, { rest: (ms) => Math.min(20, ms) });
-  return { one, three, kept, changing, keptAfter, rested };
-})()`, 600000);
+// Two pinned single-card starts cannot converge to the same build.
+const FINALS_REQUEST = {
+  weapon: "braton", enemy: "corrupted_heavy_gunner", level: 100, duration: 1,
+  metric: "dps", infinite_ammo: true, headshot_pct: 0, seed: 0x5eed,
+  strategy: "quick", build_size: 1, build_min: 1, candidate_runs: 2, runs: 4,
+  finalists: 2, screen_ratio: 0, mods: { serration: "search", point_strike: "search" },
+  arcanes: { none: "fixed" }, every_rank: { mods: [], arcanes: [] },
+  limits: { mods: 1, exilus: false, arcane_seats: [false] },
+  starts: ["serration", "point_strike"].map(id => ({
+    slots: [id, null, null, null, null, null, null, null, null, null],
+    evolutions: [], arcane: ["none"], arcane_rank: [null],
+    fixed: [{ kind: "mods", idx: 0, placement: "slot" }],
+  })),
+};
 
-const same = (a, b) => a.ok && b.ok && a.work === b.work && a.kill === b.kill && a.mods === b.mods && a.arcanes === b.arcanes;
-check("the search finds a build", r.one.ok && r.one.mods && r.one.mods !== "[]" && r.one.work > 0, JSON.stringify(r.one));
-check("three workers give the same build, number and work as one", same(r.one, r.three), JSON.stringify([r.one, r.three]));
-check("...and a count that changes every round gives them too", same(r.one, r.changing), JSON.stringify([r.one, r.changing]));
-check("...and so do workers resting between calls, as a share below 100% has them", same(r.one, r.rested), JSON.stringify([r.one, r.rested]));
-check("a background search hands its workers back for the next one", r.kept === 3 && r.keptAfter >= 3, JSON.stringify(r));
-await app.finish("a quick search answers the same on any number of cores, and a volunteer's next one starts warm");
+const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE });
+try {
+  const { evaluate, check } = app;
+  const finals = await evaluate(`(async () => {
+    const body = ${JSON.stringify(FINALS_REQUEST)};
+    const run = async (count, policy) => {
+      const job = quickFleet(body, count);
+      const workers = job.workers.slice(), wire = [], cleanup = [];
+      for (const [index, worker] of workers.entries()) {
+        const send = worker.postMessage;
+        let pending = null;
+        const observe = event => {
+          if (event.data.kind !== "result" || !pending) return;
+          const payload = event.data.payload || {};
+          pending.reply = { ok: payload.ok, error: payload.error, receipt: payload.receipt,
+            verify: payload.verify, generation: payload.generation, runs: payload.runs };
+          pending = null;
+        };
+        // Observe the actual worker result before quickFleet handles its completion.
+        worker.addEventListener("message", observe, true);
+        worker.postMessage = function (message, ...transfer) {
+          let sent = message;
+          if (["optimize", "verify_final", "finish_finals", "api"].includes(message.kind)) {
+            const call = { worker: index, kind: message.kind, path: message.path,
+              index: message.index, generation: message.generation, replay: message.replay,
+              lead: message.body?.quick_fleet?.lead === true };
+            if (message.kind === "finish_finals") {
+              const receipts = message.receipts.slice();
+              call.before = receipts.map(receipt => JSON.parse(receipt)[1]);
+              if (policy === "reverse" || policy === "missing") receipts.reverse();
+              if (policy === "missing") receipts.pop();
+              sent = { ...message, receipts };
+              call.receipts = receipts;
+            }
+            wire.push(call);
+            pending = call;
+          }
+          return send.call(worker, sent, ...transfer);
+        };
+        cleanup.push(() => {
+          worker.postMessage = send;
+          worker.removeEventListener("message", observe, true);
+        });
+      }
+      try {
+        const deadline = performance.now() + 45000;
+        while (!job.result && performance.now() < deadline) await new Promise(resolve => setTimeout(resolve, 20));
+        if (!job.result) throw Error("bounded finalist fixture did not finish");
+        const result = job.result;
+        return { ok: result.ok !== false, error: result.error,
+          answer: { results: result.results, start_results: result.start_results, final_work: result.final_work }, wire };
+      } finally {
+        cleanup.forEach(restore => restore());
+        if (!job.result) {
+          job.cancelled = true;
+          workers.forEach(worker => worker.terminate());
+        }
+      }
+    };
+    return { serial: await run(1), split: await run(2, "reverse"), missing: await run(2, "missing") };
+  })()`, 150000);
+
+  const calls = (run, kind) => run.wire.filter(call => call.kind === kind);
+  assert.equal(finals.serial.ok, true, finals.serial.error);
+  assert.equal(finals.serial.answer.results.length, 2, "fixture must retain two distinct finalists");
+  assert.equal(finals.serial.answer.start_results.length, 2, "both pinned starts must be reported");
+  const replays = finals.serial.answer.results.map(row => JSON.stringify(row.replay));
+  assert.equal(new Set(replays).size, 2, "the finalists must carry distinct complete replay identities");
+  assert.notEqual(finals.serial.answer.results[0].dps, finals.serial.answer.results[1].dps,
+    "the two scores must distinguish a misplaced receipt");
+  assert(finals.serial.answer.final_work > 0, "the serial oracle must measure its finalists");
+  assert.equal(calls(finals.serial, "verify_final").length, 0, "one worker is the serial final-round oracle");
+  assert.equal(calls(finals.serial, "finish_finals").length, 0);
+
+  for (const run of [finals.split, finals.missing]) {
+    const verify = calls(run, "verify_final"), finish = calls(run, "finish_finals");
+    assert.equal(verify.length, 2, "the actual WASM lane path must verify both finalists");
+    assert.equal(new Set(verify.map(call => call.worker)).size, 2, "both actual workers must measure a finalist");
+    const dispatch = run.wire.find(call => Array.isArray(call.reply?.verify));
+    assert(dispatch?.lead && dispatch.reply.verify.length === 2, "the actual leader must dispatch two replays");
+    for (const call of verify) {
+      assert.equal(call.generation, dispatch.reply.generation);
+      assert.equal(call.replay, dispatch.reply.verify[call.index]);
+      assert.equal(call.reply?.ok, true, "verify_final must return an actual WASM receipt");
+      const [generation, index, score] = JSON.parse(call.reply.receipt);
+      assert.equal(generation, call.generation);
+      assert.equal(index, call.index);
+      assert(Array.isArray(score.Measured) && score.Measured.length === 7, "legal finalists must actually be measured");
+    }
+    assert.deepEqual(verify.map(call => JSON.stringify(JSON.parse(call.replay))).sort(), replays.slice().sort());
+    assert.equal(finish.length, 1, "the actual leader must execute finish_finals exactly once");
+    assert.equal(finish[0].worker, dispatch.worker);
+    assert.equal(finish[0].generation, dispatch.reply.generation);
+    assert.deepEqual(finish[0].before, [0, 1], "the page assembles receipts by candidate index");
+  }
+  assert.equal(finals.split.ok, true, finals.split.error);
+  const finish = calls(finals.split, "finish_finals")[0];
+  assert.deepEqual(finish.receipts.map(receipt => JSON.parse(receipt)[1]), [1, 0],
+    "the real WASM collector must restore intentionally reversed receipt order");
+  assert.equal(finish.reply?.ok, true, "finish_finals must return the measured report");
+  assert.deepEqual(finals.split.answer, finals.serial.answer,
+    "all ordered results, start results, replay identities and final work must equal the serial oracle");
+  assert.equal(calls(finals.missing, "finish_finals")[0].receipts.length, 1);
+  assert.equal(calls(finals.missing, "finish_finals")[0].reply?.ok, false);
+  assert.equal(finals.missing.ok, false, "an actual missing receipt must fail the whole final round");
+  assert.match(finals.missing.error, /invalid or incomplete finalist receipts/);
+  console.log("  ok  actual WASM finalist dispatch, ordered replay reports, reversed receipts and missing-receipt rejection");
+
+  const r = await evaluate(`(async () => {
+    const body = ${JSON.stringify(REQUEST)};
+    const run = async (n, opts) => {
+      const job = quickFleet(body, n, async () => {}, opts);
+      while (!job.result) await new Promise((ok) => setTimeout(ok, 200));
+      const best = (job.result.results || [])[0] || {};
+      return { ok: job.result.ok !== false, error: job.result.error || null, work: job.result.work,
+        kill: best.kill_progress, mods: JSON.stringify(best.mods), arcanes: JSON.stringify(best.arcanes), workers: job.workers.length };
+    };
+    const one = await run(1);
+    const three = await run(3, { keep: true });
+    const kept = fleetKept.length;
+    let flip = 0;
+    const changing = await run(() => (flip++ % 2 ? 4 : 1), { keep: true });
+    const keptAfter = fleetKept.length;
+    const rested = await run(2, { rest: (ms) => Math.min(20, ms) });
+    return { one, three, kept, changing, keptAfter, rested };
+  })()`, 600000);
+
+  const same = (a, b) => a.ok && b.ok && a.work === b.work && a.kill === b.kill && a.mods === b.mods && a.arcanes === b.arcanes;
+  check("the search finds a build", r.one.ok && r.one.mods && r.one.mods !== "[]" && r.one.work > 0, JSON.stringify(r.one));
+  check("three workers give the same build, number and work as one", same(r.one, r.three), JSON.stringify([r.one, r.three]));
+  check("...and a count that changes every round gives them too", same(r.one, r.changing), JSON.stringify([r.one, r.changing]));
+  check("...and so do workers resting between calls, as a share below 100% has them", same(r.one, r.rested), JSON.stringify([r.one, r.rested]));
+  check("a background search hands its workers back for the next one", r.kept === 3 && r.keptAfter >= 3, JSON.stringify(r));
+  await app.finish("a quick search answers the same on any number of cores, and a volunteer's next one starts warm");
+} finally {
+  await app.close();
+}

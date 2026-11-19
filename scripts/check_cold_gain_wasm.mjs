@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // node scripts/check_cold_gain_wasm.mjs NEW_NO_MODULES [OLD_NO_MODULES [DATA_PACK]]
-// With no old package, use the checked-in upstream release. The new package
-// embeds its data; only the reference is sent the pack.
+// With no old package, use the checked-in release. Every lane receives the
+// same data pack before its first request, including a fresh candidate lane.
 // Set WFSIM_COLD_GAIN_PREP=1 to time only preparation/wire/report overhead.
 import assert from "node:assert/strict";
 import fs from "node:fs";
@@ -47,8 +47,8 @@ function lane({ glue, module }, packs = []) {
 
 const old = lane(packageFiles(oldDir), [data]);
 const nextFiles = packageFiles(nextDir);
-const next = lane(nextFiles);
-const fresh = lane(nextFiles);
+const next = lane(nextFiles, [data]);
+const fresh = lane(nextFiles, [data]);
 
 async function equal(message, actualLane = next) {
   const expected = await old(message);

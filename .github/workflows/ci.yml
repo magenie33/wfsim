@@ -107,6 +107,8 @@ jobs:
       - run: node scripts/check_ci_hotfix.mjs
       - run: node scripts/check_ci_partitions.mjs
       - run: node --test scripts/check_cla.test.mjs
+      - run: node scripts/check_gain_branch.mjs
+      - run: node scripts/check_quick_fleet.mjs --signals-only
       - run: node scripts/check_full_work.mjs
       - run: python3 scripts/check_engine_compare.py
       - run: python3 scripts/check_release_readiness.py
@@ -266,12 +268,17 @@ jobs:
       - name: Stance search agrees with a settled exhaustive reference
         if: matrix.suite == 'accuracy'
         run: node scripts/check_stance_truth.mjs
+      - name: Four-element searches agree with settled exhaustive references
+        if: matrix.suite == 'accuracy'
+        run: node scripts/check_element_truth.mjs
       - name: Retain stance truth evidence
         if: always() && matrix.suite == 'accuracy'
         uses: actions/upload-artifact@v4
         with:
           name: stance-truth-${{ github.sha }}
-          path: target/stance-truth/
+          path: |
+            target/stance-truth/
+            target/element-truth/
 
   # NATIVE AND WASM COUNT THE SAME WORK (docs/WASM.md §"Gas"): both built from
   # this commit, a fixed set of rows fought by each must give the same gas,
@@ -593,6 +600,19 @@ jobs:
         run: node scripts/check_release_identity.mjs
       - name: Build simulate and solve execute on the shipping module and data
         run: node scripts/check_release_core.mjs
+      - name: Cold gain lanes preserve complete reports with the published data pack
+        run: node scripts/check_cold_gain_wasm.mjs site site
+      - name: Gain caching preserves ordered measurements on the shipping engine
+        run: |
+          set -euo pipefail
+          baseline=e5259fe648faedaa6161324789db0fcbd4ae833f
+          git fetch --no-tags --depth=1 origin "$baseline"
+          mkdir -p target/gain-check-pkg
+          wasm=$(node -p 'JSON.parse(require("fs").readFileSync("site/release.json")).wasm')
+          pack=$(node -p 'JSON.parse(require("fs").readFileSync("site/release.json")).packs.find(p=>p.startsWith("pack.data."))')
+          cp "site/pkg/wfsim_wasm.$wasm.js" target/gain-check-pkg/wfsim_wasm.js
+          cp "site/pkg/wfsim_wasm_bg.$wasm.wasm" target/gain-check-pkg/wfsim_wasm_bg.wasm
+          node scripts/check_gain_branch.mjs --wasm target/gain-check-pkg --before "$baseline" --data-pack "site/pkg/$pack"
       # THE PAGE'S ONE PROGRAMMATIC SURFACE. Everything that drives the page
       # from outside — the checks, an in-page agent, a bot — stands on
       # `window.wfsim`, so its two properties are worth a check rather than a
@@ -884,6 +904,27 @@ jobs:
       - name: A lost lane is replaced and says where, and a slow call is not taken for a dead one
         if: matrix.group == 'calculation'
         run: node scripts/check_calc_recovers.mjs
+      - name: Whole finalist replays retain their serial results across worker counts
+        if: matrix.group == 'calculation'
+        run: node scripts/check_quick_fleet.mjs
+      - name: Gain scans retain their measured axes
+        if: matrix.group == 'calculation'
+        run: node scripts/check_gain_axes.mjs
+      - name: Gain scans retain their complete input identity
+        if: matrix.group == 'calculation'
+        run: node scripts/check_gain_freshness.mjs
+      - name: Gain comparisons retain their paired uncertainty
+        if: matrix.group == 'calculation'
+        run: node scripts/check_gain_band.mjs
+      - name: A measured result uses one captured fight
+        if: matrix.group == 'calculation'
+        run: node scripts/check_one_fight.mjs
+      - name: Requested runs remain complete
+        if: matrix.group == 'calculation'
+        run: node scripts/check_run_counts.mjs
+      - name: A full run retains precedence over its scan
+        if: matrix.group == 'calculation'
+        run: node scripts/check_run_outranks_scan.mjs
       - name: Calculation tasks retain their inputs, results and queue across pages
         if: matrix.group == 'calculation'
         run: node scripts/check_user_task_center.mjs
