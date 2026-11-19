@@ -11,6 +11,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createContext, runInContext } from "node:vm";
 
+const transport = readFileSync(new URL("../web/src/static/app/06-transport.js", import.meta.url), "utf8");
+const watch = transport.slice(transport.indexOf("const LANE_WATCHDOG"), transport.indexOf("/// WHERE A WORKER"));
+
 async function checkSignals() {
   let now = 1000;
   const workers = [], messages = [];
@@ -176,8 +179,6 @@ async function checkSignals() {
 
 async function checkFailures() {
   const source = readFileSync(new URL("../web/src/static/app/08-checkpoint-api.js", import.meta.url), "utf8");
-  const transport = readFileSync(new URL("../web/src/static/app/06-transport.js", import.meta.url), "utf8");
-  const watch = transport.slice(transport.indexOf("function watchSilence("), transport.indexOf("/// WHERE A WORKER"));
   const unhandled = [];
   const rejected = error => unhandled.push(String(error.message || error));
   process.on("unhandledRejection", rejected);
@@ -226,7 +227,7 @@ async function checkFailures() {
         pace: async () => { if (++paced === 2) { if (fault === "pace") fail(); if (fault === "null rejection") throw null; } },
         rest: () => { if (lead === 2 && fault === "rest callback") fail(); return fault.startsWith("rest") ? 1 : 0; },
       });
-      runInContext("let wopt = null, woptNextId = 1; const LANE_WATCHDOG = {loading:90000, stall:30000, tick:5000};", sandbox);
+      runInContext("let wopt = null, woptNextId = 1;", sandbox);
       runInContext(watch, sandbox);
       runInContext(source, sandbox);
       const job = runInContext("wopt = quickFleet({strategy:'quick'}, 2, pace, {rest, keep:true})", sandbox);
@@ -264,8 +265,78 @@ async function checkFailures() {
   console.log("  ok  quick fleet failures settle after completed work; live slow calls retain their answer and counts");
 }
 
+async function checkDeliveries() {
+  const source = readFileSync(new URL("../web/src/static/app/08-checkpoint-api.js", import.meta.url), "utf8");
+  const flush = () => new Promise(setImmediate);
+  for (const outcome of ["saved", "stream save failed", "final save failed", "worker stopped answering"]) {
+    let now = 1000, timerId = 0;
+    const timers = new Map(), saves = [];
+    const worker = { postMessage() {}, terminate() { this.terminated = true; } };
+    const emit = data => worker.onmessage({ data });
+    const sandbox = createContext({
+      Date: class extends Date { static now() { return now; } }, performance: { now: () => now },
+      setInterval: (fn, ms) => { timers.set(++timerId, { fn, ms }); return timerId; },
+      clearInterval: id => timers.delete(id), poolSize: () => 1, spawnEngine: () => worker,
+      computeRun: async (_, work, live) => live() ? work() : { cancelled: true },
+      keepOptimizationBuilds: (builds, source) => new Promise((resolve, reject) => {
+        assert.equal(source.kind, "public", "this task has build upload enabled");
+        saves.push({ build: builds[0], resolve, reject });
+      }),
+    });
+    runInContext("let wopt = null, woptNextId = 1;", sandbox);
+    runInContext(watch, sandbox);
+    runInContext(source, sandbox);
+    runInContext("woptStart({ strategy: 'quick' })", sandbox);
+    const job = runInContext("wopt", sandbox);
+    const { stall, tick } = runInContext("LANE_WATCHDOG", sandbox);
+    await flush();
+    assert.equal(timers.size, 1, "the worker is watched while its reply is owed");
+
+    emit({ kind: "builds", payload: ["streamed"] });
+    await flush();
+    const silent = outcome === "worker stopped answering";
+    if (!silent) emit({ kind: "result", payload: { ok: true, results: ["answer"], builds: ["final"] } });
+    for (let elapsed = 0; elapsed <= stall; elapsed += tick) {
+      now += tick;
+      for (const { fn, ms } of timers.values()) {
+        assert.equal(ms, tick);
+        fn();
+      }
+    }
+    await flush();
+    assert.deepEqual(saves.map(save => save.build), ["streamed"], "a pending stream save holds back the final save");
+
+    if (silent) {
+      assert.equal(job.result.error, outcome, "a builds message does not complete the worker call");
+      assert.equal(job.result.worker_dead, true);
+    } else {
+      assert.equal(job.result?.error ?? null, null, "a terminal worker reply must not time out during build persistence");
+      assert.equal(job.result, null, "the job still waits for durable saves");
+      assert.equal(timers.size, 0, "no worker-silence timer remains after the reply");
+    }
+    if (outcome === "stream save failed") saves[0].reject(new Error(outcome));
+    else saves[0].resolve();
+    await flush();
+    if (outcome === "saved" || outcome === "final save failed") {
+      assert.deepEqual(saves.map(save => save.build), ["streamed", "final"]);
+      assert.equal(job.result, null, "the job waits for the final save too");
+      if (outcome === "saved") saves[1].resolve();
+      else saves[1].reject(new Error(outcome));
+      await flush();
+    }
+    assert.equal(job.result.ok, outcome === "saved");
+    if (outcome === "saved") assert.deepEqual(job.result.results, ["answer"]);
+    else assert.equal(job.result.error, outcome);
+    assert.equal(timers.size, 0);
+    assert.equal(job.workers.length, 0);
+    assert.equal(worker.terminated, true);
+  }
+  console.log("  ok  quick fleet stops watching on result, waits for ordered saves and reports actual delivery failures");
+}
+
 await checkSignals();
 await checkFailures();
+await checkDeliveries();
 if (process.argv.includes("--signals-only")) process.exit(0);
 
 // A FROZEN SURVEY QUESTION, cut short: its fight shorter and fewer runs and starts.

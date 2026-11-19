@@ -249,6 +249,8 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
           }
         }
         if (e.data.kind === (resting ? "rested" : "result")) {
+          // The worker has answered even if saving its builds is still pending.
+          wd.clear();
           const payload = e.data.payload;
           if (Array.isArray(payload?.builds)) {
             const builds = payload.builds; delete payload.builds;
