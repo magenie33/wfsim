@@ -1076,7 +1076,7 @@ function buildBarCfg() {
     // everything needed to reproduce its number.
     extra: SHARE_ENABLED ? `<button class="pchip share">${escHtml(tr("share"))}</button>` : "",
     share: SHARE_ENABLED ? (p, host) => openBuildShare("preset", host,
-      {state:{...p.state, weapon:p.scope || p.state.weapon || presetWeapon()}}) : null,
+      {state:{...p.state, weapon:p.scope || p.state.weapon || presetWeapon()}, board:p.builtin ? p.board : null}) : null,
     onExtra: (bar) => {
       const b = bar.querySelector(".share");
       if (b) b.onclick = (e) => { e.stopPropagation(); openSharePanel(bar); };

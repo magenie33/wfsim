@@ -1052,6 +1052,11 @@ ui:
   "Ruler": "基准"
   "Fight": "战斗"
   "Not modelled here": "这里没有建模的部分"
+  "The text cites the published score. The link opens the build.": "文本引用已发布的榜单成绩，链接可打开对应配装。"
+  "Published leaderboard result": "已发布的榜单成绩"
+  "Player simulation": "玩家模拟结果"
+  "Engine version unavailable": "引擎版本未记录"
+  "Copy the selected text": "请复制选中的文本"
   "Score": "分数"
   "Show {k} more of {n}": "再显示 {k} 个（共 {n} 个）"
   "Squad": 小队人数

@@ -598,7 +598,7 @@ function renderBuildFinder() {
       const p = byId(el.dataset.fshare);
       if (!p) return;
       await openLibraryBuild(p);
-      return openBuildShare("finder");
+      return openBuildShare("finder", null, p);
     }
     if (g("tr.fdet")) return;
     if ((el = g("tr.fr[data-frow]"))) { finder.open = finder.open === el.dataset.frow ? null : el.dataset.frow; return rerender(); }
