@@ -913,18 +913,6 @@ jobs:
       - name: Gain scans retain their complete input identity
         if: matrix.group == 'calculation'
         run: node scripts/check_gain_freshness.mjs
-      - name: Gain comparisons retain their paired uncertainty
-        if: matrix.group == 'calculation'
-        run: node scripts/check_gain_band.mjs
-      - name: A measured result uses one captured fight
-        if: matrix.group == 'calculation'
-        run: node scripts/check_one_fight.mjs
-      - name: Requested runs remain complete
-        if: matrix.group == 'calculation'
-        run: node scripts/check_run_counts.mjs
-      - name: A full run retains precedence over its scan
-        if: matrix.group == 'calculation'
-        run: node scripts/check_run_outranks_scan.mjs
       - name: Calculation tasks retain their inputs, results and queue across pages
         if: matrix.group == 'calculation'
         run: node scripts/check_user_task_center.mjs

@@ -196,9 +196,7 @@ const w = await evaluate(`(async () => {
     if (made <= 2) ww.postMessage = () => { out.dropped += 1; };
     return ww;
   };
-  resetPool();
-  gainScan = { key: null, want: null, running: false, base: 0, floor: 0, by: {},
-    done: 0, total: 0, note: '', metric: '', failed: false, lanesLost: 0 };
+  restartCalc();
   gainPrefs = { ...gainPrefs, on: true };
   openPicker(0, document.querySelector('.slot') || document.body);
   out.wait = await window.__waitForCalcRecovery();
