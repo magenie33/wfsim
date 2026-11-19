@@ -14,10 +14,15 @@ try {
         && entries.every(e => benchRowHtml(all[0], e, 0).includes('(' + tr(ARC_POOL_LABEL[e.w.slot]) + ')'));
     });
     const weapons = META.weapons.slice(0, 2).map(w => ({ ...w, modes: ['base', 'cycle'] }));
+    const ruler = all[0], scene = ruler.cell_dir;
+    const savedIndex = scene ? SCENE_INDEX[scene] : BOARD_INDEX;
     const saved = weapons.map(w => BOARD[w.id]), priorView = benchRivenView, priorMeasured = benchMeasuredOnly;
     try {
-      const ruler = all[0], row = (mode, score, riven = null) => ({ benchmark: ruler.id, mode, score, mods: [], riven });
+      const row = (mode, score, riven = null) => ({ benchmark: ruler.id, mode, score, mods: [], riven });
       const rows = [row('base', 30), row('cycle', 25), row('cycle', 40, { bonuses: [], malus: null })];
+      const index = { [weapons[0].id]: rows, [weapons[1].id]: [] };
+      if (scene) SCENE_INDEX[scene] = index;
+      else BOARD_INDEX = index;
       BOARD[weapons[0].id] = rows; BOARD[weapons[1].id] = [];
       benchRivenView = 'all'; benchMeasuredOnly = false;
       const entries = benchEntries(ruler, weapons), best = entries.find(e => e.w.id === weapons[0].id);
@@ -31,6 +36,8 @@ try {
       out.modeRecords = BOARD[weapons[0].id] === rows && rows.length === 3
         && new Set(rankBoard(rows, [ruler.id], weapons[0].modes).map(e => e.mode)).size === 2;
     } finally {
+      if (scene) SCENE_INDEX[scene] = savedIndex;
+      else BOARD_INDEX = savedIndex;
       weapons.forEach((w, i) => { BOARD[w.id] = saved[i]; });
       benchRivenView = priorView; benchMeasuredOnly = priorMeasured;
     }

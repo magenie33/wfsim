@@ -2,6 +2,26 @@
 // The canonical storage owner installs a fresh requested-source boundary transactionally.
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
+import {boardRequestedResultDDL} from './board_requested_result_schema.mjs';
+
+function submitDefinition(httpRole) {
+ if(!/^[a-z_][a-z0-9_]{0,62}$/.test(httpRole))throw Error('invalid requested board role');
+ return readFileSync(new URL('../worker/pg/board_requested_submit.sql',import.meta.url),'utf8')+
+  'GRANT EXECUTE ON FUNCTION board_request_submit(text,text,text,text),board_request_submit(text,text,text,text,text) TO '+httpRole+';';
+}
+
+export function boardRequestedSubmitUpgrade({httpRole='wfsim'}={}) {
+ return `BEGIN;
+SET LOCAL lock_timeout='1s';
+SET LOCAL statement_timeout='10s';
+SELECT pg_catalog.set_config('search_path',pg_catalog.quote_ident(pg_catalog.current_schema())||',pg_catalog,pg_temp',true);
+DO $$ BEGIN
+ IF to_regprocedure('board_request_submit(text,text,text,text)') IS NULL THEN
+  RAISE EXCEPTION 'install the requested intake before upgrading its submission target'; END IF;
+END $$;
+${submitDefinition(httpRole)}
+COMMIT;`;
+}
 
 export function boardRequestedSchema({httpRole='wfsim',runnerRole='wfsim_board_requested',readerRole='wfsim_board_read'}={}) {
  for(const role of [httpRole,runnerRole,readerRole])if(!/^[a-z_][a-z0-9_]{0,62}$/.test(role))throw Error('invalid requested board role');
@@ -22,7 +42,8 @@ END $$;
 ${body}
 ${readFileSync(new URL('../worker/pg/board_requested_partitions.sql',import.meta.url),'utf8')}
 ${readFileSync(new URL('../worker/pg/board_requested_reviews.sql',import.meta.url),'utf8')}
-GRANT EXECUTE ON FUNCTION board_request_submit(text,text,text,text) TO ${httpRole};
+${boardRequestedResultDDL(readerRole)}
+${submitDefinition(httpRole)}
 GRANT EXECUTE ON FUNCTION board_requested_review_fresh(text,text,text,text) TO ${httpRole};
 GRANT SELECT ON entity_board_requests,state_board_requests TO ${httpRole};
 GRANT EXECUTE ON FUNCTION board_request_claim(uuid),board_request_stage(text,uuid,text),board_request_admit(text,uuid),board_request_retry(text,uuid,text,boolean) TO ${runnerRole};
@@ -30,4 +51,4 @@ GRANT EXECUTE ON FUNCTION board_requested_partition_enqueue(text,uuid),board_req
 COMMIT;
 `;
 }
-if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)process.stdout.write(boardRequestedSchema());
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)process.stdout.write(process.argv.includes('--upgrade-submit')?boardRequestedSubmitUpgrade():boardRequestedSchema());

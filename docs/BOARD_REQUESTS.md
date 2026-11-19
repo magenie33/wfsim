@@ -14,7 +14,13 @@ The retained ordinary `03` prefix is not reprioritized.
 ## Source and handoffs
 
 A single `/api/board/submit` with `requested:true`, `benchmark` and `mode` captures
-one build request. Scores are absent. Batch submissions remain ordinary inputs.
+one build request. A single eligible player upload from a custom fight names
+its official measurement target in `requested_ruler`. The original submission
+keeps the player's benchmark when present. The page prefers the selected
+eligible ruler, then the primary eligible ruler, then the first admitted ruler.
+It confirms delivery from the request receipt. Existing installations apply
+`board_requested_schema.mjs --upgrade-submit` before deploying this client.
+Scores are absent. Batch submissions remain ordinary inputs.
 The page also sends this coverage request when the published board already has
 the build; a published row does not prove database coverage. An absent review
 baseline follows the same missing-measurement entry.
@@ -53,6 +59,24 @@ an unadmitted review, so it cannot remain waiting without an executable task.
 The source status reports committed workflow state and the selected measurement;
 the page observes website publication separately after verification.
 
+## Verified results on a published partition
+
+Each admitted explicit request retains a receipt in `state_board_requested_results`.
+The indexed reader checks one due receipt per turn alongside ordinary input
+routing, ranking and publication. An active workflow waits for verification.
+A correction must match its successful review and the current selected fact.
+Existing coverage can satisfy a missing-measurement request. Only a complete,
+selected partition on the same source and Native version can receive the handoff.
+The receipt retires in the transaction that queues the canonical identity for
+the existing rank index. Native shape selection, entry thresholds and immutable
+pages apply to these results.
+
+The canonical storage owner installs an existing database upgrade with
+`node scripts/board_requested_result_schema.mjs`. The reader discovers the
+installed handoff at startup. The owner can pass up to 64 exact request IDs to
+`board_requested_result_recover(text[])` for scoped recovery. The function
+selects admitted requests by primary key and preserves pending receipts.
+
 ## Installation and operation
 
 Provision a dedicated NOLOGIN runner role and restricted login before installing
@@ -89,3 +113,21 @@ and failed preparation retain the complete static view and a retry receipt;
 they cannot select an incomplete online partition.
 Deterministic qualification failures leave the ready queue until explicit repair.
 Temporary database, lease and process failures keep the ordinary retry delay.
+
+A newly changed measurement for a complete public partition wakes its canonical
+identity directly. The input key coalesces across modes until the reader hands
+it to the index. A verified explicit request uses the same indexed handoff,
+including when the fact already exists. The index and publication queues keep
+the version that needs prompt service across retries and process restarts.
+The reader services both recent identities and the ordinary FIFO. At publication
+boundaries it alternates recent and oldest eligible work, with one generation
+in flight. A changed identity during a generation retains its later version.
+Existing installations add these wakeups with `board_rank_recent_schema.mjs`.
+
+A first measured result for an unregistered weapon and ruler records one
+pending partition. The catalog owner enables discovery after complete historical
+qualification by recording the qualified source, Native hash and archive digest
+in `state_board_rank_scope_discovery`. The reader takes one pending scope at
+a time, checks the Native ruler set and uses the normal complete partition
+baseline. Existing partition selections take precedence. Removals do not
+introduce scopes. Recording a partition does not create computation orders.

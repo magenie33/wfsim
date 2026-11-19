@@ -15,6 +15,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runInNewContext } from "node:vm";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = resolve(ROOT, "site");
@@ -219,26 +220,40 @@ if (meta.scene_weapons) {
     "the stamp's scene lists are not this board's — run scripts/board_meta.py");
 }
 
-// …AND THE PAGE READS THAT STAMP RATHER THAN THE ONE IN THE BINARY. The same
-// fields are `data/board_state.yaml`, which is compiled into the wasm, so a
-// page reading the compiled copy dates the board by its own BUILD — and "N
-// more submitted since this board was scored" then counts every submission
-// since that build. The scoring job rewrites this file hourly and rebuilds
-// nothing, so the fetched stamp is the only copy that moves with the board.
-check(/const benchState = [\s\S]{0,300}?BOARD_META[\s\S]{0,120}?\.boards/.test(app),
-  "…and the page prefers it over the compiled copy",
-  "nothing reads BOARD_META.boards — the age would date the build");
-// THE BINDING IS READ OUT OF THE SOURCE, so renaming it is not a failure here
-// and reading a field off anything else still is.
-const bind = (app.match(/const (\w+) = benchState\(/) || [])[1];
-check(!!bind, "…through one binding", "nothing calls benchState()");
-const off = [...app.matchAll(/([A-Za-z_$][\w$]*)\.submissions\b/g)].map((m) => m[1]);
-check(off.length > 0 && off.every((o) => o === bind), "…and reads submissions from it",
-  `read off ${[...new Set(off)].join(", ") || "nothing"}`);
-// NO TIME DATES A WHOLE BOARD: the live board re-ranks a weapon the moment its
-// facts move, so each row's own record is its age (docs/BOARD.md).
-const dated = [...app.matchAll(/\.scored_at_epoch_seconds\b/g)].length;
-check(!dated, "…and dates no whole board", `${dated} read(s) of a board's scored_at_epoch_seconds`);
+// The archived stamp dates its own rows. Current ranking is catalog-bound.
+const rankSource = app.slice(app.indexOf("const pageBoardReader"), app.indexOf("/// Redraw the current weapon"));
+const sharedReader = app.slice(app.indexOf("const publishedBoardRevisions"), app.indexOf("function headlessNonaHelp(say"));
+const pageReader = rankSource.slice(0, rankSource.indexOf("/// `res.ok`"));
+const pinned = "b".repeat(64), previous = new Map([["retained", "a".repeat(64)]]), pages = [];
+let catalogReads = 0;
+const context = {
+  AbortController, AbortSignal, URLSearchParams, window: {}, previous,
+  async fetchJsonPatient(path) {
+    const url = new URL(path, "https://wfsim.invalid");
+    if (url.searchParams.get("weapon") !== "furis") throw Error("unexpected weapon");
+    if (url.pathname === "/api/board/pages/catalog") {
+      catalogReads++;
+      return { ok: true, next: null, partitions: ["retained", "updated"].map(ruler => ({
+        weapon: "furis", scene: "", ruler, rows: 1, revision: previous.get(ruler) || pinned,
+      })) };
+    }
+    const ruler = url.searchParams.get("ruler"), revision = url.searchParams.get("revision");
+    if (url.pathname !== "/api/board/pages" || ruler !== "updated" || revision !== pinned)
+      throw Error("unexpected partition page");
+    pages.push(revision);
+    return { ok: true, weapon: "furis", ruler, revision, after: 0, count: 1, next: null, rows: [{ benchmark: ruler, score: 42 }] };
+  },
+};
+try {
+  const result = await runInNewContext(sharedReader + "\n" + pageReader +
+    '\nreadCurrentBoardRows("furis", "", undefined, previous)', context);
+  check(catalogReads === 1 && pages.length === 1 && result.rows[0]?.score === 42 && result.retained.has("retained"),
+    "…and current ranks use the publication directory", "the changed revision must replace its own rows");
+} catch (error) {
+  check(false, "…and current ranks use the publication directory", error.message);
+}
+check(!/boardOffOrigin|BOARD_META\.boards/.test(rankSource),
+  "…and historical snapshot metadata does not choose current ranks", "old metadata still chooses ranks");
 
 console.log(NL + (bad ? `${bad} failed` : "the build says which release it is"));
 process.exit(bad ? 1 : 0);

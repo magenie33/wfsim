@@ -3139,6 +3139,19 @@ must fail the source handoff assertion.
 
 ## `check_board_rank_capture`, `check_board_rank_index`, `check_board_rank_publication`, `check_board_rank_flow`, `check_board_rank_schema`
 
+`check_board_rank_inputs.mjs` upgrades a populated schema, compares the
+logical subscriptions across old and compact storage, exercises shared and
+changed descriptions, and expands the exact original headers on rollback.
+The check preserves null and large versions and exercises reader restart.
+
+`check_staged_rank_baseline.py` restarts a keyed capture, holds an older transaction open across a newer commit, and verifies insertions on either side of the cursor, corrections, removals and the sealed input digest.
+
+`check_rank_catalog.mjs` exercises multi-partition capture and a resumed
+change replay in local PostgreSQL. It compares the ordered output with Native
+projection of the same facts, accounts for every archive member, and rejects
+unfinished coverage, unknown identities and stale cuts.
+
+
 These checks require `WFSIM_BOARD_RANK_TEST_URL` on localhost and the built
 `wfsim-board` executable. Each owns an isolated PostgreSQL schema and removes
 only its own temporary files. CI supplies PostgreSQL 18.
@@ -3291,11 +3304,20 @@ bounded retries and same-round rearming, and settles old requests after a fresh
 weapon/scene/index reload. Removing publication retries or cache generations must
 fail those cases. Only
 review transport is stubbed; engine parsing and published row matching are real.
-The community CI job runs `check_board_page_reader.mjs` directly: sixty-four delayed pages must finish
-in revision order beyond a single page deadline, with four requests shared
-across partitions. Revision/count changes, cursor gaps, missing rows, page and
-whole-read deadlines, and weapon cancellation retain the prior complete view.
-`WFSIM_BOARD_READER_SOURCE` selects an older loader for the failing control.
+The community CI job runs `check_board_page_reader.mjs` directly. Sixty-four
+delayed pages finish in revision order beyond a single page deadline. At most
+four requests run concurrently across partitions. An open library and ranking
+observe a new build and a corrected score, including recovery from a failed
+page, without downloading unchanged partition rows. A revision or count
+mismatch, cursor gap, missing row, timeout or cancellation makes the ranking
+unavailable. The old loader selected by `WFSIM_BOARD_READER_SOURCE` reads the
+poisoned archived file and fails. The actual MCP entry and bot checks compare
+the selected revision's ranking and exercise failed reads and card invalidation.
+`check_board_result_flow.mjs` restarts publication with a new engine identifier,
+checks the existing ranking revision, then replaces one measured build. A
+second valid build retains its score and original measurement provenance. The
+canonical library retains the same records, including a build awaiting its
+first measurement, through the update and removal of a score.
 
 ## `check_task_executors`, `check_user_task_service`, `check_task_service_browser`
 

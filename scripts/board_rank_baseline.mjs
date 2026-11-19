@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // One immutable canonical cut supplies resumable coverage; live indexed changes take precedence.
+import {rankMeasurementKey} from './board_rank_keys.mjs';
+import {cachedRankInputs} from './board_rank_inputs.mjs';
 import {createHash,randomUUID} from 'node:crypto';
 import {createReadStream,lstatSync,realpathSync,statSync} from 'node:fs';
 import {mkdir,open,chmod} from 'node:fs/promises';
@@ -7,7 +9,7 @@ import {join,resolve,dirname,basename} from 'node:path';
 import {boardStorage} from './board_storage.mjs';
 import {rankFilePage,syncRankDirectory} from './board_rank_files.mjs';
 import {createRankPartition,prepareRankSources,applyRankSources,BoardRankQualificationError} from './board_rank_index.mjs';
-const measurementKey=(identity,ruler,mode)=>'['+[identity,ruler,mode].map(JSON.stringify).join(', ')+']';
+
 
 export async function captureRankBaseline(sql,{weapon,ruler,source,native,work,signal}) {
  work=boardStorage(work);
@@ -92,16 +94,15 @@ export async function prepareRankBaselinePage(sql,native,part,{work,verified=new
  }
  if(page.done&&(page.rows.at(-1)?.kind!=='complete'||Number(page.rows.at(-1).total)!==Number(part.total)))
   throw new BoardRankQualificationError('baseline terminal receipt is missing');
- const identities=sources.map(row=>row.source.id);
- const cached=await sql.unsafe(`SELECT * FROM state_board_rank_sources WHERE weapon=$1 AND ruler=$2
-  AND identity IN(SELECT jsonb_array_elements_text(($3::text)::jsonb))`,[part.weapon,part.ruler,JSON.stringify(identities)]);
- const pending=sources.filter(row=>!cached.some(prior=>prior.identity===row.source.id&&prior.live));
- const inputs=pending.map(row=>({identity:row.source.id,record:JSON.parse(row.source.record),facts:row.facts}));
+ const all=sources.map(row=>({identity:row.source.id,record:JSON.parse(row.source.record),facts:row.facts}));
+ const cached=await cachedRankInputs(sql,part,all);
+ const live=new Set(cached.filter(r=>r.live).map(r=>r.identity));
+ const pending=sources.filter(row=>!live.has(row.source.id)),inputs=all.filter(row=>!live.has(row.identity));
  const prepared=await prepareRankSources(native,{weapon:part.weapon,ruler:part.ruler,inputs,cached});
  for(const source of prepared.sources){
   const input=inputs.find(row=>row.identity===source.identity),modes=source.descriptor.publication_modes||[];
   source.dependencies=[{scope:'build',key:source.identity,version:null},
-   ...modes.map(mode=>({scope:'measurement',key:measurementKey(source.identity,part.ruler,mode.id),version:null})),
+   ...modes.map(mode=>({scope:'measurement',key:rankMeasurementKey(source.identity,part.ruler,mode.id),version:null})),
    ...[...new Set(input.facts.map(row=>row.review_id).filter(Boolean))].map(key=>({scope:'review',key,version:null}))];
   const headers=pending.find(row=>row.source.id===source.identity).headers||[];
   for(const dependency of source.dependencies)dependency.version=headers.find(row=>row.scope===dependency.scope&&row.key===dependency.key)?.version??null;

@@ -8,6 +8,7 @@ import {execFileSync} from 'node:child_process';
 import {randomBytes} from 'node:crypto';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import {openInventoryOperator} from './inventory_operator.mjs';
+import {cachedRankInputs} from './board_rank_inputs.mjs';
 import {prepareRankSources,createRankPartition,applyRankSources,prepareRankSnapshot,BoardRankConflict} from './board_rank_index.mjs';
 const url=process.env.WFSIM_BOARD_RANK_TEST_URL;
 assert(url&&['127.0.0.1','localhost','[::1]'].includes(new URL(url).hostname),'use an isolated local PostgreSQL');
@@ -28,7 +29,7 @@ const inputs=records.map((record,i)=>({identity:described[i].candidate,record,fa
 const weapon=base.weapon;let part;
 const current=new Map(inputs.map(row=>[row.identity,structuredClone(row)]));
 async function apply(batch,options={}){
- const cached=await sql.unsafe('SELECT * FROM state_board_rank_sources WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
+ const cached=await cachedRankInputs(sql,part,batch);
  const prepared=await prepareRankSources(operate,{weapon,ruler,inputs:batch,cached});
  part=await sql.begin(tx=>applyRankSources(tx,part,prepared,options));
  return prepared;
@@ -52,13 +53,32 @@ try{
  await sql.unsafe('CREATE SCHEMA '+schema);
  await sql.unsafe(readFileSync(new URL('../worker/pg/board_mailbox.sql',import.meta.url),'utf8'));
  await sql.unsafe(readFileSync(new URL('../worker/pg/board_pages.sql',import.meta.url),'utf8'));
- await sql.unsafe(readFileSync(new URL('../worker/pg/board_rank.sql',import.meta.url),'utf8'));
+ for(const file of ['board_rank','board_rank_compact'])await sql.unsafe(readFileSync(new URL('../worker/pg/'+file+'.sql',import.meta.url),'utf8'));
  await sql.unsafe('UPDATE state_board_input_source SET source=$1',[source]);
  part=await createRankPartition(sql,{weapon,ruler,source,native:native.adapter,cut:'fixture-cut'});
  await apply(inputs,{cursor:32,loaded:32});
  await sql.unsafe('UPDATE state_board_rank_partitions SET complete=true WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
  part=(await sql.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[weapon,ruler]))[0];
  await oracle('baseline');
+ const probe=await prepareRankSources(operate,{weapon,ruler,inputs});
+ await sql.unsafe('ANALYZE state_board_rank_rows');
+ part=await sql.begin(async tx=>{
+  await tx.unsafe('SET LOCAL enable_seqscan=off');
+  let checked=false;
+  const traced={unsafe:async(query,params)=>{
+   if(query.startsWith('INSERT INTO state_board_rank_winners')){
+    const [{ 'QUERY PLAN': plan }]=await tx.unsafe('EXPLAIN (FORMAT JSON) '+query,params);
+    function bounded(node){
+     return (node['Node Type']==='Limit'&&node.Plans?.some(p=>p['Index Name']==='board_rank_shape_order'))||
+      (node.Plans||[]).some(bounded);
+    }
+    assert(bounded(plan[0].Plan),'each affected shape must read its first row from the ordering index');
+    checked=true;
+   }
+   return tx.unsafe(query,params);
+  }};
+  const updated=await applyRankSources(traced,part,probe);assert(checked);return updated;
+ });
  const changed=structuredClone(inputs[3]);changed.facts=changed.facts.map(row=>({...row,score:10,finished_at:'2026-11-16T01:00:00.000Z'}));
  counts.describe=0;counts.render=0;await apply([changed],{live:true});current.set(changed.identity,changed);
  assert.equal(counts.describe,0,'a fact-only update reuses its Native descriptor');

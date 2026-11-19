@@ -39,13 +39,37 @@ const check = (what, ok, detail = "") => {
 {
   const src = appSource(), first = src.indexOf('async function submitBoardPayload('), last = src.indexOf('async function offerBoardSubmit(', first);
   const sent = [], existing = { score: 10 };
+  let confirmed = true;
   const submit = runInNewContext(src.slice(first,last)+'submitBoardPayload', {
     presetWeapon: () => 'acceltra', boardRowMatching: async () => existing,
-    boardVerdict: async () => ({ok:true,accepted:true,boards:1,of:1}), track() {},
-    fetch: async (path,init) => {sent.push({path,body:JSON.parse(init.body)});return {ok:true};},
+    boardVerdict: async () => ({ok:true,accepted:true,boards:1,of:1,target:'standard_single_target'}), track() {}, timeoutSignal() {},
+    fetch: async (path,init) => {
+      sent.push({path,body:JSON.parse(init.body)});
+      return {ok:true,json:async()=>confirmed?{ok:true,request:'00000000-0000-4000-8000-000000000044'}:{ok:true}};
+    },
   });
   const outcome = await submit({weapon:'acceltra',benchmark:'standard_single_target',mode:'base'});
   check('a published build still requests missing database coverage',sent.length===1 && sent[0].body.requested===true && outcome.state==='onboard');
+  await submit({weapon:'acceltra',mode:'base'});
+  check('custom fights request a canonical score without claiming a player benchmark',sent[1]?.body.requested_ruler==='standard_single_target' && !sent[1].body.benchmark);
+  confirmed=false;
+  check('a missing request receipt cannot report a successful upload',(await submit({weapon:'acceltra',mode:'base'})).state==='failed');
+}
+
+{
+  const source = appSource(), start = source.indexOf('async function boardVerdict(');
+  const allowed = new Set(['first', 'primary']);
+  const verdict = runInNewContext(source.slice(start,source.indexOf('/// **IS THIS BUILD',start))+'boardVerdict',{
+    benchList: () => [{id:'first'},{id:'primary',primary:true},{id:'last'}],
+    api: async (_path,input) => ({ok:true,accepted:input.scope==='library' || allowed.has(input.benchmark)}),
+  });
+  check('a custom fight prefers the eligible primary ruler',(await verdict({},true)).target==='primary');
+  check('the player-selected eligible ruler takes precedence',(await verdict({benchmark:'first'},true)).target==='first');
+  allowed.delete('primary');
+  const alternate=await verdict({benchmark:'last'},true);
+  check('an ineligible played ruler retains its verdict while a legal build gets coverage elsewhere',alternate.boards===0&&alternate.target==='first');
+  allowed.clear();
+  check('a library-only build has no ranked target',(await verdict({},true)).target===null);
 }
 
 // A LIBRARY STUB, AND IT IS THE WHOLE STORE NOW. `prepare(sql).bind(...).run()` and

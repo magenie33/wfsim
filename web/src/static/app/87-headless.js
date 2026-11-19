@@ -982,10 +982,8 @@ const HEADLESS_QUERIES = [
     async run({ weapon, ruler, riven = "without", mode: m, limit = 3, distinct = false, pooled = false }, host) {
       const w = headlessWeapon(host, weapon);
       if (w.ok === false) return w;
-      // THE HEADS ANSWER THIS AS EVERY ROW DOES (`boardHeads`, `limit` at most
-      // `BOARD_HEADS_PLACES`); a host without them reads the whole board.
-      const rows = await (host.boardHeads ? host.boardHeads(w.id, ruler) : host.board(w.id, ruler));
-      if (!rows) return headlessNo("board_not_loaded", { because: "this weapon has no board rows yet" });
+      const rows = await host.board(w.id, ruler);
+      if (!rows) return headlessNo("board_not_loaded", { because: "The board could not be reached." });
       const benches = host.meta().benchmarks || [];
       const name = headlessNameOf(host.meta());
       const evos = (w.evolutions || []).flatMap((t) => t.options || []);
@@ -1067,7 +1065,7 @@ const HEADLESS_QUERIES = [
       const w = headlessWeapon(host, weapon);
       if (w.ok === false) return w;
       const rows = await host.board(w.id, ruler);
-      if (!rows) return headlessNo("board_not_loaded", { because: "this weapon has no board rows yet" });
+      if (!rows) return headlessNo("board_not_loaded", { because: "The board could not be reached." });
       const meta = host.meta();
       const name = headlessNameOf(meta);
       const pool = (meta.riven_stats || {})[w.riven_class] || [];

@@ -10,7 +10,7 @@ import {pgDb,postgresClient,placeholders} from '../worker/db.js';
 import worker from '../worker/index.js';
 import {normalizeBoardRequest,requestedBoardPass} from './board_requested_intake.mjs';
 import {openBoardResultFlow} from './board_result_flow.mjs';
-import {boardRequestedSchema} from './board_requested_schema.mjs';
+import {boardRequestedSchema,boardRequestedSubmitUpgrade} from './board_requested_schema.mjs';
 import {calculationId} from '../worker/board_tasks.js';
 
 const url=process.env.WFSIM_REQUESTED_INTAKE_TEST_URL||process.env.WFSIM_BOARD_MAILBOX_TEST_URL;
@@ -51,6 +51,7 @@ try{
   await assert.rejects(runInstall(install(schema+'_absent_http_role')),error=>error.code==='42704');
   assert.equal((await setup.unsafe("SELECT to_regclass('entity_board_requests') name"))[0].name,null,'late grants roll back source capture and schema');
   await runInstall(install(owner));
+  await runInstall(boardRequestedSubmitUpgrade({httpRole:owner}));
   await assert.rejects(runInstall(install(owner)),/explicit upgrade is required/);
  }finally{setup.release();}
  await sql.unsafe('GRANT USAGE ON SCHEMA '+schema+' TO '+runnerRole);
@@ -124,9 +125,13 @@ try{
  assert.deepEqual(await requestedBoardPass(sql,{source:'00000000-0000-4000-8000-000000000000',binary}),{idle:true});
  await post('/api/board/submit',{builds:[{...record,benchmark:ruler,mode}]});
  assert.equal(await count('entity_board_requests'),0,'ordinary bulk uploads remain outside requested admission');
- const response=await post('/api/board/submit',body);assert.equal(response.status,200);
+ const response=await post('/api/board/submit',{...body,benchmark:undefined,requested_ruler:ruler});assert.equal(response.status,200);
  const accepted=await response.json();assert.match(accepted.request,/^[a-f0-9-]{36}$/);
  const id=accepted.request;
+ const custom=await requestRow(id);
+ assert.equal(custom.ruler,ruler);
+ assert.equal(custom.input.record.benchmark,undefined,'the requested score target is independent of the custom fight');
+ assert.equal(JSON.parse((await db.get('SELECT record FROM record_build_submissions WHERE id=?',id)).record).benchmark,undefined);
  const [{claim}]=await sql.unsafe('SELECT board_request_claim($1::uuid) claim',[source]);
  const instant=/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/;
  for(const value of [claim.created_at,claim.retry_at,claim.lease_until])assert.match(value,instant);

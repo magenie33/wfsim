@@ -28,7 +28,7 @@ const page=async(revision=null,after=0)=>(await sql.unsafe('SELECT board_read_pa
 const clock=async()=>(await sql.unsafe('SELECT published_at FROM record_board_read_snapshots s JOIN state_board_read_partitions p USING(weapon,ruler,revision) WHERE weapon=$1 AND ruler=$2',[weapon,ruler]))[0].published_at;
 try{
  await sql.unsafe('CREATE SCHEMA '+schema);
- for(const name of ['board_mailbox','board_pages','board_rank','board_rank_pages'])await sql.unsafe(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
+ for(const name of ['board_mailbox','board_pages','board_rank','board_rank_compact','board_rank_pages'])await sql.unsafe(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
  await sql.unsafe('UPDATE state_board_input_source SET source=$1',[source]);
  let part=await createRankPartition(sql,{weapon,ruler,source,native:native.adapter,cut:'fixture'});
  for(let i=0;i<input.length;i+=64){const prepared=await prepareRankSources(native,{weapon,ruler,inputs:input.slice(i,i+64)});part=await sql.begin(tx=>applyRankSources(tx,part,prepared));}

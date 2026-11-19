@@ -139,7 +139,9 @@ try {
   await writeFile(new URL("../target/recommendations-review/library-mobile.png", import.meta.url), Buffer.from(shot.result.data, "base64"));
   await app.evaluate("openLibraryBuild(recommendationLibrary.presets.get(" + JSON.stringify(target.preset) + "))");
   await until("!!document.querySelector(" + JSON.stringify(presetVote) + ")");
-  await app.evaluate("document.querySelector(" + JSON.stringify(presetVote) + ").scrollIntoView({ block: 'center' }); document.querySelector('#preset-bar-builder-builds [data-preset-info]').click(); document.querySelector(" + JSON.stringify(infoVote) + ").scrollIntoView({ block: 'center' })");
+  await app.evaluate("document.querySelector(" + JSON.stringify(presetVote) + ").scrollIntoView({ block: 'center' }); document.querySelector('#preset-bar-builder-builds [data-preset-info]').click()");
+  await until("!!document.querySelector(" + JSON.stringify(infoVote) + ")");
+  await app.evaluate("document.querySelector(" + JSON.stringify(infoVote) + ").scrollIntoView({ block: 'center' })");
   check("The preset bar and recommendation information fit a phone", await app.evaluate("document.documentElement.scrollWidth <= innerWidth && document.querySelector('#preset-info-popover').getBoundingClientRect().right <= innerWidth + 1"));
   const presetShot = await app.send("Page.captureScreenshot", { format: "png" });
   await writeFile(new URL("../target/recommendations-review/preset-mobile.png", import.meta.url), Buffer.from(presetShot.result.data, "base64"));

@@ -42,6 +42,32 @@ source and mode order. Fact changes render only their identity. Snapshot
 preparation scans this derived ordered index and indexed group maxima; it does
 not read the complete canonical library again or run fights.
 
+### Shared descriptions and observed input versions
+
+One Native executable, canonical identity and source record hash identify a
+description. Partitions that read the same record share it. Every partition
+retains its own source hash, live precedence, requested measurement modes,
+selected review IDs and exact observed mailbox versions. A registered key can
+have an unseen version. Build routing uses identity, measurement routing uses
+identity and ruler, and removed reviews use the indexed review IDs. Baseline
+reconciliation advances through bounded pages of source identities even when
+every observed version matches.
+
+On an existing indexed database the storage owner installs
+`board_rank_compact_schema.mjs upgrade` while the reader is stopped. Existing
+partition rows, dependency versions and pinned pages stay readable. Updating
+one source transfers its subscriptions atomically. Unreferenced descriptions
+are released when their last input set changes. Include descriptions, input
+sets, legacy dependencies, the source epoch and the rest of the ranking
+projection together in its consistent database backup.
+
+Recovering the legacy writer requires its expanded rows. After budgeting
+their additional storage, stop the compact writer and call
+`board_rank_expand_inputs(64)` in independent transactions until it returns
+zero. The storage owner's `board_rank_compact_schema.mjs rollback` restores
+the writable dependency table after expansion. Earlier snapshots remain
+accessible through the same page reader throughout recovery.
+
 ## Complete versions
 
 Each generation captures an immutable winner file under the source UUID,
@@ -75,7 +101,75 @@ cut/generation directories may be removed. Unregistered directories require a
 ten-minute age guard before collection. Canonical rows and other consumers'
 working directories are outside this collector.
 
+### Restartable input for a large partition
+
+An operator can stage one weapon/ruler with `scripts/stage_rank_baseline.py`
+on the board Data mount. The scan stores its last canonical library ID with
+each page. The input sequence uses a cache of one. The scanner reads its
+position, then waits for transactions already holding mailbox write locks to
+finish before reading builds. This establishes which committed inputs the
+scan must replay without blocking producers. The source UUID, cluster identity,
+Native digest and enabled capture triggers guard the stage across restarts.
+
+The `replay` action opens a single repeatable-read snapshot, enumerates
+coalesced mailbox keys in bounded pages, and reloads every changed build,
+ruler measurement and affected review from that snapshot. A later commit
+cannot displace an earlier transaction at the start boundary. The `manifest`
+action seals the resulting inputs in the existing bounded ranking format.
+The operator validates Native selection and complete page coverage, then hands
+the cut to the reserved reader. The reader retains its normal per-key change
+routing, reconciliation and atomic publication.
+
+### A shared cut for the complete catalog
+
+The immutable archive identifies the members to reconcile. A consistent copy
+of `board.meta.json` and its `board/` files includes every listed scene, its
+leader index and its weapon shards. `board_catalog_archive.mjs inventory ROOT`
+produces the inventory. Pin the archive digest returned by the importer and
+the Native executable digest for this cut. The `import ROOT INVENTORY ARCHIVE_DB NATIVE` action checks
+each file against the inventory, decodes build IDs with Native and checkpoints
+each batch. An index partition without members prevents sealing.
+
+On the guarded Data volume, `stage_rank_catalog.py STAGE scan --archive SHA
+--native SHA` walks the selection primary key in bounded pages. Each SQLite
+transaction saves its cursor, shared build records, effective facts and
+dependency versions. `catchup` drains a new producer fence, records changed
+identities in paged transactions and reloads the affected records. It resumes
+using the saved mailbox cursor and outstanding identities. `replay` closes
+the remaining changes under one time-limited repeatable-read snapshot. A
+closing timeout leaves the last committed cut available. Another catchup can
+reduce the work in that window.
+
+`qualify_rank_catalog.mjs CAPTURE_DB ARCHIVE_DB SCOPE_DB NATIVE WEAPON RULER`
+resumes Native ranking from the shared cut. The operator can set
+`WFSIM_BOARD_SCOPE_DB_BYTES` to cap its temporary SQLite database and budget
+a separate copy for its rollback journal. A descriptor is reusable under
+the same Native and source-record hashes. The scope database records the
+destination of each archived row and SHA-256 hashes of the ranked pages.
+A retained fact under a retired ruler is counted separately. Only a selected,
+succeeded review with matching identity, mode, engine and completion time can
+account for a replaced score. An unaccounted historical identity holds its scope.
+
+`rank_catalog_coverage.mjs CAPTURE_DB ARCHIVE_DB LEDGER_DB SCOPE_DB` records
+one scope receipt, its archived member dispositions and its ordered page hashes.
+Repeat an incomplete receipt transfer to resume. Once these records are durable
+and the matching publication has been verified, the temporary per-scope ranking
+database can be released. Omitting the last argument reconciles the union of archive
+partitions and measured partitions against those receipts. Missing scopes,
+orphan facts and unresolved members hold the complete catalog. An eligible
+scope can emit the existing input format with `stage_rank_catalog.py STAGE
+manifest --scope WEAPON RULER --archive SHA --native SHA`. Preserve the original
+snapshots and compare each staged publication with its qualified page hashes
+before switching the catalog. Capacity planning includes the captured inputs,
+archive and descriptor indexes, durable rank tables, transient WAL and existing
+storage reserves throughout the staged write.
+
 ## Activation and recovery
+
+The public board keeps its weapon and ruler keys through engine releases and
+rank index replacement. Valid measurements retain their original engine
+provenance. The selected publication stays available while the replacement
+index builds against the same verified measurements.
 
 Installing this additive schema does not start a consumer or change task
 admission, official computation, generation controls or static publication.

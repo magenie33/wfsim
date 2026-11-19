@@ -9,7 +9,7 @@ import {openApp} from './cdp.mjs';
 const backend=process.argv[2],{target,scene,shown,libraryTarget=target}=JSON.parse(process.argv[3]);
 assert(['127.0.0.1','localhost'].includes(new URL(backend).hostname));
 const visible={shown};let app;
-const site=resolve(new URL('../site/',import.meta.url).pathname),web=resolve(new URL('../web/src/static/',import.meta.url).pathname);
+const site=resolve(process.env.WFSIM_SITE||new URL('../site/',import.meta.url).pathname),web=resolve(new URL('../web/src/static/',import.meta.url).pathname);
 let previewSource;
 {
  const index=readFileSync(join(site,'index.html'),'utf8'),appPath=index.match(/src="(\/asset\/app\.[^"]+\.js)"/)[1];

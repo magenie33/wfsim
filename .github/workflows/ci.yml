@@ -756,7 +756,10 @@ jobs:
           node scripts/check_board_mailbox_pg.mjs
           node scripts/check_board_result_flow.mjs
           node scripts/check_board_rank_capture.mjs
+          python3 scripts/check_staged_rank_baseline.py
+          node scripts/check_rank_catalog.mjs
           node scripts/check_board_rank_index.mjs
+          node scripts/check_board_rank_inputs.mjs
           node scripts/check_board_rank_publication.mjs
           node scripts/check_board_rank_flow.mjs
           node scripts/check_board_rank_schema.mjs
