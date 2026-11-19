@@ -38,6 +38,7 @@ import subprocess
 import threading
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
 from xml.etree import ElementTree as xml_tree
@@ -74,6 +75,7 @@ WASM = ROOT / "target" / "wasm32-unknown-unknown" / "release" / "wfsim_wasm.wasm
 # module" of a path that does not move.
 WASM_PKG = ROOT / "target" / "wasm-pkg"
 SITE = "https://wfsim.app"
+BOARD_CATALOG = SITE + "/api/board/pages/catalog"
 
 
 def app_source() -> str:
@@ -1252,20 +1254,14 @@ def gear_names() -> dict:
 
 @functools.lru_cache(maxsize=1)
 def board_asof() -> str:
-    """The day `site/board/` last moved, from git rather than from a clock.
+    """The publication date of the bundled board snapshot."""
+    meta = APP / "board.meta.json"
+    scored_at = json.loads(meta.read_text(encoding="utf-8")).get("scored_at") if meta.exists() else None
+    return datetime.fromtimestamp(scored_at, timezone.utc).date().isoformat() if scored_at else ""
 
-    A BUILD IS REPRODUCIBLE OR THE DATE IS A LIE. `datetime.now()` would stamp
-    "today" onto a page whose numbers are a week old, which is the opposite of
-    what the date is for; the published board's own last commit is when those
-    numbers were written, and any checkout of this commit computes the same.
-    """
-    import subprocess
 
-    r = subprocess.run(
-        ("git", "log", "-1", "--format=%cs", "--", "site/board"),
-        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
-    )
-    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else ""
+def board_catalog_url(weapon: str) -> str:
+    return f"{BOARD_CATALOG}?weapon={quote(weapon, safe='')}"
 
 
 @functools.lru_cache(maxsize=1)
@@ -1323,10 +1319,8 @@ def board_best() -> dict:
     is frequently one, and a build the reader cannot reproduce is a worse answer
     to "what should I put on this" than the best one they can.
 
-    THE SOURCE IS `site/board/`, the only place a published row lives, and
-    reading the wrong one FAILS SILENTLY: an empty result is exactly what a
-    roster nobody has measured returns, so the two guards below are what say
-    which of them happened.
+    `site/board/` is the bundled archive. The published catalog supplies the
+    current board independently of the website build.
     """
     # A cell's rows are skipped below like any id this table does not hold.
     rulers = {k: (*order, name) for k, (order, name, _) in base_rulers().items()}
@@ -1651,6 +1645,7 @@ def prerender(flagged: str, catalog: Path) -> None:
         cwd=ROOT, stdout=subprocess.PIPE, text=True, encoding="utf-8", check=True,
     )
     summary_docs = json.loads(summaries.stdout)
+    archived_at = board_asof()
     for spec in roster():
         wid, name = spec["id"], spec["name"]
         cn = zh_names.get(wid)
@@ -1671,19 +1666,13 @@ def prerender(flagged: str, catalog: Path) -> None:
         # THE CHINESE NAME BESIDE THE ENGLISH: it is what a Chinese search types.
         title = titled_page(f"{name} {cn}" if cn and cn != name else name,
                             "Warframe build & DPS", zh_ui("Warframe build & DPS"))
-        # THE ANSWER GOES IN THE DESCRIPTION, because that is the one place
-        # nothing can hide it: the `w-brief` fold ships SHUT for the reader who
-        # opens this page every day, and a result page shows this line whether
-        # or not anything on the page is open. It is also what the searcher came
-        # for — a measured build under a named fight, which is the one thing
-        # about this weapon no other site can state.
-        best = board_best().get(wid) or ()
+        # A preview can quote a score under its named fight and archive date.
+        best = board_best().get(wid, ())
         answer = ""
-        if best:
+        if best and archived_at:
             rn, row = best[0]
             score = row.get("shown") or f"{row['score']:.4g}"
-            answer = (f" Best riven-free build on the board: {score} under {rn}"
-                      + (f", as of {board_asof()}" if board_asof() else "") + ".")
+            answer = f" Archived board {archived_at}: best riven-free score {score} under {rn}."
         desc = (
             f"{name}{f' ({cn})' if cn else ''} — {facts}. {stats}."
             + (answer or " Build it, simulate the fight, and optimize the mods.")
@@ -1695,7 +1684,7 @@ def prerender(flagged: str, catalog: Path) -> None:
 
         names_of = gear_names()
         board_rows = []
-        for rn, row in board_best().get(wid, ()):
+        for rn, row in best:
             ruler, _, fight = rn.partition(" \u00b7 ")
             gear = [names_of.get(m, m) for m in (row.get("mods") or ())]
             if row.get("exilus"):
@@ -1705,7 +1694,11 @@ def prerender(flagged: str, catalog: Path) -> None:
                                row.get("shown") or f"{row['score']:.4g}", ", ".join(gear),
                                measured_record(row)))
         caveats = caveats_of(spec, REASONS)
-        seo = summary_docs[wid]
+        live_url = html_mod.escape(board_catalog_url(wid), quote=True)
+        seo = f'<p><a href="{live_url}">Current WFSim board data</a></p>'
+        if archived_at and (APP / "board" / f"{wid}.json").exists():
+            seo += (f'<div aria-label="Archived WFSim board, {archived_at}">'
+                    f'<p>Archived WFSim board · {archived_at}</p>{summary_docs[wid]}</div>')
         out = APP / "weapons" / url_slug(spec) / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
         page = shell(flagged, title, desc, url, og_img, seo, "w-name", name, cn)
@@ -1968,9 +1961,9 @@ def weapon_md(spec, name, cn, facts, stats, board_rows, caveats) -> str:
     if cn:
         out += f"Chinese name: {cn}\n\n"
     out += f"{facts}. {stats}.\n\n"
-    if board_rows:
-        out += "## Best riven-free build on the WFSim board"
-        out += f", as of {board_asof()}\n\n" if board_asof() else "\n\n"
+    out += f"Current published rankings and revisions: {board_catalog_url(spec['id'])}\n\n"
+    if board_rows and board_asof():
+        out += f"## Archived riven-free leaders · {board_asof()}\n\n"
         out += ("A score belongs to its ruler: compare it only with scores under "
                 f"the same ruler ({SITE}/method#ruler).\n\n")
         out += ("Each row is measured on its own, and says when and by which WFSim commit; "
@@ -1982,8 +1975,8 @@ def weapon_md(spec, name, cn, facts, stats, board_rows, caveats) -> str:
     if caveats:
         out += "## Not modelled here\n\n" + "".join(f"- {c}\n" for c in caveats) + "\n"
     out += f"## In WFSim\n\n- Build, simulate and optimize it: {url}\n"
-    if (APP / "board" / f"{spec['id']}.json").exists():
-        out += f"- Every published board row, as JSON: {SITE}/board/{spec['id']}.json\n"
+    if board_asof() and (APP / "board" / f"{spec['id']}.json").exists():
+        out += f"- Archived board file ({board_asof()}): {SITE}/board/{spec['id']}.json\n"
     out += f"- [Using and citing WFSim]({SITE}/reuse)\n"
     return out
 
@@ -2009,24 +2002,25 @@ description: Look up a Warframe weapon's stats and its best measured riven-free 
 1. Find it in the roster, {SITE}/weapons.md. A weapon's address is the Warframe
    wiki's page name: {SITE}/weapons/<Wiki_Name>, for example {SITE}/weapons/Soma_Prime.
 2. Read it as markdown: request that address with `Accept: text/markdown`, or
-   append `.md`. It states the base stats, the board's best riven-free build
-   under each ruler, and what the weapon's number does not account for.
+   append `.md`. It states the base stats and modelling limits, and links to
+   the current published board.
 3. Give the reader the address without `.md`. It opens the weapon in the
    calculator, where they can change the build and run the fight themselves.
 
 ## Read the board as JSON
 
-- {SITE}/board/<weapon_id>.json holds every published row for one weapon. A row
-  names its ruler (`benchmark`), its `score` and the rounded `shown`, its `mode`,
-  and the build as WFSim ids: `mods`, `exilus`, `arcanes`, `evolutions`.
-- {SITE}/board/index.json holds rows for every weapon, keyed by weapon id.
+- {BOARD_CATALOG} lists each published weapon and ruler, its leaders and its
+  revision. Filter with `weapon` and continue using the returned `next` as `after`.
+- {SITE}/api/board/pages reads the rows. Pass `weapon`, `ruler` and the catalog's
+  `revision`. Use the returned `next` as `after` to continue within that revision.
 
 ## Quoting a number
 
 - A score belongs to its ruler. Compare scores only under the same ruler, and
   quote the ruler's name with the number.
 - Credit [WFSim]({SITE}/reuse) with a link to the weapon page or shared build.
-- Quote the "as of" date the page states; the board is rescored as builds arrive.
+- Quote the measurement time on the row, or the stated archive date when citing
+  an archived score.
 
 ## Judging a build
 
@@ -2454,7 +2448,7 @@ def ship_agent_files(by_slot: dict) -> None:
              f"- [Using and citing WFSim]({SITE}/reuse): creator quotations, AI retrieval and licensing\n"
              f"- [Weapon lookup skill]({SITE}/.well-known/agent-skills/{SKILL_NAME}/SKILL.md): "
              "how to read a weapon's page and the board\n"
-             f"- [Board index]({SITE}/board/index.json): board rows for every weapon, as JSON\n"
+             f"- [Published board catalog]({BOARD_CATALOG}): ranks and revisions by weapon and ruler\n"
              "- [Source code](https://github.com/magenie33/wfsim): the engine, the game "
              "data and the measurements behind the golden tests\n")
     put(APP / "index.md", f"# WFSim\n\n{agent_summary()}\n\nCalculator: {SITE}/\n\n{links}")
@@ -2528,13 +2522,13 @@ def ship_agent_files(by_slot: dict) -> None:
     put(wk / "api-catalog", json.dumps({"linkset": [
         {"anchor": f"{SITE}/.well-known/api-catalog",
          "item": [{"href": MCP_URL}, {"href": A2A_URL},
-                  {"href": f"{SITE}/board/index.json", "type": "application/json"}]},
+                  {"href": BOARD_CATALOG, "type": "application/json"}]},
         {"anchor": A2A_URL,
          "service-desc": [{"href": f"{SITE}/.well-known/agent-card.json", "type": "application/json"}]},
         {"anchor": MCP_URL,
          "service-desc": [{"href": card, "type": "application/json"}],
          "service-doc": [{"href": skill_url, "type": "text/markdown"}]},
-        {"anchor": f"{SITE}/board/index.json",
+        {"anchor": BOARD_CATALOG,
          "service-doc": [{"href": skill_url, "type": "text/markdown"}]},
     ]}, indent=2) + "\n")
 

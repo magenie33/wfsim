@@ -566,7 +566,7 @@ serves it:
 | `/method`, `/method/<locale>`, each with its `.md` twin | how WFSim judges a build (§"The method"), a plain page outside the app |
 | `/llms.txt` | llmstxt.org index: what WFSim is, its method and every weapon's twin |
 | `/.well-known/agent-skills/index.json` | one skill: look a weapon up, read the board, quote a score |
-| `/.well-known/api-catalog` | RFC 9727: the MCP server and the board JSON, the two public read APIs |
+| `/.well-known/api-catalog` | RFC 9727: MCP, A2A and the current board catalog |
 | `/.well-known/mcp/server-card.json` | the MCP server: its endpoint and its tools, from the headless table and `mcp/account.js` |
 | `/.well-known/agent-card.json` | the A2A agent card, from `agentCard` in `mcp/a2a.js` — the function the endpoint serves it with |
 | `/.well-known/ai-catalog.json` | ARD's catalog (ai-catalog 1.0): the MCP server card, the A2A card and the skill, each by the url it is served at; `Agentmap:` in robots.txt and `<link rel="ai-catalog">` in the page's head point at it |
@@ -582,8 +582,9 @@ and carries a `Link` header naming the twin and the discovery documents either
 way — which is why `/`, `/weapons` and `/weapons/*` run the worker first. An
 unknown `/.well-known/` path is a 404, never the SPA.
 
-A twin states only what the page does, so a fact reaches it through the same
-function that writes the html, never a second one.
+A weapon's prerendered HTML and markdown link to its current board catalog.
+Their build-time scores cite the bundled archive date. The current catalog
+selects each ruler's published revision independently of site releases.
 
 ## Web Bot Auth
 
