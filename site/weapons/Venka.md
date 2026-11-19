@@ -4,6 +4,8 @@ Chinese name: 凯旋之爪
 
 Claws · Melee · Mastery Rank 4. 140 base damage (impact 7, puncture 35, slash 98), 15% crit chance, 2x crit multiplier, 15% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=venka
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Claws · Melee · Mastery Rank 4. 140 base damage (impact 7, puncture 35, slash 
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Venka
-- Every published board row, as JSON: https://wfsim.app/board/venka.json
+- Archived board JSON: https://wfsim.app/board/venka.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

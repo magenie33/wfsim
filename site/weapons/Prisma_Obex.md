@@ -4,6 +4,8 @@ Chinese name: 棱晶·奥比克斯
 
 Sparring · Melee · Mastery Rank 10. 150 base damage (impact 105, puncture 22.5, slash 22.5), 25% crit chance, 2x crit multiplier, 30% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=prisma_obex
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -16,5 +18,5 @@ Sparring · Melee · Mastery Rank 10. 150 base damage (impact 105, puncture 22.5
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Prisma_Obex
-- Every published board row, as JSON: https://wfsim.app/board/prisma_obex.json
+- Archived board JSON: https://wfsim.app/board/prisma_obex.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

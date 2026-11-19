@@ -4,7 +4,9 @@ Chinese name: 狙击特昂·破坏者
 
 Sniper · Primary · Mastery Rank 5. 200 base damage (impact 10, puncture 180, slash 10), 28% crit chance, 2x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=snipetron_vandal
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -26,5 +28,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Snipetron_Vandal
-- Every published board row, as JSON: https://wfsim.app/board/snipetron_vandal.json
+- Archived board JSON: https://wfsim.app/board/snipetron_vandal.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

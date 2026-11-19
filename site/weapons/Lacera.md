@@ -4,6 +4,8 @@ Chinese name: 悲痛之刃
 
 Blade And Whip · Melee · Mastery Rank 7. 216 base damage (electricity 100, impact 12, puncture 38, slash 66), 5% crit chance, 2x crit multiplier, 45% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=lacera
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -15,5 +17,5 @@ Blade And Whip · Melee · Mastery Rank 7. 216 base damage (electricity 100, imp
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Lacera
-- Every published board row, as JSON: https://wfsim.app/board/lacera.json
+- Archived board JSON: https://wfsim.app/board/lacera.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

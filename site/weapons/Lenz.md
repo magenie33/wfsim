@@ -4,6 +4,8 @@ Chinese name: 楞次弓
 
 Bow · Primary · Mastery Rank 8. 50 base damage (impact 50), 50% crit chance, 2x crit multiplier, 5% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=lenz
+
 ## Not modelled here
 
 - Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
@@ -15,5 +17,5 @@ Bow · Primary · Mastery Rank 8. 50 base damage (impact 50), 50% crit chance, 2
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Lenz
-- Every published board row, as JSON: https://wfsim.app/board/lenz.json
+- Archived board JSON: https://wfsim.app/board/lenz.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

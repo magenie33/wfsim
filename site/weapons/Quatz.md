@@ -4,7 +4,9 @@ Chinese name: 夸兹
 
 Pistol · Secondary · Mastery Rank 9. 29 base damage (electricity 11, impact 9, puncture 2, slash 7), 13% crit chance, 1.5x crit multiplier, 27% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=quatz
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -25,5 +27,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Quatz
-- Every published board row, as JSON: https://wfsim.app/board/quatz.json
+- Archived board JSON: https://wfsim.app/board/quatz.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

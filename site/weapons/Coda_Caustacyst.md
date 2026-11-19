@@ -4,6 +4,8 @@ Chinese name: 终幕·灼蚀变体镰
 
 Scythe · Melee · Mastery Rank 17. 285 base damage (corrosive 120, impact 20, puncture 75, slash 70), 19% crit chance, 2.3x crit multiplier, 41% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=coda_caustacyst
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -17,5 +19,5 @@ Scythe · Melee · Mastery Rank 17. 285 base damage (corrosive 120, impact 20, p
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Coda_Caustacyst
-- Every published board row, as JSON: https://wfsim.app/board/coda_caustacyst.json
+- Archived board JSON: https://wfsim.app/board/coda_caustacyst.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

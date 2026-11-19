@@ -4,7 +4,9 @@ Chinese name: 终幕·横痃重炮
 
 Shotgun · Primary · Mastery Rank 17. 41 base damage x7 multishot (impact 2, puncture 13, slash 19, toxin 7), 27% crit chance, 2.3x crit multiplier, 10.1429% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=coda_bubonico
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -27,5 +29,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Coda_Bubonico
-- Every published board row, as JSON: https://wfsim.app/board/coda_bubonico.json
+- Archived board JSON: https://wfsim.app/board/coda_bubonico.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

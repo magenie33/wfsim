@@ -4,6 +4,8 @@ Chinese name: 蚂蟥
 
 Sparring · Melee · Mastery Rank 7. 130 base damage (impact 19.5, puncture 104, slash 6.5), 30% crit chance, 3x crit multiplier, 11% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=hirudo
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Sparring · Melee · Mastery Rank 7. 130 base damage (impact 19.5, puncture 104,
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Hirudo
-- Every published board row, as JSON: https://wfsim.app/board/hirudo.json
+- Archived board JSON: https://wfsim.app/board/hirudo.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

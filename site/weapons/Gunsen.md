@@ -4,6 +4,8 @@ Chinese name: 军扇
 
 Warfan · Melee · Mastery Rank 8. 160 base damage (impact 12.8, puncture 19.2, slash 128), 16% crit chance, 2x crit multiplier, 28% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=gunsen
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -16,5 +18,5 @@ Warfan · Melee · Mastery Rank 8. 160 base damage (impact 12.8, puncture 19.2, 
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Gunsen
-- Every published board row, as JSON: https://wfsim.app/board/gunsen.json
+- Archived board JSON: https://wfsim.app/board/gunsen.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

@@ -4,7 +4,9 @@ Chinese name: 天穹之顶
 
 Rifle · Primary · Mastery Rank 10. 150 base damage (impact 15, puncture 120, slash 15), 35% crit chance, 2.5x crit multiplier, 8% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=zenith
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -25,5 +27,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Zenith
-- Every published board row, as JSON: https://wfsim.app/board/zenith.json
+- Archived board JSON: https://wfsim.app/board/zenith.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

@@ -4,7 +4,9 @@ Chinese name: 棱晶·特拉
 
 Rifle · Primary · Mastery Rank 4. 38 base damage (impact 7.6, puncture 30.4), 10% crit chance, 2x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=prisma_tetra
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Prisma_Tetra
-- Every published board row, as JSON: https://wfsim.app/board/prisma_tetra.json
+- Archived board JSON: https://wfsim.app/board/prisma_tetra.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

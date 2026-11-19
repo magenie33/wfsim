@@ -4,7 +4,9 @@ Chinese name: 苦痛·德特昂
 
 Shotgun Sidearm · Secondary · Mastery Rank 9. 40 base damage x7 multishot (radiation 40), 8% crit chance, 1.5x crit multiplier, 13.7143% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=mara_detron
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Mara_Detron
-- Every published board row, as JSON: https://wfsim.app/board/mara_detron.json
+- Archived board JSON: https://wfsim.app/board/mara_detron.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

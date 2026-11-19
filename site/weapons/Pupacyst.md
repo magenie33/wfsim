@@ -4,6 +4,8 @@ Chinese name: 毒囊骨茧
 
 Polearm · Melee · Mastery Rank 7. 284 base damage (impact 139, viral 145), 13% crit chance, 1.5x crit multiplier, 27% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=pupacyst
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Polearm · Melee · Mastery Rank 7. 284 base damage (impact 139, viral 145), 13%
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Pupacyst
-- Every published board row, as JSON: https://wfsim.app/board/pupacyst.json
+- Archived board JSON: https://wfsim.app/board/pupacyst.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

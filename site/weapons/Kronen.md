@@ -4,6 +4,8 @@ Chinese name: 皇家拐刃
 
 Tonfa · Melee · Mastery Rank 3. 130 base damage (impact 13, puncture 13, slash 104), 10% crit chance, 1.5x crit multiplier, 20% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=kronen
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Tonfa · Melee · Mastery Rank 3. 130 base damage (impact 13, puncture 13, slash
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kronen
-- Every published board row, as JSON: https://wfsim.app/board/kronen.json
+- Archived board JSON: https://wfsim.app/board/kronen.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

@@ -9,7 +9,7 @@
 - [All weapons](https://wfsim.app/weapons.md): every weapon WFSim models, by slot
 - [Using and citing WFSim](https://wfsim.app/reuse): creator quotations, AI retrieval and licensing
 - [Weapon lookup skill](https://wfsim.app/.well-known/agent-skills/wfsim-weapon-builds/SKILL.md): how to read a weapon's page and the board
-- [Board index](https://wfsim.app/board/index.json): board rows for every weapon, as JSON
+- [Published board catalog](https://wfsim.app/api/board/pages/catalog): ranks and revisions by weapon and ruler
 - [Source code](https://github.com/magenie33/wfsim): the engine, the game data and the measurements behind the golden tests
 
 ## Weapons

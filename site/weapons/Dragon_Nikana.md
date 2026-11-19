@@ -4,7 +4,9 @@ Chinese name: 龙之侍刃
 
 Nikana · Melee · Mastery Rank 8. 188 base damage (impact 9.4, puncture 18.8, slash 159.8), 22% crit chance, 2x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=dragon_nikana
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -26,5 +28,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dragon_Nikana
-- Every published board row, as JSON: https://wfsim.app/board/dragon_nikana.json
+- Archived board JSON: https://wfsim.app/board/dragon_nikana.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

@@ -24,24 +24,25 @@ https://mcp.wfsim.app/mcp (Streamable HTTP, no sign-in) offers these tools, all 
 1. Find it in the roster, https://wfsim.app/weapons.md. A weapon's address is the Warframe
    wiki's page name: https://wfsim.app/weapons/<Wiki_Name>, for example https://wfsim.app/weapons/Soma_Prime.
 2. Read it as markdown: request that address with `Accept: text/markdown`, or
-   append `.md`. It states the base stats, the board's best riven-free build
-   under each ruler, and what the weapon's number does not account for.
+   append `.md`. It states the base stats and modelling limits, and links to
+   the current published board.
 3. Give the reader the address without `.md`. It opens the weapon in the
    calculator, where they can change the build and run the fight themselves.
 
 ## Read the board as JSON
 
-- https://wfsim.app/board/<weapon_id>.json holds every published row for one weapon. A row
-  names its ruler (`benchmark`), its `score` and the rounded `shown`, its `mode`,
-  and the build as WFSim ids: `mods`, `exilus`, `arcanes`, `evolutions`.
-- https://wfsim.app/board/index.json holds rows for every weapon, keyed by weapon id.
+- https://wfsim.app/api/board/pages/catalog lists each published weapon and ruler, its leaders and its
+  revision. Filter with `weapon` and continue using the returned `next` as `after`.
+- https://wfsim.app/api/board/pages reads the rows. Pass `weapon`, `ruler` and the catalog's
+  `revision`. Use the returned `next` as `after` to continue within that revision.
 
 ## Quoting a number
 
 - A score belongs to its ruler. Compare scores only under the same ruler, and
   quote the ruler's name with the number.
 - Credit [WFSim](https://wfsim.app/reuse) with a link to the weapon page or shared build.
-- Quote the "as of" date the page states; the board is rescored as builds arrive.
+- Quote the measurement time on the row, or the stated archive date when citing
+  an archived score.
 
 ## Judging a build
 

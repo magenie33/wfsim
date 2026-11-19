@@ -4,6 +4,8 @@ Chinese name: 恶狼战锤
 
 Hammer · Melee · Mastery Rank 7. 259 base damage (impact 132.09, puncture 7.77, slash 119.14), 17% crit chance, 1.9x crit multiplier, 33% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=wolf_sledge
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -15,5 +17,5 @@ Hammer · Melee · Mastery Rank 7. 259 base damage (impact 132.09, puncture 7.77
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Wolf_Sledge
-- Every published board row, as JSON: https://wfsim.app/board/wolf_sledge.json
+- Archived board JSON: https://wfsim.app/board/wolf_sledge.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

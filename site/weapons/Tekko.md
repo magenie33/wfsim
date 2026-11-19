@@ -4,6 +4,8 @@ Chinese name: 铁钩手甲
 
 Fist · Melee · Mastery Rank 6. 160 base damage (impact 32, puncture 16, slash 112), 30% crit chance, 2x crit multiplier, 10% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=tekko
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -16,5 +18,5 @@ Fist · Melee · Mastery Rank 6. 160 base damage (impact 32, puncture 16, slash 
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tekko
-- Every published board row, as JSON: https://wfsim.app/board/tekko.json
+- Archived board JSON: https://wfsim.app/board/tekko.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

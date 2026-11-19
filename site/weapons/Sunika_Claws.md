@@ -2,6 +2,8 @@
 
 Beast Claws · Sentinel · Mastery Rank 0. 550 base damage (slash 550), 7.5% crit chance, 3.5x crit multiplier, 7.5% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=sunika_claws
+
 ## Not modelled here
 
 - Companion melee retains its separate weapon and AI cadence model. Player melee animation parameters do not establish companion target selection, attack completion or retrieval time.
@@ -11,5 +13,5 @@ Beast Claws · Sentinel · Mastery Rank 0. 550 base damage (slash 550), 7.5% cri
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sunika_Claws
-- Every published board row, as JSON: https://wfsim.app/board/sunika_claws.json
+- Archived board JSON: https://wfsim.app/board/sunika_claws.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

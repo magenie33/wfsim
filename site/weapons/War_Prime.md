@@ -4,7 +4,9 @@ Chinese name: 战争之剑 Prime
 
 Heavy Blade · Melee · Mastery Rank 15. 270 base damage (impact 194.4, puncture 32.4, slash 43.2), 26% crit chance, 3.2x crit multiplier, 32% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=war_prime
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -28,5 +30,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/War_Prime
-- Every published board row, as JSON: https://wfsim.app/board/war_prime.json
+- Archived board JSON: https://wfsim.app/board/war_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

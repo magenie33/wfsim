@@ -4,6 +4,8 @@ Chinese name: 威震武扇 Prime
 
 Warfan · Melee · Mastery Rank 13. 260 base damage (impact 26, puncture 52, slash 182), 35% crit chance, 2.5x crit multiplier, 18% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=quassus_prime
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -17,5 +19,5 @@ Warfan · Melee · Mastery Rank 13. 260 base damage (impact 26, puncture 52, sla
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Quassus_Prime
-- Every published board row, as JSON: https://wfsim.app/board/quassus_prime.json
+- Archived board JSON: https://wfsim.app/board/quassus_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

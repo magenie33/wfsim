@@ -4,6 +4,8 @@ Chinese name: 救赎者
 
 Gunblade · Melee · Mastery Rank 4. 180 base damage (impact 18, puncture 36, slash 126), 10% crit chance, 1.8x crit multiplier, 22% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=redeemer
+
 ## Not modelled here
 
 - Slam damage and critical rules retain the declared component model. Radius uses the maximum-height convention; ascent, descent, ground contact and recovery are not a calibrated physical cycle. Native attenuation and clip lengths do not establish that cycle.
@@ -16,5 +18,5 @@ Gunblade · Melee · Mastery Rank 4. 180 base damage (impact 18, puncture 36, sl
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Redeemer
-- Every published board row, as JSON: https://wfsim.app/board/redeemer.json
+- Archived board JSON: https://wfsim.app/board/redeemer.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

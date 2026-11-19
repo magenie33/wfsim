@@ -4,7 +4,9 @@ Chinese name: 光谱切割器
 
 Pistol · Secondary · Mastery Rank 4. 18 base damage (puncture 7.56, slash 10.44), 14% crit chance, 2x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=spectra
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -20,5 +22,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Spectra
-- Every published board row, as JSON: https://wfsim.app/board/spectra.json
+- Archived board JSON: https://wfsim.app/board/spectra.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

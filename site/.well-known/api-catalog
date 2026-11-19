@@ -10,7 +10,7 @@
           "href": "https://mcp.wfsim.app/a2a"
         },
         {
-          "href": "https://wfsim.app/board/index.json",
+          "href": "https://wfsim.app/api/board/pages/catalog",
           "type": "application/json"
         }
       ]
@@ -40,7 +40,7 @@
       ]
     },
     {
-      "anchor": "https://wfsim.app/board/index.json",
+      "anchor": "https://wfsim.app/api/board/pages/catalog",
       "service-doc": [
         {
           "href": "https://wfsim.app/.well-known/agent-skills/wfsim-weapon-builds/SKILL.md",

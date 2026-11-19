@@ -4,7 +4,9 @@ Chinese name: 三宝聚
 
 Hammer · Melee · Mastery Rank 0. 248 base damage (impact 173.6, puncture 37.2, slash 37.2), 30% crit chance, 3x crit multiplier, 28% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=sampotes
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -29,5 +31,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sampotes
-- Every published board row, as JSON: https://wfsim.app/board/sampotes.json
+- Archived board JSON: https://wfsim.app/board/sampotes.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

@@ -4,7 +4,9 @@ Chinese name: 野猪
 
 Shotgun · Primary · Mastery Rank 2. 22 base damage x8 multishot (impact 12.1, puncture 3.3, slash 6.6), 10% crit chance, 1.5x crit multiplier, 7.5% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=boar
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Boar
-- Every published board row, as JSON: https://wfsim.app/board/boar.json
+- Archived board JSON: https://wfsim.app/board/boar.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

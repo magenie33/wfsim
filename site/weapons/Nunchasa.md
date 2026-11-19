@@ -2,7 +2,9 @@
 
 Bow · Primary · Mastery Rank 14. 400 base damage (cold 200, puncture 200), 32% crit chance, 2.4x crit multiplier, 32% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=nunchasa
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Nunchasa
-- Every published board row, as JSON: https://wfsim.app/board/nunchasa.json
+- Archived board JSON: https://wfsim.app/board/nunchasa.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

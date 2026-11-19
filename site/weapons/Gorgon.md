@@ -4,7 +4,9 @@ Chinese name: 蛇发女妖
 
 Rifle · Primary · Mastery Rank 3. 25 base damage (impact 18.75, puncture 3.75, slash 2.5), 17% crit chance, 1.5x crit multiplier, 9% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=gorgon
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -26,5 +28,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Gorgon
-- Every published board row, as JSON: https://wfsim.app/board/gorgon.json
+- Archived board JSON: https://wfsim.app/board/gorgon.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

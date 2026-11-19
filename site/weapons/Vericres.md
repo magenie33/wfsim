@@ -4,6 +4,8 @@ Chinese name: 真月武扇
 
 Warfan · Melee · Mastery Rank 8. 180 base damage (impact 21.6, puncture 28.8, slash 129.6), 22% crit chance, 2x crit multiplier, 20% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=vericres
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -16,5 +18,5 @@ Warfan · Melee · Mastery Rank 8. 180 base damage (impact 21.6, puncture 28.8, 
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Vericres
-- Every published board row, as JSON: https://wfsim.app/board/vericres.json
+- Archived board JSON: https://wfsim.app/board/vericres.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

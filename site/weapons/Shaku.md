@@ -4,6 +4,8 @@ Chinese name: 双节尺棍
 
 Nunchaku · Melee · Mastery Rank 10. 180 base damage (impact 180), 18% crit chance, 2x crit multiplier, 34% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=shaku
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Nunchaku · Melee · Mastery Rank 10. 180 base damage (impact 180), 18% crit cha
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Shaku
-- Every published board row, as JSON: https://wfsim.app/board/shaku.json
+- Archived board JSON: https://wfsim.app/board/shaku.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

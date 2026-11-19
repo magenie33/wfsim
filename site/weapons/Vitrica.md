@@ -4,6 +4,8 @@ Chinese name: 金璃剑
 
 Heavy Blade · Melee · Mastery Rank 13. 333 base damage (impact 99.9, puncture 99.9, slash 133.2), 23% crit chance, 2.3x crit multiplier, 33% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=vitrica
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -17,5 +19,5 @@ Heavy Blade · Melee · Mastery Rank 13. 333 base damage (impact 99.9, puncture 
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Vitrica
-- Every published board row, as JSON: https://wfsim.app/board/vitrica.json
+- Archived board JSON: https://wfsim.app/board/vitrica.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

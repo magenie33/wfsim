@@ -4,6 +4,8 @@ Chinese name: 阿提卡
 
 Crossbow · Primary · Mastery Rank 7. 80 base damage (impact 4, puncture 60, slash 16), 25% crit chance, 3x crit multiplier, 10% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=attica
+
 ## Not modelled here
 
 - Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
@@ -14,5 +16,5 @@ Crossbow · Primary · Mastery Rank 7. 80 base damage (impact 4, puncture 60, sl
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Attica
-- Every published board row, as JSON: https://wfsim.app/board/attica.json
+- Archived board JSON: https://wfsim.app/board/attica.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

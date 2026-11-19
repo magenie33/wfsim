@@ -4,7 +4,9 @@ Chinese name: 终幕·脓痘
 
 Pistol · Secondary · Mastery Rank 17. 55 base damage (toxin 55), 10% crit chance, 2.2x crit multiplier, 45% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=coda_pox
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -26,5 +28,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Coda_Pox
-- Every published board row, as JSON: https://wfsim.app/board/coda_pox.json
+- Archived board JSON: https://wfsim.app/board/coda_pox.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

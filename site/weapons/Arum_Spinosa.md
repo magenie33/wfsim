@@ -4,6 +4,8 @@ Chinese name: 疆南星刺
 
 Warfan · Melee · Mastery Rank 11. 297 base damage (impact 35.64, puncture 59.4, slash 201.96), 9% crit chance, 1.9x crit multiplier, 37% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=arum_spinosa
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -17,5 +19,5 @@ Warfan · Melee · Mastery Rank 11. 297 base damage (impact 35.64, puncture 59.4
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Arum_Spinosa
-- Every published board row, as JSON: https://wfsim.app/board/arum_spinosa.json
+- Archived board JSON: https://wfsim.app/board/arum_spinosa.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

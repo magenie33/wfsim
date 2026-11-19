@@ -4,6 +4,8 @@ Chinese name: 咀嚼金杖
 
 Heavy Blade · Melee · Mastery Rank 8. 241 base damage (impact 134.96, slash 106.04), 24% crit chance, 2x crit multiplier, 28% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=masseter
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -15,5 +17,5 @@ Heavy Blade · Melee · Mastery Rank 8. 241 base damage (impact 134.96, slash 10
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Masseter
-- Every published board row, as JSON: https://wfsim.app/board/masseter.json
+- Archived board JSON: https://wfsim.app/board/masseter.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

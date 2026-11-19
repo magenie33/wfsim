@@ -4,7 +4,9 @@ Chinese name: 信条·莉薇娅
 
 Two Handed Nikana · Melee · Mastery Rank 14. 198 base damage (impact 9.9, puncture 9.9, slash 178.2), 28% crit chance, 2.2x crit multiplier, 28% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=tenet_livia
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -29,5 +31,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tenet_Livia
-- Every published board row, as JSON: https://wfsim.app/board/tenet_livia.json
+- Archived board JSON: https://wfsim.app/board/tenet_livia.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

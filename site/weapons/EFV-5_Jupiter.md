@@ -4,7 +4,9 @@ Chinese name: 艾弗旺-5 木星
 
 Rifle · Primary · Mastery Rank 14. 61 base damage (corrosive 7, puncture 31, slash 23), 21% crit chance, 2.3x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=efv_5_jupiter
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/EFV-5_Jupiter
-- Every published board row, as JSON: https://wfsim.app/board/efv_5_jupiter.json
+- Archived board JSON: https://wfsim.app/board/efv_5_jupiter.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

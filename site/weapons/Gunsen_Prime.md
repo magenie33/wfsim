@@ -4,6 +4,8 @@ Chinese name: 军扇 Prime
 
 Warfan · Melee · Mastery Rank 12. 225 base damage (impact 9, puncture 13.5, slash 202.5), 20% crit chance, 2x crit multiplier, 34% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=gunsen_prime
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -16,5 +18,5 @@ Warfan · Melee · Mastery Rank 12. 225 base damage (impact 9, puncture 13.5, sl
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Gunsen_Prime
-- Every published board row, as JSON: https://wfsim.app/board/gunsen_prime.json
+- Archived board JSON: https://wfsim.app/board/gunsen_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

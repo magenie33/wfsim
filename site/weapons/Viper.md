@@ -4,7 +4,9 @@ Chinese name: 蝰蛇
 
 Pistol · Secondary · Mastery Rank 4. 17 base damage (impact 10.2, puncture 1.7, slash 5.1), 15% crit chance, 1.5x crit multiplier, 11% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=viper
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Viper
-- Every published board row, as JSON: https://wfsim.app/board/viper.json
+- Archived board JSON: https://wfsim.app/board/viper.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

@@ -4,7 +4,9 @@ Chinese name: 努寇微波枪
 
 Pistol · Secondary · Mastery Rank 4. 22 base damage (radiation 22), 3% crit chance, 4x crit multiplier, 29% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=nukor
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Nukor
-- Every published board row, as JSON: https://wfsim.app/board/nukor.json
+- Archived board JSON: https://wfsim.app/board/nukor.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

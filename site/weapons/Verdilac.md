@@ -4,6 +4,8 @@ Chinese name: 蝰首骨妖
 
 Whip · Melee · Mastery Rank 13. 213 base damage (impact 21.3, puncture 85.2, slash 106.5), 30% crit chance, 2.5x crit multiplier, 21% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=verdilac
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -16,5 +18,5 @@ Whip · Melee · Mastery Rank 13. 213 base damage (impact 21.3, puncture 85.2, s
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Verdilac
-- Every published board row, as JSON: https://wfsim.app/board/verdilac.json
+- Archived board JSON: https://wfsim.app/board/verdilac.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

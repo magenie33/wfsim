@@ -4,6 +4,8 @@ Chinese name: 塔克 & 卢格
 
 Sword And Shield · Melee · Mastery Rank 9. 197 base damage (impact 39.4, slash 157.6), 21% crit chance, 1.9x crit multiplier, 31% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=tak_and_lug
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -16,5 +18,5 @@ Sword And Shield · Melee · Mastery Rank 9. 197 base damage (impact 39.4, slash
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tak_%26_Lug
-- Every published board row, as JSON: https://wfsim.app/board/tak_and_lug.json
+- Archived board JSON: https://wfsim.app/board/tak_and_lug.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

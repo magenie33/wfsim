@@ -4,6 +4,8 @@ Chinese name: 电流刺索
 
 Whip · Melee · Mastery Rank 6. 210 base damage (electricity 96, impact 12, puncture 38, slash 64), 12% crit chance, 1.8x crit multiplier, 30% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=galvacord
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Whip · Melee · Mastery Rank 6. 210 base damage (electricity 96, impact 12, pun
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Galvacord
-- Every published board row, as JSON: https://wfsim.app/board/galvacord.json
+- Archived board JSON: https://wfsim.app/board/galvacord.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

@@ -4,6 +4,8 @@ Chinese name: 双子恶行
 
 Dual Swords · Melee · Mastery Rank 14. 255 base damage (gas 153, puncture 51, slash 51), 23% crit chance, 2.1x crit multiplier, 29% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=dual_viciss
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -15,5 +17,5 @@ Dual Swords · Melee · Mastery Rank 14. 255 base damage (gas 153, puncture 51, 
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Viciss
-- Every published board row, as JSON: https://wfsim.app/board/dual_viciss.json
+- Archived board JSON: https://wfsim.app/board/dual_viciss.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

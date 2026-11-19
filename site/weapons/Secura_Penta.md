@@ -4,7 +4,9 @@ Chinese name: 保障·潘塔
 
 Launcher · Primary · Mastery Rank 12. 75 base damage (impact 75), 26% crit chance, 2x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=secura_penta
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -28,5 +30,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Secura_Penta
-- Every published board row, as JSON: https://wfsim.app/board/secura_penta.json
+- Archived board JSON: https://wfsim.app/board/secura_penta.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

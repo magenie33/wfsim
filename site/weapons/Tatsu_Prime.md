@@ -4,6 +4,8 @@ Chinese name: 龙辰 Prime
 
 Two Handed Nikana · Melee · Mastery Rank 14. 230 base damage (impact 20, puncture 54, radiation 80, slash 76), 22% crit chance, 2.4x crit multiplier, 30% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=tatsu_prime
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -17,5 +19,5 @@ Two Handed Nikana · Melee · Mastery Rank 14. 230 base damage (impact 20, punct
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tatsu_Prime
-- Every published board row, as JSON: https://wfsim.app/board/tatsu_prime.json
+- Archived board JSON: https://wfsim.app/board/tatsu_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

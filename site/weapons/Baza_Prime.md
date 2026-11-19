@@ -4,7 +4,9 @@ Chinese name: 苍鹰 Prime
 
 Rifle · Primary · Mastery Rank 10. 16 base damage (impact 5.76, puncture 6.72, slash 3.52), 28% crit chance, 3x crit multiplier, 14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=baza_prime
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -25,5 +27,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Baza_Prime
-- Every published board row, as JSON: https://wfsim.app/board/baza_prime.json
+- Archived board JSON: https://wfsim.app/board/baza_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

@@ -4,7 +4,9 @@ Chinese name: 量子切割器·破坏者
 
 Rifle · Primary · Mastery Rank 10. 13 base damage x2 multishot (electricity 13), 22% crit chance, 2.4x crit multiplier, 45% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=quanta_vandal
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Quanta_Vandal
-- Every published board row, as JSON: https://wfsim.app/board/quanta_vandal.json
+- Archived board JSON: https://wfsim.app/board/quanta_vandal.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

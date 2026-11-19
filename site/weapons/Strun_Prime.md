@@ -4,7 +4,9 @@ Chinese name: 斯特朗 Prime
 
 Shotgun · Primary · Mastery Rank 14. 54 base damage x12 multishot (impact 24.3, puncture 8.1, slash 21.6), 24% crit chance, 2.2x crit multiplier, 6.66667% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=strun_prime
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -25,5 +27,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Strun_Prime
-- Every published board row, as JSON: https://wfsim.app/board/strun_prime.json
+- Archived board JSON: https://wfsim.app/board/strun_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

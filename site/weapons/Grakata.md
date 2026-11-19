@@ -4,7 +4,9 @@ Chinese name: 葛拉卡达
 
 Rifle · Primary · Mastery Rank 5. 11 base damage (impact 4.4, puncture 3.66666, slash 2.93334), 25% crit chance, 2x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=grakata
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Grakata
-- Every published board row, as JSON: https://wfsim.app/board/grakata.json
+- Archived board JSON: https://wfsim.app/board/grakata.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

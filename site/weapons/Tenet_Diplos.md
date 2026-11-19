@@ -4,7 +4,9 @@ Chinese name: 信条·纵横双枪
 
 Dual Pistols · Secondary · Mastery Rank 16. 28 base damage (impact 11.2, puncture 8.96, slash 7.84), 36% crit chance, 2.2x crit multiplier, 14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=tenet_diplos
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -25,5 +27,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tenet_Diplos
-- Every published board row, as JSON: https://wfsim.app/board/tenet_diplos.json
+- Archived board JSON: https://wfsim.app/board/tenet_diplos.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

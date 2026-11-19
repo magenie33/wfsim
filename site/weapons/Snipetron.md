@@ -4,7 +4,9 @@ Chinese name: 狙击特昂
 
 Sniper · Primary · Mastery Rank 0. 180 base damage (impact 18, puncture 144, slash 18), 30% crit chance, 1.5x crit multiplier, 12% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=snipetron
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -26,5 +28,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Snipetron
-- Every published board row, as JSON: https://wfsim.app/board/snipetron.json
+- Archived board JSON: https://wfsim.app/board/snipetron.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

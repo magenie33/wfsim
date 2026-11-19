@@ -4,7 +4,9 @@ Chinese name: 什长双枪
 
 Archgun · Archgun · Mastery Rank 1. 190 base damage (impact 85.5, puncture 52.25, slash 52.25), 28% crit chance, 2.2x crit multiplier, 14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=dual_decurion
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Decurion
-- Every published board row, as JSON: https://wfsim.app/board/dual_decurion.json
+- Archived board JSON: https://wfsim.app/board/dual_decurion.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

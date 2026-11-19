@@ -4,7 +4,9 @@ Chinese name: 海波单剑
 
 Machete · Melee · Mastery Rank 6. 172 base damage (impact 25.8, puncture 25.8, slash 120.4), 15% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=nami_solo
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -27,5 +29,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Nami_Solo
-- Every published board row, as JSON: https://wfsim.app/board/nami_solo.json
+- Archived board JSON: https://wfsim.app/board/nami_solo.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

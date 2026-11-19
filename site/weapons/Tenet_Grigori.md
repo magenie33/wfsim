@@ -4,7 +4,9 @@ Chinese name: 信条·格里高利
 
 Scythe · Melee · Mastery Rank 14. 228 base damage (impact 9.12, puncture 82.08, slash 136.8), 24% crit chance, 1.6x crit multiplier, 38% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=tenet_grigori
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -29,5 +31,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tenet_Grigori
-- Every published board row, as JSON: https://wfsim.app/board/tenet_grigori.json
+- Archived board JSON: https://wfsim.app/board/tenet_grigori.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

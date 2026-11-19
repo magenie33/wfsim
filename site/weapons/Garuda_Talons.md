@@ -4,6 +4,8 @@ Chinese name: Garuda 之爪
 
 Claws · Exalted · Mastery Rank 1. 248 base damage (impact 19.84, puncture 54.56, slash 173.6), 20% crit chance, 2x crit multiplier, 36% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=garuda_talons
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Claws · Exalted · Mastery Rank 1. 248 base damage (impact 19.84, puncture 54.5
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Garuda_Talons
-- Every published board row, as JSON: https://wfsim.app/board/garuda_talons.json
+- Archived board JSON: https://wfsim.app/board/garuda_talons.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

@@ -4,6 +4,8 @@ Chinese name: 威震武扇
 
 Warfan · Melee · Mastery Rank 8. 230 base damage (impact 27.6, puncture 46, slash 156.4), 30% crit chance, 2x crit multiplier, 12% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=quassus
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -17,5 +19,5 @@ Warfan · Melee · Mastery Rank 8. 230 base damage (impact 27.6, puncture 46, sl
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Quassus
-- Every published board row, as JSON: https://wfsim.app/board/quassus.json
+- Archived board JSON: https://wfsim.app/board/quassus.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

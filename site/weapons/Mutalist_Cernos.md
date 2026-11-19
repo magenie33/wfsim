@@ -4,6 +4,8 @@ Chinese name: 异融西诺斯
 
 Bow · Primary · Mastery Rank 7. 410 base damage (impact 369, puncture 20.5, slash 20.5), 15% crit chance, 2x crit multiplier, 49% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=mutalist_cernos
+
 ## Not modelled here
 
 - Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
@@ -14,5 +16,5 @@ Bow · Primary · Mastery Rank 7. 410 base damage (impact 369, puncture 20.5, sl
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Mutalist_Cernos
-- Every published board row, as JSON: https://wfsim.app/board/mutalist_cernos.json
+- Archived board JSON: https://wfsim.app/board/mutalist_cernos.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

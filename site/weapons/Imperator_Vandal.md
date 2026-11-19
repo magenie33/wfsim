@@ -4,7 +4,9 @@ Chinese name: 凯旋将军·破坏者
 
 Archgun · Archgun · Mastery Rank 5. 100 base damage (impact 40, puncture 35, slash 25), 28% crit chance, 2.4x crit multiplier, 12% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=imperator_vandal
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -25,5 +27,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Imperator_Vandal
-- Every published board row, as JSON: https://wfsim.app/board/imperator_vandal.json
+- Archived board JSON: https://wfsim.app/board/imperator_vandal.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

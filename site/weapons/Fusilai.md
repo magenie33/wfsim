@@ -4,7 +4,9 @@ Chinese name: 齐射玻刃
 
 Pistol · Secondary · Mastery Rank 7. 77 base damage (puncture 30.8, slash 46.2), 23% crit chance, 1.7x crit multiplier, 29% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=fusilai
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Fusilai
-- Every published board row, as JSON: https://wfsim.app/board/fusilai.json
+- Archived board JSON: https://wfsim.app/board/fusilai.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

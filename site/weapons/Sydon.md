@@ -4,6 +4,8 @@ Chinese name: 恶龙
 
 Polearm · Melee · Mastery Rank 5. 225 base damage (impact 11.25, puncture 213.75), 10% crit chance, 2x crit multiplier, 25% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=sydon
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Polearm · Melee · Mastery Rank 5. 225 base damage (impact 11.25, puncture 213.
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sydon
-- Every published board row, as JSON: https://wfsim.app/board/sydon.json
+- Archived board JSON: https://wfsim.app/board/sydon.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

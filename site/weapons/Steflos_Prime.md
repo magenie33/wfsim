@@ -4,6 +4,8 @@ Chinese name: 石晶之花 Prime
 
 Shotgun · Primary · Mastery Rank 15. 480 base damage (heat 285, impact 195), 18% crit chance, 2.2x crit multiplier, 28% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=steflos_prime
+
 ## Not modelled here
 
 - Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
@@ -13,5 +15,5 @@ Shotgun · Primary · Mastery Rank 15. 480 base damage (heat 285, impact 195), 1
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Steflos_Prime
-- Every published board row, as JSON: https://wfsim.app/board/steflos_prime.json
+- Archived board JSON: https://wfsim.app/board/steflos_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

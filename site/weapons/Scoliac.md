@@ -4,6 +4,8 @@ Chinese name: 脊椎节鞭
 
 Whip · Melee · Mastery Rank 6. 150 base damage (impact 22.5, puncture 22.5, slash 105), 13% crit chance, 1.5x crit multiplier, 29% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=scoliac
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Whip · Melee · Mastery Rank 6. 150 base damage (impact 22.5, puncture 22.5, sl
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Scoliac
-- Every published board row, as JSON: https://wfsim.app/board/scoliac.json
+- Archived board JSON: https://wfsim.app/board/scoliac.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

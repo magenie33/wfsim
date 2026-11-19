@@ -4,7 +4,9 @@ Chinese name: 葛拉特勒
 
 Archgun · Archgun · Mastery Rank 4. 225 base damage (impact 22.5, puncture 180, slash 22.5), 25% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=grattler
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -25,5 +27,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Grattler
-- Every published board row, as JSON: https://wfsim.app/board/grattler.json
+- Archived board JSON: https://wfsim.app/board/grattler.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

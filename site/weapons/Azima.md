@@ -4,7 +4,9 @@ Chinese name: 方位角
 
 Pistol · Secondary · Mastery Rank 6. 20 base damage (impact 2, puncture 5, slash 13), 16% crit chance, 2x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=azima
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -26,5 +28,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Azima
-- Every published board row, as JSON: https://wfsim.app/board/azima.json
+- Archived board JSON: https://wfsim.app/board/azima.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

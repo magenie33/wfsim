@@ -4,6 +4,8 @@ Chinese name: 噬蛇弩
 
 Crossbow · Primary · Mastery Rank 9. 159 base damage (impact 1.59, puncture 14.31, slash 143.1), 15% crit chance, 2.3x crit multiplier, 39% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=nagantaka
+
 ## Not modelled here
 
 - Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
@@ -15,5 +17,5 @@ Crossbow · Primary · Mastery Rank 9. 159 base damage (impact 1.59, puncture 14
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Nagantaka
-- Every published board row, as JSON: https://wfsim.app/board/nagantaka.json
+- Archived board JSON: https://wfsim.app/board/nagantaka.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

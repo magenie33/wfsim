@@ -4,6 +4,8 @@ Chinese name: 终幕·啐沫者
 
 Pistol · Secondary · Mastery Rank 17. 76 base damage (impact 18, puncture 32, slash 26), 13% crit chance, 2x crit multiplier, 50% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=coda_tysis
+
 ## Not modelled here
 
 - The innate Corrosive damage over time, 177 of each dart's 253, is dealt in 3 ticks of 59 over 2 s, per multishot pellet. The engine has no damage-over-time attack, so it is not counted, and against one target the number is about a third of the real one.
@@ -13,5 +15,5 @@ Pistol · Secondary · Mastery Rank 17. 76 base damage (impact 18, puncture 32, 
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Coda_Tysis
-- Every published board row, as JSON: https://wfsim.app/board/coda_tysis.json
+- Archived board JSON: https://wfsim.app/board/coda_tysis.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

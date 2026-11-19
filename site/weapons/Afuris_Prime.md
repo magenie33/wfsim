@@ -4,7 +4,9 @@ Chinese name: 盗贼双枪 Prime
 
 Dual Pistols · Secondary · Mastery Rank 12. 26 base damage (impact 3.9, puncture 18.2, slash 3.9), 16% crit chance, 2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=afuris_prime
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Afuris_Prime
-- Every published board row, as JSON: https://wfsim.app/board/afuris_prime.json
+- Archived board JSON: https://wfsim.app/board/afuris_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

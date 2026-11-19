@@ -4,6 +4,8 @@ Chinese name: 影生
 
 Nikana · Melee · Mastery Rank 11. 175 base damage (impact 26.25, puncture 12.25, slash 136.5), 19% crit chance, 2.1x crit multiplier, 30% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=skiajati
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Nikana · Melee · Mastery Rank 11. 175 base damage (impact 26.25, puncture 12.2
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Skiajati
-- Every published board row, as JSON: https://wfsim.app/board/skiajati.json
+- Archived board JSON: https://wfsim.app/board/skiajati.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

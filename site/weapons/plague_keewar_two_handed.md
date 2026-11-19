@@ -2,6 +2,8 @@
 
 Staff · Melee · Mastery Rank 0. 256.7 base damage (impact 75.675, puncture 44.675, slash 78.675, viral 57.675), 18% crit chance, 2x crit multiplier, 22% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=plague_keewar_two_handed
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -11,5 +13,5 @@ Staff · Melee · Mastery Rank 0. 256.7 base damage (impact 75.675, puncture 44.
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/plague_keewar_two_handed
-- Every published board row, as JSON: https://wfsim.app/board/plague_keewar_two_handed.json
+- Archived board JSON: https://wfsim.app/board/plague_keewar_two_handed.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

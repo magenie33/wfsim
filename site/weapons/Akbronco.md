@@ -4,7 +4,9 @@ Chinese name: 野马双枪
 
 Dual Shotguns · Secondary · Mastery Rank 2. 42 base damage x7 multishot (impact 33.6, puncture 4.2, slash 4.2), 6% crit chance, 2x crit multiplier, 3.14286% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=akbronco
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Akbronco
-- Every published board row, as JSON: https://wfsim.app/board/akbronco.json
+- Archived board JSON: https://wfsim.app/board/akbronco.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

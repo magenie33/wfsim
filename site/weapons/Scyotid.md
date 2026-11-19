@@ -4,7 +4,9 @@ Chinese name: 镰刃刺
 
 Pistol · Secondary · Mastery Rank 12. 40 base damage x4 multishot (puncture 8, toxin 32), 24% crit chance, 2.4x crit multiplier, 18% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=scyotid
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -26,5 +28,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Scyotid
-- Every published board row, as JSON: https://wfsim.app/board/scyotid.json
+- Archived board JSON: https://wfsim.app/board/scyotid.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

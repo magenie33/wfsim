@@ -4,6 +4,8 @@ Chinese name: 弗拉克斯·亡魂
 
 Fist · Melee · Mastery Rank 9. 139 base damage (impact 97.3, puncture 20.85, slash 20.85), 30% crit chance, 2.7x crit multiplier, 15% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=furax_wraith
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -17,5 +19,5 @@ Fist · Melee · Mastery Rank 9. 139 base damage (impact 97.3, puncture 20.85, s
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Furax_Wraith
-- Every published board row, as JSON: https://wfsim.app/board/furax_wraith.json
+- Archived board JSON: https://wfsim.app/board/furax_wraith.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

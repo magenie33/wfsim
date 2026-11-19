@@ -4,6 +4,8 @@ Chinese name: MK1-弗拉克斯
 
 Fist · Melee · Mastery Rank 0. 90 base damage (impact 63, puncture 13.5, slash 13.5), 20% crit chance, 2x crit multiplier, 10% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=mk1_furax
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -15,5 +17,5 @@ Fist · Melee · Mastery Rank 0. 90 base damage (impact 63, puncture 13.5, slash
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Mk1-Furax
-- Every published board row, as JSON: https://wfsim.app/board/mk1_furax.json
+- Archived board JSON: https://wfsim.app/board/mk1_furax.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

@@ -4,7 +4,9 @@ Chinese name: 棱晶 激光点发
 
 Sentinel Weapon · Sentinel · Mastery Rank 0. 22 base damage (impact 2.2, puncture 18.7, slash 1.1), 18% crit chance, 2.15x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=prisma_burst_laser
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -25,5 +27,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Prisma_Burst_Laser
-- Every published board row, as JSON: https://wfsim.app/board/prisma_burst_laser.json
+- Archived board JSON: https://wfsim.app/board/prisma_burst_laser.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

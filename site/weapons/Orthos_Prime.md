@@ -4,7 +4,9 @@ Chinese name: 欧特鲁斯 Prime
 
 Polearm · Melee · Mastery Rank 12. 234 base damage (impact 35.1, puncture 35.1, slash 163.8), 24% crit chance, 2.2x crit multiplier, 36% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=orthos_prime
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -27,5 +29,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Orthos_Prime
-- Every published board row, as JSON: https://wfsim.app/board/orthos_prime.json
+- Archived board JSON: https://wfsim.app/board/orthos_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

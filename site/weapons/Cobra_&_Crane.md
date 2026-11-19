@@ -4,6 +4,8 @@ Chinese name: 眼镜蛇 & 鹤
 
 Sword And Shield · Melee · Mastery Rank 10. 296 base damage (impact 207.2, puncture 88.8), 15% crit chance, 1.5x crit multiplier, 36% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=cobra_and_crane
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -17,5 +19,5 @@ Sword And Shield · Melee · Mastery Rank 10. 296 base damage (impact 207.2, pun
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Cobra_%26_Crane
-- Every published board row, as JSON: https://wfsim.app/board/cobra_and_crane.json
+- Archived board JSON: https://wfsim.app/board/cobra_and_crane.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

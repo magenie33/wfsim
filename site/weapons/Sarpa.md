@@ -4,6 +4,8 @@ Chinese name: 蛇刃
 
 Gunblade · Melee · Mastery Rank 8. 160 base damage (impact 16, puncture 32, slash 112), 14% crit chance, 2x crit multiplier, 28% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=sarpa
+
 ## Not modelled here
 
 - Slam damage and critical rules retain the declared component model. Radius uses the maximum-height convention; ascent, descent, ground contact and recovery are not a calibrated physical cycle. Native attenuation and clip lengths do not establish that cycle.
@@ -16,5 +18,5 @@ Gunblade · Melee · Mastery Rank 8. 160 base damage (impact 16, puncture 32, sl
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sarpa
-- Every published board row, as JSON: https://wfsim.app/board/sarpa.json
+- Archived board JSON: https://wfsim.app/board/sarpa.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

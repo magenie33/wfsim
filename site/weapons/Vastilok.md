@@ -4,6 +4,8 @@ Chinese name: 瓦斯提枪刃
 
 Gunblade · Melee · Mastery Rank 9. 279 base damage (impact 19.53, puncture 25.11, slash 234.36), 19% crit chance, 1.7x crit multiplier, 31% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=vastilok
+
 ## Not modelled here
 
 - Slam damage and critical rules retain the declared component model. Radius uses the maximum-height convention; ascent, descent, ground contact and recovery are not a calibrated physical cycle. Native attenuation and clip lengths do not establish that cycle.
@@ -16,5 +18,5 @@ Gunblade · Melee · Mastery Rank 9. 279 base damage (impact 19.53, puncture 25.
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Vastilok
-- Every published board row, as JSON: https://wfsim.app/board/vastilok.json
+- Archived board JSON: https://wfsim.app/board/vastilok.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

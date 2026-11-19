@@ -4,7 +4,9 @@ Chinese name: 关刀 Prime
 
 Polearm · Melee · Mastery Rank 12. 240 base damage (impact 60, puncture 12, slash 168), 32% crit chance, 2.4x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=guandao_prime
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -27,5 +29,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Guandao_Prime
-- Every published board row, as JSON: https://wfsim.app/board/guandao_prime.json
+- Archived board JSON: https://wfsim.app/board/guandao_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

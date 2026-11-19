@@ -4,6 +4,8 @@ Chinese name: 雷石祭
 
 Polearm · Melee · Mastery Rank 0. 220 base damage (impact 44, puncture 66, slash 110), 34% crit chance, 2.6x crit multiplier, 20% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=edun
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -15,5 +17,5 @@ Polearm · Melee · Mastery Rank 0. 220 base damage (impact 44, puncture 66, sla
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Edun
-- Every published board row, as JSON: https://wfsim.app/board/edun.json
+- Archived board JSON: https://wfsim.app/board/edun.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

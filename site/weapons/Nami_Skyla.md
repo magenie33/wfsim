@@ -4,6 +4,8 @@ Chinese name: 海波斯库拉对剑
 
 Dual Swords · Melee · Mastery Rank 2. 125 base damage (impact 18.75, puncture 18.75, slash 87.5), 10% crit chance, 1.5x crit multiplier, 15% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=nami_skyla
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Dual Swords · Melee · Mastery Rank 2. 125 base damage (impact 18.75, puncture 
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Nami_Skyla
-- Every published board row, as JSON: https://wfsim.app/board/nami_skyla.json
+- Archived board JSON: https://wfsim.app/board/nami_skyla.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

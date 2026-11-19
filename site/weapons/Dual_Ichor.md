@@ -4,7 +4,9 @@ Chinese name: 恶脓双斧
 
 Dual Swords · Melee · Mastery Rank 6. 122 base damage (impact 19, puncture 11, slash 45, toxin 47), 25% crit chance, 3x crit multiplier, 15% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=dual_ichor
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -27,5 +29,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Ichor
-- Every published board row, as JSON: https://wfsim.app/board/dual_ichor.json
+- Archived board JSON: https://wfsim.app/board/dual_ichor.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

@@ -4,6 +4,8 @@ Chinese name: 创伤
 
 Hammer · Melee · Mastery Rank 9. 220 base damage (impact 48.4, puncture 70.4, slash 101.2), 18% crit chance, 1.6x crit multiplier, 30% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=volnus
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -15,5 +17,5 @@ Hammer · Melee · Mastery Rank 9. 220 base damage (impact 48.4, puncture 70.4, 
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Volnus
-- Every published board row, as JSON: https://wfsim.app/board/volnus.json
+- Archived board JSON: https://wfsim.app/board/volnus.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

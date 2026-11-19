@@ -4,6 +4,8 @@ Chinese name: 骄傲
 
 Heavy Scythe · Melee · Mastery Rank 14. 250 base damage (puncture 125, slash 125), 15% crit chance, 2x crit multiplier, 35% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=pride
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -16,5 +18,5 @@ Heavy Scythe · Melee · Mastery Rank 14. 250 base damage (puncture 125, slash 1
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Pride
-- Every published board row, as JSON: https://wfsim.app/board/pride.json
+- Archived board JSON: https://wfsim.app/board/pride.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

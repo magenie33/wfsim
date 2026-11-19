@@ -4,7 +4,9 @@ Chinese name: 刺吸西诺斯
 
 Bow · Primary · Mastery Rank 15. 279 base damage (impact 103.23, puncture 30.69, slash 145.08), 7% crit chance, 1.9x crit multiplier, 43% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=proboscis_cernos
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -29,5 +31,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Proboscis_Cernos
-- Every published board row, as JSON: https://wfsim.app/board/proboscis_cernos.json
+- Archived board JSON: https://wfsim.app/board/proboscis_cernos.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

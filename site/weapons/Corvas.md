@@ -4,7 +4,9 @@ Chinese name: 黑鸦
 
 Archgun · Archgun · Mastery Rank 1. 160 base damage x11 multishot (impact 128, puncture 16, slash 16), 40% crit chance, 3x crit multiplier, 1.3% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=corvas
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -26,5 +28,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Corvas
-- Every published board row, as JSON: https://wfsim.app/board/corvas.json
+- Archived board JSON: https://wfsim.app/board/corvas.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

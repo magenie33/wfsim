@@ -4,7 +4,9 @@ Chinese name: 绘墨
 
 Rifle · Primary · Mastery Rank 12. 28 base damage (corrosive 20, puncture 8), 16% crit chance, 1.8x crit multiplier, 32% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=enkaus
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -28,5 +30,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Enkaus
-- Every published board row, as JSON: https://wfsim.app/board/enkaus.json
+- Archived board JSON: https://wfsim.app/board/enkaus.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

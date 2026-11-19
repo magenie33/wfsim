@@ -4,6 +4,8 @@ Chinese name: 奥比克斯
 
 Sparring · Melee · Mastery Rank 4. 120 base damage (impact 84, puncture 18, slash 18), 25% crit chance, 2x crit multiplier, 10% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=obex
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -15,5 +17,5 @@ Sparring · Melee · Mastery Rank 4. 120 base damage (impact 84, puncture 18, sl
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Obex
-- Every published board row, as JSON: https://wfsim.app/board/obex.json
+- Archived board JSON: https://wfsim.app/board/obex.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

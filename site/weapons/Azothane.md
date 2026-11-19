@@ -4,7 +4,9 @@ Chinese name: 溶灵尊
 
 Two Handed Nikana · Melee · Mastery Rank 0. 170 base damage (impact 51, puncture 34, slash 85), 34% crit chance, 3x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=azothane
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -28,5 +30,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Azothane
-- Every published board row, as JSON: https://wfsim.app/board/azothane.json
+- Archived board JSON: https://wfsim.app/board/azothane.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

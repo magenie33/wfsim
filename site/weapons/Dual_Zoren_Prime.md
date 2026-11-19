@@ -4,6 +4,8 @@ Chinese name: 佐伦双斧 Prime
 
 Dual Swords · Melee · Mastery Rank 13. 140 base damage (impact 7, puncture 7, slash 126), 30% crit chance, 3.2x crit multiplier, 22% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=dual_zoren_prime
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Dual Swords · Melee · Mastery Rank 13. 140 base damage (impact 7, puncture 7, 
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Zoren_Prime
-- Every published board row, as JSON: https://wfsim.app/board/dual_zoren_prime.json
+- Archived board JSON: https://wfsim.app/board/dual_zoren_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

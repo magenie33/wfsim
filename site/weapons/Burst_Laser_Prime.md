@@ -4,7 +4,9 @@ Chinese name: 激光点发 Prime
 
 Sentinel Weapon · Sentinel · Mastery Rank 0. 25 base damage (impact 2.5, puncture 21.25, slash 1.25), 20% crit chance, 2.3x crit multiplier, 15% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=burst_laser_prime
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -25,5 +27,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Burst_Laser_Prime
-- Every published board row, as JSON: https://wfsim.app/board/burst_laser_prime.json
+- Archived board JSON: https://wfsim.app/board/burst_laser_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

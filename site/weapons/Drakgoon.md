@@ -4,7 +4,9 @@ Chinese name: 龙骑兵
 
 Shotgun · Primary · Mastery Rank 5. 70 base damage x10 multishot (impact 7, puncture 7, slash 56), 7.5% crit chance, 2x crit multiplier, 6.9% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=drakgoon
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -26,5 +28,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Drakgoon
-- Every published board row, as JSON: https://wfsim.app/board/drakgoon.json
+- Archived board JSON: https://wfsim.app/board/drakgoon.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

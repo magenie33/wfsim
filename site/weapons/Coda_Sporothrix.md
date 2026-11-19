@@ -4,7 +4,9 @@ Chinese name: 终幕·孢丝感染枪
 
 Sniper · Primary · Mastery Rank 17. 376 base damage (impact 101.52, puncture 116.56, slash 157.92), 5% crit chance, 3x crit multiplier, 55% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=coda_sporothrix
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -27,5 +29,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Coda_Sporothrix
-- Every published board row, as JSON: https://wfsim.app/board/coda_sporothrix.json
+- Archived board JSON: https://wfsim.app/board/coda_sporothrix.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

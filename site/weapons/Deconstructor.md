@@ -4,6 +4,8 @@ Chinese name: 分离
 
 Sentinel Weapon · Sentinel · Mastery Rank 0. 130 base damage (impact 43.3333, puncture 43.3333, slash 43.3333), 0% crit chance, 1x crit multiplier, 25% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=deconstructor
+
 ## Not modelled here
 
 - Companion melee retains its separate weapon and AI cadence model. Player melee animation parameters do not establish companion target selection, attack completion or retrieval time.
@@ -17,5 +19,5 @@ Sentinel Weapon · Sentinel · Mastery Rank 0. 130 base damage (impact 43.3333, 
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Deconstructor
-- Every published board row, as JSON: https://wfsim.app/board/deconstructor.json
+- Archived board JSON: https://wfsim.app/board/deconstructor.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

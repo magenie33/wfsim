@@ -4,7 +4,9 @@ Chinese name: 卡拉克·亡魂
 
 Rifle · Primary · Mastery Rank 7. 31 base damage (impact 13.95, puncture 9.3, slash 7.75), 13% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=karak_wraith
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Karak_Wraith
-- Every published board row, as JSON: https://wfsim.app/board/karak_wraith.json
+- Archived board JSON: https://wfsim.app/board/karak_wraith.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

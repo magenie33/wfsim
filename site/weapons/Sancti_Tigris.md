@@ -4,7 +4,9 @@ Chinese name: 圣洁·猛虎
 
 Shotgun · Primary · Mastery Rank 12. 210 base damage x6 multishot (impact 21, puncture 21, slash 168), 15% crit chance, 1.5x crit multiplier, 14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=sancti_tigris
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -25,5 +27,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sancti_Tigris
-- Every published board row, as JSON: https://wfsim.app/board/sancti_tigris.json
+- Archived board JSON: https://wfsim.app/board/sancti_tigris.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

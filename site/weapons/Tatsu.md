@@ -4,6 +4,8 @@ Chinese name: 龙辰
 
 Two Handed Nikana · Melee · Mastery Rank 7. 214 base damage (impact 20, puncture 54, radiation 72, slash 68), 16% crit chance, 2x crit multiplier, 28% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=tatsu
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -17,5 +19,5 @@ Two Handed Nikana · Melee · Mastery Rank 7. 214 base damage (impact 20, punctu
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tatsu
-- Every published board row, as JSON: https://wfsim.app/board/tatsu.json
+- Archived board JSON: https://wfsim.app/board/tatsu.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

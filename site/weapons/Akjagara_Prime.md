@@ -4,7 +4,9 @@ Chinese name: 觉醒双枪 Prime
 
 Dual Pistols · Secondary · Mastery Rank 12. 38 base damage (impact 3.8, puncture 3.8, slash 30.4), 18% crit chance, 2.2x crit multiplier, 32% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=akjagara_prime
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -24,5 +26,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Akjagara_Prime
-- Every published board row, as JSON: https://wfsim.app/board/akjagara_prime.json
+- Archived board JSON: https://wfsim.app/board/akjagara_prime.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

@@ -4,7 +4,9 @@ Chinese name: 双簧管
 
 Rifle · Primary · Mastery Rank 10. 24 base damage (impact 7.2, puncture 9.6, slash 7.2), 28% crit chance, 2x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-19
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=tenora
+
+## Archived riven-free leaders · 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -27,5 +29,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tenora
-- Every published board row, as JSON: https://wfsim.app/board/tenora.json
+- Archived board JSON: https://wfsim.app/board/tenora.json
 - [Using and citing WFSim](https://wfsim.app/reuse)

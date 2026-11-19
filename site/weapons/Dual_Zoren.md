@@ -4,6 +4,8 @@ Chinese name: 佐伦双斧
 
 Dual Swords · Melee · Mastery Rank 2. 70 base damage (impact 3.5, puncture 3.5, slash 63), 25% crit chance, 3x crit multiplier, 5% status chance.
 
+Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=dual_zoren
+
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
@@ -14,5 +16,5 @@ Dual Swords · Melee · Mastery Rank 2. 70 base damage (impact 3.5, puncture 3.5
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Zoren
-- Every published board row, as JSON: https://wfsim.app/board/dual_zoren.json
+- Archived board JSON: https://wfsim.app/board/dual_zoren.json
 - [Using and citing WFSim](https://wfsim.app/reuse)
