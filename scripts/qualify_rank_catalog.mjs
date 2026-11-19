@@ -6,7 +6,7 @@ import {isDeepStrictEqual} from 'node:util';
 import {dirname,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
-import {guardCatalogFile} from './board_rank_storage.mjs';
+import {guardCatalogFile,limitRankScratch} from './board_rank_storage.mjs';
 import {openInventoryOperator} from './inventory_operator.mjs';
 import {prepareRankSources} from './board_rank_index.mjs';
 
@@ -188,6 +188,6 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const [capturePath,archivePath,result,binary,weapon,ruler]=process.argv.slice(2);
  const c=new DatabaseSync(capturePath,{readOnly:true}),a=new DatabaseSync(archivePath,{readOnly:true}),q=new DatabaseSync(guardCatalogFile(result));
  const native=await openInventoryOperator(binary),cache=new DatabaseSync(guardCatalogFile(join(dirname(capturePath),'descriptors.sqlite')));
- try{c.exec('BEGIN');a.exec('BEGIN');console.log(JSON.stringify(await qualify(c,a,q,cache,native,weapon,ruler,30)));}
+ try{limitRankScratch(q);c.exec('BEGIN');a.exec('BEGIN');console.log(JSON.stringify(await qualify(c,a,q,cache,native,weapon,ruler,30)));}
  finally{c.close();a.close();q.close();cache.close();await native.close();}
 }

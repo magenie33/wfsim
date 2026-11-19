@@ -11,6 +11,7 @@ import postgres from './pg/node_modules/postgres/src/index.js';
 import {openInventoryOperator} from './inventory_operator.mjs';
 import {prepareRankSources} from './board_rank_index.mjs';
 import {archiveInventory,importArchive} from './board_catalog_archive.mjs';
+import {limitRankScratch} from './board_rank_storage.mjs';
 import {coverage} from './rank_catalog_coverage.mjs';
 import {qualify} from './qualify_rank_catalog.mjs';
 
@@ -130,6 +131,11 @@ try{
   if(op==='describe')for(const {id} of items){assert(!seen.has(id),'canonical build described repeatedly across scopes');seen.add(id);}
   return native.call(op,items);
  }};
+ const bounded=new DatabaseSync(':memory:');bounded.exec('CREATE TABLE bounded(b BLOB)');
+ limitRankScratch(bounded,32768);
+ assert.throws(()=>bounded.exec('INSERT INTO bounded VALUES(zeroblob(65536))'),/full/i);
+ assert.equal(bounded.prepare('SELECT count(*) n FROM bounded').get().n,0);
+ bounded.close();
  const ledger=new DatabaseSync(join(dir,'receipts.sqlite'));
  let checked=0;
  for(const [i,record] of records.entries())for(const [j,ruler] of rulers.entries()){
