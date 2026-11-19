@@ -27,10 +27,10 @@ export async function requestedReservation(tx,keys,scene,selected,part,witness){
  return {request_position:String(request.position),partition_version:String(mail.version)};
 }
 
-export async function preserveCatalogPredecessor(tx,part,witness,work){
+export async function preserveCatalogPredecessor(tx,part,witness,work,verify=verifyRankBaseline){
  const keys=[part.weapon,part.ruler],cut=part.cut;
  if(!/^[a-f0-9]{64}$/.test(cut)||witness.cut_file?.sha256!==cut)throw Error('invalid predecessor cut');
- await verifyRankBaseline(part,work);
+ await verify(part,work);
  const dirt=await tx.unsafe('SELECT version,applied_version,lease FROM state_board_rank_dirty'+where+' ORDER BY identity FOR UPDATE',keys);
  if(dirt.length!==witness.dirty?.all||dirt.some(d=>d.lease!==null||String(d.version)!==String(d.applied_version)))
   throw Error('occupied catalog dirty work changed');
