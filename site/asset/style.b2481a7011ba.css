@@ -2572,6 +2572,27 @@ a.user-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px;tex
 .frem.frem-new{margin-left:0}
 @media(max-width:520px){.frem{margin-left:0}}
 #utility-reminders .wgroup-h{margin-top:20px}
+.dictionary-search input{box-sizing:border-box;width:100%;min-width:0}
+.dictionary-feedback{display:flex;align-items:center;gap:8px;margin-top:12px;color:var(--text-2);font-size:13px}
+#dictionary-results{display:grid;gap:12px;list-style:none;margin:8px 0 12px;padding:0}
+.dictionary-card{padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.dictionary-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.dictionary-card-head>div{min-width:0}
+.dictionary-card-head h2{margin:2px 0 0;font-size:22px;line-height:1.3}
+.dictionary-card-head>button{flex-shrink:0}
+.dictionary-kind{color:var(--text-2);font-size:12px}
+.dictionary-translations{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 20px;
+  margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line)}
+.dictionary-translation dt{font-size:12px;color:var(--text-2)}
+.dictionary-translation dd{margin:3px 0 0}
+.dictionary-copy-name{display:inline-flex;align-items:baseline;gap:6px;max-width:100%;padding:0;
+  border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.dictionary-copy-name span:first-child{min-width:0;overflow-wrap:anywhere}
+.dictionary-copy-icon{flex:none;color:var(--text-2);font-size:12px}
+.dictionary-copy-name:hover .dictionary-copy-icon,.dictionary-copy-name:focus-visible .dictionary-copy-icon{color:var(--accent)}
+.dictionary-share-link{box-sizing:border-box;width:100%;margin-top:12px;padding:6px 8px;border:1px solid var(--line);
+  border-radius:6px;background:var(--plane);color:var(--text);font:inherit}
+@media(max-width:680px){.dictionary-card{padding:14px}.dictionary-translations{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}}
 /* UNREAD REMINDERS, on the bell and the Reminders tab. */
 .tbadge{display:inline-block;min-width:16px;margin-left:5px;padding:0 4px;border-radius:8px;
   background:var(--accent);color:var(--surface);font-size:10.5px;font-weight:600;line-height:16px;text-align:center}
@@ -4324,3 +4345,38 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .nh-ruler-row code{font-size:12px;overflow-wrap:anywhere}
 .nh-ruler-row span{font-size:11px;color:var(--text-2)}
 .nona-help .lc-foot{justify-content:space-between;align-items:start}
+
+/* A DESKTOP WINDOW GETS TWO COLUMNS, AND THE MARKUP IS NOT TOUCHED. From 1280px
+   a module's page widens to 1560px: the blocks a reader edits float left, the
+   blocks that report stay in flow on the right, and everything else spans
+   both. Floats rather than a grid, so two columns of unrelated heights share
+   no row and the sticky tab strip keeps the whole page as its range. A block
+   kept in flow has to follow the floats in the markup, or it starts below
+   them. Below 1280px none of this applies. docs/UI.md §"A wide window". */
+@media (min-width:1280px){
+  main.config-page:is(:not([id]),#warframe-page,#companion-page){max-width:min(1560px,calc(100vw - 176px));display:flow-root}
+  main.config-page:is(:not([id]),#warframe-page,#companion-page).layout-active>*{width:auto;margin-inline:0}
+  main.config-page:is(:not([id]),#warframe-page,#companion-page).layout-active .layout-card:not(.layout-sized){width:auto;margin-inline:0}
+  main.config-page:is(:not([id]),#warframe-page,#companion-page)>:is(#forma-block,#quick-calc,
+    [data-module="builder"]:not(#stats-block,#start-edit-banner),#sim-build-block,#sim-block,#opt-block,#opt-fight-block,
+    #wf-forma-block,#wf-mod-block,#wf-arcane-block,#wf-shard-block,#wf-operator-block,#comp-body-block){
+    float:left;clear:left;width:calc(50% - 8px);max-width:calc(50% - 8px);box-sizing:border-box;margin-inline:0}
+  /* A float's top margin does not collapse into the bar above it, so the two columns would start 12px apart. */
+  main.config-page:is(:not([id]),#warframe-page)>:is(#forma-block,#wf-forma-block){margin-top:0}
+  main.config-page:is(:not([id]),#warframe-page,#companion-page)>:is(#stats-block,#sim-run-block,#sim-results-block,
+    #shapley-block,#opt-run-block,#wf-stats-block,#wf-ability-block,#comp-mods-block){
+    width:auto;max-width:none;margin-left:calc(50% + 8px);margin-right:0}
+  /* THE STATS FOLLOW THE EDIT: the panel stays beside the mods being changed
+     and scrolls inside the window's height, under its own heading. */
+  main.config-page:not([id])>#stats-block{position:sticky;top:calc(var(--shell-header-height,50px) + var(--page-tabs-height,0px) + 12px);
+    max-height:calc(100vh - var(--shell-header-height,50px) - var(--page-tabs-height,0px) - 24px);overflow:hidden auto}
+  main.config-page:not([id])>#stats-block>.bh{position:sticky;top:0;z-index:2}
+  /* A tab that is one block keeps the phone's measure under the wide header. */
+  main.config-page:not([id])>:is([data-module="rivens"],[data-module="riven-analyst"],[data-module="enemies"],[data-module="benchmark"]){
+    max-width:760px;margin-inline:auto}
+  /* The library's conditions, filters and sort become a side column of its results. */
+  body.on-build-library #build-finder{display:flow-root;--library-side:clamp(320px,27%,400px)}
+  body.on-build-library #build-finder>:is(#library-board,#library-filters,#library-sort){
+    float:left;clear:left;width:var(--library-side);max-width:var(--library-side);box-sizing:border-box;margin-inline:0}
+  body.on-build-library #build-finder>#library-results{width:auto;max-width:none;margin-left:calc(var(--library-side) + 16px);margin-right:0}
+}
