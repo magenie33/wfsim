@@ -9,18 +9,22 @@ const until="board_input_timestamp(clock_timestamp()+interval '3minutes')";
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 
-export async function putRankDirty(tx,{weapon,ruler,identity}) {
- const [row]=await tx.unsafe(`INSERT INTO state_board_rank_dirty(weapon,ruler,identity) VALUES($1,$2,$3)
-  ON CONFLICT(weapon,ruler,identity) DO UPDATE SET version=nextval('board_rank_generation'),error=NULL,
-   available_at=CASE WHEN state_board_rank_dirty.lease_until>${now} THEN state_board_rank_dirty.lease_until ELSE ${now} END
+export async function putRankDirty(tx,{weapon,ruler,identity},recent=false) {
+ const [row]=await tx.unsafe(`INSERT INTO state_board_rank_dirty(weapon,ruler,identity${recent?',version,recent_version':''})
+  ${recent?"SELECT $1,$2,$3,v,v FROM (SELECT nextval('board_rank_generation') v) seq":"VALUES($1,$2,$3)"}
+  ON CONFLICT(weapon,ruler,identity) DO UPDATE SET version=nextval('board_rank_generation'),
+   ${recent?'recent_version=greatest(state_board_rank_dirty.version+1,excluded.version),':''}error=NULL,
+   available_at=CASE WHEN state_board_rank_dirty.lease_until>${now} THEN state_board_rank_dirty.lease_until ELSE least(state_board_rank_dirty.available_at,${now}) END
   RETURNING version`,[weapon,ruler,identity]);
  return row.version;
 }
 
-export async function putRankPublication(tx,{weapon,ruler}) {
- await tx.unsafe(`INSERT INTO state_board_rank_publication_ready(weapon,ruler) VALUES($1,$2)
-  ON CONFLICT(weapon,ruler) DO UPDATE SET version=nextval('board_rank_generation'),error=NULL,
-   available_at=CASE WHEN state_board_rank_publication_ready.lease_until>${now} THEN state_board_rank_publication_ready.lease_until ELSE ${now} END`,[weapon,ruler]);
+export async function putRankPublication(tx,{weapon,ruler},recent=false) {
+ await tx.unsafe(`INSERT INTO state_board_rank_publication_ready(weapon,ruler${recent?',version,recent_version':''})
+  ${recent?"SELECT $1,$2,v,v FROM (SELECT nextval('board_rank_generation') v) seq":"VALUES($1,$2)"}
+  ON CONFLICT(weapon,ruler) DO UPDATE SET version=nextval('board_rank_generation'),
+   ${recent?'recent_version=greatest(state_board_rank_publication_ready.version+1,excluded.version),':''}error=NULL,
+   available_at=CASE WHEN state_board_rank_publication_ready.lease_until>${now} THEN state_board_rank_publication_ready.lease_until ELSE least(state_board_rank_publication_ready.available_at,${now}) END`,[weapon,ruler]);
 }
 
 export async function routeRankInput(tx,input,source) {
@@ -91,11 +95,11 @@ export async function finishRankBaseline(tx,{weapon,ruler}) {
  return !!row;
 }
 
-export async function claimRankDirty(sql,{source,native}) {
+export async function claimRankDirty(sql,{source,native,recent=false}) {
  const token=randomUUID();
  const [row]=await sql.unsafe(`WITH chosen AS MATERIALIZED(SELECT d.weapon,d.ruler,d.identity FROM state_board_rank_dirty d
   JOIN state_board_rank_partitions p USING(weapon,ruler) WHERE p.source=$1 AND p.native=$2
-   AND d.version>d.applied_version AND d.available_at<=${now} ORDER BY d.available_at,d.weapon,d.ruler,d.identity
+   ${recent?'AND d.recent_version>d.applied_version':''} AND d.version>d.applied_version AND d.available_at<=${now} ORDER BY d.available_at,d.weapon,d.ruler,d.identity
   LIMIT 1 FOR UPDATE OF d SKIP LOCKED)
   UPDATE state_board_rank_dirty d SET lease=$3,lease_until=${until},available_at=${until} FROM chosen c
   WHERE (d.weapon,d.ruler,d.identity)=(c.weapon,c.ruler,c.identity) RETURNING d.*`,[source,native,token]);
@@ -140,7 +144,7 @@ export async function applyRankDirty(sql,claim,part,prepared) {
   const updated=await applyRankSources(tx,part,prepared,{live:true});
   await tx.unsafe(`UPDATE state_board_rank_dirty SET applied_version=$4,lease=NULL,lease_until=NULL,available_at=NULL,error=NULL
    WHERE weapon=$1 AND ruler=$2 AND identity=$3`,[claim.weapon,claim.ruler,claim.identity,claim.version]);
-  if(updated.complete)await putRankPublication(tx,updated);
+  if(updated.complete)await putRankPublication(tx,updated,held.recent_version!=null&&BigInt(held.recent_version)>BigInt(held.applied_version));
   else await finishRankBaseline(tx,updated);
   return {status:'indexed',identity:claim.identity};
  });

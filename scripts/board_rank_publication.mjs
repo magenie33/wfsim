@@ -55,12 +55,12 @@ async function acknowledge(tx,claim,version) {
   WHERE weapon=$1 AND ruler=$2 AND lease=$3 AND lease_version=$4`,[claim.weapon,claim.ruler,claim.lease,claim.lease_version,version]);
 }
 
-export async function claimRankPublication(sql,{source,native}) {
+export async function claimRankPublication(sql,{source,native,recent=false}) {
  const [row]=await sql.unsafe(`WITH chosen AS MATERIALIZED(SELECT d.weapon,d.ruler FROM state_board_rank_publication_ready d
   JOIN state_board_rank_partitions p USING(weapon,ruler) WHERE p.complete AND p.source=$1 AND p.native=$2
    AND EXISTS(SELECT 1 FROM state_board_read_partitions s WHERE s.weapon=p.weapon AND s.ruler=p.ruler
     AND(s.enabled OR(NOT s.canonical_sources AND s.revision IS NULL)))
-   AND d.version>d.applied_version AND d.available_at<=${now} ORDER BY d.available_at,d.weapon,d.ruler
+   ${recent?'AND d.recent_version>d.applied_version':''} AND d.version>d.applied_version AND d.available_at<=${now} ORDER BY d.available_at,d.weapon,d.ruler
   LIMIT 1 FOR UPDATE OF d SKIP LOCKED)
   UPDATE state_board_rank_publication_ready d SET lease=$3,lease_version=d.version,lease_until=${until},available_at=${until}
   FROM chosen c WHERE (d.weapon,d.ruler)=(c.weapon,c.ruler) RETURNING d.*`,[source,native,randomUUID()]);
