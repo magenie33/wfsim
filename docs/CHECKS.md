@@ -3291,7 +3291,9 @@ poisoned archived file and fails. The actual MCP entry and bot checks compare
 the selected revision's ranking and exercise failed reads and card invalidation.
 `check_board_result_flow.mjs` restarts publication with a new engine identifier,
 checks the existing ranking revision, then replaces one measured build. A
-second valid build retains its score and original measurement provenance.
+second valid build retains its score and original measurement provenance. The
+canonical library retains the same records, including a build awaiting its
+first measurement, through the update and removal of a score.
 
 ## `check_task_executors`, `check_user_task_service`, `check_task_service_browser`
 

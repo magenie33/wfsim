@@ -58,13 +58,16 @@ try{
   const identity=identityOf(record);
   const other={...record,mods:record.mods.map(mod=>mod==='serration'?'serration@8':mod)};
   const retained=identityOf(other);
+  const unmeasured={...record,mods:record.mods.map(mod=>mod==='serration'?'serration@7':mod)};
+  const unmeasuredId=identityOf(unmeasured);
   assert.notEqual(identity,retained,'the old-engine control must be a distinct legal build');
   const fact={identity,ruler:'standard_single_target',mode:'base',score:10,metric:'kpm',cost_seconds:1,
    measured_by:'verified:000000000000',started_at:at,finished_at:at,review_id:null};
   fixture={builds:[{id:identity,at:'2026-11-16',record:JSON.stringify(record)},
-   {id:retained,at:'2026-11-16',record:JSON.stringify(other)}],
+   {id:retained,at:'2026-11-16',record:JSON.stringify(other)},
+   {id:unmeasuredId,at:'2026-11-16',record:JSON.stringify(unmeasured)}],
    facts:[fact,{...fact,identity:retained,score:9}],
-   target:{identity,weapon:record.weapon,ruler:fact.ruler,mode:'base',score:10},retainedScore:9};
+   target:{identity,weapon:record.weapon,ruler:fact.ruler,mode:'base',score:10},retainedScore:9,unmeasuredId};
   const review='4d1de37e-c95d-482f-a7b2-6bb01a846885';
   fixture.facts[0].review_id=review;
   fixture.reviews=[{id:review,ref:JSON.stringify([identity,'standard_single_target','base']),round_at:at,
@@ -138,6 +141,11 @@ try{
   assert.equal(rows.length,first.count);return rows;
  };
  const complete=await completeRows(page);
+ if(fixture.unmeasuredId)assert.equal(complete.length,2,'a canonical build without a measured fact stays outside the ranking');
+ const readLibrary=()=>sql.unsafe('SELECT id,record FROM entity_weapon_builds ORDER BY id');
+ const libraryBefore=await readLibrary();
+ if(fixture.unmeasuredId)assert(libraryBefore.some(row=>row.id===fixture.unmeasuredId),
+  "the library holds the canonical build before its first measurement");
  const queryCalls=env.LIBRARY.cost.calls;
  assert.equal((await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler}))).status,200);
  assert.equal(env.LIBRARY.cost.calls,queryCalls,'a hot page must be served without another database query');
@@ -163,7 +171,8 @@ try{
  const indexed=await captureBoardPartition(sql,target);
  assert.equal(indexed.bootstrap,false,'subsequent publication must use the measured-source index');
  assert.equal(indexed.facts.length,fixture.facts.length,'the indexed cut retains every historical fact');
- assert.equal(indexed.builds.length,fixture.builds.length,'uncomputed records must not enter native publication');
+ assert.equal(indexed.builds.length,fixture.builds.length-Number(Boolean(fixture.unmeasuredId)),
+  'unmeasured records stay in the library and do not enter the publication inputs');
  if(browser)await new Promise((resolveChild,reject)=>{
   const child=spawn(process.execPath,[resolve('scripts/board_result_browser.mjs'),base,JSON.stringify({target,scene,shown:visible.shown,libraryTarget:fixture.recent_target||target})],{stdio:'inherit'});
   child.on('error',reject);child.once('close',code=>code===0?resolveChild():reject(Error('board browser failed: '+code)));
@@ -202,6 +211,7 @@ try{
  assert(!(await completeRows(removed)).some(row=>row.score===target.score+1&&row.mode===target.mode),'a removed fact must disappear from the current ranking');
  assert.equal((await fetch(base+'/api/board/pages?'+new URLSearchParams({weapon:target.weapon,ruler:target.ruler,revision:page.revision}))).status,409,
   'a collected revision must require a fresh complete partition');
+ assert.deepEqual(await readLibrary(),libraryBefore,'engine changes, new scores and removals preserve the same canonical build records');
  console.log('ok: review-backed accepted facts publish on the production driver; indexed updates, immutable pages and removals reach the query route');
  console.log(JSON.stringify({status:'RESULT_TO_PAGE_READER_PASSED',input:process.env.WFSIM_BOARD_FLOW_INPUT?'captured authoritative result':'fixture',
   target,routed,published,revision:page.revision,rows:page.count,requests:requests.length,production_writes:false}));

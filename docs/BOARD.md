@@ -148,6 +148,10 @@ second source.
 
 ### Online ranking reads
 
+The canonical build library keeps one identity for each build. Published
+scores reference its identity. A build remains in the library while
+its ranking waits for a verified measurement or a score is removed.
+
 There is one continuing board. Its ranking partitions are keyed by weapon and
 ruler. A selected measurement is keyed by build, ruler and mode. An accepted
 replacement updates that key. Unchanged valid measurements keep their scores,
