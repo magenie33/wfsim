@@ -56,6 +56,15 @@ for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'Cargo
   assert.equal(classify([sitePackaging, extra]).deep, true, sitePackaging + ' mixed with ' + extra);
 assert.equal(classify([sitePackaging], true).deep, true);
 assert.equal(classify([sitePackaging], false, false).deep, true);
+for (const path of ['LICENSE-DATA.md', 'docs/creator-use.html']) {
+  assert.deepEqual(classify([path]).jobs, PRODUCT_JOBS, path + ' retains every ordinary correctness job');
+  assert.equal(classify([path]).deep, false, path + ' states reuse permissions without changing search');
+  for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'Cargo.lock',
+    'scripts/ci_rust.mjs', 'LICENSE-DATA-unknown.md', 'docs/creator-use-unknown.html'])
+    assert.equal(classify([path, extra]).deep, true, path + ' mixed with ' + extra);
+  assert.equal(classify([path], true).deep, true);
+  assert.equal(classify([path], false, false).deep, true);
+}
 const inventoryControlInputs = ['scripts/inventory_control.mjs', 'scripts/inventory_rebuild.mjs',
   'scripts/inventory_pipeline.mjs', 'scripts/inventory_relational_pipeline.mjs'];
 for (const path of inventoryControlInputs) {
