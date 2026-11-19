@@ -102,7 +102,8 @@ adding optimizer catalog fixtures. Unknown siblings and mixed search changes
 still require the deep fixtures. The exact CI
 wiring and non-search tooling paths declared in `ci_policy.mjs` retain full
 ordinary validation without adding full-catalog search fixtures. Those tools
-cover topbar lookup and library intake/publication. Search test execution
+cover topbar lookup, contribution intake, library intake/publication and site
+packaging. Search test execution
 (`ci_rust.mjs`) and Rust dependency changes
 still require the deep fixtures. Other core changes retain all correctness
 jobs with bounded fleet invariant fixtures.

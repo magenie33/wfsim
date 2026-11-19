@@ -34,6 +34,28 @@ for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs',
   assert.equal(classify([...NATIVE_NON_SEARCH_INPUTS, extra]).deep, true, extra + ' requires deep coverage');
 assert.equal(classify(NATIVE_NON_SEARCH_INPUTS, true).deep, true);
 assert.equal(classify(NATIVE_NON_SEARCH_INPUTS, false, false).deep, true);
+const contributionInputs = ['.github/ISSUE_TEMPLATE/measurement.md', '.github/cla-signed.txt',
+  '.github/pull_request_template.md', '.github/workflows/cla.yml', 'CLA.md', 'CLA.zh-CN.md',
+  'CONTRIBUTING.md', 'scripts/check_cla.mjs', 'scripts/check_cla.test.mjs'];
+for (const path of contributionInputs) {
+  assert.deepEqual(classify([path]).jobs, PRODUCT_JOBS, path + ' retains every ordinary correctness job');
+  assert.equal(classify([path]).deep, false, path + ' cannot change optimizer enumeration, scheduling or scoring');
+  for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'Cargo.lock',
+    'scripts/ci_rust.mjs', 'scripts/check_cla_unknown.mjs', '.github/workflows/cla_unknown.yml'])
+    assert.equal(classify([path, extra]).deep, true, path + ' mixed with ' + extra);
+  assert.equal(classify([path], true).deep, true, path + ' forced deep');
+  assert.equal(classify([path], false, false).deep, true, path + ' without a verified baseline');
+}
+assert.equal(classify(contributionInputs).deep, false);
+assert.deepEqual(classify(contributionInputs).jobs, PRODUCT_JOBS);
+const sitePackaging = 'scripts/build_site_app.py';
+assert.deepEqual(classify([sitePackaging]).jobs, PRODUCT_JOBS);
+assert.equal(classify([sitePackaging]).deep, false, 'site packaging is not an input to native full-catalog search tests');
+for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'Cargo.toml', 'Cargo.lock',
+  'scripts/ci_rust.mjs', 'scripts/build_site_unknown.py', 'scripts/build_site_app_unknown.py', 'scripts/data_packs.py'])
+  assert.equal(classify([sitePackaging, extra]).deep, true, sitePackaging + ' mixed with ' + extra);
+assert.equal(classify([sitePackaging], true).deep, true);
+assert.equal(classify([sitePackaging], false, false).deep, true);
 const inventoryControlInputs = ['scripts/inventory_control.mjs', 'scripts/inventory_rebuild.mjs',
   'scripts/inventory_pipeline.mjs', 'scripts/inventory_relational_pipeline.mjs'];
 for (const path of inventoryControlInputs) {
