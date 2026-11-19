@@ -7,17 +7,20 @@ import { execFileSync } from "node:child_process";
 import { clientSource } from "./ci_client_inputs.mjs";
 import { loadEngine } from "../bot/engine.mjs";
 import { cardDocument } from "../bot/card.mjs";
+import { boardFixture } from "./board_fixture_publication.mjs";
 const {makeAnswer} = await import(process.env.WFSIM_BOT_ANSWER_MODULE || "../bot/answer.mjs");
 const ui=JSON.parse(execFileSync(process.env.PYTHON || "python3",["-c",
   "import yaml,json,sys;print(json.dumps(yaml.safe_load(sys.stdin.read())['ui']))"],{encoding:"utf8",input:clientSource("scripts/check_nona_help.mjs")}));
 const published=JSON.parse(readFileSync("site/board/torid.json","utf8"));
 const requested=[];
-let fixtures=new Map(), checks=0;
-const server=createServer((req,res)=>{
-  requested.push(req.url);
-  const rows=fixtures.get(req.url);
-  if(!rows && req.url.includes("/heads/")) {res.writeHead(200,{"content-type":"text/html"});res.end("<!doctype html>");return;}
-  res.writeHead(rows ? 200 : 404,{"content-type":"application/json"});res.end(JSON.stringify(rows || {}));
+const fixtures=new Map();
+let failedRevision=false, checks=0;
+const publication=boardFixture((scene,id)=>({[id]:fixtures.get(scene) || []}));
+const server=createServer(async(req,res)=>{
+  const url=new URL(req.url,"http://127.0.0.1");
+  requested.push(url);
+  const body=failedRevision && url.pathname==="/api/board/pages" ? null : await publication(url);
+  res.writeHead(body?.ok ? 200 : 503,{"content-type":"application/json"});res.end(JSON.stringify(body));
 });
 await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
 const engine=await loadEngine({site:`http://127.0.0.1:${server.address().port}`}), h=engine.headless;
@@ -29,10 +32,9 @@ assert.ok(seed && free);
 for(const [i,b] of engine.meta.benchmarks.entries()) {
   const rows=[{...free,benchmark:b.id,score:100+i,shown:String(100+i)},
     {...seed,benchmark:b.id,score:200+i,shown:String(200+i),riven:{bonuses:["critical_chance","critical_damage","multishot"],malus:"magazine_capacity",rolls:[1,1,1,1]}}];
-  const path=h.headlessBoardFile(engine.meta,"torid",b.id);
-  fixtures.set(path,[...(fixtures.get(path) || []),...rows]);
+  const scene=b.cell_dir || "";
+  fixtures.set(scene,[...(fixtures.get(scene) || []),...rows]);
 }
-fixtures.set("/board/heads/torid.json",[...fixtures.values()].flat());
 const check=async(name,fn)=>{await fn();checks++;console.log("  ok  "+name);};
 try {
   const request=h.headlessNonaHelpRequest(engine.meta), riven=engine.api("/api/riven",request);
@@ -75,19 +77,19 @@ try {
     calls=[];await answer("zk Torid");assert.equal(calls[0].args.ruler,primary);
     for(const cmd of ["zk","pz"]) {calls=[];await answer(`${cmd} Torid ${primary}__unknown 10`);assert.equal(calls.length,0);}
   });
-  await check("exact cell queries read the scene file and filter all-cell heads without switching boards",async()=>{
+  await check("exact cell queries read their catalog revision and do not switch boards",async()=>{
     for(const [i,b] of engine.meta.benchmarks.entries()) {
       const rv=await engine.run("builder.rivens.read",{weapon:"torid",ruler:b.id,pooled:true});
       assert.equal(rv.groups.length,1,b.id);assert.equal(rv.groups[0].ruler_id,b.id);assert.equal(rv.groups[0].rivens[0].score,String(200+i));
       const board=await engine.run("builder.board.read",{weapon:"torid",ruler:b.id,pooled:true,distinct:true,limit:10});
       assert.equal(board.rows.length,1,b.id);assert.equal(board.rows[0].ruler_id,b.id);assert.equal(board.rows[0].score,String(100+i));
-      assert.ok(requested.includes(h.headlessBoardFile(engine.meta,"torid",b.id)));
+      assert.ok(requested.some(url=>url.pathname==="/api/board/pages" && url.searchParams.get("ruler")===b.id && url.searchParams.has("revision")));
     }
     const real=makeAnswer(engine), target=guides[0].complex.id;
     const result=await real(`zk Torid ${target} 双暴 多重 负任意 10`);
     assert.equal(new URL(result.card).searchParams.get("ruler"),target,JSON.stringify(result));
     const doc=await cardDocument(engine,result.card,{css:""});assert.ok(doc.html.includes(guides[0].complex.name));
-    assert.equal(h.headlessBoardFile(engine.meta,"torid","missing"),null);
+    assert.equal(await engine.host.board("torid","missing"),null);
   });
   await check("help ships an image with copyable complex commands and a complete ruler index fallback",async()=>{
     for(const topic of [""," 标尺"]) {
@@ -102,11 +104,24 @@ try {
     }
     assert.ok(!h.headlessNonaHelp(h.headlessSpeaker(engine.meta,engine.i18n,"zh"),null).entries[2].examples.length);
   });
-  await check("a missing heads file served as the SPA falls back to the requested cell",async()=>{
-    fixtures.delete("/board/heads/torid.json");
-    const fallback=await loadEngine({site:engine.site}),ruler=guides[0].complex.id;
-    const result=await fallback.run("builder.board.read",{weapon:"torid",ruler,limit:10});
-    assert.ok(result.rows.length && result.rows.every(row=>row.ruler_id===ruler));
+  await check("bot text and card use one snapshot and a failed revision withholds the ranking",async()=>{
+    const ruler=guides[0].complex.id, real=makeAnswer(engine), before=requested.length;
+    const reply=await real("pz Torid "+ruler+" 10");
+    const reads=requested.slice(before);
+    assert.equal(reads.filter(url=>url.pathname==="/api/board/pages").length,1);
+    assert.ok(reply.cardData.rows.every(row=>row.benchmark===ruler));
+    const scene=engine.meta.benchmarks.find(b=>b.id===ruler).cell_dir || "";
+    fixtures.set(scene,fixtures.get(scene).map(row=>row.benchmark===ruler ? {...row,score:row.score+100} : row));
+    const updated=await real("pz Torid "+ruler+" 10");
+    assert.notEqual(updated.cardVersion,reply.cardVersion,"a new ranking invalidates cached images with the same attribution");
+    failedRevision=true;
+    const result=await engine.run("builder.board.read",{weapon:"torid",ruler,limit:10});
+    assert.equal(result.reason,"board_not_loaded");
+    const unavailable=await real("pz Torid "+ruler+" 10");
+    assert.deepEqual(unavailable,{text:ui["The board could not be reached."]});
+    const card=await cardDocument(engine,reply.card,{css:""});
+    assert.ok(card.html.includes(ui["The board could not be reached."]));
+    assert(!requested.some(url=>url.pathname.startsWith("/board/")));
   });
   console.log(`ok  ${checks} help contracts, ${engine.meta.benchmarks.length} rulers and both locales`);
 } finally {server.closeAllConnections();server.close();}

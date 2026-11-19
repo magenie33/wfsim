@@ -81,7 +81,9 @@ export async function cardDocument(engine, url, { lang = "zh", css = siteStyle()
   const w = say.meta.weapons.find((x) => x.id === plain.id);
   const job = ask.kind === "appraise" ? await appraisal(ask.code, ask.result) : null;
   if (ask.kind === "appraise" && !job) throw new Error(`no appraisal ${ask.code}`);
-  const rows = Array.isArray(snapshotRows) ? snapshotRows : ask.kind === "appraise" && !(job && job.result) ? [] : (await (ask.kind === "pz" ? engine.host.boardHeads(w.id, ask.ruler) : engine.host.board(w.id, job?.ruler || ask.ruler))) || [];
+  const ruler = job?.ruler || h.headlessCardBoard(say, w, ask, []).ruler;
+  const rows = Array.isArray(snapshotRows) ? snapshotRows : job ? [] : await engine.host.board(w.id, ruler);
+  if (!rows) return { html: documentOf(h.headlessUnavailableBoardCard(say), css, lang), verdict: null };
   // THE NUMBER A CHAT IS TOLD is this replay's, never the searcher's.
   const verdict = job && job.result ? await h.headlessAppraisalReplay(say, w, job, rows, {
     board: (id, ruler) => engine.host.boardNow(id, ruler),

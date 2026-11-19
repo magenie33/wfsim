@@ -26,7 +26,7 @@ export function rules({ lang, concise }) {
     "What the page can do is grouped in skills. The skill of the module the reader is on comes attached to their message as <skill …>; load any other with skill_load before acting in it, then call its actions with act. Call actions that do not depend on each other together in one reply. An action already returns what it changed, so observe only when you need the whole page.",
     "RULES:",
     "1. Every number you state was sent to you in this conversation — by a tool, the page, the reader or the summary. Never estimate, recall or work one out in your head: for a difference, a ratio or a percentage of numbers you were sent, use calc. If you have not measured something, measure it or say you have not.",
-    "2. What the tools do not report, you cannot see. Say so rather than guess.",
+    "2. Recheck current rankings. Say what tools cannot answer.",
     "3. When the stats read lists something as not modelled, say that the number leaves it out.",
     "4. You work on a copy of the reader's build or scenario; the page makes the copy before your first change. Tell the reader which copy you worked on.",
     "5. You cannot share, submit to the leaderboard or open links; tell the reader where to click instead.",

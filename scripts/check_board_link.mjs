@@ -108,7 +108,7 @@ const r = await evaluate(`(async () => {
   out.fixtureRuler = ruler;
   [...document.querySelectorAll('#bench-picker [data-bench]')]
     .find(c => c.dataset.bench === ruler).click();
-  await s(900);
+  await loadFullBoard();renderBenchBoard();
   // THE LIVE CASE FIRST, and only then the synthetic one.
   //
   // This was injection-only, and the injection went wrong the day the board
@@ -123,6 +123,7 @@ const r = await evaluate(`(async () => {
   // injection stays as the FALLBACK — the case has to keep being covered on a
   // board that loses its last two-mode weapon, which is how it was covered for
   // the nine days before one arrived.
+  const benchRows = id => benchRowsUnder({cell_dir:''}, id);
   const modesOn = (w) => [...new Set(benchRows(w.id)
     .filter(r => r.benchmark === ruler).map(r => r.mode || 'base'))];
   const live = (META.weapons || []).find(w =>
@@ -141,7 +142,7 @@ const r = await evaluate(`(async () => {
       : (twoModes.modes || []).find(m => m !== ((base || {}).mode || 'base'));
     if (!live) {
       const have = base || benchRows(twoModes.id).find(r => r.benchmark === ruler);
-      BOARD[twoModes.id] = benchRows(twoModes.id).concat([
+      BOARD_INDEX[twoModes.id] = benchRows(twoModes.id).concat([
         { ...have, mode: other, score: have.score * 3, shown: String(have.score * 3) },
       ]);
     }
@@ -157,9 +158,17 @@ const r = await evaluate(`(async () => {
     const mine = rows[0];
     out.otherHref = mine ? mine.getAttribute('href') : null;
     if (mine) {
-      const originalFetch=window.fetch, fixture=JSON.stringify(BOARD[twoModes.id]);
-      if(!live)window.fetch=(url,options)=>new URL(String(url),location.origin).pathname==='/board/'+twoModes.id+'.json'
-        ?Promise.resolve(new Response(fixture,{headers:{'Content-Type':'application/json'}})):originalFetch(url,options);
+      const originalFetch=window.fetch, weapon=twoModes.id, revision='a'.repeat(64);
+      const fixture=BOARD_INDEX[weapon].filter(row=>row.benchmark===ruler);
+      if(!live)window.fetch=(url,options)=>{
+        const address=new URL(String(url),location.origin), params=address.searchParams;
+        if(params.get('weapon')!==weapon)return originalFetch(url,options);
+        if(address.pathname==='/api/board/pages/catalog')return Promise.resolve(Response.json({ok:true,next:null,
+          partitions:[{weapon,ruler,scene:'',revision,rows:fixture.length,leaders:fixture}]}));
+        if(address.pathname==='/api/board/pages'&&params.get('revision')===revision)
+          return Promise.resolve(Response.json({ok:true,weapon,ruler,revision,after:0,count:fixture.length,next:null,rows:fixture}));
+        return originalFetch(url,options);
+      };
       try {history.pushState({}, '', out.otherHref);await route();await s(3200);}finally{window.fetch=originalFetch;}
       out.otherOpenedWeapon = document.getElementById('weapon').value;
       out.otherOpenedMode = mode;

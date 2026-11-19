@@ -143,19 +143,17 @@ second source.
 | a build is legal | `engine::board::builds::validate_for_board` | the page's door, the worker's door — both ASK it |
 | a build's axes | `engine::board::builds::BUILD_AXES` | every surface's fields, `/api/meta` |
 | a ruler's terms | `data/benchmarks/*.yaml` | the picker, the arena, the scenario bar |
-| a row's score | the `scores` row for what the build READS | everything below |
-| what is published | `site/board/<weapon>.json` | `board/index.json`, `board.meta.json`, `data/board_state.yaml` |
+| a row's score | the verified measurement selected in `state_board_measurement_selection` | published rows and their summaries |
+| the current public revision | `state_board_read_partitions` | the catalog, leaders and revision-bound pages |
 
 ### Online ranking reads
 
-An enabled online partition is one weapon and ruler. Its complete current
-snapshot in `state_board_read_partitions` replaces that partition's static
-rows and leaders together. Other partitions retain their published files.
-The page replaces a partition only after fetching every page of its pinned
-revision; a failed read retains the previous complete view. Page requests share
-a four-request limit across the selected partitions. Each request has its own
-eight-second deadline, and the complete read has a sixty-second budget.
-Changing weapons cancels the read without replacing the previous view.
+An online partition covers one weapon and ruler. The catalog selects its current
+revision. A reader waits for the complete revision before showing its ranks.
+A failed read exposes the scope as unavailable. Page requests share a
+four-request limit across the selected partitions. Each page has an eight-second
+deadline, and the page assembly has a sixty-second budget. Changing weapons
+cancels the read.
 
 `scripts/board_result_flow.mjs` consumes canonical source changes through the
 board input mailbox. Routing and the next partition handoff commit with the
@@ -270,10 +268,10 @@ rules and complete-loadout requirements are in `WARFRAMES.md`.
 | what | where | who runs it |
 | --- | --- | --- |
 | the ruler | `data/benchmarks/*.yaml` | — |
-| the board the site reads | R2 bucket `wfsim-public`, served at `cdn.wfsim.app/board/<weapon>.json` | `scripts/live_board.sh`, the moment `scores` moves |
-| the board's daily snapshot | `site/board/<weapon>.json` | `publish.yml`, committed, read by people |
-| ranked across weapons | `site/board/index.json` | derived from the files beside it |
-| which board this is | `site/board.meta.json` | a digest per published file |
+| the board the site reads | `/api/board/pages/catalog` and `/api/board/pages` | the board ranking publisher |
+| archived board files | `site/board/<weapon>.json` and archived R2 files | archive publisher |
+| ranked across weapons | the leaders in the publication catalog | derived from the selected partition revisions |
+| which archived file this is | `board.meta.json` | a digest per archived file |
 | consent + submit | `web/src/static/app/68-board-submit.js` (`offerBoardSubmit`) | the player's browser |
 | the library | the Postgres database `wfsim` (binding `LIBRARY`, §"Postgres") | written by the endpoint |
 | the facts | `state_board_measurement_selection` in it | task acceptance and producer delivery |
@@ -764,28 +762,19 @@ persists an unlink intent and resumes it after interruption; sealed receipts,
 hashes, current canonical state and consumer audit checkpoints remain durable.
 This lifetime rule does not authorize removing external captures or backups.
 
-Completed board files, heads and the `board_meta.py` stamp become an immutable
-publication package. An independent consumer sends changed content through
-`PUT /api/board/live/<file>` (bearer `BOARD_PUSH_TOKEN`), the stamp last, into
-the bucket `wfsim-public` under their public paths, each kept thirty seconds.
+**The verified library is the source of board facts.** The ranking publisher
+commits a complete, immutable partition for each weapon and ruler, then selects
+its revision in `state_board_read_partitions` in the same transaction. The
+public catalog at `GET /api/board/pages/catalog` exposes that selection and its
+leaders. Readers bind every page to the selected revision. The main site, CN
+site, desktop, Nona, bots and MCP use the shared reader in
+`83-headless-card.js`. An absent partition or failed page makes that ranking
+unavailable. A published empty partition is a successful empty ranking.
 
-**THE PAGE READS IT WITH NO WORKER IN THE WAY.** `cdn.wfsim.app` is that
-bucket on its own domain, read through the CDN with `Access-Control-Allow-Origin:
-*`, and the page on wfsim.app reads every board file there (`BOARD_ORIGIN`,
-`boardOffOrigin`). `worker/live_board.js` still answers `/board/<file>` and
-`/board.meta.json` on wfsim.app from the same bucket, for every reader that
-names that address — a desktop shell in the field, the bots, the MCP server,
-the relay. Everything in that bucket is public, so nothing private is ever
-written to it.
-
-The publisher acknowledges each file durably and sends the captured stamp
-last. Upload failures retain their package and never occupy the verifier or
-projection consumer. The outbox has a disk bound; reaching it preserves the
-projection checkpoint for retry. Stage controls and terminal conditions are
-specified in [COMPUTE_TASKS.md](COMPUTE_TASKS.md).
-The stamp's `inputs` identifies the audited source engine, snapshot, input time
-and normalization/consumer contracts. Its `scored_at` remains the assembly time;
-each row retains the measurement's own time and provenance.
+The archived board bundle carries file digests, a build time and independent
+measurement dates. Its publication sends the stamp after every file it names.
+The Build Library links to dated historical files separately from its current
+ranking. Existing archived files and heads retain their original read paths.
 
 Explicit `INCREMENTAL_INVENTORY=0` selects the in-memory `wfsim-board --serve`
 adapter. It restores `library.json`, `new-builds.ndjson` and
@@ -806,26 +795,19 @@ board stopped reaching readers, and the run fails, which mails the owner.
 **UNVERIFIED NUMBERS NEVER REACH IT.** A client result is on no board until it
 is a fact (§"Compute orders").
 
-**THE COMMITTED BOARD IS A SNAPSHOT.** `publish.yml` writes `site/board/` once a
-day for people and for the record; the worker reads it only until the first
-live stamp exists, and never again after.
+**THE COMMITTED BOARD IS A SNAPSHOT.** `publish.yml` assembles the historical
+`site/board/` files. They and the archive in R2 have their own manifest and dates.
 
 ## The heads
 
-**A SHORT ANSWER READS THE HEADS, NOT THE BOARD.** A weapon's file holds every
-row it kept, in every scene, which for a much-surveyed weapon is tens of
-thousands of rows; a top-N answer — a bot's long image, `builder.board.read`
-— needs a few. Each cycle `scripts/board_heads.mjs` cuts each weapon's rows,
-every scene joined, to `boardHeads` (`87-headless.js`, the page's own code) into
-`board/heads/<id>.json`, pushed with the rest of the live board: every row
-holding one of the first `BOARD_HEADS_PLACES` places of its ruler, mode and
-riven-ness, and each ruler's newest-measured row. Any ranking the page draws,
-run on the heads, places its first `BOARD_HEADS_PLACES` as on every row, ties
-and their preferred build included; `check_board_heads` holds that over the
-whole snapshot. The heads are rows in the board file's own shape, so a reader
-changes the file it reads and nothing else. A weapon's heads are written again
-only when one of its files is newer. `heads/` is no scene (`board_meta.py`
-`HEADS`), and the daily snapshot carries none.
+Current standings and top-N answers read the same immutable revision as the
+full partition. The catalog includes leaders for across-weapon comparisons.
+Bot cards bind their cache entry to the selected revision and attribution.
+
+The archive's `board/heads/<id>.json` stores the first
+`BOARD_HEADS_PLACES` places per ruler, mode and riven grouping plus each
+ruler's newest measured row. `check_board_heads` proves that the reduced
+archive retains exact ranks, ties and preferred builds.
 
 ## The fact factory
 
@@ -2972,11 +2954,8 @@ rule to keep the two apart.
 
 ### What must not change
 
-- **The site reads the live board, and only it.** The page reads
-  `cdn.wfsim.app` and the worker answers `/board/*` from the same bucket
-  (§"The live board"); the committed `site/board/` is a
-  daily snapshot for people and never a fallback, so a reader is never shown a
-  board older than `scores` says.
+- **A current rank has one published revision.** Readers take the revision
+  from the catalog built on the verified library and read only its pages.
 - **The store keeps nothing about submitters.** No IP, no token, no time finer
   than the day. A working client's id is never joined to a submission
   (§"Compute orders", §"Contribution"). The one thing beside a submission is

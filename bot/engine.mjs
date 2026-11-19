@@ -9,7 +9,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const SITE = "https://wfsim.app";
-const BOARD_TTL_MS = 600_000;
 
 /// THE WASM AND ITS DATA, as `mcp/engine.js` names them: once in this process,
 /// and once in each thread of a fleet (fleet.mjs).
@@ -34,31 +33,17 @@ export async function loadEngine({ site = SITE } = {}) {
   const api = (path, body) => JSON.parse(engine.api(path, JSON.stringify(body ?? {})));
   const meta = api("/api/meta");
   const i18n = api("/api/i18n");
-  const boards = new Map();
-  const kept = async (url) => {
-    const hit = boards.get(url);
-    if (hit && Date.now() - hit.at < BOARD_TTL_MS) return hit.rows;
-    const r = await fetch(url);
-    const rows = r.ok && !r.headers.get("content-type")?.includes("text/html") ? await r.json() : null;
-    boards.set(url, { at: Date.now(), rows });
-    return rows;
-  };
+  const reader = headless.publishedBoardReader(async (path, signal) => {
+    const response = await fetch(site + path, { signal });
+    return response.ok ? response.json() : null;
+  });
+  const board = (id, ruler) => reader.weapon(meta, id, ruler).catch(() => null);
   const zh = i18n.zh || {};
   const host = {
     meta: () => meta,
     names: () => Object.values(i18n),
-    async board(id, ruler) {
-      const path = headless.headlessBoardFile(meta,id,ruler);
-      return path ? kept(site+path) : null;
-    },
-    async boardNow(id, ruler) {
-      const dir = meta.benchmarks.find(item => item.id === ruler)?.cell_dir;
-      const response = await fetch(`${site}/board/${dir ? dir + "/" : ""}${id}.json`,
-        { cache: "no-cache", signal: AbortSignal.timeout(30_000) });
-      if (response.status === 404) return [];
-      if (!response.ok) throw new Error(`board: ${response.status}`);
-      return response.json();
-    },
+    board,
+    boardNow: board,
     computationNames: (weapon, rows) => headless.headlessMeasurementWitnesses(weapon, rows, {api: async (path, body) => api(path, body),
       names: async body => {
         const response = await fetch(site + "/api/computations/names", {method:"POST",headers:{"content-type":"application/json"},
@@ -66,20 +51,15 @@ export async function loadEngine({ site = SITE } = {}) {
         if (!response.ok) throw new Error("attribution: " + response.status);
         return response.json();
       }}),
-    // THE HEADS, for a top-N answer (docs/BOARD.md §"The heads"); every row
-    // where a weapon has none yet.
-    async boardHeads(id, ruler) {
-      return (await kept(`${site}/board/heads/${id}.json`)) || host.board(id, ruler);
-    },
     api: async (path, body) => api(path, body),
     tr: (s) => (zh.ui && zh.ui[s]) || s,
     origin: SITE,
     screen_weapon: () => null,
     screen_build: () => null,
   };
-  const run = async (id, args) => {
+  const run = async (id, args, readBoard = board) => {
     const q = headless.HEADLESS_QUERIES.find((x) => x.id === id);
-    return headless.headlessCheckArgs(q, args) || q.run(args, host);
+    return headless.headlessCheckArgs(q, args) || q.run(args, { ...host, board: readBoard });
   };
   return { host, run, meta, i18n, zh, headless, api, site, wasm: engine };
 }
