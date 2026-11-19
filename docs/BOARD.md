@@ -1818,8 +1818,9 @@ and bounds its cache lifetime by their remaining validity, without querying work
   verb in the same transaction as membership changes. An indexed, paginated
   snapshot initializes those balances. Each verb's price is the mean volunteer
   compute time spent on a completed round, including its independent answers.
-  The publisher samples up to 256 recent matched rounds per verb from the
-  preceding seven days. Remaining counts times their respective prices give
+  The publisher samples up to 16 matched rounds per verb per complete
+  UTC hour over the past day. A verb without a measured round in that sample
+  uses up to 256 recent rounds from the preceding seven days. Remaining counts times their respective prices give
   remaining compute milliseconds. The divisor is volunteer compute milliseconds
   per hour over the last 24 complete UTC hours. Missing prices, stale readings
   and zero capacity leave the estimate unknown. The queue total remains visible.

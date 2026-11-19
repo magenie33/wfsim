@@ -8,17 +8,21 @@ export const QUEUE_PRICE_INTERVAL = 10 * 60000;
 
 // The sample unit is one finished execution round, including all its measured
 // volunteer attempts. A result selected from an earlier round cannot price it.
-async function sampleCost(db, verb, since) {
-  const leastCommon = verb === 'simulate' ? '' : "AND verb<>'simulate'";
-  return db.prepare(`WITH sample AS MATERIALIZED (
-    SELECT id,task_id,result_id,fact_engine FROM state_compute_scheduling
-    WHERE verb=?1::text ${leastCommon} AND state IN('fact','spot') AND fact_at>=?2::text
-    ORDER BY fact_at DESC LIMIT 256)
+async function sampleCost(db, verb, hourWindows, since) {
+  const rare = verb === 'simulate' ? '' : "AND verb<>'simulate'";
+  const candidates = `SELECT id,task_id,result_id,fact_engine FROM state_compute_scheduling
+    WHERE verb=?1::text ${rare} AND state IN('fact','spot')`;
+  const measure = (sample, window) => db.prepare(`WITH sample AS MATERIALIZED (${sample})
     SELECT count(*)::int facts,coalesce(sum(cost.ms),0)::float8 ms FROM sample q
     JOIN entity_compute_results r ON r.id=q.result_id AND r.task_id=q.task_id
     CROSS JOIN LATERAL (SELECT sum(a.compute_ms) ms FROM record_candidate_answers a
       WHERE a.task_id=q.task_id AND a.question=q.id AND a.engine=q.fact_engine AND a.official=0
-      HAVING count(*)>0 AND count(*)=count(*) FILTER(WHERE a.compute_ms>0)) cost`).bind(verb,since).first();
+      HAVING count(*)>0 AND count(*)=count(*) FILTER(WHERE a.compute_ms>0)) cost`).bind(verb,window).first();
+  const daily = await measure(`SELECT q.* FROM jsonb_array_elements(?2::text::jsonb) h
+    CROSS JOIN LATERAL (${candidates} AND fact_at>=h->>0 AND fact_at<h->>1 ORDER BY fact_at DESC LIMIT 16) q`,
+    JSON.stringify(hourWindows));
+  if (daily.facts>0) return daily;
+  return measure(`${candidates} AND fact_at>=?2::text ORDER BY fact_at DESC LIMIT 256`,since);
 }
 
 export function queueHours(row,total,prices,now) {
@@ -37,9 +41,11 @@ export async function measureQueueCosts(db, prior, now=Date.now()) {
   const hour=iso(now).slice(0,13), since=iso(now-PACE_HOURS*HOUR).slice(0,13);
   const capacity=await db.prepare(`SELECT coalesce(sum(ms),0)::float8 ms FROM record_hourly_compute_totals
     WHERE hour>=?1::text AND hour<?2::text`).bind(since,hour).first();
+  const hourEnd=Math.floor(now/HOUR)*HOUR;
+  const windows=Array.from({length:PACE_HOURS},(_,i)=>[iso(hourEnd-(i+1)*HOUR),iso(hourEnd-i*HOUR)]);
   const msOf={},factsOf={};
   for (const verb of verbs) {
-    const cost=await sampleCost(db,verb,iso(now-7*24*HOUR));
+    const cost=await sampleCost(db,verb,windows,iso(now-7*24*HOUR));
     msOf[verb]=Number(cost.ms);
     factsOf[verb]=Number(cost.facts);
   }

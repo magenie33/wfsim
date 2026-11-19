@@ -71,10 +71,10 @@ try{
   await check('removing a cancellation restores current eligibility');
   await seedComputeWork(seedData,{id:'post-opt',verb:'optimize',producer:'sweep'});
   await check('mixed verbs in one zone retain their own workload');
-  const db=pgDb(postgresClient(sql)), now=Date.now(), at=new Date(now-60000).toISOString();
+  const db=pgDb(postgresClient(sql)), now=Date.now();
   await query(readFileSync(new URL('../deploy/queue_cost_index.sql',import.meta.url),'utf8').replace('INDEX CONCURRENTLY','INDEX'));
   for(const [verb,ms] of [['simulate',100],['optimize',900]]) {
-    const id='measured-'+verb;
+    const id='measured-'+verb, at=new Date(now-(verb==='simulate'?2:48)*3600000).toISOString();
     await seedComputeWork(seedData,{id,verb,opened_at:at});
     await query(`INSERT INTO record_candidate_answers(question,task_id,engine,device,owner,official,canon,result,work,compute_ms,at)
       SELECT id,task_id,'fixture',device,device,0,'{}','{}',1,$2::bigint,$3 FROM state_compute_scheduling
