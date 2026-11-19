@@ -34,7 +34,25 @@ for (const e of cat.entries || []) {
     JSON.stringify(e));
   check(`${e.identifier}: names a document the site serves`, !e.url || served(e.url), e.url);
 }
-check("robots.txt points at the catalog", /^Agentmap: https:\/\/wfsim\.app\/\.well-known\/ai-catalog\.json$/m.test(read("robots.txt")));
+const robots = read("robots.txt");
+check("robots.txt points at the catalog", /^Agentmap: https:\/\/wfsim\.app\/\.well-known\/ai-catalog\.json$/m.test(robots));
+const groups = robots.split(/\n\s*\n/).filter((group) => /^User-agent:/m.test(group));
+const accessRules = (name) => groups
+  .filter((group) => group.split("\n").includes("User-agent: " + name))
+  .flatMap((group) => group.match(/^(?:Allow|Disallow): .*$/gm) || []).join("\n");
+check("every crawler group permits search and retrieval and reserves training", groups.length > 0 &&
+  groups.every((group) => /^Content-Signal: search=yes, ai-input=yes, ai-train=no$/m.test(group)));
+check("search and user-directed fetches can read public pages",
+  ["*", "OAI-SearchBot", "ChatGPT-User", "Claude-SearchBot", "Claude-User", "Amzn-SearchBot", "Amzn-User", "PerplexityBot"]
+    .every((name) => accessRules(name) === "Allow: /"));
+check("model training and corpus collection tokens opt out",
+  ["GPTBot", "ClaudeBot", "Applebot-Extended", "Google-Extended", "Amazonbot", "meta-externalagent", "Bytespider", "CCBot"]
+    .every((name) => accessRules(name) === "Disallow: /"));
+check("creator and crawler permissions are published and discoverable",
+  served(SITE + "/reuse/index.html") &&
+  read("reuse/index.html").includes(readFileSync(resolve(ROOT, "docs/creator-use.html"), "utf8").trim()) &&
+  read("terms/index.html").includes('href="/reuse"') &&
+  [robots, read("llms.txt"), read("weapons/Braton.md")].every((body) => body.includes(SITE + "/reuse")));
 check("the page's head points at it", /<link rel="ai-catalog" href="\/\.well-known\/ai-catalog\.json"/.test(read("index.html")));
 
 const card = JSON.parse(read(".well-known/agent-card.json"));

@@ -2607,7 +2607,9 @@ What an agent reads to find WFSim, in the built `site/`: the AI catalog names
 only documents the site serves, each entry by exactly one of `url` or `data`
 under a `urn:air:` identifier and a media type; robots.txt and the page's head
 point at it; and the A2A card the build wrote is the one `mcp/a2a.js` serves.
-Run after a site build.
+The published crawler groups must distinguish discovery from training. The terms,
+crawler directives, weapon markdown and machine-readable index link to the creator
+policy. Run after a site build.
 
 ## `check_mcp_auth`
 
