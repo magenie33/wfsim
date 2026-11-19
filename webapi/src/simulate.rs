@@ -11,7 +11,7 @@ use crate::buffs::{arcane_base, arcane_choices, arcane_fx_for};
 use crate::fight::{Fight, parse_fight};
 use crate::registry::{WeaponInfo, base_for, incarnon_id, innate_slots_for, mod_not_here, wspec};
 use crate::request::{err_json, get_bool, r1, r3};
-use crate::rivens::{mod_pool_with_rivens, riven_stat_ids_ok};
+use crate::rivens::{named_pool_with_rivens, riven_stat_ids_ok};
 
 #[cfg(test)]
 mod prepared_tests;
@@ -191,9 +191,7 @@ enum Work {
 pub(crate) struct Entrant {
     pub(crate) fight: Fight,
     terms: wfsim_engine::fight::EntrantTerms,
-    pool: Vec<ModDef>,
-    /// Where each card of `pool` sits, by id.
-    index: std::collections::HashMap<&'static str, usize>,
+    pool: wfsim_engine::data::mods::NamedPool,
     arcane_fx: wfsim_engine::data::arcanes::ArcaneFx,
     /// The base fired; the one a cycle returns to; a melee Incarnon's
     /// un-armed self (the tiers that state the window left out).
@@ -263,15 +261,9 @@ impl Entrant {
         // no seat can quietly be fighting a different enemy.
         let (roster, seat_weapons) =
             if seat { (Vec::new(), vec![info.id.to_string()]) } else { seats_beside(v, &fight.arena, info)? };
-        let pool = mod_pool_with_rivens(v, info, &evo_refs);
-        // The FIRST card of an id, as a scan of the pool would find it.
-        let mut index = std::collections::HashMap::new();
-        for (i, m) in pool.iter().enumerate() {
-            index.entry(m.id).or_insert(i);
-        }
+        let pool = named_pool_with_rivens(v, info, &evo_refs);
         Ok(Self {
             terms: fight.entrant_terms(),
-            index,
             pool,
             fight,
             arcane_fx,
@@ -288,14 +280,13 @@ impl Entrant {
     /// it, or two share a family (wiki Incompatible mods). No count is checked:
     /// slot legality is the UI's job and the engine resolves any list honestly.
     pub(crate) fn seat<'a>(&'a self, ids: &[&str]) -> Result<Vec<&'a ModDef>, Value> {
-        let info = self.fight.info;
-        let evo_refs: Vec<&str> = self.fight.evos.iter().map(String::as_str).collect();
         let mut refs: Vec<&ModDef> = Vec::with_capacity(ids.len());
         for id in ids {
-            match self.index.get(id) {
-                Some(&i) => refs.push(&self.pool[i]),
-                None => return Err(err_json(mod_not_here(id, info, &evo_refs))),
-            }
+            let Some(card) = self.pool.get(id) else {
+                let evos: Vec<_> = self.fight.evos.iter().map(String::as_str).collect();
+                return Err(err_json(mod_not_here(id, self.fight.info, &evos)));
+            };
+            refs.push(card);
         }
         for i in 0..refs.len() {
             for j in (i + 1)..refs.len() {
@@ -364,6 +355,10 @@ impl Entrant {
         Ok((panel, params))
     }
 }
+
+#[cfg(test)]
+#[path = "simulate/entrant_pool_tests.rs"]
+mod entrant_pool_tests;
 
 /// The mod ids a request names, in order.
 pub(crate) fn mod_ids(v: &Value) -> Vec<&str> {

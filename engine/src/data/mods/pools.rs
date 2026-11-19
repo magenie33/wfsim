@@ -166,7 +166,7 @@ pub fn search_presets() -> &'static SearchPresets {
 /// door cost; the weapon's pool is built once ([`pool_cached`]) and only what
 /// the named ranks add or change is owned here.
 pub fn pool_naming<S: AsRef<str>>(weapon_id: &str, ids: &[S]) -> NamedPool {
-    let mut pool = NamedPool { base: pool_cached(weapon_id, &[]), changed: Vec::new(), added: Vec::new() };
+    let mut pool = NamedPool::for_build(weapon_id, &[]);
     pool.with_ranks(ids.iter().map(AsRef::as_ref));
     pool
 }
@@ -182,6 +182,11 @@ pub struct NamedPool {
 }
 
 impl NamedPool {
+    /// A build's equip-filtered base, with no request-local cards yet.
+    pub fn for_build(weapon_id: &str, evolutions: &[&str]) -> Self {
+        Self { base: pool_cached(weapon_id, evolutions), changed: Vec::new(), added: Vec::new() }
+    }
+
     /// The card `id` names: the first of that id in [`NamedPool::iter`] order.
     pub fn get(&self, id: &str) -> Option<&ModDef> {
         match self.base.place(id) {
@@ -211,10 +216,10 @@ impl NamedPool {
     /// [`with_ranks`] on the view.
     pub fn with_ranks<'a>(&mut self, ids: impl IntoIterator<Item = &'a str>) {
         for id in ids {
+            let (card, Some(_)) = split_rank(id) else { continue };
             if self.get(id).is_some() {
                 continue;
             }
-            let (card, Some(_)) = split_rank(id) else { continue };
             if self.get(card).is_none() {
                 continue;
             }
