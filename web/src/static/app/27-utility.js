@@ -411,7 +411,8 @@ function renderReminders() {
 // ---- DICTIONARY -------------------------------------------------------------
 
 const DICTIONARY_URL = "/warframe-dictionary.json";
-const DICTIONARY_PAGE_SIZE = 24;
+const DICTIONARY_PAGE_SIZE = 8;
+let openDictionaryRoute;
 
 function dictionaryKey(text) {
   return text.normalize("NFKD").toLowerCase()
@@ -420,10 +421,11 @@ function dictionaryKey(text) {
 }
 
 function dictionaryIndex(rows) {
-  const index = new Map();
+  const index = new Map(), byId = new Map();
   let maxWords = 1;
   for (const row of rows) {
-    const keys = new Set(row.slice(1).filter(Boolean).map(dictionaryKey));
+    byId.set(row[0], row);
+    const keys = new Set(row.slice(2).filter(Boolean).map(dictionaryKey));
     keys.delete("");
     for (const key of keys) {
       if (!index.has(key)) index.set(key, []);
@@ -431,7 +433,7 @@ function dictionaryIndex(rows) {
       maxWords = Math.max(maxWords, key.split(" ").length);
     }
   }
-  return { index, maxWords };
+  return { index, byId, maxWords };
 }
 
 function dictionaryMatches(text, { index, maxWords }) {
@@ -469,41 +471,79 @@ function dictionaryMatches(text, { index, maxWords }) {
   return [...embedded];
 }
 
+function dictionaryLanguage(code) {
+  return { zh: "zh-Hans", tc: "zh-Hant" }[code] || code;
+}
+
+function dictionaryCopyName(name, code) {
+  const label = escHtml(trF("Copy {name}", { name }));
+  return `<button type="button" class="dictionary-copy-name" data-dictionary-copy
+    aria-label="${label}" title="${label}"><span lang="${escHtml(dictionaryLanguage(code))}">${escHtml(name)}</span>
+    <span class="dictionary-copy-icon" aria-hidden="true">⧉</span></button>`;
+}
+
 function showDictionary() {
-  const input = $("dictionary-search");
-  if (input.dataset.ready) return;
-  input.dataset.ready = "1";
-  const language = $("dictionary-language"), status = $("dictionary-status");
+  if (openDictionaryRoute) { openDictionaryRoute(); return; }
+  const input = $("dictionary-search"), status = $("dictionary-status");
   const results = $("dictionary-results"), more = $("dictionary-more"), retry = $("dictionary-retry");
-  let data, matches = [], shown = DICTIONARY_PAGE_SIZE;
+  let data, pageLanguage, english, openEntry, matches = [], shown = DICTIONARY_PAGE_SIZE;
+
+  function primaryColumn(row) {
+    return pageLanguage >= 0 && row[pageLanguage + 2] ? pageLanguage : english;
+  }
+
+  function card(row) {
+    const [id, kind] = row;
+    const primary = primaryColumn(row);
+    const names = data.languages.map(([code, label], index) => {
+      const name = row[index + 2];
+      return name && index !== primary ? `<div class="dictionary-translation">
+        <dt lang="${escHtml(dictionaryLanguage(code))}">${escHtml(label)}</dt>
+        <dd>${dictionaryCopyName(name, code)}</dd>
+      </div>` : "";
+    }).join("");
+    return `<li class="dictionary-card" data-dictionary-entry="${id}">
+      <div class="dictionary-card-head">
+        <div>
+          <span class="dictionary-kind">${escHtml(tr(kind))}</span>
+          <h2>${dictionaryCopyName(row[primary + 2], data.languages[primary][0])}</h2>
+        </div>
+        <button type="button" class="ghost-btn small" data-dictionary-share="${id}">${escHtml(tr("copy link"))}</button>
+      </div>
+      <input class="dictionary-share-link" type="url" readonly hidden aria-label="${escHtml(tr("copy link"))}" />
+      <dl class="dictionary-translations">${names}</dl>
+    </li>`;
+  }
 
   function renderResults() {
-    const target = language.selectedIndex + 1;
-    const anchorCode = language.value === "en" ? "zh" : "en";
-    const anchor = data.languages.findIndex(([code]) => code === anchorCode) + 1;
-    const targetLang = { zh: "zh-Hans", tc: "zh-Hant" }[language.value] || language.value;
-    const anchorLang = anchorCode === "zh" ? "zh-Hans" : anchorCode;
-    results.innerHTML = matches.slice(0, shown).map((row) => `
-      <li class="brow dictionary-row">
-        <div class="dictionary-names">
-          <strong data-dictionary-name lang="${escHtml(targetLang)}">${escHtml(row[target] || tr("Name unavailable"))}</strong>
-          ${row[anchor] ? `<span lang="${anchorLang}">${escHtml(row[anchor])}</span>` : ""}
-        </div>
-        <span class="dictionary-kind">${escHtml(tr(row[0]))}</span>
-        ${row[target] ? `<button type="button" class="ghost-btn small" data-dictionary-copy>${escHtml(tr("Copy"))}</button>` : ""}
-      </li>`).join("");
+    results.innerHTML = matches.slice(0, shown).map(card).join("");
     more.hidden = matches.length <= shown;
   }
 
-  function search() {
-    if (!data) return;
-    matches = dictionaryMatches(input.value, data);
+  function showResults(rows, message) {
+    matches = rows;
     shown = DICTIONARY_PAGE_SIZE;
-    status.textContent = !dictionaryKey(input.value) ? "" : matches.length
-      ? trF("{n} matching names", { n: matches.length })
-      : tr("No matching game names.");
+    status.textContent = message;
     renderResults();
   }
+
+  function search() {
+    const rows = dictionaryMatches(input.value, data);
+    showResults(rows, !dictionaryKey(input.value) ? "" : rows.length
+      ? trF("{n} dictionary entries", { n: rows.length })
+      : tr("No matching game names."));
+  }
+
+  openDictionaryRoute = () => {
+    if (!data) return;
+    const entry = new URLSearchParams(location.search).get("entry");
+    if (entry === openEntry) return;
+    openEntry = entry;
+    if (entry === null) { search(); return; }
+    const row = data.byId.get(entry);
+    input.value = row ? row[primaryColumn(row) + 2] : "";
+    showResults(row ? [row] : [], row ? "" : tr("This dictionary entry could not be found."));
+  };
 
   async function load() {
     retry.hidden = true;
@@ -513,24 +553,47 @@ function showDictionary() {
       if (!response.ok) throw new Error("dictionary unavailable");
       const { languages, rows } = await response.json();
       data = { languages, ...dictionaryIndex(rows) };
-      language.replaceChildren(...languages.map(([code, label]) => new Option(label, code)));
-      language.value = "zh";
-      language.disabled = false;
-      search();
+      pageLanguage = languages.findIndex(([code]) => code === LANG);
+      english = languages.findIndex(([code]) => code === "en");
+      openDictionaryRoute();
     } catch (_) {
       status.textContent = tr("The dictionary could not be loaded.");
       retry.hidden = false;
     }
   }
 
-  onTyped(input, search);
-  language.onchange = renderResults;
+  onTyped(input, () => {
+    const url = new URL(location.href);
+    if (url.searchParams.has("entry")) {
+      url.searchParams.delete("entry");
+      history.replaceState(history.state, "", url);
+      openEntry = data ? null : undefined;
+    }
+    if (data) search();
+  });
   retry.onclick = load;
   more.onclick = () => { shown += DICTIONARY_PAGE_SIZE; renderResults(); };
   results.onclick = async (event) => {
-    const button = event.target.closest("[data-dictionary-copy]");
-    if (!button) return;
-    const name = button.closest("li").querySelector("[data-dictionary-name]");
+    const share = event.target.closest("[data-dictionary-share]");
+    if (share) {
+      const origin = window.__WFSIM_DESKTOP__ || location.hostname === "wfsim.localhost" ? LIVE_ORIGIN : location.origin;
+      const url = new URL("/utility/dictionary", origin);
+      url.searchParams.set("entry", share.dataset.dictionaryShare);
+      try {
+        await navigator.clipboard.writeText(url.href);
+        presetToast(tr("link copied"));
+      } catch (_) {
+        const link = share.closest("li").querySelector(".dictionary-share-link");
+        link.value = url.href;
+        link.hidden = false;
+        link.select();
+        presetToast(tr("Copy the selected text"));
+      }
+      return;
+    }
+
+    const name = event.target.closest("[data-dictionary-copy]")?.firstElementChild;
+    if (!name) return;
     try {
       await navigator.clipboard.writeText(name.textContent);
       presetToast(tr("text copied"));

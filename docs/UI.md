@@ -1396,9 +1396,11 @@ fallback previews and indexes as the home page.
 Utility holds the game's live state, reminders, and the Dictionary. Each
 kind the worker lists has its own tab. The Dictionary loads its localization
 index when opened and searches names in the browser. It recognizes names in
-pasted chat, including linked items in brackets, and displays the chosen
-language next to English. English results show Simplified Chinese beside
-them. See `docs/DATA_SOURCES.md` for the source and refresh command.
+pasted chat, including linked items in brackets. Each entity has one card
+headed by its name in the page language, with English as the fallback.
+The card lists every other exported localized name. A copied link opens the
+same entity in the recipient's page language. See `docs/DATA_SOURCES.md`
+for the source and refresh command.
 
 | rule | where it is held |
 | --- | --- |

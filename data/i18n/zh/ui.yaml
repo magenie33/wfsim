@@ -873,12 +873,11 @@ ui:
   "Dictionary": 词典
   "Warframe name or chat message": 游戏名称或聊天消息
   "Search names or paste chat…": 搜索名称或粘贴聊天消息…
-  "Translation language": 译文语言
-  "{n} matching names": "找到 {n} 个名称"
+  "{n} dictionary entries": "找到 {n} 个词条"
   "No matching game names.": 没有找到匹配的游戏名称。
   "The dictionary could not be loaded.": 词典加载失败。
-  "Name unavailable": 暂无该语言名称
-  "Copy": 复制
+  "This dictionary entry could not be found.": 找不到这个词条。
+  "Copy {name}": "复制 {name}"
   "Blueprint": 蓝图
   "Relic": 遗物
   "Codex": 资料库

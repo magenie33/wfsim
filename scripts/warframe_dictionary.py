@@ -10,6 +10,7 @@ import json
 import re
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
+from hashlib import sha256
 
 import de_export
 
@@ -85,26 +86,29 @@ def entries(source, export):
 
 def build():
     dictionaries = [de_export._load(CLIENT / f"dict.{lang}.json") for lang in LANGUAGES]
-    rows = set()
+    rows = {}
     item_names = {}
 
-    def add(kind, names):
+    def add(kind, key, names):
         names = tuple(map(display, names))
         if names[0] and any(names[1:]):
-            rows.add((kind, *names))
+            row = (kind, *names)
+            rows[row] = min(key, rows.get(row, key))
 
     def names_for(key):
         return [words.get(key, "") for words in dictionaries]
 
     def add_names(kind, records):
         for record in records:
-            add(kind, names_for(record.get("name")))
+            key = record.get("name")
+            add(kind, key, names_for(key))
 
     for export, kind in EXPORTS.items():
         source = de_export._load(CLIENT / f"Export{export}.json")
         for item_id, record in entries(source, export):
-            names = names_for(record.get("name"))
-            add("Quest" if export == "Keys" and "chainStages" in record else kind, names)
+            key = record.get("name")
+            names = names_for(key)
+            add("Quest" if export == "Keys" and "chainStages" in record else kind, key, names)
             if isinstance(item_id, str) and item_id.startswith("/Lotus/") and names[0]:
                 item_names[item_id] = names
             if export == "Warframes":
@@ -115,9 +119,10 @@ def build():
     recipes = de_export._load(CLIENT / "ExportRecipes.json")
     blueprint_templates = names_for("/Lotus/Language/Items/BlueprintAndItem")
     for record in recipes.values():
-        names = item_names.get(record.get("resultType"))
+        result_id = record.get("resultType")
+        names = item_names.get(result_id)
         if names:
-            add("Blueprint", (template.replace("|ITEM|", name) if name and "|ITEM|" in template else ""
+            add("Blueprint", result_id, (template.replace("|ITEM|", name) if name and "|ITEM|" in template else ""
                               for template, name in zip(blueprint_templates, names)))
 
     relics = []
@@ -125,11 +130,18 @@ def build():
         source = de_export._load(de_export.CACHE / lang / f"ExportRelicArcane_{lang}.json")
         relics.append({r["uniqueName"]: r["name"] for r in source["ExportRelicArcane"] if "relicRewards" in r})
     for item_id in relics[0]:
-        add("Relic", (localized.get(item_id) for localized in relics))
+        add("Relic", item_id, (localized.get(item_id) for localized in relics))
 
     if len(rows) < 10_000:
         raise ValueError("dictionary source lost its name records")
-    return sorted(rows, key=lambda row: (row[1].casefold(), row))
+    # Links identify a source record and remain valid if its display name changes.
+    results = []
+    for row, key in sorted(rows.items(), key=lambda entry: (entry[0][1].casefold(), entry[0])):
+        identity = sha256(f"{row[0]}\0{key}".encode("utf-8")).hexdigest()[:16]
+        results.append((identity, *row))
+    if len({row[0] for row in results}) != len(results):
+        raise ValueError("duplicate dictionary entry id")
+    return results
 
 
 def main():

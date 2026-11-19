@@ -700,8 +700,9 @@ success. The website's name and notification helper is exercised too.
 ## `check_dictionary`
 
 The Dictionary loads the multilingual index on demand. Its browser check
-covers Chinese input composition, names pasted from chat, language switching,
-and a direct route served by either the dev server or the shipping build.
+covers Chinese input composition, names pasted from chat, all names grouped
+into entity cards, and share links opened in the recipient's page language.
+The check runs against the dev server or the shipping build.
 
 ## `check_world_fissures`
 

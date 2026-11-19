@@ -696,7 +696,8 @@ from [Public Export Plus](https://browse.wf/warframe-public-export-plus/).
 Each record identifies its name by a localization key shared across languages.
 Blueprints use the recipe's result id and the client's blueprint-name template.
 Relic names come from [DE's Public Export](https://origin.warframe.com/PublicExport/index_en.txt.lzma)
-and are joined by `uniqueName`. An unresolved localization is omitted.
+and are joined by `uniqueName`. An unresolved localization is omitted. Share
+links use a source-derived identifier for the entry.
 
 `python scripts/warframe_dictionary.py --fetch` refreshes the snapshot.
 Without `--fetch` it rebuilds from the local export files. The checked-in

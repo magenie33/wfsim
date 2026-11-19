@@ -410,21 +410,15 @@
     </section>
     <section id="utility-reminders" hidden></section>
     <section id="utility-dictionary" hidden>
-      <div class="dictionary-controls">
-        <div class="field">
-          <label for="dictionary-search" data-i18n>Warframe name or chat message</label>
-          <input id="dictionary-search" type="search" maxlength="500" placeholder="Search names or paste chat…" data-i18n-ph autocomplete="off" spellcheck="false" />
-        </div>
-        <div class="field">
-          <label for="dictionary-language" data-i18n>Translation language</label>
-          <select id="dictionary-language" disabled><option value="zh">简体中文</option></select>
-        </div>
+      <div class="field dictionary-search">
+        <label for="dictionary-search" data-i18n>Warframe name or chat message</label>
+        <input id="dictionary-search" type="search" maxlength="500" placeholder="Search names or paste chat…" data-i18n-ph autocomplete="off" spellcheck="false" />
       </div>
       <div class="dictionary-feedback">
         <span id="dictionary-status" role="status"></span>
         <button type="button" id="dictionary-retry" class="ghost-btn small" data-i18n hidden>Retry</button>
       </div>
-      <ul id="dictionary-results" class="bench-rows"></ul>
+      <ul id="dictionary-results"></ul>
       <button type="button" id="dictionary-more" class="ghost-btn small" data-i18n hidden>Show more</button>
     </section>
   </main>
