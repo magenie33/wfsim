@@ -8,6 +8,7 @@
 //! what a body has LEFT mid-fight is `fight::TargetState`.
 
 use crate::rules::damage::{DamageType, DamageVector};
+use crate::rules::math::ComponentMath;
 use crate::rules::scaling;
 
 /// WHAT A GUARDIAN EXIMUS'S AURA TAKES OFF.
@@ -246,7 +247,7 @@ impl TypeShares {
         let mut s = [0.0; DamageType::ALL.len()];
         if total > 0.0 {
             for t in DamageType::ALL {
-                s[t as usize] = v.get(t) / total;
+                s[t as usize] = v.get(t).component_ratio(total);
             }
         }
         TypeShares(s)

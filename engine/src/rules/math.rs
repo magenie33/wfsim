@@ -33,6 +33,58 @@ pub trait Portable {
     fn hypot_portable(self, y: f64) -> f64;
 }
 
+pub(super) trait LevelPower {
+    fn level_power(self, exponent: f64) -> f64;
+}
+
+pub(crate) trait ComponentMath {
+    fn component_ratio(self, scale: f64) -> f64;
+    fn plane_distance(self, y: f64) -> f64;
+}
+
+impl ComponentMath for f64 {
+    #[inline]
+    fn component_ratio(self, scale: f64) -> f64 {
+        // Damage packets are sparse. Division by a positive scale preserves either signed zero.
+        if self == 0.0 && scale > 0.0 { self } else { self / scale }
+    }
+
+    #[inline]
+    fn plane_distance(self, y: f64) -> f64 {
+        if self == 0.0 { return y.abs(); }
+        if y == 0.0 { return self.abs(); }
+        // On this grid both squares and their sum are exact binary64 values (at most 49 bits).
+        let (a, b) = (self * 4.0, y * 4.0);
+        if a.abs() <= 16_777_216.0 && b.abs() <= 16_777_216.0 && a == a.trunc() && b == b.trunc() {
+            return (self * self + y * y).sqrt();
+        }
+        libm::hypot(self, y)
+    }
+}
+
+impl LevelPower for f64 {
+    /// Level curves repeatedly ask for the same powers on every hit and status tick.
+    /// Both operands are keyed by bits; a collision only evicts a previous result.
+    #[inline]
+    fn level_power(self, exponent: f64) -> f64 {
+        use std::cell::Cell;
+        type Entry = (u64, u64, f64);
+        thread_local! {
+            static POWERS: [Cell<Entry>; 32] = const { [const { Cell::new((0, 0, 1.0)) }; 32] };
+        }
+        let (x, e) = (self.to_bits(), exponent.to_bits());
+        let hash = e ^ (e >> 32) ^ x.rotate_left(17);
+        let index = (hash.wrapping_mul(0x9e37_79b9_7f4a_7c15) >> 59) as usize;
+        POWERS.with(|table| {
+            let (a, b, value) = table[index].get();
+            if (a, b) == (x, e) { return value; }
+            let value = libm::pow(self, exponent);
+            table[index].set((x, e, value));
+            value
+        })
+    }
+}
+
 impl Portable for f64 {
     fn powf_portable(self, e: f64) -> f64 {
         libm::pow(self, e)
@@ -85,8 +137,40 @@ impl Portable for f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::Portable;
+    use super::{ComponentMath, LevelPower, Portable};
 
+    #[test]
+    fn grid_distances_match_libm_bits_including_boundaries_and_fallback() {
+        let values = [-4194304.25,-4194304.0,-0.25,-0.0,0.0,0.25,0.1,f64::from_bits(1),
+            4194303.75,4194304.0,4194304.25,f64::MAX,f64::INFINITY,f64::from_bits(0xfff8_0000_0000_0007)];
+        for x in values { for y in values { assert_eq!(x.plane_distance(y).to_bits(), libm::hypot(x,y).to_bits()); } }
+        for a in -80..80 { for b in -64..64 {
+            let (x,y) = (f64::from(a)/4.0,f64::from(b)/4.0);
+            assert_eq!(x.plane_distance(y).to_bits(),libm::hypot(x,y).to_bits());
+        } }
+    }
+
+    #[test]
+    fn sparse_component_division_preserves_signed_zeros_and_invalid_scales() {
+        let values = [0.0f64, -0.0, 1.0, -1.0, f64::from_bits(1), f64::MAX, f64::INFINITY, f64::NAN];
+        for x in values { for y in values {
+            let actual=x.component_ratio(y);let expected=x/y;
+            assert!(if expected.is_nan() { actual.is_nan() } else { actual.to_bits()==expected.to_bits() });
+        } }
+    }
+
+    #[test]
+    fn repeated_level_powers_are_the_same_bits_even_after_eviction() {
+        for _ in 0..2 {
+            for level in (0..=140).map(f64::from).chain([9998.0, -0.0, f64::INFINITY]) {
+                for exponent in [-1.0, 0.0, 0.5, 0.72, 0.75, 1.75, 2.0, 2.12] {
+                    for _ in 0..2 {
+                        assert_eq!(level.level_power(exponent).to_bits(), libm::pow(level, exponent).to_bits());
+                    }
+                }
+            }
+        }
+    }
     #[test]
     fn powi_is_repeated_squaring_and_agrees_with_std_where_std_is_exact() {
         for n in -6..=6 {

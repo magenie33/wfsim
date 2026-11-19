@@ -52,6 +52,18 @@ fn trace(mut req: Value, cached: bool) -> Vec<Value> {
 }
 
 #[test]
+fn parallel_native_finalists_match_one_worker_for_the_entire_report() {
+    let mut req = request();
+    req.as_object_mut().unwrap().remove("quick_fleet");
+    req["finalists"] = json!(4);
+    let serial = run(parse_optimize(&req).unwrap());
+    assert!(serial["jobs"].as_u64().unwrap() >= 4);
+    let mut parallel = parse_optimize(&req).unwrap();
+    parallel.threads = 4; // Keep the wire request inside each replay identical.
+    assert_eq!(run(parallel), serial);
+}
+
+#[test]
 fn prepared_fleet_matches_every_cold_batch_and_new_search() {
     let req = request();
     let cold = trace(req.clone(), false);
@@ -125,6 +137,27 @@ fn cache_is_bounded_and_never_keeps_failed_or_large_requests() {
     req["weapon"] = json!("unknown-weapon");
     assert!(parse_optimize(&req).is_err());
     assert!(LAST.with(|last| last.borrow().is_none()));
+}
+
+#[test]
+fn frozen_entrants_are_reused_only_for_the_same_fight() {
+    let mut req = request();
+    let first = parse_optimize(&req).unwrap();
+    let cache = first.replay.entrants.clone();
+    let pending = run(first)["pending"].clone();
+    req["quick_fleet"] = json!({"score":pending});
+    let expected = trace_output(run(parse_uncached(&req).unwrap()));
+    assert_eq!(trace_output(run(parse_optimize(&req).unwrap())), expected);
+    let entrant = cache.get().unwrap().lock().unwrap().values().flatten().next().unwrap().clone();
+    let second = parse_optimize(&req).unwrap();
+    assert!(std::sync::Arc::ptr_eq(&cache, &second.replay.entrants));
+    assert_eq!(trace_output(run(second)), expected);
+    assert!(cache.get().unwrap().lock().unwrap().values().flatten().any(|v| std::sync::Arc::ptr_eq(v, &entrant)));
+    req["headshot_pct"] = json!(25);
+    let changed = parse_optimize(&req).unwrap();
+    assert!(!std::sync::Arc::ptr_eq(&cache, &changed.replay.entrants));
+    assert!(changed.replay.entrants.get().unwrap().lock().unwrap().is_empty());
+    assert!(parse_uncached(&req).unwrap().replay.entrants.get().is_none());
 }
 
 #[test]

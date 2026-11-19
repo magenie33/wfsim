@@ -264,22 +264,9 @@ fn evaluate_proposals(
     cfg: &SearchConfig,
     state: Option<&FunnelState>,
 ) -> Vec<Evaluated> {
-    let threads = crate::worker_threads().min(batch.len().max(1));
-    let chunk = batch.len().div_ceil(threads).max(1);
-    let mut out: Vec<Vec<Evaluated>> = vec![Vec::new(); batch.len().div_ceil(chunk)];
-    std::thread::scope(|scope| {
-        for (part, slot) in batch.chunks(chunk).zip(out.iter_mut()) {
-            let scenario = scenario.clone();
-            scope.spawn(move || {
-                crate::deprioritize_current_thread();
-                *slot = part
-                    .iter()
-                    .map(|p| eval_one(p, expand, arcanes, &scenario, cfg, state))
-                    .collect();
-            });
-        }
-    });
-    out.into_iter().flatten().collect()
+    crate::descent::map_ordered(batch, crate::worker_threads(), |p| {
+        eval_one(p, expand, arcanes, scenario, cfg, state)
+    })
 }
 
 #[cfg(target_arch = "wasm32")]

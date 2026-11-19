@@ -7,12 +7,16 @@
 //! would be measuring a second fight under the first one's name —
 //! docs/BOARD.md §"Compute orders".
 
+use serde::Deserialize;
 use serde_json::{json, Value};
 use wfsim_engine::board::builds::ValidBuild;
+use wfsim_engine::fight::Shard;
 
 use crate::weapon_options::board_assembly_of;
 use crate::request::get_str;
 use crate::simulate::{riven_request, simulate_merged_json, simulate_request, PreparedSimulation};
+
+mod shard_value;
 
 fn ids(rec: &Value, key: &str) -> Vec<String> {
     rec.get(key)
@@ -212,7 +216,7 @@ pub fn owed_rows(record: &Value) -> Vec<(String, String)> {
 /// that would not parse.
 pub fn fold_runs(
     req: &Value,
-    acc: &mut wfsim_engine::fight::Shard,
+    acc: &mut Shard,
     from: u32,
     count: u32,
 ) -> Result<(), Value> {
@@ -222,8 +226,19 @@ pub fn fold_runs(
     }
     let prepared = PreparedSimulation::new(req)?;
     for k in range {
-        let piece = prepared.shard_json(k, 1);
-        match serde_json::from_value::<wfsim_engine::fight::Shard>(piece.clone()) {
+        merge_piece(acc, prepared.shard(k, 1, &mut |_, _| {})?)?;
+    }
+    Ok(())
+}
+
+fn merge_piece(acc: &mut Shard, shard: Shard) -> Result<(), Value> {
+    if shard_value::lossless(&shard) {
+        acc.merge(&shard);
+    } else {
+        // Preserve the old error payload (including nulls for non-finite fields).
+        let piece = serde_json::to_value(shard)
+            .map_err(|e| crate::request::err_json(format!("shard: {e}")))?;
+        match Shard::deserialize(&piece) {
             Ok(s) => acc.merge(&s),
             Err(_) => return Err(piece),
         }
@@ -301,7 +316,7 @@ pub fn board_runs_json(v: &Value) -> Value {
         };
         for k in range {
             let piece = prepared.shard_json(k, 1);
-            if serde_json::from_value::<wfsim_engine::fight::Shard>(piece.clone()).is_err() {
+            if Shard::deserialize(&piece).is_err() {
                 return piece;
             }
             shards.push(piece);
@@ -317,16 +332,16 @@ pub fn board_runs_json(v: &Value) -> Value {
 /// those instead of fighting: the same merges in the same order, so the same bits.
 pub fn board_fold_json(v: &Value) -> Value {
     let req = v.get("request").cloned().unwrap_or(Value::Null);
-    let mut acc: wfsim_engine::fight::Shard = match v.get("acc") {
+    let mut acc: Shard = match v.get("acc") {
         None | Some(Value::Null) => Default::default(),
-        Some(a) => match serde_json::from_value(a.clone()) {
+        Some(a) => match Shard::deserialize(a) {
             Ok(s) => s,
             Err(e) => return crate::request::err_json(format!("acc: {e}")),
         },
     };
     if let Some(pieces) = v.get("pieces").and_then(Value::as_array) {
         for p in pieces {
-            match serde_json::from_value::<wfsim_engine::fight::Shard>(p.clone()) {
+            match Shard::deserialize(p) {
                 Ok(s) => acc.merge(&s),
                 Err(e) => return crate::request::err_json(format!("piece: {e}")),
             }
@@ -352,7 +367,7 @@ pub fn board_score_json(v: &Value) -> Value {
     } else if let Some(bench)=bench_named(get_str(v,"ruler","")) { bench.metric() }
     else {return crate::request::err_json("unknown score metric");};
     let duration=req.get("duration").and_then(Value::as_f64).unwrap_or(300.0);
-    let acc: wfsim_engine::fight::Shard = match serde_json::from_value(v.get("acc").cloned().unwrap_or(Value::Null)) {
+    let acc = match Shard::deserialize(v.get("acc").unwrap_or(&Value::Null)) {
         Ok(s) => s,
         Err(e) => return crate::request::err_json(format!("acc: {e}")),
     };
@@ -367,4 +382,46 @@ pub fn board_score_json(v: &Value) -> Value {
     let mut counts = counts;
     counts.insert("gas".to_string(), json!(acc.gas));
     json!({ "ok": true, "score": metric.of(out.get(metric.field).and_then(Value::as_f64).unwrap_or(0.0),duration), "metric": metric.id, "work": acc.work(), "counts": counts })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn typed_fold_matches_the_legacy_fold_and_public_score() {
+        let request = json!({"weapon":"strun", "mods":["point_blank"], "duration":2.5,
+            "runs":5, "seed":382194, "metric":"dps", "run_series":true});
+        let pieces = board_runs_json(&json!({"request":request,"from":0,"count":5}));
+        assert_eq!(pieces["ok"], true, "{pieces}");
+        let mut legacy = Shard::default();
+        for piece in pieces["shards"].as_array().unwrap() {
+            let shard: Shard = serde_json::from_value(piece.clone()).unwrap();
+            assert!(shard_value::lossless(&shard), "ordinary runs must take the fast path");
+            legacy.merge(&shard);
+        }
+        let first = board_fold_json(&json!({"request":request,"from":0,"count":2}));
+        let first: Value = serde_json::from_str(&first.to_string()).unwrap();
+        let folded = board_fold_json(&json!({"request":request,"from":2,"count":3,"acc":first["acc"]}));
+        let expected = serde_json::to_string(&serde_json::to_value(&legacy).unwrap()).unwrap();
+        assert_eq!(folded["acc"].to_string(), expected);
+        let carried = board_fold_json(&json!({"request":request,"pieces":pieces["shards"]}));
+        assert_eq!(carried["acc"].to_string(), expected);
+        let score = |acc| board_score_json(&json!({"request":request,"acc":acc}));
+        let actual = score(folded["acc"].clone());
+        assert_eq!(actual["ok"], true, "{actual}");
+        assert_eq!(actual.to_string(), score(serde_json::to_value(&legacy).unwrap()).to_string());
+        assert_eq!(actual["work"].as_u64(), Some(legacy.work()));
+    }
+
+    #[test]
+    fn a_non_finite_shard_returns_the_original_failure_payload() {
+        // An empty shard contains the +/-infinity min/max sentinels.
+        let shard = Shard::default();
+        let expected = serde_json::to_value(&shard).unwrap();
+        assert!(serde_json::from_value::<Shard>(expected.clone()).is_err());
+        let mut acc = Shard::default();
+        assert_eq!(merge_piece(&mut acc, shard).unwrap_err(), expected);
+        assert_eq!(serde_json::to_value(acc).unwrap(), expected);
+    }
 }

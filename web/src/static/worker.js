@@ -91,6 +91,13 @@ onmessage = async (e) => {
           postMessage({ id: msg.id, kind: "progress", done, total }))
       : wasm_bindgen.api(msg.path, body);
     postMessage({ id: msg.id, payload: JSON.parse(out) });
+  } else if (msg.kind === "verify_final") {
+    const receipt = wasm_bindgen.verify_final(msg.generation, msg.index, msg.replay, (done) =>
+      postMessage({ kind: "progress", payload: { sims_done: done } }));
+    postMessage({ kind: "result", payload: { ok: !!receipt, receipt } });
+  } else if (msg.kind === "finish_finals") {
+    const out = wasm_bindgen.finish_finals(msg.generation, JSON.stringify(msg.receipts));
+    postMessage({ kind: "result", payload: JSON.parse(out) });
   } else if (msg.kind === "rest") {
     // Cooperative rests and zero-time warmup do not enter the engine.
     setTimeout(() => postMessage({ id: msg.id, kind: "rested", payload: { ok: true } }), Math.max(0, Math.min(30000, msg.ms || 0)));

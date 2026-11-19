@@ -205,68 +205,64 @@ impl<S: QuickSpace> Run<'_, S> {
             || self.cfg.stop.iter().any(|s| s.load(Ordering::Relaxed))
     }
 
-    /// Scores for `bs`, evaluating only builds not seen before. `None` = the
-    /// budget ran out first.
-    fn score(&mut self, bs: &[S::Build]) -> Option<Vec<Score>> {
-        let keys: Vec<String> = bs.iter().map(|b| self.space.key(b)).collect();
-        let mut fresh: Vec<usize> = Vec::new();
-        for (i, k) in keys.iter().enumerate() {
-            if !self.cache.contains_key(k) && !fresh.iter().any(|&j| keys[j] == *k) {
-                fresh.push(i);
-            }
-        }
+    /// `best` retains the first legal representative of each key, in input order.
+    fn score(&mut self, alts: &[(String, S::Build)]) -> Option<Vec<Score>> {
+        let fresh: Vec<_> = alts.iter().filter(|(k, _)| !self.cache.contains_key(k)).collect();
         if !fresh.is_empty() {
             if self.out_of_budget() {
                 return None;
             }
-            let batch: Vec<S::Build> = fresh.iter().map(|&i| bs[i].clone()).collect();
+            let batch: Vec<_> = fresh.iter().map(|(_, b)| b.clone()).collect();
             let got = self.space.score(&batch);
             if self.space.pending() {
                 return None;
             }
             self.stats.evals += batch.len() as u64;
-            for (&i, s) in fresh.iter().zip(got) {
-                self.cache.insert(keys[i].clone(), s);
+            for ((k, _), s) in fresh.into_iter().zip(got) {
+                self.cache.insert(k.clone(), s);
             }
         }
-        Some(keys.iter().map(|k| self.cache[k]).collect())
+        Some(alts.iter().map(|(k, _)| self.cache[k]).collect())
+    }
+
+    fn score_one(&mut self, b: &S::Build) -> Option<Score> {
+        let key = self.space.key(b);
+        if let Some(&s) = self.cache.get(&key) { return Some(s); }
+        self.score(&[(key, b.clone())])?.pop()
     }
 
     /// `alts` less what the screen drops: of the candidates with no full score
     /// yet, the best `keep_ratio` by a short measurement go on. `None` = the
     /// budget ran out first.
-    fn screened(&mut self, alts: Vec<S::Build>) -> Option<Vec<S::Build>> {
-        let keys: Vec<String> = alts.iter().map(|b| self.space.key(b)).collect();
-        let mut fresh: Vec<usize> = Vec::new();
-        for (i, k) in keys.iter().enumerate() {
-            if !self.cache.contains_key(k) && !fresh.iter().any(|&j| keys[j] == *k) {
-                fresh.push(i);
-            }
-        }
+    fn screened(&mut self, alts: Vec<(String, S::Build)>) -> Option<Vec<(String, S::Build)>> {
+        let fresh: Vec<_> = alts.iter().enumerate().filter_map(|(i, (key, _))| (!self.cache.contains_key(key)).then_some(i)).collect();
         if fresh.len() < 2 {
             return Some(alts);
         }
-        let unseen: Vec<usize> = fresh.iter().copied().filter(|&i| !self.rough.contains_key(&keys[i])).collect();
+        let unseen: Vec<_> = fresh.iter().copied().filter(|&i| !self.rough.contains_key(&alts[i].0)).collect();
         if !unseen.is_empty() {
             if self.out_of_budget() {
                 return None;
             }
-            let batch: Vec<S::Build> = unseen.iter().map(|&i| alts[i].clone()).collect();
+            let batch: Vec<_> = unseen.iter().map(|&i| alts[i].1.clone()).collect();
             let Some(got) = self.space.screen(&batch) else { return Some(alts) };
             if self.space.pending() {
                 return None;
             }
             for (&i, s) in unseen.iter().zip(got) {
-                self.rough.insert(keys[i].clone(), s);
+                self.rough.insert(alts[i].0.clone(), s);
             }
         }
-        let mut ranked = fresh.clone();
-        let head = self.rough[&keys[fresh[0]]];
-        self.screen_tied = fresh.iter().all(|&i| one_build(self.rough[&keys[i]], head));
-        rank_ties(&mut ranked, |&i| self.rough[&keys[i]], |&a, &b| self.space.prefer(&alts[a], &alts[b]).then(a.cmp(&b)));
-        let keep = ((self.space.keep_ratio() * fresh.len() as f64).ceil() as usize).clamp(1, fresh.len());
-        let dropped: std::collections::HashSet<&String> = ranked[keep..].iter().map(|&i| &keys[i]).collect();
-        Some(alts.iter().zip(&keys).filter(|(_, k)| !dropped.contains(k)).map(|(b, _)| b.clone()).collect())
+        let mut ranked = fresh;
+        let score = |&i: &usize| self.rough[&alts[i].0];
+        let head = score(&ranked[0]);
+        self.screen_tied = ranked.iter().all(|i| one_build(score(i), head));
+        let keep = ((self.space.keep_ratio() * ranked.len() as f64).ceil() as usize).clamp(1, ranked.len());
+        if keep == ranked.len() { return Some(alts); }
+        rank_ties(&mut ranked, score, |&a, &b| self.space.prefer(&alts[a].1, &alts[b].1).then(a.cmp(&b)));
+        let mut dropped = vec![false; alts.len()];
+        for &i in &ranked[keep..] { dropped[i] = true; }
+        Some(alts.into_iter().zip(dropped).filter_map(|(b, d)| (!d).then_some(b)).collect())
     }
 
     /// The best LEGAL candidate of `alts` at `p`, and whether every candidate
@@ -279,7 +275,7 @@ impl<S: QuickSpace> Run<'_, S> {
     fn best(&mut self, alts: Vec<S::Build>, p: Position) -> Option<Option<(S::Build, Score, bool)>> {
         let free: Vec<Position> = self.free.iter().copied().filter(|q| *q != p).collect();
         let mut keys = std::collections::HashSet::new();
-        let mut fit: Vec<S::Build> = Vec::new();
+        let mut fit = Vec::new();
         for b in alts {
             let b = if self.space.legal(&b) {
                 b
@@ -289,29 +285,28 @@ impl<S: QuickSpace> Run<'_, S> {
                     _ => continue,
                 }
             };
-            if keys.insert(self.space.key(&b)) {
-                fit.push(b);
+            let key = self.space.key(&b);
+            if keys.insert(key.clone()) {
+                fit.push((key, b));
             }
         }
         if fit.is_empty() {
             return Some(None);
         }
         self.screen_tied = true;
+        let many = fit.len() > 1;
+        drop(keys);
         let alts = self.screened(fit)?;
         let scores = self.score(&alts)?;
-        if self.sweeping {
-            for b in &alts {
-                self.seen.entry(self.space.key(b)).or_insert_with(|| b.clone());
-            }
-        }
         let mut best: Option<(S::Build, Score)> = None;
-        for (b, s) in alts.iter().zip(&scores) {
-            if best.as_ref().is_none_or(|(x, xs)| self.wins(b, *s, x, *xs)) {
-                best = Some((b.clone(), *s));
+        for ((key, b), &s) in alts.into_iter().zip(&scores) {
+            if self.sweeping { self.seen.entry(key).or_insert_with(|| b.clone()); }
+            if best.as_ref().is_none_or(|(x, xs)| self.wins(&b, s, x, *xs)) {
+                best = Some((b, s));
             }
         }
         // EVERY CANDIDATE AS ONE, the screen's dropped ones included.
-        let tied = keys.len() > 1
+        let tied = many
             && self.screen_tied
             && best.as_ref().is_some_and(|(_, bs)| scores.iter().all(|s| one_build(*s, *bs)));
         Some(best.map(|(b, s)| (b, s, tied)))
@@ -364,10 +359,10 @@ impl<S: QuickSpace> Run<'_, S> {
                 if !self.space.legal(&cur) {
                     true
                 } else {
-                    let Some(now) = self.score(std::slice::from_ref(&cur)) else {
+                    let Some(now) = self.score_one(&cur) else {
                         return Ok((cur, None, None, moves, true));
                     };
-                    self.wins(&b, s, &cur, now[0])
+                    self.wins(&b, s, &cur, now)
                 }
             };
             if take {
@@ -379,16 +374,16 @@ impl<S: QuickSpace> Run<'_, S> {
         if !self.space.legal(&cur) {
             return Err("the start itself does not fit, and nothing it can be filled with does");
         }
-        let Some(s) = self.score(std::slice::from_ref(&cur)) else {
+        let Some(from) = self.score_one(&cur) else {
             return Ok((cur, None, None, moves, true));
         };
-        let from = s[0];
         let mut cur_score = from;
         self.sweeping = true;
-        self.seen.entry(self.space.key(&cur)).or_insert_with(|| cur.clone());
+        let key = self.space.key(&cur);
+        self.seen.entry(key.clone()).or_insert_with(|| cur.clone());
         // A TIE MOVES ONLY TOWARD THE PREFERRED, but "as one" is a tolerance
         // and not an order, so a build the sweep has stood on is never a move.
-        let mut visited = std::collections::HashSet::from([self.space.key(&cur)]);
+        let mut visited = std::collections::HashSet::from([key]);
         'sweep: loop {
             let positions: Vec<Position> =
                 self.space.positions(&cur).into_iter().filter(|p| !fixed(p)).collect();
@@ -420,7 +415,7 @@ impl<S: QuickSpace> Run<'_, S> {
                 self.now.at = positions.len();
                 let mut pairs: Vec<S::Build> = Vec::new();
                 let mut keys = std::collections::HashSet::new();
-                for (i, &p) in coupled.iter().enumerate() {
+                for (i, &p) in coupled[..coupled.len() - 1].iter().enumerate() {
                     for c in self.space.candidates(&cur, p) {
                         for &q in &coupled[i + 1..] {
                             for d in self.space.candidates(&c, q) {
@@ -598,6 +593,38 @@ fn best_first(a: Score, b: Score) -> std::cmp::Ordering {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn repaired_batch_keeps_first_order_and_reuses_its_keys_for_both_measurements() {
+        use std::sync::{atomic::AtomicUsize, Mutex};
+        #[derive(Default)]
+        struct Batch { keys: AtomicUsize, short: Mutex<Vec<Vec<u8>>>, full: Mutex<Vec<Vec<u8>>> }
+        fn scores(bs: &[u8]) -> Vec<Score> { bs.iter().map(|&b| Some((f64::from(b), 0.0))).collect() }
+        impl QuickSpace for Batch {
+            type Build = u8;
+            fn positions(&self, _: &u8) -> Vec<Position> { vec![] }
+            fn empty(&self, _: &u8) -> Vec<Position> { vec![] }
+            fn candidates(&self, _: &u8, _: Position) -> Vec<u8> { unreachable!() }
+            fn legal(&self, b: &u8) -> bool { *b < 7 }
+            fn repair(&self, b: &u8, _: &[Position]) -> Option<u8> { Some(if *b == 9 { 2 } else { 6 }) }
+            fn key(&self, b: &u8) -> String { self.keys.fetch_add(1, Ordering::Relaxed); b.to_string() }
+            fn screen(&self, bs: &[u8]) -> Option<Vec<Score>> { self.short.lock().unwrap().push(bs.to_vec()); Some(scores(bs)) }
+            fn score(&self, bs: &[u8]) -> Vec<Score> { self.full.lock().unwrap().push(bs.to_vec()); scores(bs) }
+            fn keep_ratio(&self) -> f64 { 0.4 }
+        }
+        let space = Batch::default();
+        let cfg = QuickConfig { max_evals: 0, stop: vec![] };
+        let mut run = Run { space: &space, cfg: &cfg, cache: HashMap::new(), rough: HashMap::new(), seen: HashMap::new(),
+            sweeping: true, stats: QuickStats::default(), now: StartProgress::default(), free: vec![], screen_tied: true };
+        for step in 1..=2 {
+            let found = run.best(vec![9, 2, 4, 2, 3, 1, 7], Position {kind:"test", idx:0}).unwrap().unwrap();
+            assert_eq!(found, (6, Some((6.0, 0.0)), false));
+            assert_eq!(space.keys.load(Ordering::Relaxed), 7 * step);
+        }
+        assert_eq!(*space.short.lock().unwrap(), [vec![2,4,3,1,6]]);
+        assert_eq!(*space.full.lock().unwrap(), [vec![4,6], vec![2,3]]);
+        assert_eq!(run.stats.evals, 4);
+    }
 
     /// A toy: three slots, each takes a digit 0–9; the score is the digits'
     /// sum, except that 9 in slot 0 is illegal. The descent must reach 8+9+9,

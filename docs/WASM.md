@@ -346,9 +346,12 @@ into steps the PAGE drives (`woptQuickFleet`):
 2. The page splits the batch across all workers, the leader included:
    `quick_fleet: { score: [...] }` → each build's score and the element order
    it scored best at.
-3. The scores go back to the leader. When no start pauses, the leader
-   simulates the contenders — the final round is the simulator's — and
-   answers with the ordinary result.
+3. Once no start pauses, each finalist is measured by the simulator. A
+   multi-worker fleet sends whole replays to free workers; a single worker
+   or a single finalist runs directly. The leader retains the original rows,
+   rejects missing, duplicate or stale measurements, and ranks in screen order
+   on ties. Replays and score receipts travel as opaque JSON strings, preserving
+   the run order, floating-point sums and integer work of the serial result.
 
 Worker creation, dispatch and scheduling failures settle the search as an error
 and clear all pending calls and watchdogs. Rest calls use the same failure

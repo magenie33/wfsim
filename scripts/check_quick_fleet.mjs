@@ -125,6 +125,38 @@ async function checkSignals() {
   assert.equal(runInContext("woptStatus().workers_active", sandbox), 0);
   assert.equal(runInContext("woptStatus().phase", sandbox), "error");
 
+  const finals = runInContext("wopt = quickFleet({strategy:'quick'}, 2)", sandbox);
+  await drain();
+  const [leader, other] = workers.slice(-2);
+  leader.emit({kind:"result", payload:{ok:true, verify:["a","b","c"], generation:7, runs:1000}});
+  await drain();
+  assert.deepEqual(messages.filter(m => m.kind === "verify_final").map(m => m.index), [0, 1]);
+  other.emit({kind:"progress", payload:{sims_done:500}});
+  assert.equal(finals.status.sims_done, 500);
+  other.emit({kind:"result", payload:{ok:true,receipt:"second"}});
+  await drain();
+  assert.equal(finals.status.sims_done, 1000);
+  assert.equal(messages.at(-1).index, 2);
+  other.emit({kind:"result", payload:{ok:true,receipt:"third"}});
+  leader.emit({kind:"result", payload:{ok:true,receipt:"first"}});
+  await drain();
+  assert.equal(finals.status.sims_done, 3000);
+  assert.equal(messages.at(-1).kind, "finish_finals");
+  assert.equal(messages.at(-1).receipts.join(","), "first,second,third");
+  leader.emit({kind:"result", payload:{ok:true,final_work:99,results:[]}});
+  await drain();
+  assert.equal(finals.result.work, 99);
+
+  const failedFinal = runInContext("wopt = quickFleet({strategy:'quick'}, 2)", sandbox);
+  await drain();
+  const [firstFinal, badFinal] = workers.slice(-2);
+  firstFinal.emit({kind:"result", payload:{ok:true, verify:["a","b"], generation:8, runs:2}});
+  await drain();
+  badFinal.emit({kind:"result", payload:{ok:true}});
+  await drain();
+  assert.match(failedFinal.result.error, /Missing finalist measurement/);
+  assert.equal(failedFinal.workers.length, 0);
+
   const posted = [];
   let arriving, beat;
   const wasm = Object.assign(async () => {}, { set_heartbeat: (f) => { beat = f; } });

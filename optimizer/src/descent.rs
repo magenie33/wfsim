@@ -508,7 +508,14 @@ fn eval_point(
 
 #[cfg(not(target_arch = "wasm32"))]
 fn par_map<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Vec<R> {
-    let threads = crate::worker_threads().min(items.len()).max(1);
+    map_ordered(items, crate::worker_threads(), f)
+}
+
+/// Independent whole jobs, returned in input order under this request's worker budget.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn map_ordered<T: Sync, R: Send>(items: &[T], threads: usize, f: impl Fn(&T) -> R + Sync) -> Vec<R> {
+    let threads = crate::threads::resolve_threads(threads).min(items.len()).max(1);
+    if threads == 1 { return items.iter().map(f).collect(); }
     let chunk = items.len().div_ceil(threads).max(1);
     let mut parts: Vec<Vec<R>> = Vec::new();
     std::thread::scope(|scope| {

@@ -97,6 +97,17 @@ const r = await evaluate(`(async () => {
   // enough to be caught mid-flight on purpose — a timing race against an
   // 800 ms scan proves nothing on a fast machine.
   gainPool = [lanes[0]];
+  const realLaneSimulate = laneSimulate;
+  let release = () => {};
+  const holdSecondCandidate = () => {
+    let calls = 0, resume;
+    const gate = new Promise(r => { resume = r; });
+    laneSimulate = async (...args) => {
+      if (++calls === 2) await gate;
+      return realLaneSimulate(...args);
+    };
+    release = () => { resume(); laneSimulate = realLaneSimulate; };
+  };
   try {
     // A RICH build, because that is what makes a scan slow enough to interrupt
     // — and slow is the case that matters. An empty build's fight is over in
@@ -112,6 +123,9 @@ const r = await evaluate(`(async () => {
     const axis = { kind: 'mods', idx: 0 };
     out.modAxisTotal = gainScan.total;
 
+    // The identical fight just finished; change an actual input to exercise cancellation on cold work.
+    sim.level = 899;
+    holdSecondCandidate();
     const p1 = scanGains(axis, () => {});          // measuring fight A
     for (let i = 0; i < 400 && !(gainScan.running && gainScan.done > 0); i++) await sleep(25);
     out.caughtMidScan = gainScan.running && gainScan.done > 0;
@@ -131,6 +145,7 @@ const r = await evaluate(`(async () => {
     out.stillRunningAtCut = gainScan.running;
     const t0 = Date.now();
     const p2 = scanGains(axis, () => {});          // ...and B takes over at once
+    release();
     out.supersedeMs = Date.now() - t0;
     out.supersededKey = gainScan.want !== staleWant;
     await Promise.all([p1, p2]);
@@ -143,6 +158,8 @@ const r = await evaluate(`(async () => {
     // list, or a refresh reaching both — and if the newest request always won
     // they would cancel each other forever and neither would ever finish. Only
     // a stale FIGHT supersedes; a different axis waits its turn.
+    sim.level = 901;
+    holdSecondCandidate();
     const p3 = scanGains({ kind: 'mods', idx: 0 }, () => {});
     for (let i = 0; i < 400 && !(gainScan.running && gainScan.done > 0); i++) await sleep(25);
     const heldAxis = JSON.stringify(gainScan.axis);
@@ -150,8 +167,10 @@ const r = await evaluate(`(async () => {
     await sleep(50);
     out.axisHeld = JSON.stringify(gainScan.axis) === heldAxis && gainScan.running === true;
     out.heldAxis = heldAxis;
+    release();
     await p3;
   } finally {
+    release();
     gainPool = lanes;
   }
   await settle();

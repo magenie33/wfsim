@@ -253,9 +253,7 @@ pub fn riven_json(v: &Value) -> Value {
             })
         })
         .collect();
-    let open = wfsim_engine::build::rivens::unconfirmed_for(&info.id);
-    let unconfirmed: Vec<&str> = spec.bonuses.iter().chain(spec.malus.iter())
-        .map(|s| s.id.as_str()).filter(|id| open.contains(id)).collect();
+    let (illegal, unconfirmed) = spec.legality_and_unconfirmed_for(&info.id);
     json!({
         "ok": true,
         "class": class,
@@ -264,7 +262,7 @@ pub fn riven_json(v: &Value) -> Value {
         "stats": stats,
         // Every reason at once, so the UI can point at the knob that is wrong
         // instead of only refusing.
-        "illegal": spec.illegal_for(&info.id),
+        "illegal": illegal,
         // Stats on this card no evidence settles either way — legal, and said so.
         "unconfirmed": unconfirmed,
     })

@@ -19,6 +19,8 @@ import data_packs
 ROOT = Path(__file__).resolve().parent.parent
 TRAIN = ROOT / "tests/fixtures/simulation-cost.json"
 HOLDOUT = ROOT / "tests/gas/rows.json"
+WINDOWS_X64 = "x86_64-pc-windows-msvc"
+V3 = "x86-64-v3"
 
 
 def write(path: Path, value) -> None:
@@ -50,10 +52,34 @@ def host() -> str:
     return next(line.split(": ", 1)[1] for line in version.splitlines() if line.startswith("host: "))
 
 
-def flags(target: str, *pgo: str) -> list[str]:
+def target_features(target: str, cpu: str) -> set[str]:
+    cfg = subprocess.check_output(["rustc", "--print", "cfg", "--target", target, f"-Ctarget-cpu={cpu}"],
+                                  text=True, encoding="utf-8")
+    return {json.loads(line.removeprefix("target_feature=")) for line in cfg.splitlines()
+            if line.startswith("target_feature=")}
+
+
+def windows_v3(target: str) -> dict:
+    if target != WINDOWS_X64 or sys.platform != "win32" or C.sizeof(C.c_void_p) != 8:
+        raise ValueError("--windows-v3 requires Windows x64 Python and the native x86_64-pc-windows-msvc toolchain")
+    # Ask this compiler both what v3 emits and what it can use on this host.
+    required = target_features(target, V3)
+    if not {"avx2", "bmi2", "fma", "xsave"}.issubset(required):
+        raise ValueError("rustc did not report the expected x86-64-v3 target features")
+    missing = required - target_features(target, "native")
+    if missing:
+        raise ValueError(f"--windows-v3 cannot train on this host; missing CPU/OS features: {', '.join(sorted(missing))}")
+    return {"target_cpu": V3, "lto": "thin", "codegen_units": 1,
+            "compatibility": "Windows x64 CPUs and OS support for x86-64-v3 only",
+            "required_target_features": sorted(required)}
+
+
+def flags(target: str, *pgo: str, target_cpu: str | None = None) -> list[str]:
     base = ["-Cstrip=none"] if "apple-darwin" in target else []
     if "windows-msvc" in target:
         base = ["-Ctarget-feature=+crt-static"]
+    if target_cpu:
+        base.append(f"-Ctarget-cpu={target_cpu}")
     return [*base, *pgo]
 
 
@@ -160,8 +186,9 @@ def source_hash() -> str:
 
 
 def build(args) -> None:
-    target = args.target or host()
-    if target != host():
+    host_target = host()
+    target = args.target or host_target
+    if target != host_target:
         raise ValueError("PGO requires execution on the target host; cross-compilation cannot train it")
     if os.environ.get("WFSIM_GAS_OFF") is not None:
         raise ValueError("PGO builds retain gas metering; unset WFSIM_GAS_OFF")
@@ -169,6 +196,7 @@ def build(args) -> None:
                   (k in ("RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS") or k.startswith("CARGO_TARGET_") and k.endswith("_RUSTFLAGS"))]
     if rust_flags:
         raise ValueError(f"unset inherited compiler flags before the PGO build: {', '.join(rust_flags)}")
+    tuning = windows_v3(target) if args.windows_v3 else None
     args.work_dir.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="run-", dir=args.work_dir)).resolve()
     profile = work / "profile"
@@ -180,18 +208,21 @@ def build(args) -> None:
     if not profdata.is_file():
         raise ValueError("install matching LLVM tools: rustup component add llvm-tools-preview")
     env = data_packs.build_env()
+    cargo_profile = ({} if tuning is None else
+                     {"CARGO_PROFILE_RELEASE_LTO": tuning["lto"],
+                      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": str(tuning["codegen_units"])})
     artifacts, packs, build_flags = {}, {}, {}
 
     def compiled(stage: str, *pgo: str) -> None:
         if source_hash() != frozen:
             raise ValueError("source changed during PGO compilation")
         target_dir = work / stage
-        build_flags[stage] = flags(target, *pgo)
+        build_flags[stage] = flags(target, *pgo, target_cpu=tuning["target_cpu"] if tuning else None)
         print(f"native PGO: build {stage} ({target})", flush=True)
         command = ["cargo", "build", "--release", "--locked", "-p", "wfsim-native", "--target", target,
                    "--message-format=json-render-diagnostics"]
         with (work / f"build-{stage}.jsonl").open("w", encoding="utf-8") as log:
-            subprocess.run(command, cwd=ROOT, env={**env, "CARGO_TARGET_DIR": str(target_dir),
+            subprocess.run(command, cwd=ROOT, env={**env, **cargo_profile, "CARGO_TARGET_DIR": str(target_dir),
                                                  "CARGO_ENCODED_RUSTFLAGS": "\x1f".join(build_flags[stage])}, stdout=log, check=True)
         reports = [json.loads(line) for line in (work / f"build-{stage}.jsonl").read_text(encoding="utf-8").splitlines()]
         pack = next(Path(r["out_dir"]) / "packs/data.json" for r in reports
@@ -236,6 +267,8 @@ def build(args) -> None:
                "verified_api_cases": len(expected["api"]), "verified_rows": len(expected["rows"]),
                "baseline_sha256": sha(artifacts["baseline"]), "pgo_sha256": sha(artifacts["pgo"]),
                "selected_sha256": sha(artifacts[chosen]), "artifacts": str(work)}
+    if tuning:
+        receipt["build_tuning"] = tuning
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_bytes(artifacts[chosen].read_bytes())
     verification = args.output.with_suffix(".verify.json")
@@ -250,6 +283,8 @@ def main() -> None:
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("build")
     p.add_argument("--target")
+    p.add_argument("--windows-v3", action="store_true",
+                   help="opt in to x86-64-v3, ThinLTO and one CGU in all stages (compatible Windows x64 CPUs only)")
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--work-dir", type=Path, default=ROOT / "target/native-pgo")
     p = sub.add_parser("exercise")

@@ -110,29 +110,41 @@ pub fn evaluate_batch(
     _on_board: Option<&RoundBoardFn<'_>>,
     _by_kills: bool,
 ) -> Vec<Option<Summary>> {
-    let threads = worker_threads();
-    let chunk = jobs.len().div_ceil(threads).max(1);
+    evaluate_batch_native(cands, jobs, scenario, runs, seed, state, worker_threads())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn evaluate_batch_native(
+    cands: &[Candidate],
+    jobs: &[Job],
+    scenario: &Scenario,
+    runs: u32,
+    seed: u64,
+    state: Option<&FunnelState>,
+    threads: usize,
+) -> Vec<Option<Summary>> {
     let mut results: Vec<Option<Summary>> = vec![None; jobs.len()];
+    let evaluate_chunk = |ids: &[Job], res: &mut [Option<Summary>]| {
+        for (&(ci, ai), slot) in ids.iter().zip(res) {
+            if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
+                break;
+            }
+            *slot = Some(evaluate(&cands[ci], ai, scenario, runs, job_seed(seed, ci, ai)));
+            if let Some(st) = state {
+                st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
+            }
+        }
+    };
+    let chunk = jobs.len().div_ceil(threads).max(1);
+    if chunk >= jobs.len() {
+        evaluate_chunk(jobs, &mut results);
+        return results;
+    }
     std::thread::scope(|scope| {
         for (ids, res) in jobs.chunks(chunk).zip(results.chunks_mut(chunk)) {
-            let scenario = scenario.clone();
             scope.spawn(move || {
                 deprioritize_current_thread();
-                for (k, &(ci, ai)) in ids.iter().enumerate() {
-                    if state.is_some_and(|st| st.cancel.load(Ordering::Relaxed)) {
-                        return;
-                    }
-                    res[k] = Some(evaluate(
-                        &cands[ci],
-                        ai,
-                        &scenario,
-                        runs,
-                        job_seed(seed, ci, ai),
-                    ));
-                    if let Some(st) = state {
-                        st.sims_done.fetch_add(runs as u64, Ordering::Relaxed);
-                    }
-                }
+                evaluate_chunk(ids, res);
             });
         }
     });
@@ -250,5 +262,48 @@ mod tests {
         let (ranking, measured) = evaluate_onto(&candidate, 0, &scenario, 2, 0xBEEF_CAFE, None);
         assert_eq!(ranking, RankingStats::default());
         assert!(measured.is_none());
+    }
+
+    #[test]
+    #[cfg(not(target_arch = "wasm32"))]
+    fn the_native_inline_batch_keeps_order_streams_and_work() {
+        let (candidate, scenario) = fixture();
+        let cands = [candidate];
+        let jobs = [(0, 3), (0, 0), (0, 2), (0, 1)];
+        let runs = 4;
+        let seed = 0xBEEF_CAFE;
+        let state = FunnelState::default();
+        let inline = evaluate_batch_native(&cands, &jobs, &scenario, runs, seed, Some(&state), 1);
+        let parallel = evaluate_batch_native(&cands, &jobs, &scenario, runs, seed, None, 3);
+        assert_eq!(state.sims_done.load(Ordering::Relaxed), u64::from(runs) * jobs.len() as u64);
+        assert_eq!(inline.len(), jobs.len());
+        for ((a, b), (ci, ai)) in inline.into_iter().zip(parallel).zip(jobs) {
+            let expected = evaluate(&cands[ci], ai, &scenario, runs, job_seed(seed, ci, ai));
+            for got in [a.unwrap(), b.unwrap()] {
+                assert_eq!(got.runs, expected.runs);
+                assert_eq!(got.work, expected.work);
+                assert_eq!(got.mean_kill_progress.to_bits(), expected.mean_kill_progress.to_bits());
+                assert_eq!(got.mean_effective_damage.to_bits(), expected.mean_effective_damage.to_bits());
+            }
+        }
+    }
+
+    #[test]
+    #[cfg(not(target_arch = "wasm32"))]
+    fn the_inline_worker_observes_cancellation_between_jobs() {
+        let (candidate, mut scenario) = fixture();
+        let params = scenario.params.clone();
+        let state = std::sync::Arc::new(FunnelState::default());
+        let observed = state.clone();
+        let caller = std::thread::current().id();
+        scenario.params = std::sync::Arc::new(move |c, ai| {
+            assert_eq!(std::thread::current().id(), caller);
+            observed.cancel.store(true, Ordering::Relaxed);
+            params(c, ai)
+        });
+        let result = evaluate_batch_native(&[candidate], &[(0, 0), (0, 1)], &scenario, 2, 7, Some(&state), 1);
+        assert!(result[0].is_some());
+        assert!(result[1].is_none());
+        assert_eq!(state.sims_done.load(Ordering::Relaxed), 2);
     }
 }

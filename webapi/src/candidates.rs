@@ -15,6 +15,8 @@
 //! Capacity is not asked here: the quick calc never does, and the optimizer
 //! checks it as a separate step.
 
+use std::collections::{HashMap, HashSet};
+
 use serde_json::{json, Map, Value};
 use wfsim_engine::model::ModDef;
 
@@ -49,6 +51,11 @@ fn card_of(id: &str) -> &str {
         Some((c, r)) if !id.starts_with("riven") && r.bytes().all(|b| b.is_ascii_digit()) => c,
         _ => id,
     }
+}
+
+fn mod_family<'a>(id: &'a str, families: &HashMap<&str, Option<&'static str>>) -> &'a str {
+    let card = card_of(id);
+    families.get(card).copied().flatten().unwrap_or(card)
 }
 
 fn parse(v: &Value) -> Result<Build<'_>, Value> {
@@ -122,52 +129,47 @@ fn mods(b: &Build, idx: usize) -> Vec<Value> {
     let no = forbidden(&forbids, &b.evo);
     let mut every: Vec<ModDef> = wfsim_engine::data::mods::pool_for_weapon(&b.info.id);
     every.extend(crate::rivens::rivens_from(b.req, b.info));
-    let pool: Vec<&ModDef> = every.iter().filter(|m| !no.iter().any(|n| n == m.id)).collect();
-    // A card is its own family, so one card at two ranks is refused too.
-    let fam = |id: &str| -> String {
-        let card = card_of(id);
-        every
-            .iter()
-            .find(|m| m.id == card)
-            .and_then(|m| m.family)
-            .unwrap_or(card)
-            .to_string()
-    };
-    let cur: Vec<Option<String>> = b.slots.clone();
+    let mut families = HashMap::with_capacity(every.len());
+    for m in &every {
+        // Preserve the first pool entry, including one without a family.
+        families.entry(m.id).or_insert(m.family);
+    }
+    let cur = &b.slots;
+    let (before, after) = cur.split_at(idx);
+    let prefix: Vec<_> = before.iter().flatten().map(String::as_str).collect();
+    let suffix: Vec<_> = after[1..].iter().flatten().map(String::as_str).collect();
+    let mut held = HashSet::new();
+    let compatible = prefix.iter().chain(&suffix).all(|id| held.insert(mod_family(id, &families)));
+    let fixed = wfsim_engine::data::weapons::spec(&b.info.id).and_then(|s| s.fixed_stance.as_deref());
+    let every_rank: HashSet<_> = b.every_mods.iter().map(String::as_str).collect();
     let mut out = Vec::new();
-    for m in &pool {
-        if m.stance.is_some() != (idx == STANCE) { continue; }
-        if idx == STANCE && wfsim_engine::data::weapons::spec(&b.info.id)
-            .and_then(|s| s.fixed_stance.as_deref()).is_some_and(|id| id != m.id) { continue; }
-        // The card at max rank, then each lower rank the every-rank list asks for.
-        let mut ids = vec![m.id.to_string()];
-        if b.every_mods.iter().any(|e| e == m.id) {
-            ids.extend((0..m.max_rank).map(|r| format!("{}@{}", m.id, r)));
-        }
-        for id in ids {
-            if cur.iter().any(|c| c.as_deref() == Some(id.as_str())) {
+    if compatible {
+        for m in &every {
+            if no.iter().any(|n| n == m.id)
+                || m.stance.is_some() != (idx == STANCE)
+                || idx == STANCE && fixed.is_some_and(|id| id != m.id)
+                || idx == EXILUS && !m.exilus
+            {
                 continue;
             }
-            if idx == EXILUS && !m.exilus {
-                continue;
+            // Use the same resolver for each emitted id, including custom ids.
+            let mut emit = |id: &str| {
+                if cur.iter().any(|c| c.as_deref() == Some(id)) || held.contains(mod_family(id, &families)) {
+                    return;
+                }
+                let list: Vec<_> = prefix.iter().copied().chain([id]).chain(suffix.iter().copied()).collect();
+                out.push(json!({ "id": id, "payload": { "mods": list } }));
+            };
+            emit(m.id);
+            if every_rank.contains(m.id) {
+                for rank in 0..m.max_rank {
+                    emit(&format!("{}@{rank}", m.id));
+                }
             }
-            let mut next = cur.clone();
-            next[idx] = Some(id.clone());
-            let list: Vec<String> = next.into_iter().flatten().collect();
-            let mut fams: Vec<String> = list.iter().map(|x| fam(x)).collect();
-            let n = fams.len();
-            fams.sort();
-            fams.dedup();
-            if fams.len() != n {
-                continue;
-            }
-            out.push(json!({ "id": id, "payload": { "mods": list } }));
         }
     }
-    if idx == STANCE && cur.get(STANCE).is_some_and(Option::is_some)
-        && wfsim_engine::data::weapons::spec(&b.info.id).is_none_or(|s| s.fixed_stance.is_none()) {
-        let list: Vec<_> = cur.iter().enumerate().filter(|(i, _)| *i != STANCE).filter_map(|(_, m)| m.as_ref()).collect();
-        out.push(json!({"id":"none", "payload":{"mods":list}}));
+    if idx == STANCE && cur[STANCE].is_some() && fixed.is_none() {
+        out.push(json!({"id":"none", "payload":{"mods":prefix}}));
     }
     out
 }
@@ -310,3 +312,7 @@ pub fn candidates_json(v: &Value) -> Value {
     };
     json!({ "ok": true, "candidates": list })
 }
+
+#[cfg(test)]
+#[path = "candidates_tests.rs"]
+mod tests;

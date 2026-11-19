@@ -39,7 +39,12 @@ still resolve to the *same* combined-element damage vector (e.g.
 swapping the two members of a single combining pair: Cold,Elec vs
 Elec,Cold → the same Magnetic pool). Run the pure elemental-combination
 layer (pipeline [2]) on each candidate — it is trivially cheap — and
-dedup on the **resolved post-[2] vector** before any Monte Carlo.
+dedup on the **resolved post-[2] vector** before any Monte Carlo. For plain
+single-primary cards with a supported fixed tail, unordered pairs yield the
+same damage slot and retain the first DFS representative. The common four
+primary case needs three primary panels for 24 logical orders. A pinned
+layout, a multi-element card or an unsupported effect still resolves every
+reachable order. Similar simulated scores are not a proof for this shortcut.
 
 Position-sensitivity notes:
 
@@ -735,6 +740,12 @@ the first build and its dispatch position.
 The browser stops a search if a worker returns an incomplete score batch or
 if the leader requests an empty or identical consecutive batch.
 
+Final verification distributes whole contenders across the available workers,
+using the same simulator, seed and run count for each replay. The screen's
+order breaks a tie after kill progress and DPS. Every verified contender counts
+toward work, including those below the displayed finalists or retained only
+as the answer from a start.
+
 A leader waiting for scores returns its pending batch and start progress.
 Result identities, the merged pool and contender reports are constructed
 once no scores are pending; every start still advances to its next missing
@@ -748,7 +759,8 @@ comparisons read those same definitions and compare sorted name references.
 Each worker retains at most one parsed quick-fleet request and its immutable
 weapon bases. Its key is the entire input except the fleet's traffic payload;
 a different input replaces it. Large scopes and failed parses are not retained.
-Every invocation owns its entrant preparation and encountered-build stream.
+Each invocation owns its encountered-build stream. Up to eight immutable
+entrant preparations can be reused across batches of the same retained plan.
 The retained plan supplies no scores, random state or simulation runs, and a
 fresh search still performs its ordinary measured work.
 

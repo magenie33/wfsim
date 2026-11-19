@@ -333,6 +333,64 @@ pub struct Shard {
     pub(super) body_shots: u64,
 }
 
+mod search_carry {
+    use super::{SeatCounters, Shard, MAX_COMBATANTS};
+    use serde_json::Value;
+
+    // The public shard wire remains dense. Only a negotiated search lane sends this representation.
+    impl Shard {
+        pub fn pack_search(mut self) -> String {
+            let widths = [self.by_body.len(), self.by_combatant.len()];
+            for v in [&mut self.by_body, &mut self.by_combatant] {
+                v.truncate(v.iter().rposition(|n| n.to_bits() != 0).map_or(0, |i| i + 1));
+            }
+            let seats = self.seat_counters.iter().rposition(|s| *s != SeatCounters::default()).map_or(0, |i| i + 1);
+            let mut data = serde_json::to_value(self).expect("measured shard");
+            data["seat_counters"].as_array_mut().expect("shard seats").truncate(seats);
+            serde_json::to_string(&(1u8, widths, data)).expect("search receipt")
+        }
+
+        pub fn unpack_search(raw: &str) -> Option<Self> {
+            let (version, widths, mut data): (u8, [usize; 2], Value) = serde_json::from_str(raw).ok()?;
+            if version != 1 || widths[0] > crate::formation::MAX_BODIES + 1 || widths[1] > MAX_COMBATANTS { return None; }
+            let seats = data.get_mut("seat_counters")?.as_array_mut()?;
+            if seats.len() > MAX_COMBATANTS { return None; }
+            seats.resize(MAX_COMBATANTS, serde_json::to_value(SeatCounters::default()).ok()?);
+            let mut shard: Self = serde_json::from_value(data).ok()?;
+            for (v, width) in [&mut shard.by_body, &mut shard.by_combatant].into_iter().zip(widths) {
+                if v.len() > width { return None; }
+                v.resize(width, 0.0);
+            }
+            Some(shard)
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use serde_json::json;
+
+        #[test]
+        fn receipt_restores_every_bit_and_bounds_all_expansion() {
+            let mut s = Shard { runs: 2, min: 0.0, max: 1.0, gas: (1u64 << 54) + 1, ..Default::default() };
+            s.by_body[17] = -0.0;
+            s.by_combatant[2] = 7.5;
+            s.seat_counters[3].finishes = 1;
+            let dense = serde_json::to_string(&s).unwrap();
+            let packed = s.pack_search();
+            assert!(packed.len() < dense.len());
+            let restored = Shard::unpack_search(&packed).unwrap();
+            assert_eq!(restored.by_body[17].to_bits(), (-0.0_f64).to_bits());
+            assert_eq!(serde_json::to_string(&restored).unwrap(), dense);
+            let v: Value = serde_json::from_str(&packed).unwrap();
+            for (field, bad) in [(0,json!(2)),(1,json!([999999999,8])),(1,json!([1,3])),(1,json!([18,99]))] {
+                let mut v = v.clone(); v[field] = bad;
+                assert!(Shard::unpack_search(&v.to_string()).is_none());
+            }
+        }
+    }
+}
+
 impl Default for Shard {
     fn default() -> Self {
         Self {
