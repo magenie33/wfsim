@@ -35,10 +35,12 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
  const deterministic=error=>error instanceof BoardRankQualificationError||['ENOENT','ENOTDIR','ELOOP','53100','53200','53400','54000'].includes(error.code);
  const ensurePartition=async()=>sql.begin(async tx=>{
   await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
-  const [part]=await tx.unsafe(`SELECT p.* FROM state_board_read_partitions p WHERE (p.enabled OR(NOT p.canonical_sources AND p.revision IS NULL))
+  const [part]=await tx.unsafe(`SELECT p.* FROM state_board_read_partitions p WHERE (p.enabled OR($1::boolean AND NOT p.canonical_sources AND p.revision IS NULL))
    AND NOT EXISTS(SELECT 1 FROM state_board_rank_partitions r WHERE r.weapon=p.weapon AND r.ruler=p.ruler)
    AND NOT EXISTS(SELECT 1 FROM state_board_rank_route_inputs i WHERE i.scope='partition' AND i.key='["'||p.weapon||'","'||p.ruler||'"]')
-   ORDER BY p.weapon,p.ruler LIMIT 1`);
+   AND (p.enabled OR NOT EXISTS(SELECT FROM state_board_input_mailbox m WHERE m.scope='partition'
+    AND m.key='["'||p.weapon||'","'||p.ruler||'"]' AND NOT m.removed))
+   ORDER BY p.weapon,p.ruler LIMIT 1`,[requestedPartitions]);
   if(!part)return;
   const key=JSON.stringify([part.weapon,part.ruler]);
   const [{version}]=await tx.unsafe('SELECT board_input_put($1,$2,$3) version', ['partition',key,JSON.stringify({weapon:part.weapon,ruler:part.ruler,indexed:true,...(!part.enabled?{qualify_requested:true}:{})})]);
@@ -89,7 +91,7 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
  };
  const baseline=async()=>{
   const [part]=await sql.unsafe(`SELECT * FROM state_board_rank_partitions WHERE NOT complete AND(NOT seeded OR NOT reconciled)
-   AND source=$1 AND native=$2 AND available_at<=board_input_timestamp(clock_timestamp()) ORDER BY revision,weapon,ruler LIMIT 1`,[source,native.adapter]);
+   AND source=$1 AND native=$2 AND available_at<=board_input_timestamp(clock_timestamp()) ORDER BY available_at,revision,weapon,ruler LIMIT 1`,[source,native.adapter]);
   if(!part)return null;
   try{
    if(!part.seeded){

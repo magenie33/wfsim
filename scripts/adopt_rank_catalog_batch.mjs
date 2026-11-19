@@ -12,6 +12,7 @@ import {boardStorage} from './board_storage.mjs';
 import {scanCatalogPage,startCatalogScan} from './board_rank_catalog_scan.mjs';
 import {openInventoryOperator} from './inventory_operator.mjs';
 import {initializeJournal,jsonFile,openProtectedSets,planBatch} from './board_catalog_batch_state.mjs';
+import {preparePriority,priorityStep} from './board_catalog_priority.mjs';
 import {batchStep,closeBatch} from './board_catalog_batch_step.mjs';
 import {sampleCapacity} from './board_catalog_batch_capacity.mjs';
 import {connectFileOwner} from './board_catalog_file_owner.mjs';
@@ -40,13 +41,16 @@ function catalogFile(root,path){
 }
 
 export async function runBatch(config,action,{available,observe=()=>{},pageBudget=8}={}){
- assert(['plan','step','run','status'].includes(action)&&Number.isInteger(pageBudget)&&pageBudget>0&&pageBudget<=32,'invalid batch action');
- const state=directory(config.state,action==='status'),path=catalogFile(state,join(state,'adoption.sqlite'));
- if(action!=='plan')assert(existsSync(path),'plan the complete catalog first');
- const journal=new DatabaseSync(path,{readOnly:action==='status'});
+ const priority=['priority-run','priority-step','priority-status'].includes(action),status=action==='status'||action==='priority-status';
+ assert((priority||['plan','step','run','status'].includes(action))&&Number.isInteger(pageBudget)&&pageBudget>0&&pageBudget<=32,'invalid batch action');
+ const state=directory(config.state,status),path=catalogFile(state,join(state,priority?'priority.sqlite':'adoption.sqlite'));
+ if(!priority&&action!=='plan')assert(existsSync(path),'plan the complete catalog first');
+ const journal=new DatabaseSync(path,{readOnly:status});
  const opened=[],openRO=p=>{const db=new DatabaseSync(p,ro);opened.push(db);return db;};
  let native,sql,monitor,lock,sets,files,sampler,ongoing,capacityError;
  try{
+  if(action==='priority-status')return {scopes:journal.prepare('SELECT phase,count(*) n FROM priority_work GROUP BY phase').all(),
+   held:journal.prepare("SELECT weapon,ruler,reason,due FROM priority_work WHERE phase='held' ORDER BY due LIMIT 32").all()};
   if(action==='status')return {run:journal.prepare('SELECT closed FROM run WHERE id=1').get()||null,
    scopes:journal.prepare('SELECT phase,count(*) n FROM scopes GROUP BY phase ORDER BY phase').all(),
    storage:journal.prepare('SELECT * FROM high_water WHERE id=1').get()||null};
@@ -63,8 +67,8 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
   const spec=read('spec'),cut=read('replay'),epoch=ledger.prepare('SELECT v FROM epoch WHERE id=1').get()?.v;
   assert(spec&&cut?.snapshot&&JSON.stringify([spec.source,spec.cluster,spec.native,spec.archive,cut.snapshot,cut.captured_at])===epoch,
    'real coherent cut and matching qualification ledger required');
-  const final=jsonFile(config.coverage).final,budget=jsonFile(config.budget);
-  assert(final?.eligible&&final.scopes===final.qualified&&final.missing===0&&final.held===0&&final.orphans===0,
+  const budget=jsonFile(config.budget),final=priority?{scopes:budget.scope_count}:jsonFile(config.coverage).final;
+  if(!priority)assert(final?.eligible&&final.scopes===final.qualified&&final.missing===0&&final.held===0&&final.orphans===0,
    'historical qualification is incomplete');
   const contract={source:spec.source,native:spec.native,archive:spec.archive,cluster:String(spec.cluster),epoch,
    snapshot:cut.snapshot,at:cut.captured_at,floor:String(read('floor')??read('start')?.version),scopes:final.scopes,
@@ -72,7 +76,8 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
    pins:[...(final.current_pins?[final.current_pins.sha256]:[]),...(final.additional_heads||[]).map(p=>p.pins)].sort()};
   const previous=journal.prepare('SELECT contract,closed FROM run WHERE id=1').get();
   if(previous)assert.equal(previous.contract,JSON.stringify(contract),'batch recovery boundary changed');
-  if(action!=='plan')assert(previous,'no prepared catalog');
+  if(priority)preparePriority(journal,contract);
+  if(!priority&&action!=='plan')assert(previous,'no prepared catalog');
   if(previous?.closed&&action!=='plan')return {status:'closed'};
   assert(process.env.PG_URL,'PG_URL is required');
   const {default:postgres}=await import('./pg/node_modules/postgres/src/index.js');
@@ -89,8 +94,12 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
   assert(actor?.owner,'another catalog adoption driver is active');
   native=await openInventoryOperator(config.native);assert.equal(native.adapter,contract.native,'Native digest changed');
   const scenes=new Map(native.contract.rulers.map(r=>[r.id,r.scene]));
-  for(const p of config.pins){catalogFile(stage,p.members);catalogFile(stage,p.proof);}
-  sets=openProtectedSets(config,final,native.adapter);
+  for(const p of priority?[]:config.pins){catalogFile(stage,p.members);catalogFile(stage,p.proof);}
+  if(priority){
+   const local=archive.prepare('SELECT archive,native FROM contract JOIN sealed USING(id,archive)').get();
+   const [pin]=await sql.unsafe('SELECT archive FROM state_board_public_import WHERE id=1');
+   assert(local?.archive===contract.archive&&local.native===native.adapter&&pin?.archive===contract.archive,'first public inventory changed');
+  }else sets=openProtectedSets(config,final,native.adapter);
   const inventory=()=>jsonFile(config.reservations);
   const checkCapacity=async()=>{
    if(capacityError)throw capacityError;
@@ -105,7 +114,7 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
    const verified=await readerCut(work,{action:'verify',name:basename(dirname(p.path)),sha256:p.cut,bytes:Number(p.bytes)});
    assert.equal(verified.path,p.path);
   }};
-  const ctx={journal,capture,archive,ledger,sets,contract,scenes,native,work,sql,origins,budget,inventory,pageBudget,files:owned,
+  const ctx={state,target,journal,capture,archive,ledger,sets,contract,scenes,native,work,sql,origins,budget,inventory,pageBudget,files:owned,
    capacity:checkCapacity,
    emit:async(weapon,ruler)=>{
     for(const file of ['inputs.partial','inputs.ndjson'])catalogFile(target,join(target,file));
@@ -121,20 +130,21 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
   }
   await ctx.capacity();
   sampler=setInterval(()=>{if(!capacityError)checkCapacity().catch(e=>{capacityError=e;});},1000);
-  let scan=await startCatalogScan(sql,contract),result;
+  let scan=await startCatalogScan(sql,contract,{resumeClosed:priority}),result;
   do{
    await ctx.capacity();
    if(!scan.complete){scan=await scanCatalogPage(sql,contract.source);result={status:'scanning',scope:scan.last_scope,key:scan.last_key};}
    else{
-    result=await batchStep(ctx);
+    result=priority?await priorityStep(ctx):await batchStep(ctx);
     if(result.status==='covered'){
      assert(coverage(capture,archive,ledger,null,{readOnly:true}).eligible,'historical coverage changed before closeout');
      result=await closeBatch(ctx);
     }
    }
    await ctx.capacity();observe(result);
-   if(action==='step'||result.status==='closed')return result;
-   if(result.status.startsWith('awaiting-'))await pause(3000);
+   if(action==='step'||action==='priority-step'||result.status==='closed')return result;
+   if(priority&&['idle','deferred','awaiting-reader'].includes(result.status))await pause(250);
+   else if(result.status.startsWith('awaiting-'))await pause(3000);
   }while(true);
  }finally{
   clearInterval(sampler);if(ongoing)await ongoing.catch(()=>{});
@@ -147,7 +157,7 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
 }
 
 if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
- const [action,file]=process.argv.slice(2);assert(file,'usage: adopt_rank_catalog_batch.mjs plan|run|step|status CONFIG.json');
- const result=await runBatch(jsonFile(file),action,{observe:r=>{if(action==='run'&&r.status!=='closed')console.log(JSON.stringify(r));}});
+ const [action,file]=process.argv.slice(2);assert(file,'usage: adopt_rank_catalog_batch.mjs ACTION CONFIG.json');
+ const result=await runBatch(jsonFile(file),action,{observe:r=>{if(action.endsWith('run')&&!['closed','idle','deferred','awaiting-reader'].includes(r.status))console.log(JSON.stringify(r));}});
  console.log(JSON.stringify(result));
 }

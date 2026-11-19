@@ -11,9 +11,13 @@ import {rankFilePage,syncRankDirectory} from './board_rank_files.mjs';
 import {createRankPartition,prepareRankSources,applyRankSources,BoardRankQualificationError} from './board_rank_index.mjs';
 
 
-export async function captureRankBaseline(sql,{weapon,ruler,source,native,work,signal,mailboxFloor}) {
- work=boardStorage(work);
+export async function captureRankBaseline(sql,options) {
+ const work=boardStorage(options.work);
  const directory=join(work,'rank-cut-'+randomUUID());await mkdir(directory,{mode:0o750});
+ return captureRankBaselineAt(sql,{...options,work},directory);
+}
+
+export async function captureRankBaselineAt(sql,{weapon,ruler,source,native,work,signal,mailboxFloor},directory) {
  const path=join(directory,'inputs.ndjson'),file=await open(path,'wx'),checksum=createHash('sha256');
  let bytes=0,total=0,facts=0;
  const append=async row=>{
@@ -116,8 +120,8 @@ export async function applyRankBaselinePage(sql,part,page) {
   const updated=await applyRankSources(tx,part,page.prepared,{cursor:page.offset,loaded:page.loaded});
   if(page.done){
    if(page.loaded!==Number(part.total)||page.offset!==Number(part.bytes))throw new BoardRankQualificationError('baseline source coverage is incomplete');
-   await tx.unsafe('UPDATE state_board_rank_partitions SET seeded=true WHERE weapon=$1 AND ruler=$2',[part.weapon,part.ruler]);
   }
+  await tx.unsafe('UPDATE state_board_rank_partitions SET seeded=$3,available_at=board_input_timestamp(clock_timestamp()) WHERE weapon=$1 AND ruler=$2',[part.weapon,part.ruler,page.done]);
   return {...updated,seeded:page.done};
  });
 }

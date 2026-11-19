@@ -2,13 +2,13 @@
 import {DatabaseSync} from 'node:sqlite';
 import {pathToFileURL} from 'node:url';
 
-export async function startCatalogScan(sql,{source,floor,epoch}){
+export async function startCatalogScan(sql,{source,floor,epoch},{resumeClosed=false}={}){
  if(!epoch||!/^(0|[1-9][0-9]*)$/.test(String(floor)))throw Error('invalid drained mailbox floor');
  return sql.begin(async tx=>{
   await tx.unsafe('SELECT board_rank_source_lock($1)',[source]);
   await tx.unsafe('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[source+'/catalog-scan']);
   const [prior]=await tx.unsafe('SELECT * FROM state_board_rank_catalog_scan WHERE id=1');
-  if(prior?.closed&&prior.source===source&&prior.epoch===epoch&&String(prior.floor)===String(floor))return prior;
+  if(!resumeClosed&&prior?.closed&&prior.source===source&&prior.epoch===epoch&&String(prior.floor)===String(floor))return prior;
   if(prior&&!prior.closed){
    if(prior.source!==source||prior.epoch!==epoch||String(prior.floor)!==String(floor))throw Error('catalog mailbox boundary changed');
    const [trigger]=await tx.unsafe("SELECT 1 FROM pg_trigger WHERE tgrelid='state_board_input_mailbox'::regclass AND tgname='board_rank_catalog_input' AND tgenabled IN('O','A')");

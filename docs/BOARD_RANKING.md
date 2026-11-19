@@ -177,6 +177,27 @@ Each weapon and ruler commits independently. The first import pins the inventory
 for recovery. Repeating the command fills only missing selections. A verified
 native revision or an explicit withdrawal takes precedence over the import.
 
+### Publishing queued scopes
+
+The storage owner installs the SQL emitted by `board_catalog_priority_schema.mjs`.
+Run `scripts/run_rank_catalog_batch.py priority-run CONFIG` alongside the indexed
+reader, using the batch configuration and its existing service accounts.
+`priority-step` runs one scheduling step. `priority-status` reports outstanding
+work, including the affected keys, retry times and reasons for held scopes.
+Use one catalog controller at a time. The priority controller also services the
+historical backlog and keeps change capture active after that backlog drains.
+
+The controller reads verified arrivals, explicit requests, changes since the cut
+and historical scope receipts. Recent arrivals and older queued work receive
+separate turns and admission capacity. A verified change updates a pending
+scope's latest arrival while retaining its first arrival and request position.
+A retained scope uses its qualified input. For a genuinely new scope the
+controller takes a repeatable-read capture and qualifies its current rows with
+the same Native publisher. Both paths reconcile subsequent changes, including
+acknowledged mailbox inputs, before selecting the complete revision. A held
+scope keeps its published rows and its retry record. Once the native index
+is active, new results continue through its per-identity update queue.
+
 ### Registering a qualified catalog scope
 
 Apply the SQL emitted by `node scripts/board_rank_catalog_schema.mjs` as

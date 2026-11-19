@@ -90,7 +90,7 @@ export async function reconcileRankBaseline(tx,{weapon,ruler,source}) {
  }
  const [locked]=await tx.unsafe('SELECT reconcile_cursor FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 FOR UPDATE',[weapon,ruler]);
  if(locked.reconcile_cursor!==part.reconcile_cursor)throw new BoardRankConflict('baseline reconciliation advanced');
- await tx.unsafe('UPDATE state_board_rank_partitions SET reconcile_cursor=$3,reconciled=$4 WHERE weapon=$1 AND ruler=$2',
+ await tx.unsafe('UPDATE state_board_rank_partitions SET reconcile_cursor=$3,reconciled=$4,available_at=board_input_timestamp(clock_timestamp()) WHERE weapon=$1 AND ruler=$2',
   [weapon,ruler,ids.at(-1)?.identity||part.reconcile_cursor,ids.length<64]);
 }
 

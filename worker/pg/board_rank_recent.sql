@@ -18,9 +18,11 @@ CREATE TABLE state_board_rank_new_scopes (
  weapon text COLLATE "C" NOT NULL,
  ruler text COLLATE "C" NOT NULL,
  queued_at text COLLATE "C" NOT NULL DEFAULT board_input_timestamp(clock_timestamp()),
+ last_measured_at text COLLATE "C",
  PRIMARY KEY(weapon,ruler)
 );
 CREATE INDEX board_rank_new_scopes_ready ON state_board_rank_new_scopes(queued_at,weapon,ruler);
+CREATE INDEX board_rank_new_scopes_latest ON state_board_rank_new_scopes(coalesce(last_measured_at,queued_at),weapon,ruler);
 CREATE TABLE state_board_rank_scope_discovery (
  id integer PRIMARY KEY CHECK(id=1),
  source uuid NOT NULL,
@@ -28,11 +30,11 @@ CREATE TABLE state_board_rank_scope_discovery (
  archive text COLLATE "C" NOT NULL CHECK(archive~'^[0-9a-f]{64}$')
 );
 
-CREATE FUNCTION board_rank_capture_recent_measurement() RETURNS trigger
+CREATE OR REPLACE FUNCTION board_rank_capture_recent_measurement() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE parts jsonb:=NEW.key::jsonb; target record;
 BEGIN
- SELECT b.weapon,p.complete,r.weapon IS NOT NULL AS registered,r.enabled,r.canonical_sources,r.revision
+ SELECT b.weapon,p.complete,r.enabled,r.canonical_sources,r.revision
  INTO target FROM entity_weapon_builds b
  LEFT JOIN state_board_rank_partitions p ON p.weapon=b.weapon AND p.ruler=parts->>1
  LEFT JOIN state_board_read_partitions r ON r.weapon=b.weapon AND r.ruler=parts->>1
@@ -41,8 +43,9 @@ BEGIN
  IF target.complete AND target.enabled AND target.canonical_sources AND target.revision IS NOT NULL THEN
   INSERT INTO state_board_rank_recent_inputs(weapon,ruler,identity) VALUES(target.weapon,parts->>1,parts->>0)
    ON CONFLICT DO NOTHING;
- ELSIF NOT target.registered AND NOT NEW.removed AND jsonb_typeof(NEW.body->'score')='number' AND NEW.body->>'retired_at' IS NULL THEN
-  INSERT INTO state_board_rank_new_scopes(weapon,ruler) VALUES(target.weapon,parts->>1) ON CONFLICT DO NOTHING;
+ ELSIF NOT NEW.removed AND jsonb_typeof(NEW.body->'score')='number' AND NEW.body->>'retired_at' IS NULL THEN
+  INSERT INTO state_board_rank_new_scopes(weapon,ruler,last_measured_at) VALUES(target.weapon,parts->>1,board_input_timestamp(clock_timestamp()))
+   ON CONFLICT(weapon,ruler) DO UPDATE SET last_measured_at=greatest(state_board_rank_new_scopes.last_measured_at,excluded.last_measured_at);
  END IF;
  RETURN NULL;
 END $$;

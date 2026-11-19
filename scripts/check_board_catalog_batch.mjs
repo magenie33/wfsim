@@ -14,7 +14,7 @@ import {batchFixture} from './check_catalog_batch_fixture.mjs';
 import {runBatch} from './adopt_rank_catalog_batch.mjs';
 import {captureSelected} from './board_catalog_readback.mjs';
 
-export async function checkBatch({sql,schema,native,binary,work,weapon,ruler,source,inputs,read,until,put}){
+export async function checkBatch({sql,schema,native,binary,work,weapon,ruler,source,inputs,read,until,put,priority=false,step:readerStep,restart}){
  const second='standard_multi_target',url=new URL(process.env.WFSIM_BOARD_RANK_TEST_URL);
  url.searchParams.set('search_path',schema);process.env.PG_URL=url.href;
  await requestCatalogFixture(sql,native,weapon,ruler,source);
@@ -58,6 +58,10 @@ export async function checkBatch({sql,schema,native,binary,work,weapon,ruler,sou
  const journal=fn=>{const db=new DatabaseSync(join(config.state,'adoption.sqlite'));try{return fn(db);}finally{db.close();}};
  try{
   config.origins=await Promise.all([launch(0),launch(1)]);
+  if(priority){
+   const {checkPriority}=await import('./check_board_catalog_priority.mjs');
+   return await checkPriority({sql,schema,config,action,weapon,ruler,second,source,inputs,step:readerStep,restart,put});
+  }
   const proof=new DatabaseSync(config.pins[0].proof);
   const first=proof.prepare('SELECT * FROM live_audit WHERE ordinal=1').get();
   proof.prepare("UPDATE live_audit SET id='unknown' WHERE ordinal=1").run();

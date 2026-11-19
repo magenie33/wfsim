@@ -43,10 +43,15 @@ BEGIN
   RETURN jsonb_build_object('existing',false,'weapon',target.weapon,'ruler',target.ruler);
 END $$;
 
-CREATE FUNCTION board_requested_partition_selected(text,text,boolean) RETURNS jsonb
+CREATE OR REPLACE FUNCTION board_requested_partition_selected(text,text,boolean) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE part state_board_read_partitions%ROWTYPE;
 BEGIN
+  IF to_regclass('state_board_public_import') IS NOT NULL THEN
+    IF EXISTS(SELECT FROM state_board_public_import WHERE id=1) THEN
+      RAISE EXCEPTION 'public catalog requires a qualified first publication';
+    END IF;
+  END IF;
   IF NOT EXISTS(SELECT 1 FROM state_board_request_control WHERE id=1 AND enabled) THEN
     RAISE EXCEPTION 'requested partition preparation is paused';END IF;
   IF NOT EXISTS(SELECT 1 FROM state_board_requested_partitions WHERE weapon=$1 AND ruler=$2 AND enqueued) THEN

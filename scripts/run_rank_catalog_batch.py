@@ -66,7 +66,7 @@ def serve_files(link, node, helper, work, state, controller, reader, env):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("plan", "step", "run", "status"))
+    parser.add_argument("action", choices=("plan", "step", "run", "status", "priority-step", "priority-run", "priority-status"))
     parser.add_argument("config", type=Path)
     args = parser.parse_args()
     if os.geteuid() != 0:

@@ -31,7 +31,7 @@ const records=Array.from({length:90},(_,i)=>({...base,mods:['serration@'+i%10,'v
 const described=await native.call('describe',records.map((record,i)=>({id:'fixture-'+i,record})));
 const inputs=records.map((record,i)=>({identity:described[i].candidate,record,facts:described[i].modes.map(mode=>({identity:described[i].candidate,ruler,mode,
  score:100+i,metric:'kpm',measured_by:'verified:'+engine,finished_at:'2026-11-16T00:00:01.123Z',retired_at:null,review_id:i===80?'review-before-registration':null}))}));
-const context={work,source,engine,native:native.adapter},open=()=>openBoardRankFlow({sql:flowSql,...context,binary,nativeSha:native.adapter,requestedPartitions:true});
+const context={work,source,engine,native:native.adapter},open=(requestedPartitions=true)=>openBoardRankFlow({sql:flowSql,...context,binary,nativeSha:native.adapter,requestedPartitions});
 let flow,reader,flowSql,releaseCapture,captureReady;
 const captureGate=new Promise(resolve=>{releaseCapture=resolve;}),captured=new Promise(resolve=>{captureReady=resolve;});
 let primaryCaptures=0;
@@ -92,10 +92,11 @@ try{
  await sql.unsafe(`INSERT INTO board_facts SELECT x.* FROM jsonb_to_recordset(($1::text)::jsonb)x(identity text,ruler text,mode text,score float8,metric text,measured_by text,finished_at text,retired_at text,review_id text)`,[JSON.stringify(inputs.flatMap(row=>row.facts))]);
  await sql.unsafe(`SELECT board_input_seed('build',id,jsonb_build_object('identity',id,'weapon',weapon)::text) FROM entity_weapon_builds`);
  await sql.unsafe(`SELECT board_input_seed('measurement',jsonb_build_array(identity,ruler,mode)::text,jsonb_build_object('identity',identity,'ruler',ruler,'mode',mode)::text) FROM board_facts`);
- if(process.argv.includes('--catalog-batch')){
+ if(process.argv.includes('--catalog-batch')||process.argv.includes('--catalog-priority')){
   flowSql=reader;flow=await open();
   const {checkBatch}=await import('./check_board_catalog_batch.mjs');
-  await checkBatch({sql,schema,native,binary,work,weapon,ruler,source,inputs,read,until,put});
+  await checkBatch({sql,schema,native,binary,work,weapon,ruler,source,inputs,read,until,put,
+   priority:process.argv.includes('--catalog-priority'),step:()=>flow.step(),restart:async()=>{await flow.close();flow=await open(false);}});
  }else if(process.argv.includes('--catalog')){
   flowSql=reader;flow=await open();
   await checkCatalogHandoff({sql,native,work,weapon,ruler,source,inputs,late,read,put,until,restart:async()=>{await flow.close();flow=await open();}});
