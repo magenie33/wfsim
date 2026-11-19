@@ -94,6 +94,45 @@ The operator validates Native selection and complete page coverage, then hands
 the cut to the reserved reader. The reader retains its normal per-key change
 routing, reconciliation and atomic publication.
 
+### A shared cut for the complete catalog
+
+The immutable archive identifies the members to reconcile. A consistent copy
+of `board.meta.json` and its `board/` files includes every listed scene, its
+leader index and its weapon shards. `board_catalog_archive.mjs inventory ROOT`
+produces the inventory. Pin the archive digest returned by the importer and
+the Native executable digest for this cut. The `import ROOT INVENTORY ARCHIVE_DB NATIVE` action checks
+each file against the inventory, decodes build IDs with Native and checkpoints
+each batch. An index partition without members prevents sealing.
+
+On the guarded Data volume, `stage_rank_catalog.py STAGE scan --archive SHA
+--native SHA` walks the selection primary key in bounded pages. Each SQLite
+transaction saves its cursor, shared build records, effective facts and
+dependency versions. `catchup` drains a new producer fence, records changed
+identities in paged transactions and reloads the affected records. It resumes
+using the saved mailbox cursor and outstanding identities. `replay` closes
+the remaining changes under one time-limited repeatable-read snapshot. A
+closing timeout leaves the last committed cut available. Another catchup can
+reduce the work in that window.
+
+`qualify_rank_catalog.mjs CAPTURE_DB ARCHIVE_DB SCOPE_DB NATIVE WEAPON RULER`
+resumes Native ranking from the shared cut. A descriptor is reusable under
+the same Native and source-record hashes. The scope database records the
+destination of each archived row and SHA-256 hashes of the ranked pages.
+A retained fact under a retired ruler is counted separately. Only a selected,
+succeeded review with matching identity, mode, engine and completion time can
+account for a replaced score. An unaccounted historical identity holds its scope.
+
+`rank_catalog_coverage.mjs CAPTURE_DB ARCHIVE_DB LEDGER_DB SCOPE_DB` records
+one scope receipt. Omitting the last argument reconciles the union of archive
+partitions and measured partitions against those receipts. Missing scopes,
+orphan facts and unresolved members hold the complete catalog. An eligible
+scope can emit the existing input format with `stage_rank_catalog.py STAGE
+manifest --scope WEAPON RULER --archive SHA --native SHA`. Preserve the original
+snapshots and compare each staged publication with its qualified page hashes
+before switching the catalog. Capacity planning includes the captured inputs,
+archive and descriptor indexes, durable rank tables, transient WAL and existing
+storage reserves throughout the staged write.
+
 ## Activation and recovery
 
 The public board keeps its weapon and ruler keys through engine releases and
