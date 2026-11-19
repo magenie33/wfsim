@@ -92,7 +92,11 @@ try{
  await sql.unsafe(`INSERT INTO board_facts SELECT x.* FROM jsonb_to_recordset(($1::text)::jsonb)x(identity text,ruler text,mode text,score float8,metric text,measured_by text,finished_at text,retired_at text,review_id text)`,[JSON.stringify(inputs.flatMap(row=>row.facts))]);
  await sql.unsafe(`SELECT board_input_seed('build',id,jsonb_build_object('identity',id,'weapon',weapon)::text) FROM entity_weapon_builds`);
  await sql.unsafe(`SELECT board_input_seed('measurement',jsonb_build_array(identity,ruler,mode)::text,jsonb_build_object('identity',identity,'ruler',ruler,'mode',mode)::text) FROM board_facts`);
- if(process.argv.includes('--catalog')){
+ if(process.argv.includes('--catalog-batch')){
+  flowSql=reader;flow=await open();
+  const {checkBatch}=await import('./check_board_catalog_batch.mjs');
+  await checkBatch({sql,schema,native,binary,work,weapon,ruler,source,inputs,read,until,put});
+ }else if(process.argv.includes('--catalog')){
   flowSql=reader;flow=await open();
   await checkCatalogHandoff({sql,native,work,weapon,ruler,source,inputs,late,read,put,until,restart:async()=>{await flow.close();flow=await open();}});
  }else await checkOrdinaryFlow(late);

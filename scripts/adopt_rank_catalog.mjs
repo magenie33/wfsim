@@ -2,7 +2,7 @@
 import {randomUUID} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {chmod,copyFile,mkdir,open} from 'node:fs/promises';
-import {join} from 'node:path';
+import {basename,dirname,join,resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
 import {beginRankBaseline,verifyRankBaseline} from './board_rank_baseline.mjs';
@@ -12,7 +12,17 @@ import {requireCatalogScan} from './board_rank_catalog_scan.mjs';
 import {requestedReservation,preserveCatalogPredecessor,replaceCatalogPredecessor} from './board_rank_catalog_reservation.mjs';
 import {openInventoryOperator} from './inventory_operator.mjs';
 
-export async function registerCatalogScope(sql,{work,manifest:m,receipt:r,contract,expectedRevision=null,reservation=null,epoch=r?.snapshot}){
+async function localCut(m,work){
+ const root=guardRankSpace(work),dir=join(root,'rank-cut-'+randomUUID()),path=join(dir,'inputs.ndjson');
+ await mkdir(dir,{mode:0o750});await copyFile(m.path,path);await chmod(path,0o440);
+ const file=await open(path,'r');try{await file.sync();}finally{await file.close();}
+ syncRankDirectory(dir);syncRankDirectory(root);
+ await verifyRankBaseline({path,bytes:m.bytes,cut:m.sha256},root);
+ return {path,bytes:m.bytes,sha256:m.sha256,meta:rankFilePage(path,0,1).rows[0]};
+}
+
+export async function registerCatalogScope(sql,{work,manifest:m,receipt:r,contract,expectedRevision=null,reservation=null,epoch=r?.snapshot,
+ installed=null,verifyPredecessor=verifyRankBaseline}){
  const {source,native,weapon,ruler}=m,keys=[weapon,ruler],scene=contract.rulers.find(row=>row.id===ruler)?.scene;
  if(!r?.eligible||r.unresolved!==0||r.weapon!==weapon||r.ruler!==ruler||r.source!==source||
     r.snapshot!==m.snapshot||r.native!==native||!/^[a-f0-9]{64}$/.test(r.archive))throw Error('catalog qualification boundary changed');
@@ -44,16 +54,15 @@ export async function registerCatalogScope(sql,{work,manifest:m,receipt:r,contra
    Object.assign(frozen,await requestedReservation(tx,keys,scene,selected,part,reservation));
    if(part&&(part.source!==source||part.native!==native))throw Error('occupied catalog epoch changed');
   }else if(reservation)throw Error('pinned requested reservation missing');
-  const root=guardRankSpace(work),dir=join(root,'rank-cut-'+randomUUID()),path=join(dir,'inputs.ndjson');
-  await mkdir(dir,{mode:0o750});await copyFile(m.path,path);await chmod(path,0o440);
-  const file=await open(path,'r');try{await file.sync();}finally{await file.close();}
-  syncRankDirectory(dir);syncRankDirectory(root);
-  await verifyRankBaseline({path,bytes:m.bytes,cut:m.sha256},root);
-  const [meta]=rankFilePage(path,0,1).rows;
+  const root=installed?resolve(work):guardRankSpace(work);
+  const file=installed??await localCut(m,root),{path,meta}=file;
+  if(file.bytes!==m.bytes||file.sha256!==m.sha256||basename(path)!=='inputs.ndjson'||
+     !/^rank-cut-[a-f0-9-]{36}$/.test(basename(dirname(path)))||dirname(dirname(path))!==root)
+   throw Error('catalog staged file differs from the manifest');
   if(meta?.kind!=='meta'||!['weapon','ruler','source','native','snapshot','captured_at','mailbox_floor'].every(k=>meta[k]===m[k]))
    throw Error('catalog manifest metadata changed');
   if(part){
-   frozen.previous=await preserveCatalogPredecessor(tx,part,reservation,root);
+   frozen.previous=await preserveCatalogPredecessor(tx,part,reservation,root,verifyPredecessor);
    await replaceCatalogPredecessor(tx,{...m,path});
   }else await beginRankBaseline(tx,{...m,path});
   if(selected)await tx.unsafe('UPDATE state_board_read_partitions SET canonical_sources=true WHERE weapon=$1 AND ruler=$2',keys);

@@ -214,6 +214,45 @@ It verifies global historical coverage and each current public selection before
 retiring the temporary change capture. The canonical mailbox continues to feed
 the ordinary reader.
 
+### Adopting the complete catalog
+
+`scripts/adopt_rank_catalog_batch.mjs` consumes a qualified catalog and keeps
+one resumable adoption journal. Its JSON configuration names the following
+operator inputs.
+
+| Field | Input |
+| --- | --- |
+| `stage` | Guarded directory containing `catalog.sqlite`, `archive.sqlite` and `qualification.sqlite` |
+| `state` | Private controller directory for the journal and one reusable manifest scratch file |
+| `work`, `native` | The active ranking reader's work directory and pinned Native binary |
+| `coverage`, `budget` | Complete historical qualification and measured capacity forecast for the same source cut |
+| `pins` | One `{members,proof}` pair of SQLite files per protected inventory in the qualification result |
+| `reservations` | Current player reservation inventory, including request positions, mailbox versions and occupied cut witnesses |
+| `pg_socket`, `database_role` | Local PostgreSQL socket path and owner role when using peer authentication |
+
+Use `python3 scripts/run_rank_catalog_batch.py plan CONFIG.json` on a host
+whose capture and ranking work have separate service owners. The supervisor
+runs the controller under the existing PostgreSQL OS account. Its database
+connection uses `PG_URL`, with owner operations under `database_role` and a
+separate connection for storage measurements. The reader's OS account receives
+one opened input file, checks the byte count and digest, and writes and syncs
+its own immutable cut. The controller can also ask it to verify a named
+predecessor. Both roles check the same mounted Data volume. With a common file
+owner, use `node scripts/adopt_rank_catalog_batch.mjs plan CONFIG.json`.
+
+`plan` reconciles the archive and every protected identity with its outcome.
+It records the selected revisions in a repeatable read. A head that advanced
+since qualification also needs its full stored Native output and page digests.
+`run` advances one registration at a time. `step` advances a bounded unit and
+`status` reports outstanding scopes and sampled storage high-water. Restart
+with the same configuration and journal. Refresh a changed reservation witness
+against its original request before retrying. During adoption the controller
+checks Data and WAL headroom at stage boundaries and samples it every second.
+Each public page is compared with both official sites at its immutable
+revision. A changed selection is checked again. Closing holds the selected
+rows briefly while comparing the verified revisions and retiring the temporary
+capture in one transaction.
+
 ## Activation and recovery
 
 The public board keeps its weapon and ruler keys through engine releases and

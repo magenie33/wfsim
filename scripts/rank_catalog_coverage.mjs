@@ -52,13 +52,15 @@ function recordEvidence(ledger,scope,r,body){
  return true;
 }
 
-export function coverage(capture,archive,ledger,scope=null){
+export function coverage(capture,archive,ledger,scope=null,{readOnly=false}={}){
  const spec=state(capture,'spec'),cut=state(capture,'replay'),sealed=archive.prepare('SELECT archive FROM sealed WHERE id=1').get();
  if(!cut||spec.archive!==sealed?.archive)throw Error('complete archive and coherent replay required');
- ledger.exec('CREATE TABLE IF NOT EXISTS evidenced(weapon TEXT,ruler TEXT,PRIMARY KEY(weapon,ruler)) WITHOUT ROWID');
  const epoch=JSON.stringify([spec.source,spec.cluster,spec.native,spec.archive,cut.snapshot,cut.captured_at]);
- ledger.exec('CREATE TABLE IF NOT EXISTS epoch(id INTEGER PRIMARY KEY,v TEXT); CREATE TABLE IF NOT EXISTS receipts(weapon TEXT,ruler TEXT,body TEXT,PRIMARY KEY(weapon,ruler)) WITHOUT ROWID');
- ledger.prepare('INSERT OR IGNORE INTO epoch VALUES(1,?)').run(epoch);
+ if(!readOnly){
+  ledger.exec('CREATE TABLE IF NOT EXISTS evidenced(weapon TEXT,ruler TEXT,PRIMARY KEY(weapon,ruler)) WITHOUT ROWID');
+  ledger.exec('CREATE TABLE IF NOT EXISTS epoch(id INTEGER PRIMARY KEY,v TEXT); CREATE TABLE IF NOT EXISTS receipts(weapon TEXT,ruler TEXT,body TEXT,PRIMARY KEY(weapon,ruler)) WITHOUT ROWID');
+  ledger.prepare('INSERT OR IGNORE INTO epoch VALUES(1,?)').run(epoch);
+ }else if(scope)throw Error('read-only coverage cannot transfer a receipt');
  if(ledger.prepare('SELECT v FROM epoch').get().v!==epoch)throw Error('catalog receipt cut changed');
  if(scope){
   const r=state(scope,'receipt'),contract=JSON.parse(state(scope,'contract')||'null');
