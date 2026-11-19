@@ -15,6 +15,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runInNewContext } from "node:vm";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = resolve(ROOT, "site");
@@ -221,8 +222,36 @@ if (meta.scene_weapons) {
 
 // The archived stamp dates its own rows. Current ranking is catalog-bound.
 const rankSource = app.slice(app.indexOf("const pageBoardReader"), app.indexOf("/// Redraw the current weapon"));
-check(rankSource.includes("reader.catalog(scene, weapon") && rankSource.includes("reader.rows(partitions"),
-  "…and current ranks use the publication directory", "missing catalog-bound ranks");
+const sharedReader = app.slice(app.indexOf("const publishedBoardRevisions"), app.indexOf("function headlessNonaHelp(say"));
+const pageReader = rankSource.slice(0, rankSource.indexOf("/// `res.ok`"));
+const pinned = "b".repeat(64), previous = new Map([["retained", "a".repeat(64)]]), pages = [];
+let catalogReads = 0;
+const context = {
+  AbortController, AbortSignal, URLSearchParams, window: {}, previous,
+  async fetchJsonPatient(path) {
+    const url = new URL(path, "https://wfsim.invalid");
+    if (url.searchParams.get("weapon") !== "furis") throw Error("unexpected weapon");
+    if (url.pathname === "/api/board/pages/catalog") {
+      catalogReads++;
+      return { ok: true, next: null, partitions: ["retained", "updated"].map(ruler => ({
+        weapon: "furis", scene: "", ruler, rows: 1, revision: previous.get(ruler) || pinned,
+      })) };
+    }
+    const ruler = url.searchParams.get("ruler"), revision = url.searchParams.get("revision");
+    if (url.pathname !== "/api/board/pages" || ruler !== "updated" || revision !== pinned)
+      throw Error("unexpected partition page");
+    pages.push(revision);
+    return { ok: true, weapon: "furis", ruler, revision, after: 0, count: 1, next: null, rows: [{ benchmark: ruler, score: 42 }] };
+  },
+};
+try {
+  const result = await runInNewContext(sharedReader + "\n" + pageReader +
+    '\nreadCurrentBoardRows("furis", "", undefined, previous)', context);
+  check(catalogReads === 1 && pages.length === 1 && result.rows[0]?.score === 42 && result.retained.has("retained"),
+    "…and current ranks use the publication directory", "the changed revision must replace its own rows");
+} catch (error) {
+  check(false, "…and current ranks use the publication directory", error.message);
+}
 check(!/boardOffOrigin|BOARD_META\.boards/.test(rankSource),
   "…and historical snapshot metadata does not choose current ranks", "old metadata still chooses ranks");
 
