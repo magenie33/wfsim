@@ -9,6 +9,7 @@ import { openApp } from "./cdp.mjs";
 const read = path => readFileSync(new URL(`../web/src/static/${path}`, import.meta.url), "utf8");
 const transport = read("app/06-transport.js");
 const watch = transport.slice(transport.indexOf("function watchSilence("), transport.indexOf("/// WHERE A WORKER"));
+const lanes = transport.slice(transport.indexOf("/// WHERE A LANE WAS LOST"), transport.indexOf("/// ONE CALL ON A LANE THAT MAY DIE UNDER IT."));
 const worker = `
   const probe = new BroadcastChannel("worker-rejections");
   self.addEventListener("unhandledrejection", e => probe.postMessage(String(e.reason?.message ?? e.reason)));
@@ -21,16 +22,23 @@ const glue = `
     7,8,1,4,116,114,97,112,0,0, 10,5,1,3,0,0,11
   ));
   const { trap } = new WebAssembly.Instance(module).exports;
-  const wasm_bindgen = Object.assign(async () => {}, {
+  let instance;
+  const wasm_bindgen = Object.assign(async ({ module_or_path }) => { instance = module_or_path; }, {
     set_heartbeat() {},
     optimize() { trap(); },
     optimize_resume() { throw new Error("resume exception"); },
-    api(path) {
+    api(path, body) {
       if (path === "/throw") throw new TypeError("RPC exception");
+      if (path === "/refuse") return JSON.stringify({ ok: false, error: "business refusal", detail: 42 });
+      if (path === "/queued") probe.postMessage({ queued: instance });
+      if (path === "/instance") {
+        if (JSON.parse(body).trapInstance === instance) trap();
+        return JSON.stringify({ ok: true, instance });
+      }
       return JSON.stringify({ ok: true, path });
     },
-    simulate_shard() { throw new Error("shard exception"); },
-    simulate_merged() { throw new Error("merge exception"); },
+    simulate_shard(body) { if (JSON.parse(body).trap) trap(); throw new Error("shard exception"); },
+    simulate_merged(body) { if (JSON.parse(body).trap) trap(); throw new Error("merge exception"); },
     verify_final() { throw new Error("replay exception"); },
     finish_finals(_, receipts) {
       if (receipts === "null") return "invalid JSON";
@@ -42,16 +50,23 @@ const page = `
   let woptNextId = 1;
   const LANE_WATCHDOG = { loading: 1000, stall: 1000, tick: 50 };
   const computeRun = (_, work, live) => live() ? work() : { cancelled: true };
-  const workerErrors = [], rejections = [];
+  const WASM = true, ENGINE_VIEWS = {}, poolSize = () => 1, pool = [];
+  const track = () => {}, releaseAfterLaneFailed = () => {};
+  let readerInFlight = 0, workerCount = 0;
+  const workerErrors = [], rejections = [], queuedRuns = [];
   const probe = new BroadcastChannel("worker-rejections");
-  probe.onmessage = e => rejections.push(e.data);
+  probe.onmessage = e => {
+    if (typeof e.data === "string") rejections.push(e.data);
+    else queuedRuns.push(e.data.queued);
+  };
   function spawnEngine() {
     const worker = new Worker("/worker.js");
     worker.addEventListener("error", e => workerErrors.push(e.message));
-    worker.postMessage({ kind: "engine" });
+    worker.postMessage({ kind: "engine", module: ++workerCount });
     return worker;
   }
   ${watch}
+  ${lanes}
   ${read("app/08-checkpoint-api.js")}
 `;
 
@@ -62,6 +77,26 @@ async function quickTrap() {
     while (!job.result && performance.now() < until) await new Promise(resolve => setTimeout(resolve, 10));
     return { result: job.result, workers: job.workers.length, workerErrors, rejections };
   } finally { job.workers.forEach(worker => worker.terminate()); }
+}
+
+async function sharedLaneTrap() {
+  const before = await api("/instance", {});
+  const old = pool[0];
+  const refusal = await api("/refuse", {});
+  const reusedAfterRefusal = pool[0] === old;
+  const execution = api("/instance", { trapInstance: before.instance });
+  const pending = old.call("/queued", {});
+  const [retried, waiting] = await Promise.all([execution, pending]);
+  const after = { dead: old.dead, busy: old.busy, readerInFlight };
+  const shards = [];
+  for (const kind of ["shard", "merge"]) {
+    const lane = pool[0];
+    const result = await lane.sendNow({ kind, body: { trap: true } });
+    shards.push({ kind, result, dead: lane.dead, fresh: (await api("/instance", {})).instance });
+  }
+  const last = pool[0];
+  last.worker.terminate();
+  return { before, refusal, reusedAfterRefusal, retried, waiting, after, shards, queuedRuns, rejections };
 }
 
 async function exerciseProtocol() {
@@ -143,6 +178,24 @@ try {
   assert.equal(trap.workers, 0);
   assert.deepEqual(trap.workerErrors, [trap.result.error]);
   assert.deepEqual(trap.rejections, []);
+
+  const lane = await app.evaluate(`(${sharedLaneTrap})()`);
+  console.log("Shared lane WASM trap:", JSON.stringify(lane));
+  assert.equal(lane.before.ok, true);
+  assert(Number.isInteger(lane.before.instance));
+  assert.equal(lane.waiting.worker_dead, true);
+  assert.match(lane.waiting.error, /RuntimeError: unreachable/);
+  assert.deepEqual(lane.after, { dead: true, busy: 0, readerInFlight: 0 });
+  assert.deepEqual(lane.retried, { ok: true, instance: lane.before.instance + 1 });
+  assert.deepEqual(lane.refusal, { ok: false, error: "business refusal", detail: 42 });
+  assert.equal(lane.reusedAfterRefusal, true);
+  assert.deepEqual(lane.queuedRuns, []);
+  assert.deepEqual(lane.rejections, []);
+  for (const [i, { result, dead, fresh }] of lane.shards.entries()) {
+    assert.deepEqual(result, lane.waiting);
+    assert.equal(dead, true);
+    assert.equal(fresh, lane.retried.instance + i + 1);
+  }
 
   const wire = await app.evaluate(`(${exerciseProtocol})()`);
   const refusal = error => ({ ok: false, error });

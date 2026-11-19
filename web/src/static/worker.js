@@ -120,13 +120,24 @@ function runCall(msg) {
   }
 }
 
+let trapped = false;
 onmessage = async ({ data: msg }) => {
   if (typeof msg?.kind !== "string") return;
   if (msg.kind === "engine") { handed(msg); return; }
   try { await ready; } catch (_) { return; } // The load failure is already reported above.
+  if (trapped) return;
   try {
     runCall(msg);
   } catch (err) {
+    if (err instanceof WebAssembly.RuntimeError) {
+      // A trap can leave the instance unusable. Stop queued calls before the
+      // error task runs so the page can fail and replace the entire lane.
+      trapped = true;
+      setTimeout(() => {
+        try { throw err; } finally { close(); }
+      });
+      return;
+    }
     const error = String(err?.message || err);
     if (msg.kind === "api" || msg.kind === "shard" || msg.kind === "merge") {
       postMessage({ id: msg.id, payload: { ok: false, error } });
