@@ -205,29 +205,28 @@ function publishedBoardReader(read) {
     }
   }
 
+  const waiting = [];
+  let active = 0;
+  const pump = () => {
+    const job = waiting.shift();
+    if (!job) return;
+    active++;
+    Promise.resolve().then(job.read).then(job.resolve, job.reject).finally(() => { active--; pump(); });
+  };
+
   async function rows(entries, signal) {
     const controller = new AbortController();
-    const within = deadline(signal, 60000);
-    if (within.aborted) controller.abort(within.reason);
-    else within.addEventListener("abort", () => controller.abort(within.reason), { once: true, signal: controller.signal });
-
-    const waiting = [];
-    let active = 0;
-    const cancel = () => {
-      for (const job of waiting.splice(0)) job.reject(controller.signal.reason);
-    };
-    controller.signal.addEventListener("abort", cancel, { once: true });
-    const pump = () => {
-      const job = waiting.shift();
-      if (!job) return;
-      active++;
-      Promise.resolve().then(job.read).then(job.resolve, job.reject).finally(() => { active--; pump(); });
-    };
-    const limited = (read) => new Promise((resolve, reject) => {
+    if (signal?.aborted) controller.abort(signal.reason);
+    else signal?.addEventListener("abort", () => controller.abort(signal.reason), { once: true, signal: controller.signal });
+    const limited = read => new Promise((resolve, reject) => {
       if (controller.signal.aborted) { reject(controller.signal.reason); return; }
-      waiting.push({ read, resolve, reject });
+      waiting.push({ controller, read, resolve, reject });
       if (active < 4) pump();
     });
+    controller.signal.addEventListener("abort", () => {
+      for (let i = waiting.length - 1; i >= 0; i--) if (waiting[i].controller === controller)
+        waiting.splice(i, 1)[0].reject(controller.signal.reason);
+    }, { once: true });
 
     async function partition({ weapon, ruler, revision, rows: count }) {
       const at = (after) => limited(async () => {

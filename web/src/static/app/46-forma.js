@@ -383,7 +383,7 @@ let formaReach = null;
 const boardRulersOf = (w) => {
   const have = new Set((BOARD[w] || []).map((r) => r.benchmark));
   const loaded = boardFiles.get(w)?.loaded;
-  return benchList().filter(b => !loaded?.has(benchSceneOf(b)) || have.has(b.id)).map(b => b.id);
+  return benchList().filter(b => !loaded?.get(benchSceneOf(b))?.has(b.id) || have.has(b.id)).map(b => b.id);
 };
 
 /// Each ruler's rows as the planner reads them, with their share of the leader

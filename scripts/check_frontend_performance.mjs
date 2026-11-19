@@ -195,7 +195,7 @@ try {
   check("confirmed tally values retain their DOM while presentation moves",animation.stable&&animation.confirmed);
   check("a hidden home tally does not repaint",animation.hidden);
   await app.send("Emulation.setCPUThrottlingRate",{rate:4});
-  if(process.env.WFSIM_PERF_EAGER)await evaluate("window.perfEagerRead=loadSceneRows;loadSceneRows=id=>window.perfEagerRead(id,benchScenes())");
+  if(process.env.WFSIM_PERF_EAGER)await evaluate("window.perfEagerRead=loadBoardRulers;loadBoardRulers=id=>window.perfEagerRead(id,benchList().map(b=>b.id))");
   await evaluate("window.perfCheckLag=0;window.perfCheckLast=performance.now();window.perfCheckTimer=setInterval(()=>{const now=performance.now();window.perfCheckLag=Math.max(window.perfCheckLag,now-window.perfCheckLast-25);window.perfCheckLast=now;},25)");
   await evaluate("history.pushState(null,'','/weapons/Torid/');route()");
   const waitFor=async expression=>{
@@ -204,7 +204,7 @@ try {
   check("the large published fixture opens",await waitFor("document.body.classList.contains('on-build-library')&&!!document.querySelector('#build-finder tr.fr')"));
   check("opening a weapon downloads only its selected scene",requests.length===1&&requests[0].dir===(primary.cell_dir||""),JSON.stringify(requests));
   const view=await evaluate("({rows:builtinBuilds(finder.b).length,raw:BOARD.torid.length,visible:document.querySelectorAll('#build-finder tr.fr').length})");
-  check("ranking covers the complete selected ruler while DOM results stay bounded",view.rows===rowsPerCell&&view.raw>=view.rows&&view.visible===20,JSON.stringify(view));
+  check("ranking covers the complete selected ruler while DOM results stay bounded",view.rows===rowsPerCell&&view.raw===view.rows&&view.visible===20,JSON.stringify(view));
   for(const dir of dirs.filter(dir=>dir!==(primary.cell_dir||""))) {
     const b=meta.benchmarks.find(b=>(b.cell_dir||"")===dir);
     await evaluate("finder.b="+JSON.stringify(b.id)+";renderBuildFinder()");
@@ -229,9 +229,9 @@ try {
         cells:Object.fromEntries([...new Set(rows.map(row=>row.benchmark))].map(id=>[id,rows.filter(row=>row.benchmark===id).length]))};
     })()`);
     const reads=requests.slice(before).filter(r=>!r.card);
-    check("a card reads its complete requested scene: "+(requested===null?'default':dir||"base"),reads.length===1&&reads[0].weapon==='torid'&&reads[0].dir===dir
-      && fallback.rows===rowsPerCell*cells.length&&Object.keys(fallback.cells).length===cells.length
-      && cells.every(id=>fallback.cells[id]===rowsPerCell)&&fallback.loaded.length===1&&fallback.loaded[0]===dir,JSON.stringify({fallback,reads}));
+    check("a card reads its complete requested ruler: "+(requested===null?'default':dir||"base"),reads.length===1&&reads[0].weapon==='torid'&&reads[0].dir===dir
+      && fallback.rows===rowsPerCell&&Object.keys(fallback.cells).length===1
+      && fallback.cells[requested===null?primary.id:cells[0]]===rowsPerCell&&fallback.loaded.length===1&&fallback.loaded[0]===dir,JSON.stringify({fallback,reads}));
   }
   await evaluate("clearInterval(window.perfCheckTimer);history.pushState(null,'','/weapons/Furis/builder');route()");
   check("switching weapon releases the previous public board",await waitFor("routeWeaponId()==='furis'&&BOARD_HAVE.has('furis')&&!BOARD.torid&&finderDataMemo===null"));

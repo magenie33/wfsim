@@ -198,13 +198,13 @@ function libraryAfterRender(w, all, list, groups, drawList) {
   renderLibrarySummary(w, all);
   const box = $("build-finder");
   if (!boardHasCell(w.id, finder.b)) {
-    const state = boardFileState(w.id), dir = boardCellDir(finder.b);
+    const ruler = finder.b;
     const failed = boardCellUnavailable(w.id, finder.b);
     const count = box.querySelector(".library-result-count");
     count.innerHTML = failed ? escHtml(tr("The board could not be reached.")) : loadingHtml();
     if (failed) {
       const retry = document.createElement("button"); retry.className = "ghost-btn small"; retry.textContent = tr("Retry");
-      retry.onclick = () => { state.failed.delete(dir); state.loaded.delete(dir); loadSceneRows(w.id, [dir]).then(renderBuildFinder); };
+      retry.onclick = () => { loadBoardRulers(w.id, [ruler], true).then(renderBuildFinder); };
       count.append(" ", retry);
       const archived = headlessBoardFile(META, w.id, finder.b), stamp = BOARD_META?.scored_at;
       if (archived && Number.isFinite(stamp) && stamp > 0) {

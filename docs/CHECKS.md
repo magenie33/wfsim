@@ -2347,8 +2347,8 @@ public rows and derived caches. Timing observations contain page kinds and
 numeric durations only. `WFSIM_PERF_EAGER=1` deliberately restores eager scene
 fetching; the request-scope and cache-lifetime assertions must fail.
 At 320px a wider installed header font must keep every control in the viewport.
-With heads returning 404, each ruler's card reads its complete selected scene;
-every ruler retains all 1,800 fixture rows. Whole-board readers still require
+With heads returning 404, each card reads all 1,800 fixture rows of its
+selected ruler. Whole-board readers still require
 every scene. `WFSIM_PERF_DROP_CARD_ROW=1` removes one fallback row and must fail.
 
 ## `check_global_conditions`
@@ -3305,7 +3305,8 @@ weapon/scene/index reload. Removing publication retries or cache generations mus
 fail those cases. Only
 review transport is stubbed; engine parsing and published row matching are real.
 The community CI job runs `check_board_page_reader.mjs` directly. Sixty-four
-delayed pages finish in revision order beyond a single page deadline. At most
+delayed pages finish in revision order even when the complete read exceeds a
+minute. A weapon loads its selected ruler and explicitly opened builds. At most
 four requests run concurrently across partitions. An open library and ranking
 observe a new build and a corrected score, including recovery from a failed
 page, without downloading unchanged partition rows. A revision or count

@@ -498,10 +498,10 @@ controls belong to sorting.
 Published rows keep their ranking metadata; editor states are derived only when
 read and reused. Scene arrivals retain unchanged entries. Blank and owned builds
 leave an unopened published catalog unbuilt.
-The page fetches the complete file for its selected scene and any explicitly
-opened board builds. Changing scenes requests their files on demand. Inactive
-scene rows are released; leaving a weapon releases its public board, derived
-entries and library DOM. Saved builds, opened references and query restoration
+The page fetches the complete ranking for its selected ruler and the rulers of
+explicitly opened board builds. Switching rulers loads their pages on demand.
+The page releases rows from inactive scenes. Leaving a weapon releases its
+public board, derived entries and library DOM. Saved builds, opened references and query restoration
 remain in browser storage. Folded Overview creates its tiles when expanded.
 Ordinary sort, priority fields and directions use the site's shared dropdown.
 The shared board selector sets the comparison context independently of filter

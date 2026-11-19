@@ -166,12 +166,12 @@ same verified measurement source. Every reader uses the same catalog afterwards.
 An online partition covers one weapon and ruler. The catalog selects its current
 revision. A reader waits for the complete revision before showing its ranks.
 A visible weapon library or ranking checks its catalog every thirty seconds.
-The library reads the pages of new or changed partitions and replaces their
-rows after the complete revision arrives. An interrupted refresh keeps the
-last complete view until the next attempt. Page requests share a
-four-request limit across the selected partitions. Each page has an eight-second
-deadline, and the page assembly has a sixty-second budget. Changing weapons
-cancels the read.
+The library loads the selected ruler and explicitly opened builds. It reads
+changed partitions and replaces their rows once the whole revision arrives.
+An interrupted refresh keeps the last complete view until the next attempt.
+Page requests share a four-request limit across the selected partitions. Each
+page has an eight-second deadline. Completed pages stay in the assembly while
+more pages arrive. Changing weapons cancels the read.
 
 `scripts/board_result_flow.mjs` consumes canonical source changes through the
 board input mailbox. Routing and the next partition handoff commit with the

@@ -20,6 +20,9 @@ const previous = [{ benchmark: ruler, score: -1 }, { benchmark: "retained_other_
 
 async function run(options = {}) {
   const rows = Array.from({ length: options.empty ? 0 : total }, (_, score) => ({ benchmark: ruler, score }));
+  const extra = ruler + "_extra", remote = ruler + "_remote";
+  const benchmarks = [{ id: ruler, cell_dir: "" }, { id: extra, cell_dir: "" }, { id: remote, cell_dir: "sp200" }];
+  const opened = options.overlap ? [extra, remote] : options.opened ? [extra] : [];
   const state = { active: 0, maximum: 0, pages: 0, oldReads: 0 };
   const wait = (duration, signal) => new Promise((resolve, reject) => {
     const cancel = () => { clearTimeout(timer); reject(signal.reason || Error("aborted")); };
@@ -32,8 +35,9 @@ async function run(options = {}) {
     URLSearchParams, AbortController, AbortSignal: { any: AbortSignal.any, timeout }, timeoutSignal: timeout,
     window: {}, LIVE_ORIGIN: "https://wfsim.invalid", BOARD_ORIGIN: "https://board.invalid", boardOffOrigin: false,
     BOARD: {}, BOARD_META: null, location: { pathname: "/weapons/Furis/build-library", search: "?bench=" + ruler },
-    finder: { weapon, b: ruler }, raRuler: null, benchList: () => [{ id: ruler, cell_dir: "" }], benchSceneOf: () => "",
-    libraryDefaultBenchmark: () => ruler, modSuffix: () => "build-library", localStorage: { getItem: () => null },
+    finder: { weapon, b: ruler }, raRuler: null, benchList: () => benchmarks, benchSceneOf: b => b?.cell_dir || "",
+    libraryDefaultBenchmark: () => ruler, modSuffix: () => "build-library",
+    localStorage: { getItem: k => k === "opened" ? JSON.stringify(opened.map(b => ({ b }))) : null },
     boardActiveKey: () => "active", openedBoardKey: () => "opened",
     async fetchJsonPatient(path, _tries, signal) {
       const url = new URL(path, "https://wfsim.invalid");
@@ -42,8 +46,10 @@ async function run(options = {}) {
         return previous;
       }
       if (url.pathname === "/api/board/pages/catalog") {
-        const rulers = options.absent ? [] : options.extra ? [ruler, ruler + "_extra"] : [ruler];
-        return { ok: true, partitions: rulers.map(ruler => ({ weapon, ruler, scene: "", revision, rows: rows.length })), next: null };
+        const scene = url.searchParams.get("scene");
+        const rulers = (options.overlap ? benchmarks : options.extra ? benchmarks.slice(0, 2) : benchmarks.slice(0, 1))
+          .filter(b => !options.absent && b.cell_dir === scene);
+        return { ok: true, partitions: rulers.map(b => ({ weapon, ruler: b.id, scene, revision, rows: rows.length })), next: null };
       }
       assert.equal(url.pathname, "/api/board/pages");
       assert.equal(url.searchParams.get("revision"), revision);
@@ -58,7 +64,7 @@ async function run(options = {}) {
         const end = after + values.length;
         const page = { ok: true, weapon, ruler, revision, after, count: rows.length, rows: values, next: end < rows.length ? end : null };
         if (after === step * 3) {
-          if (options.wrongRevision) page.revision = "b".repeat(64);
+          if (options.wrongRevision || options.failRuler === ruler) page.revision = "b".repeat(64);
           if (options.wrongCount) page.count++;
           if (options.gap) page.next++;
           if (options.short) page.rows = page.rows.slice(1);
@@ -71,7 +77,17 @@ async function run(options = {}) {
   const timer = options.cancel && setTimeout(() => vm.runInContext("boardFileState('furis').controller.abort()", context), 35);
   const started = performance.now();
   try {
-    await vm.runInContext("loadWeaponBoard('furis')", context);
+    if (options.overlap) {
+      const load = (...rulers) => vm.runInContext("loadBoardRulers('furis'," + JSON.stringify(rulers) + ")", context);
+      await Promise.all([load(ruler), load(ruler, extra), load(remote)]);
+      if (options.failRuler) {
+        const surviving = JSON.parse(vm.runInContext("JSON.stringify(BOARD.furis.map(row => row.benchmark))", context));
+        assert.equal(surviving.length, 2 * total);
+        assert.deepEqual(new Set(surviving), new Set([extra, remote]));
+        options.failRuler = null;
+        await vm.runInContext("loadBoardRulers('furis',['standard_single_target'],true)", context);
+      }
+    } else await vm.runInContext("loadWeaponBoard('furis')", context);
     const result = JSON.parse(vm.runInContext("JSON.stringify(BOARD.furis ?? null)", context));
     const cell = vm.runInContext("Boolean(boardHasCell('furis','standard_single_target'))", context);
     return { result, state, elapsed: performance.now() - started, cell };
@@ -86,15 +102,27 @@ assert(full.elapsed > 200 && full.state.maximum > 1 && full.state.maximum <= 4);
 assert.equal(full.state.pages, 64); assert.equal(full.state.active, 0);
 console.log("  ok  64 pages, one revision, ordered rows, no legacy request");
 
-const concurrent = await run({ extra: true });
+const focused = await run({ extra: true });
+assert.equal(focused.result.length, total, "opening a ruler must not download unrelated ranks in its scene");
+assert.equal(focused.state.pages, 64);
+const concurrent = await run({ extra: true, opened: true });
 assert.equal(concurrent.result.length, total * 2);
 assert.equal(concurrent.state.pages, 128);
 assert(concurrent.state.maximum <= 4);
 console.log("  ok  multiple partitions share one request limit");
+const overlap = await run({ overlap: true });
+assert.equal(overlap.result.length, 3 * total);
+assert.equal(overlap.state.pages, 3 * 64);
+assert.equal(overlap.state.maximum, 4);
+const retried = await run({ overlap: true, failRuler: ruler });
+assert.equal(retried.result.length, 3 * total);
+assert.equal(retried.cell, true);
+assert.equal(retried.state.maximum, 4);
+console.log("  ok  overlapping requests share pages and retain other rulers through failure and retry");
 
 for (const [name, options] of [["revision changed", { wrongRevision: true }], ["count changed", { wrongCount: true }],
   ["cursor gap", { gap: true }], ["short page", { short: true }], ["page timeout", { hang: true }],
-  ["overall budget", { overall: 110, delay: 20 }], ["weapon cancellation", { cancel: true }]]) {
+  ["weapon cancellation", { cancel: true }]]) {
   const value = await run(options);
   assert.equal(value.result, null, name); assert.equal(value.cell, false, name);
   assert.equal(value.state.oldReads, 0, name); assert(value.state.maximum <= 4, name);
@@ -103,6 +131,9 @@ for (const [name, options] of [["revision changed", { wrongRevision: true }], ["
   console.log("  ok  " + name + " withholds an unavailable ranking");
 }
 
+const progressing = await run({ overall: 110, delay: 20 });
+assert(progressing.elapsed > 110);
+assert.equal(progressing.result.length, total, "completed pages must survive an overall read longer than one minute");
 const absent = await run({ absent: true });
 assert.deepEqual(absent.result, []); assert.equal(absent.state.pages, 0); assert.equal(absent.cell, false);
 const empty = await run({ empty: true });
@@ -116,7 +147,7 @@ const tab = vm.createContext({
   Date: { now: () => live.now }, setInterval(handler, ms) { live.tick = handler; live.interval = ms; },
   location: { pathname: "/weapons/Furis", search: "" }, finder: { weapon, b: ruler },
   benchList: () => [ruler, "other"].map(id => ({ id })), benchSceneOf: () => "", libraryDefaultBenchmark: () => ruler,
-  localStorage: { getItem: () => null }, boardActiveKey: () => "", openedBoardKey: () => "",
+  localStorage: { getItem: k => k === "opened" ? JSON.stringify([{ b: "other" }]) : null }, boardActiveKey: () => "active", openedBoardKey: () => "opened",
   modSuffix: () => "build-library", routeWeaponId: () => weapon, boardRowsLanded: () => live.draws++,
   $: () => ({ hidden: !live.bench }), benchCurrent: () => ({ id: ruler }), renderBenchBoard: () => live.draws++,
   async fetchJsonPatient(path) {

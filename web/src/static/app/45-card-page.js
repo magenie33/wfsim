@@ -49,7 +49,7 @@ async function renderCardPage(w, ask) {
   if (verdict) document.body.dataset.verdict = JSON.stringify(headlessVerdictRecord(verdict));
   const target = headlessCardBoard(pageSay(), w, ask, []).ruler;
   if (kind !== "appraise" && !boardHasCell(w.id, target)) {
-    await loadSceneRows(w.id, [boardCellDir(target)]);
+    await loadBoardRulers(w.id, [target]);
     if (!boardHasCell(w.id, target)) {
       box.innerHTML = headlessUnavailableBoardCard(pageSay());
       document.body.dataset.cardReady = "1";

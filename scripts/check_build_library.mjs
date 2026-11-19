@@ -123,8 +123,11 @@ try {
     }
   })()`);
   check("blank and owned builds leave an unopened published catalog unbuilt",idleCatalog);
-  const work=await evaluate(`(() => {
-    const weapon=presetWeapon(), rows=BOARD[weapon], originalTokens=finderTokens, originalTriggers=finderTriggers;
+  const work=await evaluate(`(async () => {
+    const weapon=presetWeapon();
+    await loadBoardRulers(weapon,[finder.b,'standard_multi_target']);
+    renderBuildFinder();
+    const rows=BOARD[weapon], originalTokens=finderTokens, originalTriggers=finderTriggers;
     const seen={tokens:[],triggers:[]}, first=()=>[...document.querySelectorAll('#build-finder tr.fr')].map(el=>el.dataset.frow).join();
     finderTokens=p=>{seen.tokens.push(p.benchmark);return originalTokens(p);};
     finderTriggers=p=>{seen.triggers.push(p.benchmark);return originalTriggers(p);};
