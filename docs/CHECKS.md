@@ -2684,7 +2684,9 @@ each open it in view and are told apart as `share.entry`. A finder row is made
 the open build first; a finalist is not — opening a build resets the search —
 so its panel sits under its row, its link decodes to that finalist's mods,
 nothing is saved, the search's results stay, and the reader's result and the
-card, both drawn from the open build, are not offered.
+card, both drawn from the open build, are not offered. Copied board text cites
+the row’s score, scenario, recorded engine and build link. Player simulations
+are identified separately, including when the open build came from the board.
 
 ## `check_share_card`
 
