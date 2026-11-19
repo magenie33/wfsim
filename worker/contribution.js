@@ -38,7 +38,7 @@
 import {queueHours} from './queue_clearance.js';
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import {statisticsSourceSql} from './statistics_source.js';
-import {queueOrders,queueZonesSql} from './queue_counts.js';
+import {queueOrders,readQueueCounts} from './queue_counts.js';
 import { iso, PACE_HOURS } from "./instant.js";
 import { clearanceOf } from "./clearance.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
@@ -829,10 +829,8 @@ export async function queueFleetOf(env,pace,now=Date.now()) {
 
 export async function queueDemandOf(env,{fleet=null,detail=null,prices=null,now=Date.now}={}) {
   const db=env.LIBRARY;
-  const installed=await db.prepare("SELECT to_regclass('state_queue_zone_seed') IS NOT NULL installed").first();
-  if(!installed?.installed)return undefined;
-  const row=await db.prepare(queueZonesSql).first();
-  if(!row)return null;
+  const row=await readQueueCounts(db);
+  if(!row)return row;
   const active=fleet && Date.parse(fleet.expires_at)>now() && fleet.order_epoch===row.order_epoch ? fleet : null;
   const {orders,total}=queueOrders(row.zones,active?.held??[]);
   if(!active?.held)for(const order of orders)delete order.dispatched;

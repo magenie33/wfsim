@@ -81,7 +81,8 @@ export async function seedQueueZones(query, options) {
   const [isolation] = await query("SELECT current_setting('transaction_isolation') level");
   if (!['repeatable read', 'serializable'].includes(isolation.level)) throw Error('queue seed requires a stable snapshot');
   const sample = await sampleQueueZones(query, options);
-  const rows = await query(`WITH changes AS MATERIALIZED (
+  const typed=options?.typed!==false;
+  const statement=typed ? `WITH changes AS MATERIALIZED (
     SELECT zone,verb,sum(n)::bigint n FROM state_queue_zone_changes WHERE epoch=$1 GROUP BY zone,verb
   ), pieces AS (
     SELECT (v->>0)::smallint zone,v->>1 verb,(v->>2)::bigint n FROM jsonb_array_elements($2::text::jsonb) v
@@ -92,9 +93,29 @@ export async function seedQueueZones(query, options) {
     SELECT $1,(SELECT coalesce(jsonb_agg(jsonb_build_array(zone,n) ORDER BY zone),'[]') FROM totals),$3::timestamptz,
       (SELECT coalesce(jsonb_agg(jsonb_build_array(zone,verb,n) ORDER BY zone,verb),'[]') FROM offsets WHERE verb<>'')
     ON CONFLICT(epoch) DO UPDATE SET workload=excluded.workload WHERE state_queue_zone_seed.workload IS NULL
-    RETURNING epoch`, [sample.order_epoch ?? '',JSON.stringify(sample.workload),sample.at]);
+    RETURNING epoch` : `WITH totals AS (
+    SELECT (v->>0)::smallint zone,(v->>1)::bigint n FROM jsonb_array_elements($2::text::jsonb) v
+    UNION ALL SELECT zone,-sum(n)::bigint FROM state_queue_zone_changes WHERE epoch=$1 GROUP BY zone
+  ), offsets AS (SELECT zone,sum(n)::bigint n FROM totals GROUP BY zone HAVING sum(n)<>0)
+  INSERT INTO state_queue_zone_seed(epoch,zones,sampled_at)
+    SELECT $1,coalesce(jsonb_agg(jsonb_build_array(zone,n) ORDER BY zone),'[]'),$3::timestamptz FROM offsets
+    ON CONFLICT(epoch) DO NOTHING RETURNING epoch`;
+  const rows=await query(statement,[sample.order_epoch??'',JSON.stringify(typed?sample.workload:sample.zones),sample.at]);
   return {...sample, installed:rows.length===1};
 }
+
+export const queueSchemaSql = `SELECT to_regclass('state_queue_zone_seed') IS NOT NULL installed,
+  to_regclass('state_queue_clearance_days') IS NOT NULL typed`;
+
+const zoneTotalsSql = `WITH epoch AS MATERIALIZED (SELECT compute_order_cut_epoch() at),
+  seed AS MATERIALIZED (SELECT s.zones FROM state_queue_zone_seed s WHERE epoch=coalesce((SELECT at FROM epoch),'')),
+  pieces AS (
+    SELECT (v->>0)::smallint zone,(v->>1)::bigint n FROM seed CROSS JOIN LATERAL jsonb_array_elements(zones) v
+    UNION ALL SELECT zone,n FROM state_queue_zone_changes WHERE epoch=coalesce((SELECT at FROM epoch),'')
+  ), totals AS (SELECT zone,sum(n)::bigint n FROM pieces GROUP BY zone HAVING sum(n)<>0)
+  SELECT (SELECT at FROM epoch) order_epoch,
+    to_char(statement_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') counts_at,
+    coalesce((SELECT jsonb_agg(jsonb_build_array(zone,n) ORDER BY zone) FROM totals),'[]') zones FROM seed`;
 
 export const queueZonesSql = `WITH epoch AS MATERIALIZED (SELECT compute_order_cut_epoch() at),
   seed AS MATERIALIZED (SELECT s.zones,s.workload FROM state_queue_zone_seed s WHERE epoch=coalesce((SELECT at FROM epoch),'')),
@@ -115,6 +136,12 @@ export const queueZonesSql = `WITH epoch AS MATERIALIZED (SELECT compute_order_c
     CASE WHEN seed.workload IS NOT NULL THEN coalesce((SELECT jsonb_object_agg(verb,n) FROM verbs),'{}') END verbs,
     coalesce((SELECT jsonb_object_agg(verb,n) FROM finished),'{}') completed FROM seed`;
 
+export async function readQueueCounts(db,{requireWorkload=false}={}) {
+  const schema=await db.prepare(queueSchemaSql).first();
+  if (!schema?.installed) return undefined;
+  if (requireWorkload && !schema.typed) return null;
+  return await db.prepare(schema.typed ? queueZonesSql : zoneTotalsSql).first() ?? null;
+}
 
 export function queueOrders(zones, held = []) {
   const active = new Map(held.map(row=>[Number(row.zone),Number(row.n)]));

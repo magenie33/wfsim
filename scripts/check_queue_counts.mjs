@@ -6,6 +6,7 @@ import postgres from './pg/node_modules/postgres/src/index.js';
 import {seedComputeWork} from './pg/fixtures.mjs';
 import {compareQueueDay,measureQueueCosts,queueHours,recordQueueDay} from '../worker/queue_clearance.js';
 import {pgDb,postgresClient,placeholders} from '../worker/db.js';
+import {queueDemandOf} from '../worker/contribution.js';
 import {seedQueueZones,queueZonesSql} from '../worker/queue_counts.js';
 
 const port=Number(process.env.WFSIM_STATISTICS_TEST_PORT);
@@ -39,10 +40,22 @@ try{
     await query(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
   await query(readFileSync(new URL('../worker/pg/order_cut_indexes.sql',import.meta.url),'utf8').replaceAll('INDEX CONCURRENTLY','INDEX'));
   for(const id of ['a','b','c','d','e'])await seedComputeWork(seedData,{id,verb:id==='b'?'optimize':'simulate',producer:'sweep'});
+  const db=pgDb(postgresClient(sql));
+  assert.equal(await queueDemandOf({LIBRARY:db}),undefined);
+  assert.equal(await measureQueueCosts(db,null),null);
   await query(`CREATE TABLE state_queue_zone_changes(epoch text NOT NULL,writer int NOT NULL,zone smallint NOT NULL,n bigint NOT NULL,PRIMARY KEY(epoch,writer,zone));
     CREATE TABLE state_queue_zone_seed(epoch text PRIMARY KEY,zones jsonb NOT NULL,sampled_at timestamptz NOT NULL);
     INSERT INTO state_queue_zone_changes VALUES('',0,3,2);
     INSERT INTO state_queue_zone_seed VALUES('','[[3,3]]',now());`);
+  await query("DELETE FROM state_queue_zone_seed WHERE epoch=''");
+  const legacySeed=await sql.begin('isolation level repeatable read',tx=>
+    seedQueueZones((s,args=[])=>tx.unsafe(s,args),{typed:false,pageRows:2}));
+  assert(legacySeed.installed);
+  const legacy=await queueDemandOf({LIBRARY:db});
+  assert.deepEqual(legacy.queue.zones,[[3,5]]);
+  assert.equal(legacy.clear_hours,null);
+  assert.equal(await measureQueueCosts(db,null),null);
+  console.log('ok total orders survive a staged queue statistics upgrade');
   await query(readFileSync(new URL('../worker/pg/queue_counts.sql',import.meta.url),'utf8'));
   assert.deepEqual(await read(),[[3,5]]);
   assert.equal((await query(queueZonesSql))[0].verbs,null);
@@ -71,7 +84,7 @@ try{
   await check('removing a cancellation restores current eligibility');
   await seedComputeWork(seedData,{id:'post-opt',verb:'optimize',producer:'sweep'});
   await check('mixed verbs in one zone retain their own workload');
-  const db=pgDb(postgresClient(sql)), now=Date.now();
+  const now=Date.now();
   await query(readFileSync(new URL('../deploy/queue_cost_index.sql',import.meta.url),'utf8').replace('INDEX CONCURRENTLY','INDEX'));
   for(const [verb,ms] of [['simulate',100],['optimize',900]]) {
     const id='measured-'+verb, at=new Date(now-(verb==='simulate'?2:48)*3600000).toISOString();

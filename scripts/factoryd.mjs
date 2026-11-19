@@ -14,7 +14,7 @@ import { signalTick, snapshotTick, fairTick, readFair, compareFair, settleShadow
 import { servedRelease, CLIENTS_PER_FACT, PROTOCOL, PROTOCOLS_SERVED } from "../worker/verify.js";
 import { dialsOf, forgetDials } from "../worker/dials.js";
 import {measureQueueCosts,recordQueueDay} from '../worker/queue_clearance.js';
-import {seedQueueZones} from '../worker/queue_counts.js';
+import {queueSchemaSql,seedQueueZones} from '../worker/queue_counts.js';
 import {currentStatistics} from '../worker/statistics_clock.js';
 import { putObject } from "./sigv4.mjs";
 import { iso } from "../worker/instant.js";
@@ -292,7 +292,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     // THE COMPUTE PAGE'S PICTURE, one object every reader gets (worker/contribution.js `demandOf`).
     queueMaintenance: async () => {
       if(!statisticsTransaction||!await allowStatistics('queue maintenance'))return false;
-      const present=await env.LIBRARY.prepare("SELECT to_regclass('state_queue_zone_seed') IS NOT NULL installed").first();
+      const present=await env.LIBRARY.prepare(queueSchemaSql).first();
       if(!present?.installed)return false;
       await statisticsTransaction(async tx=>{
         await tx.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ",[]);
@@ -305,8 +305,8 @@ export async function run({ once = false, opened = null, servedNow = served, tar
           return (await tx.query(sql,args)).rows;
         };
         await query('SELECT queue_count_fold()');
-        const [seeded]=await query("SELECT 1 FROM state_queue_zone_seed WHERE epoch=coalesce(compute_order_cut_epoch(),'') AND workload IS NOT NULL");
-        if(!seeded)await seedQueueZones(query,{pageRows:4096});
+        const [seeded]=await query("SELECT 1 FROM state_queue_zone_seed WHERE epoch=coalesce(compute_order_cut_epoch(),'')"+(present.typed?" AND workload IS NOT NULL":""));
+        if(!seeded)await seedQueueZones(query,{pageRows:4096,typed:present.typed});
       });
     },
     queueCosts: async () => {

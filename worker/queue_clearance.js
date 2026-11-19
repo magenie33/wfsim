@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import {clearanceOf} from './clearance.js';
 import {iso, PACE_HOURS} from './instant.js';
-import {queueZonesSql,queueOrders} from './queue_counts.js';
+import {queueZonesSql,queueOrders,readQueueCounts} from './queue_counts.js';
 
 const HOUR = 3600000;
 export const QUEUE_PRICE_INTERVAL = 10 * 60000;
@@ -33,7 +33,7 @@ export function queueHours(row,total,prices,now) {
 }
 
 export async function measureQueueCosts(db, prior, now=Date.now()) {
-  const row=await db.prepare(queueZonesSql).first();
+  const row=await readQueueCounts(db,{requireWorkload:true});
   if (!row?.verbs) return null;
   const verbs=Object.keys(row.verbs);
   if (prior && prior.epoch===row.order_epoch && now>=prior.at && now<prior.at+QUEUE_PRICE_INTERVAL
