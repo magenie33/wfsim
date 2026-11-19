@@ -320,11 +320,7 @@ pub fn pool_for_weapon(weapon_id: &str) -> Vec<ModDef> {
 pub(super) fn weapon_of(spec: &'static crate::data::weapons::WeaponSpec)
     -> &'static crate::data::weapons::WeaponSpec
 {
-    let group = spec.transform_group.as_deref().unwrap_or(&spec.id);
-    crate::data::weapons::all()
-        .iter()
-        .find(|x| x.transform_group.as_deref().unwrap_or(&x.id) == group && x.default_form)
-        .unwrap_or(spec)
+    spec.group_default().unwrap_or(spec)
 }
 
 

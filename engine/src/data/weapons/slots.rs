@@ -87,7 +87,7 @@ pub fn combo_needs_a_stance(weapon: &str, form: crate::model::FormKind) -> bool 
     w.rules_slot() == "melee"
         && w.fixed_stance.is_none()
         && matches!(form, F::Neutral | F::Forward | F::Block | F::BlockForward)
-        && !all().iter().find(|s| s.group() == w.group() && s.form_kind() == form)
+        && !w.group_entries().find(|s| s.form_kind() == form)
             .is_some_and(|s| !s.attack.combo_script.is_empty()
                 && s.attack.combo_script.iter().all(|h| h.event_timing.is_some()))
 }
