@@ -42,6 +42,32 @@ source and mode order. Fact changes render only their identity. Snapshot
 preparation scans this derived ordered index and indexed group maxima; it does
 not read the complete canonical library again or run fights.
 
+### Shared descriptions and observed input versions
+
+One Native executable, canonical identity and source record hash identify a
+description. Partitions that read the same record share it. Every partition
+retains its own source hash, live precedence, requested measurement modes,
+selected review IDs and exact observed mailbox versions. A registered key can
+have an unseen version. Build routing uses identity, measurement routing uses
+identity and ruler, and removed reviews use the indexed review IDs. Baseline
+reconciliation advances through bounded pages of source identities even when
+every observed version matches.
+
+On an existing indexed database the storage owner installs
+`board_rank_compact_schema.mjs upgrade` while the reader is stopped. Existing
+partition rows, dependency versions and pinned pages stay readable. Updating
+one source transfers its subscriptions atomically. Unreferenced descriptions
+are released when their last input set changes. Include descriptions, input
+sets, legacy dependencies, the source epoch and the rest of the ranking
+projection together in its consistent database backup.
+
+Recovering the legacy writer requires its expanded rows. After budgeting
+their additional storage, stop the compact writer and call
+`board_rank_expand_inputs(64)` in independent transactions until it returns
+zero. The storage owner's `board_rank_compact_schema.mjs rollback` restores
+the writable dependency table after expansion. Earlier snapshots remain
+accessible through the same page reader throughout recovery.
+
 ## Complete versions
 
 Each generation captures an immutable winner file under the source UUID,
@@ -123,7 +149,10 @@ succeeded review with matching identity, mode, engine and completion time can
 account for a replaced score. An unaccounted historical identity holds its scope.
 
 `rank_catalog_coverage.mjs CAPTURE_DB ARCHIVE_DB LEDGER_DB SCOPE_DB` records
-one scope receipt. Omitting the last argument reconciles the union of archive
+one scope receipt, its archived member dispositions and its ordered page hashes.
+Repeat an incomplete receipt transfer to resume. Once these records are durable
+and the matching publication has been verified, the temporary per-scope ranking
+database can be released. Omitting the last argument reconciles the union of archive
 partitions and measured partitions against those receipts. Missing scopes,
 orphan facts and unresolved members hold the complete catalog. An eligible
 scope can emit the existing input format with `stage_rank_catalog.py STAGE

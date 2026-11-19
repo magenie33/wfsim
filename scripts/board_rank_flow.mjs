@@ -14,6 +14,10 @@ import {collectRankStorage,collectRankOrphan} from './board_rank_gc.mjs';
 
 export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha,requestedPartitions=false,fault=async()=>{}}) {
  work=boardStorage(work);await mkdir(work,{recursive:true});
+ const [storage]=await sql.unsafe(`SELECT to_regclass('state_board_rank_descriptions') IS NOT NULL
+  AND to_regclass('state_board_rank_input_sets') IS NOT NULL AND to_regclass('state_board_rank_legacy_dependencies') IS NOT NULL
+  AND EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass('state_board_rank_dependencies') AND relkind='v') AS ready`);
+ if(!storage.ready)throw new BoardRankQualificationError('install the compact ranking storage upgrade before starting the reader');
  const [boundary]=await sql.unsafe('SELECT weapon,ruler FROM state_board_rank_partitions WHERE source<>$1 OR native<>$2 LIMIT 1',[source,nativeSha]);
  if(boundary)throw new BoardRankQualificationError('ranking projection recovery boundary changed');
  const identity=await stat(binary),native=await openInventoryOperator(binary);

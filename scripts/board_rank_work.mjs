@@ -2,11 +2,12 @@
 // Per-identity readiness joins canonical inputs to one atomic derived-index commit.
 import {randomUUID,createHash} from 'node:crypto';
 import {prepareRankSources,applyRankSources,BoardRankConflict,BoardRankQualificationError} from './board_rank_index.mjs';
-import {lockRankInputs} from './board_rank_keys.mjs';
+import {cachedRankInputs,registeredRankInputs} from './board_rank_inputs.mjs';
+import {lockRankInputs,rankMeasurementKey} from './board_rank_keys.mjs';
 const now="board_input_timestamp(clock_timestamp())";
 const until="board_input_timestamp(clock_timestamp()+interval '3minutes')";
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
-const measurementKey=(identity,ruler,mode)=>'['+[identity,ruler,mode].map(JSON.stringify).join(', ')+']';
+
 
 export async function putRankDirty(tx,{weapon,ruler,identity}) {
  const [row]=await tx.unsafe(`INSERT INTO state_board_rank_dirty(weapon,ruler,identity) VALUES($1,$2,$3)
@@ -27,9 +28,12 @@ export async function routeRankInput(tx,input,source) {
  let identity=input.scope==='build'?input.key:input.scope==='measurement'?JSON.parse(input.key)[0]:input.body?.identity;
  const ruler=input.scope==='measurement'?JSON.parse(input.key)[1]:input.body?.ruler;
  await lockRankInputs(tx,source,{identities:identity?[identity]:[],reviews:input.scope==='review'?[input.key]:[]});
- const dependencies=await tx.unsafe(`SELECT DISTINCT weapon,ruler,identity FROM state_board_rank_dependencies
-  WHERE scope=$1 AND key=$2 AND(version IS NULL OR version<$3::bigint)`,[input.scope,input.key,input.version]);
- const targets=new Map(dependencies.map(row=>[JSON.stringify([row.weapon,row.ruler,row.identity]),row]));
+ const registered=await registeredRankInputs(tx,input),targets=new Map(),covered=new Set();
+ for(const {weapon,ruler,identity,version} of registered){
+  const key=JSON.stringify([weapon,ruler,identity]);
+  if(version!=null&&BigInt(version)>=BigInt(input.version))covered.add(key);
+  else targets.set(key,{weapon,ruler,identity});
+ }
  if(identity){
   const [build]=await tx.unsafe('SELECT weapon FROM entity_weapon_builds WHERE id=$1',[identity]);
   const weapon=build?.weapon||(input.scope==='build'?input.body?.weapon:null);
@@ -42,9 +46,8 @@ export async function routeRankInput(tx,input,source) {
    }
    const parts=await tx.unsafe('SELECT weapon,ruler FROM state_board_rank_partitions WHERE weapon=$1 AND ($2::text IS NULL OR ruler=$2)',[weapon,ruler||null]);
    for(const part of parts){
-    const [covered]=await tx.unsafe(`SELECT 1 FROM state_board_rank_dependencies WHERE weapon=$1 AND ruler=$2 AND identity=$3
-     AND scope=$4 AND key=$5 AND version>=$6::bigint`,[part.weapon,part.ruler,identity,input.scope,input.key,input.version]);
-    if(!covered)targets.set(JSON.stringify([part.weapon,part.ruler,identity]),{...part,identity});
+    const key=JSON.stringify([part.weapon,part.ruler,identity]);
+    if(!covered.has(key))targets.set(key,{...part,identity});
    }
    if(input.deleted)await tx.unsafe('DELETE FROM state_board_read_routes WHERE scope=$1 AND key=$2',[input.scope,input.key]);
    else await tx.unsafe(`INSERT INTO state_board_read_routes VALUES($1,$2,$3,$4) ON CONFLICT(scope,key)
@@ -61,9 +64,13 @@ export async function routeRankInput(tx,input,source) {
 export async function reconcileRankBaseline(tx,{weapon,ruler,source}) {
  const [part]=await tx.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
  if(!part.seeded||part.reconciled)return;
- const rows=await tx.unsafe(`SELECT DISTINCT d.identity FROM state_board_rank_dependencies d
-  JOIN state_board_input_mailbox m ON m.scope=d.scope AND m.key=d.key
-  WHERE d.weapon=$1 AND d.ruler=$2 AND d.identity>$3 AND d.version IS DISTINCT FROM m.version ORDER BY d.identity LIMIT 64`,[weapon,ruler,part.reconcile_cursor]);
+ const ids=await tx.unsafe(`SELECT identity FROM state_board_rank_sources WHERE weapon=$1 AND ruler=$2 AND identity>$3
+  ORDER BY identity LIMIT 64`,[weapon,ruler,part.reconcile_cursor]);
+ const rows=await tx.unsafe(`SELECT k.identity FROM jsonb_array_elements_text($3::text::jsonb) k(identity)
+  WHERE EXISTS(SELECT 1 FROM LATERAL (SELECT scope,key,version FROM state_board_rank_dependencies
+    WHERE weapon=$1 AND ruler=$2 AND identity=k.identity OFFSET 0) d
+   CROSS JOIN LATERAL (SELECT version FROM state_board_input_mailbox WHERE scope=d.scope AND key=d.key OFFSET 0) m
+   WHERE d.version IS DISTINCT FROM m.version)`,[weapon,ruler,JSON.stringify(ids.map(row=>row.identity))]);
  await lockRankInputs(tx,source,{identities:rows.map(row=>row.identity)});
  for(const {identity} of rows){
   const version=await putRankDirty(tx,{weapon,ruler,identity});
@@ -73,7 +80,7 @@ export async function reconcileRankBaseline(tx,{weapon,ruler,source}) {
  const [locked]=await tx.unsafe('SELECT reconcile_cursor FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 FOR UPDATE',[weapon,ruler]);
  if(locked.reconcile_cursor!==part.reconcile_cursor)throw new BoardRankConflict('baseline reconciliation advanced');
  await tx.unsafe('UPDATE state_board_rank_partitions SET reconcile_cursor=$3,reconciled=$4 WHERE weapon=$1 AND ruler=$2',
-  [weapon,ruler,rows.at(-1)?.identity||part.reconcile_cursor,rows.length<64]);
+  [weapon,ruler,ids.at(-1)?.identity||part.reconcile_cursor,ids.length<64]);
 }
 
 export async function finishRankBaseline(tx,{weapon,ruler}) {
@@ -96,11 +103,11 @@ export async function claimRankDirty(sql,{source,native}) {
 }
 
 export async function prepareRankIdentity(sql,native,part,identity) {
- const [cached]=await sql.unsafe('SELECT * FROM state_board_rank_sources WHERE weapon=$1 AND ruler=$2 AND identity=$3',[part.weapon,part.ruler,identity]);
  for(let attempt=0;attempt<3;attempt++){
   const [before]=await sql.unsafe('SELECT record FROM entity_weapon_builds WHERE id=$1',[identity]);
   const record=before?JSON.parse(before.record):null;
-  const described=await prepareRankSources(native,{weapon:part.weapon,ruler:part.ruler,inputs:[{identity,record,facts:[]}],cached:cached?[cached]:[]});
+  const cached=await cachedRankInputs(sql,part,[{identity,record}]);
+  const described=await prepareRankSources(native,{weapon:part.weapon,ruler:part.ruler,inputs:[{identity,record,facts:[]}],cached});
   const descriptor=described.sources[0];
   const captured=await sql.begin('isolation level repeatable read read only',async tx=>{
    const [build]=await tx.unsafe('SELECT record FROM entity_weapon_builds WHERE id=$1',[identity]);
@@ -108,7 +115,7 @@ export async function prepareRankIdentity(sql,native,part,identity) {
    const modes=descriptor.descriptor.publication_modes||[];
    const facts=build?await tx.unsafe(`SELECT * FROM board_facts WHERE identity=$1 AND ruler=$2
     AND mode IN(SELECT jsonb_array_elements_text(($3::text)::jsonb)) ORDER BY mode`,[identity,part.ruler,JSON.stringify(modes.map(row=>row.id))]):[];
-   const dependencies=[{scope:'build',key:identity},...modes.map(mode=>({scope:'measurement',key:measurementKey(identity,part.ruler,mode.id)})),
+   const dependencies=[{scope:'build',key:identity},...modes.map(mode=>({scope:'measurement',key:rankMeasurementKey(identity,part.ruler,mode.id)})),
     ...[...new Set(facts.map(row=>row.review_id).filter(Boolean))].map(key=>({scope:'review',key}))];
    const headers=await tx.unsafe(`SELECT scope,key,version FROM state_board_input_mailbox WHERE (scope,key) IN
     (SELECT x.scope,x.key FROM jsonb_to_recordset(($1::text)::jsonb)x(scope text,key text))`,[JSON.stringify(dependencies)]);
