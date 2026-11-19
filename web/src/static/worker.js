@@ -13,7 +13,7 @@
 // page runs it in a DEDICATED worker and cancels by terminating it.
 // A LOAD THAT FAILS SAYS WHERE before it throws: `{ kind: "load_failed", cause }`,
 // one of `LOAD_CAUSES` in 06-transport.js. The throw stays, because the
-// optimizer's fleets settle on `onerror` alone and know no such message.
+// optimizer's fleets rely on `onerror` for load failures.
 const loadFailed = (cause) => postMessage({ kind: "load_failed", cause });
 try {
   importScripts("pkg/wfsim_wasm.js");
@@ -60,10 +60,7 @@ ready.then(() => wasm_bindgen.set_heartbeat(() => {
   if (now - beatAt >= 2000) { beatAt = now; postMessage({ kind: "alive", source: "engine" }); }
 }), () => {});
 
-onmessage = async (e) => {
-  if (e.data.kind === "engine") { handed(e.data); return; }
-  await ready;
-  const msg = e.data;
+function runCall(msg) {
   if (msg.kind === "shard") {
     // ONE SLICE OF A SIMULATION. The runs are independent given their index, so
     // a fleet of these covers the range between them — see `simulate_shard`.
@@ -120,5 +117,36 @@ onmessage = async (e) => {
       ? wasm_bindgen.optimize_resume(body, typeof cp === "string" ? cp : JSON.stringify(cp), onProgress, onCheckpoint, onBoard)
       : wasm_bindgen.optimize(body, onProgress, onCheckpoint, onBoard);
     postMessage({ kind: "result", payload: JSON.parse(out) });
+  }
+}
+
+let trapped = false;
+onmessage = async ({ data: msg }) => {
+  if (typeof msg?.kind !== "string") return;
+  if (msg.kind === "engine") { handed(msg); return; }
+  try { await ready; } catch (_) { return; } // The load failure is already reported above.
+  if (trapped) return;
+  try {
+    runCall(msg);
+  } catch (err) {
+    if (err instanceof WebAssembly.RuntimeError) {
+      // A trap can leave the instance unusable. Stop queued calls before the
+      // error task runs so the page can fail and replace the entire lane.
+      trapped = true;
+      setTimeout(() => {
+        try { throw err; } finally { close(); }
+      });
+      return;
+    }
+    const error = String(err?.message || err);
+    if (msg.kind === "api" || msg.kind === "shard" || msg.kind === "merge") {
+      postMessage({ id: msg.id, payload: { ok: false, error } });
+    } else if (msg.kind === "rest") {
+      postMessage({ id: msg.id, kind: "rested", payload: { ok: false, error } });
+    } else {
+      // The optimizer treats a negative result as an engine refusal. Raise
+      // execution faults from a task so its Worker.onerror can settle the fleet.
+      setTimeout(() => { throw err instanceof Error ? err : new Error(error); });
+    }
   }
 };

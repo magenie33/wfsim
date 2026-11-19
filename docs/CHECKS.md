@@ -2226,6 +2226,13 @@ whose needles are English reads a Chinese page as eight missing axes — the sam
 picture a genuinely missing axis makes. `LANG` is read at boot, so the switch is
 a reload.
 
+## `check_worker_execution_errors`
+
+A Chromium Worker executes a small WebAssembly `unreachable` instruction. The
+optimizer receives the exception, and a shared lane settles pending requests
+and retries on a fresh instance. Fixtures also cover RPC ids, load failures,
+ordinary engine refusals, malformed replies and termination during a rest.
+
 ## `check_calc_recovers`
 
 **THE QUICK CALC SURVIVES LOSING ITS WORKERS**: it never stops producing
