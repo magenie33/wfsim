@@ -945,8 +945,7 @@ async function rivenGainOnce(w, id) {
     // …AND IT STOPS WHEN COMPUTING IS TURNED OFF OR HELD, the lease handed back.
     if (computeFrozen) { lost = true; heldLease = null; }
     if (lost || !boardVerifyOn() || computeHeld()) {
-      job.cancelled = true;
-      job.workers.forEach((x) => x.terminate());
+      job.cancel();
       giveBack();
       computeEnd(null);
       return true;

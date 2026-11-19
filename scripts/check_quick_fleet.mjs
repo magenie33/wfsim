@@ -108,8 +108,8 @@ async function checkSignals() {
   now = 6000;
   workers[2].emit({ kind: "alive", source: "loading" });
   assert.equal(resting.status.engine_last_at, 5000, "a loading timer never refreshes calculation feedback");
-  resting.cancelled = true;
   workers[2].emit({ kind: "rested" });
+  resting.cancel();
   await drain();
   assert.equal(resting.status.engine_last_at, 5000, "finishing a rest never refreshes calculation feedback");
   assert.equal(resting.status.response_last_at, now);
@@ -334,9 +334,110 @@ async function checkDeliveries() {
   console.log("  ok  quick fleet stops watching on result, waits for ordered saves and reports actual delivery failures");
 }
 
+async function checkCancellation() {
+  const readApp = file => readFileSync(new URL(`../web/src/static/app/${file}.js`, import.meta.url), "utf8");
+  const source = readApp("08-checkpoint-api");
+  const boardWork = readApp("69-board-work");
+  const rivenGain = boardWork.slice(boardWork.indexOf("const RIVEN_RENEW_MS"), boardWork.indexOf("/// ONE ROW, fought here"));
+  const community = readApp("93-community-calculations");
+  const communityOptimize = community.slice(community.indexOf("async function communityOptimizationReport("), community.indexOf("const COMMUNITY_CALCULATIONS"));
+  const budget = transport.slice(0, transport.indexOf("const computeElapsed"));
+  const flush = () => new Promise(setImmediate);
+
+  for (const caller of ["foreground", "riven gain", "community report"]) {
+    for (const saving of [true, false]) {
+      const label = `${caller} cancels while ${saving ? "saving" : "computing"}`;
+      let timerId = 0, giveBacks = 0;
+      const watchdogs = new Map(), polls = new Map(), workers = [], saves = [];
+      const controller = new AbortController();
+      const request = { strategy: "quick" }, buildSource = { kind: "public" };
+      const sandbox = createContext({
+        Date: class extends Date { static now() { return 1000; } }, performance: { now: () => 1000 },
+        setInterval: f => { watchdogs.set(++timerId, f); return timerId; }, clearInterval: id => watchdogs.delete(id),
+        setTimeout: f => { polls.set(++timerId, f); return timerId; }, clearTimeout: id => polls.delete(id),
+        detectedCores: () => ({ n: 1 }), poolSize: () => 1, communityLanes: () => 1, readerBusy: () => false,
+        computeNow: null, boardVerifyOn: () => true, computeHeld: () => false, computeFrozen: false,
+        computeStart() {}, computeProgress() {}, computeEnd() {}, giveBack() { giveBacks++; },
+        request, buildSource, signal: controller.signal, communityOptimizationBuildSource: async () => buildSource,
+        keepOptimizationBuilds: () => new Promise((resolve, reject) => saves.push({ resolve, reject })),
+        spawnEngine: () => {
+          const worker = { requests: 0, terminations: 0, postMessage() { this.requests++; }, terminate() { this.terminations++; } };
+          workers.push(worker);
+          return worker;
+        },
+      });
+      runInContext("let wopt = null, woptNextId = 1, heldLease = null, computeBeats = 0, observedJob;", sandbox);
+      runInContext(budget, sandbox);
+      runInContext("computeRanges = { solo: { min: 100, max: 100 }, together: { min: 100, max: 100 } };", sandbox);
+      runInContext(watch, sandbox);
+      runInContext(source, sandbox);
+      runInContext(rivenGain, sandbox);
+      runInContext(communityOptimize, sandbox);
+      runInContext("const startFleet = quickFleet; quickFleet = (...args) => observedJob = startFleet(...args);", sandbox);
+      const start = { foreground: "woptStart(request)", "riven gain": "rivenGainOnce({ request, code: 'test' }, 'verifier')",
+        "community report": "communityOptimizationReport(request, { signal, buildSource })" }[caller];
+      const completion = Promise.resolve(runInContext(start, sandbox)).then(value => ({ value }), error => ({ error }));
+      const running = runInContext("computeBudget.running", sandbox);
+      const occupied = () => running.solo + running.together;
+      await flush();
+      const job = runInContext("observedJob", sandbox), [worker] = workers;
+      assert.equal(worker.requests, 1, label);
+      assert.equal(occupied(), 1, label);
+      const message = worker.onmessage, error = worker.onerror;
+      if (saving) message({ data: { kind: "result", payload: { ok: true, builds: ["final"] } } });
+      await flush();
+      assert.equal(saves.length, saving ? 1 : 0, label);
+      assert.equal(watchdogs.size, saving ? 0 : 1, label);
+      assert.equal(occupied(), 1, "the call holds a slot until its reply and save settle");
+
+      if (caller === "foreground") {
+        runInContext("woptCancel(); woptCancel();", sandbox);
+      } else {
+        if (caller === "riven gain") sandbox.computeFrozen = true;
+        else controller.abort();
+        for (const [id, poll] of polls) { polls.delete(id); poll(); }
+        const { value, error } = await completion;
+        if (caller === "riven gain") { assert.equal(value, true); assert.equal(giveBacks, 1); }
+        else assert.equal(error?.message, "Cancelled");
+      }
+      await flush();
+      assert.equal(occupied(), 0, `${label} must return the slot without waiting for the save or watchdog`);
+      assert.equal(job.cancelled, true, label);
+      assert.equal(job.result, null, label);
+      assert.equal(job.workers.length, 0, label);
+      assert.equal(worker.terminations, 1, label);
+      assert.equal(watchdogs.size, 0, label);
+      assert.equal(runInContext("fleetKept.length", sandbox), 0, label);
+      if (caller === "foreground") assert.equal(runInContext("woptStatus().phase", sandbox), "cancelled");
+
+      runInContext("woptStart(request)", sandbox);
+      await flush();
+      assert.equal(workers[1].requests, 1, "a new search starts before the cancelled save settles");
+      const cancelledStatus = job.status;
+      message({ data: { kind: "result", payload: { ok: true, builds: ["late"] } } });
+      error({ message: "late worker error" });
+      if (saving) {
+        if (caller === "riven gain") saves[0].resolve();
+        else saves[0].reject(new Error("late save error"));
+      }
+      await flush();
+      assert.equal(saves.length, saving ? 1 : 0, "late replies do not start another save");
+      assert.equal(job.status, cancelledStatus, "late replies and failures do not update the cancelled job");
+      assert.equal(job.result, null, label);
+      workers[1].onmessage({ data: { kind: "result", payload: { ok: true } } });
+      await flush();
+      assert.equal(runInContext("woptStatus().phase", sandbox), "done");
+      assert.equal(occupied(), 0, label);
+      assert.equal(watchdogs.size, 0, label);
+    }
+  }
+  console.log("  ok  foreground and community quick fleet cancellation return the compute slot and ignore late replies and failures");
+}
+
 await checkSignals();
 await checkFailures();
 await checkDeliveries();
+await checkCancellation();
 if (process.argv.includes("--signals-only")) process.exit(0);
 
 // A FROZEN SURVEY QUESTION, cut short: its fight shorter and fewer runs and starts.
@@ -410,10 +511,7 @@ try {
           answer: { results: result.results, start_results: result.start_results, final_work: result.final_work }, wire };
       } finally {
         cleanup.forEach(restore => restore());
-        if (!job.result) {
-          job.cancelled = true;
-          workers.forEach(worker => worker.terminate());
-        }
+        job.cancel();
       }
     };
     return { serial: await run(1), split: await run(2, "reverse"), missing: await run(2, "missing") };

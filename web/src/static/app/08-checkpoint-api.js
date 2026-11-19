@@ -221,8 +221,14 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     job.workers = [];
     if (finished && keep) fleetKeep(ws); else ws.forEach((w) => w && w.terminate());
   };
+  job.cancel = () => {
+    if (job.cancelled || job.result) return;
+    job.cancelled = true;
+    stop(false);
+    show();
+  };
   const fail = (why, engine = false) => {
-    if (job.result) return;
+    if (job.cancelled || job.result) return;
     job.result = { ok: false, error: why, worker_dead: !engine };
     stop(false);
     show();
@@ -237,6 +243,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     const finish = payload => { if (finished) return; finished = true; pendingCalls.delete(finish); wd.clear(); signals.finish(i); resolve(payload); };
     pendingCalls.add(finish);
     w.onmessage = (e) => {
+      if (finished) return;
       try {
         wd.heard();
         signals.heard(i, e.data);
@@ -564,7 +571,8 @@ function woptCancel() {
   if (!wopt) return { ok: false, error: "no such optimize job" };
   // Cancel kills the WHOLE fleet. Each worker's last pushed board is already
   // here and merged, which is what a cancel has to show.
-  if (wopt.workers && wopt.workers.length) {
+  if (wopt.cancel) wopt.cancel();
+  else if (wopt.workers && wopt.workers.length) {
     wopt.workers.forEach((w) => w && w.terminate());
     wopt.workers = [];
     wopt.cancelled = true;

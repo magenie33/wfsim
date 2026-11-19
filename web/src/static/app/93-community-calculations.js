@@ -27,7 +27,7 @@ async function communityOptimizationReport(request, { signal, buildSource }) {
   if (signal.aborted) throw new Error("Cancelled");
   const job = quickFleet(request, () => communityLanes(), async () => {},
     { keep: true, kind: "together", onBuilds: builds => keepOptimizationBuilds(builds, buildSource) });
-  const stop = () => { job.cancelled = true; job.workers.forEach((worker) => worker.terminate()); };
+  const stop = job.cancel;
   signal.addEventListener("abort", stop, { once: true });
   try {
     while (!job.result && !signal.aborted) {
