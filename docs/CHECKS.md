@@ -1623,7 +1623,9 @@ Source-driven worker fixtures cover partial creation, dispatch, scheduling and
 rest failures after completed work. Empty or repeated batches and incomplete
 score replies also end the search and release every worker and watchdog. A
 slow call that keeps reporting remains live and returns its full answer and
-work counts. `--signals-only` runs these fixtures without a browser.
+work counts. The terminal reply ends the worker timer. The call waits for
+ordered build saves and reports their own storage errors. Cancelling releases
+the compute slot during either stage. `--signals-only` covers both stages.
 
 ## `check_idle_devices`
 

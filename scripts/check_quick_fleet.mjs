@@ -312,6 +312,7 @@ async function checkDeliveries() {
     } else {
       assert.equal(job.result?.error ?? null, null, "a terminal worker reply must not time out during build persistence");
       assert.equal(job.result, null, "the job still waits for durable saves");
+      assert.equal(job.status.workers_active, 0, "a worker that already replied is not still computing");
       assert.equal(timers.size, 0, "no worker-silence timer remains after the reply");
     }
     if (outcome === "stream save failed") saves[0].reject(new Error(outcome));
@@ -326,7 +327,10 @@ async function checkDeliveries() {
     }
     assert.equal(job.result.ok, outcome === "saved");
     if (outcome === "saved") assert.deepEqual(job.result.results, ["answer"]);
-    else assert.equal(job.result.error, outcome);
+    else {
+      assert.equal(job.result.error, outcome);
+      assert.equal(job.result.worker_dead, silent, "storage and communication failures have distinct causes");
+    }
     assert.equal(timers.size, 0);
     assert.equal(job.workers.length, 0);
     assert.equal(worker.terminated, true);
