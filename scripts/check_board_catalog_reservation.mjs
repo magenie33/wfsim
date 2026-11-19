@@ -45,6 +45,18 @@ export async function checkOccupiedReservation({sql,native,work,source,weapon,in
   const receipt={source,weapon,ruler,snapshot:manifest.snapshot,native:native.adapter,archive:'c'.repeat(64),eligible:true,unresolved:0,members:1,
    rows:1,pages_sha256:sha('1 1 '+sha(rows[0].page+'\n')+'\n')};
   const args={epoch,manifest,receipt,contract:native.contract,work,reservation:saved};
+  const archivedRevision='a'.repeat(64);
+  await sql.begin(async tx=>{
+   await tx.unsafe('INSERT INTO state_board_public_import VALUES(1,$1)',[receipt.archive]);
+   await tx.unsafe("INSERT INTO record_board_read_snapshots VALUES($1,$2,$3,$4,'',$5,1,'[]','before','before')",
+    [...keys,archivedRevision,'archive:'+receipt.archive,receipt.archive]);
+   await tx.unsafe('INSERT INTO state_board_read_rows VALUES($1,$2,$3,1,$4)',[...keys,archivedRevision,rows[0].page]);
+   await tx.unsafe('INSERT INTO state_board_public_heads SELECT weapon,ruler,scene,$3 FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2',[...keys,archivedRevision]);
+  });
+  await assert.rejects(registerCatalogScope(sql,{...args,receipt:{...receipt,archive:'b'.repeat(64)}}),/outside the pinned archive/);
+  await sql.unsafe("INSERT INTO record_board_read_snapshots VALUES($1,$2,'unknown','unknown','','other',0,'[]','before','before')",keys);
+  await assert.rejects(registerCatalogScope(sql,args),/private catalog preparation changed/);
+  await sql.unsafe("DELETE FROM record_board_read_snapshots WHERE weapon=$1 AND ruler=$2 AND revision='unknown'",keys);
   await assert.rejects(registerCatalogScope(sql,{...args,reservation:{...saved,rank:{...saved.rank,cursor:'0'}}}),/predecessor changed/);
   await assert.rejects(registerCatalogScope(sql,{...args,reservation:{...saved,source_count:saved.source_count+1}}),/coverage changed/);
   assert.equal((await inventory(sql,weapon,ruler)).rank.cut,saved.rank.cut);

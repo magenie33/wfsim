@@ -112,7 +112,6 @@ export function planBatch({journal,capture,archive,ledger,sets,final,budget,cont
   const exact=journal.prepare('SELECT rows FROM pins WHERE weapon=? AND ruler=? AND revision=? LIMIT 1');
   const remember=journal.prepare('INSERT INTO initial_heads VALUES(?,?,?,?,?,?)');
   for(const s of selected){
-   assert(pin.get(s.weapon,s.ruler),'an existing public scope has no protected history');
    assert(exact.get(s.weapon,s.ruler,s.revision)?.rows===Number(s.rows)||/^[a-f0-9]{64}$/.test(s.pages_sha256),
     'initial selection lacks its protected membership or Native page proof');
    remember.run(s.weapon,s.ruler,s.revision,Number(s.rows),s.output_sha256??null,s.pages_sha256??null);

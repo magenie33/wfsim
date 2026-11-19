@@ -42,6 +42,12 @@ export async function registerCatalogScope(sql,{work,manifest:m,receipt:r,contra
    if(['frozen','replay'].includes(part.catalog_phase))throw Error('public head advanced during catalog handoff');
    return {status:selected.revision===expectedRevision?'retained':'advanced',weapon,ruler,revision:selected.revision};
   }
+  const [publicHead]=await tx.unsafe(`SELECT h.revision,s.source,s.inputs_sha256,i.archive,f.token
+   FROM state_board_public_heads h LEFT JOIN record_board_read_snapshots s USING(weapon,ruler,revision)
+   LEFT JOIN record_board_rank_snapshot_refs f USING(weapon,ruler,revision)
+   LEFT JOIN state_board_public_import i ON i.id=1 WHERE h.weapon=$1 AND h.ruler=$2 FOR UPDATE OF h`,keys);
+  if(publicHead&&(!publicHead.revision||publicHead.archive!==r.archive||publicHead.inputs_sha256!==r.archive||
+     publicHead.source!=='archive:'+r.archive||publicHead.token))throw Error('current public head is outside the pinned archive');
   await requireCatalogScan(tx,m,epoch);
   if(expectedRevision!==null)throw Error('pinned public catalog head missing');
   if(part?.catalog_phase){
@@ -51,7 +57,7 @@ export async function registerCatalogScope(sql,{work,manifest:m,receipt:r,contra
    return {status:part.catalog_phase,weapon,ruler};
   }
   if(part||selected){
-   Object.assign(frozen,await requestedReservation(tx,keys,scene,selected,part,reservation));
+   Object.assign(frozen,await requestedReservation(tx,keys,scene,selected,part,reservation,publicHead?.revision??null));
    if(part&&(part.source!==source||part.native!==native))throw Error('occupied catalog epoch changed');
   }else if(reservation)throw Error('pinned requested reservation missing');
   const root=installed?resolve(work):guardRankSpace(work);
