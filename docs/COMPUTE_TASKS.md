@@ -759,6 +759,12 @@ at the last 24 hours' average compute. Missing cost samples or capacity leave
 that estimate unknown without hiding the order count. The inventory's separate
 clearance observation remains bound to its engine, snapshot and input time.
 
+Each UTC day the queue records its forecast and compares actual completed rounds
+at the previous forecast's per-verb prices. A type with no price in that forecast
+keeps its own unpriced round count. The comparison reports the measured subtotal
+and records a full work total only when every completed round has a price.
+Cancellations do not contribute completed rounds.
+
 The queue pipeline bounds intake independently of maintenance. A failed or
 timed-out intake retains unacknowledged arrivals and still permits bounded
 registration of committed data. The workflow reports

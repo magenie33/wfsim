@@ -59,13 +59,24 @@ export function compareQueueDay(prior, row) {
   if (!prior) return null;
   const elapsed=(Date.parse(row.counts_at)-Date.parse(prior.at))/HOUR;
   if (!(elapsed>0)) return null;
-  let actual=0;
-  for (const [verb,n] of Object.entries(row.completed)) {
-    const count=n-(prior.completed[verb]??0);
-    if (!Number.isSafeInteger(count) || count<0 || (count && !prior.unit_ms[verb])) return null;
-    if (count) actual+=count*prior.unit_ms[verb];
+  let pricedMs=0, pricedRounds=0;
+  const unpriced=[];
+  const verbs=new Set([...Object.keys(prior.completed),...Object.keys(row.completed)]);
+  for (const verb of verbs) {
+    const count=(row.completed[verb]??0)-(prior.completed[verb]??0);
+    if (!Number.isSafeInteger(count) || count<0) return null;
+    if (!count) continue;
+    const unit=prior.unit_ms[verb];
+    if (Number.isFinite(unit) && unit>0) {
+      pricedMs+=count*unit;
+      pricedRounds+=count;
+    } else {
+      unpriced.push([verb,count]);
+    }
   }
-  return {elapsed_hours:elapsed,expected_ms:Math.min(elapsed,prior.hours)*prior.ms_per_hour,completed_ms:actual};
+  return {elapsed_hours:elapsed,expected_ms:Math.min(elapsed,prior.hours)*prior.ms_per_hour,
+    completed_ms:unpriced.length ? null : pricedMs,priced_ms:pricedMs,priced_rounds:pricedRounds,
+    unpriced_rounds:Object.fromEntries(unpriced)};
 }
 
 export async function recordQueueDay(db, prices, now=Date.now()) {
