@@ -755,6 +755,12 @@ build decoded from the link's own code, named in the sharer's language, for a
 chat that shows a link as a bare string; and the system share sheet where the
 browser has one (`navigator.share`).
 
+A published build’s copied text starts with a citation containing the weapon,
+score, benchmark, recorded engine version and build link. The citation includes
+the row’s measurement timestamp when available.
+An optional player simulation is labelled separately. The build link carries
+the build; the citation travels in the text.
+
 **THE PANEL IS ONE, AND IT OPENS WHERE A BUILD IS FOUND.** Besides the build
 bar's own button, a share sits beside a build wherever one is arrived at — an
 opened finder row, a search's finalist, the simulator's result — and opens the

@@ -29,6 +29,15 @@ const r = await evaluate(`(async () => {
   };
   const entries = () => sent.filter((x) => x.startsWith('share.entry:')).map((x) => x.slice(12));
   const out = {};
+  let copied = "";
+  Object.defineProperty(navigator, "clipboard", {configurable: true, value: {
+    writeText: async value => { copied = value; },
+  }});
+  const copyText = async () => {
+    copied = "";
+    await panel().querySelector(".sh-text").onclick();
+    return copied;
+  };
 
   // THE BAR'S OWN BUTTON.
   history.pushState({}, '', '/weapons/Ballistica_Prime/builder'); route(); await sleep(3500);
@@ -51,6 +60,35 @@ const r = await evaluate(`(async () => {
   out.finderShown = shown();
   await copy();
   out.finderEntry = entries().at(-1);
+  const source = buildNamed(activePreset).board;
+  const urlText = panel().querySelector(".sh-url").value;
+  const citation = (await copyText()).split(String.fromCharCode(10))[0];
+  const scene = META.benchmarks.find(b => b.id === source.benchmark);
+  const conditions = tr(scene.name).split(" · ");
+  const unit = conditions.pop();
+  out.citation = [tr("Published leaderboard result"), conditions.join(" · "), (source.shown ?? source.score.toFixed(4)) + " " + unit,
+    source.measured_by || tr("Engine version unavailable"), "WFSim", urlText].every(value => value && citation.includes(value));
+  out.citationDetail = citation;
+  const mods = s => s.slots.map(mod => mod?.mod).filter(Boolean).sort();
+  const decoded = await decodeShare(new URL(urlText, location.origin).searchParams.get(SHARE_PARAM));
+  const plainMods = s => mods(s).filter(id => !id.startsWith("riven:") && !id.startsWith("~"));
+  out.boardMods = JSON.stringify(plainMods(decoded)) === JSON.stringify(plainMods(buildNamed(activePreset).state));
+  const realClipboard = navigator.clipboard.writeText;
+  navigator.clipboard.writeText = async () => { throw new Error("clipboard denied"); };
+  await panel().querySelector(".sh-text").onclick();
+  const selected = panel().querySelector("textarea");
+  out.manualCopy = selected?.value.startsWith(citation) && selected.selectionEnd - selected.selectionStart === selected.value.length;
+  navigator.clipboard.writeText = realClipboard;
+  const legacy = shareBoardCitation({ ...source, measured_by: "", measured_at: "" });
+  out.legacy = legacy.includes(tr("Engine version unavailable")) && (!source.measured_by || !legacy.includes(source.measured_by));
+  panel().hidden = true;
+  await openSharePanel(bar());
+  out.pinnedBoard = (await copyText()).startsWith(citation);
+  panel().hidden = true;
+  const preset = buildNamed(activePreset);
+  buildBarCfg().share(preset, bar());
+  await copy();
+  out.libraryBoard = (await copyText()).startsWith(citation);
   panel().hidden = true;
 
   // THE SIMULATOR'S RESULT: the open build, as it is.
@@ -61,6 +99,15 @@ const r = await evaluate(`(async () => {
   out.simShown = shown();
   await copy();
   out.simEntry = entries().at(-1);
+  const resultRead = window.resultForShare;
+  window.resultForShare = async () => ({engine:"test-player-engine", r:{[metricOf(sim.metric).field]:2, duration:60}});
+  try {
+    panel().querySelector(".sh-result").click();
+    for (let i=0; i<40 && !panel().querySelector(".sh-result:checked"); i++) await sleep(100);
+    const personal = await copyText();
+    out.personalUnpublished = personal.includes(tr("Player simulation")) && personal.includes("test-player-engine") &&
+      !personal.includes(tr("Published leaderboard result"));
+  } finally { window.resultForShare = resultRead; }
   panel().hidden = true;
 
   // A SEARCH'S FINALIST, from a search small enough to finish in seconds.
@@ -108,6 +155,11 @@ check("...and opens the bar's panel in view, saying it came from the finder",
   r.finderShown && r.finderEntry === "finder", ok([r.finderShown, r.finderEntry]));
 check("the simulator's result shares the open build as it is, from the bar's panel",
   r.simKept && r.simShown && r.simEntry === "simulator", ok([r.simKept, r.simShown, r.simEntry]));
+check("the copied board citation includes its published score, fight, recorded engine and build link", r.citation, r.citationDetail);
+check("the link carries the cited build and denied clipboard access selects the citation", r.boardMods && r.manualCopy);
+check("the pinned build bar and the preset library cite the same published row", r.pinnedBoard && r.libraryBoard);
+check("an older published row reports its missing version", r.legacy);
+check("the simulator does not present the open build as a leaderboard result", r.personalUnpublished);
 check("a small search finishes, so a finalist can be shared", r.searched === true);
 check("a finalist carries a share", r.optButton === true);
 check("...which saves nothing, opens nothing, and leaves the search's results",

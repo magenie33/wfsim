@@ -282,7 +282,8 @@ async function shareUrl(claim, signer = null, build = null) {
       return signed || `${SHARE_ORIGIN}${weaponPath(w.id)}/s/${j.id}`;
     }
   } catch (_) { /* the long form below */ }
-  return `${location.origin}${weaponPath(w.id)}?${SHARE_PARAM}=${code}`;
+  const origin = window.__WFSIM_DESKTOP__ || location.hostname === "wfsim.localhost" ? SHARE_ORIGIN : location.origin;
+  return `${origin}${weaponPath(w.id)}?${SHARE_PARAM}=${code}`;
 }
 
 /// WHO SHARED THE BUILD ON SCREEN, when an extension can say (`shareWho`):
@@ -501,17 +502,28 @@ async function shareMeasurement() {
     ...(sim.steel_path ? { sp: 1 } : {}),
     d: Math.round(Number(sim.duration) || 1),
   };
-  return { claim, line: `${v} ${metricLabel(met)} — ${sc.name || tr("Scenarios")}`,
+  const engine = got.engine || got.r.computation?.engine;
+  return { claim, line: [tr("Player simulation"), v + " " + metricLabel(met), sc.name || tr("Scenarios"),
+    engine && tr("engine") + " " + engine].filter(Boolean).join(" · "),
     card: { value: v, unit: metricLabel(met), scene: sc.name || tr("Scenarios") } };
+}
+
+/// The version belongs to the published row, including when an older row has no version.
+function shareBoardCitation(row) {
+  if (!row || !row.benchmark || !Number.isFinite(row.score)) return "";
+  const scene = benchList().find((b) => b.id === row.benchmark);
+  const conditions = scene ? tr(scene.name) : row.benchmark;
+  const unit = conditions.includes(" · ") ? rulerUnit(conditions) : "";
+  const fight = unit ? conditions.slice(0, -(unit.length + 3)) : conditions;
+  const score = row.shown ?? row.score.toFixed(4);
+  return [tr("Published leaderboard result"), unit ? score + " " + unit : score, fight,
+    row.measured_by ? tr("engine") + " " + row.measured_by : tr("Engine version unavailable"),
+    row.measured_at].filter((value) => value != null && value !== "").join(" · ");
 }
 
 /// Whether this browser last chose to send its result. A convenience, so it is
 /// browser storage and may be lost.
 const SHARE_RESULT = "wfsim-share-result";
-
-/// WHERE ON THE PAGE THE PANEL WAS OPENED, as `share.entry`'s subject: the bar's
-/// own button, or a share beside a build somewhere else (`openBuildShare`).
-let shareFrom = "bar";
 
 /// A SHARE BESIDE A BUILD — a finder row, a search's finalist, a result — is the
 /// one panel, opened for that build. The caller makes it the open build first,
@@ -534,16 +546,23 @@ document.addEventListener("click", (e) => { if (e.target.closest("#sim-share")) 
 
 // The share panel: the link, as a link, as text, or through the system's share
 // sheet — with the sharer's result beside it when they ask for that.
-/// A `build` that is not the open one leaves without the result and the card:
-/// both are drawn from the open build, so they would describe another.
+/// The optional simulation and card both describe the open editor build.
 async function openSharePanel(bar, from = "bar", build = null) {
-  const panel = bar.querySelector(".pshare");
-  if (!panel) return;
-  if (!panel.hidden) { panel.hidden = true; return; }
-  panel.hidden = false;
-  shareFrom = from;
+  const slot = bar.querySelector(".pshare");
+  if (!slot) return;
+  if (!slot.hidden) { slot.hidden = true; return; }
+  slot.hidden = false;
+  // Each opening owns its async render; a slow link for a previous row cannot replace this one.
+  const panel = document.createElement("div");
+  slot.replaceChildren(panel);
+  const ref = (from === "bar" || from === "finder") && openedBoardActive(presetWeapon());
+  const pinned = ref && openedBoardBuild(ref);
+  const current = pinned && presetId(pinned) === activePreset ? pinned : null;
+  const linkedBuild = build || current;
+  const citation = shareBoardCitation(linkedBuild?.board);
+  const openBuild = !build || (from === "finder" && current && sameBoardRef(boardRef(build), ref));
   let withResult = false;
-  try { withResult = !build && localStorage.getItem(SHARE_RESULT) === "1"; } catch (_) { /* off */ }
+  try { withResult = openBuild && localStorage.getItem(SHARE_RESULT) === "1"; } catch (_) { /* off */ }
   // A LINK AN EXTENSION CAN SIGN offers it here (`shareSigner`); one it signs
   // only for some readers is shown `locked`, greyed, with the extension's words
   // on whose it is — never a prompt. Otherwise the link is plain.
@@ -554,9 +573,11 @@ async function openSharePanel(bar, from = "bar", build = null) {
     if (withResult) panel.innerHTML = `<div class="sh-note">${escHtml(tr("simulating this build in the current scenario…"))}</div>`;
     const measured = withResult ? await shareMeasurement() : null;
     const signing = !!signer && !signer.locked && signer.on();
-    const bUrl = await shareUrl(measured && measured.claim, signing ? signer : null, build);
-    const lines = await shareText(build);
-    const text = measured ? [lines[0], measured.line, ...lines.slice(1)] : lines;
+    const bUrl = await shareUrl(measured && measured.claim, signing ? signer : null, linkedBuild);
+    const lines = await shareText(linkedBuild);
+    const heading = citation ? lines[0] + " · " + citation : lines[0];
+    const details = measured ? [measured.line, ...lines.slice(1)] : lines.slice(1);
+    const clipboardText = (citation ? [heading + " · " + bUrl, ...details] : [heading, ...details, bUrl]).join("\n");
     const native = typeof navigator.share === "function";
     panel.innerHTML =
       `<div class="sh-row"><input class="sh-url" type="text" readonly value="${escHtml(bUrl)}">` +
@@ -564,7 +585,7 @@ async function openSharePanel(bar, from = "bar", build = null) {
       `<button class="cu-btn sh-text">${escHtml(tr("copy as text"))}</button>` +
       (native ? `<button class="cu-btn sh-native">${escHtml(tr("share…"))}</button>` : "") +
       `</div>` +
-      (build ? "" : `<label class="sh-opt"><input type="checkbox" class="sh-result"${withResult ? " checked" : ""}> ` +
+      (!openBuild ? "" : `<label class="sh-opt"><input type="checkbox" class="sh-result"${withResult ? " checked" : ""}> ` +
       `${escHtml(tr("include my result in this scenario"))}` +
       (measured ? ` <b>${escHtml(measured.line)}</b>` : "") + `</label>`) +
       (signer ? (signer.locked
@@ -572,9 +593,10 @@ async function openSharePanel(bar, from = "bar", build = null) {
         : `<label class="sh-opt"><input type="checkbox" class="sh-sign"${signing ? " checked" : ""}> ${signer.option}</label>`) : "") +
       `<div class="sh-note">${escHtml(tr(measured
         ? "the link still opens the build alone; your result travels beside it, shown as yours"
+        : citation ? "The text cites the published score. The link opens the build."
         : "the build and its rivens, and nothing else: no fight, no measurement, so opening it leaves the reader's own scenario untouched"))}`
         + (signing ? ` ${signer.note}` : "") + `</div>` +
-      (SHARE_CARD_ENABLED && !build
+      (SHARE_CARD_ENABLED && openBuild
         ? `<div class="sh-more"><button class="cu-btn sh-full">${escHtml(tr("…as a card →"))}</button></div>`
         : "");
     const bBox = panel.querySelector(".sh-url");
@@ -582,22 +604,29 @@ async function openSharePanel(bar, from = "bar", build = null) {
     // `n` says HOW it left: 1 the link, 2 as text, 3 through the system's share sheet.
     panel.querySelector(".sh-copy").onclick = async () => {
       track("share.create", $("weapon").value, 1);
-      track("share.entry", shareFrom);
+      track("share.entry", from);
       try { await navigator.clipboard.writeText(bUrl); presetToast(tr("link copied")); }
       catch (_) { bBox.select(); presetToast(tr("press Ctrl+C to copy the selected link")); }
     };
     panel.querySelector(".sh-text").onclick = async () => {
       track("share.create", $("weapon").value, 2);
-      track("share.entry", shareFrom);
-      try { await navigator.clipboard.writeText(`${text.join("\n")}\n${bUrl}`); presetToast(tr("text copied")); }
-      catch (_) { bBox.select(); presetToast(tr("press Ctrl+C to copy the selected link")); }
+      track("share.entry", from);
+      try { await navigator.clipboard.writeText(clipboardText); presetToast(tr("text copied")); }
+      catch (_) {
+        let field = panel.querySelector(".sh-copy-text");
+        if (!field) {
+          field = document.createElement("textarea"); field.className = "sh-copy-text"; field.readOnly = true;
+          field.setAttribute("aria-label", tr("copy as text")); panel.append(field);
+        }
+        field.value = clipboardText; field.select(); presetToast(tr("Copy the selected text"));
+      }
     };
     const nat = panel.querySelector(".sh-native");
     if (nat) nat.onclick = async () => {
       track("share.create", $("weapon").value, 3);
-      track("share.entry", shareFrom);
+      track("share.entry", from);
       // A CANCELLED SHEET REJECTS, and a reader closing it is not an error.
-      try { await navigator.share({ title: text[0], text: text.slice(1).join("\n"), url: bUrl }); } catch (_) { /* closed */ }
+      try { await navigator.share({ title: lines[0], text: [citation, ...details].filter(Boolean).join("\n"), url: bUrl }); } catch (_) { /* closed */ }
     };
     const signBox = panel.querySelector(".sh-sign");
     if (signBox) signBox.onchange = (e) => {
