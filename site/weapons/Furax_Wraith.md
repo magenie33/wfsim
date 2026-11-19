@@ -18,3 +18,4 @@ Fist · Melee · Mastery Rank 9. 139 base damage (impact 97.3, puncture 20.85, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Furax_Wraith
 - Every published board row, as JSON: https://wfsim.app/board/furax_wraith.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

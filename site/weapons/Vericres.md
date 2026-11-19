@@ -17,3 +17,4 @@ Warfan · Melee · Mastery Rank 8. 180 base damage (impact 21.6, puncture 28.8, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Vericres
 - Every published board row, as JSON: https://wfsim.app/board/vericres.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

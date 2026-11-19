@@ -15,3 +15,4 @@ Sword · Melee · Mastery Rank 0. 120 base damage (impact 18, puncture 18, slash
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Skana
 - Every published board row, as JSON: https://wfsim.app/board/skana.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

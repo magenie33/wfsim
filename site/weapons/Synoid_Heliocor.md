@@ -17,3 +17,4 @@ Hammer · Melee · Mastery Rank 11. 280 base damage (impact 238, puncture 28, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Synoid_Heliocor
 - Every published board row, as JSON: https://wfsim.app/board/synoid_heliocor.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -15,3 +15,4 @@ Sword · Melee · Mastery Rank 7. 192 base damage (impact 28.8, puncture 28.8, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Ether_Sword
 - Every published board row, as JSON: https://wfsim.app/board/ether_sword.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

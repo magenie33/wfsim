@@ -16,3 +16,4 @@ Glaive · Melee · Mastery Rank 9. 262 base damage (impact 57, puncture 55, slas
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Pathocyst
 - Every published board row, as JSON: https://wfsim.app/board/pathocyst.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

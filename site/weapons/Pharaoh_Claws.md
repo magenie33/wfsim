@@ -12,3 +12,4 @@ Beast Claws · Sentinel · Mastery Rank 0. 325 base damage (gas 162.5, puncture 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Pharaoh_Claws
 - Every published board row, as JSON: https://wfsim.app/board/pharaoh_claws.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

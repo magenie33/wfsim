@@ -15,3 +15,4 @@ Machete · Melee · Mastery Rank 1. 90 base damage (impact 13.5, puncture 13.5, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kama
 - Every published board row, as JSON: https://wfsim.app/board/kama.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

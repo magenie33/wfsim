@@ -15,3 +15,4 @@ Sword · Melee · Mastery Rank 0. 106 base damage (impact 31.8, puncture 15.9, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Cronus
 - Every published board row, as JSON: https://wfsim.app/board/cronus.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

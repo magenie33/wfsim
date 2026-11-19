@@ -15,3 +15,4 @@ Nikana · Melee · Mastery Rank 11. 175 base damage (impact 26.25, puncture 12.2
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Skiajati
 - Every published board row, as JSON: https://wfsim.app/board/skiajati.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -15,3 +15,4 @@ Nunchaku · Melee · Mastery Rank 11. 290 base damage (impact 193, viral 97), 19
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Pulmonars
 - Every published board row, as JSON: https://wfsim.app/board/pulmonars.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

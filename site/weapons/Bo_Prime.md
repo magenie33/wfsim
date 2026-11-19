@@ -16,3 +16,4 @@ Staff · Melee · Mastery Rank 5. 176 base damage (impact 158.4, puncture 17.6),
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Bo_Prime
 - Every published board row, as JSON: https://wfsim.app/board/bo_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

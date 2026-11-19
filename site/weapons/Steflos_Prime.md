@@ -14,3 +14,4 @@ Shotgun · Primary · Mastery Rank 15. 480 base damage (heat 285, impact 195), 1
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Steflos_Prime
 - Every published board row, as JSON: https://wfsim.app/board/steflos_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

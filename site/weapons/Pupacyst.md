@@ -15,3 +15,4 @@ Polearm · Melee · Mastery Rank 7. 284 base damage (impact 139, viral 145), 13%
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Pupacyst
 - Every published board row, as JSON: https://wfsim.app/board/pupacyst.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

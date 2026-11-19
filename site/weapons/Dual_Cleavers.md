@@ -15,3 +15,4 @@ Dual Swords · Melee · Mastery Rank 5. 157 base damage (impact 23.55, puncture 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Cleavers
 - Every published board row, as JSON: https://wfsim.app/board/dual_cleavers.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

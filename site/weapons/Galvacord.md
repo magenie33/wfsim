@@ -15,3 +15,4 @@ Whip · Melee · Mastery Rank 6. 210 base damage (electricity 96, impact 12, pun
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Galvacord
 - Every published board row, as JSON: https://wfsim.app/board/galvacord.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -12,3 +12,4 @@ Staff · Melee · Mastery Rank 0. 220 base damage (impact 11, puncture 132, slas
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/balla_two_handed
 - Every published board row, as JSON: https://wfsim.app/board/balla_two_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

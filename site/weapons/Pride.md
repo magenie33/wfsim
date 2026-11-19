@@ -17,3 +17,4 @@ Heavy Scythe · Melee · Mastery Rank 14. 250 base damage (puncture 125, slash 1
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Pride
 - Every published board row, as JSON: https://wfsim.app/board/pride.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

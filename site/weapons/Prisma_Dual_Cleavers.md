@@ -15,3 +15,4 @@ Dual Swords · Melee · Mastery Rank 9. 133 base damage (impact 13.3, puncture 1
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Prisma_Dual_Cleavers
 - Every published board row, as JSON: https://wfsim.app/board/prisma_dual_cleavers.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

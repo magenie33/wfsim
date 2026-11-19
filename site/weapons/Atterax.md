@@ -15,3 +15,4 @@ Whip · Melee · Mastery Rank 5. 129 base damage (impact 6.45, puncture 6.45, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Atterax
 - Every published board row, as JSON: https://wfsim.app/board/atterax.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

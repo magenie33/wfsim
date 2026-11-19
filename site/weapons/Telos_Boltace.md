@@ -17,3 +17,4 @@ Tonfa · Melee · Mastery Rank 11. 210 base damage (impact 21, puncture 178.5, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Telos_Boltace
 - Every published board row, as JSON: https://wfsim.app/board/telos_boltace.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

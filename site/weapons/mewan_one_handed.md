@@ -12,3 +12,4 @@ Sword · Melee · Mastery Rank 0. 220 base damage (impact 55, puncture 77, slash
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/mewan_one_handed
 - Every published board row, as JSON: https://wfsim.app/board/mewan_one_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

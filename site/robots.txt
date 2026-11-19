@@ -1,25 +1,31 @@
+# Creator and crawler policy: https://wfsim.app/reuse
+
 User-agent: *
-Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Allow: /
+
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: Amzn-SearchBot
+User-agent: Amzn-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: meta-externalfetcher
+Content-Signal: search=yes, ai-input=yes, ai-train=no
 Allow: /
 
 User-agent: GPTBot
-User-agent: OAI-SearchBot
-User-agent: ChatGPT-User
 User-agent: ClaudeBot
-User-agent: Claude-SearchBot
-User-agent: Claude-User
-User-agent: Claude-Web
-User-agent: anthropic-ai
-User-agent: Google-Extended
 User-agent: Applebot-Extended
+User-agent: Google-Extended
 User-agent: Amazonbot
-User-agent: PerplexityBot
-User-agent: Perplexity-User
 User-agent: meta-externalagent
 User-agent: Bytespider
 User-agent: CCBot
-Content-Signal: search=yes, ai-input=yes, ai-train=yes
-Allow: /
+Content-Signal: search=yes, ai-input=yes, ai-train=no
+Disallow: /
 
 Sitemap: https://wfsim.app/sitemap.xml
 Agentmap: https://wfsim.app/.well-known/ai-catalog.json

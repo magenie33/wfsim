@@ -15,3 +15,4 @@ Dagger · Melee · Mastery Rank 5. 270 base damage (impact 13.5, puncture 13.5, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sheev
 - Every published board row, as JSON: https://wfsim.app/board/sheev.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

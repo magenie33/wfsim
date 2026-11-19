@@ -18,3 +18,4 @@ Blade And Whip · Melee · Mastery Rank 11. 218 base damage (heat 81, impact 79,
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Jat_Kusar
 - Every published board row, as JSON: https://wfsim.app/board/jat_kusar.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

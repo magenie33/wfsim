@@ -15,3 +15,4 @@ Polearm · Melee · Mastery Rank 4. 202 base damage (impact 50.5, puncture 10.1,
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Guandao
 - Every published board row, as JSON: https://wfsim.app/board/guandao.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

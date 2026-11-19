@@ -12,3 +12,4 @@ Scythe · Melee · Mastery Rank 0. 305 base damage (impact 45.7994, puncture 106
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/dokrahm_one_handed
 - Every published board row, as JSON: https://wfsim.app/board/dokrahm_one_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

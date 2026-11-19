@@ -15,3 +15,4 @@ Polearm · Melee · Mastery Rank 3. 184 base damage (impact 18.4, puncture 27.6,
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tonbo
 - Every published board row, as JSON: https://wfsim.app/board/tonbo.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -12,3 +12,4 @@ Polearm · Melee · Mastery Rank 0. 246.1 base damage (impact 172.27, slash 73.8
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/kronsh_two_handed
 - Every published board row, as JSON: https://wfsim.app/board/kronsh_two_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

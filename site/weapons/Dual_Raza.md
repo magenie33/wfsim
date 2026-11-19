@@ -15,3 +15,4 @@ Dual Swords · Melee · Mastery Rank 6. 110 base damage (impact 11, puncture 33,
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Raza
 - Every published board row, as JSON: https://wfsim.app/board/dual_raza.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -17,3 +17,4 @@ Claws · Melee · Mastery Rank 14. 188 base damage (impact 9.4, puncture 37.6, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Venka_Prime
 - Every published board row, as JSON: https://wfsim.app/board/venka_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

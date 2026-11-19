@@ -17,3 +17,4 @@ Scythe · Melee · Mastery Rank 8. 230 base damage (impact 34.5, puncture 34.5, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Hate
 - Every published board row, as JSON: https://wfsim.app/board/hate.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -15,3 +15,4 @@ Polearm · Melee · Mastery Rank 2. 185 base damage (impact 27.75, puncture 27.7
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Orthos
 - Every published board row, as JSON: https://wfsim.app/board/orthos.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -18,3 +18,4 @@ Two Handed Nikana · Melee · Mastery Rank 14. 230 base damage (impact 20, punct
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tatsu_Prime
 - Every published board row, as JSON: https://wfsim.app/board/tatsu_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

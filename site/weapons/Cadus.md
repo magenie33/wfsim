@@ -16,3 +16,4 @@ Staff · Melee · Mastery Rank 4. 130 base damage (electricity 60, impact 70), 1
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Cadus
 - Every published board row, as JSON: https://wfsim.app/board/cadus.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

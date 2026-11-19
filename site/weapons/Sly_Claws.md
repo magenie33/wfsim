@@ -12,3 +12,4 @@ Beast Claws · Sentinel · Mastery Rank 0. 80 base damage (impact 40, magnetic 4
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sly_Claws
 - Every published board row, as JSON: https://wfsim.app/board/sly_claws.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

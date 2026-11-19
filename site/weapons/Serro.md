@@ -15,3 +15,4 @@ Polearm · Melee · Mastery Rank 6. 234 base damage (electricity 138, slash 96),
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Serro
 - Every published board row, as JSON: https://wfsim.app/board/serro.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

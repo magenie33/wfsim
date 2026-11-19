@@ -15,3 +15,4 @@ Sword · Melee · Mastery Rank 12. 210 base damage (impact 31.5, puncture 31.5, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Skana_Prime
 - Every published board row, as JSON: https://wfsim.app/board/skana_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

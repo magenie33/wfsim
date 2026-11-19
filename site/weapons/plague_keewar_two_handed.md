@@ -12,3 +12,4 @@ Staff · Melee · Mastery Rank 0. 256.7 base damage (impact 75.675, puncture 44.
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/plague_keewar_two_handed
 - Every published board row, as JSON: https://wfsim.app/board/plague_keewar_two_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

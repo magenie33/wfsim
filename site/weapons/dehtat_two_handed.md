@@ -12,3 +12,4 @@ Polearm · Melee · Mastery Rank 0. 239.8 base damage (impact 23.98, puncture 11
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/dehtat_two_handed
 - Every published board row, as JSON: https://wfsim.app/board/dehtat_two_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

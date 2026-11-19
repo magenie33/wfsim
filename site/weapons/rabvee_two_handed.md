@@ -12,3 +12,4 @@ Hammer · Melee · Mastery Rank 0. 248.4 base damage (impact 149.04, puncture 12
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/rabvee_two_handed
 - Every published board row, as JSON: https://wfsim.app/board/rabvee_two_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

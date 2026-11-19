@@ -16,3 +16,4 @@ Hammer · Melee · Mastery Rank 17. 250 base damage (impact 83.325, puncture 83.
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Coda_Motovore
 - Every published board row, as JSON: https://wfsim.app/board/coda_motovore.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

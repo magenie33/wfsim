@@ -15,3 +15,4 @@ Machete · Melee · Mastery Rank 11. 211 base damage (impact 31.65, puncture 31.
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Machete_Wraith
 - Every published board row, as JSON: https://wfsim.app/board/machete_wraith.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

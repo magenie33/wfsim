@@ -12,3 +12,4 @@ Sword · Melee · Mastery Rank 0. 220 base damage (impact 22, puncture 88, slash
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/ooltha_one_handed
 - Every published board row, as JSON: https://wfsim.app/board/ooltha_one_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

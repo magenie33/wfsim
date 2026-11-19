@@ -15,3 +15,4 @@ Dagger · Melee · Mastery Rank 8. 300 base damage (electricity 180, impact 120)
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Rumblejack
 - Every published board row, as JSON: https://wfsim.app/board/rumblejack.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

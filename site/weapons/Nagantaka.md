@@ -16,3 +16,4 @@ Crossbow · Primary · Mastery Rank 9. 159 base damage (impact 1.59, puncture 14
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Nagantaka
 - Every published board row, as JSON: https://wfsim.app/board/nagantaka.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -15,3 +15,4 @@ Dual Daggers · Melee · Mastery Rank 6. 224 base damage (impact 33.6, puncture 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Ether_Daggers
 - Every published board row, as JSON: https://wfsim.app/board/ether_daggers.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

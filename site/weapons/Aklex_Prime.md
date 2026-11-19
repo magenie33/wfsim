@@ -12,3 +12,4 @@ Dual Pistols · Secondary · Mastery Rank 15. 150 base damage (impact 15, punctu
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Aklex_Prime
 - Every published board row, as JSON: https://wfsim.app/board/aklex_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

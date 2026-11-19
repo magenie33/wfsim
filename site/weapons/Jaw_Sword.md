@@ -15,3 +15,4 @@ Sword · Melee · Mastery Rank 0. 120 base damage (impact 6, puncture 24, slash 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Jaw_Sword
 - Every published board row, as JSON: https://wfsim.app/board/jaw_sword.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

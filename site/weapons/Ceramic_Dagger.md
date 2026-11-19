@@ -16,3 +16,4 @@ Dagger · Melee · Mastery Rank 3. 140 base damage (impact 14, puncture 126), 10
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Ceramic_Dagger
 - Every published board row, as JSON: https://wfsim.app/board/ceramic_dagger.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

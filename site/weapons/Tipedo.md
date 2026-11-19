@@ -16,3 +16,4 @@ Staff · Melee · Mastery Rank 3. 124 base damage (impact 12.4, puncture 12.4, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tipedo
 - Every published board row, as JSON: https://wfsim.app/board/tipedo.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

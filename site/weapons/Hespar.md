@@ -16,3 +16,4 @@ Heavy Scythe · Melee · Mastery Rank 12. 280 base damage (impact 112, puncture 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Hespar
 - Every published board row, as JSON: https://wfsim.app/board/hespar.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

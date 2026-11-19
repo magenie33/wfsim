@@ -15,3 +15,4 @@ Sword · Melee · Mastery Rank 9. 217 base damage (impact 26.04, puncture 39.06,
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Krohkur
 - Every published board row, as JSON: https://wfsim.app/board/krohkur.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

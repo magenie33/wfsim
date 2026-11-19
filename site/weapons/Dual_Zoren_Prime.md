@@ -15,3 +15,4 @@ Dual Swords · Melee · Mastery Rank 13. 140 base damage (impact 7, puncture 7, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Zoren_Prime
 - Every published board row, as JSON: https://wfsim.app/board/dual_zoren_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

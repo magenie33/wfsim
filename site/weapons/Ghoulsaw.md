@@ -15,3 +15,4 @@ Assault Saw · Melee · Mastery Rank 7. 197 base damage (impact 37.43, puncture 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Ghoulsaw
 - Every published board row, as JSON: https://wfsim.app/board/ghoulsaw.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

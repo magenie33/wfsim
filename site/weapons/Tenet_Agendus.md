@@ -17,3 +17,4 @@ Sword And Shield · Melee · Mastery Rank 14. 260 base damage (electricity 140, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tenet_Agendus
 - Every published board row, as JSON: https://wfsim.app/board/tenet_agendus.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

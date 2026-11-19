@@ -28,3 +28,4 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Ichor
 - Every published board row, as JSON: https://wfsim.app/board/dual_ichor.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

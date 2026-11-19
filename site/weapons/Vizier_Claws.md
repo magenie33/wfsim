@@ -12,3 +12,4 @@ Beast Claws · Sentinel · Mastery Rank 0. 300 base damage (corrosive 150, impac
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Vizier_Claws
 - Every published board row, as JSON: https://wfsim.app/board/vizier_claws.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

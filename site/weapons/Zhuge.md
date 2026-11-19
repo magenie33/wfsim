@@ -15,3 +15,4 @@ Crossbow · Primary · Mastery Rank 10. 100 base damage (impact 5, puncture 75, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Zhuge
 - Every published board row, as JSON: https://wfsim.app/board/zhuge.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

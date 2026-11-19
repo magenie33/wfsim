@@ -12,3 +12,4 @@ Machete · Melee · Mastery Rank 0. 230 base damage (impact 161, slash 69), 18% 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/kronsh_one_handed
 - Every published board row, as JSON: https://wfsim.app/board/kronsh_one_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

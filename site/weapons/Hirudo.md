@@ -15,3 +15,4 @@ Sparring · Melee · Mastery Rank 7. 130 base damage (impact 19.5, puncture 104,
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Hirudo
 - Every published board row, as JSON: https://wfsim.app/board/hirudo.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

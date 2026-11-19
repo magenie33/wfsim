@@ -15,3 +15,4 @@ Machete · Melee · Mastery Rank 7. 193 base damage (impact 28.95, puncture 28.9
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Prisma_Machete
 - Every published board row, as JSON: https://wfsim.app/board/prisma_machete.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

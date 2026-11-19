@@ -17,3 +17,4 @@ Polearm · Melee · Mastery Rank 13. 260 base damage (impact 52, puncture 104, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Korumm
 - Every published board row, as JSON: https://wfsim.app/board/korumm.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -17,3 +17,4 @@ Blade And Whip · Melee · Mastery Rank 8. 222 base damage (slash 222), 26% crit
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dorrclave
 - Every published board row, as JSON: https://wfsim.app/board/dorrclave.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

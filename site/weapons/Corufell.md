@@ -18,3 +18,4 @@ Heavy Scythe · Melee · Mastery Rank 8. 200 base damage (impact 96, puncture 68
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Corufell
 - Every published board row, as JSON: https://wfsim.app/board/corufell.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

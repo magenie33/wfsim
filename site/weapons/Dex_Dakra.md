@@ -15,3 +15,4 @@ Dual Swords · Melee · Mastery Rank 6. 142 base damage (impact 14.2, puncture 1
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dex_Dakra
 - Every published board row, as JSON: https://wfsim.app/board/dex_dakra.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

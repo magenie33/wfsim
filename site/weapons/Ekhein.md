@@ -16,3 +16,4 @@ Hammer · Melee · Mastery Rank 10. 340 base damage (impact 340), 30% crit chanc
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Ekhein
 - Every published board row, as JSON: https://wfsim.app/board/ekhein.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -12,3 +12,4 @@ Beast Claws · Sentinel · Mastery Rank 0. 110 base damage (slash 110), 15% crit
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Vasca_Claws
 - Every published board row, as JSON: https://wfsim.app/board/vasca_claws.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

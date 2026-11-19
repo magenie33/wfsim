@@ -15,3 +15,4 @@ Bow · Primary · Mastery Rank 7. 410 base damage (impact 369, puncture 20.5, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Mutalist_Cernos
 - Every published board row, as JSON: https://wfsim.app/board/mutalist_cernos.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -16,3 +16,4 @@ Staff · Melee · Mastery Rank 5. 130 base damage (impact 91, puncture 19.5, sla
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Amphis
 - Every published board row, as JSON: https://wfsim.app/board/amphis.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

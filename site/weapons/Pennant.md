@@ -17,3 +17,4 @@ Two Handed Nikana · Melee · Mastery Rank 7. 200 base damage (impact 20, punctu
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Pennant
 - Every published board row, as JSON: https://wfsim.app/board/pennant.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

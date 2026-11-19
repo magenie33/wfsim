@@ -17,3 +17,4 @@ Gunblade · Melee · Mastery Rank 8. 160 base damage (impact 16, puncture 32, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sarpa
 - Every published board row, as JSON: https://wfsim.app/board/sarpa.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

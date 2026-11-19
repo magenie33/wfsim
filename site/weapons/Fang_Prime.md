@@ -15,3 +15,4 @@ Dual Daggers · Melee · Mastery Rank 10. 178 base damage (impact 26.7, puncture
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Fang_Prime
 - Every published board row, as JSON: https://wfsim.app/board/fang_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

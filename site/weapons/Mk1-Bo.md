@@ -16,3 +16,4 @@ Staff · Melee · Mastery Rank 0. 90 base damage (impact 81, puncture 9), 10% cr
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Mk1-Bo
 - Every published board row, as JSON: https://wfsim.app/board/mk1_bo.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

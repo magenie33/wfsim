@@ -16,3 +16,4 @@ Glaive · Melee · Mastery Rank 1. 105 base damage (impact 15.75, puncture 15.75
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Glaive
 - Every published board row, as JSON: https://wfsim.app/board/glaive.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

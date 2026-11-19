@@ -15,3 +15,4 @@ Sparring · Melee · Mastery Rank 9. 193 base damage (impact 110.01, puncture 5.
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Korrudo
 - Every published board row, as JSON: https://wfsim.app/board/korrudo.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

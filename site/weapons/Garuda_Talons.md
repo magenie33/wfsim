@@ -15,3 +15,4 @@ Claws · Exalted · Mastery Rank 1. 248 base damage (impact 19.84, puncture 54.5
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Garuda_Talons
 - Every published board row, as JSON: https://wfsim.app/board/garuda_talons.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -16,3 +16,4 @@ Scythe · Melee · Mastery Rank 4. 180 base damage (impact 27, puncture 27, slas
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Ether_Reaper
 - Every published board row, as JSON: https://wfsim.app/board/ether_reaper.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

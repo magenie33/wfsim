@@ -27,3 +27,4 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dragon_Nikana
 - Every published board row, as JSON: https://wfsim.app/board/dragon_nikana.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

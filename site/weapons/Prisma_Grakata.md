@@ -12,3 +12,4 @@ Rifle · Primary · Mastery Rank 11. 15 base damage (impact 6, puncture 5, slash
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Prisma_Grakata
 - Every published board row, as JSON: https://wfsim.app/board/prisma_grakata.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

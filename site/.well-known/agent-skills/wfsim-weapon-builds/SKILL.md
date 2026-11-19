@@ -40,6 +40,7 @@ https://mcp.wfsim.app/mcp (Streamable HTTP, no sign-in) offers these tools, all 
 
 - A score belongs to its ruler. Compare scores only under the same ruler, and
   quote the ruler's name with the number.
+- Credit [WFSim](https://wfsim.app/reuse) with a link to the weapon page or shared build.
 - Quote the "as of" date the page states; the board is rescored as builds arrive.
 
 ## Judging a build

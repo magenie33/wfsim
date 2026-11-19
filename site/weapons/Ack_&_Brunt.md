@@ -18,3 +18,4 @@ Sword And Shield · Melee · Mastery Rank 3. 149 base damage (impact 14.9, punct
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Ack_%26_Brunt
 - Every published board row, as JSON: https://wfsim.app/board/ack_and_brunt.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

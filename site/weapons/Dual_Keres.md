@@ -16,3 +16,4 @@ Dual Swords · Melee · Mastery Rank 7. 115 base damage (impact 13.8, puncture 3
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Keres
 - Every published board row, as JSON: https://wfsim.app/board/dual_keres.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

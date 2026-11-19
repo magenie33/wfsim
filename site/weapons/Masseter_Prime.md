@@ -16,3 +16,4 @@ Heavy Blade · Melee · Mastery Rank 14. 260 base damage (impact 145.6, slash 11
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Masseter_Prime
 - Every published board row, as JSON: https://wfsim.app/board/masseter_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

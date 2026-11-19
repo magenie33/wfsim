@@ -17,3 +17,4 @@ Sparring · Melee · Mastery Rank 10. 150 base damage (impact 105, puncture 22.5
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Prisma_Obex
 - Every published board row, as JSON: https://wfsim.app/board/prisma_obex.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

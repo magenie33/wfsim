@@ -15,3 +15,4 @@ Dual Nikanas · Melee · Mastery Rank 0. 190 base damage (impact 38, puncture 45
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sun_%26_Moon
 - Every published board row, as JSON: https://wfsim.app/board/sun_and_moon.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

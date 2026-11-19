@@ -16,3 +16,4 @@ Sparring · Melee · Mastery Rank 4. 120 base damage (impact 84, puncture 18, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Obex
 - Every published board row, as JSON: https://wfsim.app/board/obex.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

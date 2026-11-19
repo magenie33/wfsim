@@ -17,3 +17,4 @@ Nikana · Melee · Mastery Rank 8. 168 base damage (impact 16.8, puncture 25.2, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dex_Nikana
 - Every published board row, as JSON: https://wfsim.app/board/dex_nikana.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

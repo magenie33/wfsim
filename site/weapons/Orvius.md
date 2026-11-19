@@ -17,3 +17,4 @@ Glaive · Melee · Mastery Rank 5. 195 base damage (impact 39, puncture 9.75, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Orvius
 - Every published board row, as JSON: https://wfsim.app/board/orvius.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

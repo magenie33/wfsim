@@ -16,3 +16,4 @@ Scythe · Melee · Mastery Rank 3. 170 base damage (impact 25.5, puncture 136, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Anku
 - Every published board row, as JSON: https://wfsim.app/board/anku.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

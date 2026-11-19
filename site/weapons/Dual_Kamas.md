@@ -15,3 +15,4 @@ Dual Swords · Melee · Mastery Rank 1. 96 base damage (impact 4.8, puncture 9.6
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Kamas
 - Every published board row, as JSON: https://wfsim.app/board/dual_kamas.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

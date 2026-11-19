@@ -15,3 +15,4 @@ Whip · Melee · Mastery Rank 8. 176 base damage (electricity 80, puncture 30, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Secura_Lecta
 - Every published board row, as JSON: https://wfsim.app/board/secura_lecta.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

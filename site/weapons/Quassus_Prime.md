@@ -18,3 +18,4 @@ Warfan · Melee · Mastery Rank 13. 260 base damage (impact 26, puncture 52, sla
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Quassus_Prime
 - Every published board row, as JSON: https://wfsim.app/board/quassus_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -15,3 +15,4 @@ Dual Swords · Melee · Mastery Rank 10. 250 base damage (impact 30, puncture 45
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Twin_Krohkur
 - Every published board row, as JSON: https://wfsim.app/board/twin_krohkur.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

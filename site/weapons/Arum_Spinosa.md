@@ -18,3 +18,4 @@ Warfan · Melee · Mastery Rank 11. 297 base damage (impact 35.64, puncture 59.4
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Arum_Spinosa
 - Every published board row, as JSON: https://wfsim.app/board/arum_spinosa.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

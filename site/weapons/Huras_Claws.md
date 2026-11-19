@@ -12,3 +12,4 @@ Beast Claws · Sentinel · Mastery Rank 0. 350 base damage (slash 350), 20% crit
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Huras_Claws
 - Every published board row, as JSON: https://wfsim.app/board/huras_claws.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

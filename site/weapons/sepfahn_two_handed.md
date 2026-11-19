@@ -12,3 +12,4 @@ Staff · Melee · Mastery Rank 0. 222 base damage (impact 22.2, puncture 55.5, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/sepfahn_two_handed
 - Every published board row, as JSON: https://wfsim.app/board/sepfahn_two_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

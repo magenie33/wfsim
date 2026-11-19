@@ -18,3 +18,4 @@ Claws · Exalted · Mastery Rank 0. 250 base damage (puncture 62.5, slash 187.5)
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Valkyr_Talons
 - Every published board row, as JSON: https://wfsim.app/board/valkyr_talons.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

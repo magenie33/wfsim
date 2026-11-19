@@ -16,3 +16,4 @@ Machete · Melee · Mastery Rank 5. 178 base damage (impact 17.8, puncture 26.7,
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Gazal_Machete
 - Every published board row, as JSON: https://wfsim.app/board/gazal_machete.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -15,3 +15,4 @@ Dagger · Melee · Mastery Rank 3. 208 base damage (heat 62, impact 14, puncture
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Heat_Dagger
 - Every published board row, as JSON: https://wfsim.app/board/heat_dagger.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

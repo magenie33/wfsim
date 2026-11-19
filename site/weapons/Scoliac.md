@@ -15,3 +15,4 @@ Whip · Melee · Mastery Rank 6. 150 base damage (impact 22.5, puncture 22.5, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Scoliac
 - Every published board row, as JSON: https://wfsim.app/board/scoliac.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

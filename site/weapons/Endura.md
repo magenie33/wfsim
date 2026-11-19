@@ -15,3 +15,4 @@ Rapier · Melee · Mastery Rank 7. 200 base damage (impact 10, puncture 140, sla
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Endura
 - Every published board row, as JSON: https://wfsim.app/board/endura.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

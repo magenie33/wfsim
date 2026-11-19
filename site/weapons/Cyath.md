@@ -12,3 +12,4 @@ Machete · Melee · Mastery Rank 0. 226 base damage (impact 45.2, puncture 11.3,
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/cyath_one_handed
 - Every published board row, as JSON: https://wfsim.app/board/cyath_one_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

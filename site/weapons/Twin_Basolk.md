@@ -15,3 +15,4 @@ Dual Swords · Melee · Mastery Rank 7. 210 base damage (heat 85, impact 55, pun
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Twin_Basolk
 - Every published board row, as JSON: https://wfsim.app/board/twin_basolk.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

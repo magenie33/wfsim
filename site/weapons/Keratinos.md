@@ -16,3 +16,4 @@ Claws · Melee · Mastery Rank 9. 244 base damage (impact 79, puncture 45, slash
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Keratinos
 - Every published board row, as JSON: https://wfsim.app/board/keratinos.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

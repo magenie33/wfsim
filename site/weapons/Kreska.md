@@ -15,3 +15,4 @@ Machete · Melee · Mastery Rank 6. 190 base damage (heat 100, impact 30, punctu
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kreska
 - Every published board row, as JSON: https://wfsim.app/board/kreska.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

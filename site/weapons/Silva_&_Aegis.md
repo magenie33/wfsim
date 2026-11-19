@@ -17,3 +17,4 @@ Sword And Shield · Melee · Mastery Rank 0. 98 base damage (heat 98), 5% crit c
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Silva_%26_Aegis
 - Every published board row, as JSON: https://wfsim.app/board/silva_and_aegis.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

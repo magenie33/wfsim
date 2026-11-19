@@ -16,3 +16,4 @@ Fist · Melee · Mastery Rank 8. 128 base damage (impact 89.6, puncture 19.2, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Ankyros_Prime
 - Every published board row, as JSON: https://wfsim.app/board/ankyros_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

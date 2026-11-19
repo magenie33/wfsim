@@ -16,3 +16,4 @@ Exalted Weapon · Exalted · Mastery Rank 0. 400 base damage (puncture 400), 20%
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Shattered_Lash
 - Every published board row, as JSON: https://wfsim.app/board/shattered_lash.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

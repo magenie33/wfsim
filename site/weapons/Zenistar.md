@@ -16,3 +16,4 @@ Heavy Blade · Melee · Mastery Rank 6. 298 base damage (heat 150, impact 80, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Zenistar
 - Every published board row, as JSON: https://wfsim.app/board/zenistar.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

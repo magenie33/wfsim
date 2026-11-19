@@ -15,3 +15,4 @@ Dagger · Melee · Mastery Rank 6. 273 base damage (impact 30, puncture 84, slas
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Karyst
 - Every published board row, as JSON: https://wfsim.app/board/karyst.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

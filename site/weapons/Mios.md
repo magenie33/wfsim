@@ -16,3 +16,4 @@ Blade And Whip · Melee · Mastery Rank 8. 177 base damage (impact 53.1, punctur
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Mios
 - Every published board row, as JSON: https://wfsim.app/board/mios.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -12,3 +12,4 @@ Beast Claws · Sentinel · Mastery Rank 0. 90 base damage (puncture 45, slash 45
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Adarza_Claws
 - Every published board row, as JSON: https://wfsim.app/board/adarza_claws.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

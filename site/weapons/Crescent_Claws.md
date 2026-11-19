@@ -12,3 +12,4 @@ Beast Claws · Sentinel · Mastery Rank 0. 100 base damage (electricity 50, punc
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Crescent_Claws
 - Every published board row, as JSON: https://wfsim.app/board/crescent_claws.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

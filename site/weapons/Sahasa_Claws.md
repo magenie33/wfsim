@@ -12,3 +12,4 @@ Beast Claws · Sentinel · Mastery Rank 0. 300 base damage (impact 300), 10% cri
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sahasa_Claws
 - Every published board row, as JSON: https://wfsim.app/board/sahasa_claws.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

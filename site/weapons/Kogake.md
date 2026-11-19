@@ -15,3 +15,4 @@ Sparring · Melee · Mastery Rank 2. 120 base damage (impact 84, puncture 18, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kogake
 - Every published board row, as JSON: https://wfsim.app/board/kogake.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

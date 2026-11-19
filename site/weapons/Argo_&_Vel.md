@@ -17,3 +17,4 @@ Sword And Shield · Melee · Mastery Rank 0. 300 base damage (impact 60, slash 2
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Argo_%26_Vel
 - Every published board row, as JSON: https://wfsim.app/board/argo_and_vel.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

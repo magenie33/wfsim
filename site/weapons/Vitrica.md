@@ -18,3 +18,4 @@ Heavy Blade · Melee · Mastery Rank 13. 333 base damage (impact 99.9, puncture 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Vitrica
 - Every published board row, as JSON: https://wfsim.app/board/vitrica.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

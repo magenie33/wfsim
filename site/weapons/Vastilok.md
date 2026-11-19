@@ -17,3 +17,4 @@ Gunblade · Melee · Mastery Rank 9. 279 base damage (impact 19.53, puncture 25.
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Vastilok
 - Every published board row, as JSON: https://wfsim.app/board/vastilok.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

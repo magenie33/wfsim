@@ -15,3 +15,4 @@ Tonfa · Melee · Mastery Rank 12. 250 base damage (electricity 124, impact 82, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Prisma_Ohma
 - Every published board row, as JSON: https://wfsim.app/board/prisma_ohma.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

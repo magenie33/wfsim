@@ -18,3 +18,4 @@ Sentinel Weapon · Sentinel · Mastery Rank 0. 160 base damage (impact 53.3333, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Deconstructor_Prime
 - Every published board row, as JSON: https://wfsim.app/board/deconstructor_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

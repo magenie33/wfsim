@@ -12,3 +12,4 @@ Scythe · Melee · Mastery Rank 0. 302 base damage (impact 87, puncture 56, slas
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/plague_keewar_one_handed
 - Every published board row, as JSON: https://wfsim.app/board/plague_keewar_one_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -17,3 +17,4 @@ Scythe · Melee · Mastery Rank 14. 235.5 base damage (impact 30.5, puncture 191
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Galariak_Prime
 - Every published board row, as JSON: https://wfsim.app/board/galariak_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

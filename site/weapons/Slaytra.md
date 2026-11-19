@@ -16,3 +16,4 @@ Machete · Melee · Mastery Rank 13. 333 base damage (impact 73.26, puncture 93.
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Slaytra
 - Every published board row, as JSON: https://wfsim.app/board/slaytra.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

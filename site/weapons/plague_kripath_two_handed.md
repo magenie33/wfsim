@@ -12,3 +12,4 @@ Polearm · Melee · Mastery Rank 0. 225.72 base damage (impact 33.18, puncture 7
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/plague_kripath_two_handed
 - Every published board row, as JSON: https://wfsim.app/board/plague_kripath_two_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

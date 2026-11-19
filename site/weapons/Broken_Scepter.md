@@ -16,3 +16,4 @@ Staff · Melee · Mastery Rank 7. 179 base damage (impact 125.3, puncture 17.9, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Broken_Scepter
 - Every published board row, as JSON: https://wfsim.app/board/broken_scepter.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

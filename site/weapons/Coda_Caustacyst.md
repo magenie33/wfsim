@@ -18,3 +18,4 @@ Scythe · Melee · Mastery Rank 17. 285 base damage (corrosive 120, impact 20, p
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Coda_Caustacyst
 - Every published board row, as JSON: https://wfsim.app/board/coda_caustacyst.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

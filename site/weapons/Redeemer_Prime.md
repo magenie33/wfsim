@@ -17,3 +17,4 @@ Gunblade · Melee · Mastery Rank 10. 212 base damage (impact 21.2, puncture 42.
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Redeemer_Prime
 - Every published board row, as JSON: https://wfsim.app/board/redeemer_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

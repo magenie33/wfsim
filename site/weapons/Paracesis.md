@@ -17,3 +17,4 @@ Heavy Blade · Melee · Mastery Rank 10. 222 base damage (impact 48.84, puncture
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Paracesis
 - Every published board row, as JSON: https://wfsim.app/board/paracesis.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

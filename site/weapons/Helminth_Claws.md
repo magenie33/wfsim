@@ -12,3 +12,4 @@ Beast Claws · Sentinel · Mastery Rank 0. 200 base damage (slash 200), 7.5% cri
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Helminth_Claws
 - Every published board row, as JSON: https://wfsim.app/board/helminth_claws.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

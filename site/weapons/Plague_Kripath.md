@@ -12,3 +12,4 @@ Rapier · Melee · Mastery Rank 0. 209 base damage (impact 29, puncture 69, slas
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/plague_kripath_one_handed
 - Every published board row, as JSON: https://wfsim.app/board/plague_kripath_one_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -16,3 +16,4 @@ Assault Saw · Melee · Mastery Rank 13. 211 base damage (impact 40.09, puncture
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kuva_Ghoulsaw
 - Every published board row, as JSON: https://wfsim.app/board/kuva_ghoulsaw.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

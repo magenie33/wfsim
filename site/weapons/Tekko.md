@@ -17,3 +17,4 @@ Fist · Melee · Mastery Rank 6. 160 base damage (impact 32, puncture 16, slash 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tekko
 - Every published board row, as JSON: https://wfsim.app/board/tekko.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

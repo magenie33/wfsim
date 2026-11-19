@@ -13,3 +13,4 @@ Archgun · Archgun · Mastery Rank 8. 180 base damage (impact 20, radiation 160)
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Larkspur
 - Every published board row, as JSON: https://wfsim.app/board/larkspur.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

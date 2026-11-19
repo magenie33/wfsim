@@ -15,3 +15,4 @@ Sword · Melee · Mastery Rank 8. 260 base damage (puncture 120, radiation 80, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dark_Sword
 - Every published board row, as JSON: https://wfsim.app/board/dark_sword.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

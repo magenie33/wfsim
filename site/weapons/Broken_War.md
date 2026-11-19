@@ -15,3 +15,4 @@ Sword · Melee · Mastery Rank 10. 187 base damage (impact 18.7, puncture 18.7, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Broken_War
 - Every published board row, as JSON: https://wfsim.app/board/broken_war.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

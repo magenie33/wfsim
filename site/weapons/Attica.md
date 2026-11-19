@@ -15,3 +15,4 @@ Crossbow · Primary · Mastery Rank 7. 80 base damage (impact 4, puncture 60, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Attica
 - Every published board row, as JSON: https://wfsim.app/board/attica.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

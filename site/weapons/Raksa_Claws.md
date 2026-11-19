@@ -12,3 +12,4 @@ Beast Claws · Sentinel · Mastery Rank 0. 250 base damage (puncture 250), 7.5% 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Raksa_Claws
 - Every published board row, as JSON: https://wfsim.app/board/raksa_claws.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

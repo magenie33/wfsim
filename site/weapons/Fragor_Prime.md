@@ -17,3 +17,4 @@ Hammer · Melee · Mastery Rank 12. 270 base damage (impact 189, puncture 40.5, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Fragor_Prime
 - Every published board row, as JSON: https://wfsim.app/board/fragor_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

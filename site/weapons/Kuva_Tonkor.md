@@ -27,3 +27,4 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kuva_Tonkor
 - Every published board row, as JSON: https://wfsim.app/board/kuva_tonkor.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

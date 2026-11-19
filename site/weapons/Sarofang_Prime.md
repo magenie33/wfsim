@@ -15,3 +15,4 @@ Heavy Blade · Melee · Mastery Rank 16. 220 base damage (impact 66, puncture 8.
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sarofang_Prime
 - Every published board row, as JSON: https://wfsim.app/board/sarofang_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

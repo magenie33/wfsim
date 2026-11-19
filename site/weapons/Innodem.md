@@ -16,3 +16,4 @@ Dagger · Melee · Mastery Rank 14. 360 base damage (impact 36, puncture 144, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Innodem
 - Every published board row, as JSON: https://wfsim.app/board/innodem.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

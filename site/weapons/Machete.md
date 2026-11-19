@@ -15,3 +15,4 @@ Machete · Melee · Mastery Rank 1. 120 base damage (impact 18, puncture 18, sla
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Machete
 - Every published board row, as JSON: https://wfsim.app/board/machete.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

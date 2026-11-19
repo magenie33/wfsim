@@ -15,3 +15,4 @@ Nunchaku · Melee · Mastery Rank 14. 234 base damage (electricity 90, impact 66
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Ninkondi_Prime
 - Every published board row, as JSON: https://wfsim.app/board/ninkondi_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

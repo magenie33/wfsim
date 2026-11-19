@@ -16,3 +16,4 @@ Tonfa · Melee · Mastery Rank 9. 165 base damage (puncture 33, slash 132), 23% 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tonkkatt
 - Every published board row, as JSON: https://wfsim.app/board/tonkkatt.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

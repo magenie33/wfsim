@@ -17,3 +17,4 @@ Heavy Scythe · Melee · Mastery Rank 14. 220 base damage (puncture 44, slash 17
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Wrath
 - Every published board row, as JSON: https://wfsim.app/board/wrath.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

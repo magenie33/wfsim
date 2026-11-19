@@ -16,3 +16,4 @@ Fist · Melee · Mastery Rank 5. 135 base damage (impact 94.5, puncture 20.25, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Furax
 - Every published board row, as JSON: https://wfsim.app/board/furax.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -15,3 +15,4 @@ Claws · Melee · Mastery Rank 5. 173 base damage (impact 8.65, puncture 17.3, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Ripkas
 - Every published board row, as JSON: https://wfsim.app/board/ripkas.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

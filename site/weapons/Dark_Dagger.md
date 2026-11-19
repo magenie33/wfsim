@@ -15,3 +15,4 @@ Dagger · Melee · Mastery Rank 2. 154 base damage (puncture 58, radiation 60, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dark_Dagger
 - Every published board row, as JSON: https://wfsim.app/board/dark_dagger.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

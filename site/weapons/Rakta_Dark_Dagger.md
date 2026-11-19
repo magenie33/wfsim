@@ -15,3 +15,4 @@ Dagger · Melee · Mastery Rank 8. 246 base damage (puncture 88, radiation 96, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Rakta_Dark_Dagger
 - Every published board row, as JSON: https://wfsim.app/board/rakta_dark_dagger.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

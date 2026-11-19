@@ -12,3 +12,4 @@ Shotgun · Primary · Mastery Rank 7. 70 base damage x5 multishot (impact 52.5, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sobek
 - Every published board row, as JSON: https://wfsim.app/board/sobek.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

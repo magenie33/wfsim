@@ -15,3 +15,4 @@ Hammer · Melee · Mastery Rank 5. 200 base damage (impact 160, puncture 30, sla
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Jat_Kittag
 - Every published board row, as JSON: https://wfsim.app/board/jat_kittag.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

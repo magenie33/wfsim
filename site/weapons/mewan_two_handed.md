@@ -12,3 +12,4 @@ Polearm · Melee · Mastery Rank 0. 239.8 base damage (impact 59.95, puncture 83
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/mewan_two_handed
 - Every published board row, as JSON: https://wfsim.app/board/mewan_two_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

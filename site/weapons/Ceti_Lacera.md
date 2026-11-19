@@ -16,3 +16,4 @@ Blade And Whip · Melee · Mastery Rank 12. 216 base damage (electricity 100, im
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Ceti_Lacera
 - Every published board row, as JSON: https://wfsim.app/board/ceti_lacera.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

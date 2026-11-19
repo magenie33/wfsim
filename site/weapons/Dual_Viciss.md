@@ -16,3 +16,4 @@ Dual Swords · Melee · Mastery Rank 14. 255 base damage (gas 153, puncture 51, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Viciss
 - Every published board row, as JSON: https://wfsim.app/board/dual_viciss.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

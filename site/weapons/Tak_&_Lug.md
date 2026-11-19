@@ -17,3 +17,4 @@ Sword And Shield · Melee · Mastery Rank 9. 197 base damage (impact 39.4, slash
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tak_%26_Lug
 - Every published board row, as JSON: https://wfsim.app/board/tak_and_lug.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

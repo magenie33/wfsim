@@ -16,3 +16,4 @@ Heavy Blade · Melee · Mastery Rank 10. 250 base damage (impact 120, puncture 6
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/War
 - Every published board row, as JSON: https://wfsim.app/board/war.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -16,3 +16,4 @@ Glaive · Melee · Mastery Rank 7. 183 base damage (impact 19, puncture 36, slas
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Cerata
 - Every published board row, as JSON: https://wfsim.app/board/cerata.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

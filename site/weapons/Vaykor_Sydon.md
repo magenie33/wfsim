@@ -15,3 +15,4 @@ Polearm · Melee · Mastery Rank 11. 213 base damage (impact 10.65, puncture 202
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Vaykor_Sydon
 - Every published board row, as JSON: https://wfsim.app/board/vaykor_sydon.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

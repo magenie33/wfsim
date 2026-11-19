@@ -12,3 +12,4 @@ Machete · Melee · Mastery Rank 0. 230 base damage (impact 138, puncture 11.5, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/rabvee_one_handed
 - Every published board row, as JSON: https://wfsim.app/board/rabvee_one_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

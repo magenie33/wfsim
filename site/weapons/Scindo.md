@@ -15,3 +15,4 @@ Heavy Blade · Melee · Mastery Rank 2. 200 base damage (impact 20, puncture 20,
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Scindo
 - Every published board row, as JSON: https://wfsim.app/board/scindo.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -25,3 +25,4 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/MK1-Paris
 - Every published board row, as JSON: https://wfsim.app/board/mk1_paris.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

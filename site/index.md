@@ -7,6 +7,7 @@ Calculator: https://wfsim.app/
 - [Method](https://wfsim.app/method.md): how WFSim judges a build, and the in-game readings behind each rule
 - [MCP server](https://mcp.wfsim.app/mcp): these lookups as tools, read-only, no sign-in
 - [All weapons](https://wfsim.app/weapons.md): every weapon WFSim models, by slot
+- [Using and citing WFSim](https://wfsim.app/reuse): creator quotations, AI retrieval and licensing
 - [Weapon lookup skill](https://wfsim.app/.well-known/agent-skills/wfsim-weapon-builds/SKILL.md): how to read a weapon's page and the board
 - [Board index](https://wfsim.app/board/index.json): board rows for every weapon, as JSON
 - [Source code](https://github.com/magenie33/wfsim): the engine, the game data and the measurements behind the golden tests

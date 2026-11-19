@@ -16,3 +16,4 @@ Polearm · Melee · Mastery Rank 0. 220 base damage (impact 44, puncture 66, sla
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Edun
 - Every published board row, as JSON: https://wfsim.app/board/edun.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

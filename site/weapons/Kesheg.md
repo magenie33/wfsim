@@ -15,3 +15,4 @@ Polearm · Melee · Mastery Rank 7. 241 base damage (impact 96.4, puncture 24.1,
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kesheg
 - Every published board row, as JSON: https://wfsim.app/board/kesheg.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -15,3 +15,4 @@ Dual Swords · Melee · Mastery Rank 3. 147 base damage (impact 22.05, puncture 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Heat_Swords
 - Every published board row, as JSON: https://wfsim.app/board/dual_heat_swords.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

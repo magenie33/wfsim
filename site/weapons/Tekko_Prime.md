@@ -17,3 +17,4 @@ Fist · Melee · Mastery Rank 12. 180 base damage (impact 39.6, puncture 25.2, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tekko_Prime
 - Every published board row, as JSON: https://wfsim.app/board/tekko_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

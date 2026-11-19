@@ -15,3 +15,4 @@ Hammer · Melee · Mastery Rank 9. 280 base damage (impact 238, puncture 28, sla
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Heliocor
 - Every published board row, as JSON: https://wfsim.app/board/heliocor.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

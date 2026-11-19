@@ -15,3 +15,4 @@ Nunchaku · Melee · Mastery Rank 10. 180 base damage (impact 180), 18% crit cha
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Shaku
 - Every published board row, as JSON: https://wfsim.app/board/shaku.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

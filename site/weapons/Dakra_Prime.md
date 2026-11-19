@@ -15,3 +15,4 @@ Sword · Melee · Mastery Rank 10. 170 base damage (impact 17, puncture 17, slas
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dakra_Prime
 - Every published board row, as JSON: https://wfsim.app/board/dakra_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

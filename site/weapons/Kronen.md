@@ -15,3 +15,4 @@ Tonfa · Melee · Mastery Rank 3. 130 base damage (impact 13, puncture 13, slash
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kronen
 - Every published board row, as JSON: https://wfsim.app/board/kronen.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -15,3 +15,4 @@ Sword · Melee · Mastery Rank 5. 158 base damage (impact 23, puncture 23, slash
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Mire
 - Every published board row, as JSON: https://wfsim.app/board/mire.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -15,3 +15,4 @@ Dual Swords · Melee · Mastery Rank 11. 180 base damage (impact 18, puncture 36
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Nami_Skyla_Prime
 - Every published board row, as JSON: https://wfsim.app/board/nami_skyla_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

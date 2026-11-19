@@ -12,3 +12,4 @@ Archgun · Archgun · Mastery Rank 14. 960 base damage (heat 530, impact 430), 5
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Corvas_Prime
 - Every published board row, as JSON: https://wfsim.app/board/corvas_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

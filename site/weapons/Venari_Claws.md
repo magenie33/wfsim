@@ -12,3 +12,4 @@ Beast Claws · Sentinel · Mastery Rank 0. 40 base damage (slash 40), 20% crit c
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Venari_Claws
 - Every published board row, as JSON: https://wfsim.app/board/venari_claws.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

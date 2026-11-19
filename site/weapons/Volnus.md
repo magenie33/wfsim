@@ -16,3 +16,4 @@ Hammer · Melee · Mastery Rank 9. 220 base damage (impact 48.4, puncture 70.4, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Volnus
 - Every published board row, as JSON: https://wfsim.app/board/volnus.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -15,3 +15,4 @@ Heavy Blade · Melee · Mastery Rank 8. 200 base damage (impact 80, puncture 8, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sarofang
 - Every published board row, as JSON: https://wfsim.app/board/sarofang.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

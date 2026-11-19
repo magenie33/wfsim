@@ -16,3 +16,4 @@ Hammer · Melee · Mastery Rank 7. 259 base damage (impact 132.09, puncture 7.77
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Wolf_Sledge
 - Every published board row, as JSON: https://wfsim.app/board/wolf_sledge.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

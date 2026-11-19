@@ -16,3 +16,4 @@ Whip · Melee · Mastery Rank 12. 168 base damage (toxin 168), 16% crit chance, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Spinnerex
 - Every published board row, as JSON: https://wfsim.app/board/spinnerex.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

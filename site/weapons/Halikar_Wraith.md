@@ -16,3 +16,4 @@ Glaive · Melee · Mastery Rank 13. 225 base damage (impact 22.5, puncture 180, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Halikar_Wraith
 - Every published board row, as JSON: https://wfsim.app/board/halikar_wraith.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

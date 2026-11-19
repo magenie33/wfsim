@@ -15,3 +15,4 @@ Polearm · Melee · Mastery Rank 5. 225 base damage (impact 11.25, puncture 213.
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sydon
 - Every published board row, as JSON: https://wfsim.app/board/sydon.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

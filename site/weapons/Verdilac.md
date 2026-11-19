@@ -17,3 +17,4 @@ Whip · Melee · Mastery Rank 13. 213 base damage (impact 21.3, puncture 85.2, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Verdilac
 - Every published board row, as JSON: https://wfsim.app/board/verdilac.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

@@ -15,3 +15,4 @@ Dual Swords · Melee · Mastery Rank 8. 180 base damage (impact 27, puncture 27,
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Dual_Ether
 - Every published board row, as JSON: https://wfsim.app/board/dual_ether.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

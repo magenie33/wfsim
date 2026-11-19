@@ -14,3 +14,4 @@ Pistol · Secondary · Mastery Rank 17. 76 base damage (impact 18, puncture 32, 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Coda_Tysis
 - Every published board row, as JSON: https://wfsim.app/board/coda_tysis.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

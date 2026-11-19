@@ -12,3 +12,4 @@ Rifle · Primary · Mastery Rank 12. 58 base damage (cold 16, impact 8, puncture
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Quellor
 - Every published board row, as JSON: https://wfsim.app/board/quellor.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

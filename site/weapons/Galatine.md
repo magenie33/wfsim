@@ -15,3 +15,4 @@ Heavy Blade · Melee · Mastery Rank 3. 182 base damage (impact 4.55, puncture 4
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Galatine
 - Every published board row, as JSON: https://wfsim.app/board/galatine.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

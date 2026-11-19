@@ -15,3 +15,4 @@ Sword · Melee · Mastery Rank 4. 200 base damage (electricity 66, impact 34, pu
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Plasma_Sword
 - Every published board row, as JSON: https://wfsim.app/board/plasma_sword.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

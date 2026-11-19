@@ -12,3 +12,4 @@ Heavy Blade · Melee · Mastery Rank 0. 283.65 base damage (impact 42.5934, punc
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/dokrahm_two_handed
 - Every published board row, as JSON: https://wfsim.app/board/dokrahm_two_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

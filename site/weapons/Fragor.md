@@ -15,3 +15,4 @@ Hammer · Melee · Mastery Rank 2. 200 base damage (impact 140, puncture 30, sla
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Fragor
 - Every published board row, as JSON: https://wfsim.app/board/fragor.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

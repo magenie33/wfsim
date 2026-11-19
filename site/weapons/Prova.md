@@ -15,3 +15,4 @@ Machete · Melee · Mastery Rank 3. 128 base damage (electricity 76, impact 52),
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Prova
 - Every published board row, as JSON: https://wfsim.app/board/prova.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

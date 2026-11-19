@@ -16,3 +16,4 @@ Bow · Primary · Mastery Rank 8. 50 base damage (impact 50), 50% crit chance, 2
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Lenz
 - Every published board row, as JSON: https://wfsim.app/board/lenz.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

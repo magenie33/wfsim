@@ -12,3 +12,4 @@ Beast Claws · Sentinel · Mastery Rank 0. 550 base damage (slash 550), 7.5% cri
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Sunika_Claws
 - Every published board row, as JSON: https://wfsim.app/board/sunika_claws.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

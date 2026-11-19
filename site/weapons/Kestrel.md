@@ -16,3 +16,4 @@ Glaive · Melee · Mastery Rank 0. 84 base damage (impact 58.8, puncture 12.6, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Kestrel
 - Every published board row, as JSON: https://wfsim.app/board/kestrel.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

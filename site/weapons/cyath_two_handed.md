@@ -12,3 +12,4 @@ Polearm · Melee · Mastery Rank 0. 244.08 base damage (impact 48.816, puncture 
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/cyath_two_handed
 - Every published board row, as JSON: https://wfsim.app/board/cyath_two_handed.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

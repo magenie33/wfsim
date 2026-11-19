@@ -15,3 +15,4 @@ Sword · Melee · Mastery Rank 3. 147 base damage (impact 14.7, puncture 14.7, s
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Heat_Sword
 - Every published board row, as JSON: https://wfsim.app/board/heat_sword.json
+- [Using and citing WFSim](https://wfsim.app/reuse)

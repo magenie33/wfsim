@@ -17,3 +17,4 @@ Warfan · Melee · Mastery Rank 12. 225 base damage (impact 9, puncture 13.5, sl
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Gunsen_Prime
 - Every published board row, as JSON: https://wfsim.app/board/gunsen_prime.json
+- [Using and citing WFSim](https://wfsim.app/reuse)
