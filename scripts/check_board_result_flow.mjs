@@ -142,21 +142,16 @@ try{
  assert.equal(await (async()=>{const [{n}]=await sql.unsafe('SELECT count(*)::text n FROM state_board_input_mailbox WHERE version>applied_version');return n;})(),'0');
 
  const ui=clientSource('scripts/check_board_result_flow.mjs');
- const part=ui.slice(ui.indexOf('async function readBoardPartitionCatalog('),ui.indexOf('/// `res.ok`'));
- const context=vm.createContext({URLSearchParams,AbortController,AbortSignal,SCENE_ROWS_WITHIN_MS:8000,timeoutSignal:ms=>AbortSignal.timeout(ms),window:{},LIVE_ORIGIN:base,
+ const part=ui.slice(ui.indexOf('const pageBoardReader'),ui.indexOf('/// `res.ok`'));
+ const shared=ui.slice(ui.indexOf('const publishedBoardRevisions'),ui.indexOf('function headlessNonaHelp(say'));
+ const context=vm.createContext({URLSearchParams,AbortController,AbortSignal,window:{},target,scene,
   fetchJsonPatient:async(path,tries,signal)=>{const r=await fetch(new URL(path,base),{signal});if(!r.ok)throw Error('HTTP '+r.status);return r.json();}});
- vm.runInContext(part,context);
- const old={benchmark:target.ruler,mode:target.mode,score:0.001,mods:['old']};
- const untouched={benchmark:'retained_other_ruler',mode:'base',score:123};
- context.target=target;context.scene=scene;context.previous=[old,untouched];
- const rows=await vm.runInContext('readCurrentBoardRows(target.weapon,scene,previous)',context);
- assert(rows.some(row=>row.mode===target.mode&&row.score===target.score));
- assert(rows.some(row=>row.benchmark===untouched.benchmark&&row.score===123));
- assert(!rows.some(row=>row.mods?.[0]==='old'),'the stale published partition must be replaced');
- context.oldIndex={[target.weapon]:[old,untouched]};
- const index=await vm.runInContext('readCurrentBoardIndex(scene,oldIndex)',context);
+ vm.runInContext(shared+'\n'+part,context);
+ const {rows,rulers}=await vm.runInContext('readCurrentBoardRows(target.weapon,scene)',context);
+ assert(rulers.includes(target.ruler));
+ assert.deepEqual(JSON.parse(JSON.stringify(rows.filter(row=>row.benchmark===target.ruler))),complete);
+ const index=await vm.runInContext('readCurrentBoardIndex(scene)',context);
  assert(index[target.weapon].some(row=>row.score===target.score&&row.mode===target.mode));
- assert(!index[target.weapon].some(row=>row.mods?.[0]==='old'));
  const indexed=await captureBoardPartition(sql,target);
  assert.equal(indexed.bootstrap,false,'subsequent publication must use the measured-source index');
  assert.equal(indexed.facts.length,fixture.facts.length,'the indexed cut retains every historical fact');

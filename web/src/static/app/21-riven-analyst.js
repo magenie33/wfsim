@@ -55,7 +55,8 @@ function renderPublishedRivens() {
   if (!box || !w || !META) return;
   const wanted = raRuler || libraryDefaultBenchmark();
   if (!ensureBoardCell(w.id, wanted, renderPublishedRivens)) {
-    box.innerHTML = benchSelectorHtml(wanted) + `<p class="wb-empty">${loadingHtml()}</p>`;
+    const failed = boardCellUnavailable(w.id, wanted);
+    box.innerHTML = benchSelectorHtml(wanted) + `<p class="wb-empty">${failed ? escHtml(tr("The board could not be reached.")) : loadingHtml()}</p>`;
     wireBenchSelector(box, (id) => { raRuler = id; renderPublishedRivens(); }); return;
   }
   // AS DEEP AS THE BUILD BAR READS, so every row drawn here is one it can open.

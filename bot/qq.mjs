@@ -53,18 +53,10 @@ async function qq(path, body) {
   return text ? JSON.parse(text) : {};
 }
 
-/// Cached cards require the same board digest and current public attribution.
-/// The board digest is read at most once a minute, and cards are kept for
-/// ten minutes at most, since a card prints how long ago it was measured.
-const CARD_KEEP_MS = 600_000, CARD_KEEP_MAX = 64, STAMP_EVERY_MS = 60_000;
+/// A ranked card version binds its published rows and displayed attribution.
+const CARD_KEEP_MS = 600_000, CARD_KEEP_MAX = 64;
 const cards = new Map();
-let stamp = { digest: "", at: 0 };
-async function boardDigest() {
-  if (Date.now() - stamp.at < STAMP_EVERY_MS) return stamp.digest;
-  const digest = await fetch(`${SITE}/board.meta.json`).then((r) => r.json()).then((j) => String(j.digest || "")).catch(() => "");
-  stamp = { digest, at: Date.now() };
-  return digest;
-}
+
 /// A CARD AND ITS VERDICT, `{ png, verdict }`: drawn here (bot/card.mjs), and
 /// only a card that is not a weapon's opens the page.
 async function drawCard(url, snapshot) {
@@ -74,13 +66,12 @@ async function drawCard(url, snapshot) {
 }
 
 async function cardFor(url, version = "", snapshot) {
-  const digest = await boardDigest();
-  const hit = digest && cards.get(url);
-  if (hit && hit.digest === digest && hit.version === version && Date.now() - hit.at < CARD_KEEP_MS) return hit.png;
+  const hit = version && cards.get(url);
+  if (hit && hit.version === version && Date.now() - hit.at < CARD_KEEP_MS) return hit.png;
   const { png } = await drawCard(url, snapshot);
-  if (digest) {
+  if (version) {
     cards.delete(url);
-    cards.set(url, { png, digest, version, at: Date.now() });
+    cards.set(url, { png, version, at: Date.now() });
     if (cards.size > CARD_KEEP_MAX) cards.delete(cards.keys().next().value);
   }
   return png;

@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 
 export const CLIENT_INPUTS = {
-  'scripts/check_board_result_flow.mjs': ['web/src/static/app/40-official-builds.js'],
+  'scripts/check_board_result_flow.mjs': ['web/src/static/app/40-official-builds.js', 'web/src/static/app/83-headless-card.js'],
   'scripts/check_board_sync.mjs': ['web/src/static/app/69-board-work.js'],
   'scripts/check_statistics_clock.mjs': ['web/src/static/app/73-compute.js'],
   'scripts/check_board_reviews.mjs': ['web/src/static/app/83-headless-card.js', 'web/src/static/app/87-headless.js'],

@@ -213,15 +213,8 @@ const inBenchView = (r) =>
   benchRivenView === "all"
   || (benchRivenView === "riven") === rowHasRiven(r);
 
-/// THE WEAPON'S OWN FILE WINS OVER THE INDEX, and either answers this the
-/// same: the index holds each group's leader and this reduces a group to its
-/// leader, so a weapon whose full rows are already in hand needs no second
-/// source. A weapon in neither is "never fetched", which `boardProjection`
-/// refuses to speak about — and is why the index does not join `BOARD_HAVE`.
-const benchRows = (id) => ((!boardFiles.has(id) || boardFiles.get(id).loaded.has("")) && BOARD[id]) || (BOARD_INDEX && BOARD_INDEX[id]) || [];
-
-/// …UNDER ANOTHER SCENE, its own index alone: those rows are in no weapon file.
-const benchRowsUnder = (cur, id) => (cur.cell_dir ? (SCENE_INDEX[cur.cell_dir] || {})[id] || [] : benchRows(id));
+/// The published index carries the leaders of the revisions in its catalog.
+const benchRowsUnder = (cur, id) => ((cur.cell_dir ? SCENE_INDEX[cur.cell_dir] : BOARD_INDEX) || {})[id] || [];
 
 const benchEntries = (cur, weapons) => {
   const out = [];
@@ -265,51 +258,12 @@ function benchPendingAsk() {
     .catch(() => { benchPending = "failed"; });
 }
 
-/// The footnote itself. Silent unless the library is genuinely AHEAD of the
-/// board: "0 waiting" is furniture, and a board that IS current should simply
-/// look current.
-///
-/// IT PROMISES NOTHING ABOUT WHEN. The schedule fires hourly, but a scheduled
-/// run STANDS DOWN while the engine fingerprint has moved — the push that moved
-/// it owns that rescore — and a row too expensive for one sitting carries into
-/// the next, so any named wait is a promise the pipeline does not keep and the
-/// page cannot check. How far behind the board is, it can say exactly. HOW OLD
-/// a number is, each row says for itself (`measuredRecordHtml`): the live board
-/// re-ranks a weapon the moment its facts move, so no one time dates a board.
-
-/// WHAT THE BOARD IN HAND SAYS ABOUT ITSELF, and NOT what the binary was built
-/// with. `board_state.yaml` is compiled into the wasm, so the copy behind
-/// `META.benchmarks` is as old as the last site build — while the scoring job
-/// rewrites `board.meta.json` every hour and never rebuilds the binary. Read
-/// the compiled copy and "N more submitted" counts everything sent since the
-/// BUILD. The fetched stamp carries the same fields
-/// for exactly this reason; `META`'s is the fallback for a page that has none.
-const benchState = (cur) =>
-  (BOARD_META && BOARD_META.boards && cur && BOARD_META.boards[cur.id]) || cur || {};
-
+/// Report the outstanding work confirmed by the selected ruler.
 function benchPendingNote(cur) {
   benchPendingAsk();
-  const st = benchState(cur);
   if (!benchPending || typeof benchPending !== "object") return "";
   const note = (text) => ` <span class="bench-pending">${escHtml(text)}</span>`;
   let out = "";
-  const scored = st.submissions || 0;
-  const waiting = benchPending.count - scored;
-  // AND NEVER A NEGATIVE ONE. A ruler that has just been added has scored
-  // nothing, and a store that has expired records can sit below what the last
-  // run read; both are real and neither is "builds are waiting".
-  if (waiting > 0 && scored) {
-    out += note(tr("· {n} more submitted since this board was scored")
-      .replace("{n}", waiting));
-  }
-  // …AND WHAT IS STILL BEING MEASURED, which is a different question and the
-  // one a reader of the BOARD has. They part company exactly when somebody asks
-  // for rows to be measured again: nothing has arrived, the line above says
-  // nothing, and the board is about to change anyway.
-  //
-  // ABSENT MEANS "CANNOT SAY", NEVER "NOTHING LEFT" — a door that could not
-  // answer sends no `owed` at all, and a page that read that as zero would
-  // promise a finished board it knows nothing about.
   const owed = benchPending.owed && cur ? benchPending.owed[cur.id] : undefined;
   if (Number.isFinite(owed) && owed > 0) {
     out += note(tr("· {n} rows still being measured").replace("{n}", owed));

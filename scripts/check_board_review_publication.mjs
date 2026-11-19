@@ -139,91 +139,75 @@ function deferred() {
 
 const boardSource = fs.readFileSync(new URL("../web/src/static/app/40-official-builds.js", import.meta.url), "utf8");
 const loaderSource = [
-  block(boardSource, "async function readBoardPartitionCatalog(", "async function fetchJson("),
-  block(boardSource, "function setBoardMeta(", "/// THE LIVE BOARD'S OWN ADDRESS"),
-  block(boardSource, "const BOARD_HAVE", "/// EVERY WEAPON'S GROUP LEADERS"),
-  block(boardSource, "let BOARD_INDEX", "/// ONE WEAPON'S ROWS"),
-  block(boardSource, "async function loadWeaponBoard", "function ensureBoardCell"),
-  block(boardSource, "let boardIndexAsk", "/// THE LEADERS A RULER'S RANKING READS"),
-  block(boardSource, "async function reloadReviewedBoard", "/// THIS ORIGIN HOLDS NO BOARD"),
-].join("\n");
+  block(headlessSource, 'const publishedBoardRevisions', 'function headlessNonaHelp(say'),
+  block(boardSource, 'const pageBoardReader', '/// `res.ok`'),
+  block(boardSource, 'const BOARD_HAVE', "/// EVERY WEAPON'S GROUP LEADERS"),
+  block(boardSource, 'let BOARD_INDEX', '/// A scene is visible'),
+  block(boardSource, 'async function loadWeaponBoard', 'function ensureBoardCell'),
+  block(boardSource, 'let boardIndexAsk', '/// THE LEADERS A RULER'),
+  block(boardSource, 'async function reloadReviewedBoard', "/// Redraw the current weapon's"),
+].join('\n');
 
 const weapon = "kuva_nukor", baseRuler = "standard_multi_target", sceneRuler = "night_multi_target";
-const oldBase = [{ benchmark: baseRuler, mode: "base", score: 1411 }];
-const oldScene = [{ benchmark: sceneRuler, mode: "base", score: 1500 }];
-const freshBase = [{ benchmark: baseRuler, mode: "base", score: 10 }];
-const freshScene = [{ benchmark: sceneRuler, mode: "base", score: 12 }];
-const oldWeapon = deferred(), oldIndex = deferred(), oldSceneIndex = deferred(), freshWeapon = deferred();
-const asks = [];
-let publicationReload = false;
+const oldRevision = "a".repeat(64), newRevision = "b".repeat(64);
+const old = deferred(), fresh = deferred(), attempts = [];
+let revision = oldRevision;
+const row = (ruler, score) => ({ benchmark: ruler, mode: "base", score });
+const freshBase = [row(baseRuler, 10)], freshScene = [row(sceneRuler, 12)];
 const cacheContext = vm.createContext({
-  $: () => null,
-  AbortController, AbortSignal, URLSearchParams,
-  BOARD: {}, BOARD_META: { scene_weapons: { night: [weapon] }, digest: "a".repeat(64) }, BOARD_ORIGIN: "https://board.invalid", boardOffOrigin: false,
-  window: {}, location: { pathname: "/weapons/Kuva_Nukor/simulator", search: "" },
-  finder: {}, raRuler: null,
-  benchList: () => [{ id: baseRuler, cell_dir: "" }, { id: sceneRuler, cell_dir: "night" }],
-  benchSceneOf: (bench) => bench?.cell_dir || "",
-  libraryDefaultBenchmark: () => baseRuler, modSuffix: () => "simulator",
+  AbortController, AbortSignal, URLSearchParams, BOARD: {}, window: {},
+  location: { pathname: "/weapons/Kuva_Nukor/simulator", search: "" },
+  finder: {}, raRuler: null, benchList: () => [{ id: baseRuler, cell_dir: "" }, { id: sceneRuler, cell_dir: "night" }],
+  benchSceneOf: (bench) => bench?.cell_dir || "", libraryDefaultBenchmark: () => baseRuler, modSuffix: () => "simulator",
   boardActiveKey: () => "active", openedBoardKey: () => "opened",
   localStorage: { getItem: (key) => key === "active" ? JSON.stringify({ b: sceneRuler }) : null },
-  timeoutSignal: () => new AbortController().signal,
-  async fetchJsonPatient(url) {
-    asks.push(url);
-    if (url.startsWith("/api/board/pages/catalog?")) return { ok: true, partitions: [] };
-    if (url === "/board.meta.json") return { scene_weapons: { night: [weapon] }, digest: "b".repeat(64) };
-    if (url === "/board/" + weapon + ".json") return publicationReload ? freshWeapon.promise : oldWeapon.promise;
-    if (url === "/board/night/" + weapon + ".json") return publicationReload ? freshScene : oldScene;
-    if (url === "/board/index.json") return publicationReload ? { [weapon]: freshBase } : oldIndex.promise;
-    if (url === "/board/night/index.json") return publicationReload ? { [weapon]: freshScene } : oldSceneIndex.promise;
-    throw new Error("unexpected board fetch: " + url);
-  },
-  async fetch(url) {
-    const rows = url.includes("/night/") ? freshScene : freshBase;
-    return { ok: true, status: 200, async json() { return rows; } };
+  async fetchJsonPatient(path) {
+    const url = new URL(path, "https://wfsim.invalid"), params = url.searchParams;
+    if (url.pathname.endsWith("/catalog")) {
+      const scene = params.get("scene"), ruler = scene ? sceneRuler : baseRuler, pinned = revision;
+      if (pinned === oldRevision && !params.has("weapon")) await old.promise;
+      const leaders = pinned === newRevision ? (scene ? freshScene : freshBase) : [row(ruler, 1411)];
+      return { ok: true, partitions: [{ weapon, ruler, scene, revision: pinned, rows: 1, leaders }], next: null };
+    }
+    assert.equal(url.pathname, "/api/board/pages");
+    const ruler = params.get("ruler"), pinned = params.get("revision");
+    attempts.push([ruler, pinned]);
+    if (ruler === baseRuler) await (pinned === oldRevision ? old.promise : fresh.promise);
+    const rows = pinned === newRevision ? (ruler === baseRuler ? freshBase : freshScene) : [row(ruler, 1411)];
+    return { ok: true, weapon, ruler, revision: pinned, count: 1, rows, after: 0, next: null };
   },
 });
 vm.runInContext(loaderSource, cacheContext);
 vm.runInContext(`
-  globalThis.boardSnapshot = () => ({ rows: BOARD.kuva_nukor, index: BOARD_INDEX,
-    scene: SCENE_INDEX.night, loaded: [...boardFileState('kuva_nukor').loaded],
-    failed: [...boardFileState('kuva_nukor').failed], have: BOARD_HAVE.has('kuva_nukor') });
+  globalThis.boardSnapshot = () => ({ rows: BOARD.kuva_nukor, index: BOARD_INDEX, scene: SCENE_INDEX.night,
+    loaded: [...boardFileState('kuva_nukor').loaded.keys()], failed: [...boardFileState('kuva_nukor').failed] });
   globalThis.originalState = boardFileState('kuva_nukor');
   originalState.failed.add('previous-failure');
 `, cacheContext);
-const initialWeapon = vm.runInContext("loadWeaponBoard('kuva_nukor')", cacheContext);
-const initialIndex = vm.runInContext("loadFullBoard()", cacheContext);
-const initialSceneIndex = vm.runInContext("loadSceneIndex('night')", cacheContext);
-publicationReload = true;
-const reloading = vm.runInContext("reloadReviewedBoard('kuva_nukor', 'night_multi_target')", cacheContext);
+const initial = ["loadWeaponBoard(\x27kuva_nukor\x27)", "loadFullBoard()", "loadSceneIndex(\x27night\x27)"]
+  .map(call => vm.runInContext(call, cacheContext));
 await new Promise(setImmediate);
-assert.ok(cacheContext.originalState.controller.signal.aborted, "publication invalidates the old weapon request generation");
-const parallelReader = vm.runInContext("loadWeaponBoard('kuva_nukor')", cacheContext);
+revision = newRevision;
+const reloading = vm.runInContext("reloadReviewedBoard(\x27kuva_nukor\x27,\x27night_multi_target\x27)", cacheContext);
+const parallelReader = vm.runInContext("loadWeaponBoard(\x27kuva_nukor\x27)", cacheContext);
 await new Promise(setImmediate);
-assert.equal(asks.filter((url) => url === "/board/kuva_nukor.json").length, 2,
-  "a parallel reader shares the publication reload instead of starting another weapon fetch");
-freshWeapon.resolve(freshBase);
+assert.equal(cacheContext.originalState.controller.signal.aborted, true);
+assert.equal(attempts.filter(([ruler]) => ruler === baseRuler).length, 2, "a concurrent reader shares the new revision");
+fresh.resolve();
 const reloaded = await reloading;
 await parallelReader;
-assert.equal(JSON.stringify(reloaded.rows), JSON.stringify([...freshBase, ...freshScene]));
 assert.equal(JSON.stringify(reloaded.indexRows), JSON.stringify(freshScene));
-assert.equal(cacheContext.BOARD_META.digest, "b".repeat(64), "publication reload installs the newly read metadata");
-let snapshot = cacheContext.boardSnapshot();
-assert.equal(snapshot.have, true);
-assert.equal(snapshot.failed.length, 0, "the old failed-scene markers do not survive publication reload");
-assert.ok(snapshot.loaded.includes("") && snapshot.loaded.includes("night"), "all opened weapon scenes are reloaded");
-oldWeapon.resolve(oldBase);
-oldIndex.resolve({ [weapon]: oldBase });
-oldSceneIndex.resolve({ [weapon]: oldScene });
-await Promise.all([initialWeapon, initialIndex, initialSceneIndex]);
-snapshot = cacheContext.boardSnapshot();
-assert.equal(JSON.stringify(snapshot.rows), JSON.stringify([...freshBase, ...freshScene]), "a late old weapon response cannot overwrite the reloaded rows");
-assert.equal(JSON.stringify(snapshot.scene), JSON.stringify({ [weapon]: freshScene }), "a late old scene-index response cannot overwrite publication");
-assert.ok(snapshot.index === null || JSON.stringify(snapshot.index) === JSON.stringify({ [weapon]: freshBase }),
-  "a late old main-index response cannot restore the stale global leaderboard");
+old.resolve();
+await Promise.all(initial);
+const snapshot = cacheContext.boardSnapshot();
+assert.equal(JSON.stringify([...snapshot.rows].sort((a,b)=>a.score-b.score)), JSON.stringify([...freshBase, ...freshScene]));
+assert.equal(JSON.stringify(snapshot.scene), JSON.stringify({ [weapon]: freshScene }));
+assert.equal(snapshot.index, null, "an old index request cannot win after a new publication");
+assert.equal(snapshot.failed.length, 0);
+assert.ok(snapshot.loaded.includes("") && snapshot.loaded.includes("night"));
 await vm.runInContext("loadFullBoard()", cacheContext);
 assert.equal(JSON.stringify(cacheContext.boardSnapshot().index), JSON.stringify({ [weapon]: freshBase }));
-console.log("  ok  publication reload invalidates all weapon scenes and ignores late old responses");
+console.log("  ok  publication reload ignores late replies from the former revision");
 
 const publicationContext = observer().context;
 vm.runInContext(block(boardSource, "function boardGroupLeaders", "/// How many rows"), publicationContext);
