@@ -86,9 +86,9 @@ check("board discovery points to the current revision catalog",
   }) && weaponMd.includes(weaponCatalog) && weaponHtml.includes(`href="${weaponCatalog}"`));
 if (weaponHtml.includes("data-library-lead") || weaponMd.includes("/board/braton.json")) {
   const publishedAt = new Date(JSON.parse(read("board.meta.json")).scored_at * 1000).toISOString().slice(0, 10);
-  check("static build summaries and files identify their archive date",
+  check("static build summaries date their scores and label the archived download",
     weaponHtml.includes(`aria-label="Archived WFSim board, ${publishedAt}"`) &&
-    weaponMd.includes(`Archived board file (${publishedAt}):`));
+    weaponMd.includes("Archived board JSON:"));
 }
 
 console.log(failed ? `\n${failed} failed` : "\nwhat an agent reads to find WFSim is what the site serves");

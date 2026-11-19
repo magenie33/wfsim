@@ -1988,8 +1988,8 @@ def weapon_md(spec, name, cn, facts, stats, board_rows, caveats) -> str:
     if caveats:
         out += "## Not modelled here\n\n" + "".join(f"- {c}\n" for c in caveats) + "\n"
     out += f"## In WFSim\n\n- Build, simulate and optimize it: {url}\n"
-    if board_asof() and (APP / "board" / f"{spec['id']}.json").exists():
-        out += f"- Archived board file ({board_asof()}): {SITE}/board/{spec['id']}.json\n"
+    if (APP / "board" / f"{spec['id']}.json").exists():
+        out += f"- Archived board JSON: {SITE}/board/{spec['id']}.json\n"
     out += f"- [Using and citing WFSim]({SITE}/reuse)\n"
     return out
 
