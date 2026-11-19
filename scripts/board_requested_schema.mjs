@@ -2,6 +2,7 @@
 // The canonical storage owner installs a fresh requested-source boundary transactionally.
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
+import {boardRequestedResultDDL} from './board_requested_result_schema.mjs';
 
 export function boardRequestedSchema({httpRole='wfsim',runnerRole='wfsim_board_requested',readerRole='wfsim_board_read'}={}) {
  for(const role of [httpRole,runnerRole,readerRole])if(!/^[a-z_][a-z0-9_]{0,62}$/.test(role))throw Error('invalid requested board role');
@@ -22,6 +23,7 @@ END $$;
 ${body}
 ${readFileSync(new URL('../worker/pg/board_requested_partitions.sql',import.meta.url),'utf8')}
 ${readFileSync(new URL('../worker/pg/board_requested_reviews.sql',import.meta.url),'utf8')}
+${boardRequestedResultDDL(readerRole)}
 GRANT EXECUTE ON FUNCTION board_request_submit(text,text,text,text) TO ${httpRole};
 GRANT EXECUTE ON FUNCTION board_requested_review_fresh(text,text,text,text) TO ${httpRole};
 GRANT SELECT ON entity_board_requests,state_board_requests TO ${httpRole};
