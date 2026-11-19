@@ -476,6 +476,7 @@ pub(super) fn ruler(
         // is a number that tells nobody anything, including the person whose
         // build it refused.
         let v = match built.build.clone().and_then(|v| wfsim_webapi::board_rows::admitted(&serde_json::json!({ "weapon": weapon }), bench_id, &v).map(|()| v)) {
+            Ok(v) if !wfsim_webapi::board_rows::has_standard_riven(&v) => continue,
             Ok(v) => v,
             Err(e) => {
                 let s: Value = serde_json::from_str(built.record.get()).expect("library record");

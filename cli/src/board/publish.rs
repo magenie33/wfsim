@@ -4,6 +4,7 @@
 
 use serde_json::value::RawValue;
 use serde_json::{json, Value};
+use wfsim_engine::build::rivens::{is_standard_roll, RivenShape};
 
 /// One scored row.
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -74,7 +75,15 @@ pub(crate) struct RowRiven {
     /// One roll per stat, bonuses first then the malus — the corner this ROW
     /// is, since the rolls are part of the build's id. Not part of the shape a
     /// reader acts on, which is the two lists above.
+    #[serde(default)]
     pub(crate) rolls: Vec<f64>,
+}
+
+impl RowRiven {
+    pub(crate) fn standard_shape(self, weapon: &str) -> Option<RivenShape> {
+        let shape = RivenShape { bonuses: self.bonuses, malus: self.malus };
+        is_standard_roll(&shape, weapon, &self.rolls).then_some(shape)
+    }
 }
 
 mod projection_assembly {
@@ -108,6 +117,15 @@ pub(crate) struct Published<'a> {
     pub(crate) score: &'a RawValue,
     #[serde(default, borrow)]
     pub(crate) riven: Option<&'a RawValue>,
+}
+
+impl Published<'_> {
+    pub(crate) fn has_standard_riven(&self, weapon: &str) -> bool {
+        self.riven.is_none_or(|raw| {
+            serde_json::from_str::<RowRiven>(raw.get())
+                .is_ok_and(|riven| riven.standard_shape(weapon).is_some())
+        })
+    }
 }
 
 /// A row the page would not understand is a row this cannot speak for either, so
