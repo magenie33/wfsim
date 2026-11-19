@@ -3139,6 +3139,8 @@ must fail the source handoff assertion.
 
 ## `check_board_rank_capture`, `check_board_rank_index`, `check_board_rank_publication`, `check_board_rank_flow`, `check_board_rank_schema`
 
+`check_staged_rank_baseline.py` restarts a keyed capture, holds an older transaction open across a newer commit, and verifies insertions on either side of the cursor, corrections, removals and the sealed input digest.
+
 These checks require `WFSIM_BOARD_RANK_TEST_URL` on localhost and the built
 `wfsim-board` executable. Each owns an isolated PostgreSQL schema and removes
 only its own temporary files. CI supplies PostgreSQL 18.
