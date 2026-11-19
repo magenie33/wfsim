@@ -105,16 +105,24 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
    if(!native.healthy)throw error;return {status:'baseline_error',blocked,error:error.message};
   }
  };
- const dirty=async()=>{
-  const claim=await claimRankDirty(sql,{source,native:native.adapter});if(!claim)return null;
+ const dirty=async(recent=false)=>{
+  const claim=await claimRankDirty(sql,{source,native:native.adapter,recent});if(!claim)return null;
   try{
    const [part]=await sql.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[claim.weapon,claim.ruler]);
    const prepared=await prepareRankIdentity(sql,native,part,claim.identity);await fault('after-dirty-native-before-commit');
    return {...await applyRankDirty(sql,claim,part,prepared),stage:'indexing'};
   }catch(error){await retryRankDirty(sql,claim,error);if(!native.healthy)throw error;return {status:'index_error',error:error.message};}
  };
+ const [{recent:recentInstalled}]=await sql.unsafe("SELECT to_regclass('state_board_rank_recent_inputs') IS NOT NULL AS recent");
+ let preferRecent=true;
  const publish=async()=>{
-  publication ||= await claimRankPublication(sql,{source,native:native.adapter});if(!publication)return null;
+  if(!publication){
+   const boundary={source,native:native.adapter};
+   if(recentInstalled&&preferRecent)publication=await claimRankPublication(sql,{...boundary,recent:true});
+   publication ||= await claimRankPublication(sql,boundary);
+   if(!publication)return null;
+   preferRecent=!preferRecent;
+  }
   try{
    const [generation]=await sql.unsafe(`SELECT * FROM state_board_rank_generations WHERE weapon=$1 AND ruler=$2 AND phase IN('floor','upload') ORDER BY created_at,token LIMIT 1`,[publication.weapon,publication.ruler]);
    if(!generation){await startRankGeneration(sql,native,publication,context);return {status:'snapshot-started'};}
@@ -140,12 +148,26 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
   if(Date.now()<orphanAfter)return null;orphanAfter=Date.now()+60000;return collectRankOrphan(sql,context);
  };
  const stages=[route,baseline,dirty,publish,collect];
+ if(recentInstalled){
+  stages.push(()=>sql.begin(async tx=>{
+   await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
+   const [target]=await tx.unsafe(`DELETE FROM state_board_rank_recent_inputs i USING
+    (SELECT weapon,ruler,identity FROM state_board_rank_recent_inputs ORDER BY queued_at,weapon,ruler,identity
+     LIMIT 1 FOR UPDATE SKIP LOCKED) first
+    WHERE (i.weapon,i.ruler,i.identity)=(first.weapon,first.ruler,first.identity) RETURNING i.weapon,i.ruler,i.identity`);
+   if(!target)return null;
+   const [part]=await tx.unsafe('SELECT 1 FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 AND source=$3 AND native=$4 AND complete',
+    [target.weapon,target.ruler,source,native.adapter]);
+   if(part)await putRankDirty(tx,target,true);
+   return {status:'recent-measurement',...target};
+  }),()=>dirty(true));
+ }
  if(requestedPartitions){
   const [installed]=await sql.unsafe("SELECT to_regprocedure('board_requested_result_take(uuid,text)') IS NOT NULL AS ready");
   if(installed.ready)stages.push(()=>sql.begin(async tx=>{
    const [{target}]=await tx.unsafe('SELECT board_requested_result_take($1::uuid,$2::text) AS target',[source,native.adapter]);
    if(!target)return null;
-   await putRankDirty(tx,target);
+   await putRankDirty(tx,target,recentInstalled);
    return {status:'requested-result',...target};
   }));
  }

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // The canonical owner installs derived storage without changing producer identities or controls.
+import {boardRankRecentDDL} from './board_rank_recent_schema.mjs';
 import {boardRankCompactDDL} from './board_rank_compact_schema.mjs';
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
@@ -21,6 +22,7 @@ DO $$ BEGIN
 END $$;
 ${readFileSync(new URL('../worker/pg/board_rank.sql',import.meta.url),'utf8')}
 ${boardRankCompactDDL(readerRole)}
+${boardRankRecentDDL(readerRole)}
 ${readFileSync(new URL('../worker/pg/board_rank_pages.sql',import.meta.url),'utf8')}
 GRANT SELECT,INSERT,UPDATE,DELETE ON ${tables.join(',')} TO ${readerRole};
 GRANT SELECT(scope,key,version,removed) ON state_board_input_mailbox TO ${readerRole};
@@ -48,6 +50,9 @@ DO $$ BEGIN
 END $$;
 ${original}
 GRANT EXECUTE ON FUNCTION board_read_page(text,text,text,bigint,bigint) TO ${httpRole};
+DROP TRIGGER IF EXISTS board_rank_recent_measurement ON state_board_input_mailbox;
+DROP FUNCTION IF EXISTS board_rank_capture_recent_measurement();
+DROP TABLE IF EXISTS state_board_rank_recent_inputs;
 DROP FUNCTION board_rank_expand_inputs(integer);
 DROP VIEW state_board_rank_dependencies;
 DROP TABLE state_board_rank_input_sets,state_board_rank_descriptions;

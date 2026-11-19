@@ -234,6 +234,23 @@ try{
  const [slow]=await sql.unsafe("SELECT version,applied_version FROM state_board_input_mailbox WHERE scope='measurement' AND key=$1",[measurementKey]);
  assert(BigInt(slow.version)>BigInt(slow.applied_version),'player handoff keeps the ordinary mailbox acknowledgement intact');
  assert.deepEqual((await read(second.revision)).rows,second.rows.slice(0,128),'preceding snapshot stays readable');
+ // A newly selected ordinary measurement must survive a restart behind both routing and indexing backlog.
+ const ordinary=inputs[11],ordinaryMode=ordinary.facts[0].mode;
+ const ordinaryKey=JSON.stringify([ordinary.identity,ruler,ordinaryMode]).replaceAll(',',', ');
+ await sql.unsafe(`INSERT INTO state_board_rank_dirty(weapon,ruler,identity,available_at)
+  SELECT $1,$2,'old-index-'||i,'2000-01-01T00:00:00.000Z' FROM generate_series(1,64) i`,[weapon,ruler]);
+ await sql.unsafe('UPDATE board_facts SET score=888 WHERE identity=$1 AND ruler=$2 AND mode=$3',[ordinary.identity,ruler,ordinaryMode]);
+ await put('measurement',ordinaryKey,{identity:ordinary.identity,ruler,mode:ordinaryMode,score:888});
+ await flow.close();flow=await open();
+ let steps=0;
+ await until(async result=>{
+  assert(++steps<60,'an accepted ordinary result must advance before 64 older dirty identities');
+  return result.status==='published'&&(await read()).rows.some(row=>row.score===888);
+ },'new ordinary measurement under backlog');
+ const [olderDirty]=await sql.unsafe("SELECT count(*) FILTER(WHERE version=applied_version) done,count(*) FILTER(WHERE version>applied_version) waiting FROM state_board_rank_dirty WHERE identity LIKE 'old-index-%'");
+ assert(Number(olderDirty.done)>0&&Number(olderDirty.waiting)>0,'both indexing lanes advance');
+ assert.equal((await sql.unsafe('SELECT count(*) n FROM state_board_requested_results'))[0].n,'0');
+ await sql.unsafe("DELETE FROM state_board_rank_dirty WHERE identity LIKE 'old-index-%'");
  // A missing incomplete cut is durably blocked instead of rescanning every loop.
  await sql.unsafe("UPDATE state_board_rank_partitions SET complete=false,seeded=false,path=$1,available_at=board_input_timestamp(clock_timestamp())",[join(work,'rank-cut-00000000-0000-4000-8000-000000000000','inputs.ndjson')]);
  await until(row=>row.status==='baseline_error','missing cut refusal');
@@ -246,6 +263,15 @@ try{
  const auto=(await sql.unsafe('SELECT board_read_page($1,$2,NULL,0,128) page',[weapon,other]))[0].page;
  assert(auto.ok&&auto.rows.some(row=>row.score===333),'a demanded partition is selected only after complete staging');
  assert((await sql.unsafe('SELECT activated_at FROM state_board_requested_partitions WHERE weapon=$1 AND ruler=$2',[weapon,other]))[0].activated_at);
+ await assert.rejects(sql.begin(async tx=>{
+  await tx.unsafe('UPDATE state_board_rank_partitions SET complete=true WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
+  await putRankPublication(tx,{weapon,ruler:other});
+  await tx.unsafe("UPDATE state_board_rank_publication_ready SET available_at='2000-01-01T00:00:00.000Z' WHERE weapon=$1 AND ruler=$2",[weapon,other]);
+  await putRankPublication(tx,{weapon,ruler},true);
+  assert.equal((await claimRankPublication(tx,{source,native:native.adapter,recent:true})).ruler,ruler);
+  assert.equal((await claimRankPublication(tx,{source,native:native.adapter})).ruler,other);
+  throw Error('undo publication claims');
+ }),/undo publication claims/);
  await sql.unsafe('UPDATE state_board_read_partitions SET enabled=false WHERE weapon=$1 AND ruler=$2',[weapon,other]);
  await sql.begin(tx=>putRankPublication(tx,{weapon,ruler:other}));
  assert.equal(await claimRankPublication(sql,{source,native:native.adapter}),null,'an operator-disabled partition cannot start another snapshot');

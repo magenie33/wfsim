@@ -113,3 +113,13 @@ and failed preparation retain the complete static view and a retry receipt;
 they cannot select an incomplete online partition.
 Deterministic qualification failures leave the ready queue until explicit repair.
 Temporary database, lease and process failures keep the ordinary retry delay.
+
+A newly changed measurement for a complete public partition wakes its canonical
+identity directly. The input key coalesces across modes until the reader hands
+it to the index. A verified explicit request uses the same indexed handoff,
+including when the fact already exists. The index and publication queues keep
+the version that needs prompt service across retries and process restarts.
+The reader services both recent identities and the ordinary FIFO. At publication
+boundaries it alternates recent and oldest eligible work, with one generation
+in flight. A changed identity during a generation retains its later version.
+Existing installations add these wakeups with `board_rank_recent_schema.mjs`.
