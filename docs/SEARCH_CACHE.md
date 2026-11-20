@@ -62,9 +62,15 @@ node scripts/bake_search_cache.mjs pack --site site --receipts target/hot/by-wea
 
 站点服务器须把 `.json.gz` 当作二进制资源发送，保留实际 `Content-Length`，省略 `Content-Encoding` 或使用 `identity`。关闭该路径的自动压缩和 SPA 回退，缺文件返回 HTTP 404。哈希资源可设 `Cache-Control: public, max-age=31536000, immutable`，manifest 可设 `Cache-Control: no-cache`。浏览器遇到缺包、错误编码、字节数或 SHA-256 不匹配、解压失败或超限时会跳过官方包，继续使用可用的本地缓存并实算其余缺项。恢复时重新生成正确的哈希资源和 manifest。CLI 只写本地文件，部署由宿主流程管理。
 
+现有 nginx 配置位于 `deploy/website.nginx`。把选定 `siteRoot` 下的 `search-cache/` 映射到同源相对路径，并在 SPA 回退前为此前缀配置 `try_files $uri =404`。若由边缘 Worker 提供资源，在两份 Wrangler 配置的 `run_worker_first` 加上 `/search-cache/*`，并把前缀加入 `worker/pages.js` 中已有的静态缺包处理。可以把公开对象桶挂在相同路径，页面的读取协议相同。上线前用一个存在和一个缺失的请求分别检查二进制响应头与 404。前端看到网页的 HTML 响应头会立即停止读取并继续本地搜索。
+
+## 浏览器缓存
+
+缓存只接入前台个人优化。官方身份由创建任务时选中的榜单 ID 和引擎冻结的实际战斗条件共同确定。自定义场景使用本机的独立空间。用户关闭网站再打开时，浏览器从 IndexedDB 读取个人新增的分片，默认每武器 32 MiB、全站 128 MiB。热包请求只读取公开 manifest 和所选包。最终入围配装的复测和独立验证任务都使用实算。
+
 ## 跨发布复用
 
-现有 nginx 配置位于 `deploy/website.nginx`。把选定 `siteRoot` 下的 `search-cache/` 映射到同源相对路径，并在 SPA 回退前为此前缀配置 `try_files $uri =404`。若由边缘 Worker 提供资源，在两份 Wrangler 配置的 `run_worker_first` 加上 `/search-cache/*`，并把前缀加入 `worker/pages.js` 中已有的静态缺包处理。可以把公开对象桶挂在相同路径，页面的读取协议相同。上线前用一个存在和一个缺失的请求分别检查二进制响应头与 404。前端看到网页的 HTML 响应头会立即停止读取并继续本地搜索。
+引擎、数据、WASM 或分片协议变化时，客户端使用新身份。宿主可用 `reuse` 生成通过跨发布检查的新 receipt，并优先重烘失效且使用频繁的武器和场景组合。共享战斗代码或公共 MOD 的改动影响整个队列。
 
 `reuse` 按一把武器、一个官方榜单和一个模板迁移受信宿主的 capture。准备从可信发布渠道归档的旧、新 `site/`，以及宿主在原始烘焙时记录的 `receiptSha256`。该值覆盖整个 receipt 文件的原始字节，包括热度与耗时字段。已有 capture 可用受宿主管理的原始备份计算此值。工作者随返回文件提供的摘要不能证明宿主来源。外部结果走 `assemble` 的独立实算验收。
 
@@ -80,10 +86,6 @@ node scripts/bake_search_cache.mjs pack --site snapshots/new/site --receipts tar
 成功后，新 receipt 沿用旧场景摘要、原始 packed 字节、热度及原始烘焙耗时，重新计算目标发布的 job ID 与包 SHA-256。stdout 输出新旧记录的摘要、完整 WASM SHA-256 和核准的变动路径。新 receipt 可直接交给 `pack`，继续按发布指纹和预算生成包。
 
 ## 分布式接入点
-
-缓存只接入前台个人优化。官方身份由创建任务时选中的榜单 ID 和引擎冻结的实际战斗条件共同确定。自定义场景使用本机的独立空间。用户关闭网站再打开时，浏览器从 IndexedDB 读取个人新增的分片，默认每武器 32 MiB、全站 128 MiB。热包请求只读取公开 manifest 和所选包。最终入围配装的复测和独立验证任务都使用实算。
-
-引擎、数据、WASM 或分片协议变化时，客户端使用新身份。宿主可用 `reuse` 生成通过跨发布检查的新 receipt，并优先重烘失效且使用频繁的武器和场景组合。共享战斗代码或公共 MOD 的改动影响整个队列。
 
 `plan` 输出 `version`、`release`（站点、引擎、数据和 WASM 指纹）、`weapon`、`ruler`、`template`、`jobId`。宿主在 `--jobs` 目录保存实际派出的任务。工作者使用同一发布和模板调用 `bake`，将生成的 receipt 交回宿主。派单、传输、重试与贡献计量保留给上游调度系统。receipt 包含请求 SHA-256、规范化包 SHA-256、包、可选热度观测和宿主墙钟日志字段。
 
