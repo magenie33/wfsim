@@ -56,36 +56,37 @@ const boardProducer = {
         && Number.isFinite(Date.parse(measurement.started_at)) && Number.isFinite(Date.parse(measurement.finished_at))
         && measurement.started_at <= measurement.finished_at;
       return [
-        db.prepare(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)
-          VALUES(?2::text,?3::text,?5::text,?6::text,?4::double precision,?7::text,?11::double precision,?12::text,?1::text)
+        db.prepare(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at,publication_zone)
+          VALUES(?2::text,?3::text,?5::text,?6::text,?4::double precision,?7::text,?11::double precision,?12::text,?1::text,?13::smallint)
           ON CONFLICT(identity,ruler,mode) DO UPDATE SET
           measured_by=CASE WHEN state_board_measurement_selection.score=excluded.score THEN state_board_measurement_selection.measured_by ELSE excluded.measured_by END,
           cost_seconds=CASE WHEN state_board_measurement_selection.score=excluded.score THEN state_board_measurement_selection.cost_seconds ELSE excluded.cost_seconds END,
           started_at=CASE WHEN state_board_measurement_selection.score=excluded.score THEN state_board_measurement_selection.started_at ELSE excluded.started_at END,
           review_id=CASE WHEN state_board_measurement_selection.score=excluded.score THEN state_board_measurement_selection.review_id ELSE NULL END,
-          score=excluded.score,metric=excluded.metric,finished_at=excluded.finished_at
+          score=excluded.score,metric=excluded.metric,finished_at=excluded.finished_at,publication_zone=excluded.publication_zone
           WHERE state_board_measurement_selection.finished_at<excluded.finished_at
             AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=state_board_measurement_selection.identity AND f.ruler=state_board_measurement_selection.ruler AND f.mode=state_board_measurement_selection.mode AND f.retired_at IS NOT NULL)
             AND (state_board_measurement_selection.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM entity_measurement_reviews r JOIN state_compute_work proof ON proof.id=r.question
               WHERE r.id=state_board_measurement_selection.review_id AND (r.task_id=?10::bigint OR r.completed_at>=?9::text) AND ?8::text IS NOT NULL))`)
           .bind(native ? measurement.finished_at : at, identity, ruler, fact.result.score, mode,
             native ? measurement.measured_by : `verified:${fact.engine}`,fact.result.metric,fact.engine,fact.at || at,fact.task_id || null,
-            native ? measurement.cost_seconds : 0,native ? measurement.started_at : at),
+            native ? measurement.cost_seconds : 0,native ? measurement.started_at : at,fact.zone ?? 3),
         ...scoreWitnessWrites(db, identity, ruler, mode, at, fact),
         db.prepare("DELETE FROM state_board_pending_work WHERE build_id = ? AND ruler = ? AND mode = ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=state_board_pending_work.build_id AND f.ruler=state_board_pending_work.ruler AND f.mode=state_board_pending_work.mode AND f.retired_at IS NOT NULL)").bind(identity, ruler, mode),
       ];
     }
     return [
       db.prepare(
-        `INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
-         VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
+        `INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at, publication_zone)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?8, ?12::smallint)
          ON CONFLICT (identity, ruler, mode) DO UPDATE SET measured_by = excluded.measured_by, score = excluded.score,
-           metric = excluded.metric, cost_seconds = 0, started_at = excluded.started_at, finished_at = excluded.finished_at, review_id = NULL
+           metric = excluded.metric, cost_seconds = 0, started_at = excluded.started_at, finished_at = excluded.finished_at, review_id = NULL,
+           publication_zone = excluded.publication_zone
          WHERE NOT EXISTS (SELECT 1 FROM entity_measurement_reviews retired WHERE retired.id=state_board_measurement_selection.review_id AND retired.invalidated_at IS NOT NULL AND retired.state <> 'succeeded')
            AND state_board_measurement_selection.finished_at <= excluded.finished_at
            AND (state_board_measurement_selection.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM entity_measurement_reviews r JOIN state_compute_work proof ON proof.id = r.question
            WHERE r.id = state_board_measurement_selection.review_id AND (r.task_id=?11::bigint OR r.completed_at>=?10::text) AND ?9::text IS NOT NULL)) AND board_owed(state_board_measurement_selection.identity,state_board_measurement_selection.ruler,state_board_measurement_selection.mode)`)
-        .bind(identity, ruler, mode, `verified:${fact.engine}`, fact.result.score, fact.result.metric, at, at, fact.engine, fact.at || at, fact.task_id || null),
+        .bind(identity, ruler, mode, `verified:${fact.engine}`, fact.result.score, fact.result.metric, at, at, fact.engine, fact.at || at, fact.task_id || null, fact.zone ?? 3),
       ...scoreWitnessWrites(db, identity, ruler, mode, at, fact),
       db.prepare("DELETE FROM state_board_pending_work WHERE build_id = ? AND ruler = ? AND mode = ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=state_board_pending_work.build_id AND f.ruler=state_board_pending_work.ruler AND f.mode=state_board_pending_work.mode AND f.retired_at IS NOT NULL)").bind(identity, ruler, mode),
     ];

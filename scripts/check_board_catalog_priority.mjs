@@ -41,44 +41,54 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
  const scheduler=new DatabaseSync(':memory:'),ledger=new DatabaseSync(':memory:');
  try{
   ledger.exec('CREATE TABLE receipts(weapon TEXT,ruler TEXT,PRIMARY KEY(weapon,ruler)) WITHOUT ROWID');
-  const known=ledger.prepare('INSERT INTO receipts VALUES(?,?)');
-  for(let i=1;i<=80;i++)known.run('aaold'+i,'fixture');
-  known.run('zznew','fresh');known.run('historical','ruler');
+  ledger.prepare('INSERT INTO receipts VALUES(?,?)').run('dex_nikana','fresh');
+  scheduler.exec(`CREATE TABLE priority_work(weapon TEXT,ruler TEXT,priority INT,phase TEXT,due INT,reason TEXT,arrival TEXT,
+   PRIMARY KEY(weapon,ruler)) WITHOUT ROWID;
+   INSERT INTO priority_work VALUES('retained','fresh',-1,'pending',123540,'wait','2026-11-19T15:36:00.000Z');`);
+  const isolated={unsafe:(query,args)=>query.startsWith('SELECT weapon,ruler,position FROM state_board_requested_partitions')?[]:sql.unsafe(query,args)};
+  const context={sql:isolated,journal:scheduler,ledger,maxPending:2},now=Date.now();
   preparePriority(scheduler,{source:'test',archive});
-  await sql.unsafe(`INSERT INTO state_board_rank_new_scopes(weapon,ruler,queued_at) SELECT 'aaold'||n,'fixture','2000-01-01' FROM generate_series(1,80)n`);
-  const context={sql,journal:scheduler,ledger};
-  await nextPriority(context);
-  await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler) VALUES('zznew','fresh')");
-  await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler,queued_at) VALUES('zzfirst','fresh','2000-01-02')");
-  scheduler.prepare("INSERT INTO priority_work VALUES('zzheld','retry',0,'held',?,'transient','')").run(Date.now()-1);
-  const seen=[];
-  for(let i=0;i<17;i++){
-   known.run('newer'+i,'fresh');
-   await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler) VALUES($1,'fresh')",['newer'+i]);
-   const job=await nextPriority(context);
-   if(job){
-    seen.push(job);
-    scheduler.prepare("UPDATE priority_work SET phase='pending',due=? WHERE weapon=? AND ruler=?").run(Date.now()+60000,job.weapon,job.ruler);
-   }
-  }
-  assert(seen.some(j=>j.weapon==='zzheld'),'a due held retry gets a turn during continuous ready work');
-  assert(seen.some(j=>j.weapon==='zzfirst'&&j.priority===-2),'an older first-ever score has a turn during continuous updates');
-  assert(seen.some(j=>j.weapon==='zznew'&&j.priority===-1),'new arrivals get a bounded turn ahead of an established queue');
-  assert(seen.some(j=>j.weapon.startsWith('aaold'))&&seen.some(j=>j.priority===2),'existing queued and historical scopes also make progress');
-  await sql.unsafe("DELETE FROM state_board_rank_new_scopes WHERE weapon LIKE 'aaold%' OR weapon IN('zznew','zzfirst') OR weapon LIKE 'newer%'");
+  preparePriority(scheduler,{source:'test',archive});
+  const job=weapon=>scheduler.prepare('SELECT * FROM priority_work WHERE weapon=?').get(weapon);
+  assert.deepEqual([job('retained').priority,job('retained').phase,job('retained').due,job('retained').reason],[3,'pending',123540,'wait']);
+  scheduler.prepare("UPDATE priority_work SET due=? WHERE weapon='retained'").run(now+60000);
+  await sql.unsafe(`INSERT INTO state_board_rank_new_scopes(weapon,ruler,queued_at,zone) VALUES
+   ('correction','fresh','2020-01-01T00:00:00Z',1),('dex_nikana','fresh','2020-01-02T00:00:00Z',0),
+   ('user_second','fresh','2020-01-03T00:00:00Z',0),('ordinary','fresh','2020-01-04T00:00:00Z',3)`);
+  const next=async()=>{for(let i=0;i<8;i++){const found=await nextPriority(context,now);if(found)return found;}return null;};
+  scheduler.prepare("INSERT OR REPLACE INTO priority_cursor VALUES('turn','2')").run();
+  assert.equal((await next()).weapon,'dex_nikana','a qualified unpublished scope gets the same zone as any other admitted request');
+  const first=job('dex_nikana');
+  const set=scheduler.prepare('UPDATE priority_work SET phase=?,due=? WHERE weapon=?');
+  set.run('pending',now+60000,'dex_nikana');
+  assert.equal(await next(),null,'the shared cap holds new jobs while existing leases are busy');
+  set.run('selected',0,'retained');
+  assert.equal((await next()).weapon,'user_second','an unavailable same-zone task does not block the next FIFO task');
+  set.run('pending',now+60000,'user_second');
+  assert.equal(await next(),null);
+  set.run('held',now+60000,'user_second');
+  assert.equal((await next()).weapon,'correction','the lowest executable zone is claimed before a later zone');
+  set.run('selected',0,'correction');
+  await sql.unsafe("DELETE FROM state_board_rank_new_scopes WHERE weapon IN ('correction','user_second')");
+  await sql.unsafe("UPDATE state_board_rank_new_scopes SET last_measured_at=board_input_timestamp(clock_timestamp()) WHERE weapon='dex_nikana'");
+  scheduler.prepare("INSERT OR REPLACE INTO priority_cursor VALUES('turn','0')").run();
+  await next();
+  assert.deepEqual([job('dex_nikana').position,job('dex_nikana').arrival],[first.position,first.arrival],'new scores preserve the oldest outstanding age and queue position');
+  await sql.unsafe("DELETE FROM state_board_rank_new_scopes WHERE weapon IN ('dex_nikana','ordinary')");
  }finally{scheduler.close();ledger.close();}
  const sourceFact=inputs[0].facts[0];
  const id=sourceFact.identity,mode=sourceFact.mode;
  await sql.unsafe('INSERT INTO board_facts SELECT identity,$2,mode,71,metric,measured_by,finished_at,retired_at,review_id FROM board_facts WHERE identity=$1 AND ruler=$3 AND mode=$4',[id,fresh,ruler,mode]);
- const notify=async score=>put('measurement',JSON.stringify([id,fresh,mode]).replaceAll(',',', '),{identity:id,ruler:fresh,mode,score});
+ const notify=async (score,publication_zone=3)=>put('measurement',JSON.stringify([id,fresh,mode]).replaceAll(',',', '),{identity:id,ruler:fresh,mode,score,publication_zone});
  await notify(71);
- const arrival=async()=>(await sql.unsafe('SELECT queued_at,last_measured_at FROM state_board_rank_new_scopes WHERE weapon=$1 AND ruler=$2',[weapon,fresh]))[0];
+ const arrival=async()=>(await sql.unsafe('SELECT queued_at,last_measured_at,zone,zone_position FROM state_board_rank_new_scopes WHERE weapon=$1 AND ruler=$2',[weapon,fresh]))[0];
  assert((await arrival()).last_measured_at);
  await sql.unsafe("UPDATE state_board_rank_new_scopes SET last_measured_at='2000-01-01' WHERE weapon=$1 AND ruler=$2",[weapon,fresh]);
  const before=await arrival();
- await notify(72);
+ await notify(72,1);
  const after=await arrival();
  assert.equal(after.queued_at,before.queued_at);
+ assert.equal(after.zone,1);assert(BigInt(after.zone_position)>BigInt(before.zone_position),'promotion moves to the new zone tail');
  assert(after.last_measured_at>before.last_measured_at,'another accepted measurement advances a waiting scope');
  await sql.unsafe('INSERT INTO state_board_rank_new_scopes(weapon,ruler) VALUES($1,$2) ON CONFLICT DO NOTHING',[weapon,fresh]);
  // An unavailable proof for one scope cannot hold an unrelated current correction or first score.

@@ -184,31 +184,35 @@ native revision or an explicit withdrawal takes precedence over the import.
 
 ### Publishing queued scopes
 
-The storage owner installs the SQL emitted by `board_catalog_priority_schema.mjs`.
-Run `scripts/run_rank_catalog_batch.py priority-run CONFIG` alongside the indexed
-reader, using the batch configuration and its existing service accounts.
-`priority-step` runs one scheduling step. `priority-status` reports outstanding
-work, including the affected keys, retry times and reasons for held scopes.
-Use one catalog controller at a time. The priority controller also services the
-historical backlog and keeps change capture active after that backlog drains.
+The publication queue uses the same `00`–`99` zones as the compute queue.
+A verified measurement inherits its computation's zone. Explicit partition
+requests enter `00`, ordinary measurements without a computation enter `03`,
+and unrequested catalog replay enters `99`. The earliest executable zone
+runs first, then its FIFO position. A pending partition coalesces changes,
+keeps its oldest outstanding timestamp and moves to the new zone's tail
+on promotion. A scope waiting on a retry or a reader does not block other
+eligible work. All zones share the same capacity.
 
-The controller reads verified arrivals, explicit requests, changes since the cut
-and historical scope receipts. The first measurements for a new scope,
-recent changes to retained scopes and older queued work each receive reserved
-admission capacity. The oldest first measurement receives a turn during a
-continuous stream of updates. A verified change updates a pending
-scope's latest arrival while retaining its first arrival and request position.
-A retained scope uses its qualified input. For a genuinely new scope the
-controller takes a repeatable-read capture and qualifies its current rows with
-the same Native publisher. Both paths reconcile subsequent changes, including
-acknowledged mailbox inputs, before selecting the complete revision. While a
-first publication is pending, the active capture keeps each changed identity
-so other registered scopes for that weapon can process the same update. A held
-scope keeps its published rows and its retry record. Once the native index
-is active, new results continue through its per-identity update queue.
-Publication yields at a committed page checkpoint between scopes. Current
-corrections and first publications can finish while a larger generation resumes
-from its private cursor. Readers keep the prior complete revision throughout.
+The controller uses the scope's qualified inputs when present. It captures and
+qualifies current rows when needed. The reader applies new inputs to a
+registered ranking by identity. Both paths reconcile later changes before
+selecting a complete revision. The existing public reference stays readable
+while publication is pending. Retries keep their position and resume at the
+saved checkpoint. An accepted input that leaves the public rows identical
+keeps the existing published revision.
+
+The storage owner installs the SQL emitted by `board_catalog_priority_schema.mjs`.
+An existing ranked deployment also applies
+`node scripts/board_rank_recent_schema.mjs --zones` before switching the
+measurement writers, controller and reader. The upgrade adds queue metadata
+and leaves pending work in place. The controller upgrades its SQLite queue
+in the same file on startup.
+
+Run `scripts/run_rank_catalog_batch.py priority-run CONFIG` alongside the
+indexed reader with the existing service accounts. Run one controller at a
+time. `priority-step` runs one scheduling step. `priority-status` reports
+outstanding scopes by two-digit zone and phase, the oldest timestamp for
+each group and the reason and retry time for held work.
 
 ### Registering a qualified catalog scope
 

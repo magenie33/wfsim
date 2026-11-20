@@ -52,8 +52,10 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
   journal.exec('PRAGMA busy_timeout=5000');
   if(!status)journal.exec('PRAGMA journal_mode=WAL');
   if(action==='priority-status')return {scopes:journal.prepare('SELECT phase,count(*) n FROM priority_work GROUP BY phase').all(),
-   queues:journal.prepare("SELECT priority,phase,count(*) n,min(arrival) oldest FROM priority_work WHERE phase NOT IN('selected','retired') GROUP BY priority,phase ORDER BY priority,phase").all(),
-   held:journal.prepare("SELECT weapon,ruler,reason,due FROM priority_work WHERE phase='held' ORDER BY due LIMIT 32").all()};
+   queues:journal.prepare(`SELECT printf('%02d',priority) zone,phase,count(*) n,min(CASE WHEN arrival GLOB '*T*' THEN arrival END) oldest
+    FROM priority_work WHERE phase NOT IN('selected','retired') GROUP BY priority,phase ORDER BY priority,phase`).all(),
+   held:journal.prepare(`SELECT weapon,ruler,printf('%02d',priority) zone,reason,due
+    FROM priority_work WHERE phase='held' ORDER BY due LIMIT 32`).all()};
   if(action==='status')return {run:journal.prepare('SELECT closed FROM run WHERE id=1').get()||null,
    scopes:journal.prepare('SELECT phase,count(*) n FROM scopes GROUP BY phase ORDER BY phase').all(),
    storage:journal.prepare('SELECT * FROM high_water WHERE id=1').get()||null};

@@ -9,30 +9,44 @@ const until="board_input_timestamp(clock_timestamp()+interval '3minutes')";
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 
-async function putRankDirtyBatch(tx,targets,recent=false) {
+// Preserve the age and highest priority of an open item even while its lease is held.
+const mergeQueue = `zone=CASE WHEN queued.version>queued.applied_version THEN least(queued.zone,excluded.zone) ELSE excluded.zone END,
+ zone_position=CASE WHEN queued.version<=queued.applied_version OR excluded.zone<queued.zone THEN excluded.zone_position
+ WHEN excluded.zone=queued.zone THEN CASE WHEN queued.zone_position IS NULL THEN NULL ELSE least(queued.zone_position,excluded.zone_position) END
+ ELSE queued.zone_position END,
+ queued_at=CASE WHEN queued.version>queued.applied_version THEN least(coalesce(queued.queued_at,queued.available_at),excluded.queued_at)
+ ELSE excluded.queued_at END`;
+
+export async function putRankDirtyBatch(tx,targets,recent=false) {
  if(!targets.length)return [];
- return tx.unsafe(`WITH inputs AS MATERIALIZED(SELECT x.*${recent?",nextval('board_rank_generation') v":''}
-  FROM jsonb_to_recordset($1::text::jsonb)x(weapon text,ruler text,identity text) ORDER BY weapon,ruler,identity)
-  INSERT INTO state_board_rank_dirty(weapon,ruler,identity${recent?',version,recent_version':''})
-  SELECT weapon,ruler,identity${recent?',v,v':''} FROM inputs
+ return tx.unsafe(`WITH inputs AS MATERIALIZED(SELECT x.*,nextval('board_rank_generation') v
+  FROM jsonb_to_recordset($1::text::jsonb)x(weapon text,ruler text,identity text,zone smallint,queued_at text,zone_position bigint) ORDER BY weapon,ruler,identity)
+  INSERT INTO state_board_rank_dirty AS queued(weapon,ruler,identity,version,recent_version,zone,queued_at,zone_position)
+  SELECT weapon,ruler,identity,v,CASE WHEN $2::boolean THEN v END,coalesce(zone,CASE WHEN $2 THEN 3 ELSE 99 END),coalesce(queued_at,${now}),coalesce(zone_position,v) FROM inputs
   ON CONFLICT(weapon,ruler,identity) DO UPDATE SET version=nextval('board_rank_generation'),
-   ${recent?'recent_version=greatest(state_board_rank_dirty.version+1,excluded.version),':''}error=NULL,
-   available_at=CASE WHEN state_board_rank_dirty.lease_until>${now} THEN state_board_rank_dirty.lease_until ELSE least(state_board_rank_dirty.available_at,${now}) END
-  RETURNING identity,version`,[JSON.stringify(targets)]);
+   recent_version=CASE WHEN $2 THEN greatest(queued.version+1,excluded.version) ELSE queued.recent_version END,
+   ${mergeQueue},error=NULL,
+   available_at=CASE WHEN queued.lease_until>${now} THEN queued.lease_until ELSE least(queued.available_at,${now}) END
+  RETURNING weapon,ruler,identity,version`,[JSON.stringify(targets),recent]);
 }
 
 export async function putRankDirty(tx,target,recent=false) {
  const [row]=await putRankDirtyBatch(tx,[target],recent);return row.version;
 }
 
-export async function putRankPublication(tx,{weapon,ruler,winnersChanged,catalog_phase},recent=false) {
+export async function putRankPublication(tx,{weapon,ruler,winnersChanged,catalog_phase,zone=null,queued_at=null,zone_position=null},recent=false) {
  const unchanged=winnersChanged===false&&catalog_phase!=='frozen'&&catalog_phase!=='replay';
- const write=await tx.unsafe(`INSERT INTO state_board_rank_publication_ready(weapon,ruler${recent?',version,recent_version':''})
-  ${recent?"SELECT $1,$2,v,v FROM (SELECT nextval('board_rank_generation') v) seq":"VALUES($1,$2)"}
+ const write=await tx.unsafe(`INSERT INTO state_board_rank_publication_ready AS queued(weapon,ruler,version,recent_version,zone,queued_at,zone_position)
+  SELECT $1,$2,seq.v,CASE WHEN $5::boolean THEN seq.v END,least($3::smallint,s.zone),coalesce(least($4::text,s.queued_at),${now}),
+   CASE WHEN s.zone<$3 THEN s.zone_position WHEN s.zone=$3 THEN least(s.zone_position,$6::bigint)
+        ELSE coalesce($6::bigint,seq.v) END
+  FROM (SELECT nextval('board_rank_generation') v) seq
+  LEFT JOIN state_board_rank_new_scopes s ON(s.weapon,s.ruler)=($1,$2)
   ON CONFLICT(weapon,ruler) DO UPDATE SET version=nextval('board_rank_generation'),
-   ${recent?'recent_version=greatest(state_board_rank_publication_ready.version+1,excluded.version),':''}error=NULL,
-   available_at=CASE WHEN state_board_rank_publication_ready.lease_until>${now} THEN state_board_rank_publication_ready.lease_until ELSE least(state_board_rank_publication_ready.available_at,${now}) END
-   ${unchanged?'WHERE state_board_rank_publication_ready.delivered_output IS NULL OR state_board_rank_publication_ready.error IS NOT NULL':''}`,[weapon,ruler]);
+   recent_version=CASE WHEN $5 THEN greatest(queued.version+1,excluded.version) ELSE queued.recent_version END,
+   ${mergeQueue},error=NULL,
+   available_at=CASE WHEN queued.lease_until>${now} THEN queued.lease_until ELSE least(queued.available_at,${now}) END
+   ${unchanged?'WHERE queued.delivered_output IS NULL OR queued.error IS NOT NULL':''}`,[weapon,ruler,zone??(recent?3:99),queued_at,recent,zone_position]);
  return write.count>0;
 }
 
@@ -77,7 +91,10 @@ export async function routeRankInput(tx,input,source,catalogRequests=false) {
  if(targets.size||input.scope==='review'||(identity&&input.deleted))
   await tx.unsafe(`INSERT INTO state_board_rank_route_inputs VALUES($1,$2,$3) ON CONFLICT(scope,key)
    DO UPDATE SET version=greatest(state_board_rank_route_inputs.version,excluded.version)`,[input.scope,input.key,input.version]);
- await putRankDirtyBatch(tx,[...targets.values()]);
+ const acceptedZone=input.body?.publication_zone;
+ const zone=input.scope==='measurement'&&BigInt(input.version)>0n?(Number.isInteger(acceptedZone)&&acceptedZone>=0&&acceptedZone<=99?acceptedZone:3)
+  :input.scope==='review'&&(input.body?.state==='succeeded'||input.body?.invalidated_at)?1:99;
+ await putRankDirtyBatch(tx,[...targets.values()].map(target=>({...target,zone})));
  return {identities:targets.size};
 }
 
@@ -124,7 +141,7 @@ export async function claimRankDirty(sql,{source,native,recent=false,catalog=fal
  const [row]=await sql.unsafe(`WITH chosen AS MATERIALIZED(SELECT d.weapon,d.ruler,d.identity FROM state_board_rank_dirty d
   JOIN state_board_rank_partitions p USING(weapon,ruler) WHERE p.source=$1 AND p.native=$2
    ${catalog?"AND p.catalog_phase IS DISTINCT FROM 'frozen'":''}
-   ${recent?'AND d.recent_version>d.applied_version':''} AND d.version>d.applied_version AND d.available_at<=${now} ORDER BY d.available_at,d.weapon,d.ruler,d.identity
+   ${recent?'AND d.recent_version>d.applied_version':''} AND d.version>d.applied_version AND d.available_at<=${now} ORDER BY d.zone,coalesce(d.zone_position,0),coalesce(d.queued_at,d.available_at),d.weapon,d.ruler,d.identity
   LIMIT 1 FOR UPDATE OF d SKIP LOCKED)
   UPDATE state_board_rank_dirty d SET lease=$3,lease_until=${until},available_at=${until} FROM chosen c
   WHERE (d.weapon,d.ruler,d.identity)=(c.weapon,c.ruler,c.identity) RETURNING d.*`,[source,native,token]);
@@ -170,7 +187,7 @@ export async function applyRankDirty(sql,claim,part,prepared) {
   await tx.unsafe(`UPDATE state_board_rank_dirty SET applied_version=$4,lease=NULL,lease_until=NULL,available_at=NULL,error=NULL
    WHERE weapon=$1 AND ruler=$2 AND identity=$3`,[claim.weapon,claim.ruler,claim.identity,claim.version]);
   const publication=updated.complete
-   ?await putRankPublication(tx,updated,held.recent_version!=null&&BigInt(held.recent_version)>BigInt(held.applied_version))
+   ?await putRankPublication(tx,{...updated,zone:held.zone,queued_at:held.queued_at,zone_position:held.zone_position},held.recent_version!=null&&BigInt(held.recent_version)>BigInt(held.applied_version))
    :await finishRankBaseline(tx,updated);
   return {status:'indexed',weapon:part.weapon,ruler:part.ruler,identity:claim.identity,winners_changed:updated.winnersChanged,publication_requested:publication};
  });

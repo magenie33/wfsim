@@ -257,8 +257,9 @@ check("a spot check that disproves them refuses both and takes back what they we
 check("...and the official fact stands", (await question("three")).state === "fact"
   && (await L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE void = 1 AND question = ?", (await question("three")).id)).n === 2);
 await L.batch(BOARD_PRODUCERS.new_build.on_fact_writes(env,{payload:{identity:'three',ruler:'standard_single_target',mode:'base'}},
-  {official:true,engine:'e1',result:{score:SCORE,metric:'kpm'}}));
+  {official:true,engine:'e1',zone:42,result:{score:SCORE,metric:'kpm'}}));
 check("an official delivery corrects an incorrect existing public score",(await fact('three'))?.score===SCORE);
+check("official score delivery keeps a system-selected zone",(await L.get("SELECT publication_zone FROM state_board_measurement_selection WHERE identity='three'")).publication_zone===42);
 
 // THE SCORER: past their deadline, a row is its to claim; it reads exactly what
 // it claimed and what nobody asked the factory for, and its answer pays a client

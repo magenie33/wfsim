@@ -132,6 +132,7 @@ await check('an independent agreeing witness atomically replaces only the review
  const who=witness('2'),work=await facts().next(env,who,engine);
  await facts().answer(env,who,{lease:work.lease,engine,result:{score:15,metric:'kpm'},work:100});
  assert.equal((await score()).score,15);assert.equal((await score()).review_id,accepted.id);
+ assert.equal(Number((await score()).publication_zone),1,'an accepted correction inherits its computation zone');
  assert.equal((await state(accepted.id)).state,'succeeded');
  const status=await state(accepted.id);
  assert.deepEqual(status.record,record);

@@ -464,6 +464,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_pending ON entity_measurement_re
 CREATE INDEX IF NOT EXISTS board_reviews_waiting ON entity_measurement_reviews (engine, state, created_at);
 CREATE INDEX IF NOT EXISTS board_reviews_question ON entity_measurement_reviews (question);
 ALTER TABLE state_board_measurement_selection ADD COLUMN IF NOT EXISTS review_id TEXT COLLATE "C";
+ALTER TABLE state_board_measurement_selection ADD COLUMN IF NOT EXISTS publication_zone smallint;
 ALTER TABLE entity_measurement_reviews ADD COLUMN IF NOT EXISTS invalidated_at TEXT COLLATE "C";
 ALTER TABLE entity_measurement_reviews ADD COLUMN IF NOT EXISTS invalidation_reason TEXT COLLATE "C";
 CREATE INDEX IF NOT EXISTS scores_review ON state_board_measurement_selection (review_id) WHERE review_id IS NOT NULL;

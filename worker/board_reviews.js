@@ -25,7 +25,7 @@ export const BOARD_REVIEW_PRODUCER = {
       AND state='waiting' AND (task_id IS NULL OR task_id=?3::bigint)`).bind(fact.engine,demand.payload.review,fact.task_id),
       db.prepare(`WITH applied AS (
       UPDATE state_board_measurement_selection s SET score = ?1::double precision, metric = ?2::text, measured_by = ?3::text,
-        started_at = ?4::text, finished_at = ?4::text, cost_seconds = 0, review_id = r.id
+        started_at = ?4::text, finished_at = ?4::text, cost_seconds = 0, review_id = r.id, publication_zone = ?10::smallint
       FROM entity_measurement_reviews r WHERE r.ref = ?5::text AND r.id = ?6::text AND r.question = ?7::text AND r.state = 'waiting' AND (r.task_id IS NULL OR r.task_id=?9::bigint)
         AND s.identity = r.identity AND s.ruler = r.ruler AND s.mode = r.mode
         AND s.score = r.baseline_score AND s.measured_by = r.baseline_by AND s.finished_at = r.baseline_finished_at
@@ -33,7 +33,7 @@ export const BOARD_REVIEW_PRODUCER = {
       RETURNING s.identity)
       UPDATE entity_measurement_reviews SET state = CASE WHEN EXISTS (SELECT 1 FROM applied) THEN 'succeeded' ELSE 'superseded' END,
         completed_at = ?4::text, result_engine=?8::text,task_id=coalesce(task_id,?9::bigint) WHERE ref = ?5::text AND id = ?6::text AND question = ?7::text AND state = 'waiting' AND (task_id IS NULL OR task_id=?9::bigint)`)
-      .bind(fact.result.score, fact.result.metric, `verified:${fact.engine}`, at, demand.ref, demand.payload.review, demand.question, fact.engine, fact.task_id),
+      .bind(fact.result.score, fact.result.metric, `verified:${fact.engine}`, at, demand.ref, demand.payload.review, demand.question, fact.engine, fact.task_id, fact.zone ?? 1),
       ...scoreWitnessWrites(db, demand.payload.identity, demand.payload.ruler, demand.payload.mode, at, fact),
       db.prepare(`DELETE FROM state_board_pending_work q USING entity_measurement_reviews r WHERE r.id = ? AND r.state = 'succeeded'
         AND q.build_id = r.identity AND q.ruler = r.ruler AND q.mode = r.mode`).bind(demand.payload.review)];

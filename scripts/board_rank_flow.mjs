@@ -9,7 +9,7 @@ import {guardRankSpace} from './board_rank_storage.mjs';
 import {enqueueRequestedPartition} from './board_requested_partitions.mjs';
 import {BoardRankConflict,BoardRankQualificationError} from './board_rank_index.mjs';
 import {captureRankBaseline,beginRankBaseline,prepareRankBaselinePage,applyRankBaselinePage} from './board_rank_baseline.mjs';
-import {putRankDirty,routeRankInput,reconcileRankBaseline,finishRankBaseline,claimRankDirty,prepareRankIdentity,applyRankDirty,retryRankDirty} from './board_rank_work.mjs';
+import {putRankDirty,putRankDirtyBatch,routeRankInput,reconcileRankBaseline,finishRankBaseline,claimRankDirty,prepareRankIdentity,applyRankDirty,retryRankDirty} from './board_rank_work.mjs';
 import {claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankGeneration,publishRankGeneration,reuseRankGeneration,retryRankPublication,yieldRankPublication} from './board_rank_publication.mjs';
 import {collectRankStorage,collectRankOrphan} from './board_rank_gc.mjs';
 
@@ -116,9 +116,10 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
   }
  };
  const baseline=async()=>{
-  const parts=await sql.unsafe(`SELECT * FROM state_board_rank_partitions WHERE NOT complete AND(NOT seeded OR NOT reconciled)
-   AND source=$1 AND native=$2 AND available_at<=board_input_timestamp(clock_timestamp())
-   ORDER BY available_at,revision,weapon,ruler LIMIT $3`,[source,native.adapter,baselineConcurrency]);
+  const parts=await sql.unsafe(`SELECT p.* FROM state_board_rank_partitions p LEFT JOIN state_board_rank_new_scopes s USING(weapon,ruler)
+   WHERE NOT p.complete AND(NOT p.seeded OR NOT p.reconciled) AND p.source=$1 AND p.native=$2
+    AND p.available_at<=board_input_timestamp(clock_timestamp())
+   ORDER BY coalesce(s.zone,99),coalesce(s.zone_position,0),p.available_at,p.revision,p.weapon,p.ruler LIMIT $3`,[source,native.adapter,baselineConcurrency]);
   if(!parts.length)return null;
   if(parts.length===1)return baselinePart(parts[0],native);
   // Each partition owns its database checkpoint. The Native process accepts one call at a time.
@@ -130,8 +131,8 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
   const failed=settled.find(r=>r.status==='rejected');if(failed)throw failed.reason;
   return {status:'baseline-batch',items:settled.map(r=>r.value)};
  };
- const dirty=async(recent=false)=>{
-  const claim=await claimRankDirty(sql,{source,native:native.adapter,recent,catalog});if(!claim)return null;
+ const dirty=async()=>{
+  const claim=await claimRankDirty(sql,{source,native:native.adapter,catalog});if(!claim)return null;
   try{
    const [part]=await sql.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[claim.weapon,claim.ruler]);
    const prepared=await prepareRankIdentity(sql,native,part,claim.identity);await fault('after-dirty-native-before-commit');
@@ -140,7 +141,7 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
  };
  const [{recent:recentInstalled,discovery}]=await sql.unsafe(`SELECT to_regclass('state_board_rank_recent_inputs') IS NOT NULL AS recent,
   to_regprocedure('board_rank_discover_scope(uuid,text,text)') IS NOT NULL AS discovery`);
- let publishTurn=0,pages=0;
+ let pages=0;
  const finishPublication=(generation,result)=>{
   context.verified.delete(join(generation.directory,'winners.ndjson'));
   context.verified.delete(join(generation.directory,'rows.ndjson'));
@@ -152,11 +153,7 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
    await yieldRankPublication(sql,publication);publication=null;
   }
   if(!publication){
-   const boundary={source,native:native.adapter,catalog};
-   const lane=publishTurn++%3;
-   if(lane===0&&recentInstalled)publication=await claimRankPublication(sql,{...boundary,recent:true});
-   if(lane===1&&catalog)publication=await claimRankPublication(sql,{...boundary,first:true});
-   publication ||= await claimRankPublication(sql,boundary);
+   publication=await claimRankPublication(sql,{source,native:native.adapter,catalog});
    if(!publication)return null;
    pages=0;
   }
@@ -190,16 +187,17 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
  if(recentInstalled){
   stages.push(()=>sql.begin(async tx=>{
    await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
-   const [target]=await tx.unsafe(`DELETE FROM state_board_rank_recent_inputs i USING
-    (SELECT weapon,ruler,identity FROM state_board_rank_recent_inputs ORDER BY queued_at,weapon,ruler,identity
-     LIMIT 1 FOR UPDATE SKIP LOCKED) first
-    WHERE (i.weapon,i.ruler,i.identity)=(first.weapon,first.ruler,first.identity) RETURNING i.weapon,i.ruler,i.identity`);
-   if(!target)return null;
-   const [part]=await tx.unsafe('SELECT 1 FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 AND source=$3 AND native=$4 AND complete',
-    [target.weapon,target.ruler,source,native.adapter]);
-   if(part)await putRankDirty(tx,target,true);
-   return {status:'recent-measurement',...target};
-  }),()=>dirty(true));
+   const targets=await tx.unsafe(`WITH chosen AS MATERIALIZED (
+    SELECT i.weapon,i.ruler,i.identity FROM state_board_rank_recent_inputs i
+    JOIN state_board_rank_partitions p USING(weapon,ruler) WHERE p.source=$1 AND p.native=$2
+    ORDER BY i.zone,coalesce(i.zone_position,0),i.queued_at,i.weapon,i.ruler,i.identity LIMIT 24 FOR UPDATE OF i SKIP LOCKED)
+    DELETE FROM state_board_rank_recent_inputs i USING chosen c
+    WHERE (i.weapon,i.ruler,i.identity)=(c.weapon,c.ruler,c.identity) RETURNING i.*`,[source,native.adapter]);
+   if(!targets.length)return null;
+   await putRankDirtyBatch(tx,targets,true);
+   const {weapon,ruler,identity}=targets[0];
+   return {status:'recent-measurement',weapon,ruler,identity,count:targets.length};
+  }));
  }
  if(requestedPartitions){
   if(discovery){
