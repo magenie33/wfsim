@@ -27,9 +27,8 @@ const pair = ({ weapon, ruler }) => `${weapon}/${ruler}`;
 const fourElementsV1 = Object.freeze({ strategy: 'four_elements', finalists: 5, candidateRuns: 10 });
 const templates = Object.freeze({
   four_elements_v1: fourElementsV1,
+  four_elements_alt_arcane_v1: Object.freeze({ ...fourElementsV1, excludeArcanes: Object.freeze(['secondary_fortifier']) }),
   regular_v1: Object.freeze({ strategy: 'regular', finalists: 5, candidateRuns: 10 }),
-  four_elements_alt_aim_v1: Object.freeze({ ...fourElementsV1,
-    excludeMods: Object.freeze(['galvanized_scope', 'galvanized_crosshairs']) }),
 });
 
 function canonical(value, depth = 0) {
@@ -177,14 +176,17 @@ function receipt(job, requestSha256, answer) {
 
 export async function writeSearchCacheReceipt({ site, weapon, ruler, template = 'four_elements_v1', request, answer, out }) {
   const job = jobSpec(await releaseAt(site), weapon, ruler, template);
-  const expected = await requestFor(site, job);
+  const expected = await officialTemplateRequest(site, job);
   if (canonical(request) !== canonical(expected)) throw Error('Capture does not use the official template request');
   const result = receipt(job, sha(canonical(expected)), answer);
   await writeAtomic(resolve(out), canonical(result) + '\n');
   return result;
 }
 
-const requestFor = (site, job) => officialSearchRequest({ site, weapon: job.weapon, ruler: job.ruler, ...templates[job.template] });
+export function officialTemplateRequest(site, { weapon, ruler, template }) {
+  if (!Object.hasOwn(templates, template)) throw Error('Unknown official training template');
+  return officialSearchRequest({ site, weapon, ruler, ...templates[template] });
+}
 
 function checkedReceipt(value, release) {
   exact(value, ['version', 'job', 'requestSha256', 'packSha256', 'pack', 'heat', 'wallMs'], 'receipt');
@@ -420,7 +422,7 @@ async function main() {
   }
   const site = resolve(values.site);
   const release = await releaseAt(site);
-  const makeRequest = (job) => requestFor(site, job);
+  const makeRequest = (job) => officialTemplateRequest(site, job);
   if (command === 'plan') {
     const job = jobSpec(release, values.weapon, values.ruler, values.template ?? 'four_elements_v1');
     await makeRequest(job);

@@ -58,15 +58,13 @@ test('official request materializes crowd and uses release defaults', async () =
   await assert.rejects(officialSearchRequest({ site, weapon: 'unknown', ruler: crowd }), /Unknown official weapon/);
 });
 
-test('alternative training excludes only public mods this weapon can equip', async () => {
-  const scope = 'galvanized_scope', crosshairs = 'galvanized_crosshairs';
-  const excludeMods = [scope, crosshairs, scope, 'riven:private', 'absent_mod'];
-  for (const [weapon, expectedMods] of [['braton', [scope]], ['kuva_nukor', [crosshairs]], ['magistar', []]]) {
+test('alternative training excludes eligible public arcanes only', async () => {
+  const excludeArcanes = ['secondary_fortifier', 'secondary_fortifier', 'unknown_arcane'];
+  for (const weapon of ['braton', 'kuva_nukor', 'magistar']) {
     const options = { site, weapon, ruler: crowd };
     const expected = await officialSearchRequest(options);
-    assert.deepEqual(expected.limits.exclude.mods, []);
-    expected.limits.exclude.mods = expectedMods;
-    assert.deepEqual(await officialSearchRequest({ ...options, excludeMods }), expected, weapon);
+    expected.limits.exclude.arcanes = weapon === 'kuva_nukor' ? ['secondary_fortifier'] : [];
+    assert.deepEqual(await officialSearchRequest({ ...options, excludeArcanes }), expected);
   }
   bad('plan', { weapon: 'torid', ruler: crowd, request: '{}' }, /Unknown option/);
 });
@@ -137,13 +135,13 @@ test('CLI emits deterministic browser packs and independently rejects untrusted 
     assert.deepEqual(first, second);
     await t.test('only a host bake can warm a capture from a local staging leaf', async () => {
       const job = join(root, 'alt.json'), out = join(root, 'alt-receipt.json'), warmRunner = join(root, 'warm-runner.mjs');
-      ok('plan', { weapon: 'torid', ruler: crowd, template: 'four_elements_alt_aim_v1', out: job });
+      ok('plan', { weapon: 'kuva_nukor', ruler: crowd, template: 'four_elements_alt_arcane_v1', out: job });
       for (const leaf of [first[0].cacheRoot, join(root, 'missing-leaf')]) {
         await writeFile(warmRunner, `import {runSearchCache as capture} from './fixture.mjs';
           export const runSearchCache = (opts) => capture(opts, ${JSON.stringify(leaf)});`);
         const baked = ok('bake', { job, out, workers: '1', runner: warmRunner, 'warm-from': relative(process.cwd(), leaf) });
         assert.equal(baked[0].entries, 60);
-        assert.equal((await json(out)).job.template, 'four_elements_alt_aim_v1');
+        assert.equal((await json(out)).job.template, 'four_elements_alt_arcane_v1');
       }
       bad('bake', { job, out, runner, 'warm-from': 'https://example.invalid/cache/' }, /local cache directory/);
       bad('bake', { job, out, runner, 'warm-from': first[0].path }, /requires a directory/);

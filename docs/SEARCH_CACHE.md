@@ -6,7 +6,7 @@
 
 Node.js 从本地发布目录 `site/` 读取 `release.json`、发布的 app 和 `/api/meta` 静态内容。`officialSearchRequest()` 用发布 app 自带的 `headlessScenarioOnto()` 和 `optimizeBody()` 构造请求。阵型成员按原顺序补上默认敌人，采用榜单的种子及最终复测场数。内置模板使用空白配装、官方数据和公开候选池，紫卡、私人敌人和其他席位为空。`four_elements_v1` 与 `regular_v1` 都取 5 个入围、每候选 10 场。如需改变派单模板，增加版本化 ID。
 
-宿主可选的 **alternative training** 通过 `plan --template four_elements_alt_aim_v1` 启用。它沿用 `four_elements_v1`，从 `galvanized_scope` 和 `galvanized_crosshairs` 中选出当前发布的公开 MOD 池里该武器可装备的 ID，写入 `limits.exclude.mods`。向 `officialSearchRequest()` 传 `excludeMods` 可生成同一请求。
+宿主可用 `four_elements_alt_arcane_v1` 扩大副武器赋能池的覆盖。这个公开模板从当前武器可装备的赋能中去除 `secondary_fortifier`，保留完整 MOD 池。最终仍按武器和场景生成一份供下载的包。
 
 ```powershell
 node scripts/bake_search_cache.mjs plan --site site --weapon torid --ruler standard_multi_target__aimed_half --out target/hot/jobs/torid-half.json
@@ -20,9 +20,12 @@ node scripts/bake_search_cache.mjs pack --site site --receipts target/hot/receip
 宿主补烘第二模板时，`bake --warm-from` 接受同一发布下受信 staging 的 `cacheRoot`，即直接含 `manifest.json` 的本地叶目录。使用宿主自行烘焙或经 `assemble` 独立验收的结果生成这个目录。runner 以 `mode: 'capture'`、`remote: true`、`indexedDB: null` 从本机回环服务读取热包。读取器核对身份、大小和 SHA-256，缺包、损坏或分片缺失时由本次搜索实算。若要对照第二模板的补烘成本，可将同一 job 分别写入两个 receipt，比较各自的 `wallMs`。`assemble` 会拒绝 `--warm-from`。
 
 ```powershell
-$base = node scripts/bake_search_cache.mjs pack --site site --receipts target/hot/receipts --out target/hot/seed --pack-bytes full | ConvertFrom-Json
-node scripts/bake_search_cache.mjs plan --site site --weapon torid --ruler standard_multi_target__aimed_half --template four_elements_alt_aim_v1 --out target/hot/jobs/torid-alt.json
-node scripts/bake_search_cache.mjs bake --site site --job target/hot/jobs/torid-alt.json --warm-from $base.cacheRoot --out target/hot/receipts/torid-alt.json --workers 10
+node scripts/bake_search_cache.mjs plan --site site --weapon ocucor --ruler standard_multi_target --out target/hot/jobs/ocucor-base.json
+node scripts/bake_search_cache.mjs bake --site site --job target/hot/jobs/ocucor-base.json --out target/hot/ocucor-receipts/base.json --workers 10
+$base = node scripts/bake_search_cache.mjs pack --site site --receipts target/hot/ocucor-receipts --out target/hot/seed --pack-bytes 16777216 | ConvertFrom-Json
+node scripts/bake_search_cache.mjs plan --site site --weapon ocucor --ruler standard_multi_target --template four_elements_alt_arcane_v1 --out target/hot/jobs/ocucor-alt.json
+node scripts/bake_search_cache.mjs bake --site site --job target/hot/jobs/ocucor-alt.json --warm-from $base.cacheRoot --out target/hot/ocucor-receipts/alternate.json --workers 10
+node scripts/bake_search_cache.mjs pack --site site --receipts target/hot/ocucor-receipts --out target/hot/live-staging --pack-bytes 16777216 --update-index
 ```
 
 `officialSearchRequest()` 返回 UI 原始请求，receipt 的请求 SHA-256 也绑定这份输入。runner 应先用当前 WASM 的 `/api/computation/input` 将请求冻结成正式任务输入，再传给 Quick Fleet。缓存 identity 取自正式任务输入的捕获结果。
@@ -70,7 +73,7 @@ node scripts/bake_search_cache.mjs reuse --old-site snapshots/old/site --site sn
 node scripts/bake_search_cache.mjs pack --site snapshots/new/site --receipts target/hot/new-receipts --out target/hot/new-staging --pack-bytes 131072
 ```
 
-宿主核对发布页、包清单和实际计算资产，按发布方的算法从 `engines/<id>.json` 重新计算引擎 ID。两版 WASM、绑定、worker 以及公共计算摘要 `files.rest` 必须相同。WASM 和 `rest` 绑定了 RNG、评分与 gas 算法，`protocol`、数据格式和发布声明的其他协议字段也必须相同。两套基础模板都要在旧、新发布上产生一致的 UI 请求及 WASM 冻结请求。复用 alternative training 的 receipt 时，其版本化模板也要通过这项对照。原 receipt 对应的模板还需通过请求 SHA-256 和两版场景摘要校验。此过程仅执行 `/api/computation/input`。
+宿主核对发布页、包清单和实际计算资产，按发布方的算法从 `engines/<id>.json` 重新计算引擎 ID。两版 WASM、绑定、worker 以及公共计算摘要 `files.rest` 必须相同。WASM 和 `rest` 绑定了 RNG、评分与 gas 算法，`protocol`、数据格式和发布声明的其他协议字段也必须相同。两套基础模板都要在旧、新发布上产生一致的 UI 请求及 WASM 冻结请求。复用其他覆盖模板的 receipt 时，其版本化模板也要通过这项对照。原 receipt 对应的模板还需通过请求 SHA-256 和两版场景摘要校验。此过程仅执行 `/api/computation/input`。
 
 引擎或数据指纹变化时，新发布必须保留旧引擎清单，且 `accepted` 中恰有一条仍在有效期的旧引擎 `changed` 授权。宿主对实际数据包逐文件比较，核对武器、Kitgun 或 Zaw 文件的摘要，并从两版 YAML 核对继承、变形组、紫卡家族和组装部件的影响范围。宿主使用发布工具的 Python 和 PyYAML，可用 `WFSIM_PYTHON` 指定解释器。目标武器受影响、`join`、共享代码或公共数据变化、仅有文案或元数据推断、证据缺失都会返回 `rebake required`。只有页面发布号变化时，仍须通过相同的资产、请求和场景检查。
 

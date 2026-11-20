@@ -24,17 +24,17 @@ async function releaseInputs(site) {
 }
 
 export async function officialSearchRequest({ site, weapon, ruler, strategy = 'four_elements',
-  finalists = 5, candidateRuns = 10, excludeMods }) {
+  finalists = 5, candidateRuns = 10, excludeArcanes }) {
   if (typeof site !== 'string' || !site) throw Error('site must name the local release site directory');
   const [meta, source] = await releaseInputs(site);
-  return buildOfficialRequest(meta, source, { weapon, ruler, strategy, finalists, candidateRuns, excludeMods });
+  return buildOfficialRequest(meta, source, { weapon, ruler, strategy, finalists, candidateRuns, excludeArcanes });
 }
 
-export function buildOfficialRequest(META, source, { weapon, ruler, strategy, finalists, candidateRuns, excludeMods = [] }) {
+export function buildOfficialRequest(META, source, { weapon, ruler, strategy, finalists, candidateRuns, excludeArcanes = [] }) {
   if (!Number.isInteger(finalists) || finalists < 1 || finalists > 100 || ![1, 10].includes(candidateRuns)) {
     throw Error('Expected finalists in 1..100 and candidateRuns of 1 or 10');
   }
-  if (!Array.isArray(excludeMods)) throw Error('Expected excludeMods to be an array of public mod IDs');
+  if (!Array.isArray(excludeArcanes)) throw Error('Expected an array of public arcane IDs');
   const bench = META.benchmarks?.find((item) => item.id === ruler);
   if (!META.weapons?.some((item) => item.id === weapon)) throw Error(`Unknown official weapon: ${weapon}`);
   if (!bench?.scenario) throw Error(`Unknown official ruler: ${ruler}`);
@@ -53,12 +53,9 @@ export function buildOfficialRequest(META, source, { weapon, ruler, strategy, fi
     const valence = headlessDefaultValence(META, weapon, null);
     const assembly = headlessDefaultAssembly(META, weapon, null);
     const opt = { search_strategy: strategy, limits: headlessBlankLimits(META, weapon) };
-    if (excludeMods.length) {
-      const eligibleMods = new Set(headlessWeaponOf(META, weapon).mods || []);
-      const publicMod = headlessModOf(META);
-      for (const id of new Set(excludeMods)) {
-        if (eligibleMods.has(id) && publicMod(id)) opt.limits.exclude.mods.push(id);
-      }
+    if (excludeArcanes.length) {
+      const eligibleArcanes = new Set(headlessWeaponOf(META, weapon).arcanes || []);
+      opt.limits.exclude.arcanes = [...new Set(excludeArcanes)].filter(id => eligibleArcanes.has(id));
     }
     const startsPayload = () => headlessBuiltinStarts(META, weapon).map(start => headlessStartPayload(META, start));
     const optRun = { finalists, candidate_runs: candidateRuns };
@@ -72,6 +69,6 @@ export function buildOfficialRequest(META, source, { weapon, ruler, strategy, fi
     const activeScenario = bench.id;
     const simRuns = () => Number(META.defaults?.runs) || 1000;
     JSON.stringify(optimizeBody());`,
-  { META, bench, weapon, strategy, finalists, candidateRuns, excludeMods }, { timeout: 500, filename: 'release-optimize-body.js' });
+  { META, bench, weapon, strategy, finalists, candidateRuns, excludeArcanes }, { timeout: 500, filename: 'release-optimize-body.js' });
   return JSON.parse(result);
 }

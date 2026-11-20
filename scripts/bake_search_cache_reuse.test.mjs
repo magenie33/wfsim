@@ -76,9 +76,9 @@ async function changedRelease(next, base, { paths = [arbucep], changed = ['arbuc
   return r;
 }
 
-async function capture(base, weapon, file, { template, excludeMods } = {}) {
+async function capture(base, weapon, file, { template, excludeArcanes } = {}) {
   const ruler = 'standard_multi_target__aimed_half';
-  const request = await officialSearchRequest({ site, weapon, ruler, excludeMods });
+  const request = await officialSearchRequest({ site, weapon, ruler, excludeArcanes });
   const frozen = loadEngine().api('/api/computation/input', { kind: 'optimization', request });
   assert.equal(frozen.ok, true);
   const { engine, data, wasm } = base.release;
@@ -135,9 +135,9 @@ test('reuse admits only host-pinned capture with a proven release delta', async 
   assert.notEqual(after.packSha256, before.packSha256);
   assert.equal(invoke(out).stdout, first.stdout);
   assert.deepEqual(await readFile(receipt), original);
-  const template = 'four_elements_alt_aim_v1', alt = join(root, 'alt.json');
-  await assert.rejects(capture(base, 'torid', alt, { template }), /official template request/);
-  const altPin = await capture(base, 'torid', alt, { template, excludeMods: ['galvanized_scope', 'galvanized_crosshairs'] });
+  const template = 'four_elements_alt_arcane_v1', alt = join(root, 'alt.json');
+  await assert.rejects(capture(base, 'ocucor', alt, { template }), /official template request/);
+  const altPin = await capture(base, 'ocucor', alt, { template, excludeArcanes: ['secondary_fortifier'] });
   const altOut = join(root, 'alt-reused.json'), altReuse = invoke(altOut, altPin, alt);
   assert.equal(altReuse.status, 0, altReuse.stderr);
   assert.equal((await json(altOut)).job.template, template);

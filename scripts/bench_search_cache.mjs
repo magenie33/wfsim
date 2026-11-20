@@ -7,7 +7,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { officialSearchRequest, writeSearchCacheReceipt } from './bake_search_cache.mjs';
+import { officialTemplateRequest, writeSearchCacheReceipt } from './bake_search_cache.mjs';
 import { runSearchCache } from './run_search_cache.mjs';
 
 const { values } = parseArgs({ options: {
@@ -19,8 +19,7 @@ const { values } = parseArgs({ options: {
   local: { type: 'boolean' }, resume: { type: 'boolean' },
 } });
 const { weapon, ruler, template, budget } = values;
-const strategies = { four_elements_v1: 'four_elements', regular_v1: 'regular' };
-if (!weapon || !ruler || !values.out || !Object.hasOwn(strategies, template) || (values.lock && !values.start)) {
+if (!weapon || !ruler || !values.out || (values.lock && !values.start)) {
   throw Error('Provide --weapon ID --ruler ID --out DIR and a supported template. --lock requires --start MOD.');
 }
 const base = resolve(values.out);
@@ -29,7 +28,7 @@ const controlSite = values.control ? resolve(values.control) : site;
 const workers = Number(values.workers);
 const release = async dir => JSON.parse(await readFile(join(dir, 'release.json')));
 const rel = await release(site);
-const request = await officialSearchRequest({ site, weapon, ruler, strategy: strategies[template] });
+const request = await officialTemplateRequest(site, { weapon, ruler, template });
 const pathFor = label => join(base, label + '.json');
 const save = (label, data) => writeFile(pathFor(label), JSON.stringify(data));
 const digest = data => createHash('sha256').update(JSON.stringify(data)).digest('hex');
