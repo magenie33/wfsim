@@ -1405,7 +1405,7 @@ for the source and refresh command.
 | rule | where it is held |
 | --- | --- |
 | each live-state item is `{kind, id, attributes, names, started_at_ms, ends_at_ms}`; a new kind is a parser in the worker and a tab registered in `UTILITY_KINDS` | `worker/world.js` `KINDS`, `27-utility.js` |
-| a signed-in reader can see additional Utility shortcuts supplied for their account by `/api/cloud/tools`; they sit on their own wrapping row below the tabs, sign-out clears them and each destination checks authorization | `refreshUtilityShortcuts`, `check_utility_shortcuts.mjs` |
+| `/api/cloud/tools` supplies account-specific Utility tabs and shortcuts. A tab mounts its same-origin module inside the Utility page at `?tool=<id>`. Shortcuts sit below the tabs. Sign-out removes account tools and their panels, and each destination checks authorization. | `refreshUtilityShortcuts`, `check_utility_shortcuts.mjs` |
 | DE's file is relayed by the bot server each minute (DE refuses the worker) and served from R2; the feed is the live site's, from every origin, asked each minute while a live-state tab shows and every two minutes elsewhere while a reminder waits | `worldLoad`, `utilityClock` |
 | Void Fissures shows all of the game's three lists, or one — star chart, Steel Path, Void Storms, in that order on every chip row — by relic era, then list, then time left | `41-fissures.js` |
 | Arbitrations are in no DE file: the worker reads a schedule computed ahead, puts the hour open now in the feed, and serves the next fourteen days apart (`/api/world/arbitrations`), which the page lists by day, filtered by mission type and faction | `arbitrationsOf`, `47-arbitrations.js` |
