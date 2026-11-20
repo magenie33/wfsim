@@ -17,9 +17,9 @@ const watch = transport.slice(transport.indexOf("const LANE_WATCHDOG"), transpor
 async function checkScoreDispatch() {
   const source = readFileSync(new URL("../web/src/static/app/08-checkpoint-api.js", import.meta.url), "utf8");
   const sent = [], held = [];
-  let returned;
+  let returned, followup, clock = 0;
   const sandbox = createContext({
-    Date, performance, setTimeout, clearTimeout,
+    Date, performance: { now: () => clock }, setTimeout, clearTimeout,
     watchSilence: () => ({ start() {}, clear() {}, heard() {} }),
     computeRun: (_, work) => work(),
     spawnEngine: () => ({
@@ -28,7 +28,9 @@ async function checkScoreDispatch() {
         const reply = payload => this.onmessage({ data: { kind: "result", payload } });
         if (request.lead) {
           if (!request.fresh) returned = Array.from(request.scores);
-          queueMicrotask(() => reply(request.fresh ? { pending: sandbox.items } : { ok: true }));
+          const pending = request.fresh ? sandbox.items : followup;
+          if (!request.fresh) followup = null;
+          queueMicrotask(() => reply(pending ? { pending } : { ok: true }));
         } else {
           const groups = new Map();
           for (const item of request.score) {
@@ -96,6 +98,22 @@ async function checkScoreDispatch() {
   ], [[1, [4], 8], [2, 5, 9]], 64);
   await testBatch(Array.from({length: 11}, (_, build) => ({build, runs: 2})),
     [[0, 4, 8], [1, 5, 9]], 22);
+
+  sent.length = 0;
+  sandbox.items = Array.from({length: 48}, (_, build) => ({build, runs: 2}));
+  const second = sandbox.items.map(item => ({...item, build: item.build + 48}));
+  followup = second;
+  const job = runInContext("quickFleet({}, 2)", sandbox);
+  await new Promise(setImmediate);
+  while (held.length) {
+    clock += 5000;
+    held.shift()();
+    await new Promise(setImmediate);
+  }
+  assert.deepEqual(sent.slice(0, 4).map(s => s.length), [12, 12, 12, 12]);
+  assert.deepEqual(sent.slice(4).map(s => s.length), Array(16).fill(3));
+  assert.deepEqual(returned, ids(second));
+  assert.deepEqual([job.result.builds, job.result.fights, job.result.work], [96, 192, 384]);
 }
 
 async function checkSignals() {
