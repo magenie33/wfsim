@@ -115,6 +115,10 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .mtab:hover{color:var(--text)}
 .mtab.sel{color:var(--text);font-weight:600;border-color:var(--line);background:var(--panel2);position:relative;top:1px}
 @media(max-width:520px){.mtab{padding:8px 9px;font-size:12.5px}.module-tabs{gap:2px}}
+#utility-tabs.has-utility-shortcuts{height:auto;flex-wrap:wrap;overflow:visible;padding-bottom:6px}
+.utility-shortcuts{display:flex;flex:0 0 100%;flex-wrap:wrap;gap:6px;margin-top:4px}
+.utility-shortcuts .ghost-btn{display:inline-flex;align-items:center;min-height:36px;max-width:100%;text-decoration:none;overflow-wrap:anywhere}
+@media(max-width:520px){.utility-shortcuts .ghost-btn{min-height:44px}}
 
 /* EVERY BLOCK DECLARES WHOSE IT IS, and the rules below are DERIVED from that
    declaration rather than from a list of ids.
