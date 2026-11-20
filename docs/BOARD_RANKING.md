@@ -30,7 +30,10 @@ A baseline captures coherent measured sources and their build, selected-fact
 and selected-review headers once into an immutable file. It streams at most
 256 sources per database fetch and prepares at most 64 per Native batch. File
 digest, terminal count, byte cursor and committed coverage guard restart.
-New live normalization wins over late baseline pages. Every Native publication
+The reader can prepare pages for up to three distinct partitions in one turn
+with `WFSIM_BOARD_READ_BASELINE_CONCURRENCY` (default one). They share its
+database pool and serialize calls to the same Native process. Each database
+checkpoint is independent. New live normalization wins over late baseline pages. Every Native publication
 mode registers a measurement dependency, including modes without a fact.
 At the baseline boundary, paged reconciliation records obligations for changed
 or previously unobserved headers. The partition becomes complete only after

@@ -17,7 +17,7 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
   await tx.unsafe('INSERT INTO state_board_public_heads SELECT weapon,ruler,scene,$3 FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2',[weapon,second,old]);
  });
  await assert.rejects(sql.unsafe('SELECT board_requested_partition_selected($1,$2,false)',[weapon,second]),/requires a qualified first publication/);
- await restart();
+ await restart(3);
  const scheduler=new DatabaseSync(':memory:'),ledger=new DatabaseSync(':memory:');
  try{
   ledger.exec('CREATE TABLE receipts(weapon TEXT,ruler TEXT,PRIMARY KEY(weapon,ruler)) WITHOUT ROWID');
@@ -65,18 +65,26 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
  await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler) VALUES($1,'removed_ruler')",[weapon]);
  const page=async scope=>(await sql.unsafe('SELECT board_read_page($1,$2,NULL,0,128) page',[weapon,scope]))[0].page;
  const position=(await sql.unsafe('SELECT position FROM state_board_requested_partitions WHERE weapon=$1 AND ruler=$2',[weapon,second]))[0].position;
- let revised=false,warm=false;
+ const frozen=new Set();let revised=false,warm=false,concurrent=false;
  const stop=Date.now()+75000;let last;
  while(Date.now()<stop){
   last=await action('priority-step');
   if(last.status==='held'&&last.ruler!=='removed_ruler')throw Error('unexpected hold '+JSON.stringify(last));
+  if(last.status==='frozen')frozen.add(last.ruler);
   if(last.status==='frozen'&&last.ruler===fresh&&!revised){
    await sql.unsafe('UPDATE board_facts SET score=96 WHERE identity=$1 AND ruler=$2 AND mode=$3',[id,fresh,mode]);
    await notify(96);revised=true;
    await sql.unsafe('UPDATE board_facts SET score=999 WHERE identity=$1 AND ruler=$2 AND mode=$3',[id,ruler,mode]);
    await put('measurement',JSON.stringify([id,ruler,mode]).replaceAll(',',', '),{identity:id,ruler,mode,score:999});
   }
-  for(let n=0;n<12;n++)await step();
+  if(!frozen.has(fresh)||!frozen.has(second))continue;
+  for(let n=0;n<12;n++){
+   const work=await step();
+   if(work.status==='baseline-batch'){
+    const targets=work.items.map(x=>x.weapon+'/'+x.ruler);assert.equal(new Set(targets).size,targets.length);
+    concurrent=true;
+   }
+  }
   warm||=(await page(ruler)).rows.some(r=>r.score===999);
   const current=await page(fresh),retained=await page(second);
   if(revised&&warm&&current.ok&&current.rows.some(r=>r.score===96)&&retained.ok&&retained.revision!==old){
@@ -103,6 +111,7 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
      }
     }
    }
+   assert(concurrent,'independent first publications share the database pool and one Native');
    assert(indexed,'new canonical acknowledgement is durable without rebuilding unchanged public winners');
    assert.deepEqual(await delivery(),previous);
    console.log('ok — retained archive and requested position, fresh fenced capture and changed identity, unrelated warm correction through held work, priority restart');
