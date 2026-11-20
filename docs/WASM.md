@@ -342,7 +342,13 @@ into steps the PAGE drives (`woptQuickFleet`):
    step screen's short measurement (docs/OPTIMIZER.md, "Each step is
    screened"), answered `rough: true` with its runs (`shards`), or `{build,
    shards}`, a full measurement that continues them, answered with its best
-   order's runs (`shard`); the page passes all of it through unread.
+   order's runs (`shard`). The page spreads unmeasured neighbors round robin
+   across the existing slices, then assigns promoted builds by their pilot gas.
+   The median pilot gas weights each unknown in the mixed batch's estimate.
+   It dispatches heavier estimates first. Each slice keeps request order so the
+   worker's grouping by run count preserves positional replies. A queue outside
+   the leader's full-then-single-short grouping or with unreadable pilot gas
+   uses contiguous slices. The page restores the leader's original score order.
 2. The page splits the batch across all workers, the leader included:
    `quick_fleet: { score: [...] }` → each build's score and the element order
    it scored best at.

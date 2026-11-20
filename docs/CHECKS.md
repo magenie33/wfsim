@@ -1625,7 +1625,10 @@ score replies also end the search and release every worker and watchdog. A
 slow call that keeps reporting remains live and returns its full answer and
 work counts. The terminal reply ends the worker timer. The call waits for
 ordered build saves and reports their own storage errors. Cancelling releases
-the compute slot during either stage. `--signals-only` covers both stages.
+the compute slot during either stage. `--signals-only` also checks mixed,
+all-pilot and all-short dispatch using fake workers that group scores by run
+count. It checks unchanged inputs, slice bounds, original leader order, and
+exact build, fight and work totals with out-of-order completions.
 
 ## `check_idle_devices`
 

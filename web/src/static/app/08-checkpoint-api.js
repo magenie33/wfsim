@@ -52,6 +52,66 @@ function loadCheckpoint() {
 // ignorable. `poolSize()` is the setting; this is now only a name for it.
 const woptWorkerCount = () => poolSize();
 
+// Pilot gas is a scheduling hint. Nearby unmeasured candidates can share a
+// costly neighborhood, so spread them across the existing slices first.
+function quickScoreSlices(items, workers, width) {
+  const count = Math.ceil(items.length / width);
+  if (workers < 2 || count <= workers) return null;
+  const measured = [], unmeasured = [];
+  let shortRuns;
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    // Workers return one contiguous group per run count. The leader emits
+    // full items before a single short run count, so ascending indices preserve
+    // the positional reply even when a slice contains both kinds.
+    if (item?.runs != null) {
+      if (!Number.isInteger(item.runs) || item.runs < 1 || item.runs > 0xffffffff ||
+          item.shards != null || (shortRuns != null && item.runs !== shortRuns)) return null;
+      shortRuns = item.runs;
+    } else if (shortRuns != null) return null;
+    if (item?.shards == null) {
+      unmeasured.push(i);
+      continue;
+    }
+    if (!Array.isArray(item.shards)) return null;
+    let weight = 0;
+    for (const carried of item.shards) {
+      if (carried == null) continue;
+      let shard = carried;
+      if (typeof carried === "string") {
+        try {
+          const packed = JSON.parse(carried);
+          if (!Array.isArray(packed) || packed[0] !== 1) return null;
+          shard = packed[2];
+        } catch (_) { return null; }
+      }
+      if (!Number.isSafeInteger(shard?.gas) || shard.gas < 0) return null;
+      weight += shard.gas;
+    }
+    if (!Number.isSafeInteger(weight)) return null;
+    measured.push({ i, weight });
+  }
+  if (!unmeasured.length && measured.every(row => row.weight === measured[0].weight)) return null;
+  if (!measured.length && width === 1) return null;
+  const slices = Array.from({ length: count }, () => ({ weight: 0, indices: [] }));
+  measured.sort((a, b) => b.weight - a.weight || a.i - b.i);
+  const unknownWeight = measured[Math.floor(measured.length / 2)]?.weight ?? 0;
+  unmeasured.forEach((i, j) => {
+    const slice = slices[j % count];
+    slice.indices.push(i);
+    slice.weight += unknownWeight;
+  });
+  for (const { i, weight } of measured) {
+    let lightest;
+    for (const slice of slices) {
+      if (slice.indices.length < width && (!lightest || slice.weight < lightest.weight)) lightest = slice;
+    }
+    lightest.indices.push(i);
+    lightest.weight += weight;
+  }
+  return slices.sort((a, b) => b.weight - a.weight).map(slice => slice.indices.sort((a, b) => a - b));
+}
+
 // Merge the fleet's leaderboards into one. Each worker ran its own funnel over
 // its own elites, so every row here is measured at the SAME run count under the
 // SAME scenario and the scores are directly comparable — the merge is a sort.
@@ -377,8 +437,9 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       // TWO SLICES A WORKER: enough that a fast one takes a slow one's share,
       // few enough that each call's fixed cost stays small beside its fights.
       const size = Math.max(1, Math.ceil(r.pending.length / (k * 2)));
-      const slices = [];
-      for (let at = 0; at < r.pending.length; at += size) slices.push(r.pending.slice(at, at + size));
+      const positions = quickScoreSlices(r.pending, k, size);
+      const slices = positions ? positions.map(ids => ids.map(i => r.pending[i])) : [];
+      if (!positions) for (let at = 0; at < r.pending.length; at += size) slices.push(r.pending.slice(at, at + size));
       const outs = new Array(slices.length).fill(null);
       let next = 0, broken = false;
       activity = "scoring";
@@ -405,7 +466,10 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       if (broken || outs.some((o) => !o) || job.cancelled) return;
       const bad = outs.find((o) => o.ok === false);
       if (bad) { fail(bad.error || "a worker could not score its share", false); return; }
-      scores = outs.flatMap((o) => o.scores || []);
+      if (positions) {
+        scores = new Array(r.pending.length);
+        positions.forEach((ids, slice) => ids.forEach((i, j) => { scores[i] = outs[slice].scores[j]; }));
+      } else scores = outs.flatMap((o) => o.scores || []);
       done.builds += scores.length;
       done.fights += outs.reduce((a, o) => a + (o.fights || 0), 0);
       done.work += outs.reduce((a, o) => a + (o.work || 0), 0);

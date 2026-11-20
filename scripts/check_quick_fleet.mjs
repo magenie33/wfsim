@@ -14,6 +14,84 @@ import { createContext, runInContext } from "node:vm";
 const transport = readFileSync(new URL("../web/src/static/app/06-transport.js", import.meta.url), "utf8");
 const watch = transport.slice(transport.indexOf("const LANE_WATCHDOG"), transport.indexOf("/// WHERE A WORKER"));
 
+async function checkScoreDispatch() {
+  const source = readFileSync(new URL("../web/src/static/app/08-checkpoint-api.js", import.meta.url), "utf8");
+  const sent = [], held = [];
+  let returned;
+  const sandbox = createContext({
+    Date, performance, setTimeout, clearTimeout,
+    watchSilence: () => ({ start() {}, clear() {}, heard() {} }),
+    computeRun: (_, work) => work(),
+    spawnEngine: () => ({
+      terminate() {},
+      postMessage({ body: { quick_fleet: request } }) {
+        const reply = payload => this.onmessage({ data: { kind: "result", payload } });
+        if (request.lead) {
+          if (!request.fresh) returned = Array.from(request.scores);
+          queueMicrotask(() => reply(request.fresh ? { pending: sandbox.items } : { ok: true }));
+        } else {
+          const groups = new Map();
+          for (const item of request.score) {
+            const runs = item.runs ?? 10;
+            if (!groups.has(runs)) groups.set(runs, []);
+            groups.get(runs).push(item.build ?? item);
+          }
+          const scores = Array.from(groups.values()).flat();
+          const fights = Array.from(groups, ([runs, ids]) => runs * ids.length).reduce((a, b) => a + b, 0);
+          sent.push(Array.from(request.score));
+          held.push(() => reply({ ok: true, scores, fights, work: fights * 2 }));
+        }
+      },
+    }),
+  });
+  const plan = runInContext("let woptNextId = 1;\n" + source + "\nquickScoreSlices", sandbox);
+  const compact = gas => JSON.stringify([1, [25, 1], { gas }]);
+  const items = [{shards: [compact(2), null]}, {shards: [{gas: 4}]}, {shards: [compact(40)]}, {shards: [compact(1), compact(3)]}];
+  const before = JSON.stringify(items);
+  assert.deepEqual(Array.from(plan(items, 2, 1), ids => Array.from(ids)), [[2], [1], [3], [0]]);
+  assert.equal(JSON.stringify(items), before);
+  assert.equal(plan(items, 1, 2), null);
+  assert.equal(plan(items, 4, 1), null);
+  assert.equal(plan(Array(8).fill(items[0]), 2, 2), null);
+  for (const missing of [{runs: 0}, {runs: 2, shards: [compact(9)]}, {shards: ["unreadable"]},
+    {shards: ["[2,[],{}]"]}, {shards: [{}]}, {shards: [{gas: Number.MAX_SAFE_INTEGER}, {gas: 1}]}]) {
+    assert.equal(plan([...items, missing], 2, 1), null);
+  }
+  assert.equal(plan([...items, {runs: 2}, {runs: 3}], 2, 2), null);
+  assert.equal(plan([{runs: 2}, ...items], 2, 2), null);
+  const ids = entries => entries.map(item => item.build ?? item);
+  const testBatch = async (pending, first, fights) => {
+    sent.length = 0;
+    sandbox.items = pending;
+    const serialized = JSON.stringify(pending);
+    const job = runInContext("quickFleet({}, 2)", sandbox);
+    await new Promise(setImmediate);
+    assert.deepEqual(sent.map(ids), first);
+    // Reply in reverse launch order, including as the second wave is dispatched.
+    while (held.length) {
+      held.pop()();
+      await new Promise(setImmediate);
+    }
+    const width = Math.ceil(pending.length / 4);
+    assert.equal(sent.length, Math.ceil(pending.length / width));
+    assert.ok(sent.every(slice => slice.length > 0 && slice.length <= width));
+    assert.deepEqual(sent.flat().sort((a, b) => pending.indexOf(a) - pending.indexOf(b)), pending);
+    assert.equal(JSON.stringify(pending), serialized);
+    assert.deepEqual(returned, ids(pending));
+    assert.equal(job.result.builds, pending.length);
+    assert.equal(job.result.fights, fights);
+    assert.equal(job.result.work, fights * 2);
+  };
+  await testBatch([1, 1, 4, 4, 2, 2, 9, 9].map((gas, build) => ({ build, shards: [compact(gas)] })),
+    [[0, 6], [1, 7]], 80);
+  await testBatch([
+    ...[1, 90, 90, 1].map((gas, build) => ({ build, shards: [compact(gas)] })), [4],
+    ...Array.from({length: 7}, (_, i) => ({build: i + 5, runs: 2})),
+  ], [[1, [4], 8], [2, 5, 9]], 64);
+  await testBatch(Array.from({length: 11}, (_, build) => ({build, runs: 2})),
+    [[0, 4, 8], [1, 5, 9]], 22);
+}
+
 async function checkSignals() {
   let now = 1000;
   const workers = [], messages = [];
@@ -438,6 +516,7 @@ async function checkCancellation() {
   console.log("  ok  foreground and community quick fleet cancellation return the compute slot and ignore late replies and failures");
 }
 
+await checkScoreDispatch();
 await checkSignals();
 await checkFailures();
 await checkDeliveries();
