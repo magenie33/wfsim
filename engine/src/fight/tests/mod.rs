@@ -117,6 +117,7 @@ impl Default for FightParams {
             // HIT-SCAN: every fixture lands the instant it fires.
             projectile_speed_mps: None,
             homing: None,
+            projectile_reverse_query: false,
             scene_3d: None,
             range_m: f64::INFINITY,
             damage: Self::dual_toxocyst_base_vector(),

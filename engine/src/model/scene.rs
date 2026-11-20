@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Supplied current models and state for the opt-in 3D fight (docs/GEOMETRY.md).
-use crate::rules::geometry::{Affine, Proxy, Vec3};
+use crate::rules::geometry::{Affine, Proxy, Shape, Vec3};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -8,7 +8,14 @@ pub struct Scene3d {
     pub player: PlayerModel,
     /// Same order as the arena: aimed enemy first, then its formation.
     pub enemies: Vec<EnemyModel>,
+    /// Fixed physical substep duration.
     pub frame_seconds: f64,
+    /// Optional initial projectile updates, followed by one substep and publication per update.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub guided_updates: Vec<GuidedUpdate>,
+    /// Supplied clear line-of-sight result for acquisition queries.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub clear_homing_visibility: bool,
     /// Camera position is supplied relative to this posed player bone.
     pub camera: Mount,
     /// Native Avatar+4b0 input, kept distinct from an assumed eye or head.
@@ -27,6 +34,13 @@ pub enum Placement {
     Supplied,
     Contact,
     CenterDistance { distance: f64 },
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GuidedUpdate {
+    pub substeps: u16,
+    pub publish_transform: bool,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -61,8 +75,18 @@ pub struct EnemyModel {
     pub controller: Controller,
     /// Posed proxies in avatar-local coordinates. World scale is applied once.
     pub proxies: Vec<Proxy>,
+    /// Current installed overlap shape in avatar-local coordinates, when supplied.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub radial_proxy: Option<RadialProxy>,
     pub steering_center: Vec3,
     pub candidate_anchor: Vec3,
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RadialProxy {
+    pub local: Affine,
+    pub shape: Shape,
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]

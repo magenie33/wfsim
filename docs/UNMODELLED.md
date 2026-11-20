@@ -623,8 +623,10 @@ below is scoped to the affected entries through structured reason ids.
   separate nock timer.
 
 These limits supplement each weapon's existing specific admissions. The 3D
-direction sampler projects its ray into the arena plane with height retained;
-human silhouettes and a spread-driven headshot model require the experimental explicit scene in `GEOMETRY.md`. Its supplied-state collision and homing controls do not calibrate live pose, emission, world queries or explosion dispatch.
+direction sampler projects its ray into the arena plane with height retained.
+Human silhouettes and spread-driven headshots use the explicit scene in
+`GEOMETRY.md`. Live equipped poses, shot emission, update timing, registered
+scene shapes and world-query filtering remain calibration inputs.
 
 ### Scourge and Scourge Prime — source bindings and open consumers
 

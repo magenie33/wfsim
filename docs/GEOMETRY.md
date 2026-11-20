@@ -58,22 +58,41 @@ local-Y segment and excludes its caps. The supplied world scale is applied
 once. AABB pruning encloses the posed primitives. Ray enable and part exclusion
 are respected by the component query; contact is strictly before the ray limit.
 
-For the experimental ordinary-gun penetration adapter, one body's nearest entry
-and farthest intersected proxy exit provide a reverse record. Overlapping
-proxies do not spend the budget multiple times. This envelope is an explicit
-world-query approximation, not a recovered native reverse-world query. The
-recovered penetration fragment consumes those entry/exit records in float32
-operation order, accumulates material length and accepts budget equality.
-Per-body damage loss and range falloff are then applied at each actual contact.
+The ordinary-gun adapter supplies the body's nearest entry and farthest proxy
+exit to the trace-gun fragment. Laetum base fire selects `projectile_reverse_query`
+and uses the kinematic route at `0xa2aa00`. In the supplied straight flight,
+the entry point is the reverse anchor. The ray starts ahead of it by
+`f32(remaining * 1.1)`. The scene intersects that segment with the matching
+posed collider, and the native-order consumer selects the last matching
+handle and subtracts the binary32 distance from the remaining budget.
+Equality permits continuation. A zero-length crossing advances the shot by
+0.01 units without spending budget. A stopped shot retains its entry as the
+end and its remaining budget. Forward sweep width, the active native entry
+handle, reverse world filtering and terrain remain calibration boundaries.
+The pierced enemy settles its own contact through the ordinary damage path.
 
-The reference radial adapter uses the modeled first-contact point and distance
-to each posed body's closest sphere/capsule surface. The native Glaive impact
-branch tests its independent accumulator against a strict threshold and passes
-an impacted object handle. The radial submission reads projectile transform
-translation at `+0xd0` after its arming and scene gates. The transform's value
-at radial submission depends on the as-yet unbound impact receiver and position
-writers. Recipient geometry, cover, destruction routes and accepted direct and
-radial packets remain unbound. Status areas retain their planar policy.
+Guided impact uses the published projectile translation for the blast origin.
+The arming accumulator in the supplied first-impact route includes the
+attempted substep's flight distance. It must exceed 0.25 for radial dispatch.
+The direct impact still resolves at equality. On an armed impact, candidate
+membership uses sphere overlap against the supplied installed
+`radial_proxy` or the detailed posed shapes when that field is omitted.
+`radial_proxy.local` is relative to the avatar and can supply the installed
+collision scale independently of the visible mesh. Recipients are processed
+by nearest point of their candidate AABB, keeping the scene order for equal
+distances. Each owner is processed once, and the nearest detailed attachment
+gives its radial contact part and falloff distance. Other radial projectiles
+use the impact point and distance to the closest detailed surface.
+
+The damage path retains the measured weak-point conditions, per-instance
+settlement and independent weak-point triggers across pierced bodies.
+[M60](measurements/M60-headshot-bonuses-add.md),
+[M62](measurements/M62-volley-settles-per-pellet.md),
+[M103](measurements/M103-latron-bounces-punch-through-and-the-gauge.md),
+[M123](measurements/M123-acuity-is-three-point-four-nine-eight.md).
+The native replay captures radial parts at the controller input. Radial damage
+still follows the existing area damage rules. Live filter enrollment, cover
+and damage acceptance are open. Status areas retain their planar policy.
 
 The scene refuses delivery routes it does not implement: continuous beams,
 ricochets, melee, blobs, orbs, lingering fields, lock-on, tendrils, attractors,
@@ -105,9 +124,8 @@ The comparison includes position, velocity, quaternion, all angular velocities,
 bank and flight distance. Another 765 angular controls and 4,931 distinct math
 controls qualify the numerical stages. The state domain is the default clock,
 state 0, no gravity, an empty native +1a10 reference, and empty-world movement. Other
-state/clock branches remain unbound. The scene follows its retained quaternion
-for the projectile world rotation between steps; `step_with_world` accepts a
-separately supplied world quaternion. Live transform ownership remains unbound.
+state/clock branches remain unbound. A supplied update owns its world rotation
+until it completes. Numerical steering retains its own substep quaternion.
 The scene's supplied-direction initializer and target installation are not
 native emission producers.
 
@@ -117,12 +135,22 @@ look-at outputs. A supplied sphere ray at the exclusive float32 limit
 `0x40600001` hits with the Unicorn direction and misses with the hardware
 direction. Real game hardware/profile binding remains open.
 
-The ordinary empty-history acquisition branch tests candidate-root range and
-ranks eligible candidates by candidate-anchor distance divided by cone dot.
-A smaller visible score can replace the current winner. Equal scores keep the
-earlier enumerated actor. The scene supplies the ordered list, eligibility,
-anchor visibility and separate steering center. The client refresh owner,
-launch state, alternate scoring/history and runtime clock remain unbound.
+The ordinary update refreshes acquisition once before its fixed-substep loop.
+It retains an eligible installed target. The empty-history branch tests
+candidate-root range and ranks eligible candidates by candidate-anchor distance
+divided by cone dot. A smaller visible score can replace the current winner.
+Equal scores keep the earlier enumerated actor. The scene supplies the ordered
+list, eligibility and separate steering center. Acquisition visibility uses
+posed geometry by default. `clear_homing_visibility` supplies the clear query
+result used in the native open-grid replay. Flight still collides with bodies.
+
+`frame_seconds` is the fixed substep duration. Each `guided_updates` entry
+specifies `substeps` and whether to `publish_transform` after that update.
+Subsequent updates have one substep and publish their completed translation.
+An impact during an update uses the previous published translation, initially
+the supplied muzzle position. A projectile without an impact ends without a
+radial event. Live update cadence, launch state and alternate ownership
+predicates remain inputs for calibration.
 
 The nonsweep movement branch (`0x1246b90`) queries the center, positive side
 and negative side segments in order. They share the retained start; the
@@ -179,6 +207,13 @@ Client build 2026.10.28.09.54, executable SHA-256
   tolerance set and checks point error below 0.0003 source units.
 - `20261118T145815Z-akarius-radial-dispatch`: corrected impacted-handle ABI
   and separately observed transform translation at the radial submission.
+- `20261120T041422Z-ahom-runtime-first-native-slices`: projectile reverse
+  ray, handle-order, budget and continuation controls.
+- `20261120T063733Z-ahom-akarius-grid-clock` and
+  `20261120T064738Z-ahom-akarius-grid-recipients`: supplied 25-actor tests
+  at two collision scales. The receiver checks acquisition, direct actor
+  and part, blast center, ordered radial owners and part indices across all
+  six combinations.
 
 `scripts/import_native_flight.py` imports the original captured state pages.
 `scripts/import_native_steering.py` executes the matching original consumers
@@ -209,6 +244,8 @@ a claim about an equipped Akarius/Laetum animation or attachment writer.
 The `/api/log` response carries `scene_3d.flights`: shot/round, camera, muzzle,
 aim anchor, the eye projection's target, launch direction, selected homing target and
 contacts with part, entry/exit, travel time, thickness and remaining budget.
+Guided flights include the submitted `blast_center` and `radial_impacts` when
+present. Each radial point is the recipient's selected attachment.
 This diagnostic is bounded separately by the requested record limit and reports
 its dropped count. Damage stays in the existing combat stream and ledger.
 

@@ -88,7 +88,7 @@ pub(super) fn launch(
             ),
             None => (0., 0.),
         };
-        let path = scene.trace(
+        let mut path = scene.trace(
             head,
             dev,
             phi,
@@ -96,10 +96,23 @@ pub(super) fn launch(
             active.homing,
             active.punch_through_m + l.pierce_live_m,
             active.infinite_body_punch_through,
+            active.projectile_reverse_query,
             active.projectile_width_m,
             active.range_m,
             &eligible,
         );
+        if let (Some(hit), Some(radial)) = (path.impacts.first().copied(), active.radial) {
+            if let Some(center) = path.blast_center {
+                path.radial_impacts = scene.blast_hits(hit, center, f64::from(radial.radius_m as f32), &eligible);
+            } else if active.homing.is_none() {
+                path.radial_impacts = (0..bodies.len()).filter_map(|body| {
+                    let distance = scene.distance_to_body(hit.point, body);
+                    (radial.falloff_at(distance) > 0.).then_some(crate::scene::Impact {
+                        body, part: 0, radial: true, radial_distance: distance, ..hit
+                    })
+                }).collect();
+            }
+        }
         let each = l.rounds.per_round(l.n_pellets);
         for (contact, hit) in path.impacts.iter().enumerate() {
             let count = if contact == 0 {
@@ -128,16 +141,7 @@ pub(super) fn launch(
                     ..l.clone()
                 });
                 if let Some(rad) = active.radial.filter(|_| contact == 0) {
-                    for body in 0..bodies.len() {
-                        let distance = scene.distance_to_body(hit.point, body);
-                        if rad.falloff_at(distance) <= 0. {
-                            continue;
-                        }
-                        let mut impact = *hit;
-                        impact.body = body;
-                        impact.part = 0;
-                        impact.radial = true;
-                        impact.radial_distance = distance;
+                    for &impact in &path.radial_impacts {
                         events.push(Landing {
                             spatial: Some(SpatialLanding {
                                 impact,
@@ -147,7 +151,7 @@ pub(super) fn launch(
                                 instance,
                                 follows: instance > 0,
                                 contact,
-                                splash: body != hit.body,
+                                splash: impact.body != hit.body,
                                 progress: progress.clone(),
                             }),
                             t: l.t + hit.seconds + rad.delay_seconds,

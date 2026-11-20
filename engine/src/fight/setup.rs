@@ -1619,6 +1619,7 @@ impl FightParams {
             projectile_width_m: panel.projectile_width_m,
             projectile_speed_mps: panel.projectile_speed_mps,
             homing: panel.homing,
+            projectile_reverse_query: panel.projectile_reverse_query,
             scene_3d,
             range_m: panel.range_m,
             tendril_range_m: panel.tendril_range_m,

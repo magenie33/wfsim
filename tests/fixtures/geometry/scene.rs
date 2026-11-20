@@ -20,6 +20,14 @@ fn matrix(scale: f64, x: f64, y: f64, z: f64, yaw: f64) -> Value {
     ])
 }
 
+pub fn full_body_capsule(local_scale: f64) -> Value {
+    // AHOM-RUNTIME-01 GrineerFullBody on the hip in both pinned source poses.
+    json!({
+        "local": matrix(local_scale, 0., 1.1208325624465942, -0.011569245718419552, 0.),
+        "shape": {"type":"capsule", "radius":f64::from(0.6_f32), "height":1.}
+    })
+}
+
 pub fn scene(enemy: usize, rows: usize, contact: bool, left: bool, source_pose: bool) -> Value {
     let native: Value = serde_json::from_str(include_str!(
         "../../../engine/src/rules/geometry/fixtures/native.json"
@@ -60,7 +68,8 @@ pub fn scene(enemy: usize, rows: usize, contact: bool, left: bool, source_pose: 
             let x = (col as f64 - (rows / 2) as f64) * 3.;
             enemies.push(json!({"world":matrix(scale,x,0.,5.+row as f64*3.,180.),
             "controller":{"height":1.3,"radius":0.25,"skin":0.02,"scale":scale},
-            "proxies":proxies,"candidate_anchor":head,"steering_center":[0.,1.,0.]}));
+            "proxies":proxies,"radial_proxy":full_body_capsule(1.),
+            "candidate_anchor":head,"steering_center":[0.,1.,0.]}));
         }
     }
     // The intended head is the front row's middle enemy, index zero.

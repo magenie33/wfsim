@@ -392,6 +392,7 @@ pub struct ResolvedPanel {
     /// [`WeaponBase::projectile_speed_mps`].
     pub projectile_speed_mps: Option<f64>,
     pub homing: Option<crate::model::Homing>,
+    pub projectile_reverse_query: bool,
     /// HOW FAR THIS ATTACK REACHES, metres — `INFINITY` when the weapon
     /// declares none. See [`crate::data::weapons::AttackSpec::range_m`]: past it
     /// there is nothing, which is a different fact from `falloff`, a ramp.

@@ -722,6 +722,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         // ORB attack's trigger deploys the orb, which flies at its own
         // `OrbSpec::speed_mps`.
         homing: s.attack.homing,
+        projectile_reverse_query: s.attack.projectile_reverse_query,
         projectile_speed_mps: s
             .attack
             .projectile_speed_mps

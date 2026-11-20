@@ -51,7 +51,7 @@ fn player_and_enemy_models_define_contact_and_mounts() {
 #[test]
 fn perfect_head_intent_does_not_force_a_head_contact() {
     let s = scene(1, 1, false);
-    let path = s.trace(true, 0., 0., Some(100.), None, 0., false, 0., 100., &[true]);
+    let path = s.trace(true, 0., 0., Some(100.), None, 0., false, false, 0., 100., &[true]);
     assert_eq!(path.impacts.len(), 1);
     assert_ne!(
         path.impacts[0].part, 1,
@@ -65,7 +65,7 @@ fn perfect_head_intent_does_not_force_a_head_contact() {
     input.player.bones[48].0[7] = muzzle.0[1];
     input.player.bones[48].0[11] = muzzle.0[2];
     let aligned = Scene::new(input, 1).unwrap();
-    let path = aligned.trace(true, 0., 0., Some(100.), None, 0., false, 0., 100., &[true]);
+    let path = aligned.trace(true, 0., 0., Some(100.), None, 0., false, false, 0., 100., &[true]);
     assert_eq!(path.impacts[0].part, 1);
 }
 
@@ -80,6 +80,7 @@ fn each_round_recomputes_the_25_body_path_and_material_budget() {
         None,
         100.,
         false,
+        false,
         0.,
         100.,
         &[true; 25],
@@ -92,6 +93,7 @@ fn each_round_recomputes_the_25_body_path_and_material_budget() {
         Some(100.),
         None,
         100.,
+        false,
         false,
         0.,
         100.,
@@ -108,6 +110,7 @@ fn each_round_recomputes_the_25_body_path_and_material_budget() {
         Some(100.),
         None,
         0.,
+        false,
         false,
         0.,
         100.,
@@ -206,4 +209,77 @@ fn guided_pose_adapter_matches_original_actor_and_nearest_proxy_set() {
     assert!(totals[0] > 0);
     assert_eq!(totals[1], 2);
     eprintln!("first contacts {totals:?}, differing proxy ties {proxy_ties}");
+}
+
+fn guided_grid(scale: f64) -> Scene3d {
+    let mut input = scene(0, 1, false).input;
+    let mut model = input.enemies[0].clone();
+    let mesh = f64::from(1.6_f32);
+    model.candidate_anchor = Vec3([0., 1.2 / mesh, 0.]);
+    model.steering_center = model.candidate_anchor;
+    model.radial_proxy = serde_json::from_value(fixture::full_body_capsule(scale / mesh)).unwrap();
+    input.enemies = (0..25).map(|id| {
+        let x = f64::from(id % 5 - 2) * 3.;
+        let z = 5. + f64::from(id / 5) * 3.;
+        let mut body = model.clone();
+        body.world = Affine([mesh, 0., 0., x, 0., mesh, 0., 0., 0., 0., mesh, z]);
+        body
+    }).collect();
+    input.placement = Placement::Supplied;
+    input.frame_seconds = 1. / 64.;
+    input.clear_homing_visibility = true;
+    input.player.bones[input.player.muzzle.bone] =
+        Affine([1., 0., 0., 0., 0., 1., 0., 2.95, 0., 0., 1., 0.]);
+    input
+}
+
+#[test]
+fn guided_grid_clock_and_radial_routing_match_original_open_scene() {
+    let homing = Homing {
+        collision_radius: 0.02, initial_speed: 40., maximum_speed: 80.,
+        acceleration: 40., turning_seconds: 0.08, seek_distance: 30.,
+        seek_cone_deg: 10., minimum_flight_before_seek: 0.,
+    };
+    let early = [2, 1, 3, 0, 4, 7, 6, 8];
+    let late = [2, 1, 3, 7, 6, 8, 0, 4, 5, 9, 12, 11, 13];
+    let backlog = [2, 1, 3, 7, 0, 4, 6, 8, 5, 9];
+    // AHOM-RUNTIME-01 grid-clock and grid-recipients, these two source capsule scales.
+    for scale in [1., f64::from(1.6_f32)] {
+        for (first_substeps, publish_each, acquired, center, owners) in [
+            (1, false, 12, [0., 2.95, 0.634765625], early.as_slice()),
+            (1, true, 12, [0., 2.755542755126953, 3.947338819503784], late.as_slice()),
+            (3, false, 17, [0., 2.95, 1.93359375], &backlog[..if scale == 1. { 8 } else { 10 }]),
+        ] {
+            let mut input = guided_grid(scale);
+            input.guided_updates = (0..18).map(|i| GuidedUpdate {
+                substeps: if i == 0 { first_substeps } else { 1 },
+                publish_transform: i == 0 || publish_each,
+            }).collect();
+            let s = Scene::new(input, 25).unwrap();
+            let mut path = Flight {
+                muzzle: s.muzzle(), camera: s.camera(), head_anchor: Vec3([0.; 3]),
+                aim_target: Vec3([0., 2.95, 5.]), direction: Vec3([0., 0., 1.]),
+                steering_target: None, impacts: Vec::new(), blast_center: None,
+                radial_impacts: Vec::new(),
+            };
+            s.trace_guided(&mut path, homing, 100., &[true; 25]);
+            assert_eq!(path.steering_target, Some(acquired), "{first_substeps}/{publish_each}");
+            let [hit] = path.impacts.as_slice() else { panic!("{path:?}") };
+            assert_eq!((hit.body, hit.part), (2, 0), "{hit:?}");
+            let blast = path.blast_center.unwrap();
+            assert!(blast.minus(Vec3(center)).length() < 0.0003, "{blast:?} vs {center:?}");
+            let radius = f64::from(7.8_f32);
+            let recipients = s.blast_hits(*hit, blast, radius, &[true; 25]);
+            assert_eq!(recipients.iter().map(|h| h.body).collect::<Vec<_>>(), owners);
+            for h in recipients {
+                let (proxy, part) = match h.body % 5 {
+                    0 | 1 => (3, 3),
+                    2 => (12, 0),
+                    _ => (5, 2),
+                };
+                assert_eq!((h.proxy, h.part), (proxy, part), "{h:?}");
+                assert_eq!(h.point.minus(blast).length(), h.radial_distance);
+            }
+        }
+    }
 }

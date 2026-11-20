@@ -1,5 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 use super::*;
+
+#[test]
+fn native_kinematic_attempt_uses_reverse_order_and_remaining_budget() {
+    use penetration::{projectile_exit, reverse_start, ReverseHit};
+    let entry = [1., 2., 5.];
+    let direction = [0., 0., 1.];
+    let near = ReverseHit { reference: 1, point: [1., 2., 5.5] };
+    let far = ReverseHit { reference: 1, point: [1., 2., 5.75] };
+    let different_handle = ReverseHit { reference: 2, point: [1., 2., 5.25] };
+    let attempt = |rows: &[ReverseHit], budget| projectile_exit(entry, direction, 1, rows, budget);
+    // AHOM-RUNTIME-01 reverse control boundaries, pinned client 2026.10.28.09.54.
+    assert_eq!(reverse_start(entry, direction, 0.75), [1., 2., 5.825]);
+    assert!(attempt(&[near], f32::from_bits(0x3effffff)).is_none());
+    assert_eq!(attempt(&[near], 0.5).unwrap().remaining.to_bits(), 0);
+    assert_eq!(attempt(&[near], f32::from_bits(0x3f000001)).unwrap().remaining.to_bits(), 0x33800000);
+    assert_eq!(attempt(&[far, near, different_handle], 0.75).unwrap().point, near.point);
+    assert_eq!(attempt(&[near, far, different_handle], 0.75).unwrap().point, far.point);
+    assert!(attempt(&[different_handle], 0.75).is_none());
+    assert!(attempt(&[], 0.75).is_none());
+    assert!(attempt(&[near], 0.).is_none());
+    let tangent = attempt(&[ReverseHit { reference: 1, point: entry }], 0.75).unwrap();
+    assert_eq!(tangent.remaining, 0.75);
+    assert_eq!(tangent.resume, [1., 2., 5.01]);
+}
 use serde_json::Value;
 mod rotation;
 

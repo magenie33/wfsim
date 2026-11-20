@@ -144,6 +144,9 @@ pub struct AttackSpec {
     pub projectile_speed_mps: Option<f64>,
     #[serde(default)]
     pub homing: Option<crate::model::Homing>,
+    /// Kinematic projectile reverse continuation in an explicit 3D fight.
+    #[serde(default)]
+    pub projectile_reverse_query: bool,
     pub fire_rate: f64,
     #[serde(default)]
     pub refire: crate::model::RefireRule,

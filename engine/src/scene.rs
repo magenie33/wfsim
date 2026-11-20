@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Posed player/weapon/enemy geometry consumed by the shared fight.
-use crate::model::{Homing, Placement, Scene3d};
-use crate::rules::geometry::{eye::eye_aim, glaive, guided::Guided, rotation, Affine, Proxy, Vec3};
+use crate::model::{GuidedUpdate, Homing, Placement, Scene3d};
+use crate::rules::geometry::{eye::eye_aim, glaive, guided::Guided, rotation, Affine, Proxy, Shape, Vec3};
+
+mod projectiles;
 
 #[derive(Debug, Clone)]
 pub struct Scene {
@@ -14,6 +16,7 @@ pub struct Scene {
 #[derive(Debug, Clone)]
 struct Body {
     proxies: Vec<Prepared>,
+    radial_proxy: Option<Collider>,
     low: Vec3,
     high: Vec3,
     anchor: Vec3,
@@ -23,8 +26,16 @@ struct Body {
 #[derive(Debug, Clone)]
 struct Prepared {
     proxy: Proxy,
+    collider: Collider,
+}
+
+#[derive(Debug, Clone)]
+struct Collider {
+    shape: Shape,
     inverse: Affine,
     scale: f64,
+    low: Vec3,
+    high: Vec3,
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize)]
@@ -51,6 +62,10 @@ pub struct Flight {
     pub direction: Vec3,
     pub steering_target: Option<usize>,
     pub impacts: Vec<Impact>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blast_center: Option<Vec3>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub radial_impacts: Vec<Impact>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -95,6 +110,29 @@ fn controller_segment(root: Vec3, c: crate::model::Controller) -> (f64, f64) {
 }
 
 #[wfsim_gas_macro::metered]
+impl Collider {
+    fn new(shape: Shape, world: Affine) -> Result<Self, String> {
+        let scale = uniform_scale(world)?;
+        let inverse = world.inverse().ok_or("singular model transform")?;
+        let (radius, half) = shape.radius_and_half_height();
+        if !radius.is_finite() || !half.is_finite() || radius <= 0. || half < 0. {
+            return Err("invalid proxy dimensions".into());
+        }
+        let [a, b] = [-half, half].map(|y| world.point(Vec3([0., y, 0.])));
+        let low = Vec3(std::array::from_fn(|i| a.0[i].min(b.0[i]) - radius * scale));
+        let high = Vec3(std::array::from_fn(|i| a.0[i].max(b.0[i]) + radius * scale));
+        Ok(Self { shape, inverse, scale, low, high })
+    }
+
+    fn distance(&self, point: Vec3) -> f64 {
+        let (radius, half) = self.shape.radius_and_half_height();
+        let Vec3([x, y, z]) = self.inverse.point(point);
+        let offset = Vec3([x, y - y.clamp(-half, half), z]);
+        (offset.length() - radius).max(0.) * self.scale
+    }
+}
+
+#[wfsim_gas_macro::metered]
 impl Scene {
     pub fn input(&self) -> &Scene3d {
         &self.input
@@ -113,6 +151,9 @@ impl Scene {
             || !(0.01..=10.0).contains(&input.maximum_flight_seconds)
         {
             return Err("scene_3d frame/flight duration is out of bounds".into());
+        }
+        if input.guided_updates.len() > 10_000 {
+            return Err("scene_3d supports up to 10,000 supplied projectile updates".into());
         }
         if input.player.bones.is_empty()
             || input.player.bones.len() > 4096
@@ -222,35 +263,19 @@ impl Scene {
             for source in &body.proxies {
                 let mut proxy = source.clone();
                 proxy.world = body.world.compose(source.world);
-                if !proxy.world.0.iter().all(|v| v.is_finite()) {
-                    return Err("nonfinite model transform".into());
+                let collider = Collider::new(proxy.shape, proxy.world)?;
+                for i in 0..3 {
+                    low.0[i] = low.0[i].min(collider.low.0[i]);
+                    high.0[i] = high.0[i].max(collider.high.0[i]);
                 }
-                let inverse = proxy.world.inverse().ok_or("singular model transform")?;
-                let scale = uniform_scale(proxy.world)?;
-                let (radius, half) = match proxy.shape {
-                    crate::rules::geometry::Shape::Sphere { radius } => (radius, 0.),
-                    crate::rules::geometry::Shape::Capsule { radius, height } => {
-                        (radius, height * 0.5)
-                    }
-                };
-                if !radius.is_finite() || !half.is_finite() || radius <= 0. || half < 0. {
-                    return Err("invalid proxy dimensions".into());
-                }
-                for y in [-half, half] {
-                    let at = proxy.world.point(Vec3([0., y, 0.]));
-                    for i in 0..3 {
-                        low.0[i] = low.0[i].min(at.0[i] - radius * scale);
-                        high.0[i] = high.0[i].max(at.0[i] + radius * scale);
-                    }
-                }
-                proxies.push(Prepared {
-                    proxy,
-                    inverse,
-                    scale,
-                });
+                proxies.push(Prepared { proxy, collider });
             }
+            let radial_proxy = body.radial_proxy.map(|p| {
+                Collider::new(p.shape, body.world.compose(p.local))
+            }).transpose()?;
             bodies.push(Body {
                 proxies,
+                radial_proxy,
                 low,
                 high,
                 anchor: body.world.point(body.candidate_anchor),
@@ -310,29 +335,29 @@ impl Scene {
                 continue;
             }
             let (mut enter, mut exit, mut index, mut part) = (f64::INFINITY, 0.0_f64, 0, 0);
-            for p in &body.proxies {
+            for (slot, p) in body.proxies.iter().enumerate() {
                 if !p.proxy.ray_enabled {
                     continue;
                 }
                 let shape = match p.proxy.shape {
                     crate::rules::geometry::Shape::Sphere { radius } => {
                         crate::rules::geometry::Shape::Sphere {
-                            radius: radius + width / p.scale,
+                            radius: radius + width / p.collider.scale,
                         }
                     }
                     crate::rules::geometry::Shape::Capsule { radius, height } => {
                         crate::rules::geometry::Shape::Capsule {
-                            radius: radius + width / p.scale,
+                            radius: radius + width / p.collider.scale,
                             height,
                         }
                     }
                 };
                 if let Some((a, b)) =
-                    shape.interval(p.inverse.point(origin), p.inverse.direction(direction))
+                    shape.interval(p.collider.inverse.point(origin), p.collider.inverse.direction(direction))
                 {
                     if a < enter {
                         enter = a;
-                        index = p.proxy.cache_index;
+                        index = slot;
                         part = p.proxy.part;
                     }
                     exit = exit.max(b);
@@ -351,21 +376,7 @@ impl Scene {
             .proxies
             .iter()
             .filter(|p| p.proxy.ray_enabled)
-            .map(|p| {
-                let local = p.inverse.point(point);
-                let (radius, half) = match p.proxy.shape {
-                    crate::rules::geometry::Shape::Sphere { radius } => (radius, 0.),
-                    crate::rules::geometry::Shape::Capsule { radius, height } => {
-                        (radius, height * 0.5)
-                    }
-                };
-                let d = Vec3([
-                    local.0[0],
-                    local.0[1] - local.0[1].clamp(-half, half),
-                    local.0[2],
-                ]);
-                ((d.length() - radius) * p.scale).max(0.)
-            })
+            .map(|p| p.collider.distance(point))
             .fold(f64::INFINITY, f64::min)
     }
 
@@ -379,6 +390,7 @@ impl Scene {
         homing: Option<Homing>,
         pierce: f64,
         every_body: bool,
+        projectile_reverse_query: bool,
         width: f64,
         range: f64,
         eligible: &[bool],
@@ -443,6 +455,8 @@ impl Scene {
             direction,
             steering_target: self.input.preselected_target,
             impacts: Vec::new(),
+            blast_center: None,
+            radial_impacts: Vec::new(),
         };
         if let Some(homing) = homing {
             self.trace_guided(&mut flight, homing, range, eligible);
@@ -453,6 +467,10 @@ impl Scene {
         let mut accumulated = 0.0_f32;
         let max_distance = range.min(speed.unwrap_or(100_000.) * self.input.maximum_flight_seconds);
         let line = direction.normalized().unwrap_or(camera_direction);
+        if projectile_reverse_query && !every_body && maximum.is_finite() {
+            self.trace_kinematic(&mut flight, line, max_distance, width * 0.5, speed, maximum, eligible);
+            return flight;
+        }
         for (body, proxy, part, enter, exit) in
             self.hits(self.muzzle, line, max_distance, width * 0.5)
         {
@@ -480,7 +498,7 @@ impl Scene {
             let remaining = (maximum - accumulated).max(0.);
             flight.impacts.push(Impact {
                 body,
-                proxy,
+                proxy: self.bodies[body].proxies[proxy].proxy.cache_index,
                 part,
                 point,
                 exit: end,
@@ -508,71 +526,100 @@ impl Scene {
         let dt = self.input.frame_seconds;
         let limit = (self.input.maximum_flight_seconds / dt).ceil() as usize;
         let cone_dot = libm::cosf(homing.seek_cone_deg * f32::from_bits(0x3c8efa35));
-        for step in 0..limit {
-            let start = state.position;
-            let orientation = state.orientation;
-            if flight
-                .steering_target
-                .is_some_and(|i| eligible.get(i) != Some(&true))
-            {
-                flight.steering_target = None;
+        let mut published = state.position;
+        let mut step = 0;
+        let default_update = GuidedUpdate { substeps: 1, publish_transform: true };
+        let updates = self.input.guided_updates.iter().copied().chain(std::iter::repeat(default_update));
+        for update in updates {
+            if step >= limit {
+                break;
             }
-            if flight.steering_target.is_none() && state.flight > homing.minimum_flight_before_seek
-            {
-                let [x, y, z, _] = rotation::quaternion_direction(orientation);
-                let scores = self.bodies.iter().enumerate().filter_map(|(i, body)| {
-                    if eligible.get(i) != Some(&true) {
-                        return None;
-                    }
-                    glaive::candidate_score(
-                        start,
-                        [x, y, z],
-                        self.root(i).0.map(|v| v as f32),
-                        body.anchor.0.map(|v| v as f32),
-                        homing.seek_distance,
-                        cone_dot,
-                    )
-                    .map(|score| (i, score))
-                });
-                let origin = Vec3(start.map(f64::from));
-                flight.steering_target = glaive::select_candidate(scores, |i| {
-                    let offset = self.bodies[i].anchor.minus(origin);
-                    offset.normalized().is_none_or(|ray| {
-                        self.hits(origin, ray, offset.length() + 1e-6, 0.)
-                            .into_iter()
-                            .find(|hit| eligible.get(hit.0) == Some(&true))
-                            .is_none_or(|hit| hit.0 == i)
-                    })
-                });
-            }
+            // Native 820B36 refreshes once before its loop, including catch-up updates.
+            flight.steering_target = self.refresh_guided_target(
+                flight.steering_target, &state, homing, cone_dot, eligible,
+            );
             let target = flight
                 .steering_target
                 .map(|i| self.bodies[i].center.0.map(|v| v as f32));
-            let traveled = f64::from(state.flight);
-            let displacement = state.step(
-                target,
-                dt as f32,
-                homing.turning_seconds,
-                homing.acceleration,
-                homing.maximum_speed,
-            );
-            if let Some(mut impact) = self.guided_contact(
-                start,
-                displacement,
-                orientation,
-                homing.collision_radius,
-                (range - traveled).max(0.),
-                eligible,
-            ) {
-                impact.seconds = (step + 1) as f64 * dt;
-                impact.travel += traveled;
-                flight.impacts.push(impact);
-                return;
+            let world_orientation = state.orientation;
+            for _ in 0..usize::from(update.substeps).min(limit - step) {
+                step += 1;
+                let start = state.position;
+                let orientation = state.orientation;
+                let traveled = f64::from(state.flight);
+                let displacement = state.step_with_world(
+                    target,
+                    dt as f32,
+                    homing.turning_seconds,
+                    homing.acceleration,
+                    homing.maximum_speed,
+                    world_orientation,
+                );
+                if let Some(mut impact) = self.guided_contact(
+                    start,
+                    displacement,
+                    orientation,
+                    homing.collision_radius,
+                    (range - traveled).max(0.),
+                    eligible,
+                ) {
+                    impact.seconds = step as f64 * dt;
+                    impact.travel += traveled;
+                    flight.impacts.push(impact);
+                    // The original accumulator includes the attempted impact substep.
+                    flight.blast_center = (state.flight > 0.25).then(|| Vec3(published.map(f64::from)));
+                    return;
+                }
+                if f64::from(state.flight) >= range {
+                    return;
+                }
             }
-            if f64::from(state.flight) >= range {
-                break;
+            if update.publish_transform {
+                published = state.position;
             }
         }
+    }
+
+    fn refresh_guided_target(
+        &self,
+        retained: Option<usize>,
+        state: &Guided,
+        homing: Homing,
+        cone_dot: f32,
+        eligible: &[bool],
+    ) -> Option<usize> {
+        let retained = retained.filter(|&i| eligible.get(i) == Some(&true));
+        if retained.is_some() || state.flight <= homing.minimum_flight_before_seek {
+            return retained;
+        }
+        let origin = Vec3(state.position.map(f64::from));
+        let [x, y, z, _] = rotation::quaternion_direction(state.orientation);
+        let scores = self.bodies.iter().enumerate().filter_map(|(i, body)| {
+            if eligible.get(i) != Some(&true) {
+                return None;
+            }
+            glaive::candidate_score(
+                state.position,
+                [x, y, z],
+                self.root(i).0.map(|v| v as f32),
+                body.anchor.0.map(|v| v as f32),
+                homing.seek_distance,
+                cone_dot,
+            )
+            .map(|score| (i, score))
+        });
+        glaive::select_candidate(scores, |i| {
+            if self.input.clear_homing_visibility {
+                return true;
+            }
+            let offset = self.bodies[i].anchor.minus(origin);
+            offset.normalized().is_none_or(|ray| {
+                self.hits(origin, ray, offset.length() + 1e-6, 0.)
+                    .into_iter()
+                    .find(|hit| eligible.get(hit.0) == Some(&true))
+                    .is_none_or(|hit| hit.0 == i)
+            })
+        })
     }
 
     fn guided_contact(
@@ -605,7 +652,7 @@ impl Scene {
             {
                 return Some(Impact {
                     body,
-                    proxy,
+                    proxy: self.bodies[body].proxies[proxy].proxy.cache_index,
                     part,
                     point: origin.along(line, enter),
                     exit: origin.along(line, exit),

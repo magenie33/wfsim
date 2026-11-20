@@ -712,6 +712,7 @@ pub struct FightParams {
     /// lands the instant it is fired. See [`Self::flight_seconds`].
     pub projectile_speed_mps: Option<f64>,
     pub homing: Option<crate::model::Homing>,
+    pub projectile_reverse_query: bool,
     pub scene_3d: Option<std::sync::Arc<crate::scene::Scene>>,
     /// HOW FAR THIS WEAPON REACHES, metres — `INFINITY` when it declares none.
     /// See [`crate::data::weapons::AttackSpec::range_m`].

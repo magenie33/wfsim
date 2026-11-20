@@ -26,13 +26,17 @@ fn roots(a: f64, b: f64, c: f64) -> [Option<f64>; 2] {
 
 #[wfsim_gas_macro::metered]
 impl Shape {
+    pub fn radius_and_half_height(self) -> (f64, f64) {
+        match self {
+            Self::Sphere { radius } => (radius, 0.0),
+            Self::Capsule { radius, height } => (radius, height * 0.5),
+        }
+    }
+
     /// Entry and exit of one convex primitive, in the original ray parameter.
     pub fn interval(self, origin: Vec3, direction: Vec3) -> Option<(f64, f64)> {
         let enter = self.intersect(origin, direction)?;
-        let (radius, half) = match self {
-            Self::Sphere { radius } => (radius, 0.0),
-            Self::Capsule { radius, height } => (radius, height * 0.5),
-        };
+        let (radius, half) = self.radius_and_half_height();
         let [x, y, z] = origin.0;
         let [dx, dy, dz] = direction.0;
         let mut exit = enter;
@@ -54,10 +58,7 @@ impl Shape {
     /// Analytic reference for the native sphere/capsule query (EGEO-01).
     /// An origin already inside returns zero. Direction retains its ray parameter.
     pub fn intersect(self, origin: Vec3, direction: Vec3) -> Option<f64> {
-        let (radius, half) = match self {
-            Self::Sphere { radius } => (radius, 0.0),
-            Self::Capsule { radius, height } => (radius, height * 0.5),
-        };
+        let (radius, half) = self.radius_and_half_height();
         if radius < 0.0
             || half < 0.0
             || !radius.is_finite()

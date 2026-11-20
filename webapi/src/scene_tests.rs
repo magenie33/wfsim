@@ -28,6 +28,7 @@ fn align(scene: &mut Value, count: usize) {
         None,
         0.,
         false,
+        false,
         0.,
         100.,
         &vec![true; count],
@@ -95,9 +96,13 @@ fn a_penetrated_enemy_uses_its_own_collision_part_and_damage_ledger() {
     v["scene_3d"]["enemies"].as_array_mut().unwrap().push(rear);
     v["scene_3d"]["placement"] = json!({"kind":"supplied"});
     v["formation"] = fixture::formation(&v["scene_3d"]);
+    let mut control = params(&v);
+    control.spread = None;
+    assert!(direct(&record(&control)).iter().all(|&(i, _)| i == 0));
+    v["mods"] = json!(["seeker"]);
     let mut p = params(&v);
+    assert!(p.projectile_reverse_query && p.punch_through_m > 0.);
     p.spread = None;
-    p.punch_through_m = 10.;
     let rec = record(&p);
     let hits = direct(&rec);
     assert!(hits.contains(&(0, true)), "{hits:?}");
@@ -109,6 +114,10 @@ fn a_penetrated_enemy_uses_its_own_collision_part_and_damage_ledger() {
     let mut rng = wfsim_engine::rules::rng::Rng::new(7);
     let result = fight::run_once(&p, &mut rng);
     assert!(result.taken.by_body().0[0] > 0. && result.taken.by_body().0[1] > 0.);
+    assert!(rec.spatial_flights().iter().any(|f| {
+        let h = &f.flight.impacts;
+        h.len() == 2 && h[0].material > 0. && h[0].seconds < h[1].seconds
+    }));
 }
 
 #[test]
