@@ -33,10 +33,9 @@ pub fn scene(enemy: usize, rows: usize, contact: bool, left: bool, source_pose: 
         "../../../engine/src/rules/geometry/fixtures/native.json"
     ))
     .unwrap();
-    let player: Value = serde_json::from_str(include_str!(
-        "../../../engine/src/rules/geometry/fixtures/player.json"
-    ))
-    .unwrap();
+    let standing: Value =
+        serde_norway::from_str(include_str!("../../../data/geometry/excalibur-standing.yaml")).unwrap();
+    let player = &standing["player"];
     let scale = if enemy == 0 { 1.6 } else { 1.25 };
     let source = &native["enemies"][enemy]["proxies"];
     let proxies:Vec<_>=source.as_array().unwrap().iter().map(|p|json!({

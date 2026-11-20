@@ -14,9 +14,17 @@ Only an actual head contact receives head damage, head triggers and weakpoint
 charge. `gauge_charging_headshots` selects head intent while charging; it does
 not bypass collision. Saved field names retain their wire spelling.
 
-The player supplies avatar world transform and controller dimensions, current
-avatar-local bone transforms, camera and muzzle mounts, and the independent
-reference-point input used by the native eye-basis projection. Each mount is
+An explicit 3D request defaults to the Excalibur standing controller and
+source-default bones in `data/geometry/excalibur-standing.yaml` when it omits
+`player` or supplies only `player.equipped_fire`. The player root uses
+`player_at` on the ground plane. The supplied-state WFGEO-01 camera at
+`(0,1.8,-3)` relative to the root and the Excalibur head reference furnish
+the omitted aim inputs. Weapon-specific firing geometry comes from
+`equipped_fire`; the right-hand mount provides the fallback origin.
+
+A complete player model supplies its world transform and controller
+dimensions, current avatar-local bone transforms, camera and muzzle mounts,
+and the independent reference point used by native eye projection. Each mount is
 `world * posed bone * local attachment`. Physical-controller height does not
 stand in for head or muzzle height. Enemy models supply their world transform,
 posed bone/attachment proxies, acquisition anchor and steering center. Enemy
@@ -48,9 +56,10 @@ Each simulation starts from the supplied cursor values. Omit equipment to
 use the single muzzle mount. Live hand order, pose installation, cursor reset
 writers and spread-state producers remain calibration inputs.
 
-The request is rejected if a model is missing, a transform is nonfinite,
-singular or nonuniformly scaled, controller/world scales disagree, or a selected
-mount/proxy is absent. The resolved faction bracket currently requires one combat faction per scene. The prepared scene is immutable. The shared `parse_fight`
+The request requires all enemy models and checks for nonfinite, singular or
+nonuniformly scaled transforms, controller/world scale disagreement and
+missing selected mounts/proxies. The resolved faction bracket currently requires
+one combat faction per scene. The prepared scene is immutable. The shared `parse_fight`
 projects its actor roots into the arena for existing target/status consumers;
 a search's replay retains the complete original scene.
 
@@ -255,6 +264,7 @@ cargo test -p wfsim-engine --lib scene::tests
 cargo test -p wfsim-webapi --lib scene_tests
 cargo run --release -p wfsim-webapi --example scene_fights -- fights.json
 cargo run --release -p wfsim-webapi --example scene_fights -- equipped-fights.json --equipped
+cargo run --release -p wfsim-webapi --example scene_fights -- standing-head.json --standing-head
 cargo run --release -p wfsim-webapi --example geometry_builds -- calls.json builds.json
 cargo run --release -p wfsim-webapi --example scene_controls -- calls.json controls.json
 ```
@@ -268,6 +278,14 @@ a claim about an equipped Akarius/Laetum animation or attachment writer.
 The `--equipped` control composes the source-default Excalibur weapon-hand
 bones with each weapon's source firing positions. It supplies right then left
 for the Akarius Prime burst and advances only the hand used.
+The `--standing-head` control uses the default player through the shared API
+parser. It places 25 Corrupted Heavy Gunners at 3-unit spacing with the
+front-middle root 5 units from the player. It tracks that actor's head proxy
+center, samples intrinsic spread over 48 fixed seeds per loadout and uses
+1/64-second guided substeps. It retains the first actor and part, ordered direct
+contacts, homing acquisition and the recipient count of each armed blast for
+Akarius Prime, stock Laetum and Laetum with Seeker. The control supplies the
+source-default poses, camera and hand order.
 
 The `/api/log` response carries `scene_3d.flights`: shot/round, camera, muzzle,
 aim anchor, the eye projection's basis origin and target, launch direction,

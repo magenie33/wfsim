@@ -15,6 +15,46 @@ use crate::tenno::tenno_from;
 pub(crate) const DEFAULT_SEED: u64 = 0xC0FFEE;
 pub(crate) const DEFAULT_RUNS: u32 = 1000;
 
+fn parse_scene_3d(
+    raw: &Value,
+    count: usize,
+    player_at: wfsim_engine::rules::space::Vec2,
+) -> Result<std::sync::Arc<wfsim_engine::scene::Scene>, String> {
+    use wfsim_engine::{model::{Mount, PlayerModel}, rules::geometry::Vec3, scene::Scene};
+
+    #[derive(serde::Deserialize)]
+    struct StandingPlayer {
+        player: PlayerModel,
+        camera: Mount,
+        reference_bone: usize,
+    }
+
+    let mut input = raw.clone();
+    let fields = input.as_object_mut().ok_or("scene_3d must be an object")?;
+    let use_default = fields.get("player").is_none_or(|v| {
+        v.as_object().is_some_and(|player| player.keys().all(|key| key == "equipped_fire"))
+    });
+    if use_default {
+        let source = wfsim_engine::data::file("geometry/excalibur-standing.yaml")
+            .ok_or("missing Excalibur standing geometry")?;
+        let StandingPlayer { mut player, camera, reference_bone } =
+            serde_norway::from_str(source).map_err(|e| format!("Excalibur standing geometry: {e}"))?;
+        player.world.0[3] = player_at.x;
+        player.world.0[11] = player_at.y;
+        if let Some(equipped) = fields.get("player").and_then(|v| v.get("equipped_fire")) {
+            player.equipped_fire = serde_json::from_value(equipped.clone())
+                .map_err(|e| format!("scene_3d player equipment: {e}"))?;
+        }
+        let reference = player.bones.get(reference_bone).ok_or("missing standing aim reference")?;
+        let reference_point = player.world.compose(*reference).point(Vec3([0.; 3]));
+        fields.insert("player".into(), json!(player));
+        fields.entry("camera").or_insert_with(|| json!(camera));
+        fields.entry("reference_point").or_insert_with(|| json!(reference_point));
+    }
+    let scene = serde_json::from_value(input).map_err(|e| format!("scene_3d: {e}"))?;
+    Scene::new(scene, count).map(std::sync::Arc::new)
+}
+
 /// **WHAT THIS FIGHT SAYS ABOUT THE CLASS THIS WEAPON IS IN.**
 ///
 /// `class_rules` is `{ "<slot>": { "<axis>": value } }` on the wire — a fight
@@ -743,8 +783,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         aimed_body(v, aim_at, player_at, target, body_parts, target_at, formation);
     let scene_3d = v.get("scene_3d").map(|raw| {
         if aim_at.is_some() { return Err("scene_3d uses its head/body reticle anchor; aim_at is not supported".to_string()); }
-        let scene = serde_json::from_value(raw.clone()).map_err(|e| format!("scene_3d: {e}"))?;
-        wfsim_engine::scene::Scene::new(scene, 1 + others.len()).map(std::sync::Arc::new)
+        parse_scene_3d(raw, 1 + others.len(), player_at)
     }).transpose().map_err(err_json)?;
     let mut player_at = player_at;
     if let Some(scene) = &scene_3d {

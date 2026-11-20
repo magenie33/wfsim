@@ -190,6 +190,44 @@ fn parse_refuses_an_incomplete_scene_and_projects_controller_contact() {
 }
 
 #[test]
+fn five_meter_head_intent_uses_the_standing_player_and_the_actual_muzzle() {
+    let mut v = request("akarius_prime", 5, false);
+    equipped::equip(&mut v["scene_3d"], "akarius_prime");
+    let equipment = v["scene_3d"]["player"]["equipped_fire"].take();
+    let scene = v["scene_3d"].as_object_mut().unwrap();
+    scene.insert("player".into(), json!({"equipped_fire":equipment}));
+    scene.remove("camera");
+    scene.remove("reference_point");
+    let p = params(&v);
+    let scene = p.scene_3d.as_ref().unwrap();
+    assert_eq!(scene.input().player.bones.len(), 83);
+    assert_eq!(scene.input().player.controller.height, 1.5);
+    assert_eq!(scene.root(0).0, [0., 0., 5.]);
+    assert_eq!(scene.camera().0, [0., 1.8, -3.]);
+
+    let enemy = &scene.input().enemies[0];
+    let head = enemy.proxies.iter().find(|p| p.cache_index == scene.input().head_proxy).unwrap();
+    let center = enemy.world.compose(head.world).point(wfsim_engine::rules::geometry::Vec3([0.; 3]));
+    let rec = record(&p);
+    let flights = rec.spatial_flights();
+    assert!(flights.len() > 2);
+    for row in flights {
+        let flight = &row.flight;
+        assert_eq!(flight.head_anchor, center);
+        let aim = flight.aim_target.minus(flight.camera).normalized().unwrap();
+        let wanted = center.minus(flight.camera).normalized().unwrap();
+        assert!((1. - aim.dot(wanted)).abs() < 1e-12);
+        assert_ne!(flight.muzzle, flight.basis_origin);
+        assert!(flight.fire_origin.is_some());
+    }
+    assert!(flights.iter().any(|row| row.flight.impacts.iter().any(|hit| hit.part != 1)));
+
+    v["scene_3d"].as_object_mut().unwrap().remove("player");
+    let without_equipment = params(&v);
+    assert_eq!(without_equipment.scene_3d.as_ref().unwrap().camera().0, [0., 1.8, -3.]);
+}
+
+#[test]
 fn a_scene_search_winner_replays_under_the_same_models() {
     let mut v = request("laetum", 5, true);
     v["mods"] = json!({"hornet_strike":"search","seeker":"search","pistol_acuity":"search"});
