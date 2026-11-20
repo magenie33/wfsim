@@ -40,13 +40,19 @@ impl Expansion {
         identity
     }
 
-    fn add(&mut self, build: &builds::ValidBuild, scope: &Value, observed: Option<(&str, &str)>) {
-        self.store(build);
+    fn add(&mut self, build: &builds::ValidBuild, scope: &Value, observed: Option<(&str, &str)>) -> String {
+        let identity = self.store(build);
+        let mut public_identity = identity.clone();
         if let Some(shape) = &build.riven {
             for (index, rolls) in standard_rolls(shape, &build.weapon).into_iter().enumerate() {
-                let requested = index == 0 || rolls == build.riven_rolls;
+                let exact = rolls == build.riven_rolls;
                 let candidate = build.clone().with_riven_rolls(rolls);
-                if requested {
+                if exact {
+                    public_identity = identity.clone();
+                } else if index == 0 {
+                    public_identity = builds::build_id(&candidate);
+                }
+                if index == 0 || exact {
                     self.measure(&candidate, scope, None);
                 } else {
                     self.store(&candidate);
@@ -59,6 +65,7 @@ impl Expansion {
         } else {
             self.measure(build, scope, None);
         }
+        public_identity
     }
 
     fn measure(&mut self, build: &builds::ValidBuild, scope: &Value, only: Option<(&str, &str)>) {
@@ -109,7 +116,7 @@ pub fn plan(input: &Value, ruler: &str, mode: &str, family: bool, captured: Opti
     });
     let mut out=Expansion{builds:Vec::new(),nodes:Vec::new(),templates:Vec::new(),patches:Vec::new(),
         bases:BTreeMap::new(),measured:BTreeSet::new()};
-    out.add(&build,&scope,observed);
+    let public_identity=out.add(&build,&scope,observed);
     for job in jobs {
         let mut copy=input.clone();copy["weapon"]=job["weapon"].clone();
         for axis in ["grip","loader","link"] {
@@ -124,7 +131,7 @@ pub fn plan(input: &Value, ruler: &str, mode: &str, family: bool, captured: Opti
         if let Some(target)=valid { out.add(&target,&scope,None); }
         else { out.nodes.push(json!({"kind":"optimize","request":job["request"],"context":job["context"],"weapon":job["weapon"]})); }
     }
-    json!({"schema":1,"scope":scope,"builds":out.builds,"nodes":out.nodes,"templates":out.templates,"patches":out.patches})
+    json!({"schema":1,"scope":scope,"builds":out.builds,"nodes":out.nodes,"templates":out.templates,"patches":out.patches,"public_identity":public_identity})
 }
 
 /// A local observation must describe the exact official fight before correction.

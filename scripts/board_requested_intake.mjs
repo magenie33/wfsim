@@ -11,14 +11,18 @@ class RefusedBoardRequest extends Error {}
 
 export function requestedPlan(build,request) {
  const plan=build.flow,weapon=build.record.weapon;
- const nodes=plan?.nodes?.filter(node=>node.kind==='measure'&&node.identity===build.id&&node.ruler===request.ruler&&node.mode===request.mode);
- const boards=plan?.scope?.boards?.filter(board=>board.id===request.ruler);
- if(nodes?.length!==1||boards?.length!==1)throw new RefusedBoardRequest('requested calculation is not admitted by the native board contract');
  if(request.kind==='correction'&&build.observation?.valid!==true)throw new RefusedBoardRequest('observation does not match the official calculation');
+ if(request.kind==='missing'&&plan&&typeof plan.public_identity!=='string')throw Error('native intake must supply a public measurement identity');
+ const identity=request.kind==='missing'?plan?.public_identity:build.id;
+ const nodes=plan?.nodes?.filter(node=>node.kind==='measure'&&node.identity===identity&&node.ruler===request.ruler&&node.mode===request.mode);
+ const boards=plan?.scope?.boards?.filter(board=>board.id===request.ruler);
+ const builds=plan?.builds?.filter(row=>row.id===identity||row.id===build.id);
+ const record=builds?.find(row=>row.id===identity)?.record;
+ if(!record||nodes?.length!==1||boards?.length!==1)throw new RefusedBoardRequest('requested calculation is not admitted by the native board contract');
  const node=nodes[0];
- return {...build,derived:false,flow:{schema:plan.schema,nodes:[{...node,template:0,patch:0}],
+ return {...build,id:identity,record,derived:false,flow:{schema:plan.schema,nodes:[{...node,template:0,patch:0}],
    templates:[plan.templates[node.template]],patches:[plan.patches[node.patch]],
-   builds:plan.builds.filter(row=>row.id===build.id),scope:{boards,modes:{[weapon]:[request.mode]}}}};
+   builds,scope:{boards,modes:{[weapon]:[request.mode]}}}};
 }
 
 export async function normalizeBoardRequest(binary,request) {
