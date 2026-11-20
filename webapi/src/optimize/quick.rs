@@ -18,7 +18,7 @@
 
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use super::carry::Carry;
+use super::{carry::Carry, warm, Replay};
 
 use serde_json::{json, Value};
 use wfsim_engine::model::ModDef;
@@ -208,6 +208,13 @@ pub(crate) const KEEP_RATIO: f64 = 0.2;
 /// Jobs scored between progress updates: small enough that a single-threaded
 /// browser worker reports every few seconds, large enough to keep cores busy.
 const PROGRESS_CHUNK: usize = 32;
+
+type OrderScore = (Score, usize, f64);
+
+struct MeasuredOrders {
+    score: OrderScore,
+    shards: Vec<Option<Shard>>,
+}
 
 /// Legality is cheap to retain for the whole solve. Resolved panels are large:
 /// keep the last two batches of orders rather than every panel ever examined.
@@ -1098,13 +1105,13 @@ impl QuickCtx<'_> {
 
     /// Every build's score at its best element order, and WHICH order that is
     /// (its index in [`Self::orders_by_key`]) — what a fleet worker hands back.
-    fn score_orders(&self, bs: &[QBuild]) -> Vec<(Score, usize, f64)> {
+    fn score_orders(&self, bs: &[QBuild]) -> Vec<OrderScore> {
         self.score_orders_at(bs, self.runs)
     }
 
     /// [`Self::score_orders`] at `runs` fights a candidate, on the same seed —
     /// the screen's short count is the first `runs` of the full paired stream.
-    fn score_orders_at(&self, bs: &[QBuild], runs: u32) -> Vec<(Score, usize, f64)> {
+    fn score_orders_at(&self, bs: &[QBuild], runs: u32) -> Vec<OrderScore> {
         let keys: Vec<_> = bs.iter().map(|b| self.key(b)).collect();
         let orders: Vec<_> = bs.iter().zip(&keys).map(|(b,k)| self.orders_by_key(b,k)).collect();
         // A FULL MEASUREMENT KEEPS THE SCREEN'S RUNS: they are the first runs
@@ -1118,10 +1125,40 @@ impl QuickCtx<'_> {
                 kept.filter(|k| k.len() == os.len()).unwrap_or_else(|| vec![None; os.len()])
             })
             .collect();
+        let measured = self.measure_orders(bs, &orders, &priors, runs, false);
+        keys.into_iter().zip(measured).map(|(key, MeasuredOrders { score, mut shards })| {
+            let (s, oi, sd) = score;
+            if let (Some(_), Ok(mut m)) = (s, self.best.lock()) {
+                m.insert(key.clone(), oi);
+            }
+            if screened {
+                if let Ok(mut m) = self.screened_runs.lock() {
+                    m.insert(key.clone(), shards);
+                }
+            } else if let Some(sh) = shards.get_mut(oi).and_then(Option::take) {
+                if let Ok(mut m) = self.best_runs.lock() {
+                    m.insert(key.clone(), sh);
+                }
+            }
+            if let Ok(mut m) = self.spread.lock() {
+                m.insert(key, sd);
+            }
+            score
+        }).collect()
+    }
+
+    fn measure_orders(
+        &self,
+        bs: &[QBuild],
+        orders: &[Arc<Vec<Candidate>>],
+        priors: &[Vec<Option<Shard>>],
+        runs: u32,
+        warm: bool,
+    ) -> Vec<MeasuredOrders> {
         let jobs: Vec<(&Candidate, usize, Option<&Shard>)> = orders
             .iter()
             .zip(bs)
-            .zip(&priors)
+            .zip(priors)
             .flat_map(|((os, b), ps)| os.iter().zip(ps).map(move |(c, p)| (c, b.arcane, p.as_ref())))
             .collect();
         use std::sync::atomic::Ordering::Relaxed;
@@ -1132,7 +1169,8 @@ impl QuickCtx<'_> {
             // WHAT THIS CALL FOUGHT, not what the summaries hold: a kept run
             // was counted when it was fought.
             let (mut fights, mut work) = (0u64, 0u64);
-            for ((_, _, prior), (s, _)) in chunk.iter().zip(&got) {
+            for ((_, _, prior), (s, sh)) in chunk.iter().zip(&got) {
+                if warm && sh.is_none() { continue; }
                 fights += u64::from(runs - prior.map_or(0, |p| p.runs.min(runs)));
                 work = work.saturating_add(s.work.saturating_sub(prior.map_or(0, |p| p.work())));
             }
@@ -1149,7 +1187,7 @@ impl QuickCtx<'_> {
         }
         let mut it = sums.into_iter();
         let mut out = Vec::with_capacity(bs.len());
-        for (key, os) in keys.into_iter().zip(&orders) {
+        for os in orders {
             let mut best: Option<(usize, (f64, f64), f64)> = None;
             let mut shards: Vec<Option<Shard>> = Vec::with_capacity(os.len());
             for (oi, _) in os.iter().enumerate() {
@@ -1160,25 +1198,49 @@ impl QuickCtx<'_> {
                     best = Some((oi, sc, s.std_kill_progress));
                 }
             }
-            if let (Some((oi, _, _)), Ok(mut m)) = (best, self.best.lock()) {
-                m.insert(key.clone(), oi);
-            }
-            if screened {
-                if let Ok(mut m) = self.screened_runs.lock() {
-                    m.insert(key.clone(), shards);
-                }
-            } else if let Some(sh) = best.and_then(|(oi, _, _)| shards.get_mut(oi)?.take()) {
-                if let Ok(mut m) = self.best_runs.lock() {
-                    m.insert(key.clone(), sh);
-                }
-            }
-            let sd = best.map_or(0.0, |(_, _, sd)| sd);
-            if let Ok(mut m) = self.spread.lock() {
-                m.insert(key, sd);
-            }
-            out.push((best.map(|(_, s, _)| s), best.map_or(0, |(oi, _, _)| oi), sd));
+            let score = best.map_or((None, 0, 0.0), |(oi, score, sd)| (Some(score), oi, sd));
+            out.push(MeasuredOrders { score, shards });
         }
         out
+    }
+
+    fn warm_identities(&self, b: &QBuild, orders: &[Candidate], replay: &Replay) -> Vec<warm::OrderIdentity> {
+        orders.iter().map(|c| replay.warm_identity(c, b.arcane, self.weapon_id, self.valence_bonus, self.seed)).collect()
+    }
+
+    fn warm_keys(&self, b: &QBuild, orders: &[Candidate], replay: &Replay) -> Vec<String> {
+        self.warm_identities(b, orders, replay).into_iter().map(|id| id.key).collect()
+    }
+
+    fn score_row(key: &str, (s, oi, sd): OrderScore) -> Value {
+        json!({ "key": key, "score": s.map(|(k, e)| json!([k, e])), "order": oi, "sd": sd })
+    }
+
+    fn score_warm_at(&self, bs: &[QBuild], items: &[&Value], runs: u32, replay: &Replay, pack: bool) -> Vec<Value> {
+        let keys: Vec<_> = bs.iter().map(|b| self.key(b)).collect();
+        let orders: Vec<_> = bs.iter().zip(&keys).map(|(b, k)| self.orders_by_key(b, k)).collect();
+        let identities: Vec<_> = bs.iter().zip(&orders).map(|(b, os)| self.warm_identities(b, os, replay)).collect();
+        let priors: Vec<_> = identities.iter().zip(items).map(|(ids, item)| {
+            let warm = item["warm_shards"].as_array();
+            let carried = item["shards"].as_array().filter(|rows| rows.len() == ids.len());
+            ids.iter().enumerate().map(|(i, id)| {
+                warm::prefix(warm.and_then(|a| a.get(i)), carried.and_then(|a| a.get(i)), id, self.seed, runs)
+            }).collect()
+        }).collect();
+        let measured = self.measure_orders(bs, &orders, &priors, runs, true);
+        keys.into_iter().zip(identities).zip(measured).map(|((key, ids), MeasuredOrders { score, mut shards })| {
+            let mut row = Self::score_row(&key, score);
+            row["warm_shards"] = json!(ids.iter().zip(&shards).map(|(id, s)| {
+                s.clone().map(|s| warm::pack(id, s))
+            }).collect::<Vec<_>>());
+            if runs != self.runs {
+                row["rough"] = json!(true);
+                row["shards"] = json!(shards.into_iter().map(|s| s.map(|s| Carry::new(s, pack))).collect::<Vec<_>>());
+            } else if let Some(sh) = shards.get_mut(score.1).and_then(Option::take) {
+                row["shard"] = json!(Carry::new(sh, pack));
+            }
+            row
+        }).collect()
     }
 
     /// A fleet worker's share of a batch: each build's score and best order.
@@ -1186,16 +1248,21 @@ impl QuickCtx<'_> {
     /// screen's short measurement, answered with `rough: true` and its runs
     /// per element order (`shards`) — or `{build, shards}`, a full measurement
     /// that continues them, answered with its best order's runs (`shard`).
-    pub(crate) fn score_json(&self, builds: &[Value], stream: &super::BuildStream, pack: bool) -> Value {
+    pub(crate) fn score_json(&self, builds: &[Value], stream: &super::BuildStream, pack: bool, warm: Option<&Replay>) -> Value {
         stream.enable();
-        let mut groups: Vec<(u32, Vec<QBuild>)> = Vec::new();
+        let mut groups: Vec<(u32, Vec<QBuild>, Vec<&Value>)> = Vec::new();
         for item in builds {
             let (b, runs) = match item.get("build") {
                 Some(b) => (b, item.get("runs").and_then(Value::as_u64).map_or(self.runs, |r| r as u32)),
                 None => (item, self.runs),
             };
             let Some(b) = QBuild::from_json(b) else { continue };
-            if let Some(v) = item.get("shards") {
+            if warm.is_some() && item.get("runs").is_some_and(|r| {
+                !r.as_u64().is_some_and(|n| (1..=u64::from(self.runs)).contains(&n))
+            }) {
+                return crate::err_json("invalid warm search run count");
+            }
+            if let Some(v) = item.get("shards").filter(|_| warm.is_none()) {
                 let kept = Carry::list(v).and_then(|rows| rows.into_iter().map(|s| match s {
                     Some(s) => s.open().map(Some), None => Some(None),
                 }).collect::<Option<Vec<_>>>());
@@ -1205,19 +1272,24 @@ impl QuickCtx<'_> {
                     return crate::err_json("invalid carried search shard");
                 }
             }
-            match groups.iter_mut().find(|(r, _)| *r == runs) {
-                Some((_, g)) => g.push(b),
-                None => groups.push((runs, vec![b])),
+            let input = warm.map(|_| item);
+            match groups.iter_mut().find(|(r, _, _)| *r == runs) {
+                Some((_, g, items)) => { g.push(b); items.extend(input); }
+                None => groups.push((runs, vec![b], input.into_iter().collect())),
             }
         }
         let before = self.sims.load(std::sync::atomic::Ordering::Relaxed);
         let work_before = self.work.load(std::sync::atomic::Ordering::Relaxed);
         let mut rows: Vec<Value> = Vec::new();
-        for (runs, bs) in &groups {
+        for (runs, bs, items) in &groups {
+            if let Some(replay) = warm {
+                rows.extend(self.score_warm_at(bs, items, *runs, replay, pack));
+                continue;
+            }
             let got = self.score_orders_at(bs, *runs);
-            rows.extend(bs.iter().zip(got).map(|(b, (s, oi, sd))| {
+            rows.extend(bs.iter().zip(got).map(|(b, score)| {
                 let key = self.key(b);
-                let mut row = json!({ "key": key, "score": s.map(|(k, e)| json!([k, e])), "order": oi, "sd": sd });
+                let mut row = Self::score_row(&key, score);
                 if *runs != self.runs {
                     row["rough"] = json!(true);
                     if let Some(kept) = self.screened_runs.lock().ok().and_then(|mut m| m.remove(&key)) {
@@ -1271,19 +1343,30 @@ impl QuickCtx<'_> {
 
     /// The batch the paused starts wait for, or `None` when every start ran to
     /// the end on scores the leader already holds.
-    pub(crate) fn lead_pending() -> Option<Value> {
+    pub(crate) fn lead_pending(&self, warm: Option<&Replay>) -> Option<Value> {
         FLEET.with(|f| {
             let f = f.borrow();
             (!f.pending.is_empty() || !f.pending_rough.is_empty()).then(|| {
                 // A build the screen fought carries those runs, for whichever
                 // worker measures it in full to continue.
-                let full = f.pending.iter().map(|b| {
-                    match f.screened_runs.get(&b.1) {
-                        Some(v) => json!({ "build": b.0.to_json(), "shards": v }),
-                        None => b.0.to_json(),
+                let full = f.pending.iter().map(|(b, key)| {
+                    let mut item = match f.screened_runs.get(key) {
+                        Some(v) => json!({ "build": b.to_json(), "shards": v }),
+                        None if warm.is_some() => json!({ "build": b.to_json() }),
+                        None => b.to_json(),
+                    };
+                    if let Some(replay) = warm {
+                        item["warm_keys"] = json!(self.warm_keys(b, &self.orders_by_key(b, key), replay));
                     }
+                    item
                 });
-                let short = f.pending_rough.iter().map(|(b, runs)| json!({ "build": b.to_json(), "runs": runs }));
+                let short = f.pending_rough.iter().map(|(b, runs)| {
+                    let mut item = json!({ "build": b.to_json(), "runs": runs });
+                    if let Some(replay) = warm {
+                        item["warm_keys"] = json!(self.warm_keys(b, &self.orders_by_key(b, &self.key(b)), replay));
+                    }
+                    item
+                });
                 json!({
                     "ok": true,
                     "pending": full.chain(short).collect::<Vec<_>>(),
@@ -1735,6 +1818,154 @@ mod tests {
         );
         assert_eq!(out["ok"], json!(true), "{out}");
         out
+    }
+
+    fn warm_lead(req: &Value) -> Value {
+        let out = run(req, Some(json!({"lead": true, "fresh": true, "warm_cache": 1})));
+        assert_eq!(out["pending"].as_array().unwrap().len(), 1);
+        out["pending"][0].clone()
+    }
+
+    #[test]
+    fn warm_cache_witness_fixed_holes_preserve_incarnon_fight() {
+        let mut req = request();
+        req["weapon"] = json!("torid");
+        req["mode"] = json!("cycle");
+        req["modes"] = json!({"cycle": "fixed"});
+        req["mods"] = json!({"hellfire": "search", "infected_clip": "search", "split_chamber": "search"});
+        req.as_object_mut().unwrap().remove("starts");
+        let plan = super::super::parse_optimize(&req).unwrap();
+        let card = |id| plan.pool.iter().position(|m| m.id == id).unwrap();
+        let ordered = vec![card("hellfire"), card("infected_clip"), card("split_chamber")];
+        let base = wfsim_engine::model::WeaponBase::from_data("torid", false, &[]);
+        let spaced = [Some(ordered[0]), None, Some(ordered[1]), None, None, Some(ordered[2]), None, None];
+        let packed = [Some(ordered[0]), Some(ordered[1]), Some(ordered[2]), None, None, None, None, None];
+        let expand = |slots| wfsim_optimizer::expand_with_slots(
+            &plan.pool, &base, 0, plan.cap, &crate::registry::innate_slots_for("torid"),
+            None, &ordered, slots, u8::MAX, &plan.scenario.arena.tenno, plan.scenario.policy,
+        ).pop().expect("legal fixed layout");
+        let (packed, spaced) = (expand(&packed), expand(&spaced));
+        assert_ne!(packed.slots, spaced.slots);
+        assert_eq!(packed.ordered, spaced.ordered);
+        let identity = |c| plan.replay.warm_identity(c, 0, "torid", 0.0, 0xDEAD_BEEF).key;
+        assert_eq!(identity(&packed), identity(&spaced));
+        let prepared = |c| (plan.scenario.params)(c, 0).expect("prepared fight");
+        let (p, s) = (prepared(&packed), prepared(&spaced));
+        let cycle = p.cycle.as_ref().expect("Torid Incarnon cycle");
+        assert!(cycle.base_form.multishot > 1.0);
+        assert_eq!(format!("{p:?}"), format!("{s:?}"));
+
+        let (packed, spaced) = (plan.replay.request(&packed, 0), plan.replay.request(&spaced, 0));
+        assert_ne!(packed["mod_slots"], spaced["mod_slots"]);
+        assert_eq!(packed["mods"], spaced["mods"]);
+        for request in [&packed, &spaced] {
+            let replayed = crate::simulate::ready(request, false).expect("replay fight");
+            assert_eq!(format!("{p:?}"), format!("{:?}", replayed.params));
+        }
+    }
+
+    #[test]
+    fn warm_cache_keys_follow_order_and_start_ranks_and_rolls() {
+        let mut req = request();
+        let keys = |req: &Value| warm_lead(req)["warm_keys"].as_array().unwrap().clone();
+        let original = keys(&req);
+        assert_eq!(original.len(), 3);
+        let mut pinned = req.clone();
+        pinned["starts"][0]["slots"] = json!(["infected_clip", "stormbringer", "hellfire"]);
+        pinned["starts"][0]["fixed"][0]["placement"] = json!("slot");
+        let pinned = keys(&pinned);
+        assert!(pinned.iter().enumerate().any(|(i, k)| {
+            original.iter().position(|other| other == k).is_some_and(|j| i != j)
+        }), "a shared actual order can move to a different index: {original:?}, {pinned:?}");
+
+        let differs = |base: &[Value], changed: &Value| {
+            assert!(keys(changed).iter().all(|k| !base.contains(k)));
+        };
+        let mut lower_mod = req.clone();
+        lower_mod["mods"]["hellfire@0"] = json!("search");
+        lower_mod["starts"][0]["slots"][0] = json!("hellfire@0");
+        differs(&original, &lower_mod);
+
+        req["arcanes"] = json!({"primary_merciless@1": "fixed"});
+        let arcane = keys(&req);
+        differs(&original, &req);
+        req["arcanes"] = json!({"primary_merciless@2": "fixed"});
+        differs(&arcane, &req);
+
+        req["mods"]["riven:local"] = json!("search");
+        req["starts"][0]["slots"][0] = json!("riven:local");
+        req["rivens"] = json!([{"id": "local", "spec": {"rank": 8,
+            "bonuses": [{"id":"damage", "roll":1.03}, {"id":"critical_chance", "roll":0.94}],
+            "malus": {"id":"zoom", "roll":1.0}}}]);
+        let riven = keys(&req);
+        for i in 0..2 {
+            let mut changed = req.clone();
+            changed["rivens"][0]["spec"]["bonuses"][i]["roll"] = json!(1.01);
+            differs(&riven, &changed);
+        }
+        for (field, value) in [("rank", json!(7)), ("malus", Value::Null)] {
+            let mut changed = req.clone();
+            changed["rivens"][0]["spec"][field] = value;
+            differs(&riven, &changed);
+        }
+        let mut duplicate = req["rivens"][0].clone();
+        duplicate["spec"]["rank"] = json!(7);
+        req["rivens"].as_array_mut().unwrap().push(duplicate);
+        assert_eq!(keys(&req), riven);
+        req["rivens"].as_array_mut().unwrap().swap(0, 1);
+        differs(&riven, &req);
+    }
+
+    #[test]
+    fn warm_cache_exact_across_screen_full_and_reindexed_pool() {
+        let mut req = request();
+        req["threads"] = json!(1);
+        req["candidate_runs"] = json!(2);
+        req["mods"]["fast_hands"] = json!("search");
+        let pending = warm_lead(&req);
+        let keys = pending["warm_keys"].as_array().unwrap();
+        assert_eq!(keys.len(), 3, "keep this test within ten fights");
+        assert_eq!(keys.iter().map(Value::as_str).collect::<HashSet<_>>().len(), keys.len());
+        let score = |req: &Value, item: Value| run(req, Some(json!({"score": [item], "warm_cache": 1})));
+        let cold = score(&req, pending.clone());
+        let short = score(&req, json!({"build": pending["build"], "runs": 1}));
+        assert_eq!(cold["fights"], 6);
+        assert_eq!(short["fights"], 3);
+        let full = &cold["scores"][0]["warm_shards"];
+        let small = &short["scores"][0]["warm_shards"];
+
+        let mut other = req.clone();
+        other["mods"]["fast_hands"] = json!("exclude");
+        other["starts"][0]["slots"] = json!(["stormbringer", "hellfire", "infected_clip"]);
+        let moved = warm_lead(&other);
+        assert_ne!(moved["build"], pending["build"], "exercise different pool indices");
+        assert_eq!(moved["warm_keys"], pending["warm_keys"]);
+        let carried = &short["scores"][0]["shards"];
+        let screened = score(&other, json!({"build": moved["build"], "runs": 1,
+            "warm_shards": [full[0], small[1]], "shards": [carried[0], null, carried[2]]}));
+        assert_eq!(screened, json!({"ok": true, "scores": short["scores"], "fights": 0,
+            "work": 0, "builds": short["builds"]}));
+
+        let mut bad: Value = serde_json::from_str(full[2].as_str().unwrap()).unwrap();
+        bad[2]["index"][1]["hi"] = json!(0);
+        let mixed = score(&other, json!({"build": moved["build"],
+            "warm_shards": [full[0], full[1], bad.to_string()], "shards": carried}));
+        assert_eq!(mixed["fights"], 1);
+        let saved = Shard::unpack_search_with_identity(full[2].as_str().unwrap(), Some((
+            keys[2].as_str().unwrap(), bad[2]["warm_identity"].as_str().unwrap(),
+        ))).unwrap();
+        let prefix = Carry::read(&carried[2]).unwrap().open().unwrap();
+        assert_eq!(mixed["work"], saved.work() - prefix.work());
+        assert_eq!(mixed["scores"], cold["scores"]);
+        assert_eq!(mixed["builds"], cold["builds"]);
+
+        let hit = score(&other, json!({"build": moved["build"], "warm_shards": full}));
+        assert_eq!((hit["fights"].as_u64(), hit["work"].as_u64()), (Some(0), Some(0)));
+        assert_eq!(hit["scores"], cold["scores"]);
+        assert_eq!(hit["builds"], cold["builds"]);
+
+        let disabled = run(&other, Some(json!({"lead":true, "fresh":true, "warm_cache":true})));
+        assert_eq!(disabled["pending"][0], moved["build"], "the opt-in requires numeric 1");
     }
 
     fn strategy_request() -> Value {

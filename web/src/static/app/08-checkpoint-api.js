@@ -225,8 +225,8 @@ function optimizerWorkerSignals() {
 /// worker scores a slice of them, and the scores go back to the leader, until
 /// it answers with the result. Every worker is busy on every batch, whatever
 /// the number of starts.
-function woptQuickFleet(body, onBuilds) {
-  const job = quickFleet(body, () => woptWorkerCount(), undefined, { onBuilds });
+function woptQuickFleet(body, onBuilds, searchWarm) {
+  const job = quickFleet(body, () => woptWorkerCount(), undefined, { onBuilds, searchWarm });
   wopt = job;
   return { ok: true, job_id: job.id };
 }
@@ -257,7 +257,7 @@ function fleetKeep(workers) {
 /// however many workers scored it. `keep` hands the workers back (`fleetKeep`);
 /// `rest(ms)` is how long a worker rests after a call that took `ms`, so a
 /// background search runs the share of the time its owner set.
-function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () => 0, kind = "solo", onBuilds = async () => {} } = {}) {
+function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () => 0, kind = "solo", onBuilds = async () => {}, searchWarm = null } = {}) {
   const lanesNow = () => Math.max(1, Math.floor(typeof n === "function" ? n() : n) || 1);
   const job = { id: woptNextId++, workers: [], status: null, result: null, board: null,
     cancelled: false, shards: lanesNow(), t0: Date.now() };
@@ -407,6 +407,9 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
   (async () => {
     grow(job.shards);
     show();
+    const cache = searchWarm && kind === "solo" ? await openSearchWarmCache(body, searchWarm).catch(() => null) : null;
+    const cacheFlag = cache ? { warm_cache: 1 } : {};
+    const candidateRuns = Math.max(1, Math.min(1000, body.candidate_runs ?? 10));
     let scores = [];
     let lastBatch = null;
     for (let step = 0; ; step++) {
@@ -415,7 +418,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       await pace();
       if (job.cancelled || job.result) return;
       activity = "planning";
-      let r = await timed(0, { kind: "optimize", body: { ...body, quick_fleet: { lead: true, fresh: step === 0, scores, split_finals: job.workers.length > 1 } } },
+      let r = await timed(0, { kind: "optimize", body: { ...body, quick_fleet: { ...cacheFlag, lead: true, fresh: step === 0, scores, split_finals: job.workers.length > 1 } } },
         (p) => {
           if (p.phase === "running" && p.jobs != null) { finalStatus = p; activity = "final_simulation"; }
         });
@@ -425,6 +428,8 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
         if (!r || job.cancelled) return;
       }
       if (!r.pending) {
+        if (cache) await cache.flush().catch(() => {});
+        if (job.cancelled) return;
         job.result = { ...r, work: done.work + (r.final_work || 0), fights: done.fights, builds: done.builds, steps: step, cpu_ms: Math.round(done.cpu_ms) };
         stop(true);
         return;
@@ -456,7 +461,14 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       await Promise.all(Array.from({ length: k }, async (_, i) => {
         while (!broken && !job.cancelled && next < slices.length) {
           const at = next++;
-          const o = await timed(i, { kind: "optimize", body: { ...body, quick_fleet: { score: slices[at], compact_shards: 1 } } }, (st) => { live[i] = st; show(); });
+          const items = slices[at];
+          const score = cache ? items.map(item => {
+            if (!item.warm_keys) return item;
+            const { warm_keys, ...plain } = item;
+            const carried = cache.lookup(warm_keys, item.runs ?? candidateRuns);
+            return carried.some(Boolean) ? { ...plain, warm_shards: carried } : plain;
+          }) : items;
+          const o = await timed(i, { kind: "optimize", body: { ...body, quick_fleet: { ...cacheFlag, score, compact_shards: 1 } } }, (st) => { live[i] = st; show(); });
           live[i] = null;
           if (!o) { broken = true; return; }
           if (!Array.isArray(o.scores) || o.scores.length !== slices[at].length) {
@@ -465,6 +477,10 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
             return;
           }
           outs[at] = o;
+          if (cache) o.scores.forEach((row, j) => {
+            if (row.warm_shards && items[j].warm_keys) cache.record(items[j].warm_keys, row.warm_shards);
+            delete row.warm_shards;
+          });
           round.builds += o.scores.length;
           round.fights += o.fights || 0;
           round.slices_done += 1;
@@ -491,13 +507,13 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
   return job;
 }
 
-function woptStart(body, checkpoint, onCheckpoint, onBuilds = builds => keepOptimizationBuilds(builds, { kind: "public" })) {
+function woptStart(body, checkpoint, onCheckpoint, onBuilds = builds => keepOptimizationBuilds(builds, { kind: "public" }), searchWarm = null) {
   if (wopt && wopt.workers && wopt.workers.length) {
     return { ok: false, error: "an optimization is already running — cancel it or wait", job_id: wopt.id };
   }
   const { __resume, ...req } = body ?? {}; // the resume marker is transport, not scope
   body = req;
-  if (body.strategy === "quick" && !checkpoint) return woptQuickFleet(body, onBuilds);
+  if (body.strategy === "quick" && !checkpoint) return woptQuickFleet(body, onBuilds, searchWarm);
   // A CHECKPOINT is one worker's field, so it can only resume a run that had
   // one worker. Rather than resume a fraction of a fleet, a resume runs
   // unsharded — slower, but it is continuing a search that already exists.
@@ -672,7 +688,7 @@ async function api(path, body, onProgress, opts) {
       if (r.ok) return await r.json();
     } catch (_) { /* the engine answers it */ }
   }
-  if (path === "/api/optimize") return woptStart(body, body && body.__resume, opts?.checkpoint, opts?.builds);
+  if (path === "/api/optimize") return woptStart(body, body && body.__resume, opts?.checkpoint, opts?.builds, opts?.searchWarm);
   if (path === "/api/optimize/status" || path === "/api/optimize/cancel") {
     if (body?.id != null && wopt?.id !== body.id) return { ok: false, error: "no such optimize job" };
     return path.endsWith("/cancel") ? woptCancel() : woptStatus();
