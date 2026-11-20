@@ -35,6 +35,7 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
  };
  const partitionKey=(weapon,ruler)=>JSON.stringify([weapon,ruler]);
  const deterministic=error=>error instanceof BoardRankQualificationError||['ENOENT','ENOTDIR','ELOOP','53100','53200','53400','54000'].includes(error.code);
+ let nextPartitionCheck=0;
  const ensurePartition=async()=>sql.begin(async tx=>{
   await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
   const [part]=await tx.unsafe(`SELECT p.* FROM state_board_read_partitions p WHERE (p.enabled OR($1::boolean AND NOT p.canonical_sources AND p.revision IS NULL))
@@ -47,6 +48,7 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
   const key=JSON.stringify([part.weapon,part.ruler]);
   const [{version}]=await tx.unsafe('SELECT board_input_put($1,$2,$3) version', ['partition',key,JSON.stringify({weapon:part.weapon,ruler:part.ruler,indexed:true,...(!part.enabled?{qualify_requested:true}:{})})]);
   await tx.unsafe(`INSERT INTO state_board_rank_route_inputs VALUES('partition',$1,$2) ON CONFLICT(scope,key) DO NOTHING`,[key,version]);
+  return true;
  });
  const retryInput=async(job,error)=>{
   await mailbox.retry(job.item,job.token,{error:error.message,delaySeconds:deterministic(error)?null:5});
@@ -61,7 +63,7 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
  const route=async()=>{
   for(const [key,job] of captures)if(job.result)return finishCapture(key,job);
   if(requestedPartitions)await enqueueRequestedPartition(sql,source,native.contract.rulers);
-  await ensurePartition();
+  if(Date.now()>=nextPartitionCheck&&!await ensurePartition())nextPartitionCheck=Date.now()+1000;
   const claim=await mailbox.claim({items:1,leaseSeconds:300});
   if(!claim.inputs.length)return null;
   const item=claim.inputs[0],job={item,token:claim.token};
@@ -71,7 +73,7 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
     await sql.unsafe('SELECT board_input_ack($1,$2,$3,$4::bigint)',[item.scope,item.key,claim.token,item.version]);return {status:'superseded'};
    }
    if(input.status!=='input')throw Error('board input '+input.status);
-   if(input.scope!=='partition')return {...await mailbox.apply(input,claim.token,(tx,packet)=>routeRankInput(tx,packet,source)),stage:'routing'};
+   if(input.scope!=='partition')return {...await mailbox.apply(input,claim.token,(tx,packet)=>routeRankInput(tx,packet,source,catalog&&!requestedPartitions)),stage:'routing'};
    const {weapon,ruler}=input.body,key=partitionKey(weapon,ruler);
    const [existing]=await sql.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
    if(existing){

@@ -201,7 +201,9 @@ scope's latest arrival while retaining its first arrival and request position.
 A retained scope uses its qualified input. For a genuinely new scope the
 controller takes a repeatable-read capture and qualifies its current rows with
 the same Native publisher. Both paths reconcile subsequent changes, including
-acknowledged mailbox inputs, before selecting the complete revision. A held
+acknowledged mailbox inputs, before selecting the complete revision. While a
+first publication is pending, the active capture keeps each changed identity
+so other registered scopes for that weapon can process the same update. A held
 scope keeps its published rows and its retry record. Once the native index
 is active, new results continue through its per-identity update queue.
 Publication yields at a committed page checkpoint between scopes. Current

@@ -36,7 +36,7 @@ export async function putRankPublication(tx,{weapon,ruler,winnersChanged,catalog
  return write.count>0;
 }
 
-export async function routeRankInput(tx,input,source) {
+export async function routeRankInput(tx,input,source,catalogRequests=false) {
  await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
  let identity=input.scope==='build'?input.key:input.scope==='measurement'?JSON.parse(input.key)[0]:input.body?.identity;
  const ruler=input.scope==='measurement'?JSON.parse(input.key)[1]:input.body?.ruler;
@@ -52,9 +52,16 @@ export async function routeRankInput(tx,input,source) {
   const weapon=build?.weapon||(input.scope==='build'?input.body?.weapon:null);
   if(weapon){
    if(input.scope==='build'||input.scope==='measurement'){
+    const args=[weapon,ruler||null];
+    const retained=catalogRequests&&BigInt(input.version)>0n?`AND (p.enabled OR NOT (
+     EXISTS(SELECT 1 FROM state_board_input_mailbox m WHERE m.scope='partition' AND m.key='["'||p.weapon||'","'||p.ruler||'"]' AND NOT m.removed)
+     AND EXISTS(SELECT 1 FROM state_board_rank_catalog_inputs k WHERE (k.weapon,k.ruler,k.identity)=($1,$3,$4))
+     AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='state_board_input_mailbox'::regclass
+      AND tgname='board_rank_catalog_input' AND tgfoid=to_regprocedure('board_rank_catalog_input()') AND tgenabled IN('O','A'))))`:'';
+    if(retained)args.push(input.scope==='measurement'?ruler:'',identity);
     const [capturing]=await tx.unsafe(`SELECT 1 FROM state_board_read_partitions p WHERE p.weapon=$1
      AND ($2::text IS NULL OR p.ruler=$2) AND(p.enabled OR(NOT p.canonical_sources AND p.revision IS NULL))
-     AND NOT EXISTS(SELECT 1 FROM state_board_rank_partitions r WHERE r.weapon=p.weapon AND r.ruler=p.ruler) LIMIT 1`,[weapon,ruler||null]);
+     AND NOT EXISTS(SELECT 1 FROM state_board_rank_partitions r WHERE r.weapon=p.weapon AND r.ruler=p.ruler) ${retained} LIMIT 1`,args);
     if(capturing)throw new BoardRankConflict('ranking partition capture is not registered');
    }
    const parts=await tx.unsafe('SELECT weapon,ruler FROM state_board_rank_partitions WHERE weapon=$1 AND ($2::text IS NULL OR ruler=$2)',[weapon,ruler||null]);
