@@ -5,7 +5,7 @@ import {join} from 'node:path';
 import {reconcileSelectedInputs} from './board_catalog_delivery.mjs';
 import {registerCatalogScope} from './adopt_rank_catalog.mjs';
 import {catalogHead} from './board_catalog_readback.mjs';
-import {freshDirectory,freshPublication} from './board_catalog_fresh.mjs';
+import {freshDirectory,freshPublication,qualifyRetainedScope} from './board_catalog_fresh.mjs';
 import {transaction} from './board_catalog_batch_state.mjs';
 
 export function preparePriority(db,contract){
@@ -125,6 +125,11 @@ async function advance(ctx,job,now){
   }
   if(receipt){
    assert(receipt.eligible&&receipt.unresolved===0&&receipt.archive===contract.archive&&receipt.snapshot===contract.snapshot,'local scope qualification incomplete');
+   if(native.policyAdapter){
+    receipt=await qualifyRetainedScope(ctx,weapon,ruler);
+    if(!receipt.complete)return result('preparing','preparing-retained',100);
+    assert(receipt.eligible&&receipt.unresolved===0&&receipt.policy===native.policyAdapter,'riven policy qualification incomplete');
+   }
    manifest=await ctx.emit(weapon,ruler);
   }else{
    const newScope=await freshPublication(ctx,...keys);

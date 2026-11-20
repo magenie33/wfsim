@@ -31,12 +31,23 @@ export async function prepareRankSources(native,{weapon,ruler,inputs,cached=[]})
   const values=await native.call('describe',missing.map(({id,record})=>({id,record})));
   for(let i=0;i<missing.length;i++)sources[missing[i].index].descriptor=values[i];
  }
+ const candidates=[],rivens=[];
  for(let i=0;i<inputs.length;i++){
   const input=inputs[i],source=sources[i],d=source.descriptor;
   if(d.candidate!==null&&d.candidate!==input.identity)throw new BoardRankQualificationError('board source identities require qualification');
   if(d.candidate===null)continue;
   if(d.bucket?.[0]!==weapon)throw new BoardRankQualificationError('rank source changed its weapon');
   if((BigInt('0x'+d.admit)&(1n<<BigInt(target)))===0n)continue;
+  if(!input.facts?.length)continue;
+  const riven=d.bucket[1]?rivens.length:null;
+  if(riven!==null)rivens.push({weapon,riven:d.publication?.riven});
+  candidates.push({input,d,riven});
+ }
+ const standards=rivens.length?await native.call('standard_riven',rivens):[];
+ if(standards.length!==rivens.length||standards.some(result=>typeof result?.eligible!=='boolean'))
+  throw new BoardRankQualificationError('invalid native riven eligibility');
+ for(const {input,d,riven} of candidates){
+  if(riven!==null&&!standards[riven].eligible)continue;
   for(const fact of input.facts||[]){
    if(fact.identity!==input.identity||fact.ruler!==ruler)throw new BoardRankQualificationError('rank fact changed its scope');
    const mode=d.publication_modes.find(row=>row.id===fact.mode);

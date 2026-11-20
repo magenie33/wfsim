@@ -10,7 +10,7 @@ import {promisify} from 'node:util';
 import {guardRankSpace} from './board_rank_storage.mjs';
 import {boardStorage} from './board_storage.mjs';
 import {scanCatalogPage,startCatalogScan} from './board_rank_catalog_scan.mjs';
-import {openInventoryOperator} from './inventory_operator.mjs';
+import {openRankInventoryOperator} from './board_operator.mjs';
 import {initializeJournal,jsonFile,openProtectedSets,planBatch} from './board_catalog_batch_state.mjs';
 import {preparePriority,priorityStep} from './board_catalog_priority.mjs';
 import {batchStep,closeBatch} from './board_catalog_batch_step.mjs';
@@ -97,7 +97,8 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
   lock=await sql.reserve();
   const [actor]=await lock.unsafe('SELECT pg_try_advisory_lock(hashtextextended($1,0)) owner',[contract.source+'/catalog-batch']);
   assert(actor?.owner,'another catalog adoption driver is active');
-  native=await openInventoryOperator(config.native);assert.equal(native.adapter,contract.native,'Native digest changed');
+  native=await openRankInventoryOperator(config.native,{policyBinary:config.riven_policy_binary,policySha:config.riven_policy_sha256});
+  assert.equal(native.adapter,contract.native,'Native digest changed');
   const scenes=new Map(native.contract.rulers.map(r=>[r.id,r.scene]));
   for(const p of priority?[]:config.pins){catalogFile(stage,p.members);catalogFile(stage,p.proof);}
   if(priority){

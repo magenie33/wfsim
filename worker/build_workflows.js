@@ -37,14 +37,14 @@ export const BUILD_WORKFLOW_PRODUCER={
     } else {
       if(p.review) writes.push(...BOARD_REVIEW_PRODUCER.on_fact_writes(env,linkedReview(d),fact));
       else {
-        writes.push(db.prepare(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)
-          VALUES(?1::text,?2::text,?3::text,?4::text,?5::double precision,?6::text,0,?7::text,?7::text)
+        writes.push(db.prepare(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at,publication_zone)
+          VALUES(?1::text,?2::text,?3::text,?4::text,?5::double precision,?6::text,0,?7::text,?7::text,?8::smallint)
           ON CONFLICT(identity,ruler,mode) DO UPDATE SET measured_by=excluded.measured_by,score=excluded.score,metric=excluded.metric,
-            cost_seconds=0,started_at=excluded.started_at,finished_at=excluded.finished_at,review_id=NULL
+            cost_seconds=0,started_at=excluded.started_at,finished_at=excluded.finished_at,review_id=NULL,publication_zone=excluded.publication_zone
           WHERE state_board_measurement_selection.finished_at<=excluded.finished_at AND NOT EXISTS(
             SELECT 1 FROM entity_measurement_reviews r WHERE r.id=state_board_measurement_selection.review_id
               AND r.invalidated_at IS NOT NULL AND r.state<>'succeeded')`)
-          .bind(p.identity,p.ruler,p.mode,'verified:'+fact.engine,fact.result.score,fact.result.metric,at));
+          .bind(p.identity,p.ruler,p.mode,'verified:'+fact.engine,fact.result.score,fact.result.metric,at,fact.zone ?? 3));
         writes.push(...scoreWitnessWrites(db,p.identity,p.ruler,p.mode,at,fact));
       }
       writes.push(db.prepare("UPDATE state_build_workflow_nodes SET state='succeeded',result_id=?,delivered_at=? WHERE workflow=? AND id=? AND state='queued' AND task_id=?")

@@ -91,7 +91,7 @@ fn refusal(rec: &Value, weapon: &str, ruler: Option<&str>, e: &str) {
 }
 
 fn derive(raw: &RawValue, rulers: &[Ruler]) -> Option<Built> {
-    use wfsim_webapi::board_rows::{admitted, board_build};
+    use wfsim_webapi::board_rows::{admitted, board_build, has_standard_riven};
     let rec: Value = serde_json::from_str(raw.get()).ok()?;
     let weapon = rec.get("weapon").and_then(Value::as_str).unwrap_or("");
     let v = match board_build(&rec) {
@@ -102,10 +102,12 @@ fn derive(raw: &RawValue, rulers: &[Ruler]) -> Option<Built> {
         }
     };
     let mut admit = 0u64;
-    for (r, ruler) in rulers.iter().enumerate() {
-        match admitted(&rec, &ruler.id, &v) {
-            Ok(()) => admit |= 1 << r,
-            Err(e) => refusal(&rec, weapon, Some(&ruler.id), &e),
+    if has_standard_riven(&v) {
+        for (r, ruler) in rulers.iter().enumerate() {
+            match admitted(&rec, &ruler.id, &v) {
+                Ok(()) => admit |= 1 << r,
+                Err(e) => refusal(&rec, weapon, Some(&ruler.id), &e),
+            }
         }
     }
     let modes: Vec<&'static str> = v.board_modes()
@@ -589,10 +591,10 @@ impl Board {
                 let Ok(rows) = serde_json::from_str::<Vec<Box<RawValue>>>(&text) else { continue };
                 let keep: Vec<Box<RawValue>> = rows
                     .into_iter()
-                    .filter(|r| match published(r).map(|p| family(p.benchmark)) {
-                        None => true,
-                        Some(f) => live.contains(f) && !here.contains(f),
-                    })
+                    .filter(|r| published(r).is_none_or(|p| {
+                        let f = family(p.benchmark);
+                        live.contains(f) && !here.contains(f) && p.has_standard_riven(weapon)
+                    }))
                     .collect();
                 self.legacy.insert((dir.clone(), weapon.to_string()), keep);
             }
@@ -1058,6 +1060,32 @@ mod tests {
             furis([0.9, 1.1, 0.9]),
             braton("magnetic_capacity"),
         ]
+    }
+
+    #[test]
+    fn a_measured_actual_roll_cannot_displace_a_standard_riven() {
+        let normal = furis([1.1, 1.1, 0.9]);
+        let actual = furis([1.01, 1.02, 0.96]);
+        let alternate = |roll| {
+            let mut riven = furis([1.1, 1.1, roll]);
+            riven["riven_neg"] = json!("status_duration");
+            riven
+        };
+        let recs = vec![normal.clone(), actual.clone(), alternate(0.95), alternate(0.96)];
+        let dir = scratch("standard-rivens");
+        // Each successive build has a higher measured score.
+        let board = whole(&dir, recs.clone(), &facts(&recs, 0.0));
+        let rows: Vec<Value> =
+            serde_json::from_str(&std::fs::read_to_string(dir.join("furis.json")).unwrap()).unwrap();
+        assert!(rows.iter().any(|row| row["riven"]["rolls"] == normal["riven_rolls"]));
+        assert!(rows.iter().any(|row| row["riven"]["rolls"] == alternate(0.95)["riven_rolls"]));
+        assert!(rows.iter().all(|row| row["riven"]["rolls"] != actual["riven_rolls"]
+            && row["riven"]["rolls"] != alternate(0.96)["riven_rolls"]));
+        let ids: Vec<_> = recs.iter().map(|rec| {
+            wfsim_engine::board::builds::build_id(&wfsim_webapi::board_rows::board_build(rec).unwrap())
+        }).collect();
+        assert!(ids.iter().all(|id| board.lib.by_identity.contains_key(id)));
+        std::fs::remove_dir_all(dir).unwrap();
     }
 
     /// A fact line for every (ruler, mode) each record can be played in, its

@@ -171,12 +171,12 @@ try{
  const inputNode=normalized.flow.nodes[0],patch=normalized.flow.patches[inputNode.patch];
  const calculation={...normalized.flow.templates[inputNode.template],...patch.set};
  for(const key of patch.remove)delete calculation[key];
- async function answer(d,score){
+ async function answer(d,score,identity=normalized.id){
   const verifier=d.repeat(24),headers={'cf-connecting-ip':'192.0.2.'+d};
   const got=d==='1'?null:await post('/api/board/work',{verifier,engine,protocol:7,capabilities:['fixed-board-input-v1'],consent:{v:3,at},lanes:8},headers);
   if(got)assert.equal(got.status,200);const dispatched=got?await got.json():held;
   assert(dispatched.pack?.tasks?.length,'a fresh request must reach actual public work dispatch under the active cut: '+JSON.stringify(dispatched));
-  const work=dispatched.pack.tasks.find(task=>task.identity===normalized.id&&task.ruler===ruler);assert(work);
+  const work=dispatched.pack.tasks.find(task=>task.identity===identity&&task.ruler===ruler);assert(work);
   if(got)assert.equal(dispatched.pack.tasks[0].question,work.question,'the new requested task advances ahead of retained zone03 work');
   assert(dispatched.pack.tasks.every(task=>task.question!==cancelled));
   const replied=await post('/api/board/answers',{verifier,engine,lease:dispatched.pack.lease,done:true,
@@ -188,6 +188,8 @@ try{
  await answer('2',10);
  const selected=await db.get('SELECT * FROM state_board_measurement_selection WHERE identity=?',normalized.id);
  assert.equal(selected.score,10);assert.equal(selected.measured_by,'verified:'+engine);
+ assert.equal(Number(selected.publication_zone),0,'the workflow must carry the accepted calculation zone to publication');
+ assert.notEqual(selected.publication_zone,null);
  assert.equal((await db.get('SELECT state FROM state_build_workflows WHERE id=?',(await requestRow(id)).workflow)).state,'succeeded');
  const legacy='0fd706f8-7da9-4bca-8f93-3dbf7eaee322';
  const legacyInput={id:'review:'+legacy,at:old,record:JSON.stringify({...normalized.record,benchmark:ruler,mode}),initiator:'anonymous',
@@ -265,6 +267,35 @@ try{
  assert.equal((await db.get('SELECT state FROM entity_measurement_reviews WHERE id=?',invalid.id)).state,'failed');
  assert.equal((await requestRow('review:'+invalid.id)).phase,'rejected');
  assert.equal((await db.get('SELECT score FROM state_board_measurement_selection WHERE identity=?',normalized.id)).score,13);
+ const actualRiven={weapon:'coda_catabolyst',benchmark:ruler,mode,requested:true,
+  mods:['frostbite','riven','galvanized_diffusion','galvanized_shot','lethal_torrent','pistol_elementalist','pressurized_magazine','critical_mutation'],
+  arcanes:['secondary_enervate'],exilus:'ruinous_extension',valence:'heat',
+  riven_pos:['critical_damage','electricity','viral'],riven_neg:'zoom',riven_rolls:[1.02,0.99,1.08,1.03]};
+ const rivenResponse=await post('/api/board/submit',actualRiven);
+ assert.equal(rivenResponse.status,200,await rivenResponse.clone().text());
+ const rivenRequest=(await rivenResponse.json()).request;
+ const standardized=await normalizeBoardRequest(binary,await requestRow(rivenRequest));
+ const actual=standardized.flow.builds.find(row=>row.id!==standardized.id);
+ assert.deepEqual(actual.record.riven_rolls,actualRiven.riven_rolls);
+ assert.deepEqual(standardized.record.riven_rolls,[1.1,1.1,1.1,0.9]);
+ assert.deepEqual(standardized.flow.nodes.map(node=>node.identity),[standardized.id]);
+ assert((await pass()).staged);assert(!(await pass()).pending);
+ const rivenStatus=await (await post('/api/board/requests/status',{ids:[rivenRequest]})).json();
+ assert.equal(rivenStatus.requests[0].identity,standardized.id);
+ assert.deepEqual(JSON.parse((await db.get('SELECT record FROM entity_weapon_builds WHERE id=?',actual.id)).record),actual.record);
+ await answer('7',88,standardized.id);
+ assert(!(await db.get('SELECT 1 FROM state_board_measurement_selection WHERE identity=?',standardized.id)));
+ await answer('8',88,standardized.id);
+ assert.equal((await db.get('SELECT score FROM state_board_measurement_selection WHERE identity=?',standardized.id)).score,88);
+ assert(!(await db.get('SELECT 1 FROM state_board_measurement_selection WHERE identity=?',actual.id)));
+ await db.run(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,score,metric,measured_by,cost_seconds,started_at,finished_at)
+   VALUES(?,?,?,99,'kpm',?,0,?,?)`,actual.id,ruler,mode,'verified:'+engine,old,old);
+ for(let i=0;i<100;i++){const step=await flow.step();if(step.status==='idle')break;assert(i<99);}
+ const rivenPage=await worker.fetch(new Request('https://wfsim.app/api/board/pages?'+new URLSearchParams({weapon:actualRiven.weapon,ruler})),env,{waitUntil(){}});
+ assert.equal(rivenPage.status,200);
+ const rivenRows=(await rivenPage.json()).rows;
+ assert(rivenRows.some(row=>row.score===88),'the public board gets the independently verified standard measurement');
+ assert(!rivenRows.some(row=>row.score===99),'the same projection excludes an accepted legacy actual-roll measurement');
  const otherRuler='demolisher';
  await db.run('INSERT INTO entity_weapon_builds(id,at,record) VALUES(?,?,?)','legacy-alias',old,JSON.stringify(normalized.record));
  await db.run(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,score,metric,measured_by,cost_seconds,started_at,finished_at)
@@ -291,7 +322,7 @@ try{
  assert.deepEqual(await db.all("SELECT * FROM state_task_pipeline_controls WHERE name='admission'"),fences);
  assert.deepEqual(await db.all('SELECT * FROM entity_compute_order_cuts'),cut);
  assert.deepEqual(await db.all('SELECT * FROM relation_compute_order_cut_protection'),protectedRows,'fresh leases cannot change the retained protection manifest');
- console.log(JSON.stringify({ok:true,source_kinds:2,canonical_identity:normalized.id,community_witnesses:6,
+ console.log(JSON.stringify({ok:true,source_kinds:2,canonical_identity:normalized.id,community_witnesses:8,standard_riven:standardized.id,
   published_score:13,old_inbox_retained:true,bulk_admission_paused:true,active_cut_preserved:true,public_work_and_answers:true,
   automatic_partition:true,legacy_unadmitted_replaced:true,cancelled_execution_preserved:true,unqualified_static_retained:true,namespace_isolation:true,
   retained_prefix_priority_preserved:true,shared_held_lease_preserved:true,explicit_missing_zone:0}));

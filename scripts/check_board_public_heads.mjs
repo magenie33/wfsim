@@ -46,7 +46,7 @@ export async function checkPublicHeads({sql,web,options,run}) {
   await sql.unsafe("INSERT INTO state_board_read_partitions VALUES('cold','target','scene',false,false,NULL)");
   await run(boardPublicHeadSchema(options));
   assert.deepEqual((await page('corrected')).rows,[wire(23)],'upgrade adopts the existing verified correction');
-  for(const table of ['state_board_public_heads','state_board_public_import'])
+  for(const table of ['state_board_public_heads','state_board_public_import','state_board_public_withdrawn_revisions'])
    await assert.rejects(web.unsafe('SELECT * FROM '+table),error=>error.code==='42501');
   await sql.unsafe(`CREATE FUNCTION fail_public_page() RETURNS trigger LANGUAGE plpgsql AS $$
    BEGIN IF NEW.weapon='retry' AND NEW.ordinal=129 THEN RAISE EXCEPTION 'interrupted page'; END IF; RETURN NEW; END $$;
@@ -73,6 +73,13 @@ export async function checkPublicHeads({sql,web,options,run}) {
   assert.deepEqual(current.leaders,[wire(17)]);
   assert.deepEqual((await page('cold')).rows,[wire(17)]);
   assert.deepEqual((await page('cold',initial.revision,128)).rows,records.slice(128));
+  await assert.rejects(web.unsafe('INSERT INTO state_board_public_withdrawn_revisions VALUES($1,$2,$3)',['cold',ruler,initial.revision]),error=>error.code==='42501');
+  await sql.unsafe('INSERT INTO state_board_public_withdrawn_revisions VALUES($1,$2,$3)',['cold',ruler,initial.revision]);
+  assert.equal((await page('cold',initial.revision,128)).error,'revision_unavailable');
+  assert.deepEqual((await page('cold')).rows,[wire(17)]);
+  assert.deepEqual((await page('retry')).rows,records.slice(0,128),'unaffected snapshot history stays readable');
+  const [{body}]=await sql.unsafe('SELECT body FROM state_board_read_rows WHERE (weapon,ruler,revision,ordinal)=($1,$2,$3,129)',['cold',ruler,initial.revision]);
+  assert.deepEqual(JSON.parse(body),records[128]);
   assert.equal((await importAll()).inserted,0,'replay preserves the verified lower score');
   await sql.unsafe("UPDATE state_board_read_partitions SET enabled=false WHERE weapon='cold'");
   await sql.unsafe("DELETE FROM state_board_read_partitions WHERE weapon='corrected'");

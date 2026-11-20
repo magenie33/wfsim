@@ -241,7 +241,7 @@ export class BoardProjectionAudit {
    if(baseline?.path) {
     if(await fileHash(baseline.path)!==baseline.sha)fail('legacy audit baseline changed');
     let batch=[];
-    const carry=async()=>{const choices=await operate('carry',batch.map(row=>({dir,raw:row.raw})));
+    const carry=async()=>{const choices=await operate('carry',batch.map(row=>({dir,weapon,raw:row.raw})));
      for(let n=0;n<batch.length;n++)if(choices[n].keep){append(batch[n].raw);this.leader(dir,weapon,batch[n].raw,choices[n].index);}batch=[];};
     for await(const row of jsonArrayRows(baseline.path,{withOffsets:true})){batch.push(row);if(batch.length===256)await carry();}
     if(batch.length)await carry();

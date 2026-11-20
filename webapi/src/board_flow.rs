@@ -1,7 +1,8 @@
 //! Capture one bounded build expansion without executing any fight.
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use serde_json::{json, Map, Value};
 use wfsim_engine::board::{benchmarks, builds, groups};
+use wfsim_engine::build::rivens::standard_rolls;
 
 fn decoded(value: Option<&Value>) -> Option<Value> {
     match value? {
@@ -28,20 +29,58 @@ fn same_input(left: &Value, right: &Value) -> bool {
 struct Expansion {
     builds: Vec<Value>, nodes: Vec<Value>, templates: Vec<Value>, patches: Vec<Value>,
     bases: BTreeMap<(String,String),usize>,
+    measured: BTreeSet<String>,
 }
 impl Expansion {
-    fn add(&mut self, build: &builds::ValidBuild, scope: &Value) {
+    fn store(&mut self, build: &builds::ValidBuild) -> String {
         let identity=builds::build_id(build);
-        if self.builds.iter().any(|b| b["id"]==identity) { return; }
+        if !self.builds.iter().any(|b| b["id"]==identity) {
+            self.builds.push(json!({"id":identity,"record":record(build)}));
+        }
+        identity
+    }
+
+    fn add(&mut self, build: &builds::ValidBuild, scope: &Value, observed: Option<(&str, &str)>) -> String {
+        let identity = self.store(build);
+        let mut public_identity = identity.clone();
+        if let Some(shape) = &build.riven {
+            for (index, rolls) in standard_rolls(shape, &build.weapon).into_iter().enumerate() {
+                let exact = rolls == build.riven_rolls;
+                let candidate = build.clone().with_riven_rolls(rolls);
+                if exact {
+                    public_identity = identity.clone();
+                } else if index == 0 {
+                    public_identity = builds::build_id(&candidate);
+                }
+                if index == 0 || exact {
+                    self.measure(&candidate, scope, None);
+                } else {
+                    self.store(&candidate);
+                }
+            }
+            // A correction verifies the input described by the observation.
+            if observed.is_some() && !crate::board_rows::has_standard_riven(build) {
+                self.measure(build, scope, observed);
+            }
+        } else {
+            self.measure(build, scope, None);
+        }
+        public_identity
+    }
+
+    fn measure(&mut self, build: &builds::ValidBuild, scope: &Value, only: Option<(&str, &str)>) {
+        let identity = self.store(build);
+        if !self.measured.insert(identity.clone()) { return; }
         let record=record(build);
-        self.builds.push(json!({"id":identity,"record":record}));
         let Some(boards)=scope["boards"].as_array() else { return };
         for board in boards {
             let Some(ruler)=board["id"].as_str() else { continue };
+            if only.is_some_and(|(target, _)| target != ruler) { continue; }
             if benchmarks::all().iter().any(|b| b.id==ruler)
                 && crate::board_rows::admitted(&record,ruler,build).is_err() { continue; }
             for (played, request) in crate::board_rows::row_requests(build,&board["scenario"]) {
                 let mode=if played.id.is_empty() {"base"}else{played.id};
+                if only.is_some_and(|(_, played)| played != mode) { continue; }
                 if !scope["modes"][&build.weapon].as_array().is_some_and(|m| m.iter().any(|v| v==mode)) { continue; }
                 let Ok((request,_))=crate::computation::normalize("simulation",&request) else { continue };
                 let key=(identity.clone(),mode.to_owned());
@@ -61,7 +100,8 @@ impl Expansion {
 }
 
 /// Scope is captured at acceptance; derived builds reuse their parent's scope.
-pub fn plan(input: &Value, ruler: &str, mode: &str, family: bool, captured: Option<&Value>) -> Value {
+pub fn plan(input: &Value, ruler: &str, mode: &str, family: bool, captured: Option<&Value>,
+    observed: Option<(&str, &str)>) -> Value {
     let Ok(build)=crate::board_rows::library_build(input) else { return Value::Null };
     let mut jobs=if family {crate::board_family::transfers(input,ruler,mode)} else {Vec::new()};
     jobs.sort_by(|a,b| a["weapon"].as_str().cmp(&b["weapon"].as_str()));
@@ -74,8 +114,9 @@ pub fn plan(input: &Value, ruler: &str, mode: &str, family: bool, captured: Opti
         }
         json!({"boards":boards,"modes":modes})
     });
-    let mut out=Expansion{builds:Vec::new(),nodes:Vec::new(),templates:Vec::new(),patches:Vec::new(),bases:BTreeMap::new()};
-    out.add(&build,&scope);
+    let mut out=Expansion{builds:Vec::new(),nodes:Vec::new(),templates:Vec::new(),patches:Vec::new(),
+        bases:BTreeMap::new(),measured:BTreeSet::new()};
+    let public_identity=out.add(&build,&scope,observed);
     for job in jobs {
         let mut copy=input.clone();copy["weapon"]=job["weapon"].clone();
         for axis in ["grip","loader","link"] {
@@ -87,10 +128,10 @@ pub fn plan(input: &Value, ruler: &str, mode: &str, family: bool, captured: Opti
             let mut target_mods=target.mods.clone();target_mods.sort();
             source_mods==target_mods && build.evolutions==target.evolutions && build.arcanes==target.arcanes
         });
-        if let Some(target)=valid { out.add(&target,&scope); }
+        if let Some(target)=valid { out.add(&target,&scope,None); }
         else { out.nodes.push(json!({"kind":"optimize","request":job["request"],"context":job["context"],"weapon":job["weapon"]})); }
     }
-    json!({"schema":1,"scope":scope,"builds":out.builds,"nodes":out.nodes,"templates":out.templates,"patches":out.patches})
+    json!({"schema":1,"scope":scope,"builds":out.builds,"nodes":out.nodes,"templates":out.templates,"patches":out.patches,"public_identity":public_identity})
 }
 
 /// A local observation must describe the exact official fight before correction.
@@ -155,7 +196,7 @@ mod tests {
     fn example() -> Value { json!({"weapon":"burston_prime","mods":["serration","split_chamber","point_strike","vital_sense","hellfire","infected_clip","stormbringer","gilded_truth"],"arcanes":["primary_merciless"]}) }
     #[test]
     fn captures_measurements_and_one_incompatible_sibling_search() {
-        let record=example();let p=plan(&record,"standard_single_target","cycle",true,None);
+        let record=example();let p=plan(&record,"standard_single_target","cycle",true,None,None);
         assert_eq!(p["schema"],1);
         let nodes=p["nodes"].as_array().unwrap();
         assert_eq!(nodes.iter().filter(|n| n["kind"]=="optimize").count(),1);
@@ -180,9 +221,86 @@ mod tests {
         assert_eq!(builds::build_id(&first),builds::build_id(&second));
         assert_eq!(first.riven_rolls,vec![1.03,0.97]);
     }
+
+    #[test]
+    fn an_actual_roll_generates_a_separately_measured_standard_build() {
+        let ruler = "standard_single_target";
+        let bench = benchmarks::get(ruler).unwrap();
+        let scope = json!({
+            "boards": [{"id": ruler, "scenario": bench.scenario}],
+            "modes": {"coda_catabolyst": ["base"]},
+        });
+        let record = json!({
+            "weapon": "coda_catabolyst",
+            "mods": ["frostbite", "riven", "galvanized_diffusion", "galvanized_shot",
+                     "lethal_torrent", "pistol_elementalist", "pressurized_magazine", "critical_mutation"],
+            "arcanes": ["secondary_enervate"],
+            "exilus": "ruinous_extension",
+            "valence": "heat",
+            "riven_pos": ["critical_damage", "electricity", "viral"],
+            "riven_neg": "zoom",
+            "riven_rolls": [1.016296316622223, 0.9866666864000007, 1.0834568117925931, 1.0292689924735159],
+        });
+        let mut standard = record.clone();
+        standard["riven_rolls"] = json!([1.1, 1.1, 1.1, 0.9]);
+        let identify = |rec| builds::build_id(&crate::board_rows::library_build(rec).unwrap());
+        let raw_id = identify(&record);
+        let standard_id = identify(&standard);
+        assert_ne!(raw_id, standard_id);
+        let p = plan(&record, ruler, "base", false, Some(&scope), None);
+        let stored = p["builds"].as_array().unwrap();
+        assert_eq!(stored.len(), 2);
+        assert_eq!(stored[0]["id"], raw_id);
+        assert_eq!(stored[0]["record"]["riven_rolls"], record["riven_rolls"]);
+        assert_eq!(stored[1]["id"], standard_id);
+        assert_eq!(stored[1]["record"]["riven_rolls"], standard["riven_rolls"]);
+        let nodes = p["nodes"].as_array().unwrap();
+        assert_eq!(nodes.len(), 1);
+        assert_eq!(nodes[0]["identity"], standard_id);
+        let request = &p["templates"][nodes[0]["template"].as_u64().unwrap() as usize];
+        let report = json!({"ruler": ruler, "mode": "base", "request": request});
+        assert_eq!(observation(&standard, Some(&report))["valid"], true);
+        assert_eq!(observation(&record, Some(&report))["valid"], false);
+
+        let correction = plan(&record, ruler, "base", false, Some(&scope), Some((ruler, "base")));
+        let nodes = correction["nodes"].as_array().unwrap();
+        assert_eq!(nodes.len(), 2);
+        assert_eq!(nodes[0]["identity"], standard_id);
+        assert_eq!(nodes[1]["identity"], raw_id);
+        assert_eq!(nodes[1]["ruler"], ruler);
+        assert_eq!(nodes[1]["mode"], "base");
+    }
+
+    #[test]
+    fn generates_ambiguous_corners_without_measuring_them_all_on_intake() {
+        let record = json!({
+            "weapon": "braton_prime",
+            "arcanes": ["primary_deadhead"],
+            "evolutions": ["braton_prime_evo1_incarnon_form", "braton_prime_daring_reverie",
+                            "braton_prime_voids_guidance", "braton_prime_critical_parallel"],
+            "mods": ["primed_cryo_rounds", "malignant_force", "primary_acuity", "galvanized_aptitude",
+                     "galvanized_scope", "vile_acceleration", "vital_sense", "riven"],
+            "riven_pos": ["impact", "puncture", "slash"],
+            "riven_neg": "status_duration",
+            "riven_rolls": [1.03, 1.02, 1.01, 0.96],
+        });
+        let p = plan(&record, "standard_single_target", "cycle", true, None, None);
+        let stored = p["builds"].as_array().unwrap();
+        assert_eq!(stored.iter().filter(|b| b["record"]["weapon"] == "braton_prime").count(), 41);
+        let default = stored.iter().find(|b| b["record"]["riven_rolls"] == json!([1.1, 1.1, 1.1, 0.9])).unwrap();
+        let measured: Vec<_> = p["nodes"].as_array().unwrap().iter().filter(|n| n["kind"] == "measure").collect();
+        assert!(!measured.is_empty());
+        assert!(measured.iter().all(|n| n["identity"] == default["id"]));
+
+        let mut submitted_standard = record.clone();
+        submitted_standard["riven_rolls"] = json!([1.1, 1.1, 1.1, 0.95]);
+        let p = plan(&submitted_standard, "standard_single_target", "cycle", false, None, None);
+        let identity = &p["builds"][0]["id"];
+        assert!(p["nodes"].as_array().unwrap().iter().any(|n| &n["identity"] == identity));
+    }
     #[test]
     fn correction_requires_the_exact_official_environment() {
-        let record=example();let p=plan(&record,"standard_single_target","cycle",false,None);
+        let record=example();let p=plan(&record,"standard_single_target","cycle",false,None,None);
         let node=p["nodes"].as_array().unwrap().iter().find(|n|n["ruler"]=="standard_single_target").unwrap();
         let mut request=p["templates"][node["template"].as_u64().unwrap() as usize].clone();
         let patch=&p["patches"][node["patch"].as_u64().unwrap() as usize];
@@ -235,7 +353,7 @@ mod tests {
         let record=json!({"weapon":"larkspur","mods":["rubedo_lined_barrel","dual_rounds","parallax_scope",
             "hollowed_bullets","combustion_rounds","electrified_barrel","venomous_clip","magma_chamber"],
             "arcanes":["primary_merciless","secondary_merciless"]});
-        let p=plan(&record,"standard_single_target","base",false,None);
+        let p=plan(&record,"standard_single_target","base",false,None,None);
         let node=p["nodes"].as_array().unwrap().iter().find(|n|n["ruler"]=="standard_single_target").unwrap();
         let mut request=p["templates"][node["template"].as_u64().unwrap() as usize].clone();
         let patch=&p["patches"][node["patch"].as_u64().unwrap() as usize];

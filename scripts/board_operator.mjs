@@ -19,3 +19,21 @@ export async function openBoardOperator(binary,options={}) {
  };
  return operator;
 }
+
+export async function openRankInventoryOperator(binary,{policyBinary,policySha}={}) {
+ const native=await openBoardOperator(binary);
+ let policy;
+ try {
+  if(!policyBinary&&!policySha&&native.contract.operators.includes('standard_riven'))return native;
+  if(!policyBinary||!/^[a-f0-9]{64}$/.test(policySha||''))throw Error('pin the ranking riven policy binary');
+  policy=await openBoardOperator(policyBinary);
+  if(policy.adapter!==policySha||!policy.contract.operators.includes('standard_riven'))
+   throw Error('ranking riven policy native contract changed');
+  return {...native,policyAdapter:policy.adapter,
+   get healthy(){return native.healthy&&policy.healthy;},
+   call:(op,items)=>(op==='standard_riven'?policy:native).call(op,items),
+   close:async()=>{await Promise.all([native.close(),policy.close()]);}};
+ }catch(error){
+  await Promise.all([native.close(),policy?.close()]);throw error;
+ }
+}

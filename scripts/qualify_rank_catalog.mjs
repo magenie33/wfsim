@@ -7,7 +7,7 @@ import {dirname,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {DatabaseSync} from 'node:sqlite';
 import {guardCatalogFile,limitRankScratch} from './board_rank_storage.mjs';
-import {openInventoryOperator} from './inventory_operator.mjs';
+import {openRankInventoryOperator} from './board_operator.mjs';
 import {prepareRankSources} from './board_rank_index.mjs';
 
 const unpack=bytes=>JSON.parse(inflateSync(bytes));
@@ -26,7 +26,7 @@ export async function qualify(capture,archive,q,cache,native,weapon,ruler,second
  const historic=archive.prepare('SELECT * FROM contract JOIN sealed USING(id,archive)').get();
  if(!cut||!historic||spec.archive!==historic.archive||spec.native!==native.adapter||historic.native!==native.adapter)
   throw Error('incomplete or mismatched capture, archive or native');
- const contract=JSON.stringify({source:spec.source,archive:spec.archive,native:spec.native,cut,weapon,ruler});
+ const contract=JSON.stringify({source:spec.source,archive:spec.archive,native:spec.native,policy:native.policyAdapter,cut,weapon,ruler});
  q.exec(`CREATE TABLE IF NOT EXISTS progress(k TEXT PRIMARY KEY,v TEXT);
  CREATE TABLE IF NOT EXISTS rows(id TEXT,mode TEXT,ord INTEGER,shape TEXT,floor TEXT,def INTEGER,score REAL,page TEXT,verified INTEGER,
   PRIMARY KEY(id,mode)) WITHOUT ROWID;
@@ -178,7 +178,7 @@ export async function qualify(capture,archive,q,cache,native,weapon,ruler,second
  if(!get('receipt')){
   const hash=createHash('sha256');
   for(const {first,last,sha} of q.prepare('SELECT * FROM pages ORDER BY first').iterate())hash.update(first+' '+last+' '+sha+'\n');
-  set('receipt',{weapon,ruler,source:spec.source,snapshot:cut.snapshot,native:spec.native,archive:spec.archive,
+  set('receipt',{weapon,ruler,source:spec.source,snapshot:cut.snapshot,native:spec.native,archive:spec.archive,policy:native.policyAdapter,
    members:n,unresolved,rows:get('last')||0,pages_sha256:hash.digest('hex'),eligible:unresolved===0});
  }
  return {complete:true,...get('receipt')};
@@ -187,7 +187,8 @@ export async function qualify(capture,archive,q,cache,native,weapon,ruler,second
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  const [capturePath,archivePath,result,binary,weapon,ruler]=process.argv.slice(2);
  const c=new DatabaseSync(capturePath,{readOnly:true}),a=new DatabaseSync(archivePath,{readOnly:true}),q=new DatabaseSync(guardCatalogFile(result));
- const native=await openInventoryOperator(binary),cache=new DatabaseSync(guardCatalogFile(join(dirname(capturePath),'descriptors.sqlite')));
+ const native=await openRankInventoryOperator(binary,{policyBinary:process.env.WFSIM_BOARD_RIVEN_POLICY_BIN,policySha:process.env.WFSIM_BOARD_RIVEN_POLICY_SHA256});
+ const cache=new DatabaseSync(guardCatalogFile(join(dirname(capturePath),'descriptors.sqlite')));
  try{limitRankScratch(q);c.exec('BEGIN');a.exec('BEGIN');console.log(JSON.stringify(await qualify(c,a,q,cache,native,weapon,ruler,30)));}
  finally{c.close();a.close();q.close();cache.close();await native.close();}
 }

@@ -40,6 +40,14 @@ CREATE TABLE IF NOT EXISTS state_board_read_rows (
   PRIMARY KEY(weapon,ruler,revision,ordinal),
   FOREIGN KEY(weapon,ruler,revision) REFERENCES record_board_read_snapshots ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS state_board_public_withdrawn_revisions (
+  weapon TEXT COLLATE "C" NOT NULL,
+  ruler TEXT COLLATE "C" NOT NULL,
+  revision TEXT COLLATE "C" NOT NULL,
+  PRIMARY KEY(weapon,ruler,revision),
+  FOREIGN KEY(weapon,ruler,revision) REFERENCES record_board_read_snapshots ON DELETE CASCADE
+);
 REVOKE ALL ON state_board_read_partitions,state_board_read_routes,record_board_read_snapshots,state_board_read_rows FROM PUBLIC;
 SELECT set_config('search_path',quote_ident(current_schema())||',pg_catalog,pg_temp',false);
 
@@ -97,6 +105,8 @@ BEGIN
     FROM state_board_public_heads p JOIN record_board_read_snapshots s USING(weapon,ruler,revision)
     WHERE p.revision IS NOT NULL AND p.scene=$2 AND ($1 IS NULL OR p.weapon=$1)
       AND (p.weapon||'/'||p.ruler)>coalesce($3,'')
+      AND NOT EXISTS(SELECT 1 FROM state_board_public_withdrawn_revisions w
+        WHERE (w.weapon,w.ruler,w.revision)=(p.weapon,p.ruler,p.revision))
     ORDER BY p.weapon,p.ruler LIMIT $4+1
   )x;
   RETURN jsonb_build_object('ok',true,'partitions',items);
@@ -110,7 +120,9 @@ BEGIN
   SELECT revision INTO requested FROM state_board_public_heads WHERE weapon=$1 AND ruler=$2;
   IF requested IS NULL THEN RETURN jsonb_build_object('ok',false,'error','not_ready'); END IF;
   requested:=coalesce($3,requested);
-  SELECT * INTO held FROM record_board_read_snapshots WHERE weapon=$1 AND ruler=$2 AND revision=requested;
+  SELECT s.* INTO held FROM record_board_read_snapshots s WHERE (s.weapon,s.ruler,s.revision)=($1,$2,requested)
+    AND NOT EXISTS(SELECT 1 FROM state_board_public_withdrawn_revisions w
+      WHERE (w.weapon,w.ruler,w.revision)=(s.weapon,s.ruler,s.revision));
   IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'error','revision_unavailable'); END IF;
   SELECT coalesce(jsonb_agg(body::jsonb ORDER BY ordinal),'[]'),coalesce(max(ordinal),$4) INTO pages,last_ordinal
   FROM (SELECT ordinal,body FROM state_board_read_rows WHERE weapon=$1 AND ruler=$2 AND revision=requested

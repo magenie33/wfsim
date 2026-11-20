@@ -28,6 +28,8 @@ export async function replayCatalogCut(tx,part,generation,checked){
  const keys=[part.weapon,part.ruler];
  if(String(part.revision)!==String(generation.index_revision))
   throw new BoardRankQualificationError('frozen catalog index changed');
+ if(part.catalog_proof.policy&&part.catalog_proof.policy!==generation.riven_policy)
+  throw new BoardRankQualificationError('frozen catalog riven policy changed');
  if(checked!==part.catalog_proof.pages_sha256||Number(generation.output_rows)!==part.catalog_proof.rows)
   throw new BoardRankQualificationError('staged PostgreSQL pages differ from the qualified catalog');
  await tx.unsafe(`UPDATE state_board_rank_partitions SET catalog_phase='replay',complete=false,reconciled=false,reconcile_cursor='',

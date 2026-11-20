@@ -14,6 +14,17 @@ import {sha256} from './board_catalog_readback.mjs';
 const packed=value=>deflateSync(JSON.stringify(value),{level:1});
 export const freshDirectory=(state,w,r)=>join(state,'fresh-'+sha256(JSON.stringify([w,r])));
 
+export async function qualifyRetainedScope({state,capture,archive,native},weapon,ruler) {
+ const directory=freshDirectory(state,weapon,ruler);
+ mkdirSync(directory,{recursive:true,mode:0o700});
+ const paths=join(directory,`retained-${native.policyAdapter}.sqlite`);
+ const q=new DatabaseSync(paths);
+ try{
+  limitRankScratch(q);
+  return await qualify(capture,archive,q,q,native,weapon,ruler,1);
+ }finally{q.close();}
+}
+
 export async function freshPublication(ctx,weapon,ruler) {
  const {contract,sql,native,archive,state}=ctx,keys=[weapon,ruler];
  if(ctx.capture.prepare('SELECT 1 FROM facts WHERE weapon=? AND ruler=? LIMIT 1').get(...keys)||
@@ -29,7 +40,8 @@ export async function freshPublication(ctx,weapon,ruler) {
   writeFileSync(saved+'.partial',JSON.stringify(m),{flush:true});renameSync(saved+'.partial',saved);syncRankDirectory(directory);
  }
  assert(m.path===join(directory,'inputs.ndjson')&&m.source===contract.source&&m.native===native.adapter&&m.weapon===weapon&&m.ruler===ruler);
- const cap=new DatabaseSync(join(directory,'capture.sqlite')),q=new DatabaseSync(join(directory,'ranking.sqlite'));
+ const ranking=native.policyAdapter?`ranking-${native.policyAdapter}.sqlite`:'ranking.sqlite';
+ const cap=new DatabaseSync(join(directory,'capture.sqlite')),q=new DatabaseSync(join(directory,ranking));
  try{
   limitRankScratch(q);limitRankScratch(cap);
   cap.exec(`CREATE TABLE IF NOT EXISTS progress(k text PRIMARY KEY,v text);

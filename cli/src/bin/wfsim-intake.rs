@@ -80,8 +80,11 @@ fn intake(
             let derived=row.get("family_source").is_some_and(Value::is_string);
             entry["derived"]=json!(derived);
             entry["initiator"]=row["initiator"].clone();
-            entry["flow"]=wfsim_webapi::board_flow::plan(&record,&id(&rec,"benchmark"),&id(&rec,"mode"),!derived,row.get("workflow_scope"));
-            entry["observation"]=wfsim_webapi::board_flow::observation(&record,row.get("observation"));
+            let observation=wfsim_webapi::board_flow::observation(&record,row.get("observation"));
+            let observed=observation["ruler"].as_str().zip(observation["mode"].as_str())
+                .filter(|_| observation["valid"] == true);
+            entry["flow"]=wfsim_webapi::board_flow::plan(&record,&id(&rec,"benchmark"),&id(&rec,"mode"),!derived,row.get("workflow_scope"),observed);
+            entry["observation"]=observation;
             if let Some(source)=row["family_source"].as_str() {
                 let parts:Vec<_>=source.split('|').collect();
                 if parts.len()==3 && parts[0]=="workflow" {entry["flow_source"]=json!({"workflow":parts[1],"node":parts[2]});}
