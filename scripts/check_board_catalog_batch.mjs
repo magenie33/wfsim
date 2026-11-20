@@ -60,7 +60,7 @@ export async function checkBatch({sql,schema,native,binary,work,weapon,ruler,sou
   config.origins=await Promise.all([launch(0),launch(1)]);
   if(priority){
    const {checkPriority}=await import('./check_board_catalog_priority.mjs');
-   return await checkPriority({sql,schema,config,action,weapon,ruler,second,source,inputs,step:readerStep,restart,put});
+   return await checkPriority({sql,schema,config,action,weapon,ruler,second,source,native,inputs,step:readerStep,restart,put});
   }
   const proof=new DatabaseSync(config.pins[0].proof);
   const first=proof.prepare('SELECT * FROM live_audit WHERE ordinal=1').get();

@@ -17,7 +17,7 @@ const mergeQueue = `zone=CASE WHEN queued.version>queued.applied_version THEN le
  queued_at=CASE WHEN queued.version>queued.applied_version THEN least(coalesce(queued.queued_at,queued.available_at),excluded.queued_at)
  ELSE excluded.queued_at END`;
 
-export async function putRankDirtyBatch(tx,targets,recent=false) {
+export async function putRankDirtyBatch(tx,targets,recent=false,onlySettled=false) {
  if(!targets.length)return [];
  return tx.unsafe(`WITH inputs AS MATERIALIZED(SELECT x.*,nextval('board_rank_generation') v
   FROM jsonb_to_recordset($1::text::jsonb)x(weapon text,ruler text,identity text,zone smallint,queued_at text,zone_position bigint) ORDER BY weapon,ruler,identity)
@@ -27,6 +27,7 @@ export async function putRankDirtyBatch(tx,targets,recent=false) {
    recent_version=CASE WHEN $2 THEN greatest(queued.version+1,excluded.version) ELSE queued.recent_version END,
    ${mergeQueue},error=NULL,
    available_at=CASE WHEN queued.lease_until>${now} THEN queued.lease_until ELSE least(queued.available_at,${now}) END
+  ${onlySettled?'WHERE queued.version<=queued.applied_version':''}
   RETURNING weapon,ruler,identity,version`,[JSON.stringify(targets),recent]);
 }
 
