@@ -56,7 +56,7 @@ const woptWorkerCount = () => poolSize();
 // The cost is only a scheduling hint; the leader reads scores in request order.
 function quickScoreSlices(items, workers, width) {
   const count = Math.ceil(items.length / width);
-  if (workers < 2 || count <= workers || items.some(item => !Array.isArray(item?.shards))) return null;
+  if (workers < 2 || count <= workers || items.some(item => item?.runs != null || !Array.isArray(item?.shards))) return null;
   const weights = [];
   for (const item of items) {
     let weight = 0;

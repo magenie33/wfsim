@@ -46,7 +46,7 @@ async function checkScoreDispatch() {
   assert.equal(plan(items, 1, 2), null);
   assert.equal(plan(items, 4, 1), null);
   assert.equal(plan(Array(8).fill(items[0]), 2, 2), null);
-  for (const missing of [{runs: 2}, {shards: ["unreadable"]}, {shards: ["[2,[],{}]"]}, {shards: [{}]}]) {
+  for (const missing of [{runs: 2}, {runs: 2, shards: [compact(9)]}, {shards: ["unreadable"]}, {shards: ["[2,[],{}]"]}, {shards: [{}]}]) {
     assert.equal(plan([...items, missing], 2, 1), null);
   }
   sandbox.items = [1, 1, 4, 4, 2, 2, 9, 9].map((gas, build) => ({ build, shards: [compact(gas)] }));
