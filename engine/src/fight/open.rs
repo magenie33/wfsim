@@ -111,6 +111,7 @@ pub(super) struct Combatant<'a> {
     /// ITS SHOTS STILL IN THE AIR, in the order they were fired — see
     /// [`super::flight`]. Always empty for a weapon whose shot does not fly.
     pub(super) in_flight: Vec<Landing>,
+    pub(super) fire_state: crate::scene::FireState,
     /// WHAT IT ONLY READS — resolved once from its own build, constant for the
     /// whole engagement.
     pub(super) fixed: Fixed<'a>,
@@ -772,6 +773,7 @@ pub(super) fn open<'a>(
             influence_until,
             last_shot_t,
             in_flight: Vec::new(),
+            fire_state: crate::scene::FireState::default(),
             other: None,
             fixed: Fixed {
                 aim_off_axis,

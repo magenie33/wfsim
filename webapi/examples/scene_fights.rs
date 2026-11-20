@@ -3,6 +3,8 @@
 use serde_json::{json, Value};
 #[path = "../../tests/fixtures/geometry/scene.rs"]
 mod fixture;
+#[path = "../../tests/fixtures/geometry/equipped.rs"]
+mod equipped;
 
 fn call(path: &str, request: &Value) -> Value {
     let result: Value =
@@ -12,13 +14,22 @@ fn call(path: &str, request: &Value) -> Value {
 }
 
 fn main() {
-    let out = std::env::args().nth(1).expect("scene_fights output.json");
+    let mut args = std::env::args().skip(1);
+    let out = args.next().expect("scene_fights output.json [--equipped]");
+    let equipped = match args.next().as_deref() {
+        Some("--equipped") => true,
+        None => false,
+        _ => panic!("scene_fights output.json [--equipped]"),
+    };
     let mut results = Vec::new();
-    for aligned in [false, true] {
+    for aligned in [false, true].into_iter().filter(|&aligned| !equipped || !aligned) {
         for enemy in 0..2 {
             for contact in [true, false] {
                 for weapon in ["laetum", "akarius_prime"] {
-                    let mut scene = fixture::scene(enemy, 5, contact, false, false);
+                    let mut scene = fixture::scene(enemy, 5, contact, false, equipped);
+                    if equipped {
+                        equipped::equip(&mut scene, weapon);
+                    }
                     if aligned {
                         let prepared = wfsim_engine::scene::Scene::new(
                             serde_json::from_value(scene.clone()).unwrap(),
@@ -37,6 +48,7 @@ fn main() {
                             0.,
                             100.,
                             &[true; 25],
+                            None,
                         );
                         let muzzle = prepared.camera().along(flight.direction, 3.);
                         for (j, i) in [3, 7, 11].iter().enumerate() {

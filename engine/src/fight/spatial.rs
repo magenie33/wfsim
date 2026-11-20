@@ -67,6 +67,7 @@ pub(super) fn launch(
         .sum();
     let all: f64 = parts.iter().map(|p| p.aim_weight).sum();
     let groups = l.rounds.groups(l.n_pellets);
+    let origins = scene.fire_origins(&mut me.fire_state, &groups);
     let eligible: Vec<_> = bodies
         .iter()
         .map(|b| b.state.phase == Phase::Physical)
@@ -100,6 +101,7 @@ pub(super) fn launch(
             active.projectile_width_m,
             active.range_m,
             &eligible,
+            origins.as_ref().and_then(|o| o[round]),
         );
         if let (Some(hit), Some(radial)) = (path.impacts.first().copied(), active.radial) {
             if let Some(center) = path.blast_center {

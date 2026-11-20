@@ -50,6 +50,9 @@ pub struct PlayerModel {
     pub controller: Controller,
     pub bones: Vec<Affine>,
     pub muzzle: Mount,
+    /// Installed weapon attachment poses and the supplied round order.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub equipped_fire: Option<EquippedFire>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -57,6 +60,42 @@ pub struct PlayerModel {
 pub struct Mount {
     pub bone: usize,
     pub local: Affine,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EquippedFire {
+    pub attachments: Vec<WeaponAttachment>,
+    pub round_order: Vec<FireRound>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WeaponAttachment {
+    /// Mount relative to the current avatar bone.
+    pub mount: Mount,
+    /// Current weapon-local attachment bone cache.
+    pub bones: Vec<Affine>,
+    /// One ordered firing-position list per weapon mode.
+    pub profiles: Vec<Vec<FirePosition>>,
+    #[serde(default)]
+    pub initial_cursor: usize,
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FirePosition {
+    pub bone: Option<usize>,
+    pub local: Affine,
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FireRound {
+    pub attachment: usize,
+    pub mode: usize,
+    pub refresh_per_iteration: bool,
+    pub advance_after_round: bool,
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]

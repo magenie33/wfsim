@@ -3,7 +3,10 @@
 use crate::model::{GuidedUpdate, Homing, Placement, Scene3d};
 use crate::rules::geometry::{eye::eye_aim, glaive, guided::Guided, rotation, Affine, Proxy, Shape, Vec3};
 
+mod attachment;
 mod projectiles;
+pub(crate) use attachment::FireState;
+pub use attachment::FireOrigin;
 
 #[derive(Debug, Clone)]
 pub struct Scene {
@@ -11,6 +14,7 @@ pub struct Scene {
     muzzle: Vec3,
     camera: Affine,
     bodies: Vec<Body>,
+    equipped_fire: Option<attachment::PreparedFire>,
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +61,7 @@ pub struct Impact {
 pub struct Flight {
     pub muzzle: Vec3,
     pub camera: Vec3,
+    pub basis_origin: Vec3,
     pub head_anchor: Vec3,
     pub aim_target: Vec3,
     pub direction: Vec3,
@@ -66,6 +71,8 @@ pub struct Flight {
     pub blast_center: Option<Vec3>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub radial_impacts: Vec<Impact>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fire_origin: Option<FireOrigin>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -244,6 +251,9 @@ impl Scene {
         };
         let muzzle = mount(&input.player.muzzle)?.point(Vec3([0.; 3]));
         let camera = mount(&input.camera)?;
+        let equipped_fire = input.player.equipped_fire.as_ref()
+            .map(|equipment| attachment::PreparedFire::new(equipment, mount))
+            .transpose()?;
         let mut bodies = Vec::new();
         for body in &input.enemies {
             if !body
@@ -295,6 +305,7 @@ impl Scene {
             muzzle,
             camera,
             bodies,
+            equipped_fire,
         })
     }
 
@@ -394,6 +405,7 @@ impl Scene {
         width: f64,
         range: f64,
         eligible: &[bool],
+        fire_origin: Option<FireOrigin>,
     ) -> Flight {
         let selected = if head {
             self.input.head_proxy
@@ -447,9 +459,11 @@ impl Scene {
                 + f64::from(aim.basis[i]) * s * cp
                 + f64::from(aim.basis[4 + i]) * s * sp
         }));
+        let muzzle = fire_origin.map_or(self.muzzle, |fire| fire.position);
         let mut flight = Flight {
-            muzzle: self.muzzle,
+            muzzle,
             camera,
+            basis_origin: Vec3([aim.basis[12], aim.basis[13], aim.basis[14]].map(f64::from)),
             head_anchor,
             aim_target: Vec3(aim.target.map(f64::from)),
             direction,
@@ -457,6 +471,7 @@ impl Scene {
             impacts: Vec::new(),
             blast_center: None,
             radial_impacts: Vec::new(),
+            fire_origin,
         };
         if let Some(homing) = homing {
             self.trace_guided(&mut flight, homing, range, eligible);
@@ -472,13 +487,13 @@ impl Scene {
             return flight;
         }
         for (body, proxy, part, enter, exit) in
-            self.hits(self.muzzle, line, max_distance, width * 0.5)
+            self.hits(muzzle, line, max_distance, width * 0.5)
         {
             if eligible.get(body) != Some(&true) {
                 continue;
             }
-            let point = self.muzzle.along(line, enter);
-            let end = self.muzzle.along(line, exit);
+            let point = muzzle.along(line, enter);
+            let end = muzzle.along(line, exit);
             let material = end.minus(point).length();
             let seconds = speed.map_or(0., |v| enter / v);
             let crossing = crate::rules::geometry::penetration::traverse(
@@ -519,7 +534,7 @@ impl Scene {
     fn trace_guided(&self, flight: &mut Flight, homing: Homing, range: f64, eligible: &[bool]) {
         let direction = flight.direction.normalized().unwrap_or(Vec3([0., 0., 1.]));
         let mut state = Guided::new(
-            self.muzzle.0.map(|v| v as f32),
+            flight.muzzle.0.map(|v| v as f32),
             direction.0.map(|v| v as f32),
             homing.initial_speed,
         );

@@ -51,7 +51,7 @@ fn player_and_enemy_models_define_contact_and_mounts() {
 #[test]
 fn perfect_head_intent_does_not_force_a_head_contact() {
     let s = scene(1, 1, false);
-    let path = s.trace(true, 0., 0., Some(100.), None, 0., false, false, 0., 100., &[true]);
+    let path = s.trace(true, 0., 0., Some(100.), None, 0., false, false, 0., 100., &[true], None);
     assert_eq!(path.impacts.len(), 1);
     assert_ne!(
         path.impacts[0].part, 1,
@@ -65,8 +65,41 @@ fn perfect_head_intent_does_not_force_a_head_contact() {
     input.player.bones[48].0[7] = muzzle.0[1];
     input.player.bones[48].0[11] = muzzle.0[2];
     let aligned = Scene::new(input, 1).unwrap();
-    let path = aligned.trace(true, 0., 0., Some(100.), None, 0., false, false, 0., 100., &[true]);
+    let path = aligned.trace(true, 0., 0., Some(100.), None, 0., false, false, 0., 100., &[true], None);
     assert_eq!(path.impacts[0].part, 1);
+}
+
+#[test]
+fn attachment_refresh_is_between_physical_rounds() {
+    use crate::model::{EquippedFire, FireRound, FirePosition, WeaponAttachment};
+
+    let mut input = scene(1, 1, false).input;
+    let positions = (0..3).map(|i| {
+        let mut local = Affine::IDENTITY;
+        local.0[3] = f64::from(i);
+        FirePosition { bone: None, local }
+    }).collect();
+    input.player.equipped_fire = Some(EquippedFire {
+        attachments: vec![WeaponAttachment {
+            mount: input.player.muzzle.clone(),
+            bones: Vec::new(),
+            profiles: vec![positions],
+            initial_cursor: 0,
+        }],
+        round_order: vec![
+            FireRound { attachment: 0, mode: 99, refresh_per_iteration: true, advance_after_round: false },
+            FireRound { attachment: 0, mode: 0, refresh_per_iteration: false, advance_after_round: true },
+        ],
+    });
+    let scene = Scene::new(input, 1).unwrap();
+    let origin_x = |groups, state: &mut FireState| {
+        scene.fire_origins(state, groups).unwrap().into_iter()
+            .map(|origin| origin.map(|fire| fire.position.0[0])).collect::<Vec<_>>()
+    };
+    let mut state = FireState::default();
+    assert_eq!(origin_x(&[4, 0, 2, 1], &mut state), [Some(0.), None, Some(1.), Some(2.)]);
+    assert_eq!(origin_x(&[1, 1], &mut state), [Some(2.), Some(2.)]);
+    assert_eq!(origin_x(&[1], &mut state), [Some(0.)]);
 }
 
 #[test]
@@ -84,6 +117,7 @@ fn each_round_recomputes_the_25_body_path_and_material_budget() {
         0.,
         100.,
         &[true; 25],
+        None,
     );
     assert!(line.impacts.len() >= 3, "{line:?}");
     let wide = s.trace(
@@ -98,6 +132,7 @@ fn each_round_recomputes_the_25_body_path_and_material_budget() {
         0.,
         100.,
         &[true; 25],
+        None,
     );
     assert_ne!(
         line.impacts.iter().map(|h| h.body).collect::<Vec<_>>(),
@@ -115,6 +150,7 @@ fn each_round_recomputes_the_25_body_path_and_material_budget() {
         0.,
         100.,
         &[true; 25],
+        None,
     );
     assert_eq!(stopped.impacts.len(), 1);
     assert!(stopped.impacts[0].material > 0.1);
@@ -257,10 +293,10 @@ fn guided_grid_clock_and_radial_routing_match_original_open_scene() {
             }).collect();
             let s = Scene::new(input, 25).unwrap();
             let mut path = Flight {
-                muzzle: s.muzzle(), camera: s.camera(), head_anchor: Vec3([0.; 3]),
+                muzzle: s.muzzle(), camera: s.camera(), basis_origin: s.camera(), head_anchor: Vec3([0.; 3]),
                 aim_target: Vec3([0., 2.95, 5.]), direction: Vec3([0., 0., 1.]),
                 steering_target: None, impacts: Vec::new(), blast_center: None,
-                radial_impacts: Vec::new(),
+                radial_impacts: Vec::new(), fire_origin: None,
             };
             s.trace_guided(&mut path, homing, 100., &[true; 25]);
             assert_eq!(path.steering_target, Some(acquired), "{first_substeps}/{publish_each}");

@@ -7,6 +7,8 @@ use wfsim_engine::{
 };
 #[path = "../../tests/fixtures/geometry/scene.rs"]
 mod fixture;
+#[path = "../../tests/fixtures/geometry/equipped.rs"]
+mod equipped;
 
 fn request(weapon: &str, rows: usize, aligned: bool) -> Value {
     let mut scene = fixture::scene(1, rows, false, false, false);
@@ -32,6 +34,7 @@ fn align(scene: &mut Value, count: usize) {
         0.,
         100.,
         &vec![true; count],
+        None,
     );
     let at = s.camera().along(f.direction, 3.);
     for (axis, i) in [3, 7, 11].iter().enumerate() {
@@ -118,6 +121,34 @@ fn a_penetrated_enemy_uses_its_own_collision_part_and_damage_ledger() {
         let h = &f.flight.impacts;
         h.len() == 2 && h[0].material > 0. && h[0].seconds < h[1].seconds
     }));
+}
+
+#[test]
+fn equipped_rounds_use_the_selected_attachment_without_rotating_the_eye_basis() {
+    let mut v = request("akarius_prime", 5, false);
+    v["duration"] = json!(6.);
+    v["scene_3d"] = fixture::scene(1, 5, false, false, true);
+    equipped::equip(&mut v["scene_3d"], "akarius_prime");
+    let mut p = params(&v);
+    p.spread = None;
+    let first = record(&p);
+    let again = record(&p);
+    let flights = first.spatial_flights();
+    assert!(flights.len() >= 12);
+    assert_eq!(serde_json::to_value(flights).unwrap(), serde_json::to_value(again.spatial_flights()).unwrap());
+    for (i, row) in flights.iter().take(12).enumerate() {
+        let trace = &row.flight;
+        let fire = serde_json::to_value(trace.fire_origin).unwrap();
+        assert_eq!(fire["attachment"], i % 2);
+        assert_eq!(fire["cursor"], (i / 2) % 5);
+        assert_eq!(fire["profile"], 0);
+        assert_eq!(trace.direction, flights[0].flight.direction);
+        assert_eq!(trace.basis_origin, flights[0].flight.basis_origin);
+        assert_ne!(trace.basis_origin, trace.muzzle);
+        assert_eq!(trace.muzzle.0[0].is_sign_positive(), i % 2 == 0);
+    }
+    assert_ne!(flights[0].flight.muzzle, flights[2].flight.muzzle);
+    assert_eq!(flights[0].flight.muzzle, flights[10].flight.muzzle);
 }
 
 #[test]

@@ -25,9 +25,28 @@ order matches the arena: aimed enemy first, then `formation`.
 The scene supplies its camera-ray result to the native player eye projection
 (`0x149c340`). The projection uses binary32, extends the target by camera
 forward when the reference projects beyond the target, and uses avatar forward
-for the coincident fallback. The muzzle mount supplies the firing origin
-independently of the resulting basis. The live target service, current hand
-mount, emission cursor and spread-state producers remain supplied or unbound.
+for the coincident fallback. The firing origin is independent of the eye basis.
+
+The optional `player.equipped_fire` describes installed weapon attachments
+and their round order. Each attachment supplies its player-bone `mount`,
+weapon-local posed `bones`, starting `initial_cursor` and ordered firing
+`profiles`. Each profile contains a list of firing positions with a weapon
+bone index and local transform. The fire origin combines the mounted weapon
+transform, the current weapon bone and the local firing transform. A missing
+bone uses identity. A missing mode selects profile zero. An empty profile
+array uses the mounted weapon transform.
+
+The supplied `round_order` repeats across ammo rounds. Each entry selects an
+`attachment` and `mode`. The read at `0x56cde0` leaves its cursor unchanged.
+An advance at `0xde85d0` wraps the cursor of the selected attachment when
+the profile has at least two positions. On a supplied mode change the scene
+indexes the retained cursor modulo the number of positions in that profile.
+`refresh_per_iteration` advances before each additional physical round in the
+same emission. `advance_after_round` advances after the last physical round.
+Additional hit instances that ride the same physical round share its origin.
+Each simulation starts from the supplied cursor values. Omit equipment to
+use the single muzzle mount. Live hand order, pose installation, cursor reset
+writers and spread-state producers remain calibration inputs.
 
 The request is rejected if a model is missing, a transform is nonfinite,
 singular or nonuniformly scaled, controller/world scales disagree, or a selected
@@ -194,6 +213,11 @@ Client build 2026.10.28.09.54, executable SHA-256
   explicitly supplied 3D controls. `rotation_tables.rs` is imported from PE
   RVA `0x241ee70`; its hash is pinned in the fixture. No live acceptance trace
   or independent game measurement is supplied by this batch.
+  Its 108 original attachment controls verify Akarius and Akarius Prime's
+  two five-position profiles, Laetum's base muzzle bone and the Incarnon
+  attachment's local offset fallback. `scripts/import_native_attachments.py`
+  reads the pinned source poses, attachment declarations and read/advance
+  results into `native-attachments.json`.
 - `20261118T145138Z-native-homing-ownership`: 15 supplied-state selection
   controls, including eligibility, competing scores and enumeration order.
   The importer executes one additional original-byte control where the
@@ -230,6 +254,7 @@ cargo test -p wfsim-engine --lib rules::geometry
 cargo test -p wfsim-engine --lib scene::tests
 cargo test -p wfsim-webapi --lib scene_tests
 cargo run --release -p wfsim-webapi --example scene_fights -- fights.json
+cargo run --release -p wfsim-webapi --example scene_fights -- equipped-fights.json --equipped
 cargo run --release -p wfsim-webapi --example geometry_builds -- calls.json builds.json
 cargo run --release -p wfsim-webapi --example scene_controls -- calls.json controls.json
 ```
@@ -240,10 +265,15 @@ It retains every request, simulation and combat record. Two explicit muzzle
 controls are used: the native empty-world trace's `(0,1.5,0.3)` and a muzzle
 placed on the camera ray. The latter isolates homing from parallax; neither is
 a claim about an equipped Akarius/Laetum animation or attachment writer.
+The `--equipped` control composes the source-default Excalibur weapon-hand
+bones with each weapon's source firing positions. It supplies right then left
+for the Akarius Prime burst and advances only the hand used.
 
 The `/api/log` response carries `scene_3d.flights`: shot/round, camera, muzzle,
-aim anchor, the eye projection's target, launch direction, selected homing target and
-contacts with part, entry/exit, travel time, thickness and remaining budget.
+aim anchor, the eye projection's basis origin and target, launch direction,
+selected homing target and contacts with part, entry/exit, travel time,
+thickness and remaining budget. When equipped, the trace includes the chosen
+attachment, profile and cursor in `fire_origin`.
 Guided flights include the submitted `blast_center` and `radial_impacts` when
 present. Each radial point is the recipient's selected attachment.
 This diagnostic is bounded separately by the requested record limit and reports
