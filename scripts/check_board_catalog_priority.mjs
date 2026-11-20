@@ -88,6 +88,21 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
     q.exec('BEGIN');assert(q.prepare("SELECT 1 FROM priority_work WHERE weapon=? AND ruler=?").get(weapon,fresh));
     await action('priority-step');
    }finally{q.close();}
+   const delivery=async()=>(await sql.unsafe('SELECT version,delivered_output FROM state_board_rank_publication_ready WHERE weapon=$1 AND ruler=$2',[weapon,ruler]))[0];
+   const previous=await delivery();assert(previous.delivered_output);
+   const receipt=await put('measurement',JSON.stringify([id,ruler,mode]).replaceAll(',',', '),{identity:id,ruler,mode,score:999,source_ack:'later'});
+   let indexed=false;
+   for(let n=0;n<300&&!indexed;n++){
+    const activity=await step();
+    if(activity.status==='indexed'&&activity.ruler===ruler&&activity.identity===id){
+     const [observed]=await sql.unsafe('SELECT modes->>$4 AS version FROM state_board_rank_input_sets WHERE weapon=$1 AND ruler=$2 AND identity=$3',[weapon,ruler,id,mode]);
+     if(String(observed.version)===String(receipt)){
+      assert.equal(activity.winners_changed,false);assert.equal(activity.publication_requested,false);indexed=true;
+     }
+    }
+   }
+   assert(indexed,'new canonical acknowledgement is durable without rebuilding unchanged public winners');
+   assert.deepEqual(await delivery(),previous);
    console.log('ok — retained archive and requested position, fresh fenced capture and changed identity, unrelated warm correction through held work, priority restart');
    return;
   }

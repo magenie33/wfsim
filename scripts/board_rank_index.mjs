@@ -99,14 +99,19 @@ export async function applyRankSources(tx,part,prepared,{live=false,cursor=null,
   FROM jsonb_to_recordset(($3::text)::jsonb)x(identity text,mode text,mode_order bigint,shape text,floor text,def boolean,score double precision,riven boolean,page text)`,
   [part.weapon,part.ruler,JSON.stringify(rows.map(row=>({...row,def:row.default})))]);
  const shapes=JSON.stringify([...new Set([...old.map(row=>row.shape),...rows.map(row=>row.shape)])]);
- await tx.unsafe(`DELETE FROM state_board_rank_winners WHERE weapon=$1 AND ruler=$2 AND shape IN(SELECT jsonb_array_elements_text(($3::text)::jsonb))`,[part.weapon,part.ruler,shapes]);
- await tx.unsafe(`INSERT INTO state_board_rank_winners SELECT winner.* FROM jsonb_array_elements_text(($3::text)::jsonb) AS affected(shape)
+ const removed=await tx.unsafe(`DELETE FROM state_board_rank_winners w WHERE weapon=$1 AND ruler=$2
+  AND shape IN(SELECT jsonb_array_elements_text(($3::text)::jsonb))
+  AND NOT EXISTS(SELECT 1 FROM state_board_rank_rows r WHERE (r.weapon,r.ruler,r.shape)=(w.weapon,w.ruler,w.shape))`,[part.weapon,part.ruler,shapes]);
+ const written=await tx.unsafe(`INSERT INTO state_board_rank_winners AS w SELECT winner.* FROM jsonb_array_elements_text(($3::text)::jsonb) AS affected(shape)
   CROSS JOIN LATERAL (SELECT r.* FROM state_board_rank_rows r WHERE r.weapon=$1 AND r.ruler=$2 AND r.shape=affected.shape
-   ORDER BY r.score DESC,r.def DESC,r.identity,r.mode_order LIMIT 1) winner`,[part.weapon,part.ruler,shapes]);
+   ORDER BY r.score DESC,r.def DESC,r.identity,r.mode_order LIMIT 1) winner
+  ON CONFLICT(weapon,ruler,shape) DO UPDATE SET (identity,mode,mode_order,floor,def,score,riven,page)=
+   (excluded.identity,excluded.mode,excluded.mode_order,excluded.floor,excluded.def,excluded.score,excluded.riven,excluded.page)
+  WHERE w IS DISTINCT FROM excluded`,[part.weapon,part.ruler,shapes]);
  const [updated]=await tx.unsafe(`UPDATE state_board_rank_partitions SET revision=nextval('board_rank_generation'),input_sha256=$3,
   cursor=coalesce($4::bigint,cursor),loaded=coalesce($5::bigint,loaded) WHERE weapon=$1 AND ruler=$2 RETURNING *`,
   [part.weapon,part.ruler,digest({previous:locked.input_sha256,sources,rows,live,cursor,loaded}),cursor,loaded]);
- return updated;
+ return {...updated,winnersChanged:removed.count>0||written.count>0};
 }
 
 export async function captureRankWinners(sql,native,{weapon,ruler,source,path}) {

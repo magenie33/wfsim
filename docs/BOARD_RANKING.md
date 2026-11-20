@@ -38,8 +38,10 @@ these obligations are applied. Registered dependencies continue to route new
 changes independently.
 
 The cache retains Native shape winners under score, default-corner, canonical
-source and mode order. Fact changes render only their identity. Snapshot
-preparation scans this derived ordered index and indexed group maxima; it does
+source and mode order. Fact changes render only their identity. An input update that preserves every affected shape winner and its exact
+publication fields acknowledges the new dependency versions without scheduling
+an identical snapshot. A changed score, ordering field or visible measurement
+time on a winner schedules the partition. Snapshot preparation scans this derived ordered index and indexed group maxima; it does
 not read the complete canonical library again or run fights.
 
 ### Shared descriptions and observed input versions

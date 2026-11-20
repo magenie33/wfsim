@@ -93,6 +93,13 @@ try{
  await assert.rejects(createRankPartition(sql,{weapon,ruler,source:'different',native:native.adapter,cut:'fixture-cut'}),/boundary changed/);
  await assert.rejects(prepareRankSources(operate,{weapon,ruler,inputs:[{...inputs[1],identity:'unknown-alias'}]}),/identities require qualification/);
  await oracle('stale-source-and-alias-refusal');
+ const [leader]=await sql.unsafe('SELECT identity FROM state_board_rank_winners WHERE weapon=$1 AND ruler=$2 ORDER BY score DESC LIMIT 1',[weapon,ruler]);
+ const winner=structuredClone(current.get(leader.identity));await apply([winner],{live:true});
+ assert.equal(part.winnersChanged,false,'identical Native winners preserve the published projection');
+ winner.facts=winner.facts.map(row=>({...row,finished_at:'2026-11-18T02:00:00.000Z'}));
+ await apply([winner],{live:true});current.set(winner.identity,winner);
+ assert.equal(part.winnersChanged,true,'a changed public measurement time with the same score still changes the winner');
+ await oracle('same-score-updated-wire');
  console.log('  ok  real PostgreSQL Native index, live precedence, stale preparation and recovery-boundary checks');
 }finally{
  await native.close();await sql.unsafe('DROP SCHEMA IF EXISTS '+schema+' CASCADE');await sql.end();rmSync(work,{recursive:true,force:true});

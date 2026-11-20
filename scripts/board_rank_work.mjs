@@ -19,12 +19,15 @@ export async function putRankDirty(tx,{weapon,ruler,identity},recent=false) {
  return row.version;
 }
 
-export async function putRankPublication(tx,{weapon,ruler},recent=false) {
- await tx.unsafe(`INSERT INTO state_board_rank_publication_ready(weapon,ruler${recent?',version,recent_version':''})
+export async function putRankPublication(tx,{weapon,ruler,winnersChanged,catalog_phase},recent=false) {
+ const unchanged=winnersChanged===false&&catalog_phase!=='frozen'&&catalog_phase!=='replay';
+ const write=await tx.unsafe(`INSERT INTO state_board_rank_publication_ready(weapon,ruler${recent?',version,recent_version':''})
   ${recent?"SELECT $1,$2,v,v FROM (SELECT nextval('board_rank_generation') v) seq":"VALUES($1,$2)"}
   ON CONFLICT(weapon,ruler) DO UPDATE SET version=nextval('board_rank_generation'),
    ${recent?'recent_version=greatest(state_board_rank_publication_ready.version+1,excluded.version),':''}error=NULL,
-   available_at=CASE WHEN state_board_rank_publication_ready.lease_until>${now} THEN state_board_rank_publication_ready.lease_until ELSE least(state_board_rank_publication_ready.available_at,${now}) END`,[weapon,ruler]);
+   available_at=CASE WHEN state_board_rank_publication_ready.lease_until>${now} THEN state_board_rank_publication_ready.lease_until ELSE least(state_board_rank_publication_ready.available_at,${now}) END
+   ${unchanged?'WHERE state_board_rank_publication_ready.delivered_output IS NULL OR state_board_rank_publication_ready.error IS NOT NULL':''}`,[weapon,ruler]);
+ return write.count>0;
 }
 
 export async function routeRankInput(tx,input,source) {
@@ -152,9 +155,10 @@ export async function applyRankDirty(sql,claim,part,prepared) {
   const updated=await applyRankSources(tx,part,prepared,{live:true});
   await tx.unsafe(`UPDATE state_board_rank_dirty SET applied_version=$4,lease=NULL,lease_until=NULL,available_at=NULL,error=NULL
    WHERE weapon=$1 AND ruler=$2 AND identity=$3`,[claim.weapon,claim.ruler,claim.identity,claim.version]);
-  if(updated.complete)await putRankPublication(tx,updated,held.recent_version!=null&&BigInt(held.recent_version)>BigInt(held.applied_version));
-  else await finishRankBaseline(tx,updated);
-  return {status:'indexed',identity:claim.identity};
+  const publication=updated.complete
+   ?await putRankPublication(tx,updated,held.recent_version!=null&&BigInt(held.recent_version)>BigInt(held.applied_version))
+   :await finishRankBaseline(tx,updated);
+  return {status:'indexed',weapon:part.weapon,ruler:part.ruler,identity:claim.identity,winners_changed:updated.winnersChanged,publication_requested:publication};
  });
 }
 
