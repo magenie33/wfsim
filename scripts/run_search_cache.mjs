@@ -95,7 +95,6 @@ export async function runSearchCache({ site = fileURLToPath(new URL("../site/", 
   const transport = await src("web/src/static/app/06-transport.js");
   const watch = transport.slice(transport.indexOf("const LANE_WATCHDOG"), transport.indexOf("/// WHERE A WORKER"));
   const fleet = await src("web/src/static/app/08-checkpoint-api.js");
-  const cache = mode === "cold" ? "" : await src("web/src/static/app/07-warm-search-cache.js");
   const gen = JSON.parse(await readSite("pkg/generation.json"));
   const m = JSON.parse(await readSite("pkg/" + gen.names.find(n => /^meta\./.test(n))));
   const meta = JSON.stringify({ benchmarks: m.benchmarks });
@@ -106,7 +105,7 @@ export async function runSearchCache({ site = fileURLToPath(new URL("../site/", 
     ["/data", ["application/json", data]],
     ["/worker.js", ["application/javascript", await src("web/src/static/worker.js")]],
     ["/h.js", ["application/javascript", ['let woptNextId=1; const computeRun=async(_,call,live)=>live()?call():{cancelled:true};',
-      'const META=' + meta + ';',watch,cache,fleet,'(' + installRunner.toString() + ')()'].join("\n")]]
+      'const META=' + meta + ';',watch,fleet,'(' + installRunner.toString() + ')()'].join("\n")]]
   ]);
   let requests = [];
   const server = createServer(async (req, res) => {

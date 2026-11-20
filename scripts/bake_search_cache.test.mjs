@@ -213,7 +213,7 @@ test('CLI emits deterministic browser packs and independently rejects untrusted 
       assert.deepEqual((await json(path)).packs, {});
       assert.equal(await readFile(join(otherRelease, 'manifest.json'), 'utf8'), otherManifest);
     });
-    const browserReader = await readFile(new URL('../web/src/static/app/07-warm-search-cache.js', import.meta.url), 'utf8');
+    const browserReader = await readFile(new URL('../web/src/static/app/08-checkpoint-api.js', import.meta.url), 'utf8');
     for (const output of first) {
       const releaseId = output.release.release;
       assert.equal(output.siteRoot, join(root, 'staging', String(output.budget)));

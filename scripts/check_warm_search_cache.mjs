@@ -10,7 +10,7 @@ import { createGzip, gzipSync } from "node:zlib";
 import { APP_PARTS_DIR, appParts, appSource } from "./app_source.mjs";
 import { openApp } from "./cdp.mjs";
 
-const part = "07-warm-search-cache.js";
+const part = "08-checkpoint-api.js";
 const source = readFileSync(resolve(APP_PARTS_DIR, part), "utf8");
 const joined = appSource();
 assert.ok(appParts().includes(part) && joined.includes(source));

@@ -82,7 +82,7 @@ async function capture(base, weapon, file, { template, excludeMods } = {}) {
   const frozen = loadEngine().api('/api/computation/input', { kind: 'optimization', request });
   assert.equal(frozen.ok, true);
   const { engine, data, wasm } = base.release;
-  const reader = await readFile(new URL('../web/src/static/app/07-warm-search-cache.js', import.meta.url), 'utf8');
+  const reader = await readFile(new URL('../web/src/static/app/08-checkpoint-api.js', import.meta.url), 'utf8');
   const identity = await runInNewContext(`${reader}\nsearchWarmIdentity(JSON.parse(body), opts)`, {
     body: JSON.stringify(frozen.request), opts: { official: ruler, engine, data, wasm }, crypto: globalThis.crypto, TextEncoder });
   const key = 'q1:' + sha(weapon).slice(0, 32);

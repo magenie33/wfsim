@@ -237,7 +237,7 @@ export async function proveSearchReuse(oldSite, newSite, receipt, templates, can
   const { weapon, ruler, template } = receipt.job;
   const changedPaths = await compatible(old, next, weapon);
   const oldNormalize = normalizer(old), newNormalize = normalizer(next);
-  const cacheSource = await readFile(new URL('../web/src/static/app/07-warm-search-cache.js', import.meta.url), 'utf8');
+  const cacheSource = await readFile(new URL('../web/src/static/app/08-checkpoint-api.js', import.meta.url), 'utf8');
   for (const [name, settings] of Object.entries(templates)) {
     if (settings.excludeMods && name !== template) continue;
     const opts = { weapon, ruler, ...settings };
