@@ -3,6 +3,7 @@ mod budget;
 mod compute;
 mod engine;
 mod net;
+mod panel;
 mod runner;
 mod state;
 mod supervisor;
@@ -10,7 +11,7 @@ mod supervisor;
 mod trust;
 mod update;
 
-use clap::{Parser, Subcommand};
+use clap::{error::ErrorKind, CommandFactory, Parser, Subcommand};
 use fs2::FileExt;
 use serde_json::{json, Value};
 use state::{Config, Range, Result};
@@ -32,7 +33,12 @@ use std::{
 };
 
 #[derive(Parser)]
-#[command(name = "wfsim", version=BUILD, about = "Join WFSim volunteer computing")]
+#[command(
+    name = "wfsim",
+    version = BUILD,
+    about = "Join WFSim volunteer computing",
+    after_help = "Run wfsim in a terminal to open the interactive view."
+)]
 struct Args {
     #[arg(
         long,
@@ -41,12 +47,12 @@ struct Args {
     )]
     data_dir: Option<PathBuf>,
     #[command(subcommand)]
-    command: Action,
+    command: Option<Action>,
 }
 
 #[derive(Subcommand)]
 enum Action {
-    /// Join anonymously in this terminal; Ctrl+C returns unfinished work.
+    /// Start computing in this terminal. Ctrl+C returns unfinished work.
     Join {
         #[arg(long, hide = true)]
         worker: bool,
@@ -118,17 +124,27 @@ fn main() {
 
 fn run() -> Result<()> {
     let args = Args::parse();
+    let command = match args.command {
+        Some(command) => command,
+        None if panel::supported() => Action::Join {
+            worker: false,
+            yes: false,
+            range: None,
+            name: None,
+        },
+        None => Args::command()
+            .error(
+                ErrorKind::MissingSubcommand,
+                "a command is required outside an interactive terminal",
+            )
+            .exit(),
+    };
     let dir = args.data_dir.map(Ok).unwrap_or_else(state::data_dir)?;
     state::directory(&dir)?;
     let dir = fs::canonicalize(dir)?;
-    let lock = state::private_options()
-        .read(true)
-        .create(true)
-        .truncate(false)
-        .open(dir.join("config.lock"))?;
-    lock.lock_exclusive()?;
+    let lock = state::lock_config(&dir)?;
     let mut config = Config::load(&dir)?;
-    match &args.command {
+    match &command {
         Action::Join { range, name, .. } | Action::Config { range, name } => {
             if let Some(r) = range {
                 config.range = r.clone();
@@ -147,13 +163,13 @@ fn run() -> Result<()> {
         Action::Resume => config.paused = false,
         _ => {}
     }
-    match &args.command {
+    match &command {
         Action::Join { yes, .. } | Action::Start { yes } => consent(&mut config, *yes)?,
         _ => {}
     }
     config.save(&dir)?;
     if matches!(
-        args.command,
+        command,
         Action::Join { .. }
             | Action::Start { .. }
             | Action::Login
@@ -173,7 +189,7 @@ fn run() -> Result<()> {
     }
     // Identity creation is serialized separately from the long-running process.
     let id = if matches!(
-        args.command,
+        command,
         Action::Status { .. } | Action::Stop | Action::Service { .. }
     ) {
         None
@@ -181,7 +197,7 @@ fn run() -> Result<()> {
         Some(state::identity(&dir)?)
     };
     FileExt::unlock(&lock)?;
-    match args.command {
+    match command {
         Action::Join { worker, .. } => {
             let running = if worker {
                 Some(instance(&dir)?)
