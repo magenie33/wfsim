@@ -37,7 +37,7 @@ use std::{
     name = "wfsim",
     version = BUILD,
     about = "Join WFSim volunteer computing",
-    after_help = "Run wfsim in a terminal to open the interactive view."
+    after_help = "Run wfsim in a terminal to open the control panel. Type /start there to begin."
 )]
 struct Args {
     #[arg(
@@ -52,7 +52,7 @@ struct Args {
 
 #[derive(Subcommand)]
 enum Action {
-    /// Start computing in this terminal. Ctrl+C returns unfinished work.
+    /// Join anonymously in this terminal; Ctrl+C returns unfinished work.
     Join {
         #[arg(long, hide = true)]
         worker: bool,
@@ -126,12 +126,10 @@ fn run() -> Result<()> {
     let args = Args::parse();
     let command = match args.command {
         Some(command) => command,
-        None if panel::supported() => Action::Join {
-            worker: false,
-            yes: false,
-            range: None,
-            name: None,
-        },
+        None if panel::supported() => {
+            let dir = args.data_dir.map(Ok).unwrap_or_else(state::data_dir)?;
+            return panel::run(&dir);
+        }
         None => Args::command()
             .error(
                 ErrorKind::MissingSubcommand,
@@ -142,7 +140,12 @@ fn run() -> Result<()> {
     let dir = args.data_dir.map(Ok).unwrap_or_else(state::data_dir)?;
     state::directory(&dir)?;
     let dir = fs::canonicalize(dir)?;
-    let lock = state::lock_config(&dir)?;
+    let lock = state::private_options()
+        .read(true)
+        .create(true)
+        .truncate(false)
+        .open(dir.join("config.lock"))?;
+    lock.lock_exclusive()?;
     let mut config = Config::load(&dir)?;
     match &command {
         Action::Join { range, name, .. } | Action::Config { range, name } => {

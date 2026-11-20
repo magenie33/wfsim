@@ -3,7 +3,6 @@ use std::fs::{self, File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use fs2::FileExt;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -170,16 +169,6 @@ pub fn private_options() -> OpenOptions {
         o.mode(0o600);
     }
     o
-}
-
-pub fn lock_config(dir: &Path) -> Result<File> {
-    let lock = private_options()
-        .read(true)
-        .create(true)
-        .truncate(false)
-        .open(dir.join("config.lock"))?;
-    lock.lock_exclusive()?;
-    Ok(lock)
 }
 
 pub fn read<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T> {

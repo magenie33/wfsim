@@ -41,12 +41,14 @@ accepts that statement explicitly in a noninteractive setup. Login is optional.
 computer or phone. The first claim includes unclaimed contribution; changing
 accounts preserves each account's already attributed contribution.
 
-Run `wfsim` or `wfsim join` in a terminal to see the live state, CPU range
-and target, tasks completed this run and results waiting to be sent. Type
-`/cpu 0-100` to save a new range, `/pause` or `/resume` to control computing,
-and `/quit` or Ctrl+C to return unfinished work and exit. Press Enter to submit
-a typed command. The terminal view writes diagnostic logs to `client.log`.
-Explicit commands also work outside the terminal view.
+Run `wfsim` in a terminal to open the control panel at the saved device state.
+Type `/start` to start background computing and review the participation
+statement on first use. Use `/login` to claim the device in your browser,
+`/cpu 0-100` to save a new range, and `/pause` or `/resume` to control computing.
+The slash is optional. Press Enter to submit a command. `/stop` returns
+unfinished work and stops computing. `/quit` or Ctrl+C closes the panel
+while background computing continues. Run `wfsim join` to compute directly
+in the foreground.
 
 The default CPU range is 0–50%, in whole percentage points. The client lowers
 its target when other processes need CPU and recovers gradually when they do

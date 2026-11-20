@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 use crate::{
-    panel::{self, Panel},
     state::{self, Config, Result},
     trust,
     update::{self, Host, Installed},
@@ -8,7 +7,6 @@ use crate::{
 use semver::Version;
 use serde_json::{json, Value};
 use std::{
-    fmt,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::{
@@ -28,49 +26,12 @@ impl Drop for Worker {
     }
 }
 
-struct Session {
-    quit: Arc<AtomicBool>,
-    panel: Option<Panel>,
-}
-
-impl Session {
-    fn tick(&mut self, dir: &Path) {
-        if let Some(panel) = &mut self.panel {
-            if let Err(error) = panel.tick(dir, &self.quit) {
-                self.panel = None;
-                eprintln!("Terminal view closed: {error}. See client.log.");
-            }
-        }
-    }
-
-    fn notice(&mut self, error: bool, message: fmt::Arguments<'_>) {
-        if let Some(panel) = &mut self.panel {
-            panel.notice(message);
-        } else if error {
-            eprintln!("{message}");
-        } else {
-            println!("{message}");
-        }
-    }
-}
-
 pub fn run(dir: &Path, quit: Arc<AtomicBool>) -> Result<()> {
     let _lock = crate::instance_lock(dir, "supervisor.lock")?;
     let base = update::bootstrap(dir)?;
-    let panel = if panel::supported() {
-        match Panel::open(dir) {
-            Ok(panel) => Some(panel),
-            Err(error) => {
-                eprintln!("Terminal view unavailable: {error}");
-                None
-            }
-        }
-    } else {
-        None
-    };
     run_with(
         dir,
-        Session { quit, panel },
+        quit,
         base,
         Version::parse(crate::BUILD)?,
         update::sources(&Config::load(dir)?.server),
@@ -81,7 +42,7 @@ pub fn run(dir: &Path, quit: Arc<AtomicBool>) -> Result<()> {
 
 fn run_with(
     dir: &Path,
-    mut session: Session,
+    quit: Arc<AtomicBool>,
     base: PathBuf,
     version: Version,
     sources: Vec<String>,
@@ -105,40 +66,30 @@ fn run_with(
     let mut checking = None;
     let mut activating = false;
     'workers: loop {
-        if session.quit.load(Ordering::Relaxed) || stopped(dir, &nonce) {
+        if quit.load(Ordering::Relaxed) || stopped(dir, &nonce) {
             return Ok(());
         }
         let _ = std::fs::remove_file(dir.join("host-update.json"));
         let path = active.as_ref().map(|h| &h.path).unwrap_or(&base);
-        let mut command = Command::new(path);
-        command
+        let child = Command::new(path)
             .arg("--data-dir")
             .arg(dir)
             .args(["join", "--worker"])
             .env("WFSIM_CLI_RUN", &nonce)
             .stdin(Stdio::inherit())
             .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit());
-        if let Some(panel) = &session.panel {
-            panel.capture(&mut command)?;
-        }
-        let child = command.spawn();
+            .stderr(Stdio::inherit())
+            .spawn();
         let mut child = match child {
             Ok(child) => Worker(child),
             Err(error) if active.is_some() => {
-                session.notice(
-                    true,
-                    format_args!(
-                        "New CLI could not start: {error}; restoring the previous version."
-                    ),
-                );
+                eprintln!("New CLI could not start: {error}; restoring the previous version.");
                 active = rollback(
                     dir,
                     &mut installed,
                     active.as_ref().expect("host"),
                     &key_refs,
                     &version,
-                    &mut session,
                 )?;
                 activating = false;
                 continue;
@@ -150,10 +101,8 @@ fn run_with(
         let mut drain_at = None;
         loop {
             let now = Instant::now();
-            session.tick(dir);
-            let quitting = session.quit.load(Ordering::Relaxed);
-            let stopping = quitting || stopped(dir, &nonce);
-            if quitting && !stopped(dir, &nonce) {
+            let stopping = quit.load(Ordering::Relaxed) || stopped(dir, &nonce);
+            if quit.load(Ordering::Relaxed) {
                 state::write(&dir.join("stop.json"), &json!({"run":nonce}))?;
             }
             if activating && !stopping {
@@ -168,22 +117,18 @@ fn run_with(
                     installed.highest = Some(host.version.to_string());
                     update::save(dir, &installed)?;
                     if let Err(error) = update::prune(dir, &installed) {
-                        session.notice(true, format_args!("CLI cache cleanup deferred: {error}"));
+                        eprintln!("CLI cache cleanup deferred: {error}");
                     }
                     report(dir, "current", Some(&host.version), None)?;
                     activating = false;
-                    session.notice(
-                        false,
-                        format_args!(
-                            "WFSim CLI {} is running; device and settings preserved.",
-                            host.version
-                        ),
+                    println!(
+                        "WFSim CLI {} is running; device and settings preserved.",
+                        host.version
                     );
                 } else if began.elapsed() >= Duration::from_secs(30) {
                     let _ = child.0.kill();
                     let _ = child.0.wait();
-                    active =
-                        rollback(dir, &mut installed, host, &key_refs, &version, &mut session)?;
+                    active = rollback(dir, &mut installed, host, &key_refs, &version)?;
                     activating = false;
                     continue 'workers;
                 }
@@ -217,21 +162,15 @@ fn run_with(
                         match result {
                             Ok(Some(host)) => {
                                 report(dir, "ready", Some(&host.version), None)?;
-                                session.notice(false, format_args!(
-                                    "Verified WFSim CLI {}; returning unfinished work before upgrading.",
-                                    host.version
-                                ));
+                                println!("Verified WFSim CLI {}; returning unfinished work before upgrading.", host.version);
                                 candidate = Some(host);
                                 drain_at = Some(now);
                                 state::write(&dir.join("host-update.json"), &json!({"run":nonce}))?;
                             }
                             Ok(None) => {}
                             Err(error) => {
-                                session.notice(
-                                    true,
-                                    format_args!(
+                                eprintln!(
                                     "CLI update deferred: {error}; current computing continues."
-                                ),
                                 );
                                 report(dir, "deferred", None, Some(error.to_string()))?;
                             }
@@ -240,7 +179,7 @@ fn run_with(
                 }
             }
             if let Some(status) = child.0.try_wait()? {
-                if stopping || session.quit.load(Ordering::Relaxed) || stopped(dir, &nonce) {
+                if stopping || quit.load(Ordering::Relaxed) || stopped(dir, &nonce) {
                     return Ok(());
                 }
                 if status.code() == Some(update::HOST_CHANGED) && candidate.is_some() {
@@ -249,25 +188,17 @@ fn run_with(
                     continue 'workers;
                 }
                 if status.code() == Some(ENGINE_CHANGED) && !activating {
-                    session.notice(
-                        false,
-                        format_args!("Engine update ready; restarting computation."),
-                    );
+                    println!("Engine update ready; restarting computation.");
                     continue 'workers;
                 }
                 if let Some(host) = &active {
-                    active =
-                        rollback(dir, &mut installed, host, &key_refs, &version, &mut session)?;
+                    active = rollback(dir, &mut installed, host, &key_refs, &version)?;
                     activating = false;
                     continue 'workers;
                 }
-                session.notice(
-                    true,
-                    format_args!("Compute process exited with {status}; restarting in 15 seconds."),
-                );
+                eprintln!("Compute process exited with {status}; restarting in 15 seconds.");
                 for _ in 0..150 {
-                    session.tick(dir);
-                    if session.quit.load(Ordering::Relaxed) || stopped(dir, &nonce) {
+                    if quit.load(Ordering::Relaxed) || stopped(dir, &nonce) {
                         return Ok(());
                     }
                     std::thread::sleep(Duration::from_millis(100));
@@ -279,7 +210,7 @@ fn run_with(
             {
                 let _ = child.0.kill();
                 let _ = child.0.wait();
-                session.notice(true, format_args!("Upgrade shutdown timed out; pending answers stay on disk and outstanding leases expire."));
+                eprintln!("Upgrade shutdown timed out; pending answers stay on disk and outstanding leases expire.");
                 active = candidate.take();
                 activating = true;
                 continue 'workers;
@@ -314,14 +245,10 @@ fn rollback(
     failed: &Host,
     keys: &[&str],
     base: &Version,
-    session: &mut Session,
 ) -> Result<Option<Host>> {
-    session.notice(
-        true,
-        format_args!(
-            "CLI {} failed; returning to the previous version.",
-            failed.version
-        ),
+    eprintln!(
+        "CLI {} failed; returning to the previous version.",
+        failed.version
     );
     installed.highest = Some(
         installed

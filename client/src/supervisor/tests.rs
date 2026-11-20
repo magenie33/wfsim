@@ -175,10 +175,7 @@ fn scenario(binary_variable: &str, fails_before_ready: bool) -> Result<()> {
     let supervising = std::thread::spawn(move || {
         run_with(
             &directory,
-            Session {
-                quit: stop,
-                panel: None,
-            },
+            stop,
             base_binary,
             base_version,
             vec![server],
