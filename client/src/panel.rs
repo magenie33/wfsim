@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-use crate::state::{self, Config, Range, Result};
+use crate::state::{self, Config, Result, CONSENT_VERSION};
 use crossterm::{
     cursor::MoveTo,
     event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
@@ -7,19 +7,20 @@ use crossterm::{
     style::Print,
     terminal::{self, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use fs2::FileExt;
 use serde_json::Value;
 use std::{
-    fmt,
     fs::File,
     io::{self, IsTerminal, Stdout, Write},
     path::Path,
-    process::{Command, Stdio},
-    sync::atomic::{AtomicBool, Ordering},
+    process::Command,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
     time::Duration,
 };
 use unicode_width::UnicodeWidthChar;
-
-const COMMANDS: &str = "/cpu 0-100  /pause  /resume  /quit";
 
 pub fn supported() -> bool {
     io::stdin().is_terminal()
@@ -28,24 +29,37 @@ pub fn supported() -> bool {
         && std::env::var_os("TERM").is_none_or(|term| term != "dumb")
 }
 
-pub struct Panel {
+pub fn run(dir: &Path) -> Result<()> {
+    let closing = Arc::new(AtomicBool::new(false));
+    let signal = Arc::clone(&closing);
+    ctrlc::set_handler(move || signal.store(true, Ordering::Relaxed))?;
+
+    let mut panel = Panel::open()?;
+    while !closing.load(Ordering::Relaxed) {
+        panel.draw(dir)?;
+        if event::poll(Duration::from_millis(250))? {
+            if let Event::Key(key) = event::read()? {
+                if !panel.key(dir, key) {
+                    break;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+struct Panel {
     output: Stdout,
-    log: File,
     input: String,
     message: String,
     frame: Option<(u16, u16, Vec<String>)>,
 }
 
 impl Panel {
-    pub fn open(dir: &Path) -> io::Result<Self> {
-        let log = state::private_options()
-            .create(true)
-            .append(true)
-            .open(dir.join("client.log"))?;
+    fn open() -> io::Result<Self> {
         terminal::enable_raw_mode()?;
         let mut panel = Self {
             output: io::stdout(),
-            log,
             input: String::new(),
             message: String::new(),
             frame: None,
@@ -54,73 +68,104 @@ impl Panel {
         Ok(panel)
     }
 
-    pub fn capture(&self, child: &mut Command) -> io::Result<()> {
-        child
-            .stdin(Stdio::null())
-            .stdout(self.log.try_clone()?)
-            .stderr(self.log.try_clone()?);
-        Ok(())
-    }
-
-    pub fn notice(&mut self, message: fmt::Arguments<'_>) {
-        self.message = message.to_string();
-        let _ = writeln!(self.log, "{}", self.message);
-    }
-
-    pub fn tick(&mut self, dir: &Path, quit: &AtomicBool) -> Result<()> {
-        for _ in 0..64 {
-            if quit.load(Ordering::Relaxed) || !event::poll(Duration::ZERO)? {
-                break;
+    fn key(&mut self, dir: &Path, key: event::KeyEvent) -> bool {
+        if key.kind == KeyEventKind::Release {
+            return true;
+        }
+        match key.code {
+            KeyCode::Char('c' | 'C') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                return false;
             }
-            let Event::Key(key) = event::read()? else {
-                continue;
-            };
-            if key.kind == KeyEventKind::Release {
-                continue;
-            }
-            match key.code {
-                KeyCode::Char('c' | 'C') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                    quit.store(true, Ordering::Relaxed);
-                }
-                KeyCode::Enter => {
-                    let input = std::mem::take(&mut self.input);
-                    if !input.trim().is_empty() {
-                        self.message =
-                            command(dir, quit, &input).unwrap_or_else(|error| error.to_string());
+            KeyCode::Enter => {
+                let input = std::mem::take(&mut self.input);
+                if !input.trim().is_empty() {
+                    match self.command(dir, &input) {
+                        Ok(Some(message)) => self.message = message,
+                        Ok(None) => return false,
+                        Err(error) => self.message = error.to_string(),
                     }
                 }
-                KeyCode::Esc => self.input.clear(),
-                KeyCode::Backspace => {
-                    self.input.pop();
-                }
-                KeyCode::Char(c)
-                    if self.input.len() < 64
-                        && (c.is_ascii_graphic() || c == ' ')
-                        && !key
-                            .modifiers
-                            .intersects(KeyModifiers::CONTROL | KeyModifiers::ALT) =>
-                {
-                    self.input.push(c);
-                }
-                _ => {}
             }
+            KeyCode::Esc => self.input.clear(),
+            KeyCode::Backspace => {
+                self.input.pop();
+            }
+            KeyCode::Char(c)
+                if self.input.len() < 64
+                    && (c.is_ascii_graphic() || c == ' ')
+                    && !key
+                        .modifiers
+                        .intersects(KeyModifiers::CONTROL | KeyModifiers::ALT) =>
+            {
+                self.input.push(c);
+            }
+            _ => {}
         }
-        self.draw(dir, quit.load(Ordering::Relaxed))
+        true
     }
 
-    fn draw(&mut self, dir: &Path, stopping: bool) -> Result<()> {
+    fn command(&mut self, dir: &Path, input: &str) -> Result<Option<String>> {
+        let mut words = input.trim().trim_start_matches('/').split_whitespace();
+        let (args, success): (&[&str], &str) = match (words.next(), words.next(), words.next()) {
+            (Some("start"), None, None) => (&["start"], "Starting background computing."),
+            (Some("stop"), None, None) if !computing(dir) => {
+                return Ok(Some("Computing is stopped.".into()));
+            }
+            (Some("stop"), None, None) => (&["stop"], "Returning unfinished work and stopping."),
+            (Some("login"), None, None) => (&["login"], "Device linked."),
+            (Some("cpu"), Some(range), None) => (&["config", "--range", range], "CPU range saved."),
+            (Some("pause"), None, None) => (&["pause"], "Paused."),
+            (Some("resume"), None, None) => (&["resume"], "Resumed."),
+            (Some("quit"), None, None) => return Ok(None),
+            (Some("help"), None, None) => {
+                return Ok(Some("Type any command below, then press Enter.".into()));
+            }
+            _ => return Err("Unknown command. Type /help to see how to use the panel.".into()),
+        };
+
+        let needs_terminal = match args[0] {
+            "login" => true,
+            "start" => Config::load(dir)?
+                .consent
+                .is_none_or(|consent| consent.v != CONSENT_VERSION),
+            _ => false,
+        };
+        let mut command = Command::new(std::env::current_exe()?);
+        command.arg("--data-dir").arg(dir).args(args);
+        if needs_terminal {
+            terminal::disable_raw_mode()?;
+            execute!(self.output, Clear(ClearType::All), MoveTo(0, 0))?;
+            let status = command.status();
+            terminal::enable_raw_mode()?;
+            self.frame = None;
+            if !status?.success() {
+                return Err("Command did not complete.".into());
+            }
+        } else {
+            let result = command.output()?;
+            if !result.status.success() {
+                let error = String::from_utf8_lossy(&result.stderr);
+                let message = error.lines().find(|line| !line.trim().is_empty());
+                return Err(message.unwrap_or("Command failed.").to_owned().into());
+            }
+        }
+        Ok(Some(success.into()))
+    }
+
+    fn draw(&mut self, dir: &Path) -> Result<()> {
         let (width, height) = terminal::size()?;
         if width < 2 || height == 0 {
             return Ok(());
         }
         let status: Value = state::read(&dir.join("status.json")).unwrap_or(Value::Null);
         let config = Config::load(dir)?;
-        let phase = if stopping {
-            "Returning unfinished work"
+        let active = computing(dir);
+        let phase = if active {
+            status["state"].as_str().unwrap_or("starting")
         } else {
-            status["state"].as_str().unwrap_or("Starting")
+            "stopped"
         };
-        let percent = |key: &str| match status[key].as_f64() {
+        let percent = |key: &str| match status[key].as_f64().filter(|_| active) {
             Some(value) => format!("{value:.0}%"),
             None => String::from("--"),
         };
@@ -142,7 +187,8 @@ impl Panel {
         if !self.message.is_empty() {
             lines.push(self.message.clone());
         }
-        lines.push(COMMANDS.into());
+        lines.push("/start  /stop  /login  /cpu 0-100".into());
+        lines.push("/pause  /resume  /quit closes this panel".into());
         lines.truncate(usize::from(height - 1));
         let input_start = self
             .input
@@ -171,37 +217,12 @@ impl Drop for Panel {
     }
 }
 
-fn command(dir: &Path, quit: &AtomicBool, input: &str) -> Result<String> {
-    let mut words = input.trim().trim_start_matches('/').split_whitespace();
-    match (words.next(), words.next(), words.next()) {
-        (Some("cpu"), Some(range), None) => {
-            let range: Range = range.parse()?;
-            let message = format!("CPU range saved at {}-{}%", range.min, range.max);
-            configure(dir, |config| config.range = range)?;
-            Ok(message)
-        }
-        (Some("pause"), None, None) => {
-            configure(dir, |config| config.paused = true)?;
-            Ok("Paused".into())
-        }
-        (Some("resume"), None, None) => {
-            configure(dir, |config| config.paused = false)?;
-            Ok("Resumed".into())
-        }
-        (Some("quit"), None, None) => {
-            quit.store(true, Ordering::Relaxed);
-            Ok(String::new())
-        }
-        (Some("help"), None, None) => Ok(COMMANDS.into()),
-        _ => Err("Try /cpu 0-100, /pause, /resume, or /quit.".into()),
-    }
-}
-
-fn configure(dir: &Path, edit: impl FnOnce(&mut Config)) -> Result<()> {
-    let _lock = state::lock_config(dir)?;
-    let mut config = Config::load(dir)?;
-    edit(&mut config);
-    config.save(dir)
+fn computing(dir: &Path) -> bool {
+    let Ok(lock) = File::open(dir.join("supervisor.lock")) else {
+        return false;
+    };
+    FileExt::try_lock_shared(&lock)
+        .is_err_and(|error| error.raw_os_error() == fs2::lock_contended_error().raw_os_error())
 }
 
 fn fit(line: &str, width: u16) -> String {
