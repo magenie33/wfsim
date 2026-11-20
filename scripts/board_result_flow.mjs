@@ -215,6 +215,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  process.once('SIGTERM',()=>{running=false;});process.once('SIGINT',()=>{running=false;});
  try{
   const options={sql,source,engine,binary:join(bin,'wfsim-board'),work,nativeSha,
+   policyBinary:process.env.WFSIM_BOARD_RIVEN_POLICY_BIN,policySha:process.env.WFSIM_BOARD_RIVEN_POLICY_SHA256,
    requestedPartitions:process.env.WFSIM_BOARD_READ_REQUESTED_PARTITIONS==='1',
    baselineConcurrency:Number(process.env.WFSIM_BOARD_READ_BASELINE_CONCURRENCY??1)};
   flow=process.env.WFSIM_BOARD_READ_INDEXED==='1'

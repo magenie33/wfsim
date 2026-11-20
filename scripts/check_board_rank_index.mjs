@@ -5,7 +5,7 @@ import {readFileSync,writeFileSync,mkdtempSync,rmSync,mkdirSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join,resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
-import {randomBytes} from 'node:crypto';
+import {createHash,randomBytes} from 'node:crypto';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import {lockRankInputs} from './board_rank_keys.mjs';
 import {openInventoryOperator} from './inventory_operator.mjs';
@@ -111,6 +111,23 @@ try{
  await apply([winner],{live:true});current.set(winner.identity,winner);
  assert.equal(part.winnersChanged,true,'a changed public measurement time with the same score still changes the winner');
  await oracle('same-score-updated-wire');
+ const riven={weapon:'coda_catabolyst',mods:['frostbite','riven','galvanized_diffusion','galvanized_shot',
+  'lethal_torrent','pistol_elementalist','pressurized_magazine','critical_mutation'],
+  arcanes:['secondary_enervate'],exilus:'ruinous_extension',valence:'heat',
+  riven_pos:['critical_damage','electricity','viral'],riven_neg:'zoom'};
+ const rivenRecords=[[1.02,0.99,1.08,1.03],[1.1,1.1,1.1,0.9]].map(riven_rolls=>({...riven,riven_rolls}));
+ const rivenDescriptors=await native.call('describe',rivenRecords.map((record,i)=>({id:`riven-${i}`,record})));
+ assert.notEqual(rivenDescriptors[0].admit,rivenDescriptors[1].admit,'current Native never admits the actual-roll input');
+ const rivenInputs=rivenDescriptors.map(({candidate:identity},i)=>({identity,record:rivenRecords[i],facts:[
+  {...inputs[0].facts[0],identity,mode:'base',score:90-i*10}]}));
+ const cached=rivenInputs.map(({identity,record},i)=>({identity,record_sha256:createHash('sha256').update(JSON.stringify(record)).digest('hex'),
+  descriptor:{...rivenDescriptors[i],admit:rivenDescriptors[1].admit}}));
+ const scope={weapon:riven.weapon,ruler,inputs:rivenInputs,cached};
+ const original={...native,call:(op,items)=>op==='standard_riven'?items.map(()=>({standard:true})):native.call(op,items)};
+ assert.deepEqual((await prepareRankSources(original,scope)).rows.map(row=>row.score),[90,80],'the old cached mask would admit the actual-roll score');
+ counts.describe=0;
+ assert.deepEqual((await prepareRankSources(operate,scope)).rows.map(row=>row.score),[80]);
+ assert.equal(counts.describe,0,'riven eligibility applies without changing pinned Native descriptions');
  console.log('  ok  real PostgreSQL Native index, live precedence, stale preparation and recovery-boundary checks');
 }finally{
  await native.close();await sql.unsafe('DROP SCHEMA IF EXISTS '+schema+' CASCADE');await sql.end();rmSync(work,{recursive:true,force:true});

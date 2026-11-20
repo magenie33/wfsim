@@ -318,3 +318,29 @@ no indexed input transfer or staged snapshot reference is retained, restores the
 and preserves the canonical source identity. It refuses a rollback that would
 strand a published or pinned version. Neither installer performs historical
 task regeneration or score recomputation.
+
+### Standard riven eligibility
+
+The current rank policy evaluates each riven before its candidate reaches
+the shape winners. A reader on a retained Native descriptor epoch uses the
+current `wfsim-board` as its policy binary. Pin its exact file and SHA-256 in
+`WFSIM_BOARD_RIVEN_POLICY_BIN` and `WFSIM_BOARD_RIVEN_POLICY_SHA256`. The
+catalog controller binds the same file and digest in `riven_policy_binary`
+and `riven_policy_sha256`. The existing descriptor epoch retains its Native
+and source digests.
+
+For an installed ranking database, generate the additive upgrade with
+`node scripts/board_rank_schema.mjs --riven-policy-upgrade`. The storage owner
+installs it and sets the approved `digest` at row 1 of
+`state_board_rank_riven_policy` at the reader switch. A generation under an
+older policy must be regenerated from the same index before selection.
+
+`node scripts/board_rank_riven_repair.mjs MANIFEST.json` schedules affected
+identities in the existing index queue. The manifest binds `source`, `native`,
+`policy`, `scopes` with `weapon`, `ruler`, `revision`, `index_revision` and
+`identities`, and `historical` with individual old revision keys. Use an
+audited current revision for each scope. The selected revision remains
+available while the new index and pages are prepared. The replacement and
+withdrawal of the prior public revision commit atomically against the
+prepared index and current head. Refresh an advanced scope before retrying.
+Withdrawal retains the stored snapshot and its independent measurements.

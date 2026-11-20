@@ -3,7 +3,7 @@
 
 use super::{derive, par_map, publication_row, roster, Ruler};
 use crate::board::entry::{earning, publication_clears, publication_default, publication_floor_key, publication_shape, Earning};
-use crate::board::publish::{page_row, published, Row};
+use crate::board::publish::{page_row, published, Row, RowRiven};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::io::{BufRead, Read, Write};
@@ -72,6 +72,13 @@ fn execute(request: Request, rulers: &[Ruler]) -> Result<Vec<Value>, String> {
     if request.items.len() > MAX_ITEMS { return Err("inventory operation exceeds item bound".into()); }
     match request.op.as_str() {
         "describe" => par_map(&request.items, |item| describe(item, rulers)).into_iter().collect(),
+        "standard_riven" => request.items.into_iter().map(|item| {
+            let weapon = item.get("weapon").and_then(Value::as_str).ok_or("publication weapon required")?;
+            let riven = item.get("riven").ok_or("publication riven required")?;
+            let standard = riven.is_null() || serde_json::from_value::<RowRiven>(riven.clone())
+                .is_ok_and(|riven| riven.standard_shape(weapon).is_some());
+            Ok(json!({"standard":standard}))
+        }).collect(),
         "facts" => request.items.into_iter().map(|mut item| {
             let ruler = item.get("ruler").and_then(Value::as_str).ok_or("invalid fact ruler")?;
             let family = wfsim_engine::board::benchmarks::family(ruler);
@@ -133,7 +140,7 @@ fn execute(request: Request, rulers: &[Ruler]) -> Result<Vec<Value>, String> {
 pub(in crate::board) fn serve() {
     let rulers = roster();
     let mut out = std::io::BufWriter::new(std::io::stdout().lock());
-    serde_json::to_writer(&mut out, &json!({"v":1,"ready":true,"max_items":MAX_ITEMS,"operators":["describe","facts","gate","render","floor","carry","state"],
+    serde_json::to_writer(&mut out, &json!({"v":1,"ready":true,"max_items":MAX_ITEMS,"operators":["describe","standard_riven","facts","gate","render","floor","carry","state"],
         "entry_share":wfsim_engine::data::boards::KEEP_LEADER_SHARE,
         "rulers":rulers.iter().map(|r| json!({"id":r.id,"scene":r.dir})).collect::<Vec<_>>()})).expect("operator ready");
     writeln!(out).expect("operator ready"); out.flush().expect("operator ready");

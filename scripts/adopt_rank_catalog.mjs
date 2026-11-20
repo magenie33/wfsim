@@ -30,7 +30,8 @@ export async function registerCatalogScope(sql,{work,manifest:m,receipt:r,contra
   return {status:'retired-ruler',weapon,ruler};
  if(scene===undefined||!Number.isSafeInteger(r.rows)||r.rows<0||!/^[a-f0-9]{64}$/.test(r.pages_sha256)||!/^[a-f0-9]{64}$/.test(m.sha256))
   throw Error('invalid catalog publication proof');
- const frozen={scene,snapshot:r.snapshot,archive:r.archive,pages_sha256:r.pages_sha256,rows:r.rows};
+ if(r.policy!==undefined&&!/^[a-f0-9]{64}$/.test(r.policy))throw Error('invalid catalog riven policy');
+ const frozen={scene,snapshot:r.snapshot,archive:r.archive,pages_sha256:r.pages_sha256,rows:r.rows,...(r.policy?{policy:r.policy}:{})};
  return sql.begin(async tx=>{
   await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
   await tx.unsafe('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[JSON.stringify([source,'catalog',...keys])]);

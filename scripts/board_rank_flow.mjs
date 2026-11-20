@@ -2,7 +2,7 @@
 // Captured routing, baseline work, dirty normalization and complete publication own separate handoffs.
 import {join} from 'node:path';
 import {stat,mkdir} from 'node:fs/promises';
-import {openInventoryOperator} from './inventory_operator.mjs';
+import {openRankInventoryOperator} from './board_operator.mjs';
 import {BoardInputMailbox} from './board_input_mailbox.mjs';
 import {boardStorage} from './board_storage.mjs';
 import {guardRankSpace} from './board_rank_storage.mjs';
@@ -10,10 +10,10 @@ import {enqueueRequestedPartition} from './board_requested_partitions.mjs';
 import {BoardRankConflict,BoardRankQualificationError} from './board_rank_index.mjs';
 import {captureRankBaseline,beginRankBaseline,prepareRankBaselinePage,applyRankBaselinePage} from './board_rank_baseline.mjs';
 import {putRankDirty,putRankDirtyBatch,routeRankInput,reconcileRankBaseline,finishRankBaseline,claimRankDirty,prepareRankIdentity,applyRankDirty,retryRankDirty} from './board_rank_work.mjs';
-import {claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankGeneration,publishRankGeneration,reuseRankGeneration,retryRankPublication,yieldRankPublication} from './board_rank_publication.mjs';
+import {abandonRankGeneration,BoardRankRivenReindex,claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankGeneration,publishRankGeneration,reuseRankGeneration,retryRankPublication,yieldRankPublication} from './board_rank_publication.mjs';
 import {collectRankStorage,collectRankOrphan} from './board_rank_gc.mjs';
 
-export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha,requestedPartitions=false,baselineConcurrency=1,fault=async()=>{}}) {
+export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha,policyBinary,policySha,requestedPartitions=false,baselineConcurrency=1,fault=async()=>{}}) {
  if(!Number.isInteger(baselineConcurrency)||baselineConcurrency<1||baselineConcurrency>3)throw Error('invalid ranking baseline concurrency');
  work=boardStorage(work);await mkdir(work,{recursive:true});
  const [storage]=await sql.unsafe(`SELECT to_regclass('state_board_rank_descriptions') IS NOT NULL
@@ -23,14 +23,18 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
  const [boundary]=await sql.unsafe('SELECT weapon,ruler FROM state_board_rank_partitions WHERE source<>$1 OR native<>$2 LIMIT 1',[source,nativeSha]);
  if(boundary)throw new BoardRankQualificationError('ranking projection recovery boundary changed');
  const [{catalog}]=await sql.unsafe("SELECT to_regprocedure('board_rank_catalog_activate(text,text,text,text)') IS NOT NULL AS catalog");
- const identity=await stat(binary),native=await openInventoryOperator(binary);
+ const [expectedPolicy]=await sql.unsafe('SELECT digest FROM state_board_rank_riven_policy WHERE id=1');
+ const identity=await stat(binary),policyIdentity=policyBinary&&await stat(policyBinary);
+ const native=await openRankInventoryOperator(binary,{policyBinary,policySha});
  if(native.adapter!==nativeSha){await native.close();throw new BoardRankQualificationError('board native contract changed');}
+ const rivenPolicy=native.policyAdapter??native.adapter;
+ if(expectedPolicy&&expectedPolicy.digest!==rivenPolicy){await native.close();throw new BoardRankQualificationError('board riven policy native contract changed');}
  const mailbox=new BoardInputMailbox(sql,{source}),abort=new AbortController();
- const context={source,engine,native:native.adapter,work,catalog,verified:new Map(),prefixes:new Map(),fault};
+ const context={source,engine,native:native.adapter,rivenPolicy,work,catalog,verified:new Map(),prefixes:new Map(),fault};
  const captures=new Map();let publication=null,turn=0,closed=false,orphanAfter=0;
- const sameNative=async()=>{
-  const current=await stat(binary);
-  if(current.ino!==identity.ino||current.size!==identity.size||current.mtimeMs!==identity.mtimeMs)
+ const sameNative=async(path,opened)=>{
+  const current=await stat(path);
+  if(current.ino!==opened.ino||current.size!==opened.size||current.mtimeMs!==opened.mtimeMs)
    throw new BoardRankQualificationError('board native contract changed');
  };
  const partitionKey=(weapon,ruler)=>JSON.stringify([weapon,ruler]);
@@ -159,9 +163,15 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
   }
   pages++;
   const scope={weapon:publication.weapon,ruler:publication.ruler};
+  let generation;
   try{
-   const [generation]=await sql.unsafe(`SELECT * FROM state_board_rank_generations WHERE weapon=$1 AND ruler=$2 AND phase IN('floor','upload') ORDER BY created_at,token LIMIT 1`,[publication.weapon,publication.ruler]);
+   [generation]=await sql.unsafe(`SELECT * FROM state_board_rank_generations WHERE weapon=$1 AND ruler=$2 AND phase IN('floor','upload') ORDER BY created_at,token LIMIT 1`,[publication.weapon,publication.ruler]);
    if(!generation){await startRankGeneration(sql,native,publication,context);return {status:'snapshot-started',...scope};}
+   if(generation.riven_policy!==rivenPolicy){
+    await abandonRankGeneration(sql,publication,generation);
+    await yieldRankPublication(sql,publication);
+    return finishPublication(generation,{status:'snapshot-policy-replaced',...scope});
+   }
    if(generation.phase==='floor'){await floorRankGeneration(sql,native,publication,generation,context);return {status:'snapshot-floor',...scope};}
    if(Number(generation.upload_cursor)===0){const reused=await reuseRankGeneration(sql,publication,generation,context);if(reused)return finishPublication(generation,{...reused,...scope});}
    if(Number(generation.uploaded_rows)!==Number(generation.output_rows)||Number(generation.upload_cursor)!==Number(generation.output_size)){
@@ -170,6 +180,17 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
    const result=await publishRankGeneration(sql,native,publication,generation,context);return finishPublication(generation,{...result,...scope});
   }catch(error){
    const failed=publication;publication=null;
+   if(error.code==='40001'&&error.message==='riven repair ranking or public revision advanced'&&generation){
+    await abandonRankGeneration(sql,failed,generation);
+    error=new BoardRankConflict(error.message);
+   }
+   if(error instanceof BoardRankRivenReindex&&generation){
+    await sql.begin(async tx=>{
+     await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
+     await putRankDirtyBatch(tx,error.identities.map(identity=>({...scope,identity,zone:failed.zone})),true);
+    });
+    await abandonRankGeneration(sql,failed,generation);
+   }
    if(deterministic(error)){
     await sql.unsafe(`UPDATE state_board_rank_generations g SET phase='abandoned' WHERE weapon=$1 AND ruler=$2 AND phase IN('floor','upload')
      AND EXISTS(SELECT 1 FROM state_board_rank_publication_ready r WHERE r.weapon=g.weapon AND r.ruler=g.ruler
@@ -216,7 +237,9 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
   }));
  }
  return {contract:native.contract,step:async()=>{
-  if(closed)throw Error('ranking reader is closed');guardRankSpace(work);await sameNative();
+  if(closed)throw Error('ranking reader is closed');guardRankSpace(work);
+  await sameNative(binary,identity);
+  if(policyIdentity)await sameNative(policyBinary,policyIdentity);
   for(let i=0;i<stages.length;i++){const result=await stages[turn++%stages.length]();if(result)return result;}
   return {status:'idle'};
  },close:async()=>{closed=true;abort.abort();

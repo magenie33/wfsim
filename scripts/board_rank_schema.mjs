@@ -5,6 +5,10 @@ import {boardRankRecentDDL} from './board_rank_recent_schema.mjs';
 import {boardRankCompactDDL} from './board_rank_compact_schema.mjs';
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
+const ddl=name=>readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8');
+const rivenPolicy=readerRole=>`${ddl('board_rank_riven_policy')}
+GRANT SELECT ON state_board_rank_riven_policy,state_board_rank_riven_repairs TO ${readerRole};
+GRANT EXECUTE ON FUNCTION board_rank_finish_riven_repair(text,text,text,uuid) TO ${readerRole};`;
 export function boardRankSchema({schema='public',readerRole='wfsim_board_read',httpRole='wfsim',tablespace='wfsim_data'}={}) {
  for(const value of [schema,readerRole,httpRole,tablespace])if(!/^[a-z_][a-z0-9_]{0,62}$/.test(value))throw Error('invalid ranking installation name');
  const tables=['state_board_rank_partitions','state_board_rank_sources','state_board_rank_route_inputs',
@@ -27,6 +31,7 @@ ${boardRankCompactDDL(readerRole)}
 ${boardRankCatalogDDL(readerRole)}
 ${boardRankRecentDDL(readerRole)}
 ${readFileSync(new URL('../worker/pg/board_rank_pages.sql',import.meta.url),'utf8')}
+${rivenPolicy(readerRole)}
 GRANT SELECT,INSERT,UPDATE,DELETE ON ${tables.join(',')} TO ${readerRole};
 GRANT SELECT(scope,key,version,removed) ON state_board_input_mailbox TO ${readerRole};
 GRANT USAGE ON SEQUENCE board_rank_generation TO ${readerRole};
@@ -35,7 +40,28 @@ GRANT EXECUTE ON FUNCTION board_read_page(text,text,text,bigint,bigint) TO ${htt
 COMMIT;
 `;
 }
-if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)process.stdout.write(boardRankSchema());
+
+export function boardRankRivenPolicyUpgrade({schema='public',readerRole='wfsim_board_read',tablespace='wfsim_data'}={}) {
+ for(const value of [schema,readerRole,tablespace])if(!/^[a-z_][a-z0-9_]{0,62}$/.test(value))throw Error('invalid ranking policy installation name');
+ return `BEGIN;
+SET LOCAL lock_timeout='1s';
+SET LOCAL statement_timeout='30s';
+SET LOCAL default_tablespace='${tablespace}';
+SELECT pg_catalog.set_config('search_path','${schema},pg_catalog,pg_temp',true);
+DO $$ BEGIN
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='state_board_read_partitions'::regclass) IS DISTINCT FROM current_user
+  OR to_regclass('record_board_rank_snapshot_refs') IS NULL THEN
+  RAISE EXCEPTION 'existing indexed publication and its storage owner required';
+ END IF;
+END $$;
+${ddl('board_pages')}
+${ddl('board_rank_pages')}
+${rivenPolicy(readerRole)}
+COMMIT;
+`;
+}
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)
+ process.stdout.write(process.argv.includes('--riven-policy-upgrade')?boardRankRivenPolicyUpgrade():boardRankSchema());
 
 export function boardRankRollbackSchema({schema='public',httpRole='wfsim'}={}) {
  for(const value of [schema,httpRole])if(!/^[a-z_][a-z0-9_]{0,62}$/.test(value))throw Error('invalid ranking rollback name');
@@ -65,6 +91,9 @@ DROP FUNCTION IF EXISTS board_rank_catalog_activate(text,text,text,text);
 DROP TABLE IF EXISTS state_board_rank_recent_inputs,state_board_rank_new_scopes,state_board_rank_scope_discovery;
 DROP FUNCTION board_rank_expand_inputs(integer);
 DROP VIEW state_board_rank_dependencies;
+DROP TRIGGER IF EXISTS board_rank_guard_riven_policy ON record_board_rank_snapshot_refs;
+DROP FUNCTION IF EXISTS board_rank_guard_riven_policy(),board_rank_finish_riven_repair(text,text,text,uuid);
+DROP TABLE IF EXISTS state_board_rank_riven_repairs,state_board_rank_riven_policy;
 DROP TABLE state_board_rank_input_sets,state_board_rank_descriptions;
 DROP TABLE record_board_rank_snapshot_refs,state_board_rank_snapshot_rows,state_board_rank_generations,
  state_board_rank_publication_ready,state_board_rank_baseline_obligations,state_board_rank_dirty,

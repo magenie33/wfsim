@@ -13,11 +13,18 @@ const until="board_input_timestamp(clock_timestamp()+interval '3minutes')";
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const empty=hash('');
 
-async function generationEpoch(sql,generation,{source,native,engine}) {
+export class BoardRankRivenReindex extends BoardRankConflict {
+ constructor(identities) {
+  super('ranking winners require riven policy reindexing');
+  this.identities=identities;
+ }
+}
+
+async function generationEpoch(sql,generation,{source,native,engine,rivenPolicy=native}) {
  const [part]=await sql.unsafe(`SELECT p.*,(SELECT source FROM state_board_input_source WHERE id=1) actual
   FROM state_board_rank_partitions p WHERE weapon=$1 AND ruler=$2`,[generation.weapon,generation.ruler]);
  if(!part?.complete||part.actual!==source||part.source!==source||generation.source!==source||part.native!==native
-  ||generation.native!==native||part.cut!==generation.cut||generation.engine!==engine)
+  ||generation.native!==native||part.cut!==generation.cut||generation.engine!==engine||generation.riven_policy!==rivenPolicy)
   throw new BoardRankQualificationError('ranking generation recovery boundary changed');
 }
 
@@ -63,11 +70,21 @@ export async function claimRankPublication(sql,{source,native,recent=false,catal
     AND(s.enabled OR(NOT s.canonical_sources AND s.revision IS NULL)
     ${catalog?"OR(p.catalog_phase IN('frozen','replay') AND NOT s.enabled AND s.canonical_sources AND s.revision IS NULL)":''}))
    ${first&&catalog?"AND p.catalog_phase IN('frozen','replay')":''}
+   AND NOT EXISTS(SELECT 1 FROM state_board_rank_riven_repairs repair CROSS JOIN LATERAL jsonb_to_recordset(repair.inputs) i(identity text,version bigint)
+     LEFT JOIN state_board_rank_dirty dirty ON (dirty.weapon,dirty.ruler,dirty.identity)=(repair.weapon,repair.ruler,i.identity)
+     WHERE (repair.weapon,repair.ruler)=(p.weapon,p.ruler) AND (dirty.applied_version IS NULL OR dirty.applied_version<i.version))
    ${recent?'AND d.recent_version>d.applied_version':''} AND d.version>d.applied_version AND d.available_at<=${now} ORDER BY d.zone,coalesce(d.zone_position,0),coalesce(d.queued_at,d.available_at),d.weapon,d.ruler
   LIMIT 1 FOR UPDATE OF d SKIP LOCKED)
   UPDATE state_board_rank_publication_ready d SET lease=$3,lease_version=d.version,lease_until=${until},available_at=${until}
   FROM chosen c WHERE (d.weapon,d.ruler)=(c.weapon,c.ruler) RETURNING d.*`,[source,native,randomUUID()]);
  return row||null;
+}
+
+export async function abandonRankGeneration(sql,claim,generation) {
+ return sql.begin(async tx=>{
+  await heldPublication(tx,claim);
+  await tx.unsafe("UPDATE state_board_rank_generations SET phase='abandoned' WHERE token=$1::uuid AND phase IN('floor','upload')",[generation.token]);
+ });
 }
 
 export async function yieldRankPublication(sql,claim) {
@@ -94,18 +111,24 @@ export async function startRankGeneration(sql,native,claim,{source,work,engine})
   await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
   await heldPublication(tx,claim);
   const [generation]=await tx.unsafe(`INSERT INTO state_board_rank_generations(token,weapon,ruler,source,native,cut,engine,index_revision,ready_version,
-   phase,directory,winners_sha256,output_sha256,captured_at,input_sha256)
-   VALUES($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9,'floor',$10,$11,$12,$13,$14) RETURNING *`,
-   [token,claim.weapon,claim.ruler,source,native.adapter,captured.cut,engine,captured.revision,claim.lease_version,directory,captured.winners_sha256,empty,captured.captured_at,captured.input_sha256]);
+   phase,directory,winners_sha256,output_sha256,captured_at,input_sha256,riven_policy)
+   VALUES($1::uuid,$2,$3,$4,$5,$6,$7,$8,$9,'floor',$10,$11,$12,$13,$14,$15) RETURNING *`,
+   [token,claim.weapon,claim.ruler,source,native.adapter,captured.cut,engine,captured.revision,claim.lease_version,directory,captured.winners_sha256,empty,captured.captured_at,captured.input_sha256,native.policyAdapter??native.adapter]);
   return generation;
  });
 }
 
 export async function floorRankGeneration(sql,native,claim,generation,{work,source,engine,fault=async()=>{},verified=new Map(),prefixes=new Map()}={}) {
- await generationEpoch(sql,generation,{source,native:native.adapter,engine});
+ await generationEpoch(sql,generation,{source,native:native.adapter,engine,rivenPolicy:native.policyAdapter??native.adapter});
  const directory=directoryOf(generation,work),winners=join(directory,'winners.ndjson'),output=join(directory,'rows.ndjson');
  await verifyFile(winners,generation.winners_sha256,null,verified);
  const page=rankFilePage(winners,Number(generation.winners_cursor),256);
+ const rivens=page.rows.filter(row=>row.riven);
+ if(rivens.length){
+  const standards=await native.call('standard_riven',rivens.map(row=>({weapon:generation.weapon,riven:JSON.parse(row.page).riven})));
+  const invalid=rivens.filter((_,i)=>standards[i]?.standard!==true).map(row=>row.identity);
+  if(invalid.length)throw new BoardRankRivenReindex([...new Set(invalid)]);
+ }
  const decisions=page.rows.length?await native.call('floor',page.rows.map(row=>({score:Number(row.score),leader:Number(row.leader)}))):[];
  const kept=page.rows.filter((_,i)=>decisions[i].keep),body=kept.map(row=>row.page+'\n').join('');
  const leaders=new Map(generation.leaders.map(row=>[JSON.stringify([row.mode,row.riven]),row]));
@@ -147,8 +170,8 @@ export async function floorRankGeneration(sql,native,claim,generation,{work,sour
  return result;
 }
 
-export async function uploadRankGeneration(sql,claim,generation,{work,source,native,engine,fault=async()=>{},verified=new Map()}={}) {
- await generationEpoch(sql,generation,{source,native,engine});
+export async function uploadRankGeneration(sql,claim,generation,{work,source,native,engine,rivenPolicy=native,fault=async()=>{},verified=new Map()}={}) {
+ await generationEpoch(sql,generation,{source,native,engine,rivenPolicy});
  const path=join(directoryOf(generation,work),'rows.ndjson');await verifyFile(path,generation.output_sha256,generation.output_size,verified);
  const page=rankFilePage(path,Number(generation.upload_cursor),256);
  return sql.begin(async tx=>{
@@ -168,15 +191,16 @@ export async function uploadRankGeneration(sql,claim,generation,{work,source,nat
 
 export const rankOutputRevision=({source,engine,native,output_sha256})=>hash(JSON.stringify({source,engine,native,rows:output_sha256}));
 
-export async function reuseRankGeneration(sql,claim,generation,{source,engine,native}) {
+export async function reuseRankGeneration(sql,claim,generation,{source,engine,native,rivenPolicy=native}) {
  const revision=rankOutputRevision({source,engine,native,output_sha256:generation.output_sha256});
  return sql.begin(async tx=>{
   await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
   const [part]=await tx.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 FOR SHARE',[claim.weapon,claim.ruler]);
   const delivery=await heldPublication(tx,claim);
   const [selected]=await tx.unsafe('SELECT revision FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2 AND enabled',[claim.weapon,claim.ruler]);
-  if(!part?.complete||part.source!==source||part.native!==native||part.cut!==generation.cut||generation.engine!==engine)
+  if(!part?.complete||part.source!==source||part.native!==native||part.cut!==generation.cut||generation.engine!==engine||generation.riven_policy!==rivenPolicy)
    throw new BoardRankQualificationError('ranking generation recovery boundary changed');
+  if((await tx.unsafe('SELECT 1 FROM state_board_rank_riven_repairs WHERE (weapon,ruler)=($1,$2)',[claim.weapon,claim.ruler])).length)return null;
   if(delivery.delivered_output!==revision||selected?.revision!==revision)return null;
   await tx.unsafe("UPDATE state_board_rank_generations SET phase='abandoned' WHERE token=$1::uuid AND phase='upload'",[generation.token]);
   await tx.unsafe('UPDATE state_board_rank_publication_ready SET delivered_revision=greatest(delivered_revision,$3::bigint) WHERE weapon=$1 AND ruler=$2',[claim.weapon,claim.ruler,generation.index_revision]);
@@ -190,7 +214,7 @@ export async function publishRankGeneration(sql,native,claim,generation,{source,
   const [part]=await tx.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 FOR SHARE',[claim.weapon,claim.ruler]);
   const delivery=await heldPublication(tx,claim);
   const [current]=await tx.unsafe('SELECT * FROM state_board_rank_generations WHERE token=$1::uuid FOR UPDATE',[generation.token]);
-  if(!part?.complete||part.source!==source||current.source!==source||part.native!==native.adapter||current.native!==native.adapter||part.cut!==current.cut||current.engine!==engine)
+  if(!part?.complete||part.source!==source||current.source!==source||part.native!==native.adapter||current.native!==native.adapter||part.cut!==current.cut||current.engine!==engine||current.riven_policy!==(native.policyAdapter??native.adapter))
    throw new BoardRankQualificationError('ranking generation recovery boundary changed');
   if(current.phase!=='upload'||Number(current.uploaded_rows)!==Number(current.output_rows)||Number(current.upload_cursor)!==Number(current.output_size))
    throw new BoardRankQualificationError('ranking generation is not completely uploaded');
@@ -219,6 +243,7 @@ export async function publishRankGeneration(sql,native,claim,generation,{source,
   await tx.unsafe(`INSERT INTO record_board_read_snapshots VALUES($1,$2,$3,$4,$5,$6,$7,($8::text)::jsonb,$9,${now}) ON CONFLICT DO NOTHING`,
    [claim.weapon,claim.ruler,revision,source,engine,current.input_sha256,current.output_rows,JSON.stringify(heads),current.captured_at]);
   await tx.unsafe(`INSERT INTO record_board_rank_snapshot_refs VALUES($1,$2,$3,$4::uuid) ON CONFLICT DO NOTHING`,[claim.weapon,claim.ruler,revision,current.token]);
+  await tx.unsafe('SELECT board_rank_finish_riven_repair($1,$2,$3,$4::uuid)',[claim.weapon,claim.ruler,revision,current.token]);
   if(adopting)await tx.unsafe('SELECT board_rank_catalog_activate($1,$2,$3,$4)',[claim.weapon,claim.ruler,revision,source]);
   else if(!selected.enabled)await tx.unsafe('SELECT board_requested_partition_activate($1,$2,$3,$4::uuid)',[claim.weapon,claim.ruler,revision,source]);
   else await tx.unsafe('UPDATE state_board_read_partitions SET revision=$3 WHERE weapon=$1 AND ruler=$2',[claim.weapon,claim.ruler,revision]);
