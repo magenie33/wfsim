@@ -517,12 +517,14 @@ await check("saved-riven batches capture upload consent before asynchronous vali
   let consent = "yes", captured = null; const validating = gate(), entered = gate();
   const scope = vm.createContext({ crypto: webcrypto, console, TextEncoder, AbortController, setTimeout, clearTimeout,
     ENGINE_ID: "engine-a", boardConsent: () => consent, META: { search_presets: { presets: [{ riven: true, name: "Appraisal" }] } },
+    weaponInfo: id => ({ id }),
     accountState: { account: { profile_id: "owner-profile" } },
     initUserTasks: async () => ({ createMany: async entries => { captured = plain(entries); return entries; } }),
     api: async () => { entered.resolve(); await validating.promise; return { illegal: [] }; },
     headlessRivenGainRequest: () => ({ request: { weapon: "braton_prime" }, context: { weapon: "braton_prime" } }),
     fetch: async () => ({ ok: true }) });
-  vm.runInContext(storeSource + "\n" + appraisalSource + "\nglobalThis.submitBatch = submitSavedAppraisals;", scope);
+  vm.runInContext(storeSource + "\n" + appraisalSource
+    + "\nreplayAppraisalReferences = async () => {}; globalThis.submitBatch = submitSavedAppraisals;", scope);
   const card = { id: "owned", name: "Owned", state: { bonuses: [{ id: "critical_chance" }, { id: "critical_damage" }] } };
   const submitting = scope.submitBatch(["owned"], "ruler", "community", { weapon: "braton_prime", cards: [card] });
   await entered.promise; consent = "no"; validating.resolve(); await submitting;
