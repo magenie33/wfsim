@@ -236,9 +236,16 @@ try {
       issued++;
       return new Response(new Uint8Array(128 * 1024 + 1));
     } });
-    return { issued, aborted, hits: [timed, cross, maliciousMeta, tooBigManifest].map(cache => cache.lookup(["q1:a"], 2)[0]) };
+    searchWarmRetry.clear();
+    let pulled = false;
+    const missing = await openSearchWarmCache(body, { ...common, fetch: async () => {
+      issued++;
+      const shell = new ReadableStream({ pull(controller) { pulled = true; controller.close(); } }, { highWaterMark: 0 });
+      return new Response(shell, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    } });
+    return { issued, aborted, pulled, hits: [timed, cross, maliciousMeta, tooBigManifest, missing].map(cache => cache.lookup(["q1:a"], 2)[0]) };
   }, fixed);
-  assert.deepEqual(rejected, { issued: 3, aborted: true, hits: [null, null, null, null] });
+  assert.deepEqual(rejected, { issued: 4, aborted: true, pulled: false, hits: [null, null, null, null, null] });
   assert.deepEqual(requests, []);
 
   const corrupt = await browser(async ({ body, official, identityId }) => {

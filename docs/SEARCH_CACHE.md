@@ -61,6 +61,8 @@ node scripts/bake_search_cache.mjs pack --site site --receipts target/hot/by-wea
 
 ## 跨发布复用
 
+现有 nginx 配置位于 `deploy/website.nginx`。把选定 `siteRoot` 下的 `search-cache/` 映射到同源相对路径，并在 SPA 回退前为此前缀配置 `try_files $uri =404`。若由边缘 Worker 提供资源，在两份 Wrangler 配置的 `run_worker_first` 加上 `/search-cache/*`，并把前缀加入 `worker/pages.js` 中已有的静态缺包处理。可以把公开对象桶挂在相同路径，页面的读取协议相同。上线前用一个存在和一个缺失的请求分别检查二进制响应头与 404。前端看到网页的 HTML 响应头会立即停止读取并继续本地搜索。
+
 `reuse` 按一把武器、一个官方榜单和一个模板迁移受信宿主的 capture。准备从可信发布渠道归档的旧、新 `site/`，以及宿主在原始烘焙时记录的 `receiptSha256`。该值覆盖整个 receipt 文件的原始字节，包括热度与耗时字段。已有 capture 可用受宿主管理的原始备份计算此值。工作者随返回文件提供的摘要不能证明宿主来源。外部结果走 `assemble` 的独立实算验收。
 
 ```powershell

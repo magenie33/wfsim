@@ -257,7 +257,8 @@ async function searchWarmGet(fetcher, url, limit, signal, asset = false) {
   const declared = response.headers.get("content-length");
   const encoding = response.headers.get("content-encoding");
   const direct = !response.redirected && (!response.url || response.url === url.href);
-  if (response.status !== 200 || !direct
+  const html = /^text\/html\b/i.test(response.headers.get("content-type") || "");
+  if (response.status !== 200 || !direct || html
       || (declared !== null && (!/^\d+$/.test(declared) || Number(declared) > limit))
       || (asset && encoding && encoding.toLowerCase() !== "identity")) {
     response.body?.cancel().catch(() => {});
@@ -981,6 +982,10 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       }
       if (!Array.isArray(r.pending) || !r.pending.length) {
         fail("The optimizer requested an empty batch.", false);
+        return;
+      }
+      if (searchWarm?.capture && !r.pending.every(item => Array.isArray(item?.warm_keys))) {
+        fail("This engine cannot bake search-cache receipts. Use a matching release with search-cache support.", false);
         return;
       }
       // The build and run count identify a measurement. Carried runs are evidence.
