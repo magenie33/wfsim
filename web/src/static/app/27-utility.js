@@ -48,8 +48,10 @@ function renderUtilityTabs() {
     escHtml(tr(title))}${t === "reminders" && unread ? ` <span class="tbadge">${unread}</span>` : ""}</a>`);
   const links = accountState.account?.id === utilityShortcutAccount ? utilityShortcuts : [];
   const shortcuts = links.map((item) =>
-    `<a class="mtab" data-native href="${escHtml(item.path)}">${escHtml(worldName(item.names))}</a>`);
-  $("utility-tabs").innerHTML = tabs.concat(shortcuts).join("");
+    `<a class="ghost-btn" data-native href="${escHtml(item.path)}">${escHtml(worldName(item.names))}</a>`);
+  const nav = $("utility-tabs");
+  nav.classList.toggle("has-utility-shortcuts", links.length > 0);
+  nav.innerHTML = tabs.join("") + (links.length ? `<div class="utility-shortcuts">${shortcuts.join("")}</div>` : "");
 }
 
 function refreshUtilityShortcuts() {
