@@ -52,6 +52,32 @@ function loadCheckpoint() {
 // ignorable. `poolSize()` is the setting; this is now only a name for it.
 const woptWorkerCount = () => poolSize();
 
+// A promoted score carries the pilot fights for each element order. Start
+// expensive slices first; results are still assembled by original slice index.
+function quickScoreDispatch(slices, workers) {
+  if (workers < 2 || slices.length <= workers) return null;
+  if (slices.some(slice => slice.some(item => !Array.isArray(item?.shards)))) return null;
+  const loads = [];
+  for (const slice of slices) {
+    let load = 0;
+    for (const item of slice) for (const carried of item.shards) {
+      if (carried == null) continue;
+      let shard = carried;
+      if (typeof carried === "string") {
+        try {
+          const packed = JSON.parse(carried);
+          if (!Array.isArray(packed) || packed[0] !== 1) return null;
+          shard = packed[2];
+        } catch (_) { return null; }
+      }
+      if (!Number.isFinite(shard?.gas) || shard.gas < 0) return null;
+      load += shard.gas;
+    }
+    loads.push(load);
+  }
+  return loads.map((_, i) => i).sort((a, b) => loads[b] - loads[a] || a - b);
+}
+
 // Merge the fleet's leaderboards into one. Each worker ran its own funnel over
 // its own elites, so every row here is measured at the SAME run count under the
 // SAME scenario and the scores are directly comparable — the merge is a sort.
@@ -379,6 +405,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       const size = Math.max(1, Math.ceil(r.pending.length / (k * 2)));
       const slices = [];
       for (let at = 0; at < r.pending.length; at += size) slices.push(r.pending.slice(at, at + size));
+      const dispatch = quickScoreDispatch(slices, k);
       const outs = new Array(slices.length).fill(null);
       let next = 0, broken = false;
       activity = "scoring";
@@ -386,7 +413,8 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       show();
       await Promise.all(Array.from({ length: k }, async (_, i) => {
         while (!broken && !job.cancelled && next < slices.length) {
-          const at = next++;
+          const slot = next++;
+          const at = dispatch?.[slot] ?? slot;
           const o = await timed(i, { kind: "optimize", body: { ...body, quick_fleet: { score: slices[at], compact_shards: 1 } } }, (st) => { live[i] = st; show(); });
           live[i] = null;
           if (!o) { broken = true; return; }

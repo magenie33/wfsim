@@ -342,7 +342,9 @@ into steps the PAGE drives (`woptQuickFleet`):
    step screen's short measurement (docs/OPTIMIZER.md, "Each step is
    screened"), answered `rough: true` with its runs (`shards`), or `{build,
    shards}`, a full measurement that continues them, answered with its best
-   order's runs (`shard`); the page passes all of it through unread.
+   order's runs (`shard`). For a batch of promoted builds the page can read
+   the gas their pilot runs used and dispatch the most expensive slices first.
+   Replies return to their original slice positions before the next leader call.
 2. The page splits the batch across all workers, the leader included:
    `quick_fleet: { score: [...] }` → each build's score and the element order
    it scored best at.

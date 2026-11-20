@@ -14,6 +14,53 @@ import { createContext, runInContext } from "node:vm";
 const transport = readFileSync(new URL("../web/src/static/app/06-transport.js", import.meta.url), "utf8");
 const watch = transport.slice(transport.indexOf("const LANE_WATCHDOG"), transport.indexOf("/// WHERE A WORKER"));
 
+async function checkScoreDispatch() {
+  const source = readFileSync(new URL("../web/src/static/app/08-checkpoint-api.js", import.meta.url), "utf8");
+  const sent = [], held = [];
+  let returned;
+  const sandbox = createContext({
+    Date, performance, setTimeout, clearTimeout,
+    watchSilence: () => ({ start() {}, clear() {}, heard() {} }),
+    computeRun: (_, work) => work(),
+    spawnEngine: () => ({
+      terminate() {},
+      postMessage({ body: { quick_fleet: request } }) {
+        const reply = payload => this.onmessage({ data: { kind: "result", payload } });
+        if (request.lead) {
+          if (!request.fresh) returned = Array.from(request.scores);
+          queueMicrotask(() => reply(request.fresh ? { pending: sandbox.items } : { ok: true }));
+        } else {
+          const ids = Array.from(request.score, item => item.build);
+          sent.push(ids);
+          held.push(() => reply({ ok: true, scores: ids, fights: ids.length, work: 2 * ids.length }));
+        }
+      },
+    }),
+  });
+  const dispatch = runInContext("let woptNextId = 1;\n" + source + "\nquickScoreDispatch", sandbox);
+  const compact = gas => JSON.stringify([1, [25, 1], { gas }]);
+  const slices = [[{shards: [compact(2), null]}], [{shards: [{gas: 4}]}], [{shards: [compact(40)]}], [{shards: [compact(1), compact(3)]}]];
+  const before = JSON.stringify(slices);
+  assert.deepEqual(Array.from(dispatch(slices, 2)), [2, 1, 3, 0]);
+  assert.equal(JSON.stringify(slices), before);
+  assert.equal(dispatch(slices, 1), null);
+  assert.equal(dispatch(slices, 4), null);
+  for (const missing of [{runs: 2}, {shards: ["unreadable"]}, {shards: ["[2,[],{}]"]}, {shards: [{}]}]) {
+    assert.equal(dispatch([...slices, [missing]], 2), null);
+  }
+  sandbox.items = [1, 1, 4, 4, 2, 2, 9, 9].map((gas, build) => ({ build, shards: [compact(gas)] }));
+  const job = runInContext("quickFleet({}, 2)", sandbox);
+  await new Promise(setImmediate);
+  assert.deepEqual(sent, [[6, 7], [2, 3]]);
+  while (held.length) {
+    held.pop()();
+    await new Promise(setImmediate);
+  }
+  assert.deepEqual(returned, sandbox.items.map(item => item.build));
+  assert.equal(job.result.fights, 8);
+  assert.equal(job.result.work, 16);
+}
+
 async function checkSignals() {
   let now = 1000;
   const workers = [], messages = [];
@@ -438,6 +485,7 @@ async function checkCancellation() {
   console.log("  ok  foreground and community quick fleet cancellation return the compute slot and ignore late replies and failures");
 }
 
+await checkScoreDispatch();
 await checkSignals();
 await checkFailures();
 await checkDeliveries();
