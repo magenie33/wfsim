@@ -200,7 +200,8 @@ selecting a complete revision. The existing public reference stays readable
 while publication is pending. Retries keep their position and resume at the
 saved checkpoint. An accepted input that leaves the public rows identical
 keeps the existing published revision. The controller scans captured inputs
-for records missing from a selected rank and outdated dependencies. It resumes
+for records missing from a selected rank and outdated dependencies. Recovered
+measurements use the zone of the undelivered result. The controller resumes
 its checkpoint after the work is committed and revisits the oldest keys after
 a complete pass.
 

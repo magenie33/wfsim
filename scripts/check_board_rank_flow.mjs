@@ -66,6 +66,7 @@ try{
  await sql.unsafe(`CREATE TABLE entity_weapon_builds(id text PRIMARY KEY,weapon text,at text,record text);
   CREATE TABLE board_facts(identity text,ruler text,mode text,score float8,metric text,measured_by text,finished_at text,retired_at text,review_id text);
   CREATE TABLE entity_measurement_reviews(id text,state text);
+  CREATE TABLE state_board_measurement_selection(identity text,ruler text,mode text,PRIMARY KEY(identity,ruler,mode));
   CREATE INDEX ON board_facts(identity,ruler,mode)`);
  const database=new URL(url).pathname.slice(1);assert(/^[a-z0-9_]+$/.test(database));
  await sql.unsafe(readFileSync(new URL('../deploy/board_read_grants.sql',import.meta.url),'utf8').replaceAll('wfsim_board_read',role).replace('ON DATABASE wfsim','ON DATABASE '+database));
