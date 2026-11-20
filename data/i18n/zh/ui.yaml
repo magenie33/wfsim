@@ -3787,6 +3787,8 @@ ui:
   "The card is fixed when you start. Grading reads the current board. Editing your riven later leaves this report unchanged.": "开始时固定裂罅，评分时读取当前榜单。之后编辑裂罅不会改变这份报告。"
   "Import or edit in Rivens": "前往裂罅页导入或编辑"
   "Start analysis": "开始分析"
+  "Replaying ranking builds {done} / {total}": "正在重跑榜单配装 {done} / {total}"
+  "The replay did not finish.": "这次模拟未完成。"
   "Community compute receives these calculation inputs. The official replay runs on this device; keep WFSim open.": "一起算会接收这些计算输入。官方回放在本机执行，请保持 WFSim 打开。"
   "The search and official replay run on this device. You can keep using WFSim while they run.": "搜索与官方回放均在本机执行。计算期间仍可使用 WFSim。"
   "Analysis history": "分析历史"

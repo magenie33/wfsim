@@ -162,12 +162,12 @@ function openRivenAnalysisDialog(ids = [], ruler = appraisalRuler || benchList()
   const submit = $("analysis-submit");
   const drawCards = () => {
     $("analysis-cards").innerHTML = cards.length ? cards.map(card => `<label class="analysis-card-choice"><input type="checkbox" data-analysis-card="${escHtml(card.id)}"${selected.has(card.id) ? " checked" : ""}><span><b>${escHtml(card.name)}</b><span>${escHtml(raRolls({ bonuses: (card.state.bonuses || []).map(stat => stat.id), malus: card.state.malus?.id, rolls: (card.state.bonuses || []).map(stat => stat.roll).concat(card.state.malus ? [card.state.malus.roll] : []) }))}</span></span></label>`).join("") : `<p class="wb-empty">${escHtml(tr("no rivens for this weapon yet"))}</p>`;
-    submit.disabled = !selected.size;
+    submit.disabled = !!submit.dataset.running || !selected.size;
     const preview = () => { $("analysis-card-preview").innerHTML = cards.filter(card => selected.has(card.id)).map(card => rivenSpecCardHtml(weaponInfo(weapon), { spec: card.state })).join(""); };
     preview();
     $("analysis-cards").querySelectorAll("[data-analysis-card]").forEach(input => input.onchange = () => {
       if (input.checked) selected.add(input.dataset.analysisCard); else selected.delete(input.dataset.analysisCard);
-      submit.disabled = !selected.size; preview();
+      submit.disabled = !!submit.dataset.running || !selected.size; preview();
     });
   };
   const drawBoard = () => { $("analysis-board").innerHTML = benchSelectorHtml(ruler); wireBenchSelector($("analysis-board"), id => { ruler = id; drawBoard(); }); };
@@ -196,15 +196,23 @@ function openRivenAnalysisDialog(ids = [], ruler = appraisalRuler || benchList()
   }, true);
   submit.onclick = async () => {
     if (presetWeapon() !== weapon) return closeRivenAnalysisDialog(false);
+    if (submit.dataset.running) return;
+    submit.dataset.running = "1";
     submit.disabled = true;
+    const requestedRuler = ruler, note = overlay.querySelector("#analysis-submit-note");
     try {
       const destination = overlay.querySelector('[name="analysis-executor"]:checked').value;
-      await submitSavedAppraisals([...selected], ruler, destination, { weapon, cards });
-      appraisalRuler = ruler;
+      note.textContent = tr("Loading the board…");
+      await submitSavedAppraisals([...selected], requestedRuler, destination, { weapon, cards,
+        progress: (done, total) => { note.textContent = trF("Replaying ranking builds {done} / {total}", { done, total }); } });
+      appraisalRuler = requestedRuler;
       if (rivenAnalysisDialog?.overlay === overlay) closeRivenAnalysisDialog();
       await refreshRivenAnalysis(true);
     } catch (error) {
-      if (rivenAnalysisDialog?.overlay === overlay) { $("analysis-submit-note").textContent = tr(error.message); submit.disabled = !selected.size; }
+      note.textContent = tr(error.message);
+    } finally {
+      delete submit.dataset.running;
+      submit.disabled = !selected.size;
     }
   };
   overlay.querySelector("[data-analysis-close]").focus({ preventScroll: true });

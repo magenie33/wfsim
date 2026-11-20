@@ -250,10 +250,39 @@ function boardReviewEffective(value, weapon, buffs) {
   }
   return body;
 }
+async function matchBoardReviewRow(task, row) {
+  const { request, origin } = task, weapon = request.weapon;
+  const ruler = row.benchmark, mode = row.mode || "base";
+  if (mode !== request.mode || (origin.benchmark && ruler !== origin.benchmark)) return null;
+  const bench = benchList().find(item => item.id === ruler);
+  if (!bench || request.runs !== bench.scenario.runs) return null;
+  const ordered = await api("/api/board/order", { record: boardReviewRecord(weapon, row), ruler, mode, observation: request });
+  if (!ordered?.ok || ordered.matches_observation !== true || !/^[a-f0-9]{32}$/.test(ordered.identity || "")) return null;
+  return { row, identity: ordered.identity, ruler, mode, weapon };
+}
+
+async function runOfficialBoardSimulation(queue, weapon, row) {
+  const benchmark = row.benchmark, mode = row.mode || "base";
+  const ordered = await api("/api/board/order", { record: boardReviewRecord(weapon.id, row), ruler: benchmark, mode });
+  if (!ordered?.ok) throw new Error(ordered?.error || "The board could not be reached.");
+  const fight = benchList().find(bench => bench.id === benchmark).scenario;
+  const origin = {
+    benchmark,
+    board_row: row,
+    build: withPoolOf(weapon, () => boardRowState(weapon, row)),
+    context: { weapon: weapon.id, preset: ordered.identity, scenario: benchmark, fight,
+      key: JSON.stringify([ordered.identity, benchmark, mode]) },
+  };
+  const task = await queue.create("simulation", ordered.request, origin);
+  const finished = await queue.wait(task.id);
+  if (finished?.state !== "succeeded") throw new Error(finished?.error || "The replay did not finish.");
+}
+
 async function matchingBoardReview(task) {
   if (task.engine !== ENGINE_ID) return null;
   if (!benchList().some(bench => task.request.runs === bench.scenario.runs
     && (!task.origin.benchmark || task.origin.benchmark === bench.id))) return null;
+  if (task.origin.board_row) return matchBoardReviewRow(task, task.origin.board_row);
   const weapon = task.request.weapon;
   await loadBoard(weapon);
   if (!BOARD_HAVE.has(weapon)) throw new Error("The board is unavailable.");
@@ -262,13 +291,8 @@ async function matchingBoardReview(task) {
   const mods = JSON.stringify((input.request.mods || []).map(id => isRivenId(id) ? BOARD_RIVEN_SLOT : id));
   const rows = taskClone((BOARD[weapon] || []).filter(row => JSON.stringify((row.mods || []).concat(row.exilus ? [row.exilus] : [])) === mods));
   for (const row of rows) {
-    if ((row.mode || "base") !== task.request.mode || (task.origin.benchmark && row.benchmark !== task.origin.benchmark)) continue;
-    const bench = benchList().find(item => item.id === row.benchmark);
-    if (!bench || task.request.runs !== bench.scenario.runs) continue;
-    const ordered = await api("/api/board/order", { record: boardReviewRecord(weapon, row), ruler: row.benchmark,
-      mode: row.mode || "base", observation: task.request });
-    if (!ordered?.ok || ordered.matches_observation !== true || !/^[a-f0-9]{32}$/.test(ordered.identity || "")) continue;
-    return { row, identity: ordered.identity, ruler: row.benchmark, mode: row.mode || "base", weapon };
+    const matched = await matchBoardReviewRow(task, row);
+    if (matched) return matched;
   }
   return null;
 }

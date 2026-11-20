@@ -3301,12 +3301,8 @@ rounds across engine changes and restore ranking only through independent proof.
 Pipeline checks carry removal events through full exports and the live delta;
 CLI fixtures exclude them from ranking and entry gates in either input order.
 
-Calibration cases skip more than ten current-engine rows before filling both
-categories, grow the per-category dial, coalesce concurrent triggers, and check
-background acknowledgment and chat freeze integration. The shared appraisal
-replay is exercised with a board changed during simulation: grading must read
-it afterwards and select the corrected leader. Reversing the engine filter or
-removing that late read must fail these cases.
+The shared appraisal replay is exercised with a board changed during simulation.
+Grading reads the changed publication and selects the corrected leader.
 
 The page check uses published Laetum builds, including an actual riven corner.
 It checks the 1000-run default, saved preferences, effective global settings,
@@ -3337,8 +3333,9 @@ first measurement, through the update and removal of a score.
 
 The executor browser check runs a real optimizer, navigates away, opens its
 saved report and checks shared typed-card import and batch admission. The
-appraisal artifact retains the board fetched at grading, and submission does
-not start independent board calibration. The
+appraisal checks exercise the ordinary official simulation tasks for the
+riven-free and riven references in order before optimization, the usual
+observation path, and the newer board retained at grading. The
 service check applies the real Postgres schema on PGlite and checks idempotent
 admission, secret ownership, full-report agreement, independent cancellation,
 capability filtering, retention and delivery with the deployed daemon role's

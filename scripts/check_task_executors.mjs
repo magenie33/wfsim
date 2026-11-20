@@ -1,3 +1,4 @@
+import "./check_appraisal_references.mjs";
 import { openApp } from "./cdp.mjs";
 const app = await openApp({ boot: 13000, lang: "en" });
 try {
@@ -9,6 +10,7 @@ try {
     const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
     const until = async (condition, limit = 400) => { for (let i = 0; i < limit; i++) { if (await condition()) return; await pause(100); } throw new Error('executor check timed out'); };
     await initUserTasks(); gainPrefs.on = false; restartCalc();
+    replayAppraisalReferences = async () => {};
     const out = {};
     const heldExecutor = kind => {
       const type = USER_TASK_TYPES.get(kind), original = type.execute;

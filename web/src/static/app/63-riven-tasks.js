@@ -69,11 +69,22 @@ async function submitSavedAppraisals(ids, ruler, destination = "local", capture 
       preset_name: META.search_presets.presets.find(preset => preset.riven)?.name, scenario: ruler, batch, batch_name: "Riven analysis", appraisal: null,
       author_profile: accountState.account?.profile_id || null } });
   }
-  const tasks = await queue.createMany(entries);
-  return tasks;
+  await replayAppraisalReferences(queue, weaponInfo(weapon), ruler, capture?.progress);
+  return queue.createMany(entries);
 }
-function appraisalBoardNow(weapon, ruler) {
-  return pageBoardReader().weapon(META, weapon, ruler).catch(() => null);
+async function appraisalBoardNow(weapon, ruler) {
+  return (await pageBoardReader().weapon(META, weapon, ruler)) || [];
+}
+async function replayAppraisalReferences(queue, weapon, ruler, progress = () => {}) {
+  const rows = (await appraisalBoardNow(weapon.id, ruler)).filter(row => row.benchmark === ruler);
+  const free = pooledRanking(rankBoard(rows.filter(row => !row.riven), [ruler], weapon.modes)).slice(0, 10);
+  const { rivens } = pooledRivens(META, weapon, rows, ruler);
+  const references = free.concat(rivens.slice(0, 10));
+  for (const [i, { row }] of references.entries()) {
+    progress(i, references.length);
+    await runOfficialBoardSimulation(queue, weapon, row);
+  }
+  if (references.length) await queue.deliverEvents();
 }
 function renderSavedAppraisal(record) {
   const verdict = record.result.verdict, box = $("opt-results");
