@@ -37,21 +37,22 @@ async function checkScoreDispatch() {
       },
     }),
   });
-  const dispatch = runInContext("let woptNextId = 1;\n" + source + "\nquickScoreDispatch", sandbox);
+  const plan = runInContext("let woptNextId = 1;\n" + source + "\nquickScoreSlices", sandbox);
   const compact = gas => JSON.stringify([1, [25, 1], { gas }]);
-  const slices = [[{shards: [compact(2), null]}], [{shards: [{gas: 4}]}], [{shards: [compact(40)]}], [{shards: [compact(1), compact(3)]}]];
-  const before = JSON.stringify(slices);
-  assert.deepEqual(Array.from(dispatch(slices, 2)), [2, 1, 3, 0]);
-  assert.equal(JSON.stringify(slices), before);
-  assert.equal(dispatch(slices, 1), null);
-  assert.equal(dispatch(slices, 4), null);
+  const items = [{shards: [compact(2), null]}, {shards: [{gas: 4}]}, {shards: [compact(40)]}, {shards: [compact(1), compact(3)]}];
+  const before = JSON.stringify(items);
+  assert.deepEqual(Array.from(plan(items, 2, 1), ids => Array.from(ids)), [[2], [1], [3], [0]]);
+  assert.equal(JSON.stringify(items), before);
+  assert.equal(plan(items, 1, 2), null);
+  assert.equal(plan(items, 4, 1), null);
+  assert.equal(plan(Array(8).fill(items[0]), 2, 2), null);
   for (const missing of [{runs: 2}, {shards: ["unreadable"]}, {shards: ["[2,[],{}]"]}, {shards: [{}]}]) {
-    assert.equal(dispatch([...slices, [missing]], 2), null);
+    assert.equal(plan([...items, missing], 2, 1), null);
   }
   sandbox.items = [1, 1, 4, 4, 2, 2, 9, 9].map((gas, build) => ({ build, shards: [compact(gas)] }));
   const job = runInContext("quickFleet({}, 2)", sandbox);
   await new Promise(setImmediate);
-  assert.deepEqual(sent, [[6, 7], [2, 3]]);
+  assert.deepEqual(sent, [[0, 6], [1, 7]]);
   while (held.length) {
     held.pop()();
     await new Promise(setImmediate);

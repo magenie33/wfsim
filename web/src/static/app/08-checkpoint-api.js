@@ -52,15 +52,15 @@ function loadCheckpoint() {
 // ignorable. `poolSize()` is the setting; this is now only a name for it.
 const woptWorkerCount = () => poolSize();
 
-// A promoted score carries the pilot fights for each element order. Start
-// expensive slices first; results are still assembled by original slice index.
-function quickScoreDispatch(slices, workers) {
-  if (workers < 2 || slices.length <= workers) return null;
-  if (slices.some(slice => slice.some(item => !Array.isArray(item?.shards)))) return null;
-  const loads = [];
-  for (const slice of slices) {
-    let load = 0;
-    for (const item of slice) for (const carried of item.shards) {
+// A promoted candidate carries the pilot fights for each element order.
+// The cost is only a scheduling hint; the leader reads scores in request order.
+function quickScoreSlices(items, workers, width) {
+  const count = Math.ceil(items.length / width);
+  if (workers < 2 || count <= workers || items.some(item => !Array.isArray(item?.shards))) return null;
+  const weights = [];
+  for (const item of items) {
+    let weight = 0;
+    for (const carried of item.shards) {
       if (carried == null) continue;
       let shard = carried;
       if (typeof carried === "string") {
@@ -70,12 +70,23 @@ function quickScoreDispatch(slices, workers) {
           shard = packed[2];
         } catch (_) { return null; }
       }
-      if (!Number.isFinite(shard?.gas) || shard.gas < 0) return null;
-      load += shard.gas;
+      if (!Number.isSafeInteger(shard?.gas) || shard.gas < 0) return null;
+      weight += shard.gas;
     }
-    loads.push(load);
+    weights.push(weight);
   }
-  return loads.map((_, i) => i).sort((a, b) => loads[b] - loads[a] || a - b);
+  if (weights.every(w => w === weights[0])) return null;
+  const slices = Array.from({ length: count }, () => ({ weight: 0, indices: [] }));
+  const order = weights.map((_, i) => i).sort((a, b) => weights[b] - weights[a] || a - b);
+  for (const i of order) {
+    let lightest;
+    for (const slice of slices) {
+      if (slice.indices.length < width && (!lightest || slice.weight < lightest.weight)) lightest = slice;
+    }
+    lightest.indices.push(i);
+    lightest.weight += weights[i];
+  }
+  return slices.sort((a, b) => b.weight - a.weight).map(slice => slice.indices.sort((a, b) => a - b));
 }
 
 // Merge the fleet's leaderboards into one. Each worker ran its own funnel over
@@ -403,9 +414,9 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       // TWO SLICES A WORKER: enough that a fast one takes a slow one's share,
       // few enough that each call's fixed cost stays small beside its fights.
       const size = Math.max(1, Math.ceil(r.pending.length / (k * 2)));
-      const slices = [];
-      for (let at = 0; at < r.pending.length; at += size) slices.push(r.pending.slice(at, at + size));
-      const dispatch = quickScoreDispatch(slices, k);
+      const positions = quickScoreSlices(r.pending, k, size);
+      const slices = positions ? positions.map(ids => ids.map(i => r.pending[i])) : [];
+      if (!positions) for (let at = 0; at < r.pending.length; at += size) slices.push(r.pending.slice(at, at + size));
       const outs = new Array(slices.length).fill(null);
       let next = 0, broken = false;
       activity = "scoring";
@@ -413,8 +424,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       show();
       await Promise.all(Array.from({ length: k }, async (_, i) => {
         while (!broken && !job.cancelled && next < slices.length) {
-          const slot = next++;
-          const at = dispatch?.[slot] ?? slot;
+          const at = next++;
           const o = await timed(i, { kind: "optimize", body: { ...body, quick_fleet: { score: slices[at], compact_shards: 1 } } }, (st) => { live[i] = st; show(); });
           live[i] = null;
           if (!o) { broken = true; return; }
@@ -433,7 +443,10 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       if (broken || outs.some((o) => !o) || job.cancelled) return;
       const bad = outs.find((o) => o.ok === false);
       if (bad) { fail(bad.error || "a worker could not score its share", false); return; }
-      scores = outs.flatMap((o) => o.scores || []);
+      if (positions) {
+        scores = new Array(r.pending.length);
+        positions.forEach((ids, slice) => ids.forEach((i, j) => { scores[i] = outs[slice].scores[j]; }));
+      } else scores = outs.flatMap((o) => o.scores || []);
       done.builds += scores.length;
       done.fights += outs.reduce((a, o) => a + (o.fights || 0), 0);
       done.work += outs.reduce((a, o) => a + (o.work || 0), 0);
