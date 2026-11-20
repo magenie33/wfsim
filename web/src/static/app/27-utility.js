@@ -19,6 +19,7 @@ let utilityTab = null;
 let utilityShortcutAccount = null;
 let utilityShortcutRequest = null;
 let utilityShortcuts = [];
+let utilityPanel = null;
 
 /// A NAME FROM THE WORKER is `{en, zh}`; a missing one is the id it names.
 const worldName = (n, id) => (n && (n[LANG] || n.en)) || id || "";
@@ -33,8 +34,6 @@ function utilityLeft(ms) {
 function showUtility(tab) {
   if (tab !== utilityTab) reminderDraft = null;
   utilityTab = tab;
-  $("h-utility").textContent = tr(utilityTitle(tab));
-  for (const [t] of UTILITY_TABS) $(`utility-${t}`).hidden = t !== tab;
   if (tab === "reminders") { reminderRead(); if ($("rem-toasts")) $("rem-toasts").replaceChildren(); }
   renderUtility();
   refreshUtilityShortcuts();
@@ -42,16 +41,61 @@ function showUtility(tab) {
   utilityClock();
 }
 
-function renderUtilityTabs() {
+const utilityAccountLinks = () => accountState.account?.id === utilityShortcutAccount ? utilityShortcuts : [];
+const utilityPanelHref = (id) => `/utility/${UTILITY_TABS[0][0]}?tool=${encodeURIComponent(id)}`;
+
+function renderUtilityTabs(selected = null) {
   const unread = reminderHits().filter((h) => !h.read).length;
-  const tabs = UTILITY_TABS.map(([t, title]) => `<a class="mtab${t === utilityTab ? " sel" : ""}" href="/utility/${t}">${
+  const tabs = UTILITY_TABS.map(([t, title]) => `<a class="mtab${!selected && t === utilityTab ? " sel" : ""}" href="/utility/${t}">${
     escHtml(tr(title))}${t === "reminders" && unread ? ` <span class="tbadge">${unread}</span>` : ""}</a>`);
-  const links = accountState.account?.id === utilityShortcutAccount ? utilityShortcuts : [];
-  const shortcuts = links.map((item) =>
-    `<a class="ghost-btn" data-native href="${escHtml(item.path)}">${escHtml(worldName(item.names))}</a>`);
+  const links = utilityAccountLinks();
+  const shortcuts = [];
+  for (const item of links) {
+    const name = escHtml(worldName(item.names));
+    if (item.module) {
+      tabs.push(`<a class="mtab${item.id === selected ? " sel" : ""}" href="${utilityPanelHref(item.id)}"${item.id === selected ? ' aria-current="page"' : ""}>${name}</a>`);
+    } else {
+      shortcuts.push(`<a class="ghost-btn" data-native href="${escHtml(item.path)}">${name}</a>`);
+    }
+  }
   const nav = $("utility-tabs");
   nav.classList.toggle("has-utility-shortcuts", links.length > 0);
-  nav.innerHTML = tabs.join("") + (links.length ? `<div class="utility-shortcuts">${shortcuts.join("")}</div>` : "");
+  nav.innerHTML = tabs.join("") + (shortcuts.length ? `<div class="utility-shortcuts">${shortcuts.join("")}</div>` : "");
+}
+
+function clearUtilityPanel() {
+  if (!utilityPanel) return;
+  utilityPanel.cleanup?.();
+  utilityPanel = null;
+  const panel = $("utility-tool-panel");
+  panel.replaceChildren();
+  panel.hidden = true;
+}
+
+function renderUtilityPanel(tool) {
+  const key = JSON.stringify([utilityShortcutAccount, tool.module, location.search]);
+  if (utilityPanel?.key === key) return;
+  clearUtilityPanel();
+  const host = $("utility-tool-panel");
+  host.hidden = false;
+  host.textContent = tr("Loading…");
+  const pending = { key, cleanup: null };
+  utilityPanel = pending;
+  import(tool.module).then((panel) => {
+    if (utilityPanel !== pending) return;
+    const body = document.createElement("div");
+    host.replaceChildren(body);
+    pending.cleanup = panel.mount(body, utilityPanelHref(tool.id));
+  }).catch(() => {
+    if (utilityPanel !== pending) return;
+    host.textContent = tr("Could not load this page.");
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "ghost-btn small";
+    retry.textContent = tr("Retry");
+    retry.addEventListener("click", () => location.reload());
+    host.append(" ", retry);
+  });
 }
 
 function refreshUtilityShortcuts() {
@@ -63,7 +107,7 @@ function refreshUtilityShortcuts() {
     utilityShortcuts = [];
   }
   if (!utilityTab || $("utility-page").hidden) return;
-  if (changed) renderUtilityTabs();
+  if (changed) renderUtility();
   if (!account || utilityShortcutRequest) return;
   const request = accountCall("GET", "/api/cloud/tools");
   utilityShortcutRequest = request;
@@ -71,15 +115,22 @@ function refreshUtilityShortcuts() {
     if (utilityShortcutRequest !== request || accountState.account?.id !== account) return;
     if (!result?.ok || !Array.isArray(result.tools)) { utilityShortcutRequest = null; return; }
     utilityShortcuts = result.tools.filter((item) => typeof item?.path === "string" &&
-      /^\/api\/cloud\/[a-z0-9-]+(?:\/[a-z0-9-]+)*$/.test(item.path) && typeof item.names?.en === "string");
-    if (!$("utility-page").hidden) renderUtilityTabs();
+      /^\/api\/cloud\/[a-z0-9-]+(?:\/[a-z0-9-]+)*$/.test(item.path) && typeof item.names?.en === "string" &&
+      (!item.module || (typeof item.id === "string" && /^[a-z][a-z0-9-]{0,39}$/.test(item.id) && item.module === item.path + "/panel.js")));
+    if (!$("utility-page").hidden) renderUtility();
   });
 }
 
 function renderUtility() {
   renderBell();
   if (!utilityTab || $("utility-page").hidden) return;
-  renderUtilityTabs();
+  const wanted = new URLSearchParams(location.search).get("tool");
+  const tool = wanted && utilityAccountLinks().find((item) => item.module && item.id === wanted);
+  $("h-utility").textContent = tool ? worldName(tool.names) : tr(utilityTitle(utilityTab));
+  for (const [t] of UTILITY_TABS) $(`utility-${t}`).hidden = !!tool || t !== utilityTab;
+  renderUtilityTabs(tool?.id);
+  if (tool) { renderUtilityPanel(tool); return; }
+  clearUtilityPanel();
   if (utilityTab === "dictionary") showDictionary();
   else if (utilityTab === "reminders") renderReminders();
   else Object.values(UTILITY_KINDS).forEach((k) => { if (k.tab === utilityTab) k.render(); });

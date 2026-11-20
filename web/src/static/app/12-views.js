@@ -16,7 +16,7 @@ let initialTaskReport = { path: location.pathname, measurement: new URLSearchPar
 const urlSlug = (w) => weaponSlug(META.weapons || [], w);
 const weaponPath = (id) => headlessWeaponPath(META.weapons || [], id);
 function nav(path) {
-  const moved = location.pathname !== path;
+  const moved = location.pathname + location.search + location.hash !== path;
   if (moved) history.pushState(null, "", path);
   const routed = route();
   // A NEW PAGE STARTS AT THE TOP.
@@ -234,6 +234,7 @@ async function route() {
   $("bench-page").hidden = !bench;
   $("download-page").hidden = !dl;
   $("utility-page").hidden = !util;
+  if (!util) clearUtilityPanel();
   // The nav says where you are. `data-nav` rather than a path compare: the
   // roster lives at "/" and a path compare there matches every page.
   const here = bench ? "benchmark" : util ? "utility" : authKind === "recommendations" ? "recommendations" : authKind === "compute" ? "compute" : (!w && !support && !dl && !wfHit && !opRoute && !compHit && !stub && !authKind) ? "home" : "";
