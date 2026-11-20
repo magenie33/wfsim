@@ -7,6 +7,7 @@ import {join,resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {randomBytes} from 'node:crypto';
 import postgres from './pg/node_modules/postgres/src/index.js';
+import {lockRankInputs} from './board_rank_keys.mjs';
 import {openInventoryOperator} from './inventory_operator.mjs';
 import {cachedRankInputs} from './board_rank_inputs.mjs';
 import {prepareRankSources,createRankPartition,applyRankSources,prepareRankSnapshot,BoardRankConflict} from './board_rank_index.mjs';
@@ -51,6 +52,16 @@ async function oracle(label){
 }
 try{
  await sql.unsafe('CREATE SCHEMA '+schema);
+ const ids=inputs.map(x=>x.identity).reverse(),reviews=['z','a','a'];
+ const keys=[...new Set([...ids.map(x=>'build/'+x),...reviews.map(x=>'review/'+x)])].map(k=>source+'/board-rank/'+k);
+ const tryKeys=tx=>tx.unsafe('SELECT pg_try_advisory_xact_lock(hashtextextended(key,0)) free FROM jsonb_array_elements_text($1::text::jsonb) a(key)',[JSON.stringify(keys)]);
+ await sql.begin(async tx=>{
+  let calls=0;
+  await lockRankInputs({unsafe:(query,params)=>{calls++;return tx.unsafe(query,params);}},source,{identities:ids,reviews});
+  assert.equal(calls,1,'all dependency locks must use one database round trip');
+  assert((await sql.begin(tryKeys)).every(r=>!r.free),'routing and baseline writers lock the exact same identity and review keys');
+ });
+ assert((await sql.begin(tryKeys)).every(r=>r.free),'transaction end releases every dependency key');
  await sql.unsafe(readFileSync(new URL('../worker/pg/board_mailbox.sql',import.meta.url),'utf8'));
  await sql.unsafe(readFileSync(new URL('../worker/pg/board_pages.sql',import.meta.url),'utf8'));
  for(const file of ['board_rank','board_rank_compact'])await sql.unsafe(readFileSync(new URL('../worker/pg/'+file+'.sql',import.meta.url),'utf8'));
