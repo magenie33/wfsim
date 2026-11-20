@@ -530,7 +530,14 @@ pub fn run_once_traced(
     // WHOSE TURN, AND WHEN. The fight's clock is whatever the next seat is due
     // at; the body then reads `t` as "now" exactly as it did when there was
     // only ever one seat to be due. It ends when every seat has parked.
+    let mut turns_until_beat = 128u8;
     loop {
+        // Count completed turns, including landings and waits that `continue`.
+        if turns_until_beat == 0 {
+            crate::alive::beat();
+            turns_until_beat = 128;
+        }
+        turns_until_beat -= 1;
         let due = next_seat(&seats, params.duration_seconds);
         // A SHOT ARRIVING NO LATER THAN THE NEXT TURN LANDS FIRST, at its own
         // time (`fight::flight`). One that would arrive after the engagement
@@ -1341,4 +1348,42 @@ pub fn run_once_traced(
     r.kill_progress = r.kills as f64 + partial;
 
     r
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{alive, fight::gas::gas_now};
+    use std::cell::Cell;
+
+    thread_local! {
+        static PULSES: Cell<u32> = const { Cell::new(0) };
+    }
+
+    #[test]
+    fn a_single_fight_pulses_without_changing_its_result() {
+        let params = FightParams {
+            duration_seconds: 300.0,
+            magazine_size: 512.0,
+            ..FightParams::default()
+        };
+        let mut baseline_rng = Rng::new(42);
+        let mut observed_rng = Rng::new(42);
+        let start = gas_now();
+        let baseline = run_once(&params, &mut baseline_rng);
+        let baseline_gas = gas_now().wrapping_sub(start);
+
+        PULSES.with(|p| p.set(0));
+        alive::set(Some(|| PULSES.with(|p| p.set(p.get() + 1))));
+        let start = gas_now();
+        let observed = run_once(&params, &mut observed_rng);
+        let observed_gas = gas_now().wrapping_sub(start);
+        alive::set(None);
+
+        assert_eq!(baseline.shots, 300);
+        assert_eq!(PULSES.with(Cell::get), 2);
+        assert_eq!(format!("{observed:?}"), format!("{baseline:?}"));
+        assert_eq!(observed_rng.state(), baseline_rng.state());
+        assert_eq!(observed_gas, baseline_gas);
+    }
 }
