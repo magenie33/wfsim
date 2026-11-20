@@ -20,13 +20,25 @@ try {
       return { engine: ENGINE_ID, request: taskClone({ ...buildPayload(), ...theFight({ replay: true }) }),
         origin: { build: taskClone(snapshotState()), fight: taskClone(snapshotScenario()), benchmark: 'standard_single_target' } };
     };
+    const privatePrototype = wfBlank(PROTOTYPE_ID), shard = SHARDS()[0];
+    privatePrototype.shards[0] = { shard: shard.id, effect: shard.options[0].id, tauforged: false };
+    storePresetList(WF_BUILDS, [presetEntry('Personal Prototype', privatePrototype)], PROTOTYPE_ID);
+    const [personal] = presetListWithIds(WF_BUILDS, PROTOTYPE_ID);
+    checks.personalPrototypeWouldFollow = wielderPayloadOf(defaultWielder('laetum', null))?.shards?.length === 1;
     const plain = await fixture(false);
+    checks.boardPrototypePinned = wielderIdOf(buildWielder) === DEFAULT_PRESET_ID && plain.request.wielder == null;
+    if (!checks.personalPrototypeWouldFollow || !checks.boardPrototypePinned)
+      throw new Error('A published Laetum build must pin the unmodded Prototype even when a saved Prototype exists.');
+    setWielder({ frame: PROTOTYPE_ID, preset: personal.id });
+    checks.boardWielderLocked = buildPayload().wielder == null;
     const storedRuns = localStorage.getItem(SIM_RUNS_KEY);
     setSimRuns(17); renderSimRuns();
     checks.boardRunsPinned = simRuns() === 1000 && $('sim-runs-input').disabled && theFight().runs === 1000;
     checks.boardRunsKeepPreference = localStorage.getItem(SIM_RUNS_KEY) === storedRuns;
     const boardPreset = buildNamed(activePreset).builtin;
     copyActivePreset(buildBarCfg());
+    setWielder({ frame: PROTOTYPE_ID, preset: personal.id });
+    checks.ownedCopyCanUsePersonalPrototype = buildPayload().wielder?.shards?.length === 1;
     setSimRuns(73); renderSimRuns();
     checks.customRuns = simRuns() === 73 && !$('sim-runs-input').disabled;
     await agentDo('shell.preset.open', { bar: 'build', preset: boardPreset });
@@ -41,6 +53,22 @@ try {
     await agentDo('shell.preset.open', { bar: 'build', preset: boardPreset });
     checks.plain = !!await matchingBoardReview(plain);
     const riven = await fixture(true); checks.rivenCorner = !!await matchingBoardReview(riven);
+    const ranked = buildNamed(activePreset).board;
+    const originalSeed = sim.seed, originalSimulate = simulateFleet;
+    let submitted;
+    simulateFleet = (body, ...args) => { submitted = body; return originalSimulate(body, ...args); };
+    localStorage.setItem('wfsim-board-review', 'off');
+    try {
+      sim.seed = originalSeed + 1;
+      await runSim();
+    } finally {
+      sim.seed = originalSeed; simulateFleet = originalSimulate;
+      localStorage.removeItem('wfsim-board-review');
+    }
+    const official = await api('/api/board/order', { record: headlessBoardRecord('laetum', ranked),
+      ruler: ranked.benchmark, mode: ranked.mode || 'base', observation: submitted });
+    checks.readyRunUsesOfficialTerms = official.matches_observation === true && submitted.seed === originalSeed
+      && submitted.runs === 1000 && submitted.wielder == null && submitted.replay;
     const altered = async (key, mutate) => { const task = taskClone(plain); mutate(task); checks[key] = !await matchingBoardReview(task); };
     await altered('runs', task => { task.request.runs--; });
     await altered('seed', task => { task.request.seed++; task.origin.fight.seed++; });

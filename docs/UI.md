@@ -332,6 +332,10 @@ and specification, independently of its display name. Deleting an owned riven
 does not affect it. Copying the build, including the first edit that forks it,
 makes an owned riven with a fresh id and points the copied build at that id.
 
+Published builds pin the default holder preset. When the simulator runs a
+published row under its own ruler, it takes the input from the board's replay
+endpoint, including the holder, mode and precision the scorer uses.
+
 ## Build sync
 
 **A SIGNED-IN READER'S SAVED ENTRIES ARE THE SAME ON EVERY BROWSER SIGNED IN
