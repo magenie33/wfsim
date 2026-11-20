@@ -18,18 +18,32 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
  });
  await assert.rejects(sql.unsafe('SELECT board_requested_partition_selected($1,$2,false)',[weapon,second]),/requires a qualified first publication/);
  await restart();
- const scheduler=new DatabaseSync(':memory:'),ledger=new DatabaseSync(join(config.stage,'qualification.sqlite'),{readOnly:true});
+ const scheduler=new DatabaseSync(':memory:'),ledger=new DatabaseSync(':memory:');
  try{
+  ledger.exec('CREATE TABLE receipts(weapon TEXT,ruler TEXT,PRIMARY KEY(weapon,ruler)) WITHOUT ROWID');
+  const known=ledger.prepare('INSERT INTO receipts VALUES(?,?)');
+  for(let i=1;i<=80;i++)known.run('aaold'+i,'fixture');
+  known.run('zznew','fresh');known.run('historical','ruler');
   preparePriority(scheduler,{source:'test',archive});
   await sql.unsafe(`INSERT INTO state_board_rank_new_scopes(weapon,ruler,queued_at) SELECT 'aaold'||n,'fixture','2000-01-01' FROM generate_series(1,80)n`);
   const context={sql,journal:scheduler,ledger};
   await nextPriority(context);
   await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler) VALUES('zznew','fresh')");
+  await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler,queued_at) VALUES('zzfirst','fresh','2000-01-02')");
   const seen=[];
-  for(let i=0;i<9;i++){const job=await nextPriority(context);if(job)seen.push(job);}
+  for(let i=0;i<17;i++){
+   known.run('newer'+i,'fresh');
+   await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler) VALUES($1,'fresh')",['newer'+i]);
+   const job=await nextPriority(context);
+   if(job){
+    seen.push(job);
+    scheduler.prepare("UPDATE priority_work SET phase='pending',due=? WHERE weapon=? AND ruler=?").run(Date.now()+60000,job.weapon,job.ruler);
+   }
+  }
+  assert(seen.some(j=>j.weapon==='zzfirst'&&j.priority===-2),'an older first-ever score has a turn during continuous updates');
   assert(seen.some(j=>j.weapon==='zznew'&&j.priority===-1),'new arrivals get a bounded turn ahead of an established queue');
   assert(seen.some(j=>j.weapon.startsWith('aaold'))&&seen.some(j=>j.priority===2),'existing queued and historical scopes also make progress');
-  await sql.unsafe("DELETE FROM state_board_rank_new_scopes WHERE weapon LIKE 'aaold%' OR weapon='zznew'");
+  await sql.unsafe("DELETE FROM state_board_rank_new_scopes WHERE weapon LIKE 'aaold%' OR weapon IN('zznew','zzfirst') OR weapon LIKE 'newer%'");
  }finally{scheduler.close();ledger.close();}
  const sourceFact=inputs[0].facts[0];
  const id=sourceFact.identity,mode=sourceFact.mode;
@@ -37,6 +51,8 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
  const notify=async score=>put('measurement',JSON.stringify([id,fresh,mode]).replaceAll(',',', '),{identity:id,ruler:fresh,mode,score});
  await notify(71);
  const arrival=async()=>(await sql.unsafe('SELECT queued_at,last_measured_at FROM state_board_rank_new_scopes WHERE weapon=$1 AND ruler=$2',[weapon,fresh]))[0];
+ assert((await arrival()).last_measured_at);
+ await sql.unsafe("UPDATE state_board_rank_new_scopes SET last_measured_at='2000-01-01' WHERE weapon=$1 AND ruler=$2",[weapon,fresh]);
  const before=await arrival();
  await notify(72);
  const after=await arrival();
@@ -67,8 +83,11 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
    const [request]=await sql.unsafe('SELECT position,activated_at FROM state_board_requested_partitions WHERE weapon=$1 AND ruler=$2',[weapon,second]);
    assert.equal(request.position,position);assert(request.activated_at);
    assert.equal((await sql.unsafe('SELECT board_read_page($1,$2,$3,0,128) p',[weapon,second,old]))[0].p.rows[0].score,1397);
-   const q=new DatabaseSync(join(config.state,'priority.sqlite'));
-   try{assert(q.prepare("SELECT 1 FROM priority_work WHERE weapon=? AND ruler=?").get(weapon,fresh));}finally{q.close();}
+   const q=new DatabaseSync(join(config.state,'priority.sqlite'),{readOnly:true});
+   try{
+    q.exec('BEGIN');assert(q.prepare("SELECT 1 FROM priority_work WHERE weapon=? AND ruler=?").get(weapon,fresh));
+    await action('priority-step');
+   }finally{q.close();}
    console.log('ok — retained archive and requested position, fresh fenced capture and changed identity, unrelated warm correction through held work, priority restart');
    return;
   }

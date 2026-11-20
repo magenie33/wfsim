@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Captured routing, baseline work, dirty normalization and complete publication own separate handoffs.
+import {join} from 'node:path';
 import {stat,mkdir} from 'node:fs/promises';
 import {openInventoryOperator} from './inventory_operator.mjs';
 import {BoardInputMailbox} from './board_input_mailbox.mjs';
@@ -9,7 +10,7 @@ import {enqueueRequestedPartition} from './board_requested_partitions.mjs';
 import {BoardRankConflict,BoardRankQualificationError} from './board_rank_index.mjs';
 import {captureRankBaseline,beginRankBaseline,prepareRankBaselinePage,applyRankBaselinePage} from './board_rank_baseline.mjs';
 import {putRankDirty,routeRankInput,reconcileRankBaseline,finishRankBaseline,claimRankDirty,prepareRankIdentity,applyRankDirty,retryRankDirty} from './board_rank_work.mjs';
-import {claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankGeneration,publishRankGeneration,reuseRankGeneration,retryRankPublication} from './board_rank_publication.mjs';
+import {claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankGeneration,publishRankGeneration,reuseRankGeneration,retryRankPublication,yieldRankPublication} from './board_rank_publication.mjs';
 import {collectRankStorage,collectRankOrphan} from './board_rank_gc.mjs';
 
 export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha,requestedPartitions=false,fault=async()=>{}}) {
@@ -96,7 +97,8 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
   try{
    if(!part.seeded){
     const page=await prepareRankBaselinePage(sql,native,part,context);await fault('after-baseline-native-before-commit');
-    await applyRankBaselinePage(sql,part,page);return {status:'baseline-page',weapon:part.weapon,loaded:page.loaded};
+    await applyRankBaselinePage(sql,part,page);if(page.done)context.verified.delete(part.path);
+    return {status:'baseline-page',weapon:part.weapon,ruler:part.ruler,loaded:page.loaded};
    }
    await sql.begin(async tx=>{
     if(part.catalog_phase==='frozen'){
@@ -123,24 +125,37 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
  };
  const [{recent:recentInstalled,discovery}]=await sql.unsafe(`SELECT to_regclass('state_board_rank_recent_inputs') IS NOT NULL AS recent,
   to_regprocedure('board_rank_discover_scope(uuid,text,text)') IS NOT NULL AS discovery`);
- let preferRecent=true;
+ let publishTurn=0,pages=0;
+ const finishPublication=(generation,result)=>{
+  context.verified.delete(join(generation.directory,'winners.ndjson'));
+  context.verified.delete(join(generation.directory,'rows.ndjson'));
+  context.prefixes.delete(join(generation.directory,'rows.ndjson'));
+  publication=null;return result;
+ };
  const publish=async()=>{
+  if(publication&&pages>=4){
+   await yieldRankPublication(sql,publication);publication=null;
+  }
   if(!publication){
    const boundary={source,native:native.adapter,catalog};
-   if(recentInstalled&&preferRecent)publication=await claimRankPublication(sql,{...boundary,recent:true});
+   const lane=publishTurn++%3;
+   if(lane===0&&recentInstalled)publication=await claimRankPublication(sql,{...boundary,recent:true});
+   if(lane===1&&catalog)publication=await claimRankPublication(sql,{...boundary,first:true});
    publication ||= await claimRankPublication(sql,boundary);
    if(!publication)return null;
-   preferRecent=!preferRecent;
+   pages=0;
   }
+  pages++;
+  const scope={weapon:publication.weapon,ruler:publication.ruler};
   try{
    const [generation]=await sql.unsafe(`SELECT * FROM state_board_rank_generations WHERE weapon=$1 AND ruler=$2 AND phase IN('floor','upload') ORDER BY created_at,token LIMIT 1`,[publication.weapon,publication.ruler]);
-   if(!generation){await startRankGeneration(sql,native,publication,context);return {status:'snapshot-started'};}
-   if(generation.phase==='floor'){await floorRankGeneration(sql,native,publication,generation,context);return {status:'snapshot-floor'};}
-   if(Number(generation.upload_cursor)===0){const reused=await reuseRankGeneration(sql,publication,generation,context);if(reused){publication=null;context.verified.clear();context.prefixes.clear();return reused;}}
+   if(!generation){await startRankGeneration(sql,native,publication,context);return {status:'snapshot-started',...scope};}
+   if(generation.phase==='floor'){await floorRankGeneration(sql,native,publication,generation,context);return {status:'snapshot-floor',...scope};}
+   if(Number(generation.upload_cursor)===0){const reused=await reuseRankGeneration(sql,publication,generation,context);if(reused)return finishPublication(generation,{...reused,...scope});}
    if(Number(generation.uploaded_rows)!==Number(generation.output_rows)||Number(generation.upload_cursor)!==Number(generation.output_size)){
-    await uploadRankGeneration(sql,publication,generation,context);return {status:'snapshot-upload'};
+    await uploadRankGeneration(sql,publication,generation,context);return {status:'snapshot-upload',...scope};
    }
-   const result=await publishRankGeneration(sql,native,publication,generation,context);publication=null;context.verified.clear();context.prefixes.clear();return result;
+   const result=await publishRankGeneration(sql,native,publication,generation,context);return finishPublication(generation,{...result,...scope});
   }catch(error){
    const failed=publication;publication=null;
    if(deterministic(error)){
@@ -191,5 +206,8 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
   if(closed)throw Error('ranking reader is closed');guardRankSpace(work);await sameNative();
   for(let i=0;i<stages.length;i++){const result=await stages[turn++%stages.length]();if(result)return result;}
   return {status:'idle'};
- },close:async()=>{closed=true;abort.abort();await Promise.all([...captures.values()].map(job=>job.promise));await native.close();}};
+ },close:async()=>{closed=true;abort.abort();
+  try{await Promise.all([...captures.values()].map(job=>job.promise));if(publication)await yieldRankPublication(sql,publication);}
+  finally{await native.close();}
+ }};
 }

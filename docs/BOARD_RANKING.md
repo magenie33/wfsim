@@ -188,8 +188,10 @@ Use one catalog controller at a time. The priority controller also services the
 historical backlog and keeps change capture active after that backlog drains.
 
 The controller reads verified arrivals, explicit requests, changes since the cut
-and historical scope receipts. Recent arrivals and older queued work receive
-separate turns and admission capacity. A verified change updates a pending
+and historical scope receipts. The first measurements for a new scope,
+recent changes to retained scopes and older queued work each receive reserved
+admission capacity. The oldest first measurement receives a turn during a
+continuous stream of updates. A verified change updates a pending
 scope's latest arrival while retaining its first arrival and request position.
 A retained scope uses its qualified input. For a genuinely new scope the
 controller takes a repeatable-read capture and qualifies its current rows with
@@ -197,6 +199,9 @@ the same Native publisher. Both paths reconcile subsequent changes, including
 acknowledged mailbox inputs, before selecting the complete revision. A held
 scope keeps its published rows and its retry record. Once the native index
 is active, new results continue through its per-identity update queue.
+Publication yields at a committed page checkpoint between scopes. Current
+corrections and first publications can finish while a larger generation resumes
+from its private cursor. Readers keep the prior complete revision throughout.
 
 ### Registering a qualified catalog scope
 

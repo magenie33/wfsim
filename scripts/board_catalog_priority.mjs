@@ -30,14 +30,14 @@ async function intake(ctx,turn){
  let rows,tail,latest=[];
  if(feed==='latest'){
   const stamp='coalesce(last_measured_at,queued_at)';
-  const select='SELECT weapon,ruler,'+stamp+' queued_at FROM state_board_rank_new_scopes';
+  const select='SELECT weapon,ruler,queued_at first_queued,'+stamp+' queued_at FROM state_board_rank_new_scopes';
   const order=stamp+',weapon,ruler';
   rows=await sql.unsafe(select+' WHERE ('+order+')>($1,$2,$3) ORDER BY '+order+' LIMIT 32',cursor||[boundary[0],'','']);
   latest=await sql.unsafe(select+' WHERE '+stamp+'>=$1 ORDER BY '+stamp+' DESC,weapon DESC,ruler DESC LIMIT 8',[boundary[0]]);
   const r=rows.at(-1);tail=r&&[r.queued_at,r.weapon,r.ruler];
  }else if(feed==='accepted'){
   const select='SELECT weapon,ruler,queued_at FROM state_board_rank_new_scopes';
-  rows=await sql.unsafe(select+' WHERE (queued_at,weapon,ruler)>($1,$2,$3) ORDER BY queued_at,weapon,ruler LIMIT 32',cursor||['','','']);
+  rows=await sql.unsafe(select+' WHERE (queued_at,weapon,ruler)>($1,$2,$3) ORDER BY queued_at,weapon,ruler LIMIT 256',cursor||['','','']);
 
   const r=rows.at(-1);tail=r&&[r.queued_at,r.weapon,r.ruler];
  }else if(feed==='request'){
@@ -54,12 +54,17 @@ async function intake(ctx,turn){
  }
  const priority=feed==='history'?2:feed==='sparse'?1:0;
  transaction(db,()=>{
+  const known=ledger.prepare('SELECT 1 FROM receipts WHERE weapon=? AND ruler=?');
   const put=db.prepare(`INSERT INTO priority_work VALUES(?,?,?,'ready',0,NULL,?) ON CONFLICT(weapon,ruler)
-   DO UPDATE SET priority=min(priority_work.priority,excluded.priority),arrival=max(priority_work.arrival,excluded.arrival)
+   DO UPDATE SET priority=min(priority_work.priority,excluded.priority),arrival=CASE
+    WHEN excluded.priority=-2 THEN excluded.arrival WHEN priority_work.priority=-2 THEN priority_work.arrival
+    ELSE max(priority_work.arrival,excluded.arrival) END
    WHERE priority_work.priority>excluded.priority OR priority_work.arrival<excluded.arrival`);
   for(const row of [...rows,...latest]){
    const urgent=feed==='latest'||(feed==='request'&&BigInt(row.position)>BigInt(boundary[1]));
-   put.run(row.weapon,row.ruler,urgent?-1:priority,row.queued_at||String(row.position||'').padStart(20,'0'));
+   const first=(feed==='latest'||feed==='accepted')&&!known.get(row.weapon,row.ruler);
+   const arrival=first?(row.first_queued||row.queued_at):(row.queued_at||String(row.position||'').padStart(20,'0'));
+   put.run(row.weapon,row.ruler,first?-2:urgent?-1:priority,arrival);
    if(['latest','request','accepted'].includes(feed))db.prepare("UPDATE priority_work SET phase='ready',due=0 WHERE weapon=? AND ruler=? AND phase='selected'").run(row.weapon,row.ruler);
   }
   db.prepare('INSERT OR REPLACE INTO priority_cursor VALUES(?,?)').run(feed,JSON.stringify(tail??null));
@@ -99,10 +104,12 @@ async function advance(ctx,job,now){
    return result('held','held',60000,'ruler absent from pinned Native');
   }
   const cap=ctx.maxPending??6;
-  const slots=db.prepare(`SELECT count(*) total,count(*) FILTER(WHERE priority<0) urgent FROM priority_work
+  const slots=db.prepare(`SELECT count(*) total,count(*) FILTER(WHERE priority=-2) first,
+   count(*) FILTER(WHERE priority=-1) recent,count(*) FILTER(WHERE priority>=0) older FROM priority_work
    WHERE phase IN('pending','preparing') AND (weapon,ruler)<>(?,?)`).get(...keys);
-  const occupiedOther=job.priority<0?slots.total-slots.urgent:slots.urgent;
-  if(slots.total>=cap-(occupiedOther?0:1))return result('ready','deferred',1500);
+  const lane=job.priority===-2?'first':job.priority===-1?'recent':'older';
+  const reserved=['first','recent','older'].filter(k=>k!==lane&&!slots[k]).length;
+  if(slots.total>=cap-reserved)return result('ready','deferred',1500);
   if(receipt){
    assert(receipt.eligible&&receipt.unresolved===0&&receipt.archive===contract.archive&&receipt.snapshot===contract.snapshot,'local scope qualification incomplete');
    manifest=await ctx.emit(weapon,ruler);
@@ -139,8 +146,9 @@ export async function nextPriority(ctx,now=Date.now()){
  const pick=(clause,order='due,weapon,ruler')=>db.prepare('SELECT * FROM priority_work WHERE '+eligible+clause+' ORDER BY '+order+' LIMIT 1').get(now);
  const lane=turn%8;
  const checking=[1,5].includes(lane)&&pick(" AND phase IN ('pending','preparing')");
- const type=lane===7?2:lane===4?1:lane===2?0:-1;
- const job=checking||pick(' AND priority='+type,type<0&&lane!==6?'arrival DESC,due,weapon,ruler':undefined)||
+ const type=[-2,-1,0,-1,1,-2,-1,2][lane];
+ const order=type===-2||(type===-1&&lane===6)?'arrival,due,weapon,ruler':type===-1?'arrival DESC,due,weapon,ruler':undefined;
+ const job=checking||pick(' AND priority='+type,order)||pick(' AND priority=-2','arrival,due,weapon,ruler')||
   pick(' AND priority=-1')||pick(' AND priority=0')||pick('');
  return job;
 }
