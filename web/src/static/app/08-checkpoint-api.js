@@ -52,6 +52,14 @@ function loadCheckpoint() {
 // ignorable. `poolSize()` is the setting; this is now only a name for it.
 const woptWorkerCount = () => poolSize();
 
+// Bound the number of trips while letting idle workers pull smaller pieces
+// when scoring the preceding batch took a long time per build.
+function quickScoreWidth(total, workers, msPerBuild) {
+  const usual = Math.ceil(total / (2 * workers));
+  if (workers === 1 || !(msPerBuild > 0) || usual * msPerBuild <= 1000) return usual;
+  return Math.max(Math.ceil(total / (8 * workers)), Math.floor(1000 / msPerBuild));
+}
+
 // Pilot gas is a scheduling hint. Nearby unmeasured candidates can share a
 // costly neighborhood, so spread them across the existing slices first.
 function quickScoreSlices(items, workers, width) {
@@ -261,6 +269,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
   const warm = [];
   const pendingCalls = new Set();
   let activity = "planning", finalStatus = null;
+  let scoreMsPerBuild = 0;
   // Where each start stands, as the leader last reported it.
   let starts = [];
   const emptyRound = () => ({ builds: 0, fights: 0, total: 0, slices_done: 0, slices_total: 0 });
@@ -434,14 +443,13 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       starts = r.progress || starts;
       const k = Math.min(lanesNow(), r.pending.length);
       grow(k);
-      // TWO SLICES A WORKER: enough that a fast one takes a slow one's share,
-      // few enough that each call's fixed cost stays small beside its fights.
-      const size = Math.max(1, Math.ceil(r.pending.length / (k * 2)));
+      const size = quickScoreWidth(r.pending.length, k, scoreMsPerBuild);
       const positions = quickScoreSlices(r.pending, k, size);
       const slices = positions ? positions.map(ids => ids.map(i => r.pending[i])) : [];
       if (!positions) for (let at = 0; at < r.pending.length; at += size) slices.push(r.pending.slice(at, at + size));
       const outs = new Array(slices.length).fill(null);
       let next = 0, broken = false;
+      const scoreStartMs = done.cpu_ms;
       activity = "scoring";
       round = { ...emptyRound(), total: r.pending.length, slices_total: slices.length };
       show();
@@ -464,6 +472,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
         }
       }));
       if (broken || outs.some((o) => !o) || job.cancelled) return;
+      scoreMsPerBuild = (done.cpu_ms - scoreStartMs) / r.pending.length;
       const bad = outs.find((o) => o.ok === false);
       if (bad) { fail(bad.error || "a worker could not score its share", false); return; }
       if (positions) {

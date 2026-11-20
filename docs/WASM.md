@@ -343,7 +343,9 @@ into steps the PAGE drives (`woptQuickFleet`):
    screened"), answered `rough: true` with its runs (`shards`), or `{build,
    shards}`, a full measurement that continues them, answered with its best
    order's runs (`shard`). The page spreads unmeasured neighbors round robin
-   across the existing slices, then assigns promoted builds by their pilot gas.
+   across the slices, then assigns promoted builds by their pilot gas.
+   The previous batch's measured worker milliseconds per build size the next
+   slices, from two to eight per worker, targeting a second of scoring each.
    The median pilot gas weights each unknown in the mixed batch's estimate.
    It dispatches heavier estimates first. Each slice keeps request order so the
    worker's grouping by run count preserves positional replies. A queue outside

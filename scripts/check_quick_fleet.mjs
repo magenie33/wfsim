@@ -45,6 +45,12 @@ async function checkScoreDispatch() {
     }),
   });
   const plan = runInContext("let woptNextId = 1;\n" + source + "\nquickScoreSlices", sandbox);
+  const width = runInContext("quickScoreWidth", sandbox);
+  assert.equal(width(200, 10, 0), 10);
+  assert.equal(width(200, 10, 100), 10);
+  assert.equal(width(200, 10, 150), 6);
+  assert.equal(width(200, 10, 1e6), 3);
+  assert.equal(width(200, 1, 1e6), 100);
   const compact = gas => JSON.stringify([1, [25, 1], { gas }]);
   const items = [{shards: [compact(2), null]}, {shards: [{gas: 4}]}, {shards: [compact(40)]}, {shards: [compact(1), compact(3)]}];
   const before = JSON.stringify(items);

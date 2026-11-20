@@ -40,7 +40,7 @@ pub(super) const DEPTH_DERIVED_PROC: u32 = 3;
 /// The faction multiplier a payload at `depth` carries.
 #[wfsim_gas_macro::metered]
 pub(super) fn faction_at(faction_multiplier: f64, depth: u32) -> f64 {
-    faction_multiplier.powi_portable(depth as i32)
+    if faction_multiplier == 1.0 { 1.0 } else { faction_multiplier.powi_portable(depth as i32) }
 }
 
 /// THE SAME NUMBER, SAID AS THE TWO THINGS A READER CAN CHECK — the shooter's
