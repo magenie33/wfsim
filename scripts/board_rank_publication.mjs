@@ -126,7 +126,7 @@ export async function floorRankGeneration(sql,native,claim,generation,{work,sour
  const rivens=page.rows.filter(row=>row.riven);
  if(rivens.length){
   const standards=await native.call('standard_riven',rivens.map(row=>({weapon:generation.weapon,riven:JSON.parse(row.page).riven})));
-  const invalid=rivens.filter((_,i)=>standards[i]?.standard!==true).map(row=>row.identity);
+  const invalid=rivens.filter((_,i)=>standards[i]?.eligible!==true).map(row=>row.identity);
   if(invalid.length)throw new BoardRankRivenReindex([...new Set(invalid)]);
  }
  const decisions=page.rows.length?await native.call('floor',page.rows.map(row=>({score:Number(row.score),leader:Number(row.leader)}))):[];

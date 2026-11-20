@@ -75,9 +75,9 @@ fn execute(request: Request, rulers: &[Ruler]) -> Result<Vec<Value>, String> {
         "standard_riven" => request.items.into_iter().map(|item| {
             let weapon = item.get("weapon").and_then(Value::as_str).ok_or("publication weapon required")?;
             let riven = item.get("riven").ok_or("publication riven required")?;
-            let standard = riven.is_null() || serde_json::from_value::<RowRiven>(riven.clone())
+            let eligible = riven.is_null() || serde_json::from_value::<RowRiven>(riven.clone())
                 .is_ok_and(|riven| riven.standard_shape(weapon).is_some());
-            Ok(json!({"standard":standard}))
+            Ok(json!({"eligible":eligible}))
         }).collect(),
         "facts" => request.items.into_iter().map(|mut item| {
             let ruler = item.get("ruler").and_then(Value::as_str).ok_or("invalid fact ruler")?;

@@ -123,7 +123,7 @@ try{
  const cached=rivenInputs.map(({identity,record},i)=>({identity,record_sha256:createHash('sha256').update(JSON.stringify(record)).digest('hex'),
   descriptor:{...rivenDescriptors[i],admit:rivenDescriptors[1].admit}}));
  const scope={weapon:riven.weapon,ruler,inputs:rivenInputs,cached};
- const original={...native,call:(op,items)=>op==='standard_riven'?items.map(()=>({standard:true})):native.call(op,items)};
+ const original={...native,call:(op,items)=>op==='standard_riven'?items.map(()=>({eligible:true})):native.call(op,items)};
  assert.deepEqual((await prepareRankSources(original,scope)).rows.map(row=>row.score),[90,80],'the old cached mask would admit the actual-roll score');
  counts.describe=0;
  assert.deepEqual((await prepareRankSources(operate,scope)).rows.map(row=>row.score),[80]);

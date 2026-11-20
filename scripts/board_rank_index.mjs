@@ -44,10 +44,10 @@ export async function prepareRankSources(native,{weapon,ruler,inputs,cached=[]})
   candidates.push({input,d,riven});
  }
  const standards=rivens.length?await native.call('standard_riven',rivens):[];
- if(standards.length!==rivens.length||standards.some(result=>typeof result?.standard!=='boolean'))
+ if(standards.length!==rivens.length||standards.some(result=>typeof result?.eligible!=='boolean'))
   throw new BoardRankQualificationError('invalid native riven eligibility');
  for(const {input,d,riven} of candidates){
-  if(riven!==null&&!standards[riven].standard)continue;
+  if(riven!==null&&!standards[riven].eligible)continue;
   for(const fact of input.facts||[]){
    if(fact.identity!==input.identity||fact.ruler!==ruler)throw new BoardRankQualificationError('rank fact changed its scope');
    const mode=d.publication_modes.find(row=>row.id===fact.mode);
