@@ -2,6 +2,7 @@
 //! Player camera branch of native 0x149c340, with supplied camera and target providers.
 use super::rotation;
 
+#[derive(Debug, Clone)]
 pub struct EyeAim {
     pub target: [f32; 3],
     pub basis: [f32; 16],

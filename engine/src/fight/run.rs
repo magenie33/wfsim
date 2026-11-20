@@ -576,7 +576,7 @@ pub fn run_once_traced(
             continue;
         }
         if let Some((si, k)) = landing {
-            let mut l = seats[si].in_flight.remove(k);
+            let mut l = seats[si].in_flight.remove(k).expect("selected landing");
             if trace.is_some() {
                 sample_frames_up_to(
                     l.t, params, &mut trace, &mut next_frame, frame_seconds,
@@ -1154,7 +1154,7 @@ pub fn run_once_traced(
         if spatial || arrival_delay > 0.0 {
             let swing = landing.swing.clone();
             let burst_len = active.burst.map_or(1, |b| b.count.max(1));
-            if !spatial { me.in_flight.push(Landing {
+            if !spatial { me.in_flight.push_back(Landing {
                 t: t + arrival_delay,
                 burst_completed: Some(me.ammo.rounds_this_mag.is_multiple_of(burst_len)),
                 ..landing

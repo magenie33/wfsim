@@ -110,8 +110,9 @@ pub(super) struct Combatant<'a> {
     pub(super) last_shot_t: f64,
     /// ITS SHOTS STILL IN THE AIR, in the order they were fired — see
     /// [`super::flight`]. Always empty for a weapon whose shot does not fly.
-    pub(super) in_flight: Vec<Landing>,
+    pub(super) in_flight: std::collections::VecDeque<Landing>,
     pub(super) fire_state: crate::scene::FireState,
+    pub(super) spatial_recipient: Option<Box<super::spatial::Recipient<'a>>>,
     /// WHAT IT ONLY READS — resolved once from its own build, constant for the
     /// whole engagement.
     pub(super) fixed: Fixed<'a>,
@@ -772,8 +773,9 @@ pub(super) fn open<'a>(
             melee,
             influence_until,
             last_shot_t,
-            in_flight: Vec::new(),
+            in_flight: std::collections::VecDeque::new(),
             fire_state: crate::scene::FireState::default(),
+            spatial_recipient: None,
             other: None,
             fixed: Fixed {
                 aim_off_axis,

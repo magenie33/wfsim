@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Posed player/weapon/enemy geometry consumed by the shared fight.
 use crate::model::{GuidedUpdate, Homing, Placement, Scene3d};
-use crate::rules::geometry::{eye::eye_aim, glaive, guided::Guided, rotation, Affine, Proxy, Shape, Vec3};
+use crate::rules::geometry::{eye::{EyeAim, eye_aim}, glaive, guided::Guided, rotation, Affine, Proxy, Shape, Vec3};
 
 mod attachment;
 mod projectiles;
@@ -12,9 +12,20 @@ pub use attachment::FireOrigin;
 pub struct Scene {
     input: Scene3d,
     muzzle: Vec3,
-    camera: Affine,
+    camera: Vec3,
+    avatar_up: [f32; 4],
+    reticles: [Reticle; 2],
     bodies: Vec<Body>,
+    bounds: Vec<BoundsNode>,
     equipped_fire: Option<attachment::PreparedFire>,
+}
+
+#[derive(Debug, Clone)]
+struct Reticle {
+    anchor: Vec3,
+    direction: Vec3,
+    hits: Vec<(usize, EyeAim)>,
+    fallback: EyeAim,
 }
 
 #[derive(Debug, Clone)]
@@ -23,14 +34,98 @@ struct Body {
     radial_proxy: Option<Collider>,
     low: Vec3,
     high: Vec3,
+    root: Vec3,
     anchor: Vec3,
-    center: Vec3,
+    center: [f32; 3],
 }
 
 #[derive(Debug, Clone)]
 struct Prepared {
     proxy: Proxy,
     collider: Collider,
+    center: Vec3,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct Ray {
+    origin: Vec3,
+    direction: Vec3,
+    maximum: f64,
+    width: f64,
+}
+
+#[derive(Debug, Clone)]
+struct BoundsNode {
+    low: Vec3,
+    high: Vec3,
+    body: Option<usize>,
+    escape: usize,
+}
+
+#[wfsim_gas_macro::metered]
+impl BoundsNode {
+    fn build(bodies: &[Body]) -> Vec<Self> {
+        // Keep the direct scan for scenes too small to amortize the tree.
+        if bodies.len() < 8 || bodies.iter().any(|body| {
+            !(0..3).all(|i| body.low.0[i].is_finite() && body.high.0[i].is_finite()
+                && body.low.0[i] <= body.high.0[i])
+        }) {
+            return Vec::new();
+        }
+        let mut indices = (0..bodies.len()).collect::<Vec<_>>();
+        let mut nodes = Vec::with_capacity(bodies.len() * 2 - 1);
+        Self::append(&mut nodes, &mut indices, bodies);
+        nodes
+    }
+
+    // Depth-first layout skips a rejected subtree with a single index.
+    fn append(nodes: &mut Vec<Self>, indices: &mut [usize], bodies: &[Body]) {
+        let (mut low, mut high) = (bodies[indices[0]].low, bodies[indices[0]].high);
+        for &index in &indices[1..] {
+            for axis in 0..3 {
+                low.0[axis] = low.0[axis].min(bodies[index].low.0[axis]);
+                high.0[axis] = high.0[axis].max(bodies[index].high.0[axis]);
+            }
+        }
+        let node = nodes.len();
+        let body = (indices.len() == 1).then_some(indices[0]);
+        nodes.push(Self { low, high, body, escape: node + 1 });
+        if body.is_none() {
+            let span = high.minus(low);
+            let axis = (0..3).max_by(|&a, &b| span.0[a].total_cmp(&span.0[b])).unwrap();
+            indices.sort_unstable_by(|&a, &b| {
+                let center = |i: usize| bodies[i].low.0[axis] * 0.5 + bodies[i].high.0[axis] * 0.5;
+                center(a).total_cmp(&center(b)).then(a.cmp(&b))
+            });
+            let (left, right) = indices.split_at_mut(indices.len() / 2);
+            Self::append(nodes, left, bodies);
+            Self::append(nodes, right, bodies);
+            nodes[node].escape = nodes.len();
+        }
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl Ray {
+    fn reaches(self, low: Vec3, high: Vec3) -> bool {
+        let (mut enter, mut exit) = (0.0_f64, self.maximum);
+        for i in 0..3 {
+            if self.direction.0[i].abs() < 1e-15 {
+                if self.origin.0[i] < low.0[i] - self.width || self.origin.0[i] > high.0[i] + self.width {
+                    return false;
+                }
+            } else {
+                let a = (low.0[i] - self.width - self.origin.0[i]) / self.direction.0[i];
+                let b = (high.0[i] + self.width - self.origin.0[i]) / self.direction.0[i];
+                enter = enter.max(a.min(b));
+                exit = exit.min(a.max(b));
+                if enter > exit {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -40,6 +135,22 @@ struct Collider {
     scale: f64,
     low: Vec3,
     high: Vec3,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct BodyHit {
+    body: usize,
+    proxy: usize,
+    part: u8,
+    enter: f64,
+    exit: f64,
+}
+
+#[wfsim_gas_macro::metered]
+impl BodyHit {
+    fn cmp_entry(&self, other: &Self) -> std::cmp::Ordering {
+        self.enter.total_cmp(&other.enter).then(self.body.cmp(&other.body))
+    }
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize)]
@@ -148,7 +259,7 @@ impl Scene {
         self.muzzle
     }
     pub fn camera(&self) -> Vec3 {
-        self.camera.point(Vec3([0.; 3]))
+        self.camera
     }
     pub fn new(mut input: Scene3d, count: usize) -> Result<Self, String> {
         if input.enemies.len() != count || count == 0 || count > 361 {
@@ -278,7 +389,8 @@ impl Scene {
                     low.0[i] = low.0[i].min(collider.low.0[i]);
                     high.0[i] = high.0[i].max(collider.high.0[i]);
                 }
-                proxies.push(Prepared { proxy, collider });
+                let center = proxy.world.point(Vec3([0.; 3]));
+                proxies.push(Prepared { proxy, collider, center });
             }
             let radial_proxy = body.radial_proxy.map(|p| {
                 Collider::new(p.shape, body.world.compose(p.local))
@@ -288,8 +400,9 @@ impl Scene {
                 radial_proxy,
                 low,
                 high,
+                root: body.world.point(Vec3([0.; 3])),
                 anchor: body.world.point(body.candidate_anchor),
-                center: body.world.point(body.steering_center),
+                center: body.world.point(body.steering_center).0.map(|v| v as f32),
             });
         }
         for i in [input.head_proxy, input.body_proxy] {
@@ -300,86 +413,159 @@ impl Scene {
         if input.preselected_target.is_some_and(|i| i >= count) {
             return Err("launch target is outside scene".into());
         }
+        let bounds = BoundsNode::build(&bodies);
+        let (reticles, avatar_up) = Self::prepare_reticles(&input, camera, &bodies, &bounds);
         Ok(Self {
             input,
             muzzle,
-            camera,
+            camera: camera.point(Vec3([0.; 3])),
+            avatar_up,
+            reticles,
             bodies,
+            bounds,
             equipped_fire,
         })
     }
 
     pub fn root(&self, index: usize) -> Vec3 {
-        self.input.enemies[index].world.point(Vec3([0.; 3]))
+        self.bodies[index].root
     }
 
-    fn broad(body: &Body, origin: Vec3, direction: Vec3, maximum: f64, width: f64) -> bool {
-        let (mut enter, mut exit) = (0.0_f64, maximum);
-        for i in 0..3 {
-            if direction.0[i].abs() < 1e-15 {
-                if origin.0[i] < body.low.0[i] - width || origin.0[i] > body.high.0[i] + width {
-                    return false;
+    fn intersect_body(body: &Body, index: usize, ray: Ray) -> Option<BodyHit> {
+        if !ray.reaches(body.low, body.high) {
+            return None;
+        }
+        let (mut enter, mut exit, mut proxy, mut part) = (f64::INFINITY, 0.0_f64, 0, 0);
+        for (slot, p) in body.proxies.iter().enumerate() {
+            if !p.proxy.ray_enabled {
+                continue;
+            }
+            let expansion = ray.width / p.collider.scale;
+            let shape = match p.proxy.shape {
+                Shape::Sphere { radius } => Shape::Sphere { radius: radius + expansion },
+                Shape::Capsule { radius, height } => Shape::Capsule { radius: radius + expansion, height },
+            };
+            if let Some((a, b)) =
+                shape.interval(p.collider.inverse.point(ray.origin), p.collider.inverse.direction(ray.direction))
+            {
+                if a < enter {
+                    enter = a;
+                    proxy = slot;
+                    part = p.proxy.part;
                 }
-            } else {
-                let a = (body.low.0[i] - width - origin.0[i]) / direction.0[i];
-                let b = (body.high.0[i] + width - origin.0[i]) / direction.0[i];
-                enter = enter.max(a.min(b));
-                exit = exit.min(a.max(b));
-                if enter > exit {
-                    return false;
-                }
+                exit = exit.max(b);
             }
         }
-        true
+        (enter < ray.maximum).then_some(BodyHit { body: index, proxy, part, enter, exit })
     }
 
-    fn hits(
+    fn visit_hits(
+        bodies: &[Body],
+        bounds: &[BoundsNode],
+        ray: Ray,
+        accepts: impl Fn(usize) -> bool,
+        mut hit: impl FnMut(BodyHit),
+    ) {
+        let mut body = |index| {
+            if !accepts(index) {
+                return;
+            }
+            if let Some(contact) = Self::intersect_body(&bodies[index], index, ray) {
+                hit(contact);
+            }
+        };
+        if bounds.is_empty() || ray.width < 0. {
+            for index in 0..bodies.len() {
+                body(index);
+            }
+            return;
+        }
+        let mut index = 0;
+        while let Some(node) = bounds.get(index) {
+            if let Some(actor) = node.body {
+                body(actor);
+                index += 1;
+            } else if ray.reaches(node.low, node.high) {
+                index += 1;
+            } else {
+                index = node.escape;
+            }
+        }
+    }
+
+    fn hits(bodies: &[Body], bounds: &[BoundsNode], ray: Ray) -> Vec<BodyHit> {
+        let mut out = Vec::new();
+        Self::visit_hits(bodies, bounds, ray, |_| true, |hit| out.push(hit));
+        out.sort_by(BodyHit::cmp_entry);
+        out
+    }
+
+    fn first_hit(
         &self,
         origin: Vec3,
         direction: Vec3,
         maximum: f64,
         width: f64,
-    ) -> Vec<(usize, usize, u8, f64, f64)> {
-        let mut out = Vec::new();
-        for (i, body) in self.bodies.iter().enumerate() {
-            if !Self::broad(body, origin, direction, maximum, width) {
-                continue;
+        accepts: impl Fn(usize) -> bool,
+    ) -> Option<BodyHit> {
+        let ray = Ray { origin, direction, maximum, width };
+        let mut best = None;
+        Self::visit_hits(&self.bodies, &self.bounds, ray, accepts, |hit| {
+            if best.as_ref().is_none_or(|current| hit.cmp_entry(current).is_lt()) {
+                best = Some(hit);
             }
-            let (mut enter, mut exit, mut index, mut part) = (f64::INFINITY, 0.0_f64, 0, 0);
-            for (slot, p) in body.proxies.iter().enumerate() {
-                if !p.proxy.ray_enabled {
-                    continue;
-                }
-                let shape = match p.proxy.shape {
-                    crate::rules::geometry::Shape::Sphere { radius } => {
-                        crate::rules::geometry::Shape::Sphere {
-                            radius: radius + width / p.collider.scale,
-                        }
-                    }
-                    crate::rules::geometry::Shape::Capsule { radius, height } => {
-                        crate::rules::geometry::Shape::Capsule {
-                            radius: radius + width / p.collider.scale,
-                            height,
-                        }
-                    }
-                };
-                if let Some((a, b)) =
-                    shape.interval(p.collider.inverse.point(origin), p.collider.inverse.direction(direction))
-                {
-                    if a < enter {
-                        enter = a;
-                        index = slot;
-                        part = p.proxy.part;
-                    }
-                    exit = exit.max(b);
-                }
-            }
-            if enter < maximum {
-                out.push((i, index, part, enter, exit));
-            }
-        }
-        out.sort_by(|a, b| a.3.total_cmp(&b.3).then(a.0.cmp(&b.0)));
-        out
+        });
+        best
+    }
+
+    // Poses and ordered camera intersections are fixed. Only actor eligibility
+    // and the head/body choice change when a round is fired.
+    fn prepare_reticles(
+        input: &Scene3d,
+        camera: Affine,
+        bodies: &[Body],
+        bounds: &[BoundsNode],
+    ) -> ([Reticle; 2], [f32; 4]) {
+        let axis = |transform: Affine, direction| {
+            transform
+                .direction(Vec3(direction))
+                .normalized()
+                .unwrap_or(Vec3(direction))
+                .0
+                .map(|v| v as f32)
+        };
+        let camera_forward = axis(camera, [0., 0., 1.]);
+        let avatar_forward = axis(input.player.world, [0., 0., 1.]);
+        let [x, y, z] = axis(input.player.world, [0., 1., 0.]);
+        let avatar_up = [x, y, z, 0.];
+        let camera = camera.point(Vec3([0.; 3]));
+        let solve = |target: Vec3| {
+            eye_aim(
+                camera.0.map(|v| v as f32),
+                camera_forward,
+                target.0.map(|v| v as f32),
+                input.reference_point.0.map(|v| v as f32),
+                avatar_forward,
+                avatar_up,
+            )
+        };
+        let reticles = [input.body_proxy, input.head_proxy].map(|selected| {
+            let anchor = bodies[0]
+                .proxies
+                .iter()
+                .find(|p| p.proxy.cache_index == selected)
+                .unwrap()
+                .center;
+            let offset = anchor.minus(camera);
+            let direction = offset.normalized().unwrap_or(Vec3([0., 0., 1.]));
+            let ray = Ray { origin: camera, direction, maximum: offset.length() + 1e-6, width: 0. };
+            let hits = Self::hits(bodies, bounds, ray)
+                .into_iter()
+                .map(|h| (h.body, solve(camera.along(direction, h.enter))))
+                .collect();
+            Reticle { anchor, direction, hits, fallback: solve(anchor) }
+        });
+        (reticles, avatar_up)
     }
 
     pub fn distance_to_body(&self, point: Vec3, index: usize) -> f64 {
@@ -407,51 +593,10 @@ impl Scene {
         eligible: &[bool],
         fire_origin: Option<FireOrigin>,
     ) -> Flight {
-        let selected = if head {
-            self.input.head_proxy
-        } else {
-            self.input.body_proxy
-        };
-        let head_anchor = self.bodies[0]
-            .proxies
-            .iter()
-            .find(|p| p.proxy.cache_index == selected)
-            .unwrap()
-            .proxy
-            .world
-            .point(Vec3([0.; 3]));
-        let camera = self.camera();
-        let camera_direction = head_anchor
-            .minus(camera)
-            .normalized()
-            .unwrap_or(Vec3([0., 0., 1.]));
-        let target = self
-            .hits(
-                camera,
-                camera_direction,
-                head_anchor.minus(camera).length() + 1e-6,
-                0.,
-            )
-            .into_iter()
-            .find(|h| eligible.get(h.0) == Some(&true))
-            .map_or(head_anchor, |h| camera.along(camera_direction, h.3));
-        let axis = |transform: Affine, direction| {
-            transform
-                .direction(Vec3(direction))
-                .normalized()
-                .unwrap_or(Vec3(direction))
-                .0
-                .map(|v| v as f32)
-        };
-        let avatar_up = axis(self.input.player.world, [0., 1., 0.]);
-        let aim = eye_aim(
-            camera.0.map(|v| v as f32),
-            axis(self.camera, [0., 0., 1.]),
-            target.0.map(|v| v as f32),
-            self.input.reference_point.0.map(|v| v as f32),
-            axis(self.input.player.world, [0., 0., 1.]),
-            [avatar_up[0], avatar_up[1], avatar_up[2], 0.],
-        );
+        let reticle = &self.reticles[usize::from(head)];
+        let aim = reticle.hits.iter()
+            .find(|(body, _)| eligible.get(*body) == Some(&true))
+            .map_or(&reticle.fallback, |(_, aim)| aim);
         let muzzle = fire_origin.map_or(self.muzzle, |fire| fire.position);
         let aim_target = Vec3(aim.target.map(f64::from));
         let eye_forward = Vec3(std::array::from_fn(|i| f64::from(aim.basis[8 + i])));
@@ -463,7 +608,7 @@ impl Scene {
             rotation::look_at(
                 [x, y, z, 1.],
                 [aim.target[0], aim.target[1], aim.target[2], 1.],
-                [avatar_up[0], avatar_up[1], avatar_up[2], 0.],
+                self.avatar_up,
             )
         } else {
             aim.basis
@@ -477,9 +622,9 @@ impl Scene {
         }));
         let mut flight = Flight {
             muzzle,
-            camera,
+            camera: self.camera,
             basis_origin: Vec3([aim.basis[12], aim.basis[13], aim.basis[14]].map(f64::from)),
-            head_anchor,
+            head_anchor: reticle.anchor,
             aim_target,
             direction,
             steering_target: self.input.preselected_target,
@@ -496,14 +641,13 @@ impl Scene {
         let maximum = pierce.max(0.) as f32;
         let mut accumulated = 0.0_f32;
         let max_distance = range.min(speed.unwrap_or(100_000.) * self.input.maximum_flight_seconds);
-        let line = direction.normalized().unwrap_or(camera_direction);
+        let line = direction.normalized().unwrap_or(reticle.direction);
         if projectile_reverse_query && !every_body && maximum.is_finite() {
             self.trace_kinematic(&mut flight, line, max_distance, width * 0.5, speed, maximum, eligible);
             return flight;
         }
-        for (body, proxy, part, enter, exit) in
-            self.hits(muzzle, line, max_distance, width * 0.5)
-        {
+        let ray = Ray { origin: muzzle, direction: line, maximum: max_distance, width: width * 0.5 };
+        for BodyHit { body, proxy, part, enter, exit } in Self::hits(&self.bodies, &self.bounds, ray) {
             if eligible.get(body) != Some(&true) {
                 continue;
             }
@@ -570,7 +714,7 @@ impl Scene {
             );
             let target = flight
                 .steering_target
-                .map(|i| self.bodies[i].center.0.map(|v| v as f32));
+                .map(|i| self.bodies[i].center);
             let world_orientation = state.orientation;
             for _ in 0..usize::from(update.substeps).min(limit - step) {
                 step += 1;
@@ -644,10 +788,9 @@ impl Scene {
             }
             let offset = self.bodies[i].anchor.minus(origin);
             offset.normalized().is_none_or(|ray| {
-                self.hits(origin, ray, offset.length() + 1e-6, 0.)
-                    .into_iter()
-                    .find(|hit| eligible.get(hit.0) == Some(&true))
-                    .is_none_or(|hit| hit.0 == i)
+                self.first_hit(origin, ray, offset.length() + 1e-6, 0., |body| {
+                    eligible.get(body) == Some(&true)
+                }).is_none_or(|hit| hit.body == i)
             })
         })
     }
@@ -670,15 +813,12 @@ impl Scene {
             let line = Vec3(line.0.map(|v| f64::from(v as f32)));
             let limit = f64::from(delta.length() as f32).min(remaining_range);
             // The posed-body adapter supplies distance order and an opposing normal.
-            let records = self.hits(origin, line, limit, 0.);
-            let normal = line.0.map(|v| -v as f32);
-            let success = !records.is_empty();
-            let accepted = records.into_iter().map(|hit| {
-                let eligible = eligible.get(hit.0) == Some(&true);
-                (hit, eligible, normal)
+            let hit = self.first_hit(origin, line, limit, 0., |body| {
+                eligible.get(body) == Some(&true)
             });
-            if let Some((body, proxy, part, enter, exit)) =
-                glaive::impact_record(displacement, success, accepted)
+            let normal = line.0.map(|v| -v as f32);
+            if let Some(BodyHit { body, proxy, part, enter, exit }) =
+                glaive::impact_record(displacement, hit.is_some(), hit.map(|hit| (hit, true, normal)))
             {
                 return Some(Impact {
                     body,

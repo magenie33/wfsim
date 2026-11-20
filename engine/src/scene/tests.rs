@@ -87,6 +87,69 @@ fn offset_muzzle_reaches_the_reticle_point_and_can_be_blocked() {
 }
 
 #[test]
+fn bounds_preserve_ordered_contacts_across_a_grid() {
+    let signature = |hits: Vec<BodyHit>| {
+        hits.into_iter().map(|hit| {
+            (hit.body, hit.proxy, hit.part, hit.enter.to_bits(), hit.exit.to_bits())
+        }).collect::<Vec<_>>()
+    };
+    for enemy in 0..2 {
+        let scene = scene(enemy, 5, false);
+        assert!(!scene.bounds.is_empty());
+        for x in -8..=8 {
+            for y in 0..=4 {
+                for (maximum, width) in [(0.4, 0.), (4., 0.), (20., 0.1), (20., -0.05)] {
+                    let origin = Vec3([f64::from(x), f64::from(y) * 0.5, 4.]);
+                    let direction = Vec3([f64::from(x) * 0.06, -0.1, 1.]).normalized().unwrap();
+                    let ray = Ray { origin, direction, maximum, width };
+                    let accelerated = Scene::hits(&scene.bodies, &scene.bounds, ray);
+                    let linear = Scene::hits(&scene.bodies, &[], ray);
+                    assert_eq!(signature(accelerated), signature(linear), "{enemy} {ray:?}");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn reticle_uses_the_first_eligible_camera_intersection() {
+    let initial = scene(1, 1, false);
+    let mut input = initial.input.clone();
+    input.placement = Placement::Supplied;
+    let offset = initial.reticles[1].anchor.minus(initial.camera());
+    for fraction in [0.3, 0.6] {
+        let center = initial.camera().along(offset, fraction);
+        let mut blocker = input.enemies[0].clone();
+        blocker.world = Affine::IDENTITY;
+        for (axis, value) in center.0.into_iter().enumerate() {
+            blocker.world.0[axis * 4 + 3] = value;
+        }
+        blocker.controller.scale = 1.;
+        blocker.radial_proxy = None;
+        blocker.proxies = vec![Proxy {
+            cache_index: 0,
+            bone_token: 0,
+            part: 0,
+            shape: Shape::Sphere { radius: 0.1 },
+            world: Affine::IDENTITY,
+            ray_enabled: true,
+        }];
+        input.enemies.push(blocker);
+    }
+    let scene = Scene::new(input, 3).unwrap();
+    let aim = |eligible: &[bool]| {
+        scene.trace(true, 0., 0., None, None, 0., false, false, 0., 100., eligible, None)
+            .aim_target
+    };
+    let first = aim(&[true, true, true]);
+    let second = aim(&[true, false, true]);
+    let aimed = aim(&[true, false, false]);
+    let fallback = aim(&[false, false, false]);
+    assert!(first.0[2] < second.0[2] && second.0[2] < aimed.0[2]);
+    assert_eq!(fallback, Vec3(scene.reticles[1].anchor.0.map(|v| f64::from(v as f32))));
+}
+
+#[test]
 fn attachment_refresh_is_between_physical_rounds() {
     use crate::model::{EquippedFire, FireRound, FirePosition, WeaponAttachment};
 

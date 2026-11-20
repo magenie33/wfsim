@@ -67,6 +67,7 @@ mod replay_reads_every_buff;
 mod ripper_rounds;
 mod sniper_combo_fight;
 mod scenario_combo;
+mod spatial_recipient;
 mod spliced_riven;
 mod status_crit_parts;
 mod status_composition;

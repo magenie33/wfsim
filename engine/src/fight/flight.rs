@@ -190,15 +190,11 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let mut pellet_aims = Vec::new();
     {
         let recipient = l.spatial.as_ref().map_or(0, |s| s.impact.body);
-        let recipient_params = l.spatial.as_ref().map(|_| {
-            let mut p = me.params.clone();
-            let spec = me.params.body(recipient).expect("prepared spatial recipient");
-            p.foe = spec.params.clone();
-            p.body_parts = spec.body_parts.to_vec();
-            p.gauge_charging_body_parts.clear();
-            p.target_at = spec.at;
-            p
-        });
+        let params = if l.spatial.is_some() {
+            spatial::Recipient::params(me.params, &mut me.spatial_recipient, recipient)
+        } else {
+            me.params
+        };
         let shot = Strike {
             body_index: recipient,
             spatial: l.spatial.as_ref(),
@@ -253,7 +249,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             bar: &me.bar,
             rec_roster: &me.fixed.rec_roster,
             rec_buff_index: &me.fixed.rec_buff_index,
-            params: recipient_params.as_ref().unwrap_or(me.params),
+            params,
         };
         let mut round_aim = RoundAim::default();
         let mut live = Live {
@@ -294,7 +290,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         }
     }
     if radial_delay > 0.0 {
-        me.in_flight.push(Landing {
+        me.in_flight.push_back(Landing {
             t: t + radial_delay,
             radial_only: true,
             pellet_aims,

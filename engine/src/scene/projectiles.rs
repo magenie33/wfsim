@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-use super::{Flight, Impact, Scene, Vec3};
+use super::{BodyHit, Flight, Impact, Scene, Vec3};
 use crate::rules::geometry::penetration::{ReverseHit, projectile_exit, reverse_start};
 
 #[wfsim_gas_macro::metered]
@@ -19,10 +19,10 @@ impl Scene {
         let mut travel = 0.;
         let mut seen = vec![false; self.bodies.len()];
         let direction = line.0.map(|v| v as f32);
-        while let Some((body, slot, part, enter, _)) = self
-            .hits(origin, line, range - travel, width)
-            .into_iter()
-            .find(|h| eligible.get(h.0) == Some(&true) && !seen[h.0])
+        while let Some(BodyHit { body, proxy: slot, part, enter, .. }) =
+            self.first_hit(origin, line, range - travel, width, |body| {
+                eligible.get(body) == Some(&true) && !seen[body]
+            })
         {
             let point = origin.along(line, enter);
             let anchor = point.0.map(|v| v as f32);
@@ -119,7 +119,7 @@ impl Scene {
                     .proxies
                     .iter()
                     .map(|p| {
-                        let point = p.proxy.world.point(Vec3([0.; 3]));
+                        let point = p.center;
                         let delta = point.minus(center);
                         (&p.proxy, point, delta.dot(delta))
                     })

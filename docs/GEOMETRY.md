@@ -91,6 +91,12 @@ The analytic query uses binary64 geometry. Y is up; transforms are row-major
 local-Y segment and excludes its caps. The supplied world scale is applied
 once. AABB pruning encloses the posed primitives. Ray enable and part exclusion
 are respected by the component query; contact is strictly before the ray limit.
+The posed scene prepares the ordered camera intersections for both aim anchors.
+At emission it selects the first currently eligible actor. Larger formations
+traverse a bounding hierarchy, then use the same per-actor tests. Nearest-only
+queries retain entry distance and actor order without collecting the full list.
+Spatial damage settlement reuses the acting mode's configuration and updates
+the recipient's target fields when the body changes.
 
 The ordinary-gun adapter supplies the body's nearest entry and farthest proxy
 exit to the trace-gun fragment. Laetum base fire selects `projectile_reverse_query`

@@ -1,6 +1,46 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Schedule geometry-derived recipients through the ordinary pellet damage path.
 use super::*;
+use std::{cell::Cell, rc::Rc};
+
+/// A spatial landing uses the recipient as the primary target of settlement.
+/// The rest of the source configuration is shared by all of its landings.
+pub(super) struct Recipient<'p> {
+    source: &'p FightParams,
+    index: usize,
+    params: FightParams,
+}
+
+#[wfsim_gas_macro::metered]
+impl<'p> Recipient<'p> {
+    pub(super) fn params<'a>(
+        source: &'p FightParams,
+        cached: &'a mut Option<Box<Self>>,
+        index: usize,
+    ) -> &'a FightParams
+    where
+        'p: 'a,
+    {
+        if index == 0 && source.gauge_charging_body_parts.is_empty() {
+            return source;
+        }
+        if cached.as_ref().is_none_or(|view| !std::ptr::eq(view.source, source)) {
+            let mut params = source.clone();
+            params.gauge_charging_body_parts.clear();
+            *cached = Some(Box::new(Self { source, index: 0, params }));
+        }
+        let view = cached.as_mut().unwrap();
+        if view.index != index {
+            let spec = source.body(index).expect("prepared spatial recipient");
+            view.params.foe.clone_from(spec.params);
+            view.params.body_parts.clear();
+            view.params.body_parts.extend_from_slice(spec.body_parts);
+            view.params.target_at = spec.at;
+            view.index = index;
+        }
+        &view.params
+    }
+}
 
 #[derive(Debug, Clone)]
 pub(super) struct SpatialLanding {
@@ -12,10 +52,10 @@ pub(super) struct SpatialLanding {
     pub follows: bool,
     pub contact: usize,
     pub splash: bool,
-    progress: std::sync::Arc<std::sync::Mutex<Progress>>,
+    progress: Rc<Cell<Progress>>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Copy, Default)]
 struct Progress {
     landed: bool,
     big: bool,
@@ -25,13 +65,14 @@ struct Progress {
 #[wfsim_gas_macro::metered]
 impl SpatialLanding {
     pub fn aggregate(&self, landed: &mut bool, big: &mut bool, head: &mut bool) {
-        let mut p = self.progress.lock().expect("spatial shot progress");
+        let mut p = self.progress.get();
         p.landed |= *landed;
         p.big |= *big;
         p.head |= *head;
         *landed = p.landed;
         *big = p.big;
         *head = p.head;
+        self.progress.set(p);
     }
 }
 
@@ -43,15 +84,11 @@ pub(super) fn launch(
     bodies: &[Body],
     rec: &mut crate::record::Record,
 ) {
-    let owned = Landing {
-        burst_completed: Some(
-            me.ammo
-                .rounds_this_mag
-                .is_multiple_of(active.burst.map_or(1, |b| b.count.max(1))),
-        ),
-        ..l.clone()
-    };
-    let l = &owned;
+    let burst_completed = Some(
+        me.ammo
+            .rounds_this_mag
+            .is_multiple_of(active.burst.map_or(1, |b| b.count.max(1))),
+    );
     let Some(scene) = me.params.scene_3d.as_ref().cloned() else {
         return;
     };
@@ -72,7 +109,7 @@ pub(super) fn launch(
         .iter()
         .map(|b| b.state.phase == Phase::Physical)
         .collect();
-    let progress = std::sync::Arc::new(std::sync::Mutex::new(Progress::default()));
+    let progress = Rc::new(Cell::new(Progress::default()));
     let mut events = Vec::new();
     for (round, &copies) in groups.iter().enumerate() {
         if copies == 0 {
@@ -140,6 +177,7 @@ pub(super) fn launch(
                     n_pellets: 1,
                     rounds: Rounds::single(1, each),
                     burst_starts: false,
+                    burst_completed,
                     ..l.clone()
                 });
                 if let Some(rad) = active.radial.filter(|_| contact == 0) {
@@ -161,6 +199,7 @@ pub(super) fn launch(
                             n_pellets: 1,
                             rounds: Rounds::single(1, each),
                             burst_starts: false,
+                            burst_completed,
                             ..l.clone()
                         });
                     }
@@ -206,6 +245,7 @@ pub(super) fn launch(
             }),
             n_pellets: 0,
             burst_starts: false,
+            burst_completed,
             ..l.clone()
         });
     }
