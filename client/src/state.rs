@@ -127,19 +127,27 @@ pub fn random_hex(n: usize) -> Result<String> {
     Ok(b.iter().map(|x| format!("{x:02x}")).collect())
 }
 
+pub fn existing_identity(dir: &Path) -> Result<Option<String>> {
+    let id = match fs::read_to_string(dir.join("identity")) {
+        Ok(id) => id,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(error.into()),
+    };
+    if id.len() != 24
+        || !id
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    {
+        return Err("device identity is damaged; restore it from your backup".into());
+    }
+    Ok(Some(id))
+}
+
 pub fn identity(dir: &Path) -> Result<String> {
-    let path = dir.join("identity");
-    if path.exists() {
-        let id = fs::read_to_string(path)?;
-        if id.len() != 24
-            || !id
-                .bytes()
-                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-        {
-            return Err("device identity is damaged; restore it from your backup".into());
-        }
+    if let Some(id) = existing_identity(dir)? {
         return Ok(id);
     }
+    let path = dir.join("identity");
     let id = random_hex(12)?;
     let mut f = private_options().create_new(true).open(&path)?;
     f.write_all(id.as_bytes())?;
@@ -148,6 +156,15 @@ pub fn identity(dir: &Path) -> Result<String> {
         return Err("cannot persist device identity".into());
     }
     Ok(id)
+}
+
+pub fn pinned_origin(dir: &Path, server: &str) -> Result<bool> {
+    match fs::read_to_string(dir.join("origin")) {
+        Ok(origin) if origin == server => Ok(true),
+        Ok(_) => Err("this device belongs to another server; restore config.json or use a separate --data-dir".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(error.into()),
+    }
 }
 
 pub fn directory(dir: &Path) -> Result<()> {

@@ -48,6 +48,8 @@ Run `wfsim` in a terminal to open the control panel at the saved device state.
 Type `/start` to start background computing and review the participation
 statement on first use. Use `/login` to claim the device in your browser,
 `/cpu 0-100` to save a new range, and `/pause` or `/resume` to control computing.
+The panel restores the account link status from the saved device identity
+each time it opens.
 Enter panel commands with a leading slash. Use `/help` to see the commands.
 `/stop` returns unfinished work and stops computing. `/quit` or Ctrl+C closes
 the panel while background computing continues. Run `wfsim join` to compute

@@ -9,7 +9,7 @@ impl std::fmt::Display for ExpiredAppraisal {
     }
 }
 impl std::error::Error for ExpiredAppraisal {}
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::io::Read;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime};
@@ -73,6 +73,9 @@ impl Net {
             *self.clock.lock().expect("server clock") = Some((Instant::now(), date));
         }
         Ok(serde_json::from_slice(&read_bytes(r, 4 * 1024 * 1024)?)?)
+    }
+    pub fn device_points(&self, verifier: &str) -> Result<Value> {
+        self.post("/api/board/points", &json!({"verifier":verifier}))
     }
     pub fn until(&self, iso: &str) -> Option<Duration> {
         let at = time::OffsetDateTime::parse(iso, &time::format_description::well_known::Rfc3339)
