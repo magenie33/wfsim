@@ -49,24 +49,41 @@ fn player_and_enemy_models_define_contact_and_mounts() {
 }
 
 #[test]
-fn perfect_head_intent_does_not_force_a_head_contact() {
-    let s = scene(1, 1, false);
-    let path = s.trace(true, 0., 0., Some(100.), None, 0., false, false, 0., 100., &[true], None);
+fn offset_muzzle_reaches_the_reticle_point_and_can_be_blocked() {
+    let mut input = scene(1, 1, false).input;
+    input.player.bones[48].0[3] = 0.6;
+    input.placement = Placement::Supplied;
+    let aimed = |scene: &Scene, eligible: &[bool]| {
+        scene.trace(true, 0., 0., Some(100.), None, 0., false, false, 0., 100., eligible, None)
+    };
+    let s = Scene::new(input.clone(), 1).unwrap();
+    let path = aimed(&s, &[true]);
     assert_eq!(path.impacts.len(), 1);
-    assert_ne!(
-        path.impacts[0].part, 1,
-        "reticle direction must not teleport the muzzle onto its ray"
-    );
-    let mut input = s.input.clone();
-    // Put the supplied muzzle on the camera ray: an actual head contact.
-    let direction = path.direction;
-    let muzzle = s.camera().along(direction, 3.);
-    input.player.bones[48].0[3] = muzzle.0[0];
-    input.player.bones[48].0[7] = muzzle.0[1];
-    input.player.bones[48].0[11] = muzzle.0[2];
-    let aligned = Scene::new(input, 1).unwrap();
-    let path = aligned.trace(true, 0., 0., Some(100.), None, 0., false, false, 0., 100., &[true], None);
     assert_eq!(path.impacts[0].part, 1);
+    assert_eq!(path.muzzle.0[0], 0.6);
+    let to_target = path.aim_target.minus(path.muzzle);
+    assert!((1. - to_target.normalized().unwrap().dot(path.direction.normalized().unwrap())).abs() < 1e-12);
+    let wide = s.trace(true, 12., 0., Some(100.), None, 0., false, false, 0., 100., &[true], None);
+    assert!(wide.impacts.iter().all(|hit| hit.part != 1));
+
+    let mut intervening = input.enemies[0].clone();
+    let point = path.muzzle.along(to_target, 0.5);
+    intervening.world = Affine::IDENTITY;
+    for i in 0..3 {
+        intervening.world.0[i * 4 + 3] = point.0[i];
+    }
+    intervening.controller.scale = 1.;
+    intervening.radial_proxy = None;
+    intervening.proxies = vec![Proxy {
+        cache_index: 0, bone_token: 0, part: 0,
+        shape: Shape::Sphere { radius: 0.1 },
+        world: Affine::IDENTITY, ray_enabled: true,
+    }];
+    input.enemies.push(intervening);
+    let s = Scene::new(input, 2).unwrap();
+    let blocked = aimed(&s, &[true; 2]);
+    assert_eq!(blocked.aim_target, path.aim_target);
+    assert_eq!((blocked.impacts[0].body, blocked.impacts[0].part), (1, 0));
 }
 
 #[test]

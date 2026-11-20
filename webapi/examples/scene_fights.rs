@@ -150,7 +150,8 @@ fn main() {
                             &[true; 25],
                             None,
                         );
-                        let muzzle = prepared.camera().along(flight.direction, 3.);
+                        let view = flight.aim_target.minus(flight.camera).normalized().unwrap();
+                        let muzzle = prepared.camera().along(view, 3.);
                         for (j, i) in [3, 7, 11].iter().enumerate() {
                             scene["player"]["bones"][48][i] = json!(muzzle.0[j]);
                         }

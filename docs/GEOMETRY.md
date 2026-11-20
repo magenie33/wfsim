@@ -33,7 +33,13 @@ order matches the arena: aimed enemy first, then `formation`.
 The scene supplies its camera-ray result to the native player eye projection
 (`0x149c340`). The projection uses binary32, extends the target by camera
 forward when the reference projects beyond the target, and uses avatar forward
-for the coincident fallback. The firing origin is independent of the eye basis.
+for the coincident fallback. The eye basis and the actual firing origin are
+separate outputs. The scene builds its launch basis from that muzzle to the
+resolved reticle point. A coincident point or a point behind the muzzle's
+forward plane uses the eye basis. Each physical round applies intrinsic
+spread around the launch basis, then queries the scene from the muzzle.
+Different hand positions can produce different directions toward one
+reticle point. Geometry along the muzzle ray can intercept that round.
 
 The optional `player.equipped_fire` describes installed weapon attachments
 and their round order. Each attachment supplies its player-bone `mount`,
@@ -242,6 +248,11 @@ Client build 2026.10.28.09.54, executable SHA-256
   and separately observed transform translation at the radial submission.
 - `20261120T041422Z-ahom-runtime-first-native-slices`: projectile reverse
   ray, handle-order, budget and continuation controls.
+- The original projectile branch at `0xfee5ba..0xfee63a` subtracts the
+  muzzle from a target-service point and constructs a new basis at the muzzle.
+  The scene uses this convergence for its ordinary reticle input.
+  The full runtime selection of that branch, offset, camera target provider
+  and spawn state remain calibration inputs.
 - `20261120T063733Z-ahom-akarius-grid-clock` and
   `20261120T064738Z-ahom-akarius-grid-recipients`: supplied 25-actor tests
   at two collision scales. The receiver checks acquisition, direct actor

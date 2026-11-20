@@ -36,7 +36,8 @@ fn align(scene: &mut Value, count: usize) {
         &vec![true; count],
         None,
     );
-    let at = s.camera().along(f.direction, 3.);
+    let view = f.aim_target.minus(f.camera).normalized().unwrap();
+    let at = s.camera().along(view, 3.);
     for (axis, i) in [3, 7, 11].iter().enumerate() {
         scene["player"]["bones"][48][i] = json!(at.0[axis]);
     }
@@ -73,13 +74,14 @@ fn head_intent_does_not_override_homing_contact_or_gauge() {
     let mut cycle = request("laetum", 1, false);
     cycle["mode"] = json!("cycle");
     cycle["duration"] = json!(15.);
+    cycle["headshot_pct"] = json!(0);
     let low = record(&params(&cycle));
     assert!(direct(&low).iter().all(|(_, head)| !*head));
     assert!(!low
         .events()
         .iter()
         .any(|e| matches!(e.kind, Kind::TransformEnd { transmuted: true })));
-    align(&mut cycle["scene_3d"], 1);
+    cycle["gauge_charging_headshots"] = json!(true);
     let high = record(&params(&cycle));
     assert!(direct(&high).iter().any(|(_, head)| *head));
     assert!(
@@ -142,12 +144,15 @@ fn equipped_rounds_use_the_selected_attachment_without_rotating_the_eye_basis() 
         assert_eq!(fire["attachment"], i % 2);
         assert_eq!(fire["cursor"], (i / 2) % 5);
         assert_eq!(fire["profile"], 0);
-        assert_eq!(trace.direction, flights[0].flight.direction);
+        assert_eq!(trace.aim_target, flights[0].flight.aim_target);
+        let toward = trace.aim_target.minus(trace.muzzle).normalized().unwrap();
+        assert!((1. - trace.direction.normalized().unwrap().dot(toward)).abs() < 1e-12);
         assert_eq!(trace.basis_origin, flights[0].flight.basis_origin);
         assert_ne!(trace.basis_origin, trace.muzzle);
         assert_eq!(trace.muzzle.0[0].is_sign_positive(), i % 2 == 0);
     }
     assert_ne!(flights[0].flight.muzzle, flights[2].flight.muzzle);
+    assert_ne!(flights[0].flight.direction, flights[1].flight.direction);
     assert_eq!(flights[0].flight.muzzle, flights[10].flight.muzzle);
 }
 
@@ -158,6 +163,7 @@ fn a_miss_never_detonates_on_the_nominal_target() {
     let mut p = params(&v);
     p.homing = None;
     p.spread = None;
+    p.range_m = 1.;
     let rec = record(&p);
     assert!(rec
         .events()

@@ -452,20 +452,35 @@ impl Scene {
             axis(self.input.player.world, [0., 0., 1.]),
             [avatar_up[0], avatar_up[1], avatar_up[2], 0.],
         );
+        let muzzle = fire_origin.map_or(self.muzzle, |fire| fire.position);
+        let aim_target = Vec3(aim.target.map(f64::from));
+        let eye_forward = Vec3(std::array::from_fn(|i| f64::from(aim.basis[8 + i])));
+        let [x, y, z] = muzzle.0.map(|v| v as f32);
+        let to_target = aim_target.minus(Vec3([x, y, z].map(f64::from)));
+        let launch_basis = if to_target.dot(eye_forward) > 0.
+            && to_target.dot(to_target) > f64::from(f32::MIN_POSITIVE)
+        {
+            rotation::look_at(
+                [x, y, z, 1.],
+                [aim.target[0], aim.target[1], aim.target[2], 1.],
+                [avatar_up[0], avatar_up[1], avatar_up[2], 0.],
+            )
+        } else {
+            aim.basis
+        };
         let (s, c) = libm::sincos(deviation.to_radians());
         let (sp, cp) = libm::sincos(phase * std::f64::consts::TAU);
         let direction = Vec3(std::array::from_fn(|i| {
-            f64::from(aim.basis[8 + i]) * c
-                + f64::from(aim.basis[i]) * s * cp
-                + f64::from(aim.basis[4 + i]) * s * sp
+            f64::from(launch_basis[8 + i]) * c
+                + f64::from(launch_basis[i]) * s * cp
+                + f64::from(launch_basis[4 + i]) * s * sp
         }));
-        let muzzle = fire_origin.map_or(self.muzzle, |fire| fire.position);
         let mut flight = Flight {
             muzzle,
             camera,
             basis_origin: Vec3([aim.basis[12], aim.basis[13], aim.basis[14]].map(f64::from)),
             head_anchor,
-            aim_target: Vec3(aim.target.map(f64::from)),
+            aim_target,
             direction,
             steering_target: self.input.preselected_target,
             impacts: Vec::new(),
