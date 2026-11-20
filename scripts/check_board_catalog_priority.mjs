@@ -30,6 +30,7 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
   await nextPriority(context);
   await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler) VALUES('zznew','fresh')");
   await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler,queued_at) VALUES('zzfirst','fresh','2000-01-02')");
+  scheduler.prepare("INSERT INTO priority_work VALUES('zzheld','retry',0,'held',?,'transient','')").run(Date.now()-1);
   const seen=[];
   for(let i=0;i<17;i++){
    known.run('newer'+i,'fresh');
@@ -40,6 +41,7 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
     scheduler.prepare("UPDATE priority_work SET phase='pending',due=? WHERE weapon=? AND ruler=?").run(Date.now()+60000,job.weapon,job.ruler);
    }
   }
+  assert(seen.some(j=>j.weapon==='zzheld'),'a due held retry gets a turn during continuous ready work');
   assert(seen.some(j=>j.weapon==='zzfirst'&&j.priority===-2),'an older first-ever score has a turn during continuous updates');
   assert(seen.some(j=>j.weapon==='zznew'&&j.priority===-1),'new arrivals get a bounded turn ahead of an established queue');
   assert(seen.some(j=>j.weapon.startsWith('aaold'))&&seen.some(j=>j.priority===2),'existing queued and historical scopes also make progress');

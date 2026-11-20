@@ -22,7 +22,10 @@ export async function requestedReservation(tx,keys,scene,selected,part,witness,a
   OR EXISTS(SELECT FROM state_board_rank_generations${where}) OR EXISTS(SELECT FROM state_board_rank_baseline_obligations${where}) present`,[...keys,archivedRevision]);
  if(blocked.present||!!part!==!!witness.rank)throw Error('private catalog preparation changed');
  if(part&&(part.catalog_phase!==null||part.available_at!==null||part.seeded||part.complete||part.reconciled||
-    !['cut','path','cursor','bytes','total','loaded','revision','input_sha256'].every(k=>String(part[k])===String(witness.rank[k]))))
+    !['cut','path','cursor','bytes','total','loaded'].every(k=>String(part[k])===String(witness.rank[k]))||
+    !/^\d+$/.test(String(witness.rank.revision))||BigInt(part.revision)<BigInt(witness.rank.revision)||
+    !/^[a-f0-9]{64}$/.test(witness.rank.input_sha256)||!/^[a-f0-9]{64}$/.test(part.input_sha256)||
+    (String(part.revision)===String(witness.rank.revision))!==(part.input_sha256===witness.rank.input_sha256)))
   throw Error('occupied catalog predecessor changed');
  return {request_position:String(request.position),partition_version:String(mail.version)};
 }
@@ -32,7 +35,9 @@ export async function preserveCatalogPredecessor(tx,part,witness,work,verify=ver
  if(!/^[a-f0-9]{64}$/.test(cut)||witness.cut_file?.sha256!==cut)throw Error('invalid predecessor cut');
  await verify(part,work);
  const dirt=await tx.unsafe('SELECT version,applied_version,lease FROM state_board_rank_dirty'+where+' ORDER BY identity FOR UPDATE',keys);
- if(dirt.length!==witness.dirty?.all||dirt.some(d=>d.lease!==null||String(d.version)!==String(d.applied_version)))
+ const advanced=BigInt(part.revision)>BigInt(witness.rank.revision);
+ const covers=(count,pinned)=>Number.isSafeInteger(pinned)&&pinned>=0&&(advanced?count>=pinned:count===pinned);
+ if(!covers(dirt.length,witness.dirty?.all)||dirt.some(d=>d.lease!==null||String(d.version)!==String(d.applied_version)))
   throw Error('occupied catalog dirty work changed');
  const schema='board_cut_'+cut.slice(0,40);
  await tx.unsafe(`SELECT set_config('default_tablespace',coalesce((SELECT t.spcname FROM pg_class c JOIN pg_tablespace t ON t.oid=c.reltablespace
@@ -53,7 +58,7 @@ export async function preserveCatalogPredecessor(tx,part,witness,work,verify=ver
   const [saved]=await tx.unsafe('SELECT count(*) n FROM '+schema+'.'+name);
   counts[name]=Number(saved.n);if(copied.count!==counts[name])throw Error('incomplete private index archive');
  }
- if(counts.state_board_rank_sources!==witness.source_count||counts.state_board_rank_dirty!==dirt.length||
+ if(!covers(counts.state_board_rank_sources,witness.source_count)||counts.state_board_rank_dirty!==dirt.length||
     counts.state_board_rank_partitions!==1)throw Error('occupied catalog coverage changed');
  // The typed archive, cut file, player request and dirty mailbox survive the index replacement.
  for(const name of ['state_board_rank_winners','state_board_rank_rows','state_board_rank_input_sets','state_board_rank_legacy_dependencies','state_board_rank_sources']){
@@ -61,7 +66,8 @@ export async function preserveCatalogPredecessor(tx,part,witness,work,verify=ver
    ' a WHERE (i.identity,i.ruler,i.weapon)=(a.identity,a.ruler,a.weapon)'):await tx.unsafe('DELETE FROM '+name+where,keys);
   if(cleared.count!==counts[name])throw Error('occupied catalog indices changed');
  }
- return {schema,path:part.path,cut,cursor:String(part.cursor),loaded:String(part.loaded),revision:String(part.revision),counts};
+ return {schema,path:part.path,cut,cursor:String(part.cursor),loaded:String(part.loaded),revision:String(part.revision),input_sha256:part.input_sha256,
+  pinned:{revision:String(witness.rank.revision),input_sha256:witness.rank.input_sha256,sources:witness.source_count,dirty:witness.dirty.all},counts};
 }
 
 export async function replaceCatalogPredecessor(tx,m){

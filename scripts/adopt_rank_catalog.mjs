@@ -35,7 +35,7 @@ export async function registerCatalogScope(sql,{work,manifest:m,receipt:r,contra
   await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
   await tx.unsafe('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[JSON.stringify([source,'catalog',...keys])]);
   const [selected]=await tx.unsafe('SELECT * FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2 FOR UPDATE',keys);
-  const [part]=await tx.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 FOR NO KEY UPDATE',keys);
+  const [part]=await tx.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 FOR UPDATE',keys);
   if(selected?.enabled&&selected.canonical_sources&&selected.revision&&selected.scene===scene){
    const [head]=await tx.unsafe('SELECT source FROM record_board_read_snapshots WHERE weapon=$1 AND ruler=$2 AND revision=$3',[...keys,selected.revision]);
    if(head?.source!==source||part?.source!==source||part.native!==native||!part.complete)throw Error('existing public head has no matching canonical index');

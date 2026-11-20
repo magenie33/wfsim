@@ -222,7 +222,10 @@ MANIFEST_JSON NATIVE WORK [PINNED_REVISION] [--requested INVENTORY_JSON]`.
 A published head stays selected. An advanced head returns its actual revision
 for comparison. An existing player reservation needs its pinned request
 position and mailbox version. A paused partial cut also needs its original
-file digest, index position, coverage and quiescent state. Its typed indices
+file digest, index position, coverage and quiescent state. Accepted changes
+may advance the private index while its cut is paused. The transfer locks the
+partition, requires every outstanding identity to be applied, and preserves
+the original witness together with the actual index and its current revision. Its typed indices
 and referenced Native descriptions are copied into a separate recovery schema
 in the index tablespace. The original cut file stays pinned. The request and
 its dirty work keep their identities. Budget these scoped copies and their WAL

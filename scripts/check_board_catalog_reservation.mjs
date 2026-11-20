@@ -5,6 +5,7 @@ import {stat,utimes} from 'node:fs/promises';
 import {dirname} from 'node:path';
 import {captureRankBaseline} from './board_rank_baseline.mjs';
 import {prepareRankSources} from './board_rank_index.mjs';
+import {putRankDirty} from './board_rank_work.mjs';
 import {registerCatalogScope} from './adopt_rank_catalog.mjs';
 import {collectRankOrphan} from './board_rank_gc.mjs';
 const sha=body=>createHash('sha256').update(body).digest('hex');
@@ -36,8 +37,6 @@ export async function checkOccupiedReservation({sql,native,work,source,weapon,in
  const saved=await inventory(sql,weapon,ruler);assert(Number(saved.rank.loaded)<Number(saved.rank.total));assert(saved.source_count>0);
  const schema='board_cut_'+saved.rank.cut.slice(0,40);assert(/^board_cut_[0-9a-f]{40}$/.test(schema));
  try{
-  const [before]=await sql.unsafe(`SELECT count(*) n,md5(string_agg(md5(to_jsonb(r)::text),'' ORDER BY identity,mode)) digest
-   FROM state_board_rank_rows r WHERE weapon=$1 AND ruler=$2`,keys);
   await sql.unsafe('DELETE FROM board_facts WHERE ruler=$1',[ruler]);
   const input={...inputs[0],facts:[{...inputs[0].facts[0],ruler,mode,score:777}]};await insert(input.facts[0]);
   const manifest=await captureRankBaseline(sql,{source,weapon,ruler,native:native.adapter,work,mailboxFloor:floor});
@@ -61,11 +60,24 @@ export async function checkOccupiedReservation({sql,native,work,source,weapon,in
   await assert.rejects(registerCatalogScope(sql,{...args,reservation:{...saved,source_count:saved.source_count+1}}),/coverage changed/);
   assert.equal((await inventory(sql,weapon,ruler)).rank.cut,saved.rank.cut);
   assert.equal((await sql.unsafe('SELECT to_regnamespace($1) ns',[schema]))[0].ns,null);
+  const identity=inputs[1].identity;
+  await sql.begin(tx=>putRankDirty(tx,{weapon,ruler,identity}));
+  await assert.rejects(registerCatalogScope(sql,args),/dirty work changed/);
+  await until(row=>row.status==='indexed'&&row.identity===identity&&row.ruler===ruler,'accepted change to the occupied original cut');
+  const latest=await inventory(sql,weapon,ruler);
+  assert(BigInt(latest.rank.revision)>BigInt(saved.rank.revision));assert.notEqual(latest.rank.input_sha256,saved.rank.input_sha256);
+  assert(latest.dirty.all>saved.dirty.all);
+  await assert.rejects(registerCatalogScope(sql,{...args,reservation:{...saved,rank:{...saved.rank,revision:latest.rank.revision}}}),/predecessor changed/);
+  const [before]=await sql.unsafe(`SELECT count(*) n,md5(string_agg(md5(to_jsonb(r)::text),'' ORDER BY identity,mode)) digest
+   FROM state_board_rank_rows r WHERE weapon=$1 AND ruler=$2`,keys);
   assert.equal((await registerCatalogScope(sql,args)).status,'frozen');
   const [archived]=await sql.unsafe('SELECT count(*) n,md5(string_agg(md5(to_jsonb(r)::text),\'\' ORDER BY identity,mode)) digest FROM '+schema+'.state_board_rank_rows r');
   assert.deepEqual({...archived},{...before});
   const [old]=await sql.unsafe('SELECT cursor,loaded,cut,input_sha256 FROM '+schema+'.state_board_rank_partitions');
-  for(const [k,v] of Object.entries(old))assert.equal(v,saved.rank[k]);
+  for(const [k,v] of Object.entries(old))assert.equal(v,latest.rank[k]);
+  const [recovery]=await sql.unsafe('SELECT catalog_proof FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',keys);
+  assert.equal(recovery.catalog_proof.previous.pinned.input_sha256,saved.rank.input_sha256);
+  assert.equal(recovery.catalog_proof.previous.input_sha256,latest.rank.input_sha256);
   await utimes(dirname(saved.rank.path),new Date(0),new Date(0));
   for(let i=0;i<8;i++)await collectRankOrphan(sql,{work,catalog:true});
   assert((await stat(saved.rank.path)).isFile());
