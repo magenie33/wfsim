@@ -275,27 +275,24 @@ impl TypeShares {
     /// The whole instance's multiplier under a column. Each component takes
     /// its own factor, so with shares summing to 1 this is the weighted mean.
     pub(crate) fn whole(&self, col: &crate::data::factions::Column) -> f64 {
-        if !self.shaped() {
-            return 1.0;
-        }
+        if self.shaped() { self.weighted(col) } else { 1.0 }
+    }
+
+    fn weighted(&self, col: &crate::data::factions::Column) -> f64 {
         DamageType::ALL
             .iter()
             .map(|&t| self.0[t as usize] * col.get(t))
             .sum()
     }
 
-    /// The part that does NOT bypass shields, already column-scaled — a
-    /// PORTION of the instance, not a multiplier on it.
-    pub(crate) fn non_toxin_portion(&self, col: &crate::data::factions::Column) -> f64 {
+    /// The whole, shield-bypassing and shield-blocked portions under one column.
+    pub(crate) fn pool_portions(&self, col: &crate::data::factions::Column) -> (f64, f64, f64) {
+        let toxin = self.toxin() * col.get(DamageType::Toxin);
         if !self.shaped() {
-            return 1.0;
+            return (1.0, toxin, 1.0);
         }
-        self.whole(col) - self.toxin_portion(col)
-    }
-
-    /// The Toxin part, already column-scaled. Goes straight to health.
-    pub(crate) fn toxin_portion(&self, col: &crate::data::factions::Column) -> f64 {
-        self.toxin() * col.get(DamageType::Toxin)
+        let whole = self.weighted(col);
+        (whole, toxin, whole - toxin)
     }
 
     /// THE BIGGEST SHARE THAT A SHIELD ACTUALLY STOPS — what the non-Toxin
@@ -767,6 +764,26 @@ impl crate::data::enemies::EnemySpec {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pool_portions_match_separate_queries_in_component_order() {
+        use crate::data::factions::Column;
+        let mixed = TypeShares::of(&DamageVector::new().with(DamageType::Slash, 7.0)
+            .with(DamageType::Toxin, 23.0).with(DamageType::Cinematic, 0.25));
+        let mut cancelling = TypeShares::single(DamageType::Toxin);
+        cancelling.0[DamageType::Impact as usize] = -1.0;
+        for shares in [TypeShares::default(), cancelling, mixed, TypeShares::single(DamageType::Toxin)] {
+            for col in [Column::NEUTRAL, Column::from_multipliers(&[(DamageType::Slash, 0.0),
+                (DamageType::Toxin, -0.0), (DamageType::Cinematic, 1.5)])] {
+                let shaped = shares.0.iter().sum::<f64>() > 0.0;
+                let whole = if shaped { DamageType::ALL.iter().map(|&t| shares.0[t as usize] * col.get(t)).sum() } else { 1.0 };
+                let toxin = shares.0[DamageType::Toxin as usize] * col.get(DamageType::Toxin);
+                let blocked = if shaped { whole - toxin } else { 1.0 };
+                let (a, b, c) = shares.pool_portions(&col);
+                assert_eq!([a, b, c].map(f64::to_bits), [whole, toxin, blocked].map(f64::to_bits));
+            }
+        }
+    }
 
     #[test]
     fn empowered_shield_uses_the_assumed_before_level_installation() {

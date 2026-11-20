@@ -343,8 +343,9 @@ impl TargetState {
         passed *= led_guardian;
         if passed > 0.0 {
             let col = &p.type_mods.faction;
-            let toxin = passed * shares.toxin_portion(col);
-            let rest = passed * shares.non_toxin_portion(col);
+            let (whole, bypass, blocked) = shares.pool_portions(col);
+            let toxin = passed * bypass;
+            let rest = passed * blocked;
             if self.shield > 0.0 {
                 // THE SHIELD GATE, AND IT BELONGS TO THE HIT THAT BREAKS THE
                 // SHIELD.
@@ -408,12 +409,11 @@ impl TargetState {
                 let boosted = health_part * mit.virus_amp;
                 // Cinematic damage bypasses armour within a mixed instance too.
                 let cinematic = if ignores_armor { 0.0 } else {
-                    let col = &p.type_mods.faction;
                     let portion = shares.share(DamageType::Cinematic) * col.get(DamageType::Cinematic);
                     if self.shield > 0.0 || leak_part > 0.0 {
-                        leak_part * portion / shares.non_toxin_portion(col).max(1e-12)
+                        leak_part * portion / blocked.max(1e-12)
                     } else {
-                        health_part * portion / shares.whole(col).max(1e-12)
+                        health_part * portion / whole.max(1e-12)
                     }
                 };
                 let ordinary_health = boosted * (1.0 - dr);
@@ -526,7 +526,7 @@ impl TargetState {
 
         if let Some(out) = by_type {
             let og_total = shares.whole(&p.type_mods.overguard);
-            let non_toxin = shares.non_toxin_portion(&p.type_mods.faction);
+            let (_, _, non_toxin) = shares.pool_portions(&p.type_mods.faction);
             let (health_rest, health_toxin, common, cinematic_extra, health_total) = typed_health;
             for ty in DamageType::ALL {
                 let share = shares.share(ty);
