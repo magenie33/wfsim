@@ -6,11 +6,14 @@ same public work, verification and contribution rules as every other client.
 
 Download the native executable for your platform from the official CLI release.
 Use the npm launcher when the CLI release manifest marks that release
-`npm: true`:
+`npm: true`. Install the command once, then run it to open the control panel.
 
 ```sh
-npx wfsim@latest
+npm install --global wfsim
+wfsim
 ```
+
+`npx wfsim@latest` also opens the panel for a one-time run.
 
 The native download needs neither Node.js nor Rust. The npm launcher needs
 Node.js 22.23.4 or newer. Builds cover x86-64 Linux (glibc 2.31+), Windows,
@@ -18,9 +21,9 @@ Apple Silicon macOS and Intel macOS. An engine without a native slice for the
 current platform waits for an available official build without accepting work.
 
 For a Linux download, first run `chmod +x wfsim-x86_64-linux`, then
-`./wfsim-x86_64-linux join`. On macOS use the matching `wfsim-aarch64-macos`
+`./wfsim-x86_64-linux`. On macOS use the matching `wfsim-aarch64-macos`
 or `wfsim-x86_64-macos` filename in those commands. On Windows, PowerShell
-runs `./wfsim-x86_64-windows.exe join`. Rename the file to `wfsim` (or
+runs `./wfsim-x86_64-windows.exe`. Rename the file to `wfsim` (or
 `wfsim.exe`) and put it on your PATH to use the shorter commands below.
 
 ```sh
@@ -45,10 +48,10 @@ Run `wfsim` in a terminal to open the control panel at the saved device state.
 Type `/start` to start background computing and review the participation
 statement on first use. Use `/login` to claim the device in your browser,
 `/cpu 0-100` to save a new range, and `/pause` or `/resume` to control computing.
-The slash is optional. Press Enter to submit a command. `/stop` returns
-unfinished work and stops computing. `/quit` or Ctrl+C closes the panel
-while background computing continues. Run `wfsim join` to compute directly
-in the foreground.
+Enter panel commands with a leading slash. Use `/help` to see the commands.
+`/stop` returns unfinished work and stops computing. `/quit` or Ctrl+C closes
+the panel while background computing continues. Run `wfsim join` to compute
+directly in the foreground.
 
 The default CPU range is 0–50%, in whole percentage points. The client lowers
 its target when other processes need CPU and recovers gradually when they do

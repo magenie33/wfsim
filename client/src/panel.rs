@@ -105,20 +105,24 @@ impl Panel {
     }
 
     fn command(&mut self, dir: &Path, input: &str) -> Result<Option<String>> {
-        let mut words = input.trim().trim_start_matches('/').split_whitespace();
-        let (args, success): (&[&str], &str) = match (words.next(), words.next(), words.next()) {
-            (Some("start"), None, None) => (&["start"], "Starting background computing."),
-            (Some("stop"), None, None) if !computing(dir) => {
+        let mut words = input.split_whitespace();
+        let name = words
+            .next()
+            .and_then(|word| word.strip_prefix('/'))
+            .ok_or("Commands start with /. Type /help to see them.")?;
+        let (args, success): (&[&str], &str) = match (name, words.next(), words.next()) {
+            ("start", None, None) => (&["start"], "Starting background computing."),
+            ("stop", None, None) if !computing(dir) => {
                 return Ok(Some("Computing is stopped.".into()));
             }
-            (Some("stop"), None, None) => (&["stop"], "Returning unfinished work and stopping."),
-            (Some("login"), None, None) => (&["login"], "Device linked."),
-            (Some("cpu"), Some(range), None) => (&["config", "--range", range], "CPU range saved."),
-            (Some("pause"), None, None) => (&["pause"], "Paused."),
-            (Some("resume"), None, None) => (&["resume"], "Resumed."),
-            (Some("quit"), None, None) => return Ok(None),
-            (Some("help"), None, None) => {
-                return Ok(Some("Type any command below, then press Enter.".into()));
+            ("stop", None, None) => (&["stop"], "Returning unfinished work and stopping."),
+            ("login", None, None) => (&["login"], "Device linked."),
+            ("cpu", Some(range), None) => (&["config", "--range", range], "CPU range saved."),
+            ("pause", None, None) => (&["pause"], "Paused."),
+            ("resume", None, None) => (&["resume"], "Resumed."),
+            ("quit", None, None) => return Ok(None),
+            ("help", None, None) => {
+                return Ok(Some("Type a slash command below and press Enter.".into()));
             }
             _ => return Err("Unknown command. Type /help to see how to use the panel.".into()),
         };
@@ -188,7 +192,7 @@ impl Panel {
             lines.push(self.message.clone());
         }
         lines.push("/start  /stop  /login  /cpu 0-100".into());
-        lines.push("/pause  /resume  /quit closes this panel".into());
+        lines.push("/pause  /resume  /help  /quit".into());
         lines.truncate(usize::from(height - 1));
         let input_start = self
             .input
