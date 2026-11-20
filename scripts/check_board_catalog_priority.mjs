@@ -4,10 +4,11 @@ import {createHash} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {join} from 'node:path';
 import {preparePriority,nextPriority} from './board_catalog_priority.mjs';
+import {checkCatalogDelivery} from './check_board_catalog_delivery.mjs';
 import {routeRankInput} from './board_rank_work.mjs';
 import {prioritySchema} from './board_catalog_priority_schema.mjs';
 
-export async function checkPriority({sql,schema,config,action,weapon,ruler,second,source,inputs,step,restart,put}){
+export async function checkPriority({sql,schema,config,action,weapon,ruler,second,source,native,inputs,step,restart,put}){
  const fresh='heavy_gunner',archive=createHash('sha256').update('immutable archive fixture').digest('hex'),old='a'.repeat(64);
  const installer=await sql.reserve();
  try{await installer.unsafe(prioritySchema(schema));}finally{installer.release();}
@@ -135,6 +136,7 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
    assert(concurrent,'independent first publications share the database pool and one Native');
    assert(indexed,'new canonical acknowledgement is durable without rebuilding unchanged public winners');
    assert.deepEqual(await delivery(),previous);
+   await checkCatalogDelivery({sql,weapon,ruler,fresh,inputs,action,native,step,put,config});
    console.log('ok — retained archive and requested position, fresh fenced capture and changed identity, unrelated warm correction through held work, priority restart');
    return;
   }

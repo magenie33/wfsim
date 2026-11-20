@@ -191,6 +191,10 @@ reader, using the batch configuration and its existing service accounts.
 work, including the affected keys, retry times and reasons for held scopes.
 Use one catalog controller at a time. The priority controller also services the
 historical backlog and keeps change capture active after that backlog drains.
+It also checks captured identities against the input versions of selected
+partitions. A missing identity or outdated dependency returns to the normal
+index queue. The cursor advances after the handoff commits and repeats so
+a change behind an earlier scan is picked up on the next pass.
 
 The controller reads verified arrivals, explicit requests, changes since the cut
 and historical scope receipts. The first measurements for a new scope,

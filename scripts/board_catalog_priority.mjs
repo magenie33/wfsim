@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import {copyFileSync,renameSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
+import {reconcileSelectedInputs} from './board_catalog_delivery.mjs';
 import {registerCatalogScope} from './adopt_rank_catalog.mjs';
 import {catalogHead} from './board_catalog_readback.mjs';
 import {freshDirectory,freshPublication} from './board_catalog_fresh.mjs';
@@ -156,5 +157,7 @@ export async function nextPriority(ctx,now=Date.now()){
 
 export async function priorityStep(ctx,now=Date.now()){
  const job=await nextPriority(ctx,now);
+ const turn=Number(ctx.journal.prepare("SELECT value FROM priority_cursor WHERE feed='turn'").get().value);
+ if(turn%8===1)await reconcileSelectedInputs(ctx,now);
  return job?advance(ctx,job,now):{status:'idle'};
 }

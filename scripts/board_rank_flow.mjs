@@ -9,7 +9,7 @@ import {guardRankSpace} from './board_rank_storage.mjs';
 import {enqueueRequestedPartition} from './board_requested_partitions.mjs';
 import {BoardRankConflict,BoardRankQualificationError} from './board_rank_index.mjs';
 import {captureRankBaseline,beginRankBaseline,prepareRankBaselinePage,applyRankBaselinePage} from './board_rank_baseline.mjs';
-import {putRankDirty,routeRankInput,reconcileRankBaseline,finishRankBaseline,claimRankDirty,prepareRankIdentity,applyRankDirty,retryRankDirty} from './board_rank_work.mjs';
+import {putRankDirty,putRankDirtyBatch,routeRankInput,reconcileRankBaseline,finishRankBaseline,claimRankDirty,prepareRankIdentity,applyRankDirty,retryRankDirty} from './board_rank_work.mjs';
 import {claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankGeneration,publishRankGeneration,reuseRankGeneration,retryRankPublication,yieldRankPublication} from './board_rank_publication.mjs';
 import {collectRankStorage,collectRankOrphan} from './board_rank_gc.mjs';
 
@@ -190,15 +190,15 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
  if(recentInstalled){
   stages.push(()=>sql.begin(async tx=>{
    await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
-   const [target]=await tx.unsafe(`DELETE FROM state_board_rank_recent_inputs i USING
-    (SELECT weapon,ruler,identity FROM state_board_rank_recent_inputs ORDER BY queued_at,weapon,ruler,identity
-     LIMIT 1 FOR UPDATE SKIP LOCKED) first
-    WHERE (i.weapon,i.ruler,i.identity)=(first.weapon,first.ruler,first.identity) RETURNING i.weapon,i.ruler,i.identity`);
-   if(!target)return null;
-   const [part]=await tx.unsafe('SELECT 1 FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 AND source=$3 AND native=$4 AND complete',
-    [target.weapon,target.ruler,source,native.adapter]);
-   if(part)await putRankDirty(tx,target,true);
-   return {status:'recent-measurement',...target};
+   const targets=await tx.unsafe(`WITH chosen AS MATERIALIZED (
+    SELECT i.weapon,i.ruler,i.identity FROM state_board_rank_recent_inputs i
+    JOIN state_board_rank_partitions p USING(weapon,ruler) WHERE p.source=$1 AND p.native=$2
+    ORDER BY i.queued_at,i.weapon,i.ruler,i.identity LIMIT 24 FOR UPDATE OF i SKIP LOCKED)
+    DELETE FROM state_board_rank_recent_inputs i USING chosen c
+    WHERE (i.weapon,i.ruler,i.identity)=(c.weapon,c.ruler,c.identity) RETURNING i.weapon,i.ruler,i.identity`,[source,native.adapter]);
+   if(!targets.length)return null;
+   await putRankDirtyBatch(tx,targets,true);
+   return {status:'recent-measurement',...targets[0],count:targets.length};
   }),()=>dirty(true));
  }
  if(requestedPartitions){

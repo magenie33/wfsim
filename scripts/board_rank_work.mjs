@@ -9,7 +9,7 @@ const until="board_input_timestamp(clock_timestamp()+interval '3minutes')";
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 
-async function putRankDirtyBatch(tx,targets,recent=false) {
+export async function putRankDirtyBatch(tx,targets,recent=false,onlySettled=false) {
  if(!targets.length)return [];
  return tx.unsafe(`WITH inputs AS MATERIALIZED(SELECT x.*${recent?",nextval('board_rank_generation') v":''}
   FROM jsonb_to_recordset($1::text::jsonb)x(weapon text,ruler text,identity text) ORDER BY weapon,ruler,identity)
@@ -18,7 +18,8 @@ async function putRankDirtyBatch(tx,targets,recent=false) {
   ON CONFLICT(weapon,ruler,identity) DO UPDATE SET version=nextval('board_rank_generation'),
    ${recent?'recent_version=greatest(state_board_rank_dirty.version+1,excluded.version),':''}error=NULL,
    available_at=CASE WHEN state_board_rank_dirty.lease_until>${now} THEN state_board_rank_dirty.lease_until ELSE least(state_board_rank_dirty.available_at,${now}) END
-  RETURNING identity,version`,[JSON.stringify(targets)]);
+  ${onlySettled?'WHERE state_board_rank_dirty.version<=state_board_rank_dirty.applied_version':''}
+  RETURNING weapon,ruler,identity,version`,[JSON.stringify(targets)]);
 }
 
 export async function putRankDirty(tx,target,recent=false) {
