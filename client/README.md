@@ -9,7 +9,7 @@ Use the npm launcher when the CLI release manifest marks that release
 `npm: true`:
 
 ```sh
-npx wfsim@latest join
+npx wfsim@latest
 ```
 
 The native download needs neither Node.js nor Rust. The npm launcher needs
@@ -40,6 +40,13 @@ accepts that statement explicitly in a noninteractive setup. Login is optional.
 `login` prints a browser address and code that can be approved on another
 computer or phone. The first claim includes unclaimed contribution; changing
 accounts preserves each account's already attributed contribution.
+
+Run `wfsim` or `wfsim join` in a terminal to see the live state, CPU range
+and target, tasks completed this run and results waiting to be sent. Type
+`/cpu 0-100` to save a new range, `/pause` or `/resume` to control computing,
+and `/quit` or Ctrl+C to return unfinished work and exit. Press Enter to submit
+a typed command. The terminal view writes diagnostic logs to `client.log`.
+Explicit commands also work outside the terminal view.
 
 The default CPU range is 0–50%, in whole percentage points. The client lowers
 its target when other processes need CPU and recovers gradually when they do
