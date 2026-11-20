@@ -125,9 +125,8 @@ in flight. A changed identity during a generation retains its later version.
 Existing installations add these wakeups with `board_rank_recent_schema.mjs`.
 
 A first measured result for an unregistered weapon and ruler records one
-pending partition. The catalog owner enables discovery after complete historical
-qualification by recording the qualified source, Native hash and archive digest
-in `state_board_rank_scope_discovery`. The reader takes one pending scope at
-a time, checks the Native ruler set and uses the normal complete partition
-baseline. Existing partition selections take precedence. Removals do not
+pending partition. The priority controller schedules the affected scope from its verified
+arrival and the existing request position. A selected historical publication
+requires the scoped qualification and catch-up in [BOARD_RANKING.md](BOARD_RANKING.md).
+An unseen scope takes a fresh capture under the same source and Native contract. Existing partition selections take precedence. Removals do not
 introduce scopes. Recording a partition does not create computation orders.

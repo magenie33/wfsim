@@ -177,6 +177,32 @@ Each weapon and ruler commits independently. The first import pins the inventory
 for recovery. Repeating the command fills only missing selections. A verified
 native revision or an explicit withdrawal takes precedence over the import.
 
+### Publishing queued scopes
+
+The storage owner installs the SQL emitted by `board_catalog_priority_schema.mjs`.
+Run `scripts/run_rank_catalog_batch.py priority-run CONFIG` alongside the indexed
+reader, using the batch configuration and its existing service accounts.
+`priority-step` runs one scheduling step. `priority-status` reports outstanding
+work, including the affected keys, retry times and reasons for held scopes.
+Use one catalog controller at a time. The priority controller also services the
+historical backlog and keeps change capture active after that backlog drains.
+
+The controller reads verified arrivals, explicit requests, changes since the cut
+and historical scope receipts. The first measurements for a new scope,
+recent changes to retained scopes and older queued work each receive reserved
+admission capacity. The oldest first measurement receives a turn during a
+continuous stream of updates. A verified change updates a pending
+scope's latest arrival while retaining its first arrival and request position.
+A retained scope uses its qualified input. For a genuinely new scope the
+controller takes a repeatable-read capture and qualifies its current rows with
+the same Native publisher. Both paths reconcile subsequent changes, including
+acknowledged mailbox inputs, before selecting the complete revision. A held
+scope keeps its published rows and its retry record. Once the native index
+is active, new results continue through its per-identity update queue.
+Publication yields at a committed page checkpoint between scopes. Current
+corrections and first publications can finish while a larger generation resumes
+from its private cursor. Readers keep the prior complete revision throughout.
+
 ### Registering a qualified catalog scope
 
 Apply the SQL emitted by `node scripts/board_rank_catalog_schema.mjs` as
@@ -213,6 +239,45 @@ After the full catalog has been selected, run
 It verifies global historical coverage and each current public selection before
 retiring the temporary change capture. The canonical mailbox continues to feed
 the ordinary reader.
+
+### Adopting the complete catalog
+
+`scripts/adopt_rank_catalog_batch.mjs` consumes a qualified catalog and keeps
+one resumable adoption journal. Its JSON configuration names the following
+operator inputs.
+
+| Field | Input |
+| --- | --- |
+| `stage` | Guarded directory containing `catalog.sqlite`, `archive.sqlite` and `qualification.sqlite` |
+| `state` | Private controller directory for the journal and one reusable manifest scratch file |
+| `work`, `native` | The active ranking reader's work directory and pinned Native binary |
+| `coverage`, `budget` | Complete historical qualification and measured capacity forecast for the same source cut |
+| `pins` | One `{members,proof}` pair of SQLite files per protected inventory in the qualification result |
+| `reservations` | Current player reservation inventory, including request positions, mailbox versions and occupied cut witnesses |
+| `pg_socket`, `database_role` | Local PostgreSQL socket path and owner role when using peer authentication |
+
+Use `python3 scripts/run_rank_catalog_batch.py plan CONFIG.json` on a host
+whose capture and ranking work have separate service owners. The supervisor
+runs the controller under the existing PostgreSQL OS account. Its database
+connection uses `PG_URL`, with owner operations under `database_role` and a
+separate connection for storage measurements. The reader's OS account receives
+one opened input file, checks the byte count and digest, and writes and syncs
+its own immutable cut. The controller can also ask it to verify a named
+predecessor. Both roles check the same mounted Data volume. With a common file
+owner, use `node scripts/adopt_rank_catalog_batch.mjs plan CONFIG.json`.
+
+`plan` reconciles the archive and every protected identity with its outcome.
+It records the selected revisions in a repeatable read. A head that advanced
+since qualification also needs its full stored Native output and page digests.
+`run` advances one registration at a time. `step` advances a bounded unit and
+`status` reports outstanding scopes and sampled storage high-water. Restart
+with the same configuration and journal. Refresh a changed reservation witness
+against its original request before retrying. During adoption the controller
+checks Data and WAL headroom at stage boundaries and samples it every second.
+Each public page is compared with both official sites at its immutable
+revision. A changed selection is checked again. Closing holds the selected
+rows briefly while comparing the verified revisions and retiring the temporary
+capture in one transaction.
 
 ## Activation and recovery
 

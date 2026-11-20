@@ -5,7 +5,7 @@ import {verifyRankBaseline} from './board_rank_baseline.mjs';
 const indexed=['state_board_rank_sources','state_board_rank_input_sets','state_board_rank_legacy_dependencies',
  'state_board_rank_rows','state_board_rank_winners'];
 const where=' WHERE weapon=$1 AND ruler=$2';
-export async function requestedReservation(tx,keys,scene,selected,part,witness){
+export async function requestedReservation(tx,keys,scene,selected,part,witness,archivedRevision=null){
  if(!selected||selected.enabled||selected.canonical_sources||selected.revision!==null||selected.scene!==scene)
   throw Error('catalog reservation changed');
  if(!witness||witness.weapon!==keys[0]||witness.ruler!==keys[1])throw Error('pinned requested reservation required');
@@ -17,9 +17,9 @@ export async function requestedReservation(tx,keys,scene,selected,part,witness){
     String(mail.applied_version)!==String(witness.partition_mail?.applied))
   throw Error('player request or partition input changed');
  if((BigInt(mail.version)>BigInt(mail.applied_version))===!!part)throw Error('unexpected player request acknowledgement');
- const [blocked]=await tx.unsafe(`SELECT EXISTS(SELECT FROM record_board_read_snapshots${where})
+ const [blocked]=await tx.unsafe(`SELECT EXISTS(SELECT FROM record_board_read_snapshots${where} AND revision IS DISTINCT FROM $3)
   OR EXISTS(SELECT FROM record_board_rank_snapshot_refs${where}) OR EXISTS(SELECT FROM state_board_rank_publication_ready${where})
-  OR EXISTS(SELECT FROM state_board_rank_generations${where}) OR EXISTS(SELECT FROM state_board_rank_baseline_obligations${where}) present`,keys);
+  OR EXISTS(SELECT FROM state_board_rank_generations${where}) OR EXISTS(SELECT FROM state_board_rank_baseline_obligations${where}) present`,[...keys,archivedRevision]);
  if(blocked.present||!!part!==!!witness.rank)throw Error('private catalog preparation changed');
  if(part&&(part.catalog_phase!==null||part.available_at!==null||part.seeded||part.complete||part.reconciled||
     !['cut','path','cursor','bytes','total','loaded','revision','input_sha256'].every(k=>String(part[k])===String(witness.rank[k]))))
@@ -27,10 +27,10 @@ export async function requestedReservation(tx,keys,scene,selected,part,witness){
  return {request_position:String(request.position),partition_version:String(mail.version)};
 }
 
-export async function preserveCatalogPredecessor(tx,part,witness,work){
+export async function preserveCatalogPredecessor(tx,part,witness,work,verify=verifyRankBaseline){
  const keys=[part.weapon,part.ruler],cut=part.cut;
  if(!/^[a-f0-9]{64}$/.test(cut)||witness.cut_file?.sha256!==cut)throw Error('invalid predecessor cut');
- await verifyRankBaseline(part,work);
+ await verify(part,work);
  const dirt=await tx.unsafe('SELECT version,applied_version,lease FROM state_board_rank_dirty'+where+' ORDER BY identity FOR UPDATE',keys);
  if(dirt.length!==witness.dirty?.all||dirt.some(d=>d.lease!==null||String(d.version)!==String(d.applied_version)))
   throw Error('occupied catalog dirty work changed');

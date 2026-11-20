@@ -124,8 +124,8 @@ export async function captureRankWinners(sql,native,{weapon,ruler,source,path}) 
    for(;;){
     if(Date.now()-started>120000)throw new BoardRankQualificationError('ranking index capture exceeded its time budget');
     const page=await tx.unsafe('FETCH FORWARD 256 FROM board_rank_output');
-    for(const row of page){
-     const body=JSON.stringify(row)+'\n';diskBytes+=Buffer.byteLength(body);
+    if(page.length){
+     const body=page.map(row=>JSON.stringify(row)+'\n').join('');diskBytes+=Buffer.byteLength(body);
      if(diskBytes>256*1024*1024)throw new BoardRankQualificationError('ranking index staging exceeds its disk budget');
      checksum.update(body);await file.writeFile(body);
     }

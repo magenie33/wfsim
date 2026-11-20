@@ -3144,6 +3144,19 @@ logical subscriptions across old and compact storage, exercises shared and
 changed descriptions, and expands the exact original headers on rollback.
 The check preserves null and large versions and exercises reader restart.
 
+`check_board_rank_flow.mjs --catalog-batch` runs the batch controller through
+two HTTP entrances to the real Worker and PostgreSQL reader. It checks a
+protected publication, an empty partition, a cold player reservation and a
+retired ruler. One corrupted origin, a stale reservation, low free space
+and a concurrent driver must preserve the checkpoint. An accepted score
+during closeout must reopen only the advanced scope.
+`check_catalog_batch_scale.mjs` checks scope membership and restart at full
+catalog scale. `check_board_rank_flow.mjs --catalog-priority` exercises fresh
+arrivals behind an existing queue, archive retention and first publication,
+corrections during capture, and progress while another scope is held.
+`check_catalog_file_owner.py` exercises the two file owners on
+Linux, including a corrupt transfer, interrupted work and predecessor readback.
+
 `check_staged_rank_baseline.py` restarts a keyed capture, holds an older transaction open across a newer commit, and verifies insertions on either side of the cursor, corrections, removals and the sealed input digest.
 
 `check_rank_catalog.mjs` exercises multi-partition capture and a resumed
