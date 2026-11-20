@@ -93,6 +93,52 @@ fn head_intent_does_not_override_homing_contact_or_gauge() {
 }
 
 #[test]
+fn a_delayed_incarnon_hit_cannot_charge_the_next_cycle() {
+    let mut input = request("laetum", 1, false);
+    input["mode"] = json!("cycle");
+    input["duration"] = json!(18.);
+    input["scene_3d"]["placement"] = json!({"kind":"center_distance","distance":10.});
+    let mut p = params(&input);
+    // Put a head hit from the outgoing magazine inside the return animation.
+    p.spread = None;
+    p.projectile_speed_mps = Some(20.);
+    p.magazine_size = 4.;
+    p.multishot = 12.;
+    let base = &mut p.cycle.as_mut().unwrap().base_form;
+    base.spread = None;
+    base.multishot = 6.;
+
+    for spatial in [true, false] {
+        if !spatial {
+            p.scene_3d = None;
+        }
+        let rec = fight::record(&p, 7, 0., 18., 20000, 0);
+        let events = rec.events();
+        let origin = |cause| {
+            events.iter().find(|e| Some(e.id) == cause && matches!(e.kind, Kind::Strike { .. }))
+        };
+        let return_start = events.iter().find(|e| {
+            matches!(e.kind, Kind::TransformStart { into_transmuted: false, .. })
+        }).expect("the first magazine runs out");
+        let return_end = events.iter().find(|e| {
+            matches!(e.kind, Kind::TransformEnd { transmuted: false })
+        }).expect("the first return completes");
+        assert!(events.iter().any(|e| {
+            return_start.t < e.t && e.t < return_end.t
+                && matches!(&e.kind, Kind::Damage(d) if d.head && !d.radial)
+                && origin(e.cause).is_some_and(|shot| shot.weapon.transmuted)
+        }), "an in-flight Incarnon round still hits during the return, spatial={spatial}");
+        let next_entry = events.iter().find(|e| {
+            e.t > return_start.t
+                && matches!(e.kind, Kind::TransformStart { into_transmuted: true, .. })
+        }).expect("the base shots fill the next gauge");
+        let shot = origin(next_entry.cause).expect("the hit that fills the next gauge");
+        assert!(!shot.weapon.transmuted && shot.t >= return_end.t,
+            "only a base shot after the return can fill the gauge, spatial={spatial}");
+    }
+}
+
+#[test]
 fn a_penetrated_enemy_uses_its_own_collision_part_and_damage_ledger() {
     let mut v = request("laetum", 1, true);
     let mut rear = v["scene_3d"]["enemies"][0].clone();

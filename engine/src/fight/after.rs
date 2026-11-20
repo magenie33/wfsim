@@ -16,6 +16,7 @@ use super::*;
 #[wfsim_gas_macro::metered]
 pub(super) fn after_the_landing(
     finalizes: bool,
+    base_form_at_fire: bool,
     params: &FightParams,
     apl: &crate::data::apl::Apl,
     flash: bool,
@@ -59,7 +60,7 @@ pub(super) fn after_the_landing(
             if let Some((cy,charge_on))=params.cycle.as_ref().and_then(|cy|match cy.arms {
                 Arms::Gauge{charge_on,..}=>Some((cy,charge_on)),_=>None,
             }) {
-                charge_the_gauge(params,apl,flash,rec,rng,d,cy,charge_on,active.form==cy.base_form.form,
+                charge_the_gauge(params,apl,flash,rec,rng,d,cy,charge_on,base_form_at_fire,
                     pellets_before,headshots_before,t,r,ammo,incarnon,double_tap,buff_stacks,rs_armed,opening_closed);
             }
             return;
@@ -219,7 +220,7 @@ pub(super) fn after_the_landing(
             })
         {
             charge_the_gauge(
-                params, apl, flash, rec, rng, d, cy, charge_on, active.form == cy.base_form.form, pellets_before, headshots_before,
+                params, apl, flash, rec, rng, d, cy, charge_on, base_form_at_fire, pellets_before, headshots_before,
                 t, r, ammo, incarnon, double_tap, buff_stacks,
                 rs_armed, opening_closed,
             );

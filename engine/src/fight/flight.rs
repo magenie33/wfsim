@@ -385,6 +385,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let mut t = t;
     after_the_landing(
         l.spatial.as_ref().is_none_or(|s|s.last),
+        l.base_form,
         me.params,
         &me.apl,
         l.flash,
