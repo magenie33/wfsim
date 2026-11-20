@@ -1037,10 +1037,12 @@ const buffDenied = (b) =>
 
 async function runSim() {
   const btn = $("run-sim");
-  const request = taskClone({ ...buildPayload(), ...theFight({ replay: true }) });
+  const activeBuild = buildNamed(activePreset), scenario = scenarioNamed(activeScenario);
+  const reference = activeBuild?.builtin ? activeBuild.board : null;
+  let request = taskClone({ ...buildPayload(), ...theFight({ replay: true }) });
   const origin = { context: resultContext(), build: taskClone(snapshotState()),
-    fight: taskClone(snapshotScenario()), benchmark: (scenarioNamed(activeScenario) || {}).builtin || null,
-    preset_name: presetLabel(buildNamed(activePreset)), scenario_name: presetLabel(scenarioNamed(activeScenario)),
+    fight: taskClone(snapshotScenario()), benchmark: scenario?.builtin || null,
+    preset_name: presetLabel(activeBuild), scenario_name: presetLabel(scenario),
     board: officialBuildActive() ? null : taskClone(boardPayload()) };
   const submitting = simulationContextId(origin.context);
   const submission = crypto.randomUUID();
@@ -1049,6 +1051,13 @@ async function runSim() {
   boardState = ""; boardOnBoard = null;
   btn.disabled = true;
   try {
+    if (reference && reference.benchmark === origin.benchmark) {
+      const ordered = await api("/api/board/order", {
+        record: boardReviewRecord(origin.context.weapon, reference), ruler: reference.benchmark, mode: reference.mode || "base",
+      });
+      if (!ordered?.ok) throw new Error(ordered?.error || "The board could not be reached.");
+      request = { ...ordered.request, replay: true };
+    }
     const queue = await initUserTasks();
     const existing = queue.list().find((task) => task.kind === "simulation" && userTaskActive(task)
       && task.origin.context.weapon === origin.context.weapon && task.origin.context.preset === origin.context.preset

@@ -178,7 +178,7 @@ window.addEventListener("message", (e) => {
   // page, receives the same message from ITS pane and answers it itself.
   if (EMBED || document.querySelector(".config-page").hidden) return;
   if (e.origin !== location.origin || !d || d.wfsim !== "wielder-build") return;
-  if (!d.id || d.frame !== buildWielder.frame) return;
+  if (!d.id || d.frame !== buildWielder.frame || officialBuildActive()) return;
   // THE PANE IS ALREADY ON IT: say so before anything redraws, or the redraw
   // reloads the pane it came from.
   const held = document.querySelector("#wielder-detail .wld-pane");
@@ -245,6 +245,7 @@ function linkersOfOperatorPreset(id) {
 /// WHO HOLDS THE WEAPON — a frame, or a frame's saved build. Set by the
 /// dropdown and the door alike.
 function setWielder(v) {
+  if (officialBuildActive()) return;
   buildWielder = defaultWielder($("weapon").value, v);
   renderWielder();
   renderSimBuild();
@@ -836,6 +837,8 @@ const builtinBuildsUncached = (w, benchmark = null) => {
 /// Forma optimizer reads and saves.
 function boardRowState(w, row) {
   const axes = headlessBoardRowAxes(pageSay(), w, row, {});
+  // An unset link follows the first saved holder preset. A published build pins the default.
+  axes.wielder = { ...defaultWielder(w.id, null), preset: DEFAULT_PRESET_ID };
   if (row.riven) axes.slots.forEach((s) => {
     if (isRivenId(s.mod)) s.mod = boardRivenRef(w, row.riven);
   });
