@@ -69,18 +69,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "ba6f4f00";
+const BUILD_ID = "c02ddf50";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "041d470f+";
+const BUILD_SHA = "f878cb41+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "26dcaaf0c8a0";
+const RELEASE_ID = "ceb4cb01af0c";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -3424,7 +3424,7 @@ let initialTaskReport = { path: location.pathname, measurement: new URLSearchPar
 const urlSlug = (w) => weaponSlug(META.weapons || [], w);
 const weaponPath = (id) => headlessWeaponPath(META.weapons || [], id);
 function nav(path) {
-  const moved = location.pathname !== path;
+  const moved = location.pathname + location.search + location.hash !== path;
   if (moved) history.pushState(null, "", path);
   const routed = route();
   // A NEW PAGE STARTS AT THE TOP.
@@ -3642,6 +3642,7 @@ async function route() {
   $("bench-page").hidden = !bench;
   $("download-page").hidden = !dl;
   $("utility-page").hidden = !util;
+  if (!util) clearUtilityPanel();
   // The nav says where you are. `data-nav` rather than a path compare: the
   // roster lives at "/" and a path compare there matches every page.
   const here = bench ? "benchmark" : util ? "utility" : authKind === "recommendations" ? "recommendations" : authKind === "compute" ? "compute" : (!w && !support && !dl && !wfHit && !opRoute && !compHit && !stub && !authKind) ? "home" : "";
@@ -10186,6 +10187,7 @@ let utilityTab = null;
 let utilityShortcutAccount = null;
 let utilityShortcutRequest = null;
 let utilityShortcuts = [];
+let utilityPanel = null;
 
 /// A NAME FROM THE WORKER is `{en, zh}`; a missing one is the id it names.
 const worldName = (n, id) => (n && (n[LANG] || n.en)) || id || "";
@@ -10200,8 +10202,6 @@ function utilityLeft(ms) {
 function showUtility(tab) {
   if (tab !== utilityTab) reminderDraft = null;
   utilityTab = tab;
-  $("h-utility").textContent = tr(utilityTitle(tab));
-  for (const [t] of UTILITY_TABS) $(`utility-${t}`).hidden = t !== tab;
   if (tab === "reminders") { reminderRead(); if ($("rem-toasts")) $("rem-toasts").replaceChildren(); }
   renderUtility();
   refreshUtilityShortcuts();
@@ -10209,14 +10209,61 @@ function showUtility(tab) {
   utilityClock();
 }
 
-function renderUtilityTabs() {
+const utilityAccountLinks = () => accountState.account?.id === utilityShortcutAccount ? utilityShortcuts : [];
+const utilityPanelHref = (id) => `/utility/${UTILITY_TABS[0][0]}?tool=${encodeURIComponent(id)}`;
+
+function renderUtilityTabs(selected = null) {
   const unread = reminderHits().filter((h) => !h.read).length;
-  const tabs = UTILITY_TABS.map(([t, title]) => `<a class="mtab${t === utilityTab ? " sel" : ""}" href="/utility/${t}">${
+  const tabs = UTILITY_TABS.map(([t, title]) => `<a class="mtab${!selected && t === utilityTab ? " sel" : ""}" href="/utility/${t}">${
     escHtml(tr(title))}${t === "reminders" && unread ? ` <span class="tbadge">${unread}</span>` : ""}</a>`);
-  const links = accountState.account?.id === utilityShortcutAccount ? utilityShortcuts : [];
-  const shortcuts = links.map((item) =>
-    `<a class="mtab" data-native href="${escHtml(item.path)}">${escHtml(worldName(item.names))}</a>`);
-  $("utility-tabs").innerHTML = tabs.concat(shortcuts).join("");
+  const links = utilityAccountLinks();
+  const shortcuts = [];
+  for (const item of links) {
+    const name = escHtml(worldName(item.names));
+    if (item.module) {
+      tabs.push(`<a class="mtab${item.id === selected ? " sel" : ""}" href="${utilityPanelHref(item.id)}"${item.id === selected ? ' aria-current="page"' : ""}>${name}</a>`);
+    } else {
+      shortcuts.push(`<a class="ghost-btn" data-native href="${escHtml(item.path)}">${name}</a>`);
+    }
+  }
+  const nav = $("utility-tabs");
+  nav.classList.toggle("has-utility-shortcuts", links.length > 0);
+  nav.innerHTML = tabs.join("") + (shortcuts.length ? `<div class="utility-shortcuts">${shortcuts.join("")}</div>` : "");
+}
+
+function clearUtilityPanel() {
+  if (!utilityPanel) return;
+  utilityPanel.cleanup?.();
+  utilityPanel = null;
+  const panel = $("utility-tool-panel");
+  panel.replaceChildren();
+  panel.hidden = true;
+}
+
+function renderUtilityPanel(tool) {
+  const key = JSON.stringify([utilityShortcutAccount, tool.module, location.search]);
+  if (utilityPanel?.key === key) return;
+  clearUtilityPanel();
+  const host = $("utility-tool-panel");
+  host.hidden = false;
+  host.textContent = tr("Loading…");
+  const pending = { key, cleanup: null };
+  utilityPanel = pending;
+  import(tool.module).then((panel) => {
+    if (utilityPanel !== pending) return;
+    const body = document.createElement("div");
+    host.replaceChildren(body);
+    pending.cleanup = panel.mount(body, utilityPanelHref(tool.id));
+  }).catch(() => {
+    if (utilityPanel !== pending) return;
+    host.textContent = tr("Could not load this page.");
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "ghost-btn small";
+    retry.textContent = tr("Retry");
+    retry.addEventListener("click", () => location.reload());
+    host.append(" ", retry);
+  });
 }
 
 function refreshUtilityShortcuts() {
@@ -10228,7 +10275,7 @@ function refreshUtilityShortcuts() {
     utilityShortcuts = [];
   }
   if (!utilityTab || $("utility-page").hidden) return;
-  if (changed) renderUtilityTabs();
+  if (changed) renderUtility();
   if (!account || utilityShortcutRequest) return;
   const request = accountCall("GET", "/api/cloud/tools");
   utilityShortcutRequest = request;
@@ -10236,15 +10283,22 @@ function refreshUtilityShortcuts() {
     if (utilityShortcutRequest !== request || accountState.account?.id !== account) return;
     if (!result?.ok || !Array.isArray(result.tools)) { utilityShortcutRequest = null; return; }
     utilityShortcuts = result.tools.filter((item) => typeof item?.path === "string" &&
-      /^\/api\/cloud\/[a-z0-9-]+(?:\/[a-z0-9-]+)*$/.test(item.path) && typeof item.names?.en === "string");
-    if (!$("utility-page").hidden) renderUtilityTabs();
+      /^\/api\/cloud\/[a-z0-9-]+(?:\/[a-z0-9-]+)*$/.test(item.path) && typeof item.names?.en === "string" &&
+      (!item.module || (typeof item.id === "string" && /^[a-z][a-z0-9-]{0,39}$/.test(item.id) && item.module === item.path + "/panel.js")));
+    if (!$("utility-page").hidden) renderUtility();
   });
 }
 
 function renderUtility() {
   renderBell();
   if (!utilityTab || $("utility-page").hidden) return;
-  renderUtilityTabs();
+  const wanted = new URLSearchParams(location.search).get("tool");
+  const tool = wanted && utilityAccountLinks().find((item) => item.module && item.id === wanted);
+  $("h-utility").textContent = tool ? worldName(tool.names) : tr(utilityTitle(utilityTab));
+  for (const [t] of UTILITY_TABS) $(`utility-${t}`).hidden = !!tool || t !== utilityTab;
+  renderUtilityTabs(tool?.id);
+  if (tool) { renderUtilityPanel(tool); return; }
+  clearUtilityPanel();
   if (utilityTab === "dictionary") showDictionary();
   else if (utilityTab === "reminders") renderReminders();
   else Object.values(UTILITY_KINDS).forEach((k) => { if (k.tab === utilityTab) k.render(); });
@@ -16282,7 +16336,7 @@ window.addEventListener("message", (e) => {
   // page, receives the same message from ITS pane and answers it itself.
   if (EMBED || document.querySelector(".config-page").hidden) return;
   if (e.origin !== location.origin || !d || d.wfsim !== "wielder-build") return;
-  if (!d.id || d.frame !== buildWielder.frame) return;
+  if (!d.id || d.frame !== buildWielder.frame || officialBuildActive()) return;
   // THE PANE IS ALREADY ON IT: say so before anything redraws, or the redraw
   // reloads the pane it came from.
   const held = document.querySelector("#wielder-detail .wld-pane");
@@ -16349,6 +16403,7 @@ function linkersOfOperatorPreset(id) {
 /// WHO HOLDS THE WEAPON — a frame, or a frame's saved build. Set by the
 /// dropdown and the door alike.
 function setWielder(v) {
+  if (officialBuildActive()) return;
   buildWielder = defaultWielder($("weapon").value, v);
   renderWielder();
   renderSimBuild();
@@ -16940,6 +16995,8 @@ const builtinBuildsUncached = (w, benchmark = null) => {
 /// Forma optimizer reads and saves.
 function boardRowState(w, row) {
   const axes = headlessBoardRowAxes(pageSay(), w, row, {});
+  // An unset link follows the first saved holder preset. A published build pins the default.
+  axes.wielder = { ...defaultWielder(w.id, null), preset: DEFAULT_PRESET_ID };
   if (row.riven) axes.slots.forEach((s) => {
     if (isRivenId(s.mod)) s.mod = boardRivenRef(w, row.riven);
   });
@@ -28431,10 +28488,12 @@ const buffDenied = (b) =>
 
 async function runSim() {
   const btn = $("run-sim");
-  const request = taskClone({ ...buildPayload(), ...theFight({ replay: true }) });
+  const activeBuild = buildNamed(activePreset), scenario = scenarioNamed(activeScenario);
+  const reference = activeBuild?.builtin ? activeBuild.board : null;
+  let request = taskClone({ ...buildPayload(), ...theFight({ replay: true }) });
   const origin = { context: resultContext(), build: taskClone(snapshotState()),
-    fight: taskClone(snapshotScenario()), benchmark: (scenarioNamed(activeScenario) || {}).builtin || null,
-    preset_name: presetLabel(buildNamed(activePreset)), scenario_name: presetLabel(scenarioNamed(activeScenario)),
+    fight: taskClone(snapshotScenario()), benchmark: scenario?.builtin || null,
+    preset_name: presetLabel(activeBuild), scenario_name: presetLabel(scenario),
     board: officialBuildActive() ? null : taskClone(boardPayload()) };
   const submitting = simulationContextId(origin.context);
   const submission = crypto.randomUUID();
@@ -28443,6 +28502,13 @@ async function runSim() {
   boardState = ""; boardOnBoard = null;
   btn.disabled = true;
   try {
+    if (reference && reference.benchmark === origin.benchmark) {
+      const ordered = await api("/api/board/order", {
+        record: boardReviewRecord(origin.context.weapon, reference), ruler: reference.benchmark, mode: reference.mode || "base",
+      });
+      if (!ordered?.ok) throw new Error(ordered?.error || "The board could not be reached.");
+      request = { ...ordered.request, replay: true };
+    }
     const queue = await initUserTasks();
     const existing = queue.list().find((task) => task.kind === "simulation" && userTaskActive(task)
       && task.origin.context.weapon === origin.context.weapon && task.origin.context.preset === origin.context.preset
