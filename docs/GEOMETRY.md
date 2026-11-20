@@ -51,7 +51,11 @@ bone uses identity. A missing mode selects profile zero. An empty profile
 array uses the mounted weapon transform.
 
 The supplied `round_order` repeats across ammo rounds. Each entry selects an
-`attachment` and `mode`. The read at `0x56cde0` leaves its cursor unchanged.
+`attachment` and `mode`. Optional `round_order_by_form` entries use the
+active weapon form id, such as `incarnon`. Each form-specific order retains
+its own ammo-round position across switches. Other forms use the default
+`round_order`. Attachment firing-position cursors belong to the attachment.
+The read at `0x56cde0` leaves its cursor unchanged.
 An advance at `0xde85d0` wraps the cursor of the selected attachment when
 the profile has at least two positions. On a supplied mode change the scene
 indexes the retained cursor modulo the number of positions in that profile.

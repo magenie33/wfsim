@@ -104,7 +104,7 @@ pub(super) fn launch(
         .sum();
     let all: f64 = parts.iter().map(|p| p.aim_weight).sum();
     let groups = l.rounds.groups(l.n_pellets);
-    let origins = scene.fire_origins(&mut me.fire_state, &groups);
+    let origins = scene.fire_origins(&mut me.fire_state, active.form, &groups);
     let eligible: Vec<_> = bodies
         .iter()
         .map(|b| b.state.phase == Phase::Physical)

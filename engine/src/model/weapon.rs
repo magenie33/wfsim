@@ -603,7 +603,11 @@ impl FormKind {
     }
 
     pub fn parse(s: &str) -> FormKind {
-        match s {
+        Self::from_id(s).unwrap_or_else(|| panic!("unknown form kind in weapon data: {s}"))
+    }
+
+    pub fn from_id(s: &str) -> Option<Self> {
+        Some(match s {
             "base" => FormKind::Base,
             "charged" => FormKind::Charged,
             "incarnon" => FormKind::Incarnon,
@@ -625,8 +629,8 @@ impl FormKind {
             "charged_throw" => FormKind::ChargedThrow,
             "tap_cast" => FormKind::TapCast,
             "hold_cast" => FormKind::HoldCast,
-            other => panic!("unknown form kind in weapon data: {other}"),
-        }
+            _ => return None,
+        })
     }
 }
 

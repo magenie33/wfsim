@@ -139,6 +139,43 @@ fn a_delayed_incarnon_hit_cannot_charge_the_next_cycle() {
 }
 
 #[test]
+fn laetum_cycle_switches_between_its_equipped_muzzles() {
+    let mut input = request("laetum", 1, false);
+    input["mode"] = json!("cycle");
+    input["duration"] = json!(18.);
+    equipped::equip(&mut input["scene_3d"], "laetum");
+    let mut p = params(&input);
+    p.magazine_size = 4.;
+    p.spread = None;
+    let base = &mut p.cycle.as_mut().unwrap().base_form;
+    base.spread = None;
+    base.multishot = 6.;
+
+    let rec = fight::record(&p, 7, 0., 18., 20000, 0);
+    let mut base_muzzle = None;
+    let mut incarnon_muzzle = None;
+    let mut returned = false;
+    for row in rec.spatial_flights() {
+        let shot = rec.events().iter().find(|e| Some(e.id) == row.shot).unwrap();
+        let fire = serde_json::to_value(row.flight.fire_origin).unwrap();
+        let (attachment, muzzle) = if shot.weapon.transmuted {
+            (1, &mut incarnon_muzzle)
+        } else {
+            returned |= incarnon_muzzle.is_some();
+            (0, &mut base_muzzle)
+        };
+        assert_eq!(fire["attachment"], attachment);
+        assert_eq!(*muzzle.get_or_insert(row.flight.muzzle), row.flight.muzzle);
+    }
+    assert!(returned, "the recorded cycle must fire again after returning to base");
+    assert_ne!(base_muzzle.unwrap(), incarnon_muzzle.unwrap());
+
+    let fire = &mut input["scene_3d"]["player"]["equipped_fire"];
+    fire["round_order_by_form"]["incarnon"][0]["attachment"] = json!(2);
+    assert!(crate::fight::parse_fight(&input).is_err());
+}
+
+#[test]
 fn a_penetrated_enemy_uses_its_own_collision_part_and_damage_ledger() {
     let mut v = request("laetum", 1, true);
     let mut rear = v["scene_3d"]["enemies"][0].clone();

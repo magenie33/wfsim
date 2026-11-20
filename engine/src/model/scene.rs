@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Supplied current models and state for the opt-in 3D fight (docs/GEOMETRY.md).
+use std::collections::BTreeMap;
+
 use crate::rules::geometry::{Affine, Proxy, Shape, Vec3};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -67,6 +69,8 @@ pub struct Mount {
 pub struct EquippedFire {
     pub attachments: Vec<WeaponAttachment>,
     pub round_order: Vec<FireRound>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub round_order_by_form: BTreeMap<String, Vec<FireRound>>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

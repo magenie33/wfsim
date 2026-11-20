@@ -151,7 +151,7 @@ fn reticle_uses_the_first_eligible_camera_intersection() {
 
 #[test]
 fn attachment_refresh_is_between_physical_rounds() {
-    use crate::model::{EquippedFire, FireRound, FirePosition, WeaponAttachment};
+    use crate::model::{EquippedFire, FireRound, FirePosition, FormKind, WeaponAttachment};
 
     let mut input = scene(1, 1, false).input;
     let positions = (0..3).map(|i| {
@@ -170,10 +170,11 @@ fn attachment_refresh_is_between_physical_rounds() {
             FireRound { attachment: 0, mode: 99, refresh_per_iteration: true, advance_after_round: false },
             FireRound { attachment: 0, mode: 0, refresh_per_iteration: false, advance_after_round: true },
         ],
+        round_order_by_form: Default::default(),
     });
     let scene = Scene::new(input, 1).unwrap();
     let origin_x = |groups, state: &mut FireState| {
-        scene.fire_origins(state, groups).unwrap().into_iter()
+        scene.fire_origins(state, FormKind::Base, groups).unwrap().into_iter()
             .map(|origin| origin.map(|fire| fire.position.0[0])).collect::<Vec<_>>()
     };
     let mut state = FireState::default();

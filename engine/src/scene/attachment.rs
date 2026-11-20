@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+use std::collections::BTreeMap;
+
 use super::{uniform_scale, Affine, Scene, Vec3};
-use crate::model::{EquippedFire, FireRound, Mount, WeaponAttachment};
+use crate::model::{EquippedFire, FireRound, FormKind, Mount, WeaponAttachment};
 
 #[derive(Debug, Clone)]
 pub(super) struct PreparedFire {
     attachments: Vec<PreparedAttachment>,
     round_order: Vec<FireRound>,
+    round_order_by_form: BTreeMap<String, Vec<FireRound>>,
 }
 
 #[derive(Debug, Clone)]
@@ -18,6 +21,7 @@ pub(super) struct PreparedAttachment {
 #[derive(Default)]
 pub(crate) struct FireState {
     round: usize,
+    round_by_form: BTreeMap<&'static str, usize>,
     cursors: Vec<usize>,
 }
 
@@ -87,13 +91,17 @@ impl PreparedFire {
         equipped: &EquippedFire,
         mount: impl Fn(&Mount) -> Result<Affine, String>,
     ) -> Result<Self, String> {
-        if equipped.round_order.is_empty()
-            || equipped
-                .round_order
-                .iter()
-                .any(|round| round.attachment >= equipped.attachments.len())
-        {
+        let valid_order = |order: &[FireRound]| {
+            !order.is_empty()
+                && order.iter().all(|round| round.attachment < equipped.attachments.len())
+        };
+        if !valid_order(&equipped.round_order) {
             return Err("scene_3d firing order needs valid equipped attachments".into());
+        }
+        for (form, order) in &equipped.round_order_by_form {
+            if FormKind::from_id(form).is_none() || !valid_order(order) {
+                return Err(format!("scene_3d invalid equipped firing order for form {form}"));
+            }
         }
         let attachments = equipped
             .attachments
@@ -106,6 +114,7 @@ impl PreparedFire {
         Ok(Self {
             attachments,
             round_order: equipped.round_order.clone(),
+            round_order_by_form: equipped.round_order_by_form.clone(),
         })
     }
 }
@@ -115,6 +124,7 @@ impl Scene {
     pub(crate) fn fire_origins(
         &self,
         state: &mut FireState,
+        form: FormKind,
         groups: &[u32],
     ) -> Option<Vec<Option<FireOrigin>>> {
         let equipped = self.equipped_fire.as_ref()?;
@@ -125,8 +135,12 @@ impl Scene {
                 .map(|a| a.initial_cursor)
                 .collect();
         }
-        let round = equipped.round_order[state.round];
-        state.round = (state.round + 1) % equipped.round_order.len();
+        let (order, next_round) = match equipped.round_order_by_form.get(form.id()) {
+            Some(order) => (order, state.round_by_form.entry(form.id()).or_default()),
+            None => (&equipped.round_order, &mut state.round),
+        };
+        let round = order[*next_round];
+        *next_round = (*next_round + 1) % order.len();
         let attachment = &equipped.attachments[round.attachment];
         let cursor = &mut state.cursors[round.attachment];
         let profile = attachment.profile(round.mode);

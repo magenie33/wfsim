@@ -8,7 +8,7 @@ pub fn equip(scene: &mut Value, weapon: &str) {
     ))
     .unwrap();
     let control: &[(&str, usize)] = match weapon {
-        "laetum" => &[("ZarimanHeavyPistolAttachment", 48)],
+        "laetum" => &[("ZarimanHeavyPistolAttachment", 48), ("VoidPistolAttachment", 48)],
         "akarius_prime" => &[
             ("PrimeAkariusAttachmentRight", 48),
             ("PrimeAkariusAttachmentLeft", 17),
@@ -33,5 +33,10 @@ pub fn equip(scene: &mut Value, weapon: &str) {
             "refresh_per_iteration":false,"advance_after_round":true
         }));
     }
-    scene["player"]["equipped_fire"] = json!({"attachments":attachments,"round_order":round_order});
+    let mut fire = json!({"attachments":attachments,"round_order":round_order});
+    if weapon == "laetum" {
+        fire["round_order"] = json!([round_order[0]]);
+        fire["round_order_by_form"] = json!({"incarnon":[round_order[1]]});
+    }
+    scene["player"]["equipped_fire"] = fire;
 }
