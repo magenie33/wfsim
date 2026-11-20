@@ -154,9 +154,17 @@ pub(super) struct DebuffState {
     /// second shot and keeps nothing, at 17 pellets once a shot (MEASUREMENTS M108).
     pub(super) blast_spent_by: Option<(u32, f64)>,
     /// APPEND THROUGH [`Self::push_dot`], never `dots.push`: it keeps
-    /// `dots_due` a lower bound, and a tick pass that trusts a stale one skips
-    /// a tick that was due.
+    /// the due bound, radial provenance and shared clock in sync with the list.
     pub(super) dots: Vec<Dot>,
+    /// All live slots share one finite clock, one consolidated type and no group key.
+    /// Advancing the group or removing slots preserves this; appends must recheck it.
+    pub(super) dots_share_clock: bool,
+    /// A conservative history of Gas and non-native seeds in the two radial families.
+    /// Removal may leave a bit set. An unset bit proves absence.
+    pub(super) radial_history: u8,
+    /// All stacks of the last capped family are at or after this index. Other
+    /// families can accumulate for the whole lifetime of a cloud pile.
+    pub(super) dot_prefix: Option<(DamageType, usize)>,
     /// Electricity/Gas use the latest application's landing for the whole tick
     /// and its lethal weak-point flag; each Dot still owns its hit seed (M100).
     pub(super) proc_landings: [ProcLanding; 2],
@@ -182,6 +190,17 @@ pub(super) const BLEED_COEFFICIENT: f64 = 0.35;
 pub(super) const BLEED_DELAY: f64 = 1.0;
 pub(super) const BLEED_TICKS: u32 = 6;
 pub(super) const DOT_COEFFICIENT: f64 = 0.5; // Toxin/Electricity/Heat/Gas ticks
+
+const HAD_GAS: u8 = 1;
+const HAD_ELECTRIC_FALLBACK: u8 = 2;
+const HAD_GAS_FALLBACK: u8 = 4;
+
+#[wfsim_gas_macro::metered]
+impl Dot {
+    pub(super) fn has_native_radial_seed(&self) -> bool {
+        matches!(self.retained, crate::model::StoredStatusSeed::Radial { coefficient: 0.5, .. })
+    }
+}
 
 /// Does this status's DoT inherit the WEAK-POINT multiplier of the hit that
 /// applied it?
@@ -598,12 +617,11 @@ impl DebuffState {
                 });
             }
         }
-        let clouds: Vec<Dot> = self
-            .dots
-            .iter()
-            .filter(|d| d.dtype == DamageType::Gas)
-            .copied()
-            .collect();
+        let clouds: Vec<Dot> = if self.radial_history & HAD_GAS == 0 {
+            Vec::new()
+        } else {
+            self.dots.iter().filter(|d| d.dtype == DamageType::Gas).copied().collect()
+        };
         if !self.blast.is_empty() {
             let single: f64 = self.blast.iter().map(|b| b.value).sum();
             hits.push(AreaHit {
@@ -617,9 +635,11 @@ impl DebuffState {
             });
         }
         let gas_landing = self.proc_landings[1];
+        let gas_history = self.radial_history & (HAD_GAS | HAD_GAS_FALLBACK);
         *self = DebuffState::default();
         self.area_out = out;
         self.area_hit = hits;
+        if !clouds.is_empty() { self.radial_history = gas_history; }
         self.dots = clouds;
         self.proc_landings[1] = gas_landing;
     }
@@ -656,11 +676,12 @@ impl DebuffState {
         };
         let consolidated = matches!(dot.dtype, DamageType::Electricity | DamageType::Gas);
         let mut count = 0_usize;
-        let mut oldest = 0;
+        let start = self.dot_start(dot.dtype);
+        let mut oldest = self.dots.len();
         let mut shared_clock = None;
-        for (index, existing) in self.dots.iter().enumerate() {
+        for (index, existing) in self.dots[start..].iter().enumerate() {
             if existing.dtype != dot.dtype { continue; }
-            if count == 0 { oldest = index; }
+            if count == 0 { oldest = start + index; }
             count += 1;
             if consolidated && shared_clock.is_none() && existing.ticks_left > 0 {
                 shared_clock = Some(existing.next_tick);
@@ -683,17 +704,61 @@ impl DebuffState {
                 }
             });
         }
+        // Eviction preserves order and removes nothing before the oldest match.
+        self.dot_prefix = Some((dot.dtype, oldest));
         self.push_dot(dot);
     }
 
-    /// Append one DoT, lowering `dots_due` to it.
+    pub(super) fn dot_start(&self, dtype: DamageType) -> usize {
+        match self.dot_prefix {
+            Some((family, start)) if family == dtype => start,
+            _ => 0,
+        }
+    }
+
+    pub(super) fn retain_dots(&mut self, keep: impl FnMut(&Dot) -> bool) {
+        let before = self.dots.len();
+        self.dots.retain(keep);
+        if let Some((_, start)) = &mut self.dot_prefix {
+            *start = start.saturating_sub(before - self.dots.len());
+        }
+        if self.dots.is_empty() {
+            self.radial_history = 0;
+            self.dots_share_clock = false;
+        }
+    }
+
+    pub(super) fn has_only_native_radial_seeds(&self, family: DamageType) -> bool {
+        match family {
+            DamageType::Electricity => self.radial_history & HAD_ELECTRIC_FALLBACK == 0,
+            DamageType::Gas => self.radial_history & HAD_GAS_FALLBACK == 0,
+            _ => false,
+        }
+    }
+
+    /// Append one DoT and update the due bound and provenance.
     pub(super) fn push_dot(&mut self, dot: Dot) {
-        if dot.ticks_left > 0 {
-            match dot.dtype {
-                DamageType::Electricity => self.proc_landings[0] = dot.landing,
-                DamageType::Gas => self.proc_landings[1] = dot.landing,
-                _ => {}
+        self.dots_share_clock = (self.dots_share_clock || self.dots.is_empty())
+            && dot.ticks_left > 0
+            && consolidated(dot.dtype)
+            && dot.native_group.is_none()
+            && dot.next_tick.is_finite()
+            && self.dots.first().is_none_or(|first| {
+                first.ticks_left > 0
+                    && first.dtype == dot.dtype
+                    && first.next_tick.to_bits() == dot.next_tick.to_bits()
+            });
+        match dot.dtype {
+            DamageType::Electricity => {
+                if dot.ticks_left > 0 { self.proc_landings[0] = dot.landing; }
+                if !dot.has_native_radial_seed() { self.radial_history |= HAD_ELECTRIC_FALLBACK; }
             }
+            DamageType::Gas => {
+                if dot.ticks_left > 0 { self.proc_landings[1] = dot.landing; }
+                self.radial_history |= HAD_GAS;
+                if !dot.has_native_radial_seed() { self.radial_history |= HAD_GAS_FALLBACK; }
+            }
+            _ => {}
         }
         if let Some(due) = self.dots_due.as_mut() {
             *due = due.min(dot.next_tick);
@@ -1104,6 +1169,9 @@ impl DebuffState {
         // every Condition Overload bracket. `has_status` answers the other
         // reading of the same question, "is this target cold-statused" for a
         // perk rather than "how many TYPES are on it".
+        if self.dots_share_clock {
+            return n + usize::from(self.dots.iter().any(|d| d.ticks_left > 0));
+        }
         // THE LIVE DoT TYPES, as a bitmask. A `Vec<DamageType>` with a linear
         // `contains` per entry is a heap allocation and an O(n²) scan on a
         // function Condition Overload asks per damage INSTANCE, which on a

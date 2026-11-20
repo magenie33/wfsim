@@ -129,6 +129,19 @@ fn original_client_ordinary_counters_rng_laziness_and_target117() {
 }
 
 #[test]
+fn prefixes_round_each_addition_before_the_next_weight() {
+    let mut weights = [0.0; 32];
+    weights[0] = 1.0;
+    weights[2] = f32::EPSILON / 2.0;
+    weights[31] = f32::EPSILON / 2.0;
+    let mut cdf = super::Cdf::<3>::empty();
+    cdf.build(&weights);
+    assert_eq!(cdf.len, 3);
+    assert_eq!(cdf.total.to_bits(), 1.0_f32.to_bits());
+    assert_eq!(cdf.entries[..cdf.len], [(0, 1.0), (2, 1.0), (31, 1.0)]);
+}
+
+#[test]
 fn real_fight_sampler_matches_supplied_default13_native_vectors() {
     use crate::rules::damage::DamageVector;
     let fixture = fixture();

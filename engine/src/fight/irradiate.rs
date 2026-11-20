@@ -48,14 +48,16 @@ pub(super) fn submit_immediate_direct_echo(foe: &mut Body, victim: usize,
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn drain_echoes(seat: Seat, w: &mut CardWindows, bodies: &mut [Body],
-    params: &FightParams, active: &FightParams, gal: &mut GalStacks, arc: &mut ArcRuntime,
+    params: &FightParams, active: &FightParams, geometry: &spread::SpreadGeometry<'_>,
+    gal: &mut GalStacks, arc: &mut ArcRuntime,
     r: &mut RunResult, rec: &mut crate::record::Record, d: &mut crate::rules::rng::Draws, t: f64)
 {
     if arc.ready_echoes.is_empty() { return; }
     let mut ready = std::mem::take(&mut arc.ready_echoes);
     for echo in ready.drain(..) {
         let s = echo.strike;
-        spread_from_echo(seat, w, bodies, echo.victim, echo.coefficient * echo.scene_calibration, params, active,
+        let recipients = geometry.echo_recipients(echo.victim);
+        spread_from_echo(seat, w, bodies, recipients, echo.coefficient * echo.scene_calibration, params, active,
             s.raw_per_bucket, s.shares, s.crit_multiplier, s.crit_tier, s.attrition,
             s.modded_base, s.status_chance, &s.forced, &s.status_vector, gal, arc, r, rec, d, t);
     }
@@ -99,8 +101,10 @@ mod tests {
             headshot: false, part_factor: 1.0, status_part_factor: 1.0, status_landing: 1.0 };
         spread_hit(Seat::WIELDER, &mut w, &inst, &mut bodies[1], &p.body(1).unwrap(),
             seed, shares, 1.0, 0, 1.0, seed, 0.0, &[], &composition, &p, &p,
-            &mut gal, &mut arc, &mut r, &mut rec, &mut d, 0.0, by, false, true);
-        drain_echoes(Seat::WIELDER, &mut w, &mut bodies, &p, &p, &mut gal, &mut arc, &mut r, &mut rec, &mut d, 0.0);
+            &mut gal, &mut arc, &mut r, &mut rec, &mut d, 0.0, by, false, true, None);
+        let geometry = spread::SpreadGeometry::new(&p);
+        drain_echoes(Seat::WIELDER, &mut w, &mut bodies, &p, &p, &geometry,
+            &mut gal, &mut arc, &mut r, &mut rec, &mut d, 0.0);
         assert!(arc.ready_echoes.is_empty());
         r
     }

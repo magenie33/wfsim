@@ -426,7 +426,7 @@ pub(super) fn field_tick_seeded(
         add_by_type(&mut r.sources.field_by_type, shares, effective, &col);
     }
     ledger::settle(
-        r, rec, at, owner, body_index, DamageType::Cinematic,
+        r, rec, at, owner, body_index, || DamageType::Cinematic,
         // THE NUMBER'S OWN SHAPE ON SCREEN: a blast draws as a blast.
         if is_blast { PopKind::BlastArea } else { PopKind::Field },
         &breakdown, settled,

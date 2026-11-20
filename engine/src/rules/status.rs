@@ -5,7 +5,9 @@
 mod packet;
 pub mod ordinary;
 pub mod radial;
+mod proc_draw;
 pub use packet::{ProcCounters, ProcType};
+pub(crate) use proc_draw::SceneProcDraw;
 
 use crate::rules::damage::{DamageType, DamageVector};
 use crate::rules::rng::Rng;
@@ -105,10 +107,19 @@ pub fn procs_for_hit(forced: &[DamageType], status_chance: f64,
     vector: &DamageVector, handlers: SceneProcHandlers, rng: &mut Rng) -> Vec<DamageType>
 {
     let mut procs = forced.to_vec();
+    ordinary::sample(status_chance as f32, 0, || scene_weights(vector, handlers), || rng.unit(),
+        append_hit_procs(&mut procs, forced));
+    procs
+}
+
+#[wfsim_gas_macro::metered]
+fn append_hit_procs<'a>(procs: &'a mut Vec<DamageType>, forced: &[DamageType])
+    -> impl FnMut(Option<usize>) + 'a
+{
     let mut counters = ProcCounters::from_types(forced.iter().copied());
     let special = [DamageType::Void, DamageType::Tau];
     let mut special_counts = special.map(|kind| forced.iter().filter(|&&ty| ty == kind).count().min(255));
-    ordinary::sample(status_chance as f32, 0, || scene_weights(vector, handlers), || rng.unit(), |index| {
+    move |index| {
         let Some(index) = index else { return; };
         if index >= 30 {
             let count = &mut special_counts[index - 30];
@@ -120,8 +131,7 @@ pub fn procs_for_hit(forced: &[DamageType], status_chance: f64,
                 if let Some(dtype) = kind.damage_type() { procs.push(dtype); }
             }
         }
-    });
-    procs
+    }
 }
 
 /// Scene consumers that react to landed statuses share the final-immunity filter.

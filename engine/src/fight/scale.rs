@@ -161,7 +161,15 @@ pub(super) fn gunco_bucket(
     let cold = debuffs
         .cold_status_count(at)
         .min(params.arcane.cold_cap);
-    let types = types.unwrap_or(debuffs.distinct_statuses() as u32);
+    // Cold-derived CO can display the count in its ledger term. An embedded
+    // round also carries the count forward to its first pulse (M118).
+    let types = types.unwrap_or_else(|| {
+        if co_rate != 0.0 || params.arcane.per_cold_base_damage != 0.0 || active.embed.is_some() {
+            debuffs.distinct_statuses() as u32
+        } else {
+            0
+        }
+    });
     let gunco_total = [
         (co_rate, types),
         (params.arcane.per_cold_base_damage, cold),

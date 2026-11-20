@@ -9,7 +9,7 @@ impl DebuffState {
         let mut damage = DamageVector::new();
         let mut groups: Vec<(DamageType, f64)> = Vec::new();
         let landings = self.proc_landings;
-        self.dots.retain(|d| {
+        self.retain_dots(|d| {
             if !matches!(d.dtype, DamageType::Slash | DamageType::Toxin | DamageType::Electricity | DamageType::Gas) {
                 return true;
             }
@@ -81,7 +81,7 @@ pub(super) fn detonate_heavy_status(
             r.sources.add_status(source, effective_types.get(ty));
         }
     }
-    ledger::settle(r, rec, t, owner, body_index, shares.dominant(), PopKind::Status,
+    ledger::settle(r, rec, t, owner, body_index, || shares.dominant(), PopKind::Status,
         &breakdown, settled, Some(&body.debuffs), ledger::Clock::Dot,
         || Instance { origin: crate::record::Origin::Status, base: raw, ..Instance::default() });
     r.dot_ticks += 1;

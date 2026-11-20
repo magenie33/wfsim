@@ -213,6 +213,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             struck,
             pierce_live_m: l.pierce_live_m,
             body_at: g.body_at,
+            spread_geometry: &me.fixed.spread_geometry,
             bounce_bodies: g.bounce_bodies,
             chain_layout: &me.fixed.chain_layout,
             ricochet_layout: &me.fixed.ricochet_layout,
@@ -328,6 +329,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             g.r,
             me.tendril.count,
             me.fixed.chain_layout.as_ref(),
+            &me.fixed.spread_geometry,
             struck,
         );
     }

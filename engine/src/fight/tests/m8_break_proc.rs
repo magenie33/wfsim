@@ -96,14 +96,121 @@ fn queued_radial_ticks_preserve_distinct_opaque_groups_at_the_same_time() {
     let mut q = Probe::new();
     q.electric(false, 0.0);
     let template = q.body.debuffs.dots[0];
-    q.body.debuffs.dots = (0..48).map(|index| Dot {
-        native_group: Some(GroupKey { refCellAt28: index % 2,
-            refCellAt30: 0, byteAt18: 0, opaqueIdentityAt38: 0 }), ..template
-    }).collect();
+    q.body.debuffs.retain_dots(|_| false);
+    for index in 0..48 {
+        q.body.debuffs.push_dot(Dot {
+            native_group: Some(GroupKey { refCellAt28: index % 2,
+                refCellAt30: 0, byteAt18: 0, opaqueIdentityAt38: 0 }), ..template
+        });
+    }
     q.tick(0.01);
     assert_eq!(q.r.tally.effective(), 3841.0);
     assert_eq!(q.r.dot_ticks, 2);
     assert!(q.body.debuffs.dots.iter().all(|d| d.ticks_left == 5));
+}
+
+#[test]
+fn native_provenance_matches_the_group_scan_and_record() {
+    use crate::model::StoredStatusSeed;
+    for count in [3, TICK_QUEUE_MIN + 3] {
+        let run = |had_fallback| {
+            let mut q = Probe::new();
+            q.rec.enable_native_trace(400);
+            q.electric(false, 0.0);
+            let template = q.body.debuffs.dots[0];
+            let debuffs = &mut q.body.debuffs;
+            for i in 1..count {
+                debuffs.push_dot(Dot {
+                    cause: i as u32,
+                    retained: StoredStatusSeed::Radial { retained_seed: if i == 1 { 1e7 } else { 0.25 }, coefficient: 0.5 },
+                    next_tick: if i % 2 == 0 { 5e-10 } else { template.next_tick },
+                    bracket: 1.0 + i as f64 / 16.0,
+                    ..template
+                });
+            }
+            if had_fallback {
+                debuffs.push_dot(Dot {
+                    cause: u32::MAX - 1,
+                    retained: StoredStatusSeed::Radial { retained_seed: 1.0, coefficient: 0.25 },
+                    ..template
+                });
+                debuffs.retain_dots(|d| d.cause != u32::MAX - 1);
+            }
+            assert_eq!(debuffs.has_only_native_radial_seeds(DamageType::Electricity), !had_fallback);
+            q.tick(0.01);
+            assert_eq!(q.r.dot_ticks, 1);
+            assert_eq!(q.rec.native_steps().len(), count + 3);
+            q
+        };
+        let fast = run(false);
+        let reference = run(true);
+        assert_eq!(fast.r.tally.effective().to_bits(), reference.r.tally.effective().to_bits());
+        assert_eq!(fast.rng.state(), reference.rng.state());
+        let clocks = |q: &Probe| q.body.debuffs.dots.iter()
+            .map(|d| (d.next_tick.to_bits(), d.ticks_left)).collect::<Vec<_>>();
+        assert_eq!(clocks(&fast), clocks(&reference));
+        assert_ne!(clocks(&fast)[0].0, clocks(&fast)[2].0);
+        assert_eq!(format!("{:?}", fast.rec.events()), format!("{:?}", reference.rec.events()));
+        for (a, b) in fast.rec.native_steps().iter().zip(reference.rec.native_steps()) {
+            assert_eq!(a.input_bits, b.input_bits);
+            assert_eq!(a.output_bits, b.output_bits);
+        }
+    }
+}
+
+#[test]
+fn shared_dot_clock_matches_full_queue_with_expiry_and_blast() {
+    for blast in [false, true] {
+        let setup = |shared| {
+            let mut q = Probe::new();
+            q.rec.enable_native_trace(400);
+            q.electric(false, 0.0);
+            let template = q.body.debuffs.dots[0];
+            let debuffs = &mut q.body.debuffs;
+            debuffs.dots[0].ticks_left = 1;
+            for i in 1..TICK_QUEUE_MIN + 3 {
+                debuffs.push_dot(Dot { cause: i as u32, ticks_left: 2, ..template });
+            }
+            if blast {
+                debuffs.blast.push(BlastStack {
+                    charges_gauge: false, fuse: template.next_tick, value: 7.0,
+                    xh_bracket: 1.0, seed: u32::MAX,
+                });
+            }
+            assert!(debuffs.dots_share_clock);
+            debuffs.dots_share_clock = shared;
+            q
+        };
+        let mut fast = setup(true);
+        let mut reference = setup(false);
+        for (step, until) in [0.0, 1.5, 1.5, 3.0].into_iter().enumerate() {
+            let mut fast_keys = std::collections::BinaryHeap::new();
+            let mut reference_keys = std::collections::BinaryHeap::new();
+            fast.body.debuffs.refill_tick_queue(&mut fast_keys, until);
+            reference.body.debuffs.refill_tick_queue(&mut reference_keys, until);
+            assert_eq!(fast_keys.into_sorted_vec(), reference_keys.into_sorted_vec());
+            fast.tick(until);
+            reference.tick(until);
+            assert_eq!(fast.r.dot_ticks, reference.r.dot_ticks);
+            if step == 1 {
+                assert_eq!(fast.r.dot_ticks, if blast { 2 } else { 1 });
+            }
+            assert_eq!(fast.r.tally.effective().to_bits(), reference.r.tally.effective().to_bits());
+            assert_eq!(fast.rng.state(), reference.rng.state());
+            let clocks = |q: &Probe| q.body.debuffs.dots.iter()
+                .map(|d| (d.cause, d.next_tick.to_bits(), d.ticks_left)).collect::<Vec<_>>();
+            assert_eq!(clocks(&fast), clocks(&reference));
+            assert_eq!(fast.body.debuffs.dots_due.map(f64::to_bits), reference.body.debuffs.dots_due.map(f64::to_bits));
+        }
+        assert_eq!(fast.r.dot_ticks, 2);
+        assert_eq!(fast.r.blast_pops, u32::from(blast));
+        assert_eq!(format!("{:?}", fast.rec.events()), format!("{:?}", reference.rec.events()));
+        assert_eq!(fast.rec.native_steps().len(), reference.rec.native_steps().len());
+        for (a, b) in fast.rec.native_steps().iter().zip(reference.rec.native_steps()) {
+            assert_eq!(a.input_bits, b.input_bits);
+            assert_eq!(a.output_bits, b.output_bits);
+        }
+    }
 }
 
 #[test]

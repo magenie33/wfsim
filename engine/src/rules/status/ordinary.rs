@@ -54,42 +54,68 @@ pub fn handler_weight(evaluators: &[ProcEvaluator], components: &DamageComponent
     maximum
 }
 
-/// Shared chance/CDF loop. Weights are lazy; every successful chance draws a type.
-/// The selected callback owns the counter namespace and saturation.
+/// Ordered binary32 prefixes with one entry per positive weight.
+pub(super) struct Cdf<const N: usize> {
+    entries: [(usize, f32); N],
+    len: usize,
+    total: f32,
+}
+
 #[wfsim_gas_macro::metered]
-pub(super) fn sample<const N: usize>(chance: f32, skip_byte_0x241: u8,
-    evaluate: impl FnOnce() -> [f32; N], mut random: impl FnMut() -> f32,
-    mut selected: impl FnMut(Option<usize>))
-{
-    if skip_byte_0x241 != 0 { return; }
-    let mut evaluate = Some(evaluate);
-    let mut cdf = [(0_usize, 0.0_f32); N];
-    let mut length = 0;
-    let mut total = 0.0_f32;
-    let mut remaining = chance;
-    while remaining > 0.0 {
-        if random() > remaining { break; }
-        if let Some(evaluate) = evaluate.take() {
-            // Immutable weights give the same ordered binary32 prefixes on every draw.
-            for (index, weight) in evaluate().into_iter().enumerate() {
-                total += weight;
-                if weight > 0.0 {
-                    cdf[length] = (index, total);
-                    length += 1;
+impl<const N: usize> Cdf<N> {
+    pub(super) fn empty() -> Self {
+        Self {
+            entries: [(0, 0.0); N],
+            len: 0,
+            total: 0.0,
+        }
+    }
+
+    /// Capacity must cover the positive entries. All slots participate in the fold.
+    pub(super) fn build(&mut self, weights: &[f32]) {
+        self.len = 0;
+        self.total = 0.0;
+        for (index, &weight) in weights.iter().enumerate() {
+            self.total += weight;
+            if weight > 0.0 {
+                self.entries[self.len] = (index, self.total);
+                self.len += 1;
+            }
+        }
+    }
+
+    /// Prepare once, after the first successful chance and before its type draw.
+    /// The caller may keep an existing table. Every success still draws a type.
+    pub(super) fn sample(&mut self, chance: f32, prepare: impl FnOnce(&mut Self),
+        mut random: impl FnMut() -> f32, mut selected: impl FnMut(Option<usize>))
+    {
+        let mut prepare = Some(prepare);
+        let mut remaining = chance;
+        while remaining > 0.0 {
+            if random() > remaining { break; }
+            if let Some(prepare) = prepare.take() { prepare(self); }
+            let threshold = random() * self.total;
+            let mut choice = None;
+            for &(index, cumulative) in &self.entries[..self.len] {
+                if cumulative >= threshold {
+                    choice = Some(index);
+                    break;
                 }
             }
+            selected(choice);
+            remaining -= 1.0_f32;
         }
-        let threshold = random() * total;
-        let mut choice = None;
-        for &(index, cumulative) in &cdf[..length] {
-            if cumulative >= threshold {
-                choice = Some(index);
-                break;
-            }
-        }
-        selected(choice);
-        remaining -= 1.0_f32;
     }
+}
+
+/// A packet owns its table for the duration of its hit.
+#[wfsim_gas_macro::metered]
+pub(super) fn sample<const N: usize>(chance: f32, skip_byte_0x241: u8,
+    evaluate: impl FnOnce() -> [f32; N], random: impl FnMut() -> f32,
+    selected: impl FnMut(Option<usize>))
+{
+    if skip_byte_0x241 != 0 { return; }
+    Cdf::<N>::empty().sample(chance, |cdf| cdf.build(&evaluate()), random, selected);
 }
 
 /// 310c60 core: no NumHits scaling or final-immunity filtering occurs here.

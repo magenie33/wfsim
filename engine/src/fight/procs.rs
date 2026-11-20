@@ -75,8 +75,7 @@ pub(super) fn combined_stacks(debuffs: &DebuffState, t: DamageType) -> usize {
         DamageType::Radiation => debuffs.confusion.len(),
         DamageType::Blast => debuffs.blast.len(),
         // Gas lives in the DoT list rather than a stack vector.
-        DamageType::Gas => debuffs
-            .dots
+        DamageType::Gas => debuffs.dots[debuffs.dot_start(t)..]
             .iter()
             .filter(|d| d.dtype == DamageType::Gas && d.ticks_left > 0)
             .count(),
@@ -201,7 +200,7 @@ pub(super) fn fire_extra_hits(
         r.sources.extra_hit += eff;
         r.sources.extra_hit_by_type[ty as usize] += eff;
         ledger::settle(
-            r, rec, at, owner, 0, ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
+            r, rec, at, owner, 0, || ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
             ledger::Clock::Hit,
             || Instance {
                 origin: crate::record::Origin::ExtraHit,
@@ -490,9 +489,10 @@ pub(super) fn drain_area_procs(
                 watching(rec, &mut breakdown),
             );
             let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
-            r.sources.add_status(hit.shares.dominant(), eff);
+            let dtype = hit.shares.dominant();
+            r.sources.add_status(dtype, eff);
             ledger::settle(
-                r, rec, at_now, hit.owner, j, hit.shares.dominant(), PopKind::BlastArea,
+                r, rec, at_now, hit.owner, j, || dtype, PopKind::BlastArea,
                 &breakdown, settled, Some(dbf),
                 ledger::Clock::Dot,
                 || Instance {
@@ -564,6 +564,7 @@ pub(super) fn settle_procs(
     // through an extra damage instance.
     depth: u32,
 ) {
+    if procs.is_empty() { return; }
     let InstanceScale { native_source, native_part, mb_live, crit_multiplier, part_factor, landing, attrition, xh_bracket, status_damage_live } =
         scale;
     let status_damage = arc.status_duration(params, at);
@@ -1064,7 +1065,7 @@ pub(super) fn settle_procs(
                         let stack = b.value;
                         let part = rec.is_on().then(|| b.seed_part(rec));
                         ledger::settle(
-                            r, rec, at, owner, body_index, DamageType::Blast, PopKind::Blast,
+                            r, rec, at, owner, body_index, || DamageType::Blast, PopKind::Blast,
                             &breakdown, settled, Some(debuffs),
                             ledger::Clock::Dot,
                             || Instance {
@@ -1159,7 +1160,7 @@ pub(super) fn settle_procs(
             r.sources.arcane_on_status += eff;
             r.sources.arcane_by_type[proc as usize] += eff;
             ledger::settle(
-                r, rec, at, owner, body_index, proc, PopKind::Arcane, &breakdown, settled,
+                r, rec, at, owner, body_index, || proc, PopKind::Arcane, &breakdown, settled,
                 Some(debuffs),
                 ledger::Clock::Hit,
                 || Instance {

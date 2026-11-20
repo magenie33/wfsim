@@ -1,5 +1,62 @@
 use crate::rules::math::Portable;
+use crate::rules::space::{caught_by_blast, detonation_point};
+use crate::rules::status::{self, SceneProcDraw};
+use std::cell::OnceCell;
 use super::*;
+
+type EchoRow = Box<[usize]>;
+
+/// Static spread queries for one mode. Rows are filled only when used.
+pub(super) struct SpreadGeometry<'a> {
+    params: &'a FightParams,
+    echo_rows: OnceCell<Vec<OnceCell<EchoRow>>>,
+    tendril_candidates: OnceCell<Vec<u32>>,
+}
+
+#[wfsim_gas_macro::metered]
+impl<'a> SpreadGeometry<'a> {
+    pub(super) fn new(params: &'a FightParams) -> Self {
+        Self {
+            params,
+            echo_rows: OnceCell::new(),
+            tendril_candidates: OnceCell::new(),
+        }
+    }
+
+    pub(super) fn echo_recipients(&self, origin: usize) -> &[usize] {
+        let n = self.params.body_count();
+        if n <= 1 || origin >= n {
+            return &[];
+        }
+        let rows = self.echo_rows.get_or_init(|| vec![OnceCell::new(); n]);
+        rows[origin].get_or_init(|| {
+            let source = self.params.body(origin).expect("valid echo origin");
+            let at = detonation_point(source.at, self.params.player_at);
+            let radius = self.params.arcane.echo_radius_m;
+            // Impact order is body index, even when nearer bodies come later.
+            (0..n)
+                .filter(|&b| b != origin)
+                .filter_map(|b| {
+                    let spec = self.params.body(b)?;
+                    caught_by_blast(spec.at.distance(at), radius).then_some(b)
+                })
+                .collect()
+        })
+    }
+
+    fn tendril_candidates(&self) -> &[u32] {
+        let p = self.params;
+        self.tendril_candidates.get_or_init(|| {
+            crate::rules::chain::acquired(
+                &p.body_positions(),
+                p.player_at,
+                p.aim_point(),
+                p.tendril_acquire_deg,
+                p.tendril_range_m,
+            )
+        })
+    }
+}
 
 /// The vector before target-dependent elements, plus the aimed hit's total.
 /// A receiving body selects its own element before damage and status draws;
@@ -12,8 +69,20 @@ pub(super) struct TargetComposition {
     pub(super) adaptive_enabled: bool,
 }
 
+pub(super) struct EchoInputs<'a> {
+    draw: Option<SceneProcDraw<'a>>,
+    composition_ratio: f64,
+    extra_hit_bracket: f64,
+    damage_types: [DamageType; DamageType::ALL.len()],
+    positive: usize,
+}
+
 #[wfsim_gas_macro::metered]
 impl TargetComposition {
+    fn is_adaptive(&self, active: &FightParams) -> bool {
+        self.adaptive_enabled && active.adaptive_element.is_some()
+    }
+
     pub(super) fn for_target(
         &self,
         active: &FightParams,
@@ -223,7 +292,7 @@ pub(super) fn spread_from_influence(
             r.sources.extra_hit += eff;
             r.sources.extra_hit_by_type[ty as usize] += eff;
             ledger::settle(
-                r, rec, t, seat, b, ty, PopKind::Extra, &breakdown, settled, Some(dbf),
+                r, rec, t, seat, b, || ty, PopKind::Extra, &breakdown, settled, Some(dbf),
                 ledger::Clock::Hit,
                 || Instance {
                     origin: crate::record::Origin::Influence,
@@ -344,21 +413,23 @@ pub(super) fn spread_hit(
     // explosion's only where its entry says so (`takes_condition_overload`),
     // the rule the aimed body's half of the same blast already follows.
     takes_co: bool,
+    echo: Option<&mut EchoInputs<'_>>,
 ) -> Landed {
     // KILLED BY THIS SHOT ALREADY — see `Body::fallen`.
     if foe.fallen {
         return Landed::default();
     }
-    let vector = status_vector.for_target(active, spec.params, &foe.state);
-    let shares = if active.adaptive_element.is_some() && status_vector.adaptive_enabled {
-        TypeShares::of(&vector)
+    let adapted;
+    let (vector, shares) = if status_vector.is_adaptive(active) {
+        adapted = status_vector.for_target(active, spec.params, &foe.state);
+        (&adapted, TypeShares::of(&adapted))
     } else {
-        shares
+        (&status_vector.vector, shares)
     };
-    let composition_ratio = if status_vector.aimed_total > 0.0 {
-        vector.total() / status_vector.aimed_total
-    } else {
-        1.0
+    let composition_ratio = match echo.as_deref() {
+        Some(e) if e.draw.is_some() => e.composition_ratio,
+        _ if status_vector.aimed_total > 0.0 => vector.total() / status_vector.aimed_total,
+        _ => 1.0,
     };
     let base_damage = active.base_damage_bonus;
     let arcane_base_damage =
@@ -366,7 +437,7 @@ pub(super) fn spread_hit(
             + heavy_attack_base_damage(active, tennokai_heavy)
             + arc.rage_bonus(t);
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
-    let half_hp = if spec.params.max_health() > 0.0
+    let half_hp = if active.base_damage_below_half_health != 0.0 && spec.params.max_health() > 0.0
         && foe.state.health < 0.5 * spec.params.max_health()
     {
         active.base_damage_below_half_health
@@ -433,7 +504,7 @@ pub(super) fn spread_hit(
     // A SPREAD INSTANCE IS A WHOLE VECTOR, so the number reads as its biggest
     // component — see `DamageVector::dominant`. Computed only while tracing.
     ledger::settle(
-        r, rec, t, seat, inst.target, shares.dominant(),
+        r, rec, t, seat, inst.target, || shares.dominant(),
         // WHAT THE GAME DRAWS THIS AS, and the crit half of it is carried the
         // way the headshot is: the crit multiplier is already inside
         // `raw_per_bucket`, so a body a shot punched through takes the crit and
@@ -497,20 +568,23 @@ pub(super) fn spread_hit(
     // the radial attack part nine times, not a tenth kind of damage — the
     // meter answers "what hurt them", and a per-body split is the ROLL CALL's
     // question, which has its own panel.
-    if by.meter_row() {
+    let by_type = if by.meter_row() {
         r.sources.radial += eff;
-        add_by_type(&mut r.sources.radial_by_type, shares, eff, &col);
+        &mut r.sources.radial_by_type
     } else {
         r.sources.direct += eff;
-        add_by_type(&mut r.sources.direct_by_type, shares, eff, &col);
-    }
+        &mut r.sources.direct_by_type
+    };
+    if let Some(e) = echo.as_deref().filter(|e| e.draw.is_some()) {
+        add_parts(by_type, eff, &col, e.damage_types[..e.positive].iter().map(|&t| (t, shares.share(t))));
+    } else { add_by_type(by_type, shares, eff, &col); }
     if killed && by.is_the_shot_itself() && leaves_one(active, params.player_at, spec.at) {
         r.ghost_kills += 1;
     }
-    if by.spawns_a_tendril() {
-        r.note_kills(u32::from(killed), t, params.drop_is_in_reach(foe.state.at));
-    } else {
-        r.note_tendril_kills(u32::from(killed), t, params.drop_is_in_reach(foe.state.at));
+    if killed {
+        let in_reach = params.drop_is_in_reach(foe.state.at);
+        if by.spawns_a_tendril() { r.note_kills(1, t, in_reach); }
+        else { r.note_tendril_kills(1, t, in_reach); }
     }
     if let Some(pool) = broke.filter(|_| !killed) {
         if push_break_proc(&mut foe.debuffs, seat, params, t, pool, active, spec.params,
@@ -551,16 +625,19 @@ pub(super) fn spread_hit(
     // rolls the whole status chance — which is why a chain is worth more in
     // procs than it is in damage.
     arc.next_instance();
-    let procs = crate::rules::status::procs_for_hit(
-        forced,
-        foe.debuffs.received_proc_chance(status_chance, t),
-        &vector,
-        spec.params.proc_handlers(),
-        &mut d.status,
-    );
+    let received_chance = foe.debuffs.received_proc_chance(status_chance, t);
+    let handlers = spec.params.proc_handlers();
+    let mut echo = echo;
+    let procs = match echo.as_deref_mut().and_then(|e| e.draw.as_mut()) {
+        Some(draw) => draw.procs_for_hit(forced, received_chance, handlers, &mut d.status),
+        None => status::procs_for_hit(forced, received_chance, vector, handlers, &mut d.status),
+    };
     // WHAT THIS INSTANCE LEFT, for Melee Influence — see [`Landed`]. Taken
     // before `settle_procs` consumes the list.
-    let mut landed = Landed { procs: crate::rules::status::applied_procs(&procs, &spec.params.status_immunities).collect(), raw, shares, killed };
+    let applied = if params.arcane.influence_chance > 0.0 && matches!(by, SpreadBy::FollowThrough | SpreadBy::MeleeRadius | SpreadBy::Contact) {
+        status::applied_procs(&procs, &spec.params.status_immunities).collect()
+    } else { Vec::new() };
+    let mut landed = Landed { procs: applied, raw, shares, killed };
     settle_procs(
         procs,
         seat,
@@ -592,7 +669,7 @@ pub(super) fn spread_hit(
             // THE FIRING FORM'S bracket, like any other instance of this shot —
             // a chain hop is the same shot, and the Extra Hit it may set off is
             // the same weapon's.
-            xh_bracket: active.extra_hit_bracket(t, w),
+            xh_bracket: echo.map_or_else(|| active.extra_hit_bracket(t, w), |e| e.extra_hit_bracket),
             status_damage_live: 0.0,
         },
         &mut foe.debuffs,
@@ -739,8 +816,9 @@ pub(super) fn spread_from_melee(
             if all_contacts && n == 0 { SpreadBy::Contact } else { by },
             tennokai_heavy,
             true,
+            None,
         );
-        seeds.push((sidx, landed));
+        if params.arcane.influence_chance > 0.0 { seeds.push((sidx, landed)); }
         reached += 1;
     }
 }
@@ -904,6 +982,7 @@ pub(super) fn spread_from_punch_through(
                 SpreadBy::PunchThrough,
                 false,
                 true,
+                None,
             );
             r.punched_contacts += 1;
             if inst.headshot {
@@ -1022,6 +1101,7 @@ pub(super) fn spread_from_ricochet(
             SpreadBy::Ricochet,
             false,
             true,
+            None,
         );
     }
 }
@@ -1038,7 +1118,7 @@ pub(super) fn spread_from_echo(
     // See `process_ticks` — this instance's statuses are settled here.
     w: &mut CardWindows,
     bodies: &mut [Body],
-    origin: usize,
+    recipients: &[usize],
     share: f64,
     params: &FightParams,
     active: &FightParams,
@@ -1058,14 +1138,30 @@ pub(super) fn spread_from_echo(
     d: &mut crate::rules::rng::Draws,
     t: f64,
 ) {
-    let radius = params.arcane.echo_radius_m;
-    let Some(source) = params.body(origin) else { return; };
-    let at = crate::rules::space::detonation_point(source.at, params.player_at);
-    for (b, foe) in bodies.iter_mut().enumerate().filter(|(b, _)| *b != origin) {
-        let Some(spec) = params.body(b) else { continue };
-        if !crate::rules::space::caught_by_blast(spec.at.distance(at), radius) {
-            continue;
+    if recipients.is_empty() { return; }
+    let independent = !status_vector.is_adaptive(active);
+    // A single echo reads one shooter's windows at one instant. Adaptive elements
+    // still resolve from each recipient's live pools.
+    let mut echo = EchoInputs {
+        draw: independent.then(|| SceneProcDraw::new(&status_vector.vector)),
+        composition_ratio: if independent && status_vector.aimed_total > 0.0 {
+            status_vector.vector.total() / status_vector.aimed_total
+        } else { 1.0 },
+        extra_hit_bracket: active.extra_hit_bracket(t, w),
+        damage_types: [DamageType::Impact; DamageType::ALL.len()],
+        positive: 0,
+    };
+    if independent {
+        for t in DamageType::ALL {
+            if shares.share(t) > 0.0 {
+                echo.damage_types[echo.positive] = t;
+                echo.positive += 1;
+            }
         }
+    }
+    for &b in recipients {
+        let Some(foe) = bodies.get_mut(b) else { break };
+        let Some(spec) = params.body(b) else { continue };
         let inst = crate::rules::chain::Instance {
             target: b,
             share,
@@ -1101,6 +1197,7 @@ pub(super) fn spread_from_echo(
             SpreadBy::Echo,
             false,
             true,
+            Some(&mut echo),
         );
     }
 }
@@ -1135,6 +1232,7 @@ pub(super) fn spread_from_tendrils(
     bodies: &mut [Body],
     params: &FightParams,
     active: &FightParams,
+    geometry: &SpreadGeometry<'_>,
     live: u32,
     raw_per_bucket: f64,
     shares: TypeShares,
@@ -1155,23 +1253,12 @@ pub(super) fn spread_from_tendrils(
     if live == 0 || params.tendril_max == 0 {
         return;
     }
-    let aim = params.aim_at.unwrap_or(params.target_at);
-    // EVERY BODY A TENDRIL COULD TAKE, nearest to the RETICLE first —
-    // `rules::chain::acquired`, which is also how the Boar Incarnon's three beams pick
-    // theirs. Two weapons, two pages saying the same thing, one rule.
-    let body_at = params.body_positions();
-    let cand = crate::rules::chain::acquired(
-        &body_at,
-        params.player_at,
-        aim,
-        params.tendril_acquire_deg,
-        params.tendril_range_m,
-    );
-
     // …AND THE BEAM'S OWN TARGET IS NOT ONE OF THEM: "Tendrils homing in on the
     // main beam's target are only COSMETIC, and don't deal any additional
     // damage or status effects". Index 0 is that body.
-    for b in cand.into_iter().map(|i| i as usize).filter(|&b| b != 0).take(live as usize) {
+    for b in geometry.tendril_candidates().iter().map(|&i| i as usize)
+        .filter(|&b| b != 0).take(live as usize)
+    {
         let Some(spec) = params.body(b) else { continue };
         let inst = crate::rules::chain::Instance {
             target: b,
@@ -1212,6 +1299,7 @@ pub(super) fn spread_from_tendrils(
             SpreadBy::Tendril,
             false,
             true,
+            None,
         );
     }
 }
@@ -1380,6 +1468,7 @@ pub(super) fn blast_at(
             by,
             rad.blast_kind == crate::model::BlastKind::InFlight,
             rad.takes_condition_overload,
+            None,
         );
         if !foe.fallen {
             apply_independent_forced(rad.forced_procs, foe, t, params.status_duration_multiplier);
@@ -1502,6 +1591,7 @@ pub(super) fn spread_from_seeds(
             SpreadBy::Chain,
             false,
             true,
+            None,
         );
     }
 }
@@ -1556,7 +1646,7 @@ pub(super) fn fire_syndicate_radial(
     r.sources.syndicate += eff;
     r.sources.syndicate_by_type[sy.element as usize] += eff;
     ledger::settle(
-        r, rec, at, seat, 0, sy.element, PopKind::Arcane, &breakdown, settled,
+        r, rec, at, seat, 0, || sy.element, PopKind::Arcane, &breakdown, settled,
         Some(debuffs),
         ledger::Clock::Hit,
         || Instance {
@@ -1675,6 +1765,7 @@ pub(super) fn spread_beyond_the_target(
     r: &mut RunResult,
     tendril_count: u32,
     chain_layout: Option<&crate::rules::chain::Layout>,
+    geometry: &SpreadGeometry<'_>,
     struck: &[usize],
 ) {
     // …AND THE TENDRILS, ONCE FOR THE SHOT. They are extra BEAMS rather
@@ -1688,6 +1779,7 @@ pub(super) fn spread_beyond_the_target(
             bodies,
             params,
             active,
+            geometry,
             tendril_count,
             s.raw_per_bucket,
             s.shares,
@@ -1750,7 +1842,82 @@ pub(super) fn spread_beyond_the_target(
     // The PLAYER's buff state (`gal`, `arc`) is shared, which is right: a
     // kill is a kill whichever body it was.
     if params.arcane.echo_share > 0.0 {
-        irradiate::drain_echoes(seat, w, bodies, params, active, gal, arc, r, rec, d, t);
+        irradiate::drain_echoes(seat, w, bodies, params, active, geometry, gal, arc, r, rec, d, t);
     }
     settle_crowd_ticks(w, bodies, gal, arc, t + 1e-9, params, active, r, rec, &mut d.status);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::formation::FoeSpec;
+    use crate::rules::space::{Vec2, BODY_RADIUS_M};
+
+    fn with_positions(params: &mut FightParams, positions: &[Vec2]) {
+        for &at in positions {
+            params.others.push(FoeSpec {
+                id: String::new(),
+                params: params.foe.clone(),
+                body_parts: Vec::new(),
+                at,
+            });
+        }
+    }
+
+    #[test]
+    fn echo_rows_match_the_ordered_scan_from_every_origin() {
+        let mut p = FightParams {
+            player_at: Vec2::new(0.0, -20.0),
+            target_at: Vec2::ORIGIN,
+            ..FightParams::default()
+        };
+        p.arcane.echo_radius_m = 7.0;
+        assert!(SpreadGeometry::new(&p).echo_recipients(0).is_empty());
+        let edge = p.arcane.echo_radius_m + BODY_RADIUS_M + 1e-9;
+        with_positions(&mut p, &[
+            Vec2::new(-6.0, -BODY_RADIUS_M),
+            Vec2::new(0.1, -BODY_RADIUS_M),
+            Vec2::new(edge, -BODY_RADIUS_M),
+            Vec2::new(edge.next_up(), -BODY_RADIUS_M),
+            Vec2::ORIGIN,
+            Vec2::new(-2.173, 3.819),
+            Vec2::new(f64::NAN, 0.0),
+        ]);
+        let geometry = SpreadGeometry::new(&p);
+        assert_eq!(geometry.echo_recipients(0), &[1, 2, 3, 5, 6]);
+        let positions = p.body_positions();
+        for (origin, &source) in positions.iter().enumerate().rev() {
+            let at = detonation_point(source, p.player_at);
+            let expected: Vec<_> = positions.iter().enumerate()
+                .filter(|&(b, &pos)| b != origin && caught_by_blast(pos.distance(at), p.arcane.echo_radius_m))
+                .map(|(b, _)| b)
+                .collect();
+            assert_eq!(geometry.echo_recipients(origin), expected.as_slice());
+        }
+        assert!(geometry.echo_recipients(positions.len()).is_empty());
+    }
+
+    #[test]
+    fn tendril_candidates_keep_angle_ties_and_belong_to_the_mode() {
+        let mut p = FightParams {
+            player_at: Vec2::ORIGIN,
+            target_at: Vec2::new(0.0, 5.0),
+            tendril_acquire_deg: 30.0,
+            tendril_range_m: 10.0,
+            ..FightParams::default()
+        };
+        with_positions(&mut p, &[
+            Vec2::new(0.0, 8.0),
+            Vec2::new(0.0, 3.0),
+            Vec2::new(1.0, 3.0),
+            Vec2::new(0.0, 30.0),
+        ]);
+        let mut other = p.clone();
+        other.aim_at = Some(Vec2::new(1.0, 3.0));
+        let main = SpreadGeometry::new(&p);
+        let alt = SpreadGeometry::new(&other);
+        assert_eq!(main.tendril_candidates(), &[0, 1, 2, 3]);
+        assert_eq!(alt.tendril_candidates().first(), Some(&3));
+        assert_eq!(main.tendril_candidates(), &[0, 1, 2, 3]);
+    }
 }

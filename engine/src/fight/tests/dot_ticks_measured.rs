@@ -414,6 +414,100 @@ fn tagged_dot(tag: u32, dtype: DamageType) -> Dot {
 }
 
 #[test]
+fn shared_dot_clock_requires_identical_live_family_and_clock() {
+    use DamageType::{Electricity, Gas};
+    use crate::rules::status::radial::GroupKey;
+    let dot = tagged_dot(1, Electricity);
+    let custom = GroupKey { refCellAt28: 1, refCellAt30: 0, byteAt18: 0, opaqueIdentityAt38: 0 };
+    for second in [
+        Dot { dtype: Gas, ..dot },
+        Dot { next_tick: 5e-10, ..dot },
+        Dot { next_tick: -0.0, ..dot },
+        Dot { next_tick: f64::INFINITY, ..dot },
+        Dot { ticks_left: 0, ..dot },
+        Dot { native_group: Some(custom), ..dot },
+    ] {
+        let mut state = DebuffState::default();
+        state.push_dot(dot);
+        assert!(state.dots_share_clock);
+        state.push_dot(second);
+        assert!(!state.dots_share_clock);
+        state.retain_dots(|_| false);
+        assert!(!state.dots_share_clock);
+        state.push_dot(dot);
+        assert!(state.dots_share_clock);
+    }
+}
+
+#[test]
+fn shared_dot_clock_keeps_the_first_live_slot_and_counts_one_type() {
+    let dot = tagged_dot(1, DamageType::Electricity);
+    let mut state = DebuffState::default();
+    state.push_dot(dot);
+    state.push_dot(Dot { cause: 2, ..dot });
+    state.dots[0].ticks_left = 0;
+    state.dots[0].next_tick += 1.0;
+    state.blast.push(BlastStack {
+        charges_gauge: false, fuse: dot.next_tick, value: 1.0, xh_bracket: 1.0, seed: u32::MAX,
+    });
+    let keys = |state: &DebuffState| {
+        let mut q = std::collections::BinaryHeap::new();
+        state.refill_tick_queue(&mut q, 0.5);
+        q
+    };
+    assert!(state.dots_share_clock);
+    assert_eq!(state.distinct_statuses(), 2);
+    let mut fast = keys(&state);
+    let dot_key = fast.pop().unwrap().0;
+    assert_eq!((dot_key.class, dot_key.index), (0, 1));
+    assert_eq!(state.scan_next(0.5), Some(dot_key));
+    let blast_key = fast.pop().unwrap().0;
+    assert_eq!(blast_key.class, 2);
+    assert!(fast.is_empty());
+    state.push_dot(Dot { cause: 3, ..dot });
+    assert!(!state.dots_share_clock);
+    assert_eq!(state.distinct_statuses(), 2);
+    let mut reference = keys(&state);
+    assert_eq!(reference.pop().unwrap().0, dot_key);
+    assert_eq!(reference.pop().unwrap().0, blast_key);
+    assert!(reference.is_empty());
+    for cause in [4, 5] {
+        state.push_dot_capped(Dot { cause, ..dot }, Some(1));
+        assert!(state.dots_share_clock);
+        assert_eq!(state.dots.len(), 1);
+        assert_eq!(state.dots[0].cause, cause);
+    }
+}
+
+#[test]
+fn near_clocks_keep_the_queue_deduplication_boundary() {
+    let dot = tagged_dot(1, DamageType::Electricity);
+    let mut state = DebuffState::default();
+    state.push_dot(Dot { next_tick: 5e-10, ..dot });
+    state.push_dot(Dot { cause: 2, ..dot });
+    assert!(!state.dots_share_clock);
+    let mut q = std::collections::BinaryHeap::new();
+    state.refill_tick_queue(&mut q, 1e-10);
+    assert!(q.is_empty(), "the first slot deduplicates the group before the due-time check");
+    let scanned = state.scan_next(1e-10).unwrap();
+    assert_eq!(scanned.index, 1);
+    assert_eq!(scanned.t.to_bits(), dot.next_tick.to_bits());
+}
+
+#[test]
+fn death_clears_shared_clock_even_when_gas_survives() {
+    let mut state = DebuffState::default();
+    state.push_dot(tagged_dot(1, DamageType::Gas));
+    state.push_dot(tagged_dot(2, DamageType::Gas));
+    assert!(state.dots_share_clock);
+    let foe = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
+    state.on_death(Seat::WIELDER, None, &foe);
+    assert!(!state.dots_share_clock);
+    assert_eq!(state.dots.len(), 2);
+    assert_eq!(state.distinct_statuses(), 1);
+}
+
+#[test]
 fn capped_dot_eviction_preserves_interleaved_order_and_the_original_clock() {
     use DamageType::{Electricity, Gas, Toxin};
     let mut d = DebuffState::default();
@@ -444,6 +538,45 @@ fn a_zero_dot_cap_replaces_only_its_own_type() {
     for tag in [4, 5] {
         d.push_dot_capped(tagged_dot(tag, DamageType::Gas), Some(0));
         assert_eq!(d.dots.iter().map(|dot| dot.cause).collect::<Vec<_>>(), [2, tag]);
+    }
+}
+
+#[test]
+fn capped_family_search_matches_a_full_scan_across_compaction() {
+    use DamageType::{Electricity, Gas, Slash, Toxin};
+    let mut state = DebuffState::default();
+    let mut reference: Vec<Dot> = Vec::new();
+    let mut random = 73u32;
+    for tag in 1..=4096 {
+        random = random.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+        let dtype = [Electricity, Gas, Slash, Toxin][(random >> 30) as usize];
+        if tag % 31 == 0 {
+            let keep = |d: &Dot| d.cause % 3 != tag % 3;
+            state.retain_dots(keep);
+            reference.retain(keep);
+        }
+        let mut dot = tagged_dot(tag, dtype);
+        dot.next_tick = f64::from((random >> 12) % 17) * 0.125;
+        dot.ticks_left = (random >> 22) % 7;
+        let cap = [None, Some(10), Some(1), Some(0), Some(4)][((random >> 16) % 5) as usize];
+        state.push_dot_capped(dot, cap);
+        if matches!(dtype, Electricity | Gas) {
+            if let Some(first) = reference.iter().find(|d| d.dtype == dtype && d.ticks_left > 0) {
+                dot.next_tick = dot.next_tick.max(first.next_tick);
+            }
+        }
+        if let Some(cap) = cap {
+            while reference.iter().filter(|d| d.dtype == dtype).count() >= cap.max(1) {
+                let oldest = reference.iter().position(|d| d.dtype == dtype).unwrap();
+                reference.remove(oldest);
+            }
+        }
+        reference.push(dot);
+        let identity = |d: &Dot| (d.cause, d.next_tick.to_bits(), d.ticks_left);
+        assert!(state.dots.iter().map(identity).eq(reference.iter().map(identity)), "step {tag}");
+        for family in [Electricity, Gas, Slash, Toxin] {
+            assert!(reference[..state.dot_start(family)].iter().all(|d| d.dtype != family));
+        }
     }
 }
 

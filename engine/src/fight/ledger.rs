@@ -185,7 +185,7 @@ pub(in crate::fight) fn settle(
     // indices side by side transpose without a word from the compiler.
     who: Seat,
     body: usize,
-    dtype: DamageType,
+    dtype: impl FnOnce() -> DamageType,
     kind: PopKind,
     breakdown: &Breakdown,
     settled: Settled,
@@ -225,6 +225,6 @@ pub(in crate::fight) fn settle(
     let i = t.max(0.0) as usize;
     r.curve.0 .0[i.min(TIMELINE_BUCKETS - 1)] += settled.effective;
     if rec.wants(t) {
-        write_row(rec, t, who, body, dtype, kind, breakdown, settled, debuffs, inst());
+        write_row(rec, t, who, body, dtype(), kind, breakdown, settled, debuffs, inst());
     }
 }

@@ -67,6 +67,10 @@ impl PartialOrd for TickKey {
 
 #[wfsim_gas_macro::metered]
 impl DebuffState {
+    fn first_live_dot(&self) -> Option<(usize, &Dot)> {
+        self.dots.iter().enumerate().find(|(_, d)| d.ticks_left > 0)
+    }
+
     /// THE SHAPE OF THE SCHEDULE, as three numbers.
     ///
     /// A queued event names its slot by INDEX, so anything that reshapes the
@@ -88,9 +92,15 @@ impl DebuffState {
                 best = Some(TickKey { t, class, index: index as u32 });
             }
         };
-        for (i, d) in self.dots.iter().enumerate() {
-            if d.ticks_left > 0 {
+        if self.dots_share_clock {
+            if let Some((i, d)) = self.first_live_dot() {
                 consider(d.next_tick, 0, i);
+            }
+        } else {
+            for (i, d) in self.dots.iter().enumerate() {
+                if d.ticks_left > 0 {
+                    consider(d.next_tick, 0, i);
+                }
             }
         }
         if let Some(h) = &self.heat {
@@ -123,20 +133,26 @@ impl DebuffState {
         // under Melee Influence they were 73% of every pop.
         // A handful of groups at most; one that does not fit is queued per
         // stack as before, which costs a stale pop and changes nothing.
-        let mut groups = [(DamageType::Impact, 0.0f64, None); 8];
-        let mut n = 0;
-        for (i, d) in self.dots.iter().enumerate() {
-            if d.ticks_left > 0 {
-                if consolidated(d.dtype) {
-                    if groups[..n].iter().any(|&(t, at, key)| t == d.dtype && key == d.native_group && (at - d.next_tick).abs() < 1e-9) {
-                        continue;
-                    }
-                    if n < groups.len() {
-                        groups[n] = (d.dtype, d.next_tick, d.native_group);
-                        n += 1;
-                    }
-                }
+        if self.dots_share_clock {
+            if let Some((i, d)) = self.first_live_dot() {
                 push(d.next_tick, 0, i);
+            }
+        } else {
+            let mut groups = [(DamageType::Impact, 0.0f64, None); 8];
+            let mut n = 0;
+            for (i, d) in self.dots.iter().enumerate() {
+                if d.ticks_left > 0 {
+                    if consolidated(d.dtype) {
+                        if groups[..n].iter().any(|&(t, at, key)| t == d.dtype && key == d.native_group && (at - d.next_tick).abs() < 1e-9) {
+                            continue;
+                        }
+                        if n < groups.len() {
+                            groups[n] = (d.dtype, d.next_tick, d.native_group);
+                            n += 1;
+                        }
+                    }
+                    push(d.next_tick, 0, i);
+                }
             }
         }
         if let Some(h) = &self.heat {
@@ -330,19 +346,25 @@ pub(super) fn process_ticks(
                 // wiki `Damage/Electricity Damage`, U33.6: "no longer deal
                 // their respective damage separately ... but once per second".
                 let group_key = debuffs.dots[*i].native_group;
-                let native_radial = consolidated(dtype) && debuffs.dots.iter()
-                    .filter(|d| d.dtype == dtype && d.native_group == group_key && d.ticks_left > 0 && (d.next_tick - now).abs() < 1e-9)
-                    .all(|d| d.retained.radial_values().is_some_and(|(_, coefficient)| coefficient == 0.5));
+                let start = debuffs.dot_start(dtype);
+                // A live event slot passed the stale-key guard, so every live
+                // slot on its exact clock passes the same time test.
+                let shared_clock = debuffs.dots_share_clock && debuffs.dots[*i].ticks_left > 0;
+                let in_group = |d: &Dot| d.ticks_left > 0 && (shared_clock
+                    || (d.dtype == dtype && d.native_group == group_key && (d.next_tick - now).abs() < 1e-9));
+                let is_consolidated = consolidated(dtype);
+                let native_radial = is_consolidated && (debuffs.has_only_native_radial_seeds(dtype)
+                    || debuffs.dots[start..].iter()
+                        .filter(|d| in_group(d))
+                        .all(Dot::has_native_radial_seed));
                 let value = if native_radial {
                     use crate::rules::status::radial::{RadialGroup, RecordContext};
                     let source = crate::fight::dot::Source::at(params, dtype, now, w);
                     let mut group = RadialGroup::default();
-                    let mut own_element = 0.0;
+                    let mut last_bracket = None;
                     let mut inputs = Vec::new();
                     let trace_native = rec.native_trace_is_on();
-                    for d in debuffs.dots.iter_mut().filter(|d| d.dtype == dtype
-                        && d.native_group == group_key && d.ticks_left > 0 && (d.next_tick - now).abs() < 1e-9)
-                    {
+                    for d in debuffs.dots[start..].iter_mut().filter(|d| in_group(d)) {
                         d.next_tick += 1.0;
                         d.ticks_left -= 1;
                         let (seed, _) = d.retained.radial_values().expect("native radial record");
@@ -366,10 +388,11 @@ pub(super) fn process_ticks(
                                 head_factor: Some(crate::record::Factor::StatusSeeds), of: Vec::new() });
                         }
                         tick_landing = d.landing;
-                        own_element = d.bracket + source.element - 1.0;
+                        last_bracket = Some(d.bracket);
                         seeded_by = d.cause;
                         dot_owner = d.owner;
                     }
+                    let own_element = last_bracket.map_or(0.0, |bracket| bracket + source.element - 1.0);
                     let preparation = group.prepare_steps(0.5, own_element as f32);
                     let prepared = preparation.damage;
                     if trace_native {
@@ -415,7 +438,7 @@ pub(super) fn process_ticks(
                     });
                     dot_parts = None;
                     value
-                } else if consolidated(dtype) {
+                } else if is_consolidated {
                     let mut sum = 0.0;
                     // ONE ACCUMULATOR FOR THE WHOLE GROUP, taken from whichever
                     // seed joined it first — "they are added to the same
@@ -428,12 +451,8 @@ pub(super) fn process_ticks(
                     let mut parts: Vec<crate::record::Part> = Vec::new();
                     let mut acc_part = None;
                     let source = crate::fight::dot::Source::at(params, dtype, now, w);
-                    for d in debuffs.dots.iter_mut() {
-                        if d.dtype == dtype
-                            && d.native_group == group_key
-                            && d.ticks_left > 0
-                            && (d.next_tick - now).abs() < 1e-9
-                        {
+                    for d in &mut debuffs.dots[start..] {
+                        if in_group(d) {
                             d.next_tick += 1.0;
                             d.ticks_left -= 1;
                             // AT `now`, NOT AT THE MOMENT IT WAS APPLIED — see
@@ -579,7 +598,7 @@ pub(super) fn process_ticks(
         r.sources.add_status(src, effective);
         let was = rec.attribute_to((seeded_by != u32::MAX).then_some(seeded_by));
         ledger::settle(
-            r, rec, now, dot_owner, body_index, src,
+            r, rec, now, dot_owner, body_index, || src,
             if src == DamageType::Blast { PopKind::Blast } else { PopKind::Status },
             &breakdown, settled, Some(debuffs),
             ledger::Clock::Dot,
@@ -613,7 +632,9 @@ pub(super) fn process_ticks(
             },
         );
         r.dot_ticks += is_dot_tick as u32;
-        r.note_kills(killed as u32, now, params.drop_is_in_reach(target.at));
+        if killed {
+            r.note_kills(1, now, params.drop_is_in_reach(target.at));
+        }
         if let Some(pool) = broke.filter(|_| !killed) {
             if push_break_proc(debuffs, dot_owner, params, now, pool, active, foe,
                 target, gal, arc, r, rec, rng, 0.0, body_index) {
@@ -709,8 +730,19 @@ pub(super) fn process_ticks(
     // BACK WHERE IT LIVES, with its capacity — see `tick_q`.
     q.clear();
     debuffs.tick_q = q;
-    debuffs.dots.retain(|d| d.ticks_left > 0);
-    debuffs.dots_due = Some(debuffs.dots.iter().map(|d| d.next_tick).fold(f64::INFINITY, f64::min));
+    let due = if debuffs.dots_share_clock {
+        debuffs.retain_dots(|d| d.ticks_left > 0);
+        debuffs.dots.first().map_or(f64::INFINITY, |d| d.next_tick)
+    } else {
+        let mut due = f64::INFINITY;
+        debuffs.retain_dots(|d| {
+            if d.ticks_left == 0 { return false; }
+            due = due.min(d.next_tick);
+            true
+        });
+        due
+    };
+    debuffs.dots_due = Some(due);
 }
 
 /// WHAT IS STILL IN THE AIR, settled up to this shot — every entity already

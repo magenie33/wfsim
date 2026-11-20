@@ -54,6 +54,7 @@ pub(super) struct Strike<'a> {
     /// `Landing::pierce_live_m`.
     pub(super) pierce_live_m: f64,
     pub(super) body_at: &'a [crate::rules::space::Vec2],
+    pub(super) spread_geometry: &'a spread::SpreadGeometry<'a>,
     pub(super) bounce_bodies: &'a [crate::rules::space::Vec2],
     pub(super) chain_layout: &'a Option<crate::rules::chain::Layout>,
     pub(super) ricochet_layout: &'a Option<crate::rules::chain::Layout>,
@@ -245,6 +246,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         struck,
         pierce_live_m,
         body_at,
+        spread_geometry,
         bounce_bodies,
         chain_layout,
         ricochet_layout,
@@ -1795,7 +1797,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     crit_tier: tier, attrition, modded_base: spread_mb, status_chance,
                     forced: forced.to_vec(), status_vector: spread_composition,
                 });
-                irradiate::drain_echoes(seat, windows, bodies, params, active, gal, arc, r, rec, d, t);
+                irradiate::drain_echoes(seat, windows, bodies, params, active, spread_geometry,
+                    gal, arc, r, rec, d, t);
             }
             // …AND EVERYTHING BEHIND THE TARGET that this pellet
             // punched through to, at full damage. Only where there is
@@ -2144,7 +2147,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 t,
                 seat,
                 0,
-                qvec.dominant(),
+                || qvec.dominant(),
                 match (part.is_head, tier > 0) {
                     (true, true) => PopKind::HeadCrit,
                     (true, false) => PopKind::Head,

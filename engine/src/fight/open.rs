@@ -135,6 +135,7 @@ pub(super) struct OtherMode<'a> {
 /// these is its BUILD's answer: a second one resolves its own.
 pub(super) struct Fixed<'a> {
     pub(super) aim_off_axis: f64,
+    pub(super) spread_geometry: spread::SpreadGeometry<'a>,
     pub(super) ricochet_layout: Option<crate::rules::chain::Layout>,
     pub(super) chain_layout: Option<crate::rules::chain::Layout>,
     pub(super) struck: Vec<usize>,
@@ -775,6 +776,7 @@ pub(super) fn open<'a>(
             other: None,
             fixed: Fixed {
                 aim_off_axis,
+                spread_geometry: spread::SpreadGeometry::new(params),
                 ricochet_layout,
                 chain_layout,
                 struck,

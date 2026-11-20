@@ -260,7 +260,7 @@ pub(super) fn push_break_proc(
     let settled = target.apply(raw, TypeShares::single(DamageType::Electricity), false,
         now, foe, false, &mit, params.overguard_multiplier(), watching(rec, &mut breakdown));
     r.sources.magnetic_break += settled.effective;
-    ledger::settle(r, rec, now, owner, body_index, DamageType::Electricity, PopKind::Direct,
+    ledger::settle(r, rec, now, owner, body_index, || DamageType::Electricity, PopKind::Direct,
         &breakdown, settled, Some(debuffs), ledger::Clock::Hit,
         || Instance { origin: crate::record::Origin::MagneticBreak, base,
             part: Some("body".into()), layers: mul_layers(base, &layers), ..Instance::default() });

@@ -305,12 +305,22 @@ pub(super) fn add_by_type(
     effective: f64,
     col: &crate::data::factions::Column,
 ) {
-    let parts = || DamageType::ALL.into_iter().map(|t| (t, shares.share(t))).filter(|&(_, a)| a > 0.0);
-    let weighted: f64 = parts().map(|(t, a)| a * col.get(t)).sum();
+    let parts = DamageType::ALL.into_iter().map(|t| (t, shares.share(t))).filter(|&(_, a)| a > 0.0);
+    add_parts(dst, effective, col, parts);
+}
+
+#[wfsim_gas_macro::metered]
+pub(super) fn add_parts(
+    dst: &mut [f64; DamageType::ALL.len()],
+    effective: f64,
+    col: &crate::data::factions::Column,
+    parts: impl Iterator<Item = (DamageType, f64)> + Clone,
+) {
+    let weighted: f64 = parts.clone().map(|(t, a)| a * col.get(t)).sum();
     if weighted <= 0.0 {
         return;
     }
-    for (t, amount) in parts() {
+    for (t, amount) in parts {
         dst[t as usize] += effective * amount * col.get(t) / weighted;
     }
 }

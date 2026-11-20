@@ -950,9 +950,9 @@ fn a_gas_cloud_survives_the_death_and_nothing_else_does() {
         unit: 0.0, dtype, ignores_armor: false, seed: u32::MAX,
     };
     let mut d = DebuffState::default();
-    d.dots.push(dot(DamageType::Gas));
-    d.dots.push(dot(DamageType::Toxin));
-    d.dots.push(dot(DamageType::Electricity));
+    d.push_dot(dot(DamageType::Gas));
+    d.push_dot(dot(DamageType::Toxin));
+    d.push_dot(dot(DamageType::Electricity));
     d.blast.push(BlastStack { charges_gauge: false, fuse: 9.0, value: 30.0, xh_bracket: 1.0, seed: u32::MAX });
     d.microwave = true;
 
@@ -961,6 +961,8 @@ fn a_gas_cloud_survives_the_death_and_nothing_else_does() {
     assert_eq!(d.dots.len(), 1, "only the cloud stays: {:?}", d.dots);
     assert_eq!(d.dots[0].dtype, DamageType::Gas);
     assert_eq!(d.dots[0].ticks_left, 4, "…with its own remaining duration");
+    assert!(!d.has_only_native_radial_seeds(DamageType::Gas));
+    assert!(d.has_only_native_radial_seeds(DamageType::Electricity));
     assert!(d.blast.is_empty(), "the stacks detonated on the way out");
     assert!(!d.microwave, "everything else was the dead individual's");
     // …AND THE DETONATION IS OWED TO THE NEIGHBOURS: 300% a stack against
