@@ -9,25 +9,34 @@ const until="board_input_timestamp(clock_timestamp()+interval '3minutes')";
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 
-export async function putRankDirty(tx,{weapon,ruler,identity},recent=false) {
- const [row]=await tx.unsafe(`INSERT INTO state_board_rank_dirty(weapon,ruler,identity${recent?',version,recent_version':''})
-  ${recent?"SELECT $1,$2,$3,v,v FROM (SELECT nextval('board_rank_generation') v) seq":"VALUES($1,$2,$3)"}
+async function putRankDirtyBatch(tx,targets,recent=false) {
+ if(!targets.length)return [];
+ return tx.unsafe(`WITH inputs AS MATERIALIZED(SELECT x.*${recent?",nextval('board_rank_generation') v":''}
+  FROM jsonb_to_recordset($1::text::jsonb)x(weapon text,ruler text,identity text) ORDER BY weapon,ruler,identity)
+  INSERT INTO state_board_rank_dirty(weapon,ruler,identity${recent?',version,recent_version':''})
+  SELECT weapon,ruler,identity${recent?',v,v':''} FROM inputs
   ON CONFLICT(weapon,ruler,identity) DO UPDATE SET version=nextval('board_rank_generation'),
    ${recent?'recent_version=greatest(state_board_rank_dirty.version+1,excluded.version),':''}error=NULL,
    available_at=CASE WHEN state_board_rank_dirty.lease_until>${now} THEN state_board_rank_dirty.lease_until ELSE least(state_board_rank_dirty.available_at,${now}) END
-  RETURNING version`,[weapon,ruler,identity]);
- return row.version;
+  RETURNING identity,version`,[JSON.stringify(targets)]);
 }
 
-export async function putRankPublication(tx,{weapon,ruler},recent=false) {
- await tx.unsafe(`INSERT INTO state_board_rank_publication_ready(weapon,ruler${recent?',version,recent_version':''})
+export async function putRankDirty(tx,target,recent=false) {
+ const [row]=await putRankDirtyBatch(tx,[target],recent);return row.version;
+}
+
+export async function putRankPublication(tx,{weapon,ruler,winnersChanged,catalog_phase},recent=false) {
+ const unchanged=winnersChanged===false&&catalog_phase!=='frozen'&&catalog_phase!=='replay';
+ const write=await tx.unsafe(`INSERT INTO state_board_rank_publication_ready(weapon,ruler${recent?',version,recent_version':''})
   ${recent?"SELECT $1,$2,v,v FROM (SELECT nextval('board_rank_generation') v) seq":"VALUES($1,$2)"}
   ON CONFLICT(weapon,ruler) DO UPDATE SET version=nextval('board_rank_generation'),
    ${recent?'recent_version=greatest(state_board_rank_publication_ready.version+1,excluded.version),':''}error=NULL,
-   available_at=CASE WHEN state_board_rank_publication_ready.lease_until>${now} THEN state_board_rank_publication_ready.lease_until ELSE least(state_board_rank_publication_ready.available_at,${now}) END`,[weapon,ruler]);
+   available_at=CASE WHEN state_board_rank_publication_ready.lease_until>${now} THEN state_board_rank_publication_ready.lease_until ELSE least(state_board_rank_publication_ready.available_at,${now}) END
+   ${unchanged?'WHERE state_board_rank_publication_ready.delivered_output IS NULL OR state_board_rank_publication_ready.error IS NOT NULL':''}`,[weapon,ruler]);
+ return write.count>0;
 }
 
-export async function routeRankInput(tx,input,source) {
+export async function routeRankInput(tx,input,source,catalogRequests=false) {
  await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
  let identity=input.scope==='build'?input.key:input.scope==='measurement'?JSON.parse(input.key)[0]:input.body?.identity;
  const ruler=input.scope==='measurement'?JSON.parse(input.key)[1]:input.body?.ruler;
@@ -43,9 +52,16 @@ export async function routeRankInput(tx,input,source) {
   const weapon=build?.weapon||(input.scope==='build'?input.body?.weapon:null);
   if(weapon){
    if(input.scope==='build'||input.scope==='measurement'){
+    const args=[weapon,ruler||null];
+    const retained=catalogRequests&&BigInt(input.version)>0n?`AND (p.enabled OR NOT (
+     EXISTS(SELECT 1 FROM state_board_input_mailbox m WHERE m.scope='partition' AND m.key='["'||p.weapon||'","'||p.ruler||'"]' AND NOT m.removed)
+     AND EXISTS(SELECT 1 FROM state_board_rank_catalog_inputs k WHERE (k.weapon,k.ruler,k.identity)=($1,$3,$4))
+     AND EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='state_board_input_mailbox'::regclass
+      AND tgname='board_rank_catalog_input' AND tgfoid=to_regprocedure('board_rank_catalog_input()') AND tgenabled IN('O','A'))))`:'';
+    if(retained)args.push(input.scope==='measurement'?ruler:'',identity);
     const [capturing]=await tx.unsafe(`SELECT 1 FROM state_board_read_partitions p WHERE p.weapon=$1
      AND ($2::text IS NULL OR p.ruler=$2) AND(p.enabled OR(NOT p.canonical_sources AND p.revision IS NULL))
-     AND NOT EXISTS(SELECT 1 FROM state_board_rank_partitions r WHERE r.weapon=p.weapon AND r.ruler=p.ruler) LIMIT 1`,[weapon,ruler||null]);
+     AND NOT EXISTS(SELECT 1 FROM state_board_rank_partitions r WHERE r.weapon=p.weapon AND r.ruler=p.ruler) ${retained} LIMIT 1`,args);
     if(capturing)throw new BoardRankConflict('ranking partition capture is not registered');
    }
    const parts=await tx.unsafe('SELECT weapon,ruler FROM state_board_rank_partitions WHERE weapon=$1 AND ($2::text IS NULL OR ruler=$2)',[weapon,ruler||null]);
@@ -61,7 +77,7 @@ export async function routeRankInput(tx,input,source) {
  if(targets.size||input.scope==='review'||(identity&&input.deleted))
   await tx.unsafe(`INSERT INTO state_board_rank_route_inputs VALUES($1,$2,$3) ON CONFLICT(scope,key)
    DO UPDATE SET version=greatest(state_board_rank_route_inputs.version,excluded.version)`,[input.scope,input.key,input.version]);
- for(const row of targets.values())await putRankDirty(tx,row);
+ await putRankDirtyBatch(tx,[...targets.values()]);
  return {identities:targets.size};
 }
 
@@ -83,10 +99,11 @@ export async function reconcileRankBaseline(tx,{weapon,ruler,source}) {
    AND EXISTS(SELECT 1 FROM entity_weapon_builds b WHERE b.id=k.identity AND b.weapon=$1)
    AND EXISTS(SELECT 1 FROM board_facts f WHERE f.identity=k.identity AND f.ruler=$2))`:''}`,[weapon,ruler,JSON.stringify(ids.map(row=>row.identity))]);
  await lockRankInputs(tx,source,{identities:rows.map(row=>row.identity)});
- for(const {identity} of rows){
-  const version=await putRankDirty(tx,{weapon,ruler,identity});
-  await tx.unsafe(`INSERT INTO state_board_rank_baseline_obligations VALUES($1,$2,$3,$4)
-   ON CONFLICT(weapon,ruler,identity) DO UPDATE SET version=excluded.version`,[weapon,ruler,identity,version]);
+ if(rows.length){
+  const marked=await putRankDirtyBatch(tx,rows.map(({identity})=>({weapon,ruler,identity})));
+  await tx.unsafe(`INSERT INTO state_board_rank_baseline_obligations(weapon,ruler,identity,version)
+   SELECT $1,$2,x.identity,x.version FROM jsonb_to_recordset($3::text::jsonb)x(identity text,version bigint)
+   ON CONFLICT(weapon,ruler,identity) DO UPDATE SET version=excluded.version`,[weapon,ruler,JSON.stringify(marked)]);
  }
  const [locked]=await tx.unsafe('SELECT reconcile_cursor FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 FOR UPDATE',[weapon,ruler]);
  if(locked.reconcile_cursor!==part.reconcile_cursor)throw new BoardRankConflict('baseline reconciliation advanced');
@@ -152,9 +169,10 @@ export async function applyRankDirty(sql,claim,part,prepared) {
   const updated=await applyRankSources(tx,part,prepared,{live:true});
   await tx.unsafe(`UPDATE state_board_rank_dirty SET applied_version=$4,lease=NULL,lease_until=NULL,available_at=NULL,error=NULL
    WHERE weapon=$1 AND ruler=$2 AND identity=$3`,[claim.weapon,claim.ruler,claim.identity,claim.version]);
-  if(updated.complete)await putRankPublication(tx,updated,held.recent_version!=null&&BigInt(held.recent_version)>BigInt(held.applied_version));
-  else await finishRankBaseline(tx,updated);
-  return {status:'indexed',identity:claim.identity};
+  const publication=updated.complete
+   ?await putRankPublication(tx,updated,held.recent_version!=null&&BigInt(held.recent_version)>BigInt(held.applied_version))
+   :await finishRankBaseline(tx,updated);
+  return {status:'indexed',weapon:part.weapon,ruler:part.ruler,identity:claim.identity,winners_changed:updated.winnersChanged,publication_requested:publication};
  });
 }
 

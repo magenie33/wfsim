@@ -30,7 +30,10 @@ A baseline captures coherent measured sources and their build, selected-fact
 and selected-review headers once into an immutable file. It streams at most
 256 sources per database fetch and prepares at most 64 per Native batch. File
 digest, terminal count, byte cursor and committed coverage guard restart.
-New live normalization wins over late baseline pages. Every Native publication
+The reader can prepare pages for up to three distinct partitions in one turn
+with `WFSIM_BOARD_READ_BASELINE_CONCURRENCY` (default one). They share its
+database pool and serialize calls to the same Native process. Each database
+checkpoint is independent. New live normalization wins over late baseline pages. Every Native publication
 mode registers a measurement dependency, including modes without a fact.
 At the baseline boundary, paged reconciliation records obligations for changed
 or previously unobserved headers. The partition becomes complete only after
@@ -38,8 +41,10 @@ these obligations are applied. Registered dependencies continue to route new
 changes independently.
 
 The cache retains Native shape winners under score, default-corner, canonical
-source and mode order. Fact changes render only their identity. Snapshot
-preparation scans this derived ordered index and indexed group maxima; it does
+source and mode order. Fact changes render only their identity. An input update that preserves every affected shape winner and its exact
+publication fields acknowledges the new dependency versions without scheduling
+an identical snapshot. A changed score, ordering field or visible measurement
+time on a winner schedules the partition. Snapshot preparation scans this derived ordered index and indexed group maxima; it does
 not read the complete canonical library again or run fights.
 
 ### Shared descriptions and observed input versions
@@ -196,7 +201,9 @@ scope's latest arrival while retaining its first arrival and request position.
 A retained scope uses its qualified input. For a genuinely new scope the
 controller takes a repeatable-read capture and qualifies its current rows with
 the same Native publisher. Both paths reconcile subsequent changes, including
-acknowledged mailbox inputs, before selecting the complete revision. A held
+acknowledged mailbox inputs, before selecting the complete revision. While a
+first publication is pending, the active capture keeps each changed identity
+so other registered scopes for that weapon can process the same update. A held
 scope keeps its published rows and its retry record. Once the native index
 is active, new results continue through its per-identity update queue.
 Publication yields at a committed page checkpoint between scopes. Current
@@ -220,7 +227,10 @@ MANIFEST_JSON NATIVE WORK [PINNED_REVISION] [--requested INVENTORY_JSON]`.
 A published head stays selected. An advanced head returns its actual revision
 for comparison. An existing player reservation needs its pinned request
 position and mailbox version. A paused partial cut also needs its original
-file digest, index position, coverage and quiescent state. Its typed indices
+file digest, index position, coverage and quiescent state. Accepted changes
+may advance the private index while its cut is paused. The transfer locks the
+partition, requires every outstanding identity to be applied, and preserves
+the original witness together with the actual index and its current revision. Its typed indices
 and referenced Native descriptions are copied into a separate recovery schema
 in the index tablespace. The original cut file stays pinned. The request and
 its dirty work keep their identities. Budget these scoped copies and their WAL

@@ -24,6 +24,22 @@ try {
  try {
   const fq=(text,args=[])=>fixture.unsafe(placeholders(text),args);
   await boardMailboxCases({exec:text=>fixture.unsafe(text),run:(text,...args)=>fq(text,args),get:async(text,...args)=>(await fq(text,args))[0]??null},{noise:100001});
+  const [{source}]=await fixture.unsafe('SELECT source FROM state_board_input_source WHERE id=1');
+  for(const live of [true,false]){
+   await fixture.unsafe('VACUUM (ANALYZE) state_board_input_mailbox');
+   await fixture.unsafe("BEGIN;SET LOCAL plan_cache_mode='force_generic_plan';SET LOCAL jit=off");
+   try{
+    await fixture.unsafe("UPDATE state_board_input_mailbox SET available_at='9999' WHERE scope='measurement' AND key='ready'");
+    await fixture.unsafe("UPDATE state_board_input_mailbox SET available_at='2000-01-01' WHERE key LIKE 'later-%' AND ($1 OR version=0)",[live]);
+    await fixture.unsafe('ANALYZE state_board_input_mailbox');
+    const [r]=await fixture.unsafe("EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) SELECT board_input_claim(1,'deep-backlog',60,$1)",[source]);
+    const plan=r['QUERY PLAN'][0].Plan,blocks=plan['Shared Hit Blocks']+plan['Shared Read Blocks'];
+    assert(blocks<1024,'mixed ready backlog must use indexed lane boundaries, touched '+blocks+' blocks');
+    console.log('ready '+(live?'live and seed':'seed only')+' claim: '+blocks+' shared blocks');
+    const [owned]=await fixture.unsafe("SELECT version FROM state_board_input_mailbox WHERE lease_token='deep-backlog'");
+    assert.equal(BigInt(owned.version)>0n,live);
+   }finally{await fixture.unsafe('ROLLBACK');}
+  }
  }finally{fixture.release();}
  const source=await scalar('SELECT source FROM state_board_input_source WHERE id=1');
  const mailbox=new BoardInputMailbox(sql,{source});

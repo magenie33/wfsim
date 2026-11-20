@@ -42,8 +42,9 @@ source is refused because it would bypass row removal capture.
 The partial ready index excludes completed and blocked history. Live versions
 precede version-zero baseline seeds, so a seed backlog cannot hold new results
 behind the import. Seed pacing and resource budgets remain the importer's
-responsibility. Claims inspect
-a fixed maximum of 256 candidate keys and skip locks before taking the caller's
+responsibility. Each lane seeks its timestamp range in the same ordered
+index, including when a generic plan serves a large ready backlog. Claims
+inspect a fixed maximum of 256 candidate keys and skip locks before taking the caller's
 bounded subset. Headers contain byte sizes, not payloads. Sequence values order
 versions of one key; neither their maximum nor their allocation order is a
 cross-transaction completion cursor. Earlier allocated values can commit later.

@@ -87,18 +87,20 @@ BEGIN
   IF $1 IS NULL OR $1<1 OR $1>256 OR $2 IS NULL OR octet_length($2) NOT BETWEEN 1 AND 128 OR $3 IS NULL OR $3<1
     THEN RAISE EXCEPTION 'invalid board input claim'; END IF;
   until:=board_input_timestamp(at::timestamptz+make_interval(secs=>$3));
-  -- Bound the candidate scan before the caller's parameterized selection.
+  -- Seek both bounds of each lane in board_input_ready, including for a generic plan.
   WITH live AS MATERIALIZED (
     SELECT scope,key FROM state_board_input_mailbox
-    WHERE (version=0)=false AND version>applied_version AND available_at<=at
-    ORDER BY available_at,scope,key LIMIT 256
+    WHERE version>applied_version AND available_at IS NOT NULL AND available_at<=at
+     AND ROW((version=0),available_at) BETWEEN ROW(false,''::text) AND ROW(false,at)
+    ORDER BY (version=0),available_at,scope,key LIMIT 256
   ), candidates AS MATERIALIZED (
     SELECT scope,key FROM (
       SELECT scope,key,0 AS priority FROM live
       UNION ALL
       (SELECT scope,key,1 AS priority FROM state_board_input_mailbox
-        WHERE (version=0)=true AND version>applied_version AND available_at<=at
-        ORDER BY available_at,scope,key LIMIT (256-(SELECT count(*) FROM live)))
+        WHERE version>applied_version AND available_at IS NOT NULL AND available_at<=at
+         AND ROW((version=0),available_at) BETWEEN ROW(true,''::text) AND ROW(true,at)
+        ORDER BY (version=0),available_at,scope,key LIMIT (256-(SELECT count(*) FROM live)))
     ) inputs ORDER BY priority
   ), ready AS MATERIALIZED (
     SELECT m.scope,m.key FROM candidates c CROSS JOIN LATERAL (

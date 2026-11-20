@@ -7,6 +7,7 @@ import {join,resolve} from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {randomBytes} from 'node:crypto';
 import postgres from './pg/node_modules/postgres/src/index.js';
+import {lockRankInputs} from './board_rank_keys.mjs';
 import {openInventoryOperator} from './inventory_operator.mjs';
 import {cachedRankInputs} from './board_rank_inputs.mjs';
 import {prepareRankSources,createRankPartition,applyRankSources,prepareRankSnapshot,BoardRankConflict} from './board_rank_index.mjs';
@@ -51,6 +52,16 @@ async function oracle(label){
 }
 try{
  await sql.unsafe('CREATE SCHEMA '+schema);
+ const ids=inputs.map(x=>x.identity).reverse(),reviews=['z','a','a'];
+ const keys=[...new Set([...ids.map(x=>'build/'+x),...reviews.map(x=>'review/'+x)])].map(k=>source+'/board-rank/'+k);
+ const tryKeys=tx=>tx.unsafe('SELECT pg_try_advisory_xact_lock(hashtextextended(key,0)) free FROM jsonb_array_elements_text($1::text::jsonb) a(key)',[JSON.stringify(keys)]);
+ await sql.begin(async tx=>{
+  let calls=0;
+  await lockRankInputs({unsafe:(query,params)=>{calls++;return tx.unsafe(query,params);}},source,{identities:ids,reviews});
+  assert.equal(calls,1,'all dependency locks must use one database round trip');
+  assert((await sql.begin(tryKeys)).every(r=>!r.free),'routing and baseline writers lock the exact same identity and review keys');
+ });
+ assert((await sql.begin(tryKeys)).every(r=>r.free),'transaction end releases every dependency key');
  await sql.unsafe(readFileSync(new URL('../worker/pg/board_mailbox.sql',import.meta.url),'utf8'));
  await sql.unsafe(readFileSync(new URL('../worker/pg/board_pages.sql',import.meta.url),'utf8'));
  for(const file of ['board_rank','board_rank_compact'])await sql.unsafe(readFileSync(new URL('../worker/pg/'+file+'.sql',import.meta.url),'utf8'));
@@ -93,6 +104,13 @@ try{
  await assert.rejects(createRankPartition(sql,{weapon,ruler,source:'different',native:native.adapter,cut:'fixture-cut'}),/boundary changed/);
  await assert.rejects(prepareRankSources(operate,{weapon,ruler,inputs:[{...inputs[1],identity:'unknown-alias'}]}),/identities require qualification/);
  await oracle('stale-source-and-alias-refusal');
+ const [leader]=await sql.unsafe('SELECT identity FROM state_board_rank_winners WHERE weapon=$1 AND ruler=$2 ORDER BY score DESC LIMIT 1',[weapon,ruler]);
+ const winner=structuredClone(current.get(leader.identity));await apply([winner],{live:true});
+ assert.equal(part.winnersChanged,false,'identical Native winners preserve the published projection');
+ winner.facts=winner.facts.map(row=>({...row,finished_at:'2026-11-18T02:00:00.000Z'}));
+ await apply([winner],{live:true});current.set(winner.identity,winner);
+ assert.equal(part.winnersChanged,true,'a changed public measurement time with the same score still changes the winner');
+ await oracle('same-score-updated-wire');
  console.log('  ok  real PostgreSQL Native index, live precedence, stale preparation and recovery-boundary checks');
 }finally{
  await native.close();await sql.unsafe('DROP SCHEMA IF EXISTS '+schema+' CASCADE');await sql.end();rmSync(work,{recursive:true,force:true});

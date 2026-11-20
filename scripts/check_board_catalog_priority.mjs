@@ -4,9 +4,10 @@ import {createHash} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {join} from 'node:path';
 import {preparePriority,nextPriority} from './board_catalog_priority.mjs';
+import {routeRankInput} from './board_rank_work.mjs';
 import {prioritySchema} from './board_catalog_priority_schema.mjs';
 
-export async function checkPriority({sql,schema,config,action,weapon,ruler,second,inputs,step,restart,put}){
+export async function checkPriority({sql,schema,config,action,weapon,ruler,second,source,inputs,step,restart,put}){
  const fresh='heavy_gunner',archive=createHash('sha256').update('immutable archive fixture').digest('hex'),old='a'.repeat(64);
  const installer=await sql.reserve();
  try{await installer.unsafe(prioritySchema(schema));}finally{installer.release();}
@@ -17,7 +18,26 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
   await tx.unsafe('INSERT INTO state_board_public_heads SELECT weapon,ruler,scene,$3 FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2',[weapon,second,old]);
  });
  await assert.rejects(sql.unsafe('SELECT board_requested_partition_selected($1,$2,false)',[weapon,second]),/requires a qualified first publication/);
- await restart();
+ await restart(3);
+ const scan=await action('priority-step');assert.equal(scan.status,'scanning');
+ while(!(await sql.unsafe('SELECT complete FROM state_board_rank_catalog_scan WHERE id=1'))[0].complete)await action('priority-step');
+ const accepted=inputs[0].facts[0],reservedKey=JSON.stringify([accepted.identity,second,accepted.mode]).replaceAll(',',', ');
+ await sql.unsafe('UPDATE board_facts SET score=1777 WHERE identity=$1 AND ruler=$2 AND mode=$3',[accepted.identity,second,accepted.mode]);
+ const body={identity:accepted.identity,ruler:second,mode:accepted.mode,score:1777};
+ const reservedVersion=await put('measurement',reservedKey,body);
+ await assert.rejects(sql.begin(async tx=>{
+  const deleted=await tx.unsafe('DELETE FROM state_board_rank_catalog_inputs WHERE weapon=$1 AND ruler=$2 AND identity=$3',[weapon,second,accepted.identity]);
+  assert.equal(deleted.count,1);
+  await routeRankInput(tx,{scope:'measurement',key:reservedKey,body,version:reservedVersion},source,true);
+ }),/ranking partition capture is not registered/);
+ let routed=false;
+ for(let n=0;n<120&&!routed;n++){
+  await step();
+  const [mail]=await sql.unsafe("SELECT applied_version FROM state_board_input_mailbox WHERE scope='measurement' AND key=$1",[reservedKey]);
+  routed=String(mail.applied_version)===String(reservedVersion);
+ }
+ assert(routed,'an unindexed reservation with a durable catalog obligation can acknowledge its current source');
+ assert.equal((await sql.unsafe('SELECT 1 FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[weapon,second])).length,0);
  const scheduler=new DatabaseSync(':memory:'),ledger=new DatabaseSync(':memory:');
  try{
   ledger.exec('CREATE TABLE receipts(weapon TEXT,ruler TEXT,PRIMARY KEY(weapon,ruler)) WITHOUT ROWID');
@@ -30,6 +50,7 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
   await nextPriority(context);
   await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler) VALUES('zznew','fresh')");
   await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler,queued_at) VALUES('zzfirst','fresh','2000-01-02')");
+  scheduler.prepare("INSERT INTO priority_work VALUES('zzheld','retry',0,'held',?,'transient','')").run(Date.now()-1);
   const seen=[];
   for(let i=0;i<17;i++){
    known.run('newer'+i,'fresh');
@@ -40,6 +61,7 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
     scheduler.prepare("UPDATE priority_work SET phase='pending',due=? WHERE weapon=? AND ruler=?").run(Date.now()+60000,job.weapon,job.ruler);
    }
   }
+  assert(seen.some(j=>j.weapon==='zzheld'),'a due held retry gets a turn during continuous ready work');
   assert(seen.some(j=>j.weapon==='zzfirst'&&j.priority===-2),'an older first-ever score has a turn during continuous updates');
   assert(seen.some(j=>j.weapon==='zznew'&&j.priority===-1),'new arrivals get a bounded turn ahead of an established queue');
   assert(seen.some(j=>j.weapon.startsWith('aaold'))&&seen.some(j=>j.priority===2),'existing queued and historical scopes also make progress');
@@ -63,18 +85,26 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
  await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler) VALUES($1,'removed_ruler')",[weapon]);
  const page=async scope=>(await sql.unsafe('SELECT board_read_page($1,$2,NULL,0,128) page',[weapon,scope]))[0].page;
  const position=(await sql.unsafe('SELECT position FROM state_board_requested_partitions WHERE weapon=$1 AND ruler=$2',[weapon,second]))[0].position;
- let revised=false,warm=false;
+ const frozen=new Set();let revised=false,warm=false,concurrent=false;
  const stop=Date.now()+75000;let last;
  while(Date.now()<stop){
   last=await action('priority-step');
   if(last.status==='held'&&last.ruler!=='removed_ruler')throw Error('unexpected hold '+JSON.stringify(last));
+  if(last.status==='frozen')frozen.add(last.ruler);
   if(last.status==='frozen'&&last.ruler===fresh&&!revised){
    await sql.unsafe('UPDATE board_facts SET score=96 WHERE identity=$1 AND ruler=$2 AND mode=$3',[id,fresh,mode]);
    await notify(96);revised=true;
    await sql.unsafe('UPDATE board_facts SET score=999 WHERE identity=$1 AND ruler=$2 AND mode=$3',[id,ruler,mode]);
    await put('measurement',JSON.stringify([id,ruler,mode]).replaceAll(',',', '),{identity:id,ruler,mode,score:999});
   }
-  for(let n=0;n<12;n++)await step();
+  if(!frozen.has(fresh)||!frozen.has(second))continue;
+  for(let n=0;n<12;n++){
+   const work=await step();
+   if(work.status==='baseline-batch'){
+    const targets=work.items.map(x=>x.weapon+'/'+x.ruler);assert.equal(new Set(targets).size,targets.length);
+    concurrent=true;
+   }
+  }
   warm||=(await page(ruler)).rows.some(r=>r.score===999);
   const current=await page(fresh),retained=await page(second);
   if(revised&&warm&&current.ok&&current.rows.some(r=>r.score===96)&&retained.ok&&retained.revision!==old){
@@ -82,12 +112,29 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
    if(!status.held.some(r=>r.ruler==='removed_ruler'))continue;
    const [request]=await sql.unsafe('SELECT position,activated_at FROM state_board_requested_partitions WHERE weapon=$1 AND ruler=$2',[weapon,second]);
    assert.equal(request.position,position);assert(request.activated_at);
+   assert(retained.rows.some(r=>r.score===1777),'reserved first publication replays the already acknowledged change');
    assert.equal((await sql.unsafe('SELECT board_read_page($1,$2,$3,0,128) p',[weapon,second,old]))[0].p.rows[0].score,1397);
    const q=new DatabaseSync(join(config.state,'priority.sqlite'),{readOnly:true});
    try{
     q.exec('BEGIN');assert(q.prepare("SELECT 1 FROM priority_work WHERE weapon=? AND ruler=?").get(weapon,fresh));
     await action('priority-step');
    }finally{q.close();}
+   const delivery=async()=>(await sql.unsafe('SELECT version,delivered_output FROM state_board_rank_publication_ready WHERE weapon=$1 AND ruler=$2',[weapon,ruler]))[0];
+   const previous=await delivery();assert(previous.delivered_output);
+   const receipt=await put('measurement',JSON.stringify([id,ruler,mode]).replaceAll(',',', '),{identity:id,ruler,mode,score:999,source_ack:'later'});
+   let indexed=false;
+   for(let n=0;n<300&&!indexed;n++){
+    const activity=await step();
+    if(activity.status==='indexed'&&activity.ruler===ruler&&activity.identity===id){
+     const [observed]=await sql.unsafe('SELECT modes->>$4 AS version FROM state_board_rank_input_sets WHERE weapon=$1 AND ruler=$2 AND identity=$3',[weapon,ruler,id,mode]);
+     if(String(observed.version)===String(receipt)){
+      assert.equal(activity.winners_changed,false);assert.equal(activity.publication_requested,false);indexed=true;
+     }
+    }
+   }
+   assert(concurrent,'independent first publications share the database pool and one Native');
+   assert(indexed,'new canonical acknowledgement is durable without rebuilding unchanged public winners');
+   assert.deepEqual(await delivery(),previous);
    console.log('ok — retained archive and requested position, fresh fenced capture and changed identity, unrelated warm correction through held work, priority restart');
    return;
   }

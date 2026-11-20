@@ -145,10 +145,11 @@ export async function nextPriority(ctx,now=Date.now()){
  const eligible="phase NOT IN('selected','retired') AND due<=?";
  const pick=(clause,order='due,weapon,ruler')=>db.prepare('SELECT * FROM priority_work WHERE '+eligible+clause+' ORDER BY '+order+' LIMIT 1').get(now);
  const lane=turn%8;
+ const retry=lane===3&&pick(" AND phase='held'");
  const checking=[1,5].includes(lane)&&pick(" AND phase IN ('pending','preparing')");
  const type=[-2,-1,0,-1,1,-2,-1,2][lane];
  const order=type===-2||(type===-1&&lane===6)?'arrival,due,weapon,ruler':type===-1?'arrival DESC,due,weapon,ruler':undefined;
- const job=checking||pick(' AND priority='+type,order)||pick(' AND priority=-2','arrival,due,weapon,ruler')||
+ const job=retry||checking||pick(' AND priority='+type,order)||pick(' AND priority=-2','arrival,due,weapon,ruler')||
   pick(' AND priority=-1')||pick(' AND priority=0')||pick('');
  return job;
 }
