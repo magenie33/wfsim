@@ -4,7 +4,8 @@ import { createContext, runInContext } from "node:vm";
 
 const file = new URL("../web/src/static/app/27-utility.js", import.meta.url);
 const source = readFileSync(file, "utf8").split("/// THE STATE WHERE THE PAGE CANNOT SHOW IT")[0];
-const tabs = { innerHTML: "" };
+const tabClasses = new Set();
+const tabs = { innerHTML: "", classList: { toggle: (value, enabled) => enabled ? tabClasses.add(value) : tabClasses.delete(value) } };
 const page = { hidden: false };
 const accountState = { account: null };
 const pending = [];
@@ -37,12 +38,14 @@ refresh();
 assert.equal(pending.length, 1);
 pending[0](answer);
 await Promise.resolve();
-assert.match(tabs.innerHTML, /data-native href="\/api\/cloud\/example">示例/);
+assert.match(tabs.innerHTML, /<div class="utility-shortcuts"><a class="ghost-btn" data-native href="\/api\/cloud\/example">示例/);
+assert.ok(tabClasses.has("has-utility-shortcuts"));
 assert.doesNotMatch(tabs.innerHTML, /outside\.test/);
 
 accountState.account = null;
 refresh();
 assert.doesNotMatch(tabs.innerHTML, /api\/cloud\/example/);
+assert.ok(!tabClasses.has("has-utility-shortcuts"));
 accountState.account = { id: "owner" };
 refresh();
 accountState.account = { id: "another-account" };
