@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-use crate::state::{self, Config, Result, CONSENT_VERSION};
+use crate::{
+    net::Net,
+    state::{self, Config, Result, CONSENT_VERSION},
+};
 use crossterm::{
     cursor::MoveTo,
     event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
@@ -16,7 +19,7 @@ use std::{
     process::Command,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc,
+        mpsc, Arc,
     },
     time::Duration,
 };
@@ -35,6 +38,7 @@ pub fn run(dir: &Path) -> Result<()> {
     ctrlc::set_handler(move || signal.store(true, Ordering::Relaxed))?;
 
     let mut panel = Panel::open()?;
+    panel.account = Account::check(dir);
     while !closing.load(Ordering::Relaxed) {
         panel.draw(dir)?;
         if event::poll(Duration::from_millis(250))? {
@@ -52,6 +56,7 @@ struct Panel {
     output: Stdout,
     input: String,
     message: String,
+    account: Account,
     frame: Option<(u16, u16, Vec<String>)>,
 }
 
@@ -62,6 +67,7 @@ impl Panel {
             output: io::stdout(),
             input: String::new(),
             message: String::new(),
+            account: Account::Unlinked,
             frame: None,
         };
         execute!(panel.output, EnterAlternateScreen)?;
@@ -153,6 +159,9 @@ impl Panel {
                 return Err(message.unwrap_or("Command failed.").to_owned().into());
             }
         }
+        if args[0] == "login" {
+            self.account = Account::Linked;
+        }
         Ok(Some(success.into()))
     }
 
@@ -175,6 +184,7 @@ impl Panel {
         };
         let mut lines = vec![
             format!("WFSim | {phase}"),
+            format!("Account | {}", self.account.label()),
             format!(
                 "CPU {}-{}% | Target {} | In use {}",
                 config.range.min,
@@ -218,6 +228,54 @@ impl Drop for Panel {
     fn drop(&mut self) {
         let _ = execute!(self.output, LeaveAlternateScreen);
         let _ = terminal::disable_raw_mode();
+    }
+}
+
+enum Account {
+    Unlinked,
+    Checking(mpsc::Receiver<Result<bool>>),
+    Linked,
+    Unavailable,
+}
+
+impl Account {
+    fn check(dir: &Path) -> Self {
+        let dir = dir.to_owned();
+        let (send, receive) = mpsc::channel();
+        std::thread::spawn(move || {
+            let result = (|| {
+                let Some(id) = state::existing_identity(&dir)? else {
+                    return Ok(false);
+                };
+                let config = Config::load(&dir)?;
+                if !state::pinned_origin(&dir, &config.server)? {
+                    return Ok(false);
+                }
+                let points = Net::new(&config.server).device_points(&id)?;
+                points["claimed"]
+                    .as_bool()
+                    .filter(|_| points["ok"] == true)
+                    .ok_or_else(|| "missing device claim status".into())
+            })();
+            let _ = send.send(result);
+        });
+        Self::Checking(receive)
+    }
+
+    fn label(&mut self) -> &'static str {
+        if let Self::Checking(result) = self {
+            *self = match result.try_recv() {
+                Ok(Ok(true)) => Self::Linked,
+                Ok(Ok(false)) => Self::Unlinked,
+                Err(mpsc::TryRecvError::Empty) => return "Checking device link",
+                _ => Self::Unavailable,
+            };
+        }
+        match self {
+            Self::Unlinked => "Unlinked. Use /login",
+            Self::Linked => "Device linked",
+            _ => "Device link unavailable",
+        }
     }
 }
 

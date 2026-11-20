@@ -178,17 +178,13 @@ fn run() -> Result<()> {
             | Action::Login
             | Action::EngineCheck { .. }
             | Action::Status { refresh: true }
-    ) {
-        let origin = dir.join("origin");
-        if origin.exists() {
-            if fs::read_to_string(&origin)? != config.server {
-                return Err("this device belongs to another server; restore config.json or use a separate --data-dir".into());
-            }
-        } else {
-            let mut file = state::private_options().create_new(true).open(origin)?;
-            file.write_all(config.server.as_bytes())?;
-            file.sync_all()?;
-        }
+    ) && !state::pinned_origin(&dir, &config.server)?
+    {
+        let mut file = state::private_options()
+            .create_new(true)
+            .open(dir.join("origin"))?;
+        file.write_all(config.server.as_bytes())?;
+        file.sync_all()?;
     }
     // Identity creation is serialized separately from the long-running process.
     let id = if matches!(
@@ -297,8 +293,7 @@ fn run() -> Result<()> {
                 state::read::<Value>(&dir.join("hosts/update.json")).unwrap_or(Value::Null);
             if refresh {
                 let id = fs::read_to_string(dir.join("identity"))?;
-                status["contribution"] = net::Net::new(&config.server)
-                    .post("/api/board/points", &json!({"verifier":id}))?;
+                status["contribution"] = net::Net::new(&config.server).device_points(&id)?;
             }
             println!("{}", serde_json::to_string_pretty(&status)?);
         }
