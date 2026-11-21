@@ -461,16 +461,15 @@ function harvestFixture(producer = "user_calculation") {
       const ref = "parent|node";
       await db.run(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,payload)
         VALUES(?,?,?,'live',?,'2000-01-01','{}')`, producer, ref, HARVEST_QUESTION, at);
-      const expected = producer === "family_build" ? ref : "workflow-candidate|" + ref;
-      check(`${producer}: a special optimization keeps its captured purpose`,
-        (await authorizeHarvest(env, input, now)).claims?.family_source === expected);
+      check(`${producer}: a family-only search needs no candidate receipt`,
+        (await authorizeHarvest(env, input, now)).disabled === true);
       await db.run(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,payload)
         VALUES('user_calculation','ordinary',?,'live',?,'2100-01-01','{"board_upload":true}')`, HARVEST_QUESTION, at);
       check(`${producer}: a coalesced ordinary source submits candidates through ordinary intake`,
         (await authorizeHarvest(env, input, now)).claims?.family_source === null);
       await db.run(`UPDATE relation_task_consumers SET payload='{"board_upload":false}' WHERE producer='user_calculation'`);
-      check(`${producer}: a disabled ordinary source leaves special-purpose delivery intact`,
-        (await authorizeHarvest(env, input, now)).claims?.family_source === expected);
+      check(`${producer}: a shared ordinary opt-out keeps candidate uploads disabled`,
+        (await authorizeHarvest(env, input, now)).disabled === true);
     }
     check("source purpose does not duplicate the underlying computation task",
       (await db.get("SELECT count(*) AS n FROM entity_compute_tasks")).n === 1);
@@ -548,13 +547,19 @@ function harvestFixture(producer = "user_calculation") {
   fixture.db.leaseUntil = Date.now() - 1000;
   const expired = await fixture.post({ builds: [], harvest: fixture.source });
   check("an expired lease cannot issue a new receipt", expired.status === 403, String(expired.status));
-  const family = harvestFixture("family_build");
-  const grant = await (await family.post({ builds: [], harvest: family.source })).json();
-  const response = await family.post({ builds: [PAYLOAD, PAYLOAD], harvest: { receipt: grant.receipt } });
-  const write = family.db.calls.find(call => /INSERT INTO record_build_submissions/.test(call.sql));
-  check("family-search candidates retain trusted derivation provenance", response.ok && family.db.rows.size === 2
-    && /family_source/.test(write?.sql || "") && write.args[3] === "system" && write.args[4] === family.db.search.ref
-    && write.args[8] === "system" && write.args[9] === family.db.search.ref, JSON.stringify(write));
+  for (const producer of ["family_build", "build_workflow"]) {
+    const family = harvestFixture(producer);
+    const grant = await (await family.post({ builds: [], harvest: family.source })).json();
+    check(`${producer}: the lease grants no candidate receipt`, grant.disabled === true && !grant.receipt);
+    const carried = Buffer.from(JSON.stringify({ scope: "board-builds", question: HARVEST_QUESTION,
+      weapon: PAYLOAD.weapon, engine: "check-engine", initiator: "system", family_source: family.db.search.ref,
+      expires_at: new Date(Date.now() + 60000).toISOString() })).toString('base64url');
+    const receipt = carried + "." + await hmac(family.env.AUTH_SECRET + ":board-harvest", carried);
+    const response = await family.post({ builds: [PAYLOAD], harvest: { receipt } });
+    const result = await response.json();
+    check(`${producer}: an outstanding signed receipt cannot write candidates`, response.ok && result.disabled === true
+      && result.results[0].retryable === false && family.db.rows.size === 0);
+  }
 }
 {
   const fixture = harvestFixture();

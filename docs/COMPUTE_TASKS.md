@@ -309,12 +309,10 @@ count. Review compares normalized actual inputs in the native engine, excluding
 inert search controls and capacity layout, without rerunning a finalist.
 
 Family fill is a special optimization whose source identifies its parent
-workflow and node. Its accepted result advances that parent's captured scope;
-intermediate candidates may enter the library but never start another family
-expansion. It uses the same optimizer and execution queue as ordinary search. Purpose
-belongs to source and delivery context, outside computation identity. When a
-shared search has an ordinary source allowing upload, candidate authorization
-uses ordinary submit; special-only sources retain their bounded purpose.
+workflow and node. Its accepted result advances that parent's captured scope.
+Intermediate candidates stay in the search run unless a shared ordinary source
+allows upload through ordinary submit. Purpose belongs to source and delivery
+context, outside computation identity.
 
 Previously queued and leased calculations continue with their original inputs,
 identities and leases. Disabling an automatic producer stops future creation;
