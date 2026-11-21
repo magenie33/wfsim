@@ -320,7 +320,25 @@ try {
   await assert.rejects(db.exec(upgrade),/additive workflow trigger index must already be valid/);await db.exec('ROLLBACK');
   await db.exec('DROP INDEX '+(process.env.WFSIM_BUILD_ADMISSION_TEST_URL?'CONCURRENTLY ':'')+'build_workflow_triggers_workflow');
   await db.exec(buildAdmissionIndexSql({concurrently:!!process.env.WFSIM_BUILD_ADMISSION_TEST_URL}));
+  const familyInput='workflow:old-parent:old-node',familyRecord='{"weapon":"braton"}';
+  // Exercise the deployed family queue shape with its outstanding raw reference.
+  await db.exec(`ALTER TABLE state_build_family_inbox DROP COLUMN input;
+    ALTER TABLE state_build_family_inbox ADD CONSTRAINT state_build_family_inbox_id_fkey
+      FOREIGN KEY(id) REFERENCES record_build_submissions(id) ON DELETE CASCADE;`);
+  await db.run('INSERT INTO record_build_submissions(id,at,record,family_source) VALUES(?,?,?,?)',
+    familyInput,at,familyRecord,'workflow|old-parent|old-node');
+  await db.run('INSERT INTO state_build_family_inbox(id,retry_at) VALUES(?,?)',familyInput,at);
   await db.exec(buildAdmissionSchemaSql({role:null}));await db.exec(buildAdmissionSchemaSql({role:null}));
+  const source=inboxSource((text,args)=>db.all(text,...args));
+  const seen=[];
+  await captureInbox({source:{...source,priority:async()=>[{id:familyInput}],fresh:async()=>[],after:async()=>[]},
+    maxRows:1,emit:async(line,row)=>seen.push(row.id)});
+  assert.deepEqual(seen,[],'general intake skips a retained family mirror');
+  await db.run('DELETE FROM record_build_submissions WHERE id=?',familyInput);
+  await db.exec("UPDATE state_task_pipeline_controls SET paused=false WHERE name='family'");
+  const {input:ownedFamily}=await db.get('SELECT build_family_claim(?::text) AS input',at);
+  assert.equal(ownedFamily.id,familyInput);assert.equal(ownedFamily.record,familyRecord);
+  assert.equal(ownedFamily.family_source,'workflow|old-parent|old-node');
   if(process.argv.includes('--break-first-arrival')) {
     const original=schemaSource.match(/CREATE OR REPLACE FUNCTION build_intake_register[^]*?END \$\$;/)[0];
     await db.exec(original.replace(" OR coalesce((input->>'admission_new')::boolean,false)",''));

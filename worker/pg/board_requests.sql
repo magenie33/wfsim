@@ -30,22 +30,6 @@ CREATE INDEX board_requests_ready ON state_board_requests(position,id) WHERE pha
 CREATE TRIGGER board_request_retained BEFORE UPDATE OR DELETE ON entity_board_requests
   FOR EACH ROW EXECUTE FUNCTION build_intake_immutable();
 
-CREATE FUNCTION board_request_capture_review() RETURNS trigger
-LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
-DECLARE observation jsonb; review entity_measurement_reviews%ROWTYPE;
-BEGIN
-  IF NEW.observation IS NULL OR NEW.family_source IS NOT NULL THEN RETURN NEW; END IF;
-  observation:=NEW.observation::jsonb;
-  SELECT * INTO review FROM entity_measurement_reviews WHERE id=observation->>'review' AND state='waiting';
-  IF NOT FOUND OR NEW.id<>'review:'||review.id THEN RETURN NEW; END IF;
-  INSERT INTO entity_board_requests(id,kind,input,ruler,mode)
-    VALUES(NEW.id,'correction',to_jsonb(NEW),review.ruler,review.mode);
-  INSERT INTO state_board_requests(id) VALUES(NEW.id);
-  RETURN NEW;
-END $$;
-CREATE TRIGGER board_requested_review AFTER INSERT ON record_build_submissions
-  FOR EACH ROW EXECUTE FUNCTION board_request_capture_review();
-
 CREATE FUNCTION board_request_claim(uuid) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE held state_board_requests%ROWTYPE;
@@ -144,5 +128,5 @@ BEGIN
   END IF;
   RETURN true;
 END $$;
-REVOKE ALL ON FUNCTION board_request_capture_review(),board_request_claim(uuid),
+REVOKE ALL ON FUNCTION board_request_claim(uuid),
   board_request_stage(text,uuid,text),board_request_admit(text,uuid),board_request_retry(text,uuid,text,boolean) FROM PUBLIC;

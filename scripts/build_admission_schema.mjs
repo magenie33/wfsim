@@ -61,6 +61,7 @@ DO $grant$ BEGIN
  END IF;
  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_pipeline') THEN
   GRANT SELECT ON state_build_inbox_positions TO wfsim_pipeline;
+  GRANT SELECT (id) ON state_build_family_inbox TO wfsim_pipeline;
   GRANT EXECUTE ON FUNCTION build_intake_batch(text),build_spend_submissions(text) TO wfsim_pipeline;
  END IF;
 END $grant$;

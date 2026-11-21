@@ -187,8 +187,10 @@ Already active expansions keep their captured scope.
 A local observation creates correction work only after native normalization
 matches the official fight and the database still holds the compared baseline.
 Equal values, stale baselines and different environments create no correction.
-The public review endpoint durably captures an observation in the same inbox;
-it does not implement a second task expansion.
+An enabled requested-board queue owns the captured request or observation.
+It runs the same canonical intake without a second raw copy. An independently
+admitted family continuation owns its winning input and scope through retries.
+Its acknowledgement commits after canonical intake binds the source and plan.
 
 Hourly and live intake share `inbox_reader.mjs`. Existing waiting reviews and
 active higher-priority workflow continuations are read first, using their
@@ -205,6 +207,21 @@ reaching the scan's end wraps it so newly arrived lower ids are included in a
 later cycle. A scan ending is not proof that the inbox is empty. A failed later
 read leaves its captured prefix processable and still reports a failed cycle.
 Original source ids and observations remain unchanged through retries.
+
+### Raw inbox retirement
+
+A bounded retirement page classifies each original id. An independently owned
+copy requires matching payload and source. Canonical intake requires the
+source binding, build, plan and admission work or registered workflow. These
+classes can retire even while the downstream computation is pending. Unowned
+reviews, workflow inputs, legacy winners, derived inputs and ordinary uploads
+stay in the inbox. A legacy parent's successful state alone cannot establish
+that its winning build or an individual candidate has been handed off.
+
+`scripts/raw_inbox_retention.mjs` reports rows and live tuple bytes by class in
+read-only mode. Its write mode locks at most 128 selected raw rows per page and
+rechecks proof before deleting. A watch cursor wraps and rechecks skipped rows.
+Its checkpoint holds bounded progress and counters. No archive is created.
 
 A correction observation's engine identifies its measurement. It does not pin
 the workflow's future execution engine. Execution uses the factory's current

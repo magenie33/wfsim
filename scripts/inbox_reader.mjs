@@ -8,6 +8,8 @@ import { query,close } from './db.mjs';
 
 export const INBOX_PAGE_ROWS=100, INBOX_MAX_ROWS=250000, INBOX_MAX_BYTES=128*1024*1024;
 const fields='i.id,i.at,i.record,i.initiator,i.family_source,i.observation,i.workflow_scope';
+const ownedFamily=`CASE WHEN split_part(i.family_source,'|',1)='workflow' THEN
+  EXISTS(SELECT 1 FROM state_build_family_inbox f WHERE f.id=i.id) ELSE false END AS owned_family`;
 const digest=value=>createHash('sha256').update(value).digest('hex');
 const save=(path,value)=>{const temporary=path+'.pending-'+process.pid;writeFileSync(temporary,JSON.stringify(value)+'\n');renameSync(temporary,path);};
 
@@ -26,11 +28,12 @@ export function inboxSource(run=query) {
       ORDER BY p.zone,p.position,p.id LIMIT ?::bigint`,[max]),
     byIds: ids=>run(`WITH wanted AS MATERIALIZED (
         SELECT value AS id,ordinality FROM jsonb_array_elements_text((?::text)::jsonb) WITH ORDINALITY)
-      SELECT ${fields} FROM wanted w JOIN state_build_inbox_inputs i ON i.id=w.id ORDER BY w.ordinality`,[JSON.stringify(ids)]),
+      SELECT ${fields},${ownedFamily} FROM wanted w JOIN state_build_inbox_inputs i ON i.id=w.id ORDER BY w.ordinality`,[JSON.stringify(ids)]),
     fresh: max=>run(`SELECT p.id FROM state_build_inbox_positions p
       WHERE EXISTS(SELECT 1 FROM state_build_inbox_inputs i WHERE i.id=p.id) ORDER BY p.position,p.id LIMIT ?::bigint`,[max]),
-    after: (id,max)=>run(`SELECT ${fields} FROM state_build_inbox_inputs i
-      WHERE i.id>?::text ORDER BY i.id LIMIT ?::bigint`,[id,max]),
+    after: (id,max)=>run(`WITH page AS MATERIALIZED (SELECT ${fields} FROM state_build_inbox_inputs i
+        WHERE i.id>?::text ORDER BY i.id LIMIT ?::bigint)
+      SELECT ${fields},${ownedFamily} FROM page i ORDER BY i.id`,[id,max]),
   };
 }
 
@@ -56,11 +59,12 @@ export async function captureInbox({source=inboxSource(),emit,after='',maxRows=I
   };
   const take=async row=>{
     if(!row || typeof row.id!=='string')throw Error('an inbox input requires its original id');
-    if(seen.has(row.id))return true;
-    const line=JSON.stringify(row)+'\n',bytes=Buffer.byteLength(line);
+    const {owned_family,...input}=row;
+    if(owned_family || seen.has(input.id))return true;
+    const line=JSON.stringify(input)+'\n',bytes=Buffer.byteLength(line);
     if(bytes>maxBytes)throw Error('one inbox input exceeds the capture byte budget');
     if(receipt.rows>=maxRows || receipt.bytes+bytes>maxBytes)return false;
-    await emit(line,row);hash.update(line);seen.add(row.id);ids.push(row.id);receipt.rows++;receipt.bytes+=bytes;return true;
+    await emit(line,input);hash.update(line);seen.add(input.id);ids.push(input.id);receipt.rows++;receipt.bytes+=bytes;return true;
   };
   const finish=()=>({...receipt,output_sha256:hash.digest('hex'),elapsed_seconds:(clock()-started)/1000});
   if(timedOut())return finish();

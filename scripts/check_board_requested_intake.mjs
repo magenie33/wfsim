@@ -13,6 +13,7 @@ import {factory,canon} from '../worker/tasks.js';
 import {BUILD_WORKFLOW_PRODUCER} from '../worker/build_workflows.js';
 import {openBoardResultFlow} from './board_result_flow.mjs';
 import {boardRequestedSchema,boardRequestedSubmitUpgrade} from './board_requested_schema.mjs';
+import {rawInboxRetentionPage} from './raw_inbox_retention.mjs';
 import {calculationId} from '../worker/board_tasks.js';
 
 const url=process.env.WFSIM_REQUESTED_INTAKE_TEST_URL||process.env.WFSIM_BOARD_MAILBOX_TEST_URL;
@@ -135,7 +136,7 @@ try{
  const custom=await requestRow(id);
  assert.equal(custom.ruler,ruler);
  assert.equal(custom.input.record.benchmark,undefined,'the requested score target is independent of the custom fight');
- assert.equal(JSON.parse((await db.get('SELECT record FROM record_build_submissions WHERE id=?',id)).record).benchmark,undefined);
+ assert(!(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',id)),'the requested work owns its input from submission');
  const [{claim}]=await sql.unsafe('SELECT board_request_claim($1::uuid) claim',[source]);
  const instant=/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/;
  for(const value of [claim.created_at,claim.retry_at,claim.lease_until])assert.match(value,instant);
@@ -146,7 +147,7 @@ try{
  const bad=structuredClone(normalized);bad.flow.nodes.push(bad.flow.nodes[0]);
  await assert.rejects(db.run('SELECT board_request_stage(?::text,?::uuid,?::text)',id,claim.lease,JSON.stringify(bad)),/changed its captured scope/);
  assert.equal(await count('entity_build_intake_intents'),2,'a rejected stage cannot add an intent');
- assert(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',id));
+ assert.deepEqual((await requestRow(id)).input,custom.input,'a rejected stage retains the independently owned input');
  await db.run("UPDATE state_board_requests SET lease_until=board_input_timestamp(clock_timestamp()-interval '1second') WHERE id=?",id);
  await assert.rejects(db.run('SELECT board_request_stage(?::text,?::uuid,?::text)',id,claim.lease,JSON.stringify(normalized)),/lease changed/);
  assert((await pass()).staged,'expired claims recover through the same source');
@@ -219,6 +220,7 @@ try{
  assert.equal((await db.get('SELECT state FROM entity_measurement_reviews WHERE id=?',legacy)).state,'superseded');
  assert(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',legacyInput.id),'the old inbox is retained');
  const correction='review:'+review.id;assert.equal((await requestRow(correction)).kind,'correction');
+ assert(!(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',correction)),'the enabled review queue owns its observation');
  assert((await pass()).staged);assert(!(await pass()).pending);
  assert.deepEqual(await db.get('SELECT to_jsonb(i) body FROM entity_build_intake_intents i WHERE id=?',legacy),legacyIntent,'fresh admission never changes the old intent');
  assert(await db.get("SELECT 1 FROM state_build_admission_work WHERE kind='intake' AND key=?",legacy),'the old staged work is not admitted');
@@ -358,8 +360,12 @@ try{
  await witnesses.answerOfficial(env,{device:'official:family-fixture',owner:'official:family-fixture'},
   {question:optimizer.computation,engine,result:{report:{results:[{mods:[...familyBase.mods.slice(0,-1),'speed_trigger'],
    arcane:familyBase.arcanes,mode}]}},work:100});
+ const familyInputId='workflow:'+optimizer.workflow+':'+optimizer.id;
+ assert(await db.get('SELECT 1 FROM state_build_family_inbox WHERE id=?',familyInputId));
+ assert(!(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',familyInputId)),'a family job owns its own winning build');
  const continued=await familyBoardPass(runner,{binary});
- assert.equal(continued.input,'workflow:'+optimizer.workflow+':'+optimizer.id);
+ assert.equal(continued.input,familyInputId);
+ assert(!(await db.get('SELECT 1 FROM state_build_family_inbox WHERE id=?',familyInputId)),'only canonical intake acknowledges the family input');
  for(let i=0;i<96;i++){if((await familyBoardPass(runner,{binary})).idle)break;assert(i<95);}
  const children=await db.all("SELECT definition,state FROM state_build_workflow_nodes WHERE workflow=? AND expansion<>?",optimizer.workflow,optimizer.expansion);
  assert(children.length>0);
@@ -370,10 +376,52 @@ try{
  await admitRequest((await replay.json()).request);
  assert.deepEqual(await familyBoardPass(runner,{binary}),{idle:true},'repeat submission creates no sibling workflow');
  assert.deepEqual(await db.all("SELECT * FROM state_task_pipeline_controls WHERE name='admission'"),fences);
+ if(process.argv.includes('--break-raw-ownership')) {
+  const body=readFileSync(new URL('../worker/pg/raw_inbox_retention.sql',import.meta.url),'utf8');
+  await sql.unsafe(body.replace("THEN r.input->'record'=row_input.record::jsonb",'THEN true'));
+ }
+ const retiredAt='2020-01-01';
+ await sql.unsafe(`INSERT INTO record_build_submissions(id,at,record,initiator) VALUES
+   ('retention-a','${retiredAt}','{"weapon":"braton"}','anonymous'),
+   ('retention-b','${retiredAt}','{"weapon":"burston"}','anonymous'),
+   ('retention-c','${retiredAt}','{"weapon":"braton"}','anonymous');
+   INSERT INTO entity_board_requests(id,kind,input,ruler,mode)
+    SELECT id,'missing',jsonb_build_object('id',id,'at',at,'initiator',initiator,'record','{"weapon":"braton"}'::jsonb),'r','base'
+    FROM record_build_submissions WHERE id IN ('retention-a','retention-b');
+   INSERT INTO state_board_requests(id) VALUES('retention-a'),('retention-b');`);
+ const retentionPage={after:'retention-',limit:3};
+ const dry=await rawInboxRetentionPage(sql,retentionPage);
+ assert.equal(dry.groups.request_copy.rows,1);
+ assert.equal(dry.groups.unconfirmed_input.rows,2);
+ assert.equal(dry.removed,0);
+ await sql.begin(async tx=>{
+  await tx.unsafe("SELECT 1 FROM record_build_submissions WHERE id='retention-a' FOR UPDATE");
+  assert.equal((await rawInboxRetentionPage(sql,{...retentionPage,apply:true})).removed,0,'locked sources are deferred');
+ });
+ assert.equal((await rawInboxRetentionPage(sql,{...retentionPage,apply:true})).removed,1);
+ assert.deepEqual(await db.all("SELECT id FROM record_build_submissions WHERE id LIKE 'retention-%' ORDER BY id"),[
+  {id:'retention-b'},{id:'retention-c'}]);
+ assert(await requestRow('retention-a'),'retiring the exact copy preserves the pending request');
+ assert(!(await db.get("SELECT 1 FROM state_build_inbox_positions WHERE id='retention-a'")));
+ assert(await db.get("SELECT 1 FROM record_build_submissions WHERE id='old-inbox'"));
+ const acknowledged={after:legacyInput.id.slice(0,-1),limit:1};
+ const known=await rawInboxRetentionPage(sql,acknowledged);
+ assert.equal(known.next,legacyInput.id);assert.equal(known.groups.canonical_handoff.rows,1);
+ assert.equal((await rawInboxRetentionPage(sql,{...acknowledged,apply:true})).removed,1);
+ assert.deepEqual(await db.get('SELECT to_jsonb(i) body FROM entity_build_intake_intents i WHERE id=?',legacy),legacyIntent);
+ await sql.unsafe(`INSERT INTO record_build_submissions(id,at,record,initiator,family_source)
+   VALUES('workflow:retention:child','${retiredAt}','{"weapon":"braton"}','system','workflow|retention|child');
+   INSERT INTO state_build_family_inbox(id,retry_at,input)
+    SELECT id,at,to_jsonb(b) FROM record_build_submissions b WHERE id='workflow:retention:child';`);
+ const familyMirror={after:'workflow:retention:',limit:1};
+ assert.equal((await rawInboxRetentionPage(sql,familyMirror)).groups.family_copy.rows,1);
+ assert.equal((await rawInboxRetentionPage(sql,{...familyMirror,apply:true})).removed,1);
+ assert(await db.get("SELECT 1 FROM state_build_family_inbox WHERE id='workflow:retention:child'"));
  console.log(JSON.stringify({ok:true,source_kinds:2,canonical_identity:normalized.id,community_witnesses:8,standard_riven:standardized.id,
   published_score:13,old_inbox_retained:true,bulk_admission_paused:true,active_cut_preserved:true,public_work_and_answers:true,
   automatic_partition:true,legacy_unadmitted_replaced:true,cancelled_execution_preserved:true,unqualified_static_retained:true,namespace_isolation:true,
-  retained_prefix_priority_preserved:true,shared_held_lease_preserved:true,explicit_missing_zone:0,family_creation_and_native_continuation:true}));
+  retained_prefix_priority_preserved:true,shared_held_lease_preserved:true,explicit_missing_zone:0,
+  family_creation_and_native_continuation:true,raw_retirement_requires_ownership:true}));
 }catch(error){console.error({query:error.query,parameters:error.parameters,where:error.where});throw error;}finally{
  await flow?.close();await runner?.end();await sql.unsafe('DROP SCHEMA '+schema+' CASCADE');
  await sql.unsafe('DROP ROLE IF EXISTS '+runnerRole);await sql.end();rmSync(root,{recursive:true,force:true});Math.random=realRandom;

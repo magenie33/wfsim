@@ -59,6 +59,23 @@ CREATE TABLE IF NOT EXISTS record_build_workflow_triggers (
 CREATE INDEX IF NOT EXISTS build_workflow_triggers_workflow ON record_build_workflow_triggers(workflow,id);
 ALTER TABLE record_build_submissions ADD COLUMN IF NOT EXISTS observation TEXT COLLATE "C";
 ALTER TABLE entity_measurement_reviews ADD COLUMN IF NOT EXISTS workflow TEXT COLLATE "C";
+
+CREATE TABLE IF NOT EXISTS state_build_family_inbox (
+  id TEXT COLLATE "C" PRIMARY KEY,
+  retry_at TEXT COLLATE "C" NOT NULL,
+  lease UUID,
+  lease_until TEXT COLLATE "C",
+  error TEXT,
+  input JSONB NOT NULL
+);
+-- Backfill only existing family jobs by primary key before detaching their input.
+ALTER TABLE state_build_family_inbox ADD COLUMN IF NOT EXISTS input JSONB;
+UPDATE state_build_family_inbox f SET input=(SELECT to_jsonb(b) FROM record_build_submissions b WHERE b.id=f.id)
+  WHERE f.input IS NULL;
+ALTER TABLE state_build_family_inbox ALTER COLUMN input SET NOT NULL;
+ALTER TABLE state_build_family_inbox DROP CONSTRAINT IF EXISTS state_build_family_inbox_id_fkey;
+CREATE INDEX IF NOT EXISTS build_family_inbox_ready ON state_build_family_inbox(retry_at,id);
+
 CREATE OR REPLACE FUNCTION build_workflow_system_key(text,text) RETURNS text LANGUAGE sql IMMUTABLE AS $$
   SELECT 'system:'||md5(jsonb_build_array($1,$2)::text)
 $$;
@@ -345,10 +362,12 @@ END $$;
 REVOKE ALL ON FUNCTION build_workflow_recover(text,text) FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION build_spend_submissions(text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
-DECLARE input record; at text:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+DECLARE input record; captured jsonb; at text:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
 BEGIN
   FOR input IN SELECT b.* FROM record_build_submissions b JOIN jsonb_array_elements_text($1::jsonb) x ON b.id=x.value ORDER BY b.id FOR UPDATE OF b LOOP
     IF EXISTS(SELECT 1 FROM relation_build_intake_sources WHERE source_id=input.id) THEN CONTINUE;END IF;
+    captured:=to_jsonb(input);
+    IF EXISTS(SELECT 1 FROM state_build_family_inbox f WHERE f.id=input.id AND f.input=captured) THEN CONTINUE;END IF;
     UPDATE entity_measurement_reviews SET state='failed',completed_at=at
       WHERE id=input.observation::jsonb->>'review' AND state='waiting' AND workflow IS NULL AND task_id IS NULL;
     IF split_part(input.family_source,'|',1)='workflow' THEN
@@ -745,27 +764,19 @@ REVOKE ALL ON FUNCTION build_workflow_capture_review(text,text,text) FROM PUBLIC
 INSERT INTO state_task_pipeline_controls(name,paused,changed_at,changed_by) VALUES('family',true,
   to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'schema') ON CONFLICT DO NOTHING;
 
-CREATE TABLE IF NOT EXISTS state_build_family_inbox (
-  id TEXT COLLATE "C" PRIMARY KEY REFERENCES record_build_submissions(id) ON DELETE CASCADE,
-  retry_at TEXT COLLATE "C" NOT NULL,
-  lease UUID,
-  lease_until TEXT COLLATE "C",
-  error TEXT
-);
-CREATE INDEX IF NOT EXISTS build_family_inbox_ready ON state_build_family_inbox(retry_at,id);
-
 -- Only continuations of the independently admitted creation workflows use this inbox.
 CREATE OR REPLACE FUNCTION build_family_capture_output() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 BEGIN
   IF split_part(NEW.family_source,'|',1)='workflow' AND EXISTS(SELECT 1 FROM entity_build_workflows w
     WHERE w.id=split_part(NEW.family_source,'|',2) AND w.source->>'family'='true') THEN
-    INSERT INTO state_build_family_inbox(id,retry_at) VALUES(NEW.id,NEW.at) ON CONFLICT DO NOTHING;
+    INSERT INTO state_build_family_inbox(id,retry_at,input) VALUES(NEW.id,NEW.at,to_jsonb(NEW)) ON CONFLICT DO NOTHING;
+    RETURN NULL;
   END IF;
   RETURN NEW;
 END $$;
 DROP TRIGGER IF EXISTS build_family_output_ready ON record_build_submissions;
-CREATE TRIGGER build_family_output_ready AFTER INSERT ON record_build_submissions
+CREATE TRIGGER build_family_output_ready BEFORE INSERT ON record_build_submissions
   FOR EACH ROW WHEN(NEW.family_source IS NOT NULL) EXECUTE FUNCTION build_family_capture_output();
 
 CREATE OR REPLACE FUNCTION build_family_claim(text) RETURNS jsonb
@@ -780,30 +791,39 @@ BEGIN
   UPDATE state_build_family_inbox SET lease=gen_random_uuid(),
     lease_until=to_char(($1::timestamptz+interval '2minutes') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
     WHERE id=held.id RETURNING * INTO held;
-  RETURN (SELECT to_jsonb(i)||jsonb_build_object('lease',held.lease) FROM state_build_inbox_inputs i WHERE i.id=held.id);
+  RETURN held.input||jsonb_build_object('lease',held.lease,'workflow_scope',
+    (SELECT s.definition::text FROM entity_build_workflows w JOIN entity_build_workflow_scopes s ON s.id=w.scope_id
+      WHERE w.id=split_part(held.input->>'family_source','|',2)));
 END $$;
 
 CREATE OR REPLACE FUNCTION build_family_stage(text,uuid,text,text) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
-DECLARE input jsonb:=$3::jsonb; raw record_build_submissions%ROWTYPE;
+DECLARE input jsonb:=$3::jsonb; captured jsonb; workflow_id text; node_id text;
 BEGIN
   PERFORM 1 FROM state_task_pipeline_controls WHERE name='family' AND NOT paused FOR SHARE;
   IF NOT FOUND THEN RAISE EXCEPTION 'family intake is paused' USING ERRCODE='55000'; END IF;
-  SELECT * INTO raw FROM record_build_submissions WHERE id=$1 FOR UPDATE;
-  PERFORM 1 FROM state_build_family_inbox WHERE id=$1 AND lease=$2 AND lease_until>$4 FOR UPDATE;
+  SELECT f.input INTO captured FROM state_build_family_inbox f
+    WHERE id=$1 AND lease=$2 AND lease_until>$4 FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'family input lease changed' USING ERRCODE='40001'; END IF;
+  workflow_id:=split_part(captured->>'family_source','|',2);
+  node_id:=split_part(captured->>'family_source','|',3);
   IF input IS NOT NULL THEN
     IF input->'from' IS DISTINCT FROM jsonb_build_array($1) OR input->>'derived' IS DISTINCT FROM 'true'
       OR input->>'family_flow' IS NOT NULL OR input->>'system_source' IS NOT NULL
       OR input->>'family_creation' IS NOT NULL OR input->>'observation' IS NOT NULL
-      OR input#>>'{flow_source,workflow}' IS DISTINCT FROM split_part(raw.family_source,'|',2)
-      OR input#>>'{flow_source,node}' IS DISTINCT FROM split_part(raw.family_source,'|',3)
+      OR input#>>'{flow_source,workflow}' IS DISTINCT FROM workflow_id
+      OR input#>>'{flow_source,node}' IS DISTINCT FROM node_id
       OR EXISTS(SELECT 1 FROM jsonb_array_elements(input#>'{flow,nodes}') node
         WHERE node->>'kind' IS DISTINCT FROM 'measure') THEN
       RAISE EXCEPTION 'family output changed its captured source'; END IF;
     PERFORM build_intake_batch(jsonb_build_array(input)::text);
+  ELSE
+    UPDATE state_build_workflow_nodes SET state='failed',error='derived build was refused by intake'
+      WHERE workflow=workflow_id AND id=node_id AND state='awaiting_intake';
+    PERFORM build_workflow_finish(workflow_id,$4);
   END IF;
-  PERFORM build_spend_submissions(jsonb_build_array($1)::text);
+  DELETE FROM record_build_submissions b WHERE b.id=$1 AND to_jsonb(b)=captured;
+  DELETE FROM state_build_family_inbox WHERE id=$1;
 END $$;
 
 CREATE OR REPLACE FUNCTION build_family_retry(text,uuid,text,text) RETURNS void

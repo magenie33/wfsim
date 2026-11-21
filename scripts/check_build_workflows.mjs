@@ -354,6 +354,9 @@ export async function inboxReadPlanCases(database=null) {
     const walk=node=>[node,...(node.Plans||[]).flatMap(walk)];
     const source=walk(plan[0].Plan).find(node=>node['Relation Name']==='record_build_submissions');
     assert.ok(source?.['Node Type'].includes('Index'),'a bounded inbox read cannot scan the full submission table before its limit');
+    const [{['QUERY PLAN']:readerPlan}]=await inboxSource((text,args)=>db.all('EXPLAIN (FORMAT JSON) '+text,...args)).after('',100);
+    const readerSource=walk(readerPlan[0].Plan).find(node=>node['Relation Name']==='record_build_submissions');
+    assert.ok(readerSource?.['Node Type'].includes('Index'),'ownership filtering belongs after the indexed page');
     console.log('build workflows: indexed inbox pages preserve scope, equipment and source rows before bounded enrichment');
   } finally {if(!database)await db.close();}
 }
