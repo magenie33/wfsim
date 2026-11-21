@@ -211,7 +211,7 @@ try {
   assert.equal(await count('entity_weapon_builds'),1);assert.equal(await count('entity_build_intake_intents'),1);
   assert.equal(await count('entity_build_workflows'),0);assert.equal(await count('state_compute_scheduling'),0);
   const captured=await db.get('SELECT id,input FROM entity_build_intake_intents');
-  await db.run('SELECT build_spend_submissions(?::text)',JSON.stringify(input.from));
+  await db.run('SELECT build_ack_submissions(?::text)',JSON.stringify([{id:input.from[0],at,record:JSON.stringify(input.record),initiator:input.initiator}]));
   assert.equal(await count('record_build_submissions'),0);assert.equal(await count('state_build_inbox_positions'),0);
   assert.equal((await f.runStage(env,'admission',now)).paused,true);
   assert.equal(await count('state_build_admission_work'),1);
@@ -322,16 +322,22 @@ try {
   await db.exec(buildAdmissionIndexSql({concurrently:!!process.env.WFSIM_BUILD_ADMISSION_TEST_URL}));
   const familyInput='workflow:old-parent:old-node',familyRecord='{"weapon":"braton"}';
   // Exercise the deployed family queue shape with its outstanding raw reference.
-  await db.exec(`ALTER TABLE state_build_family_inbox DROP COLUMN input;
+  await db.exec(`DROP FUNCTION build_family_owns_inbox(text,jsonb);
+    DROP FUNCTION build_ack_submissions(text);
+    ALTER TABLE state_build_family_inbox DROP COLUMN input;
     ALTER TABLE state_build_family_inbox ADD CONSTRAINT state_build_family_inbox_id_fkey
       FOREIGN KEY(id) REFERENCES record_build_submissions(id) ON DELETE CASCADE;`);
   await db.run('INSERT INTO record_build_submissions(id,at,record,family_source) VALUES(?,?,?,?)',
     familyInput,at,familyRecord,'workflow|old-parent|old-node');
   await db.run('INSERT INTO state_build_family_inbox(id,retry_at) VALUES(?,?)',familyInput,at);
+  assert.equal((await db.get("SELECT to_regprocedure('build_ack_submissions(text)') fn")).fn,null);
   const originalSource=inboxSource((text,args)=>db.all(text,...args));
   assert.equal((await originalSource.byIds([familyInput]))[0].owned_family,undefined,
     'an owner still uses the original reader before the input schema upgrade');
   await db.exec(buildAdmissionSchemaSql({role:null}));await db.exec(buildAdmissionSchemaSql({role:null}));
+  assert.equal((await db.get("SELECT to_regprocedure('build_spend_submissions(text)') fn")).fn,null);
+  await assert.rejects(db.run('SELECT build_ack_submissions(?::text)',JSON.stringify([familyInput])),/array of objects/);
+  assert(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',familyInput));
   const source=inboxSource((text,args)=>db.all(text,...args));
   const seen=[];
   await captureInbox({source:{...source,priority:async()=>[{id:familyInput}],fresh:async()=>[],after:async()=>[]},

@@ -67,8 +67,10 @@ with the existing quick optimizer, then measures its accepted output.
 Resubmissions, corrections and derived records use their existing workflows.
 
 Native intake preserves the actual canonical build. Build and intent storage
-commit together before their source inbox rows are spent. A retry reuses both;
-a failed intake transaction leaves neither. Deferred task admission retains
+commit together before their source inbox rows are spent. Acknowledgement locks
+the current inbox row and compares the captured payload before deleting it.
+A retry reuses both the build and the intent. A failed intake transaction
+leaves neither. Deferred task admission retains
 the build and captured obligation for retry. Known global builds
 check current applicable coverage through indexed build/ruler/mode keys. Existing
 scores satisfy intake; missing ones join one computation per actual input.

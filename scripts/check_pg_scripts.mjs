@@ -51,11 +51,11 @@ await query("INSERT INTO record_build_submissions (id, at, record) VALUES (?, ?,
 
 check("the inbox is read", await run("fetch_inbox.sh", "inbox.ndjson") === 0 && read("inbox.ndjson").length === 2);
 file("builds.ndjson", `${JSON.stringify({ derived:true, id: "b1", at: "2026-10-01", record })}\n`);
-file("done.txt", "i1\ni2\n");
-check("a build is shipped and its arrivals spent", await run("ship_builds.sh", "builds.ndjson", "done.txt") === 0
+file("ack.ndjson", read("inbox.ndjson").join("\n")+"\n");
+check("a build is shipped and its arrivals spent", await run("ship_builds.sh", "builds.ndjson", "ack.ndjson") === 0
   && (await query("SELECT weapon FROM entity_weapon_builds WHERE id = 'b1'"))[0]?.weapon === "torid"
   && (await query("SELECT count(*) AS n FROM record_build_submissions"))[0].n === 0);
-check("...and shipped again it is one row", await run("ship_builds.sh", "builds.ndjson", "done.txt") === 0
+check("...and shipped again it is one row", await run("ship_builds.sh", "builds.ndjson", "ack.ndjson") === 0
   && (await query("SELECT count(*) AS n FROM entity_weapon_builds"))[0].n === 1);
 
 const equipment = {kind:"companion", equipment:"sentinel", build:{companion:"sentinel", mods:[]}};
@@ -63,9 +63,9 @@ await query("INSERT INTO record_equipment_submissions (id, at, record) VALUES (?
 check("equipment arrivals use the shared inbox reader", await run("fetch_inbox.sh", "equipment-inbox.ndjson") === 0
   && read("equipment-inbox.ndjson").some(line => JSON.parse(line).id === "equipment:i3"));
 file("equipment-builds.ndjson", JSON.stringify({id:"e1", at:"2026-10-01", record:equipment}) + "\n");
-file("equipment-done.txt", "equipment:i3\n");
+file("equipment-ack.ndjson", read("equipment-inbox.ndjson").join("\n")+"\n");
 check("equipment builds land outside weapon scores before their arrivals are spent",
-  await run("ship_builds.sh", "equipment-builds.ndjson", "equipment-done.txt") === 0
+  await run("ship_builds.sh", "equipment-builds.ndjson", "equipment-ack.ndjson") === 0
   && (await query("SELECT equipment FROM entity_equipment_builds WHERE id = 'e1'"))[0]?.equipment === "sentinel"
   && (await query("SELECT count(*) AS n FROM record_equipment_submissions"))[0].n === 0
   && (await query("SELECT count(*) AS n FROM entity_weapon_builds"))[0].n === 1);
@@ -81,14 +81,15 @@ check("equipment builds land outside weapon scores before their arrivals are spe
   const source = file("bulk-builds.ndjson", bulk.map(row => JSON.stringify({...row,derived:true})).join("\n") + "\n");
   const ids = Array.from({ length: 2505 }, (_, i) => `bulk-arrival-${i}`)
     .concat(Array.from({ length: 1205 }, (_, i) => `equipment:bulk-arrival-${i}`));
-  file("bulk-done.txt", ids.join("\n") + "\n");
+  file("bulk-ack.ndjson", ids.map(id=>JSON.stringify({id,at:'x',
+    record:id.startsWith('equipment:')?equipment:{weapon:'torid'}})).join("\n")+"\n");
   await query(`INSERT INTO record_build_submissions(id,at,record) SELECT 'bulk-arrival-'||i,'x','{"weapon":"torid"}' FROM generate_series(0,2504) i`);
   await query(`INSERT INTO record_equipment_submissions(id,at,record)
     SELECT 'equipment:bulk-arrival-'||i,'x',? FROM generate_series(0,1204) i`, [JSON.stringify(equipment)]);
-  const status = await run("ship_builds.sh", "bulk-builds.ndjson", "bulk-done.txt");
+  const status = await run("ship_builds.sh", "bulk-builds.ndjson", "bulk-ack.ndjson");
   check("thousands of mixed builds and spent arrivals use bounded JSON batches",
     status === 0 && /builds: 3713 build\(s\) in 5 statement\(s\), 0 refused/.test(scriptOutput)
-    && /inbox: 3710 row\(s\) spent in 5 statement\(s\), 0 refused/.test(scriptOutput)
+    && /inbox: 3710 row\(s\) spent in 4 statement\(s\), 0 refused/.test(scriptOutput)
     && (await query("SELECT count(*) AS n FROM entity_weapon_builds WHERE id LIKE 'bulk-%'"))[0].n === 2506
     && (await query("SELECT count(*) AS n FROM entity_equipment_builds WHERE id LIKE 'bulk-%'"))[0].n === 1205
     && (await query("SELECT count(*) AS n FROM record_build_submissions WHERE id LIKE 'bulk-%'"))[0].n === 0
@@ -113,8 +114,8 @@ check("equipment builds land outside weapon scores before their arrivals are spe
   check("escaped Unicode records split by actual UTF-8 statement bytes before the row ceiling", bounded && batches > 1);
   file("oversize.ndjson", JSON.stringify({ derived:true,id: "oversize", at: "x", record: { ...record, text: "雪".repeat(BUILD_BATCH_BYTES) } }) + "\n");
   await query("INSERT INTO record_build_submissions(id,at,record) VALUES ('oversize-arrival','x',?)", [JSON.stringify(record)]);
-  file("oversize-done.txt", "oversize-arrival\n");
-  check("one oversized row fails closed before its arrival can be spent", await run("ship_builds.sh", "oversize.ndjson", "oversize-done.txt") !== 0
+  file("oversize-ack.ndjson", JSON.stringify({id:"oversize-arrival",at:"x",record})+"\n");
+  check("one oversized row fails closed before its arrival can be spent", await run("ship_builds.sh", "oversize.ndjson", "oversize-ack.ndjson") !== 0
     && (await query("SELECT count(*) AS n FROM entity_weapon_builds WHERE id = 'oversize'"))[0].n === 0
     && (await query("SELECT count(*) AS n FROM record_build_submissions WHERE id = 'oversize-arrival'"))[0].n === 1);
   await query("TRUNCATE entity_build_intake_intents CASCADE");

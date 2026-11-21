@@ -401,7 +401,7 @@ export async function queuedReviewAcrossReleaseCases(database=null) {
     assert.deepEqual(captured[0],await db.get('SELECT * FROM state_build_inbox_inputs WHERE id=?',arrival.id));
     await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([{...input,from:[arrival.id],
       observation:{...JSON.parse(arrival.observation),valid:true}}]));
-    await db.run('SELECT build_spend_submissions(?::text)',JSON.stringify([arrival.id]));
+    await db.run('SELECT build_ack_submissions(?::text)',JSON.stringify([arrival]));
     await drainBuildAdmission(db);
     const queued=await db.get('SELECT * FROM state_compute_work WHERE id=?',first.computation);
     assert.notEqual(queued.task_id,oldResult.task_id);

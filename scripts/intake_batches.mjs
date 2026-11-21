@@ -62,10 +62,15 @@ export async function intakeBatches(file, { intake = process.env.WFSIM_INTAKE_BI
     // Captured workflows admit every sourced computation before inbox acknowledgement.
     await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('builds.ndjson'), path('empty')]);
     if(onCommitted)await onCommitted(path('builds.ndjson'));
-    await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('empty'), path('done.txt')]);
-    if (doneFile) writeFileSync(doneFile, readFileSync(path('done.txt')), { flag: 'a' });
+    const done=readFileSync(path('done.txt'),'utf8');
+    const acknowledged=new Set(done.split('\n').filter(Boolean));
+    const rows=pending.filter(line=>acknowledged.has(JSON.parse(line).id));
+    if(rows.length!==acknowledged.size)throw Error('intake acknowledgement does not match the capture');
+    writeFileSync(path('ack.ndjson'),rows.join('\n')+'\n');
+    await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('empty'), path('ack.ndjson')]);
+    if (doneFile) writeFileSync(doneFile,done,{flag:'a'});
     result.batches++; result.builds += builds.length;
-    result.arrivals += readFileSync(path('done.txt'), 'utf8').split('\n').filter(Boolean).length;
+    result.arrivals += rows.length;
     console.log(`intake: committed batch ${result.batches}, ${result.arrivals} arrival(s)`);
     pending = []; bytes = 0;
     return true;

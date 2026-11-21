@@ -152,7 +152,7 @@ try{
  assert.deepEqual((await requestRow(id)).input,custom.input,'a rejected stage retains the independently owned input');
  await db.run("UPDATE state_board_requests SET lease_until=board_input_timestamp(clock_timestamp()-interval '1second') WHERE id=?",id);
  await assert.rejects(db.run('SELECT board_request_stage(?::text,?::uuid,?::text)',id,claim.lease,JSON.stringify(normalized)),/lease changed/);
- const otherRecord=JSON.stringify({weapon:'braton'});
+ const otherRecord=JSON.stringify({weapon:'braton',padding:'x'.repeat(65536)});
  assert.notDeepEqual(JSON.parse(otherRecord),custom.input.record);
  await db.run('INSERT INTO record_build_submissions(id,at,record,initiator) VALUES(?,?,?,?)',
    id,custom.input.at,otherRecord,custom.input.initiator);
@@ -426,6 +426,11 @@ try{
  await sql.begin(async tx=>{
   await tx.unsafe("SELECT 1 FROM record_build_submissions WHERE id='retention-a' FOR UPDATE");
   assert.equal((await rawInboxRetentionPage(sql,{...retentionPage,apply:true})).removed,0,'locked sources are deferred');
+  await assert.rejects(sql.begin(async ack=>{
+   await ack.unsafe("SET LOCAL lock_timeout='100ms'");
+   await ack.unsafe('SELECT build_ack_submissions($1::text)',[JSON.stringify([
+     {id:'retention-a',at:retiredAt,record:'{"weapon":"braton"}',initiator:'anonymous'}])]);
+  }),error=>error.code==='55P03');
  });
  assert.equal((await rawInboxRetentionPage(sql,{...retentionPage,apply:true})).removed,1);
  assert.deepEqual(await db.all("SELECT id FROM record_build_submissions WHERE id LIKE 'retention-%' ORDER BY id"),[
@@ -466,8 +471,11 @@ try{
    return {owned:keyed.owned_family,seen};
  });
  assert.deepEqual(await checkReader(),{owned:undefined,seen:[mirrorId]},'old intake grants still read the raw inbox');
- await sql.unsafe(`GRANT SELECT (id) ON state_build_family_inbox TO ${pipelineRole}`);
+ await sql.unsafe(`GRANT EXECUTE ON FUNCTION build_family_owns_inbox(text,jsonb) TO ${pipelineRole}`);
  assert.deepEqual(await checkReader(),{owned:true,seen:[]},'the new grant enables independent ownership');
+ await db.run('UPDATE record_build_submissions SET record=? WHERE id=?','{"weapon":"burston"}',mirrorId);
+ assert.deepEqual(await checkReader(),{owned:false,seen:[mirrorId]},'a family ID alone cannot suppress a different raw input');
+ await db.run('UPDATE record_build_submissions SET record=? WHERE id=?','{"weapon":"braton"}',mirrorId);
  const familyMirror={after:'workflow:retention:',limit:1};
  assert.equal((await rawInboxRetentionPage(sql,familyMirror)).groups.family_copy.rows,1);
  assert.equal((await rawInboxRetentionPage(sql,{...familyMirror,apply:true})).removed,1);

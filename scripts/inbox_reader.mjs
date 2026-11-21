@@ -9,7 +9,7 @@ import { query,close } from './db.mjs';
 export const INBOX_PAGE_ROWS=100, INBOX_MAX_ROWS=250000, INBOX_MAX_BYTES=128*1024*1024;
 const fields='i.id,i.at,i.record,i.initiator,i.family_source,i.observation,i.workflow_scope';
 const ownedFamily=`CASE WHEN split_part(i.family_source,'|',1)='workflow' THEN
-  EXISTS(SELECT 1 FROM state_build_family_inbox f WHERE f.id=i.id) ELSE false END AS owned_family`;
+  build_family_owns_inbox(i.id,to_jsonb(i)-'workflow_scope') ELSE false END AS owned_family`;
 const digest=value=>createHash('sha256').update(value).digest('hex');
 const save=(path,value)=>{const temporary=path+'.pending-'+process.pid;writeFileSync(temporary,JSON.stringify(value)+'\n');renameSync(temporary,path);};
 
@@ -23,9 +23,7 @@ export function inboxReadUrl(value) {
 
 export function inboxSource(run=query) {
   let familyProjection;
-  const projection=()=>familyProjection??=run(`SELECT EXISTS(SELECT 1 FROM pg_attribute a
-    WHERE a.attrelid=to_regclass('state_build_family_inbox') AND a.attname='input' AND NOT a.attisdropped
-      AND has_column_privilege(a.attrelid,'id','SELECT')) AS detached_family`,[])
+  const projection=()=>familyProjection??=run(`SELECT coalesce(has_function_privilege(to_regprocedure('build_family_owns_inbox(text,jsonb)'),'EXECUTE'),false) AS detached_family`,[])
     .then(([row])=>row?.detached_family ? ','+ownedFamily : '');
   return {
     priority: max=>run(`SELECT p.id,p.zone,p.position FROM state_build_inbox_priorities p

@@ -15,12 +15,13 @@ END $$;
 
 CREATE OR REPLACE FUNCTION build_raw_inbox_request_matches(row_input record_build_submissions,owner_input jsonb) RETURNS boolean
 LANGUAGE sql IMMUTABLE SET search_path FROM CURRENT AS $$
-  SELECT row_input.family_source IS NULL
+  SELECT CASE WHEN build_raw_inbox_bytes(row_input)<=64*1024 AND row_input.family_source IS NULL
     AND owner_input->>'id'=row_input.id AND owner_input->>'at'=row_input.at
     AND owner_input->>'initiator' IS NOT DISTINCT FROM row_input.initiator
     AND owner_input->>'observation' IS NOT DISTINCT FROM row_input.observation
-    AND CASE jsonb_typeof(owner_input->'record') WHEN 'string' THEN owner_input->>'record'=row_input.record
+    THEN CASE jsonb_typeof(owner_input->'record') WHEN 'string' THEN owner_input->>'record'=row_input.record
       WHEN 'object' THEN owner_input->'record'=build_raw_inbox_json(row_input.record) ELSE false END
+    ELSE false END
 $$;
 
 CREATE OR REPLACE FUNCTION build_raw_inbox_disposition(row_input record_build_submissions) RETURNS text

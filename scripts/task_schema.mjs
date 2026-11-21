@@ -100,8 +100,10 @@ export function taskSchemaSql() {
       REVOKE ALL ON state_compute_inventory_invalidations,state_compute_inventory_generation,record_inventory_captures FROM wfsim_pipeline;
       REVOKE ALL ON SEQUENCE inventory_revision,inventory_generation,inventory_epoch_token FROM wfsim_pipeline;
       GRANT SELECT ON state_build_inbox_inputs,state_build_inbox_priorities,state_build_inbox_positions TO wfsim_pipeline;
-      GRANT SELECT (id) ON state_build_family_inbox TO wfsim_pipeline;
-      GRANT EXECUTE ON FUNCTION build_intake_batch(text),build_spend_submissions(text) TO wfsim_pipeline;
+      GRANT EXECUTE ON FUNCTION build_intake_batch(text) TO wfsim_pipeline;
+      IF to_regprocedure('build_ack_submissions(text)') IS NOT NULL THEN
+        GRANT EXECUTE ON FUNCTION build_ack_submissions(text),build_family_owns_inbox(text,jsonb) TO wfsim_pipeline;
+      END IF;
       GRANT EXECUTE ON FUNCTION factory_inventory_rows(text,text[]) TO wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION inventory_status(),inventory_begin(text,text,text),inventory_changes(bigint),
         inventory_inputs(text,text,text),inventory_cohort_rows(text,text,text),inventory_ack(text,text),inventory_publish(text),

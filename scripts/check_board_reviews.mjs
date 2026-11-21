@@ -45,7 +45,7 @@ const call=async(body,path='/api/board/review')=>{
     flow:{schema:1,scope:{boards:[{id:ruler}],modes:{laetum:[mode]}},builds:[],templates:[{record,ruler,mode}],patches:[{set:{},remove:[]}],
       nodes:[{kind:'measure',identity,ruler,mode,template:0,patch:0}]}});
   await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
-  await db.run('SELECT build_spend_submissions(?::text)',JSON.stringify([inbox.id]));
+  await db.run('SELECT build_ack_submissions(?::text)',JSON.stringify([inbox]));
   await drainBuildAdmission(db);
  }
  return result;

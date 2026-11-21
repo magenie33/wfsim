@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # WHAT INTAKE MADE OF THE QUEUE, PUT IN THE LIBRARY.
 #
-#   scripts/ship_builds.sh builds.ndjson done.txt
+#   scripts/ship_builds.sh builds.ndjson ack.ndjson
 #   scripts/ship_builds.sh --self-test
 #
 # `wfsim-intake` reads the inbox and writes two things: the builds it derived,
@@ -85,11 +85,11 @@ send() {
 }
 
 ship() {
-  local builds="$1" done_ids="$2"
+  local builds="$1" captured="$2"
   # `grep -c` PRINTS ZERO AND EXITS 1 on an empty file, so a `|| echo 0` after
   # it appends a SECOND zero: the count reads as two lines and never equals "0".
   local n_builds; n_builds=$(grep -c . < "$builds" 2>/dev/null) || n_builds=0
-  local n_done; n_done=$(grep -c . < "$done_ids" 2>/dev/null) || n_done=0
+  local n_done; n_done=$(grep -c . < "$captured" 2>/dev/null) || n_done=0
   if [ "$n_builds" = "0" ] && [ "$n_done" = "0" ]; then
     echo "builds: nothing to ship"
     return 0
@@ -106,7 +106,7 @@ ship() {
   fi
   node "$SHIP_FAMILY" "$builds" || return 1
   if [ "$n_done" != "0" ]; then
-    r=$(delete_batches "$done_ids" | send "delete") || return 1
+    r=$(delete_batches "$captured" | send "delete") || return 1
     set -- $r
     echo "inbox: $n_done row(s) spent in $1 statement(s), $2 refused"
     [ "$2" = "0" ] || return 1
@@ -128,7 +128,9 @@ self_test() {
     jq -n -c --arg i "$i" '{id:("h"+$i),at:"2026-01-01",record:{weapon:"torid",mods:["serration"]},from:[("u"+$i)]}' \
       >> builds.ndjson
   done
-  printf 'u1\nu2\nu3\nu4\nu5\n' > done.txt
+  for i in 1 2 3 4 5; do
+    jq -n -c --arg i "$i" '{id:("u"+$i),at:"2026-01-01",record:"{}"}' >> ack.ndjson
+  done
 
   local first; first=$(build_batches builds.ndjson | head -1)
   [ "$(printf '%s' "$first" | jq -r '.params | length')" = 1 ] \
@@ -150,8 +152,8 @@ self_test() {
     && say ok "...and the pass's own bookkeeping is not written down" \
     || say FAIL "`from` reached the statement"
 
-  local del; del=$(delete_batches done.txt | head -1)
-  printf '%s' "$del" | jq -e '.params[0] | fromjson == ["u1","u2","u3","u4","u5"]' >/dev/null \
+  local del; del=$(delete_batches ack.ndjson | head -1)
+  printf '%s' "$del" | jq -e '.params[0] | fromjson | map(.id) == ["u1","u2","u3","u4","u5"]' >/dev/null \
     && say ok "every spent queue row is named, refusals included" \
     || say FAIL "$(printf '%s' "$del" | jq -c .params)"
 
@@ -166,32 +168,32 @@ printf '{"result":[{"results":[],"success":true}],"success":true}'
 OK
   chmod +x "$DIR/bin/db"
   : > sent.log
-  ship builds.ndjson done.txt > out.txt 2>&1 \
+  ship builds.ndjson ack.ndjson > out.txt 2>&1 \
     && say ok "a pass ships its builds and spends its queue" || say FAIL "$(cat out.txt)"
   # THE ORDER IS THE WHOLE SAFETY ARGUMENT. Stopped between the two, the queue
   # still holds what the library is missing.
   grep -n "SELECT build_intake_batch" sent.log | head -1 | cut -d: -f1 > a.txt
-  grep -n "SELECT build_spend_submissions" sent.log | head -1 | cut -d: -f1 > b.txt
+  grep -n "SELECT build_ack_submissions" sent.log | head -1 | cut -d: -f1 > b.txt
   [ "$(cat a.txt)" -lt "$(cat b.txt)" ] \
     && say ok "...with every build written before any queue row is spent" \
     || say FAIL "the delete went first"
 
   node() { printf '%s\n' 'family transfers' >> "$PWD/sent.log"; [ "${FAMILY_TEST_FAIL:-0}" = 0 ]; }
   : > sent.log
-  ship builds.ndjson done.txt > out.txt 2>&1 || say FAIL "$(cat out.txt)"
+  ship builds.ndjson ack.ndjson > out.txt 2>&1 || say FAIL "$(cat out.txt)"
   local before_family after_family
   before_family=$(grep -n 'SELECT build_intake_batch' sent.log | head -1 | cut -d: -f1)
-  after_family=$(grep -n 'SELECT build_spend_submissions' sent.log | head -1 | cut -d: -f1)
+  after_family=$(grep -n 'SELECT build_ack_submissions' sent.log | head -1 | cut -d: -f1)
   local family_at; family_at=$(grep -n 'family transfers' sent.log | head -1 | cut -d: -f1)
   [ "$before_family" -lt "$family_at" ] && [ "$family_at" -lt "$after_family" ] \
     && say ok "family admission is after source storage and before spending arrivals" \
     || say FAIL "family admission was outside its durable boundary"
   : > sent.log
   export FAMILY_TEST_FAIL=1
-  if ship builds.ndjson done.txt > out.txt 2>&1; then
+  if ship builds.ndjson ack.ndjson > out.txt 2>&1; then
     say FAIL "a failed family admission spent its arrivals"
   else
-    grep -q 'SELECT build_spend_submissions' sent.log \
+    grep -q 'SELECT build_ack_submissions' sent.log \
       && say FAIL "arrivals were spent before family admission" \
       || say ok "an interrupted family admission leaves arrivals available for retry"
   fi
@@ -212,7 +214,7 @@ printf '{"result":[{"results":[],"success":true}],"success":true}'
 CUT
   chmod +x "$DIR/bin/db"
   : > sent.log
-  if ship builds.ndjson done.txt > out.txt 2>&1; then
+  if ship builds.ndjson ack.ndjson > out.txt 2>&1; then
     local sent_first sent_second
     sent_first=$(sed -n '1p' sent.log); sent_second=$(sed -n '2p' sent.log)
     [ "$sent_first" = "$sent_second" ] && [ "$(grep -c 'SELECT build_intake_batch' sent.log)" = 2 ] \
@@ -229,9 +231,9 @@ exit 1
 LOST
   chmod +x "$DIR/bin/db"
   : > sent.log
-  if ship builds.ndjson done.txt > out.txt 2>&1; then say FAIL "repeated cuts passed";
+  if ship builds.ndjson ack.ndjson > out.txt 2>&1; then say FAIL "repeated cuts passed";
   else
-    [ "$(grep -c 'SELECT build_intake_batch' sent.log)" = 3 ] && ! grep -q 'DELETE FROM' sent.log \
+    [ "$(grep -c 'SELECT build_intake_batch' sent.log)" = 3 ] && ! grep -q 'SELECT build_ack_submissions' sent.log \
       && say ok "transient cuts stop after three attempts without spending arrivals" \
       || say FAIL "retry attempts were unbounded or arrivals were spent"
   fi
@@ -245,12 +247,12 @@ exit 1
 DEAD
   chmod +x "$DIR/bin/db"
   : > sent.log
-  if ship builds.ndjson done.txt > out.txt 2>&1; then
+  if ship builds.ndjson ack.ndjson > out.txt 2>&1; then
     say FAIL "a refused write passed"
   else
     grep -q "does not exist" out.txt \
       && say ok "a refused write reports what the database said" || say FAIL "$(cat out.txt)"
-    grep -q "SELECT build_spend_submissions" sent.log \
+    grep -q "SELECT build_ack_submissions" sent.log \
       && say FAIL "the queue was spent after a refused write" \
       || say ok "...and nothing in the queue is spent"
     [ "$(grep -c 'SELECT build_intake_batch' sent.log)" = 1 ] \
@@ -274,5 +276,5 @@ if ! configured; then
   echo "builds: no database configured, nothing shipped"
   exit 0
 fi
-ship "${1:?usage: ship_builds.sh <builds.ndjson> <done.txt>}" \
-     "${2:?usage: ship_builds.sh <builds.ndjson> <done.txt>}"
+ship "${1:?usage: ship_builds.sh <builds.ndjson> <ack.ndjson>}" \
+     "${2:?usage: ship_builds.sh <builds.ndjson> <ack.ndjson>}"

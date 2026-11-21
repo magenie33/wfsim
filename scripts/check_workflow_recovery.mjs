@@ -46,7 +46,7 @@ export async function workflowRecoveryCases(database=null) {
     await db.run(legacy);
     try {await db.run('SELECT build_intake_register(?::text)',JSON.stringify([{...input,from:[arrival.id],observation,flow:{...input.flow,scope:null,nodes:[],templates:[],patches:[]}}]));}
     finally {await db.run(expansion);}
-    await db.run('SELECT build_spend_submissions(?::text)',JSON.stringify([arrival.id]));
+    await db.run('SELECT build_ack_submissions(?::text)',JSON.stringify([arrival]));
     const bad=await db.get('SELECT * FROM entity_measurement_reviews WHERE id=?',review.id);
     assert.equal(bad.state,'superseded');assert.equal(bad.task_id,null);
     assert.equal((await db.get('SELECT count(*) n FROM state_build_workflow_nodes WHERE workflow=?',bad.workflow)).n,0);

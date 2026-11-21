@@ -9,7 +9,7 @@ import { DEADLINE_MS } from "../worker/deadlines.js";
 
 export const BUILD_BATCH_ROWS = 1000, BUILD_BATCH_BYTES = 1024 * 1024;
 const statement = (table, deleting) => deleting
-  ? table === 'record_build_submissions' ? `SELECT build_spend_submissions(?::text)` : `DELETE FROM ${table} WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))`
+  ? 'SELECT build_ack_submissions(?::text)'
   : table === 'entity_weapon_builds' ? `SELECT build_intake_batch(?::text)` : `INSERT INTO ${table} (id, at, record)
      SELECT DISTINCT ON (id) id, at, record FROM jsonb_to_recordset((?::text)::jsonb)
        AS rows(id text, at text, record text, position bigint) ORDER BY id, position DESC
@@ -39,8 +39,12 @@ export async function* buildBatches(file, { deleting = false, maxRows = BUILD_BA
     if (!line) continue;
     let table, value;
     if (deleting) {
-      table = line.startsWith("equipment:") ? "record_equipment_submissions" : "record_build_submissions";
-      value = line;
+      const {id,at,record,initiator,family_source,observation} = JSON.parse(line);
+      if (typeof id !== 'string' || !id || typeof at !== 'string' || record === undefined)
+        throw new Error('inbox acknowledgement requires a captured row');
+      table = 'record_build_submissions';
+      value = {id,at,record:typeof record === 'string' ? record : JSON.stringify(record),
+        initiator,family_source,observation:typeof observation === 'object' && observation !== null ? JSON.stringify(observation) : observation};
     } else {
       let build;
       try { build = JSON.parse(line); } catch { throw new Error(`invalid intake build on line ${position + 1}`); }

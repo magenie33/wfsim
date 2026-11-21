@@ -361,22 +361,42 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION build_workflow_recover(text,text) FROM PUBLIC;
 
-CREATE OR REPLACE FUNCTION build_spend_submissions(text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
-DECLARE input record; captured jsonb; at text:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+DROP FUNCTION IF EXISTS build_spend_submissions(text);
+CREATE OR REPLACE FUNCTION build_ack_submissions(text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE proof record; captured record_build_submissions%ROWTYPE; gear record_equipment_submissions%ROWTYPE;
+  at text:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
 BEGIN
-  FOR input IN SELECT b.* FROM record_build_submissions b JOIN jsonb_array_elements_text($1::jsonb) x ON b.id=x.value ORDER BY b.id FOR UPDATE OF b LOOP
-    IF EXISTS(SELECT 1 FROM relation_build_intake_sources WHERE source_id=input.id) THEN CONTINUE;END IF;
-    captured:=to_jsonb(input);
-    IF EXISTS(SELECT 1 FROM state_build_family_inbox f WHERE f.id=input.id AND f.input=captured) THEN CONTINUE;END IF;
-    UPDATE entity_measurement_reviews SET state='failed',completed_at=at
-      WHERE id=input.observation::jsonb->>'review' AND state='waiting' AND workflow IS NULL AND task_id IS NULL;
-    IF split_part(input.family_source,'|',1)='workflow' THEN
-      UPDATE state_build_workflow_nodes SET state='failed',error='derived build was refused by intake'
-        WHERE workflow=split_part(input.family_source,'|',2) AND id=split_part(input.family_source,'|',3) AND state='awaiting_intake';
-      PERFORM build_workflow_finish(split_part(input.family_source,'|',2),at);
+  IF jsonb_typeof($1::jsonb) IS DISTINCT FROM 'array' OR jsonb_array_length($1::jsonb)>1000 THEN
+    RAISE EXCEPTION 'invalid submission acknowledgement'; END IF;
+  FOR proof IN SELECT * FROM jsonb_to_recordset($1::jsonb)
+    AS rows(id text,at text,record text,initiator text,family_source text,observation text) ORDER BY id COLLATE "C" LOOP
+    IF coalesce(proof.id,'')='' OR proof.at IS NULL OR proof.record IS NULL THEN
+      RAISE EXCEPTION 'submission acknowledgement requires captured content'; END IF;
+    IF proof.id LIKE 'equipment:%' THEN
+      SELECT * INTO gear FROM record_equipment_submissions b WHERE b.id=proof.id FOR UPDATE;
+      IF NOT FOUND THEN CONTINUE; END IF;
+      IF (gear.at,gear.record) IS DISTINCT FROM (proof.at,proof.record) THEN
+        RAISE EXCEPTION 'captured equipment submission changed'; END IF;
+      DELETE FROM record_equipment_submissions b WHERE b.id=gear.id;
+      CONTINUE;
     END IF;
+    SELECT * INTO captured FROM record_build_submissions b WHERE b.id=proof.id FOR UPDATE;
+    IF NOT FOUND THEN CONTINUE; END IF;
+    IF (captured.at,captured.record,captured.initiator,captured.family_source,captured.observation) IS DISTINCT FROM
+       (proof.at,proof.record,proof.initiator,proof.family_source,proof.observation) THEN
+      RAISE EXCEPTION 'captured build submission changed'; END IF;
+    IF NOT EXISTS(SELECT 1 FROM relation_build_intake_sources WHERE source_id=captured.id)
+      AND NOT EXISTS(SELECT 1 FROM state_build_family_inbox f WHERE f.id=captured.id AND f.input=to_jsonb(captured)) THEN
+      UPDATE entity_measurement_reviews SET state='failed',completed_at=at
+        WHERE id=captured.observation::jsonb->>'review' AND state='waiting' AND workflow IS NULL AND task_id IS NULL;
+      IF split_part(captured.family_source,'|',1)='workflow' THEN
+        UPDATE state_build_workflow_nodes SET state='failed',error='derived build was refused by intake'
+          WHERE workflow=split_part(captured.family_source,'|',2) AND id=split_part(captured.family_source,'|',3) AND state='awaiting_intake';
+        PERFORM build_workflow_finish(split_part(captured.family_source,'|',2),at);
+      END IF;
+    END IF;
+    DELETE FROM record_build_submissions b WHERE b.id=captured.id;
   END LOOP;
-  DELETE FROM record_build_submissions WHERE id IN(SELECT jsonb_array_elements_text($1::jsonb));
 END $$;
 
 -- Retraction creates an explicit sourced repair from the original frozen input.
@@ -404,7 +424,7 @@ BEGIN
     WHERE r.workflow=next_flow AND r.state='waiting' AND current.identity=r.identity AND current.ruler=r.ruler AND current.mode=r.mode
       AND current.finished_at=s.finished_at;
 END $$;
-REVOKE ALL ON FUNCTION build_intake_register(text),build_spend_submissions(text),build_workflow_repair(text,text,text,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION build_intake_register(text),build_ack_submissions(text),build_workflow_repair(text,text,text,text) FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION build_workflow_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -782,6 +802,12 @@ END $$;
 DROP TRIGGER IF EXISTS build_family_output_ready ON record_build_submissions;
 CREATE TRIGGER build_family_output_ready BEFORE INSERT ON record_build_submissions
   FOR EACH ROW WHEN(NEW.family_source IS NOT NULL) EXECUTE FUNCTION build_family_capture_output();
+
+CREATE OR REPLACE FUNCTION build_family_owns_inbox(text,jsonb) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT EXISTS(SELECT 1 FROM state_build_family_inbox f WHERE f.id=$1 AND f.input=$2)
+$$;
+REVOKE ALL ON FUNCTION build_family_owns_inbox(text,jsonb) FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION build_family_claim(text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$

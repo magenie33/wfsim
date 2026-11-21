@@ -300,7 +300,7 @@ check(batchIntake.includes("scripts/ship_builds.sh") && !batchIntake.includes("s
 // AFTER THE BUILDS, because a queue row naming a build the library does not
 // hold is a row nothing can ever take.
 const builds = batchIntake.indexOf("path('builds.ndjson'), path('empty')");
-const spent = batchIntake.indexOf("path('empty'), path('done.txt')");
+const spent = batchIntake.indexOf("path('empty'), path('ack.ndjson')");
 check(builds >= 0 && spent > builds, "…and the build and captured workflow land before inbox acknowledgement",
   "a queue row naming a build the library does not hold is never taken");
 

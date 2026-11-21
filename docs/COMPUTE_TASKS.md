@@ -285,7 +285,10 @@ remain bounded and do not block the other consumers.
 additive installation transaction for an existing task/workflow schema. It
 requires the existing workflow indexes, adds a nullable node position and
 creates new stage tables without scanning historical inputs or rewriting node
-rows. The named tablespace holds the new tables and indexes.
+rows. The named tablespace holds the new tables and indexes. Before upgrading
+the acknowledgement interface, drain the ordinary and explicit intake runners.
+Apply the admission upgrade and the explicit request submit upgrade before
+restarting intake with the matching scripts. Unacknowledged rows stay queued.
 
 ## Optimization output and retained tasks
 

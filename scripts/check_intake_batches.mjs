@@ -53,8 +53,14 @@ const arrival = (id, weapon = 'braton_prime', extra = {}) => ({ id, at: new Date
     evolutions: ['braton_prime_evo1_incarnon_form', 'braton_prime_daring_reverie', 'braton_prime_voids_guidance', 'braton_prime_prelude_of_might'] }, ...extra });
 const family = id => arrival(id);
 async function seed(rows) {
-  for (const row of rows) await query(`INSERT INTO ${row.id.startsWith('equipment:') ? 'record_equipment_submissions' : 'record_build_submissions'}(id,at,record) VALUES(?,?,?)`,
-    [row.id, row.at, JSON.stringify(row.record)]);
+  for (const row of rows) {
+    const payload=[row.id,row.at,JSON.stringify(row.record)];
+    if (row.id.startsWith('equipment:')) {
+      await query('INSERT INTO record_equipment_submissions(id,at,record) VALUES(?,?,?)',payload);
+    } else {
+      await query('INSERT INTO record_build_submissions(id,at,record,initiator) VALUES(?,?,?,?)',[...payload,row.initiator??null]);
+    }
+  }
   return file('inbox.ndjson', rows.map(row => JSON.stringify(row)).join('\n') + '\n');
 }
 const pending = async () => (await query('SELECT id FROM record_build_submissions UNION ALL SELECT id FROM record_equipment_submissions ORDER BY id')).map(row => row.id);
@@ -107,6 +113,23 @@ try {
   assert((await query('SELECT count(*) n FROM state_compute_scheduling'))[0].n>0);
   await clear();
   console.log('ok: actual nullable inbox view survives the shared reader, native normalization, admission and acknowledgment');
+
+  for (const [row,table] of [
+    [arrival('replaced-build'),'record_build_submissions'],
+    [arrival('equipment:replaced','torid',{record:{kind:'companion',build:{companion:'sentinel',mods:[]}}}),'record_equipment_submissions']
+  ]) {
+    const captured=await seed([row]);
+    await assert.rejects(execute(captured,{onCommitted:async()=>{
+      await query(`UPDATE ${table} SET at=? WHERE id=?`,['replacement',row.id]);
+      await close();
+    }}),/bash failed/);
+    assert.deepEqual(await query(`SELECT id,at FROM ${table} WHERE id=?`,[row.id]),[{id:row.id,at:'replacement'}]);
+    await execute(file('replacement.ndjson',JSON.stringify({...row,at:'replacement'})+'\n'));
+    assert.deepEqual(await pending(),[]);
+    await clear();
+  }
+  console.log('ok: a same-ID replacement survives a stale acknowledgement and is processed on a fresh capture');
+
 
   const different = arrival('bb'); different.record.mods = mods.map(mod => mod === 'speed_trigger' ? 'vile_acceleration' : mod);
   const rows = [arrival('a'), different, arrival('ccc', 'braton_prime', { initiator: 'user:first' }),
