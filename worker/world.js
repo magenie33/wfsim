@@ -9,6 +9,7 @@
 //   GET /api/world                                   the items, as last relayed, and the arbitration now
 //   GET /api/world/names                             every era and mission type, named, and the fissures seen
 //   GET /api/world/arbitrations                      the arbitrations of the coming days
+//   POST /api/world/reminder-history                 past openings matching reminder rules
 //   PUT /api/world   (bearer BOT_RELAY_TOKEN)         DE's worldState.php, as read
 import NAMES from "./world_names.json" with { type: "json" };
 
@@ -17,6 +18,7 @@ const KEY = "world/items.json";
 const FRESH_S = 30;
 const MAX_BYTES = 4 * 1024 * 1024;
 const OPEN = { "access-control-allow-origin": "*" };
+const HISTORY_CORS = { "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type" };
 
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json; charset=utf-8", ...OPEN, ...extra } });
@@ -56,6 +58,7 @@ export async function worldRoute(request, env, ctx, path) {
       fissures: seen || [], window_ms }, 200, { "cache-control": "public, max-age=600" });
   }
   if (path === "/api/world/arbitrations") return arbitrationRoute(request, ctx, path);
+  if (path === "/api/world/reminder-history") return reminderHistoryRoute(request, env);
   if (path !== "/api/world") return json({ ok: false, error: "not found" }, 404);
   if (request.method === "PUT") return worldRelay(request, env);
   if (request.method !== "GET") return json({ ok: false, error: "GET or PUT" }, 405);
@@ -125,18 +128,18 @@ function fissuresOf(ws) {
   const storms = (ws.VoidStorms || []).map((s) => ({ id: s._id && s._id.$oid,
     list: "railjack", tier: s.ActiveMissionTier, node: s.Node, mission: null,
     started_at_ms: msOf(s.Activation), ends_at_ms: msOf(s.Expiry) }));
-  return [...missions, ...storms].map((f) => {
-    const n = NAMES.nodes[f.node] || {};
-    // A STORM'S MISSION IS ITS NODE'S: every Railjack node is `MT_RAILJACK`,
-    // whatever it plays, so a storm has no mission to match on and names the
-    // node's own.
-    return { id: f.id,
-      attributes: { list: f.list, tier: f.tier, mission: f.mission, planet: n.planet || null, node: f.node },
-      names: { tier: NAMES.tiers[f.tier] || null,
-        mission: (f.mission ? NAMES.missions[f.mission] : n.mission) || null,
-        node: n.name || null, system: n.system || null },
-      started_at_ms: f.started_at_ms, ends_at_ms: f.ends_at_ms };
-  });
+  return [...missions, ...storms].map(fissureItem);
+}
+
+function fissureItem(f) {
+  const n = NAMES.nodes[f.node] || {};
+  // A storm names its node's mission; the world state gives it no mission type.
+  return { id: f.id,
+    attributes: { list: f.list, tier: f.tier, mission: f.mission, planet: n.planet || null, node: f.node },
+    names: { tier: NAMES.tiers[f.tier] || null,
+      mission: (f.mission ? NAMES.missions[f.mission] : n.mission) || null,
+      node: n.name || null, system: n.system || null },
+    started_at_ms: f.started_at_ms, ends_at_ms: f.ends_at_ms };
 }
 
 // ---- ARBITRATIONS -----------------------------------------------------------
@@ -179,15 +182,105 @@ export function arbitrationsOf(sched, from, to) {
     const end = i + 1 < sched.length ? sched[i + 1][0] : start + 3600_000;
     if (end <= from) continue;
     if (start >= to) break;
-    const n = NAMES.nodes[node] || {};
-    out.push({ kind: "arbitration", id: `arbitration-${start}`,
-      attributes: { mission: n.type || null, faction: n.faction || null, node },
-      names: { mission: (n.type && NAMES.missions[n.type]) || n.mission || null,
-        faction: (n.faction && NAMES.factions[n.faction]) || null,
-        node: n.name || null, system: n.system || null },
-      started_at_ms: start, ends_at_ms: end });
+    out.push(arbitrationItem(node, start, end));
   }
   return out;
+}
+
+function arbitrationItem(node, start, end) {
+  const n = NAMES.nodes[node] || {};
+  return { kind: "arbitration", id: `arbitration-${start}`,
+    attributes: { mission: n.type || null, faction: n.faction || null, node },
+    names: { mission: (n.type && NAMES.missions[n.type]) || n.mission || null,
+      faction: (n.faction && NAMES.factions[n.faction]) || null,
+      node: n.name || null, system: n.system || null },
+    started_at_ms: start, ends_at_ms: end };
+}
+
+const HISTORY_PAGE = 30;
+const HISTORY_ATTRIBUTES = { fissure: ["list", "tier", "mission", "planet", "node"], arbitration: ["mission", "faction", "node"] };
+const historyTime = (ms) => Number.isSafeInteger(ms) && ms >= 0 && ms <= 8.64e15;
+const historyId = (v) => typeof v === "string" && /^[\w./-]{1,256}$/.test(v);
+
+/// One row per mission, even when several reminders match it. Both sources
+/// use their own opening clocks and the same descending (start, id) cursor.
+async function reminderHistoryRoute(request, env) {
+  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: { ...OPEN, ...HISTORY_CORS } });
+  if (request.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
+  let input;
+  try {
+    const body = await request.text();
+    if (body.length > MAX_BYTES) return json({ ok: false, error: "too large" }, 413);
+    input = JSON.parse(body);
+  } catch (_) { return json({ ok: false, error: "not json" }, 400); }
+  const { rules, before: cursor } = input || {};
+  if (!Array.isArray(rules) || !rules.every((r) => typeof r?.kind === "string" && Object.hasOwn(HISTORY_ATTRIBUTES, r.kind)
+    && historyTime(r.made_at_ms) && r.attributes && typeof r.attributes === "object" && !Array.isArray(r.attributes)
+    && Object.entries(r.attributes).every(([k, v]) => HISTORY_ATTRIBUTES[r.kind].includes(k) && historyId(v)))
+    || (cursor != null && (!historyTime(cursor.started_at_ms) || !historyId(cursor.id)))) {
+    return json({ ok: false, error: "invalid reminder history query" }, 400);
+  }
+  const now = Date.now();
+  const since = Date.parse(fissureWindow(now).since);
+  const before = cursor?.started_at_ms <= now ? cursor : null;
+  const fissures = rules.filter((r) => r.kind === "fissure" && r.made_at_ms <= now);
+  const arbitrations = rules.filter((r) => r.kind === "arbitration" && r.made_at_ms <= now);
+  try {
+    const rows = (await Promise.all([
+      fissures.length ? fissureHistory(env.LIBRARY, fissures, since, now, before) : [],
+      arbitrations.length ? arbitrationHistory(arbitrations, since, now, before) : [],
+    ])).flat();
+    rows.sort((a, b) => b.started_at_ms - a.started_at_ms || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
+    const items = rows.slice(0, HISTORY_PAGE);
+    const last = items.at(-1);
+    return json({ ok: true, items, before: rows.length > HISTORY_PAGE
+      ? { id: last.id, started_at_ms: last.started_at_ms } : null }, 200, { "cache-control": "no-store" });
+  } catch (_) { return json({ ok: false, error: "reminder history unavailable" }, 503); }
+}
+
+const historyStart = (rules, since) => rules.reduce((start, r) => Math.min(start, Math.max(since, r.made_at_ms)), Infinity);
+
+async function fissureHistory(db, rules, since, now, before) {
+  const nodesOf = new Map();
+  const filters = rules.map(({ attributes: { planet, ...attributes }, made_at_ms }) => {
+    if (planet && !nodesOf.has(planet)) {
+      nodesOf.set(planet, Object.keys(NAMES.nodes).filter((id) => NAMES.nodes[id].planet === planet));
+    }
+    return { ...attributes, nodes: nodesOf.get(planet), made_at: new Date(made_at_ms).toISOString() };
+  });
+  const lower = new Date(historyStart(rules, since)).toISOString();
+  const upper = new Date(before?.started_at_ms ?? now + 1).toISOString();
+  const { results } = await db.prepare(`SELECT f.id, f.list, f.tier, f.mission, f.node, f.started_at, f.ends_at
+    FROM record_world_fissures f
+    WHERE f.started_at >= ?1 AND (f.started_at, f.id) < (?2, ?3)
+      AND EXISTS (SELECT 1 FROM jsonb_to_recordset((?4::text)::jsonb)
+        AS r(made_at text, list text, tier text, mission text, node text, nodes jsonb)
+        WHERE f.started_at >= r.made_at
+          AND (r.list IS NULL OR f.list = r.list) AND (r.tier IS NULL OR f.tier = r.tier)
+          AND (r.mission IS NULL OR f.mission = r.mission) AND (r.node IS NULL OR f.node = r.node)
+          AND (r.nodes IS NULL OR jsonb_exists(r.nodes, f.node)))
+    ORDER BY f.started_at DESC, f.id DESC LIMIT ?5`)
+    .bind(lower, upper, before?.id ?? "", JSON.stringify(filters), HISTORY_PAGE + 1).all();
+  return results.map((f) => ({ kind: "fissure", ...fissureItem({ ...f,
+    started_at_ms: Date.parse(f.started_at), ends_at_ms: Date.parse(f.ends_at) }) }));
+}
+
+async function arbitrationHistory(rules, since, now, before) {
+  const from = historyStart(rules, since);
+  const through = before?.started_at_ms ?? now;
+  if (from > through) return [];
+  const sched = await arbitrationSchedule();
+  const matches = [];
+  for (let i = sched.findLastIndex(([start]) => start <= through); i >= 0 && matches.length <= HISTORY_PAGE; i--) {
+    const [start, node] = sched[i];
+    if (start < from) break;
+    const item = arbitrationItem(node, start, sched[i + 1]?.[0] ?? start + 3600_000);
+    if (before && start === through && item.id >= before.id) continue;
+    if (rules.some((r) => start >= r.made_at_ms && Object.entries(r.attributes).every(([k, v]) => item.attributes[k] === v))) {
+      matches.push(item);
+    }
+  }
+  return matches;
 }
 
 /// THE COMING DAYS, for the arbitration page and a reminder's next time; and

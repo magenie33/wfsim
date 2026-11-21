@@ -713,6 +713,10 @@ counts and last openings from one rolling UTC calendar year. Expired-only
 combinations and their nodes disappear before cleanup; daily cleanup deletes
 old records, preserves the exact cutoff and follows its movement. Leap days
 and Gregorian century boundaries retain the correct 365- or 366-day window.
+Reminder history merges logged fissures and arbitration schedule hours, applies
+each rule's creation time and attributes, and pages through tied openings
+without duplication. The relay accepts Steel Path Capture when DE marks it
+Hard, and its history keeps the original opening and closing instants.
 
 ## `check_notices`
 
@@ -816,6 +820,10 @@ browser's first answer only counts; the bell's panel lists everything and reads
 it, clearing the cards; `/notifications` lists them and its switches turn a
 category's card off; a card leaves on its own; on a phone the bell stays on the
 bar and its panel on screen.
+
+The Reminders page reads mission windows from the server with the saved rules,
+shows their start and end in the browser's time zone, and can load earlier
+windows even when the browser's notification history is empty.
 
 ## `check_fx_lines`
 

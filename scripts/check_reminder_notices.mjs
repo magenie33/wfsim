@@ -38,9 +38,12 @@ await page(`
   };
   window.__said = [];
   const real = window.fetch;
-  window.fetch = (u, o) => String(u).includes('/api/notices/everyone')
-    ? Promise.resolve(new Response(JSON.stringify({ ok: true, notices: window.__said })))
-    : real(u, o);
+  window.__historyQuery = () => ({ ok: true, items: [], before: null });
+  window.fetch = (u, o) => {
+    if (String(u).includes('/api/notices/everyone')) return Promise.resolve(Response.json({ ok: true, notices: window.__said }));
+    if (String(u).endsWith('/api/world/reminder-history')) return Promise.resolve(Response.json(window.__historyQuery(JSON.parse(o.body))));
+    return real(u, o);
+  };
   renderUtility();
 `);
 
@@ -168,5 +171,49 @@ const phonePanel = await page(`
 `);
 check("…and its panel opens on screen", phonePanel.open && phonePanel.inView, JSON.stringify(phonePanel));
 await shot("phone-panel");
+
+await send("Emulation.setTimezoneOverride", { timezoneId: "Asia/Shanghai" });
+const history = await page(`
+  document.body.click();
+  storeJson(REMINDERS_HITS_KEY, []);
+  const started = Date.parse('2026-11-19T15:45:00Z'), ended = Date.parse('2026-11-19T16:15:00Z');
+  const attributes = { list: 'steel_path', mission: 'MT_CAPTURE' };
+  const names = { tier: { zh: '前纪' }, mission: { zh: '捕获' }, node: { zh: '测试节点' } };
+  const rule = reminderAdd('fissure', attributes, names);
+  rule.made_at_ms = started - 1000;
+  storeJson(REMINDERS_KEY, [rule]);
+  window.__historyQueries = [];
+  window.__historyFails = true;
+  window.__historyQuery = (q) => {
+    window.__historyQueries.push(q);
+    if (q.before && window.__historyFails) return { ok: false };
+    const item = { id: 'remote', kind: 'fissure', attributes, names, started_at_ms: started, ends_at_ms: ended };
+    return q.before ? { ok: true, items: [{ ...item, id: 'older', started_at_ms: started - 7200000, ends_at_ms: ended - 7200000 }], before: null }
+      : { ok: true, items: [item], before: { id: item.id, started_at_ms: started } };
+  };
+  history.pushState({}, '', '/utility/reminders'); route();
+  await new Promise((r) => setTimeout(r, 150));
+  const box = document.getElementById('reminder-history');
+  return { rows: [...box?.querySelectorAll('.brow') || []].map((el) => el.textContent.trim()),
+    localHits: reminderHits().length, first: window.__historyQueries[0], created: rule.made_at_ms };
+`);
+check("history uses the saved rule and server's localised start and end, with no browser hits",
+  history.localHits === 0 && history.rows.length === 1 && history.rows[0].includes("捕获")
+  && history.rows[0].includes("23:45") && history.rows[0].includes("00:15")
+  && history.rows[0].includes("11/19") && history.rows[0].includes("11/20")
+  && history.first?.rules.length === 1 && history.first.rules[0].made_at_ms === history.created
+  && history.first.rules[0].attributes.list === "steel_path", JSON.stringify(history));
+const older = await page(`
+  document.querySelector('[data-history-more]')?.click();
+  await new Promise((r) => setTimeout(r, 150));
+  const retry = document.querySelector('[data-history-retry]');
+  window.__historyFails = false;
+  retry?.click();
+  await new Promise((r) => setTimeout(r, 150));
+  return { retry: !!retry, rows: document.querySelectorAll('#reminder-history .brow').length,
+    cursors: window.__historyQueries.slice(1).map((q) => q.before?.id) };
+`);
+check("history keeps its earlier-page cursor through a retry and appends those windows",
+  older.retry && older.rows === 2 && older.cursors.join() === "remote,remote", JSON.stringify(older));
 
 await app.finish("what the site tells the reader is a card in the corner and a count on the bell");

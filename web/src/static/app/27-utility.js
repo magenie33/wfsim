@@ -34,7 +34,10 @@ function utilityLeft(ms) {
 function showUtility(tab) {
   if (tab !== utilityTab) reminderDraft = null;
   utilityTab = tab;
-  if (tab === "reminders") { reminderRead(); if ($("rem-toasts")) $("rem-toasts").replaceChildren(); }
+  if (tab === "reminders") {
+    reminderRead();
+    $("rem-toasts")?.replaceChildren();
+  } else reminderHistory = null;
   renderUtility();
   refreshUtilityShortcuts();
   if (tab !== "dictionary" && Date.now() - worldAt >= WORLD_ON_PAGE_MS) worldLoad().then(renderUtility);
@@ -284,6 +287,7 @@ function reminderQuiet(id) {
 /// ON EVERY ROUTE: a reader with a reminder has the clock running, and a first
 /// answer asked for, whichever page they are on.
 function reminderWatch() {
+  if ($("utility-page").hidden) reminderHistory = null;
   renderUtility();
   if (!reminders().length) return;
   utilityClock();
@@ -322,14 +326,6 @@ function reminderCheck() {
   renderUtility();
 }
 
-/// ONE FIRED ITEM AS A ROW, the same under the bell and on the Reminders tab.
-const reminderHitHtml = (h, now) => `
-      <div class="brow frow${h.ends_at_ms <= now ? " none" : ""}">
-        <span class="bname">${escHtml((UTILITY_KINDS[h.kind] || { describe: () => h.kind }).describe(h))}
-          <span class="fnode">${escHtml(new Date(h.at_ms).toLocaleString(LANG === "zh" ? "zh-CN" : "en-GB", { dateStyle: "short", timeStyle: "short" }))}</span></span>
-        ${h.ends_at_ms > now ? `<span class="bscore" data-ends="${h.ends_at_ms}">${utilityLeft(h.ends_at_ms - now)}</span>`
-          : `<span class="bnone">${escHtml(tr("ended"))}</span>`}
-      </div>`;
 /// ONE FIRED ITEM IN A SENTENCE: what it is, and how long it stays open.
 const reminderSay = (h) => trF("{what} is open — {left} left", {
   what: (UTILITY_KINDS[h.kind] || { describe: () => h.kind }).describe(h),
@@ -451,12 +447,64 @@ function reminderDraftWire(box, rows, defaults) {
 
 /// The kind the Reminders tab is building a reminder for.
 let reminderNewKind = null;
+
+let reminderHistory = null;
+async function loadReminderHistory(history, before) {
+  history.loading = true;
+  history.failed = false;
+  history.requestedBefore = before;
+  try {
+    const r = await fetch(`${LIVE_ORIGIN}/api/world/reminder-history`, {
+      method: "POST", credentials: "omit", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ rules: history.rules, before }),
+    });
+    const j = await r.json();
+    if (!j.ok || !Array.isArray(j.items)) throw new Error(j.error);
+    history.items = before ? history.items.concat(j.items) : j.items;
+    history.before = j.before;
+    history.older ||= !!before;
+  } catch (_) {
+    history.failed = true;
+  } finally {
+    history.loading = false;
+    history.at = Date.now();
+    if (reminderHistory === history) renderUtility();
+  }
+}
+
+function renderReminderHistory(rs) {
+  const rules = rs.filter((r) => Object.hasOwn(UTILITY_KINDS, r.kind))
+    .map(({ kind, attributes, made_at_ms }) => ({ kind, attributes: attributes || {}, made_at_ms: made_at_ms || 0 }));
+  const key = JSON.stringify(rules);
+  if (reminderHistory?.key !== key) {
+    reminderHistory = { key, rules, items: [], before: null, loading: false, failed: false, older: false, at: 0 };
+  }
+  const h = reminderHistory;
+  if (rules.length && !h.loading && !h.failed && !h.older && Date.now() - h.at >= WORLD_ON_PAGE_MS) loadReminderHistory(h, null);
+  const local = new Intl.DateTimeFormat(LANG === "zh" ? "zh-CN" : "en-GB", { dateStyle: "short", timeStyle: "short" });
+  const rows = h.items.map((item) => `<div class="brow frow"><span class="bname">
+      ${escHtml(UTILITY_KINDS[item.kind].describe(item))}
+      <span class="fnode">${escHtml(local.formatRange(item.started_at_ms, item.ends_at_ms))}</span>
+    </span></div>`).join("");
+  const box = $("reminder-history");
+  box.innerHTML = `${rules.length ? `<p class="bench-note">${escHtml(tr("Matching missions since each reminder was created, up to one year. Times are in your time zone."))}</p>` : ""}
+    ${rows ? `<div class="bench-rows">${rows}</div>` : ""}
+    ${h.failed ? `<div class="sim-empty">${escHtml(tr("Could not load reminder history."))}
+      <button type="button" class="ghost-btn small" data-history-retry>${escHtml(tr("Retry"))}</button></div>`
+    : h.loading ? `<div class="sim-empty">${loadingHtml()}</div>`
+    : !rows ? `<div class="sim-empty">${escHtml(tr("Nothing has fired yet."))}</div>`
+    : h.before ? `<div class="frem-act"><button type="button" class="ghost-btn small" data-history-more>${escHtml(tr("Show more"))}</button></div>` : ""}`;
+  const more = box.querySelector("[data-history-more]");
+  const retry = box.querySelector("[data-history-retry]");
+  const load = (before) => { loadReminderHistory(h, before); renderUtility(); };
+  if (more) more.onclick = () => load(h.before);
+  if (retry) retry.onclick = () => load(h.requestedBefore);
+}
+
 function renderReminders() {
   const box = $("utility-reminders");
   if (!box) return;
   const rs = reminders();
-  const hits = reminderHits();
-  const now = Date.now();
   if (!worldNamesAsk && worldNamesStale() && rs.some((r) => r.kind === "fissure")) worldNamesLoad().then(renderUtility);
   box.innerHTML = `<p class="bench-note rem-lead">${escHtml(tr("Reminders live in this browser and fire while WFSim is open in it, on any page."))}
       <a href="/notifications#notify-settings">${escHtml(tr("How you are told"))}</a></p>
@@ -474,8 +522,8 @@ function renderReminders() {
       </div>`; }).join("")}</div>`
       : `<div class="sim-empty">${escHtml(tr("No reminders yet. Make one above, or with the bell on a row of a list."))}</div>`}
     <h3 class="wgroup-h">${escHtml(tr("Recently fired"))}</h3>
-    ${hits.length ? `<div class="bench-rows">${hits.map((h) => reminderHitHtml(h, now)).join("")}</div>`
-      : `<div class="sim-empty">${escHtml(tr("Nothing has fired yet."))}</div>`}`;
+    <div id="reminder-history"></div>`;
+  renderReminderHistory(rs);
   box.querySelectorAll("[data-rdel]").forEach((el) => {
     el.onclick = () => { reminderRemove(el.dataset.rdel); renderUtility(); };
   });

@@ -403,6 +403,7 @@ CREATE TABLE IF NOT EXISTS record_world_fissures (
   started_at TEXT COLLATE "C" NOT NULL,
   ends_at    TEXT COLLATE "C" NOT NULL
 );
+CREATE INDEX IF NOT EXISTS record_world_fissures_history ON record_world_fissures (started_at DESC, id DESC);
 
 -- THE OWNER'S DONATION LEDGER, kept by hand and read by nothing in this
 -- repository.

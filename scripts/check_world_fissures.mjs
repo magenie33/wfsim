@@ -86,6 +86,58 @@ for (const [at, days] of [["2024-02-28T12:34:56.789Z", 365], ["2024-02-29T12:34:
   const window = await call("/api/world/names");
   check(`UTC calendar year ending ${at} spans ${days} days`, window.window_ms === days * 86400_000, window.window_ms);
 }
+Date.now = () => now;
+const path = "/api/world/reminder-history";
+const query = (rules, before = null) => call(path, { method: "POST", body: JSON.stringify({ rules, before }) });
+const rule = (kind, attributes, made_at_ms) => ({ kind, attributes, made_at_ms });
+const futureStart = now + 60_000;
+const commonStart = now - 120_789;
+const commonEnd = commonStart + 3600_000;
+const captureStart = now - 60_000;
+const steelCapture = { ...fissure("steel-capture", "SolNode1", "VoidT3", "MT_CAPTURE", captureStart), Hard: true };
+await call("/api/world", { ...put, body: JSON.stringify({ ActiveMissions: [steelCapture,
+  { ...steelCapture, _id: { $oid: "future" }, Activation: date(futureStart) }] }) });
+const neptunePlanet = "/Lotus/Language/Locations/Neptune";
+const steelRule = rule("fissure", { planet: neptunePlanet, list: "steel_path", mission: "MT_CAPTURE" }, commonStart);
+const exact = await query([steelRule]);
+check("a Hard Capture from the relay is available in history with the game's original window",
+  exact.items?.length === 1 && exact.items[0].id === "steel-capture" && exact.items[0].started_at_ms === captureStart
+  && exact.items[0].ends_at_ms === now + 3600_000 && exact.items[0].attributes.planet === neptunePlanet, JSON.stringify(exact));
+check("a matching opening before reminder creation does not enter its history",
+  (await query([{ ...steelRule, made_at_ms: captureStart + 1 }])).items?.length === 0);
+check("an unobserved planet returns no matches",
+  (await query([{ ...steelRule, attributes: { ...steelRule.attributes, planet: "unknown" } }])).items?.length === 0);
+const insert = LIBRARY.prepare("INSERT INTO record_world_fissures (id, list, tier, mission, node, started_at, ends_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)");
+await LIBRARY.batch([["exact-year", since], ["before-year", since - 1]].map(([id, start]) =>
+  insert.bind(id, "normal", "VoidT3", "MT_CAPTURE", "SolNode45", new Date(start).toISOString(), new Date(start + 3600_000).toISOString())));
+check("a history read enforces the retention boundary before cleanup, including its exact start",
+  (await query([rule("fissure", { node: "SolNode45" }, 0)])).items?.map((x) => x.id).join() === "exact-year");
+const tied = Array.from({ length: 30 }, (_, i) => `z-${String(i).padStart(2, "0")}`);
+await LIBRARY.batch(tied.map((id) => insert.bind(id, "steel_path", "VoidT3", "MT_CAPTURE", "SolNode1",
+  new Date(commonStart).toISOString(), new Date(commonEnd).toISOString())));
+const origFetch = globalThis.fetch;
+globalThis.fetch = async (url) => {
+  if (url !== "https://browse.wf/arbys.txt") throw new Error(`unexpected fetch ${url}`);
+  return new Response(`${commonStart / 1000},SolNode1\n${commonEnd / 1000},SolNode1\n`);
+};
+const overlapping = [steelRule, rule("fissure", { node: "SolNode1", list: "steel_path" }, commonStart),
+  rule("arbitration", { node: "SolNode1" }, commonStart)];
+const first = await query(overlapping);
+const second = first.before ? await query(overlapping, first.before) : { items: [] };
+const all = [...(first.items || []), ...(second.items || [])];
+check("mixed history pages newest first, with each overlapping match once and no lost start-time ties",
+  first.items?.length === 30 && second.before === null
+  && all.map((x) => x.id).join() === ["steel-capture", ...tied.toReversed(), `arbitration-${commonStart}`].join(),
+  JSON.stringify(all.map((x) => x.id)));
+check("arbitration history uses the schedule's exact hour and excludes future openings",
+  all.at(-1)?.started_at_ms === commonStart && all.at(-1)?.ends_at_ms === commonEnd);
+const preflight = await world.worldRoute(new Request(`https://x${path}`, { method: "OPTIONS" }), env, ctx, path);
+check("the browser can read history across origins", preflight.status === 204
+  && preflight.headers.get("access-control-allow-origin") === "*"
+  && preflight.headers.get("access-control-allow-headers") === "content-type");
+check("unknown rule filters are rejected",
+  (await query([rule("fissure", { faction: "unknown" }, now)])).error === "invalid reminder history query");
+globalThis.fetch = origFetch;
 Date.now = originalNow;
 await LIBRARY.close();
 

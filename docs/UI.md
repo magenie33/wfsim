@@ -1421,6 +1421,7 @@ for the source and refresh command.
 | a saved reminder absent from the available data says no matching mission was found — no retained fissure holds its picks, or no node of the arbitration schedule does | `possible`, `fissurePossible`, `arbitrationPossible` |
 | what a new reminder already matches is seen, so it fires for what opens later | `reminderAdd` |
 | reminders sync with a signed-in account as a pool of their own; they fire on each browser while the site is open there, on any page: once per item, never for one open when the reminder was made | `reminderCheck`, `syncPool` |
+| Recently fired pages through the last rolling UTC year of server-recorded fissure windows and arbitration schedule hours that opened after each saved reminder was made, even while the browser was closed. A mission appears once, and its start and end are shown in the reader's time zone | `reminderHistoryRoute`, `renderReminderHistory` |
 | what fired is said the way every notification is (§"Notifications"); none in a card while the Reminders tab is open | `reminderCheck` |
 | a reminder set quiet (its Pop up chip off) fires into the bell only: no card, no system notification | `reminderQuiet` |
 
