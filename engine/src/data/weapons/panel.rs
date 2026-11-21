@@ -830,6 +830,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             chain_range_m: b.chain.range_m,
             chain_damage_per_hop: b.chain.damage_per_hop,
             chain_compounds: b.chain.compounds,
+            chain_fanout: b.chain.fanout,
             chain_takes_multishot: b.chain.takes_multishot,
             chain_nodes_have_radius: b.chain.nodes_have_radius,
             // ABSENT MEANS ONE, which is every weapon that fires where it is

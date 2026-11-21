@@ -65,6 +65,7 @@ attack:
       rise_seconds: 0.6
       cooldown_delay_seconds: 0.8
       cooldown_divisor: 2.0
+      per_target: true
   damage: { toxin: 35 }   # total 35
 
 source:

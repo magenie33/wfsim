@@ -462,11 +462,12 @@ def calibrate(objects, binding, dossier, doc):
             'cooldown_delay_seconds': number(impact.get('ContinuousDamageAttenuationCooldownDelay')),
             'cooldown_divisor': number(impact.get('ContinuousDamageAttenuationCooldownTime'), 1)}
         if ramp['rise_seconds'] > 0 and ramp['cooldown_divisor'] > 0:
+            if impact.get('AttenuateContinuousDamagePerTarget') == '1':
+                ramp['per_target'] = True
+                limits.append('client_beam_target_ramp')
             adopt(updates, doc, ('attack', 'beam', 'ramp'), ramp)
             if 'ContinuousDamageAttenuation' in impact:
                 adopt(updates, doc, ('beam_ramp_floor',), pair(impact['ContinuousDamageAttenuation'])[0])
-            if impact.get('AttenuateContinuousDamagePerTarget') == '1':
-                limits.append('client_beam_target_ramp')
     if path and any(k in projectile for k in ('OnProjectileStoppedScript', 'ScriptInstance')):
         # Only nonempty scripts carry a custom callback to review.
         callbacks = {k: v for k, v in projectile.items() if k in ('OnProjectileStoppedScript', 'ScriptInstance')

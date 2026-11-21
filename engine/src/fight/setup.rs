@@ -24,9 +24,8 @@ impl FightParams {
                 return Some("scene_3d guided speed modifiers need a bound native speed consumer");
             }
         }
-        if self.beam.is_some_and(|b| b.chain_hops > 0 || b.beams_count > 1 || b.damage_radius_m > 0.)
-            || self.tendril_max > 0 {
-            return Some("scene_3d needs a beam chain, area or acquisition query");
+        if self.beam.is_some_and(|b| b.chain_nodes_have_radius) {
+            return Some("scene_3d needs an overlap query for each beam chain node");
         }
         if self.melee_radius.is_some() || !self.combo_script.is_empty() || self.target_preference.is_some() {
             return Some("scene_3d needs an attack-specific melee sweep or contact volume");
@@ -34,8 +33,8 @@ impl FightParams {
         if self.ricochet.is_some() || self.thrown_bounce.is_some() {
             return Some("scene_3d needs a ricochet or bounce traversal");
         }
-        if self.blob.is_some() || self.orb.is_some() || self.lingering.is_some() || self.lock_on.is_some()
-            || self.attractor_seconds.is_some() || self.reload_grenade.is_some()
+        if self.blob.is_some() || self.orb.is_some() || self.lock_on.is_some()
+            || self.attractor_seconds.is_some()
             || self.acid_shells.is_some() || self.spawn_on_kill.is_some() || self.spectral_dagger.is_some() {
             return Some("scene_3d needs a spawned object, lock or secondary delivery route");
         }

@@ -526,7 +526,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         l.at(params.gap(), u32::try_from(n).unwrap_or(u32::MAX))
     });
     let spatial_part = spatial.map(|s| {
-        let head = !s.impact.radial && s.impact.part == 1;
+        let head = !s.impact.radial && s.impact.part == 1 && s.beam.as_ref().is_none_or(|b| b.kind.is_none());
         parts.iter().find(|p| p.is_head == head).unwrap_or(&parts[0])
     });
     let part = if let Some(p) = spatial_part { p } else { match parts.get(round_aim.part).filter(|_| follows && round_aim.list == list) {
@@ -1760,8 +1760,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // ONE BEAM'S WORTH, never the merge: a continuous weapon fires
             // one pellet carrying multishot as `beam_merge`, so leaving it
             // in hands the shot's multishot to the half that must not take it.
-            let unmerged = 1.0 / (*beam_merge).max(1e-9);
-            if strike_spread.is_none() {
+            let for_chain = spatial.and_then(|s| s.beam.as_ref()).is_some_and(|b| !b.links.is_empty());
+            let unmerged = if for_chain { 1.0 } else { 1.0 / (*beam_merge).max(1e-9) };
+            if strike_spread.is_none() && (spatial.is_none() || for_chain) {
                 *strike_spread = Some(SpreadStrike {
                     raw_per_bucket: body_only(raw / bucket / careen) * unmerged,
                     shares,
@@ -1887,7 +1888,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // landing pellet — so a pellet that landed on nobody starts
             // none of them. The radius-caught seeds' half fires once
             // after the loop, miss or not.
-            if let Some(beam) = params.beam {
+            if let Some(beam) = params.beam.filter(|_| spatial.is_none()) {
                 spread_from_seeds(
                     seat,
                     windows,
@@ -1979,7 +1980,14 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         // THE ONE SITE THAT KNOWS ALL FOUR SHAPES: a hit is plain, a
         // crit, a weak point, or both — and "both" is its own number in
         // game, not a crit with a multiplier on it.
-        r.note_kills(killed as u32, t, params.drop_is_in_reach(bodies[body_index].state.at));
+        let pickup_in_range = params.drop_is_in_reach(bodies[body_index].state.at);
+        if spatial.and_then(|s| s.beam.as_ref()).and_then(|beam| beam.kind)
+            == Some(crate::scene::BeamContactKind::Tendril)
+        {
+            r.note_tendril_kills(killed as u32, t, pickup_in_range);
+        } else {
+            r.note_kills(killed as u32, t, pickup_in_range);
+        }
         // …AND WHAT THE KILL LEAVES STANDING. `direct` because a ghost
         // is left by the shot rather than by anything it set off, and
         // the range is the card's own ("within 50 meters of the user").
@@ -2071,6 +2079,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     // the whole value of the perk here, the cloud being
                     // most of this weapon's damage.
                     damage_multiplier: pm_mult,
+                    center: spatial.map(|s| s.impact.point),
                 };
                 if fp.stacking == crate::model::FieldStacking::Refresh {
                     entities.retain(|e| !matches!(e, Entity::Cloud(field) if field.owner == seat));
@@ -2191,7 +2200,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     // It rides the same loop, and the column that says
                     // WHY this instance exists must not answer with a
                     // mechanic melee has no card for.
-                    origin: if spatial.is_some_and(|s|s.splash) {
+                    origin: if spatial.and_then(|s| s.beam.as_ref()).is_some_and(|b| b.kind.is_some()) {
+                        crate::record::Origin::Chain
+                    } else if spatial.is_some_and(|s|s.splash) {
                         crate::record::Origin::Splash
                     } else if spatial.is_some_and(|s|s.contact>0) {
                         crate::record::Origin::PunchThrough

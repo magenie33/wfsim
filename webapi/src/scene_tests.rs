@@ -417,9 +417,84 @@ fn a_single_direct_beam_uses_the_posed_contact_and_its_physical_range() {
     let rec = record(&params(&v));
     assert!(direct(&rec).is_empty());
     assert!(!rec.spatial_flights().is_empty());
-    v["weapon"] = json!("atomos");
-    let error = crate::simulate::simulate_json(&v);
-    assert!(error["error"].as_str().unwrap().contains("beam chain"));
+}
+
+#[test]
+fn torids_first_spatial_cloud_tick_lands_with_contact() {
+    let mut v = request("torid", 1, false);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"center_distance","distance":5.}});
+    v["duration"] = json!(10.);
+    let mut p = params(&v);
+    p.spread = None;
+    p.fire_rate = 0.08;
+    let replay = record(&p);
+    let impacts: Vec<_> = replay.events().iter().filter_map(|event| match &event.kind {
+        Kind::Damage(hit) if event.subject == Some(0) => Some((event.t, hit.origin)),
+        _ => None,
+    }).collect();
+    use wfsim_engine::record::Origin;
+    let contact = impacts.iter().find(|(_, origin)| *origin == Origin::Own).unwrap().0;
+    let ticks: Vec<_> = impacts.iter().filter(|(_, origin)| *origin == Origin::Field).map(|(time, _)| *time).collect();
+    assert_eq!(ticks.len(), 10, "{impacts:?}");
+    for (i, tick) in ticks.into_iter().enumerate() {
+        assert!((tick - contact - i as f64).abs() < 1e-9);
+    }
+}
+
+#[test]
+fn torids_spatial_sphere_seeds_separate_chains_without_paying_the_direct_hit_twice() {
+    let mut v = request("torid", 1, false);
+    v.as_object_mut().unwrap().remove("mode");
+    v["form"] = json!("incarnon");
+    v["duration"] = json!(0.1);
+    v["target_at"] = json!([0., 5.]);
+    v["formation"] = json!([
+        {"id":"near","at":[1.2,5.]},
+        {"id":"far","at":[4.,5.]},
+        {"id":"outer","at":[9.,5.]},
+    ]);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    let mut p = params(&v);
+    p.spread = None;
+    let replay = record(&p);
+    let trace = replay.spatial_flights().first().expect("Torid beam tick");
+    let [direct] = trace.flight.impacts.as_slice() else { panic!("one direct contact") };
+    assert_eq!(direct.body, 0);
+    assert_eq!(trace.flight.beam_endpoint, Some(direct.point));
+    use wfsim_engine::scene::BeamContactKind::{Chain, Radius};
+    let recipients = &trace.flight.beam_contacts;
+    let caught: Vec<_> = recipients.iter().filter(|s| s.kind == Radius).map(|s| s.impact.body).collect();
+    assert_eq!(caught, [1]);
+    let links: Vec<_> = recipients.iter().filter(|s| s.kind == Chain).collect();
+    assert_eq!((links[0].impact.body, links[0].share), (2, 0.75));
+    assert_eq!((links[1].impact.body, links[1].share), (3, 0.5625));
+    assert!(replay.events().iter().any(|e| e.t == trace.time && e.subject == Some(3)
+        && matches!(&e.kind, Kind::Damage(d) if d.origin == wfsim_engine::record::Origin::Chain)));
+}
+
+#[test]
+fn boars_spatial_acquisition_and_chains_reach_nine_distinct_bodies() {
+    let mut v = request("boar_prime", 1, false);
+    v.as_object_mut().unwrap().remove("mode");
+    v["form"] = json!("incarnon");
+    v["headshot_pct"] = json!(0);
+    v["target_at"] = json!([0., 10.]);
+    v["formation"] = json!((0..5).flat_map(|row| {
+        (-2..=2).filter(move |&column| row != 0 || column != 0)
+            .map(move |column| json!({
+                "id": format!("rank{row}-{column}"),
+                "at": [f64::from(column) * 1.15, 10. + f64::from(row) * 1.15],
+            }))
+    }).collect::<Vec<_>>());
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    let replay = record(&params(&v));
+    let beam = &replay.spatial_flights().first().expect("Boar beam tick").flight;
+    let acquired = beam.beam_contacts.iter()
+        .filter(|c| c.kind == wfsim_engine::scene::BeamContactKind::Acquired).count();
+    let reached: std::collections::BTreeSet<_> = beam.impacts.iter().map(|h| h.body)
+        .chain(beam.beam_contacts.iter().map(|c| c.impact.body)).collect();
+    assert_eq!(acquired, 2);
+    assert_eq!(reached.len(), 9);
 }
 
 #[test]

@@ -138,6 +138,7 @@ attack:
       rise_seconds: 0.6
       cooldown_delay_seconds: 0.8
       cooldown_divisor: 2
+      per_target: true
     range_m: 37.0
     # Firestorm (Primed) enlarges THIS — verbatim: "The 2.3 meter damage radius
     # from the point of impact CAN benefit from Firestorm (Primed)."

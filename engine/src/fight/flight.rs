@@ -186,10 +186,21 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let mut strike_spread: Option<SpreadStrike> = None;
     let (mut any_head, mut any_big) = (false, false);
     let mut beam_merge = l.beam_merge;
+    let target_ramp = active.beam.and_then(|b| b.ramp).filter(|r| r.per_target && l.spatial.is_some());
+    let tick = 1.0 / l.live_rate.max(1e-9);
+    let mut beam_ramp = l.beam_ramp;
     let radial_delay = active.radial.filter(|_| !l.radial_only && l.spatial.is_none()).map_or(0.0, |r| r.delay_seconds);
     let mut pellet_aims = Vec::new();
     {
         let recipient = l.spatial.as_ref().map_or(0, |s| s.impact.body);
+        if let Some(source) = target_ramp.filter(|_| !g.bodies[recipient].fallen
+            && l.spatial.as_ref().is_some_and(|s| !s.miss))
+        {
+            me.target_ramps.resize(g.bodies.len(), TargetRamp::default());
+            beam_ramp = me.target_ramps[recipient].hit(
+                g.bodies[recipient].state.generation, t, tick, active.beam_ramp_floor, source,
+            );
+        }
         let params = if l.spatial.is_some() {
             spatial::Recipient::params(me.params, &mut me.spatial_recipient, recipient)
         } else {
@@ -242,7 +253,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             ms_damage: l.ms_damage,
             status_damage: me.fixed.status_damage,
             live_rate: l.live_rate,
-            beam_ramp: l.beam_ramp,
+            beam_ramp,
             next_shot_bonus: l.next_shot_bonus,
             undamaged: l.undamaged,
             t,
@@ -323,6 +334,35 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         process_entities(g.entities, t + 1e-9, &mut turn!(me, active, d), g.r, g.rec, g.bodies);
     }
 
+    if let (Some(seed), Some(strike)) = (l.spatial.as_ref().and_then(|s| s.beam.as_ref()), &strike_spread) {
+        for link in &seed.links {
+            let body = link.impact.body;
+            if g.bodies[body].fallen { continue; }
+            let Some(spec) = me.params.body(body) else { continue };
+            let inst = crate::rules::chain::Instance {
+                target: body,
+                share: link.share,
+                multishot: seed.multishot,
+                headshot: false,
+                part_factor: 1.0,
+                status_part_factor: 1.0,
+                status_landing: 1.0,
+            };
+            let raw = target_ramp.map_or(strike.raw_per_bucket, |source| {
+                let here = me.target_ramps[body].hit(
+                    g.bodies[body].state.generation, t, tick, active.beam_ramp_floor, source,
+                );
+                strike.raw_per_bucket / beam_ramp.max(1e-9) * here
+            });
+            spread_hit(
+                me.seat, &mut me.windows, &inst, &mut g.bodies[body], &spec,
+                raw, strike.shares, strike.crit_multiplier, strike.crit_tier,
+                strike.attrition, strike.modded_base, strike.status_chance, &strike.forced,
+                &strike.status_vector, me.params, active, &mut me.gal, &mut me.arc, g.r, g.rec,
+                d, t, SpreadBy::Chain, false, true,
+            );
+        }
+    }
     // NO FORMATION, NOTHING TO REACH — see [`spread_beyond_the_target`].
     if g.bodies.len() > 1 && l.spatial.is_none() {
         spread_beyond_the_target(

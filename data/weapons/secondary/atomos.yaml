@@ -73,6 +73,7 @@ attack:
       rise_seconds: 0.6
       cooldown_delay_seconds: 0.8
       cooldown_divisor: 2.0
+      per_target: true
   damage: { heat: 29 }   # total 29
 
 # incarnon_evolutions: definitions live in data/evolutions/atomos_*.yaml.

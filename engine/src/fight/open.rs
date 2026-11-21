@@ -90,6 +90,7 @@ pub(super) struct Combatant<'a> {
     pub(super) windows: CardWindows,
     pub(super) weakpoint_pile: LiveStacks,
     pub(super) beam: BeamRamp,
+    pub(super) target_ramps: Vec<TargetRamp>,
     pub(super) field_duration_boost: bool,
     pub(super) field_ctx: FieldCtx,
     pub(super) meter: Meter,
@@ -257,8 +258,8 @@ pub(super) fn open<'a>(
         }
         _ => None,
     };
-    let chain_layout = match (params.beam, params.others.is_empty()) {
-        (Some(b), false) => {
+    let chain_layout = match (params.beam, params.others.is_empty(), params.scene_3d.is_none()) {
+        (Some(b), false, true) => {
             let bodies = &body_at;
             // THE SPLASH CENTRE IS STATIC TOO: the round goes off on the aimed
             // body's surface facing the shooter, and neither of them moves.
@@ -757,6 +758,7 @@ pub(super) fn open<'a>(
             windows,
             weakpoint_pile,
             beam,
+            target_ramps: Vec::new(),
             field_duration_boost,
             field_ctx,
             meter,

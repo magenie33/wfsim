@@ -489,6 +489,8 @@ pub struct BeamGeometry {
     /// when `chain_compounds` is false, which is the Kuva Nukor's shape.
     pub chain_damage_per_hop: f64,
     pub chain_compounds: bool,
+    /// A fan starts at the last direct contact and excludes every direct hit.
+    pub chain_fanout: bool,
     pub chain_takes_multishot: bool,
     /// Does every chain NODE carry a sphere too? UNVERIFIED (MEASUREMENTS
     /// M15) — one line of weapon data so a measurement flips it.

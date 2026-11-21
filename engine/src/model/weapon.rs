@@ -146,6 +146,8 @@ pub struct BeamRampSpec {
     pub rise_seconds: f64,
     pub cooldown_delay_seconds: f64,
     pub cooldown_divisor: f64,
+    #[serde(default)]
+    pub per_target: bool,
 }
 
 /// A TOME'S RECHARGE METER — a clock you spend, and the third way this roster

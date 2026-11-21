@@ -3,6 +3,8 @@
 use super::*;
 use std::{cell::Cell, rc::Rc};
 
+pub(super) mod beam;
+
 /// A spatial landing uses the recipient as the primary target of settlement.
 /// The rest of the source configuration is shared by all of its landings.
 pub(super) struct Recipient<'p> {
@@ -52,6 +54,7 @@ pub(super) struct SpatialLanding {
     pub follows: bool,
     pub contact: usize,
     pub splash: bool,
+    pub beam: Option<beam::Seed>,
     progress: Rc<Cell<Progress>>,
 }
 
@@ -140,6 +143,7 @@ pub(super) fn launch(
             &eligible,
             origins.as_ref().and_then(|o| o[round]),
         );
+        let mut seeds = beam::seeds(&scene, &mut path, active, &eligible, me.tendril.count);
         if let (Some(hit), Some(radial)) = (path.impacts.first().copied(), active.radial) {
             if let Some(center) = path.blast_center {
                 path.radial_impacts = scene.blast_hits(hit, center, f64::from(radial.radius_m as f32), &eligible);
@@ -171,6 +175,7 @@ pub(super) fn launch(
                         follows: instance > 0,
                         contact,
                         splash: false,
+                        beam: seeds.direct.get_mut(contact).and_then(Option::take),
                         progress: progress.clone(),
                     }),
                     t: l.t + hit.seconds,
@@ -192,6 +197,7 @@ pub(super) fn launch(
                                 follows: instance > 0,
                                 contact,
                                 splash: impact.body != hit.body,
+                                beam: None,
                                 progress: progress.clone(),
                             }),
                             t: l.t + hit.seconds + rad.delay_seconds,
@@ -206,7 +212,31 @@ pub(super) fn launch(
                 }
             }
         }
-        if path.impacts.is_empty() {
+        let indirect = !seeds.indirect.is_empty();
+        for (impact, seed) in seeds.indirect {
+            let beam_merge = if seed.multishot { l.beam_merge } else { 1. };
+            events.push(Landing {
+                spatial: Some(SpatialLanding {
+                    impact,
+                    miss: false,
+                    first: false,
+                    last: false,
+                    instance: 0,
+                    follows: false,
+                    contact: 0,
+                    splash: false,
+                    beam: Some(seed),
+                    progress: progress.clone(),
+                }),
+                n_pellets: 1,
+                rounds: Rounds::single(1, 1.),
+                beam_merge,
+                burst_starts: false,
+                burst_completed,
+                ..l.clone()
+            });
+        }
+        if path.impacts.is_empty() && !indirect {
             rec.push(
                 l.t,
                 None,
@@ -241,6 +271,7 @@ pub(super) fn launch(
                 follows: false,
                 contact: 0,
                 splash: false,
+                beam: None,
                 progress,
             }),
             n_pellets: 0,

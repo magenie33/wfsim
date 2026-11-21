@@ -308,6 +308,26 @@ fn cloud_tick(
     if part.melee_scaling.is_some_and(|s| s.radius_from_melee_range) {
         part.radius_m += buff_total(active, crate::model::BuffGrant::MeleeRange, turn.buff_stacks, at);
     }
+    if let (Some(center), Some(scene)) = (f.center, &params.scene_3d) {
+        let mut aimed_died = false;
+        for (b, foe) in bodies.iter_mut().enumerate() {
+            let Some(spec) = params.body(b) else { continue };
+            if foe.state.phase != Phase::Physical { continue; }
+            let gap = scene.distance_to_body(center, b);
+            let share = part.falloff_at(gap);
+            if share <= 0. || gap > part.radius_m { continue; }
+            let killed = field_tick(
+                turn.w, owner, &part, damage_multiplier * share, at, turn.ctx, foe, b,
+                turn.gal, turn.arc, params, active, r, rec, turn.d, spec.params,
+                crate::record::Origin::Field, None, false,
+            );
+            if killed {
+                foe.debuffs.on_death(owner, params.acid_shells, spec.params);
+                aimed_died |= b == 0;
+            }
+        }
+        return if aimed_died { Flow::Stop } else { Flow::Go };
+    }
     let killed = field_tick(
         turn.w, owner, &part, damage_multiplier, at, turn.ctx, &mut bodies[0], 0, turn.gal, turn.arc,
         params, active, r, rec, turn.d, &params.foe, crate::record::Origin::Field, None, false,

@@ -1956,8 +1956,10 @@ An `attack.beam.ramp` binds native rise time, idle delay and cooldown divisor.
 The native state is elapsed ramp time: `c = max(c - dt / divisor, 0)`,
 `progress = c / rise_seconds`. Normalized decay therefore divides by
 `rise_seconds * cooldown_divisor`. Unbound beams retain the two-second
-normalized convention. First-tick scheduling and independent target ramp
-state remain unmodelled (`client_beam_target_ramp`).
+normalized convention. In 3D, a source declaration of
+`AttenuateContinuousDamagePerTarget` selects independent target clocks
+for damage from primary beams and their links. First-tick initialization
+and native reacquisition scheduling remain uncalibrated.
 
 Shape, not a damage part. It lives in `attack.beam` and is deliberately **not**
 a `radial:`, because in this engine that word means *a second damage instance*

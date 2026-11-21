@@ -183,7 +183,30 @@ pub struct Flight {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub radial_impacts: Vec<Impact>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub beam_endpoint: Option<Vec3>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub beam_contacts: Vec<BeamContact>,
+    #[serde(skip)]
+    pub(crate) stopped_at: Option<Vec3>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub fire_origin: Option<FireOrigin>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BeamContactKind {
+    Radius,
+    Acquired,
+    Chain,
+    Tendril,
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+pub struct BeamContact {
+    pub kind: BeamContactKind,
+    pub from: Vec3,
+    pub impact: Impact,
+    pub share: f64,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -577,6 +600,61 @@ impl Scene {
             .fold(f64::INFINITY, f64::min)
     }
 
+    pub(crate) fn beam_center(&self, index: usize) -> Vec3 {
+        Vec3(self.bodies[index].center.map(f64::from))
+    }
+
+    /// Open-arena acquisition uses root reach and the angle to the posed center.
+    pub(crate) fn beam_acquire(
+        &self, origin: Vec3, line: Vec3, cone_deg: f64, range: f64, eligible: &[bool],
+    ) -> Vec<Impact> {
+        let dot_limit = libm::cos(cone_deg.to_radians());
+        let player = self.input.player.world.point(Vec3([0.; 3]));
+        let mut candidates: Vec<_> = (0..self.bodies.len())
+            .filter(|&i| eligible.get(i) == Some(&true) && self.root(i).minus(player).length() <= range)
+            .filter_map(|i| {
+                let toward = self.beam_center(i).minus(origin).normalized()?;
+                let score = toward.dot(line);
+                (score >= dot_limit).then_some((score, i))
+            })
+            .collect();
+        candidates.sort_by(|a, b| b.0.total_cmp(&a.0));
+        candidates.into_iter().map(|(_, i)| self.beam_recipient(i, origin)).collect()
+    }
+
+    /// Indirect beams use a body attachment. Only the primary ray supplies a
+    /// weak-point hit. Use the posed center when no body attachment is tagged.
+    pub(crate) fn beam_recipient(&self, body: usize, from: Vec3) -> Impact {
+        let center = self.beam_center(body);
+        let proxy = self.bodies[body].proxies.iter()
+            .filter(|p| p.proxy.ray_enabled && p.proxy.part != 1)
+            .min_by(|a, b| a.center.minus(center).length().total_cmp(&b.center.minus(center).length()));
+        let point = proxy.map_or(center, |p| p.center);
+        Impact {
+            body, proxy: proxy.map_or(0, |p| p.proxy.cache_index), part: 0, point, exit: point,
+            seconds: 0., travel: point.minus(from).length(), material: 0., remaining: 0.,
+            radial: false, radial_distance: 0.,
+        }
+    }
+
+    /// The reload fan uses the modeled throw clock and reticle reach. Live
+    /// installed release pose and grenade gravity are separate inputs.
+    pub(crate) fn reload_throw(
+        &self, head: bool, yaw_deg: f64, eligible: &[bool],
+    ) -> (Flight, Vec3) {
+        let reticle = &self.reticles[usize::from(head)];
+        let aim = reticle.hits.iter()
+            .find(|(body, _)| eligible.get(*body) == Some(&true))
+            .map_or(&reticle.fallback, |(_, aim)| aim);
+        let target = Vec3(aim.target.map(f64::from));
+        let reach = target.minus(self.muzzle).length() + 1e-6;
+        let phase = if yaw_deg.is_sign_negative() { 0.5 } else { 0. };
+        let flight = self.trace(head, yaw_deg.abs(), phase, None, None, 0., false, false, 0., reach, eligible, None);
+        let line = flight.direction.normalized().unwrap_or(reticle.direction);
+        let endpoint = flight.stopped_at.unwrap_or_else(|| flight.muzzle.along(line, reach));
+        (flight, endpoint)
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn trace(
         &self,
@@ -631,6 +709,9 @@ impl Scene {
             impacts: Vec::new(),
             blast_center: None,
             radial_impacts: Vec::new(),
+            beam_endpoint: None,
+            beam_contacts: Vec::new(),
+            stopped_at: None,
             fire_origin,
         };
         if let Some(homing) = homing {
@@ -684,6 +765,7 @@ impl Scene {
                 radial_distance: 0.,
             });
             if !crossing.continues {
+                flight.stopped_at = Some(point);
                 break;
             }
         }

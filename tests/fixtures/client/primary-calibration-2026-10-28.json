@@ -2838,7 +2838,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2.0
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -4937,7 +4938,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -5174,7 +5176,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -10190,7 +10193,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2.0
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -14740,7 +14744,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2.0
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -15736,7 +15741,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2.0
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -15832,7 +15838,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2.0
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -18009,7 +18016,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2.0
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -18104,7 +18112,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2.0
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -30448,7 +30457,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2.0
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -30681,7 +30691,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2.0
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -37444,7 +37455,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2.0
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -38620,7 +38632,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },
@@ -38715,7 +38728,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 1.0,
           "cooldown_delay_seconds": 2.0,
-          "cooldown_divisor": 2.0
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
         "beam_ramp_floor": 0.5
       },
@@ -41241,7 +41255,8 @@
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
-          "cooldown_divisor": 2
+          "cooldown_divisor": 2,
+          "per_target": true
         },
         "beam_ramp_floor": 0.2
       },

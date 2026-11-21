@@ -733,6 +733,8 @@ pub struct ChainSpec {
     /// two on the second hop.
     #[serde(default = "chain_compounds_default")]
     pub compounds: bool,
+    #[serde(default)]
+    pub fanout: bool,
     /// Which targets start a chain (`radius_targets`: every enemy the sphere
     /// catches starts its own).
     pub origin: String,

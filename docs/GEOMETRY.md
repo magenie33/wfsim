@@ -43,8 +43,10 @@ composes named hand slots from their parent resource declarations in
 `20261106T150853Z-client-metadata-offline`, with each relative resource
 path resolved in the declaring layer. It reuses the retained native FK rows
 where available and compares them to FK over the tagged resource pose.
-Attachment selection with firing cycles, a special deployment, or multiple
-distinct positions needs its own model.
+A transforming weapon can reuse one origin when both named attachments
+resolve the same mount, model-bone pose and declared firing position.
+Torid uses this binding for both forms. Attachment selection with distinct
+positions or a special deployment needs its own model.
 `scripts/check_scene_coverage.py --url <native-dev-url> --out <file>`
 records the one-target trace and admission outcome for every advertised mode
 and every fixed gauge-transformed form. A trace exercises the standing model
@@ -182,13 +184,40 @@ The native replay captures radial parts at the controller input. Radial damage
 still follows the existing area damage rules. Live filter enrollment, cover
 and damage acceptance are open. Status areas retain their planar policy.
 
-Direct single-ray continuous fire uses the same posed contact as a firearm
-trace. It retains the ordinary beam tick, ramp, and multishot settlement.
-Beam chain, area and multi-beam acquisition need separate spatial queries.
+Continuous fire traces the primary beam against posed contacts and spends
+the ordinary punch-through budget. The radius uses its stopping contact or
+the range endpoint and overlaps the detailed shapes. A direct contact gets
+one primary instance. A sphere-only contact receives a body hit with its
+declared multishot rule and can start a separate chain. Acquisition checks
+the angle to posed body centers and the reach from the player's root.
+Acquired beams and live tendrils select distinct bodies outside the primary
+contacts. A tendril's direct kill cannot earn another tendril.
+
+All chain seeds are marked before the first hop. Each sequential path picks
+the nearest fresh root in 3D and considers repeats only after fresh
+candidates run out. A path cannot return to one of its own recipients.
+Vermisplicer primary fans out from its final direct contact and excludes
+the bodies already struck by the ray. Torid's single initial sphere and
+per-target ramp use the source bindings and [M15](measurements/M15-torid-incarnon-chain-nodes.md).
+The path preference uses [M52](measurements/M52-chain-path-is-fixed.md) and
+[M86](measurements/M86-a-chain-prefers-a-body-nobody-has-reached.md).
+The ordinary damage pipeline resolves links through their seed and each
+recipient's state. A per-target ramp advances once per tick and follows
+the target generation. Exact native broadphase tie order, first-tick
+activation and world-cover filters remain uncalibrated. The combat trace
+reports `beam_endpoint` and `beam_contacts` alongside primary impacts.
+
+Lingering fields spawned by a projectile contact stay at that contact
+and test posed bodies for every tick. They keep the spawning form's
+damage and the existing lifetime and stack rules.
+[M13](measurements/M13-torid-field-tick-clock.md) fixes Torid's first tick
+to the impact. Reload grenades use the source fan and posed 3D contact and
+falloff at the reticle reach for the modeled throw. Release-to-impact
+timing, gravity and installed release pose are still open.
 
 The scene refuses unsupported delivery routes including ricochets, melee
-sweeps, blobs, orbs, lingering fields, lock-on, tendrils, attractors,
-reload grenades, corpse/spawn/dagger routes, extra ability actors, ability grants,
+sweeps, blobs, orbs, lock-on, attractors, corpse/spawn/dagger routes,
+extra ability actors, ability grants,
 frame casting and echo/influence arcanes. Guided-projectile penetration and speed
 modifiers are also refused until their native consumers are bound. It does not
 silently run those through planar direct collision. No production default or board ruler selects this scene.

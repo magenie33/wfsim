@@ -114,14 +114,15 @@ def source_bone(model, wanted):
     return full
 
 
-def attach_token(ancestry, layers, candidates, records, bone_numbers):
+def attach_slots(ancestry, layers, candidates, records, bone_numbers, transformed):
     hands = {}
+    supported = {"MAIN_HAND", "OFF_HAND", "EXTRA1"} if transformed else {"MAIN_HAND", "OFF_HAND"}
     for owner in reversed(ancestry):
         declaration = layers.get(owner)
         if declaration is None:
             continue
         entries = fields(declaration.strip()[1:-1])
-        if set(entries) - {"MAIN_HAND", "OFF_HAND"}:
+        if set(entries) - supported:
             return
         for hand, raw in entries.items():
             slot = fields(raw.strip()[1:-1])
@@ -129,16 +130,15 @@ def attach_token(ancestry, layers, candidates, records, bone_numbers):
             if token != '""' and not token.startswith("/"):
                 slot["Type"] = str(PurePosixPath(owner).parent / token)
             hands.setdefault(hand, {}).update(slot)
-    slots = [row for row in hands.values() if row.get("Type", '""') != '""']
-    if len(slots) != 1:
+    slots = {hand: row for hand, row in hands.items() if row.get("Type", '""') != '""'}
+    if sum(hand != "EXTRA1" for hand in slots) != 1:
         return
-    slot = slots[0]
-    if slot.get("BoneName") not in bone_numbers or slot.get("RelativeToBounds", "0") != "0":
-        return
-    token = slot["Type"]
-    if token not in records or token not in candidates:
-        return
-    return token, slot
+    for slot in slots.values():
+        if slot.get("BoneName") not in bone_numbers or slot.get("RelativeToBounds", "0") != "0":
+            return
+        if slot["Type"] not in records or slot["Type"] not in candidates:
+            return
+    return slots
 
 
 def weapon_rig(path, slot, linked, mounts, models, bone_numbers):
@@ -209,15 +209,21 @@ def select_groups(form_rows, source, models, layers):
         involved = set.intersection(*(set(row["named_hand_or_heavy_mount_candidates"]) for row in forms))
         declaration = data["THIRD_PERSON_ATTACHMENT"]
         assert layers[declaration["declared_by"]] == declaration["source_text"]
-        found = attach_token(entry["ancestry_leaf_first"], layers, involved, links, bones)
-        if not found:
+        transformed = {row["form_or_action_id"] for row in forms} == {"base", "incarnon"}
+        slots = attach_slots(entry["ancestry_leaf_first"], layers, involved, links, bones, transformed)
+        if not slots:
             continue
-        path, slot = found
+        extra = slots.pop("EXTRA1", None)
+        slot = next(iter(slots.values()))
         if (style == "LEFT_HAND_ONLY") != slot["BoneName"].startswith("GAME_L1_"):
             continue
-        attach = weapon_rig(path, slot, links, models["mount_source"], models["models"], bones)
+        attach = weapon_rig(slot["Type"], slot, links, models["mount_source"], models["models"], bones)
         if attach is None:
             continue
+        if extra is not None:
+            other = weapon_rig(extra["Type"], extra, links, models["mount_source"], models["models"], bones)
+            if not attach["profiles"] or other != attach:
+                continue
         fire = {
             "attachment": 0, "mode": 0,
             "refresh_per_iteration": False, "advance_after_round": False,
