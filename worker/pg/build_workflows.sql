@@ -771,6 +771,10 @@ BEGIN
   IF split_part(NEW.family_source,'|',1)='workflow' AND EXISTS(SELECT 1 FROM entity_build_workflows w
     WHERE w.id=split_part(NEW.family_source,'|',2) AND w.source->>'family'='true') THEN
     INSERT INTO state_build_family_inbox(id,retry_at,input) VALUES(NEW.id,NEW.at,to_jsonb(NEW)) ON CONFLICT DO NOTHING;
+    IF NOT FOUND AND NOT EXISTS(SELECT 1 FROM state_build_family_inbox f
+      WHERE f.id=NEW.id AND f.input-'at'=to_jsonb(NEW)-'at') THEN
+      RAISE EXCEPTION 'family source already owns a different input' USING ERRCODE='23505';
+    END IF;
     RETURN NULL;
   END IF;
   RETURN NEW;

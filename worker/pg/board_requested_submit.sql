@@ -32,6 +32,10 @@ BEGIN
   IF NOT FOUND OR NEW.id<>'review:'||review.id THEN RETURN NEW; END IF;
   INSERT INTO entity_board_requests(id,kind,input,ruler,mode)
     VALUES(NEW.id,'correction',to_jsonb(NEW),review.ruler,review.mode) ON CONFLICT(id) DO NOTHING;
+  IF NOT FOUND AND NOT EXISTS(SELECT 1 FROM entity_board_requests r WHERE r.id=NEW.id
+    AND r.kind='correction' AND r.ruler=review.ruler AND r.mode=review.mode AND r.input-'at'=to_jsonb(NEW)-'at') THEN
+    RAISE EXCEPTION 'review source already owns a different input' USING ERRCODE='23505';
+  END IF;
   INSERT INTO state_board_requests(id) VALUES(NEW.id) ON CONFLICT(id) DO NOTHING;
   IF EXISTS(SELECT 1 FROM state_board_request_control WHERE id=1 AND enabled) THEN RETURN NULL; END IF;
   RETURN NEW;

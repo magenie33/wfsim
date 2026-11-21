@@ -221,6 +221,12 @@ try{
  assert(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',legacyInput.id),'the old inbox is retained');
  const correction='review:'+review.id;assert.equal((await requestRow(correction)).kind,'correction');
  assert(!(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',correction)),'the enabled review queue owns its observation');
+ const ownedReview=(await requestRow(correction)).input;
+ const retryReview=record=>db.run(`INSERT INTO record_build_submissions(id,at,record,initiator,observation)
+    VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING`,correction,old,record,ownedReview.initiator,ownedReview.observation);
+ await retryReview(ownedReview.record);
+ await assert.rejects(retryReview('{"weapon":"braton"}'),/review source already owns a different input/);
+ assert.deepEqual((await requestRow(correction)).input,ownedReview);
  assert((await pass()).staged);assert(!(await pass()).pending);
  assert.deepEqual(await db.get('SELECT to_jsonb(i) body FROM entity_build_intake_intents i WHERE id=?',legacy),legacyIntent,'fresh admission never changes the old intent');
  assert(await db.get("SELECT 1 FROM state_build_admission_work WHERE kind='intake' AND key=?",legacy),'the old staged work is not admitted');
@@ -361,8 +367,13 @@ try{
   {question:optimizer.computation,engine,result:{report:{results:[{mods:[...familyBase.mods.slice(0,-1),'speed_trigger'],
    arcane:familyBase.arcanes,mode}]}},work:100});
  const familyInputId='workflow:'+optimizer.workflow+':'+optimizer.id;
- assert(await db.get('SELECT 1 FROM state_build_family_inbox WHERE id=?',familyInputId));
+ const ownedFamily=(await db.get('SELECT input FROM state_build_family_inbox WHERE id=?',familyInputId)).input;
  assert(!(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',familyInputId)),'a family job owns its own winning build');
+ const retryFamily=record=>db.run(`INSERT INTO record_build_submissions(id,at,record,initiator,family_source)
+   VALUES(?,?,?,?,?) ON CONFLICT DO NOTHING`,familyInputId,old,record,ownedFamily.initiator,ownedFamily.family_source);
+ await retryFamily(ownedFamily.record);
+ await assert.rejects(retryFamily('{"weapon":"braton"}'),/family source already owns a different input/);
+ assert.deepEqual((await db.get('SELECT input FROM state_build_family_inbox WHERE id=?',familyInputId)).input,ownedFamily);
  const continued=await familyBoardPass(runner,{binary});
  assert.equal(continued.input,familyInputId);
  assert(!(await db.get('SELECT 1 FROM state_build_family_inbox WHERE id=?',familyInputId)),'only canonical intake acknowledges the family input');
@@ -401,7 +412,7 @@ try{
  assert.equal((await rawInboxRetentionPage(sql,{...retentionPage,apply:true})).removed,1);
  assert.deepEqual(await db.all("SELECT id FROM record_build_submissions WHERE id LIKE 'retention-%' ORDER BY id"),[
   {id:'retention-b'},{id:'retention-c'}]);
- assert(await requestRow('retention-a'),'retiring the exact copy preserves the pending request');
+ assert.equal((await requestRow('retention-a')).phase,'pending','retiring the exact copy preserves the pending request');
  assert(!(await db.get("SELECT 1 FROM state_build_inbox_positions WHERE id='retention-a'")));
  assert(await db.get("SELECT 1 FROM record_build_submissions WHERE id='old-inbox'"));
  const acknowledged={after:legacyInput.id.slice(0,-1),limit:1};
