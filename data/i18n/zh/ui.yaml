@@ -905,8 +905,9 @@ ui:
   "Relic era": 纪元
   "Planet": 星球
   "Mission": 任务
-  "About every {every} in the last {days} days": "近 {days} 天平均每 {every}一次"
-  "None in the last {days} days": "近 {days} 天没有出现"
+  "Only 1 opening in the last year": "近 1 年仅出现 1 次"
+  "About once every {n} min in the last year": "近 1 年平均每 {n} 分钟 1 次"
+  "Less than 1 min apart on average in the last year": "近 1 年平均间隔不到 1 分钟"
   "last {ago}": "上次 {ago}"
   "{n} d ago": "{n} 天前"
   "Reminder saved": 提醒已保存

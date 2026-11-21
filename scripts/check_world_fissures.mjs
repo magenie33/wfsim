@@ -55,10 +55,12 @@ check("a fissure relayed twice is logged once", Number(logged.n) === 7, logged.n
 const names = await call("/api/world/names");
 const row = (node) => (names.fissures || []).find((c) => c[3] === node);
 const neptune = row("SolNode1");
-check("a combination is [list, tier, mission, node, recent, last_ms]", neptune && neptune.slice(0, 4).join() === "normal,VoidT3,MT_CAPTURE,SolNode1",
+check("a combination is [list, tier, mission, node, recent, last_ms, first_ms]",
+  neptune?.length === 7 && neptune.slice(0, 4).join() === "normal,VoidT3,MT_CAPTURE,SolNode1",
   JSON.stringify(neptune));
 check("…counting only the retained calendar year's occurrences", neptune && neptune[4] === 3, JSON.stringify(neptune));
 check("…and when the last opened", neptune && neptune[5] === now - 60_000, JSON.stringify(neptune));
+check("…and when the first in the window opened", neptune?.[6] === since, JSON.stringify(neptune));
 check("a Void Storm's combination has no mission", row("CrewBattleNode519") && row("CrewBattleNode519")[2] === null);
 check("only retained nodes are named with their planets", names.nodes && names.nodes.SolNode1
   && names.nodes.SolNode1.planet === "/Lotus/Language/Locations/Neptune" && Object.keys(names.nodes).length === 3,
@@ -97,6 +99,9 @@ const captureStart = now - 60_000;
 const steelCapture = { ...fissure("steel-capture", "SolNode1", "VoidT3", "MT_CAPTURE", captureStart), Hard: true };
 await call("/api/world", { ...put, body: JSON.stringify({ ActiveMissions: [steelCapture,
   { ...steelCapture, _id: { $oid: "future" }, Activation: date(futureStart) }] }) });
+const captureStats = (await call("/api/world/names")).fissures.find(([list]) => list === "steel_path");
+check("frequency excludes a future opening and a single opening has identical endpoints",
+  captureStats?.[4] === 1 && captureStats[5] === captureStart && captureStats[6] === captureStart, JSON.stringify(captureStats));
 const neptunePlanet = "/Lotus/Language/Locations/Neptune";
 const steelRule = rule("fissure", { planet: neptunePlanet, list: "steel_path", mission: "MT_CAPTURE" }, commonStart);
 const exact = await query([steelRule]);

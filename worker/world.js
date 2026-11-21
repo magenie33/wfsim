@@ -41,13 +41,15 @@ export async function purgeFissures(env) {
 export async function worldRoute(request, env, ctx, path) {
   // WHAT A REMINDER CAN NAME BEFORE IT IS OPEN: the table the items are named
   // from, every combination of list, era, mission and node in the retained
-  // calendar year, its count and last opening, and the nodes and planets it names.
+  // calendar year, its count and first and last openings, and the nodes and planets it names.
   if (path === "/api/world/names") {
-    const { since, window_ms } = fissureWindow(Date.now());
+    const now = Date.now();
+    const { since, window_ms } = fissureWindow(now);
     const seen = env.LIBRARY && await env.LIBRARY.prepare(`SELECT list, tier, mission, node,
-        count(*) AS recent, max(started_at) AS last
-        FROM record_world_fissures WHERE started_at >= ?1 GROUP BY list, tier, mission, node`).bind(since).all()
-      .then((r) => r.results.map((x) => [x.list, x.tier, x.mission, x.node, Number(x.recent), Date.parse(x.last)]))
+        count(*) AS recent, max(started_at) AS last, min(started_at) AS first
+        FROM record_world_fissures WHERE started_at >= ?1 AND started_at <= ?2 GROUP BY list, tier, mission, node`)
+      .bind(since, new Date(now).toISOString()).all()
+      .then((r) => r.results.map((x) => [x.list, x.tier, x.mission, x.node, Number(x.recent), Date.parse(x.last), Date.parse(x.first)]))
       .catch(() => null);
     const nodes = {};
     for (const [, , , node] of seen || []) {

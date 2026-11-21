@@ -361,14 +361,6 @@ function reminderStatus(r) {
   return { text: [next || trF("{n} open now", { n: open }), stats].filter(Boolean).join(" · "), never: false };
 }
 
-/// A LENGTH OF TIME in minutes under two hours, then hours, then days: "every
-/// 2 h" for a fissure that comes every 90 minutes would round a third away.
-function utilitySpan(ms) {
-  const m = Math.max(1, Math.round(ms / 60000));
-  if (m < 120) return trF("{n} min", { n: m });
-  const h = Math.round(m / 60);
-  return h < 48 ? trF("{n} h", { n: h }) : trF("{n} d", { n: Math.round(h / 24) });
-}
 /// A MOMENT PAST, as how long ago, in the same units.
 function utilityAgo(ms) {
   const m = Math.floor((Date.now() - ms) / 60000);

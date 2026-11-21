@@ -216,4 +216,36 @@ const older = await page(`
 check("history keeps its earlier-page cursor through a retry and appends those windows",
   older.retry && older.rows === 2 && older.cursors.join() === "remote,remote", JSON.stringify(older));
 
+const frequency = await page(`
+  const now = Date.now(), minute = 60000;
+  const rows = [
+    ['steel_path', 'VoidT1', 'MT_DEFENSE', 'SolNode1', 2, now - 30 * minute, now - 300 * minute],
+    ['steel_path', 'VoidT2', 'MT_DEFENSE', 'SolNode2', 1, now, now],
+    ['steel_path', 'VoidT1', 'MT_RESCUE', 'SolNode3', 2, now, now - minute / 2],
+    ['normal', 'VoidT1', 'MT_DEFENSE', 'SolNode1', 20, now, now - 6000 * minute],
+  ];
+  worldNames = { ...worldNames, window_ms: 366 * 86400000, fissures: rows };
+  worldNamesAt = now;
+  const rule = { kind: 'fissure', attributes: { list: 'steel_path', mission: 'MT_DEFENSE' } };
+  storeJson(REMINDERS_KEY, [rule]);
+  renderUtility();
+  const chinese = document.querySelector('#utility-reminders .brow .fnode').textContent;
+  const two = fissureStats({ attributes: { ...rule.attributes, tier: 'VoidT1' } }, 1);
+  const one = fissureStats({ attributes: { ...rule.attributes, tier: 'VoidT2' } }, 1);
+  const brief = fissureStats({ attributes: { mission: 'MT_RESCUE' } }, 1);
+  const restore = { lang: LANG, i18n: I18N };
+  LANG = 'en'; I18N = null;
+  const english = fissureStats(rule, 1);
+  LANG = restore.lang; I18N = restore.i18n;
+  worldNames.fissures = rows.map((r) => r.slice(0, 6));
+  return { chinese, english, two, one, brief, old: fissureStats(rule, 1) };
+`);
+check("fissure frequency uses the span and interval count of all matching rows, in minutes",
+  frequency.chinese.includes("近 1 年平均每 150 分钟 1 次")
+  && frequency.english === "About once every 150 min in the last year"
+  && frequency.two === "近 1 年平均每 270 分钟 1 次", JSON.stringify(frequency));
+check("one opening has no estimated interval, and intervals below a minute are labeled",
+  frequency.one === "近 1 年仅出现 1 次" && frequency.brief === "近 1 年平均间隔不到 1 分钟", JSON.stringify(frequency));
+check("an older names response without the first opening supplies no estimate", frequency.old === null, JSON.stringify(frequency));
+
 await app.finish("what the site tells the reader is a card in the corner and a count on the bell");

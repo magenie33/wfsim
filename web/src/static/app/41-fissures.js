@@ -82,7 +82,7 @@ const FISSURE_NEW_KEYS = ["list", "tier", "mission", "planet", "node"];
 const fissureNewEmpty = () => Object.fromEntries(FISSURE_NEW_KEYS.map((k) => [k, null]));
 let fissureNew = fissureNewEmpty();
 /// EVERY RETAINED COMBINATION, as `{list, tier, mission, planet, node, recent,
-/// last_ms}`: the worker sends `[list, tier, mission, node, recent, last_ms]`,
+/// last_ms, first_ms}`: each row carries the span of its retained openings,
 /// and a node's planet is the node's own.
 let fissureSeenOf = null, fissureSeenRows = [];
 function fissureSeen() {
@@ -91,8 +91,8 @@ function fissureSeen() {
   if (fissureSeenOf === rows) return fissureSeenRows;
   const nodes = worldNames.nodes || {};
   fissureSeenOf = rows;
-  fissureSeenRows = rows.map(([list, tier, mission, node, recent, last_ms]) => ({ list, tier, mission,
-    planet: (nodes[node] || {}).planet || null, node: node || null, recent: recent || 0, last_ms: last_ms || 0 }));
+  fissureSeenRows = rows.map(([list, tier, mission, node, recent, last_ms, first_ms]) => ({ list, tier, mission,
+    planet: (nodes[node] || {}).planet || null, node: node || null, recent: recent || 0, last_ms: last_ms || 0, first_ms }));
   return fissureSeenRows;
 }
 /// Whether a seen combination holds every attribute in `picks` (null: any).
@@ -108,18 +108,24 @@ function fissurePossible(r) {
   if (!seen.length) return null;
   return seen.some((c) => fissureHolds(c, r.attributes || {}));
 }
-/// HOW OFTEN ONE LIKE IT COMES: the fissures it would have matched in the
-/// worker's window, as one every so long, and — none open now — how long ago
-/// the last opened. Null before the log is read.
+/// Mean spacing across all matching openings in the retained year. With
+/// nothing open now, also show how long ago the last one opened.
 function fissureStats(r, open) {
   const seen = fissureSeen().filter((c) => fissureHolds(c, r.attributes || {}));
-  if (!seen.length || !worldNames.window_ms) return null;
+  if (!seen.length) return null;
   const recent = seen.reduce((s, c) => s + c.recent, 0);
   const last = Math.max(...seen.map((c) => c.last_ms));
-  const days = worldNames.window_ms / 86400_000;
-  const often = recent ? trF("About every {every} in the last {days} days", { every: utilitySpan(worldNames.window_ms / recent), days })
-    : trF("None in the last {days} days", { days });
-  return open || !last ? often : `${often} · ${trF("last {ago}", { ago: utilityAgo(last) })}`;
+  let frequency = recent === 1 ? tr("Only 1 opening in the last year") : null;
+  if (recent >= 2 && seen.every((c) => Number.isFinite(c.first_ms))) {
+    const first = Math.min(...seen.map((c) => c.first_ms));
+    const minutes = (last - first) / (recent - 1) / 60_000;
+    frequency = minutes < 1 ? tr("Less than 1 min apart on average in the last year")
+      : trF("About once every {n} min in the last year", {
+        n: new Intl.NumberFormat(LANG, { maximumFractionDigits: 1 }).format(minutes),
+      });
+  }
+  const latest = !open && last ? trF("last {ago}", { ago: utilityAgo(last) }) : null;
+  return [frequency, latest].filter(Boolean).join(" · ") || null;
 }
 function fissureBuild(box) {
   if (!worldNames) {

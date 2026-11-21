@@ -709,7 +709,7 @@ The check runs against the dev server or the shipping build.
 The fissure log (`worker/world.js`) on PGlite, no network: a relayed fissure
 carries its node's planet (a Void Storm its Proxima's), is logged once however
 often it is relayed, and `/api/world/names` hands back each combination with
-counts and last openings from one rolling UTC calendar year. Expired-only
+counts and first and last openings from one rolling UTC calendar year. Expired-only
 combinations and their nodes disappear before cleanup; daily cleanup deletes
 old records, preserves the exact cutoff and follows its movement. Leap days
 and Gregorian century boundaries retain the correct 365- or 366-day window.
@@ -824,6 +824,9 @@ bar and its panel on screen.
 The Reminders page reads mission windows from the server with the saved rules,
 shows their start and end in the browser's time zone, and can load earlier
 windows even when the browser's notification history is empty.
+Fissure frequency uses the first and last matching openings and the number of
+intervals across combinations. English and Chinese present the window as one
+year, and one opening has no estimated interval.
 
 ## `check_fx_lines`
 
