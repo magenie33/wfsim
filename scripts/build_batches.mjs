@@ -18,11 +18,11 @@ const statement = (table, deleting) => deleting
 export async function prepareIntakeBuild(build) {
   const now=Date.now();
   build.deadlines ||= {intake:new Date(now+DEADLINE_MS.new_build).toISOString(),correction:new Date(now+DEADLINE_MS.board_review).toISOString(),system:new Date(now).toISOString()};
-  for(const node of build.flow?.nodes || []) {
+  for(const flow of [build.flow,build.family_flow].filter(Boolean))for(const node of flow.nodes || []) {
     let request=node.request;
     if(node.kind==='measure') {
-      request={...build.flow.templates[node.template],...build.flow.patches[node.patch].set};
-      for(const key of build.flow.patches[node.patch].remove)delete request[key];
+      request={...flow.templates[node.template],...flow.patches[node.patch].set};
+      for(const key of flow.patches[node.patch].remove)delete request[key];
     }
     node.computation=await computationId(node.kind==='measure'?'simulate':'optimize_report',request);
   }

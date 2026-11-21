@@ -162,9 +162,10 @@ BEGIN
         AND item->>'ruler'=f.source#>>'{observation,ruler}' AND item->>'mode'=f.source#>>'{observation,mode}') THEN
     RAISE EXCEPTION 'correction expansion is missing the observed measurement';
   END IF;
-  INSERT INTO state_build_admission_work(kind,key,zone,lane,position,created_at,retry_at)
+  INSERT INTO state_build_admission_work(kind,key,zone,lane,position,created_at,retry_at,family)
     SELECT 'expansion',expansion_id,f.zone,CASE WHEN f.source->>'origin'='requested' THEN 'requested' ELSE 'bulk' END,
-      min(queue_position),$4,$4 FROM state_build_workflow_nodes WHERE workflow=$1 AND expansion=expansion_id HAVING count(*)>0
+      min(queue_position),$4,$4,coalesce(f.source->>'family'='true',false)
+      FROM state_build_workflow_nodes WHERE workflow=$1 AND expansion=expansion_id HAVING count(*)>0
     ON CONFLICT(kind,key) DO NOTHING;
 END $$;
 
@@ -206,9 +207,7 @@ BEGIN
     SELECT record INTO held FROM entity_weapon_builds WHERE id=input->>'id';
     IF held::jsonb IS DISTINCT FROM input->'record' THEN RAISE EXCEPTION 'build identity has different canonical inputs'; END IF;
     plan:=input->'flow'; observation:=input->'observation';
-    trigger_key:=coalesce(observation->>'review',CASE WHEN input#>>'{system_source,id}' IS NOT NULL
-      THEN build_workflow_system_key(input#>>'{system_source,id}',input->>'id') END,
-      'intake:'||(input->>'id')||':'||md5(jsonb_build_array(input->'from',plan->'scope')::text));
+    trigger_key:=build_intake_key(input);
     recovery:=input->>'recovery_of';
     IF recovery IS NOT NULL THEN
       IF NOT pg_has_role(session_user,(SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='entity_build_workflows'::regclass),'MEMBER') THEN
@@ -271,6 +270,7 @@ BEGIN
     reason:=NULL;
     IF recovery IS NOT NULL THEN reason:=prior.kind;priority:=prior.zone;
     ELSIF jsonb_typeof(input->'system_source')='object' THEN reason:='system';priority:=coalesce((input->>'zone')::bigint,0);
+    ELSIF input->>'family_creation'='true' THEN reason:='intake';priority:=3;
     ELSIF build_intake_matches_observation(input) THEN
       reason:='correction';priority:=1;
     ELSE
@@ -291,11 +291,15 @@ BEGIN
     END IF;
     IF plan IS NULL OR plan->>'schema' IS DISTINCT FROM '1' THEN RAISE EXCEPTION 'first intake requires a captured workflow'; END IF;
     captured_key:=md5((input->>'id')||E'\n'||plan::text||CASE WHEN reason='intake' THEN '' ELSE E'\n'||trigger_key END);
+    IF input->>'family_creation'='true' THEN captured_key:='family:'||captured_key; END IF;
     UPDATE state_build_workflows SET state='cancelled',completed_at=at WHERE scope_key=captured_key AND state='active' AND compute_order_workflow_cancelled(id);
     SELECT id INTO flow_id FROM state_build_workflows WHERE scope_key=captured_key AND state='active' FOR UPDATE;
     origin:=jsonb_build_object('kind',reason,'inbox',coalesce(input->'from','[]'::jsonb),'observation',observation,
       'system',input->'system_source','deadlines',input->'deadlines','origin',CASE WHEN reason='system' OR input->>'initiator'='system' THEN 'system'
         WHEN input->>'initiator'='anonymous' OR input->>'initiator' LIKE 'user:%' OR input->>'initiator' LIKE 'bot:%' THEN 'requested' ELSE 'unknown' END);
+    IF input->>'family_creation'='true' THEN
+      origin:=origin||'{"family":true}'::jsonb;
+    END IF;
     IF recovery IS NOT NULL THEN
       origin:=origin||jsonb_build_object('recovery',jsonb_build_object('workflow',recovery,'reason','invalid empty captured scope',
         'prior_state',prior.state,'prior_completed_at',prior.completed_at,'plan_md5',md5(plan::text),'original_source',prior.source));
@@ -434,6 +438,8 @@ CREATE TABLE IF NOT EXISTS state_build_admission_work (
   PRIMARY KEY(kind,key)
 );
 CREATE INDEX IF NOT EXISTS build_admission_fifo ON state_build_admission_work(kind,lane,zone,position,key);
+ALTER TABLE state_build_admission_work ADD COLUMN IF NOT EXISTS family BOOLEAN NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS build_admission_family ON state_build_admission_work(position,key) WHERE family;
 CREATE TABLE IF NOT EXISTS state_build_admission_turns (
   kind TEXT COLLATE "C" PRIMARY KEY,
   lane TEXT COLLATE "C" NOT NULL CHECK(lane IN('requested','bulk'))
@@ -455,7 +461,8 @@ CREATE TRIGGER build_intake_source_retained BEFORE UPDATE OR DELETE ON relation_
   FOR EACH ROW EXECUTE FUNCTION build_intake_immutable();
 
 CREATE OR REPLACE FUNCTION build_intake_key(jsonb) RETURNS text LANGUAGE sql IMMUTABLE AS $$
-  SELECT CASE WHEN $1->>'recovery_of' IS NOT NULL THEN build_workflow_recovery_key($1->>'recovery_of') ELSE
+  SELECT CASE WHEN $1->>'recovery_of' IS NOT NULL THEN build_workflow_recovery_key($1->>'recovery_of')
+    WHEN $1->>'family_creation'='true' THEN 'family:'||($1->>'id') ELSE
     coalesce($1#>>'{observation,review}',CASE WHEN $1#>>'{system_source,id}' IS NOT NULL
       THEN build_workflow_system_key($1#>>'{system_source,id}',$1->>'id') END,
       'intake:'||($1->>'id')||':'||md5(jsonb_build_array($1->'from',$1#>'{flow,scope}')::text)) END
@@ -464,6 +471,7 @@ $$;
 CREATE OR REPLACE FUNCTION build_intake_batch(text) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE input jsonb; identity text; held text; intent text; positions jsonb; priority bigint; lane text;parent_scope jsonb;plan_key text;captured_plan jsonb;inserted text;
+  family boolean; family_plan jsonb; root_identity text; root_record jsonb; root_inserted text;
   at text:=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
 BEGIN
   PERFORM compute_order_cut_lock();
@@ -471,6 +479,7 @@ BEGIN
     RAISE EXCEPTION 'invalid intake batch'; END IF;
   FOR input IN SELECT value FROM jsonb_array_elements($1::jsonb) ORDER BY value->>'id' LOOP
     identity:=input->>'id';
+    family:=coalesce(input->>'family_creation'='true',false);
     IF coalesce(length(identity),0)=0 OR jsonb_typeof(input->'record') IS DISTINCT FROM 'object' THEN
       RAISE EXCEPTION 'canonical intake requires a build identity and record'; END IF;
     IF NOT(coalesce((input->>'derived')::boolean,false) AND input#>>'{flow_source,workflow}' IS NULL)
@@ -481,7 +490,8 @@ BEGIN
     IF EXISTS(SELECT 1 FROM jsonb_array_elements(coalesce(input#>'{flow,nodes}','[]'::jsonb)) n
       WHERE coalesce(n->>'computation','')!~'^[0-9a-f]{32}$') THEN RAISE EXCEPTION 'workflow node requires a canonical computation identity';END IF;
     IF input#>>'{flow_source,workflow}' IS NOT NULL THEN
-      SELECT scope.definition INTO parent_scope FROM entity_build_workflows w JOIN entity_build_workflow_scopes scope ON scope.id=w.scope_id
+      SELECT scope.definition,coalesce(w.source->>'family'='true',false) INTO parent_scope,family
+        FROM entity_build_workflows w JOIN entity_build_workflow_scopes scope ON scope.id=w.scope_id
         WHERE w.id=input#>>'{flow_source,workflow}';
       IF parent_scope IS NOT NULL AND (jsonb_typeof(parent_scope) IS DISTINCT FROM 'object' OR input#>'{flow,scope}' IS DISTINCT FROM parent_scope)
         THEN RAISE EXCEPTION 'derived input changed its captured workflow scope';END IF;
@@ -513,11 +523,35 @@ BEGIN
     lane:=CASE WHEN input->>'initiator'='anonymous' OR input->>'initiator' LIKE 'user:%' OR input->>'initiator' LIKE 'bot:%'
       OR input#>>'{observation,valid}'='true' THEN 'requested' ELSE 'bulk' END;
     INSERT INTO entity_build_intake_intents(id,build_id,plan_id,input,created_at)
-      VALUES(intent,identity,plan_key,(input-'flow')||jsonb_build_object('admission_positions',positions,'admission_lane',lane,'admission_at',at,'admission_new',inserted IS NOT NULL),at);
+      VALUES(intent,identity,plan_key,(input-ARRAY['flow','family_flow','family_root'])||jsonb_build_object(
+        'admission_positions',positions,'admission_lane',lane,'admission_at',at,'admission_new',inserted IS NOT NULL),at);
     INSERT INTO relation_build_intake_sources(source_id,intent)
       SELECT value,intent FROM jsonb_array_elements_text(coalesce(input->'from','[]'::jsonb)) ON CONFLICT DO NOTHING;
-    INSERT INTO state_build_admission_work(kind,key,zone,lane,position,created_at,retry_at)
-      VALUES('intake',intent,priority,lane,coalesce((positions->>0)::bigint,nextval('compute_queue_position')),at,at);
+    INSERT INTO state_build_admission_work(kind,key,zone,lane,position,created_at,retry_at,family)
+      VALUES('intake',intent,priority,lane,coalesce((positions->>0)::bigint,nextval('compute_queue_position')),at,at,coalesce(family,false));
+    family_plan:=input->'family_flow';
+    IF jsonb_typeof(family_plan)='object' AND (jsonb_array_length(family_plan->'nodes')>0 OR jsonb_array_length(family_plan->'builds')>0)
+      AND NOT coalesce((input->>'derived')::boolean,false) AND input#>>'{flow_source,workflow}' IS NULL
+      AND input->>'observation' IS NULL AND input->>'system_source' IS NULL AND NOT coalesce(family,false) THEN
+      root_identity:=coalesce(input#>>'{family_root,id}',identity);
+      root_record:=coalesce(input#>'{family_root,record}',input->'record');
+      root_inserted:=inserted;
+      IF root_identity<>identity THEN
+        -- A requested public riven corner can have a different identity from its submitted build.
+        IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(input#>'{flow,builds}') b
+          WHERE b->>'id'=root_identity AND b->'record'=root_record AND b#>>'{record,weapon}'=input#>>'{record,weapon}') THEN
+          RAISE EXCEPTION 'family root is outside the canonical intake plan'; END IF;
+        INSERT INTO entity_weapon_builds(id,at,record) VALUES(root_identity,left(input->>'at',10),root_record::text)
+          ON CONFLICT DO NOTHING RETURNING id INTO root_inserted;
+        SELECT record INTO held FROM entity_weapon_builds WHERE id=root_identity;
+        IF held::jsonb IS DISTINCT FROM root_record THEN RAISE EXCEPTION 'family root has different canonical inputs'; END IF;
+      END IF;
+      IF root_inserted IS NOT NULL THEN
+        PERFORM build_intake_batch(jsonb_build_array(jsonb_build_object('id',root_identity,'record',root_record,
+          'at',input->'at','from',input->'from','initiator','system','family_creation',true,
+          'flow',family_plan,'deadlines',input->'deadlines'))::text);
+      END IF;
+    END IF;
   END LOOP;
 END $$;
 REVOKE ALL ON FUNCTION build_intake_batch(text),build_intake_register(text) FROM PUBLIC;
@@ -605,10 +639,10 @@ BEGIN
   INSERT INTO state_build_admission_turns VALUES($1,'requested') ON CONFLICT DO NOTHING;
   SELECT lane INTO wanted FROM state_build_admission_turns WHERE kind=$1 FOR UPDATE;
   WITH heads AS MATERIALIZED(
-    (SELECT key FROM state_build_effective_admission_work WHERE kind=$1 AND lane='requested' AND retry_at<=$2 AND (lease IS NULL OR lease_until<=$2)
+    (SELECT key FROM state_build_effective_admission_work WHERE kind=$1 AND lane='requested' AND NOT family AND retry_at<=$2 AND (lease IS NULL OR lease_until<=$2)
       ORDER BY zone,position,key LIMIT 1)
     UNION ALL
-    (SELECT key FROM state_build_effective_admission_work WHERE kind=$1 AND lane='bulk' AND retry_at<=$2 AND (lease IS NULL OR lease_until<=$2)
+    (SELECT key FROM state_build_effective_admission_work WHERE kind=$1 AND lane='bulk' AND NOT family AND retry_at<=$2 AND (lease IS NULL OR lease_until<=$2)
       ORDER BY zone,position,key LIMIT 1))
   SELECT w.* INTO held FROM heads h JOIN state_build_admission_work w ON w.kind=$1 AND w.key=h.key
     ORDER BY w.zone,w.lane<>wanted,w.position,w.key LIMIT 1 FOR UPDATE OF w SKIP LOCKED;
@@ -707,3 +741,104 @@ BEGIN
   RETURN NULL;
 END $$;
 REVOKE ALL ON FUNCTION build_workflow_capture_review(text,text,text) FROM PUBLIC;
+
+INSERT INTO state_task_pipeline_controls(name,paused,changed_at,changed_by) VALUES('family',true,
+  to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),'schema') ON CONFLICT DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS state_build_family_inbox (
+  id TEXT COLLATE "C" PRIMARY KEY REFERENCES record_build_submissions(id) ON DELETE CASCADE,
+  retry_at TEXT COLLATE "C" NOT NULL,
+  lease UUID,
+  lease_until TEXT COLLATE "C",
+  error TEXT
+);
+CREATE INDEX IF NOT EXISTS build_family_inbox_ready ON state_build_family_inbox(retry_at,id);
+
+-- Only continuations of the independently admitted creation workflows use this inbox.
+CREATE OR REPLACE FUNCTION build_family_capture_output() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+BEGIN
+  IF split_part(NEW.family_source,'|',1)='workflow' AND EXISTS(SELECT 1 FROM entity_build_workflows w
+    WHERE w.id=split_part(NEW.family_source,'|',2) AND w.source->>'family'='true') THEN
+    INSERT INTO state_build_family_inbox(id,retry_at) VALUES(NEW.id,NEW.at) ON CONFLICT DO NOTHING;
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS build_family_output_ready ON record_build_submissions;
+CREATE TRIGGER build_family_output_ready AFTER INSERT ON record_build_submissions
+  FOR EACH ROW WHEN(NEW.family_source IS NOT NULL) EXECUTE FUNCTION build_family_capture_output();
+
+CREATE OR REPLACE FUNCTION build_family_claim(text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE held state_build_family_inbox%ROWTYPE;
+BEGIN
+  PERFORM 1 FROM state_task_pipeline_controls WHERE name='family' AND NOT paused FOR SHARE;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  SELECT * INTO held FROM state_build_family_inbox WHERE retry_at<=$1 AND (lease IS NULL OR lease_until<=$1)
+    ORDER BY retry_at,id LIMIT 1 FOR UPDATE SKIP LOCKED;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  UPDATE state_build_family_inbox SET lease=gen_random_uuid(),
+    lease_until=to_char(($1::timestamptz+interval '2minutes') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+    WHERE id=held.id RETURNING * INTO held;
+  RETURN (SELECT to_jsonb(i)||jsonb_build_object('lease',held.lease) FROM state_build_inbox_inputs i WHERE i.id=held.id);
+END $$;
+
+CREATE OR REPLACE FUNCTION build_family_stage(text,uuid,text,text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE input jsonb:=$3::jsonb; raw record_build_submissions%ROWTYPE;
+BEGIN
+  PERFORM 1 FROM state_task_pipeline_controls WHERE name='family' AND NOT paused FOR SHARE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'family intake is paused' USING ERRCODE='55000'; END IF;
+  SELECT * INTO raw FROM record_build_submissions WHERE id=$1 FOR UPDATE;
+  PERFORM 1 FROM state_build_family_inbox WHERE id=$1 AND lease=$2 AND lease_until>$4 FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'family input lease changed' USING ERRCODE='40001'; END IF;
+  IF input IS NOT NULL THEN
+    IF input->'from' IS DISTINCT FROM jsonb_build_array($1) OR input->>'derived' IS DISTINCT FROM 'true'
+      OR input->>'family_flow' IS NOT NULL OR input->>'system_source' IS NOT NULL
+      OR input->>'family_creation' IS NOT NULL OR input->>'observation' IS NOT NULL
+      OR input#>>'{flow_source,workflow}' IS DISTINCT FROM split_part(raw.family_source,'|',2)
+      OR input#>>'{flow_source,node}' IS DISTINCT FROM split_part(raw.family_source,'|',3)
+      OR EXISTS(SELECT 1 FROM jsonb_array_elements(input#>'{flow,nodes}') node
+        WHERE node->>'kind' IS DISTINCT FROM 'measure') THEN
+      RAISE EXCEPTION 'family output changed its captured source'; END IF;
+    PERFORM build_intake_batch(jsonb_build_array(input)::text);
+  END IF;
+  PERFORM build_spend_submissions(jsonb_build_array($1)::text);
+END $$;
+
+CREATE OR REPLACE FUNCTION build_family_retry(text,uuid,text,text) RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  UPDATE state_build_family_inbox SET lease=NULL,lease_until=NULL,error=left($3,1000),
+    retry_at=to_char(($4::timestamptz+interval '30 seconds') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+    WHERE id=$1 AND lease=$2 AND lease_until>$4
+$$;
+
+CREATE OR REPLACE FUNCTION build_family_admit(text,bigint) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE held state_build_admission_work%ROWTYPE; token text:=gen_random_uuid()::text; failure text;
+BEGIN
+  PERFORM 1 FROM state_task_pipeline_controls WHERE name='family' AND NOT paused FOR SHARE;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  IF $2 IS NULL OR $2<1 OR $2>16 THEN RAISE EXCEPTION 'family admission limit must be 1..16'; END IF;
+  PERFORM compute_order_cut_lock();
+  SELECT w.* INTO held FROM state_build_admission_work w
+    WHERE w.family AND w.retry_at<=$1 AND (w.lease IS NULL OR w.lease_until<=$1)
+    ORDER BY w.position,w.key LIMIT 1 FOR UPDATE SKIP LOCKED;
+  IF NOT FOUND THEN RETURN NULL; END IF;
+  IF NOT EXISTS(SELECT 1 FROM state_build_effective_admission_work WHERE kind=held.kind AND key=held.key) THEN
+    DELETE FROM state_build_admission_work WHERE kind=held.kind AND key=held.key;
+    RETURN jsonb_build_object('kind',held.kind,'key',held.key,'cancelled',true);
+  END IF;
+  UPDATE state_build_admission_work SET lease=token,
+    lease_until=to_char(($1::timestamptz+interval '2minutes') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+    WHERE kind=held.kind AND key=held.key;
+  BEGIN
+    RETURN build_admission_run(held.kind,held.key,token,$2,$1);
+  EXCEPTION WHEN OTHERS THEN
+    GET STACKED DIAGNOSTICS failure=MESSAGE_TEXT;
+    PERFORM build_admission_retry(held.kind,held.key,token,left(failure,1000),$1);
+    RETURN jsonb_build_object('kind',held.kind,'key',held.key,'error',failure);
+  END;
+END $$;
+REVOKE ALL ON FUNCTION build_family_capture_output(),build_family_claim(text),build_family_stage(text,uuid,text,text),
+  build_family_retry(text,uuid,text,text),build_family_admit(text,bigint) FROM PUBLIC;

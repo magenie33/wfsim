@@ -23,7 +23,7 @@ export function buildAdmissionSchemaSql({role='wfsim',tablespace=null}={}) {
   const admission=schema.match(/CREATE OR REPLACE FUNCTION compute_admit_tasks[^]*?END \$\$;/)?.[0];
   if(!admission?.includes("coalesce((source.value->>'position')::bigint"))throw Error('missing captured queue position support');
   const indexes=[...workflows.matchAll(/CREATE (?:UNIQUE )?INDEX IF NOT EXISTS ([a-z_]+) ON ([a-z_]+)/g)]
-    .filter(match=>!['state_build_admission_work','state_build_inbox_positions','record_build_workflow_triggers'].includes(match[2])).map(match=>match[1]);
+    .filter(match=>!['state_build_admission_work','state_build_inbox_positions','record_build_workflow_triggers','state_build_family_inbox'].includes(match[2])).map(match=>match[1]);
   if(indexes.length!==3)throw Error('workflow index prerequisite set changed');
   const names=indexes.map(name=>`('${name}')`).join(',');
   return `BEGIN;
@@ -49,6 +49,10 @@ ${orderCutBusinessSql()}
 ${workflows.replace(triggerIndex(),'')}
 ${admission}
 DO $grant$ BEGIN
+ IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_board_requested') THEN
+  GRANT EXECUTE ON FUNCTION build_family_claim(text),build_family_stage(text,uuid,text,text),
+   build_family_retry(text,uuid,text,text),build_family_admit(text,bigint) TO wfsim_board_requested;
+ END IF;
  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_factoryd') THEN
   GRANT SELECT(at) ON entity_compute_batches TO wfsim_factoryd;
   GRANT SELECT ON state_build_admission_work,state_build_effective_admission_work,state_compute_effective_open,state_compute_effective_work,state_board_effective_pending_work TO wfsim_factoryd;

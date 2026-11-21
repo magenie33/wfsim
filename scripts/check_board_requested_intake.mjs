@@ -8,7 +8,9 @@ import {randomBytes,createHash} from 'node:crypto';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import {pgDb,postgresClient,placeholders} from '../worker/db.js';
 import worker from '../worker/index.js';
-import {normalizeBoardRequest,requestedBoardPass} from './board_requested_intake.mjs';
+import {familyBoardPass,normalizeBoardRequest,requestedBoardPass} from './board_requested_intake.mjs';
+import {factory,canon} from '../worker/tasks.js';
+import {BUILD_WORKFLOW_PRODUCER} from '../worker/build_workflows.js';
 import {openBoardResultFlow} from './board_result_flow.mjs';
 import {boardRequestedSchema,boardRequestedSubmitUpgrade} from './board_requested_schema.mjs';
 import {calculationId} from '../worker/board_tasks.js';
@@ -93,6 +95,8 @@ try{
  for(const benchmark of ['demolisher',ruler]){
   const input=await normalizeBoardRequest(binary,{kind:'missing',ruler:benchmark,mode,
    input:{id:'retained-'+benchmark,at:old,record:JSON.stringify({...record,benchmark,mode}),initiator:'anonymous'}});
+  delete input.family_flow;
+  delete input.family_root;
   await db.run('SELECT build_intake_batch(?::text)',JSON.stringify([input]));
   for(const kind of ['intake','expansion']){
    const {job}=await db.get('SELECT build_admission_claim(?::text,board_input_timestamp(clock_timestamp())) job',kind);assert(job);
@@ -322,10 +326,54 @@ try{
  assert.deepEqual(await db.all("SELECT * FROM state_task_pipeline_controls WHERE name='admission'"),fences);
  assert.deepEqual(await db.all('SELECT * FROM entity_compute_order_cuts'),cut);
  assert.deepEqual(await db.all('SELECT * FROM relation_compute_order_cut_protection'),protectedRows,'fresh leases cannot change the retained protection manifest');
+ const familyBase={weapon:'burston_prime',mods:['serration','split_chamber','point_strike','vital_sense','hellfire',
+  'infected_clip','stormbringer','gilded_truth'],arcanes:['primary_merciless'],benchmark:ruler,mode,requested:true};
+ const familyRequest=await post('/api/board/submit',familyBase);
+ assert.equal(familyRequest.status,200);
+ const {request:familyRequestId}=await familyRequest.json();
+ const admitRequest=async id=>{
+  for(let i=0;i<8;i++){
+   const row=await requestRow(id);
+   if(row.phase==='admitted')return row;
+   assert(['pending','staged'].includes(row.phase),JSON.stringify(row));
+   await pass();
+  }
+  assert.fail('requested intake did not admit '+id);
+ };
+ const {workflow:familyRoot}=await admitRequest(familyRequestId);
+ assert.equal((await db.get('SELECT count(*) n FROM state_build_workflow_nodes WHERE workflow=?',familyRoot)).n,1);
+ assert.deepEqual(await familyBoardPass(runner,{binary}),{idle:true},'player intake works while family dispatch is paused');
+ await db.run("UPDATE state_task_pipeline_controls SET paused=false WHERE name='family'");
+ const rootIdentity=(await db.get('SELECT build_id FROM entity_build_workflows WHERE id=?',familyRoot)).build_id;
+ const familyKey='family:'+rootIdentity;
+ const findOptimizer=()=>db.get(`SELECT n.* FROM state_build_workflow_nodes n JOIN record_build_workflow_triggers t ON t.workflow=n.workflow
+   WHERE t.id=? AND n.definition->>'kind'='optimize' AND n.state='queued'`,familyKey);
+ let optimizer;
+ for(let i=0;i<96&&!optimizer;i++){await familyBoardPass(runner,{binary});optimizer=await findOptimizer();}
+ assert(optimizer,'the separate family pass admits the incompatible variant while general admission is paused');
+ assert.equal((await db.get('SELECT zone FROM state_compute_work WHERE id=?',optimizer.computation)).zone,3);
+ assert(optimizer.definition.request.starts[0].slots.includes(null));
+ assert(!optimizer.definition.request.starts[0].slots.includes('gilded_truth'));
+ const witnesses=factory({verbs:{optimize_report:{cap:3,lease_ms:60000,canon}},producers:{build_workflow:BUILD_WORKFLOW_PRODUCER}});
+ await witnesses.answerOfficial(env,{device:'official:family-fixture',owner:'official:family-fixture'},
+  {question:optimizer.computation,engine,result:{report:{results:[{mods:[...familyBase.mods.slice(0,-1),'speed_trigger'],
+   arcane:familyBase.arcanes,mode}]}},work:100});
+ const continued=await familyBoardPass(runner,{binary});
+ assert.equal(continued.input,'workflow:'+optimizer.workflow+':'+optimizer.id);
+ for(let i=0;i<96;i++){if((await familyBoardPass(runner,{binary})).idle)break;assert(i<95);}
+ const children=await db.all("SELECT definition,state FROM state_build_workflow_nodes WHERE workflow=? AND expansion<>?",optimizer.workflow,optimizer.expansion);
+ assert(children.length>0);
+ assert(children.every(child=>child.definition.kind==='measure'&&child.state==='queued'));
+ assert.equal((await db.get('SELECT state FROM state_build_workflow_nodes WHERE workflow=? AND id=?',optimizer.workflow,optimizer.id)).state,'succeeded');
+ assert.equal((await db.get('SELECT count(*) n FROM entity_build_workflows WHERE source->>\'family\'=\'true\' AND build_id=?',rootIdentity)).n,1);
+ const replay=await post('/api/board/submit',familyBase);assert.equal(replay.status,200);
+ await admitRequest((await replay.json()).request);
+ assert.deepEqual(await familyBoardPass(runner,{binary}),{idle:true},'repeat submission creates no sibling workflow');
+ assert.deepEqual(await db.all("SELECT * FROM state_task_pipeline_controls WHERE name='admission'"),fences);
  console.log(JSON.stringify({ok:true,source_kinds:2,canonical_identity:normalized.id,community_witnesses:8,standard_riven:standardized.id,
   published_score:13,old_inbox_retained:true,bulk_admission_paused:true,active_cut_preserved:true,public_work_and_answers:true,
   automatic_partition:true,legacy_unadmitted_replaced:true,cancelled_execution_preserved:true,unqualified_static_retained:true,namespace_isolation:true,
-  retained_prefix_priority_preserved:true,shared_held_lease_preserved:true,explicit_missing_zone:0}));
+  retained_prefix_priority_preserved:true,shared_held_lease_preserved:true,explicit_missing_zone:0,family_creation_and_native_continuation:true}));
 }catch(error){console.error({query:error.query,parameters:error.parameters,where:error.where});throw error;}finally{
  await flow?.close();await runner?.end();await sql.unsafe('DROP SCHEMA '+schema+' CASCADE');
  await sql.unsafe('DROP ROLE IF EXISTS '+runnerRole);await sql.end();rmSync(root,{recursive:true,force:true});Math.random=realRandom;

@@ -59,11 +59,12 @@ intake or replaying the old inbox.
 
 Legal arrivals and matching-environment numeric corrections use the shared
 captured expansion. Its rules, storage and queue boundaries are specified in
-[COMPUTE_TASKS.md](COMPUTE_TASKS.md). The original build and complete legal family
-copies receive measurements across their captured boards and sustainable modes.
-An incompatible copy retains compatible search positions, runs the existing
-quick optimizer, then measures its accepted output. Derived output never
-restarts family expansion.
+[COMPUTE_TASKS.md](COMPUTE_TASKS.md). First creation of a submitted canonical
+weapon build also captures its family expansion. Each complete legal copy
+receives missing measurements across its captured boards and sustainable
+modes. An incompatible copy retains compatible Mod positions, fills vacancies
+with the existing quick optimizer, then measures its accepted output.
+Resubmissions, corrections and derived records use their existing workflows.
 
 Native intake preserves the actual canonical build. Build and intent storage
 commit together before their source inbox rows are spent. A retry reuses both;
