@@ -19,6 +19,7 @@ export async function sampleCapacity(journal,sql,{work,budget,contract},availabl
  const used=Math.max(0,(initial?.first_data??data)-data);
  assert(data>=32*gib&&root>=gib,'live filesystem reserve exhausted');
  assert(used<=total&&wal<=walBudget,'live allocation exceeds the qualified forecast');
- assert(data-32*gib>=total-used&&root-gib>=Math.max(0,walBudget-wal),'insufficient remaining Data or WAL headroom');
+ // A volume-wide free-space change cannot discharge the catalog's reserved forecast.
+ assert(data-32*gib>=total&&root-gib>=Math.max(0,walBudget-wal),'insufficient remaining Data or WAL headroom');
  return {data,root,wal,used};
 }

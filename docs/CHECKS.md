@@ -3165,7 +3165,9 @@ retired ruler. One corrupted origin, a stale reservation, low free space
 and a concurrent driver must preserve the checkpoint. An accepted score
 during closeout must reopen only the advanced scope.
 `check_catalog_batch_scale.mjs` checks scope membership and restart at full
-catalog scale. `check_board_rank_flow.mjs --catalog-priority` exercises
+catalog scale. Unattributed volume consumption retains the complete forecast
+across samples; Data, WAL and capture-cut guards remain mandatory.
+`check_board_rank_flow.mjs --catalog-priority` exercises
 numbered FIFO dispatch, shared capacity, retained queue state on upgrade,
 archive continuity, late changes during preparation and progress past held work.
 `check_catalog_file_owner.py` exercises the two file owners on

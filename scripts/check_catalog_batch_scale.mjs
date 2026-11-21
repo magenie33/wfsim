@@ -4,6 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {coverage} from './rank_catalog_coverage.mjs';
 import {initializeJournal,planBatch,transaction} from './board_catalog_batch_state.mjs';
 import {sha256} from './board_catalog_readback.mjs';
+import {sampleCapacity} from './board_catalog_batch_capacity.mjs';
 
 const size=16384,empty=sha256(''),source='batch-scale',native=sha256('native'),original=sha256('archive'),ruler='standard_single_target';
 const [capture,archive,ledger,journal]=Array.from({length:4},()=>new DatabaseSync(':memory:'));
@@ -38,3 +39,35 @@ assert.equal(journal.prepare('SELECT count(*) n FROM scopes').get().n,size);
 planBatch(options);assert.equal(journal.prepare('SELECT count(*) n FROM scopes').get().n,size);
 console.log('ok — '+size+' qualified scopes, rejected a same-count substitution, resumed the same plan in '+Math.round(performance.now()-start)+' ms');
 for(const db of [capture,archive,ledger,journal])db.close();
+
+const capacityJournal=new DatabaseSync(':memory:'),gib=1024**3;
+initializeJournal(capacityJournal);
+const capacity={work:'/catalog',budget:{preliminary_capacity_pass:true,scope_count:1,
+ source_cut:{snapshot:'capacity-cut'},budget_total:24*gib,root_required:4*gib,wal_observed:2*gib},
+ contract:{snapshot:'capacity-cut',scopes:1}};
+let data=64*gib,root=16*gib,wal=2*gib;
+const available=path=>path==='/'?root:data;
+const sql={unsafe:async()=>[{bytes:String(wal)}]};
+try{
+ await sampleCapacity(capacityJournal,sql,capacity,available);
+ data=50*gib;
+ await assert.rejects(sampleCapacity(capacityJournal,sql,capacity,available),/insufficient remaining/,
+  'unrelated archives must not spend the catalog reservation');
+ await assert.rejects(sampleCapacity(capacityJournal,sql,capacity,available),/insufficient remaining/,
+  'a retained journal must not turn unrelated consumption into catalog progress');
+ assert.equal(capacityJournal.prepare('SELECT first_data FROM high_water WHERE id=1').get().first_data,64*gib);
+ data=56*gib;root=3*gib;
+ await sampleCapacity(capacityJournal,sql,capacity,available);
+ data--;
+ await assert.rejects(sampleCapacity(capacityJournal,sql,capacity,available),/insufficient remaining/);
+ data=60*gib;
+ await sampleCapacity(capacityJournal,sql,capacity,available);
+ root--;
+ await assert.rejects(sampleCapacity(capacityJournal,sql,capacity,available),/insufficient remaining/);
+ root=16*gib;wal=4*gib+1;
+ await assert.rejects(sampleCapacity(capacityJournal,sql,capacity,available),/allocation exceeds/);
+ wal=2*gib;
+ await assert.rejects(sampleCapacity(capacityJournal,sql,{...capacity,contract:{...capacity.contract,snapshot:'other-cut'}},available),
+  /forecast differs/);
+ console.log('ok — unattributed storage retains the forecast across samples, with Data, WAL and cut guards');
+}finally{capacityJournal.close();}
