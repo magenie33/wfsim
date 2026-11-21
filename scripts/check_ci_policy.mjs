@@ -83,6 +83,13 @@ for (const path of inventoryControlInputs) {
 }
 assert.equal(classify([...inventoryControlInputs, 'optimizer/src/search.rs']).deep, true);
 assert.equal(classify(['scripts/unregistered_inventory.mjs']).deep, true);
+const rawMaintenance = 'scripts/raw_inbox_retention.mjs';
+assert.deepEqual(classify([rawMaintenance]).jobs, PRODUCT_JOBS);
+assert.equal(classify([rawMaintenance]).deep, false, 'raw retirement retains ordinary correctness without full-catalog search fixtures');
+for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'scripts/raw_inbox_unknown.mjs'])
+  assert.equal(classify([rawMaintenance, extra]).deep, true);
+assert.equal(classify([rawMaintenance], true).deep, true);
+assert.equal(classify([rawMaintenance], false, false).deep, true);
 const websiteTools = ['deploy/hk-website.nginx', 'deploy/website-public.conf',
   'scripts/check_hk_website.mjs', 'scripts/check_hk_website.py', 'scripts/check_website_proxy.mjs',
   'scripts/ship_website.py', 'scripts/website_config.py', 'scripts/website_hk.py'];
