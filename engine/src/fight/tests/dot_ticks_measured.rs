@@ -542,6 +542,38 @@ fn a_zero_dot_cap_replaces_only_its_own_type() {
 }
 
 #[test]
+fn dead_dot_replacement_drops_the_last_counted_type() {
+    use DamageType::{Gas, Slash};
+    let mut state = DebuffState::default();
+    state.push_dot(tagged_dot(1, Slash));
+    state.push_dot(tagged_dot(2, Gas));
+    state.push_dot_capped(Dot { ticks_left: 0, ..tagged_dot(3, Gas) }, Some(1));
+    assert_eq!(state.distinct_statuses(), 1);
+    state.retain_dots(|_| true);
+    assert_eq!(state.distinct_statuses(), 1);
+    state.push_dot(tagged_dot(4, Gas));
+    assert_eq!(state.distinct_statuses(), 2);
+}
+
+#[test]
+fn pruned_expiry_piles_match_lazy_fifo_at_repeated_and_later_times() {
+    let mut state = DebuffState::default();
+    let mut reference = Vec::new();
+    for (now, expiry, cap) in [(0., 2., 4), (0., 4., 4), (0., 1., 4),
+        (1., 1., 3), (1., 6., 3), (1., 8., 1), (1., f64::NAN, 2), (1., 3., 2),
+        (6., 9., 0), (8., 12., 4)] {
+        state.prune(now, 1.0);
+        reference.retain(|&e| e > now);
+        if expiry > now || expiry.is_nan() {
+            if reference.len() >= cap { reference.remove(0); }
+            reference.push(expiry);
+        }
+        state.push_proc_stack(|s| &mut s.stagger, expiry, cap, now);
+        assert!(state.stagger.iter().map(|e| e.to_bits()).eq(reference.iter().map(|e| e.to_bits())));
+    }
+}
+
+#[test]
 fn capped_family_search_matches_a_full_scan_across_compaction() {
     use DamageType::{Electricity, Gas, Slash, Toxin};
     let mut state = DebuffState::default();
@@ -574,6 +606,9 @@ fn capped_family_search_matches_a_full_scan_across_compaction() {
         reference.push(dot);
         let identity = |d: &Dot| (d.cause, d.next_tick.to_bits(), d.ticks_left);
         assert!(state.dots.iter().map(identity).eq(reference.iter().map(identity)), "step {tag}");
+        let types = reference.iter().filter(|d| d.ticks_left > 0)
+            .fold(0u32, |mask, dot| mask | (1 << dot.dtype as u32));
+        assert_eq!(state.distinct_statuses(), types.count_ones() as usize, "step {tag}");
         for family in [Electricity, Gas, Slash, Toxin] {
             assert!(reference[..state.dot_start(family)].iter().all(|d| d.dtype != family));
         }
