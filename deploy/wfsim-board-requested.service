@@ -1,4 +1,4 @@
-# Only explicit requested sources may advance while general intake remains paused.
+# Explicit requests and creation-only family work have separate controls.
 [Unit]
 Description=WFSim requested board intake
 After=network-online.target postgresql.service

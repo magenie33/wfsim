@@ -26,12 +26,18 @@ fn same_input(left: &Value, right: &Value) -> bool {
         _=>left==right,
     }
 }
+#[derive(Default)]
 struct Expansion {
     builds: Vec<Value>, nodes: Vec<Value>, templates: Vec<Value>, patches: Vec<Value>,
     bases: BTreeMap<(String,String),usize>,
     measured: BTreeSet<String>,
 }
 impl Expansion {
+    fn into_plan(self, scope: Value) -> Value {
+        json!({"schema":1,"scope":scope,"builds":self.builds,"nodes":self.nodes,
+            "templates":self.templates,"patches":self.patches})
+    }
+
     fn store(&mut self, build: &builds::ValidBuild) -> String {
         let identity=builds::build_id(build);
         if !self.builds.iter().any(|b| b["id"]==identity) {
@@ -114,9 +120,9 @@ pub fn plan(input: &Value, ruler: &str, mode: &str, family: bool, captured: Opti
         }
         json!({"boards":boards,"modes":modes})
     });
-    let mut out=Expansion{builds:Vec::new(),nodes:Vec::new(),templates:Vec::new(),patches:Vec::new(),
-        bases:BTreeMap::new(),measured:BTreeSet::new()};
-    let public_identity=out.add(&build,&scope,observed);
+    let mut root=Expansion::default();
+    let public_identity=root.add(&build,&scope,observed);
+    let mut siblings=Expansion::default();
     for job in jobs {
         let mut copy=input.clone();copy["weapon"]=job["weapon"].clone();
         for axis in ["grip","loader","link"] {
@@ -126,12 +132,19 @@ pub fn plan(input: &Value, ruler: &str, mode: &str, family: bool, captured: Opti
         let valid=crate::board_rows::library_build(&copy).ok().filter(|target| {
             let mut source_mods=build.mods.clone();source_mods.sort();
             let mut target_mods=target.mods.clone();target_mods.sort();
-            source_mods==target_mods && build.evolutions==target.evolutions && build.arcanes==target.arcanes
+            source_mods==target_mods && build.evolutions==target.evolutions
+                && build.arcanes==target.arcanes && build.exilus==target.exilus
         });
-        if let Some(target)=valid { out.add(&target,&scope,None); }
-        else { out.nodes.push(json!({"kind":"optimize","request":job["request"],"context":job["context"],"weapon":job["weapon"]})); }
+        if let Some(target)=valid { siblings.add(&target,&scope,None); }
+        else { siblings.nodes.push(json!({"kind":"optimize","request":job["request"],"context":job["context"],"weapon":job["weapon"]})); }
     }
-    json!({"schema":1,"scope":scope,"builds":out.builds,"nodes":out.nodes,"templates":out.templates,"patches":out.patches,"public_identity":public_identity})
+    let family_plan=(!siblings.nodes.is_empty() || !siblings.builds.is_empty()).then(||siblings.into_plan(scope.clone()));
+    let mut plan=root.into_plan(scope);
+    plan["public_identity"]=json!(public_identity);
+    if let Some(family_plan)=family_plan {
+        plan["family"]=family_plan;
+    }
+    plan
 }
 
 /// A local observation must describe the exact official fight before correction.
@@ -199,8 +212,9 @@ mod tests {
         let record=example();let p=plan(&record,"standard_single_target","cycle",true,None,None);
         assert_eq!(p["schema"],1);
         let nodes=p["nodes"].as_array().unwrap();
-        assert_eq!(nodes.iter().filter(|n| n["kind"]=="optimize").count(),1);
-        assert!(nodes.iter().any(|n| n["kind"]=="measure"));
+        assert_eq!(p["family"]["nodes"].as_array().unwrap().len(),1);
+        assert_eq!(p["family"]["nodes"][0]["kind"],"optimize");
+        assert!(!nodes.is_empty() && nodes.iter().all(|n| n["kind"]=="measure"));
         assert!(serde_json::to_vec(&p).unwrap().len()<1024*1024);
         for node in nodes.iter().filter(|n| n["kind"]=="measure") {
             let mut request=p["templates"][node["template"].as_u64().unwrap() as usize].clone();
@@ -209,6 +223,18 @@ mod tests {
             for key in patch["remove"].as_array().unwrap() {request.as_object_mut().unwrap().remove(key.as_str().unwrap());}
             assert!(crate::simulate::PreparedSimulation::new(&request).is_ok());
         }
+    }
+    #[test]
+    fn a_legal_family_copy_captures_its_own_measurements() {
+        let mut record=example();
+        record["mods"][7]=json!("speed_trigger");
+        let plan=plan(&record,"standard_single_target","base",true,None,None);
+        let sibling=&plan["family"];
+        assert_eq!(sibling["scope"],plan["scope"]);
+        assert_eq!(sibling["builds"][0]["record"]["weapon"],"burston");
+        let nodes=sibling["nodes"].as_array().unwrap();
+        assert!(!nodes.is_empty());
+        assert!(nodes.iter().all(|node| node["kind"]=="measure" && node["identity"]==sibling["builds"][0]["id"]));
     }
     #[test]
     fn actual_rank_and_riven_roll_pairing_survive_intake() {

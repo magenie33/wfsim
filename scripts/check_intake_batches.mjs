@@ -60,6 +60,8 @@ async function seed(rows) {
 const pending = async () => (await query('SELECT id FROM record_build_submissions UNION ALL SELECT id FROM record_equipment_submissions ORDER BY id')).map(row => row.id);
 const saved = async () => (await query('SELECT id,at,record FROM entity_weapon_builds ORDER BY id')).map(row=>({...row,record:JSON.parse(row.record)}));
 const owed = () => query('SELECT batch,build_id,ruler,mode,initiator FROM state_board_pending_work ORDER BY build_id,ruler,mode');
+const intents = async () => (await query(`SELECT count(*) n FROM entity_build_intake_intents
+   WHERE input->>'family_creation' IS DISTINCT FROM 'true'`))[0].n;
 async function clear() {
   await query('DELETE FROM record_build_submissions'); await query('DELETE FROM record_equipment_submissions');
   await query('TRUNCATE entity_weapon_builds CASCADE'); await query('DELETE FROM entity_equipment_builds');
@@ -100,6 +102,7 @@ try {
   assert.equal(JSON.parse(projected).observation,null);
   await execute(file('database-view.ndjson',projected));
   assert.deepEqual(await pending(),[]);assert.equal((await saved()).length,1);
+  assert.equal((await query('SELECT count(*) n FROM state_build_admission_work WHERE family'))[0].n,1,'ordinary intake durably captures first creation while the family consumer is paused');
   assert((await query('SELECT count(*) n FROM state_build_workflow_nodes'))[0].n>0,'view → reader → native → SQL retains real work');
   assert((await query('SELECT count(*) n FROM state_compute_scheduling'))[0].n>0);
   await clear();
@@ -121,7 +124,7 @@ try {
   }}),/cut before second batch/);
   assert(!(await pending()).includes('a'));assert((await pending()).includes('bb'));
   assert.equal((await saved()).length,1);
-  assert.equal((await query('SELECT count(*) n FROM entity_build_intake_intents'))[0].n,1);
+  assert.equal(await intents(),1);
   await drainBuildAdmission(admissionFixtureDb(query));
   assert((await query('SELECT count(*) n FROM state_build_workflow_nodes'))[0].n>0);
   await execute(input);assert.deepEqual(await pending(),[]);assert.deepEqual(await saved(),expected);
@@ -137,7 +140,7 @@ try {
     await trip(table,true);await assert.rejects(execute(source));
     assert.deepEqual(await pending(),fault==='compute'?[]:['source']);
     assert.equal((await saved()).length,fault==='build'?0:1,'deferred admission retains the canonical build and its captured obligation');
-    if(fault==='compute')assert.equal((await query('SELECT count(*) n FROM entity_build_intake_intents'))[0].n,1);
+    if(fault==='compute')assert.equal(await intents(),1);
     await trip(table,false);
     if(fault==='compute')await drainBuildAdmission(admissionFixtureDb(query),Date.now()+31000);
     await execute(source);assert.deepEqual(await pending(),[]);

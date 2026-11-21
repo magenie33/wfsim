@@ -83,7 +83,12 @@ fn intake(
             let observation=wfsim_webapi::board_flow::observation(&record,row.get("observation"));
             let observed=observation["ruler"].as_str().zip(observation["mode"].as_str())
                 .filter(|_| observation["valid"] == true);
-            entry["flow"]=wfsim_webapi::board_flow::plan(&record,&id(&rec,"benchmark"),&id(&rec,"mode"),!derived,row.get("workflow_scope"),observed);
+            let family=!derived && row.get("observation").is_none_or(|value| value.is_null() || value=="null");
+            let mut flow=wfsim_webapi::board_flow::plan(&record,&id(&rec,"benchmark"),&id(&rec,"mode"),family,row.get("workflow_scope"),observed);
+            if let Some(plan)=flow.as_object_mut().and_then(|flow|flow.remove("family")) {
+                entry["family_flow"]=plan;
+            }
+            entry["flow"]=flow;
             entry["observation"]=observation;
             if let Some(source)=row["family_source"].as_str() {
                 let parts:Vec<_>=source.split('|').collect();
@@ -213,8 +218,10 @@ mod tests {
         let a=arrival("a",json!({}));let mut b=a.clone();b["id"]=json!("b");b["family_source"]=json!("workflow|parent|1");
         let (builds,..)=run(vec![a,b]);assert_eq!(builds.len(),2);
         let root=builds.iter().find(|b|b["derived"]==false).unwrap();
-        assert!(root["flow"]["nodes"].as_array().unwrap().iter().any(|n|n["kind"]=="optimize"));
+        assert!(root["family_flow"]["nodes"].as_array().unwrap().iter().any(|n|n["kind"]=="optimize"));
+        assert!(root["flow"]["nodes"].as_array().unwrap().iter().all(|n|n["kind"]=="measure"));
         let child=builds.iter().find(|b|b["derived"]==true).unwrap();
+        assert!(child.get("family_flow").is_none());
         assert!(child["flow"]["nodes"].as_array().unwrap().iter().all(|n|n["kind"]=="measure"));
         assert_eq!(child["flow_source"],json!({"workflow":"parent","node":"1"}));
     }

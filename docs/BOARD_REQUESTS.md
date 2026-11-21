@@ -30,7 +30,8 @@ A transactional trigger captures only newly inserted review submissions. It
 does not import the old inbox. The native intake validates canonical identity,
 game legality and exact observed environment. The requested policy selects the
 native plan's single build, ruler and sustainable mode, retaining its official
-fight. It does not start family copies or searches.
+fight. First creation can also register a separate family workflow in zone
+`03`. The explicit request receipt tracks the single requested measurement.
 
 A new explicit click that coalesces with an unadmitted legacy review or a
 cancelled execution captures a fresh review against the current baseline.
@@ -96,6 +97,22 @@ Its environment supplies `WFSIM_REQUESTED_DATABASE_URL`,
 `state_board_request_control.enabled` starts false. Activation and rollback
 change only this control and the new service. General intake/admission controls
 remain paused while this scoped consumer owns these requests.
+
+## Creation-only family work
+
+The canonical intake transaction reserves one family seed per newly created
+submitted weapon build. The same runner advances the seed and its expansions
+using the `family` pipeline control. An accepted optimizer result enters a leased
+inbox for its exact parent workflow and captured scope. The runner normalizes
+one result and admits at most sixteen nodes per five-second turn. Both steps
+use the existing bounded admission and measurement delivery functions.
+
+Install the current `build_admission_schema.mjs` output before updating the
+runner and its pinned Native intake artifact. It installs the family control
+paused. The storage operator can inspect or change it with
+`node scripts/task_pipeline.mjs status family`, `resume family` or `pause family`.
+A pause preserves the captured work and the inbox. Admitted calculations
+continue through the usual computation and verification stages.
 
 Source installation does not qualify a board partition. End-to-end activation
 also requires the affected partition's complete historical coverage, current

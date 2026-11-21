@@ -11,12 +11,13 @@ export const TASK_PIPELINE_STAGES = Object.freeze({
 
 export const TASK_PIPELINE_CONTROLS=Object.freeze({...TASK_PIPELINE_STAGES,
   statistics:{input:'effective computation work and pending board work',output:'factory snapshot and demand.json'},
+  family:{input:'new family plans and accepted optimizer outputs',output:'captured family workflow and zone 03 compute demands'},
 });
 const controlOf=name=>{if(!Object.hasOwn(TASK_PIPELINE_CONTROLS,name))throw Error('unknown task pipeline control');};
 export async function readPipelineControl(env,name){
   controlOf(name);
   return await env.LIBRARY.prepare('SELECT * FROM state_task_pipeline_controls WHERE name=?').bind(name).first()
-    || {name,paused:false,changed_at:null,changed_by:null};
+    || {name,paused:name==='family',changed_at:null,changed_by:null};
 }
 export async function setPipelineControl(env,name,{paused,by},now=Date.now()){
   controlOf(name);

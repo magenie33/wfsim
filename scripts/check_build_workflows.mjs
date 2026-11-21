@@ -167,6 +167,76 @@ export async function buildWorkflowCases(db) {
   await coalescedRequirementCases(db);
 }
 
+async function familyCreationCases() {
+  const db=await testDb('library'),env={LIBRARY:db},at=()=>new Date().toISOString();
+  const f=factory({verbs:{simulate:{cap:2,lease_ms:60000,canon:(r,w)=>canon({...r,work:w})},
+    optimize_report:{cap:3,lease_ms:60000,canon}},producers:{build_workflow:BUILD_WORKFLOW_PRODUCER}});
+  const scope={boards:[{id:'family-ruler'}],modes:{burston:['base'],burston_prime:['base']}};
+  const record=weapon=>({weapon,mods:['serration']});
+  const measure=(identity,patch=0)=>({kind:'measure',identity,ruler:'family-ruler',mode:'base',template:0,patch});
+  const plan=(weapon,nodes,builds=[])=>({schema:1,scope,builds,nodes,
+    templates:[{weapon,mods:['serration'],runs:2,seed:10}],patches:[{set:{},remove:[]},{set:{seed:20},remove:[]}]});
+  const intake=async build=>db.run('SELECT build_intake_batch(?::text)',JSON.stringify([await prepareIntakeBuild(build)]));
+  const family=async()=> (await db.get('SELECT build_family_admit(?::text,16) result',at())).result;
+  const ordinary=async()=> (await db.get("SELECT build_admission_claim('intake',?::text) job",at())).job;
+  const terminalCount=async()=> (await db.get("SELECT count(*) n FROM entity_build_workflows WHERE source->>'family'='true'")).n;
+  try {
+    await db.run("INSERT INTO state_task_pipeline_controls VALUES('admission',true,?,'fixture')",at());
+    const existing='family-covered',known='existing-original',root='family-new',optimized='family-optimized';
+    for(const [id,weapon] of [[existing,'burston'],[known,'burston_prime']])
+      await db.run('INSERT INTO entity_weapon_builds VALUES(?,?,?)',id,at(),JSON.stringify(record(weapon)));
+    await db.run(`INSERT INTO state_board_measurement_selection
+      (identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES(?,'family-ruler','base','prior',12,'dps',0,?,?)`,
+    existing,at(),at());
+    const familyPlan=plan('burston',[measure(existing),{kind:'optimize',weapon:'burston',
+      context:{weapon:'burston',benchmark:'family-ruler',mode:'base'},request:{weapon:'burston',runs:2,starts:[]}}]);
+    const fresh={id:root,record:record('burston_prime'),at:at(),from:['fresh'],initiator:'anonymous',
+      flow:plan('burston_prime',[measure(root)]),family_flow:familyPlan};
+    await intake({...fresh,id:known,from:['known'],flow:plan('burston_prime',[measure(known)])});
+    assert.equal((await db.get('SELECT count(*) n FROM state_build_admission_work WHERE family')).n,0,'an existing build never expands');
+    await intake(fresh);
+    await intake({...fresh,from:['resubmission']});
+    assert.equal((await db.get('SELECT count(*) n FROM state_build_admission_work WHERE family')).n,1,'creation and its replay share one family seed');
+    assert.equal(await family(),null,'the family control starts paused');
+    assert.notEqual((await ordinary()).key,'family:'+root,'ordinary admission cannot claim the family seed');
+    await db.run("UPDATE state_task_pipeline_controls SET paused=false WHERE name='family'");
+    assert.equal((await family()).key,'family:'+root);
+    assert.equal((await family()).processed,2);
+    assert.equal(await terminalCount(),1);
+    const nodes=await db.all('SELECT * FROM state_build_workflow_nodes ORDER BY position');
+    assert.deepEqual(nodes.map(node=>node.state),['skipped','queued'],'known coverage skips the family measurement before it can create a compute demand');
+    const optimizer=nodes[1];
+    await f.answerOfficial(env,{device:'official:family-create',owner:'official:family-create'},
+      {question:optimizer.computation,engine:'e',result:{report:{results:[{mods:['serration'],mode:'base'}]}},work:1});
+    const claim=async()=> (await db.get('SELECT build_family_claim(?::text) input',at())).input;
+    const output=await claim();
+    assert.deepEqual(JSON.parse(output.workflow_scope),scope);
+    assert.equal(await claim(),null);
+    const derived={id:optimized,at:at(),from:[output.id],initiator:'system',record:record('burston'),derived:true,
+      flow_source:{workflow:optimizer.workflow,node:optimizer.id},flow:plan('burston',[measure(optimized,1)])};
+    const stage=async (build,lease=output.lease)=>db.run('SELECT build_family_stage(?::text,?::uuid,?::text,?::text)',
+      output.id,lease,JSON.stringify(await prepareIntakeBuild(build)),at());
+    await assert.rejects(stage({...derived,flow_source:{...derived.flow_source,node:'wrong'}}),/changed its captured source/);
+    await db.run("UPDATE state_task_pipeline_controls SET paused=true WHERE name='family'");
+    await assert.rejects(stage(derived),/paused/);
+    await db.run("UPDATE state_task_pipeline_controls SET paused=false WHERE name='family'");
+    await stage(derived);
+    await assert.rejects(stage(derived),/lease changed/);
+    assert.equal((await family()).kind,'intake');
+    assert.equal((await family()).processed,1);
+    assert.equal(await terminalCount(),1,'the derived output continues its parent');
+    const child=await db.get("SELECT * FROM state_build_workflow_nodes WHERE state='queued'");
+    assert.equal(child.workflow,optimizer.workflow);
+    assert.equal((await db.get('SELECT zone FROM state_compute_work WHERE id=?',child.computation)).zone,3);
+    await f.answerOfficial(env,{device:'official:family-create',owner:'official:family-create'},
+      {question:child.computation,engine:'e',result:{score:21,metric:'dps'},work:1});
+    assert.equal((await db.get('SELECT score FROM state_board_measurement_selection WHERE identity=?',optimized)).score,21);
+    assert.equal((await db.get("SELECT state FROM state_build_workflows WHERE id=?",optimizer.workflow)).state,'succeeded');
+    assert.equal((await db.get("SELECT paused FROM state_task_pipeline_controls WHERE name='admission'")).paused,true);
+    console.log('family creation: one 03 scope, existing score reuse, leased optimizer continuation and canonical score delivery pass');
+  } finally {await db.close();}
+}
+
 async function currentCoverageCases(db) {
   const env={LIBRARY:db},id='coverage-known',at='2026-11-11T00:00:00.000Z',record={weapon:'braton',mods:['serration']};
   const f=factory({verbs:{simulate:{cap:2,lease_ms:60000,canon:(r,w)=>canon({...r,work:w})}},producers:{build_workflow:BUILD_WORKFLOW_PRODUCER}});
@@ -356,6 +426,7 @@ if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href) {
  if(process.argv.includes('--inbox-read-plan') || process.argv.includes('--break-inbox-plan')) {await inboxReadPlanCases();process.exit(0);}
  const db=await testDb('library');try{await buildWorkflowCases(db);}finally{await db.close();}
  await workflowProtocolCases();
+ await familyCreationCases();
  await queuedReviewAcrossReleaseCases();
  await inboxReadPlanCases();
 }

@@ -47,6 +47,12 @@ ${submitDefinition(httpRole)}
 GRANT EXECUTE ON FUNCTION board_requested_review_fresh(text,text,text,text) TO ${httpRole};
 GRANT SELECT ON entity_board_requests,state_board_requests TO ${httpRole};
 GRANT EXECUTE ON FUNCTION board_request_claim(uuid),board_request_stage(text,uuid,text),board_request_admit(text,uuid),board_request_retry(text,uuid,text,boolean) TO ${runnerRole};
+DO $$ BEGIN
+ IF to_regprocedure('build_family_admit(text,bigint)') IS NOT NULL THEN
+  GRANT EXECUTE ON FUNCTION build_family_claim(text),build_family_stage(text,uuid,text,text),
+   build_family_retry(text,uuid,text,text),build_family_admit(text,bigint) TO ${runnerRole};
+ END IF;
+END $$;
 GRANT EXECUTE ON FUNCTION board_requested_partition_enqueue(text,uuid),board_requested_partition_selected(text,text,boolean),board_requested_partition_activate(text,text,text,uuid) TO ${readerRole};
 COMMIT;
 `;

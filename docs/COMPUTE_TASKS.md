@@ -211,15 +211,21 @@ the workflow's future execution engine. Execution uses the factory's current
 compatibility checks; explicit engine requirements and task-round and lease
 guards still apply.
 
-First intake and correction generate the standard riven corners for the source
-and legal family copies. They measure the default corner and any submitted
-standard corner on the applicable captured boards. An exact correction
+Native intake generates standard riven corners for each measured build. It
+measures the default corner and any submitted standard corner on the applicable
+captured boards. An exact correction
 observation for an actual roll outside the standard corners also measures
 that roll on its observed ruler and mode. An incompatible target uses the existing
 quick optimizer with compatible positions retained, then measures the accepted
 result on that captured scope. Derived results continue their parent and never
 start another family fanout. Intermediate family candidates can be retained
 without advancing the accepted-result continuation.
+
+Family expansion is captured in the transaction that first creates a submitted
+canonical build. The creation key is the submitted identity, including when the
+original requested measurement uses a separate public riven corner. Family
+work uses zone `03` and the same intake, computation and publication boundaries.
+Ordinary admission leaves family rows for the independent family consumer.
 
 | Table | Contents |
 | --- | --- |
