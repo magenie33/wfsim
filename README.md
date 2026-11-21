@@ -57,7 +57,7 @@ cargo run --release --bin one_fight           # …and after: delta + did the an
 
 [Design](docs/CORE.md) · [Mechanics](docs/MECHANICS.md) ·
 [Measurements](docs/MEASUREMENTS.md) · [Data](data/README.md) ·
-[Contributing](CONTRIBUTING.md)
+[Contributing](CONTRIBUTING.md) · [Official search cache](docs/SEARCH_CACHE.md)
 
 ## License
 

@@ -16,6 +16,7 @@ function captureOptimizationOrigin() {
   return { weapon: presetWeapon(), preset: activeOptPreset, preset_name: (loadOptPresets().find((p) => p.id === activeOptPreset) || {}).name,
     board_upload: boardConsent() === "yes",
     scenario: activeScenario, scenario_name: (scenarioNamed(activeScenario) || {}).name, board: context,
+    official_scenario: scenarioNamed(activeScenario)?.builtin || null,
     build: taskClone(snapshotState()), fight: taskClone(sim), search: taskClone(snapshotOpt()),
     appraisal: null };
 }
@@ -161,7 +162,9 @@ async function executeOptimization(task, { signal, report, checkpoint }) {
       if (signal.aborted) throw new Error("Cancelled");
       const response = await api("/api/optimize", { ...task.request, ...(!WASM ? { __collect_builds: !!collectBuilds } : {}),
         ...(compatible?.cp ? { __resume: compatible.cp } : {}) }, null,
-        { checkpoint: (cp) => checkpoint({ cp }).catch(userTaskFailed), builds: (builds) => keepOptimizationBuilds(builds, source) });
+        { checkpoint: (cp) => checkpoint({ cp }).catch(userTaskFailed), builds: (builds) => keepOptimizationBuilds(builds, source),
+          searchWarm: !task.origin.appraisal && !task.sources?.some(s => s.origin?.appraisal) && source.kind !== "community"
+            ? { official: task.origin.official_scenario || null } : null });
       if (!response || response.ok === false) throw new Error(response?.error || "no data");
       id = response.job_id; jobToken = response.job_token;
       if (!WASM) await checkpoint({ job_id: id, job_token: jobToken });

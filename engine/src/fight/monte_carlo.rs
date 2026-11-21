@@ -339,7 +339,11 @@ mod search_carry {
 
     // The public shard wire remains dense. Only a negotiated search lane sends this representation.
     impl Shard {
-        pub fn pack_search(mut self) -> String {
+        pub fn pack_search(self) -> String {
+            self.pack_search_with_identity(None)
+        }
+
+        pub fn pack_search_with_identity(mut self, binding: Option<(&str, &str)>) -> String {
             let widths = [self.by_body.len(), self.by_combatant.len()];
             for v in [&mut self.by_body, &mut self.by_combatant] {
                 v.truncate(v.iter().rposition(|n| n.to_bits() != 0).map_or(0, |i| i + 1));
@@ -347,12 +351,27 @@ mod search_carry {
             let seats = self.seat_counters.iter().rposition(|s| *s != SeatCounters::default()).map_or(0, |i| i + 1);
             let mut data = serde_json::to_value(self).expect("measured shard");
             data["seat_counters"].as_array_mut().expect("shard seats").truncate(seats);
+            if let Some((key, identity)) = binding {
+                data["warm_key"] = Value::String(key.to_owned());
+                data["warm_identity"] = Value::String(identity.to_owned());
+            }
             serde_json::to_string(&(1u8, widths, data)).expect("search receipt")
         }
 
         pub fn unpack_search(raw: &str) -> Option<Self> {
+            Self::unpack_search_with_identity(raw, None)
+        }
+
+        pub fn unpack_search_with_identity(raw: &str, binding: Option<(&str, &str)>) -> Option<Self> {
             let (version, widths, mut data): (u8, [usize; 2], Value) = serde_json::from_str(raw).ok()?;
             if version != 1 || widths[0] > crate::formation::MAX_BODIES + 1 || widths[1] > MAX_COMBATANTS { return None; }
+            let (key, identity) = match binding {
+                Some((key, identity)) => (Some(Some(key)), Some(Some(identity))),
+                None => (None, None),
+            };
+            if data.get("warm_key").map(Value::as_str) != key
+                || data.get("warm_identity").map(Value::as_str) != identity
+            { return None; }
             let seats = data.get_mut("seat_counters")?.as_array_mut()?;
             if seats.len() > MAX_COMBATANTS { return None; }
             seats.resize(MAX_COMBATANTS, serde_json::to_value(SeatCounters::default()).ok()?);
@@ -461,6 +480,19 @@ pub const WORK_COUNTERS: [&str; 9] = ["runs", "shots", "pellets", "procs", "dot_
 pub const WORK_WEIGHTS: [u64; 9] = [373_843, 226, 258, 41, 0, 85, 0, 216, 8];
 
 impl Shard {
+    /// A search carry must cover exactly runs 0..self.runs of this stream.
+    pub fn is_search_prefix(&self, seed: u64, target: u32) -> bool {
+        self.runs != 0
+            && self.runs <= target
+            && self.index.len() == self.runs as usize
+            && self.ttks.len() <= self.index.len()
+            && self.by_body.len() == crate::formation::MAX_BODIES + 1
+            && self.by_combatant.len() == MAX_COMBATANTS
+            && self.series.kill_progress.is_empty()
+            && self.series.effective.is_empty()
+            && self.index.iter().zip(0..self.runs).all(|(r, i)| r.state() == run_state(seed, i))
+    }
+
     /// The ranking's moments and cost, without consuming or replaying runs.
     pub fn ranking(&self) -> RankingStats {
         let n = self.runs.max(1) as f64;
@@ -584,6 +616,10 @@ pub(super) fn add_sources(acc: &mut SourceDamage, r: &SourceDamage) {
 /// are as unrelated as two arbitrary seeds.
 pub(super) const GOLDEN_GAP: u64 = 0x9E37_79B9_7F4A_7C15;
 
+fn run_state(seed: u64, i: u32) -> u64 {
+    seed ^ u64::from(i).wrapping_mul(GOLDEN_GAP)
+}
+
 pub(super) fn monte_carlo_inner(
     params: &FightParams,
     runs: u32,
@@ -655,7 +691,7 @@ pub fn shard_onto(
         // error of about 0.3% at a thousand runs. A different draw from the
         // same distribution, smaller than the noise the board already lives
         // with.
-        let state = seed ^ u64::from(i).wrapping_mul(GOLDEN_GAP);
+        let state = run_state(seed, i);
         let r = run_once(params, &mut Rng::new(state));
         crate::alive::beat();
         a.index.push(RunKey::new(params.sample_by.of(&r), state));

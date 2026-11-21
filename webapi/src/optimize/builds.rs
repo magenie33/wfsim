@@ -90,7 +90,7 @@ impl Replay {
         let mods: Vec<&str> = c.ordered.iter().map(|&i| self.mods[i]).collect();
         let riven = mods.iter().copied().find(|id| id.starts_with("riven:"));
         let spec = match riven {
-            Some(id) => Some(self.riven_specs.get(id)?),
+            Some(id) => Some(&self.riven_specs.iter().rev().find(|(key, _)| *key == id)?.1),
             None => None,
         };
         let (arcanes, _) = self.arcane(ai);

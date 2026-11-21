@@ -109,6 +109,7 @@ jobs:
       - run: node --test scripts/check_cla.test.mjs
       - run: node scripts/check_gain_branch.mjs
       - run: node scripts/check_quick_fleet.mjs --signals-only
+      - run: node --test scripts/bake_search_cache.test.mjs scripts/bake_search_cache_reuse.test.mjs
       - run: node scripts/check_full_work.mjs
       - run: python3 scripts/check_engine_compare.py
       - run: python3 scripts/check_release_readiness.py
@@ -918,6 +919,12 @@ jobs:
       - name: Whole finalist replays retain their serial results across worker counts
         if: matrix.group == 'calculation'
         run: node scripts/check_quick_fleet.mjs
+      - name: Official search packages and private shards survive a browser reload
+        if: matrix.group == 'calculation'
+        run: node scripts/check_warm_search_cache.mjs
+      - name: Browser tasks and the baking host agree on official search identities
+        if: matrix.group == 'calculation'
+        run: node scripts/check_warm_cache_page.mjs
       - name: Browser workers report execution errors and retire trapped instances
         if: matrix.group == 'calculation'
         run: node scripts/check_worker_execution_errors.mjs
