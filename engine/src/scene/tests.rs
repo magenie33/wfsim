@@ -31,7 +31,9 @@ fn explosive_reflections_stop_on_the_fourth_contact_or_expiry() {
     input.head_proxy = 0;
     input.body_proxy = 1;
     let scene = Scene::new(input, 2).unwrap();
-    let model = crate::model::ReboundBlast { reflections: 3, lifetime_seconds: 2.4, restitution: 0.5 };
+    let model = crate::model::ReboundBlast {
+        reflections: 3, lifetime_seconds: 2.4, restitution: 0.5, start_life_on_impact: true,
+    };
     let mut flight = scene.launch_flight(false, 0., 0., &[true; 2], None);
     flight.direction = Vec3([0., 0., 1.]);
     let first = scene.trace_rebound_blast(&mut flight, model, 120., 0., &[true; 2]);
@@ -50,6 +52,15 @@ fn explosive_reflections_stop_on_the_fourth_contact_or_expiry() {
     let [expiry] = open.detonations.as_slice() else { panic!("one expiry") };
     assert!(expiry.expired);
     assert_eq!((expiry.seconds, expiry.travel), (2.4, 288.));
+
+    // Native first-eligible-contact-then-two-more schedules only on the first contact.
+    let model = crate::model::ReboundBlast { lifetime_seconds: 0.1, ..model };
+    let mut timed = scene.launch_flight(false, 0., 0., &[true; 2], None);
+    timed.direction = Vec3([0., 0., 1.]);
+    scene.trace_rebound_blast(&mut timed, model, 120., 0., &[true; 2]);
+    let [first, second, expiry] = timed.detonations.as_slice() else { panic!("two impacts and expiry") };
+    assert!(!first.expired && !second.expired && expiry.expired);
+    assert_eq!(expiry.seconds, first.seconds + model.lifetime_seconds);
 }
 
 #[test]

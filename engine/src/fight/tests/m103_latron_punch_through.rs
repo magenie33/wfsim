@@ -143,7 +143,10 @@ fn m103_the_incarnon_form_refuses_punch_through_and_uses_surface_reflections() {
         let form = panel(&inc);
         assert!(form.ricochet.is_none());
         let bounce = form.rebound_blast.expect("M103 surface bounce");
-        assert_eq!((bounce.reflections, bounce.lifetime_seconds, bounce.restitution), (3, 2.4, 0.5));
+        assert_eq!(bounce.reflections, 3);
+        assert_eq!(bounce.lifetime_seconds, f64::from(2.4_f32));
+        assert_eq!(bounce.restitution, 0.5);
+        assert!(bounce.start_life_on_impact);
     }
 }
 

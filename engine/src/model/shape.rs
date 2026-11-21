@@ -480,6 +480,8 @@ pub struct ReboundBlast {
     pub reflections: u32,
     pub lifetime_seconds: f64,
     pub restitution: f64,
+    #[serde(default)]
+    pub start_life_on_impact: bool,
 }
 
 /// A continuous beam's GEOMETRY — shape, not a damage part. Carried so

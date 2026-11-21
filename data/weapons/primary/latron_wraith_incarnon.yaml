@@ -68,7 +68,7 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 120
   # The resolved projectile inherits the family's lifetime and restitution.
-  rebound_blast: { reflections: 3, lifetime_seconds: 2.4, restitution: 0.5 }
+  rebound_blast: { reflections: 3, lifetime_seconds: 2.4000000953674316, restitution: 0.5, start_life_on_impact: true }
   fire_rate: 3.66666666666667
   multishot: 1.0
   ammo_cost: 1                  # of the separate 40-round charge pool

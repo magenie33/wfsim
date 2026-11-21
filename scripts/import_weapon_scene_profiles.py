@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""Extract standing single-attachment weapon profiles from the pinned source roster."""
+"""Extract standing weapon profiles from the pinned source roster."""
 import argparse
 from collections import defaultdict
 from hashlib import file_digest, sha256
@@ -11,6 +11,7 @@ import struct
 from zipfile import ZipFile
 
 from import_client_cadence import blocks, fields
+from import_native_attachments import rows
 from import_native_queries import pinned_member
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +20,8 @@ BATCH = "20261121T025655Z-all-weapon-3d-source-map"
 PIN = "24cc77326dccbb35a335892534f53981d6a80b3beeefb1aead7d43578a5ceb7a"
 METADATA = "20261106T150853Z-client-metadata-offline"
 METADATA_PIN = "dbeb51209c791af1692f91f087826805b8f99198ee0958ec4606170ab2badea2"
+CONTROLS = "20261121T133426Z-firearm-3d-fidelity-source-controls"
+CONTROLS_PIN = "1603969884404ad0b512fc05d3b326ed4107583f7a62b2fe478b69ba6b9ac28e"
 
 
 def pinned_archive(batches, batch, pin, archive):
@@ -41,6 +44,13 @@ def shape_data(batches):
     names = ("map/weapon-forms.json", "map/client-source-records.json", "models/models.json")
     with ZipFile(filename) as archive:
         return [pinned_member(archive, members[name]) for name in names]
+
+
+def read_controls(batches):
+    filename, members = pinned_archive(batches, CONTROLS, CONTROLS_PIN, "evidence.zip")
+    with ZipFile(filename) as archive:
+        cases = pinned_member(archive, members["emission/attachment-cases.json"])
+    return {(case["attachment_path"], case["supplied_mode"]): case for case in cases}
 
 
 def source_mount_layers(batches, paths):
@@ -153,7 +163,7 @@ def single_iteration(behaviors, forms):
     return True
 
 
-def weapon_rig(path, slot, linked, mounts, models, bone_numbers):
+def weapon_rig(path, slot, linked, mounts, models, bone_numbers, controls):
     declaration = linked[path]["fields"].get("FiringPositions")
     model_paths = mounts.get(path, {}).get("model_paths", [])
     firing_positions = []
@@ -162,28 +172,41 @@ def weapon_rig(path, slot, linked, mounts, models, bone_numbers):
     if declaration:
         for row in blocks(declaration["source_text"]):
             entry = fields(row)
-            if entry.get("UseMultipleFirePositions") != "0" or "FirePosition" not in entry:
-                return
-            point = fields(entry["FirePosition"].strip()[1:-1])
-            if point.get("RelativeToBounds", "0") != "0":
-                return
-            bone_name = point.get("BoneName", '""')
-            bone_id = None
-            if bone_name != '""':
-                if len(model_paths) != 1:
+            match entry.get("UseMultipleFirePositions"):
+                case "0" if "FirePosition" in entry:
+                    points = [entry["FirePosition"].strip()[1:-1]]
+                case "1" if "CyclingFirePositions" in entry:
+                    points = list(blocks(entry["CyclingFirePositions"]))
+                case _:
                     return
-                model = models[model_paths[0]]
-                try:
-                    rows = source_bone(model, bone_name)
-                except (KeyError, ValueError):
+            if not points:
+                return
+            positions = []
+            for point in map(fields, points):
+                if point.get("RelativeToBounds", "0") != "0":
                     return
-                if bone_name not in bone_ids:
-                    bone_ids[bone_name] = len(used_bones)
-                    used_bones.append(rows)
-                bone_id = bone_ids[bone_name]
-            firing_positions.append([{"bone": bone_id, "local": offset(point)}])
-        if len(firing_positions) != 1:
+                bone_name = point.get("BoneName", '""')
+                bone_id = None
+                if bone_name != '""':
+                    if len(model_paths) != 1:
+                        return
+                    if bone_name not in bone_ids:
+                        try:
+                            matrix = source_bone(models[model_paths[0]], bone_name)
+                        except (KeyError, ValueError):
+                            return
+                        bone_ids[bone_name] = len(used_bones)
+                        used_bones.append(matrix)
+                    bone_id = bone_ids[bone_name]
+                positions.append({"bone": bone_id, "local": offset(point)})
+            firing_positions.append(positions)
+        if not firing_positions:
             return
+        if len(firing_positions) > 1 or len(firing_positions[0]) > 1:
+            for mode, positions in enumerate(firing_positions):
+                case = controls.get((path, mode))
+                if not case or not agrees_with_native(case, declaration, positions, used_bones):
+                    return
     return {
         "mount": {"bone": bone_numbers[slot["BoneName"]], "local": offset(slot)},
         "bones": used_bones,
@@ -191,7 +214,32 @@ def weapon_rig(path, slot, linked, mounts, models, bone_numbers):
     }
 
 
-def select_groups(form_rows, source, models, layers):
+def agrees_with_native(case, declaration, positions, bones):
+    if case["firing_positions_source"] != declaration:
+        return False
+    mounted = rows(case["mount_world_column_major"])
+    reached = set()
+    for step in case["ordered_reads"]:
+        read = step["read"]
+        cursor = read["cursor"]
+        index = cursor % len(positions)
+        if read["selected_profile"] != case["supplied_mode"] or read["selected_candidate"] != index:
+            return False
+        reached.add(index)
+        pos = positions[index]
+        bone = mounted if pos["bone"] is None else compose(mounted, bones[pos["bone"]])
+        actual = compose(bone, pos["local"])
+        expected = rows(read["native_world_column_major"])
+        advance = step["advance"]
+        next_cursor = (cursor + 1) % len(positions) if len(positions) > 1 else cursor
+        if advance["before"] != cursor or advance["after"] != next_cursor:
+            return False
+        if max(abs(a-b) for a,b in zip(actual, expected, strict=True)) > 0.00002:
+            return False
+    return len(reached) == len(positions)
+
+
+def select_groups(form_rows, source, models, layers, controls):
     player = (ROOT / "data/geometry/excalibur-standing.yaml").read_text()
     bones = {name:i for i,name in enumerate(re.findall(r"\] # (\w+)\s*$", player, re.M))}
     assert bones["GAME_R1_WEAPON1"] == 48 and bones["GAME_L1_WEAPON1"] == 17
@@ -209,8 +257,8 @@ def select_groups(form_rows, source, models, layers):
             continue
         entry = source_weapons.get(next(iter(paths)), {})
         data = entry.get("fields", {})
-        if set(data).intersection(("IncarnonAttachments", "HeavyWeaponAttachments",
-                                   "UsesExtraHandAttachments", "PrimaryAttachmentOverride", "AlwaysUseAttachmentChildBone",
+        if set(data).intersection(("HeavyWeaponAttachments", "UsesExtraHandAttachments",
+                                   "PrimaryAttachmentOverride", "AlwaysUseAttachmentChildBone",
                                    "AuxiliaryAttachmentFiringIndex")):
             continue
         style = data.get("AttachmentFireStyle", {}).get("source_text")
@@ -222,6 +270,10 @@ def select_groups(form_rows, source, models, layers):
         declaration = data["THIRD_PERSON_ATTACHMENT"]
         assert layers[declaration["declared_by"]] == declaration["source_text"]
         transformed = {row["form_or_action_id"] for row in forms} == {"base", "incarnon"}
+        incarnon_slots = data.get("IncarnonAttachments")
+        explicit_transform = incarnon_slots and fields(incarnon_slots["source_text"].strip()[1:-1]) == {"EXTRA1": "1"}
+        if incarnon_slots and not (transformed and explicit_transform):
+            continue
         alternating = style == "ALTERNATE_HANDS"
         if alternating and (transformed or not single_iteration(entry["behavior_records"], forms)):
             continue
@@ -232,9 +284,10 @@ def select_groups(form_rows, source, models, layers):
             hands = [slots["MAIN_HAND"], slots["OFF_HAND"]]
             if not hands[0]["BoneName"].startswith("GAME_R1_") or not hands[1]["BoneName"].startswith("GAME_L1_"):
                 continue
-            rigs = [weapon_rig(hand["Type"], hand, links, models["mount_source"], models["models"], bones)
+            rigs = [weapon_rig(hand["Type"], hand, links, models["mount_source"], models["models"], bones, controls)
                     for hand in hands]
-            if any(rig is None for rig in rigs):
+            if any(rig is None or len(rig["profiles"]) > 1
+                   or any(len(p) > 1 for p in rig["profiles"]) for rig in rigs):
                 continue
             mapped[id] = {
                 "attachments": rigs,
@@ -245,22 +298,43 @@ def select_groups(form_rows, source, models, layers):
         slot = next(iter(slots.values()))
         if (style == "LEFT_HAND_ONLY") != slot["BoneName"].startswith("GAME_L1_"):
             continue
-        attach = weapon_rig(slot["Type"], slot, links, models["mount_source"], models["models"], bones)
+        attach = weapon_rig(slot["Type"], slot, links, models["mount_source"], models["models"], bones, controls)
         if attach is None:
             continue
+        rigs = [attach]
         if extra is not None:
-            other = weapon_rig(extra["Type"], extra, links, models["mount_source"], models["models"], bones)
-            if not attach["profiles"] or other != attach:
+            other = weapon_rig(extra["Type"], extra, links, models["mount_source"], models["models"], bones, controls)
+            if other is None or (not explicit_transform and (not attach["profiles"] or other != attach)):
                 continue
-        mapped[id] = {"attachments": [attach], "round_order": [firing_slot(0)]}
+            if explicit_transform:
+                rigs.append(other)
+        elif explicit_transform:
+            continue
+        orders = {}
+        for form in forms:
+            kind = form["form_or_action_id"]
+            index = int(kind == "incarnon" and len(rigs) > 1)
+            profiles = rigs[index]["profiles"]
+            mode = form["dispatch_behavior_index"]
+            if len(profiles) > 1 and mode is None:
+                break
+            mode = mode if mode is not None and mode < len(profiles) else 0
+            cycling = bool(profiles and len(profiles[mode]) > 1)
+            orders[kind] = [firing_slot(index, mode, cycling)]
+        else:
+            base = orders.get("base", next(iter(orders.values())))
+            mapped[id] = {"attachments": rigs, "round_order": base}
+            overrides = {kind: order for kind, order in orders.items() if order != base}
+            if overrides:
+                mapped[id]["round_order_by_form"] = overrides
     assert "nataruk" in mapped or "nataruk_perfect" in mapped
     return mapped
 
 
-def firing_slot(index):
+def firing_slot(index, mode=0, cycling=False):
     return {
-        "attachment": index, "mode": 0,
-        "refresh_per_iteration": False, "advance_after_round": False,
+        "attachment": index, "mode": mode,
+        "refresh_per_iteration": cycling, "advance_after_round": cycling,
     }
 
 
@@ -271,7 +345,7 @@ def main():
     args = parser.parse_args()
     form_rows, source, models = shape_data(args.batches)
     paths = {path for row in source["weapon_paths"].values() for path in row["ancestry_leaf_first"]}
-    groups = select_groups(form_rows, source, models, source_mount_layers(args.batches, paths))
+    groups = select_groups(form_rows, source, models, source_mount_layers(args.batches, paths), read_controls(args.batches))
     value = json.dumps(groups, separators=(",", ":"), allow_nan=False) + "\n"
     if args.check:
         assert OUTPUT.read_text() == value

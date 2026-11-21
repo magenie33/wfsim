@@ -15,20 +15,21 @@ impl Scene {
         let mut from = path.muzzle;
         let mut seconds = 0.;
         let mut travel = 0.;
+        let mut expires_at = model.lifetime_seconds;
         let mut direct_before_reflection = None;
         for remaining in (0..=model.reflections).rev() {
-            let reach = speed * (model.lifetime_seconds - seconds).max(0.);
+            let reach = speed * (expires_at - seconds).max(0.);
             let ground = floor_distance(from, direction, floor);
             let hit = self.contact_impact(from, direction, reach.min(ground), width, eligible);
             let floor_contact = hit.is_none() && ground <= reach;
             let leg = hit.as_ref().map_or(reach.min(ground), |h| h.travel);
             let point = from.along(direction, leg);
-            seconds = if speed > 0. { seconds + leg / speed } else { model.lifetime_seconds };
+            let expired = hit.is_none() && !floor_contact;
+            seconds = if expired || speed == 0. { expires_at } else { seconds + leg / speed };
             travel += leg;
             if let Some(hit) = hit {
                 path.impacts.push(Impact { seconds, travel, ..hit });
             }
-            let expired = hit.is_none() && !floor_contact;
             path.detonations.push(DetonationTrace {
                 point, seconds, travel, body: hit.map(|h| h.body), expired,
             });
@@ -39,6 +40,9 @@ impl Scene {
                 None => Some(Vec3([0., 1., 0.])),
             };
             let Some(normal) = normal else { break };
+            if model.start_life_on_impact && direct_before_reflection.is_none() {
+                expires_at = seconds + model.lifetime_seconds;
+            }
             direct_before_reflection.get_or_insert(path.impacts.len());
             direction = direction.along(normal, -2. * direction.dot(normal));
             path.bends.push(SurfaceBend { point, normal, direction, travel });

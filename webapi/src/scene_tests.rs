@@ -421,6 +421,28 @@ fn a_declared_single_iteration_pair_alternates_its_posed_mounts() {
 }
 
 #[test]
+fn standing_sources_select_form_profiles_and_cycle_their_sockets() {
+    let mut v = request("dera", 1, false);
+    v.as_object_mut().unwrap().remove("mode");
+    v["target_at"] = json!([0., 5.]);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    for (form, attachment, profile) in [("base", 0, 0), ("incarnon", 1, 1)] {
+        v["form"] = json!(form);
+        let replay = record(&params(&v));
+        let f = replay.spatial_flights();
+        assert!(f.len() >= 3);
+        for (shot, row) in f.iter().take(3).enumerate() {
+            let fire = serde_json::to_value(row.flight.fire_origin).unwrap();
+            assert_eq!(fire["attachment"], attachment);
+            assert_eq!(fire["profile"], profile);
+            assert_eq!(fire["cursor"], shot % 2);
+        }
+        assert_ne!(f[0].flight.muzzle, f[1].flight.muzzle);
+        assert_eq!(f[0].flight.muzzle, f[2].flight.muzzle);
+    }
+}
+
+#[test]
 fn a_rebound_projectile_can_damage_a_body_from_expiry_without_direct_contact() {
     let mut v = request("latron_prime", 1, false);
     v.as_object_mut().unwrap().remove("mode");

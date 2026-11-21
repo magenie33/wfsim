@@ -70,6 +70,9 @@ Galvanized Scope's per-stack clocks and the two guards on a locked buff.
 
 ### Still open
 
-The weak-point kill changes the live collider. The 3D scene uses the posed
-surface present at emission. Lifetime resets, dynamic world geometry and
-lethal-contact collider order still need a joined capture.
+The native scheduler control in `20261121T133426Z-firearm-3d-fidelity-source-controls`
+requests an expiry 2.4 s after the first eligible contact. Further contacts
+preserve the appointment. The 3D scene uses that clock after a bounce and the
+declared lifespan as a fallback for the measured free-flight detonation.
+The exact no-contact gate, dynamic terrain and lethal-contact collider order
+still need a joined capture.

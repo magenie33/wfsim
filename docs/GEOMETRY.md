@@ -55,7 +55,13 @@ where available and compares them to FK over the tagged resource pose.
 A transforming weapon can reuse one origin when both named attachments
 resolve the same mount, model-bone pose and declared firing position.
 Torid uses this binding for both forms. Attachment selection with distinct
-positions or a special deployment needs its own model.
+positions can use `round_order_by_form` when `IncarnonAttachments`
+explicitly enables the transformed slot.
+The `20261121T133426Z-firearm-3d-fidelity-source-controls` reads validate
+cycling sockets and separate firing profiles against the package transforms.
+The standing preset selects the profile by dispatch behavior index and
+advances cycling sockets for each physical round. Installed timing and
+deployment poses remain separate inputs.
 When the package declares `ALTERNATE_HANDS` with one firing iteration,
 the model uses the named main-hand and off-hand attachment transforms.
 The standing reference cycle starts on the main hand. The installed initial
@@ -259,12 +265,18 @@ bounds the model at three reflections before the fourth collision. The
 `20261109T023827Z-beam-bounce-aim` batch supplies 120 m/s launch, equal
 0.5 restitution, 2.4 s lifespan and explosions at contact and expiry.
 Each recorded detonation independently measures falloff against posed
-recipients at its own location. The model times the lifespan from emission.
-Post-impact life resets and live collider changes on death remain open.
+recipients at its own location. The contact controls in
+`20261121T133426Z-firearm-3d-fidelity-source-controls` schedule expiry on the
+first eligible contact only. The stationary scene starts that timer on its
+first bounce and uses the declared duration as the free-flight fallback for
+M103's no-contact detonation. The exact free-flight gate and live collider
+changes on death remain open.
 
-Secondary Irradiate uses the original victim's root and a 3D overlap of
-eligible recipients within its declared radius. It retains the existing
-settlement and [M59](measurements/M59-laetum-incarnon-irradiate-echo.md) calibration.
+Secondary Irradiate uses the original victim's entity root and a 3D overlap of
+eligible recipients within its declared radius. The native GetPosition
+controls in `20261121T133426Z-firearm-3d-fidelity-source-controls` read that
+root independently of visual and avatar-anchor transforms. Settlement
+retains the [M59](measurements/M59-laetum-incarnon-irradiate-echo.md) calibration.
 Native damage packet grouping and resumption timing remain open.
 
 The scene refuses unsupported melee, corpse explosion, dagger and ability
