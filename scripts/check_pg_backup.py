@@ -1,11 +1,12 @@
-"""A failed dump/upload/readback never publishes a recovery manifest."""
+"""Backup publication and retirement preserve complete recovery points."""
+import datetime
 import hashlib
 import importlib.util
 import io
 import json
 from pathlib import Path
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 spec = importlib.util.spec_from_file_location('pg_backup', Path(__file__).with_name('pg_backup.py'))
 backup = importlib.util.module_from_spec(spec)
@@ -69,6 +70,64 @@ class BackupCheck(unittest.TestCase):
         for prefix in ['r2:wfsim-public/backups', backup.ROOT + '/../wfsim-public', backup.ROOT + '/daily//x']:
             with self.assertRaises(ValueError):
                 backup.backup(Store(), prefix)
+
+    def test_retention_keeps_three_weekly_points_as_days_roll_forward(self):
+        today = datetime.datetime(2026, 10, 1, 4, tzinfo=datetime.timezone.utc)
+        stored = set()
+        completed = []
+        for offset in range(65):
+            if offset in (23, 24, 38, 54):
+                continue
+            now = today + datetime.timedelta(days=offset)
+            published = now.strftime('%Y%m%dT031700Z') + '-00000001'
+            completed.append((published, now.date()))
+            stored.add(published)
+            paths = (name + '/manifest.json' for name in stored)
+            stored.difference_update(name for name, _ in backup.retention_plan(paths, published, now))
+            daily_cutoff = now.date() - datetime.timedelta(days=6)
+            daily = [name for name, day in completed if day >= daily_cutoff]
+            weekly = {}
+            for name, day in completed:
+                if day < daily_cutoff:
+                    weekly[day.isocalendar()[:2]] = name
+            self.assertEqual(stored, set(daily + list(weekly.values())[-3:]), now.date())
+
+    def test_prune_r2_only_after_confirming_current_manifest(self):
+        now = datetime.datetime(2026, 11, 21, 4, tzinfo=datetime.timezone.utc)
+        names = {
+            'fresh': '20261121T031700Z-00000001',
+            'recent_failed': '20261121T021700Z-00000001',
+            'same_day': '20261121T011700Z-00000001',
+            'older_failed': '20261112T031700Z-00000001',
+            'expired': '20261015T031700Z-00000001',
+            'newer': '20261121T041700Z-00000001',
+        }
+        paths = [name + '/wfsim/part-000000' for name in names.values()]
+        paths += [names['expired'] + '/manifest.json', names['same_day'] + '/manifest.json',
+                  'maintenance/manifest.json', names['older_failed'] + '/wfsim/manifest.json']
+        def inventory():
+            return json.dumps([{'Path': path} for path in paths])
+
+        common = ['--s3-no-check-bucket']
+        with patch.object(backup.subprocess, 'run') as run:
+            run.return_value.stdout = inventory()
+            with self.assertRaisesRegex(RuntimeError, 'New backup manifest missing'):
+                backup.prune(names['fresh'], now)
+            self.assertEqual(run.call_count, 1)
+            paths.append(names['fresh'] + '/manifest.json')
+            run.return_value.stdout = inventory()
+            run.reset_mock()
+            backup.prune(names['fresh'], now)
+            expired = backup.DAILY + '/' + names['expired']
+            duplicate = backup.DAILY + '/' + names['same_day']
+            self.assertEqual(run.call_args_list[1:], [
+                call(['rclone', 'deletefile', duplicate + '/manifest.json', *common], check=True),
+                call(['rclone', 'purge', duplicate, *common], check=True),
+                call(['rclone', 'purge', backup.DAILY + '/' + names['older_failed'], *common], check=True),
+                call(['rclone', 'deletefile', expired + '/manifest.json', *common], check=True),
+                call(['rclone', 'purge', expired, *common], check=True),
+                call(['rclone', 'delete', backup.ROOT + '/daily/', '--min-age', '30d', *common], check=True),
+            ])
 
 
 if __name__ == '__main__':

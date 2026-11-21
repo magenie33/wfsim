@@ -2819,8 +2819,13 @@ Every part is read back and checked by byte count and SHA-256; the manifest is
 written last, after every dump succeeds. Concatenate each database's listed
 parts in order and check its whole digest before restoring. The manifest states
 whether an isolated restore was tested; readback alone does not claim one.
-Thirty days stay in `wfsim-pg-backup`, apart from explicitly held maintenance
-checkpoints. This copy includes personal data and stays in the owner's accounts.
+The newest complete backup of each of the latest seven UTC dates stays in
+`wfsim-pg-backup`. For earlier dates, the newest complete backup in each of
+the three most recent UTC calendar weeks represented within thirty days stays.
+Retirement runs after the current backup and its manifest pass readback.
+Incomplete nightly backups expire after one day. Maintenance checkpoints and
+task archives have separate prefixes and retention. This copy includes personal
+data and stays in the owner's accounts.
 Postgres logs statements past five seconds, rotated weekly and four kept.
 
 **IT FETCHES COLD.** The backup reads the rows straight out of the database
