@@ -473,6 +473,15 @@ pub struct Ricochet {
     pub range_m: f64,
 }
 
+/// Contact detonations and reflections for a finite-lived projectile.
+#[derive(Debug, Clone, Copy, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReboundBlast {
+    pub reflections: u32,
+    pub lifetime_seconds: f64,
+    pub restitution: f64,
+}
+
 /// A continuous beam's GEOMETRY — shape, not a damage part. Carried so
 /// Firestorm has a radius to scale and the multi-target model has its inputs;
 /// the single-target arena reads none of it.

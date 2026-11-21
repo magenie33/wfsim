@@ -1,9 +1,53 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-use super::{BodyHit, Flight, Impact, Scene, SurfaceBend, Vec3};
+use super::{BodyHit, DetonationTrace, Flight, Impact, Scene, SurfaceBend, Vec3};
 use crate::rules::geometry::penetration::{ReverseHit, projectile_exit, reverse_start};
 
 #[wfsim_gas_macro::metered]
 impl Scene {
+    /// An explosive projectile follows each reflected leg until a blocking
+    /// contact spends its final rebound or the flight timer expires.
+    pub(crate) fn trace_rebound_blast(
+        &self, path: &mut Flight, model: crate::model::ReboundBlast,
+        mut speed: f64, width: f64, eligible: &[bool],
+    ) -> usize {
+        let floor = self.input.player.world.0[7];
+        let Some(mut direction) = path.direction.normalized() else { return 0 };
+        let mut from = path.muzzle;
+        let mut seconds = 0.;
+        let mut travel = 0.;
+        let mut direct_before_reflection = None;
+        for remaining in (0..=model.reflections).rev() {
+            let reach = speed * (model.lifetime_seconds - seconds).max(0.);
+            let ground = floor_distance(from, direction, floor);
+            let hit = self.contact_impact(from, direction, reach.min(ground), width, eligible);
+            let floor_contact = hit.is_none() && ground <= reach;
+            let leg = hit.as_ref().map_or(reach.min(ground), |h| h.travel);
+            let point = from.along(direction, leg);
+            seconds = if speed > 0. { seconds + leg / speed } else { model.lifetime_seconds };
+            travel += leg;
+            if let Some(hit) = hit {
+                path.impacts.push(Impact { seconds, travel, ..hit });
+            }
+            let expired = hit.is_none() && !floor_contact;
+            path.detonations.push(DetonationTrace {
+                point, seconds, travel, body: hit.map(|h| h.body), expired,
+            });
+            path.stopped_at = Some(point);
+            if expired || remaining == 0 { break; }
+            let normal = match hit {
+                Some(h) => self.surface_normal(h),
+                None => Some(Vec3([0., 1., 0.])),
+            };
+            let Some(normal) = normal else { break };
+            direct_before_reflection.get_or_insert(path.impacts.len());
+            direction = direction.along(normal, -2. * direction.dot(normal));
+            path.bends.push(SurfaceBend { point, normal, direction, travel });
+            speed *= model.restitution;
+            from = point.along(direction, 1e-6);
+        }
+        direct_before_reflection.unwrap_or(path.impacts.len())
+    }
+
     /// Reflect a kinematic shot off the open-arena floor or a blocking
     /// proxy. Equal normal/tangent restitution preserves mirror direction.
     #[allow(clippy::too_many_arguments)]
@@ -14,14 +58,7 @@ impl Scene {
         let end = range.min(speed.unwrap_or(100_000.) * self.input.maximum_flight_seconds);
         let floor = self.input.player.world.0[7];
         let Some(mut direction) = path.direction.normalized() else { return path.impacts.len() };
-        let floor_hit = |from: Vec3, dir: Vec3| {
-            if dir.0[1] >= 0. || from.0[1] < floor {
-                f64::INFINITY
-            } else {
-                (floor - from.0[1]) / dir.0[1]
-            }
-        };
-        let first_floor = floor_hit(path.muzzle, direction);
+        let first_floor = floor_distance(path.muzzle, direction, floor);
         let stop = path.stopped_at.and_then(|at| path.impacts.last().copied().filter(|h| h.point == at));
         let stopping = stop.filter(|h| h.travel <= first_floor);
         path.impacts.retain(|h| h.travel <= first_floor);
@@ -48,7 +85,7 @@ impl Scene {
             travel += 1e-6;
             let reach = end - travel;
             if reach <= 0. { break; }
-            let step_to_floor = floor_hit(from, direction);
+            let step_to_floor = floor_distance(from, direction, floor);
             let limit = reach.min(step_to_floor);
             let mut first_blocking = None;
             for BodyHit { body, proxy, part, enter, exit } in Self::hits(
@@ -232,5 +269,14 @@ impl Scene {
                 }
             })
             .collect()
+    }
+}
+
+#[wfsim_gas_macro::metered]
+fn floor_distance(from: Vec3, direction: Vec3, floor: f64) -> f64 {
+    if direction.0[1] >= 0. || from.0[1] < floor {
+        f64::INFINITY
+    } else {
+        (floor - from.0[1]) / direction.0[1]
     }
 }

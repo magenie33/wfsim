@@ -395,6 +395,7 @@ pub struct AttackSpec {
     /// family's Incarnon form, and the roster's only member.
     #[serde(default)]
     pub ricochet: Option<RicochetSpec>,
+    pub rebound_blast: Option<crate::model::ReboundBlast>,
     /// A THROWN GLAIVE'S BOUNCES — a throw form's, and nothing else's.
     #[serde(default)]
     pub thrown_bounce: Option<Box<ThrownBounceSpec>>,

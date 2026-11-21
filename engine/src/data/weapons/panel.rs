@@ -817,6 +817,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             // hit yet, however far".
             range_m: r.range_m.unwrap_or(f64::INFINITY),
         }),
+        rebound_blast: s.attack.rebound_blast,
         thrown_bounce: s.attack.thrown_bounce.as_ref().map(|b| crate::model::ThrownBounceBase {
             bounces: b.bounces,
             explosion_chance: b.explosion_chance,

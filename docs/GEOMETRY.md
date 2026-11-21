@@ -19,7 +19,7 @@ axis with the optional shared `enemy_yaw_deg` angle relative to frontal.
 
 The preset supports primary, secondary and Archgun collision routes for
 the standing Warframe. It
-loads the Laetum, Akarius and Akarius Prime controls or the single-attachment
+loads the Laetum, Akarius and Akarius Prime controls or the attachment
 models from `geometry/weapon-attachments.yaml`. Each catalog model projects
 an unambiguous named mount and its usable declared firing position into a
 source-default pose. A gun without a bound standing attachment uses the
@@ -56,6 +56,10 @@ A transforming weapon can reuse one origin when both named attachments
 resolve the same mount, model-bone pose and declared firing position.
 Torid uses this binding for both forms. Attachment selection with distinct
 positions or a special deployment needs its own model.
+When the package declares `ALTERNATE_HANDS` with one firing iteration,
+the model uses the named main-hand and off-hand attachment transforms.
+The standing reference cycle starts on the main hand. The installed initial
+hand and reset rules remain calibration inputs.
 `scripts/check_scene_coverage.py --url <native-dev-url> --out <file>`
 records the one-target trace and admission outcome for every advertised mode
 and every fixed gauge-transformed form. A trace exercises the standing model
@@ -248,6 +252,15 @@ blocking surfaces and the open-arena floor. Its package declares launch
 speed 130 and equal normal/tangent restitution, which preserve the mirror
 direction. The model uses the catalog rebound count and straight legs.
 Installed gravity, speed clamps, terrain and collision gates are open.
+
+Latron Incarnon uses stationary posed surfaces and the open floor.
+[M103](measurements/M103-latron-bounces-punch-through-and-the-gauge.md)
+bounds the model at three reflections before the fourth collision. The
+`20261109T023827Z-beam-bounce-aim` batch supplies 120 m/s launch, equal
+0.5 restitution, 2.4 s lifespan and explosions at contact and expiry.
+Each recorded detonation independently measures falloff against posed
+recipients at its own location. The model times the lifespan from emission.
+Post-impact life resets and live collider changes on death remain open.
 
 Secondary Irradiate uses the original victim's root and a 3D overlap of
 eligible recipients within its declared radius. It retains the existing

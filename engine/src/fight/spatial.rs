@@ -130,30 +130,54 @@ pub(super) fn launch(
             ),
             None => (0., 0.),
         };
-        let mut path = scene.trace(
-            head,
-            dev,
-            phi,
-            active.projectile_speed_mps,
-            active.homing,
-            active.punch_through_m + l.pierce_live_m,
-            active.infinite_body_punch_through,
-            active.projectile_reverse_query,
-            active.projectile_width_m,
-            active.range_m,
-            &eligible,
-            origins.as_ref().and_then(|o| o[round]),
-        );
-        if let Some(lock) = active.lock_on {
-            lock_shot(&scene, active, lock, &eligible, head, me, &mut path);
-        }
         let pierce = active.punch_through_m + l.pierce_live_m;
-        let reflected_from = active.ricochet.filter(|r| r.reflects_from_surfaces)
-            .map_or(usize::MAX, |r| scene.reflect_path(&mut path, r.bounces,
-                active.projectile_speed_mps, active.projectile_width_m * 0.5,
-                active.range_m, pierce, &eligible));
+        let fire_origin = origins.as_ref().and_then(|o| o[round]);
+        let rebound = active.rebound_blast.zip(active.projectile_speed_mps);
+        let (mut path, reflected_from) = if let Some((model, speed)) = rebound {
+            let mut path = scene.launch_flight(head, dev, phi, &eligible, fire_origin);
+            let reflected = scene.trace_rebound_blast(
+                &mut path, model, speed, active.projectile_width_m * 0.5, &eligible,
+            );
+            (path, reflected)
+        } else {
+            let mut path = scene.trace(
+                head, dev, phi, active.projectile_speed_mps, active.homing, pierce,
+                active.infinite_body_punch_through, active.projectile_reverse_query,
+                active.projectile_width_m, active.range_m, &eligible, fire_origin,
+            );
+            if let Some(lock) = active.lock_on {
+                lock_shot(&scene, active, lock, &eligible, head, me, &mut path);
+            }
+            let reflected = active.ricochet.filter(|r| r.reflects_from_surfaces)
+                .map_or(usize::MAX, |r| scene.reflect_path(&mut path, r.bounces,
+                    active.projectile_speed_mps, active.projectile_width_m * 0.5,
+                    active.range_m, pierce, &eligible));
+            (path, reflected)
+        };
         let mut seeds = beam::seeds(&scene, &mut path, active, &eligible, me.tendril.count);
-        if let (Some(hit), Some(radial)) = (path.impacts.first().copied(), active.radial) {
+        let mut contact_blasts = Vec::new();
+        let mut surface_blasts = Vec::new();
+        if let Some(radial) = active.radial.filter(|_| rebound.is_some()) {
+            for det in &path.detonations {
+                let hits: Vec<_> = eligible.iter().enumerate().filter_map(|(body, &present)| {
+                    if !present {
+                        return None;
+                    }
+                    let distance = scene.distance_to_body(det.point, body);
+                    (radial.falloff_at(distance) > 0.).then_some(crate::scene::Impact {
+                        body, proxy: 0, part: 0, point: det.point, exit: det.point,
+                        seconds: det.seconds, travel: det.travel, material: 0., remaining: 0.,
+                        radial: true, radial_distance: distance,
+                    })
+                }).collect();
+                path.radial_impacts.extend_from_slice(&hits);
+                if det.body.is_some() {
+                    contact_blasts.push(hits);
+                } else {
+                    surface_blasts.extend(hits);
+                }
+            }
+        } else if let (Some(hit), Some(radial)) = (path.impacts.first().copied(), active.radial) {
             if let Some(center) = path.blast_center {
                 path.radial_impacts = scene.blast_hits(hit, center, f64::from(radial.radius_m as f32), &eligible);
             } else if active.homing.is_none() {
@@ -167,7 +191,7 @@ pub(super) fn launch(
         }
         let each = l.rounds.per_round(l.n_pellets);
         for (contact, hit) in path.impacts.iter().enumerate() {
-            let count = if contact == 0 {
+            let count = if contact == 0 || rebound.is_some() {
                 copies
             } else {
                 each.floor() as u32 + u32::from(me.d.extra.chance(each.fract()))
@@ -221,8 +245,15 @@ pub(super) fn launch(
                         });
                     }
                 }
-                if let Some(rad) = active.radial.filter(|_| contact == 0) {
-                    for &impact in &path.radial_impacts {
+                if let Some(rad) = active.radial {
+                    let radial_impacts = if rebound.is_some() {
+                        contact_blasts[contact].as_slice()
+                    } else if contact == 0 {
+                        path.radial_impacts.as_slice()
+                    } else {
+                        &[]
+                    };
+                    for &impact in radial_impacts {
                         events.push(Landing {
                             spatial: Some(SpatialLanding {
                                 impact,
@@ -246,6 +277,34 @@ pub(super) fn launch(
                             ..l.clone()
                         });
                     }
+                }
+            }
+        }
+        if let Some(rad) = active.radial {
+            for &impact in &surface_blasts {
+                for instance in 0..copies {
+                    events.push(Landing {
+                        spatial: Some(SpatialLanding {
+                            impact,
+                            miss: false,
+                            first: false,
+                            last: false,
+                            instance,
+                            follows: instance > 0,
+                            contact: 0,
+                            splash: true,
+                            beam: None,
+                            redirected: false,
+                            progress: progress.clone(),
+                        }),
+                        t: l.t + impact.seconds + rad.delay_seconds,
+                        radial_only: true,
+                        n_pellets: 1,
+                        rounds: Rounds::single(1, each),
+                        burst_starts: false,
+                        burst_completed,
+                        ..l.clone()
+                    });
                 }
             }
         }
@@ -274,7 +333,7 @@ pub(super) fn launch(
                 ..l.clone()
             });
         }
-        if path.impacts.is_empty() && !indirect {
+        if path.impacts.is_empty() && !indirect && surface_blasts.is_empty() {
             rec.push(
                 l.t,
                 None,

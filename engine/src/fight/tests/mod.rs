@@ -321,6 +321,7 @@ impl Default for FightParams {
             // chain is something a weapon DECLARES.
             beam: None,
             ricochet: None,
+            rebound_blast: None,
             thrown_bounce: None,
             // AIMED, like every fixture but the one weapon that is not.
             unaimed_headshot_chance: None,

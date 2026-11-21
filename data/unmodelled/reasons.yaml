@@ -199,6 +199,8 @@ reasons:
     text: "Assumed: a bounce lands on a weak point 50% of the time. It can headshot (wiki), but where it lands depends on geometry the sim does not model, and no rate is published."
   ricochet_terrain:
     text: "The 3D arena reflects off posed enemies and the open floor. Wall and cover geometry remain outside this scenario."
+  client_latron_rebound:
+    text: "Rebounds use stationary posed surfaces in 3D. Corpse transitions, lifetime resets after impacts and wall geometry remain uncalibrated. The planar scene resolves the first contact."
   reload_never_interrupted:
     text: "A reload is never interrupted here: in game you can fire mid-reload and keep the shells already loaded. A listed reload is a whole reload, by design."
   # THREE USES ON THE DAY IT WAS WRITTEN (Tenet Envoy, Tenet Diplos, Tenet

@@ -12,6 +12,47 @@ fn scene(enemy: usize, rows: usize, contact: bool) -> Scene {
 }
 
 #[test]
+fn explosive_reflections_stop_on_the_fourth_contact_or_expiry() {
+    let mut input = scene(1, 1, false).input;
+    input.placement = Placement::Supplied;
+    input.enemies.push(input.enemies[0].clone());
+    for (body, z) in input.enemies.iter_mut().zip([2., -2.]) {
+        body.world = Affine::IDENTITY;
+        body.world.0[11] = z;
+        body.controller.scale = 1.;
+        body.proxies.truncate(2);
+        for (i, proxy) in body.proxies.iter_mut().enumerate() {
+            proxy.cache_index = i;
+            proxy.world = Affine::IDENTITY;
+            proxy.world.0[7] = 1.5;
+            proxy.shape = Shape::Sphere { radius: 0.3 };
+        }
+    }
+    input.head_proxy = 0;
+    input.body_proxy = 1;
+    let scene = Scene::new(input, 2).unwrap();
+    let model = crate::model::ReboundBlast { reflections: 3, lifetime_seconds: 2.4, restitution: 0.5 };
+    let mut flight = scene.launch_flight(false, 0., 0., &[true; 2], None);
+    flight.direction = Vec3([0., 0., 1.]);
+    let first = scene.trace_rebound_blast(&mut flight, model, 120., 0., &[true; 2]);
+    assert_eq!(first, 1);
+    assert_eq!(flight.bends.len(), 3);
+    assert_eq!(flight.impacts.iter().map(|h| h.body).collect::<Vec<_>>(), [0, 1, 0, 1]);
+    assert_eq!(flight.detonations.len(), 4);
+    assert!(flight.detonations.iter().all(|d| !d.expired));
+    for (hits, speed) in flight.detonations.windows(2).zip([60., 30., 15.]) {
+        assert!(((hits[1].travel - hits[0].travel) / (hits[1].seconds - hits[0].seconds) - speed).abs() < 1e-8);
+    }
+    let mut open = scene.launch_flight(false, 0., 0., &[false; 2], None);
+    open.direction = Vec3([0., 0., 1.]);
+    scene.trace_rebound_blast(&mut open, model, 120., 0., &[false; 2]);
+    assert!(open.impacts.is_empty());
+    let [expiry] = open.detonations.as_slice() else { panic!("one expiry") };
+    assert!(expiry.expired);
+    assert_eq!((expiry.seconds, expiry.travel), (2.4, 288.));
+}
+
+#[test]
 fn demolisher_supplied_poses_match_native_body_queries() {
     use serde_json::Value;
 
@@ -457,7 +498,7 @@ fn guided_grid_clock_and_radial_routing_match_original_open_scene() {
                 steering_target: None, impacts: Vec::new(), blast_center: None,
                 radial_impacts: Vec::new(), fire_origin: None,
                 beam_endpoint: None, beam_contacts: Vec::new(), entity: None, redirects: Vec::new(),
-                bends: Vec::new(), stopped_at: None,
+                bends: Vec::new(), detonations: Vec::new(), stopped_at: None,
             };
             s.trace_guided(&mut path, homing, 100., &[true; 25]);
             assert_eq!(path.steering_target, Some(acquired), "{first_substeps}/{publish_each}");

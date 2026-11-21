@@ -114,7 +114,7 @@ def source_bone(model, wanted):
     return full
 
 
-def attach_slots(ancestry, layers, candidates, records, bone_numbers, transformed):
+def attach_slots(ancestry, layers, candidates, records, bone_numbers, transformed, alternating):
     hands = {}
     supported = {"MAIN_HAND", "OFF_HAND", "EXTRA1"} if transformed else {"MAIN_HAND", "OFF_HAND"}
     for owner in reversed(ancestry):
@@ -131,7 +131,7 @@ def attach_slots(ancestry, layers, candidates, records, bone_numbers, transforme
                 slot["Type"] = str(PurePosixPath(owner).parent / token)
             hands.setdefault(hand, {}).update(slot)
     slots = {hand: row for hand, row in hands.items() if row.get("Type", '""') != '""'}
-    if sum(hand != "EXTRA1" for hand in slots) != 1:
+    if sum(hand != "EXTRA1" for hand in slots) != (2 if alternating else 1):
         return
     for slot in slots.values():
         if slot.get("BoneName") not in bone_numbers or slot.get("RelativeToBounds", "0") != "0":
@@ -139,6 +139,18 @@ def attach_slots(ancestry, layers, candidates, records, bone_numbers, transforme
         if slot["Type"] not in records or slot["Type"] not in candidates:
             return
     return slots
+
+
+def single_iteration(behaviors, forms):
+    for form in forms:
+        index = form.get("dispatch_behavior_index")
+        if not isinstance(index, int) or not 0 <= index < len(behaviors):
+            return False
+        emit = behaviors[index]["selected_geometry_and_emit_fields"]
+        counts = [value for key, value in emit.items() if key.endswith(".fireIterations")]
+        if counts != ["1"]:
+            return False
+    return True
 
 
 def weapon_rig(path, slot, linked, mounts, models, bone_numbers):
@@ -202,7 +214,7 @@ def select_groups(form_rows, source, models, layers):
                                    "AuxiliaryAttachmentFiringIndex")):
             continue
         style = data.get("AttachmentFireStyle", {}).get("source_text")
-        if style not in (None, "LEFT_HAND_ONLY") or ("AuxiliaryAttachments" in data and style is None):
+        if style not in (None, "LEFT_HAND_ONLY", "ALTERNATE_HANDS") or ("AuxiliaryAttachments" in data and style is None):
             continue
         if "THIRD_PERSON_ATTACHMENT" not in data:
             continue
@@ -210,8 +222,24 @@ def select_groups(form_rows, source, models, layers):
         declaration = data["THIRD_PERSON_ATTACHMENT"]
         assert layers[declaration["declared_by"]] == declaration["source_text"]
         transformed = {row["form_or_action_id"] for row in forms} == {"base", "incarnon"}
-        slots = attach_slots(entry["ancestry_leaf_first"], layers, involved, links, bones, transformed)
+        alternating = style == "ALTERNATE_HANDS"
+        if alternating and (transformed or not single_iteration(entry["behavior_records"], forms)):
+            continue
+        slots = attach_slots(entry["ancestry_leaf_first"], layers, involved, links, bones, transformed, alternating)
         if not slots:
+            continue
+        if alternating:
+            hands = [slots["MAIN_HAND"], slots["OFF_HAND"]]
+            if not hands[0]["BoneName"].startswith("GAME_R1_") or not hands[1]["BoneName"].startswith("GAME_L1_"):
+                continue
+            rigs = [weapon_rig(hand["Type"], hand, links, models["mount_source"], models["models"], bones)
+                    for hand in hands]
+            if any(rig is None for rig in rigs):
+                continue
+            mapped[id] = {
+                "attachments": rigs,
+                "round_order": [firing_slot(index) for index in range(2)],
+            }
             continue
         extra = slots.pop("EXTRA1", None)
         slot = next(iter(slots.values()))
@@ -224,13 +252,16 @@ def select_groups(form_rows, source, models, layers):
             other = weapon_rig(extra["Type"], extra, links, models["mount_source"], models["models"], bones)
             if not attach["profiles"] or other != attach:
                 continue
-        fire = {
-            "attachment": 0, "mode": 0,
-            "refresh_per_iteration": False, "advance_after_round": False,
-        }
-        mapped[id] = {"attachments": [attach], "round_order": [fire]}
+        mapped[id] = {"attachments": [attach], "round_order": [firing_slot(0)]}
     assert "nataruk" in mapped or "nataruk_perfect" in mapped
     return mapped
+
+
+def firing_slot(index):
+    return {
+        "attachment": index, "mode": 0,
+        "refresh_per_iteration": False, "advance_after_round": False,
+    }
 
 
 def main():
@@ -247,7 +278,7 @@ def main():
     else:
         OUTPUT.write_text(value)
     print(f"{len(groups)} calculated attachment mounts, "
-          f"{sum(bool(v['attachments'][0]['profiles']) for v in groups.values())} declared fire-position lists")
+          f"{sum(bool(a['profiles']) for v in groups.values() for a in v['attachments'])} declared fire-position lists")
 
 
 if __name__ == "__main__":

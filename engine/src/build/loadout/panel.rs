@@ -559,6 +559,7 @@ pub struct ResolvedPanel {
     /// See [`ResolvedMeter`] — the recharge clock this form is gated behind.
     pub meter: Option<ResolvedMeter>,
     pub ricochet: Option<Ricochet>,
+    pub rebound_blast: Option<crate::model::ReboundBlast>,
     /// A thrown glaive's bounces, with what its cards did to them.
     pub thrown_bounce: Option<ThrownBounce>,
     /// Additive headshot-damage bonus from evolutions (Caput Mortuum).

@@ -192,6 +192,8 @@ pub struct Flight {
     pub redirects: Vec<Impact>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub bends: Vec<SurfaceBend>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub detonations: Vec<DetonationTrace>,
     #[serde(skip)]
     pub(crate) stopped_at: Option<Vec3>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -204,6 +206,15 @@ pub struct SurfaceBend {
     pub normal: Vec3,
     pub direction: Vec3,
     pub travel: f64,
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+pub struct DetonationTrace {
+    pub point: Vec3,
+    pub seconds: f64,
+    pub travel: f64,
+    pub body: Option<usize>,
+    pub expired: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
@@ -702,19 +713,11 @@ impl Scene {
         (flight, endpoint)
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn trace(
+    pub(crate) fn launch_flight(
         &self,
         head: bool,
         deviation: f64,
         phase: f64,
-        speed: Option<f64>,
-        homing: Option<Homing>,
-        pierce: f64,
-        every_body: bool,
-        projectile_reverse_query: bool,
-        width: f64,
-        range: f64,
         eligible: &[bool],
         fire_origin: Option<FireOrigin>,
     ) -> Flight {
@@ -745,7 +748,7 @@ impl Scene {
                 + f64::from(launch_basis[i]) * s * cp
                 + f64::from(launch_basis[4 + i]) * s * sp
         }));
-        let mut flight = Flight {
+        Flight {
             muzzle,
             camera: self.camera,
             basis_origin: Vec3([aim.basis[12], aim.basis[13], aim.basis[14]].map(f64::from)),
@@ -761,9 +764,29 @@ impl Scene {
             entity: None,
             redirects: Vec::new(),
             bends: Vec::new(),
+            detonations: Vec::new(),
             stopped_at: None,
             fire_origin,
-        };
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn trace(
+        &self,
+        head: bool,
+        deviation: f64,
+        phase: f64,
+        speed: Option<f64>,
+        homing: Option<Homing>,
+        pierce: f64,
+        every_body: bool,
+        projectile_reverse_query: bool,
+        width: f64,
+        range: f64,
+        eligible: &[bool],
+        fire_origin: Option<FireOrigin>,
+    ) -> Flight {
+        let mut flight = self.launch_flight(head, deviation, phase, eligible, fire_origin);
         if let Some(homing) = homing {
             self.trace_guided(&mut flight, homing, range, eligible);
             return flight;
@@ -772,7 +795,8 @@ impl Scene {
         let maximum = pierce.max(0.) as f32;
         let mut accumulated = 0.0_f32;
         let max_distance = range.min(speed.unwrap_or(100_000.) * self.input.maximum_flight_seconds);
-        let line = direction.normalized().unwrap_or(reticle.direction);
+        let muzzle = flight.muzzle;
+        let line = flight.direction.normalized().unwrap_or(self.reticles[usize::from(head)].direction);
         if projectile_reverse_query && !every_body && maximum.is_finite() {
             self.trace_kinematic(&mut flight, line, max_distance, width * 0.5, speed, maximum, eligible);
             return flight;

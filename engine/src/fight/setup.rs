@@ -27,6 +27,14 @@ impl FightParams {
         if self.beam.is_some_and(|b| b.chain_nodes_have_radius) {
             return Some("scene_3d needs an overlap query for each beam chain node");
         }
+        if self.rebound_blast.is_some_and(|r| {
+            !r.lifetime_seconds.is_finite() || r.lifetime_seconds <= 0.
+                || !(0. ..=1.).contains(&r.restitution) || r.reflections > 64
+                || self.projectile_speed_mps.is_none_or(|s| !s.is_finite() || s <= 0.)
+                || self.radial.is_none()
+        }) {
+            return Some("scene_3d needs a valid rebound speed, lifetime and radial attack");
+        }
         if self.melee_radius.is_some() || !self.combo_script.is_empty() || self.target_preference.is_some() {
             return Some("scene_3d needs an attack-specific melee sweep or contact volume");
         }
@@ -1266,6 +1274,7 @@ impl FightParams {
             // been applied and what seeds the chains is what the player built.
             beam: panel.beam,
             ricochet: panel.ricochet,
+            rebound_blast: panel.rebound_blast,
             thrown_bounce: panel.thrown_bounce,
             unaimed_headshot_chance: panel.unaimed_headshot_chance,
             windup_seconds: panel.windup_seconds,

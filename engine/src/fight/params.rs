@@ -819,6 +819,7 @@ pub struct FightParams {
     /// bounce is this attack's collision and this attack's explosion arriving
     /// again, at a body it has not hit yet.
     pub ricochet: Option<crate::model::Ricochet>,
+    pub rebound_blast: Option<crate::model::ReboundBlast>,
     /// A THROWN GLAIVE'S BOUNCES — docs/MELEE.md §10.
     pub thrown_bounce: Option<crate::build::loadout::ThrownBounce>,
     /// See [`crate::data::weapons::AttackSpec::unaimed_headshot_chance`] — this

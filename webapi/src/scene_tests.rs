@@ -407,6 +407,41 @@ fn a_variant_inherits_the_declared_hand_mount_transform() {
 }
 
 #[test]
+fn a_declared_single_iteration_pair_alternates_its_posed_mounts() {
+    let mut v = request("akbolto_prime", 1, false);
+    v["target_at"] = json!([0., 5.]);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    let replay = record(&params(&v));
+    let flights = replay.spatial_flights();
+    let origins = flights.iter().take(4)
+        .map(|row| serde_json::to_value(row.flight.fire_origin).unwrap()["attachment"].clone())
+        .collect::<Vec<_>>();
+    assert_eq!(origins, [json!(0), json!(1), json!(0), json!(1)]);
+    assert_ne!(flights[0].flight.muzzle, flights[1].flight.muzzle);
+}
+
+#[test]
+fn a_rebound_projectile_can_damage_a_body_from_expiry_without_direct_contact() {
+    let mut v = request("latron_prime", 1, false);
+    v.as_object_mut().unwrap().remove("mode");
+    v["form"] = json!("incarnon");
+    v["target_at"] = json!([0., 5.]);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    let mut p = params(&v);
+    p.spread = None;
+    p.projectile_speed_mps = Some(8.);
+    p.rebound_blast.as_mut().unwrap().lifetime_seconds = 0.5;
+    let replay = record(&p);
+    let trace = replay.spatial_flights().first().unwrap();
+    let [expiry] = trace.flight.detonations.as_slice() else { panic!("one expiry") };
+    assert!(expiry.expired && trace.flight.impacts.is_empty());
+    assert_eq!(expiry.seconds, 0.5);
+    assert!(trace.flight.radial_impacts.iter().any(|hit| hit.body == 0));
+    assert!(replay.events().iter().any(|e| e.t == trace.time + expiry.seconds
+        && e.subject == Some(0) && matches!(&e.kind, Kind::Damage(d) if d.radial)));
+}
+
+#[test]
 fn a_single_direct_beam_uses_the_posed_contact_and_its_physical_range() {
     let mut v = request("spectra_vandal", 1, false);
     v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"center_distance","distance":5.}});

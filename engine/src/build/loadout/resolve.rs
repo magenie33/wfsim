@@ -1785,6 +1785,7 @@ pub fn resolve_for(
             ..b
         }),
         ricochet: base.ricochet,
+        rebound_blast: base.rebound_blast,
         thrown_bounce,
         unaimed_headshot_chance: base.unaimed_headshot_chance,
         // A FIRE-RATE MOD SHORTENS THE WIND-UP, the same bucket and the same
