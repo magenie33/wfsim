@@ -158,7 +158,7 @@ check("a code is its kind and a keyed hash: the same asker the same code, anothe
 // A PIPELINE THAT READS THE INBOX WITHOUT IT hands intake a record with no
 // initiator, and every row it ships is unrecorded.
 const reads=[];
-const reader=inboxSource(async sql=>{reads.push(sql);return [];});
+const reader=inboxSource(async (sql,args)=>{if(args.length)reads.push(sql);return [];});
 await reader.byIds(['initiator-check']);await reader.after('',1);
 const blind=reads.filter(sql=>!sql.includes('i.initiator'));
 const entrypoints=["scripts/fetch_inbox.sh","scripts/live_board.sh"].map(p=>fs.readFileSync(new URL(`../${p}`,import.meta.url),'utf8'));

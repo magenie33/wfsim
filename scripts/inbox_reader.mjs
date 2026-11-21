@@ -22,18 +22,26 @@ export function inboxReadUrl(value) {
 }
 
 export function inboxSource(run=query) {
+  let familyProjection;
+  const projection=()=>familyProjection??=run(`SELECT EXISTS(SELECT 1 FROM pg_attribute a
+    WHERE a.attrelid=to_regclass('state_build_family_inbox') AND a.attname='input' AND NOT a.attisdropped
+      AND has_column_privilege(a.attrelid,'id','SELECT')) AS detached_family`,[])
+    .then(([row])=>row?.detached_family ? ','+ownedFamily : '');
   return {
     priority: max=>run(`SELECT p.id,p.zone,p.position FROM state_build_inbox_priorities p
       WHERE EXISTS(SELECT 1 FROM state_build_inbox_inputs i WHERE i.id=p.id)
       ORDER BY p.zone,p.position,p.id LIMIT ?::bigint`,[max]),
-    byIds: ids=>run(`WITH wanted AS MATERIALIZED (
+    byIds: async ids=>run(`WITH wanted AS MATERIALIZED (
         SELECT value AS id,ordinality FROM jsonb_array_elements_text((?::text)::jsonb) WITH ORDINALITY)
-      SELECT ${fields},${ownedFamily} FROM wanted w JOIN state_build_inbox_inputs i ON i.id=w.id ORDER BY w.ordinality`,[JSON.stringify(ids)]),
+      SELECT ${fields}${await projection()} FROM wanted w JOIN state_build_inbox_inputs i ON i.id=w.id ORDER BY w.ordinality`,[JSON.stringify(ids)]),
     fresh: max=>run(`SELECT p.id FROM state_build_inbox_positions p
       WHERE EXISTS(SELECT 1 FROM state_build_inbox_inputs i WHERE i.id=p.id) ORDER BY p.position,p.id LIMIT ?::bigint`,[max]),
-    after: (id,max)=>run(`WITH page AS MATERIALIZED (SELECT ${fields} FROM state_build_inbox_inputs i
-        WHERE i.id>?::text ORDER BY i.id LIMIT ?::bigint)
-      SELECT ${fields},${ownedFamily} FROM page i ORDER BY i.id`,[id,max]),
+    after: async (id,max)=>{
+      const ownership=await projection();
+      const page=`SELECT ${fields} FROM state_build_inbox_inputs i WHERE i.id>?::text ORDER BY i.id LIMIT ?::bigint`;
+      if(!ownership)return run(page,[id,max]);
+      return run(`WITH page AS MATERIALIZED (${page}) SELECT ${fields}${ownership} FROM page i ORDER BY i.id`,[id,max]);
+    },
   };
 }
 

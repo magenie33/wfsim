@@ -310,14 +310,15 @@ sample bodies remain inside the fitting job.
 
 Raw inbox retirement uses the library owner's connection on the data host.
 Install the build-admission schema before the requested submission upgrade
-(`node scripts/board_requested_schema.mjs --upgrade-submit`). Confirm the
-family handoffs and matching intake readers before running a watch. Use
-`node scripts/raw_inbox_retention.mjs --state <path>` for a resumable read-only
+(`node scripts/board_requested_schema.mjs --upgrade-submit`). Intake readers
+keep the original queries until the family input and reader grant exist.
+Confirm the family handoffs and matching intake readers before running a watch.
+Use `node scripts/raw_inbox_retention.mjs --state <path>` for a resumable read-only
 inventory page. With `--watch` it follows the cursor continuously and starts a
 new sweep when it reaches the end. Write watches use `--apply` and a separate
 checkpoint. `WFSIM_RAW_INBOX_ROOT_RESERVE_BYTES` is the reviewed system disk
 floor including spare WAL capacity. Watches pause on disk or host pressure and
-resume from the saved cursor. The report's tuple bytes describe the inspected
+resume from the saved cursor. The report's logical bytes describe the inspected
 rows. Measure filesystem space independently of row deletion.
 
 `python scripts/ship_task_archive.py` installs the versioned archive tool and

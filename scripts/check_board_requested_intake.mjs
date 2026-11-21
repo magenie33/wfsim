@@ -14,6 +14,7 @@ import {BUILD_WORKFLOW_PRODUCER} from '../worker/build_workflows.js';
 import {openBoardResultFlow} from './board_result_flow.mjs';
 import {boardRequestedSchema,boardRequestedSubmitUpgrade} from './board_requested_schema.mjs';
 import {rawInboxRetentionPage} from './raw_inbox_retention.mjs';
+import {captureInbox,inboxSource} from './inbox_reader.mjs';
 import {calculationId} from '../worker/board_tasks.js';
 
 const url=process.env.WFSIM_REQUESTED_INTAKE_TEST_URL||process.env.WFSIM_BOARD_MAILBOX_TEST_URL;
@@ -28,6 +29,7 @@ const engine='8ce96e275dc2',at=new Date().toISOString();
 const realRandom=Math.random;Math.random=()=>0.5;
 let flow,runner;
 const runnerRole=schema+'_runner';
+const pipelineRole=schema+'_pipeline';
 const client=postgresClient(sql),db=Object.assign(pgDb(client),{
  get:async(text,...args)=>(await client.query(placeholders(text),args)).rows[0],
  all:async(text,...args)=>(await client.query(placeholders(text),args)).rows,
@@ -387,9 +389,12 @@ try{
  await admitRequest((await replay.json()).request);
  assert.deepEqual(await familyBoardPass(runner,{binary}),{idle:true},'repeat submission creates no sibling workflow');
  assert.deepEqual(await db.all("SELECT * FROM state_task_pipeline_controls WHERE name='admission'"),fences);
- if(process.argv.includes('--break-raw-ownership')) {
+ if(process.argv.includes('--break-raw-ownership') || process.argv.includes('--break-raw-budget')) {
   const body=readFileSync(new URL('../worker/pg/raw_inbox_retention.sql',import.meta.url),'utf8');
-  await sql.unsafe(body.replace("THEN r.input->'record'=row_input.record::jsonb",'THEN true'));
+  const broken=process.argv.includes('--break-raw-ownership')
+   ? body.replace("THEN r.input->'record'=build_raw_inbox_json(row_input.record)",'THEN true')
+   : body.replace('WHEN p.bytes>row_max','WHEN false');
+  await sql.unsafe(broken);
  }
  const retiredAt='2020-01-01';
  await sql.unsafe(`INSERT INTO record_build_submissions(id,at,record,initiator) VALUES
@@ -417,23 +422,67 @@ try{
  assert(await db.get("SELECT 1 FROM record_build_submissions WHERE id='old-inbox'"));
  const acknowledged={after:legacyInput.id.slice(0,-1),limit:1};
  const known=await rawInboxRetentionPage(sql,acknowledged);
- assert.equal(known.next,legacyInput.id);assert.equal(known.groups.canonical_handoff.rows,1);
- assert.equal((await rawInboxRetentionPage(sql,{...acknowledged,apply:true})).removed,1);
+ assert.equal(known.next,legacyInput.id);assert.equal(known.groups.canonical_unproven.rows,1);
+ assert.equal((await rawInboxRetentionPage(sql,{...acknowledged,apply:true})).removed,0);
+ await db.run('DELETE FROM record_build_submissions WHERE id=?',legacyInput.id);
+ const changed={...legacyInput,record:'{"weapon":"braton"}'};
+ await db.run('INSERT INTO record_build_submissions(id,at,record,initiator,observation) VALUES(?,?,?,?,?)',...Object.values(changed));
+ assert.equal((await rawInboxRetentionPage(sql,{...acknowledged,apply:true})).removed,0,'a reused source ID does not prove its payload');
+ assert.equal((await db.get('SELECT record FROM record_build_submissions WHERE id=?',legacyInput.id)).record,changed.record);
  assert.deepEqual(await db.get('SELECT to_jsonb(i) body FROM entity_build_intake_intents i WHERE id=?',legacy),legacyIntent);
  await sql.unsafe(`INSERT INTO record_build_submissions(id,at,record,initiator,family_source)
    VALUES('workflow:retention:child','${retiredAt}','{"weapon":"braton"}','system','workflow|retention|child');
    INSERT INTO state_build_family_inbox(id,retry_at,input)
     SELECT id,at,to_jsonb(b) FROM record_build_submissions b WHERE id='workflow:retention:child';`);
+ const mirrorId='workflow:retention:child';
+ await sql.unsafe(`CREATE ROLE ${pipelineRole}; GRANT USAGE ON SCHEMA ${schema} TO ${pipelineRole};
+   GRANT SELECT ON state_build_inbox_inputs TO ${pipelineRole};`);
+ const checkReader=()=>sql.begin(async tx=>{
+   await tx.unsafe(`SET LOCAL ROLE ${pipelineRole}`);
+   let probes=0;
+   const reader=inboxSource((text,args)=>{
+     if(!args.length)probes++;
+     return tx.unsafe(placeholders(text),args);
+   });
+   const [keyed]=await reader.byIds([mirrorId]),[page]=await reader.after('workflow:retention:',1);
+   assert.equal(keyed.id,mirrorId);assert.deepEqual(keyed,page);
+   const seen=[];
+   await captureInbox({source:{...reader,priority:async()=>[{id:mirrorId}],fresh:async()=>[],after:async()=>[]},
+     maxRows:1,emit:async(line,row)=>seen.push(row.id)});
+   assert.equal(probes,1,'each reader uses one schema capability probe');
+   return {owned:keyed.owned_family,seen};
+ });
+ assert.deepEqual(await checkReader(),{owned:undefined,seen:[mirrorId]},'old intake grants still read the raw inbox');
+ await sql.unsafe(`GRANT SELECT (id) ON state_build_family_inbox TO ${pipelineRole}`);
+ assert.deepEqual(await checkReader(),{owned:true,seen:[]},'the new grant enables independent ownership');
  const familyMirror={after:'workflow:retention:',limit:1};
  assert.equal((await rawInboxRetentionPage(sql,familyMirror)).groups.family_copy.rows,1);
  assert.equal((await rawInboxRetentionPage(sql,{...familyMirror,apply:true})).removed,1);
  assert(await db.get("SELECT 1 FROM state_build_family_inbox WHERE id='workflow:retention:child'"));
+ await sql.unsafe(`INSERT INTO record_build_submissions(id,at,record,initiator)
+   VALUES('retirement-large-a','${retiredAt}',jsonb_build_object('weapon','braton','padding',repeat('x',131072))::text,'anonymous');
+   INSERT INTO entity_board_requests(id,kind,input,ruler,mode)
+    SELECT id,'missing',jsonb_build_object('id',id,'at',at,'initiator',initiator,'record',record::jsonb),'r','base'
+    FROM record_build_submissions WHERE id='retirement-large-a';
+   INSERT INTO state_board_requests(id) VALUES('retirement-large-a');`);
+ const large=await db.get("SELECT octet_length(record) logical,pg_column_size(record) stored FROM record_build_submissions WHERE id='retirement-large-a'");
+ assert(large.logical>65536 && large.stored<65536,'the test input is physically compressed below its logical budget');
+ const oversized=await rawInboxRetentionPage(sql,{after:'retirement-large-',limit:1,apply:true});
+ assert.equal(oversized.groups.oversize_input?.rows,1,'the logical row budget protects compressed inputs');
+ assert.equal(oversized.removed,0);
+ assert(await db.get("SELECT 1 FROM record_build_submissions WHERE id='retirement-large-a'"));
+ await sql.unsafe(`INSERT INTO record_build_submissions(id,at,record)
+   SELECT 'zz-budget-'||lpad(n::text,3,'0'),'${retiredAt}',repeat('y',60000) FROM generate_series(1,160) n;`);
+ const bounded=await rawInboxRetentionPage(sql,{after:'zz-budget-',limit:160});
+ assert(bounded.scanned<160 && bounded.groups.unconfirmed_input.bytes<=8*1024*1024);
+ const remainder=await rawInboxRetentionPage(sql,{after:bounded.next,limit:160});
+ assert.equal(bounded.scanned+remainder.scanned,160,'a page budget defers remaining rows to the next cursor');
  console.log(JSON.stringify({ok:true,source_kinds:2,canonical_identity:normalized.id,community_witnesses:8,standard_riven:standardized.id,
   published_score:13,old_inbox_retained:true,bulk_admission_paused:true,active_cut_preserved:true,public_work_and_answers:true,
   automatic_partition:true,legacy_unadmitted_replaced:true,cancelled_execution_preserved:true,unqualified_static_retained:true,namespace_isolation:true,
   retained_prefix_priority_preserved:true,shared_held_lease_preserved:true,explicit_missing_zone:0,
-  family_creation_and_native_continuation:true,raw_retirement_requires_ownership:true}));
+  family_creation_and_native_continuation:true,raw_retirement_requires_ownership:true,old_intake_grants_work:true}));
 }catch(error){console.error({query:error.query,parameters:error.parameters,where:error.where});throw error;}finally{
  await flow?.close();await runner?.end();await sql.unsafe('DROP SCHEMA '+schema+' CASCADE');
- await sql.unsafe('DROP ROLE IF EXISTS '+runnerRole);await sql.end();rmSync(root,{recursive:true,force:true});Math.random=realRandom;
+ await sql.unsafe('DROP ROLE IF EXISTS '+runnerRole+','+pipelineRole);await sql.end();rmSync(root,{recursive:true,force:true});Math.random=realRandom;
 }

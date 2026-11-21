@@ -328,6 +328,9 @@ try {
   await db.run('INSERT INTO record_build_submissions(id,at,record,family_source) VALUES(?,?,?,?)',
     familyInput,at,familyRecord,'workflow|old-parent|old-node');
   await db.run('INSERT INTO state_build_family_inbox(id,retry_at) VALUES(?,?)',familyInput,at);
+  const originalSource=inboxSource((text,args)=>db.all(text,...args));
+  assert.equal((await originalSource.byIds([familyInput]))[0].owned_family,undefined,
+    'an owner still uses the original reader before the input schema upgrade');
   await db.exec(buildAdmissionSchemaSql({role:null}));await db.exec(buildAdmissionSchemaSql({role:null}));
   const source=inboxSource((text,args)=>db.all(text,...args));
   const seen=[];

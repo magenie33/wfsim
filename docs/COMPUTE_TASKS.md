@@ -210,18 +210,22 @@ Original source ids and observations remain unchanged through retries.
 
 ### Raw inbox retirement
 
-A bounded retirement page classifies each original id. An independently owned
-copy requires matching payload and source. Canonical intake requires the
-source binding, build, plan and admission work or registered workflow. These
-classes can retire even while the downstream computation is pending. Unowned
+A bounded retirement page classifies each original id. A copied request or
+family input can retire once the independent owner's payload and source match,
+even while the downstream computation is pending. Native intake acknowledges
+its own captured rows after it commits canonical custody. Historical canonical
+links identify earlier processing while retaining only normalized input, so
+they cannot confirm the original payload during a standalone cleanup. Unowned
 reviews, workflow inputs, legacy winners, derived inputs and ordinary uploads
-stay in the inbox. A legacy parent's successful state alone cannot establish
-that its winning build or an individual candidate has been handed off.
+stay in the inbox. A legacy parent's success does not establish an input's
+handoff.
 
-`scripts/raw_inbox_retention.mjs` reports rows and live tuple bytes by class in
-read-only mode. Its write mode locks at most 128 selected raw rows per page and
-rechecks proof before deleting. A watch cursor wraps and rechecks skipped rows.
-Its checkpoint holds bounded progress and counters. No archive is created.
+`scripts/raw_inbox_retention.mjs` reports rows and logical bytes by class in
+read-only mode. Each page compares at most 8 MiB of input. Rows larger than
+64 KiB stay in the inbox without payload comparison. Write mode locks at most
+128 selected rows per page and rechecks size and proof before deleting. A watch
+cursor wraps and rechecks skipped rows. The checkpoint holds bounded progress
+and counters. No archive is created.
 
 A correction observation's engine identifies its measurement. It does not pin
 the workflow's future execution engine. Execution uses the factory's current
