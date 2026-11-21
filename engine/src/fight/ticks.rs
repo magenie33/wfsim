@@ -323,6 +323,7 @@ pub(super) fn process_ticks(
         let mut native_layers = None;
         let (value, ignores_armor, is_dot_tick, hit_type, src, xh) = match &ev {
             Ev::Dot(i) => {
+                debuffs.invalidate_dot_types();
                 let dtype = debuffs.dots[*i].dtype;
                 let ignores_armor = debuffs.dots[*i].ignores_armor;
                 tick_landing = debuffs.proc_landing(&debuffs.dots[*i]);
