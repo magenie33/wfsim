@@ -152,9 +152,14 @@ try{
  assert.deepEqual((await requestRow(id)).input,custom.input,'a rejected stage retains the independently owned input');
  await db.run("UPDATE state_board_requests SET lease_until=board_input_timestamp(clock_timestamp()-interval '1second') WHERE id=?",id);
  await assert.rejects(db.run('SELECT board_request_stage(?::text,?::uuid,?::text)',id,claim.lease,JSON.stringify(normalized)),/lease changed/);
+ const otherRecord=JSON.stringify({weapon:'braton'});
+ assert.notDeepEqual(JSON.parse(otherRecord),custom.input.record);
+ await db.run('INSERT INTO record_build_submissions(id,at,record,initiator) VALUES(?,?,?,?)',
+   id,custom.input.at,otherRecord,custom.input.initiator);
  assert((await pass()).staged,'expired claims recover through the same source');
  assert.equal(await count('state_compute_work'),2,'canonical intake does not create or replace the held computation');
- assert(!(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',id)));
+ assert.equal((await db.get('SELECT record FROM record_build_submissions WHERE id=?',id))?.record,
+   otherRecord,'staging preserves a different payload with the same source ID');
  assert(await db.get("SELECT 1 FROM record_build_submissions WHERE id='old-inbox'"));
  const sharedNode=await db.get('SELECT workflow FROM state_build_workflow_nodes WHERE computation=? AND task_id=?',retained[1],sharedBefore.task_id);
  await db.run(`INSERT INTO state_build_workflow_nodes(workflow,id,expansion,definition,state,retry_at,queue_position)
@@ -229,7 +234,14 @@ try{
  await retryReview(ownedReview.record);
  await assert.rejects(retryReview('{"weapon":"braton"}'),/review source already owns a different input/);
  assert.deepEqual((await requestRow(correction)).input,ownedReview);
- assert((await pass()).staged);assert(!(await pass()).pending);
+ await db.run('UPDATE state_board_request_control SET enabled=false');
+ await db.run('INSERT INTO record_build_submissions(id,at,record,initiator,observation) VALUES(?,?,?,?,?)',
+   correction,ownedReview.at,ownedReview.record,ownedReview.initiator,ownedReview.observation);
+ assert(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',correction));
+ await db.run('UPDATE state_board_request_control SET enabled=true');
+ assert((await pass()).staged);
+ assert(!(await db.get('SELECT 1 FROM record_build_submissions WHERE id=?',correction)),'staging removes the exact legacy copy');
+ assert(!(await pass()).pending);
  assert.deepEqual(await db.get('SELECT to_jsonb(i) body FROM entity_build_intake_intents i WHERE id=?',legacy),legacyIntent,'fresh admission never changes the old intent');
  assert(await db.get("SELECT 1 FROM state_build_admission_work WHERE kind='intake' AND key=?",legacy),'the old staged work is not admitted');
  assert.equal(await count('state_compute_work'),2,'correction retains the computation identity and opens its execution round');
@@ -392,8 +404,9 @@ try{
  if(process.argv.includes('--break-raw-ownership') || process.argv.includes('--break-raw-budget')) {
   const body=readFileSync(new URL('../worker/pg/raw_inbox_retention.sql',import.meta.url),'utf8');
   const broken=process.argv.includes('--break-raw-ownership')
-   ? body.replace("THEN r.input->'record'=build_raw_inbox_json(row_input.record)",'THEN true')
+   ? body.replace("THEN owner_input->'record'=build_raw_inbox_json(row_input.record)",'THEN true')
    : body.replace('WHEN p.bytes>row_max','WHEN false');
+  assert.notEqual(broken,body);
   await sql.unsafe(broken);
  }
  const retiredAt='2020-01-01';

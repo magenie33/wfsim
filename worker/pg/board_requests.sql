@@ -43,35 +43,6 @@ BEGIN
   RETURN to_jsonb(held)||(SELECT to_jsonb(r) FROM entity_board_requests r WHERE r.id=held.id);
 END $$;
 
-CREATE FUNCTION board_request_stage(text,uuid,text) RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
-DECLARE request entity_board_requests%ROWTYPE; input jsonb:=$3::jsonb; plan jsonb:=input->'flow';
-BEGIN
-  PERFORM 1 FROM state_board_request_control WHERE id=1 AND enabled FOR SHARE;
-  IF NOT FOUND THEN RAISE EXCEPTION 'requested board intake is paused' USING ERRCODE='55000'; END IF;
-  PERFORM 1 FROM state_board_requests WHERE id=$1 AND phase='pending' AND lease=$2 AND lease_until>board_input_timestamp(clock_timestamp()) FOR UPDATE;
-  IF NOT FOUND THEN RAISE EXCEPTION 'requested input lease changed' USING ERRCODE='40001'; END IF;
-  SELECT * INTO STRICT request FROM entity_board_requests WHERE id=$1;
-  IF input->'from' IS DISTINCT FROM jsonb_build_array($1) OR input->>'derived' IS DISTINCT FROM 'false'
-    OR input->>'system_source' IS NOT NULL OR input->>'recovery_of' IS NOT NULL
-    OR jsonb_array_length(plan->'nodes') IS DISTINCT FROM 1
-    OR plan#>>'{nodes,0,kind}' IS DISTINCT FROM 'measure'
-    OR plan#>>'{nodes,0,identity}' IS DISTINCT FROM input->>'id'
-    OR plan#>>'{nodes,0,ruler}' IS DISTINCT FROM request.ruler
-    OR plan#>>'{nodes,0,mode}' IS DISTINCT FROM request.mode
-    OR jsonb_array_length(plan#>'{scope,boards}') IS DISTINCT FROM 1
-    OR plan#>>'{scope,boards,0,id}' IS DISTINCT FROM request.ruler
-    OR plan#>'{scope,modes}' IS DISTINCT FROM jsonb_build_object(input#>>'{record,weapon}',jsonb_build_array(request.mode))
-    OR (request.kind='correction' AND (input#>>'{observation,valid}' IS DISTINCT FROM 'true'
-      OR input#>>'{observation,review}' IS DISTINCT FROM (request.input->>'observation')::jsonb->>'review'))
-    OR (request.kind='missing' AND input->'observation' IS DISTINCT FROM 'null'::jsonb) THEN
-    RAISE EXCEPTION 'requested input changed its captured scope'; END IF;
-  input:=input||jsonb_build_object('zone',request.zone);
-  PERFORM build_intake_batch(jsonb_build_array(input)::text);
-  UPDATE state_board_requests SET phase='staged',intent=build_intake_key(input),lease=NULL,lease_until=NULL,error=NULL WHERE id=$1;
-  PERFORM build_spend_submissions(jsonb_build_array($1)::text);
-END $$;
-
 CREATE FUNCTION board_request_admit(text,uuid) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE held state_board_requests%ROWTYPE; at text; work record; flow text; pending boolean; requested_zone bigint;
@@ -129,4 +100,4 @@ BEGIN
   RETURN true;
 END $$;
 REVOKE ALL ON FUNCTION board_request_claim(uuid),
-  board_request_stage(text,uuid,text),board_request_admit(text,uuid),board_request_retry(text,uuid,text,boolean) FROM PUBLIC;
+  board_request_admit(text,uuid),board_request_retry(text,uuid,text,boolean) FROM PUBLIC;

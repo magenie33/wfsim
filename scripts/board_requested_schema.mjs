@@ -6,8 +6,8 @@ import {boardRequestedResultDDL} from './board_requested_result_schema.mjs';
 
 function submitDefinition(httpRole) {
  if(!/^[a-z_][a-z0-9_]{0,62}$/.test(httpRole))throw Error('invalid requested board role');
- return readFileSync(new URL('../worker/pg/board_requested_submit.sql',import.meta.url),'utf8')+
-  readFileSync(new URL('../worker/pg/raw_inbox_retention.sql',import.meta.url),'utf8')+
+ return readFileSync(new URL('../worker/pg/raw_inbox_retention.sql',import.meta.url),'utf8')+
+  readFileSync(new URL('../worker/pg/board_requested_submit.sql',import.meta.url),'utf8')+
   'GRANT EXECUTE ON FUNCTION board_request_submit(text,text,text,text),board_request_submit(text,text,text,text,text) TO '+httpRole+';';
 }
 

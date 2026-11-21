@@ -13,20 +13,26 @@ BEGIN
   RETURN NULL;
 END $$;
 
+CREATE OR REPLACE FUNCTION build_raw_inbox_request_matches(row_input record_build_submissions,owner_input jsonb) RETURNS boolean
+LANGUAGE sql IMMUTABLE SET search_path FROM CURRENT AS $$
+  SELECT row_input.family_source IS NULL
+    AND owner_input->>'id'=row_input.id AND owner_input->>'at'=row_input.at
+    AND owner_input->>'initiator' IS NOT DISTINCT FROM row_input.initiator
+    AND owner_input->>'observation' IS NOT DISTINCT FROM row_input.observation
+    AND CASE jsonb_typeof(owner_input->'record') WHEN 'string' THEN owner_input->>'record'=row_input.record
+      WHEN 'object' THEN owner_input->'record'=build_raw_inbox_json(row_input.record) ELSE false END
+$$;
+
 CREATE OR REPLACE FUNCTION build_raw_inbox_disposition(row_input record_build_submissions) RETURNS text
 LANGUAGE sql STABLE SET search_path FROM CURRENT AS $$
   SELECT CASE
     WHEN EXISTS(SELECT 1 FROM state_build_family_inbox f
       WHERE f.id=row_input.id AND f.input=to_jsonb(row_input)) THEN 'family_copy'
-    WHEN row_input.family_source IS NULL AND EXISTS(
+    WHEN EXISTS(
       SELECT 1 FROM entity_board_requests r JOIN state_board_requests s USING(id)
       WHERE r.id=row_input.id AND s.phase IN('pending','staged','admitted')
         AND EXISTS(SELECT 1 FROM state_board_request_control WHERE id=1 AND enabled)
-        AND r.input->>'id'=row_input.id AND r.input->>'at'=row_input.at
-        AND r.input->>'initiator' IS NOT DISTINCT FROM row_input.initiator
-        AND r.input->>'observation' IS NOT DISTINCT FROM row_input.observation
-        AND CASE jsonb_typeof(r.input->'record') WHEN 'string' THEN r.input->>'record'=row_input.record
-          WHEN 'object' THEN r.input->'record'=build_raw_inbox_json(row_input.record) ELSE false END
+        AND build_raw_inbox_request_matches(row_input,r.input)
     ) THEN 'request_copy'
     WHEN EXISTS(SELECT 1 FROM relation_build_intake_sources src
       JOIN entity_build_intake_intents i ON i.id=src.intent
@@ -83,4 +89,5 @@ BEGIN
   RETURN jsonb_build_object('scanned',scanned,'next',last_id,'groups',tally,'removed',removed);
 END $$;
 REVOKE ALL ON FUNCTION build_raw_inbox_bytes(record_build_submissions),build_raw_inbox_json(text),
+  build_raw_inbox_request_matches(record_build_submissions,jsonb),
   build_raw_inbox_disposition(record_build_submissions),build_raw_inbox_retire_page(text,integer,boolean) FROM PUBLIC;
