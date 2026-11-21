@@ -476,6 +476,7 @@ function renderScenarioFields(ids, opts = {}) {
       ? placement : "custom";
     const canUse3d = profiles3d?.weapons.includes(w?.id) && profiles3d.enemies.includes(sim.enemy)
       && (sim.formation || []).every((f) => profiles3d.enemies.includes(f.enemy || sim.enemy));
+    const referenceMuzzle = sourceDefault && profiles3d?.reference_weapons?.includes(w?.id);
     const geometryOptions = [["", tr("2D")], ["supplied", tr("3D · Arena positions")], ["contact", tr("3D · Contact")]];
     if (scene3d === "custom") geometryOptions.push(["custom", tr("3D · Custom scene")]);
     const geometry = (canUse3d || scene3d) ? `
@@ -483,6 +484,7 @@ function renderScenarioFields(ids, opts = {}) {
         <select data-k="scene_3d">
           ${geometryOptions.map(([id, label]) => `<option value="${id}"${id === scene3d ? " selected" : ""}${id && id !== "custom" && !canUse3d ? " disabled" : ""}>${escHtml(label)}</option>`).join("")}
         </select>
+        ${referenceMuzzle ? `<small class="scenario-effective">${escHtml(tr("Standing reference muzzle"))}</small>` : ""}
       </label>` : "";
     // EVERYTHING ABOUT THE TARGET LIVES IN THE CANVAS, and
     // only the DURATION stays outside: how long the fight runs is a property of

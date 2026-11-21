@@ -17,15 +17,39 @@ profile. The standing Excalibur, from the same source data as explicit
 scenes, faces the aimed actor. The formation faces the shooter along that
 axis with the optional shared `enemy_yaw_deg` angle relative to frontal.
 
-The preset contains Laetum, Akarius and Akarius Prime emission controls
-and the Thrax Centurion, Corrupted Heavy Gunner and Demolisher Devourer
-posed controls. The Demolisher has its mine slots disabled in this pose.
+The preset supports primary, secondary and Archgun collision routes for
+the standing Warframe. Companion weapons need their own posed carrier. It
+loads the Laetum, Akarius and Akarius Prime controls or the single-attachment
+models from `geometry/weapon-attachments.yaml`. Each catalog model projects
+an unambiguous named mount and its usable declared firing position into a
+source-default pose. A gun without a bound standing attachment uses the
+Excalibur right-hand reference mount. The picker labels that reference,
+and the combat record reports `emitter: player_mount` or `attachment`.
+`/api/meta.scene_3d_source_default.reference_weapons` lists the guns that use
+the reference mount. The preset includes Thrax Centurion, Corrupted Heavy
+Gunner and Demolisher Devourer posed controls. The Demolisher has its mine
+slots disabled in this pose.
 The geometry picker uses the supplied source-default state with a fixed
 1/64 s step and clear homing visibility. `scripts/import_scene_profiles.py
 --check` verifies the compact data projection. An explicit scene supplies
 other poses, emitters and actor models through the same shared fight.
 `/api/log` records each actor's resolved root and each physical round's
 origin, path, and contacts.
+
+`scripts/import_weapon_scene_profiles.py --batches <exchange>/batches --check`
+checks the projection from `20261121T025655Z-all-weapon-3d-source-map`.
+The projection uses the exact weapon, attachment and model path. It
+composes named hand slots from their parent resource declarations in
+`20261106T150853Z-client-metadata-offline`, with each relative resource
+path resolved in the declaring layer. It reuses the retained native FK rows
+where available and compares them to FK over the tagged resource pose.
+Attachment selection with firing cycles, a special deployment, or multiple
+distinct positions needs its own model.
+`scripts/check_scene_coverage.py --url <native-dev-url> --out <file>`
+records the one-target trace and admission outcome for every advertised mode
+and every fixed gauge-transformed form. A trace exercises the standing model
+and the weapon's currently resolved attack. Installed poses, native routing
+and per-build parity use separate controls.
 
 `headshot_pct` is reticle intent in this scene. At 100 the player keeps aiming
 at the selected head proxy and completely compensates recoil. Intrinsic spread,
@@ -158,8 +182,12 @@ The native replay captures radial parts at the controller input. Radial damage
 still follows the existing area damage rules. Live filter enrollment, cover
 and damage acceptance are open. Status areas retain their planar policy.
 
-The scene refuses delivery routes it does not implement: continuous beams,
-ricochets, melee, blobs, orbs, lingering fields, lock-on, tendrils, attractors,
+Direct single-ray continuous fire uses the same posed contact as a firearm
+trace. It retains the ordinary beam tick, ramp, and multishot settlement.
+Beam chain, area and multi-beam acquisition need separate spatial queries.
+
+The scene refuses unsupported delivery routes including ricochets, melee
+sweeps, blobs, orbs, lingering fields, lock-on, tendrils, attractors,
 reload grenades, corpse/spawn/dagger routes, extra ability actors, ability grants,
 frame casting and echo/influence arcanes. Guided-projectile penetration and speed
 modifiers are also refused until their native consumers are bound. It does not

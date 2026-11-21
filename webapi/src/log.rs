@@ -116,6 +116,7 @@ pub fn log_json(v: &Value) -> Value {
             "actors": actors,
             "flights": rec.spatial_flights(),
             "dropped": rec.spatial_flights_dropped(),
+            "emitter": if scene.input().player.equipped_fire.is_some() { "attachment" } else { "player_mount" },
             "scope": "Supplied poses and state",
         });
     }

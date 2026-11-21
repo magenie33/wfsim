@@ -38,6 +38,8 @@ struct SourceProfiles {
     enemies: BTreeMap<String, SourceEnemy>,
 }
 
+type WeaponMounts = BTreeMap<String, EquippedFire>;
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct SourceRequest {
@@ -65,12 +67,33 @@ fn profiles() -> Result<&'static SourceProfiles, String> {
         .map_err(Clone::clone)
 }
 
-pub(crate) fn source_default_choices() -> Value {
-    profiles().map_or(Value::Null, |source| {
-        json!({
-            "weapons": source.weapons.keys().collect::<Vec<_>>(),
-            "enemies": source.enemies.keys().collect::<Vec<_>>(),
+fn catalog_mounts() -> Result<&'static WeaponMounts, String> {
+    static SOURCE: OnceLock<Result<WeaponMounts, String>> = OnceLock::new();
+    SOURCE
+        .get_or_init(|| {
+            let yaml = data::file("geometry/weapon-attachments.yaml")
+                .ok_or("missing catalog attachment geometry")?;
+            serde_json::from_str(yaml).map_err(|e| format!("catalog attachment geometry: {e}"))
         })
+        .as_ref()
+        .map_err(Clone::clone)
+}
+
+fn standing_gun(id: &str) -> bool {
+    data::weapons::spec(id)
+        .is_some_and(|w| matches!(w.weapon_type.as_str(), "primary" | "secondary" | "archgun"))
+}
+
+pub(crate) fn source_default_choices() -> Value {
+    let (Ok(source), Ok(mounts)) = (profiles(), catalog_mounts()) else {
+        return Value::Null;
+    };
+    let guns = crate::registry::weapons().iter().filter(|w| standing_gun(&w.id) && !w.sentinel);
+    json!({
+        "weapons": guns.clone().map(|w| &w.id).collect::<Vec<_>>(),
+        "reference_weapons": guns.filter(|w| !source.weapons.contains_key(&w.id)
+            && !mounts.contains_key(&w.id)).map(|w| &w.id).collect::<Vec<_>>(),
+        "enemies": source.enemies.keys().collect::<Vec<_>>(),
     })
 }
 
@@ -117,7 +140,7 @@ fn pose(at: Vec2, forward_x: f64, forward_z: f64, scale: f64) -> Affine {
 
 pub(crate) fn source_default<'a>(
     raw: &Value,
-    weapon: &str,
+    weapon: &crate::registry::WeaponInfo,
     player_at: Vec2,
     aimed: (&'a str, Vec2),
     formation: impl Iterator<Item = (&'a str, Vec2)>,
@@ -131,10 +154,13 @@ pub(crate) fn source_default<'a>(
         return Err("scene_3d enemy yaw must be finite".into());
     }
     let source = profiles()?;
-    let fire = source
-        .weapons
-        .get(weapon)
-        .ok_or_else(|| format!("scene_3d has no source-default weapon profile for {weapon}"))?;
+    if !standing_gun(&weapon.id) {
+        return Err("scene_3d standing gun preset requires a primary, secondary or Archgun".into());
+    }
+    if weapon.sentinel {
+        return Err("scene_3d needs a posed companion carrier and its weapon mount".into());
+    }
+    let fire = source.weapons.get(&weapon.id).or(catalog_mounts()?.get(&weapon.id));
     let enemy_profile = |id: &str| {
         source
             .enemies
@@ -148,8 +174,7 @@ pub(crate) fn source_default<'a>(
         .normalized()
         .ok_or("scene_3d needs a target direction")?;
     let [x, _, z] = heading.0;
-    let (player, camera, reference_point) =
-        standing(pose(player_at, x, z, 1.), Some(fire.clone()))?;
+    let (player, camera, reference_point) = standing(pose(player_at, x, z, 1.), fire.cloned())?;
     let (sin, cos) = enemy_yaw_deg.to_radians().sin_cos_portable();
     let enemies = std::iter::once(aimed)
         .chain(formation)

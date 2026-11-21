@@ -24,14 +24,26 @@ impl FightParams {
                 return Some("scene_3d guided speed modifiers need a bound native speed consumer");
             }
         }
-        if self.continuous || self.beam.is_some() || self.ricochet.is_some() || self.thrown_bounce.is_some()
-            || self.melee_radius.is_some() || !self.combo_script.is_empty() || self.target_preference.is_some()
-            || self.blob.is_some() || self.orb.is_some() || self.lingering.is_some() || self.lock_on.is_some()
-            || self.tendril_max>0 || self.attractor_seconds.is_some() || self.reload_grenade.is_some()
-            || self.acid_shells.is_some() || self.spawn_on_kill.is_some() || self.spectral_dagger.is_some()
-            || !self.abilities.is_empty() || self.frame.is_some() || !self.also_acting.is_empty() || self.arcane.echo_share>0.
-            || self.arcane.influence_chance>0. {
-            return Some("scene_3d currently supports ordinary gun collisions and radial impacts; this build needs an unsupported delivery or secondary scene route");
+        if self.beam.is_some_and(|b| b.chain_hops > 0 || b.beams_count > 1 || b.damage_radius_m > 0.)
+            || self.tendril_max > 0 {
+            return Some("scene_3d needs a beam chain, area or acquisition query");
+        }
+        if self.melee_radius.is_some() || !self.combo_script.is_empty() || self.target_preference.is_some() {
+            return Some("scene_3d needs an attack-specific melee sweep or contact volume");
+        }
+        if self.ricochet.is_some() || self.thrown_bounce.is_some() {
+            return Some("scene_3d needs a ricochet or bounce traversal");
+        }
+        if self.blob.is_some() || self.orb.is_some() || self.lingering.is_some() || self.lock_on.is_some()
+            || self.attractor_seconds.is_some() || self.reload_grenade.is_some()
+            || self.acid_shells.is_some() || self.spawn_on_kill.is_some() || self.spectral_dagger.is_some() {
+            return Some("scene_3d needs a spawned object, lock or secondary delivery route");
+        }
+        if !self.abilities.is_empty() || self.frame.is_some() || !self.also_acting.is_empty() {
+            return Some("scene_3d needs ability or additional wielder geometry");
+        }
+        if self.arcane.echo_share > 0. || self.arcane.influence_chance > 0. {
+            return Some("scene_3d needs a secondary arcane recipient query");
         }
         if let Some(cycle)=&self.cycle {if let Some(error)=cycle.base_form.scene_3d_error(){return Some(error);}}
         if let Some(toggle)=&self.toggle {if let Some(error)=toggle.other.scene_3d_error(){return Some(error);}}

@@ -347,7 +347,7 @@ fn the_source_default_preset_runs_and_records_the_five_by_five_arena() {
 }
 
 #[test]
-fn the_source_default_preset_poses_its_registered_enemy_and_refuses_an_unknown_profile() {
+fn a_standing_scene_resolves_the_enemy_and_reports_a_reference_muzzle() {
     let mut v = request("laetum", 1, false);
     v["enemy"] = json!("demolisher_devourer");
     v["target_at"] = json!([5., 0.]);
@@ -366,8 +366,60 @@ fn the_source_default_preset_poses_its_registered_enemy_and_refuses_an_unknown_p
     assert!(error["error"].as_str().unwrap().contains("enemy profile for crewman"));
     v["enemy"] = json!("demolisher_devourer");
     v["weapon"] = json!("braton");
+    let log = crate::log::log_json(&v);
+    assert_eq!(log["ok"], true, "{log}");
+    assert_eq!(log["scene_3d"]["emitter"], "player_mount");
+    v["weapon"] = json!("verglas_prime");
     let error = crate::fight::parse_fight(&v).err().unwrap();
-    assert!(error["error"].as_str().unwrap().contains("weapon profile for braton"));
+    assert!(error["error"].as_str().unwrap().contains("posed companion carrier"));
+}
+
+#[test]
+fn the_standing_scene_uses_nataruks_declared_bow_and_arrow_origin() {
+    let mut v = request("nataruk_perfect", 1, false);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"center_distance","distance":5.}});
+    let p = params(&v);
+    let fire = p.scene_3d.as_ref().unwrap().input().player.equipped_fire.as_ref().unwrap();
+    assert_eq!(fire.attachments[0].mount.bone, 17);
+    assert_eq!(fire.attachments[0].bones.len(), 1);
+    let log = crate::log::log_json(&v);
+    assert_eq!(log["ok"], true, "{log}");
+    assert_eq!(log["scene_3d"]["emitter"], "attachment");
+    let flights = log["scene_3d"]["flights"].as_array().unwrap();
+    assert!(!flights.is_empty());
+    assert!(flights.iter().all(|row| row["flight"]["fire_origin"].is_object()));
+}
+
+#[test]
+fn a_variant_inherits_the_declared_hand_mount_transform() {
+    let mut v = request("hek", 1, false);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"center_distance","distance":5.}});
+    let mount = |v: &Value| {
+        let p = params(v);
+        p.scene_3d.unwrap().input().player.equipped_fire.as_ref().unwrap().attachments[0].mount.clone()
+    };
+    let base = mount(&v);
+    v["weapon"] = json!("vaykor_hek");
+    let variant = mount(&v);
+    assert_eq!(variant.bone, 48);
+    assert_eq!(variant.local.0, base.local.0);
+    assert!(variant.local.0[1].abs() > 0.08);
+}
+
+#[test]
+fn a_single_direct_beam_uses_the_posed_contact_and_its_physical_range() {
+    let mut v = request("spectra_vandal", 1, false);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"center_distance","distance":5.}});
+    let rec = record(&params(&v));
+    assert!(direct(&rec).iter().any(|&(actor, _)| actor == 0));
+    assert!(rec.spatial_flights().iter().any(|trace| !trace.flight.impacts.is_empty()));
+    v["scene_3d"]["placement"]["distance"] = json!(100.);
+    let rec = record(&params(&v));
+    assert!(direct(&rec).is_empty());
+    assert!(!rec.spatial_flights().is_empty());
+    v["weapon"] = json!("atomos");
+    let error = crate::simulate::simulate_json(&v);
+    assert!(error["error"].as_str().unwrap().contains("beam chain"));
 }
 
 #[test]
