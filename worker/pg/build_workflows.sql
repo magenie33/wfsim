@@ -809,6 +809,14 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
 $$;
 REVOKE ALL ON FUNCTION build_family_owns_inbox(text,jsonb) FROM PUBLIC;
 
+DO $path$
+DECLARE routine text; namespace text:=pg_catalog.current_schema();
+BEGIN
+  FOREACH routine IN ARRAY ARRAY['build_ack_submissions(text)','build_family_owns_inbox(text,jsonb)'] LOOP
+    EXECUTE pg_catalog.format('ALTER FUNCTION %I.%s SET search_path=%I,pg_catalog,pg_temp',namespace,routine,namespace);
+  END LOOP;
+END $path$;
+
 CREATE OR REPLACE FUNCTION build_family_claim(text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE held state_build_family_inbox%ROWTYPE;

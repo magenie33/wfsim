@@ -30,7 +30,6 @@ export function buildAdmissionSchemaSql({role='wfsim',tablespace=null}={}) {
 SET LOCAL lock_timeout='1s';SET LOCAL statement_timeout='15s';
 ${role?`SET LOCAL ROLE "${role}";`:''}
 ${tablespace?`SET LOCAL default_tablespace="${tablespace}";`:''}
-SELECT pg_catalog.set_config('search_path',pg_catalog.quote_ident(pg_catalog.current_schema())||',pg_catalog,pg_temp',true);
 DO $prerequisite$ BEGIN
  IF to_regclass('state_task_pipeline_controls') IS NULL OR to_regclass('state_build_workflow_nodes') IS NULL
   OR to_regprocedure('build_intake_batch(text)') IS NULL THEN RAISE EXCEPTION 'base task and workflow schema required';END IF;
