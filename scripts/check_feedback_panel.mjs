@@ -19,6 +19,7 @@ const shot = async (name) => {
   writeFileSync(join(shots, `${name}.png`), Buffer.from(m.result.data, "base64"));
 };
 const page = (body) => evaluate(`(async () => { ${body} })()`);
+const builderRoute = "/weapons/Rubico_Prime/builder";
 
 await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false });
 // THE FIXTURE: accounts offered and nobody signed in; the worker's answer is
@@ -30,7 +31,7 @@ await page(`
   window.fetch = (u, o) => String(u).endsWith('/api/feedback')
     ? (window.__sent.push(JSON.parse(o.body)), Promise.resolve(new Response(JSON.stringify(window.__answer))))
     : real(u, o);
-  history.pushState({}, '', '/weapons/Rubico_Prime/builder'); await route();
+  history.pushState({}, '', ${JSON.stringify(builderRoute)}); await route();
   accountState = { providers: ['google'], account: null, loaded: true };
   renderAccountEntry();
 `);
@@ -44,6 +45,7 @@ const state = () => page(`
   return { shown: !box.hidden && b.width > 0, inBar: b.top >= bar.top && b.bottom <= bar.bottom && b.right <= innerWidth,
     besideBell: bell.width === 0 || b.right <= bell.left + 1,
     open: box.classList.contains('open') && p.width > 0, panelInView: p.left >= 0 && p.right <= innerWidth,
+    route: location.pathname + location.search,
     signIn: (panel.querySelector('a[href^="/login"]') || {}).getAttribute ? panel.querySelector('a[href^="/login"]').getAttribute('href') : null,
     box: !!document.getElementById('feedback-text'), text: (document.getElementById('feedback-text') || {}).value,
     shots: document.querySelectorAll('#feedback-shots img').length,
@@ -59,12 +61,22 @@ const paste = () => page(`
   const dt = new DataTransfer(); dt.items.add(new File([blob], 'shot.png', { type: 'image/png' }));
   document.getElementById('feedback-text').dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
 `);
+async function waitForShots(count) {
+  const deadline = Date.now() + 10000;
+  let current = await state();
+  while (current.shots !== count && Date.now() < deadline) {
+    await sleep(100);
+    current = await state();
+  }
+  return current;
+}
 
 let s = await state();
 check("the mark is on the bar, beside the bell", s.shown && s.inBar && s.besideBell, JSON.stringify(s));
 await click("#feedback-btn");
 s = await state();
-check("signed out, the panel is the way to sign in, back to this page", s.open && !s.box && s.signIn === "/login?return=%2Fweapons%2FRubico_Prime", JSON.stringify(s));
+check("signed out, the panel is the way to sign in, back to this page",
+  s.open && !s.box && s.signIn === `/login?return=${encodeURIComponent(s.route)}`, JSON.stringify(s));
 await shot("signed-out");
 await click("body");
 check("a click elsewhere shuts it", !(await state()).open);
@@ -75,12 +87,10 @@ s = await state();
 check("signed in, it is one box and nothing to choose", s.open && s.box && s.selects === 0 && s.add, JSON.stringify(s));
 await page(`document.getElementById('feedback-text').value = 'Hunter Munitions here reads 42.5%, the game says 40%';`);
 await paste();
-await sleep(800);
-s = await state();
+s = await waitForShots(1);
 check("a pasted screenshot sits beside the box", s.shots === 1, JSON.stringify(s));
 await paste(); await paste();
-await sleep(1500);
-s = await state();
+s = await waitForShots(3);
 check("three is the most, and the add button goes", s.shots === 3 && !s.add, JSON.stringify(s));
 await shot("signed-in");
 await click('[data-fbk-drop="1"]');
@@ -102,7 +112,7 @@ await page(`window.__answer = { ok: true, id: 7 };
   document.getElementById('feedback-text').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));`);
 await sleep(800);
 const sent = await page(`return window.__sent.at(-1);`);
-check("Ctrl+Enter sends the words with where the reader was", sent && sent.text.startsWith("Hunter") && sent.route === "/weapons/Rubico_Prime/builder"
+check("Ctrl+Enter sends the words with where the reader was", sent && sent.text.startsWith("Hunter") && sent.route === builderRoute
   && typeof sent.release === "string" && sent.lang === "zh" && /\/weapons\/Rubico_Prime\?/.test(sent.share || ""), JSON.stringify(sent).slice(0, 300));
 check("…and the screenshots as JPEG", sent && sent.images.length === 2 && sent.images.every((u) => u.startsWith("data:image/jpeg;base64,")));
 check("…and nothing that asks what it is about", sent && Object.keys(sent).sort().join() === "images,lang,release,route,share,text", sent && Object.keys(sent).join());
@@ -133,4 +143,4 @@ const covered = await page(`
 check("…and nothing floating covers it", covered === 0, covered + " points covered");
 await shot("phone");
 
-await app.close();
+await app.finish("the feedback panel returns to the page and accepts screenshots");
