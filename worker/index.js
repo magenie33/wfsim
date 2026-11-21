@@ -286,12 +286,10 @@ async function submit(request, env) {
         .bind(...args).run();
       return Response.json({ ok: true, request: id });
     }
-    const family = harvest?.claims.family_source;
-    const columns = family ? "id, at, record, initiator, family_source" : "id, at, record, initiator";
-    const values = records.map(() => family ? "(?, ?, ?, ?, ?)" : "(?, ?, ?, ?)").join(", ");
+    const values = records.map(() => "(?, ?, ?, ?)").join(", ");
     await env.LIBRARY.prepare(
-      `INSERT INTO record_build_submissions (${columns}) VALUES ${values}`,
-    ).bind(...records.flatMap(rec => [crypto.randomUUID(), rec.at, JSON.stringify(rec), initiator, ...(family ? [family] : [])])).run();
+      `INSERT INTO record_build_submissions (id, at, record, initiator) VALUES ${values}`,
+    ).bind(...records.flatMap(rec => [crypto.randomUUID(), rec.at, JSON.stringify(rec), initiator])).run();
   } catch (e) {
     console.log("inbox write failed:", (e && e.message) || String(e));
     return bad("the library could not be written", 503);

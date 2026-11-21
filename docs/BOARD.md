@@ -32,8 +32,8 @@ number**. Everything else follows from it:
   exact-environment numeric review entry; intermediate candidates do not.
   Official scenarios use their ruler's run count for the final round.
   Family fill is a special optimization: its accepted result
-  continues its captured parent scope, and its intermediate candidates never
-  restart family expansion;
+  continues its captured parent scope. Its intermediate candidates stay in
+  the search run;
 - every row is reproducible by anyone with the repo, since the score was
   computed by the engine that ships to their browser under the benchmark's own
   pinned seed. Wasm, Windows native and Linux native agree to the last bit
@@ -90,7 +90,7 @@ The legacy family admission endpoint returns its disabled state. Existing
 recorded family requests continue to compute and deliver, without release-based
 reopening. Trusted derived provenance is outside the build and cannot be
 supplied by a public upload. Accepted optimizer continuations retain their
-parent scope; intermediate candidates only enter the build library.
+parent scope. Only the accepted output enters intake for a family-only search.
 
 ## Who computes the board
 
@@ -343,9 +343,9 @@ calculation's retention window (`USER_TASK_KEEP_MS`), allowing delivery after
 the lease finishes or the browser restarts. It grants no score or contribution
 credit. Invalid scope or signatures are permanent refusals; expiry returns
 410 with `retryable: false`. The browser keeps permanently refused outbox
-items visible instead of deleting or endlessly retrying them. Family-search
-receipts retain trusted `family_source`, so their candidates do not seed more
-family requests.
+items visible instead of deleting or endlessly retrying them. A family-only
+search receives `disabled` for candidate uploads. The accepted result is
+delivered through its trusted family source.
 
 ### Why the page FETCHES the board
 

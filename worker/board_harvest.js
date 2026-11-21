@@ -9,6 +9,7 @@ import { questionId } from "./task_contract.js";
 
 const keyOf = env => `${env.AUTH_SECRET}:board-harvest`;
 const failure = (error, status) => ({ error, status, retryable: status >= 500 || status === 429 });
+const disabled = () => ({ disabled: true, public: { disabled: true } });
 const details = claims => ({ question: claims.question, weapon: claims.weapon, engine: claims.engine, expires_at: claims.expires_at });
 
 async function issue(env, fields, now) {
@@ -35,6 +36,7 @@ export async function authorizeHarvest(env, input, now = Date.now(), httpRequest
     if (Date.parse(claims.expires_at) <= now) return failure("harvest receipt expired", 410);
     if ((input.question !== undefined && input.question !== claims.question)
         || (input.engine !== undefined && input.engine !== claims.engine)) return failure("harvest receipt does not match this search", 403);
+    if (claims.family_source !== null) return disabled();
     return { claims, public: details(claims) };
   }
   if (!ENGINE_ID.test(input.engine || "")) return failure("bad harvest engine", 400);
@@ -72,14 +74,14 @@ export async function authorizeHarvest(env, input, now = Date.now(), httpRequest
         d.due_at, d.asked_at, d.producer, d.ref LIMIT 1`)
     .bind(input.lease, input.verifier, iso(now), input.question || "").first();
   if (!row || !["optimize", "optimize_report"].includes(row.verb)) return failure("the harvest search is no longer held", 403);
+  if (row.producer === "family_build" || row.producer === "build_workflow") return disabled();
   let request;
   try { request = JSON.parse(row.request); } catch (_) { return failure("bad harvest search", 403); }
   if (row.verb === "optimize") request = request.request;
   if (!request || typeof request !== "object" || Array.isArray(request)
       || !/^[a-z0-9_]{1,64}$/.test(request.weapon || "")) return failure("bad harvest search", 403);
   if (row.producer === "user_calculation" && JSON.parse(row.payload || '{}').board_upload !== true)
-    return { disabled: true, public: { disabled: true } };
+    return disabled();
   return issue(env, { question: row.id, weapon: request.weapon, engine: input.engine,
-    initiator: row.producer === "survey" || row.producer === "family_build" || row.producer === "build_workflow" ? "system" : row.initiator || null,
-    family_source: row.producer === "family_build" ? row.ref : row.producer === "build_workflow" ? "workflow-candidate|"+row.ref : null }, now);
+    initiator: row.producer === "survey" ? "system" : row.initiator || null, family_source: null }, now);
 }

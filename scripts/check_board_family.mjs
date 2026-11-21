@@ -214,11 +214,13 @@ await check("leased search receipts deliver atomic build batches after the lease
   await db.run("UPDATE state_compute_work SET lease = ?, leased_to = ?, lease_until = ? WHERE id = ?", lease, verifier, until, question);
   await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, initiator)
     VALUES ('family_build', 'harvest-family-source', ?, 'live', ?, ?, 'system')`, question, at, at);
-  const familyGrant = await (await submit({ builds: [], harvest: { lease, verifier, question, engine: "next-engine" } })).json();
-  const familyBatch = await submit({ builds: [{ weapon: "torid", mods: ["serration"] }], harvest: { receipt: familyGrant.receipt } });
+  const familyLease = { lease, verifier, question, engine: "next-engine" };
+  const familyGrant = await (await submit({ builds: [], harvest: familyLease })).json();
+  assert.equal(familyGrant.disabled, true);
+  const familyBatch = await submit({ builds: [{ weapon: "torid", mods: ["serration"] }], harvest: familyLease });
   assert.equal(familyBatch.status, 200, await familyBatch.clone().text());
-  const familyInbox = await db.get("SELECT initiator, family_source FROM record_build_submissions WHERE family_source = 'harvest-family-source'");
-  assert.deepEqual(familyInbox, { initiator: "system", family_source: "harvest-family-source" });
+  assert.equal((await familyBatch.json()).results[0].retryable, false);
+  assert.equal(await count('record_build_submissions'), before + builds.length);
 });
 
 console.log(`\n${passed} retained family and disabled-ingress checks passed`);
