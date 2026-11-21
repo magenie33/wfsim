@@ -1241,6 +1241,7 @@ pub fn meta_json() -> Value {
         // axis-list bug this file guards against: two declarations of one fact,
         // and the day one moves the other is silently wrong.
         "max_bodies": wfsim_engine::formation::MAX_BODIES,
+        "scene_3d_source_default": crate::scene_profiles::source_default_choices(),
         // …AND HOW MANY GUNS, for the same reason and out of the same rule.
         // The roster is a list on the page and a `Vec` in the fight, and the
         // ceiling on it is the engine's (`fight::MAX_COMBATANTS`).

@@ -1014,6 +1014,14 @@ ui:
   "Download for {os}": "下载 {os} 版"
   "Drain": 消耗
   "Duration (s)": 时长（秒）
+  Simulation geometry: 模拟几何
+  Head aim: 瞄准头部
+  Head aim %: 瞄准头部比例
+  Aim at the head while charging: 充能时瞄准头部
+  2D: 平面
+  3D · Arena positions: 三维 · 场地位置
+  3D · Contact: 三维 · 贴身
+  3D · Custom scene: 三维 · 自定义场景
   "Each pellet adds 2 to the melee combo count, up to 28 a shot, and on Kullervo it adds 7 s of combo duration (wiki). There is no melee weapon here, so none of this applies.": "每颗弹丸给近战连击数 +2，单发上限 28；装在 Kullervo 身上还会给近战 +7 秒连击持续时间（wiki）。这里没有近战武器，所以都不适用。"
   "Equipping it also takes the melee slot, so a Vinquibus loadout has no melee weapon; this fight has no melee to give up.": "装备它会同时占用近战槽位，所以带 Vinquibus 的配置没有近战武器；本场本来就没有近战。"
   "Each way costs an animation — {in}s in, {out}s out, both scaled by reload speed.": 两个方向各有一段动作 —— 进入 {in} 秒、退出 {out} 秒，都会被装填速度缩放。

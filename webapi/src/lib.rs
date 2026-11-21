@@ -33,6 +33,7 @@ mod qr;
 mod registry;
 mod request;
 mod rivens;
+mod scene_profiles;
 mod shapley;
 mod scenario_catalog;
 mod simulate;

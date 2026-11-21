@@ -317,8 +317,63 @@ fn five_meter_head_intent_uses_the_standing_player_and_the_actual_muzzle() {
 }
 
 #[test]
+fn the_source_default_preset_runs_and_records_the_five_by_five_arena() {
+    let mut v = request("akarius_prime", 5, false);
+    v["scene_3d"] = json!({
+        "preset":"source_default",
+        "placement":{"kind":"center_distance","distance":5.}
+    });
+    let result = crate::simulate::simulate_json(&v);
+    assert_eq!(result["ok"], true, "{result}");
+    v["run"] = result["run"].clone();
+    let log = crate::log::log_json(&v);
+    let actors = log["scene_3d"]["actors"].as_array().unwrap();
+    assert_eq!(actors.len(), 25);
+    assert_eq!(actors[0]["root"], json!([0.,0.,5.]));
+    let flights = log["scene_3d"]["flights"].as_array().unwrap();
+    assert!(flights.len() >= 2);
+    let first = &flights[0]["flight"];
+    let second = &flights[1]["flight"];
+    assert_eq!(first["fire_origin"]["attachment"], 0);
+    assert_eq!(second["fire_origin"]["attachment"], 1);
+    assert_ne!(first["muzzle"], second["muzzle"]);
+    assert_eq!(first["head_anchor"], second["head_anchor"]);
+    assert!(flights.iter().any(|row| row["flight"]["steering_target"].is_number()));
+
+    v["scene_3d"]["placement"] = json!({"kind":"contact"});
+    let fight = crate::fight::parse_fight(&v).unwrap();
+    assert!((fight.arena.target_at.y - 0.7825).abs() < 1e-6);
+    assert_eq!(fight.arena.others.len(), 24);
+}
+
+#[test]
+fn the_source_default_preset_poses_its_registered_enemy_and_refuses_an_unknown_profile() {
+    let mut v = request("laetum", 1, false);
+    v["enemy"] = json!("demolisher_devourer");
+    v["target_at"] = json!([5., 0.]);
+    v["scene_3d"] = json!({"preset":"source_default","enemy_yaw_deg":90.,
+        "placement":{"kind":"center_distance","distance":10.}});
+    let fight = crate::fight::parse_fight(&v).unwrap();
+    let scene = fight.arena.scene_3d.unwrap();
+    assert_eq!(scene.root(0).0, [10., 0., 0.]);
+    assert_eq!(scene.camera().0, [-3., 1.8, 0.]);
+    assert_eq!(scene.input().head_proxy, 11);
+    assert_eq!(scene.input().enemies[0].proxies.len(), 15);
+    assert!(scene.input().enemies[0].world.0[10] > 1.);
+
+    v["enemy"] = json!("crewman");
+    let error = crate::fight::parse_fight(&v).err().unwrap();
+    assert!(error["error"].as_str().unwrap().contains("enemy profile for crewman"));
+    v["enemy"] = json!("demolisher_devourer");
+    v["weapon"] = json!("braton");
+    let error = crate::fight::parse_fight(&v).err().unwrap();
+    assert!(error["error"].as_str().unwrap().contains("weapon profile for braton"));
+}
+
+#[test]
 fn a_scene_search_winner_replays_under_the_same_models() {
     let mut v = request("laetum", 5, true);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
     v["mods"] = json!({"hornet_strike":"search","seeker":"search","pistol_acuity":"search"});
     v["strategy"] = json!("quick");
     v["modes"] = json!({"base":"fixed"});

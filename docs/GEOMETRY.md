@@ -7,6 +7,26 @@ for the live game's pose, emission, world-query and explosion providers.
 
 ## Aim and actors
 
+Set `scene_3d` to `{"preset":"source_default","placement":{"kind":"center_distance","distance":5}}`
+to use the standing open-arena preset. The simulator's geometry picker offers
+the preset for the weapon and target profiles in `/api/meta.scene_3d_source_default`.
+The preset uses the fight's `player_at`, `target_at` and `formation` roots,
+then applies the requested placement. Omitted placement uses physical
+controller contact. Each actor in the formation resolves its own enemy
+profile. The standing Excalibur, from the same source data as explicit
+scenes, faces the aimed actor. The formation faces the shooter along that
+axis with the optional shared `enemy_yaw_deg` angle relative to frontal.
+
+The preset contains Laetum, Akarius and Akarius Prime emission controls
+and the Thrax Centurion, Corrupted Heavy Gunner and Demolisher Devourer
+posed controls. The Demolisher has its mine slots disabled in this pose.
+The geometry picker uses the supplied source-default state with a fixed
+1/64 s step and clear homing visibility. `scripts/import_scene_profiles.py
+--check` verifies the compact data projection. An explicit scene supplies
+other poses, emitters and actor models through the same shared fight.
+`/api/log` records each actor's resolved root and each physical round's
+origin, path, and contacts.
+
 `headshot_pct` is reticle intent in this scene. At 100 the player keeps aiming
 at the selected head proxy and completely compensates recoil. Intrinsic spread,
 camera/muzzle parallax, homing and intervening bodies still determine contact.
@@ -66,7 +86,7 @@ Each simulation starts from the supplied cursor values. Omit equipment to
 use the single muzzle mount. Live hand order, pose installation, cursor reset
 writers and spread-state producers remain calibration inputs.
 
-The request requires all enemy models and checks for nonfinite, singular or
+An explicit request supplies all enemy models. Scene preparation checks for nonfinite, singular or
 nonuniformly scaled transforms, controller/world scale disagreement and
 missing selected mounts/proxies. The resolved faction bracket currently requires
 one combat faction per scene. The prepared scene is immutable. The shared `parse_fight`

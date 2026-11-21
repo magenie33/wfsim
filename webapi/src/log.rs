@@ -106,9 +106,18 @@ pub fn log_json(v: &Value) -> Value {
         answer["native_trace"] = json!({ "steps": rec.native_steps(), "dropped": rec.native_steps_dropped(),
             "scope": "Captured native numeric boundaries; context_binding identifies remaining scene adapters" });
     }
-    if params.scene_3d.is_some() {
-        answer["scene_3d"] = json!({"flights":rec.spatial_flights(),"dropped":rec.spatial_flights_dropped(),
-            "scope":"Explicit supplied poses and state; see docs/GEOMETRY.md for unbound native providers"});
+    if let Some(scene) = &params.scene_3d {
+        let actors = std::iter::once(params.target_id.as_str())
+            .chain(params.others.iter().map(|body| body.id.as_str()))
+            .enumerate()
+            .map(|(index, id)| json!({"id":id,"root":scene.root(index)}))
+            .collect::<Vec<_>>();
+        answer["scene_3d"] = json!({
+            "actors": actors,
+            "flights": rec.spatial_flights(),
+            "dropped": rec.spatial_flights_dropped(),
+            "scope": "Supplied poses and state",
+        });
     }
     answer
 }
