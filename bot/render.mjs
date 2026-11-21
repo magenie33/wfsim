@@ -58,7 +58,7 @@ async function launch() {
   proc.unref();
   const c = { proc, dir, slot, base: "", pages: 0, open: 0, idle: null, retired: false };
   browsers.add(c);
-  proc.once("exit", () => { browsers.delete(c); rmSync(dir, { recursive: true, force: true }); });
+  proc.once("exit", () => { browsers.delete(c); rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
   const until = Date.now() + LAUNCH_MS;
   while (Date.now() < until && alive(c)) {
     try {
