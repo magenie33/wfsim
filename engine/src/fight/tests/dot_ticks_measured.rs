@@ -556,6 +556,26 @@ fn dead_dot_replacement_drops_the_last_counted_type() {
 }
 
 #[test]
+fn expiry_callbacks_count_live_types_before_compaction() {
+    use DamageType::{Electricity, Gas, Slash};
+    let mut state = DebuffState::default();
+    state.push_dot(tagged_dot(1, Gas));
+    state.push_dot(tagged_dot(2, Slash));
+    assert_eq!(state.distinct_statuses(), 2);
+
+    state.invalidate_dot_types();
+    state.dots[0].ticks_left = 0;
+    assert_eq!(state.distinct_statuses(), 1);
+    state.push_dot(tagged_dot(3, Electricity));
+    assert_eq!(state.distinct_statuses(), 2);
+    state.dots[1].ticks_left = 0;
+    assert_eq!(state.distinct_statuses(), 1);
+    state.retain_dots(|dot| dot.ticks_left > 0);
+    assert_eq!(state.distinct_statuses(), 1);
+    assert_eq!(state.dots[0].dtype, Electricity);
+}
+
+#[test]
 fn pruned_expiry_piles_match_lazy_fifo_at_repeated_and_later_times() {
     let mut state = DebuffState::default();
     let mut reference = Vec::new();
