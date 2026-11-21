@@ -12,6 +12,84 @@ fn scene(enemy: usize, rows: usize, contact: bool) -> Scene {
 }
 
 #[test]
+fn demolisher_supplied_poses_match_native_body_queries() {
+    use serde_json::Value;
+
+    let source: Value = serde_json::from_str(include_str!(
+        "../rules/geometry/fixtures/native-demolisher.json"
+    ))
+    .unwrap();
+    let cases = source["cases"].as_array().unwrap();
+    assert_eq!(cases.len(), 62);
+    let mut contacts = 0;
+    for case in cases {
+        let supplied = &source["fixtures"][case["fixture"].as_u64().unwrap() as usize];
+        let mut input = scene(1, 1, false).input;
+        input.placement = Placement::Supplied;
+        input.head_proxy = 11;
+        input.body_proxy = 1;
+        let body = &mut input.enemies[0];
+        body.world = serde_json::from_value(supplied["world"].clone()).unwrap();
+        body.controller = crate::model::Controller {
+            height: source["controller"]["height"].as_f64().unwrap() as f32,
+            radius: source["controller"]["radius"].as_f64().unwrap() as f32,
+            skin: source["controller"]["skin"].as_f64().unwrap() as f32,
+            scale: supplied["scale"].as_f64().unwrap() as f32,
+        };
+        body.radial_proxy = None;
+        body.candidate_anchor =
+            serde_json::from_value(source["anchors"]["head_bone"].clone()).unwrap();
+        body.steering_center =
+            serde_json::from_value(source["anchors"]["hip_bone"].clone()).unwrap();
+        body.proxies = serde_json::from_value(source["proxies"].clone()).unwrap();
+        let disabled = case["disabled"].as_array().unwrap();
+        for proxy in &mut body.proxies {
+            proxy.ray_enabled &= !disabled
+                .iter()
+                .any(|slot| slot.as_u64() == Some(proxy.cache_index as u64));
+        }
+        let prepared = Scene::new(input, 1).unwrap();
+        let vector = |key: &str| {
+            let vector: Vec3 = serde_json::from_value(case[key].clone()).unwrap();
+            Vec3(vector.0.map(|value| f64::from(value as f32)))
+        };
+        let ray = Ray {
+            origin: vector("origin"),
+            direction: vector("direction"),
+            maximum: case["maximum"].as_f64().unwrap(),
+            width: 0.,
+        };
+        let hit = Scene::intersect_body(&prepared.bodies[0], 0, ray);
+        let expected = &case["expected"];
+        assert_eq!(hit.is_some(), !expected.is_null(), "{}", case["name"]);
+        if let Some(hit) = hit {
+            contacts += 1;
+            let slot = prepared.bodies[0].proxies[hit.proxy].proxy.cache_index as u64;
+            assert!(
+                expected["tied_slots"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|candidate| candidate.as_u64() == Some(slot)),
+                "{}: {hit:?}",
+                case["name"]
+            );
+            if expected["proxy"].as_u64() == Some(slot) {
+                assert_eq!(expected["part"].as_u64(), Some(u64::from(hit.part)));
+            }
+            let point: Vec3 = serde_json::from_value(expected["point"].clone()).unwrap();
+            let delta = ray.origin.along(ray.direction, hit.enter).minus(point);
+            assert!(
+                delta.0.iter().all(|v| v.abs() < 0.0003),
+                "{}: {delta:?}",
+                case["name"]
+            );
+        }
+    }
+    assert_eq!(contacts, 58);
+}
+
+#[test]
 fn player_and_enemy_models_define_contact_and_mounts() {
     assert_eq!(
         fixture::formation(&fixture::scene(0, 5, true, false, false))

@@ -254,6 +254,14 @@ Client build 2026.10.28.09.54, executable SHA-256
   controls. The portable scene compares contact step, actor and point against
   the supplied-state original replay. It preserves the supplied nearest-proxy
   tolerance set and checks point error below 0.0003 source units.
+- `20261121T015856Z-demolisher-devourer-source-geometry`, manifest SHA-256
+  `a878aa22020e8dc04ad650a2543767372562d08c570abd23fd3759bc1755848d`:
+  the Disruption Avatar has 72 source-default bones and 15 body-query
+  proxies. Head slots 0 and 11 share one bone, and mine slots are 12–14.
+  `scripts/import_native_demolisher.py` prepares both supplied scales and
+  62 native first-contact controls for the scene body query. The controls use
+  a supplied proxy enable mask and controller state. Installed head and
+  homing anchors, mine state and receiving damage remain separate inputs.
 - `20261118T145815Z-akarius-radial-dispatch`: corrected impacted-handle ABI
   and separately observed transform translation at the radial submission.
 - `20261120T041422Z-ahom-runtime-first-native-slices`: projectile reverse
