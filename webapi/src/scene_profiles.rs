@@ -47,6 +47,15 @@ struct SourceRequest {
     placement: Option<Placement>,
     #[serde(default)]
     enemy_yaw_deg: f64,
+    carrier: Option<CarrierPose>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct CarrierPose {
+    player: PlayerModel,
+    camera: Mount,
+    reference_point: Vec3,
 }
 
 #[derive(Deserialize)]
@@ -93,6 +102,8 @@ pub(crate) fn source_default_choices() -> Value {
         "weapons": guns.clone().map(|w| &w.id).collect::<Vec<_>>(),
         "reference_weapons": guns.filter(|w| !source.weapons.contains_key(&w.id)
             && !mounts.contains_key(&w.id)).map(|w| &w.id).collect::<Vec<_>>(),
+        "carrier_weapons": crate::registry::weapons().iter()
+            .filter(|w| w.sentinel && standing_gun(&w.id)).map(|w| &w.id).collect::<Vec<_>>(),
         "enemies": source.enemies.keys().collect::<Vec<_>>(),
     })
 }
@@ -149,6 +160,7 @@ pub(crate) fn source_default<'a>(
         preset: Preset::SourceDefault,
         placement,
         enemy_yaw_deg,
+        carrier,
     } = serde_json::from_value(raw.clone()).map_err(|e| format!("scene_3d: {e}"))?;
     if !enemy_yaw_deg.is_finite() {
         return Err("scene_3d enemy yaw must be finite".into());
@@ -157,8 +169,11 @@ pub(crate) fn source_default<'a>(
     if !standing_gun(&weapon.id) {
         return Err("scene_3d standing gun preset requires a primary, secondary or Archgun".into());
     }
-    if weapon.sentinel {
+    if weapon.sentinel && carrier.is_none() {
         return Err("scene_3d needs a posed companion carrier and its weapon mount".into());
+    }
+    if !weapon.sentinel && carrier.is_some() {
+        return Err("scene_3d carrier is only available for companion weapons".into());
     }
     let fire = source.weapons.get(&weapon.id).or(catalog_mounts()?.get(&weapon.id));
     let enemy_profile = |id: &str| {
@@ -168,13 +183,17 @@ pub(crate) fn source_default<'a>(
             .ok_or_else(|| format!("scene_3d has no source-default enemy profile for {id}"))
     };
     let first = enemy_profile(aimed.0)?;
+    let player_at = carrier.as_ref().map_or(player_at, |p| Vec2::new(p.player.world.0[3], p.player.world.0[11]));
     let dx = aimed.1.x - player_at.x;
     let dz = aimed.1.y - player_at.y;
     let heading = Vec3([dx, 0., dz])
         .normalized()
         .ok_or("scene_3d needs a target direction")?;
     let [x, _, z] = heading.0;
-    let (player, camera, reference_point) = standing(pose(player_at, x, z, 1.), fire.cloned())?;
+    let (player, camera, reference_point) = match carrier {
+        Some(c) => (c.player, c.camera, c.reference_point),
+        None => standing(pose(player_at, x, z, 1.), fire.cloned())?,
+    };
     let (sin, cos) = enemy_yaw_deg.to_radians().sin_cos_portable();
     let enemies = std::iter::once(aimed)
         .chain(formation)
@@ -202,7 +221,7 @@ pub(crate) fn source_default<'a>(
             head_proxy: first.head_proxy,
             body_proxy: first.body_proxy,
             maximum_flight_seconds: 2.,
-            placement: placement.unwrap_or(Placement::Contact),
+            placement: placement.unwrap_or(if weapon.sentinel { Placement::Supplied } else { Placement::Contact }),
             preselected_target: None,
         },
         count,

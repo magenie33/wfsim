@@ -190,7 +190,7 @@ fn m127_forms_and_attachment_parts_keep_separate_piles() {
     let p = measured("stug", 1, false, false).blob.unwrap();
     let contact = BlobContact {
         body: 0, spot: 0, head: false, weakpoint: false, critical_head: false,
-        base_form: true, generation: 0, head_bracket: 1.0,
+        base_form: true, generation: 0, head_bracket: 1.0, center: None,
     };
     let mut entities = Vec::new();
     let seat = crate::record::Seat(0);

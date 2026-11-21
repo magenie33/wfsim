@@ -186,10 +186,24 @@ pub struct Flight {
     pub beam_endpoint: Option<Vec3>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub beam_contacts: Vec<BeamContact>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub entity: Option<&'static str>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub redirects: Vec<Impact>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub bends: Vec<SurfaceBend>,
     #[serde(skip)]
     pub(crate) stopped_at: Option<Vec3>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fire_origin: Option<FireOrigin>,
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+pub struct SurfaceBend {
+    pub point: Vec3,
+    pub normal: Vec3,
+    pub direction: Vec3,
+    pub travel: f64,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
@@ -600,6 +614,39 @@ impl Scene {
             .fold(f64::INFINITY, f64::min)
     }
 
+    pub(crate) fn distance_to_radial_body(&self, point: Vec3, index: usize) -> f64 {
+        self.bodies[index].radial_proxy.as_ref().map_or_else(
+            || self.distance_to_body(point, index), |proxy| proxy.distance(point),
+        )
+    }
+
+    pub(crate) fn contact_distance(
+        &self, start: Vec3, direction: Vec3, reach: f64, eligible: &[bool],
+    ) -> Option<f64> {
+        self.first_hit(start, direction, reach, 0., |i| eligible.get(i) == Some(&true))
+            .map(|hit| hit.enter)
+    }
+
+    pub(crate) fn contact_impact(
+        &self, start: Vec3, direction: Vec3, reach: f64, width: f64, eligible: &[bool],
+    ) -> Option<Impact> {
+        let hit = self.first_hit(start, direction, reach, width, |i| eligible.get(i) == Some(&true))?;
+        let point = start.along(direction, hit.enter);
+        let exit = start.along(direction, hit.exit);
+        Some(Impact {
+            body: hit.body, part: hit.part, proxy: self.bodies[hit.body].proxies[hit.proxy].proxy.cache_index,
+            point, exit, travel: hit.enter, material: exit.minus(point).length(),
+            seconds: 0., remaining: 0., radial: false, radial_distance: 0.,
+        })
+    }
+
+    pub(crate) fn target_anchor(&self, actor: usize, head: bool) -> Vec3 {
+        let center = self.beam_center(actor);
+        self.bodies[actor].proxies.iter()
+            .find(|p| p.proxy.ray_enabled && p.proxy.part == u8::from(head))
+            .map_or(center, |p| p.center)
+    }
+
     pub(crate) fn beam_center(&self, index: usize) -> Vec3 {
         Vec3(self.bodies[index].center.map(f64::from))
     }
@@ -711,6 +758,9 @@ impl Scene {
             radial_impacts: Vec::new(),
             beam_endpoint: None,
             beam_contacts: Vec::new(),
+            entity: None,
+            redirects: Vec::new(),
+            bends: Vec::new(),
             stopped_at: None,
             fire_origin,
         };

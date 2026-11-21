@@ -498,6 +498,110 @@ fn boars_spatial_acquisition_and_chains_reach_nine_distinct_bodies() {
 }
 
 #[test]
+fn a_companion_uses_the_supplied_carrier_muzzle() {
+    let mut v = request("verglas_prime", 1, false);
+    v["target_at"] = json!([0., 5.]);
+    v["scene_3d"] = json!({"preset":"source_default","carrier":{
+        "player":{
+            "world":[1,0,0,1.2,0,1,0,2.45,0,0,1,-0.65],
+            "controller":{"height":0.3,"radius":0.18,"skin":0.005,"scale":1.0},
+            "bones":[[1,0,0,0,0,1,0,0,0,0,1,0]],
+            "muzzle":{"bone":0,"local":[1,0,0,0,0,1,0,0.1,0,0,1,0.15]}
+        },
+        "camera":{"bone":0,"local":[1,0,0,0,0,1,0,0.5,0,0,1,0]},
+        "reference_point":[1.2,2.65,-0.65]
+    }});
+    let replay = record(&params(&v));
+    let path = &replay.spatial_flights().first().expect("carrier beam").flight;
+    assert!(path.muzzle.minus(wfsim_engine::rules::geometry::Vec3([1.2, 2.55, -0.5])).length() < 1e-12);
+    assert_eq!(path.impacts[0].body, 0);
+}
+
+#[test]
+fn stugs_pile_uses_its_actual_host_and_carries_the_impact_clock() {
+    let mut v = request("stug", 1, false);
+    v["target_at"] = json!([0., 8.]);
+    v["formation"] = json!([{"id":"front","at":[0., 5.]}]);
+    v["duration"] = json!(8.);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    let mut p = params(&v);
+    p.spread = None;
+    p.fire_rate = 0.08;
+    let replay = record(&p);
+    let trace = replay.spatial_flights().first().expect("Stug round");
+    let hit = trace.flight.impacts.first().expect("Stug attachment");
+    assert_eq!(hit.body, 1);
+    let ticks: Vec<_> = replay.events().iter().filter(|event| event.subject == Some(1)
+        && matches!(&event.kind, Kind::Damage(d) if d.origin == wfsim_engine::record::Origin::Blob))
+        .map(|e| e.t).collect();
+    assert_eq!(ticks.len(), 3, "{ticks:?}");
+    for (elapsed, tick) in [0., 1., p.blob.unwrap().lifespan_seconds].into_iter().zip(ticks) {
+        assert!((tick - trace.time - hit.seconds - elapsed).abs() < 1e-9);
+    }
+}
+
+#[test]
+fn grimoire_alt_fire_deploys_a_posed_orb_and_resolves_its_fuse() {
+    let mut v = request("grimoire", 1, false);
+    v.as_object_mut().unwrap().remove("mode");
+    v["form"] = json!("alt_fire");
+    v["target_at"] = json!([0., 3.]);
+    v["formation"] = json!([{"id":"rear","at":[0.,13.]}]);
+    v["headshot_pct"] = json!(0);
+    v["duration"] = json!(8.);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    let mut p = params(&v);
+    p.fire_rate = 0.08;
+    let replay = record(&p);
+    let trace = replay.spatial_flights().iter().find(|t| t.flight.entity == Some("orb")).unwrap();
+    let damages: Vec<_> = replay.events().iter()
+        .filter_map(|e| match &e.kind {
+            Kind::Damage(d) if d.origin == wfsim_engine::record::Origin::Orb => Some((e.t, d.radial, e.subject)),
+            _ => None,
+        }).collect();
+    assert!(trace.flight.muzzle.0[1] > 0.);
+    assert!(damages.iter().any(|&(t, radial, actor)| t > trace.time && !radial && actor == Some(0)), "{damages:?}");
+    assert!(damages.iter().any(|&(t, radial, actor)| t > trace.time && radial && actor == Some(1)), "{damages:?}");
+}
+
+#[test]
+fn dual_toxocysts_redirect_hits_a_different_posed_body() {
+    let mut v = request("dual_toxocyst", 1, false);
+    v.as_object_mut().unwrap().remove("mode");
+    v["form"] = json!("incarnon");
+    v["target_at"] = json!([0., 5.]);
+    v["formation"] = json!([{"id":"near","at":[2.,5.]},{"id":"far","at":[0.,12.]}]);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    let replay = record(&params(&v));
+    let first = &replay.spatial_flights().first().expect("Toxocyst round").flight;
+    assert_eq!(first.impacts[0].body, 0);
+    assert_eq!(first.redirects[0].body, 1);
+    assert!(replay.events().iter().any(|e| e.subject == Some(1)
+        && matches!(&e.kind, Kind::Damage(d) if d.origin == wfsim_engine::record::Origin::Ricochet)));
+}
+
+#[test]
+fn irradiate_overlaps_the_near_actor_and_excludes_the_victim() {
+    let mut v = request("laetum", 1, false);
+    v["arcane"] = json!(["secondary_irradiate"]);
+    v["target_at"] = json!([0., 5.]);
+    v["formation"] = json!([{"id":"near","at":[2.,5.]},{"id":"far","at":[10.,5.]}]);
+    v["duration"] = json!(10.);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    let mut p = params(&v);
+    assert!(p.arcane.echo_share > 0.);
+    p.spread = None;
+    p.forced_procs = vec![wfsim_engine::rules::damage::DamageType::Radiation];
+    let replay = record(&p);
+    let recipients: Vec<_> = replay.events().iter().filter_map(|e| match &e.kind {
+        Kind::Damage(d) if d.origin == wfsim_engine::record::Origin::Echo => e.subject,
+        _ => None,
+    }).collect();
+    assert!(!recipients.is_empty());
+    assert!(recipients.iter().all(|&body| body == 1), "{recipients:?}");
+}
+
+#[test]
 fn a_scene_search_winner_replays_under_the_same_models() {
     let mut v = request("laetum", 5, true);
     v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});

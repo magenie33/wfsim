@@ -55,6 +55,7 @@ pub(super) struct SpatialLanding {
     pub contact: usize,
     pub splash: bool,
     pub beam: Option<beam::Seed>,
+    pub redirected: bool,
     progress: Rc<Cell<Progress>>,
 }
 
@@ -143,6 +144,14 @@ pub(super) fn launch(
             &eligible,
             origins.as_ref().and_then(|o| o[round]),
         );
+        if let Some(lock) = active.lock_on {
+            lock_shot(&scene, active, lock, &eligible, head, me, &mut path);
+        }
+        let pierce = active.punch_through_m + l.pierce_live_m;
+        let reflected_from = active.ricochet.filter(|r| r.reflects_from_surfaces)
+            .map_or(usize::MAX, |r| scene.reflect_path(&mut path, r.bounces,
+                active.projectile_speed_mps, active.projectile_width_m * 0.5,
+                active.range_m, pierce, &eligible));
         let mut seeds = beam::seeds(&scene, &mut path, active, &eligible, me.tendril.count);
         if let (Some(hit), Some(radial)) = (path.impacts.first().copied(), active.radial) {
             if let Some(center) = path.blast_center {
@@ -176,6 +185,7 @@ pub(super) fn launch(
                         contact,
                         splash: false,
                         beam: seeds.direct.get_mut(contact).and_then(Option::take),
+                        redirected: contact >= reflected_from,
                         progress: progress.clone(),
                     }),
                     t: l.t + hit.seconds,
@@ -185,6 +195,32 @@ pub(super) fn launch(
                     burst_completed,
                     ..l.clone()
                 });
+                if let Some(rc) = active.ricochet.filter(|r| !r.reflects_from_surfaces) {
+                    for impact in redirects(&scene, *hit, rc, &eligible, &mut me.d.spine) {
+                        path.redirects.push(impact);
+                        events.push(Landing {
+                            spatial: Some(SpatialLanding {
+                                impact,
+                                miss: false,
+                                first: false,
+                                last: false,
+                                instance,
+                                follows: false,
+                                contact: 0,
+                                splash: false,
+                                beam: None,
+                                redirected: true,
+                                progress: progress.clone(),
+                            }),
+                            t: l.t + hit.seconds,
+                            n_pellets: 1,
+                            rounds: Rounds::single(1, each),
+                            burst_starts: false,
+                            burst_completed,
+                            ..l.clone()
+                        });
+                    }
+                }
                 if let Some(rad) = active.radial.filter(|_| contact == 0) {
                     for &impact in &path.radial_impacts {
                         events.push(Landing {
@@ -198,6 +234,7 @@ pub(super) fn launch(
                                 contact,
                                 splash: impact.body != hit.body,
                                 beam: None,
+                                redirected: contact >= reflected_from,
                                 progress: progress.clone(),
                             }),
                             t: l.t + hit.seconds + rad.delay_seconds,
@@ -226,6 +263,7 @@ pub(super) fn launch(
                     contact: 0,
                     splash: false,
                     beam: Some(seed),
+                    redirected: false,
                     progress: progress.clone(),
                 }),
                 n_pellets: 1,
@@ -272,6 +310,7 @@ pub(super) fn launch(
                 contact: 0,
                 splash: false,
                 beam: None,
+                redirected: false,
                 progress,
             }),
             n_pellets: 0,
@@ -289,4 +328,57 @@ pub(super) fn launch(
         last.spatial.as_mut().unwrap().last = true;
     }
     me.in_flight.extend(events);
+}
+
+#[wfsim_gas_macro::metered]
+fn redirects(
+    scene: &crate::scene::Scene, seed: crate::scene::Impact, rc: crate::model::Ricochet,
+    eligible: &[bool], rng: &mut Rng,
+) -> Vec<crate::scene::Impact> {
+    let mut eligible = eligible.to_vec();
+    let mut current = seed;
+    let mut path = Vec::new();
+    for _ in 0..rc.bounces {
+        eligible[current.body] = false;
+        let root = scene.root(current.body);
+        let near = eligible.iter().enumerate().filter_map(|(body, &present)| {
+            let gap = scene.root(body).minus(root).length();
+            (present && gap <= rc.range_m).then_some((body, gap))
+        }).min_by(|a, b| a.1.total_cmp(&b.1));
+        let Some((target, _)) = near else { break };
+        let anchor = scene.target_anchor(target, rng.chance(rc.headshot_chance));
+        let Some(direction) = anchor.minus(current.point).normalized() else { break };
+        let reach = anchor.minus(current.point).length() + 1e-6;
+        let Some(hit) = scene.contact_impact(current.point, direction, reach, 0., &eligible) else { break };
+        path.push(hit);
+        current = hit;
+    }
+    path
+}
+
+#[wfsim_gas_macro::metered]
+fn lock_shot(
+    scene: &crate::scene::Scene, active: &FightParams, lock: crate::model::LockOn,
+    eligible: &[bool], head: bool, me: &mut Combatant, path: &mut crate::scene::Flight,
+) {
+    let forward = path.aim_target.minus(path.muzzle).normalized().unwrap_or(path.direction);
+    let candidates = scene.beam_acquire(path.muzzle, forward, lock.acquire_deg, lock.range_m, eligible);
+    let choices = &candidates[..candidates.len().min(lock.targets as usize)];
+    if choices.is_empty() { return; }
+    let round = me.ammo.rounds_this_mag.saturating_sub(1) as usize;
+    let actor = choices[round % choices.len()].body;
+    let gap = scene.distance_to_body(path.muzzle, actor);
+    let Some((miss, head_keep)) = lock.at(gap, choices.len() as u32) else { return };
+    path.steering_target = Some(actor);
+    path.impacts.clear();
+    path.stopped_at = None;
+    if me.d.aim.chance(miss) { return; }
+    let anchor = scene.target_anchor(actor, head && me.d.aim.chance(head_keep));
+    let Some(dir) = anchor.minus(path.muzzle).normalized() else { return };
+    path.direction = dir;
+    if let Some(mut hit) = scene.contact_impact(path.muzzle, dir, active.range_m, active.projectile_width_m * 0.5, eligible) {
+        hit.seconds = active.projectile_speed_mps.map_or(0., |speed| hit.travel / speed);
+        path.stopped_at = Some(hit.point);
+        path.impacts.push(hit);
+    }
 }

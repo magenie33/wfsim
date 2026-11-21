@@ -653,13 +653,11 @@ flight retains a declared constant-speed approximation. Gravity, speed decay and
 throw's `IgnoreFireIterations` consumer remain unmodelled; multishot currently
 uses separate damage instances. These limitations are `client_scourge_throw`.
 
-`ReleasePriestSpear` declares a 14 m application area and 5 s pulse interval;
-the projectile lives 20 s after impact. The attached attractor record declares
-`AttractRadius=1`, `LifeSpan=5` and damage buffering. Those are configuration
-inputs, not a closed steering/initialization consumer or a measured effective
-headshot duration. The aiming aid, spatial application and persistent pulse
-entity remain unmodelled (`client_scourge_field`). A miss outside the field's
-actual reach can therefore still receive the target-only CO approximation.
+`ReleasePriestSpear` declares a 14 m application area, a 5 s pulse interval and
+a 20 s projectile lifetime after impact. The 3D scene applies that pulse from a
+posed body contact. The attached attractor record declares `AttractRadius=1`,
+`LifeSpan=5` and damage buffering. Installed redirection, floor attachment
+and the resulting weak-point damage remain unmodelled (`client_scourge_field`).
 
 Primary CO follows the authoritative catalog's ordinary additive class, while
 the weapon page's Known Bugs describes multiplicative primary-fire Galvanized

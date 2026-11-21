@@ -456,7 +456,8 @@ fn guided_grid_clock_and_radial_routing_match_original_open_scene() {
                 aim_target: Vec3([0., 2.95, 5.]), direction: Vec3([0., 0., 1.]),
                 steering_target: None, impacts: Vec::new(), blast_center: None,
                 radial_impacts: Vec::new(), fire_origin: None,
-                beam_endpoint: None, beam_contacts: Vec::new(), stopped_at: None,
+                beam_endpoint: None, beam_contacts: Vec::new(), entity: None, redirects: Vec::new(),
+                bends: Vec::new(), stopped_at: None,
             };
             s.trace_guided(&mut path, homing, 100., &[true; 25]);
             assert_eq!(path.steering_target, Some(acquired), "{first_substeps}/{publish_each}");

@@ -41,6 +41,11 @@ Echoes originate from the actual struck body, exclude that body, and can reach
 the aimed body when another body triggered them. An echo cannot trigger itself.
 The scene invalidates its listener projection on body-generation changes.
 
+In a posed scene the echo originates at the victim's root and checks the
+declared radius against each physical actor's overlap shape. Each accepted
+recipient uses the existing full-strength echo settlement. The originating
+victim is excluded before the overlap.
+
 The scene's resolved loadout supplies a logical type relation and uncharged query
 context. Native GetType/IsA ownership, charged-getter meaning, callback lifetime,
 packet producer selection and the complete collision/update/Sleep(0) window are

@@ -122,7 +122,7 @@ ui:
   "The native fan, first-pellet or charge-dependent spread override is not simulated; the declared spread approximation remains in use.": "尚未模拟原生扇形、首弹丸或随蓄力变化的散布覆盖规则；目前保留条目所声明的散布近似。"
   "Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated.": "已绑定原生弹体回调作为来源证据；尚未模拟未核实的回调时序、缩放和附加效果。"
   "Primary fire uses ray collision; the native projectile's collision width is not simulated.": "主射击按射线判定碰撞；尚未模拟原生弹体的碰撞宽度。"
-  "Bullet Attractor is approximated as a CO status on the aimed target; spatial application, field pulses and bullet redirection are not simulated.": "子弹吸附场目前近似为所瞄目标身上的一种 CO 状态；尚未模拟施加范围、场的脉冲和弹道吸附。"
+  "Bullet Attractor applies a CO status via spatial pulses in 3D and on the aimed target in the planar scene. Bullet redirection and floor attachment remain uncalibrated.": "子弹吸附场在 3D 场景里按空间脉冲施加 CO 状态，平面场景则施加给瞄准目标。弹道吸附和钉在地面后的表现仍待校准。"
   "The throw's projectile selection is unverified. Flight is straight, and multishot uses separate damage instances.": "尚未核实投掷实际使用的弹体；目前按直线飞行、多重射击逐个结算伤害处理。"
   "Primary-fire Condition Overload uses the catalog's additive rule; its conflict with the weapon page's multiplicative claim is unresolved.": "主射击的 CO 按专表的加算规则计算；武器页面写作乘算，这一冲突尚未解决。"
   "Maximum Deviation": "最大偏移角"
@@ -2209,7 +2209,7 @@ ui:
   "The mines are detonated by hand with the alt-fire, and several can be laid first (wiki). The sim detonates each on landing: the ceiling for one mine. Laying several and detonating them together is not modelled.": "地雷由副射击手动引爆，可以先布置多颗（wiki）。模拟让每颗落地即爆，这是单颗地雷的上限。先布置多颗再一起引爆的打法未建模。"
   "The mines are detonated by hand with the alt-fire, up to four at a time (wiki). The sim detonates each on landing: the ceiling for one mine. Sticking four and detonating them together is not modelled.": "地雷由副射击手动引爆，最多同时四颗（wiki）。模拟让每颗落地即爆，这是单颗地雷的上限。先粘上四颗再一起引爆的打法未建模。"
   "Fired until the next shot would empty the battery, then held while it refills: 1 s back to full, where an empty battery's reload animation is 2 s.": "一直射击到下一发会打空电池为止，然后停火等它回满：回满只要 1 秒，而打空后的换弹动画要 2 秒。"
-  "Inside 10 m the miniature rifles pick their own spot, modelled in outline: at contact every round lands where it is aimed; at 10 m against one enemy half of them miss and none finds a head; each further enemy in reach takes some of the misses away, none left at four. In game the two rounds of a burst can land on different enemies; here both land on the aimed one, so the total is about right and the aimed enemy's share reads high.": "10 米内微型步枪会自己选落点，这里只做了大致建模：贴脸时每发都打在瞄准处；10 米、只有一个敌人时一半空枪，且打不中头；范围内每多一个敌人空枪就少一些，四个敌人时不再空枪。游戏里同一次连发的两发可以打到不同敌人；这里都算在瞄准的敌人身上，所以总伤害大致准确，但瞄准目标分到的偏多。"
+  "The miniature rifles use the measured lock-on outline inside 10 m. Rounds can select distinct bodies in 3D. The game's exact target order remains uncalibrated.": "微型步枪在 10 米内沿用已有测量的锁定近似。3D 场景里不同发可以锁定不同敌人，游戏内的精确选敌顺序仍待校准。"
   "The missiles home, which is not modelled; with one target at zero distance, homing and straight missiles land the same.": "导弹会追踪，未建模；只有一个零距离目标时，追踪与直射的命中结果相同。"
   "The alt-fire's third attack, a burn in 6 m between the contact hit and the explosion, is not counted: the engine carries one direct hit and one explosion per attack. The number reads low.": "副射击的第三段攻击（接触命中与爆炸之间、6 米内的灼烧）未计入：引擎每次攻击只带一次直击和一次爆炸。数字偏低。"
   "The module's third attack, 'Infested Harpoon Contact', is the damage dealt while the target is held, a state the engine does not track; it is not counted.": "模块中的第三段攻击「Infested Harpoon Contact」是目标被定住期间造成的伤害，引擎不追踪这种状态，所以未计入。"
@@ -2758,7 +2758,7 @@ ui:
   "In game the blast staggers the wielder; the player has no body here, so it costs nothing.": "游戏里爆炸会让使用者踉跄；这里玩家没有身体，所以没有代价。"
   "The blast needs no line of sight. There is no cover here, so the perk adds nothing.": "爆炸不需要视线。本场没有掩体，所以这个天赋不产生额外收益。"
   "This weapon is silent; there is nobody to alert here, so stealth is worth nothing.": "这把武器是静音的；这里没有会被惊动的敌人，所以潜行没有价值。"
-  "A bounce here reflects off enemies only; in game walls and the floor count too, so with cover the number reads low.": "这里的反弹只发生在敌人身上；游戏里墙和地面也算，所以有掩体时数字偏低。"
+  "The 3D arena reflects off posed enemies and the open floor. Wall and cover geometry remain outside this scenario.": "3D 场景可从有姿态的敌人和开放地面反弹，墙体和掩体几何仍在该场景范围之外。"
 
   # WHAT THE WARFRAME BRINGS: the squad aura and archon shard panel. The
   # aura and shard NAMES are not here — those are ids and live in names.yaml.

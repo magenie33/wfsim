@@ -18,7 +18,7 @@ scenes, faces the aimed actor. The formation faces the shooter along that
 axis with the optional shared `enemy_yaw_deg` angle relative to frontal.
 
 The preset supports primary, secondary and Archgun collision routes for
-the standing Warframe. Companion weapons need their own posed carrier. It
+the standing Warframe. It
 loads the Laetum, Akarius and Akarius Prime controls or the single-attachment
 models from `geometry/weapon-attachments.yaml`. Each catalog model projects
 an unambiguous named mount and its usable declared firing position into a
@@ -35,6 +35,15 @@ The geometry picker uses the supplied source-default state with a fixed
 other poses, emitters and actor models through the same shared fight.
 `/api/log` records each actor's resolved root and each physical round's
 origin, path, and contacts.
+
+A robotic companion firearm can use the preset's target models with a posed
+`scene_3d.carrier`. Supply its complete `player` model, `camera` mount and
+world-space `reference_point`. The player model contains the carrier's world
+transform, controller, posed bones, muzzle and optional equipment. These
+requests use supplied placement by default. An explicit scene for a companion
+also requires the complete carrier. `/api/meta.scene_3d_source_default.carrier_weapons`
+lists applicable entries. The weapon's AI and aim policies retain their catalog
+conventions. Installed follower offsets and live poses remain separate inputs.
 
 `scripts/import_weapon_scene_profiles.py --batches <exchange>/batches --check`
 checks the projection from `20261121T025655Z-all-weapon-3d-source-map`.
@@ -215,12 +224,39 @@ to the impact. Reload grenades use the source fan and posed 3D contact and
 falloff at the reticle reach for the modeled throw. Release-to-impact
 timing, gravity and installed release pose are still open.
 
-The scene refuses unsupported delivery routes including ricochets, melee
-sweeps, blobs, orbs, lock-on, attractors, corpse/spawn/dagger routes,
-extra ability actors, ability grants,
-frame casting and echo/influence arcanes. Guided-projectile penetration and speed
-modifiers are also refused until their native consumers are bound. It does not
-silently run those through planar direct collision. No production default or board ruler selects this scene.
+Stug piles retain the struck actor, proxy and contact point. Merge, fuse,
+tick and explosion damage retain [M127](measurements/M127-stug-base-blob-ticks-and-multishot.md).
+Grimoire orbs launch along the posed reticle, travel in 3D and slow when
+their segment reaches a body. Each strike tests the current extent and its
+links use the 3D distance between roots. The blast measures from the fuse
+position. The projectile's collision width and native target order are open.
+
+Scourge throws plant the package's 14 m, five-second pulse around the actual
+contact. The next throw cancels future pulses and each applied debuff keeps
+its lifetime. Bullet attraction and floor attachment remain open.
+Ballistica counts qualifying ghosts at the struck actor's range from the
+wielder. Ghost attack simulation is outside the combat model.
+Haalvu distributes locked rounds among eligible posed candidates ordered by
+angle. The lock retains the declared miss and head estimates, and the
+round's physical segment resolves the struck part. Installed lock order
+and shot poses remain open.
+
+Hitscan ricochets choose the next eligible root inside the declared range
+and run a new contact from the previous impact. Dual Toxocyst retains the
+observed head-aim share from M111. Kuva Drakgoon uses reflection at posed
+blocking surfaces and the open-arena floor. Its package declares launch
+speed 130 and equal normal/tangent restitution, which preserve the mirror
+direction. The model uses the catalog rebound count and straight legs.
+Installed gravity, speed clamps, terrain and collision gates are open.
+
+Secondary Irradiate uses the original victim's root and a 3D overlap of
+eligible recipients within its declared radius. It retains the existing
+settlement and [M59](measurements/M59-laetum-incarnon-irradiate-echo.md) calibration.
+Native damage packet grouping and resumption timing remain open.
+
+The scene refuses unsupported melee, corpse explosion, dagger and ability
+routes. Guided-projectile penetration and speed modifiers require their
+bound native consumers. The production and board presets retain their scene.
 
 ## Homing
 

@@ -1063,7 +1063,13 @@ pub(super) fn spread_from_echo(
     let at = crate::rules::space::detonation_point(source.at, params.player_at);
     for (b, foe) in bodies.iter_mut().enumerate().filter(|(b, _)| *b != origin) {
         let Some(spec) = params.body(b) else { continue };
-        if !crate::rules::space::caught_by_blast(spec.at.distance(at), radius) {
+        let inside = if let Some(scene) = &params.scene_3d {
+            foe.state.phase == Phase::Physical
+                && scene.distance_to_radial_body(scene.root(origin), b) <= radius
+        } else {
+            crate::rules::space::caught_by_blast(spec.at.distance(at), radius)
+        };
+        if !inside {
             continue;
         }
         let inst = crate::rules::chain::Instance {

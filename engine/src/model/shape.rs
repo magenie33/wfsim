@@ -461,6 +461,7 @@ pub struct ThrownBounceBase {
 /// attack's own radial arriving again; this says only how many and how far.
 #[derive(Debug, Clone, Copy)]
 pub struct Ricochet {
+    pub reflects_from_surfaces: bool,
     /// Bounces after the first collision — one on the Drakgoon, whose page
     /// gives *"Shots bounce once"*.
     pub bounces: u32,

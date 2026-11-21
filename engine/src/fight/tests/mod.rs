@@ -454,6 +454,7 @@ fn a_bouncing_projectile_in_a_crowd(n: usize, head_chance: f64) -> FightParams {
         crit_bonus: false,
     }];
     p.ricochet = Some(crate::model::Ricochet {
+        reflects_from_surfaces: false,
         bounces: 5,
         headshot_chance: head_chance,
         range_m: f64::INFINITY,

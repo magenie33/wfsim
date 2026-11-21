@@ -1003,6 +1003,8 @@ pub struct GrenadeThrowSpec {
 /// was written. Rewritten rather than joined, so the roster has one spelling.
 #[derive(Debug, Clone, Deserialize)]
 pub struct RicochetSpec {
+    #[serde(default)]
+    pub reflects_from_surfaces: bool,
     /// Bounces AFTER the first collision.
     ///
     /// SIX EXPLOSIONS IS FIVE BOUNCES: *"exploding up to 6 times"*, and the

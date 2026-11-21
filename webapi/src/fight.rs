@@ -744,6 +744,9 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     let scene_3d = v.get("scene_3d").map(|raw| {
         if aim_at.is_some() { return Err("scene_3d uses its head/body reticle anchor; aim_at is not supported".to_string()); }
         if raw.get("preset").is_none() {
+            if info.sentinel && raw.get("player").and_then(|p| p.get("world")).is_none() {
+                return Err("scene_3d needs a posed companion carrier and its weapon mount".into());
+            }
             return crate::scene_profiles::explicit(raw, 1 + others.len(), player_at);
         }
         if ["airborne", "sliding", "aim_gliding"].iter().any(|flag| get_bool(v, flag, false)) {

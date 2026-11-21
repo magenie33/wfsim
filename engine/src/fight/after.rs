@@ -91,7 +91,7 @@ pub(super) fn after_the_landing(
         // applied to an enemy runs its own clock. A field the sim never
         // re-pulses and a debuff that survives its field are the same thing
         // from the target's side, which is the only side this arena has.
-        if let Some(secs) = active.attractor_seconds {
+        if let Some(secs) = active.attractor_seconds.filter(|_| params.scene_3d.is_none()) {
             DebuffState::push_capped(&mut bodies[0].debuffs.attractor, *t + secs, 1, *t);
         }
 

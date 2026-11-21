@@ -31,6 +31,7 @@ pub(super) struct Strike<'a> {
     /// the seat travels with the attack rather than being named again at each
     /// of the places one lands.
     pub(super) seat: Seat,
+    pub(super) arena: &'a FightParams,
     pub(super) active: &'a FightParams,
     pub(super) qvec: &'a DamageVector,
     /// Unquantized composition after the swing, before live added elements.
@@ -228,6 +229,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         skip_radial,
         round_multishot,
         seat,
+        arena,
         active,
         qvec,
         direct_pre_snap,
@@ -520,7 +522,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // INSIDE A LOCK-ON'S REACH THE ROUND PICKS ITS OWN SPOT: `(miss chance,
     // chance a head-aimed round keeps the head)` for this gap and the bodies
     // the rifles can take (`model::LockOn`). `None` on every other weapon.
-    let lock = active.lock_on.and_then(|l| {
+    let lock = active.lock_on.filter(|_| spatial.is_none()).and_then(|l| {
         let aim = params.aim_at.unwrap_or(params.target_at);
         let n = crate::rules::chain::acquired(&params.body_positions(), params.player_at, aim, l.acquire_deg, l.range_m).len();
         l.at(params.gap(), u32::try_from(n).unwrap_or(u32::MAX))
@@ -1703,7 +1705,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         // (direct part) and the explosion (radial part) are two passes
         // over the same flight and must not disagree about it.
         if direct && ric_path.is_none() {
-            if let Some(rc) = params.ricochet {
+            if let Some(rc) = params.ricochet.filter(|_| spatial.is_none()) {
                 let from = struck.first().copied().unwrap_or(0);
                 let n = params.body_count();
                 // TWO MECHANICS, and the field each wiki page publishes
@@ -1809,12 +1811,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 );
             }
             if params.arcane.echo_share > 0.0 {
-                irradiate::submit_immediate_direct_echo(&mut bodies[body_index], body_index, params, arc, || SpreadStrike {
+                let source = if spatial.is_some() { active } else { params };
+                irradiate::submit_immediate_direct_echo(&mut bodies[body_index], body_index, source, arc, || SpreadStrike {
                     raw_per_bucket: body_only(raw / bucket), shares, crit_multiplier,
                     crit_tier: tier, attrition, modded_base: spread_mb, status_chance,
                     forced: forced.to_vec(), status_vector: spread_composition,
                 });
-                irradiate::drain_echoes(seat, windows, bodies, params, active, gal, arc, r, rec, d, t);
+                irradiate::drain_echoes(seat, windows, bodies, arena, active, gal, arc, r, rec, d, t);
             }
             // …AND EVERYTHING BEHIND THE TARGET that this pellet
             // punched through to, at full damage. Only where there is
@@ -1991,8 +1994,14 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         // …AND WHAT THE KILL LEAVES STANDING. `direct` because a ghost
         // is left by the shot rather than by anything it set off, and
         // the range is the card's own ("within 50 meters of the user").
-        if killed && direct && leaves_one(active, params.player_at, params.target_at) {
-            r.ghost_kills += 1;
+        if let Some(ghost) = active.spawn_on_kill.filter(|_| killed && direct) {
+            let ghost_in_range = if let Some(scene) = &params.scene_3d {
+                let wielder = scene.input().player.world.point(crate::rules::geometry::Vec3([0.; 3]));
+                scene.root(body_index).minus(wielder).length() <= ghost.range_m
+            } else {
+                leaves_one(active, params.player_at, params.target_at)
+            };
+            r.ghost_kills += u32::from(ghost_in_range);
         }
         // EXECUTIONER'S FORTUNE. Rolled HERE and nowhere else, because
         // this is the only place that knows both halves of its
@@ -2200,7 +2209,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     // It rides the same loop, and the column that says
                     // WHY this instance exists must not answer with a
                     // mechanic melee has no card for.
-                    origin: if spatial.and_then(|s| s.beam.as_ref()).is_some_and(|b| b.kind.is_some()) {
+                    origin: if spatial.is_some_and(|s| s.redirected) {
+                        crate::record::Origin::Ricochet
+                    } else if spatial.and_then(|s| s.beam.as_ref()).is_some_and(|b| b.kind.is_some()) {
                         crate::record::Origin::Chain
                     } else if spatial.is_some_and(|s|s.splash) {
                         crate::record::Origin::Splash

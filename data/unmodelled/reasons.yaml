@@ -93,7 +93,7 @@ reasons:
   client_scourge_primary_collision:
     text: "Primary fire uses ray collision; the native projectile's collision width is not simulated."
   client_scourge_field:
-    text: "Bullet Attractor is approximated as a CO status on the aimed target; spatial application, field pulses and bullet redirection are not simulated."
+    text: "Bullet Attractor applies a CO status via spatial pulses in 3D and on the aimed target in the planar scene. Bullet redirection and floor attachment remain uncalibrated."
   client_scourge_throw:
     text: "The throw's projectile selection is unverified. Flight is straight, and multishot uses separate damage instances."
   client_scourge_primary_co:
@@ -198,7 +198,7 @@ reasons:
   bounce_headshot_assumed:
     text: "Assumed: a bounce lands on a weak point 50% of the time. It can headshot (wiki), but where it lands depends on geometry the sim does not model, and no rate is published."
   ricochet_terrain:
-    text: "A bounce here reflects off enemies only; in game walls and the floor count too, so with cover the number reads low."
+    text: "The 3D arena reflects off posed enemies and the open floor. Wall and cover geometry remain outside this scenario."
   reload_never_interrupted:
     text: "A reload is never interrupted here: in game you can fire mid-reload and keep the shells already loaded. A listed reload is a whole reload, by design."
   # THREE USES ON THE DAY IT WAS WRITTEN (Tenet Envoy, Tenet Diplos, Tenet

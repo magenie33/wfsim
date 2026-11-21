@@ -21,11 +21,21 @@ pub(super) enum Entity {
     Cloud(FieldState),
     Pile(BlobPile),
     Orb(OrbState),
+    Attractor(AttractorField),
     Dagger(DaggerState),
     Volley(Volley),
     ReloadCold(ReloadCold),
     ColdTrail(ColdTrailTick),
     Embed(EmbedState),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(super) struct AttractorField {
+    pub(super) owner: Seat,
+    pub(super) at: crate::rules::geometry::Vec3,
+    pub(super) pulse: f64,
+    pub(super) expires: f64,
+    pub(super) debuff_seconds: f64,
 }
 
 /// A RELOAD'S THROW, due at the instant it left the hand (`fight::grenades`).
@@ -104,6 +114,7 @@ impl Entity {
             Entity::Cloud(f) => f.owner,
             Entity::Pile(p) => p.owner,
             Entity::Orb(o) => o.owner,
+            Entity::Attractor(f) => f.owner,
             Entity::Dagger(g) => g.owner,
             Entity::Volley(v) => v.owner,
             Entity::ReloadCold(v) => v.owner,
@@ -123,6 +134,7 @@ impl Entity {
                 let strike_due = o.strikes_left > 0 && o.next_strike <= o.fuse_at;
                 Some(if strike_due { o.next_strike } else { o.fuse_at })
             }
+            Entity::Attractor(f) => (f.pulse < f.expires).then_some(f.pulse),
             Entity::Dagger(g) => Some(g.strikes_at),
             Entity::Volley(v) => Some(v.at),
             Entity::ReloadCold(v) => Some(v.at),
@@ -235,6 +247,19 @@ pub(super) fn process_entities(
                 Flow::Go
             }
             Entity::Orb(_) => orb_event(entities, i, at, turn, r, rec, bodies),
+            Entity::Attractor(mut f) => {
+                if let Some(scene) = &turn.params.scene_3d {
+                    for (body, actor) in bodies.iter_mut().enumerate() {
+                        if actor.state.phase == Phase::Physical && scene.distance_to_body(f.at, body) <= 14. {
+                            DebuffState::push_capped(&mut actor.debuffs.attractor, at + f.debuff_seconds, 1, at);
+                        }
+                    }
+                }
+                // ReleasePriestSpear applies the field on impact and every five seconds.
+                f.pulse += 5.;
+                entities[i] = Entity::Attractor(f);
+                Flow::Go
+            }
             Entity::Dagger(_) => {
                 let Entity::Dagger(dagger) = entities.remove(i) else { unreachable!() };
                 dagger_strike(dagger, turn, r, rec, bodies);
@@ -382,6 +407,10 @@ fn orb_event(
 ) -> Flow {
     let (params, active) = (turn.params, turn.field_active);
     let body_at = params.body_positions();
+    let eligible = params.scene_3d.as_ref().map(|_| {
+        bodies.iter().map(|body| body.state.phase == Phase::Physical).collect::<Vec<_>>()
+    });
+    let spatial = params.scene_3d.as_deref().zip(eligible.as_deref());
     // Status events strictly before this one land first, exactly as they do
     // before a cloud's tick.
     process_ticks(
@@ -390,7 +419,20 @@ fn orb_event(
     );
     let orb = {
         let Entity::Orb(o) = &mut entities[i] else { unreachable!() };
-        o.advance(at, &body_at);
+        if let Some((scene, eligible)) = spatial.filter(|_| !o.spatial_ready) {
+            let total: f64 = params.body_parts.iter().map(|p| p.aim_weight).sum();
+            let head: f64 = params.body_parts.iter().filter(|p| p.is_head).map(|p| p.aim_weight).sum();
+            let aim_head = turn.d.aim.next_f64() < head / total.max(1e-20);
+            let origin = scene.fire_origins(&mut crate::scene::FireState::default(), active.form, &[1])
+                .and_then(|v| v[0]);
+            let mut ray = scene.trace(aim_head, 0., 0., None, None, 0., false, false, 0., 0., eligible, origin);
+            o.at = ray.muzzle;
+            o.dir = ray.direction.normalized().unwrap_or(o.dir);
+            o.spatial_ready = true;
+            ray.entity = Some("orb");
+            rec.trace_spatial(o.at_time, None, 0, ray);
+        }
+        o.advance(at, &body_at, spatial);
         *o
     };
     let is_strike = orb.strikes_left > 0 && orb.next_strike <= orb.fuse_at;
@@ -410,7 +452,15 @@ fn orb_event(
     // WHO IS IN REACH. Any part of a body touching is enough — the rule every
     // sphere in this engine uses.
     let in_reach: Vec<usize> = (0..body_at.len())
-        .filter(|&b| crate::rules::space::caught_by_blast(body_at[b].distance(orb.at), orb.part.strike_radius_m))
+        .filter(|&b| {
+            if let Some((scene, eligible)) = spatial {
+                eligible[b] && scene.distance_to_body(orb.at, b) <= orb.part.strike_radius_m
+            } else {
+                let [x, _, z] = orb.at.0;
+                let distance = body_at[b].distance(crate::rules::space::Vec2::new(x, z));
+                crate::rules::space::caught_by_blast(distance, orb.part.strike_radius_m)
+            }
+        })
         .collect();
     if in_reach.is_empty() {
         return Flow::Go;
@@ -434,7 +484,11 @@ fn orb_event(
             let Some((k, _)) = rest
                 .iter()
                 .enumerate()
-                .map(|(k, &b)| (k, body_at[from].distance(body_at[b])))
+                .map(|(k, &b)| {
+                    let distance = spatial.map_or_else(|| body_at[from].distance(body_at[b]),
+                        |(scene, _)| scene.root(from).minus(scene.root(b)).length());
+                    (k, distance)
+                })
                 .filter(|(_, dist)| *dist <= orb.part.chain_range_m + 1e-9)
                 .min_by(|a, b| a.1.total_cmp(&b.1))
             else {

@@ -60,7 +60,7 @@ fn scourge_throw_uses_native_aim_profiles_and_adopted_timing_inputs() {
             assert_eq!(spread.sampling.unwrap().horizontal_ratio, row["sampling"]["horizontal_ratio"].as_f64().unwrap());
         }
         assert!(w.unmodeled.iter().any(|line| line.contains("projectile selection is unverified")));
-        assert!(w.unmodeled.iter().any(|line| line.contains("spatial application")));
+        assert!(w.unmodeled_parts.iter().any(|part| part.reason.as_deref() == Some("client_scourge_field")));
     }
     assert!(spec("scourge_prime").unwrap().unmodeled.iter().any(|line| line.contains("multiplicative claim")));
 }

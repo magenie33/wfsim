@@ -213,6 +213,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             skip_radial: radial_delay > 0.0 || l.spatial.as_ref().is_some_and(|s| !s.impact.radial),
             round_multishot: l.rounds.per_round(l.n_pellets),
             seat: me.seat,
+            arena: me.params,
             active,
             qvec: &l.qvec,
             direct_pre_snap: l.direct_pre_snap,
@@ -314,14 +315,25 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             _ => None,
         }).fold(t, f64::max);
     }
+    let planting = l.spatial.as_ref().filter(|s| s.first && !s.miss && !s.impact.radial)
+        .zip(active.attractor_seconds);
+    if let Some((s, seconds)) = planting {
+        // The package's planted projectile survives for twenty seconds.
+        g.entities.push(Entity::Attractor(AttractorField {
+            owner: me.seat, at: s.impact.point, pulse: t + 1e-9, expires: t + 20., debuff_seconds: seconds,
+        }));
+    }
 
     // THE BLOB EMBEDS in the body the shot struck, and a pile this shot takes
     // to its cap goes off now (`fight::blobs`).
     if let Some((part, (spot, head, weakpoint, critical_head))) = active.blob.zip(blob_contact) {
+        let hit = l.spatial.as_ref().map(|s| s.impact);
+        let body = hit.map_or(0, |h| h.body);
         let contact = BlobContact {
-            body: 0, spot, head, weakpoint, critical_head, base_form: l.base_form,
-            generation: g.bodies[0].state.generation,
+            body, spot: hit.map_or(spot, |h| h.proxy), head, weakpoint, critical_head, base_form: l.base_form,
+            generation: g.bodies[body].state.generation,
             head_bracket: l.shot_head_landing,
+            center: hit.map(|h| h.point),
         };
         if let Some(pile) = embed_blob(g.entities, part, me.seat, contact, l.blob_stacks, t) {
             detonate_blob(
@@ -382,6 +394,10 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             me.fixed.chain_layout.as_ref(),
             struck,
         );
+    }
+    if l.spatial.is_some() && me.params.arcane.echo_share > 0.0 {
+        irradiate::drain_echoes(me.seat, &mut me.windows, g.bodies, me.params, active,
+            &mut me.gal, &mut me.arc, g.r, g.rec, d, t);
     }
     // …AND ENDS THAT WAY, for whatever settles before the next one — once
     // its burst is done.

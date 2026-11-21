@@ -1148,6 +1148,9 @@ pub fn run_once_traced(
         // Contact follows charge and the animation event, then projectile
         // travel where present. The next input has its own completion clock.
         let spatial = me.params.scene_3d.is_some();
+        if spatial && active.attractor_seconds.is_some() {
+            entities.retain(|e| !matches!(e, Entity::Attractor(f) if f.owner == me.seat));
+        }
         if spatial { spatial::launch(&landing, active, me, &bodies, rec); }
         let arrival_delay = if spatial { 0.0 } else { active.flight_seconds(me.params.gap())
             + swing_contact_delay(active, landing.swing.as_ref(), live_rate, tennokai, tennokai_heavy) };

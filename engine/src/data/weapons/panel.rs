@@ -809,6 +809,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         orb: s.attack.orb.as_deref().copied(),
         meter: s.attack.meter,
         ricochet: s.attack.ricochet.as_ref().map(|r| crate::model::Ricochet {
+            reflects_from_surfaces: r.reflects_from_surfaces,
             bounces: r.bounces,
             headshot_chance: r.headshot_chance,
             // NO RANGE IS NOT ZERO RANGE — it is the page stating no limit but
