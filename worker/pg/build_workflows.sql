@@ -653,6 +653,15 @@ BEGIN
       PERFORM compute_admit_tasks(specs::text,demands::text,'',at);specs:='[]';demands:='[]';
     END IF;
   END LOOP;
+  IF f.kind='intake' AND f.source->>'origin'='system' AND f.source#>>'{inbox,0}' ~ '^coverage-[0-9a-f]{16}/group/[0-9a-f]{64}$' THEN
+    IF EXISTS(SELECT 1 FROM jsonb_array_elements(specs) s GROUP BY s->>'id'
+      HAVING count(DISTINCT s-ARRAY['ordinal','position'])>1) THEN
+      RAISE EXCEPTION 'grouped aliases do not share a frozen request';
+    END IF;
+    SELECT coalesce(jsonb_agg(spec ORDER BY ord),'[]'::jsonb) INTO specs
+      FROM (SELECT DISTINCT ON (s->>'id') s spec, ord
+        FROM jsonb_array_elements(specs) WITH ORDINALITY x(s,ord) ORDER BY s->>'id',ord) shared;
+  END IF;
   IF jsonb_array_length(specs)>0 THEN PERFORM compute_admit_tasks(specs::text,demands::text,'',at); END IF;
   UPDATE state_build_workflow_nodes node SET computation=q.id,task_id=q.task_id,state='queued'
     FROM state_compute_work q WHERE node.workflow=workflow_id AND node.expansion=expansion_id AND node.id=ANY(touched) AND node.state='pending' AND q.id=node.definition->>'computation';
