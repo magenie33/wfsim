@@ -75,10 +75,7 @@ pub(super) fn combined_stacks(debuffs: &DebuffState, t: DamageType) -> usize {
         DamageType::Radiation => debuffs.confusion.len(),
         DamageType::Blast => debuffs.blast.len(),
         // Gas lives in the DoT list rather than a stack vector.
-        DamageType::Gas => debuffs.dots[debuffs.dot_start(t)..]
-            .iter()
-            .filter(|d| d.dtype == DamageType::Gas && d.ticks_left > 0)
-            .count(),
+        DamageType::Gas => debuffs.live_dot_count(DamageType::Gas),
         _ => 0,
     }
 }
@@ -112,7 +109,7 @@ pub(super) fn has_status(debuffs: &DebuffState, t: DamageType) -> bool {
         // Slash, Toxin, Electricity and Gas are DoTs and are answered below.
         _ => false,
     };
-    own || debuffs.dots.iter().any(|d| d.dtype == t && d.ticks_left > 0)
+    own || debuffs.live_dot_count(t) > 0
 }
 
 /// Stacks of a combined status the target must be AT, counting the one this
@@ -184,7 +181,7 @@ pub(super) fn fire_extra_hits(
         // carries is the one already inside `trigger_raw`.
         let part_again = if body_part_again { part_again } else { 1.0 };
         let raw = trigger_raw * fraction * bracket * part_again * f;
-        let mut breakdown = Breakdown::default();
+        let mut breakdown = watching(rec);
         let settled = target.apply(
             raw,
             TypeShares::single(ty),
@@ -194,13 +191,13 @@ pub(super) fn fire_extra_hits(
             false,
             mit,
             params.overguard_multiplier(),
-            watching(rec, &mut breakdown),
+            breakdown.as_mut(),
         );
         let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
         r.sources.extra_hit += eff;
         r.sources.extra_hit_by_type[ty as usize] += eff;
         ledger::settle(
-            r, rec, at, owner, 0, || ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
+            r, rec, at, owner, 0, || ty, PopKind::Extra, breakdown.as_ref(), settled, Some(debuffs),
             ledger::Clock::Hit,
             || Instance {
                 origin: crate::record::Origin::ExtraHit,
@@ -255,7 +252,7 @@ pub(super) fn fire_extra_hits(
             rng,
         );
         settle_procs(
-            procs,
+            &procs,
             owner,
             at,
             0,
@@ -400,28 +397,29 @@ pub(super) fn drain_area_procs(
     }
     // Collected first: handing a Dot from body i to body j needs both of them
     // borrowed at once.
-    let mut pending: Vec<(usize, Dot, f64, u16)> = Vec::new();
-    for (b, f) in bodies.iter_mut().enumerate() {
-        for (dot, r, n) in f.debuffs.area_out.drain(..) {
-            pending.push((b, dot, r, n));
+    let mut out_count = 0usize;
+    let mut hit_count = 0usize;
+    for f in bodies.iter() {
+        out_count += f.debuffs.area_out.len();
+        hit_count += f.debuffs.area_hit.len();
+    }
+    if out_count == 0 && hit_count == 0 {
+        return;
+    }
+    let mut pending: Vec<(usize, Dot, f64, u16)> = Vec::with_capacity(out_count);
+    if out_count > 0 {
+        for (b, f) in bodies.iter_mut().enumerate() {
+            for (dot, r, n) in f.debuffs.area_out.drain(..) {
+                pending.push((b, dot, r, n));
+            }
         }
     }
-    // ONE BODY, ONE CORPSE, ONE EXPLOSION PER INSTANT. A cascade terminates in
-    // game because the dead stay dead; this arena respawns a training dummy the
-    // moment it dies, so without a bound one explosion killing seven bodies
-    // produces seven explosions, then forty-nine, then three hundred and
-    // forty-three — measured as a 10 GB allocation on an eight-body line.
-    //
-    // The bound is the game's own sentence rather than a cap somebody picked: a
-    // body can only die once at one instant, so it can only explode once. Later
-    // instants are later deaths and chain normally.
-    let mut exploded = vec![false; bodies.len()];
-    // …AND THE INSTANT ONES: a simultaneous Blast detonation, and the corpse
-    // explosion Acid Shells turns a kill into.
-    let mut blows: Vec<(usize, AreaHit)> = Vec::new();
-    for (b, f) in bodies.iter_mut().enumerate() {
-        for h in f.debuffs.area_hit.drain(..) {
-            blows.push((b, h));
+    let mut blows: Vec<(usize, AreaHit)> = Vec::with_capacity(hit_count);
+    if hit_count > 0 {
+        for (b, f) in bodies.iter_mut().enumerate() {
+            for h in f.debuffs.area_hit.drain(..) {
+                blows.push((b, h));
+            }
         }
     }
     for (from, dot, radius_m, count) in pending {
@@ -436,24 +434,37 @@ pub(super) fn drain_area_procs(
             let cap = dot_cap_for(fp, dot.dtype);
             // One landing per receiving body and arc; its weak-point flag
             // exists even when no bonus raises the head's damage (M100).
-            let dot = if dot.dtype == DamageType::Electricity
-                && parts.iter().any(|p| p.is_head)
-                && arc_landing.chance(TESLA_HEAD_LANDING_CHANCE)
-            {
-                Dot { landing: ProcLanding::at(head_landing, parts.iter().find(|p| p.is_head).expect("head part")), ..dot }
-            } else {
-                dot
+            let dot = match (dot.dtype == DamageType::Electricity).then(|| parts.iter().find(|p| p.is_head)).flatten() {
+                Some(hp) if arc_landing.chance(TESLA_HEAD_LANDING_CHANCE) => {
+                    Dot { landing: ProcLanding::at(head_landing, hp), ..dot }
+                }
+                _ => dot,
             };
             // NEVER MORE THAN THE RECEIVER CAN HOLD: pushing an eleventh copy
             // of an identical cloud only evicts the first.
             let n = cap.map_or(usize::from(count), |c| usize::from(count).min(c));
+            dbf.dots.reserve(n);
             for _ in 0..n {
                 dbf.push_dot_capped(dot, cap);
             }
         }
     }
+    if blows.is_empty() {
+        return;
+    }
+    // ONE BODY, ONE CORPSE, ONE EXPLOSION PER INSTANT. A cascade terminates in
+    // game because the dead stay dead; this arena respawns a training dummy the
+    // moment it dies, so without a bound one explosion killing seven bodies
+    // produces seven explosions, then forty-nine, then three hundred and
+    // forty-three — measured as a 10 GB allocation on an eight-body line.
+    //
+    // The bound is the game's own sentence rather than a cap somebody picked: a
+    // body can only die once at one instant, so it can only explode once. Later
+    // instants are later deaths and chain normally.
+    let mut exploded = vec![false; bodies.len()];
     let status_damage = params.status_duration_multiplier;
     for (from, hit) in blows {
+        let dtype = hit.shares.dominant();
         for (j, centre_gap) in near.within_at(from, hit.radius_m) {
             // THE HOST IS NEVER ONE OF THEM: it took the single-target half and
             // the page excludes it from this one.
@@ -476,7 +487,7 @@ pub(super) fn drain_area_procs(
             }
             let dmg = hit.damage * share;
             let mit = dbf.mitigation(at_now, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
-            let mut breakdown = Breakdown::default();
+            let mut breakdown = watching(rec);
             let settled = state.apply(
                 dmg,
                 hit.shares,
@@ -486,14 +497,13 @@ pub(super) fn drain_area_procs(
                 false,
                 &mit,
                 params.overguard_multiplier(),
-                watching(rec, &mut breakdown),
+                breakdown.as_mut(),
             );
             let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
-            let dtype = hit.shares.dominant();
             r.sources.add_status(dtype, eff);
             ledger::settle(
                 r, rec, at_now, hit.owner, j, || dtype, PopKind::BlastArea,
-                &breakdown, settled, Some(dbf),
+                breakdown.as_ref(), settled, Some(dbf),
                 ledger::Clock::Dot,
                 || Instance {
                     origin: crate::record::Origin::Splash,
@@ -536,7 +546,7 @@ pub(super) const TESLA_RADIUS_M: f64 = 3.0;
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn settle_procs(
-    procs: Vec<DamageType>,
+    procs: &[DamageType],
     // WHOSE PROCS THESE ARE. Every DoT they leave carries it, so the tick that
     // pays out four seconds later is still credited to whoever applied it.
     owner: Seat,
@@ -720,7 +730,7 @@ pub(super) fn settle_procs(
     // page), so the only thing this choice can be wrong about is how soon after
     // each respawn it lands: a fraction of a second out of a 180 s engagement.
     // What it is NOT wrong about is the count, which is the whole payload.
-    if active.applies_microwave && status::applied_procs(&procs, &foe.status_immunities).next().is_some() {
+    if active.applies_microwave && status::applied_procs(procs, &foe.status_immunities).next().is_some() {
         debuffs.microwave = true;
     }
     let incoming = if params.arcane.debilitate_chance > 0.0 {
@@ -734,7 +744,7 @@ pub(super) fn settle_procs(
     } else { None };
     let generation = target.generation;
     let mut qualified = 0_u32;
-    for proc in procs {
+    for &proc in procs {
         // Read before the match applies it — see the Debilitate hook below.
         let accepted = !foe.status_immunities.contains(&proc);
         let stacks_before = if incoming.is_some() || (accepted && proc == DamageType::Gas) {
@@ -1052,7 +1062,7 @@ pub(super) fn settle_procs(
                     let mut broke_any = None;
                     for b in &fired {
                         r.blast_gauge_hits += u32::from(b.charges_gauge);
-                        let mut breakdown = Breakdown::default();
+                        let mut breakdown = watching(rec);
                         let settled = target.apply(
                             b.value,
                             TypeShares::single(DamageType::Blast),
@@ -1062,7 +1072,7 @@ pub(super) fn settle_procs(
                             false,
                             &mit,
                             params.overguard_multiplier(),
-                            watching(rec, &mut breakdown),
+                            breakdown.as_mut(),
                         );
                         let (eff, k, broke) = (settled.effective, settled.killed, settled.broken);
                         r.sources.add_status(DamageType::Blast, eff);
@@ -1070,7 +1080,7 @@ pub(super) fn settle_procs(
                         let part = rec.is_on().then(|| b.seed_part(rec));
                         ledger::settle(
                             r, rec, at, owner, body_index, || DamageType::Blast, PopKind::Blast,
-                            &breakdown, settled, Some(debuffs),
+                            breakdown.as_ref(), settled, Some(debuffs),
                             ledger::Clock::Dot,
                             || Instance {
                                 origin: crate::record::Origin::Status,
@@ -1148,7 +1158,7 @@ pub(super) fn settle_procs(
         // column factor alike.
         if params.arcane.flat_damage_on_status > 0.0 {
             let amt = params.arcane.flat_damage_on_status * params.faction_at_time(at);
-            let mut breakdown = Breakdown::default();
+            let mut breakdown = watching(rec);
             let settled = target.apply(
                 amt,
                 TypeShares::single(proc),
@@ -1158,13 +1168,13 @@ pub(super) fn settle_procs(
                 false,
                 mit,
                 params.overguard_multiplier(),
-                watching(rec, &mut breakdown),
+                breakdown.as_mut(),
             );
             let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
             r.sources.arcane_on_status += eff;
             r.sources.arcane_by_type[proc as usize] += eff;
             ledger::settle(
-                r, rec, at, owner, body_index, || proc, PopKind::Arcane, &breakdown, settled,
+                r, rec, at, owner, body_index, || proc, PopKind::Arcane, breakdown.as_ref(), settled,
                 Some(debuffs),
                 ledger::Clock::Hit,
                 || Instance {
@@ -1203,7 +1213,8 @@ pub(super) fn settle_procs(
                 // M37: upstream scalar factors survive; geometry starts at BODY.
                 scalar.landing = ProcLanding::default();
                 scalar.attrition *= noncrit_mult(active.noncrit_bonus, 0, rng);
-                settle_procs(child.procs.types().collect(), owner, at, body_index, scalar,
+                let derived: status::HitProcs = status::HitProcs::from_slice(&child.procs.types().collect::<Vec<_>>());
+                settle_procs(&derived, owner, at, body_index, scalar,
                     debuffs, gal, arc, target, params, active, mit, r, rec, rng, foe,
                     DEPTH_DERIVED_PROC);
             }
@@ -1273,7 +1284,7 @@ pub(super) fn roll_proc_conversion(
     d: &mut crate::rules::rng::Draws,
     live_rate: f64,
     immune: &[DamageType],
-    procs: &mut Vec<DamageType>,
+    procs: &mut impl crate::rules::status::ProcSink,
 ) {
     if let Some(pc) = active.proc_conversion {
         if !immune.contains(&pc.from) && !immune.contains(&pc.to)
@@ -1285,7 +1296,7 @@ pub(super) fn roll_proc_conversion(
                     1.0
                 };
             if d.status.chance(chance) {
-                procs.push(pc.to);
+                procs.push_proc(pc.to);
             }
         }
     }

@@ -187,7 +187,7 @@ pub(in crate::fight) fn settle(
     body: usize,
     dtype: impl FnOnce() -> DamageType,
     kind: PopKind,
-    breakdown: &Breakdown,
+    breakdown: Option<&Breakdown>,
     settled: Settled,
     debuffs: Option<&DebuffState>,
     clock: Clock,
@@ -225,6 +225,17 @@ pub(in crate::fight) fn settle(
     let i = t.max(0.0) as usize;
     r.curve.0 .0[i.min(TIMELINE_BUCKETS - 1)] += settled.effective;
     if rec.wants(t) {
-        write_row(rec, t, who, body, dtype(), kind, breakdown, settled, debuffs, inst());
+        write_row(
+            rec,
+            t,
+            who,
+            body,
+            dtype(),
+            kind,
+            breakdown.expect("an active combat record captures its damage breakdown"),
+            settled,
+            debuffs,
+            inst(),
+        );
     }
 }

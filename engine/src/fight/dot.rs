@@ -39,8 +39,8 @@ pub(super) struct Dot {
     /// than only the ones being recorded.
     pub(super) owner: Seat,
     pub(super) native_part: Option<crate::model::HitPart>,
-    /// None retains the scene's measured grouping; native key producers are unbound.
-    pub(super) native_group: Option<crate::rules::status::radial::GroupKey>,
+    /// None retains the scene's measured grouping; interned id into `DebuffState::native_groups`.
+    pub(super) native_group: Option<std::num::NonZeroU16>,
     pub(super) next_tick: f64,
     pub(super) ticks_left: u32,
     /// WHICH SHOT SEEDED THIS, by combat-record event id (`record::Event::id`).

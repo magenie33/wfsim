@@ -1578,7 +1578,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         // HERE and not afterwards: `apply` spends the pools and, on a
         // kill, respawns the body outright, so a snapshot taken on the
         // next line would be a snapshot of a different fight.
-        let mut breakdown = Breakdown::default();
+        let mut breakdown = watching(rec);
         let settled = bodies[0].state.apply(
             raw,
             shares,
@@ -1588,7 +1588,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             false,
             &mit,
             params.overguard_multiplier(),
-            watching(rec, &mut breakdown),
+            breakdown.as_mut(),
         );
         let (effective, killed, broke) =
             (settled.effective, settled.killed, settled.broken);
@@ -2154,7 +2154,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     (false, true) => PopKind::Crit,
                     (false, false) => PopKind::Direct,
                 },
-                &breakdown, settled,
+                breakdown.as_ref(), settled,
                 Some(&bodies[0].debuffs),
                 ledger::Clock::Hit,
                 || Instance {
@@ -2446,7 +2446,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             Vec::new()
         };
         settle_procs(
-            procs,
+            &procs,
             seat,
             t,
             0,

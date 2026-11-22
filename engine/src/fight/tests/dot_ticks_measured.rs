@@ -419,13 +419,14 @@ fn shared_dot_clock_requires_identical_live_family_and_clock() {
     use crate::rules::status::radial::GroupKey;
     let dot = tagged_dot(1, Electricity);
     let custom = GroupKey { refCellAt28: 1, refCellAt30: 0, byteAt18: 0, opaqueIdentityAt38: 0 };
+    let custom_id = DebuffState::default().intern_group(custom);
     for second in [
         Dot { dtype: Gas, ..dot },
         Dot { next_tick: 5e-10, ..dot },
         Dot { next_tick: -0.0, ..dot },
         Dot { next_tick: f64::INFINITY, ..dot },
         Dot { ticks_left: 0, ..dot },
-        Dot { native_group: Some(custom), ..dot },
+        Dot { native_group: custom_id, ..dot },
     ] {
         let mut state = DebuffState::default();
         state.push_dot(dot);
@@ -521,12 +522,12 @@ fn capped_dot_eviction_preserves_interleaved_order_and_the_original_clock() {
     next.next_tick = 3.5;
     next.landing = ProcLanding { factor: 1.8, head: true, weak_point: true };
     d.push_dot_capped(next, Some(2));
-    assert_eq!(d.dots.iter().map(|dot| dot.cause).collect::<Vec<_>>(), [1, 3, 5, 7, 9, 10]);
-    let last = d.dots.last().unwrap();
+    assert_eq!(d.active_dots().map(|dot| dot.cause).collect::<Vec<_>>(), [1, 3, 5, 7, 9, 10]);
+    let last = d.active_dots().last().unwrap();
     assert_eq!(last.next_tick, 7.25, "the first live clock is read before eviction");
     assert_eq!(last.ticks_left, 6, "alignment preserves the application's lifetime");
     assert_eq!(d.proc_landing(last), next.landing);
-    assert_eq!(d.dots[4].landing, ProcLanding::default(), "existing hit seeds keep their landing");
+    assert_eq!(d.active_dots().nth(4).unwrap().landing, ProcLanding::default(), "existing hit seeds keep their landing");
 }
 
 #[test]
@@ -537,7 +538,7 @@ fn a_zero_dot_cap_replaces_only_its_own_type() {
     }
     for tag in [4, 5] {
         d.push_dot_capped(tagged_dot(tag, DamageType::Gas), Some(0));
-        assert_eq!(d.dots.iter().map(|dot| dot.cause).collect::<Vec<_>>(), [2, tag]);
+        assert_eq!(d.active_dots().map(|dot| dot.cause).collect::<Vec<_>>(), [2, tag]);
     }
 }
 
@@ -625,14 +626,18 @@ fn capped_family_search_matches_a_full_scan_across_compaction() {
         }
         reference.push(dot);
         let identity = |d: &Dot| (d.cause, d.next_tick.to_bits(), d.ticks_left);
-        assert!(state.dots.iter().map(identity).eq(reference.iter().map(identity)), "step {tag}");
+        assert!(state.active_dots().map(identity).eq(reference.iter().map(identity)), "step {tag}");
         let types = reference.iter().filter(|d| d.ticks_left > 0)
             .fold(0u32, |mask, dot| mask | (1 << dot.dtype as u32));
         assert_eq!(state.distinct_statuses(), types.count_ones() as usize, "step {tag}");
         for family in [Electricity, Gas, Slash, Toxin] {
-            assert!(reference[..state.dot_start(family)].iter().all(|d| d.dtype != family));
+            let want_live = reference.iter().filter(|d| d.dtype == family && d.ticks_left > 0).count();
+            assert_eq!(state.live_dot_count(family), want_live, "step {tag} {family:?}");
         }
     }
+    let identity = |d: &Dot| (d.cause, d.next_tick.to_bits(), d.ticks_left);
+    state.retain_dots(|_| true);
+    assert!(state.dots.iter().map(identity).eq(reference.iter().map(identity)));
 }
 
 #[test]
@@ -765,4 +770,120 @@ fn a_toxin_status_damage_pays_toxin_ticks_and_nothing_else() {
     assert!((both / tox - 1.9).abs() < 1e-9, "x{}", both / tox);
     let heat = dot(DamageType::Heat, vec![], 1.0);
     assert_eq!(dot(DamageType::Heat, vec![(DamageType::Toxin, 0.3)], 1.0), heat);
+}
+
+#[test]
+fn capped_family_ring_and_fast_schedule_match_reference_across_compaction() {
+    use DamageType::{Electricity, Gas, Slash, Toxin};
+    let push_ref = |list: &mut Vec<Dot>, mut dot: Dot, cap: Option<usize>| {
+        if matches!(dot.dtype, Electricity | Gas) {
+            if let Some(shared) = list.iter().find(|d| d.dtype == dot.dtype && d.ticks_left > 0).map(|d| d.next_tick) {
+                if shared > dot.next_tick {
+                    dot.next_tick = shared;
+                }
+            }
+        }
+        if let Some(c) = cap {
+            let keep = c.saturating_sub(1);
+            let mut drop_n = list.iter().filter(|d| d.dtype == dot.dtype).count().saturating_sub(keep);
+            list.retain(|d| {
+                if d.dtype == dot.dtype && drop_n > 0 {
+                    drop_n -= 1;
+                    false
+                } else {
+                    true
+                }
+            });
+        }
+        list.push(dot);
+    };
+
+    for aligned in [true, false] {
+        let mut fast = DebuffState::default();
+        let mut reference: Vec<Dot> = Vec::new();
+        for step in 0..320u32 {
+            let tick_at = if aligned {
+                1.25 - f64::from(step) * 0.002
+            } else {
+                0.25 + f64::from(step) * 0.002
+            };
+            let (dtype, cap, next_tick) = match step % 8 {
+                0..=3 => (Gas, Some(10), tick_at),
+                4..=5 => (Electricity, None, tick_at + 0.15),
+                6 => (Slash, Some(12), 1.0 + f64::from(step % 5) * 0.1),
+                _ => (Toxin, Some(12), 1.1 + f64::from(step % 7) * 0.1),
+            };
+            let mut d = tagged_dot(step + 1, dtype);
+            d.next_tick = next_tick;
+            fast.push_dot_capped(d, cap);
+            push_ref(&mut reference, d, cap);
+
+            assert_eq!(
+                fast.active_dots().map(|x| (x.cause, x.dtype, x.next_tick.to_bits())).collect::<Vec<_>>(),
+                reference.iter().map(|x| (x.cause, x.dtype, x.next_tick.to_bits())).collect::<Vec<_>>(),
+                "aligned={aligned} step={step}",
+            );
+            for fam in [Slash, Electricity, Toxin, Gas] {
+                assert_eq!(
+                    fast.live_dot_count(fam),
+                    reference.iter().filter(|x| x.dtype == fam && x.ticks_left > 0).count(),
+                    "count {fam:?} aligned={aligned} step={step}",
+                );
+            }
+            if aligned {
+                assert!(fast.has_fast_dot_schedule(), "fast schedule holds at {step}");
+                let ref_due = reference.iter().filter(|x| x.ticks_left > 0).map(|x| x.next_tick).fold(f64::INFINITY, f64::min);
+                assert_eq!(fast.fast_dots_due().to_bits(), ref_due.to_bits());
+            }
+            let until = if aligned { 1.30 } else { 0.85 };
+            let mut q = std::collections::BinaryHeap::new();
+            fast.refill_tick_queue(&mut q, until);
+            let mut popped = Vec::new();
+            while let Some(std::cmp::Reverse(k)) = q.pop() {
+                popped.push((k.t.to_bits(), fast.dots[k.index as usize].cause));
+            }
+            let expected_first = reference.iter()
+                .filter(|x| x.ticks_left > 0 && x.next_tick < until)
+                .min_by(|a, b| a.next_tick.total_cmp(&b.next_tick))
+                .map(|x| (x.next_tick.to_bits(), x.cause));
+            assert_eq!(fast.scan_next(until).map(|k| (k.t.to_bits(), fast.dots[k.index as usize].cause)), expected_first);
+            assert_eq!(popped.first().copied(), expected_first);
+        }
+    }
+}
+
+#[test]
+fn hit_procs_spills_past_inline_capacity_without_reordering() {
+    let mut procs = crate::rules::status::HitProcs::default();
+    let seq: Vec<DamageType> = (0..25).map(|i| DamageType::ALL[i % DamageType::ALL.len()]).collect();
+    for &ty in &seq {
+        procs.push(ty);
+    }
+    assert_eq!(&*procs, seq.as_slice());
+    assert_eq!(procs.into_iter().collect::<Vec<_>>(), seq);
+}
+
+#[test]
+fn future_groups_preserve_the_eight_group_deduplication_cap() {
+    use DamageType::{Electricity, Gas};
+    let mut state = DebuffState::default();
+    for k in 0..8u32 {
+        let mut future = tagged_dot(k + 1, Electricity);
+        future.next_tick = 10.0 + f64::from(k);
+        state.push_dot(future);
+    }
+    let mut gas_late = tagged_dot(100, Gas);
+    gas_late.next_tick = 1.0 + 5e-10;
+    state.push_dot(gas_late);
+    let mut elec_mid = tagged_dot(101, Electricity);
+    elec_mid.next_tick = 1.0 + 2e-10;
+    state.push_dot(elec_mid);
+    let mut gas_early = tagged_dot(102, Gas);
+    gas_early.next_tick = 1.0;
+    state.push_dot(gas_early);
+
+    let mut q = std::collections::BinaryHeap::new();
+    state.refill_tick_queue(&mut q, 1.0 + 1e-9);
+    let first = q.pop().unwrap().0;
+    assert_eq!(state.dots[first.index as usize].cause, 102);
 }

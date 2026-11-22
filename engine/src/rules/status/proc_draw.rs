@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Lazy scene CDF reuse across independent hits with one quantized vector.
 
-use super::{append_hit_procs, ordinary::Cdf, scene_weights, ProcCounters, SceneProcHandlers};
+use super::{
+    append_hit_procs, append_unsaturated, cannot_saturate, ordinary::Cdf, scene_weights,
+    ProcCounters, SceneProcHandlers,
+};
 use crate::rules::{
     damage::{DamageType, DamageVector},
     rng::Rng,
@@ -15,6 +18,7 @@ pub(crate) struct SceneProcDraw<'a> {
     vector: &'a DamageVector,
     key: Option<u32>,
     cdf: Cdf<SCENE_TYPES>,
+    output: Vec<DamageType>,
 }
 
 #[wfsim_gas_macro::metered]
@@ -24,6 +28,7 @@ impl<'a> SceneProcDraw<'a> {
             vector,
             key: None,
             cdf: Cdf::empty(),
+            output: Vec::new(),
         }
     }
 
@@ -33,15 +38,28 @@ impl<'a> SceneProcDraw<'a> {
         status_chance: f64,
         handlers: SceneProcHandlers,
         rng: &mut Rng,
-    ) -> Vec<DamageType> {
-        let mut procs = forced.to_vec();
-        self.sample(
-            status_chance as f32,
-            handlers,
-            || rng.unit(),
-            append_hit_procs(&mut procs, forced),
-        );
-        procs
+    ) -> &[DamageType] {
+        let mut procs = std::mem::take(&mut self.output);
+        procs.clear();
+        procs.extend_from_slice(forced);
+        let chance = status_chance as f32;
+        if cannot_saturate(forced, chance) {
+            self.sample(
+                chance,
+                handlers,
+                || rng.unit(),
+                |index| append_unsaturated(&mut procs, index),
+            );
+        } else {
+            self.sample(
+                chance,
+                handlers,
+                || rng.unit(),
+                append_hit_procs(&mut procs, forced),
+            );
+        }
+        self.output = procs;
+        &self.output
     }
 
     fn sample(
@@ -51,7 +69,7 @@ impl<'a> SceneProcDraw<'a> {
         random: impl FnMut() -> f32,
         selected: impl FnMut(Option<usize>),
     ) {
-        let Self { vector, key, cdf } = self;
+        let Self { vector, key, cdf, .. } = self;
         cdf.sample(
             chance,
             |cdf| {
