@@ -81,8 +81,10 @@ writeFileSync(join(scratch,'psql'),[
   '#!/usr/bin/env python3',
   'import os,subprocess,sys',
   'body=sys.stdin.buffer.read()',
+  'fault=os.environ.get("ARCHIVE_TEST_FAULT")',
+  'if fault=="before-accept" and b"raw_archive_move_accept(" in body: sys.exit(1)',
   'run=subprocess.run([os.environ["ARCHIVE_REAL_PSQL"],*sys.argv[1:]],input=body,capture_output=True)',
-  'if os.environ.get("ARCHIVE_TEST_FAULT")=="lost-accept" and b"raw_archive_move_accept(" in body and run.returncode==0:',
+  'if fault=="lost-accept" and b"raw_archive_move_accept(" in body and run.returncode==0:',
   ' sys.exit(1)',
   'sys.stdout.buffer.write(run.stdout)',
   'sys.stderr.buffer.write(run.stderr)',
@@ -142,6 +144,7 @@ async function moveFixture(){
     const ack=(tx,captured)=>tx.unsafe('SELECT build_ack_submissions($1)',[JSON.stringify(captured)]);
     const warm='08000000-0000-4000-8000-000000000001';
     const freshArrival='90000000-0000-8000-8000-000000000001';
+    const raced='07000000-0000-4000-8000-000000000001', gained='07500000-0000-4000-8000-000000000001';
     const [settled,claimed,survivor,settledPart,tail]=[1,2,3,4,5].map(n=>'10000000-0000-4000-8000-00000000000'+n);
     const content=i=>{
       const input=JSON.parse(rows[0].input.record);
@@ -166,11 +169,15 @@ async function moveFixture(){
         await ack(tx,proofs);
       };
     }
-    await owner.unsafe('GRANT EXECUTE ON FUNCTION build_intake_batch(text) TO '+writerRole).simple();
+    await owner.unsafe('GRANT EXECUTE ON FUNCTION build_intake_batch(text) TO '+writerRole+
+      '; GRANT INSERT ON state_build_inbox_positions TO '+writerRole+
+      '; GRANT USAGE ON SEQUENCE compute_queue_position TO '+writerRole).simple();
     await ack(writer,await source.byIds(['positioned-hot']));
     await submit(writer,warm,content(0));
     await owner.unsafe('ALTER TABLE record_build_submissions DISABLE TRIGGER build_inbox_positioned');
     for(const [i,id] of [settled,claimed,survivor,settledPart,tail].entries()) await submit(writer,id,content(i+1));
+    await submit(writer,raced,content(7));
+    await submit(writer,gained,content(0));
     await owner.unsafe('ALTER TABLE record_build_submissions ENABLE TRIGGER build_inbox_positioned');
     const parent=await oldRelation();
     const writerFile=join(scratch,'writers.json');
@@ -186,24 +193,69 @@ async function moveFixture(){
     writerProof(original);
     assert.throws(()=>cli(...start(original)),/55000/);
     await owner.unsafe('SELECT raw_archive_move_attach_arrivals()');
+    await submit(replay,freshArrival,content(6));
     const copyOnline=copy(1);
     copyOnline[copyOnline.indexOf('--rows')+1]='4';
     writerProof(attempt);
     cli(...start(attempt));
-    cli(...copyOnline);
-    await owner.unsafe('INSERT INTO state_build_inbox_positions(id) VALUES($1)',[claimed]);
-    assert.deepEqual(await skips(attempt),[claimed]);
+    failCli('before-accept',...copyOnline);
+    const [prepared]=await transfer(attempt);
+    const verified=gunzipSync(readFileSync(join(objectDir(attempt),prepared.part+'-'+prepared.digest+'.json.gz'))).toString('utf8');
+    const racingAck=await ready(await source.byIds([raced]));
+    const pids=await Promise.all([owner,writer,replay].map(async db=>(await db.unsafe('SELECT pg_backend_pid() AS pid'))[0].pid));
+    const observer=postgres(connection.toString(),{max:1,onnotice(){}});
+    let acceptStarted,finishAccept;
+    const acceptingFirst=new Promise(resolve=>{acceptStarted=resolve;});
+    const holdAccept=new Promise(resolve=>{finishAccept=resolve;});
+    const publication=owner.begin(async tx=>{
+      await tx.unsafe('SELECT raw_archive_move_accept($1,$2,4,12288)',[verified,prepared.digest]);
+      acceptStarted();
+      await holdAccept;
+    });
+    await Promise.race([acceptingFirst,publication]);
+    const operations=Promise.allSettled([
+      writer.begin(tx=>racingAck(tx)),
+      replay.unsafe('INSERT INTO state_build_inbox_positions(id) VALUES($1)',[gained]),
+    ]);
+    try {
+      let blocked=false;
+      for(let i=0;i<80;i++){
+        const [state]=await observer.unsafe('SELECT $1::int=ANY(pg_blocking_pids($2::int)) AND $1::int=ANY(pg_blocking_pids($3::int)) AS blocked',pids);
+        if(state.blocked){blocked=true;break;}
+        await new Promise(resolve=>setTimeout(resolve,20));
+      }
+      assert(blocked,'legacy ACK and new owner wait for the accepted range');
+    } finally {
+      finishAccept();
+      await observer.end({timeout:5});
+      await publication;
+      for(const result of await operations) assert.equal(result.status,'fulfilled',result.reason?.message);
+    }
+    assert.deepEqual(await skips(attempt),[raced,gained]);
+    assert.deepEqual(await hotIds(),[gained,warm]);
+    assert.deepEqual(await pending([raced,gained]),[gained]);
+    const visible=[gained,warm,settled,claimed,survivor,settledPart,tail,freshArrival];
+    const beforeAbort=await source.byIds(visible), fifoBeforeAbort=await positions();
+    const grants=()=>writer.unsafe("SELECT has_table_privilege('state_build_inbox_inputs','SELECT') AS reads,"+
+      "has_function_privilege('build_ack_submissions(text)','EXECUTE') AS acknowledges,"+
+      "has_table_privilege('record_raw_archive_arrivals','INSERT') AS child_write");
+    const aclBefore=await grants();
+    assert.deepEqual([...aclBefore],[{reads:true,acknowledges:true,child_write:false}]);
     cli('abort-clean',attempt,'--work',scratch);
-    assert.deepEqual(await pending([claimed]),[claimed]);
-    assert((await positions()).some(row=>row.id===claimed));
+    assert.deepEqual(await oldRelation(),parent);
+    assert.deepEqual(await source.byIds(visible),beforeAbort);
+    assert.deepEqual(await positions(),fifoBeforeAbort);
+    assert.deepEqual(await grants(),aclBefore);
+    assert.deepEqual(await hotIds(),[]);
+    console.log('ok: the accepted range fences waiting ACK and ownership writes, and abort preserves the live views, ACL and FIFO');
     failCli('lost-delete',...retire(attempt));
-    assert.deepEqual(await skips(attempt),[claimed]);
+    assert.deepEqual(await skips(attempt),[raced,gained]);
     assert.deepEqual(objects(attempt),[]);
     assert.equal(cli(...retire(attempt)).length,1);
     assert.deepEqual(await skips(attempt),[]);
     assert.equal((await owner.unsafe("SELECT pg_relation_size('record_raw_archive_skips')::int AS n"))[0].n,0);
     assert.deepEqual(objects(attempt),[]);
-    await owner.unsafe('DELETE FROM state_build_inbox_positions WHERE id=$1',[claimed]);
+    await ack(writer,await source.byIds([gained]));
     const writerDigest=writerProof(original);
     cli(...start(original));
     assert.equal(cli('status-clean')[0].writer_receipt,writerDigest);
