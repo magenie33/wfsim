@@ -44,6 +44,7 @@ const retained='00000000-0000-4000-8000-000000000003';
 const late='00000000-0000-4000-8000-000000000004';
 const gear='equipment:protected';
 const at='2026-11-22';
+const instant=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const record=JSON.stringify(JSON.parse(readFileSync(new URL('../tests/gas/rows.json',import.meta.url),'utf8'))[0].record);
 const captureFile=join(scratch,'incoming.ndjson'),receiptFile=join(scratch,'capture.json');
 const done=join(scratch,'done.txt'),cursor=join(scratch,'cursor.json'),builds=join(scratch,'derived.ndjson');
@@ -196,6 +197,7 @@ try{
  const [cutReceipt,phase]=await shortLock(cut);
  assert(cutReceipt.old_bytes>4*1024*1024 && cutReceipt.new_bytes<cutReceipt.old_bytes/50);
  assert.equal(phase.phase,'draining');
+ assert.match(phase.cut_at,instant);
  assert.equal(await one('SELECT raw_inbox_library_count() v'),null);
  assert.equal((await pending()).count,null);
  const postCut=await snapshot();
@@ -231,6 +233,7 @@ try{
  writeFileSync(object,bytes);
  const loaded=cli(drain).filter(row=>row.stage==='drained');
  assert.equal(loaded.length,packets.length);
+ assert.match(await one('SELECT loaded_at v FROM record_raw_inbox_archive_chunks WHERE part=1'),instant);
  assert.equal((await source(pipeline).byIds([raced,spent])).length,0);
  const recovered=(await source(pipeline).byIds([retained]))[0];
  for(const key of ['id','at','record','initiator','family_source','observation'])
@@ -242,12 +245,14 @@ try{
  assert.deepEqual(replay,{loaded:0,replay:true});
  assert.equal(cli(drain).filter(row=>row.stage==='drained').length,0);
  assert.equal((await source(pipeline).byIds([retained])).length,0,'a committed drain cannot resurrect an ACKed input');
- await shortLock(['finish',generation]);
+ const [finished]=await shortLock(['finish',generation]);
+ assert.match(finished.completed_at,instant);
  assert(Number(await one('SELECT raw_inbox_library_count() v'))>4000);
  assert((await pending()).count>4000);
  await shortLock(['begin',abandoned]);
  await put(writer,'new-on-abort');
- await shortLock(['abort',abandoned]);
+ const [aborted]=await shortLock(['abort',abandoned]);
+ assert.match(aborted.aborted_at,instant);
  assert.equal((await source(pipeline).byIds(['new-on-abort']))[0].id,'new-on-abort');
  assert.equal(await one("SELECT count(*)::int v FROM pg_trigger WHERE tgname LIKE '%raw_inbox_rollover%' AND NOT tgisinternal"),0);
  console.log(JSON.stringify({native:true,restored_parts:packets.length,old_bytes:cutReceipt.old_bytes,new_bytes:cutReceipt.new_bytes,

@@ -11,16 +11,16 @@ CREATE TABLE state_raw_inbox_archive_cursor (
   generation uuid PRIMARY KEY,
   after_id text COLLATE "C",
   next_part bigint NOT NULL DEFAULT 1,
-  cut_at timestamptz,
-  completed_at timestamptz,
-  aborted_at timestamptz
+  cut_at text COLLATE "C",
+  completed_at text COLLATE "C",
+  aborted_at text COLLATE "C"
 );
 CREATE TABLE record_raw_inbox_archive_chunks (
   generation uuid NOT NULL REFERENCES state_raw_inbox_archive_cursor(generation),
   part bigint NOT NULL,
   digest text NOT NULL CHECK(digest~'^[a-f0-9]{64}$'),
   rows integer NOT NULL,
-  loaded_at timestamptz,
+  loaded_at text COLLATE "C",
   PRIMARY KEY(generation,part)
 );
 CREATE TABLE state_raw_inbox_archive_claims (
@@ -238,7 +238,8 @@ BEGIN
   IF added<>hot_rows THEN RAISE EXCEPTION 'raw inbox hot spool copy changed'; END IF;
   ALTER TABLE record_build_submissions ENABLE TRIGGER USER;
   TRUNCATE state_raw_inbox_hot_spool;
-  UPDATE state_raw_inbox_archive_cursor SET cut_at=clock_timestamp() WHERE generation=$1;
+  UPDATE state_raw_inbox_archive_cursor
+    SET cut_at=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') WHERE generation=$1;
   UPDATE state_raw_inbox_rollover SET phase='draining' WHERE id=1;
   RETURN jsonb_build_object('generation',$1,'old_bytes',old_bytes,'new_bytes',pg_total_relation_size('record_build_submissions'),
     'hot_rows',hot_rows,'hot_bytes',hot_bytes);
@@ -261,7 +262,8 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'only a raw inbox generation before cut can be abandoned'; END IF;
   PERFORM raw_inbox_rollover_untrack();
   TRUNCATE state_raw_inbox_hot_spool,state_raw_inbox_archive_claims;
-  UPDATE state_raw_inbox_archive_cursor SET aborted_at=clock_timestamp() WHERE generation=$1;
+  UPDATE state_raw_inbox_archive_cursor
+    SET aborted_at=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') WHERE generation=$1;
 END $$;
 
 CREATE FUNCTION raw_inbox_rollover_ack(record_build_submissions) RETURNS void
@@ -316,7 +318,9 @@ BEGIN
     DELETE FROM state_raw_inbox_archive_claims WHERE id=inbox.id AND materializing;
     inserted:=inserted+1;
   END LOOP;
-  UPDATE record_raw_inbox_archive_chunks SET loaded_at=clock_timestamp() WHERE generation=active AND part=part_id;
+  UPDATE record_raw_inbox_archive_chunks
+    SET loaded_at=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+    WHERE generation=active AND part=part_id;
   RETURN jsonb_build_object('loaded',inserted,'replay',false);
 END $$;
 
@@ -330,7 +334,8 @@ BEGIN
     RAISE EXCEPTION 'raw inbox generation still holds cold inputs'; END IF;
   TRUNCATE state_raw_inbox_archive_claims;
   PERFORM raw_inbox_rollover_untrack();
-  UPDATE state_raw_inbox_archive_cursor SET completed_at=clock_timestamp() WHERE generation=$1;
+  UPDATE state_raw_inbox_archive_cursor
+    SET completed_at=to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') WHERE generation=$1;
   UPDATE state_raw_inbox_rollover SET phase='idle' WHERE id=1;
 END $$;
 
