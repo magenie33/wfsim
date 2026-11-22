@@ -20,11 +20,8 @@ use super::*;
 /// record explain the same instance, so they are recorded together or not at
 /// all — otherwise they are two accounts of one hit.
 #[wfsim_gas_macro::metered]
-pub(super) fn watching<'a>(
-    rec: &crate::record::Record,
-    breakdown: &'a mut Breakdown,
-) -> Option<&'a mut Breakdown> {
-    rec.is_on().then_some(breakdown)
+pub(super) fn watching(rec: &crate::record::Record) -> Option<Breakdown> {
+    rec.is_on().then(Breakdown::default)
 }
 
 /// Offensive explanation of the represented packet. Native stage traces and

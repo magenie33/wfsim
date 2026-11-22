@@ -274,7 +274,7 @@ pub(super) fn spread_from_influence(
                 params.armor_strip_per_puncture,
                 params.squad.enemy_armor_multiplier,
             );
-            let mut breakdown = Breakdown::default();
+            let mut breakdown = watching(rec);
             let settled = state.apply(
                 raw,
                 TypeShares::single(ty),
@@ -286,13 +286,13 @@ pub(super) fn spread_from_influence(
                 false,
                 &mit,
                 params.overguard_multiplier(),
-                watching(rec, &mut breakdown),
+                breakdown.as_mut(),
             );
             let (eff, killed) = (settled.effective, settled.killed);
             r.sources.extra_hit += eff;
             r.sources.extra_hit_by_type[ty as usize] += eff;
             ledger::settle(
-                r, rec, t, seat, b, || ty, PopKind::Extra, &breakdown, settled, Some(dbf),
+                r, rec, t, seat, b, || ty, PopKind::Extra, breakdown.as_ref(), settled, Some(dbf),
                 ledger::Clock::Hit,
                 || Instance {
                     origin: crate::record::Origin::Influence,
@@ -330,7 +330,7 @@ pub(super) fn spread_from_influence(
                 &mut d.status,
             );
             settle_procs(
-                procs,
+                &procs,
                 seat,
                 t,
                 b,
@@ -478,7 +478,7 @@ pub(super) fn spread_hit(
     // column the next read returns, and the split belongs to the hit that
     // broke it rather than to the state it left behind.
     let col = foe.state.incoming_column(spec.params);
-    let mut breakdown = Breakdown::default();
+    let mut breakdown = watching(rec);
     let settled = foe.state.apply(
         raw,
         shares,
@@ -498,7 +498,7 @@ pub(super) fn spread_hit(
         false,
         &mit,
         params.overguard_multiplier(),
-        watching(rec, &mut breakdown),
+        breakdown.as_mut(),
     );
     let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
     // A SPREAD INSTANCE IS A WHOLE VECTOR, so the number reads as its biggest
@@ -517,7 +517,7 @@ pub(super) fn spread_hit(
             (false, true) => PopKind::Crit,
             (false, false) => PopKind::Direct,
         },
-        &breakdown, settled, Some(&foe.debuffs),
+        breakdown.as_ref(), settled, Some(&foe.debuffs),
         ledger::Clock::Hit,
         || Instance {
             // WHY THIS BODY GOT HIT AT ALL — the one column a formation
@@ -627,15 +627,19 @@ pub(super) fn spread_hit(
     arc.next_instance();
     let received_chance = foe.debuffs.received_proc_chance(status_chance, t);
     let handlers = spec.params.proc_handlers();
-    let mut echo = echo;
-    let procs = match echo.as_deref_mut().and_then(|e| e.draw.as_mut()) {
+    let xh_bracket = echo.as_deref().map_or_else(|| active.extra_hit_bracket(t, w), |e| e.extra_hit_bracket);
+    let ordinary;
+    let procs: &[DamageType] = match echo.and_then(|e| e.draw.as_mut()) {
         Some(draw) => draw.procs_for_hit(forced, received_chance, handlers, &mut d.status),
-        None => status::procs_for_hit(forced, received_chance, vector, handlers, &mut d.status),
+        None => {
+            ordinary = status::procs_for_hit(forced, received_chance, vector, handlers, &mut d.status);
+            &ordinary
+        }
     };
     // WHAT THIS INSTANCE LEFT, for Melee Influence — see [`Landed`]. Taken
     // before `settle_procs` consumes the list.
     let applied = if params.arcane.influence_chance > 0.0 && matches!(by, SpreadBy::FollowThrough | SpreadBy::MeleeRadius | SpreadBy::Contact) {
-        status::applied_procs(&procs, &spec.params.status_immunities).collect()
+        status::applied_procs(procs, &spec.params.status_immunities).collect()
     } else { Vec::new() };
     let mut landed = Landed { procs: applied, raw, shares, killed };
     settle_procs(
@@ -669,7 +673,7 @@ pub(super) fn spread_hit(
             // THE FIRING FORM'S bracket, like any other instance of this shot —
             // a chain hop is the same shot, and the Extra Hit it may set off is
             // the same weapon's.
-            xh_bracket: echo.map_or_else(|| active.extra_hit_bracket(t, w), |e| e.extra_hit_bracket),
+            xh_bracket,
             status_damage_live: 0.0,
         },
         &mut foe.debuffs,
@@ -1630,7 +1634,7 @@ pub(super) fn fire_syndicate_radial(
     let status_damage = params.status_duration_multiplier;
     let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
     let amt = sy.damage * params.faction_at_time(at);
-    let mut breakdown = Breakdown::default();
+    let mut breakdown = watching(rec);
     let settled = target.apply(
         amt,
         TypeShares::single(sy.element),
@@ -1640,13 +1644,13 @@ pub(super) fn fire_syndicate_radial(
         false,
         &mit,
         params.overguard_multiplier(),
-        watching(rec, &mut breakdown),
+        breakdown.as_mut(),
     );
     let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
     r.sources.syndicate += eff;
     r.sources.syndicate_by_type[sy.element as usize] += eff;
     ledger::settle(
-        r, rec, at, seat, 0, || sy.element, PopKind::Arcane, &breakdown, settled,
+        r, rec, at, seat, 0, || sy.element, PopKind::Arcane, breakdown.as_ref(), settled,
         Some(debuffs),
         ledger::Clock::Hit,
         || Instance {
@@ -1675,7 +1679,7 @@ pub(super) fn fire_syndicate_radial(
         // Its own instance, like the field tick above.
         arc.next_instance();
         settle_procs(
-            vec![sy.element],
+            &[sy.element],
             seat,
             at,
             0,

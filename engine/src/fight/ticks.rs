@@ -23,6 +23,7 @@ pub(super) const TICK_QUEUE_MIN: usize = 32;
 
 /// ELECTRICITY AND GAS TICK AS ONE GROUP — every live stack of the type pays
 /// into one instance a second (wiki `Damage/Electricity Damage`, U33.6).
+#[inline]
 #[wfsim_gas_macro::metered]
 pub(super) fn consolidated(t: DamageType) -> bool {
     matches!(t, DamageType::Electricity | DamageType::Gas)
@@ -65,21 +66,92 @@ impl PartialOrd for TickKey {
     }
 }
 
+const DOT_FAMILY_MASK: u32 = (1 << DamageType::Slash as u32)
+    | (1 << DamageType::Electricity as u32)
+    | (1 << DamageType::Toxin as u32)
+    | (1 << DamageType::Gas as u32);
+
 #[wfsim_gas_macro::metered]
 impl DebuffState {
-    fn first_live_dot(&self) -> Option<(usize, &Dot)> {
-        self.dots.iter().enumerate().find(|(_, d)| d.ticks_left > 0)
+    #[inline]
+    pub(super) fn has_fast_dot_schedule(&self) -> bool {
+        self.live_dot_types != u32::MAX
+            && (self.live_dot_types & !DOT_FAMILY_MASK) == 0
+            && (self.live_dot_counts[0] == 0 || self.dot_rings[0].exact)
+            && (self.live_dot_counts[1] == 0 || self.consolidated_clocks[0].shared)
+            && (self.live_dot_counts[2] == 0 || self.dot_rings[2].exact)
+            && (self.live_dot_counts[3] == 0 || self.consolidated_clocks[1].shared)
+    }
+
+    #[inline]
+    pub(super) fn fast_dots_due(&self) -> f64 {
+        let mut due = f64::INFINITY;
+        for (c, f, dtype) in [(0, 1, DamageType::Electricity), (1, 3, DamageType::Gas)] {
+            if self.live_dot_counts[f] > 0 {
+                if let Some((_, d)) = self.first_live_consolidated_in_slice(c, dtype) {
+                    due = due.min(d.next_tick);
+                }
+            }
+        }
+        for f in [0, 2] {
+            if self.live_dot_counts[f] > 0 {
+                let ring = &self.dot_rings[f];
+                for k in 0..ring.len as usize {
+                    let idx = ring.slots[(ring.head as usize + k) & (debuffs::DOT_CAP_RING_MAX - 1)] as usize;
+                    if let Some(d) = self.dots.get(idx) {
+                        if d.ticks_left > 0 {
+                            due = due.min(d.next_tick);
+                        }
+                    }
+                }
+            }
+        }
+        due
+    }
+
+    #[inline]
+    fn first_live_consolidated_in_slice(&self, c: usize, dtype: DamageType) -> Option<(usize, &Dot)> {
+        let h = self.consolidated_clocks[c].head as usize;
+        if let Some(d) = self.dots.get(h) {
+            if d.dtype == dtype && d.ticks_left > 0 {
+                return Some((h, d));
+            }
+        }
+        self.scan_first_live_consolidated_in_slice(c, dtype)
+    }
+
+    #[cold]
+    fn scan_first_live_consolidated_in_slice(&self, c: usize, dtype: DamageType) -> Option<(usize, &Dot)> {
+        let f = if c == 0 { 1 } else { 3 };
+        if self.dot_rings[f].exact {
+            let ring = &self.dot_rings[f];
+            for k in 0..ring.len as usize {
+                let idx = ring.slots[(ring.head as usize + k) & (debuffs::DOT_CAP_RING_MAX - 1)] as usize;
+                if let Some(d) = self.dots.get(idx) {
+                    if d.dtype == dtype && d.ticks_left > 0 {
+                        return Some((idx, d));
+                    }
+                }
+            }
+            return None;
+        }
+        let start = (self.consolidated_clocks[c].head as usize).min(self.dots.len());
+        for (off, d) in self.dots[start..].iter().enumerate() {
+            if d.dtype == dtype && d.ticks_left > 0 {
+                return Some((start + off, d));
+            }
+        }
+        None
     }
 
     /// THE SHAPE OF THE SCHEDULE, as three numbers.
     ///
     /// A queued event names its slot by INDEX, so anything that reshapes the
-    /// collections invalidates the queue. Rather than remember to say so at
-    /// every mutation site — the failure mode this repo has been bitten by
-    /// before — the loop DERIVES it: take the fingerprint, process one event,
-    /// take it again, and rebuild if it moved.
-    pub(super) fn tick_shape(&self) -> (usize, usize, bool) {
-        (self.dots.len(), self.blast.len(), self.heat.is_some())
+    /// collections invalidates the queue. Generation counters distinguish a
+    /// Blast fuse pop (`blast.len()`) from DoT or Heat mutations during callbacks.
+    #[inline]
+    pub(super) fn tick_shape(&self) -> (u32, u32, usize) {
+        (self.dots_gen, self.heat_gen, self.blast.len())
     }
 
     /// THE NEXT EVENT, BY SCANNING. The original rule, kept as the small-state
@@ -87,82 +159,180 @@ impl DebuffState {
     /// reproduces rather than replaces.
     pub(super) fn scan_next(&self, until: f64) -> Option<TickKey> {
         let mut best: Option<TickKey> = None;
-        let mut consider = |t: f64, class: u8, index: usize| {
-            if t < until && best.as_ref().is_none_or(|b| t < b.t) {
-                best = Some(TickKey { t, class, index: index as u32 });
-            }
-        };
-        if self.dots_share_clock {
-            if let Some((i, d)) = self.first_live_dot() {
-                consider(d.next_tick, 0, i);
-            }
-        } else {
-            for (i, d) in self.dots.iter().enumerate() {
-                if d.ticks_left > 0 {
-                    consider(d.next_tick, 0, i);
+        if !matches!(self.dots_due, Some(due) if due >= until) {
+            if self.has_fast_dot_schedule() {
+                if self.live_dot_counts[1] > 0 {
+                    if let Some((i, d)) = self.first_live_consolidated_in_slice(0, DamageType::Electricity) {
+                        if d.next_tick < until {
+                            let k = TickKey { t: d.next_tick, class: 0, index: i as u32 };
+                            if match best { Some(b) => k < b, None => true } {
+                                best = Some(k);
+                            }
+                        }
+                    }
+                }
+                if self.live_dot_counts[3] > 0 {
+                    if let Some((i, d)) = self.first_live_consolidated_in_slice(1, DamageType::Gas) {
+                        if d.next_tick < until {
+                            let k = TickKey { t: d.next_tick, class: 0, index: i as u32 };
+                            if match best { Some(b) => k < b, None => true } {
+                                best = Some(k);
+                            }
+                        }
+                    }
+                }
+                for f in [0, 2] {
+                    if self.live_dot_counts[f] > 0 {
+                        let ring = &self.dot_rings[f];
+                        for k_idx in 0..ring.len as usize {
+                            let i = ring.slots[(ring.head as usize + k_idx) & (debuffs::DOT_CAP_RING_MAX - 1)] as usize;
+                            if let Some(d) = self.dots.get(i) {
+                                if d.ticks_left > 0 && d.next_tick < until {
+                                    let k = TickKey { t: d.next_tick, class: 0, index: i as u32 };
+                                    if match best { Some(b) => k < b, None => true } {
+                                        best = Some(k);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                for (i, d) in self.dots.iter().enumerate() {
+                    if d.ticks_left > 0 && d.next_tick < until {
+                        let k = TickKey { t: d.next_tick, class: 0, index: i as u32 };
+                        if match best { Some(b) => k < b, None => true } {
+                            best = Some(k);
+                        }
+                    }
                 }
             }
         }
         if let Some(h) = &self.heat {
-            if h.next_tick <= h.expiry {
-                consider(h.next_tick, 1, 0);
+            if h.next_tick <= h.expiry && h.next_tick < until {
+                let k = TickKey { t: h.next_tick, class: 1, index: 0 };
+                if match best { Some(b) => k < b, None => true } {
+                    best = Some(k);
+                }
             }
         }
         for (i, b) in self.blast.iter().enumerate() {
-            consider(b.fuse, 2, i);
+            if b.fuse < until {
+                let k = TickKey { t: b.fuse, class: 2, index: i as u32 };
+                if match best { Some(b) => k < b, None => true } {
+                    best = Some(k);
+                }
+            }
         }
         best
     }
 
     /// Every event this state has pending before `until`, into a queue the
     /// caller owns — see [`Self::tick_q`] for why it is not returned.
+    /// Returns a lower bound on the earliest unqueued live DoT `next_tick`.
     pub(super) fn refill_tick_queue(
         &self,
         q: &mut std::collections::BinaryHeap<std::cmp::Reverse<TickKey>>,
         until: f64,
-    ) {
+    ) -> f64 {
         q.clear();
-        let mut push = |t: f64, class: u8, index: usize| {
-            if t < until {
-                q.push(std::cmp::Reverse(TickKey { t, class, index: index as u32 }));
-            }
-        };
+        let mut unqueued_due = f64::INFINITY;
         // A CONSOLIDATED GROUP IS ONE EVENT, so it is queued once: the stack
         // with the lowest index, which is the key that fires today — every
-        // other stack's key only ever came off the queue stale. On a crowd
-        // under Melee Influence they were 73% of every pop.
-        // A handful of groups at most; one that does not fit is queued per
-        // stack as before, which costs a stale pop and changes nothing.
-        if self.dots_share_clock {
-            if let Some((i, d)) = self.first_live_dot() {
-                push(d.next_tick, 0, i);
+        // other stack's key only ever came off the queue stale.
+        if matches!(self.dots_due, Some(due) if due >= until) {
+            unqueued_due = self.dots_due.unwrap_or(f64::INFINITY);
+        } else if self.has_fast_dot_schedule() {
+            for (c, f, dtype) in [(0, 1, DamageType::Electricity), (1, 3, DamageType::Gas)] {
+                if self.live_dot_counts[f] > 0 {
+                    if let Some((i, d)) = self.first_live_consolidated_in_slice(c, dtype) {
+                        if d.next_tick < until {
+                            q.push(std::cmp::Reverse(TickKey { t: d.next_tick, class: 0, index: i as u32 }));
+                        } else if d.next_tick < unqueued_due {
+                            unqueued_due = d.next_tick;
+                        }
+                    }
+                }
+            }
+            for f in [0, 2] {
+                if self.live_dot_counts[f] > 0 {
+                    let ring = &self.dot_rings[f];
+                    for k in 0..ring.len as usize {
+                        let i = ring.slots[(ring.head as usize + k) & (debuffs::DOT_CAP_RING_MAX - 1)] as usize;
+                        if let Some(d) = self.dots.get(i) {
+                            if d.ticks_left > 0 {
+                                if d.next_tick < until {
+                                    q.push(std::cmp::Reverse(TickKey { t: d.next_tick, class: 0, index: i as u32 }));
+                                } else if d.next_tick < unqueued_due {
+                                    unqueued_due = d.next_tick;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         } else {
             let mut groups = [(DamageType::Impact, 0.0f64, None); 8];
-            let mut n = 0;
+            let mut n = 0usize;
+            let mut last_hit: Option<(DamageType, u64, Option<std::num::NonZeroU16>)> = None;
             for (i, d) in self.dots.iter().enumerate() {
-                if d.ticks_left > 0 {
-                    if consolidated(d.dtype) {
-                        if groups[..n].iter().any(|&(t, at, key)| t == d.dtype && key == d.native_group && (at - d.next_tick).abs() < 1e-9) {
-                            continue;
-                        }
-                        if n < groups.len() {
-                            groups[n] = (d.dtype, d.next_tick, d.native_group);
-                            n += 1;
+                if d.ticks_left == 0 {
+                    continue;
+                }
+                let nt = d.next_tick;
+                if nt >= until {
+                    if nt < unqueued_due {
+                        unqueued_due = nt;
+                    }
+                    if n == groups.len() {
+                        continue;
+                    }
+                }
+                if consolidated(d.dtype) {
+                    let bits = nt.to_bits();
+                    if last_hit == Some((d.dtype, bits, d.native_group)) {
+                        continue;
+                    }
+                    let mut matched_at = None;
+                    for g in &groups[..n] {
+                        if g.0 == d.dtype && g.2 == d.native_group && (g.1 - nt).abs() < 1e-9 {
+                            matched_at = Some(g.1);
+                            break;
                         }
                     }
-                    push(d.next_tick, 0, i);
+                    if let Some(at) = matched_at {
+                        if nt.is_finite() {
+                            last_hit = Some((d.dtype, bits, d.native_group));
+                        }
+                        if at >= until && nt < unqueued_due {
+                            unqueued_due = nt;
+                        }
+                        continue;
+                    }
+                    if n < groups.len() {
+                        groups[n] = (d.dtype, nt, d.native_group);
+                        n += 1;
+                        if nt.is_finite() {
+                            last_hit = Some((d.dtype, bits, d.native_group));
+                        }
+                    }
+                }
+                if nt < until {
+                    q.push(std::cmp::Reverse(TickKey { t: nt, class: 0, index: i as u32 }));
                 }
             }
         }
         if let Some(h) = &self.heat {
-            if h.next_tick <= h.expiry {
-                push(h.next_tick, 1, 0);
+            if h.next_tick <= h.expiry && h.next_tick < until {
+                q.push(std::cmp::Reverse(TickKey { t: h.next_tick, class: 1, index: 0 }));
             }
         }
         for (i, b) in self.blast.iter().enumerate() {
-            push(b.fuse, 2, i);
+            if b.fuse < until {
+                q.push(std::cmp::Reverse(TickKey { t: b.fuse, class: 2, index: i as u32 }));
+            }
         }
+        unqueued_due
     }
 }
 
@@ -273,23 +443,40 @@ pub(super) fn process_ticks(
     // NOTHING DUE, NOTHING TO DO: the loop below would pop no event, so an
     // answer from the bound and a live look at Heat and Blast is the same one
     // without rebuilding a queue over every DoT on the body.
-    let heat_due = debuffs.heat.as_ref().is_some_and(|h| h.next_tick <= h.expiry && h.next_tick < until);
-    if debuffs.dots_due.is_some_and(|due| due >= until) && !heat_due && debuffs.blast.iter().all(|b| b.fuse >= until) {
-        return;
+    if matches!(debuffs.dots_due, Some(due) if due >= until)
+        && !matches!(&debuffs.heat, Some(h) if h.next_tick <= h.expiry && h.next_tick < until)
+    {
+        let mut blast_due = false;
+        for b in &debuffs.blast {
+            if b.fuse < until {
+                blast_due = true;
+                break;
+            }
+        }
+        if !blast_due {
+            return;
+        }
     }
-    let use_queue = debuffs.dots.len() > TICK_QUEUE_MIN;
+    let use_queue = debuffs.active_dot_count() > TICK_QUEUE_MIN;
     let mut q = std::mem::take(&mut debuffs.tick_q);
-    if use_queue {
-        debuffs.refill_tick_queue(&mut q, until);
-    }
+    let mut unqueued_due = if use_queue {
+        debuffs.refill_tick_queue(&mut q, until)
+    } else {
+        f64::INFINITY
+    };
+    let mut advanced_due = f64::INFINITY;
+    let mut any_dot_expired = false;
+    let mut can_skip_retain = use_queue;
+    let initial_dots_gen = debuffs.dots_gen;
     let mut shape = debuffs.tick_shape();
     loop {
-        let next = if use_queue {
-            q.pop().map(|std::cmp::Reverse(k)| k)
+        let k = if use_queue {
+            let Some(std::cmp::Reverse(k)) = q.pop() else { break };
+            k
         } else {
-            debuffs.scan_next(until)
+            let Some(k) = debuffs.scan_next(until) else { break };
+            k
         };
-        let Some(k) = next else { break };
         // A STALE KEY. A consolidated family advances EVERY one of its live
         // instances when the first of them fires, so the queue still holds
         // entries for ticks that have already been paid. The scan path never
@@ -298,7 +485,7 @@ pub(super) fn process_ticks(
         // identically, and only one of them can go stale.
         if k.class == 0 {
             match debuffs.dots.get(k.index as usize) {
-                Some(d) if (d.next_tick - k.t).abs() < 1e-9 => {}
+                Some(d) if d.ticks_left > 0 && (d.next_tick - k.t).abs() < 1e-9 => {}
                 _ => continue,
             }
         }
@@ -323,7 +510,6 @@ pub(super) fn process_ticks(
         let mut native_layers = None;
         let (value, ignores_armor, is_dot_tick, hit_type, src, xh) = match &ev {
             Ev::Dot(i) => {
-                debuffs.invalidate_dot_types();
                 let dtype = debuffs.dots[*i].dtype;
                 let ignores_armor = debuffs.dots[*i].ignores_armor;
                 tick_landing = debuffs.proc_landing(&debuffs.dots[*i]);
@@ -333,65 +519,199 @@ pub(super) fn process_ticks(
                 // recorder's "current shot" stays the loop's business.
                 seeded_by = debuffs.dots[*i].cause;
                 dot_owner = debuffs.dots[*i].owner;
-                // A CONSOLIDATED FAMILY PAYS ONCE — one damage instance for
-                // every live stack, which is the number the game pops.
-                //
-                // The clock was already shared (`push_dot_capped`); this is the
-                // other half of the same rule, and without it ten Electricity
-                // stacks landed as ten instances at one instant where the game
-                // shows one. It is NOT bookkeeping: an instance is the unit
-                // that attenuation clamps, that a shield gate multiplies, and
-                // that overkill is measured against, so ten small ones and one
-                // large one are different fights on any target that has those.
-                //
-                // wiki `Damage/Electricity Damage`, U33.6: "no longer deal
-                // their respective damage separately ... but once per second".
-                let group_key = debuffs.dots[*i].native_group;
-                let start = debuffs.dot_start(dtype);
-                // A live event slot passed the stale-key guard, so every live
-                // slot on its exact clock passes the same time test.
-                let shared_clock = debuffs.dots_share_clock && debuffs.dots[*i].ticks_left > 0;
-                let in_group = |d: &Dot| d.ticks_left > 0 && (shared_clock
-                    || (d.dtype == dtype && d.native_group == group_key && (d.next_tick - now).abs() < 1e-9));
+                let group_id = debuffs.dots[*i].native_group;
+                let c_slot = debuffs::consolidated_slot(dtype);
+                let family_shared_clock = c_slot.is_some_and(|c| {
+                    debuffs.live_dot_types != u32::MAX && debuffs.consolidated_clocks[c].shared
+                }) && debuffs.dots[*i].ticks_left > 0;
+                let start = if family_shared_clock {
+                    *i
+                } else {
+                    c_slot.map_or(0, |c| (debuffs.consolidated_clocks[c].head as usize).min(*i))
+                };
                 let is_consolidated = consolidated(dtype);
-                let native_radial = is_consolidated && (debuffs.has_only_native_radial_seeds(dtype)
-                    || debuffs.dots[start..].iter()
-                        .filter(|d| in_group(d))
-                        .all(Dot::has_native_radial_seed));
+                let native_radial = if !is_consolidated {
+                    false
+                } else if debuffs.has_only_native_radial_seeds(dtype) {
+                    true
+                } else {
+                    let mut all_native = true;
+                    for d in &debuffs.dots[start..] {
+                        if d.ticks_left > 0
+                            && d.dtype == dtype
+                            && (family_shared_clock || (d.native_group == group_id && (d.next_tick - now).abs() < 1e-9))
+                            && !d.has_native_radial_seed()
+                        {
+                            all_native = false;
+                            break;
+                        }
+                    }
+                    all_native
+                };
+                let mut expired_in_event = 0u32;
+                let mut first_surviving_idx: Option<u32> = None;
                 let value = if native_radial {
                     use crate::rules::status::radial::{RadialGroup, RecordContext};
                     let source = crate::fight::dot::Source::at(params, dtype, now, w);
+                    let f1 = source.faction;
+                    let f2 = f1 * f1;
                     let mut group = RadialGroup::default();
                     let mut last_bracket = None;
                     let mut inputs = Vec::new();
                     let trace_native = rec.native_trace_is_on();
-                    for d in debuffs.dots[start..].iter_mut().filter(|d| in_group(d)) {
-                        d.next_tick += 1.0;
-                        d.ticks_left -= 1;
-                        let (seed, _) = d.retained.radial_values().expect("native radial record");
-                        // The scene retains its measured live-faction policy until its native writer is bound.
-                        let input = (seed as f64 * faction_at(source.faction, d.depth.saturating_sub(1))) as f32;
-                        let part = d.native_part.unwrap_or(if d.landing.head { crate::model::HitPart::HEAD } else { crate::model::HitPart::BODY });
-                        let before = group.accumulator;
-                        group.visit(input, RecordContext { part74: part.0, ..Default::default() });
-                        if trace_native {
-                            rec.trace_native(now, || crate::record::NativeStep {
-                                phase: "status_tick", group: group_key, part: Some(group.part55),
-                                proc_type: crate::model::ProcType::from_damage_type(dtype).map(|p| p.id()),
-                                context_binding: if group_key.is_some() { "caller_supplied_group" } else { "scene_group" },
-                                ..crate::record::NativeStep::new(now, body_index, "ALN-PROC-03.accumulate",
-                                    &[before, input], group.accumulator)
-                            });
+                    let recording = rec.is_on();
+                    let group_key = trace_native.then(|| debuffs.group_key(group_id)).flatten();
+                    if !trace_native && !recording {
+                        let mut last_idx = None;
+                        let ring_opt = debuffs::dot_family_slot(dtype)
+                            .and_then(|f| debuffs.dot_rings[f].exact.then_some(debuffs.dot_rings[f]));
+                        if let Some(ring) = ring_opt {
+                            for k in 0..ring.len as usize {
+                                let idx = ring.slots[(ring.head as usize + k) & (debuffs::DOT_CAP_RING_MAX - 1)] as usize;
+                                if idx < start {
+                                    continue;
+                                }
+                                let d = &mut debuffs.dots[idx];
+                                if d.ticks_left == 0
+                                    || d.dtype != dtype
+                                    || (!family_shared_clock
+                                        && (d.native_group != group_id || (d.next_tick - now).abs() >= 1e-9))
+                                {
+                                    continue;
+                                }
+                                d.next_tick += 1.0;
+                                d.ticks_left -= 1;
+                                if d.ticks_left == 0 {
+                                    any_dot_expired = true;
+                                    expired_in_event += 1;
+                                } else {
+                                    if first_surviving_idx.is_none() {
+                                        first_surviving_idx = Some(idx as u32);
+                                    }
+                                    if !family_shared_clock && d.next_tick < advanced_due {
+                                        advanced_due = d.next_tick;
+                                    }
+                                }
+                                let crate::model::StoredStatusSeed::Radial { retained_seed: seed, .. } = d.retained else {
+                                    unreachable!("native radial record");
+                                };
+                                let f_mult = match d.depth.saturating_sub(1) {
+                                    0 => 1.0,
+                                    1 => f1,
+                                    2 => f2,
+                                    other => faction_at(f1, other),
+                                };
+                                group.accumulator += (seed as f64 * f_mult) as f32;
+                                last_idx = Some(idx);
+                            }
+                        } else {
+                            for (off, d) in debuffs.dots[start..].iter_mut().enumerate() {
+                                if d.ticks_left == 0
+                                    || d.dtype != dtype
+                                    || (!family_shared_clock
+                                        && (d.native_group != group_id || (d.next_tick - now).abs() >= 1e-9))
+                                {
+                                    continue;
+                                }
+                                d.next_tick += 1.0;
+                                d.ticks_left -= 1;
+                                if d.ticks_left == 0 {
+                                    any_dot_expired = true;
+                                    expired_in_event += 1;
+                                } else {
+                                    if first_surviving_idx.is_none() {
+                                        first_surviving_idx = Some((start + off) as u32);
+                                    }
+                                    if !family_shared_clock && d.next_tick < advanced_due {
+                                        advanced_due = d.next_tick;
+                                    }
+                                }
+                                let crate::model::StoredStatusSeed::Radial { retained_seed: seed, .. } = d.retained else {
+                                    unreachable!("native radial record");
+                                };
+                                let f_mult = match d.depth.saturating_sub(1) {
+                                    0 => 1.0,
+                                    1 => f1,
+                                    2 => f2,
+                                    other => faction_at(f1, other),
+                                };
+                                group.accumulator += (seed as f64 * f_mult) as f32;
+                                last_idx = Some(start + off);
+                            }
                         }
-                        if rec.is_on() {
-                            inputs.push(crate::record::Part { factor: crate::record::Factor::StatusSeeds,
-                                amount: input as f64, head: input as f64,
-                                head_factor: Some(crate::record::Factor::StatusSeeds), of: Vec::new() });
+                        if family_shared_clock {
+                            if let Some(surv) = first_surviving_idx {
+                                let nt = debuffs.dots[surv as usize].next_tick;
+                                if nt < advanced_due {
+                                    advanced_due = nt;
+                                }
+                            }
                         }
-                        tick_landing = d.landing;
-                        last_bracket = Some(d.bracket);
-                        seeded_by = d.cause;
-                        dot_owner = d.owner;
+                        if let Some(li) = last_idx {
+                            let last = &debuffs.dots[li];
+                            tick_landing = last.landing;
+                            last_bracket = Some(last.bracket);
+                            seeded_by = last.cause;
+                            dot_owner = last.owner;
+                        }
+                    } else {
+                        for (off, d) in debuffs.dots[start..].iter_mut().enumerate() {
+                            if d.ticks_left == 0
+                                || d.dtype != dtype
+                                || (!family_shared_clock
+                                    && (d.native_group != group_id || (d.next_tick - now).abs() >= 1e-9))
+                            {
+                                continue;
+                            }
+                            d.next_tick += 1.0;
+                            d.ticks_left -= 1;
+                            if d.ticks_left == 0 {
+                                any_dot_expired = true;
+                                expired_in_event += 1;
+                            } else {
+                                if first_surviving_idx.is_none() {
+                                    first_surviving_idx = Some((start + off) as u32);
+                                }
+                                if d.next_tick < advanced_due {
+                                    advanced_due = d.next_tick;
+                                }
+                            }
+                            let crate::model::StoredStatusSeed::Radial { retained_seed: seed, .. } = d.retained else {
+                                unreachable!("native radial record");
+                            };
+                            let f_mult = match d.depth.saturating_sub(1) {
+                                0 => 1.0,
+                                1 => f1,
+                                2 => f2,
+                                other => faction_at(f1, other),
+                            };
+                            let input = (seed as f64 * f_mult) as f32;
+                            let part = d.native_part.unwrap_or(if d.landing.head { crate::model::HitPart::HEAD } else { crate::model::HitPart::BODY });
+                            if trace_native {
+                                let before = group.accumulator;
+                                group.visit(input, RecordContext { part74: part.0, ..Default::default() });
+                                rec.trace_native(now, || crate::record::NativeStep {
+                                    phase: "status_tick", group: group_key, part: Some(group.part55),
+                                    proc_type: crate::model::ProcType::from_damage_type(dtype).map(|p| p.id()),
+                                    context_binding: if group_id.is_some() { "caller_supplied_group" } else { "scene_group" },
+                                    ..crate::record::NativeStep::new(now, body_index, "ALN-PROC-03.accumulate",
+                                        &[before, input], group.accumulator)
+                                });
+                            } else {
+                                group.accumulator += input;
+                                group.count = group.count.wrapping_add(1);
+                                group.part55 = part.0;
+                            }
+                            if recording {
+                                inputs.push(crate::record::Part { factor: crate::record::Factor::StatusSeeds,
+                                    amount: input as f64, head: input as f64,
+                                    head_factor: Some(crate::record::Factor::StatusSeeds), of: Vec::new() });
+                            }
+                            tick_landing = d.landing;
+                            last_bracket = Some(d.bracket);
+                            seeded_by = d.cause;
+                            dot_owner = d.owner;
+                        }
                     }
                     let own_element = last_bracket.map_or(0.0, |bracket| bracket + source.element - 1.0);
                     let preparation = group.prepare_steps(0.5, own_element as f32);
@@ -405,7 +725,7 @@ pub(super) fn process_ticks(
                             rec.trace_native(now, || crate::record::NativeStep {
                                 phase: "status_tick", group: group_key, part: Some(group.part55),
                                 proc_type: crate::model::ProcType::from_damage_type(dtype).map(|p| p.id()),
-                                context_binding: if group_key.is_some() { "caller_supplied_group" } else { "scene_group" },
+                                context_binding: if group_id.is_some() { "caller_supplied_group" } else { "scene_group" },
                                 ..crate::record::NativeStep::new(now, body_index, stage, &inputs, output)
                             });
                         }
@@ -452,10 +772,24 @@ pub(super) fn process_ticks(
                     let mut parts: Vec<crate::record::Part> = Vec::new();
                     let mut acc_part = None;
                     let source = crate::fight::dot::Source::at(params, dtype, now, w);
-                    for d in &mut debuffs.dots[start..] {
-                        if in_group(d) {
+                    for (off, d) in debuffs.dots[start..].iter_mut().enumerate() {
+                        if d.ticks_left > 0
+                            && d.dtype == dtype
+                            && (family_shared_clock || (d.native_group == group_id && (d.next_tick - now).abs() < 1e-9))
+                        {
                             d.next_tick += 1.0;
                             d.ticks_left -= 1;
+                            if d.ticks_left == 0 {
+                                any_dot_expired = true;
+                                expired_in_event += 1;
+                            } else {
+                                if first_surviving_idx.is_none() {
+                                    first_surviving_idx = Some((start + off) as u32);
+                                }
+                                if d.next_tick < advanced_due {
+                                    advanced_due = d.next_tick;
+                                }
+                            }
                             // AT `now`, NOT AT THE MOMENT IT WAS APPLIED — see
                             // `Dot::live`. A buff the shooter gained while this
                             // was burning is already in it.
@@ -486,6 +820,12 @@ pub(super) fn process_ticks(
                     let d = &mut debuffs.dots[*i];
                     d.next_tick += 1.0;
                     d.ticks_left -= 1;
+                    if d.ticks_left == 0 {
+                        any_dot_expired = true;
+                        expired_in_event = 1;
+                    } else if d.next_tick < advanced_due {
+                        advanced_due = d.next_tick;
+                    }
                     // Slash and Toxin tick independently, so each stack is its
                     // own tick group and carries its own accumulator.
                     let source = crate::fight::dot::Source::at(params, d.dtype, now, w);
@@ -501,6 +841,15 @@ pub(super) fn process_ticks(
                     });
                     seeds + acc
                 };
+                if expired_in_event > 0 {
+                    debuffs.note_expired_dots(dtype, expired_in_event);
+                }
+                if family_shared_clock {
+                    if let (Some(c), Some(surv)) = (c_slot, first_surviving_idx) {
+                        debuffs.consolidated_clocks[c].head = surv;
+                        debuffs.consolidated_clocks[c].next_tick = debuffs.dots[surv as usize].next_tick;
+                    }
+                }
                 let hit_type = if ignores_armor {
                     DamageType::Cinematic
                 } else {
@@ -581,7 +930,7 @@ pub(super) fn process_ticks(
         // Overguard holds and its plain value once it is gone. Once, not
         // squared — a tick is the same instance's payload landing later, not a
         // derivation, so nothing re-applies it the way faction is.
-        let mut breakdown = Breakdown::default();
+        let mut breakdown = watching(rec);
         let settled = target.apply(
             value,
             TypeShares::single(hit_type),
@@ -591,7 +940,7 @@ pub(super) fn process_ticks(
             ignores_armor,
             &mit,
             params.overguard_multiplier(),
-            watching(rec, &mut breakdown),
+            breakdown.as_mut(),
         );
         let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
         // …AND WHOSE BODY IT WAS. Only worth recording once there is more than
@@ -601,7 +950,7 @@ pub(super) fn process_ticks(
         ledger::settle(
             r, rec, now, dot_owner, body_index, || src,
             if src == DamageType::Blast { PopKind::Blast } else { PopKind::Status },
-            &breakdown, settled, Some(debuffs),
+            breakdown.as_ref(), settled, Some(debuffs),
             ledger::Clock::Dot,
             || Instance {
                 origin: crate::record::Origin::Status,
@@ -700,8 +1049,18 @@ pub(super) fn process_ticks(
             continue;   // the scan re-reads the truth every time; nothing to keep
         }
         let now_shape = debuffs.tick_shape();
-        if now_shape != shape {
-            debuffs.refill_tick_queue(&mut q, until);
+        if now_shape.0 != shape.0 || now_shape.1 != shape.1 || (now_shape.2 != shape.2 && any_dot_expired) {
+            unqueued_due = debuffs.refill_tick_queue(&mut q, until);
+            advanced_due = f64::INFINITY;
+            can_skip_retain = false;
+            shape = now_shape;
+        } else if now_shape.2 != shape.2 {
+            q.retain(|std::cmp::Reverse(k)| k.class != 2);
+            for (bi, b) in debuffs.blast.iter().enumerate() {
+                if b.fuse < until {
+                    q.push(std::cmp::Reverse(TickKey { t: b.fuse, class: 2, index: bi as u32 }));
+                }
+            }
             shape = now_shape;
         } else {
             match &ev {
@@ -722,8 +1081,6 @@ pub(super) fn process_ticks(
                         }
                     }
                 }
-                // A detonation removes itself, so the shape ALWAYS moved and
-                // the rebuild above ran. Nothing to re-queue.
                 Ev::Blast(_) => {}
             }
         }
@@ -731,19 +1088,21 @@ pub(super) fn process_ticks(
     // BACK WHERE IT LIVES, with its capacity — see `tick_q`.
     q.clear();
     debuffs.tick_q = q;
-    let due = if debuffs.dots_share_clock {
-        debuffs.retain_dots(|d| d.ticks_left > 0);
-        debuffs.dots.first().map_or(f64::INFINITY, |d| d.next_tick)
-    } else {
-        let mut due = f64::INFINITY;
-        debuffs.retain_dots(|d| {
-            if d.ticks_left == 0 { return false; }
-            due = due.min(d.next_tick);
-            true
-        });
-        due
-    };
-    debuffs.dots_due = Some(due);
+    if !any_dot_expired
+        && !(debuffs.dot_tombstones >= 64 && (debuffs.dot_tombstones as usize) * 2 >= debuffs.dots.len())
+        && debuffs.live_dot_types != u32::MAX
+        && debuffs.dots_gen == initial_dots_gen
+    {
+        if debuffs.has_fast_dot_schedule() {
+            debuffs.dots_due = Some(debuffs.fast_dots_due());
+            return;
+        }
+        if use_queue && can_skip_retain && advanced_due >= until {
+            debuffs.dots_due = Some(unqueued_due.min(advanced_due));
+            return;
+        }
+    }
+    debuffs.dots_due = Some(debuffs.sweep_expired_dots());
 }
 
 /// WHAT IS STILL IN THE AIR, settled up to this shot — every entity already

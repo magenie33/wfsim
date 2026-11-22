@@ -182,7 +182,7 @@ pub(super) fn reload_cold_wave(
             let mit = here.debuffs.mitigation(wave.at, turn.params.status_duration_multiplier,
                 active.armor_strip_per_puncture, turn.params.squad.enemy_armor_multiplier);
             let scale = weapon_status_scale(turn, active, wave.at);
-            settle_procs(vec![proc], wave.owner, wave.at, i, scale , &mut here.debuffs, turn.gal, turn.arc, &mut here.state, turn.params,
+            settle_procs(&[proc], wave.owner, wave.at, i, scale , &mut here.debuffs, turn.gal, turn.arc, &mut here.state, turn.params,
                 active, &mit, r, rec, &mut turn.d.status, spec.params, DEPTH_PROC);
         }
     }
@@ -241,6 +241,6 @@ pub(super) fn cold_trail_tick(tick: ColdTrailTick, turn: &mut Turn, r: &mut RunR
     turn.arc.encumber(turn.params, tick.at, spec.params, &mut procs);
     procs.retain(|p| !spec.params.status_immunities.contains(p));
     let scale = weapon_status_scale(turn, active, tick.at);
-    settle_procs(procs, tick.owner, tick.at, tick.body, scale, &mut here.debuffs, turn.gal, turn.arc,
+    settle_procs(&procs, tick.owner, tick.at, tick.body, scale, &mut here.debuffs, turn.gal, turn.arc,
         &mut here.state, turn.params, active, &mit, r, rec, &mut turn.d.status, spec.params, DEPTH_PROC);
 }

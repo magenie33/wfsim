@@ -40,6 +40,7 @@ impl DebuffState {
             let strip = self.heat_ramp_up(now, params.status_duration_multiplier);
             self.heat_decay = Some((now, strip));
             self.heat = None;
+            self.heat_gen = self.heat_gen.wrapping_add(1);
         }
         damage
     }
@@ -69,10 +70,10 @@ pub(super) fn detonate_heavy_status(
     let raw = damage.total();
     if raw <= 0.0 { return false; }
     let shares = TypeShares::of(&damage);
-    let mut breakdown = Breakdown::default();
+    let mut breakdown = watching(rec);
     let mut effective_types = DamageVector::new();
     let settled = body.state.apply_with_types(raw, shares, false, t, foe, false, &mit,
-        params.overguard_multiplier(), watching(rec, &mut breakdown), &mut effective_types);
+        params.overguard_multiplier(), breakdown.as_mut(), &mut effective_types);
     let killed = settled.killed;
     let broke = settled.broken;
     for ty in DamageType::ALL {
@@ -82,7 +83,7 @@ pub(super) fn detonate_heavy_status(
         }
     }
     ledger::settle(r, rec, t, owner, body_index, || shares.dominant(), PopKind::Status,
-        &breakdown, settled, Some(&body.debuffs), ledger::Clock::Dot,
+        breakdown.as_ref(), settled, Some(&body.debuffs), ledger::Clock::Dot,
         || Instance { origin: crate::record::Origin::Status, base: raw, ..Instance::default() });
     r.dot_ticks += 1;
     r.note_kills(u32::from(killed), t, params.drop_is_in_reach(body.state.at));

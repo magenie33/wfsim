@@ -234,7 +234,7 @@ pub(super) fn push_break_proc(
     let procs = crate::rules::status::procs_for_hit(&forced,
         0.0, &DamageVector::new(), foe.proc_handlers(), rng);
     let generation = target.generation;
-    settle_procs(procs, owner, now, body_index, InstanceScale { native_source: Some(parent.scalar), native_part: Some(parent.part),
+    settle_procs(&procs, owner, now, body_index, InstanceScale { native_source: Some(parent.scalar), native_part: Some(parent.part),
         mb_live,
         crit_multiplier: 1.0,
         part_factor: 1.0,
@@ -256,12 +256,12 @@ pub(super) fn push_break_proc(
         (crate::record::Factor::TargetMultiplier, foe.faction_bracket_multiplier),
     ];
     let raw = parent.scalar.value(false) as f64 * params.faction_bracket_at(now) * foe.faction_bracket_multiplier;
-    let mut breakdown = Breakdown::default();
+    let mut breakdown = watching(rec);
     let settled = target.apply(raw, TypeShares::single(DamageType::Electricity), false,
-        now, foe, false, &mit, params.overguard_multiplier(), watching(rec, &mut breakdown));
+        now, foe, false, &mit, params.overguard_multiplier(), breakdown.as_mut());
     r.sources.magnetic_break += settled.effective;
     ledger::settle(r, rec, now, owner, body_index, || DamageType::Electricity, PopKind::Direct,
-        &breakdown, settled, Some(debuffs), ledger::Clock::Hit,
+        breakdown.as_ref(), settled, Some(debuffs), ledger::Clock::Hit,
         || Instance { origin: crate::record::Origin::MagneticBreak, base,
             part: Some("body".into()), layers: mul_layers(base, &layers), ..Instance::default() });
     r.note_kills(u32::from(settled.killed), now, params.drop_is_in_reach(target.at));

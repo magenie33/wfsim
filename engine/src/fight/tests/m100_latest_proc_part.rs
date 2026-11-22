@@ -37,7 +37,7 @@ fn applications(dtype: DamageType, hits: &[(bool, bool)], lethal: bool, dense: b
     for &(head, crit) in hits {
         let part = if head { all_head().remove(0) } else { mono_body(1.0).remove(0) };
         let mit = body.debuffs.mitigation(0.0, 1.0, 0.0, 0.0);
-        settle_procs(vec![dtype], Seat::WIELDER, 0.0, 0, InstanceScale { native_source: None, native_part: None,
+        settle_procs(&[dtype], Seat::WIELDER, 0.0, 0, InstanceScale { native_source: None, native_part: None,
             mb_live: 160.0,
             crit_multiplier: if crit { if head { 2.0 * cd } else { cd } } else { 1.0 },
             part_factor: if head { 5.4 } else { 1.0 },
