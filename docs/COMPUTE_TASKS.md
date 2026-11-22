@@ -272,6 +272,31 @@ avoid repeating a complete fight inside one expansion. Queue admission is
 independent of scope construction: equivalent nodes share the same physical
 computation and deliver separately to every consumer.
 
+Coverage refill uses an owner-only entry into the same intake and computation
+queues. It joins consecutive Native targets for one build and mode under a
+single parent. The scope contains only those rulers. A transaction accepts at
+most 32 targets across all its parents and preserves their cursor order and
+individual source receipts. Equivalent targets have separate deliveries and
+reuse the same task or retained fact. Only a task admitted by the current
+batch advances its new-task count.
+
+The supplier keeps its existing cursor and task ledger. It binds a batch
+to that cursor, then verifies every disposition and task source on a
+separate read-only connection before advancing. An uncertain commit without
+complete readback holds the current cursor. Existing receipts remain
+readable after a process restart or an overlapping batch. Before switching
+writers, reconcile the previous receipt and resume at the next ordinal.
+The `board_coverage.mjs` session reads one JSON command per verified batch
+and reuses separate writer and reader connections to
+`WFSIM_BOARD_COVERAGE_DATABASE_URL`. The operator supplies
+`operation`, `checkpoint`, `proposal`, `sealed` and `pins` after each
+production capacity check. An `admit` submits that batch and a `read`
+checks its committed disposition without writing. A missing or uncertain
+readback ends the session so the operator can hold that ordinal.
+The explicit `scripts/board_coverage_schema.mjs --tablespace=NAME` installer
+places these receipts in the capacity-qualified tablespace. The normal
+library bootstrap leaves the coverage entry closed.
+
 Admission reserves computation positions when accepting the intent, preserving
 arrival order through deferred expansion. Requested and bulk lane heads share
 turns within a zone; the declared zone remains authoritative. Aliases in one
