@@ -24,6 +24,23 @@ ${submitDefinition(httpRole)}
 COMMIT;`;
 }
 
+export function boardRequestedIntentUpgrade() {
+ const source=readFileSync(new URL('../worker/pg/board_requested_partitions.sql',import.meta.url),'utf8');
+ const capture=source.match(/CREATE OR REPLACE FUNCTION board_requested_partition_capture\(\)[^]*?END \$\$;/)?.[0];
+ if(!capture)throw Error('missing requested partition capture');
+ return `BEGIN;
+SET LOCAL lock_timeout='1s';
+SET LOCAL statement_timeout='10s';
+SELECT pg_catalog.set_config('search_path',pg_catalog.quote_ident(pg_catalog.current_schema())||',pg_catalog,pg_temp',true);
+DO $$ BEGIN
+ IF to_regprocedure('board_requested_partition_capture()') IS NULL THEN
+  RAISE EXCEPTION 'install requested partitions before upgrading their intent reader'; END IF;
+END $$;
+${capture}
+COMMIT;
+`;
+}
+
 export function boardRequestedSchema({httpRole='wfsim',runnerRole='wfsim_board_requested',readerRole='wfsim_board_read'}={}) {
  for(const role of [httpRole,runnerRole,readerRole])if(!/^[a-z_][a-z0-9_]{0,62}$/.test(role))throw Error('invalid requested board role');
  const body=readFileSync(new URL('../worker/pg/board_requests.sql',import.meta.url),'utf8');
@@ -58,4 +75,8 @@ GRANT EXECUTE ON FUNCTION board_requested_partition_enqueue(text,uuid),board_req
 COMMIT;
 `;
 }
-if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)process.stdout.write(process.argv.includes('--upgrade-submit')?boardRequestedSubmitUpgrade():boardRequestedSchema());
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url) {
+ const definition=process.argv.includes('--upgrade-intent')?boardRequestedIntentUpgrade
+  :process.argv.includes('--upgrade-submit')?boardRequestedSubmitUpgrade:boardRequestedSchema;
+ process.stdout.write(definition());
+}

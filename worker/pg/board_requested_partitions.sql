@@ -8,13 +8,15 @@ CREATE TABLE state_board_requested_partitions (
   PRIMARY KEY(weapon,ruler)
 );
 CREATE INDEX board_requested_partitions_ready ON state_board_requested_partitions(position) WHERE NOT enqueued;
-CREATE FUNCTION board_requested_partition_capture() RETURNS trigger
+CREATE OR REPLACE FUNCTION board_requested_partition_capture() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 BEGIN
   IF OLD.phase='pending' AND NEW.phase='staged' THEN
     INSERT INTO state_board_requested_partitions(weapon,ruler)
-      SELECT i.input#>>'{record,weapon}',r.ruler FROM entity_board_requests r
-        JOIN entity_build_intake_intents i ON i.id=NEW.intent WHERE r.id=NEW.id
+      SELECT CASE WHEN i.input ? 'record' THEN i.input#>>'{record,weapon}'
+        ELSE b.record::jsonb->>'weapon' END,r.ruler FROM entity_board_requests r
+        JOIN entity_build_intake_intents i ON i.id=NEW.intent
+        JOIN entity_weapon_builds b ON b.id=i.build_id WHERE r.id=NEW.id
       ON CONFLICT DO NOTHING;
   END IF;
   RETURN NEW;

@@ -12,7 +12,7 @@ import {familyBoardPass,normalizeBoardRequest,requestedBoardPass} from './board_
 import {factory,canon} from '../worker/tasks.js';
 import {BUILD_WORKFLOW_PRODUCER} from '../worker/build_workflows.js';
 import {openBoardResultFlow} from './board_result_flow.mjs';
-import {boardRequestedSchema,boardRequestedSubmitUpgrade} from './board_requested_schema.mjs';
+import {boardRequestedIntentUpgrade,boardRequestedSchema,boardRequestedSubmitUpgrade} from './board_requested_schema.mjs';
 import {rawInboxRetentionPage} from './raw_inbox_retention.mjs';
 import {captureInbox,inboxSource} from './inbox_reader.mjs';
 import {calculationId} from '../worker/board_tasks.js';
@@ -57,6 +57,10 @@ try{
   assert.equal((await setup.unsafe("SELECT to_regclass('entity_board_requests') name"))[0].name,null,'late grants roll back source capture and schema');
   await runInstall(install(owner));
   await runInstall(boardRequestedSubmitUpgrade({httpRole:owner}));
+  const identity=await setup.unsafe("SELECT 'board_requested_partition_capture()'::regprocedure::oid id");
+  await runInstall(boardRequestedIntentUpgrade());
+  await runInstall(boardRequestedIntentUpgrade());
+  assert.deepEqual(await setup.unsafe("SELECT 'board_requested_partition_capture()'::regprocedure::oid id"),identity);
   await assert.rejects(runInstall(install(owner)),/explicit upgrade is required/);
  }finally{setup.release();}
  await sql.unsafe('GRANT USAGE ON SCHEMA '+schema+' TO '+runnerRole);
