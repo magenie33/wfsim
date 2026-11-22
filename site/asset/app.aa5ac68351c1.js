@@ -69,18 +69,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "b3f23770";
+const BUILD_ID = "e1053f7f";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "b4302252+";
+const BUILD_SHA = "3d1d1ec6+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "7220b727a6a6";
+const RELEASE_ID = "431480f75b0a";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -4327,7 +4327,7 @@ const inBenchView = (r) =>
   || (benchRivenView === "riven") === rowHasRiven(r);
 
 /// The published index carries the leaders of the revisions in its catalog.
-const benchRowsUnder = (cur, id) => ((cur.cell_dir ? SCENE_INDEX[cur.cell_dir] : BOARD_INDEX) || {})[id] || [];
+const benchRowsUnder = (cur, id) => rulerBoardIndex(cur)?.[id] || [];
 
 const benchEntries = (cur, weapons) => {
   const out = [];
@@ -16589,8 +16589,8 @@ async function readCurrentBoardRows(weapon, scene, signal, previous, wanted, rea
 }
 
 const boardIndexRevisions = new WeakMap();
-async function readCurrentBoardIndex(scene, signal, previous) {
-  const partitions = await pageBoardReader().catalog(scene, null, signal);
+async function readCurrentBoardIndex(scene, signal, previous, ruler) {
+  const partitions = await pageBoardReader().catalog(scene, null, signal, ruler);
   const signature = JSON.stringify(partitions.map(p => [p.weapon, p.ruler, p.revision]));
   if (boardIndexRevisions.get(previous) === signature) return previous;
   const index = Object.create(null);
@@ -16805,11 +16805,40 @@ function loadSceneIndex(dir, refresh = false) {
   }
   return sceneIndexAsk[dir];
 }
-/// THE LEADERS A RULER'S RANKING READS, and the state of asking for them.
-const benchIndexOf = (cur) => (cur && cur.cell_dir
-  ? { index: SCENE_INDEX[cur.cell_dir] || null, asking: !!sceneIndexAsk[cur.cell_dir],
-    lost: !!sceneIndexUnreachable[cur.cell_dir], load: refresh => loadSceneIndex(cur.cell_dir, refresh) }
-  : { index: BOARD_INDEX, asking: !!boardIndexAsk, lost: boardIndexUnreachable, load: loadFullBoard });
+/// THE LEADERS A RULER needs come from its selected published partitions.
+const rulerBoardIndexes = new Map();
+const sceneBoardIndex = cur => cur?.cell_dir ? SCENE_INDEX[cur.cell_dir] : BOARD_INDEX;
+function rulerBoardIndex(cur) {
+  const sceneIndex = sceneBoardIndex(cur), state = rulerBoardIndexes.get(cur?.id);
+  if (state?.index && state.sceneIndex === sceneIndex) return state.index;
+  return sceneIndex ?? state?.index ?? null;
+}
+
+function loadRulerBoardIndex(cur, refresh) {
+  const scene = cur?.cell_dir || "";
+  if (!cur) return loadFullBoard(refresh);
+  if (!refresh && rulerBoardIndex(cur)) return Promise.resolve();
+  let state = rulerBoardIndexes.get(cur.id);
+  if (!state) rulerBoardIndexes.set(cur.id, state = { index: null, ask: null, lost: false });
+  if (!state.ask) {
+    const sceneIndex = sceneBoardIndex(cur);
+    state.lost = false;
+    state.ask = readCurrentBoardIndex(scene, undefined, state.index, cur.id).then(index => {
+      state.index = index;
+      state.sceneIndex = sceneIndex;
+    },
+      () => { state.lost = true; }).finally(() => { state.ask = null; });
+  }
+  return state.ask;
+}
+
+function benchIndexOf(cur) {
+  const state = rulerBoardIndexes.get(cur?.id);
+  const scene = cur?.cell_dir;
+  return { index: rulerBoardIndex(cur), asking: !!(state?.ask ?? (scene ? sceneIndexAsk[scene] : boardIndexAsk)),
+    lost: !!(state?.lost ?? (scene ? sceneIndexUnreachable[scene] : boardIndexUnreachable)),
+    load: refresh => loadRulerBoardIndex(cur, refresh) };
+}
 
 /// The benchmark page: ask first, so the first draw already knows a request is
 /// in flight, then draw again when it settles.
@@ -16892,7 +16921,7 @@ async function refreshVisibleBoard() {
   const weapon = !bench && modSuffix() === "build-library" && routeWeaponId();
   if (!bench && !weapon) return;
   const ruler = bench ? benchCurrent() : null;
-  const view = bench ? "bench/" + (ruler?.cell_dir || "") : weapon + "/" + finder.b;
+  const view = bench ? "bench/" + (ruler?.id || "") : weapon + "/" + finder.b;
   const now = Date.now();
   if (boardRefreshView === view && now - boardRefreshAt < boardRefreshMs) return;
   boardRefreshView = view; boardRefreshAt = now;
@@ -37013,15 +37042,15 @@ function publishedBoardReader(read) {
   const fail = () => { throw new Error("The board could not be reached."); };
   const query = (path, params, signal) => read(path + "?" + new URLSearchParams(params), deadline(signal, 8000));
 
-  async function catalog(scene, weapon, signal) {
+  async function catalog(scene, weapon, signal, ruler) {
     const entries = [];
     for (let after = ""; ;) {
-      const params = { scene, after, ...(weapon ? { weapon } : {}) };
+      const params = { scene, after, ...(weapon ? { weapon } : {}), ...(ruler ? { ruler } : {}) };
       const page = await query("/api/board/pages/catalog", params, signal);
       if (!page?.ok || !Array.isArray(page.partitions)) fail();
       for (const entry of page.partitions) {
         const key = entry?.weapon + "/" + entry?.ruler;
-        if (!entry || entry.scene !== scene || (weapon && entry.weapon !== weapon) ||
+        if (!entry || entry.scene !== scene || (weapon && entry.weapon !== weapon) || (ruler && entry.ruler !== ruler) ||
             typeof entry.weapon !== "string" || typeof entry.ruler !== "string" || key <= after ||
             !/^[a-f0-9]{64}$/.test(entry.revision) || !Number.isSafeInteger(entry.rows) || entry.rows < 0) fail();
         entries.push(entry);
