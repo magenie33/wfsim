@@ -8,6 +8,7 @@ import {factory,canon} from '../worker/tasks.js';
 import {prepareIntakeBuild} from './build_batches.mjs';
 import {readInventoryState,inventoryWrite} from '../worker/task_inventory.js';
 import {orderCutReadCases} from './check_order_cut_reads.mjs';
+import {enableInboxStorage} from './pg/test_db.mjs';
 
 export async function orderCutCases(db) {
   await db.exec(readFileSync(new URL('../worker/pg/order_cut_indexes.sql',import.meta.url),'utf8').replaceAll('INDEX CONCURRENTLY','INDEX'));
@@ -112,7 +113,8 @@ export async function orderCutCases(db) {
   assert.equal((await db.get('SELECT count(*) n FROM state_compute_scheduling')).n,8);
   console.log('ok late imported input stays stored without resurrecting work, accepting a result or creating credit; GC retains physical history');
   const httpEnv={...env,AUTH_SECRET:'order-cut-fixture-only',FACTORY_TOKEN:'fixture-token',ASSETS:{fetch:async()=>Response.json({engine:'e'})}};
-  const before=async()=>db.get('SELECT (SELECT count(*) FROM entity_compute_tasks) tasks,(SELECT count(*) FROM record_candidate_answers) answers,(SELECT count(*) FROM entity_compute_results) results,(SELECT count(*) FROM record_build_submissions) inputs,(SELECT coalesce(sum(work),0) FROM entity_compute_devices) credit');
+  await enableInboxStorage(db);
+  const before=async()=>db.get('SELECT (SELECT count(*) FROM entity_compute_tasks) tasks,(SELECT count(*) FROM record_candidate_answers) answers,(SELECT count(*) FROM entity_compute_results) results,(SELECT count(*) FROM state_build_inbox_inputs) inputs,(SELECT coalesce(sum(work),0) FROM entity_compute_devices) credit');
   const prior=await before();
   const imported=await officialRoute(new Request('https://fixture.invalid/api/tasks/official/answer',{method:'POST',headers:{authorization:'Bearer fixture-token','content-type':'application/json'},
     body:JSON.stringify({witness:'official:fixture',engine:'e',producers:['sweep'],answers:[{ref:'late',question:by.late,result:{score:1,metric:'kpm'},work:1}]})}),httpEnv,'/api/tasks/official/answer');

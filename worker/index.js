@@ -20,6 +20,7 @@
 
 import { decodeShare, useShareHost } from "./share_codec.js";
 import { equipmentLibraryRoute } from "./equipment_library.js";
+import { inboxSourceId,inboxGeneration } from "./inbox_source.js";
 import { accountRoute, purgeDeleted, sessionAccount, initiatorCode, sameSite, limited } from "./accounts.js";
 import { cloudPath, cloudRoute, READ_ONLY_CLOUD } from "./cloud.js";
 import { agentRoute } from "./agents.js";
@@ -207,11 +208,7 @@ function record(b) {
   return { rec };
 }
 
-// Fresh ordinary inputs use a UUID version outside the frozen legacy archive.
-const submissionId = () => {
-  const id = crypto.randomUUID();
-  return id.slice(0,14)+'8'+id.slice(15);
-};
+const submissionSource = () => ({id:inboxSourceId(crypto.randomUUID()),generation:inboxGeneration()});
 
 /// A BUILD INTO THE BOARD'S DOOR from inside the worker — an agreed riven gain
 /// (appraise.js) — checked and stored exactly as a reader's submission is, with
@@ -219,8 +216,14 @@ const submissionId = () => {
 export async function submitRecord(env, build, initiator = null, origin = {}) {
   const built = record(build || {});
   if (built.err || !env.LIBRARY) return false;
-  await env.LIBRARY.prepare("INSERT INTO record_build_submissions (id, at, record, initiator, family_source) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING")
-    .bind(origin.id || submissionId(), built.rec.at, JSON.stringify(built.rec), initiator, origin.family_source || null).run();
+  if(origin.id) {
+    await env.LIBRARY.prepare("SELECT build_inbox_submit_family(?::text,?::text,?::text,?::text,?::text)")
+      .bind(origin.id,built.rec.at,JSON.stringify(built.rec),initiator,origin.family_source||null).run();
+  } else {
+    const source=submissionSource();
+    await env.LIBRARY.prepare("SELECT build_inbox_submit(?::text,?::text,?::text,?::text,NULL,NULL,?::bigint)")
+      .bind(source.id,built.rec.at,JSON.stringify(built.rec),initiator,source.generation).run();
+  }
   return true;
 }
 
@@ -292,10 +295,10 @@ async function submit(request, env) {
         .bind(...args).run();
       return Response.json({ ok: true, request: id });
     }
-    const values = records.map(() => "(?, ?, ?, ?)").join(", ");
+    const values = records.map(() => "(?, ?, ?, ?, ?::bigint)").join(", ");
     await env.LIBRARY.prepare(
-      `INSERT INTO record_build_submissions (id, at, record, initiator) VALUES ${values}`,
-    ).bind(...records.flatMap(rec => [submissionId(), rec.at, JSON.stringify(rec), initiator])).run();
+      `SELECT build_inbox_submit(i.id,i.at,i.record,i.initiator,NULL,NULL,i.generation) FROM (VALUES ${values}) AS i(id,at,record,initiator,generation)`,
+    ).bind(...records.flatMap(rec => {const source=submissionSource();return [source.id,rec.at,JSON.stringify(rec),initiator,source.generation];})).run();
   } catch (e) {
     console.log("inbox write failed:", (e && e.message) || String(e));
     return bad("the library could not be written", 503);
@@ -324,7 +327,9 @@ async function pending(env) {
     // intake yet is in the library as far as the submitter is concerned, and
     // the sentence this feeds is "N have arrived since this board was scored".
     let local;
-    try { local = await env.LIBRARY.prepare("SELECT raw_inbox_library_count() AS n").first(); }
+    try { local = await env.LIBRARY.prepare("SELECT build_inbox_library_count() AS n").first(); }
+    catch (error) { if (error?.code !== '42883') throw error; }
+    if(!local)try { local = await env.LIBRARY.prepare("SELECT raw_inbox_library_count() AS n").first(); }
     catch (error) { if (error?.code !== '42883') throw error; }
     const r = local ?? await env.LIBRARY.prepare(
       "SELECT (SELECT COUNT(*) FROM entity_weapon_builds) + (SELECT COUNT(*) FROM record_build_submissions) AS n",

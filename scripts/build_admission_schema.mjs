@@ -62,7 +62,7 @@ DO $grant$ BEGIN
  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_pipeline') THEN
   GRANT SELECT ON state_build_inbox_positions TO wfsim_pipeline;
   GRANT EXECUTE ON FUNCTION build_family_owns_inbox(text,jsonb) TO wfsim_pipeline;
-  GRANT EXECUTE ON FUNCTION build_intake_batch(text),build_ack_submissions(text) TO wfsim_pipeline;
+  GRANT EXECUTE ON FUNCTION build_intake_batch(text),build_ack_submissions(text),build_inbox_assert_ack(text) TO wfsim_pipeline;
  END IF;
 END $grant$;
 COMMIT;

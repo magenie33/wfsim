@@ -12,7 +12,8 @@ export const FAMILY_PRODUCERS = { family_build: {
   still_wanted: async (env, demand) => !!await env.LIBRARY.prepare("SELECT id FROM entity_family_search_requests WHERE id = ? AND state = 'waiting' AND compute_order_family_wanted(id)")
     .bind(demand.ref).first(),
   on_fact: async (env, demand, fact) => {
-    const row = await env.LIBRARY.prepare("SELECT * FROM entity_family_search_requests WHERE id = ? AND state = 'waiting' AND compute_order_family_wanted(id)")
+    const row = await env.LIBRARY.prepare(`SELECT f.*,build_inbox_family_owned(f.id) AS input_owned
+      FROM entity_family_search_requests f WHERE f.id=? AND f.state='waiting' AND compute_order_family_wanted(f.id)`)
       .bind(demand.ref).first();
     if (!row) return;
     const best = fact.result?.report?.results?.[0];
@@ -23,7 +24,7 @@ export const FAMILY_PRODUCERS = { family_build: {
     }
     if (best.replay?.weapon !== row.weapon) throw new Error("family result names another weapon");
     const build = headlessBoardPayloadFromResult(best, JSON.parse(row.context));
-    if (!await submitRecord(env, build, "system", { family_source: row.id, id: `family:${row.id}` }))
+    if (!row.input_owned && !await submitRecord(env, build, "system", { family_source: row.id, id: `family:${row.id}` }))
       throw new Error("family result is not a board record");
     await env.LIBRARY.prepare("UPDATE entity_family_search_requests SET state = 'succeeded', completed_at = ? WHERE id = ? AND state = 'waiting' AND compute_order_family_wanted(id)")
       .bind(iso(Date.now()), row.id).run();

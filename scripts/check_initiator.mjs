@@ -14,7 +14,7 @@ import { initiatorOf, boardTasksRoute } from "../worker/board_tasks.js";
 import { initiatorCode, sha256 } from "../worker/accounts.js";
 import worker from "../worker/index.js";
 import { DIAL_DEFAULTS, setDial as setFixtureDial } from "../worker/dials.js";
-import { testDb } from "./pg/test_db.mjs";
+import { testDb,enableInboxStorage } from "./pg/test_db.mjs";
 import { inboxSource } from "./inbox_reader.mjs";
 
 let failures = 0;
@@ -113,11 +113,12 @@ const PAYLOAD = { benchmark: "standard_single_target_v1", weapon: "kuva_nukor", 
 const submit = (cookie) => worker.fetch(new Request("https://wfsim.app/api/board/submit", { method: "POST",
   headers: { "content-type": "application/json", ...(cookie ? { cookie } : {}) }, body: JSON.stringify(PAYLOAD) }),
   { ...env, ACCOUNTS: A, ASSETS: { fetch: async () => new Response("site") } });
+await enableInboxStorage(L);
 const okIn = (await submit("wfsim_session=tok")).ok, okOut = (await submit(null)).ok;
-const inbox = (await L.all("SELECT initiator FROM record_build_submissions ORDER BY initiator")).map((r) => r.initiator);
+const inbox = (await L.all("SELECT initiator FROM state_build_inbox_inputs ORDER BY initiator")).map((r) => r.initiator);
 check("a submission signed in keeps its account's code, one signed out `anonymous`, and nothing else about either",
   okIn && okOut && inbox.length === 2 && inbox[0] === "anonymous" && inbox[1] === await initiatorCode(env, "user", "acc1")
-  && (await L.all("SELECT * FROM record_build_submissions")).every((r) => Object.keys(r).sort().join() === "at,family_source,id,initiator,observation,record"
+  && (await L.all("SELECT id,at,record,initiator,family_source,observation FROM state_build_inbox_inputs")).every((r) => Object.keys(r).sort().join() === "at,family_source,id,initiator,observation,record"
     && r.family_source === null && r.observation === null), JSON.stringify(inbox));
 
 // ---- an arrival asked ----

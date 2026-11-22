@@ -61,7 +61,11 @@ export async function intakeBatches(file, { intake = process.env.WFSIM_INTAKE_BI
     writeFileSync(path('builds.ndjson'), builds.map(build => JSON.stringify(build) + '\n').join(''));
     const done=readFileSync(path('done.txt'),'utf8');
     const acknowledged=new Set(done.split('\n').filter(Boolean));
-    const rows=pending.filter(line=>acknowledged.has(JSON.parse(line).id));
+    const accepted=new Set(builds.flatMap(build=>build.from||[]));
+    const rows=pending.filter(line=>acknowledged.has(JSON.parse(line).id)).map(line=>{
+      const row=JSON.parse(line);
+      return accepted.has(row.id) ? line : JSON.stringify({...row,rejected:true});
+    });
     if(rows.length!==acknowledged.size)throw Error('intake acknowledgement does not match the capture');
     writeFileSync(path('ack.ndjson'),rows.join('\n')+'\n');
     // A legacy mailbox or external family transfer acknowledges after its own write.
