@@ -186,15 +186,15 @@ function publishedBoardReader(read) {
   const fail = () => { throw new Error("The board could not be reached."); };
   const query = (path, params, signal) => read(path + "?" + new URLSearchParams(params), deadline(signal, 8000));
 
-  async function catalog(scene, weapon, signal) {
+  async function catalog(scene, weapon, signal, ruler) {
     const entries = [];
     for (let after = ""; ;) {
-      const params = { scene, after, ...(weapon ? { weapon } : {}) };
+      const params = { scene, after, ...(weapon ? { weapon } : {}), ...(ruler ? { ruler } : {}) };
       const page = await query("/api/board/pages/catalog", params, signal);
       if (!page?.ok || !Array.isArray(page.partitions)) fail();
       for (const entry of page.partitions) {
         const key = entry?.weapon + "/" + entry?.ruler;
-        if (!entry || entry.scene !== scene || (weapon && entry.weapon !== weapon) ||
+        if (!entry || entry.scene !== scene || (weapon && entry.weapon !== weapon) || (ruler && entry.ruler !== ruler) ||
             typeof entry.weapon !== "string" || typeof entry.ruler !== "string" || key <= after ||
             !/^[a-f0-9]{64}$/.test(entry.revision) || !Number.isSafeInteger(entry.rows) || entry.rows < 0) fail();
         entries.push(entry);
