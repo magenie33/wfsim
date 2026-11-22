@@ -11,10 +11,16 @@ export function buildInboxSchemaSql({tablespace,schema='public',writerRole='wfsi
   const ack=workflow.match(/CREATE OR REPLACE FUNCTION build_ack_submissions\(text\)[\s\S]*?\nEND \$\$;/)?.[0];
   const assertion=workflow.match(/CREATE OR REPLACE FUNCTION build_inbox_assert_ack\(text\)[\s\S]*?\nEND \$\$;/)?.[0];
   if(start<0||end<start||!ack||!assertion)throw Error('missing authoritative inbox definitions');
+  const generationIndex=workflow.match(/^CREATE INDEX IF NOT EXISTS build_inbox_positions_generation ON state_build_inbox_positions\(generation,id\)\n  WHERE generation IS NOT NULL;$/m)?.[0];
+  if(!generationIndex)throw Error('missing authoritative inbox generation index');
+  const definitions=workflow.slice(start,end).replace(generationIndex,
+    `SET LOCAL statement_timeout='10min';\n${generationIndex}\nSET LOCAL statement_timeout='15s';`);
   const module=readFileSync(new URL('../worker/pg/build_inbox_storage.sql',import.meta.url),'utf8');
   return `BEGIN;
 SET LOCAL lock_timeout='500ms';SET LOCAL statement_timeout='15s';
-SET LOCAL default_tablespace='${tablespace}';
+SELECT pg_catalog.set_config('default_tablespace',CASE WHEN
+ (SELECT oid FROM pg_tablespace WHERE spcname='${tablespace}')=
+ (SELECT dattablespace FROM pg_database WHERE datname=current_database()) THEN '' ELSE '${tablespace}' END,true);
 SET LOCAL search_path="${schema}",pg_catalog,pg_temp;
 DO $owner$ BEGIN
  IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='entity_weapon_builds'::regclass) IS DISTINCT FROM current_user THEN
@@ -35,10 +41,15 @@ BEGIN
  SELECT to_jsonb(p)-'prosrc' INTO STRICT after FROM pg_catalog.pg_proc p WHERE p.oid=routine;
  IF before IS DISTINCT FROM after THEN RAISE EXCEPTION 'inbox acknowledgement attributes changed'; END IF;
 END $install$;
-${workflow.slice(start,end)}
+${definitions}
 ${assertion}
 REVOKE ALL ON FUNCTION build_inbox_assert_ack(text) FROM PUBLIC;
-ALTER TABLE record_build_inbox_payloads SET TABLESPACE "${tablespace}";
+DO $parent_space$ BEGIN
+ IF (SELECT oid FROM pg_tablespace WHERE spcname='${tablespace}') IS DISTINCT FROM
+   (SELECT dattablespace FROM pg_database WHERE datname=current_database()) THEN
+  ALTER TABLE record_build_inbox_payloads SET TABLESPACE "${tablespace}";
+ END IF;
+END $parent_space$;
 ${module}
 GRANT EXECUTE ON FUNCTION build_inbox_submit(text,text,text,text,text,text,bigint),build_inbox_submit_family(text,text,text,text,text) TO "${writerRole}";
 GRANT EXECUTE ON FUNCTION build_inbox_family_owned(text) TO "${writerRole}";

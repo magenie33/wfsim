@@ -56,6 +56,10 @@ its protected hot child is outside this module's generation registry.
    the submission and acknowledgement entries. It also grants the installed
    factory daemon role its ordinary/family entries. Storage and automatic
    maintenance initially remain disabled.
+   The first `build_inbox_positions_generation` index scans existing FIFO
+   positions even when its predicate selects no rows. That single statement
+   has ten minutes; all other installation statements retain fifteen seconds,
+   with the same 500 ms lock budget throughout.
 2. Install the candidate Worker, including `inbox_source.js`, and its factory
    delivery modules. Install `build_batches.mjs` and `intake_batches.mjs` in
    both live and hourly consumers. Keep the same pinned Native binary when
