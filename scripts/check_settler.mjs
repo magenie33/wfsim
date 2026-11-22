@@ -12,6 +12,7 @@ import { signalTick, snapshotTick as writeSnapshotTick, fairTick, readFair, comp
 import { testDb } from "./pg/test_db.mjs";
 import { SETTLER_SILENT_MS } from "../worker/factory.js";
 import { mock } from "node:test";
+import { readFileSync } from "node:fs";
 import { DIAL_DEFAULTS, forgetDials, dialsOf } from "../worker/dials.js";
 import {statisticsProviderCases} from './check_statistics_provider.mjs';
 
@@ -305,6 +306,73 @@ console.log("the work signal");
   await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id IN ('o1', 'u1')");
   const none = await workWaiting(L);
   check("…and none when nothing may be taken", none.open === false && none.urgent === false, JSON.stringify(none));
+}
+
+console.log("the empty queue signal");
+{
+  const { workWaiting } = await import("../worker/settler.js");
+  const db = await testDb("library");
+  const epoch = iso(now - 1000);
+  const sample = async (library, at, open, urgent) => {
+    const signal = await signalTick({ LIBRARY: library }, { engine: "e1" }, at);
+    const wave = await workWaiting(library, at);
+    return signal.open === open && signal.urgent === urgent && signal.epoch === epoch &&
+      wave.open === (open > 0) && wave.urgent === (urgent > 0);
+  };
+  try {
+    const cutoff = await seedComputeWork(db, { id: "cancelled-tail", opened_at: iso(now - 2000) });
+    await db.run(`INSERT INTO entity_compute_order_cuts VALUES ('signal-cut',?, ?,1,0,'',?,'{}')`, epoch, cutoff, epoch);
+    await db.run(`INSERT INTO record_compute_order_cut_activations VALUES ('signal-cut',?,0,'',0,'')`, epoch);
+    await seedComputeWork(db, { id: "available", opened_at: iso(now) });
+    check("a deployment without counters reads the live schedule", await sample(db, now, 1, 0));
+
+    await db.exec(readFileSync(new URL("../worker/pg/queue_counts.sql", import.meta.url), "utf8"));
+    check("an installed count without a seed still reads live work", await sample(db, now, 1, 0));
+    await db.run("INSERT INTO state_queue_zone_seed (epoch,zones,sampled_at) VALUES (?,'[]',now())", iso(now - 3000));
+    check("an empty seed for another cut cannot hide work", await sample(db, now, 1, 0));
+    await db.run("INSERT INTO state_queue_zone_seed (epoch,zones,sampled_at) VALUES (?,'[[3,1]]',now())", epoch);
+
+    const heldUntil = iso(now + 60_000);
+    await seedComputeWork(db, { id: "urgent", opened_at: iso(now), waits: 1 });
+    await seedComputeWork(db, { id: "held", opened_at: iso(now), leased_to: "worker", lease: "lease", lease_until: heldUntil });
+    check("ordinary and urgent work are signalled with an unexpired lease left out of open", await sample(db, now, 1, 1));
+    check("a lease becomes available when its time expires", await sample(db, now + 60_001, 2, 1));
+    await db.run("INSERT INTO state_queue_zone_changes (epoch,writer,zone,verb,n) VALUES (?,0,0,'simulate',-3)", epoch);
+    check("opposite signed zone balances cannot be mistaken for an empty queue", await sample(db, now, 1, 1));
+    await db.run("DELETE FROM state_queue_zone_changes WHERE epoch=? AND writer=0", epoch);
+
+    const schema = (await db.get("SELECT current_schema() AS name")).name;
+    const role = `${schema}_signal_reader`;
+    await db.exec(`CREATE ROLE ${role}; GRANT USAGE ON SCHEMA ${schema} TO ${role};
+      GRANT SELECT ON state_factory_parameters,entity_compute_devices,state_compute_work,
+        state_compute_effective_open,record_compute_order_cancellations TO ${role}; SET ROLE ${role}`);
+    try {
+      check("the signal still reads live work when its role cannot read the counters", await sample(db, now, 1, 1));
+    } finally { await db.exec(`RESET ROLE; DROP OWNED BY ${role}; DROP ROLE ${role}`); }
+
+    await db.run("UPDATE state_compute_work SET state='withdrawn',lease=NULL,lease_until=NULL,leased_to=NULL WHERE id IN ('available','urgent','held')");
+    let historyReads = 0, measuredQueries = 0;
+    const skipCheck = { ...db, prepare(sql) {
+      const stmt = db.prepare(sql);
+      if (!sql.includes("FROM stats_open")) return stmt;
+      return { ...stmt, bind(...args) {
+        const bound = stmt.bind(...args);
+        return { ...bound, first: async () => {
+          const row = await db.get("EXPLAIN (ANALYZE, FORMAT JSON) " + sql, ...args);
+          function scanned(node) {
+            if (node["Subplan Name"] === "CTE a") return 0;
+            return (node["Relation Name"] === "state_compute_scheduling" ? node["Actual Loops"] : 0) +
+              (node.Plans ?? []).reduce((n, child) => n + scanned(child), 0);
+          }
+          measuredQueries++;
+          historyReads += scanned(row["QUERY PLAN"][0].Plan);
+          return bound.first();
+        } };
+      } };
+    } };
+    check("a proven empty cut skips scheduling scans in both signal and wave",
+      await sample(skipCheck, now, 0, 0) && measuredQueries === 2 && historyReads === 0, String(historyReads));
+  } finally { forgetDials(); await db.close(); }
 }
 
 await statisticsProviderCases();
