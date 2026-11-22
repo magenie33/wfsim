@@ -146,6 +146,8 @@ WHERE EXISTS(SELECT FROM pg_locks l WHERE l.relation='{LEDGER}'::regclass AND l.
 """
     query = f"""BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
 SET LOCAL search_path TO {args.schema},pg_catalog,pg_temp;
+SET LOCAL synchronize_seqscans=off;
+SET LOCAL max_parallel_workers_per_gather=0;
 SELECT jsonb_build_object('oid',c.oid,'file',pg_relation_filenode(c.oid),'path',pg_relation_filepath(c.oid))
 FROM pg_class c JOIN pg_locks l ON l.relation=c.oid
 WHERE c.oid='{HOT}'::regclass AND l.pid={freeze["pid"]} AND l.granted
