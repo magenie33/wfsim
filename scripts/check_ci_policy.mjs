@@ -20,6 +20,12 @@ for (const path of ['engine/src/fight.rs', 'optimizer/src/search.rs', 'webapi/sr
   assert.equal(classify([path]).scope, 'full', path);
 }
 assert.deepEqual(classify([]).jobs, PRODUCT_JOBS);
+assert.deepEqual(classify(['scripts/db.mjs']).jobs, PRODUCT_JOBS);
+assert.equal(classify(['scripts/db.mjs']).deep, false, 'database transport retains ordinary coverage without changing optimizer search');
+for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'Cargo.lock', 'scripts/ci_rust.mjs', 'scripts/db_unknown.mjs'])
+  assert.equal(classify(['scripts/db.mjs', extra]).deep, true);
+assert.equal(classify(['scripts/db.mjs'], true).deep, true);
+assert.equal(classify(['scripts/db.mjs'], false, false).deep, true);
 assert.equal(NATIVE_NON_SEARCH_INPUTS.length, 75, 'the reviewed Native declaration is complete');
 assert.equal(new Set(NATIVE_NON_SEARCH_INPUTS).size, 75);
 assert.equal(NATIVE_NON_SEARCH_INPUTS.filter(p => p.startsWith('scripts/')).length, 21);

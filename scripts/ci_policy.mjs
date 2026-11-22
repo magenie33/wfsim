@@ -49,7 +49,7 @@ const NON_SEARCH_TOOLS = [...NATIVE_NON_SEARCH_INPUTS, 'scripts/check_weapon_sea
   'scripts/inventory_control.mjs', 'scripts/inventory_rebuild.mjs',
   'scripts/board_input_maintenance.mjs',
   'scripts/inventory_pipeline.mjs', 'scripts/inventory_relational_pipeline.mjs',
-  'scripts/build_batches.mjs', 'scripts/ship_family.mjs', 'scripts/ship_bot.py', '.github/workflows/scores.yml',
+  'scripts/build_batches.mjs', 'scripts/db.mjs', 'scripts/ship_family.mjs', 'scripts/ship_bot.py', '.github/workflows/scores.yml',
   'scripts/factoryd.mjs', 'scripts/factory_capacity.mjs', 'scripts/pg_health.py', 'scripts/check_pg_health.py',
   'scripts/board_admission_schema.mjs',
   'scripts/fetch_score_inputs.mjs', 'scripts/order_credit.mjs', 'scripts/fetch_queue.sh', '.github/workflows/settle.yml',
