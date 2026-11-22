@@ -6,6 +6,7 @@ import { randomBytes } from "node:crypto";
 import { pgDb, placeholders } from "../worker/db.js";
 async function database() {
   const url = process.env.WFSIM_ADMISSION_TEST_URL;
+  if (process.argv.includes("--require-pg")) assert.ok(url, "producer lock checks require isolated real PostgreSQL");
   if (!url) return testDb("library");
   assert.ok(["127.0.0.1", "localhost", "[::1]"].includes(new URL(url).hostname), "admission race checks require isolated local PG");
   const { default: postgres } = await import("./pg/node_modules/postgres/src/index.js");
