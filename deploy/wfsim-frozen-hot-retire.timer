@@ -1,0 +1,9 @@
+[Unit]
+Description=Check whether the WFSim frozen inbox files can be released
+
+[Timer]
+OnBootSec=10min
+OnUnitInactiveSec=15min
+
+[Install]
+WantedBy=timers.target

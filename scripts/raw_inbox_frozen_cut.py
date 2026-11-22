@@ -225,7 +225,8 @@ WHERE EXISTS(SELECT FROM pg_locks l WHERE l.relation='{LEDGER}'::regclass AND l.
 SET LOCAL search_path TO {args.schema},pg_catalog,pg_temp;
 SET LOCAL synchronize_seqscans=off;
 SET LOCAL max_parallel_workers_per_gather=0;
-SELECT jsonb_build_object('oid',c.oid,'file',pg_relation_filenode(c.oid),'path',pg_relation_filepath(c.oid))
+SELECT jsonb_build_object('oid',c.oid::bigint,'file',pg_relation_filenode(c.oid)::bigint,'path',pg_relation_filepath(c.oid),
+  'tablespace',c.reltablespace::bigint)
 FROM pg_class c JOIN pg_locks l ON l.relation=c.oid
 WHERE c.oid='{HOT}'::regclass AND l.pid={freeze["pid"]} AND l.granted
   AND l.mode='ShareLock' AND l.virtualtransaction={literal(freeze["transaction"])}
@@ -445,7 +446,8 @@ def main():
                 raise RuntimeError("cut successor changed during verification")
             path = write_cut(args,root,plan,control,freeze,next_freeze,hot)
             emit(dict(stage="verified_cut_script",path=str(path),counts=plan["counts"],
-                      original=freeze,keeper=next_freeze))
+                      original=freeze,keeper=next_freeze,generation=str(args.generation),
+                      parent_oid=args.oid,cluster=control["cluster"],hot=hot))
 
 
 if __name__=="__main__":

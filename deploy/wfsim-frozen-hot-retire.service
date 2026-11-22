@@ -1,0 +1,12 @@
+[Unit]
+Description=Release the drained WFSim frozen inbox relation
+After=postgresql.service
+ConditionPathExists=/etc/wfsim-frozen-hot-retire.env
+
+[Service]
+Type=oneshot
+User=postgres
+EnvironmentFile=/etc/wfsim-frozen-hot-retire.env
+ExecStart=/usr/bin/python3 /opt/wfsim-raw-archive/scripts/raw_inbox_frozen_hot_retire.py --cut-receipt ${WFSIM_FROZEN_HOT_RECEIPT} --work ${WFSIM_FROZEN_HOT_WORK} --pgdata ${WFSIM_FROZEN_HOT_PGDATA} --data-mount ${WFSIM_FROZEN_HOT_DATA} --source-service ${WFSIM_FROZEN_HOT_SERVICE} --root-reserve-bytes ${WFSIM_FROZEN_HOT_ROOT_RESERVE} --data-reserve-bytes ${WFSIM_FROZEN_HOT_DATA_RESERVE} --pg-controldata ${WFSIM_FROZEN_HOT_CONTROL_DATA}
+TimeoutStartSec=30s
+NoNewPrivileges=true
