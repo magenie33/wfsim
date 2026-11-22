@@ -10,7 +10,9 @@ import { close, transaction } from "./db.mjs";
 
 export const BUILD_BATCH_ROWS = 1000, BUILD_BATCH_BYTES = 1024 * 1024;
 const statement = (table, deleting) => deleting
-  ? 'SELECT build_ack_submissions(?::text)'
+  ? `WITH acknowledged AS MATERIALIZED (
+       SELECT build_ack_submissions(input), input FROM (VALUES (?::text)) AS captured(input)
+     ) SELECT build_inbox_assert_ack(input) FROM acknowledged`
   : table === 'entity_weapon_builds' ? `SELECT build_intake_batch(?::text)` : `INSERT INTO ${table} (id, at, record)
      SELECT DISTINCT ON (id) id, at, record FROM jsonb_to_recordset((?::text)::jsonb)
        AS rows(id text, at text, record text, position bigint) ORDER BY id, position DESC
@@ -36,10 +38,6 @@ export async function* buildBatches(file, { deleting = false, maxRows = BUILD_BA
   const batches = new Map();
   let position = 0;
   const body = batch => ({ sql: batch.sql, params: [`[${batch.rows.join(",")}]`] });
-  function* statements(batch) {
-    const operation=body(batch);yield operation;
-    if(deleting)yield {sql:'SELECT build_inbox_assert_ack(?::text)',params:operation.params};
-  }
   for await (const line of createInterface({ input: createReadStream(file), crlfDelay: Infinity })) {
     if (!line) continue;
     let table, value;
@@ -69,13 +67,13 @@ export async function* buildBatches(file, { deleting = false, maxRows = BUILD_BA
     const bytes = Buffer.byteLength(JSON.stringify(row)) - 2;
     if (batch.base + bytes > maxBytes) throw new Error("one intake row exceeds the batch byte limit");
     if (batch.rows.length && (batch.rows.length >= maxRows || batch.base + batch.bytes + bytes + 1 > maxBytes)) {
-      yield* statements(batch);
+      yield body(batch);
       batch.rows = []; batch.bytes = 0;
     }
     batch.bytes += bytes + (batch.rows.length ? 1 : 0);
     batch.rows.push(row);
   }
-  for (const batch of batches.values()) if (batch.rows.length) yield* statements(batch);
+  for (const batch of batches.values()) if (batch.rows.length) yield body(batch);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
