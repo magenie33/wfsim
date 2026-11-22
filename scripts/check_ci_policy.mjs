@@ -96,19 +96,21 @@ for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'scrip
   assert.equal(classify([rawMaintenance, extra]).deep, true);
 assert.equal(classify([rawMaintenance], true).deep, true);
 assert.equal(classify([rawMaintenance], false, false).deep, true);
-const rawRolloverTools = ['scripts/raw_inbox_rollover.py', 'scripts/check_raw_inbox_rollover.mjs'];
+const rawRolloverTools = ['scripts/raw_inbox_rollover.py', 'scripts/raw_inbox_archive_consume.mjs',
+  'scripts/check_raw_inbox_rollover.mjs', 'scripts/check_raw_inbox_archive.mjs'];
 for (const path of rawRolloverTools) {
-  assert.deepEqual(classify([path]).jobs, path.endsWith('.py') ? PRODUCT_JOBS : BROWSER_JOBS,
+  assert.deepEqual(classify([path]).jobs, path.startsWith('scripts/check_') ? BROWSER_JOBS : PRODUCT_JOBS,
     path + ' retains its ordinary correctness jobs');
   assert.equal(classify([path]).deep, false, path + ' preserves search enumeration and scoring');
   for (const extra of ['optimizer/src/search.rs', 'webapi/src/optimize.rs', 'Cargo.lock',
-    'scripts/ci_rust.mjs', 'scripts/raw_inbox_rollover_unknown.py'])
+    'scripts/ci_rust.mjs', 'scripts/raw_inbox_rollover_unknown.py', 'scripts/raw_inbox_archive_unknown.mjs'])
     assert.equal(classify([path, extra]).deep, true, path + ' mixed with ' + extra);
   assert.equal(classify([path], true).deep, true);
   assert.equal(classify([path], false, false).deep, true);
 }
-assert.deepEqual([...checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8')).get('scripts/check_raw_inbox_rollover.mjs') || []],
-  ['pipeline'], 'real PostgreSQL rollover verification runs in ordinary pipeline CI');
+const archiveJobs = checkJobPaths(readFileSync('.github/workflows/ci.yml', 'utf8'));
+for (const check of rawRolloverTools.filter(path => path.startsWith('scripts/check_')))
+  assert.deepEqual([...archiveJobs.get(check) || []], ['pipeline'], `${check} runs in ordinary pipeline CI`);
 const websiteTools = ['deploy/hk-website.nginx', 'deploy/website-public.conf',
   'scripts/check_hk_website.mjs', 'scripts/check_hk_website.py', 'scripts/check_website_proxy.mjs',
   'scripts/ship_website.py', 'scripts/website_config.py', 'scripts/website_hk.py'];

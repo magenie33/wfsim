@@ -94,7 +94,7 @@ const NON_SEARCH_TOOLS = [...NATIVE_NON_SEARCH_INPUTS, 'scripts/check_weapon_sea
   'scripts/task_reissue.mjs', 'scripts/build_admission_schema.mjs', 'scripts/pg/build_admission_fixture.mjs',
   'scripts/check_build_workflows.mjs', 'scripts/check_factory_deploy.py', 'scripts/check_workflow_recovery.mjs',
   'scripts/inbox_reader.mjs', 'scripts/raw_inbox_retention.mjs', 'scripts/migrations/db_library.mjs',
-  'scripts/raw_inbox_rollover.py', 'scripts/check_raw_inbox_rollover.mjs',
+  'scripts/raw_inbox_rollover.py', 'scripts/raw_inbox_archive_consume.mjs', 'scripts/check_raw_inbox_rollover.mjs',
   'scripts/board_coverage.mjs', 'scripts/board_coverage_schema.mjs', 'scripts/check_board_coverage.mjs',
   'tests/fixtures/build-admission-base5a/build_workflows.sql',
   'tests/fixtures/build-admission-base5a/compute_admit_tasks.sql', 'tests/fixtures/build-admission-base5a/source.json',
