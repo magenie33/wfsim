@@ -165,7 +165,7 @@ or `full=true` reject the request. Renames include both paths.
 | Profile | Changes | Required checks |
 | --- | --- | --- |
 | `factory-sql` | `worker/pg/sync.sql` and its registered regression checks | Factory, eligibility, fairness, settlement, retention and protocol checks; queued settlement and the sync procedure also run together |
-| `daemon-signal` | Exact reviewed queue-signal runtime bytes with both regressions | Factory and protocol checks plus real PostgreSQL empty/small-queue plan and fallback checks |
+| `daemon-signal` | Exact reviewed queue-signal runtime bytes and signal-only JIT setting with both regressions | Factory and protocol checks plus real PostgreSQL connection settings, empty/small-queue plans and fallback checks |
 | `ci` | CI selection, gates, partitions and the hotfix workflow/runner | Selection, partitions and hotfix boundary/proof regressions |
 
 The factory profile partitions each mode's complete 400 liveness seeds,

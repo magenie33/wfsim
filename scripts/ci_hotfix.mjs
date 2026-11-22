@@ -23,7 +23,7 @@ export const HOTFIX_PROFILES = {
     groups: ['factory', 'async', ...HOTFIX_FACTORY_GROUPS],
   },
   'daemon-signal': {
-    paths: ['worker/queue_counts.js', 'worker/settler.js', 'scripts/check_factory_signal_pg.mjs'],
+    paths: ['worker/queue_counts.js', 'worker/settler.js', 'scripts/factoryd.mjs', 'scripts/check_factory_signal_pg.mjs'],
     groups: ['factory', 'async', ...HOTFIX_FACTORY_GROUPS, 'signal-pg'],
   },
   ci: {
@@ -46,6 +46,7 @@ export const HOTFIX_CHECKS = {
 };
 
 export const SIGNAL_RUNTIME_HASHES = {
+  'scripts/factoryd.mjs': ['17d7076e180df0db6a683ff884ba560df91a3b473c1f2003afe7bb1f8b377d71', 'c88431108248d88dd523b529a51fc7cd28b55aa028b48db3a45fc4dd65967a0f'],
   'worker/queue_counts.js': ['af5ff3a32887573bf4c94f33b762a20e32149a4d726bd6a0702b4ac60be243d2', '14a0125b9d2a472de34fcfc706ef4e2165c33ccb22603df2294764c8a3b3cf8a'],
   'worker/settler.js': ['4b9e6dd9e3c766e20df85ffcf8a175acd371b8822661fc4e87671f96f7bf8229', 'be36f8f1ef178afc4b7f5b346ca93b6f3b5aebc2f514ef881a2b1d5e8da0f8f6'],
 };
