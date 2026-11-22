@@ -195,6 +195,35 @@ try {
   assert.equal((await saved()).length, 1);
   console.log('ok: a mixed build and equipment handoff commits its owners and spends both FIFO positions together');
 
+  for (const [row, table] of [
+    [arrival('atomic-replaced-build'), 'record_build_submissions'],
+    [{ ...equipment, id: 'equipment:atomic-replaced' }, 'record_equipment_submissions'],
+  ]) {
+    await clear();
+    const captured = await seed([row]);
+    const replacement = { ...row, record: { ...row.record, note: 'replacement input' } };
+    let replaced = false;
+    await assert.rejects(execute(captured, { run: async (command, args, io) => {
+      if (args.includes('handoff')) {
+        assert.equal(replaced, false);
+        replaced = true;
+        await query(`UPDATE ${table} SET record=? WHERE id=?`, [JSON.stringify(replacement.record), row.id]);
+        await close();
+      }
+      return runIntakeCommand(command, args, io);
+    } }), /failed/);
+    assert.equal(replaced, true, 'the replacement races the atomic path rather than a legacy callback');
+    assert.deepEqual(await pending(), [row.id]);
+    assert.deepEqual(JSON.parse((await query(`SELECT record FROM ${table} WHERE id=?`, [row.id]))[0].record), replacement.record);
+    assert.deepEqual(await saved(), []);
+    assert.deepEqual(await gear(), []);
+    assert.equal(await intents(), 0);
+    await execute(file('atomic-replacement.ndjson', JSON.stringify(replacement) + '\n'));
+    assert.deepEqual(await pending(), []);
+    assert.equal((await saved()).length + (await gear()).length, 1);
+  }
+  console.log('ok: a replacement before atomic handoff retains its input and rolls back every owner until recapture');
+
   await clear();
   const fifo=await seed([arrival('fifo')]);
   await query("INSERT INTO entity_compute_batches(id,at,total) VALUES('existing','2000-01-01',1)");
