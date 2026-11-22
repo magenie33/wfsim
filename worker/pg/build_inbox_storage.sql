@@ -275,7 +275,7 @@ BEGIN
       AND c.relowner=parent.relowner AND c.relnamespace=parent.relnamespace AND c.relkind='r' AND c.relispartition
       AND c.relname='record_build_inbox_payloads_'||CASE WHEN $2 THEN 'r' ELSE 'g' END||$1
       AND pg_get_expr(c.relpartbound,c.oid)=format('FOR VALUES IN (''%s'')',selected_generation))
-    OR EXISTS(SELECT FROM state_build_inbox_positions p WHERE p.payload_generation=selected_generation)
+    OR EXISTS(SELECT FROM state_build_inbox_positions p WHERE p.generation=$1 AND p.payload_generation=selected_generation)
     OR EXISTS(SELECT FROM record_build_inbox_payloads WHERE generation=selected_generation AND state='pending') THEN
     RAISE EXCEPTION 'unfinished input or changed partition ownership' USING ERRCODE='55000'; END IF;
   bytes:=pg_total_relation_size(relation);

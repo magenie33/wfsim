@@ -12,7 +12,8 @@ const change=async(sql,params=[],milliseconds=8000)=>((await transaction([
 ]))[1]||[])[0];
 export const NEXT_INBOX_GENERATION_SQL=`SELECT g.generation::text,g.original,g.retained FROM state_build_inbox_generations g
   WHERE g.generation<(SELECT closed_before FROM state_build_inbox_storage WHERE id=1)
-    AND (g.original IS NOT NULL OR NOT EXISTS(SELECT FROM state_build_inbox_positions p WHERE p.payload_generation=-g.generation))
+    AND (g.original IS NOT NULL OR NOT EXISTS(SELECT FROM state_build_inbox_positions p
+      WHERE p.generation=g.generation AND p.payload_generation=-g.generation))
   ORDER BY generation LIMIT 1`;
 export function inboxCapacity(path) {
   const value=JSON.parse(readFileSync(path,'utf8'));
@@ -72,7 +73,8 @@ export async function inboxStorageAction(action,options={}) {
   const [old]=await query(NEXT_INBOX_GENERATION_SQL);
   if(!old)return {receipts};
   const generation=Number(old.generation);
-  const pending=async sign=>(await query('SELECT EXISTS(SELECT FROM state_build_inbox_positions WHERE payload_generation=?::bigint) AS pending',[generation*sign]))[0].pending;
+  const pending=async sign=>(await query('SELECT EXISTS(SELECT FROM state_build_inbox_positions WHERE generation=?::bigint AND payload_generation=?::bigint) AS pending',
+    [generation,generation*sign]))[0].pending;
   if(old.original!==null) {
     if(await pending(1)) {
       await perform('SELECT build_inbox_prepare_retained(?::bigint)',[generation]);
