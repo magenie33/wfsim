@@ -154,7 +154,9 @@ const tab = vm.createContext({
     const url = new URL(path, "https://wfsim.invalid");
     if (url.pathname.endsWith("/catalog")) {
       live.reads++;
-      return { ok: true, next: null, partitions: [...live.partitions.values()].map(p => ({
+      const ruler = url.searchParams.get("ruler");
+      if (live.bench) live.rulers.push(ruler);
+      return { ok: true, next: null, partitions: [...live.partitions.values()].filter(p => !ruler || p.ruler === ruler).map(p => ({
         weapon, scene: "", ruler: p.ruler, revision: p.revision, rows: p.rows.length, leaders: p.rows.slice(0, 1)
       })) };
     }
@@ -198,8 +200,10 @@ assert.equal(live.draws, draws);
 assert.equal(live.pages.length, pages);
 assert.equal(live.pages.filter(r => r === "other").length, 1, "unchanged partitions stay local");
 live.bench = true;
+live.rulers = [];
 await tick();
-const leader = () => vm.runInContext("BOARD_INDEX.furis.find(r => r.benchmark === 'standard_single_target').score", tab);
+assert.deepEqual(live.rulers, [ruler], "a visible ranking requests only the selected ruler");
+const leader = () => vm.runInContext("benchIndexOf(benchCurrent()).index.furis.find(r => r.benchmark === 'standard_single_target').score", tab);
 assert.equal(leader(), 31);
 update(ruler, "d", [34]);
 await tick();

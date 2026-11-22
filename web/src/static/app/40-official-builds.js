@@ -318,8 +318,8 @@ async function readCurrentBoardRows(weapon, scene, signal, previous, wanted, rea
 }
 
 const boardIndexRevisions = new WeakMap();
-async function readCurrentBoardIndex(scene, signal, previous) {
-  const partitions = await pageBoardReader().catalog(scene, null, signal);
+async function readCurrentBoardIndex(scene, signal, previous, ruler) {
+  const partitions = await pageBoardReader().catalog(scene, null, signal, ruler);
   const signature = JSON.stringify(partitions.map(p => [p.weapon, p.ruler, p.revision]));
   if (boardIndexRevisions.get(previous) === signature) return previous;
   const index = Object.create(null);
@@ -534,11 +534,30 @@ function loadSceneIndex(dir, refresh = false) {
   }
   return sceneIndexAsk[dir];
 }
-/// THE LEADERS A RULER'S RANKING READS, and the state of asking for them.
-const benchIndexOf = (cur) => (cur && cur.cell_dir
-  ? { index: SCENE_INDEX[cur.cell_dir] || null, asking: !!sceneIndexAsk[cur.cell_dir],
-    lost: !!sceneIndexUnreachable[cur.cell_dir], load: refresh => loadSceneIndex(cur.cell_dir, refresh) }
-  : { index: BOARD_INDEX, asking: !!boardIndexAsk, lost: boardIndexUnreachable, load: loadFullBoard });
+/// THE LEADERS A RULER needs come from its selected published partitions.
+const rulerBoardIndexes = new Map();
+const sceneBoardIndex = cur => cur?.cell_dir ? SCENE_INDEX[cur.cell_dir] : BOARD_INDEX;
+const rulerBoardIndex = cur => sceneBoardIndex(cur) ?? rulerBoardIndexes.get(cur?.id)?.index ?? null;
+
+function loadRulerBoardIndex(cur, refresh) {
+  const scene = cur?.cell_dir || "";
+  if (!cur || sceneBoardIndex(cur)) return scene ? loadSceneIndex(scene, refresh) : loadFullBoard(refresh);
+  let state = rulerBoardIndexes.get(cur.id);
+  if (!state) rulerBoardIndexes.set(cur.id, state = { index: null, ask: null, lost: false });
+  if (!refresh && state.index) return Promise.resolve();
+  if (!state.ask) {
+    state.lost = false;
+    state.ask = readCurrentBoardIndex(scene, undefined, state.index, cur.id).then(index => { state.index = index; },
+      () => { state.lost = true; }).finally(() => { state.ask = null; });
+  }
+  return state.ask;
+}
+
+function benchIndexOf(cur) {
+  const state = rulerBoardIndexes.get(cur?.id);
+  return { index: rulerBoardIndex(cur), asking: !!state?.ask, lost: !!state?.lost,
+    load: refresh => loadRulerBoardIndex(cur, refresh) };
+}
 
 /// The benchmark page: ask first, so the first draw already knows a request is
 /// in flight, then draw again when it settles.
@@ -621,7 +640,7 @@ async function refreshVisibleBoard() {
   const weapon = !bench && modSuffix() === "build-library" && routeWeaponId();
   if (!bench && !weapon) return;
   const ruler = bench ? benchCurrent() : null;
-  const view = bench ? "bench/" + (ruler?.cell_dir || "") : weapon + "/" + finder.b;
+  const view = bench ? "bench/" + (ruler?.id || "") : weapon + "/" + finder.b;
   const now = Date.now();
   if (boardRefreshView === view && now - boardRefreshAt < boardRefreshMs) return;
   boardRefreshView = view; boardRefreshAt = now;

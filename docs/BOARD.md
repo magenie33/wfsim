@@ -2981,6 +2981,7 @@ rule to keep the two apart.
 
 - **A current rank has one published revision.** Readers take the revision
   from the catalog built on the verified library and read only its pages.
+  The across-weapon view reads leaders for its selected ruler from that catalog.
 - **The store keeps nothing about submitters.** No IP, no token, no time finer
   than the day. A working client's id is never joined to a submission
   (§"Compute orders", §"Contribution"). The one thing beside a submission is

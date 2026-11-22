@@ -95,15 +95,16 @@ INSERT INTO state_board_public_heads
   FROM state_board_read_partitions WHERE revision IS NOT NULL
   ON CONFLICT(weapon,ruler) DO NOTHING;
 
-CREATE OR REPLACE FUNCTION board_read_catalog(text,text,text,bigint) RETURNS jsonb
+CREATE OR REPLACE FUNCTION board_read_catalog(text,text,text,bigint,text) RETURNS jsonb
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE items jsonb;
 BEGIN
-  IF $4 IS NULL OR $4<1 OR $4>128 THEN RAISE EXCEPTION 'invalid board catalog page size'; END IF;
+  IF $4 IS NULL OR $4<1 OR $4>(CASE WHEN $5 IS NULL THEN 128 ELSE 512 END) THEN
+    RAISE EXCEPTION 'invalid board catalog page size'; END IF;
   SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.weapon,x.ruler),'[]') INTO items FROM (
     SELECT p.weapon,p.ruler,p.scene,p.revision,s.leaders,s.rows,s.captured_at,s.published_at
     FROM state_board_public_heads p JOIN record_board_read_snapshots s USING(weapon,ruler,revision)
-    WHERE p.revision IS NOT NULL AND p.scene=$2 AND ($1 IS NULL OR p.weapon=$1)
+    WHERE p.revision IS NOT NULL AND p.scene=$2 AND ($1 IS NULL OR p.weapon=$1) AND ($5 IS NULL OR p.ruler=$5)
       AND (p.weapon||'/'||p.ruler)>coalesce($3,'')
       AND NOT EXISTS(SELECT 1 FROM state_board_public_withdrawn_revisions w
         WHERE (w.weapon,w.ruler,w.revision)=(p.weapon,p.ruler,p.revision))
@@ -111,6 +112,11 @@ BEGIN
   )x;
   RETURN jsonb_build_object('ok',true,'partitions',items);
 END $$;
+
+CREATE OR REPLACE FUNCTION board_read_catalog(text,text,text,bigint) RETURNS jsonb
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT board_read_catalog($1,$2,$3,$4,NULL::text)
+$$;
 
 CREATE OR REPLACE FUNCTION board_read_page(text,text,text,bigint,bigint) RETURNS jsonb
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
@@ -131,4 +137,5 @@ BEGIN
     'engine',held.engine,'captured_at',held.captured_at,'count',held.rows,'after',$4,'rows',pages,
     'next',CASE WHEN last_ordinal<held.rows THEN last_ordinal END);
 END $$;
-REVOKE ALL ON FUNCTION board_read_catalog(text,text,text,bigint),board_read_page(text,text,text,bigint,bigint) FROM PUBLIC;
+REVOKE ALL ON FUNCTION board_read_catalog(text,text,text,bigint),board_read_catalog(text,text,text,bigint,text),
+  board_read_page(text,text,text,bigint,bigint) FROM PUBLIC;
