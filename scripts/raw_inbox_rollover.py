@@ -196,6 +196,7 @@ def consume_sealed_page(args):
 def retire_clean_page(generation):
     index = json_pg(f"SELECT coalesce(raw_archive_retire_next('{generation}'::uuid),'null'::jsonb);")
     if index is None:
+        pg('SELECT raw_archive_trim_skips();')
         return
     part, digest = int(index['part']), index['digest']
     key = object_key(str(generation),part,digest)
@@ -226,15 +227,22 @@ def install_clean(args):
     pg(f"""BEGIN;
 SET LOCAL default_tablespace='{args.tablespace}';
 SELECT set_config('search_path',quote_ident(current_schema())||',pg_catalog,pg_temp',true);
+LOCK TABLE ONLY record_build_submissions IN ACCESS EXCLUSIVE MODE NOWAIT;
 DO $$ BEGIN
   IF to_regclass('state_raw_inbox_rollover') IS NOT NULL
     OR (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='record_build_submissions'::regclass)<>current_user
     THEN RAISE EXCEPTION 'install the clean archive under the detached source owner'; END IF;
+  IF to_regclass('state_raw_archive_move') IS NOT NULL THEN
+    IF EXISTS(SELECT FROM state_raw_archive_move WHERE phase<>'idle') THEN
+      RAISE EXCEPTION 'upgrade the clean archive when its move is idle';
+    END IF;
+  END IF;
 END $$;
 {archive}
 {move}
 GRANT EXECUTE ON FUNCTION raw_inbox_library_count() TO "{args.http_role}";
-GRANT EXECUTE ON FUNCTION raw_archive_next(),raw_archive_consume(uuid,bigint,text,text[],text) TO "{args.consume_role}";
+GRANT EXECUTE ON FUNCTION raw_archive_next(),raw_archive_pending(uuid,bigint,text),
+  raw_archive_consume(uuid,bigint,text,text[],text) TO "{args.consume_role}";
 COMMIT;
 """)
 
@@ -275,34 +283,54 @@ def copy_clean_page(args, live_identity, lease):
     return True
 
 
-def clean_fence(path, generation):
+def clean_receipt(path, generation):
     with path.open('rb') as source:
         body = source.read(65537)
     if len(body)>65536:
-        raise ValueError('raw archive fence receipt is too large')
+        raise ValueError('raw archive receipt is too large')
     receipt = json.loads(body)
     if (not isinstance(receipt,dict) or receipt.get('v')!=1 or receipt.get('generation')!=str(generation)
             or not re.fullmatch('[0-9a-f]{40}',str(receipt.get('source')))):
-        raise ValueError('raw archive fence does not identify the deployed source and generation')
+        raise ValueError('raw archive receipt does not identify the deployed source and generation')
+    return sha(body), receipt
+
+
+def clean_fence(path, generation):
+    digest, receipt = clean_receipt(path,generation)
     for consumer in ('live','hourly'):
         state = receipt.get(consumer)
         if (not isinstance(state,dict) or state.get('paused') is not True or state.get('inflight')!=0
                 or state.get('capture') not in ('acknowledged','discarded')
                 or not re.fullmatch('[0-9a-f]{64}',str(state.get('receipt')))):
             raise ValueError('both raw intake consumers and their capture receipts must be fenced')
-    return sha(body)
+    return digest, receipt['source']
+
+
+def writer_fence(path, generation):
+    digest, receipt = clean_receipt(path,generation)
+    writers = receipt.get('writers')
+    if (receipt.get('legacy_raw_writers') is not False or not isinstance(writers,dict)
+            or any(not re.fullmatch('[0-9a-f]{64}',str(writers.get(role)))
+                   for role in ('wfsim','factoryd','pipeline'))):
+        raise ValueError('verify the deployed writers and the end of legacy raw writes')
+    return digest, receipt['source']
 
 
 def clean_action(args, lease=None):
     if args.action=='install-clean':
         install_clean(args)
+    elif args.action=='begin-precopy-clean':
+        digest, source = writer_fence(args.writer_file,args.generation)
+        pg(f"SELECT raw_archive_move_begin_online('{args.generation}'::uuid,'{source}','{digest}');")
     elif args.action=='status-clean':
         emit(json_pg("""SELECT jsonb_build_object('phase',m.phase,'generation',m.generation,'after',m.after_id,
-          'source_oid',m.source_oid,'sealed_parts',g.sealed_parts,'sealed_rows',g.sealed_rows,
+          'source_oid',m.source_oid,'online_source',m.online_source,'writer_receipt',m.writer_receipt,
+          'sealed_parts',g.sealed_parts,'sealed_rows',g.sealed_rows,
           'next_part',g.next_part,'consumed_rows',g.consumed_rows,'retired_part',g.retired_part,
           'source_bytes',pg_total_relation_size('record_build_submissions'),
           'hot_bytes',pg_total_relation_size('record_raw_archive_hot'),
-          'arrival_bytes',pg_total_relation_size('record_raw_archive_arrivals'))
+          'arrival_bytes',pg_total_relation_size('record_raw_archive_arrivals'),
+          'skip_bytes',pg_total_relation_size('record_raw_archive_skips'))
           FROM state_raw_archive_move m LEFT JOIN state_raw_archive_generation g USING(generation);"""))
     elif args.action=='retire-clean':
         retire_clean_page(args.generation)
@@ -320,11 +348,13 @@ def clean_action(args, lease=None):
         mode = {'begin-clean':'begin','cut-clean':'cut','abort-clean':'abort'}[args.action]
         parameters = f"'{args.generation}'::uuid"
         if mode!='abort':
-            parameters += f",'{clean_fence(args.fence_file,args.generation)}'"
+            digest, source = clean_fence(args.fence_file,args.generation)
+            parameters += f",'{digest}'"
         if mode=='cut':
             if min(args.root_reserve,args.work_reserve,args.peak_root_bytes)<1 or not args.work.is_dir():
                 raise ValueError('specify the approved cut reserves and root overhead')
             disk_gate(args.work,args.root_reserve+args.peak_root_bytes,args.work_reserve)
+            parameters += f",'{source}'"
         value = pg(f'SELECT raw_archive_move_{mode}({parameters});')
         if value:
             emit({'stage':'cut','old_source_bytes':int(value)})
@@ -398,6 +428,9 @@ def read_arguments():
     clean.add_argument('--tablespace',required=True)
     clean.add_argument('--http-role',required=True)
     clean.add_argument('--consume-role',required=True)
+    precopy = choices.add_parser('begin-precopy-clean')
+    precopy.add_argument('generation',type=uuid.UUID)
+    precopy.add_argument('--writer-file',type=Path,required=True)
     for name in ('begin-clean','cut-clean','abort-clean'):
         cmd = choices.add_parser(name)
         cmd.add_argument('generation',type=uuid.UUID)

@@ -235,31 +235,41 @@ read-only mode. Each page compares at most 8 MiB of input. Rows larger than
 cursor wraps and rechecks skipped rows. The checkpoint holds bounded progress
 and counters. No archive is created.
 
-The storage owner's clean move freezes the legacy source after both live and
-hourly intake have drained their captured files and stopped taking new batches.
-The owner supplies the same fence file to the start and cut commands. It
-states the deployed source commit and the generation, and includes hashed
-readbacks for both stopped consumers and their retired capture receipts. Deploy the new
-version-eight submission UUIDs to every writer before freezing the
-version-four generation.
 The storage owner can attach the empty arrivals relation while the archive is
 idle. Version-four submissions still reach the original relation during the
 writer transition. Both relations remain visible to ordinary intake and share
 its existing acknowledgement and position rules.
-New arrivals use the attached tablespace during the move. The existing queue
-positions stay in their own relation.
+
+Deploy version-eight submission UUIDs to every writer before running
+`begin-precopy-clean --writer-file`. The receipt records the generation,
+deployed source, hashed writer checks for `wfsim`, `factoryd` and `pipeline`,
+and confirmation that version-four raw writes have ended. Live and hourly
+intake continue through the same view and acknowledge both disks. The legacy
+source accepts deletions and its captured payloads are immutable during
+pre-copy. Queue positions stay in their own relation.
 
 The source scan keeps position-bearing, typed and independently referenced
 inputs in a typed table on the attached disk. Immutable R2 parts hold only
 ordinary, unpositioned legacy inputs. Each nonempty part is read back and
 restored once in an independent database before the source range advances.
-An oversized input stops the cursor. After covering the frozen range, the
-same transaction clears the old parent relation, attaches the preserved
-relations and activates the sealed archive. Existing reads and exact
+An acknowledgement behind the cursor retires its typed copy or records the
+exact cold member that settled. A new owner behind the cursor moves the
+member to the typed table and records its exclusion from the archive intake.
+Both changes commit with the acknowledgement or owner. Each part's
+exclusions expire when that part is consumed or retired.
+
+An oversized input stops the cursor. After covering the old source, pause
+live and hourly intake and drain or discard their captured files for the cut.
+The fence identifies the deployed writer source and generation and includes
+hashed readbacks for both stopped consumers and their retired capture
+receipts. The cut clears the old parent, attaches the preserved inputs and
+activates the archive in one transaction. Existing reads and exact
 acknowledgements continue to use the parent and its indexes on each child.
-The archive consumer checks the ordered part and its Native acknowledgement,
-then commits canonical intake and the next part together. Cold inputs
-never enter the raw table again. A failed transaction leaves the part pending.
+
+The archive consumer checks the ordered part and the Native acknowledgement
+of its pending members. It commits canonical intake, the next part and
+removal of the part's exclusions together. A failed transaction leaves the
+part pending.
 The storage owner can retire the exact R2 object after committed custody or
 an aborted move that retained the original input. Its retirement receipt
 advances after confirming the object's absence.
