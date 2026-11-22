@@ -288,6 +288,42 @@ fn complex_cards_nonfinite_arithmetic_and_exilus_are_fail_closed() {
 }
 
 #[test]
+fn galvanized_vigilante_and_locked_tail_cards_preserve_exact_classes() {
+    let all: Vec<ModDef> = wfsim_engine::data::mods::classes()
+        .into_iter()
+        .flat_map(class_pool)
+        .collect();
+    let pick = |id: &str| {
+        all.iter()
+            .find(|m| m.id == id)
+            .cloned()
+            .unwrap_or_else(|| panic!("missing {id}"))
+    };
+    let pool = vec![
+        pick("stormbringer"),
+        pick("infected_clip"),
+        pick("cryo_rounds"),
+        pick("hellfire"),
+        pick("galvanized_chamber"),
+        pick("galvanized_aptitude"),
+        pick("galvanized_scope"),
+        pick("vigilante_armaments"),
+        pick("rifle_elementalist"),
+        pick("semi_rifle_cannonade"),
+    ];
+    let base = WeaponBase::from_data("burston_prime", false, &[]);
+    let case = Case {
+        pool: &pool,
+        base: &base,
+        second: Some(&base),
+        exilus: &[None],
+        cap: 90,
+    };
+    case.diff(&[0, 1, 2, 3, 4, 5, 6, 7], (24, 3));
+    case.diff(&[0, 1, 2, 3, 4, 5, 8, 9], (24, 3));
+}
+
+#[test]
 #[ignore = "short local timing, run explicitly with --ignored --nocapture"]
 fn time_legacy_and_classes() {
     let mut pool = cards();

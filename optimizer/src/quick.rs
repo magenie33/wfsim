@@ -14,8 +14,45 @@
 //! caller wires them to the quick calc's own candidate list, the auto-Forma
 //! planner and the simulator's fight, so none of those rules exists twice.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::hash::{BuildHasherDefault, Hasher};
 use std::sync::atomic::{AtomicBool, Ordering};
+
+#[derive(Default)]
+struct FastHasher(u64);
+
+impl Hasher for FastHasher {
+    #[inline]
+    fn finish(&self) -> u64 {
+        self.0
+    }
+
+    #[inline]
+    fn write(&mut self, bytes: &[u8]) {
+        const K: u64 = 0x517cc1b727220a95;
+        let mut h = self.0;
+        let mut chunks = bytes.chunks_exact(8);
+        for chunk in &mut chunks {
+            let word = u64::from_le_bytes(chunk.try_into().unwrap());
+            h = (h.rotate_left(5) ^ word).wrapping_mul(K);
+        }
+        let rem = chunks.remainder();
+        if !rem.is_empty() {
+            let mut tail = [0u8; 8];
+            tail[..rem.len()].copy_from_slice(rem);
+            h = (h.rotate_left(5) ^ u64::from_le_bytes(tail) ^ (rem.len() as u64)).wrapping_mul(K);
+        }
+        self.0 = h;
+    }
+
+    #[inline]
+    fn write_usize(&mut self, i: usize) {
+        self.0 = (self.0.rotate_left(5) ^ (i as u64)).wrapping_mul(0x517cc1b727220a95);
+    }
+}
+
+type FastMap<K, V> = HashMap<K, V, BuildHasherDefault<FastHasher>>;
+type FastSet<K> = HashSet<K, BuildHasherDefault<FastHasher>>;
 
 /// A position of a build: an axis kind and an index within it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -165,13 +202,13 @@ pub struct QuickConfig<'a> {
 struct Run<'a, S: QuickSpace> {
     space: &'a S,
     cfg: &'a QuickConfig<'a>,
-    cache: HashMap<String, Score>,
+    cache: FastMap<String, Score>,
     /// Screen scores of builds the screen dropped. Never in `cache`, so a
     /// dropped build is never a move and never on the list.
-    rough: HashMap<String, Score>,
+    rough: FastMap<String, Score>,
     /// Every build a SWEEP asked about, by key: whole builds, legal, one change
     /// from where some start stood. The fill's half-empty builds are not here.
-    seen: HashMap<String, S::Build>,
+    seen: FastMap<String, S::Build>,
     sweeping: bool,
     stats: QuickStats,
     now: StartProgress,
@@ -253,15 +290,34 @@ impl<S: QuickSpace> Run<'_, S> {
                 self.rough.insert(alts[i].0.clone(), s);
             }
         }
-        let mut ranked = fresh;
-        let score = |&i: &usize| self.rough[&alts[i].0];
-        let head = score(&ranked[0]);
-        self.screen_tied = ranked.iter().all(|i| one_build(score(i), head));
+        let mut ranked: Vec<(usize, Score)> = fresh
+            .into_iter()
+            .map(|i| (i, self.rough[&alts[i].0]))
+            .collect();
+        let head = ranked[0].1;
+        self.screen_tied = ranked.iter().all(|&(_, s)| one_build(s, head));
         let keep = ((self.space.keep_ratio() * ranked.len() as f64).ceil() as usize).clamp(1, ranked.len());
         if keep == ranked.len() { return Some(alts); }
-        rank_ties(&mut ranked, score, |&a, &b| self.space.prefer(&alts[a].1, &alts[b].1).then(a.cmp(&b)));
+        let tie = |&(a, _): &(usize, Score), &(b, _): &(usize, Score)| {
+            self.space.prefer(&alts[a].1, &alts[b].1).then(a.cmp(&b))
+        };
+        ranked.sort_unstable_by(|a, b| {
+            best_first(a.1, b.1).then_with(|| if a.1.is_none() { tie(a, b) } else { a.0.cmp(&b.0) })
+        });
+        let mut at = 0;
+        while at < keep {
+            let group_head = ranked[at].1;
+            let end = (at + 1..ranked.len())
+                .find(|&j| !one_build(ranked[j].1, group_head))
+                .unwrap_or(ranked.len());
+            if at < keep && keep < end && end - at > 1 {
+                ranked[at..end].sort_unstable_by(&tie);
+                break;
+            }
+            at = end;
+        }
         let mut dropped = vec![false; alts.len()];
-        for &i in &ranked[keep..] { dropped[i] = true; }
+        for &(i, _) in &ranked[keep..] { dropped[i] = true; }
         Some(alts.into_iter().zip(dropped).filter_map(|(b, d)| (!d).then_some(b)).collect())
     }
 
@@ -274,7 +330,7 @@ impl<S: QuickSpace> Run<'_, S> {
     /// one is that riven, not a refusal.
     fn best(&mut self, alts: Vec<S::Build>, p: Position) -> Option<Option<(S::Build, Score, bool)>> {
         let free: Vec<Position> = self.free.iter().copied().filter(|q| *q != p).collect();
-        let mut keys = std::collections::HashSet::new();
+        let mut keys = FastSet::default();
         let mut fit = Vec::new();
         for b in alts {
             let b = if self.space.legal(&b) {
@@ -298,9 +354,10 @@ impl<S: QuickSpace> Run<'_, S> {
         drop(keys);
         let alts = self.screened(fit)?;
         let scores = self.score(&alts)?;
+        let keep_seen = self.sweeping && !self.space.defer_results();
         let mut best: Option<(S::Build, Score)> = None;
         for ((key, b), &s) in alts.into_iter().zip(&scores) {
-            if self.sweeping { self.seen.entry(key).or_insert_with(|| b.clone()); }
+            if keep_seen { self.seen.entry(key).or_insert_with(|| b.clone()); }
             if best.as_ref().is_none_or(|(x, xs)| self.wins(&b, s, x, *xs)) {
                 best = Some((b, s));
             }
@@ -383,7 +440,8 @@ impl<S: QuickSpace> Run<'_, S> {
         self.seen.entry(key.clone()).or_insert_with(|| cur.clone());
         // A TIE MOVES ONLY TOWARD THE PREFERRED, but "as one" is a tolerance
         // and not an order, so a build the sweep has stood on is never a move.
-        let mut visited = std::collections::HashSet::from([key]);
+        let mut visited = FastSet::default();
+        visited.insert(key);
         'sweep: loop {
             let positions: Vec<Position> =
                 self.space.positions(&cur).into_iter().filter(|p| !fixed(p)).collect();
@@ -414,7 +472,7 @@ impl<S: QuickSpace> Run<'_, S> {
             if coupled.len() > 1 {
                 self.now.at = positions.len();
                 let mut pairs: Vec<S::Build> = Vec::new();
-                let mut keys = std::collections::HashSet::new();
+                let mut keys = FastSet::default();
                 for (i, &p) in coupled[..coupled.len() - 1].iter().enumerate() {
                     for c in self.space.candidates(&cur, p) {
                         for &q in &coupled[i + 1..] {
@@ -470,9 +528,9 @@ pub fn quick_descent<S: QuickSpace>(
     let mut run = Run {
         space,
         cfg,
-        cache: HashMap::new(),
-        rough: HashMap::new(),
-        seen: HashMap::new(),
+        cache: FastMap::default(),
+        rough: FastMap::default(),
+        seen: FastMap::default(),
         sweeping: false,
         stats: QuickStats::default(),
         now: StartProgress::default(),
@@ -575,7 +633,9 @@ fn rank_ties<T>(v: &mut [T], score: impl Fn(&T) -> Score, tie: impl Fn(&T, &T) -
     while at < v.len() {
         let head = score(&v[at]);
         let end = (at + 1..v.len()).find(|&j| !one_build(score(&v[j]), head)).unwrap_or(v.len());
-        v[at..end].sort_by(&tie);
+        if end - at > 1 {
+            v[at..end].sort_by(&tie);
+        }
         at = end;
     }
 }
@@ -614,7 +674,7 @@ mod tests {
         }
         let space = Batch::default();
         let cfg = QuickConfig { max_evals: 0, stop: vec![] };
-        let mut run = Run { space: &space, cfg: &cfg, cache: HashMap::new(), rough: HashMap::new(), seen: HashMap::new(),
+        let mut run = Run { space: &space, cfg: &cfg, cache: FastMap::default(), rough: FastMap::default(), seen: FastMap::default(),
             sweeping: true, stats: QuickStats::default(), now: StartProgress::default(), free: vec![], screen_tied: true };
         for step in 1..=2 {
             let found = run.best(vec![9, 2, 4, 2, 3, 1, 7], Position {kind:"test", idx:0}).unwrap().unwrap();

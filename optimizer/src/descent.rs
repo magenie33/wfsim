@@ -516,22 +516,31 @@ fn par_map<T: Sync, R: Send>(items: &[T], f: impl Fn(&T) -> R + Sync) -> Vec<R> 
 pub fn map_ordered<T: Sync, R: Send>(items: &[T], threads: usize, f: impl Fn(&T) -> R + Sync) -> Vec<R> {
     let threads = crate::threads::resolve_threads(threads).min(items.len()).max(1);
     if threads == 1 { return items.iter().map(f).collect(); }
-    let chunk = items.len().div_ceil(threads).max(1);
-    let mut parts: Vec<Vec<R>> = Vec::new();
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    let slots: Vec<std::sync::Mutex<Option<R>>> =
+        (0..items.len()).map(|_| std::sync::Mutex::new(None)).collect();
     std::thread::scope(|scope| {
-        let handles: Vec<_> = items
-            .chunks(chunk)
-            .map(|part| {
-                let f = &f;
-                scope.spawn(move || {
-                    crate::deprioritize_current_thread();
-                    part.iter().map(f).collect::<Vec<R>>()
-                })
-            })
-            .collect();
-        parts = handles.into_iter().map(|h| h.join().expect("descent worker")).collect();
+        for _ in 0..threads {
+            let next = &next;
+            let slots = &slots;
+            let f = &f;
+            scope.spawn(move || {
+                crate::deprioritize_current_thread();
+                loop {
+                    let i = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    if i >= items.len() {
+                        break;
+                    }
+                    let r = f(&items[i]);
+                    *slots[i].lock().expect("descent output slot") = Some(r);
+                }
+            });
+        }
     });
-    parts.into_iter().flatten().collect()
+    slots
+        .into_iter()
+        .map(|s| s.into_inner().expect("descent output slot").expect("descent job completed"))
+        .collect()
 }
 
 #[cfg(target_arch = "wasm32")]

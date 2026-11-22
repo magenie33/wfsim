@@ -16,7 +16,7 @@
 //! land afterward. Nothing here equates different partitions by magnitude.
 
 use wfsim_engine::build::loadout::ResolvedPanel;
-use wfsim_engine::model::{IndirectStat, ModDef, ModEffect, WeaponBase};
+use wfsim_engine::model::{AcidShellsPart, ModDef, ModEffect, WeaponBase};
 use wfsim_engine::rules::damage::DamageType;
 
 pub(super) fn anchor(
@@ -64,27 +64,83 @@ fn plain(m: &ModDef) -> bool {
 }
 
 pub(super) fn fixed_tail(m: &ModDef) -> bool {
-    plain(m)
-        && m.effects.iter().all(|e| match *e {
-            ModEffect::BaseDamage(v)
-            | ModEffect::Multishot(v)
-            | ModEffect::CritChance(v)
-            | ModEffect::CritDamage(v)
-            | ModEffect::StatusChance(v)
-            | ModEffect::FireRate(v)
-            | ModEffect::ReloadSpeed(v)
-            | ModEffect::MagazineCapacity(v)
-            | ModEffect::Indirect(
-                IndirectStat::ProjectileSpeed
-                | IndirectStat::Recoil
-                | IndirectStat::Noise
-                | IndirectStat::AmmoMax
-                | IndirectStat::AmmoConversion,
-                v,
-            ) => v.is_finite(),
-            ModEffect::CombinedElement(t, v) => t.is_secondary_element() && v.is_finite(),
-            _ => false,
-        })
+    m.stance.is_none() && m.effects.iter().all(fixed_tail_effect)
+}
+
+fn fixed_tail_effect(e: &ModEffect) -> bool {
+    match *e {
+        ModEffect::Element(..)
+        | ModEffect::DamageConversion { .. }
+        | ModEffect::PostCoalesceElement(..) => false,
+        ModEffect::CombinedElement(t, v) => t.is_secondary_element() && v.is_finite(),
+        ModEffect::WhileTenno(_, ref inner) => fixed_tail_effect(inner),
+        ModEffect::BaseDamage(v)
+        | ModEffect::Multishot(v)
+        | ModEffect::CritChance(v)
+        | ModEffect::CritDamage(v)
+        | ModEffect::StatusChance(v)
+        | ModEffect::PostModStatusChance(v)
+        | ModEffect::FireRate(v)
+        | ModEffect::ChargeRate(v)
+        | ModEffect::ReloadSpeed(v)
+        | ModEffect::MagazineCapacity(v)
+        | ModEffect::FlatBaseMagazine(v)
+        | ModEffect::StatusDamage(v)
+        | ModEffect::StatusDuration(v)
+        | ModEffect::SlashOnCrit(v)
+        | ModEffect::AmmoEfficiency(v)
+        | ModEffect::BlastRadius(v)
+        | ModEffect::WeakpointDamage(v)
+        | ModEffect::HeadshotDamage(v)
+        | ModEffect::WeakpointCritChance(v)
+        | ModEffect::LastRoundDamage(v)
+        | ModEffect::FirstRoundDamage(v)
+        | ModEffect::AddedSpread(v)
+        | ModEffect::OverguardDamage(v)
+        | ModEffect::NonCritDamage(v)
+        | ModEffect::MagazineRefillOnKill(v)
+        | ModEffect::ComboDuration(v)
+        | ModEffect::LingeringAreaFraction(v)
+        | ModEffect::Indirect(_, v)
+        | ModEffect::FactionDamage(_, v)
+        | ModEffect::Physical(_, v)
+        | ModEffect::CondBuff(_, v) => v.is_finite(),
+        ModEffect::GrantsStackingBuff(ref b) => {
+            b.per_stack.is_finite() && b.duration.is_finite() && b.chance.is_finite()
+        }
+        ModEffect::OnKillMultishot { per_stack, duration, .. }
+        | ModEffect::ConditionOverload { per_stack, duration, .. }
+        | ModEffect::OnHeadshotKillCritChance { per_stack, duration, .. }
+        | ModEffect::ConsecutiveHitDamage { per_stack, duration, .. } => {
+            per_stack.is_finite() && duration.is_finite()
+        }
+        ModEffect::OnHeadshotCritChance { bonus, duration }
+        | ModEffect::OnKillCritDamage { bonus, duration }
+        | ModEffect::OnReloadFireRate { bonus, duration }
+        | ModEffect::OnReloadDamage { bonus, duration }
+        | ModEffect::OnEximusWeakpointDamage { bonus, duration } => {
+            bonus.is_finite() && duration.is_finite()
+        }
+        ModEffect::BaseDamageIfNoEnemyWithin { bonus, metres }
+        | ModEffect::BaseDamageBeyondTargetRange { bonus, metres } => {
+            bonus.is_finite() && metres.is_finite()
+        }
+        ModEffect::PerTendril { crit_chance, status_chance } => {
+            crit_chance.is_finite() && status_chance.is_finite()
+        }
+        ModEffect::CritChancePerHit(c) => c.per_stack.is_finite() && c.max_bonus.is_finite(),
+        ModEffect::ProcConversion { chance, low_rate_threshold, low_rate_multiplier, .. } => {
+            chance.is_finite() && low_rate_threshold.is_finite() && low_rate_multiplier.is_finite()
+        }
+        ModEffect::SyndicateRadial { amount, .. } => amount.is_finite(),
+        ModEffect::AcidShells(part) => match part {
+            AcidShellsPart::FlatDamage(v)
+            | AcidShellsPart::HealthFraction(v)
+            | AcidShellsPart::RadiusM(v) => v.is_finite(),
+        },
+        ModEffect::GrantsLingering(_) | ModEffect::AdditionalForcedProcs(..) => true,
+        _ => false,
+    }
 }
 
 pub(super) fn pair_class(order: &[DamageType], anchor: DamageType) -> u32 {

@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Element orders that can occupy prescribed physical slots.
-use crate::{rebuild_candidate, Candidate};
+use crate::Candidate;
 use std::collections::HashSet;
 use wfsim_engine::{
+    build::loadout::resolve_for,
     data::tenno::Tenno,
     model::{ModDef, StackPolicy, WeaponBase},
-    rules::{capacity::Polarity, damage::DamageType},
+    rules::{
+        capacity::{plan_forma, PlannedMod, Polarity},
+        damage::DamageType,
+    },
 };
 
 /// Enumerate each reachable element order, retaining one layout per damage vector.
@@ -23,6 +27,36 @@ pub fn expand_with_slots(
     tenno: &Tenno,
     policy: StackPolicy,
 ) -> Vec<Candidate> {
+    if subset.iter().any(|&i| i >= pool.len()) {
+        return Vec::new();
+    }
+    let mut planned: Vec<PlannedMod> = subset
+        .iter()
+        .filter(|&&i| pool[i].stance.is_none())
+        .map(|&i| PlannedMod {
+            base_drain: pool[i].base_drain,
+            polarity: pool[i].polarity,
+        })
+        .collect();
+    if let Some(x) = exilus {
+        planned.push(PlannedMod {
+            base_drain: x.base_drain,
+            polarity: x.polarity,
+        });
+    }
+    let padded_slots;
+    let slot_polarities: &[Option<Polarity>] = if innate.len() >= planned.len() {
+        innate
+    } else {
+        let mut v = innate.to_vec();
+        v.resize(planned.len(), None);
+        padded_slots = v;
+        &padded_slots
+    };
+    let Ok(plan) = plan_forma(cap, slot_polarities, &planned) else {
+        return Vec::new();
+    };
+
     let mut elements = Vec::new();
     for &i in subset {
         if let Some(t) = pool[i].primary_element() {
@@ -42,11 +76,18 @@ pub fn expand_with_slots(
         })
         .collect();
     free.sort_unstable();
+    let stances: Vec<usize> = subset
+        .iter()
+        .copied()
+        .filter(|&i| pool[i].stance.is_some())
+        .collect();
     let mut seen = HashSet::new();
     let mut out = Vec::new();
+    let mut dead = HashSet::new();
+    let mut refs = Vec::with_capacity(subset.len() + usize::from(exilus.is_some()));
     for order in orders {
         let mut layout = [None; 8];
-        let mut dead = HashSet::new();
+        dead.clear();
         if !seat(
             pool,
             &free,
@@ -61,32 +102,34 @@ pub fn expand_with_slots(
         ) {
             continue;
         }
-        let mut ordered: Vec<usize> = layout.iter().flatten().copied().collect();
-        ordered.extend(subset.iter().copied().filter(|&i| pool[i].stance.is_some()));
-        let Some(mut c) = rebuild_candidate(
-            pool,
-            base,
-            None,
-            innate,
-            cap,
-            tenno,
-            policy,
-            &ordered,
-            variant,
-            0,
-            &[exilus],
-        ) else {
-            continue;
-        };
-        let vector: Vec<_> = c
-            .panel
+        let mut ordered: Vec<usize> = Vec::with_capacity(subset.len());
+        for s in layout.iter().flatten() {
+            ordered.push(*s);
+        }
+        ordered.extend_from_slice(&stances);
+        refs.clear();
+        for &i in &ordered {
+            refs.push(&pool[i]);
+        }
+        if let Some(x) = exilus {
+            refs.push(x);
+        }
+        let panel = resolve_for(base, &refs, policy, tenno);
+        let vector: Vec<_> = panel
             .damage
             .iter_nonzero()
             .map(|(t, v)| (t, (v * 1e6).round() as i64))
             .collect();
         if seen.insert(vector) {
-            c.slots = Some(layout);
-            out.push(c);
+            out.push(Candidate {
+                ordered,
+                slots: Some(layout),
+                panel,
+                base_panel: None,
+                plan: plan.clone(),
+                variant,
+                exilus: 0,
+            });
         }
     }
     out
