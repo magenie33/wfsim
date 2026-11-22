@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import postgres from "./pg/node_modules/postgres/src/index.js";
+import { openEnv } from "./factoryd.mjs";
 import { pgDb, placeholders, postgresClient } from "../worker/db.js";
 import { signalTick, workWaiting } from "../worker/settler.js";
 
@@ -63,6 +64,14 @@ async function addLive(id, task, waits, until = null) {
 
 try {
   await sql.unsafe(`CREATE SCHEMA ${schema}`);
+  const daemon = await openEnv({ PG_URL: testUrl }, (target, options) => postgres(target, {
+    ...options, connection: { jit: "on", ...options.connection, search_path: schema },
+  }));
+  try {
+    const settings = `SELECT current_setting('application_name') AS name,current_setting('jit') AS jit`;
+    assert.deepEqual(await daemon.signalEnv.LIBRARY.prepare(settings).first(), { name: "wfsim-factoryd-signal", jit: "off" });
+    assert.deepEqual(await daemon.env.LIBRARY.prepare(settings).first(), { name: "wfsim-factoryd", jit: "on" });
+  } finally { await daemon.close(); }
   for (const name of ["schema", "library", "sync", "inventory", "build_workflows", "board_admission"]) {
     await sql.unsafe(readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta.url), "utf8"));
   }

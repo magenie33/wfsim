@@ -94,6 +94,7 @@ export async function openEnv(env = process.env, connect = postgres) {
     // Background batches can contain several bounded statements; the connection stays alive between them.
     const connection = { ...CONNECTION, ...(background ? { transaction_timeout: 0 } : {}),
       ...(stage ? {statement_timeout:5000,transaction_timeout:30000} : {}),
+      ...(signal ? { jit: "off" } : {}),
       application_name: signal ? "wfsim-factoryd-signal" : stage ? "wfsim-factoryd-"+stage : background ? "wfsim-factoryd-background" : CONNECTION.application_name };
     const c = postgresClient(connect(url, { ...POSTGRES_OPTIONS, max, idle_timeout: 0, connection, onnotice: () => {},
       ...(env.PG_SOCKET ? { host: env.PG_SOCKET } : {}) }));
