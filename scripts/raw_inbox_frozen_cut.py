@@ -2,6 +2,7 @@
 """Stage a verified hot relation or prepare a cut for the original lock-holder session."""
 
 import argparse
+from contextlib import ExitStack, contextmanager
 import gzip
 import hashlib
 import json
@@ -9,6 +10,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 import uuid
 
 from raw_inbox_frozen_assemble import ranges, read_group
@@ -23,6 +25,9 @@ FIELDS = "id,at,record,initiator,family_source,observation"
 IDENT = re.compile(r"[a-z][a-z0-9_]*\Z")
 LEGACY = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\Z")
 HEX = re.compile(r"[0-9a-f]{64}\Z")
+HOT_BUCKETS = 128
+HOT_HASH_BYTES = 32
+HOT_BUCKET_LIMIT = 16*1024*1024
 
 
 def literal(value):
@@ -135,6 +140,78 @@ END $$;"""
         emit(dict(stage="staged_hot_range",start=start,end=end,rows=known["rows"],replay=hold is not None))
 
 
+def hot_fields(stream):
+    while (fields := row_fields(stream,6)) is not None:
+        yield fields
+
+
+def write_hot_hashes(directory, label, rows, limit):
+    count = 0
+    with ExitStack() as resources:
+        files = {}
+        for fields in rows:
+            count += 1
+            if count>limit:
+                raise RuntimeError("hot content exceeds the captured row count")
+            digest = hashlib.sha256(b"\x00\x06"+b"".join(fields[:6])).digest()
+            bucket = digest[0]//2
+            if bucket not in files:
+                files[bucket] = resources.enter_context((directory/f"{label}-{bucket}").open("wb"))
+            files[bucket].write(digest)
+    if count!=limit:
+        raise RuntimeError("hot content does not cover the captured rows")
+    return count
+
+
+@contextmanager
+def hot_content_witness(args, plan):
+    if args.hot_verify_spool_bytes is None:
+        yield None
+        return
+    count = plan["counts"]["hot"]
+    stat = os.statvfs(args.work)
+    projected = 2*(count*HOT_HASH_BYTES+HOT_BUCKETS*stat.f_frsize)
+    if not plan.get("hot_staged") or projected>min(args.hot_verify_spool_bytes,stat.f_bavail*stat.f_frsize):
+        raise RuntimeError("staged hot content verification exceeds its spool budget")
+    control,freeze,entries = ranges(args.work,args.generation,args.range_list,args.legacy_freeze_proof)
+    if control!=plan["control"] or freeze!=plan["freeze"] or [capture for capture,_ in entries]!=plan["ranges"]:
+        raise RuntimeError("hot content witness changed frozen source ranges")
+
+    def source_rows():
+        for capture, folder in entries:
+            rows = capture["counts"]["hot"]
+            if rows:
+                group = read_group(folder/"hot.copy.gz",7,capture["groups"]["hot"])
+                seen = 0
+                for fields,_ in group:
+                    seen += 1
+                    yield fields
+                if seen!=rows:
+                    raise RuntimeError("hot content witness changed a range row count")
+
+    with tempfile.TemporaryDirectory(prefix="raw-hot-verify-",dir=args.work) as tmp:
+        directory = Path(tmp)
+        write_hot_hashes(directory,"source",source_rows(),count)
+        yield directory
+
+
+def match_hot_hashes(directory, stream, expected):
+    count = write_hot_hashes(directory,"staged",hot_fields(stream),expected)
+
+    def bucket_hashes(path):
+        if not path.exists():
+            return []
+        if path.stat().st_size>HOT_BUCKET_LIMIT:
+            raise RuntimeError("one hot verification bucket exceeds its memory bound")
+        content = path.read_bytes()
+        return sorted(content[index:index+HOT_HASH_BYTES] for index in range(0,len(content),HOT_HASH_BYTES))
+
+    for bucket in range(HOT_BUCKETS):
+        if bucket_hashes(directory/f"source-{bucket}")!=bucket_hashes(directory/f"staged-{bucket}"):
+            raise RuntimeError("the staged hot rows differ from the verified source content")
+    return count
+
+
 def inspect_hot(args, plan, freeze):
     ledger = ""
     if plan.get("hot_staged"):
@@ -158,7 +235,8 @@ WHERE c.oid='{HOT}'::regclass AND l.pid={freeze["pid"]} AND l.granted
 {ledger}
 COPY {HOT} ({FIELDS}) TO STDOUT WITH (FORMAT binary);
 COMMIT;"""
-    with subprocess.Popen([*PSQL,"--no-password"],env=pg_environment(args.source_service),
+    with hot_content_witness(args,plan) as witness, subprocess.Popen(
+                          [*PSQL,"--no-password"],env=pg_environment(args.source_service),
                           stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL) as proc:
         try:
             proc.stdin.write(query.encode())
@@ -178,16 +256,19 @@ COMMIT;"""
                         (capture["start"],capture["end"],str(args.generation),capture["source_sha256"],
                          capture["groups"]["hot"]["sha256"],capture["counts"]["hot"])):
                         raise RuntimeError("hot stage receipt does not match its verified physical rows")
-                    segment = hashlib.sha256()
-                    for _ in range(check["rows"]):
-                        fields = row_fields(proc.stdout,6)
-                        if fields is None:
-                            raise RuntimeError("staged hot stream ended early")
-                        segment.update(b"\x00\x06"+b"".join(fields))
-                        count += 1
-                    if segment.hexdigest()!=check["hot_sha"]:
-                        raise RuntimeError("staged hot range changed after verified COPY")
-                if row_fields(proc.stdout,6) is not None:
+                    if witness is None:
+                        segment = hashlib.sha256()
+                        for _ in range(check["rows"]):
+                            fields = row_fields(proc.stdout,6)
+                            if fields is None:
+                                raise RuntimeError("staged hot stream ended early")
+                            segment.update(b"\x00\x06"+b"".join(fields))
+                            count += 1
+                        if segment.hexdigest()!=check["hot_sha"]:
+                            raise RuntimeError("staged hot range changed after verified COPY")
+                if witness is not None:
+                    count = match_hot_hashes(witness,proc.stdout,plan["counts"]["hot"])
+                elif row_fields(proc.stdout,6) is not None:
                     raise RuntimeError("staged hot stream exceeded its expected coverage")
             else:
                 while (fields := row_fields(proc.stdout,6)) is not None:
@@ -330,6 +411,7 @@ def main():
     parser.add_argument("--range-list",type=Path)
     parser.add_argument("--legacy-freeze-proof",type=Path)
     parser.add_argument("--retire-hot-copy",action="store_true")
+    parser.add_argument("--hot-verify-spool-bytes",type=int)
     args = parser.parse_args()
     if not IDENT.fullmatch(args.schema) or not 0<args.freeze_pid<=2147483647 or (
         args.cut_pid is not None and not 0<args.cut_pid<=2147483647):
