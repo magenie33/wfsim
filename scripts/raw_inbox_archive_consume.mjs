@@ -9,6 +9,7 @@ import { buildBatches } from './build_batches.mjs';
 import { close, transaction } from './db.mjs';
 
 const MAX_BYTES = 8392704;
+const PACKAGE_ROWS = 2048;
 const SLICE_ROWS = 64;
 const CLI_START_BUDGET_MS = 10000;
 
@@ -20,7 +21,7 @@ export async function consumeArchive(bytes, digest, native, sqlMs, {startUntil=I
   if (!Number.isSafeInteger(sqlMs) || sqlMs<1 || sqlMs>12000) throw Error('invalid raw archive statement limit');
   const body=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
   const packet=JSON.parse(body);
-  if (!Array.isArray(packet.rows) || packet.rows.length<1 || packet.rows.length>512 || !Number.isSafeInteger(packet.part) || packet.part<1)
+  if (!Array.isArray(packet.rows) || packet.rows.length<1 || packet.rows.length>PACKAGE_ROWS || !Number.isSafeInteger(packet.part) || packet.part<1)
     throw Error('invalid raw archive rows');
   const timeout={sql:"SELECT set_config('statement_timeout',?,true)",params:[sqlMs+'ms']};
   const [,[{pending}]]=await transaction([timeout,{sql:'SELECT raw_archive_pending(?::uuid,?::bigint,?::text) AS pending',

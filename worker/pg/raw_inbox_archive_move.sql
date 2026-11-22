@@ -158,8 +158,12 @@ CREATE OR REPLACE FUNCTION raw_archive_move_page(integer,integer) RETURNS jsonb
 LANGUAGE plpgsql STABLE SET search_path FROM CURRENT AS $$
 DECLARE active state_raw_archive_move%ROWTYPE; part bigint; packet jsonb; scanned integer;
 BEGIN
-  IF $1 IS NULL OR $1 NOT BETWEEN 1 AND 512 OR $2 IS NULL OR $2 NOT BETWEEN 4096 AND 8388608 THEN
+  IF $1 IS NULL OR $1 NOT BETWEEN 1 AND 2048 OR $2 IS NULL OR $2 NOT BETWEEN 4096 AND 8388608 THEN
     RAISE EXCEPTION 'invalid raw archive source bounds'; END IF;
+  IF $1>512 AND NOT EXISTS(SELECT FROM pg_constraint
+    WHERE conrelid='record_raw_archive_parts'::regclass AND conname='raw_archive_parts_rows_wide') THEN
+    RAISE EXCEPTION 'wide archive pages require the matching metadata upgrade' USING ERRCODE='55000';
+  END IF;
   SELECT * INTO STRICT active FROM state_raw_archive_move WHERE id=1 AND phase='copying';
   SELECT sealed_parts+1 INTO STRICT part FROM state_raw_archive_generation WHERE generation=active.generation AND phase='sealing';
   WITH sizes AS MATERIALIZED (

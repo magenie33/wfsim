@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS state_raw_archive_generation (
   CHECK(retired_part BETWEEN 0 AND CASE WHEN phase='abandoned' THEN sealed_parts ELSE next_part-1 END)
 );
 ALTER TABLE state_raw_archive_generation ADD COLUMN IF NOT EXISTS next_offset integer NOT NULL DEFAULT 0
-  CHECK(next_offset BETWEEN 0 AND 511);
+  CONSTRAINT raw_archive_generation_offset_wide CHECK(next_offset BETWEEN 0 AND 2047);
 ALTER TABLE state_raw_archive_generation ADD COLUMN IF NOT EXISTS next_slice_rows integer NOT NULL DEFAULT 64
   CHECK(next_slice_rows BETWEEN 1 AND 64);
 CREATE UNIQUE INDEX IF NOT EXISTS raw_archive_single_generation ON state_raw_archive_generation((true)) WHERE phase IN('sealing','consuming');
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS record_raw_archive_parts (
   part bigint NOT NULL CHECK(part>0),
   first_id text COLLATE "C" NOT NULL,
   last_id text COLLATE "C" NOT NULL CHECK(last_id>=first_id),
-  rows integer NOT NULL CHECK(rows BETWEEN 1 AND 512),
+  rows integer NOT NULL CONSTRAINT raw_archive_parts_rows_wide CHECK(rows BETWEEN 1 AND 2048),
   digest text NOT NULL CHECK(digest~'^[0-9a-f]{64}$'),
   PRIMARY KEY(generation,part)
 );

@@ -48,7 +48,8 @@ const consume=part=>consumeArchive(part.body,part.digest,native,5000);
 const scratch=mkdtempSync(join(tmpdir(),'clean-raw-archive-test-'));
 const service=join(scratch,'pg_service.conf');
 const serviceAddress=url=>'host='+url.hostname+'\nport='+url.port+'\nuser='+url.username+'\ndbname='+url.pathname.slice(1)+'\n';
-writeFileSync(service,'[source]\n'+serviceAddress(connection)+'[restore]\n'+serviceAddress(restore));
+writeFileSync(service,'[source]\n'+serviceAddress(connection)+'[restore]\n'+serviceAddress(restore)+
+  '[source-alias]\n'+serviceAddress(connection));
 writeFileSync(join(scratch,'rclone'),[
   '#!/usr/bin/env python3',
   'import json,os,sys',
@@ -80,8 +81,11 @@ assert(realPsql);
 writeFileSync(join(scratch,'psql'),[
   '#!/usr/bin/env python3',
   'import os,subprocess,sys',
-  'body=sys.stdin.buffer.read()',
   'fault=os.environ.get("ARCHIVE_TEST_FAULT")',
+  'if "--no-password" in sys.argv:',
+  ' if fault=="restore-disconnect": sys.exit(1)',
+  ' os.execv(os.environ["ARCHIVE_REAL_PSQL"],[os.environ["ARCHIVE_REAL_PSQL"],*sys.argv[1:]])',
+  'body=sys.stdin.buffer.read()',
   'if fault=="before-accept" and b"raw_archive_move_accept(" in body: sys.exit(1)',
   'run=subprocess.run([os.environ["ARCHIVE_REAL_PSQL"],*sys.argv[1:]],input=body,capture_output=True)',
   'if fault=="lost-accept" and b"raw_archive_move_accept(" in body and run.returncode==0:',
@@ -105,6 +109,7 @@ function failCli(fault,...args){
   const result=runCli(args,fault);
   assert.notEqual(result.status,0,result.stdout);
   assert.ifError(result.error);
+  return result;
 }
 let writer, replay;
 async function moveFixture(){
@@ -196,8 +201,16 @@ async function moveFixture(){
     await submit(replay,freshArrival,content(6));
     const copyOnline=copy(1);
     copyOnline[copyOnline.indexOf('--rows')+1]='4';
+    copyOnline.push('--reuse-restore-connection');
     writerProof(attempt);
     cli(...start(attempt));
+    const wrongRestore=[...copyOnline];
+    wrongRestore[wrongRestore.indexOf('--restore-service')+1]='source-alias';
+    assert.match(failCli('',...wrongRestore).stderr,/closed before rollback confirmation|Broken pipe/);
+    assert.equal(cli('status-clean')[0].sealed_parts,0);
+    assert.match(failCli('restore-disconnect',...copyOnline).stderr,/closed before rollback confirmation|Broken pipe/);
+    assert.equal(cli('status-clean')[0].sealed_parts,0);
+    assert.throws(()=>cli('widen-precopy-clean','--work',scratch),/55000/);
     failCli('before-accept',...copyOnline);
     const [prepared]=await transfer(attempt);
     const verified=gunzipSync(readFileSync(join(objectDir(attempt),prepared.part+'-'+prepared.digest+'.json.gz'))).toString('utf8');

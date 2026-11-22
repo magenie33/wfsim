@@ -7,6 +7,7 @@ import io
 import json
 import os
 import re
+import selectors
 import subprocess
 import tempfile
 import time
@@ -18,6 +19,7 @@ SOURCE = Path(__file__).resolve().parents[1]
 PREFIX = 'r2:wfsim-pg-backup/raw-inbox-rollover-v1'
 MAX_BODY = 8392704
 RCLONE_FLAGS = ['--s3-no-check-bucket', '--contimeout', '8s', '--timeout', '25s', '--retries', '1']
+PSQL = ['psql', '-XqAt', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=verbose']
 
 
 def run(command, *, data=None, env=None, timeout=45, pass_fds=()):
@@ -30,16 +32,88 @@ def run(command, *, data=None, env=None, timeout=45, pass_fds=()):
     return child.stdout
 
 
-def pg(statement, *, service=None, seconds=12):
+def pg_environment(service):
     environment = os.environ.copy()
     if service:
         environment['PGSERVICE'] = service
         for key in ('PGHOST', 'PGHOSTADDR', 'PGPORT', 'PGDATABASE', 'PGUSER', 'PGPASSWORD', 'PGOPTIONS'):
             environment.pop(key, None)
-    options = f"SET statement_timeout='{seconds}s'; SET lock_timeout='500ms'; SET plan_cache_mode='force_custom_plan';\n"
-    output = run(['psql', '-XqAt', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=verbose'], data=options.encode()+statement.encode(),
-                 env=environment, timeout=seconds+7)
+    return environment
+
+
+def pg_options(seconds):
+    return f"SET statement_timeout='{seconds}s'; SET lock_timeout='500ms'; SET plan_cache_mode='force_custom_plan';\n"
+
+
+def pg(statement, *, service=None, seconds=12):
+    output = run(PSQL, data=(pg_options(seconds)+statement).encode(),
+                 env=pg_environment(service), timeout=seconds+7)
     return output.rstrip(b'\n')
+
+
+class RestoreConnection:
+    """One independent psql connection with one fully rolled-back transaction per package."""
+
+    def __init__(self, service):
+        self.service = service
+        self.child = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()
+
+    def close(self):
+        if self.child is None:
+            return
+        child, self.child = self.child, None
+        child.stdin.close()
+        child.stdout.close()
+        try:
+            child.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            child.kill()
+            child.wait(timeout=5)
+
+    def query(self, statement, *, service):
+        if service != self.service:
+            raise ValueError('restore service changed within the window')
+        first = self.child is None
+        if first:
+            self.child = subprocess.Popen([*PSQL, '--no-password'], env=pg_environment(service), bufsize=0,
+                                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        marker = uuid.uuid4().hex.encode('ascii') + b'\n'
+        sql = (pg_options(12) if first else '').encode() + statement.encode() + b'\\echo ' + marker
+        end = time.monotonic()+19
+        child = self.child
+        result = bytearray()
+        try:
+            os.set_blocking(child.stdin.fileno(), False)
+            os.set_blocking(child.stdout.fileno(), False)
+            with selectors.DefaultSelector() as ready:
+                ready.register(child.stdin, selectors.EVENT_WRITE)
+                ready.register(child.stdout, selectors.EVENT_READ)
+                pending = memoryview(sql)
+                while time.monotonic()<end:
+                    for key, event in ready.select(max(0,end-time.monotonic())):
+                        if event==selectors.EVENT_WRITE:
+                            pending = pending[os.write(key.fd,pending):]
+                            if not pending:
+                                ready.unregister(child.stdin)
+                        else:
+                            received = os.read(key.fd,65536)
+                            if not received:
+                                raise RuntimeError('independent restore closed before rollback confirmation')
+                            result.extend(received)
+                            if len(result)>MAX_BODY+65536:
+                                raise RuntimeError('independent restore exceeded its readback bound')
+                            if not pending and result.endswith(b'\n'+marker):
+                                return bytes(result[:-len(marker)-1])
+            raise TimeoutError('independent restore did not confirm rollback in time')
+        except BaseException:
+            self.close()
+            raise
 
 
 def literal_json(body):
@@ -90,7 +164,7 @@ def put(key, plain, work, *, pass_fds=()):
         run(['rclone', 'copyto', str(outgoing), key, '--immutable', '--no-traverse', *RCLONE_FLAGS],pass_fds=pass_fds)
 
 
-def prove_restore(body, restore_service, live_identity):
+def prove_restore(body, restore_service, live_identity, *, execute=None):
     if not restore_service or restore_service==os.environ.get('PGSERVICE'):
         raise ValueError('use a separate PostgreSQL restore service')
     # Compare the initialized cluster identity in the same restore connection.
@@ -114,7 +188,7 @@ SELECT jsonb_agg(jsonb_build_object('input',to_jsonb(r)-ARRAY['ordinal','positio
   'position',r.position::text,'portable',r.portable) ORDER BY r.ordinal) FROM restored r;
 ROLLBACK;
 """
-    lines = pg(header, service=restore_service).splitlines()
+    lines = (execute or pg)(header, service=restore_service).splitlines()
     if len(lines)!=2 or lines[0]!=b'1' or json.loads(lines[1])!=json.loads(body)['rows']:
         raise RuntimeError('remote packet did not restore every captured field and queue position')
 
@@ -266,6 +340,32 @@ COMMIT;
 """)
 
 
+def widen_precopy(args):
+    move = (SOURCE/'worker/pg/raw_inbox_archive_move.sql').read_text()
+    start = move.index('CREATE OR REPLACE FUNCTION raw_archive_move_page(')
+    end = move.index('CREATE OR REPLACE FUNCTION raw_archive_move_prepare(',start)
+    page = move[start:end]
+    pg(f"""BEGIN;
+SELECT set_config('search_path',quote_ident(current_schema())||',pg_catalog,pg_temp',true);
+LOCK TABLE state_raw_archive_move, state_raw_archive_generation, record_raw_archive_parts
+  IN ACCESS EXCLUSIVE MODE NOWAIT;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT FROM state_raw_archive_move m JOIN state_raw_archive_generation g USING(generation)
+    WHERE m.id=1 AND m.phase='copying' AND g.phase='sealing' AND m.online_source IS NOT NULL
+      AND m.upload_digest IS NULL AND m.source_oid='record_build_submissions'::regclass::oid)
+    OR EXISTS (SELECT FROM record_raw_archive_uploads u JOIN state_raw_archive_move m USING(generation))
+  THEN RAISE EXCEPTION 'wide archive upgrade requires the current online move between resolved pages'
+    USING ERRCODE='55000'; END IF;
+END $$;
+ALTER TABLE record_raw_archive_parts DROP CONSTRAINT record_raw_archive_parts_rows_check,
+  ADD CONSTRAINT raw_archive_parts_rows_wide CHECK(rows BETWEEN 1 AND 2048) NOT VALID;
+ALTER TABLE state_raw_archive_generation DROP CONSTRAINT state_raw_archive_generation_next_offset_check,
+  ADD CONSTRAINT raw_archive_generation_offset_wide CHECK(next_offset BETWEEN 0 AND 2047) NOT VALID;
+{page}
+COMMIT;
+""")
+
+
 @contextmanager
 def clean_archive_lock(work):
     import fcntl
@@ -277,7 +377,7 @@ def clean_archive_lock(work):
         yield lock.fileno()
 
 
-def copy_clean_page(args, live_identity, lease):
+def copy_clean_page(args, live_identity, lease, restore=None):
     disk_gate(args.work,args.root_reserve,args.work_reserve)
     body = pg(f"SELECT coalesce(raw_archive_move_prepare({args.rows},{args.bytes}),'null');")
     packet = json.loads(body)
@@ -294,7 +394,7 @@ def copy_clean_page(args, live_identity, lease):
             # A fresh readback also resolves a lost upload reply for this exact key.
             pass
         body = get(key,digest)
-        prove_restore(body,args.restore_service,live_identity)
+        prove_restore(body,args.restore_service,live_identity,execute=restore.query if restore else None)
     disk_gate(args.work,args.root_reserve,args.work_reserve)
     literal_text = f"convert_from(decode('{body.hex()}','hex'),'UTF8')"
     accepted = json_pg(f"SELECT raw_archive_move_accept({literal_text},'{digest}',{args.rows},{args.bytes});")
@@ -338,6 +438,8 @@ def writer_fence(path, generation):
 def clean_action(args, lease=None):
     if args.action=='install-clean':
         install_clean(args)
+    elif args.action=='widen-precopy-clean':
+        widen_precopy(args)
     elif args.action=='begin-precopy-clean':
         digest, source = writer_fence(args.writer_file,args.generation)
         pg(f"SELECT raw_archive_move_begin_online('{args.generation}'::uuid,'{source}','{digest}');")
@@ -361,9 +463,11 @@ def clean_action(args, lease=None):
         if not identity.isdecimal():
             raise RuntimeError('could not identify the source cluster')
         until = time.monotonic()+args.seconds
-        for _ in range(args.parts):
-            if time.monotonic()>=until or not copy_clean_page(args,identity,lease):
-                break
+        with RestoreConnection(args.restore_service) as restore:
+            for _ in range(args.parts):
+                if time.monotonic()>=until or not copy_clean_page(
+                        args,identity,lease,restore if args.reuse_restore_connection else None):
+                    break
     else:
         mode = {'begin-clean':'begin','cut-clean':'cut','abort-clean':'abort'}[args.action]
         parameters = f"'{args.generation}'::uuid"
@@ -451,6 +555,8 @@ def read_arguments():
     precopy = choices.add_parser('begin-precopy-clean')
     precopy.add_argument('generation',type=uuid.UUID)
     precopy.add_argument('--writer-file',type=Path,required=True)
+    wide = choices.add_parser('widen-precopy-clean')
+    wide.add_argument('--work',type=Path,required=True)
     for name in ('begin-clean','cut-clean','abort-clean'):
         cmd = choices.add_parser(name)
         cmd.add_argument('generation',type=uuid.UUID)
@@ -464,6 +570,7 @@ def read_arguments():
     clean = choices.add_parser('copy-clean')
     disk_arguments(clean)
     clean.add_argument('--restore-service',required=True)
+    clean.add_argument('--reuse-restore-connection',action='store_true')
     clean.add_argument('--parts',type=int,required=True)
     clean.add_argument('--seconds',type=int,required=True)
     clean.add_argument('--rows',type=int,default=512)
@@ -486,7 +593,7 @@ def main():
     args = read_arguments()
     if args.action=='install':
         install(args.tablespace)
-    elif args.action in ('copy-clean','cut-clean','abort-clean','retire-clean'):
+    elif args.action in ('copy-clean','cut-clean','abort-clean','retire-clean','widen-precopy-clean'):
         with clean_archive_lock(args.work) as lease:
             clean_action(args,lease)
         return
