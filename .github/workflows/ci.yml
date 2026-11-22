@@ -694,6 +694,18 @@ jobs:
     if: needs.plan.outputs.pipeline == 'true' && needs.plan.outputs.reuse == ''
     runs-on: ubuntu-latest
     services:
+      restore-postgres:
+        image: postgres:18.7-bookworm
+        env:
+          POSTGRES_PASSWORD: mailbox_check
+          POSTGRES_DB: wfsim_checks
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d wfsim_checks"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
       postgres:
         image: postgres:18.7-bookworm
         env:
@@ -796,6 +808,16 @@ jobs:
           cargo build --bin wfsim-intake
           node scripts/check_intake_batches.mjs
           node scripts/check_board_requested_intake.mjs
+      - name: Raw inbox rollover preserves ownership through independent PostgreSQL recovery
+        env:
+          WFSIM_RAW_ROLLOVER_TEST_URL: postgresql://postgres@127.0.0.1:5433/wfsim_checks
+          WFSIM_RAW_ROLLOVER_RESTORE_URL: postgresql://postgres@127.0.0.1:5434/wfsim_checks
+          PGPASSWORD: mailbox_check
+          PGPASSFILE: ${{ runner.temp }}/raw-rollover.pgpass
+        run: |
+          printf '%s\n' '127.0.0.1:*:wfsim_checks:postgres:mailbox_check' > "$PGPASSFILE"
+          chmod 600 "$PGPASSFILE"
+          node scripts/check_raw_inbox_rollover.mjs
       - name: Scoring inputs use the production Postgres driver
         env:
           WFSIM_SCORE_INPUTS_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
