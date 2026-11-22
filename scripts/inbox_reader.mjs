@@ -22,20 +22,29 @@ export function inboxReadUrl(value) {
 }
 
 export function inboxSource(run=query) {
-  let familyProjection;
-  const projection=()=>familyProjection??=run(`SELECT coalesce(has_function_privilege(to_regprocedure('build_family_owns_inbox(text,jsonb)'),'EXECUTE'),false) AS detached_family`,[])
-    .then(([row])=>row?.detached_family ? ','+ownedFamily : '');
+  let capabilities;
+  const ready=()=>capabilities??=run(`SELECT
+    coalesce(has_function_privilege(to_regprocedure('build_family_owns_inbox(text,jsonb)'),'EXECUTE'),false) AS detached_family,
+    coalesce(has_function_privilege(to_regprocedure('build_inbox_scan_ids(text,bigint)'),'EXECUTE'),false) AS indexed_scan`,[])
+    .then(([row])=>({ownership:row?.detached_family ? ','+ownedFamily : '',indexedScan:!!row?.indexed_scan}));
+  const exact=`CROSS JOIN LATERAL (SELECT ${fields} FROM state_build_inbox_inputs i WHERE i.id=w.id OFFSET 0) i`;
   return {
-    priority: max=>run(`SELECT p.id,p.zone,p.position FROM state_build_inbox_priorities p
-      WHERE EXISTS(SELECT 1 FROM state_build_inbox_inputs i WHERE i.id=p.id)
-      ORDER BY p.zone,p.position,p.id LIMIT ?::bigint`,[max]),
+    pagedQueue:true,
+    priority: (max,after)=>run(`SELECT p.id,p.zone,p.position FROM state_build_inbox_priorities p
+      WHERE EXISTS(SELECT FROM state_build_inbox_inputs i WHERE i.id=p.id OFFSET 0)
+      ${after?'AND (p.zone,p.position,p.id)>(?::bigint,?::text,?::text)':''}
+      ORDER BY p.zone,p.position,p.id LIMIT ?::bigint`,after?[after.zone,after.position,after.id,max]:[max]),
     byIds: async ids=>run(`WITH wanted AS MATERIALIZED (
         SELECT value AS id,ordinality FROM jsonb_array_elements_text((?::text)::jsonb) WITH ORDINALITY)
-      SELECT ${fields}${await projection()} FROM wanted w JOIN state_build_inbox_inputs i ON i.id=w.id ORDER BY w.ordinality`,[JSON.stringify(ids)]),
-    fresh: max=>run(`SELECT p.id FROM state_build_inbox_positions p
-      WHERE EXISTS(SELECT 1 FROM state_build_inbox_inputs i WHERE i.id=p.id) ORDER BY p.position,p.id LIMIT ?::bigint`,[max]),
+      SELECT ${fields}${(await ready()).ownership} FROM wanted w ${exact} ORDER BY w.ordinality`,[JSON.stringify(ids)]),
+    fresh: (max,after)=>run(`SELECT p.id,p.position FROM state_build_inbox_positions p
+      WHERE EXISTS(SELECT FROM state_build_inbox_inputs i WHERE i.id=p.id OFFSET 0)
+      ${after?'AND (p.position,p.id)>(?::bigint,?::text)':''}
+      ORDER BY p.position,p.id LIMIT ?::bigint`,after?[after.position,after.id,max]:[max]),
     after: async (id,max)=>{
-      const ownership=await projection();
+      const {ownership,indexedScan}=await ready();
+      if(indexedScan)return run(`WITH wanted AS MATERIALIZED (SELECT id FROM build_inbox_scan_ids(?::text,?::bigint))
+        SELECT ${fields}${ownership} FROM wanted w ${exact} ORDER BY i.id`,[id,max]);
       const page=`SELECT ${fields} FROM state_build_inbox_inputs i WHERE i.id>?::text ORDER BY i.id LIMIT ?::bigint`;
       if(!ownership)return run(page,[id,max]);
       return run(`WITH page AS MATERIALIZED (${page}) SELECT ${fields}${ownership} FROM page i ORDER BY i.id`,[id,max]);
@@ -73,25 +82,30 @@ export async function captureInbox({source=inboxSource(),emit,after='',maxRows=I
     await emit(line,input);hash.update(line);seen.add(input.id);ids.push(input.id);receipt.rows++;receipt.bytes+=bytes;return true;
   };
   const finish=()=>({...receipt,output_sha256:hash.digest('hex'),elapsed_seconds:(clock()-started)/1000});
-  if(timedOut())return finish();
-  const priority=await source.priority(maxRows+1);
-  for(let offset=0;offset<priority.length;offset+=pageRows) {
-    if(timedOut() || receipt.rows>=maxRows)return finish();
-    const rows=await read(()=>source.byIds(priority.slice(offset,offset+pageRows).map(row=>row.id)));
-    if(!rows)return finish();
-    for(const row of rows)if(!await take(row))return finish();
-  }
-  if(priority.length>maxRows) {receipt.stop='priority_continues';return finish();}
-  if(source.fresh && !timedOut() && receipt.rows<maxRows) {
-    const fresh=await read(()=>source.fresh(Math.ceil((maxRows-receipt.rows)/2)));
-    if(!fresh)return finish();
-    for(let offset=0;offset<fresh.length;offset+=pageRows) {
-      if(timedOut())return finish();
-      const rows=await read(()=>source.byIds(fresh.slice(offset,offset+pageRows).map(row=>row.id)));
-      if(!rows)return finish();
-      for(const row of rows)if(!await take(row))return finish();
+  const takeQueued=async (method,limit)=>{
+    let count=0, cursor;
+    while(!timedOut() && receipt.rows<maxRows) {
+      const size=source.pagedQueue?Math.min(pageRows,limit-count):limit;
+      const keys=await read(()=>source[method](size,cursor));
+      if(!keys)return null;
+      for(let offset=0;offset<keys.length;offset+=pageRows) {
+        if(timedOut() || receipt.rows>=maxRows)return null;
+        const rows=await read(()=>source.byIds(keys.slice(offset,offset+pageRows).map(row=>row.id)));
+        if(!rows)return null;
+        for(const row of rows)if(!await take(row))return null;
+      }
+      count+=keys.length;
+      if(!source.pagedQueue || keys.length<size || count>=limit)return count;
+      cursor=keys.at(-1);
     }
-  }
+    return null;
+  };
+  if(timedOut())return finish();
+  const priority=await takeQueued('priority',maxRows+1);
+  if(priority===null)return finish();
+  if(priority>maxRows) {receipt.stop='priority_continues';return finish();}
+  if(source.fresh && !timedOut() && receipt.rows<maxRows &&
+    await takeQueued('fresh',Math.ceil((maxRows-receipt.rows)/2))===null)return finish();
   while(!timedOut() && receipt.rows<maxRows) {
     const rows=await read(()=>source.after(receipt.next_after,pageRows));
     if(!rows)return finish();

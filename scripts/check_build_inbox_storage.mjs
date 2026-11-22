@@ -8,7 +8,7 @@ import { join,resolve } from 'node:path';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import { buildInboxSchemaSql } from './build_inbox_schema.mjs';
 import { buildBatches } from './build_batches.mjs';
-import { inboxSource } from './inbox_reader.mjs';
+import { captureInbox,inboxSource } from './inbox_reader.mjs';
 import { boardRequestedSchema } from './board_requested_schema.mjs';
 import { placeholders,pgDb,postgresClient } from '../worker/db.js';
 import { inboxSourceId,INBOX_GENERATION_MS } from '../worker/inbox_source.js';
@@ -233,6 +233,17 @@ try {
     await submit(tx,input(key()));
   }),error=>error.code==='40001');
   const carryBefore=await positions();
+  await assert.rejects(writer.unsafe("SELECT id FROM build_inbox_scan_ids('',1)"),error=>error.code==='42501');
+  await assert.rejects(reader.unsafe('SELECT id FROM record_build_inbox_payloads LIMIT 1'),error=>error.code==='42501');
+  const indexedCapture=[];
+  const fullSource=await query('SELECT * FROM state_build_inbox_inputs ORDER BY id');
+  const scanCursor=fullSource[0].id;
+  const withoutOwnership=({owned_family,...row})=>row;
+  assert.deepEqual((await source.after(scanCursor,2)).map(withoutOwnership),fullSource.slice(1,3));
+  const indexedReceipt=await captureInbox({source,maxRows:5,pageRows:2,emit:(_line,row)=>indexedCapture.push(row.id)});
+  assert.equal(indexedReceipt.rows,Math.min(5,fullSource.length));
+  assert.equal(new Set(indexedCapture).size,indexedReceipt.rows);
+  assert(!indexedReceipt.read_error);
   await query('CREATE OR REPLACE FUNCTION build_inbox_current_generation() RETURNS bigint LANGUAGE sql VOLATILE AS $$ SELECT '+(generation+2)+'::bigint $$');
   await query('SELECT build_inbox_close_generations()');
   await assert.rejects(submit(writer,refused),error=>error.code==='55000');
@@ -245,6 +256,7 @@ try {
   assert(moved>=2);
   assert.equal((await one('SELECT build_inbox_carry($1,64) AS n',[generation])).n,0);
   assert.deepEqual((await positions()).map(({payload_generation,...row})=>row),carryBefore.map(({payload_generation,...row})=>row));
+  assert((await source.after(tail.id.slice(0,-1),10)).some(row=>row.id===tail.id),'carried generation stays in the indexed scan');
   await assert.rejects(owner.begin(async tx=>{
     await tx.unsafe('UPDATE state_build_inbox_generations SET original=(SELECT original FROM state_build_inbox_generations WHERE generation=$2) WHERE generation=$1',[generation,generation+1]);
     await tx.unsafe('SELECT build_inbox_retire($1,false)',[generation]);

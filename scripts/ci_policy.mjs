@@ -96,6 +96,7 @@ const NON_SEARCH_TOOLS = [...NATIVE_NON_SEARCH_INPUTS, 'scripts/check_weapon_sea
   'scripts/inbox_reader.mjs', 'scripts/raw_inbox_retention.mjs', 'scripts/migrations/db_library.mjs',
   'scripts/raw_inbox_rollover.py', 'scripts/raw_inbox_archive_consume.mjs', 'scripts/check_raw_inbox_rollover.mjs',
   'scripts/build_inbox_schema.mjs', 'scripts/inbox_storage.mjs', 'scripts/check_build_inbox_storage.mjs',
+  'worker/pg/build_inbox_reader.sql',
   'deploy/wfsim-inbox-storage.service', 'deploy/wfsim-inbox-storage.timer',
   'tests/fixtures/inbox-c41/source.json', 'tests/fixtures/inbox-c41/raw_inbox_archive.sql',
   'tests/fixtures/inbox-c41/raw_inbox_archive_move.sql', 'tests/fixtures/inbox-c41/build_ack_submissions.sql',

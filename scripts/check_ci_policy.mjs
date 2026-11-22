@@ -412,6 +412,7 @@ for (const extra of ['optimizer/src/quick.rs', 'scripts/board_coverage_unknown.m
 assert.equal(classify(coverageSupplyTools, true).deep, true);
 assert.equal(classify(coverageSupplyTools, false, false).deep, true);
 const inboxStorageTools=['scripts/build_inbox_schema.mjs','scripts/inbox_storage.mjs','scripts/check_build_inbox_storage.mjs',
+  'worker/pg/build_inbox_reader.sql',
   'deploy/wfsim-inbox-storage.service','deploy/wfsim-inbox-storage.timer','tests/fixtures/inbox-c41/source.json',
   'tests/fixtures/inbox-c41/raw_inbox_archive.sql','tests/fixtures/inbox-c41/raw_inbox_archive_move.sql',
   'tests/fixtures/inbox-c41/build_ack_submissions.sql','tests/fixtures/inbox-c41/state_build_inbox_inputs.sql'];
