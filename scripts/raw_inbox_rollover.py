@@ -363,6 +363,27 @@ def retire_clean_page(generation, spool=None):
     return True
 
 
+def admission_at_limit(args):
+    limit = args.max_admission_backlog
+    if limit is None:
+        return False
+    try:
+        limited = json.loads(pg(f"""BEGIN READ ONLY;
+SET LOCAL statement_timeout='{args.statement_ms}ms';
+SELECT to_jsonb(EXISTS(SELECT FROM state_build_effective_admission_work WHERE kind='intake'
+  OFFSET {limit-1} LIMIT 1));
+COMMIT;""",seconds=(args.statement_ms+999)//1000))
+        if not limited:
+            return False
+        reason = 'admission_backlog'
+    except RuntimeError as error:
+        if 'SQLSTATE 57014' not in str(error):
+            raise
+        reason = 'admission_backlog_timeout'
+    emit({'stage':'deferred','reason':reason,'limit':limit})
+    return True
+
+
 def drain_sealed(args):
     phase = json_pg(f"""SELECT coalesce((SELECT to_jsonb(phase) FROM state_raw_archive_generation
       WHERE generation='{args.generation}'::uuid),'null'::jsonb);""")
@@ -377,10 +398,7 @@ def drain_sealed(args):
         if phase=='complete':
             emit({'stage':'complete','generation':str(args.generation)})
             return
-        if args.max_admission_backlog is not None and json_pg(f"""SELECT to_jsonb(EXISTS(
-          SELECT FROM state_build_admission_work WHERE kind='intake'
-          OFFSET {args.max_admission_backlog-1} LIMIT 1));"""):
-            emit({'stage':'deferred','reason':'admission_backlog','limit':args.max_admission_backlog})
+        if admission_at_limit(args):
             return
         receipt = consume_sealed_page(args,args.generation)
         if not receipt or not receipt['committed']:
