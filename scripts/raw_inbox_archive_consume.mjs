@@ -15,7 +15,7 @@ const CLI_START_BUDGET_MS = 10000;
 
 class SliceLimit extends Error {}
 
-export async function consumeArchive(bytes, digest, native, sqlMs, {startUntil=Infinity, hasRoom=()=>true, oneSliceRows}={}) {
+export async function consumeArchive(bytes, digest, native, sqlMs, {startUntil=Infinity, hasRoom=()=>true, oneSliceRows, guarded=false}={}) {
   if (!Buffer.isBuffer(bytes) || bytes.length>MAX_BYTES || !/^[0-9a-f]{64}$/.test(digest) ||
       createHash('sha256').update(bytes).digest('hex')!==digest) throw Error('raw archive checksum or size changed');
   if (!Number.isSafeInteger(sqlMs) || sqlMs<1 || sqlMs>12000) throw Error('invalid raw archive statement limit');
@@ -50,11 +50,18 @@ export async function consumeArchive(bytes, digest, native, sqlMs, {startUntil=I
       continue;
     }
     if(!hasRoom())return {committed:false,offset,paused:'filesystem_reserve'};
-    const [,[{result}]]=await transaction([
-      timeout,
-      {sql:'SELECT raw_archive_consume_slice(?::uuid,?::bigint,?::text,?::int,?::int,ARRAY(SELECT jsonb_array_elements_text((?::text)::jsonb)),?::text) AS result',
-        params:[packet.generation,packet.part,body,offset,end,JSON.stringify(intake.ids),intake.body]},
-    ]);
+    const consume=guarded?'raw_archive_consume_guarded_slice':'raw_archive_consume_slice';
+    let result;
+    try {
+      [,[{result}]]=await transaction([
+        timeout,
+        {sql:`SELECT ${consume}(?::uuid,?::bigint,?::text,?::int,?::int,ARRAY(SELECT jsonb_array_elements_text((?::text)::jsonb)),?::text) AS result`,
+          params:[packet.generation,packet.part,body,offset,end,JSON.stringify(intake.ids),intake.body]},
+      ]);
+    } catch(error) {
+      if(guarded&&error.code==='WSA01')return {committed:false,offset,deferred:'paused_or_cancelled_intake'};
+      throw error;
+    }
     if(!result.committed||!Number.isSafeInteger(result.offset)||result.offset<=offset||result.offset>packet.rows.length)
       throw Error('raw archive offset did not advance');
     replay=replay&&result.replay;
@@ -101,9 +108,10 @@ function diskRoom(work, rootBlocks, workBlocks) {
 
 if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).href) {
   try {
-    const [native,digest,timeout,work,rootBlocks,workBlocks,oneSliceRows]=process.argv.slice(2);
+    const [native,digest,timeout,work,rootBlocks,workBlocks,oneSliceRows,guard]=process.argv.slice(2);
     if(!native||!digest||!timeout||!work||!rootBlocks||!workBlocks)
       throw Error('raw archive consume requires Native, digest, timeout and disk reserves');
+    if(guard!==undefined&&guard!=='guarded')throw Error('unknown raw archive custody policy');
     let size=0;
     const chunks=[];
     for await(const chunk of process.stdin) {
@@ -114,7 +122,7 @@ if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).
     const root=BigInt(rootBlocks), data=BigInt(workBlocks);
     console.log(JSON.stringify(await consumeArchive(Buffer.concat(chunks),digest,native,Number(timeout),{
       startUntil:performance.now()+CLI_START_BUDGET_MS,hasRoom:()=>diskRoom(work,root,data),
-      oneSliceRows:oneSliceRows===undefined?undefined:Number(oneSliceRows),
+      oneSliceRows:oneSliceRows===undefined?undefined:Number(oneSliceRows),guarded:guard==='guarded',
     })));
   } catch(error) {
     console.error('raw archive consume refused'+(/^[A-Z0-9]{5}$/.test(error.code||'')?' ('+error.code+')':''));

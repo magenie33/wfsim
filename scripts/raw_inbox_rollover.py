@@ -292,7 +292,7 @@ def drain_page(args):
     return True
 
 
-def consume_sealed_page(args, generation=None, one_slice_rows=None):
+def consume_sealed_page(args, generation=None, one_slice_rows=None, guarded=False):
     disk_gate(args.work, args.root_reserve+args.peak_root_bytes, args.work_reserve)
     index = json_pg("SELECT coalesce(raw_archive_next(),'null'::jsonb);")
     if index is None:
@@ -319,6 +319,8 @@ def consume_sealed_page(args, generation=None, one_slice_rows=None):
                reserve_blocks(args.work,args.work_reserve)]
     if one_slice_rows is not None:
         command.append(str(one_slice_rows))
+    if guarded:
+        command.append('guarded')
     result = run(command,data=body,env=environment)
     receipt = json.loads(result)
     stage = 'consumed' if receipt['committed'] else 'partial'
@@ -326,6 +328,8 @@ def consume_sealed_page(args, generation=None, one_slice_rows=None):
         stage = 'blocked'
     if receipt.get('paused'):
         stage = 'paused'
+    if receipt.get('deferred'):
+        stage = 'deferred'
     emit({'stage':stage,**index,**receipt})
     if stage=='blocked':
         raise RuntimeError('a single pending archive input exceeds its intake limits')
@@ -370,10 +374,11 @@ def admission_at_limit(args):
     limit = args.max_admission_backlog
     if limit is None:
         return False
+    lane = ' AND NOT family' if args.guarded else ''
     try:
         limited = json.loads(pg(f"""BEGIN READ ONLY;
 SET LOCAL statement_timeout='{args.statement_ms}ms';
-SELECT to_jsonb(EXISTS(SELECT FROM state_build_effective_admission_work WHERE kind='intake'
+SELECT to_jsonb(EXISTS(SELECT FROM state_build_effective_admission_work WHERE kind='intake'{lane}
   OFFSET {limit-1} LIMIT 1));
 COMMIT;""",seconds=(args.statement_ms+999)//1000))
         if not limited:
@@ -403,7 +408,7 @@ def drain_sealed(args):
             return
         if admission_at_limit(args):
             return
-        receipt = consume_sealed_page(args,args.generation,args.one_slice_rows)
+        receipt = consume_sealed_page(args,args.generation,args.one_slice_rows,args.guarded)
         if not receipt or not receipt['committed']:
             return
         retire_clean_page(args.generation,args.local_archive)
@@ -688,6 +693,7 @@ def read_arguments():
             consume.add_argument('--seconds',type=int,required=True)
             consume.add_argument('--max-admission-backlog',type=int)
             consume.add_argument('--one-slice-rows',type=int,choices=range(1,65),metavar='1..64')
+            consume.add_argument('--guarded',action='store_true')
     clean = choices.add_parser('install-clean')
     clean.add_argument('--tablespace',required=True)
     clean.add_argument('--http-role',required=True)
@@ -756,7 +762,8 @@ def main():
             with clean_archive_lock(args.work):
                 consume_sealed_page(args)
         else:
-            if min(args.parts,args.seconds)<1 or (args.max_admission_backlog is not None and args.max_admission_backlog<1):
+            if (min(args.parts,args.seconds)<1 or (args.max_admission_backlog is not None and args.max_admission_backlog<1)
+                or (args.guarded and (args.one_slice_rows is None or args.max_admission_backlog is None))):
                 raise ValueError('provide positive archive drain budgets')
             with clean_archive_lock(args.work):
                 drain_sealed(args)
