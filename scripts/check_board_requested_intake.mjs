@@ -134,8 +134,6 @@ try{
  const {source}=await db.get('SELECT source FROM state_board_request_control');
  const pass=()=>requestedBoardPass(runner,{source,binary});
  assert.deepEqual(await requestedBoardPass(sql,{source:'00000000-0000-4000-8000-000000000000',binary}),{idle:true});
- await post('/api/board/submit',{builds:[{...record,benchmark:ruler,mode}]});
- assert.equal(await count('entity_board_requests'),0,'ordinary bulk uploads remain outside requested admission');
  const response=await post('/api/board/submit',{...body,benchmark:undefined,requested_ruler:ruler});assert.equal(response.status,200);
  const accepted=await response.json();assert.match(accepted.request,/^[a-f0-9-]{36}$/);
  const id=accepted.request;
@@ -502,6 +500,15 @@ try{
  assert(bounded.scanned<160 && bounded.groups.unconfirmed_input.bytes<=8*1024*1024);
  const remainder=await rawInboxRetentionPage(sql,{after:bounded.next,limit:160});
  assert.equal(bounded.scanned+remainder.scanned,160,'a page budget defers remaining rows to the next cursor');
+ await sql.unsafe(readFileSync(new URL('../worker/pg/build_inbox_storage.sql',import.meta.url),'utf8'));
+ const {generation}=await db.get('SELECT build_inbox_current_generation() AS generation');
+ for(const candidate of [generation-1,generation,generation+1])await db.run('SELECT build_inbox_prepare(?::bigint)',candidate);
+ await db.run('SELECT build_inbox_enable(?::text,false)','c'.repeat(64));
+ const previousRequests=await count('entity_board_requests');
+ const ordinary=await post('/api/board/submit',{builds:[{...record,benchmark:ruler,mode}]});
+ assert.equal(ordinary.status,200,'the ordinary batch is accepted with current inbox storage');
+ assert.equal(await count('record_build_inbox_payloads'),1,'the ordinary build enters the rolling inbox');
+ assert.equal(await count('entity_board_requests'),previousRequests,'ordinary bulk uploads remain outside requested admission');
  console.log(JSON.stringify({ok:true,source_kinds:2,canonical_identity:normalized.id,community_witnesses:8,standard_riven:standardized.id,
   published_score:13,old_inbox_retained:true,bulk_admission_paused:true,active_cut_preserved:true,public_work_and_answers:true,
   automatic_partition:true,legacy_unadmitted_replaced:true,cancelled_execution_preserved:true,unqualified_static_retained:true,namespace_isolation:true,
