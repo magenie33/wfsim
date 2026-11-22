@@ -8,6 +8,7 @@ import json
 import os
 import re
 import selectors
+import stat
 import subprocess
 import tempfile
 import time
@@ -164,6 +165,42 @@ def put(key, plain, work, *, pass_fds=()):
         run(['rclone', 'copyto', str(outgoing), key, '--immutable', '--no-traverse', *RCLONE_FLAGS],pass_fds=pass_fds)
 
 
+def local_object(spool, generation, part, digest):
+    if spool is None:
+        return None
+    generation = str(uuid.UUID(generation))
+    name = object_key(generation,part,digest).rsplit('/',1)[1]
+    directory = spool / (generation + '.assembled')
+    with (directory / 'spool.json').open('rb') as marker:
+        receipt = json.loads(marker.read(1025))
+    if receipt.get('v')!=1 or receipt.get('generation')!=generation or type(receipt.get('cloud_through')) is not int:
+        raise RuntimeError('local archive mount or generation changed')
+    return directory / name if part>receipt['cloud_through'] else None
+
+
+def read_local_object(path, digest):
+    if not stat.S_ISREG(path.lstat().st_mode):
+        raise RuntimeError('local archive object is not a regular file')
+    with gzip.open(path,'rb') as packed:
+        body = packed.read(MAX_BODY+1)
+    if len(body)>MAX_BODY or sha(body)!=digest:
+        raise RuntimeError('local archive digest or byte limit changed')
+    return body
+
+
+def retire_local_object(path, digest):
+    try:
+        read_local_object(path,digest)
+    except FileNotFoundError:
+        return
+    path.unlink()
+    directory = os.open(path.parent,os.O_RDONLY|os.O_DIRECTORY)
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
+
+
 def prove_restore(body, restore_service, live_identity, *, execute=None):
     if not restore_service or restore_service==os.environ.get('PGSERVICE'):
         raise ValueError('use a separate PostgreSQL restore service')
@@ -256,7 +293,8 @@ def consume_sealed_page(args):
         return
     part = int(index['part'])
     key = object_key(index['generation'],part,index['digest'])
-    body = get(key,index['digest'])
+    local = local_object(args.local_archive,index['generation'],part,index['digest'])
+    body = read_local_object(local,index['digest']) if local is not None else get(key,index['digest'])
     packet = json.loads(body)
     if packet.get('generation')!=index['generation'] or packet.get('part')!=part:
         raise RuntimeError('raw archive object belongs to another part')
@@ -284,13 +322,14 @@ def consume_sealed_page(args):
         raise RuntimeError('archive paused at filesystem reserve')
 
 
-def retire_clean_page(generation):
+def retire_clean_page(generation, spool=None):
     index = json_pg(f"SELECT coalesce(raw_archive_retire_next('{generation}'::uuid),'null'::jsonb);")
     if index is None:
         pg('SELECT raw_archive_trim_skips();')
         return
     part, digest = int(index['part']), index['digest']
     key = object_key(str(generation),part,digest)
+    local = local_object(spool,str(generation),part,digest)
 
     def object_present():
         stat = json.loads(run(['rclone','lsjson',key,'--stat',*RCLONE_FLAGS]))
@@ -301,10 +340,13 @@ def retire_clean_page(generation):
                 return True
         raise RuntimeError('unrecognized archive object state')
 
-    if object_present():
-        run(['rclone','deletefile',key,*RCLONE_FLAGS])
-    if object_present():
-        raise RuntimeError('archive object remains after retirement')
+    if local is None:
+        if object_present():
+            run(['rclone','deletefile',key,*RCLONE_FLAGS])
+        if object_present():
+            raise RuntimeError('archive object remains after retirement')
+    else:
+        retire_local_object(local,digest)
     pg(f"SELECT raw_archive_retired('{generation}'::uuid,{part},'{digest}');")
     emit({'stage':'retired','generation':str(generation),'part':part,'digest':digest})
 
@@ -485,7 +527,7 @@ def clean_action(args, lease=None):
           'skip_bytes',pg_total_relation_size('record_raw_archive_skips'))
           FROM state_raw_archive_move m LEFT JOIN state_raw_archive_generation g USING(generation);"""))
     elif args.action=='retire-clean':
-        retire_clean_page(args.generation)
+        retire_clean_page(args.generation,args.local_archive)
     elif args.action=='copy-clean':
         if min(args.parts,args.seconds,args.root_reserve,args.work_reserve)<1 or not args.work.is_dir():
             raise ValueError('specify a bounded archive window and both disk reserves')
@@ -578,6 +620,7 @@ def read_arguments():
     consume.add_argument('--native',type=Path,required=True)
     consume.add_argument('--peak-root-bytes',type=int,required=True)
     consume.add_argument('--statement-ms',type=int,required=True)
+    consume.add_argument('--local-archive',type=Path)
     clean = choices.add_parser('install-clean')
     clean.add_argument('--tablespace',required=True)
     clean.add_argument('--http-role',required=True)
@@ -615,6 +658,7 @@ def read_arguments():
     clean = choices.add_parser('retire-clean')
     clean.add_argument('generation',type=uuid.UUID)
     clean.add_argument('--work',type=Path,required=True)
+    clean.add_argument('--local-archive',type=Path)
     choices.add_parser('status-clean')
     return base.parse_args()
 
