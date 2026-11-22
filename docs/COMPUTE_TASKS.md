@@ -242,6 +242,10 @@ states the deployed source commit and the generation, and includes hashed
 readbacks for both stopped consumers and their retired capture receipts. Deploy the new
 version-eight submission UUIDs to every writer before freezing the
 version-four generation.
+The storage owner can attach the empty arrivals relation while the archive is
+idle. Version-four submissions still reach the original relation during the
+writer transition. Both relations remain visible to ordinary intake and share
+its existing acknowledgement and position rules.
 New arrivals use the attached tablespace during the move. The existing queue
 positions stay in their own relation.
 

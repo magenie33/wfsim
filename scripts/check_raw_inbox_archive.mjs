@@ -140,6 +140,24 @@ async function moveFixture(){
   await owner.unsafe('ALTER TABLE record_build_submissions ENABLE TRIGGER build_inbox_positioned');
   await owner.unsafe("INSERT INTO state_build_family_inbox(id,retry_at,input) VALUES($1,$2,'{}')",[held,at]);
   const before=await oldRelation();
+  const stagedLegacy='00000000-0000-4000-8000-000000000009';
+  const stagedArrival='00000000-0000-8000-8000-000000000009';
+  await owner.unsafe('SELECT raw_archive_move_attach_arrivals()');
+  for (const id of [stagedLegacy,stagedArrival])
+    await Promise.all([submit(writer,id),submit(replay,id)]);
+  assert.deepEqual([...await owner.unsafe(`SELECT id,tableoid::regclass::text AS storage
+    FROM record_build_submissions WHERE id IN($1,$2) ORDER BY id`,[stagedLegacy,stagedArrival])],[
+    {id:stagedLegacy,storage:'record_build_submissions'},{id:stagedArrival,storage:'record_raw_archive_arrivals'},
+  ]);
+  const staged=await source.byIds([stagedLegacy,stagedArrival]);
+  assert.equal(staged.length,2);
+  const stagedPositions=async()=>(await positions()).filter(row=>[stagedLegacy,stagedArrival].includes(row.id));
+  assert.equal((await stagedPositions()).length,2);
+  await writer.unsafe('SELECT build_ack_submissions($1::text)',[JSON.stringify(staged)]);
+  assert.equal((await source.byIds([stagedLegacy,stagedArrival])).length,0);
+  assert.deepEqual(await stagedPositions(),[]);
+  assert.deepEqual(await oldRelation(),before);
+  console.log('ok: idle attachment routes new arrivals while both writer generations still intake and acknowledge');
   fenced(attempt);
   cli('begin-clean',attempt,'--fence-file',fenceFile);
   assert.equal((await writer.unsafe('SELECT raw_inbox_library_count() AS n'))[0].n,null);

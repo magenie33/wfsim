@@ -31,7 +31,8 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE mode text;
 BEGIN
   SELECT phase INTO STRICT mode FROM state_raw_archive_move WHERE id=1;
-  IF mode='idle' AND NOT EXISTS(SELECT FROM pg_inherits WHERE inhrelid='record_raw_archive_arrivals'::regclass) THEN RETURN NEW; END IF;
+  IF mode='idle' AND (raw_archive_legacy_id(NEW.id) OR NOT EXISTS(
+    SELECT FROM pg_inherits WHERE inhrelid='record_raw_archive_arrivals'::regclass)) THEN RETURN NEW; END IF;
   IF raw_archive_legacy_id(NEW.id) THEN RAISE EXCEPTION 'old raw archive ID cannot be written again' USING ERRCODE='23505'; END IF;
   PERFORM FROM record_build_submissions WHERE id=NEW.id FOR KEY SHARE;
   IF FOUND THEN RETURN NULL; END IF;
