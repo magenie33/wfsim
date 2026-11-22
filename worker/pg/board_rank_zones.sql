@@ -15,5 +15,8 @@ ALTER TABLE state_board_rank_publication_ready ADD COLUMN IF NOT EXISTS queued_a
 ALTER TABLE state_board_rank_publication_ready ALTER COLUMN queued_at SET DEFAULT board_input_timestamp(clock_timestamp());
 CREATE INDEX IF NOT EXISTS board_rank_new_scopes_zone ON state_board_rank_new_scopes(zone,coalesce(zone_position,0),queued_at,weapon,ruler);
 CREATE INDEX IF NOT EXISTS board_rank_recent_zone ON state_board_rank_recent_inputs(zone,coalesce(zone_position,0),queued_at,weapon,ruler,identity);
+CREATE INDEX IF NOT EXISTS board_rank_dirty_zone ON state_board_rank_dirty
+ (zone,coalesce(zone_position,0),coalesce(queued_at,available_at),weapon,ruler,identity)
+ WHERE version>applied_version AND available_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS board_rank_publication_zone ON state_board_rank_publication_ready(zone,coalesce(zone_position,0),coalesce(queued_at,available_at),weapon,ruler)
  WHERE version>applied_version AND available_at IS NOT NULL;
