@@ -126,7 +126,7 @@ def verified_bin(path, prefix, state):
                 yield values
 
 
-def finalize_prefix(root, path, prefix, state, max_rows, control):
+def finalize_prefix(root, path, prefix, state, max_rows, control, gzip_level=1):
     payloads = sorted(verified_bin(path,prefix,state),key=lambda values:values[0])
     if len(payloads)!=state["counts"][prefix]:
         raise RuntimeError("prefix members do not account for all verified input")
@@ -145,7 +145,7 @@ def finalize_prefix(root, path, prefix, state, max_rows, control):
         digest = sha(body)
         output = root / f"{part}-{digest}.json.gz"
         with output.open("xb") as target:
-            target.write(gzip.compress(body,compresslevel=1,mtime=0))
+            target.write(gzip.compress(body,compresslevel=gzip_level,mtime=0))
             target.flush()
             os.fsync(target.fileno())
         receipt = json.loads(read_local_object(output,digest))
@@ -183,7 +183,7 @@ def finalize_prefix(root, path, prefix, state, max_rows, control):
         seal()
 
 
-def assemble_stream(work,generation,control,freeze,prepared,max_rows):
+def assemble_stream(work,generation,control,freeze,prepared,max_rows,gzip_level=1):
     identity = sha(json.dumps([control,freeze,[record for record,_ in prepared],max_rows],
                               sort_keys=True,separators=(",",":")).encode())
     root = work / f"{generation}.packing"
@@ -216,7 +216,7 @@ def assemble_stream(work,generation,control,freeze,prepared,max_rows):
         for prefix in sorted(state["counts"]):
             path = root / ("bin-"+prefix+".gz")
             if prefix not in state["done_prefixes"]:
-                finalize_prefix(root,path,prefix,state,max_rows,control)
+                finalize_prefix(root,path,prefix,state,max_rows,control,gzip_level)
                 state["done_prefixes"].append(prefix)
                 store(state_path,state)
             path.unlink(missing_ok=True)

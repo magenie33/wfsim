@@ -199,6 +199,7 @@ def main():
     parser.add_argument("--range-list",type=Path)
     parser.add_argument("--legacy-freeze-proof",type=Path)
     parser.add_argument("--rows",type=int,choices=(512,2048),default=512)
+    parser.add_argument("--gzip-level",type=int,choices=range(1,10),default=1)
     parser.add_argument("--staged-hot",action="store_true")
     parser.add_argument("--streaming",action="store_true")
     parser.add_argument("--source-service")
@@ -206,6 +207,8 @@ def main():
     parser.add_argument("--freeze-pid",type=int)
     parser.add_argument("--schema",default="public")
     args = parser.parse_args()
+    if args.gzip_level!=1 and not args.streaming:
+        raise ValueError("the gzip level applies only to resumable local packing")
     if args.streaming and not args.staged_hot:
         raise ValueError("stage the exact hot ranges before building a bounded-space package")
     if args.streaming and (not args.source_service or not args.oid or not args.freeze_pid
@@ -224,7 +227,7 @@ def main():
             from raw_inbox_frozen_owners import current_frame
             if current_frame(args)!=(control,freeze):
                 raise RuntimeError("the frozen source changed before bounded-space packing")
-            root,counts,parts = assemble_stream(args.work,args.generation,control,freeze,prepared,args.rows)
+            root,counts,parts = assemble_stream(args.work,args.generation,control,freeze,prepared,args.rows,args.gzip_level)
             if current_frame(args)!=(control,freeze):
                 raise RuntimeError("the frozen source changed during bounded-space packing")
             publish(root,final,control,freeze,prepared,counts,None,parts,True)
