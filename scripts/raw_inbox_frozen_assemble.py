@@ -20,15 +20,26 @@ FIELDS = ("id", "at", "record", "initiator", "family_source", "observation")
 NULL_FIELD = b"\xff\xff\xff\xff"
 
 
-def ranges(work, generation):
+def ranges(work,generation,range_list=None,legacy_proof=None):
     prepared = []
-    for folder in work.glob(f"{generation}.*-*"):
-        receipt_path = folder / "receipt.json"
-        record = json.loads(receipt_path.read_bytes())
+    paths = ([Path(path) for path in json.loads(range_list.read_bytes())] if range_list
+             else [folder / "receipt.json" for folder in work.glob(f"{generation}.*-*")])
+    legacy = json.loads(legacy_proof.read_bytes()) if legacy_proof else None
+    old_hashes = {} if legacy is None else {(row["start"],row["end"]):row["receipt_sha256"] for row in legacy["ranges"]}
+    for receipt_path in paths:
+        folder = receipt_path.parent
+        body = receipt_path.read_bytes()
+        record = json.loads(body)
         if record["v"] != 1 or record["control"]["generation"] != str(generation):
             raise RuntimeError("range receipt has another archive identity")
         if folder.name != f'{generation}.{record["start"]}-{record["end"]}':
             raise RuntimeError("range path does not identify its receipt")
+        if "freeze" not in record and legacy is not None:
+            observed = hashlib.sha256(body).hexdigest()
+            if (legacy["v"]!=1 or legacy["control"]!=record["control"]
+                or old_hashes.get((record["start"],record["end"]))!=observed):
+                raise RuntimeError("early range is missing its exact external freeze evidence")
+            record = dict(record,freeze=legacy["freeze"],legacy_receipt_sha256=observed)
         prepared.append((record, folder))
     prepared.sort(key=lambda item: item[0]["start"])
     if not prepared:
@@ -159,13 +170,15 @@ def main():
     parser.add_argument("--work",type=Path,required=True)
     parser.add_argument("--generation",type=uuid.UUID,required=True)
     parser.add_argument("--restore-service",required=True)
+    parser.add_argument("--range-list",type=Path)
+    parser.add_argument("--legacy-freeze-proof",type=Path)
     parser.add_argument("--rows",type=int,choices=(512,2048),default=512)
     args = parser.parse_args()
     soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
     if soft < 300:
         resource.setrlimit(resource.RLIMIT_NOFILE,(300,hard))
     with clean_archive_lock(args.work):
-        control,freeze,prepared = ranges(args.work,args.generation)
+        control,freeze,prepared = ranges(args.work,args.generation,args.range_list,args.legacy_freeze_proof)
         final = args.work / f"{args.generation}.assembled"
         if final.exists():
             raise RuntimeError("the verified archive plan already exists")

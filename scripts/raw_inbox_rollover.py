@@ -109,6 +109,8 @@ class RestoreConnection:
                             result.extend(received)
                             if len(result)>MAX_BODY+65536:
                                 raise RuntimeError('independent restore exceeded its readback bound')
+                            if not pending and result==marker:
+                                return b''
                             if not pending and result.endswith(b'\n'+marker):
                                 return bytes(result[:-len(marker)-1])
             raise TimeoutError('independent restore did not confirm rollback in time')

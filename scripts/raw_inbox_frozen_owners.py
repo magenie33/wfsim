@@ -51,6 +51,13 @@ def id_bytes(key):
     return bytes.fromhex(key.replace(b"-", b"").decode("ascii")) if UUID.fullmatch(key) else None
 
 
+def pg_instant(value):
+    if value.endswith("Z"):
+        value = value[:-1] + "+00:00"
+    value = re.sub(r"\.(\d{1,6})(?=[+-])",lambda match:"."+match[1].ljust(6,"0"),value)
+    return datetime.fromisoformat(value)
+
+
 class OwnerMap:
     """An exact 16-bit prefix index over compact full keys and optional FIFO positions."""
 
@@ -207,8 +214,8 @@ def import_exports(args, root):
     control,freeze = current_frame(args)
     if ((witness["freeze_pid"],witness["freeze_vxid"]) != (freeze["pid"],freeze["transaction"])
         or witness["source_control"] != control
-        or datetime.fromisoformat(witness["freeze_backend_start"]) != datetime.fromisoformat(freeze["backend_start"])
-        or datetime.fromisoformat(witness["freeze_xact_start"]) != datetime.fromisoformat(freeze["xact_start"])):
+        or pg_instant(witness["freeze_backend_start"]) != pg_instant(freeze["backend_start"])
+        or pg_instant(witness["freeze_xact_start"]) != pg_instant(freeze["xact_start"])):
         raise RuntimeError("external owner exports belong to another freeze")
     after = (control["after"] or "").encode()
     counts = [0] * len(EXPORT_NAMES)
