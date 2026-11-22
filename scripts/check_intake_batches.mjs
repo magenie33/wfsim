@@ -84,7 +84,7 @@ async function trip(table, enabled) {
   await query(`DROP TRIGGER IF EXISTS reject_batch ON ${table}`);
   if (enabled) {
     await query(`CREATE OR REPLACE FUNCTION reject_batch_write() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture write refused'; END $$`);
-    await query(`CREATE TRIGGER reject_batch BEFORE ${table === 'record_build_submissions' ? 'DELETE' : 'INSERT'} ON ${table} FOR EACH ROW EXECUTE FUNCTION reject_batch_write()`);
+    await query(`CREATE TRIGGER reject_batch BEFORE ${table.endsWith('_submissions') ? 'DELETE' : 'INSERT'} ON ${table} FOR EACH ROW EXECUTE FUNCTION reject_batch_write()`);
   }
 }
 try {
@@ -162,14 +162,39 @@ try {
     const table=fault==='build'?'entity_weapon_builds':fault==='compute'?'entity_compute_specs':'record_build_submissions';
     await trip(table,true);await assert.rejects(execute(source));
     assert.deepEqual(await pending(),fault==='compute'?[]:['source']);
-    assert.equal((await saved()).length,fault==='build'?0:1,'deferred admission retains the canonical build and its captured obligation');
-    if(fault==='compute')assert.equal(await intents(),1);
+    assert.equal((await saved()).length,fault==='compute'?1:0,'only a failure after handoff retains the canonical build');
+    assert.equal(await intents(),fault==='compute'?1:0,'the intake intent commits with the inbox acknowledgement');
     await trip(table,false);
     if(fault==='compute')await drainBuildAdmission(admissionFixtureDb(query),Date.now()+31000);
     await execute(source);assert.deepEqual(await pending(),[]);
     assert.equal((await saved()).length,1);assert.equal((await query('SELECT count(*) n FROM entity_build_workflows'))[0].n,1);
   }
   console.log('ok: build, computation admission and inbox deletion failures preserve retryable arrivals without duplicate workflows');
+
+  await clear();
+  const equipment = arrival('equipment:sentinel', 'torid', { record: { kind: 'companion', build: { companion: 'sentinel',
+    mods: ['calculated_redirection', 'accelerated_deflection', 'animal_instinct', 'vacuum', 'guardian',
+      'regen', 'repair_kit', 'spare_parts', 'shield_charger', 'coolant_leak'].map(id => ({ id })) } } });
+  const mixed = await seed([arrival('build-before-equipment'), equipment]);
+  const positions = () => query('SELECT id,position FROM state_build_inbox_positions ORDER BY position');
+  const gear = () => query('SELECT equipment FROM entity_equipment_builds');
+  const originalPositions = await positions();
+  assert.equal(originalPositions.length, 2);
+  await trip('record_equipment_submissions', true);
+  await assert.rejects(execute(mixed, { maxRows: 2 }));
+  assert.deepEqual(await pending(), ['build-before-equipment', equipment.id]);
+  assert.deepEqual(await positions(), originalPositions);
+  assert.deepEqual(await saved(), []);
+  assert.deepEqual(await gear(), []);
+  assert.equal(await intents(), 0);
+  await trip('record_equipment_submissions', false);
+  await execute(mixed, { maxRows: 2 });
+  assert.deepEqual(await pending(), []);
+  assert.deepEqual(await positions(), []);
+  assert.deepEqual(await gear(), [{ equipment: 'sentinel' }]);
+  assert.equal((await saved()).length, 1);
+  console.log('ok: a mixed build and equipment handoff commits its owners and spends both FIFO positions together');
+
   await clear();
   const fifo=await seed([arrival('fifo')]);
   await query("INSERT INTO entity_compute_batches(id,at,total) VALUES('existing','2000-01-01',1)");

@@ -1276,8 +1276,9 @@ requests and unique queue totals. Build, family, queue, factory acknowledgment
 and deletion failures retain retryable arrivals; losing either the factory
 reply or the final delete reply does not duplicate calculations. Row, UTF-8
 byte and deadline bounds prevent new unbounded work. Deferred computation
-admission failures retain acknowledged canonical inputs and their obligations;
-source deletion failures retain both the inbox and the committed intent.
+admission failures retain acknowledged canonical inputs and their obligations.
+An ordinary source deletion failure rolls back both the canonical records and
+the acknowledgement, including a mixed batch of weapon and equipment inputs.
 The actual CLI commits a captured prefix and reports its subsequent read error;
 a changed capture is refused before any arrival is spent.
 The actual nullable inbox view passes through the shared reader and native

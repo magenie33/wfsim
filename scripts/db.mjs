@@ -27,7 +27,11 @@ async function client(database) {
   if (url.startsWith("pglite:")) {
     const { PGlite } = await import("./pg/node_modules/@electric-sql/pglite/dist/index.js");
     const pg = new PGlite(url.slice("pglite:".length), { parsers: { 20: (x) => Number(x), 1700: (x) => Number(x) } });
-    c = { run: async (text, params) => { const r = await pg.query(text, params); return { rows: r.rows, changes: r.affectedRows ?? 0 }; },
+    const run = connection => async (text, params) => {
+      const r = await connection.query(text, params);
+      return { rows: r.rows, changes: r.affectedRows ?? 0 };
+    };
+    c = { run: run(pg), transaction: fn => pg.transaction(tx => fn(run(tx))),
       end: () => pg.close() };
   } else {
     const { default: postgres } = await import("./pg/node_modules/postgres/src/index.js");
@@ -35,7 +39,11 @@ async function client(database) {
     const sql = postgres(url, { max: 4, onnotice: () => {}, connect_timeout: 15, idle_timeout: 5, fetch_types: false,
       connection: { statement_timeout: STATEMENT_MS, application_name: "wfsim-scripts" },
       types: { bigint: { to: 20, from: [20, 1700], serialize: (x) => String(x), parse: (x) => Number(x) } } });
-    c = { run: async (text, params) => { const r = await sql.unsafe(text, params); return { rows: [...r], changes: r.count ?? 0 }; },
+    const run = connection => async (text, params) => {
+      const r = await connection.unsafe(text, params);
+      return { rows: [...r], changes: r.count ?? 0 };
+    };
+    c = { run: run(sql), transaction: fn => sql.begin(tx => fn(run(tx))),
       end: () => sql.end({ timeout: 5 }) };
   }
   clients.set(database, c);
@@ -69,6 +77,14 @@ export async function query(sql, params = [], database = "library") {
   const j = await answer(sql, params, database);
   if (!j.success) throw new Error(`postgres: ${JSON.stringify(j.errors)}`);
   return j.result[0].results;
+}
+
+export async function transaction(statements, database = "library") {
+  if (!statements.length) return;
+  const c = await client(database);
+  await c.transaction(async run => {
+    for (const { sql, params } of statements) await run(placeholders(sql), params);
+  });
 }
 
 /// Every client closed, so the process may end.
