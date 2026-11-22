@@ -67,6 +67,7 @@ DECLARE
   intent_key text;
   flow_id text;
   expansion_id text;
+  owns_expansion boolean;
   counted bigint[] := '{}';
   started text := to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
 BEGIN
@@ -194,11 +195,16 @@ BEGIN
         SELECT value,intent_key FROM jsonb_array_elements_text(intake_sources) ON CONFLICT DO NOTHING;
     END IF;
     PERFORM board_coverage_lease('intake',intent_key,1,started);
-    SELECT t.workflow INTO STRICT flow_id FROM record_build_workflow_triggers t
+    SELECT t.workflow, f.source=t.source INTO STRICT flow_id,owns_expansion FROM record_build_workflow_triggers t
       JOIN entity_build_workflows f ON f.id=t.workflow
       WHERE t.id=intent_key AND f.kind='intake' AND f.build_id=build AND t.source->>'origin'='system';
     expansion_id:=flow_id||':root';
-    PERFORM board_coverage_lease('expansion',expansion_id,jsonb_array_length(eligible),started);
+    IF owns_expansion THEN
+      PERFORM board_coverage_lease('expansion',expansion_id,jsonb_array_length(eligible),started);
+    ELSIF EXISTS(SELECT 1 FROM state_build_workflow_nodes n
+      WHERE n.workflow=flow_id AND n.expansion=expansion_id AND n.state='pending') THEN
+      RAISE EXCEPTION 'existing workflow admission still owns this scope' USING ERRCODE='40001';
+    END IF;
     item_no:=0;
     FOR candidate IN SELECT e FROM jsonb_array_elements(eligible) e
     LOOP

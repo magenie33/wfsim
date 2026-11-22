@@ -235,6 +235,38 @@ try {
   assert.deepEqual(replies.map(reply=>reply.verified),[once,null]);
   assert.equal(await readBoardCoverageBatch(reader,await prepare([nextTarget])),null);
 
+  const alreadyQueued = await prepare([
+    await cell(13,build('4'),'ordinary-first',89), await cell(14,build('4'),'ordinary-second',90),
+  ]);
+  const ordinaryPlan = { ...alreadyQueued.batch.groups[0].plan,
+    from: ['ordinary-explicit-source'], initiator: 'anonymous' };
+  await writer.unsafe('SELECT build_intake_batch($1::text)',[JSON.stringify([ordinaryPlan])]);
+  const admissionTime = new Date(Date.now()+1000).toISOString();
+  for (const [kind,width] of [['intake',1],['expansion',2]]) {
+    const [{job}] = await writer.unsafe('SELECT build_admission_claim($1,$2) job',[kind,admissionTime]);
+    assert(job);
+    const [{result}] = await writer.unsafe('SELECT build_admission_run($1,$2,$3,$4,$5) result',
+      [kind,job.key,job.lease,width,admissionTime]);
+    assert.equal(result.processed,width);
+    assert.equal(result.pending,false);
+    if (kind==='intake') {
+      const pending = await counts();
+      await assert.rejects(admitBoardCoverageBatch(writer,reader,alreadyQueued),/still owns this scope/);
+      assert.deepEqual(await counts(),pending);
+    }
+  }
+  const oldParent = await lookup(`SELECT f.id FROM entity_build_workflows f
+    JOIN record_build_workflow_triggers t ON t.workflow=f.id
+    WHERE t.source#>>'{inbox,0}'='ordinary-explicit-source'`);
+  assert.equal((await lookup("SELECT count(*)::int n FROM state_build_admission_work WHERE key=$1",
+    [oldParent.id+':root'])).n,0);
+  const beforeCoalescing = await counts();
+  const reusedParent = await admitBoardCoverageBatch(writer,reader,alreadyQueued);
+  assert.equal(reusedParent.taskIds.length,0);
+  assert(reusedParent.dispositions.every(row=>row.outcome==='joined_shared_task' && row.workflow===oldParent.id));
+  assert.deepEqual({...await counts()},{...beforeCoalescing,receipts:beforeCoalescing.receipts+2});
+  assert.deepEqual(await readBoardCoverageBatch(reader,alreadyQueued),reusedParent);
+
   await writer.unsafe('DELETE FROM relation_compute_task_sources WHERE task_id=$1',[once.taskIds[0]]);
   assert.equal(await readBoardCoverageBatch(reader,batch),null,'readback requires the independent task source');
   console.log('board coverage: exact cursor, alias, active cut, missing proof, lost commit and transaction rollback pass');
