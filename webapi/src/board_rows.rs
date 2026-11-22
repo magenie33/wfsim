@@ -230,7 +230,7 @@ pub fn fold_runs(
     if range.is_empty() {
         return Ok(());
     }
-    let prepared = PreparedSimulation::new(req)?;
+    let prepared = PreparedSimulation::cached(req)?;
     for k in range {
         merge_piece(acc, prepared.shard(k, 1, &mut |_, _| {})?)?;
     }
@@ -310,19 +310,27 @@ pub fn board_order_json(v: &Value) -> Value {
 /// `from..from+count`, ONE SHARD A RUN and none of them merged, so a row's runs
 /// can be fought on every lane at once and still fold in the scorer's order.
 pub fn board_runs_json(v: &Value) -> Value {
-    let req = v.get("request").cloned().unwrap_or(Value::Null);
+    let req = v.get("request").unwrap_or(&Value::Null);
     let from = v.get("from").and_then(Value::as_u64).unwrap_or(0) as u32;
     let count = v.get("count").and_then(Value::as_u64).unwrap_or(0) as u32;
     let mut shards = Vec::with_capacity(count as usize);
     let range = from..from.saturating_add(count);
     if !range.is_empty() {
-        let prepared = match PreparedSimulation::new(&req) {
+        let prepared = match PreparedSimulation::cached(req) {
             Ok(p) => p,
             Err(e) => return e,
         };
         for k in range {
-            let piece = prepared.shard_json(k, 1);
-            if Shard::deserialize(&piece).is_err() {
+            let shard = match prepared.shard(k, 1, &mut |_, _| {}) {
+                Ok(s) => s,
+                Err(e) => return e,
+            };
+            let ok = shard_value::lossless(&shard);
+            let piece = match serde_json::to_value(&shard) {
+                Ok(val) => val,
+                Err(e) => return crate::request::err_json(format!("shard: {e}")),
+            };
+            if !ok && Shard::deserialize(&piece).is_err() {
                 return piece;
             }
             shards.push(piece);
@@ -337,7 +345,6 @@ pub fn board_runs_json(v: &Value) -> Value {
 /// `/api/board/runs` shards of the runs after `acc`, IN RUN ORDER — it merges
 /// those instead of fighting: the same merges in the same order, so the same bits.
 pub fn board_fold_json(v: &Value) -> Value {
-    let req = v.get("request").cloned().unwrap_or(Value::Null);
     let mut acc: Shard = match v.get("acc") {
         None | Some(Value::Null) => Default::default(),
         Some(a) => match Shard::deserialize(a) {
@@ -354,9 +361,10 @@ pub fn board_fold_json(v: &Value) -> Value {
         }
         return json!({ "ok": true, "acc": acc });
     }
+    let req = v.get("request").unwrap_or(&Value::Null);
     let from = v.get("from").and_then(Value::as_u64).unwrap_or(0) as u32;
     let count = v.get("count").and_then(Value::as_u64).unwrap_or(0) as u32;
-    if let Err(piece) = fold_runs(&req, &mut acc, from, count) {
+    if let Err(piece) = fold_runs(req, &mut acc, from, count) {
         return piece;
     }
     json!({ "ok": true, "acc": acc })

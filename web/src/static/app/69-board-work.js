@@ -56,6 +56,13 @@ async function measureRow(request, ruler, live, onPiece = () => {}, from = null)
     }
     return null;
   };
+  const pickMergeLane = () => {
+    let best = 0;
+    for (let idx = 1; idx < ls.length; idx++) {
+      if (boardLaneAt(idx).busy < boardLaneAt(best).busy) best = idx;
+    }
+    return best;
+  };
   const fold = () => {
     const pieces = [];
     while (ready.has(folded + pieces.length)) pieces.push(ready.get(folded + pieces.length));
@@ -66,34 +73,41 @@ async function measureRow(request, ruler, live, onPiece = () => {}, from = null)
     merging = merging.then(async () => {
       if (failed) return;
       const began = performance.now();
-      const step = await ask(0, "/api/board/fold", { request, acc, pieces });
+      const step = await ask(pickMergeLane(), "/api/board/fold", { request, acc, pieces });
       spent += computeElapsed(step, began);
       if (step) { acc = step.acc; onPiece(Math.min(runs, folded), runs, { acc, folded: upto, spent }); } else failed = true;
     });
   };
+  const runOnePiece = async (k) => {
+    const left = runs - cursor;
+    const want = est ? Math.max(1, Math.round(PIECE_MS / est)) : 1;
+    const count = Math.max(1, Math.min(want, 1000, Math.ceil(left / ls.length), left));
+    const pieceFrom = cursor;
+    cursor += count;
+    const began = performance.now();
+    const r = await ask(k, "/api/board/runs", { request, from: pieceFrom, count });
+    if (!r || !Array.isArray(r.shards) || r.shards.length !== count) { failed = true; return; }
+    const ms = Math.max(1, computeElapsed(r, began));
+    spent += ms;
+    est = est === null ? ms / count : est * 0.7 + (ms / count) * 0.3;
+    r.shards.forEach((x, i) => ready.set(pieceFrom + i, x));
+    fold();
+  };
+  if (!failed && est === null && cursor < runs && ls.length > 1) {
+    if (!live()) return null;
+    await runOnePiece(0);
+  }
   await Promise.all(ls.map(async (_, k) => {
     while (!failed && cursor < runs) {
       if (!live()) { failed = true; return; }
       if (k >= communityLanes()) { await new Promise((r) => setTimeout(r, PIECE_MS)); continue; }
-      const left = runs - cursor;
-      const want = est ? Math.max(1, Math.round(PIECE_MS / est)) : 1;
-      const count = Math.max(1, Math.min(want, 1000, Math.ceil(left / ls.length), left));
-      const from = cursor;
-      cursor += count;
-      const began = performance.now();
-      const r = await ask(k, "/api/board/runs", { request, from, count });
-      if (!r || !Array.isArray(r.shards) || r.shards.length !== count) { failed = true; return; }
-      const ms = Math.max(1, computeElapsed(r, began));
-      spent += ms;
-      est = est === null ? ms / count : est * 0.7 + (ms / count) * 0.3;
-      r.shards.forEach((x, i) => ready.set(from + i, x));
-      fold();
+      await runOnePiece(k);
     }
   }));
   await merging;
   if (failed || folded !== runs) return null;
   const began = performance.now();
-  const s = await ask(0, "/api/board/score", { ruler, request, acc });
+  const s = await ask(pickMergeLane(), "/api/board/score", { ruler, request, acc });
   spent += computeElapsed(s, began);
   return s && Number.isFinite(s.score) ? { ...s, compute_ms: Math.round(spent), lanes: ls.length } : null;
 }
