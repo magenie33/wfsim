@@ -222,6 +222,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.hotfix_matrix) }}
+    services:
+      signal-pg:
+        image: ${{ matrix.group == 'signal-pg' && 'postgres:18' || '' }}
+        env:
+          POSTGRES_DB: wfsim_checks
+          POSTGRES_PASSWORD: signal_check
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d wfsim_checks"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      WFSIM_SIGNAL_TEST_URL: postgresql://postgres:signal_check@127.0.0.1:5433/wfsim_checks
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -732,6 +747,10 @@ jobs:
         run: npm ci --silent --prefix scripts/pg
       - name: The board's pipeline reads and writes Postgres
         run: node scripts/check_pg_scripts.mjs
+      - name: Proven empty and small queue signals skip historical PostgreSQL plans
+        env:
+          WFSIM_SIGNAL_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5433/wfsim_checks
+        run: node scripts/check_factory_signal_pg.mjs
       - name: Queue cancellation preserves demand ownership
         run: node scripts/check_cancel_queue.mjs
       - name: Official settlement reports failures and releases claims

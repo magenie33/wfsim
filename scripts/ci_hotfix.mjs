@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { factoryMatrix, factoryCommand } from './factory_shards.mjs';
 
@@ -21,6 +22,10 @@ export const HOTFIX_PROFILES = {
       'scripts/check_moot_checks.mjs', 'scripts/check_forget_past.mjs', 'scripts/check_idle_devices.mjs'],
     groups: ['factory', 'async', ...HOTFIX_FACTORY_GROUPS],
   },
+  'daemon-signal': {
+    paths: ['worker/queue_counts.js', 'worker/settler.js', 'scripts/check_factory_signal_pg.mjs'],
+    groups: ['factory', 'async', ...HOTFIX_FACTORY_GROUPS, 'signal-pg'],
+  },
   ci: {
     paths: ['.github/workflows/ci.yml', 'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs',
       'scripts/ci_hotfix.mjs', 'scripts/check_ci_policy.mjs', 'scripts/check_ci_partitions.mjs',
@@ -37,7 +42,35 @@ export const HOTFIX_CHECKS = {
     'check_moot_checks', 'check_forget_past', 'check_idle_devices', 'check_contribution',
     'check_ledger', 'check_dials', 'check_clients_doc', 'check_appraise'],
   async: ['check_board_verify', 'check_board_sync', 'check_fair'],
+  'signal-pg': ['check_factory_signal_pg'],
 };
+
+export const SIGNAL_RUNTIME_HASHES = {
+  'worker/queue_counts.js': ['af5ff3a32887573bf4c94f33b762a20e32149a4d726bd6a0702b4ac60be243d2', '14a0125b9d2a472de34fcfc706ef4e2165c33ccb22603df2294764c8a3b3cf8a'],
+  'worker/settler.js': ['4b9e6dd9e3c766e20df85ffcf8a175acd371b8822661fc4e87671f96f7bf8229', 'be36f8f1ef178afc4b7f5b346ca93b6f3b5aebc2f514ef881a2b1d5e8da0f8f6'],
+};
+
+// Runtime bytes are approved separately from CI wiring and must retain both regressions.
+export function assertSignalChanges(paths, base, head, run = args => execFileSync('git', args), approved = SIGNAL_RUNTIME_HASHES) {
+  if (![base, head].every(sha => /^[a-f0-9]{40}$/.test(sha || ''))) throw new Error('Daemon-signal requires exact Git base and head');
+  run(['merge-base', '--is-ancestor', base, head]);
+  const actual = run(['diff', '--name-only', '--no-renames', '-z', base, head]).toString().split('\0').filter(Boolean).sort();
+  if (JSON.stringify(actual) !== JSON.stringify([...paths].sort())) throw new Error('Daemon-signal paths differ from the actual Git diff');
+  const required = [...Object.keys(approved), 'scripts/check_settler.mjs', 'scripts/check_factory_signal_pg.mjs'];
+  const allowed = [...required, ...HOTFIX_PROFILES.ci.paths];
+  if (actual.some(path => !allowed.includes(path) && !ordinaryDocs(path))) throw new Error('Daemon-signal cannot include other runtime or contract changes');
+  if (required.some(path => !actual.includes(path))) throw new Error('Daemon-signal requires both runtime repairs and both regressions');
+  const mode = (sha, path) => run(['ls-tree', sha, '--', path]).toString().match(/^(100644|100755) blob [a-f0-9]{40}\t/)?.[1];
+  const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+  for (const [path, hashes] of Object.entries(approved)) {
+    if (mode(base, path) !== '100644' || mode(head, path) !== '100644'
+        || hash(run(['show', `${base}:${path}`])) !== hashes[0] || hash(run(['show', `${head}:${path}`])) !== hashes[1])
+      throw new Error('Daemon-signal runtime differs from the reviewed patch: ' + path);
+  }
+  const check = 'scripts/check_factory_signal_pg.mjs';
+  if (run(['ls-tree', base, '--', check]).length || mode(head, check) !== '100644' || !run(['show', `${head}:${check}`]).length)
+    throw new Error('Daemon-signal requires a new regular PostgreSQL regression');
+}
 
 export const BOARD_ENTRY_CHANGE = {
   liveBefore: '  node --max-old-space-size=192 "$HERE/inventory_pipeline.mjs" "$WORK" "$BIN" --serve',
@@ -95,6 +128,7 @@ export function hotfixPlan(paths, { verifiedBase = true, reason = '', event = 'w
   }
   if (!profiles.size) throw new Error('Hotfix CI requires a supported code or check change');
   if (profiles.has('board-entry')) assertBoardEntryChanges(paths, base, head);
+  if (profiles.has('daemon-signal')) assertSignalChanges(paths, base, head);
   const groups = new Set(['policy']);
   for (const p of profiles) for (const group of HOTFIX_PROFILES[p].groups) groups.add(group);
   return { scope: 'hotfix', jobs: ['hotfix'], profiles: [...profiles].sort(),

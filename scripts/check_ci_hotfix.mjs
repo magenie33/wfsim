@@ -2,11 +2,12 @@
 import assert from 'node:assert/strict';
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { ALL_CI_JOBS, assertGate, checkJobPaths, OPTIONAL_NATIVE_JOBS, PRODUCT_JOBS } from './ci_policy.mjs';
-import { assertHotfixProof, BOARD_ENTRY_CHANGE, HOTFIX_CHECKS, HOTFIX_PROFILES, HOTFIX_FACTORY_GROUPS, hotfixCommands, hotfixPlan } from './ci_hotfix.mjs';
+import { assertHotfixProof, assertSignalChanges, SIGNAL_RUNTIME_HASHES, BOARD_ENTRY_CHANGE, HOTFIX_CHECKS, HOTFIX_PROFILES, HOTFIX_FACTORY_GROUPS, hotfixCommands, hotfixPlan } from './ci_hotfix.mjs';
 import { trustedRun, validProof } from './ci_runs.mjs';
 import { COMPANION_JOBS } from './full_work.mjs';
 import { factoryCases, factoryMatrix, factoryCommand, factorySelection, assertFactoryCoverage } from './factory_shards.mjs';
@@ -42,6 +43,51 @@ for (const checks of Object.values(HOTFIX_CHECKS)) {
   assert.equal(new Set(checks).size, checks.length);
   for (const check of checks) assert(existsSync(`scripts/${check}.mjs`), check);
 }
+
+const signalPaths = [...Object.keys(SIGNAL_RUNTIME_HASHES), 'scripts/check_settler.mjs', 'scripts/check_factory_signal_pg.mjs'];
+const signalBefore = Object.fromEntries(Object.keys(SIGNAL_RUNTIME_HASHES).map(path => [path, Buffer.from('before ' + path)]));
+const signalAfter = Object.fromEntries(Object.keys(SIGNAL_RUNTIME_HASHES).map(path => [path, Buffer.from('after ' + path)]));
+const digest = bytes => createHash('sha256').update(bytes).digest('hex');
+const approved = Object.fromEntries(Object.keys(SIGNAL_RUNTIME_HASHES).map(path => [path, [digest(signalBefore[path]), digest(signalAfter[path])]]));
+const signalBase = 'c'.repeat(40), signalHead = 'd'.repeat(40);
+function signalGit(paths, mutation = {}) {
+  return args => {
+    if (args[0] === 'merge-base') { if (mutation.ancestry) throw Error('not ancestor'); return Buffer.alloc(0); }
+    if (args[0] === 'diff') return Buffer.from((mutation.paths || paths).join('\0') + '\0');
+    const path = args.at(-1), before = args[1] === signalBase;
+    if (args[0] === 'ls-tree') {
+      if (before && path === 'scripts/check_factory_signal_pg.mjs' && !mutation.existingCheck) return Buffer.alloc(0);
+      const mode = mutation.mode && !before && path === signalPaths[0] ? mutation.mode : '100644';
+      return Buffer.from(mode + ' blob ' + '1'.repeat(40) + '\t' + path + '\n');
+    }
+    if (args[0] === 'show') {
+      const [revision, file] = args[1].split(':');
+      if (mutation.emptyCheck && file === 'scripts/check_factory_signal_pg.mjs') return Buffer.alloc(0);
+      if (file === signalPaths[0] && (mutation.changedRuntime || mutation.changedBase && revision === signalBase)) return Buffer.from('unreviewed');
+      return (revision === signalBase ? signalBefore[file] : signalAfter[file]) || Buffer.from('regression');
+    }
+    throw Error('unexpected Git operation');
+  };
+}
+assertSignalChanges(signalPaths, signalBase, signalHead, signalGit(signalPaths), approved);
+for (const mutation of [{ancestry:true}, {paths:signalPaths.slice(1)}, {changedRuntime:true}, {changedBase:true},
+  {mode:'120000'}, {mode:'100755'}, {existingCheck:true}, {emptyCheck:true}])
+  assert.throws(() => assertSignalChanges(signalPaths, signalBase, signalHead, signalGit(signalPaths,mutation), approved));
+for (const extra of ['worker/pg/sync.sql', 'worker/factory.js', 'docs/CLIENTS.md', 'scripts/check_signal_unknown.mjs']) {
+  const mixed = [...signalPaths, extra];
+  assert.throws(() => assertSignalChanges(mixed,signalBase,signalHead,signalGit(mixed),approved));
+}
+assert.throws(() => assertSignalChanges(signalPaths.slice(0,-1),signalBase,signalHead,signalGit(signalPaths.slice(0,-1)),approved));
+assert.throws(() => hotfixPlan(signalPaths,{reason}),/exact Git/);
+for (const [path, hashes] of Object.entries(SIGNAL_RUNTIME_HASHES))
+  assert.equal(digest(readFileSync(path)),hashes[1],path + ' matches the reviewed runtime bytes');
+assert.deepEqual(HOTFIX_CHECKS['signal-pg'],['check_factory_signal_pg']);
+assert.deepEqual(HOTFIX_PROFILES['daemon-signal'].groups,['factory','async',...HOTFIX_FACTORY_GROUPS,'signal-pg']);
+const signalWorkflow = readFileSync('.github/workflows/ci.yml','utf8');
+assert.match(signalWorkflow,/matrix\.group == 'signal-pg' && 'postgres:18'/);
+assert.match(signalWorkflow,/WFSIM_SIGNAL_TEST_URL: postgresql:\/\/postgres:signal_check@127\.0\.0\.1:5433\/wfsim_checks/);
+assert.match(signalWorkflow,/run: node scripts\/check_factory_signal_pg\.mjs/);
+console.log('Daemon-signal scope rejects unrelated runtime, missing regressions, changed baselines and byte or mode drift.');
 
 const extras = ['check_board_verify', 'check_board_sync', 'check_sync_proc', 'check_fair',
   'check_settler', 'check_factory_availability', 'check_settler_async', 'check_initiator', 'check_moot_checks', 'check_forget_past',
@@ -88,7 +134,7 @@ return {status:Number(process.env.HOTFIX_CAPTURE_EXIT||0)};};syncBuiltinESMExpor
     assert.deepEqual(hotfixCommands(group)[0].command, expected.command);
     assert.equal(hotfixCommands(group)[0].env.WFSIM_SETTLE_ASYNC, row.mode === 'async' ? '1' : '0');
   }
-  for (const group of [HOTFIX_FACTORY_GROUPS[0], 'async', 'factory'])
+  for (const group of [HOTFIX_FACTORY_GROUPS[0], 'async', 'factory', 'signal-pg'])
     assert.equal(invoke(group, {HOTFIX_CAPTURE_EXIT:'7'}).status, 7, group + ' preserves a failed child');
   for (const group of ['factory-wrong-random-0-of-8', 'factory-sync-random-8-of-8', 'factory-sync-regressions-1-of-1']) {
     const result = invoke(group);
