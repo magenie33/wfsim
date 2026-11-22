@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import resource
 import tempfile
 import uuid
@@ -20,7 +21,7 @@ FIELDS = ("id", "at", "record", "initiator", "family_source", "observation")
 NULL_FIELD = b"\xff\xff\xff\xff"
 
 
-def ranges(work,generation,range_list=None,legacy_proof=None):
+def ranges(work,generation,range_list=None,legacy_proof=None,complete=True):
     prepared = []
     paths = ([Path(path) for path in json.loads(range_list.read_bytes())] if range_list
              else [folder / "receipt.json" for folder in work.glob(f"{generation}.*-*")])
@@ -46,13 +47,13 @@ def ranges(work,generation,range_list=None,legacy_proof=None):
         raise RuntimeError("no proven physical ranges")
     control = prepared[0][0]["control"]
     freeze = prepared[0][0].get("freeze")
-    block = 0
+    block = 0 if complete else prepared[0][0]["start"]
     for record, _ in prepared:
         if (record["control"] != control or record.get("freeze") != freeze
             or record["start"] != block or record["end"] <= block):
             raise RuntimeError("the proven ranges must describe one continuous frozen source")
         block = record["end"]
-    if block * control["block_size"] != control["bytes"]:
+    if complete and block * control["block_size"] != control["bytes"]:
         raise RuntimeError("verified ranges do not cover the frozen source heap")
     return control,freeze,prepared
 
@@ -72,18 +73,23 @@ def read_group(path, columns, facts=None):
             raise RuntimeError("range payload no longer matches its restored bytes")
 
 
-def separate(target, prepared):
+def separate(target, prepared, hot_staged=False):
     counts = {"hot":0,"cold":0}
     hot_path = target / "hot.copy.gz"
     hot_digest = hashlib.sha256(HEADER)
-    with ExitStack() as stack, gzip.open(hot_path, "wb", compresslevel=1) as hot:
+    with ExitStack() as stack:
         bins = {}
-        hot.write(HEADER)
+        hot = None if hot_staged else stack.enter_context(gzip.open(hot_path,"wb",compresslevel=1))
+        if hot is not None:
+            hot.write(HEADER)
         for record, folder in prepared:
             expected = record["counts"]
             if sum(expected.values()) != record["source_rows"]:
                 raise RuntimeError("range count does not account for the source")
             for lane in counts:
+                if lane=="hot" and hot_staged:
+                    counts["hot"] += expected["hot"]
+                    continue
                 found = 0
                 for values, raw in read_group(folder / (lane + ".copy.gz"), 7, record["groups"][lane]):
                     found += 1
@@ -104,12 +110,15 @@ def separate(target, prepared):
                 if found != expected[lane]:
                     raise RuntimeError("range lane count changed")
                 counts[lane] += found
-        hot.write(END)
-        hot_digest.update(END)
+        if hot is not None:
+            hot.write(END)
+            hot_digest.update(END)
         for stream in bins.values():
             stream.write(END)
+    if hot_staged:
+        return counts,None
     sync_file(hot_path)
-    return counts, hot_digest.hexdigest()
+    return counts,hot_digest.hexdigest()
 
 
 def pack(target, control, service, max_rows):
@@ -165,6 +174,23 @@ def pack(target, control, service, max_rows):
     return parts
 
 
+def publish(root, final, control, freeze, prepared, counts, hot_sha, parts, hot_staged):
+    if sum(p["rows"] for p in parts)!=counts["cold"]:
+        raise RuntimeError("archive part counts do not match the verified ranges")
+    manifest = {"v":1,"control":control,"freeze":freeze,"counts":counts,"hot_sha256":hot_sha,"parts":parts,
+                "hot_staged":hot_staged,"ranges":[record for record,_ in prepared]}
+    plan = root / "manifest.json"
+    plan.write_text(json.dumps(manifest,separators=(",", ":"))+"\n")
+    spool = root / "spool.json"
+    spool.write_text(json.dumps(dict(v=1,generation=control["generation"],
+        cloud_through=control["sealed_parts"]),separators=(",", ":"))+"\n")
+    sync_file(plan)
+    sync_file(spool)
+    sync_directory(root)
+    root.rename(final)
+    sync_directory(final.parent)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--work",type=Path,required=True)
@@ -173,7 +199,18 @@ def main():
     parser.add_argument("--range-list",type=Path)
     parser.add_argument("--legacy-freeze-proof",type=Path)
     parser.add_argument("--rows",type=int,choices=(512,2048),default=512)
+    parser.add_argument("--staged-hot",action="store_true")
+    parser.add_argument("--streaming",action="store_true")
+    parser.add_argument("--source-service")
+    parser.add_argument("--oid",type=int)
+    parser.add_argument("--freeze-pid",type=int)
+    parser.add_argument("--schema",default="public")
     args = parser.parse_args()
+    if args.streaming and not args.staged_hot:
+        raise ValueError("stage the exact hot ranges before building a bounded-space package")
+    if args.streaming and (not args.source_service or not args.oid or not args.freeze_pid
+        or not 0<args.freeze_pid<=2147483647 or not re.fullmatch(r"[a-z][a-z0-9_]*",args.schema)):
+        raise ValueError("provide the frozen source while retiring verified intermediate ranges")
     soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
     if soft < 300:
         resource.setrlimit(resource.RLIMIT_NOFILE,(300,hard))
@@ -182,24 +219,21 @@ def main():
         final = args.work / f"{args.generation}.assembled"
         if final.exists():
             raise RuntimeError("the verified archive plan already exists")
-        with tempfile.TemporaryDirectory(prefix=".assembled-",dir=args.work) as temporary:
-            root = Path(temporary)
-            counts, hot_sha = separate(root,prepared)
-            parts = pack(root,control,args.restore_service,args.rows)
-            if sum(p["rows"] for p in parts) != counts["cold"]:
-                raise RuntimeError("archive part counts do not match the verified ranges")
-            manifest = {"v":1,"control":control,"freeze":freeze,"counts":counts,"hot_sha256":hot_sha,"parts":parts,
-                        "ranges":[record for record,_ in prepared]}
-            plan = root / "manifest.json"
-            plan.write_text(json.dumps(manifest,separators=(",", ":"))+"\n")
-            spool = root / "spool.json"
-            spool.write_text(json.dumps(dict(v=1,generation=str(args.generation),
-                cloud_through=control["sealed_parts"]),separators=(",", ":"))+"\n")
-            sync_file(plan)
-            sync_file(spool)
-            sync_directory(root)
-            root.rename(final)
-            sync_directory(args.work)
+        if args.streaming:
+            from raw_inbox_frozen_pack import assemble_stream
+            from raw_inbox_frozen_owners import current_frame
+            if current_frame(args)!=(control,freeze):
+                raise RuntimeError("the frozen source changed before bounded-space packing")
+            root,counts,parts = assemble_stream(args.work,args.generation,control,freeze,prepared,args.rows)
+            if current_frame(args)!=(control,freeze):
+                raise RuntimeError("the frozen source changed during bounded-space packing")
+            publish(root,final,control,freeze,prepared,counts,None,parts,True)
+        else:
+            with tempfile.TemporaryDirectory(prefix=".assembled-",dir=args.work) as temporary:
+                root = Path(temporary)
+                counts,hot_sha = separate(root,prepared,args.staged_hot)
+                parts = pack(root,control,args.restore_service,args.rows)
+                publish(root,final,control,freeze,prepared,counts,hot_sha,parts,args.staged_hot)
     emit(dict(path=str(final),counts=counts,parts=len(parts)))
 
 

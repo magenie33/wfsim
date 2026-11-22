@@ -273,8 +273,28 @@ def sync_directory(path):
         os.close(fd)
 
 
+def already_retired(args, final):
+    from raw_inbox_frozen_owners import current_frame
+
+    previous = json.loads((final / "receipt.json").read_bytes())
+    original = json.loads(args.prepared.read_bytes())
+    control,freeze = current_frame(args)
+    if (previous["control"]!=control or previous["freeze"]!=freeze or original["control"]!=control
+        or original["freeze"]!=freeze or previous["start"]!=original["start"] or previous["end"]!=original["end"]
+        or previous["source_sha256"]!=original["source_sha256"]
+        or previous["source_rows"]!=original["source_rows"]):
+        raise RuntimeError("retired staging source does not match its durable classified range")
+    for lane,facts in previous["groups"].items():
+        if prove_restore(args.restore_service,control["cluster"],final/(lane+".copy.gz"),args.restore_temp_mb)!=facts:
+            raise RuntimeError("the remaining copy of a retired staging range changed")
+    return {**previous,"replay":True,"prepared_retired":True}
+
+
 def verify_range(args):
     final = args.work / f"{args.generation}.{args.start}-{args.start + args.blocks}"
+    prepared = args.prepared.parent / "source.copy.gz" if args.prepared else None
+    if args.retire_prepared and prepared is not None and not prepared.exists():
+        return already_retired(args,final)
     with tempfile.TemporaryDirectory(prefix=".raw-range-", dir=args.work) as staging:
         root = Path(staging)
         started = time.monotonic()
@@ -295,13 +315,20 @@ def verify_range(args):
                 for lane, facts in previous["groups"].items()
             ):
                 raise RuntimeError("the range or its existing verified payload changed")
-            return {**previous, "replay":True}
+            if args.retire_prepared and prepared is not None and previous.get("freeze")==receipt.get("freeze"):
+                prepared.unlink()
+                sync_directory(prepared.parent)
+                return {**previous,"replay":True,"prepared_retired":True}
+            return {**previous,"replay":True}
         (root / "receipt.json").write_text(json.dumps(receipt, separators=(",", ":")) + "\n")
         for path in root.iterdir():
             sync_file(path)
         sync_directory(root)
         root.rename(final)
         sync_directory(args.work)
+        if args.retire_prepared and prepared is not None:
+            prepared.unlink()
+            sync_directory(prepared.parent)
     return {**receipt, "replay":False, "timing_ms":{
         "capture":round((captured-started)*1000), "restore":round((restored-captured)*1000),
         "durability":round((time.monotonic()-restored)*1000),
@@ -322,6 +349,7 @@ def main():
     parser.add_argument("--inline-owners",action="store_true")
     parser.add_argument("--owner-map",type=Path)
     parser.add_argument("--prepared-range",type=Path,action="append",default=[])
+    parser.add_argument("--retire-prepared",action="store_true")
     parser.add_argument("--freeze-pid",type=int)
     parser.add_argument("--restore-temp-mb",type=int,choices=(16,32,64,96,128))
     args = parser.parse_args()

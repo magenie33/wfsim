@@ -11,12 +11,14 @@ import re
 import subprocess
 import uuid
 
+from raw_inbox_frozen_assemble import ranges, read_group
 from raw_inbox_frozen_owners import current_frame, freeze_sql
-from raw_inbox_frozen_range import CONTROL, END, HEADER, exact, row_fields
-from raw_inbox_rollover import PSQL, clean_fence, clean_archive_lock, emit, pg_environment, read_local_object
+from raw_inbox_frozen_range import CONTROL, END, HEADER, exact, row_fields, sync_directory
+from raw_inbox_rollover import PSQL, clean_fence, clean_archive_lock, emit, pg_environment, read_local_object, run
 
 
 HOT = "record_raw_archive_frozen_hot"
+LEDGER = "state_raw_archive_frozen_hot_copy"
 FIELDS = "id,at,record,initiator,family_source,observation"
 IDENT = re.compile(r"[a-z][a-z0-9_]*\Z")
 LEGACY = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\Z")
@@ -66,7 +68,82 @@ def stage_hot(args, root):
             raise RuntimeError("could not stage the verified hot COPY on the data tablespace")
 
 
+def recorded_hot(args,start):
+    query = f"""BEGIN;
+SET LOCAL search_path TO {args.schema},pg_catalog,pg_temp;
+SELECT coalesce((SELECT to_jsonb(r) FROM {LEDGER} r WHERE r.start_block={start}),'null'::jsonb);
+COMMIT;"""
+    return json.loads(run(PSQL,data=query.encode(),env=pg_environment(args.source_service)))
+
+
+def stage_hot_ranges(args):
+    control,freeze,entries = ranges(args.work,args.generation,args.range_list,args.legacy_freeze_proof,complete=False)
+    if current_frame(args)!=(control,freeze):
+        raise RuntimeError("hot ranges do not belong to the live frozen source")
+    settings = f"SET LOCAL search_path TO {args.schema},pg_catalog,pg_temp; SET LOCAL default_tablespace TO {args.tablespace};"
+    create = f"""BEGIN;
+{settings}
+CREATE TABLE IF NOT EXISTS {HOT} (LIKE record_build_submissions INCLUDING ALL);
+CREATE TABLE IF NOT EXISTS {LEDGER} (
+  start_block bigint PRIMARY KEY, end_block bigint NOT NULL, generation uuid NOT NULL,
+  source_sha text NOT NULL, group_sha text NOT NULL, rows bigint NOT NULL, hot_sha text NOT NULL
+);
+COMMIT;"""
+    env = pg_environment(args.source_service)
+    run(PSQL,data=create.encode(),env=env)
+    for capture,folder in entries:
+        if current_frame(args)!=(control,freeze):
+            raise RuntimeError("the frozen owner changed during hot staging")
+        start,end = capture["start"],capture["end"]
+        original = capture["groups"]["hot"]["sha256"]
+        known = dict(start_block=start,end_block=end,generation=str(args.generation),
+                     source_sha=capture["source_sha256"],group_sha=original,rows=capture["counts"]["hot"])
+        hold = recorded_hot(args,start)
+        file = folder / "hot.copy.gz"
+        if hold is None:
+            logical = hashlib.sha256()
+            body = bytearray(HEADER)
+            count = 0
+            for values,_ in read_group(file,7,capture["groups"]["hot"]):
+                row = b"\x00\x06"+b"".join(values[:6])
+                body.extend(row)
+                logical.update(row)
+                count += 1
+            if count!=known["rows"]:
+                raise RuntimeError("hot range row count changed")
+            body.extend(END)
+            known["hot_sha"] = logical.hexdigest()
+            guard = f"""LOCK TABLE {LEDGER} IN SHARE ROW EXCLUSIVE MODE NOWAIT;
+DO $$ BEGIN
+  IF {start}<>coalesce((SELECT max(end_block) FROM {LEDGER}),0)
+    OR EXISTS(SELECT FROM {LEDGER} WHERE generation<>'{args.generation}'::uuid)
+    OR ({start}=0 AND EXISTS(SELECT FROM {HOT}))
+  THEN RAISE EXCEPTION 'hot staging is not at the expected contiguous range'; END IF;
+END $$;"""
+            values = ",".join(str(value) if isinstance(value,int) else literal(value) for value in known.values())
+            write = f"INSERT INTO {LEDGER} ({','.join(known)}) VALUES({values});"
+            run([*PSQL,"--no-password","-c","BEGIN","-c",settings,"-c",guard,
+                 "-c",f"COPY {HOT} ({FIELDS}) FROM STDIN WITH (FORMAT binary)","-c",write,"-c","COMMIT"],
+                env=env,data=body,timeout=120)
+            if recorded_hot(args,start)!=known:
+                raise RuntimeError("could not independently read the committed hot range receipt")
+        elif any(hold[key]!=value for key,value in known.items()):
+            raise RuntimeError("committed hot staging receipt belongs to another range")
+        if args.retire_hot_copy and file.exists():
+            file.unlink()
+            sync_directory(file.parent)
+        emit(dict(stage="staged_hot_range",start=start,end=end,rows=known["rows"],replay=hold is not None))
+
+
 def inspect_hot(args, plan, freeze):
+    ledger = ""
+    if plan.get("hot_staged"):
+        ledger = f"""
+SELECT coalesce(jsonb_agg(to_jsonb(r) ORDER BY start_block),'[]'::jsonb)
+FROM {LEDGER} r
+WHERE EXISTS(SELECT FROM pg_locks l WHERE l.relation='{LEDGER}'::regclass AND l.pid={freeze["pid"]}
+  AND l.virtualtransaction={literal(freeze["transaction"])} AND l.mode='ShareLock' AND l.granted);
+"""
     query = f"""BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
 SET LOCAL search_path TO {args.schema},pg_catalog,pg_temp;
 SELECT jsonb_build_object('oid',c.oid,'file',pg_relation_filenode(c.oid),'path',pg_relation_filepath(c.oid))
@@ -76,6 +153,7 @@ WHERE c.oid='{HOT}'::regclass AND l.pid={freeze["pid"]} AND l.granted
   AND c.relpersistence='p' AND pg_relation_filepath(c.oid) LIKE 'pg_tblspc/%'
   AND NOT EXISTS(SELECT FROM pg_inherits WHERE inhrelid=c.oid OR inhparent=c.oid)
   AND EXISTS(SELECT FROM pg_index WHERE indrelid=c.oid AND indisprimary AND indisvalid);
+{ledger}
 COPY {HOT} ({FIELDS}) TO STDOUT WITH (FORMAT binary);
 COMMIT;"""
     with subprocess.Popen([*PSQL,"--no-password"],env=pg_environment(args.source_service),
@@ -84,13 +162,35 @@ COMMIT;"""
             proc.stdin.write(query.encode())
             proc.stdin.close()
             hot = json.loads(proc.stdout.readline(4096))
+            checks = json.loads(proc.stdout.readline(32*1024*1024)) if ledger else []
             if exact(proc.stdout,len(HEADER))!=HEADER:
                 raise RuntimeError("the staged hot relation did not emit binary COPY")
             digest = hashlib.sha256(HEADER)
             count = 0
-            while (fields := row_fields(proc.stdout,6)) is not None:
-                digest.update(b"\x00\x06"+b"".join(fields))
-                count += 1
+            if ledger:
+                if len(checks)!=len(plan["ranges"]):
+                    raise RuntimeError("staged hot ledger does not cover each proven physical range")
+                for check,capture in zip(checks,plan["ranges"]):
+                    if ((check["start_block"],check["end_block"],check["generation"],check["source_sha"],
+                         check["group_sha"],check["rows"]) !=
+                        (capture["start"],capture["end"],str(args.generation),capture["source_sha256"],
+                         capture["groups"]["hot"]["sha256"],capture["counts"]["hot"])):
+                        raise RuntimeError("hot stage receipt does not match its verified physical rows")
+                    segment = hashlib.sha256()
+                    for _ in range(check["rows"]):
+                        fields = row_fields(proc.stdout,6)
+                        if fields is None:
+                            raise RuntimeError("staged hot stream ended early")
+                        segment.update(b"\x00\x06"+b"".join(fields))
+                        count += 1
+                    if segment.hexdigest()!=check["hot_sha"]:
+                        raise RuntimeError("staged hot range changed after verified COPY")
+                if row_fields(proc.stdout,6) is not None:
+                    raise RuntimeError("staged hot stream exceeded its expected coverage")
+            else:
+                while (fields := row_fields(proc.stdout,6)) is not None:
+                    digest.update(b"\x00\x06"+b"".join(fields))
+                    count += 1
             digest.update(END)
             if proc.stdout.read(1) or proc.wait(timeout=10):
                 raise RuntimeError("the staged hot relation could not be verified")
@@ -98,7 +198,7 @@ COMMIT;"""
             if proc.poll() is None:
                 proc.kill()
                 proc.wait()
-    if digest.hexdigest()!=plan["hot_sha256"] or count!=plan["counts"]["hot"]:
+    if (not ledger and digest.hexdigest()!=plan["hot_sha256"]) or count!=plan["counts"]["hot"]:
         raise RuntimeError("the staged hot relation is not the exact independently verified input")
     return hot
 
@@ -142,6 +242,12 @@ def write_cut(args, root, plan, control, freeze, next_freeze, hot):
     cold = plan["counts"]["cold"]
     part_count = len(plan["parts"])
     tail = literal(plan["parts"][-1]["last"]) if part_count else "last_id"
+    ledger_guard = ""
+    retire_ledger = ""
+    if plan.get("hot_staged"):
+        ledger_guard = f"""OR NOT EXISTS(SELECT FROM pg_locks WHERE pid=pg_backend_pid() AND granted
+      AND mode='ShareLock' AND relation='{LEDGER}'::regclass)"""
+        retire_ledger = f"DROP TABLE {LEDGER};"
     text = rf"""\set ON_ERROR_STOP on
 SAVEPOINT frozen_inbox_cut;
 SET LOCAL search_path TO {args.schema},pg_catalog,pg_temp;
@@ -166,6 +272,7 @@ BEGIN
     OR '{HOT}'::regclass::oid<>{int(hot["oid"])}::oid
     OR ({query}) IS DISTINCT FROM {expected}::jsonb
     OR ({keeper}) IS DISTINCT FROM {expected_freeze}::jsonb
+    {ledger_guard}
   THEN RAISE EXCEPTION 'the verified cut must use the attested source and stage locks' USING ERRCODE='55000';
   END IF;
   LOCK TABLE ONLY record_build_submissions IN ACCESS EXCLUSIVE MODE NOWAIT;
@@ -184,6 +291,7 @@ BEGIN
   FOR EACH ROW EXECUTE FUNCTION raw_archive_move_identity();
   REVOKE ALL ON {HOT} FROM public;
   ALTER TABLE {HOT} INHERIT record_build_submissions;
+  {retire_ledger}
   INSERT INTO pg_temp.frozen_result VALUES(released,NULL);
 EXCEPTION WHEN others THEN
   INSERT INTO pg_temp.frozen_result VALUES(NULL,SQLSTATE);
@@ -207,7 +315,7 @@ ROLLBACK TO SAVEPOINT frozen_inbox_cut;
 def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action",choices=("stage-hot","prepare-cut"))
+    parser.add_argument("action",choices=("stage-hot","stage-hot-ranges","prepare-cut"))
     parser.add_argument("--work",type=Path,required=True)
     parser.add_argument("--generation",type=uuid.UUID,required=True)
     parser.add_argument("--source-service",required=True)
@@ -217,11 +325,19 @@ def main():
     parser.add_argument("--cut-pid",type=int)
     parser.add_argument("--tablespace")
     parser.add_argument("--fence-file",type=Path)
+    parser.add_argument("--range-list",type=Path)
+    parser.add_argument("--legacy-freeze-proof",type=Path)
+    parser.add_argument("--retire-hot-copy",action="store_true")
     args = parser.parse_args()
     if not IDENT.fullmatch(args.schema) or not 0<args.freeze_pid<=2147483647 or (
         args.cut_pid is not None and not 0<args.cut_pid<=2147483647):
         raise ValueError("provide the active source schema and original lock holder")
     with clean_archive_lock(args.work):
+        if args.action=="stage-hot-ranges":
+            if not args.tablespace or not IDENT.fullmatch(args.tablespace) or args.tablespace=="pg_default":
+                raise ValueError("provide the existing data tablespace")
+            stage_hot_ranges(args)
+            return
         root,plan,control,freeze = verified_manifest(args)
         if args.action=="stage-hot":
             if not args.tablespace or not IDENT.fullmatch(args.tablespace) or args.tablespace=="pg_default":
