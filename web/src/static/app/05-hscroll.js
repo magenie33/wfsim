@@ -161,11 +161,46 @@ refreshStickyHeader();
   let previous = {};
   try { previous = JSON.parse(localStorage.getItem(key)) || {}; } catch {}
   const saved = previous.schema === 2 && previous.cards && previous.orders ? previous : {schema:2,cards:{},orders:{}};
+  const columnMin = 35, columnMax = 65, columnDefault = 50;
+  const weaponColumns = saved.weaponColumns = {
+    single: saved.weaponColumns?.single === true,
+    left: Number.isInteger(saved.weaponColumns?.left)
+      ? Math.max(columnMin, Math.min(columnMax, saved.weaponColumns.left)) : columnDefault,
+  };
   const groups = new Map();
   let editing = false, pending = false, dragging = null;
   const changed = () => Object.keys(saved.cards).length || Object.keys(saved.orders).length;
   const save = () => { localStorage.setItem(key, JSON.stringify(saved)); schedule(); };
   const text = (node, value) => { if (node.textContent !== value) node.textContent = value; };
+  function wireWeaponColumns(page, tools) {
+    const controls = document.createElement('div');
+    controls.className = 'weapon-column-tools';
+    controls.innerHTML = `<select aria-label="${escHtml(tr('Columns'))}"><option value="two">${escHtml(tr('Two columns'))}</option><option value="one">${escHtml(tr('One column'))}</option></select>
+      <label>${escHtml(tr('Column split'))} <input type="range" min="${columnMin}" max="${columnMax}"></label><span aria-hidden="true"></span>`;
+    tools.querySelector('[data-layout-edit]').before(controls);
+    const mode = controls.querySelector('select'), split = controls.querySelector('input');
+    const ratio = controls.querySelector('span');
+    function paint() {
+      mode.value = weaponColumns.single ? 'one' : 'two';
+      split.value = weaponColumns.left;
+      split.parentElement.hidden = weaponColumns.single;
+      ratio.hidden = weaponColumns.single;
+      const value = `${weaponColumns.left} : ${100 - weaponColumns.left}`;
+      text(ratio, value);
+      split.setAttribute('aria-valuetext', value);
+      page.classList.toggle('weapon-single-column', weaponColumns.single);
+      page.style.setProperty('--weapon-column-share', weaponColumns.left / 100);
+    }
+    mode.onchange = () => { weaponColumns.single = mode.value === 'one'; paint(); save(); };
+    split.oninput = () => { weaponColumns.left = split.valueAsNumber; paint(); };
+    split.onchange = save;
+    paint();
+    return () => {
+      weaponColumns.single = false;
+      weaponColumns.left = columnDefault;
+      paint();
+    };
+  }
   function apply(group) {
     const ids = group.rows.map(({card}) => card.id), requested = saved.orders[group.key] || ids;
     const order = [...requested.filter(id => ids.includes(id)), ...ids.filter(id => !requested.includes(id))];
@@ -283,20 +318,24 @@ refreshStickyHeader();
     }
     for (const page of document.querySelectorAll('.config-page, [data-card-layout]')) {
       if (page.hidden) continue;
+      const weapon = page.matches('main.config-page:not([id])');
       let tools = page.querySelector(':scope > .layout-tools');
       if (!tools) {
         tools = document.createElement('div'); tools.className = 'layout-tools';
         tools.innerHTML = `<span>${escHtml(tr('Layout'))}</span><span class="layout-status"></span><button type="button" class="ghost-btn small" data-layout-edit>${escHtml(tr('Edit layout'))}</button><button type="button" class="ghost-btn small" data-layout-reset>${escHtml(tr('Restore default layout'))}</button>`;
         const tabs = page.querySelector('.module-tabs, :scope > [data-layout-header]'); if (tabs) tabs.after(tools); else page.prepend(tools);
+        const resetColumns = weapon ? wireWeaponColumns(page, tools) : null;
         tools.querySelector('[data-layout-edit]').onclick = () => { editing = !editing; refresh(); };
         tools.querySelector('[data-layout-reset]').onclick = () => {
+          resetColumns?.();
           saved.cards = {}; saved.orders = {};
           document.querySelectorAll('.layout-card').forEach(card => { card.style.width = ''; card.style.height = ''; card.classList.remove('layout-sized'); });
           for (const group of groups.values()) if (group.rows.every(({slot}) => slot.isConnected)) apply(group);
           save(); refresh();
         };
       }
-      text(tools.querySelector('.layout-status'),changed() ? tr('Custom layout') + ' · ' + tr('Saved') : tr('Default layout'));
+      const custom = changed() || (weapon && (weaponColumns.single || weaponColumns.left !== columnDefault));
+      text(tools.querySelector('.layout-status'),custom ? tr('Custom layout') + ' · ' + tr('Saved') : tr('Default layout'));
       const edit = tools.querySelector('[data-layout-edit]'); text(edit,editing ? tr('Done') : tr('Edit layout')); edit.setAttribute('aria-pressed',editing);
       page.classList.toggle('layout-active',editing || !!changed()); page.classList.toggle('layout-editing',editing);
       const candidates = [...page.querySelectorAll(':scope > .block, :scope > .library-panel, :scope > .calculation-conditions, #build-finder > .library-panel, #calculation-scenario-editor > .scenario-section')].filter(card => card.id);

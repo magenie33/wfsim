@@ -2390,6 +2390,11 @@ buttons, whose bottom run blocks remain in the jump index. Results stay in
 their original containers. Disabled controls also disable their shortcuts.
 Compact page tabs stay below the header on desktop and phone; the active phone
 tab and side controls remain inside the viewport.
+Weapon columns start equal and retain their split and single-column preference
+across tabs and reloads. Geometry checks at the desktop breakpoint cover both
+extreme splits in English and Chinese, including a wrapping equipment name,
+compact icon, score and expanded equipment comparisons. Restoring the default
+returns to equal widths.
 Empty library results retain their document height and scroll position while
 the toolbar compacts, return to their expanded layout at the top, and remain
 stable in both languages across desktop and phone dimensions, resizing and

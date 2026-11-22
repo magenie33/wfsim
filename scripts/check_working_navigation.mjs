@@ -16,6 +16,11 @@ try {
   })()`);
   app.check('Builder keeps quick calculation and the separate scenario editor',initial.separate);
   app.check('the compact floating execution controls are available with both compute indicators',initial.ready&&initial.compact,JSON.stringify(initial));
+  const defaultColumns=await app.evaluate(`(()=>{
+    const left=$('mod-block').getBoundingClientRect(),right=$('stats-block').getBoundingClientRect();
+    return Math.abs(left.width-right.width)<1&&Math.abs(right.left-left.right-16)<1;
+  })()`);
+  app.check('wide Builder starts with equal editor and stats columns',defaultColumns);
   const inline=await app.evaluate(`(()=>{
     window.navigationResults=[$('sim-results-block'),$('opt-results')].map(node=>({node,parent:node.parentNode}));
     return $('sim-run-block')?.contains($('run-sim'))&&$('opt-runbar').contains($('run-opt'))&&!$('execution-dock').contains($('run-sim'));
@@ -45,9 +50,12 @@ try {
   await app.evaluate(`(async()=>{history.pushState(null,'','/weapons/Laetum/simulator');await route();})()`);await app.sleep(150);
   const blocks=await app.evaluate(`(()=>{
     const sim=$('sim-run-block'),build=$('sim-build-block'),scenario=$('sim-block');
-    return {indexed:pageFolds().some(f=>f.box===sim),equal:Math.abs(sim.getBoundingClientRect().width-build.getBoundingClientRect().width)<1&&Math.abs(scenario.getBoundingClientRect().width-build.getBoundingClientRect().width)<1};
+    const ruler=scenario.querySelector('#dd-preset-simulator-scenarios .dd-v');
+    return {indexed:pageFolds().some(f=>f.box===sim),equal:Math.abs(sim.getBoundingClientRect().width-build.getBoundingClientRect().width)<1&&Math.abs(scenario.getBoundingClientRect().width-build.getBoundingClientRect().width)<1,
+      rulerFits:!!ruler&&ruler.scrollWidth<=ruler.clientWidth+1};
   })()`);
   app.check('simulation has an indexed run block equal in width to the cards above',blocks.indexed&&blocks.equal);
+  app.check('the simulator shows the complete selected board conditions',blocks.rulerFits);
   await app.evaluate('scrollTo(0,700)');await app.sleep(150);
   const pinned=await app.evaluate(`(()=>{const h=document.querySelector('.topbar').getBoundingClientRect(),t=$('module-tabs').getBoundingClientRect();return Math.abs(h.top)<1&&Math.abs(t.top-h.bottom)<2&&t.height<=36;})()`);
   app.check('page tabs remain pinned below the compact shell',pinned);
@@ -81,8 +89,66 @@ try {
   app.check('card order and dimensions survive reload',JSON.stringify(persisted.order)===JSON.stringify(layout.first)&&persisted.width===layout.width);
   const reset=await app.evaluate(`(()=>{document.querySelector('[data-layout-reset]').click();const n=$('opt-run-block');return [...n.parentElement.children].filter(n=>n.dataset.module==='optimizer').map(n=>n.id).join(',')==='opt-block,opt-fight-block,opt-run-block'&&n.style.width==='';})()`);
   app.check('default layout restores authored order and natural dimensions',reset);
+  const columnControls=`
+    const tools=document.querySelector('main.config-page:not([id]) .weapon-column-tools');
+    const mode=tools.querySelector('select'),split=tools.querySelector('input');
+    const setMode=value=>{mode.value=value;mode.dispatchEvent(new Event('change'));};
+    const setSplit=value=>{split.value=value;split.dispatchEvent(new Event('input'));split.dispatchEvent(new Event('change'));};
+    const geometry=(a,b)=>{
+      const left=$(a).getBoundingClientRect(),right=$(b).getBoundingClientRect();
+      return {share:Math.round(100*left.width/(left.width+right.width)),gap:right.left-left.right,stacked:Math.abs(right.left-left.left)<1&&Math.abs(right.width-left.width)<1};
+    };`;
+  const selectedColumns=await app.evaluate(`(()=>{
+    ${columnControls}
+    setSplit(62);
+    const wide=geometry('opt-block','opt-run-block');
+    setMode('one');
+    return {wide,single:geometry('opt-block','opt-run-block').stacked,sliderHidden:split.parentElement.hidden};
+  })()`);
+  app.check('changing the split reflows the optimizer, and single column stacks it',selectedColumns.wide.share===62&&Math.abs(selectedColumns.wide.gap-16)<1&&selectedColumns.single&&selectedColumns.sliderHidden,JSON.stringify(selectedColumns));
+  await app.load('/weapons/Laetum/',5000);
+  const columns=await app.evaluate(`(()=>{
+    ${columnControls}
+    const saved=mode.value==='one'&&geometry('library-filters','library-results').stacked;
+    setMode('two');
+    return {saved,restored:geometry('library-filters','library-results'),split:split.valueAsNumber};
+  })()`);
+  app.check('single column survives navigation and reload, and reopening two columns restores the split',columns.saved&&columns.split===62&&columns.restored.share===62&&Math.abs(columns.restored.gap-16)<1,JSON.stringify(columns));
+  await app.send('Emulation.setDeviceMetricsOverride',{width:960,height:900,deviceScaleFactor:1,mobile:false});
+  const smallWindow=await app.evaluate(`(()=>{${columnControls}return tools.offsetHeight===0&&geometry('library-filters','library-results').stacked&&split.valueAsNumber===62;})()`);
+  app.check('a narrow window stacks the library without changing the desktop preference',smallWindow);
   for (const lang of ['en','zh']) {
     if (lang==='zh') await app.setLang(lang,2000);
+    await app.send('Emulation.setDeviceMetricsOverride',{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+    await app.load('/weapons/Laetum/',5000);
+    const narrow=await app.evaluate(`(()=>{
+      ${columnControls}
+      const overview=document.querySelector('.fd-ov');
+      if (overview.classList.contains('shut')) overview.querySelector('.fold-h').click();
+      const tile=overview.querySelector('.fd-ov-u:has(img)'),name=tile?.querySelector('.fd-ov-name'),image=tile?.querySelector('img');
+      if (!name) return {tile:false};
+      const wideIcon=image.offsetWidth;
+      name.textContent=${JSON.stringify(lang==='zh'?'镀层弹头扩散与额外弹匣容量和多重射击伤害加成组合效果测试':'Galvanized Diffusion with a long equipment name and several qualifiers')};
+      setSplit(35);
+      const bounds=name.getBoundingClientRect(),range=document.createRange();
+      range.selectNodeContents(name);
+      const rectangles=[...range.getClientRects()];
+      const fits=rectangles.length>2&&rectangles.every(r=>r.left>=bounds.left-1&&r.right<=bounds.right+1&&r.bottom<=bounds.bottom+1);
+      const narrowIcon=image.offsetWidth;
+      const narrowFilters=geometry('library-filters','library-results');
+      setSplit(65);
+      $('library-results').querySelector('tr.fr:not(.tie)')?.click();
+      const results=$('library-results').querySelector('.fd-main');
+      const detail=results.querySelector('.fd-why-row .share');
+      const narrowResults=geometry('library-filters','library-results');
+      const resultFits=results.clientWidth>=results.scrollWidth-1&&!!detail?.offsetHeight;
+      document.querySelector('[data-layout-reset]').click();
+      const restored=split.valueAsNumber===50&&geometry('library-filters','library-results').share===50;
+      return {fits,wideIcon,narrowIcon,narrowFilters,narrowResults,resultFits,restored,pageFits:document.documentElement.scrollWidth<=innerWidth};
+    })()`);
+    app.check('overview keeps the whole equipment label and reduces the icon at '+lang+' 35:65',narrow.fits&&narrow.narrowIcon<narrow.wideIcon&&narrow.narrowFilters?.share===35,JSON.stringify(narrow));
+    app.check('narrow results keep scores and equipment comparisons in view at '+lang+' 65:35',narrow.resultFits&&narrow.narrowResults?.share===65&&narrow.pageFits,JSON.stringify(narrow));
+    app.check('default layout resets the column split at '+lang,narrow.restored,JSON.stringify(narrow));
     await app.load('/weapons/Laetum?filter=score%20%3E%201e30&view=library',3000);
     app.check('the scroll fixture has an empty library',await app.evaluate(`!!document.querySelector('#library-results .fd-empty')&&!document.querySelector('#build-finder tr.fr')`));
     for (const [width,height] of [[1353,919],[864,896],[1440,1000],[1353,959],[864,936],[390,844]]) {
@@ -127,6 +193,7 @@ try {
   await app.load('/warframes/Prototype',4000);
   const frameLibrary=await app.evaluate(`location.pathname==='/warframes/Prototype'&&!$('wf-library').hidden&&$('wf-library').querySelectorAll('.wf-library-entry').length===1&&$('wf-module-tabs').querySelectorAll('.mtab').length===2`);
   app.check('Warframe root opens saved builds with Library and Builder tabs',frameLibrary);
+  app.check('Warframe layout settings stay independent of weapon columns',await app.evaluate(`!$('warframe-page').querySelector('.weapon-column-tools')`));
   await app.evaluate(`document.querySelector('[data-wf-library-open="library-probe"]').click()`);await app.sleep(400);
   app.check('opening a Warframe library card reuses its existing builder and preset',await app.evaluate(`location.pathname==='/warframes/Prototype/builder'&&wfActive==='library-probe'&&$('wf-library').hidden`));
   await app.finish('settings stay in their modules while execution and navigation remain within reach');

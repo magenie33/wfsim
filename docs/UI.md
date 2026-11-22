@@ -1447,25 +1447,25 @@ Where the names come from: `docs/DATA_SOURCES.md` §"The world state".
 
 ## A wide window
 
-**A DESKTOP WINDOW GETS TWO COLUMNS; A PHONE KEEPS ITS ONE.** From 1280px a
-weapon, Warframe or companion page widens to 1560px, less the room the
-execution dock stands in. What a reader edits floats left and what reports on
-it stays in flow on the right: the builder's steps beside its stats, the
-scenario editor beside the run and its results, the search plan beside the
-optimizer's run, a frame's mods beside its stats and abilities. Build Library
-turns its conditions, filters and sort into a side column of the results. A tab
-that is one block keeps the 760px measure under the wide header. Below 1280px
-none of it applies.
+From 1280px a weapon, Warframe or companion page can widen to 1560px with
+space reserved for the execution dock. Editors sit on the left and results
+on the right. In Build Library, conditions, filters and sorting sit beside the
+results. A tab with one block keeps the 760px measure under the wide header.
 
-**IT IS STYLE ALONE** (`style.css`, the last rule set): no wrapper is added, so
-folds, the jump menu and the layout preferences read the same children. Floats
-rather than a grid, because two columns of unrelated heights must not share a
-row and the sticky tab strip needs the whole page as its range. The cost is an
-order rule: a block kept in flow has to follow the floated ones in the markup,
-or it starts below them — a card reordered ahead of its column's floats through
-Edit layout does exactly that. The builder's stats block is sticky under the
-tabs and scrolls inside the window's height, so the numbers stay beside the mod
-being changed.
+The weapon layout toolbar defaults to equal columns. Its slider sets the
+left share of the space available after the gutter, from 35 to 65 percent.
+One column stacks the cards at their single-column measure. The browser
+remembers the mode and split across weapons and tabs. Below 1280px the page
+stacks automatically. Restore default layout restores the equal split and
+shows two columns when there is room.
+
+The columns keep the existing sibling cards for folds, the jump index and
+layout preferences. Left cards float, so a right card in document flow
+begins below any preceding full-width content and can sit beside floats
+that precede it. Builder stats stay sticky below the tabs in two columns.
+Build Library adapts to each panel's width. Equipment icons shrink and
+names wrap. Narrow results stack the build and its score, with the equipment
+comparison values in the expanded row.
 
 ## The page is three modules, plus editors
 

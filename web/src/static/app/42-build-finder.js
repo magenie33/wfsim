@@ -426,7 +426,7 @@ function renderBuildFinder() {
         const best = bestOf.get(t);
         const label = finderTokenName(t) + (state ? ` · ${tr(state === "req" ? "must have" : "I don't have")}` : "");
         return `<button type="button" class="fd-u fd-ov-u ${state}" data-fcyc="${escHtml(t)}" aria-pressed="${!!state}" aria-label="${escHtml(label)}" title="${escHtml(label)}">` +
-          `<span class="fd-ov-media" aria-hidden="true">${img ? `<img src="${escHtml(img)}" alt="" loading="lazy" width="44" height="56">` : escHtml(finderTokenKind(t))}</span>` +
+          (img ? `<img class="fd-ov-media" src="${escHtml(img)}" alt="" loading="lazy" width="44" height="56">` : "") +
           `<span class="fd-ov-name">${escHtml(finderTokenName(t))}</span><span class="fd-ov-state" aria-hidden="true">${state === "req" ? "✓" : state === "exc" ? "−" : ""}</span>` +
           `<span class="fd-ov-meta"><span class="fd-ov-count"><b>${c}</b> / ${total}</span><span>${best ? `#${best.rank}` : "—"}</span></span></button>`;
       }).join("")}</div></div>`;
@@ -469,11 +469,12 @@ function renderBuildFinder() {
     segBtn("rv", "riven", tr("With riven"), inMode.filter((p) => p.riven).length) +
     segBtn("rv", "plain", tr("Without riven"), inMode.filter((p) => !p.riven).length) + `</div>` +
     `<div class="fd-seg fd-depth"><span>${escHtml(tr("Depth"))}</span>${finderDepthHtml(w)}</div>` + libraryNumericFilters() + trigHtml() + `</div>` + libraryAttributeFilters(all) + `</div>` +
-    `<div class="fd-conds"><div class="fd-q" role="search">` +
+    `<div class="fd-conds"><label for="fd-input">${escHtml(tr("Search equipment"))}</label><div class="fd-q" role="search">` +
     [...finder.exc].map((t) => `<span class="fd-tok exc"><i>${escHtml(tr("I don't have"))}</i> <b>${escHtml(finderTokenName(t))}</b><button type="button" data-funtok="${escHtml(t)}" aria-label="${escHtml(tr("remove"))}">×</button></span>`).join("") +
     [...finder.req].map((t) => `<span class="fd-tok req"><i>${escHtml(tr("must have"))}</i> <b>${escHtml(finderTokenName(t))}</b><button type="button" data-funtok="${escHtml(t)}" aria-label="${escHtml(tr("remove"))}">×</button></span>`).join("") +
-    `<input id="fd-input" type="text" autocomplete="off" placeholder="${escHtml(tr("what you don't have, or must have — mods, arcanes, evolutions, riven stats"))}">` +
-    `<div class="fd-sugg" id="fd-sugg" hidden></div></div></div>` +
+    `<input id="fd-input" type="text" autocomplete="off" aria-describedby="fd-search-hint">` +
+    `<div class="fd-sugg" id="fd-sugg" hidden></div></div><p class="fd-hint" id="fd-search-hint">` +
+    escHtml(tr("what you don't have, or must have — mods, arcanes, evolutions, riven stats")) + `</p></div>` +
     overviewHtml() + `</div>` + librarySortPanel() +
     `<div class="library-panel library-results-panel" id="library-results" aria-label="${escHtml(tr("Results"))}">` + libraryToolbar(list.length) + `<div class="fd-main">${listHtml()}</div></div>`;
 

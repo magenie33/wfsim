@@ -323,7 +323,7 @@ body.on-wbench [data-module="builder"],body.on-build-library [data-module="build
 .fd-q{flex:1 1 320px;display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-height:32px;padding:3px 8px;border:1px solid var(--line);border-radius:9px;background:var(--plane);position:relative}
 .fd-q:focus-within{border-color:var(--accent)}
 .fd-q input{flex:1;min-width:150px;border:0;outline:0;background:transparent;font:inherit;font-size:12.5px;color:var(--text);height:24px}
-.fd-tok{display:inline-flex;align-items:center;gap:4px;height:23px;padding:0 3px 0 8px;border-radius:6px;font-size:12px;background:var(--surface);border:1px solid var(--line);white-space:nowrap}
+.fd-tok{display:inline-flex;align-items:center;gap:4px;min-height:23px;max-width:100%;padding:2px 3px 2px 8px;border-radius:6px;font-size:12px;background:var(--surface);border:1px solid var(--line);overflow-wrap:anywhere}
 .fd-tok i{font-style:normal;color:var(--req)}
 .fd-tok.exc{border-color:color-mix(in srgb,var(--critical) 45%,var(--line))}
 .fd-tok.exc i{color:var(--critical)}
@@ -344,7 +344,7 @@ body.on-wbench [data-module="builder"],body.on-build-library [data-module="build
 .fd-scope{display:flex;flex-wrap:wrap;gap:8px 18px;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel3)}
 .fd-seg{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .fd-seg > span{font-size:11px;color:var(--muted)}
-.fd-seg button{height:26px;padding:0 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface);font:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--text)}
+.fd-seg button{min-height:26px;max-width:100%;padding:2px 9px;border:1px solid var(--line);border-radius:7px;background:var(--surface);font:inherit;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-align:left;overflow-wrap:anywhere;color:var(--text)}
 .fd-seg button:hover{border-color:var(--accent)}
 .fd-seg button.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;font-weight:600}
 .fd-depth input[type=range]{width:180px;accent-color:var(--accent)}
@@ -361,7 +361,6 @@ body.on-wbench [data-module="builder"],body.on-build-library [data-module="build
 .fd-u .pc{text-align:right;color:var(--text-2);font-variant-numeric:tabular-nums;font-size:11.5px}
 .fd-u.req{border-color:var(--req)}
 .fd-u.exc{border-color:var(--critical);opacity:.8}
-.fd-u.exc span:first-of-type{text-decoration:line-through}
 .fd-hint{font-size:11px;color:var(--muted);margin:4px 0 0}
 .fd-main{overflow-x:auto}
 .fd-main table{border-collapse:collapse;width:100%;min-width:640px}
@@ -406,11 +405,12 @@ body.on-wbench [data-module="builder"],body.on-build-library [data-module="build
 .fd-more button{height:28px;border-radius:8px;border:1px dashed var(--line);background:transparent;padding:0 14px;cursor:pointer;color:var(--text-2);font:inherit;font-size:12px}
 .fd-empty{padding:22px 14px;text-align:center;color:var(--muted);font-size:13px}
 .fd-conds{padding:9px 12px;border-bottom:1px solid var(--line)}
+.fd-conds>label{margin-bottom:5px}
 /* REFUSING A TRIGGER: the fight's own switches, as toggles; a group header refuses its members. */
 .fd-trig{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px}
 .fd-trig .h{font-size:11px;color:var(--muted)}
 .fd-tg{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}
-.fd-tg button{height:24px;padding:0 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:11.5px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.fd-tg button{min-height:24px;max-width:100%;padding:2px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:11.5px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;text-align:left;overflow-wrap:anywhere}
 .fd-tg button em{font-style:normal;color:var(--muted);font-size:10.5px;font-variant-numeric:tabular-nums}
 .fd-tg button.g{font-weight:600;color:var(--text-2)}
 .fd-tg button:hover{border-color:var(--critical)}
@@ -436,21 +436,18 @@ body.on-wbench [data-module="builder"],body.on-build-library [data-module="build
 .fd-ov-body{display:grid;gap:16px;padding-top:14px}
 .fd-ov-g h4{margin:0 0 8px;font-size:12px;color:var(--text-2);font-weight:600;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
 .fd-ov-g h4 small{font-weight:400}
-.fd-ov .fd-use{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-@media (max-width:640px){.fd-ov .fd-use{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.fd-ov-u{grid-template-columns:44px minmax(0,1fr) 14px;grid-template-rows:1fr auto;gap:4px 8px;height:84px;padding:9px;border-color:var(--line);border-radius:9px;background:var(--panel3);align-items:start}
-.fd-ov-u .fd-ov-media{grid-row:1/3;display:flex;align-items:center;justify-content:center;width:44px;height:62px;font-size:10px;color:var(--muted)}
-.fd-ov-media img{width:44px;height:56px;object-fit:contain}
-.fd-ov-u .fd-ov-name{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:17px;max-height:34px}
-.fd-ov-state{width:14px;text-align:center;color:var(--req)}
-.fd-ov-u .fd-ov-meta{grid-column:2/4;display:flex;justify-content:space-between;gap:6px;color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.fd-ov .fd-use{grid-template-columns:repeat(auto-fill,minmax(min(100%,156px),1fr));gap:8px}
+.fd-ov-u{--overview-icon-width:38px;--overview-icon-height:48px;grid-template-columns:minmax(0,1fr) 12px;grid-template-rows:1fr auto;gap:4px 6px;min-height:62px;padding:7px;border-color:var(--line);border-radius:9px;background:var(--panel3);align-items:start}
+.fd-ov-u:has(.fd-ov-media){grid-template-columns:var(--overview-icon-width) minmax(0,1fr) 12px}
+.fd-ov-media{grid-row:1/3;width:var(--overview-icon-width);height:var(--overview-icon-height);object-fit:contain}
+.fd-ov-u .fd-ov-name{white-space:normal;overflow-wrap:anywhere;overflow:visible;line-height:17px}
+.fd-ov-state{text-align:center;color:var(--req)}
+.fd-ov-u .fd-ov-meta{grid-column:-3/-1;display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 6px;color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
 .fd-ov-count b{font-weight:600;color:var(--text-2)}
 .fd-ov-u.req{background:color-mix(in srgb,var(--req) 8%,var(--surface))}
 .fd-ov-u.exc{background:color-mix(in srgb,var(--critical) 6%,var(--surface));opacity:1}
 .fd-ov-u.exc .fd-ov-state{color:var(--critical)}
 .fd-ov-u.exc .fd-ov-name{text-decoration:line-through;color:var(--muted)}
-.fd-ov-u.exc span:first-of-type{text-decoration:none}
-@media (max-width:480px){.fd-ov-u{grid-template-columns:32px minmax(0,1fr) 12px;padding:7px;column-gap:5px;height:90px}.fd-ov-u .fd-ov-media,.fd-ov-media img{width:32px}}
 .fd-refbar{padding:7px 12px;font-size:12px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
 .fd-refbar.off{background:transparent;color:var(--muted)}
 .fd-refbar button,.fd-refbtn{height:24px;padding:0 9px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--text-2);cursor:pointer;font:inherit;font-size:12px;white-space:nowrap;margin-left:6px}
@@ -460,7 +457,8 @@ body.on-wbench [data-module="builder"],body.on-build-library [data-module="build
 .fd-main .down{color:var(--critical)}
 .fd-open-row{padding:4px 2px 6px}
 .fd-ans-head{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap}
-.fd-ans-t{flex:1;min-width:200px}
+.fd-ans-t{flex:1 1 200px;min-width:0}
+.fd-ans-t .fd-sd{white-space:normal;overflow-wrap:anywhere}
 .fd-ans-score{display:flex;align-items:baseline;gap:5px;font-variant-numeric:tabular-nums}
 .fd-ans-score b{font-size:22px;font-weight:800}
 .fd-ans-score small{color:var(--muted)}
@@ -479,7 +477,6 @@ body.on-wbench [data-module="builder"],body.on-build-library [data-module="build
 .fd-why-row .cost{font-size:12px;font-variant-numeric:tabular-nums}
 .fd-nohave{height:23px;padding:0 9px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--text-2);cursor:pointer;font:inherit;font-size:11.5px;white-space:nowrap}
 .fd-nohave:hover{border-color:var(--critical);color:var(--critical)}
-@media (max-width:760px){.fd-why{grid-template-columns:1fr max-content}.fd-why-row .share,.fd-why-head span:nth-child(2){display:none}}
 /* A BOARD BUILD IN THE BUILD BAR: dashed and locked, the same read-only mark
    the scenario bar's official entries carry; × takes it out of the bar. */
 .preset-bar .pgroup{font-size:10.5px;color:var(--muted)}
@@ -3924,7 +3921,7 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .library-entry[hidden],.fd-scope[hidden]{display:none}
 .library-toolbar{position:sticky;top:calc(var(--shell-header-height,50px) + var(--page-tabs-height,0px));z-index:18;background:var(--surface);border-radius:12px 12px 0 0;border-bottom:1px solid var(--line);margin-bottom:var(--library-toolbar-gap,0px)}
 .library-toolbar-row{display:flex;align-items:center;gap:8px;padding:10px 12px 4px}
-.library-context{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:none;color:var(--text-2);text-align:left;cursor:pointer;font-size:12px}
+.library-context{flex:1;min-width:0;overflow-wrap:anywhere;border:0;background:none;color:var(--text-2);text-align:left;cursor:pointer;font-size:12px}
 .library-sort{display:flex;flex-direction:row;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
 .library-sort .dd{width:auto;max-width:190px;font-size:12px;padding:5px 7px}
 .library-result-count{padding:0 12px 6px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px}
@@ -3967,7 +3964,7 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .library-query-language textarea{display:block;box-sizing:border-box;width:100%;min-height:85px;margin-top:6px;padding:10px;font:12px/1.6 ui-monospace,monospace;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:7px;resize:vertical}
 .library-query-actions{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--critical)}
 .library-expression-chip{max-width:100%;box-sizing:border-box}
-.library-expression-chip b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(56vw,480px)}
+.library-expression-chip b{min-width:0}
 @media(max-width:520px){.library-toolbar-row{flex-wrap:wrap}.library-context{flex-basis:100%;order:3}.library-query-rule{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr) 22px;gap:4px}.library-query-group{padding:6px}.library-query-group .library-query-group{margin-left:4px}.library-query-order-row{grid-template-columns:14px minmax(0,1fr) 82px 20px 20px;gap:4px}}
 
 .library-panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:0 0 12px;scroll-margin-top:72px;overflow-anchor:none;min-width:0}
@@ -3993,11 +3990,50 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .library-board-panel[hidden]{display:none}
 .library-board-panel>h2{font-size:13px;margin:0 0 12px}
 .library-board-panel .board-selector{margin-bottom:0}
+.library-board-panel,.library-filter-panel,.library-sort-panel{container:library-controls / inline-size}
+.library-results-panel{container:library-results / inline-size}
+#build-finder .dd{height:auto}
+#build-finder .dd-v{white-space:normal;overflow-wrap:anywhere}
+.library-sort-control{max-width:100%}
+.library-sort .dd{max-width:100%}
+.library-query-group-head,.library-query-add,.library-query-actions,.library-retained-filter{flex-wrap:wrap}
+@container library-controls (max-width:460px){
+  .fd-ov-u{--overview-icon-width:26px;--overview-icon-height:34px}
+  .fd-sg{flex-wrap:wrap}
+  .fd-sg .nm{flex-basis:70%;overflow-wrap:anywhere}
+  .fd-sg button{height:auto;min-height:22px}
+  .board-choice-row{display:block}
+  .board-choice-row>.slotf-lab{display:block;margin-bottom:5px}
+  .library-query-group .library-query-group{margin-left:0}
+  .library-query-rule{grid-template-columns:62px minmax(0,1fr) 26px}
+  .library-query-rule>[data-query-field]{grid-column:1/-1}
+  .library-query-order-row{grid-template-columns:18px minmax(0,1fr) minmax(0,95px) 24px 24px}
+}
 .page-tabs-stuck .library-toolbar{display:flex;flex-wrap:wrap;align-items:center}
-.page-tabs-stuck .library-toolbar-row{flex:1;min-width:0;padding:6px 10px}
+.page-tabs-stuck .library-toolbar-row{flex:1 0 auto;max-width:100%;flex-wrap:wrap;padding:6px 10px}
 .page-tabs-stuck .library-toolbar .library-context{display:none}
 .page-tabs-stuck .library-result-count{padding:0 10px 0 0;margin-left:auto;white-space:nowrap}
 .page-tabs-stuck .library-stat-status{flex-basis:100%}
+@container library-results (max-width:640px){
+  .library-toolbar-row{flex-wrap:wrap}
+  .library-context{flex-basis:100%;order:1}
+  .fd-main>table,.fd-main>table>tbody{display:block;width:100%;min-width:0}
+  .fd-main>table>thead{display:none}
+  .fd-main tr.fr{display:grid;grid-template-columns:minmax(0,1fr) auto;border-bottom:1px solid var(--line)}
+  .fd-main tr.fr>td{width:auto;min-width:0;border-bottom:0;padding:8px}
+  .fd-main tr.fr>td:first-child{align-self:center;grid-column:1;grid-row:1}
+  .fd-main tr.fr>td:nth-child(2){grid-column:1/-1;grid-row:2}
+  .fd-main tr.fr>td:last-child{grid-column:2;grid-row:1;text-align:right}
+  .fd-main .fdet,.fd-main .fdet>td{display:block}
+  .fd-main .fd-sv,.fd-main .fd-sd{white-space:normal;overflow-wrap:anywhere}
+  .fd-main .fd-sv{flex-wrap:wrap}
+  .fd-main .fd-card,.fd-why{overflow-wrap:anywhere}
+  .fd-main .sb-chip img,.fd-why-row .nm img{flex:none}
+  .fd-why{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1.1fr);column-gap:8px;align-items:start}
+  .fd-why-head>span:last-child,.fd-why-row>:empty{display:none}
+  .fd-why-row>button{grid-column:1/-1;justify-self:start;margin-bottom:6px}
+  .fd-why-row .share{line-height:18px;height:auto}
+}
 .block,.fold,.library-panel,.calculation-conditions{scroll-margin-top:calc(var(--shell-header-height,50px) + var(--page-tabs-height,0px) + 12px)}
 
 .quick-calc.calculation-conditions{display:block;padding:0;background:var(--surface);border-radius:12px;margin-bottom:12px;scroll-margin-top:72px}
@@ -4107,6 +4143,11 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .layout-tools{display:flex;align-items:center;gap:7px;margin:0 auto 12px;font-size:11px;color:var(--muted)}
 .layout-tools>span{margin-right:auto}
 .layout-tools [hidden]{display:none}
+.weapon-column-tools{display:none}
+.weapon-column-tools select{width:auto;padding-block:3px}
+.weapon-column-tools label{flex-direction:row;align-items:center;gap:7px;font-size:inherit}
+.weapon-column-tools input{width:100px;margin:0}
+.weapon-column-tools>span{white-space:nowrap;font-variant-numeric:tabular-nums}
 .layout-active.config-page,.compute-workspace.layout-active{max-width:1280px}
 .layout-active>:not(#build-finder){width:min(724px,100%);margin-inline:auto}
 .layout-active #build-finder{width:100%;max-width:none}
@@ -4312,12 +4353,6 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
   .recommendation-points{gap:26px}.recommendation-points dd{font-size:19px}
   .recommendation-history-build{padding:12px}.recommendation-history-build .fd-card{font-size:11px;overflow-wrap:anywhere}
   .recommendation-library-note{font-size:10px}.recommendation-period{font-size:10px}
-  body.on-build-library .fd-main>table,body.on-build-library .fd-main>table>tbody{display:block;width:100%;min-width:0}body.on-build-library .fd-main>table>thead{display:none}
-  body.on-build-library .fd-main tr.fr{display:grid;grid-template-columns:minmax(0,1fr) auto;border-bottom:1px solid var(--line)}
-  body.on-build-library .fd-main tr.fr>td{width:auto;min-width:0;border-bottom:0;padding:8px}
-  body.on-build-library .fd-main tr.fr>td:first-child{align-self:center;grid-column:1;grid-row:1}
-  body.on-build-library .fd-main tr.fr>td:nth-child(2){grid-column:1/-1;grid-row:2;overflow-wrap:anywhere}
-  body.on-build-library .fd-main tr.fr>td:last-child{grid-column:2;grid-row:1;text-align:right}
   .recommendation-control{min-width:0}.recommendation-vote{font-size:11px;padding:0 7px}
   body.on-build-library .fd-main tr.fr>td:last-child>.fd-open{font-size:11px;height:23px}
 }
@@ -4350,37 +4385,42 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .nh-ruler-row span{font-size:11px;color:var(--text-2)}
 .nona-help .lc-foot{justify-content:space-between;align-items:start}
 
-/* A DESKTOP WINDOW GETS TWO COLUMNS, AND THE MARKUP IS NOT TOUCHED. From 1280px
-   a module's page widens to 1560px: the blocks a reader edits float left, the
-   blocks that report stay in flow on the right, and everything else spans
-   both. Floats rather than a grid, so two columns of unrelated heights share
-   no row and the sticky tab strip keeps the whole page as its range. A block
-   kept in flow has to follow the floats in the markup, or it starts below
-   them. Below 1280px none of this applies. docs/UI.md §"A wide window". */
+/* Each side stacks independently. The sticky tab strip spans both columns. */
 @media (min-width:1280px){
-  main.config-page:is(:not([id]),#warframe-page,#companion-page){max-width:min(1560px,calc(100vw - 176px));display:flow-root}
-  main.config-page:is(:not([id]),#warframe-page,#companion-page).layout-active>*{width:auto;margin-inline:0}
-  main.config-page:is(:not([id]),#warframe-page,#companion-page).layout-active .layout-card:not(.layout-sized){width:auto;margin-inline:0}
-  main.config-page:is(:not([id]),#warframe-page,#companion-page)>:is(#forma-block,#quick-calc,
+  .weapon-column-tools{display:flex;align-items:center;gap:8px}
+  main.config-page:is(:not([id],.weapon-single-column),#warframe-page,#companion-page){
+    max-width:min(1560px,calc(100vw - 176px));display:flow-root;
+    --left-column-width:calc((100% - 16px) * var(--weapon-column-share,.5))}
+  main.config-page:is(:not([id],.weapon-single-column),#warframe-page,#companion-page).layout-active>*{width:auto;margin-inline:0}
+  main.config-page:is(:not([id],.weapon-single-column),#warframe-page,#companion-page).layout-active .layout-card:not(.layout-sized){width:auto;margin-inline:0}
+  main.config-page:is(:not([id],.weapon-single-column),#warframe-page,#companion-page)>:is(#forma-block,#quick-calc,
     [data-module="builder"]:not(#stats-block,#start-edit-banner),#sim-build-block,#sim-block,#opt-block,#opt-fight-block,
     #wf-forma-block,#wf-mod-block,#wf-arcane-block,#wf-shard-block,#wf-operator-block,#comp-body-block){
-    float:left;clear:left;width:calc(50% - 8px);max-width:calc(50% - 8px);box-sizing:border-box;margin-inline:0}
+    float:left;clear:left;width:var(--left-column-width);max-width:var(--left-column-width);box-sizing:border-box;margin-inline:0}
   /* A float's top margin does not collapse into the bar above it, so the two columns would start 12px apart. */
-  main.config-page:is(:not([id]),#warframe-page)>:is(#forma-block,#wf-forma-block){margin-top:0}
-  main.config-page:is(:not([id]),#warframe-page,#companion-page)>:is(#stats-block,#sim-run-block,#sim-results-block,
+  main.config-page:is(:not([id],.weapon-single-column),#warframe-page)>:is(#forma-block,#wf-forma-block){margin-top:0}
+  main.config-page:is(:not([id],.weapon-single-column),#warframe-page,#companion-page)>:is(#stats-block,#sim-run-block,#sim-results-block,
     #shapley-block,#opt-run-block,#wf-stats-block,#wf-ability-block,#comp-mods-block){
-    width:auto;max-width:none;margin-left:calc(50% + 8px);margin-right:0}
-  /* THE STATS FOLLOW THE EDIT: the panel stays beside the mods being changed
-     and scrolls inside the window's height, under its own heading. */
-  main.config-page:not([id])>#stats-block{position:sticky;top:calc(var(--shell-header-height,50px) + var(--page-tabs-height,0px) + 12px);
+    width:auto;max-width:none;margin-left:calc(var(--left-column-width) + 16px);margin-right:0}
+  main.config-page:not([id],.weapon-single-column)>:is(#stats-block,#sim-run-block,#sim-results-block,#shapley-block,#opt-run-block){
+    max-width:calc(100% - var(--left-column-width) - 16px)}
+  main.config-page:not([id],.weapon-single-column)>#stats-block{position:sticky;top:calc(var(--shell-header-height,50px) + var(--page-tabs-height,0px) + 12px);
     max-height:calc(100vh - var(--shell-header-height,50px) - var(--page-tabs-height,0px) - 24px);overflow:hidden auto}
-  main.config-page:not([id])>#stats-block>.bh{position:sticky;top:0;z-index:2}
+  main.config-page:not([id],.weapon-single-column)>#stats-block>.bh{position:sticky;top:0;z-index:2}
   /* A tab that is one block keeps the phone's measure under the wide header. */
-  main.config-page:not([id])>:is([data-module="rivens"],[data-module="riven-analyst"],[data-module="enemies"],[data-module="benchmark"]){
+  main.config-page:not([id],.weapon-single-column)>:is([data-module="rivens"],[data-module="riven-analyst"],[data-module="enemies"],[data-module="benchmark"]){
     max-width:760px;margin-inline:auto}
-  /* The library's conditions, filters and sort become a side column of its results. */
-  body.on-build-library #build-finder{display:flow-root;--library-side:clamp(320px,27%,400px)}
-  body.on-build-library #build-finder>:is(#library-board,#library-filters,#library-sort){
-    float:left;clear:left;width:var(--library-side);max-width:var(--library-side);box-sizing:border-box;margin-inline:0}
-  body.on-build-library #build-finder>#library-results{width:auto;max-width:none;margin-left:calc(var(--library-side) + 16px);margin-right:0}
+  body.on-build-library main.config-page:not(.weapon-single-column)>#build-finder{display:flow-root}
+  main.config-page:not(.weapon-single-column)>#build-finder>:is(#library-board,#library-filters,#library-sort){
+    float:left;clear:left;width:var(--left-column-width);max-width:var(--left-column-width);margin-inline:0}
+  main.config-page:not(.weapon-single-column)>#build-finder>#library-results{
+    width:auto;max-width:calc(100% - var(--left-column-width) - 16px);margin-left:calc(var(--left-column-width) + 16px);margin-right:0}
+}
+
+main.config-page:not([id])>:is(#mod-block,#stats-block){container-type:inline-size}
+main.config-page:not([id])>.block>.bh,main.config-page:not([id])>.block>.bh .sub{flex-wrap:wrap}
+#dd-preset-simulator-scenarios{height:auto;min-height:26px}
+#dd-preset-simulator-scenarios .dd-v{white-space:normal;overflow-wrap:anywhere}
+@container (max-width:440px){
+  #mod-block .slots,#stats-block .stat-table{grid-template-columns:minmax(0,1fr)}
 }
