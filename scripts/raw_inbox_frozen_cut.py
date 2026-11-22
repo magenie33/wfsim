@@ -163,16 +163,28 @@ def write_hot_hashes(directory, label, rows, limit):
     return count
 
 
+def memory_available():
+    fields = Path('/proc/meminfo').read_text(encoding='ascii')
+    match = re.search(r'^MemAvailable:\s+([0-9]+) kB$',fields,re.MULTILINE)
+    if not match:
+        raise RuntimeError("could not read current available host memory")
+    return int(match[1])*1024
+
+
 @contextmanager
 def hot_content_witness(args, plan):
     if args.hot_verify_spool_bytes is None:
         yield None
         return
     count = plan["counts"]["hot"]
-    stat = os.statvfs(args.work)
+    work = args.hot_verify_temp_dir or args.work
+    stat = os.statvfs(work)
     projected = 2*(count*HOT_HASH_BYTES+HOT_BUCKETS*stat.f_frsize)
     if not plan.get("hot_staged") or projected>min(args.hot_verify_spool_bytes,stat.f_bavail*stat.f_frsize):
         raise RuntimeError("staged hot content verification exceeds its spool budget")
+    if (args.hot_verify_memory_reserve_bytes is not None
+        and memory_available()<projected+8*HOT_BUCKET_LIMIT+args.hot_verify_memory_reserve_bytes):
+        raise RuntimeError("staged hot content verification exceeds its available memory budget")
     control,freeze,entries = ranges(args.work,args.generation,args.range_list,args.legacy_freeze_proof)
     if control!=plan["control"] or freeze!=plan["freeze"] or [capture for capture,_ in entries]!=plan["ranges"]:
         raise RuntimeError("hot content witness changed frozen source ranges")
@@ -189,7 +201,7 @@ def hot_content_witness(args, plan):
                 if seen!=rows:
                     raise RuntimeError("hot content witness changed a range row count")
 
-    with tempfile.TemporaryDirectory(prefix="raw-hot-verify-",dir=args.work) as tmp:
+    with tempfile.TemporaryDirectory(prefix="raw-hot-verify-",dir=work) as tmp:
         directory = Path(tmp)
         write_hot_hashes(directory,"source",source_rows(),count)
         yield directory
@@ -413,10 +425,16 @@ def main():
     parser.add_argument("--legacy-freeze-proof",type=Path)
     parser.add_argument("--retire-hot-copy",action="store_true")
     parser.add_argument("--hot-verify-spool-bytes",type=int)
+    parser.add_argument("--hot-verify-temp-dir",type=Path)
+    parser.add_argument("--hot-verify-memory-reserve-bytes",type=int)
     args = parser.parse_args()
     if not IDENT.fullmatch(args.schema) or not 0<args.freeze_pid<=2147483647 or (
         args.cut_pid is not None and not 0<args.cut_pid<=2147483647):
         raise ValueError("provide the active source schema and original lock holder")
+    if (args.hot_verify_temp_dir is not None and (args.hot_verify_spool_bytes is None or not args.hot_verify_temp_dir.is_dir())
+        or args.hot_verify_memory_reserve_bytes is not None and
+           (args.hot_verify_temp_dir is None or args.hot_verify_memory_reserve_bytes<1)):
+        raise ValueError("provide an existing temporary directory and positive verification budgets")
     with clean_archive_lock(args.work):
         if args.action=="stage-hot-ranges":
             if not args.tablespace or not IDENT.fullmatch(args.tablespace) or args.tablespace=="pg_default":
