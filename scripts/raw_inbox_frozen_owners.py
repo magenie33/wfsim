@@ -3,6 +3,7 @@
 
 import argparse
 from contextlib import ExitStack
+from datetime import datetime
 import gzip
 import hashlib
 import json
@@ -39,7 +40,7 @@ def freeze_sql(pid):
     locked = ",".join(f"'{table}'::regclass::oid" for table in LOCKED)
     return f"""
 SELECT jsonb_build_object('pid',{pid},'transaction',max(l.virtualtransaction),
-  'backend_start',max(a.backend_start))
+  'backend_start',max(a.backend_start),'xact_start',max(a.xact_start))
 FROM pg_locks l JOIN pg_stat_activity a USING(pid)
 WHERE l.pid={pid} AND l.mode='ShareLock' AND l.granted AND l.relation=ANY(ARRAY[{locked}])
 HAVING count(DISTINCT l.relation)={len(LOCKED)} AND count(DISTINCT l.virtualtransaction)=1;
@@ -204,7 +205,10 @@ def import_exports(args, root):
 
     witness = json.loads(args.export_proof.read_bytes())
     control,freeze = current_frame(args)
-    if (witness["freeze_pid"],witness["freeze_vxid"]) != (freeze["pid"],freeze["transaction"]):
+    if ((witness["freeze_pid"],witness["freeze_vxid"]) != (freeze["pid"],freeze["transaction"])
+        or witness["source_control"] != control
+        or datetime.fromisoformat(witness["freeze_backend_start"]) != datetime.fromisoformat(freeze["backend_start"])
+        or datetime.fromisoformat(witness["freeze_xact_start"]) != datetime.fromisoformat(freeze["xact_start"])):
         raise RuntimeError("external owner exports belong to another freeze")
     after = (control["after"] or "").encode()
     counts = [0] * len(EXPORT_NAMES)

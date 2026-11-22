@@ -72,7 +72,100 @@ def row_fields(stream, columns=8):
     return fields
 
 
+def split_rows(stream, directory, owners, columns=8, flags=None):
+    counts = {"hot":0,"cold":0}
+    source = hashlib.sha256()
+    original_bytes = 0
+    null = b"\xff\xff\xff\xff"
+    with gzip.open(directory / "hot.copy.gz","wb",compresslevel=1) as hot, \
+            gzip.open(directory / "cold.copy.gz","wb",compresslevel=1) as cold:
+        outputs = {"hot":hot,"cold":cold}
+        for file in outputs.values():
+            file.write(HEADER)
+        while (fields := row_fields(stream,columns)) is not None:
+            raw = b"\x00\x06"+b"".join(fields[:6])
+            original_bytes += len(raw)
+            if original_bytes > MAX_SOURCE_BYTES:
+                raise RuntimeError("physical range exceeds its decoded payload budget")
+            source.update(raw)
+            if columns==7:
+                fields.insert(6,null)
+            elif columns==6:
+                fields.extend((null,b"\x00\x00\x00\x01"+exact(flags,1)))
+            decision = fields[7]
+            if decision not in (b"\x00\x00\x00\x01\x00",b"\x00\x00\x00\x01\x01"):
+                raise RuntimeError("portability decision must be a PostgreSQL boolean")
+            lane = "cold" if decision[-1]==1 else "hot"
+            if owners is not None:
+                active, position = owners.get(fields[0][4:])
+                if active:
+                    lane = "hot"
+                    if position is not None:
+                        fields[6] = b"\x00\x00\x00\x08"+position
+            if lane=="cold" and fields[6]!=null:
+                raise RuntimeError("a portable input unexpectedly owns a queue position")
+            outputs[lane].write(b"\x00\x07"+b"".join(fields[:7]))
+            counts[lane] += 1
+        for file in outputs.values():
+            file.write(END)
+    if flags is not None and flags.read(1):
+        raise RuntimeError("intrinsic portability row count changed")
+    return counts,source.hexdigest(),original_bytes
+
+
+def use_owners(args, control, freeze):
+    from raw_inbox_frozen_owners import OwnerMap
+    if args.owners is None:
+        args.owners = OwnerMap(args.owner_map,control,freeze)
+    if args.owners.control!=control or args.owners.freeze!=freeze:
+        raise RuntimeError("the exact owner lock or source changed")
+    return args.owners
+
+
+def read_prepared(args, directory):
+    import io
+    from raw_inbox_frozen_owners import current_frame
+
+    meta = json.loads(args.prepared.read_bytes())
+    control,freeze = current_frame(args)
+    end = args.start+args.blocks
+    columns = meta.get("columns",7)
+    if (meta["control"]!=control or meta["freeze"]!=freeze
+        or meta["start"]!=args.start or meta["end"]!=end
+        or end*control["block_size"]>control["bytes"] or columns not in (6,7)):
+        raise RuntimeError("the previously captured range belongs to another frozen source")
+    path = args.prepared.parent / "source.copy.gz"
+    with path.open("rb") as data:
+        packed = hashlib.sha256()
+        for block in iter(lambda:data.read(1024*1024),b""):
+            packed.update(block)
+        if packed.hexdigest()!=meta["gz_sha256"]:
+            raise RuntimeError("the previously captured physical range changed")
+        data.seek(0)
+        flags = None
+        if columns==6:
+            bits = (args.prepared.parent / "intrinsic.bits").read_bytes()
+            if len(bits)!=meta["source_rows"] or hashlib.sha256(bits).hexdigest()!=meta["intrinsic_sha256"]:
+                raise RuntimeError("the previously captured portability flags changed")
+            flags = io.BytesIO(bits)
+        owners = use_owners(args,control,freeze)
+        with gzip.GzipFile(fileobj=data,mode="rb") as stream:
+            if exact(stream,len(HEADER))!=HEADER:
+                raise RuntimeError("the prepared source is not PostgreSQL binary COPY")
+            counts,digest,size = split_rows(stream,directory,owners,columns,flags)
+            if stream.read(1):
+                raise RuntimeError("the prepared source contains multiple COPY streams")
+    if (sum(counts.values()),digest,size)!=(meta["source_rows"],meta["source_sha256"],meta["source_bytes"]):
+        raise RuntimeError("prepared source contents do not match their physical range")
+    if current_frame(args)!=(control,freeze):
+        raise RuntimeError("the exact owner lock was lost during prepared capture")
+    return dict(v=1,control=control,freeze=freeze,start=args.start,end=end,source_rows=sum(counts.values()),
+                source_sha256=digest,source_bytes=size,counts=counts)
+
+
 def capture(args, directory):
+    if args.prepared:
+        return read_prepared(args,directory)
     end = args.start + args.blocks
     guard = ""
     decision_sql = "raw_archive_move_portable(b)"
@@ -86,9 +179,10 @@ def capture(args, directory):
   THEN RAISE EXCEPTION 'archive portability rules changed'; END IF;
 END $$;"""
         decision_sql = INLINE_OWNERS
-    if args.owner_map:
-        from raw_inbox_frozen_owners import OwnerMap, freeze_sql
+    if args.freeze_pid:
+        from raw_inbox_frozen_owners import freeze_sql
         lock_frame = freeze_sql(args.freeze_pid)
+    if args.owner_map:
         join_sql = ""
         position_sql = "NULL::bigint"
         decision_sql = INTRINSIC_PORTABLE
@@ -110,9 +204,7 @@ COPY (
 {lock_frame}
 COMMIT;
 """
-    counts = {"hot": 0, "cold": 0}
-    source = hashlib.sha256()
-    original_bytes = 0
+    freeze = None
     env = pg_environment(args.source_service)
     with subprocess.Popen([*PSQL, "--no-password"], env=env,
                           stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL) as cmd:
@@ -124,45 +216,16 @@ COMMIT;
             control = json.loads(cmd.stdout.readline(4096))
             if int(control["oid"]) != args.oid or control["generation"] != str(args.generation):
                 raise RuntimeError("source OID or archive generation changed")
-            if args.owner_map:
+            if lock_frame:
                 freeze = json.loads(cmd.stdout.readline(4096))
-                if args.owners is None:
-                    args.owners = OwnerMap(args.owner_map,control,freeze)
-                owners = args.owners
-                if owners.control != control or owners.freeze != freeze:
-                    raise RuntimeError("the exact owner lock or source changed")
+            if args.owner_map:
+                owners = use_owners(args,control,freeze)
             if end > control["bytes"] // control["block_size"]:
                 raise RuntimeError("range extends beyond the captured heap")
             if exact(cmd.stdout, len(HEADER)) != HEADER:
                 raise RuntimeError("unrecognized PostgreSQL binary COPY header")
-            with gzip.open(directory / "hot.copy.gz", "wb", compresslevel=1) as hot, \
-                    gzip.open(directory / "cold.copy.gz", "wb", compresslevel=1) as cold:
-                outputs = {"hot": hot, "cold": cold}
-                for stream in outputs.values():
-                    stream.write(HEADER)
-                while (fields := row_fields(cmd.stdout)) is not None:
-                    raw = b"\x00\x06" + b"".join(fields[:6])
-                    original_bytes += len(raw)
-                    if original_bytes > MAX_SOURCE_BYTES:
-                        raise RuntimeError("physical range exceeds its decoded payload budget")
-                    source.update(raw)
-                    decision = fields[7]
-                    if decision not in (b"\x00\x00\x00\x01\x00", b"\x00\x00\x00\x01\x01"):
-                        raise RuntimeError("portability decision must be a PostgreSQL boolean")
-                    lane = "cold" if decision[-1] == 1 else "hot"
-                    if owners is not None:
-                        active, position = owners.get(fields[0][4:])
-                        if active:
-                            lane = "hot"
-                            if position is not None:
-                                fields[6] = b"\x00\x00\x00\x08" + position
-                    if lane == "cold" and fields[6] != b"\xff\xff\xff\xff":
-                        raise RuntimeError("a portable input unexpectedly owns a queue position")
-                    outputs[lane].write(b"\x00\x07" + b"".join(fields[:7]))
-                    counts[lane] += 1
-                for stream in outputs.values():
-                    stream.write(END)
-            if owners is not None and json.loads(cmd.stdout.readline(4096)) != freeze:
+            counts,digest,original_bytes = split_rows(cmd.stdout,directory,owners)
+            if lock_frame and json.loads(cmd.stdout.readline(4096)) != freeze:
                 raise RuntimeError("the exact owner lock was lost during capture")
             if cmd.stdout.read(1) or cmd.wait(timeout=10):
                 raise RuntimeError("the source snapshot did not complete")
@@ -170,8 +233,9 @@ COMMIT;
             if cmd.poll() is None:
                 cmd.kill()
                 cmd.wait()
-    return {"v": 1, "control": control, "start": args.start, "end": end, "source_rows": sum(counts.values()),
-            "source_sha256": source.hexdigest(), "source_bytes": original_bytes, "counts": counts}
+    receipt = {"v": 1, "control": control, "start": args.start, "end": end, "source_rows": sum(counts.values()),
+               "source_sha256": digest, "source_bytes": original_bytes, "counts": counts}
+    return {**receipt, "freeze":freeze} if freeze else receipt
 
 
 def prove_restore(service, source_cluster, path, temp_mb=None):
@@ -225,12 +289,13 @@ def verify_range(args):
         if final.exists():
             # Re-capture the source on a retry. A matching OID alone cannot identify pending input.
             previous = json.loads((final / "receipt.json").read_text())
-            if previous != receipt or any(
+            comparison = receipt if "freeze" in previous else {k:v for k,v in receipt.items() if k!="freeze"}
+            if previous != comparison or any(
                 prove_restore(args.restore_service, source, final / (lane + ".copy.gz"), args.restore_temp_mb) != facts
                 for lane, facts in previous["groups"].items()
             ):
                 raise RuntimeError("the range or its existing verified payload changed")
-            return {**receipt, "replay":True}
+            return {**previous, "replay":True}
         (root / "receipt.json").write_text(json.dumps(receipt, separators=(",", ":")) + "\n")
         for path in root.iterdir():
             sync_file(path)
@@ -256,6 +321,7 @@ def main():
     parser.add_argument("--parts",type=int,default=1)
     parser.add_argument("--inline-owners",action="store_true")
     parser.add_argument("--owner-map",type=Path)
+    parser.add_argument("--prepared-range",type=Path,action="append",default=[])
     parser.add_argument("--freeze-pid",type=int)
     parser.add_argument("--restore-temp-mb",type=int,choices=(16,32,64,96,128))
     args = parser.parse_args()
@@ -266,10 +332,15 @@ def main():
         raise ValueError("provide a frozen source, separate restore service and a bounded physical range")
     if args.owner_map and (args.freeze_pid is None or not 0<args.freeze_pid<=2147483647):
         raise ValueError("the exact owner map requires its active PostgreSQL lock holder")
+    if args.freeze_pid is not None and not 0<args.freeze_pid<=2147483647:
+        raise ValueError("provide a valid frozen PostgreSQL lock holder")
+    if args.prepared_range and (not args.owner_map or len(args.prepared_range)!=args.parts):
+        raise ValueError("provide one prior range receipt per part and the frozen owner map")
     args.owners = None
     try:
         with clean_archive_lock(args.work):
-            for _ in range(args.parts):
+            for slot in range(args.parts):
+                args.prepared = args.prepared_range[slot] if args.prepared_range else None
                 emit(verify_range(args))
                 args.start += args.blocks
     finally:

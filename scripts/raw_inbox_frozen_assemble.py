@@ -34,14 +34,16 @@ def ranges(work, generation):
     if not prepared:
         raise RuntimeError("no proven physical ranges")
     control = prepared[0][0]["control"]
+    freeze = prepared[0][0].get("freeze")
     block = 0
     for record, _ in prepared:
-        if record["control"] != control or record["start"] != block or record["end"] <= block:
+        if (record["control"] != control or record.get("freeze") != freeze
+            or record["start"] != block or record["end"] <= block):
             raise RuntimeError("the proven ranges must describe one continuous frozen source")
         block = record["end"]
     if block * control["block_size"] != control["bytes"]:
         raise RuntimeError("verified ranges do not cover the frozen source heap")
-    return control, prepared
+    return control,freeze,prepared
 
 
 def read_group(path, columns, facts=None):
@@ -163,7 +165,7 @@ def main():
     if soft < 300:
         resource.setrlimit(resource.RLIMIT_NOFILE,(300,hard))
     with clean_archive_lock(args.work):
-        control, prepared = ranges(args.work,args.generation)
+        control,freeze,prepared = ranges(args.work,args.generation)
         final = args.work / f"{args.generation}.assembled"
         if final.exists():
             raise RuntimeError("the verified archive plan already exists")
@@ -173,7 +175,7 @@ def main():
             parts = pack(root,control,args.restore_service,args.rows)
             if sum(p["rows"] for p in parts) != counts["cold"]:
                 raise RuntimeError("archive part counts do not match the verified ranges")
-            manifest = {"v":1,"control":control,"counts":counts,"hot_sha256":hot_sha,"parts":parts,
+            manifest = {"v":1,"control":control,"freeze":freeze,"counts":counts,"hot_sha256":hot_sha,"parts":parts,
                         "ranges":[record for record,_ in prepared]}
             plan = root / "manifest.json"
             plan.write_text(json.dumps(manifest,separators=(",", ":"))+"\n")
