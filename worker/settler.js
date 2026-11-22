@@ -13,7 +13,7 @@ import { dialsOf } from "./dials.js";
 import { COMPUTING_MS } from "./contribution.js";
 import { facts } from "./factory.js";
 import { STATISTICS_OPEN } from "./statistics_open.js";
-import { queueEmptyExpression } from "./queue_counts.js";
+import { queueSignalSql } from "./queue_counts.js";
 import {placeholders} from './placeholders.js';
 
 /// THE FACTORY NOW, written as the one `factory_snapshot` row. `asking` and
@@ -52,13 +52,13 @@ export async function statisticsSnapshot(query,counts,{engine=null,release=null}
 }
 
 export async function signalTick(env,{engine=null,release=null}={},now=Date.now()) {
-  const db=env.LIBRARY,at=iso(now),d=await dialsOf(env,now),empty=await queueEmptyExpression(db);
-  const n=await db.prepare(`WITH a AS (SELECT count(*) AS n FROM ${askingIds(3, 1)} x),${STATISTICS_OPEN},
-    empty_queue AS MATERIALIZED (SELECT ${empty} AS empty) SELECT
-      CASE WHEN (SELECT empty FROM empty_queue) THEN 0 ELSE
+  const db=env.LIBRARY,at=iso(now),d=await dialsOf(env,now),fast=await queueSignalSql(db);
+  const n=await db.prepare(`WITH a AS (SELECT count(*) AS n FROM ${askingIds(3, 1)} x),${STATISTICS_OPEN},${fast} SELECT
+      CASE WHEN (SELECT exact FROM queue_signal) THEN
+        least((SELECT ready FROM queue_signal),GREATEST(1,(SELECT n FROM a))*$2::bigint) ELSE
         (SELECT count(*) FROM (SELECT 1 FROM stats_open WHERE waits = 0
          AND (lease_until IS NULL OR lease_until < $1::text) LIMIT GREATEST(1, (SELECT n FROM a)) * $2::bigint) o) END AS open,
-      CASE WHEN (SELECT empty FROM empty_queue) THEN 0 ELSE
+      CASE WHEN (SELECT exact FROM queue_signal) THEN (SELECT urgent FROM queue_signal) ELSE
         (SELECT count(*) FROM stats_open WHERE waits > 0) END AS urgent,
       (SELECT n FROM a) AS asking,
       (SELECT count(*) FROM entity_compute_devices WHERE banned = 0 AND last_at >= $4::text) AS computing,
@@ -81,11 +81,11 @@ export function signalBody(snap, d, { protocol, protocols }) {
 /// IS THERE WORK AT ALL, open or waited on — two indexed probes, cheap enough to
 /// ask every couple of seconds so a wave from nothing is signalled at once.
 export async function workWaiting(db, now = Date.now()) {
-  const empty = await queueEmptyExpression(db);
-  const r = await db.prepare(`WITH ${STATISTICS_OPEN},empty_queue AS MATERIALIZED (SELECT ${empty} AS empty) SELECT
-      CASE WHEN (SELECT empty FROM empty_queue) THEN false ELSE EXISTS
-        (SELECT 1 FROM stats_open WHERE waits = 0 AND (lease_until IS NULL OR lease_until < ?1::text)) END AS open,
-      CASE WHEN (SELECT empty FROM empty_queue) THEN false ELSE EXISTS
+  const fast = await queueSignalSql(db);
+  const r = await db.prepare(`WITH ${STATISTICS_OPEN},${fast} SELECT
+      CASE WHEN (SELECT exact FROM queue_signal) THEN (SELECT ready>0 FROM queue_signal) ELSE EXISTS
+        (SELECT 1 FROM stats_open WHERE waits = 0 AND (lease_until IS NULL OR lease_until < $1::text)) END AS open,
+      CASE WHEN (SELECT exact FROM queue_signal) THEN (SELECT urgent>0 FROM queue_signal) ELSE EXISTS
         (SELECT 1 FROM stats_open WHERE waits > 0) END AS urgent`).bind(iso(now)).first();
   return { open: !!r.open, urgent: !!r.urgent };
 }

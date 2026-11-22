@@ -117,14 +117,38 @@ const zoneTotalsSql = `WITH epoch AS MATERIALIZED (SELECT compute_order_cut_epoc
     to_char(statement_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') counts_at,
     coalesce((SELECT jsonb_agg(jsonb_build_array(zone,n) ORDER BY zone) FROM totals),'[]') zones FROM seed`;
 
-// Only an installed seed for the current cut and zero balances prove emptiness.
-export async function queueEmptyExpression(db) {
+// A complete set of live keys is proved against the same snapshot's zone balances.
+export async function queueSignalSql(db) {
   const access = await db.prepare(`SELECT
     has_table_privilege(to_regclass('state_queue_zone_seed'),'SELECT') AND
-    has_table_privilege(to_regclass('state_queue_zone_changes'),'SELECT') AS readable`).first();
-  return access?.readable
-    ? `coalesce((SELECT zones='[]'::jsonb FROM (${zoneTotalsSql}) queue),false)`
-    : 'false';
+    has_table_privilege(to_regclass('state_queue_zone_changes'),'SELECT') AS readable,
+    has_table_privilege(to_regclass('state_compute_scheduling'),'SELECT') AS scheduling`).first();
+  if (!access?.readable) return `queue_signal AS (SELECT false AS exact,0::bigint AS ready,0::bigint AS urgent)`;
+  const totals = `queue_signal_totals AS MATERIALIZED (${zoneTotalsSql})`;
+  if (!access.scheduling) return `${totals},
+    queue_signal AS (SELECT zones='[]'::jsonb AS exact,0::bigint AS ready,0::bigint AS urgent FROM queue_signal_totals)`;
+  return `${totals},
+    queue_signal_zones AS MATERIALIZED (
+      SELECT (v->>0)::smallint AS zone,(v->>1)::bigint AS n FROM queue_signal_totals q
+      CROSS JOIN LATERAL jsonb_array_elements(q.zones) v
+    ), queue_signal_size AS MATERIALIZED (
+      SELECT coalesce(sum(z.n),0) AS n FROM queue_signal_totals q LEFT JOIN queue_signal_zones z ON true
+      GROUP BY q.order_epoch HAVING coalesce(sum(z.n),0)<=128 AND coalesce(min(z.n),1)>0
+    ), queue_signal_candidates AS MATERIALIZED (
+      SELECT candidate.* FROM queue_signal_size size CROSS JOIN queue_signal_zones z CROSS JOIN LATERAL (
+        SELECT s.id,s.task_id,s.waits,s.lease_until FROM state_compute_scheduling s
+        WHERE s.state='open' AND ${zone}=z.zone
+        ORDER BY ${zone} DESC,${position} DESC,s.id DESC LIMIT z.n+16
+      ) candidate
+    ), queue_signal AS MATERIALIZED (
+      SELECT count(*)=(SELECT n FROM queue_signal_size) AS exact,
+        count(*) FILTER(WHERE c.waits=0 AND (c.lease_until IS NULL OR c.lease_until<$1::text)) AS ready,
+        count(*) FILTER(WHERE c.waits>0) AS urgent
+      FROM queue_signal_candidates c
+      WHERE EXISTS (SELECT 1 FROM state_compute_effective_open live WHERE live.id=c.id AND live.task_id=c.task_id OFFSET 0)
+        AND NOT EXISTS (SELECT 1 FROM record_compute_order_cancellations r
+          WHERE r.question=c.id AND r.task_id=c.task_id AND r.cut_id=(SELECT id FROM compute_order_cut()))
+    )`;
 }
 
 export const queueZonesSql = `WITH epoch AS MATERIALIZED (SELECT compute_order_cut_epoch() at),

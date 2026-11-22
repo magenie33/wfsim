@@ -36,7 +36,7 @@ const wave = () => workWaiting(measured, now);
 const totals = ({ open, urgent }) => [open, urgent];
 
 function historyLoops(node) {
-  if (node["Subplan Name"] === "CTE a") return [];
+  if (["CTE a", "CTE queue_signal", "CTE queue_signal_candidates"].includes(node["Subplan Name"])) return [];
   const found = ["state_compute_scheduling", "entity_compute_tasks"].includes(node["Relation Name"])
     ? [node["Actual Loops"]] : [];
   return found.concat((node.Plans ?? []).flatMap(historyLoops));
@@ -46,9 +46,12 @@ async function scanLoops() {
   const [statement, args] = sampled;
   sampled = undefined;
   const [row] = await sql.unsafe("EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + statement, args);
-  const loops = historyLoops(row["QUERY PLAN"][0].Plan);
+  const plan = row["QUERY PLAN"][0].Plan;
+  const loops = historyLoops(plan);
   assert(loops.length, "the plan includes the prior history path");
-  return loops.reduce((n, count) => n + count, 0);
+  const zoneScan = (node) => (node["Index Name"] === "compute_scheduling_zone" && node["Scan Direction"] === "Backward"
+    ? [[node["Actual Rows"], node["Actual Loops"]]] : []).concat((node.Plans ?? []).flatMap(zoneScan));
+  return { loops: loops.reduce((n, count) => n + count, 0), zoneReads: zoneScan(plan) };
 }
 async function addLive(id, task, waits, until = null) {
   await sql`INSERT INTO entity_compute_specs VALUES (${id},'simulate','{}')`;
@@ -80,26 +83,35 @@ try {
   assert.deepEqual(totals(before), [0, 0]);
   assert.equal(before.asking, 1);
   assert.equal(before.computing, 1);
-  assert((await scanLoops()) > 0, "an unseeded current cut must read the authoritative schedule");
+  assert((await scanLoops()).loops > 0, "an unseeded current cut must read the authoritative schedule");
 
   await sql`INSERT INTO state_queue_zone_seed (epoch,zones,sampled_at) VALUES (${epoch},'[]',now())`;
   assert.deepEqual(await signal(), before);
-  assert.equal(await scanLoops(), 0, "an exact zero signal must skip the historical queue plan");
+  assert.equal((await scanLoops()).loops, 0, "an exact zero signal must skip the historical queue plan");
   assert.deepEqual(await wave(), { open: false, urgent: false });
-  assert.equal(await scanLoops(), 0, "an exact zero wave must skip the historical queue plan");
+  assert.equal((await scanLoops()).loops, 0, "an exact zero wave must skip the historical queue plan");
 
   await addLive("ready", history + 1, 0);
   await addLive("urgent", history + 2, 1);
   await addLive("leased", history + 3, 0, "2026-11-22T04:20:00.000Z");
   assert.deepEqual(totals(await signal()), [1, 1]);
+  const active = await scanLoops();
+  assert.equal(active.loops, 0, "a complete small signal must skip the historical queue plan");
+  assert.deepEqual(active.zoneReads, [[19, 1]], "the existing zone index bounds the positive candidate read");
   assert.deepEqual(await wave(), { open: true, urgent: true });
+  assert.equal((await scanLoops()).loops, 0, "a complete small wave must skip the historical queue plan");
   await sql`UPDATE state_compute_work SET lease_until='2026-11-22T04:18:59.000Z' WHERE id='leased'`;
   assert.deepEqual(totals(await signal()), [2, 1]);
+  for (let i = 0; i < 20; i++) await addLive(`hidden-${i}`, history + 4 + i, 0);
+  await sql`INSERT INTO record_compute_order_cancellations (question,task_id,cut_id,at)
+    SELECT id,task_id,'signal-cut',${epoch} FROM state_compute_scheduling WHERE id LIKE 'hidden-%'`;
+  assert.deepEqual(totals(await signal()), [2, 1]);
+  assert((await scanLoops()).loops > 0, "an incomplete candidate set must fall back to the authoritative schedule");
   await sql`UPDATE state_compute_work SET state='withdrawn',lease=NULL,lease_until=NULL,leased_to=NULL
     WHERE id IN ('ready','urgent','leased')`;
   assert.deepEqual(totals(await signal()), [0, 0]);
-  assert.equal(await scanLoops(), 0, "the settled queue must return to the fast zero path");
-  console.log("PASS real PostgreSQL signal and wave skip historical rows only after the current cut proves zero");
+  assert.equal((await scanLoops()).loops, 0, "the settled queue must return to the fast zero path");
+  console.log("PASS real PostgreSQL signal and wave skip history for exact empty and small queue sets");
 } finally {
   try { await sql.unsafe(`DROP SCHEMA IF EXISTS ${schema} CASCADE`); }
   finally { await sql.end(); }
