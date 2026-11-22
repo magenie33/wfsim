@@ -396,6 +396,15 @@ for (const path of readyFeatureTools) {
 }
 assert.deepEqual(classify(readyFeatureTools).jobs, PRODUCT_JOBS);
 assert.equal(classify(readyFeatureTools).deep, false);
+const coverageSupplyTools = ['scripts/board_coverage.mjs', 'scripts/board_coverage_schema.mjs', 'scripts/check_board_coverage.mjs'];
+assert.deepEqual(classify(coverageSupplyTools).jobs, PRODUCT_JOBS);
+assert.equal(classify(coverageSupplyTools).deep, false, 'bounded coverage intake does not change search enumeration');
+for (const extra of ['optimizer/src/quick.rs', 'scripts/board_coverage_unknown.mjs'])
+  assert.equal(classify([...coverageSupplyTools, extra]).deep, true, extra + ' retains deep validation');
+assert.equal(classify(coverageSupplyTools, true).deep, true);
+assert.equal(classify(coverageSupplyTools, false, false).deep, true);
+assert.match(readFileSync('.github/workflows/ci.yml', 'utf8'),
+  /WFSIM_COVERAGE_TEST_URL: postgresql:\/\/postgres:mailbox_check@127\.0\.0\.1:5433\/wfsim_checks\s+run: node scripts\/check_board_coverage\.mjs/);
 for (const path of ['tests/fixtures/engine-compare/new-calls.json', 'scripts/new_engine_compare.py',
   'tests/fixtures/client/kitgun-status-other.json', 'tests/golden/M133-other.json', 'docs/measurements/M133-other.md'])
   assert.equal(classify([path]).deep, true, path + ' is outside the exact registered paths');
