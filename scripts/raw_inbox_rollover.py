@@ -340,23 +340,33 @@ COMMIT;
 """)
 
 
+def resolved_precopy(generation, expected_source):
+    if not re.fullmatch('[0-9a-f]{40}',expected_source):
+        raise ValueError('provide the exact deployed writer source')
+    return f"""BEGIN;
+DO $$ BEGIN
+  PERFORM set_config('search_path',quote_ident(current_schema())||',pg_catalog,pg_temp',true);
+END $$;
+LOCK TABLE state_raw_archive_move, state_raw_archive_generation, record_raw_archive_parts
+  IN ACCESS EXCLUSIVE MODE NOWAIT;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT FROM state_raw_archive_move m JOIN state_raw_archive_generation g USING(generation)
+    WHERE m.id=1 AND m.phase='copying' AND g.phase='sealing' AND m.generation='{generation}'::uuid
+      AND m.online_source='{expected_source}' AND m.writer_receipt IS NOT NULL
+      AND m.upload_digest IS NULL AND m.source_oid='record_build_submissions'::regclass::oid)
+    OR EXISTS (SELECT FROM record_raw_archive_uploads u JOIN state_raw_archive_move m USING(generation))
+  THEN RAISE EXCEPTION 'archive change requires the current online move between resolved pages'
+    USING ERRCODE='55000'; END IF;
+END $$;
+"""
+
+
 def widen_precopy(args):
     move = (SOURCE/'worker/pg/raw_inbox_archive_move.sql').read_text()
     start = move.index('CREATE OR REPLACE FUNCTION raw_archive_move_page(')
     end = move.index('CREATE OR REPLACE FUNCTION raw_archive_move_prepare(',start)
     page = move[start:end]
-    pg(f"""BEGIN;
-SELECT set_config('search_path',quote_ident(current_schema())||',pg_catalog,pg_temp',true);
-LOCK TABLE state_raw_archive_move, state_raw_archive_generation, record_raw_archive_parts
-  IN ACCESS EXCLUSIVE MODE NOWAIT;
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT FROM state_raw_archive_move m JOIN state_raw_archive_generation g USING(generation)
-    WHERE m.id=1 AND m.phase='copying' AND g.phase='sealing' AND m.online_source IS NOT NULL
-      AND m.upload_digest IS NULL AND m.source_oid='record_build_submissions'::regclass::oid)
-    OR EXISTS (SELECT FROM record_raw_archive_uploads u JOIN state_raw_archive_move m USING(generation))
-  THEN RAISE EXCEPTION 'wide archive upgrade requires the current online move between resolved pages'
-    USING ERRCODE='55000'; END IF;
-END $$;
+    pg(resolved_precopy(args.generation,args.source)+f"""
 ALTER TABLE record_raw_archive_parts DROP CONSTRAINT record_raw_archive_parts_rows_check,
   ADD CONSTRAINT raw_archive_parts_rows_wide CHECK(rows BETWEEN 1 AND 2048) NOT VALID;
 ALTER TABLE state_raw_archive_generation DROP CONSTRAINT state_raw_archive_generation_next_offset_check,
@@ -364,6 +374,24 @@ ALTER TABLE state_raw_archive_generation DROP CONSTRAINT state_raw_archive_gener
 {page}
 COMMIT;
 """)
+
+
+def repin_precopy(args):
+    writer_receipt, new_source = writer_fence(args.writer_file,args.generation)
+    if args.old_source==new_source:
+        raise ValueError('provide a different deployed writer source')
+    result = json_pg(resolved_precopy(args.generation,args.old_source)+f"""
+WITH previous AS (SELECT writer_receipt FROM state_raw_archive_move WHERE id=1), repin AS (
+  UPDATE state_raw_archive_move SET online_source='{new_source}',writer_receipt='{writer_receipt}'
+    WHERE id=1 AND online_source='{args.old_source}'
+    RETURNING generation,after_id,online_source,writer_receipt
+)
+SELECT jsonb_build_object('stage','writer_source','generation',generation,'after',after_id,
+  'old_source','{args.old_source}','old_writer_receipt',previous.writer_receipt,
+  'source',online_source,'writer_receipt',repin.writer_receipt) FROM repin CROSS JOIN previous;
+COMMIT;
+""")
+    emit(result)
 
 
 @contextmanager
@@ -440,6 +468,8 @@ def clean_action(args, lease=None):
         install_clean(args)
     elif args.action=='widen-precopy-clean':
         widen_precopy(args)
+    elif args.action=='repin-precopy-clean':
+        repin_precopy(args)
     elif args.action=='begin-precopy-clean':
         digest, source = writer_fence(args.writer_file,args.generation)
         pg(f"SELECT raw_archive_move_begin_online('{args.generation}'::uuid,'{source}','{digest}');")
@@ -556,7 +586,14 @@ def read_arguments():
     precopy.add_argument('generation',type=uuid.UUID)
     precopy.add_argument('--writer-file',type=Path,required=True)
     wide = choices.add_parser('widen-precopy-clean')
+    wide.add_argument('generation',type=uuid.UUID)
+    wide.add_argument('--source',required=True)
     wide.add_argument('--work',type=Path,required=True)
+    repin = choices.add_parser('repin-precopy-clean')
+    repin.add_argument('generation',type=uuid.UUID)
+    repin.add_argument('--old-source',required=True)
+    repin.add_argument('--writer-file',type=Path,required=True)
+    repin.add_argument('--work',type=Path,required=True)
     for name in ('begin-clean','cut-clean','abort-clean'):
         cmd = choices.add_parser(name)
         cmd.add_argument('generation',type=uuid.UUID)
@@ -593,7 +630,7 @@ def main():
     args = read_arguments()
     if args.action=='install':
         install(args.tablespace)
-    elif args.action in ('copy-clean','cut-clean','abort-clean','retire-clean','widen-precopy-clean'):
+    elif args.action in ('copy-clean','cut-clean','abort-clean','retire-clean','widen-precopy-clean','repin-precopy-clean'):
         with clean_archive_lock(args.work) as lease:
             clean_action(args,lease)
         return

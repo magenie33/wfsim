@@ -140,9 +140,9 @@ async function moveFixture(){
   const positions=()=>owner.unsafe('SELECT id,position::text FROM state_build_inbox_positions ORDER BY id');
   const keys=async()=>(await writer.unsafe('SELECT id FROM record_build_submissions ORDER BY id')).map(row=>row.id);
   const fenceFile=join(scratch,'fence.json');
-  const fenced=gen=>{
+  const fenced=(gen,source='a'.repeat(40))=>{
     const consumer={paused:true,inflight:0,capture:'discarded',receipt:fence};
-    writeFileSync(fenceFile,JSON.stringify({v:1,generation:gen,source:'a'.repeat(40),live:consumer,hourly:consumer}));
+    writeFileSync(fenceFile,JSON.stringify({v:1,generation:gen,source,live:consumer,hourly:consumer}));
     return createHash('sha256').update(readFileSync(fenceFile)).digest('hex');
   };
   if(precopy) {
@@ -187,8 +187,8 @@ async function moveFixture(){
     const parent=await oldRelation();
     const writerFile=join(scratch,'writers.json');
     const writers={wfsim:fence,factoryd:fence,pipeline:fence};
-    function writerProof(gen, verified=writers){
-      const body=JSON.stringify({v:1,generation:gen,source:'a'.repeat(40),legacy_raw_writers:false,writers:verified});
+    function writerProof(gen, verified=writers, source='a'.repeat(40)){
+      const body=JSON.stringify({v:1,generation:gen,source,legacy_raw_writers:false,writers:verified});
       writeFileSync(writerFile,body);
       return createHash('sha256').update(body).digest('hex');
     }
@@ -210,7 +210,11 @@ async function moveFixture(){
     assert.equal(cli('status-clean')[0].sealed_parts,0);
     assert.match(failCli('restore-disconnect',...copyOnline).stderr,/closed before rollback confirmation|Broken pipe/);
     assert.equal(cli('status-clean')[0].sealed_parts,0);
-    assert.throws(()=>cli('widen-precopy-clean','--work',scratch),/55000/);
+    writerProof(attempt,writers,'b'.repeat(40));
+    assert.throws(()=>cli('widen-precopy-clean',attempt,'--source','a'.repeat(40),'--work',scratch),/55000/);
+    assert.throws(()=>cli('repin-precopy-clean',attempt,'--old-source','a'.repeat(40),
+      '--writer-file',writerFile,'--work',scratch),/55000/);
+    assert.equal(cli('status-clean')[0].online_source,'a'.repeat(40));
     failCli('before-accept',...copyOnline);
     const [prepared]=await transfer(attempt);
     const verified=gunzipSync(readFileSync(join(objectDir(attempt),prepared.part+'-'+prepared.digest+'.json.gz'))).toString('utf8');
@@ -271,7 +275,16 @@ async function moveFixture(){
     await ack(writer,await source.byIds([gained]));
     const writerDigest=writerProof(original);
     cli(...start(original));
-    assert.equal(cli('status-clean')[0].writer_receipt,writerDigest);
+    const [beforeRepin]=cli('status-clean');
+    assert.equal(beforeRepin.writer_receipt,writerDigest);
+    const released='b'.repeat(40);
+    const newDigest=writerProof(original,writers,released);
+    const repin=['repin-precopy-clean',original,'--writer-file',writerFile,'--work',scratch,'--old-source'];
+    assert.throws(()=>cli(...repin,'c'.repeat(40)),/55000/);
+    assert.deepEqual(cli('status-clean'),[beforeRepin]);
+    assert.deepEqual(cli(...repin,'a'.repeat(40)),[{stage:'writer_source',generation:original,after:beforeRepin.after,
+      old_source:'a'.repeat(40),old_writer_receipt:writerDigest,source:released,writer_receipt:newDigest}]);
+    assert.deepEqual(cli('status-clean'),[{...beforeRepin,online_source:released,writer_receipt:newDigest}]);
     await assert.rejects(submit(writer,cold),error=>error.code==='23505');
     await assert.rejects(owner.unsafe('UPDATE record_build_submissions SET record=$1 WHERE id=$2',['{}',survivor]),error=>error.code==='55000');
     assert.throws(()=>cli('install-clean','--tablespace','pg_default','--http-role',writerRole,'--consume-role',role),/P0001/);
@@ -320,8 +333,9 @@ async function moveFixture(){
     assert.deepEqual(await transfer(original),[outstanding]);
     assert.deepEqual(cli(...copyOnline),[]);
     const fenceDigest=fenced(original);
-    await assert.rejects(owner.unsafe('SELECT raw_archive_move_cut($1,$2,$3)',[original,fenceDigest,'b'.repeat(40)]),error=>error.code==='55000');
+    await assert.rejects(owner.unsafe('SELECT raw_archive_move_cut($1,$2,$3)',[original,fenceDigest,'a'.repeat(40)]),error=>error.code==='55000');
     assert.deepEqual(await oldRelation(),parent);
+    fenced(original,released);
     const [cut]=cli('cut-clean',original,'--fence-file',fenceFile,...budgets,'--peak-root-bytes','1');
     assert(cut.old_source_bytes>0);
     assert.equal((await oldRelation()).oid,parent.oid);
