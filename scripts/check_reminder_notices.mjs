@@ -37,10 +37,12 @@ await page(`
     reminderCheck();
   };
   window.__said = [];
+  window.__worldNamesFixture = { ok: true, tiers: {}, missions: {}, planets: {}, nodes: {}, fissures: [] };
   const real = window.fetch;
   window.__historyQuery = () => ({ ok: true, items: [], before: null });
   window.fetch = (u, o) => {
     if (String(u).includes('/api/notices/everyone')) return Promise.resolve(Response.json({ ok: true, notices: window.__said }));
+    if (String(u).endsWith('/api/world/names')) return Promise.resolve(Response.json(window.__worldNamesFixture));
     if (String(u).endsWith('/api/world/reminder-history')) return Promise.resolve(Response.json(window.__historyQuery(JSON.parse(o.body))));
     return real(u, o);
   };
@@ -224,7 +226,7 @@ const frequency = await page(`
     ['steel_path', 'VoidT1', 'MT_RESCUE', 'SolNode3', 2, now, now - minute / 2],
     ['normal', 'VoidT1', 'MT_DEFENSE', 'SolNode1', 20, now, now - 6000 * minute],
   ];
-  worldNames = { ...worldNames, window_ms: 366 * 86400000, fissures: rows };
+  worldNames = { ...window.__worldNamesFixture, window_ms: 366 * 86400000, fissures: rows };
   worldNamesAt = now;
   const rule = { kind: 'fissure', attributes: { list: 'steel_path', mission: 'MT_DEFENSE' } };
   storeJson(REMINDERS_KEY, [rule]);
