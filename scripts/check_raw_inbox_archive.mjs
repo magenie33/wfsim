@@ -5,15 +5,18 @@ import { createHash,randomUUID } from 'node:crypto';
 import { mkdtempSync,readFileSync,readdirSync,rmSync,writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter,join,resolve } from 'node:path';
+import { gunzipSync } from 'node:zlib';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import { consumeArchive } from './raw_inbox_archive_consume.mjs';
 import { close,query } from './db.mjs';
 import { boardRequestedSchema } from './board_requested_schema.mjs';
+import { buildBatches } from './build_batches.mjs';
 import { inboxSource } from './inbox_reader.mjs';
 import { placeholders } from '../worker/placeholders.js';
 
 const connection=new URL(process.env.WFSIM_RAW_ROLLOVER_TEST_URL);
 const restore=new URL(process.env.WFSIM_RAW_ROLLOVER_RESTORE_URL);
+const precopy=process.argv[2]==='--precopy';
 for(const url of [connection,restore]) assert(['127.0.0.1','localhost'].includes(url.hostname)&&!url.password);
 assert.notEqual(connection.port,restore.port);
 const schema='raw_archive_'+randomUUID().replaceAll('-',''), role=schema+'_reader';
@@ -67,7 +70,9 @@ writeFileSync(join(scratch,'rclone'),[
   'elif action=="lsjson":',
   ' if fault=="stat-denied": sys.exit(1)',
   ' print(json.dumps({"IsDir":not path.is_file(),"Size":path.stat().st_size if path.is_file() else -1}))',
-  'elif action=="deletefile": path.unlink()',
+  'elif action=="deletefile":',
+  ' path.unlink()',
+  ' if fault=="lost-delete": sys.exit(1)',
   'else: raise RuntimeError("unexpected archive transport")',
 ].join('\n')+'\n',{mode:0o700});
 const realPsql=spawnSync('which',['psql'],{encoding:'utf8'}).stdout.trim();
@@ -118,7 +123,8 @@ async function moveFixture(){
   const original=randomUUID(), attempt=randomUUID();
   const hot='family:legacy', review='review:kept', arrival='00000000-0000-8000-8000-000000000001', late='workflow:repeat:1';
   const cold='10000000-0000-4000-8000-000000000001', held='10000000-0000-4000-8000-000000000002';
-  const objects=gen=>readdirSync(join(scratch,'wfsim-pg-backup','raw-inbox-rollover-v1',gen));
+  const objectDir=gen=>join(scratch,'wfsim-pg-backup','raw-inbox-rollover-v1',gen);
+  const objects=gen=>readdirSync(objectDir(gen));
   const transfer=async gen=>[...await owner.unsafe('SELECT part::int,digest FROM record_raw_archive_uploads WHERE generation=$1 ORDER BY part,digest',[gen])];
   const copy=parts=>['copy-clean',...budgets,'--parts',String(parts),'--seconds','20','--restore-service','restore','--rows','2','--bytes','12288'];
   const retire=gen=>['retire-clean',gen,'--work',scratch];
@@ -132,6 +138,156 @@ async function moveFixture(){
     writeFileSync(fenceFile,JSON.stringify({v:1,generation:gen,source:'a'.repeat(40),live:consumer,hourly:consumer}));
     return createHash('sha256').update(readFileSync(fenceFile)).digest('hex');
   };
+  if(precopy) {
+    const ack=(tx,captured)=>tx.unsafe('SELECT build_ack_submissions($1)',[JSON.stringify(captured)]);
+    const warm='08000000-0000-4000-8000-000000000001';
+    const freshArrival='90000000-0000-8000-8000-000000000001';
+    const [settled,claimed,survivor,settledPart,tail]=[1,2,3,4,5].map(n=>'10000000-0000-4000-8000-00000000000'+n);
+    const content=i=>{
+      const input=JSON.parse(rows[0].input.record);
+      input.mods.splice(i,1);
+      return JSON.stringify(input);
+    };
+    const pending=async queryIds=>(await source.byIds(queryIds)).map(row=>row.id);
+    const skips=async(gen=original)=>(await owner.unsafe('SELECT id::text FROM record_raw_archive_skips WHERE generation=$1 ORDER BY id',[gen])).map(row=>row.id);
+    const hotIds=async()=>(await owner.unsafe('SELECT id FROM ONLY record_raw_archive_hot ORDER BY id')).map(row=>row.id);
+    async function ready(captured){
+      const done=join(scratch,'live.done'), builds=join(scratch,'live.ndjson');
+      const result=spawnSync(native,['--deadline','15','--done',done],{
+        input:captured.map(row=>JSON.stringify(row)).join('\n')+'\n',encoding:'utf8',timeout:20000,maxBuffer:8388608,
+      });
+      assert.equal(result.status,0,result.stderr);
+      assert.deepEqual(readFileSync(done,'utf8').trim().split('\n'),captured.map(row=>row.id));
+      writeFileSync(builds,result.stdout);
+      const batch=[];
+      for await(const statement of buildBatches(builds))batch.push(statement);
+      return async(tx,proofs=captured)=>{
+        for(const statement of batch) await tx.unsafe(placeholders(statement.sql),statement.params);
+        await ack(tx,proofs);
+      };
+    }
+    await owner.unsafe('GRANT EXECUTE ON FUNCTION build_intake_batch(text) TO '+writerRole).simple();
+    await ack(writer,await source.byIds(['positioned-hot']));
+    await submit(writer,warm,content(0));
+    await owner.unsafe('ALTER TABLE record_build_submissions DISABLE TRIGGER build_inbox_positioned');
+    for(const [i,id] of [settled,claimed,survivor,settledPart,tail].entries()) await submit(writer,id,content(i+1));
+    await owner.unsafe('ALTER TABLE record_build_submissions ENABLE TRIGGER build_inbox_positioned');
+    const parent=await oldRelation();
+    const writerFile=join(scratch,'writers.json');
+    const writers={wfsim:fence,factoryd:fence,pipeline:fence};
+    function writerProof(gen, verified=writers){
+      const body=JSON.stringify({v:1,generation:gen,source:'a'.repeat(40),legacy_raw_writers:false,writers:verified});
+      writeFileSync(writerFile,body);
+      return createHash('sha256').update(body).digest('hex');
+    }
+    const start=gen=>['begin-precopy-clean',gen,'--writer-file',writerFile];
+    writerProof(original,{wfsim:fence,factoryd:fence});
+    assert.throws(()=>cli(...start(original)),/verify the deployed writers/);
+    writerProof(original);
+    assert.throws(()=>cli(...start(original)),/55000/);
+    await owner.unsafe('SELECT raw_archive_move_attach_arrivals()');
+    const copyOnline=copy(1);
+    copyOnline[copyOnline.indexOf('--rows')+1]='4';
+    writerProof(attempt);
+    cli(...start(attempt));
+    cli(...copyOnline);
+    await owner.unsafe('INSERT INTO state_build_inbox_positions(id) VALUES($1)',[claimed]);
+    assert.deepEqual(await skips(attempt),[claimed]);
+    cli('abort-clean',attempt,'--work',scratch);
+    assert.deepEqual(await pending([claimed]),[claimed]);
+    assert((await positions()).some(row=>row.id===claimed));
+    failCli('lost-delete',...retire(attempt));
+    assert.deepEqual(await skips(attempt),[claimed]);
+    assert.deepEqual(objects(attempt),[]);
+    assert.equal(cli(...retire(attempt)).length,1);
+    assert.deepEqual(await skips(attempt),[]);
+    assert.equal((await owner.unsafe("SELECT pg_relation_size('record_raw_archive_skips')::int AS n"))[0].n,0);
+    assert.deepEqual(objects(attempt),[]);
+    await owner.unsafe('DELETE FROM state_build_inbox_positions WHERE id=$1',[claimed]);
+    const writerDigest=writerProof(original);
+    cli(...start(original));
+    assert.equal(cli('status-clean')[0].writer_receipt,writerDigest);
+    await assert.rejects(submit(writer,cold),error=>error.code==='23505');
+    await assert.rejects(owner.unsafe('UPDATE record_build_submissions SET record=$1 WHERE id=$2',['{}',survivor]),error=>error.code==='55000');
+    assert.throws(()=>cli('install-clean','--tablespace','pg_default','--http-role',writerRole,'--consume-role',role),/P0001/);
+    const [first]=cli(...copyOnline);
+    assert.deepEqual([first.after,first.hot,first.cold],[survivor,1,3]);
+    assert.deepEqual(await hotIds(),[warm]);
+    assert.deepEqual(await pending([warm,settled,claimed,survivor,tail]),[warm,settled,claimed,survivor,tail]);
+    await submit(replay,freshArrival,content(6));
+    const captured=await source.byIds([warm,settled,freshArrival]);
+    const settle=await ready(captured);
+    const fifo=await positions();
+    await assert.rejects(writer.begin(tx=>settle(tx,[...captured.slice(0,2),{...captured[2],record:'{}'}])),/changed/);
+    assert.deepEqual(await hotIds(),[warm]);
+    assert.deepEqual(await skips(),[]);
+    assert.deepEqual(await pending([warm,settled,freshArrival]),[warm,settled,freshArrival]);
+    assert.deepEqual(await positions(),fifo);
+    await writer.begin(tx=>settle(tx));
+    assert.deepEqual(await hotIds(),[]);
+    assert.deepEqual(await skips(),[settled]);
+    assert.deepEqual(await pending([warm,settled,freshArrival]),[]);
+    await owner.unsafe('INSERT INTO state_build_inbox_positions(id) VALUES($1)',[claimed]);
+    assert.deepEqual(await hotIds(),[claimed]);
+    assert.deepEqual(await skips(),[settled,claimed]);
+    const copyOne=[...copyOnline];
+    copyOne[copyOne.indexOf('--rows')+1]='1';
+    const [next]=cli(...copyOne);
+    assert.deepEqual([next.after,next.cold],[settledPart,1]);
+    const finishPart=await ready(await source.byIds([settledPart]));
+    await writer.begin(tx=>finishPart(tx));
+    const positionsBefore=await positions();
+    failCli('readback',...copyOnline);
+    const [outstanding]=await transfer(original);
+    const [{body}]=await owner.unsafe('SELECT raw_archive_move_page(4,12288)::text AS body');
+    const last=await ready(await source.byIds([tail]));
+    let notify,release;
+    const holding=new Promise(resolve=>{notify=resolve;});
+    const wait=new Promise(resolve=>{release=resolve;});
+    const live=writer.begin(async tx=>{await last(tx);notify();await wait;});
+    await Promise.race([live,holding]);
+    const accepting=owner.unsafe('SELECT raw_archive_move_accept($1,$2,4,12288)',[body,outstanding.digest]).then(()=>null,error=>error);
+    try {
+      assert.equal(await Promise.race([accepting,new Promise(resolve=>setTimeout(()=>resolve('waiting'),70))]),'waiting');
+    } finally {release();await live;}
+    assert.equal((await accepting).code,'55000');
+    assert.equal(cli('status-clean')[0].after,settledPart);
+    assert.deepEqual(await transfer(original),[outstanding]);
+    assert.deepEqual(cli(...copyOnline),[]);
+    const fenceDigest=fenced(original);
+    await assert.rejects(owner.unsafe('SELECT raw_archive_move_cut($1,$2,$3)',[original,fenceDigest,'b'.repeat(40)]),error=>error.code==='55000');
+    assert.deepEqual(await oldRelation(),parent);
+    const [cut]=cli('cut-clean',original,'--fence-file',fenceFile,...budgets,'--peak-root-bytes','1');
+    assert(cut.old_source_bytes>0);
+    assert.equal((await oldRelation()).oid,parent.oid);
+    for(const name of [parent.heap,parent.pk]){
+      assert.equal((await owner.unsafe('SELECT coalesce((pg_stat_file($1,true)).size,0)::int AS bytes',[name]))[0].bytes,0);
+    }
+    assert.deepEqual(await positions(),positionsBefore);
+    assert.deepEqual(await pending([claimed,survivor]),[claimed]);
+    assert.equal(cli(...retire(original))[0].digest,outstanding.digest);
+    assert.deepEqual(cli(...retire(original)),[]);
+    const [{digest},{digest:emptyDigest}]=await owner.unsafe('SELECT digest FROM record_raw_archive_parts WHERE generation=$1 ORDER BY part',[original]);
+    const sealed=gunzipSync(readFileSync(join(objectDir(original),'1-'+digest+'.json.gz'))).toString('utf8');
+    await assert.rejects(owner.unsafe('SELECT raw_archive_consume($1,1,$2,$3::text[],\'[]\')',[original,sealed,[settled,claimed,survivor]]),
+      error=>error.code==='22023');
+    assert.deepEqual(await skips(),[settled,claimed,settledPart]);
+    const [received]=cli('consume',...budgets,'--native',native,'--peak-root-bytes','1','--statement-ms','5000');
+    assert.deepEqual([received.generation,received.committed,received.rows],[original,true,3]);
+    assert.deepEqual(await skips(),[settledPart]);
+    assert.equal(cli(...retire(original))[0].digest,digest);
+    const [empty]=cli('consume',...budgets,'--native',process.execPath,'--peak-root-bytes','1','--statement-ms','5000');
+    assert.deepEqual([empty.generation,empty.committed,empty.rows],[original,true,1]);
+    assert.deepEqual(await skips(),[]);
+    assert.equal((await owner.unsafe("SELECT pg_relation_size('record_raw_archive_skips')::int AS n"))[0].n,0);
+    const consumed=await owner.unsafe('SELECT DISTINCT source_id FROM relation_build_intake_sources WHERE source_id IN ($1,$2,$3,$4) ORDER BY source_id',[settled,claimed,survivor,tail]);
+    assert.deepEqual(consumed.map(row=>row.source_id),[settled,survivor,tail]);
+    assert.equal(cli(...retire(original))[0].digest,emptyDigest);
+    assert.deepEqual(objects(original),[]);
+    assert.deepEqual(await pending([claimed,survivor]),[claimed]);
+    console.log('ok: online pre-copy preserves live ACK and FIFO, protects a new owner, and retires exact parts after atomic custody');
+    return;
+  }
   await submit(writer,hot);
   await submit(writer,review);
   await owner.unsafe('ALTER TABLE record_build_submissions DISABLE TRIGGER build_inbox_positioned');
@@ -243,10 +399,14 @@ async function moveFixture(){
   assert(!remaining.some(row=>[hot,review,late,arrival].includes(row.id)));
   console.log('ok: the same source OID, inherited hot reads, cross-session deduplication and exact ACK preserve both FIFO tiers');
 }
+if(!precopy){
+  const online=spawnSync(process.execPath,[process.argv[1],'--precopy'],{stdio:'inherit',timeout:90000});
+  assert.equal(online.status,0,online.error?.message);
+}
 try{
   await owner.unsafe('CREATE SCHEMA '+schema+'; CREATE ROLE '+role+' NOLOGIN; SET search_path='+schema+',pg_catalog,pg_temp').simple();
   await owner.unsafe(ddl).simple();
-  await owner.unsafe('GRANT USAGE ON SCHEMA '+schema+' TO '+role+'; GRANT EXECUTE ON FUNCTION raw_archive_next(),raw_archive_consume(uuid,bigint,text,text[],text) TO '+role).simple();
+  await owner.unsafe('GRANT USAGE ON SCHEMA '+schema+' TO '+role+'; GRANT EXECUTE ON FUNCTION raw_archive_next(),raw_archive_pending(uuid,bigint,text),raw_archive_consume(uuid,bigint,text,text[],text) TO '+role).simple();
   const url=new URL(connection); url.searchParams.set('options','-c search_path='+schema+',pg_catalog,pg_temp -c role='+role+' -c transaction_timeout=10000 -c lock_timeout=250');
   process.env.PG_URL=url.toString();
   await owner.unsafe('SELECT raw_archive_begin($1,$2)',[generation,fence]);
