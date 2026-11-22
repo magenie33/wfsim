@@ -30,7 +30,8 @@ const r = await evaluate(`(async () => {
   const out = { rulers: [] };
   const chips = [...document.querySelectorAll('#bench-picker [data-bench]')];
   out.rulers = chips.map(c => c.dataset.bench);
-  out.boardWeapons = Object.keys(BOARD_INDEX || {}).length;
+  await benchIndexOf(benchCurrent()).load();
+  out.boardWeapons = Object.keys(benchIndexOf(benchCurrent()).index || {}).length;
   // EVERY RULER, not just the second one: the bug was that one of them was
   // reachable and the rest resolved to it.
   out.each = [];

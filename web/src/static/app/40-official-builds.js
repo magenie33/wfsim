@@ -537,17 +537,25 @@ function loadSceneIndex(dir, refresh = false) {
 /// THE LEADERS A RULER needs come from its selected published partitions.
 const rulerBoardIndexes = new Map();
 const sceneBoardIndex = cur => cur?.cell_dir ? SCENE_INDEX[cur.cell_dir] : BOARD_INDEX;
-const rulerBoardIndex = cur => sceneBoardIndex(cur) ?? rulerBoardIndexes.get(cur?.id)?.index ?? null;
+function rulerBoardIndex(cur) {
+  const sceneIndex = sceneBoardIndex(cur), state = rulerBoardIndexes.get(cur?.id);
+  if (state?.index && state.sceneIndex === sceneIndex) return state.index;
+  return sceneIndex ?? state?.index ?? null;
+}
 
 function loadRulerBoardIndex(cur, refresh) {
   const scene = cur?.cell_dir || "";
-  if (!cur || sceneBoardIndex(cur)) return scene ? loadSceneIndex(scene, refresh) : loadFullBoard(refresh);
+  if (!cur) return loadFullBoard(refresh);
+  if (!refresh && rulerBoardIndex(cur)) return Promise.resolve();
   let state = rulerBoardIndexes.get(cur.id);
   if (!state) rulerBoardIndexes.set(cur.id, state = { index: null, ask: null, lost: false });
-  if (!refresh && state.index) return Promise.resolve();
   if (!state.ask) {
+    const sceneIndex = sceneBoardIndex(cur);
     state.lost = false;
-    state.ask = readCurrentBoardIndex(scene, undefined, state.index, cur.id).then(index => { state.index = index; },
+    state.ask = readCurrentBoardIndex(scene, undefined, state.index, cur.id).then(index => {
+      state.index = index;
+      state.sceneIndex = sceneIndex;
+    },
       () => { state.lost = true; }).finally(() => { state.ask = null; });
   }
   return state.ask;
@@ -555,7 +563,9 @@ function loadRulerBoardIndex(cur, refresh) {
 
 function benchIndexOf(cur) {
   const state = rulerBoardIndexes.get(cur?.id);
-  return { index: rulerBoardIndex(cur), asking: !!state?.ask, lost: !!state?.lost,
+  const scene = cur?.cell_dir;
+  return { index: rulerBoardIndex(cur), asking: !!(state?.ask ?? (scene ? sceneIndexAsk[scene] : boardIndexAsk)),
+    lost: !!(state?.lost ?? (scene ? sceneIndexUnreachable[scene] : boardIndexUnreachable)),
     load: refresh => loadRulerBoardIndex(cur, refresh) };
 }
 
