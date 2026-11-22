@@ -191,16 +191,20 @@ def read_local_object(path, digest):
 
 
 def retire_local_object(path, digest):
+    blocks = None
     try:
+        size = path.lstat()
         read_local_object(path,digest)
+        path.unlink()
+        blocks = size.st_blocks
     except FileNotFoundError:
-        return
-    path.unlink()
+        pass
     directory = os.open(path.parent,os.O_RDONLY|os.O_DIRECTORY)
     try:
         os.fsync(directory)
     finally:
         os.close(directory)
+    return None if blocks is None else blocks*512
 
 
 def prove_restore(body, restore_service, live_identity, *, execute=None):
@@ -288,11 +292,13 @@ def drain_page(args):
     return True
 
 
-def consume_sealed_page(args):
+def consume_sealed_page(args, generation=None):
     disk_gate(args.work, args.root_reserve+args.peak_root_bytes, args.work_reserve)
     index = json_pg("SELECT coalesce(raw_archive_next(),'null'::jsonb);")
     if index is None:
         return
+    if generation is not None and index['generation']!=str(generation):
+        raise RuntimeError('the active raw archive is not owned by this drain')
     part = int(index['part'])
     key = object_key(index['generation'],part,index['digest'])
     local = local_object(args.local_archive,index['generation'],part,index['digest'])
@@ -322,16 +328,18 @@ def consume_sealed_page(args):
         raise RuntimeError('a single pending archive input exceeds its intake limits')
     if stage=='paused':
         raise RuntimeError('archive paused at filesystem reserve')
+    return receipt
 
 
 def retire_clean_page(generation, spool=None):
     index = json_pg(f"SELECT coalesce(raw_archive_retire_next('{generation}'::uuid),'null'::jsonb);")
     if index is None:
         pg('SELECT raw_archive_trim_skips();')
-        return
+        return False
     part, digest = int(index['part']), index['digest']
     key = object_key(str(generation),part,digest)
     local = local_object(spool,str(generation),part,digest)
+    receipt = {'stage':'retired','generation':str(generation),'part':part,'digest':digest}
 
     def object_present():
         stat = json.loads(run(['rclone','lsjson',key,'--stat',*RCLONE_FLAGS]))
@@ -348,9 +356,36 @@ def retire_clean_page(generation, spool=None):
         if object_present():
             raise RuntimeError('archive object remains after retirement')
     else:
-        retire_local_object(local,digest)
+        size = retire_local_object(local,digest)
+        receipt.update(storage='local',allocated_bytes=size or 0,already_absent=size is None)
     pg(f"SELECT raw_archive_retired('{generation}'::uuid,{part},'{digest}');")
-    emit({'stage':'retired','generation':str(generation),'part':part,'digest':digest})
+    emit(receipt)
+    return True
+
+
+def drain_sealed(args):
+    phase = json_pg(f"""SELECT coalesce((SELECT to_jsonb(phase) FROM state_raw_archive_generation
+      WHERE generation='{args.generation}'::uuid),'null'::jsonb);""")
+    if phase not in ('consuming','complete'):
+        raise RuntimeError('the selected raw archive is not sealed for intake')
+    deadline = time.monotonic()+args.seconds
+    for _ in range(args.parts):
+        if time.monotonic()>=deadline:
+            return
+        if retire_clean_page(args.generation,args.local_archive):
+            continue
+        if phase=='complete':
+            emit({'stage':'complete','generation':str(args.generation)})
+            return
+        if args.max_admission_backlog is not None and json_pg(f"""SELECT to_jsonb(EXISTS(
+          SELECT FROM state_build_admission_work WHERE kind='intake'
+          OFFSET {args.max_admission_backlog-1} LIMIT 1));"""):
+            emit({'stage':'deferred','reason':'admission_backlog','limit':args.max_admission_backlog})
+            return
+        receipt = consume_sealed_page(args,args.generation)
+        if not receipt or not receipt['committed']:
+            return
+        retire_clean_page(args.generation,args.local_archive)
 
 
 def install_clean(args):
@@ -617,12 +652,18 @@ def read_arguments():
         else:
             cmd.add_argument('--max-hot-rows',type=int,required=True)
             cmd.add_argument('--part-peak-bytes',type=int,required=True)
-    consume = choices.add_parser('consume')
-    disk_arguments(consume)
-    consume.add_argument('--native',type=Path,required=True)
-    consume.add_argument('--peak-root-bytes',type=int,required=True)
-    consume.add_argument('--statement-ms',type=int,required=True)
-    consume.add_argument('--local-archive',type=Path)
+    for action in ('consume','drain-sealed'):
+        consume = choices.add_parser(action)
+        disk_arguments(consume)
+        consume.add_argument('--native',type=Path,required=True)
+        consume.add_argument('--peak-root-bytes',type=int,required=True)
+        consume.add_argument('--statement-ms',type=int,required=True)
+        consume.add_argument('--local-archive',type=Path,required=action=='drain-sealed')
+        if action=='drain-sealed':
+            consume.add_argument('generation',type=uuid.UUID)
+            consume.add_argument('--parts',type=int,required=True)
+            consume.add_argument('--seconds',type=int,required=True)
+            consume.add_argument('--max-admission-backlog',type=int)
     clean = choices.add_parser('install-clean')
     clean.add_argument('--tablespace',required=True)
     clean.add_argument('--http-role',required=True)
@@ -683,11 +724,18 @@ def main():
     elif args.action.endswith('-clean'):
         clean_action(args)
         return
-    elif args.action=='consume':
+    elif args.action in ('consume','drain-sealed'):
         if (min(args.root_reserve,args.work_reserve,args.peak_root_bytes)<1 or not args.work.is_dir()
             or not args.native.is_file() or not 1<=args.statement_ms<=12000 or not os.environ.get('PG_URL')):
             raise ValueError('specify the approved one-part archive budgets, Native binary and database URL')
-        consume_sealed_page(args)
+        if args.action=='consume':
+            with clean_archive_lock(args.work):
+                consume_sealed_page(args)
+        else:
+            if min(args.parts,args.seconds)<1 or (args.max_admission_backlog is not None and args.max_admission_backlog<1):
+                raise ValueError('provide positive archive drain budgets')
+            with clean_archive_lock(args.work):
+                drain_sealed(args)
         return
     elif args.action in ('copy','drain'):
         if min(args.parts,args.seconds,args.root_reserve,args.work_reserve)<1 or not args.work.is_dir():
