@@ -103,6 +103,9 @@ are eligibility constraints. They do not block other executable entries.
 Sustained earlier-zone work can delay later zones; producer usage and deadlines
 do not reorder a zone.
 
+Runtime producers retain their usage rows. Admission initializes a missing row
+at the current minimum usage. Charging and timing updates own existing rows.
+
 A build workflow keeps every participating computation occupied until all its
 required steps finish, including accepted output, durable delivery and derived
 build intake. An ordinary source reuses a finished child while its parent remains active.

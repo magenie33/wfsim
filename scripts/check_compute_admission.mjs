@@ -15,9 +15,11 @@ async function database() {
   await sql.unsafe(`CREATE SCHEMA ${schema}`);
   for (const name of ["schema", "library", "sync", "inventory", "build_workflows"]) await sql.unsafe(readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta.url), "utf8"));
   const query = async (text, args = []) => { const r = await sql.unsafe(text, args); return { rows: [...r], affected: r.count }; };
-  return Object.assign(pgDb({ query, transaction: fn => sql.begin(tx => fn({ query: async (text, args) => {
+  const transaction = fn => sql.begin(tx => fn({ query: async (text, args) => {
     const r = await tx.unsafe(text, args); return { rows: [...r], affected: r.count };
-  } })) }), {
+  } }));
+  return Object.assign(pgDb({ query, transaction }), {
+    transaction,
     get: async (text, ...args) => (await query(placeholders(text),args)).rows[0] || null,
     all: async (text,...args) => (await query(placeholders(text),args)).rows,
     run: async (text, ...args) => (await query(placeholders(text),args)).affected,
@@ -149,8 +151,53 @@ try {
   await inboxReadPlanCases();
   await queuedReviewAcrossReleaseCases();
   await workflowRecoveryCases();
+  if (db.transaction) await producerUsageCases(db, at);
   console.log("compute admission: shared identity, queue zones, held execution, all origins, retries and atomic rejection pass");
 } finally { await db.close(); }
+
+async function producerUsageCases(db, at) {
+  const existing = "usage_probe", unseen = "usage_probe_first";
+  const existsSql = "WHERE NOT EXISTS (SELECT 1 FROM state_producer_compute_usage existing WHERE existing.producer=";
+  if (process.argv.includes("--break-producer-usage-insert")) {
+    const source = readFileSync(new URL("../worker/pg/schema.sql", import.meta.url), "utf8");
+    const definition = source.match(/CREATE OR REPLACE FUNCTION compute_admit_tasks[^]*?END \$\$;/)[0];
+    const predicate = `${existsSql}demand.value->>'producer')`;
+    assert.ok(definition.includes(predicate));
+    await db.run(definition.replace(predicate, ""));
+  }
+  const library = process.argv.includes("--break-worker-usage-insert") ? {
+    ...db, prepare(text) { return db.prepare(text.replace(`${existsSql}x.p)`, "")); },
+  } : db;
+  const f = factory({ verbs: { simulate: { cap: 2, lease_ms: 60000, canon } },
+    producers: { [existing]: { on_fact: async () => {} }, [unseen]: { on_fact: async () => {} } } });
+  const submit = (producer, ref) => f.demand({ LIBRARY: library }, {
+    producer, ref, verb: "simulate", request: { build: ref }, due_in_ms: 60000, payload: {},
+  }, "engine-fixture", at, { before: [db.prepare("SET LOCAL lock_timeout = '300ms'")] });
+
+  await db.run("INSERT INTO state_producer_compute_usage(producer,used,answer_ms,weight) VALUES(?,300,20,2)", existing);
+  const duringCharge = await db.transaction(async hold => {
+    await hold.query("SELECT factory_charge($1)", [JSON.stringify([{ p: existing, n: 3 }])]);
+    return submit(existing, "while-charging");
+  });
+  const duringLearning = await db.transaction(async hold => {
+    await hold.query("SELECT factory_learn($1,0.5)", [JSON.stringify([{ p: existing, ms: 100, n: 2 }])]);
+    return submit(existing, "while-learning");
+  });
+  for (const id of [duringCharge, duringLearning]) {
+    assert.equal((await db.get("SELECT count(*) AS n FROM state_compute_scheduling WHERE id=?", id)).n, 1);
+  }
+  const usage = producer => db.get("SELECT used, answer_ms, weight FROM state_producer_compute_usage WHERE producer=?", producer);
+  assert.deepEqual(await usage(existing), { used: 330, answer_ms: 42.5, weight: 2 });
+
+  await db.run("UPDATE state_producer_compute_usage SET used=greatest(used,125)");
+  const floor = (await db.get("SELECT min(used) AS used FROM state_producer_compute_usage")).used;
+  assert.ok(floor > 0);
+  const first = await Promise.all([submit(unseen, "first-usage-a"), submit(unseen, "first-usage-b")]);
+  assert.equal(new Set(first).size, 2);
+  assert.deepEqual(await usage(unseen), { used: floor, answer_ms: 0, weight: 1 });
+  assert.equal((await db.get("SELECT count(*) AS n FROM state_producer_compute_usage WHERE producer=?", unseen)).n, 1);
+  console.log("producer usage: existing admission completes while charging and learning hold the row, and concurrent first use shares its floor");
+}
 
 function computationWithoutMetadata(request) {
   const copy={...request};delete copy.engine;return copy;
