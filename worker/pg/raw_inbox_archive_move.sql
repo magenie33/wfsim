@@ -4,9 +4,10 @@ CREATE TABLE state_raw_archive_move (
   phase text NOT NULL CHECK(phase IN('idle','copying','cutting','complete')),
   generation uuid REFERENCES state_raw_archive_generation(generation),
   source_oid oid NOT NULL,
-  after_id text COLLATE "C"
+  after_id text COLLATE "C",
+  upload_digest text CHECK(upload_digest~'^[0-9a-f]{64}$')
 );
-INSERT INTO state_raw_archive_move VALUES(1,'idle',NULL,'record_build_submissions'::regclass::oid,NULL);
+INSERT INTO state_raw_archive_move VALUES(1,'idle',NULL,'record_build_submissions'::regclass::oid,NULL,NULL);
 
 CREATE TABLE record_raw_archive_hot (LIKE record_build_submissions INCLUDING ALL);
 CREATE TABLE record_raw_archive_arrivals (LIKE record_build_submissions INCLUDING ALL);
@@ -136,6 +137,23 @@ BEGIN
   RETURN packet;
 END $$;
 
+CREATE FUNCTION raw_archive_move_prepare(integer,integer) RETURNS text
+LANGUAGE plpgsql SET search_path FROM CURRENT AS $$
+DECLARE active state_raw_archive_move%ROWTYPE; packet jsonb; body text; digest text;
+BEGIN
+  LOCK TABLE ONLY record_build_submissions IN ROW SHARE MODE;
+  SELECT * INTO STRICT active FROM state_raw_archive_move WHERE id=1 AND phase='copying' FOR UPDATE;
+  packet:=raw_archive_move_page($1,$2);
+  IF packet IS NULL THEN RETURN NULL; END IF;
+  body:=packet::text;
+  IF jsonb_array_length(packet->'rows')>0 THEN
+    digest:=encode(sha256(convert_to(body,'UTF8')),'hex');
+    INSERT INTO record_raw_archive_uploads VALUES(active.generation,(packet->>'part')::bigint,digest) ON CONFLICT DO NOTHING;
+  END IF;
+  UPDATE state_raw_archive_move SET upload_digest=digest WHERE id=1;
+  RETURN body;
+END $$;
+
 CREATE FUNCTION raw_archive_move_accept(text,text,integer,integer) RETURNS jsonb
 LANGUAGE plpgsql SET search_path FROM CURRENT AS $$
 DECLARE active state_raw_archive_move%ROWTYPE; packet jsonb; kept integer; cold integer; tail text;
@@ -153,10 +171,15 @@ BEGIN
   GET DIAGNOSTICS kept=ROW_COUNT;
   IF kept+cold<>(packet->>'source_rows')::int THEN RAISE EXCEPTION 'raw archive ownership did not cover the source range'; END IF;
   IF cold>0 THEN
+    IF active.upload_digest IS DISTINCT FROM $2 THEN
+      RAISE EXCEPTION 'raw archive object was not prepared for upload' USING ERRCODE='55000'; END IF;
+    DELETE FROM record_raw_archive_uploads
+    WHERE (generation,part,digest)=(active.generation,(packet->>'part')::bigint,$2);
+    IF NOT FOUND THEN RAISE EXCEPTION 'raw archive upload receipt is missing' USING ERRCODE='55000'; END IF;
     PERFORM raw_archive_seal_part(active.generation,(packet->>'part')::bigint,packet#>>'{rows,0,input,id}',
       packet#>>'{rows,-1,input,id}',cold,$2);
   END IF;
-  UPDATE state_raw_archive_move SET after_id=tail WHERE id=1;
+  UPDATE state_raw_archive_move SET after_id=tail,upload_digest=NULL WHERE id=1;
   RETURN jsonb_build_object('after',tail,'hot',kept,'cold',cold);
 END $$;
 
@@ -173,7 +196,7 @@ DECLARE active state_raw_archive_move%ROWTYPE; old_bytes bigint; parts bigint;
 BEGIN
   LOCK TABLE ONLY record_build_submissions IN ACCESS EXCLUSIVE MODE NOWAIT;
   SELECT * INTO STRICT active FROM state_raw_archive_move WHERE id=1 AND phase='copying' AND generation=$1 FOR UPDATE;
-  IF active.source_oid<>'record_build_submissions'::regclass::oid
+  IF active.source_oid<>'record_build_submissions'::regclass::oid OR active.upload_digest IS NOT NULL
     OR EXISTS(SELECT FROM ONLY record_build_submissions b WHERE active.after_id IS NULL OR b.id>active.after_id) THEN
     RAISE EXCEPTION 'raw archive still has a source range to seal' USING ERRCODE='55000';
   END IF;
@@ -191,7 +214,8 @@ END $$;
 CREATE FUNCTION raw_archive_move_abort(uuid) RETURNS void LANGUAGE plpgsql SET search_path FROM CURRENT AS $$
 BEGIN
   LOCK TABLE ONLY record_build_submissions IN ACCESS EXCLUSIVE MODE NOWAIT;
-  UPDATE state_raw_archive_move SET phase='idle',generation=NULL,after_id=NULL WHERE id=1 AND phase='copying' AND generation=$1;
+  UPDATE state_raw_archive_move SET phase='idle',generation=NULL,after_id=NULL,upload_digest=NULL
+    WHERE id=1 AND phase='copying' AND generation=$1;
   IF NOT FOUND THEN RAISE EXCEPTION 'only a frozen source can abandon its move' USING ERRCODE='55000'; END IF;
   UPDATE state_raw_archive_generation SET phase='abandoned' WHERE generation=$1 AND phase='sealing';
   TRUNCATE record_raw_archive_hot;
@@ -209,5 +233,6 @@ END $$;
 REVOKE ALL ON state_raw_archive_move,record_raw_archive_hot,record_raw_archive_arrivals FROM PUBLIC;
 REVOKE ALL ON FUNCTION raw_archive_move_identity(),raw_archive_move_route(),raw_archive_move_freeze(),raw_archive_move_owner_fence(),
   raw_archive_move_begin(uuid,text),raw_archive_move_portable(record_build_submissions),raw_archive_move_page(integer,integer),
-  raw_archive_move_accept(text,text,integer,integer),raw_archive_move_attach_arrivals(),raw_archive_move_cut(uuid,text),
+  raw_archive_move_prepare(integer,integer),raw_archive_move_accept(text,text,integer,integer),
+  raw_archive_move_attach_arrivals(),raw_archive_move_cut(uuid,text),
   raw_archive_move_abort(uuid),raw_inbox_library_count() FROM PUBLIC;
