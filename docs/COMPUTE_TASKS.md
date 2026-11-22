@@ -296,8 +296,9 @@ production capacity check. An `admit` submits that batch and a `read`
 checks its committed disposition without writing. A missing or uncertain
 readback ends the session so the operator can hold that ordinal.
 The explicit `scripts/board_coverage_schema.mjs --tablespace=NAME` installer
-places these receipts in the capacity-qualified tablespace. The normal
-library bootstrap leaves the coverage entry closed.
+places these receipts in the capacity-qualified tablespace. Replacing the
+workflow admission function preserves its identity, owner, privileges and
+trusted search path. The normal library bootstrap leaves the coverage entry closed.
 
 Admission reserves computation positions when accepting the intent, preserving
 arrival order through deferred expansion. Requested and bulk lane heads share

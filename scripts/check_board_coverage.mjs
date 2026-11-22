@@ -67,10 +67,16 @@ let epoch;
 try {
   await writer.unsafe('CREATE SCHEMA ' + schema);
   for (const name of ['schema', 'library', 'sync', 'inventory', 'build_workflows', 'board_admission']) {
-    await writer.unsafe(readSql(name));
+    let definition = readSql(name);
+    if (name==='build_workflows') {
+      const branch = /  IF f.kind='intake' AND f.source->>'origin'='system' AND f.source#[\s\S]*?\n(?=  IF jsonb_array_length\(specs\)>0 THEN)/;
+      assert(branch.test(definition));
+      definition = definition.replace(branch, '');
+    }
+    await writer.unsafe(definition);
   }
   assert.throws(() => boardCoverageSchemaSql(), /capacity-qualified/);
-  let installation = boardCoverageSchemaSql('pg_default').replace("SET LOCAL ROLE wfsim;", "");
+  let installation = boardCoverageSchemaSql('pg_default',schema).replace("SET LOCAL ROLE wfsim;", "");
   if (process.argv.includes('--break-readback-proof')) {
     const guarded = `JOIN relation_compute_task_sources linked ON linked.trigger_id=tr.id
               AND linked.producer='build_workflow' AND linked.ref=n.workflow||'|'||n.id
@@ -84,8 +90,38 @@ try {
     assert(installation.includes(guarded));
     installation = installation.replace(guarded, 'IF sources NOT BETWEEN 1 AND 512');
   }
-  await writer.unsafe(installation);
-  await writer.unsafe(installation);
+  const signature = schema+'.build_workflow_admit_nodes(text,bigint,text)';
+  const routine = async () => (await lookup(`SELECT to_jsonb(p)-'prosrc' metadata
+    FROM pg_catalog.pg_proc p WHERE p.oid=pg_catalog.to_regprocedure($1)`,[signature])).metadata;
+  const definition = async () => (await lookup('SELECT pg_get_functiondef(pg_catalog.to_regprocedure($1)) definition',[signature])).definition;
+  const before = await routine();
+  const oldDefinition = await definition();
+  assert(!oldDefinition.includes('grouped aliases do not share a frozen request'));
+  assert.deepEqual(before.proconfig,['search_path='+schema+',pg_catalog,pg_temp']);
+  for (let pass=0;pass<2;pass++) {
+    await writer.unsafe('SET search_path TO "$user",public');
+    await writer.unsafe(installation);
+    assert.deepEqual(await routine(),before);
+    assert((await definition()).includes('grouped aliases do not share a frozen request'));
+  }
+  await writer.unsafe('ALTER FUNCTION '+signature+' SET plan_cache_mode=force_custom_plan');
+  const unsupported = await routine();
+  await assert.rejects(writer.unsafe(installation),/unsupported workflow admission function configuration/);
+  await writer.unsafe('ROLLBACK');
+  assert.deepEqual(await routine(),unsupported);
+  await writer.unsafe('ALTER FUNCTION '+signature+' RESET plan_cache_mode');
+  assert.deepEqual(await routine(),before);
+  await writer.unsafe('CREATE TEMP TABLE entity_build_workflow_expansions (id text)');
+  const withShadow = () => writer.unsafe(`SELECT ${schema}.build_workflow_admit_nodes('shadow',1,$1)`,[at]);
+  await assert.rejects(withShadow,error=>error.code==='P0002');
+  try {
+    await writer.unsafe('ALTER FUNCTION '+signature+' SET search_path TO '+schema+',pg_catalog');
+    await assert.rejects(withShadow,error=>error.code==='42703');
+  } finally {
+    await writer.unsafe('ALTER FUNCTION '+signature+' SET search_path TO '+schema+',pg_catalog,pg_temp');
+    await writer.unsafe('DROP TABLE pg_temp.entity_build_workflow_expansions');
+  }
+  await writer.unsafe('SET search_path TO '+schema+',pg_catalog,pg_temp');
   await writer.unsafe(readSql('order_cut_indexes').replaceAll('INDEX CONCURRENTLY', 'INDEX'));
   await writer.unsafe(`
     INSERT INTO state_task_pipeline_controls(name,paused,changed_at,changed_by) VALUES('admission',true,'test','test');
