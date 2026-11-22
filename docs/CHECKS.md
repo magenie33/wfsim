@@ -990,6 +990,10 @@ reads; permanent 404 and a wrong release restore the prior pointer.
 
 ## `check_card_document`
 
+`check_bot_render_cleanup.mjs` keeps a profile and cache slot until Chrome's
+stdio closes, including a child's write after the parent exits. Removal is
+bounded and permanent errors propagate. Unrelated temporary files survive.
+
 The bot's card is the page's, pixel for pixel: each fixture — command help,
 the complete ruler index, a plain gun,
 riven builds, the analyst with and without a filter, a melee, a weapon with
