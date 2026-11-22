@@ -211,6 +211,8 @@ try {
   assert.equal(await count('entity_weapon_builds'),1);assert.equal(await count('entity_build_intake_intents'),1);
   assert.equal(await count('entity_build_workflows'),0);assert.equal(await count('state_compute_scheduling'),0);
   const captured=await db.get('SELECT id,input FROM entity_build_intake_intents');
+  assert.equal(Object.hasOwn(captured.input,'record'),false);
+  assert.deepEqual((await db.get('SELECT record::jsonb record FROM entity_weapon_builds WHERE id=?',input.id)).record,input.record);
   await db.run('SELECT build_ack_submissions(?::text)',JSON.stringify([{id:input.from[0],at,record:JSON.stringify(input.record),initiator:input.initiator}]));
   assert.equal(await count('record_build_submissions'),0);assert.equal(await count('state_build_inbox_positions'),0);
   assert.equal((await f.runStage(env,'admission',now)).paused,true);
@@ -237,11 +239,18 @@ try {
   console.log('ok: bounded pending-node commits preserve captured FIFO positions and source bindings without changing results or credit');
 
   const crash=await fixture();await intake(crash);
+  await db.exec('ALTER TABLE entity_build_intake_intents DISABLE TRIGGER build_intake_intent_retained');
+  await db.run(`UPDATE entity_build_intake_intents i SET input=i.input||jsonb_build_object('record',b.record::jsonb)
+    FROM entity_weapon_builds b WHERE i.build_id=b.id AND b.id=?`,crash.id);
+  await db.exec('ALTER TABLE entity_build_intake_intents ENABLE TRIGGER build_intake_intent_retained');
+  const historical=(await db.get('SELECT input FROM entity_build_intake_intents WHERE build_id=?',crash.id)).input;
+  assert.deepEqual(historical.record,crash.record);
   const lost=await crashAfterClaim();assert.equal(await claim('intake'),null);
   const resumed=await claim('intake',now+120001);assert(resumed && resumed.lease!==lost.lease);
   await assert.rejects(run(lost,2,now+120001),/claim changed/);
   assert.equal((await db.get('SELECT build_admission_retry(?::text,?::text,?::text,?::text,?::text) changed',lost.kind,lost.key,lost.lease,'old worker',at)).changed,false);
   await run(resumed,2,now+120001);await drain(now+120001);
+  assert.deepEqual((await db.get('SELECT input FROM entity_build_intake_intents WHERE build_id=?',crash.id)).input,historical);
   assert.equal(await count('entity_build_intake_intents'),2);assert.equal(await count('state_compute_scheduling'),8);
   console.log('ok: a committed claim outlives its worker; expiry replaces its token and stale run/retry cannot consume the new claim');
 
@@ -363,4 +372,16 @@ try {
   const completion=await db.get('SELECT s.state FROM entity_build_workflows w JOIN state_build_workflows s ON s.id=w.id WHERE w.build_id=?',empty.id);
   assert.equal(completion?.state,'succeeded');
   console.log('ok: a first legal arrival with an empty applicable scope preserves its captured completion across deferred registration');
+  const submitted=await fixture(), familyRoot=await fixture();
+  submitted.flow.builds=[{id:familyRoot.id,record:familyRoot.record}];
+  submitted.family_root={id:familyRoot.id,record:familyRoot.record};
+  submitted.family_flow=familyRoot.flow;
+  await intake(submitted);
+  const familyIntent=await db.get(`SELECT i.input,b.record::jsonb record FROM entity_build_intake_intents i
+    JOIN entity_weapon_builds b ON b.id=i.build_id WHERE i.id=?`,'family:'+familyRoot.id);
+  assert.equal(familyIntent.input.family_creation,true);
+  assert.equal(Object.hasOwn(familyIntent.input,'record'),false);
+  assert.deepEqual(familyIntent.record,familyRoot.record);
+  assert.deepEqual(familyIntent.input.from,submitted.from);
+  console.log('ok: a distinct family root and its immutable source resolve through the canonical build');
 }finally{await db.close();}

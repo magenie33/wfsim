@@ -568,7 +568,7 @@ BEGIN
     lane:=CASE WHEN input->>'initiator'='anonymous' OR input->>'initiator' LIKE 'user:%' OR input->>'initiator' LIKE 'bot:%'
       OR input#>>'{observation,valid}'='true' THEN 'requested' ELSE 'bulk' END;
     INSERT INTO entity_build_intake_intents(id,build_id,plan_id,input,created_at)
-      VALUES(intent,identity,plan_key,(input-ARRAY['flow','family_flow','family_root'])||jsonb_build_object(
+      VALUES(intent,identity,plan_key,(input-ARRAY['record','flow','family_flow','family_root'])||jsonb_build_object(
         'admission_positions',positions,'admission_lane',lane,'admission_at',at,'admission_new',inserted IS NOT NULL),at);
     INSERT INTO relation_build_intake_sources(source_id,intent)
       SELECT value,intent FROM jsonb_array_elements_text(coalesce(input->'from','[]'::jsonb)) ON CONFLICT DO NOTHING;
@@ -719,8 +719,11 @@ BEGIN
   IF NOT EXISTS(SELECT 1 FROM state_build_effective_admission_work WHERE kind=held.kind AND key=held.key) THEN
     RETURN jsonb_build_object('kind',held.kind,'key',held.key,'processed',0,'pending',false,'cancelled',true);END IF;
   IF held.kind='intake' THEN
-    SELECT i.input||CASE WHEN p.id IS NOT NULL THEN jsonb_build_object('flow',p.definition) ELSE '{}'::jsonb END INTO STRICT captured
-      FROM entity_build_intake_intents i LEFT JOIN entity_build_intake_plans p ON p.id=i.plan_id WHERE i.id=held.key;
+    SELECT (CASE WHEN i.input ? 'record' THEN i.input
+        ELSE i.input||jsonb_build_object('record',b.record::jsonb) END)||
+      CASE WHEN p.id IS NOT NULL THEN jsonb_build_object('flow',p.definition) ELSE '{}'::jsonb END INTO STRICT captured
+      FROM entity_build_intake_intents i JOIN entity_weapon_builds b ON b.id=i.build_id
+      LEFT JOIN entity_build_intake_plans p ON p.id=i.plan_id WHERE i.id=held.key;
     PERFORM build_intake_register(jsonb_build_array(captured)::text);processed:=1;
   ELSIF EXISTS(SELECT 1 FROM entity_build_workflow_expansions e JOIN state_build_workflows f ON f.id=e.workflow WHERE e.id=held.key AND f.state='active') THEN
     processed:=build_workflow_admit_nodes(held.key,$4,$5);
