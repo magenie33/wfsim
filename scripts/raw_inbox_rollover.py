@@ -292,7 +292,7 @@ def drain_page(args):
     return True
 
 
-def consume_sealed_page(args, generation=None):
+def consume_sealed_page(args, generation=None, one_slice_rows=None):
     disk_gate(args.work, args.root_reserve+args.peak_root_bytes, args.work_reserve)
     index = json_pg("SELECT coalesce(raw_archive_next(),'null'::jsonb);")
     if index is None:
@@ -313,10 +313,13 @@ def consume_sealed_page(args, generation=None):
         size = os.statvfs(path).f_frsize
         return str((reserve+size-1)//size)
 
-    result = run(['node',str(SOURCE/'scripts/raw_inbox_archive_consume.mjs'),
-                  str(args.native.resolve()),index['digest'],str(args.statement_ms),environment['TMPDIR'],
-                  reserve_blocks('/',args.root_reserve+args.peak_root_bytes),
-                  reserve_blocks(args.work,args.work_reserve)],data=body,env=environment)
+    command = ['node',str(SOURCE/'scripts/raw_inbox_archive_consume.mjs'),
+               str(args.native.resolve()),index['digest'],str(args.statement_ms),environment['TMPDIR'],
+               reserve_blocks('/',args.root_reserve+args.peak_root_bytes),
+               reserve_blocks(args.work,args.work_reserve)]
+    if one_slice_rows is not None:
+        command.append(str(one_slice_rows))
+    result = run(command,data=body,env=environment)
     receipt = json.loads(result)
     stage = 'consumed' if receipt['committed'] else 'partial'
     if receipt.get('blocked'):
@@ -400,10 +403,12 @@ def drain_sealed(args):
             return
         if admission_at_limit(args):
             return
-        receipt = consume_sealed_page(args,args.generation)
+        receipt = consume_sealed_page(args,args.generation,args.one_slice_rows)
         if not receipt or not receipt['committed']:
             return
         retire_clean_page(args.generation,args.local_archive)
+        if args.one_slice_rows is not None:
+            return
 
 
 def install_clean(args):
@@ -682,6 +687,7 @@ def read_arguments():
             consume.add_argument('--parts',type=int,required=True)
             consume.add_argument('--seconds',type=int,required=True)
             consume.add_argument('--max-admission-backlog',type=int)
+            consume.add_argument('--one-slice-rows',type=int,choices=range(1,65),metavar='1..64')
     clean = choices.add_parser('install-clean')
     clean.add_argument('--tablespace',required=True)
     clean.add_argument('--http-role',required=True)
