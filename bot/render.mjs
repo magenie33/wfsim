@@ -6,6 +6,7 @@
 // and this browser only ever opens wfsim.app.
 import { spawn } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -58,7 +59,11 @@ async function launch() {
   proc.unref();
   const c = { proc, dir, slot, base: "", pages: 0, open: 0, idle: null, retired: false };
   browsers.add(c);
-  proc.once("exit", () => { browsers.delete(c); rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 }); });
+  // Chrome's children can still hold the profile after its parent exits.
+  proc.once("close", async () => {
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    browsers.delete(c);
+  });
   const until = Date.now() + LAUNCH_MS;
   while (Date.now() < until && alive(c)) {
     try {
