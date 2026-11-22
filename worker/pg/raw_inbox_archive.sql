@@ -23,6 +23,14 @@ CREATE TABLE record_raw_archive_parts (
   PRIMARY KEY(generation,part)
 );
 
+-- Keep exact keys that may have reached R2 until a sealed part takes custody.
+CREATE TABLE record_raw_archive_uploads (
+  generation uuid NOT NULL REFERENCES state_raw_archive_generation(generation),
+  part bigint NOT NULL CHECK(part>0),
+  digest text NOT NULL CHECK(digest~'^[0-9a-f]{64}$'),
+  PRIMARY KEY(generation,part,digest)
+);
+
 CREATE FUNCTION raw_archive_legacy_id(text) RETURNS boolean
 LANGUAGE sql IMMUTABLE STRICT SET search_path FROM CURRENT AS $$
   SELECT $1 COLLATE "C"~'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
@@ -64,15 +72,28 @@ $$;
 
 CREATE FUNCTION raw_archive_retire_next(uuid) RETURNS jsonb
 LANGUAGE sql STABLE SET search_path FROM CURRENT AS $$
-  SELECT jsonb_build_object('part',p.part::text,'digest',p.digest)
-  FROM state_raw_archive_generation g JOIN record_raw_archive_parts p
-    ON (p.generation,p.part)=(g.generation,g.retired_part+1)
-  WHERE g.generation=$1 AND (g.phase='abandoned' OR (g.phase IN('consuming','complete') AND p.part<g.next_part))
+  WITH eligible AS (
+    SELECT p.part,p.digest,true AS upload
+    FROM state_raw_archive_generation g JOIN record_raw_archive_uploads p USING(generation)
+    WHERE g.generation=$1 AND g.phase<>'sealing' AND NOT EXISTS(
+      SELECT FROM record_raw_archive_parts s WHERE (s.generation,s.part,s.digest)=(p.generation,p.part,p.digest))
+    UNION ALL
+    SELECT p.part,p.digest,false
+    FROM state_raw_archive_generation g JOIN record_raw_archive_parts p
+      ON (p.generation,p.part)=(g.generation,g.retired_part+1)
+    WHERE g.generation=$1 AND (g.phase='abandoned' OR (g.phase IN('consuming','complete') AND p.part<g.next_part))
+  )
+  SELECT jsonb_build_object('part',part::text,'digest',digest) FROM eligible
+    ORDER BY upload DESC,part,digest LIMIT 1
 $$;
 
 CREATE FUNCTION raw_archive_retired(uuid,bigint,text) RETURNS void
 LANGUAGE plpgsql SET search_path FROM CURRENT AS $$
 BEGIN
+  DELETE FROM record_raw_archive_uploads p USING state_raw_archive_generation g
+  WHERE (p.generation,p.part,p.digest)=($1,$2,$3) AND g.generation=p.generation AND g.phase<>'sealing'
+    AND NOT EXISTS(SELECT FROM record_raw_archive_parts s WHERE (s.generation,s.part,s.digest)=(p.generation,p.part,p.digest));
+  IF FOUND THEN RETURN; END IF;
   UPDATE state_raw_archive_generation g SET retired_part=$2 WHERE g.generation=$1
     AND g.retired_part+1=$2 AND (g.phase='abandoned' OR (g.phase IN('consuming','complete') AND $2<g.next_part))
     AND EXISTS(SELECT FROM record_raw_archive_parts p WHERE (p.generation,p.part,p.digest)=($1,$2,$3));
@@ -126,7 +147,7 @@ BEGIN
   RETURN jsonb_build_object('committed',true,'replay',false,'rows',sealed.rows);
 END $$;
 
-REVOKE ALL ON state_raw_archive_generation,record_raw_archive_parts FROM PUBLIC;
+REVOKE ALL ON state_raw_archive_generation,record_raw_archive_parts,record_raw_archive_uploads FROM PUBLIC;
 REVOKE ALL ON FUNCTION raw_archive_legacy_id(text),raw_archive_begin(uuid,text),
   raw_archive_seal_part(uuid,bigint,text,text,integer,text),raw_archive_activate(uuid,text,bigint),
   raw_archive_next(),raw_archive_consume(uuid,bigint,text,text[],text),

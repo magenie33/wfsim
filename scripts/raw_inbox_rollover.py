@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import time
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 
 SOURCE = Path(__file__).resolve().parents[1]
@@ -19,8 +20,8 @@ MAX_BODY = 8392704
 RCLONE_FLAGS = ['--s3-no-check-bucket', '--contimeout', '8s', '--timeout', '25s', '--retries', '1']
 
 
-def run(command, *, data=None, env=None, timeout=45):
-    child = subprocess.run(command, input=data, env=env, capture_output=True, timeout=timeout)
+def run(command, *, data=None, env=None, timeout=45, pass_fds=()):
+    child = subprocess.run(command, input=data, env=env, capture_output=True, timeout=timeout, pass_fds=pass_fds)
     if child.returncode:
         # SQL statements and object contents can include private submission text.
         code = re.search(rb'(?:ERROR|FATAL):\s+([0-9A-Z]{5}):',child.stderr)
@@ -82,11 +83,11 @@ def get(key, digest):
     return plain
 
 
-def put(key, plain, work):
+def put(key, plain, work, *, pass_fds=()):
     with tempfile.TemporaryDirectory(prefix='raw-archive-', dir=work) as temporary:
         outgoing = Path(temporary)/'part.json.gz'
         outgoing.write_bytes(gzip.compress(plain, compresslevel=3, mtime=0))
-        run(['rclone', 'copyto', str(outgoing), key, '--immutable', '--no-traverse', *RCLONE_FLAGS])
+        run(['rclone', 'copyto', str(outgoing), key, '--immutable', '--no-traverse', *RCLONE_FLAGS],pass_fds=pass_fds)
 
 
 def prove_restore(body, restore_service, live_identity):
@@ -201,9 +202,12 @@ def retire_clean_page(generation):
 
     def object_present():
         stat = json.loads(run(['rclone','lsjson',key,'--stat',*RCLONE_FLAGS]))
-        if not isinstance(stat,dict) or not isinstance(stat.get('IsDir'),bool):
-            raise RuntimeError('unrecognized archive object state')
-        return not stat['IsDir']
+        if isinstance(stat,dict):
+            if stat.get('IsDir') is True and stat.get('Size')==-1:
+                return False
+            if stat.get('IsDir') is False and type(stat.get('Size')) is int and stat['Size']>=0:
+                return True
+        raise RuntimeError('unrecognized archive object state')
 
     if object_present():
         run(['rclone','deletefile',key,*RCLONE_FLAGS])
@@ -235,9 +239,20 @@ COMMIT;
 """)
 
 
-def copy_clean_page(args, live_identity):
+@contextmanager
+def clean_archive_lock(work):
+    import fcntl
+    with (work/'raw-inbox-archive.lock').open('ab') as lock:
+        try:
+            fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise RuntimeError('another raw archive transfer still owns the work directory') from None
+        yield lock.fileno()
+
+
+def copy_clean_page(args, live_identity, lease):
     disk_gate(args.work,args.root_reserve,args.work_reserve)
-    body = pg(f"SELECT coalesce(raw_archive_move_page({args.rows},{args.bytes}),'null'::jsonb)::text;")
+    body = pg(f"SELECT coalesce(raw_archive_move_prepare({args.rows},{args.bytes}),'null');")
     packet = json.loads(body)
     if packet is None:
         return False
@@ -246,7 +261,11 @@ def copy_clean_page(args, live_identity):
     digest = sha(body)
     if packet['rows']:
         key = object_key(packet['generation'],packet['part'],digest)
-        put(key,body,args.work)
+        try:
+            put(key,body,args.work,pass_fds=(lease,))
+        except (RuntimeError,subprocess.TimeoutExpired):
+            # A fresh readback also resolves a lost upload reply for this exact key.
+            pass
         body = get(key,digest)
         prove_restore(body,args.restore_service,live_identity)
     disk_gate(args.work,args.root_reserve,args.work_reserve)
@@ -274,7 +293,7 @@ def clean_fence(path, generation):
     return sha(body)
 
 
-def clean_action(args):
+def clean_action(args, lease=None):
     if args.action=='install-clean':
         install_clean(args)
     elif args.action=='status-clean':
@@ -295,7 +314,7 @@ def clean_action(args):
             raise RuntimeError('could not identify the source cluster')
         until = time.monotonic()+args.seconds
         for _ in range(args.parts):
-            if time.monotonic()>=until or not copy_clean_page(args,identity):
+            if time.monotonic()>=until or not copy_clean_page(args,identity,lease):
                 break
     else:
         mode = {'begin-clean':'begin','cut-clean':'cut','abort-clean':'abort'}[args.action]
@@ -387,6 +406,8 @@ def read_arguments():
         if name=='cut-clean':
             disk_arguments(cmd)
             cmd.add_argument('--peak-root-bytes',type=int,required=True)
+        if name=='abort-clean':
+            cmd.add_argument('--work',type=Path,required=True)
     clean = choices.add_parser('copy-clean')
     disk_arguments(clean)
     clean.add_argument('--restore-service',required=True)
@@ -396,6 +417,7 @@ def read_arguments():
     clean.add_argument('--bytes',type=int,default=1048576)
     clean = choices.add_parser('retire-clean')
     clean.add_argument('generation',type=uuid.UUID)
+    clean.add_argument('--work',type=Path,required=True)
     choices.add_parser('status-clean')
     return base.parse_args()
 
@@ -411,6 +433,10 @@ def main():
     args = read_arguments()
     if args.action=='install':
         install(args.tablespace)
+    elif args.action in ('copy-clean','cut-clean','abort-clean','retire-clean'):
+        with clean_archive_lock(args.work) as lease:
+            clean_action(args,lease)
+        return
     elif args.action.endswith('-clean'):
         clean_action(args)
         return

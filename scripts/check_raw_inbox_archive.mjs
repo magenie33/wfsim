@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createHash,randomUUID } from 'node:crypto';
-import { mkdtempSync,readFileSync,rmSync,writeFileSync } from 'node:fs';
+import { mkdtempSync,readFileSync,readdirSync,rmSync,writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter,join,resolve } from 'node:path';
 import postgres from './pg/node_modules/postgres/src/index.js';
@@ -54,24 +54,50 @@ writeFileSync(join(scratch,'rclone'),[
   'key=rest[0] if action=="copyto" else source',
   'assert key.startswith("r2:wfsim-pg-backup/raw-inbox-rollover-v1/")',
   'path=Path(os.environ["ARCHIVE_TEST_ROOT"])/key.removeprefix("r2:")',
+  'fault=os.environ.get("ARCHIVE_TEST_FAULT")',
   'if action=="copyto":',
   ' assert "--immutable" in rest',
   ' path.parent.mkdir(parents=True,exist_ok=True)',
   ' body=Path(source).read_bytes()',
   ' if path.exists(): assert path.read_bytes()==body',
   ' else: path.write_bytes(body)',
-  'elif action=="cat": sys.stdout.buffer.write(path.read_bytes())',
-  'elif action=="lsjson": print(json.dumps({"IsDir":not path.is_file()}))',
+  'elif action=="cat":',
+  ' if fault=="readback": sys.exit(1)',
+  ' sys.stdout.buffer.write(path.read_bytes())',
+  'elif action=="lsjson":',
+  ' if fault=="stat-denied": sys.exit(1)',
+  ' print(json.dumps({"IsDir":not path.is_file(),"Size":path.stat().st_size if path.is_file() else -1}))',
   'elif action=="deletefile": path.unlink()',
   'else: raise RuntimeError("unexpected archive transport")',
 ].join('\n')+'\n',{mode:0o700});
+const realPsql=spawnSync('which',['psql'],{encoding:'utf8'}).stdout.trim();
+assert(realPsql);
+writeFileSync(join(scratch,'psql'),[
+  '#!/usr/bin/env python3',
+  'import os,subprocess,sys',
+  'body=sys.stdin.buffer.read()',
+  'run=subprocess.run([os.environ["ARCHIVE_REAL_PSQL"],*sys.argv[1:]],input=body,capture_output=True)',
+  'if os.environ.get("ARCHIVE_TEST_FAULT")=="lost-accept" and b"raw_archive_move_accept(" in body and run.returncode==0:',
+  ' sys.exit(1)',
+  'sys.stdout.buffer.write(run.stdout)',
+  'sys.stderr.buffer.write(run.stderr)',
+  'sys.exit(run.returncode)',
+].join('\n')+'\n',{mode:0o700});
 const budgets=['--work',scratch,'--root-reserve','1','--work-reserve','1'];
-function cli(...args){
-  const result=spawnSync('python3',['scripts/raw_inbox_rollover.py',...args],{encoding:'utf8',timeout:30000,
+function runCli(args,fault=''){
+  return spawnSync('python3',['scripts/raw_inbox_rollover.py',...args],{encoding:'utf8',timeout:30000,
     env:{...process.env,PGSERVICE:'source',PGSERVICEFILE:service,PGOPTIONS:'-c search_path='+schema,
-      PATH:scratch+delimiter+process.env.PATH,ARCHIVE_TEST_ROOT:scratch}});
+      PATH:scratch+delimiter+process.env.PATH,ARCHIVE_TEST_ROOT:scratch,ARCHIVE_REAL_PSQL:realPsql,ARCHIVE_TEST_FAULT:fault}});
+}
+function cli(...args){
+  const result=runCli(args);
   assert.equal(result.status,0,result.stderr||result.error?.message);
   return result.stdout.trim().split('\n').filter(Boolean).map(JSON.parse);
+}
+function failCli(fault,...args){
+  const result=runCli(args,fault);
+  assert.notEqual(result.status,0,result.stdout);
+  assert.ifError(result.error);
 }
 let writer, replay;
 async function moveFixture(){
@@ -91,7 +117,11 @@ async function moveFixture(){
   const source=inboxSource((text,params)=>writer.unsafe(placeholders(text),params));
   const original=randomUUID(), attempt=randomUUID();
   const hot='family:legacy', review='review:kept', arrival='00000000-0000-8000-8000-000000000001', late='workflow:repeat:1';
-  const cold='10000000-0000-4000-8000-000000000001';
+  const cold='10000000-0000-4000-8000-000000000001', held='10000000-0000-4000-8000-000000000002';
+  const objects=gen=>readdirSync(join(scratch,'wfsim-pg-backup','raw-inbox-rollover-v1',gen));
+  const transfer=async gen=>[...await owner.unsafe('SELECT part::int,digest FROM record_raw_archive_uploads WHERE generation=$1 ORDER BY part,digest',[gen])];
+  const copy=parts=>['copy-clean',...budgets,'--parts',String(parts),'--seconds','20','--restore-service','restore','--rows','2','--bytes','12288'];
+  const retire=gen=>['retire-clean',gen,'--work',scratch];
   const submit=(db,id,record='{}')=>db.unsafe('INSERT INTO record_build_submissions(id,at,record) VALUES($1,$2,$3) ON CONFLICT(id) DO NOTHING',[id,at,record]);
   const oldRelation=async()=>(await owner.unsafe("SELECT 'record_build_submissions'::regclass::oid AS oid,pg_relation_filepath('record_build_submissions') AS heap,(SELECT pg_relation_filepath(indexrelid) FROM pg_index WHERE indrelid='record_build_submissions'::regclass AND indisprimary) AS pk"))[0];
   const positions=()=>owner.unsafe('SELECT id,position::text FROM state_build_inbox_positions ORDER BY id');
@@ -106,17 +136,25 @@ async function moveFixture(){
   await submit(writer,review);
   await owner.unsafe('ALTER TABLE record_build_submissions DISABLE TRIGGER build_inbox_positioned');
   await submit(writer,cold,rows[0].input.record);
+  await submit(writer,held,rows[1].input.record);
   await owner.unsafe('ALTER TABLE record_build_submissions ENABLE TRIGGER build_inbox_positioned');
+  await owner.unsafe("INSERT INTO state_build_family_inbox(id,retry_at,input) VALUES($1,$2,'{}')",[held,at]);
   const before=await oldRelation();
   fenced(attempt);
   cli('begin-clean',attempt,'--fence-file',fenceFile);
   assert.equal((await writer.unsafe('SELECT raw_inbox_library_count() AS n'))[0].n,null);
   await submit(writer,arrival);
-  cli('copy-clean',...budgets,'--parts','1','--seconds','20','--restore-service','restore','--rows','2','--bytes','4096');
-  cli('abort-clean',attempt);
+  failCli('readback',...copy(1));
+  const [abandoned]=await transfer(attempt);
+  failCli('readback',...copy(1));
+  assert.deepEqual(await transfer(attempt),[abandoned]);
+  assert.deepEqual(objects(attempt),[abandoned.part+'-'+abandoned.digest+'.json.gz']);
+  assert.deepEqual(cli(...retire(attempt)),[]);
+  cli('abort-clean',attempt,'--work',scratch);
   assert((await keys()).includes(arrival));
   assert((await keys()).includes(cold));
-  assert.equal(cli('retire-clean',attempt)[0].part,1);
+  assert.equal(cli(...retire(attempt))[0].digest,abandoned.digest);
+  assert.deepEqual(objects(attempt),[]);
 
   writeFileSync(fenceFile,JSON.stringify({v:1,generation:original,source:'a'.repeat(40),live:{paused:true}}));
   assert.throws(()=>cli('begin-clean',original,'--fence-file',fenceFile),/capture receipts must be fenced/);
@@ -128,8 +166,18 @@ async function moveFixture(){
   await assert.rejects(owner.unsafe("INSERT INTO entity_board_requests(id,kind,input,ruler,mode) VALUES($1,'missing','{}','standard_single_target','base')",[cold]),error=>error.code==='55000');
   await assert.rejects(owner.unsafe("INSERT INTO state_build_family_inbox(id,retry_at,input) VALUES($1,$2,'{}')",[cold,at]),error=>error.code==='55000');
   await assert.rejects(owner.unsafe('DELETE FROM record_build_submissions WHERE id=$1',[hot]),error=>error.code==='55000');
-  const sealed=cli('copy-clean',...budgets,'--parts','10','--seconds','20','--restore-service','restore','--rows','2','--bytes','4096');
-  assert.equal(sealed.reduce((total,item)=>total+item.cold,0),1);
+  failCli('readback',...copy(1));
+  const [superseded]=await transfer(original);
+  await owner.unsafe('DELETE FROM state_build_family_inbox WHERE id=$1',[held]);
+  failCli('lost-accept',...copy(1));
+  const [manifest]=await owner.unsafe('SELECT digest,rows FROM record_raw_archive_parts WHERE generation=$1',[original]);
+  assert.equal(manifest.rows,2);
+  assert.notEqual(manifest.digest,superseded.digest);
+  assert.deepEqual(await transfer(original),[superseded]);
+  assert.equal(objects(original).length,2);
+  const sealed=cli(...copy(10));
+  assert.equal(sealed.reduce((total,item)=>total+item.cold,0),0);
+  assert.deepEqual(cli(...retire(original)),[]);
   let wake,release;
   const waiting=new Promise(resolve=>{wake=resolve;});
   const gate=new Promise(resolve=>{release=resolve;});
@@ -142,19 +190,25 @@ async function moveFixture(){
   const [cut]=cli('cut-clean',original,'--fence-file',fenceFile,...budgets,'--peak-root-bytes','1');
   assert(cut.old_source_bytes>0);
   const [cutStatus]=cli('status-clean');
-  assert.deepEqual([cutStatus.phase,cutStatus.generation,cutStatus.sealed_rows,cutStatus.next_part],['complete',original,1,1]);
+  assert.deepEqual([cutStatus.phase,cutStatus.generation,cutStatus.sealed_rows,cutStatus.next_part],['complete',original,2,1]);
   assert.equal((await oldRelation()).oid,before.oid);
   for(const name of [before.heap,before.pk]){
     assert.equal((await owner.unsafe('SELECT coalesce((pg_stat_file($1,true)).size,0)::int AS bytes',[name]))[0].bytes,0);
   }
   assert.deepEqual(await positions(),beforeCut);
-  assert.equal((await writer.unsafe('SELECT raw_inbox_library_count()::int AS n'))[0].n,10);
-  assert.deepEqual(cli('retire-clean',original),[]);
+  assert.equal((await writer.unsafe('SELECT raw_inbox_library_count()::int AS n'))[0].n,11);
+  failCli('stat-denied',...retire(original));
+  assert.deepEqual(await transfer(original),[superseded]);
+  assert.equal(cli(...retire(original))[0].digest,superseded.digest);
+  assert.deepEqual(await transfer(original),[]);
+  assert.deepEqual(objects(original),['1-'+manifest.digest+'.json.gz']);
+  assert.deepEqual(cli(...retire(original)),[]);
   const [received]=cli('consume',...budgets,'--native',native,'--peak-root-bytes','1','--statement-ms','5000');
-  assert.deepEqual([received.generation,received.committed,received.rows],[original,true,1]);
-  const [retired]=cli('retire-clean',original);
+  assert.deepEqual([received.generation,received.committed,received.rows],[original,true,2]);
+  const [retired]=cli(...retire(original));
   assert.deepEqual([retired.part,retired.digest],[1,received.digest]);
-  assert.deepEqual(cli('retire-clean',original),[]);
+  assert.deepEqual(cli(...retire(original)),[]);
+  assert.deepEqual(objects(original),[]);
   assert.deepEqual(await positions(),beforeCut);
   assert.deepEqual((await source.byIds([hot,review,arrival,late])).map(row=>row.id),[hot,review,arrival,late]);
   await Promise.all([submit(writer,hot),submit(replay,hot)]);

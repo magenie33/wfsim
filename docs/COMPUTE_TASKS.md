@@ -259,6 +259,10 @@ never enter the raw table again. A failed transaction leaves the part pending.
 The storage owner can retire the exact R2 object after committed custody or
 an aborted move that retained the original input. Its retirement receipt
 advances after confirming the object's absence.
+The move records the exact object key before upload and retains superseded
+keys until the generation is cut or abandoned. Copy, cut, abort and retirement
+use the same private work directory. An upload holds that directory's lock
+until its process exits.
 
 A correction observation's engine identifies its measurement. It does not pin
 the workflow's future execution engine. Execution uses the factory's current
