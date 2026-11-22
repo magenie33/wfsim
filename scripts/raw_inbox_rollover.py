@@ -174,6 +174,143 @@ def drain_page(args):
     return True
 
 
+def consume_sealed_page(args):
+    disk_gate(args.work, args.root_reserve+args.peak_root_bytes, args.work_reserve)
+    index = json_pg("SELECT coalesce(raw_archive_next(),'null'::jsonb);")
+    if index is None:
+        return
+    part = int(index['part'])
+    key = object_key(index['generation'],part,index['digest'])
+    body = get(key,index['digest'])
+    packet = json.loads(body)
+    if packet.get('generation')!=index['generation'] or packet.get('part')!=part:
+        raise RuntimeError('raw archive object belongs to another part')
+    disk_gate(args.work, args.root_reserve+args.peak_root_bytes, args.work_reserve)
+    environment = {**os.environ,'TMPDIR':str(args.work.resolve())}
+    result = run(['node',str(SOURCE/'scripts/raw_inbox_archive_consume.mjs'),
+                  str(args.native.resolve()),index['digest'],str(args.statement_ms)],data=body,env=environment)
+    emit({'stage':'consumed',**index,**json.loads(result)})
+
+
+def retire_clean_page(generation):
+    index = json_pg(f"SELECT coalesce(raw_archive_retire_next('{generation}'::uuid),'null'::jsonb);")
+    if index is None:
+        return
+    part, digest = int(index['part']), index['digest']
+    key = object_key(str(generation),part,digest)
+
+    def object_present():
+        stat = json.loads(run(['rclone','lsjson',key,'--stat',*RCLONE_FLAGS]))
+        if not isinstance(stat,dict) or not isinstance(stat.get('IsDir'),bool):
+            raise RuntimeError('unrecognized archive object state')
+        return not stat['IsDir']
+
+    if object_present():
+        run(['rclone','deletefile',key,*RCLONE_FLAGS])
+    if object_present():
+        raise RuntimeError('archive object remains after retirement')
+    pg(f"SELECT raw_archive_retired('{generation}'::uuid,{part},'{digest}');")
+    emit({'stage':'retired','generation':str(generation),'part':part,'digest':digest})
+
+
+def install_clean(args):
+    names = (args.tablespace,args.http_role,args.consume_role)
+    if any(not re.fullmatch('[a-z_][a-z0-9_]{0,62}', name) for name in names):
+        raise ValueError('use an existing data tablespace and explicit database roles')
+    archive, move = [(SOURCE/'worker/pg'/name).read_text() for name in
+                     ('raw_inbox_archive.sql','raw_inbox_archive_move.sql')]
+    pg(f"""BEGIN;
+SET LOCAL default_tablespace='{args.tablespace}';
+SELECT set_config('search_path',quote_ident(current_schema())||',pg_catalog,pg_temp',true);
+DO $$ BEGIN
+  IF to_regclass('state_raw_inbox_rollover') IS NOT NULL
+    OR (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='record_build_submissions'::regclass)<>current_user
+    THEN RAISE EXCEPTION 'install the clean archive under the detached source owner'; END IF;
+END $$;
+{archive}
+{move}
+GRANT EXECUTE ON FUNCTION raw_inbox_library_count() TO "{args.http_role}";
+GRANT EXECUTE ON FUNCTION raw_archive_next(),raw_archive_consume(uuid,bigint,text,text[],text) TO "{args.consume_role}";
+COMMIT;
+""")
+
+
+def copy_clean_page(args, live_identity):
+    disk_gate(args.work,args.root_reserve,args.work_reserve)
+    body = pg(f"SELECT coalesce(raw_archive_move_page({args.rows},{args.bytes}),'null'::jsonb)::text;")
+    packet = json.loads(body)
+    if packet is None:
+        return False
+    if len(body)>MAX_BODY:
+        raise RuntimeError('raw archive page exceeds its transfer bound')
+    digest = sha(body)
+    if packet['rows']:
+        key = object_key(packet['generation'],packet['part'],digest)
+        put(key,body,args.work)
+        body = get(key,digest)
+        prove_restore(body,args.restore_service,live_identity)
+    disk_gate(args.work,args.root_reserve,args.work_reserve)
+    literal_text = f"convert_from(decode('{body.hex()}','hex'),'UTF8')"
+    accepted = json_pg(f"SELECT raw_archive_move_accept({literal_text},'{digest}',{args.rows},{args.bytes});")
+    emit({'stage':'sealed',**accepted})
+    return True
+
+
+def clean_fence(path, generation):
+    with path.open('rb') as source:
+        body = source.read(65537)
+    if len(body)>65536:
+        raise ValueError('raw archive fence receipt is too large')
+    receipt = json.loads(body)
+    if (not isinstance(receipt,dict) or receipt.get('v')!=1 or receipt.get('generation')!=str(generation)
+            or not re.fullmatch('[0-9a-f]{40}',str(receipt.get('source')))):
+        raise ValueError('raw archive fence does not identify the deployed source and generation')
+    for consumer in ('live','hourly'):
+        state = receipt.get(consumer)
+        if (not isinstance(state,dict) or state.get('paused') is not True or state.get('inflight')!=0
+                or state.get('capture') not in ('acknowledged','discarded')
+                or not re.fullmatch('[0-9a-f]{64}',str(state.get('receipt')))):
+            raise ValueError('both raw intake consumers and their capture receipts must be fenced')
+    return sha(body)
+
+
+def clean_action(args):
+    if args.action=='install-clean':
+        install_clean(args)
+    elif args.action=='status-clean':
+        emit(json_pg("""SELECT jsonb_build_object('phase',m.phase,'generation',m.generation,'after',m.after_id,
+          'source_oid',m.source_oid,'sealed_parts',g.sealed_parts,'sealed_rows',g.sealed_rows,
+          'next_part',g.next_part,'consumed_rows',g.consumed_rows,'retired_part',g.retired_part,
+          'source_bytes',pg_total_relation_size('record_build_submissions'),
+          'hot_bytes',pg_total_relation_size('record_raw_archive_hot'),
+          'arrival_bytes',pg_total_relation_size('record_raw_archive_arrivals'))
+          FROM state_raw_archive_move m LEFT JOIN state_raw_archive_generation g USING(generation);"""))
+    elif args.action=='retire-clean':
+        retire_clean_page(args.generation)
+    elif args.action=='copy-clean':
+        if min(args.parts,args.seconds,args.root_reserve,args.work_reserve)<1 or not args.work.is_dir():
+            raise ValueError('specify a bounded archive window and both disk reserves')
+        identity = pg('SELECT system_identifier::text FROM pg_control_system();').decode()
+        if not identity.isdecimal():
+            raise RuntimeError('could not identify the source cluster')
+        until = time.monotonic()+args.seconds
+        for _ in range(args.parts):
+            if time.monotonic()>=until or not copy_clean_page(args,identity):
+                break
+    else:
+        mode = {'begin-clean':'begin','cut-clean':'cut','abort-clean':'abort'}[args.action]
+        parameters = f"'{args.generation}'::uuid"
+        if mode!='abort':
+            parameters += f",'{clean_fence(args.fence_file,args.generation)}'"
+        if mode=='cut':
+            if min(args.root_reserve,args.work_reserve,args.peak_root_bytes)<1 or not args.work.is_dir():
+                raise ValueError('specify the approved cut reserves and root overhead')
+            disk_gate(args.work,args.root_reserve+args.peak_root_bytes,args.work_reserve)
+        value = pg(f'SELECT raw_archive_move_{mode}({parameters});')
+        if value:
+            emit({'stage':'cut','old_source_bytes':int(value)})
+
+
 def install(tablespace):
     if not re.fullmatch('[a-z_][a-z0-9_]{0,62}', tablespace):
         raise ValueError('invalid PostgreSQL tablespace')
@@ -233,6 +370,33 @@ def read_arguments():
         else:
             cmd.add_argument('--max-hot-rows',type=int,required=True)
             cmd.add_argument('--part-peak-bytes',type=int,required=True)
+    consume = choices.add_parser('consume')
+    disk_arguments(consume)
+    consume.add_argument('--native',type=Path,required=True)
+    consume.add_argument('--peak-root-bytes',type=int,required=True)
+    consume.add_argument('--statement-ms',type=int,required=True)
+    clean = choices.add_parser('install-clean')
+    clean.add_argument('--tablespace',required=True)
+    clean.add_argument('--http-role',required=True)
+    clean.add_argument('--consume-role',required=True)
+    for name in ('begin-clean','cut-clean','abort-clean'):
+        cmd = choices.add_parser(name)
+        cmd.add_argument('generation',type=uuid.UUID)
+        if name!='abort-clean':
+            cmd.add_argument('--fence-file',type=Path,required=True)
+        if name=='cut-clean':
+            disk_arguments(cmd)
+            cmd.add_argument('--peak-root-bytes',type=int,required=True)
+    clean = choices.add_parser('copy-clean')
+    disk_arguments(clean)
+    clean.add_argument('--restore-service',required=True)
+    clean.add_argument('--parts',type=int,required=True)
+    clean.add_argument('--seconds',type=int,required=True)
+    clean.add_argument('--rows',type=int,default=512)
+    clean.add_argument('--bytes',type=int,default=1048576)
+    clean = choices.add_parser('retire-clean')
+    clean.add_argument('generation',type=uuid.UUID)
+    choices.add_parser('status-clean')
     return base.parse_args()
 
 
@@ -247,6 +411,15 @@ def main():
     args = read_arguments()
     if args.action=='install':
         install(args.tablespace)
+    elif args.action.endswith('-clean'):
+        clean_action(args)
+        return
+    elif args.action=='consume':
+        if (min(args.root_reserve,args.work_reserve,args.peak_root_bytes)<1 or not args.work.is_dir()
+            or not args.native.is_file() or not 1<=args.statement_ms<=12000 or not os.environ.get('PG_URL')):
+            raise ValueError('specify the approved one-part archive budgets, Native binary and database URL')
+        consume_sealed_page(args)
+        return
     elif args.action in ('copy','drain'):
         if min(args.parts,args.seconds,args.root_reserve,args.work_reserve)<1 or not args.work.is_dir():
             raise ValueError('specify a bounded archive window and an existing work directory')

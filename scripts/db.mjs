@@ -80,10 +80,12 @@ export async function query(sql, params = [], database = "library") {
 }
 
 export async function transaction(statements, database = "library") {
-  if (!statements.length) return;
+  if (!statements.length) return [];
   const c = await client(database);
-  await c.transaction(async run => {
-    for (const { sql, params } of statements) await run(placeholders(sql), params);
+  return c.transaction(async run => {
+    const results = [];
+    for (const { sql, params } of statements) results.push((await run(placeholders(sql), params)).rows);
+    return results;
   });
 }
 

@@ -229,8 +229,8 @@ console.log("the board's submission endpoint\n");
   check("the same build twice is two queue rows, not one",
     kv.rows.size === 2, `${kv.rows.size} row(s)`);
   const keys = [...kv.rows.keys()];
-  check("...under ids that say nothing about the build",
-    keys.every((k) => /^[0-9a-f-]{36}$/i.test(k)), keys.join("  |  "));
+  check("...under opaque UUIDs outside the frozen version-four archive",
+    keys.every((k) => /^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(k)), keys.join("  |  "));
   const sql = kv.calls.map((c) => c.sql).join(" ");
   check("...and nothing is written to `builds`",
     !/INTO entity_weapon_builds/.test(sql) && /INTO record_build_submissions/.test(sql), sql);

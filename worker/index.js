@@ -207,6 +207,12 @@ function record(b) {
   return { rec };
 }
 
+// Fresh ordinary inputs use a UUID version outside the frozen legacy archive.
+const submissionId = () => {
+  const id = crypto.randomUUID();
+  return id.slice(0,14)+'8'+id.slice(15);
+};
+
 /// A BUILD INTO THE BOARD'S DOOR from inside the worker — an agreed riven gain
 /// (appraise.js) — checked and stored exactly as a reader's submission is, with
 /// who asked for it (docs/BOARD.md §"Who asked").
@@ -214,7 +220,7 @@ export async function submitRecord(env, build, initiator = null, origin = {}) {
   const built = record(build || {});
   if (built.err || !env.LIBRARY) return false;
   await env.LIBRARY.prepare("INSERT INTO record_build_submissions (id, at, record, initiator, family_source) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING")
-    .bind(origin.id || crypto.randomUUID(), built.rec.at, JSON.stringify(built.rec), initiator, origin.family_source || null).run();
+    .bind(origin.id || submissionId(), built.rec.at, JSON.stringify(built.rec), initiator, origin.family_source || null).run();
   return true;
 }
 
@@ -289,7 +295,7 @@ async function submit(request, env) {
     const values = records.map(() => "(?, ?, ?, ?)").join(", ");
     await env.LIBRARY.prepare(
       `INSERT INTO record_build_submissions (id, at, record, initiator) VALUES ${values}`,
-    ).bind(...records.flatMap(rec => [crypto.randomUUID(), rec.at, JSON.stringify(rec), initiator])).run();
+    ).bind(...records.flatMap(rec => [submissionId(), rec.at, JSON.stringify(rec), initiator])).run();
   } catch (e) {
     console.log("inbox write failed:", (e && e.message) || String(e));
     return bad("the library could not be written", 503);
