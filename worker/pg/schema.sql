@@ -424,8 +424,10 @@ BEGIN
   PERFORM factory_restate(id) FROM (SELECT DISTINCT unnest(affected) id
     UNION SELECT value->>'id' FROM jsonb_array_elements(s)) changed ORDER BY id;
   INSERT INTO state_producer_compute_usage(producer,used)
-    SELECT DISTINCT value->>'producer',coalesce((SELECT min(used) FROM state_producer_compute_usage),0)
-      FROM jsonb_array_elements(d) ON CONFLICT DO NOTHING;
+    SELECT DISTINCT demand.value->>'producer',coalesce((SELECT min(used) FROM state_producer_compute_usage),0)
+    FROM jsonb_array_elements(d) demand(value)
+    WHERE NOT EXISTS (SELECT 1 FROM state_producer_compute_usage existing WHERE existing.producer=demand.value->>'producer')
+    ON CONFLICT DO NOTHING;
 END $$;
 
 CREATE OR REPLACE FUNCTION compute_accept_result(text,bigint,text,text,text,text,text,bigint,text) RETURNS bigint

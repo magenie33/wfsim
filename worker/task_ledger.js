@@ -56,6 +56,7 @@ export function createLedger({ verbs, producerOf } = {}) {
         // A PRODUCER NEVER SEEN starts at the least any has used: no credit banked.
         db.prepare(`INSERT INTO state_producer_compute_usage (producer, used)
                       SELECT x.p, COALESCE((SELECT min(used) FROM state_producer_compute_usage), 0) FROM jsonb_array_elements_text((?1::text)::jsonb) AS x(p)
+                      WHERE NOT EXISTS (SELECT 1 FROM state_producer_compute_usage existing WHERE existing.producer=x.p)
                     ON CONFLICT (producer) DO NOTHING`)
           .bind(JSON.stringify([...new Set([...ds.values()].map((d) => d.producer))].sort())),
       ]);
