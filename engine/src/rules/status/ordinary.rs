@@ -55,12 +55,14 @@ pub fn handler_weight(evaluators: &[ProcEvaluator], components: &DamageComponent
 }
 
 /// Ordered binary32 prefixes with one entry per positive weight.
+#[cfg(test)]
 pub(super) struct Cdf<const N: usize> {
     entries: [(usize, f32); N],
     len: usize,
     total: f32,
 }
 
+#[cfg(test)]
 #[wfsim_gas_macro::metered]
 impl<const N: usize> Cdf<N> {
     pub(super) fn empty() -> Self {
@@ -109,6 +111,7 @@ impl<const N: usize> Cdf<N> {
 }
 
 /// A packet owns its table for the duration of its hit.
+#[cfg(test)]
 #[wfsim_gas_macro::metered]
 pub(super) fn sample<const N: usize>(chance: f32, skip_byte_0x241: u8,
     evaluate: impl FnOnce() -> [f32; N], random: impl FnMut() -> f32,
@@ -123,11 +126,34 @@ pub(super) fn sample<const N: usize>(chance: f32, skip_byte_0x241: u8,
 pub fn generate(chance: f32, skip_byte_0x241: u8, components: &DamageComponents,
     handlers: &[&[ProcEvaluator]; 30], counters: &mut ProcCounters, rng: &mut NativeRng)
 {
-    sample::<30>(chance, skip_byte_0x241,
-        || std::array::from_fn(|index| handler_weight(handlers[index], components)),
-        || rng.unit(), |index| {
-            if let Some(index) = index { counters.add(ProcType::new(index as u8).expect("proc index"), 1); }
-        });
+    if skip_byte_0x241 != 0 || chance <= 0.0 { return; }
+    let mut entries = [(0usize, 0.0_f32); 30];
+    let mut len = 0usize;
+    let mut total = 0.0_f32;
+    let mut built = false;
+    let mut remaining = chance;
+    while remaining > 0.0 {
+        if rng.unit() > remaining { break; }
+        if !built {
+            for (index, evals) in handlers.iter().enumerate() {
+                let weight = handler_weight(evals, components);
+                total += weight;
+                if weight > 0.0 {
+                    entries[len] = (index, total);
+                    len += 1;
+                }
+            }
+            built = true;
+        }
+        let threshold = rng.unit() * total;
+        for &(index, cumulative) in &entries[..len] {
+            if cumulative >= threshold {
+                counters.add(ProcType::new(index as u8).expect("proc index"), 1);
+                break;
+            }
+        }
+        remaining -= 1.0_f32;
+    }
 }
 
 #[cfg(test)]

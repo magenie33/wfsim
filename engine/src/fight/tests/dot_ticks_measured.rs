@@ -589,7 +589,7 @@ fn pruned_expiry_piles_match_lazy_fifo_at_repeated_and_later_times() {
             if reference.len() >= cap { reference.remove(0); }
             reference.push(expiry);
         }
-        state.push_proc_stack(|s| &mut s.stagger, expiry, cap, now);
+        state.push_proc_stack(crate::fight::debuffs::ProcStackKind::Stagger, expiry, cap, now);
         assert!(state.stagger.iter().map(|e| e.to_bits()).eq(reference.iter().map(|e| e.to_bits())));
     }
 }
@@ -886,4 +886,41 @@ fn future_groups_preserve_the_eight_group_deduplication_cap() {
     state.refill_tick_queue(&mut q, 1.0 + 1e-9);
     let first = q.pop().unwrap().0;
     assert_eq!(state.dots[first.index as usize].cause, 102);
+}
+
+#[test]
+fn push_dot_capped_n_matches_repeated_single_pushes() {
+    for cap in [None, Some(1), Some(3), Some(10)] {
+        for existing in [0usize, 2, 3, 9, 10, 12] {
+            for batch in [0usize, 1, 2, 4, 10, 15] {
+                let mut single = DebuffState::default();
+                let mut bulk = DebuffState::default();
+                for i in 0..existing {
+                    let mut d = tagged_dot(i as u32 + 1, DamageType::Gas);
+                    d.next_tick = 1.0 + i as f64 * 0.1;
+                    d.ticks_left = 6;
+                    single.push_dot_capped(d, cap);
+                    bulk.push_dot_capped(d, cap);
+                }
+                let mut incoming = tagged_dot(999, DamageType::Gas);
+                incoming.next_tick = 2.5;
+                incoming.ticks_left = 5;
+                for _ in 0..batch {
+                    single.push_dot_capped(incoming, cap);
+                }
+                bulk.push_dot_capped_n(incoming, cap, batch);
+                assert_eq!(single.active_dot_count(), bulk.active_dot_count());
+                assert_eq!(single.live_dot_count(DamageType::Gas), bulk.live_dot_count(DamageType::Gas));
+                assert_eq!(single.radial_history, bulk.radial_history);
+                let single_live: Vec<_> = single.active_dots().copied().collect();
+                let bulk_live: Vec<_> = bulk.active_dots().copied().collect();
+                assert_eq!(single_live.len(), bulk_live.len());
+                for (a, b) in single_live.iter().zip(bulk_live.iter()) {
+                    assert_eq!(a.cause, b.cause);
+                    assert_eq!(a.next_tick.to_bits(), b.next_tick.to_bits());
+                    assert_eq!(a.ticks_left, b.ticks_left);
+                }
+            }
+        }
+    }
 }

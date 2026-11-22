@@ -298,6 +298,7 @@ pub(super) fn write_row(
 }
 
 /// Split dealt damage using its quantized shares, never its status weights.
+#[inline]
 #[wfsim_gas_macro::metered]
 pub(super) fn add_by_type(
     dst: &mut [f64; DamageType::ALL.len()],
@@ -305,22 +306,43 @@ pub(super) fn add_by_type(
     effective: f64,
     col: &crate::data::factions::Column,
 ) {
-    let parts = DamageType::ALL.into_iter().map(|t| (t, shares.share(t))).filter(|&(_, a)| a > 0.0);
-    add_parts(dst, effective, col, parts);
-}
-
-#[wfsim_gas_macro::metered]
-pub(super) fn add_parts(
-    dst: &mut [f64; DamageType::ALL.len()],
-    effective: f64,
-    col: &crate::data::factions::Column,
-    parts: impl Iterator<Item = (DamageType, f64)> + Clone,
-) {
-    let weighted: f64 = parts.clone().map(|(t, a)| a * col.get(t)).sum();
+    let mut active = [(DamageType::Impact, 0.0_f64); DamageType::ALL.len()];
+    let mut len = 0usize;
+    let mut weighted = 0.0_f64;
+    for t in DamageType::ALL {
+        let a = shares.share(t);
+        if a > 0.0 {
+            weighted += a * col.get(t);
+            active[len] = (t, a);
+            len += 1;
+        }
+    }
     if weighted <= 0.0 {
         return;
     }
-    for (t, amount) in parts {
+    for &(t, amount) in &active[..len] {
+        dst[t as usize] += effective * amount * col.get(t) / weighted;
+    }
+}
+
+#[inline]
+#[wfsim_gas_macro::metered]
+pub(super) fn add_positive_by_type(
+    dst: &mut [f64; DamageType::ALL.len()],
+    shares: &TypeShares,
+    effective: f64,
+    col: &crate::data::factions::Column,
+    types: &[DamageType],
+) {
+    let mut weighted = 0.0_f64;
+    for &t in types {
+        weighted += shares.share(t) * col.get(t);
+    }
+    if weighted <= 0.0 {
+        return;
+    }
+    for &t in types {
+        let amount = shares.share(t);
         dst[t as usize] += effective * amount * col.get(t) / weighted;
     }
 }

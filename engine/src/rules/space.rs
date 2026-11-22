@@ -428,6 +428,14 @@ impl Neighbours {
         }
     }
 
+    #[inline]
+    pub fn list_from(&self, from: usize) -> &[(f64, u32)] {
+        match self.near.get(from) {
+            Some(v) => v.as_slice(),
+            None => &[],
+        }
+    }
+
     /// Every body within `radius_m` of body `from`, itself included — ANY PART
     /// TOUCHING IS ENOUGH, the same rule every sphere in this engine uses
     /// ([`caught_by_blast`]).

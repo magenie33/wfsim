@@ -78,6 +78,49 @@ pub(super) struct EchoInputs<'a> {
 }
 
 #[wfsim_gas_macro::metered]
+impl<'a> EchoInputs<'a> {
+    #[inline]
+    pub(super) fn for_group(
+        status_vector: &'a TargetComposition,
+        shares: TypeShares,
+        active: &FightParams,
+        params: &FightParams,
+        t: f64,
+        w: &mut CardWindows,
+    ) -> Self {
+        let independent = !status_vector.is_adaptive(active);
+        let mut out = Self {
+            draw: if independent {
+                Some(SceneProcDraw::new(&status_vector.vector))
+            } else {
+                None
+            },
+            composition_ratio: if independent && status_vector.aimed_total > 0.0 {
+                status_vector.vector.total() / status_vector.aimed_total
+            } else {
+                1.0
+            },
+            extra_hit_bracket: if params.has_any_abilities() {
+                active.extra_hit_bracket(t, w)
+            } else {
+                1.0
+            },
+            damage_types: [DamageType::Impact; DamageType::ALL.len()],
+            positive: 0,
+        };
+        if independent {
+            for ty in DamageType::ALL {
+                if shares.share(ty) > 0.0 {
+                    out.damage_types[out.positive] = ty;
+                    out.positive += 1;
+                }
+            }
+        }
+        out
+    }
+}
+
+#[wfsim_gas_macro::metered]
 impl TargetComposition {
     fn is_adaptive(&self, active: &FightParams) -> bool {
         self.adaptive_enabled && active.adaptive_element.is_some()
@@ -326,7 +369,7 @@ pub(super) fn spread_from_influence(
                 forced,
                 0.0,
                 &DamageVector::new().with(ty, raw),
-                tparams.proc_handlers(),
+                state.proc_handlers,
                 &mut d.status,
             );
             settle_procs(
@@ -437,8 +480,9 @@ pub(super) fn spread_hit(
             + heavy_attack_base_damage(active, tennokai_heavy)
             + arc.rage_bonus(t);
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);
-    let half_hp = if active.base_damage_below_half_health != 0.0 && spec.params.max_health() > 0.0
-        && foe.state.health < 0.5 * spec.params.max_health()
+    let half_hp = if active.base_damage_below_half_health != 0.0
+        && foe.state.max_health > 0.0
+        && foe.state.health < 0.5 * foe.state.max_health
     {
         active.base_damage_below_half_health
     } else {
@@ -575,9 +619,15 @@ pub(super) fn spread_hit(
         r.sources.direct += eff;
         &mut r.sources.direct_by_type
     };
-    if let Some(e) = echo.as_deref().filter(|e| e.draw.is_some()) {
-        add_parts(by_type, eff, &col, e.damage_types[..e.positive].iter().map(|&t| (t, shares.share(t))));
-    } else { add_by_type(by_type, shares, eff, &col); }
+    if let Some(e) = echo.as_deref() {
+        if e.draw.is_some() {
+            add_positive_by_type(by_type, &shares, eff, &col, &e.damage_types[..e.positive]);
+        } else {
+            add_by_type(by_type, shares, eff, &col);
+        }
+    } else {
+        add_by_type(by_type, shares, eff, &col);
+    }
     if killed && by.is_the_shot_itself() && leaves_one(active, params.player_at, spec.at) {
         r.ghost_kills += 1;
     }
@@ -626,12 +676,18 @@ pub(super) fn spread_hit(
     // procs than it is in damage.
     arc.next_instance();
     let received_chance = foe.debuffs.received_proc_chance(status_chance, t);
-    let handlers = spec.params.proc_handlers();
-    let xh_bracket = echo.as_deref().map_or_else(|| active.extra_hit_bracket(t, w), |e| e.extra_hit_bracket);
+    let handlers = foe.state.proc_handlers;
+    let xh_bracket = match echo.as_deref() {
+        Some(e) => e.extra_hit_bracket,
+        None if params.has_any_abilities() => active.extra_hit_bracket(t, w),
+        None => 1.0,
+    };
     let ordinary;
-    let procs: &[DamageType] = match echo.and_then(|e| e.draw.as_mut()) {
-        Some(draw) => draw.procs_for_hit(forced, received_chance, handlers, &mut d.status),
-        None => {
+    let procs: &[DamageType] = match echo {
+        Some(e) if e.draw.is_some() => {
+            e.draw.as_mut().unwrap().procs_for_hit(forced, received_chance, handlers, &mut d.status)
+        }
+        _ => {
             ordinary = status::procs_for_hit(forced, received_chance, vector, handlers, &mut d.status);
             &ordinary
         }
@@ -642,6 +698,18 @@ pub(super) fn spread_hit(
         status::applied_procs(procs, &spec.params.status_immunities).collect()
     } else { Vec::new() };
     let mut landed = Landed { procs: applied, raw, shares, killed };
+    let landing = if inst.headshot {
+        let mut found = ProcLanding::default();
+        for p in spec.body_parts {
+            if p.is_head {
+                found = ProcLanding::at(inst.status_landing, p);
+                break;
+            }
+        }
+        found
+    } else {
+        ProcLanding::default()
+    };
     settle_procs(
         procs,
         seat,
@@ -665,10 +733,7 @@ pub(super) fn spread_hit(
             // round, on a ruler whose own rule is that a punched body IS a
             // weak-point hit.
             part_factor: inst.status_part_factor,
-            landing: if inst.headshot {
-                spec.body_parts.iter().find(|p| p.is_head)
-                    .map_or_else(ProcLanding::default, |p| ProcLanding::at(inst.status_landing, p))
-            } else { ProcLanding::default() },
+            landing,
             attrition,
             // THE FIRING FORM'S bracket, like any other instance of this shot —
             // a chain hop is the same shot, and the Extra Hit it may set off is
@@ -698,7 +763,7 @@ pub(super) fn spread_hit(
     {
         irradiate::submit_immediate_direct_echo(foe, inst.target, params, arc, || SpreadStrike {
             raw_per_bucket, shares, crit_multiplier, crit_tier, attrition, modded_base,
-            status_chance, forced: forced.to_vec(), status_vector: *status_vector,
+            status_chance, forced: status::HitProcs::from_slice(forced), status_vector: *status_vector,
         });
     }
     landed
@@ -732,7 +797,7 @@ pub(super) struct SpreadStrike {
     pub(super) attrition: f64,
     pub(super) modded_base: f64,
     pub(super) status_chance: f64,
-    pub(super) forced: Vec<DamageType>,
+    pub(super) forced: status::HitProcs,
     /// The attack-part composition before each body's adaptive element.
     pub(super) status_vector: TargetComposition,
 }
@@ -881,6 +946,10 @@ pub(super) fn spread_from_punch_through(
     t: f64,
 ) -> PunchedWeakPoints {
     let mut punched = PunchedWeakPoints::default();
+    if struck.len() <= 1 {
+        return punched;
+    }
+    let mut group = EchoInputs::for_group(status_vector, shares, active, params, t, w);
     // The FIRST is the body the rest of the engagement is already scored
     // against; everything behind it is what this function is for.
     for (crossed, &s) in struck.iter().enumerate().skip(1) {
@@ -986,7 +1055,7 @@ pub(super) fn spread_from_punch_through(
                 SpreadBy::PunchThrough,
                 false,
                 true,
-                None,
+                Some(&mut group),
             );
             r.punched_contacts += 1;
             if inst.headshot {
@@ -1047,7 +1116,7 @@ pub(super) fn spread_from_ricochet(
     status_chance: f64,
     forced: &[DamageType],
     status_vector: &TargetComposition,
-    head_factor: &dyn Fn(&BodySpec<'_>) -> f64,
+    head_brackets: (f64, f64),
     // What an Electricity or Gas tick is worth on a head (`Dot::landing`).
     head_landing: f64,
     gal: &mut GalStacks,
@@ -1057,6 +1126,10 @@ pub(super) fn spread_from_ricochet(
     d: &mut crate::rules::rng::Draws,
     t: f64,
 ) {
+    if path.is_empty() {
+        return;
+    }
+    let mut group = EchoInputs::for_group(status_vector, shares, active, params, t, w);
     for &(body, head) in path {
         // THE AIMED BODY IS NEVER A BOUNCE TARGET — it is where the projectile
         // came from, and `bounce_path` has it visited before the walk starts.
@@ -1064,6 +1137,18 @@ pub(super) fn spread_from_ricochet(
             continue;
         }
         let Some(spec) = params.body(body) else { continue };
+        let hf = if head {
+            let mut m = 1.0;
+            for p in spec.body_parts {
+                if p.is_head {
+                    m = p.multiplier;
+                    break;
+                }
+            }
+            active.head_value(m, 1.5) * head_brackets.0 * head_brackets.1
+        } else {
+            1.0
+        };
         let inst = crate::rules::chain::Instance {
             target: body,
             // THE WHOLE COLLISION, undiminished.
@@ -1073,10 +1158,10 @@ pub(super) fn spread_from_ricochet(
             // pellet, so the count is already there.
             multishot: false,
             headshot: head,
-            part_factor: if head { head_factor(&spec) } else { 1.0 },
+            part_factor: hf,
             // A RICOCHET ROLLS ITS OWN, so the hit and its statuses read the
             // same answer — `raw_per_bucket` is handed to it body-only.
-            status_part_factor: if head { head_factor(&spec) } else { 1.0 },
+            status_part_factor: hf,
             status_landing: if head { head_landing } else { 1.0 },
         };
         spread_hit(
@@ -1105,7 +1190,7 @@ pub(super) fn spread_from_ricochet(
             SpreadBy::Ricochet,
             false,
             true,
-            None,
+            Some(&mut group),
         );
     }
 }
@@ -1143,26 +1228,7 @@ pub(super) fn spread_from_echo(
     t: f64,
 ) {
     if recipients.is_empty() { return; }
-    let independent = !status_vector.is_adaptive(active);
-    // A single echo reads one shooter's windows at one instant. Adaptive elements
-    // still resolve from each recipient's live pools.
-    let mut echo = EchoInputs {
-        draw: independent.then(|| SceneProcDraw::new(&status_vector.vector)),
-        composition_ratio: if independent && status_vector.aimed_total > 0.0 {
-            status_vector.vector.total() / status_vector.aimed_total
-        } else { 1.0 },
-        extra_hit_bracket: active.extra_hit_bracket(t, w),
-        damage_types: [DamageType::Impact; DamageType::ALL.len()],
-        positive: 0,
-    };
-    if independent {
-        for t in DamageType::ALL {
-            if shares.share(t) > 0.0 {
-                echo.damage_types[echo.positive] = t;
-                echo.positive += 1;
-            }
-        }
-    }
+    let mut echo = EchoInputs::for_group(status_vector, shares, active, params, t, w);
     for &b in recipients {
         let Some(foe) = bodies.get_mut(b) else { break };
         let Some(spec) = params.body(b) else { continue };
@@ -1257,12 +1323,25 @@ pub(super) fn spread_from_tendrils(
     if live == 0 || params.tendril_max == 0 {
         return;
     }
+    let candidates = geometry.tendril_candidates();
+    if candidates.is_empty() {
+        return;
+    }
+    let mut group = EchoInputs::for_group(status_vector, shares, active, params, t, w);
+    let mut taken = 0usize;
+    let limit = live as usize;
     // …AND THE BEAM'S OWN TARGET IS NOT ONE OF THEM: "Tendrils homing in on the
     // main beam's target are only COSMETIC, and don't deal any additional
     // damage or status effects". Index 0 is that body.
-    for b in geometry.tendril_candidates().iter().map(|&i| i as usize)
-        .filter(|&b| b != 0).take(live as usize)
-    {
+    for &cand in candidates {
+        let b = cand as usize;
+        if b == 0 {
+            continue;
+        }
+        if taken >= limit {
+            break;
+        }
+        taken += 1;
         let Some(spec) = params.body(b) else { continue };
         let inst = crate::rules::chain::Instance {
             target: b,
@@ -1303,7 +1382,7 @@ pub(super) fn spread_from_tendrils(
             SpreadBy::Tendril,
             false,
             true,
-            None,
+            Some(&mut group),
         );
     }
 }
@@ -1422,6 +1501,10 @@ pub(super) fn blast_at(
     t: f64,
     by: SpreadBy,
 ) {
+    if bodies.len() <= 1 {
+        return;
+    }
+    let mut group: Option<EchoInputs<'_>> = None;
     // FROM BODY 1: the aimed one takes the explosion on the aimed path, which
     // is where the round's own falloff and its weak point are already known.
     for (b, foe) in bodies.iter_mut().enumerate().skip(1) {
@@ -1445,6 +1528,10 @@ pub(super) fn blast_at(
             part_factor: 1.0,
             status_part_factor: 1.0,
             status_landing: 1.0,
+        };
+        let grp = match &mut group {
+            Some(g) => g,
+            None => group.insert(EchoInputs::for_group(status_vector, shares, active, params, t, w)),
         };
         spread_hit(
             seat,
@@ -1472,7 +1559,7 @@ pub(super) fn blast_at(
             by,
             rad.blast_kind == crate::model::BlastKind::InFlight,
             rad.takes_condition_overload,
-            None,
+            Some(grp),
         );
         if !foe.fallen {
             apply_independent_forced(rad.forced_procs, foe, t, params.status_duration_multiplier);
@@ -1524,12 +1611,52 @@ pub(super) fn spread_from_seeds(
     d: &mut crate::rules::rng::Draws,
     t: f64,
     layout: Option<&crate::rules::chain::Layout>,
+    cached_chains: Option<&[crate::rules::chain::Instance]>,
     multishot_half: bool,
     // EVERY BODY THE BEAM STRUCK, in ray order — one of them ordinarily, more
     // with punch through, and EMPTY when it struck the floor. It decides who
     // may headshot and who carries multishot, and nothing else.
     struck: &[usize],
 ) {
+    if let Some(cached) = cached_chains {
+        if cached.is_empty() {
+            return;
+        }
+        let mut group = EchoInputs::for_group(status_vector, shares, active, params, t, w);
+        for inst in cached {
+            let Some(spec) = params.body(inst.target) else { continue };
+            let foe = &mut bodies[inst.target];
+            spread_hit(
+                seat,
+                w,
+                inst,
+                foe,
+                &spec,
+                raw_per_bucket,
+                shares,
+                crit_multiplier,
+                crit_tier,
+                attrition,
+                modded_base,
+                status_chance,
+                forced,
+                status_vector,
+                params,
+                active,
+                gal,
+                arc,
+                r,
+                rec,
+                d,
+                t,
+                SpreadBy::Chain,
+                false,
+                true,
+                Some(&mut group),
+            );
+        }
+        return;
+    }
     let spec = crate::rules::chain::Spec {
         hops: beam.chain_hops,
         range_m: beam.chain_range_m,
@@ -1566,9 +1693,17 @@ pub(super) fn spread_from_seeds(
             )
         }
     };
-    for inst in landed.iter().filter(|i| i.multishot == multishot_half && i.target != 0) {
+    let mut group: Option<EchoInputs<'_>> = None;
+    for inst in &landed {
+        if inst.multishot != multishot_half || inst.target == 0 {
+            continue;
+        }
         let Some(spec) = params.body(inst.target) else { continue };
         let foe = &mut bodies[inst.target];
+        let grp = match &mut group {
+            Some(g) => g,
+            None => group.insert(EchoInputs::for_group(status_vector, shares, active, params, t, w)),
+        };
         spread_hit(
             seat,
             w,
@@ -1595,7 +1730,7 @@ pub(super) fn spread_from_seeds(
             SpreadBy::Chain,
             false,
             true,
-            None,
+            Some(grp),
         );
     }
 }
@@ -1769,6 +1904,7 @@ pub(super) fn spread_beyond_the_target(
     r: &mut RunResult,
     tendril_count: u32,
     chain_layout: Option<&crate::rules::chain::Layout>,
+    chain_splash: Option<&[crate::rules::chain::Instance]>,
     geometry: &SpreadGeometry<'_>,
     struck: &[usize],
 ) {
@@ -1831,6 +1967,7 @@ pub(super) fn spread_beyond_the_target(
             d,
             t,
             chain_layout,
+            chain_splash,
             false,
             // THE SAME STRUCK LIST the per-pellet half used — this pass
             // fires the seeds the RADIUS caught, and it tells them apart by

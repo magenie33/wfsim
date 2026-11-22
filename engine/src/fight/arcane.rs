@@ -190,24 +190,28 @@ impl ArcRuntime {
     /// Live stacks of whichever specs belong to `owner`. They share one count
     /// by construction (one arcane is one card), so the first answers for all.
     pub(super) fn owner_stacks(&mut self, fx: &ArcaneFx, owner: &str, now: f64) -> u32 {
-        fx.buffs
-            .iter()
-            .zip(self.states.iter_mut())
-            .find(|(s, _)| {
-                let o = if s.owner.is_empty() { fx.id.as_str() } else { s.owner.as_str() };
-                o == owner
-            })
-            .map_or(0, |(s, st)| st.current(s, now))
+        for (s, st) in fx.buffs.iter().zip(self.states.iter_mut()) {
+            let o = if s.owner.is_empty() { fx.id.as_str() } else { s.owner.as_str() };
+            if o == owner {
+                return st.current(s, now);
+            }
+        }
+        0
     }
 
     /// Σ per_stack × live stacks over every buff granting `grant`.
+    #[inline]
     pub(super) fn total(&mut self, specs: &[ArcBuffSpec], grant: ArcGrant, now: f64) -> f64 {
-        specs
-            .iter()
-            .zip(self.states.iter_mut())
-            .filter(|(s, _)| s.grant == grant)
-            .map(|(s, st)| s.per_stack * st.current(s, now) as f64)
-            .sum()
+        if specs.is_empty() {
+            return 0.0;
+        }
+        let mut sum = 0.0;
+        for (s, st) in specs.iter().zip(self.states.iter_mut()) {
+            if s.grant == grant {
+                sum += s.per_stack * st.current(s, now) as f64;
+            }
+        }
+        sum
     }
 
     /// Open the next damage instance. Called once per trigger pull, and once

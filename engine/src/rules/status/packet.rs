@@ -5,20 +5,50 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ProcType(u8);
 
+pub(crate) const ORDINARY_DAMAGE_TYPES: [crate::rules::damage::DamageType; 13] = {
+    use crate::rules::damage::DamageType::*;
+    [
+        Impact, Puncture, Slash, Heat, Cold, Electricity, Toxin,
+        Blast, Radiation, Gas, Magnetic, Viral, Corrosive,
+    ]
+};
+
 #[wfsim_gas_macro::metered]
 impl ProcType {
-    pub fn new(value: u8) -> Option<Self> { (value < 30).then_some(Self(value)) }
+    #[inline]
+    pub fn new(value: u8) -> Option<Self> {
+        if value < 30 { Some(Self(value)) } else { None }
+    }
+    #[inline]
     pub fn index(self) -> usize { self.0 as usize }
+    #[inline]
     pub fn id(self) -> u8 { self.0 }
 
+    #[inline]
     pub fn damage_type(self) -> Option<crate::rules::damage::DamageType> {
-        use crate::rules::damage::DamageType::*;
-        [Impact, Puncture, Slash, Heat, Cold, Electricity, Toxin, Blast,
-            Radiation, Gas, Magnetic, Viral, Corrosive].get(self.index()).copied()
+        ORDINARY_DAMAGE_TYPES.get(self.index()).copied()
     }
 
+    #[inline]
     pub fn from_damage_type(kind: crate::rules::damage::DamageType) -> Option<Self> {
-        (0..13).map(Self).find(|native| native.damage_type() == Some(kind))
+        use crate::rules::damage::DamageType::*;
+        let id = match kind {
+            Impact => 0,
+            Puncture => 1,
+            Slash => 2,
+            Heat => 3,
+            Cold => 4,
+            Electricity => 5,
+            Toxin => 6,
+            Blast => 7,
+            Radiation => 8,
+            Gas => 9,
+            Magnetic => 10,
+            Viral => 11,
+            Corrosive => 12,
+            _ => return None,
+        };
+        Some(Self(id))
     }
 }
 
@@ -64,7 +94,11 @@ impl ProcCounters {
     }
     pub fn set_forced(&mut self, kind: ProcType) { self.0[kind.index()] = 1; }
     pub fn mask(&self) -> u32 {
-        self.0.iter().enumerate().fold(0, |mask, (i, &count)| mask | (u32::from(count > 0) << i))
+        let mut mask = 0u32;
+        for (i, &count) in self.0.iter().enumerate() {
+            mask |= u32::from(count > 0) << i;
+        }
+        mask
     }
     pub fn present(&self) -> impl Iterator<Item = ProcType> + '_ {
         self.0.iter().enumerate().filter_map(|(i, &count)| (count > 0).then_some(ProcType(i as u8)))

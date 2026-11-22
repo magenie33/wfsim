@@ -562,12 +562,53 @@ impl DebuffState {
     }
 }
 
+#[derive(Clone, Copy)]
+pub(super) enum ProcStackKind {
+    Stagger,
+    Weakened,
+    Disrupt,
+    Virus,
+    Corrosion,
+    Confusion,
+    Attractor,
+    Tau,
+}
+
+#[inline]
+#[wfsim_gas_macro::metered]
+pub(super) fn retain_gt(list: &mut Vec<f64>, now: f64) {
+    if list.is_empty() {
+        return;
+    }
+    let len = list.len();
+    let mut write = 0usize;
+    for read in 0..len {
+        let e = list[read];
+        if e > now {
+            if write != read {
+                list[write] = e;
+            }
+            write += 1;
+        }
+    }
+    list.truncate(write);
+}
+
 #[wfsim_gas_macro::metered]
 impl DebuffState {
     /// Scene-selected Tau entries enter the native late target117 query (N07A).
+    #[inline]
     pub(super) fn received_proc_chance(&self, packet_chance: f64, now: f64) -> f64 {
+        if self.tau.is_empty() {
+            return packet_chance as f32 as f64;
+        }
         use crate::rules::upgrades::{OperationType, UpgradeEntry, UpgradeType};
-        let stacks = self.tau.iter().filter(|&&expiry| expiry > now).count();
+        let mut stacks = 0usize;
+        for &expiry in &self.tau {
+            if expiry > now {
+                stacks += 1;
+            }
+        }
         if stacks == 0 { return packet_chance as f32 as f64; }
         let entry = UpgradeEntry { UpgradeType: UpgradeType::AVATAR_PROC_CHANCE_VULNERABILITY,
             OperationType: OperationType::STACKING_MULTIPLY,
@@ -577,14 +618,20 @@ impl DebuffState {
 
     /// FIFO push with the universal replace-oldest rule (application-time
     /// order; uniform durations make the front the oldest).
+    #[inline]
     pub(super) fn push_capped(list: &mut Vec<f64>, expiry: f64, cap: usize, now: f64) {
         Self::push_timed(list, expiry, cap, now, false);
     }
 
+    #[inline]
     fn push_timed(list: &mut Vec<f64>, expiry: f64, cap: usize, now: f64, pruned: bool) {
         // A non-finite duration may have appended NaN since the last prune.
-        if !pruned || list.last().is_some_and(|last| last.is_nan()) {
-            list.retain(|&e| e > now);
+        let tail_nan = match list.last() {
+            Some(last) => last.is_nan(),
+            None => false,
+        };
+        if !pruned || tail_nan {
+            retain_gt(list, now);
         }
         // A STACK THAT IS ALREADY DEAD IS NOT APPLIED — a fight's status
         // duration of -100% or less gives `STATUS_DURATION * status_damage <= 0`,
@@ -598,11 +645,22 @@ impl DebuffState {
         list.push(expiry);
     }
 
+    #[inline]
     pub(super) fn push_proc_stack(
-        &mut self, pile: impl FnOnce(&mut Self) -> &mut Vec<f64>, expiry: f64, cap: usize, now: f64,
+        &mut self, kind: ProcStackKind, expiry: f64, cap: usize, now: f64,
     ) {
         let pruned = self.pruned_at == Some(now);
-        Self::push_timed(pile(self), expiry, cap, now, pruned);
+        let pile = match kind {
+            ProcStackKind::Stagger => &mut self.stagger,
+            ProcStackKind::Weakened => &mut self.weakened,
+            ProcStackKind::Disrupt => &mut self.disrupt,
+            ProcStackKind::Virus => &mut self.virus,
+            ProcStackKind::Corrosion => &mut self.corrosion,
+            ProcStackKind::Confusion => &mut self.confusion,
+            ProcStackKind::Attractor => &mut self.attractor,
+            ProcStackKind::Tau => &mut self.tau,
+        };
+        Self::push_timed(pile, expiry, cap, now, pruned);
     }
 
     /// Push an independent DoT (Slash/Toxin/Electricity/Gas). These have no
@@ -969,6 +1027,84 @@ impl DebuffState {
             self.compact_evicted_dots();
         }
         self.push_dot(dot);
+    }
+
+    pub(super) fn push_dot_capped_n(&mut self, mut dot: Dot, cap: Option<usize>, count: usize) {
+        if count == 0 {
+            return;
+        }
+        if count == 1 || dot.ticks_left == 0 {
+            for _ in 0..count {
+                self.push_dot_capped(dot, cap);
+            }
+            return;
+        }
+        let Some(f) = dot_family_slot(dot.dtype) else {
+            for _ in 0..count {
+                self.push_dot_capped(dot, cap);
+            }
+            return;
+        };
+        if let Some(c) = consolidated_slot(dot.dtype) {
+            if self.live_dot_counts[f] > 0 && !self.consolidated_clocks[c].shared {
+                for _ in 0..count {
+                    self.push_dot_capped(dot, cap);
+                }
+                return;
+            }
+        }
+        if let Some(shared) = self.first_live_consolidated_clock(dot.dtype) {
+            if shared > dot.next_tick {
+                dot.next_tick = shared;
+            }
+        }
+        match cap {
+            Some(cap_val) if (2..=DOT_CAP_RING_MAX).contains(&cap_val) && self.dot_rings[f].exact => {
+                if self.active_dot_count() == 0 {
+                    self.clear_all_dots();
+                }
+                let n = count.min(cap_val);
+                let cur = self.dot_rings[f].len as usize;
+                let remove = (cur + n).saturating_sub(cap_val);
+                for _ in 0..remove {
+                    let ring = &mut self.dot_rings[f];
+                    let old_idx = ring.slots[ring.head as usize] as usize;
+                    ring.head = ((ring.head as usize + 1) & (DOT_CAP_RING_MAX - 1)) as u8;
+                    ring.len -= 1;
+                    self.evict_dot_at(old_idx);
+                }
+                if remove > 0 {
+                    if let Some(c) = consolidated_slot(dot.dtype) {
+                        let ring = &self.dot_rings[f];
+                        self.consolidated_clocks[c].head = if ring.len > 0 {
+                            ring.slots[ring.head as usize]
+                        } else {
+                            self.dots.len() as u32
+                        };
+                    }
+                }
+                if self.dot_tombstones >= 64
+                    && (self.dot_tombstones as usize) * 2 >= self.dots.len()
+                {
+                    self.compact_evicted_dots();
+                }
+                self.dots.reserve(n);
+                for _ in 0..n {
+                    self.push_dot(dot);
+                }
+            }
+            None => {
+                self.dots.reserve(count);
+                for _ in 0..count {
+                    self.push_dot(dot);
+                }
+            }
+            _ => {
+                for _ in 0..count {
+                    self.push_dot_capped(dot, cap);
+                }
+            }
+        }
     }
 
     fn compact_evicted_dots(&mut self) {
@@ -1360,8 +1496,9 @@ impl DebuffState {
         }
     }
 
+    #[inline]
     pub(super) fn weakened_active(&mut self, now: f64) -> usize {
-        self.weakened.retain(|&e| e > now);
+        retain_gt(&mut self.weakened, now);
         self.weakened.len()
     }
 
@@ -1382,17 +1519,21 @@ impl DebuffState {
             return;
         }
         self.pruned_at = Some(now);
-        self.lifted = self.lifted.filter(|&e| e > now);
-        self.knockdown = self.knockdown.filter(|&e| e > now);
-        self.stagger.retain(|&e| e > now);
-        self.weakened.retain(|&e| e > now);
-        self.freeze.retain(|&e| e > now);
-        self.disrupt.retain(|&e| e > now);
-        self.virus.retain(|&e| e > now);
-        self.corrosion.retain(|&e| e > now);
-        self.confusion.retain(|&e| e > now);
-        self.attractor.retain(|&e| e > now);
-        self.tau.retain(|&e| e > now);
+        if let Some(e) = self.lifted {
+            if e <= now { self.lifted = None; }
+        }
+        if let Some(e) = self.knockdown {
+            if e <= now { self.knockdown = None; }
+        }
+        retain_gt(&mut self.stagger, now);
+        retain_gt(&mut self.weakened, now);
+        retain_gt(&mut self.freeze, now);
+        retain_gt(&mut self.disrupt, now);
+        retain_gt(&mut self.virus, now);
+        retain_gt(&mut self.corrosion, now);
+        retain_gt(&mut self.confusion, now);
+        retain_gt(&mut self.attractor, now);
+        retain_gt(&mut self.tau, now);
         if let Some(f) = self.frozen_until {
             if f <= now {
                 // THAW: chill is SET to exactly 3 stacks with FRESH 6 s timers
@@ -1407,8 +1548,11 @@ impl DebuffState {
                 // out — so this is a rule either way and is written down as
                 // one rather than made to look like a consequence.
                 self.frozen_until = None;
-                self.freeze = vec![f + STATUS_DURATION * status_damage; FROZEN_RESET_STACKS];
-                self.freeze.retain(|&e| e > now); // long-idle prune
+                let reset_exp = f + STATUS_DURATION * status_damage;
+                self.freeze.clear();
+                if reset_exp > now {
+                    self.freeze.resize(FROZEN_RESET_STACKS, reset_exp);
+                }
             }
         }
         if let Some(h) = &self.heat {
@@ -1424,10 +1568,13 @@ impl DebuffState {
         }
         if let Some((t0, s0)) = self.heat_decay {
             let steps = heat_strip_steps(now - t0, HEAT_STRIP_DECAY_INTERVAL * status_damage) as usize;
-            let start = HEAT_STRIP_DECAY
-                .iter()
-                .position(|&s| s <= s0 + 1e-9)
-                .unwrap_or(HEAT_STRIP_DECAY.len() - 1);
+            let mut start = HEAT_STRIP_DECAY.len() - 1;
+            for (i, &s) in HEAT_STRIP_DECAY.iter().enumerate() {
+                if s <= s0 + 1e-9 {
+                    start = i;
+                    break;
+                }
+            }
             if start + steps >= HEAT_STRIP_DECAY.len() - 1 {
                 self.heat_decay = None; // fully returned
             }
@@ -1437,11 +1584,14 @@ impl DebuffState {
     /// ACTIVE Cold statuses on the target for per-Cold-stack bonuses
     /// (Secondary Shiver): the live Freeze stack count; the Frozen state
     /// counts as the full 10 (it consumed 9 stacks + the trigger proc).
+    #[inline]
     pub(super) fn cold_status_count(&mut self, now: f64) -> u32 {
-        if self.frozen_until.is_some_and(|f| f > now) {
-            return 10;
+        if let Some(f) = self.frozen_until {
+            if f > now {
+                return 10;
+            }
         }
-        self.freeze.retain(|&e| e > now);
+        retain_gt(&mut self.freeze, now);
         self.freeze.len() as u32
     }
 
