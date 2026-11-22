@@ -317,11 +317,13 @@ async function pending(env) {
     // BOTH TABLES. A submission that has arrived but has not been through
     // intake yet is in the library as far as the submitter is concerned, and
     // the sentence this feeds is "N have arrived since this board was scored".
-    const r = await env.LIBRARY.prepare(
+    let local;
+    try { local = await env.LIBRARY.prepare("SELECT raw_inbox_library_count() AS n").first(); }
+    catch (error) { if (error?.code !== '42883') throw error; }
+    const r = local ?? await env.LIBRARY.prepare(
       "SELECT (SELECT COUNT(*) FROM entity_weapon_builds) + (SELECT COUNT(*) FROM record_build_submissions) AS n",
     ).first();
-    const n = Number(r && r.n);
-    if (Number.isFinite(n)) count = n;
+    if (r?.n != null && Number.isFinite(Number(r.n))) count = Number(r.n);
   } catch (e) {
     console.log("library count failed:", (e && e.message) || String(e));
   }

@@ -381,7 +381,13 @@ BEGIN
       CONTINUE;
     END IF;
     SELECT * INTO captured FROM record_build_submissions b WHERE b.id=proof.id FOR UPDATE;
-    IF NOT FOUND THEN CONTINUE; END IF;
+    IF NOT FOUND THEN
+      IF to_regprocedure('raw_inbox_rollover_ack(record_build_submissions)') IS NOT NULL THEN
+        PERFORM raw_inbox_rollover_ack(ROW(proof.id,proof.at,proof.record,proof.initiator,proof.family_source,
+          proof.observation)::record_build_submissions);
+      END IF;
+      CONTINUE;
+    END IF;
     IF (captured.at,captured.record,captured.initiator,captured.family_source,captured.observation) IS DISTINCT FROM
        (proof.at,proof.record,proof.initiator,proof.family_source,proof.observation) THEN
       RAISE EXCEPTION 'captured build submission changed'; END IF;
