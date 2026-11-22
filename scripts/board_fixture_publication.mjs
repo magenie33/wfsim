@@ -34,11 +34,12 @@ export function boardFixture(load, { immutable = false } = {}) {
     const params = url.searchParams, weapon = params.get("weapon"), after = params.get("after") || "";
     if (url.pathname === "/api/board/pages/catalog") {
       const scene = params.get("scene") || "", key = JSON.stringify([scene, weapon]);
+      const ruler = params.get("ruler"), size = ruler ? 512 : 128;
       if (immutable && !catalogs.has(key)) catalogs.set(key, catalog(scene, weapon));
       const entries = await (immutable ? catalogs.get(key) : catalog(scene, weapon));
-      const visible = entries.filter(p => p.weapon + "/" + p.ruler > after).slice(0, 129);
-      const next = visible.length > 128 ? visible[127].weapon + "/" + visible[127].ruler : null;
-      return { ok: true, partitions: visible.slice(0, 128), next };
+      const visible = entries.filter(p => (!ruler || p.ruler === ruler) && p.weapon + "/" + p.ruler > after).slice(0, size + 1);
+      const next = visible.length > size ? visible[size - 1].weapon + "/" + visible[size - 1].ruler : null;
+      return { ok: true, partitions: visible.slice(0, size), next };
     }
     if (url.pathname !== "/api/board/pages") return null;
     const ruler = params.get("ruler"), revision = params.get("revision");

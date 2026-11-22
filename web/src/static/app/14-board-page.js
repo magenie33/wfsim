@@ -214,7 +214,7 @@ const inBenchView = (r) =>
   || (benchRivenView === "riven") === rowHasRiven(r);
 
 /// The published index carries the leaders of the revisions in its catalog.
-const benchRowsUnder = (cur, id) => ((cur.cell_dir ? SCENE_INDEX[cur.cell_dir] : BOARD_INDEX) || {})[id] || [];
+const benchRowsUnder = (cur, id) => rulerBoardIndex(cur)?.[id] || [];
 
 const benchEntries = (cur, weapons) => {
   const out = [];

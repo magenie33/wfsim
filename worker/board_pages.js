@@ -26,9 +26,12 @@ export async function boardPagesRoute(request,env,ctx) {
   if(catalog) {
    const scene=params.get('scene')??'';
    if((scene!==''&&!name(scene))||!/^[a-z0-9_/]*$/.test(after)||after.length>322)return reply({ok:false,error:'invalid board cursor'},400);
-   const result=await env.LIBRARY.prepare('SELECT board_read_catalog(?::text,?::text,?::text,128::bigint) page').bind(weapon,scene,after).first();
+   const size=ruler?512:128;
+   const statement=ruler?'SELECT board_read_catalog(?::text,?::text,?::text,512::bigint,?::text) page'
+    :'SELECT board_read_catalog(?::text,?::text,?::text,128::bigint) page';
+   const result=await env.LIBRARY.prepare(statement).bind(...(ruler?[weapon,scene,after,ruler]:[weapon,scene,after])).first();
    data=result.page;const all=data.partitions;
-   data={...data,partitions:all.slice(0,128),next:all.length>128?all[127].weapon+'/'+all[127].ruler:null};
+   data={...data,partitions:all.slice(0,size),next:all.length>size?all[size-1].weapon+'/'+all[size-1].ruler:null};
   }else{
    if(!weapon||!ruler||!/^(0|[1-9][0-9]{0,14})$/.test(after||'0'))return reply({ok:false,error:'invalid board cursor'},400);
    const result=await env.LIBRARY.prepare('SELECT board_read_page(?::text,?::text,?::text,?::bigint,128::bigint) page')
