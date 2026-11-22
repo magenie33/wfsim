@@ -35,7 +35,7 @@ def enemies():
         "local": [1, 0, 0, 0, 0, 1, 0, 1.1208325624465942, 0, 0, 1, -0.011569245718419552],
         "shape": {"type": "capsule", "radius": 0.6000000238418579, "height": 1},
     }
-    result = {}
+    result = read("native-acolytes.json")
     for i, (id, path, scale) in enumerate((
         ("thrax_centurion", "/Lotus/Types/Enemies/Duviri/Avatars/DuviriMeleeAvatar", 1.6),
         ("corrupted_heavy_gunner", "/Lotus/Types/Enemies/Orokin/OrokinHeavyFemaleAvatar", 1.25),

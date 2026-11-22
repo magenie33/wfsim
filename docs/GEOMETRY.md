@@ -27,8 +27,12 @@ Excalibur right-hand reference mount. The picker labels that reference,
 and the combat record reports `emitter: player_mount` or `attachment`.
 `/api/meta.scene_3d_source_default.reference_weapons` lists the guns that use
 the reference mount. The preset includes Thrax Centurion, Corrupted Heavy
-Gunner and Demolisher Devourer posed controls. The Demolisher has its mine
-slots disabled in this pose.
+Gunner, Demolisher Devourer, and the Angst, Mania, Misery, Torment and
+Violence Acolytes. The Demolisher has its mine slots disabled in this pose.
+The Acolytes use their separate posed damage proxies and the controller
+declared by StalkerWalk. Their head capsule supplies the standing aim
+anchor and their posed hip supplies the steering center. The radial path
+uses their detailed proxies in the supplied standing scene.
 The geometry picker uses the supplied source-default state with a fixed
 1/64 s step and clear homing visibility. `scripts/import_scene_profiles.py
 --check` verifies the compact data projection. An explicit scene supplies
@@ -357,6 +361,12 @@ Client build 2026.10.28.09.54, executable SHA-256
   24 proxies, eight supplied world/pose caches, 618 ray cases and 121
   instruction-exact float32 penetration fragments. Position tolerance is
   0.0003 and the supplied tied-nearest set, not inflated hitboxes.
+- `20261120T173808Z-wfsim-3d-roster-migration` retains 1,200 original
+  body rays for five source-default Acolyte rigs at two scales and two
+  yaws. `scripts/import_native_acolytes.py --exchange <exchange> --check`
+  verifies the projection against the retained rig data and the inherited
+  `StalkerWalkAttribs` values. Installed pose and target-point overrides
+  are separate runtime inputs.
 - `20261116T094904Z-shooter-3d-origins`, manifest SHA-256
   `c938a7e8ef08d58fba86bd3c1c8fea18062015000bee7cc8fed9c6e521b0dc13`:
   83 Excalibur source-default bone transforms and controller dimensions.

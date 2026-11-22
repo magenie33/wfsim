@@ -3,6 +3,7 @@ use serde_json::{json, Value};
 use wfsim_engine::{
     fight,
     record::{Kind, Record},
+    rules::geometry::Vec3,
     scene::Scene,
 };
 #[path = "../../tests/fixtures/geometry/scene.rs"]
@@ -404,6 +405,26 @@ fn a_variant_inherits_the_declared_hand_mount_transform() {
     assert_eq!(variant.bone, 48);
     assert_eq!(variant.local.0, base.local.0);
     assert!(variant.local.0[1].abs() > 0.08);
+}
+
+#[test]
+fn all_retained_acolyte_poses_resolve_standing_weak_point_hits() {
+    let mut v = request("laetum", 1, false);
+    v["target_at"] = json!([0., 5.]);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    for enemy in ["angst", "mania", "misery", "torment", "violence"] {
+        v["enemy"] = json!(enemy);
+        let mut p = params(&v);
+        p.spread = None;
+        let scene = p.scene_3d.as_ref().unwrap();
+        let body = &scene.input().enemies[0];
+        assert_eq!(body.proxies.len(), 10);
+        assert_eq!(body.controller.scale, 1.1);
+        let head = &body.proxies[scene.input().head_proxy];
+        assert_eq!(head.part, 1);
+        assert_eq!(body.candidate_anchor, head.world.point(Vec3([0.; 3])));
+        assert!(direct(&record(&p)).contains(&(0, true)), "{enemy}");
+    }
 }
 
 #[test]
