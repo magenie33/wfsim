@@ -188,9 +188,26 @@ def consume_sealed_page(args):
         raise RuntimeError('raw archive object belongs to another part')
     disk_gate(args.work, args.root_reserve+args.peak_root_bytes, args.work_reserve)
     environment = {**os.environ,'TMPDIR':str(args.work.resolve())}
+
+    def reserve_blocks(path, reserve):
+        size = os.statvfs(path).f_frsize
+        return str((reserve+size-1)//size)
+
     result = run(['node',str(SOURCE/'scripts/raw_inbox_archive_consume.mjs'),
-                  str(args.native.resolve()),index['digest'],str(args.statement_ms)],data=body,env=environment)
-    emit({'stage':'consumed',**index,**json.loads(result)})
+                  str(args.native.resolve()),index['digest'],str(args.statement_ms),environment['TMPDIR'],
+                  reserve_blocks('/',args.root_reserve+args.peak_root_bytes),
+                  reserve_blocks(args.work,args.work_reserve)],data=body,env=environment)
+    receipt = json.loads(result)
+    stage = 'consumed' if receipt['committed'] else 'partial'
+    if receipt.get('blocked'):
+        stage = 'blocked'
+    if receipt.get('paused'):
+        stage = 'paused'
+    emit({'stage':stage,**index,**receipt})
+    if stage=='blocked':
+        raise RuntimeError('a single pending archive input exceeds its intake limits')
+    if stage=='paused':
+        raise RuntimeError('archive paused at filesystem reserve')
 
 
 def retire_clean_page(generation):
@@ -242,7 +259,9 @@ END $$;
 {move}
 GRANT EXECUTE ON FUNCTION raw_inbox_library_count() TO "{args.http_role}";
 GRANT EXECUTE ON FUNCTION raw_archive_next(),raw_archive_pending(uuid,bigint,text),
-  raw_archive_consume(uuid,bigint,text,text[],text) TO "{args.consume_role}";
+  raw_archive_consume(uuid,bigint,text,text[],text),
+  raw_archive_narrow_slice(uuid,bigint,text,integer,integer),
+  raw_archive_consume_slice(uuid,bigint,text,integer,integer,text[],text) TO "{args.consume_role}";
 COMMIT;
 """)
 
@@ -326,7 +345,8 @@ def clean_action(args, lease=None):
         emit(json_pg("""SELECT jsonb_build_object('phase',m.phase,'generation',m.generation,'after',m.after_id,
           'source_oid',m.source_oid,'online_source',m.online_source,'writer_receipt',m.writer_receipt,
           'sealed_parts',g.sealed_parts,'sealed_rows',g.sealed_rows,
-          'next_part',g.next_part,'consumed_rows',g.consumed_rows,'retired_part',g.retired_part,
+          'next_part',g.next_part,'next_offset',g.next_offset,'next_slice_rows',g.next_slice_rows,
+          'consumed_rows',g.consumed_rows,'retired_part',g.retired_part,
           'source_bytes',pg_total_relation_size('record_build_submissions'),
           'hot_bytes',pg_total_relation_size('record_raw_archive_hot'),
           'arrival_bytes',pg_total_relation_size('record_raw_archive_arrivals'),

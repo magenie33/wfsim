@@ -451,6 +451,86 @@ async function moveFixture(){
   assert(!remaining.some(row=>[hot,review,late,arrival].includes(row.id)));
   console.log('ok: the same source OID, inherited hot reads, cross-session deduplication and exact ACK preserve both FIFO tiers');
 }
+async function sliceFixture(){
+  const mods=['serration','split_chamber','vigilante_armaments','point_strike','vital_sense','speed_trigger',
+    'fast_hands','shred','vigilante_fervor','hellfire','stormbringer','infected_clip','cryo_rounds',
+    'malignant_force','high_voltage','thermite_rounds','rime_rounds','hammer_shot','metal_auger',
+    'rifle_elementalist','stabilizer','terminal_velocity'];
+  const variants=[];
+  for(let a=0;a<mods.length;a++) for(let b=a+1;b<mods.length;b++)
+    for(let c=b+1;c<mods.length;c++) for(let d=c+1;d<mods.length;d++) variants.push([mods[a],mods[b],mods[c],mods[d]]);
+  const library=async()=>(await writer.unsafe('SELECT raw_inbox_library_count()::int AS n'))[0].n;
+  async function sealed(generation, members, skip=[]){
+    const body=Buffer.from(JSON.stringify({generation,part:1,after:null,rows:members}));
+    const digest=createHash('sha256').update(body).digest('hex');
+    const memberIds=members.map(item=>item.input.id);
+    await owner.unsafe('SELECT raw_archive_begin($1,$2)',[generation,fence]);
+    await owner.unsafe('SELECT raw_archive_seal_part($1,1,$2,$3,$4,$5)',[generation,memberIds[0],memberIds.at(-1),members.length,digest]);
+    for(const id of skip) await owner.unsafe('INSERT INTO record_raw_archive_skips VALUES($1,1,$2)',[generation,id]);
+    await owner.unsafe('SELECT raw_archive_activate($1,$2,1)',[generation,fence]);
+    return {generation,body,digest,memberIds};
+  }
+  const state=async gen=>(await owner.unsafe('SELECT next_part::int,next_offset,next_slice_rows,consumed_rows::int FROM state_raw_archive_generation WHERE generation=$1',[gen]))[0];
+  const retire=async gen=>(await owner.unsafe('SELECT raw_archive_retire_next($1) AS next',[gen]))[0].next;
+  const missing=async gen=>(await owner.unsafe('SELECT id::text FROM record_raw_archive_skips WHERE generation=$1 ORDER BY id',[gen])).map(row=>row.id);
+  const items=variants.slice(0,512).map((mods,index)=>({position:null,portable:true,input:{
+    id:'a1000000-0000-4000-8000-'+(index+1).toString(16).padStart(12,'0'),at,initiator:'anonymous',family_source:null,observation:null,
+    record:JSON.stringify({weapon:'braton_prime',benchmark:'standard_single_target',mode:'base',mods}),
+  }}));
+  const skipped=[0,64,511].map(index=>items[index].input.id);
+  const initial=await library();
+  const packet=await sealed(randomUUID(),items,skipped);
+  const settle=async(p,bin=native)=>consumeArchive(p.body,p.digest,bin,12000);
+  const started=performance.now();
+  assert.equal(await library(),initial+509);
+  await owner.unsafe("CREATE FUNCTION reject_second_archive_slice() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF OLD.next_offset=64 THEN RAISE EXCEPTION 'second archive slice refused'; END IF; RETURN NEW; END $$; CREATE TRIGGER reject_second_archive_slice BEFORE UPDATE ON state_raw_archive_generation FOR EACH ROW EXECUTE FUNCTION reject_second_archive_slice()").simple();
+  await assert.rejects(settle(packet),/second archive slice refused/);
+  assert.deepEqual(await state(packet.generation),{next_part:1,next_offset:64,next_slice_rows:64,consumed_rows:64});
+  assert.deepEqual(await missing(packet.generation),skipped.slice(1));
+  assert.equal(await library(),initial+509);
+  assert.deepEqual(await consumeArchive(packet.body,packet.digest,native,12000,{hasRoom:()=>false}),
+    {committed:false,offset:64,paused:'filesystem_reserve'});
+  assert.deepEqual(await state(packet.generation),{next_part:1,next_offset:64,next_slice_rows:64,consumed_rows:64});
+  assert.equal(await retire(packet.generation),null);
+  await assert.rejects(owner.unsafe('SELECT raw_archive_retired($1,1,$2)',[packet.generation,packet.digest]),error=>error.code==='55000');
+  const previous=await owner.unsafe('SELECT raw_archive_consume_slice($1,1,$2,0,64,$3::text[],\'[]\') AS receipt',[packet.generation,packet.body.toString('utf8'),[]]);
+  assert.deepEqual(previous[0].receipt,{committed:true,replay:true,rows:0,offset:64,complete:false});
+  await assert.rejects(owner.unsafe('SELECT raw_archive_consume($1,1,$2,$3::text[],\'[]\')',
+    [packet.generation,packet.body.toString('utf8'),packet.memberIds]),error=>error.code==='55000');
+  await assert.rejects(query('SELECT raw_archive_write_slice(?::uuid,1,?::text,0,64,ARRAY[]::text[],\'[]\')',
+    [packet.generation,packet.body.toString('utf8')]),/permission denied/);
+  await owner.unsafe('DROP TRIGGER reject_second_archive_slice ON state_raw_archive_generation');
+  assert.deepEqual(await settle(packet),{committed:true,replay:false,rows:512});
+  assert.deepEqual(await state(packet.generation),{next_part:2,next_offset:0,next_slice_rows:64,consumed_rows:512});
+  assert.deepEqual(await missing(packet.generation),[]);
+  assert.equal(await library(),initial+509);
+  const [{sources}]=await owner.unsafe("SELECT count(DISTINCT source_id)::int AS sources FROM relation_build_intake_sources WHERE source_id LIKE 'a1000000-%'");
+  assert.equal(sources,509);
+  assert.deepEqual(await retire(packet.generation),{part:'1',digest:packet.digest});
+  assert.deepEqual(await settle(packet),{committed:true,replay:true,rows:512});
+  console.log('ok: 512 distinct inputs settle from a verified part, retain only pending skips and enable retirement at its final slice ('+Math.round(performance.now()-started)+' ms)');
+
+  const control=items.slice(0,3).map(item=>({...item,input:{...item.input,id:'b'+item.input.id.slice(1)}}));
+  const extreme=await sealed(randomUUID(),control);
+  const limited=join(scratch,'limited-native');
+  writeFileSync(limited,[
+    '#!/usr/bin/env python3',
+    'import json,pathlib,subprocess,sys',
+    'body=sys.stdin.buffer.read()',
+    'rows=[json.loads(line) for line in body.splitlines()]',
+    'if len(rows)>1 or rows[0]["id"]=='+JSON.stringify(extreme.memberIds[1])+':',
+    ' pathlib.Path(sys.argv[sys.argv.index("--done")+1]).write_text("")',
+    ' sys.exit(0)',
+    'sys.exit(subprocess.run(['+JSON.stringify(native)+',*sys.argv[1:]],input=body).returncode)',
+  ].join('\n')+'\n',{mode:0o700});
+  assert.deepEqual(await settle(extreme,limited),{committed:false,offset:1,blocked:'single_input_limit'});
+  assert.deepEqual(await state(extreme.generation),{next_part:1,next_offset:1,next_slice_rows:1,consumed_rows:1});
+  assert.equal(await retire(extreme.generation),null);
+  assert.deepEqual(await settle(extreme),{committed:true,replay:false,rows:3});
+  assert.deepEqual(await retire(extreme.generation),{part:'1',digest:extreme.digest});
+  console.log('ok: smaller slice size persists across restarts and a single blocked input retains its exact object');
+}
+
 if(!precopy){
   const online=spawnSync(process.execPath,[process.argv[1],'--precopy'],{stdio:'inherit',timeout:90000});
   assert.equal(online.status,0,online.error?.message);
@@ -458,7 +538,10 @@ if(!precopy){
 try{
   await owner.unsafe('CREATE SCHEMA '+schema+'; CREATE ROLE '+role+' NOLOGIN; SET search_path='+schema+',pg_catalog,pg_temp').simple();
   await owner.unsafe(ddl).simple();
-  await owner.unsafe('GRANT USAGE ON SCHEMA '+schema+' TO '+role+'; GRANT EXECUTE ON FUNCTION raw_archive_next(),raw_archive_pending(uuid,bigint,text),raw_archive_consume(uuid,bigint,text,text[],text) TO '+role).simple();
+  await owner.unsafe('GRANT USAGE ON SCHEMA '+schema+' TO '+role+'; GRANT EXECUTE ON FUNCTION raw_archive_next(),'+
+    'raw_archive_pending(uuid,bigint,text),raw_archive_consume(uuid,bigint,text,text[],text),'+
+    'raw_archive_narrow_slice(uuid,bigint,text,integer,integer),'+
+    'raw_archive_consume_slice(uuid,bigint,text,integer,integer,text[],text) TO '+role).simple();
   const url=new URL(connection); url.searchParams.set('options','-c search_path='+schema+',pg_catalog,pg_temp -c role='+role+' -c transaction_timeout=10000 -c lock_timeout=250');
   process.env.PG_URL=url.toString();
   await owner.unsafe('SELECT raw_archive_begin($1,$2)',[generation,fence]);
@@ -487,6 +570,7 @@ try{
   assert.equal((await query('SELECT raw_archive_next() AS part'))[0].part,null);
   console.log('ok: sealed parts use Native custody and atomic sequential receipts without hydrating raw inputs or changing FIFO positions');
   await moveFixture();
+  if(!precopy)await sliceFixture();
 }finally{
   await close();
   if(oldURL===undefined)delete process.env.PG_URL;else process.env.PG_URL=oldURL;

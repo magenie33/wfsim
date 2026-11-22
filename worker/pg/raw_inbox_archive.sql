@@ -11,6 +11,10 @@ CREATE TABLE IF NOT EXISTS state_raw_archive_generation (
   CHECK(next_part BETWEEN 1 AND sealed_parts+1),
   CHECK(retired_part BETWEEN 0 AND CASE WHEN phase='abandoned' THEN sealed_parts ELSE next_part-1 END)
 );
+ALTER TABLE state_raw_archive_generation ADD COLUMN IF NOT EXISTS next_offset integer NOT NULL DEFAULT 0
+  CHECK(next_offset BETWEEN 0 AND 511);
+ALTER TABLE state_raw_archive_generation ADD COLUMN IF NOT EXISTS next_slice_rows integer NOT NULL DEFAULT 64
+  CHECK(next_slice_rows BETWEEN 1 AND 64);
 CREATE UNIQUE INDEX IF NOT EXISTS raw_archive_single_generation ON state_raw_archive_generation((true)) WHERE phase IN('sealing','consuming');
 
 CREATE TABLE IF NOT EXISTS record_raw_archive_parts (
@@ -89,8 +93,21 @@ BEGIN
     SELECT FROM record_raw_archive_parts p WHERE (p.generation,p.part,p.digest)=($1,$2,$3)) THEN
     RAISE EXCEPTION 'raw archive digest or sequence changed' USING ERRCODE='55000';
   END IF;
-  RETURN jsonb_build_object('replay',$2<active.next_part,'skip',ARRAY(
+  RETURN jsonb_build_object('replay',$2<active.next_part,'offset',CASE WHEN $2=active.next_part THEN active.next_offset END,
+    'limit',active.next_slice_rows,'skip',ARRAY(
     SELECT id::text FROM record_raw_archive_skips s WHERE (s.generation,s.part)=($1,$2) ORDER BY id));
+END $$;
+
+CREATE OR REPLACE FUNCTION raw_archive_narrow_slice(uuid,bigint,text,integer,integer) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+BEGIN
+  IF NOT coalesce($5 BETWEEN 1 AND 63,false) THEN
+    RAISE EXCEPTION 'invalid raw archive slice limit' USING ERRCODE='22023';
+  END IF;
+  UPDATE state_raw_archive_generation g SET next_slice_rows=$5
+  WHERE g.generation=$1 AND g.phase='consuming' AND (g.next_part,g.next_offset)=($2,$4)
+    AND g.next_slice_rows>$5 AND EXISTS(SELECT FROM record_raw_archive_parts p
+      WHERE (p.generation,p.part,p.digest)=($1,$2,$3));
 END $$;
 
 CREATE OR REPLACE FUNCTION raw_archive_retire_next(uuid) RETURNS jsonb
@@ -137,12 +154,13 @@ BEGIN
   PERFORM raw_archive_trim_skips();
 END $$;
 
-CREATE OR REPLACE FUNCTION raw_archive_consume(uuid,bigint,text,text[],text) RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+CREATE OR REPLACE FUNCTION raw_archive_write_slice(uuid,bigint,text,integer,integer,text[],text) RETURNS jsonb
+LANGUAGE plpgsql SET search_path FROM CURRENT AS $$
 DECLARE active state_raw_archive_generation%ROWTYPE; sealed record_raw_archive_parts%ROWTYPE;
-  packet jsonb; batch jsonb; ids text[]; remaining text[]; skipped text[];
+  packet jsonb; batch jsonb; ids text[]; selected text[]; remaining text[]; skipped text[];
+  start_at integer:=coalesce($4,0); stop_at integer; complete boolean;
 BEGIN
-  IF $3 IS NULL OR octet_length($3)>8392704 OR $5 IS NULL OR octet_length($5)>8392704 THEN
+  IF $3 IS NULL OR octet_length($3)>8392704 OR $7 IS NULL OR octet_length($7)>8392704 THEN
     RAISE EXCEPTION 'raw archive part exceeds its transfer bounds' USING ERRCODE='22023';
   END IF;
   SELECT * INTO STRICT active FROM state_raw_archive_generation WHERE generation=$1 FOR UPDATE;
@@ -151,7 +169,22 @@ BEGIN
     OR active.phase NOT IN('consuming','complete') OR $2>active.next_part THEN
     RAISE EXCEPTION 'raw archive digest or sequence changed' USING ERRCODE='55000';
   END IF;
-  IF $2<active.next_part THEN RETURN jsonb_build_object('committed',true,'replay',true,'rows',sealed.rows); END IF;
+  stop_at:=coalesce($5,sealed.rows);
+  IF start_at<0 OR stop_at<=start_at OR stop_at>sealed.rows THEN
+    RAISE EXCEPTION 'raw archive slice is outside its part' USING ERRCODE='22023';
+  END IF;
+  IF $2<active.next_part THEN
+    RETURN jsonb_build_object('committed',true,'replay',true,'rows',sealed.rows,'offset',sealed.rows,'complete',true);
+  END IF;
+  IF $5 IS NULL AND active.next_offset<>0 THEN
+    RAISE EXCEPTION 'partially consumed raw archive requires slice intake' USING ERRCODE='55000';
+  END IF;
+  IF start_at>active.next_offset THEN
+    RAISE EXCEPTION 'raw archive slice does not follow the committed offset' USING ERRCODE='55000';
+  END IF;
+  IF start_at<active.next_offset THEN
+    RETURN jsonb_build_object('committed',true,'replay',true,'rows',0,'offset',active.next_offset,'complete',false);
+  END IF;
   packet:=$3::jsonb;
   IF packet->>'generation' IS DISTINCT FROM $1::text OR packet->>'part' IS DISTINCT FROM $2::text
     OR jsonb_typeof(packet->'rows') IS DISTINCT FROM 'array' OR jsonb_array_length(packet->'rows')<>sealed.rows THEN
@@ -171,11 +204,12 @@ BEGIN
   END IF;
   SELECT ARRAY(SELECT id::text FROM record_raw_archive_skips s WHERE (s.generation,s.part)=($1,$2))
     INTO skipped;
-  remaining:=ARRAY(SELECT id FROM unnest(ids) WITH ORDINALITY AS source(id,ordinal) WHERE NOT id=ANY(skipped) ORDER BY ordinal);
-  IF NOT (skipped<@ids) OR remaining IS DISTINCT FROM $4 THEN
+  selected:=ids[start_at+1:stop_at];
+  remaining:=ARRAY(SELECT id FROM unnest(selected) WITH ORDINALITY AS source(id,ordinal) WHERE NOT id=ANY(skipped) ORDER BY ordinal);
+  IF NOT (skipped<@ids) OR remaining IS DISTINCT FROM $6 THEN
     RAISE EXCEPTION 'raw archive acknowledgement does not match pending inputs' USING ERRCODE='22023';
   END IF;
-  batch:=$5::jsonb;
+  batch:=$7::jsonb;
   IF jsonb_typeof(batch) IS DISTINCT FROM 'array' OR jsonb_array_length(batch)>1000 OR EXISTS(
     SELECT FROM jsonb_array_elements(batch) item
       WHERE jsonb_typeof(item->'from') IS DISTINCT FROM 'array'
@@ -183,16 +217,39 @@ BEGIN
         OR item#>>'{record,kind}' IN('warframe','companion')) THEN
     RAISE EXCEPTION 'raw archive canonical output changed its source' USING ERRCODE='22023';
   END IF;
-  PERFORM build_intake_batch($5);
-  DELETE FROM record_raw_archive_skips s WHERE (s.generation,s.part)=($1,$2);
-  UPDATE state_raw_archive_generation SET next_part=$2+1,consumed_rows=consumed_rows+sealed.rows,
-    phase=CASE WHEN sealed_parts=$2 THEN 'complete' ELSE 'consuming' END WHERE generation=$1;
-  IF active.sealed_parts=$2 THEN PERFORM raw_archive_trim_skips(); END IF;
-  RETURN jsonb_build_object('committed',true,'replay',false,'rows',sealed.rows);
+  PERFORM build_intake_batch($7);
+  DELETE FROM record_raw_archive_skips s WHERE (s.generation,s.part)=($1,$2) AND s.id::text=ANY(selected);
+  complete:=stop_at=sealed.rows;
+  UPDATE state_raw_archive_generation
+  SET next_part=CASE WHEN complete THEN $2+1 ELSE $2 END,
+      next_offset=CASE WHEN complete THEN 0 ELSE stop_at END,
+      next_slice_rows=CASE WHEN complete THEN 64 ELSE next_slice_rows END,
+      consumed_rows=consumed_rows+stop_at-start_at,
+      phase=CASE WHEN complete AND sealed_parts=$2 THEN 'complete' ELSE 'consuming' END
+  WHERE generation=$1;
+  IF complete AND active.sealed_parts=$2 THEN PERFORM raw_archive_trim_skips(); END IF;
+  RETURN jsonb_build_object('committed',true,'replay',false,'rows',stop_at-start_at,'offset',stop_at,'complete',complete);
 END $$;
+
+CREATE OR REPLACE FUNCTION raw_archive_consume_slice(uuid,bigint,text,integer,integer,text[],text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+BEGIN
+  IF $4 IS NULL OR $5 IS NULL OR ($5::bigint-$4) NOT BETWEEN 1 AND 64 THEN
+    RAISE EXCEPTION 'raw archive slice exceeds its row bound' USING ERRCODE='22023';
+  END IF;
+  RETURN raw_archive_write_slice($1,$2,$3,$4,$5,$6,$7);
+END $$;
+
+CREATE OR REPLACE FUNCTION raw_archive_consume(uuid,bigint,text,text[],text) RETURNS jsonb
+LANGUAGE sql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT raw_archive_write_slice($1,$2,$3,NULL,NULL,$4,$5)-ARRAY['offset','complete']
+$$;
 
 REVOKE ALL ON state_raw_archive_generation,record_raw_archive_parts,record_raw_archive_uploads,record_raw_archive_skips FROM PUBLIC;
 REVOKE ALL ON FUNCTION raw_archive_legacy_id(text),raw_archive_begin(uuid,text),
   raw_archive_seal_part(uuid,bigint,text,text,integer,text),raw_archive_activate(uuid,text,bigint),
   raw_archive_next(),raw_archive_pending(uuid,bigint,text),raw_archive_consume(uuid,bigint,text,text[],text),
+  raw_archive_narrow_slice(uuid,bigint,text,integer,integer),
+  raw_archive_write_slice(uuid,bigint,text,integer,integer,text[],text),
+  raw_archive_consume_slice(uuid,bigint,text,integer,integer,text[],text),
   raw_archive_retire_next(uuid),raw_archive_retired(uuid,bigint,text),raw_archive_trim_skips() FROM PUBLIC;

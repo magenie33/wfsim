@@ -266,10 +266,14 @@ receipts. The cut clears the old parent, attaches the preserved inputs and
 activates the archive in one transaction. Existing reads and exact
 acknowledgements continue to use the parent and its indexes on each child.
 
-The archive consumer checks the ordered part and the Native acknowledgement
-of its pending members. It commits canonical intake, the next part and
-removal of the part's exclusions together. A failed transaction leaves the
-part pending.
+The archive consumer verifies the original part and takes at most 64 members
+at a time. Each transaction commits canonical intake, the part offset and
+the removal of that slice's exclusions together. The final slice advances
+the part and makes its exact object eligible for retirement. The next pass
+starts at the committed offset. Both filesystem reserves apply to every
+write. The consumer reduces and records the slice
+size when it reaches an intake limit. An input that exceeds a limit on its
+own remains pending with an explicit blocked receipt.
 The storage owner can retire the exact R2 object after committed custody or
 an aborted move that retained the original input. Its retirement receipt
 advances after confirming the object's absence.
