@@ -6,6 +6,7 @@ import { once } from "node:events";
 import { pathToFileURL } from "node:url";
 import { computationId } from "../worker/computation_input.js";
 import { DEADLINE_MS } from "../worker/deadlines.js";
+import { close, transaction } from "./db.mjs";
 
 export const BUILD_BATCH_ROWS = 1000, BUILD_BATCH_BYTES = 1024 * 1024;
 const statement = (table, deleting) => deleting
@@ -75,9 +76,19 @@ export async function* buildBatches(file, { deleting = false, maxRows = BUILD_BA
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   process.stdout.on("error", error => { if (error.code === "EPIPE") process.exit(0); else throw error; });
   try {
-    if (!["builds", "deletes"].includes(process.argv[2]) || !process.argv[3]) throw new Error("usage: build_batches.mjs builds|deletes <file>");
-    for await (const batch of buildBatches(process.argv[3], { deleting: process.argv[2] === "deletes" })) {
-      if (!process.stdout.write(`${JSON.stringify(batch)}\n`)) await once(process.stdout, "drain");
+    const [mode, file, captured] = process.argv.slice(2);
+    if (mode === "handoff" && file && captured) {
+      if (process.env.PG_URL) {
+        const statements = [];
+        for await (const batch of buildBatches(file)) statements.push(batch);
+        for await (const batch of buildBatches(captured, { deleting: true })) statements.push(batch);
+        try { await transaction(statements); } finally { await close(); }
+      }
+    } else {
+      if (!["builds", "deletes"].includes(mode) || !file) throw new Error("usage: build_batches.mjs builds|deletes <file> or handoff <builds> <captured>");
+      for await (const batch of buildBatches(file, { deleting: mode === "deletes" })) {
+        if (!process.stdout.write(`${JSON.stringify(batch)}\n`)) await once(process.stdout, "drain");
+      }
     }
   } catch (error) { console.error(`builds: ${error.message}`); process.exitCode = 1; }
 }

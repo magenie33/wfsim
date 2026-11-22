@@ -174,10 +174,15 @@ relationships without simulating a fight. `scope: "library"` on
 `/api/board/check` checks storage legality; ordinary board checks retain each
 ruler's eligibility rules.
 
-`build_intake_batch` commits the canonical build, an immutable intake intent,
-its interned native plan and the original source bindings before acknowledging
-the inbox. This transaction creates no computation tasks. The independent
-`admission` consumer registers the captured workflow, then admits at most 128
+`build_intake_batch` stores the canonical build, an immutable intake intent,
+its interned native plan and the original source bindings. Ordinary bounded
+intake commits these writes and its exact inbox acknowledgement in one
+transaction. Equipment commits its canonical record with the same
+acknowledgement. A legacy mailbox or external family transfer acknowledges
+after its own durable write.
+
+The independent `admission` consumer registers the captured workflow and
+creates its computation tasks, admitting at most 128
 nodes per leased expansion slice. Each slice commits its tasks and source links
 with its acknowledgement. A crash retains the obligation; an expired lease can
 be reclaimed, and a stale token cannot acknowledge another claim.

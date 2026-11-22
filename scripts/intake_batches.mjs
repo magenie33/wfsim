@@ -59,15 +59,19 @@ export async function intakeBatches(file, { intake = process.env.WFSIM_INTAKE_BI
     }
     state.exec('COMMIT');
     writeFileSync(path('builds.ndjson'), builds.map(build => JSON.stringify(build) + '\n').join(''));
-    // Captured workflows admit every sourced computation before inbox acknowledgement.
-    await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('builds.ndjson'), path('empty')]);
-    if(onCommitted)await onCommitted(path('builds.ndjson'));
     const done=readFileSync(path('done.txt'),'utf8');
     const acknowledged=new Set(done.split('\n').filter(Boolean));
     const rows=pending.filter(line=>acknowledged.has(JSON.parse(line).id));
     if(rows.length!==acknowledged.size)throw Error('intake acknowledgement does not match the capture');
     writeFileSync(path('ack.ndjson'),rows.join('\n')+'\n');
-    await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('empty'), path('ack.ndjson')]);
+    // A legacy mailbox or external family transfer acknowledges after its own write.
+    if (onCommitted || builds.some(build => build.family)) {
+      await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('builds.ndjson'), path('empty')]);
+      if (onCommitted) await onCommitted(path('builds.ndjson'));
+      await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('empty'), path('ack.ndjson')]);
+    } else {
+      await execute(process.execPath, [join(ROOT, 'scripts/build_batches.mjs'), 'handoff', path('builds.ndjson'), path('ack.ndjson')]);
+    }
     if (doneFile) writeFileSync(doneFile,done,{flag:'a'});
     result.batches++; result.builds += builds.length;
     result.arrivals += rows.length;
