@@ -117,6 +117,16 @@ const zoneTotalsSql = `WITH epoch AS MATERIALIZED (SELECT compute_order_cut_epoc
     to_char(statement_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') counts_at,
     coalesce((SELECT jsonb_agg(jsonb_build_array(zone,n) ORDER BY zone) FROM totals),'[]') zones FROM seed`;
 
+// Only an installed seed for the current cut and zero balances prove emptiness.
+export async function queueEmptyExpression(db) {
+  const access = await db.prepare(`SELECT
+    has_table_privilege(to_regclass('state_queue_zone_seed'),'SELECT') AND
+    has_table_privilege(to_regclass('state_queue_zone_changes'),'SELECT') AS readable`).first();
+  return access?.readable
+    ? `coalesce((SELECT zones='[]'::jsonb FROM (${zoneTotalsSql}) queue),false)`
+    : 'false';
+}
+
 export const queueZonesSql = `WITH epoch AS MATERIALIZED (SELECT compute_order_cut_epoch() at),
   seed AS MATERIALIZED (SELECT s.zones,s.workload FROM state_queue_zone_seed s WHERE epoch=coalesce((SELECT at FROM epoch),'')),
   changes AS MATERIALIZED (SELECT zone,verb,sum(n)::bigint n,sum(completed)::bigint completed
