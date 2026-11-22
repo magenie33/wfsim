@@ -104,7 +104,8 @@ try{
  await sql.unsafe(boardRequestedSchema({httpRole:writerRole,runnerRole,readerRole:owner}).replace("default_tablespace='wfsim_data'","default_tablespace='pg_default'"));
  await sql.unsafe(`GRANT SELECT,INSERT ON record_build_submissions,record_equipment_submissions TO ${writerRole};
   GRANT SELECT ON state_build_inbox_inputs,state_build_inbox_positions,state_build_inbox_priorities TO ${pipelineRole};
-  GRANT EXECUTE ON FUNCTION build_family_owns_inbox(text,jsonb),build_intake_batch(text),build_ack_submissions(text) TO ${pipelineRole};`);
+  GRANT EXECUTE ON FUNCTION build_family_owns_inbox(text,jsonb),build_intake_batch(text),
+    build_ack_submissions(text),build_inbox_assert_ack(text) TO ${pipelineRole};`);
  writer=connect(writerRole);pipeline=connect(pipelineRole);typed=connect(runnerRole);
  cli(['install','--tablespace','pg_default']);
  await sql.unsafe(`GRANT EXECUTE ON FUNCTION raw_inbox_library_count() TO ${writerRole};

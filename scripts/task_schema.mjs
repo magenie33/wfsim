@@ -102,7 +102,8 @@ export function taskSchemaSql() {
       GRANT SELECT ON state_build_inbox_inputs,state_build_inbox_priorities,state_build_inbox_positions TO wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION build_intake_batch(text) TO wfsim_pipeline;
       IF to_regprocedure('build_ack_submissions(text)') IS NOT NULL THEN
-        GRANT EXECUTE ON FUNCTION build_ack_submissions(text),build_family_owns_inbox(text,jsonb) TO wfsim_pipeline;
+        GRANT EXECUTE ON FUNCTION build_ack_submissions(text),build_family_owns_inbox(text,jsonb),
+          build_inbox_assert_ack(text) TO wfsim_pipeline;
       END IF;
       GRANT EXECUTE ON FUNCTION factory_inventory_rows(text,text[]) TO wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION inventory_status(),inventory_begin(text,text,text),inventory_changes(bigint),
