@@ -277,8 +277,10 @@ queues. It joins consecutive Native targets for one build and mode under a
 single parent. The scope contains only those rulers. A transaction accepts at
 most 32 targets across all its parents and preserves their cursor order and
 individual source receipts. Equivalent targets have separate deliveries and
-reuse the same task or retained fact. Only a task admitted by the current
-batch advances its new-task count.
+reuse the same task or retained fact. An identical active parent keeps its
+existing admission and deliveries. Coverage attaches provenance to its
+queued nodes after ordinary admission finishes. Only a task admitted by the
+current batch advances its new-task count.
 
 The supplier keeps its existing cursor and task ledger. It binds a batch
 to that cursor, then verifies every disposition and task source on a
