@@ -36,16 +36,21 @@ export async function* buildBatches(file, { deleting = false, maxRows = BUILD_BA
   const batches = new Map();
   let position = 0;
   const body = batch => ({ sql: batch.sql, params: [`[${batch.rows.join(",")}]`] });
+  function* statements(batch) {
+    const operation=body(batch);yield operation;
+    if(deleting)yield {sql:'SELECT build_inbox_assert_ack(?::text)',params:operation.params};
+  }
   for await (const line of createInterface({ input: createReadStream(file), crlfDelay: Infinity })) {
     if (!line) continue;
     let table, value;
     if (deleting) {
-      const {id,at,record,initiator,family_source,observation} = JSON.parse(line);
+      const {id,at,record,initiator,family_source,observation,rejected} = JSON.parse(line);
       if (typeof id !== 'string' || !id || typeof at !== 'string' || record === undefined)
         throw new Error('inbox acknowledgement requires a captured row');
       table = 'record_build_submissions';
       value = {id,at,record:typeof record === 'string' ? record : JSON.stringify(record),
         initiator,family_source,observation:typeof observation === 'object' && observation !== null ? JSON.stringify(observation) : observation};
+      if(rejected===true)value.rejected=true;
     } else {
       let build;
       try { build = JSON.parse(line); } catch { throw new Error(`invalid intake build on line ${position + 1}`); }
@@ -64,13 +69,13 @@ export async function* buildBatches(file, { deleting = false, maxRows = BUILD_BA
     const bytes = Buffer.byteLength(JSON.stringify(row)) - 2;
     if (batch.base + bytes > maxBytes) throw new Error("one intake row exceeds the batch byte limit");
     if (batch.rows.length && (batch.rows.length >= maxRows || batch.base + batch.bytes + bytes + 1 > maxBytes)) {
-      yield body(batch);
+      yield* statements(batch);
       batch.rows = []; batch.bytes = 0;
     }
     batch.bytes += bytes + (batch.rows.length ? 1 : 0);
     batch.rows.push(row);
   }
-  for (const batch of batches.values()) if (batch.rows.length) yield body(batch);
+  for (const batch of batches.values()) if (batch.rows.length) yield* statements(batch);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

@@ -1,0 +1,18 @@
+# Install only after qualifying the deployed writer and Native intake.
+[Unit]
+Description=WFSim temporary input storage maintenance
+After=postgresql.service
+RequiresMountsFor=/srv/wfsim-data
+ConditionPathExists=/etc/wfsim-inbox-storage.capacity.json
+
+[Service]
+Type=oneshot
+User=postgres
+WorkingDirectory=/opt/wfsim-inbox-storage
+EnvironmentFile=/etc/wfsim-inbox-storage.env
+ExecStart=/usr/bin/node scripts/inbox_storage.mjs tick --capacity /etc/wfsim-inbox-storage.capacity.json
+Nice=15
+CPUWeight=20
+IOSchedulingClass=idle
+TimeoutStartSec=30
+NoNewPrivileges=true

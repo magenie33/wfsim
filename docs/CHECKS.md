@@ -1268,6 +1268,18 @@ scopes preserve a first arrival's completion; `--break-first-arrival` removes
 that captured first-arrival flag and must fail. The source-ACK guard
 also has a failing `check_board_reviews --break-source-ack` control.
 
+## `check_build_inbox_storage`
+
+A localhost PostgreSQL and the pinned Native binary exercise ordinary single
+and batch Worker submissions, explicit refusal, atomic source/intent custody,
+role permissions and the exact arrivals bridge. Opaque sources keep their
+generation in temporary SQL metadata. Cross-generation reuse, expired retries,
+old acknowledgement rollback, conflicting payloads, interrupted carry and
+clock rollback fail closed. A live older tail cannot block later retirement.
+The heap and every index file of retired partitions must disappear, while
+protected legacy inputs, parent OID and FIFO positions remain unchanged.
+The committed c41 fixture installs without relying on Git history.
+
 ## `check_intake_batches`
 
 Run after `cargo build --bin wfsim-intake`. The real binary, Bash shippers and

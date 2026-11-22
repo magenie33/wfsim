@@ -1,0 +1,11 @@
+[Unit]
+Description=Maintain WFSim temporary input generations
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=1min
+RandomizedDelaySec=10s
+Unit=wfsim-inbox-storage.service
+
+[Install]
+WantedBy=timers.target

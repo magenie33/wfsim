@@ -1,7 +1,7 @@
 import { seedComputeWork } from "./pg/fixtures.mjs";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { testDb } from "./pg/test_db.mjs";
+import { testDb,enableInboxStorage } from "./pg/test_db.mjs";
 import { familyRoute, askFamilyTransfers, FAMILY_PRODUCERS } from "../worker/board_family.js";
 import { facts, workOf } from "../worker/factory.js";
 import { userTasksRoute, purgeUserCalculations } from "../worker/user_tasks.js";
@@ -11,6 +11,7 @@ import { shipFamily } from "./ship_family.mjs";
 import worker from "../worker/index.js";
 
 const db = await testDb("library"), engine = "test-engine";
+await enableInboxStorage(db);
 const env = { LIBRARY: db, FACTORY_TOKEN: "check", ASSETS: { fetch: async () => Response.json({ engine }) } };
 const source = "a".repeat(32), ruler = "standard_single_target";
 const job = { input_schema: 1, source, weapon: "burston", ruler, request: { weapon: "burston", strategy: "quick", runs: 2, finalists: 1,
@@ -100,13 +101,13 @@ await check("one witness cannot publish a derived build", async () => {
   const path = "/api/user-tasks/answer";
   const response = await userTasksRoute(new Request(`https://wfsim.test${path}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
     verifier: who.device, engine, lease: work.lease, question: work.question, work: 100, report }) }), env, path);
-  assert.equal(response.status, 200); assert.equal(await count('record_build_submissions'), 0);
+  assert.equal(response.status, 200); assert.equal(await count('state_build_inbox_inputs'), 0);
 });
 await check("independent agreement submits the target build with trusted nonrecursive provenance", async () => {
   const who = witness("6"), work = await facts().next(env, who, engine);
   assert.ok(work); await facts().answer(env, who, { lease: work.lease, engine, result: { report }, work: 100 });
-  assert.equal(await count('record_build_submissions'), 1); assert.equal(await count('state_board_measurement_selection'), 0);
-  const inbox = await db.get("SELECT * FROM record_build_submissions"), transfer = await db.get("SELECT * FROM entity_family_search_requests");
+  assert.equal(await count('state_build_inbox_inputs'), 1); assert.equal(await count('state_board_measurement_selection'), 0);
+  const inbox = await db.get("SELECT * FROM state_build_inbox_inputs"), transfer = await db.get("SELECT * FROM entity_family_search_requests");
   assert.equal(inbox.family_source, transfer.id); assert.equal(inbox.initiator, "system");
   assert.equal(transfer.state, "succeeded");
   const record = JSON.parse(inbox.record);
@@ -118,7 +119,7 @@ await check("completed transfers and replayed facts cannot submit again", async 
   await call();
   const row = await db.get("SELECT * FROM entity_family_search_requests");
   await FAMILY_PRODUCERS.family_build.on_fact(env, { ref: row.id }, { engine, result: { report } });
-  assert.equal(await count('record_build_submissions'), 1); assert.equal(await count('state_compute_work'), 1);
+  assert.equal(await count('state_build_inbox_inputs'), 1); assert.equal(await count('state_compute_work'), 1);
 });
 await check("a crash after derived submission resumes without a second inbox record", async () => {
   const row = await db.get("SELECT * FROM entity_family_search_requests"), prepare = db.prepare;
@@ -131,13 +132,13 @@ await check("a crash after derived submission resumes without a second inbox rec
     await assert.rejects(FAMILY_PRODUCERS.family_build.on_fact(env, { ref: row.id }, { engine, result: { report } }), /interrupted completion/);
   } finally { db.prepare = prepare; }
   await FAMILY_PRODUCERS.family_build.on_fact(env, { ref: row.id }, { engine, result: { report } });
-  assert.equal(await count('record_build_submissions'), 1);
+  assert.equal(await count('state_build_inbox_inputs'), 1);
 });
 await check("the public submission cannot forge derivation provenance", async () => {
   const response = await worker.fetch(new Request("https://wfsim.test/api/board/submit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({
     weapon: "burston", mods: ["serration"], family_source: "forged" }) }), env, { waitUntil() {} });
   assert.equal(response.status, 200, await response.clone().text());
-  const rows = await db.all("SELECT * FROM record_build_submissions WHERE family_source IS NULL");
+  const rows = await db.all("SELECT * FROM state_build_inbox_inputs WHERE family_source IS NULL");
   assert.equal(rows.length, 1); assert.equal(JSON.parse(rows[0].record).family_source, undefined);
 });
 await check("an empty search terminates without inventing a score", async () => {
@@ -181,6 +182,7 @@ await check("a deployment change and repeated arrival preserve the same family r
   assert.equal((await db.get("SELECT count(*) AS n FROM entity_family_search_requests WHERE engine = 'next-engine'")).n, 0);
 });
 await check("leased search receipts deliver atomic build batches after the lease closes", async () => {
+  await enableInboxStorage(db);
   env.AUTH_SECRET = "family-harvest-check-only";
   const question = "e".repeat(32), lease = "f".repeat(32), verifier = "e".repeat(24);
   const at = new Date().toISOString(), until = new Date(Date.now() + 60_000).toISOString();
@@ -196,21 +198,21 @@ await check("leased search receipts deliver atomic build batches after the lease
   assert.equal(grant.question, question);
   await db.run("UPDATE state_compute_work SET lease = NULL, leased_to = NULL, lease_until = NULL WHERE id = ?", question);
   await db.run("UPDATE relation_task_consumers SET state = 'served' WHERE question = ?", question);
-  const before = await count('record_build_submissions');
+  const before = await count('state_build_inbox_inputs');
   const builds = Array.from({ length: 128 }, () => ({ weapon: "torid", mods: ["serration"], score: 123, initiator: "system", family_source: "fake" }));
   const calls = db.cost.calls;
   const response = await submit({ builds, harvest: { receipt: grant.receipt, question, engine: "next-engine" } });
   assert.equal(response.status, 200, await response.clone().text());
   assert.equal(db.cost.calls - calls, 1, "one multi-row insert is one database round trip");
   assert.equal((await response.json()).results.filter(item => item.ok).length, builds.length);
-  assert.equal(await count('record_build_submissions'), before + builds.length);
-  const rows = await db.all("SELECT record, initiator, family_source FROM record_build_submissions WHERE initiator = 'user:harvest-requester'");
+  assert.equal(await count('state_build_inbox_inputs'), before + builds.length);
+  const rows = await db.all("SELECT record, initiator, family_source FROM state_build_inbox_inputs WHERE initiator = 'user:harvest-requester'");
   assert.equal(rows.length, builds.length);
   assert.ok(rows.every(row => row.family_source === null && JSON.parse(row.record).score === undefined));
   assert.equal(await count('state_board_measurement_selection'), 0);
   const wrong = await submit({ builds, harvest: { receipt: grant.receipt, question: "a".repeat(32) } });
   assert.equal(wrong.status, 403);
-  assert.equal(await count('record_build_submissions'), before + builds.length);
+  assert.equal(await count('state_build_inbox_inputs'), before + builds.length);
   await db.run("UPDATE state_compute_work SET lease = ?, leased_to = ?, lease_until = ? WHERE id = ?", lease, verifier, until, question);
   await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, initiator)
     VALUES ('family_build', 'harvest-family-source', ?, 'live', ?, ?, 'system')`, question, at, at);
@@ -220,7 +222,7 @@ await check("leased search receipts deliver atomic build batches after the lease
   const familyBatch = await submit({ builds: [{ weapon: "torid", mods: ["serration"] }], harvest: familyLease });
   assert.equal(familyBatch.status, 200, await familyBatch.clone().text());
   assert.equal((await familyBatch.json()).results[0].retryable, false);
-  assert.equal(await count('record_build_submissions'), before + builds.length);
+  assert.equal(await count('state_build_inbox_inputs'), before + builds.length);
 });
 
 console.log(`\n${passed} retained family and disabled-ingress checks passed`);

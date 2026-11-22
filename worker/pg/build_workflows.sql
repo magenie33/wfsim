@@ -83,11 +83,40 @@ CREATE OR REPLACE FUNCTION build_workflow_recovery_key(text) RETURNS text LANGUA
   SELECT 'recover-empty:'||$1
 $$;
 -- Scope enrichment must preserve the primary-key path used by bounded readers.
+CREATE TABLE IF NOT EXISTS state_build_inbox_positions (
+  id TEXT COLLATE "C" PRIMARY KEY,
+  position BIGINT NOT NULL DEFAULT nextval('compute_queue_position')
+);
+ALTER TABLE state_build_inbox_positions ADD COLUMN IF NOT EXISTS generation BIGINT;
+ALTER TABLE state_build_inbox_positions ADD COLUMN IF NOT EXISTS payload_generation BIGINT;
+CREATE INDEX IF NOT EXISTS build_inbox_positions_generation ON state_build_inbox_positions(generation,id)
+  WHERE generation IS NOT NULL;
+CREATE TABLE IF NOT EXISTS record_build_inbox_payloads (
+  generation BIGINT NOT NULL,
+  id TEXT COLLATE "C" NOT NULL,
+  at TEXT COLLATE "C",
+  record TEXT COLLATE "C",
+  initiator TEXT COLLATE "C",
+  family_source TEXT COLLATE "C",
+  observation TEXT COLLATE "C",
+  input_hash BYTEA NOT NULL CHECK(octet_length(input_hash)=32),
+  state TEXT NOT NULL CHECK(state IN('pending','accepted','refused')),
+  PRIMARY KEY(generation,id),
+  CHECK(state<>'pending' OR (at IS NOT NULL AND record IS NOT NULL))
+) PARTITION BY LIST(generation);
 CREATE OR REPLACE VIEW state_build_inbox_inputs AS
   SELECT b.id,b.at,b.record,b.initiator,b.family_source,b.observation,
     (SELECT s.definition::text FROM entity_build_workflows w JOIN entity_build_workflow_scopes s ON s.id=w.scope_id
       WHERE split_part(b.family_source,'|',1)='workflow' AND w.id=split_part(b.family_source,'|',2)) AS workflow_scope
-    FROM record_build_submissions b
+    FROM (
+      SELECT id,at,record,initiator,family_source,observation FROM record_build_submissions
+      UNION ALL
+      SELECT p.id,b.at,b.record,b.initiator,b.family_source,b.observation FROM state_build_inbox_positions p
+        CROSS JOIN LATERAL (SELECT x.at,x.record,x.initiator,x.family_source,x.observation
+          FROM record_build_inbox_payloads x WHERE x.generation=p.payload_generation AND x.id=p.id
+            AND x.state='pending' OFFSET 0) b
+        WHERE p.generation IS NOT NULL
+    ) b
   UNION ALL SELECT id,at,record,NULL,NULL,NULL,NULL FROM record_equipment_submissions;
 
 CREATE OR REPLACE VIEW state_build_inbox_priorities AS
@@ -369,7 +398,7 @@ BEGIN
   IF jsonb_typeof($1::jsonb) IS DISTINCT FROM 'array' OR jsonb_array_length($1::jsonb)>1000 THEN
     RAISE EXCEPTION 'invalid submission acknowledgement'; END IF;
   FOR proof IN SELECT * FROM jsonb_to_recordset($1::jsonb)
-    AS rows(id text,at text,record text,initiator text,family_source text,observation text) ORDER BY id COLLATE "C" LOOP
+    AS rows(id text,at text,record text,initiator text,family_source text,observation text,rejected boolean) ORDER BY id COLLATE "C" LOOP
     IF coalesce(proof.id,'')='' OR proof.at IS NULL OR proof.record IS NULL THEN
       RAISE EXCEPTION 'submission acknowledgement requires captured content'; END IF;
     IF proof.id LIKE 'equipment:%' THEN
@@ -379,6 +408,9 @@ BEGIN
         RAISE EXCEPTION 'captured equipment submission changed'; END IF;
       DELETE FROM record_equipment_submissions b WHERE b.id=gear.id;
       CONTINUE;
+    END IF;
+    IF to_regprocedure('build_inbox_ack(jsonb)') IS NOT NULL THEN
+      IF build_inbox_ack(to_jsonb(proof)) THEN CONTINUE; END IF;
     END IF;
     SELECT * INTO captured FROM record_build_submissions b WHERE b.id=proof.id FOR UPDATE;
     IF NOT FOUND THEN
@@ -404,6 +436,15 @@ BEGIN
     DELETE FROM record_build_submissions b WHERE b.id=captured.id;
   END LOOP;
 END $$;
+
+CREATE OR REPLACE FUNCTION build_inbox_assert_ack(text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+BEGIN
+  IF EXISTS(SELECT FROM state_build_inbox_positions p JOIN jsonb_array_elements($1::jsonb) proof ON p.id=proof->>'id'
+    WHERE p.generation IS NOT NULL) THEN
+    RAISE EXCEPTION 'the installed acknowledgement did not release the generation input' USING ERRCODE='55000'; END IF;
+END $$;
+REVOKE ALL ON FUNCTION build_inbox_assert_ack(text) FROM PUBLIC;
 
 -- Retraction creates an explicit sourced repair from the original frozen input.
 CREATE OR REPLACE FUNCTION build_workflow_repair(text,text,text,text) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
@@ -830,7 +871,7 @@ REVOKE ALL ON FUNCTION build_family_owns_inbox(text,jsonb) FROM PUBLIC;
 DO $path$
 DECLARE routine text; namespace text:=pg_catalog.current_schema();
 BEGIN
-  FOREACH routine IN ARRAY ARRAY['build_ack_submissions(text)','build_family_owns_inbox(text,jsonb)'] LOOP
+  FOREACH routine IN ARRAY ARRAY['build_ack_submissions(text)','build_family_owns_inbox(text,jsonb)','build_inbox_assert_ack(text)'] LOOP
     EXECUTE pg_catalog.format('ALTER FUNCTION %I.%s SET search_path=%I,pg_catalog,pg_temp',namespace,routine,namespace);
   END LOOP;
 END $path$;

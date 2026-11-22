@@ -32,6 +32,12 @@ GRANT SELECT,INSERT,UPDATE ON entity_measurement_reviews TO wfsim_factoryd;
 GRANT SELECT ON board_facts TO wfsim_factoryd;
 GRANT SELECT, UPDATE ON entity_family_search_requests TO wfsim_factoryd;
 GRANT SELECT, INSERT ON record_build_submissions TO wfsim_factoryd;
+DO $inbox$ BEGIN
+ IF to_regprocedure('build_inbox_submit(text,text,text,text,text,text,bigint)') IS NOT NULL THEN
+  GRANT EXECUTE ON FUNCTION build_inbox_submit(text,text,text,text,text,text,bigint),build_inbox_submit_family(text,text,text,text,text),
+    build_inbox_family_owned(text) TO wfsim_factoryd;
+ END IF;
+END $inbox$;
 
 GRANT SELECT,INSERT,DELETE ON entity_compute_specs,entity_compute_tasks,entity_compute_results TO wfsim_factoryd;
 GRANT UPDATE(id) ON entity_compute_specs TO wfsim_factoryd;

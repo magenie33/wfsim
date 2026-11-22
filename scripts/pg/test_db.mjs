@@ -12,6 +12,12 @@ import { pgDb, placeholders } from "../../worker/db.js";
 const PG_DIR = new URL("../../worker/pg/", import.meta.url);
 const DDL = { library: ["schema.sql", "library.sql", "sync.sql", "inventory.sql", "build_workflows.sql", "board_admission.sql"], accounts: ["accounts.sql"] };
 const ddl = (kind) => DDL[kind].map((f) => readFileSync(new URL(f, PG_DIR), "utf8")).join("\n");
+export async function enableInboxStorage(db) {
+  await db.exec(readFileSync(new URL('build_inbox_storage.sql',PG_DIR),'utf8'));
+  const {generation}=await db.get('SELECT build_inbox_current_generation() AS generation');
+  for(const value of [generation-1,generation,generation+1])await db.run('SELECT build_inbox_prepare(?)',value);
+  await db.run('SELECT build_inbox_enable(?,false)','c'.repeat(64));
+}
 const profile = process.env.WFSIM_TEST_DB_TIMING === "1" || !!process.env.WFSIM_TEST_DB_TIMING_FILE;
 const phases = Object.fromEntries(["startup", "schema", "ddl", "search_path", "query", "exec", "transaction"].map(key => [key, { calls: 0, ms: 0 }]));
 const timed = profile ? async (phase, fn) => {

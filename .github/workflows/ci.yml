@@ -838,6 +838,7 @@ jobs:
           chmod 600 "$PGPASSFILE"
           node scripts/check_raw_inbox_rollover.mjs
           node scripts/check_raw_inbox_archive.mjs
+          node scripts/check_build_inbox_storage.mjs
       - name: Producer admission preserves accounting while settlement holds its usage row
         env:
           WFSIM_ADMISSION_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5433/wfsim_checks

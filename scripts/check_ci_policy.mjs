@@ -411,6 +411,16 @@ for (const extra of ['optimizer/src/quick.rs', 'scripts/board_coverage_unknown.m
   assert.equal(classify([...coverageSupplyTools, extra]).deep, true, extra + ' retains deep validation');
 assert.equal(classify(coverageSupplyTools, true).deep, true);
 assert.equal(classify(coverageSupplyTools, false, false).deep, true);
+const inboxStorageTools=['scripts/build_inbox_schema.mjs','scripts/inbox_storage.mjs','scripts/check_build_inbox_storage.mjs',
+  'deploy/wfsim-inbox-storage.service','deploy/wfsim-inbox-storage.timer','tests/fixtures/inbox-c41/source.json',
+  'tests/fixtures/inbox-c41/raw_inbox_archive.sql','tests/fixtures/inbox-c41/raw_inbox_archive_move.sql',
+  'tests/fixtures/inbox-c41/build_ack_submissions.sql','tests/fixtures/inbox-c41/state_build_inbox_inputs.sql'];
+assert.deepEqual(classify(inboxStorageTools).jobs,PRODUCT_JOBS);
+assert.equal(classify(inboxStorageTools).deep,false);
+for(const extra of ['optimizer/src/quick.rs','scripts/inbox_storage_unknown.mjs'])
+  assert.equal(classify([...inboxStorageTools,extra]).deep,true);
+assert.equal(classify(inboxStorageTools,true).deep,true);
+assert.equal(classify(inboxStorageTools,false,false).deep,true);
 assert.match(readFileSync('.github/workflows/ci.yml', 'utf8'),
   /WFSIM_COVERAGE_TEST_URL: postgresql:\/\/postgres:mailbox_check@127\.0\.0\.1:5433\/wfsim_checks\s+run: node scripts\/check_board_coverage\.mjs/);
 for (const path of ['tests/fixtures/engine-compare/new-calls.json', 'scripts/new_engine_compare.py',

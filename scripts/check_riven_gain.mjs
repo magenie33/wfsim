@@ -15,7 +15,7 @@ import { boardTasksRoute } from "../worker/board_tasks.js";
 import { canon } from "../worker/tasks.js";
 import { facts } from "../worker/factory.js";
 import { headlessRivenGainRequest } from "../mcp/headless.js";
-import { testDb } from "./pg/test_db.mjs";
+import { testDb,enableInboxStorage } from "./pg/test_db.mjs";
 import { setDial } from '../worker/dials.js';
 
 let failures = 0;
@@ -28,6 +28,7 @@ const LIBRARY = await testDb("library"), ACCOUNTS = await testDb("accounts");
 const site = (engine) => ({ fetch: async () => new Response(JSON.stringify({ engine })) });
 const env = { BOT_RELAY_TOKEN: "relay", FACTORY_TOKEN: "ft", LIBRARY, ACCOUNTS, ASSETS: site("e1") };
 const L = LIBRARY;
+await enableInboxStorage(L);
 
 const appraise = async (method, path, body, headers = {}) => {
   if (body && typeof body === "object" && path.endsWith("/request")) body = { input_schema: 1, ...body };
@@ -124,16 +125,16 @@ check("unequal answers credit nobody", await credited(A) === 0 && await credited
 await freeLeases();
 const t3 = await work(C);
 check("...and a third computer is asked", t3 && t3.kind === "riven_gain", JSON.stringify(t3));
-const inboxBefore = (await L.get("SELECT COUNT(*) AS n FROM record_build_submissions")).n;
+const inboxBefore = (await L.get("SELECT COUNT(*) AS n FROM state_build_inbox_inputs")).n;
 await answer(t3, C);
 check("two owners' equal answers credit both — the work, and the hour — and not the one that differed",
   await credited(A) === 4e9 && await credited(C) === 4e9 && await credited(B) === 0 && await today(A) === 4e9 && await today(C) === 4e9,
   `${await credited(A)} ${await credited(B)} ${await credited(C)}`);
 check("...the appraisal is agreed and its build goes to the board's door, as a reader's submission",
   !!(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = ?", code)).agreed_at
-  && (await L.get("SELECT COUNT(*) AS n FROM record_build_submissions")).n === inboxBefore + 1);
+  && (await L.get("SELECT COUNT(*) AS n FROM state_build_inbox_inputs")).n === inboxBefore + 1);
 check("...as its chat's asker, the bot code its demand carries",
-  (await L.get("SELECT count(*) AS n FROM record_build_submissions WHERE initiator LIKE 'bot:%'")).n === 1 && (await L.get("SELECT count(*) AS n FROM record_build_submissions WHERE initiator IS NULL")).n === 0);
+  (await L.get("SELECT count(*) AS n FROM state_build_inbox_inputs WHERE initiator LIKE 'bot:%'")).n === 1 && (await L.get("SELECT count(*) AS n FROM state_build_inbox_inputs WHERE initiator IS NULL")).n === 0);
 check("...after which it is handed out no more", (await work(D) || {}).kind !== "riven_gain");
 check("a browser's own riven gain says confirmed once its answer is credited, and gone when it was not",
   await stateOf(A, { code, at: 1 }) === "confirmed" && await stateOf(C, { code, at: 1 }) === "confirmed" && await stateOf(B, { code, at: 1 }) === "gone");
@@ -226,7 +227,7 @@ await L.run("UPDATE state_compute_work SET state = 'withdrawn'");
   check("...but to another", s2 && s2.code === fresh, JSON.stringify(s2));
   await answer(s2, G, {}, "198.51.100.9");
   check("two owners on two networks agree", !!(await L.get("SELECT agreed_at FROM entity_appraisal_requests WHERE code = ?", fresh)).agreed_at);
-  check("...and a survey's agreed build goes to the board's door as WFSim's own", (await L.get("SELECT count(*) AS n FROM record_build_submissions WHERE initiator = 'system'")).n >= 1);
+  check("...and a survey's agreed build goes to the board's door as WFSim's own", (await L.get("SELECT count(*) AS n FROM state_build_inbox_inputs WHERE initiator = 'system'")).n >= 1);
 
   // ONE QUESTION, ASKED AGAIN: a chat asking what a survey already agreed on is
   // answered at once, and nobody computes it a second time.
