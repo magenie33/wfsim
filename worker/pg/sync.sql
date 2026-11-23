@@ -114,7 +114,7 @@ $$;
 
 -- Executable work is selected by zone, then its position within that zone.
 -- Each disjoint range applies eligibility, FIFO and its bound before the final merge.
--- The post-cut task index drives point lookups on the scheduling primary key.
+-- Filter open state after the point lookup so the open index is not scanned per task.
 CREATE OR REPLACE FUNCTION factory_candidates(text,bigint,bigint,text,text,text,text,text,bigint,bigint,text,text,bigint,text,text,text,boolean)
 RETURNS SETOF state_compute_work LANGUAGE plpgsql SET jit=off AS $function$
 DECLARE prefix_pick text;found_count bigint;remaining bigint:=$13;cutoff bigint;pick text:=$pick$
@@ -140,8 +140,9 @@ DECLARE prefix_pick text;found_count bigint;remaining bigint:=$13;cutoff bigint;
         SELECT guard.id,guard.task_id,coalesce(guard.zone,factory_default_zone(guard.producer)) AS zone,
           coalesce(guard.zone_position,guard.task_id) AS position FROM entity_compute_tasks t
           CROSS JOIN LATERAL (SELECT g.* FROM state_compute_scheduling g
-            WHERE g.id=t.computation AND g.task_id=t.id AND g.state='open' OFFSET 0) guard
+            WHERE g.id=t.computation AND g.task_id=t.id OFFSET 0) guard
         WHERE t.id>$17::bigint
+          AND guard.state='open'
           AND (coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id)
             >(SELECT keep_zone,keep_position,keep_id FROM cut)
         ORDER BY zone,position,guard.id OFFSET 0) ordered
