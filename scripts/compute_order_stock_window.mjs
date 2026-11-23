@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { setTimeout } from 'node:timers/promises';
 import { queueOrders, queueZonesSql } from '../worker/queue_counts.js';
-import { boardCoverageOrderAdapter } from './board_coverage_orders.mjs';
+import { admitCoverageReceipts } from './board_coverage_orders.mjs';
 
 const rollback = new Set(['55P03', '40P01', '40001', '25P02']);
 const hex = /^[0-9a-f]{32}$/;
@@ -19,6 +19,15 @@ export function checkActiveOrderLimit(limit) {
 const confirmPage = (actual, { first, last, orders }) => {
   if (!actual || Number(actual.first_byte) !== first || Number(actual.next_byte) !== last || actual.orders !== orders)
     throw Error('stock window page changed');
+};
+
+const pagePositions = (positions, page) => {
+  // A window reserved by an earlier runner still owns its original positions.
+  const slots = Array.isArray(positions) ? positions :
+    page.prepared.items.map(({ target }) => positions[target.computation]);
+  if (slots.length !== page.prepared.items.length || slots.some(slot => !taskID.test(slot)))
+    throw Error('stock window source positions changed');
+  return slots;
 };
 
 export async function stockWindowBounds(reader, { id, rows, maxOpen, limit }) {
@@ -51,9 +60,10 @@ export async function reserveStockWindow(writer, { id, cut, pages, maxOpen }) {
         !Number.isSafeInteger(page.orders) || page.orders < 1 || page.first < 0 || page.first >= page.last ||
         (at > 0 && page.first !== pages[at - 1].last)))
     throw Error('stock window must be consecutive and fit the configured queue');
-  const computations = [...new Set(pages.flatMap(page => page.prepared.items.map(item => item.target.computation)))];
-  if (!computations.length || computations.length > count || computations.some(id => !hex.test(id)))
+  if (pages.some(page => !page.prepared.items.length || page.prepared.items.length > page.orders ||
+    page.prepared.items.some(({ target }) => !hex.test(target.computation))))
     throw Error('stock window needs canonical computations');
+  const sourcePages = pages.map(page => ({ first: page.first, sources: page.prepared.items.length }));
   const key = JSON.stringify([id, first]);
   return writer.begin(async tx => {
     await lock(tx);
@@ -65,23 +75,32 @@ export async function reserveStockWindow(writer, { id, cut, pages, maxOpen }) {
     if (run.paused) return { result: 'paused' };
     const [existing] = await readWindow(tx);
     if (existing) {
+      const legacy = !Array.isArray(existing.positions[first]);
+      const size = legacy ? new Set(pages.flatMap(page =>
+        page.prepared.items.map(({ target }) => target.computation))).size : pages.length;
       if (existing.key !== key || Number(existing.next_byte) !== last || Number(existing.max_open) !== maxOpen ||
-          computations.some(id => !taskID.test(existing.positions[id])) || Object.keys(existing.positions).length !== computations.length)
+          Object.keys(existing.positions).length !== size)
         throw Error('resume the reserved stock window with its original input and limits');
       const reserved = await tx.unsafe('SELECT * FROM state_compute_order_stock_pages WHERE window_key=$1 ORDER BY first_byte', [key]);
       if (reserved.length !== pages.length) throw Error('stock window pages changed');
-      pages.forEach((page, at) => confirmPage(reserved[at], page));
+      pages.forEach((page, at) => {
+        confirmPage(reserved[at], page);
+        pagePositions(existing.positions[page.first] ?? existing.positions, page);
+      });
       return { result: 'reserved', key };
     }
     const [queue] = await tx.unsafe(queueZonesSql);
     if (!queue) return { result: 'queue_unavailable' };
     if (queueOrders(queue.zones).total + count > maxOpen) return { result: 'queue_full' };
     await tx.unsafe(`INSERT INTO state_compute_order_stock_window(key,import_id,first_byte,next_byte,max_open,positions)
-      SELECT $1,$2,$3,$4,$5,jsonb_object_agg(computation,position::text)
-      FROM (SELECT computation,nextval('compute_queue_position') position
-        FROM (SELECT computation FROM jsonb_array_elements_text($6::text::jsonb) WITH ORDINALITY
-          r(computation,ordinal) ORDER BY ordinal OFFSET 0) ordered) positions`,
-    [key, id, first, last, maxOpen, JSON.stringify(computations)]);
+      SELECT $1,$2,$3,$4,$5,jsonb_object_agg(first,slots)
+      FROM (SELECT first,jsonb_agg(position::text ORDER BY slot) slots
+        FROM (SELECT first,slot,nextval('compute_queue_position') position FROM (
+          SELECT first,slot
+          FROM jsonb_to_recordset($6::text::jsonb) p(first bigint,sources int)
+          CROSS JOIN LATERAL generate_series(0,p.sources-1) slot
+          ORDER BY first,slot OFFSET 0) ordered) positions GROUP BY first) pages`,
+    [key, id, first, last, maxOpen, JSON.stringify(sourcePages)]);
     await tx.unsafe(`INSERT INTO state_compute_order_stock_pages
       SELECT $1,first,last,orders FROM jsonb_to_recordset($2::text::jsonb) p(first bigint,last bigint,orders int)`,
     [key, JSON.stringify(pages.map(({ first, last, orders }) => ({ first, last, orders })))]);
@@ -91,7 +110,8 @@ export async function reserveStockWindow(writer, { id, cut, pages, maxOpen }) {
 
 async function admitPage(writer, { id, key, cut, page }) {
   return writer.begin(async tx => {
-    const [reserved] = await tx.unsafe(`SELECT p.*,w.positions,i.paused FROM state_compute_order_stock_pages p
+    const [reserved] = await tx.unsafe(`SELECT p.*,coalesce(w.positions->p.first_byte::text,w.positions) positions,i.paused
+      FROM state_compute_order_stock_pages p
       JOIN state_compute_order_stock_window w ON w.key=p.window_key
       JOIN state_compute_order_imports i ON i.id=w.import_id
       WHERE w.import_id=$1 AND p.window_key=$2 AND p.first_byte=$3 FOR UPDATE OF p`, [id, key, page.first]);
@@ -101,20 +121,23 @@ async function admitPage(writer, { id, key, cut, page }) {
     if (current !== cut) throw Error('stock window order cut changed');
     if ((await tx.unsafe('SELECT 1 FROM record_compute_order_import_batches WHERE (import_id,first_byte)=($1,$2)',
       [id, page.first])).length) return 'committed';
-    const ids = await boardCoverageOrderAdapter.admit(tx, page.prepared);
+    const positions = pagePositions(reserved.positions, page);
+    const tasks = (await admitCoverageReceipts(tx, page.prepared))
+      .map(({ taskId, slot }) => ({ id: taskId, position: positions[slot] }));
+    const ids = tasks.map(({ id }) => id);
     if (ids.length > page.orders || ids.some(id => !taskID.test(id)) || new Set(ids).size !== ids.length)
       throw Error('invalid physical stock receipt');
     const taskIds = JSON.stringify(ids);
     const held = await tx.unsafe(`WITH physical AS MATERIALIZED (
-      SELECT t.id,t.computation,($3::text::jsonb->>t.computation)::bigint position
-      FROM jsonb_array_elements_text($1::text::jsonb) a(id) JOIN entity_compute_tasks t ON t.id=a.id::bigint
+      SELECT t.id,t.computation,a.position
+      FROM jsonb_to_recordset($1::text::jsonb) a(id bigint,position bigint) JOIN entity_compute_tasks t ON t.id=a.id
       WHERE t.xmin=pg_current_xact_id()::xid
     ), placed AS (
       UPDATE state_compute_scheduling q SET zone_position=p.position FROM physical p
       WHERE (q.id,q.task_id)=(p.computation,p.id) AND q.state='open' AND q.zone=3 AND p.position IS NOT NULL
       RETURNING q.task_id
     ) INSERT INTO state_compute_order_stock_holds SELECT task_id,$2 FROM placed RETURNING task_id`,
-    [taskIds, key, JSON.stringify(reserved.positions)]);
+    [JSON.stringify(tasks), key]);
     if (held.length !== ids.length) throw Error('stock admission failed its position or task check');
     await tx.unsafe(`INSERT INTO record_compute_order_import_batches VALUES($1,$2,$3,$4,
       ARRAY(SELECT value::bigint FROM jsonb_array_elements_text($5::text::jsonb)))`,
@@ -154,14 +177,15 @@ export async function admitStockPage(writer, reader, request, signal) {
 export function admitStockPages(pages, admit) {
   const latest = new Map();
   return Promise.allSettled(pages.map((page, lane) => {
-    const builds = new Set(page.prepared.items.map(({ target }) => target.identity));
-    const predecessors = new Set([...builds].map(build => latest.get(build)).filter(Boolean));
+    const keys = new Set(page.prepared.items.flatMap(({ target }) =>
+      [`build:${target.identity}`, `computation:${target.computation}`]));
+    const predecessors = new Set([...keys].map(key => latest.get(key)).filter(Boolean));
     const result = Promise.all(predecessors).then(outcomes => {
       if (outcomes.some(outcome => outcome.result === 'paused')) return { result: 'paused' };
       return admit(page, lane);
     });
-    // The database takes a build lock for every identity. Shared pages follow source order.
-    for (const build of builds) latest.set(build, result);
+    // Preserve the first eligible source when a computation or build spans pages.
+    for (const key of keys) latest.set(key, result);
     return result;
   }));
 }

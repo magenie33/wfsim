@@ -37,7 +37,7 @@ async function prepareOrders(orders, { id, first, cut, engine }) {
   return { batch: { ...parts[0], batch, last: items.length, groups: parts.flatMap(part => part.groups) }, items, cut };
 }
 
-async function admitCoverageOrders(tx, { batch, items, cut }) {
+export async function admitCoverageReceipts(tx, { batch, items, cut }) {
   await tx.unsafe('SELECT compute_order_import_coverage(($1::text)::jsonb,$2,$3)', [JSON.stringify(batch), cut, batch.engine]);
   const received = await tx.unsafe(`SELECT x.target->>'source' source, r.disposition->>'batch' batch,
       r.disposition->>'outcome' outcome,t.id::text task_id
@@ -54,9 +54,18 @@ async function admitCoverageOrders(tx, { batch, items, cut }) {
     ORDER BY (x.target->>'ordinal')::bigint`, [JSON.stringify(batch)]);
   if (received.length !== items.length || received.some((row, index) => row.source !== items[index].source || row.batch !== batch.batch))
     throw Error('coverage admission did not retain each source');
-  const enqueued = received.filter(row => row.outcome === 'enqueued');
-  if (enqueued.some(row => !row.task_id)) throw Error('coverage admission does not prove its new tasks');
-  return [...new Set(enqueued.map(row => row.task_id))];
+  const tasks = new Map();
+  received.forEach((row, slot) => {
+    if (row.outcome !== 'enqueued') return;
+    if (!row.task_id) throw Error('coverage admission does not prove its new tasks');
+    if (!tasks.has(row.task_id)) tasks.set(row.task_id, { taskId: row.task_id, slot });
+  });
+  return [...tasks.values()];
 }
 
-export const boardCoverageOrderAdapter = { prepare: prepareOrders, admit: admitCoverageOrders };
+export const boardCoverageOrderAdapter = {
+  prepare: prepareOrders,
+  async admit(tx, prepared) {
+    return (await admitCoverageReceipts(tx, prepared)).map(({ taskId }) => taskId);
+  },
+};
