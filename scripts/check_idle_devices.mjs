@@ -90,16 +90,21 @@ const failAt = NOW + 5 * 3_600_000;
 await db.run("UPDATE entity_compute_devices SET last_at = ?", iso(failAt));
 await (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:"odd",verb:"simulate",request:"{}",state:"nondeterministic",opened_at:args[0],due_at:args[1]});})(db,[iso(failAt),iso(failAt)]);
 const injections = new Map();
-const fails = (pattern) => new Proxy(db, { get: (o, k) => {
-  if (k !== "prepare") return typeof o[k] === "function" ? o[k].bind(o) : o[k];
-  return (sql) => {
-    if (!pattern.test(sql)) return real(sql);
-    const no = async () => { injections.set(pattern, (injections.get(pattern) || 0) + 1);
-      throw Object.assign(new Error("SQL private-value"), { code: "57014" }); };
-    const statement = { bind: () => statement, first: no, all: no, run: no };
-    return statement;
+const fails = (pattern) => {
+  const timeout = async () => {
+    injections.set(pattern, (injections.get(pattern) || 0) + 1);
+    throw Object.assign(new Error("SQL private-value"), { code: "57014" });
   };
-} });
+  return new Proxy(db, { get: (o, k) => {
+    if (k === "batch") return statements => statements.some(s => pattern.test(s.sql)) ? timeout() : o.batch(statements);
+    if (k !== "prepare") return typeof o[k] === "function" ? o[k].bind(o) : o[k];
+    return (sql) => {
+      if (!pattern.test(sql)) return real(sql);
+      const statement = { sql, bind: () => statement, first: timeout, all: timeout, run: timeout };
+      return statement;
+    };
+  } });
+};
 const brokenChecks = [
   ["stalled", /WITH RECURSIVE producers\(producer\) AS|SELECT d\.producer, count\(DISTINCT d\.question\)/],
   ["nondeterministic", /SELECT SUM\(n\) AS n FROM/],

@@ -120,14 +120,18 @@ export const BOARD_KINDS_SQL = `(${BOARD_KINDS.map((k) => `'${k}'`).join(", ")})
 /// read only when it is to be said.
 export async function cellsFilling(env, now = Date.now(), since_ms = 6 * 3_600_000) {
   const db = env.LIBRARY;
-  const { results: owed } = await db.prepare(
-    `SELECT ruler, count(*) AS owed FROM state_board_effective_pending_work WHERE ruler LIKE '%!_!_%' ESCAPE '!' GROUP BY ruler`).all();
+  const read = async statement => {
+    const [, rows] = await db.batch([db.prepare("SET LOCAL statement_timeout = 2000"), statement]);
+    return rows.results;
+  };
+  const owed = await read(db.prepare(
+    `SELECT ruler, count(*) AS owed FROM state_board_effective_pending_work WHERE ruler LIKE '%!_!_%' ESCAPE '!' GROUP BY ruler`));
   if (!owed.length) return [];
-  const { results: measured } = await db.prepare(
+  const measured = await read(db.prepare(
     `SELECT ruler, count(*) AS measured, sum(CASE WHEN finished_at > ?1::text THEN 1 ELSE 0 END) AS recent,
        sum(CASE WHEN finished_at > ?2::text THEN 1 ELSE 0 END) AS paced FROM state_board_measurement_selection
        WHERE ruler LIKE '%!_!_%' ESCAPE '!' GROUP BY ruler`)
-    .bind(iso(now - since_ms), iso(now - PACE_HOURS * 3_600_000)).all();
+    .bind(iso(now - since_ms), iso(now - PACE_HOURS * 3_600_000)));
   const m = new Map(measured.map((r) => [r.ruler, r]));
   return owed.map((r) => ({ ruler: r.ruler, measured: m.get(r.ruler)?.measured || 0, recent: m.get(r.ruler)?.recent || 0,
     recent_hours: since_ms / 3_600_000, paced: m.get(r.ruler)?.paced || 0, pace_hours: PACE_HOURS, owed: r.owed }));
