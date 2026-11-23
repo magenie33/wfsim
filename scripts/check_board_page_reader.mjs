@@ -141,8 +141,12 @@ const empty = await run({ empty: true });
 assert.deepEqual(empty.result, []); assert.equal(empty.state.pages, 1); assert.equal(empty.cell, true);
 console.log("  ok  absent and complete-empty partitions remain distinct");
 
+const deadlines = [];
 const narrowCatalog = vm.runInNewContext(cut(shared, "const publishedBoardRevisions", "function headlessNonaHelp(say")
-  + "\npublishedBoardReader", { URLSearchParams, AbortSignal, AbortController });
+  + "\npublishedBoardReader", { URLSearchParams, AbortController, AbortSignal: { timeout(ms) {
+    deadlines.push(ms);
+    return AbortSignal.timeout(ms);
+  } } });
 const expectedCatalog = Array.from({ length: 65 }, (_, i) => ({ weapon: `weapon${String(i).padStart(2, "0")}`,
   ruler, revision, scene: "", rows: 1 }));
 const asks = [];
@@ -156,6 +160,7 @@ const reader = narrowCatalog(async path => {
 });
 assert.deepEqual(JSON.parse(JSON.stringify(await reader.catalog("", null, undefined, ruler))), expectedCatalog);
 assert.deepEqual(asks, [[null, ""], ["64", ""], ["64", expectedCatalog[63].weapon + "/" + ruler]]);
+assert.deepEqual(deadlines, [8000, 15000, 15000]);
 const env = { LIBRARY: { prepare(statement) {
   assert.match(statement, /\?::bigint/);
   return { bind(...args) {
