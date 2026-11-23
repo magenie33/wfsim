@@ -1407,15 +1407,17 @@ BEGIN
   IF EXISTS(SELECT 1 FROM jsonb_to_recordset($2) d(question text,producer text,ref text,trigger_id text,zone bigint,asked_at text)
       WHERE d.question=$1 AND coalesce(d.zone,factory_default_zone(d.producer))<c.keep_zone
         AND coalesce(d.asked_at,$4)>c.cut_at
-        AND NOT EXISTS(SELECT 1 FROM relation_compute_task_sources p JOIN entity_compute_tasks t ON t.id=p.task_id
-          WHERE t.computation=$1 AND (p.producer,p.ref,p.trigger_id)=(d.producer,d.ref,d.trigger_id))) THEN
+        AND NOT EXISTS(SELECT 1 FROM (SELECT id FROM entity_compute_tasks WHERE computation=$1 OFFSET 0) t
+          CROSS JOIN LATERAL(SELECT 1 FROM relation_compute_task_sources p
+            WHERE (p.task_id,p.producer,p.ref,p.trigger_id)=(t.id,d.producer,d.ref,d.trigger_id) OFFSET 0) source)) THEN
     RETURN CASE WHEN q.id IS NULL THEN 1 ELSE 2 END;
   END IF;
   IF cancelled OR ($3>=c.keep_zone AND EXISTS(
     SELECT 1 FROM jsonb_to_recordset($2) d(question text,producer text,ref text,trigger_id text,asked_at text)
       WHERE d.question=$1 AND (coalesce(d.asked_at,$4)<=c.cut_at OR EXISTS(
-        SELECT 1 FROM relation_compute_task_sources p JOIN entity_compute_tasks t ON t.id=p.task_id
-        WHERE t.computation=$1 AND (p.producer,p.ref,p.trigger_id)=(d.producer,d.ref,d.trigger_id))))) THEN RETURN 0; END IF;
+        SELECT 1 FROM (SELECT id FROM entity_compute_tasks WHERE computation=$1 OFFSET 0) t
+        CROSS JOIN LATERAL(SELECT 1 FROM relation_compute_task_sources p
+          WHERE (p.task_id,p.producer,p.ref,p.trigger_id)=(t.id,d.producer,d.ref,d.trigger_id) OFFSET 0) source)))) THEN RETURN 0; END IF;
   RETURN 1;
 END $$;
 
