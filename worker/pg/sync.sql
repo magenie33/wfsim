@@ -339,7 +339,8 @@ $$;
 CREATE OR REPLACE FUNCTION factory_queue_signal(text) RETURNS TABLE (exact boolean, ready bigint, urgent bigint)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path FROM CURRENT SET jit=off AS $$
 BEGIN
-  IF to_regclass('state_queue_zone_seed') IS NULL OR to_regclass('state_queue_zone_changes') IS NULL THEN RETURN; END IF;
+  IF to_regclass('state_queue_zone_seed') IS NULL OR to_regclass('state_queue_zone_changes') IS NULL
+    OR to_regprocedure('compute_order_stock_dispatchable(bigint,bigint)') IS NULL THEN RETURN; END IF;
   RETURN QUERY
   WITH active_cut AS MATERIALIZED(SELECT * FROM compute_order_cut()),
   epoch AS MATERIALIZED(SELECT coalesce(compute_order_cut_epoch(),'') AS at),

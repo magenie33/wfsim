@@ -107,6 +107,11 @@ try {
   assert.equal((await scanLoops()).loops, 0, "an exact zero signal must skip the historical queue plan");
   assert.deepEqual(await wave(), { open: false, urgent: false });
   assert.equal((await scanLoops()).loops, 0, "an exact zero wave must skip the historical queue plan");
+  await sql.unsafe("ALTER FUNCTION compute_order_stock_dispatchable(bigint,bigint) RENAME TO legacy_uninstalled_stock_guard");
+  assert.deepEqual(await signal(), before);
+  assert((await scanLoops()).loops > 0, "a partial stock schema must use the authoritative schedule");
+  await sql.unsafe("ALTER FUNCTION legacy_uninstalled_stock_guard(bigint,bigint) RENAME TO compute_order_stock_dispatchable");
+
 
   await addLive("ready", history + 1, 0);
   await addLive("urgent", history + 2, 1);
