@@ -24,7 +24,7 @@ export const REFILL_STOCK_SQL = `WITH balance AS MATERIALIZED (${queueZonesSql})
       SELECT s.id,s.task_id,s.waits,s.lease_until,s.required_engine,s.required_capability,s.lanes,s.verb
       FROM state_compute_scheduling s WHERE s.state='open' AND ${zone}=z.zone
       ORDER BY ${zone} DESC,coalesce(s.zone_position,s.task_id) DESC,s.id DESC
-      LIMIT least(z.n+16,greatest(128,$3::bigint+16))
+      LIMIT least(z.n+16,$4::bigint+16)
     ) candidate
   ), measured AS (
     SELECT count(*) AS live,count(*) FILTER(WHERE c.waits=0
@@ -37,15 +37,15 @@ export const REFILL_STOCK_SQL = `WITH balance AS MATERIALIZED (${queueZonesSql})
       AND NOT EXISTS(SELECT 1 FROM record_compute_order_cancellations r
         WHERE r.cut_id=(SELECT id FROM compute_order_cut()) AND r.question=c.id AND r.task_id=c.task_id)
   )
-  SELECT CASE WHEN size.open<$3 THEN true ELSE (
+  SELECT CASE WHEN size.open<$3 THEN true WHEN size.open>=$4 THEN false ELSE (
     SELECT CASE WHEN measured.ready>=$3 THEN false WHEN measured.live=size.open THEN true END FROM measured
   ) END AS below FROM size`;
 
-export async function belowReadyOrderStock(reader, engine, limit, now = Date.now()) {
-  if (!positive(limit)) throw Error('a positive ready order limit is required');
+export async function belowReadyOrderStock(reader, engine, limit, maxOpen, now = Date.now()) {
+  if (!positive(limit) || !positive(maxOpen) || limit >= maxOpen) throw Error('invalid ready stock watermarks');
   return reader.begin(async tx => {
     await tx.unsafe("SET TRANSACTION READ ONLY; SET LOCAL statement_timeout='2s'; SET LOCAL jit=off");
-    const [sample] = await tx.unsafe(REFILL_STOCK_SQL, [iso(now), engine, limit]);
+    const [sample] = await tx.unsafe(REFILL_STOCK_SQL, [iso(now), engine, limit, maxOpen]);
     return sample?.below ?? null;
   });
 }
@@ -121,10 +121,12 @@ function publicSnapshot(url) {
   };
 }
 
-export async function openOrderRefill(reader, config, maxOpen) {
+export async function openOrderRefill(reader, config, maxOpen, source) {
   const cfg = JSON.parse(await readFile(config, 'utf8'));
+  const inputSha = source?.inputSha ?? cfg.input_sha256;
   if (cfg.v !== 1 || !positive(cfg.ready_below) || !positive(maxOpen) || cfg.ready_below >= maxOpen
-      || !/^[0-9a-f]{64}$/.test(cfg.input_sha256 || '') || typeof cfg.order_epoch !== 'string'
+      || !/^[0-9a-f]{64}$/.test(inputSha || '') || typeof cfg.order_epoch !== 'string'
+      || (source && source.cut !== cfg.order_epoch)
       || ![cfg.root_reserve_bytes, cfg.data_reserve_bytes, cfg.wal_max_bytes, cfg.wal_reserve_bytes].every(positive)
       || cfg.wal_reserve_bytes >= cfg.wal_max_bytes
       || ![cfg.max_io_pressure, cfg.max_memory_pressure, cfg.max_clear_hours].every(n => Number.isFinite(n) && n > 0)
@@ -148,11 +150,11 @@ export async function openOrderRefill(reader, config, maxOpen) {
   };
   const refill = orderRefill({ low: cfg.ready_below, maxHours: cfg.max_clear_hours, capacity,
     stock: async (engine, limit) => {
-      try { return await belowReadyOrderStock(reader, engine, limit); }
+      try { return await belowReadyOrderStock(reader, engine, limit, maxOpen); }
       catch (error) { if (error.code === '57014') return null; throw error; }
     },
     release: publicSnapshot('https://wfsim.app/release.json'),
     demand: publicSnapshot('https://cdn.wfsim.app/demand.json'),
     onHold: reason => console.error(JSON.stringify({ result: 'refill_wait', reason })) });
-  return { ...refill, inputSha: cfg.input_sha256, cut: cfg.order_epoch };
+  return { ...refill, inputSha, cut: cfg.order_epoch, source };
 }

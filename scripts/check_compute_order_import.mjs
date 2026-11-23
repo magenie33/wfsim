@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import postgres from './pg/node_modules/postgres/src/index.js';
@@ -10,6 +10,7 @@ import { boardCoverageSchemaSql } from './board_coverage_schema.mjs';
 import { boardCoverageOrderAdapter } from './board_coverage_orders.mjs';
 import { boardCoverageGaps } from './board_coverage_gaps.mjs';
 import { importComputeOrders, orderImportConnection, verifyRefillConnection } from './compute_order_import.mjs';
+import { runOrderStock } from './compute_order_stock.mjs';
 import { belowReadyOrderStock, orderRefill } from './compute_order_refill.mjs';
 import { computeOrderImportSchema } from './compute_order_import_schema.mjs';
 import { computationId } from '../worker/computation_input.js';
@@ -192,6 +193,9 @@ try {
     WHERE producer='build_workflow' AND state='live'`);
   assert(flows.n >= filled + selected.length);
 
+  const spaced = Array.from({ length: 160 }, (_, i) => demand('stock-window-' + i, 10_000 + i));
+  const stockWindow = await run({ path: file('stock-window', spaced), id: 'stock-window', target: spaced.length, rows: 32 });
+  assert.equal(stockWindow.admitted, spaced.length);
   const tick = Date.now(), now = new Date(tick).toISOString(), otherEngine = 'b'.repeat(12);
   const [{ order_epoch: cut, zones }] = await reader.unsafe(queueZonesSql);
   const maxOpen = queueOrders(zones).total + 1;
@@ -205,19 +209,20 @@ try {
     lease_until=CASE WHEN id=$5 THEN $6 ELSE lease_until END
     WHERE id IN ($2,$3,$4,$5)`,
   [engine, ...stock.map(({ id }) => id), new Date(tick + 60000).toISOString()]);
-  assert.equal(await belowReadyOrderStock(reader, engine, maxOpen, tick), true);
-  assert.equal(await belowReadyOrderStock(reader, engine, 2, tick), true);
-  assert.equal(await belowReadyOrderStock(reader, engine, 1, tick), false);
+  assert.equal(await belowReadyOrderStock(reader, engine, maxOpen, maxOpen + 1, tick), true);
+  assert.equal(await belowReadyOrderStock(reader, engine, 2, maxOpen, tick), true);
+  assert.equal(await belowReadyOrderStock(reader, engine, 1, maxOpen, tick), false);
+  assert.equal(await belowReadyOrderStock(reader, engine, 1, maxOpen - 1, tick), false);
   await writer.unsafe(`INSERT INTO record_compute_order_cancellations
     SELECT s.id,s.task_id,c.id,$2 FROM state_compute_scheduling s
     CROSS JOIN compute_order_cut() c WHERE s.id=$1`, [stock[0].id, now]);
-  assert.equal(await belowReadyOrderStock(reader, engine, 1, tick), true);
+  assert.equal(await belowReadyOrderStock(reader, engine, 1, maxOpen, tick), true);
   await writer.unsafe('DELETE FROM record_compute_order_cancellations WHERE question=$1', [stock[0].id]);
 
   const path = file('refill', [demand('refill-a', 501), demand('refill-b', 502)]);
   const inputSha = createHash('sha256').update(readFileSync(path)).digest('hex');
   const settings = { low: 1, maxHours: 2, now: () => tick,
-    stock: (current, limit) => belowReadyOrderStock(reader, current, limit, tick) };
+    stock: (current, limit) => belowReadyOrderStock(reader, current, limit, 10_000, tick) };
   const goodSnapshot = { ok: true, counts_at: now, order_epoch: cut, clear_hours: 1 };
   const runs = { path, id: 'refill', target: 2, rows: 1, maxOpen, waitMs: 1 };
   await assert.rejects(run({ ...runs, refill: { inputSha, cut: 'different' } }), /approved source/);
@@ -263,6 +268,53 @@ try {
     await Promise.all([proofConnection.end(), refillWriter.end()]);
     await writer.unsafe('DROP ROLE ' + serviceRole);
   }
+  const sealedSource = (name, first, orders) => {
+    const sourcePath = file(name, orders), bytes = readFileSync(sourcePath);
+    return { id: name, file: name + '.ndjson', first, last: first + orders.length - 1,
+      input_bytes: bytes.length, input_sha256: createHash('sha256').update(bytes).digest('hex') };
+  };
+  const manifest = join(root, 'stock.json');
+  const publishStock = files => {
+    const stage = manifest + '.writing';
+    writeFileSync(stage, JSON.stringify({ v: 1, engine, order_epoch: cut, files }));
+    renameSync(stage, manifest);
+  };
+  const first = sealedSource('stock-first', 200, [demand('stock-first', 601)]);
+  const second = sealedSource('stock-second', 201, [demand('stock-second', 602), demand('stock-alias', 601)]);
+  const third = sealedSource('stock-third', 203, [demand('stock-third', 603)]);
+  const refillSource = source => ({ ...orderRefill({ ...settings, capacity: () => true, release: () => ({ engine }),
+    demand: () => goodSnapshot, delay: () => assert.fail('stock should be admitted') }), source,
+    inputSha: source.inputSha, cut: source.cut });
+  const supply = { manifest, writer, reader, adapters, rows: 1, maxOpen: 10_000,
+    anchor: first.id, openRefill: refillSource };
+  publishStock([first, second]);
+  const firstBatch = await runOrderStock({ ...supply, maxBatches: 1 });
+  assert.deepEqual([firstBatch.result, firstBatch.id, firstBatch.admitted], ['batch_limit', first.id, 1]);
+  assert.equal((await reader.unsafe('SELECT 1 FROM state_compute_order_imports WHERE id=$1', [second.id])).length, 0);
+  rmSync(join(root, first.file));
+  const partial = await runOrderStock({ ...supply, maxBatches: 1 });
+  assert.deepEqual([partial.result, partial.id, partial.admitted, partial.processed], ['batch_limit', second.id, 1, 1]);
+  const stockStop = new AbortController(), handoffs = [];
+  await assert.rejects(runOrderStock({ ...supply, signal: stockStop.signal,
+    onProgress: event => { if (['complete', 'input_exhausted'].includes(event.result)) handoffs.push(event.id); },
+    delay: () => {
+      if (handoffs.length === 1) publishStock([first, second, third]);
+      else stockStop.abort();
+    } }), { name: 'AbortError' });
+  assert.deepEqual(handoffs, [second.id, third.id]);
+  const counted = await reader.unsafe(`SELECT id,processed,admitted FROM state_compute_order_imports
+    WHERE id IN ($1,$2,$3) ORDER BY id`, [first.id, second.id, third.id]);
+  assert.deepEqual(counted.map(row => [row.id, Number(row.processed), Number(row.admitted)]),
+    [[first.id, 1, 1], [second.id, 2, 1], [third.id, 1, 1]]);
+  publishStock([first, { ...second, first: second.first + 1 }]);
+  await assert.rejects(runOrderStock(supply), /consecutive sources/);
+  publishStock([second, third]);
+  await assert.rejects(runOrderStock(supply), /approved import/);
+  const incorrect = sealedSource('stock-bad', 204, [demand('stock-bad', 604)]);
+  publishStock([first, second, third, { ...incorrect, last: 205 }]);
+  await assert.rejects(runOrderStock(supply), /order count or size/);
+  assert.equal((await reader.unsafe('SELECT 1 FROM state_compute_order_imports WHERE id=$1', [incorrect.id])).length, 0);
+  console.log('  ok  stock resumes existing imports and an appended source without a restart, gaps or duplicate orders');
   console.log('  ok  low-ready refill, release and host holds, atomic high cap and resume from the same source');
   console.log('  ok  sealed input, lost reply, pause and resume, queue cap, coverage rollback, lock retry, duplicate replay, concurrent runners and Native gaps');
 } finally {

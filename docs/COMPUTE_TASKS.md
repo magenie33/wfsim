@@ -424,6 +424,25 @@ returns to the low-watermark check. A confirmed lock rollback retries at
 the same byte; ambiguous writes go through the indexed receipt and the
 same restart protocol as manual import.
 
+For continuous approved stock, use
+`run-stock MANIFEST --stock-anchor=ID --max-open=N --refill-config=FILE`.
+The manifest holds `v: 1`, `engine`, `order_epoch` and `files`, an ordered
+list of sealed sources. Each entry gives `id`, file basename `file`, inclusive
+source ordinals `first` and `last`, `input_bytes` and `input_sha256`. The
+ordinals must be consecutive and the file must contain one newline-terminated
+order per ordinal. The anchor is the first approved import ID.
+
+An existing refill service can use the stock command as its ExecStart.
+Publish completely written sources alongside the root-owned manifest and
+append their descriptors by atomic replacement. The service requires a
+verified final cursor before advancing and waits for another descriptor
+after the last source. It reuses each existing import ID and its database
+progress after a restart. Keep the sealed prefix in the manifest. The
+payload file of a finished source can be retired after its final receipt.
+The capacity config supplies the cut and budgets, and the stock manifest
+supplies the approved file digests. A different engine or order cut requires
+a newly qualified manifest.
+
 Admission reserves computation positions when accepting the intent, preserving
 arrival order through deferred expansion. Requested and bulk lane heads share
 turns within a zone; the declared zone remains authoritative. Aliases in one

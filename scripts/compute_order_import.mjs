@@ -92,6 +92,25 @@ async function verifyPage(reader, id, first, last, orders) {
   return proof;
 }
 
+async function verifyImportPosition(reader, id, next) {
+  if (next === 0) return;
+  const [prior] = await reader.unsafe(`SELECT first_byte,orders FROM record_compute_order_import_batches
+    WHERE import_id=$1 AND first_byte<$2 ORDER BY first_byte DESC LIMIT 1`, [id, next]);
+  if (!prior || !await verifyPage(reader, id, Number(prior.first_byte), next, prior.orders))
+    throw Error('cannot verify the saved import position');
+}
+
+export async function orderImportAtEnd(reader, { id, inputSha, inputBytes, engine, cut, target }) {
+  const [run] = await readState(reader, id);
+  if (!run) return false;
+  if (run.input_sha !== inputSha || Number(run.input_bytes) !== inputBytes || run.engine !== engine ||
+      run.cut !== cut || Number(run.target) !== target) throw Error('stock source disagrees with the existing import');
+  if (Number(run.next_byte) !== inputBytes) return false;
+  if (Number(run.processed) !== target) throw Error('stock source did not account for every order line');
+  await verifyImportPosition(reader, id, inputBytes);
+  return true;
+}
+
 async function admitPage(writer, reader, page, signal, retryRollbacks) {
   for (let attempt = 0; ; attempt++) {
     signal?.throwIfAborted();
@@ -125,15 +144,19 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
         throw Error('order file changed during the import');
     };
     const hash = createHash('sha256');
+    let lines = 0;
     for await (const bytes of file.createReadStream({ start: 0, autoClose: false })) {
       signal?.throwIfAborted();
       hash.update(bytes);
+      if (refill?.source) for (let newline = bytes.indexOf(10); newline >= 0; newline = bytes.indexOf(10, newline + 1)) lines++;
     }
     await checkFile();
     const inputSha = hash.digest('hex'), inputBytes = Number(original.size);
     const [{ cut }] = await reader.unsafe("SELECT coalesce(compute_order_cut_epoch(),'') cut");
     if (refill && (refill.inputSha !== inputSha || refill.cut !== cut))
       throw Error('order refill input or cut differs from the approved source');
+    if (refill?.source && (inputBytes !== refill.source.inputBytes || lines !== target))
+      throw Error('stock source order count or size differs from its approved file');
     if (refill && !(await readState(reader, id)).length) {
       await refill.wait({ cut, engine, signal });
       await checkFile();
@@ -146,12 +169,7 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
     let next = Number(run.next_byte), admitted = Number(run.admitted), processed = Number(run.processed);
     const status = result => ({ result, admitted, processed, without_new_task: processed - admitted,
       remaining: target - admitted, next_byte: next });
-    if (next > 0) {
-      const [prior] = await reader.unsafe(`SELECT first_byte,orders FROM record_compute_order_import_batches
-        WHERE import_id=$1 AND first_byte<$2 ORDER BY first_byte DESC LIMIT 1`, [id, next]);
-      if (!prior || !await verifyPage(reader, id, Number(prior.first_byte), next, prior.orders))
-        throw Error('cannot verify the saved import position');
-    }
+    await verifyImportPosition(reader, id, next);
     if (run.paused) return status('paused');
     const stream = orderLines(file, next);
     try {
@@ -224,11 +242,14 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   const { positionals: [operation, id, path, extra], values } = parseArgs({ allowPositionals: true,
     options: { target: { type: 'string' }, engine: { type: 'string' }, 'max-open': { type: 'string' },
       rows: { type: 'string' }, batches: { type: 'string' }, once: { type: 'boolean' },
-      'refill-config': { type: 'string' } } });
+      'refill-config': { type: 'string' }, 'stock-anchor': { type: 'string' } } });
   const url = process.env.WFSIM_COMPUTE_ORDER_DATABASE_URL;
-  if (!url || !id || extra || !['run', 'status', 'pause', 'resume'].includes(operation) || (operation === 'run') !== !!path
-      || (values['refill-config'] && (operation !== 'run' || values.once)))
-    throw Error('usage: compute_order_import.mjs run ID FILE --target=N --engine=ID --max-open=N [--rows=N] [--batches=N] [--refill-config=FILE], or status|pause|resume ID');
+  const stock = operation === 'run-stock';
+  if (!url || !id || extra || !['run', 'run-stock', 'status', 'pause', 'resume'].includes(operation) || (operation === 'run') !== !!path
+      || (values['refill-config'] && (!['run', 'run-stock'].includes(operation) || values.once))
+      || (stock && (!values['refill-config'] || !values['stock-anchor'] || values.engine || values.target))
+      || (!stock && values['stock-anchor']))
+    throw Error('usage: compute_order_import.mjs run ID FILE --target=N --engine=ID --max-open=N, run-stock MANIFEST --stock-anchor=ID --max-open=N --refill-config=FILE, or status|pause|resume ID');
   const { default: postgres } = await import('./pg/node_modules/postgres/src/index.js');
   const connect = proof => postgres(url, { max: 1, fetch_types: false,
     connection: orderImportConnection(proof, !!values['refill-config']) });
@@ -236,17 +257,22 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   const controller = new AbortController();
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => controller.abort());
   try {
-    if (operation === 'run') {
+    if (operation === 'run' || stock) {
       const { boardCoverageOrderAdapter } = await import('./board_coverage_orders.mjs');
       const config = values['refill-config'];
-      const refill = config ? await (await import('./compute_order_refill.mjs')).openOrderRefill(reader, config, Number(values['max-open'])) : null;
-      if (refill) await Promise.all([verifyRefillConnection(writer, false), verifyRefillConnection(reader, true)]);
-      const result = await importComputeOrders({ writer, reader, path, id, engine: values.engine, target: Number(values.target),
-        maxOpen: Number(values['max-open']), rows: values.rows === undefined ? undefined : Number(values.rows),
+      const maxOpen = Number(values['max-open']);
+      const options = { writer, reader, maxOpen, rows: values.rows === undefined ? undefined : Number(values.rows),
         maxBatches: values.batches === undefined ? undefined : Number(values.batches), signal: controller.signal,
-        waitMs: refill ? 500 : values.once ? 0 : 8000, retryRollbacks: !values.once && !refill,
+        waitMs: config ? 500 : values.once ? 0 : 8000, retryRollbacks: !values.once && !config,
         adapters: new Map([['board_coverage', boardCoverageOrderAdapter]]),
-        refill, onProgress: event => console.error(JSON.stringify(event)) });
+        onProgress: event => console.error(JSON.stringify(event)) };
+      if (config) await Promise.all([verifyRefillConnection(writer, false), verifyRefillConnection(reader, true)]);
+      const openRefill = async source => (await import('./compute_order_refill.mjs')).openOrderRefill(reader, config, maxOpen, source);
+      const result = stock
+        ? await (await import('./compute_order_stock.mjs')).runOrderStock({ ...options, manifest: id,
+          anchor: values['stock-anchor'], openRefill })
+        : await importComputeOrders({ ...options, path, id, engine: values.engine, target: Number(values.target),
+          refill: config ? await openRefill() : null });
       console.log(JSON.stringify(result));
     } else {
       const [state] = operation === 'status' ? await readState(reader, id) : await writer.unsafe(
