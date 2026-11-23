@@ -114,7 +114,7 @@ $$;
 
 -- Executable work is selected by zone, then its position within that zone.
 -- Each disjoint range applies eligibility, FIFO and its bound before the final merge.
--- The post-cut task index drives point lookups on the scheduling primary key.
+-- The open scheduling index bounds post-cut work without reading closed rounds.
 CREATE OR REPLACE FUNCTION factory_candidates(text,bigint,bigint,text,text,text,text,text,bigint,bigint,text,text,bigint,text,text,text,boolean)
 RETURNS SETOF state_compute_work LANGUAGE plpgsql SET jit=off AS $function$
 DECLARE prefix_pick text;found_count bigint;remaining bigint:=$13;cutoff bigint;pick text:=$pick$
@@ -138,10 +138,8 @@ DECLARE prefix_pick text;found_count bigint;remaining bigint:=$13;cutoff bigint;
     UNION ALL
     (SELECT candidate.* FROM LATERAL(SELECT q.* FROM (
         SELECT guard.id,guard.task_id,coalesce(guard.zone,factory_default_zone(guard.producer)) AS zone,
-          coalesce(guard.zone_position,guard.task_id) AS position FROM entity_compute_tasks t
-          CROSS JOIN LATERAL (SELECT g.* FROM state_compute_scheduling g
-            WHERE g.id=t.computation AND g.task_id=t.id AND g.state='open' OFFSET 0) guard
-        WHERE t.id>$17::bigint
+          coalesce(guard.zone_position,guard.task_id) AS position FROM state_compute_scheduling guard
+        WHERE guard.state='open' AND guard.task_id>$17::bigint
           AND (coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id)
             >(SELECT keep_zone,keep_position,keep_id FROM cut)
         ORDER BY zone,position,guard.id OFFSET 0) ordered
@@ -290,6 +288,7 @@ RETURNS TABLE (id text, verb text, request text, due_at text, producer text, zon
       q.leased_to_prev, q.lease_prev_until, q.lease, q.leased_to, q.lease_until, $1)),
     lease = $15, lease_until = $16, leased_to = $17, leased_at = $1
   WHERE q.id IN (SELECT factory_take($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14))
+    AND factory_takeable(q.lease_until,q.leased_at,$1,$9)
     AND (SELECT count(DISTINCT h.lease) FROM state_compute_work h WHERE h.leased_to = $17 AND h.lease_until > $1 AND h.lease <> $15) < $18
   RETURNING q.id, q.verb, q.request, q.due_at, q.producer, q.zone, q.zone_position
 $$;

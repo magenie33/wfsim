@@ -903,6 +903,10 @@ jobs:
         run: node scripts/check_settler_async.mjs
       - name: A sync as one call answers and writes what the statements do, in two round trips at most
         run: node scripts/check_sync_proc.mjs
+      - name: Concurrent pack grants preserve live leases and post-cut FIFO
+        env:
+          WFSIM_ORDER_CUT_TEST_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
+        run: node scripts/check_compute_order_lease_pg.mjs
       - name: Every ask names who asked, one asker is held to its share, and a code is erased once the ask is over
         run: node scripts/check_initiator.mjs
       - name: An official check of another engine goes back to the volunteers, and a spot of one to its fact

@@ -1007,6 +1007,13 @@ Install and verify `worker/pg/order_cut_indexes.sql` separately before activatio
 Its two online index builds read the existing heaps; they never run in worker
 startup, the additive function upgrade or activation.
 
+The post-cut pack selector reads open scheduling rows by physical task ID. Its
+foreign key links each row to the same computation and task. Before replacing
+the selector in a live database, install `worker/pg/order_dispatch_open_index.sql`
+separately and verify the partial index is valid. The concurrent build scans
+the scheduling heap. Pack writes recheck lease availability on the target row
+so a stale candidate cannot supersede a valid lease before its ceiling.
+
 Stage precedes the fresh protection snapshot. `compute_order_cut_protect(text,
 jsonb)` imports the audited historical and required-parent ids, and
 `compute_order_cut_capture(text)` adds indexed execution, previous-credential,
