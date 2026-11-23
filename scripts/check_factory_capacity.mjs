@@ -294,7 +294,7 @@ let auditSql, auditArgs, unsettledSql, unsettledArgs;
 const observed = { ...A, prepare(sql) {
   const statement = A.prepare(sql);
   if (/count\(DISTINCT d\.question\)/i.test(sql)) return { bind(...args) { auditSql = sql; auditArgs = args; return statement.bind(...args); } };
-  if (/SELECT count\(\*\) AS n FROM state_compute_effective_work q WHERE q\.state IN/.test(sql)) return { bind(...args) { unsettledSql = sql; unsettledArgs = args; return statement.bind(...args); } };
+  if (/SELECT count\(\*\) AS n FROM state_compute_work q WHERE q\.state IN/.test(sql)) return { bind(...args) { unsettledSql = sql; unsettledArgs = args; return statement.bind(...args); } };
   return statement;
 } };
 const findings = await f.audit({ LIBRARY: observed }, now);
@@ -359,9 +359,22 @@ for (const mode of ["force_generic_plan", "force_custom_plan"]) {
   assert.ok(readAnswers > 0 && readAnswers <= 100, `${mode}: official settlement must read its candidates without scanning other questions' recent answers (${readAnswers})`);
 }
 await A.exec("DEALLOCATE unsettled_audit; RESET plan_cache_mode");
+const day = 24 * 3_600_000;
+for (const [id, state, age, odd] of [
+  ["old-nondeterministic", "nondeterministic", day + 1, 0],
+  ["recent-nondeterministic", "nondeterministic", day - 1, 1],
+  ["recent-odd-fact", "fact", day - 1, 1],
+  ["odd-at-cutoff", "fact", day, 1],
+  ["recent-ordinary-fact", "fact", day - 1, 0],
+]) {
+  await seedComputeWork(A, { id, state, odd, fact_at: new Date(now - age).toISOString() });
+}
+const oddFinding = (await f.audit({ LIBRARY: A }, now)).find(x => x.kind === "nondeterministic");
+assert.equal(oddFinding?.questions, 3);
 await A.close();
 console.log("ok: the watchdog counts silent producers without reading healthy producers' overdue questions");
 console.log("ok: official settlement observations read only their questions' answers");
+console.log("ok: the watchdog counts every nondeterministic state once and odd facts inside its day");
 
 const C = await testDb("library");
 await C.exec(`INSERT INTO state_board_pending_work (batch,build_id,ruler,mode)

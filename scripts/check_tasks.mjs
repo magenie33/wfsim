@@ -517,19 +517,6 @@ await runCase("fixed:watchdog-stall", async () => {
   check("...a round is every finding, under one instant", latest.length === round.length && round.length > 0, JSON.stringify(latest));
   await watchdog(tell, later + 40 * 24 * 3_600_000);
   check("...each saying kept thirty days", (await said()).length === 1, JSON.stringify(await said()));
-  const day = 24 * 3_600_000;
-  for (const [id, state, age, odd] of [
-    ["old-nondeterministic", "nondeterministic", day + 1, 0],
-    ["recent-nondeterministic", "nondeterministic", day - 1, 1],
-    ["recent-odd-fact", "fact", day - 1, 1],
-    ["odd-at-cutoff", "fact", day, 1],
-    ["recent-ordinary-fact", "fact", day - 1, 0],
-  ]) {
-    await seedComputeWork(db, { id, state, odd, fact_at: iso(later - age) });
-  }
-  const observed = (await f.audit(env, later)).find((x) => x.kind === "nondeterministic");
-  check("the watchdog counts every nondeterministic state once and only odd facts inside its day",
-    observed?.questions === 3, JSON.stringify(observed));
 });
 await runCase("fixed:overdue", async () => {
   // A BACKLOG PAST DUE: one question four hours late is said, one an hour late is not.
