@@ -116,7 +116,9 @@ try {
   await db.exec("INSERT INTO entity_compute_specs(id,verb,request) SELECT md5(i::text),'simulate','{}' FROM generate_series(1,100000) i; INSERT INTO entity_compute_tasks(id,computation,generation,created_at,reason) OVERRIDING SYSTEM VALUE SELECT i,md5(i::text),1,'2026-01-01','request' FROM generate_series(1,100000) i; INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,producer,zone,zone_position) SELECT md5(i::text),'simulate',i,'open','2026-01-01','2026-01-01','sweep',3,i FROM generate_series(1,100000) i; ANALYZE state_compute_scheduling; ANALYZE entity_compute_tasks;");
   const source=readFileSync(new URL('../worker/pg/sync.sql',import.meta.url),'utf8');
   const types=['text','bigint','bigint','text','text','text','text','text','bigint','bigint','text','text','bigint','text','text','text','bigint'];
-  const inner=source.match(/pick text:=\$pick\$([^]*?)\$pick\$;/)[1].replaceAll('/* lock */','').replaceAll('/* state */',"guard.state='open'").replace('/* source */','factory_eligible($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)').replace(/\$(\d+)\b/g,(_,n)=>`($${n}::${types[Number(n)-1]})`);
+  const postCut=source.match(/post_cut_pick text:=\$post\$([^]*?)\$post\$;/)[1];
+  const inner=source.match(/pick text:=\$pick\$([^]*?)\$pick\$;/)[1].replace('/* post-cut candidates */',postCut)
+    .replaceAll('/* lock */','').replaceAll('/* state */',"guard.state='open'").replace('/* source */','factory_eligible($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)').replace(/\$(\d+)\b/g,(_,n)=>`($${n}::${types[Number(n)-1]})`);
   const args=['2026-11-17T00:00:00.000Z',0,1,'e','["w"]','w','n',null,600,0,'["open"]',null,1,null,null,null,100000];
   for(const active of [false,true]) {
     if(active) {
