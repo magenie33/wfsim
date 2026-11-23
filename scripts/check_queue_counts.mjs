@@ -121,6 +121,28 @@ try{
   assert.equal(compareQueueDay(prior,{...row,completed:{simulate:2}}),null);
   assert.equal(compareQueueDay(prior,{...row,completed:{...row.completed,followup:0}}).completed_ms,0);
   console.log('ok measured confirmed rounds, complete-hour capacity, daily checkpoint and cancellation-safe comparison');
+  await query("UPDATE state_compute_scheduling SET state='withdrawn' WHERE state='open' AND verb='optimize'");
+  const [quiet]=await query(queueZonesSql);
+  assert.equal(quiet.verbs.optimize,undefined);
+  assert.equal(quiet.completed.optimize,1);
+  const timedOut={prepare(s) {
+    if (!s.includes('sum(cost.ms)')) return db.prepare(s);
+    return {bind(...args) {
+      if (args[0]==='optimize') return {first:async()=>{throw Object.assign(Error('timeout'),{code:'57014'});}};
+      return db.prepare(s).bind(...args);
+    }};
+  }};
+  const partialPrices=await measureQueueCosts(timedOut,prices,now+11*60000);
+  assert.equal(queueHours(quiet,quiet.verbs.simulate,partialPrices,now+12*60000),2*quiet.verbs.simulate);
+  const quietPrices=await measureQueueCosts(db,prices,now+11*60000);
+  await seedComputeWork(seedData,{id:'rare-arrival',verb:'optimize',producer:'sweep'});
+  const [arrival]=await query(queueZonesSql);
+  assert.equal(arrival.verbs.optimize,1);
+  const arrivalTotal=Object.values(arrival.verbs).reduce((a,b)=>a+b,0);
+  assert.equal(queueHours(arrival,arrivalTotal,partialPrices,now+12*60000),null);
+  await assert.rejects(measureQueueCosts(timedOut,partialPrices,now+12*60000),{code:'57014'});
+  assert.equal(queueHours(arrival,arrivalTotal,quietPrices,now+12*60000),
+    2*arrival.verbs.simulate+18,'arrival uses confirmed rare-round cost from the idle interval');
   await writer.end();await query('SELECT queue_count_fold()');
   await check('folding a disconnected writer preserves the complete read');
   const again=await seed();assert.equal(again.installed,false);await check('retry cannot overwrite a seed');
