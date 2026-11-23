@@ -78,35 +78,15 @@ impl DebuffState {
         self.live_dot_types != u32::MAX
             && (self.live_dot_types & !DOT_FAMILY_MASK) == 0
             && (self.live_dot_counts[0] == 0 || self.dot_rings[0].exact)
-            && (self.live_dot_counts[1] == 0 || self.consolidated_clocks[0].shared)
+            && (self.live_dot_counts[1] == 0
+                || self.consolidated_clocks[0].shared
+                || self.dot_rings[1].exact
+                || (!self.consolidated_clocks[0].phases_invalid && self.consolidated_clocks[0].phases_len > 1))
             && (self.live_dot_counts[2] == 0 || self.dot_rings[2].exact)
-            && (self.live_dot_counts[3] == 0 || self.consolidated_clocks[1].shared)
-    }
-
-    #[inline]
-    pub(super) fn fast_dots_due(&self) -> f64 {
-        let mut due = f64::INFINITY;
-        for (c, f, dtype) in [(0, 1, DamageType::Electricity), (1, 3, DamageType::Gas)] {
-            if self.live_dot_counts[f] > 0 {
-                if let Some((_, d)) = self.first_live_consolidated_in_slice(c, dtype) {
-                    due = due.min(d.next_tick);
-                }
-            }
-        }
-        for f in [0, 2] {
-            if self.live_dot_counts[f] > 0 {
-                let ring = &self.dot_rings[f];
-                for k in 0..ring.len as usize {
-                    let idx = ring.slots[(ring.head as usize + k) & (debuffs::DOT_CAP_RING_MAX - 1)] as usize;
-                    if let Some(d) = self.dots.get(idx) {
-                        if d.ticks_left > 0 {
-                            due = due.min(d.next_tick);
-                        }
-                    }
-                }
-            }
-        }
-        due
+            && (self.live_dot_counts[3] == 0
+                || self.consolidated_clocks[1].shared
+                || self.dot_rings[3].exact
+                || (!self.consolidated_clocks[1].phases_invalid && self.consolidated_clocks[1].phases_len > 1))
     }
 
     #[inline]
@@ -144,6 +124,71 @@ impl DebuffState {
         None
     }
 
+    #[cold]
+    fn scan_phase_live_slow(&self, dtype: DamageType, phase: &debuffs::ClockPhase) -> Option<(u32, f64)> {
+        let start = (phase.head as usize).min(self.dots.len());
+        let end_excl = ((phase.tail as usize) + 1).min(self.dots.len());
+        let bits = phase.next_tick.to_bits();
+        for (off, d) in self.dots[start..end_excl].iter().enumerate() {
+            if d.dtype == dtype && d.ticks_left > 0 && d.next_tick.to_bits() == bits {
+                return Some(((start + off) as u32, d.next_tick));
+            }
+        }
+        None
+    }
+
+    #[inline]
+    pub(super) fn fast_dots_due(&self) -> f64 {
+        let mut due = f64::INFINITY;
+        for (c, f, dtype) in [(0, 1, DamageType::Electricity), (1, 3, DamageType::Gas)] {
+            if self.live_dot_counts[f] > 0 {
+                if self.consolidated_clocks[c].shared {
+                    if let Some((_, d)) = self.first_live_consolidated_in_slice(c, dtype) {
+                        due = due.min(d.next_tick);
+                    }
+                } else if self.dot_rings[f].exact {
+                    let ring = &self.dot_rings[f];
+                    for k in 0..ring.len as usize {
+                        let idx = ring.slots[(ring.head as usize + k) & (debuffs::DOT_CAP_RING_MAX - 1)] as usize;
+                        if let Some(d) = self.dots.get(idx) {
+                            if d.ticks_left > 0 {
+                                due = due.min(d.next_tick);
+                            }
+                        }
+                    }
+                } else {
+                    let slot = &self.consolidated_clocks[c];
+                    for phase in &slot.phases[..slot.phases_len as usize] {
+                        let h = phase.head as usize;
+                        let nt = match self.dots.get(h) {
+                            Some(d) if d.dtype == dtype && d.ticks_left > 0 && d.next_tick.to_bits() == phase.next_tick.to_bits() => {
+                                Some(d.next_tick)
+                            }
+                            _ => self.scan_phase_live_slow(dtype, phase).map(|(_, t)| t),
+                        };
+                        if let Some(t) = nt {
+                            due = due.min(t);
+                        }
+                    }
+                }
+            }
+        }
+        for f in [0, 2] {
+            if self.live_dot_counts[f] > 0 {
+                let ring = &self.dot_rings[f];
+                for k in 0..ring.len as usize {
+                    let idx = ring.slots[(ring.head as usize + k) & (debuffs::DOT_CAP_RING_MAX - 1)] as usize;
+                    if let Some(d) = self.dots.get(idx) {
+                        if d.ticks_left > 0 {
+                            due = due.min(d.next_tick);
+                        }
+                    }
+                }
+            }
+        }
+        due
+    }
+
     /// THE SHAPE OF THE SCHEDULE, as three numbers.
     ///
     /// A queued event names its slot by INDEX, so anything that reshapes the
@@ -161,22 +206,48 @@ impl DebuffState {
         let mut best: Option<TickKey> = None;
         if !matches!(self.dots_due, Some(due) if due >= until) {
             if self.has_fast_dot_schedule() {
-                if self.live_dot_counts[1] > 0 {
-                    if let Some((i, d)) = self.first_live_consolidated_in_slice(0, DamageType::Electricity) {
-                        if d.next_tick < until {
-                            let k = TickKey { t: d.next_tick, class: 0, index: i as u32 };
-                            if match best { Some(b) => k < b, None => true } {
-                                best = Some(k);
+                for (c, f, dtype) in [(0, 1, DamageType::Electricity), (1, 3, DamageType::Gas)] {
+                    if self.live_dot_counts[f] > 0 {
+                        if self.consolidated_clocks[c].shared {
+                            if let Some((i, d)) = self.first_live_consolidated_in_slice(c, dtype) {
+                                if d.next_tick < until {
+                                    let k = TickKey { t: d.next_tick, class: 0, index: i as u32 };
+                                    if match best { Some(b) => k < b, None => true } {
+                                        best = Some(k);
+                                    }
+                                }
                             }
-                        }
-                    }
-                }
-                if self.live_dot_counts[3] > 0 {
-                    if let Some((i, d)) = self.first_live_consolidated_in_slice(1, DamageType::Gas) {
-                        if d.next_tick < until {
-                            let k = TickKey { t: d.next_tick, class: 0, index: i as u32 };
-                            if match best { Some(b) => k < b, None => true } {
-                                best = Some(k);
+                        } else if self.dot_rings[f].exact {
+                            let ring = &self.dot_rings[f];
+                            for k_idx in 0..ring.len as usize {
+                                let i = ring.slots[(ring.head as usize + k_idx) & (debuffs::DOT_CAP_RING_MAX - 1)] as usize;
+                                if let Some(d) = self.dots.get(i) {
+                                    if d.ticks_left > 0 && d.next_tick < until {
+                                        let k = TickKey { t: d.next_tick, class: 0, index: i as u32 };
+                                        if match best { Some(b) => k < b, None => true } {
+                                            best = Some(k);
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            let slot = &self.consolidated_clocks[c];
+                            for phase in &slot.phases[..slot.phases_len as usize] {
+                                let h = phase.head as usize;
+                                let resolved = match self.dots.get(h) {
+                                    Some(d) if d.dtype == dtype && d.ticks_left > 0 && d.next_tick.to_bits() == phase.next_tick.to_bits() => {
+                                        Some((phase.head, d.next_tick))
+                                    }
+                                    _ => self.scan_phase_live_slow(dtype, phase),
+                                };
+                                if let Some((head, nt)) = resolved {
+                                    if nt < until {
+                                        let k = TickKey { t: nt, class: 0, index: head };
+                                        if match best { Some(b) => k < b, None => true } {
+                                            best = Some(k);
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -242,7 +313,13 @@ impl DebuffState {
         // other stack's key only ever came off the queue stale.
         if matches!(self.dots_due, Some(due) if due >= until) {
             unqueued_due = self.dots_due.unwrap_or(f64::INFINITY);
-        } else if self.has_fast_dot_schedule() {
+        } else if self.live_dot_types != u32::MAX
+            && (self.live_dot_types & !DOT_FAMILY_MASK) == 0
+            && (self.live_dot_counts[0] == 0 || self.dot_rings[0].exact)
+            && (self.live_dot_counts[1] == 0 || self.consolidated_clocks[0].shared)
+            && (self.live_dot_counts[2] == 0 || self.dot_rings[2].exact)
+            && (self.live_dot_counts[3] == 0 || self.consolidated_clocks[1].shared)
+        {
             for (c, f, dtype) in [(0, 1, DamageType::Electricity), (1, 3, DamageType::Gas)] {
                 if self.live_dot_counts[f] > 0 {
                     if let Some((i, d)) = self.first_live_consolidated_in_slice(c, dtype) {
@@ -271,14 +348,71 @@ impl DebuffState {
                     }
                 }
             }
-        } else {
-            let mut groups = [(DamageType::Impact, 0.0f64, None); 8];
-            let mut n = 0usize;
-            let mut last_hit: Option<(DamageType, u64, Option<std::num::NonZeroU16>)> = None;
-            for (i, d) in self.dots.iter().enumerate() {
-                if d.ticks_left == 0 {
+        } else if self.has_fast_dot_schedule() {
+            let mut lists = [[0u32; debuffs::DOT_CAP_RING_MAX]; 2];
+            let mut lens = [0usize; 2];
+            for (c, f, dtype) in [(0, 1, DamageType::Electricity), (1, 3, DamageType::Gas)] {
+                if self.live_dot_counts[f] == 0 {
                     continue;
                 }
+                if self.consolidated_clocks[c].shared {
+                    if let Some((i, _)) = self.first_live_consolidated_in_slice(c, dtype) {
+                        lists[c][0] = i as u32;
+                        lens[c] = 1;
+                    }
+                } else if self.dot_rings[f].exact {
+                    let ring = &self.dot_rings[f];
+                    let mut out = 0usize;
+                    for k in 0..ring.len as usize {
+                        let idx = ring.slots[(ring.head as usize + k) & (debuffs::DOT_CAP_RING_MAX - 1)];
+                        if let Some(d) = self.dots.get(idx as usize) {
+                            if d.ticks_left > 0 {
+                                lists[c][out] = idx;
+                                out += 1;
+                            }
+                        }
+                    }
+                    lens[c] = out;
+                } else {
+                    let slot = &self.consolidated_clocks[c];
+                    let mut out = 0usize;
+                    for phase in &slot.phases[..slot.phases_len as usize] {
+                        let h = phase.head as usize;
+                        let head_opt = match self.dots.get(h) {
+                            Some(d) if d.dtype == dtype && d.ticks_left > 0 && d.next_tick.to_bits() == phase.next_tick.to_bits() => {
+                                Some(phase.head)
+                            }
+                            _ => self.scan_phase_live_slow(dtype, phase).map(|(idx, _)| idx),
+                        };
+                        if let Some(head) = head_opt {
+                            let mut ins = out;
+                            while ins > 0 && lists[c][ins - 1] > head {
+                                lists[c][ins] = lists[c][ins - 1];
+                                ins -= 1;
+                            }
+                            lists[c][ins] = head;
+                            out += 1;
+                        }
+                    }
+                    lens[c] = out;
+                }
+            }
+            let mut groups = [(DamageType::Impact, 0.0f64, None); 8];
+            let mut n = 0usize;
+            let mut p0 = 0usize;
+            let mut p1 = 0usize;
+            let mut overflowed_phases = false;
+            while p0 < lens[0] || p1 < lens[1] {
+                let idx = if p1 >= lens[1] || (p0 < lens[0] && lists[0][p0] <= lists[1][p1]) {
+                    let v = lists[0][p0];
+                    p0 += 1;
+                    v
+                } else {
+                    let v = lists[1][p1];
+                    p1 += 1;
+                    v
+                };
+                let d = &self.dots[idx as usize];
                 let nt = d.next_tick;
                 if nt >= until {
                     if nt < unqueued_due {
@@ -288,38 +422,121 @@ impl DebuffState {
                         continue;
                     }
                 }
-                if consolidated(d.dtype) {
-                    let bits = nt.to_bits();
-                    if last_hit == Some((d.dtype, bits, d.native_group)) {
-                        continue;
+                let mut matched_at = None;
+                for g in &groups[..n] {
+                    if g.0 == d.dtype && g.2 == d.native_group && (g.1 - nt).abs() < 1e-9 {
+                        matched_at = Some(g.1);
+                        break;
                     }
-                    let mut matched_at = None;
-                    for g in &groups[..n] {
-                        if g.0 == d.dtype && g.2 == d.native_group && (g.1 - nt).abs() < 1e-9 {
-                            matched_at = Some(g.1);
-                            break;
-                        }
+                }
+                if let Some(at) = matched_at {
+                    if at >= until && nt < unqueued_due {
+                        unqueued_due = nt;
                     }
-                    if let Some(at) = matched_at {
-                        if nt.is_finite() {
-                            last_hit = Some((d.dtype, bits, d.native_group));
-                        }
-                        if at >= until && nt < unqueued_due {
-                            unqueued_due = nt;
-                        }
-                        continue;
-                    }
-                    if n < groups.len() {
-                        groups[n] = (d.dtype, nt, d.native_group);
-                        n += 1;
-                        if nt.is_finite() {
-                            last_hit = Some((d.dtype, bits, d.native_group));
-                        }
-                    }
+                    continue;
+                }
+                if n < groups.len() {
+                    groups[n] = (d.dtype, nt, d.native_group);
+                    n += 1;
+                } else if nt < until && (!self.dot_rings[1].exact || !self.dot_rings[3].exact) {
+                    overflowed_phases = true;
+                    break;
                 }
                 if nt < until {
-                    q.push(std::cmp::Reverse(TickKey { t: nt, class: 0, index: i as u32 }));
+                    q.push(std::cmp::Reverse(TickKey { t: nt, class: 0, index: idx }));
                 }
+            }
+            if overflowed_phases {
+                return self.refill_tick_queue_slow(q, until);
+            }
+            for f in [0, 2] {
+                if self.live_dot_counts[f] > 0 {
+                    let ring = &self.dot_rings[f];
+                    for k in 0..ring.len as usize {
+                        let i = ring.slots[(ring.head as usize + k) & (debuffs::DOT_CAP_RING_MAX - 1)] as usize;
+                        if let Some(d) = self.dots.get(i) {
+                            if d.ticks_left > 0 {
+                                if d.next_tick < until {
+                                    q.push(std::cmp::Reverse(TickKey { t: d.next_tick, class: 0, index: i as u32 }));
+                                } else if d.next_tick < unqueued_due {
+                                    unqueued_due = d.next_tick;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            return self.refill_tick_queue_slow(q, until);
+        }
+        if let Some(h) = &self.heat {
+            if h.next_tick <= h.expiry && h.next_tick < until {
+                q.push(std::cmp::Reverse(TickKey { t: h.next_tick, class: 1, index: 0 }));
+            }
+        }
+        for (i, b) in self.blast.iter().enumerate() {
+            if b.fuse < until {
+                q.push(std::cmp::Reverse(TickKey { t: b.fuse, class: 2, index: i as u32 }));
+            }
+        }
+        unqueued_due
+    }
+
+    #[cold]
+    fn refill_tick_queue_slow(
+        &self,
+        q: &mut std::collections::BinaryHeap<std::cmp::Reverse<TickKey>>,
+        until: f64,
+    ) -> f64 {
+        q.clear();
+        let mut unqueued_due = f64::INFINITY;
+        let mut groups = [(DamageType::Impact, 0.0f64, None); 8];
+        let mut n = 0usize;
+        let mut last_hit: Option<(DamageType, u64, Option<std::num::NonZeroU16>)> = None;
+        for (i, d) in self.dots.iter().enumerate() {
+            if d.ticks_left == 0 {
+                continue;
+            }
+            let nt = d.next_tick;
+            if nt >= until {
+                if nt < unqueued_due {
+                    unqueued_due = nt;
+                }
+                if n == groups.len() {
+                    continue;
+                }
+            }
+            if consolidated(d.dtype) {
+                let bits = nt.to_bits();
+                if last_hit == Some((d.dtype, bits, d.native_group)) {
+                    continue;
+                }
+                let mut matched_at = None;
+                for g in &groups[..n] {
+                    if g.0 == d.dtype && g.2 == d.native_group && (g.1 - nt).abs() < 1e-9 {
+                        matched_at = Some(g.1);
+                        break;
+                    }
+                }
+                if let Some(at) = matched_at {
+                    if nt.is_finite() {
+                        last_hit = Some((d.dtype, bits, d.native_group));
+                    }
+                    if at >= until && nt < unqueued_due {
+                        unqueued_due = nt;
+                    }
+                    continue;
+                }
+                if n < groups.len() {
+                    groups[n] = (d.dtype, nt, d.native_group);
+                    n += 1;
+                    if nt.is_finite() {
+                        last_hit = Some((d.dtype, bits, d.native_group));
+                    }
+                }
+            }
+            if nt < until {
+                q.push(std::cmp::Reverse(TickKey { t: nt, class: 0, index: i as u32 }));
             }
         }
         if let Some(h) = &self.heat {
@@ -524,10 +741,31 @@ pub(super) fn process_ticks(
                 let family_shared_clock = c_slot.is_some_and(|c| {
                     debuffs.live_dot_types != u32::MAX && debuffs.consolidated_clocks[c].shared
                 }) && debuffs.dots[*i].ticks_left > 0;
-                let start = if family_shared_clock {
-                    *i
+                let exact_phase = if !family_shared_clock {
+                    c_slot.and_then(|c| {
+                        let f = if c == 0 { 1 } else { 3 };
+                        if debuffs.live_dot_types != u32::MAX
+                            && !debuffs.dot_rings[f].exact
+                            && debuffs.dots[*i].ticks_left > 0
+                        {
+                            debuffs.consolidated_clocks[c].active_phase_for(now, *i)
+                        } else {
+                            None
+                        }
+                    })
                 } else {
-                    c_slot.map_or(0, |c| (debuffs.consolidated_clocks[c].head as usize).min(*i))
+                    None
+                };
+                let phase_shared_clock = family_shared_clock || exact_phase.is_some();
+                let (start, end_excl) = if let Some((_, p_start, p_end_incl)) = exact_phase {
+                    (p_start, (p_end_incl + 1).min(debuffs.dots.len()))
+                } else if family_shared_clock {
+                    (*i, debuffs.dots.len())
+                } else {
+                    (
+                        c_slot.map_or(0, |c| (debuffs.consolidated_clocks[c].head as usize).min(*i)),
+                        debuffs.dots.len(),
+                    )
                 };
                 let is_consolidated = consolidated(dtype);
                 let native_radial = if !is_consolidated {
@@ -536,7 +774,7 @@ pub(super) fn process_ticks(
                     true
                 } else {
                     let mut all_native = true;
-                    for d in &debuffs.dots[start..] {
+                    for d in &debuffs.dots[start..end_excl] {
                         if d.ticks_left > 0
                             && d.dtype == dtype
                             && (family_shared_clock || (d.native_group == group_id && (d.next_tick - now).abs() < 1e-9))
@@ -550,6 +788,7 @@ pub(super) fn process_ticks(
                 };
                 let mut expired_in_event = 0u32;
                 let mut first_surviving_idx: Option<u32> = None;
+                let mut last_surviving_idx = 0u32;
                 let value = if native_radial {
                     use crate::rules::status::radial::{RadialGroup, RecordContext};
                     let source = crate::fight::dot::Source::at(params, dtype, now, w);
@@ -568,7 +807,7 @@ pub(super) fn process_ticks(
                         if let Some(ring) = ring_opt {
                             for k in 0..ring.len as usize {
                                 let idx = ring.slots[(ring.head as usize + k) & (debuffs::DOT_CAP_RING_MAX - 1)] as usize;
-                                if idx < start {
+                                if idx < start || idx >= end_excl {
                                     continue;
                                 }
                                 let d = &mut debuffs.dots[idx];
@@ -588,7 +827,8 @@ pub(super) fn process_ticks(
                                     if first_surviving_idx.is_none() {
                                         first_surviving_idx = Some(idx as u32);
                                     }
-                                    if !family_shared_clock && d.next_tick < advanced_due {
+                                    last_surviving_idx = idx as u32;
+                                    if !phase_shared_clock && d.next_tick < advanced_due {
                                         advanced_due = d.next_tick;
                                     }
                                 }
@@ -605,7 +845,7 @@ pub(super) fn process_ticks(
                                 last_idx = Some(idx);
                             }
                         } else {
-                            for (off, d) in debuffs.dots[start..].iter_mut().enumerate() {
+                            for (off, d) in debuffs.dots[start..end_excl].iter_mut().enumerate() {
                                 if d.ticks_left == 0
                                     || d.dtype != dtype
                                     || (!family_shared_clock
@@ -619,10 +859,12 @@ pub(super) fn process_ticks(
                                     any_dot_expired = true;
                                     expired_in_event += 1;
                                 } else {
+                                    let idx32 = (start + off) as u32;
                                     if first_surviving_idx.is_none() {
-                                        first_surviving_idx = Some((start + off) as u32);
+                                        first_surviving_idx = Some(idx32);
                                     }
-                                    if !family_shared_clock && d.next_tick < advanced_due {
+                                    last_surviving_idx = idx32;
+                                    if !phase_shared_clock && d.next_tick < advanced_due {
                                         advanced_due = d.next_tick;
                                     }
                                 }
@@ -639,7 +881,7 @@ pub(super) fn process_ticks(
                                 last_idx = Some(start + off);
                             }
                         }
-                        if family_shared_clock {
+                        if phase_shared_clock {
                             if let Some(surv) = first_surviving_idx {
                                 let nt = debuffs.dots[surv as usize].next_tick;
                                 if nt < advanced_due {
@@ -655,7 +897,7 @@ pub(super) fn process_ticks(
                             dot_owner = last.owner;
                         }
                     } else {
-                        for (off, d) in debuffs.dots[start..].iter_mut().enumerate() {
+                        for (off, d) in debuffs.dots[start..end_excl].iter_mut().enumerate() {
                             if d.ticks_left == 0
                                 || d.dtype != dtype
                                 || (!family_shared_clock
@@ -669,9 +911,11 @@ pub(super) fn process_ticks(
                                 any_dot_expired = true;
                                 expired_in_event += 1;
                             } else {
+                                let idx32 = (start + off) as u32;
                                 if first_surviving_idx.is_none() {
-                                    first_surviving_idx = Some((start + off) as u32);
+                                    first_surviving_idx = Some(idx32);
                                 }
+                                last_surviving_idx = idx32;
                                 if d.next_tick < advanced_due {
                                     advanced_due = d.next_tick;
                                 }
@@ -772,7 +1016,7 @@ pub(super) fn process_ticks(
                     let mut parts: Vec<crate::record::Part> = Vec::new();
                     let mut acc_part = None;
                     let source = crate::fight::dot::Source::at(params, dtype, now, w);
-                    for (off, d) in debuffs.dots[start..].iter_mut().enumerate() {
+                    for (off, d) in debuffs.dots[start..end_excl].iter_mut().enumerate() {
                         if d.ticks_left > 0
                             && d.dtype == dtype
                             && (family_shared_clock || (d.native_group == group_id && (d.next_tick - now).abs() < 1e-9))
@@ -783,9 +1027,11 @@ pub(super) fn process_ticks(
                                 any_dot_expired = true;
                                 expired_in_event += 1;
                             } else {
+                                let idx32 = (start + off) as u32;
                                 if first_surviving_idx.is_none() {
-                                    first_surviving_idx = Some((start + off) as u32);
+                                    first_surviving_idx = Some(idx32);
                                 }
+                                last_surviving_idx = idx32;
                                 if d.next_tick < advanced_due {
                                     advanced_due = d.next_tick;
                                 }
@@ -844,10 +1090,22 @@ pub(super) fn process_ticks(
                 if expired_in_event > 0 {
                     debuffs.note_expired_dots(dtype, expired_in_event);
                 }
-                if family_shared_clock {
-                    if let (Some(c), Some(surv)) = (c_slot, first_surviving_idx) {
-                        debuffs.consolidated_clocks[c].head = surv;
-                        debuffs.consolidated_clocks[c].next_tick = debuffs.dots[surv as usize].next_tick;
+                if let Some(c) = c_slot {
+                    let f = if c == 0 { 1 } else { 3 };
+                    if debuffs.live_dot_counts[f] > 0 {
+                        if let Some((p_idx, _, _)) = exact_phase {
+                            let surv = first_surviving_idx.map(|first| {
+                                (first, last_surviving_idx, debuffs.dots[first as usize].next_tick)
+                            });
+                            let dots_len = debuffs.dots.len() as u32;
+                            debuffs.consolidated_clocks[c].finish_phase_tick(p_idx, surv, dots_len);
+                        } else if family_shared_clock {
+                            if let Some(surv) = first_surviving_idx {
+                                debuffs.consolidated_clocks[c].head = surv;
+                                debuffs.consolidated_clocks[c].tail = last_surviving_idx;
+                                debuffs.consolidated_clocks[c].next_tick = debuffs.dots[surv as usize].next_tick;
+                            }
+                        }
                     }
                 }
                 let hit_type = if ignores_armor {

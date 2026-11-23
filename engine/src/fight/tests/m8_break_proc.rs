@@ -162,6 +162,103 @@ fn native_provenance_matches_the_group_scan_and_record() {
 }
 
 #[test]
+fn multi_phase_dot_clocks_and_uncapped_batches_match_full_queue() {
+    for recorded in [false, true] {
+        let setup = |use_fast: bool| {
+            let mut q = Probe::new();
+            if recorded {
+                q.rec.enable_native_trace(2000);
+            } else {
+                q.rec = crate::record::Record::off();
+            }
+            q.body.state.health = 1e12;
+            q.electric(false, 0.0);
+            let template = q.body.debuffs.dots[0];
+            q.body.debuffs.retain_dots(|_| false);
+            let mut cause = 1u32;
+            for (phase, ticks_left) in [(0.05, 1), (0.11, 2), (0.17, 3), (0.23, 6)] {
+                let d = Dot {
+                    cause,
+                    dtype: DamageType::Electricity,
+                    next_tick: phase,
+                    ticks_left,
+                    ..template
+                };
+                cause += 1;
+                if use_fast {
+                    q.body.debuffs.push_dot_capped_n(d, None, 12);
+                } else {
+                    for _ in 0..12 {
+                        q.body.debuffs.push_dot_capped(d, None);
+                    }
+                }
+            }
+            for (phase, batch) in [(0.07, 4usize), (0.13, 4), (0.19, 5)] {
+                let d = Dot {
+                    cause,
+                    dtype: DamageType::Gas,
+                    next_tick: phase,
+                    ticks_left: 2,
+                    ..template
+                };
+                cause += 1;
+                if use_fast {
+                    q.body.debuffs.push_dot_capped_n(d, Some(10), batch);
+                } else {
+                    for _ in 0..batch {
+                        q.body.debuffs.push_dot_capped(d, Some(10));
+                    }
+                }
+            }
+            assert!(!q.body.debuffs.consolidated_clocks[0].shared);
+            if use_fast {
+                assert!(q.body.debuffs.has_fast_dot_schedule());
+            } else {
+                q.body.debuffs.consolidated_clocks[0].phases_invalid = true;
+                q.body.debuffs.consolidated_clocks[1].phases_invalid = true;
+                q.body.debuffs.dot_rings[3].exact = false;
+                assert!(!q.body.debuffs.has_fast_dot_schedule());
+            }
+            q
+        };
+        let mut fast = setup(true);
+        let mut reference = setup(false);
+        for until in [0.06, 0.14, 0.30, 1.15, 2.50, 7.00] {
+            if !fast.body.debuffs.dots.is_empty() {
+                assert!(fast.body.debuffs.has_fast_dot_schedule());
+                reference.body.debuffs.consolidated_clocks[0].phases_invalid = true;
+                reference.body.debuffs.consolidated_clocks[1].phases_invalid = true;
+                reference.body.debuffs.dot_rings[3].exact = false;
+            }
+            assert_eq!(fast.body.debuffs.scan_next(until), reference.body.debuffs.scan_next(until));
+            let mut fast_keys = std::collections::BinaryHeap::new();
+            let mut reference_keys = std::collections::BinaryHeap::new();
+            let fast_due = fast.body.debuffs.refill_tick_queue(&mut fast_keys, until);
+            let ref_due = reference.body.debuffs.refill_tick_queue(&mut reference_keys, until);
+            assert_eq!(fast_due.to_bits(), ref_due.to_bits());
+            assert_eq!(fast_keys.into_sorted_vec(), reference_keys.into_sorted_vec());
+            fast.tick(until);
+            reference.tick(until);
+            assert_eq!(fast.r.dot_ticks, reference.r.dot_ticks);
+            assert_eq!(fast.r.tally.effective().to_bits(), reference.r.tally.effective().to_bits());
+            assert_eq!(fast.body.debuffs.dots_due.map(f64::to_bits), reference.body.debuffs.dots_due.map(f64::to_bits));
+            let clocks = |q: &Probe| {
+                q.body.debuffs.active_dots().map(|d| (d.cause, d.dtype, d.next_tick.to_bits(), d.ticks_left)).collect::<Vec<_>>()
+            };
+            assert_eq!(clocks(&fast), clocks(&reference));
+        }
+        if recorded {
+            assert_eq!(format!("{:?}", fast.rec.events()), format!("{:?}", reference.rec.events()));
+            assert_eq!(fast.rec.native_steps().len(), reference.rec.native_steps().len());
+            for (a, b) in fast.rec.native_steps().iter().zip(reference.rec.native_steps()) {
+                assert_eq!(a.input_bits, b.input_bits);
+                assert_eq!(a.output_bits, b.output_bits);
+            }
+        }
+    }
+}
+
+#[test]
 fn shared_dot_clock_matches_full_queue_with_expiry_and_blast() {
     for blast in [false, true] {
         let setup = |shared| {

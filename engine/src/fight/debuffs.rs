@@ -248,11 +248,176 @@ impl Default for DotCapRing {
     }
 }
 
+pub(super) const MAX_CONSOLIDATED_PHASES: usize = 8;
+const PHASE_MIN_SEPARATION: f64 = 1e-6;
+
+#[derive(Clone, Copy, Default)]
+pub(super) struct ClockPhase {
+    pub(super) next_tick: f64,
+    pub(super) head: u32,
+    pub(super) tail: u32,
+}
+
 #[derive(Clone, Copy, Default)]
 pub(super) struct ConsolidatedClock {
     pub(super) shared: bool,
-    pub(super) next_tick: f64,
+    pub(super) phases_invalid: bool,
+    pub(super) phases_len: u8,
+    pub(super) last_phase: u8,
     pub(super) head: u32,
+    pub(super) tail: u32,
+    pub(super) next_tick: f64,
+    pub(super) phases: [ClockPhase; MAX_CONSOLIDATED_PHASES],
+}
+
+#[wfsim_gas_macro::metered]
+impl ConsolidatedClock {
+    #[cold]
+    pub(super) fn split_from_shared(&mut self, first_idx: u32, last_idx: u32, dot: &Dot) {
+        if dot.native_group.is_none()
+            && dot.next_tick.is_finite()
+            && (self.next_tick - dot.next_tick).abs() >= PHASE_MIN_SEPARATION
+        {
+            self.phases[0] = ClockPhase { next_tick: self.next_tick, head: self.head, tail: self.tail };
+            self.phases[1] = ClockPhase { next_tick: dot.next_tick, head: first_idx, tail: last_idx };
+            self.phases_len = 2;
+            self.last_phase = 1;
+            self.phases_invalid = false;
+        } else {
+            self.phases_invalid = true;
+            self.phases_len = 0;
+        }
+    }
+
+    #[cold]
+    pub(super) fn seed_from_ring(&mut self, ring: &DotCapRing, dots: &[Dot], dtype: DamageType) {
+        self.phases_len = 0;
+        self.last_phase = 0;
+        self.phases_invalid = false;
+        for k in 0..ring.len as usize {
+            let idx = ring.slots[(ring.head as usize + k) & (DOT_CAP_RING_MAX - 1)];
+            let d = &dots[idx as usize];
+            if d.dtype == dtype && d.ticks_left > 0 {
+                self.observe_phase_miss(idx, idx, d);
+                if self.phases_invalid {
+                    return;
+                }
+            }
+        }
+    }
+
+    #[cold]
+    pub(super) fn observe_phase_miss(&mut self, first_idx: u32, last_idx: u32, dot: &Dot) {
+        if self.phases_invalid {
+            return;
+        }
+        if dot.native_group.is_none() && dot.next_tick.is_finite() {
+            let nt = dot.next_tick;
+            let bits = nt.to_bits();
+            let len = self.phases_len as usize;
+            for p in 0..len {
+                let p_nt = self.phases[p].next_tick;
+                if p_nt.to_bits() == bits {
+                    self.phases[p].tail = last_idx;
+                    self.last_phase = p as u8;
+                    return;
+                }
+                if (p_nt - nt).abs() < PHASE_MIN_SEPARATION {
+                    self.phases_invalid = true;
+                    return;
+                }
+            }
+            if len < MAX_CONSOLIDATED_PHASES {
+                self.phases[len] = ClockPhase { next_tick: nt, head: first_idx, tail: last_idx };
+                self.phases_len = (len + 1) as u8;
+                self.last_phase = len as u8;
+                return;
+            }
+        }
+        self.phases_invalid = true;
+    }
+
+    #[inline]
+    pub(super) fn active_phase_for(&self, now: f64, key_idx: usize) -> Option<(usize, usize, usize)> {
+        if self.phases_invalid || self.phases_len <= 1 {
+            return None;
+        }
+        let len = self.phases_len as usize;
+        for p in 0..len {
+            if (self.phases[p].next_tick - now).abs() < 1e-9 {
+                let start = (self.phases[p].head as usize).min(key_idx);
+                let end_incl = (self.phases[p].tail as usize).max(key_idx);
+                return Some((p, start, end_incl));
+            }
+        }
+        None
+    }
+
+    #[inline]
+    pub(super) fn finish_phase_tick(
+        &mut self,
+        p_idx: usize,
+        surviving: Option<(u32, u32, f64)>,
+        dots_len: u32,
+    ) {
+        if self.phases_invalid {
+            return;
+        }
+        let len = self.phases_len as usize;
+        if p_idx >= len {
+            self.phases_invalid = true;
+            return;
+        }
+        match surviving {
+            Some((first, last, new_nt)) => {
+                if !new_nt.is_finite() {
+                    self.phases_invalid = true;
+                    return;
+                }
+                self.phases[p_idx] = ClockPhase { next_tick: new_nt, head: first, tail: last };
+                for q in 0..len {
+                    if q != p_idx && (self.phases[q].next_tick - new_nt).abs() < PHASE_MIN_SEPARATION {
+                        self.phases_invalid = true;
+                        return;
+                    }
+                }
+                let mut min_head = self.phases[0].head;
+                for q in 1..len {
+                    min_head = min_head.min(self.phases[q].head);
+                }
+                self.head = min_head;
+            }
+            None => {
+                for q in p_idx + 1..len {
+                    self.phases[q - 1] = self.phases[q];
+                }
+                let new_len = len - 1;
+                self.phases_len = new_len as u8;
+                if self.last_phase as usize >= new_len {
+                    self.last_phase = 0;
+                }
+                if new_len == 0 {
+                    self.shared = false;
+                    self.phases_invalid = false;
+                    self.head = dots_len;
+                    self.tail = dots_len;
+                    self.next_tick = 0.0;
+                } else if new_len == 1 {
+                    self.shared = true;
+                    self.head = self.phases[0].head;
+                    self.tail = self.phases[0].tail;
+                    self.next_tick = self.phases[0].next_tick;
+                    self.phases_len = 0;
+                } else {
+                    let mut min_head = self.phases[0].head;
+                    for q in 1..new_len {
+                        min_head = min_head.min(self.phases[q].head);
+                    }
+                    self.head = min_head;
+                }
+            }
+        }
+    }
 }
 
 #[wfsim_gas_macro::metered]
@@ -898,6 +1063,9 @@ impl DebuffState {
         self.dot_tombstones += 1;
         self.dots_gen = self.dots_gen.wrapping_add(1);
         if was_live {
+            if let Some(c) = consolidated_slot(was_type) {
+                self.consolidated_clocks[c].phases_invalid = true;
+            }
             self.note_expired_dots(was_type, 1);
         }
     }
@@ -912,8 +1080,11 @@ impl DebuffState {
                 self.live_dot_types &= !(1 << dtype as u32);
             }
             if let Some(c) = consolidated_slot(dtype) {
-                self.consolidated_clocks[c].shared = false;
-                self.consolidated_clocks[c].head = self.dots.len() as u32;
+                let slot = &mut self.consolidated_clocks[c];
+                slot.shared = false;
+                slot.phases_invalid = false;
+                slot.phases_len = 0;
+                slot.head = self.dots.len() as u32;
             }
         }
     }
@@ -1045,21 +1216,32 @@ impl DebuffState {
             }
             return;
         };
-        if let Some(c) = consolidated_slot(dot.dtype) {
-            if self.live_dot_counts[f] > 0 && !self.consolidated_clocks[c].shared {
-                for _ in 0..count {
-                    self.push_dot_capped(dot, cap);
-                }
-                return;
-            }
-        }
-        if let Some(shared) = self.first_live_consolidated_clock(dot.dtype) {
-            if shared > dot.next_tick {
-                dot.next_tick = shared;
-            }
-        }
         match cap {
+            None => {
+                if let Some(shared) = self.first_live_consolidated_clock(dot.dtype) {
+                    if shared > dot.next_tick {
+                        dot.next_tick = shared;
+                    }
+                }
+                self.push_uncapped_dots_same(dot, f, count);
+            }
             Some(cap_val) if (2..=DOT_CAP_RING_MAX).contains(&cap_val) && self.dot_rings[f].exact => {
+                let cur = self.dot_rings[f].len as usize;
+                if cur + count > cap_val && self.live_dot_counts[f] > 0 {
+                    if let Some(c) = consolidated_slot(dot.dtype) {
+                        if !self.consolidated_clocks[c].shared {
+                            for _ in 0..count {
+                                self.push_dot_capped(dot, cap);
+                            }
+                            return;
+                        }
+                    }
+                }
+                if let Some(shared) = self.first_live_consolidated_clock(dot.dtype) {
+                    if shared > dot.next_tick {
+                        dot.next_tick = shared;
+                    }
+                }
                 if self.active_dot_count() == 0 {
                     self.clear_all_dots();
                 }
@@ -1088,16 +1270,7 @@ impl DebuffState {
                 {
                     self.compact_evicted_dots();
                 }
-                self.dots.reserve(n);
-                for _ in 0..n {
-                    self.push_dot(dot);
-                }
-            }
-            None => {
-                self.dots.reserve(count);
-                for _ in 0..count {
-                    self.push_dot(dot);
-                }
+                self.push_uncapped_dots_same(dot, f, n);
             }
             _ => {
                 for _ in 0..count {
@@ -1109,7 +1282,7 @@ impl DebuffState {
 
     fn compact_evicted_dots(&mut self) {
         let mut rings = [DotCapRing::default(); 4];
-        let mut clocks = [ConsolidatedClock::default(); 2];
+        self.consolidated_clocks = [ConsolidatedClock::default(); 2];
         let mut counts = [0u32; 4];
         let len = self.dots.len();
         let mut write = 0usize;
@@ -1124,26 +1297,53 @@ impl DebuffState {
             }
             write += 1;
             if let Some(f) = dot_family_slot(dot.dtype) {
-                let ring = &mut rings[f];
-                if ring.exact {
-                    if (ring.len as usize) < DOT_CAP_RING_MAX {
-                        ring.slots[ring.len as usize] = idx;
-                        ring.len += 1;
+                if rings[f].exact {
+                    if (rings[f].len as usize) < DOT_CAP_RING_MAX {
+                        let pos = rings[f].len as usize;
+                        rings[f].slots[pos] = idx;
+                        rings[f].len += 1;
                     } else {
-                        ring.exact = false;
+                        rings[f].exact = false;
+                        if let Some(c) = consolidated_slot(dot.dtype) {
+                            if counts[f] > 0
+                                && !self.consolidated_clocks[c].shared
+                                && !self.consolidated_clocks[c].phases_invalid
+                            {
+                                self.consolidated_clocks[c].seed_from_ring(&rings[f], &self.dots[..write], dot.dtype);
+                            }
+                        }
                     }
                 }
                 if dot.ticks_left > 0 {
                     counts[f] += 1;
                     if let Some(c) = consolidated_slot(dot.dtype) {
-                        let slot = &mut clocks[c];
+                        let slot = &mut self.consolidated_clocks[c];
                         if counts[f] == 1 {
-                            slot.shared = dot.native_group.is_none() && dot.next_tick.is_finite();
+                            let clean = dot.native_group.is_none() && dot.next_tick.is_finite();
+                            slot.shared = clean;
+                            slot.phases_invalid = !clean;
                             slot.next_tick = dot.next_tick;
                             slot.head = idx;
+                            slot.tail = idx;
                         } else if slot.shared {
-                            slot.shared = dot.native_group.is_none()
-                                && slot.next_tick.to_bits() == dot.next_tick.to_bits();
+                            if dot.native_group.is_none() && slot.next_tick.to_bits() == dot.next_tick.to_bits() {
+                                slot.tail = idx;
+                            } else {
+                                slot.shared = false;
+                                if !rings[f].exact {
+                                    slot.split_from_shared(idx, idx, &dot);
+                                }
+                            }
+                        } else if !rings[f].exact && !slot.phases_invalid {
+                            let lp = slot.last_phase as usize;
+                            if lp < slot.phases_len as usize
+                                && dot.native_group.is_none()
+                                && slot.phases[lp].next_tick.to_bits() == dot.next_tick.to_bits()
+                            {
+                                slot.phases[lp].tail = idx;
+                            } else {
+                                slot.observe_phase_miss(idx, idx, &dot);
+                            }
                         }
                     }
                 }
@@ -1151,20 +1351,21 @@ impl DebuffState {
         }
         self.dots.truncate(write);
         self.dot_rings = rings;
-        self.consolidated_clocks = clocks;
         self.dot_tombstones = 0;
         self.dots_gen = self.dots_gen.wrapping_add(1);
     }
 
     pub(super) fn invalidate_dot_types(&mut self) {
         self.live_dot_types = u32::MAX;
+        self.consolidated_clocks[0].phases_invalid = true;
+        self.consolidated_clocks[1].phases_invalid = true;
     }
 
     fn rebuild_dot_indices(&mut self) -> f64 {
         let mut types = 0u32;
         let mut counts = [0u32; 4];
         let mut rings = [DotCapRing::default(); 4];
-        let mut clocks = [ConsolidatedClock::default(); 2];
+        self.consolidated_clocks = [ConsolidatedClock::default(); 2];
         let mut due = f64::INFINITY;
         let len = self.dots.len();
         let mut write = 0usize;
@@ -1179,13 +1380,21 @@ impl DebuffState {
             }
             write += 1;
             if let Some(f) = dot_family_slot(dot.dtype) {
-                let ring = &mut rings[f];
-                if ring.exact {
-                    if (ring.len as usize) < DOT_CAP_RING_MAX {
-                        ring.slots[ring.len as usize] = idx;
-                        ring.len += 1;
+                if rings[f].exact {
+                    if (rings[f].len as usize) < DOT_CAP_RING_MAX {
+                        let pos = rings[f].len as usize;
+                        rings[f].slots[pos] = idx;
+                        rings[f].len += 1;
                     } else {
-                        ring.exact = false;
+                        rings[f].exact = false;
+                        if let Some(c) = consolidated_slot(dot.dtype) {
+                            if counts[f] > 0
+                                && !self.consolidated_clocks[c].shared
+                                && !self.consolidated_clocks[c].phases_invalid
+                            {
+                                self.consolidated_clocks[c].seed_from_ring(&rings[f], &self.dots[..write], dot.dtype);
+                            }
+                        }
                     }
                 }
                 if dot.ticks_left > 0 {
@@ -1199,14 +1408,33 @@ impl DebuffState {
                 types |= 1 << dot.dtype as u32;
                 if let Some(c) = consolidated_slot(dot.dtype) {
                     let f = if c == 0 { 1 } else { 3 };
-                    let slot = &mut clocks[c];
+                    let slot = &mut self.consolidated_clocks[c];
                     if counts[f] == 1 {
-                        slot.shared = dot.native_group.is_none() && dot.next_tick.is_finite();
+                        let clean = dot.native_group.is_none() && dot.next_tick.is_finite();
+                        slot.shared = clean;
+                        slot.phases_invalid = !clean;
                         slot.next_tick = dot.next_tick;
                         slot.head = idx;
+                        slot.tail = idx;
                     } else if slot.shared {
-                        slot.shared = dot.native_group.is_none()
-                            && slot.next_tick.to_bits() == dot.next_tick.to_bits();
+                        if dot.native_group.is_none() && slot.next_tick.to_bits() == dot.next_tick.to_bits() {
+                            slot.tail = idx;
+                        } else {
+                            slot.shared = false;
+                            if !rings[f].exact {
+                                slot.split_from_shared(idx, idx, &dot);
+                            }
+                        }
+                    } else if !rings[f].exact && !slot.phases_invalid {
+                        let lp = slot.last_phase as usize;
+                        if lp < slot.phases_len as usize
+                            && dot.native_group.is_none()
+                            && slot.phases[lp].next_tick.to_bits() == dot.next_tick.to_bits()
+                        {
+                            slot.phases[lp].tail = idx;
+                        } else {
+                            slot.observe_phase_miss(idx, idx, &dot);
+                        }
                     }
                 }
             }
@@ -1215,7 +1443,6 @@ impl DebuffState {
         self.live_dot_types = types;
         self.live_dot_counts = counts;
         self.dot_rings = rings;
-        self.consolidated_clocks = clocks;
         self.dot_tombstones = 0;
         self.dots_gen = self.dots_gen.wrapping_add(1);
         if self.dots.is_empty() {
@@ -1230,7 +1457,7 @@ impl DebuffState {
         let mut types = 0u32;
         let mut counts = [0u32; 4];
         let mut rings = [DotCapRing::default(); 4];
-        let mut clocks = [ConsolidatedClock::default(); 2];
+        self.consolidated_clocks = [ConsolidatedClock::default(); 2];
         let mut due = f64::INFINITY;
         let len = self.dots.len();
         let mut write = 0usize;
@@ -1249,25 +1476,49 @@ impl DebuffState {
             }
             types |= 1 << dot.dtype as u32;
             if let Some(f) = dot_family_slot(dot.dtype) {
-                let ring = &mut rings[f];
-                if ring.exact {
-                    if (ring.len as usize) < DOT_CAP_RING_MAX {
-                        ring.slots[ring.len as usize] = idx;
-                        ring.len += 1;
+                if rings[f].exact {
+                    if (rings[f].len as usize) < DOT_CAP_RING_MAX {
+                        let pos = rings[f].len as usize;
+                        rings[f].slots[pos] = idx;
+                        rings[f].len += 1;
                     } else {
-                        ring.exact = false;
+                        rings[f].exact = false;
+                        if let Some(c) = consolidated_slot(dot.dtype) {
+                            if !self.consolidated_clocks[c].shared && !self.consolidated_clocks[c].phases_invalid {
+                                self.consolidated_clocks[c].seed_from_ring(&rings[f], &self.dots[..write], dot.dtype);
+                            }
+                        }
                     }
                 }
                 counts[f] += 1;
                 if let Some(c) = consolidated_slot(dot.dtype) {
-                    let slot = &mut clocks[c];
+                    let slot = &mut self.consolidated_clocks[c];
                     if counts[f] == 1 {
-                        slot.shared = dot.native_group.is_none() && dot.next_tick.is_finite();
+                        let clean = dot.native_group.is_none() && dot.next_tick.is_finite();
+                        slot.shared = clean;
+                        slot.phases_invalid = !clean;
                         slot.next_tick = dot.next_tick;
                         slot.head = idx;
+                        slot.tail = idx;
                     } else if slot.shared {
-                        slot.shared = dot.native_group.is_none()
-                            && slot.next_tick.to_bits() == dot.next_tick.to_bits();
+                        if dot.native_group.is_none() && slot.next_tick.to_bits() == dot.next_tick.to_bits() {
+                            slot.tail = idx;
+                        } else {
+                            slot.shared = false;
+                            if !rings[f].exact {
+                                slot.split_from_shared(idx, idx, &dot);
+                            }
+                        }
+                    } else if !rings[f].exact && !slot.phases_invalid {
+                        let lp = slot.last_phase as usize;
+                        if lp < slot.phases_len as usize
+                            && dot.native_group.is_none()
+                            && slot.phases[lp].next_tick.to_bits() == dot.next_tick.to_bits()
+                        {
+                            slot.phases[lp].tail = idx;
+                        } else {
+                            slot.observe_phase_miss(idx, idx, &dot);
+                        }
                     }
                 }
             }
@@ -1276,7 +1527,6 @@ impl DebuffState {
         self.live_dot_types = types;
         self.live_dot_counts = counts;
         self.dot_rings = rings;
-        self.consolidated_clocks = clocks;
         self.dot_tombstones = 0;
         self.dots_gen = self.dots_gen.wrapping_add(1);
         if self.dots.is_empty() {
@@ -1370,18 +1620,25 @@ impl DebuffState {
         };
         self.dots_share_clock = shares_clock;
         if let Some(f) = fam {
-            let ring = &mut self.dot_rings[f];
-            if ring.exact {
-                if (ring.len as usize) < DOT_CAP_RING_MAX {
+            let prev_live = self.live_dot_counts[f];
+            if self.dot_rings[f].exact {
+                if (self.dot_rings[f].len as usize) < DOT_CAP_RING_MAX {
+                    let ring = &mut self.dot_rings[f];
                     let pos = (ring.head as usize + ring.len as usize) & (DOT_CAP_RING_MAX - 1);
                     ring.slots[pos] = idx;
                     ring.len += 1;
                 } else {
-                    ring.exact = false;
+                    self.dot_rings[f].exact = false;
+                    if let Some(c) = consolidated_slot(dot.dtype) {
+                        if prev_live > 0 && !self.consolidated_clocks[c].shared && !self.consolidated_clocks[c].phases_invalid {
+                            let ring_copy = self.dot_rings[f];
+                            self.consolidated_clocks[c].seed_from_ring(&ring_copy, &self.dots, dot.dtype);
+                        }
+                    }
                 }
             }
             if dot.ticks_left > 0 {
-                self.live_dot_counts[f] += 1;
+                self.live_dot_counts[f] = prev_live + 1;
             }
         }
         if dot.ticks_left > 0 {
@@ -1390,14 +1647,34 @@ impl DebuffState {
             }
             if let Some(c) = consolidated_slot(dot.dtype) {
                 let f = if c == 0 { 1 } else { 3 };
-                let clean = dot.native_group.is_none() && dot.next_tick.is_finite();
+                let ring_exact = self.dot_rings[f].exact;
                 let slot = &mut self.consolidated_clocks[c];
                 if self.live_dot_counts[f] == 1 {
+                    let clean = dot.native_group.is_none() && dot.next_tick.is_finite();
                     slot.shared = clean;
+                    slot.phases_invalid = !clean;
                     slot.next_tick = dot.next_tick;
                     slot.head = idx;
-                } else {
-                    slot.shared = slot.shared && clean && slot.next_tick.to_bits() == dot.next_tick.to_bits();
+                    slot.tail = idx;
+                } else if slot.shared {
+                    if dot.native_group.is_none() && slot.next_tick.to_bits() == dot.next_tick.to_bits() {
+                        slot.tail = idx;
+                    } else {
+                        slot.shared = false;
+                        if !ring_exact {
+                            slot.split_from_shared(idx, idx, &dot);
+                        }
+                    }
+                } else if !ring_exact && !slot.phases_invalid {
+                    let lp = slot.last_phase as usize;
+                    if lp < slot.phases_len as usize
+                        && dot.native_group.is_none()
+                        && slot.phases[lp].next_tick.to_bits() == dot.next_tick.to_bits()
+                    {
+                        slot.phases[lp].tail = idx;
+                    } else {
+                        slot.observe_phase_miss(idx, idx, &dot);
+                    }
                 }
             }
         }
@@ -1421,6 +1698,118 @@ impl DebuffState {
         }
         self.dots_gen = self.dots_gen.wrapping_add(1);
         self.dots.push(dot);
+    }
+
+    #[inline(always)]
+    fn push_uncapped_dots_same(&mut self, dot: Dot, f: usize, count: usize) {
+        debug_assert_ne!(dot.dtype, EVICTED_DOT_TYPE);
+        debug_assert!(count >= 1 && dot.ticks_left > 0);
+        let was_empty = self.active_dot_count() == 0;
+        let first_idx = self.dots.len() as u32;
+        let last_idx = first_idx + (count as u32 - 1);
+        if was_empty && self.live_dot_types != u32::MAX {
+            self.live_dot_types = 0;
+        }
+        let single_clock_candidate = consolidated(dot.dtype)
+            && dot.native_group.is_none()
+            && dot.next_tick.is_finite();
+        let shares_clock = if was_empty {
+            single_clock_candidate
+        } else if self.dots_share_clock && single_clock_candidate {
+            let first_active = if self.dot_tombstones == 0 {
+                self.dots.first()
+            } else if self.dot_rings[f].exact && self.dot_rings[f].len > 0 {
+                let ring = &self.dot_rings[f];
+                self.dots.get(ring.slots[ring.head as usize] as usize)
+            } else {
+                self.first_active_dot_slow(dot.dtype)
+            };
+            match first_active {
+                Some(first) => {
+                    first.ticks_left > 0
+                        && first.dtype == dot.dtype
+                        && first.next_tick.to_bits() == dot.next_tick.to_bits()
+                }
+                None => true,
+            }
+        } else {
+            false
+        };
+        self.dots_share_clock = shares_clock;
+        let prev_live = self.live_dot_counts[f];
+        if self.dot_rings[f].exact {
+            if (self.dot_rings[f].len as usize) + count <= DOT_CAP_RING_MAX {
+                let ring = &mut self.dot_rings[f];
+                let head = ring.head as usize;
+                let base_len = ring.len as usize;
+                for k in 0..count {
+                    let pos = (head + base_len + k) & (DOT_CAP_RING_MAX - 1);
+                    ring.slots[pos] = first_idx + k as u32;
+                }
+                ring.len = (base_len + count) as u8;
+            } else {
+                self.dot_rings[f].exact = false;
+                if let Some(c) = consolidated_slot(dot.dtype) {
+                    if prev_live > 0 && !self.consolidated_clocks[c].shared && !self.consolidated_clocks[c].phases_invalid {
+                        let ring_copy = self.dot_rings[f];
+                        self.consolidated_clocks[c].seed_from_ring(&ring_copy, &self.dots, dot.dtype);
+                    }
+                }
+            }
+        }
+        self.live_dot_counts[f] = prev_live + count as u32;
+        if self.live_dot_types != u32::MAX {
+            self.live_dot_types |= 1 << dot.dtype as u32;
+        }
+        if let Some(c) = consolidated_slot(dot.dtype) {
+            let ring_exact = self.dot_rings[f].exact;
+            let slot = &mut self.consolidated_clocks[c];
+            if prev_live == 0 {
+                let clean = dot.native_group.is_none() && dot.next_tick.is_finite();
+                slot.shared = clean;
+                slot.phases_invalid = !clean;
+                slot.next_tick = dot.next_tick;
+                slot.head = first_idx;
+                slot.tail = last_idx;
+            } else if slot.shared {
+                if dot.native_group.is_none() && slot.next_tick.to_bits() == dot.next_tick.to_bits() {
+                    slot.tail = last_idx;
+                } else {
+                    slot.shared = false;
+                    if !ring_exact {
+                        slot.split_from_shared(first_idx, last_idx, &dot);
+                    }
+                }
+            } else if !ring_exact && !slot.phases_invalid {
+                let lp = slot.last_phase as usize;
+                if lp < slot.phases_len as usize
+                    && dot.native_group.is_none()
+                    && slot.phases[lp].next_tick.to_bits() == dot.next_tick.to_bits()
+                {
+                    slot.phases[lp].tail = last_idx;
+                } else {
+                    slot.observe_phase_miss(first_idx, last_idx, &dot);
+                }
+            }
+        }
+        match dot.dtype {
+            DamageType::Electricity => {
+                self.proc_landings[0] = dot.landing;
+                if !dot.has_native_radial_seed() { self.radial_history |= HAD_ELECTRIC_FALLBACK; }
+            }
+            DamageType::Gas => {
+                self.proc_landings[1] = dot.landing;
+                self.radial_history |= HAD_GAS;
+                if !dot.has_native_radial_seed() { self.radial_history |= HAD_GAS_FALLBACK; }
+            }
+            _ => {}
+        }
+        match self.dots_due {
+            Some(due) if due <= dot.next_tick => {}
+            _ => self.dots_due = Some(dot.next_tick),
+        }
+        self.dots_gen = self.dots_gen.wrapping_add(count as u32);
+        self.dots.resize(self.dots.len() + count, dot);
     }
 
     #[inline]
