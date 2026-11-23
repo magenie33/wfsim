@@ -55,16 +55,20 @@ try{
   check('a fresh independent availability row is used while complete statistics stay paused',(await opened()).open===5000&&(await opened()).asking===7);
   await withoutFallbackPlan(async()=>check('a cache hit returns before the canonical fallback is planned',(await opened()).open===5000));
   const fastSql=functionSql(selected).match(/RETURN QUERY\s+([\s\S]*?);/)?.[1];
-  assert(fastSql&&!/\$[23]\b/.test(fastSql),'the authoritative fast statement has only time and pack inputs');
-  const plan=(await client.query('EXPLAIN(ANALYZE,BUFFERS,FORMAT JSON)'+fastSql.replaceAll('$4','$2'),[iso(0),200])).rows[0]['QUERY PLAN'];
+  assert(fastSql&&!/\$[123]\b/.test(fastSql),'the fast statement uses the database clock and the requested pack ceiling');
+  const plan=(await client.query('EXPLAIN(ANALYZE,BUFFERS,FORMAT JSON)'+fastSql.replaceAll('$4','$1'),[200])).rows[0]['QUERY PLAN'];
   if(process.env.WFSIM_AVAILABILITY_PLAN_FILE)writeFileSync(process.env.WFSIM_AVAILABILITY_PLAN_FILE,JSON.stringify(plan,null,2)+'\n');
   const nodes=[];const walk=value=>{if(!value||typeof value!=='object')return;if(value['Relation Name'])nodes.push(value);for(const child of Object.values(value))if(typeof child==='object')Array.isArray(child)?child.forEach(walk):walk(child);};walk(plan);
   check('the fresh cache plan reads no question, consumer, device or snapshot heap',nodes.some(node=>node['Relation Name']==='state_factory_findings'&&node['Actual Loops']>0)
     &&nodes.every(node=>['state_factory_findings','record_compute_order_cut_activations'].includes(node['Relation Name'])||node['Actual Loops']===0));
   check('a cache write never restamps the complete snapshot',JSON.stringify(await db.get('SELECT * FROM state_factory_snapshot'))===JSON.stringify(before));
   check('a pack above the sampled ceiling retains canonical fallback',(await opened(iso(0),201)).open===1);
-  check('an expired sample retains canonical fallback',(await opened(iso(60_001))).open===1);
-  check('a future sample cannot appear fresh',(await opened(iso(-1))).open===1);
+  await withoutFallbackPlan(async()=>check('a sample refreshed during a request avoids planning the canonical fallback',
+    (await opened(iso(-1))).open===5000));
+  await db.run('UPDATE state_factory_findings SET at=? WHERE kind=?',iso(-60_001),AVAILABILITY_KEY);
+  check('an expired sample retains canonical fallback',(await opened()).open===1);
+  await db.run('UPDATE state_factory_findings SET at=? WHERE kind=?',iso(600_000),AVAILABILITY_KEY);
+  check('a sample timestamped after the database read cannot appear fresh',(await opened()).open===1);
   await db.run('UPDATE state_factory_findings SET at=? WHERE kind=?',iso(-30000).replace('Z','Y'),AVAILABILITY_KEY);
   check('a malformed clock inside the lexical freshness window is ignored',(await opened()).open===1);
   await db.run('UPDATE state_factory_findings SET at=? WHERE kind=?',iso(0),AVAILABILITY_KEY);
@@ -77,7 +81,8 @@ try{
   await db.run('DELETE FROM state_factory_findings WHERE kind=?',AVAILABILITY_KEY);
   await db.run('UPDATE state_factory_snapshot SET at=? WHERE id=1',iso(0));
   check('the original fresh snapshot remains a compatibility fallback',(await opened()).open===99);
-  await withoutFallbackPlan(async()=>check('a full snapshot returns before the canonical fallback is planned',(await opened()).open===99));
+  await withoutFallbackPlan(async()=>check('a full snapshot refreshed during a request also avoids planning the canonical fallback',
+    (await opened(iso(-1))).open===99));
   await cacheAvailability(db,sample(),{write});
   await db.run("INSERT INTO entity_compute_order_cuts VALUES('availability-cut',?,1,99,999999999,'z',?,'{}')",iso(1000),iso(1000));
   await db.run("INSERT INTO record_compute_order_cut_activations VALUES('availability-cut',?,0,'',0,'')",iso(1000));

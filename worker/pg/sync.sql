@@ -331,9 +331,10 @@ CREATE OR REPLACE FUNCTION factory_asking(text, text) RETURNS SETOF text LANGUAG
   UNION SELECT leased_to FROM state_compute_work WHERE leased_to IS NOT NULL AND lease_until > $2
 $$;
 
--- Availability has its own clock; both caches expire after one minute. A cut
--- invalidates its epoch; a changed pack ceiling may require the original count.
--- $2 is unused, kept so the procedure that calls this stays as it is.
+-- Cache freshness follows the database statement clock. A request can start
+-- before a newer sample replaces the previous one. The canonical fallback still
+-- counts leases against the request clock. A cut or a larger pack can invalidate
+-- the cache. $2 is unused.
 CREATE OR REPLACE FUNCTION factory_open(text, bigint, text, bigint) RETURNS TABLE (open bigint, asking bigint)
 LANGUAGE plpgsql STABLE AS $$
 BEGIN
@@ -353,15 +354,17 @@ BEGIN
     AND f.epoch IS NOT DISTINCT FROM e.at AND f.open BETWEEN 0 AND 9007199254740991
     AND f.asking BETWEEN 0 AND 9007199254740991 AND f.pack_max BETWEEN 1 AND 9007199254740991 AND f.pack_max >= $4
     AND f.at ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$'
-    AND pg_input_is_valid(f.at,'timestamp with time zone') AND f.at <= $1
-    AND f.at >= to_char(($1::timestamptz AT TIME ZONE 'UTC') - interval '60 seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+    AND pg_input_is_valid(f.at,'timestamp with time zone')
+    AND f.at <= to_char(statement_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+    AND f.at >= to_char((statement_timestamp() AT TIME ZONE 'UTC') - interval '60 seconds','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
   SELECT f.open,f.asking FROM fast f;
   IF FOUND THEN RETURN; END IF;
 
   RETURN QUERY
   SELECT f.open,f.asking FROM state_factory_snapshot f WHERE f.id=1
-    AND f.at<= $1 AND f.at>=coalesce(compute_order_cut_epoch(),'')
-    AND f.at >= to_char(($1::timestamptz AT TIME ZONE 'UTC') - interval '60 seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+    AND f.at>=coalesce(compute_order_cut_epoch(),'')
+    AND f.at <= to_char(statement_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+    AND f.at >= to_char((statement_timestamp() AT TIME ZONE 'UTC') - interval '60 seconds','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
   IF FOUND THEN RETURN; END IF;
 
   RETURN QUERY
