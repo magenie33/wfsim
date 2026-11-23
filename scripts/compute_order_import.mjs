@@ -10,6 +10,7 @@ import { queueOrders, queueZonesSql } from '../worker/queue_counts.js';
 import { COMPUTE_ORDER_IMPORT_ROWS } from './compute_order_import_schema.mjs';
 
 const PAGE_BYTES = 8 * 1024 * 1024;
+const ROLLED_BACK = new Set(['55P03', '40P01', '40001', '25P02']);
 const integer = n => Number.isSafeInteger(n) && n > 0;
 const readState = (sql, id) => sql.unsafe('SELECT * FROM state_compute_order_imports WHERE id=$1', [id]);
 
@@ -51,7 +52,7 @@ async function admitDemands(tx, { asks, engine }) {
   return tasks.map(({ id }) => id);
 }
 
-async function commitPage(writer, id, first, last, orderCount, cut, maxOpen, adapter, prepared) {
+async function commitPage(writer, { id, first, last, orderCount, cut, maxOpen, adapter, prepared }) {
   return writer.begin(async tx => {
     await tx.unsafe("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='15s'; SET LOCAL jit=off");
     await tx.unsafe("SELECT pg_advisory_xact_lock(hashtextextended('compute-order-import',0))");
@@ -87,6 +88,19 @@ async function verifyPage(reader, id, first, last, orders) {
   if (Number(proof.next_byte) !== last || proof.orders !== orders || proof.supported !== proof.admitted)
     throw Error('committed order batch failed independent verification');
   return proof;
+}
+
+async function admitPage(writer, reader, page, signal) {
+  for (let attempt = 0; ; attempt++) {
+    let result, error;
+    try { result = await commitPage(writer, page); } catch (cause) { error = cause; }
+    if (result && result !== 'committed') return { result };
+    const proof = await verifyPage(reader, page.id, page.first, page.last, page.orderCount);
+    if (proof) return { result: 'committed', proof };
+    if (attempt >= 2 || !ROLLED_BACK.has(error?.code))
+      throw error || Error('order admission requires independent readback');
+    await setTimeout(150 * (attempt + 1), undefined, { signal });
+  }
 }
 
 export async function importComputeOrders({ writer, reader, path, id, target, engine, maxOpen,
@@ -150,20 +164,18 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
         }
         await checkFile();
         const prepared = await adapter.prepare(orders, { id, first: next, cut, engine });
-        let outcome, error;
+        const page = { id, first: next, last, orderCount: orders.length, cut, maxOpen, adapter, prepared };
+        let attempt;
         do {
-          try { outcome = await commitPage(writer, id, next, last, orders.length, cut, maxOpen, adapter, prepared); }
-          catch (cause) { error = cause; break; }
-          if (outcome !== 'queue_full' || !waitMs) break;
-          onProgress(status(outcome));
+          attempt = await admitPage(writer, reader, page, signal);
+          if (attempt.result !== 'queue_full' || !waitMs) break;
+          onProgress(status(attempt.result));
           await setTimeout(waitMs, undefined, { signal });
           await checkFile();
         } while (true);
-        if (outcome && outcome !== 'committed') return status(outcome);
-        const proof = await verifyPage(reader, id, next, last, orders.length);
-        if (!proof) throw error || Error('order admission requires independent readback');
+        if (attempt.result !== 'committed') return status(attempt.result);
         next = last;
-        admitted += proof.admitted;
+        admitted += attempt.proof.admitted;
         processed += orders.length;
         onProgress(status('running'));
         if (admitted === target) return status('complete');

@@ -121,6 +121,27 @@ try {
     FROM record_compute_order_import_batches WHERE import_id='concurrent'`);
   assert.deepEqual({ ...physical }, { pages: 2, new: 2 });
 
+  let timedOut = false;
+  const locked = Promise.withResolvers(), release = Promise.withResolvers();
+  const hold = peerWriter.begin(async tx => {
+    await tx.unsafe("SELECT pg_advisory_xact_lock(hashtextextended('compute-order-import',0))");
+    locked.resolve();
+    await release.promise;
+  });
+  const contendedWriter = { unsafe: (...args) => writer.unsafe(...args), begin: async fn => {
+    try { return await writer.begin(fn); }
+    catch (error) {
+      if (error.code === '55P03') { timedOut = true; release.resolve(); }
+      throw error;
+    }
+  } };
+  try {
+    await Promise.race([locked.promise, hold]);
+    const retried = await run({ writer: contendedWriter, path: file('contended', [demand('contended', 5)]),
+      id: 'contended', target: 1 });
+    assert.deepEqual([timedOut, retried.result, retried.admitted], [true, 'complete', 1]);
+  } finally { release.resolve(); await hold; }
+
   const cliUrl = new URL(url);
   cliUrl.searchParams.set('search_path', schema+',pg_catalog,pg_temp');
   const env = { ...process.env, WFSIM_COMPUTE_ORDER_DATABASE_URL: cliUrl.href };
@@ -163,7 +184,7 @@ try {
   const [flows] = await reader.unsafe(`SELECT count(*)::int n FROM relation_task_consumers
     WHERE producer='build_workflow' AND state='live'`);
   assert(flows.n >= filled + selected.length);
-  console.log('  ok  sealed input, lost reply, pause and resume, queue cap, coverage rollback, duplicate replay, concurrent runners and Native gaps');
+  console.log('  ok  sealed input, lost reply, pause and resume, queue cap, coverage rollback, lock retry, duplicate replay, concurrent runners and Native gaps');
 } finally {
   await Promise.all([reader.end(), peerReader.end(), peerWriter.end()]);
   await writer.unsafe('DROP SCHEMA '+schema+' CASCADE').catch(() => {});

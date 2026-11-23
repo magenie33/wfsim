@@ -380,7 +380,8 @@ task receipts for the existing execution queue.
 Run `compute_order_import.mjs run ID FILE --target=N --engine=ID --max-open=N`
 using the owner connection in `WFSIM_COMPUTE_ORDER_DATABASE_URL`. Each page
 commits the tasks, byte cursor and new task IDs together. Independent indexed
-readback validates the receipt. An interrupted run uses the same ID, exact file,
+readback validates the receipt. A database rollback can retry the same page
+after readback proves the receipt absent. An interrupted run uses the same ID, exact file,
 engine and target. `status ID` reads progress, `pause ID` stops at a batch
 boundary, and `resume ID` clears the pause for the next run. `--rows=N` selects
 the batch size from 1 to 1,024, with 256 by default. `--batches=N --once` gives
