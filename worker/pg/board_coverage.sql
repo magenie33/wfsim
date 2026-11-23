@@ -212,7 +212,10 @@ BEGIN
       target_computation:=candidate#>>'{target,computation}';
       SELECT n.state,n.task_id,t.generation,t.xmin AS created_in,q.state AS task_state,q.zone INTO STRICT observed
         FROM state_build_workflow_nodes n LEFT JOIN entity_compute_tasks t ON t.id=n.task_id
-        LEFT JOIN state_compute_work q ON (q.id,q.task_id)=(n.computation,n.task_id)
+        LEFT JOIN LATERAL (
+          SELECT q.state,q.zone FROM state_compute_work q
+          WHERE (q.id,q.task_id)=(n.computation,n.task_id) OFFSET 0
+        ) q ON true
         WHERE (n.workflow,n.id)=(flow_id,item_no::text) AND n.definition=candidate->'node';
       IF observed.state='skipped' AND observed.task_id IS NULL AND EXISTS(
         SELECT 1 FROM state_board_measurement_selection s WHERE

@@ -704,8 +704,22 @@ BEGIN
         FROM jsonb_array_elements(specs) WITH ORDINALITY x(s,ord) ORDER BY s->>'id',ord) shared;
   END IF;
   IF jsonb_array_length(specs)>0 THEN PERFORM compute_admit_tasks(specs::text,demands::text,'',at); END IF;
-  UPDATE state_build_workflow_nodes node SET computation=q.id,task_id=q.task_id,state='queued'
-    FROM state_compute_work q WHERE node.workflow=workflow_id AND node.expansion=expansion_id AND node.id=ANY(touched) AND node.state='pending' AND q.id=node.definition->>'computation';
+  -- Probe effective work by computation from the locked nodes in this batch.
+  WITH admitted AS MATERIALIZED (
+    SELECT node.id,task.id AS computation,task.task_id
+    FROM unnest(touched) AS selected(id)
+    CROSS JOIN LATERAL (
+      SELECT node.id,node.definition FROM state_build_workflow_nodes node
+      WHERE (node.workflow,node.id)=(workflow_id,selected.id)
+        AND node.expansion=expansion_id AND node.state='pending' OFFSET 0
+    ) node
+    CROSS JOIN LATERAL (
+      SELECT q.id,q.task_id FROM state_compute_work q WHERE q.id=node.definition->>'computation' OFFSET 0
+    ) task
+  )
+  UPDATE state_build_workflow_nodes node
+    SET computation=admitted.computation,task_id=admitted.task_id,state='queued'
+    FROM admitted WHERE (node.workflow,node.id)=(workflow_id,admitted.id);
   UPDATE entity_measurement_reviews r SET task_id=node.task_id FROM state_build_workflow_nodes node
     WHERE node.workflow=workflow_id AND node.expansion=expansion_id AND node.id=ANY(touched) AND r.id=node.definition->>'review' AND r.task_id IS NULL;
   INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload,requirements)
