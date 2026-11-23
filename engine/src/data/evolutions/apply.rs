@@ -8,6 +8,7 @@ use super::*;
 /// base ("CO-bonus does not use base damage increase Evolution").
 /// `currently_broken` evolutions apply nothing.
 pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
+    if let Some(additional) = base.additional_projectile.as_mut() { apply(additional, evos); }
     if let Some(heavy) = base.melee_heavy.as_mut() { apply(heavy, evos); }
     for profile in base.melee_profiles.values_mut() { apply(profile, evos); }
     let original_total = base.base_vector.total();

@@ -39,6 +39,8 @@ pub struct DeploymentSpec {
     /// deployment this whole field exists to prevent.
     #[serde(default)]
     pub radial_damage: Option<BTreeMap<String, f64>>,
+    #[serde(default)]
+    pub additional_projectile: Option<super::attack::AdditionalProjectileSpec>,
     /// ...and its lingering FIELD, under the same rule.
     #[serde(default)]
     pub lingering_damage: Option<BTreeMap<String, f64>>,
@@ -58,6 +60,8 @@ pub struct DeploymentSpec {
     pub crit_chance: Option<f64>,
     #[serde(default)]
     pub crit_multiplier: Option<f64>,
+    #[serde(default)]
+    pub radial_crit_multiplier: Option<f64>,
     #[serde(default)]
     pub status_chance: Option<f64>,
 }
@@ -109,6 +113,9 @@ pub fn apply_valence(base: &mut WeaponBase, id: &str, element: &str, bonus: f64)
     }
     let Some(ty) = crate::rules::damage::DamageType::from_name(element) else { return };
     let fraction = bonus.clamp(s.min, s.max);
+    if let Some(additional) = base.additional_projectile.as_mut() {
+        apply_valence(additional, id, element, bonus);
+    }
     let total = base.base_vector.total();
     if fraction <= 0.0 {
         return;
@@ -177,6 +184,7 @@ pub fn apply_deployment(base: &mut WeaponBase, id: &str, deployment: &str) {
         return;
     }
     let Some(d) = s.deployments.get(deployment) else { return };
+    base.additional_projectile = None;
     if let Some(v) = d.reload_seconds {
         base.base_reload = v;
     }
@@ -192,19 +200,21 @@ pub fn apply_deployment(base: &mut WeaponBase, id: &str, deployment: &str) {
     // EVERY ATTACK PART, because the infobox states every attack part. The
     // direct vector alone would leave an Arch-Gun's explosion on the other
     // column — which is the half-applied deployment `validate` refuses.
-    let vector_of = |m: &std::collections::BTreeMap<String, f64>| {
-        let mut v = crate::rules::damage::DamageVector::new();
-        for (name, amount) in m {
-            v.add(damage_type(name), *amount);
-        }
-        v
-    };
+    let vector_of = super::attack::projectile_damage;
     if let Some(m) = d.damage.as_ref() {
+        let co_fraction = base.co_base_fraction();
         base.base_vector = vector_of(m);
+        if d.additional_projectile.is_some() {
+            base.co_base = base.base_vector.total() * co_fraction;
+        }
     }
     if let Some(m) = d.radial_damage.as_ref() {
         if let Some(r) = base.radial.as_mut() {
+            let co_fraction = r.co_base_fraction();
             r.base_vector = vector_of(m);
+            if d.additional_projectile.is_some() {
+                r.co_base = r.base_vector.total() * co_fraction;
+            }
         }
     }
     if let Some(m) = d.lingering_damage.as_ref() {
@@ -223,6 +233,12 @@ pub fn apply_deployment(base: &mut WeaponBase, id: &str, deployment: &str) {
     }
     if let Some(v) = d.status_chance {
         base.base_status_chance = v;
+    }
+    if let Some((r, v)) = base.radial.as_mut().zip(d.radial_crit_multiplier) {
+        r.base_crit_damage = v;
+    }
+    if let Some(spec) = &d.additional_projectile {
+        base.additional_projectile = Some(Box::new(spec.apply_to(base)));
     }
 }
 

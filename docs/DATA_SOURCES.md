@@ -113,6 +113,26 @@ the supplied before/after installation state. M8 records the independent
 807/958/1098/662 gameplay controls and distinguishes the adopted mode ordering
 from the verified consumer arithmetic. Full live installer timing is unbound.
 
+## Additional multishot projectiles
+
+The decoded `2026.10.28.09.54` client package and native selector controls bind
+ordinary projectile resources through `fireIterations` and select the
+additional resource on subsequent iterations. The Drive receipt
+`20261123T135856Z-multishot-projectile-resource-sweep` (manifest SHA-256
+`9cfaa0e41851c2c8f46d50ffc70f11f3e750e4a967811d65ad6c49666bd92ab5`)
+identifies five player routes with distinct combat inputs. Each selected
+resource takes its own direct and radial damage, crit and status through the
+same build and fight rules.
+
+Latron Prime binds the Incarnon behavior only. Regular Grattler binds its
+Archwing override and Kuva Grattler binds Archwing and atmosphere separately.
+The native Archwing ordinary damage is 225 direct and 310 radial for Grattler
+and 50 direct and 155 radial for Kuva Grattler. Tenet Detron primary has ten
+ordinary iterations. Its additional status input uses the same division by
+ten as the pinned secondary calibration, yielding 9% from the 0.9 declaration.
+Live roll consumption for that branch and the Kuva Grattler ground resource
+source-proc list need in-game confirmation.
+
 ## Pinned primary form and sampler inputs
 
 ### Whole-secondary calibration

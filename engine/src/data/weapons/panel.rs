@@ -174,10 +174,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
     static MOD_POOLS: crate::data::Memo<[&'static str]> = crate::data::Memo::new();
     let id = s.id.as_str();
 
-    let mut vector = DamageVector::new();
-    for (name, amount) in &s.attack.damage {
-        vector = vector.with(damage_type(name), *amount);
-    }
+    let vector = super::attack::projectile_damage(&s.attack.damage);
 
     let injected_elements = if frenzy_active {
         s.perks
@@ -481,7 +478,8 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         }
     });
 
-    WeaponBase {
+    let mut base = WeaponBase {
+        additional_projectile: None,
         weakness_bonus: s.weakness_bonus.or_else(|| s.transforms_from.as_deref()
             .and_then(spec).and_then(|base| base.weakness_bonus)),
         tennokai_can_convert: s.group_entries().find(|e| e.form_kind() == crate::model::FormKind::Heavy)
@@ -854,5 +852,9 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         headshot_damage_bonus: s.headshot_damage_bonus.unwrap_or(0.0),
         headshot_multiplier: s.headshot_multiplier,
         noncrit_bonus: None,
+    };
+    if let Some(spec) = &s.attack.additional_projectile {
+        base.additional_projectile = Some(Box::new(spec.apply_to(&base)));
     }
+    base
 }

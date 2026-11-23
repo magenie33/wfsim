@@ -101,6 +101,7 @@ pub struct Toggle {
 /// Parameters of the dummy engagement.
 #[derive(Debug, Clone)]
 pub struct FightParams {
+    pub additional_projectile: Option<Box<FightParams>>,
     /// Native pending queries take precedence over the supplied resolved-stat adapter.
     pub critical_inputs: Option<crate::rules::critical::CriticalInputs>,
     pub weakness_bonus: Option<f64>,

@@ -496,6 +496,8 @@ pub struct AttackSpec {
     /// A radial (AoE) part fired with every projectile of this attack.
     #[serde(default)]
     pub radial: Option<Box<RadialSpec>>,
+    #[serde(default)]
+    pub additional_projectile: Option<AdditionalProjectileSpec>,
     /// See [`ExtraHitReads`] — the shares an Extra Hit off this attack's
     /// direct hit reads, where they are not the attack's own.
     #[serde(default)]
@@ -547,6 +549,62 @@ pub struct AttackSpec {
     /// Continuous-beam geometry (Torid Incarnon). Shape, not a damage part.
     #[serde(default)]
     pub beam: Option<Box<BeamSpec>>,
+}
+
+/// Combat fields supplied by an explicitly selected multishot projectile.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct AdditionalProjectileSpec {
+    pub damage: Option<BTreeMap<String, f64>>,
+    pub radial_damage: Option<BTreeMap<String, f64>>,
+    pub crit_chance: Option<f64>,
+    pub crit_multiplier: Option<f64>,
+    pub status_chance: Option<f64>,
+    pub radial_status_chance: Option<f64>,
+}
+
+impl AdditionalProjectileSpec {
+    pub(super) fn apply_to(&self, base: &WeaponBase) -> WeaponBase {
+        let mut projectile = base.clone();
+        if let Some(damage) = &self.damage {
+            projectile.base_vector = projectile_damage(damage);
+            projectile.co_base = projectile.base_vector.total() * base.co_base_fraction();
+        }
+        if let Some(chance) = self.crit_chance {
+            projectile.base_crit_chance = chance;
+        }
+        if let Some(multiplier) = self.crit_multiplier {
+            projectile.base_crit_damage = multiplier;
+        }
+        if let Some(chance) = self.status_chance {
+            projectile.base_status_chance = chance;
+        }
+        if let Some(radial) = projectile.radial.as_mut() {
+            if let Some(damage) = &self.radial_damage {
+                let co_fraction = radial.co_base_fraction();
+                radial.base_vector = projectile_damage(damage);
+                radial.co_base = radial.base_vector.total() * co_fraction;
+            }
+            if let Some(chance) = self.crit_chance {
+                radial.base_crit_chance = chance;
+            }
+            if let Some(multiplier) = self.crit_multiplier {
+                radial.base_crit_damage = multiplier;
+            }
+            if let Some(chance) = self.radial_status_chance {
+                radial.base_status_chance = chance;
+            }
+        }
+        projectile
+    }
+}
+
+pub(super) fn projectile_damage(damage: &BTreeMap<String, f64>) -> DamageVector {
+    let mut vector = DamageVector::new();
+    for (name, amount) in damage {
+        vector.set(damage_type(name), *amount);
+    }
+    vector
 }
 
 /// THE SPECTRAL DAGGER — the infobox's `Spectral Dagger` attack and its

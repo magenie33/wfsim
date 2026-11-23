@@ -95,6 +95,13 @@ attack:
   # proc — *"Collision deals Impact damage and have a guaranteed Impact proc"*.
   # Rolled status lands on top of it.
   damage: { impact: 50.0 }   # total 50
+  # see notes: client_additional_projectiles
+  additional_projectile:
+    radial_damage: { puncture: 40.0, heat: 40.0 }
+    crit_chance: 0.32
+    crit_multiplier: 3.0
+    status_chance: 0.24
+    radial_status_chance: 0.24
   # The EXPLOSION — rules in MECHANICS §7.
   # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): 4.0 m -> +320% at rank 5.
   # ✅ MEASURED (M104) at rank 2: +70% a metre over the 3.2 m it takes is

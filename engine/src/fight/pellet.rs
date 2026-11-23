@@ -22,6 +22,7 @@ use super::bumps::{bump_buffs, bump_status_buffs};
 pub(super) struct Strike<'a> {
     pub(super) radial_only: bool,
     pub(super) skip_radial: bool,
+    pub(super) ordinary_projectile_count: Option<u32>,
     /// The multishot one round carries (`resolve::Rounds::per_round`).
     pub(super) round_multishot: f64,
     /// WHO THREW IT. Every instance this strike settles is credited here, so
@@ -222,6 +223,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     let Strike {
         radial_only,
         skip_radial,
+        ordinary_projectile_count,
         round_multishot,
         seat,
         active,
@@ -2158,12 +2160,6 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 Some(&bodies[0].debuffs),
                 ledger::Clock::Hit,
                 || Instance {
-                    // WHICH PELLET OF THE PULL THIS WAS. The first is the one
-                    // the trigger would have fired with no multishot at all;
-                    // every one after it is multishot's, and telling them apart
-                    // is the difference between "my multishot works" and
-                    // "something is double-counting".
-                    //
                     // THE ORIGIN IS THE PELLET'S, NOT THE STAGE'S. A
                     // pellet with an explosion produces two rows and
                     // they are the SAME pellet — `radial` says which
@@ -2176,9 +2172,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     // It rides the same loop, and the column that says
                     // WHY this instance exists must not answer with a
                     // mechanic melee has no card for.
-                    origin: if pellet_idx == 0 {
-                        crate::record::Origin::Own
-                    } else if swing.as_ref().is_some_and(|h| h.hits > 1) {
+                    origin: if pellet_idx < ordinary_projectile_count.unwrap_or(1)
+                        || swing.as_ref().is_some_and(|h| h.hits > 1)
+                    {
                         crate::record::Origin::Own
                     } else {
                         crate::record::Origin::Multishot

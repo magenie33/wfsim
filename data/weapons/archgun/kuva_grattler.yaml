@@ -6,24 +6,23 @@ class: archgun
 form: base
 default_form: true
 
-# TWO COLUMNS, AND A STAT OTHER THAN DAMAGE MOVES. The critical multiplier is
-# 2.10x in Archwing and 2.00x on the ground — the first field outside damage,
-# reload and reserve that any Arch-Gun's two tabs disagree on, and the reason
-# `DeploymentSpec` carries crit and status at all.
-#
-#   |            | impact | explosion | crit mult | reload | Ammo Max |
-#   | Atmosphere |  140   |    235    |   2.00x   | 2.50 s |   320    |
-#   | Archwing   |   94   |    155    |   2.10x   | 4.00 s |     0    |
-#
-# x1.489 and x1.516 — two parts, two ratios, and neither is 2.
 deployment: atmosphere
 deployments:
   archwing:
     reload_seconds: 4.0
     no_resupply: false
-    damage: { impact: 9.4, puncture: 75.2, slash: 9.4 }   # 94 total
+    # see notes: client_additional_projectiles
+    damage: { impact: 5.0, puncture: 40.0, slash: 5.0 }
     radial_damage: { blast: 155.0 }
     crit_multiplier: 2.1
+    radial_crit_multiplier: 2.1
+    additional_projectile:
+      damage: { impact: 10.0, puncture: 80.0, slash: 10.0 }
+      radial_damage: { blast: 205.0 }
+      crit_chance: 0.25
+      crit_multiplier: 2.0
+      status_chance: 0.25
+      radial_status_chance: 0.25
 mod_pools: [archgun]
 mastery_rank: 15
 # ADVERSARY: a Kuva weapon ranks to 40, not 30 — five Forma and 80 capacity.
@@ -88,7 +87,12 @@ attack:
     effectiveness: 0.00
     stacking: multiplies
     radius_calculation: doesnt_work
-  damage: { impact: 14.0, puncture: 112.0, slash: 14.0 }   # 140 (Archwing: 94)
+  damage: { impact: 14.0, puncture: 112.0, slash: 14.0 }
+  # see notes: client_additional_projectiles
+  additional_projectile:
+    crit_chance: 0.25
+    status_chance: 0.25
+    radial_status_chance: 0.25
   radial:
     extra_hit_reads: { impact: 0.4, slash: 0.25, puncture: 0.35 }   # see notes: extra_hit_reads
     damage: { blast: 235.0 }         # Archwing: 155

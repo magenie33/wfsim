@@ -800,8 +800,9 @@ pub fn run_once_traced(
         me.windows.sync_frenzy(&me.bar);
         let resting =
             if me.incarnon.in_base_form { &me.fixed.base_resting } else { &me.fixed.main_resting };
+        let frenzy_down = t >= me.windows.frenzy;
         let (qvec, pre_quantization) = match resting {
-            Some(down) if t >= me.windows.frenzy => (
+            Some(down) if frenzy_down => (
                 down,
                 &active.resting.as_ref().expect("resting vector needs resting panel").damage,
             ),
@@ -811,18 +812,18 @@ pub fn run_once_traced(
         // for this shot: the vector its count resolved to. No robotic weapon
         // has Frenzy, so the two never meet.
         let piled_q;
-        let (qvec, pre_quantization) = match &active.per_hit_element {
+        let (qvec, pre_quantization, piled_element_count) = match &active.per_hit_element {
             Some(p) => {
                 me.windows.element_pile.settle(&p.spec, r.pellets, me.last_shot_t);
                 match me.windows.element_pile.stacks_at(&p.spec, t) {
-                    0 => (qvec, pre_quantization),
+                    0 => (qvec, pre_quantization, 0),
                     k => {
                         piled_q = p.damage[k as usize - 1].quantized_against(modded_base);
-                        (&piled_q, &p.damage[k as usize - 1])
+                        (&piled_q, &p.damage[k as usize - 1], k)
                     }
                 }
             }
-            None => (qvec, pre_quantization),
+            None => (qvec, pre_quantization, 0),
         };
         // ---- THE MELEE SWING THIS SHOT IS — see [`swing_this_shot`] ------
         let Swung {
@@ -876,6 +877,7 @@ pub fn run_once_traced(
             flat_crit,
             crit_chance_relative,
             effective_cc,
+            direct_flat_crit,
             undamaged,
             weakpoint_cd,
             weakpoint_sc,
@@ -1118,6 +1120,9 @@ pub fn run_once_traced(
             melee_struck,
             pierce_live_m: buff_total(active, crate::model::BuffGrant::PunchThrough, &mut me.buff_stacks, t),
             effective_cc,
+            direct_flat_crit,
+            frenzy_down,
+            piled_element_count,
             crit_chance_relative,
             flat_crit,
             cc_mult,

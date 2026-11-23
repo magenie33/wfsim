@@ -95,6 +95,12 @@ attack:
     end_m: 52.0
     reduction: 0.3077
   damage: { radiation: 26 }   # 26 a pellet, 260 a shot
+  # see notes: client_additional_projectiles
+  additional_projectile:
+    damage: { radiation: 40 }
+    crit_chance: 0.04
+    crit_multiplier: 1.5
+    status_chance: 0.09
 
 unmodeled:
   - reason: client_accuracy_runtime
