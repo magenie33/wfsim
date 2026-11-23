@@ -11,7 +11,7 @@ import { boardCoverageOrderAdapter } from './board_coverage_orders.mjs';
 import { boardCoverageGaps } from './board_coverage_gaps.mjs';
 import { importComputeOrders, orderImportAtEnd, orderImportConnection, verifyRefillConnection } from './compute_order_import.mjs';
 import { acceptOrderStock, readAcceptedStock, runOrderStock } from './compute_order_stock.mjs';
-import { admitStockPage, publishStockWindow, reserveStockWindow } from './compute_order_stock_window.mjs';
+import { admitStockPage, MAX_ACTIVE_ORDERS, publishStockWindow, reserveStockWindow, stockWindowBounds } from './compute_order_stock_window.mjs';
 import { belowReadyOrderStock, orderRefill } from './compute_order_refill.mjs';
 import { computeOrderImportSchema } from './compute_order_import_schema.mjs';
 import { computationId } from '../worker/computation_input.js';
@@ -60,6 +60,7 @@ try {
     SELECT compute_order_cut_activate('order-import-cut',0,'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
     SELECT setval(pg_get_serial_sequence('entity_compute_tasks','id'),1,true);`);
   const manual = file('manual', [demand('first', 1), demand('same-input', 1), demand('second', 2, 0), demand('extra', 3)]);
+  await assert.rejects(run({ path: manual, id: 'over-cap', target: 2, maxOpen: MAX_ACTIVE_ORDERS + 1 }), /max-open/);
   assert.equal((await run({ path: manual, id: 'manual', target: 2, rows: 2 })).result, 'queue_unavailable');
   assert.equal(await count(), 0);
   await writer.unsafe("INSERT INTO state_queue_zone_seed(epoch,zones,sampled_at,workload) VALUES(coalesce(compute_order_cut_epoch(),''),'[]',now(),'[]')");
@@ -254,6 +255,16 @@ try {
     demand: () => goodSnapshot, delay: () => assert.fail('refill should resume below both limits') }), inputSha, cut };
   const resumed = await run({ ...runs, refill: restart });
   assert.deepEqual([resumed.result, resumed.processed, resumed.admitted], ['complete', 2, 2]);
+  const [retired] = await writer.unsafe(`SELECT task_ids[1] id FROM record_compute_order_import_batches
+    WHERE import_id='refill' ORDER BY first_byte DESC LIMIT 1`);
+  await writer.begin(async tx => {
+    await tx.unsafe("UPDATE state_compute_scheduling SET state='withdrawn' WHERE task_id=$1", [retired.id]);
+    await tx.unsafe('DELETE FROM state_compute_scheduling WHERE task_id=$1', [retired.id]);
+    await tx.unsafe('DELETE FROM entity_compute_tasks WHERE id=$1', [retired.id]);
+  });
+  const refillSeal = { id: 'refill', target: 2, inputSha, inputBytes: readFileSync(path).length, engine, cut };
+  assert(await orderImportAtEnd(reader, refillSeal), 'completed stock handoff survives retired task detail');
+  assert.equal((await run({ ...runs, refill: restart })).admitted, 2);
   const serviceRole = schema + '_service';
   await writer.unsafe('CREATE ROLE ' + serviceRole);
   const serviceUrl = new URL(url);
@@ -383,8 +394,16 @@ try {
   }));
   const [{ zones: beforeWindow }] = await reader.unsafe(queueZonesSql);
   const occupiedSlots = queueOrders(beforeWindow).total;
-  const reservation = { id: source.id, cut, pages, maxOpen: occupiedSlots + 2 };
+  const reservation = { id: source.id, cut, pages, maxOpen: MAX_ACTIVE_ORDERS };
   assert.equal((await reserveStockWindow(writer, { ...reservation, maxOpen: occupiedSlots + 1 })).result, 'queue_full');
+  await assert.rejects(reserveStockWindow(writer, { ...reservation, maxOpen: MAX_ACTIVE_ORDERS + 1 }), /max-open/);
+  const seedOccupied = n => writer.unsafe(`UPDATE state_queue_zone_seed
+    SET zones=jsonb_build_array(jsonb_build_array(99,$2::bigint)) WHERE epoch=$1`, [cut, n]);
+  await seedOccupied(MAX_ACTIVE_ORDERS - occupiedSlots - 1);
+  const bounds = { id: source.id, rows: 1, maxOpen: MAX_ACTIVE_ORDERS, limit: 2 };
+  assert.deepEqual(await stockWindowBounds(reader, bounds), { pages: [1] });
+  assert.equal((await reserveStockWindow(writer, reservation)).result, 'queue_full');
+  await seedOccupied(MAX_ACTIVE_ORDERS - occupiedSlots - 2);
   const { key } = await reserveStockWindow(writer, reservation);
   const late = await admitStockPage({ begin: async fn => {
     await writer.begin(fn);
@@ -407,6 +426,9 @@ try {
     WHERE b.import_id=$1 AND compute_order_stock_dispatchable(q.task_id,q.zone) ORDER BY q.zone_position`, [source.id]);
   assert.deepEqual(visible.map(row=>row.computation), orders.map(order=>order.target.computation));
   assert.equal((await reader.unsafe('SELECT 1 FROM state_compute_order_stock_holds WHERE window_key=$1', [key])).length, 0);
+  assert.equal((await stockWindowBounds(reader, bounds)).result, 'queue_full');
+  await writer.unsafe("UPDATE state_compute_scheduling SET state='withdrawn' WHERE id=$1", [orders[0].target.computation]);
+  assert.deepEqual(await stockWindowBounds(reader, bounds), { pages: [1] });
   console.log('  ok  parallel stock shares the cap and publishes a durable FIFO window after a lost reply');
   console.log('  ok  durable stock acceptance has its own budget and verified receipts; the dispatcher uses only accepted sources');
   console.log('  ok  low-ready refill, release and host holds, atomic high cap and resume from the same source');

@@ -275,6 +275,12 @@ advisory lock and losing that session stops it. Copying deployment configuration
 to another host does not create another primary database or a second settler.
 Move the active daemon by stopping the old service before starting the new one.
 
+Bulk order refill accepts `--max-open` up to 1,000,000 effective open tasks.
+An operator can set a lower watermark to fit the data volume and clearance
+budget. The importer counts leased and reserved work toward capacity. Pending
+source files have their own intake budget. A committed batch receipt keeps the
+source cursor verifiable after its task detail retires.
+
 ## Database storage
 
 `python scripts/ship_health.py` installs `wfsim-health.timer`, using the same

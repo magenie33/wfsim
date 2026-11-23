@@ -8,7 +8,7 @@ import { pgDb, postgresClient } from '../worker/db.js';
 import { facts } from '../worker/factory.js';
 import { queueOrders, queueZonesSql } from '../worker/queue_counts.js';
 import { COMPUTE_ORDER_IMPORT_ROWS } from './compute_order_import_schema.mjs';
-import { admitStockPage, publishStockWindow, refuseLegacyWindow, reserveStockWindow, stockWindowBounds } from './compute_order_stock_window.mjs';
+import { admitStockPage, checkActiveOrderLimit, publishStockWindow, refuseLegacyWindow, reserveStockWindow, stockWindowBounds } from './compute_order_stock_window.mjs';
 
 const PAGE_BYTES = 8 * 1024 * 1024;
 const REFILL_TRANSACTION_MS = 8000;
@@ -102,9 +102,10 @@ async function verifyPage(reader, id, first, last, orders) {
 
 async function verifyImportPosition(reader, id, next) {
   if (next === 0) return;
-  const [prior] = await reader.unsafe(`SELECT first_byte,orders FROM record_compute_order_import_batches
+  // The committed receipt survives retirement of the task detail it witnessed.
+  const [prior] = await reader.unsafe(`SELECT next_byte,orders,cardinality(task_ids) AS admitted FROM record_compute_order_import_batches
     WHERE import_id=$1 AND first_byte<$2 ORDER BY first_byte DESC LIMIT 1`, [id, next]);
-  if (!prior || !await verifyPage(reader, id, Number(prior.first_byte), next, prior.orders))
+  if (!prior || Number(prior.next_byte) !== next || prior.admitted > prior.orders)
     throw Error('cannot verify the saved import position');
 }
 
@@ -137,8 +138,9 @@ async function admitPage(writer, reader, page, signal, retryRollbacks) {
 export async function importComputeOrders({ writer, reader, path, id, target, engine, maxOpen,
   rows = 256, signal, waitMs = 0, maxBatches = Infinity, retryRollbacks = true,
   adapters = new Map(), refill, peerWriters = [], onProgress = () => {} }) {
+  checkActiveOrderLimit(maxOpen);
   if (writer === reader || typeof id !== 'string' || !id.trim() || !/^[0-9a-f]{12,64}$/.test(engine || '') ||
-      ![target, maxOpen, rows].every(integer) || rows > COMPUTE_ORDER_IMPORT_ROWS ||
+      ![target, rows].every(integer) || rows > COMPUTE_ORDER_IMPORT_ROWS ||
       (maxBatches !== Infinity && !integer(maxBatches)))
     throw Error('invalid compute order import parameters');
   const routes = new Map([['demand', { prepare: prepareDemands, admit: admitDemands }], ...adapters]);
@@ -332,6 +334,8 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
       || (accept && (!values['stock-anchor'] || values.engine || values.target || values['max-open'] ||
         values.rows || values.batches || values.once)))
     throw Error('usage: compute_order_import.mjs run ID FILE --target=N --engine=ID --max-open=N, run-stock MANIFEST or run-accepted-stock DIRECTORY with --stock-anchor=ID --max-open=N --refill-config=FILE [--parallel-workers=N for accepted stock], accept-stock MANIFEST --stock-anchor=ID --max-pending-orders=N --max-pending-bytes=N, or status|pause|resume ID');
+  const maxOpen = Number(values['max-open']);
+  if (stock || operation === 'run') checkActiveOrderLimit(maxOpen);
   const { default: postgres } = await import('./pg/node_modules/postgres/src/index.js');
   const connect = proof => postgres(url, { max: 1, fetch_types: false,
     connection: orderImportConnection(proof, !!values['refill-config']) });
@@ -349,7 +353,6 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
     } else if (operation === 'run' || stock) {
       const { boardCoverageOrderAdapter } = await import('./board_coverage_orders.mjs');
       const config = values['refill-config'];
-      const maxOpen = Number(values['max-open']);
       const options = { writer, reader, peerWriters, maxOpen, rows: values.rows === undefined ? undefined : Number(values.rows),
         maxBatches: values.batches === undefined ? undefined : Number(values.batches), signal: controller.signal,
         waitMs: config ? 500 : values.once ? 0 : 8000, retryRollbacks: !values.once && !config,
