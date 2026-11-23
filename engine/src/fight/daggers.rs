@@ -52,13 +52,14 @@ pub(super) fn make_daggers(
     // THE NEAREST BODY INSIDE ITS REACH, measured from the wielder it orbits.
     // The page says it "seeks an enemy within 15 meters" and names no
     // preference, so the nearest is the one that invents none.
-    let target = params
-        .body_positions()
-        .iter()
-        .enumerate()
-        .map(|(b, &at)| (b, crate::rules::space::gap(params.player_at, at)))
-        .filter(|&(_, d)| d <= g.rules.seek_range_m)
-        .min_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)));
+    let target = if let Some(scene) = &params.scene_3d {
+        scene.nearest_melee_target(g.rules.seek_range_m)
+    } else {
+        params.body_positions().iter().enumerate()
+            .map(|(b, &at)| (b, crate::rules::space::gap(params.player_at, at)))
+            .filter(|&(_, d)| d <= g.rules.seek_range_m)
+            .min_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)))
+    };
     // A KILL PAST THE CLOCK'S LENGTH is dated to this look.
     let births = clock[..timed].iter().map(|&at| at.min(t)).chain(std::iter::repeat(t));
     for born in births.take(n as usize) {

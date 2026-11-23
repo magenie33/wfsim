@@ -1016,6 +1016,7 @@ ui:
   "Duration (s)": 时长（秒）
   Simulation geometry: 模拟几何
   Standing reference muzzle: 使用站立参考枪口
+  Approximate melee reach: 使用近战范围近似
   Head aim: 瞄准头部
   Head aim %: 瞄准头部比例
   Aim at the head while charging: 充能时瞄准头部

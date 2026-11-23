@@ -1,4 +1,5 @@
 use super::*;
+use crate::rules::space::MELEE_ARC_DEG;
 
 #[wfsim_gas_macro::metered]
 impl FightParams {
@@ -35,24 +36,26 @@ impl FightParams {
         }) {
             return Some("scene_3d needs a valid rebound speed, lifetime and radial attack");
         }
-        if self.melee_radius.is_some() || !self.combo_script.is_empty() || self.target_preference.is_some() {
-            return Some("scene_3d needs an attack-specific melee sweep or contact volume");
-        }
-        if self.thrown_bounce.is_some() {
+        if self.thrown_bounce.is_some() && !self.uses_melee_volume() {
             return Some("scene_3d needs a thrown melee bounce traversal");
         }
-        if self.acid_shells.is_some() || self.spectral_dagger.is_some() {
+        if self.acid_shells.is_some() || (self.spectral_dagger.is_some() && !self.uses_melee_volume()) {
             return Some("scene_3d needs a spawned object, lock or secondary delivery route");
         }
         if !self.abilities.is_empty() || self.frame.is_some() || !self.also_acting.is_empty() {
             return Some("scene_3d needs ability or additional wielder geometry");
         }
-        if self.arcane.influence_chance > 0. {
+        if self.arcane.influence_chance > 0. && !self.uses_melee_volume() {
             return Some("scene_3d needs a melee influence recipient query");
         }
         if let Some(cycle)=&self.cycle {if let Some(error)=cycle.base_form.scene_3d_error(){return Some(error);}}
         if let Some(toggle)=&self.toggle {if let Some(error)=toggle.other.scene_3d_error(){return Some(error);}}
         None
+    }
+
+    pub fn uses_melee_volume(&self) -> bool {
+        self.form.is_melee() || self.follow_through.is_some()
+            || self.melee_radius.is_some() || self.target_preference.is_some()
     }
     /// CAN WHAT THIS BODY DROPPED BE COLLECTED? The pack lands where the body
     /// fell and the Tenno does not walk, so the answer is a distance and
@@ -955,6 +958,9 @@ impl FightParams {
         if self.others.is_empty() {
             return vec![0];
         }
+        if let Some(scene) = &self.scene_3d {
+            return scene.melee_contacts(reach, all_around);
+        }
         // WHICH WAY THE SWING FACES — the same line the shot leaves on.
         let aim = self.aim_point();
         let mut out: Vec<(usize, f64)> = vec![(0, crate::rules::space::gap(self.player_at, self.target_at))];
@@ -979,18 +985,27 @@ impl FightParams {
         out.into_iter().map(|(i, _)| i).collect()
     }
 
-    /// Contact is assumed at the aimed body; bone motion and approach are absent.
-    /// Neighbours intersect the hit sphere through the arena's body footprint.
+    /// The contact sphere is centered on the host's body.
     pub fn melee_radius_struck(&self, extra_reach_m: f64) -> Vec<usize> {
         let Some(area) = self.melee_radius else { return Vec::new() };
         let radius = (area.radius_m + extra_reach_m).max(0.0);
         let mut neighbours: Vec<(usize, f64)> = self.others.iter().enumerate()
             .filter_map(|(i, f)| {
-                let distance = self.target_at.distance(f.at);
-                crate::rules::space::caught_by_blast(distance, radius).then_some((i + 1, distance))
+                let floor_distance = self.target_at.distance(f.at);
+                self.melee_area_distance(0, i + 1, floor_distance, radius).map(|d| (i + 1, d))
             }).collect();
         neighbours.sort_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)));
         std::iter::once(0).chain(neighbours.into_iter().map(|(i, _)| i)).collect()
+    }
+
+    pub(crate) fn melee_area_distance(&self, from: usize, to: usize, floor_distance: f64, radius: f64) -> Option<f64> {
+        self.scene_3d.as_ref().map_or_else(
+            || crate::rules::space::caught_by_blast(floor_distance, radius).then_some(floor_distance),
+            |scene| {
+                let distance = scene.distance_to_radial_body(scene.beam_center(from), to);
+                crate::rules::space::within(distance, radius).then_some(distance)
+            },
+        )
     }
 
     /// THE GAP between the two bodies — surface to surface, zero at contact,

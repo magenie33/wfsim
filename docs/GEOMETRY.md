@@ -17,9 +17,9 @@ profile. The standing Excalibur, from the same source data as explicit
 scenes, faces the aimed actor. The formation faces the shooter along that
 axis with the optional shared `enemy_yaw_deg` angle relative to frontal.
 
-The preset supports primary, secondary and Archgun collision routes for
-the standing Warframe. It
-loads the Laetum, Akarius and Akarius Prime controls or the attachment
+The preset supports primary, secondary and Archgun collision routes and
+approximate standing melee. It loads the Laetum, Akarius and Akarius Prime
+controls or the attachment
 models from `geometry/weapon-attachments.yaml`. Each catalog model projects
 an unambiguous named mount and its usable declared firing position into a
 source-default pose. A gun without a bound standing attachment uses the
@@ -150,6 +150,16 @@ Height enters the capsule-segment overlap check. Other contact arrangements
 need supplied positions; this is not a general character-controller solver.
 
 ## Collision and settlement
+
+Standing melee uses the resolved controller capsules for reach and the
+existing forward cone or full-circle swing rule. The scene precomputes
+distance, cone membership, and the nearest-first order once. Per-swing range
+buffs still choose contacts from that order. Contact, slam and Melee Influence
+areas query the posed volumes. Spectral Daggers use the nearest 3D
+controller distance for acquisition and retain their attack clock.
+Melee keeps its existing action clock and
+settlement. Stance animation sweeps, the airborne pose during a slam, and
+glaive bounce/homing continue to use the existing approximations.
 
 Each physical round samples the weapon's resolved intrinsic spread once in 3D.
 Multishot instances share its physical path; each receiving body independently

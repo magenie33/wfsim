@@ -93,17 +93,24 @@ fn standing_gun(id: &str) -> bool {
         .is_some_and(|w| matches!(w.weapon_type.as_str(), "primary" | "secondary" | "archgun"))
 }
 
+fn standing_melee(id: &str) -> bool {
+    data::weapons::spec(id).is_some_and(|w| w.weapon_type.as_str() == "melee")
+}
+
 pub(crate) fn source_default_choices() -> Value {
     let (Ok(source), Ok(mounts)) = (profiles(), catalog_mounts()) else {
         return Value::Null;
     };
-    let guns = crate::registry::weapons().iter().filter(|w| standing_gun(&w.id) && !w.sentinel);
+    let weapons = crate::registry::weapons().iter().filter(|w| !w.sentinel);
+    let guns = weapons.clone().filter(|w| standing_gun(&w.id));
     json!({
-        "weapons": guns.clone().map(|w| &w.id).collect::<Vec<_>>(),
+        "weapons": weapons.clone().filter(|w| standing_gun(&w.id) || standing_melee(&w.id)).map(|w| &w.id).collect::<Vec<_>>(),
+        "melee_weapons": weapons.filter(|w| standing_melee(&w.id)).map(|w| &w.id).collect::<Vec<_>>(),
         "reference_weapons": guns.filter(|w| !source.weapons.contains_key(&w.id)
             && !mounts.contains_key(&w.id)).map(|w| &w.id).collect::<Vec<_>>(),
         "carrier_weapons": crate::registry::weapons().iter()
-            .filter(|w| w.sentinel && standing_gun(&w.id)).map(|w| &w.id).collect::<Vec<_>>(),
+            .filter(|w| w.sentinel && (standing_gun(&w.id) || standing_melee(&w.id)))
+            .map(|w| &w.id).collect::<Vec<_>>(),
         "enemies": source.enemies.keys().collect::<Vec<_>>(),
     })
 }
@@ -166,8 +173,8 @@ pub(crate) fn source_default<'a>(
         return Err("scene_3d enemy yaw must be finite".into());
     }
     let source = profiles()?;
-    if !standing_gun(&weapon.id) {
-        return Err("scene_3d standing gun preset requires a primary, secondary or Archgun".into());
+    if !standing_gun(&weapon.id) && !standing_melee(&weapon.id) {
+        return Err("scene_3d standing preset needs a supported weapon".into());
     }
     if weapon.sentinel && carrier.is_none() {
         return Err("scene_3d needs a posed companion carrier and its weapon mount".into());

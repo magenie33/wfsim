@@ -189,7 +189,7 @@ pub(super) fn spread_from_influence(
     for (b, at) in body_at.iter().copied().enumerate() {
         // ANY PART OF A BODY TOUCHING IS ENOUGH — the rule every sphere in
         // this engine uses.
-        if !crate::rules::space::caught_by_blast(epicentre.distance(at), radius_m) {
+        if b != from && params.melee_area_distance(from, b, epicentre.distance(at), radius_m).is_none() {
             continue;
         }
         let (Some(spec), Some(here)) = (params.body(b), bodies.get_mut(b)) else { continue };
@@ -1343,11 +1343,16 @@ pub(super) fn blast_at(
         // THREE DIMENSIONS: the floor gap and how far over or under the shot
         // went are legs of the same triangle, and a pellet that sailed above
         // the crowd is genuinely farther from every one of them.
-        let dist = det.distance_to(spec.at);
-        if !crate::rules::space::caught_by_blast(dist, rad.radius_m) {
-            continue;
-        }
-        let share = rad.falloff_at(crate::rules::space::blast_reach(dist));
+        let distance = if let Some(scene) = params.scene_3d.as_ref().filter(|_| active.uses_melee_volume()) {
+            scene.melee_blast_distance(det, b)
+        } else {
+            let distance = det.distance_to(spec.at);
+            if !crate::rules::space::caught_by_blast(distance, rad.radius_m) {
+                continue;
+            }
+            crate::rules::space::blast_reach(distance)
+        };
+        let share = rad.falloff_at(distance);
         if share <= 0.0 {
             continue;
         }
@@ -1641,7 +1646,10 @@ pub(super) fn falloff_factor(
         // the pellet hit, and zero for anything the blast is
         // standing inside.
         (Some(r), _) => {
-            r.falloff_at(crate::rules::space::blast_reach(det.distance_to(params.target_at)))
+            let distance = params.scene_3d.as_ref().filter(|_| active.uses_melee_volume())
+                .map_or_else(|| crate::rules::space::blast_reach(det.distance_to(params.target_at)),
+                    |scene| scene.melee_blast_distance(det, 0));
+            r.falloff_at(distance)
         }
         // THE DIRECT HIT reads the GAP, which IS the distance it
         // flew: a bullet vanishes at the surface it hits.

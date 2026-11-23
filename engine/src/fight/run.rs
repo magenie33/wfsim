@@ -1147,7 +1147,7 @@ pub fn run_once_traced(
         lay_cold_trail(me.seat, active, t, &mut entities);
         // Contact follows charge and the animation event, then projectile
         // travel where present. The next input has its own completion clock.
-        let spatial = me.params.scene_3d.is_some();
+        let spatial = me.params.scene_3d.is_some() && !active.uses_melee_volume();
         if spatial && active.attractor_seconds.is_some() {
             entities.retain(|e| !matches!(e, Entity::Attractor(f) if f.owner == me.seat));
         }

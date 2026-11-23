@@ -153,6 +153,9 @@ pub fn miss_distance(range_m: f64, deviation_deg: f64) -> f64 {
 /// toss. What decides a tie is the gate's own rule: the boundary is inside.
 const GEOMETRY_TIE: f64 = 1e-9;
 
+/// Standing approximation for ordinary melee swings.
+pub(crate) const MELEE_ARC_DEG: f64 = 90.0;
+
 /// Is `value` within `limit`, with a tie counting as inside — see
 /// [`GEOMETRY_TIE`].
 #[wfsim_gas_macro::metered]

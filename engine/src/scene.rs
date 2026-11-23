@@ -17,6 +17,8 @@ pub struct Scene {
     reticles: [Reticle; 2],
     bodies: Vec<Body>,
     bounds: Vec<BoundsNode>,
+    melee_gap: Vec<(usize, f64, bool)>,
+    slam_distance: Vec<f64>,
     equipped_fire: Option<attachment::PreparedFire>,
 }
 
@@ -37,6 +39,20 @@ struct Body {
     root: Vec3,
     anchor: Vec3,
     center: [f32; 3],
+}
+
+#[wfsim_gas_macro::metered]
+impl Body {
+    fn distance(&self, point: Vec3) -> f64 {
+        self.proxies.iter()
+            .filter(|p| p.proxy.ray_enabled)
+            .map(|p| p.collider.distance(point))
+            .fold(f64::INFINITY, f64::min)
+    }
+
+    fn radial_distance(&self, point: Vec3) -> f64 {
+        self.radial_proxy.as_ref().map_or_else(|| self.distance(point), |proxy| proxy.distance(point))
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -300,6 +316,57 @@ impl Collider {
 
 #[wfsim_gas_macro::metered]
 impl Scene {
+    fn melee_reach(input: &Scene3d, root: Vec3, bodies: &[Body]) -> Vec<(usize, f64, bool)> {
+        let (bottom, top) = controller_segment(root, input.player.controller);
+        let player_radius = f64::from(controller_radius(input.player.controller));
+        let aim = bodies[0].root.minus(root);
+        let forward = Vec3([aim.0[0], 0., aim.0[2]]).normalized();
+        let cone = libm::cos((crate::rules::space::MELEE_ARC_DEG * 0.5).to_radians());
+        let mut reach: Vec<_> = bodies.iter().zip(&input.enemies).enumerate().map(|(index, (body, model))| {
+            let delta = body.root.minus(root);
+            let horizontal = Vec3([delta.0[0], 0., delta.0[2]]);
+            let (other_bottom, other_top) = controller_segment(body.root, model.controller);
+            let dy = (bottom - other_top).max(other_bottom - top).max(0.);
+            let gap = (libm::sqrt(horizontal.dot(horizontal) + dy * dy)
+                - player_radius - f64::from(controller_radius(model.controller))).max(0.);
+            let in_arc = index == 0 || forward.is_none_or(|f| {
+                crate::rules::space::within(horizontal.length() * cone, horizontal.dot(f))
+            });
+            (index, gap, in_arc)
+        }).collect();
+        reach[1..].sort_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)));
+        reach
+    }
+
+    pub(crate) fn aimed_melee_gap(&self) -> f64 {
+        self.melee_gap[0].1
+    }
+
+    pub(crate) fn melee_contacts(&self, reach: f64, all_around: bool) -> Vec<usize> {
+        std::iter::once(0)
+            .chain(self.melee_gap[1..].iter().take_while(|(_, gap, _)| crate::rules::space::within(*gap, reach))
+                .filter(|(_, _, in_arc)| all_around || *in_arc)
+                .map(|(index, _, _)| *index))
+            .collect()
+    }
+
+    pub(crate) fn nearest_melee_target(&self, reach: f64) -> Option<(usize, f64)> {
+        let (aimed, gap, _) = self.melee_gap[0];
+        let (index, distance, _) = self.melee_gap.get(1).copied()
+            .filter(|&(_, distance, _)| distance < gap)
+            .unwrap_or((aimed, gap, true));
+        (distance <= reach).then_some((index, distance))
+    }
+
+    pub(crate) fn melee_blast_distance(&self, at: crate::rules::space::Detonation, body: usize) -> f64 {
+        let world = self.input.player.world.0;
+        if at.height_m == 0. && at.at.x == world[3] && at.at.y == world[11] {
+            return self.slam_distance[body];
+        }
+        let origin = Vec3([at.at.x, world[7] + at.height_m, at.at.y]);
+        self.distance_to_radial_body(origin, body)
+    }
+
     pub fn input(&self) -> &Scene3d {
         &self.input
     }
@@ -463,6 +530,8 @@ impl Scene {
         }
         let bounds = BoundsNode::build(&bodies);
         let (reticles, avatar_up) = Self::prepare_reticles(&input, camera, &bodies, &bounds);
+        let melee_gap = Self::melee_reach(&input, root, &bodies);
+        let slam_distance = bodies.iter().map(|body| body.radial_distance(root)).collect();
         Ok(Self {
             input,
             muzzle,
@@ -471,6 +540,8 @@ impl Scene {
             reticles,
             bodies,
             bounds,
+            melee_gap,
+            slam_distance,
             equipped_fire,
         })
     }
@@ -617,18 +688,11 @@ impl Scene {
     }
 
     pub fn distance_to_body(&self, point: Vec3, index: usize) -> f64 {
-        self.bodies[index]
-            .proxies
-            .iter()
-            .filter(|p| p.proxy.ray_enabled)
-            .map(|p| p.collider.distance(point))
-            .fold(f64::INFINITY, f64::min)
+        self.bodies[index].distance(point)
     }
 
     pub(crate) fn distance_to_radial_body(&self, point: Vec3, index: usize) -> f64 {
-        self.bodies[index].radial_proxy.as_ref().map_or_else(
-            || self.distance_to_body(point, index), |proxy| proxy.distance(point),
-        )
+        self.bodies[index].radial_distance(point)
     }
 
     pub(crate) fn contact_distance(

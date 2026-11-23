@@ -428,6 +428,22 @@ fn all_retained_acolyte_poses_resolve_standing_weak_point_hits() {
 }
 
 #[test]
+fn standing_melee_uses_the_height_of_the_posed_targets() {
+    let mut v = request("magistar", 1, false);
+    v["target_at"] = json!([0., 1.5]);
+    let mut input = v["scene_3d"].clone();
+    input["placement"] = json!({"kind":"supplied"});
+    input["enemies"][0]["world"][11] = json!(1.5);
+    v["scene_3d"] = input;
+    let on_floor = record(&params(&v));
+    assert!(on_floor.events().iter().any(|e| matches!(&e.kind, Kind::Damage(d) if !d.radial)));
+    assert!(on_floor.spatial_flights().is_empty());
+    v["scene_3d"]["enemies"][0]["world"][7] = json!(8.);
+    let raised = record(&params(&v));
+    assert!(!raised.events().iter().any(|e| matches!(&e.kind, Kind::Damage(_))));
+}
+
+#[test]
 fn a_declared_single_iteration_pair_alternates_its_posed_mounts() {
     let mut v = request("akbolto_prime", 1, false);
     v["target_at"] = json!([0., 5.]);

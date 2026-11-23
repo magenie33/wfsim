@@ -696,7 +696,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // ---- WHERE THIS PELLET WENT (MECHANICS §11) --------------
     // Spread samples retain both angle and direction, including vertical scatter.
     let range = params.range_to_centre();
-    let gap_m = spatial.map_or_else(|| params.gap(), |s| s.impact.travel);
+    let gap_m = spatial.map_or_else(
+        || {
+            params.scene_3d.as_ref().filter(|_| active.uses_melee_volume())
+                .map_or_else(|| params.gap(), |s| s.aimed_melee_gap())
+        },
+        |s| s.impact.travel,
+    );
     // HOW FAR THE TARGET ALREADY IS FROM THE AIM LINE, before a degree
     // of spread is added. Zero whenever the weapon points at it, which
     // is every fight this engine ran before aim became a place you
