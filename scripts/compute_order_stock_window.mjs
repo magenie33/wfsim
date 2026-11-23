@@ -9,12 +9,20 @@ const taskID = /^[1-9][0-9]*$/;
 const lock = tx => tx.unsafe("SELECT pg_advisory_xact_lock(hashtextextended('compute-order-import',0))");
 const cutOf = tx => tx.unsafe("SELECT compute_order_cut_lock(),coalesce(compute_order_cut_epoch(),'') cut");
 const readWindow = tx => tx.unsafe('SELECT * FROM state_compute_order_stock_window');
+
+export const MAX_ACTIVE_ORDERS = 1_000_000;
+export function checkActiveOrderLimit(limit) {
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_ACTIVE_ORDERS)
+    throw Error(`max-open must be between 1 and ${MAX_ACTIVE_ORDERS}`);
+}
+
 const confirmPage = (actual, { first, last, orders }) => {
   if (!actual || Number(actual.first_byte) !== first || Number(actual.next_byte) !== last || actual.orders !== orders)
     throw Error('stock window page changed');
 };
 
 export async function stockWindowBounds(reader, { id, rows, maxOpen, limit }) {
+  checkActiveOrderLimit(maxOpen);
   const [window] = await readWindow(reader);
   if (window) {
     if (window.import_id !== id) throw Error('resume the earlier stock window before advancing');
@@ -35,9 +43,10 @@ export async function refuseLegacyWindow(tx) {
 }
 
 export async function reserveStockWindow(writer, { id, cut, pages, maxOpen }) {
+  checkActiveOrderLimit(maxOpen);
   const first = pages[0]?.first, last = pages.at(-1)?.last;
   const count = pages.reduce((n, page) => n + page.orders, 0);
-  if (!Number.isSafeInteger(maxOpen) || !count || count > maxOpen ||
+  if (!count || count > maxOpen ||
       pages.some((page, at) => !Number.isSafeInteger(page.first) || !Number.isSafeInteger(page.last) ||
         !Number.isSafeInteger(page.orders) || page.orders < 1 || page.first < 0 || page.first >= page.last ||
         (at > 0 && page.first !== pages[at - 1].last)))
