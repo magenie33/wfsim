@@ -69,18 +69,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "e1053f7f";
+const BUILD_ID = "b5a1ee2d";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "71c23406+";
+const BUILD_SHA = "99d4c557+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "431480f75b0a";
+const RELEASE_ID = "c21ece3622cc";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -700,11 +700,46 @@ refreshStickyHeader();
   let previous = {};
   try { previous = JSON.parse(localStorage.getItem(key)) || {}; } catch {}
   const saved = previous.schema === 2 && previous.cards && previous.orders ? previous : {schema:2,cards:{},orders:{}};
+  const columnMin = 35, columnMax = 65, columnDefault = 50;
+  const weaponColumns = saved.weaponColumns = {
+    single: saved.weaponColumns?.single === true,
+    left: Number.isInteger(saved.weaponColumns?.left)
+      ? Math.max(columnMin, Math.min(columnMax, saved.weaponColumns.left)) : columnDefault,
+  };
   const groups = new Map();
   let editing = false, pending = false, dragging = null;
   const changed = () => Object.keys(saved.cards).length || Object.keys(saved.orders).length;
   const save = () => { localStorage.setItem(key, JSON.stringify(saved)); schedule(); };
   const text = (node, value) => { if (node.textContent !== value) node.textContent = value; };
+  function wireWeaponColumns(page, tools) {
+    const controls = document.createElement('div');
+    controls.className = 'weapon-column-tools';
+    controls.innerHTML = `<select aria-label="${escHtml(tr('Columns'))}"><option value="two">${escHtml(tr('Two columns'))}</option><option value="one">${escHtml(tr('One column'))}</option></select>
+      <label>${escHtml(tr('Column split'))} <input type="range" min="${columnMin}" max="${columnMax}"></label><span aria-hidden="true"></span>`;
+    tools.querySelector('[data-layout-edit]').before(controls);
+    const mode = controls.querySelector('select'), split = controls.querySelector('input');
+    const ratio = controls.querySelector('span');
+    function paint() {
+      mode.value = weaponColumns.single ? 'one' : 'two';
+      split.value = weaponColumns.left;
+      split.parentElement.hidden = weaponColumns.single;
+      ratio.hidden = weaponColumns.single;
+      const value = `${weaponColumns.left} : ${100 - weaponColumns.left}`;
+      text(ratio, value);
+      split.setAttribute('aria-valuetext', value);
+      page.classList.toggle('weapon-single-column', weaponColumns.single);
+      page.style.setProperty('--weapon-column-share', weaponColumns.left / 100);
+    }
+    mode.onchange = () => { weaponColumns.single = mode.value === 'one'; paint(); save(); };
+    split.oninput = () => { weaponColumns.left = split.valueAsNumber; paint(); };
+    split.onchange = save;
+    paint();
+    return () => {
+      weaponColumns.single = false;
+      weaponColumns.left = columnDefault;
+      paint();
+    };
+  }
   function apply(group) {
     const ids = group.rows.map(({card}) => card.id), requested = saved.orders[group.key] || ids;
     const order = [...requested.filter(id => ids.includes(id)), ...ids.filter(id => !requested.includes(id))];
@@ -822,20 +857,24 @@ refreshStickyHeader();
     }
     for (const page of document.querySelectorAll('.config-page, [data-card-layout]')) {
       if (page.hidden) continue;
+      const weapon = page.matches('main.config-page:not([id])');
       let tools = page.querySelector(':scope > .layout-tools');
       if (!tools) {
         tools = document.createElement('div'); tools.className = 'layout-tools';
         tools.innerHTML = `<span>${escHtml(tr('Layout'))}</span><span class="layout-status"></span><button type="button" class="ghost-btn small" data-layout-edit>${escHtml(tr('Edit layout'))}</button><button type="button" class="ghost-btn small" data-layout-reset>${escHtml(tr('Restore default layout'))}</button>`;
         const tabs = page.querySelector('.module-tabs, :scope > [data-layout-header]'); if (tabs) tabs.after(tools); else page.prepend(tools);
+        const resetColumns = weapon ? wireWeaponColumns(page, tools) : null;
         tools.querySelector('[data-layout-edit]').onclick = () => { editing = !editing; refresh(); };
         tools.querySelector('[data-layout-reset]').onclick = () => {
+          resetColumns?.();
           saved.cards = {}; saved.orders = {};
           document.querySelectorAll('.layout-card').forEach(card => { card.style.width = ''; card.style.height = ''; card.classList.remove('layout-sized'); });
           for (const group of groups.values()) if (group.rows.every(({slot}) => slot.isConnected)) apply(group);
           save(); refresh();
         };
       }
-      text(tools.querySelector('.layout-status'),changed() ? tr('Custom layout') + ' · ' + tr('Saved') : tr('Default layout'));
+      const custom = changed() || (weapon && (weaponColumns.single || weaponColumns.left !== columnDefault));
+      text(tools.querySelector('.layout-status'),custom ? tr('Custom layout') + ' · ' + tr('Saved') : tr('Default layout'));
       const edit = tools.querySelector('[data-layout-edit]'); text(edit,editing ? tr('Done') : tr('Edit layout')); edit.setAttribute('aria-pressed',editing);
       page.classList.toggle('layout-active',editing || !!changed()); page.classList.toggle('layout-editing',editing);
       const candidates = [...page.querySelectorAll(':scope > .block, :scope > .library-panel, :scope > .calculation-conditions, #build-finder > .library-panel, #calculation-scenario-editor > .scenario-section')].filter(card => card.id);
@@ -1157,7 +1196,7 @@ const ENGINE_WASM_BYTES = 11332601;
 /// THE ANSWERS THE BUILD ALREADY KNOWS, path to file (scripts/engine_views.mjs):
 /// a page reads its catalog from these and draws before the engine has
 /// downloaded, which then only has to be there by the first computation.
-const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.1e671dad6968.json", "/api/i18n": "/pkg/i18n.68a9cb249865.json", "/api/warframe/catalog": "/pkg/warframes.5e085bf6fef0.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
+const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.1e671dad6968.json", "/api/i18n": "/pkg/i18n.f5553156a485.json", "/api/warframe/catalog": "/pkg/warframes.5e085bf6fef0.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
 /// A DOWNLOAD THAT RECEIVES NOTHING FOR THIS LONG IS CUT, so a stalled line ends
 /// in a failure the lanes can report rather than in lanes that wait for ever.
 const ENGINE_STALL_MS = 60_000;
@@ -17913,7 +17952,7 @@ function renderBuildFinder() {
         const best = bestOf.get(t);
         const label = finderTokenName(t) + (state ? ` · ${tr(state === "req" ? "must have" : "I don't have")}` : "");
         return `<button type="button" class="fd-u fd-ov-u ${state}" data-fcyc="${escHtml(t)}" aria-pressed="${!!state}" aria-label="${escHtml(label)}" title="${escHtml(label)}">` +
-          `<span class="fd-ov-media" aria-hidden="true">${img ? `<img src="${escHtml(img)}" alt="" loading="lazy" width="44" height="56">` : escHtml(finderTokenKind(t))}</span>` +
+          (img ? `<img class="fd-ov-media" src="${escHtml(img)}" alt="" loading="lazy" width="44" height="56">` : "") +
           `<span class="fd-ov-name">${escHtml(finderTokenName(t))}</span><span class="fd-ov-state" aria-hidden="true">${state === "req" ? "✓" : state === "exc" ? "−" : ""}</span>` +
           `<span class="fd-ov-meta"><span class="fd-ov-count"><b>${c}</b> / ${total}</span><span>${best ? `#${best.rank}` : "—"}</span></span></button>`;
       }).join("")}</div></div>`;
@@ -17956,11 +17995,12 @@ function renderBuildFinder() {
     segBtn("rv", "riven", tr("With riven"), inMode.filter((p) => p.riven).length) +
     segBtn("rv", "plain", tr("Without riven"), inMode.filter((p) => !p.riven).length) + `</div>` +
     `<div class="fd-seg fd-depth"><span>${escHtml(tr("Depth"))}</span>${finderDepthHtml(w)}</div>` + libraryNumericFilters() + trigHtml() + `</div>` + libraryAttributeFilters(all) + `</div>` +
-    `<div class="fd-conds"><div class="fd-q" role="search">` +
+    `<div class="fd-conds"><label for="fd-input">${escHtml(tr("Search equipment"))}</label><div class="fd-q" role="search">` +
     [...finder.exc].map((t) => `<span class="fd-tok exc"><i>${escHtml(tr("I don't have"))}</i> <b>${escHtml(finderTokenName(t))}</b><button type="button" data-funtok="${escHtml(t)}" aria-label="${escHtml(tr("remove"))}">×</button></span>`).join("") +
     [...finder.req].map((t) => `<span class="fd-tok req"><i>${escHtml(tr("must have"))}</i> <b>${escHtml(finderTokenName(t))}</b><button type="button" data-funtok="${escHtml(t)}" aria-label="${escHtml(tr("remove"))}">×</button></span>`).join("") +
-    `<input id="fd-input" type="text" autocomplete="off" placeholder="${escHtml(tr("what you don't have, or must have — mods, arcanes, evolutions, riven stats"))}">` +
-    `<div class="fd-sugg" id="fd-sugg" hidden></div></div></div>` +
+    `<input id="fd-input" type="text" autocomplete="off" aria-describedby="fd-search-hint">` +
+    `<div class="fd-sugg" id="fd-sugg" hidden></div></div><p class="fd-hint" id="fd-search-hint">` +
+    escHtml(tr("what you don't have, or must have — mods, arcanes, evolutions, riven stats")) + `</p></div>` +
     overviewHtml() + `</div>` + librarySortPanel() +
     `<div class="library-panel library-results-panel" id="library-results" aria-label="${escHtml(tr("Results"))}">` + libraryToolbar(list.length) + `<div class="fd-main">${listHtml()}</div></div>`;
 
