@@ -69,18 +69,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "b5a1ee2d";
+const BUILD_ID = "64fbd9da";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "8bc6fbd1+";
+const BUILD_SHA = "85e0aa4c+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "c21ece3622cc";
+const RELEASE_ID = "eb12a80e6d33";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -37080,13 +37080,23 @@ function publishedBoardReader(read) {
     return controller.signal;
   };
   const fail = () => { throw new Error("The board could not be reached."); };
-  const query = (path, params, signal) => read(path + "?" + new URLSearchParams(params), deadline(signal, 8000));
+  const query = (path, params, signal, timeout = 8000) => read(path + "?" + new URLSearchParams(params), deadline(signal, timeout));
 
   async function catalog(scene, weapon, signal, ruler) {
     const entries = [];
+    let limit;
     for (let after = ""; ;) {
       const params = { scene, after, ...(weapon ? { weapon } : {}), ...(ruler ? { ruler } : {}) };
-      const page = await query("/api/board/pages/catalog", params, signal);
+      const ask = () => query("/api/board/pages/catalog", limit ? { ...params, limit } : params, signal, limit ? 15000 : 8000);
+      let page;
+      try {
+        page = await ask();
+      } catch (error) {
+        if (signal?.aborted || limit || weapon || !ruler) throw error;
+        // Resume at the same cursor with less data per response on a slow link.
+        limit = 64;
+        page = await ask();
+      }
       if (!page?.ok || !Array.isArray(page.partitions)) fail();
       for (const entry of page.partitions) {
         const key = entry?.weapon + "/" + entry?.ruler;
