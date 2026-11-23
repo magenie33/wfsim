@@ -20,3 +20,13 @@ CREATE TABLE IF NOT EXISTS record_compute_order_import_batches (
   PRIMARY KEY (import_id, first_byte)
 );
 REVOKE ALL ON state_compute_order_imports,record_compute_order_import_batches FROM PUBLIC;
+
+CREATE TABLE IF NOT EXISTS record_compute_order_stock_sources (
+  stock text COLLATE "C" NOT NULL,
+  first_ordinal bigint NOT NULL CHECK (first_ordinal > 0),
+  file text COLLATE "C" NOT NULL,
+  import_id text COLLATE "C" NOT NULL UNIQUE REFERENCES state_compute_order_imports(id),
+  PRIMARY KEY (stock,first_ordinal),
+  UNIQUE (stock,file)
+);
+REVOKE ALL ON record_compute_order_stock_sources FROM PUBLIC;

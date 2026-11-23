@@ -10,7 +10,7 @@ import { boardCoverageSchemaSql } from './board_coverage_schema.mjs';
 import { boardCoverageOrderAdapter } from './board_coverage_orders.mjs';
 import { boardCoverageGaps } from './board_coverage_gaps.mjs';
 import { importComputeOrders, orderImportAtEnd, orderImportConnection, verifyRefillConnection } from './compute_order_import.mjs';
-import { runOrderStock } from './compute_order_stock.mjs';
+import { acceptOrderStock, readAcceptedStock, runOrderStock } from './compute_order_stock.mjs';
 import { belowReadyOrderStock, orderRefill } from './compute_order_refill.mjs';
 import { computeOrderImportSchema } from './compute_order_import_schema.mjs';
 import { computationId } from '../worker/computation_input.js';
@@ -320,6 +320,55 @@ try {
   await assert.rejects(runOrderStock(supply), /order count or size/);
   assert.equal((await reader.unsafe('SELECT 1 FROM state_compute_order_imports WHERE id=$1', [incorrect.id])).length, 0);
   console.log('  ok  stock resumes existing imports and an appended source without a restart, gaps or duplicate orders');
+
+  const fourth = sealedSource('accepted-fourth', 204, [demand('accepted-fourth', 701), demand('accepted-next', 702)]);
+  const fifth = sealedSource('accepted-fifth', 206, [demand('accepted-fifth', 703)]);
+  const sixth = sealedSource('accepted-sixth', 207, [demand('accepted-sixth', 704)]);
+  const intake = { writer, reader, manifest, anchor: first.id, atEnd: orderImportAtEnd,
+    maxPendingOrders: 2, maxPendingBytes: fourth.input_bytes + fifth.input_bytes + sixth.input_bytes };
+  publishStock([first, second, third, fourth]);
+  const active = await count();
+  assert.deepEqual(await acceptOrderStock(intake), {
+    result: 'accepted', stock: first.id, sources: 4, orders: 6, through: 205,
+  });
+  assert.equal(await count(), active, 'durable stock acceptance does not consume scheduling slots');
+  const cliReceipt = JSON.parse(execFileSync(process.execPath, ['scripts/compute_order_import.mjs', 'accept-stock', manifest,
+    '--stock-anchor='+first.id, '--max-pending-orders=2', '--max-pending-bytes='+intake.maxPendingBytes],
+  { env, encoding: 'utf8', timeout: 10_000 }));
+  assert.equal(cliReceipt.through, 205);
+  const acceptedDispatch = { ...supply, manifest: undefined, directory: root, maxBatches: 1 };
+  const heldFull = await runOrderStock({ ...acceptedDispatch, maxOpen: 1 });
+  assert.equal(heldFull.result, 'queue_full');
+  assert.equal(await count(), active);
+  assert.equal((await readAcceptedStock(reader, first.id, root)).length, 4);
+
+  publishStock([first, second, third, fourth, fifth]);
+  await assert.rejects(acceptOrderStock(intake), /pending intake budget/);
+  assert.equal((await reader.unsafe('SELECT 1 FROM state_compute_order_imports WHERE id=$1', [fifth.id])).length, 0);
+  assert.equal((await runOrderStock(acceptedDispatch)).id, fourth.id);
+  await assert.rejects(acceptOrderStock({ ...intake, maxPendingBytes: 1 }), /pending intake budget/);
+  const lostReply = { begin: async operation => {
+    await writer.begin(operation);
+    throw Error('simulated socket loss after stock commit');
+  } };
+  const [recoveredStock, concurrentStock] = await Promise.all([
+    acceptOrderStock({ ...intake, writer: lostReply }),
+    acceptOrderStock({ ...intake, writer: peerWriter, reader: peerReader }),
+  ]);
+  assert.deepEqual(recoveredStock, concurrentStock);
+  assert.equal(recoveredStock.through, 206);
+  publishStock([first, second, third, fourth, { ...fifth, file: sixth.file }]);
+  await assert.rejects(acceptOrderStock(intake), /replaces a sealed source/);
+  publishStock([first, second, third, fourth, fifth, { ...sixth, input_sha256: '0'.repeat(64) }]);
+  await assert.rejects(acceptOrderStock(intake), /content differs/);
+  assert.equal((await readAcceptedStock(reader, first.id, root)).length, 5);
+
+  rmSync(manifest);
+  const dispatched = await runOrderStock({ ...acceptedDispatch, maxBatches: 2 });
+  assert.deepEqual([dispatched.result, dispatched.id, dispatched.admitted], ['batch_limit', fifth.id, 1]);
+  assert.equal(await count(), active + 3);
+  assert.equal((await reader.unsafe('SELECT 1 FROM state_compute_order_imports WHERE id=$1', [sixth.id])).length, 0);
+  console.log('  ok  durable stock acceptance has its own budget and verified receipts; the dispatcher uses only accepted sources');
   console.log('  ok  low-ready refill, release and host holds, atomic high cap and resume from the same source');
   console.log('  ok  sealed input, lost reply, pause and resume, queue cap, coverage rollback, lock retry, duplicate replay, concurrent runners and Native gaps');
 } finally {

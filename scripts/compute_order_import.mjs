@@ -242,14 +242,21 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   const { positionals: [operation, id, path, extra], values } = parseArgs({ allowPositionals: true,
     options: { target: { type: 'string' }, engine: { type: 'string' }, 'max-open': { type: 'string' },
       rows: { type: 'string' }, batches: { type: 'string' }, once: { type: 'boolean' },
-      'refill-config': { type: 'string' }, 'stock-anchor': { type: 'string' } } });
+      'refill-config': { type: 'string' }, 'stock-anchor': { type: 'string' },
+      'max-pending-orders': { type: 'string' }, 'max-pending-bytes': { type: 'string' } } });
   const url = process.env.WFSIM_COMPUTE_ORDER_DATABASE_URL;
-  const stock = operation === 'run-stock';
-  if (!url || !id || extra || !['run', 'run-stock', 'status', 'pause', 'resume'].includes(operation) || (operation === 'run') !== !!path
-      || (values['refill-config'] && (!['run', 'run-stock'].includes(operation) || values.once))
+  const stock = operation === 'run-stock' || operation === 'run-accepted-stock';
+  const accept = operation === 'accept-stock';
+  const intakeLimits = values['max-pending-orders'] !== undefined || values['max-pending-bytes'] !== undefined;
+  if (!url || !id || extra || !(stock || accept || ['run', 'status', 'pause', 'resume'].includes(operation))
+      || (operation === 'run') !== !!path
+      || (values['refill-config'] && (!(stock || operation === 'run') || values.once))
       || (stock && (!values['refill-config'] || !values['stock-anchor'] || values.engine || values.target))
-      || (!stock && values['stock-anchor']))
-    throw Error('usage: compute_order_import.mjs run ID FILE --target=N --engine=ID --max-open=N, run-stock MANIFEST --stock-anchor=ID --max-open=N --refill-config=FILE, or status|pause|resume ID');
+      || (!(stock || accept) && values['stock-anchor'])
+      || (!accept && intakeLimits)
+      || (accept && (!values['stock-anchor'] || values.engine || values.target || values['max-open'] ||
+        values.rows || values.batches || values.once)))
+    throw Error('usage: compute_order_import.mjs run ID FILE --target=N --engine=ID --max-open=N, run-stock MANIFEST or run-accepted-stock DIRECTORY with --stock-anchor=ID --max-open=N --refill-config=FILE, accept-stock MANIFEST --stock-anchor=ID --max-pending-orders=N --max-pending-bytes=N, or status|pause|resume ID');
   const { default: postgres } = await import('./pg/node_modules/postgres/src/index.js');
   const connect = proof => postgres(url, { max: 1, fetch_types: false,
     connection: orderImportConnection(proof, !!values['refill-config']) });
@@ -257,7 +264,13 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   const controller = new AbortController();
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => controller.abort());
   try {
-    if (operation === 'run' || stock) {
+    if (accept) {
+      const { acceptOrderStock } = await import('./compute_order_stock.mjs');
+      const result = await acceptOrderStock({ writer, reader, manifest: id, anchor: values['stock-anchor'],
+        maxPendingOrders: Number(values['max-pending-orders']), maxPendingBytes: Number(values['max-pending-bytes']),
+        atEnd: orderImportAtEnd, signal: controller.signal });
+      console.log(JSON.stringify(result));
+    } else if (operation === 'run' || stock) {
       const { boardCoverageOrderAdapter } = await import('./board_coverage_orders.mjs');
       const config = values['refill-config'];
       const maxOpen = Number(values['max-open']);
@@ -269,7 +282,8 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
       if (config) await Promise.all([verifyRefillConnection(writer, false), verifyRefillConnection(reader, true)]);
       const openRefill = async source => (await import('./compute_order_refill.mjs')).openOrderRefill(reader, config, maxOpen, source);
       const result = stock
-        ? await (await import('./compute_order_stock.mjs')).runOrderStock({ ...options, manifest: id,
+        ? await (await import('./compute_order_stock.mjs')).runOrderStock({ ...options,
+          ...(operation === 'run-accepted-stock' ? { directory: id } : { manifest: id }),
           anchor: values['stock-anchor'], openRefill, importOrders: importComputeOrders, atEnd: orderImportAtEnd })
         : await importComputeOrders({ ...options, path, id, engine: values.engine, target: Number(values.target),
           refill: config ? await openRefill() : null });

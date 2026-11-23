@@ -443,6 +443,20 @@ The capacity config supplies the cut and budgets, and the stock manifest
 supplies the approved file digests. A different engine or order cut requires
 a newly qualified manifest.
 
+Use `accept-stock MANIFEST --stock-anchor=ID --max-pending-orders=N --max-pending-bytes=N`
+to register sealed input separately from dispatch. It verifies each new file,
+syncs it and its containing directory, and commits its immutable descriptor
+before returning an independently read receipt. Its limits count the unprocessed
+orders and bytes in that stock. Previously finished imports can join the
+initial accepted prefix using their final task receipts.
+
+Use `run-accepted-stock DIRECTORY --stock-anchor=ID --max-open=N --refill-config=FILE`
+to dispatch from the accepted database prefix. The directory holds the sealed
+files. The dispatcher can start before the first acceptance and continues from
+the existing import ledgers after a restart. Keep each pending file available
+until its final import receipt. Acceptance counts source orders. Task count
+advances when dispatch commits independently verified task IDs.
+
 Admission reserves computation positions when accepting the intent, preserving
 arrival order through deferred expansion. Requested and bulk lane heads share
 turns within a zone; the declared zone remains authoritative. Aliases in one
