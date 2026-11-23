@@ -288,8 +288,10 @@ try {
   const first = sealedSource('stock-first', 200, [demand('stock-first', 601)]);
   const second = sealedSource('stock-second', 201, [demand('stock-second', 602), demand('stock-alias', 601)]);
   const third = sealedSource('stock-third', 203, [demand('stock-third', 603)]);
-  const refillSource = source => ({ ...orderRefill({ ...settings, capacity: () => true, release: () => ({ engine }),
-    demand: () => goodSnapshot, delay: () => assert.fail('stock should be admitted') }), source,
+  let stockChecks = 0;
+  const refillSource = (source, cycle) => ({ ...orderRefill({ ...settings, capacity: () => true, release: () => ({ engine }),
+    stock: (...args) => { stockChecks++; return settings.stock(...args); },
+    demand: () => goodSnapshot, delay: () => assert.fail('stock should be admitted') }, cycle), source,
     inputSha: source.inputSha, cut: source.cut });
   const supply = { manifest, writer, reader, adapters, rows: 1, maxOpen: 10_000,
     anchor: first.id, openRefill: refillSource, importOrders: importComputeOrders, atEnd: orderImportAtEnd };
@@ -301,6 +303,7 @@ try {
   const partial = await runOrderStock({ ...supply, maxBatches: 1 });
   assert.deepEqual([partial.result, partial.id, partial.admitted, partial.processed], ['batch_limit', second.id, 1, 1]);
   const stockStop = new AbortController(), handoffs = [];
+  stockChecks = 0;
   await assert.rejects(runOrderStock({ ...supply, signal: stockStop.signal,
     onProgress: event => { if (['complete', 'input_exhausted'].includes(event.result)) handoffs.push(event.id); },
     delay: () => {
@@ -308,6 +311,7 @@ try {
       else stockStop.abort();
     } }), { name: 'AbortError' });
   assert.deepEqual(handoffs, [second.id, third.id]);
+  assert.equal(stockChecks, 1, 'a verified successor keeps filling until the high watermark');
   const counted = await reader.unsafe(`SELECT id,processed,admitted FROM state_compute_order_imports
     WHERE id IN ($1,$2,$3) ORDER BY id`, [first.id, second.id, third.id]);
   assert.deepEqual(counted.map(row => [row.id, Number(row.processed), Number(row.admitted)]),

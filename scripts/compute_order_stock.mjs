@@ -141,6 +141,7 @@ export async function acceptOrderStock({ writer, reader, manifest, anchor, maxPe
 export async function runOrderStock({ manifest, directory, openRefill, importOrders, atEnd, anchor, reader, signal, onProgress = () => {},
   delay = () => setTimeout(10_000, undefined, { signal }), maxBatches = Infinity, ...options }) {
   if (maxBatches !== Infinity && !positive(maxBatches)) throw Error('invalid stock batch limit');
+  const refillCycle = {};
   let index = 0, previous = [], lastHold;
   for (;;) {
     signal?.throwIfAborted();
@@ -162,7 +163,7 @@ export async function runOrderStock({ manifest, directory, openRefill, importOrd
       index++;
       continue;
     }
-    const refill = await openRefill(source);
+    const refill = await openRefill(source, refillCycle);
     const progress = event => {
       if (event.result === 'running') maxBatches -= event.batches ?? 1;
       return onProgress({ ...event, id: source.id });
