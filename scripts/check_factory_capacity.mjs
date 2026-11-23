@@ -3,6 +3,7 @@ import {seedComputeWork,seedComputeWorkMany,fixtureDemand} from './pg/fixtures.m
 // Capacity backs off background reads while the same facts, fairness and
 // public counts survive; failures cannot wedge a cache or the background lane.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createServer } from "node:net";
 import postgres from "./pg/node_modules/postgres/src/index.js";
 import { POSTGRES_OPTIONS, placeholders } from "../worker/db.js";
@@ -383,4 +384,52 @@ countSort(cellPlan["QUERY PLAN"][0].Plan);
 assert.ok(sortRows <= 4000, `cell counts must deduplicate batches before sorting the entire queue (${sortRows})`);
 await C.close();
 console.log("ok: cell counts preserve build and mode identity without sorting every queued copy");
+
+const O = await testDb("library");
+const cutIndexes = readFileSync(new URL("../worker/pg/order_cut_indexes.sql", import.meta.url), "utf8");
+await O.exec(cutIndexes.replaceAll("INDEX CONCURRENTLY", "INDEX"));
+await O.exec(`CREATE TABLE overdue_fixture(id text,task bigint,zone bigint,position bigint,waits bigint,live boolean);
+  INSERT INTO overdue_fixture VALUES
+    ('old-prefix',90,3,20,1,true),('old-prefix-cancelled',91,3,21,1,true),
+    ('old-protected',92,3,150,0,true),('old-inactive',93,3,200,1,true),
+    ('old-protected-cancelled',94,3,220,0,true),('old-waiting',95,3,25,2,true),
+    ('new-tail',101,3,300,0,true),('new-priority',102,0,250,1,true),
+    ('new-without-consumer',103,3,301,1,false),('new-cancelled',104,3,302,1,true),
+    ('new-due-now',105,3,303,1,true);
+  INSERT INTO entity_compute_specs(id,verb,request) SELECT id,'simulate','{}' FROM overdue_fixture;
+  INSERT INTO entity_compute_tasks(id,computation,generation,created_at,reason)
+    SELECT task,id,1,'2026-01-01','request' FROM overdue_fixture;
+  INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,zone,zone_position,waits)
+    SELECT id,'simulate',task,'open',CASE WHEN id='new-due-now' THEN '${at}' ELSE '2026-01-01' END,
+      '2026-01-01',zone,position,waits FROM overdue_fixture;
+  INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at)
+    SELECT 'fixture',id,id,'live','2026-01-01','2026-01-01' FROM overdue_fixture WHERE live;
+  INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at)
+    VALUES ('another','ref','old-protected','live','2026-01-01','2026-01-01'),
+           ('fixture','second','new-tail','live','2026-01-01','2026-01-01');
+  SELECT compute_order_cut_stage('{"id":"overdue","cut_at":"2026-11-16","task_cutoff":100,"keep_boundary":[3,100,"tail"],"source":{}}');
+  SELECT compute_order_cut_protect('overdue','["old-protected","old-protected-cancelled"]');
+  SELECT compute_order_cut_capture('overdue');
+  SELECT compute_order_cut_activate('overdue',2,
+    encode(sha256(convert_to(E'old-protected\\nold-protected-cancelled','utf8')),'hex'));
+  INSERT INTO record_compute_order_cancellations(question,task_id,cut_id,at)
+    SELECT id,task,'overdue','2026-11-23' FROM overdue_fixture WHERE id LIKE '%-cancelled';`);
+let overduePlan;
+const overdueDb = { ...O, prepare(sql) {
+  if (sql.startsWith("WITH cut AS MATERIALIZED")) overduePlan = sql;
+  return O.prepare(sql);
+} };
+const overdueFinding = async () => (await f.audit({LIBRARY:overdueDb}, now)).find(x => x.kind === "overdue");
+const fallback = await overdueFinding();
+assert.equal(fallback?.questions, 4);
+assert.equal(overduePlan, undefined);
+await O.exec(`CREATE INDEX compute_scheduling_stock_epoch_due ON state_compute_scheduling(waits DESC,due_at,id)
+  WHERE state='open' AND task_id>100 AND waits IN(0,1);`);
+const indexed = await overdueFinding();
+assert.ok(overduePlan?.includes("e.task_id>100"));
+assert.deepEqual(indexed?.producers.toSorted((a,b) => a.producer.localeCompare(b.producer)),
+  fallback.producers.toSorted((a,b) => a.producer.localeCompare(b.producer)));
+assert.equal(indexed?.questions, fallback.questions);
+await O.close();
+console.log("ok: the indexed overdue read preserves retained work, cancellations, live consumers and the due boundary");
 console.log("factory capacity checks passed");

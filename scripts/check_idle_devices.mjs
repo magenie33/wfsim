@@ -104,7 +104,7 @@ const brokenChecks = [
   ["stalled", /WITH RECURSIVE producers\(producer\) AS|SELECT d\.producer, count\(DISTINCT d\.question\)/],
   ["nondeterministic", /SELECT SUM\(n\) AS n FROM/],
   ["unsettled", /SELECT count\(\*\) AS n FROM state_compute_effective_work q WHERE q\.state IN/],
-  ["overdue", /WITH overdue AS MATERIALIZED/],
+  ["overdue", /\boverdue AS MATERIALIZED\b/],
   ["disagreeing", /SELECT a\.owner, count\(\*\) AS answers/],
   ["refused_rows", /SELECT question, engine, owners, at FROM record_refusal_withdrawals/],
   ["redeliver", /SELECT through FROM state_factory_progress WHERE name = 'redeliver'/],
