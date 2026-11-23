@@ -109,7 +109,7 @@ const fails = (pattern) => {
 const brokenChecks = [
   ["stalled", /WITH RECURSIVE producers\(producer\) AS|SELECT d\.producer, count\(DISTINCT d\.question\)/],
   ["nondeterministic", /SELECT SUM\(n\) AS n FROM/],
-  ["unsettled", /q\.state IN[^\n]+\s+AND NOT EXISTS \(SELECT 1 FROM \(SELECT a\.at FROM record_candidate_answers/],
+  ["unsettled", /\bofficial AS MATERIALIZED\b/],
   ["overdue", /\boverdue AS MATERIALIZED\b/],
   ["disagreeing", /SELECT a\.owner, count\(\*\) AS answers/],
   ["refused_rows", /SELECT question, engine, owners, at FROM record_refusal_withdrawals/],
@@ -167,6 +167,25 @@ console.log("\nstalls respect each producer's complete demand history");
     && found[0].kind === "stalled:quiet", JSON.stringify(found));
   check("duplicate demands count their question once and a renewed row is held", found[0]?.questions === 1
     && found[0]?.oldest_due === old && found[0]?.witnesses_active === 1, JSON.stringify(found));
+}
+
+console.log("\nonly unresolved official work without a recent answer is unsettled");
+{
+  const db = await testDb("library"), env = { LIBRARY: db }, f = factory({ verbs: {}, producers: {} });
+  const cutoff = iso(NOW - 2 * 3_600_000), old = iso(NOW - 3 * 3_600_000), now = iso(NOW);
+  for (const [id, state, opened] of [["old", "spot", old], ["old_answer", "disputed", now],
+    ["boundary_answer", "spot", old], ["recent", "spot", now], ["cancelled", "spot", old], ["ordinary", "open", old]])
+    await seedComputeWork(db, { id, verb: "simulate", request: {}, state, opened_at: opened, due_at: now });
+  for (const [id, at] of [["old_answer", old], ["boundary_answer", cutoff], ["boundary_answer", old]])
+    await db.run(`INSERT INTO record_candidate_answers (question,engine,device,owner,canon,result,work,at)
+      VALUES (?, 'e1', ?, 'witness', '{}', '{}', 1, ?)`, id, at, at);
+  await db.run(`INSERT INTO entity_compute_order_cuts (id,cut_at,task_cutoff,keep_zone,keep_position,keep_id,created_at,source)
+    VALUES ('unsettled', ?, 1, 3, 0, '', ?, '{}')`, old, old);
+  await db.run(`INSERT INTO record_compute_order_cut_activations VALUES ('unsettled', ?, 0, repeat('0',64), 0, repeat('0',64))`, old);
+  await db.run(`INSERT INTO record_compute_order_cancellations
+    SELECT id,task_id,'unsettled',? FROM state_compute_scheduling WHERE id='cancelled'`, old);
+  const found = (await f.audit(env, NOW)).find(finding => finding.kind === "unsettled");
+  check("a recent opening still uses its last answer and a boundary answer is recent", found?.questions === 2, JSON.stringify(found));
 }
 
 console.log("\nlegacy redelivery advances without an unbounded history scan");

@@ -112,16 +112,29 @@ export function createObservation() {
     // WAITING ON THE OFFICIAL MACHINES since its last answer put it there: a
     // dispute nobody settles is the one place a question can still wait for ever.
     // Not `opened_at` — a refresh opened hours ago turns spot a minute ago. The
-    // last answer is before the cutoff when none is after it. Keep both answer
-    // reads on that official question; a global recent-answer set also reads
-    // the volunteers' history when no official question needs it.
+    // recent-answer index avoids reading old answers for every official question.
+    // An official state can only be hidden by an explicit order cancellation.
     await observe("unsettled", async () => {
       const cutoff = iso(now - UNSETTLED_MS);
+      const boundary = `?${OFFICIAL_STATES.length + 1}::text`;
       const unsettled = (await db.prepare(
-      `SELECT count(*) AS n FROM state_compute_work q WHERE q.state IN (${OFFICIAL_STATES.map(() => "?").join(", ")})
-          AND NOT EXISTS (SELECT 1 FROM (SELECT a.at FROM record_candidate_answers a WHERE a.question = q.id OFFSET 0) a WHERE a.at >= ?)
-          AND (q.opened_at < ? OR EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.question = q.id OFFSET 0))`)
-        .bind(...OFFICIAL_STATES, cutoff, cutoff).first()).n;
+      `WITH cut AS MATERIALIZED (SELECT id FROM compute_order_cut()),
+        official AS MATERIALIZED (
+          SELECT s.id,s.opened_at FROM state_compute_scheduling s
+          WHERE s.state IN (${OFFICIAL_STATES.map((_, i) => `?${i + 1}`).join(", ")})
+            AND NOT EXISTS (SELECT 1 FROM record_compute_order_cancellations c
+              WHERE (c.question,c.task_id,c.cut_id)=(s.id,s.task_id,(SELECT id FROM cut)))
+        ),
+        answered AS MATERIALIZED (
+          SELECT DISTINCT a.question FROM record_candidate_answers a
+          WHERE a.at>=${boundary} AND EXISTS (SELECT 1 FROM official)
+        ),
+        quiet AS MATERIALIZED (
+          SELECT q.id,q.opened_at FROM official q LEFT JOIN answered a ON a.question=q.id WHERE a.question IS NULL
+        )
+        SELECT count(*) AS n FROM quiet q WHERE CASE WHEN q.opened_at<${boundary} THEN true ELSE
+          EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.question=q.id LIMIT 1 OFFSET 0) END`)
+        .bind(...OFFICIAL_STATES, cutoff).first()).n;
       if (unsettled) out.push({ kind: "unsettled", questions: unsettled });
     });
     // PAST DUE AND STILL OPEN, by kind. Stop once the alert threshold is crossed;
