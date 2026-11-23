@@ -9,7 +9,7 @@ import postgres from './pg/node_modules/postgres/src/index.js';
 import { boardCoverageSchemaSql } from './board_coverage_schema.mjs';
 import { boardCoverageOrderAdapter } from './board_coverage_orders.mjs';
 import { boardCoverageGaps } from './board_coverage_gaps.mjs';
-import { importComputeOrders, orderImportConnection, verifyRefillConnection } from './compute_order_import.mjs';
+import { importComputeOrders, orderImportAtEnd, orderImportConnection, verifyRefillConnection } from './compute_order_import.mjs';
 import { runOrderStock } from './compute_order_stock.mjs';
 import { belowReadyOrderStock, orderRefill } from './compute_order_refill.mjs';
 import { computeOrderImportSchema } from './compute_order_import_schema.mjs';
@@ -274,6 +274,11 @@ try {
       input_bytes: bytes.length, input_sha256: createHash('sha256').update(bytes).digest('hex') };
   };
   const manifest = join(root, 'stock.json');
+  writeFileSync(manifest, '{}');
+  assert.throws(() => execFileSync(process.execPath, ['scripts/compute_order_import.mjs', 'run-stock', manifest,
+    '--stock-anchor=stock-first', '--max-open=10000', '--refill-config='+manifest],
+  { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 10_000, killSignal: 'SIGKILL' }),
+  error => error.stderr.includes('invalid order stock manifest'));
   const publishStock = files => {
     const stage = manifest + '.writing';
     writeFileSync(stage, JSON.stringify({ v: 1, engine, order_epoch: cut, files }));
@@ -286,7 +291,7 @@ try {
     demand: () => goodSnapshot, delay: () => assert.fail('stock should be admitted') }), source,
     inputSha: source.inputSha, cut: source.cut });
   const supply = { manifest, writer, reader, adapters, rows: 1, maxOpen: 10_000,
-    anchor: first.id, openRefill: refillSource };
+    anchor: first.id, openRefill: refillSource, importOrders: importComputeOrders, atEnd: orderImportAtEnd };
   publishStock([first, second]);
   const firstBatch = await runOrderStock({ ...supply, maxBatches: 1 });
   assert.deepEqual([firstBatch.result, firstBatch.id, firstBatch.admitted], ['batch_limit', first.id, 1]);

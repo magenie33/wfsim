@@ -270,7 +270,7 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
       const openRefill = async source => (await import('./compute_order_refill.mjs')).openOrderRefill(reader, config, maxOpen, source);
       const result = stock
         ? await (await import('./compute_order_stock.mjs')).runOrderStock({ ...options, manifest: id,
-          anchor: values['stock-anchor'], openRefill })
+          anchor: values['stock-anchor'], openRefill, importOrders: importComputeOrders, atEnd: orderImportAtEnd })
         : await importComputeOrders({ ...options, path, id, engine: values.engine, target: Number(values.target),
           refill: config ? await openRefill() : null });
       console.log(JSON.stringify(result));

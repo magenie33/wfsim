@@ -2,7 +2,6 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-import { importComputeOrders, orderImportAtEnd } from './compute_order_import.mjs';
 
 const positive = value => Number.isSafeInteger(value) && value > 0;
 
@@ -29,7 +28,7 @@ export function orderStockSources(plan, directory) {
   });
 }
 
-export async function runOrderStock({ manifest, openRefill, anchor, reader, signal, onProgress = () => {},
+export async function runOrderStock({ manifest, openRefill, importOrders, atEnd, anchor, reader, signal, onProgress = () => {},
   delay = () => setTimeout(10_000, undefined, { signal }), maxBatches = Infinity, ...options }) {
   if (maxBatches !== Infinity && !positive(maxBatches)) throw Error('invalid stock batch limit');
   let index = 0, previous = [], lastHold;
@@ -50,7 +49,7 @@ export async function runOrderStock({ manifest, openRefill, anchor, reader, sign
       await delay();
       continue;
     }
-    if (await orderImportAtEnd(reader, source)) {
+    if (await atEnd(reader, source)) {
       index++;
       continue;
     }
@@ -59,9 +58,9 @@ export async function runOrderStock({ manifest, openRefill, anchor, reader, sign
       if (event.result === 'running') maxBatches--;
       onProgress({ ...event, id: source.id });
     };
-    const result = await importComputeOrders({ ...options, ...source, reader, signal, refill, maxBatches, onProgress: progress });
+    const result = await importOrders({ ...options, ...source, reader, signal, refill, maxBatches, onProgress: progress });
     if (result.result === 'complete' || result.result === 'input_exhausted') {
-      if (!await orderImportAtEnd(reader, source)) throw Error('order stock cannot advance without verified EOF');
+      if (!await atEnd(reader, source)) throw Error('order stock cannot advance without verified EOF');
       progress(result);
       if (!maxBatches) return { ...result, result: 'batch_limit', id: source.id };
       index++;
