@@ -102,6 +102,8 @@ const NON_SEARCH_TOOLS = [...NATIVE_NON_SEARCH_INPUTS, 'scripts/check_weapon_sea
   'tests/fixtures/inbox-c41/raw_inbox_archive_move.sql', 'tests/fixtures/inbox-c41/build_ack_submissions.sql',
   'tests/fixtures/inbox-c41/state_build_inbox_inputs.sql',
   'scripts/board_coverage.mjs', 'scripts/board_coverage_schema.mjs', 'scripts/check_board_coverage.mjs',
+  'scripts/board_coverage_gaps.mjs', 'scripts/board_coverage_orders.mjs', 'scripts/compute_order_import.mjs',
+  'scripts/compute_order_import_schema.mjs', 'scripts/check_compute_order_import.mjs',
   'tests/fixtures/build-admission-base5a/build_workflows.sql',
   'tests/fixtures/build-admission-base5a/compute_admit_tasks.sql', 'tests/fixtures/build-admission-base5a/source.json',
   'tests/fixtures/board-consumers-61de/scripts/board_heads.mjs',

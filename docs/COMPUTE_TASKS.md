@@ -352,6 +352,43 @@ places these receipts in the capacity-qualified tablespace. Replacing the
 workflow admission function preserves its identity, owner, privileges and
 trusted search path. The normal library bootstrap leaves the coverage entry closed.
 
+### Bulk order import
+
+`compute_order_import.mjs` streams a newline-terminated JSON order list into the
+shared compute ledger. A `demand` row carries the existing factory ask in `ask`,
+including its stable `trigger_id` and `due_in_ms`. A `board_coverage` row carries
+a Native-captured measurement plan and its exact target. Order kind selects the
+admission contract. Producers of these rows share one import cursor, receipt,
+queue watermark and restart protocol.
+
+`board_coverage_gaps.mjs --binary=PATH --native=SHA --max-builds=N` writes orders
+to stdout and its last library ID and counts to stderr. Use `--after=ID` to
+continue a library scan or `--build=ID` to capture one build's gaps. The reader
+pages the canonical library and chooses a valid selected measurement as the
+anchor for each measured build. Native captures applicable scenarios and modes.
+Indexed reads exclude existing measurements and covered in-flight scopes.
+Admission rechecks current coverage and uses the existing workflow and delivery.
+
+After the coverage schema, the storage owner installs the output of
+`compute_order_import_schema.mjs --tablespace=NAME`. Installations that only
+submit factory demands need only the import tables and ordinary compute schema.
+The import installer derives its wider board entry from canonical coverage
+admission and preserves the existing entry and source receipts. It keeps each
+Native parent at its ordinary width. Import tables store progress and physical
+task receipts for the existing execution queue.
+
+Run `compute_order_import.mjs run ID FILE --target=N --engine=ID --max-open=N`
+using the owner connection in `WFSIM_COMPUTE_ORDER_DATABASE_URL`. Each page
+commits the tasks, byte cursor and new task IDs together. Independent indexed
+readback validates the receipt. An interrupted run uses the same ID, exact file,
+engine and target. `status ID` reads progress, `pause ID` stops at a batch
+boundary, and `resume ID` clears the pause for the next run. `--rows=N` selects
+the batch size from 1 to 1,024, with 256 by default. `--batches=N --once` gives
+an existing capacity supervisor a finite window and returns at the queue
+watermark. That supervisor retains its storage and host-pressure checks.
+The effective open queue count includes leased tasks. Only newly committed
+physical task IDs advance the target. Exhausting the file reports the shortfall.
+
 Admission reserves computation positions when accepting the intent, preserving
 arrival order through deferred expansion. Requested and bulk lane heads share
 turns within a zone; the declared zone remains authoritative. Aliases in one

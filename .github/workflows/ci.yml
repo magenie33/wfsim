@@ -847,6 +847,10 @@ jobs:
         env:
           WFSIM_COVERAGE_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5433/wfsim_checks
         run: node scripts/check_board_coverage.mjs
+      - name: Compute order imports share a verified cursor for manual and discovered orders
+        env:
+          WFSIM_COVERAGE_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5433/wfsim_checks
+        run: node scripts/check_compute_order_import.mjs
       - name: Scoring inputs use the production Postgres driver
         env:
           WFSIM_SCORE_INPUTS_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs

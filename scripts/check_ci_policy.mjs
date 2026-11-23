@@ -175,6 +175,8 @@ const providerCases = providerCheck.match(/export async function statisticsProvi
 assert.ok(providerCases, 'the pipeline provider regression entry exists');
 assert.match(providerCases, /^ await statisticsStorageCases\(\);$/m);
 const admissionToolInputs = ['scripts/check_build_workflows.mjs', 'scripts/check_factory_deploy.py',
+  'scripts/board_coverage_gaps.mjs', 'scripts/board_coverage_orders.mjs', 'scripts/compute_order_import.mjs',
+  'scripts/compute_order_import_schema.mjs',
   'scripts/check_workflow_recovery.mjs', 'scripts/inbox_reader.mjs', 'scripts/migrations/db_library.mjs',
   'tests/fixtures/build-admission-base5a/build_workflows.sql',
   'tests/fixtures/build-admission-base5a/compute_admit_tasks.sql', 'tests/fixtures/build-admission-base5a/source.json'];
@@ -424,6 +426,8 @@ assert.equal(classify(inboxStorageTools,true).deep,true);
 assert.equal(classify(inboxStorageTools,false,false).deep,true);
 assert.match(readFileSync('.github/workflows/ci.yml', 'utf8'),
   /WFSIM_COVERAGE_TEST_URL: postgresql:\/\/postgres:mailbox_check@127\.0\.0\.1:5433\/wfsim_checks\s+run: node scripts\/check_board_coverage\.mjs/);
+assert.match(readFileSync('.github/workflows/ci.yml', 'utf8'),
+  /WFSIM_COVERAGE_TEST_URL: postgresql:\/\/postgres:mailbox_check@127\.0\.0\.1:5433\/wfsim_checks\s+run: node scripts\/check_compute_order_import\.mjs/);
 for (const path of ['tests/fixtures/engine-compare/new-calls.json', 'scripts/new_engine_compare.py',
   'tests/fixtures/client/kitgun-status-other.json', 'tests/golden/M133-other.json', 'docs/measurements/M133-other.md'])
   assert.equal(classify([path]).deep, true, path + ' is outside the exact registered paths');
