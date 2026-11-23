@@ -90,21 +90,24 @@ async function verifyPage(reader, id, first, last, orders) {
   return proof;
 }
 
-async function admitPage(writer, reader, page, signal) {
+async function admitPage(writer, reader, page, signal, retryRollbacks) {
   for (let attempt = 0; ; attempt++) {
+    signal?.throwIfAborted();
     let result, error;
     try { result = await commitPage(writer, page); } catch (cause) { error = cause; }
     if (result && result !== 'committed') return { result };
     const proof = await verifyPage(reader, page.id, page.first, page.last, page.orderCount);
     if (proof) return { result: 'committed', proof };
-    if (attempt >= 2 || !ROLLED_BACK.has(error?.code))
+    if (!ROLLED_BACK.has(error?.code))
       throw error || Error('order admission requires independent readback');
+    if (!retryRollbacks || attempt >= 2) return { result: 'rolled_back' };
     await setTimeout(150 * (attempt + 1), undefined, { signal });
   }
 }
 
 export async function importComputeOrders({ writer, reader, path, id, target, engine, maxOpen,
-  rows = 256, signal, waitMs = 0, maxBatches = Infinity, adapters = new Map(), onProgress = () => {} }) {
+  rows = 256, signal, waitMs = 0, maxBatches = Infinity, retryRollbacks = true,
+  adapters = new Map(), onProgress = () => {} }) {
   if (writer === reader || typeof id !== 'string' || !id.trim() || !/^[0-9a-f]{12,64}$/.test(engine || '') ||
       ![target, maxOpen, rows].every(integer) || rows > COMPUTE_ORDER_IMPORT_ROWS ||
       (maxBatches !== Infinity && !integer(maxBatches)))
@@ -167,7 +170,7 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
         const page = { id, first: next, last, orderCount: orders.length, cut, maxOpen, adapter, prepared };
         let attempt;
         do {
-          attempt = await admitPage(writer, reader, page, signal);
+          attempt = await admitPage(writer, reader, page, signal, retryRollbacks);
           if (attempt.result !== 'queue_full' || !waitMs) break;
           onProgress(status(attempt.result));
           await setTimeout(waitMs, undefined, { signal });
@@ -207,7 +210,8 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
       const result = await importComputeOrders({ writer, reader, path, id, engine: values.engine, target: Number(values.target),
         maxOpen: Number(values['max-open']), rows: values.rows === undefined ? undefined : Number(values.rows),
         maxBatches: values.batches === undefined ? undefined : Number(values.batches), signal: controller.signal,
-        waitMs: values.once ? 0 : 8000, adapters: new Map([['board_coverage', boardCoverageOrderAdapter]]),
+        waitMs: values.once ? 0 : 8000, retryRollbacks: !values.once,
+        adapters: new Map([['board_coverage', boardCoverageOrderAdapter]]),
         onProgress: event => console.error(JSON.stringify(event)) });
       console.log(JSON.stringify(result));
     } else {

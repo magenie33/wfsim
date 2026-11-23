@@ -386,7 +386,8 @@ engine and target. `status ID` reads progress, `pause ID` stops at a batch
 boundary, and `resume ID` clears the pause for the next run. `--rows=N` selects
 the batch size from 1 to 1,024, with 256 by default. `--batches=N --once` gives
 an existing capacity supervisor a finite window and returns at the queue
-watermark. That supervisor retains its storage and host-pressure checks.
+watermark or after a confirmed rollback. The supervisor can recheck its
+storage and host-pressure gates before starting another attempt.
 The effective open queue count includes leased tasks. Only newly committed
 physical task IDs advance the target. Exhausting the file reports the shortfall.
 
