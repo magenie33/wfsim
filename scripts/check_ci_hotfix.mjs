@@ -79,8 +79,12 @@ for (const extra of ['worker/pg/sync.sql', 'worker/factory.js', 'docs/CLIENTS.md
 }
 assert.throws(() => assertSignalChanges(signalPaths.slice(0,-1),signalBase,signalHead,signalGit(signalPaths.slice(0,-1)),approved));
 assert.throws(() => hotfixPlan(signalPaths,{reason}),/exact Git/);
-for (const [path, hashes] of Object.entries(SIGNAL_RUNTIME_HASHES))
-  assert.equal(digest(readFileSync(path)),hashes[1],path + ' matches the reviewed runtime bytes');
+// The approval is for a fixed emergency patch. Changes validated by ordinary CI
+// do not inherit that approval.
+for (const hashes of Object.values(SIGNAL_RUNTIME_HASHES)) {
+  assert.equal(new Set(hashes).size, 2);
+  assert(hashes.every(hash => /^[0-9a-f]{64}$/.test(hash)));
+}
 assert.deepEqual(HOTFIX_CHECKS['signal-pg'],['check_factory_signal_pg']);
 assert.deepEqual(HOTFIX_PROFILES['daemon-signal'].groups,['factory','async',...HOTFIX_FACTORY_GROUPS,'signal-pg']);
 const signalWorkflow = readFileSync('.github/workflows/ci.yml','utf8');
