@@ -8,7 +8,7 @@ import { pgDb, postgresClient } from '../worker/db.js';
 import { facts } from '../worker/factory.js';
 import { queueOrders, queueZonesSql } from '../worker/queue_counts.js';
 import { COMPUTE_ORDER_IMPORT_ROWS } from './compute_order_import_schema.mjs';
-import { admitStockPage, checkActiveOrderLimit, publishStockWindow, refuseLegacyWindow, reserveStockWindow, stockWindowBounds } from './compute_order_stock_window.mjs';
+import { admitStockPage, admitStockPages, checkActiveOrderLimit, publishStockWindow, refuseLegacyWindow, reserveStockWindow, stockWindowBounds } from './compute_order_stock_window.mjs';
 
 const PAGE_BYTES = 8 * 1024 * 1024;
 const REFILL_TRANSACTION_MS = 8000;
@@ -241,8 +241,8 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
         }
         const { key } = reservation;
         for (let start = 0; start < pages.length; start += lanes.length) {
-          const results = await Promise.allSettled(pages.slice(start, start + lanes.length)
-            .map((page, lane) => admitStockPage(lanes[lane], reader, { id, key, cut, page }, signal)));
+          const results = await admitStockPages(pages.slice(start, start + lanes.length),
+            (page, lane) => admitStockPage(lanes[lane], reader, { id, key, cut, page }, signal));
           for (const result of results) if (result.status === 'rejected') throw result.reason;
           if (results.some(result => result.value.result === 'paused')) return status('paused');
         }

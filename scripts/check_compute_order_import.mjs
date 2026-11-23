@@ -11,7 +11,7 @@ import { boardCoverageOrderAdapter } from './board_coverage_orders.mjs';
 import { boardCoverageGaps } from './board_coverage_gaps.mjs';
 import { importComputeOrders, orderImportAtEnd, orderImportConnection, verifyRefillConnection } from './compute_order_import.mjs';
 import { acceptOrderStock, readAcceptedStock, runOrderStock } from './compute_order_stock.mjs';
-import { admitStockPage, MAX_ACTIVE_ORDERS, publishStockWindow, reserveStockWindow, stockWindowBounds } from './compute_order_stock_window.mjs';
+import { admitStockPage, admitStockPages, MAX_ACTIVE_ORDERS, publishStockWindow, reserveStockWindow, stockWindowBounds } from './compute_order_stock_window.mjs';
 import { belowReadyOrderStock, orderRefill } from './compute_order_refill.mjs';
 import { computeOrderImportSchema } from './compute_order_import_schema.mjs';
 import { computationId } from '../worker/computation_input.js';
@@ -40,6 +40,28 @@ const demand = (ref, seed, zone = 3) => ({ kind: 'demand', ask: { producer: 'use
   trigger_id: ref, verb: 'simulate_report', request: { seed }, zone, due_in_ms: 0, payload: { ref } } });
 
 try {
+  const sharedPages = [['a'], ['independent'], ['a', 'b'], ['b']].map(builds => (
+    { prepared: { items: builds.map(identity => ({ target: { identity } })) } }
+  ));
+  const firstPage = Promise.withResolvers(), started = [];
+  const sharing = admitStockPages(sharedPages, async (_, lane) => {
+    started.push(lane);
+    if (lane === 0) await firstPage.promise;
+    return { result: 'committed' };
+  });
+  await Promise.resolve();
+  assert.deepEqual(started, [0, 1], 'unrelated pages proceed while later pages sharing a build wait');
+  firstPage.resolve();
+  assert((await sharing).every(item => item.value?.result === 'committed'));
+  assert.deepEqual(started, [0, 1, 2, 3]);
+  started.length = 0;
+  const paused = await admitStockPages(sharedPages, (_, lane) => {
+    started.push(lane);
+    return { result: lane === 0 ? 'paused' : 'committed' };
+  });
+  assert.deepEqual(started, [0, 1], 'a pause stops every dependent page');
+  assert.deepEqual(paused.map(item => item.value.result), ['paused', 'committed', 'paused', 'paused']);
+
   await writer.unsafe('CREATE SCHEMA '+schema);
   for (const name of ['schema', 'library', 'sync', 'inventory', 'build_workflows', 'board_admission', 'queue_counts'])
     await writer.unsafe(loadSql(name));

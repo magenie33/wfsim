@@ -151,6 +151,21 @@ export async function admitStockPage(writer, reader, request, signal) {
   }
 }
 
+export function admitStockPages(pages, admit) {
+  const latest = new Map();
+  return Promise.allSettled(pages.map((page, lane) => {
+    const builds = new Set(page.prepared.items.map(({ target }) => target.identity));
+    const predecessors = new Set([...builds].map(build => latest.get(build)).filter(Boolean));
+    const result = Promise.all(predecessors).then(outcomes => {
+      if (outcomes.some(outcome => outcome.result === 'paused')) return { result: 'paused' };
+      return admit(page, lane);
+    });
+    // The database takes a build lock for every identity. Shared pages follow source order.
+    for (const build of builds) latest.set(build, result);
+    return result;
+  }));
+}
+
 export async function publishStockWindow(writer, reader, { id, key, cut, pages }) {
   if (writer === reader) throw Error('stock window requires independent readback');
   const first = pages[0].first, last = pages.at(-1).last;
