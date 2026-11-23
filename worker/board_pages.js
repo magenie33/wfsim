@@ -24,12 +24,15 @@ export async function boardPagesRoute(request,env,ctx) {
  let data;
  try {
   if(catalog) {
-   const scene=params.get('scene')??'';
+   const scene=params.get('scene')??'',limit=params.get('limit');
    if((scene!==''&&!name(scene))||!/^[a-z0-9_/]*$/.test(after)||after.length>322)return reply({ok:false,error:'invalid board cursor'},400);
-   const size=ruler?512:128;
-   const statement=ruler?'SELECT board_read_catalog(?::text,?::text,?::text,512::bigint,?::text) page'
-    :'SELECT board_read_catalog(?::text,?::text,?::text,128::bigint) page';
-   const result=await env.LIBRARY.prepare(statement).bind(...(ruler?[weapon,scene,after,ruler]:[weapon,scene,after])).first();
+   const maximum=ruler?512:128;
+   if(limit!==null&&(!/^[1-9][0-9]{0,2}$/.test(limit)||Number(limit)>maximum))
+    return reply({ok:false,error:'invalid board catalog page size'},400);
+   const size=limit===null?maximum:Number(limit),args=[weapon,scene,after,size];
+   const statement=ruler?'SELECT board_read_catalog(?::text,?::text,?::text,?::bigint,?::text) page'
+    :'SELECT board_read_catalog(?::text,?::text,?::text,?::bigint) page';
+   const result=await env.LIBRARY.prepare(statement).bind(...(ruler?[...args,ruler]:args)).first();
    data=result.page;const all=data.partitions;
    data={...data,partitions:all.slice(0,size),next:all.length>size?all[size-1].weapon+'/'+all[size-1].ruler:null};
   }else{
