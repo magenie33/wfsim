@@ -200,19 +200,32 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
         if (bounds.pages.length > maxBatches - batches) throw Error('stock window exceeds the remaining batch limit');
         await refill.wait({ cut, engine, signal, reserved: bounds.reserved });
         const pages = [], stream = orderLines(file, next);
-        let first = next;
+        let first = next, pending = [];
         try {
-          for (const limit of bounds.pages) {
-            const orders = [];
-            let last = first;
-            while (orders.length < limit && last < inputBytes) {
+          for (const [index, limit] of bounds.pages.entries()) {
+            const lines = pending;
+            pending = [];
+            while (lines.length < limit && (lines.at(-1)?.end ?? first) < inputBytes) {
               const { value, done } = await stream.next();
-              if (done || value.order?.kind !== 'board_coverage' || value.end - first > PAGE_BYTES)
-                throw Error('parallel stock needs consecutive coverage pages within the batch byte limit');
-              last = value.end;
-              orders.push(value.order);
+              if (done) throw Error('stock source ended before its approved byte length');
+              lines.push(value);
             }
-            if (!orders.length) break;
+            if (!lines.length) break;
+            if (!bounds.reserved && bounds.pages[index + 1] && lines.at(-1).end < inputBytes) {
+              const { value } = await stream.next();
+              if (value) {
+                pending = [value];
+                const build = value.order?.target?.identity;
+                const split = lines.findLastIndex(line => line.order?.target?.identity !== build) + 1;
+                // Adjacent pages can write in parallel when they do not share a build lock.
+                if (split > 0 && lines.length - split < bounds.pages[index + 1])
+                  pending.unshift(...lines.splice(split));
+              }
+            }
+            const last = lines.at(-1).end;
+            const orders = lines.map(line => line.order);
+            if (orders.some(order => order?.kind !== 'board_coverage') || last - first > PAGE_BYTES)
+              throw Error('parallel stock needs consecutive coverage pages within the batch byte limit');
             pages.push({ first, last, orders: orders.length, prepared: await adapter.prepare(orders, { id, first, cut, engine }) });
             first = last;
           }
