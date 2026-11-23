@@ -89,6 +89,7 @@ try {
   await sql`INSERT INTO state_compute_scheduling (id,verb,task_id,state,due_at,opened_at,zone)
     SELECT md5(i::text),'simulate',i,'open','2026-11-01T00:00:00.000Z','2026-11-01T00:00:00.000Z',3
     FROM generate_series(1,${history}::int) i`;
+  await sql`UPDATE state_compute_scheduling SET lease_prev='historical' WHERE task_id BETWEEN 1 AND 8`;
   await sql`INSERT INTO entity_compute_order_cuts VALUES ('signal-cut',${epoch},${history},1,0,'',${epoch},'{}')`;
   await sql`INSERT INTO record_compute_order_cut_activations VALUES ('signal-cut',${epoch},0,'',0,'')`;
   await sql.unsafe(readFileSync(new URL("../worker/pg/queue_counts.sql", import.meta.url), "utf8"));
@@ -160,6 +161,7 @@ try {
     '2026-11-22T04:20:00.000Z','test-device',16)`;
   assert.equal(leased.length,8);
   assert(!leased.some(row=>row.id==="candidate-1"),"the unpublished FIFO head stays held");
+  assert(leased.every(row=>row.id.startsWith("candidate-")),"old execution evidence does not replace explicit cut protection");
   const at=new Date(now).toISOString();
   await addCandidates(787,2048);
   const [largest]=await sql`SELECT * FROM factory_queue_signal(${at})`;

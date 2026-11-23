@@ -225,6 +225,8 @@ $prefix$;
         FROM tail t CROSS JOIN LATERAL(SELECT s.* FROM state_compute_scheduling s WHERE (s.id,s.task_id)=(t.id,t.task_id) OFFSET 0) guard
         CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE (e.id,e.task_id)=(guard.id,guard.task_id) OFFSET 0) q
         WHERE guard.state='open' AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9)
+          AND (guard.task_id>(SELECT task_cutoff FROM cut)
+            OR guard.id IN(SELECT p.question FROM compute_order_cut_protections() p))
           AND ($12 IS NULL OR guard.waits=0)
         ORDER BY t.z,t.pos,t.id LIMIT $13 /* lock */
       )
