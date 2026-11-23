@@ -397,7 +397,9 @@ Run the same import with `--refill-config=FILE` on the database host to keep
 the file and writer and proof connections open across idle periods. The
 service template `deploy/wfsim-compute-order-refill.service` takes the normal
 import arguments through its environment file. Use the local PostgreSQL
-connection and a fixed verified import ID and immutable source file. The
+connection and a fixed verified import ID and immutable source file.
+Connections enforce an eight-second transaction timeout, with 16 MiB temporary
+space on the writer and zero on the read-only proof connection. The
 target or end of the approved source ends the service normally. A subsequent
 source uses its own import ID. Stop the previous source's writer before
 activating its successor, and start at the next undisposed source entry.

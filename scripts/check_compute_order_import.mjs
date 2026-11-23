@@ -9,7 +9,7 @@ import postgres from './pg/node_modules/postgres/src/index.js';
 import { boardCoverageSchemaSql } from './board_coverage_schema.mjs';
 import { boardCoverageOrderAdapter } from './board_coverage_orders.mjs';
 import { boardCoverageGaps } from './board_coverage_gaps.mjs';
-import { importComputeOrders } from './compute_order_import.mjs';
+import { importComputeOrders, orderImportConnection, verifyRefillConnection } from './compute_order_import.mjs';
 import { belowReadyOrderStock, orderRefill } from './compute_order_refill.mjs';
 import { computeOrderImportSchema } from './compute_order_import_schema.mjs';
 import { computationId } from '../worker/computation_input.js';
@@ -248,6 +248,21 @@ try {
     demand: () => goodSnapshot, delay: () => assert.fail('refill should resume below both limits') }), inputSha, cut };
   const resumed = await run({ ...runs, refill: restart });
   assert.deepEqual([resumed.result, resumed.processed, resumed.admitted], ['complete', 2, 2]);
+  const serviceRole = schema + '_service';
+  await writer.unsafe('CREATE ROLE ' + serviceRole);
+  const serviceUrl = new URL(url);
+  serviceUrl.searchParams.set('role', serviceRole);
+  const proofConnection = postgres(serviceUrl.href, { max: 1, fetch_types: false, connection: orderImportConnection(true, true) });
+  const refillWriter = postgres(serviceUrl.href, { max: 1, fetch_types: false, connection: orderImportConnection(false, true) });
+  try {
+    await Promise.all([verifyRefillConnection(refillWriter, false), verifyRefillConnection(proofConnection, true)]);
+    assert.equal((await proofConnection.unsafe('SELECT current_user AS role'))[0].role, serviceRole);
+    await assert.rejects(verifyRefillConnection(refillWriter, true), /approved transaction/);
+    await assert.rejects(proofConnection.unsafe('CREATE SCHEMA order_refill_proof_cannot_write'), { code: '25006' });
+  } finally {
+    await Promise.all([proofConnection.end(), refillWriter.end()]);
+    await writer.unsafe('DROP ROLE ' + serviceRole);
+  }
   console.log('  ok  low-ready refill, release and host holds, atomic high cap and resume from the same source');
   console.log('  ok  sealed input, lost reply, pause and resume, queue cap, coverage rollback, lock retry, duplicate replay, concurrent runners and Native gaps');
 } finally {

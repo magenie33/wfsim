@@ -10,6 +10,7 @@ import { queueOrders, queueZonesSql } from '../worker/queue_counts.js';
 import { COMPUTE_ORDER_IMPORT_ROWS } from './compute_order_import_schema.mjs';
 
 const PAGE_BYTES = 8 * 1024 * 1024;
+const REFILL_TRANSACTION_MS = 8000;
 const ROLLED_BACK = new Set(['55P03', '40P01', '40001', '25P02']);
 const integer = n => Number.isSafeInteger(n) && n > 0;
 const readState = (sql, id) => sql.unsafe('SELECT * FROM state_compute_order_imports WHERE id=$1', [id]);
@@ -52,9 +53,10 @@ async function admitDemands(tx, { asks, engine }) {
   return tasks.map(({ id }) => id);
 }
 
-async function commitPage(writer, { id, first, last, orderCount, cut, maxOpen, adapter, prepared }) {
+async function commitPage(writer, { id, first, last, orderCount, cut, maxOpen, adapter, prepared, automatic }) {
   return writer.begin(async tx => {
-    await tx.unsafe("SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='15s'; SET LOCAL jit=off");
+    const timeout = automatic ? REFILL_TRANSACTION_MS : 15_000;
+    await tx.unsafe(`SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='${timeout}ms'; SET LOCAL jit=off`);
     await tx.unsafe("SELECT pg_advisory_xact_lock(hashtextextended('compute-order-import',0))");
     const [run] = await tx.unsafe('SELECT * FROM state_compute_order_imports WHERE id=$1 FOR UPDATE', [id]);
     if (run.paused) return 'paused';
@@ -173,7 +175,7 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
         }
         await checkFile();
         const prepared = await adapter.prepare(orders, { id, first: next, cut, engine });
-        const page = { id, first: next, last, orderCount: orders.length, cut, maxOpen, adapter, prepared };
+        const page = { id, first: next, last, orderCount: orders.length, cut, maxOpen, adapter, prepared, automatic: !!refill };
         let attempt;
         do {
           if (refill) {
@@ -202,6 +204,22 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
   } finally { await file.close(); }
 }
 
+export function orderImportConnection(proof, automatic) {
+  const base = { application_name: proof ? 'wfsim-order-import-proof' : 'wfsim-order-import',
+    statement_timeout: 15_000, lock_timeout: 500, jit: 'off' };
+  if (!automatic) return base;
+  return { ...base, statement_timeout: REFILL_TRANSACTION_MS, transaction_timeout: REFILL_TRANSACTION_MS,
+    temp_file_limit: proof ? '0' : '16MB', default_transaction_read_only: proof ? 'on' : 'off' };
+}
+
+export async function verifyRefillConnection(sql, proof) {
+  const [{ ok }] = await sql.unsafe(`SELECT NOT pg_is_in_recovery()
+    AND current_setting('transaction_timeout')::interval=interval '8 seconds'
+    AND pg_size_bytes(current_setting('temp_file_limit')) BETWEEN 0 AND $1
+    AND current_setting('default_transaction_read_only')=$2 AS ok`, [proof ? 0 : 16 * 1024 * 1024, proof ? 'on' : 'off']);
+  if (!ok) throw Error('order refill connection lacks the approved transaction and temporary file limits');
+}
+
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   const { positionals: [operation, id, path, extra], values } = parseArgs({ allowPositionals: true,
     options: { target: { type: 'string' }, engine: { type: 'string' }, 'max-open': { type: 'string' },
@@ -212,9 +230,9 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
       || (values['refill-config'] && (operation !== 'run' || values.once)))
     throw Error('usage: compute_order_import.mjs run ID FILE --target=N --engine=ID --max-open=N [--rows=N] [--batches=N] [--refill-config=FILE], or status|pause|resume ID');
   const { default: postgres } = await import('./pg/node_modules/postgres/src/index.js');
-  const connect = name => postgres(url, { max: 1, fetch_types: false,
-    connection: { application_name: name, statement_timeout: 15_000, lock_timeout: 500, jit: 'off' } });
-  const writer = connect('wfsim-order-import'), reader = connect('wfsim-order-import-proof');
+  const connect = proof => postgres(url, { max: 1, fetch_types: false,
+    connection: orderImportConnection(proof, !!values['refill-config']) });
+  const writer = connect(false), reader = connect(true);
   const controller = new AbortController();
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => controller.abort());
   try {
@@ -222,6 +240,7 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
       const { boardCoverageOrderAdapter } = await import('./board_coverage_orders.mjs');
       const config = values['refill-config'];
       const refill = config ? await (await import('./compute_order_refill.mjs')).openOrderRefill(reader, config, Number(values['max-open'])) : null;
+      if (refill) await Promise.all([verifyRefillConnection(writer, false), verifyRefillConnection(reader, true)]);
       const result = await importComputeOrders({ writer, reader, path, id, engine: values.engine, target: Number(values.target),
         maxOpen: Number(values['max-open']), rows: values.rows === undefined ? undefined : Number(values.rows),
         maxBatches: values.batches === undefined ? undefined : Number(values.batches), signal: controller.signal,
