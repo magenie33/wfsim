@@ -52,8 +52,8 @@ export async function belowReadyOrderStock(reader, engine, limit, maxOpen, now =
 }
 
 export function orderRefill({ low, maxHours, stock, capacity, release, demand,
-  delay = signal => setTimeout(POLL_MS, undefined, { signal }), now = Date.now, onHold = () => {} }) {
-  let filling = false, lastHold;
+  delay = signal => setTimeout(POLL_MS, undefined, { signal }), now = Date.now, onHold = () => {} }, cycle = {}) {
+  let lastHold;
   const hold = async (reason, signal) => {
     if (lastHold !== reason) onHold(reason);
     lastHold = reason;
@@ -61,8 +61,9 @@ export function orderRefill({ low, maxHours, stock, capacity, release, demand,
   };
   return {
     pollMs: POLL_MS,
-    observe({ result }) { if (result === 'queue_full') filling = false; },
+    observe({ result }) { if (result === 'queue_full') cycle.filling = false; },
     async wait({ cut, engine, signal, reserved }) {
+      if (cycle.cut !== cut || cycle.engine !== engine) Object.assign(cycle, { cut, engine, filling: false });
       for (;;) {
         signal?.throwIfAborted();
         if (!await capacity()) { await hold('host_capacity', signal); continue; }
@@ -75,11 +76,11 @@ export function orderRefill({ low, maxHours, stock, capacity, release, demand,
           await hold('clearance_budget', signal);
           continue;
         }
-        if (!filling && !reserved) {
+        if (!cycle.filling && !reserved) {
           const below = await stock(engine, low);
           if (below === false) { await hold('ready_stock', signal); continue; }
           if (below !== true) { await hold('ready_stock_unavailable', signal); continue; }
-          filling = true;
+          cycle.filling = true;
         }
         lastHold = undefined;
         return;
@@ -122,7 +123,7 @@ function publicSnapshot(url) {
   };
 }
 
-export async function openOrderRefill(reader, config, maxOpen, source) {
+export async function openOrderRefill(reader, config, maxOpen, source, cycle) {
   const cfg = JSON.parse(await readFile(config, 'utf8'));
   const inputSha = source?.inputSha ?? cfg.input_sha256;
   if (cfg.v !== 1 || !positive(cfg.ready_below) || !positive(maxOpen) || cfg.ready_below >= maxOpen
@@ -156,6 +157,6 @@ export async function openOrderRefill(reader, config, maxOpen, source) {
     },
     release: publicSnapshot('https://wfsim.app/release.json'),
     demand: publicSnapshot('https://cdn.wfsim.app/demand.json'),
-    onHold: reason => console.error(JSON.stringify({ result: 'refill_wait', reason })) });
+    onHold: reason => console.error(JSON.stringify({ result: 'refill_wait', reason })) }, cycle);
   return { ...refill, inputSha, cut: cfg.order_epoch, source };
 }

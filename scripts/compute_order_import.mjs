@@ -373,7 +373,7 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
         onProgress: event => console.error(JSON.stringify(event)) };
       if (config) await Promise.all([writer, ...peerWriters].map(connection => verifyRefillConnection(connection, false))
         .concat(verifyRefillConnection(reader, true)));
-      const openRefill = async source => (await import('./compute_order_refill.mjs')).openOrderRefill(reader, config, maxOpen, source);
+      const openRefill = async (source, cycle) => (await import('./compute_order_refill.mjs')).openOrderRefill(reader, config, maxOpen, source, cycle);
       const result = stock
         ? await (await import('./compute_order_stock.mjs')).runOrderStock({ ...options,
           ...(operation === 'run-accepted-stock' ? { directory: id } : { manifest: id }),
