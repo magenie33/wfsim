@@ -1926,7 +1926,6 @@ TRAINING_AND_CORPUS_CRAWLERS = (
     "GPTBot", "ClaudeBot", "Applebot-Extended", "Google-Extended", "Amazonbot",
     "meta-externalagent", "Bytespider", "CCBot",
 )
-CONTENT_SIGNAL = "Content-Signal: search=yes, ai-input=yes, ai-train=no"
 
 # WHERE AN AGENT CALLS WFSIM, and what it is told WFSim is: the MCP server
 # (`mcp/`) and the table it runs, read through `scripts/dump_headless.mjs` so
@@ -1955,11 +1954,10 @@ def robots_txt() -> str:
     discovery = "".join(f"User-agent: {a}\n" for a in DISCOVERY_CRAWLERS)
     training = "".join(f"User-agent: {a}\n" for a in TRAINING_AND_CORPUS_CRAWLERS)
     return (f"# Creator and crawler policy: {SITE}/reuse\n\n"
-            f"User-agent: *\n{CONTENT_SIGNAL}\nAllow: /\n\n"
-            f"{discovery}{CONTENT_SIGNAL}\nAllow: /\n\n"
-            f"{training}{CONTENT_SIGNAL}\nDisallow: /\n\n"
-            f"Sitemap: {SITE}/sitemap.xml\n"
-            f"Agentmap: {SITE}/.well-known/ai-catalog.json\n")
+            "User-agent: *\nAllow: /\n\n"
+            f"{discovery}Allow: /\n\n"
+            f"{training}Disallow: /\n\n"
+            f"Sitemap: {SITE}/sitemap.xml\n")
 
 
 def md_cell(text: str) -> str:

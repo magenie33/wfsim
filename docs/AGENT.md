@@ -570,7 +570,7 @@ serves it:
 | `/.well-known/api-catalog` | RFC 9727: MCP, A2A and the current board catalog |
 | `/.well-known/mcp/server-card.json` | the MCP server: its endpoint and its tools, from the headless table and `mcp/account.js` |
 | `/.well-known/agent-card.json` | the A2A agent card, from `agentCard` in `mcp/a2a.js` — the function the endpoint serves it with |
-| `/.well-known/ai-catalog.json` | ARD's catalog (ai-catalog 1.0): the MCP server card, the A2A card and the skill, each by the url it is served at; `Agentmap:` in robots.txt and `<link rel="ai-catalog">` in the page's head point at it |
+| `/.well-known/ai-catalog.json` | ARD's catalog (ai-catalog 1.0) lists the MCP server card, A2A card and skill by URL. The page links to it with `<link rel="ai-catalog">` |
 | `/auth.md` | how an agent registers, claims a key for its person and uses it — drawn by the worker (`worker/agents.js`) |
 | `/.well-known/oauth-protected-resource`, `/.well-known/oauth-authorization-server` | RFC 9728 and RFC 8414, the second with auth.md's `agent_auth` block, from the same constants as `/auth.md` |
 | `/robots.txt` | search and on-demand AI retrieval allowed, training reserved; named training and corpus tokens receive `Disallow: /` |

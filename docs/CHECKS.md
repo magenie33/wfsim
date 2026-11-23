@@ -2657,11 +2657,11 @@ its signal, and a tool answers as the door does.
 
 What an agent reads to find WFSim, in the built `site/`: the AI catalog names
 only documents the site serves, each entry by exactly one of `url` or `data`
-under a `urn:air:` identifier and a media type; robots.txt and the page's head
-point at it; and the A2A card the build wrote is the one `mcp/a2a.js` serves.
-The published crawler groups must distinguish discovery from training. The terms,
-crawler directives, weapon markdown and machine-readable index link to the creator
-policy. Run after a site build.
+under a `urn:air:` identifier and a media type. The page head links to the catalog
+and the A2A card matches the one `mcp/a2a.js` serves. The robots file uses crawl
+directives supported by Googlebot, names the canonical sitemap and sets access
+for the crawler groups. The terms, robots file, weapon markdown and
+machine-readable index link to the creator policy. Run after a site build.
 
 ## `check_mcp_auth`
 

@@ -1,10 +1,9 @@
 // WHAT AN AGENT READS TO FIND WFSIM, as `build_site_app.py` wrote it into
 // `site/` (docs/AGENT.md §"Machine-readable"). What it holds: the AI catalog
 // (ARD) names only documents the site serves, each entry by exactly one of
-// `url` or `data`, under `urn:air:` identifiers and a media type; robots.txt
-// and the page's head both point at it; and the A2A card the build wrote is the
-// one `mcp/a2a.js` serves; the method is served in every language it has. No
-// network, no browser; run after a site build.
+// `url` or `data`, under `urn:air:` identifiers and a media type. The page
+// links to the catalog, the A2A card matches `mcp/a2a.js` and the method is
+// served in every translated language. Run after a site build.
 import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -35,16 +34,19 @@ for (const e of cat.entries || []) {
   check(`${e.identifier}: names a document the site serves`, !e.url || served(e.url), e.url);
 }
 const robots = read("robots.txt");
-check("robots.txt points at the catalog", /^Agentmap: https:\/\/wfsim\.app\/\.well-known\/ai-catalog\.json$/m.test(robots));
+const directives = robots.split("\n").map((line) => line.split("#")[0].trim()).filter(Boolean);
+const unsupported = directives.filter((line) => !/^(?:User-agent|Allow|Disallow|Sitemap):\s+\S/.test(line));
+check("robots.txt uses crawl directives supported by Googlebot", unsupported.length === 0, unsupported.join(", "));
+check("robots.txt names the canonical sitemap",
+  directives.filter((line) => line.startsWith("Sitemap:")).join("\n") === `Sitemap: ${SITE}/sitemap.xml`);
 const groups = robots.split(/\n\s*\n/).filter((group) => /^User-agent:/m.test(group));
 const accessRules = (name) => groups
   .filter((group) => group.split("\n").includes("User-agent: " + name))
   .flatMap((group) => group.match(/^(?:Allow|Disallow): .*$/gm) || []).join("\n");
-check("every crawler group permits search and retrieval and reserves training", groups.length > 0 &&
-  groups.every((group) => /^Content-Signal: search=yes, ai-input=yes, ai-train=no$/m.test(group)));
 check("search and user-directed fetches can read public pages",
-  ["*", "OAI-SearchBot", "ChatGPT-User", "Claude-SearchBot", "Claude-User", "Amzn-SearchBot", "Amzn-User", "PerplexityBot"]
-    .every((name) => accessRules(name) === "Allow: /"));
+  ["*", "OAI-SearchBot", "ChatGPT-User", "Claude-SearchBot", "Claude-User", "Amzn-SearchBot", "Amzn-User",
+    "PerplexityBot", "Perplexity-User", "meta-externalfetcher"].every((name) => accessRules(name) === "Allow: /")
+    && ["", "Allow: /"].includes(accessRules("Googlebot")));
 check("model training and corpus collection tokens opt out",
   ["GPTBot", "ClaudeBot", "Applebot-Extended", "Google-Extended", "Amazonbot", "meta-externalagent", "Bytespider", "CCBot"]
     .every((name) => accessRules(name) === "Disallow: /"));
