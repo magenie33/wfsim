@@ -118,7 +118,7 @@ $$;
 -- Filter open state after the point lookup so the open index is not scanned per task.
 CREATE OR REPLACE FUNCTION factory_candidates(text,bigint,bigint,text,text,text,text,text,bigint,bigint,text,text,bigint,text,text,text,boolean)
 RETURNS SETOF state_compute_work LANGUAGE plpgsql SET jit=off AS $function$
-DECLARE prefix_pick text;found_count bigint;remaining bigint:=$13;cutoff bigint;pick text:=$pick$
+DECLARE prefix_pick text;tail_pick text;found_count bigint;remaining bigint:=$13;cutoff bigint;pick text:=$pick$
   WITH cut AS MATERIALIZED(SELECT * FROM compute_order_cut()),
     eligible AS NOT MATERIALIZED(SELECT q.* FROM /* source */ q
       WHERE q.state IN(SELECT jsonb_array_elements_text($11::jsonb))
@@ -210,6 +210,31 @@ $prefix$;
     IF found_count=$13 THEN RETURN;END IF;
     remaining:=$13-found_count;
     pick:=replace(pick,'/* prefix enabled */ true','false');
+    IF $15 IS NULL AND remaining<=1024 THEN
+      -- A full pack from the first indexed range is final; a sparse range uses the exact merge.
+      tail_pick:=split_part(pick,'  SELECT chosen.* FROM (',1)||$tail$
+      , tail AS MATERIALIZED (
+        SELECT s.id,s.task_id,coalesce(s.zone,factory_default_zone(s.producer)) z,coalesce(s.zone_position,s.task_id) pos
+        FROM state_compute_scheduling s WHERE s.state='open'
+          AND (coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id)
+            >(SELECT keep_zone,keep_position,keep_id FROM cut)
+        ORDER BY coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id
+        LIMIT greatest(1024::bigint,8*$13)
+      ), taken AS MATERIALIZED (
+        SELECT ROW(q.*)::state_compute_work picked,t.z,t.pos,t.id
+        FROM tail t CROSS JOIN LATERAL(SELECT s.* FROM state_compute_scheduling s WHERE (s.id,s.task_id)=(t.id,t.task_id) OFFSET 0) guard
+        CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE (e.id,e.task_id)=(guard.id,guard.task_id) OFFSET 0) q
+        WHERE guard.state='open' AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9)
+          AND ($12 IS NULL OR guard.waits=0)
+        ORDER BY t.z,t.pos,t.id LIMIT $13 /* lock */
+      )
+      SELECT (t.picked).* FROM taken t WHERE (SELECT count(*) FROM taken)=$13 ORDER BY t.z,t.pos,t.id
+$tail$;
+      tail_pick:=replace(tail_pick,'/* lock */',CASE WHEN $17 THEN 'FOR UPDATE OF guard SKIP LOCKED' ELSE '' END);
+      RETURN QUERY EXECUTE tail_pick USING $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,remaining,$14,$15,$16;
+      GET DIAGNOSTICS found_count=ROW_COUNT;
+      IF found_count=remaining THEN RETURN;END IF;
+    END IF;
   END IF;
   RETURN QUERY EXECUTE pick USING $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,remaining,$14,$15,$16,cutoff;
 END $function$;
