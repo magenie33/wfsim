@@ -26,20 +26,21 @@ export const REFILL_STOCK_SQL = `WITH balance AS MATERIALIZED (${queueZonesSql})
       ORDER BY ${zone} DESC,coalesce(s.zone_position,s.task_id) DESC,s.id DESC
       LIMIT least(z.n+16,$4::bigint+16)
     ) candidate
-  ), measured AS (
-    SELECT count(*) AS live,count(*) FILTER(WHERE c.waits=0
-      AND (c.lease_until IS NULL OR c.lease_until<$1)
-      AND (c.required_engine IS NULL OR c.required_engine=$2)
-      AND (c.required_capability IS NULL OR c.required_capability='fixed-board-input-v1')
-      AND c.lanes IS NULL AND c.verb IN ('simulate','optimize')) AS ready
-    FROM candidates c
+  ), effective AS MATERIALIZED (
+    SELECT c.* FROM candidates c
     WHERE EXISTS(SELECT 1 FROM state_compute_effective_open q WHERE q.id=c.id AND q.task_id=c.task_id OFFSET 0)
       AND NOT EXISTS(SELECT 1 FROM record_compute_order_cancellations r
         WHERE r.cut_id=(SELECT id FROM compute_order_cut()) AND r.question=c.id AND r.task_id=c.task_id)
   )
-  SELECT CASE WHEN size.open<$3 THEN true WHEN size.open>=$4 THEN false ELSE (
-    SELECT CASE WHEN measured.ready>=$3 THEN false WHEN measured.live=size.open THEN true END FROM measured
-  ) END AS below FROM size`;
+  SELECT CASE WHEN size.open<$3 THEN true WHEN size.open>=$4 THEN false
+    WHEN (SELECT count(*) FROM (
+      SELECT 1 FROM effective c WHERE c.waits=0
+        AND (c.lease_until IS NULL OR c.lease_until<$1)
+        AND (c.required_engine IS NULL OR c.required_engine=$2)
+        AND (c.required_capability IS NULL OR c.required_capability='fixed-board-input-v1')
+        AND c.lanes IS NULL AND c.verb IN ('simulate','optimize') LIMIT $3
+    ) ready)=$3 THEN false
+    WHEN (SELECT count(*) FROM effective)=size.open THEN true END AS below FROM size`;
 
 export async function belowReadyOrderStock(reader, engine, limit, maxOpen, now = Date.now()) {
   if (!positive(limit) || !positive(maxOpen) || limit >= maxOpen) throw Error('invalid ready stock watermarks');
