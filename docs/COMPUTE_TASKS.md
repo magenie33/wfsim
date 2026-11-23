@@ -391,6 +391,37 @@ storage and host-pressure gates before starting another attempt.
 The effective open queue count includes leased tasks. Only newly committed
 physical task IDs advance the target. Exhausting the file reports the shortfall.
 
+#### Automatic refill
+
+Run the same import with `--refill-config=FILE` on the database host to keep
+the file and writer and proof connections open across idle periods. The
+service template `deploy/wfsim-compute-order-refill.service` takes the normal
+import arguments through its environment file. Use the local PostgreSQL
+connection and a fixed verified import ID and immutable source file. The
+target or end of the approved source ends the service normally. A subsequent
+source uses its own import ID. Stop the previous source's writer before
+activating its successor, and start at the next undisposed source entry.
+
+The configuration has `v: 1`, `input_sha256`, `order_epoch` (empty before
+a cut), `ready_below`, `max_clear_hours`, absolute `data_directory` and
+`wal_directory`, `root_reserve_bytes`, `data_reserve_bytes`, `wal_max_bytes`,
+`wal_reserve_bytes`, `max_io_pressure` and `max_memory_pressure`. Set reserves
+including an approved batch's peak allocation. The WAL and data directories
+must resolve to the data volume. Pressure values are whole-host full PSI
+avg10 percentages. Keep the service disabled until the operator qualifies
+the input, role, volume paths and production budget.
+
+The low watermark counts regular simulate and optimize tasks with no active
+lease, dependencies or lane requirement, compatible with the supplied
+engine and current order cut. It includes the fixed board input capability.
+Refill continues toward the transaction's `--max-open` cap once it starts.
+Each page also needs
+host headroom, the served engine, and a recent clearance reading for the
+same cut below `max_clear_hours`. Unknown observations wait. A full queue
+returns to the low-watermark check. A confirmed lock rollback retries at
+the same byte; ambiguous writes go through the indexed receipt and the
+same restart protocol as manual import.
+
 Admission reserves computation positions when accepting the intent, preserving
 arrival order through deferred expansion. Requested and bulk lane heads share
 turns within a zone; the declared zone remains authoritative. Aliases in one

@@ -10,8 +10,10 @@ import { boardCoverageSchemaSql } from './board_coverage_schema.mjs';
 import { boardCoverageOrderAdapter } from './board_coverage_orders.mjs';
 import { boardCoverageGaps } from './board_coverage_gaps.mjs';
 import { importComputeOrders } from './compute_order_import.mjs';
+import { orderRefill, readyOrderStock } from './compute_order_refill.mjs';
 import { computeOrderImportSchema } from './compute_order_import_schema.mjs';
 import { computationId } from '../worker/computation_input.js';
+import { queueOrders, queueZonesSql } from '../worker/queue_counts.js';
 
 const url = process.env.WFSIM_COVERAGE_TEST_URL;
 assert(url && ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(url).hostname), 'use an isolated local PostgreSQL');
@@ -189,6 +191,56 @@ try {
   const [flows] = await reader.unsafe(`SELECT count(*)::int n FROM relation_task_consumers
     WHERE producer='build_workflow' AND state='live'`);
   assert(flows.n >= filled + selected.length);
+
+  const tick = Date.now(), now = new Date(tick).toISOString(), otherEngine = 'b'.repeat(12);
+  const [{ order_epoch: cut, zones }] = await reader.unsafe(queueZonesSql);
+  const maxOpen = queueOrders(zones).total + 1;
+  await writer.unsafe('UPDATE state_compute_scheduling SET required_engine=$1', [otherEngine]);
+  const stock = await reader.unsafe(`SELECT id FROM state_compute_effective_open
+    WHERE verb='simulate' AND waits=0 AND required_capability='fixed-board-input-v1' AND lanes IS NULL LIMIT 4`);
+  assert.equal(stock.length, 4);
+  await writer.unsafe(`UPDATE state_compute_scheduling SET required_engine=$1,
+    waits=CASE WHEN id=$3 THEN 1 ELSE waits END,
+    required_capability=CASE WHEN id=$4 THEN 'fixture' ELSE required_capability END,
+    lease_until=CASE WHEN id=$5 THEN $6 ELSE lease_until END
+    WHERE id IN ($2,$3,$4,$5)`,
+  [engine, ...stock.map(({ id }) => id), new Date(tick + 60000).toISOString()]);
+  assert.equal(await readyOrderStock(reader, engine, 2, tick), 1);
+
+  const path = file('refill', [demand('refill-a', 501), demand('refill-b', 502)]);
+  const inputSha = createHash('sha256').update(readFileSync(path)).digest('hex');
+  const settings = { low: 1, maxHours: 2, now: () => tick,
+    stock: (current, limit) => readyOrderStock(reader, current, limit, tick) };
+  const goodSnapshot = { ok: true, counts_at: now, order_epoch: cut, clear_hours: 1 };
+  const runs = { path, id: 'refill', target: 2, rows: 1, maxOpen, waitMs: 1 };
+  await assert.rejects(run({ ...runs, refill: { inputSha, cut: 'different' } }), /approved source/);
+  assert.equal((await reader.unsafe("SELECT id FROM state_compute_order_imports WHERE id='refill'")).length, 0);
+  let hasRoom = false, served = otherEngine, snapshot = { ...goodSnapshot, counts_at: at };
+  const held = [];
+  const refill = { ...orderRefill({ ...settings, capacity: () => hasRoom, release: () => ({ engine: served }),
+    demand: () => snapshot, onHold: reason => held.push(reason),
+    delay: async () => {
+      if (held.at(-1) === 'host_capacity') hasRoom = true;
+      else if (held.at(-1) === 'served_engine') served = engine;
+      else if (held.at(-1) === 'clearance_budget') snapshot = goodSnapshot;
+      else if (held.at(-1) === 'ready_stock') {
+        assert.equal((await reader.unsafe("SELECT id FROM state_compute_order_imports WHERE id='refill'")).length, 0);
+        await writer.unsafe('UPDATE state_compute_scheduling SET required_engine=$1 WHERE id=$2', [otherEngine, stock[0].id]);
+      } else assert.fail('unexpected refill hold');
+    } }), inputSha, cut, pollMs: 1 };
+  const refillStop = new AbortController();
+  await assert.rejects(run({ ...runs, refill, signal: refillStop.signal,
+    onProgress: event => { if (event.result === 'queue_full') refillStop.abort(); } }), { name: 'AbortError' });
+  assert.deepEqual(held, ['host_capacity', 'served_engine', 'clearance_budget', 'ready_stock']);
+  const [saved] = await reader.unsafe("SELECT admitted,processed FROM state_compute_order_imports WHERE id='refill'");
+  assert.deepEqual([Number(saved.admitted), Number(saved.processed)], [1, 1]);
+  await writer.unsafe(`UPDATE state_compute_scheduling s SET state='withdrawn' FROM record_compute_order_import_batches r
+    WHERE r.import_id='refill' AND s.task_id=ANY(r.task_ids)`);
+  const restart = { ...orderRefill({ ...settings, capacity: () => true, release: () => ({ engine }),
+    demand: () => goodSnapshot, delay: () => assert.fail('refill should resume below both limits') }), inputSha, cut };
+  const resumed = await run({ ...runs, refill: restart });
+  assert.deepEqual([resumed.result, resumed.processed, resumed.admitted], ['complete', 2, 2]);
+  console.log('  ok  low-ready refill, release and host holds, atomic high cap and resume from the same source');
   console.log('  ok  sealed input, lost reply, pause and resume, queue cap, coverage rollback, lock retry, duplicate replay, concurrent runners and Native gaps');
 } finally {
   await Promise.all([reader.end(), peerReader.end(), peerWriter.end()]);

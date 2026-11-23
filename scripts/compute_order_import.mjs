@@ -107,7 +107,7 @@ async function admitPage(writer, reader, page, signal, retryRollbacks) {
 
 export async function importComputeOrders({ writer, reader, path, id, target, engine, maxOpen,
   rows = 256, signal, waitMs = 0, maxBatches = Infinity, retryRollbacks = true,
-  adapters = new Map(), onProgress = () => {} }) {
+  adapters = new Map(), refill, onProgress = () => {} }) {
   if (writer === reader || typeof id !== 'string' || !id.trim() || !/^[0-9a-f]{12,64}$/.test(engine || '') ||
       ![target, maxOpen, rows].every(integer) || rows > COMPUTE_ORDER_IMPORT_ROWS ||
       (maxBatches !== Infinity && !integer(maxBatches)))
@@ -130,6 +130,12 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
     await checkFile();
     const inputSha = hash.digest('hex'), inputBytes = Number(original.size);
     const [{ cut }] = await reader.unsafe("SELECT coalesce(compute_order_cut_epoch(),'') cut");
+    if (refill && (refill.inputSha !== inputSha || refill.cut !== cut))
+      throw Error('order refill input or cut differs from the approved source');
+    if (refill && !(await readState(reader, id)).length) {
+      await refill.wait({ cut, engine, signal });
+      await checkFile();
+    }
     await writer.unsafe(`INSERT INTO state_compute_order_imports(id,input_sha,input_bytes,engine,cut,target)
       VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT DO NOTHING`, [id, inputSha, inputBytes, engine, cut, target]);
     const [run] = await readState(reader, id);
@@ -170,10 +176,15 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
         const page = { id, first: next, last, orderCount: orders.length, cut, maxOpen, adapter, prepared };
         let attempt;
         do {
+          if (refill) {
+            await refill.wait({ cut, engine, signal });
+            await checkFile();
+          }
           attempt = await admitPage(writer, reader, page, signal, retryRollbacks);
-          if (attempt.result !== 'queue_full' || !waitMs) break;
+          if (!waitMs || (attempt.result !== 'queue_full' && !(refill && attempt.result === 'rolled_back'))) break;
+          refill?.observe(attempt);
           onProgress(status(attempt.result));
-          await setTimeout(waitMs, undefined, { signal });
+          await setTimeout(refill && attempt.result === 'queue_full' ? refill.pollMs : waitMs, undefined, { signal });
           await checkFile();
         } while (true);
         if (attempt.result !== 'committed') return status(attempt.result);
@@ -194,10 +205,12 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   const { positionals: [operation, id, path, extra], values } = parseArgs({ allowPositionals: true,
     options: { target: { type: 'string' }, engine: { type: 'string' }, 'max-open': { type: 'string' },
-      rows: { type: 'string' }, batches: { type: 'string' }, once: { type: 'boolean' } } });
+      rows: { type: 'string' }, batches: { type: 'string' }, once: { type: 'boolean' },
+      'refill-config': { type: 'string' } } });
   const url = process.env.WFSIM_COMPUTE_ORDER_DATABASE_URL;
-  if (!url || !id || extra || !['run', 'status', 'pause', 'resume'].includes(operation) || (operation === 'run') !== !!path)
-    throw Error('usage: compute_order_import.mjs run ID FILE --target=N --engine=ID --max-open=N [--rows=N] [--batches=N], or status|pause|resume ID');
+  if (!url || !id || extra || !['run', 'status', 'pause', 'resume'].includes(operation) || (operation === 'run') !== !!path
+      || (values['refill-config'] && (operation !== 'run' || values.once)))
+    throw Error('usage: compute_order_import.mjs run ID FILE --target=N --engine=ID --max-open=N [--rows=N] [--batches=N] [--refill-config=FILE], or status|pause|resume ID');
   const { default: postgres } = await import('./pg/node_modules/postgres/src/index.js');
   const connect = name => postgres(url, { max: 1, fetch_types: false,
     connection: { application_name: name, statement_timeout: 15_000, lock_timeout: 500, jit: 'off' } });
@@ -207,12 +220,14 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   try {
     if (operation === 'run') {
       const { boardCoverageOrderAdapter } = await import('./board_coverage_orders.mjs');
+      const config = values['refill-config'];
+      const refill = config ? await (await import('./compute_order_refill.mjs')).openOrderRefill(reader, config, Number(values['max-open'])) : null;
       const result = await importComputeOrders({ writer, reader, path, id, engine: values.engine, target: Number(values.target),
         maxOpen: Number(values['max-open']), rows: values.rows === undefined ? undefined : Number(values.rows),
         maxBatches: values.batches === undefined ? undefined : Number(values.batches), signal: controller.signal,
-        waitMs: values.once ? 0 : 8000, retryRollbacks: !values.once,
+        waitMs: refill ? 500 : values.once ? 0 : 8000, retryRollbacks: !values.once && !refill,
         adapters: new Map([['board_coverage', boardCoverageOrderAdapter]]),
-        onProgress: event => console.error(JSON.stringify(event)) });
+        refill, onProgress: event => console.error(JSON.stringify(event)) });
       console.log(JSON.stringify(result));
     } else {
       const [state] = operation === 'status' ? await readState(reader, id) : await writer.unsafe(
@@ -220,5 +235,7 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
       if (!state) throw Error('unknown compute order import');
       console.log(JSON.stringify(state));
     }
+  } catch (error) {
+    if (!values['refill-config'] || !controller.signal.aborted || error.name !== 'AbortError') throw error;
   } finally { await Promise.all([writer.end(), reader.end()]); }
 }

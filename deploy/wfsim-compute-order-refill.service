@@ -1,0 +1,24 @@
+[Unit]
+Description=WFSim compute order refill
+After=network-online.target postgresql.service
+Wants=network-online.target
+RequiresMountsFor=/srv/wfsim-data
+ConditionPathExists=/etc/wfsim-compute-order-refill.json
+
+[Service]
+User=postgres
+WorkingDirectory=/opt/wfsim-compute-order-refill
+EnvironmentFile=/etc/wfsim-compute-order-refill.env
+ExecStart=/usr/local/bin/node scripts/compute_order_import.mjs run ${ORDER_IMPORT_ID} ${ORDER_IMPORT_FILE} --target=${ORDER_IMPORT_TARGET} --engine=${ORDER_IMPORT_ENGINE} --max-open=${ORDER_IMPORT_MAX_OPEN} --rows=${ORDER_IMPORT_ROWS} --refill-config=/etc/wfsim-compute-order-refill.json
+Nice=10
+CPUWeight=25
+IOSchedulingClass=idle
+NoNewPrivileges=true
+ProtectSystem=strict
+PrivateTmp=true
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
