@@ -15,7 +15,7 @@ const {default:postgres}=await import('./pg/node_modules/postgres/src/index.js')
 const schema='order_cut_'+randomBytes(6).toString('hex');
 const options={max:5,fetch_types:false,onnotice(){},connection:{search_path:schema,statement_timeout:15000},
   types:{bigint:{to:20,from:[20,1700],parse:Number,serialize:String}}};
-const sql=postgres(url,options),ddl=['schema','library','sync','inventory','build_workflows','board_admission']
+const sql=postgres(url,options),ddl=['schema','library','sync','inventory','build_workflows','board_admission','build_inbox_storage']
   .map(name=>readFileSync(new URL(`../worker/pg/${name}.sql`,import.meta.url),'utf8')).join('\n');
 const client=postgresClient(sql),db=Object.assign(pgDb(client),{
   exec:text=>sql.unsafe(text),run:async(text,...args)=>(await client.query(placeholders(text),args)).affected,
@@ -138,13 +138,19 @@ try {
   const planNodes=node=>[node,...(node.Plans??[]).flatMap(planNodes)];
   const tailNodes=planNodes(tailPlan['QUERY PLAN'][0].Plan);
   assert(tailNodes.some(n=>n['Index Name']==='entity_compute_tasks_pkey'&&/id >.*100000/.test(n['Index Cond']??'')));
+  assert(tailNodes.some(n=>n.Alias==='g'&&n['Index Name']==='state_compute_scheduling_pkey'&&/id = t.computation/.test(n['Index Cond']??'')));
   assert(!tailNodes.some(n=>n['Relation Name']==='state_compute_scheduling'&&n['Node Type']==='Seq Scan'));
   console.log('ok post-cut dispatch plans the real cutoff and probes scheduling by task identity');
   await db.exec(`INSERT INTO entity_compute_specs(id,verb,request) VALUES ('post-cut-dispatch','simulate','{}');
     INSERT INTO entity_compute_tasks(id,computation,generation,created_at,reason) OVERRIDING SYSTEM VALUE
-      VALUES (100001,'post-cut-dispatch',1,'2026-11-17','request');
+      VALUES (100001,'post-cut-dispatch',1,'2026-11-17','request'),
+        (100002,'post-cut-dispatch',2,'2026-11-17','request');
     INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,producer,zone,zone_position)
       VALUES ('post-cut-dispatch','simulate',100001,'open','2026-11-17','2026-11-17','post-cut-fixture',3,100001)`);
+  const match=await db.all(`SELECT id,task_id FROM factory_candidates(?::text,0,1,'e','["w"]','w','n',NULL,600,0,
+    '["open"]',NULL,8,NULL,NULL,'post-cut-fixture',false)`,args[0]);
+  assert.deepEqual(match,[{id:'post-cut-dispatch',task_id:100001}]);
+  console.log('ok dispatch ignores a later round whose task identity differs from scheduling');
   const postCutLease=await db.all(`SELECT id FROM factory_lease_pack_zoned(?::text,1,'e','["w"]','w','n',NULL,600,0,
     '["simulate"]',NULL,NULL,'post-cut-fixture',1,'post-cut-lease','2026-11-18','w',1)`,args[0]);
   assert.deepEqual(postCutLease.map(row=>row.id),['post-cut-dispatch']);
