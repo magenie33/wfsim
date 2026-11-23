@@ -6,6 +6,7 @@ import { seedComputeWork, replaceComputeResult } from "./pg/fixtures.mjs";
 // only just opened or went away is none of them; the watchdog writes each kind
 // down in Chinese, once a round, listing all of its devices.
 import { testDb } from "./pg/test_db.mjs";
+import { readFileSync } from "node:fs";
 import { idleFindings, loopAsksPerHour } from "../worker/idle_devices.js";
 import { watchdog } from "../worker/factory.js";
 import { watchdogText } from "../worker/watchdog_say.js";
@@ -220,6 +221,49 @@ console.log("\nlegacy redelivery advances without an unbounded history scan");
   }
   check("a missing cursor recovers a recent legacy fact through bounded windows", bounded && !skipped
     && delivered.length === 1 && delivered[0] === "cold" && passes > 1, JSON.stringify({ delivered, passes, through: iso(through) }));
+}
+
+{
+  const db = await testDb("library");
+  const indexes = readFileSync(new URL("../worker/pg/order_cut_indexes.sql", import.meta.url), "utf8");
+  await db.exec(indexes.replaceAll("INDEX CONCURRENTLY", "INDEX"));
+  await db.exec(`CREATE TABLE usage_fixture(producer text,task bigint,position bigint,used float8);
+    INSERT INTO usage_fixture VALUES ('prefix',1,1,30),('protected',2,20,20),
+      ('cancelled-old',3,21,2),('inactive-old',4,22,1),('recent',5,40,40),('cancelled-new',6,41,3),('idle',NULL,NULL,10);
+    INSERT INTO entity_compute_specs(id,verb,request)
+      SELECT producer,'simulate','{}' FROM usage_fixture WHERE task IS NOT NULL;
+    INSERT INTO entity_compute_tasks(id,computation,generation,created_at,reason)
+      SELECT task,producer,1,'2026-01-01','request' FROM usage_fixture WHERE task IS NOT NULL;
+    INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,zone,zone_position,producer)
+      SELECT producer,'simulate',task,'open','2026-01-01','2026-01-01',3,position,producer
+      FROM usage_fixture WHERE task IS NOT NULL;
+    SELECT compute_order_cut_stage('{"id":"usage","cut_at":"2026-11-16","task_cutoff":4,"keep_boundary":[3,10,"x"],"source":{}}');
+    SELECT compute_order_cut_protect('usage','["cancelled-old","protected"]');
+    SELECT compute_order_cut_capture('usage');
+    SELECT compute_order_cut_activate('usage',2,
+      encode(sha256(convert_to(E'cancelled-old\\nprotected','utf8')),'hex'));
+    INSERT INTO record_compute_order_cancellations(question,task_id,cut_id,at)
+      SELECT producer,task,'usage','2026-11-23' FROM usage_fixture WHERE producer LIKE 'cancelled-%';
+    INSERT INTO state_producer_compute_usage(producer,used) SELECT producer,used FROM usage_fixture;`);
+  const f = factory({ verbs: {}, producers: {} });
+  const usage = () => db.all("SELECT producer,used FROM state_producer_compute_usage ORDER BY producer");
+  await f.liftIdle({LIBRARY:db});
+  const fallback = await usage();
+  await db.exec(`UPDATE state_producer_compute_usage u SET used=f.used FROM usage_fixture f WHERE f.producer=u.producer;
+    CREATE INDEX compute_scheduling_stock_epoch_zone ON state_compute_scheduling
+      ((coalesce(zone,factory_default_zone(producer))::numeric),coalesce(zone_position,task_id),id)
+      WHERE state='open' AND task_id>4;`);
+  let paged = false;
+  await f.liftIdle({LIBRARY:{...db,prepare(sql) {
+    if (sql.startsWith("WITH RECURSIVE")) paged = true;
+    return db.prepare(sql);
+  }}});
+  const indexed = await usage();
+  check("the idle floor preserves the active prefix, protected and recent producers while lifting only idle producers",
+    paged && JSON.stringify(indexed)===JSON.stringify(fallback)
+      && indexed.every(({ producer,used }) => used === (producer==="prefix"?30:producer==="recent"?40:20)),
+    JSON.stringify(indexed));
+  await db.close();
 }
 
 console.log(failures ? `\n${failures} failed` : "\nan idle computer is found by what the server keeps, and said once");
