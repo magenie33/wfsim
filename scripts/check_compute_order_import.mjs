@@ -10,7 +10,7 @@ import { boardCoverageSchemaSql } from './board_coverage_schema.mjs';
 import { boardCoverageOrderAdapter } from './board_coverage_orders.mjs';
 import { boardCoverageGaps } from './board_coverage_gaps.mjs';
 import { importComputeOrders } from './compute_order_import.mjs';
-import { orderRefill, readyOrderStock } from './compute_order_refill.mjs';
+import { belowReadyOrderStock, orderRefill } from './compute_order_refill.mjs';
 import { computeOrderImportSchema } from './compute_order_import_schema.mjs';
 import { computationId } from '../worker/computation_input.js';
 import { queueOrders, queueZonesSql } from '../worker/queue_counts.js';
@@ -205,15 +205,23 @@ try {
     lease_until=CASE WHEN id=$5 THEN $6 ELSE lease_until END
     WHERE id IN ($2,$3,$4,$5)`,
   [engine, ...stock.map(({ id }) => id), new Date(tick + 60000).toISOString()]);
-  assert.equal(await readyOrderStock(reader, engine, 2, tick), 1);
+  assert.equal(await belowReadyOrderStock(reader, engine, maxOpen, tick), true);
+  assert.equal(await belowReadyOrderStock(reader, engine, 2, tick), true);
+  assert.equal(await belowReadyOrderStock(reader, engine, 1, tick), false);
+  await writer.unsafe(`INSERT INTO record_compute_order_cancellations
+    SELECT s.id,s.task_id,c.id,$2 FROM state_compute_scheduling s
+    CROSS JOIN compute_order_cut() c WHERE s.id=$1`, [stock[0].id, now]);
+  assert.equal(await belowReadyOrderStock(reader, engine, 1, tick), true);
+  await writer.unsafe('DELETE FROM record_compute_order_cancellations WHERE question=$1', [stock[0].id]);
 
   const path = file('refill', [demand('refill-a', 501), demand('refill-b', 502)]);
   const inputSha = createHash('sha256').update(readFileSync(path)).digest('hex');
   const settings = { low: 1, maxHours: 2, now: () => tick,
-    stock: (current, limit) => readyOrderStock(reader, current, limit, tick) };
+    stock: (current, limit) => belowReadyOrderStock(reader, current, limit, tick) };
   const goodSnapshot = { ok: true, counts_at: now, order_epoch: cut, clear_hours: 1 };
   const runs = { path, id: 'refill', target: 2, rows: 1, maxOpen, waitMs: 1 };
   await assert.rejects(run({ ...runs, refill: { inputSha, cut: 'different' } }), /approved source/);
+  await assert.rejects(run({ ...runs, refill: { inputSha: '0'.repeat(64), cut } }), /approved source/);
   assert.equal((await reader.unsafe("SELECT id FROM state_compute_order_imports WHERE id='refill'")).length, 0);
   let hasRoom = false, served = otherEngine, snapshot = { ...goodSnapshot, counts_at: at };
   const held = [];

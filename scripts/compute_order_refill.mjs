@@ -8,24 +8,45 @@ import { queueZonesSql } from '../worker/queue_counts.js';
 const POLL_MS = 10_000;
 const DEMAND_MAX_AGE = 120_000;
 const positive = n => Number.isSafeInteger(n) && n > 0;
+const zone = 'coalesce(s.zone,factory_default_zone(s.producer))';
 
-// Count only enough broadly executable work to decide the low watermark.
-export async function readyOrderStock(reader, engine, limit, now = Date.now()) {
+// The exact total can prove the low mark without walking historical tasks.
+// Otherwise the zone index gives a bounded set of keys to check individually.
+export const REFILL_STOCK_SQL = `WITH balance AS MATERIALIZED (${queueZonesSql}),
+  zones AS MATERIALIZED (
+    SELECT (v->>0)::smallint zone,(v->>1)::bigint n
+    FROM balance CROSS JOIN LATERAL jsonb_array_elements(zones) v
+  ), size AS MATERIALIZED (
+    SELECT coalesce(sum(z.n),0)::bigint AS open FROM balance LEFT JOIN zones z ON true
+    GROUP BY balance.order_epoch HAVING coalesce(min(z.n),1)>0
+  ), candidates AS MATERIALIZED (
+    SELECT candidate.* FROM zones z CROSS JOIN LATERAL (
+      SELECT s.id,s.task_id,s.waits,s.lease_until,s.required_engine,s.required_capability,s.lanes,s.verb
+      FROM state_compute_scheduling s WHERE s.state='open' AND ${zone}=z.zone
+      ORDER BY ${zone} DESC,coalesce(s.zone_position,s.task_id) DESC,s.id DESC
+      LIMIT least(z.n+16,greatest(128,$3::bigint+16))
+    ) candidate
+  ), measured AS (
+    SELECT count(*) AS live,count(*) FILTER(WHERE c.waits=0
+      AND (c.lease_until IS NULL OR c.lease_until<$1)
+      AND (c.required_engine IS NULL OR c.required_engine=$2)
+      AND (c.required_capability IS NULL OR c.required_capability='fixed-board-input-v1')
+      AND c.lanes IS NULL AND c.verb IN ('simulate','optimize')) AS ready
+    FROM candidates c
+    WHERE EXISTS(SELECT 1 FROM state_compute_effective_open q WHERE q.id=c.id AND q.task_id=c.task_id OFFSET 0)
+      AND NOT EXISTS(SELECT 1 FROM record_compute_order_cancellations r
+        WHERE r.cut_id=(SELECT id FROM compute_order_cut()) AND r.question=c.id AND r.task_id=c.task_id)
+  )
+  SELECT CASE WHEN size.open<$3 THEN true ELSE (
+    SELECT CASE WHEN measured.ready>=$3 THEN false WHEN measured.live=size.open THEN true END FROM measured
+  ) END AS below FROM size`;
+
+export async function belowReadyOrderStock(reader, engine, limit, now = Date.now()) {
   if (!positive(limit)) throw Error('a positive ready order limit is required');
   return reader.begin(async tx => {
     await tx.unsafe("SET TRANSACTION READ ONLY; SET LOCAL statement_timeout='2s'; SET LOCAL jit=off");
-    const [sample] = await tx.unsafe(`WITH balance AS MATERIALIZED (${queueZonesSql})
-    SELECT CASE WHEN zones='[]'::jsonb THEN 0 ELSE (SELECT count(*)::int FROM (
-      SELECT 1 FROM state_compute_effective_open q
-      WHERE q.waits=0 AND (q.lease_until IS NULL OR q.lease_until<$1)
-        AND (q.required_engine IS NULL OR q.required_engine=$2)
-        AND (q.required_capability IS NULL OR q.required_capability='fixed-board-input-v1') AND q.lanes IS NULL
-        AND q.verb IN ('simulate','optimize')
-        AND NOT EXISTS(SELECT 1 FROM record_compute_order_cancellations r
-          WHERE r.cut_id=(SELECT id FROM compute_order_cut()) AND r.question=q.id AND r.task_id=q.task_id)
-      LIMIT $3
-    ) stock) END AS ready FROM balance`, [iso(now), engine, limit]);
-    return sample?.ready ?? null;
+    const [sample] = await tx.unsafe(REFILL_STOCK_SQL, [iso(now), engine, limit]);
+    return sample?.below ?? null;
   });
 }
 
@@ -54,9 +75,9 @@ export function orderRefill({ low, maxHours, stock, capacity, release, demand,
           continue;
         }
         if (!filling) {
-          const ready = await stock(engine, low);
-          if (!Number.isSafeInteger(ready) || ready < 0) { await hold('ready_stock_unavailable', signal); continue; }
-          if (ready >= low) { await hold('ready_stock', signal); continue; }
+          const below = await stock(engine, low);
+          if (below === false) { await hold('ready_stock', signal); continue; }
+          if (below !== true) { await hold('ready_stock_unavailable', signal); continue; }
           filling = true;
         }
         lastHold = undefined;
@@ -127,7 +148,7 @@ export async function openOrderRefill(reader, config, maxOpen) {
   };
   const refill = orderRefill({ low: cfg.ready_below, maxHours: cfg.max_clear_hours, capacity,
     stock: async (engine, limit) => {
-      try { return await readyOrderStock(reader, engine, limit); }
+      try { return await belowReadyOrderStock(reader, engine, limit); }
       catch (error) { if (error.code === '57014') return null; throw error; }
     },
     release: publicSnapshot('https://wfsim.app/release.json'),
