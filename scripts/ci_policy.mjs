@@ -69,6 +69,7 @@ const NON_SEARCH_TOOLS = [...NATIVE_NON_SEARCH_INPUTS, 'scripts/check_weapon_sea
   'scripts/capacity_directory_bytes.mjs', 'scripts/check_capacity_walk.mjs',
   'scripts/check_official_claims.mjs', 'scripts/check_pipeline_clock.mjs', 'scripts/check_task_pipeline.mjs',
   'scripts/check_order_cut.mjs', 'scripts/check_order_cut_pg.mjs', 'scripts/check_order_cut_reads.mjs', 'scripts/check_order_cut_keyed.mjs',
+  'scripts/check_compute_order_lease_pg.mjs',
   'scripts/check_inventory_inputs_keyed.mjs', 'tests/fixtures/inventory-inputs-keyed/broad-inputs.sql',
   'scripts/board_input_mailbox.mjs', 'scripts/board_result_flow.mjs', 'scripts/board_result_browser.mjs', 'scripts/board_read_schema.mjs',
   'scripts/board_rank_index.mjs', 'scripts/board_rank_baseline.mjs', 'scripts/board_rank_files.mjs', 'scripts/board_rank_flow.mjs',

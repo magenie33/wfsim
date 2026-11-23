@@ -1007,6 +1007,9 @@ Install and verify `worker/pg/order_cut_indexes.sql` separately before activatio
 Its two online index builds read the existing heaps; they never run in worker
 startup, the additive function upgrade or activation.
 
+Pack writes recheck lease availability on the target row so a stale candidate
+cannot supersede a valid lease before its ceiling.
+
 Stage precedes the fresh protection snapshot. `compute_order_cut_protect(text,
 jsonb)` imports the audited historical and required-parent ids, and
 `compute_order_cut_capture(text)` adds indexed execution, previous-credential,

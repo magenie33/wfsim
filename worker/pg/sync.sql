@@ -290,6 +290,7 @@ RETURNS TABLE (id text, verb text, request text, due_at text, producer text, zon
       q.leased_to_prev, q.lease_prev_until, q.lease, q.leased_to, q.lease_until, $1)),
     lease = $15, lease_until = $16, leased_to = $17, leased_at = $1
   WHERE q.id IN (SELECT factory_take($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14))
+    AND factory_takeable(q.lease_until,q.leased_at,$1,$9)
     AND (SELECT count(DISTINCT h.lease) FROM state_compute_work h WHERE h.leased_to = $17 AND h.lease_until > $1 AND h.lease <> $15) < $18
   RETURNING q.id, q.verb, q.request, q.due_at, q.producer, q.zone, q.zone_position
 $$;
