@@ -988,6 +988,13 @@ impl FightParams {
         }
     }
 
+    pub(super) fn direct_crit_chance(&self, relative: f64, flat: f64) -> f64 {
+        self.critical_inputs.map_or_else(
+            || self.base_crit_chance + self.unmodded_crit_chance * relative + flat,
+            |inputs| inputs.chance(relative, flat),
+        )
+    }
+
     pub fn from_panel(
         panel: &crate::build::loadout::ResolvedPanel,
         arena: &crate::arena::Arena,
@@ -998,6 +1005,8 @@ impl FightParams {
         // (diluted by Serration, and it reaches status payloads through
         // ModifiedBase); `multiplies` is a final multiplier on the instance
         // that an adding CO's term does not see (`scale::beside_adding_co`).
+        let additional_projectile = panel.additional_projectile.as_ref()
+            .map(|p| Box::new(Self::from_panel(p, arena, arcane)));
         let melee_heavy = panel.melee_heavy.as_ref().map(|p| Box::new(Self::from_panel(p, arena, arcane)));
         let melee_profiles = panel.melee_profiles.iter().map(|(id, p)|
             (id.clone(), Self::from_panel(p, arena, arcane))).collect();
@@ -1200,6 +1209,7 @@ impl FightParams {
             per_hit_element: panel.per_hit_element.clone(),
             adaptive_element: panel.adaptive_element.clone(),
             radial: compressed_radial,
+            additional_projectile,
             cluster: panel.cluster,
             reload_grenade: panel.reload_grenade,
             reload_cold_radius_per_round_m: panel.reload_cold_radius_per_round_m,

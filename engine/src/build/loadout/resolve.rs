@@ -38,6 +38,9 @@ pub fn resolve_for(
     policy: StackPolicy,
     tenno: &crate::data::tenno::Tenno,
 ) -> ResolvedPanel {
+    let additional_projectile = base.additional_projectile.as_ref().map(|additional| {
+        Box::new(resolve_for(additional, mods, policy, tenno))
+    });
     // A GATED FLAT BASE-DAMAGE ADD IS A CHANGE TO THE WEAPON, folded BEFORE
     // anything reads the panel: Haven Foray's "With Overshields: Increase Base
     // Damage by +40" makes the same weapon a plain "+40" would. The only gated
@@ -1716,6 +1719,7 @@ pub fn resolve_for(
             } else { selected }
     };
     ResolvedPanel {
+        additional_projectile,
         heavy_damage_mods_apply: base.heavy_damage_mods_apply,
         combo_damage_applies: base.combo_damage_applies,
         wait_for_lingering: base.wait_for_lingering,

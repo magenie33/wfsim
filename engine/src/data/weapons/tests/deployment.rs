@@ -106,15 +106,11 @@ fn every_stated_column_is_in_the_band_the_game_uses() {
         let ground: f64 = w.attack.damage.values().sum();
         assert!(space > 0.0, "{}: a stated column with no damage in it", w.id);
         let r = ground / space;
-        // THE OBSERVED RANGE, after reading all twenty pages: 1.000 (Corvas
-        // Prime, whose two tabs are identical) through 1.489 (Kuva
-        // Grattler) and 1.5 (Grattler, Mausolon) up to 2.071 (Phaedra).
-        // The invariant worth asserting is only the DIRECTION — a ground
-        // column is never weaker than its Archwing one — plus a ceiling
-        // that a dropped digit or a factor of ten cannot pass.
+        // The direction catches swapped columns. The ceiling accounts for
+        // the Kuva Grattler native pair, 140 in atmosphere and 50 in Archwing.
         assert!(
-            (1.0..=2.5).contains(&r),
-            "{}: ground is x{r:.3} of Archwing ({ground} against {space}).                  Under 1.0 means the two tabs are swapped; over 2.5 is a                  transcription slip. The game's observed range is 1.000-2.071.",
+            (1.0..=2.8).contains(&r),
+            "{}: ground is x{r:.3} of Archwing ({ground} against {space}).",
             w.id
         );
         seen += 1;

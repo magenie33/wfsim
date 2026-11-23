@@ -14,6 +14,7 @@ pub(super) struct Resolved {
     pub(super) flat_crit: f64,
     pub(super) crit_chance_relative: f64,
     pub(super) effective_cc: f64,
+    pub(super) direct_flat_crit: f64,
     pub(super) undamaged: bool,
     pub(super) weakpoint_cd: f64,
     pub(super) weakpoint_sc: f64,
@@ -54,7 +55,7 @@ pub(super) struct Rounds {
 #[wfsim_gas_macro::metered]
 impl Rounds {
     /// More rounds than any weapon has (the roster's most is 28).
-    const MAX: usize = 32;
+    pub(super) const MAX: usize = 32;
 
     /// `rounds` rounds sharing `multishot` between them, each rolling its own.
     pub(super) fn roll(rounds: u32, multishot: f64, rng: &mut crate::rules::rng::Rng) -> Self {
@@ -85,6 +86,22 @@ impl Rounds {
     /// to the shot and every instance is its own round.
     pub(super) fn per_round(&self, instances: u32) -> f64 {
         if self.total() == instances { self.each } else { 1.0 }
+    }
+
+    pub(super) fn has_additional(&self, instances: u32) -> bool {
+        self.total() == instances && self.copies[..self.n].iter().any(|&c| c > 1)
+    }
+
+    /// Native resource selection emits the ordinary iterations before the extras.
+    /// A copy still uses its underlying round aim.
+    pub(super) fn ordinary_first(&self) -> impl Iterator<Item = (usize, bool)> + '_ {
+        let copies = &self.copies[..self.n];
+        let ordinary = copies.iter().enumerate().filter(|&(_, &c)| c != 0)
+            .map(|(round, _)| (round, false));
+        let additional = copies.iter().enumerate().flat_map(|(round, &c)| {
+            (1..c).map(move |_| (round, true))
+        });
+        ordinary.chain(additional)
     }
 
     /// For each instance in firing order: does it ride the round before it?
@@ -355,10 +372,7 @@ pub(super) fn resolve_the_shot(
         };
         let direct_flat_crit = flat_crit + weakened_cc + derived_cc
             + if undamaged { active.crit_chance_on_undamaged } else { 0.0 };
-        let effective_cc = active.critical_inputs.map_or_else(
-            || active.base_crit_chance + active.unmodded_crit_chance * crit_chance_relative + direct_flat_crit,
-            |inputs| inputs.chance(crit_chance_relative, direct_flat_crit),
-        );
+        let effective_cc = active.direct_crit_chance(crit_chance_relative, direct_flat_crit);
 
         // Live fire rate (base + Pressurized Magazine's on-reload buff, ×
         // the BuffBar multiplier) — schedules shots below and gates
@@ -592,6 +606,7 @@ pub(super) fn resolve_the_shot(
         flat_crit,
         crit_chance_relative,
         effective_cc,
+        direct_flat_crit,
         undamaged,
         weakpoint_cd,
         weakpoint_sc,

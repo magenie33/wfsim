@@ -57,6 +57,7 @@ mod perks_and_cards;
 mod precombat_list;
 mod pools_columns_record;
 mod projectile_flight;
+mod projectile_variants;
 mod radials_roster_targets;
 mod reload_grenade;
 mod reload_cold;
@@ -85,6 +86,7 @@ impl Default for FightParams {
     /// the engine.
     fn default() -> Self {
         Self {
+            additional_projectile: None,
             critical_inputs: None,
             weakness_bonus: None,
             heavy_damage_mods_apply: true,

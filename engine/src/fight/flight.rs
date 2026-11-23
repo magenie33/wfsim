@@ -53,6 +53,9 @@ pub(super) struct Landing {
     /// that lands while it flies does not lengthen it.
     pub(super) pierce_live_m: f64,
     pub(super) effective_cc: f64,
+    pub(super) direct_flat_crit: f64,
+    pub(super) frenzy_down: bool,
+    pub(super) piled_element_count: u32,
     pub(super) crit_chance_relative: f64,
     pub(super) flat_crit: f64,
     pub(super) cc_mult: f64,
@@ -99,6 +102,19 @@ impl Landing {
         else { active };
         self.profile.as_ref().map_or(active, |id| active.melee_profiles.get(id).expect("melee event needs its attack profile"))
     }
+}
+
+#[wfsim_gas_macro::metered]
+fn additional_projectile_damage(projectile: &FightParams, landing: &Landing) -> DamageVector {
+    if let Some(index) = landing.piled_element_count.checked_sub(1) {
+        if let Some(pile) = &projectile.per_hit_element {
+            return pile.damage[index as usize];
+        }
+    }
+    if let Some(resting) = projectile.resting.as_ref().filter(|_| landing.frenzy_down) {
+        return resting.damage;
+    }
+    projectile.damage
 }
 
 /// THE EARLIEST SHOT STILL IN THE AIR that arrives inside the engagement and no
@@ -189,6 +205,8 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         let shot = Strike {
             radial_only: l.radial_only,
             skip_radial: radial_delay > 0.0,
+            ordinary_projectile_count: active.additional_projectile.as_ref()
+                .map(|_| active.base_multishot as u32),
             round_multishot: l.rounds.per_round(l.n_pellets),
             seat: me.seat,
             active,
@@ -270,12 +288,41 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             super_crit_armed: &mut me.super_crit_armed,
             round_aim: &mut round_aim,
         };
-        for (pellet_idx, follows) in (0..l.n_pellets).zip(l.rounds.follows(l.n_pellets)) {
-            if l.radial_only {
-                *live.round_aim = l.pellet_aims[pellet_idx as usize];
+        if let Some(additional) = active.additional_projectile.as_deref()
+            .filter(|_| l.rounds.has_additional(l.n_pellets))
+        {
+            let damage = additional_projectile_damage(additional, l);
+            let modded_base = additional.dot_modified_base.unwrap_or_else(|| damage.total());
+            let qvec = damage.quantized_against(modded_base);
+            let extra = Strike {
+                active: additional,
+                qvec: &qvec,
+                direct_pre_snap: damage,
+                modded_base,
+                co_base: additional.co_base,
+                effective_cc: additional.direct_crit_chance(l.crit_chance_relative, l.direct_flat_crit),
+                ..shot
+            };
+            let mut aims = [RoundAim::default(); super::resolve::Rounds::MAX];
+            for (pellet_idx, (round, follows)) in (0..l.n_pellets).zip(l.rounds.ordinary_first()) {
+                if l.radial_only {
+                    *live.round_aim = l.pellet_aims[pellet_idx as usize];
+                } else if follows {
+                    *live.round_aim = aims[round];
+                }
+                let projectile = if follows { &extra } else { &shot };
+                settle_pellet(pellet_idx, follows || l.radial_only, projectile, &mut live);
+                if !follows { aims[round] = *live.round_aim; }
+                if radial_delay > 0.0 { pellet_aims.push(*live.round_aim); }
             }
-            settle_pellet(pellet_idx, follows || l.radial_only, &shot, &mut live);
-            if radial_delay > 0.0 { pellet_aims.push(*live.round_aim); }
+        } else {
+            for (pellet_idx, follows) in (0..l.n_pellets).zip(l.rounds.follows(l.n_pellets)) {
+                if l.radial_only {
+                    *live.round_aim = l.pellet_aims[pellet_idx as usize];
+                }
+                settle_pellet(pellet_idx, follows || l.radial_only, &shot, &mut live);
+                if radial_delay > 0.0 { pellet_aims.push(*live.round_aim); }
+            }
         }
     }
     if radial_delay > 0.0 {

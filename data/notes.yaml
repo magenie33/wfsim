@@ -9,6 +9,9 @@
 # an entry from being orphaned.
 
 notes:
+  client_additional_projectiles: |
+    Matching client Packages.bin projectile resources and native multishot selector controls.
+    See docs/DATA_SOURCES.md, Additional multishot projectiles.
   client_secondary_calibration: |
     scripts/import_secondary_calibration.py binds every secondary form to its
     native behavior and selected damage component. Exact source hashes,

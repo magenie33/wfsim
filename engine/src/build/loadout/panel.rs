@@ -340,6 +340,7 @@ impl ResolvedRadial {
 /// The resolved panel: everything the dummy sim needs from layers [1]+[2].
 #[derive(Debug, Clone)]
 pub struct ResolvedPanel {
+    pub(crate) additional_projectile: Option<Box<ResolvedPanel>>,
     /// Authoritative pending queries; numeric crit fields are display or supplied-fixture projections.
     pub critical_inputs: Option<crate::rules::critical::CriticalInputs>,
     pub weakness_bonus: Option<f64>,

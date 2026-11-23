@@ -6,24 +6,15 @@ class: archgun
 form: base
 default_form: true
 
-# TWO COLUMNS. This one is x1.5 rather than x2 — the impact goes 150 -> 225 and
-# the explosion 205 -> 310, which is x1.512 and NOT the same ratio as its own
-# direct part. Two attack parts of one weapon scaling by two different numbers
-# is the clearest case in the roster for transcribing both tabs.
-#
-#   |            | impact | explosion | reload | Ammo Max |
-#   | Atmosphere |  225   |    310    | 2.00 s |   180    |
-#   | Archwing   |  150   |    205    | 4.00 s |     0    |
-#
-# Identical in both: crit 25% / 2.00x, status 25%, fire rate 6.25, magazine 30,
-# blast radius 9.0 m and its falloff, projectile speed 250 m/s.
 deployment: atmosphere
 deployments:
   archwing:
     reload_seconds: 4.0
     no_resupply: false
-    damage: { impact: 15.0, puncture: 120.0, slash: 15.0 }   # 150 total
-    radial_damage: { blast: 205.0 }
+    # see notes: client_additional_projectiles
+    additional_projectile:
+      damage: { impact: 10.0, puncture: 80.0, slash: 10.0 }
+      radial_damage: { blast: 205.0 }
 mod_pools: [archgun]
 mastery_rank: 4
 max_rank: 30
@@ -84,10 +75,10 @@ attack:
     effectiveness: 0.00
     stacking: multiplies
     radius_calculation: doesnt_work
-  damage: { impact: 22.5, puncture: 180.0, slash: 22.5 }   # 225 (Archwing: 150)
+  damage: { impact: 22.5, puncture: 180.0, slash: 22.5 }
   radial:
     extra_hit_reads: { impact: 0.4, slash: 0.25, puncture: 0.35 }   # see notes: extra_hit_reads
-    damage: { blast: 310.0 }         # Archwing: 205
+    damage: { blast: 310.0 }
     radius_m: 9.0
     falloff_start_m: 0.0
     falloff_reduction: 0.7           # 100% at the centre -> 30% at 9.0 m
