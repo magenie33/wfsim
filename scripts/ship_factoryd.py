@@ -129,7 +129,8 @@ def index_sql() -> str:
     """Concurrent indexes from the same DDL a new database is laid with."""
     ddl = "\n".join((ROOT / "worker" / "pg" / p).read_text() for p in ("schema.sql", "library.sql"))
     statements = []
-    for name in ("compute_scheduling_odd_at", "compute_scheduling_dispatched", "scores_pace", "queue_calculation"):
+    for name in ("compute_scheduling_odd_at", "compute_scheduling_dispatched", "compute_scheduling_open_lease_end",
+                 "scores_pace", "queue_calculation"):
         found = re.search(rf"CREATE (?:UNIQUE )?INDEX IF NOT EXISTS {name}\b[^;]+;", ddl)
         if not found:
             raise ValueError(f"factory index missing from schema: {name}")
@@ -171,10 +172,11 @@ def deploy() -> None:
         stdin=bundle(commit))
     ssh(t, "sudo -u postgres psql -d wfsim -X -q -v ON_ERROR_STOP=1", stdin=index_sql().encode())
     ready = ssh(t, "sudo -u postgres psql -d wfsim -X -q -At -v ON_ERROR_STOP=1", stdin=b"""
-SELECT count(*) = 4 AND bool_and(i.indisvalid AND i.indisready)
+SELECT count(*) = 5 AND bool_and(i.indisvalid AND i.indisready)
 FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
 WHERE c.relnamespace = 'public'::regnamespace
-AND c.relname IN ('compute_scheduling_odd_at', 'compute_scheduling_dispatched', 'scores_pace', 'queue_calculation');
+AND c.relname IN ('compute_scheduling_odd_at', 'compute_scheduling_dispatched', 'compute_scheduling_open_lease_end',
+                  'scores_pace', 'queue_calculation');
 """).strip()
     if ready != "t":
         sys.exit("factoryd: required indexes are not valid and ready; running daemon kept")

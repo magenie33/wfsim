@@ -359,12 +359,13 @@ CREATE OR REPLACE FUNCTION factory_asking(text, text) RETURNS SETOF text LANGUAG
   UNION SELECT leased_to FROM state_compute_work WHERE leased_to IS NOT NULL AND lease_until > $2
 $$;
 
--- Prove the current small queue against its same-snapshot balances. A partial
--- scan or an unseeded cut gives no count.
+-- Prove a small queue against its same-snapshot balances. Large queues count
+-- the exceptions to ready work from the same exact balance.
 CREATE OR REPLACE FUNCTION factory_queue_signal(text) RETURNS TABLE (exact boolean, ready bigint, urgent bigint)
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path FROM CURRENT SET jit=off AS $$
 BEGIN
   IF to_regclass('state_queue_zone_seed') IS NULL OR to_regclass('state_queue_zone_changes') IS NULL
+    OR to_regclass('state_compute_order_stock_holds') IS NULL
     OR to_regprocedure('compute_order_stock_dispatchable(bigint,bigint)') IS NULL THEN RETURN; END IF;
   RETURN QUERY
   WITH active_cut AS MATERIALIZED(SELECT * FROM compute_order_cut()),
@@ -378,9 +379,15 @@ BEGIN
     SELECT p.zone,sum(p.n)::bigint AS n FROM pieces p GROUP BY p.zone HAVING sum(p.n)<>0
   ), size AS MATERIALIZED (
     SELECT coalesce(sum(z.n),0)::bigint AS n FROM seed s LEFT JOIN zones z ON true
-    GROUP BY s.zones HAVING coalesce(sum(z.n),0) BETWEEN 0 AND 2048 AND coalesce(min(z.n),1)>0
+    GROUP BY s.zones HAVING coalesce(min(z.n),1)>0
+  ), small AS MATERIALIZED (
+    SELECT n FROM size WHERE n<=2048
+  ), large AS MATERIALIZED (
+    SELECT n FROM size WHERE n>2048 AND (SELECT count(*) FROM active_cut)<=1
+      AND EXISTS(SELECT 1 FROM pg_index i WHERE i.indexrelid=to_regclass('compute_scheduling_open_lease_end')
+        AND i.indrelid=to_regclass('state_compute_scheduling') AND i.indisready AND i.indisvalid)
   ), candidates AS MATERIALIZED (
-    SELECT candidate.* FROM size sz CROSS JOIN zones z CROSS JOIN LATERAL (
+    SELECT candidate.* FROM small sz CROSS JOIN zones z CROSS JOIN LATERAL (
       SELECT s.id,s.task_id,s.waits,s.lease_until,coalesce(s.zone,factory_default_zone(s.producer)) AS zone,
         coalesce(s.zone_position,s.task_id) AS position
       FROM state_compute_scheduling s WHERE s.state='open' AND coalesce(s.zone,factory_default_zone(s.producer))=z.zone
@@ -393,14 +400,40 @@ BEGIN
       (r.task_id>c.task_cutoff OR (r.zone,r.position,r.id)<=(c.keep_zone,c.keep_position,c.keep_id)
         OR EXISTS(SELECT 1 FROM relation_compute_order_cut_protection p WHERE p.cut_id=c.id AND p.question=r.id))
       AND NOT EXISTS(SELECT 1 FROM record_compute_order_cancellations a WHERE (a.question,a.task_id,a.cut_id)=(r.id,r.task_id,c.id)))
+  ), exceptions AS MATERIALIZED (
+    SELECT r.* FROM large CROSS JOIN LATERAL (
+      SELECT s.id,s.task_id,s.waits,s.zone,s.zone_position,s.producer FROM state_compute_scheduling s WHERE s.state='open' AND s.waits>0
+      UNION ALL
+      SELECT s.id,s.task_id,s.waits,s.zone,s.zone_position,s.producer FROM state_compute_scheduling s WHERE s.state='open' AND s.waits<0
+      UNION ALL
+      SELECT s.id,s.task_id,s.waits,s.zone,s.zone_position,s.producer FROM state_compute_scheduling s
+        WHERE s.state='open' AND s.waits=0 AND s.lease_until>=$1
+      UNION ALL
+      SELECT s.id,s.task_id,s.waits,s.zone,s.zone_position,s.producer FROM state_compute_order_stock_holds h
+        CROSS JOIN LATERAL(SELECT q.* FROM state_compute_scheduling q WHERE q.task_id=h.task_id AND q.id=(
+          SELECT t.computation FROM entity_compute_tasks t WHERE t.id=h.task_id OFFSET 0) OFFSET 0) s
+        WHERE s.state='open' AND s.waits=0 AND (s.lease_until IS NULL OR s.lease_until<$1)
+          AND coalesce(s.zone,factory_default_zone(s.producer))>=3
+    ) r
+  ), unavailable AS (
+    SELECT count(*) AS n,count(*) FILTER(WHERE r.waits>0
+      AND compute_order_stock_dispatchable(r.task_id,coalesce(r.zone,factory_default_zone(r.producer)))) AS urgent
+    FROM exceptions r LEFT JOIN active_cut c ON true
+    WHERE c.id IS NULL OR (
+      (r.task_id>c.task_cutoff OR (coalesce(r.zone,factory_default_zone(r.producer)),coalesce(r.zone_position,r.task_id),r.id)
+        <=(c.keep_zone,c.keep_position,c.keep_id)
+        OR EXISTS(SELECT 1 FROM relation_compute_order_cut_protection p WHERE p.cut_id=c.id AND p.question=r.id))
+      AND NOT EXISTS(SELECT 1 FROM record_compute_order_cancellations a WHERE (a.question,a.task_id,a.cut_id)=(r.id,r.task_id,c.id)))
   )
-  SELECT EXISTS(SELECT 1 FROM size) AND NOT EXISTS(
+  SELECT EXISTS(SELECT 1 FROM small) AND NOT EXISTS(
       SELECT 1 FROM zones z LEFT JOIN (SELECT e.zone,count(*) AS n FROM effective e GROUP BY e.zone) q USING (zone)
       WHERE z.n IS DISTINCT FROM q.n),
     count(*) FILTER(WHERE r.waits=0 AND (r.lease_until IS NULL OR r.lease_until<$1)
       AND compute_order_stock_dispatchable(r.task_id,r.zone)),
     count(*) FILTER(WHERE r.waits>0 AND compute_order_stock_dispatchable(r.task_id,r.zone))
-  FROM effective r;
+  FROM effective r HAVING NOT EXISTS(SELECT 1 FROM large)
+  UNION ALL
+  SELECT u.n<=l.n,greatest(0,l.n-u.n),u.urgent FROM large l CROSS JOIN unavailable u;
 END
 $$;
 
