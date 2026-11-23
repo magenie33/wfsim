@@ -11,7 +11,7 @@ import { buildBatches } from './build_batches.mjs';
 import { captureInbox,inboxSource } from './inbox_reader.mjs';
 import { boardRequestedSchema } from './board_requested_schema.mjs';
 import { placeholders,pgDb,postgresClient } from '../worker/db.js';
-import { inboxSourceId,INBOX_GENERATION_MS } from '../worker/inbox_source.js';
+import { inboxSourceId,inboxGeneration } from '../worker/inbox_source.js';
 import worker from '../worker/index.js';
 import { FAMILY_PRODUCERS } from '../worker/board_family.js';
 import { NEXT_INBOX_GENERATION_SQL } from './inbox_storage.mjs';
@@ -37,7 +37,13 @@ const at='2026-11-22';
 const query=(text,args=[])=>owner.unsafe(text,args);
 const one=async(text,args=[])=>(await query(text,args))[0];
 const positions=()=>query('SELECT id,position::text,generation::text,payload_generation::text FROM state_build_inbox_positions ORDER BY id');
-const generation=Math.floor(Date.now()/INBOX_GENERATION_MS);
+const fixtureNow=Date.now(),generation=inboxGeneration(fixtureNow);
+async function fixtureFetch(request,env) {
+  const now=Date.now;
+  Date.now=()=>fixtureNow;
+  try { return await worker.fetch(request,env); }
+  finally { Date.now=now; }
+}
 const sourceGenerations=new Map();
 const key=(offset=0)=>{const id=inboxSourceId(randomUUID());sourceGenerations.set(id,generation+offset);return id;};
 const input=id=>({id,at,record,initiator:'anonymous',family_source:null,observation:null});
@@ -97,6 +103,7 @@ try {
   const install=buildInboxSchemaSql({tablespace:space,schema,writerRole:http,pipelineRole:pipeline});
   await owner.unsafe(install).simple();
   await owner.unsafe(install).simple();
+  await query('CREATE OR REPLACE FUNCTION build_inbox_current_generation() RETURNS bigint LANGUAGE sql VOLATILE AS $$ SELECT '+generation+'::bigint $$');
   assert.deepEqual(await one("SELECT to_jsonb(p)-'prosrc' AS value FROM pg_proc p WHERE oid='build_ack_submissions(text)'::regprocedure"),attrs);
   assert.deepEqual((await positions()).map(({id,position})=>({id,position})),originalFIFO);
   assert.equal((await one('SELECT enabled FROM state_build_inbox_storage')).enabled,false);
@@ -186,17 +193,17 @@ try {
   assert.equal((await one('SELECT coalesce((pg_stat_file($1,true)).size,0)::int AS n',[oldArrivals.file])).n,0);
   assert.deepEqual(await one("SELECT to_jsonb(b) AS input,pg_relation_filepath('record_raw_archive_hot') AS file FROM ONLY record_raw_archive_hot b WHERE id='offline:protected'"),protectedInput);
   const publicDb=pgDb(postgresClient(writer));
-  const response=await worker.fetch(new Request('https://wfsim.app/api/board/submit',{method:'POST',
+  const response=await fixtureFetch(new Request('https://wfsim.app/api/board/submit',{method:'POST',
     headers:{'content-type':'application/json'},body:record}),{LIBRARY:publicDb,ASSETS:{fetch:async()=>new Response('fixture')}});
   assert.equal(response.status,200,await response.text());
-  const batchResponse=await worker.fetch(new Request('https://wfsim.app/api/board/submit',{method:'POST',
+  const batchResponse=await fixtureFetch(new Request('https://wfsim.app/api/board/submit',{method:'POST',
     headers:{'content-type':'application/json'},body:JSON.stringify({builds:[JSON.parse(record),JSON.parse(record)]})}),
     {LIBRARY:publicDb,ASSETS:{fetch:async()=>new Response('fixture')}});
   assert.equal(batchResponse.status,200,await batchResponse.text());
   await assert.rejects(writer.unsafe('SELECT * FROM record_build_inbox_payloads'),error=>error.code==='42501');
   await assert.rejects(reader.unsafe('SELECT build_inbox_retire($1,false)',[generation]),error=>error.code==='42501');
   await query('UPDATE state_board_request_control SET enabled=true');
-  const requested=await worker.fetch(new Request('https://wfsim.app/api/board/submit',{method:'POST',
+  const requested=await fixtureFetch(new Request('https://wfsim.app/api/board/submit',{method:'POST',
     headers:{'content-type':'application/json',origin:'https://wfsim.app'},body:JSON.stringify({...JSON.parse(record),
       benchmark:'standard_single_target',mode:'base',requested:true})}),{LIBRARY:publicDb,ASSETS:{fetch:async()=>new Response('fixture')}});
   assert.equal(requested.status,200,await requested.clone().text());
