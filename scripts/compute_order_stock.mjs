@@ -164,8 +164,8 @@ export async function runOrderStock({ manifest, directory, openRefill, importOrd
     }
     const refill = await openRefill(source);
     const progress = event => {
-      if (event.result === 'running') maxBatches--;
-      onProgress({ ...event, id: source.id });
+      if (event.result === 'running') maxBatches -= event.batches ?? 1;
+      return onProgress({ ...event, id: source.id });
     };
     const result = await importOrders({ ...options, ...source, reader, signal, refill, maxBatches, onProgress: progress });
     if (result.result === 'complete' || result.result === 'input_exhausted') {

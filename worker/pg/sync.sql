@@ -92,6 +92,7 @@ CREATE OR REPLACE FUNCTION factory_eligible(text, bigint, bigint, text, text, te
 RETURNS SETOF state_compute_work LANGUAGE sql STABLE AS $$
   SELECT q.* FROM state_compute_work q
   WHERE factory_takeable(q.lease_until, q.leased_at, $1, $9)
+    AND compute_order_stock_dispatchable(q.task_id,q.zone)
     AND (q.required_engine IS NULL OR q.required_engine=$4)
     AND ($2=1 OR q.required_capability IS NULL OR $5::jsonb ? ('cap:'||q.required_capability))
     AND (q.verb NOT IN ('simulate_report', 'optimize_report') OR $5::jsonb ? 'cap:calculation-reports-v1')

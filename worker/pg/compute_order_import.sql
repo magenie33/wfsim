@@ -30,3 +30,21 @@ CREATE TABLE IF NOT EXISTS record_compute_order_stock_sources (
   UNIQUE (stock,file)
 );
 REVOKE ALL ON record_compute_order_stock_sources FROM PUBLIC;
+
+CREATE TABLE IF NOT EXISTS state_compute_order_stock_window (
+  slot boolean PRIMARY KEY DEFAULT true CHECK (slot),
+  key text COLLATE "C" NOT NULL UNIQUE,
+  import_id text COLLATE "C" NOT NULL REFERENCES state_compute_order_imports(id),
+  first_byte bigint NOT NULL CHECK (first_byte>=0),
+  next_byte bigint NOT NULL CHECK (next_byte>first_byte),
+  max_open bigint NOT NULL CHECK (max_open>0),
+  positions jsonb NOT NULL
+);
+CREATE TABLE IF NOT EXISTS state_compute_order_stock_pages (
+  window_key text COLLATE "C" NOT NULL REFERENCES state_compute_order_stock_window(key) ON DELETE CASCADE,
+  first_byte bigint NOT NULL CHECK (first_byte>=0),
+  next_byte bigint NOT NULL CHECK (next_byte>first_byte),
+  orders integer NOT NULL CHECK (orders>0),
+  PRIMARY KEY (window_key,first_byte)
+);
+REVOKE ALL ON state_compute_order_stock_window,state_compute_order_stock_pages FROM PUBLIC;
