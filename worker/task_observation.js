@@ -11,6 +11,52 @@ export function watchdogFailure(step, error) {
   return { kind: `watchdog_failed:${step}`, code };
 }
 
+async function overdueRanges(db) {
+  const row = await db.prepare(`SELECT c.task_cutoff::text AS cutoff FROM compute_order_cut() c
+    WHERE EXISTS (SELECT 1 FROM pg_index i WHERE i.indexrelid=to_regclass('compute_scheduling_stock_epoch_due')
+      AND i.indrelid='state_compute_scheduling'::regclass AND i.indisvalid AND i.indisready
+      AND substring(pg_get_expr(i.indpred,i.indrelid) FROM 'task_id > ['' ]*([0-9]+)')::bigint<=c.task_cutoff)`).first();
+  const cutoff = row?.cutoff;
+  if (!/^[1-9][0-9]*$/.test(cutoff ?? "")) return `overdue AS MATERIALIZED (
+    SELECT q.id,q.due_at FROM state_compute_effective_work q WHERE q.state='open' AND q.waits IN (0,1) AND q.due_at<?1::text
+      AND EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question=q.id AND d.state='live')
+    ORDER BY q.waits DESC,q.due_at,q.id LIMIT ?2::bigint)`;
+  // Bound the new orders, retained prefix and protected tail separately before merging.
+  return `cut AS MATERIALIZED(SELECT id,keep_zone,keep_position,keep_id FROM compute_order_cut()),
+    prefix AS MATERIALIZED (
+      SELECT s.id,s.task_id,s.waits,s.due_at FROM state_compute_scheduling s
+      WHERE s.state='open' AND s.task_id<=${cutoff}
+        AND (coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id)
+          <=(SELECT keep_zone,keep_position,keep_id FROM cut)
+      ORDER BY coalesce(s.zone,factory_default_zone(s.producer)),coalesce(s.zone_position,s.task_id),s.id
+    ),
+    eligible AS NOT MATERIALIZED (
+      SELECT s.id,s.task_id,s.waits,s.due_at,s.zone,s.zone_position,s.producer
+      FROM state_compute_scheduling s WHERE s.state='open' AND s.waits IN(0,1) AND s.due_at<?1::text
+        AND NOT EXISTS (SELECT 1 FROM record_compute_order_cancellations c
+          WHERE (c.question,c.task_id,c.cut_id)=(s.id,s.task_id,(SELECT id FROM cut)))
+        AND EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question=s.id AND d.state='live')
+    ),
+    overdue AS MATERIALIZED (
+      SELECT q.id,q.due_at FROM (
+        (SELECT e.id,e.waits,e.due_at FROM eligible e WHERE e.task_id>${cutoff}
+          ORDER BY e.waits DESC,e.due_at,e.id LIMIT ?2::bigint)
+        UNION ALL
+        (SELECT s.id,s.waits,s.due_at FROM prefix s CROSS JOIN LATERAL (
+           SELECT 1 FROM eligible e WHERE (e.id,e.task_id)=(s.id,s.task_id) OFFSET 0
+         ) e ORDER BY s.waits DESC,s.due_at,s.id LIMIT ?2::bigint)
+        UNION ALL
+        (SELECT s.id,s.waits,s.due_at FROM compute_order_cut_protections() p CROSS JOIN LATERAL (
+          SELECT e.id,e.waits,e.due_at FROM eligible e WHERE e.id=p.question AND e.task_id<=${cutoff}
+            AND (coalesce(e.zone,factory_default_zone(e.producer)),coalesce(e.zone_position,e.task_id),e.id)
+                  >(SELECT keep_zone,keep_position,keep_id FROM cut)
+          OFFSET 0
+        ) s WHERE p.cut_id=(SELECT id FROM cut)
+          ORDER BY s.waits DESC,s.due_at,s.id LIMIT ?2::bigint)
+      ) q ORDER BY q.waits DESC,q.due_at,q.id LIMIT ?2::bigint
+    )`;
+}
+
 export function createObservation() {
   /// WHAT IS WRONG RIGHT NOW, for the watchdog: a kind whose overdue questions
   /// went unanswered while witnesses were at work, questions that were not
@@ -81,11 +127,9 @@ export function createObservation() {
     // PAST DUE AND STILL OPEN, by kind. Stop once the alert threshold is crossed;
     // a large queue is a lower bound, not another full inventory scan.
     await observe("overdue", async () => {
+      const ranges = await overdueRanges(db);
       const { results: late } = await db.prepare(
-      `WITH overdue AS MATERIALIZED (
-         SELECT q.id,q.due_at FROM state_compute_effective_work q WHERE q.state='open' AND q.waits IN (0,1) AND q.due_at<?1::text
-           AND EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question=q.id AND d.state='live')
-         ORDER BY q.waits DESC,q.due_at,q.id LIMIT ?2::bigint)
+      `WITH ${ranges}
        SELECT d.producer,count(DISTINCT q.id) AS questions,min(q.due_at) AS oldest_due,
          (SELECT count(*) FROM overdue) AS total,
          (SELECT count(*) FROM overdue)>=?2::bigint AS at_least
