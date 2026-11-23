@@ -186,9 +186,18 @@ function publishedBoardReader(read) {
 
   async function catalog(scene, weapon, signal, ruler) {
     const entries = [];
+    let limit;
     for (let after = ""; ;) {
       const params = { scene, after, ...(weapon ? { weapon } : {}), ...(ruler ? { ruler } : {}) };
-      const page = await query("/api/board/pages/catalog", params, signal);
+      let page;
+      try {
+        page = await query("/api/board/pages/catalog", limit ? { ...params, limit } : params, signal);
+      } catch (error) {
+        if (signal?.aborted || limit || weapon || !ruler) throw error;
+        // Resume at the same cursor with less data per response on a slow link.
+        limit = 64;
+        page = await query("/api/board/pages/catalog", { ...params, limit }, signal);
+      }
       if (!page?.ok || !Array.isArray(page.partitions)) fail();
       for (const entry of page.partitions) {
         const key = entry?.weapon + "/" + entry?.ruler;

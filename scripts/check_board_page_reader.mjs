@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
+import { boardPagesRoute } from "../worker/board_pages.js";
 
 const source = readFileSync(process.env.WFSIM_BOARD_READER_SOURCE || new URL("../web/src/static/app/40-official-builds.js", import.meta.url), "utf8");
 const shared = readFileSync(new URL("../web/src/static/app/83-headless-card.js", import.meta.url), "utf8");
@@ -139,6 +140,36 @@ assert.deepEqual(absent.result, []); assert.equal(absent.state.pages, 0); assert
 const empty = await run({ empty: true });
 assert.deepEqual(empty.result, []); assert.equal(empty.state.pages, 1); assert.equal(empty.cell, true);
 console.log("  ok  absent and complete-empty partitions remain distinct");
+
+const narrowCatalog = vm.runInNewContext(cut(shared, "const publishedBoardRevisions", "function headlessNonaHelp(say")
+  + "\npublishedBoardReader", { URLSearchParams, AbortSignal, AbortController });
+const expectedCatalog = Array.from({ length: 65 }, (_, i) => ({ weapon: `weapon${String(i).padStart(2, "0")}`,
+  ruler, revision, scene: "", rows: 1 }));
+const asks = [];
+const reader = narrowCatalog(async path => {
+  const params = new URL(path, "https://wfsim.invalid").searchParams;
+  const limit = params.get("limit"), after = params.get("after");
+  asks.push([limit, after]);
+  if (!limit) throw new DOMException("board transfer timed out", "TimeoutError");
+  const page = expectedCatalog.filter(p => p.weapon + "/" + ruler > after).slice(0, Number(limit));
+  return { ok: true, partitions: page, next: page.length === Number(limit) ? page.at(-1).weapon + "/" + ruler : null };
+});
+assert.deepEqual(JSON.parse(JSON.stringify(await reader.catalog("", null, undefined, ruler))), expectedCatalog);
+assert.deepEqual(asks, [[null, ""], ["64", ""], ["64", expectedCatalog[63].weapon + "/" + ruler]]);
+const env = { LIBRARY: { prepare(statement) {
+  assert.match(statement, /\?::bigint/);
+  return { bind(...args) {
+    assert.deepEqual(args, [null, "", "", 64, ruler]);
+    return { first: async () => ({ page: { ok: true, partitions: expectedCatalog } }) };
+  } };
+} } };
+const limited = await boardPagesRoute(new Request(`https://wfsim.invalid/api/board/pages/catalog?ruler=${ruler}&limit=64`), env);
+const limitedPage = await limited.json();
+assert.equal(limited.status, 200);
+assert.deepEqual(limitedPage.partitions, expectedCatalog.slice(0,64));
+assert.equal(limitedPage.next, expectedCatalog[63].weapon + "/" + ruler);
+assert.equal((await boardPagesRoute(new Request(`https://wfsim.invalid/api/board/pages/catalog?ruler=${ruler}&limit=513`), env)).status, 400);
+console.log("  ok  a failed wide ranking transfer resumes at the same cursor with bounded pages");
 
 const live = { partitions: new Map(), reads: 0, pages: [], draws: 0, now: 0, bench: false, failPage: false };
 const document = { hidden: false, addEventListener(type, handler) { if (type === "visibilitychange") live.visible = handler; } };
