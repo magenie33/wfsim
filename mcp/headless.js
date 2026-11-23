@@ -184,13 +184,23 @@ function publishedBoardReader(read) {
     return controller.signal;
   };
   const fail = () => { throw new Error("The board could not be reached."); };
-  const query = (path, params, signal) => read(path + "?" + new URLSearchParams(params), deadline(signal, 8000));
+  const query = (path, params, signal, timeout = 8000) => read(path + "?" + new URLSearchParams(params), deadline(signal, timeout));
 
   async function catalog(scene, weapon, signal, ruler) {
     const entries = [];
+    let limit;
     for (let after = ""; ;) {
       const params = { scene, after, ...(weapon ? { weapon } : {}), ...(ruler ? { ruler } : {}) };
-      const page = await query("/api/board/pages/catalog", params, signal);
+      const ask = () => query("/api/board/pages/catalog", limit ? { ...params, limit } : params, signal, limit ? 15000 : 8000);
+      let page;
+      try {
+        page = await ask();
+      } catch (error) {
+        if (signal?.aborted || limit || weapon || !ruler) throw error;
+        // Resume at the same cursor with less data per response on a slow link.
+        limit = 64;
+        page = await ask();
+      }
       if (!page?.ok || !Array.isArray(page.partitions)) fail();
       for (const entry of page.partitions) {
         const key = entry?.weapon + "/" + entry?.ruler;
