@@ -118,7 +118,25 @@ $$;
 -- Filter open state after the point lookup so the open index is not scanned per task.
 CREATE OR REPLACE FUNCTION factory_candidates(text,bigint,bigint,text,text,text,text,text,bigint,bigint,text,text,bigint,text,text,text,boolean)
 RETURNS SETOF state_compute_work LANGUAGE plpgsql SET jit=off AS $function$
-DECLARE prefix_pick text;tail_pick text;found_count bigint;remaining bigint:=$13;cutoff bigint;pick text:=$pick$
+DECLARE prefix_pick text;tail_pick text;found_count bigint;remaining bigint:=$13;cutoff bigint;indexed_tail boolean:=false;
+post_cut_pick text:=$post$
+    (SELECT candidate.* FROM LATERAL(SELECT q.* FROM (
+        SELECT guard.id,guard.task_id,coalesce(guard.zone,factory_default_zone(guard.producer)) AS zone,
+          coalesce(guard.zone_position,guard.task_id) AS position FROM entity_compute_tasks t
+          CROSS JOIN LATERAL (SELECT g.* FROM state_compute_scheduling g
+            WHERE g.id=t.computation AND g.task_id=t.id OFFSET 0) guard
+        WHERE t.id>$17::bigint
+          AND guard.state='open'
+          AND (coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id)
+            >(SELECT keep_zone,keep_position,keep_id FROM cut)
+        ORDER BY zone,position,guard.id OFFSET 0) ordered
+      CROSS JOIN LATERAL(SELECT g.* FROM state_compute_scheduling g WHERE g.id=ordered.id OFFSET 0) guard
+      CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q
+      WHERE q.task_id=ordered.task_id AND q.state='open'
+        AND (q.zone,q.zone_position,q.id)>(SELECT keep_zone,keep_position,keep_id FROM cut)
+      ORDER BY ordered.zone,ordered.position,ordered.id LIMIT $13 /* lock */) candidate)
+$post$;
+pick text:=$pick$
   WITH cut AS MATERIALIZED(SELECT * FROM compute_order_cut()),
     eligible AS NOT MATERIALIZED(SELECT q.* FROM /* source */ q
       WHERE q.state IN(SELECT jsonb_array_elements_text($11::jsonb))
@@ -137,21 +155,7 @@ DECLARE prefix_pick text;tail_pick text;found_count bigint;remaining bigint:=$13
         AND (coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id)<=(SELECT keep_zone,keep_position,keep_id FROM cut)
       ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */) candidate)
     UNION ALL
-    (SELECT candidate.* FROM LATERAL(SELECT q.* FROM (
-        SELECT guard.id,guard.task_id,coalesce(guard.zone,factory_default_zone(guard.producer)) AS zone,
-          coalesce(guard.zone_position,guard.task_id) AS position FROM entity_compute_tasks t
-          CROSS JOIN LATERAL (SELECT g.* FROM state_compute_scheduling g
-            WHERE g.id=t.computation AND g.task_id=t.id OFFSET 0) guard
-        WHERE t.id>$17::bigint
-          AND guard.state='open'
-          AND (coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id)
-            >(SELECT keep_zone,keep_position,keep_id FROM cut)
-        ORDER BY zone,position,guard.id OFFSET 0) ordered
-      CROSS JOIN LATERAL(SELECT g.* FROM state_compute_scheduling g WHERE g.id=ordered.id OFFSET 0) guard
-      CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q
-      WHERE q.task_id=ordered.task_id AND q.state='open'
-        AND (q.zone,q.zone_position,q.id)>(SELECT keep_zone,keep_position,keep_id FROM cut)
-      ORDER BY ordered.zone,ordered.position,ordered.id LIMIT $13 /* lock */) candidate)
+    /* post-cut candidates */
     UNION ALL
     (SELECT candidate.* FROM LATERAL(SELECT q.* FROM (
         SELECT guard.id,guard.task_id,coalesce(guard.zone,factory_default_zone(guard.producer)) AS zone,
@@ -178,7 +182,26 @@ BEGIN
   IF cutoff IS NULL THEN
     pick:=split_part(pick,'  SELECT chosen.* FROM (',1)||
       'SELECT q.* FROM state_compute_scheduling guard CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q WHERE /* state */ AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9) AND ($12 IS NULL OR guard.waits=0) ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id LIMIT $13 /* lock */';
+  ELSIF $2=0 AND $15 IS NULL THEN
+    -- A cut can reuse an index covering an earlier cutoff. An index missing earlier IDs cannot serve this cut.
+    SELECT EXISTS(SELECT 1 FROM pg_index i WHERE i.indexrelid=to_regclass('compute_scheduling_stock_epoch_zone')
+      AND i.indrelid=to_regclass('state_compute_scheduling') AND i.indisready AND i.indisvalid
+      AND substring(pg_get_expr(i.indpred,i.indrelid) FROM 'task_id > ''?([0-9]+)')::bigint<=cutoff) INTO indexed_tail;
+    IF indexed_tail THEN
+      post_cut_pick:=$indexed$
+      (SELECT candidate.* FROM LATERAL(SELECT q.* FROM state_compute_scheduling guard
+        CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE (e.id,e.task_id)=(guard.id,guard.task_id) OFFSET 0) q
+        WHERE guard.state='open' AND guard.task_id>/* stock cutoff */
+          AND (coalesce(guard.zone,factory_default_zone(guard.producer))::numeric,coalesce(guard.zone_position,guard.task_id),guard.id)
+            >(SELECT keep_zone::numeric,keep_position,keep_id FROM cut)
+          AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9) AND ($12 IS NULL OR guard.waits=0)
+        ORDER BY coalesce(guard.zone,factory_default_zone(guard.producer))::numeric,coalesce(guard.zone_position,guard.task_id),guard.id
+        LIMIT $13 /* lock */) candidate)
+      $indexed$;
+      post_cut_pick:=replace(post_cut_pick,'/* stock cutoff */',cutoff::text);
+    END IF;
   END IF;
+  pick:=replace(pick,'/* post-cut candidates */',post_cut_pick);
   pick:=replace(pick,'/* source */',CASE WHEN $15 IS NULL THEN
     'factory_eligible($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)' ELSE
     '(SELECT e.* FROM state_task_answer_heads h CROSS JOIN LATERAL(SELECT e.* FROM factory_eligible($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) e WHERE e.id=h.question OFFSET 0) e WHERE h.engine=$15)' END);
@@ -210,7 +233,7 @@ $prefix$;
     IF found_count=$13 THEN RETURN;END IF;
     remaining:=$13-found_count;
     pick:=replace(pick,'/* prefix enabled */ true','false');
-    IF $15 IS NULL AND remaining<=1024 THEN
+    IF NOT indexed_tail AND $15 IS NULL AND remaining<=1024 THEN
       -- A full pack from the first indexed range is final; a sparse range uses the exact merge.
       tail_pick:=split_part(pick,'  SELECT chosen.* FROM (',1)||$tail$
       , tail AS MATERIALIZED (

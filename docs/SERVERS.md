@@ -281,6 +281,12 @@ budget. The importer counts leased and reserved work toward capacity. Pending
 source files have their own intake budget. A committed batch receipt keeps the
 source cursor verifiable after its task detail retires.
 
+For a large stock after an order cut, install `deploy/stock_epoch_index.sql`
+with the active `cutoff`, target `tablespace` and `lock_wait` for the online
+build. It indexes only new open tasks. Protected older tasks keep their
+separate ordered read. A cut earlier than the installed index uses the
+canonical picker.
+
 ## Database storage
 
 `python scripts/ship_health.py` installs `wfsim-health.timer`, using the same
