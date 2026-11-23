@@ -224,7 +224,8 @@ console.log("\nlegacy redelivery advances without an unbounded history scan");
   await db.exec(indexes.replaceAll("INDEX CONCURRENTLY", "INDEX"));
   await db.exec(`CREATE TABLE usage_fixture(producer text,task bigint,position bigint,used float8);
     INSERT INTO usage_fixture VALUES ('prefix',1,1,30),('protected',2,20,20),
-      ('cancelled-old',3,21,2),('inactive-old',4,22,1),('recent',5,40,40),('cancelled-new',6,41,3),('idle',NULL,NULL,10);
+      ('cancelled-old',3,21,2),('inactive-old',4,22,1),('recent',3005,40,40),('cancelled-new',3006,41,3),
+      ('prefix-tail',7,9,15),('idle',NULL,NULL,10);
     INSERT INTO entity_compute_specs(id,verb,request)
       SELECT producer,'simulate','{}' FROM usage_fixture WHERE task IS NOT NULL;
     INSERT INTO entity_compute_tasks(id,computation,generation,created_at,reason)
@@ -232,7 +233,13 @@ console.log("\nlegacy redelivery advances without an unbounded history scan");
     INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,zone,zone_position,producer)
       SELECT producer,'simulate',task,'open','2026-01-01','2026-01-01',3,position,producer
       FROM usage_fixture WHERE task IS NOT NULL;
-    SELECT compute_order_cut_stage('{"id":"usage","cut_at":"2026-11-16","task_cutoff":4,"keep_boundary":[3,10,"x"],"source":{}}');
+    INSERT INTO entity_compute_specs(id,verb,request)
+      SELECT 'prefix-page-'||i,'simulate','{}' FROM generate_series(100,1124) i;
+    INSERT INTO entity_compute_tasks(id,computation,generation,created_at,reason)
+      SELECT i,'prefix-page-'||i,1,'2026-01-01','request' FROM generate_series(100,1124) i;
+    INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,zone,zone_position,producer)
+      SELECT 'prefix-page-'||i,'simulate',i,'open','2026-01-01','2026-01-01',3,2,'prefix' FROM generate_series(100,1124) i;
+    SELECT compute_order_cut_stage('{"id":"usage","cut_at":"2026-11-16","task_cutoff":2000,"keep_boundary":[3,10,"x"],"source":{}}');
     SELECT compute_order_cut_protect('usage','["cancelled-old","protected"]');
     SELECT compute_order_cut_capture('usage');
     SELECT compute_order_cut_activate('usage',2,
@@ -247,7 +254,7 @@ console.log("\nlegacy redelivery advances without an unbounded history scan");
   await db.exec(`UPDATE state_producer_compute_usage u SET used=f.used FROM usage_fixture f WHERE f.producer=u.producer;
     CREATE INDEX compute_scheduling_stock_epoch_zone ON state_compute_scheduling
       ((coalesce(zone,factory_default_zone(producer))::numeric),coalesce(zone_position,task_id),id)
-      WHERE state='open' AND task_id>4;`);
+      WHERE state='open' AND task_id>2000;`);
   let paged = false;
   await f.liftIdle({LIBRARY:{...db,prepare(sql) {
     if (sql.startsWith("WITH RECURSIVE")) paged = true;
@@ -256,7 +263,7 @@ console.log("\nlegacy redelivery advances without an unbounded history scan");
   const indexed = await usage();
   check("the idle floor preserves the active prefix, protected and recent producers while lifting only idle producers",
     paged && JSON.stringify(indexed)===JSON.stringify(fallback)
-      && indexed.every(({ producer,used }) => used === (producer==="prefix"?30:producer==="recent"?40:20)),
+      && indexed.every(({ producer,used }) => used === ({prefix:30, recent:40, protected:20}[producer] ?? 15)),
     JSON.stringify(indexed));
   await db.close();
 }

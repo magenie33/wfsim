@@ -19,14 +19,25 @@ async function idleUsageFloor(db) {
   return `WITH RECURSIVE cut AS MATERIALIZED(SELECT id,keep_zone,keep_position,keep_id FROM compute_order_cut()),
     ledger AS MATERIALIZED (SELECT producer,used FROM state_producer_compute_usage),
     lower_bound AS (SELECT min(used) AS v FROM ledger),
-    prefix AS MATERIALIZED (
-      SELECT s.id,s.task_id,s.producer FROM state_compute_scheduling s
+    prefix_page AS MATERIALIZED (
+      SELECT s.id,s.task_id,s.producer,${zone} AS z,${position} AS pos FROM state_compute_scheduling s
       WHERE s.state='open' AND s.task_id<=${cutoff}
         AND (${zone},${position},s.id)<=(SELECT keep_zone,keep_position,keep_id FROM cut)
-      ORDER BY ${zone},${position},s.id
+      ORDER BY ${zone},${position},s.id LIMIT 1025
+    ),
+    prefix_tail AS MATERIALIZED (
+      SELECT z,pos,id FROM prefix_page WHERE (SELECT count(*) FROM prefix_page)=1025
+      ORDER BY z DESC,pos DESC,id DESC LIMIT 1
     ),
     retained AS (
-      SELECT * FROM prefix
+      SELECT id,task_id,producer FROM prefix_page
+      UNION ALL
+      SELECT s.id,s.task_id,s.producer FROM prefix_tail p CROSS JOIN LATERAL (
+        SELECT * FROM state_compute_scheduling s WHERE s.state='open' AND s.task_id<=${cutoff}
+          AND (${zone},${position},s.id)>(p.z,p.pos,p.id)
+          AND (${zone},${position},s.id)<=(SELECT keep_zone,keep_position,keep_id FROM cut)
+        ORDER BY ${zone},${position},s.id OFFSET 0
+      ) s
       UNION ALL
       SELECT s.id,s.task_id,s.producer FROM compute_order_cut_protections() p CROSS JOIN LATERAL (
         SELECT * FROM state_compute_scheduling s WHERE s.id=p.question OFFSET 0
