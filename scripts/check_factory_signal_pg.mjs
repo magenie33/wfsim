@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import postgres from "./pg/node_modules/postgres/src/index.js";
+import { belowReadyOrderStock } from "./compute_order_refill.mjs";
 import { openEnv } from "./factoryd.mjs";
 import { pgDb, placeholders, postgresClient } from "../worker/db.js";
 import { signalTick, workWaiting } from "../worker/settler.js";
@@ -175,9 +176,15 @@ try {
   assert.deepEqual({...large},{exact:true,ready:2039,urgent:1});
   const [afterLease]=await sql`SELECT * FROM factory_queue_signal('2026-11-22T04:19:00.001Z')`;
   assert.deepEqual({...afterLease},{exact:true,ready:2040,urgent:1});
+  assert.equal(await belowReadyOrderStock(sql, "fixture", 2042, 2053, now), true,
+    "a large queue with insufficient possible ready jobs must skip the historical schedule");
+  await assert.rejects(belowReadyOrderStock(sql, "fixture", 2042, 2053, now + 1),
+    /the stale availability path walked history/, "an equal bound including held rows still requires the compatibility check");
   await sql.unsafe("DROP INDEX compute_scheduling_open_lease_end");
   const [tooLarge]=await sql`SELECT exact FROM factory_queue_signal(${at})`;
   assert.equal(tooLarge.exact,false);
+  await assert.rejects(belowReadyOrderStock(sql, "fixture", 2042, 2053, now),
+    /the stale availability path walked history/, "an inexact signal cannot decide whether to refill");
   await assert.rejects(sql`SELECT * FROM factory_open(${at}::text,NULL,'2026-11-22T04:18:00.000Z',1024)`,
     /the stale availability path walked history/);
   console.log("PASS real PostgreSQL signal, wave, uncached availability and actual lease retain exact counts and skip history at production watermarks");

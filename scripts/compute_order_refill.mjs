@@ -10,8 +10,8 @@ const DEMAND_MAX_AGE = 120_000;
 const positive = n => Number.isSafeInteger(n) && n > 0;
 const zone = 'coalesce(s.zone,factory_default_zone(s.producer))';
 
-// The exact total can prove the low mark without walking historical tasks.
-// Otherwise the zone index gives a bounded set of keys to check individually.
+// Exact totals can prove the low mark without walking historical tasks.
+// The all-client ready count plus holds bounds the compatible physical rows.
 export const REFILL_STOCK_SQL = `WITH balance AS MATERIALIZED (${queueZonesSql}),
   zones AS MATERIALIZED (
     SELECT (v->>0)::smallint zone,(v->>1)::bigint n
@@ -33,6 +33,8 @@ export const REFILL_STOCK_SQL = `WITH balance AS MATERIALIZED (${queueZonesSql})
         WHERE r.cut_id=(SELECT id FROM compute_order_cut()) AND r.question=c.id AND r.task_id=c.task_id)
   )
   SELECT CASE WHEN size.open<$3 THEN true WHEN size.open>=$4 THEN false
+    WHEN EXISTS(SELECT 1 FROM factory_queue_signal($1::text) AS signal WHERE signal.exact
+      AND signal.ready+(SELECT count(*) FROM state_compute_order_stock_holds)<$3) THEN true
     WHEN (SELECT count(*) FROM (
       SELECT 1 FROM effective c WHERE c.waits=0
         AND (c.lease_until IS NULL OR c.lease_until<$1)
