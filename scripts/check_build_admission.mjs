@@ -111,6 +111,7 @@ async function checkQueryBounds(input) {
       const broken=original.replace('workflow=$1 AND expansion=expansion_id','expansion=expansion_id')
         .replaceAll('workflow=workflow_id AND expansion=expansion_id','expansion=expansion_id')
         .replaceAll('node.workflow=workflow_id AND node.expansion=expansion_id','node.expansion=expansion_id')
+        .replace('(node.workflow,node.id)=(workflow_id,selected.id)','node.id=selected.id')
         .replace('FROM entity_build_workflow_expansions e JOIN state_build_workflow_nodes n ON n.workflow=e.workflow\n      WHERE e.id=held.key AND n.expansion=e.id',
           'FROM state_build_workflow_nodes n WHERE n.expansion=held.key');
       assert.notEqual(broken,original);await db.exec(broken);
@@ -164,7 +165,7 @@ async function checkQueryBounds(input) {
   const queries=[
     ['capture','SELECT min(queue_position) '+capture.match(/FROM state_build_workflow_nodes WHERE[^;]+? HAVING/)[0].replace(/ HAVING$/,'')],
     ['slice',admit.match(/FOR n IN (SELECT \* FROM state_build_workflow_nodes[^]+?) LOOP/)[1].replace('LIMIT $2','LIMIT 1')],
-    ['node_update',admit.match(/UPDATE state_build_workflow_nodes node SET[^;]+;/)[0]],
+    ['node_update',admit.match(/WITH admitted AS MATERIALIZED \([^;]+;/)[0]],
     ['review_update',admit.match(/UPDATE entity_measurement_reviews r SET[^;]+;/)[0]],
     ['sources','SELECT node.id '+admit.match(/FROM state_build_workflow_nodes node JOIN record_build_workflow_triggers[^;]+? ON CONFLICT/)[0].replace(/ ON CONFLICT$/,'')],
     ['pending',runBody.match(/SELECT EXISTS\([^;]+\) INTO pending/)[0].replace(' INTO pending','')],
