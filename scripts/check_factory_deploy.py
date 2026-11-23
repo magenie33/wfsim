@@ -26,7 +26,8 @@ with patch.dict(os.environ, {"R2_ACCESS_KEY_ID": "only-one-value"}, clear=True):
     except SystemExit:
         pass
 sql = module.index_sql()
-assert sql.count("CREATE INDEX CONCURRENTLY IF NOT EXISTS") == 3
+assert sql.count("CREATE INDEX CONCURRENTLY IF NOT EXISTS") == 4
+assert "CREATE INDEX CONCURRENTLY IF NOT EXISTS compute_scheduling_open_lease_end" in sql
 assert "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS queue_calculation ON state_board_pending_work (build_id, ruler, mode);" in sql
 assert "INCLUDE (measured_by)" in sql and re.search(r"WHERE\s+odd\s*=\s*1", sql)
 assert "BEGIN" not in sql and "DROP" not in sql

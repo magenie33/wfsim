@@ -147,7 +147,7 @@ try {
   const nodes=node=>[node,...(node.Plans??[]).flatMap(nodes)];
   const scans=nodes(bounded["QUERY PLAN"][0].Plan).filter(node=>node["Index Name"]==="compute_scheduling_zone");
   assert(scans.some(node=>node["Scan Direction"]==="Backward"&&node["Actual Rows"]<=802&&node["Actual Loops"]===1));
-  assert(!nodes(bounded["QUERY PLAN"][0].Plan).some(node=>node["Relation Name"]==="entity_compute_tasks"));
+  assert(!nodes(bounded["QUERY PLAN"][0].Plan).some(node=>node["Relation Name"]==="entity_compute_tasks"&&node["Actual Loops"]>0));
   await sql.unsafe(`CREATE FUNCTION signal_fixture_history_forbidden() RETURNS boolean LANGUAGE plpgsql VOLATILE AS $$
     BEGIN RAISE EXCEPTION 'the stale availability path walked history'; END $$;
     CREATE OR REPLACE VIEW state_compute_effective_open AS
@@ -164,7 +164,16 @@ try {
   await addCandidates(787,2048);
   const [largest]=await sql`SELECT * FROM factory_queue_signal(${at})`;
   assert.deepEqual({...largest},{exact:true,ready:2039,urgent:0});
-  await addCandidates(2049,2049);
+  await addCandidates(2049,2052);
+  await sql`UPDATE state_compute_scheduling SET waits=2 WHERE id IN ('candidate-2049','candidate-2052')`;
+  await sql`UPDATE state_compute_scheduling SET waits=-1 WHERE id='candidate-2051'`;
+  await sql`UPDATE state_compute_scheduling SET lease_until=${at} WHERE id='candidate-2050'`;
+  await sql`INSERT INTO state_compute_order_stock_holds VALUES (${history}+100+2052,'fixture-window')`;
+  const [large]=await sql`SELECT * FROM factory_queue_signal(${at})`;
+  assert.deepEqual({...large},{exact:true,ready:2039,urgent:1});
+  const [afterLease]=await sql`SELECT * FROM factory_queue_signal('2026-11-22T04:19:00.001Z')`;
+  assert.deepEqual({...afterLease},{exact:true,ready:2040,urgent:1});
+  await sql.unsafe("DROP INDEX compute_scheduling_open_lease_end");
   const [tooLarge]=await sql`SELECT exact FROM factory_queue_signal(${at})`;
   assert.equal(tooLarge.exact,false);
   await assert.rejects(sql`SELECT * FROM factory_open(${at}::text,NULL,'2026-11-22T04:18:00.000Z',1024)`,

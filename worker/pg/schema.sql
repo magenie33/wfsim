@@ -246,6 +246,8 @@ CREATE INDEX IF NOT EXISTS compute_scheduling_zone ON state_compute_scheduling
 CREATE INDEX IF NOT EXISTS compute_scheduling_order ON state_compute_scheduling(state, waits DESC, due_at, id);
 CREATE INDEX IF NOT EXISTS compute_scheduling_holder ON state_compute_scheduling(leased_to);
 CREATE INDEX IF NOT EXISTS compute_scheduling_lease ON state_compute_scheduling(lease);
+CREATE INDEX IF NOT EXISTS compute_scheduling_open_lease_end ON state_compute_scheduling(lease_until)
+  WHERE state='open' AND waits=0 AND lease_until IS NOT NULL;
 CREATE INDEX IF NOT EXISTS compute_scheduling_fact_at ON state_compute_scheduling(fact_at, verb);
 CREATE INDEX IF NOT EXISTS compute_scheduling_shadow_page ON state_compute_scheduling(fact_at, id)
   WHERE state IN ('fact', 'spot') AND fact_at IS NOT NULL;
