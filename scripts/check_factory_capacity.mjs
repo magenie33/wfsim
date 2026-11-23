@@ -295,7 +295,7 @@ let auditSql, auditArgs, unsettledSql, unsettledArgs;
 const observed = { ...A, prepare(sql) {
   const statement = A.prepare(sql);
   if (/count\(DISTINCT d\.question\)/i.test(sql)) return { bind(...args) { auditSql = sql; auditArgs = args; return statement.bind(...args); } };
-  if (/SELECT count\(\*\) AS n FROM state_compute_work q WHERE q\.state IN/.test(sql)) return { bind(...args) { unsettledSql = sql; unsettledArgs = args; return statement.bind(...args); } };
+  if (/\bofficial AS MATERIALIZED\b/.test(sql)) return { bind(...args) { unsettledSql = sql; unsettledArgs = args; return statement.bind(...args); } };
   return statement;
 } };
 const findings = await f.audit({ LIBRARY: observed }, now);
@@ -360,6 +360,38 @@ for (const mode of ["force_generic_plan", "force_custom_plan"]) {
   assert.ok(readAnswers > 0 && readAnswers <= 100, `${mode}: official settlement must read its candidates without scanning other questions' recent answers (${readAnswers})`);
 }
 await A.exec("DEALLOCATE unsettled_audit; RESET plan_cache_mode");
+await A.run(`UPDATE state_compute_scheduling SET state='spot',opened_at=?
+  WHERE id IN (SELECT 'audit-'||n FROM generate_series(1,256) n)`, new Date(now - 3 * 3_600_000).toISOString());
+await A.run("DELETE FROM record_candidate_answers WHERE question='audit-2'");
+await A.exec("ANALYZE state_compute_scheduling; ANALYZE record_candidate_answers");
+const denseFindings = await f.audit({ LIBRARY: observed }, now);
+assert.equal(denseFindings.find(x => x.kind === "unsettled")?.questions, 2);
+await A.exec(`PREPARE dense_unsettled_audit AS ${placeholders(unsettledSql)}`);
+const unsettledPlan = async mode => {
+  await A.exec(`SET plan_cache_mode=${mode}`);
+  const plan = await A.get(`EXPLAIN (ANALYZE,FORMAT JSON,TIMING OFF) EXECUTE dense_unsettled_audit(${unsettledArgs.map(literal).join(",")})`);
+  const answerScans = node => [
+    ...(node["Relation Name"] === "record_candidate_answers" && node["Actual Loops"] ? [node] : []),
+    ...(node.Plans || []).flatMap(answerScans),
+  ];
+  return answerScans(plan["QUERY PLAN"][0].Plan);
+};
+for (const mode of ["force_generic_plan", "force_custom_plan"]) {
+  const scans = await unsettledPlan(mode);
+  const recent = scans.find(node => node["Index Name"] === "answers_by_at");
+  assert.equal(recent?.["Actual Rows"], 258, `${mode}: the recent range must stop at one more than the official count`);
+  assert.ok(scans.some(node => node["Index Name"] === "answers_by_question" && node["Actual Loops"] === 257),
+    `${mode}: the wide recent range must use keyed checks for the official questions`);
+}
+await A.run(`DELETE FROM record_candidate_answers
+  WHERE question NOT IN (SELECT id FROM state_compute_scheduling WHERE state='spot')`);
+await A.exec("ANALYZE record_candidate_answers");
+assert.equal((await f.audit({ LIBRARY: observed }, now)).find(x => x.kind === "unsettled")?.questions, 2);
+for (const mode of ["force_generic_plan", "force_custom_plan"]) {
+  const scans = await unsettledPlan(mode);
+  assert.deepEqual(scans.map(node => node["Actual Loops"]), [1], `${mode}: many official questions must share one recent answer read`);
+}
+await A.exec("DEALLOCATE dense_unsettled_audit; RESET plan_cache_mode");
 const day = 24 * 3_600_000;
 for (const [id, state, age, odd] of [
   ["old-nondeterministic", "nondeterministic", day + 1, 0],
@@ -374,7 +406,7 @@ const oddFinding = (await f.audit({ LIBRARY: A }, now)).find(x => x.kind === "no
 assert.equal(oddFinding?.questions, 3);
 await A.close();
 console.log("ok: the watchdog counts silent producers without reading healthy producers' overdue questions");
-console.log("ok: official settlement observations read only their questions' answers");
+console.log("ok: sparse official settlement observations seek by question, dense observations share one recent answer read");
 console.log("ok: the watchdog counts every nondeterministic state once and odd facts inside its day");
 
 const C = await testDb("library");

@@ -4,6 +4,8 @@ import { iso } from "./instant.js";
 import { dialsOf } from "./dials.js";
 import { OFFICIAL_STATES, ceilingS, OVERDUE_MAX, OVERDUE_HOURS_MS, UNSETTLED_MS, DISAGREE_MIN, DISAGREE_SHARE } from "./task_contract.js";
 
+const UNSETTLED_POINT_LOOKUPS = 128;
+
 export function watchdogFailure(step, error) {
   const code = error?.code === "57014" ? "timeout" : ["40P01", "55P03"].includes(error?.code) ? "lock"
     : /^08/.test(error?.code || "") ? "connection" : "error";
@@ -111,26 +113,40 @@ export function createObservation() {
     });
     // WAITING ON THE OFFICIAL MACHINES since its last answer put it there: a
     // dispute nobody settles is the one place a question can still wait for ever.
-    // Not `opened_at` — a refresh opened hours ago turns spot a minute ago. The
-    // recent-answer index avoids reading old answers for every official question.
+    // A recent answer can move an old open question to spot. Keyed lookups
+    // serve small sets. Larger sets share a recent range when it is cheaper.
     // An official state can only be hidden by an explicit order cancellation.
     await observe("unsettled", async () => {
       const cutoff = iso(now - UNSETTLED_MS);
       const boundary = `?${OFFICIAL_STATES.length + 1}::text`;
       const unsettled = (await db.prepare(
-      `WITH cut AS MATERIALIZED (SELECT id FROM compute_order_cut()),
+      `WITH settlement_cut AS MATERIALIZED (SELECT id FROM compute_order_cut()),
         official AS MATERIALIZED (
           SELECT s.id,s.opened_at FROM state_compute_scheduling s
           WHERE s.state IN (${OFFICIAL_STATES.map((_, i) => `?${i + 1}`).join(", ")})
             AND NOT EXISTS (SELECT 1 FROM record_compute_order_cancellations c
-              WHERE (c.question,c.task_id,c.cut_id)=(s.id,s.task_id,(SELECT id FROM cut)))
+              WHERE (c.question,c.task_id,c.cut_id)=(s.id,s.task_id,(SELECT id FROM settlement_cut)))
+        ),
+        scope AS MATERIALIZED (
+          SELECT count(*) AS questions FROM official
+        ),
+        recent_sample AS MATERIALIZED (
+          SELECT a.question FROM record_candidate_answers a
+          WHERE a.at>=${boundary} AND (SELECT questions>${UNSETTLED_POINT_LOOKUPS} FROM scope)
+          ORDER BY a.at LIMIT (SELECT questions+1 FROM scope)
+        ),
+        strategy AS MATERIALIZED (
+          SELECT CASE WHEN questions>${UNSETTLED_POINT_LOOKUPS}
+            THEN (SELECT count(*) FROM recent_sample)<=questions ELSE false END AS bulk FROM scope
         ),
         answered AS MATERIALIZED (
-          SELECT DISTINCT a.question FROM record_candidate_answers a
-          WHERE a.at>=${boundary} AND EXISTS (SELECT 1 FROM official)
+          SELECT DISTINCT question FROM recent_sample WHERE (SELECT bulk FROM strategy)
         ),
         quiet AS MATERIALIZED (
           SELECT q.id,q.opened_at FROM official q LEFT JOIN answered a ON a.question=q.id WHERE a.question IS NULL
+            AND CASE WHEN (SELECT bulk FROM strategy) THEN true ELSE NOT EXISTS (
+              SELECT 1 FROM (SELECT at FROM record_candidate_answers WHERE question=q.id OFFSET 0) recent
+              WHERE recent.at>=${boundary}) END
         )
         SELECT count(*) AS n FROM quiet q WHERE CASE WHEN q.opened_at<${boundary} THEN true ELSE
           EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.question=q.id LIMIT 1 OFFSET 0) END`)
