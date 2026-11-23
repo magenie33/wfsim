@@ -56,7 +56,7 @@ export function createObservation() {
     });
     await observe("nondeterministic", async () => {
       const odd = (await db.prepare(`SELECT SUM(n) AS n FROM (
-      SELECT count(*) AS n FROM state_compute_effective_work WHERE state = 'nondeterministic'
+      SELECT count(*) AS n FROM state_compute_work WHERE state = 'nondeterministic'
       UNION ALL
       SELECT count(*) AS n FROM state_compute_work WHERE odd = 1 AND fact_at > ? AND state != 'nondeterministic'
     ) x`)
