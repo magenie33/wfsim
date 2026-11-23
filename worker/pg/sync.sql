@@ -334,6 +334,50 @@ CREATE OR REPLACE FUNCTION factory_asking(text, text) RETURNS SETOF text LANGUAG
   UNION SELECT leased_to FROM state_compute_work WHERE leased_to IS NOT NULL AND lease_until > $2
 $$;
 
+-- Prove the current small queue against its same-snapshot balances. A partial
+-- scan or an unseeded cut gives no count.
+CREATE OR REPLACE FUNCTION factory_queue_signal(text) RETURNS TABLE (exact boolean, ready bigint, urgent bigint)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path FROM CURRENT SET jit=off AS $$
+BEGIN
+  IF to_regclass('state_queue_zone_seed') IS NULL OR to_regclass('state_queue_zone_changes') IS NULL THEN RETURN; END IF;
+  RETURN QUERY
+  WITH active_cut AS MATERIALIZED(SELECT * FROM compute_order_cut()),
+  epoch AS MATERIALIZED(SELECT coalesce(compute_order_cut_epoch(),'') AS at),
+  seed AS MATERIALIZED(SELECT s.zones FROM state_queue_zone_seed s,epoch e WHERE s.epoch=e.at),
+  pieces AS (
+    SELECT (v->>0)::smallint AS zone,(v->>1)::bigint AS n FROM seed,jsonb_array_elements(seed.zones) AS v
+    UNION ALL
+    SELECT d.zone,d.n FROM state_queue_zone_changes d,epoch e WHERE d.epoch=e.at
+  ), zones AS MATERIALIZED (
+    SELECT p.zone,sum(p.n)::bigint AS n FROM pieces p GROUP BY p.zone HAVING sum(p.n)<>0
+  ), size AS MATERIALIZED (
+    SELECT coalesce(sum(z.n),0)::bigint AS n FROM seed s LEFT JOIN zones z ON true
+    GROUP BY s.zones HAVING coalesce(sum(z.n),0) BETWEEN 0 AND 2048 AND coalesce(min(z.n),1)>0
+  ), candidates AS MATERIALIZED (
+    SELECT candidate.* FROM size sz CROSS JOIN zones z CROSS JOIN LATERAL (
+      SELECT s.id,s.task_id,s.waits,s.lease_until,coalesce(s.zone,factory_default_zone(s.producer)) AS zone,
+        coalesce(s.zone_position,s.task_id) AS position
+      FROM state_compute_scheduling s WHERE s.state='open' AND coalesce(s.zone,factory_default_zone(s.producer))=z.zone
+      ORDER BY coalesce(s.zone,factory_default_zone(s.producer)) DESC,coalesce(s.zone_position,s.task_id) DESC,s.id DESC
+      LIMIT z.n+16
+    ) candidate
+  ), effective AS (
+    SELECT r.* FROM candidates r LEFT JOIN active_cut c ON true
+    WHERE c.id IS NULL OR (
+      (r.task_id>c.task_cutoff OR (r.zone,r.position,r.id)<=(c.keep_zone,c.keep_position,c.keep_id)
+        OR EXISTS(SELECT 1 FROM relation_compute_order_cut_protection p WHERE p.cut_id=c.id AND p.question=r.id))
+      AND NOT EXISTS(SELECT 1 FROM record_compute_order_cancellations a WHERE (a.question,a.task_id,a.cut_id)=(r.id,r.task_id,c.id)))
+  )
+  SELECT EXISTS(SELECT 1 FROM size) AND NOT EXISTS(
+      SELECT 1 FROM zones z LEFT JOIN (SELECT e.zone,count(*) AS n FROM effective e GROUP BY e.zone) q USING (zone)
+      WHERE z.n IS DISTINCT FROM q.n),
+    count(*) FILTER(WHERE r.waits=0 AND (r.lease_until IS NULL OR r.lease_until<$1)
+      AND compute_order_stock_dispatchable(r.task_id,r.zone)),
+    count(*) FILTER(WHERE r.waits>0 AND compute_order_stock_dispatchable(r.task_id,r.zone))
+  FROM effective r;
+END
+$$;
+
 -- Cache freshness follows the database statement clock. A request can start
 -- before a newer sample replaces the previous one. The canonical fallback still
 -- counts leases against the request clock. A cut or a larger pack can invalidate
@@ -369,6 +413,14 @@ BEGIN
     AND f.at <= to_char(statement_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
     AND f.at >= to_char((statement_timestamp() AT TIME ZONE 'UTC') - interval '60 seconds','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
   IF FOUND THEN RETURN; END IF;
+
+  IF to_regprocedure('factory_queue_signal(text)') IS NOT NULL THEN
+    RETURN QUERY
+    WITH q AS MATERIALIZED (SELECT s.ready FROM factory_queue_signal($1) s WHERE s.exact),
+      a AS (SELECT count(*) AS n FROM factory_asking($3,$1))
+    SELECT least(q.ready,GREATEST(1,a.n)*$4),a.n FROM q CROSS JOIN a;
+    IF FOUND THEN RETURN; END IF;
+  END IF;
 
   RETURN QUERY
   WITH a AS (SELECT count(*) AS n FROM factory_asking($3, $1))
