@@ -38,7 +38,7 @@ async function prepareOrders(orders, { id, first, cut, engine }) {
 }
 
 async function admitCoverageOrders(tx, { batch, items, cut }) {
-  await tx.unsafe('SELECT board_coverage_admit_import(($1::text)::jsonb,$2,$3)', [JSON.stringify(batch), cut, batch.engine]);
+  await tx.unsafe('SELECT compute_order_import_coverage(($1::text)::jsonb,$2,$3)', [JSON.stringify(batch), cut, batch.engine]);
   const received = await tx.unsafe(`SELECT x.target->>'source' source, r.disposition->>'batch' batch,
       r.disposition->>'outcome' outcome,t.id::text task_id
     FROM board_coverage_targets(($1::text)::jsonb) AS x(target)

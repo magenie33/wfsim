@@ -41,10 +41,12 @@ try {
     await writer.unsafe(loadSql(name));
   const install = sql => writer.unsafe(sql.replace('SET LOCAL ROLE wfsim;', ''));
   await install(boardCoverageSchemaSql('pg_default', schema));
-  const getCoverage = () => writer.unsafe("SELECT prosrc FROM pg_proc WHERE oid='board_coverage_admit(jsonb,text,text)'::regprocedure");
-  const original = (await getCoverage())[0].prosrc;
+  const getCoverage = () => writer.unsafe(`SELECT oid::text,to_jsonb(p) AS definition FROM pg_proc p
+    WHERE pronamespace=current_schema()::regnamespace AND proname LIKE 'board_coverage_%' ORDER BY oid`);
+  const original = await getCoverage();
   await install(computeOrderImportSchema('pg_default', schema));
-  assert.equal((await getCoverage())[0].prosrc, original);
+  assert.equal(original.length, 6);
+  assert.deepEqual(await getCoverage(), original);
   await writer.unsafe(loadSql('order_cut_indexes').replaceAll('INDEX CONCURRENTLY', 'INDEX'));
   await writer.unsafe(`INSERT INTO state_task_pipeline_controls(name,paused,changed_at,changed_by) VALUES('admission',true,'test','test');
     INSERT INTO state_factory_parameters(name,value,set_at,set_by) VALUES('board_admission',0,'test','test') ON CONFLICT(name) DO UPDATE SET value=0;

@@ -18,8 +18,8 @@ SET LOCAL search_path="${schema}",pg_catalog,pg_temp;
 SET LOCAL lock_timeout='5s';
 SET LOCAL default_tablespace='${tablespace}';
 ${read('compute_order_import')}
-CREATE OR REPLACE FUNCTION ${name.replace('board_coverage_admit', 'board_coverage_admit_import')}${coverage.replaceAll(width, `BETWEEN 1 AND ${COMPUTE_ORDER_IMPORT_ROWS}`)}END $$;
-REVOKE ALL ON FUNCTION board_coverage_admit_import(jsonb,text,text) FROM PUBLIC;
+CREATE OR REPLACE FUNCTION ${name.replace('board_coverage_admit', 'compute_order_import_coverage')}${coverage.replaceAll(width, `BETWEEN 1 AND ${COMPUTE_ORDER_IMPORT_ROWS}`)}END $$;
+REVOKE ALL ON FUNCTION compute_order_import_coverage(jsonb,text,text) FROM PUBLIC;
 COMMIT;
 `;
 }
