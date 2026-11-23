@@ -256,6 +256,18 @@ CREATE INDEX IF NOT EXISTS compute_scheduling_dispatched ON state_compute_schedu
 CREATE INDEX IF NOT EXISTS compute_scheduling_withdrawn ON state_compute_scheduling(opened_at) WHERE state='withdrawn';
 ALTER TABLE state_compute_scheduling SET (autovacuum_analyze_scale_factor=0, autovacuum_analyze_threshold=50000);
 
+CREATE TABLE IF NOT EXISTS state_compute_order_stock_holds (
+  task_id bigint PRIMARY KEY REFERENCES entity_compute_tasks(id),
+  window_key text COLLATE "C" NOT NULL
+);
+REVOKE ALL ON state_compute_order_stock_holds FROM PUBLIC;
+
+-- Promotion into a human-priority zone carries its own dispatch position.
+CREATE OR REPLACE FUNCTION compute_order_stock_dispatchable(bigint,bigint) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT $2<3 OR NOT EXISTS(SELECT FROM state_compute_order_stock_holds WHERE task_id=$1)
+$$;
+
 CREATE OR REPLACE FUNCTION compute_open_task(text,text,text,text,boolean DEFAULT false) RETURNS bigint
 LANGUAGE plpgsql AS $$
 DECLARE held state_compute_scheduling%ROWTYPE; next_task bigint; next_generation bigint; cancelled text;
@@ -1324,6 +1336,13 @@ LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE c record; cancelled text; held state_compute_scheduling%ROWTYPE; key text;
 BEGIN
   PERFORM compute_order_cut_lock();
+  IF TG_TABLE_NAME='state_compute_scheduling' AND TG_OP='UPDATE' THEN
+    IF NEW.lease IS NOT NULL AND (NEW.lease,NEW.leased_to) IS DISTINCT FROM (OLD.lease,OLD.leased_to)
+      AND coalesce(NEW.zone,factory_default_zone(NEW.producer))>=3 THEN
+      PERFORM 1 FROM state_compute_order_stock_holds WHERE task_id=NEW.task_id;
+      IF FOUND THEN RETURN NULL; END IF;
+    END IF;
+  END IF;
   IF NOT EXISTS(SELECT 1 FROM entity_compute_order_cuts) THEN RETURN NEW; END IF;
   IF TG_TABLE_NAME='state_compute_scheduling' THEN
     IF TG_OP='INSERT' THEN held:=NEW;ELSE held:=OLD;END IF;

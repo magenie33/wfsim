@@ -8,6 +8,7 @@ import { pgDb, postgresClient } from '../worker/db.js';
 import { facts } from '../worker/factory.js';
 import { queueOrders, queueZonesSql } from '../worker/queue_counts.js';
 import { COMPUTE_ORDER_IMPORT_ROWS } from './compute_order_import_schema.mjs';
+import { admitStockPage, publishStockWindow, refuseLegacyWindow, reserveStockWindow, stockWindowBounds } from './compute_order_stock_window.mjs';
 
 const PAGE_BYTES = 8 * 1024 * 1024;
 const REFILL_TRANSACTION_MS = 8000;
@@ -17,7 +18,13 @@ const readState = (sql, id) => sql.unsafe('SELECT * FROM state_compute_order_imp
 
 async function* orderLines(file, offset) {
   let prefix = Buffer.alloc(0);
-  for await (const bytes of file.createReadStream({ start: offset, autoClose: false })) {
+  let position = offset;
+  for (;;) {
+    const buffer = Buffer.allocUnsafe(64 * 1024);
+    const { bytesRead } = await file.read(buffer, 0, buffer.length, position);
+    if (!bytesRead) break;
+    position += bytesRead;
+    const bytes = buffer.subarray(0, bytesRead);
     const data = prefix.length ? Buffer.concat([prefix, bytes]) : bytes;
     let start = 0;
     for (let end; (end = data.indexOf(10, start)) >= 0; start = end + 1) {
@@ -58,6 +65,7 @@ async function commitPage(writer, { id, first, last, orderCount, cut, maxOpen, a
     const timeout = automatic ? REFILL_TRANSACTION_MS : 15_000;
     await tx.unsafe(`SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='${timeout}ms'; SET LOCAL jit=off`);
     await tx.unsafe("SELECT pg_advisory_xact_lock(hashtextextended('compute-order-import',0))");
+    await refuseLegacyWindow(tx);
     const [run] = await tx.unsafe('SELECT * FROM state_compute_order_imports WHERE id=$1 FOR UPDATE', [id]);
     if (run.paused) return 'paused';
     if (Number(run.next_byte) !== first) throw Error('another runner advanced this order import');
@@ -128,7 +136,7 @@ async function admitPage(writer, reader, page, signal, retryRollbacks) {
 
 export async function importComputeOrders({ writer, reader, path, id, target, engine, maxOpen,
   rows = 256, signal, waitMs = 0, maxBatches = Infinity, retryRollbacks = true,
-  adapters = new Map(), refill, onProgress = () => {} }) {
+  adapters = new Map(), refill, peerWriters = [], onProgress = () => {} }) {
   if (writer === reader || typeof id !== 'string' || !id.trim() || !/^[0-9a-f]{12,64}$/.test(engine || '') ||
       ![target, maxOpen, rows].every(integer) || rows > COMPUTE_ORDER_IMPORT_ROWS ||
       (maxBatches !== Infinity && !integer(maxBatches)))
@@ -171,6 +179,70 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
       remaining: target - admitted, next_byte: next });
     await verifyImportPosition(reader, id, next);
     if (run.paused) return status('paused');
+    if (peerWriters.length) {
+      const adapter = routes.get('board_coverage');
+      if (!refill?.source || !adapter || new Set([writer, reader, ...peerWriters]).size !== peerWriters.length + 2)
+        throw Error('parallel admission requires accepted coverage stock and independent writers');
+      const lanes = [writer, ...peerWriters];
+      let batches = 0;
+      while (next < inputBytes) {
+        signal?.throwIfAborted();
+        const bounds = await stockWindowBounds(reader, { id, rows, maxOpen, limit: Math.min(maxBatches - batches, lanes.length) });
+        if (bounds.result === 'queue_unavailable') return status(bounds.result);
+        if (bounds.result) {
+          refill.observe(bounds);
+          onProgress(status(bounds.result));
+          await setTimeout(refill.pollMs, undefined, { signal });
+          continue;
+        }
+        if (bounds.pages.length > maxBatches - batches) throw Error('stock window exceeds the remaining batch limit');
+        await refill.wait({ cut, engine, signal, reserved: bounds.reserved });
+        const pages = [], stream = orderLines(file, next);
+        let first = next;
+        try {
+          for (const limit of bounds.pages) {
+            const orders = [];
+            let last = first;
+            while (orders.length < limit && last < inputBytes) {
+              const { value, done } = await stream.next();
+              if (done || value.order?.kind !== 'board_coverage' || value.end - first > PAGE_BYTES)
+                throw Error('parallel stock needs consecutive coverage pages within the batch byte limit');
+              last = value.end;
+              orders.push(value.order);
+            }
+            if (!orders.length) break;
+            pages.push({ first, last, orders: orders.length, prepared: await adapter.prepare(orders, { id, first, cut, engine }) });
+            first = last;
+          }
+        } finally { await stream.return(); }
+        await checkFile();
+        const reservation = await reserveStockWindow(writer, { id, cut, pages, maxOpen });
+        if (reservation.result === 'paused') return status('paused');
+        if (reservation.result !== 'reserved') {
+          refill.observe(reservation);
+          onProgress(status(reservation.result));
+          await setTimeout(refill.pollMs, undefined, { signal });
+          continue;
+        }
+        const { key } = reservation;
+        for (let start = 0; start < pages.length; start += lanes.length) {
+          const results = await Promise.allSettled(pages.slice(start, start + lanes.length)
+            .map((page, lane) => admitStockPage(lanes[lane], reader, { id, key, cut, page }, signal)));
+          for (const result of results) if (result.status === 'rejected') throw result.reason;
+          if (results.some(result => result.value.result === 'paused')) return status('paused');
+        }
+        const publication = await publishStockWindow(writer, reader, { id, key, cut, pages });
+        if (publication.result === 'paused') return status('paused');
+        next = publication.next;
+        admitted += publication.admitted;
+        processed += publication.processed;
+        batches += pages.length;
+        await onProgress({ ...status('running'), batches: pages.length });
+        if (next === inputBytes) return status('input_exhausted');
+        if (batches >= maxBatches) return status('batch_limit');
+      }
+      return status('input_exhausted');
+    }
     const stream = orderLines(file, next);
     try {
       let pending = await stream.next(), batches = 0;
@@ -243,24 +315,28 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
     options: { target: { type: 'string' }, engine: { type: 'string' }, 'max-open': { type: 'string' },
       rows: { type: 'string' }, batches: { type: 'string' }, once: { type: 'boolean' },
       'refill-config': { type: 'string' }, 'stock-anchor': { type: 'string' },
-      'max-pending-orders': { type: 'string' }, 'max-pending-bytes': { type: 'string' } } });
+      'max-pending-orders': { type: 'string' }, 'max-pending-bytes': { type: 'string' },
+      'parallel-workers': { type: 'string' } } });
   const url = process.env.WFSIM_COMPUTE_ORDER_DATABASE_URL;
   const stock = operation === 'run-stock' || operation === 'run-accepted-stock';
   const accept = operation === 'accept-stock';
+  const parallel = values['parallel-workers'] === undefined ? 1 : Number(values['parallel-workers']);
   const intakeLimits = values['max-pending-orders'] !== undefined || values['max-pending-bytes'] !== undefined;
   if (!url || !id || extra || !(stock || accept || ['run', 'status', 'pause', 'resume'].includes(operation))
       || (operation === 'run') !== !!path
       || (values['refill-config'] && (!(stock || operation === 'run') || values.once))
       || (stock && (!values['refill-config'] || !values['stock-anchor'] || values.engine || values.target))
+      || !integer(parallel) || parallel > 8 || (parallel !== 1 && operation !== 'run-accepted-stock')
       || (!(stock || accept) && values['stock-anchor'])
       || (!accept && intakeLimits)
       || (accept && (!values['stock-anchor'] || values.engine || values.target || values['max-open'] ||
         values.rows || values.batches || values.once)))
-    throw Error('usage: compute_order_import.mjs run ID FILE --target=N --engine=ID --max-open=N, run-stock MANIFEST or run-accepted-stock DIRECTORY with --stock-anchor=ID --max-open=N --refill-config=FILE, accept-stock MANIFEST --stock-anchor=ID --max-pending-orders=N --max-pending-bytes=N, or status|pause|resume ID');
+    throw Error('usage: compute_order_import.mjs run ID FILE --target=N --engine=ID --max-open=N, run-stock MANIFEST or run-accepted-stock DIRECTORY with --stock-anchor=ID --max-open=N --refill-config=FILE [--parallel-workers=N for accepted stock], accept-stock MANIFEST --stock-anchor=ID --max-pending-orders=N --max-pending-bytes=N, or status|pause|resume ID');
   const { default: postgres } = await import('./pg/node_modules/postgres/src/index.js');
   const connect = proof => postgres(url, { max: 1, fetch_types: false,
     connection: orderImportConnection(proof, !!values['refill-config']) });
   const writer = connect(false), reader = connect(true);
+  const peerWriters = Array.from({ length: parallel - 1 }, () => connect(false));
   const controller = new AbortController();
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => controller.abort());
   try {
@@ -274,12 +350,13 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
       const { boardCoverageOrderAdapter } = await import('./board_coverage_orders.mjs');
       const config = values['refill-config'];
       const maxOpen = Number(values['max-open']);
-      const options = { writer, reader, maxOpen, rows: values.rows === undefined ? undefined : Number(values.rows),
+      const options = { writer, reader, peerWriters, maxOpen, rows: values.rows === undefined ? undefined : Number(values.rows),
         maxBatches: values.batches === undefined ? undefined : Number(values.batches), signal: controller.signal,
         waitMs: config ? 500 : values.once ? 0 : 8000, retryRollbacks: !values.once && !config,
         adapters: new Map([['board_coverage', boardCoverageOrderAdapter]]),
         onProgress: event => console.error(JSON.stringify(event)) };
-      if (config) await Promise.all([verifyRefillConnection(writer, false), verifyRefillConnection(reader, true)]);
+      if (config) await Promise.all([writer, ...peerWriters].map(connection => verifyRefillConnection(connection, false))
+        .concat(verifyRefillConnection(reader, true)));
       const openRefill = async source => (await import('./compute_order_refill.mjs')).openOrderRefill(reader, config, maxOpen, source);
       const result = stock
         ? await (await import('./compute_order_stock.mjs')).runOrderStock({ ...options,
@@ -296,5 +373,5 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
     }
   } catch (error) {
     if (!values['refill-config'] || !controller.signal.aborted || error.name !== 'AbortError') throw error;
-  } finally { await Promise.all([writer.end(), reader.end()]); }
+  } finally { await Promise.all([writer, reader, ...peerWriters].map(connection => connection.end())); }
 }

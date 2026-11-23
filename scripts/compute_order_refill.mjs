@@ -61,7 +61,7 @@ export function orderRefill({ low, maxHours, stock, capacity, release, demand,
   return {
     pollMs: POLL_MS,
     observe({ result }) { if (result === 'queue_full') filling = false; },
-    async wait({ cut, engine, signal }) {
+    async wait({ cut, engine, signal, reserved }) {
       for (;;) {
         signal?.throwIfAborted();
         if (!await capacity()) { await hold('host_capacity', signal); continue; }
@@ -74,7 +74,7 @@ export function orderRefill({ low, maxHours, stock, capacity, release, demand,
           await hold('clearance_budget', signal);
           continue;
         }
-        if (!filling) {
+        if (!filling && !reserved) {
           const below = await stock(engine, low);
           if (below === false) { await hold('ready_stock', signal); continue; }
           if (below !== true) { await hold('ready_stock_unavailable', signal); continue; }

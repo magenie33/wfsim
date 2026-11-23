@@ -11,6 +11,7 @@ import { boardCoverageOrderAdapter } from './board_coverage_orders.mjs';
 import { boardCoverageGaps } from './board_coverage_gaps.mjs';
 import { importComputeOrders, orderImportAtEnd, orderImportConnection, verifyRefillConnection } from './compute_order_import.mjs';
 import { acceptOrderStock, readAcceptedStock, runOrderStock } from './compute_order_stock.mjs';
+import { admitStockPage, publishStockWindow, reserveStockWindow } from './compute_order_stock_window.mjs';
 import { belowReadyOrderStock, orderRefill } from './compute_order_refill.mjs';
 import { computeOrderImportSchema } from './compute_order_import_schema.mjs';
 import { computationId } from '../worker/computation_input.js';
@@ -368,6 +369,45 @@ try {
   assert.deepEqual([dispatched.result, dispatched.id, dispatched.admitted], ['batch_limit', fifth.id, 1]);
   assert.equal(await count(), active + 3);
   assert.equal((await reader.unsafe('SELECT 1 FROM state_compute_order_imports WHERE id=$1', [sixth.id])).length, 0);
+  const orders = [...new Map(discovered.slice(1).map(order => [order.target.computation, order])).values()].slice(0, 2);
+  assert.equal(orders.length, 2);
+  const windowSource = sealedSource('accepted-window', 207, orders);
+  publishStock([first, second, third, fourth, fifth, windowSource]);
+  await acceptOrderStock({ ...intake, maxPendingBytes: windowSource.input_bytes });
+  const source = (await readAcceptedStock(reader, first.id, root)).at(-1);
+  const split = Buffer.byteLength(JSON.stringify(orders[0])+'\n');
+  const pages = await Promise.all(orders.map(async (order, i) => {
+    const first = i === 0 ? 0 : split;
+    return { first, last: i === 0 ? split : source.inputBytes, orders: 1,
+      prepared: await boardCoverageOrderAdapter.prepare([order], { id: source.id, first, cut, engine }) };
+  }));
+  const [{ zones: beforeWindow }] = await reader.unsafe(queueZonesSql);
+  const occupiedSlots = queueOrders(beforeWindow).total;
+  const reservation = { id: source.id, cut, pages, maxOpen: occupiedSlots + 2 };
+  assert.equal((await reserveStockWindow(writer, { ...reservation, maxOpen: occupiedSlots + 1 })).result, 'queue_full');
+  const { key } = await reserveStockWindow(writer, reservation);
+  const late = await admitStockPage({ begin: async fn => {
+    await writer.begin(fn);
+    throw Error('page response lost after commit');
+  } }, reader, { ...reservation, key, page: pages[1] });
+  assert.equal(late.admitted, 1);
+  const [hidden] = await reader.unsafe(`SELECT q.task_id,compute_order_stock_dispatchable(q.task_id,q.zone) eligible
+    FROM state_compute_scheduling q JOIN state_compute_order_stock_holds h ON h.task_id=q.task_id
+    WHERE h.window_key=$1`, [key]);
+  assert.equal(hidden.eligible, false);
+  assert.equal((await writer.unsafe(`UPDATE state_compute_scheduling SET lease='test-rejected',leased_to='test-rejected'
+    WHERE task_id=$1 RETURNING id`, [hidden.task_id])).length, 0);
+  await assert.rejects(publishStockWindow(writer, reader, { ...reservation, key }), /unresolved page/);
+  const resumedWindow = await run({ ...source, maxOpen: reservation.maxOpen, rows: 1, writer: peerWriter, reader: peerReader,
+    peerWriters: [writer], refill: { ...refillSource(source), wait: ({ reserved }) => assert.equal(reserved, true) } });
+  assert.deepEqual([resumedWindow.result, resumedWindow.processed, resumedWindow.admitted], ['input_exhausted', 2, 2]);
+  const visible = await reader.unsafe(`SELECT t.computation FROM record_compute_order_import_batches b
+    CROSS JOIN LATERAL unnest(b.task_ids) a(id) JOIN entity_compute_tasks t USING (id)
+    JOIN state_compute_scheduling q ON (q.id,q.task_id)=(t.computation,t.id)
+    WHERE b.import_id=$1 AND compute_order_stock_dispatchable(q.task_id,q.zone) ORDER BY q.zone_position`, [source.id]);
+  assert.deepEqual(visible.map(row=>row.computation), orders.map(order=>order.target.computation));
+  assert.equal((await reader.unsafe('SELECT 1 FROM state_compute_order_stock_holds WHERE window_key=$1', [key])).length, 0);
+  console.log('  ok  parallel stock shares the cap and publishes a durable FIFO window after a lost reply');
   console.log('  ok  durable stock acceptance has its own budget and verified receipts; the dispatcher uses only accepted sources');
   console.log('  ok  low-ready refill, release and host holds, atomic high cap and resume from the same source');
   console.log('  ok  sealed input, lost reply, pause and resume, queue cap, coverage rollback, lock retry, duplicate replay, concurrent runners and Native gaps');

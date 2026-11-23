@@ -212,6 +212,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
     const capable=capabilities.length ? `q.required_capability IN (${capabilities.map(literal).join(',')})` : 'FALSE';
     const takeable = `(q.required_capability IS NULL OR ${capable}) AND q.verb NOT IN (SELECT value FROM jsonb_array_elements_text((?5::text)::jsonb))
             AND (q.lease_until IS NULL OR q.lease_until < ?3::text)
+            AND compute_order_stock_dispatchable(q.task_id,q.zone)
             AND ${producer}
             AND NOT EXISTS (SELECT 1 FROM (SELECT a.device, a.engine FROM state_compute_candidate_answers a
               WHERE a.question = q.id OFFSET 0) a WHERE a.device = ?2::text AND a.engine = ?4::text)`;

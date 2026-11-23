@@ -104,6 +104,7 @@ const NON_SEARCH_TOOLS = [...NATIVE_NON_SEARCH_INPUTS, 'scripts/check_weapon_sea
   'tests/fixtures/inbox-c41/state_build_inbox_inputs.sql',
   'scripts/board_coverage.mjs', 'scripts/board_coverage_schema.mjs', 'scripts/check_board_coverage.mjs',
   'scripts/board_coverage_gaps.mjs', 'scripts/board_coverage_orders.mjs', 'scripts/compute_order_import.mjs',
+  'scripts/compute_order_stock_window.mjs',
   'scripts/compute_order_import_schema.mjs', 'scripts/check_compute_order_import.mjs',
   'scripts/compute_order_refill.mjs', 'scripts/compute_order_stock.mjs', 'deploy/wfsim-compute-order-refill.service',
   'tests/fixtures/build-admission-base5a/build_workflows.sql',

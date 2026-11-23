@@ -457,6 +457,18 @@ the existing import ledgers after a restart. Keep each pending file available
 until its final import receipt. Acceptance counts source orders. Task count
 advances when dispatch commits independently verified task IDs.
 
+Accepted coverage stock supports `--parallel-workers=N`. A single dispatcher
+reserves queue space and FIFO positions for consecutive pages of one approved
+file. Workers may commit pages out of order. A task stays unavailable in the
+bulk zone until independent readback verifies the entire reserved window.
+Promotion into an earlier priority zone uses its own position. Publication
+releases the holds and advances the import cursor in one transaction.
+
+After a crash, the dispatcher resumes the reserved window at the same file
+offset with its original cap. Each committed page keeps its physical task IDs.
+The serial importer requires a published window before starting a new page.
+Released windows leave only the normal import receipts.
+
 Admission reserves computation positions when accepting the intent, preserving
 arrival order through deferred expansion. Requested and bulk lane heads share
 turns within a zone; the declared zone remains authoritative. Aliases in one
