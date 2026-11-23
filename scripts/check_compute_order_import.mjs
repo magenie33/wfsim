@@ -40,8 +40,8 @@ const demand = (ref, seed, zone = 3) => ({ kind: 'demand', ask: { producer: 'use
   trigger_id: ref, verb: 'simulate_report', request: { seed }, zone, due_in_ms: 0, payload: { ref } } });
 
 try {
-  const sharedPages = [['a'], ['independent'], ['a', 'b'], ['b']].map(builds => (
-    { prepared: { items: builds.map(identity => ({ target: { identity } })) } }
+  const sharedPages = [[['a', 'a']], [['independent', 'independent']], [['a', 'a'], ['b', 'b']], [['alias', 'b']]].map(targets => (
+    { prepared: { items: targets.map(([identity, computation]) => ({ target: { identity, computation } })) } }
   ));
   const firstPage = Promise.withResolvers(), started = [];
   const sharing = admitStockPages(sharedPages, async (_, lane) => {
@@ -431,6 +431,10 @@ try {
   assert.equal((await reserveStockWindow(writer, reservation)).result, 'queue_full');
   await seedOccupied(MAX_ACTIVE_ORDERS - occupiedSlots - 2);
   const { key } = await reserveStockWindow(writer, reservation);
+  await writer.unsafe(`UPDATE state_compute_order_stock_window SET positions=jsonb_build_object(
+    $2::text,positions->'0'->0,$3::text,positions->$4::text->0)
+    WHERE key=$1 AND jsonb_typeof(positions->'0')='array'`,
+  [key, orders[0].target.computation, orders[1].target.computation, split]);
   const late = await admitStockPage({ begin: async fn => {
     await writer.begin(fn);
     throw Error('page response lost after commit');
@@ -456,6 +460,32 @@ try {
   await writer.unsafe("UPDATE state_compute_scheduling SET state='withdrawn' WHERE id=$1", [orders[0].target.computation]);
   assert.deepEqual(await stockWindowBounds(reader, bounds), { pages: [1] });
   console.log('  ok  parallel stock shares the cap and publishes a durable FIFO window after a lost reply');
+  const used = await reader.unsafe("SELECT id FROM entity_compute_specs");
+  const usedComputations = new Set(used.map(({ id }) => id));
+  const freshOrders = [...new Map(discovered.filter(order => !usedComputations.has(order.target.computation))
+    .map(order => [order.target.computation, order])).values()].slice(0, 2);
+  assert.equal(freshOrders.length, 2);
+  const skipped = structuredClone(freshOrders[1]);
+  const aliasRuler = skipped.target.ruler + '__prior';
+  skipped.target.ruler = aliasRuler;
+  skipped.plan.flow.scope.boards[0].id = aliasRuler;
+  skipped.plan.flow.nodes[0].ruler = aliasRuler;
+  await writer.unsafe("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES('prior',$1,$2,$3)",
+    [skipped.target.identity, aliasRuler, skipped.target.mode]);
+  await seedOccupied(0);
+  const aliases = sealedSource('accepted-prior-alias', windowSource.last + 1, [skipped, ...freshOrders]);
+  publishStock([first, second, third, fourth, fifth, windowSource, aliases]);
+  await acceptOrderStock({ ...intake, maxPendingOrders: 3, maxPendingBytes: aliases.input_bytes });
+  const aliasStock = (await readAcceptedStock(reader, first.id, root)).at(-1);
+  const aliasFill = await run({ ...aliasStock, rows: 1, peerWriters: [peerWriter, peerReader],
+    refill: { ...refillSource(aliasStock), wait() {} } });
+  assert.deepEqual([aliasFill.result, aliasFill.processed, aliasFill.admitted], ['input_exhausted', 3, 2]);
+  const orderedAliases = await reader.unsafe(`SELECT t.computation FROM record_compute_order_import_batches b
+    CROSS JOIN LATERAL unnest(b.task_ids) a(id) JOIN entity_compute_tasks t USING(id)
+    JOIN state_compute_scheduling q ON (q.id,q.task_id)=(t.computation,t.id)
+    WHERE b.import_id=$1 AND compute_order_stock_dispatchable(q.task_id,q.zone) ORDER BY q.zone_position`, [aliasStock.id]);
+  assert.deepEqual(orderedAliases.map(row => row.computation), freshOrders.map(order => order.target.computation),
+    'a skipped alias cannot give a later task its earlier FIFO position');
   console.log('  ok  durable stock acceptance has its own budget and verified receipts; the dispatcher uses only accepted sources');
   console.log('  ok  low-ready refill, release and host holds, atomic high cap and resume from the same source');
   console.log('  ok  sealed input, lost reply, pause and resume, queue cap, coverage rollback, lock retry, duplicate replay, concurrent runners and Native gaps');
