@@ -133,6 +133,9 @@ only with the valid secret, preserving same-origin checks, OAuth callbacks,
 cookies and network independence. Proxy geography is unknown rather than the
 website server's country.
 
+Weapon modules serve the weapon's prerendered document and canonical URL.
+The browser uses the requested address to open the module.
+
 The Hong Kong include additionally replaces `X-WFSim-Website-Host` with
 `cn.wfsim.app`, authenticated with its existing `RELAY_SECRET`. That credential
 cannot restore the main site's hostname. The browser's `Origin` and account

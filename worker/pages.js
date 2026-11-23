@@ -82,14 +82,23 @@ async function agentPage(request, env, twin) {
 /// THE PREFIXES THAT ARE CONTENT-ADDRESSED: nothing under them is ever html.
 const HASHED = ["/asset/", "/pkg/", "/ocr/"];
 
+// A module opens at its own address with the weapon's document and canonical.
+const WEAPON_MODULE = /^(\/weapons\/[^/]+)\/(?:builder|build-library|simulator|optimizer|rivens|riven-analyst|enemies|benchmark|card)\/?$/;
+
 /// The response for a request the site's files answer alone, or null for one
 /// that needs the worker's databases.
 export async function edgeServe(request, env) {
-  const path = new URL(request.url).pathname;
+  const url = new URL(request.url);
+  const path = url.pathname;
   const twin = markdownTwin(path);
   if (twin) return agentPage(request, env, twin);
   const page = twinOf(path);
   if (page) return twinFile(request, env, page);
+  const weapon = WEAPON_MODULE.exec(path);
+  if (weapon && (request.method === "GET" || request.method === "HEAD")) {
+    url.pathname = weapon[1];
+    return env.ASSETS.fetch(new Request(url.toString(), request));
+  }
   if (!HASHED.some((p) => path.startsWith(p))) return null;
   // A HASHED FILE THAT IS GONE IS A 404, AND NOT THE APP.
   //

@@ -74,6 +74,23 @@ const gone = await edgeServe(get("/pkg/gone.wasm"), env);
 check("a hashed file that is gone is a 404, not the app", gone && gone.status === 404, gone && gone.status);
 check("an endpoint is not the edge's", (await edgeServe(get("/api/board/ping"), env)) === null);
 
+const weaponModule = /\(\?<wfsim_weapon_page>[^\n]+\)\/\(([^)]+)\)/.exec(readFileSync(resolve(ROOT, "deploy/website.nginx"), "utf8"));
+const clientModules = ["builder", "build-library", "simulator", "optimizer", "rivens", "riven-analyst", "enemies", "benchmark", "card"];
+check("the website serves the weapon document at every module address",
+  weaponModule?.[1] === clientModules.join("|"));
+for (const module of clientModules) {
+  const found = await edgeServe(get(`/weapons/Ack_%26_Brunt/${module}?mode=base`), env);
+  check(`the ${module} address has its weapon document`, found && await found.text() === "/weapons/Ack_%26_Brunt");
+}
+const slash = await edgeServe(get("/weapons/Laetum/build-library/"), env);
+check("a trailing slash uses the same weapon document", slash && await slash.text() === "/weapons/Laetum");
+const post = new Request("https://wfsim.app/weapons/Laetum/build-library", { method: "POST" });
+check("the weapon rewrite is for document reads", (await edgeServe(post, env)) === null);
+check("short build links still reach their own handler",
+  (await edgeServe(get("/weapons/Laetum/s/0123456789"), env)) === null);
+check("an unknown weapon module keeps the normal fallback",
+  (await edgeServe(get("/weapons/Laetum/no-such-module"), env)) === null);
+
 for (const p of ["/api/board/ping", "/board.meta.json", "/.well-known/api-catalog", "/og/s/abc"]) {
   const r = await edge.fetch(get(p), env);
   check(`${p} goes to the placed worker`, (await r.text()) === "backend" && asked.includes(p), asked.join(" "));
