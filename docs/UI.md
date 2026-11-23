@@ -1395,6 +1395,11 @@ the app takes the same shape in the reader's language. A URL meant to be found
 or pasted gets its own served file (`shell_pages`): a path left to the SPA
 fallback previews and indexes as the home page.
 
+A weapon document shows its base stats and dated board summary while the app
+loads. The Build Library replaces the archive with the selected live cell.
+The initial weapon and default scope keep their dated summary while that
+cell is unavailable.
+
 ## Utility
 
 Utility holds the game's live state, reminders, and the Dictionary. Each

@@ -1531,14 +1531,17 @@ def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str,
     # draws its own prose, so for those this stays the fallback it was.
     if keep_h1 == "w-name":
         slot = '<div id="doc" class="doc" hidden></div>'
-        if slot not in page:
-            sys.exit("index.html: the #doc slot is gone — a weapon page has nowhere to say what it is")
+        main = '<main class="config-page" hidden>'
+        if any(page.count(marker) != 1 for marker in ("<body>", main, slot)):
+            sys.exit("index.html: a weapon page needs its body, main and #doc")
         # STAMPED WITH THE PATH IT WAS WRITTEN FOR. A reader who routes to
         # another weapon without a page load leaves this block describing a
         # page that is no longer open, and the app rewrites it — it tells the
         # two apart by this and by nothing else, so a first load stays exactly
         # what a crawler indexed.
         at = url[len(SITE):] or "/"
+        page = page.replace("<body>", '<body class="weapon-preview">', 1)
+        page = page.replace(main, '<main class="config-page">', 1)
         return page.replace(
             slot, f'<div id="doc" class="doc" data-url="{html_mod.escape(at, quote=True)}">\n'
             + seo + "    </div>", 1)
@@ -1680,10 +1683,8 @@ def prerender(flagged: str, catalog: Path) -> None:
             rn, row = best[0]
             score = row.get("shown") or f"{row['score']:.4g}"
             answer = f" Archived board {archived_at}: best riven-free score {score} under {rn}."
-        desc = (
-            f"{name}{f' ({cn})' if cn else ''} — {facts}. {stats}."
-            + (answer or " Build it, simulate the fight, and optimize the mods.")
-        )
+        intro = f"{name}{f' ({cn})' if cn else ''} — {facts}. {stats}."
+        desc = intro + (answer or " Build it, simulate the fight, and optimize the mods.")
         card = f"og/{url_slug(spec)}.png"
         drew = og_card(APP / card, name, cn, facts, stats)
         og_img = SITE + url_path("/" + card) if drew else f"{SITE}/logo.svg"
@@ -1702,10 +1703,12 @@ def prerender(flagged: str, catalog: Path) -> None:
                                measured_record(row)))
         caveats = caveats_of(spec, REASONS)
         live_url = html_mod.escape(board_catalog_url(wid), quote=True)
-        seo = f'<p><a href="{live_url}">Current WFSim board data</a></p>'
+        seo = (f'<p>{html_mod.escape(intro)}</p>'
+               f'<p><a href="{live_url}">Current WFSim board data</a></p>')
         if archived_at and (APP / "board" / f"{wid}.json").exists():
+            summary = summary_docs[wid].replace("library-summary shut", "library-summary", 1)
             seo += (f'<div aria-label="Archived WFSim board, {archived_at}">'
-                    f'<p>Archived WFSim board · {archived_at}</p>{summary_docs[wid]}</div>')
+                    f'<p>Archived WFSim board · {archived_at}</p>{summary}</div>')
         out = APP / "weapons" / url_slug(spec) / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
         page = shell(flagged, title, desc, url, og_img, seo, "w-name", name, cn)

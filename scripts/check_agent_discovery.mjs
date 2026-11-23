@@ -78,6 +78,9 @@ const boardCatalog = `${SITE}/api/board/pages/catalog`;
 const weaponCatalog = `${boardCatalog}?weapon=braton`;
 const weaponMd = read("weapons/Braton.md");
 const weaponHtml = read("weapons/Braton/index.html");
+check("the weapon document shows its stats as it loads",
+  weaponHtml.includes('<body class="weapon-preview">') && weaponHtml.includes('<main class="config-page">')
+  && /<div id="doc" class="doc" data-url="\/weapons\/Braton">\s*<p>Braton[^<]*base damage/.test(weaponHtml));
 const discoveryPaths = ["index.md", "llms.txt", ".well-known/api-catalog", ".well-known/agent-skills/wfsim-weapon-builds/SKILL.md"];
 check("board discovery points to the current revision catalog",
   discoveryPaths.every((path) => {

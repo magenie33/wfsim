@@ -2678,6 +2678,10 @@ body:has(.dtup:not([hidden])) .rtoasts{bottom:130px}
 .booting .bdot+.bdot+.bdot,.loading-status .bdot+.bdot+.bdot{animation-delay:.3s}
 .booting .boot-progress{position:absolute;left:16px;right:16px;top:calc(50% + 24px);text-align:center;
   font-size:13px;letter-spacing:0;color:var(--text-3,var(--text-2))}
+body.weapon-preview #booting{position:static;flex-wrap:wrap;min-height:34px;font-size:14px}
+body.weapon-preview #boot-progress{position:static}
+body.weapon-preview .config-page:not([id]) > :not(.wstrip,#doc){display:none}
+body.weapon-preview #w-img:not([src]){display:none}
 @keyframes bootdot{0%,60%,100%{opacity:.25}30%{opacity:1}}
 /* Motion is decoration here; the word alone says the same thing. */
 @media (prefers-reduced-motion:reduce){ .booting .bdot,.loading-status .bdot{animation:none} }
@@ -3914,7 +3918,7 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 }
 
 /* The query stays within reach while the result list grows. */
-body:not(.on-build-library) #doc{display:none}
+body:not(.on-build-library,.weapon-preview) #doc{display:none}
 body.on-build-library #preset-bar-builder-builds,body.on-build-library #forma-block,
 body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-library #jump{display:none}
 .library-entry{display:flex;justify-content:flex-end;margin:0 0 10px}

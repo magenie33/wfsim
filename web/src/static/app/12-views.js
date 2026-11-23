@@ -386,6 +386,7 @@ async function route() {
   }
   // LAST: the jump menu indexes whatever the page has just become, and which
   // blocks a module shows is decided above.
+  document.body.classList.remove("weapon-preview");
   refreshExecutionDock();
   if (document.body.classList.contains("on-simulator")) { renderSimBuffs(); renderScenarioEditorView(); }
   renderJump();

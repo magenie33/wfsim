@@ -42,6 +42,12 @@ function renderLibrarySummary(w, all) {
   const box = $("doc");
   if (!box) return;
   const rows = BOARD[w.id] || all.map((p) => p.board), mode = finder.mo === FINDER_EVERY_MODE ? null : finder.mo;
+  if (box.dataset.url) {
+    // The dated archive can answer the initial scope while its live cell is unavailable.
+    if (decodeURIComponent(box.dataset.url) === weaponPath(w.id) && finder.b === libraryDefaultBenchmark()
+      && mode === null && !boardHasCell(w.id, finder.b)) return;
+    delete box.dataset.url;
+  }
   const key = JSON.stringify([w.id, finder.b, mode, LANG]);
   if (box.dataset.libraryKey !== key || box.libraryRows !== rows || box.libraryLocale !== I18N) {
     box.innerHTML = headlessLibrarySummary(pageSay(), w, rows, finder.b, mode, benchmarkName(finder.b));
