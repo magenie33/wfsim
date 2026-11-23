@@ -101,6 +101,11 @@ server {
     }
     location ~ /\. { return 404; }
     location ~ ^/(_headers|_redirects|native/) { return 404; }
+    location ~ ^(?<wfsim_weapon_page>/weapons/[^/]+)/(builder|build-library|simulator|optimizer|rivens|riven-analyst|enemies|benchmark|card)$ {
+        try_files $wfsim_weapon_page/index.html /index.html;
+        add_header Cache-Control "no-cache";
+        add_header Vary Accept;
+    }
     location / {
         if ($uri ~ "^(.+)/$") { return 308 $1$is_args$args; }
         if ($wfsim_markdown) { return 418; }
