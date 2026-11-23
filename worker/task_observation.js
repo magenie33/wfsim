@@ -72,7 +72,7 @@ export function createObservation() {
     await observe("unsettled", async () => {
       const cutoff = iso(now - UNSETTLED_MS);
       const unsettled = (await db.prepare(
-      `SELECT count(*) AS n FROM state_compute_effective_work q WHERE q.state IN (${OFFICIAL_STATES.map(() => "?").join(", ")})
+      `SELECT count(*) AS n FROM state_compute_work q WHERE q.state IN (${OFFICIAL_STATES.map(() => "?").join(", ")})
           AND NOT EXISTS (SELECT 1 FROM (SELECT a.at FROM record_candidate_answers a WHERE a.question = q.id OFFSET 0) a WHERE a.at >= ?)
           AND (q.opened_at < ? OR EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.question = q.id OFFSET 0))`)
         .bind(...OFFICIAL_STATES, cutoff, cutoff).first()).n;
