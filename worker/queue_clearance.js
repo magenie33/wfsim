@@ -44,10 +44,15 @@ export async function measureQueueCosts(db, prior, now=Date.now()) {
   const hourEnd=Math.floor(now/HOUR)*HOUR;
   const windows=Array.from({length:PACE_HOURS},(_,i)=>[iso(hourEnd-(i+1)*HOUR),iso(hourEnd-i*HOUR)]);
   const msOf={},factsOf={};
-  for (const verb of verbs) {
-    const cost=await sampleCost(db,verb,windows,iso(now-7*24*HOUR));
-    msOf[verb]=Number(cost.ms);
-    factsOf[verb]=Number(cost.facts);
+  // A measured verb can re-enter the queue between price updates.
+  for (const verb of new Set([...verbs,...Object.keys(row.completed??{})])) {
+    try {
+      const cost=await sampleCost(db,verb,windows,iso(now-7*24*HOUR));
+      msOf[verb]=Number(cost.ms);
+      factsOf[verb]=Number(cost.facts);
+    } catch (error) {
+      if (Object.hasOwn(row.verbs,verb) || !['57014','55P03'].includes(error?.code)) throw error;
+    }
   }
   return {epoch:row.order_epoch,at:now,expires:now+2*QUEUE_PRICE_INTERVAL,msOf,factsOf,
     perHour:Number(capacity.ms)/PACE_HOURS,sampleHours:PACE_HOURS};
