@@ -392,12 +392,14 @@ unrecognised id `403`)
   `dropped`: never recorded, with `why`: `not_held` (another client took the row
   since) or `stale_engine`. Either way the client deletes the result.
 - `held`: whether each named row is still the client's; `false` stops that row.
-- `next_ms`: when the client may next be handed work. Sync then, or when its
+- `next_ms`: time left at reply until the next hand-out. Sync then, or when its
   work runs low (`sync_low_ms` left), whichever is later; sync sooner only to
   hand in results or to stop. A pack's gate is at most `sync_floor_ms`, shortened
   to its estimated time to reach `sync_low_ms`; a bootstrap pack without a pace
   has no gate. A renewal-only or full-buffer reply does not add a gate;
-  empty picks still wait `sync_idle_ms`.
+  empty picks still wait `sync_idle_ms` from the request. `empty` distinguishes
+  a reply without available work from a completed renewal, including when the
+  retry time elapsed before the reply.
 
 The official page and desktop client refill on estimated remaining time, not
 a completion percentage. The active row uses recent folded progress; queued

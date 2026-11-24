@@ -123,7 +123,8 @@ async function sync(request, env) {
   if (refusedClient) return refusedClient;
   const db = env.LIBRARY, now = Date.now(), at = iso(now), id = b.verifier, d = await dialsOf(env, now);
   const scale = d.sync_scale_pct / 100, ms = (x) => Math.round(x * scale);
-  const say = (body) => json({ ok: true, ...protocolsSaid(), ...body, dials: clientDials(d, SYNC_CLIENT_DIALS) });
+  const say = ({ next_ms, ...body }) => json({ ok: true, ...protocolsSaid(), ...body,
+    next_ms: Math.max(0, next_ms - Math.max(0, Date.now() - now)), dials: clientDials(d, SYNC_CLIENT_DIALS) });
   // THE OWNER'S SWITCH: every client falls back to protocol 7 for the session.
   if (d.sync_off) return json({ ok: true, fallback: 7, ...protocolsSaid() });
   if (b.protocol !== PROTOCOL) return say({ stale: true, next_ms: ms(d.sync_idle_ms), taken: [], dropped: [], held: [], pack: null, work: null, states: [] });
@@ -213,7 +214,7 @@ async function rest(x, { taken, dropped }) {
   const idle = async (extra = {}) => {
     const next = now + ms(d.sync_idle_ms);
     await db.prepare("UPDATE entity_compute_devices SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
-    return say({ ...base, ...extra, pack: null, work: null, next_ms: next - now });
+    return say({ ...base, ...extra, empty: consented && !extra.stale && !extra.busy, pack: null, work: null, next_ms: next - now });
   };
   if (stale) return idle({ stale: true });
   if (me.banned) return say({ ...base, banned: true, until: me.refused_until, pack: null, work: null, next_ms: ms(d.sync_idle_ms) });
@@ -323,7 +324,7 @@ async function viaProcedure(x, given) {
   const idle = async (extra = {}, wrote = true) => {
     const next = now + ms(d.sync_idle_ms);
     if (!wrote) await db.prepare("UPDATE entity_compute_devices SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
-    return say({ ...base, ...extra, pack: null, work: null, next_ms: next - now });
+    return say({ ...base, ...extra, empty: consented && !extra.stale && !extra.busy, pack: null, work: null, next_ms: next - now });
   };
   switch (r.outcome) {
     case "stale": return idle({ stale: true });

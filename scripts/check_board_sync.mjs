@@ -69,7 +69,7 @@ console.log("\na pack, and the time to come back");
 // A PACE IS KNOWN, so the pack is sized by time: many rows, enough to test with.
 const first = await as(A, { pace_ms: 30_000 });
 check("a sync is handed a pack of board rows, and when to come back", first.pack && first.pack.tasks.length >= 6 && first.pack.tasks[0].record.weapon === "braton_prime"
-  && first.next_ms >= DIALS.sync_floor_ms.default && first.protocol === 8, JSON.stringify(first).slice(0, 400));
+  && first.next_ms > 0 && first.next_ms <= DIALS.sync_floor_ms.default && first.protocol === 8, JSON.stringify(first).slice(0, 400));
 check("…with every dial a protocol 8 client reads", SYNC_CLIENT_DIALS.every((k) => first.dials && first.dials[k] === DIALS[k].default), JSON.stringify(first.dials));
 check("…and the protocols served, as release.json says them", JSON.stringify(first.protocols_served) === "[8,7,6]");
 const lease = first.pack.lease, rows = first.pack.tasks.map((t) => t.question);
@@ -214,12 +214,22 @@ const renewOnly = await as(E, { want_ms: 0, held: [{ lease: small.pack.lease, ro
 check("a renewal without new work does not impose a new refill delay", renewOnly.next_ms === 0, JSON.stringify(renewOnly).slice(0, 200));
 await free(); await comeBack(E);
 await setDial(env, "sync_scale_pct", 125, "check");
-const beforeScaled = Date.now(), scaled = await as(E, { pace_ms: 30_000, want_ms: 150_000 }), afterScaled = Date.now();
+const wallClock = Date.now, beforeScaled = wallClock();
+let timedAt = beforeScaled, scaled;
+const slowRelease = { ...env, ASSETS: { fetch: async () => {
+  timedAt += 12_000;
+  return new Response(JSON.stringify({ engine: "e1", release: "r1" }));
+} } };
+try {
+  Date.now = () => timedAt;
+  scaled = await (await syncRoute(new Request("https://x/api/board/sync", { method: "POST", body: JSON.stringify({
+    verifier: E, engine: "e1", protocol: PROTOCOL, consent: YES, lanes: 4, pace_ms: 30_000, want_ms: 150_000,
+  }) }), slowRelease)).json();
+} finally { Date.now = wallClock; }
 const scaledGate = Date.parse((await L.get("SELECT next_at FROM entity_compute_devices WHERE id = ?", E)).next_at);
-check("a paced partial pack scales its gate and persists the same deadline",
-  scaled.pack?.tasks.length === 5 && scaled.next_ms === 37_500
-    && scaledGate >= beforeScaled + scaled.next_ms && scaledGate <= afterScaled + scaled.next_ms,
-  JSON.stringify({ n: scaled.pack?.tasks.length, next_ms: scaled.next_ms, scaledGate, beforeScaled, afterScaled }));
+check("a slow sync replies with the remaining time to the persisted scaled deadline",
+  scaled.pack?.tasks.length === 5 && scaledGate === beforeScaled + 37_500 && scaled.next_ms === 25_500,
+  JSON.stringify({ n: scaled.pack?.tasks.length, next_ms: scaled.next_ms, scaledGate, beforeScaled }));
 await setDial(env, "sync_scale_pct", 100, "check");
 // …A SNAPSHOT OVER A MINUTE OLD IS NOT READ: open is counted here, and these few rows are short.
 await free(); await comeBack(E);
@@ -330,13 +340,24 @@ page.idleCount = (_at, idle, failed, lanes) => idleReports.push([idle, failed, l
 page.SYNC_BACKOFF_MS = 5000; page.SYNC_BACKOFF_MAX_MS = 600000; page.roadDropped = "";
 const healthyEmpty = { ok: true, next_ms: 20_000 };
 for (const [reply, want] of [[null, 1000], [healthyEmpty, 1000], [{ ...healthyEmpty, early: true }, 1000],
-  [{ ...healthyEmpty, busy: true }, 1000], [healthyEmpty, 0], [{ ok: true, next_ms: 0 }, 1000]]) {
+  [{ ...healthyEmpty, busy: true }, 1000], [healthyEmpty, 0], [{ ok: true, next_ms: 0 }, 1000],
+  [{ ok: true, next_ms: 0, empty: true }, 1000]]) {
   page.syncFailures = 0; page.syncNotBefore = 0; page.postBoardWork = async () => reply;
   await send("device", { want });
 }
 check("protocol 8 reports lost and empty attempts without counting renewals or dispatch gates",
-  JSON.stringify(idleReports) === JSON.stringify([[true, true, 4], [true, false, 4]]), JSON.stringify(idleReports));
+  JSON.stringify(idleReports) === JSON.stringify([[true, true, 4], [true, false, 4], [true, false, 4]]), JSON.stringify(idleReports));
 page.boardSyncBody = initialBody; page.idleCount = initialIdleCount;
+
+const savedClientClock = page.Date, savedTake = page.takeSynced;
+let clientAt = 100_000;
+page.Date = class extends Date { static now() { return clientAt; } };
+page.syncNotBefore = 0;
+page.postBoardWork = async () => healthyEmpty;
+page.takeSynced = async () => { clientAt += 7_000; };
+await send("device", { want: 0 });
+check("local result bookkeeping does not extend the refill deadline", page.syncNotBefore === 120_000, String(page.syncNotBefore));
+page.Date = savedClientClock; page.takeSynced = savedTake; page.syncNotBefore = 0;
 
 let routeClock = 700_000, releaseProbes;
 const probed = new Promise((resolve) => { releaseProbes = resolve; });

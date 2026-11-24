@@ -606,13 +606,13 @@ async function boardSync(id, { want = null } = {}) {
     }
     if (r.fallback === 7) { boardProtocol = 7; return r; }
     syncFailures = 0;
+    if (Number.isFinite(r.next_ms)) syncNotBefore = lastSyncAt + r.next_ms;
     if (r.dials) Object.assign(syncDials, r.dials);
     if (r.kept) idleKept(idle);
-    if (asking && !r.work && !r.pack?.tasks?.length && r.next_ms > 0 && !r.early && !r.busy && !r.stale && !r.banned)
+    if (asking && !r.work && !r.pack?.tasks?.length && (r.empty || r.next_ms > 0) && !r.early && !r.busy && !r.stale && !r.banned)
       idleCount(sentAt, true, false, body.lanes, "");
     refusedPending = refusedPending.filter((x) => !refusedSent.includes(x.question));
     await takeSynced(r, results, sentAt, body.held);
-    if (Number.isFinite(r.next_ms)) syncNotBefore = Date.now() + r.next_ms;
     noteHandOut(r);
     if (r.work) syncWork = r.work;
     if (r.pack && r.pack.tasks && r.pack.tasks.length) {
