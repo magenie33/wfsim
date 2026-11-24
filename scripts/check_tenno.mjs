@@ -105,7 +105,7 @@ const r = await evaluate(`(async () => {
 })()`);
 
 check("the Tenno block carries every player field",
-  ["aiming", "headshot_pct", "invisible", "airborne", "overshields", "channeling", "solo_weapon",
+  ["aiming", "weakpoint_aim_pct", "miss_pct", "invisible", "airborne", "overshields", "channeling", "solo_weapon",
    "wf_health", "wf_shield", "wf_armor", "wf_energy", "wf_sprint"]
     .every((k) => r.keys.includes(k)),
   r.keys.join(","));

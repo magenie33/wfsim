@@ -15,7 +15,7 @@ try {
     $('sim-whole-fight').open=true;
     const edit=(key,value)=>{const el=$('sim-block').querySelector('[data-k="'+key+'"]');
       if(el.type==='checkbox')el.checked=value;else el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}));};
-    edit('level',4321);edit('headshot_pct',23);
+    edit('level',4321);edit('weakpoint_aim_pct',23);
     setScenarioFields({buffs:{'global-check':{stacks:9,locked:true}},extra_stats:{crit_chance:.42}});
     const simCount=$('sim-runs-input');simCount.value=17;simCount.dispatchEvent(new Event('change',{bubbles:true}));
     window.globalScenarioEditor=$('calculation-scenario-editor');
@@ -57,22 +57,22 @@ try {
       history.pushState(null,'','/weapons/Laetum/${module}');await route();
       return {same:$('calculation-scenario-editor')===window.globalScenarioEditor&&document.querySelectorAll('#calculation-scenario-editor').length===1,
         visible:$('quick-calc').offsetParent===null&&($('calculation-scenario-editor').offsetParent!==null)===('${module}'==='simulator'),
-        value:sim.level===4321&&sim.headshot_pct===23&&$('gp-runs').value==='30'&&!$('gp-on').checked&&simRuns()===17};
+        value:sim.level===4321&&sim.weakpoint_aim_pct===23&&$('gp-runs').value==='30'&&!$('gp-on').checked&&simRuns()===17};
     })()`);
     app.check(module+' retains global state while controls stay in their modules',view.same&&view.visible&&view.value);
   }
   const other=await app.evaluate(`(async()=>{
     history.pushState(null,'','/weapons/Artax/simulator');await route();
-    const raw=$('sim-technique').querySelector('[data-k="headshot_pct"]');
+    const raw=$('sim-technique').querySelector('[data-k="weakpoint_aim_pct"]');
     const preserved=raw.value==='23'&&!raw.disabled&&sim.buffs['global-check'].stacks===9&&sim.extra_stats.crit_chance===.42;
     setScenarioView('all');
     const retained=$('sim-buffs').querySelector('[data-b="global-check"][data-f="stacks"]');
     const editableRetained=retained?.value==='9'&&!retained.disabled;
     if(retained){retained.value=11;retained.dispatchEvent(new Event('change',{bubbles:true}));}
-    const headshot=$('sim-technique').querySelector('[data-k="headshot_pct"]');
+    const headshot=$('sim-technique').querySelector('[data-k="weakpoint_aim_pct"]');
     headshot.value=43;headshot.dispatchEvent(new Event('change',{bubbles:true}));
-    const row=$('sim-technique').querySelector('[data-k="headshot_pct"]').closest('label');
-    const forced=row.querySelector('.scenario-effective').textContent.includes('0')&&row.querySelector('input').value==='43';
+    const row=$('sim-technique').querySelector('[data-k="weakpoint_aim_pct"]').closest('label');
+    const forced=sim.weakpoint_aim_pct===43&&row.querySelector('input').value==='43';
     history.pushState(null,'','/weapons/Artax/builder');await route();
     $('gp-ranks').click();const list=everyRank();
     return {preserved,forced,editableRetained,id:activeScenario,count:loadPresetList(SCENARIOS).length,
@@ -81,7 +81,7 @@ try {
   })()`);
   app.check('a companion view retains unrelated global scenario values',other.preserved&&other.id===first.id&&other.count===first.count);
   app.check('settings unused by the current build remain globally editable',other.editableRetained);
-  app.check('global values remain editable while the effective forced value is explained',other.forced);
+  app.check('the companion keeps the configured weak-point aim',other.forced);
   app.check('global rank selection and candidates do not narrow to the weapon',other.ranks===first.ranks&&other.shown===other.total&&JSON.stringify(other.offers)===JSON.stringify(first.offers));
   const buffs=await app.evaluate(`(()=>{
     const b={id:'global-buff',name:'Global buff',max_stacks:2,default_stacks:0,default_locked:false};
@@ -95,7 +95,7 @@ try {
   app.check('the preservation check rejects a view that clamps stored stacks',buffs.rejectsClamp);
   await app.evaluate('flushPresetSaves()');
   await app.load('/weapons/Laetum/builder',6500);
-  app.check('global edits made from another weapon survive reload',await app.evaluate(`activeScenario===${JSON.stringify(first.id)}&&sim.level===4321&&sim.headshot_pct===43&&sim.buffs['global-check'].stacks===11&&sim.extra_stats.crit_chance===.42&&gainRuns()===30&&gainPrefs.on===false&&simRuns()===17`));
+  app.check('global edits made from another weapon survive reload',await app.evaluate(`activeScenario===${JSON.stringify(first.id)}&&sim.level===4321&&sim.weakpoint_aim_pct===43&&sim.buffs['global-check'].stacks===11&&sim.extra_stats.crit_chance===.42&&gainRuns()===30&&gainPrefs.on===false&&simRuns()===17`));
   await app.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   await app.evaluate("(async()=>{history.pushState(null,'','/weapons/Laetum/simulator');await route();})()");
   app.check('the shared editor and all buff cards fit a phone',await app.evaluate("(()=>{setScenarioView('all');return document.documentElement.scrollWidth<=innerWidth&&[...$('sim-buffs').querySelectorAll('.buff-card')].every(card=>card.scrollWidth<=card.clientWidth+1);})()"));

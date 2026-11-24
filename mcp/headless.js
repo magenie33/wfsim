@@ -825,8 +825,9 @@ async function headlessAppraisalReplay(say, w, job, rows, host) {
   // THE RULER'S OWN FIGHT AND RUNS, not a reader's: the grade divides this
   // number by the board's, and a board row is fought at the ruler's runs.
   const contact = 2 * (Number(meta.body_radius_m) || 0.25);
-  const sim = { ...headlessScenarioOnto(meta, bench.scenario, contact, met.id), __weapon: w.id };
-  const runs = (bench.scenario || {}).runs;
+  const scenario = headlessRulerScenario(meta, bench.scenario, w.id);
+  const sim = { ...headlessScenarioOnto(meta, scenario, contact, met.id), __weapon: w.id };
+  const runs = scenario.runs;
   const r = await host.simulate({ ...headlessSeat(meta, state, undefined), rivens: [{ id, name: "", spec: riven }],
     ...sim, runs, custom_enemies: [], buffs: sim.buffs || {}, also_acting: [] });
   if (!r || r.ok === false) return { ok: false, reason: (r && r.error) || say.t("the replay did not run") };
@@ -1828,6 +1829,15 @@ const HEADLESS_DEAD_SCENARIO_FIELDS = ["form", "mode", "runs", "attack_interval_
 /// A SCENARIO AS THE LIVE FIGHT, onto a COMPLETE fight — the defaults — and never
 /// onto the fight before it: `st` states only what it has an opinion about, so
 /// spreading it over the outgoing fight would keep that fight's other fields.
+function headlessRulerScenario(meta, scenario, weapon) {
+  const { scenes, scene_selection, ...fallback } = scenario || {};
+  const info = headlessWeaponOf(meta, weapon);
+  const selected = scene_selection?.weapons?.[weapon]
+    ?? scene_selection?.weapon_types?.[info?.weapon_type]
+    ?? scene_selection?.classes?.[info?.weapon_class];
+  return selected === undefined ? fallback : scenes[selected];
+}
+
 function headlessScenarioOnto(meta, st, contact, metric) {
   st = { ...(st || {}) };
   HEADLESS_DEAD_SCENARIO_FIELDS.forEach((k) => { delete st[k]; });
@@ -1983,7 +1993,7 @@ function headlessRivenGainRequest(meta, { weapon, ruler, card, rivenId = "apprai
   const preset = ((meta.search_presets || {}).presets || []).find((p) => p.riven);
   if (!w || w.no_riven || !bench || !preset) return null;
   const contact = 2 * (Number(meta.body_radius_m) || 0.25);
-  const sim = { ...headlessScenarioOnto(meta, bench.scenario, contact, "kpm"), __weapon: weapon };
+  const sim = { ...headlessScenarioOnto(meta, headlessRulerScenario(meta, bench.scenario, weapon), contact, "kpm"), __weapon: weapon };
   const mod = "riven:" + rivenId;
   const spec = headlessWithDrafts(meta, { bonuses: (card.bonuses || []).map((b) => ({ id: b.id, roll: b.roll })),
     malus: card.malus ? { id: card.malus.id, roll: card.malus.roll } : null,

@@ -196,6 +196,8 @@ pub(crate) fn source_default<'a>(
         source
             .enemies
             .get(id)
+            .or_else(|| matches!(preset, Preset::SourceStandard)
+                .then(|| &source.enemies["corrupted_heavy_gunner"]))
             .ok_or_else(|| format!("scene_3d has no source-default enemy profile for {id}"))
     };
     let first = enemy_profile(aimed.0)?;

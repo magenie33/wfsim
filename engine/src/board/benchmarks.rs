@@ -365,7 +365,13 @@ pub fn scenario_for(scenario: &serde_json::Value, weapon: &str) -> serde_json::V
         crate::build::scenario::class_of(weapon).and_then(|class| selection["classes"].get(class))
     });
     if let Some(selected) = scene.and_then(serde_json::Value::as_str) {
-        return scenario["scenes"][selected].clone();
+        let found = &scenario["scenes"][selected];
+        if found.get("formation_grid").is_some() {
+            let mut scene = serde_norway::to_value(found).expect("scene");
+            expand_formation_grid(&mut scene).expect("validated formation grid");
+            return serde_json::to_value(scene).expect("scene");
+        }
+        return found.clone();
     }
     let mut default = scenario.clone();
     if let Some(fields) = default.as_object_mut() {
@@ -373,6 +379,19 @@ pub fn scenario_for(scenario: &serde_json::Value, weapon: &str) -> serde_json::V
         fields.remove("scene_selection");
     }
     default
+}
+
+/// Browser arena metadata carries ready-to-draw formations.
+pub fn scenario_for_display(scenario: &serde_norway::Value) -> serde_norway::Value {
+    let mut display = scenario.clone();
+    if let Some(scenes) = display.as_mapping_mut().and_then(|m| m.get_mut("scenes"))
+        .and_then(serde_norway::Value::as_mapping_mut)
+    {
+        for scene in scenes.values_mut() {
+            expand_formation_grid(scene).expect("validated formation grid");
+        }
+    }
+    display
 }
 
 fn prepare_scenes(scenario: &mut serde_norway::Value) -> Result<(), String> {
@@ -390,7 +409,7 @@ fn prepare_scenes(scenario: &mut serde_norway::Value) -> Result<(), String> {
         if scene.get("scenes").is_some() || scene.get("scene_selection").is_some() {
             return Err("a named scene must be a complete fight".into());
         }
-        expand_formation_grid(scene)?;
+        expand_formation_grid(&mut scene.clone())?;
     }
     if let Some(selection) = selection {
         for (category, entries) in selection.as_mapping().ok_or("scene_selection must be a mapping")? {

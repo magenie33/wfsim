@@ -9,6 +9,7 @@ const scope = createContext({ console });
 for (const name of ["83-headless-card", "92-riven-input", "87-headless", "78-optimizer-page", "80-optimizer-preset", "08-checkpoint-api"]) runInContext(source(name), scope);
 const read = text => JSON.parse(runInContext(`JSON.stringify(${text})`, scope));
 runInContext(`
+  const presetWeapon = () => "test";
   const META = {
     weapons: [{ id: "test", modes: ["base"], mods: ["heat_card", "cold_card", "electric_card", "toxin_card"],
       evolutions: [{ tier: 1, options: [{ id: "first" }, { id: "second" }] }] }],

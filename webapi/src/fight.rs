@@ -749,7 +749,8 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
             }
             return crate::scene_profiles::explicit(raw, 1 + others.len(), player_at);
         }
-        if ["airborne", "sliding", "aim_gliding"].iter().any(|flag| get_bool(v, flag, false)) {
+        if raw["preset"] != "source_standard"
+            && ["airborne", "sliding", "aim_gliding"].iter().any(|flag| get_bool(v, flag, false)) {
             return Err("scene_3d source-default preset requires a standing shooter".to_string());
         }
         let roster = v.get("formation").and_then(Value::as_array).into_iter().flatten();

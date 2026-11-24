@@ -1345,7 +1345,7 @@ pub fn meta_json() -> Value {
                 "arcanes": b.build.arcanes,
                 "exilus": b.build.exilus,
             },
-            "scenario": b.scenario,
+            "scenario": wfsim_engine::board::benchmarks::scenario_for_display(&b.scenario),
         })).collect::<Vec<_>>(),
         // DE's own icon per damage type — the meter and the charts colour and
         // label by TYPE, so both halves of that (colour in style.css, file

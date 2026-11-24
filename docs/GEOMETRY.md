@@ -16,7 +16,9 @@ Official rulers select a ranged or melee scene with explicit placement.
 The arena remains a top-down view. The ranged scene starts at 5 m center
 distance. The melee scene starts at controller contact. A companion without
 a qualified carrier uses the standing reference emitter for the standard
-preset. Its weapon damage and companion rules still apply.
+preset. Its weapon damage and companion rules still apply. Standard geometry
+uses the Heavy Gunner's posed collision volumes when the selected target has
+no model. Movement flags retain the standing geometry in this preset.
 
 In 3D, `weakpoint_aim_pct` weights the selected weak-point center against
 the ordinary body anchor. `miss_pct` assigns deliberate misses per physical
