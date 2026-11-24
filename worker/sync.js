@@ -145,7 +145,10 @@ async function sync(request, env) {
   const who = await witness(env, id, now);
   const w = { device: id, owner: who.owner, siblings: [...who.siblings, ...["calculation-reports-v1","fixed-board-input-v1"].filter(c=>b.capabilities?.includes(c)).map(c=>"cap:"+c)], net: await netOf(request, env), lanes };
   const f = facts();
-  const x = { request, env, b, p, d, db, now, at, id, ms, say, served, release, grace, stale, consented, lanes, pace, want, who, w, f };
+  const queuedPack = Array.isArray(b.capabilities) && b.capabilities.includes("queued-pack-v1");
+  const packsHeld = queuedPack ? Math.min(2, d.packs_held) : d.packs_held;
+  const packMax = queuedPack ? Math.min(d.pack8_max, HELD_MAX / packsHeld) : d.pack8_max;
+  const x = { queuedPack, packsHeld, packMax, request, env, b, p, d, db, now, at, id, ms, say, served, release, grace, stale, consented, lanes, pace, want, who, w, f };
 
   // THE CLIENT, ITS YES, ITS DAY, ITS IDLE HOURS — one batch, as `/work` writes them.
   const seen = () => db.batch([
@@ -197,7 +200,7 @@ const byLease = (results) => {
 
 /// EVERYTHING AFTER THE RESULTS, statement by statement.
 async function rest(x, { taken, dropped }) {
-  const { request, env, b, p, d, db, now, at, id, ms, say, served, release, grace, stale, consented, pace, want, who, w, f } = x;
+  const { request, env, b, p, d, db, now, at, id, ms, say, served, release, grace, stale, consented, pace, want, who, w, f, packsHeld, packMax } = x;
   // ROWS ITS ENGINE REFUSED: given back, never handed to it again on this engine.
   const withdrawn = stale ? [] : await f.refuseRows(env, w, b.engine, served.engine, p.refused, d.refusals_to_withdraw, now);
   const done = new Set([...taken, ...p.refused.map((r) => r.question)]);
@@ -224,7 +227,7 @@ async function rest(x, { taken, dropped }) {
     return say({ ...base, early: true, pack: null, work: null, next_ms: Math.max(0, Date.parse(me.next_at) - now) });
   }
   const holds = await db.prepare("SELECT count(*) AS questions, count(DISTINCT lease) AS packs FROM state_compute_work WHERE leased_to = ? AND lease_until > ?").bind(id, at).first();
-  if (want <= 0 || holds.packs >= d.packs_held) return say({ ...base, pack: null, work: null, next_ms: 0 });
+  if (want <= 0 || holds.packs >= packsHeld) return say({ ...base, pack: null, work: null, next_ms: 0 });
 
   const engine = b.engine;
   let head = (await f.headOf(env, w, engine, now, d).all()).results[0];
@@ -237,7 +240,7 @@ async function rest(x, { taken, dropped }) {
     head = await f.headOf(env, w, engine, now, d, true).first();
     if (!head) return idle();
   }
-  const per = { ...d, pack_ms: Math.max(1, want), pack_max: d.pack8_max }, rows = packRows(pace, per);
+  const per = { ...d, pack_ms: Math.max(1, want), pack_max: packMax }, rows = packRows(pace, per);
   const fair = await db.prepare("SELECT * FROM factory_open(?1::text, ?2::bigint, ?3::text, ?4::bigint)")
     .bind(at, null, iso(now - 2 * d.asked_every_ms), rows).first();
   const { open, asking } = fair;
@@ -247,7 +250,7 @@ async function rest(x, { taken, dropped }) {
   const short = Math.floor(open / Math.max(1, asking)) < rows;
   if (short && throttled(await fairTable(request, env, served.engine, now), accountOf(who.owner, id))) return idle();
   const n = packSize(pace, open, asking, per), lease_ms = short ? d.pack_lease_ms : d.sync_lease_ms;
-  const got = await f.nextPack(env, w, engine, { n, lease_ms, most: d.packs_held, exclude: grace && !grace.join ? grace.changed : null, join: grace && grace.join ? served.engine : null,
+  const got = await f.nextPack(env, w, engine, { n, lease_ms, most: packsHeld, exclude: grace && !grace.join ? grace.changed : null, join: grace && grace.join ? served.engine : null,
     producer: null }, now);
   return packed(x, base, idle, got && got.lease, lease_ms, got ? got.questions : []);
 }
@@ -268,12 +271,12 @@ async function alone(x, base, idle) {
 }
 
 /// THE PACK HANDED OUT, and when to come back.
-async function packed({ db, now, id, ms, say, d, grace, served, pace }, base, idle, lease, lease_ms, questions, wrote = false) {
+async function packed({ db, now, id, ms, say, d, grace, served, pace, queuedPack }, base, idle, lease, lease_ms, questions, wrote = false) {
   const tasks = questions.map(packTaskOf).filter(Boolean);
   if (!tasks.length) return idle();
-  const next = now + ms(Math.min(d.sync_floor_ms, Math.max(0, tasks.length * (pace || 0) - d.sync_low_ms)));
+  const next = queuedPack ? now : now + ms(Math.min(d.sync_floor_ms, Math.max(0, tasks.length * (pace || 0) - d.sync_low_ms)));
   if (!wrote) await db.prepare("UPDATE entity_compute_devices SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
-  // The gate must not outlast the pack's estimated refill threshold.
+  // A queued-pack client can fill its spare slot as soon as this pack starts.
   return say({ ...base, work: null, pack: { lease, lease_ms, tasks }, next_ms: next - now,
     ...(grace ? { engine: served.engine, accepted_until: grace.until, ...(grace.join ? { join: true } : {}) } : {}) });
 }
@@ -284,8 +287,8 @@ async function packed({ db, now, id, ms, say, d, grace, served, pace }, base, id
 /// as `rest` says it. `given`: the results already recorded here, or null for
 /// the procedure to record them.
 async function viaProcedure(x, given) {
-  const { request, env, b, p, d, db, now, at, id, ms, say, served, release, grace, stale, consented, pace, want, who, w, f } = x;
-  const rules = f.syncRules, rows = packRows(pace, { ...d, pack_ms: Math.max(1, want), pack_max: d.pack8_max }), a = askedArgs({ ...b, lanes: w.lanes, ahead: false }, now, d);
+  const { request, env, b, p, d, db, now, at, id, ms, say, served, release, grace, stale, consented, pace, want, who, w, f, packsHeld, packMax, queuedPack } = x;
+  const rules = f.syncRules, rows = packRows(pace, { ...d, pack_ms: Math.max(1, want), pack_max: packMax }), a = askedArgs({ ...b, lanes: w.lanes, ahead: false }, now, d);
   const span = typeof b.since === "string" ? await spanOf(env, id).then((from) => ({ from }), () => null) : null;
   const throttle = throttled(await fairTable(request, env, served.engine, now), accountOf(who.owner, id));
   const call = {
@@ -304,14 +307,14 @@ async function viaProcedure(x, given) {
     held: p.held, keep: p.keep ? p.keep.question : null, renew_until: iso(now + d.sync_lease_ms), states: p.states,
     points: span && { from: span.from, recent_from: periodStarts().month, week_from: periodStarts().week,
       since_hour: HOUR.test(b.since) ? b.since : null },
-    consented, idle_at: iso(now + ms(d.sync_idle_ms)), floor_at: iso(now + ms(d.sync_floor_ms)), want, packs_held: d.packs_held,
+    consented, idle_at: iso(now + ms(d.sync_idle_ms)), floor_at: iso(now + ms(d.sync_floor_ms)), want, packs_held: packsHeld,
     ceiling_s: Math.round(d.row_ceiling_ms / 1000), grace_s: Math.round(d.settle_grace_ms / 1000), official_states: JSON.stringify(OFFICIAL_STATES),
     grace: grace ? { exclude: grace.join ? null : JSON.stringify(grace.changed), join: grace.join ? served.engine : null } : null,
     fair: { asking_since: iso(now - 2 * d.asked_every_ms), per: rows,
       short_rows: rows, cap: d.compute_cap, cap_since: iso(now - 600_000), throttle },
-    pack: { by_pace: pace ? Math.round(Math.max(1, want) / pace) : d.pack_first, max: d.pack8_max, lease: newLease(),
+    pack: { by_pace: pace ? Math.round(Math.max(1, want) / pace) : d.pack_first, max: packMax, lease: newLease(),
       short_until: iso(now + d.pack_lease_ms), long_until: iso(now + d.sync_lease_ms),
-      refill: { pace: pace || 0, low: d.sync_low_ms, floor: d.sync_floor_ms, scale: d.sync_scale_pct } },
+      refill: { pace: pace || 0, low: d.sync_low_ms, floor: queuedPack ? 0 : d.sync_floor_ms, scale: d.sync_scale_pct } },
   };
   const r = await callSync(db, call);
   // A CHECK'S DATABASE SETTLES WHAT WAS QUEUED AT ONCE (scripts/pg/test_db.mjs).

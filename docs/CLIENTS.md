@@ -337,7 +337,7 @@ and never produces a wrong number.
 ## The cycle, protocol 8
 
 One door, `POST /api/board/sync` (body ≤ `sync_body` characters,
-worker/sync.js). A client syncs when its work runs low, when results have waited
+worker/sync.js). A client syncs to refill its work, when results have waited
 `flush_ms`, and when it stops; an idle client reads the work signal instead
 (§"The work signal"). Every sync states, in full, what the client holds.
 
@@ -392,8 +392,7 @@ unrecognised id `403`)
   `dropped`: never recorded, with `why`: `not_held` (another client took the row
   since) or `stale_engine`. Either way the client deletes the result.
 - `held`: whether each named row is still the client's; `false` stops that row.
-- `next_ms`: time left at reply until the next hand-out. Sync then, or when its
-  work runs low (`sync_low_ms` left), whichever is later; sync sooner only to
+- `next_ms`: time left at reply until the next hand-out. Sync sooner only to
   hand in results or to stop. A pack's gate is at most `sync_floor_ms`, shortened
   to its estimated time to reach `sync_low_ms`; a bootstrap pack without a pace
   has no gate. A renewal-only or full-buffer reply does not add a gate;
@@ -401,29 +400,18 @@ unrecognised id `403`)
   a reply without available work from a completed renewal, including when the
   retry time elapsed before the reply.
 
-The official page and desktop client refill on estimated remaining time, not
-a completion percentage. The active row uses recent folded progress; queued
-rows use completed-row timings for the weapon, ruler, mode and effective
-compute share, falling back to the device's overall pace. Changing the share
-resets the active rate. Resumed rows measure only their remaining fraction.
+The official page and desktop client send the `queued-pack-v1` capability.
+With a running pack and an empty spare slot, they ask for one full pack when
+the current pack starts. One request or one queued pack fills the spare slot.
+The queued pack prepares its first row while the current pack computes. When
+the current pack ends, the queued pack starts and opens the spare slot again.
 
-The lead adapts within `sync_low_ms`, which remains its ceiling. It sums
-measured useful-sync time (including local reply processing), order preparation,
-progress-update spacing and observed late-handoff gaps. Each uses an
-exponentially weighted mean and absolute deviation (weight 0.2); the estimate
-is the larger of the latest sample and mean plus three deviations. Network
-slowdowns enlarge the lead immediately; stable recovery and on-time handoffs
-shrink it. Empty or fair-limited replies do not teach dispatch latency.
-Cold sessions use `poll_ms` for dispatch and one compute piece for preparation
-and update spacing. Learning is local to the running session, uses a monotonic
-clock and sends no probes or additional telemetry.
-
-A background pack prepares its first row while the current row computes;
-execution reuses that order. There is still at most one buffered next pack,
-subject to `packs_held`, server gates and unchanged fairness and independence
-rules. Failed requests back off even when results or renewals are due; a
-successful reply's new-work gate still permits both. Task scarcity and fair
-share waits are not interpreted as a reason to prefetch further ahead.
+A successful pack grant has no cooldown for these clients. The server caps
+them at two held packs, subject to a lower `packs_held` limit. Empty grants and
+connection failures still back off. Fairness, eligibility and independence
+apply to each grant. `pace_ms` sizes a pack; it does not determine when the
+official client requests its next pack. Clients without the capability use
+the existing cooldown.
 
 | reply | meaning | then |
 | --- | --- | --- |

@@ -72,6 +72,22 @@ check("a sync is handed a pack of board rows, and when to come back", first.pack
   && first.next_ms > 0 && first.next_ms <= DIALS.sync_floor_ms.default && first.protocol === 8, JSON.stringify(first).slice(0, 400));
 check("…with every dial a protocol 8 client reads", SYNC_CLIENT_DIALS.every((k) => first.dials && first.dials[k] === DIALS[k].default), JSON.stringify(first.dials));
 check("…and the protocols served, as release.json says them", JSON.stringify(first.protocols_served) === "[8,7,6]");
+const queuedClient = "f".repeat(24);
+const queuedOptions = { pace_ms: 60_000, want_ms: 240_000, capabilities: ["queued-pack-v1"] };
+const current = await sync(queuedClient, queuedOptions);
+const namedPack = (p) => ({ lease: p.lease, rows: p.tasks.map((t) => t.question) });
+const spare = await sync(queuedClient, { ...queuedOptions, held: [namedPack(current.pack)] });
+check("a queued-pack client gets a spare immediately after a paced grant",
+  current.next_ms === 0 && spare.pack?.lease !== current.pack.lease && spare.pack?.tasks.length > 0);
+await setDial(env, 'packs_held', 4, 'fixture');
+const full = await sync(queuedClient, { ...queuedOptions, held: [namedPack(current.pack), namedPack(spare.pack)] });
+check("the database limits queued-pack clients to two packs", !full.pack && full.held.every((row) => row.held));
+const retrySpare = await sync(queuedClient, { ...queuedOptions, held: [namedPack(current.pack)] });
+const leasesAfterRetry = await L.get("SELECT count(DISTINCT lease) AS n FROM state_compute_work WHERE leased_to = ?", queuedClient);
+check("retrying after a lost spare reply preserves the current pack and only one spare",
+  retrySpare.pack?.tasks.length > 0 && retrySpare.held.every((row) => row.held) && leasesAfterRetry.n === 2);
+await sync(queuedClient, { ...queuedOptions, want_ms: 0 });
+await setDial(env, 'packs_held', DIALS.packs_held.default, 'fixture');
 const lease = first.pack.lease, rows = first.pack.tasks.map((t) => t.question);
 
 // F4 — NO HEAD START FROM ASKING OFTEN: a sync before its time gets no work,
@@ -251,7 +267,7 @@ let monotonic = 0;
 const page = {
   Date: class extends Date { static now() { return 100_000; } },
   setTimeout, heldPack: null, packQueue: [], lostRows: new Set(), boardPaceMs: 1000,
-  syncDials: { packs_held: 2, poll_ms: 10_000, sync_low_ms: 120_000, flush_ms: 600_000, report_ms: 0 },
+  syncDials: { packs_held: 2, pack8_ms: 600_000, poll_ms: 10_000, flush_ms: 600_000, report_ms: 0 },
   boardProtocol: 8, syncNotBefore: 0, syncInFlight: null, syncWork: null, bootSyncAt: 1, lastSyncAt: 100_000, resultsMem: [],
   jittered: (ms) => ms, keptResults: async () => [], loadCut: () => null, maybeReloadForRelease() {}, idleCount() {},
   communityLanes: () => 4,
@@ -263,9 +279,9 @@ page.giveBack = () => { page.returned++; page.heldPack = null; page.packQueue = 
 page.readSignal = async () => { page.reads++; return { open: 0, urgent: 0 }; };
 page.packRowOnce = async () => { page.measured++; return true; };
 page.boardSync = async () => { page.asked++; return null; };
-const client = runInNewContext(source.slice(source.indexOf("const refillTiming ="), source.indexOf("function boardSyncBody(")) +
+const client = runInNewContext(source.slice(source.indexOf("async function prepareBoardRow("), source.indexOf("function boardSyncBody(")) +
   source.slice(source.indexOf("const idleWaitMs ="), source.indexOf("function keepRow8(")) +
-  "\n({ workOnce8, refill8, idleWaitMs, workLeftMs, refillLeadMs, learnTiming, refillTiming, rowProgress, rowPaces });", page);
+  "\n({ workOnce8, refill8, idleWaitMs });", page);
 const pack = (lease) => ({ proto: 8, lease, next: 0, tasks: [{ question: lease }], done: new Set() });
 let finishSync;
 page.heldPack = { ...pack("old"), next: 1, done: new Set(["old"]) };
@@ -299,17 +315,7 @@ client.refill8("device");
 check("a one-pack server limit suppresses refill until the held pack is done", page.asked === 0);
 page.syncDials.packs_held = 2;
 client.refill8("device");
-check("a low buffer refills when another slot is available", page.asked === 1);
-page.heldPack = { ...pack("long"), row: "long", progress: 0.99 }; page.boardPaceMs = 300_000; page.asked = 0;
-client.refill8("device");
-check("the running row's completed fraction does not delay a long-row refill", page.asked === 1, String(page.asked));
-page.heldPack.done.add("long");
-check("a completed row does not make remaining work negative", client.workLeftMs() === 0);
-page.heldPack.tasks.push({ question: "queued" });
-check("a completed row's progress is not subtracted from the next row", client.workLeftMs() === 300_000);
-page.heldPack.done.clear(); page.lostRows.add("long");
-check("a lost row's progress is not subtracted from the next row", client.workLeftMs() === 300_000);
-page.lostRows.clear();
+check("an empty spare slot refills while a pack is active", page.asked === 1);
 page.heldPack = null; page.packQueue = [];
 page.refusedPending = []; page.syncFailures = 0;
 page.boardSyncBody = () => ({ held: [], results: [] });
@@ -396,76 +402,21 @@ Object.assign(page, {
   keepRow8: async () => {}, dropCut() {}, computeStart() {}, computeProgress() {}, computeEnd() {},
   api: async () => ({ ok: true, request: {} }), saveCut() {}, syncInFlight: null, syncNotBefore: 0,
 });
-page.heldPack = pack("progress");
+page.heldPack = pack("start");
 page.heldPack.tasks[0].record = { weapon: "braton_prime" };
 page.ENGINE_ID = "engine";
-page.measureRow = async (_request, _ruler, _live, onPiece) => { monotonic += 60_000; onPiece(90, 100, { folded: 90 }); return null; };
 const measure = runInNewContext(source.slice(source.indexOf("async function packRowOnce("), source.indexOf("/// DOES THIS BROWSER KEEP COMPUTING")) + "\npackRowOnce;", page);
-page.refill8 = client.refill8; page.asked = 0;
-page.boardSync = async () => { page.asked++; return null; };
-await measure("device", page.heldPack);
-check("real row progress triggers refill before the long row finishes",
-  page.heldPack.progress === 0.9 && page.asked === 1, JSON.stringify({ progress: page.heldPack.progress, asked: page.asked }));
-
-page.heldPack = pack("accelerated");
-page.heldPack.tasks[0].record = { weapon: "braton_prime" };
+page.refill8 = client.refill8;
 page.asked = 0;
-for (const stat of Object.values(client.refillTiming)) for (const key of Object.keys(stat)) delete stat[key];
-page.measureRow = async (_request, _ruler, _live, onPiece) => { monotonic += 3000; onPiece(30, 100, { folded: 30 }); return null; };
+page.boardSync = async () => { page.asked++; page.syncInFlight = new Promise(() => {}); };
+page.measureRow = async () => {
+  check("the first row starts after asking for its spare, before any progress", page.asked === 1);
+  client.refill8("device");
+  check("an in-flight request occupies the spare slot", page.asked === 1);
+  return null;
+};
 await measure("device", page.heldPack);
-check("a fast current row can request refill before the old 80-percent trigger", page.asked === 1);
-check("current progress replaces a stale previous-row duration", Math.abs(client.workLeftMs() - 7000) < 1e-6);
-
-for (const stat of Object.values(client.refillTiming)) for (const key of Object.keys(stat)) delete stat[key];
-const coldLead = client.refillLeadMs();
-client.learnTiming(client.refillTiming.sync, 200);
-client.learnTiming(client.refillTiming.prepare, 100);
-client.learnTiming(client.refillTiming.piece, 250);
-const fastLead = client.refillLeadMs();
-client.learnTiming(client.refillTiming.sync, 5000);
-const slowLead = client.refillLeadMs();
-for (let i = 0; i < 40; i++) client.learnTiming(client.refillTiming.sync, 200);
-const recoveredLead = client.refillLeadMs();
-check("measured fast dispatch shrinks the cold-start lead", fastLead === 550 && fastLead < coldLead);
-check("one slow useful dispatch expands the lead immediately", slowLead >= 5350);
-check("stable recovery shrinks the lead rather than retaining a historical maximum", recoveredLead < 600);
-client.learnTiming(client.refillTiming.sync, 1_000_000);
-check("a latency spike cannot exceed the server low-work ceiling", client.refillLeadMs() === page.syncDials.sync_low_ms);
-
-page.heldPack = pack("slow");
-page.heldPack.tasks[0].record = { weapon: "braton_prime" };
-page.heldPack.row = "slow"; page.heldPack.next = 1;
-Object.assign(page.heldPack, { paceKey: JSON.stringify(["braton_prime", undefined, undefined, 4]), sampleProgress: 0, sampleAt: monotonic });
-monotonic += 30_000;
-client.rowProgress(page.heldPack, 10, 100);
-check("a slow row is not refilled merely because its percentage advanced", client.workLeftMs() > client.refillLeadMs());
-page.communityPower = () => 2;
-monotonic += 250;
-client.rowProgress(page.heldPack, 20, 100);
-check("a changed compute share discards the old active rate", page.heldPack.rowMs === 0);
-
-page.communityPower = () => 4;
-page.heldPack = null; page.packQueue = []; page.syncNotBefore = 0;
-page.postBoardWork = async () => { monotonic += 700; return { ok: true, next_ms: 0, pack: { lease: "timed", lease_ms: 60_000, tasks: [{ question: "timed" }] } }; };
-page.takeSynced = async () => { monotonic += 200; };
-await send("device");
-check("actual sync timing includes local reply processing", client.refillTiming.sync.last === 900);
-page.postBoardWork = async () => { monotonic += 100_000; return { ok: true, next_ms: 20_000 }; };
-await send("device");
-check("an empty or fair-limited reply does not inflate learned dispatch latency", client.refillTiming.sync.last === 900);
-
-page.packQueue = []; page.syncNotBefore = 0;
-page.packRowOnce = async () => true;
-page.syncInFlight = Promise.resolve().then(() => {
-  monotonic += 600;
-  page.packQueue.push(pack("gap")); page.syncInFlight = null;
-  return { pack: { tasks: [{ question: "gap" }] } };
-});
-await client.workOnce8("device");
-check("a late useful refill feeds its actual handoff gap back into the lead", client.refillTiming.gap.last === 600);
-page.heldPack = null; page.packQueue = [pack("on-time")];
-await client.workOnce8("device");
-check("an on-time buffered handoff feeds a zero gap back into the lead", client.refillTiming.gap.last === 0);
+page.syncInFlight = null;
 
 let orders = 0;
 page.heldPack = pack("working"); page.packQueue = []; page.syncNotBefore = 0;
@@ -478,7 +429,7 @@ page.postBoardWork = async () => {
 await send("device");
 const prepared = page.packQueue.shift();
 check("background refill prepares the first next row while the current row computes",
-  !!prepared.prepared && orders === 1 && client.refillTiming.prepare.last === 120);
+  !!prepared.prepared && orders === 1);
 page.heldPack = prepared;
 page.measureRow = async (_request, _ruler, _live, onPiece) => { monotonic += 100; onPiece(10, 100, { folded: 10 }); return null; };
 await measure("device", prepared);
@@ -491,62 +442,26 @@ check("a transient background preparation failure is retried when the row starts
 Object.assign(page, {
   taskKey: () => "row", idbWrite: async () => {}, computeFinished: 0, renderBoardConsent() {},
 });
-page.heldPack = pack("completed");
+page.syncInFlight = null;
+page.heldPack = pack("current");
 page.heldPack.tasks[0].record = { weapon: "braton_prime" };
-client.rowPaces.clear();
-page.measureRow = async (_request, _ruler, _live, onPiece) => {
-  monotonic += 2500; onPiece(50, 100, { folded: 50 });
-  monotonic += 2500; onPiece(100, 100, { folded: 100 });
+const successor = pack("successor");
+successor.tasks[0].record = { weapon: "lex" };
+page.packQueue = [successor];
+page.asked = 0;
+page.boardSync = async () => { page.asked++; page.syncInFlight = new Promise(() => {}); };
+page.measureRow = async () => {
+  check("the queued pack does not trigger another request during current work", page.asked === 0);
   return { score: 1 };
 };
 await measure("device", page.heldPack);
-const learnedKey = JSON.stringify(["braton_prime", undefined, undefined, 4]);
-check("a completed row teaches the matching task and compute-share pace", client.rowPaces.get(learnedKey) === 5000);
-page.heldPack = pack("changed");
-page.heldPack.tasks[0].record = { weapon: "braton_prime" };
-page.measureRow = async (_request, _ruler, _live, onPiece) => {
-  page.communityPower = () => 2;
-  monotonic += 2500; onPiece(50, 100, { folded: 50 });
-  monotonic += 2500; onPiece(100, 100, { folded: 100 });
-  return { score: 1 };
+page.packRowOnce = measure;
+page.measureRow = async () => {
+  check("promoting the queued pack immediately requests its successor", page.heldPack === successor && page.asked === 1);
+  return null;
 };
-await measure("device", page.heldPack);
-check("a row that changed share is not learned as a whole row at the new share", client.rowPaces.size === 1);
-
-page.communityPower = () => 4;
-page.heldPack = { ...pack("resumed"), from: { folded: 50 } };
-page.heldPack.tasks[0].record = { weapon: "lex" };
-page.measureRow = async (_request, _ruler, _live, onPiece) => {
-  monotonic += 2000; onPiece(100, 100, { folded: 100 }); return { score: 1 };
-};
-await measure("device", page.heldPack);
-check("resuming halfway learns a full-row pace from only the remaining half",
-  client.rowPaces.get(JSON.stringify(["lex", undefined, undefined, 4])) === 4000);
-
-function handoffTrace(delay) {
-  for (const stat of Object.values(client.refillTiming)) for (const key of Object.keys(stat)) delete stat[key];
-  client.learnTiming(client.refillTiming.sync, delay);
-  client.learnTiming(client.refillTiming.prepare, 100);
-  client.learnTiming(client.refillTiming.piece, 100);
-  page.heldPack = { ...pack("trace"), row: "trace", next: 1, paceKey: JSON.stringify([undefined, undefined, undefined, 4]),
-    sampleAt: monotonic, sampleProgress: 0 };
-  page.packQueue = []; page.syncInFlight = null; page.syncNotBefore = 0; page.resultsMem = [];
-  let at = null, calls = 0;
-  const began = monotonic;
-  page.boardSync = async () => { calls++; at = monotonic - began; page.syncInFlight = new Promise(() => {}); };
-  for (let piece = 1; piece <= 100; piece++) {
-    monotonic += 100;
-    client.rowProgress(page.heldPack, piece, 100);
-    client.refill8("device");
-  }
-  page.syncInFlight = null;
-  return { at, calls, gap: Math.max(0, at + delay + 100 - 10_000), held: Math.max(0, 10_000 - at - delay - 100) };
-}
-const fastTrace = handoffTrace(200), slowTrace = handoffTrace(4000);
-check("a trained fast link hands off seamlessly without holding the next pack for seconds",
-  fastTrace.calls === 1 && fastTrace.gap === 0 && fastTrace.held <= 200 && fastTrace.at >= 9000, JSON.stringify(fastTrace));
-check("a trained slow link starts earlier, not more often, and still hands off seamlessly",
-  slowTrace.calls === 1 && slowTrace.gap === 0 && slowTrace.held <= 200 && slowTrace.at < fastTrace.at, JSON.stringify(slowTrace));
+await client.workOnce8("device");
+page.syncInFlight = null;
 
 console.log(failures ? `\n${failures} failed` : "\nprotocol 8 hands out by protocol 7's rules and holds a client to its time");
 process.exit(failures ? 1 : 0);
