@@ -35,7 +35,9 @@ runs:
         # keep in sync with mise.toml
         toolchain: "1.97.1"
         targets: wasm32-unknown-unknown, x86_64-pc-windows-msvc
-    - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+    # A partial cache hit can clean the prepared release files under target.
+    - if: inputs.build != 'publish'
+      uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       with:
         workspaces: |
           . -> target
