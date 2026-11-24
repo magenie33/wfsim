@@ -71,12 +71,12 @@ https://wfsim.app/benchmark
 
 ## 以游戏为准
 
-**游戏内实测、wiki 和 DE 公开导出数据不一致时，以实测为准，其次 wiki，再次导出数据；引擎里每一条公式都写明出处。**
+**游戏内实测与 Warframe Wiki 不一致时，WFSim 以实测为准。**
 
 ### 为什么
 
-- 卡面文字和 wiki 是在描述游戏，它们可能漏掉两个效果怎么叠加，或者列出的数字到底指什么。游戏内实测能把这个问题定下来。
-- 引擎采用的每一条实测都连同数字一起公开，任何人都可以重测一遍。
+- Warframe Wiki 提供游戏机制参考。游戏内实测可以验证效果如何叠加、面板数值如何生效。
+- 下方的记录列出了可复现的游戏内测试。
 - 测试锁定的数值，只有新的游戏内实测才能改。
 
 ### 怎么用
@@ -87,7 +87,7 @@ https://wfsim.app/benchmark
 ### 依据的读数
 
 - 游戏内实测 · +50% 和 +30% 两个爆头加成，游戏内实测是只有第一个时的 1.1998 倍：它们相加（1.2），不是相乘（1.3）。 [M60-headshot-bonuses-add](https://github.com/magenie33/wfsim/blob/main/docs/measurements/M60-headshot-bonuses-add.md)
-- 游戏内实测 · 投掷每扔一次都要装填，所以一个循环是蓄力加装填，1.6 秒，而不是射速看起来的 1 秒。 [M43-throw-cycle-includes-reload](https://github.com/magenie33/wfsim/blob/main/docs/measurements/M43-throw-cycle-includes-reload.md)
+- 游戏内实测 · 实测观察到，祸根每次投掷后都会装填，因此投掷周期包含蓄力和装填。 [M43-throw-cycle-includes-reload](https://github.com/magenie33/wfsim/blob/main/docs/measurements/M43-throw-cycle-includes-reload.md)
 
 ## 分数是算出来的，不是填进去的
 

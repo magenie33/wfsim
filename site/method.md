@@ -71,12 +71,12 @@ https://wfsim.app/benchmark
 
 ## The game is the authority
 
-**Where a reading taken in the game, the wiki and DE's public export disagree, the reading wins, then the wiki, then the export; every formula in the engine names its source.**
+**When an in-game measurement and the Warframe Wiki disagree, WFSim follows the measurement.**
 
 ### Why
 
-- A card's text and the wiki describe the game, and they can leave out how two effects combine or what a listed number means. A reading in the game settles it.
-- Each reading the engine applies is published with its numbers, so anyone can take it again.
+- The Warframe Wiki provides a reference for game mechanics. In-game tests can show how effects combine and what a listed number means.
+- The records below give examples of in-game tests you can repeat.
 - A tested value changes only with a new reading in the game.
 
 ### How to apply it
@@ -87,7 +87,7 @@ https://wfsim.app/benchmark
 ### The readings behind it
 
 - In game · Headshot bonuses of +50% and +30% read 1.1998 times the first in game: they add (1.2), they do not multiply (1.3). [M60-headshot-bonuses-add](https://github.com/magenie33/wfsim/blob/main/docs/measurements/M60-headshot-bonuses-add.md)
-- In game · A throw reloads after every throw, so its cycle is the wind-up plus the reload, 1.6 s rather than the 1 s its fire rate suggests. [M43-throw-cycle-includes-reload](https://github.com/magenie33/wfsim/blob/main/docs/measurements/M43-throw-cycle-includes-reload.md)
+- In game · The Scourge's throw was observed to trigger a reload each time, so its cycle includes both wind-up and reload. [M43-throw-cycle-includes-reload](https://github.com/magenie33/wfsim/blob/main/docs/measurements/M43-throw-cycle-includes-reload.md)
 
 ## A score is computed, never typed
 
