@@ -25,6 +25,15 @@ pub struct Scene {
     equipped_fire: Option<attachment::PreparedFire>,
 }
 
+/// A floor-map aim selects an actor and may supply a point beside that actor.
+#[derive(Debug, Clone, Copy)]
+pub struct FloorAim {
+    pub actor: usize,
+    pub head_proxy: usize,
+    pub body_proxy: usize,
+    pub at: Option<crate::rules::space::Vec2>,
+}
+
 #[derive(Debug, Clone)]
 struct Reticle {
     anchor: Vec3,
@@ -319,10 +328,13 @@ impl Collider {
 
 #[wfsim_gas_macro::metered]
 impl Scene {
-    fn melee_reach(input: &Scene3d, root: Vec3, bodies: &[Body]) -> Vec<(usize, f64, bool)> {
+    fn melee_reach(input: &Scene3d, root: Vec3, bodies: &[Body], aim: Option<FloorAim>) -> Vec<(usize, f64, bool)> {
         let (bottom, top) = controller_segment(root, input.player.controller);
         let player_radius = f64::from(controller_radius(input.player.controller));
-        let aim = bodies[0].root.minus(root);
+        let aim_point = aim.map_or(bodies[0].root, |aim| {
+            aim.at.map_or(bodies[aim.actor].root, |at| Vec3([at.x, root.0[1], at.y]))
+        });
+        let aim = aim_point.minus(root);
         let forward = Vec3([aim.0[0], 0., aim.0[2]]).normalized();
         let cone = libm::cos((crate::rules::space::MELEE_ARC_DEG * 0.5).to_radians());
         let mut reach: Vec<_> = bodies.iter().zip(&input.enemies).enumerate().map(|(index, (body, model))| {
@@ -332,7 +344,7 @@ impl Scene {
             let dy = (bottom - other_top).max(other_bottom - top).max(0.);
             let gap = (libm::sqrt(horizontal.dot(horizontal) + dy * dy)
                 - player_radius - f64::from(controller_radius(model.controller))).max(0.);
-            let in_arc = index == 0 || forward.is_none_or(|f| {
+            let in_arc = forward.is_none_or(|f| {
                 crate::rules::space::within(horizontal.length() * cone, horizontal.dot(f))
             });
             (index, gap, in_arc)
@@ -380,15 +392,19 @@ impl Scene {
         self.camera
     }
     pub fn new(input: Scene3d, count: usize) -> Result<Self, String> {
-        Self::prepare(input, count, false)
+        Self::prepare(input, count, false, None)
     }
 
     /// Standing target drills hold the unobstructed head proxy center.
     pub fn new_standing(input: Scene3d, count: usize) -> Result<Self, String> {
-        Self::prepare(input, count, true)
+        Self::prepare(input, count, true, None)
     }
 
-    fn prepare(mut input: Scene3d, count: usize, head_center: bool) -> Result<Self, String> {
+    pub fn new_standing_aimed(input: Scene3d, count: usize, aim: Option<FloorAim>) -> Result<Self, String> {
+        Self::prepare(input, count, true, aim)
+    }
+
+    fn prepare(mut input: Scene3d, count: usize, head_center: bool, aim: Option<FloorAim>) -> Result<Self, String> {
         if input.enemies.len() != count || count == 0 || count > 361 {
             return Err("scene_3d needs one model per arena enemy (maximum 361)".into());
         }
@@ -540,9 +556,20 @@ impl Scene {
         if input.preselected_target.is_some_and(|i| i >= count) {
             return Err("launch target is outside scene".into());
         }
+        if let Some(aim) = aim {
+            if aim.at.is_some_and(|at| !at.x.is_finite() || !at.y.is_finite())
+                || bodies.get(aim.actor).is_none_or(|body| {
+                    [aim.head_proxy, aim.body_proxy].iter().any(|index| {
+                        !body.proxies.iter().any(|p| p.proxy.cache_index == *index)
+                    })
+                })
+            {
+                return Err("invalid floor aim or missing aim proxy".into());
+            }
+        }
         let bounds = BoundsNode::build(&bodies);
-        let (reticles, avatar_up) = Self::prepare_reticles(&input, camera, &bodies, &bounds, head_center);
-        let melee_gap = Self::melee_reach(&input, root, &bodies);
+        let (reticles, avatar_up) = Self::prepare_reticles(&input, camera, &bodies, &bounds, head_center, aim);
+        let melee_gap = Self::melee_reach(&input, root, &bodies, aim);
         let slam_distance = bodies.iter().map(|body| body.radial_distance(root)).collect();
         Ok(Self {
             input,
@@ -682,6 +709,7 @@ impl Scene {
         bodies: &[Body],
         bounds: &[BoundsNode],
         head_center: bool,
+        aim: Option<FloorAim>,
     ) -> ([Reticle; 2], [f32; 4]) {
         let axis = |transform: Affine, direction| {
             transform
@@ -707,17 +735,23 @@ impl Scene {
             )
         };
         let reticles = [false, true].map(|head| {
-            let selected = if head { input.head_proxy } else { input.body_proxy };
-            let anchor = bodies[0]
+            let actor = aim.map_or(0, |aim| aim.actor);
+            let selected = if head {
+                aim.map_or(input.head_proxy, |aim| aim.head_proxy)
+            } else {
+                aim.map_or(input.body_proxy, |aim| aim.body_proxy)
+            };
+            let anchor = bodies[actor]
                 .proxies
                 .iter()
                 .find(|p| p.proxy.cache_index == selected)
                 .unwrap()
                 .center;
+            let anchor = aim.and_then(|aim| aim.at).map_or(anchor, |at| Vec3([at.x, anchor.0[1], at.y]));
             let offset = anchor.minus(camera);
             let direction = offset.normalized().unwrap_or(Vec3([0., 0., 1.]));
             let ray = Ray { origin: camera, direction, maximum: offset.length() + 1e-6, width: 0. };
-            let hits = Self::hits(bodies, bounds, ray)
+            let hits = if aim.is_some() { Vec::new() } else { Self::hits(bodies, bounds, ray) }
                 .into_iter()
                 .map(|hit| {
                     let target = if head_center && head && hit.body == 0 && hit.part == 1 {

@@ -221,17 +221,20 @@ function mountArenaCanvas(host, s, en, opts) {
     const struck = arenaFirstHit(s);
     const you = px(s.player_at), aimS = px(aim);
 
-    // THE MUZZLE, and the line from it. A straight-line weapon does not stop
-    // where you point — the aim marker is a DIRECTION, so
-    // the line runs through it and off the floor.
+    // The floor-map aim passes through the reticle. Projectiles use their
+    // posed muzzle and the selected height in the engine.
     const span = Math.hypot(aim[0] - s.player_at[0], aim[1] - s.player_at[1]) || 1;
     const u = [(aim[0] - s.player_at[0]) / span, (aim[1] - s.player_at[1]) / span];
-    const mz = px([s.player_at[0] + u[0] * BODY_R_M, s.player_at[1] + u[1] * BODY_R_M]);
+    const mz = you;
     const su = [u[0], -u[1]];
     ctx.save();
-    ctx.strokeStyle = cssv("accent"); ctx.lineWidth = 1.6;
+    ctx.strokeStyle = cssv("accent"); ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(mz[0], mz[1]);
-    ctx.lineTo(mz[0] + su[0] * 4000, mz[1] + su[1] * 4000); ctx.stroke();
+    ctx.lineTo(aimS[0], aimS[1]); ctx.stroke();
+    ctx.setLineDash([5, 5]);
+    ctx.globalAlpha = 0.55;
+    ctx.beginPath(); ctx.moveTo(aimS[0], aimS[1]);
+    ctx.lineTo(aimS[0] + su[0] * 4000, aimS[1] + su[1] * 4000); ctx.stroke();
     ctx.restore();
 
     for (let i = 0; i < bodies.length; i++) {
@@ -304,7 +307,7 @@ function mountArenaCanvas(host, s, en, opts) {
     const row = (k, v) => `<div class="ai-row"><span>${escHtml(k)}</span>`
       + `<span class="num">${escHtml(String(v))}</span></div>`;
     const gapTo = (b) => Math.max(0,
-      Math.hypot(b[0] - s.player_at[0], b[1] - s.player_at[1]) - CONTACT_M).toFixed(2) + " m";
+      Math.hypot(b[0] - s.player_at[0], b[1] - s.player_at[1]) - (s.scene_3d ? 0 : CONTACT_M)).toFixed(2) + " m";
 
     // WHO IT IS COMES FIRST. A body's NAME is `e3` — what
     // the roll call, the heat map and the debuff table call it, so the header
@@ -450,7 +453,7 @@ function mountArenaCanvas(host, s, en, opts) {
     rail.innerHTML = TOOLS.map(([id, key, title, svg]) =>
       `<button class="arc-tool" data-tool="${id}" title="${escHtml(title)} (${key})"
          aria-label="${escHtml(title)}" aria-pressed="${id === tool}"${
-        id === "hand" ? "" : id === "aim" && s.scene_3d ? " disabled" : dis()}>
+        id === "hand" ? "" : dis()}>
          <svg viewBox="0 0 22 22">${svg}</svg></button>`).join("");
     optbox.innerHTML =
       `<button class="arc-opt" data-opt="snap" aria-pressed="${snapGrid}"${dis()}
@@ -509,6 +512,12 @@ function mountArenaCanvas(host, s, en, opts) {
     }
     return best;
   }
+  const aimPoint = (p) => {
+    const bodies = arenaBodies(s);
+    const target = bodies.find((at, i) => Math.hypot(at[0] - p[0], at[1] - p[1])
+      <= arenaControllerRadius(s, i));
+    return target ? [...target] : snapTo(p);
+  };
   const hitYou = (p) => Math.hypot(s.player_at[0] - p[0], s.player_at[1] - p[1]) <= grab();
   // THE MARKER IS GRABBABLE ONLY ONCE IT IS A PLACE OF ITS OWN.
   //
@@ -607,7 +616,7 @@ function mountArenaCanvas(host, s, en, opts) {
     // …and with the aim tool the whole floor is the marker, which is the only
     // way to put an aim somewhere the first time.
     if (tool === "aim") {
-      if (!s.scene_3d) { mode = "aim"; s.aim_at = snapTo(p); draw(); paintChips(); }
+      mode = "aim"; s.aim_at = aimPoint(p); draw(); paintChips();
       return;
     }
     // THE ORDER IS WHAT YOU REACH FOR FIRST: a placed aim marker, then an
@@ -648,7 +657,7 @@ function mountArenaCanvas(host, s, en, opts) {
     }
     if (mode === "paint") { placeAt(p); return; }
     if (mode === "erase") { eraseAt(p); return; }
-    if (mode === "aim") { s.aim_at = snapTo(p); draw(); paintChips(); return; }
+    if (mode === "aim") { s.aim_at = aimPoint(p); draw(); paintChips(); return; }
     if (mode === "you") {
       s.player_at = snapTo(p);
       s.target_at = keepApart(s.player_at, s.target_at);
@@ -886,7 +895,7 @@ function mountArena(host, s, en, opts) {
       // body is dragged, but a PLACE has nothing to grab, so it is clicked.
       // Bodies and the marker itself are dragged instead, so they are skipped.
       const svg = e.target.closest && e.target.closest(".ar-svg");
-      if (!svg || s.scene_3d || (e.target.closest && e.target.closest("[data-drag]"))) return;
+      if (!svg || (e.target.closest && e.target.closest("[data-drag]"))) return;
       if (opts.readonly || officialScenarioActive()) return;
       const box = svg.getBoundingClientRect();
       if (!box.width || !box.height) return;
