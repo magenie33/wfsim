@@ -825,3 +825,15 @@ fn a_scene_search_winner_replays_under_the_same_models() {
         assert_eq!(row["dps"], replay["dps"]);
     }
 }
+
+#[test]
+fn standard_placement_matches_the_weapon_class() {
+    for (weapon, expected) in [("laetum", 5.0), ("magistar", 0.7825)] {
+        let mut input = request(weapon, 1, false);
+        input["scene_3d"] = json!({"preset": "source_standard"});
+        let fight = crate::fight::parse_fight(&input).unwrap();
+        let arena = fight.arena;
+        let distance = arena.target_at.distance(arena.player_at);
+        assert!((distance - expected).abs() < 1e-6, "{weapon}: {distance}");
+    }
+}

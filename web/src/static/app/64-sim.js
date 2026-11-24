@@ -471,14 +471,15 @@ function renderScenarioFields(ids, opts = {}) {
        </div>`;
     const profiles3d = META.scene_3d_source_default;
     const placement = sim.scene_3d?.placement?.kind || "contact";
-    const sourceDefault = sim.scene_3d?.preset === "source_default";
-    const scene3d = !sim.scene_3d ? "" : sourceDefault && ["supplied", "contact"].includes(placement)
+    const standard3d = sim.scene_3d?.preset === "source_standard";
+    const sourceDefault = standard3d || sim.scene_3d?.preset === "source_default";
+    const scene3d = !sim.scene_3d ? "" : standard3d ? "standard" : sourceDefault && ["supplied", "contact"].includes(placement)
       ? placement : "custom";
     const canUse3d = profiles3d?.weapons.includes(w?.id) && profiles3d.enemies.includes(sim.enemy)
       && (sim.formation || []).every((f) => profiles3d.enemies.includes(f.enemy || sim.enemy));
     const referenceMuzzle = sourceDefault && profiles3d?.reference_weapons?.includes(w?.id);
     const meleeVolume = sourceDefault && profiles3d?.melee_weapons?.includes(w?.id);
-    const geometryOptions = [["", tr("2D")], ["supplied", tr("3D · Arena positions")], ["contact", tr("3D · Contact")]];
+    const geometryOptions = [["", tr("2D")], ["standard", tr("3D · Standard")], ["supplied", tr("3D · Arena positions")], ["contact", tr("3D · Contact")]];
     if (scene3d === "custom") geometryOptions.push(["custom", tr("3D · Custom scene")]);
     const geometry = (canUse3d || scene3d) ? `
       <label>${escHtml(tr("Simulation geometry"))}
@@ -666,7 +667,9 @@ function renderScenarioFields(ids, opts = {}) {
           if (el.value === "custom") return;
           const enabled = !!el.value;
           setScenarioFields(enabled
-            ? { scene_3d: { preset: "source_default", placement: { kind: el.value } }, aim_at: null }
+            ? { scene_3d: el.value === "standard"
+              ? { preset: "source_standard" }
+              : { preset: "source_default", placement: { kind: el.value } }, aim_at: null }
             : { scene_3d: null });
           if (opts.after) opts.after();
           return;

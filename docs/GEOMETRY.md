@@ -7,6 +7,11 @@ for the live game's pose, emission, world-query and explosion providers.
 
 ## Aim and actors
 
+The `source_standard` preset uses 5 m horizontal controller-center distance
+for standing firearms and controller contact for standing melee. Formation
+offsets are preserved. The arena draws the projected controller radii from
+the source profiles.
+
 Set `scene_3d` to `{"preset":"source_default","placement":{"kind":"center_distance","distance":5}}`
 to use the standing open-arena preset. The simulator's geometry picker offers
 the preset for the weapon and target profiles in `/api/meta.scene_3d_source_default`.

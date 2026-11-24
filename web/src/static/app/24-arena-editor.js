@@ -215,7 +215,7 @@ function mountArenaCanvas(host, s, en, opts) {
     ctx.fillStyle = cssv("panel3"); ctx.fillRect(0, 0, W, H);
     grid();
 
-    const r = Math.max(2.5, BODY_R_M * view.k);
+    const r = arenaControllerRadius(s) * view.k;
     const bodies = arenaBodies(s);
     const aim = arenaAim(s);
     const struck = arenaFirstHit(s);
@@ -236,6 +236,7 @@ function mountArenaCanvas(host, s, en, opts) {
 
     for (let i = 0; i < bodies.length; i++) {
       const [x, y] = px(bodies[i]);
+      const r = arenaControllerRadius(s, i) * view.k;
       if (x < -r * 3 || x > W + r * 3 || y < -r * 3 || y > H + r * 3) continue;
       const on = sel.has(i);
       // ITS UNIT'S COLOUR (see `unitHue`), so a mixed formation reads as one
@@ -259,7 +260,7 @@ function mountArenaCanvas(host, s, en, opts) {
       }
     }
 
-    ctx.beginPath(); ctx.arc(you[0], you[1], Math.max(3, r), 0, 7);
+    ctx.beginPath(); ctx.arc(you[0], you[1], r, 0, 7);
     ctx.fillStyle = cssv("gold"); ctx.globalAlpha = 0.45; ctx.fill(); ctx.globalAlpha = 1;
     ctx.lineWidth = 2; ctx.strokeStyle = cssv("gold"); ctx.stroke();
     // …and a short arrow past the muzzle, so being turned by your own aim is

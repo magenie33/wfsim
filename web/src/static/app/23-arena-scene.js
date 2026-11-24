@@ -28,6 +28,21 @@ const adoptBodyRadius = (m) => {
 // to be laid out in whatever pixel width the host happened to have, which is
 // ZERO while the panel is on another tab — so the geometry came out NaN and a
 // drag wrote `[null, null]` into the fight. A viewBox has no such moment.
+function arenaControllerRadius(s, enemy) {
+  const scene = s.scene_3d;
+  if (!scene) return BODY_R_M;
+  const profiles = META?.scene_3d_source_default;
+  if (enemy === undefined) {
+    const model = scene.carrier?.player || scene.player;
+    return model?.controller
+      ? model.controller.radius * (model.controller.scale ?? 1)
+      : profiles?.player_controller_radius_m || BODY_R_M;
+  }
+  const model = scene.enemies?.[enemy]?.controller;
+  return model ? model.radius * (model.scale ?? 1)
+    : profiles?.enemy_controller_radii_m?.[unitAt(s, enemy)] || BODY_R_M;
+}
+
 const ARENA_VW = 320;
 const ARENA_VH = 176;
 
@@ -183,7 +198,7 @@ function arenaSvg(s, en, heat, sel) {
   const g = arenaGeom(w, h, s.player_at, ...bodies, aim);
   const [px, py] = g.px(s.player_at);
   const [tx, ty] = g.px(aim);
-  const r = Math.max(3, BODY_R_M * g.s);
+  const r = arenaControllerRadius(s) * g.s;
   // A GRID THAT STAYS READABLE: the step grows with the zoom so the lines
   // never crowd, and it is labelled, because a scale nobody can read is a
   // picture rather than a measurement.
@@ -239,7 +254,7 @@ function arenaSvg(s, en, heat, sel) {
     const fill = heat && heat[i] > 0
       ? ` style="fill-opacity:${(0.15 + 0.75 * heat[i]).toFixed(3)}"` : "";
     return `<circle class="ar-body ar-foe${cls}" data-drag="foe:${i}" data-foe="${i}"${fill} `
-      + `cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r.toFixed(1)}"/>`;
+      + `cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${(arenaControllerRadius(s, i) * g.s).toFixed(1)}"/>`;
   }).join("");
   // A short arrow past the muzzle says which way the body is FACING, so a
   // player being turned by their own aim is visible rather than implied.

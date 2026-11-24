@@ -62,6 +62,7 @@ struct CarrierPose {
 #[serde(rename_all = "snake_case")]
 enum Preset {
     SourceDefault,
+    SourceStandard,
 }
 
 fn profiles() -> Result<&'static SourceProfiles, String> {
@@ -112,6 +113,13 @@ pub(crate) fn source_default_choices() -> Value {
             .filter(|w| w.sentinel && (standing_gun(&w.id) || standing_melee(&w.id)))
             .map(|w| &w.id).collect::<Vec<_>>(),
         "enemies": source.enemies.keys().collect::<Vec<_>>(),
+        "enemy_controller_radii_m": source.enemies.iter().map(|(id, enemy)| {
+            let c = &enemy.model.controller;
+            (id, c.radius * c.scale)
+        }).collect::<BTreeMap<_, _>>(),
+        "player_controller_radius_m": standing(Affine::IDENTITY, None).ok().map(|(player, _, _)| {
+            player.controller.radius * player.controller.scale
+        }),
     })
 }
 
@@ -164,7 +172,7 @@ pub(crate) fn source_default<'a>(
     formation: impl Iterator<Item = (&'a str, Vec2)>,
 ) -> Result<Arc<Scene>, String> {
     let SourceRequest {
-        preset: Preset::SourceDefault,
+        preset,
         placement,
         enemy_yaw_deg,
         carrier,
@@ -216,6 +224,13 @@ pub(crate) fn source_default<'a>(
         })
         .collect::<Result<Vec<_>, String>>()?;
     let count = enemies.len();
+    let default_placement = if weapon.sentinel {
+        Placement::Supplied
+    } else if matches!(preset, Preset::SourceStandard) && standing_gun(&weapon.id) {
+        Placement::CenterDistance { distance: 5. }
+    } else {
+        Placement::Contact
+    };
     Scene::new_standing(
         Scene3d {
             player,
@@ -228,7 +243,7 @@ pub(crate) fn source_default<'a>(
             head_proxy: first.head_proxy,
             body_proxy: first.body_proxy,
             maximum_flight_seconds: 2.,
-            placement: placement.unwrap_or(if weapon.sentinel { Placement::Supplied } else { Placement::Contact }),
+            placement: placement.unwrap_or(default_placement),
             preselected_target: None,
         },
         count,
