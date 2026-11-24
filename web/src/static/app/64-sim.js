@@ -474,7 +474,7 @@ function renderScenarioFields(ids, opts = {}) {
     const placement = sim.scene_3d?.placement?.kind || "contact";
     const standard3d = sim.scene_3d?.preset === "source_standard";
     const sourceDefault = standard3d || sim.scene_3d?.preset === "source_default";
-    const scene3d = !sim.scene_3d ? "" : standard3d ? "standard" : sourceDefault && ["supplied", "contact"].includes(placement)
+    const scene3d = !sim.scene_3d ? "" : standard3d && placement !== "supplied" ? "standard" : sourceDefault && ["supplied", "contact"].includes(placement)
       ? placement : "custom";
     const canUse3d = profiles3d?.weapons.includes(w?.id) && profiles3d.enemies.includes(sim.enemy)
       && (sim.formation || []).every((f) => profiles3d.enemies.includes(f.enemy || sim.enemy));

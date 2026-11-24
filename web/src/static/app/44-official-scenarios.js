@@ -32,6 +32,16 @@ const officialScenarioActive = () => !!(scenarioNamed(activeScenario) || {}).bui
 // need it now: the bar itself, and the "edit a copy of this fight" button in
 // the official note, which performs the identical copy. A second hand-written
 // config there is how the two come to copy different things.
+function editableScenario(state) {
+  const placement = state.scene_3d?.placement?.kind;
+  if (state.scene_3d?.preset && !state.scene_3d.carrier
+    && (placement === "contact" || placement === "center_distance")) {
+    state = arenaDisplayPlacement(state);
+    state.scene_3d = { ...state.scene_3d, placement: { kind: "supplied" } };
+  }
+  return state;
+}
+
 function scenarioBarCfg() {
   const cfg = {
     domain: SCENARIOS,
@@ -63,7 +73,8 @@ function scenarioBarCfg() {
     setActive: (n) => { activeScenario = n; localStorage.setItem(presetActiveKey(SCENARIOS), scenarioKey(n)); },
     snapshot: snapshotScenario,
     apply: applyScenario,
-    blank: snapshotScenario,
+    blank: () => editableScenario(snapshotScenario()),
+    copyState: editableScenario,
     // Owning nothing, the fight is an official ruler: there is no blank to show.
     pinned: true,
     rerender: scenariosChanged,

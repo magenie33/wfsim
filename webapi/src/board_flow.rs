@@ -175,6 +175,17 @@ pub fn observation(record: &Value, raw: Option<&Value>) -> Value {
             }
         }
         let fight=crate::fight::parse_fight(&request)?;
+        // Placement policies project to the same physical fight when their roots agree.
+        if request["scene_3d"]["preset"] == "source_standard" && fight.arena.scene_3d.is_some() {
+            request["player_at"] = json!([fight.arena.player_at.x, fight.arena.player_at.y]);
+            request["target_at"] = json!([fight.arena.target_at.x, fight.arena.target_at.y]);
+            if let Some(formation) = request.get_mut("formation").and_then(Value::as_array_mut) {
+                for (entry, body) in formation.iter_mut().zip(&fight.arena.others) {
+                    entry["at"] = json!([body.at.x, body.at.y]);
+                }
+            }
+            request["scene_3d"]["placement"] = json!({"kind":"supplied"});
+        }
         let ranks:Vec<_>=request["arcane"].as_array().into_iter().flatten().enumerate().map(|(i,id)| {
             request["arcane_rank"][i].as_u64().or_else(|| fight.info.arcane_pools.get(i)
                 .and_then(|pool|wfsim_engine::data::arcanes::for_slot(pool,id.as_str().unwrap_or("")))
@@ -382,6 +393,11 @@ mod tests {
         let mut report=raw.clone();report["request"]["replay"]=json!(true);report["request"]["custom_enemies"]=json!([]);report["request"]["also_acting"]=json!([]);
         report["request"]["player_at"]=json!([0,0]);report["request"]["target_at"]=json!([0,5]);
         assert_eq!(observation(&record,Some(&report))["valid"],true);
+        let mut editable = report.clone();
+        editable["request"]["scene_3d"]["placement"] = json!({"kind":"supplied"});
+        assert_eq!(observation(&record, Some(&editable))["valid"], true);
+        editable["request"]["target_at"] = json!([0, 40]);
+        assert_eq!(observation(&record, Some(&editable))["valid"], false);
         report["request"].as_object_mut().unwrap().remove("scene_3d");
         assert_eq!(observation(&record,Some(&report))["valid"],false);
         let mut finalist=raw.clone();

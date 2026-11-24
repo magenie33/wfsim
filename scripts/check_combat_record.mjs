@@ -38,7 +38,7 @@ const r = await evaluate(`(async () => {
   // unmodded Laetum body shot is 160 — enough to break the shield and not
   // enough to make the leak hard to read.
   sim.enemy = 'crewman'; sim.level = 1; sim.steel_path = false; sim.eximus = false;
-  sim.duration = 6; setSimRuns(12); sim.headshot_pct = 0;
+  sim.duration = 6; setSimRuns(12); sim.weakpoint_aim_pct = 0; sim.miss_pct = 0;
   sim.formation = []; sim.aim_at = null;
   markScenarioDirty && markScenarioDirty();
   // A BUILD, and the check needs one. Every assertion below passed for a month
@@ -355,6 +355,7 @@ const m = await evaluate(`(async () => {
   // FAR ENOUGH THAT THE CONE IS WIDER THAN A BODY. The arena is the only place
   // a position is set, so this moves the body rather than typing a distance.
   sim.target_at = [0, 40];
+  sim.scene_3d.placement = { kind: 'supplied' };
   sim.aiming = false;
   sim.duration = 8; setSimRuns(8);
   markScenarioDirty && markScenarioDirty();
@@ -456,6 +457,10 @@ const live = await evaluate(`(async () => {
   // the fights this panel had to be paged for — and the paging assertions at
   // the bottom of this file pass VACUOUSLY on a record that fits on one page.
   // A real board build over a minute is thousands of rows.
+  sim.target_at = [0, 5];
+  sim.scene_3d.placement = { kind: 'supplied' };
+  sim.aiming = true;
+  sim.weakpoint_aim_pct = 100;
   sim.duration = 60; setSimRuns(3);
   markScenarioDirty && markScenarioDirty();
   await sleep(400);
