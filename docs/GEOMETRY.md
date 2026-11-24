@@ -12,6 +12,18 @@ for standing firearms and controller contact for standing melee. Formation
 offsets are preserved. The arena draws the projected controller radii from
 the source profiles.
 
+Official rulers select a ranged or melee scene with explicit placement.
+The arena remains a top-down view. The ranged scene starts at 5 m center
+distance. The melee scene starts at controller contact. A companion without
+a qualified carrier uses the standing reference emitter for the standard
+preset. Its weapon damage and companion rules still apply.
+
+In 3D, `weakpoint_aim_pct` weights the selected weak-point center against
+the ordinary body anchor. `miss_pct` assigns deliberate misses per physical
+round, including its multishot copies. A deliberate miss spends the firing
+action and settles no contacts. Scatter and intervening geometry can produce
+additional misses. Existing scenes can still supply `headshot_pct`.
+
 Set `scene_3d` to `{"preset":"source_default","placement":{"kind":"center_distance","distance":5}}`
 to use the standing open-arena preset. The simulator's geometry picker offers
 the preset for the weapon and target profiles in `/api/meta.scene_3d_source_default`.

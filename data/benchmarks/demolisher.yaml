@@ -39,6 +39,7 @@ name: "Demolisher · one target · Demolisher Devourer {scene} · {shooting} · 
 standard: "One specific fight players run, measured as it is rather than as a stand-in for most play: a Demolisher a full squad meets, taken apart by one weapon."
 
 rules:
+  - "Combat uses three-dimensional collisions. Ranged weapons begin 5 m from the main target, center to center. Melee weapons begin at controller contact. There are no deliberate misses."
   # MECHANICAL LANGUAGE, AND NO WEAPON IN IT — the standard all three rulers are
   # held to. These lines say what is done to EVERY entry.
   - "The target is one Demolisher Devourer {scene}, carrying the health a four-player squad gives it. The fight lasts 180 seconds."
@@ -66,7 +67,7 @@ build:
   valence: full
 
 ladder: [scene, shooting]
-scenario:
+scenario: &standard_fight
   # THE FIRST OF THE TWO CHANGED TERMS.
   enemy: demolisher_devourer
   level: 9999
@@ -98,6 +99,8 @@ scenario:
 
   # The first shooting rung; weapon-forced targeting and stance still apply.
   headshot_pct: 100
+  weakpoint_aim_pct: 100
+  miss_pct: 0
 
   # THE NEUTRAL PLAYER, every field named including the ones already sitting at
   # that value — the same block and the same rule as the other two rulers, so
@@ -127,3 +130,14 @@ scenario:
 
 source:
   url: https://wiki.warframe.com/w/Disruption
+
+scene_selection:
+  weapon_types: {primary: ranged, secondary: ranged, archgun: ranged, melee: melee}
+scenes:
+  ranged:
+    <<: *standard_fight
+    target_at: [0, 5]
+    scene_3d: {preset: source_standard, placement: {kind: center_distance, distance: 5}}
+  melee:
+    <<: *standard_fight
+    scene_3d: {preset: source_standard, placement: {kind: contact}}

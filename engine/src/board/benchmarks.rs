@@ -6,7 +6,7 @@
 //! ruler someone else can pick up.
 //!
 //! A ruler can select a complete named scene for a weapon or weapon class.
-//! Exact weapon selections take precedence over class selections. All scenes
+//! Exact weapon selections take precedence over weapon-type and class selections. All scenes
 //! share the ruler's metric. Build terms remain independent of the scene.
 //!
 //! What replaces the per-weapon settings is POLICY the engine already resolves:
@@ -360,6 +360,8 @@ pub fn core_metric(
 pub fn scenario_for(scenario: &serde_json::Value, weapon: &str) -> serde_json::Value {
     let selection = &scenario["scene_selection"];
     let scene = selection["weapons"].get(weapon).or_else(|| {
+        crate::data::weapons::spec(weapon).and_then(|spec| selection["weapon_types"].get(spec.weapon_type.as_str()))
+    }).or_else(|| {
         crate::build::scenario::class_of(weapon).and_then(|class| selection["classes"].get(class))
     });
     if let Some(selected) = scene.and_then(serde_json::Value::as_str) {
@@ -396,6 +398,7 @@ fn prepare_scenes(scenario: &mut serde_norway::Value) -> Result<(), String> {
             for (key, scene) in entries.as_mapping().ok_or("scene selector must be a mapping")? {
                 let valid_key = key.as_str().is_some_and(|key| match kind {
                     Some("weapons") => crate::data::weapons::spec(key).is_some(),
+                    Some("weapon_types") => matches!(key, "primary" | "secondary" | "archgun" | "melee"),
                     Some("classes") => crate::build::scenario::WEAPON_CLASSES.contains(&key),
                     _ => false,
                 });
@@ -490,8 +493,18 @@ pub fn all() -> &'static [Benchmark] {
             // prefix scan would parse an axis as a ruler.
             .filter(|(p, _)| p.ends_with(".yaml") && !p["benchmarks/".len()..].contains('/'))
             .map(|(p, text)| {
-                let mut b: Benchmark =
+                let mut raw: serde_norway::Value =
                     serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
+                raw.apply_merge().unwrap_or_else(|e| panic!("{p}: {e}"));
+                let fields = raw.as_mapping_mut().unwrap_or_else(|| panic!("{p}: expected a mapping"));
+                for name in ["scenes", "scene_selection"] {
+                    if let Some(value) = fields.remove(name) {
+                        fields.get_mut("scenario").and_then(serde_norway::Value::as_mapping_mut)
+                            .unwrap_or_else(|| panic!("{p}: expected a scenario mapping"))
+                            .insert(name.into(), value);
+                    }
+                }
+                let mut b: Benchmark = serde_norway::from_value(raw).unwrap_or_else(|e| panic!("{p}: {e}"));
                 prepare_scenes(&mut b.scenario)
                     .unwrap_or_else(|e| panic!("{p}: {e}"));
                 // THE CORE IS CHECKED WHERE THE FILE BECOMES A BENCHMARK, so
@@ -676,7 +689,7 @@ scene_selection:
     #[test]
     fn the_standard_single_target_benchmark_is_what_we_published() {
         let b = get("standard_single_target").expect("data/benchmarks/standard_single_target.yaml");
-        assert_eq!(b.name, "Standard Single Target · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM");
+        assert_eq!(b.name, "Standard Single Target · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM");
         let s = |k: &str| b.scenario.get(k).cloned();
         assert_eq!(s("enemy").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("thrax_centurion"));
         assert_eq!(s("level").and_then(|v| v.as_u64()), Some(9999));
@@ -709,18 +722,8 @@ scene_selection:
         // whoever doubts it.
         assert_eq!(s("seed").and_then(|v| v.as_u64()), Some(0xC0FFEE));
 
-        // AIMED, AND EVERY SHOT ON THE WEAK POINT — both pinned, because they
-        // are terms of this board's claim and a reader should find them in the
-        // ruler rather than in a default. They are two different facts: the
-        // stance gates mods like Argon Scope, the rate is where the shots land.
-        //
-        // Pinning it does risk ranking a SENTINEL at a headshot rate it
-        // cannot reach, and that is handled where it belongs rather than by
-        // omission: `parse_fight` pins a sentinel's rate at 0 whatever the
-        // request says, the same way
-        // `tenno_from` pins its stance. A weapon fact is not a benchmark's to
-        // state, and a benchmark's terms are not a default's to hide.
-        assert_eq!(s("headshot_pct").and_then(|v| v.as_f64()), Some(100.0));
+        assert_eq!(s("weakpoint_aim_pct").and_then(|v| v.as_f64()), Some(100.0));
+        assert_eq!(s("miss_pct").and_then(|v| v.as_f64()), Some(0.0));
         assert_eq!(s("aiming").and_then(|v| v.as_bool()), Some(true));
         // ...and buffs stay omitted, which IS the policy: each opens where
         // docs/BUFFS.md says, and pinning them would assert stacks the fight
@@ -923,6 +926,13 @@ scene_selection:
                     let mut expected = original.scenario.clone();
                     for (k, v) in &shot.set {
                         expected.as_mapping_mut().unwrap().insert(k.clone(), v.clone());
+                        if let Some(scenes) = expected.as_mapping_mut().unwrap().get_mut("scenes")
+                            .and_then(serde_norway::Value::as_mapping_mut)
+                        {
+                            for scene in scenes.values_mut() {
+                                scene.as_mapping_mut().unwrap().insert(k.clone(), v.clone());
+                            }
+                        }
                     }
                     assert_eq!(cell.scenario, expected, "{id}: only shooting conditions change");
                     assert_eq!(cell.scenario.get("aiming").and_then(|v| v.as_bool()), Some(true));

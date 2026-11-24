@@ -108,6 +108,9 @@ pub(super) fn launch(
         .sum();
     let all: f64 = parts.iter().map(|p| p.aim_weight).sum();
     let groups = l.rounds.groups(l.n_pellets);
+    let misses = (scene.miss_chance > 0.).then(|| {
+        groups.iter().map(|&copies| copies > 0 && me.d.aim.chance(scene.miss_chance)).collect::<Vec<_>>()
+    });
     let origins = scene.fire_origins(&mut me.fire_state, active.form, &groups);
     let eligible: Vec<_> = bodies
         .iter()
@@ -123,7 +126,16 @@ pub(super) fn launch(
     let extra = additional_groups.iter().copied().enumerate()
         .flat_map(|(round, copies)| (1..copies).map(move |_| (round, 1)));
     for (iteration, (round, copies)) in ordinary.chain(extra).enumerate() {
-        let head = me.d.aim.next_f64() < head_weight / all.max(1e-20);
+        let charging = me.incarnon.in_base_form && !me.params.gauge_charging_body_parts.is_empty();
+        let weakpoint_aim = if charging { 1. } else { scene.weakpoint_aim.unwrap_or(head_weight / all.max(1e-20)) };
+        let head = me.d.aim.next_f64() < weakpoint_aim;
+        if misses.as_ref().is_some_and(|misses| misses[round]) {
+            let origin = origins.as_ref().and_then(|origins| origins[round]);
+            let path = scene.launch_flight(head, 0., 0., &eligible, origin);
+            rec.push(l.t, None, crate::record::Kind::Miss { reason: "scenario miss" });
+            rec.trace_spatial(l.t, l.shot, round as u32, path);
+            continue;
+        }
         let spread = l.spread.map(|mut s| {
             if let Some(scale) = accuracy.charge_attenuation {
                 s.min_deg *= f64::from(scale);

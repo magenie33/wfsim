@@ -274,6 +274,8 @@ pub const SCENARIO_AXES: &[ScenarioAxis] = &[
     ScenarioAxis { id: "formation", kind: AxisKind::Structured, group: Group::Target, requires: FREE },
     ScenarioAxis { id: "player_at", kind: AxisKind::Structured, group: Group::Target, requires: FREE },
     ScenarioAxis { id: "target_at", kind: AxisKind::Structured, group: Group::Target, requires: FREE },
+    ScenarioAxis { id: "weakpoint_aim_pct", kind: AxisKind::Number { min: 0.0, max: 100.0 }, group: Group::Engagement, requires: FREE },
+    ScenarioAxis { id: "miss_pct", kind: AxisKind::Number { min: 0.0, max: 100.0 }, group: Group::Engagement, requires: FREE },
     ScenarioAxis { id: "aim_at", kind: AxisKind::Structured, group: Group::Target, requires: FREE },
 
     // ---- the engagement --------------------------------------------------

@@ -1051,6 +1051,8 @@ ui:
   Aim at the head while charging: 充能时瞄准头部
   2D: 平面
   3D · Arena positions: 三维 · 场地位置
+  Weak-point aim %: 弱点瞄准率
+  Miss %: 空枪率
   3D · Standard: 三维 · 标准距离
   3D · Contact: 三维 · 贴身
   3D · Custom scene: 三维 · 自定义场景

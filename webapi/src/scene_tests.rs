@@ -837,3 +837,46 @@ fn standard_placement_matches_the_weapon_class() {
         assert!((distance - expected).abs() < 1e-6, "{weapon}: {distance}");
     }
 }
+
+#[test]
+fn deliberate_misses_fire_but_never_land() {
+    let mut input = request("laetum", 1, false);
+    input["scene_3d"] = json!({"preset": "source_standard"});
+    input["weakpoint_aim_pct"] = json!(100);
+    input["miss_pct"] = json!(100);
+    let misses = record(&params(&input));
+    assert!(misses.events().iter().any(|e| matches!(e.kind, Kind::Strike { .. })));
+    assert!(misses.events().iter().any(|e| matches!(e.kind, Kind::Miss { reason: "scenario miss" })));
+    assert!(!misses.spatial_flights().is_empty());
+    assert!(misses.spatial_flights().iter().all(|f| f.flight.impacts.is_empty()));
+    input["miss_pct"] = json!(0);
+    let shots = record(&params(&input));
+    assert!(shots.spatial_flights().iter().any(|f| !f.flight.impacts.is_empty()));
+}
+
+#[test]
+fn official_rulers_resolve_3d_for_every_weapon_class() {
+    use wfsim_engine::board::benchmarks;
+    for ruler in benchmarks::all() {
+        let scenario = serde_json::to_value(&ruler.scenario).unwrap();
+        for (weapon, is_melee) in [
+            ("braton", false), ("laetum", false), ("imperator", false),
+            ("verglas", false), ("magistar", true), ("adarza_claws", true),
+        ] {
+            let mut request = benchmarks::scenario_for(&scenario, weapon);
+            request["weapon"] = json!(weapon);
+            assert_eq!(request["miss_pct"], 0, "{}", ruler.id);
+            assert_eq!(request["weakpoint_aim_pct"], request["headshot_pct"], "{}", ruler.id);
+            let arena = crate::fight::parse_fight(&request)
+                .unwrap_or_else(|e| panic!("{} {weapon}: {e}", ruler.id)).arena;
+            assert!(arena.scene_3d.is_some());
+            let distance = arena.player_at.distance(arena.target_at);
+            assert!(if is_melee { distance < 1. } else { (distance - 5.).abs() < 1e-6 },
+                "{} {weapon}: {distance}", ruler.id);
+            request["runs"] = json!(1);
+            request["duration"] = json!(1);
+            let outcome = crate::simulate::simulate_json(&request);
+            assert_eq!(outcome["ok"], true, "{} {weapon}: {}", ruler.id, outcome["error"]);
+        }
+    }
+}

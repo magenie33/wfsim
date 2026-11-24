@@ -73,6 +73,7 @@ standard: "Standard means one set of conditions for every build: one tough, unaf
 # THE RULES IN PROSE, for the page that publishes them. The name above states
 # the same standard in one line so a rank stays quotable; this is it at length.
 rules:
+  - "Combat uses three-dimensional collisions. Ranged weapons begin 5 m from the main target, center to center. Melee weapons begin at controller contact. There are no deliberate misses."
   # MECHANICAL LANGUAGE, AND NO WEAPON IN IT. A rule that
   # names a weapon is a rule that has to be edited when the roster grows, and
   # `board/benchmarks.rs` already refuses this file any weapon, mod, arcane or
@@ -110,7 +111,7 @@ build:
   valence: full
 
 ladder: [scene, shooting]
-scenario:
+scenario: &standard_fight
   # A single Thrax target (faction Unknown) at the top of the level range, Steel
   # Path. Chosen because it is the fight the roster is already calibrated
   # against, not because it is the only fight worth having — a second ruler
@@ -231,6 +232,8 @@ scenario:
   # The first shooting rung; later rungs override its fields.
   # Weapon-forced targeting and stance still apply through parse_fight.
   headshot_pct: 100
+  weakpoint_aim_pct: 100
+  miss_pct: 0
 
   # NO FORM, AND NO MODE. How a weapon is played is part of the ENTRANT, not
   # of the fight — a Torid through its Incarnon cycle and a Torid that never
@@ -304,3 +307,14 @@ scenario:
   extra_stats: {}
   # NO `frame`: picking one fills armor, energy and sprint together, which is
   # exactly the influence this board exists to keep out.
+
+scene_selection:
+  weapon_types: {primary: ranged, secondary: ranged, archgun: ranged, melee: melee}
+scenes:
+  ranged:
+    <<: *standard_fight
+    target_at: [0, 5]
+    scene_3d: {preset: source_standard, placement: {kind: center_distance, distance: 5}}
+  melee:
+    <<: *standard_fight
+    scene_3d: {preset: source_standard, placement: {kind: contact}}

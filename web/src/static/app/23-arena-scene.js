@@ -43,6 +43,20 @@ function arenaControllerRadius(s, enemy) {
     : profiles?.enemy_controller_radii_m?.[unitAt(s, enemy)] || BODY_R_M;
 }
 
+function arenaDisplayPlacement(s) {
+  const placement = s.scene_3d?.placement;
+  const span = arenaSpan(s);
+  if (!placement || !span || s.scene_3d.carrier || s.scene_3d.player) return s;
+  const distance = placement.kind === "center_distance" ? placement.distance
+    : placement.kind === "contact" ? Math.fround(Math.fround(arenaControllerRadius(s)
+      + arenaControllerRadius(s, 0)) + (META.scene_3d_source_default?.player_controller_skin_m || 0))
+    : span;
+  const shift = s.target_at.map((n, i) => (n - s.player_at[i]) * (distance / span - 1));
+  const moved = (at) => at.map((n, i) => n + shift[i]);
+  return { ...s, target_at: moved(s.target_at),
+    formation: (s.formation || []).map((entry) => ({ ...entry, at: moved(entry.at) })) };
+}
+
 const ARENA_VW = 320;
 const ARENA_VH = 176;
 
@@ -212,7 +226,7 @@ function arenaSvg(s, en, heat, sel) {
     const yy = g.px([0, y])[1].toFixed(1);
     lines.push(`<line class="ar-grid" x1="0" y1="${yy}" x2="${w}" y2="${yy}"/>`);
   }
-  const d = arenaDistance(s);
+  const d = s.scene_3d ? arenaSpan(s) : arenaDistance(s);
   // THE MUZZLE — where the shot actually leaves, a point on the player's own
   // circumference facing the target (`engine::rules::space::muzzle`). Drawn because
   // it is load-bearing rather than decorative: the cone widens over the flight

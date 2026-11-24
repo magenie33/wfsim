@@ -11,6 +11,8 @@ pub use attachment::FireOrigin;
 #[derive(Debug, Clone)]
 pub struct Scene {
     input: Scene3d,
+    pub(crate) weakpoint_aim: Option<f64>,
+    pub(crate) miss_chance: f64,
     muzzle: Vec3,
     camera: Vec3,
     avatar_up: [f32; 4],
@@ -543,6 +545,8 @@ impl Scene {
         let slam_distance = bodies.iter().map(|body| body.radial_distance(root)).collect();
         Ok(Self {
             input,
+            weakpoint_aim: None,
+            miss_chance: 0.,
             muzzle,
             camera: camera.point(Vec3([0.; 3])),
             avatar_up,
@@ -553,6 +557,12 @@ impl Scene {
             slam_distance,
             equipped_fire,
         })
+    }
+
+    pub fn with_shooting_policy(mut self, weakpoint_aim: Option<f64>, miss_chance: f64) -> Self {
+        self.weakpoint_aim = weakpoint_aim;
+        self.miss_chance = miss_chance;
+        self
     }
 
     pub fn root(&self, index: usize) -> Vec3 {
@@ -804,9 +814,13 @@ impl Scene {
         fire_origin: Option<FireOrigin>,
     ) -> Flight {
         let reticle = &self.reticles[usize::from(head)];
-        let aim = reticle.hits.iter()
-            .find(|(body, _)| eligible.get(*body) == Some(&true))
-            .map_or(&reticle.fallback, |(_, aim)| aim);
+        let aim = if self.weakpoint_aim.is_some() {
+            &reticle.fallback
+        } else {
+            reticle.hits.iter()
+                .find(|(body, _)| eligible.get(*body) == Some(&true))
+                .map_or(&reticle.fallback, |(_, aim)| aim)
+        };
         let muzzle = fire_origin.map_or(self.muzzle, |fire| fire.position);
         let aim_target = Vec3(aim.target.map(f64::from));
         let eye_forward = Vec3(std::array::from_fn(|i| f64::from(aim.basis[8 + i])));

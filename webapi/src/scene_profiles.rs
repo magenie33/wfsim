@@ -117,6 +117,7 @@ pub(crate) fn source_default_choices() -> Value {
             let c = &enemy.model.controller;
             (id, c.radius * c.scale)
         }).collect::<BTreeMap<_, _>>(),
+        "player_controller_skin_m": standing(Affine::IDENTITY, None).ok().map(|(player, _, _)| player.controller.skin),
         "player_controller_radius_m": standing(Affine::IDENTITY, None).ok().map(|(player, _, _)| {
             player.controller.radius * player.controller.scale
         }),
@@ -184,7 +185,7 @@ pub(crate) fn source_default<'a>(
     if !standing_gun(&weapon.id) && !standing_melee(&weapon.id) {
         return Err("scene_3d standing preset needs a supported weapon".into());
     }
-    if weapon.sentinel && carrier.is_none() {
+    if weapon.sentinel && carrier.is_none() && !matches!(preset, Preset::SourceStandard) {
         return Err("scene_3d needs a posed companion carrier and its weapon mount".into());
     }
     if !weapon.sentinel && carrier.is_some() {
@@ -224,7 +225,7 @@ pub(crate) fn source_default<'a>(
         })
         .collect::<Result<Vec<_>, String>>()?;
     let count = enemies.len();
-    let default_placement = if weapon.sentinel {
+    let default_placement = if weapon.sentinel && !matches!(preset, Preset::SourceStandard) {
         Placement::Supplied
     } else if matches!(preset, Preset::SourceStandard) && standing_gun(&weapon.id) {
         Placement::CenterDistance { distance: 5. }

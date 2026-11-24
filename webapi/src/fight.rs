@@ -756,6 +756,19 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         let models = roster.zip(&others).map(|(entry, body)| (formation_enemy(entry, enemy_id), body.at));
         crate::scene_profiles::source_default(raw, info, player_at, (enemy_id, target_at), models)
     }).transpose().map_err(err_json)?;
+    let scene_3d = scene_3d.map(|mut scene| {
+        let weakpoint_aim = v.get("weakpoint_aim_pct").map(|_| {
+            resolved_number("weakpoint_aim_pct", &info.id, rule("weakpoint_aim_pct"),
+                get_f64(v, "weakpoint_aim_pct", 100.)).clamp(0., 100.) / 100.
+        });
+        let miss_chance = resolved_number("miss_pct", &info.id, rule("miss_pct"),
+            get_f64(v, "miss_pct", 0.)).clamp(0., 100.) / 100.;
+        if weakpoint_aim.is_some() || miss_chance > 0. {
+            let policy = std::sync::Arc::unwrap_or_clone(scene).with_shooting_policy(weakpoint_aim, miss_chance);
+            scene = std::sync::Arc::new(policy);
+        }
+        scene
+    });
     let mut player_at = player_at;
     if let Some(scene) = &scene_3d {
         let planar = |p: wfsim_engine::rules::geometry::Vec3| wfsim_engine::rules::space::Vec2::new(p.0[0], p.0[2]);

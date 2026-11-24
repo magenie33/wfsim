@@ -23,13 +23,14 @@ name: "Standard Multi Target · 5x5 at 3 m · Thrax Centurion {scene} · {shooti
 standard: "Standard means one set of conditions for every build: a crowd of tough, unaffiliated targets, packed as close as every elemental area effect still reaches and no larger than holds them whole, the same fight and the same rules, so a number reproduces on any machine and any two builds compare directly. Your own conditions are set in the simulator."
 
 rules:
+  - "Combat uses three-dimensional collisions. Ranged weapons begin 5 m from the main target, center to center. Melee weapons begin at controller contact. There are no deliberate misses."
   - "The target is a formation of 25 Thrax Centurions {scene}, a 5 by 5 grid spaced 3 metres centre to centre: the smallest odd square that holds every elemental area effect around the aimed body whole, a fully grown 6 m Gas cloud included. The fight lasts 180 seconds."
   - "A weapon's own explosion wider than about 6 m, and punch-through past five bodies, are clipped by the grid on purpose: a deeper column would rank the formation rather than the weapon."
   - "The spacing decides whether splash or single-target damage wins: 3 m is where that ordering matches play, and it is the widest whole metre at which Electricity still reaches a neighbour."
   - "The target is a Thrax Centurion because a build that beats it transfers: it belongs to no faction, so no faction mod and no faction bonus reads on it; it carries Overguard, which most Warframe abilities cannot take off, so the weapon has to; it is armoured and tanky; it is immune to no element, so every proc lands; its weak points are the ordinary ones, 3x on the head and 1x elsewhere."
-  - "The shooter stands at contact with the middle body of the front rank, and fires along the line that rank faces."
+  - "The main target is the middle body of the front rank."
   - "{shooting} A weapon's forced targeting and stance still apply."
-  - "Direct hits, including punch-through hits, use the selected headshot rate. A chain hop and a damage cloud cannot be a weak point hit. A Blast detonation carries the weak-point and critical multipliers of the hit that applied the stack (MEASUREMENTS M54)."
+  - "Direct hits and punch-through use the actual contacted body part. A chain hop and a damage cloud cannot be a weak point hit. A Blast detonation carries the weak-point and critical multipliers of the hit that applied the stack (MEASUREMENTS M54)."
   - "The score is kills per minute across the whole formation, counting the fraction of each target already gone."
   - "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body."
   - "The grid is stated as three numbers rather than as 25 positions, so its terms can be read and argued with."
@@ -50,7 +51,7 @@ build:
   valence: full
 
 ladder: [scene, shooting]
-scenario:
+scenario: &standard_fight
   enemy: thrax_centurion
   level: 9999
   steel_path: true
@@ -134,6 +135,8 @@ scenario:
   metric: kpm
   infinite_ammo: true
   headshot_pct: 100
+  weakpoint_aim_pct: 100
+  miss_pct: 0
 
   # THE TENNO — the neutral player of data/tenno/default.yaml, field for field
   # the same as the single-target ruler's. A multi-target board differs from it
@@ -163,3 +166,14 @@ scenario:
   # Unticked is the honest default: nothing overridden, the floor in use.
   wf_energy_pct: 1.0
   extra_stats: {}
+
+scene_selection:
+  weapon_types: {primary: ranged, secondary: ranged, archgun: ranged, melee: melee}
+scenes:
+  ranged:
+    <<: *standard_fight
+    target_at: [0, 5]
+    scene_3d: {preset: source_standard, placement: {kind: center_distance, distance: 5}}
+  melee:
+    <<: *standard_fight
+    scene_3d: {preset: source_standard, placement: {kind: contact}}

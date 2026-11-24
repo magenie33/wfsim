@@ -381,7 +381,10 @@ const zoomField = (w,state) => {
     + [...new Set([...levels,...(current ? [current] : [])])].sort((a,b) => a-b).map(value => `<option value="${value}"${value === current ? " selected" : ""}>${value.toFixed(1)}x</option>`).join("")
     + `</select>${scenarioEffective(w,"scope_zoom")}${local.length < 2 ? `<small class="scenario-effective">${escHtml(tr("Not used by this weapon"))}</small>` : ""}</label>`;
 };
-const headshotField = (w,state) => `<label>${escHtml(tr(state.scene_3d ? "Head aim %" : "Headshot %"))}<input type="number" data-k="headshot_pct" min="0" max="100" value="${state.headshot_pct}">${scenarioEffective(w,"headshot_pct")}</label>`;
+const headshotField = (w,state) => state.scene_3d
+  ? `<label>${escHtml(tr("Weak-point aim %"))}<input type="number" data-k="weakpoint_aim_pct" min="0" max="100" value="${state.weakpoint_aim_pct ?? state.headshot_pct}"></label>
+     <label>${escHtml(tr("Miss %"))}<input type="number" data-k="miss_pct" min="0" max="100" value="${state.miss_pct ?? 0}"></label>`
+  : `<label>${escHtml(tr("Headshot %"))}<input type="number" data-k="headshot_pct" min="0" max="100" value="${state.headshot_pct}">${scenarioEffective(w,"headshot_pct")}</label>`;
 const chargingHeadshotField = (w,state) => {
   if (!w.has_cycle && !scenarioAll()) return "";
   return `<label class="check"><input type="checkbox" data-k="gauge_charging_headshots"${state.gauge_charging_headshots ? " checked" : ""}> ${escHtml(tr(state.scene_3d ? "Aim at the head while charging" : "Headshots while charging"))}${scenarioEffective(w,"gauge_charging_headshots")}${!w.has_cycle ? `<small class="scenario-effective">${escHtml(tr("Not used by this weapon"))}</small>` : ""}</label>`;

@@ -200,7 +200,8 @@ function fightCardHtml(s = sim) {
     chip(`${s.duration} s`),
     ...(Number(interval) > 0
       ? [chip(`${tr("Estimated attack interval (s)")}: ${Number(interval.toFixed(3))}`)] : []),
-    chip(s.scene_3d ? `${tr("Head aim")} ${s.headshot_pct}%` : `${s.headshot_pct}% ${tr("headshots")}`),
+    chip(s.scene_3d ? `${tr("Weak-point aim %")} ${s.weakpoint_aim_pct ?? s.headshot_pct}%` : `${s.headshot_pct}% ${tr("headshots")}`),
+    ...(s.scene_3d ? [chip(`${tr("Miss %")} ${s.miss_pct ?? 0}%`)] : []),
     ...(s.gauge_charging_headshots && (weaponInfo($("weapon").value) || {}).has_cycle
       ? [chip(tr(s.scene_3d ? "Aim at the head while charging" : "headshots while charging"))] : []),
     chip(tr(s.aiming ? "Aiming" : "hip-fire")),
@@ -667,7 +668,8 @@ function renderScenarioFields(ids, opts = {}) {
           if (el.value === "custom") return;
           const enabled = !!el.value;
           setScenarioFields(enabled
-            ? { scene_3d: el.value === "standard"
+            ? { ...(el.value === "standard" ? { weakpoint_aim_pct: 100, miss_pct: 0 } : {}),
+              scene_3d: el.value === "standard"
               ? { preset: "source_standard" }
               : { preset: "source_default", placement: { kind: el.value } }, aim_at: null }
             : { scene_3d: null });

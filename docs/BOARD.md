@@ -152,9 +152,9 @@ second source.
 ### Weapon-specific ruler scenes
 
 A ruler's `scenario` carries its default fight. It can also contain a `scenes`
-map of complete named fights and `scene_selection` maps named `weapons` and
-`classes`. Selection uses the exact weapon first, then its class, then the
-default fight. Each named fight declares the ruler's metric and can specify
+map of complete named fights and `scene_selection` maps named `weapons`,
+`weapon_types` and `classes`. Selection checks them in that order, then uses
+the default fight. Each named fight declares the ruler's metric and can specify
 its own targets, formation, placement, duration, run count and ammo rules.
 
 Weapon selection resolves the complete fight before it reaches the arena,

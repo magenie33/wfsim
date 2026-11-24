@@ -394,7 +394,8 @@ function renderResults(r, testedAt, build, context) {
     // claim about their own play rather than this engine's finding.
     const assumed = [
       chip(fight.aiming ? tr("aiming throughout") : tr("firing from the hip")),
-      chip(`${tr(fight.scene_3d ? "Head aim" : "Headshots")} ${Math.round(fight.headshot_pct || 0)}%`),
+      chip(`${tr(fight.scene_3d ? "Weak-point aim %" : "Headshots")} ${Math.round(fight.weakpoint_aim_pct ?? fight.headshot_pct ?? 0)}%`),
+      ...(fight.scene_3d ? [chip(`${tr("Miss %")} ${fight.miss_pct ?? 0}%`)] : []),
       fight.invisible ? chip(tr("invisible")) : "",
       fight.airborne ? chip(tr("airborne")) : "",
       fight.sliding ? chip(tr("sliding")) : "",

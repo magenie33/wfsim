@@ -379,7 +379,7 @@ function mountArenaCanvas(host, s, en, opts) {
   function paintReadout() {
     const n = arenaBodies(s).length;
     readout.textContent =
-      `${n} ${n === 1 ? tr("enemy") : tr("enemies")}  ·  ${arenaDistance(s).toFixed(2)} m` +
+      `${n} ${n === 1 ? tr("enemy") : tr("enemies")}  ·  ${(s.scene_3d ? arenaSpan(s) : arenaDistance(s)).toFixed(2)} m` +
       (sel.size ? `  ·  ${sel.size} ${tr("selected")}` : "");
   }
 
@@ -794,6 +794,7 @@ function mountArenaCanvas(host, s, en, opts) {
 
 function mountArena(host, s, en, opts) {
   if (!host) return;
+  if (opts.readonly || officialScenarioActive() || opts.heat) s = arenaDisplayPlacement(s);
   // THE EDITOR IS A CANVAS as of 2026-08-18; the ANALYSIS mount is still the
   // SVG scene. Setting up a fight and reading one are two things, and only
   // one of them is an editor — the result panel's copy draws a fight that has

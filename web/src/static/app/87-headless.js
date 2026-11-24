@@ -625,8 +625,10 @@ const HEADLESS_DEAD_SCENARIO_FIELDS = ["form", "mode", "runs", "attack_interval_
 /// spreading it over the outgoing fight would keep that fight's other fields.
 function headlessRulerScenario(meta, scenario, weapon) {
   const { scenes, scene_selection, ...fallback } = scenario || {};
-  const cls = headlessWeaponOf(meta, weapon)?.weapon_class;
-  const selected = scene_selection?.weapons?.[weapon] ?? scene_selection?.classes?.[cls];
+  const info = headlessWeaponOf(meta, weapon);
+  const selected = scene_selection?.weapons?.[weapon]
+    ?? scene_selection?.weapon_types?.[info?.weapon_type]
+    ?? scene_selection?.classes?.[info?.weapon_class];
   return selected === undefined ? fallback : scenes[selected];
 }
 
