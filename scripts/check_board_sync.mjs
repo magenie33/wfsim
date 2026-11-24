@@ -324,6 +324,51 @@ page.syncFailures = 1; page.syncNotBefore = 99_000;
 await send("device", { want: 0 });
 check("a failed request retries once its backoff expires", networkCalls === 2, String(networkCalls));
 
+const idleReports = [], initialBody = page.boardSyncBody, initialIdleCount = page.idleCount;
+page.boardSyncBody = (_id, { want }) => ({ want_ms: want, lanes: 4, held: [], results: [] });
+page.idleCount = (_at, idle, failed, lanes) => idleReports.push([idle, failed, lanes]);
+page.SYNC_BACKOFF_MS = 5000; page.SYNC_BACKOFF_MAX_MS = 600000; page.roadDropped = "";
+const healthyEmpty = { ok: true, next_ms: 20_000 };
+for (const [reply, want] of [[null, 1000], [healthyEmpty, 1000], [{ ...healthyEmpty, early: true }, 1000],
+  [{ ...healthyEmpty, busy: true }, 1000], [healthyEmpty, 0], [{ ok: true, next_ms: 0 }, 1000]]) {
+  page.syncFailures = 0; page.syncNotBefore = 0; page.postBoardWork = async () => reply;
+  await send("device", { want });
+}
+check("protocol 8 reports lost and empty attempts without counting renewals or dispatch gates",
+  JSON.stringify(idleReports) === JSON.stringify([[true, true, 4], [true, false, 4]]), JSON.stringify(idleReports));
+page.boardSyncBody = initialBody; page.idleCount = initialIdleCount;
+
+let routeClock = 700_000, releaseProbes;
+const probed = new Promise((resolve) => { releaseProbes = resolve; });
+const routePage = { location: { origin: "https://wfsim.app" }, Date: class extends Date { static now() { return routeClock; } },
+  timeoutSignal: () => null, performance: { now: () => routeClock }, localStorage: { getItem: () => "auto" },
+  fetch: async () => { await probed; return { ok: true, json: async () => ({}) }; } };
+const routeCode = source.slice(source.indexOf("const RELAY = "), source.indexOf("/// HOW EACH ROAD CARRIES A PUBLIC FILE"));
+const routes = runInNewContext(routeCode + "\n({ chooseRoute, postBoardWork, known: () => { routeBase = RELAY; routeAt = 1; }, active: () => routing });", routePage);
+routes.known();
+let foregroundRoute;
+const routeChoice = routes.chooseRoute().then((base) => { foregroundRoute = base; });
+await Promise.resolve();
+check("auto route refresh leaves the last usable route available immediately", foregroundRoute === "https://cn.wfsim.app" && !!routes.active());
+releaseProbes();
+await routes.active(); await routeChoice;
+check("the completed route refresh selects the measured route for later calls", await routes.chooseRoute() === "");
+const slowProbe = new Promise((resolve) => { releaseProbes = resolve; });
+routePage.fetch = async (url) => {
+  await slowProbe;
+  if (!url.startsWith("https:")) {
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    routeClock += 100;
+  }
+  return { ok: true, json: async () => ({}) };
+};
+routePage.postBoardTo = async (base) => base === "" ? { ok: true } : null;
+routes.known();
+const inFlight = routes.postBoardWork("/api/board/sync", {}), olderProbe = routes.active();
+check("a failed route can switch while the probe is still pending", (await inFlight)?.ok === true);
+releaseProbes(); await olderProbe;
+check("a stale route probe cannot undo a successful failover", await routes.chooseRoute() === "");
+
 Object.assign(page, {
   setInterval, clearInterval, RENEW_RETRY_MS: 30_000, RESUME_SAVE_MS: 15_000, AHEAD_AT: 0.8,
   computeBeats: 0, resumeCut: null, resumeSavedAt: 100_000, boardPaceMs: 300_000,
