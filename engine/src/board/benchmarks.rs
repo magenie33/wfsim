@@ -289,6 +289,13 @@ fn expand_ladder(b: Benchmark, axes: &[Axis]) -> Result<Vec<Benchmark>, String> 
         if let Some(hole) = super::describe::unfilled(&c) {
             return Err(format!("says `{{{hole}}}`, which is not an axis it spans"));
         }
+        if let Some(scenes) = c.scenario.as_mapping_mut().and_then(|m| m.get_mut("scenes"))
+            .and_then(serde_norway::Value::as_mapping_mut)
+        {
+            for scene in scenes.values_mut() {
+                *scene = serde_json::to_string(scene).expect("named fight is serializable").into();
+            }
+        }
         out.push(c);
         let mut i = lines.len();
         loop {
@@ -366,12 +373,15 @@ pub fn scenario_for(scenario: &serde_json::Value, weapon: &str) -> serde_json::V
     });
     if let Some(selected) = scene.and_then(serde_json::Value::as_str) {
         let found = &scenario["scenes"][selected];
-        if found.get("formation_grid").is_some() {
-            let mut scene = serde_norway::to_value(found).expect("scene");
+        let scene = found.as_str().map_or_else(|| found.clone(), |json| {
+            serde_json::from_str(json).expect("validated named fight")
+        });
+        if scene.get("formation_grid").is_some() {
+            let mut scene = serde_norway::to_value(scene).expect("scene");
             expand_formation_grid(&mut scene).expect("validated formation grid");
             return serde_json::to_value(scene).expect("scene");
         }
-        return found.clone();
+        return scene;
     }
     let mut default = scenario.clone();
     if let Some(fields) = default.as_object_mut() {
@@ -388,6 +398,9 @@ pub fn scenario_for_display(scenario: &serde_norway::Value) -> serde_norway::Val
         .and_then(serde_norway::Value::as_mapping_mut)
     {
         for scene in scenes.values_mut() {
+            if let Some(json) = scene.as_str() {
+                *scene = serde_json::from_str(json).expect("validated named fight");
+            }
             expand_formation_grid(scene).expect("validated formation grid");
         }
     }
@@ -687,7 +700,7 @@ scene_selection:
         assert!(!banned.is_empty(), "the ban list itself has to load");
         for b in all() {
             let mut seen = Vec::new();
-            let mut scenario = b.scenario.clone();
+            let mut scenario = scenario_for_display(&b.scenario);
             scenario.as_mapping_mut().unwrap().remove("scene_selection");
             strings_in(&scenario, &mut seen);
             for s in seen {
@@ -942,7 +955,7 @@ scene_selection:
                 for (j, shot) in shooting.iter().enumerate() {
                     let id = if j == 0 { old_id.clone() } else { format!("{old_id}__{}", shot.tag) };
                     let cell = get(&id).expect("every scene has every shooting rung");
-                    let mut expected = original.scenario.clone();
+                    let mut expected = scenario_for_display(&original.scenario);
                     for (k, v) in &shot.set {
                         expected.as_mapping_mut().unwrap().insert(k.clone(), v.clone());
                         if let Some(scenes) = expected.as_mapping_mut().unwrap().get_mut("scenes")
@@ -953,7 +966,7 @@ scene_selection:
                             }
                         }
                     }
-                    assert_eq!(cell.scenario, expected, "{id}: only shooting conditions change");
+                    assert_eq!(scenario_for_display(&cell.scenario), expected, "{id}: only shooting conditions change");
                     assert_eq!(cell.scenario.get("aiming").and_then(|v| v.as_bool()), Some(true));
                     assert!(cell.rules.iter().any(|r| r.shown().contains(&shot.long)), "{id}: its own rules");
                 }
