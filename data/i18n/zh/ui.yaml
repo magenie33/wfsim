@@ -1058,8 +1058,7 @@ ui:
   "Expand all": 全部展开
   "Every formula cites its source, and every golden test is calibrated against a real in-game run.":
     每一条公式都注明出处，每一个 golden test 都对着一次真实的游戏内实测校准。
-  "Every formula in the engine cites its source — a wiki page, a datamine, or a measurement — and every golden test is calibrated against a real in-game run.":
-    引擎里每条公式都写明出处——wiki、数据挖掘，或者一次实测；每个 golden 测试都拿真实的游戏内跑测校准过。
+  "In-game measurement records and how WFSim uses Warframe Wiki references": "游戏内实测记录与 Warframe Wiki 参考说明"
   "Every hit, sorted": 每一次命中，分类
   "Every main slot filled, every evolution tier the weapon has, every arcane seat it has. Exilus is never counted.": 主槽位全部装满，武器有几层进化就点几层，有几个赋能位就装几个。Exilus 一律不计。
   "Every shot is aimed and lands on the weak point of whatever it strikes directly. Nothing a chain, a blast or a cloud reaches can be a weak point hit.": 每一发都在瞄准状态下命中所直接击中目标的弱点。链接、爆炸和云雾波及到的一律不算弱点命中。
@@ -2534,7 +2533,7 @@ ui:
   "measured {t}": "测于 {t}"
   "engine": "引擎"
   "Record": "记录"
-  "Every build shows when it was measured and by which WFSim engine. The game and WFSim both change, so an older record may be behind.": "每个配装都标明了测量时间和 WF模拟 引擎。游戏和 WF模拟 都在更新，较早的记录可能已经落后。"
+  "This score comes from a WFSim simulation. Re-running the build on the current engine may yield a different score.": "此分数由 WF模拟 的引擎计算得出。用当前引擎重跑同一配装，分数可能会变化。"
   "Measured": "测量记录"
   "ruler": "基准"
   "Nothing measured for this weapon yet.": "这把武器还没有测过。"

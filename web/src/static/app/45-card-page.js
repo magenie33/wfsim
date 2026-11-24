@@ -12,7 +12,7 @@ const measuredRecordHtml = (row, words = true, weapon = presetWeapon()) => headl
   + computationBadge(weapon, row);
 
 /// …SAID ONCE BESIDE A LIST OF THEM, so nobody reads an old record as today's.
-function measuredNote() { return tr("Every build shows when it was measured and by which WFSim engine. The game and WFSim both change, so an older record may be behind."); }
+function measuredNote() { return tr("This score comes from a WFSim simulation. Re-running the build on the current engine may yield a different score."); }
 
 /// What the address asks for (`headlessCardAsk`).
 const cardParams = () => headlessCardAsk(location.search);

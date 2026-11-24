@@ -42,14 +42,14 @@ ui:
   "A shot that brings a Blast pile to ten detonates it once, and the rest of that shot's Blast procs are lost.": "一发把爆炸层数打满十层，只引爆一次，这一发剩下的爆炸触发全部作废。"
 
   "The game is the authority": "以游戏为准"
-  "Where a reading taken in the game, the wiki and DE's public export disagree, the reading wins, then the wiki, then the export; every formula in the engine names its source.": "游戏内实测、wiki 和 DE 公开导出数据不一致时，以实测为准，其次 wiki，再次导出数据；引擎里每一条公式都写明出处。"
-  "A card's text and the wiki describe the game, and they can leave out how two effects combine or what a listed number means. A reading in the game settles it.": "卡面文字和 wiki 是在描述游戏，它们可能漏掉两个效果怎么叠加，或者列出的数字到底指什么。游戏内实测能把这个问题定下来。"
-  "Each reading the engine applies is published with its numbers, so anyone can take it again.": "引擎采用的每一条实测都连同数字一起公开，任何人都可以重测一遍。"
+  "When an in-game measurement and the Warframe Wiki disagree, WFSim follows the measurement.": "游戏内实测与 Warframe Wiki 不一致时，WFSim 以实测为准。"
+  "The Warframe Wiki provides a reference for game mechanics. In-game tests can show how effects combine and what a listed number means.": "Warframe Wiki 提供游戏机制参考。游戏内实测可以验证效果如何叠加、面板数值如何生效。"
+  "The records below give examples of in-game tests you can repeat.": "下方的记录列出了可复现的游戏内测试。"
   "A tested value changes only with a new reading in the game.": "测试锁定的数值，只有新的游戏内实测才能改。"
   "Where a card's wording and a reading in the game disagree, follow the reading.": "卡面写法和游戏内实测不一致时，按实测来。"
   "Where your own reading in the game disagrees with WFSim, yours is the one to trust.": "你自己的游戏内实测和 WFSim 不一致时，信你的实测。"
   "Headshot bonuses of +50% and +30% read 1.1998 times the first in game: they add (1.2), they do not multiply (1.3).": "+50% 和 +30% 两个爆头加成，游戏内实测是只有第一个时的 1.1998 倍：它们相加（1.2），不是相乘（1.3）。"
-  "A throw reloads after every throw, so its cycle is the wind-up plus the reload, 1.6 s rather than the 1 s its fire rate suggests.": "投掷每扔一次都要装填，所以一个循环是蓄力加装填，1.6 秒，而不是射速看起来的 1 秒。"
+  "The Scourge's throw was observed to trigger a reload each time, so its cycle includes both wind-up and reload.": "实测观察到，祸根每次投掷后都会装填，因此投掷周期包含蓄力和装填。"
 
   "A score is computed, never typed": "分数是算出来的，不是填进去的"
   "A board build is one anyone submitted or a search found, and its score is the engine's: the ruler's fight run many times under a pinned seed.": "榜上的配装来自任何人的提交或搜索的结果，分数则由引擎给出：在固定种子下把基准的战斗跑很多遍。"

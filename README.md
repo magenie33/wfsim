@@ -24,12 +24,10 @@ live. Fights are single-target or a formation; the crowd ruler is a 5x5. Gaps ar
 issues welcome.
 
 **On AI:** I use AI assistance while writing this code (see
-[AGENTS.md](AGENTS.md)). The simulator itself contains
-no AI: it is a deterministic damage model plus a Monte Carlo search over mod
-combinations. Every formula cites a wiki page, a datamine, or a measurement,
-and each in-game measurement is written up as its own file under
-[`docs/measurements/`](docs/measurements) — the engine tests that pin them cite
-the measurement by number.
+[AGENTS.md](AGENTS.md)). The simulator uses a deterministic damage model, and
+the optimizer compares builds across repeated, seeded simulations. See the
+[in-game measurement records](docs/MEASUREMENTS.md) and
+[Warframe Wiki](https://wiki.warframe.com/) to check specific mechanics.
 
 What the sim does **not** model — movement, holstering, nobody shooting back,
 the Warframe's own actions beyond the buffs it puts on the weapon — is listed
