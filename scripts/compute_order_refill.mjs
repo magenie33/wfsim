@@ -7,6 +7,8 @@ import { queueZonesSql } from '../worker/queue_counts.js';
 
 const POLL_MS = 10_000;
 const DEMAND_MAX_AGE = 120_000;
+const REFILL_OUTSIDE_CHECK_MS = 60_000;
+const MINUTE_MS = 60_000;
 const positive = n => Number.isSafeInteger(n) && n > 0;
 const zone = 'coalesce(s.zone,factory_default_zone(s.producer))';
 
@@ -53,8 +55,25 @@ export async function belowReadyOrderStock(reader, engine, limit, maxOpen, now =
   });
 }
 
-export function orderRefill({ low, maxHours, stock, capacity, release, demand,
+function scheduleOf(value, normalLow) {
+  if (value === undefined) return null;
+  const { start_minute_cst, period_hours, window_minutes, emergency_below, emergency_refill_to } = value ?? {};
+  if (!Number.isSafeInteger(start_minute_cst) || start_minute_cst < 0 || start_minute_cst >= 1440
+      || !positive(period_hours) || 24 % period_hours !== 0
+      || !positive(window_minutes) || window_minutes >= period_hours * 60
+      || !positive(emergency_below) || !positive(emergency_refill_to)
+      || emergency_below >= emergency_refill_to || emergency_refill_to > normalLow)
+    throw Error('invalid refill schedule or emergency watermarks');
+  const period = period_hours * 60;
+  return { emergency_below, emergency_refill_to, open: at => {
+    const minute = Math.floor(at / MINUTE_MS) + 8 * 60;
+    return ((minute - start_minute_cst) % period + period) % period < window_minutes;
+  } };
+}
+
+export function orderRefill({ low, maxHours, stock, capacity, release, demand, schedule,
   delay = signal => setTimeout(POLL_MS, undefined, { signal }), now = Date.now, onHold = () => {} }, cycle = {}) {
+  const window = scheduleOf(schedule, low);
   let lastHold;
   const hold = async (reason, signal) => {
     if (lastHold !== reason) onHold(reason);
@@ -63,9 +82,14 @@ export function orderRefill({ low, maxHours, stock, capacity, release, demand,
   };
   return {
     pollMs: POLL_MS,
+    mayStart: window ? () => {
+      const at = now();
+      return window.open(at) || (cycle.emergency && at >= cycle.emergencyAt && at - cycle.emergencyAt < REFILL_OUTSIDE_CHECK_MS);
+    } : undefined,
     observe({ result }) { if (result === 'queue_full') cycle.filling = false; },
     async wait({ cut, engine, signal, reserved }) {
-      if (cycle.cut !== cut || cycle.engine !== engine) Object.assign(cycle, { cut, engine, filling: false });
+      if (cycle.cut !== cut || cycle.engine !== engine)
+        Object.assign(cycle, { cut, engine, filling: false, emergency: false, outsideCheck: undefined });
       for (;;) {
         signal?.throwIfAborted();
         if (!await capacity()) { await hold('host_capacity', signal); continue; }
@@ -78,6 +102,25 @@ export function orderRefill({ low, maxHours, stock, capacity, release, demand,
           await hold('clearance_budget', signal);
           continue;
         }
+        if (window && !reserved && !window.open(now())) {
+          const limit = cycle.emergency ? window.emergency_refill_to : window.emergency_below;
+          const sampled = now(), prior = cycle.outsideCheck;
+          const fresh = prior && prior.limit === limit && sampled >= prior.at && sampled - prior.at < REFILL_OUTSIDE_CHECK_MS;
+          const below = fresh ? prior.below : await stock(engine, limit);
+          cycle.filling = false;
+          if (below !== true) {
+            if (below === false) cycle.emergency = false;
+            if (!fresh) cycle.outsideCheck = { at: sampled, limit, below };
+            await hold(below === false ? 'refill_window' : 'ready_stock_unavailable', signal);
+            continue;
+          }
+          cycle.outsideCheck = undefined;
+          cycle.emergency = true;
+          cycle.emergencyAt = sampled;
+          lastHold = undefined;
+          return;
+        }
+        if (window && !reserved) { cycle.emergency = false; cycle.outsideCheck = undefined; }
         if (!cycle.filling && !reserved) {
           const below = await stock(engine, low);
           if (below === false) { await hold('ready_stock', signal); continue; }
@@ -152,7 +195,7 @@ export async function openOrderRefill(reader, config, maxOpen, source, cycle) {
       return false;
     }
   };
-  const refill = orderRefill({ low: cfg.ready_below, maxHours: cfg.max_clear_hours, capacity,
+  const refill = orderRefill({ low: cfg.ready_below, maxHours: cfg.max_clear_hours, capacity, schedule: cfg.refill_schedule,
     stock: async (engine, limit) => {
       try { return await belowReadyOrderStock(reader, engine, limit, maxOpen); }
       catch (error) { if (error.code === '57014') return null; throw error; }

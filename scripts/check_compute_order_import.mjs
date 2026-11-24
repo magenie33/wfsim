@@ -248,6 +248,56 @@ try {
   const settings = { low: 1, maxHours: 2, now: () => tick,
     stock: (current, limit) => belowReadyOrderStock(reader, current, limit, 10_000, tick) };
   const goodSnapshot = { ok: true, counts_at: now, order_epoch: cut, clear_hours: 1 };
+  const schedule = { start_minute_cst: 180, period_hours: 24, window_minutes: 240, emergency_below: 2, emergency_refill_to: 3 };
+  let calendarTime = Date.parse('2026-11-24T18:59:59.999Z');
+  let compatible = 4, step, healthy = true;
+  const calendarChecks = [], calendarHolds = [];
+  const calendarSettings = { ...settings, low: 8, schedule, now: () => calendarTime, capacity: () => healthy,
+    stock: (_engine, limit) => { calendarChecks.push(limit); return compatible < limit; }, release: () => ({ engine }),
+    demand: () => ({ ...goodSnapshot, counts_at: new Date(calendarTime).toISOString() }),
+    delay: () => step(), onHold: reason => calendarHolds.push(reason) };
+  const scheduled = orderRefill(calendarSettings), requestStock = { cut, engine };
+  step = () => calendarTime++;
+  await scheduled.wait(requestStock);
+  assert.deepEqual(calendarHolds, ['refill_window']);
+  assert.deepEqual(calendarChecks, [2, 8]);
+  assert(scheduled.mayStart());
+  calendarTime = Date.parse('2026-11-24T23:00:00Z');
+  assert(!scheduled.mayStart(), 'the Beijing window closes at 07:00:00');
+  healthy = false;
+  step = () => { healthy = true; };
+  await scheduled.wait({ ...requestStock, reserved: true });
+  assert.equal(calendarHolds.at(-1), 'host_capacity', 'a reserved group retains the host guard');
+  assert.deepEqual(calendarChecks, [2, 8], 'a reserved group can resume outside its window');
+  compatible = 1;
+  step = () => assert.fail('a real shortage must enable emergency refill');
+  await scheduled.wait(requestStock);
+  assert(scheduled.mayStart());
+  compatible = 2;
+  await scheduled.wait(requestStock);
+  assert.deepEqual(calendarChecks.slice(-2), [2, 3], 'the emergency refill uses its own stop watermark');
+  compatible = 3;
+  const emergencyEnd = new AbortController();
+  step = () => emergencyEnd.abort();
+  await assert.rejects(scheduled.wait({ ...requestStock, signal: emergencyEnd.signal }), { name: 'AbortError' });
+  assert(!scheduled.mayStart(), 'emergency permission ends at its high watermark');
+  const overnight = orderRefill({ ...calendarSettings, schedule: { ...schedule, start_minute_cst: 1380, window_minutes: 120 } });
+  calendarTime = Date.parse('2026-11-24T16:59:59.999Z');
+  assert(overnight.mayStart(), 'the previous Beijing date opened the midnight window');
+  calendarTime = Date.parse('2026-11-24T17:00:00Z');
+  assert(!overnight.mayStart(), 'the overnight window closes at 01:00 Beijing time');
+  const serialId = 'window-serial', serialFile = file(serialId, [demand(serialId, 500)]);
+  const serialSha = createHash('sha256').update(readFileSync(serialFile)).digest('hex');
+  let serialWaits = 0;
+  const serial = await run({ path: serialFile, id: serialId, target: 1, refill: {
+    cut, inputSha: serialSha, mayStart: () => serialWaits >= 3,
+    wait: async () => {
+      serialWaits++;
+      assert.equal((await reader.unsafe('SELECT 1 FROM record_compute_order_import_batches WHERE import_id=$1', [serialId])).length, 0);
+    },
+  } });
+  assert.deepEqual([serial.admitted, serialWaits], [1, 3], 'a serial transaction retries after a window closes before its write');
+  await writer.unsafe("UPDATE state_compute_scheduling SET state='withdrawn' WHERE task_id IN (SELECT unnest(task_ids) FROM record_compute_order_import_batches WHERE import_id=$1)", [serialId]);
   const runs = { path, id: 'refill', target: 2, rows: 1, maxOpen, waitMs: 1 };
   await assert.rejects(run({ ...runs, refill: { inputSha, cut: 'different' } }), /approved source/);
   await assert.rejects(run({ ...runs, refill: { inputSha: '0'.repeat(64), cut } }), /approved source/);
@@ -430,7 +480,14 @@ try {
   assert.deepEqual(await stockWindowBounds(reader, bounds), { pages: [1] });
   assert.equal((await reserveStockWindow(writer, reservation)).result, 'queue_full');
   await seedOccupied(MAX_ACTIVE_ORDERS - occupiedSlots - 2);
-  const { key } = await reserveStockWindow(writer, reservation);
+  calendarTime = Date.parse('2026-11-24T23:00:00Z');
+  const windowGate = { ...reservation, mayStart: scheduled.mayStart };
+  assert.deepEqual(await reserveStockWindow(writer, windowGate), { result: 'refill_window' });
+  assert.deepEqual(await stockWindowBounds(reader, bounds), { pages: [1, 1] });
+  calendarTime--;
+  const { key } = await reserveStockWindow(writer, windowGate);
+  calendarTime++;
+  assert.deepEqual(await reserveStockWindow(writer, windowGate), { result: 'reserved', key });
   const late = await admitStockPage({ begin: async fn => {
     await writer.begin(fn);
     throw Error('page response lost after commit');
@@ -444,7 +501,8 @@ try {
     WHERE task_id=$1 RETURNING id`, [hidden.task_id])).length, 0);
   await assert.rejects(publishStockWindow(writer, reader, { ...reservation, key }), /unresolved page/);
   const resumedWindow = await run({ ...source, maxOpen: reservation.maxOpen, rows: 1, writer: peerWriter, reader: peerReader,
-    peerWriters: [writer], refill: { ...refillSource(source), wait: ({ reserved }) => assert.equal(reserved, true) } });
+    peerWriters: [writer], refill: { ...refillSource(source), mayStart: scheduled.mayStart,
+      wait: ({ reserved }) => { assert(reserved); return scheduled.wait({ ...requestStock, reserved }); } } });
   assert.deepEqual([resumedWindow.result, resumedWindow.processed, resumedWindow.admitted], ['input_exhausted', 2, 2]);
   const visible = await reader.unsafe(`SELECT t.computation FROM record_compute_order_import_batches b
     CROSS JOIN LATERAL unnest(b.task_ids) a(id) JOIN entity_compute_tasks t USING (id)
@@ -455,6 +513,7 @@ try {
   assert.equal((await stockWindowBounds(reader, bounds)).result, 'queue_full');
   await writer.unsafe("UPDATE state_compute_scheduling SET state='withdrawn' WHERE id=$1", [orders[0].target.computation]);
   assert.deepEqual(await stockWindowBounds(reader, bounds), { pages: [1] });
+  console.log('  ok  Beijing refill hours and the emergency watermark gate new writes; a reserved window resumes after closing');
   console.log('  ok  parallel stock shares the cap and publishes a durable FIFO window after a lost reply');
   console.log('  ok  durable stock acceptance has its own budget and verified receipts; the dispatcher uses only accepted sources');
   console.log('  ok  low-ready refill, release and host holds, atomic high cap and resume from the same source');

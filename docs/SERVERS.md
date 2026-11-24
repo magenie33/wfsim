@@ -281,6 +281,13 @@ budget. The importer counts leased and reserved work toward capacity. Pending
 source files have their own intake budget. A committed batch receipt keeps the
 source cursor verifiable after its task detail retires.
 
+The optional `refill_schedule` in `--refill-config` limits when the importer
+starts a batch. `start_minute_cst` counts minutes since midnight in Beijing.
+`period_hours` divides 24 and `window_minutes` sets a shorter open interval.
+Outside the interval, refill starts below `emergency_below` compatible ready
+tasks and stops at `emergency_refill_to`. A reserved batch can finish after
+closing. Host capacity, served engine, and clearance checks apply throughout.
+
 For a large stock after an order cut, install `deploy/stock_epoch_index.sql`
 with the active `cutoff`, target `tablespace` and `lock_wait` for the online
 build. It indexes only new open tasks. Protected older tasks keep their

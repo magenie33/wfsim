@@ -60,7 +60,7 @@ async function admitDemands(tx, { asks, engine }) {
   return tasks.map(({ id }) => id);
 }
 
-async function commitPage(writer, { id, first, last, orderCount, cut, maxOpen, adapter, prepared, automatic }) {
+async function commitPage(writer, { id, first, last, orderCount, cut, maxOpen, adapter, prepared, automatic, mayStart }) {
   return writer.begin(async tx => {
     const timeout = automatic ? REFILL_TRANSACTION_MS : 15_000;
     await tx.unsafe(`SET LOCAL lock_timeout='500ms'; SET LOCAL statement_timeout='${timeout}ms'; SET LOCAL jit=off`);
@@ -74,6 +74,7 @@ async function commitPage(writer, { id, first, last, orderCount, cut, maxOpen, a
     const [queue] = await tx.unsafe(queueZonesSql);
     if (!queue) return 'queue_unavailable';
     if (queueOrders(queue.zones).total + orderCount > maxOpen) return 'queue_full';
+    if (mayStart && !mayStart()) return 'refill_window';
     const ids = await adapter.admit(tx, prepared);
     if (ids.length > orderCount || new Set(ids).size !== ids.length || ids.some(task => !/^[1-9][0-9]*$/.test(task)))
       throw Error('invalid physical task receipt');
@@ -231,7 +232,7 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
           }
         } finally { await stream.return(); }
         await checkFile();
-        const reservation = await reserveStockWindow(writer, { id, cut, pages, maxOpen });
+        const reservation = await reserveStockWindow(writer, { id, cut, pages, maxOpen, mayStart: refill.mayStart });
         if (reservation.result === 'paused') return status('paused');
         if (reservation.result !== 'reserved') {
           refill.observe(reservation);
@@ -280,7 +281,8 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
         }
         await checkFile();
         const prepared = await adapter.prepare(orders, { id, first: next, cut, engine });
-        const page = { id, first: next, last, orderCount: orders.length, cut, maxOpen, adapter, prepared, automatic: !!refill };
+        const page = { id, first: next, last, orderCount: orders.length, cut, maxOpen, adapter, prepared,
+          automatic: !!refill, mayStart: refill?.mayStart };
         let attempt;
         do {
           if (refill) {
@@ -288,6 +290,7 @@ export async function importComputeOrders({ writer, reader, path, id, target, en
             await checkFile();
           }
           attempt = await admitPage(writer, reader, page, signal, retryRollbacks);
+          if (refill && attempt.result === 'refill_window') continue;
           if (!waitMs || (attempt.result !== 'queue_full' && !(refill && attempt.result === 'rolled_back'))) break;
           refill?.observe(attempt);
           onProgress(status(attempt.result));

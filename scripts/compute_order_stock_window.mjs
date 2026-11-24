@@ -42,7 +42,7 @@ export async function refuseLegacyWindow(tx) {
   if (installed && (await readWindow(tx)).length) throw Error('resume the reserved stock window before using the serial importer');
 }
 
-export async function reserveStockWindow(writer, { id, cut, pages, maxOpen }) {
+export async function reserveStockWindow(writer, { id, cut, pages, maxOpen, mayStart }) {
   checkActiveOrderLimit(maxOpen);
   const first = pages[0]?.first, last = pages.at(-1)?.last;
   const count = pages.reduce((n, page) => n + page.orders, 0);
@@ -76,6 +76,7 @@ export async function reserveStockWindow(writer, { id, cut, pages, maxOpen }) {
     const [queue] = await tx.unsafe(queueZonesSql);
     if (!queue) return { result: 'queue_unavailable' };
     if (queueOrders(queue.zones).total + count > maxOpen) return { result: 'queue_full' };
+    if (mayStart && !mayStart()) return { result: 'refill_window' };
     await tx.unsafe(`INSERT INTO state_compute_order_stock_window(key,import_id,first_byte,next_byte,max_open,positions)
       SELECT $1,$2,$3,$4,$5,jsonb_object_agg(computation,position::text)
       FROM (SELECT computation,nextval('compute_queue_position') position
