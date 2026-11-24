@@ -347,6 +347,38 @@ RETURNS TABLE (id text, verb text, request text, due_at text, producer text, zon
   RETURNING q.id, q.verb, q.request, q.due_at, q.producer, q.zone, q.zone_position
 $$;
 
+-- Use the same locked candidate ordering and lease guard as row-count dispatch.
+CREATE OR REPLACE FUNCTION factory_take_pack_rcs(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint,
+  text, text, text, bigint, text)
+RETURNS TABLE (id text, verb text, request text, due_at text, producer text, zone bigint, zone_position bigint) LANGUAGE sql AS $$
+  WITH policy AS MATERIALIZED (SELECT $19::jsonb AS body),
+  candidates AS MATERIALIZED (
+    SELECT q.id, price.rcs_ms,
+      row_number() OVER queue_order AS position,
+      sum(coalesce(price.rcs_ms,0)) OVER queue_order - coalesce(price.rcs_ms,0) AS previous_ms,
+      count(*) FILTER (WHERE price.rcs_ms IS NULL OR price.rcs_ms > (policy.body->>'target_rcs_ms')::bigint)
+        OVER queue_order AS barriers,
+      first_value(price.rcs_ms) OVER queue_order AS first_price,
+      (policy.body->>'target_rcs_ms')::bigint AS target_ms,
+      (policy.body->>'max_rcs_ms')::bigint AS max_ms,
+      (policy.body->>'fallback_rows')::bigint AS fallback_rows
+    FROM factory_candidates($1,0,$2,$3,$4,$5,$6,$7,$8,$9,'["open"]',$10,$14,$11,$12,$13,true) q
+    CROSS JOIN policy
+    LEFT JOIN state_compute_rcs_prices price ON price.engine=$3 AND price.model=policy.body->>'model' AND price.computation=q.id
+    WINDOW queue_order AS (ORDER BY q.zone,q.zone_position,q.id ROWS UNBOUNDED PRECEDING)
+  )
+  UPDATE state_compute_work q SET (lease_prev, leased_to_prev, lease_prev_until) = (SELECT * FROM factory_supersede(q.lease_prev,
+      q.leased_to_prev, q.lease_prev_until, q.lease, q.leased_to, q.lease_until, $1)),
+    lease = $15, lease_until = $16, leased_to = $17, leased_at = $1
+  WHERE q.id IN (SELECT c.id FROM candidates c WHERE
+    (c.position <= c.fallback_rows AND c.first_price IS NULL)
+    OR (c.position = 1 AND c.first_price IS NOT NULL)
+    OR (c.barriers = 0 AND c.previous_ms < c.target_ms AND c.previous_ms + c.rcs_ms <= c.max_ms))
+    AND factory_takeable(q.lease_until,q.leased_at,$1,$9)
+    AND (SELECT count(DISTINCT h.lease) FROM state_compute_work h WHERE h.leased_to = $17 AND h.lease_until > $1 AND h.lease <> $15) < $18
+  RETURNING q.id, q.verb, q.request, q.due_at, q.producer, q.zone, q.zone_position
+$$;
+
 CREATE OR REPLACE FUNCTION factory_take_pack(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint,
   text, text, text, bigint)
 RETURNS TABLE (id text, verb text, request text, due_at text, producer text) LANGUAGE sql AS $$
@@ -365,6 +397,15 @@ CREATE OR REPLACE FUNCTION factory_lease_pack_zoned(text, bigint, text, text, te
   text, text, text, bigint)
 RETURNS TABLE (id text, verb text, request text, due_at text, producer text, zone bigint, zone_position bigint) LANGUAGE sql AS $$
   WITH taken AS MATERIALIZED (SELECT * FROM factory_take_pack_zoned($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)),
+  charged AS MATERIALIZED (SELECT factory_charge((SELECT jsonb_agg(jsonb_build_object('p', c.producer, 'n', c.n) ORDER BY c.producer)
+    FROM (SELECT t.producer, count(*) AS n FROM taken t GROUP BY t.producer) c)::text))
+  SELECT t.id, t.verb, t.request, t.due_at, t.producer, t.zone, t.zone_position FROM taken t CROSS JOIN charged
+$$;
+
+CREATE OR REPLACE FUNCTION factory_lease_pack_rcs(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint,
+  text, text, text, bigint, text)
+RETURNS TABLE (id text, verb text, request text, due_at text, producer text, zone bigint, zone_position bigint) LANGUAGE sql AS $$
+  WITH taken AS MATERIALIZED (SELECT * FROM factory_take_pack_rcs($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)),
   charged AS MATERIALIZED (SELECT factory_charge((SELECT jsonb_agg(jsonb_build_object('p', c.producer, 'n', c.n) ORDER BY c.producer)
     FROM (SELECT t.producer, count(*) AS n FROM taken t GROUP BY t.producer) c)::text))
   SELECT t.id, t.verb, t.request, t.due_at, t.producer, t.zone, t.zone_position FROM taken t CROSS JOIN charged
@@ -956,6 +997,7 @@ DECLARE
   v_packable boolean;
   v_fair record;
   v_short boolean;
+  v_rcs text := p #>> '{pack,rcs}';
   v_size bigint;
   v_next text;
   v_got jsonb;
@@ -1114,6 +1156,12 @@ BEGIN
     RETURN;
   END IF;
   v_size := GREATEST(1, LEAST((p #>> '{pack,max}')::bigint, (p #>> '{pack,by_pace}')::bigint, v_fair.open / GREATEST(1, v_fair.asking)));
+  IF v_rcs IS NOT NULL AND NOT v_short AND NOT v_grace THEN
+    v_rcs := (v_rcs::jsonb || jsonb_build_object('fallback_rows',v_size))::text;
+    v_size := LEAST((p #>> '{pack,max}')::bigint, v_fair.open / GREATEST(1, v_fair.asking));
+  ELSE
+    v_rcs := NULL;
+  END IF;
   -- A PICK THAT WAS DEAD IS PICKED AGAIN, under the same lease, as
   -- worker/tasks.js `nextPack` does (`PICK_ROUNDS`): until the pack is full, a
   -- pick finds nothing dead, or PICK_ROUNDS picks. A row of the pick no longer owed
@@ -1121,10 +1169,17 @@ BEGIN
   -- all are (`sift`). Each pick is charged as its own (`board_sync`).
   FOR v_round IN 1..8 LOOP
     EXIT WHEN jsonb_array_length(v_have) >= v_size;
-    v_got := COALESCE((SELECT jsonb_agg(to_jsonb(t)) FROM factory_take_pack_zoned(v_at, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling,
-      v_grace_s, (p -> 'packable')::text, p #>> '{grace,exclude}', p #>> '{grace,join}', NULL::text,
-      v_size - jsonb_array_length(v_have), v_lease, CASE WHEN v_short THEN p #>> '{pack,short_until}' ELSE p #>> '{pack,long_until}' END, v_dev,
-      (p ->> 'packs_held')::bigint) t), '[]'::jsonb);
+    IF v_rcs IS NULL THEN
+      v_got := COALESCE((SELECT jsonb_agg(to_jsonb(t)) FROM factory_take_pack_zoned(v_at, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling,
+        v_grace_s, (p -> 'packable')::text, p #>> '{grace,exclude}', p #>> '{grace,join}', NULL::text,
+        v_size - jsonb_array_length(v_have), v_lease, CASE WHEN v_short THEN p #>> '{pack,short_until}' ELSE p #>> '{pack,long_until}' END, v_dev,
+        (p ->> 'packs_held')::bigint) t), '[]'::jsonb);
+    ELSE
+      v_got := COALESCE((SELECT jsonb_agg(to_jsonb(t)) FROM factory_take_pack_rcs(v_at, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling,
+        v_grace_s, (p -> 'packable')::text, p #>> '{grace,exclude}', p #>> '{grace,join}', NULL::text,
+        v_size - jsonb_array_length(v_have), v_lease, CASE WHEN v_short THEN p #>> '{pack,short_until}' ELSE p #>> '{pack,long_until}' END, v_dev,
+        (p ->> 'packs_held')::bigint, v_rcs) t), '[]'::jsonb);
+    END IF;
     EXIT WHEN jsonb_array_length(v_got) = 0;
     v_charges := v_charges || jsonb_build_array((SELECT jsonb_agg(jsonb_build_object('p', c.p, 'n', c.n) ORDER BY c.p)
       FROM (SELECT t ->> 'producer' AS p, count(*) AS n FROM jsonb_array_elements(v_got) t GROUP BY 1) c));
@@ -1160,7 +1215,7 @@ BEGIN
         'due_at', t ->> 'due_at', 'zone',(t->>'zone')::bigint,'zone_position',(t->>'zone_position')::bigint,'demands', (SELECT COALESCE(jsonb_agg(jsonb_build_object('producer', e ->> 'producer', 'ref', e ->> 'ref',
           'payload', e ->> 'payload') ORDER BY (e ->> 'k')::bigint), '[]'::jsonb) FROM jsonb_array_elements(v_wanted) e WHERE e ->> 'question' = t ->> 'id')))
       FROM jsonb_array_elements(v_got) t WHERE NOT v_gone ? (t ->> 'id')), '[]'::jsonb);
-    EXIT WHEN jsonb_array_length(v_gone) = 0;
+    EXIT WHEN jsonb_array_length(v_gone) = 0 OR (v_rcs IS NOT NULL AND jsonb_array_length(v_have) > 0);
   END LOOP;
   r := jsonb_set(r, '{use,charge}', v_charges);
   v_got := COALESCE((SELECT jsonb_agg(t ORDER BY (t ->> 'zone')::bigint,(t ->> 'zone_position')::bigint,t ->> 'question' COLLATE "C") FROM jsonb_array_elements(v_have) t), '[]'::jsonb);

@@ -9,7 +9,7 @@ time is an observation for ETA and renewals.
 
 The offline evaluator in `scripts/compute_rcs.py` takes a JSON file and
 writes a JSON receipt to stdout. It has no production database or client
-dependencies. Live dispatch still uses its existing rules.
+dependencies. Live dispatch uses RCS only through the opt-in pilot below.
 
 ## Measurement and pricing
 
@@ -93,3 +93,32 @@ promotion and rollback operation and a fresh observation window after each
 change. The offline receipt is evidence for that operation.
 
 Run `python3 scripts/check_compute_rcs.py` for the scoped checks.
+
+## Production pilot
+
+The opt-in Worker path uses the same zone ordering, eligibility and leases
+as ordinary protocol 8. It applies the RCS target to already packable tasks.
+Whole optimization requests continue down the existing standalone dispatch
+path. Clients identify support with `queued-pack-v1`. Clients that omit it,
+including older clients, follow their existing row sizing. The pilot also
+uses row sizing during scarcity and engine grace. A missing price at the
+head uses the original row count. A missing price later in a priced pack
+ends that pack before the missing task.
+
+Install the additive database contract emitted by
+`node scripts/compute_rcs_schema.mjs` before setting the Worker pilot variable.
+The database owner applies the generated transaction after comparing the
+installed sync procedure with the expected source. Install prices for the
+current engine and the approved model in `state_compute_rcs_prices`.
+Each row references the immutable computation identity. Verify an import
+against the approved price evidence before activating its model.
+
+Set `WFSIM_RCS_PACK_PILOT` to a JSON object with `engine`, `model`
+(the pricing model's SHA-256), `percent` (1–10), `target_rcs_ms`
+`max_rcs_ms` and `expires_at` (UTC, at most 24 hours ahead). Cohort assignment uses a stable account hash, with a
+device hash for an unclaimed device. Expiry or removing the variable
+returns new grants to row sizing. Existing grants retain their task list and leases.
+The initial production trial requires qualified prices on the intended
+cohort's queue prefix, representative reference samples, a measured
+claim budget, comparable account windows and a rollback owner. Deployment
+with the variable unset adds no pilot reads to ordinary dispatch.

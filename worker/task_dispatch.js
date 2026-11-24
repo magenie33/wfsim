@@ -60,7 +60,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
   /// never start a fact, so handed every row, every stale page answers the head of
   /// the queue again and none of it counts.
   /// The pick, the lease and the charge are worker/pg/sync.sql `factory_lease_pack`.
-  async function nextPack(env, w, engine, { n, lease_ms, most = 1, exclude = null, join = null, producer = null }, now = Date.now()) {
+  async function nextPack(env, w, engine, { n, lease_ms, most = 1, exclude = null, join = null, producer = null, rcs = null }, now = Date.now()) {
     if(env.FACTORY_DRAINING==="1")return null;
     const db = env.LIBRARY, at = iso(now), lease = newLease(), d = await dialsOf(env, now);
     const [, , , , , , , , ceiling, grace] = eligibleArgs(w, engine, at, d);
@@ -70,11 +70,12 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
     // at the head of the order are withdrawn a pack's worth a pick, and the
     // client is handed the live rows behind them, never nothing.
     for (let round = 0; round < PICK_ROUNDS && kept.length < n; round++) {
+      const picker = rcs ? "factory_lease_pack_rcs" : "factory_lease_pack_zoned";
       const [taken, ds] = await db.batch([
-        db.prepare(`SELECT * FROM factory_lease_pack_zoned(?1::text, ?2::bigint, ?3::text, ?4::text, ?5::text, ?6::text, ?7::text, ?8::bigint, ?9::bigint,
-            ?10::text, ?11::text, ?12::text, ?13::text, ?14::bigint, ?15::text, ?16::text, ?17::text, ?18::bigint)`)
+        db.prepare(`SELECT * FROM ${picker}(?1::text, ?2::bigint, ?3::text, ?4::text, ?5::text, ?6::text, ?7::text, ?8::bigint, ?9::bigint,
+            ?10::text, ?11::text, ?12::text, ?13::text, ?14::bigint, ?15::text, ?16::text, ?17::text, ?18::bigint${rcs ? ", ?19::text" : ""})`)
           .bind(at, w.lanes ?? 1, engine, JSON.stringify(w.siblings || [w.device]), w.owner || w.device, w.net || "", w.before ?? null, ceiling, grace,
-            PACKABLE, exclude ? JSON.stringify(exclude) : null, join, producer, n - kept.length, lease, iso(now + lease_ms), w.device, most),
+            PACKABLE, exclude ? JSON.stringify(exclude) : null, join, producer, n - kept.length, lease, iso(now + lease_ms), w.device, most, ...(rcs ? [JSON.stringify(rcs)] : [])),
         // IN ONE ORDER, which the sync's procedure walks too (`board_sync`).
         db.prepare(`SELECT d.question, d.producer, d.ref, d.payload FROM relation_task_consumers d JOIN state_compute_work q ON q.id = d.question
             WHERE q.lease = ? AND q.leased_to = ? AND d.state = 'live' ORDER BY d.question, d.producer, d.ref`).bind(lease, w.device),
@@ -92,7 +93,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
       }
       kept.push(...taken.results.filter((q) => !gone.includes(q.id)));
       wanted.push(...owed);
-      if (!gone.length) break;
+      if (!gone.length || (rcs && kept.length)) break;
     }
     for (const x of wanted) await onLease(env, x, now);
     const questions = kept
@@ -271,7 +272,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
         await restateAll(db, gone);
       }
       results.push(...got.filter((q) => !gone.includes(q.id)));
-      if (!gone.length) break;
+      if (!gone.length || (rcs && kept.length)) break;
     }
     if (!results.length) return [];
     // IN THE ORDER IT WAS CHOSEN: an UPDATE returns its rows in none.

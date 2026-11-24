@@ -232,7 +232,6 @@ def tune(data):
                 break
             if trial["first_grant_p95_ms"] > nonnegative(baseline["first_grant_p95_ms"]):
                 break
-                break
             if target > incumbent and idle[-1] >= Fraction(baseline["idle_slot_ms"], baseline["eligible_slot_ms"]):
                 break
         else:

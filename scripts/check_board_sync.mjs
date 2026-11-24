@@ -463,5 +463,67 @@ page.measureRow = async () => {
 await client.workOnce8("device");
 page.syncInFlight = null;
 
+console.log("\nreference core-second pilot");
+const pricedDb = await testDb("library");
+const model = "a".repeat(64), policy = { engine: "e1", model, percent: 10, target_rcs_ms: 600_000, max_rcs_ms: 720_000,
+  expires_at: new Date(Date.now() + 60_000).toISOString() };
+const pricedEnv = { ...env, LIBRARY: pricedDb, WFSIM_RCS_PACK_PILOT: JSON.stringify(policy) };
+const pricedPost = async (route, path, body) => (await route(new Request(`https://x${path}`, {
+  method: "POST", headers: { authorization: "Bearer ft" }, body: JSON.stringify(body),
+}), pricedEnv, path)).json();
+await setDial(pricedEnv, "board_admission", 1, "fixture");
+const pricedIds = ["rcs-a", "rcs-b", "rcs-oversized", "rcs-unpriced", "rcs-e", "rcs-f"];
+await pricedDb.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES (?, ?, 'test', 0)", batch, batch);
+for (const identity of pricedIds) {
+  await pricedDb.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES (?, ?, ?)", identity, new Date().toISOString(),
+    JSON.stringify({ weapon: "braton_prime", mods: ["serration", identity] }));
+  await pricedDb.run("INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES (?, ?, 'standard_single_target', 'base')", batch, identity);
+  const demanded = await pricedPost(boardTasksRoute, "/api/board/ask", { batch, rows: [{ identity, ruler: "standard_single_target", mode: "base" }] });
+  check("reference price fixture registers " + identity, demanded.asked === 1);
+  if (identity !== "rcs-unpriced") await pricedDb.run(
+    "INSERT INTO state_compute_rcs_prices (engine, model, computation, rcs_ms) SELECT 'e1', ?, question, ? FROM relation_task_consumers WHERE ref = ?",
+    model, identity === "rcs-oversized" ? 1_200_000 : 300_000, `${identity}|standard_single_target|base`);
+}
+await pricedDb.run(`INSERT INTO state_factory_snapshot (id, at, open, urgent, asking, computing, queue_rows, settle_queue_rows, daemon_at, daemon_commit)
+  VALUES (1, ?, 200, 0, 1, 0, 200, 0, ?, '')`, new Date().toISOString(), new Date().toISOString());
+let pilotDevice;
+for (let i = 1; !pilotDevice && i <= 100; i++) {
+  const device = i.toString(16).padStart(24, "0");
+  const key = new TextEncoder().encode("rcs-pack-v1:" + device);
+  if (new DataView(await crypto.subtle.digest("SHA-256", key)).getUint32(0) < 2 ** 32 / 10) pilotDevice = device;
+}
+check("an enrolled pilot device is available", !!pilotDevice);
+const pilotSync = (extra = {}) => pricedPost(syncRoute, "/api/board/sync", {
+  verifier: pilotDevice, engine: "e1", protocol: PROTOCOL, consent: YES, lanes: 4,
+  want_ms: 600_000, pace_ms: 20_000, capabilities: ["fixed-board-input-v1", "queued-pack-v1"], ...extra,
+});
+const grantIds = (reply) => reply.pack?.tasks.map(task => task.identity);
+const pilotFirst = await pilotSync();
+check("RCS grant stops at the work target in FIFO order", JSON.stringify(grantIds(pilotFirst)) === JSON.stringify(pricedIds.slice(0, 2)),
+  JSON.stringify(grantIds(pilotFirst)));
+const pilotSpare = await pilotSync({ held: [{ lease: pilotFirst.pack.lease, rows: pilotFirst.pack.tasks.map(t => t.question) }] });
+check("an oversized RCS head is one whole pack", JSON.stringify(grantIds(pilotSpare)) === '["rcs-oversized"]', JSON.stringify(grantIds(pilotSpare)));
+await setDial(pricedEnv, "packs_held", 4, "fixture");
+const heldPilot = [pilotFirst.pack, pilotSpare.pack].map(p => ({ lease: p.lease, rows: p.tasks.map(t => t.question) }));
+const thirdPilot = await pilotSync({ held: heldPilot });
+check("RCS grants preserve the two-pack cap with a higher server dial",
+  !thirdPilot.pack && thirdPilot.held.every(row => row.held));
+await setDial(pricedEnv, "packs_held", DIALS.packs_held.default, "fixture");
+await pricedDb.run("UPDATE entity_compute_devices SET next_at = NULL WHERE id = ?", pilotDevice);
+const oldClientGrant = await pilotSync({ capabilities: ["fixed-board-input-v1"] });
+check("a client without the pilot capability uses row sizing", grantIds(oldClientGrant)?.length === pricedIds.length,
+  JSON.stringify(grantIds(oldClientGrant)));
+await pricedDb.run("UPDATE entity_compute_devices SET next_at = NULL WHERE id = ?", pilotDevice);
+await pricedDb.run("UPDATE state_compute_work SET lease_until = ?, leased_to = ? WHERE id IN (SELECT question FROM relation_task_consumers WHERE ref LIKE 'rcs-a|%' OR ref LIKE 'rcs-b|%' OR ref LIKE 'rcs-oversized|%')",
+  new Date(Date.now() + 300_000).toISOString(), B);
+const unpriced = await pilotSync();
+check("an unpriced FIFO head falls back to legacy rows without skipping it",
+  JSON.stringify(grantIds(unpriced)) === JSON.stringify(pricedIds.slice(3)), JSON.stringify(grantIds(unpriced)));
+
+pricedEnv.WFSIM_RCS_PACK_PILOT = JSON.stringify({ ...policy, expires_at: new Date(Date.now() - 1000).toISOString() });
+await pricedDb.run("UPDATE entity_compute_devices SET next_at = NULL WHERE id = ?", pilotDevice);
+await pricedDb.run("UPDATE state_compute_work SET lease_until = NULL, leased_to = NULL, lease = NULL");
+check("an expired pilot returns even enrolled clients to normal packs", grantIds(await pilotSync())?.length === pricedIds.length);
+
 console.log(failures ? `\n${failures} failed` : "\nprotocol 8 hands out by protocol 7's rules and holds a client to its time");
 process.exit(failures ? 1 : 0);
