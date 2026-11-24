@@ -131,7 +131,9 @@ const empowermentOf = (s) => (s.empowered === "archimedea" || s.empowered === "i
 
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: null,
   guardian_aura: false, ancient_protector_aura: false,
-  headshot_pct: 100, aiming: true, scope_zoom: 0,
+  headshot_pct: 100, weakpoint_aim_pct: 100, miss_pct: 0,
+  scene_3d: { preset: "source_standard", placement: { kind: "supplied" } },
+  aiming: true, scope_zoom: 0,
   // THE FIGHT'S GEOMETRY: where the two of them stand, in metres. CONTACT by
   // default (0.5 m, twice a body's radius) — the closest they can be, which is
   // what point blank means once a body has a size, and what both official

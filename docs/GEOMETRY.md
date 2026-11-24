@@ -22,6 +22,13 @@ no model. Movement flags retain the standing geometry in this preset.
 Additional wielders use the shared reference pose and a reference emitter.
 Ability placement uses each ability's existing rules on the projected arena.
 
+The floor map supplies `aim_at` in ground-plane coordinates. A point inside
+a target's controller selects that actor's weak-point or body anchor. A
+point elsewhere uses its own horizontal coordinates and the corresponding
+anchor height of the nearest actor. Contacts are resolved in 3D along the
+posed muzzle ray, including intervening enemies. The standing melee arc
+faces the indicated floor-map direction.
+
 In 3D, `weakpoint_aim_pct` weights the selected weak-point center against
 the ordinary body anchor. `miss_pct` assigns deliberate misses per physical
 round, including its multishot copies. A deliberate miss spends the firing

@@ -26,7 +26,7 @@ const FIELDS = `(() => {
       effective: lab?.querySelector('.scenario-effective')?.textContent || '',
     };
   };
-  return { aiming: pick('aiming'), ammo: pick('infinite_ammo'), head: pick('headshot_pct') };
+  return { aiming: pick('aiming'), ammo: pick('infinite_ammo'), head: pick('weakpoint_aim_pct') };
 })()`;
 
 await evaluate(`(async () => {
@@ -53,14 +53,11 @@ const sent = await open("/weapons/Verglas_Prime/simulator");
 check("a sentinel shows effective aim while leaving the global input editable", sent.aiming.there && !sent.aiming.disabled && /On|开/.test(sent.aiming.effective), JSON.stringify(sent.aiming));
 check("...and its ammo is pinned ON — there is no reserve to run out of",
   !sent.ammo.disabled && /On|开/.test(sent.ammo.effective), JSON.stringify(sent.ammo));
-check("...and its headshot rate is pinned at 0",
-  !sent.head.disabled && /: 0$/.test(sent.head.effective), JSON.stringify(sent.head));
-check("...and each says why, in words", [sent.aiming, sent.ammo, sent.head]
+check("...and its weak-point aim remains an editable scenario input",
+  sent.head.there && !sent.head.disabled, JSON.stringify(sent.head));
+check("...and the forced flags explain their values", [sent.aiming, sent.ammo]
   .every((f) => f.there && f.why && f.why.length >= 8),
-  [sent.aiming, sent.ammo, sent.head]
-    .map((f) => `"${String(f.why || (f.there ? "" : "ABSENT")).slice(0, 40)}"`).join(" | "));
-check("...and the headshot reason is the SENTINEL one, not the generic blurb",
-  /sentinel|companion|守护/.test(sent.head.why), `"${sent.head.why.slice(0, 90)}"`);
+  [sent.aiming, sent.ammo].map(f => f.why).join(" | "));
 
 const ag = await open("/weapons/Larkspur_Prime/simulator");
 check("a ground Arch-Gun's ammo is pinned OFF — pickups it cannot receive",
@@ -75,19 +72,19 @@ check("an ordinary weapon owns all three", ord.aiming.disabled === false
 
 const kept = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-  sim.headshot_pct = 40; markScenarioDirty(); await sleep(1600);
-  const before = sim.headshot_pct;
+  sim.weakpoint_aim_pct = 40; markScenarioDirty(); await sleep(1600);
+  const before = sim.weakpoint_aim_pct;
   history.pushState({}, '', '/weapons/Verglas_Prime/simulator'); route(); await sleep(2600);
-  const onSentinel = sim.headshot_pct;
-  const input = document.querySelector('#sim-technique [data-k="headshot_pct"]');
+  const onSentinel = sim.weakpoint_aim_pct;
+  const input = document.querySelector('#sim-technique [data-k="weakpoint_aim_pct"]');
   const shown = input?.value;
   const effective = input?.closest('label')?.querySelector('.scenario-effective')?.textContent;
   history.pushState({}, '', '/weapons/Torid/simulator'); route(); await sleep(2600);
-  return { before, onSentinel, shown, effective, after: sim.headshot_pct };
+  return { before, onSentinel, shown, effective, after: sim.weakpoint_aim_pct };
 })()`);
-check("the reader's own headshot rate survives a trip through a sentinel",
+check("the reader's own weak-point aim survives a trip through a sentinel",
   kept.before === 40 && kept.after === 40,
   `set ${kept.before} -> on the sentinel ${kept.onSentinel} -> back ${kept.after}`);
-check("...while the global input shows 40 and the effective value shows 0", Number(kept.shown) === 40 && /: 0$/.test(kept.effective), `showed ${kept.shown}`);
+check("...while the global input shows 40", Number(kept.shown) === 40, `showed ${kept.shown}`);
 
 await app.finish("a question this weapon cannot be asked is pinned, and says why");

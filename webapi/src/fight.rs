@@ -740,10 +740,11 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
             )
         });
     let (target, body_parts, mut target_at, mut others, aimed_id) =
-        aimed_body(v, aim_at, player_at, target, body_parts, target_at, formation);
+        aimed_body(v, if v.get("scene_3d").is_some() { None } else { aim_at },
+            player_at, target, body_parts, target_at, formation);
     let scene_3d = v.get("scene_3d").map(|raw| {
-        if aim_at.is_some() { return Err("scene_3d uses its head/body reticle anchor; aim_at is not supported".to_string()); }
         if raw.get("preset").is_none() {
+            if aim_at.is_some() { return Err("explicit scene_3d requires its supplied reticle anchor".to_string()); }
             if info.sentinel && raw.get("player").and_then(|p| p.get("world")).is_none() {
                 return Err("scene_3d needs a posed companion carrier and its weapon mount".into());
             }
@@ -755,7 +756,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         }
         let roster = v.get("formation").and_then(Value::as_array).into_iter().flatten();
         let models = roster.zip(&others).map(|(entry, body)| (formation_enemy(entry, enemy_id), body.at));
-        crate::scene_profiles::source_default(raw, info, player_at, (enemy_id, target_at), models)
+        crate::scene_profiles::source_default(raw, info, player_at, (enemy_id, target_at), models, aim_at)
     }).transpose().map_err(err_json)?;
     let scene_3d = scene_3d.map(|mut scene| {
         let weakpoint_aim = v.get("weakpoint_aim_pct").map(|_| {

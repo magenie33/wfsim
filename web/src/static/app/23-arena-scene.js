@@ -106,7 +106,9 @@ function setArenaDistance(s, want) {
   if (d < 1e-9) { dx = 0; dy = 1; }
   const u = d < 1e-9 ? 1 : d;
   // `want` is a GAP, and the model holds centres — one contact apart.
-  const m = Math.max(CONTACT_M, want + CONTACT_M);
+  const contact = arenaControllerRadius(s) + arenaControllerRadius(s, 0)
+    + (s.scene_3d ? (META?.scene_3d_source_default?.player_controller_skin_m || 0) : 0);
+  const m = Math.max(contact, s.scene_3d ? want : want + contact);
   s.target_at = [ax + (dx / u) * m, ay + (dy / u) * m];
 }
 
@@ -184,13 +186,13 @@ function arenaFirstHit(s) {
   const [px, py] = s.player_at;
   const span = Math.hypot(aim[0] - px, aim[1] - py) || 1;
   const [ux, uy] = [(aim[0] - px) / span, (aim[1] - py) / span];
-  const [mx, my] = [px + ux * BODY_R_M, py + uy * BODY_R_M];
+  const [mx, my] = s.scene_3d ? [px, py] : [px + ux * BODY_R_M, py + uy * BODY_R_M];
   let best = null;
   bodies.forEach((b, i) => {
     const [dx, dy] = [b[0] - mx, b[1] - my];
     const along = dx * ux + dy * uy;
     if (along < 0) return;
-    if (Math.abs(dx * uy - dy * ux) > BODY_R_M) return;
+    if (Math.abs(dx * uy - dy * ux) > arenaControllerRadius(s, i)) return;
     if (!best || along < best[1]) best = [i, along];
   });
   return best ? best[0] : -1;
@@ -236,16 +238,17 @@ function arenaSvg(s, en, heat, sel) {
   // …AND IT FACES WHERE THE WEAPON POINTS, which may be a body or bare floor.
   const span = Math.hypot(tx - px, ty - py) || 1;
   const ux = (tx - px) / span, uy = (ty - py) / span;
-  const mx = px + ux * r, my = py + uy * r;
+  const mx = s.scene_3d ? px : px + ux * r, my = s.scene_3d ? py : py + uy * r;
   const struck = arenaFirstHit(s);
-  // THE SHOT STOPS WHERE IT STOPS, and the line says so. Solid from the muzzle
+  // In 3D the floor line indicates aim. The collision is resolved in the engine.
+  // In a legacy planar scene the line indicates the first projected body. Solid from the muzzle
   // to the body it actually reaches; DASHED on from there to wherever you are
   // pointing. Aiming past a body is legal and common — you point at the one
   // behind — and without this the scene showed a line running through a body it
   // cannot pass. No punch-through is modelled, so the first
   // body on the line is where it ends.
   const hitPx = struck >= 0 ? g.px(bodies[struck]) : null;
-  const stop = hitPx
+  const stop = !s.scene_3d && hitPx
     ? [hitPx[0] - ux * r, hitPx[1] - uy * r]
     : [tx, ty];
   const sight = `<line class="ar-link" x1="${mx.toFixed(1)}" y1="${my.toFixed(1)}" `
