@@ -26,6 +26,7 @@ mod prepared;
 mod stance;
 mod final_round;
 mod carry;
+mod warm;
 
 pub use builds::BuildStream;
 pub use final_round::{FinalRound, FinalScore};
@@ -240,7 +241,7 @@ pub(crate) struct Replay {
     builds: BuildStream,
     /// Only a retained fleet plan enables this small cross-batch input cache.
     entrants: std::sync::Arc<std::sync::OnceLock<Prepared>>,
-    riven_specs: std::collections::HashMap<&'static str, wfsim_engine::build::rivens::RivenSpec>,
+    riven_specs: Vec<(&'static str, wfsim_engine::build::rivens::RivenSpec)>,
 }
 
 impl Replay {
@@ -1053,7 +1054,7 @@ fn parse_uncached(v: &Value) -> Result<OptimizePlan, Value> {
             .collect(),
         builds: BuildStream::default(),
         entrants: Default::default(),
-        riven_specs: crate::rivens::riven_specs_from(&replay_base, info).into_iter().collect(),
+        riven_specs: crate::rivens::riven_specs_from(&replay_base, info),
     });
     // THE OPTIMIZER BUILDS NO FIGHT: a candidate is scored in the fight the
     // simulator builds from its request (`simulate::Entrant`), prepared once per
@@ -2024,9 +2025,10 @@ pub fn run_optimize_resumable(
             screened_runs: Default::default(),
             best_runs: Default::default(),
         };
+            let warm = (fleet["warm_cache"] == 1).then_some(replay.as_ref());
             // A FLEET WORKER'S SHARE: score these builds and nothing else.
             if let Some(builds) = fleet.get("score").and_then(Value::as_array) {
-                return ctx.score_json(builds, &replay.builds, fleet["compact_shards"] == 1);
+                return ctx.score_json(builds, &replay.builds, fleet["compact_shards"] == 1, warm);
             }
             if ctx.lead {
                 let scores = fleet.get("scores").and_then(Value::as_array).map_or(&[][..], Vec::as_slice);
@@ -2036,7 +2038,7 @@ pub fn run_optimize_resumable(
             let (sj, stats, report) =
                 quick::run_quick(&ctx, st, max_evals, Some(state), shard, shards, space.len(), finalists);
             // THE LEADER'S PAUSE: the builds its starts wait for go back to the page.
-            if let Some(p) = ctx.lead.then(quick::QuickCtx::lead_pending).flatten() {
+            if let Some(p) = ctx.lead.then(|| ctx.lead_pending(warm)).flatten() {
                 return p;
             }
             quick_report = Some(report);
