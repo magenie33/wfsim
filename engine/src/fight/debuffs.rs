@@ -156,6 +156,9 @@ pub(super) struct DebuffState {
     /// APPEND THROUGH [`Self::push_dot`], never `dots.push`: it keeps
     /// the due bound, radial provenance and shared clock in sync with the list.
     pub(super) dots: Vec<Dot>,
+    /// One bit per live type. During tick settlement all bits set requests a
+    /// scan, so a callback can observe an expiry before queue compaction.
+    pub(super) live_dot_types: u32,
     /// All live slots share one finite clock, one consolidated type and no group key.
     /// Advancing the group or removing slots preserves this; appends must recheck it.
     pub(super) dots_share_clock: bool,
@@ -517,7 +520,14 @@ impl DebuffState {
     /// FIFO push with the universal replace-oldest rule (application-time
     /// order; uniform durations make the front the oldest).
     pub(super) fn push_capped(list: &mut Vec<f64>, expiry: f64, cap: usize, now: f64) {
-        list.retain(|&e| e > now); // lazy prune of expired stacks
+        Self::push_timed(list, expiry, cap, now, false);
+    }
+
+    fn push_timed(list: &mut Vec<f64>, expiry: f64, cap: usize, now: f64, pruned: bool) {
+        // A non-finite duration may have appended NaN since the last prune.
+        if !pruned || list.last().is_some_and(|last| last.is_nan()) {
+            list.retain(|&e| e > now);
+        }
         // A STACK THAT IS ALREADY DEAD IS NOT APPLIED — a fight's status
         // duration of -100% or less gives `STATUS_DURATION * status_damage <= 0`,
         // and an expired entry is one `prune` has been told it may skip.
@@ -528,6 +538,13 @@ impl DebuffState {
             list.remove(0); // replace the oldest APPLIED stack
         }
         list.push(expiry);
+    }
+
+    pub(super) fn push_proc_stack(
+        &mut self, pile: impl FnOnce(&mut Self) -> &mut Vec<f64>, expiry: f64, cap: usize, now: f64,
+    ) {
+        let pruned = self.pruned_at == Some(now);
+        Self::push_timed(pile(self), expiry, cap, now, pruned);
     }
 
     /// Push an independent DoT (Slash/Toxin/Electricity/Gas). These have no
@@ -639,7 +656,10 @@ impl DebuffState {
         *self = DebuffState::default();
         self.area_out = out;
         self.area_hit = hits;
-        if !clouds.is_empty() { self.radial_history = gas_history; }
+        if !clouds.is_empty() {
+            self.radial_history = gas_history;
+            self.invalidate_dot_types();
+        }
         self.dots = clouds;
         self.proc_landings[1] = gas_landing;
     }
@@ -663,7 +683,8 @@ impl DebuffState {
         // because a Gas cloud and a Tesla arc reach NEIGHBOURS through
         // `post_area` and those instances join the neighbour's clock too.
         let Some(cap) = cap else {
-            if matches!(dot.dtype, DamageType::Electricity | DamageType::Gas) {
+            if matches!(dot.dtype, DamageType::Electricity | DamageType::Gas)
+                && self.live_dot_types & (1 << dot.dtype as u32) != 0 {
                 if let Some(shared) = self.dots.iter()
                     .find(|d| d.dtype == dot.dtype && d.ticks_left > 0)
                     .map(|d| d.next_tick)
@@ -675,16 +696,24 @@ impl DebuffState {
             return;
         };
         let consolidated = matches!(dot.dtype, DamageType::Electricity | DamageType::Gas);
-        let mut count = 0_usize;
         let start = self.dot_start(dot.dtype);
         let mut oldest = self.dots.len();
+        let mut count = 0;
         let mut shared_clock = None;
-        for (index, existing) in self.dots[start..].iter().enumerate() {
-            if existing.dtype != dot.dtype { continue; }
-            if count == 0 { oldest = start + index; }
-            count += 1;
-            if consolidated && shared_clock.is_none() && existing.ticks_left > 0 {
-                shared_clock = Some(existing.next_tick);
+        if self.dots_share_clock
+            && self.dots.first().is_some_and(|d| d.dtype == dot.dtype && d.ticks_left > 0)
+        {
+            oldest = 0;
+            count = self.dots.len();
+            shared_clock = Some(self.dots[0].next_tick);
+        } else {
+            for (index, existing) in self.dots[start..].iter().enumerate() {
+                if existing.dtype != dot.dtype { continue; }
+                if count == 0 { oldest = start + index; }
+                count += 1;
+                if consolidated && shared_clock.is_none() && existing.ticks_left > 0 {
+                    shared_clock = Some(existing.next_tick);
+                }
             }
         }
         // The first live clock belongs to the pre-eviction list, including an evicted stack.
@@ -692,6 +721,7 @@ impl DebuffState {
             if shared > dot.next_tick { dot.next_tick = shared; }
         }
         let mut remove = count.saturating_sub(cap.saturating_sub(1));
+        if remove > 0 && dot.ticks_left == 0 { self.invalidate_dot_types(); }
         if remove == 1 {
             self.dots.remove(oldest);
         } else if remove > 1 {
@@ -716,9 +746,19 @@ impl DebuffState {
         }
     }
 
-    pub(super) fn retain_dots(&mut self, keep: impl FnMut(&Dot) -> bool) {
+    pub(super) fn invalidate_dot_types(&mut self) {
+        self.live_dot_types = u32::MAX;
+    }
+
+    pub(super) fn retain_dots(&mut self, mut keep: impl FnMut(&Dot) -> bool) {
         let before = self.dots.len();
-        self.dots.retain(keep);
+        let mut types = 0;
+        self.dots.retain(|dot| {
+            let retained = keep(dot);
+            if retained && dot.ticks_left > 0 { types |= 1 << dot.dtype as u32; }
+            retained
+        });
+        self.live_dot_types = types;
         if let Some((_, start)) = &mut self.dot_prefix {
             *start = start.saturating_sub(before - self.dots.len());
         }
@@ -738,6 +778,8 @@ impl DebuffState {
 
     /// Append one DoT and update the due bound and provenance.
     pub(super) fn push_dot(&mut self, dot: Dot) {
+        if self.dots.is_empty() { self.live_dot_types = 0; }
+        if dot.ticks_left > 0 { self.live_dot_types |= 1 << dot.dtype as u32; }
         self.dots_share_clock = (self.dots_share_clock || self.dots.is_empty())
             && dot.ticks_left > 0
             && consolidated(dot.dtype)
@@ -1169,21 +1211,10 @@ impl DebuffState {
         // every Condition Overload bracket. `has_status` answers the other
         // reading of the same question, "is this target cold-statused" for a
         // perk rather than "how many TYPES are on it".
-        if self.dots_share_clock {
-            return n + usize::from(self.dots.iter().any(|d| d.ticks_left > 0));
-        }
-        // THE LIVE DoT TYPES, as a bitmask. A `Vec<DamageType>` with a linear
-        // `contains` per entry is a heap allocation and an O(n²) scan on a
-        // function Condition Overload asks per damage INSTANCE, which on a
-        // launcher is a few thousand times a run. Seventeen damage types fit in
-        // a `u32`, so the same set is one word and `count_ones` is the answer —
-        // identical by construction, a set of at most 17 things, counted.
-        let mut seen: u32 = 0;
-        for d in &self.dots {
-            if d.ticks_left > 0 {
-                seen |= 1 << d.dtype as u32;
-            }
-        }
-        n + seen.count_ones() as usize
+        let dot_types = if self.live_dot_types == u32::MAX {
+            self.dots.iter().filter(|d| d.ticks_left > 0)
+                .fold(0, |types, d| types | (1 << d.dtype as u32))
+        } else { self.live_dot_types };
+        n + dot_types.count_ones() as usize
     }
 }

@@ -736,8 +736,12 @@ pub(super) fn settle_procs(
     let mut qualified = 0_u32;
     for proc in procs {
         // Read before the match applies it — see the Debilitate hook below.
-        let stacks_before = combined_stacks(debuffs, proc);
         let accepted = !foe.status_immunities.contains(&proc);
+        let stacks_before = if incoming.is_some() || (accepted && proc == DamageType::Gas) {
+            combined_stacks(debuffs, proc)
+        } else {
+            0
+        };
         if incoming.is_some() && stacks_before + usize::from(accepted) >= DEBILITATE_STACKS {
             if let Some(kind) = crate::model::ProcType::from_damage_type(proc) {
                 // M34 observes the tenth application even when Blast drains inline.
@@ -747,15 +751,15 @@ pub(super) fn settle_procs(
         if !accepted { continue; }
         r.procs += 1;
         match proc {
-            DamageType::Impact => DebuffState::push_capped(
-                &mut debuffs.stagger,
+            DamageType::Impact => debuffs.push_proc_stack(
+                |s| &mut s.stagger,
                 at + STAGGER_DURATION * status_damage,
                 stagger_cap,
                 at,
             ),
             DamageType::Puncture => {
-                DebuffState::push_capped(
-                    &mut debuffs.weakened,
+                debuffs.push_proc_stack(
+                    |s| &mut s.weakened,
                     at + WEAKENED_DURATION * status_damage,
                     gcap(WEAKENED_CAP),
                     at,
@@ -921,20 +925,20 @@ pub(super) fn settle_procs(
                     arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ColdStatus, at);
                 }
             }
-            DamageType::Magnetic => DebuffState::push_capped(
-                &mut debuffs.disrupt,
+            DamageType::Magnetic => debuffs.push_proc_stack(
+                |s| &mut s.disrupt,
                 at + STATUS_DURATION * status_damage,
                 gcap(TEN_STACK_CAP),
                 at,
             ),
-            DamageType::Viral => DebuffState::push_capped(
-                &mut debuffs.virus,
+            DamageType::Viral => debuffs.push_proc_stack(
+                |s| &mut s.virus,
                 at + STATUS_DURATION * status_damage,
                 gcap(TEN_STACK_CAP),
                 at,
             ),
-            DamageType::Corrosive => DebuffState::push_capped(
-                &mut debuffs.corrosion,
+            DamageType::Corrosive => debuffs.push_proc_stack(
+                |s| &mut s.corrosion,
                 at + CORROSION_DURATION * status_damage,
                 // THE ONE CEILING A PLAYER CAN MOVE. An Emerald Archon Shard is
                 // "+2 (+3) max stacks of Corrosion", and its page is explicit
@@ -949,8 +953,8 @@ pub(super) fn settle_procs(
                 gcap(TEN_STACK_CAP + corrosion_cap_bonus),
                 at,
             ),
-            DamageType::Radiation => DebuffState::push_capped(
-                &mut debuffs.confusion,
+            DamageType::Radiation => debuffs.push_proc_stack(
+                |s| &mut s.confusion,
                 at + STATUS_DURATION * status_damage,
                 gcap(TEN_STACK_CAP),
                 at,
@@ -959,14 +963,14 @@ pub(super) fn settle_procs(
             // here: no weapon in the roster deals Void, and Xata's Whisper's
             // second instance is entirely Void. Worth one line in the CO
             // counter and nothing else — see `DebuffState::attractor`.
-            DamageType::Void => DebuffState::push_capped(
-                &mut debuffs.attractor,
+            DamageType::Void => debuffs.push_proc_stack(
+                |s| &mut s.attractor,
                 at + ATTRACTOR_DURATION * status_damage,
                 1,
                 at,
             ),
-            DamageType::Tau => DebuffState::push_capped(
-                &mut debuffs.tau,
+            DamageType::Tau => debuffs.push_proc_stack(
+                |s| &mut s.tau,
                 at + TAU_DURATION * status_damage,
                 gcap(TEN_STACK_CAP),
                 at,
