@@ -158,6 +158,26 @@ try {
   assert.deepEqual(postCutLease.map(row=>row.id),['post-cut-dispatch']);
   console.log('ok packed dispatch leases an eligible post-cut task across the normal write and lock path');
 
+  await db.exec(`INSERT INTO entity_compute_specs(id,verb,request)
+    SELECT md5(i::text),'simulate','{}' FROM generate_series(100003,130002) i;
+    INSERT INTO entity_compute_tasks(id,computation,generation,created_at,reason) OVERRIDING SYSTEM VALUE
+    SELECT i,md5(i::text),1,'2026-11-17','request' FROM generate_series(100003,130002) i;
+    INSERT INTO state_compute_scheduling(id,verb,task_id,state,due_at,opened_at,producer,zone,zone_position)
+    SELECT md5(i::text),'simulate',i,'open','2026-11-17','2026-11-17','sweep',3,i FROM generate_series(100003,130002) i;
+    INSERT INTO record_candidate_answers(question,task_id,engine,device,owner,net,canon,result,work,at)
+    SELECT id,task_id,'served','peer','peer','peer','{}','{}',1,'2026-11-17'
+    FROM state_compute_work WHERE task_id IN(1,130002);
+    ANALYZE state_compute_scheduling; ANALYZE entity_compute_tasks; ANALYZE state_task_answer_heads;`);
+  const graceQuery = `SELECT factory_take($1::text,1,'old','["grace"]','grace','other',NULL,600,0,
+    '["simulate"]',NULL,'served',NULL,20) AS id`;
+  const [graceExplain] = await sql.unsafe('EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) '+graceQuery,[args[0]]);
+  const gracePlan = graceExplain['QUERY PLAN'][0].Plan;
+  const graceIds = (await sql.unsafe(graceQuery,[args[0]])).map(row=>row.id);
+  assert.deepEqual(graceIds,[1,130002].map(i=>createHash('md5').update(String(i)).digest('hex')));
+  const graceBlocks = (gracePlan['Shared Hit Blocks']||0)+(gracePlan['Shared Read Blocks']||0);
+  assert(graceBlocks<5000,`sparse grace pick read ${graceBlocks} buffers for only two answer heads`);
+  console.log(`ok sparse grace pick reads ${graceBlocks} buffers across the cut with 30000 post-cut tasks`);
+
 
   await reset();
   await db.exec(`INSERT INTO entity_compute_specs(id,verb,request)

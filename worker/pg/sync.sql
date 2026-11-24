@@ -211,6 +211,21 @@ BEGIN
   END IF;
   pick:=replace(pick,'/* state */',CASE WHEN $2=0 THEN 'guard.state=''open''' ELSE 'guard.state IN(SELECT jsonb_array_elements_text($11::jsonb))' END);
   pick:=replace(pick,'/* lock */',CASE WHEN $17 THEN 'FOR UPDATE OF guard SKIP LOCKED' ELSE '' END);
+  IF $2=0 AND cutoff IS NOT NULL AND $15 IS NOT NULL THEN
+    -- Resolve the cut on served answer heads before touching the stock tail.
+    pick:=split_part(pick,'  SELECT chosen.* FROM (',1)||$grace$
+      SELECT q.* FROM eligible q JOIN state_compute_scheduling guard ON guard.id=q.id
+      WHERE guard.state='open' AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9)
+        AND ($12 IS NULL OR guard.waits=0)
+        AND (guard.task_id>$17
+          OR (q.zone,q.zone_position,q.id)<=(SELECT keep_zone,keep_position,keep_id FROM cut)
+          OR guard.id IN(SELECT p.question FROM compute_order_cut_protections() p))
+      ORDER BY q.zone,q.zone_position,q.id LIMIT $13 /* grace lock */
+$grace$;
+    pick:=replace(pick,'/* grace lock */',CASE WHEN $17 THEN 'FOR UPDATE OF guard SKIP LOCKED' ELSE '' END);
+    RETURN QUERY EXECUTE pick USING $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,cutoff;
+    RETURN;
+  END IF;
   IF $2=0 AND cutoff IS NOT NULL THEN
     prefix_pick:=split_part(pick,'  SELECT chosen.* FROM (',1)||$prefix$
       SELECT q.* FROM state_compute_scheduling guard
