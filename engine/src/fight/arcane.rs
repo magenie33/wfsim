@@ -96,7 +96,7 @@ impl ArcRuntime {
     }
 
     pub(super) fn encumber(&mut self, params: &FightParams, at: f64, foe: &Foe,
-        procs: &mut Vec<DamageType>)
+        procs: &mut impl crate::rules::status::ProcSink)
     {
         if params.arcane.encumber_chance <= 0.0 { return; }
         // Event-time adapter: simultaneous submissions share an active condition.
@@ -122,7 +122,7 @@ impl ArcRuntime {
             self.encumber_state.activate(params.arcane.encumber_condition);
             for kind in packet.present() {
                 if let Some(dtype) = kind.damage_type() {
-                    for _ in before.count(kind)..packet.count(kind) { procs.push(dtype); }
+                    for _ in before.count(kind)..packet.count(kind) { procs.push_proc(dtype); }
                 }
             }
         }

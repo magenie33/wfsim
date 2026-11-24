@@ -405,7 +405,7 @@ pub(super) fn field_tick_seeded(
             * params.ability_final_at(at)
             * careen;
     let col = target.incoming_column(foe);
-    let mut breakdown = Breakdown::default();
+    let mut breakdown = watching(rec);
     let settled = target.apply(
         raw,
         shares,
@@ -415,7 +415,7 @@ pub(super) fn field_tick_seeded(
         false,
         &mit,
         params.overguard_multiplier(),
-        watching(rec, &mut breakdown),
+        breakdown.as_mut(),
     );
     let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
     if is_blast {
@@ -429,7 +429,7 @@ pub(super) fn field_tick_seeded(
         r, rec, at, owner, body_index, || DamageType::Cinematic,
         // THE NUMBER'S OWN SHAPE ON SCREEN: a blast draws as a blast.
         if is_blast { PopKind::BlastArea } else { PopKind::Field },
-        &breakdown, settled,
+        breakdown.as_ref(), settled,
         Some(debuffs),
         ledger::Clock::Hit,
         || Instance {
@@ -529,7 +529,7 @@ pub(super) fn field_tick_seeded(
         s.scale = Some(scale);
     }
     settle_procs(
-        procs,
+        &procs,
         owner,
         at,
         body_index,

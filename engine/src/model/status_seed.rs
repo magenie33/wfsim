@@ -39,7 +39,7 @@ impl StatusSeed {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum StoredStatusSeed {
     Radial { retained_seed: f32, coefficient: f32 },
-    Supplied { retained_seed: f64, coefficient: f64 },
+    Supplied(f64),
 }
 
 #[wfsim_gas_macro::metered]
@@ -49,15 +49,15 @@ impl StoredStatusSeed {
     }
 
     pub fn from_unbound_source(input: StatusSeed) -> Self {
-        Self::Supplied { retained_seed: input.retained_value(), coefficient: input.coefficient }
+        Self::Supplied(input.retained_value() * input.coefficient)
     }
 
-    pub fn supplied(value: f64) -> Self { Self::Supplied { retained_seed: value, coefficient: 1.0 } }
+    pub fn supplied(value: f64) -> Self { Self::Supplied(value) }
 
     pub fn snapshot_damage(self) -> f64 {
         match self {
             Self::Radial { retained_seed, coefficient } => (coefficient * retained_seed) as f64,
-            Self::Supplied { retained_seed, coefficient } => retained_seed * coefficient,
+            Self::Supplied(damage) => damage,
         }
     }
 

@@ -156,15 +156,27 @@ pub(super) struct DebuffState {
     /// APPEND THROUGH [`Self::push_dot`], never `dots.push`: it keeps
     /// the due bound, radial provenance and shared clock in sync with the list.
     pub(super) dots: Vec<Dot>,
+    /// Caller-supplied radial group keys interned by 1-based `NonZeroU16`.
+    pub(super) native_groups: Vec<crate::rules::status::radial::GroupKey>,
+    /// One bit per live type; `u32::MAX` requests a live scan after explicit invalidation.
+    pub(super) live_dot_types: u32,
+    /// Live (`ticks_left > 0`, un-evicted) stack counts for Slash, Electricity, Toxin and Gas.
+    pub(super) live_dot_counts: [u32; 4],
+    /// FIFO un-evicted slot indices per DoT family while its count stays within `DOT_CAP_RING_MAX`.
+    pub(super) dot_rings: [DotCapRing; 4],
+    /// Per-family shared-clock state and monotonic first-live cursor for Electricity and Gas.
+    pub(super) consolidated_clocks: [ConsolidatedClock; 2],
+    /// Evicted tombstone slots currently sitting in `dots` awaiting compaction.
+    pub(super) dot_tombstones: u32,
+    /// Incremented whenever `dots` or `heat` mutates so `process_ticks` detects callback changes.
+    pub(super) dots_gen: u32,
+    pub(super) heat_gen: u32,
     /// All live slots share one finite clock, one consolidated type and no group key.
     /// Advancing the group or removing slots preserves this; appends must recheck it.
     pub(super) dots_share_clock: bool,
     /// A conservative history of Gas and non-native seeds in the two radial families.
     /// Removal may leave a bit set. An unset bit proves absence.
     pub(super) radial_history: u8,
-    /// All stacks of the last capped family are at or after this index. Other
-    /// families can accumulate for the whole lifetime of a cloud pile.
-    pub(super) dot_prefix: Option<(DamageType, usize)>,
     /// Electricity/Gas use the latest application's landing for the whole tick
     /// and its lethal weak-point flag; each Dot still owns its hit seed (M100).
     pub(super) proc_landings: [ProcLanding; 2],
@@ -195,8 +207,57 @@ const HAD_GAS: u8 = 1;
 const HAD_ELECTRIC_FALLBACK: u8 = 2;
 const HAD_GAS_FALLBACK: u8 = 4;
 
+/// Cinematic damage never appears as a stored DoT's status `dtype` (Bleed stores
+/// `DamageType::Slash` with `ignores_armor: true`), so it marks evicted slots in place.
+pub(super) const EVICTED_DOT_TYPE: DamageType = DamageType::Cinematic;
+pub(super) const DOT_CAP_RING_MAX: usize = 16;
+
+#[inline]
+pub(super) const fn dot_family_slot(dtype: DamageType) -> Option<usize> {
+    match dtype {
+        DamageType::Slash => Some(0),
+        DamageType::Electricity => Some(1),
+        DamageType::Toxin => Some(2),
+        DamageType::Gas => Some(3),
+        _ => None,
+    }
+}
+
+#[inline]
+pub(super) const fn consolidated_slot(dtype: DamageType) -> Option<usize> {
+    match dtype {
+        DamageType::Electricity => Some(0),
+        DamageType::Gas => Some(1),
+        _ => None,
+    }
+}
+
+#[derive(Clone, Copy)]
+pub(super) struct DotCapRing {
+    pub(super) slots: [u32; DOT_CAP_RING_MAX],
+    pub(super) head: u8,
+    pub(super) len: u8,
+    pub(super) exact: bool,
+}
+
+#[wfsim_gas_macro::metered]
+impl Default for DotCapRing {
+    #[inline]
+    fn default() -> Self {
+        Self { slots: [0; DOT_CAP_RING_MAX], head: 0, len: 0, exact: true }
+    }
+}
+
+#[derive(Clone, Copy, Default)]
+pub(super) struct ConsolidatedClock {
+    pub(super) shared: bool,
+    pub(super) next_tick: f64,
+    pub(super) head: u32,
+}
+
 #[wfsim_gas_macro::metered]
 impl Dot {
+    #[inline]
     pub(super) fn has_native_radial_seed(&self) -> bool {
         matches!(self.retained, crate::model::StoredStatusSeed::Radial { coefficient: 0.5, .. })
     }
@@ -517,7 +578,14 @@ impl DebuffState {
     /// FIFO push with the universal replace-oldest rule (application-time
     /// order; uniform durations make the front the oldest).
     pub(super) fn push_capped(list: &mut Vec<f64>, expiry: f64, cap: usize, now: f64) {
-        list.retain(|&e| e > now); // lazy prune of expired stacks
+        Self::push_timed(list, expiry, cap, now, false);
+    }
+
+    fn push_timed(list: &mut Vec<f64>, expiry: f64, cap: usize, now: f64, pruned: bool) {
+        // A non-finite duration may have appended NaN since the last prune.
+        if !pruned || list.last().is_some_and(|last| last.is_nan()) {
+            list.retain(|&e| e > now);
+        }
         // A STACK THAT IS ALREADY DEAD IS NOT APPLIED — a fight's status
         // duration of -100% or less gives `STATUS_DURATION * status_damage <= 0`,
         // and an expired entry is one `prune` has been told it may skip.
@@ -528,6 +596,13 @@ impl DebuffState {
             list.remove(0); // replace the oldest APPLIED stack
         }
         list.push(expiry);
+    }
+
+    pub(super) fn push_proc_stack(
+        &mut self, pile: impl FnOnce(&mut Self) -> &mut Vec<f64>, expiry: f64, cap: usize, now: f64,
+    ) {
+        let pruned = self.pruned_at == Some(now);
+        Self::push_timed(pile(self), expiry, cap, now, pruned);
     }
 
     /// Push an independent DoT (Slash/Toxin/Electricity/Gas). These have no
@@ -548,6 +623,7 @@ impl DebuffState {
     /// body in radius.
     /// IS THERE ANYTHING TO TICK? Asked of 361 bodies once per shot on a crowd
     /// ruler, while the shot reaches thirteen.
+    #[inline]
     pub(super) fn idle(&self) -> bool {
         self.dots.is_empty() && self.heat.is_none() && self.blast.is_empty()
     }
@@ -592,6 +668,8 @@ impl DebuffState {
         acid: Option<crate::model::AcidShells>,
         victim: &Foe,
     ) {
+        let mut tick_q = std::mem::take(&mut self.tick_q);
+        tick_q.clear();
         let out = std::mem::take(&mut self.area_out);
         let mut hits = std::mem::take(&mut self.area_hit);
         // ACID SHELLS: "enemies killed by the Sobek explode, dealing a flat
@@ -617,13 +695,24 @@ impl DebuffState {
                 });
             }
         }
-        let clouds: Vec<Dot> = if self.radial_history & HAD_GAS == 0 {
+        let mut clouds: Vec<Dot> = Vec::new();
+        if self.radial_history & HAD_GAS != 0 {
+            for d in &self.dots {
+                if d.dtype == DamageType::Gas {
+                    clouds.push(*d);
+                }
+            }
+        }
+        let native_groups = if clouds.is_empty() {
             Vec::new()
         } else {
-            self.dots.iter().filter(|d| d.dtype == DamageType::Gas).copied().collect()
+            std::mem::take(&mut self.native_groups)
         };
         if !self.blast.is_empty() {
-            let single: f64 = self.blast.iter().map(|b| b.value).sum();
+            let mut single = 0.0;
+            for b in &self.blast {
+                single += b.value;
+            }
             hits.push(AreaHit {
                 // Every stack in one event, so there is no one applier to
                 // name — see the Blast branch of `process_ticks`.
@@ -637,11 +726,152 @@ impl DebuffState {
         let gas_landing = self.proc_landings[1];
         let gas_history = self.radial_history & (HAD_GAS | HAD_GAS_FALLBACK);
         *self = DebuffState::default();
+        self.tick_q = tick_q;
         self.area_out = out;
         self.area_hit = hits;
-        if !clouds.is_empty() { self.radial_history = gas_history; }
         self.dots = clouds;
+        self.native_groups = native_groups;
         self.proc_landings[1] = gas_landing;
+        if self.dots.is_empty() {
+            self.dots_due = Some(f64::INFINITY);
+        } else {
+            self.radial_history = gas_history;
+            let due = self.rebuild_dot_indices();
+            self.dots_due = Some(due);
+        }
+    }
+
+    #[inline]
+    pub(super) fn active_dot_count(&self) -> usize {
+        self.dots.len() - self.dot_tombstones as usize
+    }
+
+    #[cfg(test)]
+    pub(super) fn active_dots(&self) -> impl Iterator<Item = &Dot> {
+        self.dots.iter().filter(|d| d.dtype != EVICTED_DOT_TYPE)
+    }
+
+    #[cfg(test)]
+    pub(super) fn intern_group(
+        &mut self,
+        key: crate::rules::status::radial::GroupKey,
+    ) -> Option<std::num::NonZeroU16> {
+        let pos = self.native_groups.iter().position(|k| *k == key).unwrap_or_else(|| {
+            let p = self.native_groups.len();
+            self.native_groups.push(key);
+            p
+        });
+        std::num::NonZeroU16::new((pos + 1) as u16)
+    }
+
+    pub(super) fn group_key(
+        &self,
+        id: Option<std::num::NonZeroU16>,
+    ) -> Option<crate::rules::status::radial::GroupKey> {
+        id.and_then(|n| self.native_groups.get(usize::from(n.get()) - 1).copied())
+    }
+
+    #[inline]
+    pub(super) fn live_dot_count(&self, dtype: DamageType) -> usize {
+        let Some(f) = dot_family_slot(dtype) else { return 0 };
+        if self.live_dot_types == u32::MAX {
+            let mut n = 0usize;
+            for d in &self.dots {
+                if d.dtype == dtype && d.ticks_left > 0 {
+                    n += 1;
+                }
+            }
+            return n;
+        }
+        self.live_dot_counts[f] as usize
+    }
+
+    #[inline]
+    fn first_live_consolidated_clock(&mut self, dtype: DamageType) -> Option<f64> {
+        let c = consolidated_slot(dtype)?;
+        if self.live_dot_types != u32::MAX && (self.live_dot_types & (1 << dtype as u32)) == 0 {
+            return None;
+        }
+        let h = self.consolidated_clocks[c].head as usize;
+        if let Some(d) = self.dots.get(h) {
+            if d.dtype == dtype && d.ticks_left > 0 {
+                return Some(d.next_tick);
+            }
+        }
+        self.scan_first_live_consolidated_clock(c, dtype)
+    }
+
+    #[cold]
+    fn scan_first_live_consolidated_clock(&mut self, c: usize, dtype: DamageType) -> Option<f64> {
+        let f = if c == 0 { 1 } else { 3 };
+        if self.dot_rings[f].exact {
+            let ring = self.dot_rings[f];
+            for k in 0..ring.len as usize {
+                let idx = ring.slots[(ring.head as usize + k) & (DOT_CAP_RING_MAX - 1)] as usize;
+                if let Some(d) = self.dots.get(idx) {
+                    if d.dtype == dtype && d.ticks_left > 0 {
+                        self.consolidated_clocks[c].head = idx as u32;
+                        return Some(d.next_tick);
+                    }
+                }
+            }
+            self.consolidated_clocks[c].head = self.dots.len() as u32;
+            return None;
+        }
+        let start = (self.consolidated_clocks[c].head as usize).min(self.dots.len());
+        for (offset, d) in self.dots[start..].iter().enumerate() {
+            if d.dtype == dtype && d.ticks_left > 0 {
+                let idx = start + offset;
+                self.consolidated_clocks[c].head = idx as u32;
+                return Some(d.next_tick);
+            }
+        }
+        self.consolidated_clocks[c].head = self.dots.len() as u32;
+        None
+    }
+
+    #[inline]
+    fn evict_dot_at(&mut self, idx: usize) {
+        let old = &mut self.dots[idx];
+        let was_type = old.dtype;
+        let was_live = old.ticks_left > 0;
+        old.dtype = EVICTED_DOT_TYPE;
+        old.ticks_left = 0;
+        self.dot_tombstones += 1;
+        self.dots_gen = self.dots_gen.wrapping_add(1);
+        if was_live {
+            self.note_expired_dots(was_type, 1);
+        }
+    }
+
+    #[inline]
+    pub(super) fn note_expired_dots(&mut self, dtype: DamageType, expired: u32) {
+        let Some(f) = dot_family_slot(dtype) else { return };
+        let next = self.live_dot_counts[f].saturating_sub(expired);
+        self.live_dot_counts[f] = next;
+        if next == 0 {
+            if self.live_dot_types != u32::MAX {
+                self.live_dot_types &= !(1 << dtype as u32);
+            }
+            if let Some(c) = consolidated_slot(dtype) {
+                self.consolidated_clocks[c].shared = false;
+                self.consolidated_clocks[c].head = self.dots.len() as u32;
+            }
+        }
+    }
+
+    fn clear_all_dots(&mut self) {
+        self.dots.clear();
+        self.live_dot_counts = [0; 4];
+        self.dot_rings = [DotCapRing::default(); 4];
+        self.consolidated_clocks = [ConsolidatedClock::default(); 2];
+        self.dot_tombstones = 0;
+        self.radial_history = 0;
+        self.dots_share_clock = false;
+        self.dots_due = Some(f64::INFINITY);
+        if self.live_dot_types != u32::MAX {
+            self.live_dot_types = 0;
+        }
     }
 
     pub(super) fn push_dot_capped(&mut self, mut dot: Dot, cap: Option<usize>) {
@@ -662,72 +892,284 @@ impl DebuffState {
         // what moves is WHEN the damage lands. HERE rather than in `push_dot`,
         // because a Gas cloud and a Tesla arc reach NEIGHBOURS through
         // `post_area` and those instances join the neighbour's clock too.
+        // The first live clock belongs to the pre-eviction list, including an evicted stack.
+        if let Some(shared) = self.first_live_consolidated_clock(dot.dtype) {
+            if shared > dot.next_tick { dot.next_tick = shared; }
+        }
         let Some(cap) = cap else {
-            if matches!(dot.dtype, DamageType::Electricity | DamageType::Gas) {
-                if let Some(shared) = self.dots.iter()
-                    .find(|d| d.dtype == dot.dtype && d.ticks_left > 0)
-                    .map(|d| d.next_tick)
-                {
-                    if shared > dot.next_tick { dot.next_tick = shared; }
-                }
-            }
             self.push_dot(dot);
             return;
         };
-        let consolidated = matches!(dot.dtype, DamageType::Electricity | DamageType::Gas);
-        let mut count = 0_usize;
-        let start = self.dot_start(dot.dtype);
-        let mut oldest = self.dots.len();
-        let mut shared_clock = None;
-        for (index, existing) in self.dots[start..].iter().enumerate() {
-            if existing.dtype != dot.dtype { continue; }
-            if count == 0 { oldest = start + index; }
-            count += 1;
-            if consolidated && shared_clock.is_none() && existing.ticks_left > 0 {
-                shared_clock = Some(existing.next_tick);
+        let keep_at_most = cap.saturating_sub(1);
+        let mut removed_any = false;
+        if let Some(f) = dot_family_slot(dot.dtype) {
+            if self.dot_rings[f].exact {
+                let count = self.dot_rings[f].len as usize;
+                let remove = count.saturating_sub(keep_at_most);
+                for _ in 0..remove {
+                    let ring = &mut self.dot_rings[f];
+                    let old_idx = ring.slots[ring.head as usize] as usize;
+                    ring.head = ((ring.head as usize + 1) & (DOT_CAP_RING_MAX - 1)) as u8;
+                    ring.len -= 1;
+                    self.evict_dot_at(old_idx);
+                    removed_any = true;
+                }
+                if removed_any {
+                    if let Some(c) = consolidated_slot(dot.dtype) {
+                        let ring = &self.dot_rings[f];
+                        self.consolidated_clocks[c].head = if ring.len > 0 {
+                            ring.slots[ring.head as usize]
+                        } else {
+                            self.dots.len() as u32
+                        };
+                    }
+                }
+            } else {
+                let mut count = 0usize;
+                for d in &self.dots {
+                    if d.dtype == dot.dtype {
+                        count += 1;
+                    }
+                }
+                let mut remove = count.saturating_sub(keep_at_most);
+                let mut rebuilt = DotCapRing::default();
+                let can_rebuild = keep_at_most < DOT_CAP_RING_MAX;
+                for idx in 0..self.dots.len() {
+                    if self.dots[idx].dtype != dot.dtype {
+                        continue;
+                    }
+                    if remove > 0 {
+                        remove -= 1;
+                        self.evict_dot_at(idx);
+                        removed_any = true;
+                    } else if can_rebuild {
+                        let pos = rebuilt.len as usize;
+                        rebuilt.slots[pos] = idx as u32;
+                        rebuilt.len += 1;
+                    }
+                }
+                if can_rebuild {
+                    if let Some(c) = consolidated_slot(dot.dtype) {
+                        self.consolidated_clocks[c].head = if rebuilt.len > 0 {
+                            rebuilt.slots[0]
+                        } else {
+                            self.dots.len() as u32
+                        };
+                    }
+                    self.dot_rings[f] = rebuilt;
+                }
             }
         }
-        // The first live clock belongs to the pre-eviction list, including an evicted stack.
-        if let Some(shared) = shared_clock {
-            if shared > dot.next_tick { dot.next_tick = shared; }
+        if removed_any && dot.ticks_left == 0 {
+            self.invalidate_dot_types();
         }
-        let mut remove = count.saturating_sub(cap.saturating_sub(1));
-        if remove == 1 {
-            self.dots.remove(oldest);
-        } else if remove > 1 {
-            self.dots.retain(|existing| {
-                if existing.dtype == dot.dtype && remove > 0 {
-                    remove -= 1;
-                    false
-                } else {
-                    true
-                }
-            });
+        if self.active_dot_count() == 0 {
+            self.clear_all_dots();
+        } else if self.dot_tombstones >= 64 && (self.dot_tombstones as usize) * 2 >= self.dots.len() {
+            self.compact_evicted_dots();
         }
-        // Eviction preserves order and removes nothing before the oldest match.
-        self.dot_prefix = Some((dot.dtype, oldest));
         self.push_dot(dot);
     }
 
-    pub(super) fn dot_start(&self, dtype: DamageType) -> usize {
-        match self.dot_prefix {
-            Some((family, start)) if family == dtype => start,
-            _ => 0,
+    fn compact_evicted_dots(&mut self) {
+        let mut rings = [DotCapRing::default(); 4];
+        let mut clocks = [ConsolidatedClock::default(); 2];
+        let mut counts = [0u32; 4];
+        let len = self.dots.len();
+        let mut write = 0usize;
+        for read in 0..len {
+            let dot = self.dots[read];
+            if dot.dtype == EVICTED_DOT_TYPE {
+                continue;
+            }
+            let idx = write as u32;
+            if write != read {
+                self.dots[write] = dot;
+            }
+            write += 1;
+            if let Some(f) = dot_family_slot(dot.dtype) {
+                let ring = &mut rings[f];
+                if ring.exact {
+                    if (ring.len as usize) < DOT_CAP_RING_MAX {
+                        ring.slots[ring.len as usize] = idx;
+                        ring.len += 1;
+                    } else {
+                        ring.exact = false;
+                    }
+                }
+                if dot.ticks_left > 0 {
+                    counts[f] += 1;
+                    if let Some(c) = consolidated_slot(dot.dtype) {
+                        let slot = &mut clocks[c];
+                        if counts[f] == 1 {
+                            slot.shared = dot.native_group.is_none() && dot.next_tick.is_finite();
+                            slot.next_tick = dot.next_tick;
+                            slot.head = idx;
+                        } else if slot.shared {
+                            slot.shared = dot.native_group.is_none()
+                                && slot.next_tick.to_bits() == dot.next_tick.to_bits();
+                        }
+                    }
+                }
+            }
         }
+        self.dots.truncate(write);
+        self.dot_rings = rings;
+        self.consolidated_clocks = clocks;
+        self.dot_tombstones = 0;
+        self.dots_gen = self.dots_gen.wrapping_add(1);
     }
 
-    pub(super) fn retain_dots(&mut self, keep: impl FnMut(&Dot) -> bool) {
-        let before = self.dots.len();
-        self.dots.retain(keep);
-        if let Some((_, start)) = &mut self.dot_prefix {
-            *start = start.saturating_sub(before - self.dots.len());
+    pub(super) fn invalidate_dot_types(&mut self) {
+        self.live_dot_types = u32::MAX;
+    }
+
+    fn rebuild_dot_indices(&mut self) -> f64 {
+        let mut types = 0u32;
+        let mut counts = [0u32; 4];
+        let mut rings = [DotCapRing::default(); 4];
+        let mut clocks = [ConsolidatedClock::default(); 2];
+        let mut due = f64::INFINITY;
+        let len = self.dots.len();
+        let mut write = 0usize;
+        for read in 0..len {
+            let dot = self.dots[read];
+            if dot.dtype == EVICTED_DOT_TYPE {
+                continue;
+            }
+            let idx = write as u32;
+            if write != read {
+                self.dots[write] = dot;
+            }
+            write += 1;
+            if let Some(f) = dot_family_slot(dot.dtype) {
+                let ring = &mut rings[f];
+                if ring.exact {
+                    if (ring.len as usize) < DOT_CAP_RING_MAX {
+                        ring.slots[ring.len as usize] = idx;
+                        ring.len += 1;
+                    } else {
+                        ring.exact = false;
+                    }
+                }
+                if dot.ticks_left > 0 {
+                    counts[f] += 1;
+                }
+            }
+            if dot.ticks_left > 0 {
+                if dot.next_tick < due {
+                    due = dot.next_tick;
+                }
+                types |= 1 << dot.dtype as u32;
+                if let Some(c) = consolidated_slot(dot.dtype) {
+                    let f = if c == 0 { 1 } else { 3 };
+                    let slot = &mut clocks[c];
+                    if counts[f] == 1 {
+                        slot.shared = dot.native_group.is_none() && dot.next_tick.is_finite();
+                        slot.next_tick = dot.next_tick;
+                        slot.head = idx;
+                    } else if slot.shared {
+                        slot.shared = dot.native_group.is_none()
+                            && slot.next_tick.to_bits() == dot.next_tick.to_bits();
+                    }
+                }
+            }
         }
+        self.dots.truncate(write);
+        self.live_dot_types = types;
+        self.live_dot_counts = counts;
+        self.dot_rings = rings;
+        self.consolidated_clocks = clocks;
+        self.dot_tombstones = 0;
+        self.dots_gen = self.dots_gen.wrapping_add(1);
         if self.dots.is_empty() {
             self.radial_history = 0;
             self.dots_share_clock = false;
+            self.dots_due = Some(f64::INFINITY);
         }
+        due
     }
 
+    pub(super) fn sweep_expired_dots(&mut self) -> f64 {
+        let mut types = 0u32;
+        let mut counts = [0u32; 4];
+        let mut rings = [DotCapRing::default(); 4];
+        let mut clocks = [ConsolidatedClock::default(); 2];
+        let mut due = f64::INFINITY;
+        let len = self.dots.len();
+        let mut write = 0usize;
+        for read in 0..len {
+            let dot = self.dots[read];
+            if dot.ticks_left == 0 || dot.dtype == EVICTED_DOT_TYPE {
+                continue;
+            }
+            let idx = write as u32;
+            if write != read {
+                self.dots[write] = dot;
+            }
+            write += 1;
+            if dot.next_tick < due {
+                due = dot.next_tick;
+            }
+            types |= 1 << dot.dtype as u32;
+            if let Some(f) = dot_family_slot(dot.dtype) {
+                let ring = &mut rings[f];
+                if ring.exact {
+                    if (ring.len as usize) < DOT_CAP_RING_MAX {
+                        ring.slots[ring.len as usize] = idx;
+                        ring.len += 1;
+                    } else {
+                        ring.exact = false;
+                    }
+                }
+                counts[f] += 1;
+                if let Some(c) = consolidated_slot(dot.dtype) {
+                    let slot = &mut clocks[c];
+                    if counts[f] == 1 {
+                        slot.shared = dot.native_group.is_none() && dot.next_tick.is_finite();
+                        slot.next_tick = dot.next_tick;
+                        slot.head = idx;
+                    } else if slot.shared {
+                        slot.shared = dot.native_group.is_none()
+                            && slot.next_tick.to_bits() == dot.next_tick.to_bits();
+                    }
+                }
+            }
+        }
+        self.dots.truncate(write);
+        self.live_dot_types = types;
+        self.live_dot_counts = counts;
+        self.dot_rings = rings;
+        self.consolidated_clocks = clocks;
+        self.dot_tombstones = 0;
+        self.dots_gen = self.dots_gen.wrapping_add(1);
+        if self.dots.is_empty() {
+            self.radial_history = 0;
+            self.dots_share_clock = false;
+            self.dots_due = Some(f64::INFINITY);
+        }
+        due
+    }
+
+    pub(super) fn retain_dots(&mut self, mut keep: impl FnMut(&Dot) -> bool) {
+        let len = self.dots.len();
+        let mut write = 0usize;
+        for read in 0..len {
+            let dot = self.dots[read];
+            if dot.dtype == EVICTED_DOT_TYPE || !keep(&dot) {
+                continue;
+            }
+            if write != read {
+                self.dots[write] = dot;
+            }
+            write += 1;
+        }
+        self.dots.truncate(write);
+        self.dot_tombstones = 0;
+        let _ = self.rebuild_dot_indices();
+    }
+
+    #[inline]
     pub(super) fn has_only_native_radial_seeds(&self, family: DamageType) -> bool {
         match family {
             DamageType::Electricity => self.radial_history & HAD_ELECTRIC_FALLBACK == 0,
@@ -736,18 +1178,93 @@ impl DebuffState {
         }
     }
 
+    #[cold]
+    fn first_active_dot_slow(&self, dtype: DamageType) -> Option<&Dot> {
+        let start = match consolidated_slot(dtype) {
+            Some(c) => (self.consolidated_clocks[c].head as usize).min(self.dots.len()),
+            None => 0,
+        };
+        for d in &self.dots[start..] {
+            if d.dtype != EVICTED_DOT_TYPE {
+                return Some(d);
+            }
+        }
+        None
+    }
+
     /// Append one DoT and update the due bound and provenance.
+    #[inline]
     pub(super) fn push_dot(&mut self, dot: Dot) {
-        self.dots_share_clock = (self.dots_share_clock || self.dots.is_empty())
-            && dot.ticks_left > 0
+        debug_assert_ne!(dot.dtype, EVICTED_DOT_TYPE);
+        let was_empty = self.active_dot_count() == 0;
+        let idx = self.dots.len() as u32;
+        if was_empty && self.live_dot_types != u32::MAX {
+            self.live_dot_types = 0;
+        }
+        let fam = dot_family_slot(dot.dtype);
+        let single_clock_candidate = dot.ticks_left > 0
             && consolidated(dot.dtype)
             && dot.native_group.is_none()
-            && dot.next_tick.is_finite()
-            && self.dots.first().is_none_or(|first| {
-                first.ticks_left > 0
-                    && first.dtype == dot.dtype
-                    && first.next_tick.to_bits() == dot.next_tick.to_bits()
-            });
+            && dot.next_tick.is_finite();
+        let shares_clock = if was_empty {
+            single_clock_candidate
+        } else if self.dots_share_clock && single_clock_candidate {
+            let first_active = if self.dot_tombstones == 0 {
+                self.dots.first()
+            } else if let Some(f) = fam {
+                if self.dot_rings[f].exact && self.dot_rings[f].len > 0 {
+                    let ring = &self.dot_rings[f];
+                    self.dots.get(ring.slots[ring.head as usize] as usize)
+                } else {
+                    self.first_active_dot_slow(dot.dtype)
+                }
+            } else {
+                None
+            };
+            match first_active {
+                Some(first) => {
+                    first.ticks_left > 0
+                        && first.dtype == dot.dtype
+                        && first.next_tick.to_bits() == dot.next_tick.to_bits()
+                }
+                None => true,
+            }
+        } else {
+            false
+        };
+        self.dots_share_clock = shares_clock;
+        if let Some(f) = fam {
+            let ring = &mut self.dot_rings[f];
+            if ring.exact {
+                if (ring.len as usize) < DOT_CAP_RING_MAX {
+                    let pos = (ring.head as usize + ring.len as usize) & (DOT_CAP_RING_MAX - 1);
+                    ring.slots[pos] = idx;
+                    ring.len += 1;
+                } else {
+                    ring.exact = false;
+                }
+            }
+            if dot.ticks_left > 0 {
+                self.live_dot_counts[f] += 1;
+            }
+        }
+        if dot.ticks_left > 0 {
+            if self.live_dot_types != u32::MAX {
+                self.live_dot_types |= 1 << dot.dtype as u32;
+            }
+            if let Some(c) = consolidated_slot(dot.dtype) {
+                let f = if c == 0 { 1 } else { 3 };
+                let clean = dot.native_group.is_none() && dot.next_tick.is_finite();
+                let slot = &mut self.consolidated_clocks[c];
+                if self.live_dot_counts[f] == 1 {
+                    slot.shared = clean;
+                    slot.next_tick = dot.next_tick;
+                    slot.head = idx;
+                } else {
+                    slot.shared = slot.shared && clean && slot.next_tick.to_bits() == dot.next_tick.to_bits();
+                }
+            }
+        }
         match dot.dtype {
             DamageType::Electricity => {
                 if dot.ticks_left > 0 { self.proc_landings[0] = dot.landing; }
@@ -760,12 +1277,17 @@ impl DebuffState {
             }
             _ => {}
         }
-        if let Some(due) = self.dots_due.as_mut() {
-            *due = due.min(dot.next_tick);
+        if dot.ticks_left > 0 {
+            match self.dots_due {
+                Some(due) if due <= dot.next_tick => {}
+                _ => self.dots_due = Some(dot.next_tick),
+            }
         }
+        self.dots_gen = self.dots_gen.wrapping_add(1);
         self.dots.push(dot);
     }
 
+    #[inline]
     pub(super) fn proc_landing(&self, dot: &Dot) -> ProcLanding {
         match dot.dtype {
             DamageType::Electricity => self.proc_landings[0],
@@ -794,6 +1316,7 @@ impl DebuffState {
         if expiry <= t {
             return;
         }
+        self.heat_gen = self.heat_gen.wrapping_add(1);
         match &mut self.heat {
             Some(h) => {
                 match cap {
@@ -896,6 +1419,7 @@ impl DebuffState {
                 // entity had reached when it died.
                 self.heat_decay = Some((h.expiry, self.heat_ramp_up(h.expiry, status_damage)));
                 self.heat = None;
+                self.heat_gen = self.heat_gen.wrapping_add(1);
             }
         }
         if let Some((t0, s0)) = self.heat_decay {
@@ -1169,21 +1693,10 @@ impl DebuffState {
         // every Condition Overload bracket. `has_status` answers the other
         // reading of the same question, "is this target cold-statused" for a
         // perk rather than "how many TYPES are on it".
-        if self.dots_share_clock {
-            return n + usize::from(self.dots.iter().any(|d| d.ticks_left > 0));
-        }
-        // THE LIVE DoT TYPES, as a bitmask. A `Vec<DamageType>` with a linear
-        // `contains` per entry is a heap allocation and an O(n²) scan on a
-        // function Condition Overload asks per damage INSTANCE, which on a
-        // launcher is a few thousand times a run. Seventeen damage types fit in
-        // a `u32`, so the same set is one word and `count_ones` is the answer —
-        // identical by construction, a set of at most 17 things, counted.
-        let mut seen: u32 = 0;
-        for d in &self.dots {
-            if d.ticks_left > 0 {
-                seen |= 1 << d.dtype as u32;
-            }
-        }
-        n + seen.count_ones() as usize
+        let dot_types = if self.live_dot_types == u32::MAX {
+            self.dots.iter().filter(|d| d.ticks_left > 0)
+                .fold(0, |types, d| types | (1 << d.dtype as u32))
+        } else { self.live_dot_types };
+        n + dot_types.count_ones() as usize
     }
 }

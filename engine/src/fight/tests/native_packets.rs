@@ -63,7 +63,7 @@ fn one_submitted_packet_with_twenty_magnetic_counters_has_one_primary_selection(
         let here = &mut fight.bodies[0];
         here.debuffs.disrupt = vec![10.0; 10];
         let mit = here.debuffs.mitigation(0.0, 1.0, 0.0, 1.0);
-        settle_procs(vec![DamageType::Magnetic; count], Seat::WIELDER, 0.0, 0,
+        settle_procs(&vec![DamageType::Magnetic; count], Seat::WIELDER, 0.0, 0,
             InstanceScale { native_source: None, native_part: None, mb_live: 75.0, crit_multiplier: 1.0, part_factor: 1.0,
                 landing: ProcLanding::default(), attrition: 1.0, xh_bracket: 1.0,
                 status_damage_live: 0.0 },
@@ -177,7 +177,7 @@ fn one_primary_callback_can_select_multiple_compound_types_and_coalesce_shared_c
             here.debuffs.disrupt = vec![10.0; 10];
             let mit = here.debuffs.mitigation(0.0, 1.0, 0.0, 1.0);
             let procs = [vec![DamageType::Radiation; count], vec![DamageType::Magnetic; count]].concat();
-            settle_procs(procs, Seat::WIELDER, 0.0, 0,
+            settle_procs(&procs, Seat::WIELDER, 0.0, 0,
                 InstanceScale { native_source: None, native_part: None, mb_live: 75.0,
                     crit_multiplier: 1.0, part_factor: 1.0, landing: ProcLanding::default(),
                     attrition: 1.0, xh_bracket: 1.0, status_damage_live: 0.0 },

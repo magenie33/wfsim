@@ -35,7 +35,7 @@ impl Probe {
     fn electric(&mut self, head: bool, at: f64) {
         let part = if head { all_head().remove(0) } else { mono_body(1.0).remove(0) };
         let mit = self.body.debuffs.mitigation(at, 1.0, 0.0, 1.0);
-        settle_procs(vec![DamageType::Electricity], Seat::WIELDER, at, 0, InstanceScale { native_source: None, native_part: None,
+        settle_procs(&[DamageType::Electricity], Seat::WIELDER, at, 0, InstanceScale { native_source: None, native_part: None,
             mb_live: 160.0, crit_multiplier: 1.0, part_factor: if head { 5.4 } else { 1.0 },
             landing: ProcLanding::at(if head { 1.8 } else { 1.0 }, &part),
             attrition: 1.0, xh_bracket: 1.0, status_damage_live: 0.0,
@@ -98,10 +98,13 @@ fn queued_radial_ticks_preserve_distinct_opaque_groups_at_the_same_time() {
     let template = q.body.debuffs.dots[0];
     q.body.debuffs.retain_dots(|_| false);
     for index in 0..48 {
-        q.body.debuffs.push_dot(Dot {
-            native_group: Some(GroupKey { refCellAt28: index % 2,
-                refCellAt30: 0, byteAt18: 0, opaqueIdentityAt38: 0 }), ..template
+        let group = q.body.debuffs.intern_group(GroupKey {
+            refCellAt28: index % 2,
+            refCellAt30: 0,
+            byteAt18: 0,
+            opaqueIdentityAt38: 0,
         });
+        q.body.debuffs.push_dot(Dot { native_group: group, ..template });
     }
     q.tick(0.01);
     assert_eq!(q.r.tally.effective(), 3841.0);
@@ -179,6 +182,7 @@ fn shared_dot_clock_matches_full_queue_with_expiry_and_blast() {
             }
             assert!(debuffs.dots_share_clock);
             debuffs.dots_share_clock = shared;
+            debuffs.consolidated_clocks[0].shared = shared;
             q
         };
         let mut fast = setup(true);
