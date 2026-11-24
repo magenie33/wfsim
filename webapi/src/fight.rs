@@ -1373,12 +1373,10 @@ mod the_demolisher_ruler {
     #[test]
     fn the_demolisher_ruler_changes_the_target_and_the_squad_and_nothing_else() {
         let of = |id: &str| {
-            wfsim_engine::board::benchmarks::all()
-                .iter()
-                .find(|b| b.id == id)
-                .unwrap_or_else(|| panic!("no ruler {id}"))
-                .scenario
-                .clone()
+            use wfsim_engine::board::benchmarks;
+            let rule = benchmarks::get(id).unwrap_or_else(|| panic!("no ruler {id}"));
+            let scenario = serde_json::to_value(&rule.scenario).unwrap();
+            serde_norway::to_value(benchmarks::scenario_for(&scenario, "braton")).unwrap()
         };
         // A NEW RULER MUST NOT BECOME THE ONE THE APP OPENS ON. `all()` sorts
         // the primary to the front and leaves the rest in path order, and the
@@ -1431,12 +1429,10 @@ mod the_demolisher_ruler {
     #[test]
     fn the_heavy_gunner_ruler_changes_the_target_and_nothing_else() {
         let of = |id: &str| {
-            wfsim_engine::board::benchmarks::all()
-                .iter()
-                .find(|b| b.id == id)
-                .unwrap_or_else(|| panic!("no ruler {id}"))
-                .scenario
-                .clone()
+            use wfsim_engine::board::benchmarks;
+            let rule = benchmarks::get(id).unwrap_or_else(|| panic!("no ruler {id}"));
+            let scenario = serde_json::to_value(&rule.scenario).unwrap();
+            serde_norway::to_value(benchmarks::scenario_for(&scenario, "braton")).unwrap()
         };
         let (aimed, gunner) = (of("standard_single_target"), of("heavy_gunner"));
         let get = |s: &serde_norway::Value, k: &str| s.get(k).cloned();

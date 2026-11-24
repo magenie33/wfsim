@@ -373,8 +373,10 @@ mod tests {
         let raw=json!({"ruler":node["ruler"],"mode":node["mode"],"request":request});
         assert_eq!(observation(&record,Some(&raw))["valid"],true);
         let mut report=raw.clone();report["request"]["replay"]=json!(true);report["request"]["custom_enemies"]=json!([]);report["request"]["also_acting"]=json!([]);
-        report["request"]["player_at"]=json!([0,0]);report["request"]["target_at"]=json!([0,0.5]);
+        report["request"]["player_at"]=json!([0,0]);report["request"]["target_at"]=json!([0,5]);
         assert_eq!(observation(&record,Some(&report))["valid"],true);
+        report["request"].as_object_mut().unwrap().remove("scene_3d");
+        assert_eq!(observation(&record,Some(&report))["valid"],false);
         let mut finalist=raw.clone();
         finalist["request"]["strategy"]=json!("quick");
         finalist["request"]["starts"]=json!([]);
