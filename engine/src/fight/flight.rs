@@ -322,7 +322,6 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             blob_contact: &mut blob_contact,
             super_crit_armed: &mut me.super_crit_armed,
             round_aim: &mut round_aim,
-            direct_proc_draw: &mut direct_proc_draw,
         };
         if let Some(additional) = active.additional_projectile.as_deref()
             .filter(|_| l.rounds.has_additional(l.n_pellets))
@@ -330,9 +329,12 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             let damage = additional_projectile_damage(additional, l);
             let modded_base = additional.dot_modified_base.unwrap_or_else(|| damage.total());
             let qvec = damage.quantized_against(modded_base);
+            let mut extra_proc_draw = crate::rules::status::SceneProcDraw::new(&qvec);
             let extra = Strike {
                 active: additional,
                 qvec: &qvec,
+                shot_qtotal: qvec.total(),
+                shot_shares: TypeShares::of(&qvec),
                 direct_pre_snap: damage,
                 modded_base,
                 co_base: additional.co_base,
@@ -346,8 +348,12 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
                 } else if follows {
                     *live.round_aim = aims[round];
                 }
-                let projectile = if follows { &extra } else { &shot };
-                settle_pellet(pellet_idx, follows || l.radial_only, projectile, &mut live);
+                let (projectile, proc_draw) = if follows {
+                    (&extra, &mut extra_proc_draw)
+                } else {
+                    (&shot, &mut direct_proc_draw)
+                };
+                settle_pellet(pellet_idx, follows || l.radial_only, projectile, &mut live, proc_draw);
                 if !follows { aims[round] = *live.round_aim; }
                 if radial_delay > 0.0 { pellet_aims.push(*live.round_aim); }
             }
@@ -356,7 +362,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
                 if l.radial_only {
                     *live.round_aim = l.pellet_aims[pellet_idx as usize];
                 }
-                settle_pellet(pellet_idx, follows || l.radial_only, &shot, &mut live);
+                settle_pellet(pellet_idx, follows || l.radial_only, &shot, &mut live, &mut direct_proc_draw);
                 if radial_delay > 0.0 { pellet_aims.push(*live.round_aim); }
             }
         }

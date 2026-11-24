@@ -157,3 +157,27 @@ fn extra_detron_rounds_settle_after_all_ten_ordinary_rounds() {
         assert_eq!(cd, quantize_base_crit_damage(expected_cd));
     }
 }
+
+#[test]
+fn direct_projectile_variants_use_their_own_damage_and_status_distribution() {
+    let mut shot = flat_base();
+    shot.damage = DamageVector::new().with(DamageType::Cold, 40.0);
+    shot.status_chance = 1.0;
+    shot.base_status_chance = 1.0;
+    shot.multishot = 2.0;
+    let mut extra = shot.clone();
+    extra.damage = DamageVector::new().with(DamageType::Heat, 80.0);
+    shot.additional_projectile = Some(Box::new(extra));
+
+    let report = record(&shot, 0x2302, 0.0, f64::INFINITY, 100_000, 0);
+    let direct: Vec<_> = report.events().iter().filter_map(|event| match &event.kind {
+        Kind::Damage(row) if row.pellet.is_some() && !row.radial => {
+            Some((row.origin, row.raw, row.procs.as_slice()))
+        }
+        _ => None,
+    }).take(2).collect();
+    assert_eq!(direct, [
+        (Origin::Own, 40.0, &[DamageType::Cold][..]),
+        (Origin::Multishot, 80.0, &[DamageType::Heat][..]),
+    ]);
+}
