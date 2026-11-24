@@ -237,6 +237,16 @@ CREATE TABLE IF NOT EXISTS state_compute_scheduling (
   CHECK ((result_id IS NULL AND fact_engine IS NULL AND fact_at IS NULL)
       OR (result_id IS NOT NULL AND fact_engine IS NOT NULL AND fact_at IS NOT NULL))
 );
+-- Reference prices are scoped to an engine and an approved calibration model.
+CREATE TABLE IF NOT EXISTS state_compute_rcs_prices (
+  engine TEXT COLLATE "C" NOT NULL,
+  model TEXT COLLATE "C" NOT NULL,
+  computation TEXT COLLATE "C" NOT NULL REFERENCES entity_compute_specs(id) ON DELETE CASCADE,
+  rcs_ms BIGINT NOT NULL CHECK (rcs_ms BETWEEN 1 AND 86400000),
+  PRIMARY KEY (engine, model, computation)
+);
+CREATE INDEX IF NOT EXISTS compute_rcs_prices_computation ON state_compute_rcs_prices(computation);
+
 ALTER TABLE state_compute_scheduling ADD COLUMN IF NOT EXISTS zone BIGINT;
 ALTER TABLE state_compute_scheduling ADD COLUMN IF NOT EXISTS zone_position BIGINT;
 ALTER TABLE state_compute_scheduling ADD COLUMN IF NOT EXISTS required_capability TEXT COLLATE "C";

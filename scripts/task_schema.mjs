@@ -65,7 +65,8 @@ export function taskSchemaSql() {
     schema.match(/CREATE OR REPLACE FUNCTION compute_register_tasks[^]*?END \$\$;/)?.[0],
     ...[...sync.matchAll(/CREATE OR REPLACE FUNCTION factory_head\([^]*?\$\$;/g)].map(m => m[0]),
     sync.match(/CREATE OR REPLACE FUNCTION factory_take\([^]*?\$\$;/)?.[0],
-    ...['factory_take_pack_zoned','factory_take_pack','factory_lease_pack_zoned','factory_lease_pack'].map(name =>
+    schema.match(/CREATE TABLE IF NOT EXISTS state_compute_rcs_prices[^]*?compute_rcs_prices_computation[^;]+;/)?.[0],
+    ...['factory_take_pack_zoned','factory_take_pack_rcs','factory_take_pack','factory_lease_pack_zoned','factory_lease_pack_rcs','factory_lease_pack'].map(name =>
       sync.match(new RegExp('CREATE OR REPLACE FUNCTION '+name+'\\([^]*?\\$\\$;'))?.[0]),
     sync.match(/CREATE OR REPLACE FUNCTION factory_eligible\([^]*?\$\$;/)?.[0],
     sync.match(/CREATE OR REPLACE FUNCTION factory_moot_checks\([^]*?\$\$;/)?.[0],
