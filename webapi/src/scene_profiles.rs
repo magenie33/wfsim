@@ -15,7 +15,7 @@ use wfsim_engine::{
         math::Portable,
         space::Vec2,
     },
-    scene::Scene,
+    scene::{FloorAim, Scene},
 };
 
 #[derive(Deserialize)]
@@ -171,6 +171,7 @@ pub(crate) fn source_default<'a>(
     player_at: Vec2,
     aimed: (&'a str, Vec2),
     formation: impl Iterator<Item = (&'a str, Vec2)>,
+    aim_at: Option<Vec2>,
 ) -> Result<Arc<Scene>, String> {
     let SourceRequest {
         preset,
@@ -202,25 +203,42 @@ pub(crate) fn source_default<'a>(
     };
     let first = enemy_profile(aimed.0)?;
     let player_at = carrier.as_ref().map_or(player_at, |p| Vec2::new(p.player.world.0[3], p.player.world.0[11]));
-    let dx = aimed.1.x - player_at.x;
-    let dz = aimed.1.y - player_at.y;
+    let direction = aim_at.filter(|at| at.distance(player_at) > 1e-9).unwrap_or(aimed.1);
+    let dx = direction.x - player_at.x;
+    let dz = direction.y - player_at.y;
     let heading = Vec3([dx, 0., dz])
         .normalized()
         .ok_or("scene_3d needs a target direction")?;
     let [x, _, z] = heading.0;
+    let facing = Vec3([aimed.1.x - player_at.x, 0., aimed.1.y - player_at.y]).normalized().unwrap_or(heading);
+    let [enemy_x, _, enemy_z] = facing.0;
     let (player, camera, reference_point) = match carrier {
         Some(c) => (c.player, c.camera, c.reference_point),
         None => standing(pose(player_at, x, z, 1.), fire.cloned())?,
     };
     let (sin, cos) = enemy_yaw_deg.to_radians().sin_cos_portable();
-    let enemies = std::iter::once(aimed)
-        .chain(formation)
+    let roster: Vec<_> = std::iter::once(aimed).chain(formation).collect();
+    let floor_aim = aim_at.map(|at| {
+        let actor = roster.iter().enumerate().min_by(|(_, a), (_, b)| {
+            a.1.distance(at).total_cmp(&b.1.distance(at))
+        }).map_or(0, |(i, _)| i);
+        let profile = enemy_profile(roster[actor].0)?;
+        let controller = profile.model.controller;
+        let on_actor = roster[actor].1.distance(at) <= f64::from(controller.radius * controller.scale);
+        Ok::<_, String>(FloorAim {
+            actor,
+            head_proxy: profile.head_proxy,
+            body_proxy: profile.body_proxy,
+            at: (!on_actor).then_some(at),
+        })
+    }).transpose()?;
+    let enemies = roster.into_iter()
         .map(|(id, at)| {
             let mut model = enemy_profile(id)?.model.clone();
             model.world = pose(
                 at,
-                -x * cos - z * sin,
-                x * sin - z * cos,
+                -enemy_x * cos - enemy_z * sin,
+                enemy_x * sin - enemy_z * cos,
                 f64::from(model.controller.scale),
             );
             Ok(model)
@@ -234,7 +252,7 @@ pub(crate) fn source_default<'a>(
     } else {
         Placement::Contact
     };
-    Scene::new_standing(
+    Scene::new_standing_aimed(
         Scene3d {
             player,
             enemies,
@@ -250,6 +268,7 @@ pub(crate) fn source_default<'a>(
             preselected_target: None,
         },
         count,
+        floor_aim,
     )
     .map(|scene| Arc::new(if matches!(preset, Preset::SourceStandard) {
         scene.with_reference_fallback()
