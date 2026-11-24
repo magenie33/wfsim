@@ -8,6 +8,9 @@ The target queue fields and module boundaries are specified in
 installed interfaces; target-only rules require separate implementation and
 rollout qualification.
 
+[Core seconds](COMPUTE_RCS.md) defines offline cost calibration, pack replay
+and trial evaluation for the reference-based dispatch policy.
+
 Ordinary queue reconciliation recovers only work already recorded in the
 pending queue. Missing scores, newly added boards and library coverage do not
 create tasks through reconciliation. It does not purge pending work. Complete
