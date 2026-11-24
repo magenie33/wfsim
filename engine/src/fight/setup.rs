@@ -571,6 +571,7 @@ impl FightParams {
     /// power it would be applied once whatever the payload's depth. Here it is
     /// raised with the bracket, which is what was measured
     /// (`faction_bracket_multiplier`).
+    #[inline]
     pub fn faction_at_time(&self, t: f64) -> f64 {
         self.faction_bracket_at(t) * self.foe.faction_bracket_multiplier
     }
@@ -580,6 +581,9 @@ impl FightParams {
     /// CHECK against a mod, and the two are told apart nowhere else.
     #[inline(always)]
     pub fn faction_bracket_at(&self, t: f64) -> f64 {
+        if !self.has_any_abilities() {
+            return self.faction_multiplier;
+        }
         self.faction_multiplier + crate::data::abilities::faction_bonus_at(&self.abilities_now(), t)
     }
 
@@ -589,6 +593,9 @@ impl FightParams {
     /// once."
     #[inline(always)]
     pub fn ability_final_at(&self, t: f64) -> f64 {
+        if !self.has_any_abilities() {
+            return 1.0;
+        }
         crate::data::abilities::final_mult_at(&self.abilities_now(), t)
     }
 
@@ -607,26 +614,28 @@ impl FightParams {
     /// burning when the buff lands starts hitting harder, and stops the moment
     /// it lapses. A mod's own share is in the Dot's frozen `bracket` because a
     /// mod is never not equipped — the same number either way.
+    #[inline]
     pub(super) fn element_at(&self, ty: DamageType, t: f64, w: &CardWindows) -> f64 {
-        // THE WEAPON'S OWN WINDOW, opened by an event rather than by a clock —
-        // the one thing here a schedule cannot answer.
-        let weakpoint = self
-            .on_weakpoint
-            .filter(|b| b.element == ty && t < w.weakpoint_buff)
-            .map_or(0.0, |b| b.bonus);
-        // …AND FRENZY'S, opened by a headshot: what it injects is additive
-        // with elemental mods, so it sits in this bracket while it is up.
-        let frenzy: f64 = self
-            .resting
-            .as_ref()
-            .filter(|_| t < w.frenzy)
-            .map_or(0.0, |r| r.injected.iter().filter(|(e, _)| *e == ty).map(|(_, v)| v).sum());
-        // …AND A COMPANION'S PILE, worth what it holds until it lapses.
-        let piled = self
-            .per_hit_element
-            .as_ref()
-            .filter(|p| p.spec.element == ty)
-            .map_or(0.0, |p| w.element_pile.bonus_at(&p.spec, t));
+        let weakpoint = match self.on_weakpoint {
+            Some(b) if b.element == ty && t < w.weakpoint_buff => b.bonus,
+            _ => 0.0,
+        };
+        let frenzy = match &self.resting {
+            Some(r) if t < w.frenzy => {
+                let mut s = 0.0;
+                for &(e, v) in &r.injected {
+                    if e == ty {
+                        s += v;
+                    }
+                }
+                s
+            }
+            _ => 0.0,
+        };
+        let piled = match &self.per_hit_element {
+            Some(p) if p.spec.element == ty => w.element_pile.bonus_at(&p.spec, t),
+            _ => 0.0,
+        };
         weakpoint + frenzy + piled + self.scheduled_element_at(ty, t)
     }
 
@@ -648,18 +657,24 @@ impl FightParams {
 
     /// The share the ABILITIES and the arcane add, which is a pure function of
     /// time — [`Self::element_at`] is what everything reads.
+    #[inline]
     fn scheduled_element_at(&self, ty: DamageType, t: f64) -> f64 {
-        // …AND AN ARCANE'S, which is the same kind of term in the same
-        // bracket: `ArcaneFx::added_elements` is held for the whole
-        // engagement, so it has no `t` to be read at.
-        let arcane: f64 =
-            self.arcane.added_elements.iter().filter(|(e, _)| *e == ty).map(|(_, v)| v).sum();
-        arcane
-            + crate::data::abilities::added_elements_at(&self.abilities_now(), t)
-                .iter()
-                .filter(|(e, _)| *e == ty)
-                .map(|(_, v)| v)
-                .sum::<f64>()
+        let mut arcane = 0.0;
+        for &(e, v) in &self.arcane.added_elements {
+            if e == ty {
+                arcane += v;
+            }
+        }
+        if !self.has_any_abilities() {
+            return arcane;
+        }
+        let mut abil = 0.0;
+        for (e, v) in crate::data::abilities::added_elements_at(&self.abilities_now(), t) {
+            if e == ty {
+                abil += v;
+            }
+        }
+        arcane + abil
     }
 
     /// The finished vector with the ability elements ON TOP — never through
@@ -677,6 +692,9 @@ impl FightParams {
         t: f64,
         w: &CardWindows,
     ) -> DamageVector {
+        if !self.has_live_elements(t, w) {
+            return qvec;
+        }
         let out = self.with_live_elements_unquantized(qvec, stage_mb, t, w);
         if out == qvec { out } else { out.quantized_against(stage_mb) }
     }
@@ -1866,10 +1884,17 @@ impl FightParams {
     ///
     /// UNQUANTIZED: an extra hit copies the hit before the snap (M40: 135 and 63
     /// on screen; the snapped vector pops 134 and 62).
+    #[inline]
     pub(super) fn extra_hit_bracket(&self, t: f64, w: &CardWindows) -> f64 {
-        let mb = self.dot_modified_base.unwrap_or_else(|| self.damage.total());
+        let mb = match self.dot_modified_base {
+            Some(mb) => mb,
+            None => self.damage.total(),
+        };
         if mb <= 0.0 {
             return 1.0;
+        }
+        if !self.has_live_elements(t, w) {
+            return self.damage.total() / mb;
         }
         self.with_live_elements_unquantized(self.damage, mb, t, w).total() / mb
     }
@@ -1878,14 +1903,19 @@ impl FightParams {
     /// Everything with a clock on it is read per tick instead
     /// ([`Self::element_at`]), which is the same number for a mod and the only
     /// right one for a buff.
+    #[inline]
     pub(super) fn elem_bracket(&self, t: DamageType) -> f64 {
         // Frenzy DOWN: its injection has a clock, so `element_at` adds it.
-        self.resting
-            .as_ref()
-            .map_or(&self.elem_dot_bonus, |r| &r.elem_dot_bonus)
-            .iter()
-            .find(|(x, _)| *x == t)
-            .map_or(1.0, |(_, v)| *v)
+        let list = match &self.resting {
+            Some(r) => &r.elem_dot_bonus,
+            None => &self.elem_dot_bonus,
+        };
+        for &(x, v) in list {
+            if x == t {
+                return v;
+            }
+        }
+        1.0
     }
 }
 

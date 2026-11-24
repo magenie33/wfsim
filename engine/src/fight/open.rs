@@ -134,13 +134,19 @@ pub(super) struct OtherMode<'a> {
 /// engagement. On the combatant rather than in the world because every one of
 /// these is its BUILD's answer: a second one resolves its own.
 pub(super) struct Fixed<'a> {
+    pub(super) uses_field_ctx: bool,
     pub(super) aim_off_axis: f64,
     pub(super) spread_geometry: spread::SpreadGeometry<'a>,
     pub(super) ricochet_layout: Option<crate::rules::chain::Layout>,
     pub(super) chain_layout: Option<crate::rules::chain::Layout>,
+    pub(super) chain_multishot: Vec<crate::rules::chain::Instance>,
+    pub(super) chain_splash: Vec<crate::rules::chain::Instance>,
+    pub(super) base_chain_multishot: Option<Vec<crate::rules::chain::Instance>>,
+    pub(super) base_chain_splash: Option<Vec<crate::rules::chain::Instance>>,
     pub(super) struck: Vec<usize>,
     /// The same, for the cycle's base form — see `open`.
     pub(super) base_struck: Option<Vec<usize>>,
+    pub(super) head_part_multiplier: f64,
     pub(super) rec_roster: Vec<BuffSeries>,
     pub(super) rec_buff_index: Vec<Option<usize>>,
     pub(super) main_variants: Vec<(crate::rules::damage::DamageVector, f64, f64)>,
@@ -296,6 +302,57 @@ pub(super) fn open<'a>(
     // Incarnon projectile does not (M103) — so one list for the engagement
     // answered the whole fight with the TRANSFORMED form's reach.
     let base_struck = params.cycle.as_ref().map(|cy| cy.base_form.struck_bodies());
+    let (chain_multishot, chain_splash, base_chain_multishot, base_chain_splash) =
+        match (&chain_layout, params.beam) {
+            (Some(layout), Some(b)) => {
+                let spec = crate::rules::chain::Spec {
+                    hops: b.chain_hops,
+                    range_m: b.chain_range_m,
+                    falloff: b.chain_damage_per_hop,
+                    compounds: b.chain_compounds,
+                };
+                let all = crate::rules::chain::resolve_in(layout, params.body_count(), &struck, spec);
+                let mut ms = Vec::new();
+                let mut sp = Vec::new();
+                for inst in all {
+                    if inst.target != 0 {
+                        if inst.multishot {
+                            ms.push(inst);
+                        } else {
+                            sp.push(inst);
+                        }
+                    }
+                }
+                let (bms, bsp) = match &base_struck {
+                    Some(bs) => {
+                        let base_all =
+                            crate::rules::chain::resolve_in(layout, params.body_count(), bs, spec);
+                        let mut bms = Vec::new();
+                        let mut bsp = Vec::new();
+                        for inst in base_all {
+                            if inst.target != 0 {
+                                if inst.multishot {
+                                    bms.push(inst);
+                                } else {
+                                    bsp.push(inst);
+                                }
+                            }
+                        }
+                        (Some(bms), Some(bsp))
+                    }
+                    None => (None, None),
+                };
+                (ms, sp, bms, bsp)
+            }
+            _ => (Vec::new(), Vec::new(), None, None),
+        };
+    let mut head_part_multiplier = 1.0;
+    for p in &params.body_parts {
+        if p.is_head {
+            head_part_multiplier = p.multiplier;
+            break;
+        }
+    }
     let next_frame = 0.0f64;
     let frame_seconds = trace.as_ref().map_or(f64::INFINITY, |r| r.frame_seconds);
     let mut bar = BuffBar::new();
@@ -775,12 +832,18 @@ pub(super) fn open<'a>(
             in_flight: Vec::new(),
             other: None,
             fixed: Fixed {
+                uses_field_ctx: params.spawns_entities(),
                 aim_off_axis,
                 spread_geometry: spread::SpreadGeometry::new(params),
                 ricochet_layout,
                 chain_layout,
+                chain_multishot,
+                chain_splash,
+                base_chain_multishot,
+                base_chain_splash,
                 struck,
                 base_struck,
+                head_part_multiplier,
                 rec_roster,
                 rec_buff_index,
                 main_variants,

@@ -7,6 +7,7 @@ pub mod ordinary;
 pub mod radial;
 mod proc_draw;
 pub use packet::{ProcCounters, ProcType};
+pub(crate) use packet::ORDINARY_DAMAGE_TYPES;
 pub(crate) use proc_draw::SceneProcDraw;
 
 use crate::rules::damage::{DamageType, DamageVector};
@@ -82,56 +83,146 @@ pub fn magnetic_break_normalized_source(source: f64, weapon_weakness_bonus: f64,
 }
 
 
-/// Scene projection: selected default13 graph plus separate Void and Tau statuses.
-/// Native handler installation and special proc ids remain unbound (N07A).
+pub(crate) const SCENE_CDF_CAP: usize = 15;
+
+#[cfg(test)]
 #[wfsim_gas_macro::metered]
-fn scene_weights(vector: &DamageVector, handlers: SceneProcHandlers) -> [f32; 32] {
+pub(crate) fn scene_weights(vector: &DamageVector, handlers: SceneProcHandlers) -> [f32; 32] {
     let mut weights = [0.0; 32];
     for (index, weight) in weights.iter_mut().enumerate().take(13) {
         if handlers.ordinary_mask & (1 << index) == 0 { continue; }
-        // One explicit component and unit WeightMultiplier reduce to its positive value.
-        let kind = ProcType::new(index as u8).expect("ordinary index").damage_type().expect("ordinary type");
+        let kind = ORDINARY_DAMAGE_TYPES[index];
         let component = vector.get(kind) as f32;
         if component > 0.0 { *weight = component; }
     }
-    // Scene alternatives stay outside ProcCounters; their native proc ids are unbound.
     if handlers.void { weights[30] = (vector.get(DamageType::Void) as f32).max(0.0); }
     if handlers.tau { weights[31] = (vector.get(DamageType::Tau) as f32).max(0.0); }
     weights
+}
+
+#[inline]
+#[wfsim_gas_macro::metered]
+pub(crate) fn build_scene_cdf(
+    vector: &DamageVector,
+    handlers: SceneProcHandlers,
+    entries: &mut [(DamageType, f32); SCENE_CDF_CAP],
+) -> (usize, f32) {
+    let mut len = 0usize;
+    let mut total = 0.0_f32;
+    let mut mask = handlers.ordinary_mask & ProcCounters::ORDINARY_MASK;
+    while mask != 0 {
+        let index = mask.trailing_zeros() as usize;
+        let dtype = ORDINARY_DAMAGE_TYPES[index];
+        let component = vector.get(dtype) as f32;
+        if component > 0.0 {
+            total += component;
+            entries[len] = (dtype, total);
+            len += 1;
+        }
+        mask &= mask - 1;
+    }
+    if handlers.void {
+        let component = vector.get(DamageType::Void) as f32;
+        if component > 0.0 {
+            total += component;
+            entries[len] = (DamageType::Void, total);
+            len += 1;
+        }
+    }
+    if handlers.tau {
+        let component = vector.get(DamageType::Tau) as f32;
+        if component > 0.0 {
+            total += component;
+            entries[len] = (DamageType::Tau, total);
+            len += 1;
+        }
+    }
+    (len, total)
 }
 
 /// Raw generated statuses. Immunity is checked at application, after counters exist.
 /// Forced entries retain scene order; accepted ordinary draws saturate per type.
 #[wfsim_gas_macro::metered]
 pub fn procs_for_hit(forced: &[DamageType], status_chance: f64,
-    vector: &DamageVector, handlers: SceneProcHandlers, rng: &mut Rng) -> Vec<DamageType>
+    vector: &DamageVector, handlers: SceneProcHandlers, rng: &mut Rng) -> HitProcs
 {
-    let mut procs = forced.to_vec();
-    ordinary::sample(status_chance as f32, 0, || scene_weights(vector, handlers), || rng.unit(),
-        append_hit_procs(&mut procs, forced));
+    let mut procs = HitProcs::from_slice(forced);
+    let chance = status_chance as f32;
+    if chance <= 0.0 {
+        return procs;
+    }
+    if cannot_saturate(forced, chance) {
+        let mut entries = [(DamageType::Impact, 0.0_f32); SCENE_CDF_CAP];
+        let mut len = 0usize;
+        let mut total = 0.0_f32;
+        let mut built = false;
+        let mut remaining = chance;
+        while remaining > 0.0 {
+            if rng.unit() > remaining { break; }
+            if !built {
+                (len, total) = build_scene_cdf(vector, handlers, &mut entries);
+                built = true;
+            }
+            let threshold = rng.unit() * total;
+            for &(dtype, cumulative) in &entries[..len] {
+                if cumulative >= threshold {
+                    procs.push(dtype);
+                    break;
+                }
+            }
+            remaining -= 1.0_f32;
+        }
+    } else {
+        sample_hit_procs_saturated(&mut procs, forced, chance, vector, handlers, rng);
+    }
     procs
 }
 
+#[cold]
 #[wfsim_gas_macro::metered]
-fn append_hit_procs<'a>(procs: &'a mut Vec<DamageType>, forced: &[DamageType])
-    -> impl FnMut(Option<usize>) + 'a
-{
-    let mut counters = ProcCounters::from_types(forced.iter().copied());
-    let special = [DamageType::Void, DamageType::Tau];
-    let mut special_counts = special.map(|kind| forced.iter().filter(|&&ty| ty == kind).count().min(255));
-    move |index| {
-        let Some(index) = index else { return; };
-        if index >= 30 {
-            let count = &mut special_counts[index - 30];
-            if *count < 255 { procs.push(special[index - 30]); *count += 1; }
-        } else {
-            let kind = ProcType::new(index as u8).expect("proc index");
-            if counters.count(kind) < 255 {
-                counters.add(kind, 1);
-                if let Some(dtype) = kind.damage_type() { procs.push(dtype); }
+pub(crate) fn sample_hit_procs_saturated(
+    procs: &mut impl ProcSink,
+    forced: &[DamageType],
+    chance: f32,
+    vector: &DamageVector,
+    handlers: SceneProcHandlers,
+    rng: &mut Rng,
+) {
+    let mut counts = [0u8; DamageType::ALL.len()];
+    for &ty in forced {
+        let slot = &mut counts[ty as usize];
+        *slot = slot.saturating_add(1);
+    }
+    let mut entries = [(DamageType::Impact, 0.0_f32); SCENE_CDF_CAP];
+    let mut len = 0usize;
+    let mut total = 0.0_f32;
+    let mut built = false;
+    let mut remaining = chance;
+    while remaining > 0.0 {
+        if rng.unit() > remaining { break; }
+        if !built {
+            (len, total) = build_scene_cdf(vector, handlers, &mut entries);
+            built = true;
+        }
+        let threshold = rng.unit() * total;
+        for &(dtype, cumulative) in &entries[..len] {
+            if cumulative >= threshold {
+                let slot = &mut counts[dtype as usize];
+                if *slot < 255 {
+                    *slot += 1;
+                    procs.push_proc(dtype);
+                }
+                break;
             }
         }
+        remaining -= 1.0_f32;
     }
+}
+
+#[inline]
+#[wfsim_gas_macro::metered]
+pub(crate) fn cannot_saturate(forced: &[DamageType], chance: f32) -> bool {
+    forced.len() <= 255 && chance <= (255 - forced.len()) as f32
 }
 
 /// Scene consumers that react to landed statuses share the final-immunity filter.
@@ -140,6 +231,195 @@ pub fn applied_procs<'a>(generated: &'a [DamageType], immune: &'a [DamageType])
     -> impl Iterator<Item = DamageType> + 'a
 {
     generated.iter().copied().filter(|kind| !immune.contains(kind))
+}
+
+#[inline]
+#[wfsim_gas_macro::metered]
+pub fn applied_procs_count(generated: &[DamageType], immune: &[DamageType]) -> usize {
+    if immune.is_empty() {
+        return generated.len();
+    }
+    let mut n = 0usize;
+    for kind in generated {
+        if !immune.contains(kind) {
+            n += 1;
+        }
+    }
+    n
+}
+
+#[inline]
+#[wfsim_gas_macro::metered]
+pub fn has_applied_proc(generated: &[DamageType], immune: &[DamageType]) -> bool {
+    if immune.is_empty() {
+        return !generated.is_empty();
+    }
+    for kind in generated {
+        if !immune.contains(kind) {
+            return true;
+        }
+    }
+    false
+}
+
+const INLINE_PROCS_CAP: usize = 16;
+
+#[derive(Debug, Clone)]
+pub enum HitProcs {
+    Inline { buf: [DamageType; INLINE_PROCS_CAP], len: u8 },
+    Heap(Vec<DamageType>),
+}
+
+#[wfsim_gas_macro::metered]
+impl Default for HitProcs {
+    #[inline]
+    fn default() -> Self {
+        Self::Inline { buf: [DamageType::Impact; INLINE_PROCS_CAP], len: 0 }
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl HitProcs {
+    #[inline]
+    pub fn from_slice(forced: &[DamageType]) -> Self {
+        if forced.len() <= INLINE_PROCS_CAP {
+            let mut buf = [DamageType::Impact; INLINE_PROCS_CAP];
+            buf[..forced.len()].copy_from_slice(forced);
+            Self::Inline { buf, len: forced.len() as u8 }
+        } else {
+            Self::Heap(forced.to_vec())
+        }
+    }
+
+    #[inline]
+    pub fn push(&mut self, ty: DamageType) {
+        if let Self::Inline { buf, len } = self {
+            let l = *len as usize;
+            if l < INLINE_PROCS_CAP {
+                buf[l] = ty;
+                *len += 1;
+                return;
+            }
+        }
+        self.push_slow(ty);
+    }
+
+    #[cold]
+    fn push_slow(&mut self, ty: DamageType) {
+        match self {
+            Self::Inline { buf, .. } => {
+                let mut v = Vec::with_capacity(INLINE_PROCS_CAP + 8);
+                v.extend_from_slice(buf);
+                v.push(ty);
+                *self = Self::Heap(v);
+            }
+            Self::Heap(v) => v.push(ty),
+        }
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl std::ops::Deref for HitProcs {
+    type Target = [DamageType];
+    #[inline]
+    fn deref(&self) -> &[DamageType] {
+        match self {
+            Self::Inline { buf, len } => &buf[..*len as usize],
+            Self::Heap(v) => v.as_slice(),
+        }
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl PartialEq for HitProcs {
+    fn eq(&self, other: &Self) -> bool {
+        (**self) == (**other)
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl PartialEq<[DamageType]> for HitProcs {
+    fn eq(&self, other: &[DamageType]) -> bool {
+        (**self) == *other
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl PartialEq<Vec<DamageType>> for HitProcs {
+    fn eq(&self, other: &Vec<DamageType>) -> bool {
+        (**self) == *other.as_slice()
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl<const N: usize> PartialEq<[DamageType; N]> for HitProcs {
+    fn eq(&self, other: &[DamageType; N]) -> bool {
+        (**self) == *other.as_slice()
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl PartialEq<HitProcs> for &[DamageType] {
+    fn eq(&self, other: &HitProcs) -> bool {
+        **self == **other
+    }
+}
+
+pub enum HitProcsIter {
+    Inline { buf: [DamageType; INLINE_PROCS_CAP], pos: u8, len: u8 },
+    Heap(std::vec::IntoIter<DamageType>),
+}
+
+#[wfsim_gas_macro::metered]
+impl Iterator for HitProcsIter {
+    type Item = DamageType;
+    fn next(&mut self) -> Option<DamageType> {
+        match self {
+            Self::Inline { buf, pos, len } => {
+                if *pos < *len {
+                    let item = buf[*pos as usize];
+                    *pos += 1;
+                    Some(item)
+                } else {
+                    None
+                }
+            }
+            Self::Heap(it) => it.next(),
+        }
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl IntoIterator for HitProcs {
+    type Item = DamageType;
+    type IntoIter = HitProcsIter;
+    fn into_iter(self) -> HitProcsIter {
+        match self {
+            Self::Inline { buf, len } => HitProcsIter::Inline { buf, pos: 0, len },
+            Self::Heap(v) => HitProcsIter::Heap(v.into_iter()),
+        }
+    }
+}
+
+#[wfsim_gas_macro::metered]
+pub trait ProcSink: std::ops::Deref<Target = [DamageType]> {
+    fn push_proc(&mut self, ty: DamageType);
+}
+
+#[wfsim_gas_macro::metered]
+impl ProcSink for Vec<DamageType> {
+    #[inline]
+    fn push_proc(&mut self, ty: DamageType) {
+        self.push(ty);
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl ProcSink for HitProcs {
+    #[inline]
+    fn push_proc(&mut self, ty: DamageType) {
+        self.push(ty);
+    }
 }
 
 #[cfg(test)]

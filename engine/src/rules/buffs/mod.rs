@@ -134,25 +134,57 @@ impl BuffBar {
 
     /// Insert a buff, replacing any existing buff with the same id.
     pub fn upsert(&mut self, buff: Buff) {
-        match self.buffs.iter_mut().find(|b| b.id == buff.id) {
-            Some(existing) => *existing = buff,
-            None => self.buffs.push(buff),
+        for existing in &mut self.buffs {
+            if existing.id == buff.id {
+                *existing = buff;
+                return;
+            }
         }
+        self.buffs.push(buff);
     }
 
     pub fn get(&self, id: &str) -> Option<&Buff> {
-        self.buffs.iter().find(|b| b.id == id)
+        for b in &self.buffs {
+            if b.id == id {
+                return Some(b);
+            }
+        }
+        None
     }
 
     /// Remove a buff by id, if present.
     pub fn remove(&mut self, id: &str) {
-        self.buffs.retain(|b| b.id != id);
+        let mut write = 0;
+        for read in 0..self.buffs.len() {
+            if self.buffs[read].id != id {
+                if write != read {
+                    self.buffs.swap(write, read);
+                }
+                write += 1;
+            }
+        }
+        self.buffs.truncate(write);
     }
 
     /// Drop every buff whose expiry is at or before `t_secs`.
     pub fn expire(&mut self, t_secs: f64) {
-        self.buffs
-            .retain(|b| b.expiry_seconds.is_none_or(|e| e > t_secs));
+        if self.buffs.is_empty() {
+            return;
+        }
+        let mut write = 0;
+        for read in 0..self.buffs.len() {
+            let keep = match self.buffs[read].expiry_seconds {
+                Some(e) => e > t_secs,
+                None => true,
+            };
+            if keep {
+                if write != read {
+                    self.buffs.swap(write, read);
+                }
+                write += 1;
+            }
+        }
+        self.buffs.truncate(write);
     }
 
     /// All active buffs, for display (the UI reads this).
@@ -165,9 +197,17 @@ impl BuffBar {
     /// Scope-aware application (weapon vs Warframe vs squad) will refine this
     /// once non-weapon buffs exist; today every buff is `Weapon`-scoped.
     pub fn total_contributions(&self) -> Contributions {
-        self.buffs.iter().fold(Contributions::default(), |acc, b| {
-            acc.combine(b.contributions.clone())
-        })
+        let mut out = Contributions::default();
+        for b in &self.buffs {
+            out.flat_crit_chance += b.contributions.flat_crit_chance;
+            out.fire_rate_multiplier *= b.contributions.fire_rate_multiplier;
+            out.ammo_efficiency += b.contributions.ammo_efficiency;
+            out.infinite_ammo |= b.contributions.infinite_ammo;
+            if !b.contributions.injected_elements.is_empty() {
+                out.injected_elements.extend_from_slice(&b.contributions.injected_elements);
+            }
+        }
+        out
     }
 }
 

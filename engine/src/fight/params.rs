@@ -915,6 +915,39 @@ impl std::ops::Deref for AbilitiesNow<'_> {
 
 #[wfsim_gas_macro::metered]
 impl FightParams {
+    #[inline(always)]
+    pub(super) fn has_any_abilities(&self) -> bool {
+        !self.abilities.is_empty() || self.abilities_live.is_some()
+    }
+
+    #[inline(always)]
+    fn panel_spawns_entities(&self) -> bool {
+        self.lingering.is_some()
+            || self.blob.is_some()
+            || self.orb.is_some()
+            || self.meter.is_some()
+            || self.spectral_dagger.is_some()
+            || self.reload_grenade.is_some()
+            || self.reload_cold_radius_per_round_m.is_some()
+            || self.cold_trail.is_some()
+            || self.embed.is_some()
+    }
+
+    #[inline]
+    pub(super) fn spawns_entities(&self) -> bool {
+        self.panel_spawns_entities()
+            || self.cycle.as_ref().is_some_and(|c| c.base_form.panel_spawns_entities())
+            || self.melee_heavy.as_deref().is_some_and(Self::panel_spawns_entities)
+            || self.melee_profiles.values().any(Self::panel_spawns_entities)
+    }
+
+    #[inline(always)]
+    pub(super) fn has_live_elements(&self, t: f64, w: &CardWindows) -> bool {
+        self.has_any_abilities()
+            || !self.arcane.added_elements.is_empty()
+            || (self.on_weakpoint.is_some() && t < w.weakpoint_buff)
+    }
+
     /// **EVERY ABILITY WINDOW, AS THIS RUN HAS IT** — the live set a frame casts
     /// into, or the fixed one when nothing in the fight casts.
     #[inline(always)]

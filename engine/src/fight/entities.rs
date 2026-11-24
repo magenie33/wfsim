@@ -203,13 +203,30 @@ pub(super) fn process_entities(
     rec: &mut crate::record::Record,
     bodies: &mut [Body],
 ) {
-    while let Some((i, at)) = entities
-        .iter()
-        .enumerate()
-        .filter(|(_, e)| e.owner() == turn.seat)
-        .filter_map(|(i, e)| e.due().filter(|&at| at < until).map(|at| (i, at)))
-        .min_by(|a, b| a.1.total_cmp(&b.1))
-    {
+    if entities.is_empty() {
+        return;
+    }
+    loop {
+        let mut best: Option<(usize, f64)> = None;
+        for (i, e) in entities.iter().enumerate() {
+            if e.owner() != turn.seat {
+                continue;
+            }
+            if let Some(at) = e.due() {
+                if at < until {
+                    let take = match best {
+                        None => true,
+                        Some((_, bt)) => at.total_cmp(&bt).is_lt(),
+                    };
+                    if take {
+                        best = Some((i, at));
+                    }
+                }
+            }
+        }
+        let Some((i, at)) = best else {
+            break;
+        };
         let flow = match entities[i] {
             Entity::Cloud(_) => cloud_tick(entities, i, at, turn, r, rec, bodies),
             Entity::Pile(_) => {

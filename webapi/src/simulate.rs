@@ -145,8 +145,8 @@ pub fn simulate_shard_json(
     count: u32,
     on_run: &mut impl FnMut(u32, u32),
 ) -> Value {
-    match ready(v, false) {
-        Ok(r) => shard_json(v, &r, from, count, on_run),
+    match PreparedSimulation::cached(v) {
+        Ok(p) => p.unchecked_shard_json(from, count, on_run),
         Err(e) => e,
     }
 }
@@ -488,6 +488,14 @@ pub(crate) struct Ready {
     forma: Option<FormaPlan>,
 }
 
+thread_local! {
+    static LAST_PREPARED_SIM: std::cell::RefCell<Option<(Value, std::sync::Arc<PreparedSimulation>)>> =
+        const { std::cell::RefCell::new(None) };
+}
+
+const MAX_CACHED_OTHERS: usize = 512;
+const MAX_CACHED_ROSTER: usize = 4;
+
 /// One immutable request, prepared for independent indexed runs. Each run owns
 /// its RNG and mutable combat state; retaining this object retains no results.
 pub struct PreparedSimulation {
@@ -500,6 +508,27 @@ impl PreparedSimulation {
     pub fn new(request: &Value) -> Result<Self, Value> {
         let Ready { fight, params, .. } = ready(request, false)?;
         Ok(Self { params, seed: fight.seed, keeps_series: get_bool(request, "run_series", false) })
+    }
+
+    pub(crate) fn cached(request: &Value) -> Result<std::sync::Arc<Self>, Value> {
+        let hit = LAST_PREPARED_SIM.with(|slot| {
+            slot.borrow()
+                .as_ref()
+                .filter(|(held, _)| held == request)
+                .map(|(_, sim)| std::sync::Arc::clone(sim))
+        });
+        if let Some(sim) = hit {
+            return Ok(sim);
+        }
+        let sim = std::sync::Arc::new(Self::new(request)?);
+        if sim.params.others.len() <= MAX_CACHED_OTHERS
+            && sim.params.also_acting.len() <= MAX_CACHED_ROSTER
+        {
+            LAST_PREPARED_SIM.with(|slot| {
+                *slot.borrow_mut() = Some((request.clone(), std::sync::Arc::clone(&sim)));
+            });
+        }
+        Ok(sim)
     }
 
     /// The same shard as the simulator's, with progress local to this range.
@@ -519,6 +548,20 @@ impl PreparedSimulation {
         ))
     }
 
+    pub(crate) fn unchecked_shard_json(
+        &self,
+        from: u32,
+        count: u32,
+        on_run: &mut impl FnMut(u32, u32),
+    ) -> Value {
+        let s = wfsim_engine::fight::shard(
+            &self.params, from, count, self.seed, self.keeps_series,
+            &mut |done| on_run(done, count),
+        );
+        serde_json::to_value(&s).unwrap_or_else(|e| err_json(format!("shard: {e}")))
+    }
+
+    #[cfg(test)]
     pub(crate) fn shard_json(&self, from: u32, count: u32) -> Value {
         match self.shard(from, count, &mut |_, _| {}) {
             Ok(s) => serde_json::to_value(&s).unwrap_or_else(|e| err_json(format!("shard: {e}"))),

@@ -75,10 +75,7 @@ pub(super) fn combined_stacks(debuffs: &DebuffState, t: DamageType) -> usize {
         DamageType::Radiation => debuffs.confusion.len(),
         DamageType::Blast => debuffs.blast.len(),
         // Gas lives in the DoT list rather than a stack vector.
-        DamageType::Gas => debuffs.dots[debuffs.dot_start(t)..]
-            .iter()
-            .filter(|d| d.dtype == DamageType::Gas && d.ticks_left > 0)
-            .count(),
+        DamageType::Gas => debuffs.live_dot_count(DamageType::Gas),
         _ => 0,
     }
 }
@@ -112,7 +109,7 @@ pub(super) fn has_status(debuffs: &DebuffState, t: DamageType) -> bool {
         // Slash, Toxin, Electricity and Gas are DoTs and are answered below.
         _ => false,
     };
-    own || debuffs.dots.iter().any(|d| d.dtype == t && d.ticks_left > 0)
+    own || debuffs.live_dot_count(t) > 0
 }
 
 /// Stacks of a combined status the target must be AT, counting the one this
@@ -162,8 +159,11 @@ pub(super) fn fire_extra_hits(
     rec: &mut crate::record::Record,
     rng: &mut Rng,
 ) -> bool {
+    if !params.has_any_abilities() || trigger_raw <= 0.0 {
+        return false;
+    }
     let hits = crate::data::abilities::extra_hits_at(&params.abilities_now(), at);
-    if hits.is_empty() || trigger_raw <= 0.0 {
+    if hits.is_empty() {
         return false;
     }
     let f = params.faction_at_time(at);
@@ -184,7 +184,7 @@ pub(super) fn fire_extra_hits(
         // carries is the one already inside `trigger_raw`.
         let part_again = if body_part_again { part_again } else { 1.0 };
         let raw = trigger_raw * fraction * bracket * part_again * f;
-        let mut breakdown = Breakdown::default();
+        let mut breakdown = watching(rec);
         let settled = target.apply(
             raw,
             TypeShares::single(ty),
@@ -194,13 +194,13 @@ pub(super) fn fire_extra_hits(
             false,
             mit,
             params.overguard_multiplier(),
-            watching(rec, &mut breakdown),
+            breakdown.as_mut(),
         );
         let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
         r.sources.extra_hit += eff;
         r.sources.extra_hit_by_type[ty as usize] += eff;
         ledger::settle(
-            r, rec, at, owner, 0, || ty, PopKind::Extra, &breakdown, settled, Some(debuffs),
+            r, rec, at, owner, 0, || ty, PopKind::Extra, breakdown.as_ref(), settled, Some(debuffs),
             ledger::Clock::Hit,
             || Instance {
                 origin: crate::record::Origin::ExtraHit,
@@ -251,11 +251,11 @@ pub(super) fn fire_extra_hits(
             forced,
             if forced_status { 0.0 } else { debuffs.received_proc_chance(status_chance, at) },
             &DamageVector::new().with(ty, raw),
-            params.foe.proc_handlers(),
+            target.proc_handlers,
             rng,
         );
         settle_procs(
-            procs,
+            &procs,
             owner,
             at,
             0,
@@ -392,19 +392,89 @@ pub(super) fn drain_area_procs(
         // ONE BODY, so a cloud has nobody to reach and the queue is dropped
         // rather than walked. This is what keeps every single-target fight
         // byte-identical.
-        bodies.iter_mut().for_each(|f| {
-            f.debuffs.area_out.clear();
-            f.debuffs.area_hit.clear();
-        });
+        for f in bodies.iter_mut() {
+            if !f.debuffs.area_out.is_empty() {
+                f.debuffs.area_out.clear();
+            }
+            if !f.debuffs.area_hit.is_empty() {
+                f.debuffs.area_hit.clear();
+            }
+        }
         return;
     }
     // Collected first: handing a Dot from body i to body j needs both of them
     // borrowed at once.
-    let mut pending: Vec<(usize, Dot, f64, u16)> = Vec::new();
-    for (b, f) in bodies.iter_mut().enumerate() {
-        for (dot, r, n) in f.debuffs.area_out.drain(..) {
-            pending.push((b, dot, r, n));
+    let mut out_count = 0usize;
+    let mut hit_count = 0usize;
+    for f in bodies.iter() {
+        out_count += f.debuffs.area_out.len();
+        hit_count += f.debuffs.area_hit.len();
+    }
+    if out_count == 0 && hit_count == 0 {
+        return;
+    }
+    let mut pending: Vec<(usize, Dot, f64, u16)> = Vec::with_capacity(out_count);
+    if out_count > 0 {
+        for (b, f) in bodies.iter_mut().enumerate() {
+            for (dot, r, n) in f.debuffs.area_out.drain(..) {
+                pending.push((b, dot, r, n));
+            }
         }
+    }
+    let mut blows: Vec<(usize, AreaHit)> = Vec::with_capacity(hit_count);
+    if hit_count > 0 {
+        for (b, f) in bodies.iter_mut().enumerate() {
+            for h in f.debuffs.area_hit.drain(..) {
+                blows.push((b, h));
+            }
+        }
+    }
+    for (from, dot, radius_m, count) in pending {
+        let reach_max = radius_m + crate::rules::space::BODY_RADIUS_M + 1e-9;
+        let is_elec = dot.dtype == DamageType::Electricity;
+        for &(d, j_u32) in near.list_from(from) {
+            if d > reach_max {
+                break;
+            }
+            let j = j_u32 as usize;
+            // THE ORIGIN ALREADY HAS IT: the cloud's damage to the body
+            // standing in it is the proc itself.
+            if j == from {
+                continue;
+            }
+            let (Some(spec), Some(here)) = (params.body(j), bodies.get_mut(j)) else { continue };
+            let (dbf, fp, parts) = (&mut here.debuffs, spec.params, spec.body_parts);
+            let cap = dot_cap_for(fp, dot.dtype);
+            // One landing per receiving body and arc; its weak-point flag
+            // exists even when no bonus raises the head's damage (M100).
+            let dot = if is_elec {
+                let mut head_part = None;
+                for p in parts {
+                    if p.is_head {
+                        head_part = Some(p);
+                        break;
+                    }
+                }
+                match head_part {
+                    Some(hp) if arc_landing.chance(TESLA_HEAD_LANDING_CHANCE) => {
+                        Dot { landing: ProcLanding::at(head_landing, hp), ..dot }
+                    }
+                    _ => dot,
+                }
+            } else {
+                dot
+            };
+            // NEVER MORE THAN THE RECEIVER CAN HOLD: pushing an eleventh copy
+            // of an identical cloud only evicts the first.
+            let n = match cap {
+                Some(c) => usize::from(count).min(c),
+                None => usize::from(count),
+            };
+            dbf.push_dot_capped_n(dot, cap, n);
+        }
+    }
+    if blows.is_empty() {
+        return;
     }
     // ONE BODY, ONE CORPSE, ONE EXPLOSION PER INSTANT. A cascade terminates in
     // game because the dead stay dead; this arena respawns a training dummy the
@@ -416,45 +486,15 @@ pub(super) fn drain_area_procs(
     // body can only die once at one instant, so it can only explode once. Later
     // instants are later deaths and chain normally.
     let mut exploded = vec![false; bodies.len()];
-    // …AND THE INSTANT ONES: a simultaneous Blast detonation, and the corpse
-    // explosion Acid Shells turns a kill into.
-    let mut blows: Vec<(usize, AreaHit)> = Vec::new();
-    for (b, f) in bodies.iter_mut().enumerate() {
-        for h in f.debuffs.area_hit.drain(..) {
-            blows.push((b, h));
-        }
-    }
-    for (from, dot, radius_m, count) in pending {
-        for j in near.within(from, radius_m) {
-            // THE ORIGIN ALREADY HAS IT: the cloud's damage to the body
-            // standing in it is the proc itself.
-            if j == from {
-                continue;
-            }
-            let (Some(spec), Some(here)) = (params.body(j), bodies.get_mut(j)) else { continue };
-            let (dbf, fp, parts) = (&mut here.debuffs, spec.params, spec.body_parts);
-            let cap = dot_cap_for(fp, dot.dtype);
-            // One landing per receiving body and arc; its weak-point flag
-            // exists even when no bonus raises the head's damage (M100).
-            let dot = if dot.dtype == DamageType::Electricity
-                && parts.iter().any(|p| p.is_head)
-                && arc_landing.chance(TESLA_HEAD_LANDING_CHANCE)
-            {
-                Dot { landing: ProcLanding::at(head_landing, parts.iter().find(|p| p.is_head).expect("head part")), ..dot }
-            } else {
-                dot
-            };
-            // NEVER MORE THAN THE RECEIVER CAN HOLD: pushing an eleventh copy
-            // of an identical cloud only evicts the first.
-            let n = cap.map_or(usize::from(count), |c| usize::from(count).min(c));
-            for _ in 0..n {
-                dbf.push_dot_capped(dot, cap);
-            }
-        }
-    }
     let status_damage = params.status_duration_multiplier;
     for (from, hit) in blows {
-        for (j, centre_gap) in near.within_at(from, hit.radius_m) {
+        let dtype = hit.shares.dominant();
+        let reach_max = hit.radius_m + crate::rules::space::BODY_RADIUS_M + 1e-9;
+        for &(centre_gap, j_u32) in near.list_from(from) {
+            if centre_gap > reach_max {
+                break;
+            }
+            let j = j_u32 as usize;
             // THE HOST IS NEVER ONE OF THEM: it took the single-target half and
             // the page excludes it from this one.
             if j == from {
@@ -476,7 +516,7 @@ pub(super) fn drain_area_procs(
             }
             let dmg = hit.damage * share;
             let mit = dbf.mitigation(at_now, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
-            let mut breakdown = Breakdown::default();
+            let mut breakdown = watching(rec);
             let settled = state.apply(
                 dmg,
                 hit.shares,
@@ -486,14 +526,13 @@ pub(super) fn drain_area_procs(
                 false,
                 &mit,
                 params.overguard_multiplier(),
-                watching(rec, &mut breakdown),
+                breakdown.as_mut(),
             );
             let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
-            let dtype = hit.shares.dominant();
             r.sources.add_status(dtype, eff);
             ledger::settle(
                 r, rec, at_now, hit.owner, j, || dtype, PopKind::BlastArea,
-                &breakdown, settled, Some(dbf),
+                breakdown.as_ref(), settled, Some(dbf),
                 ledger::Clock::Dot,
                 || Instance {
                     origin: crate::record::Origin::Splash,
@@ -533,10 +572,132 @@ pub(super) const GAS_RADIUS_MAX_M: f64 = 6.0;
 /// THE TESLA CHAIN's, and it does not grow: "all enemies in a 3-meter radius".
 pub(super) const TESLA_RADIUS_M: f64 = 3.0;
 
+struct ProcDotCtx<'a> {
+    params: &'a FightParams,
+    owner: Seat,
+    at: f64,
+    body_index: usize,
+    seeded_by: u32,
+    mb_live: f64,
+    crit_multiplier: f64,
+    part_factor: f64,
+    landing: ProcLanding,
+    attrition: f64,
+    sdm: f64,
+    ecl: f64,
+    depth: u32,
+    native_source: Option<crate::rules::upgrades::NativeScalar>,
+    native_part: Option<crate::model::HitPart>,
+    general_cap: Option<usize>,
+    status_damage_live: f64,
+}
+
+#[inline]
+#[wfsim_gas_macro::metered]
+fn make_proc_seed(
+    mb_live: f64,
+    coefficient: f64,
+    sdm: f64,
+    crit_multiplier: f64,
+    body_part: f64,
+    attrition: f64,
+    ecl: f64,
+) -> crate::record::Seed {
+    crate::record::Seed {
+        base: mb_live,
+        coefficient,
+        status_damage: sdm,
+        critical: crit_multiplier,
+        body_part,
+        attrition,
+        ability_final: ecl,
+        faction: 1.0,
+    }
+}
+
+#[inline]
+#[wfsim_gas_macro::metered]
+fn dot_cap_with_unit(dtype: DamageType, general_cap: Option<usize>) -> Option<usize> {
+    match (dot_family_cap(dtype), general_cap) {
+        (Some(a), Some(b)) => Some(a.min(b)),
+        (Some(a), None) => Some(a),
+        (None, u) => u,
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
+#[inline]
+#[wfsim_gas_macro::metered]
+fn push_proc_dot(
+    ctx: &ProcDotCtx<'_>,
+    debuffs: &mut DebuffState,
+    rec: &mut crate::record::Record,
+    dtype: DamageType,
+    coeff: f64,
+    bracket: f64,
+    delay: f64,
+    ticks: u32,
+    ignores_armor: bool,
+) -> Dot {
+    let part = if dot_takes_weakpoint(dtype) { ctx.part_factor } else { 1.0 };
+    let sdm = ctx.sdm + ctx.params.status_damage_of(dtype);
+    let base_seed = make_proc_seed(ctx.mb_live, coeff, sdm, ctx.crit_multiplier, part, ctx.attrition, ctx.ecl);
+    let retained = match ctx.native_source {
+        Some(source) if matches!(dtype, DamageType::Electricity | DamageType::Gas) => {
+            let packet = crate::model::DamageData::new(source);
+            let kind = crate::model::ProcType::from_damage_type(dtype).expect("ordinary status id");
+            let stored = packet.retained_proc_seed(kind, proc_damage_entries(ctx.params, ctx.status_damage_live));
+            if rec.native_trace_is_on() {
+                let at = ctx.at;
+                let body_index = ctx.body_index;
+                let native_part = ctx.native_part;
+                let params = ctx.params;
+                let status_damage_live = ctx.status_damage_live;
+                rec.trace_native(at, || crate::record::NativeStep {
+                    phase: "status_application", proc_type: Some(kind.id()),
+                    part: native_part.map(|part| part.0),
+                    entries: proc_damage_entries(params, status_damage_live).filter_map(|entry| entry.for_proc(kind)).collect(),
+                    materialized: Some(false),
+                    ..crate::record::NativeStep::new(at, body_index, "ALN-MAG-03.child.WEAPON_PROC_DAMAGE",
+                        &[source.base()], stored)
+                });
+            }
+            crate::model::StoredStatusSeed::Radial { retained_seed: stored, coefficient: coeff as f32 }
+        }
+        _ if matches!(dtype, DamageType::Electricity | DamageType::Gas) =>
+            crate::model::StoredStatusSeed::radial(base_seed),
+        _ => crate::model::StoredStatusSeed::from_unbound_source(base_seed),
+    };
+    let dot = Dot {
+        native_group: None,
+        native_part: ctx.native_part,
+        owner: ctx.owner,
+        next_tick: ctx.at + delay,
+        ticks_left: ticks,
+        cause: ctx.seeded_by,
+        retained,
+        landing: if lands_on_a_part(dtype) { ctx.landing } else { ProcLanding::default() },
+        unit: coeff * sdm * ctx.ecl,
+        bracket,
+        depth: ctx.depth,
+        dtype,
+        ignores_armor,
+        seed: rec.seed(match ctx.native_source {
+            Some(_) if retained.radial_values().is_some() => crate::model::StatusSeed {
+                coefficient: coeff,
+                ..crate::model::StatusSeed::supplied(retained.radial_values().expect("native radial seed").0 as f64)
+            },
+            _ => base_seed,
+        }),
+    };
+    debuffs.push_dot_capped(dot, dot_cap_with_unit(dtype, ctx.general_cap));
+    dot
+}
+
+#[allow(clippy::too_many_arguments, clippy::manual_map)]
 #[wfsim_gas_macro::metered]
 pub(super) fn settle_procs(
-    procs: Vec<DamageType>,
+    procs: &[DamageType],
     // WHOSE PROCS THESE ARE. Every DoT they leave carries it, so the tick that
     // pays out four seconds later is still credited to whoever applied it.
     owner: Seat,
@@ -570,21 +731,28 @@ pub(super) fn settle_procs(
     let status_damage = arc.status_duration(params, at);
     let sdm = params.status_damage_multiplier + status_damage_live;
     let caps = foe.stack_caps;
-    let gcap = |base: usize| caps.map_or(base, |c| base.min(c.general));
-    let corrosion_cap_bonus = params.squad.cap_bonus("corrosion");
-    let stagger_cap = caps.map_or(STAGGER_CAP, |c| STAGGER_CAP.min(c.impact));
-    let heat_cap: Option<usize> = caps.map(|c| c.general);
-    // PER FAMILY, not one number for all four — see `dot_family_cap`. This read
-    // `caps.map(|c| c.general)`, which is None for every published enemy, so
-    // the direct path capped nothing and a Gas build stacked past the ten the
-    // game allows.
-    let dot_cap_of = |dtype: DamageType| -> Option<usize> {
-        match (dot_family_cap(dtype), caps.map(|c| c.general)) {
-            (Some(a), Some(b)) => Some(a.min(b)),
-            (Some(a), None) => Some(a),
-            (None, u) => u,
-        }
+    let general_cap = match caps {
+        Some(c) => Some(c.general),
+        None => None,
     };
+    let ten_cap = match general_cap {
+        Some(g) => TEN_STACK_CAP.min(g),
+        None => TEN_STACK_CAP,
+    };
+    let weakened_cap = match general_cap {
+        Some(g) => WEAKENED_CAP.min(g),
+        None => WEAKENED_CAP,
+    };
+    let corrosion_cap_bonus = params.squad.cap_bonus("corrosion");
+    let corrosion_cap = match general_cap {
+        Some(g) => (TEN_STACK_CAP + corrosion_cap_bonus).min(g),
+        None => TEN_STACK_CAP + corrosion_cap_bonus,
+    };
+    let stagger_cap = match caps {
+        Some(c) => STAGGER_CAP.min(c.impact),
+        None => STAGGER_CAP,
+    };
+    let heat_cap: Option<usize> = general_cap;
     // Elemental DoT tick (data/debuffs): 0.5 × ModifiedBase ×
     // (1 + element bonuses) × (1 + status damage) × crit/part
     // snapshot. Delay-1 DoTs tick at +1..+6 s; delay-0 (Electricity/
@@ -599,128 +767,29 @@ pub(super) fn settle_procs(
     } else {
         ((BLEED_TICKS as f64 * status_damage).floor() as u32).max(1)
     };
-    // Faction is re-applied at every DERIVATION step — see `faction_at`. A
-    // status the hit applied is one step past it, so depth 2 (wiki
-    // Faction_Damage_Bonus; MECHANICS §8). This was written `faction_multiplier *
-    // faction_multiplier`, which is the same number and says nothing about why.
-    // AT `at`, because Roar is in this bracket and Roar ends. A status takes
-    // the faction bonus that was running when it was APPLIED — the proc is a
-    // snapshot of its instance, which is why `crit_multiplier` is snapshotted here
-    // too.
     let fm2 = faction_at(params.faction_at_time(at), depth);
-    // ECLIPSE IS SNAPSHOTTED AND FACTION IS NOT, and that is a fact about the
-    // BRACKET rather than about where the buff came from — both are abilities
-    // with a duration.
-    //
-    // The wiki draws the same line for a different reason and in so many words:
-    // *"Unlike faction damage, which double dips for status effects, the one
-    // from Eclipse is applied once."* The FINAL multiplier is not part of what
-    // a status inherits; the faction bracket is, twice over. So it is read HERE,
-    // at `at`, and lives in the tick's frozen half.
     let ecl = params.ability_final_at(at);
-    // WHICH SHOT IS APPLYING THESE. Read once, here, so every DoT this call
-    // seeds points back at the same trigger pull — including the ones a
-    // detonation or an echo applies, which are still that shot's doing.
     let seeded_by = rec.shot().unwrap_or(u32::MAX);
-    // RETURNS THE DOT IT PUSHED, so an AREA proc can post a copy to
-    // `DebuffState::area_out` for everybody standing near this body.
-    // WHAT A SEED IS MADE OF, kept by the record for the row its ticks write.
-    let seed_of = |coefficient: f64, body_part: f64, sdm: f64| crate::record::Seed {
-        base: mb_live,
-        coefficient,
-        status_damage: sdm,
-        critical: crit_multiplier,
-        body_part,
+    let dot_ctx = ProcDotCtx {
+        params,
+        owner,
+        at,
+        body_index,
+        seeded_by,
+        mb_live,
+        crit_multiplier,
+        part_factor,
+        landing,
         attrition,
-        ability_final: ecl,
-        faction: 1.0,
+        sdm,
+        ecl,
+        depth,
+        native_source,
+        native_part,
+        general_cap,
+        status_damage_live,
     };
-    let push_dot = |debuffs: &mut DebuffState,
-                    rec: &mut crate::record::Record,
-                    dtype: DamageType,
-                    coeff: f64,
-                    bracket: f64,
-                    delay: f64,
-                    ticks: u32,
-                    ignores_armor: bool| -> Dot {
-        // THE WEAK-POINT MULTIPLIER IS PER STATUS, and Toxin does not take it. The wiki's
-        // Toxin page says it does — "Additional Multipliers include ... Enemy
-        // Body Parts multipliers" — and a measurement beats the wiki.
-        //
-        // BLAST IS THE CONTROL AND GOES THE OTHER WAY: the same session
-        // measured a 10-stack detonation at 1050 to a neighbour off a BODY hit
-        // and 3150 off a HEAD hit, exactly x3.00 (MEASUREMENTS M54). So this is
-        // one status's rule and not a family's; the rest keep the wiki's answer
-        // until somebody measures them, which is what `dot_takes_weakpoint`
-        // exists to make a one-line change.
-        let part = if dot_takes_weakpoint(dtype) { part_factor } else { 1.0 };
-        // ONE ELEMENT'S OWN STATUS DAMAGE joins the sum for its procs only.
-        let sdm = sdm + params.status_damage_of(dtype);
-        let retained = match native_source {
-            Some(source) if matches!(dtype, DamageType::Electricity | DamageType::Gas) => {
-                let packet = crate::model::DamageData::new(source);
-                let kind = crate::model::ProcType::from_damage_type(dtype).expect("ordinary status id");
-                let stored = packet.retained_proc_seed(kind, proc_damage_entries(params, status_damage_live));
-                if rec.native_trace_is_on() {
-                    rec.trace_native(at, || crate::record::NativeStep {
-                        phase: "status_application", proc_type: Some(kind.id()),
-                        part: native_part.map(|part| part.0),
-                        entries: proc_damage_entries(params, status_damage_live).filter_map(|entry| entry.for_proc(kind)).collect(),
-                        materialized: Some(false),
-                        ..crate::record::NativeStep::new(at, body_index, "ALN-MAG-03.child.WEAPON_PROC_DAMAGE",
-                            &[source.base()], stored)
-                    });
-                }
-                crate::model::StoredStatusSeed::Radial { retained_seed: stored, coefficient: coeff as f32 }
-            }
-            _ if matches!(dtype, DamageType::Electricity | DamageType::Gas) =>
-                crate::model::StoredStatusSeed::radial(seed_of(coeff, part, sdm)),
-            _ => crate::model::StoredStatusSeed::from_unbound_source(seed_of(coeff, part, sdm)),
-        };
-        let dot = Dot {
-                native_group: None,
-                native_part,
-                owner,
-                next_tick: at + delay,
-                ticks_left: ticks,
-                cause: seeded_by,
-                // `bracket` is `1 + Σ this element's bonuses`, and an ability
-                // that adds this element is "additive with elemental mods" —
-                // so its share belongs in the same sum, which is what makes
-                // Fireball Frenzy "contribute to DoT" rather than only to the
-                // hit.
-                // THE INSTANCE'S HALF, and ECLIPSE IS IN IT. The element
-                // bracket and the faction bonus are re-read at every tick
-                // (`Dot::live`); the final multiplier is not, measured.
-                retained,
-                landing: if lands_on_a_part(dtype) { landing } else { ProcLanding::default() },
-                // Supplied-family accumulator input: the same
-                // chain with the SEED taken out of it. See
-                // `Dot::accumulator_unit`.
-                unit: coeff * sdm * ecl,
-                bracket,
-                depth,
-
-                dtype,
-                ignores_armor,
-                seed: rec.seed(match native_source {
-                    Some(_) if retained.radial_values().is_some() => crate::model::StatusSeed { coefficient: coeff,
-                        ..crate::model::StatusSeed::supplied(retained.radial_values().expect("native radial seed").0 as f64) },
-                    _ => seed_of(coeff, part, sdm),
-                }),
-        };
-        debuffs.push_dot_capped(dot, dot_cap_of(dtype));
-        dot
-    };
-    // MICROWAVE, landed with this weapon's own procs and never taken off.
-    //
-    // Tied to a PROC rather than to a hit because the wiki's word is "can proc
-    // an invisible Status Effect" — so a build with no status chance gets none,
-    // which is the conservative reading. Its DURATION is infinite (Kuva Nukor
-    // page), so the only thing this choice can be wrong about is how soon after
-    // each respawn it lands: a fraction of a second out of a 180 s engagement.
-    // What it is NOT wrong about is the count, which is the whole payload.
-    if active.applies_microwave && status::applied_procs(&procs, &foe.status_immunities).next().is_some() {
+    if active.applies_microwave && status::has_applied_proc(procs, &foe.status_immunities) {
         debuffs.microwave = true;
     }
     let incoming = if params.arcane.debilitate_chance > 0.0 {
@@ -734,10 +803,14 @@ pub(super) fn settle_procs(
     } else { None };
     let generation = target.generation;
     let mut qualified = 0_u32;
-    for proc in procs {
+    for &proc in procs {
         // Read before the match applies it — see the Debilitate hook below.
-        let stacks_before = combined_stacks(debuffs, proc);
         let accepted = !foe.status_immunities.contains(&proc);
+        let stacks_before = if incoming.is_some() || (accepted && proc == DamageType::Gas) {
+            combined_stacks(debuffs, proc)
+        } else {
+            0
+        };
         if incoming.is_some() && stacks_before + usize::from(accepted) >= DEBILITATE_STACKS {
             if let Some(kind) = crate::model::ProcType::from_damage_type(proc) {
                 // M34 observes the tenth application even when Blast drains inline.
@@ -747,17 +820,17 @@ pub(super) fn settle_procs(
         if !accepted { continue; }
         r.procs += 1;
         match proc {
-            DamageType::Impact => DebuffState::push_capped(
-                &mut debuffs.stagger,
+            DamageType::Impact => debuffs.push_proc_stack(
+                super::debuffs::ProcStackKind::Stagger,
                 at + STAGGER_DURATION * status_damage,
                 stagger_cap,
                 at,
             ),
             DamageType::Puncture => {
-                DebuffState::push_capped(
-                    &mut debuffs.weakened,
+                debuffs.push_proc_stack(
+                    super::debuffs::ProcStackKind::Weakened,
                     at + WEAKENED_DURATION * status_damage,
-                    gcap(WEAKENED_CAP),
+                    weakened_cap,
                     at,
                 );
                 // FLENSING SPIKES counts the BULLET, once per body. The pellet
@@ -777,7 +850,8 @@ pub(super) fn settle_procs(
                     debuffs.apply_cold_proc(at, status_damage, target.overguard > 0.0, caps, foe.cannot_be_frozen);
                 }
             }
-            DamageType::Slash => { push_dot(
+            DamageType::Slash => { push_proc_dot(
+                &dot_ctx,
                 debuffs,
                 rec,
                 DamageType::Slash,
@@ -793,7 +867,8 @@ pub(super) fn settle_procs(
                 // (crit damage + multishot). The weapon-only rule is
                 // the arcane's own (wiki), not a sim limitation.
                 arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ToxinStatus, at);
-                let _ = push_dot(
+                let _ = push_proc_dot(
+                    &dot_ctx,
                     debuffs,
                     rec,
                     DamageType::Toxin,
@@ -809,7 +884,8 @@ pub(super) fn settle_procs(
                 // weapon applies grants one stack to both of its
                 // buffs (reload speed + multishot).
                 arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ElectricityStatus, at);
-                let dot = push_dot(
+                let dot = push_proc_dot(
+                    &dot_ctx,
                     debuffs,
                     rec,
                     DamageType::Electricity,
@@ -830,11 +906,12 @@ pub(super) fn settle_procs(
                 debuffs.post_area(
                     Dot { landing: ProcLanding::default(), ..dot },
                     TESLA_RADIUS_M,
-                    dot_cap_of(DamageType::Electricity),
+                    dot_cap_with_unit(DamageType::Electricity, general_cap),
                 );
             }
             DamageType::Gas => {
-                let dot = push_dot(
+                let dot = push_proc_dot(
+                    &dot_ctx,
                     debuffs,
                     rec,
                     DamageType::Gas,
@@ -863,9 +940,17 @@ pub(super) fn settle_procs(
                     None => u32::MAX,
                 };
                 debuffs.post_area(
-                    Dot { retained: crate::model::StoredStatusSeed::radial(seed_of(DOT_COEFFICIENT, 1.0, sdm + params.status_damage_of(DamageType::Gas))), landing: ProcLanding::default(), seed, ..dot },
+                    Dot {
+                        retained: crate::model::StoredStatusSeed::radial(make_proc_seed(
+                            mb_live, DOT_COEFFICIENT, sdm + params.status_damage_of(DamageType::Gas),
+                            crit_multiplier, 1.0, attrition, ecl,
+                        )),
+                        landing: ProcLanding::default(),
+                        seed,
+                        ..dot
+                    },
                     radius_m,
-                    dot_cap_of(DamageType::Gas),
+                    dot_cap_with_unit(DamageType::Gas, general_cap),
                 );
             }
             DamageType::Heat => {
@@ -921,54 +1006,44 @@ pub(super) fn settle_procs(
                     arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ColdStatus, at);
                 }
             }
-            DamageType::Magnetic => DebuffState::push_capped(
-                &mut debuffs.disrupt,
+            DamageType::Magnetic => debuffs.push_proc_stack(
+                super::debuffs::ProcStackKind::Disrupt,
                 at + STATUS_DURATION * status_damage,
-                gcap(TEN_STACK_CAP),
+                ten_cap,
                 at,
             ),
-            DamageType::Viral => DebuffState::push_capped(
-                &mut debuffs.virus,
+            DamageType::Viral => debuffs.push_proc_stack(
+                super::debuffs::ProcStackKind::Virus,
                 at + STATUS_DURATION * status_damage,
-                gcap(TEN_STACK_CAP),
+                ten_cap,
                 at,
             ),
-            DamageType::Corrosive => DebuffState::push_capped(
-                &mut debuffs.corrosion,
+            DamageType::Corrosive => debuffs.push_proc_stack(
+                super::debuffs::ProcStackKind::Corrosion,
                 at + CORROSION_DURATION * status_damage,
-                // THE ONE CEILING A PLAYER CAN MOVE. An Emerald Archon Shard is
-                // "+2 (+3) max stacks of Corrosion", and its page is explicit
-                // that a WEAPON's corrosion may exceed ten because of it. Five
-                // Tauforged sockets are +15, and `corrosive_strip` is
-                // `0.20 + 0.06 x stacks` capped at 1.0 — so this is the
-                // difference between stripping 80% of armour and all of it.
-                //
-                // `gcap` still mins with the ENEMY's own cap, and that is
-                // right: "No Status Effect will exceed a maximum of 4 stacks"
-                // is a hard rule on the Acolytes, not a bonus to out-bid.
-                gcap(TEN_STACK_CAP + corrosion_cap_bonus),
+                corrosion_cap,
                 at,
             ),
-            DamageType::Radiation => DebuffState::push_capped(
-                &mut debuffs.confusion,
+            DamageType::Radiation => debuffs.push_proc_stack(
+                super::debuffs::ProcStackKind::Confusion,
                 at + STATUS_DURATION * status_damage,
-                gcap(TEN_STACK_CAP),
+                ten_cap,
                 at,
             ),
             // The Bullet Attractor, which only ever arrives from an EXTRA HIT
             // here: no weapon in the roster deals Void, and Xata's Whisper's
             // second instance is entirely Void. Worth one line in the CO
             // counter and nothing else — see `DebuffState::attractor`.
-            DamageType::Void => DebuffState::push_capped(
-                &mut debuffs.attractor,
+            DamageType::Void => debuffs.push_proc_stack(
+                super::debuffs::ProcStackKind::Attractor,
                 at + ATTRACTOR_DURATION * status_damage,
                 1,
                 at,
             ),
-            DamageType::Tau => DebuffState::push_capped(
-                &mut debuffs.tau,
+            DamageType::Tau => debuffs.push_proc_stack(
+                super::debuffs::ProcStackKind::Tau,
                 at + TAU_DURATION * status_damage,
-                gcap(TEN_STACK_CAP),
+                ten_cap,
                 at,
             ),
             // THE REST OF A SHOT THAT FILLED THE PILE ADDS NO STACK — see
@@ -981,10 +1056,13 @@ pub(super) fn settle_procs(
                         debuffs.blast.remove(0); // FIFO replace-oldest
                     }
                 }
+                let charges_gauge = match &params.cycle {
+                    Some(c) => active.form == c.base_form.form && matches!(c.arms,
+                        Arms::Gauge { charge_on: crate::model::ChargeOn::HitsAndWeakpoints, .. }),
+                    None => false,
+                };
                 debuffs.blast.push(BlastStack {
-                    charges_gauge: params.cycle.as_ref().is_some_and(|c|
-                        active.form == c.base_form.form && matches!(c.arms,
-                            Arms::Gauge { charge_on: crate::model::ChargeOn::HitsAndWeakpoints, .. })),
+                    charges_gauge,
                     fuse: at + BLAST_FUSE * status_damage,
                     value: BLAST_COEFFICIENT
                         * mb_live
@@ -999,16 +1077,21 @@ pub(super) fn settle_procs(
                         attrition: 1.0,
                         ability_final: 1.0,
                         faction: fm2,
-                        ..seed_of(BLAST_COEFFICIENT, part_factor, sdm)
+                        ..make_proc_seed(mb_live, BLAST_COEFFICIENT, sdm, crit_multiplier, part_factor, attrition, ecl)
                     }),
                 });
                 if debuffs.blast.len() >= TEN_STACK_CAP {
                     // Early detonation: every stack's single-target
                     // hit at once, all stacks consumed (radial
                     // excluded — it never hits the host).
-                    let fired: Vec<BlastStack> = debuffs.blast.drain(..).collect();
+                    let mut fired = std::mem::take(&mut debuffs.blast);
                     debuffs.blast_spent_by = Some((r.shots, at));
-                    let total: f64 = fired.iter().map(|b| b.value).sum();
+                    let mut total = 0.0_f64;
+                    let mut xh_total = 0.0_f64;
+                    for b in &fired {
+                        total += b.value;
+                        xh_total += b.value * b.xh_bracket;
+                    }
                     // …AND THE OTHER HALF, which is the bigger one: a
                     // SIMULTANEOUS detonation reaches 5 m at ten times the
                     // per-stack value the host takes. The host is excluded by
@@ -1022,12 +1105,6 @@ pub(super) fn settle_procs(
                         shares: TypeShares::single(DamageType::Blast),
                         linear_falloff: false,
                     });
-                    // …and each stack's OWN extra-hit contribution, pre-scaled
-                    // by the bracket the gun that applied it had. Ten stacks
-                    // land as one number here, but they are ten detonations and
-                    // an expiring Nourish between the first and the tenth would
-                    // make their brackets differ.
-                    let xh_total: f64 = fired.iter().map(|b| b.value * b.xh_bracket).sum();
                     let mit = debuffs.mitigation(
                         at,
                         status_damage,
@@ -1048,7 +1125,7 @@ pub(super) fn settle_procs(
                     let mut broke_any = None;
                     for b in &fired {
                         r.blast_gauge_hits += u32::from(b.charges_gauge);
-                        let mut breakdown = Breakdown::default();
+                        let mut breakdown = watching(rec);
                         let settled = target.apply(
                             b.value,
                             TypeShares::single(DamageType::Blast),
@@ -1058,7 +1135,7 @@ pub(super) fn settle_procs(
                             false,
                             &mit,
                             params.overguard_multiplier(),
-                            watching(rec, &mut breakdown),
+                            breakdown.as_mut(),
                         );
                         let (eff, k, broke) = (settled.effective, settled.killed, settled.broken);
                         r.sources.add_status(DamageType::Blast, eff);
@@ -1066,7 +1143,7 @@ pub(super) fn settle_procs(
                         let part = rec.is_on().then(|| b.seed_part(rec));
                         ledger::settle(
                             r, rec, at, owner, body_index, || DamageType::Blast, PopKind::Blast,
-                            &breakdown, settled, Some(debuffs),
+                            breakdown.as_ref(), settled, Some(debuffs),
                             ledger::Clock::Dot,
                             || Instance {
                                 origin: crate::record::Origin::Status,
@@ -1089,6 +1166,10 @@ pub(super) fn settle_procs(
                             killed = true;
                             break;
                         }
+                    }
+                    fired.clear();
+                    if debuffs.blast.is_empty() {
+                        debuffs.blast = fired;
                     }
                     // ONE MOMENT, ONE KILL, ONE BREAK — however many numbers
                     // shared it. The same rule M76 states for what an arcane
@@ -1144,7 +1225,7 @@ pub(super) fn settle_procs(
         // column factor alike.
         if params.arcane.flat_damage_on_status > 0.0 {
             let amt = params.arcane.flat_damage_on_status * params.faction_at_time(at);
-            let mut breakdown = Breakdown::default();
+            let mut breakdown = watching(rec);
             let settled = target.apply(
                 amt,
                 TypeShares::single(proc),
@@ -1154,13 +1235,13 @@ pub(super) fn settle_procs(
                 false,
                 mit,
                 params.overguard_multiplier(),
-                watching(rec, &mut breakdown),
+                breakdown.as_mut(),
             );
             let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
             r.sources.arcane_on_status += eff;
             r.sources.arcane_by_type[proc as usize] += eff;
             ledger::settle(
-                r, rec, at, owner, body_index, || proc, PopKind::Arcane, &breakdown, settled,
+                r, rec, at, owner, body_index, || proc, PopKind::Arcane, breakdown.as_ref(), settled,
                 Some(debuffs),
                 ledger::Clock::Hit,
                 || Instance {
@@ -1199,7 +1280,8 @@ pub(super) fn settle_procs(
                 // M37: upstream scalar factors survive; geometry starts at BODY.
                 scalar.landing = ProcLanding::default();
                 scalar.attrition *= noncrit_mult(active.noncrit_bonus, 0, rng);
-                settle_procs(child.procs.types().collect(), owner, at, body_index, scalar,
+                let derived: status::HitProcs = status::HitProcs::from_slice(&child.procs.types().collect::<Vec<_>>());
+                settle_procs(&derived, owner, at, body_index, scalar,
                     debuffs, gal, arc, target, params, active, mit, r, rec, rng, foe,
                     DEPTH_DERIVED_PROC);
             }
@@ -1269,7 +1351,7 @@ pub(super) fn roll_proc_conversion(
     d: &mut crate::rules::rng::Draws,
     live_rate: f64,
     immune: &[DamageType],
-    procs: &mut Vec<DamageType>,
+    procs: &mut impl crate::rules::status::ProcSink,
 ) {
     if let Some(pc) = active.proc_conversion {
         if !immune.contains(&pc.from) && !immune.contains(&pc.to)
@@ -1281,7 +1363,7 @@ pub(super) fn roll_proc_conversion(
                     1.0
                 };
             if d.status.chance(chance) {
-                procs.push(pc.to);
+                procs.push_proc(pc.to);
             }
         }
     }

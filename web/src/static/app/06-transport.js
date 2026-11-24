@@ -854,7 +854,7 @@ async function simulateFleet(body, onProgress, opts) {
       // same name. Without the retry one reclaimed worker fails the whole
       // simulation, and for the quick calc this call is the baseline every
       // candidate is measured against.
-      const r = await ask((fresh) => (fresh ? freeLane() : lane).send({ kind: "shard", body, from, count },
+      const r = await ask((fresh) => (fresh ? freeLane() : lane).send({ kind: "shard", body, from, count, prepared: true },
         (d) => { live.set(k, d); tick(); }, false, () => !cancelled() && !failed && !stopped));
       live.set(k, 0);
       // A CANCELLED PIECE CANCELS THE SIMULATION — there is no answer to merge
@@ -887,7 +887,7 @@ async function simulateFleet(body, onProgress, opts) {
   // THE PIECES MERGE IN ANY ORDER AND ANY NUMBER: a shard carries sums, and the
   // median is chosen by ranking what every piece brought back. That is what
   // lets the split be decided while the work is already running.
-  return ask(() => freeLane().send({ kind: "merge", body, shards: parts }, null, false, () => !cancelled()));
+  return ask(() => freeLane().send({ kind: "merge", body, shards: parts, prepared: true }, null, false, () => !cancelled()));
 }
 
 /// STOP EVERY WASM CALL IN FLIGHT, which is the only way to interrupt one: it

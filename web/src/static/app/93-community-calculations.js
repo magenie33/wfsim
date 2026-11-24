@@ -12,7 +12,7 @@ async function communitySimulationReport(request, signal) {
         if (signal.aborted) throw new Error("Cancelled");
         if (next >= pieces.length) break;
         const at = next++, from = at * count, n = Math.min(count, runs - from);
-        const part = await lane.send({ kind: "shard", body: request, from, count: n }, null, true);
+        const part = await lane.send({ kind: "shard", body: request, from, count: n, prepared: true }, null, true);
         if (!part || part.ok === false || part.cancelled) throw Object.assign(new Error(part?.error || "The worker could not finish."),
           { engineRefused: part?.ok === false && !part.worker_dead && !part.cancelled && !signal.aborted });
         pieces[at] = part; finished += n;
@@ -20,7 +20,7 @@ async function communitySimulationReport(request, signal) {
       }
     }));
     if (signal.aborted) throw new Error("Cancelled");
-    return await lanes[0].send({ kind: "merge", body: request, shards: pieces }, null, true);
+    return await lanes[0].send({ kind: "merge", body: request, shards: pieces, prepared: true }, null, true);
   } finally { signal.removeEventListener("abort", stop); stop(); }
 }
 async function communityOptimizationReport(request, { signal, buildSource }) {

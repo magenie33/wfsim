@@ -85,17 +85,22 @@ pub fn run_once(params: &FightParams, rng: &mut Rng) -> RunResult {
 #[inline]
 #[wfsim_gas_macro::metered]
 pub(super) fn buff_total(from: &FightParams, grant: crate::model::BuffGrant, stacks: &mut [LiveStacks], t: f64) -> f64 {
-    from.stacking_buffs
-        .iter()
-        .enumerate()
-        .filter(|(_, b)| match grant {
+    if from.stacking_buffs.is_empty() {
+        return 0.0;
+    }
+    let mut sum = 0.0;
+    for (i, b) in from.stacking_buffs.iter().enumerate() {
+        let matches_grant = match grant {
             crate::model::BuffGrant::BaseDamage =>
                 (b.grant == grant && from.universal_damage_mods_apply)
                 || (b.grant == crate::model::BuffGrant::MeleeDamage && from.melee_damage_mods_apply),
             _ => b.grant == grant,
-        })
-        .map(|(i, b)| b.per_stack * stacks[i].current(t, b.duration) as f64)
-        .sum::<f64>()
+        };
+        if matches_grant {
+            sum += b.per_stack * stacks[i].current(t, b.duration) as f64;
+        }
+    }
+    sum
 }
 
 
@@ -505,16 +510,17 @@ pub fn run_once_traced(
     ///
     /// A seat that is finished parks at infinity and is never picked again.
     fn next_seat(seats: &[Combatant], end: f64) -> Option<usize> {
-        seats
-            .iter()
-            .enumerate()
-            .filter(|(_, c)| c.next_t.is_finite() && c.next_t < end)
-            .min_by(|(ia, a), (ib, b)| {
-                a.next_t
-                    .total_cmp(&b.next_t)
-                    .then_with(|| ia.cmp(ib))
-            })
-            .map(|(i, _)| i)
+        let mut best_i = 0usize;
+        let mut best_t = f64::INFINITY;
+        let mut found = false;
+        for (i, c) in seats.iter().enumerate() {
+            if c.next_t.is_finite() && c.next_t < end && (!found || c.next_t < best_t) {
+                best_i = i;
+                best_t = c.next_t;
+                found = true;
+            }
+        }
+        if found { Some(best_i) } else { None }
     }
 
     // …AND ITS CONSTANTS STAY ON IT TOO. Binding them as locals would hold a
@@ -524,8 +530,16 @@ pub fn run_once_traced(
     // **THE LIST THIS RUN EXECUTES**, composed once rather than per decision:
     // it is the same list for the whole engagement, and building it inside the
     // loop would allocate on every shot.
-    let has_blobs = seats.iter().any(|s| s.params.blob.is_some()
-        || s.params.cycle.as_ref().is_some_and(|c| c.base_form.blob.is_some()));
+    let has_scheduled_entities = seats.iter().any(|s| {
+        s.params.blob.is_some()
+            || s.params.wait_for_lingering
+            || s.params.cycle.as_ref().is_some_and(|c| c.base_form.blob.is_some())
+            || s.other.as_ref().is_some_and(|o| {
+                o.params.blob.is_some()
+                    || o.params.wait_for_lingering
+                    || o.params.cycle.as_ref().is_some_and(|c| c.base_form.blob.is_some())
+            })
+    });
     let mut t;
     // WHOSE TURN, AND WHEN. The fight's clock is whatever the next seat is due
     // at; the body then reads `t` as "now" exactly as it did when there was
@@ -542,18 +556,38 @@ pub fn run_once_traced(
         // A SHOT ARRIVING NO LATER THAN THE NEXT TURN LANDS FIRST, at its own
         // time (`fight::flight`). One that would arrive after the engagement
         // never does. A weapon whose shot does not fly never has one.
-        let by = due.map(|s| seats[s].next_t);
+        #[allow(clippy::manual_map)]
+        let by = match due {
+            Some(s) => Some(seats[s].next_t),
+            None => None,
+        };
         let landing = next_landing(&seats, by, params.duration_seconds);
-        let next_action = landing.map(|(s, k)| seats[s].in_flight[k].t)
-            .or(by).unwrap_or(f64::INFINITY);
+        let next_action = match landing {
+            Some((s, k)) => seats[s].in_flight[k].t,
+            None => by.unwrap_or(f64::INFINITY),
+        };
         // Persistent melee fields act while their owner waits for deployment expiry.
-        let scheduled = has_blobs || seats.iter().any(|s| s.params.wait_for_lingering);
-        let entity_due = scheduled.then(|| entities.iter().filter_map(|e| match e {
-            Entity::Pile(p) => e.due().map(|at| (p.owner.0, at)),
-            Entity::Cloud(f) if f.part.melee_scaling.is_some() => e.due().map(|at| (f.owner.0, at)),
-            _ => None,
-        }).filter(|(_, at)| *at <= next_action && *at < params.duration_seconds)
-            .min_by(|a, b| a.1.total_cmp(&b.1))).flatten();
+        let mut entity_due: Option<(usize, f64)> = None;
+        if has_scheduled_entities && !entities.is_empty() {
+            for e in &entities {
+                let cand = match e {
+                    Entity::Pile(p) => e.due().map(|at| (p.owner.0, at)),
+                    Entity::Cloud(f) if f.part.melee_scaling.is_some() => e.due().map(|at| (f.owner.0, at)),
+                    _ => None,
+                };
+                if let Some((seat_idx, at)) = cand {
+                    if at <= next_action && at < params.duration_seconds {
+                        let take = match entity_due {
+                            None => true,
+                            Some((_, bt)) => at.total_cmp(&bt).is_lt(),
+                        };
+                        if take {
+                            entity_due = Some((seat_idx, at));
+                        }
+                    }
+                }
+            }
+        }
         if let Some((si, at)) = entity_due {
             if trace.is_some() {
                 sample_frames_up_to(at, params, &mut trace, &mut next_frame, frame_seconds,
@@ -1024,31 +1058,29 @@ pub fn run_once_traced(
         };
         let shot_head_landing = (1.0 + shot_hb) * (1.0 + shot_hi);
         // Field ticks due before this shot, with the buff state as of now.
-        me.field_ctx = FieldCtx {
-            direct_hit: false,
-            weakpoint_direct: false,
-            critical_head_direct: false,
-            flat_crit,
-            crit_chance_relative_mods: crit_chance_relative - me.params.arcane.crit_chance_relative,
-            crit_damage_relative_mods: buff_total(active, crate::model::BuffGrant::CritDamage, &mut me.buff_stacks, t),
-            base_damage_add_mods: bd_reload_add
-                + bd_eximus_add
-                + active.compression_base_damage
-                + buff_total(active, crate::model::BuffGrant::BaseDamage, &mut me.buff_stacks, t)
-                + buff_total(active, crate::model::BuffGrant::FlatBaseDamage, &mut me.buff_stacks, t),
-            // The same ladder the pellet loop builds below, on the aimed body's
-            // own head — see the field's note on why it is computed twice
-            // rather than shared.
-            head_factor: {
-                let m = me.params
-                    .body_parts
-                    .iter()
-                    .find(|p| p.is_head)
-                    .map_or(1.0, |p| p.multiplier);
-                active.head_value(m, 1.5) * (1.0 + shot_hb) * (1.0 + shot_hi)
-            },
-            head_landing: shot_head_landing,
-        };
+        if me.fixed.uses_field_ctx
+            || !entities.is_empty()
+            || me.other.as_ref().is_some_and(|o| o.fixed.uses_field_ctx)
+        {
+            me.field_ctx = FieldCtx {
+                direct_hit: false,
+                weakpoint_direct: false,
+                critical_head_direct: false,
+                flat_crit,
+                crit_chance_relative_mods: crit_chance_relative - me.params.arcane.crit_chance_relative,
+                crit_damage_relative_mods: buff_total(active, crate::model::BuffGrant::CritDamage, &mut me.buff_stacks, t),
+                base_damage_add_mods: bd_reload_add
+                    + bd_eximus_add
+                    + active.compression_base_damage
+                    + buff_total(active, crate::model::BuffGrant::BaseDamage, &mut me.buff_stacks, t)
+                    + buff_total(active, crate::model::BuffGrant::FlatBaseDamage, &mut me.buff_stacks, t),
+                // The same ladder the pellet loop builds below, on the aimed body's
+                // own head — see the field's note on why it is computed twice
+                // rather than shared.
+                head_factor: active.head_value(me.fixed.head_part_multiplier, 1.5) * (1.0 + shot_hb) * (1.0 + shot_hi),
+                head_landing: shot_head_landing,
+            };
+        }
         settle_what_is_in_the_air(
             &mut turn!(me, active, &mut *d),
             rec,
@@ -1333,13 +1365,15 @@ pub fn run_once_traced(
     // the physical form is real progress and is not the kill, so the spectre's
     // health joins the denominator: a gun that cannot touch it stalls at the
     // physical form's share of the individual instead of scoring a kill.
-    let spectral_health =
-        params.foe.spectral.map_or(0.0, |sp| params.foe.max_health() * sp.health_share);
-    let pool = params.foe.overguard()
-        + params.foe.max_shield()
-        + params.foe.max_health()
-        + spectral_health;
     let aimed = &bodies[0].state;
+    let spectral_health = match params.foe.spectral {
+        Some(sp) => aimed.max_health * sp.health_share,
+        None => 0.0,
+    };
+    let pool = aimed.max_overguard
+        + aimed.max_shield
+        + aimed.max_health
+        + spectral_health;
     let remaining = if aimed.health <= 0.0 {
         0.0
     } else {

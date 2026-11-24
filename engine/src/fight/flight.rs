@@ -122,18 +122,29 @@ fn additional_projectile_damage(projectile: &FightParams, landing: &Landing) -> 
 /// precedes. Ties go to the lower seat, then to the earlier pull.
 #[wfsim_gas_macro::metered]
 pub(super) fn next_landing(seats: &[Combatant], by: Option<f64>, end: f64) -> Option<(usize, usize)> {
-    let mut best: Option<(usize, usize, f64)> = None;
+    let mut best_si = 0usize;
+    let mut best_k = 0usize;
+    let mut best_t = f64::INFINITY;
+    let mut found = false;
     for (si, c) in seats.iter().enumerate() {
         for (k, l) in c.in_flight.iter().enumerate() {
-            if l.t >= end || by.is_some_and(|b| l.t > b) {
+            if l.t >= end {
                 continue;
             }
-            if best.is_none_or(|(_, _, t)| l.t < t) {
-                best = Some((si, k, l.t));
+            if let Some(b) = by {
+                if l.t > b {
+                    continue;
+                }
+            }
+            if !found || l.t < best_t {
+                best_si = si;
+                best_k = k;
+                best_t = l.t;
+                found = true;
             }
         }
     }
-    best.map(|(si, k, _)| (si, k))
+    if found { Some((best_si, best_k)) } else { None }
 }
 
 /// THE WORLD A HIT LANDS IN — the fight's shared state, which a turn borrows
@@ -149,6 +160,8 @@ pub(super) struct Ground<'w> {
     pub(super) area_near: &'w crate::rules::space::Neighbours,
 }
 
+type CachedChainPair<'a> = (&'a [crate::rules::chain::Instance], &'a [crate::rules::chain::Instance]);
+
 /// SETTLE ONE HIT at `l.t`: every pellet, what they spread, and what the hit
 /// owes afterwards. Returns the clock, which a transform the gauge fills here
 /// moves on.
@@ -161,13 +174,26 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     // through is its own (`open`). A live grant's metres walk the line again
     // for this shot; with none, the engagement's list stands.
     let struck_live: Vec<usize>;
-    let struck: &[usize] = match &me.fixed.base_struck {
+    let (struck, cached_chains): (&[usize], Option<CachedChainPair<'_>>) = match &me.fixed.base_struck {
         _ if l.pierce_live_m > 0.0 || l.special_heavy || l.profile.is_some() => {
             struck_live = active.struck_bodies_with(l.pierce_live_m);
-            &struck_live
+            (&struck_live, None)
         }
-        Some(b) if l.base_form => b,
-        _ => &me.fixed.struck,
+        Some(b) if l.base_form => (
+            b,
+            match (&me.fixed.base_chain_multishot, &me.fixed.base_chain_splash) {
+                (Some(ms), Some(sp)) => Some((ms.as_slice(), sp.as_slice())),
+                _ => None,
+            },
+        ),
+        _ => (
+            &me.fixed.struck,
+            if me.fixed.chain_layout.is_some() {
+                Some((me.fixed.chain_multishot.as_slice(), me.fixed.chain_splash.as_slice()))
+            } else {
+                None
+            },
+        ),
     };
     // The per-projectile vectors belong to the form that fired. A cycle whose
     // base form has them and whose Incarnon form does not reads an empty slice.
@@ -199,7 +225,13 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let mut strike_spread: Option<SpreadStrike> = None;
     let (mut any_head, mut any_big) = (false, false);
     let mut beam_merge = l.beam_merge;
-    let radial_delay = active.radial.filter(|_| !l.radial_only).map_or(0.0, |r| r.delay_seconds);
+    let radial_delay = match active.radial {
+        Some(r) if !l.radial_only => r.delay_seconds,
+        _ => 0.0,
+    };
+    let shot_qtotal = l.qvec.total();
+    let shot_shares = TypeShares::of(&l.qvec);
+    let mut direct_proc_draw = crate::rules::status::SceneProcDraw::new(&l.qvec);
     let mut pellet_aims = Vec::new();
     {
         let shot = Strike {
@@ -211,6 +243,8 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             seat: me.seat,
             active,
             qvec: &l.qvec,
+            shot_qtotal,
+            shot_shares,
             direct_pre_snap: l.direct_pre_snap,
             variants,
             variant_rad,
@@ -234,6 +268,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             spread_geometry: &me.fixed.spread_geometry,
             bounce_bodies: g.bounce_bodies,
             chain_layout: &me.fixed.chain_layout,
+            chain_multishot: cached_chains.map(|(ms, _)| ms),
             ricochet_layout: &me.fixed.ricochet_layout,
             aim_off_axis: me.fixed.aim_off_axis,
             effective_cc: l.effective_cc,
@@ -287,6 +322,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             blob_contact: &mut blob_contact,
             super_crit_armed: &mut me.super_crit_armed,
             round_aim: &mut round_aim,
+            direct_proc_draw: &mut direct_proc_draw,
         };
         if let Some(additional) = active.additional_projectile.as_deref()
             .filter(|_| l.rounds.has_additional(l.n_pellets))
@@ -334,10 +370,17 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         });
     }
     if active.wait_for_lingering {
-        me.melee.deployed_until = g.entities.iter().filter_map(|e| match e {
-            Entity::Cloud(f) if f.owner == me.seat => f.expires_at,
-            _ => None,
-        }).fold(t, f64::max);
+        let mut until = t;
+        for e in g.entities.iter() {
+            if let Entity::Cloud(f) = e {
+                if f.owner == me.seat {
+                    if let Some(exp) = f.expires_at {
+                        until = until.max(exp);
+                    }
+                }
+            }
+        }
+        me.melee.deployed_until = until;
     }
 
     // THE BLOB EMBEDS in the body the shot struck, and a pile this shot takes
@@ -376,14 +419,22 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             g.r,
             me.tendril.count,
             me.fixed.chain_layout.as_ref(),
+            cached_chains.map(|(_, sp)| sp),
             &me.fixed.spread_geometry,
             struck,
         );
     }
     // …AND ENDS THAT WAY, for whatever settles before the next one — once
     // its burst is done.
-    let burst_len = active.burst.map_or(1, |b| b.count.max(1));
-    if l.burst_completed.unwrap_or_else(|| me.ammo.rounds_this_mag.is_multiple_of(burst_len)) {
+    let burst_len = match active.burst {
+        Some(b) => b.count.max(1),
+        None => 1,
+    };
+    let burst_done = match l.burst_completed {
+        Some(done) => done,
+        None => me.ammo.rounds_this_mag.is_multiple_of(burst_len),
+    };
+    if burst_done {
         for b in g.bodies.iter_mut() {
             b.fallen = false;
         }

@@ -52,6 +52,37 @@ pub(super) struct Rounds {
     copies: [u16; Rounds::MAX],
 }
 
+pub(super) struct FollowsIter<'a> {
+    per_round: &'a [u16],
+    round_idx: usize,
+    in_round: u16,
+    fallback_left: u32,
+}
+
+#[wfsim_gas_macro::metered]
+impl Iterator for FollowsIter<'_> {
+    type Item = bool;
+    #[inline]
+    fn next(&mut self) -> Option<bool> {
+        while self.round_idx < self.per_round.len() {
+            let c = self.per_round[self.round_idx];
+            if self.in_round < c {
+                let follows = self.in_round > 0;
+                self.in_round += 1;
+                return Some(follows);
+            }
+            self.round_idx += 1;
+            self.in_round = 0;
+        }
+        if self.fallback_left > 0 {
+            self.fallback_left -= 1;
+            Some(false)
+        } else {
+            None
+        }
+    }
+}
+
 #[wfsim_gas_macro::metered]
 impl Rounds {
     /// More rounds than any weapon has (the roster's most is 28).
@@ -68,8 +99,13 @@ impl Rounds {
         Self { n, each, copies }
     }
 
+    #[inline]
     pub(super) fn total(&self) -> u32 {
-        self.copies[..self.n].iter().map(|&c| u32::from(c)).sum()
+        let mut sum = 0u32;
+        for &c in &self.copies[..self.n] {
+            sum += u32::from(c);
+        }
+        sum
     }
 
     /// THE FIRST `keep` INSTANCES, in firing order — what a starved magazine
@@ -84,6 +120,7 @@ impl Rounds {
 
     /// The multishot a round carries, or 1 where the layout no longer adds up
     /// to the shot and every instance is its own round.
+    #[inline]
     pub(super) fn per_round(&self, instances: u32) -> f64 {
         if self.total() == instances { self.each } else { 1.0 }
     }
@@ -107,13 +144,15 @@ impl Rounds {
     /// For each instance in firing order: does it ride the round before it?
     /// `instances` is the shot's final count; a layout that no longer adds up
     /// to it (a swing landing twice) falls back to one round an instance.
-    pub(super) fn follows(&self, instances: u32) -> impl Iterator<Item = bool> + '_ {
+    #[inline]
+    pub(super) fn follows(&self, instances: u32) -> FollowsIter<'_> {
         let laid = self.total() == instances;
-        let per_round: &[u16] = if laid { &self.copies[..self.n] } else { &[] };
-        per_round
-            .iter()
-            .flat_map(|&c| (0..c).map(|k| k > 0))
-            .chain((0..if laid { 0 } else { instances }).map(|_| false))
+        FollowsIter {
+            per_round: if laid { &self.copies[..self.n] } else { &[] },
+            round_idx: 0,
+            in_round: 0,
+            fallback_left: if laid { 0 } else { instances },
+        }
     }
 }
 
@@ -272,16 +311,24 @@ pub(super) fn resolve_the_shot(
         // Relative, shared by every stage: Crosshairs' on-headshot buff and
         // its per-stack-expiry kill stacks (assumes constant aiming), plus the
         // arcane's assumed-max conditionals (Overcharge).
-        let crit_chance_relative = params.crit_chance_on_headshot.map_or(0.0, |b| {
-            if t < windows.crit_on_headshot {
-                b.value
-            } else {
-                0.0
+        let cc_headshot = match params.crit_chance_on_headshot {
+            Some(b) if t < windows.crit_on_headshot => b.value,
+            _ => 0.0,
+        };
+        let cc_stack = match &params.crit_chance_stack {
+            Some(s) => {
+                crate::fight::debuffs::retain_gt(&mut windows.crit_on_headshot_stacks, t);
+                s.per_stack * windows.crit_on_headshot_stacks.len() as f64
             }
-        }) + params.crit_chance_stack.as_ref().map_or(0.0, |s| {
-            windows.crit_on_headshot_stacks.retain(|&e| e > t);
-            s.per_stack * windows.crit_on_headshot_stacks.len() as f64
-        }) + params.arcane.crit_chance_relative
+            None => 0.0,
+        };
+        let cc_per_hit = match params.crit_chance_per_hit {
+            Some(c) => c.bonus(crit_per_hit.stacks),
+            None => 0.0,
+        };
+        let crit_chance_relative = cc_headshot
+            + cc_stack
+            + params.arcane.crit_chance_relative
             // SECONDARY OUTBURST's stacks, in the bracket its card names.
             + arc.total(&params.arcane.buffs, ArcGrant::CritChance, t)
             // CRITICAL MUTATION: "additive with mods such as Pistol Gambit", a
@@ -295,9 +342,7 @@ pub(super) fn resolve_the_shot(
             // max bonus Hata-Satya and Point Strike will have a 30% × (1 + 500%
             // + 150%) critical chance" — the wiki does the bracket for us, and
             // it is the same one Point Strike is in.
-            + params
-                .crit_chance_per_hit
-                .map_or(0.0, |c| c.bonus(crit_per_hit.stacks))
+            + cc_per_hit
             // BLOOD RUSH. `Crit Chance = Weapon Crit Chance x [1 + Mod Crit
             // Bonus + Blood Rush Bonus x (Combo Multi - 1)] + Static Crit
             // Bonus` (wiki, verbatim) — so it belongs in this bracket beside
@@ -332,10 +377,13 @@ pub(super) fn resolve_the_shot(
         // number, one scope out.
         // DEATH KNELL'S TWO NUMBERS, read once per SHOT — every stacking buff
         // in this loop follows that rule. Both add to the FINISHED value.
-        let (weakpoint_cd, weakpoint_sc) = params.weakpoint_stacks.map_or((0.0, 0.0), |w| {
-            let n = f64::from(weakpoint_pile.current(t, w.duration_seconds));
-            (w.crit_multiplier * n, w.status_chance * n)
-        });
+        let (weakpoint_cd, weakpoint_sc) = match params.weakpoint_stacks {
+            Some(w) => {
+                let n = f64::from(weakpoint_pile.current(t, w.duration_seconds));
+                (w.crit_multiplier * n, w.status_chance * n)
+            }
+            None => (0.0, 0.0),
+        };
         let sc_arc_shot = arc.total(&params.arcane.buffs, ArcGrant::StatusChance, t)
             + params.sc_per_tendril * f64::from(tendril.count)
             // WEEPING WOUNDS, the same sentence on the status side: `Status

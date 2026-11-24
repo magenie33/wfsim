@@ -268,10 +268,17 @@ pub fn bounce_path(layout: &Layout, n: usize, from: usize, bounces: u32) -> Vec<
     for _ in 0..bounces {
         // NEAREST FIRST — `near` is sorted by (distance, index), which is the
         // same rule and the same tie-break the chain walks under.
-        let Some(&next) = layout.near[cur].iter().find(|&&j| !seen[j as usize]) else {
+        let mut found = None;
+        for &j in &layout.near[cur] {
+            let idx = j as usize;
+            if !seen[idx] {
+                found = Some(idx);
+                break;
+            }
+        }
+        let Some(next) = found else {
             break;
         };
-        let next = next as usize;
         out.push(next);
         seen[next] = true;
         cur = next;
@@ -286,15 +293,26 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
     if n == 0 {
         return out;
     }
-    let struck: Vec<usize> = struck.iter().copied().filter(|&i| i < n).collect();
-    let mut seeds: Vec<usize> = struck.clone();
-    seeds.extend(layout.caught.iter().map(|&i| i as usize).filter(|i| !struck.contains(i)));
+    let mut valid_struck = Vec::with_capacity(struck.len());
+    for &i in struck {
+        if i < n {
+            valid_struck.push(i);
+        }
+    }
+    let mut seeds = Vec::with_capacity(valid_struck.len() + layout.caught.len());
+    seeds.extend_from_slice(&valid_struck);
+    for &c in &layout.caught {
+        let idx = c as usize;
+        if !valid_struck.contains(&idx) {
+            seeds.push(idx);
+        }
+    }
     // THE BEAMS THAT AIMED THEMSELVES, and the aimed body is one of the count —
     // so a weapon firing three takes two more than it was pointed at, and one
     // that struck nobody takes three. Each is a seed like any other: its own
     // chain, its own path, `seen` of its own.
     if layout.beams > 1 {
-        let mut extra = (layout.beams as usize).saturating_sub(struck.len());
+        let mut extra = (layout.beams as usize).saturating_sub(valid_struck.len());
         for &i in &layout.acquired {
             if extra == 0 {
                 break;
@@ -325,7 +343,7 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
         taken[s] = true;
     }
     for &s in &seeds {
-        let direct = struck.contains(&s);
+        let direct = valid_struck.contains(&s);
         out.push(Instance {
             target: s, share: 1.0, multishot: direct, headshot: direct,
             part_factor: 1.0,
@@ -336,20 +354,29 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
         // ONE `seen` PER SEED — a path never revisits its OWN bodies, and one
         // path running out does not stop another. Cleared rather than
         // reallocated: this runs once per landing pellet.
-        seen.iter_mut().for_each(|x| *x = false);
+        seen.fill(false);
         seen[s] = true;
         let (mut cur, mut share) = (s, 1.0);
         for _ in 0..spec.hops {
             // NEAREST FIRST, so the first entry that qualifies IS the answer the
             // scan computes. `near` excludes `cur` itself only by `seen`.
-            let fresh = layout.near[cur]
-                .iter()
-                .find(|&&j| !seen[j as usize] && !taken[j as usize]);
-            let Some(&next) = fresh.or_else(|| layout.near[cur].iter().find(|&&j| !seen[j as usize]))
-            else {
+            let mut fresh_next = None;
+            let mut any_next = None;
+            for &j in &layout.near[cur] {
+                let idx = j as usize;
+                if !seen[idx] {
+                    if any_next.is_none() {
+                        any_next = Some(idx);
+                    }
+                    if !taken[idx] {
+                        fresh_next = Some(idx);
+                        break;
+                    }
+                }
+            }
+            let Some(next) = fresh_next.or(any_next) else {
                 break;
             };
-            let next = next as usize;
             taken[next] = true;
             share = if spec.compounds { share * spec.falloff } else { spec.falloff };
             out.push(Instance {

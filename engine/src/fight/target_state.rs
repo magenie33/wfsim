@@ -50,6 +50,11 @@ pub(super) struct TargetState {
     /// within `pickup_range_m` of it. A respawn puts the new body in the same
     /// place, which is what `TargetMode::InstantRespawn` means.
     pub(super) at: crate::rules::space::Vec2,
+    pub(super) max_overguard: f64,
+    pub(super) max_shield: f64,
+    pub(super) max_health: f64,
+    pub(super) scaled_armor: f64,
+    pub(super) proc_handlers: crate::rules::status::SceneProcHandlers,
     pub(super) overguard: f64,
     pub(super) shield: f64,
     pub(super) health: f64,
@@ -73,9 +78,10 @@ pub(super) struct TargetState {
 /// DIRECTLY: no sim can catch it, since every fixture that keeps health intact
 /// long enough freezes all three pools at once (`TargetMode::InfiniteHealth`),
 /// and there a wrong implementation reads the same "undamaged" a right one does.
+#[inline]
 #[wfsim_gas_macro::metered]
-pub(super) fn target_undamaged(t: &TargetState, p: &Foe) -> bool {
-    t.health >= p.max_health() - 1e-9 && t.shield >= p.max_shield() - 1e-9
+pub(super) fn target_undamaged(t: &TargetState, _p: &Foe) -> bool {
+    t.health >= t.max_health - 1e-9 && t.shield >= t.max_shield - 1e-9
 }
 
 #[wfsim_gas_macro::metered]
@@ -88,13 +94,23 @@ impl TargetState {
         if let Err(e) = p.validate() {
             panic!("invalid target: {e}");
         }
+        let max_overguard = p.overguard();
+        let max_shield = p.max_shield();
+        let max_health = p.max_health();
+        let scaled_armor = p.armor();
+        let proc_handlers = p.proc_handlers();
         Self {
             at,
             generation: 0,
             phase: Phase::Physical,
-            overguard: p.overguard(),
-            shield: p.max_shield(),
-            health: p.max_health(),
+            max_overguard,
+            max_shield,
+            max_health,
+            scaled_armor,
+            proc_handlers,
+            overguard: max_overguard,
+            shield: max_shield,
+            health: max_health,
             gate_until: 0.0,
             atten_window_start: now,
             atten_window_damage: 0.0,
@@ -107,15 +123,12 @@ impl TargetState {
     /// a reader can walk: row `n`'s pools are row `n−1`'s minus what row `n−1`
     /// took out of them, so damage counted twice or never recorded breaks the
     /// chain where it happened (see [`crate::record::TargetAt`]).
-    pub(super) fn snapshot(&self, p: &Foe, mit: &Mitigation, now: f64) -> crate::record::TargetAt {
+    pub(super) fn snapshot(&self, _p: &Foe, mit: &Mitigation, now: f64) -> crate::record::TargetAt {
         crate::record::TargetAt {
             overguard: self.overguard,
             shield: self.shield,
             health: self.health,
-            // `Foe::armor` re-runs the level-scaling curve on every
-            // call, so this is not the free field read it looks like — which is
-            // why every caller takes the snapshot behind `watching`.
-            armor: p.armor() * mit.armor_multiplier,
+            armor: self.scaled_armor * mit.armor_multiplier,
             shield_gate_until: (self.gate_until > now).then_some(self.gate_until),
         }
     }
@@ -293,8 +306,11 @@ impl TargetState {
         let mut led_og_remaining = 1.0f64;
         let mut led_fortifier = 1.0f64;
         let mut typed_health = (0.0, 0.0, 0.0, 0.0, 0.0);
+        let mut og_whole_cached: Option<f64> = None;
+        let mut non_toxin_cached: Option<f64> = None;
         if self.overguard > 0.0 {
             let whole = shares.whole(&p.type_mods.overguard);
+            og_whole_cached = Some(whole);
             let plain = gated * whole * mit.disrupt_amp;
             if plain < self.overguard && overguard_multiplier > 1.0 {
                 // SECONDARY FORTIFIER, CHECKED AS THE DAMAGE LANDS on this
@@ -344,6 +360,7 @@ impl TargetState {
         if passed > 0.0 {
             let col = &p.type_mods.faction;
             let (whole, bypass, blocked) = shares.pool_portions(col);
+            non_toxin_cached = Some(blocked);
             let toxin = passed * bypass;
             let rest = passed * blocked;
             if self.shield > 0.0 {
@@ -404,7 +421,7 @@ impl TargetState {
                 let dr = if ignores_armor {
                     0.0
                 } else {
-                    scaling::armor_damage_reduction(p.armor() * mit.armor_multiplier)
+                    scaling::armor_damage_reduction(self.scaled_armor * mit.armor_multiplier)
                 };
                 let boosted = health_part * mit.virus_amp;
                 // Cinematic damage bypasses armour within a mixed instance too.
@@ -432,7 +449,7 @@ impl TargetState {
                     // is the same for both halves of `health_part`, so applying
                     // it to the leak's share is exact rather than proportional.
                     led_health_scale = if before > 0.0 { health_part / before } else { 1.0 };
-                    led_armor_effective = p.armor() * mit.armor_multiplier;
+                    led_armor_effective = self.scaled_armor * mit.armor_multiplier;
                     led_hp_armor = if cinematic > 0.0 && boosted > 0.0 { mitigated / boosted } else { 1.0 - dr };
                     led_hp_floor = if mitigated > 0.0 { health_part / mitigated } else { 1.0 };
                     led_hp_floored = mitigated < 1.0;
@@ -505,7 +522,7 @@ impl TargetState {
                 self.atten_window_start += 1.0;
                 self.atten_window_damage = 0.0;
             }
-            let hp = p.max_health();
+            let hp = self.max_health;
             let allowed = (a.instance_fraction * hp)
                 .min(a.dps_fraction * hp - self.atten_window_damage)
                 .max(0.0);
@@ -525,8 +542,14 @@ impl TargetState {
         }
 
         if let Some(out) = by_type {
-            let og_total = shares.whole(&p.type_mods.overguard);
-            let (_, _, non_toxin) = shares.pool_portions(&p.type_mods.faction);
+            let og_total = match og_whole_cached {
+                Some(w) => w,
+                None => shares.whole(&p.type_mods.overguard),
+            };
+            let non_toxin = match non_toxin_cached {
+                Some(nt) => nt,
+                None => shares.pool_portions(&p.type_mods.faction).2,
+            };
             let (health_rest, health_toxin, common, cinematic_extra, health_total) = typed_health;
             for ty in DamageType::ALL {
                 let share = shares.share(ty);
@@ -712,15 +735,20 @@ impl TargetState {
                 self.phase = Phase::Reforming { until: now + sp.delay_seconds };
                 self.overguard = 0.0;
                 self.shield = 0.0;
-                self.health = p.max_health() * sp.health_share;
+                self.health = self.max_health * sp.health_share;
                 self.gate_until = 0.0;
                 self.atten_window_start = now;
                 self.atten_window_damage = 0.0;
                 return out;
             }
-            let generation = self.generation.wrapping_add(1);
-            *self = TargetState::spawn_at(p, now, self.at); // instant respawn, same spot
-            self.generation = generation;
+            self.generation = self.generation.wrapping_add(1);
+            self.phase = Phase::Physical;
+            self.overguard = self.max_overguard;
+            self.shield = self.max_shield;
+            self.health = self.max_health;
+            self.gate_until = 0.0;
+            self.atten_window_start = now;
+            self.atten_window_damage = 0.0;
             out.killed = true;
         }
         out

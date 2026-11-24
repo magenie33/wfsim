@@ -268,24 +268,33 @@ impl TypeShares {
     /// Does this instance have a shape at all? A shapeless one (nothing but
     /// zeros) is treated as one untyped, neutral lump rather than as damage
     /// that vanishes — the shares are bookkeeping, never a gate on damage.
+    #[inline]
     pub(crate) fn shaped(&self) -> bool {
-        self.0.iter().sum::<f64>() > 0.0
+        let mut sum = 0.0;
+        for &v in &self.0 {
+            sum += v;
+        }
+        sum > 0.0
     }
 
     /// The whole instance's multiplier under a column. Each component takes
     /// its own factor, so with shares summing to 1 this is the weighted mean.
+    #[inline]
     pub(crate) fn whole(&self, col: &crate::data::factions::Column) -> f64 {
         if self.shaped() { self.weighted(col) } else { 1.0 }
     }
 
+    #[inline]
     fn weighted(&self, col: &crate::data::factions::Column) -> f64 {
-        DamageType::ALL
-            .iter()
-            .map(|&t| self.0[t as usize] * col.get(t))
-            .sum()
+        let mut sum = 0.0;
+        for &t in &DamageType::ALL {
+            sum += self.0[t as usize] * col.get(t);
+        }
+        sum
     }
 
     /// The whole, shield-bypassing and shield-blocked portions under one column.
+    #[inline]
     pub(crate) fn pool_portions(&self, col: &crate::data::factions::Column) -> (f64, f64, f64) {
         let toxin = self.toxin() * col.get(DamageType::Toxin);
         if !self.shaped() {
@@ -305,21 +314,30 @@ impl TypeShares {
             if DamageType::ALL[i] == DamageType::Toxin {
                 continue;
             }
-            if best.is_none_or(|b| self.0[i] > self.0[b]) {
+            let take = match best {
+                None => true,
+                Some(b) => self.0[i] > self.0[b],
+            };
+            if take {
                 best = Some(i);
             }
         }
-        best.filter(|&b| self.0[b] > 0.0)
-            .map_or_else(|| self.dominant(), |b| DamageType::ALL[b])
+        match best {
+            Some(b) if self.0[b] > 0.0 => DamageType::ALL[b],
+            _ => self.dominant(),
+        }
     }
 }
 
 #[wfsim_gas_macro::metered]
 impl Foe {
     /// Explicit graphs override the scene eligibility fallback, independently of immunity.
+    #[inline]
     pub fn proc_handlers(&self) -> crate::rules::status::SceneProcHandlers {
-        self.proc_handlers.unwrap_or_else(||
-            crate::rules::status::SceneProcHandlers::from_scene_immunity(&self.status_immunities))
+        match self.proc_handlers {
+            Some(h) => h,
+            None => crate::rules::status::SceneProcHandlers::from_scene_immunity(&self.status_immunities),
+        }
     }
     /// A plain training dummy: no defenses, never dies. Damage passes through
     /// unmitigated, which keeps raw-damage calibration runs simple.
@@ -407,8 +425,12 @@ impl Foe {
     }
 
     /// `(health and shields, armor)` from the mission's Empowered Enemies.
+    #[inline]
     fn empowered_mults(&self) -> (f64, f64) {
-        self.empowered.map_or((1.0, 1.0), |(e, squad)| e.multipliers(squad))
+        match self.empowered {
+            Some((e, squad)) => e.multipliers(squad),
+            None => (1.0, 1.0),
+        }
     }
 
     /// Scaled armor (spawn minimum 200, cap 2,700; Steel Path does not touch
