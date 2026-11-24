@@ -115,6 +115,16 @@ from the verified consumer arithmetic. Full live installer timing is unbound.
 
 ## Pinned primary form and sampler inputs
 
+`scripts/import_accuracy_runtime.py --exchange <exchange> --check` joins
+primary and secondary 3D spread by internal owner and selected behavior
+index. `data/geometry/accuracy-runtime.yaml` keeps the applicable per-form
+switches and shares the shooting profile properties by package path.
+The importer verifies the roster dossiers, aim-property scopes and constructor
+(`20261109T023827Z-beam-bounce-aim`), derived samplers
+(`20261109T025857Z-spread-sampling`) and Coda Bubonico emission controls
+(`20261111T080715Z-coda-runtime-queue-followup`). The latter records support
+a source replay of the 60 Hz and 120 Hz shooting-channel sequences.
+
 ### Whole-secondary calibration
 
 `scripts/import_kitgun_status.py --exchange <exchange> --check` binds all

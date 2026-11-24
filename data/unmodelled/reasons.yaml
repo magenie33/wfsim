@@ -68,7 +68,7 @@ reasons:
   client_battery_defaults:
     text: "Some battery defaults are absent from the parsed records; the published recharge convention remains in use."
   client_special_spread:
-    text: "The native fan, first-pellet or charge-dependent spread override is not simulated; the declared spread approximation remains in use."
+    text: "Bound 3D projectile forms apply their declared fan or charge endpoints. Custom beam patterns and unselected firing variants use the declared approximation."
   client_projectile_callbacks:
     text: "Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated."
 
@@ -99,7 +99,7 @@ reasons:
   client_scourge_primary_co:
     text: "Primary-fire Condition Overload uses the catalog's additive rule; its conflict with the weapon page's multiplicative claim is unresolved."
   client_accuracy_runtime:
-    text: "Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady."
+    text: "Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady."
   client_beam_target_ramp:
     text: "The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target."
   heavy_slam_cycle_assumed:

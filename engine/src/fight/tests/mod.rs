@@ -139,6 +139,8 @@ impl Default for FightParams {
             // …and nothing may miss: a fixture that dropped shots would put
             // every golden value in this file at the mercy of an aim roll.
             spread: None,
+            spread_scaling: None,
+            live_accuracy: false,
             player_at: crate::rules::space::Vec2::ORIGIN,
             target_at: crate::rules::space::Vec2::ORIGIN,
             lingering: None,

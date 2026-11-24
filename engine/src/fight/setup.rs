@@ -1245,6 +1245,7 @@ impl FightParams {
                 .filter(|(f, _)| *f == target.faction)
                 .map(|(_, v)| v)
                 .sum::<f64>();
+        let live_accuracy = panel.stacking_buffs.iter().any(|b| b.grant == crate::model::BuffGrant::Accuracy);
         Self {
             // NOBODY ELSE ACTS UNLESS A CALLER SAYS SO. Another seat is another
             // BUILD, and this constructor was handed one.
@@ -1276,6 +1277,11 @@ impl FightParams {
             embed: panel.embed,
             falloff: panel.falloff,
             spread: panel.spread,
+            spread_scaling: panel.spread_scaling.filter(|s| {
+                (arena.scene_3d.is_some() && s.runtime != crate::model::SpreadRuntime::default())
+                    || live_accuracy
+            }),
+            live_accuracy,
             // Straight off the ARENA, like `abilities` and `duration_seconds`.
             player_at,
             target_at,

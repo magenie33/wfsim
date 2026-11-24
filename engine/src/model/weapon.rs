@@ -117,20 +117,20 @@ pub struct FalloffPoint {
 }
 
 /// Per-form resting and sustained spread parameters. Native profiles select
-/// hip/aimed ranges and emission geometry; live bloom timing is unmodelled.
+/// hip/aimed ranges and emission geometry.
 /// Legacy profiles interpret the resting value as an off-axis cone angle.
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct SpreadSpec {
-    /// Deviation With Aim — the first shot's cone.
+    /// Lower bound of the declared aiming envelope.
     pub min_deg: f64,
-    /// Max Deviation — where sustained fire takes it.
+    /// Upper bound of the declared aiming envelope.
     pub max_deg: f64,
-    /// Native emission geometry; the range remains the current resting envelope.
+    /// Native emission geometry and the separately declared hip-fire range.
     #[serde(default)]
     pub sampling: Option<SpreadSampling>,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub struct SpreadSampling {
     pub horizontal_ratio: f64,
     pub uniform: bool,
@@ -1426,6 +1426,7 @@ pub struct WeaponBase {
     /// accuracy mods — see [`crate::model::SpreadSpec`]. `None` = not
     /// transcribed, and the entry admits it.
     pub spread: Option<crate::model::SpreadSpec>,
+    pub spread_runtime: [crate::model::SpreadRuntime; 2],
     /// DIRECT-hit damage falloff as the weapon data states it, unscaled — see
     /// [`Falloff`], which is this after Projectile Speed has moved the window.
     pub falloff: Option<crate::model::FalloffSpec>,

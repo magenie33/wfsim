@@ -9,16 +9,14 @@ internal_name: /Lotus/Upgrades/Mods/Shotgun/Event/AccuracyWhileAimingShotgunMod
 description: "On Hit:\n+X% Accuracy when Aiming for Xs"
 
 effects:
-  # CONDITIONAL — accuracy, on hit, while aiming. Not a damage stat and the
-  # arena has no spread, so it lands in the indirect bucket; written with its
-  # real trigger so the card's window survives (the wiki's rank table: 1.5s -> 9s).
-  - kind: buff
+  - kind: stacking_buff
     trigger: hit
     condition: aiming
     grants: accuracy
     rank0: 0.05
     rankMax: 0.3
     max_stacks: 1
+    decay: all_at_once
     # see notes: ramps_with_rank
     duration_rank0: 1.5
     duration: 9

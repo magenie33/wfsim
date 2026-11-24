@@ -33,6 +33,7 @@ mod passives;
 mod slots;
 mod traits;
 mod panel;
+mod accuracy;
 #[cfg(test)]
 mod tests;
 

@@ -113,6 +113,7 @@ pub(super) struct Combatant<'a> {
     /// [`super::flight`]. Always empty for a weapon whose shot does not fly.
     pub(super) in_flight: std::collections::VecDeque<Landing>,
     pub(super) fire_state: crate::scene::FireState,
+    pub(super) spread_state: super::accuracy::SpreadState,
     pub(super) spatial_recipient: Option<Box<super::spatial::Recipient<'a>>>,
     /// WHAT IT ONLY READS — resolved once from its own build, constant for the
     /// whole engagement.
@@ -777,6 +778,7 @@ pub(super) fn open<'a>(
             last_shot_t,
             in_flight: std::collections::VecDeque::new(),
             fire_state: crate::scene::FireState::default(),
+            spread_state: super::accuracy::SpreadState::default(),
             spatial_recipient: None,
             other: None,
             fixed: Fixed {

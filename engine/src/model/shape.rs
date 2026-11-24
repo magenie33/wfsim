@@ -319,9 +319,8 @@ impl RadialBase {
     }
 }
 
-/// Resolved resting spread and optional native emission geometry.
-/// Sustained envelope growth and recovery remain unmodelled.
-#[derive(Debug, Clone, Copy)]
+/// Resolved spread envelope and optional native emission geometry.
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Spread {
     pub min_deg: f64,
     pub max_deg: f64,
@@ -339,7 +338,6 @@ impl Spread {
     }
 
     /// Legacy off-axis cone sampling; native profiles use `sample`.
-    /// Only the resting envelope is emitted.
     pub fn draw(&self, u: f64) -> f64 {
         self.min_deg * u
     }
@@ -355,7 +353,18 @@ impl Spread {
     /// RNG initialization, live envelope timing and special emitters are separate.
     pub fn sample(&self, cone: f64, azimuth: f64, radius: f64, index: u32, count: u32) -> (f64, f64) {
         let Some(spec) = self.sampling else { return (self.draw(cone), azimuth); };
-        let angle = (cone * self.min_deg).clamp(0.0, 179.0).to_radians() * 0.5;
+        self.sample_disk(spec, cone * self.min_deg, azimuth, radius, index, count)
+    }
+
+    pub fn sample_fixed_cone(self, azimuth: f64, radius: f64, index: u32, count: u32) -> (f64, f64) {
+        let Some(spec) = self.sampling else { return (self.draw(1.0), azimuth); };
+        self.sample_disk(spec, self.min_deg, azimuth, radius, index, count)
+    }
+
+    fn sample_disk(self, spec: crate::model::SpreadSampling, spread: f64, azimuth: f64,
+        radius: f64, index: u32, count: u32) -> (f64, f64)
+    {
+        let angle = spread.clamp(0.0, 179.0).to_radians() * 0.5;
         let uniform = spec.uniform && count > 1;
         let phase = if uniform { f64::from(index) / f64::from(count) } else { azimuth };
         let phi = phase * std::f64::consts::TAU;
@@ -366,6 +375,77 @@ impl Spread {
         let deviation = x.hypot_portable(y).atan2_portable(1.0).to_degrees();
         let direction = y.atan2_portable(x).rem_euclid(std::f64::consts::TAU) / std::f64::consts::TAU;
         (deviation, direction)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
+pub struct SpreadTiming {
+    pub rate: f32,
+    pub recovery_rate: f32,
+    pub recovery_delay: f32,
+    pub exponential: bool,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct SpreadRuntime {
+    pub timing: Option<SpreadTiming>,
+    pub inverse: bool,
+    pub fan: Option<SpreadFan>,
+    pub charge_attenuation: Option<f32>,
+    pub extra_floor: Option<f32>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
+pub struct SpreadFan {
+    pub start_deg: f32,
+    pub end_deg: f32,
+    pub vertical: bool,
+}
+
+#[wfsim_gas_macro::metered]
+impl SpreadFan {
+    /// Lotus projectile sampler 0x10d0e10 with zero charge rotation.
+    pub fn sample(self, index: usize, count: usize, envelope: f64, u: f64) -> (f64, f64) {
+        let fraction = (index + 1) as f32 / count as f32;
+        let angle = f64::from(self.start_deg + (self.end_deg - self.start_deg) * fraction);
+        let jitter = (2.0 * u - 1.0) * envelope;
+        let (sin_yaw, cos_yaw) = libm::sincos(angle.to_radians());
+        let (sin_pitch, cos_pitch) = libm::sincos(jitter.to_radians());
+        let (x, y) = (sin_yaw, -sin_pitch * cos_yaw);
+        let (x, y) = if self.vertical { (-y, x) } else { (x, y) };
+        let deviation = x.hypot_portable(y).atan2_portable(cos_pitch * cos_yaw).to_degrees();
+        let phase = y.atan2_portable(x).rem_euclid(std::f64::consts::TAU) / std::f64::consts::TAU;
+        (deviation, phase)
+    }
+}
+
+/// Unmodified envelope and the upgrade bracket shared by panel and emission.
+#[derive(Debug, Clone, Copy)]
+pub struct SpreadScaling {
+    pub base: Spread,
+    pub accuracy_bonus: f64,
+    pub added_spread: f64,
+    pub runtime: SpreadRuntime,
+}
+
+#[wfsim_gas_macro::metered]
+impl SpreadScaling {
+    pub fn factor(self, live_accuracy: f64) -> f64 {
+        let bonus = self.accuracy_bonus + live_accuracy;
+        if self.base.sampling.is_some() {
+            (1.0 - bonus).max(0.0)
+        } else {
+            1.0 / (1.0 + bonus).max(0.05)
+        }
+    }
+
+    pub fn resolved(self, live_accuracy: f64) -> Spread {
+        let factor = self.factor(live_accuracy);
+        Spread {
+            min_deg: self.base.min_deg * factor + self.added_spread,
+            max_deg: self.base.max_deg * factor + self.added_spread,
+            ..self.base
+        }
     }
 }
 

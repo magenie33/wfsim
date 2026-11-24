@@ -486,6 +486,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         }
     });
 
+    let accuracy = super::accuracy::profile(id);
     WeaponBase {
         weakness_bonus: s.weakness_bonus.or_else(|| s.transforms_from.as_deref()
             .and_then(spec).and_then(|base| base.weakness_bonus)),
@@ -711,7 +712,9 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         reload_from_empty_speed: s.reload_from_empty_speed.unwrap_or(0.0),
         slam,
         shockwave: s.attack.shockwave,
-        spread: s.attack.spread,
+        spread: s.attack.spread.filter(|spread| spread.sampling.is_some())
+            .or_else(|| accuracy.and_then(|profile| profile.resting)).or(s.attack.spread),
+        spread_runtime: accuracy.map_or(Default::default(), |profile| profile.runtime),
         // Only an EVOLUTION grants one (Lone Enforcer); no weapon declares it.
         multishot_beyond_range: None,
         falloff: s.attack.falloff.clone(),

@@ -21,6 +21,7 @@ use super::bumps::{bump_buffs, bump_status_buffs};
 /// strike is what a combatant does.
 #[derive(Clone, Copy)]
 pub(super) struct Strike<'a> {
+    pub(super) spread: Option<crate::model::Spread>,
     pub(super) body_index: usize,
     pub(super) spatial: Option<&'a super::spatial::SpatialLanding>,
     pub(super) radial_only: bool,
@@ -223,6 +224,7 @@ pub(super) fn weakpoint_contact(
 #[wfsim_gas_macro::metered]
 pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live: &mut Live) {
     let Strike {
+        spread,
         body_index,
         spatial,
         radial_only,
@@ -714,7 +716,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // one scalar. How far the pellet passed the aimed body is the only
     // thing ONE body can be asked; a crowd asks WHERE, so both survive
     // to build the epicentre below.
-    let (dev, phi) = if spatial.is_some() { (0., 0.) } else { match active.spread {
+    let (dev, phi) = if spatial.is_some() { (0., 0.) } else { match spread {
         Some(s) if follows && !s.is_pinpoint() && range > 0.0 => (round_aim.dev, round_aim.phi),
         Some(s) if s.sampling.is_some() && !s.is_pinpoint() && range > 0.0 => s.sample(
             d.aim.next_f64(), d.blast_dir.next_f64(), d.aim.next_f64(),

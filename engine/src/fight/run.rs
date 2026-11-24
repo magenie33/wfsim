@@ -1083,7 +1083,26 @@ pub fn run_once_traced(
             me.melee.combo_points = combo_now * active.heavy_attack_efficiency;
             me.melee.combo_spent_t = t;
         }
+        let spread = active.spread.map(|spread| {
+            let Some(scaling) = active.spread_scaling else { return spread; };
+            if spread != scaling.resolved(0.0) {
+                return spread;
+            }
+            let live = if active.live_accuracy {
+                buff_total(active, crate::model::BuffGrant::Accuracy, &mut me.buff_stacks, t)
+            } else {
+                0.0
+            };
+            let resolved = if live == 0.0 { spread } else { scaling.resolved(live) };
+            match (n_pellets > 0, me.params.scene_3d.as_ref(), scaling.runtime.timing) {
+                (true, Some(scene), Some(timing)) => me.spread_state.emit(
+                    active as *const FightParams, scaling, resolved, timing, live, t, scene.input().frame_seconds,
+                ),
+                _ => resolved,
+            }
+        });
         let landing = Landing {
+            spread,
             spatial: None,
             radial_only: false,
             pellet_aims: Vec::new(),

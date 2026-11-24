@@ -311,6 +311,7 @@ pub enum BuffGrant {
     /// panel's `punch_through_m`, read at the shot so a window a kill opened
     /// reaches the bodies behind the target (`FightParams::struck_bodies_with`).
     PunchThrough,
+    Accuracy,
 }
 
 #[wfsim_gas_macro::metered]
@@ -339,6 +340,7 @@ impl BuffGrant {
             BuffGrant::MeleeRange => "melee_range",
             BuffGrant::StatusDamage => "status_damage",
             BuffGrant::PunchThrough => "punch_through",
+            BuffGrant::Accuracy => "accuracy",
         }
     }
 
@@ -348,7 +350,7 @@ impl BuffGrant {
         [
             G::BaseDamage, G::MeleeDamage, G::FlatBaseDamage, G::BaseMultishot, G::Multishot, G::FlatMultishot, G::ReloadSpeed,
             G::FireRate, G::BaseCritDamage, G::CritDamage, G::CritChance, G::StatusChance, G::AmmoEfficiency, G::InfiniteAmmo, G::HeadshotDamage,
-            G::InitialCombo, G::MeleeRange, G::StatusDamage, G::PunchThrough,
+            G::InitialCombo, G::MeleeRange, G::StatusDamage, G::PunchThrough, G::Accuracy,
         ]
         .into_iter()
         .find(|g| g.id() == id)
@@ -382,6 +384,7 @@ impl BuffGrant {
             BuffGrant::MeleeRange => "melee_range",
             BuffGrant::StatusDamage => "status_damage",
             BuffGrant::PunchThrough => "punch_through",
+            BuffGrant::Accuracy => "accuracy",
         }
     }
 
@@ -410,6 +413,7 @@ impl BuffGrant {
             BuffGrant::MeleeRange => "Range",
             BuffGrant::StatusDamage => "Status Damage",
             BuffGrant::PunchThrough => "Punch Through",
+            BuffGrant::Accuracy => "Accuracy",
         }
     }
 }

@@ -16,6 +16,7 @@ use super::*;
 /// read when it lands, which is when the game reads it.
 #[derive(Clone)]
 pub(super) struct Landing {
+    pub(super) spread: Option<crate::model::Spread>,
     pub(super) spatial: Option<spatial::SpatialLanding>,
     /// The collision already settled; only its delayed explosion remains.
     pub(super) radial_only: bool,
@@ -207,6 +208,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             me.params
         };
         let shot = Strike {
+            spread: l.spread,
             body_index: recipient,
             spatial: l.spatial.as_ref(),
             radial_only: l.radial_only,

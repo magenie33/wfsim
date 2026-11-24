@@ -3,7 +3,7 @@ use serde_json::{json, Value};
 use wfsim_engine::{
     fight,
     record::{Kind, Record},
-    rules::geometry::Vec3,
+    rules::{geometry::Vec3, math::Portable},
     scene::Scene,
 };
 #[path = "../../tests/fixtures/geometry/scene.rs"]
@@ -377,6 +377,74 @@ fn standing_head_aim_centers_the_shotgun_pattern_at_contact_and_five_metres() {
                 }
             }
         }
+    }
+}
+
+#[test]
+fn accuracy_on_hit_narrows_only_later_emissions_in_the_standing_scene() {
+    let mut v = request("hek", 1, false);
+    v["aiming"] = json!(true);
+    v["scene_3d"] = json!({
+        "preset": "source_default",
+        "placement": {"kind": "center_distance", "distance": 5.}
+    });
+    v["mods"] = json!(["vicious_spread"]);
+    let control = record(&params(&v));
+    v["mods"] = json!(["vicious_spread", "narrow_barrel"]);
+    let equipped = record(&params(&v));
+    let plain = control.spatial_flights();
+    let narrowed = equipped.spatial_flights();
+    assert!(plain.len() >= 14 && narrowed.len() >= 14);
+    assert!(narrowed[..7].iter().any(|row| !row.flight.impacts.is_empty()));
+    for (a, b) in plain[..7].iter().zip(&narrowed[..7]) {
+        assert_eq!(a.shot, b.shot);
+        assert_eq!(a.flight.direction, b.flight.direction);
+    }
+    let deviation = |row: &wfsim_engine::scene::FlightTrace| {
+        let flight = &row.flight;
+        let forward = flight.aim_target.minus(flight.muzzle).normalized().unwrap();
+        let dir = flight.direction.normalized().unwrap();
+        1.0 - forward.dot(dir)
+    };
+    assert!(plain[7..14].iter().zip(&narrowed[7..14]).all(|(a, b)| deviation(a) > deviation(b)));
+}
+
+#[test]
+fn cernos_prime_launches_its_declared_fan_on_the_first_release() {
+    let mut v = request("cernos_prime", 1, false);
+    v["mode"] = json!("charged");
+    v["aiming"] = json!(true);
+    v["scene_3d"] = json!({
+        "preset": "source_default",
+        "placement": {"kind": "center_distance", "distance": 5.}
+    });
+    let result = record(&params(&v));
+    let flights = result.spatial_flights();
+    assert!(flights.len() >= 3);
+    for (row, expected) in flights[..3].iter().zip([1.433333, 0.133333, 1.7]) {
+        let flight = &row.flight;
+        let forward = flight.aim_target.minus(flight.muzzle).normalized().unwrap();
+        let dir = flight.direction.normalized().unwrap();
+        assert!((forward.dot(dir).clamp(-1.0, 1.0).acos_portable().to_degrees() - expected).abs() < 1e-4);
+    }
+}
+
+#[test]
+fn coda_bubonico_emits_added_multishot_as_independent_rounds() {
+    let mut v = request("coda_bubonico", 1, false);
+    v["aiming"] = json!(true);
+    v["scene_3d"] = json!({
+        "preset": "source_default",
+        "placement": {"kind": "center_distance", "distance": 5.}
+    });
+    let mut p = params(&v);
+    p.multishot = 14.;
+    let recorded = record(&p);
+    let flights = recorded.spatial_flights();
+    let first = flights[0].shot;
+    assert_eq!(flights.iter().take_while(|row| row.shot == first).count(), 14);
+    for (index, row) in flights[..14].iter().enumerate() {
+        assert!(flights[..index].iter().all(|other| other.flight.direction != row.flight.direction));
     }
 }
 

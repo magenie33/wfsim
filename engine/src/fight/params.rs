@@ -282,6 +282,8 @@ pub struct FightParams {
     /// whether a pellet lands on the target or beside it. `None` = this entry's
     /// spread is not transcribed, so nothing of it may miss.
     pub spread: Option<crate::model::Spread>,
+    pub spread_scaling: Option<crate::model::SpreadScaling>,
+    pub live_accuracy: bool,
     /// The LINGERING FIELD every landed projectile leaves (Torid's Toxin
     /// cloud). A third kind of attack part: it persists and TICKS instead of
     /// landing once, and each tick is a full damage instance — own crit roll,

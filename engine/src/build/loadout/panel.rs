@@ -431,6 +431,7 @@ pub struct ResolvedPanel {
     /// `None` = this entry's spread is not transcribed, so no shot of it is
     /// allowed to miss and the entry admits that.
     pub spread: Option<Spread>,
+    pub spread_scaling: Option<crate::model::SpreadScaling>,
     /// DIRECT-hit damage falloff, when this attack lists one — the shotgun's,
     /// and the range the Arsenal prints. `None` = full damage at any distance.
     pub falloff: Option<Falloff>,

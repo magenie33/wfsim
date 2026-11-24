@@ -115,20 +115,42 @@ pub(super) fn launch(
         .collect();
     let progress = Rc::new(Cell::new(Progress::default()));
     let mut events = Vec::new();
-    for (round, &copies) in groups.iter().enumerate() {
-        if copies == 0 {
-            continue;
-        }
+    let accuracy = active.spread_scaling.map_or_else(crate::model::SpreadRuntime::default, |s| s.runtime);
+    let split_multishot = accuracy.extra_floor.is_some() && l.spread.is_some();
+    let ordinary = groups.iter().copied().enumerate().filter(|(_, copies)| *copies > 0)
+        .map(|(round, copies)| (round, if split_multishot { 1 } else { copies }));
+    let additional_groups: &[u32] = if split_multishot { &groups } else { &[] };
+    let extra = additional_groups.iter().copied().enumerate()
+        .flat_map(|(round, copies)| (1..copies).map(move |_| (round, 1)));
+    for (iteration, (round, copies)) in ordinary.chain(extra).enumerate() {
         let head = me.d.aim.next_f64() < head_weight / all.max(1e-20);
-        let (dev, phi) = match active.spread.filter(|s| !s.is_pinpoint()) {
-            Some(s) => s.sample(
+        let spread = l.spread.map(|mut s| {
+            if let Some(scale) = accuracy.charge_attenuation {
+                s.min_deg *= f64::from(scale);
+            }
+            s
+        });
+        let (dev, phi) = match (spread, accuracy.fan, accuracy.extra_floor) {
+            (Some(s), Some(fan), _) => {
+                let jitter = if s.is_pinpoint() { 0.5 } else { me.d.aim.next_f64() };
+                fan.sample(round, groups.len(), s.min_deg, jitter)
+            }
+            (Some(mut s), _, Some(floor)) if l.n_pellets > 1 => {
+                let base = groups.len();
+                if iteration >= base {
+                    let lower = floor + (iteration - base) as f32 * 0.2 / base.max(1) as f32;
+                    s.min_deg = s.min_deg.max(f64::from(lower));
+                }
+                s.sample_fixed_cone(me.d.blast_dir.next_f64(), me.d.aim.next_f64(), iteration as u32, l.n_pellets)
+            }
+            (Some(s), _, _) if !s.is_pinpoint() => s.sample(
                 me.d.aim.next_f64(),
                 me.d.blast_dir.next_f64(),
                 me.d.aim.next_f64(),
                 round as u32,
                 groups.len() as u32,
             ),
-            None => (0., 0.),
+            _ => (0., 0.),
         };
         let pierce = active.punch_through_m + l.pierce_live_m;
         let fire_origin = origins.as_ref().and_then(|o| o[round]);

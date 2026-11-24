@@ -1565,25 +1565,23 @@ pub fn resolve_for(
 
     // Source-backed profiles use native WEAPON_SPREAD endpoint reductions.
     // Wiki profiles retain the inverse-accuracy rule; docs/MECHANICS.md §11.
-    let spread = base.spread.map(|s| {
+    let spread_scaling = base.spread.map(|s| {
         let bonus = indirect
             .iter()
             .find(|(st, _)| *st == IndirectStat::Accuracy)
             .map_or(0.0, |(_, v)| *v);
-        // Native WEAPON_SPREAD applies a stacked reduction to each range endpoint.
-        let factor = if s.sampling.is_some() { (1.0 - bonus).max(0.0) }
-            else { 1.0 / (1.0 + bonus).max(0.05) };
         let (min, max) = match s.sampling.filter(|_| !tenno.state.aiming) {
             Some(profile) => (profile.hip_min_deg.unwrap_or(s.min_deg), profile.hip_max_deg.unwrap_or(s.max_deg)),
             None => (s.min_deg, s.max_deg),
         };
-        // Added spread is independent of the weapon's accuracy scaling.
-        Spread {
-            min_deg: min * factor + added_spread,
-            max_deg: max * factor + added_spread,
-            sampling: s.sampling,
+        crate::model::SpreadScaling {
+            base: Spread { min_deg: min, max_deg: max, sampling: s.sampling },
+            accuracy_bonus: bonus,
+            added_spread,
+            runtime: base.spread_runtime[usize::from(!tenno.state.aiming)],
         }
     });
+    let spread = spread_scaling.map(|s| s.resolved(0.0));
 
     // BEAM LENGTH: the weapon's reach, and the ONE bracket the wiki states for
     // it — VERBATIM (Galvanized Acceleration, Notes): *"Sinister Reach will not
@@ -1749,6 +1747,7 @@ pub fn resolve_for(
         blob,
         embed,
         spread,
+        spread_scaling,
         falloff,
         lingering,
         slash_on_crit,
