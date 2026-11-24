@@ -443,7 +443,9 @@ function headlessDefaultScenario(meta, contact, metric) {
     // otherwise — every fight this app has ever run is one player against one
     // enemy, and this changes the ENEMY, never the number of guns.
     squad_size: d.squad_size || 1,
-    headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
+    headshot_pct: d.headshot_pct, weakpoint_aim_pct: d.headshot_pct ?? 100,
+    miss_pct: 0, scene_3d: { preset: "source_standard", placement: { kind: "supplied" } },
+    aiming: d.aiming !== false,
     // THE TOP ZOOM LEVEL unless a level was picked — see `zoomField`.
     scope_zoom: Number(d.scope_zoom) || 0,
     // WHERE THE TWO OF THEM STAND, metres. Contact by default — as close as
@@ -637,6 +639,8 @@ function headlessScenarioOnto(meta, st, contact, metric) {
   HEADLESS_DEAD_SCENARIO_FIELDS.forEach((k) => { delete st[k]; });
   const sim = { ...headlessDefaultScenario(meta, contact, metric), ...st, buffs: JSON.parse(JSON.stringify(st.buffs || {})),
     apl: JSON.parse(JSON.stringify(Array.isArray(st.apl) ? st.apl : [])) };
+  if (!sim.scene_3d) sim.scene_3d = { preset: "source_standard", placement: { kind: "supplied" } };
+  if (st.weakpoint_aim_pct == null && st.headshot_pct != null) sim.weakpoint_aim_pct = st.headshot_pct;
   // A STORED 1 IS NOT A CHOICE: an older page wrote it for everybody, before the
   // wielder's own strength reached the fight. Null reads the Warframe build.
   if (typeof sim.ability_strength !== "number" || sim.ability_strength === 1) sim.ability_strength = null;

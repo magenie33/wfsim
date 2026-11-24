@@ -892,3 +892,25 @@ fn standard_scene_replays_an_additional_wielder_with_the_reference_mount() {
     assert_eq!(crate::simulate::simulate_json(&input)["ok"], true);
     assert_eq!(crate::log::log_json(&input)["ok"], true);
 }
+
+#[test]
+fn floor_aim_selects_another_actor_or_an_empty_point_in_3d() {
+    let mut input = request("braton", 1, false);
+    input["scene_3d"] = json!({"preset":"source_standard","placement":{"kind":"supplied"}});
+    input["player_at"] = json!([0, 0]);
+    input["target_at"] = json!([0, 5]);
+    input["formation"] = json!([{"id":"right","at":[3,5]}]);
+    input["weakpoint_aim_pct"] = json!(100);
+    input["aim_at"] = json!([3,5]);
+    let mut p = params(&input);
+    p.spread = None;
+    let hit = record(&p);
+    assert!(hit.spatial_flights().iter().any(|row| row.flight.impacts.iter().any(|i| i.body == 1)));
+    assert!(hit.spatial_flights().iter().all(|row| row.flight.impacts.iter().all(|i| i.body != 0)));
+    input["aim_at"] = json!([20,5]);
+    let mut p = params(&input);
+    p.spread = None;
+    let miss = record(&p);
+    assert!(!miss.spatial_flights().is_empty());
+    assert!(miss.spatial_flights().iter().all(|row| row.flight.impacts.is_empty()));
+}
