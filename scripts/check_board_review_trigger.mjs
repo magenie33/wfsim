@@ -45,10 +45,15 @@ for(const cancelled of [false,true]) {
 }
 const precision=text.match(/function optimizationFinalRuns\(\) \{[^]*?\n\}/)?.[0];
 assert.ok(precision,'official optimizer final precision has one resolver');
+const selectScene = text.match(/function headlessRulerScenario\([^]*?\n\}/)?.[0];
+assert.ok(selectScene,'official optimizer reads the shared scene selector');
 for(const builtin of ['standard_single_target',null]) {
-  const runs=runInNewContext(precision+'\noptimizationFinalRuns()',{
-    activeScenario:'selected',scenarioNamed:()=>({builtin}),benchList:()=>[{id:'standard_single_target',scenario:{runs:1000}}],simRuns:()=>7
+  const runs=runInNewContext(selectScene+'\n'+precision+'\noptimizationFinalRuns()',{
+    activeScenario:'selected',scenarioNamed:()=>({builtin}),presetWeapon:()=> 'laetum',
+    META:{}, headlessWeaponOf:()=>({weapon_type:'secondary'}),
+    benchList:()=>[{id:'standard_single_target',scenario:{runs:1000,
+      scenes:{ranged:{runs:1200}},scene_selection:{weapon_types:{secondary:'ranged'}}}}],simRuns:()=>7
   });
-  assert.equal(runs,builtin?1000:7);
+  assert.equal(runs,builtin?1200:7);
 }
 console.log('review triggers: intermediate submit, final completion review, cancellation and official final precision pass');
