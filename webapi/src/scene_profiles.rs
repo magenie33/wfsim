@@ -216,7 +216,7 @@ pub(crate) fn source_default<'a>(
         })
         .collect::<Result<Vec<_>, String>>()?;
     let count = enemies.len();
-    Scene::new(
+    Scene::new_standing(
         Scene3d {
             player,
             enemies,

@@ -77,8 +77,11 @@ and the weapon's currently resolved attack. Installed poses, native routing
 and per-build parity use separate controls.
 
 `headshot_pct` is reticle intent in this scene. At 100 the player keeps aiming
-at the selected head proxy and completely compensates recoil. Intrinsic spread,
-camera/muzzle parallax, homing and intervening bodies still determine contact.
+at the selected head proxy and completely compensates recoil. The standing
+preset converges the muzzle on the center of a visible selected head. An earlier
+camera obstruction supplies the convergence point if it intercepts that aim.
+Explicit supplied scenes use their camera surface intersection. Intrinsic
+spread, muzzle position, homing and intervening bodies still determine contact.
 Only an actual head contact receives head damage, head triggers and weakpoint
 charge. `gauge_charging_headshots` selects head intent while charging; it does
 not bypass collision. Saved field names retain their wire spelling.

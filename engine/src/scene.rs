@@ -376,7 +376,16 @@ impl Scene {
     pub fn camera(&self) -> Vec3 {
         self.camera
     }
-    pub fn new(mut input: Scene3d, count: usize) -> Result<Self, String> {
+    pub fn new(input: Scene3d, count: usize) -> Result<Self, String> {
+        Self::prepare(input, count, false)
+    }
+
+    /// Standing target drills hold the unobstructed head proxy center.
+    pub fn new_standing(input: Scene3d, count: usize) -> Result<Self, String> {
+        Self::prepare(input, count, true)
+    }
+
+    fn prepare(mut input: Scene3d, count: usize, head_center: bool) -> Result<Self, String> {
         if input.enemies.len() != count || count == 0 || count > 361 {
             return Err("scene_3d needs one model per arena enemy (maximum 361)".into());
         }
@@ -529,7 +538,7 @@ impl Scene {
             return Err("launch target is outside scene".into());
         }
         let bounds = BoundsNode::build(&bodies);
-        let (reticles, avatar_up) = Self::prepare_reticles(&input, camera, &bodies, &bounds);
+        let (reticles, avatar_up) = Self::prepare_reticles(&input, camera, &bodies, &bounds, head_center);
         let melee_gap = Self::melee_reach(&input, root, &bodies);
         let slam_distance = bodies.iter().map(|body| body.radial_distance(root)).collect();
         Ok(Self {
@@ -644,6 +653,7 @@ impl Scene {
         camera: Affine,
         bodies: &[Body],
         bounds: &[BoundsNode],
+        head_center: bool,
     ) -> ([Reticle; 2], [f32; 4]) {
         let axis = |transform: Affine, direction| {
             transform
@@ -668,7 +678,8 @@ impl Scene {
                 avatar_up,
             )
         };
-        let reticles = [input.body_proxy, input.head_proxy].map(|selected| {
+        let reticles = [false, true].map(|head| {
+            let selected = if head { input.head_proxy } else { input.body_proxy };
             let anchor = bodies[0]
                 .proxies
                 .iter()
@@ -680,7 +691,14 @@ impl Scene {
             let ray = Ray { origin: camera, direction, maximum: offset.length() + 1e-6, width: 0. };
             let hits = Self::hits(bodies, bounds, ray)
                 .into_iter()
-                .map(|h| (h.body, solve(camera.along(direction, h.enter))))
+                .map(|hit| {
+                    let target = if head_center && head && hit.body == 0 && hit.part == 1 {
+                        anchor
+                    } else {
+                        camera.along(direction, hit.enter)
+                    };
+                    (hit.body, solve(target))
+                })
                 .collect();
             Reticle { anchor, direction, hits, fallback: solve(anchor) }
         });

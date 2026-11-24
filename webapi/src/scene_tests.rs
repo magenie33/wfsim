@@ -348,6 +348,39 @@ fn the_source_default_preset_runs_and_records_the_five_by_five_arena() {
 }
 
 #[test]
+fn standing_head_aim_centers_the_shotgun_pattern_at_contact_and_five_metres() {
+    let mut v = request("hek", 1, false);
+    v["aiming"] = json!(true);
+    v["target_at"] = json!([0., 5.]);
+    for kind in ["contact", "center_distance"] {
+        v["scene_3d"] = json!({"preset":"source_default", "placement":{"kind":kind}});
+        if kind == "center_distance" {
+            v["scene_3d"]["placement"]["distance"] = json!(5.);
+        }
+        let mut p = params(&v);
+        for zero_spread in [false, true] {
+            if zero_spread {
+                p.spread = None;
+            }
+            let recorded = record(&p);
+            let flights = recorded.spatial_flights();
+            let first_shot = flights[0].shot;
+            let first: Vec<_> = flights.iter().take_while(|f| f.shot == first_shot).collect();
+            assert_eq!(first.len(), 7);
+            for trace in first {
+                let flight = &trace.flight;
+                assert!(flight.aim_target.minus(flight.head_anchor).length() < 1e-6);
+                let impact = flight.impacts.first().expect("a pellet reaches the aimed enemy");
+                assert_eq!(impact.body, 0);
+                if kind == "center_distance" {
+                    assert_eq!(impact.part, 1);
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn a_standing_scene_resolves_the_enemy_and_reports_a_reference_muzzle() {
     let mut v = request("laetum", 1, false);
     v["enemy"] = json!("demolisher_devourer");
