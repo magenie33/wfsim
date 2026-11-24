@@ -112,12 +112,19 @@ pub fn plan(input: &Value, ruler: &str, mode: &str, family: bool, captured: Opti
     let mut jobs=if family {crate::board_family::transfers(input,ruler,mode)} else {Vec::new()};
     jobs.sort_by(|a,b| a["weapon"].as_str().cmp(&b["weapon"].as_str()));
     let scope=decoded(captured).unwrap_or_else(|| {
-        let mut boards: Vec<_>=benchmarks::all().iter().map(|b| json!({"id":b.id,"scenario":b.scenario})).collect();
-        boards.sort_by(|a,b| a["id"].as_str().cmp(&b["id"].as_str()));
         let mut modes=BTreeMap::new();
         for weapon in std::iter::once(build.weapon.as_str()).chain(jobs.iter().filter_map(|j| j["weapon"].as_str())) {
             modes.insert(weapon.to_owned(),groups::board_modes(weapon));
         }
+        let mut boards: Vec<_> = benchmarks::all().iter().map(|b| {
+            let scenario = serde_json::to_value(&b.scenario).expect("scenario");
+            let mut selected = benchmarks::scenario_for(&scenario, &build.weapon);
+            if modes.keys().any(|weapon| benchmarks::scenario_for(&scenario, weapon) != selected) {
+                selected = scenario;
+            }
+            json!({"id": b.id, "scenario": selected})
+        }).collect();
+        boards.sort_by(|a,b| a["id"].as_str().cmp(&b["id"].as_str()));
         json!({"boards":boards,"modes":modes})
     });
     let mut root=Expansion::default();
