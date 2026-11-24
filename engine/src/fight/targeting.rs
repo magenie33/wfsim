@@ -32,8 +32,9 @@ pub(super) fn contact_targets(
     let Some(area) = params.melee_radius else { return vec![chosen] };
     let mut neighbours: Vec<(usize, f64)> = available.into_iter().filter(|i| *i != chosen)
         .filter_map(|i| {
-            let distance = bodies[chosen].state.at.distance(bodies[i].state.at);
-            crate::rules::space::caught_by_blast(distance, (area.radius_m + extra_reach_m).max(0.0)).then_some((i, distance))
+            let floor_distance = bodies[chosen].state.at.distance(bodies[i].state.at);
+            params.melee_area_distance(chosen, i, floor_distance, (area.radius_m + extra_reach_m).max(0.0))
+                .map(|d| (i, d))
         }).collect();
     neighbours.sort_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)));
     std::iter::once(chosen).chain(neighbours.into_iter().map(|(i, _)| i)).collect()

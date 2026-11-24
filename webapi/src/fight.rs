@@ -739,12 +739,35 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
                 a[1].as_f64().unwrap_or(0.0),
             )
         });
-    let (target, body_parts, target_at, others, aimed_id) =
+    let (target, body_parts, mut target_at, mut others, aimed_id) =
         aimed_body(v, aim_at, player_at, target, body_parts, target_at, formation);
+    let scene_3d = v.get("scene_3d").map(|raw| {
+        if aim_at.is_some() { return Err("scene_3d uses its head/body reticle anchor; aim_at is not supported".to_string()); }
+        if raw.get("preset").is_none() {
+            if info.sentinel && raw.get("player").and_then(|p| p.get("world")).is_none() {
+                return Err("scene_3d needs a posed companion carrier and its weapon mount".into());
+            }
+            return crate::scene_profiles::explicit(raw, 1 + others.len(), player_at);
+        }
+        if ["airborne", "sliding", "aim_gliding"].iter().any(|flag| get_bool(v, flag, false)) {
+            return Err("scene_3d source-default preset requires a standing shooter".to_string());
+        }
+        let roster = v.get("formation").and_then(Value::as_array).into_iter().flatten();
+        let models = roster.zip(&others).map(|(entry, body)| (formation_enemy(entry, enemy_id), body.at));
+        crate::scene_profiles::source_default(raw, info, player_at, (enemy_id, target_at), models)
+    }).transpose().map_err(err_json)?;
+    let mut player_at = player_at;
+    if let Some(scene) = &scene_3d {
+        let planar = |p: wfsim_engine::rules::geometry::Vec3| wfsim_engine::rules::space::Vec2::new(p.0[0], p.0[2]);
+        player_at = planar(scene.input().player.world.point(wfsim_engine::rules::geometry::Vec3([0.; 3])));
+        target_at = planar(scene.root(0));
+        for (i, other) in others.iter_mut().enumerate() { other.at = planar(scene.root(i + 1)); }
+    }
     // ---- the ARENA: both actors, and how long they are at it. Assembled
     // once and handed whole to whichever constructor runs, so the two forms
     // of a cycle cannot end up fighting two different fights.
     let arena = wfsim_engine::arena::Arena {
+        scene_3d,
         apl,
         // THE SQUAD THE SCENARIO NAMED. It rides on the arena so the optimizer
         // inherits it from the same constructor rather than re-deriving it.
@@ -1076,6 +1099,10 @@ pub(crate) fn empowerment_from(
 ///
 /// Anything a body omits it takes from the AIMED one, so a formation of
 /// nine identical enemies is nine positions and nothing else.
+fn formation_enemy<'a>(entry: &'a Value, enemy_id: &'a str) -> &'a str {
+    entry.get("enemy").and_then(Value::as_str).filter(|s| !s.is_empty()).unwrap_or(enemy_id)
+}
+
 fn formation_from(
     v: &Value,
     specs: &[EnemySpec],
@@ -1108,11 +1135,7 @@ fn formation_from(
             //
             // The same applies to a LEVEL of null and an EXIMUS of null: absent
             // and blank are one state here, and it means "the aimed body's".
-            let id = e
-                .get("enemy")
-                .and_then(Value::as_str)
-                .filter(|s| !s.is_empty())
-                .unwrap_or(enemy_id);
+            let id = formation_enemy(e, enemy_id);
             let Some(es) = specs.iter().find(|s| s.id == id) else {
                 return Err(err_json(format!("unknown enemy: {id}")));
             };

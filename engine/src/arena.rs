@@ -23,6 +23,7 @@ use crate::data::tenno::Tenno;
 /// One engagement: who shoots, who is shot, from where, for how long.
 #[derive(Debug, Clone)]
 pub struct Arena {
+    pub scene_3d: Option<std::sync::Arc<crate::scene::Scene>>,
     /// WHO THE AIMED BODY IS, by name. `crate::formation::FoeSpec::id` for
     /// every OTHER body; this one is not in `others` — it is the fight's own
     /// target — so its name lives here.
@@ -158,6 +159,7 @@ impl Arena {
     /// exactly this and should not have to spell it out.
     pub fn training(duration_seconds: f64) -> Self {
         Self {
+            scene_3d: None,
             apl: crate::data::apl::Apl::default(),
             target_id: "e1".to_string(),
             tenno: crate::data::tenno::default_tenno().clone(),

@@ -190,3 +190,12 @@ would boot a second copy of the whole SPA to display a table the parent
 already holds. A BLOCKED POPUP IS NOT A SILENCE, and closing the window hands
 it back. `recordMarkup` emits an EMPTY host and `paintRecord` fills it.
 The popup half of the check needs `evaluate(…, { userGesture: true })`.
+
+## Explicit scene diagnostics
+
+An explicit 3D fight includes bounded `scene_3d.flights` alongside the ordinary
+combat events in `/api/log`. Each physical round retains its camera, muzzle, aim
+anchor, emitted direction, homing target and geometric contacts, with the shot
+id joining the existing ledger. The diagnostic reports its own dropped count;
+it does not replace damage rows. Scope and supplied-state limits are in
+[GEOMETRY](GEOMETRY.md).

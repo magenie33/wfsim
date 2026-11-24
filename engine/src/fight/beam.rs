@@ -19,6 +19,28 @@ pub(super) struct BeamRamp {
     pub(super) last_tick: Option<f64>,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub(super) struct TargetRamp {
+    generation: Option<u32>,
+    clock: BeamRamp,
+    factor: f64,
+}
+
+#[wfsim_gas_macro::metered]
+impl TargetRamp {
+    pub(super) fn hit(
+        &mut self, generation: u32, at: f64, step: f64, floor: f64, source: crate::model::BeamRampSpec,
+    ) -> f64 {
+        if self.generation != Some(generation) {
+            *self = Self { generation: Some(generation), ..Default::default() };
+        }
+        if self.clock.last_tick != Some(at) {
+            self.factor = self.clock.tick(at, step, floor, Some(source));
+        }
+        self.factor
+    }
+}
+
 #[wfsim_gas_macro::metered]
 impl BeamRamp {
     /// The multiplier for a tick at `now`, then advance the ramp by one tick's
@@ -47,9 +69,21 @@ mod tests {
     use super::*;
 
     #[test]
+    fn simultaneous_links_advance_a_target_clock_once_and_respawn_starts_cold() {
+        let source = crate::model::BeamRampSpec {
+            rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true,
+        };
+        let mut ramp = TargetRamp::default();
+        assert_eq!(ramp.hit(1, 0., 0.1, 0.2, source), 0.2);
+        assert_eq!(ramp.hit(1, 0., 0.1, 0.2, source), 0.2);
+        assert!((ramp.hit(1, 0.1, 0.1, 0.2, source) - (0.2 + 0.8 / 6.)).abs() < 1e-12);
+        assert_eq!(ramp.hit(2, 0.2, 0.1, 0.2, source), 0.2);
+    }
+
+    #[test]
     fn native_cooldown_divides_time_state_before_normalizing_progress() {
         let source = Some(crate::model::BeamRampSpec {
-            rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0,
+            rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: false,
         });
         let mut native = BeamRamp { progress: 1.0, last_tick: Some(0.0) };
         let mut ordinary = native;

@@ -53,9 +53,10 @@ gauge twice**. A weak-point hit is a LANDING, not a trigger pull.
 
 ### What is implemented
 
-The three `latron*_incarnon` entries declare no `ricochet:` and carry the
-bounce as an admission instead; `punch_through_mods: false` was already there
-and is now measured. `FightParams::struck_bodies` is computed per FORM
+The three `latron*_incarnon` entries use `rebound_blast` in 3D scenes and
+`punch_through_mods: false`. Rebounds follow posed surface normals, detonate
+at contacts and spend three reflections before the fourth collision. The
+planar scene settles the first contact. `FightParams::struck_bodies` is computed per FORM
 (`fight::open`), and `spread::PunchedWeakPoints` carries the punched weak
 points back to the aimed path, which fires each trigger once per landing and
 counts them in `RunResult::headshots_on_others` for the gauge.
@@ -69,6 +70,9 @@ Galvanized Scope's per-stack clocks and the two guards on a locked buff.
 
 ### Still open
 
-The reflection itself. A deterministic angle-of-incidence bounce needs
-surfaces, which is a 2D-arena decision and not a weapon one — recorded here
-rather than modelled, and the weapons say so on the page.
+The native scheduler control in `20261121T133426Z-firearm-3d-fidelity-source-controls`
+requests an expiry 2.4 s after the first eligible contact. Further contacts
+preserve the appointment. The 3D scene uses that clock after a bounce and the
+declared lifespan as a fallback for the measured free-flight detonation.
+The exact no-contact gate, dynamic terrain and lethal-contact collider order
+still need a joined capture.

@@ -96,12 +96,10 @@ What it turned on:
 
 What is still open here:
 
-- **THE BLOOM.** Native growth, recovery and smoothing formulas are available,
-  but their per-form update/emission ordering remains unreviewed. Shots use
-  the resting range; the sustained limit is carried unused. Native profiles
-  select hip/aimed ranges and sample the client's elliptical emission geometry.
-  Camera recoil follows the fixed-reticle compensation assumption. The
-  `client_accuracy_runtime` admission states the remaining live-state gap;
+- **Live accuracy inputs.** Bound 3D firearms use the stationary shooting channel.
+  Movement, intentional view rotation, equip-to-fire transients and native
+  random stream lifecycle are outside that contract. Planar fights and profiles
+  without an applicable live binding use their authored spread envelope;
 - **the body proxy**, whose shared radius is `space::BODY_RADIUS_M`. Spread
   retains a three-dimensional ray and projects its closest point to plane
   coordinates plus height; vertical scatter still counts as a miss. Actual
@@ -596,10 +594,11 @@ does not establish complete runtime or in-game calibration. Supported ordinary
 damage, rates, charge, reload and generic sampler inputs are applied; the register
 below is scoped to the affected entries through structured reason ids.
 
-- `client_accuracy_runtime`: resting hip/aim envelopes; growth, recovery,
-  smoothing and emission order remain unmodelled. Perfect recoil compensation
-  holds the reticle steady and is the default player model.
-- `client_special_spread`: fan, first-pellet and charge-dependent emission.
+- `client_accuracy_runtime`: live growth, recovery and smoothing are applied
+  to bound stationary 3D firearm profiles. Equip and stance transitions,
+  native random state and unbound profiles retain limits.
+- `client_special_spread`: custom beam patterns, arbitrary partial charges and
+  firing variants without full emission bindings.
 - `client_beam_target_ramp`: shared ramp progress instead of target-local state.
 - `client_spool_pellets` and `client_rate_spool`: a declared pellet stage and
   shot-count ramp span; native counter cadence and reset remain unverified.
@@ -623,8 +622,10 @@ below is scoped to the affected entries through structured reason ids.
   separate nock timer.
 
 These limits supplement each weapon's existing specific admissions. The 3D
-direction sampler projects its ray into the arena plane with height retained;
-human silhouettes and a spread-driven headshot model remain outside that geometry.
+direction sampler projects its ray into the arena plane with height retained.
+Human silhouettes and spread-driven headshots use the explicit scene in
+`GEOMETRY.md`. Live equipped poses, shot emission, update timing, registered
+scene shapes and world-query filtering remain calibration inputs.
 
 ### Scourge and Scourge Prime — source bindings and open consumers
 
@@ -651,13 +652,11 @@ flight retains a declared constant-speed approximation. Gravity, speed decay and
 throw's `IgnoreFireIterations` consumer remain unmodelled; multishot currently
 uses separate damage instances. These limitations are `client_scourge_throw`.
 
-`ReleasePriestSpear` declares a 14 m application area and 5 s pulse interval;
-the projectile lives 20 s after impact. The attached attractor record declares
-`AttractRadius=1`, `LifeSpan=5` and damage buffering. Those are configuration
-inputs, not a closed steering/initialization consumer or a measured effective
-headshot duration. The aiming aid, spatial application and persistent pulse
-entity remain unmodelled (`client_scourge_field`). A miss outside the field's
-actual reach can therefore still receive the target-only CO approximation.
+`ReleasePriestSpear` declares a 14 m application area, a 5 s pulse interval and
+a 20 s projectile lifetime after impact. The 3D scene applies that pulse from a
+posed body contact. The attached attractor record declares `AttractRadius=1`,
+`LifeSpan=5` and damage buffering. Installed redirection, floor attachment
+and the resulting weak-point damage remain unmodelled (`client_scourge_field`).
 
 Primary CO follows the authoritative catalog's ordinary additive class, while
 the weapon page's Known Bugs describes multiplicative primary-fire Galvanized

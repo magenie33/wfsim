@@ -119,16 +119,16 @@ ui:
   "This entry uses the fully spooled pellet count; the initial pellet-count ramp and reset are not simulated.": "此条目使用完全预热后的弹丸数量；尚未模拟起始弹丸数量的增长与重置。"
   "The burst uses the base magazine's round count; its length does not grow with magazine capacity.": "连发使用基础弹匣的发数；连发长度尚不随弹匣容量增长。"
   "Some battery defaults are absent from the parsed records; the published recharge convention remains in use.": "解析档案缺少部分电池默认参数；目前保留已公布的充能规则。"
-  "The native fan, first-pellet or charge-dependent spread override is not simulated; the declared spread approximation remains in use.": "尚未模拟原生扇形、首弹丸或随蓄力变化的散布覆盖规则；目前保留条目所声明的散布近似。"
+  "Bound 3D projectile forms apply their declared fan or charge endpoints. Custom beam patterns and unselected firing variants use the declared approximation.": "已匹配的 3D 弹体模式采用各自的扇形或蓄力端点。自定义光束与尚未接入的射击变体沿用条目近似。"
   "Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated.": "已绑定原生弹体回调作为来源证据；尚未模拟未核实的回调时序、缩放和附加效果。"
   "Primary fire uses ray collision; the native projectile's collision width is not simulated.": "主射击按射线判定碰撞；尚未模拟原生弹体的碰撞宽度。"
-  "Bullet Attractor is approximated as a CO status on the aimed target; spatial application, field pulses and bullet redirection are not simulated.": "子弹吸附场目前近似为所瞄目标身上的一种 CO 状态；尚未模拟施加范围、场的脉冲和弹道吸附。"
+  "Bullet Attractor applies a CO status via spatial pulses in 3D and on the aimed target in the planar scene. Bullet redirection and floor attachment remain uncalibrated.": "子弹吸附场在 3D 场景里按空间脉冲施加 CO 状态，平面场景则施加给瞄准目标。弹道吸附和钉在地面后的表现仍待校准。"
   "The throw's projectile selection is unverified. Flight is straight, and multishot uses separate damage instances.": "尚未核实投掷实际使用的弹体；目前按直线飞行、多重射击逐个结算伤害处理。"
   "Primary-fire Condition Overload uses the catalog's additive rule; its conflict with the weapon page's multiplicative claim is unresolved.": "主射击的 CO 按专表的加算规则计算；武器页面写作乘算，这一冲突尚未解决。"
   "Maximum Deviation": "最大偏移角"
-  "resting and sustained angular limits; sustained spread growth is not simulated": "静止与持续开火时的角度上限；尚未模拟持续开火时散布的增长"
-  "Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.": "尚未模拟持续开火时散布的增长、恢复和平滑；射击使用所选瞄准状态下的静止散布。后坐力按压枪保持准星稳定处理。"
-  "Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated.": "光束伤害爬升进度由所有目标共用；尚未模拟各目标独立的爬升起点和重新锁定。"
+  "angular limits for the selected aiming state": "当前瞄准状态的散布角度范围"
+  "Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.": "已匹配的 3D 站姿射击会计算散布增长、恢复与平滑。切换武器、移动姿势及未匹配的射击模式仍有局限。玩家保持准星稳定。"
+  "The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target.": "游戏内首次命中和重新锁定的爬升时序还有待校准。具备对应源数据的 3D 光束可以为每个目标独立记录爬升进度。"
   "Delivered by": "交付"
   "Calculated by": "计算"
   "Verified by": "验证"
@@ -1043,6 +1043,16 @@ ui:
   "Download for {os}": "下载 {os} 版"
   "Drain": 消耗
   "Duration (s)": 时长（秒）
+  Simulation geometry: 模拟几何
+  Standing reference muzzle: 使用站立参考枪口
+  Approximate melee reach: 使用近战范围近似
+  Head aim: 瞄准头部
+  Head aim %: 瞄准头部比例
+  Aim at the head while charging: 充能时瞄准头部
+  2D: 平面
+  3D · Arena positions: 三维 · 场地位置
+  3D · Contact: 三维 · 贴身
+  3D · Custom scene: 三维 · 自定义场景
   "Each pellet adds 2 to the melee combo count, up to 28 a shot, and on Kullervo it adds 7 s of combo duration (wiki). There is no melee weapon here, so none of this applies.": "每颗弹丸给近战连击数 +2，单发上限 28；装在 Kullervo 身上还会给近战 +7 秒连击持续时间（wiki）。这里没有近战武器，所以都不适用。"
   "Equipping it also takes the melee slot, so a Vinquibus loadout has no melee weapon; this fight has no melee to give up.": "装备它会同时占用近战槽位，所以带 Vinquibus 的配置没有近战武器；本场本来就没有近战。"
   "Each way costs an animation — {in}s in, {out}s out, both scaled by reload speed.": 两个方向各有一段动作 —— 进入 {in} 秒、退出 {out} 秒，都会被装填速度缩放。
@@ -1957,7 +1967,7 @@ ui:
   "req pins the slot — the pool marks give way": 必带会钉死这个槽位 —— 候选标记随之清除
   "req pins the tier — the pool marks give way": 必带会钉死这一层 —— 候选标记随之清除
   "req": 必带
-  "The rockets aim for the torso, so a high headshot rate is not reachable in play, though this entry uses whatever is set.": "火箭瞄准躯干，所以实战中达不到高爆头率，但本条目会按设定的数值计算。"
+  "Live equipped muzzle/pose, target installation and projectile sweep are unbound; the experimental scene consumes supplied state.": "尚未绑定实战装备的枪口、姿态、目标安装及弹丸扫掠；实验场景使用显式提供的状态。"
   "rolls": 区间
   "running {n} simulations…": 正在跑 {n} 次模拟…
   "running": 个生效中
@@ -2239,7 +2249,7 @@ ui:
   "The mines are detonated by hand with the alt-fire, and several can be laid first (wiki). The sim detonates each on landing: the ceiling for one mine. Laying several and detonating them together is not modelled.": "地雷由副射击手动引爆，可以先布置多颗（wiki）。模拟让每颗落地即爆，这是单颗地雷的上限。先布置多颗再一起引爆的打法未建模。"
   "The mines are detonated by hand with the alt-fire, up to four at a time (wiki). The sim detonates each on landing: the ceiling for one mine. Sticking four and detonating them together is not modelled.": "地雷由副射击手动引爆，最多同时四颗（wiki）。模拟让每颗落地即爆，这是单颗地雷的上限。先粘上四颗再一起引爆的打法未建模。"
   "Fired until the next shot would empty the battery, then held while it refills: 1 s back to full, where an empty battery's reload animation is 2 s.": "一直射击到下一发会打空电池为止，然后停火等它回满：回满只要 1 秒，而打空后的换弹动画要 2 秒。"
-  "Inside 10 m the miniature rifles pick their own spot, modelled in outline: at contact every round lands where it is aimed; at 10 m against one enemy half of them miss and none finds a head; each further enemy in reach takes some of the misses away, none left at four. In game the two rounds of a burst can land on different enemies; here both land on the aimed one, so the total is about right and the aimed enemy's share reads high.": "10 米内微型步枪会自己选落点，这里只做了大致建模：贴脸时每发都打在瞄准处；10 米、只有一个敌人时一半空枪，且打不中头；范围内每多一个敌人空枪就少一些，四个敌人时不再空枪。游戏里同一次连发的两发可以打到不同敌人；这里都算在瞄准的敌人身上，所以总伤害大致准确，但瞄准目标分到的偏多。"
+  "The miniature rifles use the measured lock-on outline inside 10 m. Rounds can select distinct bodies in 3D. The game's exact target order remains uncalibrated.": "微型步枪在 10 米内沿用已有测量的锁定近似。3D 场景里不同发可以锁定不同敌人，游戏内的精确选敌顺序仍待校准。"
   "The missiles home, which is not modelled; with one target at zero distance, homing and straight missiles land the same.": "导弹会追踪，未建模；只有一个零距离目标时，追踪与直射的命中结果相同。"
   "The alt-fire's third attack, a burn in 6 m between the contact hit and the explosion, is not counted: the engine carries one direct hit and one explosion per attack. The number reads low.": "副射击的第三段攻击（接触命中与爆炸之间、6 米内的灼烧）未计入：引擎每次攻击只带一次直击和一次爆炸。数字偏低。"
   "The module's third attack, 'Infested Harpoon Contact', is the damage dealt while the target is held, a state the engine does not track; it is not counted.": "模块中的第三段攻击「Infested Harpoon Contact」是目标被定住期间造成的伤害，引擎不追踪这种状态，所以未计入。"
@@ -2253,7 +2263,7 @@ ui:
   "the player does not move or aim by hand here": 这里的玩家不移动，也不手动瞄准
   "The primary fire homes on a beaconed target for 20 s (wiki); shots here already land where aimed, so homing adds nothing.": "主射击会在 20 秒内追踪被标记的目标（wiki）；这里的子弹本来就落在瞄准处，所以追踪不产生收益。"
   "the progenitor element — pool = searched, req = pin one": 始祖元素——pool 表示纳入搜索，req 表示钉死一个
-  "The projectile's bounces are not counted. It bounces up to three times, each a reflection off what it hit, so off a body killed by a weak-point hit it leaves almost straight up. The plane has no surfaces, so the shot scores where it lands; in a tight corridor the bounces add up to three more collisions and explosions, and the number reads low.": "弹体的反弹未计入。它最多反弹三次，每次都是从被击中物体上反射出去，所以从被弱点击杀的目标身上几乎是笔直向上飞走。本场没有表面，所以只计落点；在狭窄的走廊里，反弹最多再带来三次碰撞和三次爆炸，数字偏低。"
+  "Rebounds use stationary posed surfaces in 3D. Corpse transitions, lifetime resets after impacts and wall geometry remain uncalibrated. The planar scene resolves the first contact.": "3D 反弹使用固定姿态的碰撞面。尸体倒地、命中后寿命刷新和墙体几何仍待校准。平面场景结算首次命中。"
   "The projectile explodes on impact or after 15 m (wiki). This entry treats 15 m as the reach, which stops the direct hit correctly but also stops the explosion, so beyond 15 m it deals nothing here while in game it still explodes.": "弹体在命中或飞行 15 米后爆炸（wiki）。本条目把 15 米当作射程，这能正确地截断直击，但也截断了爆炸，所以超过 15 米时这里没有伤害，而游戏里仍会爆炸。"
   "The projectile's thickness is left blank on the page; the sim fires a ray, so only bodies on the line are hit either way.": "页面没有填写弹体的厚度；模拟发射的是射线，所以无论多厚，都只命中线上的目标。"
   "The projectile is a wall 3 m thick (4.4 m on the Tenet variant) that sweeps everything in that band; the sim fires a ray, so only bodies on the line are hit and against a crowd the number reads low.": "弹体是一道 3 米厚的墙（Tenet 版本为 4.4 米），会扫过这个宽度内的一切；模拟发射的是一条射线，只命中线上的目标，所以面对人群时数字偏低。"
@@ -2269,7 +2279,7 @@ ui:
   "The rocket flies at 60 m/s and can be shot down; nothing shoots back here, so every rocket arrives.": "火箭以 60 米/秒飞行，可以被打掉；这里没有东西会还击，所以每枚火箭都会命中。"
   "The rockets can be guided by aiming and fired from behind cover, at half speed while guided (20 m/s against 40). The target here does not move, so guidance changes nothing.": "火箭可以通过瞄准来引导，也能从掩体后发射，引导时速度减半（20 米/秒对 40 米/秒）。这里的目标不会移动，所以引导没有影响。"
   "The rockets arm only after 7 m (wiki); closer, they hit without exploding. The sim applies the explosion at every range, so a fight set inside 7 m reads high by the whole explosion, most of the weapon.": "火箭飞行 7 米后才会解除保险（wiki）；距离更近时只命中、不爆炸。模拟在任何距离都计算爆炸，所以设定在 7 米内的战斗数字偏高，偏高的量就是整次爆炸，也就是这把武器的大部分伤害。"
-  "The rockets home within 15 degrees; every shot here hits anyway, so homing adds nothing.": "火箭会追踪 15 度内的目标；这里本来就每发都命中，所以追踪不产生收益。"
+  "Homing is resolved only with an explicit scene_3d; the default planar scene assumes its configured hit parts.": "仅在显式 scene_3d 场景中计算追踪；默认平面场景沿用设定的命中部位。"
   "An Enkaus hit that leaves an ink-stained enemy below 35% health kills it outright, as one hit at 600% critical chance, 1x critical multiplier and a forced Corrosive status (wiki); the stain comes from the alternate fire or Follie's passive, and bosses and enemies with special states are spared. Nothing is ink-stained here, so every enemy is shot down to zero and the number reads low.": "Enkaus 的命中若让被墨迹沾染的敌人血量低于 35%，会直接将其击杀，这一击为 600% 暴击率、1 倍暴击伤害并必定触发腐蚀异况（wiki）；墨迹来自替代射击或 Follie 的被动，首领和处于特殊状态的敌人不受影响。这里没有任何敌人被墨迹沾染，所以每个敌人都要打到零血，数字偏低。"
   "Primary fire on an ink-stained enemy spends no ammo and restores 0.33 rounds per enemy hit (wiki). Nothing is ink-stained here, so every tick spends a round and the beam reloads on its usual schedule; the number reads low.": "主射击命中被墨迹沾染的敌人时不消耗弹药，且每命中一个敌人返还 0.33 发（wiki）。这里没有任何敌人被墨迹沾染，所以每跳都消耗一发，光束按平常的节奏换弹；数字偏低。"
   "Unmeasured: the page gives the beam a 30 m range and the weapon module 36 m. The sim uses 36 m, so a fight set between 30 m and 36 m reads high if the page is right.": "未实测：页面写光束射程 30 米，武器模块写 36 米。模拟用 36 米，所以如果页面是对的，设定在 30 到 36 米之间的战斗数字偏高。"
@@ -2295,13 +2305,11 @@ ui:
   "Eclipse's damage buff does not reach this chamber in game (wiki, Bugs); here a buff reaches every weapon, so with Eclipse up the number reads high.": "游戏里黯然失色的伤害加成对这种枪膛无效（wiki，Bugs 一节）；这里增益对所有武器都生效，所以开着黯然失色时数字偏高。"
   "The projectile has a width, smaller than the secondary's; the sim fires a ray, so with infinite punch through only bodies on the line are hit.": "弹体有宽度（比副武器的小）；模拟发射的是射线，所以即使无限穿透，也只命中线上的目标。"
   "The sphere also forms at the beam's maximum range (3 m, page); here the range is a hard limit, so a target up to 3 m beyond it takes nothing.": "在光束最大射程处也会形成球形范围（3 米，页面）；这里射程是硬上限，所以射程外 3 米内的目标什么都吃不到。"
-  "Chains skip enemies already hit by the main beam (page); here a chain can hit a body the beam passed through, so the number reads high.": "连锁不会打已被主光束命中的敌人（页面）；这里连锁可以打到被光束穿过的目标，所以数字偏高。"
   "The tendrils auto-target with a slight delay before dealing damage, while ammo is spent (page); not modelled.": "触须自动索敌，造成伤害前有轻微延迟，期间仍消耗弹药（页面）；未建模。"
   "The Condition Overload catalog prices this weapon's term on a fixed 57 damage whatever the grip, which cannot be expressed as a share of the direct hit. The direct hit takes the ordinary term on its own Impact instead: none on the default Gibber grip, 261 on Haymaker.": "异况超量目录对这把武器的加成固定按 57 点伤害计算，与握把无关，这无法表达为直击的一个比例。这里改为按直击自身的冲击伤害计算常规加成：默认的 Gibber 握把为零，Haymaker 为 261。"
   "The projectile falls off from 13 m to 26 m to an unpublished amount, so no falloff is applied.": "弹体在 13 米到 26 米之间衰减，衰减到多少没有公开，所以这里不应用衰减。"
   "The sac arcs heavily, reduced by Projectile Speed; not modelled.": "孢囊弧线很大，弹速可以减小弧度；未建模。"
-  "The three tendrils fan out within 6 m of the main target (page); here the chain hops 6 m from each previous enemy. Against a tight group the two agree; an enemy 6-12 m from the first is reached here and not in game.": "三条触须会在主目标 6 米范围内散开（页面）；这里的连锁则是每一跳距离上一个目标 6 米。面对密集的敌群两者一致；距离第一个目标 6–12 米的敌人，这里能打到，游戏里打不到。"
-  "With punch through, chains come only from the furthest target the beam hits (page); here every body the beam crosses starts its own chain, so the number reads high.": "带穿透时，连锁只从光束命中的最远目标发出（页面）；这里光束穿过的每个目标都会各自发出连锁，所以数字偏高。"
+  "The tendrils fan out from the final direct contact and skip directly struck enemies in 3D. The planar scene uses a sequential chain.": "3D 场景中，触须从最后一个直射命中点向外分叉，跳过已被直射命中的敌人。平面场景使用逐跳连锁。"
   "The tendril auto-targets, with a noticeable delay between firing and dealing damage while ammo is spent (page); the delay is not modelled.": "触须会自动索敌，从开火到造成伤害有明显的延迟，期间仍消耗弹药（页面）；这段延迟未建模。"
   "The tendrils aim themselves at different enemies and can fail to lock, losing damage (page). All five land on the target here, which is what staying at melee range and aiming directly produces.": "触须会各自锁定不同的敌人，也可能锁定失败，损失伤害（页面）。这里五条全部命中目标，这是贴身直接瞄准时的情况。"
   "An auto-targeted tendril always aims at the enemy's centre and never headshots; only one aimed above the enemy can.": "自动索敌的触须总是瞄准敌人中心，不会爆头；只有往敌人上方瞄的那条可以。"
@@ -2790,7 +2798,7 @@ ui:
   "In game the blast staggers the wielder; the player has no body here, so it costs nothing.": "游戏里爆炸会让使用者踉跄；这里玩家没有身体，所以没有代价。"
   "The blast needs no line of sight. There is no cover here, so the perk adds nothing.": "爆炸不需要视线。本场没有掩体，所以这个天赋不产生额外收益。"
   "This weapon is silent; there is nobody to alert here, so stealth is worth nothing.": "这把武器是静音的；这里没有会被惊动的敌人，所以潜行没有价值。"
-  "A bounce here reflects off enemies only; in game walls and the floor count too, so with cover the number reads low.": "这里的反弹只发生在敌人身上；游戏里墙和地面也算，所以有掩体时数字偏低。"
+  "The 3D arena reflects off posed enemies and the open floor. Wall and cover geometry remain outside this scenario.": "3D 场景可从有姿态的敌人和开放地面反弹，墙体和掩体几何仍在该场景范围之外。"
 
   # WHAT THE WARFRAME BRINGS: the squad aura and archon shard panel. The
   # aura and shard NAMES are not here — those are ids and live in names.yaml.

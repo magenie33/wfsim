@@ -736,6 +736,7 @@ fn faction_bonus_applies_only_vs_matching_target_faction() {
         t
     };
     let arena = |target, body_parts| crate::arena::Arena {
+        scene_3d: None,
         target,
         body_parts,
         ..crate::arena::Arena::training(10.0)

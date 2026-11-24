@@ -63,6 +63,8 @@ attack:
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 100
+  # Kinematic GunProjectile uses the A2AA00 continuation (AHOM-RUNTIME-01).
+  projectile_reverse_query: true
   fire_rate: 2.5
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0

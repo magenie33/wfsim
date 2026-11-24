@@ -51,6 +51,7 @@ fn scenario(duration: f64, level: u32) -> Scenario {
     // sentinel policy: nothing on the field triggers its conditionals
     Scenario::from_panels(
         Arena {
+            scene_3d: None,
             apl: Default::default(),
             squad_size: 1,
             target_id: "e1".to_string(),

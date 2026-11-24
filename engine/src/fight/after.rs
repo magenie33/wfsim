@@ -15,6 +15,8 @@ use super::*;
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn after_the_landing(
+    finalizes: bool,
+    base_form_at_fire: bool,
     params: &FightParams,
     apl: &crate::data::apl::Apl,
     flash: bool,
@@ -54,6 +56,15 @@ pub(super) fn after_the_landing(
     rs_armed: &mut bool,
     opening_closed: &mut bool,
     field_duration_boost: &mut bool,) {
+        if !finalizes {
+            if let Some((cy,charge_on))=params.cycle.as_ref().and_then(|cy|match cy.arms {
+                Arms::Gauge{charge_on,..}=>Some((cy,charge_on)),_=>None,
+            }) {
+                charge_the_gauge(params,apl,flash,rec,rng,d,cy,charge_on,base_form_at_fire,
+                    pellets_before,headshots_before,t,r,ammo,incarnon,double_tap,buff_stacks,rs_armed,opening_closed);
+            }
+            return;
+        }
         // A SCOPED SHOT THAT HIT NOTHING TAKES ONE OFF THE SHOT COMBO COUNTER
         // (M117): by one, not to zero; the decay timer keeps its own clock; and a
         // miss from the hip takes nothing.
@@ -80,7 +91,7 @@ pub(super) fn after_the_landing(
         // applied to an enemy runs its own clock. A field the sim never
         // re-pulses and a debuff that survives its field are the same thing
         // from the target's side, which is the only side this arena has.
-        if let Some(secs) = active.attractor_seconds {
+        if let Some(secs) = active.attractor_seconds.filter(|_| params.scene_3d.is_none()) {
             DebuffState::push_capped(&mut bodies[0].debuffs.attractor, *t + secs, 1, *t);
         }
 
@@ -209,7 +220,7 @@ pub(super) fn after_the_landing(
             })
         {
             charge_the_gauge(
-                params, apl, flash, rec, rng, d, cy, charge_on, active.form == cy.base_form.form, pellets_before, headshots_before,
+                params, apl, flash, rec, rng, d, cy, charge_on, base_form_at_fire, pellets_before, headshots_before,
                 t, r, ammo, incarnon, double_tap, buff_stacks,
                 rs_armed, opening_closed,
             );

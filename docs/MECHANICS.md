@@ -1956,8 +1956,10 @@ An `attack.beam.ramp` binds native rise time, idle delay and cooldown divisor.
 The native state is elapsed ramp time: `c = max(c - dt / divisor, 0)`,
 `progress = c / rise_seconds`. Normalized decay therefore divides by
 `rise_seconds * cooldown_divisor`. Unbound beams retain the two-second
-normalized convention. First-tick scheduling and independent target ramp
-state remain unmodelled (`client_beam_target_ramp`).
+normalized convention. In 3D, a source declaration of
+`AttenuateContinuousDamagePerTarget` selects independent target clocks
+for damage from primary beams and their links. First-tick initialization
+and native reacquisition scheduling remain uncalibrated.
 
 Shape, not a damage part. It lives in `attack.beam` and is deliberately **not**
 a `radial:`, because in this engine that word means *a second damage instance*
@@ -3499,18 +3501,26 @@ Source-backed `spread.sampling` profiles use the client's emission geometry:
 randomize `A = clamp(u0 * S, 0, 179)`, sample azimuth and square-root disk
 radius, then scale the two axes by `horizontal_ratio` and its complement.
 The disk's radius is `tan(A * pi / 360)`. Uniform multi-iteration emission
-uses azimuth `2*pi*index/count` and unit radial input; each round still draws
-its own cone parameter. Multishot copies retain the round's sampled direction.
-The portable sampler reproduces bounded native vectors within float32
-rounding; native seed setup and cross-call correlations are uncalibrated.
+uses azimuth `2*pi*index/count` and unit radial input. Each round still draws
+its own cone parameter. Ordinary multishot copies retain that direction (M119).
+The portable sampler reproduces bounded native vectors within float32 rounding.
+The simulator supplies its own deterministic random stream.
 
-Those profiles select their declared hip or aimed resting range from the
-Tenno's aiming state. Native `WEAPON_SPREAD` upgrades reduce each endpoint by
-`max(1 - accuracy_bonus, 0)`; the added-spread term follows that scaling.
-Attuned Accuracy requires aiming. Live growth, recovery, smoothing and special
-emitters remain unmodelled. The default fixed-reticle contract perfectly
-compensates camera recoil, which does not reduce hit rate. Intrinsic spread
-still applies.
+Native forms select their hip or aimed profile. `WEAPON_SPREAD` upgrades scale
+the endpoints by `max(1 - accuracy_bonus, 0)`; added spread follows that bracket.
+Attuned Accuracy requires aiming. Hit-triggered Accuracy starts on landing
+and affects later emissions. Every round in a release uses the same
+pre-emission Accuracy state, including projectiles that land later.
+
+A stationary 3D fight starts with the selected firing form's settled spread
+at its idle endpoint. The shooting channel grows on each release, recovers
+after its frame-based delay, and feeds the critically damped spread consumed
+by the next release. Inverse profiles widen toward the idle bound during
+recovery. The default reticle stays on its selected point and compensates
+camera recoil. The Coda Bubonico primary uses independent fixed-cone disk
+samples and a minimum spread for added multishot. Declared projectile fans
+use per-slot angles with spread jitter, and bound charge forms use their
+release or full-charge spread attenuation.
 
 ## 12. BEAM CHAINING — the mechanic a second target turns on
 
@@ -4338,3 +4348,10 @@ its two grants want the same treatment `OnReloadFireRate` already has — a
 
 **Status:** known gap, not a wrong number — the Stats panel's reading is right
 for what that panel is.
+
+## Experimental supplied 3D scene
+
+An explicit `scene_3d` request uses the shared collision and flight adapter in
+[GEOMETRY](GEOMETRY.md). In this scene, headshot percentage controls reticle
+intent and recoil compensation; intrinsic spread, player/enemy models and
+homing determine the actual part. The default planar policy remains §11.

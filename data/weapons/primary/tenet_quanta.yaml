@@ -84,6 +84,7 @@ attack:
       rise_seconds: 1.0
       cooldown_delay_seconds: 2.0
       cooldown_divisor: 2.0
+      per_target: true
 beam_ramp_floor: 0.5
 
 source:

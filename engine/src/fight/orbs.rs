@@ -1,4 +1,5 @@
 use crate::rules::math::Portable;
+use crate::rules::geometry::Vec3;
 use super::*;
 
 /// PUT AN ORB IN THE AIR at `t`, from the muzzle, along the aim.
@@ -48,8 +49,9 @@ pub(super) fn throw_orb(
     live.push(Entity::Orb(OrbState {
         owner,
         part: o,
-        at: muzzle,
-        dir,
+        at: Vec3([muzzle.x, 0., muzzle.y]),
+        dir: Vec3([dir.x, 0., dir.y]),
+        spatial_ready: false,
         at_time: t,
         contacted: false,
         // THE FIRST STRIKE IS AT THE THROW, and the clock runs from there
@@ -79,10 +81,11 @@ pub(super) struct OrbState {
     /// Where it is. Advanced to each event's time as that event is settled,
     /// which is all the resolution this needs — nothing between two strikes
     /// asks where it is.
-    pub(super) at: crate::rules::space::Vec2,
+    pub(super) at: Vec3,
     /// Unit heading, fixed at the throw: touching a body slows it and does not
     /// turn it.
-    pub(super) dir: crate::rules::space::Vec2,
+    pub(super) dir: Vec3,
+    pub(super) spatial_ready: bool,
     /// The clock `at` was last advanced to.
     pub(super) at_time: f64,
     /// Has it touched a body yet? The one thing that changes its speed.
@@ -109,14 +112,10 @@ impl OrbState {
     /// position model exists to get right.
     /// This orb `metres` further along its heading. `dir` is a unit vector, so
     /// there is nothing to normalise.
-    pub(super) fn step(&self, metres: f64) -> crate::rules::space::Vec2 {
-        crate::rules::space::Vec2::new(
-            self.at.x + self.dir.x * metres,
-            self.at.y + self.dir.y * metres,
-        )
-    }
-
-    pub(super) fn advance(&mut self, to: f64, bodies: &[crate::rules::space::Vec2]) {
+    pub(super) fn advance(
+        &mut self, to: f64, bodies: &[crate::rules::space::Vec2],
+        spatial: Option<(&crate::scene::Scene, &[bool])>,
+    ) {
         while self.at_time < to - 1e-12 {
             let speed = if self.contacted {
                 self.part.speed_after_contact_mps
@@ -130,17 +129,23 @@ impl OrbState {
             let reach = speed * (to - self.at_time);
             let hit = if self.contacted {
                 None
+            } else if let Some((scene, eligible)) = spatial {
+                scene.contact_distance(self.at, self.dir, reach, eligible)
             } else {
-                crate::rules::space::first_hit(self.at, self.dir, bodies).filter(|(_, d)| *d <= reach + 1e-9)
+                let [x, _, z] = self.at.0;
+                let [dx, _, dz] = self.dir.0;
+                use crate::rules::space::{Vec2, first_hit};
+                first_hit(Vec2::new(x, z), Vec2::new(dx, dz), bodies)
+                    .map(|(_, d)| d).filter(|&d| d <= reach + 1e-9)
             };
             match hit {
-                Some((_, d)) => {
-                    self.at = self.step(d);
+                Some(d) => {
+                    self.at = self.at.along(self.dir, d);
                     self.at_time += d / speed;
                     self.contacted = true;
                 }
                 None => {
-                    self.at = self.step(reach);
+                    self.at = self.at.along(self.dir, reach);
                     self.at_time = to;
                 }
             }
@@ -227,12 +232,19 @@ pub(super) fn orb_detonation(
 ) {
     let Some(part) = active.orb_blast else { return };
     for (b, &pos) in body_at.iter().enumerate() {
-        let dist = pos.distance(orb.at);
-        if !crate::rules::space::caught_by_blast(dist, part.radius_m) {
-            continue;
-        }
+        let gap = if let Some(scene) = &params.scene_3d {
+            if bodies[b].state.phase != Phase::Physical { continue; }
+            let distance = scene.distance_to_body(orb.at, b);
+            if distance > part.radius_m { continue; }
+            distance
+        } else {
+            let [x, _, z] = orb.at.0;
+            let dist = pos.distance(crate::rules::space::Vec2::new(x, z));
+            if !crate::rules::space::caught_by_blast(dist, part.radius_m) { continue; }
+            crate::rules::space::blast_reach(dist)
+        };
         // LINEAR FALLOFF MEASURED FROM THE ORB rather than from a body.
-        let mult = orb.damage_multiplier * part.falloff_at(crate::rules::space::blast_reach(dist));
+        let mult = orb.damage_multiplier * part.falloff_at(gap);
         if let (Some(spec), Some(here)) = (params.body(b), bodies.get_mut(b)) {
             field_tick(
                 w,

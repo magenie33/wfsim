@@ -283,6 +283,8 @@ pub struct FightParams {
     /// whether a pellet lands on the target or beside it. `None` = this entry's
     /// spread is not transcribed, so nothing of it may miss.
     pub spread: Option<crate::model::Spread>,
+    pub spread_scaling: Option<crate::model::SpreadScaling>,
+    pub live_accuracy: bool,
     /// The LINGERING FIELD every landed projectile leaves (Torid's Toxin
     /// cloud). A third kind of attack part: it persists and TICKS instead of
     /// landing once, and each tick is a full damage instance — own crit roll,
@@ -712,6 +714,9 @@ pub struct FightParams {
     /// FLIGHT SPEED with its bonuses, metres a second — `None` is a shot that
     /// lands the instant it is fired. See [`Self::flight_seconds`].
     pub projectile_speed_mps: Option<f64>,
+    pub homing: Option<crate::model::Homing>,
+    pub projectile_reverse_query: bool,
+    pub scene_3d: Option<std::sync::Arc<crate::scene::Scene>>,
     /// HOW FAR THIS WEAPON REACHES, metres — `INFINITY` when it declares none.
     /// See [`crate::data::weapons::AttackSpec::range_m`].
     pub range_m: f64,
@@ -817,6 +822,7 @@ pub struct FightParams {
     /// bounce is this attack's collision and this attack's explosion arriving
     /// again, at a body it has not hit yet.
     pub ricochet: Option<crate::model::Ricochet>,
+    pub rebound_blast: Option<crate::model::ReboundBlast>,
     /// A THROWN GLAIVE'S BOUNCES — docs/MELEE.md §10.
     pub thrown_bounce: Option<crate::build::loadout::ThrownBounce>,
     /// See [`crate::data::weapons::AttackSpec::unaimed_headshot_chance`] — this

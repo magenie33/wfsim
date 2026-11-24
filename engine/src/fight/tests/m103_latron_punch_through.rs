@@ -121,11 +121,10 @@ fn m103_a_punched_weak_point_fires_what_a_weak_point_fires() {
     );
 }
 
-/// THE INCARNON FORM PIERCES NOBODY and the base form does — *"Punch Through
-/// does not affect the incarnon projectile"*, ✅ measured (M103) — and no
-/// Latron declares a BOUNCE, whose rule the same reading put out of reach.
+/// M103 measures punch through on the base shot and surface reflections on
+/// the charged projectile, which receives no punch through.
 #[test]
-fn m103_the_incarnon_form_refuses_punch_through_and_declares_no_bounce() {
+fn m103_the_incarnon_form_refuses_punch_through_and_uses_surface_reflections() {
     for id in ["latron", "latron_prime", "latron_wraith"] {
         let inc = format!("{id}_incarnon");
         let panel = |w: &str| {
@@ -141,10 +140,13 @@ fn m103_the_incarnon_form_refuses_punch_through_and_declares_no_bounce() {
             "{inc} takes no punch through: {}",
             panel(&inc).punch_through_m
         );
-        assert!(
-            crate::model::WeaponBase::from_data(&inc, false, &[]).ricochet.is_none(),
-            "{inc} declares no bounce"
-        );
+        let form = panel(&inc);
+        assert!(form.ricochet.is_none());
+        let bounce = form.rebound_blast.expect("M103 surface bounce");
+        assert_eq!(bounce.reflections, 3);
+        assert_eq!(bounce.lifetime_seconds, f64::from(2.4_f32));
+        assert_eq!(bounce.restitution, 0.5);
+        assert!(bounce.start_life_on_impact);
     }
 }
 

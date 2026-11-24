@@ -344,7 +344,8 @@ pub(super) fn charge_the_gauge(
         incarnon.contact_mark = contacts;
         incarnon.weakpoint_mark = weakpoints;
         incarnon.blast_mark = r.blast_gauge_hits;
-        if incarnon.in_base_form && (base_hit || cy.ends != Ends::SingleShot) {
+        // Hits retain their firing form when they land after a return.
+        if incarnon.in_base_form && base_hit {
             // Per PELLET, and per the WEAPON's rule: weak-point hits for
             // the Zariman pistols, any direct hit for the Torid, kills for
             // the Mausolon. A field or radial instance is neither of the

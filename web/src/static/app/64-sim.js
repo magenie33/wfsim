@@ -200,9 +200,9 @@ function fightCardHtml(s = sim) {
     chip(`${s.duration} s`),
     ...(Number(interval) > 0
       ? [chip(`${tr("Estimated attack interval (s)")}: ${Number(interval.toFixed(3))}`)] : []),
-    chip(`${s.headshot_pct}% ${tr("headshots")}`),
+    chip(s.scene_3d ? `${tr("Head aim")} ${s.headshot_pct}%` : `${s.headshot_pct}% ${tr("headshots")}`),
     ...(s.gauge_charging_headshots && (weaponInfo($("weapon").value) || {}).has_cycle
-      ? [chip(tr("headshots while charging"))] : []),
+      ? [chip(tr(s.scene_3d ? "Aim at the head while charging" : "headshots while charging"))] : []),
     chip(tr(s.aiming ? "Aiming" : "hip-fire")),
     chip(`${Math.round(gap * 10) / 10} m`),
     chip(metricLabel(metricOf(s.metric))),
@@ -469,6 +469,25 @@ function renderScenarioFields(ids, opts = {}) {
          </button>
          ${wiki}
        </div>`;
+    const profiles3d = META.scene_3d_source_default;
+    const placement = sim.scene_3d?.placement?.kind || "contact";
+    const sourceDefault = sim.scene_3d?.preset === "source_default";
+    const scene3d = !sim.scene_3d ? "" : sourceDefault && ["supplied", "contact"].includes(placement)
+      ? placement : "custom";
+    const canUse3d = profiles3d?.weapons.includes(w?.id) && profiles3d.enemies.includes(sim.enemy)
+      && (sim.formation || []).every((f) => profiles3d.enemies.includes(f.enemy || sim.enemy));
+    const referenceMuzzle = sourceDefault && profiles3d?.reference_weapons?.includes(w?.id);
+    const meleeVolume = sourceDefault && profiles3d?.melee_weapons?.includes(w?.id);
+    const geometryOptions = [["", tr("2D")], ["supplied", tr("3D · Arena positions")], ["contact", tr("3D · Contact")]];
+    if (scene3d === "custom") geometryOptions.push(["custom", tr("3D · Custom scene")]);
+    const geometry = (canUse3d || scene3d) ? `
+      <label>${escHtml(tr("Simulation geometry"))}
+        <select data-k="scene_3d">
+          ${geometryOptions.map(([id, label]) => `<option value="${id}"${id === scene3d ? " selected" : ""}${id && id !== "custom" && !canUse3d ? " disabled" : ""}>${escHtml(label)}</option>`).join("")}
+        </select>
+        ${referenceMuzzle ? `<small class="scenario-effective">${escHtml(tr("Standing reference muzzle"))}</small>` : ""}
+        ${meleeVolume ? `<small class="scenario-effective">${escHtml(tr("Approximate melee reach"))}</small>` : ""}
+      </label>` : "";
     // EVERYTHING ABOUT THE TARGET LIVES IN THE CANVAS, and
     // only the DURATION stays outside: how long the fight runs is a property of
     // the ENGAGEMENT rather than of anybody standing on the floor, and it is the
@@ -497,6 +516,7 @@ function renderScenarioFields(ids, opts = {}) {
       </div>` +
       `<div class="field-grid">
         ${deployField(w, sim)}
+        ${geometry}
         <label>${escHtml(tr("Duration (s)"))} <input type="number" data-k="duration" min="1" max="3600" value="${sim.duration}"></label>
       </div>`;
     const pick = $(`${ids.target}-pick`);
@@ -642,6 +662,15 @@ function renderScenarioFields(ids, opts = {}) {
     box.querySelectorAll("[data-k]").forEach((el) => {
       el.addEventListener("change", () => {
         const k = el.dataset.k;
+        if (k === "scene_3d") {
+          if (el.value === "custom") return;
+          const enabled = !!el.value;
+          setScenarioFields(enabled
+            ? { scene_3d: { preset: "source_default", placement: { kind: el.value } }, aim_at: null }
+            : { scene_3d: null });
+          if (opts.after) opts.after();
+          return;
+        }
         // A WARFRAME OVERRIDE IS TWO CONTROLS FOR ONE FACT, so it cannot use
         // the generic binding: the tick and the number share a `data-k`, and
         // reading `el.checked` into it would store `true` where a number goes.

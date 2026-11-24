@@ -1404,6 +1404,16 @@ fn form_section(
             None => (sb.min_deg, sb.max_deg),
         };
         let deg = |x: f64| format!("{}°", display_number(x));
+        let runtime = panel.spread_scaling.map_or(Default::default(), |s| s.runtime);
+        let aim_bound = |input| {
+            let input = input * runtime.charge_attenuation.map_or(1.0, f64::from);
+            if let Some(fan) = runtime.fan {
+                let rounds = base.base_multishot.round().max(1.0) as usize;
+                fan.sample(0, rounds, input, 1.0).0.max(fan.sample(rounds - 1, rounds, input, 1.0).0)
+            } else {
+                sr.max_deviation_deg(input)
+            }
+        };
         let pinpoint = sr.min_deg <= 0.0 && sr.max_deg <= 0.0;
         let cone = |a: f64, b: f64| {
             if (a - b).abs() < 1e-9 { deg(a) } else { format!("{}–{}", deg(a), deg(b)) }
@@ -1411,13 +1421,13 @@ fn form_section(
         stats.push(json!({
             "key": "spread",
             "label": if sr.sampling.is_some() { "Maximum Deviation" } else { "Cone" },
-            "base": cone(sr.max_deviation_deg(base_min), sr.max_deviation_deg(base_max)),
-            "final": cone(sr.max_deviation_deg(sr.min_deg), sr.max_deviation_deg(sr.max_deg)),
+            "base": cone(aim_bound(base_min), aim_bound(base_max)),
+            "final": cone(aim_bound(sr.min_deg), aim_bound(sr.max_deg)),
             // THE NOTE IS THE POINT on a pinpoint weapon: it says the
             // accuracy penalty in the build above cost nothing, which is
             // not something a `0° -> 0°` row says by itself.
             "note": if sr.sampling.is_some() {
-                "resting and sustained angular limits; sustained spread growth is not simulated"
+                "angular limits for the selected aiming state"
             } else if pinpoint {
                 "this weapon fires exactly where the reticle is, so an accuracy                      penalty has no cone to widen and costs nothing here"
             } else {

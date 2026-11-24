@@ -699,7 +699,7 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
 #[cfg(test)]
 pub(crate) const STACKING_BUFF_KEYS: &[&str] = &[
     "kind", "trigger", "grants", "rank0", "rankMax", "max_stacks", "duration",
-    "duration_rank0", "chance", "chance_rank0", "decay", "precombat", "per_shell", "cleared_by",
+    "duration_rank0", "chance", "chance_rank0", "decay", "precombat", "per_shell", "cleared_by", "condition",
 ];
 
 /// EVERY `<field>_rank0` LADDERS `<field>` from rank 0 to the max-rank value

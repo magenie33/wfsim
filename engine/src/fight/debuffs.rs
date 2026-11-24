@@ -523,15 +523,6 @@ pub(super) fn heat_strip_steps(elapsed: f64, interval: f64) -> f64 {
     (elapsed / interval + 1e-9).floor()
 }
 
-/// THE ARC A SWING SWEEPS in front of the wielder, degrees, centred on the aim.
-///
-/// A STAND-IN, and the only invented number in [`FightParams::melee_struck`]:
-/// the game publishes an arc for no stance, and the real answer is per ATTACK
-/// INPUT — each animation covers its own wedge. Ninety degrees stands in for
-/// all of them until those are measured. A `360deg` swing is published and
-/// bypasses this; it is not an approximation of anything.
-pub(super) const MELEE_ARC_DEG: f64 = 90.0;
-
 /// Live target-side damage-taken modifiers at one instant (the tick-time
 /// mitigation pipeline — defender-side, evaluated per hit/tick).
 pub(super) struct Mitigation {

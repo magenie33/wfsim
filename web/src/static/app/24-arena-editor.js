@@ -449,7 +449,7 @@ function mountArenaCanvas(host, s, en, opts) {
     rail.innerHTML = TOOLS.map(([id, key, title, svg]) =>
       `<button class="arc-tool" data-tool="${id}" title="${escHtml(title)} (${key})"
          aria-label="${escHtml(title)}" aria-pressed="${id === tool}"${
-        id === "hand" ? "" : dis()}>
+        id === "hand" ? "" : id === "aim" && s.scene_3d ? " disabled" : dis()}>
          <svg viewBox="0 0 22 22">${svg}</svg></button>`).join("");
     optbox.innerHTML =
       `<button class="arc-opt" data-opt="snap" aria-pressed="${snapGrid}"${dis()}
@@ -605,7 +605,10 @@ function mountArenaCanvas(host, s, en, opts) {
     if (tool === "erase") { mode = "erase"; eraseAt(p); return; }
     // …and with the aim tool the whole floor is the marker, which is the only
     // way to put an aim somewhere the first time.
-    if (tool === "aim") { mode = "aim"; s.aim_at = snapTo(p); draw(); paintChips(); return; }
+    if (tool === "aim") {
+      if (!s.scene_3d) { mode = "aim"; s.aim_at = snapTo(p); draw(); paintChips(); }
+      return;
+    }
     // THE ORDER IS WHAT YOU REACH FOR FIRST: a placed aim marker, then an
     // ENEMY, then yourself. The enemy before the player, because at contact
     // they are one grab apart and the enemy is what a formation is made of.
@@ -881,7 +884,7 @@ function mountArena(host, s, en, opts) {
       // body is dragged, but a PLACE has nothing to grab, so it is clicked.
       // Bodies and the marker itself are dragged instead, so they are skipped.
       const svg = e.target.closest && e.target.closest(".ar-svg");
-      if (!svg || (e.target.closest && e.target.closest("[data-drag]"))) return;
+      if (!svg || s.scene_3d || (e.target.closest && e.target.closest("[data-drag]"))) return;
       if (opts.readonly || officialScenarioActive()) return;
       const box = svg.getBoundingClientRect();
       if (!box.width || !box.height) return;

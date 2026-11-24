@@ -90,6 +90,7 @@ pub(super) struct Combatant<'a> {
     pub(super) windows: CardWindows,
     pub(super) weakpoint_pile: LiveStacks,
     pub(super) beam: BeamRamp,
+    pub(super) target_ramps: Vec<TargetRamp>,
     pub(super) field_duration_boost: bool,
     pub(super) field_ctx: FieldCtx,
     pub(super) meter: Meter,
@@ -110,7 +111,10 @@ pub(super) struct Combatant<'a> {
     pub(super) last_shot_t: f64,
     /// ITS SHOTS STILL IN THE AIR, in the order they were fired — see
     /// [`super::flight`]. Always empty for a weapon whose shot does not fly.
-    pub(super) in_flight: Vec<Landing>,
+    pub(super) in_flight: std::collections::VecDeque<Landing>,
+    pub(super) fire_state: crate::scene::FireState,
+    pub(super) spread_state: super::accuracy::SpreadState,
+    pub(super) spatial_recipient: Option<Box<super::spatial::Recipient<'a>>>,
     /// WHAT IT ONLY READS — resolved once from its own build, constant for the
     /// whole engagement.
     pub(super) fixed: Fixed<'a>,
@@ -262,8 +266,8 @@ pub(super) fn open<'a>(
         }
         _ => None,
     };
-    let chain_layout = match (params.beam, params.others.is_empty()) {
-        (Some(b), false) => {
+    let chain_layout = match (params.beam, params.others.is_empty(), params.scene_3d.is_none()) {
+        (Some(b), false, true) => {
             let bodies = &body_at;
             // THE SPLASH CENTRE IS STATIC TOO: the round goes off on the aimed
             // body's surface facing the shooter, and neither of them moves.
@@ -813,6 +817,7 @@ pub(super) fn open<'a>(
             windows,
             weakpoint_pile,
             beam,
+            target_ramps: Vec::new(),
             field_duration_boost,
             field_ctx,
             meter,
@@ -829,7 +834,10 @@ pub(super) fn open<'a>(
             melee,
             influence_until,
             last_shot_t,
-            in_flight: Vec::new(),
+            in_flight: std::collections::VecDeque::new(),
+            fire_state: crate::scene::FireState::default(),
+            spread_state: super::accuracy::SpreadState::default(),
+            spatial_recipient: None,
             other: None,
             fixed: Fixed {
                 uses_field_ctx: params.spawns_entities(),

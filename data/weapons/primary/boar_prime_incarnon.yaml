@@ -126,7 +126,8 @@ attack:
     ramp:
       rise_seconds: 0.6
       cooldown_delay_seconds: 0.8
-      cooldown_divisor: 2
+      cooldown_divisor: 2.0
+      per_target: true
     range_m: 20.0
     damage_radius_m: 0.0
     radius_takes_multishot: false

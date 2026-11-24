@@ -68,7 +68,7 @@ reasons:
   client_battery_defaults:
     text: "Some battery defaults are absent from the parsed records; the published recharge convention remains in use."
   client_special_spread:
-    text: "The native fan, first-pellet or charge-dependent spread override is not simulated; the declared spread approximation remains in use."
+    text: "Bound 3D projectile forms apply their declared fan or charge endpoints. Custom beam patterns and unselected firing variants use the declared approximation."
   client_projectile_callbacks:
     text: "Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated."
 
@@ -93,15 +93,15 @@ reasons:
   client_scourge_primary_collision:
     text: "Primary fire uses ray collision; the native projectile's collision width is not simulated."
   client_scourge_field:
-    text: "Bullet Attractor is approximated as a CO status on the aimed target; spatial application, field pulses and bullet redirection are not simulated."
+    text: "Bullet Attractor applies a CO status via spatial pulses in 3D and on the aimed target in the planar scene. Bullet redirection and floor attachment remain uncalibrated."
   client_scourge_throw:
     text: "The throw's projectile selection is unverified. Flight is straight, and multishot uses separate damage instances."
   client_scourge_primary_co:
     text: "Primary-fire Condition Overload uses the catalog's additive rule; its conflict with the weapon page's multiplicative claim is unresolved."
   client_accuracy_runtime:
-    text: "Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady."
+    text: "Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady."
   client_beam_target_ramp:
-    text: "Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated."
+    text: "The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target."
   heavy_slam_cycle_assumed:
     text: "The heavy-slam loop uses a {cycle} s recovery and the maximum-height radius; the time spent climbing is not simulated."
   blob_over_cap:
@@ -198,7 +198,9 @@ reasons:
   bounce_headshot_assumed:
     text: "Assumed: a bounce lands on a weak point 50% of the time. It can headshot (wiki), but where it lands depends on geometry the sim does not model, and no rate is published."
   ricochet_terrain:
-    text: "A bounce here reflects off enemies only; in game walls and the floor count too, so with cover the number reads low."
+    text: "The 3D arena reflects off posed enemies and the open floor. Wall and cover geometry remain outside this scenario."
+  client_latron_rebound:
+    text: "Rebounds use stationary posed surfaces in 3D. Corpse transitions, lifetime resets after impacts and wall geometry remain uncalibrated. The planar scene resolves the first contact."
   reload_never_interrupted:
     text: "A reload is never interrupted here: in game you can fire mid-reload and keep the shells already loaded. A listed reload is a whole reload, by design."
   # THREE USES ON THE DAY IT WAS WRITTEN (Tenet Envoy, Tenet Diplos, Tenet

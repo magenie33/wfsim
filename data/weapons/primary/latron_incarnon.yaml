@@ -46,20 +46,11 @@ pseudo_reload:
 # any way", which the radial below obeys by declaring nothing.
 co_behavior: independent
 
-# TWO ATTACK PARTS — the collision and its explosion — and A THIRD THING THIS
-# ENGINE DOES NOT TAKE. VERBATIM (wiki): "Incarnon Form changes the weapon's
-# fire mode from hitscan to a traveling projectile that can ricochet off
-# enemies and terrain, exploding up to 6 times with a 4 meter radius, dealing
-# damage once for any collision on enemies, and again for the explosion."
-#
-# THE BOUNCES ARE NOT MODELLED (MEASUREMENTS M103): three at most, each a
-# REFLECTION off what was touched, and a weak-point kill sends the projectile
-# almost straight up. Reflection needs surfaces this plane has none of, and
-# `ricochet:`'s nearest-body walk is the wrong shape for pure geometry — so
-# this entry declares none, and the numbers below are the aimed landing's.
+# A contact explosion and a surface rebound share the arriving projectile.
+# The 3D scene follows each leg to the next contact or the lifetime limit.
 unmodeled:
   - reason: client_accuracy_runtime
-  - "The projectile's bounces are not counted. It bounces up to three times, each a reflection off what it hit, so off a body killed by a weak-point hit it leaves almost straight up. The plane has no surfaces, so the shot scores where it lands; in a tight corridor the bounces add up to three more collisions and explosions, and the number reads low."
+  - reason: client_latron_rebound
 
 attack:
   # see notes: cone_half_angle_from
@@ -74,6 +65,8 @@ attack:
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 120
+  # M103 bounds reflections. The client projectile supplies lifetime and restitution.
+  rebound_blast: { reflections: 3, lifetime_seconds: 2.4000000953674316, restitution: 0.5, start_life_on_impact: true }
   fire_rate: 3.33333333333333
   multishot: 1.0
   ammo_cost: 1                  # of the separate 40-round charge pool

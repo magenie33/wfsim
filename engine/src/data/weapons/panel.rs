@@ -478,6 +478,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         }
     });
 
+    let accuracy = super::accuracy::profile(id);
     let mut base = WeaponBase {
         additional_projectile: None,
         weakness_bonus: s.weakness_bonus.or_else(|| s.transforms_from.as_deref()
@@ -703,7 +704,9 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         reload_from_empty_speed: s.reload_from_empty_speed.unwrap_or(0.0),
         slam,
         shockwave: s.attack.shockwave,
-        spread: s.attack.spread,
+        spread: s.attack.spread.filter(|spread| spread.sampling.is_some())
+            .or_else(|| accuracy.and_then(|profile| profile.resting)).or(s.attack.spread),
+        spread_runtime: accuracy.map_or(Default::default(), |profile| profile.runtime),
         // Only an EVOLUTION grants one (Lone Enforcer); no weapon declares it.
         multishot_beyond_range: None,
         falloff: s.attack.falloff.clone(),
@@ -713,6 +716,8 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         // A HIT-SCAN OR BEAM ATTACK HAS NO FLIGHT whatever it states, and an
         // ORB attack's trigger deploys the orb, which flies at its own
         // `OrbSpec::speed_mps`.
+        homing: s.attack.homing,
+        projectile_reverse_query: s.attack.projectile_reverse_query,
         projectile_speed_mps: s
             .attack
             .projectile_speed_mps
@@ -799,6 +804,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         orb: s.attack.orb.as_deref().copied(),
         meter: s.attack.meter,
         ricochet: s.attack.ricochet.as_ref().map(|r| crate::model::Ricochet {
+            reflects_from_surfaces: r.reflects_from_surfaces,
             bounces: r.bounces,
             headshot_chance: r.headshot_chance,
             // NO RANGE IS NOT ZERO RANGE — it is the page stating no limit but
@@ -806,6 +812,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             // hit yet, however far".
             range_m: r.range_m.unwrap_or(f64::INFINITY),
         }),
+        rebound_blast: s.attack.rebound_blast,
         thrown_bounce: s.attack.thrown_bounce.as_ref().map(|b| crate::model::ThrownBounceBase {
             bounces: b.bounces,
             explosion_chance: b.explosion_chance,
@@ -820,6 +827,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             chain_range_m: b.chain.range_m,
             chain_damage_per_hop: b.chain.damage_per_hop,
             chain_compounds: b.chain.compounds,
+            chain_fanout: b.chain.fanout,
             chain_takes_multishot: b.chain.takes_multishot,
             chain_nodes_have_radius: b.chain.nodes_have_radius,
             // ABSENT MEANS ONE, which is every weapon that fires where it is

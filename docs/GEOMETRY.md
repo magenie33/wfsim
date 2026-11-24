@@ -1,0 +1,501 @@
+# Explicit 3D combat
+
+An optional `scene_3d` request drives the shared simulator and optimizer with
+supplied player and enemy models. Without it, the planar policy in MECHANICS
+§11 applies. This is an experimental scene adapter, not a calibrated replacement
+for the live game's pose, emission, world-query and explosion providers.
+
+## Aim and actors
+
+Set `scene_3d` to `{"preset":"source_default","placement":{"kind":"center_distance","distance":5}}`
+to use the standing open-arena preset. The simulator's geometry picker offers
+the preset for the weapon and target profiles in `/api/meta.scene_3d_source_default`.
+The preset uses the fight's `player_at`, `target_at` and `formation` roots,
+then applies the requested placement. Omitted placement uses physical
+controller contact. Each actor in the formation resolves its own enemy
+profile. The standing Excalibur, from the same source data as explicit
+scenes, faces the aimed actor. The formation faces the shooter along that
+axis with the optional shared `enemy_yaw_deg` angle relative to frontal.
+
+The preset supports primary, secondary and Archgun collision routes and
+approximate standing melee. It loads the Laetum, Akarius and Akarius Prime
+controls or the attachment
+models from `geometry/weapon-attachments.yaml`. Each catalog model projects
+an unambiguous named mount and its usable declared firing position into a
+source-default pose. A gun without a bound standing attachment uses the
+Excalibur right-hand reference mount. The picker labels that reference,
+and the combat record reports `emitter: player_mount` or `attachment`.
+`/api/meta.scene_3d_source_default.reference_weapons` lists the guns that use
+the reference mount. The preset includes Thrax Centurion, Corrupted Heavy
+Gunner, Demolisher Devourer, and the Angst, Mania, Misery, Torment and
+Violence Acolytes. The Demolisher has its mine slots disabled in this pose.
+The Acolytes use their separate posed damage proxies and the controller
+declared by StalkerWalk. Their head capsule supplies the standing aim
+anchor and their posed hip supplies the steering center. The radial path
+uses their detailed proxies in the supplied standing scene.
+The geometry picker uses the supplied source-default state with a fixed
+1/64 s step and clear homing visibility. `scripts/import_scene_profiles.py
+--check` verifies the compact data projection. An explicit scene supplies
+other poses, emitters and actor models through the same shared fight.
+`/api/log` records each actor's resolved root and each physical round's
+origin, path, and contacts.
+
+A robotic companion firearm can use the preset's target models with a posed
+`scene_3d.carrier`. Supply its complete `player` model, `camera` mount and
+world-space `reference_point`. The player model contains the carrier's world
+transform, controller, posed bones, muzzle and optional equipment. These
+requests use supplied placement by default. An explicit scene for a companion
+also requires the complete carrier. `/api/meta.scene_3d_source_default.carrier_weapons`
+lists applicable entries. The weapon's AI and aim policies retain their catalog
+conventions. Installed follower offsets and live poses remain separate inputs.
+
+`scripts/import_weapon_scene_profiles.py --batches <exchange>/batches --check`
+checks the projection from `20261121T025655Z-all-weapon-3d-source-map`.
+The projection uses the exact weapon, attachment and model path. It
+composes named hand slots from their parent resource declarations in
+`20261106T150853Z-client-metadata-offline`, with each relative resource
+path resolved in the declaring layer. It reuses the retained native FK rows
+where available and compares them to FK over the tagged resource pose.
+A transforming weapon can reuse one origin when both named attachments
+resolve the same mount, model-bone pose and declared firing position.
+Torid uses this binding for both forms. Attachment selection with distinct
+positions can use `round_order_by_form` when `IncarnonAttachments`
+explicitly enables the transformed slot.
+The `20261121T133426Z-firearm-3d-fidelity-source-controls` reads validate
+cycling sockets and separate firing profiles against the package transforms.
+The standing preset selects the profile by dispatch behavior index and
+advances cycling sockets for each physical round. Installed timing and
+deployment poses remain separate inputs.
+When the package declares `ALTERNATE_HANDS` with one firing iteration,
+the model uses the named main-hand and off-hand attachment transforms.
+The standing reference cycle starts on the main hand. The installed initial
+hand and reset rules remain calibration inputs.
+`scripts/check_scene_coverage.py --url <native-dev-url> --out <file>`
+records the one-target trace and admission outcome for every advertised mode
+and every fixed gauge-transformed form. A trace exercises the standing model
+and the weapon's currently resolved attack. Installed poses, native routing
+and per-build parity use separate controls.
+
+`headshot_pct` is reticle intent in this scene. At 100 the player keeps aiming
+at the selected head proxy and completely compensates recoil. The standing
+preset converges the muzzle on the center of a visible selected head. An earlier
+camera obstruction supplies the convergence point if it intercepts that aim.
+Explicit supplied scenes use their camera surface intersection. Intrinsic
+spread, muzzle position, homing and intervening bodies still determine contact.
+Only an actual head contact receives head damage, head triggers and weakpoint
+charge. `gauge_charging_headshots` selects head intent while charging; it does
+not bypass collision. Saved field names retain their wire spelling.
+
+An explicit 3D request defaults to the Excalibur standing controller and
+source-default bones in `data/geometry/excalibur-standing.yaml` when it omits
+`player` or supplies only `player.equipped_fire`. The player root uses
+`player_at` on the ground plane. The supplied-state WFGEO-01 camera at
+`(0,1.8,-3)` relative to the root and the Excalibur head reference furnish
+the omitted aim inputs. Weapon-specific firing geometry comes from
+`equipped_fire`; the right-hand mount provides the fallback origin.
+
+A complete player model supplies its world transform and controller
+dimensions, current avatar-local bone transforms, camera and muzzle mounts,
+and the independent reference point used by native eye projection. Each mount is
+`world * posed bone * local attachment`. Physical-controller height does not
+stand in for head or muzzle height. Enemy models supply their world transform,
+posed bone/attachment proxies, acquisition anchor and steering center. Enemy
+order matches the arena: aimed enemy first, then `formation`.
+
+The scene supplies its camera-ray result to the native player eye projection
+(`0x149c340`). The projection uses binary32, extends the target by camera
+forward when the reference projects beyond the target, and uses avatar forward
+for the coincident fallback. The eye basis and the actual firing origin are
+separate outputs. The scene builds its launch basis from that muzzle to the
+resolved reticle point. A coincident point or a point behind the muzzle's
+forward plane uses the eye basis. Each physical round applies intrinsic
+spread around the launch basis, then queries the scene from the muzzle.
+Different hand positions can produce different directions toward one
+reticle point. Geometry along the muzzle ray can intercept that round.
+
+The optional `player.equipped_fire` describes installed weapon attachments
+and their round order. Each attachment supplies its player-bone `mount`,
+weapon-local posed `bones`, starting `initial_cursor` and ordered firing
+`profiles`. Each profile contains a list of firing positions with a weapon
+bone index and local transform. The fire origin combines the mounted weapon
+transform, the current weapon bone and the local firing transform. A missing
+bone uses identity. A missing mode selects profile zero. An empty profile
+array uses the mounted weapon transform.
+
+The supplied `round_order` repeats across ammo rounds. Each entry selects an
+`attachment` and `mode`. Optional `round_order_by_form` entries use the
+active weapon form id, such as `incarnon`. Each form-specific order retains
+its own ammo-round position across switches. Other forms use the default
+`round_order`. Attachment firing-position cursors belong to the attachment.
+The read at `0x56cde0` leaves its cursor unchanged.
+An advance at `0xde85d0` wraps the cursor of the selected attachment when
+the profile has at least two positions. On a supplied mode change the scene
+indexes the retained cursor modulo the number of positions in that profile.
+`refresh_per_iteration` advances before each additional physical round in the
+same emission. `advance_after_round` advances after the last physical round.
+Additional hit instances that ride the same physical round share its origin.
+Each simulation starts from the supplied cursor values. Omit equipment to
+use the single muzzle mount. Live hand order, pose installation, cursor reset
+writers and spread-state producers remain calibration inputs.
+
+An explicit request supplies all enemy models. Scene preparation checks for nonfinite, singular or
+nonuniformly scaled transforms, controller/world scale disagreement and
+missing selected mounts/proxies. The resolved faction bracket currently requires
+one combat faction per scene. The prepared scene is immutable. The shared `parse_fight`
+projects its actor roots into the arena for existing target/status consumers;
+a search's replay retains the complete original scene.
+
+`placement.kind` is `supplied`, `contact` or `center_distance` with `distance`.
+Automatic placement translates the entire formation along its horizontal aim
+axis. Contact supports upright controllers on one floor with overlapping inner
+segments: the float32 installed radii sum plus the **moving player's** skin.
+Height enters the capsule-segment overlap check. Other contact arrangements
+need supplied positions; this is not a general character-controller solver.
+
+## Collision and settlement
+
+Standing melee uses the resolved controller capsules for reach and the
+existing forward cone or full-circle swing rule. The scene precomputes
+distance, cone membership, and the nearest-first order once. Per-swing range
+buffs still choose contacts from that order. Contact, slam and Melee Influence
+areas query the posed volumes. Spectral Daggers use the nearest 3D
+controller distance for acquisition and retain their attack clock.
+Melee keeps its existing action clock and
+settlement. Stance animation sweeps, the airborne pose during a slam, and
+glaive bounce/homing continue to use the existing approximations.
+
+Each physical round samples the weapon's resolved intrinsic spread once in 3D.
+Multishot instances share its physical path; each receiving body independently
+rolls the round's multishot share. The path is queried against every enemy's
+posed sphere/capsule proxies, ordered by nearest contact. Range, part, flight
+length and arrival time belong to that contact. Every receiving body uses the
+ordinary pellet damage, critical, status, buff and ledger code with its own
+state. A penetrated body independently resolves its part.
+
+The analytic query uses binary64 geometry. Y is up; transforms are row-major
+3x4 matrices applied to column vectors. Capsule height describes its inner
+local-Y segment and excludes its caps. The supplied world scale is applied
+once. AABB pruning encloses the posed primitives. Ray enable and part exclusion
+are respected by the component query; contact is strictly before the ray limit.
+The posed scene prepares the ordered camera intersections for both aim anchors.
+At emission it selects the first currently eligible actor. Larger formations
+traverse a bounding hierarchy, then use the same per-actor tests. Nearest-only
+queries retain entry distance and actor order without collecting the full list.
+Spatial damage settlement reuses the acting mode's configuration and updates
+the recipient's target fields when the body changes.
+
+The ordinary-gun adapter supplies the body's nearest entry and farthest proxy
+exit to the trace-gun fragment. Laetum base fire selects `projectile_reverse_query`
+and uses the kinematic route at `0xa2aa00`. In the supplied straight flight,
+the entry point is the reverse anchor. The ray starts ahead of it by
+`f32(remaining * 1.1)`. The scene intersects that segment with the matching
+posed collider, and the native-order consumer selects the last matching
+handle and subtracts the binary32 distance from the remaining budget.
+Equality permits continuation. A zero-length crossing advances the shot by
+0.01 units without spending budget. A stopped shot retains its entry as the
+end and its remaining budget. Forward sweep width, the active native entry
+handle, reverse world filtering and terrain remain calibration boundaries.
+The pierced enemy settles its own contact through the ordinary damage path.
+
+Guided impact uses the published projectile translation for the blast origin.
+The arming accumulator in the supplied first-impact route includes the
+attempted substep's flight distance. It must exceed 0.25 for radial dispatch.
+The direct impact still resolves at equality. On an armed impact, candidate
+membership uses sphere overlap against the supplied installed
+`radial_proxy` or the detailed posed shapes when that field is omitted.
+`radial_proxy.local` is relative to the avatar and can supply the installed
+collision scale independently of the visible mesh. Recipients are processed
+by nearest point of their candidate AABB, keeping the scene order for equal
+distances. Each owner is processed once, and the nearest detailed attachment
+gives its radial contact part and falloff distance. Other radial projectiles
+use the impact point and distance to the closest detailed surface.
+
+The damage path retains the measured weak-point conditions, per-instance
+settlement and independent weak-point triggers across pierced bodies.
+[M60](measurements/M60-headshot-bonuses-add.md),
+[M62](measurements/M62-volley-settles-per-pellet.md),
+[M103](measurements/M103-latron-bounces-punch-through-and-the-gauge.md),
+[M123](measurements/M123-acuity-is-three-point-four-nine-eight.md).
+The native replay captures radial parts at the controller input. Radial damage
+still follows the existing area damage rules. Live filter enrollment, cover
+and damage acceptance are open. Status areas retain their planar policy.
+
+Continuous fire traces the primary beam against posed contacts and spends
+the ordinary punch-through budget. The radius uses its stopping contact or
+the range endpoint and overlaps the detailed shapes. A direct contact gets
+one primary instance. A sphere-only contact receives a body hit with its
+declared multishot rule and can start a separate chain. Acquisition checks
+the angle to posed body centers and the reach from the player's root.
+Acquired beams and live tendrils select distinct bodies outside the primary
+contacts. A tendril's direct kill cannot earn another tendril.
+
+All chain seeds are marked before the first hop. Each sequential path picks
+the nearest fresh root in 3D and considers repeats only after fresh
+candidates run out. A path cannot return to one of its own recipients.
+Vermisplicer primary fans out from its final direct contact and excludes
+the bodies already struck by the ray. Torid's single initial sphere and
+per-target ramp use the source bindings and [M15](measurements/M15-torid-incarnon-chain-nodes.md).
+The path preference uses [M52](measurements/M52-chain-path-is-fixed.md) and
+[M86](measurements/M86-a-chain-prefers-a-body-nobody-has-reached.md).
+The ordinary damage pipeline resolves links through their seed and each
+recipient's state. A per-target ramp advances once per tick and follows
+the target generation. Exact native broadphase tie order, first-tick
+activation and world-cover filters remain uncalibrated. The combat trace
+reports `beam_endpoint` and `beam_contacts` alongside primary impacts.
+
+Lingering fields spawned by a projectile contact stay at that contact
+and test posed bodies for every tick. They keep the spawning form's
+damage and the existing lifetime and stack rules.
+[M13](measurements/M13-torid-field-tick-clock.md) fixes Torid's first tick
+to the impact. Reload grenades use the source fan and posed 3D contact and
+falloff at the reticle reach for the modeled throw. Release-to-impact
+timing, gravity and installed release pose are still open.
+
+Stug piles retain the struck actor, proxy and contact point. Merge, fuse,
+tick and explosion damage retain [M127](measurements/M127-stug-base-blob-ticks-and-multishot.md).
+Grimoire orbs launch along the posed reticle, travel in 3D and slow when
+their segment reaches a body. Each strike tests the current extent and its
+links use the 3D distance between roots. The blast measures from the fuse
+position. The projectile's collision width and native target order are open.
+
+Scourge throws plant the package's 14 m, five-second pulse around the actual
+contact. The next throw cancels future pulses and each applied debuff keeps
+its lifetime. Bullet attraction and floor attachment remain open.
+Ballistica counts qualifying ghosts at the struck actor's range from the
+wielder. Ghost attack simulation is outside the combat model.
+Haalvu distributes locked rounds among eligible posed candidates ordered by
+angle. The lock retains the declared miss and head estimates, and the
+round's physical segment resolves the struck part. Installed lock order
+and shot poses remain open.
+
+Hitscan ricochets choose the next eligible root inside the declared range
+and run a new contact from the previous impact. Dual Toxocyst retains the
+observed head-aim share from M111. Kuva Drakgoon uses reflection at posed
+blocking surfaces and the open-arena floor. Its package declares launch
+speed 130 and equal normal/tangent restitution, which preserve the mirror
+direction. The model uses the catalog rebound count and straight legs.
+Installed gravity, speed clamps, terrain and collision gates are open.
+
+Latron Incarnon uses stationary posed surfaces and the open floor.
+[M103](measurements/M103-latron-bounces-punch-through-and-the-gauge.md)
+bounds the model at three reflections before the fourth collision. The
+`20261109T023827Z-beam-bounce-aim` batch supplies 120 m/s launch, equal
+0.5 restitution, 2.4 s lifespan and explosions at contact and expiry.
+Each recorded detonation independently measures falloff against posed
+recipients at its own location. The contact controls in
+`20261121T133426Z-firearm-3d-fidelity-source-controls` schedule expiry on the
+first eligible contact only. The stationary scene starts that timer on its
+first bounce and uses the declared duration as the free-flight fallback for
+M103's no-contact detonation. The exact free-flight gate and live collider
+changes on death remain open.
+
+Secondary Irradiate uses the original victim's entity root and a 3D overlap of
+eligible recipients within its declared radius. The native GetPosition
+controls in `20261121T133426Z-firearm-3d-fidelity-source-controls` read that
+root independently of visual and avatar-anchor transforms. Settlement
+retains the [M59](measurements/M59-laetum-incarnon-irradiate-echo.md) calibration.
+Native damage packet grouping and resumption timing remain open.
+
+The scene refuses unsupported melee, corpse explosion, dagger and ability
+routes. Guided-projectile penetration and speed modifiers require their
+bound native consumers. The production and board presets retain their scene.
+
+## Homing
+
+The Akarius entries carry the source Glaive inputs: initial speed 40, maximum
+80, acceleration 40, turn duration 0.079999998, seek range 30, cone 10 degrees,
+strict flight-distance-greater-than-zero acquisition gate, and blade radius
+0.02. These fields are consumed by the explicit scene. The default planar
+scene retains its declared projectile-flight convention.
+
+The numerical step retains the quaternion, three angular velocities and bank
+state. It uses the native look-at, Euler/quaternion conversions, angle wrapping,
+polynomial sine/cosine and CRT asin/atan2 consumers, including their original
+binary32/binary64 boundaries and atan2 table. Turning duration is multiplied by
+five without a retained target and floored at binary32(1e-6). The original
+0.235/0.48 encodings are `0x3e70a3d7`/`0x3ef5c28f`. Bank steering uses the
+supplied world quaternion separately from the retained rotation. Flight distance
+accumulates bounded speed times the time step, independently of rounded position.
+
+The default numerical route agrees bit-for-bit with 429 retained native steps
+across 60 continuous supplied-state sequences and 120 additional 3D controls.
+The comparison includes position, velocity, quaternion, all angular velocities,
+bank and flight distance. Another 765 angular controls and 4,931 distinct math
+controls qualify the numerical stages. The state domain is the default clock,
+state 0, no gravity, an empty native +1a10 reference, and empty-world movement. Other
+state/clock branches remain unbound. A supplied update owns its world rotation
+until it completes. Numerical steering retains its own substep quaternion.
+The scene's supplied-direction initializer and target installation are not
+native emission producers.
+
+These original-byte controls execute under the pinned Unicorn environment.
+The isolated i7-14700KF hardware controls produce different RSQRTPS and
+look-at outputs. A supplied sphere ray at the exclusive float32 limit
+`0x40600001` hits with the Unicorn direction and misses with the hardware
+direction. Real game hardware/profile binding remains open.
+
+The ordinary update refreshes acquisition once before its fixed-substep loop.
+It retains an eligible installed target. The empty-history branch tests
+candidate-root range and ranks eligible candidates by candidate-anchor distance
+divided by cone dot. A smaller visible score can replace the current winner.
+Equal scores keep the earlier enumerated actor. The scene supplies the ordered
+list, eligibility and separate steering center. Acquisition visibility uses
+posed geometry by default. `clear_homing_visibility` supplies the clear query
+result used in the native open-grid replay. Flight still collides with bodies.
+
+`frame_seconds` is the fixed substep duration. Each `guided_updates` entry
+specifies `substeps` and whether to `publish_transform` after that update.
+Subsequent updates have one substep and publish their completed translation.
+An impact during an update uses the previous published translation, initially
+the supplied muzzle position. A projectile without an impact ends without a
+radial event. Live update cadence, launch state and alternate ownership
+predicates remain inputs for calibration.
+
+The nonsweep movement branch (`0x1246b90`) queries the center, positive side
+and negative side segments in order. They share the retained start; the
+center endpoint uses 1.2 times the physical displacement, and side endpoints
+add or subtract blade radius along the supplied world quaternion's right
+axis. Empty movement advances by the physical displacement. The record
+consumer considers backend order, preacceptance and the first eligible record's
+normal. A back-facing result advances to another segment. For modeled combat
+the posed-body adapter supplies nearest-actor ordering, an opposing normal and
+settlement at the supplied step boundary. Its binary64 proxy arithmetic can
+choose a different member of an original nearest set. Real PhysX records,
+world surfaces, impact continuation, contact timing and dynamic poses remain
+unbound.
+
+## Evidence and verification
+
+Client build 2026.10.28.09.54, executable SHA-256
+`dae100202115919c89440c9ef320f691113ee8dcaf01205cbd180072c35aabdb`.
+
+- `20261116T084610Z-enemy-3d-gun-foundation`, manifest SHA-256
+  `86a258275bdce5cf21c5bee885cc6768a57066c20efcb7bb5ff786a1f8c26374`:
+  24 proxies, eight supplied world/pose caches, 618 ray cases and 121
+  instruction-exact float32 penetration fragments. Position tolerance is
+  0.0003 and the supplied tied-nearest set, not inflated hitboxes.
+- `20261120T173808Z-wfsim-3d-roster-migration` retains 1,200 original
+  body rays for five source-default Acolyte rigs at two scales and two
+  yaws. `scripts/import_native_acolytes.py --exchange <exchange> --check`
+  verifies the projection against the retained rig data and the inherited
+  `StalkerWalkAttribs` values. Installed pose and target-point overrides
+  are separate runtime inputs.
+- `20261116T094904Z-shooter-3d-origins`, manifest SHA-256
+  `c938a7e8ef08d58fba86bd3c1c8fea18062015000bee7cc8fed9c6e521b0dc13`:
+  83 Excalibur source-default bone transforms and controller dimensions.
+  Source-default pose is not an equipped firing animation.
+- `20261117T083330Z-native-contact-movement`: capsule construction and
+  conditional upright contact. Its broader native movement cases are not
+  replaced by the supported axial contact condition.
+- `20261117T114909Z-akarius-homing-close-range`: steering inputs and the 36
+  exported empty-world motion sequences, retained in `native-motion.json`.
+- `20261117T132810Z-reticle-3d-homing-materials`: full reticle-to-impact
+  verification and execution of its complete acceptance matrix are false.
+- `20261118T083810Z-native-3d-homing-replay-retention`, manifest SHA-256
+  `5f57e9c7c377f16b7571b2900a6f7ab8f9c76d9fa584e316b0c16fb7eb72aea3`:
+  full matching executable/modules, original RIP data and call-state pages.
+  `native-flight.json` retains numerical states from the original 705-call
+  capture. `native-steering.json` adds observed native math boundaries and
+  explicitly supplied 3D controls. `rotation_tables.rs` is imported from PE
+  RVA `0x241ee70`; its hash is pinned in the fixture. No live acceptance trace
+  or independent game measurement is supplied by this batch.
+  Its 108 original attachment controls verify Akarius and Akarius Prime's
+  two five-position profiles, Laetum's base muzzle bone and the Incarnon
+  attachment's local offset fallback. `scripts/import_native_attachments.py`
+  reads the pinned source poses, attachment declarations and read/advance
+  results into `native-attachments.json`.
+- `20261118T145138Z-native-homing-ownership`: 15 supplied-state selection
+  controls, including eligibility, competing scores and enumeration order.
+  The importer executes one additional original-byte control where the
+  winning target has the larger Euclidean distance.
+- `20261119T043220Z-glaive-motion-queries`: 68 original descriptor and
+  backend-record controls, including nine first impact-call boundaries.
+- `20261119T055143Z-native-3d-answers-hardware`: 38 supplied-state flights,
+  3,099 ordered segment descriptors, two full 25-actor scenes and hardware
+  controls. The portable scene compares contact step, actor and point against
+  the supplied-state original replay. It preserves the supplied nearest-proxy
+  tolerance set and checks point error below 0.0003 source units.
+- `20261121T015856Z-demolisher-devourer-source-geometry`, manifest SHA-256
+  `a878aa22020e8dc04ad650a2543767372562d08c570abd23fd3759bc1755848d`:
+  the Disruption Avatar has 72 source-default bones and 15 body-query
+  proxies. Head slots 0 and 11 share one bone, and mine slots are 12–14.
+  `scripts/import_native_demolisher.py` prepares both supplied scales and
+  62 native first-contact controls for the scene body query. The controls use
+  a supplied proxy enable mask and controller state. Installed head and
+  homing anchors, mine state and receiving damage remain separate inputs.
+- `20261118T145815Z-akarius-radial-dispatch`: corrected impacted-handle ABI
+  and separately observed transform translation at the radial submission.
+- `20261120T041422Z-ahom-runtime-first-native-slices`: projectile reverse
+  ray, handle-order, budget and continuation controls.
+- The original projectile branch at `0xfee5ba..0xfee63a` subtracts the
+  muzzle from a target-service point and constructs a new basis at the muzzle.
+  The scene uses this convergence for its ordinary reticle input.
+  The full runtime selection of that branch, offset, camera target provider
+  and spawn state remain calibration inputs.
+- `20261120T063733Z-ahom-akarius-grid-clock` and
+  `20261120T064738Z-ahom-akarius-grid-recipients`: supplied 25-actor tests
+  at two collision scales. The receiver checks acquisition, direct actor
+  and part, blast center, ordered radial owners and part indices across all
+  six combinations.
+
+`scripts/import_native_flight.py` imports the original captured state pages.
+`scripts/import_native_steering.py` executes the matching original consumers
+through the retained research scripts. The importer pins the executable and
+original result index, reruns the 123 source controls, then adds explicit
+boundary/3D inputs. Reproduction uses the batch's Python3.14.0 and locked
+dependencies; `--atan-table` writes the production table from the original PE.
+Expected states never come from the Rust implementation.
+`scripts/import_native_queries.py` projects the source-pinned eye, selector
+and movement results into `native-queries.json`.
+
+```sh
+cargo test -p wfsim-engine --lib rules::geometry
+cargo test -p wfsim-engine --lib scene::tests
+cargo test -p wfsim-webapi --lib scene_tests
+cargo run --release -p wfsim-webapi --example scene_fights -- fights.json
+cargo run --release -p wfsim-webapi --example scene_fights -- equipped-fights.json --equipped
+cargo run --release -p wfsim-webapi --example scene_fights -- standing-head.json --standing-head
+cargo run --release -p wfsim-webapi --example geometry_builds -- calls.json builds.json
+cargo run --release -p wfsim-webapi --example scene_controls -- calls.json controls.json
+```
+
+`scene_fights` runs 5x5 supplied models at 3-unit spacing for both source enemy
+scales, contact and named center separation 5, with real intrinsic spread.
+It retains every request, simulation and combat record. Two explicit muzzle
+controls are used: the native empty-world trace's `(0,1.5,0.3)` and a muzzle
+placed on the camera ray. The latter isolates homing from parallax; neither is
+a claim about an equipped Akarius/Laetum animation or attachment writer.
+The `--equipped` control composes the source-default Excalibur weapon-hand
+bones with each weapon's source firing positions. It supplies right then left
+for the Akarius Prime burst and advances only the hand used.
+The `--standing-head` control uses the default player through the shared API
+parser. It places 25 Corrupted Heavy Gunners at 3-unit spacing with the
+front-middle root 5 units from the player. It tracks that actor's head proxy
+center, samples intrinsic spread over 48 fixed seeds per loadout and uses
+1/64-second guided substeps. It retains the first actor and part, ordered direct
+contacts, homing acquisition and the recipient count of each armed blast for
+Akarius Prime, stock Laetum and Laetum with Seeker. The control supplies the
+source-default poses, camera and hand order.
+
+The `/api/log` response carries `scene_3d.flights`: shot/round, camera, muzzle,
+aim anchor, the eye projection's basis origin and target, launch direction,
+selected homing target and contacts with part, entry/exit, travel time,
+thickness and remaining budget. When equipped, the trace includes the chosen
+attachment, profile and cursor in `fire_origin`.
+Guided flights include the submitted `blast_center` and `radial_impacts` when
+present. Each radial point is the recipient's selected attachment.
+This diagnostic is bounded separately by the requested record limit and reports
+its dropped count. Damage stays in the existing combat stream and ledger.
+
+The build harness exhausts each declared scope with two reference seeds, reports
+settling/rank/list recall separately and asserts ranked replay score, DPS and
+kills exactly. Existing `build-calls.json` without a scene is an aim-weight
+sensitivity experiment; it does not measure geometric headshot probability.
+Full gameplay calibration still needs live equipped poses/origins, world-query
+bindings and independent in-game measurements. No golden value is changed by
+these supplied-state experiments.
+
+`scene_controls` projects every actor root from the prepared engine scene into
+a planar control request. It preserves the complete formation, including bodies
+that took zero damage. A simulation report lists damaged bodies and cannot
+serve as the formation source. The explicit scene remains the authority.

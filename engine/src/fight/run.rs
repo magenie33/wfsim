@@ -617,7 +617,7 @@ pub fn run_once_traced(
             continue;
         }
         if let Some((si, k)) = landing {
-            let mut l = seats[si].in_flight.remove(k);
+            let mut l = seats[si].in_flight.remove(k).expect("selected landing");
             if trace.is_some() {
                 sample_frames_up_to(
                     l.t, params, &mut trace, &mut next_frame, frame_seconds,
@@ -1124,7 +1124,27 @@ pub fn run_once_traced(
             me.melee.combo_points = combo_now * active.heavy_attack_efficiency;
             me.melee.combo_spent_t = t;
         }
+        let spread = active.spread.map(|spread| {
+            let Some(scaling) = active.spread_scaling else { return spread; };
+            if spread != scaling.resolved(0.0) {
+                return spread;
+            }
+            let live = if active.live_accuracy {
+                buff_total(active, crate::model::BuffGrant::Accuracy, &mut me.buff_stacks, t)
+            } else {
+                0.0
+            };
+            let resolved = if live == 0.0 { spread } else { scaling.resolved(live) };
+            match (n_pellets > 0, me.params.scene_3d.as_ref(), scaling.runtime.timing) {
+                (true, Some(scene), Some(timing)) => me.spread_state.emit(
+                    active as *const FightParams, scaling, resolved, timing, live, t, scene.input().frame_seconds,
+                ),
+                _ => resolved,
+            }
+        });
         let landing = Landing {
+            spread,
+            spatial: None,
             radial_only: false,
             pellet_aims: Vec::new(),
             t,
@@ -1190,16 +1210,21 @@ pub fn run_once_traced(
         lay_cold_trail(me.seat, active, t, &mut entities);
         // Contact follows charge and the animation event, then projectile
         // travel where present. The next input has its own completion clock.
-        let arrival_delay = active.flight_seconds(me.params.gap())
-            + swing_contact_delay(active, landing.swing.as_ref(), live_rate, tennokai, tennokai_heavy);
-        if arrival_delay > 0.0 {
+        let spatial = me.params.scene_3d.is_some() && !active.uses_melee_volume();
+        if spatial && active.attractor_seconds.is_some() {
+            entities.retain(|e| !matches!(e, Entity::Attractor(f) if f.owner == me.seat));
+        }
+        if spatial { spatial::launch(&landing, active, me, &bodies, rec); }
+        let arrival_delay = if spatial { 0.0 } else { active.flight_seconds(me.params.gap())
+            + swing_contact_delay(active, landing.swing.as_ref(), live_rate, tennokai, tennokai_heavy) };
+        if spatial || arrival_delay > 0.0 {
             let swing = landing.swing.clone();
             let burst_len = active.burst.map_or(1, |b| b.count.max(1));
-            me.in_flight.push(Landing {
+            if !spatial { me.in_flight.push_back(Landing {
                 t: t + arrival_delay,
                 burst_completed: Some(me.ammo.rounds_this_mag.is_multiple_of(burst_len)),
                 ..landing
-            });
+            }); }
             if single_shot {
                 me.incarnon.in_base_form = true;
                 me.incarnon.base_magazine = me.ammo.loaded;

@@ -21,6 +21,8 @@ pub(super) struct FieldState {
     /// generated). Per field, because within one pull some grenades have it and
     /// some do not.
     pub(super) damage_multiplier: f64,
+    /// Posed projectile contact. Planar fields use the aimed body's position.
+    pub(super) center: Option<crate::rules::geometry::Vec3>,
 }
 
 /// The attacker-side buff state a FIELD tick reads, as of the most recent

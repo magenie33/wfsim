@@ -19,6 +19,7 @@ attack:
     max_deg: 80
   trigger: semi_auto
   shot_type: projectile
+  projectile_speed_mps: 130
   fire_rate: 3.33333333333333
   multishot: 10.0
   ammo_cost: 1
@@ -28,6 +29,7 @@ attack:
   # NO PUNCH THROUGH — the charged shot's 1.5 m is that form's alone.
   punch_through_m: 0.0
   ricochet:
+    reflects_from_surfaces: true
     bounces: 1
     headshot_chance: 0.0
   # "Primarily Slash damage (60%)" untapped.

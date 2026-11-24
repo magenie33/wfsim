@@ -392,6 +392,8 @@ pub struct ResolvedPanel {
     /// — `None` on an attack that does not fly. See
     /// [`WeaponBase::projectile_speed_mps`].
     pub projectile_speed_mps: Option<f64>,
+    pub homing: Option<crate::model::Homing>,
+    pub projectile_reverse_query: bool,
     /// HOW FAR THIS ATTACK REACHES, metres — `INFINITY` when the weapon
     /// declares none. See [`crate::data::weapons::AttackSpec::range_m`]: past it
     /// there is nothing, which is a different fact from `falloff`, a ramp.
@@ -430,6 +432,7 @@ pub struct ResolvedPanel {
     /// `None` = this entry's spread is not transcribed, so no shot of it is
     /// allowed to miss and the entry admits that.
     pub spread: Option<Spread>,
+    pub spread_scaling: Option<crate::model::SpreadScaling>,
     /// DIRECT-hit damage falloff, when this attack lists one — the shotgun's,
     /// and the range the Arsenal prints. `None` = full damage at any distance.
     pub falloff: Option<Falloff>,
@@ -558,6 +561,7 @@ pub struct ResolvedPanel {
     /// See [`ResolvedMeter`] — the recharge clock this form is gated behind.
     pub meter: Option<ResolvedMeter>,
     pub ricochet: Option<Ricochet>,
+    pub rebound_blast: Option<crate::model::ReboundBlast>,
     /// A thrown glaive's bounces, with what its cards did to them.
     pub thrown_bounce: Option<ThrownBounce>,
     /// Additive headshot-damage bonus from evolutions (Caput Mortuum).

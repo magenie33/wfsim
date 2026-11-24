@@ -829,10 +829,19 @@ pub struct Record {
     native_trace_limit: usize,
     native_steps: Vec<NativeStep>,
     native_steps_dropped: u64,
+    spatial_flights: Vec<crate::scene::FlightTrace>,
+    spatial_flights_dropped: u64,
 }
 
 #[wfsim_gas_macro::metered]
 impl Record {
+    pub fn spatial_flights(&self) -> &[crate::scene::FlightTrace] { &self.spatial_flights }
+    pub fn spatial_flights_dropped(&self) -> u64 { self.spatial_flights_dropped }
+    pub fn trace_spatial(&mut self, time:f64, shot:Option<u32>, round:u32, flight:crate::scene::Flight) {
+        if !self.on || time<self.from || time>=self.to {return;}
+        if self.spatial_flights.len()>=self.limit {self.spatial_flights_dropped+=1;return;}
+        self.spatial_flights.push(crate::scene::FlightTrace{time,shot,round,flight});
+    }
     pub fn enable_native_trace(&mut self, limit: usize) { self.native_trace_limit = limit; }
     pub fn native_trace_is_on(&self) -> bool { self.native_trace_limit > 0 }
     pub fn native_steps(&self) -> &[NativeStep] { &self.native_steps }

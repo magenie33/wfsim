@@ -98,6 +98,13 @@ pub(super) fn throw_reload_grenades(
     let muzzle = crate::rules::space::muzzle(params.player_at, aim);
     let reach = muzzle.distance(aim);
     let heading = (aim.y - muzzle.y).atan2_portable(aim.x - muzzle.x);
+    let posed = params.scene_3d.as_ref().map(|scene| {
+        let eligible: Vec<_> = bodies.iter().map(|b| b.state.phase == Phase::Physical).collect();
+        let head: f64 = params.body_parts.iter().filter(|part| part.is_head).map(|part| part.aim_weight).sum();
+        let total: f64 = params.body_parts.iter().map(|part| part.aim_weight).sum();
+        (scene, eligible, head / total.max(1e-20))
+    });
+    let head = posed.as_ref().is_some_and(|(_, _, fraction)| d.aim.chance(*fraction));
     let mut struck: Vec<usize> = Vec::new();
     for i in 0..g.count {
         let spread = if g.count > 1 {
@@ -107,9 +114,26 @@ pub(super) fn throw_reload_grenades(
         };
         let a = heading + spread.to_radians();
         let land = crate::rules::space::Vec2::new(muzzle.x + reach * a.cos_portable(), muzzle.y + reach * a.sin_portable());
-        // THE CONTACT HIT lands on a body the grenade came down on, and on
-        // nothing if it came down on the floor beside one.
-        let hit = (0..body_at.len()).find(|&b| body_at[b].distance(land) <= crate::rules::space::BODY_RADIUS_M + 1e-9);
+        let (hit, distances) = if let Some((scene, eligible, _)) = &posed {
+            let (mut flight, center) = scene.reload_throw(head, spread, eligible);
+            let hit = flight.impacts.first().map(|impact| impact.body);
+            flight.blast_center = Some(center);
+            rec.trace_spatial(at, None, i, flight);
+            let distances = eligible.iter().enumerate()
+                .filter(|(_, present)| **present)
+                .map(|(b, _)| (b, scene.distance_to_body(center, b)))
+                .filter(|&(_, gap)| gap <= blast.radius_m)
+                .collect();
+            (hit, distances)
+        } else {
+            let hit = (0..body_at.len()).find(|&b| body_at[b].distance(land) <= crate::rules::space::BODY_RADIUS_M + 1e-9);
+            let distances = body_at.iter().enumerate().filter_map(|(b, pos)| {
+                let distance = pos.distance(land);
+                crate::rules::space::caught_by_blast(distance, blast.radius_m)
+                    .then(|| (b, crate::rules::space::blast_reach(distance)))
+            }).collect::<Vec<_>>();
+            (hit, distances)
+        };
         if let Some(b) = hit {
             if settle(w, owner, &contact, last_round_factor, at, ctx, b, gal, arc, params, active, r, rec, d, bodies) && b == 0 {
                 bodies[0].debuffs.on_death(owner, params.acid_shells, &params.foe);
@@ -120,15 +144,11 @@ pub(super) fn throw_reload_grenades(
         // body — "Explosion has linear Damage Falloff from 100% to 50% from
         // central impact".
         let mut aimed_died = false;
-        for (b, &pos) in body_at.iter().enumerate() {
-            let dist = pos.distance(land);
-            if !crate::rules::space::caught_by_blast(dist, blast.radius_m) {
-                continue;
-            }
+        for (b, dist) in distances {
             if !struck.contains(&b) {
                 struck.push(b);
             }
-            let multiplier = last_round_factor * blast.falloff_at(crate::rules::space::blast_reach(dist));
+            let multiplier = last_round_factor * blast.falloff_at(dist);
             aimed_died |= settle(w, owner, &blast, multiplier, at, ctx, b, gal, arc, params, active, r, rec, d, bodies) && b == 0;
         }
         if aimed_died {

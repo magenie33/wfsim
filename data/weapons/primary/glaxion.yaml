@@ -76,6 +76,7 @@ attack:
       rise_seconds: 0.6
       cooldown_delay_seconds: 0.8
       cooldown_divisor: 2.0
+      per_target: true
 source:
   url: https://wiki.warframe.com/w/Glaxion
 beam_ramp_floor: 0.2

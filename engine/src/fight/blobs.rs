@@ -13,6 +13,7 @@ pub(super) struct BlobContact {
     pub(super) base_form: bool,
     pub(super) generation: u32,
     pub(super) head_bracket: f64,
+    pub(super) center: Option<crate::rules::geometry::Vec3>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -110,8 +111,10 @@ fn settle_blob(
         Some(_) => params,
         None => active,
     };
-    process_ticks(w, &mut bodies[0], gal, arc, at + 1e-9, params, active, r, rec,
-        &mut d.status, &params.foe, 0);
+    let host = pile.contact.body;
+    let Some(host_spec) = params.body(host) else { return };
+    process_ticks(w, &mut bodies[host], gal, arc, at + 1e-9, params, active, r, rec,
+        &mut d.status, host_spec.params, host);
     let part = if explosion { &pile.part.explosion } else { &pile.part.hit };
     let mut area = lingering_of(part, None);
     let scale = pile.part.stack_scale(pile.stacks, explosion);
@@ -131,10 +134,18 @@ fn settle_blob(
     ctx.critical_head_direct = ctx.direct_hit && pile.contact.critical_head;
     let (mut hit, mut big_crit) = (false, false);
     for (b, &pos) in body_at.iter().enumerate() {
-        let dist = pos.distance(centre);
-        if !crate::rules::space::caught_by_blast(dist, area.radius_m) { continue; }
         let (Some(spec), Some(here)) = (params.body(b), bodies.get_mut(b)) else { continue };
-        let falloff = area.falloff_at(crate::rules::space::blast_reach(dist));
+        let distance = if let (Some(point), Some(scene)) = (pile.contact.center, &params.scene_3d) {
+            if here.state.phase != Phase::Physical { continue; }
+            let distance = scene.distance_to_body(point, b);
+            if distance > area.radius_m + 1e-9 { continue; }
+            distance
+        } else {
+            let distance = pos.distance(centre);
+            if !crate::rules::space::caught_by_blast(distance, area.radius_m) { continue; }
+            crate::rules::space::blast_reach(distance)
+        };
+        let falloff = area.falloff_at(distance);
         let outcome = field_tick_seeded(w, pile.owner, &area, falloff * head, at, &ctx, here, b,
             gal, arc, params, active, r, rec, d, spec.params,
             crate::record::Origin::Blob, None, explosion, None);

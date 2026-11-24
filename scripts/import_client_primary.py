@@ -156,6 +156,8 @@ def main():
                     'cooldown_divisor': numeric(impact['ContinuousDamageAttenuationCooldownTime'])}
                 row['beam_ramp'] = ramp
                 block = '    ramp:\n' + ''.join('      ' + k + ': ' + render(v) + '\n' for k,v in ramp.items())
+                if row['beam_expected']['per_target']:
+                    block += '      per_target: true\n'
                 text = re.sub(r'(?m)^    ramp:\n(?:      [^\n]+\n)+', '', text)
                 text, count = re.subn(r'(?m)^  beam:\n', '  beam:\n' + block, text)
                 assert count == 1

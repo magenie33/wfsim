@@ -16,6 +16,8 @@ use super::*;
 /// read when it lands, which is when the game reads it.
 #[derive(Clone)]
 pub(super) struct Landing {
+    pub(super) spread: Option<crate::model::Spread>,
+    pub(super) spatial: Option<spatial::SpatialLanding>,
     /// The collision already settled; only its delayed explosion remains.
     pub(super) radial_only: bool,
     pub(super) pellet_aims: Vec<RoundAim>,
@@ -169,6 +171,8 @@ type CachedChainPair<'a> = (&'a [crate::rules::chain::Instance], &'a [crate::rul
 #[wfsim_gas_macro::metered]
 pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> f64 {
     let t = l.t;
+    let pellets_before = if l.spatial.is_some() {g.r.pellets} else {l.pellets_before};
+    let headshots_before = if l.spatial.is_some() {g.r.weakpoint_hits+g.r.headshots_on_others} else {l.headshots_before};
     let active = l.active(me.params);
     // …AND WHO IS ON THE LINE IS THE FIRING FORM'S ANSWER TOO: a form's punch
     // through is its own (`open`). A live grant's metres walk the line again
@@ -213,7 +217,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     }
     // ONE INSTANCE for a per-instance arcane cap: the whole pull, pellets and
     // radial included.
-    me.arc.next_instance();
+    if l.spatial.as_ref().is_none_or(|s|s.first) {me.arc.next_instance();}
     // Secondary Encumber: at most ONE extra proc per instant — pellets of one
     // pull land simultaneously, so one roll per pull.
     // DID THIS SHOT HIT ANYTHING AT ALL — the question the SHOT COMBO COUNTER
@@ -225,8 +229,11 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let mut strike_spread: Option<SpreadStrike> = None;
     let (mut any_head, mut any_big) = (false, false);
     let mut beam_merge = l.beam_merge;
+    let target_ramp = active.beam.and_then(|b| b.ramp).filter(|r| r.per_target && l.spatial.is_some());
+    let tick = 1.0 / l.live_rate.max(1e-9);
+    let mut beam_ramp = l.beam_ramp;
     let radial_delay = match active.radial {
-        Some(r) if !l.radial_only => r.delay_seconds,
+        Some(r) if !l.radial_only && l.spatial.is_none() => r.delay_seconds,
         _ => 0.0,
     };
     let shot_qtotal = l.qvec.total();
@@ -234,13 +241,31 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let mut direct_proc_draw = crate::rules::status::SceneProcDraw::new(&l.qvec);
     let mut pellet_aims = Vec::new();
     {
+        let recipient = l.spatial.as_ref().map_or(0, |s| s.impact.body);
+        if let Some(source) = target_ramp.filter(|_| !g.bodies[recipient].fallen
+            && l.spatial.as_ref().is_some_and(|s| !s.miss))
+        {
+            me.target_ramps.resize(g.bodies.len(), TargetRamp::default());
+            beam_ramp = me.target_ramps[recipient].hit(
+                g.bodies[recipient].state.generation, t, tick, active.beam_ramp_floor, source,
+            );
+        }
+        let params = if l.spatial.is_some() {
+            spatial::Recipient::params(me.params, &mut me.spatial_recipient, recipient)
+        } else {
+            me.params
+        };
         let shot = Strike {
+            spread: l.spread,
+            body_index: recipient,
+            spatial: l.spatial.as_ref(),
             radial_only: l.radial_only,
-            skip_radial: radial_delay > 0.0,
+            skip_radial: radial_delay > 0.0 || l.spatial.as_ref().is_some_and(|s| !s.impact.radial),
             ordinary_projectile_count: active.additional_projectile.as_ref()
                 .map(|_| active.base_multishot as u32),
             round_multishot: l.rounds.per_round(l.n_pellets),
             seat: me.seat,
+            arena: me.params,
             active,
             qvec: &l.qvec,
             shot_qtotal,
@@ -285,14 +310,14 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             ms_damage: l.ms_damage,
             status_damage: me.fixed.status_damage,
             live_rate: l.live_rate,
-            beam_ramp: l.beam_ramp,
+            beam_ramp,
             next_shot_bonus: l.next_shot_bonus,
             undamaged: l.undamaged,
             t,
             bar: &me.bar,
             rec_roster: &me.fixed.rec_roster,
             rec_buff_index: &me.fixed.rec_buff_index,
-            params: me.params,
+            params,
         };
         let mut round_aim = RoundAim::default();
         let mut live = Live {
@@ -343,7 +368,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             };
             let mut aims = [RoundAim::default(); super::resolve::Rounds::MAX];
             for (pellet_idx, (round, follows)) in (0..l.n_pellets).zip(l.rounds.ordinary_first()) {
-                if l.radial_only {
+                if l.radial_only && l.spatial.is_none() {
                     *live.round_aim = l.pellet_aims[pellet_idx as usize];
                 } else if follows {
                     *live.round_aim = aims[round];
@@ -353,22 +378,32 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
                 } else {
                     (&shot, &mut direct_proc_draw)
                 };
-                settle_pellet(pellet_idx, follows || l.radial_only, projectile, &mut live, proc_draw);
+                let (instance, follows) = l.spatial.as_ref().map_or(
+                    (pellet_idx, follows || l.radial_only), |s| (s.instance, s.follows),
+                );
+                if l.spatial.as_ref().is_none_or(|s| !s.miss) {
+                    settle_pellet(instance, follows, projectile, &mut live, proc_draw);
+                }
                 if !follows { aims[round] = *live.round_aim; }
                 if radial_delay > 0.0 { pellet_aims.push(*live.round_aim); }
             }
         } else {
             for (pellet_idx, follows) in (0..l.n_pellets).zip(l.rounds.follows(l.n_pellets)) {
-                if l.radial_only {
+                if l.radial_only && l.spatial.is_none() {
                     *live.round_aim = l.pellet_aims[pellet_idx as usize];
                 }
-                settle_pellet(pellet_idx, follows || l.radial_only, &shot, &mut live, &mut direct_proc_draw);
+                let (instance, follows) = l.spatial.as_ref().map_or(
+                    (pellet_idx, follows || l.radial_only), |s| (s.instance, s.follows),
+                );
+                if l.spatial.as_ref().is_none_or(|s| !s.miss) {
+                    settle_pellet(instance, follows, &shot, &mut live, &mut direct_proc_draw);
+                }
                 if radial_delay > 0.0 { pellet_aims.push(*live.round_aim); }
             }
         }
     }
     if radial_delay > 0.0 {
-        me.in_flight.push(Landing {
+        me.in_flight.push_back(Landing {
             t: t + radial_delay,
             radial_only: true,
             pellet_aims,
@@ -388,14 +423,25 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         }
         me.melee.deployed_until = until;
     }
+    let planting = l.spatial.as_ref().filter(|s| s.first && !s.miss && !s.impact.radial)
+        .zip(active.attractor_seconds);
+    if let Some((s, seconds)) = planting {
+        // The package's planted projectile survives for twenty seconds.
+        g.entities.push(Entity::Attractor(AttractorField {
+            owner: me.seat, at: s.impact.point, pulse: t + 1e-9, expires: t + 20., debuff_seconds: seconds,
+        }));
+    }
 
     // THE BLOB EMBEDS in the body the shot struck, and a pile this shot takes
     // to its cap goes off now (`fight::blobs`).
     if let Some((part, (spot, head, weakpoint, critical_head))) = active.blob.zip(blob_contact) {
+        let hit = l.spatial.as_ref().map(|s| s.impact);
+        let body = hit.map_or(0, |h| h.body);
         let contact = BlobContact {
-            body: 0, spot, head, weakpoint, critical_head, base_form: l.base_form,
-            generation: g.bodies[0].state.generation,
+            body, spot: hit.map_or(spot, |h| h.proxy), head, weakpoint, critical_head, base_form: l.base_form,
+            generation: g.bodies[body].state.generation,
             head_bracket: l.shot_head_landing,
+            center: hit.map(|h| h.point),
         };
         if let Some(pile) = embed_blob(g.entities, part, me.seat, contact, l.blob_stacks, t) {
             detonate_blob(
@@ -408,8 +454,37 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         process_entities(g.entities, t + 1e-9, &mut turn!(me, active, d), g.r, g.rec, g.bodies);
     }
 
+    if let (Some(seed), Some(strike)) = (l.spatial.as_ref().and_then(|s| s.beam.as_ref()), &strike_spread) {
+        for link in &seed.links {
+            let body = link.impact.body;
+            if g.bodies[body].fallen { continue; }
+            let Some(spec) = me.params.body(body) else { continue };
+            let inst = crate::rules::chain::Instance {
+                target: body,
+                share: link.share,
+                multishot: seed.multishot,
+                headshot: false,
+                part_factor: 1.0,
+                status_part_factor: 1.0,
+                status_landing: 1.0,
+            };
+            let raw = target_ramp.map_or(strike.raw_per_bucket, |source| {
+                let here = me.target_ramps[body].hit(
+                    g.bodies[body].state.generation, t, tick, active.beam_ramp_floor, source,
+                );
+                strike.raw_per_bucket / beam_ramp.max(1e-9) * here
+            });
+            spread_hit(
+                me.seat, &mut me.windows, &inst, &mut g.bodies[body], &spec,
+                raw, strike.shares, strike.crit_multiplier, strike.crit_tier,
+                strike.attrition, strike.modded_base, strike.status_chance, &strike.forced,
+                &strike.status_vector, me.params, active, &mut me.gal, &mut me.arc, g.r, g.rec,
+                d, t, SpreadBy::Chain, false, true, None,
+            );
+        }
+    }
     // NO FORMATION, NOTHING TO REACH — see [`spread_beyond_the_target`].
-    if g.bodies.len() > 1 {
+    if g.bodies.len() > 1 && l.spatial.is_none() {
         spread_beyond_the_target(
             me.seat,
             &mut me.windows,
@@ -430,6 +505,10 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             struck,
         );
     }
+    if l.spatial.is_some() && me.params.arcane.echo_share > 0.0 {
+        irradiate::drain_echoes(me.seat, &mut me.windows, g.bodies, me.params, active,
+            &me.fixed.spread_geometry, &mut me.gal, &mut me.arc, g.r, g.rec, d, t);
+    }
     // …AND ENDS THAT WAY, for whatever settles before the next one — once
     // its burst is done.
     let burst_len = match active.burst {
@@ -440,7 +519,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         Some(done) => done,
         None => me.ammo.rounds_this_mag.is_multiple_of(burst_len),
     };
-    if burst_done {
+    if burst_done && l.spatial.as_ref().is_none_or(|s| s.last) {
         for b in g.bodies.iter_mut() {
             b.fallen = false;
         }
@@ -470,10 +549,16 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     // form that makes them was up when it swung.
     make_daggers(me.seat, me.params, active, t, g.r, &mut me.dagger_kill_mark, g.entities);
 
-    if l.radial_only { return t; }
+    if l.spatial.is_none() && l.radial_only { return t; }
+    if let Some(s)=&l.spatial {
+        s.aggregate(&mut landed_this_shot,&mut any_big,&mut any_head);
+        me.weakpoint_next_shot_armed=any_head;
+    }
 
     let mut t = t;
     after_the_landing(
+        l.spatial.as_ref().is_none_or(|s|s.last),
+        l.base_form,
         me.params,
         &me.apl,
         l.flash,
@@ -485,8 +570,8 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         landed_this_shot,
         any_big,
         any_head,
-        l.pellets_before,
-        l.headshots_before,
+        pellets_before,
+        headshots_before,
         l.burst_completed,
         &l.swing,
         l.combo_now,

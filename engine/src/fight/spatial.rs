@@ -1,0 +1,465 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//! Schedule geometry-derived recipients through the ordinary pellet damage path.
+use super::*;
+use std::{cell::Cell, rc::Rc};
+
+pub(super) mod beam;
+
+/// A spatial landing uses the recipient as the primary target of settlement.
+/// The rest of the source configuration is shared by all of its landings.
+pub(super) struct Recipient<'p> {
+    source: &'p FightParams,
+    index: usize,
+    params: FightParams,
+}
+
+#[wfsim_gas_macro::metered]
+impl<'p> Recipient<'p> {
+    pub(super) fn params<'a>(
+        source: &'p FightParams,
+        cached: &'a mut Option<Box<Self>>,
+        index: usize,
+    ) -> &'a FightParams
+    where
+        'p: 'a,
+    {
+        if index == 0 && source.gauge_charging_body_parts.is_empty() {
+            return source;
+        }
+        if cached.as_ref().is_none_or(|view| !std::ptr::eq(view.source, source)) {
+            let mut params = source.clone();
+            params.gauge_charging_body_parts.clear();
+            *cached = Some(Box::new(Self { source, index: 0, params }));
+        }
+        let view = cached.as_mut().unwrap();
+        if view.index != index {
+            let spec = source.body(index).expect("prepared spatial recipient");
+            view.params.foe.clone_from(spec.params);
+            view.params.body_parts.clear();
+            view.params.body_parts.extend_from_slice(spec.body_parts);
+            view.params.target_at = spec.at;
+            view.index = index;
+        }
+        &view.params
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(super) struct SpatialLanding {
+    pub impact: crate::scene::Impact,
+    pub miss: bool,
+    pub first: bool,
+    pub last: bool,
+    pub instance: u32,
+    pub follows: bool,
+    pub contact: usize,
+    pub splash: bool,
+    pub beam: Option<beam::Seed>,
+    pub redirected: bool,
+    progress: Rc<Cell<Progress>>,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct Progress {
+    landed: bool,
+    big: bool,
+    head: bool,
+}
+
+#[wfsim_gas_macro::metered]
+impl SpatialLanding {
+    pub fn aggregate(&self, landed: &mut bool, big: &mut bool, head: &mut bool) {
+        let mut p = self.progress.get();
+        p.landed |= *landed;
+        p.big |= *big;
+        p.head |= *head;
+        *landed = p.landed;
+        *big = p.big;
+        *head = p.head;
+        self.progress.set(p);
+    }
+}
+
+#[wfsim_gas_macro::metered]
+pub(super) fn launch(
+    l: &Landing,
+    active: &FightParams,
+    me: &mut Combatant,
+    bodies: &[Body],
+    rec: &mut crate::record::Record,
+) {
+    let burst_completed = Some(
+        me.ammo
+            .rounds_this_mag
+            .is_multiple_of(active.burst.map_or(1, |b| b.count.max(1))),
+    );
+    let Some(scene) = me.params.scene_3d.as_ref().cloned() else {
+        return;
+    };
+    let parts = if me.incarnon.in_base_form && !me.params.gauge_charging_body_parts.is_empty() {
+        &me.params.gauge_charging_body_parts
+    } else {
+        &me.params.body_parts
+    };
+    let head_weight: f64 = parts
+        .iter()
+        .filter(|p| p.is_head)
+        .map(|p| p.aim_weight)
+        .sum();
+    let all: f64 = parts.iter().map(|p| p.aim_weight).sum();
+    let groups = l.rounds.groups(l.n_pellets);
+    let origins = scene.fire_origins(&mut me.fire_state, active.form, &groups);
+    let eligible: Vec<_> = bodies
+        .iter()
+        .map(|b| b.state.phase == Phase::Physical)
+        .collect();
+    let progress = Rc::new(Cell::new(Progress::default()));
+    let mut events = Vec::new();
+    let accuracy = active.spread_scaling.map_or_else(crate::model::SpreadRuntime::default, |s| s.runtime);
+    let split_multishot = accuracy.extra_floor.is_some() && l.spread.is_some();
+    let ordinary = groups.iter().copied().enumerate().filter(|(_, copies)| *copies > 0)
+        .map(|(round, copies)| (round, if split_multishot { 1 } else { copies }));
+    let additional_groups: &[u32] = if split_multishot { &groups } else { &[] };
+    let extra = additional_groups.iter().copied().enumerate()
+        .flat_map(|(round, copies)| (1..copies).map(move |_| (round, 1)));
+    for (iteration, (round, copies)) in ordinary.chain(extra).enumerate() {
+        let head = me.d.aim.next_f64() < head_weight / all.max(1e-20);
+        let spread = l.spread.map(|mut s| {
+            if let Some(scale) = accuracy.charge_attenuation {
+                s.min_deg *= f64::from(scale);
+            }
+            s
+        });
+        let (dev, phi) = match (spread, accuracy.fan, accuracy.extra_floor) {
+            (Some(s), Some(fan), _) => {
+                let jitter = if s.is_pinpoint() { 0.5 } else { me.d.aim.next_f64() };
+                fan.sample(round, groups.len(), s.min_deg, jitter)
+            }
+            (Some(mut s), _, Some(floor)) if l.n_pellets > 1 => {
+                let base = groups.len();
+                if iteration >= base {
+                    let lower = floor + (iteration - base) as f32 * 0.2 / base.max(1) as f32;
+                    s.min_deg = s.min_deg.max(f64::from(lower));
+                }
+                s.sample_fixed_cone(me.d.blast_dir.next_f64(), me.d.aim.next_f64(), iteration as u32, l.n_pellets)
+            }
+            (Some(s), _, _) if !s.is_pinpoint() => s.sample(
+                me.d.aim.next_f64(),
+                me.d.blast_dir.next_f64(),
+                me.d.aim.next_f64(),
+                round as u32,
+                groups.len() as u32,
+            ),
+            _ => (0., 0.),
+        };
+        let pierce = active.punch_through_m + l.pierce_live_m;
+        let fire_origin = origins.as_ref().and_then(|o| o[round]);
+        let rebound = active.rebound_blast.zip(active.projectile_speed_mps);
+        let (mut path, reflected_from) = if let Some((model, speed)) = rebound {
+            let mut path = scene.launch_flight(head, dev, phi, &eligible, fire_origin);
+            let reflected = scene.trace_rebound_blast(
+                &mut path, model, speed, active.projectile_width_m * 0.5, &eligible,
+            );
+            (path, reflected)
+        } else {
+            let mut path = scene.trace(
+                head, dev, phi, active.projectile_speed_mps, active.homing, pierce,
+                active.infinite_body_punch_through, active.projectile_reverse_query,
+                active.projectile_width_m, active.range_m, &eligible, fire_origin,
+            );
+            if let Some(lock) = active.lock_on {
+                lock_shot(&scene, active, lock, &eligible, head, me, &mut path);
+            }
+            let reflected = active.ricochet.filter(|r| r.reflects_from_surfaces)
+                .map_or(usize::MAX, |r| scene.reflect_path(&mut path, r.bounces,
+                    active.projectile_speed_mps, active.projectile_width_m * 0.5,
+                    active.range_m, pierce, &eligible));
+            (path, reflected)
+        };
+        let mut seeds = beam::seeds(&scene, &mut path, active, &eligible, me.tendril.count);
+        let mut contact_blasts = Vec::new();
+        let mut surface_blasts = Vec::new();
+        if let Some(radial) = active.radial.filter(|_| rebound.is_some()) {
+            for det in &path.detonations {
+                let hits: Vec<_> = eligible.iter().enumerate().filter_map(|(body, &present)| {
+                    if !present {
+                        return None;
+                    }
+                    let distance = scene.distance_to_body(det.point, body);
+                    (radial.falloff_at(distance) > 0.).then_some(crate::scene::Impact {
+                        body, proxy: 0, part: 0, point: det.point, exit: det.point,
+                        seconds: det.seconds, travel: det.travel, material: 0., remaining: 0.,
+                        radial: true, radial_distance: distance,
+                    })
+                }).collect();
+                path.radial_impacts.extend_from_slice(&hits);
+                if det.body.is_some() {
+                    contact_blasts.push(hits);
+                } else {
+                    surface_blasts.extend(hits);
+                }
+            }
+        } else if let (Some(hit), Some(radial)) = (path.impacts.first().copied(), active.radial) {
+            if let Some(center) = path.blast_center {
+                path.radial_impacts = scene.blast_hits(hit, center, f64::from(radial.radius_m as f32), &eligible);
+            } else if active.homing.is_none() {
+                path.radial_impacts = (0..bodies.len()).filter_map(|body| {
+                    let distance = scene.distance_to_body(hit.point, body);
+                    (radial.falloff_at(distance) > 0.).then_some(crate::scene::Impact {
+                        body, part: 0, radial: true, radial_distance: distance, ..hit
+                    })
+                }).collect();
+            }
+        }
+        let each = l.rounds.per_round(l.n_pellets);
+        for (contact, hit) in path.impacts.iter().enumerate() {
+            let count = if contact == 0 || rebound.is_some() {
+                copies
+            } else {
+                each.floor() as u32 + u32::from(me.d.extra.chance(each.fract()))
+            };
+            // Direct and immediate radial instances retain per-instance ordering.
+            for instance in 0..count {
+                events.push(Landing {
+                    spatial: Some(SpatialLanding {
+                        impact: *hit,
+                        miss: false,
+                        first: false,
+                        last: false,
+                        instance,
+                        follows: instance > 0,
+                        contact,
+                        splash: false,
+                        beam: seeds.direct.get_mut(contact).and_then(Option::take),
+                        redirected: contact >= reflected_from,
+                        progress: progress.clone(),
+                    }),
+                    t: l.t + hit.seconds,
+                    n_pellets: 1,
+                    rounds: Rounds::single(1, each),
+                    burst_starts: false,
+                    burst_completed,
+                    ..l.clone()
+                });
+                if let Some(rc) = active.ricochet.filter(|r| !r.reflects_from_surfaces) {
+                    for impact in redirects(&scene, *hit, rc, &eligible, &mut me.d.spine) {
+                        path.redirects.push(impact);
+                        events.push(Landing {
+                            spatial: Some(SpatialLanding {
+                                impact,
+                                miss: false,
+                                first: false,
+                                last: false,
+                                instance,
+                                follows: false,
+                                contact: 0,
+                                splash: false,
+                                beam: None,
+                                redirected: true,
+                                progress: progress.clone(),
+                            }),
+                            t: l.t + hit.seconds,
+                            n_pellets: 1,
+                            rounds: Rounds::single(1, each),
+                            burst_starts: false,
+                            burst_completed,
+                            ..l.clone()
+                        });
+                    }
+                }
+                if let Some(rad) = active.radial {
+                    let radial_impacts = if rebound.is_some() {
+                        contact_blasts[contact].as_slice()
+                    } else if contact == 0 {
+                        path.radial_impacts.as_slice()
+                    } else {
+                        &[]
+                    };
+                    for &impact in radial_impacts {
+                        events.push(Landing {
+                            spatial: Some(SpatialLanding {
+                                impact,
+                                miss: false,
+                                first: false,
+                                last: false,
+                                instance,
+                                follows: instance > 0,
+                                contact,
+                                splash: impact.body != hit.body,
+                                beam: None,
+                                redirected: contact >= reflected_from,
+                                progress: progress.clone(),
+                            }),
+                            t: l.t + hit.seconds + rad.delay_seconds,
+                            radial_only: true,
+                            n_pellets: 1,
+                            rounds: Rounds::single(1, each),
+                            burst_starts: false,
+                            burst_completed,
+                            ..l.clone()
+                        });
+                    }
+                }
+            }
+        }
+        if let Some(rad) = active.radial {
+            for &impact in &surface_blasts {
+                for instance in 0..copies {
+                    events.push(Landing {
+                        spatial: Some(SpatialLanding {
+                            impact,
+                            miss: false,
+                            first: false,
+                            last: false,
+                            instance,
+                            follows: instance > 0,
+                            contact: 0,
+                            splash: true,
+                            beam: None,
+                            redirected: false,
+                            progress: progress.clone(),
+                        }),
+                        t: l.t + impact.seconds + rad.delay_seconds,
+                        radial_only: true,
+                        n_pellets: 1,
+                        rounds: Rounds::single(1, each),
+                        burst_starts: false,
+                        burst_completed,
+                        ..l.clone()
+                    });
+                }
+            }
+        }
+        let indirect = !seeds.indirect.is_empty();
+        for (impact, seed) in seeds.indirect {
+            let beam_merge = if seed.multishot { l.beam_merge } else { 1. };
+            events.push(Landing {
+                spatial: Some(SpatialLanding {
+                    impact,
+                    miss: false,
+                    first: false,
+                    last: false,
+                    instance: 0,
+                    follows: false,
+                    contact: 0,
+                    splash: false,
+                    beam: Some(seed),
+                    redirected: false,
+                    progress: progress.clone(),
+                }),
+                n_pellets: 1,
+                rounds: Rounds::single(1, 1.),
+                beam_merge,
+                burst_starts: false,
+                burst_completed,
+                ..l.clone()
+            });
+        }
+        if path.impacts.is_empty() && !indirect && surface_blasts.is_empty() {
+            rec.push(
+                l.t,
+                None,
+                crate::record::Kind::Miss {
+                    reason: "3d trajectory reached no enemy",
+                },
+            );
+        }
+        rec.trace_spatial(l.t, l.shot, round as u32, path);
+    }
+    if events.is_empty() {
+        let impact = crate::scene::Impact {
+            body: 0,
+            proxy: 0,
+            part: 0,
+            point: scene.muzzle(),
+            exit: scene.muzzle(),
+            seconds: 0.,
+            travel: 0.,
+            material: 0.,
+            remaining: 0.,
+            radial: false,
+            radial_distance: 0.,
+        };
+        events.push(Landing {
+            spatial: Some(SpatialLanding {
+                impact,
+                miss: true,
+                first: false,
+                last: false,
+                instance: 0,
+                follows: false,
+                contact: 0,
+                splash: false,
+                beam: None,
+                redirected: false,
+                progress,
+            }),
+            n_pellets: 0,
+            burst_starts: false,
+            burst_completed,
+            ..l.clone()
+        });
+    }
+    events.sort_by(|a, b| a.t.total_cmp(&b.t));
+    if let Some(first) = events.first_mut() {
+        first.burst_starts = l.burst_starts;
+        first.spatial.as_mut().unwrap().first = true;
+    }
+    if let Some(last) = events.last_mut() {
+        last.spatial.as_mut().unwrap().last = true;
+    }
+    me.in_flight.extend(events);
+}
+
+#[wfsim_gas_macro::metered]
+fn redirects(
+    scene: &crate::scene::Scene, seed: crate::scene::Impact, rc: crate::model::Ricochet,
+    eligible: &[bool], rng: &mut Rng,
+) -> Vec<crate::scene::Impact> {
+    let mut eligible = eligible.to_vec();
+    let mut current = seed;
+    let mut path = Vec::new();
+    for _ in 0..rc.bounces {
+        eligible[current.body] = false;
+        let root = scene.root(current.body);
+        let near = eligible.iter().enumerate().filter_map(|(body, &present)| {
+            let gap = scene.root(body).minus(root).length();
+            (present && gap <= rc.range_m).then_some((body, gap))
+        }).min_by(|a, b| a.1.total_cmp(&b.1));
+        let Some((target, _)) = near else { break };
+        let anchor = scene.target_anchor(target, rng.chance(rc.headshot_chance));
+        let Some(direction) = anchor.minus(current.point).normalized() else { break };
+        let reach = anchor.minus(current.point).length() + 1e-6;
+        let Some(hit) = scene.contact_impact(current.point, direction, reach, 0., &eligible) else { break };
+        path.push(hit);
+        current = hit;
+    }
+    path
+}
+
+#[wfsim_gas_macro::metered]
+fn lock_shot(
+    scene: &crate::scene::Scene, active: &FightParams, lock: crate::model::LockOn,
+    eligible: &[bool], head: bool, me: &mut Combatant, path: &mut crate::scene::Flight,
+) {
+    let forward = path.aim_target.minus(path.muzzle).normalized().unwrap_or(path.direction);
+    let candidates = scene.beam_acquire(path.muzzle, forward, lock.acquire_deg, lock.range_m, eligible);
+    let choices = &candidates[..candidates.len().min(lock.targets as usize)];
+    if choices.is_empty() { return; }
+    let round = me.ammo.rounds_this_mag.saturating_sub(1) as usize;
+    let actor = choices[round % choices.len()].body;
+    let gap = scene.distance_to_body(path.muzzle, actor);
+    let Some((miss, head_keep)) = lock.at(gap, choices.len() as u32) else { return };
+    path.steering_target = Some(actor);
+    path.impacts.clear();
+    path.stopped_at = None;
+    if me.d.aim.chance(miss) { return; }
+    let anchor = scene.target_anchor(actor, head && me.d.aim.chance(head_keep));
+    let Some(dir) = anchor.minus(path.muzzle).normalized() else { return };
+    path.direction = dir;
+    if let Some(mut hit) = scene.contact_impact(path.muzzle, dir, active.range_m, active.projectile_width_m * 0.5, eligible) {
+        hit.seconds = active.projectile_speed_mps.map_or(0., |speed| hit.travel / speed);
+        path.stopped_at = Some(hit.point);
+        path.impacts.push(hit);
+    }
+}

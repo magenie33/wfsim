@@ -68,6 +68,7 @@ mod replay_reads_every_buff;
 mod ripper_rounds;
 mod sniper_combo_fight;
 mod scenario_combo;
+mod spatial_recipient;
 mod spliced_riven;
 mod status_crit_parts;
 mod status_composition;
@@ -118,6 +119,9 @@ impl Default for FightParams {
             projectile_width_m: 0.0,
             // HIT-SCAN: every fixture lands the instant it fires.
             projectile_speed_mps: None,
+            homing: None,
+            projectile_reverse_query: false,
+            scene_3d: None,
             range_m: f64::INFINITY,
             damage: Self::dual_toxocyst_base_vector(),
             resting: None,
@@ -137,6 +141,8 @@ impl Default for FightParams {
             // …and nothing may miss: a fixture that dropped shots would put
             // every golden value in this file at the mercy of an aim roll.
             spread: None,
+            spread_scaling: None,
+            live_accuracy: false,
             player_at: crate::rules::space::Vec2::ORIGIN,
             target_at: crate::rules::space::Vec2::ORIGIN,
             lingering: None,
@@ -319,6 +325,7 @@ impl Default for FightParams {
             // chain is something a weapon DECLARES.
             beam: None,
             ricochet: None,
+            rebound_blast: None,
             thrown_bounce: None,
             // AIMED, like every fixture but the one weapon that is not.
             unaimed_headshot_chance: None,
@@ -452,6 +459,7 @@ fn a_bouncing_projectile_in_a_crowd(n: usize, head_chance: f64) -> FightParams {
         crit_bonus: false,
     }];
     p.ricochet = Some(crate::model::Ricochet {
+        reflects_from_surfaces: false,
         bounces: 5,
         headshot_chance: head_chance,
         range_m: f64::INFINITY,

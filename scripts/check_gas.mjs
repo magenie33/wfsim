@@ -26,7 +26,7 @@ const check = (what, ok, detail = "") => {
 /// THE METERED SOURCES: what a fight runs. A module a new verb's work runs in
 /// is added here, and this check then asks every item in it for the attribute.
 export const METERED = ["engine/src/fight", "engine/src/rules", "engine/src/model", "engine/src/target.rs",
-  "engine/src/formation.rs", "engine/src/record.rs"];
+  "engine/src/formation.rs", "engine/src/record.rs", "engine/src/scene.rs"];
 /// …less the code around the runs, which must not count: the loop that reads
 /// the count, the counter itself, and the maths that stands in for std's,
 /// which was never counted either.

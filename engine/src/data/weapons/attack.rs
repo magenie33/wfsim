@@ -142,6 +142,11 @@ pub struct AttackSpec {
     /// after the trigger (docs/MECHANICS.md §"Projectile flight").
     #[serde(default)]
     pub projectile_speed_mps: Option<f64>,
+    #[serde(default)]
+    pub homing: Option<crate::model::Homing>,
+    /// Kinematic projectile reverse continuation in an explicit 3D fight.
+    #[serde(default)]
+    pub projectile_reverse_query: bool,
     pub fire_rate: f64,
     #[serde(default)]
     pub refire: crate::model::RefireRule,
@@ -390,6 +395,7 @@ pub struct AttackSpec {
     /// family's Incarnon form, and the roster's only member.
     #[serde(default)]
     pub ricochet: Option<RicochetSpec>,
+    pub rebound_blast: Option<crate::model::ReboundBlast>,
     /// A THROWN GLAIVE'S BOUNCES — a throw form's, and nothing else's.
     #[serde(default)]
     pub thrown_bounce: Option<Box<ThrownBounceSpec>>,
@@ -786,6 +792,8 @@ pub struct ChainSpec {
     /// two on the second hop.
     #[serde(default = "chain_compounds_default")]
     pub compounds: bool,
+    #[serde(default)]
+    pub fanout: bool,
     /// Which targets start a chain (`radius_targets`: every enemy the sphere
     /// catches starts its own).
     pub origin: String,
@@ -1054,6 +1062,8 @@ pub struct GrenadeThrowSpec {
 /// was written. Rewritten rather than joined, so the roster has one spelling.
 #[derive(Debug, Clone, Deserialize)]
 pub struct RicochetSpec {
+    #[serde(default)]
+    pub reflects_from_surfaces: bool,
     /// Bounces AFTER the first collision.
     ///
     /// SIX EXPLOSIONS IS FIVE BOUNCES: *"exploding up to 6 times"*, and the
