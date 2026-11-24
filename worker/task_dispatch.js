@@ -272,7 +272,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
         await restateAll(db, gone);
       }
       results.push(...got.filter((q) => !gone.includes(q.id)));
-      if (!gone.length || (rcs && kept.length)) break;
+      if (!gone.length) break;
     }
     if (!results.length) return [];
     // IN THE ORDER IT WAS CHOSEN: an UPDATE returns its rows in none.
