@@ -69,18 +69,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "64fbd9da";
+const BUILD_ID = "ff4f672d";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "f1c59b17+";
+const BUILD_SHA = "585371f7+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "eb12a80e6d33";
+const RELEASE_ID = "91b3e763174e";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -29001,19 +29001,25 @@ function computeRoad() {
 function setComputeRoad(v) {
   try { if (v === "auto") localStorage.removeItem(ROAD_KEY); else if (ROADS.includes(v)) localStorage.setItem(ROAD_KEY, v); } catch (_) { /* this page only */ }
   routeAt = 0;
+  routing = null;
 }
 function chooseRoute() {
   if (!relayServes()) return Promise.resolve("");
   const road = computeRoad();
   if (road !== "auto") return Promise.resolve(road === "relay" ? RELAY : "");
   if (Date.now() - routeAt < ROUTE_EVERY_MS) return Promise.resolve(routeBase);
-  routing = routing || Promise.all([timeRoute(""), timeRoute(RELAY)]).then(([direct, relay]) => {
-    routeBase = relay < direct ? RELAY : "";
-    routeAt = Date.now();
-    routing = null;
-    return routeBase;
-  });
-  return routing;
+  if (!routing) {
+    const sample = Promise.all([timeRoute(""), timeRoute(RELAY)]).then(([direct, relay]) => {
+      if (routing === sample) {
+        routeBase = relay < direct ? RELAY : "";
+        routeAt = Date.now();
+        routing = null;
+      }
+      return routeBase;
+    });
+    routing = sample;
+  }
+  return routeAt ? Promise.resolve(routeBase) : routing;
 }
 /// ONE CALL OF THE BOARD'S WORK, by the chosen road — the relay carries
 /// `RELAY_PATHS` alone — its answer or null. A call one road drops goes by the
@@ -29030,6 +29036,7 @@ async function postBoardWork(path, body) {
   if (r || !board || computeRoad() !== "auto") return r;
   const other = base ? "" : RELAY;
   const again = await postBoardTo(other, path, body);
+  routing = null;
   routeBase = other;
   routeAt = again ? Date.now() : 0;
   return again;
@@ -29302,6 +29309,7 @@ async function boardSync(id, { want = null } = {}) {
     const early = Date.now() < syncNotBefore;
     const ask = early ? 0 : want == null ? Math.max(0, syncDials.pack8_ms - workLeftMs()) : want;
     const body = boardSyncBody(id, { want: ask, results }), sentAt = Date.now(), idle = body.idle ? idleLoad() : {};
+    const asking = body.want_ms > 0;
     const refusedSent = (body.refused || []).map((r) => r.question);
     const r = await postBoardWork("/api/board/sync", body);
     lastSyncAt = Date.now();
@@ -29309,16 +29317,18 @@ async function boardSync(id, { want = null } = {}) {
       syncFailures += 1;
       const cap = Math.min(SYNC_BACKOFF_MAX_MS, SYNC_BACKOFF_MS * 2 ** (syncFailures - 1));
       syncNotBefore = Date.now() + Math.random() * cap;
-      idleCount(sentAt, false, true, communityLanes(), roadDropped);
+      if (asking || roadDropped) idleCount(sentAt, asking, asking, body.lanes, roadDropped);
       return null;
     }
     if (r.fallback === 7) { boardProtocol = 7; return r; }
     syncFailures = 0;
+    if (Number.isFinite(r.next_ms)) syncNotBefore = lastSyncAt + r.next_ms;
     if (r.dials) Object.assign(syncDials, r.dials);
     if (r.kept) idleKept(idle);
+    if (asking && !r.work && !r.pack?.tasks?.length && (r.empty || r.next_ms > 0) && !r.early && !r.busy && !r.stale && !r.banned)
+      idleCount(sentAt, true, false, body.lanes, "");
     refusedPending = refusedPending.filter((x) => !refusedSent.includes(x.question));
     await takeSynced(r, results, sentAt, body.held);
-    if (Number.isFinite(r.next_ms)) syncNotBefore = Date.now() + r.next_ms;
     noteHandOut(r);
     if (r.work) syncWork = r.work;
     if (r.pack && r.pack.tasks && r.pack.tasks.length) {
