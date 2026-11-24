@@ -251,7 +251,11 @@ pub(crate) fn source_default<'a>(
         },
         count,
     )
-    .map(Arc::new)
+    .map(|scene| Arc::new(if matches!(preset, Preset::SourceStandard) {
+        scene.with_reference_fallback()
+    } else {
+        scene
+    }))
 }
 
 pub(crate) fn explicit(raw: &Value, count: usize, player_at: Vec2) -> Result<Arc<Scene>, String> {

@@ -11,6 +11,7 @@ pub use attachment::FireOrigin;
 #[derive(Debug, Clone)]
 pub struct Scene {
     input: Scene3d,
+    reference_fallback: bool,
     pub(crate) weakpoint_aim: Option<f64>,
     pub(crate) miss_chance: f64,
     muzzle: Vec3,
@@ -545,6 +546,7 @@ impl Scene {
         let slam_distance = bodies.iter().map(|body| body.radial_distance(root)).collect();
         Ok(Self {
             input,
+            reference_fallback: false,
             weakpoint_aim: None,
             miss_chance: 0.,
             muzzle,
@@ -557,6 +559,22 @@ impl Scene {
             slam_distance,
             equipped_fire,
         })
+    }
+
+    pub fn using_reference_fallback(&self) -> bool {
+        self.reference_fallback
+    }
+
+    pub fn with_reference_fallback(mut self) -> Self {
+        self.reference_fallback = true;
+        self
+    }
+
+    pub fn reference_wielder(&self) -> Self {
+        let mut scene = self.clone();
+        scene.input.player.equipped_fire = None;
+        scene.equipped_fire = None;
+        scene
     }
 
     pub fn with_shooting_policy(mut self, weakpoint_aim: Option<f64>, miss_chance: f64) -> Self {

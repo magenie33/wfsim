@@ -880,3 +880,15 @@ fn official_rulers_resolve_3d_for_every_weapon_class() {
         }
     }
 }
+
+#[test]
+fn standard_scene_replays_an_additional_wielder_with_the_reference_mount() {
+    let mut input = request("laetum", 1, false);
+    input["scene_3d"] = json!({"preset": "source_standard"});
+    input["also_acting"] = json!([{"weapon": "torid", "mode": "base", "mods": []}]);
+    let p = params(&input);
+    assert!(p.scene_3d.as_ref().unwrap().input().player.equipped_fire.is_some());
+    assert!(p.also_acting[0].scene_3d.as_ref().unwrap().input().player.equipped_fire.is_none());
+    assert_eq!(crate::simulate::simulate_json(&input)["ok"], true);
+    assert_eq!(crate::log::log_json(&input)["ok"], true);
+}

@@ -413,7 +413,13 @@ pub(crate) fn seats_beside(
 pub(crate) fn seat_from(v: &Value, arena: &wfsim_engine::arena::Arena) -> Result<FightParams, Value> {
     let e = Entrant::new(v, true)?;
     let refs = e.seat(&mod_ids(v))?;
-    Ok(e.bare(&refs, arena)?.1)
+    if let Some(scene) = arena.scene_3d.as_ref().filter(|scene| scene.using_reference_fallback()) {
+        let mut arena = arena.clone();
+        arena.scene_3d = Some(std::sync::Arc::new(scene.reference_wielder()));
+        Ok(e.bare(&refs, &arena)?.1)
+    } else {
+        Ok(e.bare(&refs, arena)?.1)
+    }
 }
 
 /// WHAT THE BUILD COSTS IN CAPACITY AND FORMA — a report about the build, and

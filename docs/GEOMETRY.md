@@ -19,6 +19,8 @@ a qualified carrier uses the standing reference emitter for the standard
 preset. Its weapon damage and companion rules still apply. Standard geometry
 uses the Heavy Gunner's posed collision volumes when the selected target has
 no model. Movement flags retain the standing geometry in this preset.
+Additional wielders use the shared reference pose and a reference emitter.
+Ability placement uses each ability's existing rules on the projected arena.
 
 In 3D, `weakpoint_aim_pct` weights the selected weak-point center against
 the ordinary body anchor. `miss_pct` assigns deliberate misses per physical

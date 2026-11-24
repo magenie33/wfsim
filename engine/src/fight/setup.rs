@@ -42,7 +42,9 @@ impl FightParams {
         if self.acid_shells.is_some() || (self.spectral_dagger.is_some() && !self.uses_melee_volume()) {
             return Some("scene_3d needs a spawned object, lock or secondary delivery route");
         }
-        if !self.abilities.is_empty() || self.frame.is_some() || !self.also_acting.is_empty() {
+        if !scene.using_reference_fallback()
+            && (!self.abilities.is_empty() || self.frame.is_some() || !self.also_acting.is_empty())
+        {
             return Some("scene_3d needs ability or additional wielder geometry");
         }
         if self.arcane.influence_chance > 0. && !self.uses_melee_volume() {
