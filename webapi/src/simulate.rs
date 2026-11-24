@@ -67,7 +67,7 @@ pub fn simulate_request(
     v: &wfsim_engine::board::builds::ValidBuild,
     played: wfsim_engine::data::weapons::WeaponPlayMode,
 ) -> Value {
-    let mut req = scenario.clone();
+    let mut req = wfsim_engine::board::benchmarks::scenario_for(scenario, &v.weapon);
     let Some(o) = req.as_object_mut() else {
         return req;
     };

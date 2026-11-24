@@ -7,7 +7,7 @@
 // point, since a number only means something against a ruler someone else can
 // pick up. Wanting a variant is what ⧉ is for: it copies the official one into
 // an ordinary, editable scenario of your own.
-const builtinScenarios = () => (META.benchmarks || []).map((b) => ({
+const builtinScenarios = (weapon = presetWeapon()) => (META.benchmarks || []).map((b) => ({
   // TRANSLATED for display, like everything else on the page. Its identity is
   // the `builtin` id below, never this string — see `scenarioNamed`.
   name: benchShort(b.id),
@@ -15,7 +15,7 @@ const builtinScenarios = () => (META.benchmarks || []).map((b) => ({
   // under, and a retired version has to be recognisable as retired.
   builtin: b.id,
   savedAt: 0,
-  state: b.scenario,
+  state: headlessRulerScenario(META, b.scenario, weapon),
 }));
 // The list every reader sees: official first, then the player's own.
 const scenarioList = () => builtinScenarios().concat(loadPresetList(SCENARIOS));
@@ -273,16 +273,10 @@ function applyWeaponInner(id, presetMods) {
   // five are not even legal here; `defaultAssembly` returns null on a weapon
   // that takes none, which is what clears them on the way to an ordinary gun.
   assembly = defaultAssembly(id, null);
-  // THE FIGHT DOES NOT MOVE. A scenario is shared across the roster now
-  // (`SHARED_DOMAINS`), so switching weapons keeps the fight you are measuring
-  // under — which is the entire point of being able to compare two guns.
-  //
-  // Its one weapon-shaped knob is headshot %, and it is left alone for the same
-  // reason the official rulers leave it alone: the ruler pins 100 and applies
-  // to the whole roster, and the SERVER forces 0 on a weapon that cannot
-  // headshot (`parse_fight`, sentinel). Resetting it here would have rewritten
-  // the shared scenario every time you changed weapon, and auto-save would have
-  // stored that.
+  const bench = benchList().find((b) => b.id === scenarioNamed(activeScenario)?.builtin);
+  if (bench?.scenario.scene_selection && sim.__weapon !== id) {
+    applyScenario(headlessRulerScenario(META, bench.scenario, id));
+  }
   sim.__weapon = id;
   // A weapon's search is its own: `renderOpt` seeds one blank start.
   opt = { starts: [], limits: null }; optSeeded = false;

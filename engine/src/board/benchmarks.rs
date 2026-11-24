@@ -5,12 +5,9 @@
 //! once, and on every weapon, because a number only means something against a
 //! ruler someone else can pick up.
 //!
-//! **A benchmark may not name a weapon, a mod, an arcane, an evolution, or a
-//! weapon form**, which [`no_benchmark_names_a_weapon`] enforces. That is the
-//! feature — a definition that never speaks about a member of the roster cannot
-//! be wrong about a member it has never seen, so adding weapon 201 can never
-//! require editing a benchmark. It is stronger than tagging weapons, which is
-//! correct only while every weapon is tagged correctly.
+//! A ruler can select a complete named scene for a weapon or weapon class.
+//! Exact weapon selections take precedence over class selections. All scenes
+//! share the ruler's metric. Build terms remain independent of the scene.
 //!
 //! What replaces the per-weapon settings is POLICY the engine already resolves:
 //! `form: default`, an omitted `headshot_pct` (0 for a sentinel weapon, 100
@@ -271,6 +268,13 @@ fn expand_ladder(b: Benchmark, axes: &[Axis]) -> Result<Vec<Benchmark>, String> 
                     for (k, v) in &r.set {
                         m.insert(k.clone(), v.clone());
                     }
+                    if let Some(scenes) = m.get_mut("scenes").and_then(serde_norway::Value::as_mapping_mut) {
+                        for scene in scenes.values_mut().filter_map(serde_norway::Value::as_mapping_mut) {
+                            for (k, v) in &r.set {
+                                scene.insert(k.clone(), v.clone());
+                            }
+                        }
+                    }
                 }
                 c.cell.push((axis.id.clone(), r.tag.clone()));
             }
@@ -350,6 +354,58 @@ pub fn core_metric(
     };
     crate::rules::metrics::get(id)
         .ok_or_else(|| format!("names the metric `{id}`, which `engine::metrics::ALL` does not"))
+}
+
+/// Select the ruler's complete fight before introducing the build.
+pub fn scenario_for(scenario: &serde_json::Value, weapon: &str) -> serde_json::Value {
+    let selection = &scenario["scene_selection"];
+    let scene = selection["weapons"].get(weapon).or_else(|| {
+        crate::build::scenario::class_of(weapon).and_then(|class| selection["classes"].get(class))
+    });
+    if let Some(selected) = scene.and_then(serde_json::Value::as_str) {
+        return scenario["scenes"][selected].clone();
+    }
+    let mut default = scenario.clone();
+    if let Some(fields) = default.as_object_mut() {
+        fields.remove("scenes");
+        fields.remove("scene_selection");
+    }
+    default
+}
+
+fn prepare_scenes(scenario: &mut serde_norway::Value) -> Result<(), String> {
+    let metric = core_metric(scenario)?.id;
+    expand_formation_grid(scenario)?;
+    let selection = scenario.get("scene_selection").cloned();
+    let Some(scenes) = scenario.as_mapping_mut().and_then(|m| m.get_mut("scenes")) else {
+        return if selection.is_some() { Err("scene_selection needs scenes".into()) } else { Ok(()) };
+    };
+    let scenes = scenes.as_mapping_mut().ok_or("scenes must be a mapping")?;
+    for (name, scene) in scenes.iter_mut() {
+        if name.as_str().is_none() || core_metric(scene)?.id != metric {
+            return Err("a named scene must use the ruler metric".into());
+        }
+        if scene.get("scenes").is_some() || scene.get("scene_selection").is_some() {
+            return Err("a named scene must be a complete fight".into());
+        }
+        expand_formation_grid(scene)?;
+    }
+    if let Some(selection) = selection {
+        for (category, entries) in selection.as_mapping().ok_or("scene_selection must be a mapping")? {
+            let kind = category.as_str();
+            for (key, scene) in entries.as_mapping().ok_or("scene selector must be a mapping")? {
+                let valid_key = key.as_str().is_some_and(|key| match kind {
+                    Some("weapons") => crate::data::weapons::spec(key).is_some(),
+                    Some("classes") => crate::build::scenario::WEAPON_CLASSES.contains(&key),
+                    _ => false,
+                });
+                if !valid_key || !scenes.contains_key(scene) {
+                    return Err(format!("invalid scene selection {key:?} → {scene:?}"));
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 /// A CROWD IN THREE NUMBERS, expanded HERE and nowhere else.
@@ -436,7 +492,7 @@ pub fn all() -> &'static [Benchmark] {
             .map(|(p, text)| {
                 let mut b: Benchmark =
                     serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
-                expand_formation_grid(&mut b.scenario)
+                prepare_scenes(&mut b.scenario)
                     .unwrap_or_else(|e| panic!("{p}: {e}"));
                 // THE CORE IS CHECKED WHERE THE FILE BECOMES A BENCHMARK, so
                 // no consumer downstream has to decide what an unnamed one
@@ -569,17 +625,39 @@ mod tests {
         }
     }
 
-    /// THE RULE, enforced. A benchmark that names a weapon — or a mod, an
-    /// arcane, an evolution, or a form only some weapons register — is a ruler
-    /// that measures different things on different weapons, and it fails the
-    /// build rather than the board.
+    #[test]
+    fn named_scenes_expand_formations_and_validate_selectors() {
+        let mut scenario: serde_norway::Value = serde_norway::from_str(
+            "metric: kpm
+scenes:
+  group:
+    metric: kpm
+    player_at: [0, 0]
+    target_at: [0, 5]
+    formation_grid: {cols: 2, rows: 2, spacing_m: 2}
+scene_selection:
+  classes: {primary: group}
+",
+        ).unwrap();
+        prepare_scenes(&mut scenario).unwrap();
+        let json = serde_json::to_value(&scenario).unwrap();
+        let scene = scenario_for(&json, "braton");
+        assert_eq!(scene["formation"].as_array().unwrap().len(), 3);
+        assert!(scene.get("formation_grid").is_none());
+        scenario["scene_selection"]["classes"]["primary"] = "missing".into();
+        assert!(prepare_scenes(&mut scenario).is_err());
+    }
+
+    /// The fight describes the scene. Only its selector may name weapons.
     #[test]
     fn no_benchmark_names_a_weapon() {
         let banned = weapon_bound_ids();
         assert!(!banned.is_empty(), "the ban list itself has to load");
         for b in all() {
             let mut seen = Vec::new();
-            strings_in(&b.scenario, &mut seen);
+            let mut scenario = b.scenario.clone();
+            scenario.as_mapping_mut().unwrap().remove("scene_selection");
+            strings_in(&scenario, &mut seen);
             for s in seen {
                 assert!(
                     !banned.contains(&s),

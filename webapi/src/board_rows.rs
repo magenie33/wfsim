@@ -261,12 +261,9 @@ pub fn measured(req: &Value, acc: &wfsim_engine::fight::Shard) -> Value {
 /// THE ROW'S NUMBER IN THE RULER'S OWN UNITS. `score` off the wire is kill
 /// PROGRESS over the whole engagement, so a `kpm` ruler turns it into a rate and
 /// a `dps` one reads a different field entirely.
-pub fn row_score(bench: &wfsim_engine::board::benchmarks::Benchmark, out: &Value) -> f64 {
+pub fn row_score(bench: &wfsim_engine::board::benchmarks::Benchmark, request: &Value, out: &Value) -> f64 {
     let metric = bench.metric();
-    let duration = serde_json::to_value(&bench.scenario)
-        .ok()
-        .and_then(|s| s.get("duration").and_then(Value::as_f64))
-        .unwrap_or(300.0);
+    let duration = request.get("duration").and_then(Value::as_f64).unwrap_or(300.0);
     metric.of(out.get(metric.field).and_then(Value::as_f64).unwrap_or(0.0), duration)
 }
 

@@ -823,8 +823,9 @@ async function headlessAppraisalReplay(say, w, job, rows, host) {
   // THE RULER'S OWN FIGHT AND RUNS, not a reader's: the grade divides this
   // number by the board's, and a board row is fought at the ruler's runs.
   const contact = 2 * (Number(meta.body_radius_m) || 0.25);
-  const sim = { ...headlessScenarioOnto(meta, bench.scenario, contact, met.id), __weapon: w.id };
-  const runs = (bench.scenario || {}).runs;
+  const scenario = headlessRulerScenario(meta, bench.scenario, w.id);
+  const sim = { ...headlessScenarioOnto(meta, scenario, contact, met.id), __weapon: w.id };
+  const runs = scenario.runs;
   const r = await host.simulate({ ...headlessSeat(meta, state, undefined), rivens: [{ id, name: "", spec: riven }],
     ...sim, runs, custom_enemies: [], buffs: sim.buffs || {}, also_acting: [] });
   if (!r || r.ok === false) return { ok: false, reason: (r && r.error) || say.t("the replay did not run") };

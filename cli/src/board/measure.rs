@@ -227,7 +227,7 @@ mod tests {
             }));
             assert_eq!(
                 scored["score"].as_f64().unwrap().to_bits(),
-                wfsim_webapi::board_rows::row_score(bench, &banked).to_bits(),
+                wfsim_webapi::board_rows::row_score(bench, &req, &banked).to_bits(),
                 "the order's {mode} number is not the scorer's",
             );
             assert_eq!(scored["metric"], json!(bench.metric().id), "the order's metric is not the ruler's");

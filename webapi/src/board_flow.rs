@@ -208,6 +208,44 @@ mod tests {
     use super::*;
     fn example() -> Value { json!({"weapon":"burston_prime","mods":["serration","split_chamber","point_strike","vital_sense","hellfire","infected_clip","stormbringer","gilded_truth"],"arcanes":["primary_merciless"]}) }
     #[test]
+    fn a_ruler_selects_a_complete_scene_for_each_weapon() {
+        let scenario = json!({
+            "metric": "kpm", "enemy": "thrax_centurion",
+            "scene_selection": {
+                "classes": {"primary": "range", "secondary": "range", "melee": "contact"},
+                "weapons": {"laetum": "range"}
+            },
+            "scenes": {
+                "range": {"metric": "kpm", "enemy": "corrupted_heavy_gunner",
+                    "duration": 20, "runs": 12, "headshot_pct": 100,
+                    "formation": [{"id": "e2", "at": [1, 5]}],
+                    "scene_3d": {"preset": "source_default",
+                        "placement": {"kind": "center_distance", "distance": 5}}},
+                "contact": {"metric": "kpm", "enemy": "corrupted_heavy_gunner",
+                    "duration": 10, "runs": 6,
+                    "scene_3d": {"preset": "source_default", "placement": {"kind": "contact"}}}
+            }
+        });
+        for (weapon, expected, neighbors, runs) in [
+            ("laetum", 5.0, 1, 12), ("braton", 5.0, 1, 12), ("magistar", 0.7825, 0, 6),
+        ] {
+            let build = crate::board_rows::library_build(&json!({"weapon": weapon, "mods": []})).unwrap();
+            let request = crate::board_rows::row_requests(&build, &scenario).remove(0).1;
+            assert_eq!(request["runs"], runs);
+            assert!(request.get("scene_selection").is_none() && request.get("scenes").is_none());
+            let arena = crate::fight::parse_fight(&request).unwrap().arena;
+            assert!((arena.target_at.distance(arena.player_at) - expected).abs() < 1e-6);
+            assert_eq!(arena.others.len(), neighbors);
+        }
+        let mut override_scene = scenario;
+        override_scene["scene_selection"]["weapons"]["laetum"] = json!("contact");
+        let selected = benchmarks::scenario_for(&override_scene, "laetum");
+        assert_eq!(selected["duration"], 10);
+        assert!(selected.get("formation").is_none());
+        assert_eq!(benchmarks::scenario_for(&override_scene, "imperator")["enemy"], "thrax_centurion");
+    }
+
+    #[test]
     fn captures_measurements_and_one_incompatible_sibling_search() {
         let record=example();let p=plan(&record,"standard_single_target","cycle",true,None,None);
         assert_eq!(p["schema"],1);

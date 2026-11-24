@@ -262,7 +262,8 @@ const optIsLive = () => !!userTasks?.view().some((task) => task.state === "runni
 /// same question.
 function optimizationFinalRuns() {
   const ruler = scenarioNamed(activeScenario)?.builtin;
-  return benchList().find(bench => bench.id === ruler)?.scenario.runs ?? simRuns();
+  const bench = benchList().find(bench => bench.id === ruler);
+  return headlessRulerScenario(META, bench?.scenario, presetWeapon()).runs ?? simRuns();
 }
 function optimizeBody() {
   // NO SCOPE: the server searches every candidate the quick calc offers.

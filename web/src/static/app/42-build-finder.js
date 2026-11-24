@@ -628,7 +628,9 @@ const SIM_RUNS_KEY = "wfsim-sim-runs";
 const boardSimRuns = () => {
   if (!META) return null;
   const build = buildNamed(activePreset);
-  return build?.builtin ? (benchList().find(bench => bench.id === build.benchmark)?.scenario.runs || headlessDefaultRuns(META)) : null;
+  if (!build?.builtin) return null;
+  const bench = benchList().find(bench => bench.id === build.benchmark);
+  return headlessRulerScenario(META, bench?.scenario, presetWeapon()).runs ?? headlessDefaultRuns(META);
 };
 const simRuns = () => {
   const board = boardSimRuns();

@@ -255,7 +255,7 @@ async function matchBoardReviewRow(task, row) {
   const ruler = row.benchmark, mode = row.mode || "base";
   if (mode !== request.mode || (origin.benchmark && ruler !== origin.benchmark)) return null;
   const bench = benchList().find(item => item.id === ruler);
-  if (!bench || request.runs !== bench.scenario.runs) return null;
+  if (!bench || request.runs !== headlessRulerScenario(META, bench.scenario, weapon).runs) return null;
   const ordered = await api("/api/board/order", { record: boardReviewRecord(weapon, row), ruler, mode, observation: request });
   if (!ordered?.ok || ordered.matches_observation !== true || !/^[a-f0-9]{32}$/.test(ordered.identity || "")) return null;
   return { row, identity: ordered.identity, ruler, mode, weapon };
@@ -265,7 +265,7 @@ async function runOfficialBoardSimulation(queue, weapon, row) {
   const benchmark = row.benchmark, mode = row.mode || "base";
   const ordered = await api("/api/board/order", { record: boardReviewRecord(weapon.id, row), ruler: benchmark, mode });
   if (!ordered?.ok) throw new Error(ordered?.error || "The board could not be reached.");
-  const fight = benchList().find(bench => bench.id === benchmark).scenario;
+  const fight = headlessRulerScenario(META, benchList().find(bench => bench.id === benchmark).scenario, weapon.id);
   const origin = {
     benchmark,
     board_row: row,
@@ -280,7 +280,7 @@ async function runOfficialBoardSimulation(queue, weapon, row) {
 
 async function matchingBoardReview(task) {
   if (task.engine !== ENGINE_ID) return null;
-  if (!benchList().some(bench => task.request.runs === bench.scenario.runs
+  if (!benchList().some(bench => task.request.runs === headlessRulerScenario(META, bench.scenario, task.request.weapon).runs
     && (!task.origin.benchmark || task.origin.benchmark === bench.id))) return null;
   if (task.origin.board_row) return matchBoardReviewRow(task, task.origin.board_row);
   const weapon = task.request.weapon;

@@ -623,6 +623,13 @@ const HEADLESS_DEAD_SCENARIO_FIELDS = ["form", "mode", "runs", "attack_interval_
 /// A SCENARIO AS THE LIVE FIGHT, onto a COMPLETE fight — the defaults — and never
 /// onto the fight before it: `st` states only what it has an opinion about, so
 /// spreading it over the outgoing fight would keep that fight's other fields.
+function headlessRulerScenario(meta, scenario, weapon) {
+  const { scenes, scene_selection, ...fallback } = scenario || {};
+  const cls = headlessWeaponOf(meta, weapon)?.weapon_class;
+  const selected = scene_selection?.weapons?.[weapon] ?? scene_selection?.classes?.[cls];
+  return selected === undefined ? fallback : scenes[selected];
+}
+
 function headlessScenarioOnto(meta, st, contact, metric) {
   st = { ...(st || {}) };
   HEADLESS_DEAD_SCENARIO_FIELDS.forEach((k) => { delete st[k]; });
@@ -778,7 +785,7 @@ function headlessRivenGainRequest(meta, { weapon, ruler, card, rivenId = "apprai
   const preset = ((meta.search_presets || {}).presets || []).find((p) => p.riven);
   if (!w || w.no_riven || !bench || !preset) return null;
   const contact = 2 * (Number(meta.body_radius_m) || 0.25);
-  const sim = { ...headlessScenarioOnto(meta, bench.scenario, contact, "kpm"), __weapon: weapon };
+  const sim = { ...headlessScenarioOnto(meta, headlessRulerScenario(meta, bench.scenario, weapon), contact, "kpm"), __weapon: weapon };
   const mod = "riven:" + rivenId;
   const spec = headlessWithDrafts(meta, { bonuses: (card.bonuses || []).map((b) => ({ id: b.id, roll: b.roll })),
     malus: card.malus ? { id: card.malus.id, roll: card.malus.roll } : null,

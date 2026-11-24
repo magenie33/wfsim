@@ -430,7 +430,7 @@ pub(super) fn ruler(
     let metric = bench.metric();
     // THE ROW'S NUMBER IN THE RULER'S OWN UNITS, said once for the scorer and
     // the page's producer (`board_rows::row_score`).
-    let score_in = |out: &Value| -> f64 { wfsim_webapi::board_rows::row_score(bench, out) };
+    let score_in = |req: &Value, out: &Value| wfsim_webapi::board_rows::row_score(bench, req, out);
 
     let mut rows: Vec<Row> = Vec::new();
     let (mut seen, mut refused) = (0usize, 0usize);
@@ -774,7 +774,7 @@ pub(super) fn ruler(
                     // per-minute rate: 55.26 on screen for a build that kills
                     // 11.05 a minute over 300 s. The RANKING survives either way,
                     // being a linear rescale; the number people read does not.
-                    let s = score_in(&out);
+                    let s = score_in(&req, &out);
                     let at = stamp(&std::time::SystemTime::now());
                     computed.insert(key.clone(), s);
                     // …AND THE FACT IS DURABLE HERE, not when the run ends. A

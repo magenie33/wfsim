@@ -283,7 +283,7 @@ function benchArena(cur) {
     fold.ontoggle = () => { if (fold.open) benchArena(benchCurrent()); };
   }
   if (bar && cur && (!fold || fold.open)) {
-    const sc = { ...defaultScenario(), ...(cur.scenario || {}) };
+    const sc = { ...defaultScenario(), ...headlessRulerScenario(META, cur.scenario, presetWeapon()) };
     sc.player_at = [...(sc.player_at || [0, 0])];
     sc.target_at = [...(sc.target_at || [0, CONTACT_M])];
     // THE RULER'S OWN CROWD, never `= []` and `= null`: a benchmark CAN have
