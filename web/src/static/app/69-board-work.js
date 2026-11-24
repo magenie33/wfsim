@@ -285,19 +285,25 @@ function computeRoad() {
 function setComputeRoad(v) {
   try { if (v === "auto") localStorage.removeItem(ROAD_KEY); else if (ROADS.includes(v)) localStorage.setItem(ROAD_KEY, v); } catch (_) { /* this page only */ }
   routeAt = 0;
+  routing = null;
 }
 function chooseRoute() {
   if (!relayServes()) return Promise.resolve("");
   const road = computeRoad();
   if (road !== "auto") return Promise.resolve(road === "relay" ? RELAY : "");
   if (Date.now() - routeAt < ROUTE_EVERY_MS) return Promise.resolve(routeBase);
-  routing = routing || Promise.all([timeRoute(""), timeRoute(RELAY)]).then(([direct, relay]) => {
-    routeBase = relay < direct ? RELAY : "";
-    routeAt = Date.now();
-    routing = null;
-    return routeBase;
-  });
-  return routing;
+  if (!routing) {
+    const sample = Promise.all([timeRoute(""), timeRoute(RELAY)]).then(([direct, relay]) => {
+      if (routing === sample) {
+        routeBase = relay < direct ? RELAY : "";
+        routeAt = Date.now();
+        routing = null;
+      }
+      return routeBase;
+    });
+    routing = sample;
+  }
+  return routeAt ? Promise.resolve(routeBase) : routing;
 }
 /// ONE CALL OF THE BOARD'S WORK, by the chosen road — the relay carries
 /// `RELAY_PATHS` alone — its answer or null. A call one road drops goes by the
@@ -314,6 +320,7 @@ async function postBoardWork(path, body) {
   if (r || !board || computeRoad() !== "auto") return r;
   const other = base ? "" : RELAY;
   const again = await postBoardTo(other, path, body);
+  routing = null;
   routeBase = other;
   routeAt = again ? Date.now() : 0;
   return again;
@@ -586,6 +593,7 @@ async function boardSync(id, { want = null } = {}) {
     const early = Date.now() < syncNotBefore;
     const ask = early ? 0 : want == null ? Math.max(0, syncDials.pack8_ms - workLeftMs()) : want;
     const body = boardSyncBody(id, { want: ask, results }), sentAt = Date.now(), idle = body.idle ? idleLoad() : {};
+    const asking = body.want_ms > 0;
     const refusedSent = (body.refused || []).map((r) => r.question);
     const r = await postBoardWork("/api/board/sync", body);
     lastSyncAt = Date.now();
@@ -593,13 +601,15 @@ async function boardSync(id, { want = null } = {}) {
       syncFailures += 1;
       const cap = Math.min(SYNC_BACKOFF_MAX_MS, SYNC_BACKOFF_MS * 2 ** (syncFailures - 1));
       syncNotBefore = Date.now() + Math.random() * cap;
-      idleCount(sentAt, false, true, communityLanes(), roadDropped);
+      if (asking || roadDropped) idleCount(sentAt, asking, asking, body.lanes, roadDropped);
       return null;
     }
     if (r.fallback === 7) { boardProtocol = 7; return r; }
     syncFailures = 0;
     if (r.dials) Object.assign(syncDials, r.dials);
     if (r.kept) idleKept(idle);
+    if (asking && !r.work && !r.pack?.tasks?.length && r.next_ms > 0 && !r.early && !r.busy && !r.stale && !r.banned)
+      idleCount(sentAt, true, false, body.lanes, "");
     refusedPending = refusedPending.filter((x) => !refusedSent.includes(x.question));
     await takeSynced(r, results, sentAt, body.held);
     if (Number.isFinite(r.next_ms)) syncNotBefore = Date.now() + r.next_ms;
