@@ -11,6 +11,10 @@ const REFILL_OUTSIDE_CHECK_MS = 60_000;
 const MINUTE_MS = 60_000;
 const positive = n => Number.isSafeInteger(n) && n > 0;
 const zone = 'coalesce(s.zone,factory_default_zone(s.producer))';
+const stockShapeMismatch = `(s.lanes IS NOT NULL OR
+  (s.required_capability IS NOT NULL AND s.required_capability<>'fixed-board-input-v1') OR
+  s.verb NOT IN ('simulate','optimize'))`;
+export const REFILL_STOCK_EXCEPTION = `(s.required_engine IS NOT NULL OR ${stockShapeMismatch})`;
 
 // Exact totals can prove the low mark without walking historical tasks.
 // The all-client ready count plus holds bounds the compatible physical rows.
@@ -55,6 +59,42 @@ export async function belowReadyOrderStock(reader, engine, limit, maxOpen, now =
   });
 }
 
+const SCHEDULED_STOCK_SQL = `WITH signal AS MATERIALIZED (
+    SELECT exact,ready FROM factory_queue_signal($1::text)
+  ), can_count AS MATERIALIZED (
+    SELECT EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('compute_scheduling_stock_exception')
+      AND indrelid='state_compute_scheduling'::regclass AND indisready AND indisvalid) AS ready
+  ), possible AS MATERIALIZED (
+    SELECT s.id,s.task_id,s.lease_until,${zone} AS zone,s.required_engine,
+      s.required_capability,s.lanes,s.verb
+    FROM state_compute_scheduling s
+    WHERE s.state='open' AND s.waits=0 AND ${REFILL_STOCK_EXCEPTION}
+      AND EXISTS(SELECT 1 FROM signal WHERE exact AND ready>=$3)
+      AND (SELECT ready FROM can_count)
+    ORDER BY s.task_id,s.id LIMIT 4097
+  ), bound AS MATERIALIZED (
+    SELECT count(*) AS n FROM possible
+  ), incompatible AS (
+    SELECT count(*) AS n FROM possible s,bound b
+    WHERE b.n<4097 AND (s.lease_until IS NULL OR s.lease_until<$1)
+      AND ((s.required_engine IS NOT NULL AND s.required_engine<>$2) OR ${stockShapeMismatch})
+      AND compute_order_stock_dispatchable(s.task_id,s.zone)
+      AND EXISTS(SELECT 1 FROM state_compute_effective_open q WHERE (q.id,q.task_id)=(s.id,s.task_id) OFFSET 0)
+  )
+  SELECT CASE WHEN NOT signal.exact THEN NULL WHEN signal.ready<$3 THEN true
+    WHEN can_count.ready AND bound.n<4097 AND incompatible.n<=signal.ready THEN (signal.ready-incompatible.n)<$3 END AS below
+  FROM signal,can_count,bound,incompatible`;
+
+// Subtract a bounded set of exceptions from the same snapshot's ready count.
+// A missing index or too many exceptions leaves the result undecided.
+export async function belowScheduledReadyStock(reader, engine, limit, now = Date.now()) {
+  return reader.begin(async tx => {
+    await tx.unsafe("SET TRANSACTION READ ONLY; SET LOCAL statement_timeout='2s'; SET LOCAL jit=off");
+    const [sample] = await tx.unsafe(SCHEDULED_STOCK_SQL, [iso(now), engine, limit]);
+    return sample?.below ?? null;
+  });
+}
+
 function scheduleOf(value, normalLow) {
   if (value === undefined) return null;
   const { start_minute_cst, period_hours, window_minutes, emergency_below, emergency_refill_to } = value ?? {};
@@ -71,7 +111,7 @@ function scheduleOf(value, normalLow) {
   } };
 }
 
-export function orderRefill({ low, maxHours, stock, capacity, release, demand, schedule,
+export function orderRefill({ low, maxHours, stock, scheduledStock = stock, capacity, release, demand, schedule,
   delay = signal => setTimeout(POLL_MS, undefined, { signal }), now = Date.now, onHold = () => {} }, cycle = {}) {
   const window = scheduleOf(schedule, low);
   let lastHold;
@@ -106,7 +146,7 @@ export function orderRefill({ low, maxHours, stock, capacity, release, demand, s
           const limit = cycle.emergency ? window.emergency_refill_to : window.emergency_below;
           const sampled = now(), prior = cycle.outsideCheck;
           const fresh = prior && prior.limit === limit && sampled >= prior.at && sampled - prior.at < REFILL_OUTSIDE_CHECK_MS;
-          const below = fresh ? prior.below : await stock(engine, limit);
+          const below = fresh ? prior.below : await scheduledStock(engine, limit);
           cycle.filling = false;
           if (below !== true) {
             if (below === false) cycle.emergency = false;
@@ -198,6 +238,10 @@ export async function openOrderRefill(reader, config, maxOpen, source, cycle) {
   const refill = orderRefill({ low: cfg.ready_below, maxHours: cfg.max_clear_hours, capacity, schedule: cfg.refill_schedule,
     stock: async (engine, limit) => {
       try { return await belowReadyOrderStock(reader, engine, limit, maxOpen); }
+      catch (error) { if (error.code === '57014') return null; throw error; }
+    },
+    scheduledStock: async (engine, limit) => {
+      try { return await belowScheduledReadyStock(reader, engine, limit); }
       catch (error) { if (error.code === '57014') return null; throw error; }
     },
     release: publicSnapshot('https://wfsim.app/release.json'),

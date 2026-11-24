@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import postgres from "./pg/node_modules/postgres/src/index.js";
-import { belowReadyOrderStock } from "./compute_order_refill.mjs";
+import { belowReadyOrderStock, belowScheduledReadyStock, REFILL_STOCK_EXCEPTION } from "./compute_order_refill.mjs";
 import { openEnv } from "./factoryd.mjs";
 import { pgDb, placeholders, postgresClient } from "../worker/db.js";
 import { signalTick, workWaiting } from "../worker/settler.js";
@@ -187,6 +187,22 @@ try {
     /the stale availability path walked history/, "an inexact signal cannot decide whether to refill");
   await assert.rejects(sql`SELECT * FROM factory_open(${at}::text,NULL,'2026-11-22T04:18:00.000Z',1024)`,
     /the stale availability path walked history/);
+  const schemaSource = readFileSync(new URL("../worker/pg/schema.sql", import.meta.url), "utf8");
+  await sql.unsafe(schemaSource.match(/CREATE INDEX IF NOT EXISTS compute_scheduling_open_lease_end[^;]+;/)[0]);
+  await sql.unsafe(schemaSource.match(/CREATE OR REPLACE VIEW state_compute_effective_open AS[^;]+;/)[0]);
+  assert.equal(await belowScheduledReadyStock(sql, 'fixture', 2040, now), true,
+    'even without the exception index, insufficient total ready work proves insufficient compatible work');
+  assert.equal(await belowScheduledReadyStock(sql, 'fixture', 2039, now), null,
+    'the whole queue is an upper bound when the exception index is absent');
+  await sql.unsafe(`CREATE INDEX compute_scheduling_stock_exception ON state_compute_scheduling(task_id,id)
+    WHERE state='open' AND waits=0 AND ${REFILL_STOCK_EXCEPTION.replaceAll('s.', '')}`);
+  await sql`UPDATE state_compute_scheduling SET required_engine='other' WHERE id IN ('candidate-800','candidate-2050','candidate-787')`;
+  await sql`UPDATE state_compute_scheduling SET required_engine='fixture' WHERE id='candidate-801'`;
+  await sql`INSERT INTO state_compute_order_stock_holds VALUES (${history}+100+787,'fixture-window')`;
+  assert.equal(await belowScheduledReadyStock(sql, 'fixture', 2038, now), true,
+    'the compatible count subtracts the ready engine exception');
+  assert.equal(await belowScheduledReadyStock(sql, 'fixture', 2037, now), false,
+    'a leased exception, held exception and matching engine do not lower the count again');
   console.log("PASS real PostgreSQL signal, wave, uncached availability and actual lease retain exact counts and skip history at production watermarks");
 } finally {
   try { await sql.unsafe(`DROP SCHEMA IF EXISTS ${schema} CASCADE`); }

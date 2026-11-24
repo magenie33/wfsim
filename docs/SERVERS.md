@@ -287,6 +287,10 @@ starts a batch. `start_minute_cst` counts minutes since midnight in Beijing.
 Outside the interval, refill starts below `emergency_below` compatible ready
 tasks and stops at `emergency_refill_to`. A reserved batch can finish after
 closing. Host capacity, served engine, and clearance checks apply throughout.
+Install `deploy/stock_refill_exception_index.sql` with `tablespace` and
+`lock_wait` so a daytime compatibility check can count the exceptions to the
+ready inventory. When the count cannot be verified, the importer waits for the
+next check or scheduled interval.
 
 For a large stock after an order cut, install `deploy/stock_epoch_index.sql`
 with the active `cutoff`, target `tablespace` and `lock_wait` for the online
