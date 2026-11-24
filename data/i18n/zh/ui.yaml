@@ -1052,6 +1052,14 @@ ui:
   2D: 平面
   3D · Arena positions: 三维 · 场地位置
   Weak-point aim %: 弱点瞄准率
+  "the official rulers — each weapon uses its assigned fight": 官方榜单会为当前武器选择测试场景
+  "100% weak-point aim": "100% 瞄准弱点"
+  "Shots use 100% weak-point aim.": "射击以 100% 的概率瞄准弱点。"
+  "50% weak-point aim": "50% 瞄准弱点"
+  "Shots use 50% weak-point aim.": "射击以 50% 的概率瞄准弱点。"
+  "0% weak-point aim": "0% 瞄准弱点"
+  "Shots use 0% weak-point aim.": "射击以 0% 的概率瞄准弱点。"
+  "Combat uses three-dimensional collisions. Ranged weapons begin 5 m from the main target, center to center. Melee weapons begin at controller contact. There are no deliberate misses.": "战斗采用三维碰撞。远程武器从距主目标中心 5 米处开打，近战武器从碰撞体贴身处开打。主动空枪率为 0%。"
   Miss %: 空枪率
   3D · Standard: 三维 · 标准距离
   3D · Contact: 三维 · 贴身

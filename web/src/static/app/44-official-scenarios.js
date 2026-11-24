@@ -52,9 +52,9 @@ function scenarioBarCfg() {
     boardPicker: (anchor) => openBenchSelector(anchor, scenarioNamed(activeScenario)?.builtin,
       (id) => pickPreset(cfg, id)),
     openLabel: tr("Official scenarios"),
-    openHint: tr("the official rulers — the same fight on every weapon"),
+    openHint: tr("the official rulers — each weapon uses its assigned fight"),
     readonly: (p) => !!p.builtin,
-    roTitle: () => tr("the official rulers — the same fight on every weapon"),
+    roTitle: () => tr("the official rulers — each weapon uses its assigned fight"),
     unpin: (id) => unpinPublished(cfg, id),
     // Owning nothing, the fight is the first ruler: a first number is then a
     // number the board can compare.
