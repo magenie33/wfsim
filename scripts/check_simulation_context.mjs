@@ -21,14 +21,14 @@ export async function checkSimulationContext(app) {
     const read = () => ({
       score: shownResult?.r.score,
       unit: document.querySelector('#sim-results .hero-unit')?.textContent,
-      head: [...document.querySelectorAll('#sim-results .fc')].find(el => el.textContent.startsWith('Headshots'))?.textContent,
+      head: [...document.querySelectorAll('#sim-results .fc')].find(el => el.textContent.startsWith('Weak-point aim %'))?.textContent,
       stale: !!$('sim-result-context') && !$('sim-result-context').hidden,
       selected: document.querySelector('#sim-history tr.on')?.dataset.rview,
       agent: agentResult(),
     });
     copyActiveScenario();
     const secondScene = activeScenario;
-    setScenarioFields({ headshot_pct: 0, metric: 'dps' });
+    setScenarioFields({ weakpoint_aim_pct: 0, miss_pct: 25, metric: 'dps' });
     const immediate = read();
     renderStoredSimResult();
     const redrawn = read(), keyAfterEdit = recordKey(shownResult.r);
@@ -79,20 +79,20 @@ export async function checkSimulationContext(app) {
     valence = originalValence;
     return { immediate, redrawn, secondView, returned, historical, firstKey, keyAfterEdit,
       firstScore: first.r.score, secondScore: second.r.score, firstId: first.id,
-      captured: !!request && request.headshot_pct === 100 && request.formation.length === 24 && request.runs === 2,
-      recordRequest: !!request && !!log && log.headshot_pct === 100 && log.metric === 'kpm'
+      captured: !!request && request.weakpoint_aim_pct === 100 && request.miss_pct === 0 && request.formation.length === 24 && request.runs === 2,
+      recordRequest: !!request && !!log && log.weakpoint_aim_pct === 100 && log.miss_pct === 0 && log.metric === 'kpm'
         && JSON.stringify(log.mods) === JSON.stringify(request.mods)
         && JSON.stringify(log.formation) === JSON.stringify(request.formation),
       legacyRefused, olderEngineRefused, valenceIdentity, incomplete,
     };
   })()`);
   app.check('editing the scenario immediately marks the displayed measurement stale', result.immediate.stale, JSON.stringify(result.immediate));
-  app.check('a redraw retains the measured headshot rate and metric', result.redrawn.head === 'Headshots 100%' && result.redrawn.unit === 'KPM' && result.redrawn.stale, JSON.stringify(result.redrawn));
+  app.check('a redraw retains the measured weak-point aim and metric', result.redrawn.head === 'Weak-point aim % 100%' && result.redrawn.unit === 'KPM' && result.redrawn.stale, JSON.stringify(result.redrawn));
   app.check('a new measurement records the complete executed request', result.captured);
   app.check('switching scenarios restores their own matching measurements', result.returned.score === result.firstScore && result.returned.selected === result.firstId
     && result.returned.unit === 'KPM' && !result.returned.stale && result.secondView.unit === 'DPS', JSON.stringify(result.returned));
   app.check('an older history row keeps its recorded conditions under another scenario', result.historical.score === result.firstScore
-    && result.historical.head === 'Headshots 100%' && result.historical.unit === 'KPM' && result.historical.stale, JSON.stringify(result.historical));
+    && result.historical.head === 'Weak-point aim % 100%' && result.historical.unit === 'KPM' && result.historical.stale, JSON.stringify(result.historical));
   app.check('editing the scenario does not change the displayed combat record identity', result.firstKey === result.keyAfterEdit);
   app.check('reading an older combat record submits its captured build and fight', result.recordRequest);
   app.check('missing historical input and another engine cannot regenerate against the editor', result.legacyRefused && result.olderEngineRefused);
