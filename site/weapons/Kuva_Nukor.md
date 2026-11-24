@@ -14,14 +14,14 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 26.0172 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Eject Magazine, Secondary Enervate | 2026-10-22 12:38 UTC · 99dec9ad6d01 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 143.6214 | Frostbite, Pistol Pestilence, Primed Convulsion, Seeker, Galvanized Diffusion, Hornet Strike, Lethal Torrent, Pistol Elementalist, Secondary Enervate | 2026-11-01 23:33 UTC · 4393e1730621 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 5.5375 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Pistol Elementalist, Ruinous Extension, Secondary Enervate | 2026-10-24 00:19 UTC · 5c64c380e5f2 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 14.4967 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Secondary Enervate | 2026-10-24 00:37 UTC · 5c64c380e5f2 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 26.0172 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Eject Magazine, Secondary Enervate | 2026-10-22 12:38 UTC · 99dec9ad6d01 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 143.6214 | Frostbite, Pistol Pestilence, Primed Convulsion, Seeker, Galvanized Diffusion, Hornet Strike, Lethal Torrent, Pistol Elementalist, Secondary Enervate | 2026-11-01 23:33 UTC · 4393e1730621 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 5.5375 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Pistol Elementalist, Ruinous Extension, Secondary Enervate | 2026-10-24 00:19 UTC · 5c64c380e5f2 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 14.4967 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Secondary Enervate | 2026-10-24 00:37 UTC · 5c64c380e5f2 |
 
 ## Not modelled here
 
-- Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated.
+- The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target.
 - Microwave also enlarges the body part it hit, an aiming aid the sim does not use. Its status count is modelled.
 
 ## In WFSim

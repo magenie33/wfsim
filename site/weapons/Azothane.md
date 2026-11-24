@@ -14,9 +14,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | heavy | 6.3485 | Volcanic Edge, Sacrificial Steel, Condition Overload, Primed Fury, Galvanized Reflex, Amalgam Organ Shatter, Focus Radon, Magnetic Rush, Dreamer's Wrath, Melee Exposure | 2026-10-05 14:38 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | heavy | 11.3857 | Volcanic Edge, Sacrificial Steel, Condition Overload, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Focus Radon, Magnetic Rush, Dreamer's Wrath, Melee Exposure | 2026-10-06 01:19 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | heavy | 0.3767 | Volcanic Edge, Sacrificial Steel, Condition Overload, Primed Fury, Galvanized Reflex, Amalgam Organ Shatter, Corrupt Charge, Focus Radon, Dreamer's Wrath, Melee Exposure | 2026-10-05 14:01 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | heavy | 6.3485 | Volcanic Edge, Sacrificial Steel, Condition Overload, Primed Fury, Galvanized Reflex, Amalgam Organ Shatter, Focus Radon, Magnetic Rush, Dreamer's Wrath, Melee Exposure | 2026-10-05 14:38 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | heavy | 11.3857 | Volcanic Edge, Sacrificial Steel, Condition Overload, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Focus Radon, Magnetic Rush, Dreamer's Wrath, Melee Exposure | 2026-10-06 01:19 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | heavy | 0.3767 | Volcanic Edge, Sacrificial Steel, Condition Overload, Primed Fury, Galvanized Reflex, Amalgam Organ Shatter, Corrupt Charge, Focus Radon, Dreamer's Wrath, Melee Exposure | 2026-10-05 14:01 UTC |
 
 ## Not modelled here
 

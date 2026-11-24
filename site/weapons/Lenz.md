@@ -8,7 +8,7 @@ Current published rankings and revisions: https://wfsim.app/api/board/pages/cata
 
 ## Not modelled here
 
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The module gives this shot three attacks and the engine carries one explosion: the Blast collapse is modelled, and the initial blast is not - neither its 10 Cold damage nor its guaranteed Cold status in 7.2 m, so a build that profits from Cold stacks or a status count reads low.
 - The bubble holds what it catches until it collapses (wiki); crowd control, and enemies here neither move nor stop.
 - In game the blast staggers the wielder; the player has no body here, so it costs nothing.

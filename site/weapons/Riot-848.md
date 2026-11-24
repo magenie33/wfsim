@@ -14,15 +14,15 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.1531 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Cascadia Flare | 2026-10-22 14:22 UTC · 99dec9ad6d01 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.1531 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Cascadia Flare | 2026-10-23 01:24 UTC · 62a82930d1d3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.6858 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Cascadia Flare | 2026-10-23 01:24 UTC · 62a82930d1d3 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.6379 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Cascadia Flare | 2026-10-22 16:04 UTC · 99dec9ad6d01 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 2.1531 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Cascadia Flare | 2026-10-22 14:22 UTC · 99dec9ad6d01 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 2.1531 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Cascadia Flare | 2026-10-23 01:24 UTC · 62a82930d1d3 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.6858 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Cascadia Flare | 2026-10-23 01:24 UTC · 62a82930d1d3 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.6379 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Cascadia Flare | 2026-10-22 16:04 UTC · 99dec9ad6d01 |
 
 ## Not modelled here
 
 - Returning-projectile ammunition keeps its declared resource convention; the native reserve field does not establish a finite pickup-based ammo pool.
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The explosion comes on the reload: rounds lodge in surfaces and explode in 1.5 m when reloading, up to 32 at a time (wiki). The engine's explosions go off on impact, so the 48 Blast a round is not counted, and against anything that survives a magazine the number reads low by about four fifths.
 - It uses no ammo pickups and has a reserve of zero (module); reserves are infinite here, so the limit it is built around does not apply.
 

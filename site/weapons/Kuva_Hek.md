@@ -14,14 +14,14 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 9.0634 | Frigid Blast, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Hunter Munitions, Shotgun Elementalist, Magnetic Strafe, Shotgun Vendetta | 2026-10-24 04:39 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 35.3461 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Primed Ammo Stock, Critical Deceleration, Semi-Shotgun Cannonade, Scattered Justice, Primed Counterbalance, Shotgun Vendetta | 2026-10-24 04:39 UTC · dac6ecbaf97e |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 0.7685 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Primed Ammo Stock, Critical Deceleration, Semi-Shotgun Cannonade, Scattered Justice, Primed Counterbalance, Shotgun Vendetta | 2026-10-24 04:39 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 4.5429 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Primed Ammo Stock, Critical Deceleration, Semi-Shotgun Cannonade, Scattered Justice, Primed Counterbalance, Shotgun Vendetta | 2026-10-24 04:41 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 9.0634 | Frigid Blast, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Hunter Munitions, Shotgun Elementalist, Magnetic Strafe, Shotgun Vendetta | 2026-10-24 04:39 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 35.3461 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Primed Ammo Stock, Critical Deceleration, Semi-Shotgun Cannonade, Scattered Justice, Primed Counterbalance, Shotgun Vendetta | 2026-10-24 04:39 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | alternate | 0.7685 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Primed Ammo Stock, Critical Deceleration, Semi-Shotgun Cannonade, Scattered Justice, Primed Counterbalance, Shotgun Vendetta | 2026-10-24 04:39 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 4.5429 | Primed Charged Shell, Galvanized Hell, Primed Point Blank, Primed Ravage, Primed Ammo Stock, Critical Deceleration, Semi-Shotgun Cannonade, Scattered Justice, Primed Counterbalance, Shotgun Vendetta | 2026-10-24 04:41 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 
 ## In WFSim
 

@@ -14,14 +14,14 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 21.8210 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-22 12:39 UTC · 99dec9ad6d01 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 52.2564 | Primed Charged Shell, Shell Shock, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Shotgun Elementalist, Galvanized Acceleration, Primary Crux | 2026-10-24 00:30 UTC · 5c64c380e5f2 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | cycle | 3.7401 | Primed Chilling Grasp, Toxic Barrage, Incendiary Coat, Galvanized Hell, Primed Cleanse Grineer, Primed Ravage, Critical Deceleration, Semi-Shotgun Cannonade, Primary Compression | 2026-10-24 00:39 UTC · 5c64c380e5f2 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 13.0330 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-24 00:47 UTC · 5c64c380e5f2 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 21.8210 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-22 12:39 UTC · 99dec9ad6d01 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | cycle | 52.2564 | Primed Charged Shell, Shell Shock, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Shotgun Elementalist, Galvanized Acceleration, Primary Crux | 2026-10-24 00:30 UTC · 5c64c380e5f2 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | cycle | 3.7401 | Primed Chilling Grasp, Toxic Barrage, Incendiary Coat, Galvanized Hell, Primed Cleanse Grineer, Primed Ravage, Critical Deceleration, Semi-Shotgun Cannonade, Primary Compression | 2026-10-24 00:39 UTC · 5c64c380e5f2 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 13.0330 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-24 00:47 UTC · 5c64c380e5f2 |
 
 ## Not modelled here
 
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - A reload is never interrupted here: in game you can fire mid-reload and keep the shells already loaded. A listed reload is a whole reload, by design.
 
 ## In WFSim

@@ -14,10 +14,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 6.5087 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pax Charge, Secondary Fortifier | 2026-11-03 02:37 UTC · 4393e1730621 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 6.5087 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pax Charge, Secondary Fortifier | 2026-11-03 02:38 UTC · 4393e1730621 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.4280 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pax Charge, Secondary Fortifier | 2026-11-03 02:38 UTC · 4393e1730621 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.4035 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-22 16:46 UTC · 99dec9ad6d01 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 6.5087 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pax Charge, Secondary Fortifier | 2026-11-03 02:37 UTC · 4393e1730621 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 6.5087 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pax Charge, Secondary Fortifier | 2026-11-03 02:38 UTC · 4393e1730621 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.4280 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Hornet Strike, Primed Target Cracker, Galvanized Shot, Anemic Agility, Pax Charge, Secondary Fortifier | 2026-11-03 02:38 UTC · 4393e1730621 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.4035 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-22 16:46 UTC · 99dec9ad6d01 |
 
 ## Not modelled here
 

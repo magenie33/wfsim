@@ -14,10 +14,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 4.4817 | Frostbite, Jolt, Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Anemic Agility, Pistol Elementalist, Primed Steady Hands, Cascadia Flare | 2026-10-25 17:28 UTC · 3194962a0af7 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 4.4965 | Frostbite, Jolt, Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Anemic Agility, Pistol Elementalist, Primed Steady Hands, Cascadia Flare | 2026-10-25 17:28 UTC · 3194962a0af7 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.5400 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Anemic Agility, Gunslinger, Magnetic Might, Cascadia Flare | 2026-10-24 05:28 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.6287 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Anemic Agility, Gunslinger, Magnetic Might, Cascadia Flare | 2026-10-24 05:19 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 4.4817 | Frostbite, Jolt, Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Anemic Agility, Pistol Elementalist, Primed Steady Hands, Cascadia Flare | 2026-10-25 17:28 UTC · 3194962a0af7 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | cycle | 4.4965 | Frostbite, Jolt, Primed Heated Charge, Scorch, Pistol Acuity, Primed Target Cracker, Anemic Agility, Pistol Elementalist, Primed Steady Hands, Cascadia Flare | 2026-10-25 17:28 UTC · 3194962a0af7 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.5400 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Anemic Agility, Gunslinger, Magnetic Might, Cascadia Flare | 2026-10-24 05:28 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.6287 | Jolt, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Anemic Agility, Gunslinger, Magnetic Might, Cascadia Flare | 2026-10-24 05:19 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 

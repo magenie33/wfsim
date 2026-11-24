@@ -14,14 +14,14 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 24.8188 | Frostbite, Pistol Pestilence, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Pressurized Magazine, Magnetic Might, Primed Steady Hands, Secondary Deadhead | 2026-10-23 11:08 UTC · 4296a0964da6 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 48.2598 | Frostbite, Pistol Pestilence, Pistol Acuity, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Anemic Agility, Magnetic Might, Primed Steady Hands, Secondary Deadhead | 2026-10-23 11:10 UTC · 4296a0964da6 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.1790 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Magnetic Might, Cascadia Flare | 2026-10-23 01:29 UTC · 62a82930d1d3 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 14.6201 | Frostbite, Pistol Pestilence, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Pressurized Magazine, Magnetic Might, Primed Steady Hands, Secondary Deadhead | 2026-10-23 11:11 UTC · 4296a0964da6 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 24.8188 | Frostbite, Pistol Pestilence, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Pressurized Magazine, Magnetic Might, Primed Steady Hands, Secondary Deadhead | 2026-10-23 11:08 UTC · 4296a0964da6 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 48.2598 | Frostbite, Pistol Pestilence, Pistol Acuity, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Anemic Agility, Magnetic Might, Primed Steady Hands, Secondary Deadhead | 2026-10-23 11:10 UTC · 4296a0964da6 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 1.1790 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Magnetic Might, Cascadia Flare | 2026-10-23 01:29 UTC · 62a82930d1d3 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 14.6201 | Frostbite, Pistol Pestilence, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Pressurized Magazine, Magnetic Might, Primed Steady Hands, Secondary Deadhead | 2026-10-23 11:11 UTC · 4296a0964da6 |
 
 ## Not modelled here
 
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 
 ## In WFSim
 

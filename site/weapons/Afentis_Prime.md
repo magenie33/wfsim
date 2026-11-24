@@ -14,10 +14,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 4.8025 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Critical Delay, Hammer Shot, Semi-Rifle Cannonade, Vital Sense, Primary Bulwark | 2026-10-24 05:32 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 18.3713 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Critical Delay, Hammer Shot, Semi-Rifle Cannonade, Vital Sense, Primary Bulwark | 2026-10-24 05:22 UTC · dac6ecbaf97e |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 0.7581 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Critical Delay, Hammer Shot, Semi-Rifle Cannonade, Vital Sense, Primary Bulwark | 2026-10-24 05:26 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 2.6114 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Critical Delay, Hammer Shot, Semi-Rifle Cannonade, Vital Sense, Primary Bulwark | 2026-10-24 05:32 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 4.8025 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Critical Delay, Hammer Shot, Semi-Rifle Cannonade, Vital Sense, Primary Bulwark | 2026-10-24 05:32 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 18.3713 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Critical Delay, Hammer Shot, Semi-Rifle Cannonade, Vital Sense, Primary Bulwark | 2026-10-24 05:22 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | alternate | 0.7581 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Critical Delay, Hammer Shot, Semi-Rifle Cannonade, Vital Sense, Primary Bulwark | 2026-10-24 05:26 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 2.6114 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Critical Delay, Hammer Shot, Semi-Rifle Cannonade, Vital Sense, Primary Bulwark | 2026-10-24 05:32 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 

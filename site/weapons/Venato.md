@@ -14,10 +14,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 7.8901 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Reaping Spiral, Dreamer's Wrath, Melee Exposure | 2026-11-04 14:58 UTC · 9e4647c46c76 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 7.8974 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Reaping Spiral, Dreamer's Wrath, Melee Exposure | 2026-11-04 15:30 UTC · 9e4647c46c76 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | forward | 1.2539 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Reaping Spiral, Dreamer's Wrath, Melee Exposure | 2026-11-04 15:04 UTC · 9e4647c46c76 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 5.6742 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Reaping Spiral, Dreamer's Wrath, Melee Exposure | 2026-11-04 15:29 UTC · 9e4647c46c76 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | forward | 7.8901 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Reaping Spiral, Dreamer's Wrath, Melee Exposure | 2026-11-04 14:58 UTC · 9e4647c46c76 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | forward | 7.8974 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Reaping Spiral, Dreamer's Wrath, Melee Exposure | 2026-11-04 15:30 UTC · 9e4647c46c76 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | forward | 1.2539 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Reaping Spiral, Dreamer's Wrath, Melee Exposure | 2026-11-04 15:04 UTC · 9e4647c46c76 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | forward | 5.6742 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Reaping Spiral, Dreamer's Wrath, Melee Exposure | 2026-11-04 15:29 UTC · 9e4647c46c76 |
 
 ## Not modelled here
 

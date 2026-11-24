@@ -14,10 +14,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.3841 | Sacrificial Steel, Blood Rush, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Melee Elementalist, Pressure Point, Corrupt Charge, Discipline's Merit, Melee Exposure | 2026-11-03 21:40 UTC · df9e2353a3fa |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.3830 | Sacrificial Steel, Blood Rush, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Melee Elementalist, Pressure Point, Corrupt Charge, Discipline's Merit, Melee Exposure | 2026-11-03 21:40 UTC · df9e2353a3fa |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.1434 | Sacrificial Steel, Blood Rush, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Melee Elementalist, Pressure Point, Corrupt Charge, Discipline's Merit, Melee Exposure | 2026-11-03 22:00 UTC · df9e2353a3fa |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.6569 | Sacrificial Steel, Blood Rush, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Melee Elementalist, Pressure Point, Corrupt Charge, Discipline's Merit, Melee Exposure | 2026-11-03 21:40 UTC · df9e2353a3fa |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.3841 | Sacrificial Steel, Blood Rush, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Melee Elementalist, Pressure Point, Corrupt Charge, Discipline's Merit, Melee Exposure | 2026-11-03 21:40 UTC · df9e2353a3fa |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.3830 | Sacrificial Steel, Blood Rush, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Melee Elementalist, Pressure Point, Corrupt Charge, Discipline's Merit, Melee Exposure | 2026-11-03 21:40 UTC · df9e2353a3fa |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.1434 | Sacrificial Steel, Blood Rush, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Melee Elementalist, Pressure Point, Corrupt Charge, Discipline's Merit, Melee Exposure | 2026-11-03 22:00 UTC · df9e2353a3fa |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.6569 | Sacrificial Steel, Blood Rush, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Melee Elementalist, Pressure Point, Corrupt Charge, Discipline's Merit, Melee Exposure | 2026-11-03 21:40 UTC · df9e2353a3fa |
 
 ## Not modelled here
 

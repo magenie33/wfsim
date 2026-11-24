@@ -14,14 +14,14 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate cycle | 54.6019 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Lethal Momentum, Secondary Deadhead | 2026-10-24 01:44 UTC · 5c64c380e5f2 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate cycle | 256.3237 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Lethal Momentum, Secondary Deadhead | 2026-10-24 01:44 UTC · 5c64c380e5f2 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate cycle | 11.5341 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Lethal Momentum, Cascadia Flare | 2026-10-24 02:03 UTC · 5c64c380e5f2 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate cycle | 32.5254 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Lethal Momentum, Cascadia Flare | 2026-10-24 01:19 UTC · 5c64c380e5f2 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate cycle | 54.6019 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Lethal Momentum, Secondary Deadhead | 2026-10-24 01:44 UTC · 5c64c380e5f2 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate cycle | 256.3237 | Primed Convulsion, Pistol Pestilence, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Lethal Momentum, Secondary Deadhead | 2026-10-24 01:44 UTC · 5c64c380e5f2 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | alternate cycle | 11.5341 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Lethal Momentum, Cascadia Flare | 2026-10-24 02:03 UTC · 5c64c380e5f2 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate cycle | 32.5254 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Lethal Momentum, Cascadia Flare | 2026-10-24 01:19 UTC · 5c64c380e5f2 |
 
 ## Not modelled here
 
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - A partly charged shot is not modelled: an early release multiplies the Normal Shot's own base by (1 + charge) and adds the evolution's flat damage outside that, so 50% is 40 x 1.5 + 3, not 43 x 1.5. Only the two ends are carried: no charge, and the full charge.
 - A ghost is counted, not fought: a charged-shot kill leaves one for 7 s and the run reports how many there were, but a ghost neither attacks nor blocks here.
 

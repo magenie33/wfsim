@@ -14,14 +14,14 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 5.2829 | Stormbringer, Galvanized Chamber, Serration, Critical Delay, Rifle Elementalist, Vigilante Armaments, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:31 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 26.8084 | Stormbringer, High Voltage, Galvanized Chamber, Serration, Critical Delay, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:34 UTC · dac6ecbaf97e |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.7798 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:34 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.0770 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:34 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 5.2829 | Stormbringer, Galvanized Chamber, Serration, Critical Delay, Rifle Elementalist, Vigilante Armaments, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:31 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 26.8084 | Stormbringer, High Voltage, Galvanized Chamber, Serration, Critical Delay, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:34 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.7798 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:34 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 2.0770 | High Voltage, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:34 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 
-- Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated.
+- The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target.
 
 ## In WFSim
 

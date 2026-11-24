@@ -14,10 +14,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.1379 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Heavy Caliber, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-22 12:34 UTC · 99dec9ad6d01 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 4.6057 | Malignant Force, Rime Rounds, Hellfire, Heavy Caliber, Primed Shred, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-23 19:47 UTC · 5c64c380e5f2 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.2193 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Split Chamber, Serration, Rifle Elementalist, Vigilante Armaments | 2026-10-23 19:52 UTC · 5c64c380e5f2 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.6715 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Heavy Caliber, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-23 19:47 UTC · 5c64c380e5f2 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.1379 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Heavy Caliber, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-22 12:34 UTC · 99dec9ad6d01 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 4.6057 | Malignant Force, Rime Rounds, Hellfire, Heavy Caliber, Primed Shred, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-23 19:47 UTC · 5c64c380e5f2 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.2193 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Split Chamber, Serration, Rifle Elementalist, Vigilante Armaments | 2026-10-23 19:52 UTC · 5c64c380e5f2 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.6715 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Heavy Caliber, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-23 19:47 UTC · 5c64c380e5f2 |
 
 ## Not modelled here
 

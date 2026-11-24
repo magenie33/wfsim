@@ -12,15 +12,15 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 8.7265 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Galvanized Scope, Critical Delay, Vital Sense, Radiated Reload, Vigilante Supplies, Longbow Sharpshot | 2026-10-24 06:01 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 31.5988 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Galvanized Scope, Critical Delay, Vital Sense, Radiated Reload, Vigilante Supplies, Longbow Sharpshot | 2026-10-24 05:40 UTC · dac6ecbaf97e |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.4196 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Critical Delay, Hunter Munitions, Vital Sense, Radiated Reload, Vigilante Supplies, Longbow Sharpshot | 2026-10-24 05:40 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 3.6178 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Galvanized Scope, Critical Delay, Vital Sense, Radiated Reload, Vigilante Supplies, Longbow Sharpshot | 2026-10-24 05:40 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 8.7265 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Galvanized Scope, Critical Delay, Vital Sense, Radiated Reload, Vigilante Supplies, Longbow Sharpshot | 2026-10-24 06:01 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 31.5988 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Galvanized Scope, Critical Delay, Vital Sense, Radiated Reload, Vigilante Supplies, Longbow Sharpshot | 2026-10-24 05:40 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.4196 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Critical Delay, Hunter Munitions, Vital Sense, Radiated Reload, Vigilante Supplies, Longbow Sharpshot | 2026-10-24 05:40 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 3.6178 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Serration, Galvanized Scope, Critical Delay, Vital Sense, Radiated Reload, Vigilante Supplies, Longbow Sharpshot | 2026-10-24 05:40 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 
 - Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated.
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The projectile has travel time and must be led at range (wiki). Every shot here connects instantly, so against a moving target the real hit rate is lower.
 
 ## In WFSim

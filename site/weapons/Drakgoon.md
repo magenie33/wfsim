@@ -14,15 +14,15 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 0.2924 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-22 13:17 UTC · 99dec9ad6d01 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 0.2915 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-24 05:48 UTC · dac6ecbaf97e |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 0.01097 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-22 19:00 UTC · 62a82930d1d3 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 0.1335 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-24 05:48 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 0.2924 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-22 13:17 UTC · 99dec9ad6d01 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 0.2915 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-24 05:48 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | alternate | 0.01097 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-22 19:00 UTC · 62a82930d1d3 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 0.1335 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-24 05:48 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 
-- The native fan, first-pellet or charge-dependent spread override is not simulated; the declared spread approximation remains in use.
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound 3D projectile forms apply their declared fan or charge endpoints. Custom beam patterns and unselected firing variants use the declared approximation.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Shots ricochet once (wiki), which reaches enemies behind cover; there are no walls here.
 
 ## In WFSim

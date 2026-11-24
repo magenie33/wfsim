@@ -14,14 +14,14 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 16.0810 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Enervate | 2026-10-31 13:48 UTC · ea828b371375 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 16.0810 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Enervate | 2026-10-31 13:48 UTC · ea828b371375 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 1.2052 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Cascadia Flare | 2026-10-23 01:17 UTC · 62a82930d1d3 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 7.4618 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Cascadia Flare | 2026-10-23 01:17 UTC · 62a82930d1d3 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 16.0810 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Enervate | 2026-10-31 13:48 UTC · ea828b371375 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 16.0810 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Enervate | 2026-10-31 13:48 UTC · ea828b371375 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | alternate | 1.2052 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Cascadia Flare | 2026-10-23 01:17 UTC · 62a82930d1d3 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | alternate | 7.4618 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Cascadia Flare | 2026-10-23 01:17 UTC · 62a82930d1d3 |
 
 ## Not modelled here
 
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The Condition Overload bonus ignores damage falloff (the catalog's notes on both rows); here it falls off with the shot, so a status-stacking build at range reads low.
 - The in-game falloff display is wrong on this weapon (page): it shows 13-22 m, and full damage holds to about 28 m. The 26-52 m entered here is the module's and infobox's.
 

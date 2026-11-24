@@ -14,15 +14,15 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 7.4259 | Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-22 14:35 UTC · 99dec9ad6d01 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 28.4859 | Rime Rounds, Galvanized Chamber, Heavy Caliber, Primed Firestorm, Critical Delay, Rifle Elementalist, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-24 04:56 UTC · dac6ecbaf97e |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.9241 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-24 05:05 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.7916 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-24 04:56 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 7.4259 | Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-22 14:35 UTC · 99dec9ad6d01 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | cycle | 28.4859 | Rime Rounds, Galvanized Chamber, Heavy Caliber, Primed Firestorm, Critical Delay, Rifle Elementalist, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-24 04:56 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.9241 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-24 05:05 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 2.7916 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-24 04:56 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 
 - Fire-rate ramp endpoints use parsed values; ramp length retains the declared shot-count convention because the native counter's update cadence is unverified.
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The spool rebuilds after every reload. Per the page, short pauses in burst fire keep it, so a player who taps keeps more of the rate than the sim. The spool itself is modelled.
 
 ## In WFSim

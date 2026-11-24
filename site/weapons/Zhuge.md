@@ -8,7 +8,7 @@ Current published rankings and revisions: https://wfsim.app/api/board/pages/cata
 
 ## Not modelled here
 
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Not offered here: the bow-exclusive Thunderbolt, which on this weapon turns every bolt into a grenade, a second damage source.
 - On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.
 - This weapon is silent; there is nobody to alert here, so stealth is worth nothing.

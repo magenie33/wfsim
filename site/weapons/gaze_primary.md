@@ -14,10 +14,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.9469 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-24 05:45 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.9446 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-24 05:56 UTC · dac6ecbaf97e |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.3287 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-24 05:54 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.6819 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-24 05:51 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.9469 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-24 05:45 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.9446 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-24 05:56 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.3287 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-24 05:54 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.6819 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-24 05:51 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 

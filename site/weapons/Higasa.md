@@ -14,14 +14,14 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.7497 | Hellfire, Primary Acuity, Primed Shred, Galvanized Scope, Higasa Serration, Rifle Elementalist, Vile Acceleration, Vital Sense, Terminal Velocity, Primary Crux | 2026-10-22 13:18 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 13.4499 | Hellfire, Primary Acuity, Primed Shred, Galvanized Scope, Higasa Serration, Rifle Elementalist, Vile Acceleration, Vital Sense, Terminal Velocity, Primary Crux | 2026-10-22 21:47 UTC · 62a82930d1d3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.5964 | Hellfire, Primary Acuity, Primed Shred, Galvanized Scope, Higasa Serration, Rifle Elementalist, Vile Acceleration, Vital Sense, Terminal Velocity, Primary Crux | 2026-10-22 21:55 UTC · 62a82930d1d3 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.6460 | Hellfire, Primary Acuity, Primed Shred, Galvanized Scope, Higasa Serration, Rifle Elementalist, Vile Acceleration, Vital Sense, Terminal Velocity, Primary Crux | 2026-10-22 17:18 UTC · 62a82930d1d3 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 2.7497 | Hellfire, Primary Acuity, Primed Shred, Galvanized Scope, Higasa Serration, Rifle Elementalist, Vile Acceleration, Vital Sense, Terminal Velocity, Primary Crux | 2026-10-22 13:18 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 13.4499 | Hellfire, Primary Acuity, Primed Shred, Galvanized Scope, Higasa Serration, Rifle Elementalist, Vile Acceleration, Vital Sense, Terminal Velocity, Primary Crux | 2026-10-22 21:47 UTC · 62a82930d1d3 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.5964 | Hellfire, Primary Acuity, Primed Shred, Galvanized Scope, Higasa Serration, Rifle Elementalist, Vile Acceleration, Vital Sense, Terminal Velocity, Primary Crux | 2026-10-22 21:55 UTC · 62a82930d1d3 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.6460 | Hellfire, Primary Acuity, Primed Shred, Galvanized Scope, Higasa Serration, Rifle Elementalist, Vile Acceleration, Vital Sense, Terminal Velocity, Primary Crux | 2026-10-22 17:18 UTC · 62a82930d1d3 |
 
 ## Not modelled here
 
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Aiming raises a shield that blocks frontal projectiles, closing on a reload or a charge (wiki). Nothing shoots back here; the number is unaffected.
 
 ## In WFSim

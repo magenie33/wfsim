@@ -8,7 +8,7 @@ Current published rankings and revisions: https://wfsim.app/api/board/pages/cata
 
 ## Not modelled here
 
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Headshot kills from the bolt boost reload speed by 50% (wiki); a kill-triggered buff the engine does not model. The page notes its forced Impact proc makes repeated headshots hard anyway.
 - Used by Garuda it gains 1 m of innate punch through (wiki), a Warframe-specific bonus not modelled here.
 - On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.

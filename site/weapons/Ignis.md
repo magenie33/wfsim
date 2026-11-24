@@ -14,14 +14,14 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 4.5269 | Primed Cryo Rounds, Malignant Force, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-11-03 15:09 UTC · 51a5068e9d8b |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 7.1390 | Primed Cryo Rounds, Malignant Force, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-11-03 15:14 UTC · 51a5068e9d8b |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.2935 | Primed Cryo Rounds, Malignant Force, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-11-03 15:14 UTC · 51a5068e9d8b |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.2737 | Primed Cryo Rounds, Malignant Force, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-11-03 15:15 UTC · 51a5068e9d8b |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 4.5269 | Primed Cryo Rounds, Malignant Force, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-11-03 15:09 UTC · 51a5068e9d8b |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 7.1390 | Primed Cryo Rounds, Malignant Force, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-11-03 15:14 UTC · 51a5068e9d8b |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.2935 | Primed Cryo Rounds, Malignant Force, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-11-03 15:14 UTC · 51a5068e9d8b |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.2737 | Primed Cryo Rounds, Malignant Force, Amalgam Serration, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-11-03 15:15 UTC · 51a5068e9d8b |
 
 ## Not modelled here
 
-- Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated.
+- The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target.
 
 ## In WFSim
 

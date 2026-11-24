@@ -14,10 +14,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 10.1692 | Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Gladiator Vice, Organ Shatter, Weeping Wounds, Magnetic Rush, Vulpine Mask, Master's Edge, Melee Exposure | 2026-11-04 15:04 UTC · 9e4647c46c76 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 17.3995 | Molten Impact, Primed Fury, Primed Pressure Point, Galvanized Elementalist, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Vulpine Mask, Master's Edge, Melee Duplicate | 2026-11-04 15:37 UTC · 9e4647c46c76 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | forward | 0.9468 | Molten Impact, Primed Fury, Primed Pressure Point, Galvanized Elementalist, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Vulpine Mask, Master's Edge, Melee Duplicate | 2026-11-04 15:37 UTC · 9e4647c46c76 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 5.0558 | Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Gladiator Vice, Organ Shatter, Weeping Wounds, Magnetic Rush, Vulpine Mask, Master's Edge, Melee Exposure | 2026-11-04 15:11 UTC · 9e4647c46c76 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | forward | 10.1692 | Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Gladiator Vice, Organ Shatter, Weeping Wounds, Magnetic Rush, Vulpine Mask, Master's Edge, Melee Exposure | 2026-11-04 15:04 UTC · 9e4647c46c76 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | forward | 17.3995 | Molten Impact, Primed Fury, Primed Pressure Point, Galvanized Elementalist, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Vulpine Mask, Master's Edge, Melee Duplicate | 2026-11-04 15:37 UTC · 9e4647c46c76 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | forward | 0.9468 | Molten Impact, Primed Fury, Primed Pressure Point, Galvanized Elementalist, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Vulpine Mask, Master's Edge, Melee Duplicate | 2026-11-04 15:37 UTC · 9e4647c46c76 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | forward | 5.0558 | Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Gladiator Vice, Organ Shatter, Weeping Wounds, Magnetic Rush, Vulpine Mask, Master's Edge, Melee Exposure | 2026-11-04 15:11 UTC · 9e4647c46c76 |
 
 ## Not modelled here
 

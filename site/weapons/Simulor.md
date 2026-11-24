@@ -14,15 +14,15 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.2372 | Hellfire, Wildfire, Thermite Rounds, Heavy Caliber, Serration, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vigilante Supplies, Primary Crux | 2026-10-31 17:39 UTC · 4233a1ed03df |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 4.9415 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vigilante Supplies, Primary Crux | 2026-10-31 17:46 UTC · 4233a1ed03df |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.1286 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vigilante Supplies, Primary Crux | 2026-10-31 17:46 UTC · 4233a1ed03df |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.6279 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vigilante Supplies, Primary Crux | 2026-10-31 17:46 UTC · 4233a1ed03df |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.2372 | Hellfire, Wildfire, Thermite Rounds, Heavy Caliber, Serration, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vigilante Supplies, Primary Crux | 2026-10-31 17:39 UTC · 4233a1ed03df |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 4.9415 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vigilante Supplies, Primary Crux | 2026-10-31 17:46 UTC · 4233a1ed03df |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.1286 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vigilante Supplies, Primary Crux | 2026-10-31 17:46 UTC · 4233a1ed03df |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.6279 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Heavy Caliber, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vigilante Supplies, Primary Crux | 2026-10-31 17:46 UTC · 4233a1ed03df |
 
 ## Not modelled here
 
 - Flight uses the declared constant speed; native projectile acceleration is not simulated.
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - This attack uses the published beacon or orb component; native launch-packet statistics do not establish the scripted damage sequence.
 - Orbs merge: a new orb joining one in the air triggers 'Orb Merging Damage' in 4 m, growing with the number merged (wiki). The engine resolves each shot on its own, so the merge is not counted and the number reads well low for a player stacking orbs.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.

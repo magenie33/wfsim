@@ -14,14 +14,14 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.5604 | Hellfire, Primary Acuity, Serration, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Compression | 2026-10-24 06:12 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.5604 | Hellfire, Primary Acuity, Serration, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Compression | 2026-10-24 06:12 UTC · dac6ecbaf97e |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.2763 | Hellfire, Primary Acuity, Serration, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Compression | 2026-10-24 06:12 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.8210 | Hellfire, Primary Acuity, Serration, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Compression | 2026-10-24 05:38 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.5604 | Hellfire, Primary Acuity, Serration, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Compression | 2026-10-24 06:12 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.5604 | Hellfire, Primary Acuity, Serration, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Compression | 2026-10-24 06:12 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.2763 | Hellfire, Primary Acuity, Serration, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Compression | 2026-10-24 06:12 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.8210 | Hellfire, Primary Acuity, Serration, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Compression | 2026-10-24 05:38 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - It reloads 50% faster from an empty magazine (wiki); the engine has one reload time per weapon. The sim always empties the magazine, so the 3 s here is the slow reload and the number reads low.
 - The explosion arrives 0.6 s after the bolt lands, which lets an enemy walk out of it (page); here it resolves on impact, so nothing escapes.
 - On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.

@@ -14,7 +14,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 9.1294 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Reaping Spiral, Dreamer's Wrath, Melee Exposure | 2026-11-06 12:25 UTC · d8787cb351c5 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | forward | 9.1294 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Reaping Spiral, Dreamer's Wrath, Melee Exposure | 2026-11-06 12:25 UTC · d8787cb351c5 |
 
 ## Not modelled here
 

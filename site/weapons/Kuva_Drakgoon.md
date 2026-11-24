@@ -14,17 +14,17 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 5.5598 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-24 05:35 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 26.9234 | Primed Chilling Grasp, Contagious Spread, Scattering Inferno, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Deadhead | 2026-10-23 01:18 UTC · 62a82930d1d3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.5656 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-24 05:51 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.2436 | Primed Chilling Grasp, Contagious Spread, Scattering Inferno, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Deadhead | 2026-10-23 01:18 UTC · 62a82930d1d3 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 5.5598 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-24 05:35 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 26.9234 | Primed Chilling Grasp, Contagious Spread, Scattering Inferno, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Deadhead | 2026-10-23 01:18 UTC · 62a82930d1d3 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.5656 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-24 05:51 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 2.2436 | Primed Chilling Grasp, Contagious Spread, Scattering Inferno, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Deadhead | 2026-10-23 01:18 UTC · 62a82930d1d3 |
 
 ## Not modelled here
 
-- The native fan, first-pellet or charge-dependent spread override is not simulated; the declared spread approximation remains in use.
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound 3D projectile forms apply their declared fan or charge endpoints. Custom beam patterns and unselected firing variants use the declared approximation.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - Assumed: a bounce lands on a weak point 50% of the time. It can headshot (wiki), but where it lands depends on geometry the sim does not model, and no rate is published.
-- A bounce here reflects off enemies only; in game walls and the floor count too, so with cover the number reads low.
+- The 3D arena reflects off posed enemies and the open floor. Wall and cover geometry remain outside this scenario.
 
 ## In WFSim
 

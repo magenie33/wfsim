@@ -14,10 +14,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.3861 | Frostbite, Jolt, Primed Heated Charge, Scorch, Hornet Strike, Barrel Diffusion, Lethal Torrent, Pistol Elementalist | 2026-11-06 00:58 UTC · 95d73da96acb |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.3861 | Frostbite, Jolt, Primed Heated Charge, Scorch, Hornet Strike, Barrel Diffusion, Lethal Torrent, Pistol Elementalist | 2026-11-06 10:28 UTC · 0ae1bf8edb0f |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.01458 | Primed Heated Charge, Scorch, Hornet Strike, Barrel Diffusion, Lethal Torrent, Pistol Elementalist, Magnetic Might, Sure Shot | 2026-11-06 10:28 UTC · 0ae1bf8edb0f |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.1676 | Primed Heated Charge, Scorch, Hornet Strike, Barrel Diffusion, Lethal Torrent, Pistol Elementalist, Magnetic Might, Sure Shot | 2026-11-06 10:28 UTC · 0ae1bf8edb0f |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.3861 | Frostbite, Jolt, Primed Heated Charge, Scorch, Hornet Strike, Barrel Diffusion, Lethal Torrent, Pistol Elementalist | 2026-11-06 00:58 UTC · 95d73da96acb |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.3861 | Frostbite, Jolt, Primed Heated Charge, Scorch, Hornet Strike, Barrel Diffusion, Lethal Torrent, Pistol Elementalist | 2026-11-06 10:28 UTC · 0ae1bf8edb0f |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.01458 | Primed Heated Charge, Scorch, Hornet Strike, Barrel Diffusion, Lethal Torrent, Pistol Elementalist, Magnetic Might, Sure Shot | 2026-11-06 10:28 UTC · 0ae1bf8edb0f |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.1676 | Primed Heated Charge, Scorch, Hornet Strike, Barrel Diffusion, Lethal Torrent, Pistol Elementalist, Magnetic Might, Sure Shot | 2026-11-06 10:28 UTC · 0ae1bf8edb0f |
 
 ## Not modelled here
 

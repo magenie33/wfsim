@@ -14,16 +14,16 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 45.7227 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shrapnel Shot, Vigilante Supplies, Primary Deadhead | 2026-10-24 03:28 UTC · db272037fe1d |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 177.6446 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shrapnel Shot, Vigilante Supplies, Primary Deadhead | 2026-10-24 03:44 UTC · db272037fe1d |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 8.3623 | Primed Chilling Grasp, Toxic Barrage, Galvanized Hell, Primed Cleanse Grineer, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Vigilante Supplies, Primary Deadhead | 2026-10-22 20:08 UTC · 62a82930d1d3 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 30.9509 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Vigilante Supplies, Primary Deadhead | 2026-10-24 03:32 UTC · db272037fe1d |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 45.7227 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shrapnel Shot, Vigilante Supplies, Primary Deadhead | 2026-10-24 03:28 UTC · db272037fe1d |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 177.6446 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shrapnel Shot, Vigilante Supplies, Primary Deadhead | 2026-10-24 03:44 UTC · db272037fe1d |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 8.3623 | Primed Chilling Grasp, Toxic Barrage, Galvanized Hell, Primed Cleanse Grineer, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Vigilante Supplies, Primary Deadhead | 2026-10-22 20:08 UTC · 62a82930d1d3 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 30.9509 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Vigilante Supplies, Primary Deadhead | 2026-10-24 03:32 UTC · db272037fe1d |
 
 ## Not modelled here
 
 - Fire-rate ramp endpoints use parsed values; ramp length retains the declared shot-count convention because the native counter's update cadence is unverified.
 - This entry uses the fully spooled pellet count; the initial pellet-count ramp and reset are not simulated.
-- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- Bound standing 3D profiles use shooting-channel spread growth, recovery and smoothing. Equip transitions, moving poses and unmatched profiles retain limits. The player holds the reticle steady.
 - The spool rebuilds after every reload. Per the page, short pauses in burst fire keep it, so a player who taps keeps more of the rate than the sim. The spool itself is modelled.
 
 ## In WFSim

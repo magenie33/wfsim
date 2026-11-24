@@ -14,14 +14,14 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 6.4211 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-24 05:09 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 22.4931 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Heavy Caliber, Rifle Elementalist, Vile Acceleration, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-23 13:05 UTC · 5c64c380e5f2 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.9987 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-24 05:17 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 3.6848 | Malignant Force, Rime Rounds, Hellfire, Heavy Caliber, Primary Acuity, Primed Bane of Orokin, Rifle Elementalist, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-23 13:06 UTC · 5c64c380e5f2 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 6.4211 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-24 05:09 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 22.4931 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Heavy Caliber, Rifle Elementalist, Vile Acceleration, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-23 13:05 UTC · 5c64c380e5f2 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.9987 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-24 05:17 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 3.6848 | Malignant Force, Rime Rounds, Hellfire, Heavy Caliber, Primary Acuity, Primed Bane of Orokin, Rifle Elementalist, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-23 13:06 UTC · 5c64c380e5f2 |
 
 ## Not modelled here
 
-- Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated.
+- The beam's native first-contact ramp and reacquisition timing remain uncalibrated. A source-bound 3D beam can keep separate ramp progress per target.
 - The beam's 0.15 m thickness, the largest of any continuous weapon, is not modelled: the beam here is a ray, so a shot that would clip an enemy with its edge misses, and Heavy Caliber's accuracy penalty costs more than in game.
 - The area damage can headshot, which the page marks as a bug; the sim applies headshots to the direct hit only, so the blast is never a headshot here.
 
