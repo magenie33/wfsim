@@ -62,7 +62,10 @@ const ctx = {
   headlessAppraisalReplay: async (_say, w, job, _rows, host) => ({ ok: true, reference_rows: await host.board(w.id, job.ruler) }),
 };
 const part = name => readFileSync(new URL("../web/src/static/app/" + name + ".js", import.meta.url), "utf8");
+const headless = part("87-headless");
 const create = runInNewContext([
+  headless.match(/function headlessRulerScenario\([^]*?\n\}/)[0],
+  "const headlessWeaponOf = () => weaponInfo();",
   part("53-task-store"),
   "USER_TASK_TYPES.set('optimization', { schema: 1, validate() {}, save: async () => 'graded' });",
   part("59-simulation-tasks"),
