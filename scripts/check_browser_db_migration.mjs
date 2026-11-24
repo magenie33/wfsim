@@ -7,10 +7,13 @@ const source=name=>readFileSync(new URL("../web/src/static/"+name,import.meta.ur
 let task=source("app/53-task-store.js");
 if(process.argv.includes("--break-atomic-write"))task=task.replace("tx.abort();reject(error);return;","reject(error);return;");
 const result=source("app/35-results.js"), compute=source("app/69-board-work.js");
+const computeStart=compute.indexOf("const COMPUTE_DB =");
+const computeEnd=compute.indexOf("async function keptResults(",computeStart);
+if(computeStart<0 || computeEnd<=computeStart)throw new Error("Compute database source boundaries are missing");
 const files={
   "/source/task":task,
   "/source/result":result.slice(result.indexOf("const RESULTS_DB"),result.indexOf("function resultContext()")),
-  "/source/compute":compute.slice(compute.indexOf("const COMPUTE_DB ="),compute.indexOf("/// SESSION-LOCAL TIMINGS")),
+  "/source/compute":compute.slice(computeStart,computeEnd),
 };
 const server=createServer((request,response)=>{
   const path=new URL(request.url,"http://localhost").pathname;
