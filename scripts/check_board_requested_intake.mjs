@@ -132,7 +132,7 @@ try{
  assert.equal(await count('entity_board_requests'),0,'installation never captures the old inbox');
  await db.run('UPDATE state_board_request_control SET enabled=true');
  const {source}=await db.get('SELECT source FROM state_board_request_control');
- const pass=()=>requestedBoardPass(runner,{source,binary});
+ const pass=()=>requestedBoardPass(runner,{source,binary,nativeEngine:engine});
  assert.deepEqual(await requestedBoardPass(sql,{source:'00000000-0000-4000-8000-000000000000',binary}),{idle:true});
  const response=await post('/api/board/submit',{...body,benchmark:undefined,requested_ruler:ruler});assert.equal(response.status,200);
  const accepted=await response.json();assert.match(accepted.request,/^[a-f0-9-]{36}$/);
@@ -291,7 +291,15 @@ try{
  await db.run("UPDATE entity_measurement_reviews SET created_at=?,round_at='2026-01-04T00:00:00.000Z' WHERE id=?",old,fresh.id);
  const invalid=await(await post('/api/board/review',{identity:normalized.id,ruler,mode,engine,
   observed_score:14,baseline_score:13,metric:'kpm',request:{...calculation,duration:calculation.duration+1}})).json();
- assert(invalid.accepted);assert((await pass()).rejected,'an inexact observation must not enter execution');
+ assert(invalid.accepted);
+ await assert.rejects(requestedBoardPass(runner,{source,binary}),/awaits matching native engine/);
+ assert.equal((await requestRow('review:'+invalid.id)).phase,'pending');
+ await db.run('UPDATE state_board_requests SET retry_at=board_input_timestamp(clock_timestamp()) WHERE id=?','review:'+invalid.id);
+ await assert.rejects(requestedBoardPass(runner,{source,binary,nativeEngine:'bad0bad0bad0'}),/awaits matching native engine/);
+ assert.equal((await requestRow('review:'+invalid.id)).phase,'pending');
+ assert.equal((await db.get('SELECT state FROM entity_measurement_reviews WHERE id=?',invalid.id)).state,'waiting');
+ await db.run('UPDATE state_board_requests SET retry_at=board_input_timestamp(clock_timestamp()) WHERE id=?','review:'+invalid.id);
+ assert((await pass()).rejected,'an inexact observation must not enter execution');
  assert.equal((await db.get('SELECT state FROM entity_measurement_reviews WHERE id=?',invalid.id)).state,'failed');
  assert.equal((await requestRow('review:'+invalid.id)).phase,'rejected');
  assert.equal((await db.get('SELECT score FROM state_board_measurement_selection WHERE identity=?',normalized.id)).score,13);
