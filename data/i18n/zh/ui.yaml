@@ -1195,6 +1195,15 @@ ui:
   "fix this position in the start": 在这个起点里固定这个位置
   "descended from {n} starts, but the time budget ran out before every one settled — a strong build, short of the best those starts reach": 从 {n} 个起点出发下降，但时间预算在全部收敛前用完了 —— 这是一套强配置，但还不是这些起点能到达的最优
   "Fire Rate": 射速
+  "Beam Damage Ramp": 射线伤害爬升
+  "No damage ramp": 无伤害爬升
+  "Ramp Scope": 爬升归属
+  "Per target": 按目标独立
+  "Per weapon behavior": 按武器行为实例
+  "Ramp Duration": 爬升时间
+  "Ramp Cooldown Delay": 冷却延迟
+  "Nominal Ramp Decay Duration": 标称衰减时间
+  "Ramp Cooldown Divisor": 冷却除数
   "Fire {base} until the gauge fills, spend it in {other}, come back — and again.": 用{base}打到充能条满，切到{other}把它花掉，再切回来 —— 如此往复。
   "Fired in its {form} for the whole fight.": "整场战斗都用{form}射击。"
   "First magazine": 第一个弹匣

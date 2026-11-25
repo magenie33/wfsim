@@ -57,6 +57,35 @@ async function nativeWeakPointPanel(lang) {
   }
 }
 
+async function nativeBeamRampPanel(lang) {
+  const out = JSON.parse(await evaluate(`(async () => {
+    const results = {};
+    for (const weapon of ["torid", "panthera", "furis", "braton"]) {
+      const p = await api("/api/panel", { weapon, mods: [] });
+      if (${JSON.stringify(process.env.WFSIM_BREAK === "beam_ramp")}) {
+        for (const f of p.forms || []) f.stats = f.stats.filter(row => !row.key.startsWith("beam_ramp"));
+      }
+      renderPanel(p);
+      results[weapon] = [...document.querySelectorAll("#stats-rows .srow")].map(row => ({
+        label: row.querySelector(".sk")?.textContent,
+        value: row.querySelector(".sv")?.textContent,
+        arrow: !!row.querySelector(".sbase"),
+      }));
+    }
+    return JSON.stringify(results);
+  })()`));
+  const labels = lang === "zh" ? ["射线伤害爬升", "爬升归属", "爬升时间", "冷却延迟", "标称衰减时间", "冷却除数"]
+    : ["Beam Damage Ramp", "Ramp Scope", "Ramp Duration", "Ramp Cooldown Delay", "Nominal Ramp Decay Duration", "Ramp Cooldown Divisor"];
+  const target = lang === "zh" ? "按目标独立" : "Per target";
+  const shared = lang === "zh" ? "按武器行为实例" : "Per weapon behavior";
+  const none = lang === "zh" ? "无伤害爬升" : "No damage ramp";
+  const expected = ["20.0% → 100.0%", target, "0.6s", "0.8s", "1.2s", "×2.0"];
+  check(`[${lang}] Torid exposes all six resolved ramp parameters`, labels.every((label, i) => out.torid.some(row => row.label === label && row.value === expected[i] && !row.arrow)), JSON.stringify(out.torid));
+  check(`[${lang}] Panthera uses the shared weapon-behavior scope`, out.panthera.some(row => row.label === labels[1] && row.value === shared));
+  check(`[${lang}] Furis Incarnon has no damage ramp`, out.furis.some(row => row.label === labels[0] && row.value === none));
+  check(`[${lang}] Braton has no beam ramp rows`, !out.braton.some(row => labels.includes(row.label)));
+}
+
 for (const lang of ["en", "zh"]) {
   // LANG IS READ AT BOOT, so the switch is a reload, not a setting — the
   // pattern check_enemies established.
@@ -68,6 +97,7 @@ for (const lang of ["en", "zh"]) {
 
   if (process.env.WFSIM_NATIVE_ONLY === "1") {
     await nativeWeakPointPanel(lang);
+    await nativeBeamRampPanel(lang);
     continue;
   }
 
@@ -498,6 +528,7 @@ for (const lang of ["en", "zh"]) {
   check(`[${lang}] …and a form that CAN zoom gets no such line`,
     r.zoomFalsePositives === 0, String(r.zoomFalsePositives));
   await nativeWeakPointPanel(lang);
+  await nativeBeamRampPanel(lang);
 }
 
 await app.finish("what the app does not model is on the page");

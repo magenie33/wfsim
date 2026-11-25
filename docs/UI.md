@@ -46,6 +46,14 @@ Torid build, 30 s vs 120 s gave 0.044 vs 0.049 KPM while the totals went 0.022
 vs 0.098 — the residual is ramp-up, reloads and the DoT tail, exactly the
 drift DPS shows over the same pair (18,653 vs 20,551).
 
+## Beam damage ramp
+
+The weapon stats panel states the resolved attenuation separately for each
+form: starting-to-full damage, target-local or weapon-behavior scope, rise
+seconds, cooldown delay, nominal decay duration and divisor. Unity endpoints
+show no ramp; ordinary non-beam forms have no row. These are fixed behavior
+parameters, not mod bonuses or the current target's live ramp progress.
+
 ## Native weapon weak-point input
 
 The weapon stats panel leads with the native weak-point bonus and the factor

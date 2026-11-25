@@ -1830,6 +1830,23 @@ fn form_section(
         "sources": [],
     }));
 
+    if let Some(ramp) = panel.beam_ramp {
+        let mut ramp_row = |key, label, value: String| {
+            weapon_rows.push(json!({ "key": key, "label": label, "base": value, "final": value,
+                "sources": [] }));
+        };
+        if panel.beam_ramp_floor == 1.0 {
+            ramp_row("beam_ramp", "Beam Damage Ramp", "No damage ramp".to_string());
+        } else {
+            ramp_row("beam_ramp", "Beam Damage Ramp", format!("{} → {}", pc(panel.beam_ramp_floor), pc(1.0)));
+            ramp_row("beam_ramp_scope", "Ramp Scope", if ramp.per_target { "Per target" } else { "Per weapon behavior" }.to_string());
+            ramp_row("beam_ramp_duration", "Ramp Duration", secs(ramp.rise_seconds));
+            ramp_row("beam_ramp_cooldown_delay", "Ramp Cooldown Delay", secs(ramp.cooldown_delay_seconds));
+            ramp_row("beam_ramp_decay_duration", "Nominal Ramp Decay Duration", secs(ramp.rise_seconds * ramp.cooldown_divisor));
+            ramp_row("beam_ramp_cooldown_divisor", "Ramp Cooldown Divisor", format!("×{}", num(ramp.cooldown_divisor)));
+        }
+    }
+
     // A damage vector as displayed rows: type, amount, share of the total.
     let vector_rows = |v: &wfsim_engine::rules::damage::DamageVector| {
         let total = v.total();
@@ -2223,6 +2240,30 @@ mod mode_apl_tests {
                 .map(wfsim_engine::data::apl::Precombat::to_simc).collect::<Vec<_>>()));
             assert!(actual["apl"].as_array().unwrap().iter().any(|line| line == rule), "{actual}");
         }
+    }
+
+    #[test]
+    fn weapon_panel_displays_resolved_beam_attenuation_by_form() {
+        let read = |weapon: &str| panel_json(&json!({"weapon":weapon,"mods":[]}));
+        let rows = |p: &Value| p["forms"].as_array().unwrap().iter().flat_map(|f| f["stats"].as_array().unwrap().iter())
+            .filter(|r| r["key"].as_str().unwrap_or_default().starts_with("beam_ramp")).cloned().collect::<Vec<_>>();
+        let torid = read("torid");
+        let beam_rows = rows(&torid);
+        assert_eq!(beam_rows.len(), 6, "{beam_rows:?}");
+        for (key, expected) in [("beam_ramp", "20.0% → 100.0%"), ("beam_ramp_scope", "Per target"),
+            ("beam_ramp_duration", "0.6s"), ("beam_ramp_cooldown_delay", "0.8s"),
+            ("beam_ramp_decay_duration", "1.2s"), ("beam_ramp_cooldown_divisor", "×2.0")] {
+            let r = beam_rows.iter().find(|r| r["key"] == key).unwrap();
+            assert_eq!(r["final"], expected);
+            assert_eq!(r["base"], r["final"]);
+            assert!(r["sources"].as_array().unwrap().is_empty());
+        }
+        let panthera = rows(&read("panthera"));
+        assert!(panthera.iter().any(|r| r["key"] == "beam_ramp_scope" && r["final"] == "Per weapon behavior"));
+        let furis = rows(&read("furis"));
+        assert_eq!(furis.len(), 1);
+        assert_eq!(furis[0]["final"], "No damage ramp");
+        assert!(rows(&read("braton")).is_empty());
     }
 
     #[test]
