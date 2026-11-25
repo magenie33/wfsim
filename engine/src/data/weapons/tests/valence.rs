@@ -120,3 +120,27 @@ fn the_kuva_nukors_measured_condition_overload_ladder() {
         );
     }
 }
+
+#[test]
+fn livia_inherits_valence_in_every_attack_form() {
+    for id in ["tenet_livia", "tenet_livia_forward", "tenet_livia_block",
+        "tenet_livia_block_forward", "tenet_livia_heavy", "tenet_livia_heavy_slam"] {
+        let spec = valence_of(id).expect(id);
+        assert_eq!(spec.elements.len(), 7);
+        assert_eq!((spec.min, spec.max), (0.25, 0.60));
+        let bare = WeaponBase::from_data(id, true, &[]);
+        let mut valenced = bare.clone();
+        apply_valence(&mut valenced, id, "heat", 0.60);
+        let check = |before: &crate::rules::damage::DamageVector, after: &crate::rules::damage::DamageVector| {
+            assert!((after.total() - before.total() * 1.6).abs() < 1e-8, "{id}");
+            assert!((after.get(DamageType::Heat) - before.get(DamageType::Heat) - before.total() * 0.6).abs() < 1e-8, "{id}");
+        };
+        check(&bare.base_vector, &valenced.base_vector);
+        if let Some((a, b)) = bare.slam.as_ref().zip(valenced.slam.as_ref()) {
+            check(&a.base_vector, &b.base_vector);
+        }
+        if let Some((a, b)) = bare.radial.as_ref().zip(valenced.radial.as_ref()) {
+            check(&a.base_vector, &b.base_vector);
+        }
+    }
+}

@@ -9,8 +9,6 @@ co_behavior: additive_with_base_damage
 unmodeled:
 - reason: client_melee_timing
 - reason: client_melee_geometry
-- reason: melee_valence_unmodelled
-  family: Tenet
 - reason: melee_slide_unpublished
 attack:
   trigger: melee
