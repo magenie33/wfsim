@@ -1844,6 +1844,24 @@ fn form_section(
             ramp_row("beam_ramp_cooldown_delay", "Ramp Cooldown Delay", secs(ramp.cooldown_delay_seconds));
             ramp_row("beam_ramp_decay_duration", "Nominal Ramp Decay Duration", secs(ramp.rise_seconds * ramp.cooldown_divisor));
             ramp_row("beam_ramp_cooldown_divisor", "Ramp Cooldown Divisor", format!("×{}", num(ramp.cooldown_divisor)));
+            weapon_rows.iter_mut().find(|r| r["key"] == "beam_ramp").unwrap()["note"] = json!("The lower endpoint is the initialized multiplier; the first damage tick already advances elapsed ramp time.");
+        }
+    }
+
+    if let Some(deployment) = panel.beam_deployment {
+        let mut fixed = |key, label, value: String| weapon_rows.push(json!({
+            "key": key, "label": label, "base": value, "final": value, "sources": [] }));
+        fixed("beam_expansion", "Beam Expansion Time", secs(deployment.expansion_seconds));
+        fixed("beam_retraction", "Beam Retraction Time", secs(deployment.retraction_seconds));
+        if panel.range_m.is_finite() && base.range_m.is_finite() {
+            for (key, label, seconds) in [("beam_expansion_speed", "Beam Expansion Speed", deployment.expansion_seconds),
+                ("beam_retraction_speed", "Beam Retraction Speed", deployment.retraction_seconds)] {
+                if seconds > 0. {
+                    weapon_rows.push(json!({ "key": key, "label": label,
+                        "base": format!("{} m/s", num(base.range_m / seconds)),
+                        "final": format!("{} m/s", num(panel.range_m / seconds)), "sources": [] }));
+                }
+            }
         }
     }
 
@@ -2264,6 +2282,23 @@ mod mode_apl_tests {
         assert_eq!(furis.len(), 1);
         assert_eq!(furis[0]["final"], "No damage ramp");
         assert!(rows(&read("braton")).is_empty());
+    }
+
+    #[test]
+    fn beam_deployment_speed_uses_range_not_projectile_speed() {
+        let read = |mods: Value| panel_json(&json!({"weapon":"phantasma","mods":mods}));
+        let value = |p: &Value, key: &str| p["forms"].as_array().unwrap().iter()
+            .flat_map(|f| f["stats"].as_array().unwrap().iter())
+            .find(|r| r["key"] == key).unwrap()["final"].as_str().unwrap().to_string();
+        let stock = read(json!([]));
+        let projectile = read(json!(["fatal_acceleration"]));
+        let range = read(json!(["galvanized_acceleration"]));
+        assert_eq!(value(&stock, "beam_expansion"), "0.2s");
+        assert_eq!(value(&stock, "beam_retraction"), "0.02s");
+        assert_eq!(value(&stock, "beam_expansion_speed"), "95.0 m/s");
+        assert_eq!(value(&projectile, "beam_expansion_speed"), value(&stock, "beam_expansion_speed"));
+        assert_eq!(value(&range, "beam_expansion"), "0.2s");
+        assert!(value(&range, "beam_expansion_speed").split(' ').next().unwrap().parse::<f64>().unwrap() > 95.);
     }
 
     #[test]

@@ -94,6 +94,8 @@ co_behavior: additive_with_base_damage
 beam_ramp_floor: 0.2
 beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
 
+beam_deployment: { expansion_seconds: 0.0, retraction_seconds: 0.0 }
+
 attack:
   extra_hit_reads: { impact: 0.3, slash: 0.3, puncture: 0.3 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
@@ -130,13 +132,8 @@ attack:
   # the Larkspur Prime at half its damage. The arena is on the ground, so every
   # number here is the atmospheric one.
   beam:
-    # 40 m is the ATMOSPHERE column; the Archwing one is 160 (wiki). This said
-    # 20 and was read by nothing, while the weapon's own unmodelled note said
-    # 40 — the two disagreed in the same file until the range was modelled and
-    # the field started deciding something. Same two-column trap
-    # AGENTS.md was written about, caught this time by the file contradicting
-    # itself.
-    range_m: 40.0
+    # Native HeavyBehaviors declares 50 m; ordinary Archwing declares 180 m.
+    range_m: 50.0
     damage_radius_m: 0.0
     radius_takes_multishot: false
     chain:

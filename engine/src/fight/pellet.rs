@@ -83,6 +83,7 @@ pub(super) struct Strike<'a> {
     pub(super) status_damage: f64,
     pub(super) live_rate: f64,
     pub(super) beam_ramp: f64,
+    pub(super) beam_reach_m: Option<f64>,
     /// Longbow Sharpshot's bonus on THIS shot — 0.0 unless the last one hit a
     /// weak point. Every pellet and the explosion of the shot carry it.
     pub(super) next_shot_bonus: f64,
@@ -290,6 +291,7 @@ pub(super) fn settle_pellet(
         status_damage,
         live_rate,
         beam_ramp,
+        beam_reach_m,
         next_shot_bonus,
         undamaged,
         t,
@@ -819,7 +821,7 @@ pub(super) fn settle_pellet(
     // `gap` is what the shot flies and what the arena prints, so "20 m"
     // is the number on the scene. `INFINITY` where none is declared.
     let contact = active.target_preference.is_some();
-    let in_range = contact || gap_m <= active.range_m;
+    let in_range = contact || gap_m <= beam_reach_m.unwrap_or(active.range_m);
     let pellet_lands = spatial.is_some() || contact || (aim_offset <= crate::rules::space::BODY_RADIUS_M && in_range && !round_aim.lock_miss);
     // WHERE THE ROUND WENT OFF — ONE EPICENTRE FOR THE WHOLE
     // EXPLOSION.

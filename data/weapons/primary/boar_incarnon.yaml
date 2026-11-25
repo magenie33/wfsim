@@ -90,6 +90,8 @@ co_behavior: additive_with_base_damage
 #    moves here, so a body inside the acquire cone never leaves it;
 #  - the range is extendable with Galvanized Acceleration (Sinister Reach
 #    cannot be equipped on this weapon).
+beam_deployment: { expansion_seconds: 0.03, retraction_seconds: 0.01 }
+
 attack:
   # see notes: cone_half_angle_from
   spread:

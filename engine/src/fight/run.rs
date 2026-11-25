@@ -1036,6 +1036,10 @@ pub fn run_once_traced(
         } else {
             1.0
         };
+        let beam_reach_m = active.beam_deployment.map(|spec| {
+            me.beam_deployment[usize::from(me.incarnon.in_base_form)].tick(t,
+                1.0 / live_rate.max(1e-9), spec, active.range_m)
+        });
         // THE GAUGE'S OWN MARK, and it counts what the gauge counts —
         // `RunResult::weakpoint_hits`, not the reported headshot rate.
         let headshots_before = r.weakpoint_hits + r.headshots_on_others;
@@ -1188,6 +1192,7 @@ pub fn run_once_traced(
             ms_damage,
             live_rate,
             beam_ramp,
+            beam_reach_m,
             next_shot_bonus: if me.weakpoint_next_shot_armed {
                 me.params.arcane.weakpoint_next_shot_damage
             } else {

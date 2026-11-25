@@ -53,6 +53,8 @@ form: starting-to-full damage, target-local or weapon-behavior scope, rise
 seconds, cooldown delay, nominal decay duration and divisor. Unity endpoints
 show no ramp; ordinary non-beam forms have no row. These are fixed behavior
 parameters, not mod bonuses or the current target's live ramp progress.
+Beam expansion and retraction time are also listed; speed uses the resolved
+range divided by the respective nonzero time, so range mods change speed.
 
 ## Native weapon weak-point input
 

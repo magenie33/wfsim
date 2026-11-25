@@ -467,6 +467,7 @@ pub struct WeaponSpec {
     #[serde(default)]
     pub beam_ramp_floor: Option<f64>,
     pub beam_ramp: Option<crate::model::BeamRampSpec>,
+    pub beam_deployment: Option<crate::model::BeamDeploymentSpec>,
     #[serde(default)]
     pub reload_seconds: Option<f64>,
     /// AN INNATE RELOAD-SPEED TERM on a reload from empty, in the bucket the

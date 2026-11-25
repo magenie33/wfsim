@@ -200,7 +200,11 @@ attenuation; Onos's distinct charge consumer remains unmodelled. The supplementa
 from `20261125T052906Z-beam-ramp-roster-coverage`. The 4,654 vectors from
 `20261125T045717Z-beam-ramp-timing-gates` pin binary32 state updates,
 strict inactivity gates and factor interpolation. Target ownership and
-shared-instance isolation are verified separately by the subsequent batches.
+shared-instance isolation are verified separately by the subsequent batches. The 57
+source scopes and 600 deployment, 256 range and 240 first-eligible-tick reads
+from `20261125T074623Z-beam-deployment-first-tick-and-clock` bind expansion
+and retraction, and establish elapsed-before-factor ordering. Ground archguns
+use HeavyBehaviors; modular zero range remains an assembly placeholder.
 
 ### Whole-primary calibration
 

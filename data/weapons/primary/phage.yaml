@@ -40,6 +40,8 @@ co_behavior: additive_with_base_damage
 beam_ramp_floor: 0.7
 beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
 
+beam_deployment: { expansion_seconds: 0.25, retraction_seconds: 0.02 }
+
 attack:
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack). It is the HIP

@@ -48,6 +48,8 @@ co_behavior: additive_with_base_damage
 beam_ramp_floor: 1.0
 beam_ramp: { rise_seconds: 1.0, cooldown_delay_seconds: 0.0, cooldown_divisor: 1.0, per_target: false }
 
+beam_deployment: { expansion_seconds: 0.05, retraction_seconds: 0.01 }
+
 attack:
   # see notes: cone_half_angle_from
   spread:

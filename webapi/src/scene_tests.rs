@@ -925,7 +925,8 @@ fn direct_beam_without_special_geometry_restarts_at_each_spawn() {
     assert!(replay.events().iter().filter(|e| matches!(&e.kind, Kind::Damage(d) if d.killed)).count() > 5);
     let per_target = factors(&p);
     assert!(per_target.len() > 5);
-    assert!(per_target.iter().all(|v| (*v - 0.2).abs() < 1e-7), "{per_target:?}");
+    let first = 0.2 + 0.8 * (1. / p.fire_rate / 0.6);
+    assert!(per_target.iter().all(|v| (*v - first).abs() < 1e-7), "{per_target:?}");
     p.beam_ramp.as_mut().unwrap().per_target = false;
     let global = factors(&p);
     assert!(global.iter().any(|v| *v > 0.9), "{global:?}");
@@ -951,7 +952,33 @@ fn athodai_beam_bursts_use_target_attenuation() {
             _ => None,
         }).collect::<Vec<_>>();
         assert!(hits.len() > 5, "{id}: {hits:?}");
-        assert!((hits[0] - 0.2).abs() < 1e-7, "{id}: {hits:?}");
+        let first = 0.2 + 0.8 * (1. / p.fire_rate / 0.6);
+        assert!((hits[0] - first).abs() < 1e-7, "{id}: {hits:?}");
         assert!(hits.iter().any(|v| *v > 0.9), "{id}: {hits:?}");
     }
+}
+
+#[test]
+fn phantasma_deployment_restricts_early_contacts_and_first_factor_advances() {
+    use wfsim_engine::record::{Factor, Layer, Origin};
+    let hit = |distance: f64| {
+        let mut v = request("phantasma", 1, false);
+        v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"center_distance","distance":distance}});
+        let mut p = params(&v);
+        p.spread = None;
+        let rec = record(&p);
+        rec.events().iter().find_map(|e| match &e.kind {
+            Kind::Damage(d) if d.origin == Origin::Own => Some((e.t, d.layers.iter().find_map(|l| match l {
+                Layer::Mul { factor: Factor::BeamRamp, value, .. } => Some(*value),
+                _ => None,
+            }).unwrap_or(1.))),
+            _ => None,
+        }).expect("beam contact")
+    };
+    let near = hit(5.);
+    let far = hit(18.);
+    let expected = 0.02 + 0.98 * (1. / 12. / 0.6);
+    assert!((near.1 - expected).abs() < 1e-7, "{near:?}");
+    assert!((far.1 - expected).abs() < 1e-7, "{far:?}");
+    assert!(far.0 > near.0, "{near:?} {far:?}");
 }

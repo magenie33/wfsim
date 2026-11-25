@@ -140,6 +140,13 @@ pub struct SpreadSampling {
     pub hip_max_deg: Option<f64>,
 }
 
+/// Beam reach progresses independently of damage attenuation and fire rate.
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct BeamDeploymentSpec {
+    pub expansion_seconds: f64,
+    pub retraction_seconds: f64,
+}
+
 /// Native attenuation stores elapsed ramp time; cooldown is its divisor.
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct BeamRampSpec {
@@ -1069,6 +1076,7 @@ pub struct WeaponBase {
     /// Where this weapon's beam ramp starts (0.20 unless it says otherwise).
     pub beam_ramp_floor: f64,
     pub beam_ramp: Option<crate::model::BeamRampSpec>,
+    pub beam_deployment: Option<crate::model::BeamDeploymentSpec>,
     /// Does this weapon apply MICROWAVE? See `fight::DebuffState::microwave`.
     pub applies_microwave: bool,
     /// See `data::weapons::WeaponSpec::independent_procs`. No mod adds or

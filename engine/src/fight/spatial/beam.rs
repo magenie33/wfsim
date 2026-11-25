@@ -27,7 +27,7 @@ impl Seed {
 
 #[wfsim_gas_macro::metered]
 pub(super) fn seeds(
-    scene: &Scene, path: &mut Flight, active: &FightParams, eligible: &[bool], tendrils: u32,
+    scene: &Scene, path: &mut Flight, active: &FightParams, reach: f64, eligible: &[bool], tendrils: u32,
 ) -> Seeds {
     let beam = active.beam.filter(|b| b.chain_hops > 0 || b.damage_radius_m > 0. || b.beams_count > 1);
     if beam.is_none() && tendrils == 0 {
@@ -45,7 +45,7 @@ pub(super) fn seeds(
     if let Some(beam) = beam {
         if beam.damage_radius_m > 0. {
             let line = path.direction.normalized().unwrap_or(reticle);
-            let endpoint = path.stopped_at.unwrap_or_else(|| path.muzzle.along(line, active.range_m));
+            let endpoint = path.stopped_at.unwrap_or_else(|| path.muzzle.along(line, reach));
             path.beam_endpoint = Some(endpoint);
             for (body, &is_present) in eligible.iter().enumerate() {
                 if is_present && !taken[body] && scene.distance_to_body(endpoint, body) <= beam.damage_radius_m {
@@ -58,7 +58,8 @@ pub(super) fn seeds(
         if beam.beams_count > 1 {
             let count = (beam.beams_count as usize).saturating_sub(path.impacts.len());
             let muzzle = path.muzzle;
-            let range = beam.beams_range_m + (active.range_m - beam.range_m);
+            let range = (beam.beams_range_m + (active.range_m - beam.range_m))
+                * if active.range_m.is_finite() && active.range_m > 0. { reach / active.range_m } else { 1. };
             let candidates = scene.beam_acquire(muzzle, reticle, beam.beams_acquire_deg, range, eligible);
             let mut remaining = count;
             for impact in candidates {

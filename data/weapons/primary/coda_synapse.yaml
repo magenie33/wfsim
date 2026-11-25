@@ -60,6 +60,8 @@ valence:
   min: 0.25
   max: 0.60
 
+beam_deployment: { expansion_seconds: 0.05, retraction_seconds: 0.01 }
+
 attack:
   # see notes: cone_half_angle_from
   spread:

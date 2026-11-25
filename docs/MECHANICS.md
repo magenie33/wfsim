@@ -1969,11 +1969,21 @@ instance's independent shared state. The simulator maintains separate clocks
 for the base and transformed behavior and each target generation. Athodai's
 alternate burst modes use target-local attenuation at the resolved tick rate.
 
-The fight has accepted-hit timestamps rather than native update callbacks.
-It steps inactive gaps at the resolved tick interval, advances subsequent
-contacts before interpolation and opens the first accepted hit at the
-initialized time. Exact first-hit update ordering, promotion marker writers,
-behavior reinstallation and native accepted-tick scheduling remain open.
+Native contact creation initializes the damage countdown to the reciprocal
+of modified fire rate. Eligible updates add actual elapsed attenuation
+before testing the due countdown and reading the factor. The simulator uses
+an ideal accepted-event period, including the first hit, rather than a fixed
+frame rate. The upstream client scheduler is variable-time; actual packet
+acceptance and frame-boundary timing remain open.
+
+Deployment is a separate normalized binary32 state. Active updates add
+`dt / expansion_seconds`, inactive updates subtract `dt / retraction_seconds`,
+clamped to [0,1]. Zero expansion gives full upgraded reach, and zero retraction
+clears the state. The ordinary live trace uses upgraded range times deployment
+fraction, including the sphere endpoint. Range changes distance per second,
+not expansion time. The event model samples deployment at the resolved damage
+period and retracts through inactive gaps; first-contact phase, special
+predicate routes, status settlement and exact clip decrement remain open.
 
 Shape, not a damage part. It lives in `attack.beam` and is deliberately **not**
 a `radial:`, because in this engine that word means *a second damage instance*

@@ -35,6 +35,8 @@ reload_seconds: 2.0
 # the Tenet: this is the one family in the batch the catalog says nothing about.
 co_behavior: additive_with_base_damage
 
+beam_deployment: { expansion_seconds: 0.1, retraction_seconds: 0.1 }
+
 attack:
   # see notes: cone_half_angle_from
   spread:

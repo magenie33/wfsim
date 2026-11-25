@@ -121,7 +121,7 @@ fn one_numbering_runs_from_the_aimed_body_through_the_whole_formation() {
 /// ramp would pass a test that only looked at 5 m and 50 m.
 #[test]
 fn a_weapon_deals_nothing_past_its_range() {
-    let at = |weapon: &str, gap: f64| {
+    let at = |weapon: &str, gap: f64, deployment: bool| {
         let base = crate::model::WeaponBase::from_data(weapon, false, &[]);
         let refs: Vec<&crate::model::ModDef> = Vec::new();
         let panel = crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
@@ -132,21 +132,23 @@ fn a_weapon_deals_nothing_past_its_range() {
             0.0,
             gap + crate::rules::space::CONTACT_RANGE_M,
         );
-        let p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
+        let mut p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
+        if !deployment { p.beam_deployment = None; }
         run_once(&p, &mut Rng::new(0x5EED)).effective_damage()
     };
 
     // Parsed trace reaches are 19 m and 23 m. The wall includes its endpoint.
     for (id, reach) in [("phantasma", 19.0), ("phantasma_prime", 23.0)] {
-        assert!(at(id, reach - 1.0) > 0.0, "{id}: inside the wall");
-        assert!(at(id, reach) > 0.0, "{id}: the wall is inclusive");
-        assert_eq!(at(id, reach + 1.0), 0.0, "{id}: past the wall");
-        assert!((at(id, 1.0) - at(id, reach)).abs() < 1e-9, "{id}: no taper before the wall");
+        assert!(at(id, reach - 1.0, true) > 0.0, "{id}: inside the wall");
+        assert!(at(id, reach, true) > 0.0, "{id}: the wall is inclusive");
+        assert_eq!(at(id, reach + 1.0, true), 0.0, "{id}: past the wall");
+        assert!((at(id, 1.0, false) - at(id, reach, false)).abs() < 1e-9, "{id}: no taper before the wall once deployment is excluded");
+        assert!(at(id, 1.0, true) > at(id, reach, true), "{id}: deployment delays far contact");
     }
     // THE NEGATIVE CONTROL. A weapon that declares no range is unlimited,
     // which is what every weapon in this engine was until today — so this
     // must not have quietly become a cap on the whole roster.
-    assert!(at("braton", 60.0) > 0.0, "a weapon with no declared range still reaches");
+    assert!(at("braton", 60.0, true) > 0.0, "a weapon with no declared range still reaches");
 }
 
 /// A SHOT THAT WENT WIDE DOES NOT BLAST A BYSTANDER.

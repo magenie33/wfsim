@@ -672,6 +672,7 @@ pub struct FightParams {
     /// 0.20 "for most weapons" (wiki); Phantasma Prime is 0.15.
     pub beam_ramp_floor: f64,
     pub beam_ramp: Option<crate::model::BeamRampSpec>,
+    pub beam_deployment: Option<crate::model::BeamDeploymentSpec>,
     /// Does this weapon apply MICROWAVE? See [`DebuffState::microwave`].
     pub applies_microwave: bool,
     /// See `data::weapons::WeaponSpec::independent_procs` — status effects this

@@ -18,6 +18,36 @@ pub(super) struct BeamRamp {
     pub(super) last_tick: Option<f64>,
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub(super) struct BeamDeployment {
+    fraction: f32,
+    last_tick: Option<f64>,
+}
+
+#[wfsim_gas_macro::metered]
+impl BeamDeployment {
+    fn update(fraction: f32, dt: f32, seconds: f32, active: bool) -> f32 {
+        if seconds == 0. { return if active { 1. } else { 0. }; }
+        let progress = dt / seconds;
+        (if active { fraction + progress } else { fraction - progress }).clamp(0., 1.)
+    }
+
+    fn range(upgraded: f32, expansion: f32, fraction: f32) -> f32 {
+        if expansion == 0. { upgraded } else { upgraded * fraction }
+    }
+
+    pub(super) fn tick(&mut self, at: f64, period: f64, spec: crate::model::BeamDeploymentSpec, upgraded_range: f64) -> f64 {
+        let gap = self.last_tick.map_or(period, |t| (at - t).max(0.));
+        let idle = (gap - period).max(0.);
+        if idle > 1e-9 {
+            self.fraction = Self::update(self.fraction, idle as f32, spec.retraction_seconds as f32, false);
+        }
+        self.fraction = Self::update(self.fraction, gap.min(period) as f32, spec.expansion_seconds as f32, true);
+        self.last_tick = Some(at);
+        f64::from(Self::range(upgraded_range as f32, spec.expansion_seconds as f32, self.fraction))
+    }
+}
+
 #[derive(Clone, Copy)]
 struct NativeRamp {
     floor: f32,
@@ -97,29 +127,26 @@ impl TargetRamp {
 
 #[wfsim_gas_macro::metered]
 impl BeamRamp {
-    /// Source-bound updates work in elapsed float32 time. The first accepted
-    /// hit has no yet-qualified preceding update, so starts at zero; later
-    /// contacts advance on the simulator's tick schedule before interpolation.
+    /// Native eligible elapsed time advances before the factor read. The
+    /// event-time model supplies the nominal period, not a fixed frame rate.
     pub(super) fn tick(&mut self, now: f64, tick_seconds: f64, floor: f64, source: Option<crate::model::BeamRampSpec>) -> f64 {
         if let Some(source) = source {
             let native = NativeRamp { floor: floor as f32, ceiling: 1., rise: source.rise_seconds as f32,
                 delay: source.cooldown_delay_seconds as f32, divisor: source.cooldown_divisor as f32 };
             let mut time = self.state as f32;
-            if let Some(prev) = self.last_tick {
-                let gap = (now - prev).max(0.);
-                let idle = (gap - tick_seconds).max(0.);
-                time = native.idle_time(time, idle, tick_seconds);
-                // A contact after a fully cold gap opens a new interval.
-                if time > 0. || idle <= f64::from(native.delay) {
-                    let dt = gap.min(tick_seconds) as f32;
-                    if source.per_target {
-                        if NativeRamp::record_gate(dt, tick_seconds as f32, 0., true, true).1 {
-                            time = (time + dt).min(native.rise);
-                        }
-                    } else {
-                        (time, _) = native.global(dt, time, 0., true, false);
-                    }
+            let gap = self.last_tick.map_or(tick_seconds, |prev| (now - prev).max(0.));
+            let idle = (gap - tick_seconds).max(0.);
+            time = native.idle_time(time, idle, tick_seconds);
+            // The native contact opens a countdown of one period; eligible
+            // updates advance attenuation before the due check. The ideal
+            // accepted-event schedule supplies that nominal period directly.
+            let dt = gap.min(tick_seconds) as f32;
+            if source.per_target {
+                if NativeRamp::record_gate(dt, tick_seconds as f32, 0., true, true).1 {
+                    time = (time + dt).min(native.rise);
                 }
+            } else {
+                (time, _) = native.global(dt, time, 0., true, false);
             }
             let mut unused = 0.;
             let (factor, _) = if source.per_target { native.factor(&mut time, &mut unused, true, 1., false) }
@@ -151,10 +178,11 @@ mod tests {
             rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true,
         };
         let mut ramp = TargetRamp::default();
-        assert_eq!(ramp.hit(1, 0., 0.1, 0.2, source), f64::from(0.2_f32));
-        assert_eq!(ramp.hit(1, 0., 0.1, 0.2, source), f64::from(0.2_f32));
-        assert!((ramp.hit(1, 0.1, 0.1, 0.2, source) - (0.2 + 0.8 / 6.)).abs() < 1e-7);
-        assert_eq!(ramp.hit(2, 0.2, 0.1, 0.2, source), f64::from(0.2_f32));
+        let first = f64::from(0.2_f32 + 0.8_f32 * (0.1_f32 / 0.6_f32));
+        assert_eq!(ramp.hit(1, 0., 0.1, 0.2, source), first);
+        assert_eq!(ramp.hit(1, 0., 0.1, 0.2, source), first);
+        assert!((ramp.hit(1, 0.1, 0.1, 0.2, source) - (0.2 + 0.8 / 3.)).abs() < 1e-7);
+        assert_eq!(ramp.hit(2, 0.2, 0.1, 0.2, source), first);
     }
 
     #[test]
@@ -163,7 +191,7 @@ mod tests {
             cooldown_divisor: 2.0, per_target: true };
         let mut a = TargetRamp::default();
         let mut b = TargetRamp::default();
-        let cold = f64::from(0.2_f32);
+        let cold = f64::from(0.2_f32 + 0.8_f32 * (0.1_f32 / 0.6_f32));
         assert_eq!(a.hit(1, 0., 0.1, 0.2, source), cold);
         assert!(a.hit(1, 0.2, 0.1, 0.2, source) > cold);
         for i in 3..10 { a.hit(1, f64::from(i) * 0.1, 0.1, 0.2, source); }
@@ -184,7 +212,7 @@ mod tests {
         assert!(factor > 0.5 && factor < 0.8, "{factor}");
         assert!((ordinary.tick(1.5, 0.1, 0.2, None) - 0.76).abs() < 1e-12);
         let mut empty = BeamRamp { state: f64::from(0.6_f32), last_tick: Some(0.0) };
-        assert_eq!(empty.tick(2.2, 0.1, 0.2, source), f64::from(0.2_f32));
+        assert_eq!(empty.tick(2.2, 0.1, 0.2, source), f64::from(0.2_f32 + 0.8_f32 * (0.1_f32 / 0.6_f32)));
     }
 
     #[test]
@@ -257,6 +285,78 @@ mod tests {
             eq(states[other], "other_instance_after");
         }
         assert_eq!(rows.len(), 18);
+    }
+
+
+    #[test]
+    fn native_deployment_and_range_match_all_vectors() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!("fixtures/native-beam-deployment.json")).unwrap();
+        let f = |v: &serde_json::Value| v.as_f64().unwrap() as f32;
+        let progress = fixture["progress"].as_array().unwrap();
+        for row in progress {
+            let actual = BeamDeployment::update(f(&row[0]), f(&row[1]), f(&row[2]), row[3].as_bool().unwrap());
+            assert_eq!(actual.to_bits(), f(&row[4]).to_bits(), "{row}");
+        }
+        let ranges = fixture["range_cases"].as_array().unwrap();
+        for row in ranges {
+            let actual = BeamDeployment::range(f(&row[0]) * f(&row[1]), f(&row[2]), f(&row[3]));
+            assert_eq!(actual.to_bits(), f(&row[4]).to_bits(), "{row}");
+        }
+        assert_eq!((progress.len(), ranges.len()), (600, 256));
+    }
+
+    #[test]
+    fn first_eligible_tick_uses_elapsed_time_before_the_due_check() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!("fixtures/native-beam-deployment.json")).unwrap();
+        let f = |v: &serde_json::Value| v.as_f64().unwrap() as f32;
+        let n = NativeRamp { floor: 0.02, ceiling: 1., rise: 0.6, delay: 0.8, divisor: 2. };
+        let cases = fixture["first_tick"].as_array().unwrap();
+        let mut count = 0;
+        for row in cases {
+            let period = f(&row["period"]);
+            let dt = f(&row["dt"]);
+            let mut remaining = period;
+            let mut time = 0_f32;
+            let mut update = 0;
+            for tick in row["ticks"].as_array().unwrap() {
+                loop {
+                    update += 1;
+                    remaining -= dt;
+                    time = (time + dt).min(n.rise);
+                    if remaining <= 0. { break; }
+                }
+                assert_eq!(update, tick["update"].as_u64().unwrap());
+                assert_eq!(time.to_bits(), f(&tick["progress_seconds"]).to_bits());
+                let (factor, _) = n.factor(&mut time, &mut 0., true, 1., false);
+                assert_eq!(factor.to_bits(), f(&tick["factor"]).to_bits());
+                remaining += period;
+                count += 1;
+            }
+        }
+        assert_eq!(count, 240);
+    }
+
+    #[test]
+    fn source_deployment_is_bound_to_every_registered_beam_scope() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!("fixtures/native-beam-deployment.json")).unwrap();
+        let mut count = 0;
+        for row in fixture["rows"].as_array().unwrap() {
+            let id = row["id"].as_str().unwrap();
+            if id == "lizzie" || id.ends_with("_heavy") { continue; }
+            let p = crate::data::weapons::base_panel(id, false);
+            let d = p.beam_deployment.unwrap();
+            let source = &row["source"];
+            let raw = |key: &str| source[key].as_str().unwrap().parse::<f64>().unwrap();
+            assert!((d.expansion_seconds - raw("MaxTraceDistanceTime")).abs() < 1e-6, "{id}");
+            assert!((d.retraction_seconds - raw("RetractTime")).abs() < 1e-6, "{id}");
+            let range = if ["larkspur", "larkspur_prime", "cortege"].contains(&id) {
+                fixture["rows"].as_array().unwrap().iter().find(|r| r["id"] == format!("{id}_heavy")).unwrap()["source"]["traceDistance"].as_str().unwrap().parse::<f64>().unwrap()
+            } else { raw("traceDistance") };
+            if range > 0. { assert!((p.range_m - range).abs() < 1e-6, "{id}: {} vs {range}", p.range_m); }
+            else { assert!(p.range_m > 0., "{id}: installed modular range"); }
+            count += 1;
+        }
+        assert_eq!(count, 53);
     }
 
 }

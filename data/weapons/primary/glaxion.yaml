@@ -35,6 +35,8 @@ reload_seconds: 2.2
 # at the full +100%. Absence means ORDINARY rather than unknown.
 co_behavior: additive_with_base_damage
 
+beam_deployment: { expansion_seconds: 0.3, retraction_seconds: 0.01 }
+
 attack:
   # see notes: cone_half_angle_from
   spread:

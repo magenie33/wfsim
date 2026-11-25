@@ -1667,6 +1667,7 @@ impl FightParams {
             kill_streak_opens_at: 0,
             beam_ramp_floor: panel.beam_ramp_floor,
             beam_ramp: panel.beam_ramp,
+            beam_deployment: panel.beam_deployment,
             applies_microwave: panel.applies_microwave,
             independent_procs: panel.independent_procs,
             syndicate_radial: panel.syndicate_radial,

@@ -81,6 +81,8 @@ co_behavior: additive_with_base_damage
 # And there is NO cloud in this form: the data module lists the Poison Cloud as
 # a child of attack 1 (AttackParentIndex 1, the grenade), and the Incarnon
 # attack has no field of its own.
+beam_deployment: { expansion_seconds: 0.03, retraction_seconds: 0.03 }
+
 attack:
   # see notes: cone_half_angle_from
   spread:

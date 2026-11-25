@@ -138,6 +138,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         burst: None,
         beam_ramp_floor: 0.20,
         beam_ramp: None,
+        beam_deployment: None,
         syndicate_radial: None,
         pellet_damage: Vec::new(),
         multishot_adds_damage: false,

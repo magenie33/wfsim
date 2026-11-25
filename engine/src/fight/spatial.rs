@@ -116,6 +116,7 @@ pub(super) fn launch(
         .iter()
         .map(|b| b.state.phase == Phase::Physical)
         .collect();
+    let reach = l.beam_reach_m.unwrap_or(active.range_m);
     let progress = Rc::new(Cell::new(Progress::default()));
     let mut events = Vec::new();
     let accuracy = active.spread_scaling.map_or_else(crate::model::SpreadRuntime::default, |s| s.runtime);
@@ -177,7 +178,7 @@ pub(super) fn launch(
             let mut path = scene.trace(
                 head, dev, phi, active.projectile_speed_mps, active.homing, pierce,
                 active.infinite_body_punch_through, active.projectile_reverse_query,
-                active.projectile_width_m, active.range_m, &eligible, fire_origin,
+                active.projectile_width_m, reach, &eligible, fire_origin,
             );
             if let Some(lock) = active.lock_on {
                 lock_shot(&scene, active, lock, &eligible, head, me, &mut path);
@@ -188,7 +189,7 @@ pub(super) fn launch(
                     active.range_m, pierce, &eligible));
             (path, reflected)
         };
-        let mut seeds = beam::seeds(&scene, &mut path, active, &eligible, me.tendril.count);
+        let mut seeds = beam::seeds(&scene, &mut path, active, reach, &eligible, me.tendril.count);
         let mut contact_blasts = Vec::new();
         let mut surface_blasts = Vec::new();
         if let Some(radial) = active.radial.filter(|_| rebound.is_some()) {

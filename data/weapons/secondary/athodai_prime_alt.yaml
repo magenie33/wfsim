@@ -19,6 +19,8 @@ headshot_multiplier: 1.0
 beam_ramp_floor: 0.2
 beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
 
+beam_deployment: { expansion_seconds: 0.05, retraction_seconds: 0.01 }
+
 attack:
   # see notes: cone_half_angle_from_2
   spread:

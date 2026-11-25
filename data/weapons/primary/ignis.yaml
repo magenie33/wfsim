@@ -37,6 +37,8 @@ co_behavior: additive_with_base_damage
 # Parsed attenuation bounds; see client_primary_calibration.
 beam_ramp_floor: 0.2
 
+beam_deployment: { expansion_seconds: 0.3, retraction_seconds: 0.25 }
+
 attack:
   # see notes: cone_half_angle_from
   spread:
