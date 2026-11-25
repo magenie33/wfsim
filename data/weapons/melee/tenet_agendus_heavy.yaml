@@ -9,8 +9,6 @@ unmodeled:
 - reason: client_melee_timing
 - reason: client_melee_special
 - reason: client_melee_geometry
-- reason: melee_valence_unmodelled
-  family: Tenet
 - reason: melee_slide_unpublished
 - The first heavy projectile has no exported animation duration or release event. It launches at the start
   of a nominal one-second motion after the package two-second charge; the page states a one-second wind-up.

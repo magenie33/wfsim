@@ -13,8 +13,6 @@ unmodeled:
   reads low.'
 - reason: melee_attack_unmodelled
   attacks: Corrosive Pool
-- reason: melee_valence_unmodelled
-  family: Coda
 - reason: melee_slide_unpublished
 attack:
   trigger: melee

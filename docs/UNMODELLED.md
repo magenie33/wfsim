@@ -490,7 +490,6 @@ numbers, and the engine does not apply, is admitted on that weapon:
 | a passive, a signature bonus, a wielder bonus | `melee_passive_unmodelled` (says what it is) | Wrath, Pride, Lesion, Tonkkatt, the block-charge Sword and Shields, … |
 | infobox heavy total against the class table's | `melee_heavy_total_disputed` | where the two differ |
 | Incarnon Genesis / Form | `melee_incarnon_unmodelled` | the Incarnon melee |
-| the Kuva / Tenet / Coda valence bonus | `melee_valence_unmodelled` | adversary melee without a `valence` declaration |
 
 **Left out.** The **Vinquibus**'s melee row is the bayonet of
 the primary already in the roster (same `internal_name`); the **Dark

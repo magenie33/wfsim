@@ -13,8 +13,6 @@ unmodeled:
   reads low.'
 - reason: melee_own_combo_unmodelled
   combos: heavy slam and slam attack
-- reason: melee_valence_unmodelled
-  family: Tenet
 - The shockwave's blasts go off with the slam that sends them; the page says the wave travels and times nothing (M110).
 attack:
   trigger: melee

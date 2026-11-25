@@ -284,8 +284,6 @@ reasons:
     text: "Its Incarnon evolutions and Incarnon Form are not modelled."
   melee_incarnon_slam_arms_unmodelled:
     text: "A plain slam at the arming combo also activates its Incarnon Form; here only a heavy attack does, so a loop that slams without a heavy arms it later than in a mission, or never."
-  melee_valence_unmodelled:
-    text: "Its {family} valence bonus is not modelled: the build cannot state the element and bonus this copy rolled, so it reads without one."
   steflos_projectile_lifetime:
     text: "Projectile lifetime and growth are not modelled: the base lifetime is 0.6 s, each enemy hit adds 50% lifetime up to 10 s, and the projectile grows in size. The simulation uses a fixed 2 m width and does not stop the projectile when its lifetime expires."
   steflos_signature_speed:

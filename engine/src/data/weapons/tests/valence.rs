@@ -144,3 +144,11 @@ fn livia_inherits_valence_in_every_attack_form() {
         }
     }
 }
+
+#[test]
+fn every_adversary_weapon_form_declares_valence() {
+    for spec in all().iter().filter(|s| s.traits.iter().any(|t|
+        matches!(t.as_str(), "kuva_lich" | "tenet" | "technocyte_coda"))) {
+        assert!(valence_of(&spec.id).is_some(), "{}", spec.id);
+    }
+}
