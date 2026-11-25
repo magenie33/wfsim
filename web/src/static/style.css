@@ -4424,3 +4424,10 @@ main.config-page:not([id])>.block>.bh,main.config-page:not([id])>.block>.bh .sub
 @container (max-width:440px){
   #mod-block .slots,#stats-block .stat-table{grid-template-columns:minmax(0,1fr)}
 }
+
+/* A loading route must not expose the previous weapon's interactive state. */
+.config-page[data-route-pending]>:not(.wstrip,#module-tabs,#doc,#weapon-route-status){display:none!important}
+body:has(.config-page[data-route-pending]:not([hidden])) :is(#execution-dock,#jump){display:none!important}
+body:has(.config-page[data-route-pending]:not([hidden])) #booting{display:none}
+
+.config-page[data-route-pending="prerender"] .library-summary-body{display:block}

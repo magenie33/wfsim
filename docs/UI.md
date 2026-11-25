@@ -489,6 +489,12 @@ voting controls. Switching to a new UTC day resets the history view to
 available today. Account data and service limits are in `ACCOUNTS.md`.
 
 The weapon root is its Build Library; `/builder` edits the active build.
+Home and global search link to the weapon root. A measured global leaderboard
+row links directly to Builder with its ruler, mode and riven group; an
+unmeasured weapon links to the library. The weapon strip and module links
+are visible before the board request finishes. The editor remains hidden
+until its data is ready. Prerendered library summaries remain visible during
+startup and are replaced by the current board only when it answers.
 `/build-library` and the weapon's `/benchmark` are aliases of the library.
 Existing root links carrying a shared build or board build open Builder;
 report parameters retain their Simulator or Optimizer destination. A library

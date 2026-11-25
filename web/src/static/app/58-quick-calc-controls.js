@@ -162,6 +162,7 @@ function renderQuickCalc() {
   const box = $("quick-calc");
   if (!box || !META) return;
   box.hidden = !routeWeaponId() || modSuffix() !== "";
+  if (box.hidden) return;
   const on = gainPrefs.on !== false;
   const list = everyRank();
   box.innerHTML =

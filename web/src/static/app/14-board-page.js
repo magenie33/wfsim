@@ -451,10 +451,10 @@ let benchScroll = null;
 
 /// One overview entry per weapon; its link retains the winning build's full identity.
 const benchRowHtml = (cur, { w, mode, row }, i) => `
-      <div class="brow-group"><a class="brow${row ? "" : " none"}" href="/weapons/${urlSlug(w)}${
+      <div class="brow-group"><a class="brow${row ? "" : " none"}" href="${weaponPath(w.id)}${row ? "/builder" : ""}${
         // The winner's ruler, mode and riven group reproduce the displayed score.
         `?bench=${encodeURIComponent(cur.id)}&mode=${encodeURIComponent(mode)}${
-          row ? `&riven=${rowHasRiven(row) ? 1 : 0}` : ""}`}">
+          row ? `&riven=${rowHasRiven(row) ? 1 : 0}` : "&view=library"}`}">
         <span class="brank">${row ? `#${i + 1}` : "—"}</span>
         ${imgTag(IMG(w.image), "bimg")}
         <span class="bname">${escHtml(weaponEntryName(w))}${

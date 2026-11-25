@@ -882,31 +882,16 @@ function boardRowState(w, row) {
 /// carrying both, which is what a board row is. Everything after this point
 /// still obeys the rule — picking a build in the bar moves nothing else.
 ///
-/// Silent where it cannot help: a link naming a ruler this build of the site
-/// has never heard of, or a weapon with no row under it, leaves the page as it
-/// found it rather than clearing what is on screen.
+/// An unavailable group never substitutes another group's build.
 function applyBenchLink(w, benchId, wantMode, wantRiven) {
+  const rows = builtinBuilds(benchId).filter(p => p.benchmark === benchId
+    && (wantRiven == null || !!p.riven === wantRiven)
+    && (!wantMode || p.mode === wantMode));
+  if (!rows.length) return false;
   const sc = builtinScenarios().find((s) => s.builtin === benchId);
   if (sc) pickPreset(scenarioBarCfg(), presetId(sc));
-  let rows = builtinBuilds().filter((p) => p.benchmark === benchId);
-  if (!rows.length) return;
-  // WHICH OF THE TWO LEADERS, narrowed FIRST because it is the coarser split:
-  // a weapon's riven rows and its plain ones are two rankings, and taking the
-  // mode's leader out of the union hands back whichever of the two happens to
-  // score higher. Skipped when the link predates the parameter, and skipped
-  // when it would leave nothing — a board that holds only plain rows still has
-  // to answer a `riven=1` link with the row it does have rather than with
-  // silence.
-  if (wantRiven !== null && wantRiven !== undefined) {
-    const narrowed = rows.filter((p) => !!p.riven === wantRiven);
-    if (narrowed.length) rows = narrowed;
-  }
-  // The mode the link asked for, else however this weapon is played — the
-  // board's own row order inside a ruler is best-first, so `find` is the
-  // leader either way.
-  const want = wantMode && (w.modes || []).includes(wantMode) ? wantMode : null;
-  const row = (want && rows.find((p) => p.mode === want)) || rows[0];
-  pickPreset(buildBarCfg(), presetId(row));
+  pickPreset(buildBarCfg(), presetId(rows[0]));
+  return true;
 }
 
 const buildList = () => builtinBuilds().concat(loadPresetList(BUILDS));

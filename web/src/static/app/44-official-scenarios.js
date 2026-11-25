@@ -139,13 +139,16 @@ const defaultEvolutions = (weaponId, sel) => Object.fromEntries(weaponEvos(weapo
 /// AN INDEX OVER `poolWithRivens()`: a board's rows look up every mod they name,
 /// thousands on one card. Only a riven id (`isRivenId`) reads the saved rivens.
 let modIndex = { pool: null, map: null };
+const weaponModPool = w => {
+  const byId = new Map(Object.values(META.mod_pools || {}).flat().map(m => [m.id, m]));
+  return (w.mods || []).map(id => byId.get(id)).filter(Boolean);
+};
 /// `fn` run with `w`'s mod pool in place of the open weapon's, and that one back after.
 function withPoolOf(w, fn) {
   if (!w || !META || w.id === (rivenContextWeapon || ($("weapon") || {}).value)) return fn();
-  const byId = new Map(Object.values(META.mod_pools || {}).flat().map((m) => [m.id, m]));
   const saved = currentPool, savedRivenWeapon = rivenContextWeapon;
   rivenContextWeapon = w.id;
-  currentPool = (w.mods || []).map((id) => byId.get(id)).filter(Boolean);
+  currentPool = weaponModPool(w);
   try { return fn(); } finally { currentPool = saved; rivenContextWeapon = savedRivenWeapon; }
 }
 const modById = (id) => {
@@ -243,9 +246,9 @@ function clearMods() {
 // build preset then follows the new weapon via the explicit
 // markPresetDirty() below, which no-ops when this runs inside a preset
 // load (restoreState already holds the applying guard).
-function applyWeapon(id, presetMods) {
+function applyWeapon(id, presetMods, draw = true) {
   weaponEditorReady = true;
-  whileApplying(() => applyWeaponInner(id, presetMods));
+  whileApplying(() => applyWeaponInner(id, presetMods, draw));
   markPresetDirty();
 }
 
@@ -261,12 +264,26 @@ function switchWeapon(id) {
   flushPresetSaves();
   $("weapon").value = id;
   ensureWeaponBoard(id);
-  applyWeapon(id, null);
+  currentPool = weaponModPool(weaponInfo(id));
+  rivenModCache = { key: null, list: [] };
   initPresets();
   renderModuleTabs();
 }
 
-function applyWeaponInner(id, presetMods) {
+// The strip describes the weapon, independently of the editor's active build.
+function renderWeaponIdentity(w) {
+  const wimg = IMG(w.image);
+  $("w-img").hidden = !wimg;
+  if (wimg) $("w-img").src = wimg;
+  $("w-name").innerHTML = wl(weaponEntryName(w), wikiUrl(wikiWeaponName(w)));
+  const lines = w.passives || [];
+  $("w-passives").hidden = !lines.length;
+  $("w-passives").innerHTML = lines.map(x => `<div>${escHtml(tr(x))}</div>`).join("");
+  $("w-tags").innerHTML = [w.subtype, w.uses_evo2 ? "Incarnon" : null, w.sentinel ? "Sentinel" : null]
+    .filter(Boolean).map(t => `<span class="tag">${escHtml(t)}</span>`).join("");
+}
+
+function applyWeaponInner(id, presetMods, draw) {
   const w = weaponInfo(id);
   buffList = []; // rebuilt from the next /api/panel response for this build
   // HOW THIS WEAPON IS PLAYED, reset to its own default. "base" is a legal id
@@ -313,10 +330,7 @@ function applyWeaponInner(id, presetMods) {
   // weapon and ammo mods do nothing on an infinite reserve, and neither
   // reaches the builder or the optimizer while the pool
   // was computed twice.
-  const byId = new Map(
-    Object.values(META.mod_pools || {}).flat().map((m) => [m.id, m]),
-  );
-  currentPool = (w.mods || []).map((id) => byId.get(id)).filter(Boolean);
+  currentPool = weaponModPool(w);
   // NINE, not eight. The server sends 8 main slots plus the EXILUS slot's own
   // innate polarity (`innate_slots_for`, which has appended it since the
   // 2026-07-28 wiki cross-check), and this line sliced that ninth entry off
@@ -333,13 +347,7 @@ function applyWeaponInner(id, presetMods) {
   // that hid the exilus polarity, one slot further along.
   innate[STANCE] = w.stance_polarity || null;
 
-  // A weapon with no asset yet must show NOTHING, not a broken-image box:
-  // src="" still resolves (to the page) and renders as a failed load.
-  const wimg = IMG(w.image);
-  $("w-img").hidden = !wimg;
-  if (wimg) $("w-img").src = wimg;
-  // The weapon name links to its wiki page too (display suffixes like
-  // " (sentinel)" are ours, not part of the page name).
+  renderWeaponIdentity(w);
   renderWeaponName();
   // Subtype (e.g. "Dual Pistols") + form tags; the mod-eligibility group
   // (mod_class) drives the picker's pool but isn't shown as a tag.
@@ -353,22 +361,6 @@ function applyWeaponInner(id, presetMods) {
     .map((p) => (POOL_NAME[p] || p).replace(/ Mods$/, "")).join(" + ") + " Mods";
   $("mod-block-h").textContent = tr(poolName || "Mods");
 
-  // WHAT THIS WEAPON DOES BEYOND ITS STATS. Generated engine-side from the data
-  // that implements each passive, so the line and the simulation cannot say
-  // different things. Empty for most weapons; the strip hides itself then.
-  //
-  // It lives here, in the weapon strip, because a passive is part of the
-  // WEAPON — not of the build, not of the fight. Gotva Prime's crit set and
-  // Dual Toxocyst's Frenzy are most of what those weapons are, and until
-  // 2026-08-05 the page never mentioned either, so both read as ordinary guns.
-  const wp = $("w-passives");
-  if (wp) {
-    const lines = w.passives || [];
-    wp.hidden = !lines.length;
-    wp.innerHTML = lines.map((x) => `<div>${escHtml(tr(x))}</div>`).join("");
-  }
-  $("w-tags").innerHTML = [w.subtype, w.uses_evo2 ? "Incarnon" : null, w.sentinel ? "Sentinel" : null]
-    .filter(Boolean).map((t) => `<span class="tag">${t}</span>`).join("");
 
   const AX = weaponAxes(w.id);
   show("arcane-block", AX.arcanes.length > 0);
@@ -411,7 +403,9 @@ function applyWeaponInner(id, presetMods) {
   // plan for an empty build, whose layout is the one the weapon was born with.
   if (slots.some((x) => x.mod)) autoForma({ alone: true }).then((r) => { if (r) renderMods(); });
 
-  renderAssembly();
-  renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); renderOpt();
+  if (draw) {
+    renderAssembly();
+    renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); renderOpt();
+  }
 }
 

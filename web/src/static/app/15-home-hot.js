@@ -48,7 +48,7 @@ function renderHomeHot() {
           (META.weapons || []).filter((w) => w.slot === sl.id).length)).join("")}</div>
       ${hotSlot === "all" ? "" : slotFilterRows(pool, hotFilter)}
     </details>
-    ${rows.length ? `<div class="bench-rows">${shown.map((w, i) => `<a class="brow${score(w) ? "" : " none"}" href="/weapons/${urlSlug(w)}">
+    ${rows.length ? `<div class="bench-rows">${shown.map((w, i) => `<a class="brow${score(w) ? "" : " none"}" href="${weaponPath(w.id)}">
         <span class="brank">${score(w) ? `#${i + 1}` : "—"}</span>
         ${imgTag(IMG(w.image), "bimg")}
         <span class="bname">${escHtml(w.name)}</span></a>`).join("")}</div>`

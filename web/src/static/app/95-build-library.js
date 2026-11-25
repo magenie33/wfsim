@@ -195,7 +195,15 @@ function libraryAfterRender(w, all, list, groups, drawList) {
   if (!libraryActive || libraryNavigating) return;
   loadLibraryRecommendations(w, all);
   const changed = libraryWriteQuery();
-  renderLibrarySummary(w, all);
+  // An unanswered request must not replace the archived summary with an empty board.
+  const absent = boardFiles.get(w.id)?.loaded.get(boardCellDir(finder.b))?.get(finder.b) === null;
+  if (boardHasCell(w.id, finder.b) || absent) renderLibrarySummary(w, all);
+  else if ($("doc").libraryRows || finder.b !== libraryDefaultBenchmark() || finder.mo !== FINDER_EVERY_MODE) {
+    $("doc").hidden = true;
+    $("doc").replaceChildren();
+    $("doc").libraryRows = null;
+    delete $("doc").dataset.libraryKey;
+  }
   const box = $("build-finder");
   if (!boardHasCell(w.id, finder.b)) {
     const ruler = finder.b;

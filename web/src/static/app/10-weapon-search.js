@@ -151,8 +151,7 @@ function initWeaponSearch() {
     input.value = "";
     if (row.dataset.kind === "warframe") return nav(warframePath(wfFrames().find(f => f.id === row.dataset.id)));
     if (row.dataset.kind === "companion") return nav(companionPath(compHost(row.dataset.id)));
-    switchWeapon(row.dataset.id);
-    nav(weaponModPath(row.dataset.id));
+    nav(weaponPath(row.dataset.id));
   });
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".wsearch")) shut();
@@ -406,7 +405,7 @@ async function init() {
   const saved = savedCounts();
   track("presets.saved", "presets", saved.presets);
   track("presets.saved", "customs", saved.customs);
-  const boardBoot = loadBoard(routeWeaponId() ? bootWeapon : null);
+  loadBoard(routeWeaponId() ? bootWeapon : null);
   applyI18n();
   fillSelect("weapon", META.weapons);
   initWeaponSearch();
@@ -414,11 +413,6 @@ async function init() {
   $("weapon").value = bootWeapon;
   arcanes = arcanesFor(bootWeapon, d.arcane);
   sim = defaultScenario();
-  if (routeWeaponId()) {
-    await Promise.race([boardBoot, new Promise(resolve => setTimeout(resolve, 4000))]);
-    applyWeapon(bootWeapon, d.mods);
-    boardBoot.then(() => boardRowsLanded(bootWeapon));
-  }
 
   // THROUGH THE DOOR, like every other consumer — see "The agent door". The
   // control and an agent must move the page the same way, and the only thing
@@ -441,7 +435,6 @@ async function init() {
   // lists already on this machine are filed per weapon. It needs `META`, which
   // is why it is called here rather than beside the migrations it belongs with.
   foldRivensIntoOneList();
-  if (weaponEditorReady) initPresets();
   reattachOptimize(); // project the durable queue and offer a legacy checkpoint
   $("auto-forma").addEventListener("click", () => autoForma().then(() => renderMods()));
   $("clear-mods").addEventListener("click", () => { clearMods(); });

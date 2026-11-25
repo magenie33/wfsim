@@ -1,6 +1,46 @@
 import {openApp} from './cdp.mjs';
 const app=await openApp({boot:8000,lang:'en',base:process.env.WFSIM_BASE});
 try {
+  await app.load('/',8000);
+  const navigation = await app.evaluate(`(async()=>{
+    const original=loadWeaponBoard, target=weaponInfo('torid'), next=weaponInfo('laetum');
+    let release, released=false;
+    const held=new Promise(r=>{release=()=>{released=true;r();};});
+    loadWeaponBoard=async id=>{const board=original(id);if(id===target.id)await held;return board;};
+    try {
+      const card=document.querySelector('a.wcard[href="'+weaponPath(target.id)+'"]');
+      const start=performance.now();card.click();
+      await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0)));
+      const first={ms:performance.now()-start,waiting:!released,path:location.pathname===weaponPath(target.id),
+        title:$('w-name').textContent.includes(weaponEntryName(target)),homeHidden:$('home-page').hidden,
+        library:document.body.classList.contains('on-build-library'),editorHidden:$('mod-block').offsetParent===null,
+        tabs:[...$('module-tabs').querySelectorAll('a')].every(a=>a.getAttribute('href').startsWith(weaponPath(target.id)))};
+      const nextRoute=nav(weaponPath(next.id));release();await nextRoute;
+      const settled=location.pathname===weaponPath(next.id)&&$('w-name').textContent.includes(weaponEntryName(next))
+        &&!document.querySelector('.config-page').hasAttribute('data-route-pending');
+      const row=builtinBuilds(libraryDefaultBenchmark())[0];
+      const box=document.createElement('div');box.innerHTML=benchRowHtml({id:row.benchmark},{w:next,mode:row.mode,row:row.board},0);
+      const link=box.querySelector('a.brow').getAttribute('href');await nav(link);
+      const picked=location.pathname===weaponPath(next.id)+'/builder'&&buildNamed(activePreset)?.board
+        &&boardRowIdentity(buildNamed(activePreset).board)===boardRowIdentity(row.board)&&mode===row.mode;
+      const missingLink=link.replace(/mode=[^&]+/,'mode=not_a_mode');
+      await nav(missingLink);
+      const missing=$('mod-block').offsetParent===null&&!$('weapon-route-status').hidden
+        &&new URLSearchParams(location.search).get('mode')==='not_a_mode';
+      await nav(link);
+      $('wsearch-list').innerHTML='<div class="opt" data-id="torid" data-kind="weapon"></div>';
+      $('wsearch-list').firstElementChild.click();
+      const search=location.pathname===weaponPath(target.id);
+      await nav('/');
+      return {first,settled,picked,missing,search,link};
+    } finally {loadWeaponBoard=original;release();}
+  })()`);
+  console.log(`  first weapon paint with held board: ${navigation.first.ms.toFixed(1)} ms`);
+  app.check('a held board request does not hold the home page or expose the old editor',navigation.first.waiting&&navigation.first.path&&navigation.first.title&&navigation.first.homeHidden&&navigation.first.library&&navigation.first.editorHidden&&navigation.first.tabs,JSON.stringify(navigation.first));
+  app.check('a superseded weapon request cannot draw over the next route',navigation.settled);
+  app.check('a leaderboard link opens its measured build in Builder',navigation.picked, navigation.link);
+  app.check('an unavailable leaderboard group never displays another build',navigation.missing);
+  app.check('search from Builder enters the weapon library',navigation.search);
   await app.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await app.load('/weapons/Laetum/builder',6000);
   const initial=await app.evaluate(`(()=>{
