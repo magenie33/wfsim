@@ -892,3 +892,41 @@ fn standard_scene_replays_an_additional_wielder_with_the_reference_mount() {
     assert_eq!(crate::simulate::simulate_json(&input)["ok"], true);
     assert_eq!(crate::log::log_json(&input)["ok"], true);
 }
+
+#[test]
+fn direct_beam_without_special_geometry_restarts_at_each_spawn() {
+    let mut v = request("spectra_vandal", 1, false);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"center_distance","distance":5.}});
+    let mut p = params(&v);
+    p.foe.mode = wfsim_engine::target::TargetMode::InstantRespawn;
+    p.foe.eximus = false;
+    p.foe.steel_path = false;
+    p.foe.level = p.foe.base_level;
+    p.foe.base_health = 0.01;
+    p.foe.base_overguard = 0.;
+    p.foe.base_armor = 0.;
+    p.foe.base_shield = 0.;
+    p.status_chance = 0.;
+    p.spread = None;
+    p.base_crit_chance = 0.;
+    p.unmodded_crit_chance = 0.;
+    p.critical_inputs = None;
+    use wfsim_engine::record::{Factor, Layer, Origin};
+    let factors = |p: &fight::FightParams| {
+        record(p).events().iter().filter_map(|e| match &e.kind {
+            Kind::Damage(d) if d.origin == Origin::Own => Some(d.layers.iter().find_map(|l| match l {
+                Layer::Mul { factor: Factor::BeamRamp, value, .. } => Some(*value),
+                _ => None,
+            }).unwrap_or(1.)),
+            _ => None,
+        }).collect::<Vec<_>>()
+    };
+    let replay = record(&p);
+    assert!(replay.events().iter().filter(|e| matches!(&e.kind, Kind::Damage(d) if d.killed)).count() > 5);
+    let per_target = factors(&p);
+    assert!(per_target.len() > 5);
+    assert!(per_target.iter().all(|v| (*v - 0.2).abs() < 1e-9), "{per_target:?}");
+    p.beam_ramp.as_mut().unwrap().per_target = false;
+    let global = factors(&p);
+    assert!(global.iter().any(|v| *v > 0.9), "{global:?}");
+}

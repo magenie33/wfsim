@@ -91,6 +91,9 @@ co_behavior: additive_with_base_damage
 # Verglas' pure Cold: the innate element enters the hierarchy LAST and takes
 # whatever the mod elements leave (MECHANICS §3 rule 2). Radiation is a
 # COMBINED element, so it cannot be consumed by a mod pairing at all.
+beam_ramp_floor: 0.2
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
+
 attack:
   extra_hit_reads: { impact: 0.3, slash: 0.3, puncture: 0.3 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
@@ -149,6 +152,7 @@ attack:
 # — the Deployer cooldown, the ground range and Hildryn's
 # reserve bonus are properties of the WEAPON and were always missing here.
 unmodeled:
+  - reason: client_beam_target_ramp
   - reason: arch_gun_deployer_cooldown
   - "Hildryn's signature bonus is not modelled: carried by her, it holds 700 reserve ammo instead of 400."
 

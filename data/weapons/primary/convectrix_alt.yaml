@@ -12,7 +12,8 @@ introduced: "17.5"
 co_behavior: additive_with_base_damage
 
 # 80% on the alt-fire against the primary's 60% — see the weapon's entry.
-beam_ramp_floor: 0.80
+beam_ramp_floor: 0.8
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
 
 attack:
   # see notes: cone_half_angle_from_2
@@ -34,6 +35,7 @@ attack:
   damage: { impact: 0.9, puncture: 0.9, slash: 7.2 }   # 9 a pellet, 18 a shot
 
 unmodeled:
+  - reason: client_beam_target_ramp
   - reason: client_special_spread
   - reason: client_accuracy_runtime
   - "The alt-fire sweeps both beams across the front (wiki); the sim fires a fixed ray, so the number is the ceiling against one target and reads low against a line."

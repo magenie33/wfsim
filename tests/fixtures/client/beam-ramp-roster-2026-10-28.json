@@ -1,0 +1,716 @@
+[
+  {
+    "id": "amprex",
+    "owner": "/Lotus/Weapons/Corpus/LongGuns/ChainLightningGun/ChainLightningRifle",
+    "index": 0,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "artax",
+    "owner": "/Lotus/Types/Sentinels/SentinelWeapons/Gremlin",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "atomos",
+    "owner": "/Lotus/Weapons/Grineer/Pistols/HeatGun/GrnHeatGun",
+    "index": 0,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "basmu_beam",
+    "owner": "/Lotus/Weapons/Sentients/SentRifleNewWar/SentRifleNewWarGun",
+    "index": 1,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.5",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "boar_incarnon",
+    "owner": "/Lotus/Weapons/Tenno/Shotgun/FullAutoShotgun",
+    "index": 1,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "boar_prime_incarnon",
+    "owner": "/Lotus/Weapons/Tenno/Shotgun/PrimeBoar",
+    "index": 1,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "catabolyst",
+    "owner": "/Lotus/Weapons/Infested/Pistols/InfBeamPistol/InfBeamPistol",
+    "index": 0,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "coda_catabolyst",
+    "owner": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaCatabolyst",
+    "index": 0,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "coda_synapse",
+    "owner": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSynapse",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "convectrix",
+    "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpSplitLaser/CrpSplitLaser",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.60000002,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "convectrix_alt",
+    "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpSplitLaser/CrpSplitLaser",
+    "index": 1,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.80000001,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "cortege",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchGun/ThanoTechArchGun",
+    "index": 0,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "cycron",
+    "owner": "/Lotus/Weapons/Corpus/Pistols/CrpChargeGun/CrpChargeGun",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "embolist",
+    "owner": "/Lotus/Weapons/Infested/Pistols/InfestedPistol",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.30000001,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "enkaus",
+    "owner": "/Lotus/Weapons/Tenno/LongGuns/TnInkRifle/TnInkRifleWeapon",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.40000001,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "flux_rifle",
+    "owner": "/Lotus/Weapons/ClanTech/Energy/CrpLaserRifle",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "furis_incarnon",
+    "owner": "/Lotus/Weapons/Tenno/Pistol/AutoPistol",
+    "index": 1,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{1,1}",
+      "ContinuousDamageAttenuationTime": "1",
+      "ContinuousDamageAttenuationCooldownTime": "1",
+      "ContinuousDamageAttenuationCooldownDelay": "0",
+      "AttenuateContinuousDamagePerTarget": "0"
+    },
+    "error": null
+  },
+  {
+    "id": "gammacor",
+    "owner": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "gaze_primary",
+    "owner": "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelDPart",
+    "index": null,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "gaze_secondary",
+    "owner": "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelDPart",
+    "index": null,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "glaxion",
+    "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpFreezeRay/CrpFreezeRayRifle",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "glaxion_vandal",
+    "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpFreezeRay/Vandal/CrpFreezeRayVandalRifle",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "ignis",
+    "owner": "/Lotus/Weapons/ClanTech/Chemical/FlameThrower",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "ignis_wraith",
+    "owner": "/Lotus/Weapons/ClanTech/Chemical/FlameThrowerWraith",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "kuva_nukor",
+    "owner": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Nukor/KuvaNukor",
+    "index": 0,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "larkspur",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/TnShieldframeArchGun/TnShieldFrameArchGun",
+    "index": 0,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "larkspur_prime",
+    "owner": "/Lotus/Weapons/Tenno/Archwing/Primary/PrimeLarkspur/PrimeLarkspurWeapon",
+    "index": 0,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "mk1_furis_incarnon",
+    "owner": "/Lotus/Weapons/MK1Series/MK1Furis",
+    "index": 1,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{1,1}",
+      "ContinuousDamageAttenuationTime": "1",
+      "ContinuousDamageAttenuationCooldownTime": "1",
+      "ContinuousDamageAttenuationCooldownDelay": "0",
+      "AttenuateContinuousDamagePerTarget": "0"
+    },
+    "error": null
+  },
+  {
+    "id": "nukor",
+    "owner": "/Lotus/Weapons/Grineer/Pistols/GrineerMicrowavegun/GrnMicrowavePistol",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "ocucor",
+    "owner": "/Lotus/Weapons/Corpus/Pistols/CrpSentExperimentPistol/CrpSentExperimentPistol",
+    "index": 0,
+    "impact_type": "/Lotus/Types/Game/CrpSentPistolImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "onos_incarnon",
+    "owner": "/Lotus/Weapons/Thanotech/EntratiWristGun/EntratiWristGunWeapon",
+    "index": 1,
+    "impact_type": "/Lotus/Types/Weapon/EntratiWristGunBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{1,2.5}",
+      "ContinuousDamageAttenuationTime": "0",
+      "ContinuousDamageAttenuationCooldownTime": "0",
+      "ContinuousDamageAttenuationCooldownDelay": "0",
+      "AttenuateContinuousDamagePerTarget": "0"
+    },
+    "error": null
+  },
+  {
+    "id": "panthera_alt",
+    "owner": "/Lotus/Weapons/Tenno/LongGuns/Miter/TnoMiter",
+    "index": 1,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.1,1}",
+      "ContinuousDamageAttenuationTime": "0.80000001",
+      "ContinuousDamageAttenuationCooldownTime": "1",
+      "ContinuousDamageAttenuationCooldownDelay": "0",
+      "AttenuateContinuousDamagePerTarget": "0"
+    },
+    "error": null
+  },
+  {
+    "id": "panthera_prime_alt",
+    "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimePanthera/PrimePanthera",
+    "index": 1,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.1,1}",
+      "ContinuousDamageAttenuationTime": "0.80000001",
+      "ContinuousDamageAttenuationCooldownTime": "1",
+      "ContinuousDamageAttenuationCooldownDelay": "0",
+      "AttenuateContinuousDamagePerTarget": "0"
+    },
+    "error": null
+  },
+  {
+    "id": "phage",
+    "owner": "/Lotus/Weapons/Infested/LongGuns/Tentacluster/InfestedShotgun",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.69999999,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "phantasma",
+    "owner": "/Lotus/Weapons/Tenno/LongGuns/RevenantShotgun/RevenantShotgun",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.02,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "phantasma_prime",
+    "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimePhantasma/PhantasmaPrimeShotgun",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.02,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "quanta",
+    "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpShockRifle/CrpShockRifle",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "quanta_vandal",
+    "owner": "/Lotus/Weapons/Corpus/LongGuns/CrpShockRifle/QuantaVandal",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "spectra",
+    "owner": "/Lotus/Weapons/ClanTech/Energy/CrpLaserPistol",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "spectra_vandal",
+    "owner": "/Lotus/Weapons/Corpus/Pistols/CorpusModularPistol/Vandal/CrpLaserPistolVandal",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "synapse",
+    "owner": "/Lotus/Weapons/Infested/LongGuns/InfestedRifle",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "synoid_gammacor",
+    "owner": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSSynoidGammacor",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "tazicor",
+    "owner": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon",
+    "index": 0,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "0"
+    },
+    "error": null
+  },
+  {
+    "id": "tenet_cycron",
+    "owner": "/Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBECycron/CrpBECycron",
+    "index": 0,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "tenet_glaxion",
+    "owner": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEGlaxion/CrpBEGlaxion",
+    "index": 0,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "tenet_quanta",
+    "owner": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEQuanta/CrpBEQuanta",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.5,1}",
+      "ContinuousDamageAttenuationTime": "1",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "2",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "torid_incarnon",
+    "owner": "/Lotus/Weapons/ClanTech/Bio/BioWeapon",
+    "index": 1,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "verglas",
+    "owner": "/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "verglas_prime",
+    "owner": "/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayPrimeRifle",
+    "index": 0,
+    "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "vermisplicer_primary",
+    "owner": "/Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelBeam/InfModularBarrelBeamPart",
+    "index": null,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{0.2,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  },
+  {
+    "id": "vermisplicer_secondary",
+    "owner": "/Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelBeam/InfModularBarrelBeamPart",
+    "index": null,
+    "impact_type": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+    "fields": {
+      "ContinuousDamageAttenuation": "{1,1}",
+      "ContinuousDamageAttenuationTime": "0.60000002",
+      "ContinuousDamageAttenuationCooldownTime": "2",
+      "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+      "AttenuateContinuousDamagePerTarget": "1"
+    },
+    "error": null
+  }
+]

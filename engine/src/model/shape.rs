@@ -885,9 +885,6 @@ impl ComboHit {
 /// stops hitting a target, the damage decays back to its initial point over 2
 /// seconds. For most weapons, this lower percentage is 20%."
 ///
-/// The floor is PER WEAPON — the same page lists exceptions (Convectrix 60/80%,
-/// Phage 70%, Embolist 30%), and the roster now has one: Phantasma Prime ramps
-/// "from 15% to 100%", not from 20%. So this constant is the DEFAULT the
-/// sentence gives ("for most weapons"), and a weapon that disagrees says so in
-/// its own file (`beam_ramp_floor`).
+/// Source-bound forms declare their own lower endpoint in `beam_ramp_floor`.
+/// This default is retained for synthetic and unbound continuous attacks.
 pub const BEAM_RAMP_FLOOR: f64 = 0.20;

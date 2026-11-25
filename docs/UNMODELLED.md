@@ -599,7 +599,7 @@ below is scoped to the affected entries through structured reason ids.
   native random state and unbound profiles retain limits.
 - `client_special_spread`: custom beam patterns, arbitrary partial charges and
   firing variants without full emission bindings.
-- `client_beam_target_ramp`: shared ramp progress instead of target-local state.
+- `client_beam_target_ramp`: native first-contact initialization and reacquisition timing remain uncalibrated.
 - `client_spool_pellets` and `client_rate_spool`: a declared pellet stage and
   shot-count ramp span; native counter cadence and reset remain unverified.
 - `client_clip_burst`: base-magazine burst length rather than dynamic capacity.

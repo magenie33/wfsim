@@ -2,9 +2,6 @@ id: spectra
 name: Spectra
 slot: secondary
 weapon_type: secondary
-# THE ORDINARY SPECTRA: an 18-metre cutting laser with half a metre of innate
-# punch through — one body's worth exactly — and the same 25% ramp floor its
-# Vandal carries. The Vandal reaches 22 m and hits a fifth harder.
 class: pistol
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -32,10 +29,9 @@ reload_seconds: 1.8
 # see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
-# WHERE THE RAMP STARTS. "Damage ramps up from 25% to 100% over 0.6 seconds when
-# firing. After firing stops for 0.8 seconds, the damage decays back to 25% over
-# 2 seconds" — the same floor the Vandal carries.
-beam_ramp_floor: 0.25
+# Client impact attenuation declares the lower endpoint.
+beam_ramp_floor: 0.2
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
 
 attack:
   # see notes: cone_half_angle_from
@@ -60,3 +56,6 @@ source:
   url: https://wiki.warframe.com/w/Spectra
 
 # see notes: client_secondary_calibration
+
+unmodeled:
+  - reason: client_beam_target_ramp

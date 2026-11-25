@@ -48,6 +48,9 @@ reload_seconds: 2.1
 # see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
 
+beam_ramp_floor: 0.2
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
+
 attack:
   # see notes: cone_half_angle_from
   spread:
@@ -82,6 +85,7 @@ attack:
   damage: { impact: 5, puncture: 6, slash: 10, toxin: 12 }
 
 unmodeled:
+  - reason: client_beam_target_ramp
   - reason: client_modular_assembly
   - "The tendrils fan out from the final direct contact and skip directly struck enemies in 3D. The planar scene uses a sequential chain."
   - "The tendril auto-targets, with a noticeable delay between firing and dealing damage while ammo is spent (page); the delay is not modelled."

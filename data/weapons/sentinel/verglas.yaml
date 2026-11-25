@@ -27,6 +27,9 @@ reload_seconds: 2.2
 # see notes: no_condition_overload_row
 co_behavior: additive_with_base_damage
 
+beam_ramp_floor: 0.2
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
+
 attack:
   trigger: held
   shot_type: hit_scan
@@ -43,6 +46,7 @@ attack:
   range_m: 24.0
   damage: { cold: 26.0 }
 unmodeled:
+  - reason: client_beam_target_ramp
   - reason: companion_fires_it
   - reason: spread_not_transcribed
 

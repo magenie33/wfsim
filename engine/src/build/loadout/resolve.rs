@@ -2181,6 +2181,7 @@ pub fn resolve_for(
         spawn_on_kill: base.spawn_on_kill,
         kill_streak_summon: base.kill_streak_summon,
         beam_ramp_floor: base.beam_ramp_floor,
+        beam_ramp: base.beam_ramp,
         applies_microwave: base.applies_microwave,
         independent_procs: base.independent_procs,
         forced_procs: base.forced_procs.iter().copied().chain(extra_forced_procs).collect(),

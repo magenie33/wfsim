@@ -32,10 +32,9 @@ reload_seconds: 2
 # see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
-# WHERE THE RAMP STARTS. "Damage ramps up from 30% to 100% over 0.6 seconds when
-# firing. After firing stops for 0.8 seconds, the damage decays back to 30% over
-# 2 seconds" — the same floor the Kuva Nukor carries.
-beam_ramp_floor: 0.30
+# Client impact attenuation declares the lower endpoint.
+beam_ramp_floor: 0.2
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
 
 attack:
   # see notes: cone_half_angle_from
@@ -57,6 +56,7 @@ attack:
   damage: { radiation: 22 }   # total 22
 
 unmodeled:
+  - reason: client_beam_target_ramp
   - "The Microwave status enlarges the body part that was shot (wiki). It deals no damage and has no entry in the engine; its effect is an aiming aid the sim does not use."
 
 source:

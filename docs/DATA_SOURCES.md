@@ -189,6 +189,14 @@ cap as an established final damage multiplier. Return-ammo weapons retain their
 resource convention; Scyotid magazine reload binds the ordinary-fire state rather
 than its toggle action's short timer. `UNMODELLED.md` owns the remaining scope.
 
+### Held-fire attenuation
+
+`python scripts/check_beam_ramp_roster.py --exchange <exchange>` verifies the
+51-form receipt against the pinned roster archive and behavior overrides.
+Native lower endpoints, rise time, cooldown delay, divisor and target-local
+flags are bound independently of beam geometry. Unity endpoints have no
+attenuation; Onos's distinct charge consumer remains unmodelled.
+
 ### Whole-primary calibration
 
 `scripts/import_primary_calibration.py --exchange <exchange> --check` verifies

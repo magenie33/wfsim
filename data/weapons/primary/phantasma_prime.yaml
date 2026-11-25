@@ -40,17 +40,9 @@ reload_seconds: 0.5          # "tied for the fastest reload of all primary shotg
 # phantasma_prime_charged.yaml.)
 co_behavior: additive_with_base_damage
 
-# THE RAMP STARTS AT 15%, NOT 20%. Verbatim: "Damage ramps up from 15% to 100%
-# over 0.6 seconds when firing. After firing stops for 0.8 seconds, the damage
-# decays back to 15% over 2 seconds." The wiki's general rule is "for most
-# weapons, this lower percentage is 20%" and names exceptions (Convectrix,
-# Phage, Embolist); this weapon is the roster's first, which is why
-# `BEAM_RAMP_FLOOR` stopped being a constant the sim applied to everything.
-#
-# It is a real 5-point difference on every tick before the ramp tops out, and
-# on an 11-round magazine at 0.5 ammo a tick — 22 ticks, 1.8 seconds — a
-# weapon spends a third of every magazine climbing.
-beam_ramp_floor: 0.15
+# Client impact attenuation declares the lower endpoint.
+beam_ramp_floor: 0.02
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
 
 attack:
   # see notes: cone_half_angle_from
@@ -102,3 +94,6 @@ source:
   url: https://wiki.warframe.com/w/Phantasma_Prime
 
 # see notes: client_primary_calibration
+
+unmodeled:
+  - reason: client_beam_target_ramp

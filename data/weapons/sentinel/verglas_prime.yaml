@@ -44,6 +44,9 @@ co_behavior: additive_with_base_damage
 # Innate damage is pure COLD, which makes this the engine's reference case for
 # an elemental-innate weapon: the innate element enters the hierarchy LAST and
 # takes whatever the mod elements leave (MECHANICS §3 rule 2).
+beam_ramp_floor: 0.2
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
+
 attack:
   trigger: held
   shot_type: hit_scan
@@ -68,6 +71,7 @@ attack:
 # firing its own weapon and a beam range this arena has no distance for are
 # properties of the WEAPON and were always missing here.
 unmodeled:
+  - reason: client_beam_target_ramp
   - reason: companion_fires_it
   - reason: spread_not_transcribed
 

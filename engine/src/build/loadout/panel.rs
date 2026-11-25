@@ -670,6 +670,7 @@ pub struct ResolvedPanel {
     pub kill_streak_summon: Option<crate::model::KillStreakSummonSpec>,
     /// See `data::weapons::WeaponSpec::beam_ramp_floor`. No mod moves it.
     pub beam_ramp_floor: f64,
+    pub beam_ramp: Option<crate::model::BeamRampSpec>,
     /// Does this weapon apply MICROWAVE? See `fight::DebuffState::microwave`.
     pub applies_microwave: bool,
     /// See `data::weapons::WeaponSpec::independent_procs`.

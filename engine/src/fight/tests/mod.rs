@@ -288,6 +288,7 @@ impl Default for FightParams {
             kill_streak_summon_opens_active: false,
             kill_streak_opens_at: 0,
             beam_ramp_floor: crate::model::BEAM_RAMP_FLOOR,
+            beam_ramp: None,
             applies_microwave: false,
             independent_procs: &[],
             syndicate_radial: None,

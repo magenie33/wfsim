@@ -39,6 +39,9 @@ reload_seconds: 2.2
 # see notes: condition_overload_no_row_4
 co_behavior: additive_with_base_damage
 
+beam_ramp_floor: 0.4
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
+
 attack:
   # see notes: cone_half_angle_from_2
   spread:
@@ -59,6 +62,7 @@ attack:
   damage: { corrosive: 20, puncture: 8 }   # total 28
 
 unmodeled:
+  - reason: client_beam_target_ramp
   - reason: client_battery_defaults
   - "An Enkaus hit that leaves an ink-stained enemy below 35% health kills it outright, as one hit at 600% critical chance, 1x critical multiplier and a forced Corrosive status (wiki); the stain comes from the alternate fire or Follie's passive, and bosses and enemies with special states are spared. Nothing is ink-stained here, so every enemy is shot down to zero and the number reads low."
   - "Primary fire on an ink-stained enemy spends no ammo and restores 0.33 rounds per enemy hit (wiki). Nothing is ink-stained here, so every tick spends a round and the beam reloads on its usual schedule; the number reads low."

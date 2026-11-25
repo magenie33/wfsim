@@ -53,6 +53,9 @@ modes:
       - { action: { do: alt_fire }, when: { if: always } }
       - { action: { do: shoot }, when: { if: always } }
 
+beam_ramp_floor: 0.2
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
+
 attack:
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack).
@@ -98,6 +101,7 @@ attack:
   damage: { heat: 180.0 }          # Archwing: 90
 
 unmodeled:
+  - reason: client_beam_target_ramp
   # THE BEAM'S OWN AoE. The characteristics say "Beam deals radial damage
   # varying from of 1 to 4 meters in a cone shape" and the infobox publishes NO
   # radial row for the primary — its only one belongs to the grenades. So the

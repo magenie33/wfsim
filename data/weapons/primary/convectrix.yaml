@@ -36,7 +36,8 @@ co_behavior: additive_with_base_damage
 # A CONTINUOUS WEAPON, and its ramp starts high: "Damage ramps up from 60%
 # (primary fire)/80% (alt-fire) to 100% over 0.6 seconds when firing" (wiki).
 # Held, so its two beams land on one body as ONE instance, the beam rule.
-beam_ramp_floor: 0.60
+beam_ramp_floor: 0.6
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
 
 attack:
   # see notes: cone_half_angle_from_2
@@ -58,6 +59,7 @@ attack:
   damage: { impact: 1.2, puncture: 1.2, slash: 9.6 }   # 12 a pellet, 24 a shot
 
 unmodeled:
+  - reason: client_beam_target_ramp
   - reason: client_special_spread
   - reason: client_accuracy_runtime
   - "The two beams converge on the crosshair and deal full damage only once aligned (wiki); here both land on the target from the first tick, so the number is the ceiling."

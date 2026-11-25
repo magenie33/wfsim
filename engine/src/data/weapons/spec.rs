@@ -463,10 +463,10 @@ pub struct WeaponSpec {
     #[serde(default)]
     pub scope: Vec<ScopeSpec>,
     /// Where this CONTINUOUS weapon's damage ramp starts, as a fraction of
-    /// full damage. Omitted means the wiki's "for most weapons" 20%; state it
-    /// only for a weapon whose page gives a different number.
+    /// full damage. Omitted means the generic 20% convention.
     #[serde(default)]
     pub beam_ramp_floor: Option<f64>,
+    pub beam_ramp: Option<crate::model::BeamRampSpec>,
     #[serde(default)]
     pub reload_seconds: Option<f64>,
     /// AN INNATE RELOAD-SPEED TERM on a reload from empty, in the bucket the

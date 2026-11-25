@@ -229,7 +229,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let mut strike_spread: Option<SpreadStrike> = None;
     let (mut any_head, mut any_big) = (false, false);
     let mut beam_merge = l.beam_merge;
-    let target_ramp = active.beam.and_then(|b| b.ramp).filter(|r| r.per_target && l.spatial.is_some());
+    let target_ramp = active.beam_ramp.filter(|r| r.per_target && l.spatial.is_some());
     let tick = 1.0 / l.live_rate.max(1e-9);
     let mut beam_ramp = l.beam_ramp;
     let radial_delay = match active.radial {

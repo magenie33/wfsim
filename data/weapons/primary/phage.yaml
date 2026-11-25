@@ -37,7 +37,8 @@ co_behavior: additive_with_base_damage
 # firing. After firing stops for 0.8 seconds, the damage decays back to 70% over
 # 2 seconds" — the wiki's beam page lists this weapon among the exceptions to
 # the 20% every other beam gets, and 70% is the highest floor in the roster.
-beam_ramp_floor: 0.70
+beam_ramp_floor: 0.7
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
 
 attack:
   # Cone half-angle from the reticle, degrees — wiki
@@ -63,6 +64,7 @@ attack:
   damage: { viral: 5 }   # 5 a beam, 35 a tick
 
 unmodeled:
+  - reason: client_beam_target_ramp
   - reason: client_special_spread
   - reason: client_accuracy_runtime
   - "From the hip the seven beams spread; aiming focuses them on the crosshair (wiki). The sim aims, so all seven land: the ceiling against one enemy."

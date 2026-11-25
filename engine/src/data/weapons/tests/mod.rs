@@ -2,6 +2,7 @@ use super::*;
 
 mod admissions;
 mod battery;
+mod beam_ramp;
 mod client_cadence;
 mod client_melee;
 mod client_primary;

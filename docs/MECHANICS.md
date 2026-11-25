@@ -1936,10 +1936,11 @@ exactly (status chance pinned at 1.0 so the proc counts are not sample means).
 weapon stops hitting a target, the damage decays back to its initial point over
 2 seconds. For most weapons, this lower percentage is 20%."* Held fire advances
 the ramp one tick-period at a time; a gap longer than the 0.8 s grace decays it.
-The per-weapon exceptions the page lists (Convectrix 60/80%, Phage 70%, Embolist
-30%) are weapon data: an entry that ramps from elsewhere states its own
-`beam_ramp_floor`, which is per ENTRY and not inherited — the Convectrix's
-alt-fire is a separate entry with its own 80%.
+The source-bound roster uses the effective per-form impact declaration;
+`beam_ramp_floor` is the lower endpoint, and `beam_ramp` (or the existing
+`attack.beam.ramp`) binds timing independently of ray shape. Explicit unity
+endpoints do not attenuate. A distinct charge consumer, such as Onos, is not
+an ordinary timed beam ramp.
 
 Applied as a FINAL multiplier on the instance and NOT on ModifiedBase — a
 transient scaling of output, not a weapon-stat change, so the status payloads
@@ -1952,7 +1953,7 @@ the ramp's interaction with status payloads is a modeling choice.
 
 #### A beam's GEOMETRY — sphere and chain (Torid Incarnon)
 
-An `attack.beam.ramp` binds native rise time, idle delay and cooldown divisor.
+A `beam_ramp` or `attack.beam.ramp` binds native rise time, idle delay and cooldown divisor.
 The native state is elapsed ramp time: `c = max(c - dt / divisor, 0)`,
 `progress = c / rise_seconds`. Normalized decay therefore divides by
 `rise_seconds * cooldown_divisor`. Unbound beams retain the two-second

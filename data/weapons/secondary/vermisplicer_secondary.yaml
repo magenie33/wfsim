@@ -46,6 +46,9 @@ reload_seconds: 2.1
 # see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
 
+beam_ramp_floor: 1.0
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
+
 attack:
   # see notes: cone_half_angle_from
   spread:
