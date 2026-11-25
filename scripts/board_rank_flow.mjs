@@ -10,7 +10,7 @@ import {enqueueRequestedPartition} from './board_requested_partitions.mjs';
 import {BoardRankConflict,BoardRankQualificationError} from './board_rank_index.mjs';
 import {captureRankBaseline,beginRankBaseline,prepareRankBaselinePage,applyRankBaselinePage} from './board_rank_baseline.mjs';
 import {putRankDirty,putRankDirtyBatch,routeRankInput,reconcileRankBaseline,finishRankBaseline,claimRankDirty,prepareRankIdentity,applyRankDirty,retryRankDirty} from './board_rank_work.mjs';
-import {abandonRankGeneration,BoardRankRivenReindex,claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankGeneration,publishRankGeneration,reuseRankGeneration,retryRankPublication,yieldRankPublication} from './board_rank_publication.mjs';
+import {abandonRankGeneration,BoardRankRivenReindex,deferRankRivenReindex,claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankGeneration,publishRankGeneration,reuseRankGeneration,retryRankPublication,yieldRankPublication} from './board_rank_publication.mjs';
 import {collectRankStorage,collectRankOrphan} from './board_rank_gc.mjs';
 
 export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha,policyBinary,policySha,requestedPartitions=false,baselineConcurrency=1,fault=async()=>{}}) {
@@ -185,11 +185,8 @@ export async function openBoardRankFlow({sql,source,engine,binary,work,nativeSha
     error=new BoardRankConflict(error.message);
    }
    if(error instanceof BoardRankRivenReindex&&generation){
-    await sql.begin(async tx=>{
-     await tx.unsafe('SELECT board_rank_source_lock($1::text)',[source]);
-     await putRankDirtyBatch(tx,error.identities.map(identity=>({...scope,identity,zone:failed.zone})),true);
-    });
-    await abandonRankGeneration(sql,failed,generation);
+    try{return await deferRankRivenReindex(sql,failed,generation,error);}
+    catch(conflict){error=conflict;}
    }
    if(deterministic(error)){
     await sql.unsafe(`UPDATE state_board_rank_generations g SET phase='abandoned' WHERE weapon=$1 AND ruler=$2 AND phase IN('floor','upload')

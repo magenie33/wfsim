@@ -8,8 +8,9 @@ import {randomBytes,createHash} from 'node:crypto';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import {openInventoryOperator} from './inventory_operator.mjs';
 import {createRankPartition,prepareRankSources,applyRankSources,prepareRankSnapshot} from './board_rank_index.mjs';
-import {putRankPublication} from './board_rank_work.mjs';
-import {abandonRankGeneration,BoardRankRivenReindex,claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankGeneration,publishRankGeneration,reuseRankGeneration,yieldRankPublication} from './board_rank_publication.mjs';
+import {putRankPublication,putRankDirty,claimRankDirty,applyRankDirty} from './board_rank_work.mjs';
+import {boardRankReindexUpgrade} from './board_rank_schema.mjs';
+import {abandonRankGeneration,BoardRankRivenReindex,deferRankRivenReindex,claimRankPublication,startRankGeneration,floorRankGeneration,uploadRankGeneration,publishRankGeneration,reuseRankGeneration,yieldRankPublication} from './board_rank_publication.mjs';
 import {collectRankStorage} from './board_rank_gc.mjs';
 import {stageRankRivenRepair,withdrawOldRankRevision} from './board_rank_riven_repair.mjs';
 const url=process.env.WFSIM_BOARD_RANK_TEST_URL;assert(url&&['localhost','127.0.0.1'].includes(new URL(url).hostname));
@@ -31,6 +32,14 @@ try{
  await sql.unsafe('CREATE SCHEMA '+schema);
  for(const name of ['board_mailbox','board_pages','board_rank','board_rank_compact','board_rank_recent','board_rank_zones','board_rank_pages','board_rank_riven_policy'])await sql.unsafe(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
  await sql.unsafe('UPDATE state_board_input_source SET source=$1',[source]);
+ const [{owner}]=await sql.unsafe('SELECT current_user owner');
+ const [{oid:readyOid}]=await sql.unsafe("SELECT 'state_board_rank_publication_ready'::regclass::oid::text oid");
+ await sql.unsafe('DROP TABLE state_board_rank_reindex_dependencies');
+ const upgrade=boardRankReindexUpgrade({schema,readerRole:owner,tablespace:'pg_default'});
+ const installer=await sql.reserve();
+ try{await installer.unsafe(upgrade);await installer.unsafe(upgrade);}finally{installer.release();}
+ assert.equal((await sql.unsafe("SELECT 'state_board_rank_publication_ready'::regclass::oid::text oid"))[0].oid,readyOid);
+
  let part=await createRankPartition(sql,{weapon,ruler,source,native:native.adapter,cut:'fixture'});
  for(let i=0;i<input.length;i+=64){const prepared=await prepareRankSources(native,{weapon,ruler,inputs:input.slice(i,i+64)});part=await sql.begin(tx=>applyRankSources(tx,part,prepared));}
  await sql.unsafe('UPDATE state_board_rank_partitions SET complete=true,seeded=true,reconciled=true WHERE weapon=$1 AND ruler=$2',[weapon,ruler]);
@@ -152,15 +161,47 @@ try{
  assert.equal((await page(published.revision)).error,'revision_unavailable','replacement and withdrawal commit together');
  assert.equal((await withdrawOldRankRevision(sql,bound,{weapon,ruler,revision:oldRevision})).withdrawn,true);
  assert.equal((await page(oldRevision)).error,'revision_unavailable');
- const latentId=input.at(-1).identity;
+ const latentId=input.at(-1).identity,earlyId=input.at(-2).identity;
  const invalidRiven={bonuses:['critical_damage','multishot'],malus:null,rolls:[1.02,0.99]};
  await sql.unsafe(`UPDATE state_board_rank_winners SET riven=true,page=jsonb_set(page::jsonb,'{riven}',$4::jsonb)::text
-  WHERE (weapon,ruler,identity)=($1,$2,$3)`,[weapon,ruler,latentId,JSON.stringify(invalidRiven)]);
- await sql.begin(tx=>putRankPublication(tx,{weapon,ruler}));
+  WHERE weapon=$1 AND ruler=$2 AND identity IN (SELECT jsonb_array_elements_text($3::text::jsonb))`,[weapon,ruler,JSON.stringify([latentId,earlyId]),JSON.stringify(invalidRiven)]);
+ await sql.begin(async tx=>{
+  await putRankPublication(tx,{weapon,ruler,zone:3,zone_position:100,queued_at:oldClock});
+  await putRankDirty(tx,{weapon,ruler,identity:latentId,zone:3,zone_position:200,queued_at:oldClock});
+  await putRankDirty(tx,{weapon,ruler,identity:earlyId,zone:3,zone_position:50,queued_at:oldClock});
+ });
  const latentClaim=await claimRankPublication(sql,context);
- const latent=await startRankGeneration(sql,native,latentClaim,context);
- await assert.rejects(floorRankGeneration(sql,native,latentClaim,latent,context),
-  error=>error instanceof BoardRankRivenReindex&&error.identities[0]===latentId);
+ const latent=await startRankGeneration(sql,native,latentClaim,context);let invalid;
+ await assert.rejects(floorRankGeneration(sql,native,latentClaim,latent,context),error=>{
+  invalid=error;return error instanceof BoardRankRivenReindex&&error.identities.includes(latentId)&&error.identities.includes(earlyId);
+ });
  assert.equal((await page()).revision,repaired.revision,'latent legacy winners cannot enter a new public floor');
+ assert.equal((await deferRankRivenReindex(sql,latentClaim,latent,invalid)).dependencies,2);
+ assert.equal((await sql.unsafe('SELECT phase FROM state_board_rank_generations WHERE token=$1::uuid',[latent.token]))[0].phase,'abandoned');
+ const blocked=await claimRankPublication(sql,context);assert.equal(blocked,null,'the earlier parent waits for the exact reindex versions');
+ const dirty=await sql.unsafe(`SELECT d.identity,d.zone,d.zone_position::text pos,d.queued_at,d.version::text,d.applied_version::text,i.version::text dep
+  FROM state_board_rank_reindex_dependencies i JOIN state_board_rank_dirty d USING(weapon,ruler,identity)
+  WHERE weapon=$1 AND ruler=$2 ORDER BY d.zone,d.zone_position`,[weapon,ruler]);
+ assert.deepEqual(dirty.map(d=>[d.identity,d.zone,d.pos,d.queued_at]),[
+  [earlyId,3,'50',oldClock],[latentId,3,'100',oldClock]]);
+ assert(dirty.every(d=>d.version===d.dep&&BigInt(d.applied_version)<BigInt(d.dep)));
+ await sql.begin(tx=>putRankPublication(tx,otherKey));
+ const unrelated=await claimRankPublication(sql,context);assert.equal(unrelated.ruler,other,'the parent waits without blocking other publications');
+ await sql.unsafe('UPDATE state_board_rank_publication_ready SET applied_version=version,lease=NULL,lease_version=NULL,lease_until=NULL,available_at=NULL WHERE weapon=$1 AND ruler=$2',[weapon,other]);
+ for(const identity of [earlyId,latentId]){
+  const claim=await claimRankDirty(sql,{...context,recent:true});assert.equal(claim.identity,identity);
+  const prepared=await prepareRankSources(native,{weapon,ruler,inputs:[input.find(row=>row.identity===identity)]});
+  part=(await sql.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[weapon,ruler]))[0];
+  assert.equal((await applyRankDirty(sql,claim,part,prepared)).status,'indexed');
+  if(identity===earlyId)assert.equal(await claimRankPublication(sql,context),null,'one unfinished version still holds publication');
+ }
+ const recoveredClaim=await claimRankPublication(sql,context);assert(recoveredClaim);
+ let recovered=await startRankGeneration(sql,native,recoveredClaim,context);
+ while(recovered.phase==='floor')recovered=await floorRankGeneration(sql,native,recoveredClaim,recovered,context);
+ while(!recovered.uploaded)recovered=await uploadRankGeneration(sql,recoveredClaim,recovered,context);
+ const valid=await publishRankGeneration(sql,native,recoveredClaim,recovered,context);
+ assert.equal((await page()).revision,valid.revision);
+ assert.equal((await page(repaired.revision)).ok,true,'automatic reindex does not withdraw the previous public revision');
+ assert.equal((await sql.unsafe('SELECT count(*) n FROM state_board_rank_reindex_dependencies'))[0].n,'0');
  console.log('ok — real staged append/upload rollback, prefix recovery, complete atomic pages, preserved old refs, concurrent readiness and unchanged clocks');
 }finally{await native.close();await sql.unsafe('DROP SCHEMA IF EXISTS '+schema+' CASCADE');await sql.end();rmSync(work,{recursive:true,force:true});}

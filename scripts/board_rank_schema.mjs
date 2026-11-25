@@ -13,7 +13,7 @@ export function boardRankSchema({schema='public',readerRole='wfsim_board_read',h
  for(const value of [schema,readerRole,httpRole,tablespace])if(!/^[a-z_][a-z0-9_]{0,62}$/.test(value))throw Error('invalid ranking installation name');
  const tables=['state_board_rank_partitions','state_board_rank_sources','state_board_rank_route_inputs',
   'state_board_rank_rows','state_board_rank_winners','state_board_rank_dirty','state_board_rank_baseline_obligations','state_board_rank_publication_ready',
-  'state_board_rank_generations','state_board_rank_snapshot_rows','record_board_rank_snapshot_refs'];
+  'state_board_rank_generations','state_board_rank_snapshot_rows','record_board_rank_snapshot_refs','state_board_rank_reindex_dependencies'];
  return `BEGIN;
 SET LOCAL lock_timeout='1s';
 SET LOCAL statement_timeout='30s';
@@ -60,8 +60,27 @@ ${rivenPolicy(readerRole)}
 COMMIT;
 `;
 }
+export function boardRankReindexUpgrade({schema='public',readerRole='wfsim_board_read',tablespace='wfsim_data'}={}) {
+ for(const value of [schema,readerRole,tablespace])if(!/^[a-z_][a-z0-9_]{0,62}$/.test(value))throw Error('invalid ranking installation name');
+ const source=ddl('board_rank').match(/CREATE TABLE IF NOT EXISTS state_board_rank_reindex_dependencies[^]*?REVOKE ALL ON state_board_rank_reindex_dependencies FROM PUBLIC;/)?.[0];
+ if(!source)throw Error('missing reindex dependency contract');
+ return `BEGIN;
+SET LOCAL lock_timeout='1s';
+SET LOCAL statement_timeout='10s';
+SET LOCAL default_tablespace='${tablespace}';
+SELECT pg_catalog.set_config('search_path','${schema},pg_catalog,pg_temp',true);
+DO $$ BEGIN
+ IF (SELECT pg_get_userbyid(relowner) FROM pg_class WHERE oid='state_board_rank_publication_ready'::regclass) IS DISTINCT FROM current_user
+ THEN RAISE EXCEPTION 'ranking upgrade requires the publication owner';END IF;
+END $$;
+${source}
+GRANT SELECT,INSERT,UPDATE,DELETE ON state_board_rank_reindex_dependencies TO ${readerRole};
+COMMIT;
+`;
+}
 if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url)
- process.stdout.write(process.argv.includes('--riven-policy-upgrade')?boardRankRivenPolicyUpgrade():boardRankSchema());
+ process.stdout.write(process.argv.includes('--reindex-dependencies-upgrade')?boardRankReindexUpgrade():
+  process.argv.includes('--riven-policy-upgrade')?boardRankRivenPolicyUpgrade():boardRankSchema());
 
 export function boardRankRollbackSchema({schema='public',httpRole='wfsim'}={}) {
  for(const value of [schema,httpRole])if(!/^[a-z_][a-z0-9_]{0,62}$/.test(value))throw Error('invalid ranking rollback name');
@@ -95,6 +114,7 @@ DROP TRIGGER IF EXISTS board_rank_guard_riven_policy ON record_board_rank_snapsh
 DROP FUNCTION IF EXISTS board_rank_guard_riven_policy(),board_rank_finish_riven_repair(text,text,text,uuid);
 DROP TABLE IF EXISTS state_board_rank_riven_repairs,state_board_rank_riven_policy;
 DROP TABLE state_board_rank_input_sets,state_board_rank_descriptions;
+DROP TABLE IF EXISTS state_board_rank_reindex_dependencies;
 DROP TABLE record_board_rank_snapshot_refs,state_board_rank_snapshot_rows,state_board_rank_generations,
  state_board_rank_publication_ready,state_board_rank_baseline_obligations,state_board_rank_dirty,
  state_board_rank_winners,state_board_rank_rows,state_board_rank_legacy_dependencies,state_board_rank_sources,
