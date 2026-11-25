@@ -22,10 +22,11 @@ async function localCut(m,work){
 }
 
 export async function registerCatalogScope(sql,{work,manifest:m,receipt:r,contract,expectedRevision=null,reservation=null,epoch=r?.snapshot,
- installed=null,verifyPredecessor=verifyRankBaseline}){
+ installed=null,verifyPredecessor=verifyRankBaseline,requireFresh=false}){
  const {source,native,weapon,ruler}=m,keys=[weapon,ruler],scene=contract.rulers.find(row=>row.id===ruler)?.scene;
  if(!r?.eligible||r.unresolved!==0||r.weapon!==weapon||r.ruler!==ruler||r.source!==source||
     r.snapshot!==m.snapshot||r.native!==native||!/^[a-f0-9]{64}$/.test(r.archive))throw Error('catalog qualification boundary changed');
+ if(requireFresh&&r.members!==0)throw Error('fresh scope requires zero historical members');
  if(scene===undefined&&r.members===0&&r.retained>0&&r.rows===0&&r.reason==='ruler absent from pinned Native')
   return {status:'retired-ruler',weapon,ruler};
  if(scene===undefined||!Number.isSafeInteger(r.rows)||r.rows<0||!/^[a-f0-9]{64}$/.test(r.pages_sha256)||!/^[a-f0-9]{64}$/.test(m.sha256))
@@ -37,6 +38,7 @@ export async function registerCatalogScope(sql,{work,manifest:m,receipt:r,contra
   await tx.unsafe('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[JSON.stringify([source,'catalog',...keys])]);
   const [selected]=await tx.unsafe('SELECT * FROM state_board_read_partitions WHERE weapon=$1 AND ruler=$2 FOR UPDATE',keys);
   const [part]=await tx.unsafe('SELECT * FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2 FOR UPDATE',keys);
+  if(requireFresh&&selected?.revision)throw Error('fresh scope already has a public head');
   if(selected?.enabled&&selected.canonical_sources&&selected.revision&&selected.scene===scene){
    const [head]=await tx.unsafe('SELECT source FROM record_board_read_snapshots WHERE weapon=$1 AND ruler=$2 AND revision=$3',[...keys,selected.revision]);
    if(head?.source!==source||part?.source!==source||part.native!==native||!part.complete)throw Error('existing public head has no matching canonical index');
@@ -47,6 +49,7 @@ export async function registerCatalogScope(sql,{work,manifest:m,receipt:r,contra
    FROM state_board_public_heads h LEFT JOIN record_board_read_snapshots s USING(weapon,ruler,revision)
    LEFT JOIN record_board_rank_snapshot_refs f USING(weapon,ruler,revision)
    LEFT JOIN state_board_public_import i ON i.id=1 WHERE h.weapon=$1 AND h.ruler=$2 FOR UPDATE OF h`,keys);
+  if(requireFresh&&publicHead)throw Error('fresh scope already has a public head');
   if(publicHead&&(!publicHead.revision||publicHead.archive!==r.archive||publicHead.inputs_sha256!==r.archive||
      publicHead.source!=='archive:'+r.archive||publicHead.token))throw Error('current public head is outside the pinned archive');
   await requireCatalogScan(tx,m,epoch);

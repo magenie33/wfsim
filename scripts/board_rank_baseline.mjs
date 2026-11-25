@@ -17,13 +17,13 @@ export async function captureRankBaseline(sql,options) {
  return captureRankBaselineAt(sql,{...options,work},directory);
 }
 
-export async function captureRankBaselineAt(sql,{weapon,ruler,source,native,work,signal,mailboxFloor},directory) {
+export async function captureRankBaselineAt(sql,{weapon,ruler,source,native,work,signal,mailboxFloor,limits},directory) {
  const path=join(directory,'inputs.ndjson'),file=await open(path,'wx'),checksum=createHash('sha256');
  let bytes=0,total=0,facts=0;
  const append=async row=>{
   const body=JSON.stringify(row)+'\n';
   if(Buffer.byteLength(body)>8*1024*1024)throw new BoardRankQualificationError('one baseline source exceeds its row budget');
-  bytes+=Buffer.byteLength(body);if(bytes>512*1024*1024)throw new BoardRankQualificationError('baseline exceeds its disk budget');
+  bytes+=Buffer.byteLength(body);if(bytes>Math.min(512*1024*1024,limits?.manifest_bytes??Infinity))throw new BoardRankQualificationError('baseline exceeds its disk budget');
   checksum.update(body);await file.writeFile(body);
  };
  try{
@@ -48,7 +48,9 @@ export async function captureRankBaselineAt(sql,{weapon,ruler,source,native,work
     const page=await tx.unsafe('FETCH FORWARD 256 FROM board_rank_baseline');
     for(const row of page){
      if(!row.facts)continue;
-     total++;facts+=row.facts.length;await append({kind:'source',source:{id:row.id,at:row.at,record:row.record},facts:row.facts,headers:row.headers});
+     total++;facts+=row.facts.length;
+     if(limits&&(total>limits.identities||facts>limits.facts))throw new BoardRankQualificationError('fresh scope capture exceeds its qualified forecast');
+     await append({kind:'source',source:{id:row.id,at:row.at,record:row.record},facts:row.facts,headers:row.headers});
     }
     if(page.length<256)break;
    }
