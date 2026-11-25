@@ -101,7 +101,8 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
  const scopedConfig={...config,state:scopedState,budget:budgetFile,priority_scope:{weapon,ruler:second}};
  const scopeOpts={available:()=>128*1024**3,pageBudget:1};
  await assert.rejects(runBatch({...scopedConfig,priority_scope:{weapon,ruler:'demolisher'}},'priority-step',scopeOpts),/one-scope capacity forecast/);
- await assert.rejects(runBatch(scopedConfig,'priority-step',{...scopeOpts,available:()=>33*1024**3}),/insufficient remaining Data/);
+ const lowBudgetState=join(scopedState,'low-budget-fixture');mkdirSync(lowBudgetState);
+ await assert.rejects(runBatch({...scopedConfig,state:lowBudgetState},'priority-step',{...scopeOpts,available:()=>33*1024**3}),/insufficient remaining Data/);
  assert.equal((await sql.unsafe('SELECT 1 FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[weapon,second])).length,0);
  const scoped=await runBatch(scopedConfig,'priority-step',scopeOpts);
  assert.equal(scoped.status,'frozen');assert.equal(scoped.weapon,weapon);assert.equal(scoped.ruler,second);
@@ -177,6 +178,39 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
    assert(concurrent,'independent first publications share the database pool and one Native');
    assert(indexed,'new canonical acknowledgement is durable without rebuilding unchanged public winners');
    assert.deepEqual(await delivery(),previous);
+   const capacityDrift={...scopeOpts,available:()=>110*1024**3};
+   await assert.rejects(runBatch(scopedConfig,'priority-step',capacityDrift),/live allocation exceeds the qualified forecast/);
+   const completion={...scopedConfig,priority_completion_revision:retained.revision};
+   const journalBefore=new DatabaseSync(join(scopedState,'priority-scope.sqlite'),{readOnly:true});
+   const high=journalBefore.prepare('SELECT * FROM high_water').get();
+   assert.equal(journalBefore.prepare('SELECT phase FROM priority_work').get().phase,'pending');journalBefore.close();
+   await assert.rejects(runBatch({...completion,priority_completion_revision:'0'.repeat(64)},'priority-complete',capacityDrift),/pinned Native publication changed/);
+   const actualFetch=globalThis.fetch;
+   try{
+    globalThis.fetch=async(url,opts)=>{
+     const response=await actualFetch(url,opts),u=new URL(url);
+     if(u.origin!==config.origins[1]||u.pathname!=='/api/board/pages')return response;
+     const body=await response.json();
+     if(body.rows?.length)body.rows[0].score+=1;
+     return Response.json(body);
+    };
+    await assert.rejects(runBatch(completion,'priority-complete',capacityDrift),/public rows differ/);
+   }finally{globalThis.fetch=actualFetch;}
+
+   const stats=async()=>(await sql.unsafe(`SELECT (SELECT count(*) FROM state_board_rank_generations) generations,
+    (SELECT count(*) FROM state_board_read_partitions) partitions,(SELECT count(*) FROM board_facts) facts`))[0];
+   const unchanged=await stats();
+   let completed;
+   for(let i=0;i<10;i++){completed=await runBatch(completion,'priority-complete',capacityDrift);if(completed.status==='selected')break;}
+   assert.equal(completed.status,'selected');assert.equal(completed.revision,retained.revision);
+   assert.deepEqual(await stats(),unchanged,'completion schedules no new generation, partition or fact');
+   const journalAfter=new DatabaseSync(join(scopedState,'priority-scope.sqlite'),{readOnly:true});
+   try{
+    assert.deepEqual(journalAfter.prepare('SELECT * FROM high_water').get(),high);
+    assert.equal(journalAfter.prepare('SELECT phase FROM priority_work').get().phase,'selected');
+    assert.equal(journalAfter.prepare('SELECT revision FROM verified').get().revision,retained.revision);
+   }finally{journalAfter.close();}
+   assert.equal((await runBatch(completion,'priority-complete',capacityDrift)).status,'selected');
    await checkCatalogDelivery({sql,weapon,ruler,fresh,inputs,action,native,step,put,config});
    console.log('ok — retained archive and requested position, fresh fenced capture and changed identity, unrelated warm correction through held work, priority restart');
    return;

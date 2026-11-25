@@ -13,6 +13,7 @@ import {scanCatalogPage,startCatalogScan} from './board_rank_catalog_scan.mjs';
 import {openRankInventoryOperator} from './board_operator.mjs';
 import {initializeJournal,jsonFile,openProtectedSets,planBatch} from './board_catalog_batch_state.mjs';
 import {preparePriority,priorityStep} from './board_catalog_priority.mjs';
+import {completePriorityScope} from './board_catalog_scope_completion.mjs';
 import {batchStep,closeBatch} from './board_catalog_batch_step.mjs';
 import {sampleCapacity} from './board_catalog_batch_capacity.mjs';
 import {connectFileOwner} from './board_catalog_file_owner.mjs';
@@ -41,15 +42,19 @@ function catalogFile(root,path){
 }
 
 export async function runBatch(config,action,{available,observe=()=>{},pageBudget=8}={}){
- const priority=['priority-run','priority-step','priority-status'].includes(action),status=action==='status'||action==='priority-status';
+ const completeOnly=action==='priority-complete';
+ const priority=completeOnly||['priority-run','priority-step','priority-status'].includes(action),status=action==='status'||action==='priority-status';
  assert((priority||['plan','step','run','status'].includes(action))&&Number.isInteger(pageBudget)&&pageBudget>0&&pageBudget<=32,'invalid batch action');
  const priorityScope=config.priority_scope;
  if(priorityScope){
-  assert(['priority-step','priority-status'].includes(action)&&
+  assert(['priority-step','priority-status','priority-complete'].includes(action)&&
    Object.keys(priorityScope).sort().join(',')==='ruler,weapon'&&[priorityScope.weapon,priorityScope.ruler].every(x=>typeof x==='string'&&/^[a-z0-9_]{1,160}$/.test(x)),
    'scoped catalog requires one explicit partition and priority-step');
  }
+ if(completeOnly)assert(priorityScope&&/^[a-f0-9]{64}$/.test(config.priority_completion_revision||''),
+  'completion requires one scope and a pinned published revision');
  const state=directory(config.state,status),path=catalogFile(state,join(state,priorityScope?'priority-scope.sqlite':priority?'priority.sqlite':'adoption.sqlite'));
+ if(completeOnly)assert(existsSync(path),'completion requires an existing scope journal');
  if(!priority&&action!=='plan')assert(existsSync(path),'plan the complete catalog first');
  const journal=new DatabaseSync(path,{readOnly:status});
  const opened=[],openRO=p=>{const db=new DatabaseSync(p,ro);opened.push(db);return db;};
@@ -142,6 +147,7 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
     const out=await execute('python3',[helper,join(stage,'catalog.sqlite'),target,weapon,ruler],{maxBuffer:65536});
     const m=JSON.parse(out.stdout);assert.equal(m.path,join(target,'inputs.ndjson'));return m;
    }};
+  if(completeOnly)return await completePriorityScope(ctx,config.priority_completion_revision);
   if(action==='plan'){
    const selected=previous?[]:await captureSelected(sql,sets,contract);
    planBatch({...ctx,final,reservations:inventory().reservations,selected});

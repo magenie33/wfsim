@@ -276,6 +276,16 @@ The old public head remains readable until its replacement commits. Observe
 `priority-status` and stop once the scope is selected. The single-scope
 controller does not scan or prepare the rest of the catalog.
 
+When its publication has already committed and only the controller's
+acknowledgement remains, set `priority_completion_revision` to the verified
+current public revision and run
+`python3 scripts/run_rank_catalog_batch.py priority-complete CONFIG.json`.
+This mode requires the original scoped journal, qualification and cut,
+verifies both official catalogs and revision-bound pages, then rereads the
+same head under the source lock. It retains the existing capacity history
+and fixed disk reserve. It does not reserve another generation budget.
+Repeat bounded steps until the selected acknowledgement is recorded.
+
 ### Adopting the complete catalog
 
 `scripts/adopt_rank_catalog_batch.mjs` consumes a qualified catalog and keeps
