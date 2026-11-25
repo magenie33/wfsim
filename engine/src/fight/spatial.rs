@@ -48,6 +48,8 @@ impl<'p> Recipient<'p> {
 pub(super) struct SpatialLanding {
     pub impact: crate::scene::Impact,
     pub miss: bool,
+    pub field_contact: bool,
+    pub surface_embed: bool,
     pub first: bool,
     pub last: bool,
     pub instance: u32,
@@ -174,11 +176,18 @@ pub(super) fn launch(
             );
             (path, reflected)
         } else {
-            let mut path = scene.trace(
-                head, dev, phi, active.projectile_speed_mps, active.homing, pierce,
-                active.infinite_body_punch_through, active.projectile_reverse_query,
-                active.projectile_width_m, active.range_m, &eligible, fire_origin,
-            );
+            let mut path = if let Some((gravity, speed)) = active.projectile_gravity.zip(active.projectile_speed_mps) {
+                let mut path = scene.launch_flight(head, dev, phi, &eligible, fire_origin);
+                scene.trace_gravity(&mut path, gravity, speed, active.projectile_width_m * 0.5,
+                    active.range_m, pierce, active.infinite_body_punch_through, &eligible);
+                path
+            } else {
+                scene.trace(
+                    head, dev, phi, active.projectile_speed_mps, active.homing, pierce,
+                    active.infinite_body_punch_through, active.projectile_reverse_query,
+                    active.projectile_width_m, active.range_m, &eligible, fire_origin,
+                )
+            };
             if let Some(lock) = active.lock_on {
                 lock_shot(&scene, active, lock, &eligible, head, me, &mut path);
             }
@@ -236,6 +245,9 @@ pub(super) fn launch(
                     spatial: Some(SpatialLanding {
                         impact: *hit,
                         miss: false,
+                        field_contact: active.projectile_gravity.is_none_or(|g| !g.embed_surfaces)
+                            || path.stopped_at == Some(hit.point),
+                        surface_embed: false,
                         first: false,
                         last: false,
                         instance,
@@ -260,6 +272,8 @@ pub(super) fn launch(
                             spatial: Some(SpatialLanding {
                                 impact,
                                 miss: false,
+                                field_contact: true,
+                                surface_embed: false,
                                 first: false,
                                 last: false,
                                 instance,
@@ -292,6 +306,8 @@ pub(super) fn launch(
                             spatial: Some(SpatialLanding {
                                 impact,
                                 miss: false,
+                                field_contact: true,
+                                surface_embed: false,
                                 first: false,
                                 last: false,
                                 instance,
@@ -321,6 +337,8 @@ pub(super) fn launch(
                         spatial: Some(SpatialLanding {
                             impact,
                             miss: false,
+                            field_contact: true,
+                            surface_embed: false,
                             first: false,
                             last: false,
                             instance,
@@ -342,6 +360,24 @@ pub(super) fn launch(
                 }
             }
         }
+        if let Some(surface) = path.surface_contact.filter(|_| active.lingering.is_some()) {
+            for instance in 0..copies {
+                let impact = crate::scene::Impact {
+                    body: 0, proxy: 0, part: 0, point: surface.point, exit: surface.point,
+                    seconds: surface.seconds, travel: surface.travel, material: 0., remaining: 0.,
+                    radial: false, radial_distance: 0.,
+                };
+                events.push(Landing {
+                    spatial: Some(SpatialLanding {
+                        impact, miss: true, field_contact: false, surface_embed: true,
+                        first: false, last: false, instance, follows: false, contact: 0,
+                        splash: false, beam: None, redirected: false, progress: progress.clone(),
+                    }),
+                    t: l.t + surface.seconds, n_pellets: 0,
+                    burst_starts: false, burst_completed, ..l.clone()
+                });
+            }
+        }
         let indirect = !seeds.indirect.is_empty();
         for (impact, seed) in seeds.indirect {
             let beam_merge = if seed.multishot { l.beam_merge } else { 1. };
@@ -349,6 +385,8 @@ pub(super) fn launch(
                 spatial: Some(SpatialLanding {
                     impact,
                     miss: false,
+                    field_contact: true,
+                    surface_embed: false,
                     first: false,
                     last: false,
                     instance: 0,
@@ -396,6 +434,8 @@ pub(super) fn launch(
             spatial: Some(SpatialLanding {
                 impact,
                 miss: true,
+                field_contact: true,
+                surface_embed: false,
                 first: false,
                 last: false,
                 instance: 0,

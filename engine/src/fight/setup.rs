@@ -11,6 +11,14 @@ impl FightParams {
         if self.others.iter().any(|body|body.params.faction!=self.foe.faction) {
             return Some("scene_3d currently requires one combat faction for the resolved faction bracket");
         }
+        if self.projectile_gravity.is_some_and(|gravity| {
+            !gravity.multiplier.is_finite() || gravity.multiplier < 0.
+                || !gravity.delay_seconds.is_finite() || gravity.delay_seconds < 0.
+                || self.projectile_speed_mps.is_none_or(|speed| !speed.is_finite() || speed <= 0.)
+                || self.homing.is_some() || self.rebound_blast.is_some()
+        }) {
+            return Some("invalid scene_3d kinematic gravity inputs");
+        }
         if let Some(h)=self.homing {
             if ![h.initial_speed,h.maximum_speed,h.acceleration,h.turning_seconds,h.seek_distance,h.seek_cone_deg,
                 h.minimum_flight_before_seek,h.collision_radius].iter().all(|v|v.is_finite())
@@ -1383,6 +1391,7 @@ impl FightParams {
                 falloff_reduction: 0.0,
                 stacking: crate::model::FieldStacking::Stack,
                 takes_condition_overload: false,
+                co_attached_only: false,
                 co_behavior: None,
                 forced_proc_count: 1,
                 excludes_live_base_damage: false,
@@ -1411,6 +1420,7 @@ impl FightParams {
                 falloff_reduction: r.falloff_reduction,
                 stacking: crate::model::FieldStacking::Stack,
                 takes_condition_overload: r.takes_condition_overload,
+                co_attached_only: false,
                 co_behavior: None,
                 forced_proc_count: 1,
                 excludes_live_base_damage: false,
@@ -1453,6 +1463,7 @@ impl FightParams {
                     falloff_reduction: if strike { 0.0 } else { r.falloff_reduction },
                     stacking: crate::model::FieldStacking::Stack,
                     takes_condition_overload: r.takes_condition_overload,
+                    co_attached_only: false,
                     // *"Condition Overload effects are multiplicative to sources
                     // of universal base damage"* — a bracket of its own.
                     co_behavior: Some(crate::model::CoBehavior::Independent),
@@ -1689,6 +1700,7 @@ impl FightParams {
             projectile_speed_mps: panel.projectile_speed_mps,
             homing: panel.homing,
             projectile_reverse_query: panel.projectile_reverse_query,
+            projectile_gravity: panel.projectile_gravity,
             scene_3d,
             range_m: panel.range_m,
             tendril_range_m: panel.tendril_range_m,

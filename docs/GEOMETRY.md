@@ -264,6 +264,22 @@ the target generation. Exact native broadphase tie order, first-tick
 activation and world-cover filters remain uncalibrated. The combat trace
 reports `beam_endpoint` and `beam_contacts` alongside primary impacts.
 
+Kinematic gravity uses the bounded CB-04 client branch in
+`20261111T080715Z-coda-runtime-queue-followup`. Its float32 velocity update
+adds the gravity term before displacement, after the elapsed-time gate and
+only when the previous vertical speed is above -50. The 72 retained vectors
+verify the arithmetic. Torid's projectile dossier declares initial and maximum
+speed 40, gravity multiplier 0.5 and embedding. The resolved projectile speed
+and scene step drive a segment sweep against posed bodies and the open-arena
+floor. Installed speed clamps, exact firing pose and scene scheduling beyond
+the supplied horizon require their own runtime controls.
+
+A terminal Torid contact embeds one cloud per physical projectile. A floor
+contact has no direct victim but starts the same field clock. A body contact
+remembers its actor and spawn generation. Only the attached actor receives
+the cloud's multiplicative Condition Overload term, and a later generation
+at that position can remain inside the cloud without inheriting attachment.
+
 Lingering fields spawned by a projectile contact stay at that contact
 and test posed bodies for every tick. They keep the spawning form's
 damage and the existing lifetime and stack rules.

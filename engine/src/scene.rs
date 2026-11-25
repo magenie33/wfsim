@@ -198,6 +198,8 @@ pub struct Flight {
     pub steering_target: Option<usize>,
     pub impacts: Vec<Impact>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub surface_contact: Option<SurfaceContact>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub blast_center: Option<Vec3>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub radial_impacts: Vec<Impact>,
@@ -217,6 +219,13 @@ pub struct Flight {
     pub(crate) stopped_at: Option<Vec3>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fire_origin: Option<FireOrigin>,
+}
+
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+pub struct SurfaceContact {
+    pub point: Vec3,
+    pub seconds: f64,
+    pub travel: f64,
 }
 
 #[derive(Debug, Clone, Copy, serde::Serialize)]
@@ -871,6 +880,7 @@ impl Scene {
             direction,
             steering_target: self.input.preselected_target,
             impacts: Vec::new(),
+            surface_contact: None,
             blast_center: None,
             radial_impacts: Vec::new(),
             beam_endpoint: None,

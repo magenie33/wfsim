@@ -31,10 +31,8 @@ effects:
   # the mods feed, so the value reaches the panel like any other
   # handling stat.
   #
-  # What is still NOT derived is the RANGE it buys: max range = speed x
-  # lifetime, and no source gives the Torid's projectile lifetime (the wiki
-  # page stops at shot_speed 40). The arena is single-target at a fixed
-  # engagement anyway, so it models neither travel time nor range.
+  # The 3D launch uses the resolved speed. Projectile lifetime beyond the
+  # supplied scene horizon has no qualified source.
   - kind: projectile_speed_bonus
     value: 0.50
 

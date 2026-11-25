@@ -1426,6 +1426,7 @@ fn a_field_takes_condition_overload_only_where_the_weapon_declares_it() {
             heavy_damage_mods_apply: true,
             melee_scaling: None,
             takes_condition_overload: takes,
+            co_attached_only: false,
             co_behavior: None,
             forced_proc_count: 1,
             excludes_live_base_damage: false,

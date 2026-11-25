@@ -895,8 +895,17 @@ pub struct ZoomLevel {
     pub crit_chance_post_mod: f64,
 }
 
-/// A weapon's unmodded panel (fixed evolutions folded in — they alter the
-/// weapon's BASE stats before mods).
+/// Kinematic gravity inputs declared by a projectile resource.
+#[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
+pub struct ProjectileGravity {
+    pub multiplier: f32,
+    #[serde(default)]
+    pub delay_seconds: f32,
+    #[serde(default)]
+    pub embed_surfaces: bool,
+}
+
+/// A weapon's unmodded panel with fixed evolutions folded into its base stats.
 #[derive(Debug, Clone)]
 pub struct WeaponBase {
     pub additional_projectile: Option<Box<WeaponBase>>,
@@ -926,6 +935,7 @@ pub struct WeaponBase {
     /// [`crate::data::weapons::AttackSpec::projectile_speed_mps`], before any
     /// bonus — `None` is a shot that arrives the instant it is fired.
     pub projectile_speed_mps: Option<f64>,
+    pub projectile_gravity: Option<ProjectileGravity>,
     pub homing: Option<crate::model::Homing>,
     pub projectile_reverse_query: bool,
     /// [`crate::data::weapons::AttackSpec::range_m`] — `INFINITY` when the

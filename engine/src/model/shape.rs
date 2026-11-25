@@ -71,6 +71,7 @@ pub struct LingeringBase {
     /// would not get it, but the programmer let it"), so the weapon declares it
     /// rather than the engine assuming every field behaves that way.
     pub takes_condition_overload: bool,
+    pub co_attached_only: bool,
     /// See [`crate::data::weapons::LingeringSpec::elemental_mods_apply`].
     pub elemental_mods_apply: bool,
     /// See [`crate::data::weapons::LingeringSpec::can_crit`].

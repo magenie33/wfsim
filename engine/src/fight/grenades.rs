@@ -221,6 +221,7 @@ pub(super) fn lingering_of(
         falloff_reduction: r.falloff_reduction,
         stacking: crate::model::FieldStacking::Stack,
         takes_condition_overload: co.is_some(),
+        co_attached_only: false,
         co_behavior: co,
         forced_proc_count: 1,
         excludes_live_base_damage: false,

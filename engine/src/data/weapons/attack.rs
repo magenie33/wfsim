@@ -143,6 +143,8 @@ pub struct AttackSpec {
     #[serde(default)]
     pub projectile_speed_mps: Option<f64>,
     #[serde(default)]
+    pub projectile_gravity: Option<crate::model::ProjectileGravity>,
+    #[serde(default)]
     pub homing: Option<crate::model::Homing>,
     /// Kinematic projectile reverse continuation in an explicit 3D fight.
     #[serde(default)]
@@ -678,6 +680,8 @@ pub struct LingeringSpec {
     /// catalog spells out per weapon.
     #[serde(default)]
     pub takes_condition_overload: bool,
+    #[serde(default)]
+    pub co_attached_only: bool,
     /// `stack` (default) or `refresh`. The Torid STACKS — ✅ measured
     /// (MEASUREMENTS M13) — but this stays weapon DATA rather than a constant:
     /// the branch is per weapon, and a future one may refresh.

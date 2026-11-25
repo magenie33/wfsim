@@ -1533,6 +1533,7 @@ pub fn resolve_for(
             falloff_reduction: f.falloff_reduction,
             stacking: f.stacking,
             takes_condition_overload: f.takes_condition_overload,
+            co_attached_only: f.co_attached_only,
             co_behavior: None,
             forced_proc_count: 1,
             excludes_live_base_damage: false,
@@ -1736,6 +1737,7 @@ pub fn resolve_for(
         projectile_speed_mps,
         homing: base.homing,
         projectile_reverse_query: base.projectile_reverse_query,
+        projectile_gravity: base.projectile_gravity,
         // A THROWN GLAIVE FLIES FURTHER AS IT FLIES FASTER — Whirlwind's page:
         // *"As a direct result, this mod also increases throwing distance."*
         range_m: if base.form.is_throw() { beam_range_m * ps } else { beam_range_m },

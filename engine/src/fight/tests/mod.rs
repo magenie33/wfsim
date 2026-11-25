@@ -119,6 +119,7 @@ impl Default for FightParams {
             projectile_width_m: 0.0,
             // HIT-SCAN: every fixture lands the instant it fires.
             projectile_speed_mps: None,
+            projectile_gravity: None,
             homing: None,
             projectile_reverse_query: false,
             scene_3d: None,
@@ -546,6 +547,7 @@ fn cloud(stacking: crate::model::FieldStacking) -> crate::build::loadout::Resolv
         falloff_reduction: 1.0,
         stacking,
         takes_condition_overload: true,
+        co_attached_only: false,
         co_behavior: None,
         forced_proc_count: 1,
         excludes_live_base_damage: false,
@@ -609,6 +611,7 @@ fn orb_part(damage: f64) -> crate::build::loadout::ResolvedLingering {
         falloff_reduction: 0.0,
         stacking: crate::model::FieldStacking::Stack,
         takes_condition_overload: false,
+        co_attached_only: false,
         co_behavior: None,
         forced_proc_count: 1,
         excludes_live_base_damage: false,

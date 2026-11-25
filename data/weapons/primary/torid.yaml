@@ -89,7 +89,9 @@ attack:
     max_deg: 0.0
   trigger: semi_auto
   shot_type: projectile
-  projectile_speed_mps: 40      # slow, heavy arc
+  projectile_speed_mps: 40
+  # BioGrenadeProjectile declares KinematicGravity, multiplier 0.5 and Embed.
+  projectile_gravity: { multiplier: 0.5, embed_surfaces: true }
   fire_rate: 1.5
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
@@ -143,6 +145,8 @@ attack:
     # which is doubly discrepant: an AoE part receiving CO, and receiving it as
     # a MULTIPLYING bonus. Both halves are why the row exists.
     takes_condition_overload: true
+    # The cloud takes its multiplicative CO bonus on the attached actor.
+    co_attached_only: true
 
 # incarnon_evolutions (data/evolutions/torid_*.yaml) — FOUR tiers, not five:
 # - { tier: 1, unlock: complete a solo mission with this weapon equipped,

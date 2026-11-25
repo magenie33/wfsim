@@ -1,8 +1,7 @@
 use super::*;
 
-/// One live LINGERING FIELD attached to the target — one entity per grenade
-/// that stuck, since each multishot projectile is its own grenade and its own
-/// cloud. `FieldStacking::Reresh` keeps this list at length 1.
+/// One field per settled grenade, including multishot copies.
+/// Refresh stacking replaces the previous field of the same combatant.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct FieldState {
     /// An absolute lifetime for fields whose pulse speed can change in flight.
@@ -23,6 +22,36 @@ pub(super) struct FieldState {
     pub(super) damage_multiplier: f64,
     /// Posed projectile contact. Planar fields use the aimed body's position.
     pub(super) center: Option<crate::rules::geometry::Vec3>,
+    /// The actor and spawn generation the projectile embedded in.
+    pub(super) attached: Option<(usize, u32)>,
+}
+
+#[wfsim_gas_macro::metered]
+impl FieldState {
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn spawn(
+        entities: &mut Vec<Entity>, active: &FightParams, owner: Seat, at: f64,
+        duration_boost: bool, combo: f64, damage_multiplier: f64,
+        center: Option<crate::rules::geometry::Vec3>, attached: Option<(usize,u32)>,
+    ) {
+        let Some(mut part) = active.lingering else { return };
+        if duration_boost { part.duration_seconds *= active.field_duration_on_empty_reload; }
+        if part.melee_scaling.is_some_and(|s| s.duration_per_combo) {
+            part.duration_seconds *= combo;
+        }
+        if part.stacking == crate::model::FieldStacking::Refresh {
+            entities.retain(|e| !matches!(e, Entity::Cloud(field) if field.owner == owner));
+        }
+        entities.push(Entity::Cloud(Self {
+            expires_at: part.melee_scaling.map(|_| at + part.duration_seconds),
+            owner,
+            next_tick: at + part.first_tick_delay_seconds,
+            ticks_left: if part.melee_scaling.is_some() { u32::MAX } else {
+                (part.duration_seconds * part.tick_rate).round() as u32
+            },
+            part, damage_multiplier, center, attached,
+        }));
+    }
 }
 
 /// The attacker-side buff state a FIELD tick reads, as of the most recent

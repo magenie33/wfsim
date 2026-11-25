@@ -507,6 +507,7 @@ fn guided_grid_clock_and_radial_routing_match_original_open_scene() {
                 muzzle: s.muzzle(), camera: s.camera(), basis_origin: s.camera(), head_anchor: Vec3([0.; 3]),
                 aim_target: Vec3([0., 2.95, 5.]), direction: Vec3([0., 0., 1.]),
                 steering_target: None, impacts: Vec::new(), blast_center: None,
+                surface_contact: None,
                 radial_impacts: Vec::new(), fire_origin: None,
                 beam_endpoint: None, beam_contacts: Vec::new(), entity: None, redirects: Vec::new(),
                 bends: Vec::new(), detonations: Vec::new(), stopped_at: None,

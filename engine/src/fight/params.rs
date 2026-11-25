@@ -714,6 +714,7 @@ pub struct FightParams {
     /// FLIGHT SPEED with its bonuses, metres a second — `None` is a shot that
     /// lands the instant it is fired. See [`Self::flight_seconds`].
     pub projectile_speed_mps: Option<f64>,
+    pub projectile_gravity: Option<crate::model::ProjectileGravity>,
     pub homing: Option<crate::model::Homing>,
     pub projectile_reverse_query: bool,
     pub scene_3d: Option<std::sync::Arc<crate::scene::Scene>>,

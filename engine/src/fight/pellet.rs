@@ -330,6 +330,7 @@ pub(super) fn settle_pellet(
     // damage bonuses like Serration"), so it multiplies the finished
     // instance rather than joining a bucket. With no multishot source
     // there is no pellet 1 and the perk is worth exactly nothing.
+    let attachment = active.lingering.map(|_| (body_index, bodies[body_index].state.generation));
     let pm_mult = if pellet_idx > 0 {
         1.0 + active.multishot_ammo_bonus
     } else {
@@ -2204,42 +2205,9 @@ pub(super) fn settle_pellet(
         // the tick clock; reading it as a delayed first tick cost a
         // tenth of the field's damage.
         if direct {
-            if let Some(fp) = &active.lingering {
-                // Renewed Horror doubles THIS field's lifetime, so it
-                // ticks 20 times instead of 10 — ✅ measured (M13): one
-                // direct number plus twenty field numbers.
-                let boost = if *field_duration_boost {
-                    active.field_duration_on_empty_reload
-                } else {
-                    1.0
-                };
-                let mut part = *fp;
-                part.duration_seconds *= boost;
-                if part.melee_scaling.is_some_and(|s| s.duration_per_combo) {
-                    part.duration_seconds *= shot.combo_multiplier;
-                }
-                let fresh = FieldState {
-                    expires_at: part.melee_scaling.map(|_| t + part.duration_seconds),
-                    owner: seat,
-                    // …AND THE GRIMOIRE'S ORB IS THE OTHER SHAPE. Its
-                    // contact is the direct hit this pellet already
-                    // settled, and its pulses run on a one second clock
-                    // from there — so its field opens one interval late
-                    // rather than doubling the collision.
-                    next_tick: t + part.first_tick_delay_seconds,
-                    ticks_left: if part.melee_scaling.is_some() { u32::MAX } else { (part.duration_seconds * part.tick_rate).round() as u32 },
-                    part,
-                    // Plentiful Mayhem follows a GENERATED grenade into
-                    // the cloud it leaves — which is
-                    // the whole value of the perk here, the cloud being
-                    // most of this weapon's damage.
-                    damage_multiplier: pm_mult,
-                    center: spatial.map(|s| s.impact.point),
-                };
-                if fp.stacking == crate::model::FieldStacking::Refresh {
-                    entities.retain(|e| !matches!(e, Entity::Cloud(field) if field.owner == seat));
-                }
-                entities.push(Entity::Cloud(fresh));
+            if attachment.is_some() && spatial.is_none_or(|s| s.field_contact) {
+                FieldState::spawn(entities, active, seat, t, *field_duration_boost,
+                    shot.combo_multiplier, pm_mult, spatial.map(|s| s.impact.point), attachment);
             }
             // …AND A LANDED VECTIS INCARNON ROUND LEAVES ITS ORB in the body,
             // carrying this shot's first round and shot combo with it (M117),
@@ -2355,6 +2323,8 @@ pub(super) fn settle_pellet(
                     // mechanic melee has no card for.
                     origin: if spatial.is_some_and(|s| s.redirected) {
                         crate::record::Origin::Ricochet
+                    } else if spatial.and_then(|s| s.beam.as_ref()).is_some_and(|b| b.kind == Some(crate::scene::BeamContactKind::Radius)) {
+                        crate::record::Origin::Splash
                     } else if spatial.and_then(|s| s.beam.as_ref()).is_some_and(|b| b.kind.is_some()) {
                         crate::record::Origin::Chain
                     } else if spatial.is_some_and(|s| s.splash) {

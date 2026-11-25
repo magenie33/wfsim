@@ -358,8 +358,12 @@ fn cloud_tick(
             let gap = scene.distance_to_body(center, b);
             let share = part.falloff_at(gap);
             if share <= 0. || gap > part.radius_m { continue; }
+            let mut recipient = part;
+            if recipient.co_attached_only && f.attached != Some((b, foe.state.generation)) {
+                recipient.takes_condition_overload = false;
+            }
             let killed = field_tick(
-                turn.w, owner, &part, damage_multiplier * share, at, turn.ctx, foe, b,
+                turn.w, owner, &recipient, damage_multiplier * share, at, turn.ctx, foe, b,
                 turn.gal, turn.arc, params, active, r, rec, turn.d, spec.params,
                 crate::record::Origin::Field, None, false,
             );

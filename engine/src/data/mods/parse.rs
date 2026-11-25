@@ -623,6 +623,7 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                     Some("refresh") => crate::model::FieldStacking::Refresh,
                     _ => crate::model::FieldStacking::Stack,
                 },
+                co_attached_only: false,
                 takes_condition_overload: v
                     .get("takes_condition_overload")
                     .and_then(Value::as_bool)

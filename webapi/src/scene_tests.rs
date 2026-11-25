@@ -899,3 +899,111 @@ fn standard_scene_replays_an_additional_wielder_with_the_reference_mount() {
     assert_eq!(crate::simulate::simulate_json(&input)["ok"], true);
     assert_eq!(crate::log::log_json(&input)["ok"], true);
 }
+
+#[test]
+fn torid_gravity_and_floor_embedding_share_the_projectile_and_cloud_clock() {
+    let mut v = request("torid", 1, false);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    v["player_at"] = json!([0.,0.]);
+    v["target_at"] = json!([0.,50.]);
+    v["duration"] = json!(8.);
+    let mut p = params(&v);
+    p.spread = None;
+    p.fire_rate = 0.08;
+    assert_eq!(p.projectile_gravity.unwrap().multiplier, 0.5);
+    let first = record(&p);
+    let trajectory = &first.spatial_flights()[0].flight;
+    assert!(trajectory.impacts.is_empty());
+    let surface = trajectory.surface_contact.expect("the grenade embeds on the floor");
+    assert!(surface.point.0[1].abs() < 1e-6);
+    assert!(surface.seconds > 0.);
+    v["formation"] = json!([{"id":"near_floor","at":[surface.point.0[0]+1.5,surface.point.0[2]]}]);
+    let mut p = params(&v);
+    p.spread = None;
+    p.fire_rate = 0.08;
+    let replay = record(&p);
+    let trace = &replay.spatial_flights()[0].flight;
+    assert!(trace.impacts.is_empty());
+    let at = trace.surface_contact.unwrap().seconds;
+    use wfsim_engine::record::Origin;
+    assert!(!replay.events().iter().any(|e| matches!(&e.kind, Kind::Damage(d) if d.origin == Origin::Own)));
+    assert!(replay.events().iter().any(|e| e.subject == Some(1) && (e.t-at).abs()<1e-8
+        && matches!(&e.kind, Kind::Damage(d) if d.origin == Origin::Field && !d.head)));
+    v["mode"] = json!("cycle");
+    v["evolutions"] = json!(["torid_evo1_incarnon_form"]);
+    let cycle = record(&params(&v));
+    assert!(!cycle.events().iter().any(|e| matches!(e.kind, Kind::TransformStart { .. })),
+        "floor clouds must never charge Incarnon");
+}
+
+#[test]
+fn torid_cloud_condition_overload_belongs_to_its_attached_actor() {
+    let mut v = request("torid", 1, false);
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    v["target_at"] = json!([0.,5.]);
+    v["formation"] = json!([{"id":"neighbor","at":[1.5,5.]}]);
+    v["duration"] = json!(4.);
+    let mut correct = params(&v);
+    correct.spread = None;
+    correct.fire_rate = 0.08;
+    correct.co_per_type = 0.8;
+    correct.co_stack = None;
+    correct.status_chance = 1.;
+    correct.lingering.as_mut().unwrap().status_chance = 1.;
+    correct.lingering.as_mut().unwrap().crit_chance = 0.;
+    assert!(correct.lingering.as_ref().unwrap().co_attached_only);
+    let mut all_targets = correct.clone();
+    all_targets.lingering.as_mut().unwrap().co_attached_only = false;
+    let read = |p: &fight::FightParams, body| {
+        record(p).events().iter().filter_map(|e| match &e.kind {
+            Kind::Damage(d) if e.subject == Some(body) && d.origin == wfsim_engine::record::Origin::Field => Some(d.raw),
+            _ => None,
+        }).collect::<Vec<_>>()
+    };
+    let host = read(&correct,0);
+    assert!(!host.is_empty());
+    assert_eq!(host, read(&all_targets,0));
+    let neighbor = read(&correct,1);
+    let wrong = read(&all_targets,1);
+    assert!(!neighbor.is_empty());
+    assert!(neighbor.iter().zip(wrong).any(|(actual, all)| *actual < all));
+}
+
+#[test]
+fn torid_incarnon_multishot_reaches_only_the_primary_seed_and_its_chain() {
+    let mut v = request("torid", 1, false);
+    v.as_object_mut().unwrap().remove("mode");
+    v["form"] = json!("incarnon");
+    v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"supplied"}});
+    v["target_at"] = json!([0.,5.]);
+    v["formation"] = json!([{"id":"sphere","at":[1.2,5.]},{"id":"chain","at":[4.,5.]}]);
+    v["duration"] = json!(0.01);
+    let mut p = params(&v);
+    p.spread = None;
+    p.critical_inputs = None;
+    p.base_crit_chance = 0.;
+    p.unmodded_crit_chance = 0.;
+    p.status_chance = 0.;
+    p.multishot = 1.;
+    use wfsim_engine::record::Origin;
+    let read = |p: &fight::FightParams, origin: Origin| {
+        fight::record(p, 7, 0., 0.01, 20000, 0).events().iter().filter_map(|e| match &e.kind {
+            Kind::Damage(d) if d.origin == origin => Some((e.subject, d.raw)),
+            _ => None,
+        }).collect::<Vec<_>>()
+    };
+    let main = read(&p,Origin::Own);
+    let splash = read(&p,Origin::Splash);
+    let links = read(&p,Origin::Chain);
+    assert_eq!(main.len(),1);
+    assert_eq!(splash.len(),1);
+    assert!(!links.is_empty());
+    p.multishot = 2.;
+    let main_double = read(&p,Origin::Own);
+    assert!((main_double[0].1 - 2.*main[0].1).abs() < 0.2);
+    assert_eq!(splash,read(&p,Origin::Splash));
+    let doubled_links = read(&p,Origin::Chain);
+    assert_eq!(links.len(),doubled_links.len());
+    assert!(links.iter().zip(&doubled_links).any(|(one,two)| (2.*one.1-two.1).abs()<0.2));
+    assert!(links.iter().zip(&doubled_links).any(|(one,two)| (one.1-two.1).abs()<0.2));
+}

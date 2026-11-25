@@ -467,6 +467,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             falloff_start_m: f.falloff_start_m.unwrap_or(0.0),
             falloff_reduction: f.falloff_reduction.unwrap_or(0.0),
             takes_condition_overload: f.takes_condition_overload,
+            co_attached_only: f.co_attached_only,
             elemental_mods_apply: f.elemental_mods_apply,
             can_crit: f.can_crit,
             status_mods_apply: f.status_mods_apply,
@@ -718,6 +719,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         // `OrbSpec::speed_mps`.
         homing: s.attack.homing,
         projectile_reverse_query: s.attack.projectile_reverse_query,
+        projectile_gravity: s.attack.projectile_gravity,
         projectile_speed_mps: s
             .attack
             .projectile_speed_mps

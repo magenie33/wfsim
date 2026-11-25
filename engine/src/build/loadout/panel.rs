@@ -111,6 +111,7 @@ pub struct ResolvedLingering {
     /// See [`LingeringBase::takes_condition_overload`] — CO on an AoE part is
     /// the exception, not the default.
     pub takes_condition_overload: bool,
+    pub co_attached_only: bool,
     /// THE PART'S OWN CO CLASS, where the catalog gives the part a row of its own
     /// (a thrown grenade's contact); `None` reads the weapon's `co_behavior`.
     pub co_behavior: Option<crate::model::CoBehavior>,
@@ -392,6 +393,7 @@ pub struct ResolvedPanel {
     /// — `None` on an attack that does not fly. See
     /// [`WeaponBase::projectile_speed_mps`].
     pub projectile_speed_mps: Option<f64>,
+    pub projectile_gravity: Option<crate::model::ProjectileGravity>,
     pub homing: Option<crate::model::Homing>,
     pub projectile_reverse_query: bool,
     /// HOW FAR THIS ATTACK REACHES, metres — `INFINITY` when the weapon

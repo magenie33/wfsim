@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-use super::{BodyHit, DetonationTrace, Flight, Impact, Scene, SurfaceBend, Vec3};
+use super::{BodyHit, DetonationTrace, Flight, Impact, Scene, SurfaceBend, SurfaceContact, Vec3};
 use crate::rules::geometry::penetration::{ReverseHit, projectile_exit, reverse_start};
 
 #[wfsim_gas_macro::metered]
@@ -136,6 +136,71 @@ impl Scene {
         let (_, half) = shape.collider.shape.radius_and_half_height();
         let local_normal = Vec3([local.0[0], local.0[1] - local.0[1].clamp(-half, half), local.0[2]]);
         shape.collider.inverse.inverse()?.direction(local_normal).normalized()
+    }
+
+    /// Kinematic gravity is applied before each displacement and collision sweep.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn trace_gravity(
+        &self, path: &mut Flight, model: crate::model::ProjectileGravity,
+        speed: f64, width: f64, range: f64, pierce: f64, every_body: bool, eligible: &[bool],
+    ) {
+        use crate::rules::geometry::{gravity::vertical_velocity, penetration};
+        let Some(direction) = path.direction.normalized() else { return };
+        let mut velocity = direction.0.map(|v| v as f32 * speed as f32);
+        let mut position = path.muzzle;
+        let mut seconds = 0.;
+        let mut travel = 0.;
+        let maximum = pierce.max(0.) as f32;
+        let mut accumulated = 0.;
+        let mut seen = vec![false; self.bodies.len()];
+        let floor = self.input.player.world.0[7];
+        while seconds < self.input.maximum_flight_seconds && travel < range {
+            let step = self.input.frame_seconds.min(self.input.maximum_flight_seconds - seconds) as f32;
+            if step <= 0. { break; }
+            velocity[1] = vertical_velocity(velocity[1], step, model.multiplier,
+                model.delay_seconds, seconds as f32);
+            let next = Vec3(std::array::from_fn(|i| f64::from(position.0[i] as f32 + velocity[i] * step)));
+            let displacement = next.minus(position);
+            let length = displacement.length();
+            let Some(line) = displacement.normalized() else { break };
+            let ground = if model.embed_surfaces { floor_distance(position, line, floor) } else { f64::INFINITY };
+            let reach = length.min(range - travel).min(ground);
+            while let Some(BodyHit { body, proxy, part, enter, exit }) =
+                self.first_hit(position, line, reach, width, |i| eligible.get(i) == Some(&true) && !seen[i])
+            {
+                let point = position.along(line, enter);
+                let end = position.along(line, exit);
+                let crossing = penetration::traverse(
+                    point.0.map(|v| v as f32), body as u64 + 1,
+                    &[ReverseHit { reference: body as u64 + 1, point: end.0.map(|v| v as f32) }],
+                    penetration::Budget { maximum, accumulated, infinite: every_body },
+                );
+                accumulated = crossing.accumulated;
+                path.impacts.push(Impact {
+                    body, proxy: self.bodies[body].proxies[proxy].proxy.cache_index, part, point,
+                    exit: end, seconds: seconds + f64::from(step) * enter / length,
+                    travel: travel + enter, material: end.minus(point).length(),
+                    remaining: (maximum - accumulated).max(0.), radial: false, radial_distance: 0.,
+                });
+                if !crossing.continues {
+                    path.stopped_at = Some(point);
+                    return;
+                }
+                seen[body] = true;
+            }
+            if ground <= reach {
+                let point = position.along(line, reach);
+                path.stopped_at = Some(point);
+                path.surface_contact = Some(SurfaceContact {
+                    point, seconds: seconds + f64::from(step) * reach / length, travel: travel + reach,
+                });
+                return;
+            }
+            if reach < length { return; }
+            position = next;
+            travel += length;
+            seconds += f64::from(step);
+        }
     }
 
     #[allow(clippy::too_many_arguments)]

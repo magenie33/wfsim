@@ -2,6 +2,7 @@
 //! Explicit-pose body queries. Native bindings and adoption scope: docs/GEOMETRY.md.
 pub mod penetration;
 pub mod guided;
+pub(crate) mod gravity;
 pub mod glaive;
 pub mod eye;
 pub mod rotation;

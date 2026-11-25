@@ -410,6 +410,11 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             ..l.clone()
         });
     }
+    if let Some(surface) = l.spatial.as_ref().filter(|landing| landing.surface_embed) {
+        let multiplier = if surface.instance > 0 { 1. + active.multishot_ammo_bonus } else { 1. };
+        FieldState::spawn(g.entities, active, me.seat, t, me.field_duration_boost,
+            l.combo_multiplier, multiplier, Some(surface.impact.point), None);
+    }
     if active.wait_for_lingering {
         let mut until = t;
         for e in g.entities.iter() {
