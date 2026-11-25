@@ -258,6 +258,24 @@ It verifies global historical coverage and each current public selection before
 retiring the temporary change capture. The canonical mailbox continues to feed
 the ordinary reader.
 
+### A bounded first-publication step
+
+An existing complete change capture also supports a separately budgeted
+retained scope. Copy the pinned priority controller configuration into a new
+controller state directory and set `priority_scope` to its weapon and ruler.
+Use a separately measured capacity receipt for that scope, with
+`scope_count: 1` and `scope` containing its weapon, ruler and the existing
+qualification receipt's `members` and `rows`. The fixed disk reserve and
+the measured Data and WAL budgets still apply.
+
+Run `python3 scripts/run_rank_catalog_batch.py priority-step CONFIG.json`.
+The first step must match the current priority head. Later steps resume its
+same sealed journal. Registration qualifies the historical archive and
+current riven policy before the ordinary reader processes the private cut.
+The old public head remains readable until its replacement commits. Observe
+`priority-status` and stop once the scope is selected. The single-scope
+controller does not scan or prepare the rest of the catalog.
+
 ### Adopting the complete catalog
 
 `scripts/adopt_rank_catalog_batch.mjs` consumes a qualified catalog and keeps

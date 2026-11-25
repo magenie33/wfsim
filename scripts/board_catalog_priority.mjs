@@ -27,7 +27,7 @@ export function preparePriority(db,contract){
     CREATE INDEX priority_zone_fifo ON priority_work(priority,position) WHERE phase NOT IN('selected','retired');`);
   });
  }
- const pin=JSON.stringify([contract.source,contract.cluster,contract.native,contract.archive,contract.epoch]);
+ const pin=JSON.stringify([contract.source,contract.cluster,contract.native,contract.archive,contract.epoch,...(contract.priority_scope?[contract.priority_scope]:[])]);
  db.prepare("INSERT OR IGNORE INTO priority_cursor VALUES('contract',?)").run(pin);
  assert.equal(db.prepare("SELECT value FROM priority_cursor WHERE feed='contract'").get().value,pin,'priority publication boundary changed');
 }
@@ -158,6 +158,19 @@ async function advance(ctx,job,now){
 }
 
 export async function nextPriority(ctx,now=Date.now()){
+ if(ctx.priorityScope){
+  const {journal:db,sql,priorityScope:{weapon,ruler}}=ctx;
+  const keys=[weapon,ruler];
+  const held=db.prepare('SELECT * FROM priority_work WHERE weapon=? AND ruler=?').get(...keys);
+  if(held)return held.phase!=='selected'&&held.phase!=='retired'&&held.due<=now?held:null;
+  const [next]=await sql.unsafe(`SELECT weapon,ruler,zone,queued_at FROM state_board_rank_new_scopes
+   ORDER BY zone,coalesce(zone_position,0),queued_at,weapon,ruler LIMIT 1`);
+  if(!next)return null;
+  if(next.weapon!==weapon||next.ruler!==ruler)throw Error('approved scope is not the current priority head');
+  transaction(db,()=>db.prepare(`INSERT INTO priority_work(weapon,ruler,priority,phase,due,reason,arrival,position)
+   VALUES(?,?,?,'ready',0,NULL,?,1)`).run(...keys,next.zone,next.queued_at));
+  return db.prepare('SELECT * FROM priority_work WHERE weapon=? AND ruler=?').get(...keys);
+ }
  const db=ctx.journal,turn=Number(db.prepare("SELECT value FROM priority_cursor WHERE feed='turn'").get()?.value||0);
  await intake(ctx,turn);
  const active=db.prepare("SELECT count(*) n FROM priority_work WHERE phase IN('pending','preparing')").get().n;
@@ -167,7 +180,9 @@ export async function nextPriority(ctx,now=Date.now()){
 
 export async function priorityStep(ctx,now=Date.now()){
  const job=await nextPriority(ctx,now);
- const turn=Number(ctx.journal.prepare("SELECT value FROM priority_cursor WHERE feed='turn'").get().value);
- if(turn%8===1)await reconcileSelectedInputs(ctx,now);
+ if(!ctx.priorityScope){
+  const turn=Number(ctx.journal.prepare("SELECT value FROM priority_cursor WHERE feed='turn'").get().value);
+  if(turn%8===1)await reconcileSelectedInputs(ctx,now);
+ }
  return job?advance(ctx,job,now):{status:'idle'};
 }
