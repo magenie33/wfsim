@@ -465,4 +465,6 @@ The directory links to a profile only when that account publishes its name.
 Apply `worker/pg/accounts.sql` before deployment, then apply
 `worker/pg/grant_simfleet_honors.sql` once to bind the inaugural project and
 honors to the repository owner's linked GitHub account. If that login is not
-linked, resolve the recipient with the owner before granting.
+linked, the operator resolves the recipient with the owner and sets the exact
+account id in the session setting `wfsim.honors_recipient` before granting.
+A conflicting linked GitHub account rejects the grant.
