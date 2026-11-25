@@ -622,4 +622,16 @@ check('Livia offers the shared progenitor control', livia.shown && livia.spec?.e
   && livia.saved?.element === 'impact' && livia.saved.bonus === 0.6, JSON.stringify(livia));
 check('Livia applies the selected bonus to base damage', Math.abs(livia.base - 316.8) < 1e-4, JSON.stringify(livia));
 
+const caustacyst = await evaluate(`(async () => {
+  history.pushState({}, '', '/weapons/Coda_Caustacyst/builder'); await route();
+  const spec = weaponInfo('coda_caustacyst')?.valence;
+  const shown = !document.getElementById('element-block').hidden;
+  return { spec, shown, saved:snapshotState().valence,
+    offered:(ddReg.get('dd-valence') || { items:[] }).items.map(i => i.value) };
+})()`);
+check('Coda Caustacyst opens with a legal progenitor bonus', caustacyst.shown
+  && caustacyst.spec?.elements.length === 7 && caustacyst.saved?.element === 'impact'
+  && caustacyst.saved.bonus === 0.6 && caustacyst.offered.length === 7
+  && caustacyst.offered.every(e => caustacyst.spec.elements.includes(e)), JSON.stringify(caustacyst));
+
 await app.finish("an adversary weapon's Valence bonus reaches its damage");
