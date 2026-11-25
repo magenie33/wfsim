@@ -27,7 +27,7 @@ assert.equal((await route()).projects[0].profile, undefined);
 assert.equal((await contributorProfilesRoute(new Request("https://wfsim.app" + path + "?view=identity"), env, path)).status, 404);
 const source = readFileSync(new URL("../web/src/static/app/17-account.js", import.meta.url), "utf8");
 const badge = runInNewContext(source.slice(source.indexOf("function developerHonors("), source.indexOf("async function communityProjectsPage")) + "\ndeveloperHonors", { aT: text => text });
-assert.match(badge(account.developer_honors), /Core Developer.*Community Developer/);
+assert.match(badge(account.developer_honors), /WFSim Core Developer.*WFSim Community Developer/);
 assert.equal(badge(["unrecognized"]), "");
 const slot = { isConnected: true, innerHTML: "" }, main = { innerHTML: "", querySelector: () => slot };
 const render = runInNewContext(source.slice(source.indexOf("function developerHonors(")) + "\ncommunityProjectsPage", {

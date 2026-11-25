@@ -1248,7 +1248,7 @@ async function authAct(el) {
 })();
 
 function developerHonors(honors = []) {
-  const labels = [["core_developer", "Core Developer", '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor"><path d="M4 3L1 6l3 3M8 3l3 3-3 3M7 1L5 11"/></svg>'], ["community_developer", "Community Developer", '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor"><path d="M3 3l6 3-6 3V3"/><circle cx="3" cy="3" r="1.5" fill="currentColor"/><circle cx="9" cy="6" r="1.5" fill="currentColor"/><circle cx="3" cy="9" r="1.5" fill="currentColor"/></svg>']];
+  const labels = [["core_developer", "WFSim Core Developer", '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor"><path d="M4 3L1 6l3 3M8 3l3 3-3 3M7 1L5 11"/></svg>'], ["community_developer", "WFSim Community Developer", '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor"><path d="M3 3l6 3-6 3V3"/><circle cx="3" cy="3" r="1.5" fill="currentColor"/><circle cx="9" cy="6" r="1.5" fill="currentColor"/><circle cx="3" cy="9" r="1.5" fill="currentColor"/></svg>']];
   return labels.filter(([id]) => honors.includes(id)).map(([id, name, icon]) =>
     ` <span class="contrib-mark developer-honor ${id}"><span aria-hidden="true">${icon}</span>${aT(name)}</span>`).join("");
 }

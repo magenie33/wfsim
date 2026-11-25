@@ -3911,8 +3911,8 @@ ui:
   "MOD slot layout does not match the ordered mods": "MOD 槽位布局与配装中的卡牌顺序不一致"
 
   "Community Projects": 社区项目
-  "Core Developer": 核心开发者
-  "Community Developer": 社区开发者
+  "WFSim Core Developer": WFSim 核心开发者
+  "WFSim Community Developer": WFSim 社区开发者
   "Discover independent projects built around WFSim and verified by WFSim.": 探索由社区开发者围绕 WFSim 构建、经过 WFSim 验证的第三方项目。
   "Verification confirms usefulness and compatibility, not official authorship.": 验证确认项目的实用性及兼容性，不代表项目由 WFSim 官方出品。
   "Apply for project listing": 申请收录项目
