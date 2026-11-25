@@ -46,7 +46,7 @@ function protocolCases(workflow) {
   assert.equal(new Set(cases).size, cases.length, 'each command and protocol mode executes once');
   assert.deepEqual([...cases].sort(), [
     'async/check_board_verify.mjs', 'async/check_queue_once.mjs', 'async/check_board_sync.mjs',
-    'async/check_board_reviews.mjs', 'async/check_fair.mjs', 'proc/check_board_sync.mjs',
+    'async/check_board_reviews.mjs', 'async/check_board_periodic_refresh.mjs', 'async/check_fair.mjs', 'proc/check_board_sync.mjs',
     'proc-async/check_board_sync.mjs', 'proc-async/check_board_reviews.mjs', 'proc-async/check_board_family.mjs',
   ].sort(), 'all original protocol command/mode pairs remain');
   return cases;
@@ -88,6 +88,7 @@ const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 protocolCases(workflow);
 assert.throws(() => protocolCases(workflow.replace('group: [async, proc, proc-async]', 'group: [async, proc]')));
 assert.throws(() => protocolCases(workflow.replace('          node scripts/check_board_family.mjs\n', '')));
+assert.throws(() => protocolCases(workflow.replace('          node scripts/check_board_periodic_refresh.mjs\n', '')));
 assert.throws(() => protocolCases(workflow.replace('WFSIM_SYNC_PROC: "1"', 'WFSIM_SYNC_PROC: "0"')));
 assert.throws(() => protocolCases(workflow.replace('WFSIM_ANSWER_BULK: "1"', 'WFSIM_ANSWER_BULK: "0"')));
 assert.deepEqual(new Set([...RUST_SUITES, ...Object.keys(DEEP_SCOPE_GROUPS)]), new Set(['workspace', 'webapi', 'accuracy', ...RUST_GROUPS]));
