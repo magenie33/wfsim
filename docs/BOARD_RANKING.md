@@ -267,7 +267,10 @@ Use a separately measured capacity receipt for that scope, with
 `scope_count: 1` and `scope` containing its weapon, ruler and the existing
 qualification receipt's `members` and `rows`. A fresh scope instead uses
 `fresh: true`, `members: 0`, and independently measured upper bounds `rows`,
-`identities`, `facts`, and `manifest_bytes` (positive except `rows`). It has no retained facts,
+`identities`, `facts`, `manifest_bytes`, and `scanned_builds` (positive except
+`rows`). The last bound counts every build examined, including builds without
+a fact for the ruler. A bounded preflight and the real cursor share the same
+snapshot; excess work prevents the cut from being sealed. It has no retained facts,
 archive scope, receipt or public head. Its new repeatable-read cut and Native
 qualification must fit those bounds. The controller pins them in its journal.
 The fixed disk reserve and the measured Data and WAL budgets still apply.

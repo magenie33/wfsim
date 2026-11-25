@@ -69,7 +69,8 @@ export async function registerCatalogScope(sql,{work,manifest:m,receipt:r,contra
   if(file.bytes!==m.bytes||file.sha256!==m.sha256||basename(path)!=='inputs.ndjson'||
      !/^rank-cut-[a-f0-9-]{36}$/.test(basename(dirname(path)))||dirname(dirname(path))!==root)
    throw Error('catalog staged file differs from the manifest');
-  if(meta?.kind!=='meta'||!['weapon','ruler','source','native','snapshot','captured_at','mailbox_floor'].every(k=>meta[k]===m[k]))
+  if(meta?.kind!=='meta'||!['weapon','ruler','source','native','snapshot','captured_at','mailbox_floor',
+     ...(requireFresh?['scanned_builds']:[])].every(k=>meta[k]===m[k])||(requireFresh&&(!Number.isSafeInteger(m.scanned_builds)||m.scanned_builds<m.total)))
    throw Error('catalog manifest metadata changed');
   if(part){
    frozen.previous=await preserveCatalogPredecessor(tx,part,reservation,root,verifyPredecessor);

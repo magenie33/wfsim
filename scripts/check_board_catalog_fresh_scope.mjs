@@ -2,14 +2,16 @@
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {join} from 'node:path';
-import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
+import {existsSync,mkdirSync,readFileSync,writeFileSync} from 'node:fs';
 import {runBatch} from './adopt_rank_catalog_batch.mjs';
 import {freshDirectory} from './board_catalog_fresh.mjs';
 
 export async function checkFreshScope({sql,config,weapon,ruler,second,inputs,step,put,native}){
  const fresh='heavy_gunner__aimed_body',keys=[weapon,fresh],fact=inputs[0].facts[0],old='a'.repeat(64);
  const opts={available:()=>128*1024**3,pageBudget:1};
- const scope={weapon,ruler:fresh,fresh:true,members:0,rows:8,identities:8,facts:16,manifest_bytes:65536};
+ const [{n}]=await sql.unsafe('SELECT count(*)::int n FROM entity_weapon_builds WHERE weapon=$1',[weapon]);
+ assert(n>8);
+ const scope={weapon,ruler:fresh,fresh:true,members:0,rows:8,identities:8,facts:16,manifest_bytes:65536,scanned_builds:n};
  const base=JSON.parse(readFileSync(config.budget));
  const make=(name,forecast=scope)=>{
   const state=join(config.state,`fresh-scope-${name}`);mkdirSync(state);
@@ -34,6 +36,12 @@ export async function checkFreshScope({sql,config,weapon,ruler,second,inputs,ste
  await assert.rejects(runBatch({...good,priority_scope:{weapon,ruler:second}},'priority-step',opts),/one-scope capacity forecast/);
  await assert.rejects(runBatch(good,'priority-step',{...opts,available:()=>1024**3}),/reserve exhausted/);
  assert.equal(await registered(),undefined);
+ const scanSmall=make('scan',{...scope,scanned_builds:n-1});
+ const scanCapped=await runBatch(scanSmall,'priority-step',opts);
+ assert.equal(scanCapped.status,'held');assert.match(scanCapped.reason,/build scan exceeds/);
+ const cutDir=freshDirectory(scanSmall.state,...keys);
+ assert(!existsSync(join(cutDir,'cut.json'))&&!existsSync(join(cutDir,'inputs.ndjson')));
+ assert.equal(await registered(),undefined);assert.equal(await published(),undefined);
  const tooSmall=make('small',{...scope,manifest_bytes:16});
  const capped=await runBatch(tooSmall,'priority-step',opts);assert.equal(capped.status,'held');assert.match(capped.reason,/disk budget/);
  assert.equal(await registered(),undefined);assert.equal(await published(),undefined);
@@ -68,7 +76,11 @@ export async function checkFreshScope({sql,config,weapon,ruler,second,inputs,ste
  finally{writeFileSync(selected.budget,sealedBudget);}
  const capacityDrift={...opts,available:()=>1024**3};
  await assert.rejects(runBatch({...completion,priority_completion_revision:'0'.repeat(64)},'priority-complete',capacityDrift),/pinned Native publication changed/);
- const directory=freshDirectory(selected.state,...keys),cut=join(directory,'cut.json');const raw=readFileSync(cut,'utf8');const corrupt=JSON.parse(raw);corrupt.snapshot='not-the-captured-snapshot';
+ const directory=freshDirectory(selected.state,...keys),cut=join(directory,'cut.json');const raw=readFileSync(cut,'utf8');
+ const sealed=JSON.parse(raw);assert.equal(sealed.scanned_builds,n);assert(sealed.total<sealed.scanned_builds);
+ const lines=readFileSync(join(directory,'inputs.ndjson'),'utf8').trimEnd().split('\n').map(JSON.parse);
+ assert.equal(lines[0].scanned_builds,n);assert.equal(lines.at(-1).scanned_builds,n);
+ const corrupt=JSON.parse(raw);corrupt.snapshot='not-the-captured-snapshot';
  writeFileSync(cut,JSON.stringify(corrupt));
  try{await assert.rejects(runBatch(completion,'priority-complete',capacityDrift),/fresh scope qualification differs/);}finally{writeFileSync(cut,raw);}
  const stats=async()=>(await sql.unsafe(`SELECT (SELECT count(*) FROM state_board_rank_generations) generations,
@@ -80,5 +92,6 @@ export async function checkFreshScope({sql,config,weapon,ruler,second,inputs,ste
  const journal=new DatabaseSync(join(selected.state,'priority-scope.sqlite'),{readOnly:true});
  try{assert.equal(journal.prepare('SELECT phase FROM priority_work').get().phase,'selected');}finally{journal.close();}
  assert.equal((await runBatch(completion,'priority-complete',capacityDrift)).status,'selected');
+ console.log(`ok — ${n} scanned builds with ${sealed.total} fact-bearing identities; one-below scan cap leaves no manifest or registration`);
  console.log('ok — bounded first publication, fresh receipt and fenced completion, retained and changed head refusal');
 }

@@ -3199,7 +3199,8 @@ across samples; Data, WAL and capture-cut guards remain mandatory.
 numbered FIFO dispatch, shared capacity, retained queue state on upgrade,
 archive continuity, late changes during preparation and progress past held work.
 The separately budgeted fresh-scope path captures a new canonical cut only when
-no retained source or public head exists, and verifies the selected revision
+no retained source or public head exists, counts builds without facts against
+the scan limit, and verifies the selected revision
 against that same receipt without allocating another generation.
 `check_catalog_file_owner.py` exercises the two file owners on
 Linux, including a corrupt transfer, interrupted work and predecessor readback.
