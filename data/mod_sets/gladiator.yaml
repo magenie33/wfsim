@@ -5,11 +5,8 @@ name: Gladiator
 # It is Blood Rush's own bracket and its own scaling, bought with set pieces
 # instead of a mod slot.
 #
-# IT SCALES PER EQUIPPED MEMBER with no threshold, so one piece already pays its
-# 10% — and THREE of the six are WARFRAME mods (Aegis, Finesse, Resolve), which
-# this engine has no loadout for. A weapon build alone therefore reaches 30%
-# here against 60% in game, which is the same ceiling the Vigilante set
-# discloses about its own two Warframe members.
+# One piece grants 10%; the linked Warframe's Aegis, Finesse and Resolve
+# count with the three weapon cards, up to 60% per combo step.
 #
 # IT PAYS ALMOST NOTHING IN A HEAVY MODE, and that is the counter's doing rather
 # than the set's: the swing that reads the multiplier is the swing that empties

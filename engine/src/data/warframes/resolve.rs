@@ -228,6 +228,8 @@ pub struct Resolved {
     /// The arcanes that arm a buff on a WEAPON (Arcane Fury), which only that
     /// weapon's fight can run.
     pub weapon_buffs: Vec<crate::model::WielderBuff>,
+    /// Set ids of the legally seated Warframe cards, one entry per card.
+    pub mod_sets: Vec<String>,
 }
 
 pub(super) fn by_rank(ladder: &[f64], rank: u32) -> f64 {
@@ -763,7 +765,8 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
         .filter(|(m, _)| m.augments.is_some())
         .map(|(m, _)| m.id.as_str())
         .collect();
-    Ok(Resolved { frame, stats, abilities, tags, shield_gate, admissions, refused, augments, cast_arcanes, weapon_buffs })
+    let mod_sets = seated.iter().filter_map(|(m, _)| m.set.clone()).collect();
+    Ok(Resolved { frame, stats, abilities, tags, shield_gate, admissions, refused, augments, cast_arcanes, weapon_buffs, mod_sets })
 }
 
 /// The capacity an aura adds, from W`Aura`: "matching polarity … double of the

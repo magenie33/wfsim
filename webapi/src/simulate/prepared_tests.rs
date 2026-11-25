@@ -158,3 +158,34 @@ fn a_prepared_request_is_owned_and_runs_share_no_live_state() {
         assert_eq!(actual[1], simulate_shard_json(&original, 0, 3, &mut |_, _| {}));
     }
 }
+
+#[test]
+fn gladiator_wielder_and_weapon_members_share_the_combo_bonus() {
+    let mut request = json!({"weapon":"magistar", "duration":1, "runs":1,
+        "mods":["gladiator_might","gladiator_rush","gladiator_vice"]});
+    let check = |v: &Value, expected: f64| {
+        let prepared = PreparedSimulation::new(v).unwrap();
+        assert!((prepared.params.crit_chance_per_combo - expected).abs() < 1e-9,
+            "{} instead of {expected}", prepared.params.crit_chance_per_combo);
+    };
+    check(&request, 0.3);
+    let armed = PreparedSimulation::new(&request).unwrap().params;
+    let mut empty = request.clone();
+    empty["mods"] = json!([]);
+    let bare = PreparedSimulation::new(&empty).unwrap().params;
+    assert!((armed.crit_multiplier / bare.crit_multiplier - 1.6).abs() < 1e-5);
+    assert!((armed.fire_rate / bare.fire_rate - 1.3).abs() < 1e-5);
+    assert!((armed.combo_duration_seconds - bare.combo_duration_seconds - 6.0).abs() < 1e-5);
+    request["wielder"] = json!({"frame":"valkyr", "mods":[{"id":"gladiator_aegis"},
+        {"id":"gladiator_resolve"},{"id":"gladiator_finesse"}]});
+    check(&request, 0.6);
+    let panel = crate::panel::panel_json(&request);
+    assert!(panel["conditionals"].as_array().unwrap().iter().any(|c|
+        c["mod"] == "Gladiator" && c["why"].as_str().is_some_and(|s| s.contains("6 of 6"))), "{panel}");
+    request["mods"] = json!([]);
+    check(&request, 0.3);
+    request["wielder"]["mods"] = json!([{"id":"gladiator_aegis"},{"id":"gladiator_aegis"}]);
+    check(&request, 0.1);
+    request["weapon"] = json!("braton");
+    check(&request, 0.0);
+}

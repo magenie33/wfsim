@@ -2151,7 +2151,7 @@ fn each_gladiator_member_adds_its_share_to_the_combo_crit_bracket() {
             - 0.30)
             .abs()
             < 1e-12,
-        "three weapon members is the ceiling this engine can equip",
+        "three members are seated on the weapon",
     );
     // …AND IT SHARES THE BRACKET WITH THE MOD rather than replacing it.
     assert!(

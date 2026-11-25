@@ -95,6 +95,7 @@ pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::
     t.augments = r.augments.iter().map(|a| (*a).to_string()).collect();
     t.cast_arcanes = r.cast_arcanes.clone();
     t.weapon_buffs = r.weapon_buffs.clone();
+    t.mod_sets = r.mod_sets.clone();
     t.ability_efficiency = r.stat(wf::FrameStat::AbilityEfficiency).value;
     t.casting_speed_bonus = r.stat(wf::FrameStat::CastingSpeed).value - 1.0;
     if !info.sentinel {

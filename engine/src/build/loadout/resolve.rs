@@ -1553,18 +1553,11 @@ pub fn resolve_for(
         .filter(|s| s.kind == crate::data::mod_sets::SetBonusKind::CritTierUpgrade)
         .map(|s| s.per_mod)
         .sum();
-    // …AND THE GLADIATOR SET READS THE COMBO COUNTER, into Blood Rush's own
-    // bracket: `base_cc x [1 + mods + this x (combo - 1)]`. Three of its six
-    // members are Warframe mods, so a weapon build alone reaches 30% here and
-    // the ceiling is stated in `data/mod_sets/gladiator.yaml` rather than
-    // pretended away — the same disclosure the Vigilante set carries.
-    let set_crit_per_combo: f64 = mods
-        .iter()
-        .filter_map(|m| m.set)
-        .filter_map(crate::data::mod_sets::set_def)
-        .filter(|s| s.kind == crate::data::mod_sets::SetBonusKind::CritChancePerCombo)
-        .map(|s| s.per_mod)
-        .sum();
+    // Gladiator shares Blood Rush's bracket, including the linked Warframe's cards.
+    let set_crit_per_combo: f64 = if base.slot == "melee" {
+        crate::data::mod_sets::combo_crit_sets(mods, tenno)
+            .map(|(set, count)| set.per_mod * count as f64).sum()
+    } else { 0.0 };
 
     // Source-backed profiles use native WEAPON_SPREAD endpoint reductions.
     // Wiki profiles retain the inverse-accuracy rule; docs/MECHANICS.md §11.

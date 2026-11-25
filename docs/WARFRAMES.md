@@ -264,6 +264,10 @@ different wielder and never reaches the board.
 - The BOARD never records one: every ruler scores in the Prototype's hands.
 - A share link does not carry the wielder yet (`SHARE_EXCLUDED_AXES`).
 
+The linked Warframe contributes its seated Gladiator set cards to melee combo
+critical chance, together with the weapon cards. Each member adds 10% per
+combo tier above 1x, up to 60% per tier for all six.
+
 ## Companions
 
 A companion weapon links a companion body or a weapon-scoped Prototype.

@@ -108,19 +108,7 @@ pub fn sets() -> &'static [ModSetDef] {
     all()
 }
 
-/// One set by id. `None` = a mod names a set with no definition file, which
-/// the pool test refuses.
-/// HOW MANY OF A SET'S MEMBERS THIS ENGINE CAN EQUIP.
-///
-/// A set is up to six mods spread across the Warframe AND the weapons — "Only
-/// the number of equipped mods within the set dictates the Set Bonus strength"
-/// (wiki, Set_Mods) — and this engine has no Warframe loadout. So a set whose
-/// members are not all weapon mods has a LOWER CEILING here than in game: the
-/// Vigilante set is six at 5% each, two of them (Vigor, Pursuit) go on the
-/// frame, and a weapon build tops out at 20% against 30%.
-///
-/// Counted from the data rather than written down, so a set that later becomes
-/// complete stops being reported as short on its own.
+/// Count the members carried by weapon mod pools, excluding Warframe cards.
 pub fn members_carried(set_id: &str) -> u32 {
     static COUNTS: OnceLock<Vec<(String, u32)>> = OnceLock::new();
     let counts = COUNTS.get_or_init(|| {
@@ -139,6 +127,15 @@ pub fn members_carried(set_id: &str) -> u32 {
         out
     });
     counts.iter().find(|(s, _)| s == set_id).map_or(0, |(_, n)| *n)
+}
+
+/// Count the weapon and linked Warframe members of a combo-crit set.
+pub fn combo_crit_sets<'a>(mods: &'a [&'a crate::model::ModDef], tenno: &'a crate::data::tenno::Tenno) -> impl Iterator<Item = (&'static ModSetDef, usize)> + 'a {
+    sets().iter().filter(|s| s.kind == SetBonusKind::CritChancePerCombo).filter_map(move |s| {
+        let count = mods.iter().filter(|m| m.set == Some(s.id)).count()
+            + tenno.mod_sets.iter().filter(|id| id.as_str() == s.id).count();
+        (count > 0).then_some((s, count.min(s.members as usize)))
+    })
 }
 
 pub fn set_def(id: &str) -> Option<&'static ModSetDef> {
