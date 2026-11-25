@@ -4433,3 +4433,5 @@ main.config-page:not([id])>.block>.bh,main.config-page:not([id])>.block>.bh .sub
 
 .community-project .bh h2{display:flex;align-items:center;gap:10px}
 .community-project-icon{color:var(--accent);flex:none}
+
+.community-project-apply{display:flex;flex-wrap:wrap;gap:8px}

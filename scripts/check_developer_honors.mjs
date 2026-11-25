@@ -38,6 +38,8 @@ const render = runInNewContext(source.slice(source.indexOf("function developerHo
 await render(main);
 assert.match(main.innerHTML, /Community Projects/);
 assert.match(main.innerHTML, /Apply for project listing/);
+assert.match(main.innerHTML, /discord.gg\/H4BMqvYFVg/);
+assert.match(main.innerHTML, /qm.qq.com\/q\/uiXrMSTs8S/);
 assert.match(slot.innerHTML, /Verified by WFSim/);
 assert.match(slot.innerHTML, new RegExp("/user/" + profile));
 assert.match(slot.innerHTML, /github.com\/superexboom\/simfleet/);

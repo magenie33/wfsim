@@ -1258,7 +1258,11 @@ async function communityProjectsPage(main) {
     <p>${aT("Discover independent projects built around WFSim and verified by WFSim.")}</p>
     <div data-community-projects aria-live="polite">${aT("Loading…")}</div>
     <p class="set-note">${aT("Verification confirms usefulness and compatibility, not official authorship.")}</p>
-    <a class="ghost-btn" href="${LANG === "zh" ? "https://qm.qq.com/q/uiXrMSTs8S" : "https://discord.gg/H4BMqvYFVg"}" target="_blank" rel="noopener">${aT("Apply for project listing")}</a>
+    <h2>${aT("Apply for project listing")}</h2>
+    <div class="community-project-apply">
+      <a class="ghost-btn" href="https://discord.gg/H4BMqvYFVg" target="_blank" rel="noopener">Discord</a>
+      <a class="ghost-btn" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener">${aT("QQ group")}</a>
+    </div>
     </div></div>`;
   const list = main.querySelector("[data-community-projects]");
   const result = await accountCall("GET", "/api/community/projects");
