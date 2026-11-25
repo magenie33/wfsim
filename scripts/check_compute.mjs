@@ -17,6 +17,13 @@ const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE });
 const { evaluate, check } = app;
 await app.setLang("en", 20000);
 
+// The publication signal is live, unlike this fixture's local task endpoints.
+await evaluate(`(() => {
+  const fetchLocal = window.fetch;
+  window.fetch = (url, init) => String(url) === SIGNAL_URL
+    ? Promise.resolve(new Response(null, { status: 404 })) : fetchLocal(url, init);
+})()`);
+
 const budgetRun = await evaluate(`(async () => {
   if (!WASM) return { native: true };
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
