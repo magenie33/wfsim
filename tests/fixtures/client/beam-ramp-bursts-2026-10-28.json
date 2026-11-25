@@ -1,0 +1,32 @@
+{
+  "batch": "20261125T052906Z-beam-ramp-roster-coverage",
+  "manifest_sha256": "dc7d22dea41178dc50c358ada8d4eb40b8ee95be28a6515a643b99454753a480",
+  "rows": [
+    {
+      "id": "athodai_prime_alt",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAthodai/PrimeAthodaiPistolWeapon",
+      "index": 1,
+      "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+      "fields": {
+        "ContinuousDamageAttenuation": "{0.2,1}",
+        "ContinuousDamageAttenuationTime": "0.60000002",
+        "ContinuousDamageAttenuationCooldownTime": "2",
+        "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+        "AttenuateContinuousDamagePerTarget": "1"
+      }
+    },
+    {
+      "id": "athodai_alt",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnJetTurbine/TnJetTurbinePistolWeapon",
+      "index": 1,
+      "impact_type": "/EE/Types/Game/WeaponBeamImpactBehavior",
+      "fields": {
+        "ContinuousDamageAttenuation": "{0.2,1}",
+        "ContinuousDamageAttenuationTime": "0.60000002",
+        "ContinuousDamageAttenuationCooldownTime": "2",
+        "ContinuousDamageAttenuationCooldownDelay": "0.80000001",
+        "AttenuateContinuousDamagePerTarget": "1"
+      }
+    }
+  ]
+}

@@ -930,3 +930,28 @@ fn direct_beam_without_special_geometry_restarts_at_each_spawn() {
     let global = factors(&p);
     assert!(global.iter().any(|v| *v > 0.9), "{global:?}");
 }
+
+#[test]
+fn athodai_beam_bursts_use_target_attenuation() {
+    use wfsim_engine::record::{Factor, Layer, Origin};
+    for id in ["athodai", "athodai_prime"] {
+        let mut v = request(id, 1, false);
+        v.as_object_mut().unwrap().remove("mode");
+        v["form"] = json!("alt_fire");
+        v["scene_3d"] = json!({"preset":"source_default","placement":{"kind":"center_distance","distance":5.}});
+        let mut p = params(&v);
+        assert!(!p.continuous && p.beam_ramp.unwrap().per_target);
+        p.spread = None;
+        let replay = record(&p);
+        let hits = replay.events().iter().filter_map(|e| match &e.kind {
+            Kind::Damage(d) if d.origin == Origin::Own => Some(d.layers.iter().find_map(|l| match l {
+                Layer::Mul { factor: Factor::BeamRamp, value, .. } => Some(*value),
+                _ => None,
+            }).unwrap_or(1.)),
+            _ => None,
+        }).collect::<Vec<_>>();
+        assert!(hits.len() > 5, "{id}: {hits:?}");
+        assert!((hits[0] - 0.2).abs() < 1e-9, "{id}: {hits:?}");
+        assert!(hits.iter().any(|v| *v > 0.9), "{id}: {hits:?}");
+    }
+}

@@ -30,3 +30,24 @@ fn every_held_form_binds_its_client_attenuation_declaration() {
     let held: std::collections::BTreeSet<_> = all().iter().filter(|w| w.attack.trigger == "held").map(|w| w.id.as_str()).collect();
     assert_eq!(held, checked);
 }
+
+#[test]
+fn beam_bursts_bind_attenuation_without_changing_burst_cadence() {
+    let receipt: serde_json::Value = serde_json::from_str(include_str!("../../../../../tests/fixtures/client/beam-ramp-bursts-2026-10-28.json")).unwrap();
+    for row in receipt["rows"].as_array().unwrap() {
+        let id = row["id"].as_str().unwrap();
+        let p = base_panel(id, false);
+        assert_eq!(spec(id).unwrap().attack.trigger, "burst");
+        assert!(!p.continuous);
+        let f = &row["fields"];
+        let r = p.beam_ramp.unwrap();
+        let close = |actual: f64, key: &str| assert!((actual - f[key].as_str().unwrap().parse::<f64>().unwrap()).abs() < 1e-6, "{id}: {key}");
+        assert_eq!(p.beam_ramp_floor, 0.2);
+        assert_eq!(f["ContinuousDamageAttenuation"], "{0.2,1}");
+        close(r.rise_seconds, "ContinuousDamageAttenuationTime");
+        close(r.cooldown_delay_seconds, "ContinuousDamageAttenuationCooldownDelay");
+        close(r.cooldown_divisor, "ContinuousDamageAttenuationCooldownTime");
+        assert!(r.per_target);
+        assert_eq!(f["AttenuateContinuousDamagePerTarget"], "1");
+    }
+}

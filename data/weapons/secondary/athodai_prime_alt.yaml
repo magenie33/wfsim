@@ -16,6 +16,9 @@ co_behavior: additive_with_base_damage
 # multiplier". The weapon's own page does not say it.
 headshot_multiplier: 1.0
 
+beam_ramp_floor: 0.2
+beam_ramp: { rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true }
+
 attack:
   # see notes: cone_half_angle_from_2
   spread:
@@ -37,12 +40,13 @@ attack:
   crit_multiplier: 2.5
   status_chance: 0.35
   punch_through_m: 2.0
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
+  # Maximum reach; damage attenuation is a separate time state.
   # wiki: "Range: 16.0 m" on this attack.
   range_m: 16.0
   damage: { heat: 100 }   # total 100
 
 unmodeled:
+  - reason: client_beam_target_ramp
   - reason: client_clip_burst
   - "The burst empties the magazine, and this entry fires a fixed count, the unmodded magazine. Magazine mods lengthen the burst (page), so a build with one reads low."
   - "The cone is 2 m thick (wiki); the sim fires a ray with no width."

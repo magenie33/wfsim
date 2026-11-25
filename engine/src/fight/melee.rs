@@ -803,6 +803,8 @@ pub(super) fn seconds_to_next_shot(
             }
         }
         None => match active.burst {
+            // Beam bursts use the resolved beam tick rate rather than projectile burst spacing.
+            Some(_) if active.beam_ramp.is_some() => 1.0 / rate,
             Some(b) if b.count > 1 => {
                 let live = if raw_rate == active.fire_rate { 1.0 } else {
                     let base = active.unmodded_fire_rate.max(1e-9);

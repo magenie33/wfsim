@@ -1959,8 +1959,14 @@ The native state is elapsed ramp time: `c = max(c - dt / divisor, 0)`,
 `rise_seconds * cooldown_divisor`. Unbound beams retain the two-second
 normalized convention. In 3D, a source declaration of
 `AttenuateContinuousDamagePerTarget` selects independent target clocks
-for damage from primary beams and their links. First-tick initialization
-and native reacquisition scheduling remain uncalibrated.
+for damage from primary beams and their links. A native contact reuses a record keyed by the recipient object, resets
+its inactivity and preserves its remaining local time. Different objects
+receive distinct records. The global mode instead reads the behavior
+instance's independent shared state. Athodai's alternate burst modes
+also use target-local attenuation. Their beam burst uses the resolved tick
+rate; native accepted-tick scheduling and magazine termination remain open.
+Native update/contact ordering, the first accepted damage tick and complete
+record lifecycle remain uncalibrated.
 
 Shape, not a damage part. It lives in `attack.beam` and is deliberately **not**
 a `radial:`, because in this engine that word means *a second damage instance*

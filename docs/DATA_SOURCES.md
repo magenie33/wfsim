@@ -195,7 +195,9 @@ than its toggle action's short timer. `UNMODELLED.md` owns the remaining scope.
 51-form receipt against the pinned roster archive and behavior overrides.
 Native lower endpoints, rise time, cooldown delay, divisor and target-local
 flags are bound independently of beam geometry. Unity endpoints have no
-attenuation; Onos's distinct charge consumer remains unmodelled.
+attenuation; Onos's distinct charge consumer remains unmodelled. The supplemental
+`beam-ramp-bursts-2026-10-28.json` receipt binds the two Athodai alternate modes
+from `20261125T052906Z-beam-ramp-roster-coverage`.
 
 ### Whole-primary calibration
 
