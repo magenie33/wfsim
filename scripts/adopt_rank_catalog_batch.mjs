@@ -14,6 +14,7 @@ import {openRankInventoryOperator} from './board_operator.mjs';
 import {initializeJournal,jsonFile,openProtectedSets,planBatch} from './board_catalog_batch_state.mjs';
 import {preparePriority,priorityStep} from './board_catalog_priority.mjs';
 import {completePriorityScope} from './board_catalog_scope_completion.mjs';
+import {assertFreshOrigin,freshScopeLimits} from './board_catalog_fresh.mjs';
 import {batchStep,closeBatch} from './board_catalog_batch_step.mjs';
 import {sampleCapacity} from './board_catalog_batch_capacity.mjs';
 import {connectFileOwner} from './board_catalog_file_owner.mjs';
@@ -84,19 +85,24 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
   assert(spec&&cut?.snapshot&&JSON.stringify([spec.source,spec.cluster,spec.native,spec.archive,cut.snapshot,cut.captured_at])===epoch,
    'real coherent cut and matching qualification ledger required');
   const budget=jsonFile(config.budget),final=priority?{scopes:budget.scope_count}:jsonFile(config.coverage).final;
+  let fresh;
   if(priorityScope){
    assert(budget.scope_count===1&&budget.scope?.weapon===priorityScope.weapon&&budget.scope?.ruler===priorityScope.ruler&&
     Number.isSafeInteger(budget.budget_total)&&budget.budget_total>0,'one-scope capacity forecast required');
    const row=ledger.prepare('SELECT body FROM receipts WHERE weapon=? AND ruler=?').get(priorityScope.weapon,priorityScope.ruler);
    const receipt=row&&JSON.parse(row.body);
-   assert(receipt?.eligible&&receipt.unresolved===0&&receipt.members===budget.scope.members&&receipt.rows===budget.scope.rows,
+   if(budget.scope.fresh===true){
+    assert(!receipt,'retained scope requires its original qualification');
+    assertFreshOrigin(capture,archive,priorityScope.weapon,priorityScope.ruler);
+    fresh=freshScopeLimits(budget.scope);
+   }else assert(receipt?.eligible&&receipt.unresolved===0&&receipt.members===budget.scope.members&&receipt.rows===budget.scope.rows,
     'scope forecast must identify its existing qualified archive receipt');
   }
   if(!priority)assert(final?.eligible&&final.scopes===final.qualified&&final.missing===0&&final.held===0&&final.orphans===0,
    'historical qualification is incomplete');
   const contract={source:spec.source,native:spec.native,archive:spec.archive,cluster:String(spec.cluster),epoch,
    snapshot:cut.snapshot,at:cut.captured_at,floor:String(read('floor')??read('start')?.version),scopes:final.scopes,
-   ...(priorityScope?{priority_scope:priorityScope}:{}),work,volume:process.env.WFSIM_BOARD_DATA_UUID||null,origins,
+   ...(priorityScope?{priority_scope:priorityScope}:{}),...(fresh?{priority_fresh:fresh}:{}),work,volume:process.env.WFSIM_BOARD_DATA_UUID||null,origins,
    pins:[...(final.current_pins?[final.current_pins.sha256]:[]),...(final.additional_heads||[]).map(p=>p.pins)].sort()};
   const previous=journal.prepare('SELECT contract,closed FROM run WHERE id=1').get();
   if(previous)assert.equal(previous.contract,JSON.stringify(contract),'batch recovery boundary changed');

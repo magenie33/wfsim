@@ -5,7 +5,7 @@ import {join} from 'node:path';
 import {reconcileSelectedInputs} from './board_catalog_delivery.mjs';
 import {registerCatalogScope} from './adopt_rank_catalog.mjs';
 import {catalogHead} from './board_catalog_readback.mjs';
-import {freshDirectory,freshPublication,qualifyRetainedScope} from './board_catalog_fresh.mjs';
+import {freshDirectory,freshPublication,qualifyRetainedScope,readFreshQualification} from './board_catalog_fresh.mjs';
 import {transaction} from './board_catalog_batch_state.mjs';
 
 export function preparePriority(db,contract){
@@ -27,7 +27,7 @@ export function preparePriority(db,contract){
     CREATE INDEX priority_zone_fifo ON priority_work(priority,position) WHERE phase NOT IN('selected','retired');`);
   });
  }
- const pin=JSON.stringify([contract.source,contract.cluster,contract.native,contract.archive,contract.epoch,...(contract.priority_scope?[contract.priority_scope]:[])]);
+ const pin=JSON.stringify([contract.source,contract.cluster,contract.native,contract.archive,contract.epoch,...(contract.priority_scope?[contract.priority_scope]:[]),...(contract.priority_fresh?[contract.priority_fresh]:[])]);
  db.prepare("INSERT OR IGNORE INTO priority_cursor VALUES('contract',?)").run(pin);
  assert.equal(db.prepare("SELECT value FROM priority_cursor WHERE feed='contract'").get().value,pin,'priority publication boundary changed');
 }
@@ -100,7 +100,16 @@ async function advance(ctx,job,now){
  };
  try{
   const head=await catalogHead(sql,...keys);
+  if(contract.priority_fresh&&head?.catalog_phase){
+   const {receipt,manifest}=readFreshQualification(ctx,...keys),proof=head.catalog_proof;
+   assert(head.cut===manifest.sha256&&head.rank_source===contract.source&&head.native===contract.native&&
+    proof?.snapshot===receipt.snapshot&&proof.archive===receipt.archive&&proof.pages_sha256===receipt.pages_sha256&&
+    proof.rows===receipt.rows&&proof.policy===receipt.policy,
+    'fresh scope registration differs from its qualified capture');
+   if(head.enabled&&head.revision)return result('pending','awaiting-completion',2500);
+  }
   if(head?.enabled&&head.revision){
+   assert(!contract.priority_fresh,'fresh scope already has a public head');
    assert(head.complete&&head.rank_source===contract.source&&head.source===contract.source&&head.native===contract.native,'existing Native selection changed source');
    await sql.begin(async tx=>{
     await tx.unsafe('SELECT board_rank_source_lock($1)',[contract.source]);
@@ -112,6 +121,10 @@ async function advance(ctx,job,now){
    });
    rmSync(freshDirectory(ctx.state,...keys),{recursive:true,force:true});
    return result('selected','selected');
+  }
+  if(contract.priority_fresh&&!head?.catalog_phase){
+   const [published]=await sql.unsafe('SELECT revision FROM state_board_public_heads WHERE weapon=$1 AND ruler=$2',keys);
+   assert(!published,'fresh scope already has a public head');
   }
   if(head?.catalog_phase){
    const held=(head.error&&!head.available_at&&head.error)||(head.publication_error&&!head.publication_available&&head.publication_error);
@@ -149,7 +162,7 @@ async function advance(ctx,job,now){
   await ctx.capacity();
   const installed=await ctx.files.stage(manifest);
   const r=await registerCatalogScope(sql,{work:ctx.work,manifest,receipt,contract:native.contract,epoch:contract.epoch,
-   reservation:witness,installed,verifyPredecessor:ctx.files.verify});
+   reservation:witness,installed,verifyPredecessor:ctx.files.verify,requireFresh:!!contract.priority_fresh});
   return result('pending',r.status,500);
  }catch(e){
   if(/capacity|headroom|allocation|storage reserve|supervisor disconnected/i.test(e.message))throw e;

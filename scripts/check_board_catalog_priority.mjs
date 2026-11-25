@@ -212,6 +212,8 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
    }finally{journalAfter.close();}
    assert.equal((await runBatch(completion,'priority-complete',capacityDrift)).status,'selected');
    await checkCatalogDelivery({sql,weapon,ruler,fresh,inputs,action,native,step,put,config});
+   const {checkFreshScope}=await import('./check_board_catalog_fresh_scope.mjs');
+   await checkFreshScope({sql,config,weapon,ruler,second,inputs,step,put,native});
    console.log('ok — retained archive and requested position, fresh fenced capture and changed identity, unrelated warm correction through held work, priority restart');
    return;
   }

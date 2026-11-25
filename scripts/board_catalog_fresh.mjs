@@ -25,10 +25,54 @@ export async function qualifyRetainedScope({state,capture,archive,native},weapon
  }finally{q.close();}
 }
 
+export function assertFreshOrigin(capture,archive,weapon,ruler) {
+ const keys=[weapon,ruler];
+ assert(!capture.prepare('SELECT 1 FROM facts WHERE weapon=? AND ruler=? LIMIT 1').get(...keys)&&
+  !archive.prepare('SELECT 1 FROM scopes WHERE weapon=? AND ruler=?').get(...keys)&&
+  !archive.prepare('SELECT 1 FROM members WHERE weapon=? AND ruler=? LIMIT 1').get(...keys),
+  'retained scope requires its original qualification');
+}
+
+export function freshScopeLimits(scope) {
+ assert(scope.fresh===true&&scope.members===0&&Number.isSafeInteger(scope.rows)&&scope.rows>=0&&
+  ['identities','facts','manifest_bytes'].every(k=>
+  Number.isSafeInteger(scope[k])&&scope[k]>0),'fresh scope requires a bounded current forecast');
+ return {rows:scope.rows,identities:scope.identities,facts:scope.facts,manifest_bytes:scope.manifest_bytes};
+}
+
+export function checkFreshManifest(m,contract,weapon,ruler,limits) {
+ assert(m.weapon===weapon&&m.ruler===ruler&&m.source===contract.source&&m.native===contract.native&&
+  m.mailbox_floor===contract.floor&&typeof m.snapshot==='string'&&m.snapshot&&/^[a-f0-9]{64}$/.test(m.sha256),
+  'fresh scope capture boundary changed');
+ assert([m.total,m.facts,m.bytes].every(n=>Number.isSafeInteger(n)&&n>0)&&
+  m.total<=limits.identities&&m.facts<=limits.facts&&m.bytes<=limits.manifest_bytes,
+  'fresh scope capture exceeds its qualified forecast');
+}
+
+export function checkFreshReceipt(r,m,contract,policy,limits) {
+ assert(r?.complete&&r.eligible&&r.unresolved===0&&r.members===0&&r.weapon===m.weapon&&r.ruler===m.ruler&&
+  r.source===m.source&&r.native===m.native&&r.snapshot===m.snapshot&&r.archive===contract.archive&&
+  r.policy===policy&&Number.isSafeInteger(r.rows)&&r.rows>=0&&r.rows<=limits.rows&&/^[a-f0-9]{64}$/.test(r.pages_sha256),
+  'fresh scope qualification differs from its bounded capture');
+}
+
+export function readFreshQualification({state,contract,native},weapon,ruler) {
+ const directory=freshDirectory(state,weapon,ruler),manifest=JSON.parse(readFileSync(join(directory,'cut.json'),'utf8'));
+ checkFreshManifest(manifest,contract,weapon,ruler,contract.priority_fresh);
+ assert(manifest.path===join(directory,'inputs.ndjson'),'fresh scope manifest path changed');
+ const ranking=native.policyAdapter?`ranking-${native.policyAdapter}.sqlite`:'ranking.sqlite';
+ const db=new DatabaseSync(join(directory,ranking),{readOnly:true});
+ try{
+  const receipt={complete:true,...JSON.parse(db.prepare("SELECT v FROM progress WHERE k='receipt'").get().v)};
+  checkFreshReceipt(receipt,manifest,contract,native.policyAdapter,contract.priority_fresh);
+  return {receipt,manifest};
+ }finally{db.close();}
+}
+
 export async function freshPublication(ctx,weapon,ruler) {
  const {contract,sql,native,archive,state}=ctx,keys=[weapon,ruler];
- if(ctx.capture.prepare('SELECT 1 FROM facts WHERE weapon=? AND ruler=? LIMIT 1').get(...keys)||
-    archive.prepare('SELECT 1 FROM scopes WHERE weapon=? AND ruler=?').get(...keys))throw Error('retained scope requires its original qualification');
+ assertFreshOrigin(ctx.capture,archive,...keys);
+ const limits=contract.priority_fresh;
  const directory=freshDirectory(state,...keys),saved=join(directory,'cut.json');
  mkdirSync(directory,{recursive:true,mode:0o700});
  let m;
@@ -36,10 +80,11 @@ export async function freshPublication(ctx,weapon,ruler) {
  else{
   const file=join(directory,'inputs.ndjson');rmSync(file,{force:true});
   m=await captureRankBaselineAt(sql,{weapon,ruler,source:contract.source,native:contract.native,
-   work:state,mailboxFloor:contract.floor},directory);
+   work:state,mailboxFloor:contract.floor,limits},directory);
   writeFileSync(saved+'.partial',JSON.stringify(m),{flush:true});renameSync(saved+'.partial',saved);syncRankDirectory(directory);
  }
  assert(m.path===join(directory,'inputs.ndjson')&&m.source===contract.source&&m.native===native.adapter&&m.weapon===weapon&&m.ruler===ruler);
+ if(limits)checkFreshManifest(m,contract,...keys,limits);
  const ranking=native.policyAdapter?`ranking-${native.policyAdapter}.sqlite`:'ranking.sqlite';
  const cap=new DatabaseSync(join(directory,'capture.sqlite')),q=new DatabaseSync(join(directory,ranking));
  try{
@@ -72,6 +117,7 @@ export async function freshPublication(ctx,weapon,ruler) {
   const r=await qualify(cap,archive,q,q,native,weapon,ruler,1);
   if(!r.complete)return null;
   assert(r.eligible&&r.members===0&&r.unresolved===0);
+  if(limits)checkFreshReceipt(r,m,contract,native.policyAdapter,limits);
   return {manifest:m,receipt:r};
  }finally{cap.close();q.close();}
 }
