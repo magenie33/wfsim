@@ -458,7 +458,9 @@ projects. Project metadata lives in `worker/community_projects.js`; the
 project's account association and the person's honors are separate records.
 Each project configures its own name, description, optional icon and available
 homepage, source and download links. Public developer identity uses the
-ranking's name and marks, not a separate project-specific name.
+ranking's name and marks, not a separate project-specific name. Public names
+with marks share the identity renderer and its layout across the directory,
+ranking, profile and computation witnesses.
 The directory links to a profile only when that account publishes its name.
 Apply `worker/pg/accounts.sql` before deployment, then apply
 `worker/pg/grant_simfleet_honors.sql` once to bind the inaugural project and

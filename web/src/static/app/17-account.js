@@ -1255,10 +1255,10 @@ function identityMarks(person) {
   return (extHookNow("contributorMark", person.mark) || "") + developerHonors(person.developer_honors);
 }
 function publicIdentityName(person, linked = true) {
-  if (!person?.name) return `<span class="rank-name muted">${aT("Anonymous contributor")}</span>`;
+  if (!person?.name) return `<span class="public-identity"><span class="rank-name muted">${aT("Anonymous contributor")}</span></span>`;
   const name = linked && person.profile ? userProfileLink(person.profile, person.name, "rank-name")
     : `<span class="rank-name">${escHtml(person.name)}</span>`;
-  return name + identityMarks(person);
+  return `<span class="public-identity">${name}${identityMarks(person)}</span>`;
 }
 function communityProjectCard(project) {
   const links = [["homepage", "Project homepage"], ["source", "Source code"], ["download", "Download"]];

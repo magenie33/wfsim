@@ -53,6 +53,13 @@ export async function contributorAccounts(env, ids, byProfile = false) {
   return new Map(results.map(row => [row.id, { ...row, name: shownName(row.display_name, row.username,
     row.held_name ? { display_name: row.held_name, reason: row.held_reason } : null) }]));
 }
+export function publicContributorIdentity(person, mark) {
+  if (!person?.named) return { name: null, profile: null };
+  return { name: person.name, profile: person.profile_id,
+    ...(mark ? { mark } : {}),
+    ...(person.developer_honors?.length ? { developer_honors: person.developer_honors } : {}) };
+}
+
 export async function witnessNames(env, witnesses) {
   const devices = [...new Set(witnesses.filter(w => !w.official).map(w => w.device))];
   let spans = [];
@@ -71,8 +78,7 @@ export async function witnessNames(env, witnesses) {
   return witnesses.map(w => {
     if (w.official) return { official: true, name: w.device.replace(/^official:/, ""), completed_at: w.completed_at };
     const account = accounts.get(ownerOf(w));
-    return { name: account?.named ? account.name : null, profile: account?.named ? account.profile_id : null,
-      ...(account?.named && marks[account.id] ? { mark: marks[account.id] } : {}),
+    return { ...publicContributorIdentity(account, marks[account?.id]),
       completed_at: w.completed_at };
   });
 }

@@ -111,8 +111,7 @@ let profileWeaponPicker = null;
 const computationMinute = value => String(value || "").slice(0, 16);
 const computationWitnessHtml = (witnesses, roles = false) => witnesses.map((w, i) => {
   const name = w.official ? `<span>${aT("Official compute")}${w.name ? ` · ${escHtml(w.name)}` : ""}</span>`
-    : w.name && w.profile ? userProfileLink(w.profile, w.name) + (extHookNow("contributorMark", w.mark) || "")
-      : `<span class="muted">${aT("Anonymous contributor")}</span>`;
+    : publicIdentityName(w);
   return roles ? `<span class="computation-witness"><span class="muted">${aT(i ? "Verified by" : "Calculated by")}</span> ${name}</span>` : name;
 }).join(`<span aria-hidden="true"> · </span>`);
 function deliveryRecordHtml(source) {
@@ -291,7 +290,7 @@ function computationPage(main, kind) {
     ${!state.recordsLoading && !state.rows.length && !state.recordsError && !state.next ? `<p class="muted">${aT("No calculation records here yet.")}</p>` : ""}${records}
     ${computePagerHtml({ page: state.recordPage, hasNext: !!state.next, loading: state.recordsLoading }, page => `data-profile-page="${page}"`)}`;
   main.innerHTML = `<div class="contributor-profile"><header class="profile-heading"><span class="avatar">${escHtml((p.name || "?").slice(0, 1).toUpperCase())}</span>
-    <div><span class="profile-eyebrow">${aT(p.you ? "My profile" : "User profile")}</span><h2>${escHtml(p.name)}${identityMarks(p)} ${p.contributor_rank == null ? "" : contributorRankBadge(p.contributor_rank)}</h2><span class="muted">@${escHtml(p.username || "")}</span></div>
+    <div><span class="profile-eyebrow">${aT(p.you ? "My profile" : "User profile")}</span><h2>${publicIdentityName(p, false)} ${p.contributor_rank == null ? "" : contributorRankBadge(p.contributor_rank)}</h2><span class="muted">@${escHtml(p.username || "")}</span></div>
     <div class="profile-totals"><b>${total("signatures")}</b><span>${aT("Lifetime signatures")}</span></div>
     <div class="profile-totals"><b>${total("points")}</b><span>${aT("Contribution points")}</span></div></header>
     ${userHomeControlsHtml(p)}${stats}

@@ -2089,6 +2089,8 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .rank-row.top .rank-n{color:var(--gold);font-weight:700}
 .rank-who{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
 .rank-who>*{white-space:nowrap}
+.public-identity{display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px 8px;min-width:0;max-width:100%;vertical-align:middle}
+.public-identity>*{white-space:nowrap;max-width:100%}
 .rank-name{overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .rank-name.muted{color:var(--muted)}
 .calculation-record a{color:var(--accent);text-decoration:none}

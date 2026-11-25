@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { contributorAccounts, contributorMarks } from "./contributor_identity.js";
+import { contributorAccounts, contributorMarks, publicContributorIdentity } from "./contributor_identity.js";
 
 const projects = [{
   id: "simfleet", name: "simfleet",
@@ -17,7 +17,6 @@ export async function communityProjectsRoute(request, env, path) {
   const marks = await contributorMarks(env, people);
   return Response.json({ ok: true, projects: projects.map(project => {
     const person = people.get(owners.find(row => row.project === project.id)?.account);
-    return { ...project, developer: person?.named ? { name: person.name, profile: person.profile_id,
-      mark: marks[person.id] || null, developer_honors: person.developer_honors || [] } : { name: null } };
+    return { ...project, developer: publicContributorIdentity(person, marks[person?.id]) };
   }) }, { headers: { "cache-control": "no-store" } });
 }

@@ -49,7 +49,7 @@ import { meritTotals } from "./merit.js";
 import { dialsOf } from "./dials.js";
 import { BOARD_KINDS } from "./board_kinds.js";
 import { readInventoryState } from "./task_inventory.js";
-import { contributorAccounts, contributorMarks } from "./contributor_identity.js";
+import { contributorAccounts, contributorMarks, publicContributorIdentity } from "./contributor_identity.js";
 import {currentStatistics,statisticsExpiresAt} from './statistics_clock.js';
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
@@ -578,11 +578,12 @@ async function everyoneOf(env, wait = false) {
   // THE PAID HALF answers a hundred accounts an ask, so the named rows go in parts.
   const marks = await contributorMarks(env, profiles, wait);
   if (!marks) return null;
-  const everyone = rows.map((e) => ({ key: e.key, name: e.named ? e.name : null,
-    ...(e.named ? { profile: profiles.get(e.id)?.profile_id, ...(profiles.get(e.id)?.developer_honors?.length ? { developer_honors: profiles.get(e.id).developer_honors } : {}) } : {}),
-    points: e.points, recent: e.recent, week: e.week, last_week: e.last_week, contributor_rank: contributorRank(e.points),
-    // THE HONOUR travels with a name only: an anonymous row says nothing more.
-    ...(e.named && e.volunteer ? { volunteer: true } : {}), ...(e.named && marks[e.id] ? { mark: marks[e.id] } : {}) }));
+  const everyone = rows.map(e => {
+    const person = profiles.get(e.id), named = !!person?.named;
+    return { key: e.key, ...(named ? publicContributorIdentity(person, marks[e.id]) : { name: null }),
+      points: e.points, recent: e.recent, week: e.week, last_week: e.last_week, contributor_rank: contributorRank(e.points),
+      ...(named && e.volunteer ? { volunteer: true } : {}) };
+  });
   return { everyone, day, computing: await computingNow(env), pool: await poolOf(env), merit: await meritTotals(env).catch(() => null) };
 }
 
