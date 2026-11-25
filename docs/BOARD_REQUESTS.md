@@ -94,6 +94,10 @@ The independent service pins its immutable native binary hash and source UUID.
 Its environment supplies `WFSIM_REQUESTED_DATABASE_URL`,
 `WFSIM_REQUESTED_INTAKE_BIN`, `WFSIM_REQUESTED_INTAKE_SHA256` and
 `WFSIM_REQUESTED_SOURCE`, plus the existing data-disk guard variables.
+`WFSIM_REQUESTED_ENGINE` names the engine associated with the verified
+Native artifact. An invalid correction from another or unknown engine remains
+a retryable request until validation can run under its matching engine.
+A correction that validates under the current Native still proceeds.
 `state_board_request_control.enabled` starts false. Activation and rollback
 change only this control and the new service. General intake/admission controls
 remain paused while this scoped consumer owns these requests.

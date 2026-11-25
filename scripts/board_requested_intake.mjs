@@ -65,7 +65,7 @@ export async function familyBoardPass(sql,{binary,max=16,clock=()=>new Date().to
  return input||result?{input:input?.id,admission:result}:{idle:true};
 }
 
-export async function requestedBoardPass(sql,{source,binary}) {
+export async function requestedBoardPass(sql,{source,binary,nativeEngine=null}) {
  const [{request}]=await sql.unsafe('SELECT board_request_claim($1::uuid) request',[source]);
  if(!request)return {idle:true};
  try{
@@ -74,6 +74,12 @@ export async function requestedBoardPass(sql,{source,binary}) {
    try{input=await normalizeBoardRequest(binary,request);}
    catch(error){
     if(!(error instanceof RefusedBoardRequest))throw error;
+    // A different engine has not established that this observation is invalid.
+    if(request.kind==='correction'){
+     const observation=typeof request.input.observation==='string'?JSON.parse(request.input.observation):request.input.observation;
+     if(!nativeEngine||observation?.engine!==nativeEngine)
+      throw Error('requested correction awaits matching native engine');
+    }
     await sql.unsafe('SELECT board_request_retry($1,$2::uuid,$3,true)',[request.id,request.lease,error.message]);
     return {id:request.id,rejected:true,error:error.message};
    }
@@ -91,6 +97,8 @@ export async function requestedBoardPass(sql,{source,binary}) {
 if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
  const {default:postgres}=await import('./pg/node_modules/postgres/src/index.js');
  const binary=process.env.WFSIM_REQUESTED_INTAKE_BIN,source=process.env.WFSIM_REQUESTED_SOURCE;
+ const nativeEngine=process.env.WFSIM_REQUESTED_ENGINE;
+ if(nativeEngine!=null&&!/^[a-f0-9]{12}$/.test(nativeEngine))throw Error('invalid requested native engine pin');
  boardStorage(process.env.WFSIM_BOARD_WORK_ROOT||'.');
  if(!binary||!source||!/^[0-9a-f]{64}$/.test(process.env.WFSIM_REQUESTED_INTAKE_SHA256||''))throw Error('pin requested source and native intake binary');
  const bytes=await readFile(binary),sha=createHash('sha256').update(bytes).digest('hex');
@@ -103,7 +111,7 @@ if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
   while(!stopping){
    let delay=0;
    try{
-    const result=await requestedBoardPass(sql,{source,binary});
+    const result=await requestedBoardPass(sql,{source,binary,nativeEngine});
     console.log(JSON.stringify(result));
     if(result.idle)delay=1000;
    }catch(error){console.error(error.message);delay=5000;}
