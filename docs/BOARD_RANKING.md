@@ -267,6 +267,12 @@ Use a separately measured capacity receipt for that scope, with
 `scope_count: 1` and `scope` containing its weapon, ruler and the existing
 qualification receipt's `members` and `rows`. The fixed disk reserve and
 the measured Data and WAL budgets still apply.
+When PostgreSQL WAL lives on the Data mount, reserve the greater of the
+total scope allocation and its measured non-WAL budget plus the remaining
+absolute WAL allowance. A forecast can state the non-WAL part in
+`non_wal_budget_bytes`; it must fit inside the total forecast. The controller
+checks the actual WAL filesystem device rather than its historical placement.
+The fixed Data and root reserves and absolute WAL limit still apply.
 
 Run `python3 scripts/run_rank_catalog_batch.py priority-step CONFIG.json`.
 The first step must match the current priority head. Later steps resume its

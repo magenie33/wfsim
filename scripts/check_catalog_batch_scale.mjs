@@ -4,7 +4,7 @@ import {DatabaseSync} from 'node:sqlite';
 import {coverage} from './rank_catalog_coverage.mjs';
 import {initializeJournal,planBatch,transaction} from './board_catalog_batch_state.mjs';
 import {sha256} from './board_catalog_readback.mjs';
-import {sampleCapacity} from './board_catalog_batch_capacity.mjs';
+import {sampleCapacity,rankWalVolume} from './board_catalog_batch_capacity.mjs';
 
 const size=16384,empty=sha256(''),source='batch-scale',native=sha256('native'),original=sha256('archive'),ruler='standard_single_target';
 const [capture,archive,ledger,journal]=Array.from({length:4},()=>new DatabaseSync(':memory:'));
@@ -71,3 +71,23 @@ try{
   /forecast differs/);
  console.log('ok — unattributed storage retains the forecast across samples, with Data, WAL and cut guards');
 }finally{capacityJournal.close();}
+
+const sameVolumeJournal=new DatabaseSync(':memory:');
+initializeJournal(sameVolumeJournal);
+try{
+ const byPath={'/':1n,'/catalog':2n,'/postgres/pg_wal':2n};
+ const stat=p=>({dev:byPath[p]});
+ assert.equal(rankWalVolume('/catalog','/postgres',stat),'data');
+ byPath['/postgres/pg_wal']=1n;assert.equal(rankWalVolume('/catalog','/postgres',stat),'root');
+ byPath['/postgres/pg_wal']=3n;assert.throws(()=>rankWalVolume('/catalog','/postgres',stat),/outside the qualified/);
+ const scope={...capacity,budget:{...capacity.budget,budget_total:2*gib,non_wal_budget_bytes:gib,wal_on_root:false}};
+ data=35*gib;root=gib;wal=2*gib;
+ const good=await sampleCapacity(sameVolumeJournal,sql,scope,available);
+ assert.equal(good.dataRequired,3*gib);assert.equal(good.rootRequired,0);
+ data--;await assert.rejects(sampleCapacity(sameVolumeJournal,sql,scope,available),/insufficient remaining/);
+ data=34*gib;wal=3*gib;
+ assert.equal((await sampleCapacity(sameVolumeJournal,sql,scope,available)).dataRequired,2*gib);
+ wal=4*gib+1;await assert.rejects(sampleCapacity(sameVolumeJournal,sql,scope,available),/allocation exceeds/);
+ await assert.rejects(sampleCapacity(sameVolumeJournal,sql,{...scope,budget:{...scope.budget,non_wal_budget_bytes:3*gib}},available),/invalid capacity/);
+ console.log('ok — actual WAL device selection and same-volume reservation without double counting');
+}finally{sameVolumeJournal.close();}
