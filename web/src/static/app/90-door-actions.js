@@ -211,7 +211,7 @@ const AGENT_ACTIONS = [
     anchor: "#sim-target-arena",
     needs_weapon: true,
     args: { meters: { kind: "number", required: true, min: 0, max: 200, what: "gap in metres" } },
-    run({ meters }) { return agentArena(() => { setArenaDistance(sim, meters); }); },
+    run({ meters }) { return agentArena(() => { setArenaDistance(sim, sim.scene_3d ? meters + arenaContactDistance(sim) : meters); }); },
   },
   {
     id: "simulator.arena.add",
