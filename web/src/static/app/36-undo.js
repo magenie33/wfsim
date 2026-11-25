@@ -431,7 +431,7 @@ function restoreState(st, weapon) {
   if (!libraryAddress && (!document.querySelector(".config-page").hidden || (here && here !== w))) {
     history.replaceState(null, "", weaponModPath(w));
   }
-  applyWeapon(w, null); // resets pool/innate/visibility
+  applyWeapon(w, null, false); // reset axes without drawing an intermediate blank build
   releaseAbsent(BUILDS);
   (st.slots || []).forEach((s, i) => {
     if (i >= slots.length) return;
@@ -489,7 +489,7 @@ function restoreState(st, weapon) {
   if (officialBuildActive()) autoForma({ alone: true }).then((r) => { if (r) renderMods(); });
   renderAssembly();
   renderWielder(); renderWeaponName();
-  renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); refreshPanel();
+  renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); renderOpt(); refreshPanel();
   if ((st.slots || []).some((s) => isReadOnlyRivenId(s.mod))) refreshRivenNames();
   renderStoredSimResult(); // the simulator shows THIS preset's last test
   if (absentOf(BUILDS, activePreset).length) {

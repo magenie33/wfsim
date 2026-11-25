@@ -17,6 +17,20 @@ def refuses(action, message):
         raise AssertionError("a broken build input passed preflight")
 
 
+# The exact weapon HTML must be visible before application startup.
+weapon_url = build.SITE + "/weapons/Torid"
+page = build.shell((build.STATIC / "index.html").read_text(encoding="utf-8"),
+                   "Torid | WFSim", "Torid description", weapon_url,
+                   build.SITE + "/logo.svg", "<p>Torid published builds.</p>",
+                   "w-name", "Torid", "托里德")
+assert '<body class="on-build-library">' in page
+assert '<main class="config-page" data-route-pending="prerender">' in page
+assert '<h1 id="w-name">Torid</h1>' in page
+assert f'<link rel="canonical" href="{weapon_url}" />' in page
+assert '<div id="doc" class="doc" data-url="/weapons/Torid">' in page
+assert '<p>Torid published builds.</p>' in page
+print("The prerendered weapon page exposes its own heading, canonical and visible summary.")
+
 with tempfile.TemporaryDirectory(prefix="wfsim-build-inputs-") as tmp:
     build.ROOT = Path(tmp)
     cache = build.ROOT / "web/cache"

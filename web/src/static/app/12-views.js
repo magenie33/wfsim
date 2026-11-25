@@ -103,8 +103,9 @@ async function route() {
     // refreshed: `importShare` fills the editor in, but which module is
     // VISIBLE is this function's job and it had been skipped. The query is
     // already stripped, so this re-entry takes the ordinary path.
-    route();
-    importShare(shared);
+    const expected = routeGen + 1;
+    await route();
+    if (routeGen === expected) await importShare(shared);
     return;
   }
   // …AND A SHORT ONE, whose id boot already took off the address. The page is
@@ -112,8 +113,11 @@ async function route() {
   if (SHARE_ENABLED && SHORT_SHARE_ID) {
     const id = SHORT_SHARE_ID, sig = SHORT_SHARE_SIG;
     SHORT_SHARE_ID = SHORT_SHARE_SIG = null;
-    route();
+    const expected = routeGen + 1;
+    const drawn = route();
     shortShareCode(id).then(async (code) => {
+      await drawn;
+      if (routeGen !== expected) return;
       if (!code) { presetToast(tr("that share link could not be found")); return; }
       if (await importShare(code) && sig) showShareBy(id, sig);
     });
@@ -163,14 +167,9 @@ async function route() {
   const w = m && headlessWeaponAt(META.weapons || [], m[1]);
   // The active module: "" = builder, "simulator", "optimizer".
   const mod = w ? (m[2] === "/builder" ? "" : m[2] ? m[2].slice(1) : "build-library") : "";
-  // THE ROWS BEFORE ANYTHING IS SHOWN. Waiting after the page was unhidden put
-  // the PREVIOUS weapon on screen for the whole round trip. A route that another
-  // navigation overtook while it waited draws nothing.
   const gen = ++routeGen;
   beginPageTiming();
   releaseBoardCache(w ? w.id : null);
-  if (w) await loadWeaponBoard(w.id);
-  if (gen !== routeGen) return;
   if (w) {
     const path = weaponPath(w.id) + (mod === "build-library" ? "" : "/" + (mod || "builder"));
     if (location.pathname !== path) history.replaceState(history.state, "", path + location.search + location.hash);
@@ -244,7 +243,9 @@ async function route() {
   // …AND THE COMMUNITY'S MENU, on any of its own pages.
   const community = $("community-toggle");
   if (community) community.classList.toggle("sel", ["compute", "contributors", "clan", "community_projects"].includes(authKind));
-  document.querySelector(".config-page").hidden = !w;
+  const workspace = document.querySelector(".config-page");
+  workspace.hidden = !w;
+  if (!w) workspace.removeAttribute("data-route-pending");
   const modName = { "build-library": "Build Library", simulator: "Simulator", optimizer: "Optimizer", rivens: "Rivens", "riven-analyst": "Riven Analyst", enemies: "Enemies", benchmark: "Benchmark" }[mod];
   const modTitle = modName ? ` · ${tr(modName)}` : "";
   // A TITLE CARRIES THE SEARCH TERMS, not the headline: nobody looks for
@@ -300,6 +301,29 @@ async function route() {
     // and redraws when the rest lands, so the page is never a spinner.
     showBenchBoard();
   } else if (w) {
+    // The destination owns the screen before its board or editor is ready.
+    // Keep the old editor state intact for its pending saves, but never show it.
+    const pending = !weaponEditorReady || $("weapon").value !== w.id
+      || boardRequestedRulers(w.id).some(b => !boardHasCell(w.id, b));
+    if (pending) {
+      workspace.dataset.routePending = w.id;
+      renderWeaponIdentity(w);
+      renderModuleTabs(mod, w.id);
+      const doc = $("doc");
+      if (decodeURIComponent(doc.dataset.url || "") !== decodeURIComponent(weaponPath(w.id)) || doc.libraryRows) doc.hidden = true;
+      $("weapon-route-status").innerHTML = loadingHtml();
+      $("weapon-route-status").hidden = false;
+    }
+    const board = loadWeaponBoard(w.id);
+    if (pending && !document.hidden) {
+      // Yield a paint even when the board is already cached.
+      await new Promise(resolve => {
+        const fallback = setTimeout(resolve, 100);
+        requestAnimationFrame(() => { clearTimeout(fallback); setTimeout(resolve, 0); });
+      });
+    }
+    await board;
+    if (gen !== routeGen) return;
     // `?mode=` — HOW the linked build is played, carried by the link that made
     // it. A board row is a weapon AND a mode ("Burston Prime, base form"), so a
     // link that dropped the second half landed on a page measuring something
@@ -327,6 +351,7 @@ async function route() {
     // cannot reproduce, and arriving with neither gave you the FIRST ruler's
     // leader whichever board you clicked.
     const wantBench = libraryAddress ? null : new URLSearchParams(location.search).get("bench");
+    const benchAddress = wantBench ? location.pathname + location.search + location.hash : null;
     // WHICH OF THE TWO LEADERS — see the link builder. Null when the link
     // predates the parameter, which means "whichever row leads".
     const rivenParam = new URLSearchParams(location.search).get("riven");
@@ -335,15 +360,34 @@ async function route() {
     // SYNCHRONOUSLY: `switchWeapon` builds this weapon's presets out of them
     // and `applyBenchLink` opens one BY NAME. A board that lands afterwards is
     // a deep link that opens the wrong build, which is what a board link exists
-    // to stop. Awaited at the top of this function, before the page is shown.
+    // to stop. Awaited before the editor is shown.
     if (!weaponEditorReady || $("weapon").value !== w.id) {
       switchWeapon(w.id);
     }
     if (libraryAddress && location.pathname + location.search + location.hash !== libraryAddress) history.replaceState(history.state, "", libraryAddress);
-    if (wantBench) applyBenchLink(w, wantBench, wantMode, wantRiven);
+    if (wantBench && !applyBenchLink(w, wantBench, wantMode, wantRiven)) {
+      history.replaceState(history.state, "", benchAddress);
+      workspace.dataset.routePending = w.id;
+      const status = $("weapon-route-status");
+      status.hidden = false;
+      const failed = boardFileState(w.id).failed.has(wantBench);
+      status.textContent = tr(failed ? "The board could not be reached." : "No build has been measured under these board conditions.");
+      if (failed) {
+        const retry = document.createElement("button");
+        retry.className = "ghost-btn small"; retry.textContent = tr("Retry");
+        retry.onclick = () => { boardFileState(w.id).failed.delete(wantBench); route(); };
+        status.append(" ", retry);
+      }
+      markPageUsable(gen);
+      return;
+    }
     // A TASK THIS BROWSER COMPUTED (73-compute.js), opened from its list.
     const wantTask = new URLSearchParams(location.search).get("task");
-    if (wantTask && await openComputeTask(w, wantTask)) history.replaceState(null, "", location.pathname);
+    if (wantTask) {
+      const opened = await openComputeTask(w, wantTask);
+      if (gen !== routeGen) return;
+      if (opened) history.replaceState(null, "", location.pathname);
+    }
     if (wantMode && (w.modes || []).includes(wantMode)) {
       if (wantMode !== mode) {
         mode = wantMode;
@@ -370,9 +414,16 @@ async function route() {
     // those fields on arrival — the other tab may have moved them, and the
     // tabs are CSS-hidden rather than re-rendered.
     if (mod === "simulator") renderSim();
-    if (mod === "simulator") await openSimulationReport(w, measurement);
-    if (mod === "optimizer") { renderOpt(); await openOptimizationReport(optimizationId); await refreshOptimizerHistory(true); }
-    else optimizationReport = null;
+    if (mod === "simulator") {
+      await openSimulationReport(w, measurement);
+      if (gen !== routeGen) return;
+    }
+    if (mod === "optimizer") {
+      renderOpt(); await openOptimizationReport(optimizationId);
+      if (gen !== routeGen) return;
+      await refreshOptimizerHistory(true);
+      if (gen !== routeGen) return;
+    } else optimizationReport = null;
     if (mod === "rivens") renderRivens();
     if (mod === "riven-analyst") { history.replaceState(history.state, "", weaponPath(w.id) + "/riven-analyst" + analysisQuery); renderRivenAnalyst(); }
     else closeRivenAnalysisDialog(false);
@@ -381,6 +432,8 @@ async function route() {
     if (mod === "benchmark") renderWeaponBench();
     renderBuildLibrary();
     renderQuickCalc();
+    workspace.removeAttribute("data-route-pending");
+    $("weapon-route-status").hidden = true;
   } else {
     renderHome();
   }
@@ -401,8 +454,8 @@ const WEAPON_TABS = [["build-library", "Build Library"], ["", "Builder"], ["simu
   ["optimizer", "Optimizer"], ["rivens", "Rivens"], ["riven-analyst", "Riven Analyst"], ["enemies", "Enemies"]];
 
 // Module links follow the active weapon entry.
-function renderModuleTabs(mod = modSuffix()) {
-  $("module-tabs").innerHTML = WEAPON_TABS.map(([id, label]) => `<a class="mtab ${mod === id ? "sel" : ""}" href="${weaponTabPath($("weapon").value, id)}">${tr(label)}</a>`).join("");
+function renderModuleTabs(mod = modSuffix(), weapon = $("weapon").value) {
+  $("module-tabs").innerHTML = WEAPON_TABS.map(([id, label]) => `<a class="mtab ${mod === id ? "sel" : ""}" href="${weaponTabPath(weapon, id)}">${tr(label)}</a>`).join("");
 }
 
 // WHAT AN ARCANE SEAT IS CALLED: the pool it draws, which is a weapon type or
@@ -513,7 +566,7 @@ function renderHome() {
         .map((t) => `<span class="tag">${escHtml(weaponTagLabel(t))}</span>`),
       w.weapon_type && w.weapon_type !== w.slot ? tag(ARC_POOL_LABEL[w.weapon_type] || w.weapon_type) : "",
     ].join("");
-    return `<a class="wcard" href="/weapons/${urlSlug(w)}">
+    return `<a class="wcard" href="${weaponPath(w.id)}">
       ${imgTag(IMG(w.image), "wc-img")}
       <div class="wc-info">
         <div class="wc-name">${escHtml(weaponEntryName(w))}</div>

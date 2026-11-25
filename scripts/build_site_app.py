@@ -1472,9 +1472,8 @@ def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str,
     """The app shell carrying ONE page's head and its crawler-visible body.
 
     Shared by every prerendered page so a new one cannot get half the
-    treatment: a per-page <title> with the site-wide OG block still saying
-    "WFSim" previews as the site, which is the bug this whole pass exists to
-    fix. `seo` is the block removed the moment the app boots.
+    treatment: each page has its own title, OG metadata and visible content.
+    The weapon summary remains until current board data replaces it.
 
     `keep_h1` names the route hero this page is about; a weapon page passes
     none, because its heading is the weapon and the shell has no hero for it.
@@ -1541,6 +1540,9 @@ def shell(flagged: str, title: str, desc: str, url: str, og_img: str, seo: str,
         # two apart by this and by nothing else, so a first load stays exactly
         # what a crawler indexed.
         at = url[len(SITE):] or "/"
+        page = page.replace('<body>', '<body class="on-build-library">', 1)
+        page = page.replace('<main class="config-page" hidden>',
+                            '<main class="config-page" data-route-pending="prerender">', 1)
         return page.replace(
             slot, f'<div id="doc" class="doc" data-url="{html_mod.escape(at, quote=True)}">\n'
             + seo + "    </div>", 1)
@@ -1640,9 +1642,8 @@ def prerender(flagged: str, catalog: Path) -> None:
       2. **Per-page BODY** — the weapon's actual numbers as text. Google runs
          JS and would eventually see the app render; **Baidu largely does
          not**, and the audience here is Chinese players. So each page states
-         its weapon in HTML, and an inline script removes that block the
-         moment the app boots. Not cloaking: the text says exactly what the
-         app renders, and the visitor sees the app.
+         its weapon in visible HTML. The app replaces the archived summary
+         with the current board when it arrives.
     """
     assets = yload((ROOT / "data" / "assets.yaml").read_text(encoding="utf-8"))
     zh = yload((ROOT / "data" / "i18n" / "zh" / "names.yaml").read_text(encoding="utf-8"))
@@ -1718,6 +1719,10 @@ def prerender(flagged: str, catalog: Path) -> None:
         out = APP / "weapons" / url_slug(spec) / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
         page = shell(flagged, title, desc, url, og_img, seo, "w-name", name, cn)
+        image = assets.get("weapons", {}).get(wid)
+        if image:
+            src = html_mod.escape("/img/" + image + ".webp", quote=True)
+            page = page.replace('<img id="w-img" alt="" />', f'<img id="w-img" alt="" src="{src}" />', 1)
         past_the_scanner(lambda: put(out, page))
         alias = legacy_url_slug(spec)
         if alias:

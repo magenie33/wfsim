@@ -279,11 +279,17 @@ try {
   check("detailed conditions expand on a phone", await evaluate("!document.querySelector('.fd-scope').hidden"));
   const phone=await evaluate(interactions);
   for(const [key,ok] of Object.entries(phone))check("phone board and Overview interaction: "+key,ok);
-  const empty = await evaluate(`(() => {
-    const b=benchList().find(b=>!(BOARD[presetWeapon()]||[]).some(r=>r.benchmark===b.id));
-    if(!b)return true;finder.b=b.id;renderBuildFinder();
-    return $('doc').textContent.includes(tr('No build has been measured under these board conditions.'))
-      && !document.querySelector('#doc [data-library-build]');
+  const empty = await evaluate(`(async () => {
+    for (const b of benchList()) {
+      if ((BOARD[presetWeapon()]||[]).some(r=>r.benchmark===b.id)) continue;
+      finder.b=b.id;await loadBoardRulers(presetWeapon(),[b.id]);
+      if ((BOARD[presetWeapon()]||[]).some(r=>r.benchmark===b.id)) continue;
+      if (boardFiles.get(presetWeapon())?.loaded.get(boardCellDir(b.id))?.get(b.id)!==null) continue;
+      renderBuildFinder();
+      return $('doc').textContent.includes(tr('No build has been measured under these board conditions.'))
+        && !document.querySelector('#doc [data-library-build]');
+    }
+    return true;
   })()`);
   check("unpublished conditions never borrow another ruler's winner", empty);
   await app.finish("the Build Library finds and preserves usable builds");

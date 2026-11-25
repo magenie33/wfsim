@@ -44,6 +44,7 @@ const r = await evaluate(`(async () => {
   bar.querySelector('[data-dd="dd-preset-builder-builds"]').click();
   document.querySelector('#dd-menu .opt[data-v="' + first.id + '"]').click(); await sleep(1600);
   const levelAfter = sim.level;
+  await nav(weaponPath(presetWeapon()) + "/simulator");
   const onScreen = ($$('#sim-target [data-k="level"]')||{}).value;
   const modAfter = slots[0].mod;
 
@@ -57,34 +58,34 @@ const r = await evaluate(`(async () => {
   // ...and the SEARCH must survive a build switch too. Loading a build
   // rebuilds the editor for its weapon, which resets the search in passing —
   // the active search preset is what has to put it back.
-  document.querySelectorAll('.tab').forEach(x => { if(/Optim/i.test(x.textContent)) x.click(); });
+  await nav(weaponPath(presetWeapon()) + '/optimizer');
   await sleep(1500);
   copyActivePreset(optBarCfg()); await sleep(300);
   opt.starts = [blankStart(), blankStart()];
   setOptSizes({ candidate_runs: 1 }); await sleep(900);
-  document.querySelectorAll('.tab').forEach(x => { if(/Build/i.test(x.textContent)) x.click(); });
+  await nav(weaponPath(presetWeapon()) + '/builder');
   await sleep(800);
   const second = loadPresetList(BUILDS).find(p => p.id !== first.id);
   bar.querySelector('[data-dd="dd-preset-builder-builds"]').click();
   document.querySelector('#dd-menu .opt[data-v="' + second.id + '"]').click(); await sleep(1600);
-  document.querySelectorAll('.tab').forEach(x => { if(/Optim/i.test(x.textContent)) x.click(); });
+  await nav(weaponPath(presetWeapon()) + '/optimizer');
   await sleep(1800);
   const scope = opt.starts.length, fin = optRun.candidate_runs;
 
   // The optimizer's BUFFS are the scenario's, read-only. Set one in the
   // simulator and the search must show it, without a control to change it.
-  document.querySelectorAll('.tab').forEach(x => { if(/Build/i.test(x.textContent)) x.click(); });
+  await nav(weaponPath(presetWeapon()) + '/builder');
   await sleep(700);
   slots[1].mod = 'galvanized_chamber'; slots[1].rank = modById('galvanized_chamber').max_rank;
   markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
-  document.querySelectorAll('.tab').forEach(x => { if(/Sim/i.test(x.textContent)) x.click(); });
+  await nav(weaponPath(presetWeapon()) + '/simulator');
   await sleep(1500);
   const simBox = $$('#sim-buffs');
   const one = simBox.querySelector('input[data-f="stacks"]');
   const buffId = one ? one.dataset.b : null;
   if (one) { one.value = '3'; one.dispatchEvent(new Event('change')); }
   await sleep(1200);
-  document.querySelectorAll('.tab').forEach(x => { if(/Optim/i.test(x.textContent)) x.click(); });
+  await nav(weaponPath(presetWeapon()) + '/optimizer');
   await sleep(2500);
   // THE OPTIMIZER'S FIGHT CARD lists the buff at the scenario's stacks, and
   // holds no control to change it.

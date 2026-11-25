@@ -2403,6 +2403,11 @@ buff scope and metadata variants against the global union.
 
 ## `check_working_navigation`
 
+A held weapon board request leaves the new weapon heading and module links
+visible, with the old editor hidden. An overtaken request cannot draw over
+its successor. Global search reaches the Library and a leaderboard row opens
+its measured build in Builder.
+
 The side shortcuts submit through the original Simulation and Optimizer
 buttons, whose bottom run blocks remain in the jump index. Results stay in
 their original containers. Disabled controls also disable their shortcuts.
