@@ -181,41 +181,34 @@ pub fn panel_json(v: &Value) -> Value {
         }
     }
 
-    // A SET WHOSE MEMBERS ARE NOT ALL WEAPON MODS HAS A LOWER CEILING HERE than
-    // it does in game, and the player has to be told the number rather than
-    // reading 20% and assuming it is the cap.
-    //
-    // "Set Mods … offer increasing bonuses when one or more mods in a set are
-    // equipped on the player's Warframe AND weapons … Only the number of
-    // equipped mods within the set dictates the Set Bonus strength" (wiki,
-    // Set_Mods). The Vigilante set is six, and two of them — Vigor and Pursuit
-    // — go on the FRAME, which this engine has no loadout for. So a weapon
-    // build tops out at 4 x 5% = 20% against the game's 30%.
-    //
-    // DERIVED, not written down: `members` is the set's real size and the
-    // weapon-side count is however many of our mods name it, so a set we later
-    // complete stops printing this on its own.
+    // Combo-crit sets count both seats, and pay according to the live counter.
+    if info.slot == "melee" {
+        for (set, count) in wfsim_engine::data::mod_sets::combo_crit_sets(&refs, &panel_tenno) {
+            let bonus = set.per_mod * count as f64;
+            conditionals.push(json!({
+                "mod": set.name,
+                "desc": format!("{} per combo multiplier", fpct(bonus)),
+                "active": true,
+                "why": format!("{count} of {} equipped across the weapon and linked Warframe; nothing at 1x, {} at the 12x cap", set.members, fpct(bonus * 11.0)),
+            }));
+        }
+    }
+    // Other cross-loadout sets still disclose their weapon-side limit.
     {
         use std::collections::BTreeSet;
         let mut said: BTreeSet<&str> = BTreeSet::new();
         for m in &refs {
             let Some(set_id) = m.set else { continue };
-            if !said.insert(set_id) {
-                continue;
-            }
+            if !said.insert(set_id) { continue; }
             let Some(def) = wfsim_engine::data::mod_sets::set_def(set_id) else { continue };
+            if def.kind == wfsim_engine::data::mod_sets::SetBonusKind::CritChancePerCombo { continue; }
             let ours = wfsim_engine::data::mod_sets::members_carried(set_id);
-            if ours >= def.members {
-                continue;
-            }
+            if ours >= def.members { continue; }
             conditionals.push(json!({
                 "mod": def.name,
                 "desc": format!("set bonus: {:.0}% per equipped member", def.per_mod * 100.0),
                 "active": true,
-                "why": format!(
-                    "{} of the set's {} members are weapon mods — the rest go on the WARFRAME,                      which this sim has no loadout for. So a build here tops out at {:.0}%,                      against {:.0}% in game.",
-                    ours, def.members, f64::from(ours) * def.per_mod * 100.0,
-                    f64::from(def.members) * def.per_mod * 100.0),
+                "why": format!("{} of the set's {} members are weapon mods; only these members contribute here, up to {:.0}% against {:.0}% in game.", ours, def.members, f64::from(ours) * def.per_mod * 100.0, f64::from(def.members) * def.per_mod * 100.0),
             }));
         }
     }

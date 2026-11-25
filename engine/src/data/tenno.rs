@@ -113,6 +113,9 @@ pub struct Tenno {
     /// …and the ones that arm a buff on a weapon of their slot (Arcane Fury).
     #[serde(skip)]
     pub weapon_buffs: Vec<crate::model::WielderBuff>,
+    /// Set ids contributed by the linked Warframe, once per seated card.
+    #[serde(default)]
+    pub mod_sets: Vec<String>,
     /// WHAT A COMPANION'S CARDS PILE ON ITS WEAPON per hit (Fired Up), at the
     /// ranks seated — `data::companions::CompanionBuild::element_per_hit`.
     #[serde(skip)]
