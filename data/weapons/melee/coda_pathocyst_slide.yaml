@@ -9,8 +9,6 @@ co_behavior: additive_with_base_damage
 unmodeled:
   - reason: client_melee_timing
   - reason: client_melee_geometry
-  - reason: melee_valence_unmodelled
-    family: Coda
   - reason: glaive_heavy_is_a_throw
 attack:
   trigger: melee

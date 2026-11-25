@@ -9,8 +9,6 @@ unmodeled:
 - reason: client_melee_timing
 - reason: client_melee_special
 - reason: client_melee_geometry
-- reason: melee_valence_unmodelled
-  family: Tenet
 - reason: melee_slide_unpublished
 - The disk launches on the second standing heavy only. Heavy-slide activation, combo-scaled lifetime,
   surface ricochets and repeat disk hits are not modelled. This profile follows the infobox one-metre-per-second

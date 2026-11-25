@@ -11,8 +11,6 @@ unmodeled:
 - reason: client_melee_geometry
 - reason: melee_own_combo_unmodelled
   combos: heavy slam and slam attack
-- reason: melee_valence_unmodelled
-  family: Tenet
 attack:
   trigger: melee
   shot_type: hit_scan

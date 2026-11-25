@@ -16,8 +16,6 @@ unmodeled:
 - The wave's combo multiplier, doubled heavy critical-chance bonus and Condition Overload use the general heavy-attack rules;
   these interactions are unmeasured.
 - The corrosive trail's independent damage buckets, rectangular coverage, persistent pool contacts and blindness are not modelled.
-- reason: melee_valence_unmodelled
-  family: Coda
 - The Coda page repeats the original wave's 225 damage and 9%/2x/37% crit and status. Those projectile stats have no in-game
   calibration.
 attack:

@@ -26,6 +26,11 @@ ammo_max: ~
 
 combo_duration_seconds: 5.0
 
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
 co_behavior: additive_with_base_damage
 
 unmodeled:
@@ -36,8 +41,6 @@ unmodeled:
   reads low.'
 - reason: melee_attack_unmodelled
   attacks: Corrosive Pool
-- reason: melee_valence_unmodelled
-  family: Coda
 - reason: melee_slide_unpublished
 attack:
   trigger: melee

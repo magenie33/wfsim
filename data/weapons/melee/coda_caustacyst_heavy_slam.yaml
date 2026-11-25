@@ -11,8 +11,6 @@ unmodeled:
   down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart.'
 - reason: melee_attack_unmodelled
   attacks: Corrosive Pool
-- reason: melee_valence_unmodelled
-  family: Coda
 - reason: melee_slide_unpublished
 attack:
   # see notes: swing_trigger_pull_engine
