@@ -6,26 +6,12 @@ Scythe · Melee · Mastery Rank 14. 228 base damage (impact 9.12, puncture 82.08
 
 Current published rankings and revisions: https://wfsim.app/api/board/pages/catalog?weapon=tenet_grigori
 
-## Archived riven-free leaders · 2026-11-07
-
-A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
-
-Each row is measured on its own, and says when and by which WFSim commit; the game and WFSim both change, so an older row may be behind.
-
-| Ruler | Fight | Mode | Score | Build | Measured |
-| --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.3841 | Sacrificial Steel, Blood Rush, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Melee Elementalist, Pressure Point, Corrupt Charge, Discipline's Merit, Melee Exposure | 2026-11-03 21:40 UTC · df9e2353a3fa |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 1.3830 | Sacrificial Steel, Blood Rush, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Melee Elementalist, Pressure Point, Corrupt Charge, Discipline's Merit, Melee Exposure | 2026-11-03 21:40 UTC · df9e2353a3fa |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% weak-point aim · 4-player health · 180 s · KPM | base | 0.1434 | Sacrificial Steel, Blood Rush, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Melee Elementalist, Pressure Point, Corrupt Charge, Discipline's Merit, Melee Exposure | 2026-11-03 22:00 UTC · df9e2353a3fa |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% weak-point aim · 180 s · KPM | base | 0.6569 | Sacrificial Steel, Blood Rush, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Melee Elementalist, Pressure Point, Corrupt Charge, Discipline's Merit, Melee Exposure | 2026-11-03 21:40 UTC · df9e2353a3fa |
-
 ## Not modelled here
 
 - Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
 - Slam damage and critical rules retain the declared component model. Radius uses the maximum-height convention; ascent, descent, ground contact and recovery are not a calibrated physical cycle. Native attenuation and clip lengths do not establish that cycle.
 - Melee reach, sweep/thrust arcs and bone motion retain the declared arena approximation. Native collision dimensions alone do not establish the animated contact surface.
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
-- Its Tenet valence bonus is not modelled: the build cannot state the element and bonus this copy rolled, so it reads without one.
 - The wiki publishes no slide attack figure or duration for this weapon, so there is no slide mode.
 
 ## In WFSim
