@@ -35,17 +35,18 @@ export function assertFreshOrigin(capture,archive,weapon,ruler) {
 
 export function freshScopeLimits(scope) {
  assert(scope.fresh===true&&scope.members===0&&Number.isSafeInteger(scope.rows)&&scope.rows>=0&&
-  ['identities','facts','manifest_bytes'].every(k=>
-  Number.isSafeInteger(scope[k])&&scope[k]>0),'fresh scope requires a bounded current forecast');
- return {rows:scope.rows,identities:scope.identities,facts:scope.facts,manifest_bytes:scope.manifest_bytes};
+  ['identities','facts','manifest_bytes','scanned_builds'].every(k=>
+  Number.isSafeInteger(scope[k])&&scope[k]>0)&&scope.scanned_builds<Number.MAX_SAFE_INTEGER,'fresh scope requires a bounded current forecast');
+ return {rows:scope.rows,identities:scope.identities,facts:scope.facts,manifest_bytes:scope.manifest_bytes,scanned_builds:scope.scanned_builds};
 }
 
 export function checkFreshManifest(m,contract,weapon,ruler,limits) {
  assert(m.weapon===weapon&&m.ruler===ruler&&m.source===contract.source&&m.native===contract.native&&
   m.mailbox_floor===contract.floor&&typeof m.snapshot==='string'&&m.snapshot&&/^[a-f0-9]{64}$/.test(m.sha256),
   'fresh scope capture boundary changed');
- assert([m.total,m.facts,m.bytes].every(n=>Number.isSafeInteger(n)&&n>0)&&
-  m.total<=limits.identities&&m.facts<=limits.facts&&m.bytes<=limits.manifest_bytes,
+ assert([m.total,m.facts,m.bytes,m.scanned_builds].every(n=>Number.isSafeInteger(n)&&n>0)&&
+  m.total<=limits.identities&&m.facts<=limits.facts&&m.bytes<=limits.manifest_bytes&&
+  m.total<=m.scanned_builds&&m.scanned_builds<=limits.scanned_builds,
   'fresh scope capture exceeds its qualified forecast');
 }
 

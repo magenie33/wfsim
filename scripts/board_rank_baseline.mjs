@@ -4,7 +4,7 @@ import {rankMeasurementKey} from './board_rank_keys.mjs';
 import {cachedRankInputs} from './board_rank_inputs.mjs';
 import {createHash,randomUUID} from 'node:crypto';
 import {createReadStream,lstatSync,realpathSync,statSync} from 'node:fs';
-import {mkdir,open,chmod} from 'node:fs/promises';
+import {mkdir,open,chmod,rm} from 'node:fs/promises';
 import {join,resolve,dirname,basename} from 'node:path';
 import {boardStorage} from './board_storage.mjs';
 import {rankFilePage,syncRankDirectory} from './board_rank_files.mjs';
@@ -19,7 +19,13 @@ export async function captureRankBaseline(sql,options) {
 
 export async function captureRankBaselineAt(sql,{weapon,ruler,source,native,work,signal,mailboxFloor,limits},directory) {
  const path=join(directory,'inputs.ndjson'),file=await open(path,'wx'),checksum=createHash('sha256');
- let bytes=0,total=0,facts=0;
+ let bytes=0,total=0,facts=0,scanned=0;
+ const began=Date.now(),timeBudget=120000;
+ const remaining=()=>{
+  signal?.throwIfAborted();const left=timeBudget-(Date.now()-began);
+  if(left<=0)throw new BoardRankQualificationError('baseline capture exceeded its time budget');
+  return left;
+ };
  const append=async row=>{
   const body=JSON.stringify(row)+'\n';
   if(Buffer.byteLength(body)>8*1024*1024)throw new BoardRankQualificationError('one baseline source exceeds its row budget');
@@ -28,25 +34,47 @@ export async function captureRankBaselineAt(sql,{weapon,ruler,source,native,work
  };
  try{
   const metadata=await sql.begin('isolation level repeatable read read only',async tx=>{
-   const [{actual,captured_at,snapshot}]=await tx.unsafe(`SELECT (SELECT source FROM state_board_input_source WHERE id=1) actual,
+   let expected,statementLimit;
+   const query=async(text,args=[])=>{
+    if(!limits)return tx.unsafe(text,args);
+    const ms=Math.min(statementLimit,remaining());
+    await tx.unsafe("SELECT set_config('statement_timeout',$1,true)",[String(ms)]);
+    const result=await tx.unsafe(text,args);remaining();return result;
+   };
+   if(limits){
+    const [{setting}]=await tx.unsafe("SELECT setting FROM pg_settings WHERE name='statement_timeout'");
+    statementLimit=Math.min(Number(setting)||10000,10000);
+   }
+   const [{actual,captured_at,snapshot}]=await query(`SELECT (SELECT source FROM state_board_input_source WHERE id=1) actual,
     to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') captured_at,pg_current_snapshot()::text snapshot`);
    if(actual!==source)throw new BoardRankQualificationError('board source changed');
-   const meta={kind:'meta',v:1,weapon,ruler,source,native,captured_at,snapshot,...(mailboxFloor==null?{}:{mailbox_floor:String(mailboxFloor)})};await append(meta);
-   await tx.unsafe(`DECLARE board_rank_baseline NO SCROLL CURSOR FOR SELECT b.id,b.at,
+   if(limits){
+    const [{n}]=await query(`SELECT count(*)::text n FROM
+     (SELECT 1 FROM entity_weapon_builds WHERE weapon=$1 LIMIT $2) scoped`,[weapon,limits.scanned_builds+1]);
+    expected=Number(n);
+    if(!Number.isSafeInteger(expected)||expected<0||expected>limits.scanned_builds)
+     throw new BoardRankQualificationError('fresh scope build scan exceeds its qualified forecast');
+   }
+   const meta={kind:'meta',v:1,weapon,ruler,source,native,captured_at,snapshot,...(mailboxFloor==null?{}:{mailbox_floor:String(mailboxFloor)}),
+    ...(limits?{scanned_builds:expected}:{})};await append(meta);
+   const builds=limits?'(SELECT id,at,record FROM entity_weapon_builds WHERE weapon=$1 LIMIT $3)':'entity_weapon_builds';
+   await query(`DECLARE board_rank_baseline NO SCROLL CURSOR FOR SELECT b.id,b.at,
     CASE WHEN f.rows IS NOT NULL THEN b.record END record,f.rows facts,h.rows headers
-    FROM entity_weapon_builds b CROSS JOIN LATERAL(SELECT jsonb_agg(to_jsonb(s) ORDER BY s.mode) rows
+    FROM ${builds} b CROSS JOIN LATERAL(SELECT jsonb_agg(to_jsonb(s) ORDER BY s.mode) rows
      FROM board_facts s WHERE s.identity=b.id AND s.ruler=$2)f CROSS JOIN LATERAL(
       SELECT coalesce(jsonb_agg(jsonb_build_object('scope',m.scope,'key',m.key,'version',m.version::text)),'[]') rows
       FROM(SELECT 'build'::text scope,b.id key WHERE f.rows IS NOT NULL UNION
        SELECT 'measurement',jsonb_build_array(b.id,$2::text,x->>'mode')::text FROM jsonb_array_elements(f.rows)x UNION
        SELECT 'review',x->>'review_id' FROM jsonb_array_elements(f.rows)x WHERE x->>'review_id' IS NOT NULL
       )k CROSS JOIN LATERAL(SELECT scope,key,version FROM state_board_input_mailbox
-       WHERE scope=k.scope AND key=k.key OFFSET 0)m)h WHERE b.weapon=$1`,[weapon,ruler]);
+       WHERE scope=k.scope AND key=k.key OFFSET 0)m)h${limits?'':' WHERE b.weapon=$1'}`,
+    limits?[weapon,ruler,limits.scanned_builds+1]:[weapon,ruler]);
    const started=Date.now();
    for(;;){
     signal?.throwIfAborted();if(Date.now()-started>120000)throw new BoardRankQualificationError('baseline capture exceeded its time budget');
-    const page=await tx.unsafe('FETCH FORWARD 256 FROM board_rank_baseline');
+    const page=await query('FETCH FORWARD 256 FROM board_rank_baseline');
     for(const row of page){
+     if(limits&&++scanned>limits.scanned_builds)throw new BoardRankQualificationError('fresh scope build scan exceeds its qualified forecast');
      if(!row.facts)continue;
      total++;facts+=row.facts.length;
      if(limits&&(total>limits.identities||facts>limits.facts))throw new BoardRankQualificationError('fresh scope capture exceeds its qualified forecast');
@@ -54,13 +82,20 @@ export async function captureRankBaselineAt(sql,{weapon,ruler,source,native,work
     }
     if(page.length<256)break;
    }
-   await tx.unsafe('CLOSE board_rank_baseline');await append({kind:'complete',total,facts,snapshot});
+   await query('CLOSE board_rank_baseline');
+   if(limits){
+    remaining();
+    if(scanned!==expected)throw new BoardRankQualificationError('fresh scope build scan differs from its snapshot preflight');
+   }
+   await append({kind:'complete',total,facts,snapshot,...(limits?{scanned_builds:scanned}:{})});
+   if(limits)remaining();
    return meta;
   });
   await file.sync();await file.close();await chmod(path,0o440);syncRankDirectory(directory);syncRankDirectory(work);
   return {...metadata,path,bytes,total,facts,sha256:checksum.digest('hex')};
  }catch(error){
   await file.close();
+  if(limits)await rm(path,{force:true});
   if(error.code==='57014')throw new BoardRankQualificationError('baseline capture exceeded its SQL statement budget: '+error.message,{cause:error});
   throw error;
  }
