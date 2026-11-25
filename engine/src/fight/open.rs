@@ -89,8 +89,8 @@ pub(super) struct Combatant<'a> {
     pub(super) arc: ArcRuntime,
     pub(super) windows: CardWindows,
     pub(super) weakpoint_pile: LiveStacks,
-    pub(super) beam: BeamRamp,
-    pub(super) target_ramps: Vec<TargetRamp>,
+    pub(super) beam: [BeamRamp; 2],
+    pub(super) target_ramps: [Vec<TargetRamp>; 2],
     pub(super) field_duration_boost: bool,
     pub(super) field_ctx: FieldCtx,
     pub(super) meter: Meter,
@@ -587,7 +587,7 @@ pub(super) fn open<'a>(
     // status-payload scaling now live in `settle_procs`, which every instance
     // kind shares.
     // A continuous weapon's damage ramp, per run.
-    let beam = BeamRamp::default();
+    let beam = [BeamRamp::default(); 2];
     // Renewed Horror: armed by a reload from empty, spent by the next shot's
     // field. The sim always reloads from empty (it fires until dry), so on the
     // Torid this is the first shot of every magazine after the first.
@@ -817,7 +817,7 @@ pub(super) fn open<'a>(
             windows,
             weakpoint_pile,
             beam,
-            target_ramps: Vec::new(),
+            target_ramps: [Vec::new(), Vec::new()],
             field_duration_boost,
             field_ctx,
             meter,

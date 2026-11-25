@@ -925,7 +925,7 @@ fn direct_beam_without_special_geometry_restarts_at_each_spawn() {
     assert!(replay.events().iter().filter(|e| matches!(&e.kind, Kind::Damage(d) if d.killed)).count() > 5);
     let per_target = factors(&p);
     assert!(per_target.len() > 5);
-    assert!(per_target.iter().all(|v| (*v - 0.2).abs() < 1e-9), "{per_target:?}");
+    assert!(per_target.iter().all(|v| (*v - 0.2).abs() < 1e-7), "{per_target:?}");
     p.beam_ramp.as_mut().unwrap().per_target = false;
     let global = factors(&p);
     assert!(global.iter().any(|v| *v > 0.9), "{global:?}");
@@ -951,7 +951,7 @@ fn athodai_beam_bursts_use_target_attenuation() {
             _ => None,
         }).collect::<Vec<_>>();
         assert!(hits.len() > 5, "{id}: {hits:?}");
-        assert!((hits[0] - 0.2).abs() < 1e-9, "{id}: {hits:?}");
+        assert!((hits[0] - 0.2).abs() < 1e-7, "{id}: {hits:?}");
         assert!(hits.iter().any(|v| *v > 0.9), "{id}: {hits:?}");
     }
 }

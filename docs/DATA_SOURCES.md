@@ -197,7 +197,10 @@ Native lower endpoints, rise time, cooldown delay, divisor and target-local
 flags are bound independently of beam geometry. Unity endpoints have no
 attenuation; Onos's distinct charge consumer remains unmodelled. The supplemental
 `beam-ramp-bursts-2026-10-28.json` receipt binds the two Athodai alternate modes
-from `20261125T052906Z-beam-ramp-roster-coverage`.
+from `20261125T052906Z-beam-ramp-roster-coverage`. The 4,654 vectors from
+`20261125T045717Z-beam-ramp-timing-gates` pin binary32 state updates,
+strict inactivity gates and factor interpolation. Target ownership and
+shared-instance isolation are verified separately by the subsequent batches.
 
 ### Whole-primary calibration
 

@@ -245,8 +245,9 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         if let Some(source) = target_ramp.filter(|_| !g.bodies[recipient].fallen
             && l.spatial.as_ref().is_some_and(|s| !s.miss))
         {
-            me.target_ramps.resize(g.bodies.len(), TargetRamp::default());
-            beam_ramp = me.target_ramps[recipient].hit(
+            let ramps = &mut me.target_ramps[usize::from(l.base_form)];
+            ramps.resize(g.bodies.len(), TargetRamp::default());
+            beam_ramp = ramps[recipient].hit(
                 g.bodies[recipient].state.generation, t, tick, active.beam_ramp_floor, source,
             );
         }
@@ -469,7 +470,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
                 status_landing: 1.0,
             };
             let raw = target_ramp.map_or(strike.raw_per_bucket, |source| {
-                let here = me.target_ramps[body].hit(
+                let here = me.target_ramps[usize::from(l.base_form)][body].hit(
                     g.bodies[body].state.generation, t, tick, active.beam_ramp_floor, source,
                 );
                 strike.raw_per_bucket / beam_ramp.max(1e-9) * here

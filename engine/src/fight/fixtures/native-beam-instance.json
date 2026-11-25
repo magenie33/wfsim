@@ -1,0 +1,456 @@
+{
+  "manifest_sha256": "e4e29dcf9725f768f31a8c7ec604ee41d7314a2502b034184f0276d3654a9be1",
+  "member_sha256": "723491709f6b6ea3e246bf82edabd0664260b65d63c37ec83d5c1c1031b7c968",
+  "cases": [
+    {
+      "mode": "panthera_alt",
+      "step": 0,
+      "behavior_instance": 0,
+      "target_record": 0,
+      "activity": 1,
+      "dt": 0.4000000059604645,
+      "shared_before": [
+        0.0,
+        0.0
+      ],
+      "shared_after": [
+        0.4000000059604645,
+        0.0
+      ],
+      "factor": 0.550000011920929,
+      "other_instance_before": [
+        0.0,
+        0.0
+      ],
+      "other_instance_after": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "mode": "panthera_alt",
+      "step": 1,
+      "behavior_instance": 0,
+      "target_record": 1,
+      "activity": 1,
+      "dt": 0.4000000059604645,
+      "shared_before": [
+        0.4000000059604645,
+        0.0
+      ],
+      "shared_after": [
+        0.800000011920929,
+        0.0
+      ],
+      "factor": 1.0,
+      "other_instance_before": [
+        0.0,
+        0.0
+      ],
+      "other_instance_after": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "mode": "panthera_alt",
+      "step": 2,
+      "behavior_instance": 1,
+      "target_record": 1,
+      "activity": 1,
+      "dt": 0.20000000298023224,
+      "shared_before": [
+        0.0,
+        0.0
+      ],
+      "shared_after": [
+        0.20000000298023224,
+        0.0
+      ],
+      "factor": 0.32499998807907104,
+      "other_instance_before": [
+        0.800000011920929,
+        0.0
+      ],
+      "other_instance_after": [
+        0.800000011920929,
+        0.0
+      ]
+    },
+    {
+      "mode": "panthera_alt",
+      "step": 3,
+      "behavior_instance": 0,
+      "target_record": 1,
+      "activity": 0,
+      "dt": 0.10000000149011612,
+      "shared_before": [
+        0.800000011920929,
+        0.0
+      ],
+      "shared_after": [
+        0.699999988079071,
+        0.10000000149011612
+      ],
+      "factor": 0.887499988079071,
+      "other_instance_before": [
+        0.20000000298023224,
+        0.0
+      ],
+      "other_instance_after": [
+        0.20000000298023224,
+        0.0
+      ]
+    },
+    {
+      "mode": "panthera_alt",
+      "step": 4,
+      "behavior_instance": 0,
+      "target_record": 1,
+      "activity": 0,
+      "dt": 0.10000000149011612,
+      "shared_before": [
+        0.699999988079071,
+        0.10000000149011612
+      ],
+      "shared_after": [
+        0.5999999642372131,
+        0.20000000298023224
+      ],
+      "factor": 0.7749999761581421,
+      "other_instance_before": [
+        0.20000000298023224,
+        0.0
+      ],
+      "other_instance_after": [
+        0.20000000298023224,
+        0.0
+      ]
+    },
+    {
+      "mode": "panthera_alt",
+      "step": 5,
+      "behavior_instance": 0,
+      "target_record": 0,
+      "activity": 1,
+      "dt": 0.20000000298023224,
+      "shared_before": [
+        0.5999999642372131,
+        0.20000000298023224
+      ],
+      "shared_after": [
+        0.7999999523162842,
+        0.0
+      ],
+      "factor": 0.9999999403953552,
+      "other_instance_before": [
+        0.20000000298023224,
+        0.0
+      ],
+      "other_instance_after": [
+        0.20000000298023224,
+        0.0
+      ]
+    },
+    {
+      "mode": "panthera_prime_alt",
+      "step": 0,
+      "behavior_instance": 0,
+      "target_record": 0,
+      "activity": 1,
+      "dt": 0.4000000059604645,
+      "shared_before": [
+        0.0,
+        0.0
+      ],
+      "shared_after": [
+        0.4000000059604645,
+        0.0
+      ],
+      "factor": 0.550000011920929,
+      "other_instance_before": [
+        0.0,
+        0.0
+      ],
+      "other_instance_after": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "mode": "panthera_prime_alt",
+      "step": 1,
+      "behavior_instance": 0,
+      "target_record": 1,
+      "activity": 1,
+      "dt": 0.4000000059604645,
+      "shared_before": [
+        0.4000000059604645,
+        0.0
+      ],
+      "shared_after": [
+        0.800000011920929,
+        0.0
+      ],
+      "factor": 1.0,
+      "other_instance_before": [
+        0.0,
+        0.0
+      ],
+      "other_instance_after": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "mode": "panthera_prime_alt",
+      "step": 2,
+      "behavior_instance": 1,
+      "target_record": 1,
+      "activity": 1,
+      "dt": 0.20000000298023224,
+      "shared_before": [
+        0.0,
+        0.0
+      ],
+      "shared_after": [
+        0.20000000298023224,
+        0.0
+      ],
+      "factor": 0.32499998807907104,
+      "other_instance_before": [
+        0.800000011920929,
+        0.0
+      ],
+      "other_instance_after": [
+        0.800000011920929,
+        0.0
+      ]
+    },
+    {
+      "mode": "panthera_prime_alt",
+      "step": 3,
+      "behavior_instance": 0,
+      "target_record": 1,
+      "activity": 0,
+      "dt": 0.10000000149011612,
+      "shared_before": [
+        0.800000011920929,
+        0.0
+      ],
+      "shared_after": [
+        0.699999988079071,
+        0.10000000149011612
+      ],
+      "factor": 0.887499988079071,
+      "other_instance_before": [
+        0.20000000298023224,
+        0.0
+      ],
+      "other_instance_after": [
+        0.20000000298023224,
+        0.0
+      ]
+    },
+    {
+      "mode": "panthera_prime_alt",
+      "step": 4,
+      "behavior_instance": 0,
+      "target_record": 1,
+      "activity": 0,
+      "dt": 0.10000000149011612,
+      "shared_before": [
+        0.699999988079071,
+        0.10000000149011612
+      ],
+      "shared_after": [
+        0.5999999642372131,
+        0.20000000298023224
+      ],
+      "factor": 0.7749999761581421,
+      "other_instance_before": [
+        0.20000000298023224,
+        0.0
+      ],
+      "other_instance_after": [
+        0.20000000298023224,
+        0.0
+      ]
+    },
+    {
+      "mode": "panthera_prime_alt",
+      "step": 5,
+      "behavior_instance": 0,
+      "target_record": 0,
+      "activity": 1,
+      "dt": 0.20000000298023224,
+      "shared_before": [
+        0.5999999642372131,
+        0.20000000298023224
+      ],
+      "shared_after": [
+        0.7999999523162842,
+        0.0
+      ],
+      "factor": 0.9999999403953552,
+      "other_instance_before": [
+        0.20000000298023224,
+        0.0
+      ],
+      "other_instance_after": [
+        0.20000000298023224,
+        0.0
+      ]
+    },
+    {
+      "mode": "tazicor",
+      "step": 0,
+      "behavior_instance": 0,
+      "target_record": 0,
+      "activity": 1,
+      "dt": 0.30000001192092896,
+      "shared_before": [
+        0.0,
+        0.0
+      ],
+      "shared_after": [
+        0.30000001192092896,
+        0.0
+      ],
+      "factor": 0.6000000238418579,
+      "other_instance_before": [
+        0.0,
+        0.0
+      ],
+      "other_instance_after": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "mode": "tazicor",
+      "step": 1,
+      "behavior_instance": 0,
+      "target_record": 1,
+      "activity": 1,
+      "dt": 0.30000001192092896,
+      "shared_before": [
+        0.30000001192092896,
+        0.0
+      ],
+      "shared_after": [
+        0.6000000238418579,
+        0.0
+      ],
+      "factor": 1.0,
+      "other_instance_before": [
+        0.0,
+        0.0
+      ],
+      "other_instance_after": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "mode": "tazicor",
+      "step": 2,
+      "behavior_instance": 1,
+      "target_record": 1,
+      "activity": 1,
+      "dt": 0.15000000596046448,
+      "shared_before": [
+        0.0,
+        0.0
+      ],
+      "shared_after": [
+        0.15000000596046448,
+        0.0
+      ],
+      "factor": 0.4000000059604645,
+      "other_instance_before": [
+        0.6000000238418579,
+        0.0
+      ],
+      "other_instance_after": [
+        0.6000000238418579,
+        0.0
+      ]
+    },
+    {
+      "mode": "tazicor",
+      "step": 3,
+      "behavior_instance": 0,
+      "target_record": 1,
+      "activity": 0,
+      "dt": 0.10000000149011612,
+      "shared_before": [
+        0.6000000238418579,
+        0.0
+      ],
+      "shared_after": [
+        0.6000000238418579,
+        0.10000000149011612
+      ],
+      "factor": 1.0,
+      "other_instance_before": [
+        0.15000000596046448,
+        0.0
+      ],
+      "other_instance_after": [
+        0.15000000596046448,
+        0.0
+      ]
+    },
+    {
+      "mode": "tazicor",
+      "step": 4,
+      "behavior_instance": 0,
+      "target_record": 1,
+      "activity": 0,
+      "dt": 0.9000000357627869,
+      "shared_before": [
+        0.6000000238418579,
+        0.10000000149011612
+      ],
+      "shared_after": [
+        0.15000000596046448,
+        1.0
+      ],
+      "factor": 0.4000000059604645,
+      "other_instance_before": [
+        0.15000000596046448,
+        0.0
+      ],
+      "other_instance_after": [
+        0.15000000596046448,
+        0.0
+      ]
+    },
+    {
+      "mode": "tazicor",
+      "step": 5,
+      "behavior_instance": 0,
+      "target_record": 0,
+      "activity": 1,
+      "dt": 0.15000000596046448,
+      "shared_before": [
+        0.15000000596046448,
+        1.0
+      ],
+      "shared_after": [
+        0.30000001192092896,
+        0.0
+      ],
+      "factor": 0.6000000238418579,
+      "other_instance_before": [
+        0.15000000596046448,
+        0.0
+      ],
+      "other_instance_after": [
+        0.15000000596046448,
+        0.0
+      ]
+    }
+  ]
+}

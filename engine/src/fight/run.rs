@@ -1032,7 +1032,7 @@ pub fn run_once_traced(
         // MECHANICS — but it is a sub-2% question on sustained fire, unlike the
         // merge above.
         let beam_ramp = if active.continuous || active.beam_ramp.is_some() {
-            me.beam.tick(t, 1.0 / live_rate.max(1e-9), active.beam_ramp_floor, active.beam_ramp)
+            me.beam[usize::from(me.incarnon.in_base_form)].tick(t, 1.0 / live_rate.max(1e-9), active.beam_ramp_floor, active.beam_ramp)
         } else {
             1.0
         };
