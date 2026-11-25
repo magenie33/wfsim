@@ -817,7 +817,7 @@ function mountArena(host, s, en, opts) {
   const chips = () => {
     const n = 1 + (s.formation || []).length;
     const jumps = ARENA_JUMPS.map((m) => {
-      const on = Math.abs(arenaDistance(s) - m) < 0.05;
+      const on = Math.abs((s.scene_3d && m > 0 ? arenaSpan(s) : arenaDistance(s)) - m) < 0.05;
       const label = m === 0 ? tr("contact") : `${m} m`;
       return `<button class="ar-jump${on ? " on" : ""}" data-jump="${m}"${dis}>${escHtml(label)}</button>`;
     }).join("");

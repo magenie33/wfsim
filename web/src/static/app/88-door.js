@@ -377,7 +377,7 @@ const agentArenaState = () => ({
   player_at: sim.player_at, target: { id: "e1", at: sim.target_at, enemy: sim.enemy },
   formation: (sim.formation || []).map((f) => ({ id: f.id, at: f.at, enemy: f.enemy || sim.enemy })),
   aim_at: sim.aim_at || null,
-  gap_m: Math.round((arenaSpan(sim) - CONTACT_M) * 100) / 100, max_bodies: ARENA_MAX_BODIES(),
+  gap_m: Math.round(arenaDistance(sim) * 100) / 100, max_bodies: ARENA_MAX_BODIES(),
 });
 
 /// THE ROSTER AS A CALLER READS IT — every seat in the fight, the open build
