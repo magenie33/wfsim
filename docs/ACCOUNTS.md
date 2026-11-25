@@ -456,6 +456,9 @@ rank or compute points.
 The community directory at `/community/projects` lists verified independent
 projects. Project metadata lives in `worker/community_projects.js`; the
 project's account association and the person's honors are separate records.
+Each project configures its own name, description, optional icon and available
+homepage, source and download links. Public developer identity uses the
+ranking's name and marks, not a separate project-specific name.
 The directory links to a profile only when that account publishes its name.
 Apply `worker/pg/accounts.sql` before deployment, then apply
 `worker/pg/grant_simfleet_honors.sql` once to bind the inaugural project and

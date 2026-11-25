@@ -291,7 +291,7 @@ function computationPage(main, kind) {
     ${!state.recordsLoading && !state.rows.length && !state.recordsError && !state.next ? `<p class="muted">${aT("No calculation records here yet.")}</p>` : ""}${records}
     ${computePagerHtml({ page: state.recordPage, hasNext: !!state.next, loading: state.recordsLoading }, page => `data-profile-page="${page}"`)}`;
   main.innerHTML = `<div class="contributor-profile"><header class="profile-heading"><span class="avatar">${escHtml((p.name || "?").slice(0, 1).toUpperCase())}</span>
-    <div><span class="profile-eyebrow">${aT(p.you ? "My profile" : "User profile")}</span><h2>${escHtml(p.name)}${(extHookNow("contributorMark", p.mark) || "") + developerHonors(p.developer_honors)} ${p.contributor_rank == null ? "" : contributorRankBadge(p.contributor_rank)}</h2><span class="muted">@${escHtml(p.username || "")}</span></div>
+    <div><span class="profile-eyebrow">${aT(p.you ? "My profile" : "User profile")}</span><h2>${escHtml(p.name)}${identityMarks(p)} ${p.contributor_rank == null ? "" : contributorRankBadge(p.contributor_rank)}</h2><span class="muted">@${escHtml(p.username || "")}</span></div>
     <div class="profile-totals"><b>${total("signatures")}</b><span>${aT("Lifetime signatures")}</span></div>
     <div class="profile-totals"><b>${total("points")}</b><span>${aT("Contribution points")}</span></div></header>
     ${userHomeControlsHtml(p)}${stats}

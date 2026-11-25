@@ -4428,7 +4428,13 @@ main.config-page:not([id])>.block>.bh,main.config-page:not([id])>.block>.bh .sub
 .contrib-mark.developer-honor{display:inline-flex;align-items:center;gap:5px;border:1px solid currentColor;border-radius:999px;height:22px;padding:0 10px;font-size:12px;font-weight:700;letter-spacing:.02em;vertical-align:middle;white-space:nowrap}
 .developer-honor.core_developer{color:light-dark(#6643ad,#a78bfa);box-shadow:0 0 6px #a78bfa26}
 .developer-honor.community_developer{color:light-dark(#087f73,#2dd4bf);background:#2dd4bf0d}
-.community-project{margin:16px 0}
+.settings.solo.community-projects-page{max-width:1080px}
+.community-project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:16px 0}
+.community-project{margin:0;min-width:0;display:flex;flex-direction:column}
+.community-project .bb{display:flex;flex:1;flex-direction:column;gap:10px}
+.community-project .bb p{margin:0;flex:1}
+.community-project-links{display:flex;flex-wrap:wrap;gap:8px}
+@media(max-width:680px){.community-project-grid{grid-template-columns:minmax(0,1fr)}}
 .community-project .bh{flex-wrap:wrap;gap:8px}
 
 .community-project .bh h2{display:flex;align-items:center;gap:10px}

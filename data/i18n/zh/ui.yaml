@@ -3918,8 +3918,8 @@ ui:
   "Apply for project listing": 申请收录项目
   "Could not load community projects.": 无法加载社区项目。
   "Verified by WFSim": WFSim 已验证
-  "Volunteer computing": 志愿计算
   "An independent command-line client for contributing compute to WFSim.": 为 WFSim 提供志愿算力的独立命令行客户端。
+  "Project homepage": 项目主页
   "Source code": 源代码
 
 effect_phrases:

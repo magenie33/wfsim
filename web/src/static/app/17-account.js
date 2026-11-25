@@ -646,9 +646,7 @@ const contributorsOrdered = () => (contributorsState || []).map((c, i) => ({ c, 
   .sort((x, y) => y.v - x.v || x.i - y.i);
 
 function contributorRowInner(c, at, shown) {
-  const who = c.name === null ? `<span class="rank-name muted">${aT("Anonymous contributor")}</span>`
-    : `${c.profile ? userProfileLink(c.profile, c.name, "rank-name")
-      : `<span class="rank-name">${escHtml(c.name)}</span>`}${(extHookNow("contributorMark", c.mark) || "") + developerHonors(c.developer_honors)}`;
+  const who = publicIdentityName(c);
   return `<span class="rank-n">${at + 1}</span><span class="rank-who">${contributorRankBadge(c.contributor_rank)}${who}${
     c.you ? `<span class="rank-you">${aT("(you)")}</span>` : ""}</span><span class="rank-pts">${escHtml(shown.toLocaleString(accountLocale()))}</span>`;
 }
@@ -1253,10 +1251,30 @@ function developerHonors(honors = []) {
     ` <span class="contrib-mark developer-honor ${id}"><span aria-hidden="true">${icon}</span>${aT(name)}</span>`).join("");
 }
 
+function identityMarks(person) {
+  return (extHookNow("contributorMark", person.mark) || "") + developerHonors(person.developer_honors);
+}
+function publicIdentityName(person, linked = true) {
+  if (!person?.name) return `<span class="rank-name muted">${aT("Anonymous contributor")}</span>`;
+  const name = linked && person.profile ? userProfileLink(person.profile, person.name, "rank-name")
+    : `<span class="rank-name">${escHtml(person.name)}</span>`;
+  return name + identityMarks(person);
+}
+function communityProjectCard(project) {
+  const links = [["homepage", "Project homepage"], ["source", "Source code"], ["download", "Download"]];
+  const icon = project.icon ? `<img class="community-project-icon" src="${escHtml(project.icon)}" width="32" height="32" alt="">`
+    : '<svg class="community-project-icon" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><rect x="2" y="5" width="28" height="22" rx="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m8 12 5 4-5 4m8 0h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  return `<article class="block community-project">
+    <div class="bh"><h2>${icon} ${escHtml(project.name)}</h2>${project.verified ? `<span class="tag ok">${aT("Verified by WFSim")}</span>` : ""}</div>
+    <div class="bb"><div class="rank-who">${publicIdentityName(project.developer)}</div>
+    <p>${aT(project.description)}</p>
+    <div class="community-project-links">${links.filter(([key]) => project.links?.[key]).map(([key, label]) =>
+      `<a class="ghost-btn" href="${escHtml(project.links[key])}" target="_blank" rel="noopener">${aT(label)}</a>`).join("")}</div></div></article>`;
+}
 async function communityProjectsPage(main) {
-  main.innerHTML = `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Community Projects")}</h1>
+  main.innerHTML = `<div class="settings solo community-projects-page"><div class="set-main"><h1 class="page">${aT("Community Projects")}</h1>
     <p>${aT("Discover independent projects built around WFSim and verified by WFSim.")}</p>
-    <div data-community-projects aria-live="polite">${aT("Loading…")}</div>
+    <div class="community-project-grid" data-community-projects aria-live="polite">${aT("Loading…")}</div>
     <p class="set-note">${aT("Verification confirms usefulness and compatibility, not official authorship.")}</p>
     <h2>${aT("Apply for project listing")}</h2>
     <div class="community-project-apply">
@@ -1268,9 +1286,5 @@ async function communityProjectsPage(main) {
   const result = await accountCall("GET", "/api/community/projects");
   if (!list.isConnected) return;
   if (!result?.ok) { list.textContent = tr("Could not load community projects."); return; }
-  list.innerHTML = result.projects.map(project => `<article class="block community-project">
-    <div class="bh"><h2><svg class="community-project-icon" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><rect x="2" y="5" width="28" height="22" rx="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m8 12 5 4-5 4m8 0h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ${escHtml(project.name)}</h2>${project.verified ? `<span class="tag ok">${aT("Verified by WFSim")}</span>` : ""}</div>
-    <div class="bb"><div class="muted">${userProfileLink(project.profile, project.developer)} · ${aT(project.category)}</div>
-    <p>${aT(project.description)}</p>
-    <a class="ghost-btn" href="${escHtml(project.source)}" target="_blank" rel="noopener">${aT("Source code")}</a></div></article>`).join("");
+  list.innerHTML = result.projects.map(communityProjectCard).join("");
 }

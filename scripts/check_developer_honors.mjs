@@ -6,7 +6,8 @@ import { contributorAccounts } from "../worker/contributor_identity.js";
 import { contributorProfilesRoute } from "../worker/contributor_profiles.js";
 import { communityProjectsRoute } from "../worker/community_projects.js";
 
-const ACCOUNTS = await testDb("accounts"), env = { ACCOUNTS };
+const ACCOUNTS = await testDb("accounts"), env = { ACCOUNTS, CLOUD: { fetch: async () =>
+  Response.json({ ok: true, marks: { recipient: { kind: "fixture", tier: "patron" } } }) } };
 const profile = "a".repeat(32);
 await ACCOUNTS.run("INSERT INTO entity_accounts(id,created_at,username,profile_id) VALUES ('recipient','2026-01-01','developer',?)", profile);
 await ACCOUNTS.run("INSERT INTO relation_account_login_identities(provider,subject,account,label,linked_at) VALUES ('github','54000348','recipient','SuperExboom','2026-01-01')");
@@ -18,12 +19,15 @@ const account = (await contributorAccounts(env, ["recipient"])).get("recipient")
 assert.deepEqual(account.developer_honors, ["community_developer", "core_developer"]);
 assert.equal(account.label, "fixture");
 const route = async () => (await communityProjectsRoute(new Request("https://wfsim.app/api/community/projects"), env, "/api/community/projects")).json();
-assert.equal((await route()).projects[0].profile, profile);
+const listed = (await route()).projects[0];
+assert.deepEqual(listed.developer, { name: "developer", profile, mark: { kind: "fixture", tier: "patron" },
+  developer_honors: account.developer_honors });
+assert.equal(listed.category, undefined);
 const path = "/api/contributors/profile/" + profile;
 const response = await contributorProfilesRoute(new Request("https://wfsim.app" + path + "?view=identity"), env, path);
 assert.deepEqual((await response.json()).profile.developer_honors, account.developer_honors);
 await ACCOUNTS.run("UPDATE state_account_public_attribution SET named=0 WHERE account='recipient'");
-assert.equal((await route()).projects[0].profile, undefined);
+assert.deepEqual((await route()).projects[0].developer, { name: null });
 assert.equal((await contributorProfilesRoute(new Request("https://wfsim.app" + path + "?view=identity"), env, path)).status, 404);
 const source = readFileSync(new URL("../web/src/static/app/17-account.js", import.meta.url), "utf8");
 const badge = runInNewContext(source.slice(source.indexOf("function developerHonors("), source.indexOf("async function communityProjectsPage")) + "\ndeveloperHonors", { aT: text => text });
@@ -31,9 +35,10 @@ assert.match(badge(account.developer_honors), /WFSim Core Developer.*WFSim Commu
 assert.equal(badge(["unrecognized"]), "");
 const slot = { isConnected: true, innerHTML: "" }, main = { innerHTML: "", querySelector: () => slot };
 const render = runInNewContext(source.slice(source.indexOf("function developerHonors(")) + "\ncommunityProjectsPage", {
-  aT: text => text, tr: text => text, LANG: "en", escHtml: text => text,
+  aT: text => text, tr: text => text, escHtml: text => text, extHookNow: (_, mark) => mark ? "Existing identity mark" : "",
   userProfileLink: (id, name) => id ? '<a href="/user/' + id + '">' + name + '</a>' : name,
-  accountCall: async () => ({ ok: true, projects: [{ ...(await route()).projects[0], profile }] }),
+  accountCall: async () => ({ ok: true, projects: [listed, { name: "Second project",
+    developer: listed.developer, description: "Second description", links: { homepage: "https://example.com", download: "https://example.com/download" } }] }),
 });
 await render(main);
 assert.match(main.innerHTML, /Community Projects/);
@@ -43,4 +48,9 @@ assert.match(main.innerHTML, /qm.qq.com\/q\/uiXrMSTs8S/);
 assert.match(slot.innerHTML, /Verified by WFSim/);
 assert.match(slot.innerHTML, new RegExp("/user/" + profile));
 assert.match(slot.innerHTML, /github.com\/superexboom\/simfleet/);
+assert.match(slot.innerHTML, /Existing identity mark.*WFSim Core Developer.*WFSim Community Developer/);
+assert.match(slot.innerHTML, /Second project/);
+assert.match(slot.innerHTML, /Project homepage/);
+assert.match(slot.innerHTML, /Download/);
+assert.doesNotMatch(slot.innerHTML, /Volunteer computing/);
 console.log("developer honors: grant, coexistence, profile, project link, anonymity and badge rendering pass");
