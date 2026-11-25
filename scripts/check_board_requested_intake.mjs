@@ -302,6 +302,24 @@ try{
  assert((await pass()).rejected,'an inexact observation must not enter execution');
  assert.equal((await db.get('SELECT state FROM entity_measurement_reviews WHERE id=?',invalid.id)).state,'failed');
  assert.equal((await requestRow('review:'+invalid.id)).phase,'rejected');
+ const reopenSql=readFileSync(new URL('./board_reopen_rejected_corrections.sql',import.meta.url),'utf8');
+ const rejectedId='review:'+invalid.id;
+ const reopen=async sha=>sql.begin(async tx=>{
+  await tx.unsafe("CREATE TEMP TABLE correction_recovery_input(id text PRIMARY KEY,input_sha256 text NOT NULL) ON COMMIT DROP");
+  await tx.unsafe('INSERT INTO correction_recovery_input VALUES($1,$2)',[rejectedId,sha]);
+  return (await tx.unsafe(reopenSql)).at(-1).map(row=>row.id);
+ });
+ const {sha}=await db.get("SELECT encode(sha256(convert_to(input::text,'UTF8')),'hex') sha FROM entity_board_requests WHERE id=?",rejectedId);
+ assert.deepEqual(await reopen('0'.repeat(64)),[],'changed input hash cannot reopen a review');
+ await db.run('UPDATE state_board_measurement_selection SET score=score+1 WHERE identity=?',normalized.id);
+ assert.deepEqual(await reopen(sha),[],'changed baseline protects the newer score');
+ await db.run('UPDATE state_board_measurement_selection SET score=score-1 WHERE identity=?',normalized.id);
+ assert.deepEqual(await reopen(sha),[rejectedId]);
+ assert.deepEqual(await reopen(sha),[],'repeating the exact recovery cannot reopen again');
+ assert.equal((await requestRow(rejectedId)).phase,'pending');
+ assert.equal((await db.get('SELECT state FROM entity_measurement_reviews WHERE id=?',invalid.id)).state,'waiting');
+ assert((await pass()).rejected,'reopened inputs must still pass actual Native validation');
+
  assert.equal((await db.get('SELECT score FROM state_board_measurement_selection WHERE identity=?',normalized.id)).score,13);
  const actualRiven={weapon:'coda_catabolyst',benchmark:ruler,mode,requested:true,
   mods:['frostbite','riven','galvanized_diffusion','galvanized_shot','lethal_torrent','pistol_elementalist','pressurized_magazine','critical_mutation'],
