@@ -43,7 +43,13 @@ function catalogFile(root,path){
 export async function runBatch(config,action,{available,observe=()=>{},pageBudget=8}={}){
  const priority=['priority-run','priority-step','priority-status'].includes(action),status=action==='status'||action==='priority-status';
  assert((priority||['plan','step','run','status'].includes(action))&&Number.isInteger(pageBudget)&&pageBudget>0&&pageBudget<=32,'invalid batch action');
- const state=directory(config.state,status),path=catalogFile(state,join(state,priority?'priority.sqlite':'adoption.sqlite'));
+ const priorityScope=config.priority_scope;
+ if(priorityScope){
+  assert(['priority-step','priority-status'].includes(action)&&
+   Object.keys(priorityScope).sort().join(',')==='ruler,weapon'&&[priorityScope.weapon,priorityScope.ruler].every(x=>typeof x==='string'&&/^[a-z0-9_]{1,160}$/.test(x)),
+   'scoped catalog requires one explicit partition and priority-step');
+ }
+ const state=directory(config.state,status),path=catalogFile(state,join(state,priorityScope?'priority-scope.sqlite':priority?'priority.sqlite':'adoption.sqlite'));
  if(!priority&&action!=='plan')assert(existsSync(path),'plan the complete catalog first');
  const journal=new DatabaseSync(path,{readOnly:status});
  const opened=[],openRO=p=>{const db=new DatabaseSync(p,ro);opened.push(db);return db;};
@@ -73,11 +79,19 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
   assert(spec&&cut?.snapshot&&JSON.stringify([spec.source,spec.cluster,spec.native,spec.archive,cut.snapshot,cut.captured_at])===epoch,
    'real coherent cut and matching qualification ledger required');
   const budget=jsonFile(config.budget),final=priority?{scopes:budget.scope_count}:jsonFile(config.coverage).final;
+  if(priorityScope){
+   assert(budget.scope_count===1&&budget.scope?.weapon===priorityScope.weapon&&budget.scope?.ruler===priorityScope.ruler&&
+    Number.isSafeInteger(budget.budget_total)&&budget.budget_total>0,'one-scope capacity forecast required');
+   const row=ledger.prepare('SELECT body FROM receipts WHERE weapon=? AND ruler=?').get(priorityScope.weapon,priorityScope.ruler);
+   const receipt=row&&JSON.parse(row.body);
+   assert(receipt?.eligible&&receipt.unresolved===0&&receipt.members===budget.scope.members&&receipt.rows===budget.scope.rows,
+    'scope forecast must identify its existing qualified archive receipt');
+  }
   if(!priority)assert(final?.eligible&&final.scopes===final.qualified&&final.missing===0&&final.held===0&&final.orphans===0,
    'historical qualification is incomplete');
   const contract={source:spec.source,native:spec.native,archive:spec.archive,cluster:String(spec.cluster),epoch,
    snapshot:cut.snapshot,at:cut.captured_at,floor:String(read('floor')??read('start')?.version),scopes:final.scopes,
-   work,volume:process.env.WFSIM_BOARD_DATA_UUID||null,origins,
+   ...(priorityScope?{priority_scope:priorityScope}:{}),work,volume:process.env.WFSIM_BOARD_DATA_UUID||null,origins,
    pins:[...(final.current_pins?[final.current_pins.sha256]:[]),...(final.additional_heads||[]).map(p=>p.pins)].sort()};
   const previous=journal.prepare('SELECT contract,closed FROM run WHERE id=1').get();
   if(previous)assert.equal(previous.contract,JSON.stringify(contract),'batch recovery boundary changed');
@@ -120,7 +134,7 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
    const verified=await readerCut(work,{action:'verify',name:basename(dirname(p.path)),sha256:p.cut,bytes:Number(p.bytes)});
    assert.equal(verified.path,p.path);
   }};
-  const ctx={state,target,journal,capture,archive,ledger,sets,contract,scenes,native,work,sql,origins,budget,inventory,pageBudget,files:owned,
+  const ctx={state,target,journal,capture,archive,ledger,sets,contract,scenes,native,work,sql,origins,budget,inventory,pageBudget,files:owned,priorityScope,
    capacity:checkCapacity,
    emit:async(weapon,ruler)=>{
     for(const file of ['inputs.partial','inputs.ndjson'])catalogFile(target,join(target,file));
@@ -136,7 +150,11 @@ export async function runBatch(config,action,{available,observe=()=>{},pageBudge
   }
   await ctx.capacity();
   sampler=setInterval(()=>{if(!capacityError)checkCapacity().catch(e=>{capacityError=e;});},1000);
-  let scan=await startCatalogScan(sql,contract,{resumeClosed:priority}),result;
+  let scan,result;
+  if(priorityScope){
+   [scan]=await sql.unsafe('SELECT * FROM state_board_rank_catalog_scan WHERE id=1 AND source=$1 AND epoch=$2 AND complete AND NOT closed',[contract.source,contract.epoch]);
+   assert(scan&&String(scan.floor)===contract.floor,'scoped catalog requires an existing complete change capture');
+  }else scan=await startCatalogScan(sql,contract,{resumeClosed:priority});
   do{
    await ctx.capacity();
    if(!scan.complete){scan=await scanCatalogPage(sql,contract.source);result={status:'scanning',scope:scan.last_scope,key:scan.last_key};}

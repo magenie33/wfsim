@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {DatabaseSync} from 'node:sqlite';
 import {join} from 'node:path';
+import {mkdirSync,readFileSync,writeFileSync} from 'node:fs';
+import {runBatch} from './adopt_rank_catalog_batch.mjs';
 import {preparePriority,nextPriority} from './board_catalog_priority.mjs';
 import {checkCatalogDelivery} from './check_board_catalog_delivery.mjs';
 import {routeRankInput} from './board_rank_work.mjs';
@@ -59,6 +61,13 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
   const next=async()=>{for(let i=0;i<8;i++){const found=await nextPriority(context,now);if(found)return found;}return null;};
   scheduler.prepare("INSERT OR REPLACE INTO priority_cursor VALUES('turn','2')").run();
   assert.equal((await next()).weapon,'dex_nikana','a qualified unpublished scope gets the same zone as any other admitted request');
+  const isolatedScope=new DatabaseSync(':memory:');
+  try{
+   preparePriority(isolatedScope,{source:'test',archive,priority_scope:{weapon:'ordinary',ruler:'fresh'}});
+   await assert.rejects(nextPriority({journal:isolatedScope,sql:isolated,priorityScope:{weapon:'ordinary',ruler:'fresh'}},now),/current priority head/);
+   assert.equal(isolatedScope.prepare('SELECT count(*) n FROM priority_work').get().n,0);
+  }finally{isolatedScope.close();}
+
   const first=job('dex_nikana');
   const set=scheduler.prepare('UPDATE priority_work SET phase=?,due=? WHERE weapon=?');
   set.run('pending',now+60000,'dex_nikana');
@@ -77,6 +86,28 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
   assert.deepEqual([job('dex_nikana').position,job('dex_nikana').arrival],[first.position,first.arrival],'new scores preserve the oldest outstanding age and queue position');
   await sql.unsafe("DELETE FROM state_board_rank_new_scopes WHERE weapon IN ('dex_nikana','ordinary')");
  }finally{scheduler.close();ledger.close();}
+ // Only the current priority head can enter a separately budgeted one-scope step.
+ await sql.unsafe(`INSERT INTO state_board_rank_new_scopes(weapon,ruler,zone)
+  VALUES($1,$2,0) ON CONFLICT(weapon,ruler) DO NOTHING`,[weapon,second]);
+ const [scopeHead]=await sql.unsafe(`SELECT weapon,ruler FROM state_board_rank_new_scopes
+  ORDER BY zone,coalesce(zone_position,0),queued_at,weapon,ruler LIMIT 1`);
+ assert.deepEqual(scopeHead,{weapon,ruler:second});
+ const scopedState=join(config.state,'scoped-fixture');mkdirSync(scopedState);
+ const ledgerDb=new DatabaseSync(join(config.stage,'qualification.sqlite'),{readOnly:true});
+ const scopeReceipt=JSON.parse(ledgerDb.prepare('SELECT body FROM receipts WHERE weapon=? AND ruler=?').get(weapon,second).body);
+ ledgerDb.close();
+ const budget={...JSON.parse(readFileSync(config.budget)),scope_count:1,scope:{weapon,ruler:second,members:scopeReceipt.members,rows:scopeReceipt.rows}};
+ const budgetFile=join(scopedState,'budget.json');writeFileSync(budgetFile,JSON.stringify(budget));
+ const scopedConfig={...config,state:scopedState,budget:budgetFile,priority_scope:{weapon,ruler:second}};
+ const scopeOpts={available:()=>128*1024**3,pageBudget:1};
+ await assert.rejects(runBatch({...scopedConfig,priority_scope:{weapon,ruler:'demolisher'}},'priority-step',scopeOpts),/one-scope capacity forecast/);
+ await assert.rejects(runBatch(scopedConfig,'priority-step',{...scopeOpts,available:()=>33*1024**3}),/insufficient remaining Data/);
+ assert.equal((await sql.unsafe('SELECT 1 FROM state_board_rank_partitions WHERE weapon=$1 AND ruler=$2',[weapon,second])).length,0);
+ const scoped=await runBatch(scopedConfig,'priority-step',scopeOpts);
+ assert.equal(scoped.status,'frozen');assert.equal(scoped.weapon,weapon);assert.equal(scoped.ruler,second);
+ assert.equal((await sql.unsafe('SELECT revision FROM state_board_public_heads WHERE weapon=$1 AND ruler=$2',[weapon,second]))[0].revision,old);
+ const scopeJournal=new DatabaseSync(join(scopedState,'priority-scope.sqlite'),{readOnly:true});
+ try{assert.equal(scopeJournal.prepare('SELECT count(*) n FROM priority_work').get().n,1);}finally{scopeJournal.close();}
  const sourceFact=inputs[0].facts[0];
  const id=sourceFact.identity,mode=sourceFact.mode;
  await sql.unsafe('INSERT INTO board_facts SELECT identity,$2,mode,71,metric,measured_by,finished_at,retired_at,review_id FROM board_facts WHERE identity=$1 AND ruler=$3 AND mode=$4',[id,fresh,ruler,mode]);
@@ -96,7 +127,7 @@ export async function checkPriority({sql,schema,config,action,weapon,ruler,secon
  await sql.unsafe("INSERT INTO state_board_rank_new_scopes(weapon,ruler) VALUES($1,'removed_ruler')",[weapon]);
  const page=async scope=>(await sql.unsafe('SELECT board_read_page($1,$2,NULL,0,128) page',[weapon,scope]))[0].page;
  const position=(await sql.unsafe('SELECT position FROM state_board_requested_partitions WHERE weapon=$1 AND ruler=$2',[weapon,second]))[0].position;
- const frozen=new Set();let revised=false,warm=false,concurrent=false;
+ const frozen=new Set([second]);let revised=false,warm=false,concurrent=false;
  const stop=Date.now()+75000;let last;
  while(Date.now()<stop){
   last=await action('priority-step');
