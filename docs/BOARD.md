@@ -398,7 +398,9 @@ standing is shown only after the exact cell has loaded.
 | `live_board.sh` | every 20 s, on the board server | `scores` is ranked into the LIVE board in R2, which the site reads | two cores: seconds for the weapons a cycle moved; minutes to start, deriving the library once |
 
 The hourly queue supplements missing measurements and repairs interrupted
-score retirements. Age alone does not request another measurement. Explicit
+score retirements. Periodic refresh runs independently at UTC 00:00, 06:00,
+12:00 and 18:00. Each selected measurement older than the configured age
+(default 14 days) receives a system calculation in zone 04. Explicit
 model-correction rescores retire selected measured rows and request independent
 replacement measurements.
 
@@ -444,11 +446,15 @@ open at the head of the order, where every pick withdraws it at a pack's worth
 an ask. Reconciliation does not recreate a cancelled calculation from a library
 coverage gap.
 
-**NOTHING ASKS FOR A MEASURED ROW AGAIN ON THE CLOCK.** A row is measured again
-only when a person asks — the rescore button, or a batch by hand. The engine id
-moves on edits that move no number, so a re-ask driven by age or by the engine
-id would rescore the whole board after a wording change. `queue.yml` holds no
-such step, and `check_rescore_paths` fails on one.
+**REFRESH IS DUE BY THE MEASUREMENT CLOCK.** `board-refresh.yml` reads
+selected measurements by their finished time and uses the canonical Native
+intake plan with a system source per build, ruler, mode and baseline time.
+`BOARD_REFRESH_DAYS` sets the age in whole days. A workflow-dispatch input can
+override it for one pass. An engine ID change does not generate orders.
+The old fact remains selected until an independent replacement is verified.
+Even an equal result refreshes the measurement time. Repeated passes join the
+retained source. A failed round can be retried on the next pass. A user correction on the same computation promotes its active
+round to zone 01.
 
 **THE PUBLISH DOES NOT CARE WHAT IS BEING COMPUTED.** It reads the table, ranks
 it, writes the files and commits if they moved. A scoring run may be halfway
