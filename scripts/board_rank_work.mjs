@@ -118,7 +118,9 @@ export async function reconcileRankBaseline(tx,{weapon,ruler,source}) {
    AND EXISTS(SELECT 1 FROM board_facts f WHERE f.identity=k.identity AND f.ruler=$2))`:''}`,[weapon,ruler,JSON.stringify(ids.map(row=>row.identity))]);
  await lockRankInputs(tx,source,{identities:rows.map(row=>row.identity)});
  if(rows.length){
-  const marked=await putRankDirtyBatch(tx,rows.map(({identity})=>({weapon,ruler,identity})));
+  const [parent]=catalog?await tx.unsafe(`SELECT zone,coalesce(zone_position,0) zone_position,queued_at
+   FROM state_board_rank_new_scopes WHERE weapon=$1 AND ruler=$2`,[weapon,ruler]):[];
+  const marked=await putRankDirtyBatch(tx,rows.map(({identity})=>({weapon,ruler,identity,...parent})));
   await tx.unsafe(`INSERT INTO state_board_rank_baseline_obligations(weapon,ruler,identity,version)
    SELECT $1,$2,x.identity,x.version FROM jsonb_to_recordset($3::text::jsonb)x(identity text,version bigint)
    ON CONFLICT(weapon,ruler,identity) DO UPDATE SET version=excluded.version`,[weapon,ruler,JSON.stringify(marked)]);

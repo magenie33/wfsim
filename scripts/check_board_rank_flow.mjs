@@ -98,6 +98,10 @@ try{
   const {checkBatch}=await import('./check_board_catalog_batch.mjs');
   await checkBatch({sql,schema,native,binary,work,weapon,ruler,source,inputs,read,until,put,
    priority:process.argv.includes('--catalog-priority'),step:()=>flow.step(),restart:async width=>{await flow.close();flow=await open(false,width);}});
+  if(process.argv.includes('--catalog-priority')){
+   const {checkReplayPriority}=await import('./check_board_rank_replay_priority.mjs');
+   await checkReplayPriority(sql,source,native.adapter);
+  }
  }else if(process.argv.includes('--catalog')){
   flowSql=reader;flow=await open();
   await checkCatalogHandoff({sql,native,work,weapon,ruler,source,inputs,late,read,put,until,restart:async()=>{await flow.close();flow=await open();}});
