@@ -365,6 +365,17 @@ await send("device", { want: 0 });
 check("local result bookkeeping does not extend the refill deadline", page.syncNotBefore === 120_000, String(page.syncNotBefore));
 page.Date = savedClientClock; page.takeSynced = savedTake; page.syncNotBefore = 0;
 
+let toggledWake = 0;
+const togglePage = { localStorage: { setItem() {} }, COMPUTE_RANGES_KEY: "ranges", computeRanges: {},
+  CONSENT_KEY: "consent", COMPUTE_CONSENT_V: 3, renderBoardConsent() {}, computeRedraw() {},
+  computeChrome() {}, renderComputePicker() {}, computeWake: () => { toggledWake++; } };
+const toggle = runInNewContext(source.slice(source.indexOf("function setBoardVerify("), source.indexOf("// Compatibility setters"))
+  + "\nsetBoardVerify;", togglePage);
+toggle(false);
+check("turning off computing does not wake the idle dispatcher", toggledWake === 0);
+toggle(true);
+check("turning on computing immediately wakes the idle dispatcher", toggledWake === 1);
+
 let routeClock = 700_000, releaseProbes;
 const probed = new Promise((resolve) => { releaseProbes = resolve; });
 const routePage = { location: { origin: "https://wfsim.app" }, Date: class extends Date { static now() { return routeClock; } },
@@ -372,13 +383,17 @@ const routePage = { location: { origin: "https://wfsim.app" }, Date: class exten
   fetch: async () => { await probed; return { ok: true, json: async () => ({}) }; } };
 const routeCode = source.slice(source.indexOf("const RELAY = "), source.indexOf("/// HOW EACH ROAD CARRIES A PUBLIC FILE"));
 const routes = runInNewContext(routeCode + "\n({ chooseRoute, postBoardWork, known: () => { routeBase = RELAY; routeAt = 1; }, active: () => routing });", routePage);
+let coldRoute;
+const coldChoice = routes.chooseRoute().then(base => { coldRoute = base; });
+await Promise.resolve();
+check("the first ask uses direct immediately while both routes are measured", coldRoute === "" && !!routes.active());
 routes.known();
 let foregroundRoute;
 const routeChoice = routes.chooseRoute().then((base) => { foregroundRoute = base; });
 await Promise.resolve();
 check("auto route refresh leaves the last usable route available immediately", foregroundRoute === "https://cn.wfsim.app" && !!routes.active());
 releaseProbes();
-await routes.active(); await routeChoice;
+await routes.active(); await routeChoice; await coldChoice;
 check("the completed route refresh selects the measured route for later calls", await routes.chooseRoute() === "");
 const slowProbe = new Promise((resolve) => { releaseProbes = resolve; });
 routePage.fetch = async (url) => {

@@ -160,6 +160,7 @@ function setBoardVerify(on) {
   computeRedraw();
   computeChrome();
   renderComputePicker();
+  if (on && computeWake) computeWake();
 }
 
 // Compatibility setters select a fixed range; both consumers use ComputeBudget.
@@ -317,7 +318,7 @@ function chooseRoute() {
     });
     routing = sample;
   }
-  return routeAt ? Promise.resolve(routeBase) : routing;
+  return Promise.resolve(routeBase);
 }
 /// ONE CALL OF THE BOARD'S WORK, by the chosen road — the relay carries
 /// `RELAY_PATHS` alone — its answer or null. A call one road drops goes by the
