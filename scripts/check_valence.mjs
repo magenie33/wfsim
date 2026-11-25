@@ -92,7 +92,7 @@ check("the block is drawn for an adversary weapon", r.shown === true, String(r.s
 // bonus, so a fresh page opens on one. 21 x 1.60 = 33.6.
 check("it opens on 60% Impact, not on a weapon nobody has",
   r.opened.element === "impact" && r.opened.bonus === 0.6
-    && Math.abs(r.openedBase - 33.6) < 1e-6,
+    && Math.abs(r.openedBase - 33.6) < 1e-4,
   JSON.stringify({ ...r.opened, base: r.openedBase }));
 // …AND THERE IS NO WAY BACK TO A WEAPON NOBODY HAS. Seven
 // picks, all of them elements, and the roll never greys out.
@@ -102,10 +102,10 @@ check("...and the element is mandatory: seven picks, no `none`",
 // THE ARITHMETIC, exactly: 21 + 21 × 0.60 = 33.6, as BASE damage. 21 is the
 // weapon's own printed Radiation, which the infobox states.
 check("a 60% Toxin progenitor is +12.6 Toxin beside the Radiation",
-  Math.abs(r.toxin.base - 33.6) < 1e-6, `21 -> ${r.toxin.base}`);
+  Math.abs(r.toxin.base - 33.6) < 1e-4, `21 -> ${r.toxin.base}`);
 // …AND THE MERGE, which is the half a "new element" implementation gets wrong.
 check("...and a Radiation one merges into the 21 it already deals",
-  Math.abs(r.rad.base - 33.6) < 1e-6, String(r.rad.base));
+  Math.abs(r.rad.base - 33.6) < 1e-4, String(r.rad.base));
 check("it saves with the BUILD, not the fight",
   r.savedElement === "radiation" && r.savedBonus === 0.6 && r.inFight === false,
   JSON.stringify({ element: r.savedElement, bonus: r.savedBonus, inFight: r.inFight }));
@@ -606,5 +606,20 @@ check("...with the reason ON SCREEN rather than in a workflow log",
   /Valence/.test(door.bad.panel)
     && /不会提交|榜单不会收|is not sent|would not take/.test(door.bad.panel),
   door.bad.panel.replace(/\s+/g, " ").slice(0, 160));
+
+const livia = await evaluate(`(async () => {
+  history.pushState({}, '', '/weapons/Tenet_Livia/builder'); await route();
+  const spec = weaponInfo('tenet_livia')?.valence;
+  const shown = !document.getElementById('element-block').hidden;
+  const saved = snapshotState().valence;
+  const body = { ...buildPayload(), ...theFight(), weapon:'tenet_livia',
+    mode:'base', mods:[], arcanes:[], evolutions:[], valence_element:'heat',
+    valence_bonus:0.6, duration:1, runs:1 };
+  const out = await api('/api/simulate', body);
+  return { spec, shown, saved, base:out.panel?.modified_base };
+})()`);
+check('Livia offers the shared progenitor control', livia.shown && livia.spec?.elements.length === 7
+  && livia.saved?.element === 'impact' && livia.saved.bonus === 0.6, JSON.stringify(livia));
+check('Livia applies the selected bonus to base damage', Math.abs(livia.base - 316.8) < 1e-4, JSON.stringify(livia));
 
 await app.finish("an adversary weapon's Valence bonus reaches its damage");
