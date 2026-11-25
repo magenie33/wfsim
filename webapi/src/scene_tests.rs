@@ -655,7 +655,14 @@ fn torids_spatial_sphere_seeds_separate_chains_without_paying_the_direct_hit_twi
     let trace = replay.spatial_flights().first().expect("Torid beam tick");
     let [direct] = trace.flight.impacts.as_slice() else { panic!("one direct contact") };
     assert_eq!(direct.body, 0);
+    assert_eq!(direct.part, 1, "the player's primary beam can hit the head");
     assert_eq!(trace.flight.beam_endpoint, Some(direct.point));
+    use wfsim_engine::record::Origin;
+    assert!(replay.events().iter().any(|event|
+        matches!(&event.kind, Kind::Damage(hit) if hit.origin == Origin::Own && hit.head)));
+    assert!(replay.events().iter().all(|event|
+        !matches!(&event.kind, Kind::Damage(hit)
+            if matches!(hit.origin, Origin::Chain | Origin::Splash) && hit.head)));
     use wfsim_engine::scene::BeamContactKind::{Chain, Radius};
     let recipients = &trace.flight.beam_contacts;
     let caught: Vec<_> = recipients.iter().filter(|s| s.kind == Radius).map(|s| s.impact.body).collect();
