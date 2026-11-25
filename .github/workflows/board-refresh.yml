@@ -1,0 +1,39 @@
+name: board-refresh
+
+on:
+  schedule:
+    - cron: "0 0,6,12,18 * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Age in days before a measured score is queued (blank uses the configured default)"
+        type: string
+        default: ""
+
+concurrency:
+  group: board-periodic-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.23.4"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.97.1"
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release --locked -p wfsim-cli --bin wfsim-intake
+      - uses: ./.github/actions/databases
+        with:
+          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          pg_url: ${{ secrets.PG_PIPELINE_URL }}
+      - name: Queue overdue measurements in zone 04
+        env:
+          BOARD_REFRESH_DAYS: ${{ inputs.days || vars.BOARD_REFRESH_DAYS }}
+        run: node scripts/board_periodic_refresh.mjs target/release/wfsim-intake
