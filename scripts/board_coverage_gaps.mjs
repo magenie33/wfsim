@@ -11,7 +11,7 @@ import { prepareIntakeBuild } from './build_batches.mjs';
 const shape = node => [node.identity, node.ruler, node.mode];
 const identity = /^[0-9a-f]{32}$/;
 
-async function capture(binary, rows) {
+export async function captureBoardBuilds(binary, rows) {
   if (!rows.length) return [];
   const stdout = await new Promise((resolve, reject) => {
     const child = execFile(binary, [], { timeout: 35_000, maxBuffer: 32 * 1024 * 1024 },
@@ -63,7 +63,7 @@ export async function boardCoverageGaps({ reader, binary, native, after = '', bu
   });
   const measured = candidates.filter(row => row.witness);
   const bySource = new Map(measured.map(row => [row.id, row]));
-  const normalized = await capture(binary, measured);
+  const normalized = await captureBoardBuilds(binary, measured);
   const orders = [];
   for (const row of normalized) {
     const candidate = row.from?.length === 1 && bySource.get(row.from[0]);

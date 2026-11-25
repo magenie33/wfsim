@@ -25,8 +25,8 @@
 #
 # NOTHING HERE ASKS FOR A MEASURED ROW AGAIN ON THE CLOCK. The engine id moves
 # on edits that move no number, so a re-ask on the clock would rescore the whole
-# board after a wording change. A row is measured again only when a person asks
-# (`rescore` below).
+# board after a wording change. Periodic refresh uses the separate board-refresh workflow.
+# Explicit corrections use `rescore` below.
 name: queue
 
 on:

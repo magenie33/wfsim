@@ -267,9 +267,12 @@ check(ordinary.includes('--admit') && ordinary.includes('exit 0') && !ordinary.i
   "ordinary reconciliation advances bounded registration without exporting the queue");
 function codeOfReconciliation() { return reconcile.split(NL).filter(line => !line.trim().startsWith("#")); }
 check(!/--queue-older/.test(queueWf),
-  "no measured row is asked for again on the clock",
+  "hourly reconciliation does not create refresh work",
   "the engine id moves on edits that move no number, so an hourly re-ask "
     + "rescores the whole board after a wording change");
+const refresh = workflowText("board-refresh.yml");
+check(refresh.includes('cron: "0 0,6,12,18 * * *"') && !/^  push:/m.test(refresh),
+  "periodic refresh has four UTC slots and no push trigger");
 const rescore = step("ask for every row of one ruler again");
 check(rescore !== null && !passesGate(rescore),
   "…and the rescore button overrides it",

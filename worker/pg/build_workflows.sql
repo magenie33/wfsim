@@ -643,6 +643,85 @@ END $$;
 REVOKE ALL ON FUNCTION build_intake_batch(text),build_intake_register(text) FROM PUBLIC;
 
 
+-- Selected measurements are refreshed by their own retained baseline.
+CREATE OR REPLACE FUNCTION board_periodic_refresh_source(text,text,text,text) RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  WITH RECURSIVE rounds(source) AS (
+    SELECT ('refresh|'||$2||'|'||$3||'|'||$4) COLLATE "C"
+    UNION ALL
+    SELECT 'refresh|'||$2||'|'||$3||'|'||$4||'|retry|'||md5(r.source||'|'||w.completed_at)
+    FROM rounds r
+    JOIN record_build_workflow_triggers t ON t.id=build_workflow_system_key(r.source,$1)
+    JOIN state_build_workflows w ON w.id=t.workflow
+    WHERE w.state='failed' AND w.completed_at IS NOT NULL
+  )
+  SELECT r.source FROM rounds r WHERE NOT EXISTS(
+    SELECT 1 FROM entity_build_intake_intents i WHERE i.id=build_workflow_system_key(r.source,$1))
+  LIMIT 1
+$$;
+REVOKE ALL ON FUNCTION board_periodic_refresh_source(text,text,text,text) FROM PUBLIC;
+
+CREATE OR REPLACE FUNCTION board_periodic_refresh_candidates(text,text,text,text,text,bigint)
+RETURNS TABLE(identity text,ruler text,mode text,finished_at text,at text,record text,source_id text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  SELECT f.identity,f.ruler,f.mode,f.finished_at,b.at,b.record,source.id
+  FROM state_board_measurement_selection f JOIN entity_weapon_builds b ON b.id=f.identity
+  LEFT JOIN entity_measurement_reviews r ON r.id=f.review_id
+  CROSS JOIN LATERAL (SELECT board_periodic_refresh_source(f.identity,f.ruler,f.mode,f.finished_at) id OFFSET 0) source
+  WHERE f.finished_at<=$1 AND (f.finished_at,f.identity,f.ruler,f.mode)>($2,$3,$4,$5)
+    AND f.score>=0 AND f.score<'Infinity'::float8
+    AND (r.invalidated_at IS NULL OR r.state='succeeded')
+    AND NOT EXISTS(SELECT 1 FROM state_board_pending_work q
+      WHERE q.build_id=f.identity AND q.ruler=f.ruler AND q.mode=f.mode)
+    AND NOT EXISTS(SELECT 1 FROM entity_measurement_reviews pending
+      WHERE pending.ref=f.identity||'|'||f.ruler||'|'||f.mode AND pending.state='waiting')
+    AND source.id IS NOT NULL
+  ORDER BY f.finished_at,f.identity,f.ruler,f.mode LIMIT least(greatest($6,0),64)
+$$;
+
+CREATE OR REPLACE FUNCTION board_periodic_refresh_admit(text) RETURNS bigint
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE plans jsonb; build_key text; item jsonb; accepted bigint:=0;
+BEGIN
+  PERFORM compute_order_cut_lock();
+  IF jsonb_typeof($1::jsonb) IS DISTINCT FROM 'array' OR jsonb_array_length($1::jsonb)>64 THEN
+    RAISE EXCEPTION 'invalid periodic refresh batch'; END IF;
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements($1::jsonb) p
+    WHERE p->>'zone' IS DISTINCT FROM '4' OR p->>'initiator' IS DISTINCT FROM 'system'
+      OR p#>>'{system_source,reason}' IS DISTINCT FROM 'periodic board refresh'
+      OR jsonb_array_length(p#>'{flow,nodes}') IS DISTINCT FROM 1
+      OR p#>>'{flow,nodes,0,kind}' IS DISTINCT FROM 'measure'
+      OR p#>>'{flow,nodes,0,identity}' IS DISTINCT FROM p->>'id'
+      OR p#>>'{system_source,id}' IS NULL
+      OR p#>>'{system_source,measured_at}' IS NULL)
+    THEN RAISE EXCEPTION 'periodic refresh must name one captured measurement'; END IF;
+  SELECT coalesce(jsonb_agg(p.value ORDER BY p.ordinality),'[]'::jsonb) INTO plans
+    FROM jsonb_array_elements($1::jsonb) WITH ORDINALITY p(value,ordinality)
+    JOIN state_board_measurement_selection s ON s.identity=p.value->>'id'
+      AND s.ruler=p.value#>>'{flow,nodes,0,ruler}'
+      AND s.mode=p.value#>>'{flow,nodes,0,mode}'
+      AND s.finished_at=p.value#>>'{system_source,measured_at}'
+    LEFT JOIN entity_measurement_reviews r ON r.id=s.review_id
+    WHERE (r.invalidated_at IS NULL OR r.state='succeeded')
+      AND NOT EXISTS(SELECT 1 FROM state_board_pending_work q
+        WHERE q.build_id=s.identity AND q.ruler=s.ruler AND q.mode=s.mode)
+      AND NOT EXISTS(SELECT 1 FROM entity_measurement_reviews pending
+        WHERE pending.ref=s.identity||'|'||s.ruler||'|'||s.mode AND pending.state='waiting')
+      AND p.value#>>'{system_source,id}'=board_periodic_refresh_source(s.identity,s.ruler,s.mode,s.finished_at);
+  -- Lock in the shared intake key order, then reserve positions in scan order.
+  FOR build_key IN SELECT DISTINCT value->>'id' FROM jsonb_array_elements(plans) ORDER BY 1 LOOP
+    PERFORM pg_advisory_xact_lock(hashtextextended('build-workflow:'||build_key,0));
+  END LOOP;
+  FOR item IN SELECT value FROM jsonb_array_elements(plans) WITH ORDINALITY ORDER BY ordinality LOOP
+    IF NOT EXISTS(SELECT 1 FROM entity_build_intake_intents i WHERE i.id=build_intake_key(item)) THEN
+      PERFORM build_intake_batch(jsonb_build_array(item)::text);
+      accepted:=accepted+1;
+    END IF;
+  END LOOP;
+  RETURN accepted;
+END $$;
+REVOKE ALL ON FUNCTION board_periodic_refresh_candidates(text,text,text,text,text,bigint),board_periodic_refresh_admit(text) FROM PUBLIC;
+
 CREATE OR REPLACE FUNCTION build_workflow_admit_nodes(text,bigint,text) RETURNS bigint
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE expansion_id text:=$1;workflow_id text;plan jsonb;at text:=$3;f record;n record;request jsonb;patch jsonb;
@@ -656,6 +735,15 @@ BEGIN
   FOR n IN SELECT * FROM state_build_workflow_nodes WHERE workflow=workflow_id AND expansion=expansion_id AND state='pending' AND NOT compute_order_workflow_node_cancelled(workflow,id) ORDER BY position LIMIT $2 FOR UPDATE SKIP LOCKED LOOP
     touched:=array_append(touched,n.id);processed:=processed+1;
     IF n.definition->>'kind'='measure' THEN
+      IF f.kind='system' AND f.source#>>'{system,reason}'='periodic board refresh'
+        AND NOT EXISTS(SELECT 1 FROM state_board_measurement_selection s
+          LEFT JOIN entity_measurement_reviews r ON r.id=s.review_id
+          WHERE s.identity=n.definition->>'identity' AND s.ruler=n.definition->>'ruler' AND s.mode=n.definition->>'mode'
+            AND s.finished_at=f.source#>>'{system,measured_at}'
+            AND (r.invalidated_at IS NULL OR r.state='succeeded') FOR SHARE OF s) THEN
+        UPDATE state_build_workflow_nodes SET state='skipped',delivered_at=at WHERE workflow=workflow_id AND id=n.id;
+        CONTINUE;
+      END IF;
       IF f.kind='intake' AND EXISTS(SELECT 1 FROM state_board_measurement_selection s
         WHERE s.identity=n.definition->>'identity' AND s.ruler=n.definition->>'ruler' AND s.mode=n.definition->>'mode') THEN
         UPDATE state_build_workflow_nodes SET state='skipped',delivered_at=at WHERE workflow=workflow_id AND id=n.id;

@@ -98,7 +98,7 @@ witnesses are execution attempts under that entry. Engine changes neither
 reopen results nor recreate disputes.
 
 The queue consists of zones `00` through `99`. Explicit human calculations use
-`00`, matching-environment corrections use `01`, and ordinary intake uses `03`.
+`00`, matching-environment corrections use `01`, ordinary intake uses `03`, and periodic board refresh uses `04`.
 A system source may select any zone. Dispatch selects the first executable
 entry by zone, then FIFO position within that zone. A source promotion joins
 the destination tail. Dependencies, unsupported capabilities and held leases
@@ -637,8 +637,14 @@ Dates and batches are not part of it. Each pending calculation has one
 Repeated batches and refresh rounds merge into its original batch and may fill
 an absent initiator. Only newly inserted calculations increase a pipeline batch's total.
 A unique index enforces the calculation key. Existing pending legacy rows
-continue to execute. Periodic refresh does not create ordinary work.
-Explicit board corrections retain their immediate independent-review path.
+continue to execute. The periodic refresh generator selects old valid measurements
+in bounded pages, captures only the measured row using Native intake, and
+registers a zone 04 system workflow. Its source key includes the baseline
+measurement time. Admission checks that the baseline is still selected;
+fact delivery uses the ordinary review's compare-and-update rule.
+Explicit board corrections join the same computation and can promote its round.
+Install the current `scripts/build_admission_schema.mjs` output as the
+library storage owner before enabling the scheduled workflow.
 
 The demand projection gives a full background-read statement budget when queue
 counts or compute-cost estimates need refreshing. The normal budget applies

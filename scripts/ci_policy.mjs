@@ -93,7 +93,7 @@ const NON_SEARCH_TOOLS = [...NATIVE_NON_SEARCH_INPUTS, 'scripts/check_weapon_sea
   'scripts/source_capture_gc.mjs', 'scripts/split_board_pipeline.mjs', 'scripts/sqlite_schema.mjs',
   'scripts/sqlite_transaction_recovery.mjs', 'scripts/task_pipeline.mjs', 'scripts/task_schema.mjs',
   'scripts/task_reissue.mjs', 'scripts/build_admission_schema.mjs', 'scripts/pg/build_admission_fixture.mjs',
-  'scripts/check_build_workflows.mjs', 'scripts/check_factory_deploy.py', 'scripts/check_workflow_recovery.mjs',
+  'scripts/check_build_workflows.mjs', 'scripts/check_board_periodic_refresh.mjs', 'scripts/board_periodic_refresh.mjs', 'scripts/check_factory_deploy.py', 'scripts/check_workflow_recovery.mjs',
   'scripts/inbox_reader.mjs', 'scripts/raw_inbox_retention.mjs', 'scripts/migrations/db_library.mjs',
   'scripts/raw_inbox_rollover.py', 'scripts/raw_inbox_archive_consume.mjs', 'scripts/check_raw_inbox_rollover.mjs',
   'scripts/build_inbox_schema.mjs', 'scripts/inbox_storage.mjs', 'scripts/check_build_inbox_storage.mjs',

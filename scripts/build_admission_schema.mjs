@@ -63,6 +63,7 @@ DO $grant$ BEGIN
   GRANT SELECT ON state_build_inbox_positions TO wfsim_pipeline;
   GRANT EXECUTE ON FUNCTION build_family_owns_inbox(text,jsonb) TO wfsim_pipeline;
   GRANT EXECUTE ON FUNCTION build_intake_batch(text),build_ack_submissions(text),build_inbox_assert_ack(text) TO wfsim_pipeline;
+  GRANT EXECUTE ON FUNCTION board_periodic_refresh_candidates(text,text,text,text,text,bigint),board_periodic_refresh_admit(text) TO wfsim_pipeline;
  END IF;
 END $grant$;
 COMMIT;
