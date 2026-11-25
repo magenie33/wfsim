@@ -8,6 +8,7 @@ import {boardStorage} from './board_storage.mjs';
 import {rankFilePage,syncRankDirectory} from './board_rank_files.mjs';
 import {catalogSelection,catalogPageDigest,replayCatalogCut} from './board_rank_catalog_replay.mjs';
 import {captureRankWinners,BoardRankConflict,BoardRankQualificationError} from './board_rank_index.mjs';
+import {putRankDirtyBatch} from './board_rank_work.mjs';
 const now="board_input_timestamp(clock_timestamp())";
 const until="board_input_timestamp(clock_timestamp()+interval '3minutes')";
 const hash=value=>createHash('sha256').update(value).digest('hex');
@@ -61,6 +62,7 @@ async function acknowledge(tx,claim,version) {
   lease=NULL,lease_version=NULL,lease_until=NULL,error=NULL,
   available_at=CASE WHEN version>greatest(applied_version,$5::bigint) THEN ${now} ELSE NULL END
   WHERE weapon=$1 AND ruler=$2 AND lease=$3 AND lease_version=$4`,[claim.weapon,claim.ruler,claim.lease,claim.lease_version,version]);
+ await tx.unsafe('DELETE FROM state_board_rank_reindex_dependencies WHERE weapon=$1 AND ruler=$2',[claim.weapon,claim.ruler]);
 }
 
 export async function claimRankPublication(sql,{source,native,recent=false,catalog=false,first=false}) {
@@ -73,11 +75,42 @@ export async function claimRankPublication(sql,{source,native,recent=false,catal
    AND NOT EXISTS(SELECT 1 FROM state_board_rank_riven_repairs repair CROSS JOIN LATERAL jsonb_to_recordset(repair.inputs) i(identity text,version bigint)
      LEFT JOIN state_board_rank_dirty dirty ON (dirty.weapon,dirty.ruler,dirty.identity)=(repair.weapon,repair.ruler,i.identity)
      WHERE (repair.weapon,repair.ruler)=(p.weapon,p.ruler) AND (dirty.applied_version IS NULL OR dirty.applied_version<i.version))
+   AND NOT EXISTS(SELECT 1 FROM state_board_rank_reindex_dependencies i LEFT JOIN state_board_rank_dirty dirty
+    ON (dirty.weapon,dirty.ruler,dirty.identity)=(i.weapon,i.ruler,i.identity)
+    WHERE (i.weapon,i.ruler)=(p.weapon,p.ruler) AND (dirty.applied_version IS NULL OR dirty.applied_version<i.version))
    ${recent?'AND d.recent_version>d.applied_version':''} AND d.version>d.applied_version AND d.available_at<=${now} ORDER BY d.zone,coalesce(d.zone_position,0),coalesce(d.queued_at,d.available_at),d.weapon,d.ruler
   LIMIT 1 FOR UPDATE OF d SKIP LOCKED)
   UPDATE state_board_rank_publication_ready d SET lease=$3,lease_version=d.version,lease_until=${until},available_at=${until}
   FROM chosen c WHERE (d.weapon,d.ruler)=(c.weapon,c.ruler) RETURNING d.*`,[source,native,randomUUID()]);
  return row||null;
+}
+
+export async function deferRankRivenReindex(sql,claim,generation,error){
+ if(!(error instanceof BoardRankRivenReindex)||!error.identities.length||error.identities.length>256)
+  throw Error('invalid ranking reindex dependency');
+ const keys=[claim.weapon,claim.ruler];
+ return sql.begin(async tx=>{
+  await tx.unsafe('SELECT board_rank_source_lock($1::text)',[generation.source]);
+  const [parent]=await tx.unsafe(`SELECT zone,zone_position,queued_at FROM state_board_rank_publication_ready
+   WHERE weapon=$1 AND ruler=$2 AND lease=$3 AND lease_version=$4 AND lease_until>${now}`,[...keys,claim.lease,claim.lease_version]);
+  if(!parent)throw new BoardRankConflict('ranking publication lease changed');
+  // Dirty rows are locked before publication, as in applyRankDirty.
+  const marked=await putRankDirtyBatch(tx,error.identities.map(identity=>({weapon:claim.weapon,ruler:claim.ruler,identity,
+   zone:parent.zone,zone_position:parent.zone_position??0,queued_at:parent.queued_at})),true);
+  const held=await heldPublication(tx,claim);
+  if(held.zone!==parent.zone||String(held.zone_position)!==String(parent.zone_position)||held.queued_at!==parent.queued_at)
+   throw new BoardRankConflict('ranking publication priority changed');
+  const changed=await tx.unsafe(`UPDATE state_board_rank_generations SET phase='abandoned' WHERE token=$1::uuid
+   AND weapon=$2 AND ruler=$3 AND phase IN('floor','upload') AND source=$4 AND native=$5 RETURNING token`,
+   [generation.token,...keys,generation.source,generation.native]);
+  if(!changed.length)throw new BoardRankConflict('ranking generation changed');
+  await tx.unsafe(`INSERT INTO state_board_rank_reindex_dependencies AS d(weapon,ruler,identity,version)
+   SELECT $1,$2,i.identity,i.version FROM jsonb_to_recordset($3::text::jsonb)i(identity text,version bigint)
+   ON CONFLICT(weapon,ruler,identity) DO UPDATE SET version=greatest(d.version,excluded.version)`,[...keys,JSON.stringify(marked)]);
+  await tx.unsafe(`UPDATE state_board_rank_publication_ready SET lease=NULL,lease_version=NULL,lease_until=NULL,error=$3,
+   available_at=${now} WHERE weapon=$1 AND ruler=$2`,[...keys,error.message]);
+  return {status:'publication-deferred',weapon:claim.weapon,ruler:claim.ruler,dependencies:marked.length};
+ });
 }
 
 export async function abandonRankGeneration(sql,claim,generation) {

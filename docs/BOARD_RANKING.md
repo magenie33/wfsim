@@ -347,6 +347,14 @@ catalog controller binds the same file and digest in `riven_policy_binary`
 and `riven_policy_sha256`. The existing descriptor epoch retains its Native
 and source digests.
 
+If Native rejects a staged winner, the publication records the exact dirty
+reindex versions and releases its generation lease. Each reindex inherits
+the parent's queue position and preserves earlier work. The parent can claim
+again only after those versions have applied. Ordinary reindexing retains
+the previous public revision. Install the bounded additive dependency table
+with `node scripts/board_rank_schema.mjs --reindex-dependencies-upgrade`
+before starting the corresponding reader.
+
 For an installed ranking database, generate the additive upgrade with
 `node scripts/board_rank_schema.mjs --riven-policy-upgrade`. The storage owner
 installs it and sets the approved `digest` at row 1 of

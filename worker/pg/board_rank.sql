@@ -118,6 +118,16 @@ CREATE TABLE state_board_rank_publication_ready (
 );
 CREATE INDEX board_rank_publication_ready ON state_board_rank_publication_ready(available_at,weapon,ruler)
  WHERE version>applied_version AND available_at IS NOT NULL;
+-- Publication waits for the exact invalid-winner reindex versions.
+CREATE TABLE IF NOT EXISTS state_board_rank_reindex_dependencies (
+ weapon TEXT COLLATE "C" NOT NULL,
+ ruler TEXT COLLATE "C" NOT NULL,
+ identity TEXT COLLATE "C" NOT NULL,
+ version BIGINT NOT NULL,
+ PRIMARY KEY(weapon,ruler,identity),
+ FOREIGN KEY(weapon,ruler) REFERENCES state_board_rank_publication_ready ON DELETE CASCADE
+);
+REVOKE ALL ON state_board_rank_reindex_dependencies FROM PUBLIC;
 CREATE TABLE state_board_rank_generations (
  token UUID PRIMARY KEY,
  weapon TEXT COLLATE "C" NOT NULL,
