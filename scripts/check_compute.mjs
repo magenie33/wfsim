@@ -414,18 +414,26 @@ const f = await evaluate(`(async () => {
   const request = { ...order.request, runs: 48 };
   const one = await api("/api/board/fold", { request, from: 0, count: 48 });
   const want = await api("/api/board/score", { ruler: "standard_single_target", request, acc: one.acc });
-  setCommunityShare(100); setBoardVerify(true); lastTouched = 0;
-  const used = new Set();
-  (await boardLanes(communityLanes())).forEach((l, i) => {
-    const call = l.call;
-    l.call = (p, b, x, c) => { if (p === "/api/board/runs") used.add(i); return call(p, b, x, c); };
-  });
-  const got = await measureRow(request, "standard_single_target", () => true);
-  localStorage.removeItem("wfsim-community-share"); lastTouched = Date.now();
-  out.lanes = communityLanes(); out.used = used.size;
-  out.same = !!got && got.score === want.score && got.metric === want.metric && got.work === want.work;
-  out.got = got && [got.score, got.metric, got.work]; out.want = [want.score, want.metric, want.work];
-  return JSON.stringify(out);
+  // This fixture owns the lanes; the dispatcher has separate work/lease fixtures.
+  const dispatch = workOnce;
+  workOnce = async () => false;
+  try {
+    setCommunityShare(100); setBoardVerify(true); lastTouched = 0;
+    const used = new Set();
+    (await boardLanes(communityLanes())).forEach((l, i) => {
+      const call = l.call;
+      l.call = (p, b, x, c) => { if (p === "/api/board/runs") used.add(i); return call(p, b, x, c); };
+    });
+    const got = await measureRow(request, "standard_single_target", () => true);
+    out.lanes = communityLanes(); out.used = used.size;
+    out.same = !!got && got.score === want.score && got.metric === want.metric && got.work === want.work;
+    out.got = got && [got.score, got.metric, got.work]; out.want = [want.score, want.metric, want.work];
+    return JSON.stringify(out);
+  } finally {
+    setBoardVerify(false);
+    localStorage.removeItem("wfsim-community-share"); lastTouched = Date.now();
+    workOnce = dispatch;
+  }
 })()`);
 const fr = JSON.parse(f);
 check("[built site] a board order fights on more than one lane when its share buys them",
