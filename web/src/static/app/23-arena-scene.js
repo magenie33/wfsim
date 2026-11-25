@@ -105,9 +105,7 @@ function setArenaDistance(s, want) {
   const d = Math.hypot(dx, dy);
   if (d < 1e-9) { dx = 0; dy = 1; }
   const u = d < 1e-9 ? 1 : d;
-  // `want` is a GAP, and the model holds centres — one contact apart.
-  const contact = arenaControllerRadius(s) + arenaControllerRadius(s, 0)
-    + (s.scene_3d ? (META?.scene_3d_source_default?.player_controller_skin_m || 0) : 0);
+  const contact = arenaContactDistance(s);
   const m = Math.max(contact, s.scene_3d ? want : want + contact);
   s.target_at = [ax + (dx / u) * m, ay + (dy / u) * m];
 }
@@ -121,12 +119,12 @@ const ARENA_JUMPS = [0, 5, 10, 20, 40];
 const arenaSpan = (s) =>
   Math.hypot(s.target_at[0] - s.player_at[0], s.target_at[1] - s.player_at[1]);
 
-/// THE GAP — surface to surface, and what a reader is shown. Zero at contact,
-/// which is what point blank means to a player. The 0.4 m
-/// between the two centres is the model's business; nobody should subtract it
-/// to find out how far away they are standing. Everything the page displays,
-/// sets and marks is this number; `engine::rules::space::gap` is the same one.
-const arenaDistance = (s) => Math.max(0, arenaSpan(s) - CONTACT_M);
+/// The agent gap is surface to surface. 3D floor controls use centre distance.
+const arenaContactDistance = (s) => s.scene_3d
+  ? arenaControllerRadius(s) + arenaControllerRadius(s, 0)
+    + (META?.scene_3d_source_default?.player_controller_skin_m || 0)
+  : CONTACT_M;
+const arenaDistance = (s) => Math.max(0, arenaSpan(s) - arenaContactDistance(s));
 
 /// EVERY BODY ON THE FLOOR, aimed one first — the order the api and the engine
 /// both use, so nothing has to be reordered on the way out.
