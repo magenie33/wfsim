@@ -290,6 +290,10 @@ build. It indexes only new open tasks. Protected older tasks keep their
 separate ordered read. A cut earlier than the installed index uses the
 canonical picker.
 
+Ranking readers, catalog batches and capture jobs use `WFSIM_BOARD_DATA_RESERVE_BYTES`
+for the mounted Data volume. The default is 32 GiB and the minimum is 16 GiB.
+Catalog batches also reserve their forecast allocation and WAL headroom.
+
 ## Database storage
 
 `python scripts/ship_health.py` installs `wfsim-health.timer`, using the same

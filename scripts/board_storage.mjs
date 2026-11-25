@@ -4,6 +4,15 @@ import {existsSync,lstatSync,realpathSync,statSync,statfsSync,accessSync,constan
 import {resolve,isAbsolute,dirname,join} from 'node:path';
 import {pathToFileURL} from 'node:url';
 
+export function boardDataReserve(env=process.env) {
+ const value=env.WFSIM_BOARD_DATA_RESERVE_BYTES;
+ if(value===undefined)return 32*1024**3;
+ const bytes=Number(value);
+ if(!/^[1-9][0-9]*$/.test(value)||!Number.isSafeInteger(bytes)||bytes<16*1024**3)
+  throw Error('invalid board Data reserve in bytes');
+ return bytes;
+}
+
 export function boardStorage(work,{env=process.env,stat=statSync,filesystem=statfsSync}={}) {
  const fields=['WFSIM_BOARD_WORK_ROOT','WFSIM_BOARD_DATA_MOUNT','WFSIM_BOARD_DATA_UUID'];
  if(env.WFSIM_BOARD_STORAGE_REQUIRED!=null&&!['0','1'].includes(env.WFSIM_BOARD_STORAGE_REQUIRED))throw Error('invalid board storage requirement');

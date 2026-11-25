@@ -50,6 +50,18 @@ const available=path=>path==='/'?root:data;
 const sql={unsafe:async()=>[{bytes:String(wal)}]};
 try{
  await sampleCapacity(capacityJournal,sql,capacity,available);
+ const originalReserve=process.env.WFSIM_BOARD_DATA_RESERVE_BYTES;
+ const configuredJournal=new DatabaseSync(':memory:');initializeJournal(configuredJournal);
+ try{
+  process.env.WFSIM_BOARD_DATA_RESERVE_BYTES=String(16*gib);data=41*gib;
+  await sampleCapacity(configuredJournal,sql,capacity,available);
+  data=40*gib-1;
+  await assert.rejects(sampleCapacity(configuredJournal,sql,capacity,available),/insufficient remaining/);
+ }finally{
+  configuredJournal.close();
+  if(originalReserve===undefined)delete process.env.WFSIM_BOARD_DATA_RESERVE_BYTES;
+  else process.env.WFSIM_BOARD_DATA_RESERVE_BYTES=originalReserve;
+ }
  data=50*gib;
  await assert.rejects(sampleCapacity(capacityJournal,sql,capacity,available),/insufficient remaining/,
   'unrelated archives must not spend the catalog reservation');

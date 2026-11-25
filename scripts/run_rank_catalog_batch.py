@@ -81,7 +81,7 @@ def main():
         raise ValueError("node is unavailable")
     names = Path(__file__).resolve().parent
     # The reader receives one input descriptor. Database connection settings belong to the controller.
-    file_env = {k: v for k, v in os.environ.items() if k in ("PATH", "LANG", "LC_ALL", "WFSIM_BOARD_DATA_MOUNT", "WFSIM_BOARD_DATA_UUID")}
+    file_env = {k: v for k, v in os.environ.items() if k in ("PATH", "LANG", "LC_ALL", "WFSIM_BOARD_DATA_MOUNT", "WFSIM_BOARD_DATA_UUID", "WFSIM_BOARD_DATA_RESERVE_BYTES")}
     file_env.update(WFSIM_BOARD_WORK_ROOT=str(work), WFSIM_BOARD_STORAGE_REQUIRED="1")
     if "WFSIM_BOARD_DATA_UUID" not in file_env or "WFSIM_BOARD_DATA_MOUNT" not in file_env:
         raise ValueError("production Data mount and UUID are required")

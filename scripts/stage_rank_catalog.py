@@ -16,7 +16,7 @@ import time
 import zlib
 from pathlib import Path
 
-from stage_rank_baseline import Database, drained_fence, identity, literal, receipt, start_capture, write_manifest
+from stage_rank_baseline import Database, board_data_reserve, drained_fence, identity, literal, receipt, start_capture, write_manifest
 
 
 def packed(value):
@@ -274,7 +274,7 @@ def main():
         if os.environ.get("WFSIM_BOARD_STORAGE_REQUIRED") == "1":
             mount = Path(os.environ["WFSIM_BOARD_DATA_MOUNT"])
             if (a.stage.stat().st_dev != mount.stat().st_dev or mount.stat().st_dev == os.stat("/").st_dev
-                or shutil.disk_usage(mount).free < 32 * 1024**3 or shutil.disk_usage("/").free < 1024**3):
+                or shutil.disk_usage(mount).free < board_data_reserve() or shutil.disk_usage("/").free < 1024**3):
                 raise ValueError("ranking storage reserve unavailable")
     capacity()
     with (a.stage/"catalog.lock").open("a") as lock, contextlib.closing(sqlite3.connect(a.stage/"catalog.sqlite")) as store:

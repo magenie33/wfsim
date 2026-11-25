@@ -20,6 +20,11 @@ try{
  assert.equal(guardRankSpace('/data',space(33,2)),'/data');
  assert.throws(()=>guardRankSpace('/data',space(31,2)),/headroom/);
  assert.throws(()=>guardRankSpace('/data',space(33,0)),/headroom/);
+ const configured=(data,value)=>{const options=space(data,2);options.env.WFSIM_BOARD_DATA_RESERVE_BYTES=value;return options;};
+ assert.equal(guardRankSpace('/data',configured(16,String(16*1024**3))),'/data');
+ assert.throws(()=>guardRankSpace('/data',configured(15,String(16*1024**3))),/headroom/);
+ for(const invalid of ['','0','16GiB',String(15*1024**3),'9007199254740992'])
+  assert.throws(()=>guardRankSpace('/data',configured(40,invalid)),/invalid board Data reserve/);
  await sql.unsafe('CREATE SCHEMA '+schema);
  for(const name of ['schema','library'])await sql.unsafe(readFileSync(new URL('../worker/pg/'+name+'.sql',import.meta.url),'utf8'));
  await sql.unsafe('CREATE ROLE '+http+' NOLOGIN');

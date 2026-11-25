@@ -10,9 +10,24 @@ import sqlite3
 import subprocess
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 from urllib.parse import unquote, urlparse
 
 import stage_rank_baseline as stage
+
+with patch.dict(os.environ):
+    key = "WFSIM_BOARD_DATA_RESERVE_BYTES"
+    os.environ.pop(key, None)
+    assert stage.board_data_reserve() == 32 * 1024**3
+    os.environ[key] = str(16 * 1024**3)
+    assert stage.board_data_reserve() == 16 * 1024**3
+    for invalid in ("", "16GiB", str(15 * 1024**3), str(2**53)):
+        os.environ[key] = invalid
+        try:
+            stage.board_data_reserve()
+        except ValueError:
+            continue
+        raise AssertionError("invalid Data reserve was accepted")
 
 url = os.environ["WFSIM_BOARD_RANK_TEST_URL"]
 if urlparse(url).hostname not in {"127.0.0.1", "localhost"}:

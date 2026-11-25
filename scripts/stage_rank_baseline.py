@@ -16,6 +16,15 @@ from pathlib import Path
 PAGE = 4096
 
 
+def board_data_reserve():
+    raw = os.environ.get("WFSIM_BOARD_DATA_RESERVE_BYTES")
+    if raw is None:
+        return 32 * 1024**3
+    if not re.fullmatch(r"[1-9][0-9]{0,15}", raw) or not 16 * 1024**3 <= int(raw) <= 2**53 - 1:
+        raise ValueError("invalid board Data reserve in bytes")
+    return int(raw)
+
+
 def literal(text):
     return "'" + text.replace("'", "''") + "'"
 
@@ -357,7 +366,7 @@ def main():
         data = os.environ["WFSIM_BOARD_DATA_MOUNT"]
         if os.stat(data).st_dev == os.stat("/").st_dev or os.stat(args.stage).st_dev != os.stat(data).st_dev:
             raise ValueError("staging requires the mounted Data disk")
-        if shutil.disk_usage(data).free < 32 * 1024**3 or shutil.disk_usage("/").free < 1024**3:
+        if shutil.disk_usage(data).free < board_data_reserve() or shutil.disk_usage("/").free < 1024**3:
             raise ValueError("insufficient ranking storage reserve")
     import fcntl
 
