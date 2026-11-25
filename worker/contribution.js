@@ -501,7 +501,7 @@ async function person(request, env, name) {
   }));
   return json({ ok: true, computing, person: { name: hit.name, points: hit.points,
     recent: hit.recent, week: hit.week, ranks, contributor_rank: hit.contributor_rank, ...(hit.volunteer ? { volunteer: true } : {}),
-    ...(hit.mark ? { mark: hit.mark } : {}) } });
+    ...(hit.developer_honors ? { developer_honors: hit.developer_honors } : {}), ...(hit.mark ? { mark: hit.mark } : {}) } });
 }
 
 /// THE RANKING the page shows, its first `limit`. A name and a handle leave
@@ -579,7 +579,7 @@ async function everyoneOf(env, wait = false) {
   const marks = await contributorMarks(env, profiles, wait);
   if (!marks) return null;
   const everyone = rows.map((e) => ({ key: e.key, name: e.named ? e.name : null,
-    ...(e.named ? { profile: profiles.get(e.id)?.profile_id } : {}),
+    ...(e.named ? { profile: profiles.get(e.id)?.profile_id, ...(profiles.get(e.id)?.developer_honors?.length ? { developer_honors: profiles.get(e.id).developer_honors } : {}) } : {}),
     points: e.points, recent: e.recent, week: e.week, last_week: e.last_week, contributor_rank: contributorRank(e.points),
     // THE HONOUR travels with a name only: an anonymous row says nothing more.
     ...(e.named && e.volunteer ? { volunteer: true } : {}), ...(e.named && marks[e.id] ? { mark: marks[e.id] } : {}) }));

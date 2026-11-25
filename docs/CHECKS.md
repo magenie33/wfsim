@@ -1875,6 +1875,12 @@ ledger holds its own spans' hours device by device, a device taken since
 counted as removed; no answer carries a full device id or an account's id or
 name.
 
+## `check_developer_honors`
+
+Exercises the real accounts schema, inaugural grant, profile and community
+project routes, independent identity labels and anonymous visibility.
+The contribution check also asserts both honors on a named ranking row.
+
 ## `check_contribution` and `check_clearance`
 
 Plain node on PGlite (`worker/pg/*.sql`), the paid half

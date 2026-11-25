@@ -28,6 +28,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS accounts_username ON entity_accounts (username
 ALTER TABLE entity_accounts ADD COLUMN IF NOT EXISTS profile_id TEXT COLLATE "C";
 CREATE UNIQUE INDEX IF NOT EXISTS accounts_profile_id ON entity_accounts (profile_id);
 
+-- Developer honors are independent of contribution points and selected labels.
+CREATE TABLE IF NOT EXISTS relation_account_developer_honors (
+  account TEXT COLLATE "C" REFERENCES entity_accounts (id) ON DELETE CASCADE,
+  honor TEXT COLLATE "C" CHECK (honor IN ('core_developer','community_developer')),
+  PRIMARY KEY (account,honor)
+);
+CREATE TABLE IF NOT EXISTS relation_community_project_developers (
+  project TEXT COLLATE "C" PRIMARY KEY,
+  account TEXT COLLATE "C" NOT NULL REFERENCES entity_accounts (id) ON DELETE CASCADE
+);
+
 -- A ten-minute browser claim for any volunteer client, without an account key.
 CREATE TABLE IF NOT EXISTS state_device_claim_challenges (
   token_hash TEXT COLLATE "C" PRIMARY KEY,

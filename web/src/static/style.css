@@ -2099,7 +2099,7 @@ a.user-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px;tex
 .contributor-profile{max-width:1100px;margin:28px auto;padding:0 20px 40px}
 .profile-heading{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--line)}
 .profile-heading>.avatar{width:56px;height:56px;font-size:24px;flex-shrink:0}
-.profile-heading h2{margin:0 0 5px;display:flex;align-items:center;gap:8px}
+.profile-heading h2{margin:0 0 5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .profile-heading>div:nth-child(2){flex:1;min-width:160px}
 .profile-totals{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-2)}
 .profile-totals b{font-size:24px;color:var(--text);font-variant-numeric:tabular-nums}
@@ -4424,3 +4424,12 @@ main.config-page:not([id])>.block>.bh,main.config-page:not([id])>.block>.bh .sub
 @container (max-width:440px){
   #mod-block .slots,#stats-block .stat-table{grid-template-columns:minmax(0,1fr)}
 }
+
+.contrib-mark.developer-honor{display:inline-flex;align-items:center;gap:5px;border:1px solid currentColor;border-radius:999px;height:22px;padding:0 10px;font-size:12px;font-weight:700;letter-spacing:.02em;vertical-align:middle;white-space:nowrap}
+.developer-honor.core_developer{color:light-dark(#6643ad,#a78bfa);box-shadow:0 0 6px #a78bfa26}
+.developer-honor.community_developer{color:light-dark(#087f73,#2dd4bf);background:#2dd4bf0d}
+.community-project{margin:16px 0}
+.community-project .bh{flex-wrap:wrap;gap:8px}
+
+.community-project .bh h2{display:flex;align-items:center;gap:10px}
+.community-project-icon{color:var(--accent);flex:none}

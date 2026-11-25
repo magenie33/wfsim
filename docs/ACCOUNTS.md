@@ -444,3 +444,20 @@ browser secret. Optimization and appraisal requests expire after 14 days;
 simulation requests retain 30 days. Shared input/report payloads are deleted
 after their last consumer expires. Aggregate contribution
 counters remain. Local queue and artifact storage is cleared with browser data.
+
+## Developer honors and community projects
+
+Core Developer and Community Developer are independent, manually granted
+honors. They appear together with the selected identity label on named
+contribution rows and public profiles. The account owner can see their own
+honors even when anonymous. Neither honor changes authorization, membership,
+rank or compute points.
+
+The community directory at `/community/projects` lists verified independent
+projects. Project metadata lives in `worker/community_projects.js`; the
+project's account association and the person's honors are separate records.
+The directory links to a profile only when that account publishes its name.
+Apply `worker/pg/accounts.sql` before deployment, then apply
+`worker/pg/grant_simfleet_honors.sql` once to bind the inaugural project and
+honors to the repository owner's linked GitHub account. If that login is not
+linked, resolve the recipient with the owner before granting.

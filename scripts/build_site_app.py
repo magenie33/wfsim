@@ -1834,6 +1834,12 @@ def prerender(flagged: str, catalog: Path) -> None:
             "The volunteers whose devices compute WFSim's free features together. Everything "
             "they compute is free for every player, and WFSim never makes money from it.",
         ),
+        (
+            "community/projects", titled_page(f"Community Projects {zh_ui('Community Projects')}",
+                                             "independent projects built around WFSim"),
+            None, "Community Projects",
+            "Discover independent projects built around WFSim and verified by WFSim.",
+        ),
     ]
     for path, title, hero, nav, desc in shell_pages:
         (APP / path).mkdir(parents=True, exist_ok=True)

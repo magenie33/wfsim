@@ -147,7 +147,11 @@ check("the identity API accepts an eligible selection, including a hidden choice
   (await selectIdentity(ann, true, fixtureMark.kind)).status === 200
   && (await selectIdentity(cy, false, fixtureMark.kind)).status === 200
   && (await selectIdentity(bob, true, "ineligible-fixture")).status === 403);
+await accounts.run("INSERT INTO relation_account_developer_honors(account,honor) VALUES ('acct-ann','core_developer'), ('acct-ann','community_developer'), ('acct-cy','community_developer')");
 const named = await ranking();
+check("developer honors coexist with the selected mark and never expose anonymous holders",
+  named[1].developer_honors?.join(",") === "community_developer,core_developer"
+  && !("developer_honors" in named[0]) && !("developer_honors" in named[2]), JSON.stringify(named));
 check("agreed, a row shows the display name alone, or the username when there is none",
   JSON.stringify(named.map((e) => e.name)) === JSON.stringify([null, "Ann", "bob"]) && named.every((e) => !("username" in e)),
   JSON.stringify(named));

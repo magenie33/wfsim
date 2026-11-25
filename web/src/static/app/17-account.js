@@ -17,7 +17,7 @@ const ACCOUNT_SLOTS = [
   { id: "email", name: "Email" },
 ];
 const AUTH_PATHS = { "/login": "login", "/signup": "signup", "/reset": "reset", "/account": "account",
-  "/account/sync": "sync", "/contributors": "contributors", "/compute": "compute", "/clan": "clan",
+  "/account/sync": "sync", "/contributors": "contributors", "/compute": "compute", "/clan": "clan", "/community/projects": "community_projects",
   "/notifications": "notifications", "/account/recommendations": "recommendations" };
 /// …and the pages an extension mounts (`EXT.pages`), routed the same way.
 const userProfilePath = (id = "me") => "/user/" + encodeURIComponent(id);
@@ -33,7 +33,7 @@ const authKindOf = (path) => /^\/(?:user|people)\/(me|[a-f0-9]{32})\/?$/.test(pa
 /// EACH PAGE ITS OWN `app.view` KIND, so the way in can be read step by step;
 /// the settings pages carry `account_`, since `sync` alone could be any sync.
 const AUTH_VIEWS = { login: "login", signup: "signup", reset: "reset",
-  account: "account", sync: "account_sync", contributors: "contributors", compute: "compute", clan: "clan",
+  account: "account", sync: "account_sync", contributors: "contributors", compute: "compute", clan: "clan", community_projects: "community_projects",
   notifications: "notifications", recommendations: "recommendations", profile: "profile", calculation: "calculation" };
 const authView = (kind) => AUTH_VIEWS[kind] || (EXT.pages[kind] || {}).view || "other";
 /// The pages of a signed-in account; every other kind is a way in.
@@ -648,7 +648,7 @@ const contributorsOrdered = () => (contributorsState || []).map((c, i) => ({ c, 
 function contributorRowInner(c, at, shown) {
   const who = c.name === null ? `<span class="rank-name muted">${aT("Anonymous contributor")}</span>`
     : `${c.profile ? userProfileLink(c.profile, c.name, "rank-name")
-      : `<span class="rank-name">${escHtml(c.name)}</span>`}${extHookNow("contributorMark", c.mark) || ""}`;
+      : `<span class="rank-name">${escHtml(c.name)}</span>`}${(extHookNow("contributorMark", c.mark) || "") + developerHonors(c.developer_honors)}`;
   return `<span class="rank-n">${at + 1}</span><span class="rank-who">${contributorRankBadge(c.contributor_rank)}${who}${
     c.you ? `<span class="rank-you">${aT("(you)")}</span>` : ""}</span><span class="rank-pts">${escHtml(shown.toLocaleString(accountLocale()))}</span>`;
 }
@@ -919,6 +919,7 @@ function renderAuthPage(kind) {
     notificationsPage(main);
     return;
   }
+  if (kind === "community_projects") { communityProjectsPage(main); return; }
   if (kind === "clan") {
     main.innerHTML = clanPage();
     const box = $("clan-ign");
@@ -1245,3 +1246,27 @@ async function authAct(el) {
     if (authCode().length === 6 && go && !(pw && !pw.value)) authAct(go);
   });
 })();
+
+function developerHonors(honors = []) {
+  const labels = [["core_developer", "Core Developer", '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor"><path d="M4 3L1 6l3 3M8 3l3 3-3 3M7 1L5 11"/></svg>'], ["community_developer", "Community Developer", '<svg viewBox="0 0 12 12" width="12" height="12" fill="none" stroke="currentColor"><path d="M3 3l6 3-6 3V3"/><circle cx="3" cy="3" r="1.5" fill="currentColor"/><circle cx="9" cy="6" r="1.5" fill="currentColor"/><circle cx="3" cy="9" r="1.5" fill="currentColor"/></svg>']];
+  return labels.filter(([id]) => honors.includes(id)).map(([id, name, icon]) =>
+    ` <span class="contrib-mark developer-honor ${id}"><span aria-hidden="true">${icon}</span>${aT(name)}</span>`).join("");
+}
+
+async function communityProjectsPage(main) {
+  main.innerHTML = `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Community Projects")}</h1>
+    <p>${aT("Discover independent projects built around WFSim and verified by WFSim.")}</p>
+    <div data-community-projects aria-live="polite">${aT("Loading…")}</div>
+    <p class="set-note">${aT("Verification confirms usefulness and compatibility, not official authorship.")}</p>
+    <a class="ghost-btn" href="${LANG === "zh" ? "https://qm.qq.com/q/uiXrMSTs8S" : "https://discord.gg/H4BMqvYFVg"}" target="_blank" rel="noopener">${aT("Apply for project listing")}</a>
+    </div></div>`;
+  const list = main.querySelector("[data-community-projects]");
+  const result = await accountCall("GET", "/api/community/projects");
+  if (!list.isConnected) return;
+  if (!result?.ok) { list.textContent = tr("Could not load community projects."); return; }
+  list.innerHTML = result.projects.map(project => `<article class="block community-project">
+    <div class="bh"><h2><svg class="community-project-icon" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><rect x="2" y="5" width="28" height="22" rx="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m8 12 5 4-5 4m8 0h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> ${escHtml(project.name)}</h2>${project.verified ? `<span class="tag ok">${aT("Verified by WFSim")}</span>` : ""}</div>
+    <div class="bb"><div class="muted">${userProfileLink(project.profile, project.developer)} · ${aT(project.category)}</div>
+    <p>${aT(project.description)}</p>
+    <a class="ghost-btn" href="${escHtml(project.source)}" target="_blank" rel="noopener">${aT("Source code")}</a></div></article>`).join("");
+}

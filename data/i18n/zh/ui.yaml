@@ -3910,6 +3910,18 @@ ui:
   "the same MOD is fixed to different slots in the start and final requirements": "同一张 MOD 在起点与最终要求中被固定到了不同槽位"
   "MOD slot layout does not match the ordered mods": "MOD 槽位布局与配装中的卡牌顺序不一致"
 
+  "Community Projects": 社区项目
+  "Core Developer": 核心开发者
+  "Community Developer": 社区开发者
+  "Discover independent projects built around WFSim and verified by WFSim.": 探索由社区开发者围绕 WFSim 构建、经过 WFSim 验证的第三方项目。
+  "Verification confirms usefulness and compatibility, not official authorship.": 验证确认项目的实用性及兼容性，不代表项目由 WFSim 官方出品。
+  "Apply for project listing": 申请收录项目
+  "Could not load community projects.": 无法加载社区项目。
+  "Verified by WFSim": WFSim 已验证
+  "Volunteer computing": 志愿计算
+  "An independent command-line client for contributing compute to WFSim.": 为 WFSim 提供志愿算力的独立命令行客户端。
+  "Source code": 源代码
+
 effect_phrases:
   - ['^slot ([0-9]+) is fixed to different mods in the start and final requirements$', '起点与最终要求在第 $1 槽固定了不同的 MOD']
   - ['^arcane seat ([0-9]+) conflicts with the final requirements$', '第 $1 个赋能槽位的 pin 与最终要求冲突']

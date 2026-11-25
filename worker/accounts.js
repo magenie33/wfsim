@@ -727,7 +727,10 @@ export async function accountRoute(request, env, path) {
     .bind(account).first();
   const meritLedger = (await env.ACCOUNTS.prepare("SELECT at, kind, amount, balance, note FROM record_priority_credit_entries WHERE account = ?1 ORDER BY id")
     .bind(account).all()).results;
+  const developerHonors = (await env.ACCOUNTS.prepare("SELECT honor FROM relation_account_developer_honors WHERE account=? ORDER BY honor").bind(account).all()).results;
+  const communityProjects = (await env.ACCOUNTS.prepare("SELECT project FROM relation_community_project_developers WHERE account=? ORDER BY project").bind(account).all()).results;
   return json({ ok: true, account: await accountView(env, account), agents: await agentsOf(env, account), devices,
+    developer_honors: developerHonors.map(row => row.honor), community_projects: communityProjects.map(row => row.project),
     contribution_choice: choice || null, display_name_hold: await heldName(env.ACCOUNTS, account), merit: merit || null, merit_ledger: meritLedger,
     ...(await noticesExport(env, account)),
     ...(await feedbackExport(env, account)),

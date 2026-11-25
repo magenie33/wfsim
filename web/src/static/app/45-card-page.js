@@ -91,7 +91,7 @@ async function renderContributorsCard() {
   const periods = [["week", "week", "Weekly ranking"], ["recent", "recent", "Monthly ranking"], ["all", "points", "All-time ranking"]];
   const num = (x) => escHtml((x || 0).toLocaleString(accountLocale()));
   const who = (c) => (c.name === null ? `<span class="rank-name muted">${aT("Anonymous contributor")}</span>`
-    : `<span class="rank-name">${escHtml(c.name)}</span>${extHookNow("contributorMark", c.mark) || ""}`);
+    : `<span class="rank-name">${escHtml(c.name)}</span>${(extHookNow("contributorMark", c.mark) || "") + developerHonors(c.developer_honors)}`);
   let title, body, computing = 0;
   if (name) {
     const r = await get(`?name=${encodeURIComponent(name)}`);
@@ -99,7 +99,7 @@ async function renderContributorsCard() {
     computing = (r && r.computing) || 0;
     title = trF("{name}'s contribution", { name });
     body = !me ? `<p class="sim-empty">${escHtml(tr("Nobody on the ranking shows that name."))}</p>`
-      : `<div class="lc-sub">${contributorRankBar(me.contributor_rank)}</div><div class="rank-who lc-sub">${extHookNow("contributorMark", me.mark) || ""}</div>`
+      : `<div class="lc-sub">${contributorRankBar(me.contributor_rank)}</div><div class="rank-who lc-sub">${(extHookNow("contributorMark", me.mark) || "") + developerHonors(me.developer_honors)}</div>`
         + periods.map(([id, key, label]) => cardBox(`<span class="sb-h">${aT(label)}</span>`,
           me.ranks[id] ? `<div class="lc-head"><b class="lc-rank">#${me.ranks[id]}</b><b class="lc-score">${num(me[key])}</b><span class="sb-empty">${aT("Points")}</span></div>`
             : `<p class="sb-empty">${aT("Not on this ranking yet.")}</p>`)).join("");

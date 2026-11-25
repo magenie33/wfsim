@@ -33,6 +33,7 @@ import { popularity } from "./popularity.js";
 import { qqRoute } from "./qq.js";
 import { worldRoute, purgeFissures } from "./world.js";
 import { userTasksRoute } from "./user_tasks.js";
+import { communityProjectsRoute } from "./community_projects.js";
 import { contributorProfilesRoute } from "./contributor_profiles.js";
 import { appraiseRoute } from "./appraise.js";
 import { watchdog, WATCHDOG_CRON, officialRoute } from "./factory.js";
@@ -817,7 +818,7 @@ async function serve(request, env, ctx) {
         { status: 503, headers: { "content-type": "application/json", "retry-after": "120", "cache-control": "no-store" } });
     }
     {
-      const r = await contributorProfilesRoute(request, env, path);
+      const r = await communityProjectsRoute(request, env, path) || await contributorProfilesRoute(request, env, path);
       if (r) return r;
     }
     {

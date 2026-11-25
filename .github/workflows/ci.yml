@@ -1392,6 +1392,8 @@ jobs:
         run: node scripts/check_dials.mjs
       - name: A machine's compute counts under the account that claimed it, its name on the ranking only by consent
         run: node scripts/check_contribution.mjs
+      - name: Developer honors coexist and community projects link only named profiles
+        run: node scripts/check_developer_honors.mjs
       - name: Computation witnesses retain credit independently of fourteen day details
         run: node scripts/check_compute_attribution.mjs
       - name: A device's ledger says where every point went, and names nobody else

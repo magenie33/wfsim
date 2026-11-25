@@ -38,7 +38,8 @@ export async function contributorAccounts(env, ids, byProfile = false) {
   if (!env.ACCOUNTS || !ids.length) return new Map();
   const wanted = JSON.stringify([...new Set(ids)]);
   const { results } = await env.ACCOUNTS.prepare(`SELECT a.id,a.profile_id,a.username,a.display_name,c.named,c.label,c.chosen_at,
-    h.display_name AS held_name,h.reason AS held_reason FROM entity_accounts a LEFT JOIN state_account_public_attribution c ON c.account=a.id
+    h.display_name AS held_name,h.reason AS held_reason,
+    (SELECT json_agg(d.honor ORDER BY d.honor) FROM relation_account_developer_honors d WHERE d.account=a.id) AS developer_honors FROM entity_accounts a LEFT JOIN state_account_public_attribution c ON c.account=a.id
     LEFT JOIN state_account_name_holds h ON h.account=a.id WHERE a.${byProfile ? "profile_id" : "id"} IN (SELECT jsonb_array_elements_text((?::text)::jsonb))`)
     .bind(wanted).all();
   const missing = results.filter(row => !row.profile_id).map(row => ({ id: row.id, profile: crypto.randomUUID().replaceAll("-", "") }));

@@ -72,7 +72,7 @@ export async function contributorProfilesRoute(request, env, path) {
   if (!["full", "identity", "summary", "records"].includes(view) || !Number.isInteger(size) || size < 1 || size > 50
     || !["board", "optimization"].includes(kind) || weapon && !SLUG.test(weapon) || before && (!Array.isArray(before)
     || before.length !== (kind === "board" ? 4 : 2) || !before.every(bounded))) return no("bad_query");
-  const identity = { id: person.profile_id, name: person.name, username: person.username, named: !!person.named, you: account === me };
+  const identity = { id: person.profile_id, name: person.name, username: person.username, named: !!person.named, you: account === me, developer_honors: person.developer_honors || [] };
   if (view === "identity") return reply({ ok: true, profile: identity });
   identity.mark = (await contributorMarks(env, people))?.[account] || null;
   if (!env.LIBRARY) return no("unavailable", 503);
