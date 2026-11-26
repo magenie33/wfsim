@@ -45,7 +45,8 @@ export async function checkFreshScope({sql,config,weapon,ruler,second,inputs,ste
  const tooSmall=make('small',{...scope,manifest_bytes:16});
  const capped=await runBatch(tooSmall,'priority-step',opts);assert.equal(capped.status,'held');assert.match(capped.reason,/disk budget/);
  assert.equal(await registered(),undefined);assert.equal(await published(),undefined);
- const noRows=await runBatch(make('rows',{...scope,rows:0}),'priority-step',opts);
+ const rowsSpec=make('rows',{...scope,rows:0});let noRows;
+ for(let i=0;i<20;i++){noRows=await runBatch(rowsSpec,'priority-step',opts);if(noRows.status!=='preparing-fresh'&&noRows.status!=='idle')break;await new Promise(r=>setTimeout(r,120));}
  assert.equal(noRows.status,'held');assert.match(noRows.reason,/fresh scope qualification differs/);
  assert.equal(await registered(),undefined);assert.equal(await published(),undefined);
  const [archive]=await sql.unsafe('SELECT archive FROM state_board_public_import WHERE id=1');
