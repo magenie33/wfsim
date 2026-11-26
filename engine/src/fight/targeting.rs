@@ -21,7 +21,9 @@ pub(super) fn contact_targets(
     let rank = |i: usize| match preference {
         P::Different => u8::from(same(i)),
         P::Eximus => u8::from(!params.body(i).is_some_and(|b| b.params.eximus)),
-        P::NearOwner(range) => u8::from(params.player_at.distance(bodies[i].state.at) > range),
+        P::NearOwner(range) => {
+            u8::from(!crate::rules::space::within(params.player_distance_m(i, bodies[i].state.at), range))
+        }
         _ => u8::from(!same(i)),
     };
     let Some(&chosen) = available.iter().min_by(|&&a, &&b| {

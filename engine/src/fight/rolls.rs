@@ -1,4 +1,3 @@
-use crate::rules::math::Portable;
 use super::*;
 
 /// Devouring Attrition's multiplier for ONE damage instance: a
@@ -149,12 +148,19 @@ pub(super) fn weakpoint_ammo(
     spec.is_some_and(|w| w.infinite_ammo && pile.current(t, w.duration_seconds) > 0)
 }
 
-/// DOES A KILL HERE LEAVE ONE STANDING? The weapon has to say so, and the body
-/// has to be inside the range the card names.
+/// DOES A KILL HERE LEAVE ONE STANDING? The weapon has to say so, and the
+/// killed body has to be inside the range the card names (3D root distance when
+/// a 3D scene is bound, planar centre distance otherwise).
 #[wfsim_gas_macro::metered]
-pub(super) fn leaves_one(active: &FightParams, from: crate::rules::space::Vec2, body: crate::rules::space::Vec2) -> bool {
-    active.spawn_on_kill
-        .is_some_and(|g| (body.x - from.x).hypot_portable(body.y - from.y) <= g.range_m)
+pub(super) fn leaves_one(
+    active: &FightParams,
+    params: &FightParams,
+    body_index: usize,
+    body_at: crate::rules::space::Vec2,
+) -> bool {
+    active.spawn_on_kill.is_some_and(|g| {
+        crate::rules::space::within(params.player_distance_m(body_index, body_at), g.range_m)
+    })
 }
 
 /// The share of a shot's cost waived right now: 1 under INFINITE AMMO, else

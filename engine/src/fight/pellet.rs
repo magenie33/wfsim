@@ -2178,14 +2178,8 @@ pub(super) fn settle_pellet(
         // …AND WHAT THE KILL LEAVES STANDING. `direct` because a ghost
         // is left by the shot rather than by anything it set off, and
         // the range is the card's own ("within 50 meters of the user").
-        if let Some(ghost) = active.spawn_on_kill.filter(|_| killed && direct) {
-            let ghost_in_range = if let Some(scene) = &params.scene_3d {
-                let wielder = scene.input().player.world.point(crate::rules::geometry::Vec3([0.; 3]));
-                scene.root(body_index).minus(wielder).length() <= ghost.range_m
-            } else {
-                leaves_one(active, params.player_at, params.target_at)
-            };
-            r.ghost_kills += u32::from(ghost_in_range);
+        if killed && direct && leaves_one(active, params, body_index, bodies[body_index].state.at) {
+            r.ghost_kills += 1;
         }
         // EXECUTIONER'S FORTUNE. Rolled HERE and nowhere else, because
         // this is the only place that knows both halves of its

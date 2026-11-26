@@ -1152,3 +1152,34 @@ fn shotgun_vendetta_requires_kill_within_5m() {
         );
     }
 }
+
+/// Lone Enforcer ("+25% Multishot if no enemies are within 5m") must check
+/// every body in the arena, not just the aimed target.
+#[test]
+fn lone_enforcer_checks_all_formation_bodies_not_just_aimed_target() {
+    let base = crate::model::WeaponBase::from_data("vectis_prime", false, &["vectis_prime_lone_enforcer"]);
+    let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+    let make_arena = |other_at: Option<crate::rules::space::Vec2>| {
+        let mut arena = crate::arena::Arena::training(10.0);
+        arena.target_at = crate::rules::space::Vec2::new(0.0, 10.0);
+        if let Some(at) = other_at {
+            arena.others.push(crate::formation::FoeSpec {
+                id: "e2".into(),
+                at,
+                params: arena.target.clone(),
+                body_parts: arena.body_parts.clone(),
+            });
+        }
+        FightParams::from_panel(&panel, &arena, &ArcaneFx::none()).multishot
+    };
+
+    let solo_far = make_arena(None);
+    let with_far_other = make_arena(Some(crate::rules::space::Vec2::new(0.0, 12.0)));
+    let with_near_other = make_arena(Some(crate::rules::space::Vec2::new(0.0, 4.0)));
+    let with_edge_other = make_arena(Some(crate::rules::space::Vec2::new(0.0, 5.0)));
+
+    assert!((solo_far - 1.25).abs() < 1e-9, "solo at 10 m gets +25% multishot: {solo_far}");
+    assert!((with_far_other - 1.25).abs() < 1e-9, "all bodies > 5 m keeps bonus: {with_far_other}");
+    assert!((with_near_other - 1.0).abs() < 1e-9, "nearby body at 4 m cancels bonus: {with_near_other}");
+    assert!((with_edge_other - 1.0).abs() < 1e-9, "body at exact 5 m is within 5 m: {with_edge_other}");
+}

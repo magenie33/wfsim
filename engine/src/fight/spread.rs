@@ -628,7 +628,7 @@ pub(super) fn spread_hit(
     } else {
         add_by_type(by_type, shares, eff, &col);
     }
-    if killed && by.is_the_shot_itself() && leaves_one(active, params.player_at, spec.at) {
+    if killed && by.is_the_shot_itself() && leaves_one(active, params, inst.target, spec.at) {
         r.ghost_kills += 1;
     }
     if killed {

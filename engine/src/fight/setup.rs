@@ -1115,17 +1115,19 @@ impl FightParams {
             }
             None => (1.0, 0.0),
         };
-        let target_distance = arena.player_at.distance(arena.target_at);
+        let target_distance = arena.player_distance_to_body_m(0, arena.target_at);
+        let no_enemy_within = |metres: f64| {
+            !crate::rules::space::within(target_distance, metres)
+                && arena.others.iter().enumerate().all(|(i, foe)| {
+                    !crate::rules::space::within(arena.player_distance_to_body_m(i + 1, foe.at), metres)
+                })
+        };
         compression_base_damage += panel.base_damage_beyond_target_range.iter()
-            .filter(|(_, metres)| target_distance > *metres)
+            .filter(|(_, metres)| !crate::rules::space::within(target_distance, *metres))
             .map(|(bonus, _)| bonus)
             .sum::<f64>();
         compression_base_damage += panel.base_damage_if_no_enemy_within.iter()
-            .filter(|(_, metres)| {
-                target_distance > *metres
-                    && arena.others.iter()
-                        .all(|foe| arena.player_at.distance(foe.at) > *metres)
-            })
+            .filter(|(_, metres)| no_enemy_within(*metres))
             .map(|(bonus, _)| bonus)
             .sum::<f64>();
         // …AND THE SPHERE IT BOUGHT THAT WITH IS ACTUALLY GONE: *"x0.2 explosion
@@ -1255,25 +1257,10 @@ impl FightParams {
             (assumed, None)
         };
         // LONE ENFORCER: "+25% Multishot if no enemies are within 5m".
-        //
-        // HERE, and not in `resolve`, because this is the first clause in the
-        // roster that asks about the FIGHT's geometry rather than the player's
-        // state — `resolve` is handed a Tenno and never an arena, so a
-        // `GatedGrant` could not answer it. This is the seam Primary
-        // Compression already uses: the panel brings what the card says, the
-        // arena brings whether it is true.
-        //
-        // ONE ENEMY, so "no enemies within 5m" is exactly "the target is
-        // further away than 5m" — decidable now, and it was filed as an edge
-        // (`no_distance`) until the arena had a range.
-        //
-        // A FRACTION OF BASE MULTISHOT, into the same bucket the mods feed —
-        // the reading `GatedGrant::Multishot` already carries for every other
-        // conditional multishot grant, so a gated +25% and a plain +25% cannot
-        // come out as different panels. False at point blank, which is where
-        // both boards are scored, so no row moves.
+        // Settled against every body in the arena (aimed target and formation),
+        // using 3D root distance when a 3D scene is bound.
         let lone_bonus = match panel.multishot_beyond_range {
-            Some((v, m)) if player_at.distance(target_at) > m => v * panel.base_multishot,
+            Some((v, m)) if no_enemy_within(m) => v * panel.base_multishot,
             _ => 0.0,
         };
         // Resolve the faction bucket against THIS target's faction (additive

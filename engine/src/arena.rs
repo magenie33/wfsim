@@ -153,6 +153,17 @@ impl Arena {
         crate::rules::space::gap(self.player_at, self.target_at)
     }
 
+    /// Centre-to-centre metres from the player to body `body_index`: 3D root
+    /// distance when a 3D scene is bound, planar coordinate distance otherwise.
+    pub fn player_distance_to_body_m(&self, body_index: usize, body_at: Vec2) -> f64 {
+        if let Some(scene) = self.scene_3d.as_ref().filter(|s| body_index < s.input().enemies.len()) {
+            let wielder = scene.input().player.world.point(crate::rules::geometry::Vec3([0.; 3]));
+            scene.root(body_index).minus(wielder).length()
+        } else {
+            self.player_at.distance(body_at)
+        }
+    }
+
     /// The engine's own fixture: the neutral Tenno against a training dummy
     /// for 10 s. Production code never uses it — a real fight names its
     /// target — but every test that only cares about weapon numbers wants
