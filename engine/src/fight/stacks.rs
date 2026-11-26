@@ -267,7 +267,7 @@ pub(super) fn push_break_proc(
     r.note_kills(u32::from(settled.killed), now, params.drop_is_in_reach(target.at));
     if settled.killed {
         gal.bump_on_kill(params, now);
-        arc.on_kill(params, now);
+        arc.on_kill(params, now, params.player_distance_m(body_index, target.at));
         debuffs.on_death(owner, params.acid_shells, foe);
         return true;
     }

@@ -67,6 +67,17 @@ impl FightParams {
         crate::rules::space::gap(self.player_at, body_at) <= self.pickup_range_m
     }
 
+    /// Centre-to-centre distance in metres from the player to a body: 3D root
+    /// distance when a 3D scene is bound, planar coordinate distance otherwise.
+    pub(super) fn player_distance_m(&self, body_index: usize, body_at: crate::rules::space::Vec2) -> f64 {
+        if let Some(scene) = self.scene_3d.as_ref().filter(|s| body_index < s.input().enemies.len()) {
+            let wielder = scene.input().player.world.point(crate::rules::geometry::Vec3([0.; 3]));
+            scene.root(body_index).minus(wielder).length()
+        } else {
+            self.player_at.distance(body_at)
+        }
+    }
+
     /// WHO FIRES IN THIS FIGHT, seat for seat with [`RunResult::dealt`] and
     /// with the record's `combatant` — the combatant roster, the exact
     /// counterpart of the body roster a formation names.

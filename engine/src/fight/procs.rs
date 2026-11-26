@@ -148,6 +148,7 @@ pub(super) fn fire_extra_hits(
     head_direct: bool,
     status_chance: f64,
     at: f64,
+    body_index: usize,
     debuffs: &mut DebuffState,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
@@ -227,7 +228,7 @@ pub(super) fn fire_extra_hits(
         }
         if killed {
             gal.bump_on_kill(params, at);
-            arc.on_kill(params, at);
+            arc.on_kill(params, at, params.player_distance_m(body_index, target.at));
             debuffs.on_death(owner, params.acid_shells, &params.foe);
             // A fresh individual, so the remaining extra hits of this trigger
             // are gone with the one that earned them — the same rule the wiki
@@ -1183,7 +1184,7 @@ pub(super) fn settle_procs(
                     }
                     if killed {
                         gal.bump_on_kill(params, at);
-                        arc.on_kill(params, at);
+                        arc.on_kill(params, at, params.player_distance_m(body_index, target.at));
                         debuffs.on_death(owner, params.acid_shells, &params.foe);
                     } else {
                         // THE ONE STATUS PAYLOAD THAT TRIGGERS AN EXTRA HIT, and
@@ -1199,6 +1200,7 @@ pub(super) fn settle_procs(
                             false,
                             active.status_chance,
                             at,
+                            body_index,
                             debuffs,
                             gal,
                             arc,
@@ -1263,7 +1265,7 @@ pub(super) fn settle_procs(
             }
             if killed {
                 gal.bump_on_kill(params, at);
-                arc.on_kill(params, at);
+                arc.on_kill(params, at, params.player_distance_m(body_index, target.at));
                 debuffs.on_death(owner, params.acid_shells, &params.foe);
             }
         }

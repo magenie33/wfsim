@@ -1579,6 +1579,7 @@ fn arcane_stacks_all_drop_on_timeout_or_bleed_off_one_at_a_time() {
                 duration: 2.0,
                 all_drop,
                 one_per_instance: false,
+                max_distance_m: None,
                 initial_stacks: 3,
             }],
             ..ArcaneFx::none()
@@ -1636,6 +1637,7 @@ fn a_per_instance_arcane_gains_one_stack_a_pull_not_one_a_pellet() {
                 duration: 1000.0, // no decay inside the window
                 all_drop: true,
                 one_per_instance,
+                max_distance_m: None,
                 initial_stacks: 0,
             }],
             ..ArcaneFx::none()

@@ -22,23 +22,20 @@ internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/ShotgunMultishotAndRe
 description: "On shotgun kill within 5m of target:\n+X% Multishot and +X% Reload Speed for 15s."
 
 effects:
-  # WITHIN 5m IS NOT MODELLED. The arena has no range, and the sim's engagement
-  # is a duel at one distance — so this fires on every kill, which OVERSTATES
-  # uptime for a player fighting at range and is exact for the shotgun range
-  # this arcane is built for. Recorded here rather than silently assumed.
+  # Both grants share the 5 m kill-distance gate, checked against the
+  # player-to-target centre distance on every kill.
   - kind: buff
     trigger: kill
     grants: multishot
+    max_distance_m: 5
     rank0: 0.3
     rankMax: 1.8
     max_stacks: 1
     duration: 15
-  # The reload half rides the same trigger. `reload_speed_bonus` is the flat
-  # form the loader knows; the buff's own duration is what the card states, and
-  # a 15 s window on a shotgun's reload cadence is most of the fight.
   - kind: buff
     trigger: kill
     grants: reload_speed
+    max_distance_m: 5
     rank0: 0.125
     rankMax: 0.75
     max_stacks: 1

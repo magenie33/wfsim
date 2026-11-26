@@ -2454,7 +2454,7 @@ pub(super) fn settle_pellet(
         if killed {
             bodies[body_index].fallen = true;
             gal.bump_on_kill(params, t);
-            arc.on_kill(params, t);
+            arc.on_kill(params, t, params.player_distance_m(body_index, bodies[body_index].state.at));
             if direct && (active.spends_combo || tennokai_heavy) { arc.heavy_kill(active, t); }
             // THE WEAK POINT, not the head: Update 44.0 converted Deadhead and
             // Galvanized Scope / Crosshairs from "On Headshot" to "On Weakpoint".
@@ -2514,6 +2514,7 @@ pub(super) fn settle_pellet(
                 head_direct,
                 status_chance,
                 t,
+                body_index,
                 &mut bodies[body_index].debuffs,
                 &mut *gal,
                 &mut *arc,

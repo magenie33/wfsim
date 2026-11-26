@@ -97,7 +97,7 @@ pub(super) fn detonate_heavy_status(
     if killed {
         body.fallen = true;
         gal.bump_on_kill(params, t);
-        arc.on_kill(params, t);
+        arc.on_kill(params, t, params.player_distance_m(body_index, body.state.at));
         arc.heavy_kill(active, t);
         body.debuffs.on_death(owner, params.acid_shells, foe);
     }

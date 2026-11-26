@@ -1259,7 +1259,7 @@ pub(super) fn process_ticks(
             // rather than the weapon's" is a reading the shape invites and the
             // game refuses (MEASUREMENTS M70).
             gal.bump_on_kill(params, now);
-            arc.on_kill(params, now);
+            arc.on_kill(params, now, params.player_distance_m(body_index, target.at));
             if tick_landing.weak_point {
                 weakpoint_kill(params, arc, w, now);
             }
@@ -1279,6 +1279,7 @@ pub(super) fn process_ticks(
                 false,
                 active.status_chance,
                 now,
+                body_index,
                 debuffs,
                 gal,
                 arc,

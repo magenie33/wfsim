@@ -27,6 +27,9 @@ pub struct ArcBuffSpec {
     /// on-status family — do not state the rule, and absence is not evidence
     /// of it (the CO catalog taught this).
     pub one_per_instance: bool,
+    /// Maximum player-to-target centre distance in metres for the trigger to
+    /// fire (`None` = any distance). Shotgun Vendetta gates on kills within 5 m.
+    pub max_distance_m: Option<f64>,
     /// Stacks at t = 0 (arcane stacking buffs start FULL — user setting).
     pub initial_stacks: u32,
 }

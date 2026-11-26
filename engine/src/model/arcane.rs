@@ -52,6 +52,7 @@ pub enum ArcEffect {
         duration: f64,
         all_drop: bool,
         one_per_instance: bool,
+        max_distance_m: Option<f64>,
     },
     /// Scales off a WARFRAME STAT rather than off anything the weapon does:
     /// `per_unit x (stat - above)`, capped at the rank's value, gated on the

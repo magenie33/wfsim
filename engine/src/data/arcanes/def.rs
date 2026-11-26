@@ -147,7 +147,16 @@ impl ArcaneDef {
             match e {
                 ArcEffect::ComboCountChance(scale) => fx.combo_count_chance += scale.at(rank, self.max_rank),
                 ArcEffect::ComboCountChanceOnLifted(scale) => fx.combo_count_chance_on_lifted += scale.at(rank, self.max_rank),
-                ArcEffect::Buff { trigger, grant, scale, max_stacks, duration, all_drop, one_per_instance } => {
+                ArcEffect::Buff {
+                    trigger,
+                    grant,
+                    scale,
+                    max_stacks,
+                    duration,
+                    all_drop,
+                    one_per_instance,
+                    max_distance_m,
+                } => {
                     if policy == StackPolicy::BaseOnly {
                         continue; // sentinel: conditional never fires
                     }
@@ -171,6 +180,7 @@ impl ArcaneDef {
                         },
                         all_drop: *all_drop,
                         one_per_instance: *one_per_instance,
+                        max_distance_m: *max_distance_m,
                         // EARNED from zero: an arcane's stacks come from kills
                         // and procs, and a fight that cannot produce them must
                         // not be credited with them (docs/BUFFS.md).
@@ -204,6 +214,7 @@ impl ArcaneDef {
                         all_drop: false,
                         // A passive has no instance to be one-per.
                         one_per_instance: false,
+                        max_distance_m: None,
                         initial_stacks: 1,
                     });
                 }
@@ -372,7 +383,16 @@ impl ArcaneDef {
             match e {
                 ArcEffect::ComboCountChance(sc) => out.push(format!("{} additional Combo Count Chance", pct(at(sc)))),
                 ArcEffect::ComboCountChanceOnLifted(sc) => out.push(format!("{} additional Combo Count Chance against Lifted enemies", pct(at(sc)))),
-                ArcEffect::Buff { trigger, grant, scale, max_stacks, duration, all_drop, one_per_instance } => {
+                ArcEffect::Buff {
+                    trigger,
+                    grant,
+                    scale,
+                    max_stacks,
+                    duration,
+                    all_drop,
+                    one_per_instance,
+                    max_distance_m,
+                } => {
                     let what = match grant {
                         ArcGrant::BaseDamage => "Base Damage",
                         ArcGrant::Multishot => "Multishot",
@@ -394,13 +414,14 @@ impl ArcaneDef {
                         ArcTrigger::Passive => "Always",
                         ArcTrigger::ComboSwap => "Per melee combo multiplier consumed on swap",
                     };
+                    let within = max_distance_m.map_or(String::new(), |m| format!(" within {m}m"));
                     let decay = if *all_drop { "all drop on timeout" } else { "lose one on timeout" };
                     // The per-instance cap belongs on the CARD: it is the
                     // difference between a shotgun gaining one stack a shot and
                     // gaining twelve, and nothing else on screen says which.
                     let rate = if *one_per_instance { ", one per shot" } else { "" };
                     out.push(format!(
-                        "{when}: {} {what} per stack ×{max_stacks}{rate}, {duration}s ({decay})",
+                        "{when}{within}: {} {what} per stack ×{max_stacks}{rate}, {duration}s ({decay})",
                         pct(at(scale))
                     ));
                 }

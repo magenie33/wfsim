@@ -231,10 +231,25 @@ impl ArcRuntime {
     /// multiple stacks."* Every other spec still bumps per proc, because
     /// nothing says otherwise about it.
     pub(super) fn bump_trigger(&mut self, specs: &[ArcBuffSpec], trigger: ArcTrigger, now: f64) {
+        self.bump_trigger_at(specs, trigger, now, None);
+    }
+
+    fn bump_trigger_at(
+        &mut self,
+        specs: &[ArcBuffSpec],
+        trigger: ArcTrigger,
+        now: f64,
+        distance_m: Option<f64>,
+    ) {
         let instance = self.instance;
         for (s, st) in specs.iter().zip(self.states.iter_mut()) {
             if s.trigger != trigger {
                 continue;
+            }
+            if let Some(limit) = s.max_distance_m {
+                if !distance_m.is_some_and(|d| crate::rules::space::within(d, limit)) {
+                    continue;
+                }
             }
             if s.one_per_instance {
                 if st.last_instance == instance {
@@ -246,9 +261,10 @@ impl ArcRuntime {
         }
     }
 
-    /// ANY kill: arcane on-kill buffs stack; Sharpened Bullets refreshes.
-    pub(super) fn on_kill(&mut self, params: &FightParams, now: f64) {
-        self.bump_trigger(&params.arcane.buffs, ArcTrigger::Kill, now);
+    /// ANY kill: arcane on-kill buffs stack when within any per-spec distance
+    /// gate; Sharpened Bullets refreshes.
+    pub(super) fn on_kill(&mut self, params: &FightParams, now: f64, kill_distance_m: f64) {
+        self.bump_trigger_at(&params.arcane.buffs, ArcTrigger::Kill, now, Some(kill_distance_m));
         if let Some(b) = params.crit_damage_on_kill {
             self.crit_damage_kill_expiry_seconds = now + b.duration;
         }

@@ -625,6 +625,7 @@ fn a_relative_crit_buff_reaches_the_explosion_against_its_own_base() {
             duration: crate::model::NO_TIMEOUT,
             all_drop: true,
             one_per_instance: false,
+            max_distance_m: None,
             initial_stacks: 2,
         }],
         ..ArcaneFx::none()

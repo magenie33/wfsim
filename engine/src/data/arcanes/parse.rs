@@ -123,6 +123,7 @@ pub(super) fn effect(v: &Value, max_rank: u32) -> Option<ArcEffect> {
                         duration: crate::model::NO_TIMEOUT,
                         all_drop: false,
                         one_per_instance: false,
+                        max_distance_m: None,
                     })
                 }
                 "roll" if grants == "weakpoint_crit_chance" => {
@@ -161,6 +162,7 @@ pub(super) fn effect(v: &Value, max_rank: u32) -> Option<ArcEffect> {
                     .get("one_stack_per_instance")
                     .and_then(serde_norway::Value::as_bool)
                     .unwrap_or(false),
+                max_distance_m: f(v, "max_distance_m"),
             }
         }
         // Kinship carries `per: ally_buff` — team-context, uncapped: inert

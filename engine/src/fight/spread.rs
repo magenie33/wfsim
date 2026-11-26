@@ -359,7 +359,7 @@ pub(super) fn spread_from_influence(
                 // cloud states (MEASUREMENTS M70), for the same reason, and it
                 // was counted here without firing anything.
                 gal.bump_on_kill(params, t);
-                arc.on_kill(params, t);
+                arc.on_kill(params, t, params.player_distance_m(b, at));
                 continue;
             }
             // …AND THE STATUS ITSELF, which is the half the card is named for.
@@ -650,7 +650,7 @@ pub(super) fn spread_hit(
     if killed {
         foe.fallen = true;
         gal.bump_on_kill(params, t);
-        arc.on_kill(params, t);
+        arc.on_kill(params, t, params.player_distance_m(inst.target, foe.state.at));
         if by == SpreadBy::FollowThrough && (active.spends_combo || tennokai_heavy) { arc.heavy_kill(active, t); }
         // …AND THE BODY THAT STANDS BACK UP IS A NEW INDIVIDUAL, which the
         // aimed path has said since the engine had statuses and this one did

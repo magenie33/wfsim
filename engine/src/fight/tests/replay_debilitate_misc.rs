@@ -141,6 +141,7 @@ fn a_locked_buff_still_earns_stacks() {
                     duration: crate::model::NO_TIMEOUT,
                     all_drop: false,
                     one_per_instance: false,
+                    max_distance_m: None,
                     initial_stacks: initial,
                 }],
                 ..ArcaneFx::none()
@@ -185,6 +186,7 @@ fn one_config_reaches_every_grant_of_its_arcane() {
         duration: 12.0,
         all_drop: true,
         one_per_instance: false,
+        max_distance_m: None,
         initial_stacks: 40,
     };
     let mut p = FightParams {
@@ -1073,4 +1075,80 @@ pub(super) fn debilitate_split(
     let mut native = crate::rules::rng::NativeRng::new(rng.state());
     let incoming = crate::model::ProcCounters::from_types([landed]);
     incoming.split_combined(1 << kind.id(), &mut native).types().next()
+}
+
+/// Distance-gated on-kill arcanes (Shotgun Vendetta, within 5 m) must trigger
+/// on kills at or inside the limit and stay inactive on kills beyond it.
+#[test]
+fn shotgun_vendetta_requires_kill_within_5m() {
+    let def = crate::data::arcanes::for_slot("primary", "shotgun_vendetta")
+        .expect("shotgun_vendetta must load");
+    let fx = def.fx(5, crate::model::StackPolicy::Emergent, &[], crate::data::tenno::default_tenno());
+    assert_eq!(fx.buffs.len(), 2, "multishot + reload_speed");
+    for spec in &fx.buffs {
+        assert_eq!(spec.max_distance_m, Some(5.0), "both grants carry the 5 m gate");
+    }
+    assert!(
+        def.describe_at(5).iter().all(|line| line.contains("within 5m")),
+        "describe_at must state the 5 m gate: {:?}",
+        def.describe_at(5)
+    );
+
+    let run = |dist_m: f64, arcane: ArcaneFx| {
+        let mut damage = DamageVector::default();
+        damage.set(DamageType::Impact, 200.0);
+        let mut foe = frail_target(TargetMode::InstantRespawn, 0.0, 0.0);
+        // Survives multiple pellets per shot so multishot pellets actually land.
+        foe.base_health = 500.0;
+        let p = FightParams {
+            damage,
+            foe,
+            player_at: crate::rules::space::Vec2::ORIGIN,
+            target_at: crate::rules::space::Vec2::new(0.0, dist_m),
+            multishot: 1.0,
+            base_multishot: 1.0,
+            fire_rate: 2.0,
+            magazine_size: 4.0,
+            reload_seconds: 2.0,
+            base_crit_chance: 0.0,
+            crit_multiplier: 1.0,
+            duration_seconds: 15.0,
+            arcane,
+            ..no_status()
+        };
+        monte_carlo(&p, 4, 7)
+    };
+
+    let at_5m = run(5.0, fx.clone());
+    let bare_5m = run(5.0, ArcaneFx::none());
+    assert!(
+        at_5m.mean_pellets > bare_5m.mean_pellets * 2.0,
+        "at exact 5 m, Shotgun Vendetta must trigger: pellets {} vs bare {}",
+        at_5m.mean_pellets,
+        bare_5m.mean_pellets
+    );
+    assert!(
+        at_5m.mean_shots > bare_5m.mean_shots,
+        "at exact 5 m, reload speed must raise shot count: {} vs {}",
+        at_5m.mean_shots,
+        bare_5m.mean_shots
+    );
+
+    for far in [5.01, 10.0] {
+        let with = run(far, fx.clone());
+        let bare = run(far, ArcaneFx::none());
+        assert!(
+            with.mean_kills > 0.0,
+            "fixture must actually score kills at {far} m so the gate is tested"
+        );
+        assert!(
+            (with.mean_pellets - bare.mean_pellets).abs() < 1e-9
+                && (with.mean_shots - bare.mean_shots).abs() < 1e-9,
+            "at {far} m (> 5 m), Shotgun Vendetta must not trigger: pellets {} vs {}, shots {} vs {}",
+            with.mean_pellets,
+            bare.mean_pellets,
+            with.mean_shots,
+            bare.mean_shots
+        );
+    }
 }

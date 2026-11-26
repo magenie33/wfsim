@@ -473,7 +473,7 @@ pub(super) fn field_tick_seeded(
     }
     if killed {
         gal.bump_on_kill(params, at);
-        arc.on_kill(params, at);
+        arc.on_kill(params, at, params.player_distance_m(body_index, target.at));
         return FieldOutcome { killed: true, crit_tier: tier };
     }
     // Status per TICK, from the field's own vector and its own status chance,

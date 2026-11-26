@@ -21,6 +21,7 @@ fn two_arcanes_fold_into_one_effect_set() {
             duration: 5.0,
             all_drop: false,
             one_per_instance: false,
+            max_distance_m: None,
             initial_stacks: 3,
         }],
         ..ArcaneFx::none()

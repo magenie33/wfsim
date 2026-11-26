@@ -1133,3 +1133,54 @@ fn drakgoon_charged_and_kompressa_match_between_2d_and_3d() {
     assert!((mod3 / mod2 - 1.0).abs() < 0.15, "kompressa modded 3D/2D mismatch: {mod3} vs {mod2}");
     assert!(mod3 > base3 * 2.5 && mod2 > base2 * 2.5, "kompressa radial must scale with multishot");
 }
+
+#[test]
+fn shotgun_vendetta_respects_5m_distance_in_3d() {
+    let run = |dist_m: f64, arcane: Option<&str>| {
+        let mut input = request("boar_prime", 1, false);
+        input["level"] = json!(20);
+        input["eximus"] = json!(false);
+        input["steel_path"] = json!(false);
+        input["duration"] = json!(15.0);
+        input["runs"] = json!(6);
+        input["seed"] = json!(11);
+        input["scene_3d"] = json!({
+            "preset": "source_standard",
+            "placement": {"kind": "center_distance", "distance": dist_m}
+        });
+        if let Some(id) = arcane {
+            input["arcane"] = json!([id]);
+            input["arcane_rank"] = json!([5]);
+        }
+        crate::simulate::simulate_json(&input)
+    };
+
+    let near_with = run(5.0, Some("shotgun_vendetta"));
+    let near_bare = run(5.0, None);
+    assert_eq!(near_with["ok"], true, "{near_with}");
+    assert!(
+        near_with["kills"].as_f64().unwrap() > 0.0,
+        "must score kills at 5 m: {near_with}"
+    );
+    assert!(
+        near_with["dps"].as_f64().unwrap() > near_bare["dps"].as_f64().unwrap() * 2.0,
+        "at 5 m in 3D, Shotgun Vendetta must activate: dps {} vs {}",
+        near_with["dps"],
+        near_bare["dps"]
+    );
+
+    let far_with = run(10.0, Some("shotgun_vendetta"));
+    let far_bare = run(10.0, None);
+    assert_eq!(far_with["ok"], true, "{far_with}");
+    assert!(
+        far_with["kills"].as_f64().unwrap() > 0.0,
+        "must score kills at 10 m so the distance gate is exercised: {far_with}"
+    );
+    assert!(
+        (far_with["dps"].as_f64().unwrap() - far_bare["dps"].as_f64().unwrap()).abs() < 1e-6
+            && (far_with["kills"].as_f64().unwrap() - far_bare["kills"].as_f64().unwrap()).abs() < 1e-9,
+        "at 10 m in 3D, Shotgun Vendetta must stay inactive: with {} vs bare {}",
+        far_with["dps"],
+        far_bare["dps"]
+    );
+}
