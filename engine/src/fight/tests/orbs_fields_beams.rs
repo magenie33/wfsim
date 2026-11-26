@@ -942,6 +942,9 @@ fn a_beams_dot_scales_with_multishot_squared() {
         let mut p = FightParams {
             damage: DamageVector::new().with(DamageType::Toxin, 50.0),
             continuous,
+            // Isolate multishot-squared scaling from the 20% ramp floor's
+            // dilution by the M58 +1 DoT accumulator.
+            beam_ramp_floor: 1.0,
             multishot,
             base_multishot: 1.0,
             status_chance: if forced { 0.0 } else { 1.0 },
@@ -1047,4 +1050,131 @@ fn finite_reserve_stops_the_gun() {
     };
     let s = monte_carlo(&p, 20, 4);
     assert!((s.mean_shots - 24.0).abs() < 1e-9, "shots {}", s.mean_shots);
+}
+
+/// M133: multi-tendril CentralBeam weapons (Phantasma, Phantasma Prime, Phage)
+/// keep their central beam unscaled by multishot mods and live multishot buffs.
+#[test]
+fn m133_central_beam_is_excluded_from_multishot_scaling() {
+    let pool = crate::data::mods::class_pool("shotgun");
+    let find_mod = |id: &str| {
+        pool.iter()
+            .find(|m| m.id == id)
+            .unwrap_or_else(|| panic!("missing mod {id}"))
+    };
+    let hells = find_mod("hells_chamber");
+    let galv = find_mod("galvanized_hell");
+
+    // Phantasma Prime: 5 outer beams + 1 fixed central beam.
+    let pp = crate::model::WeaponBase::from_data("phantasma_prime", false, &[]);
+    assert!(pp.has_central_beam);
+    let stock = crate::build::loadout::resolve(&pp, &[], crate::model::StackPolicy::Emergent);
+    assert!((stock.multishot - 6.0).abs() < 1e-9, "stock {}", stock.multishot);
+
+    let with_hells = crate::build::loadout::resolve(&pp, &[hells], crate::model::StackPolicy::Emergent);
+    // 1 + 5 * (1 + 1.2) = 12.0 (not 6 * 2.2 = 13.2).
+    assert!((with_hells.multishot - 12.0).abs() < 1e-9, "hells {}", with_hells.multishot);
+
+    let galv_max = crate::build::loadout::resolve(&pp, &[galv], crate::model::StackPolicy::AssumedMax);
+    let want_galv = 1.0 + 5.0 * (1.0 + 1.1 + 4.0 * 0.29997);
+    assert!((galv_max.multishot - want_galv).abs() < 1e-4, "galv max {} vs {want_galv}", galv_max.multishot);
+
+    let galv_emergent = crate::build::loadout::resolve(&pp, &[galv], crate::model::StackPolicy::Emergent);
+    let on_kill = galv_emergent.multishot_stack.expect("Galvanized Hell on-kill");
+    assert!((on_kill.per_stack - 5.0 * 0.29997).abs() < 1e-4, "per_stack {}", on_kill.per_stack);
+
+    // Phage: 6 outer beams + 1 fixed central beam -> 1 + 6 * 2.2 = 14.2.
+    let phage = crate::model::WeaponBase::from_data("phage", false, &[]);
+    assert!(phage.has_central_beam);
+    let phage_hells = crate::build::loadout::resolve(&phage, &[hells], crate::model::StackPolicy::Emergent);
+    assert!((phage_hells.multishot - 14.2).abs() < 1e-4, "phage hells {}", phage_hells.multishot);
+}
+
+/// M133: continuous beam ramp scales status DoT ModifiedBase on the first tick
+/// (15% floor -> 13.775 Heat tick on Phantasma Prime + Incendiary Coat) and
+/// resets per target generation even without an attack.beam splash block.
+#[test]
+fn m133_beam_ramp_scales_dot_seeds_and_resets_per_target() {
+    let pool = crate::data::mods::class_pool("shotgun");
+    let inc = pool
+        .iter()
+        .find(|m| m.id == "incendiary_coat")
+        .expect("incendiary_coat");
+    let pp = crate::model::WeaponBase::from_data("phantasma_prime", false, &[]);
+    let panel = crate::build::loadout::resolve(&pp, &[inc], crate::model::StackPolicy::Emergent);
+    let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(1.5), &ArcaneFx::none());
+    p.base_crit_chance = 0.0;
+    p.crit_multiplier = 1.0;
+    // Force exactly one Heat stack on the first tick (beam status_chance scales
+    // by multishot, so 1.0 would land six stacks at once).
+    p.status_chance = 0.0;
+    p.base_status_chance = 0.0;
+    p.forced_procs = vec![DamageType::Heat];
+    p.damage = DamageVector::new().with(DamageType::Heat, p.damage.total());
+    p.foe.base_health = 1e12;
+    p.foe.base_armor = 0.0;
+    p.foe.base_shield = 0.0;
+    p.foe.base_overguard = 0.0;
+    p.body_parts = vec![BodyPart {
+        name: "body".into(),
+        aim_weight: 1.0,
+        multiplier: 1.0,
+        is_head: false,
+        is_weak_point: false,
+        crit_bonus: false,
+    }];
+    // Single first tick at 15% ramp: (90 * 0.15 + 1) * 0.5 * 1.9 = 13.775.
+    p.fire_rate = 0.5;
+    p.duration_seconds = 1.5;
+    let rec = record(&p, 1, 0.0, 2.0, 200, 0);
+    let first_dot = rec
+        .events()
+        .iter()
+        .find_map(|e| match &e.kind {
+            crate::record::Kind::Damage(d)
+                if d.origin == crate::record::Origin::Status && d.dtype == DamageType::Heat =>
+            {
+                Some(d.raw)
+            }
+            _ => None,
+        })
+        .expect("first-tick Heat DoT");
+    let expected = (90.0 * 0.15 + 1.0) * 0.5 * 1.9;
+    assert!((first_dot - expected).abs() < 1e-4, "first-tick Heat DoT {first_dot} != {expected}");
+
+    // Per-target ramp reset for continuous weapons without an attack.beam block:
+    // kill the first target after full ramp (>0.6 s), then verify the respawn's
+    // first direct hit drops back to the 15% ramp floor.
+    let mut respawn = p.clone();
+    respawn.fire_rate = 12.0;
+    respawn.duration_seconds = 1.2;
+    respawn.forced_procs.clear();
+    // Direct hit at full ramp is 90 * 1.9 = 171; ~8 ticks (~0.67 s) exceed 1000 HP.
+    respawn.foe.base_health = 1000.0;
+    respawn.foe.mode = TargetMode::InstantRespawn;
+    let r = record(&respawn, 1, 0.0, 2.0, 400, 0);
+    let mut first_hit = None;
+    let mut saw_kill = false;
+    let mut after_respawn_hit = None;
+    for e in r.events() {
+        if let crate::record::Kind::Damage(d) = &e.kind {
+            if first_hit.is_none() && d.origin == crate::record::Origin::Own {
+                first_hit = Some(d.raw);
+            }
+            if saw_kill && d.origin == crate::record::Origin::Own {
+                after_respawn_hit = Some(d.raw);
+                break;
+            }
+            if d.killed {
+                saw_kill = true;
+            }
+        }
+    }
+    let initial = first_hit.expect("initial direct hit");
+    let hit = after_respawn_hit.expect("direct hit on respawned target");
+    let full_hit = respawn.damage.total() * respawn.multishot;
+    assert!(
+        (hit - initial).abs() < 1e-6 && hit < full_hit * 0.2,
+        "respawned target hit {hit} did not match initial 15% ramp hit {initial} (full={full_hit})"
+    );
 }

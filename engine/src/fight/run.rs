@@ -1033,12 +1033,8 @@ pub fn run_once_traced(
                 rounds.truncate(n_pellets);
             }
         }
-        // The damage ramp, evaluated once per tick. A FINAL multiplier on the
-        // instance and NOT on ModifiedBase: it is a transient scaling of the
-        // beam's output, not a weapon-stat change, so the status payloads are
-        // left out of it. Nothing sources that either way — flagged in
-        // MECHANICS — but it is a sub-2% question on sustained fire, unlike the
-        // merge above.
+        // Fallback beam ramp when a continuous weapon opts out of per-target
+        // attenuation; ordinary beams overwrite this per recipient in `flight`.
         let beam_ramp = if active.continuous {
             me.beam.tick(t, 1.0 / live_rate.max(1e-9), active.beam_ramp_floor, active.beam.and_then(|b| b.ramp))
         } else {

@@ -457,6 +457,9 @@ pub(super) fn resolve_the_shot(
         // are other bonuses. `resolve` has already emptied the panel's own
         // buckets; this is the live half it cannot reach.
         let ms_locked = params.locks("multishot");
+        let fixed_central = if active.has_central_beam && active.base_multishot > 1.0 { 1.0 } else { 0.0 };
+        let scaled_ms_base = (active.base_multishot - fixed_central).max(0.0);
+        let ms_bucket_ratio = (active.multishot - fixed_central) / scaled_ms_base.max(1e-9);
         let ms_eff = active.multishot
             + params
                 .multishot_stack
@@ -465,7 +468,7 @@ pub(super) fn resolve_the_shot(
             + if ms_locked {
                 0.0
             } else {
-                active.base_multishot * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t)
+                scaled_ms_base * arc.total(&params.arcane.buffs, ArcGrant::Multishot, t)
             }
             // Final Fusillade: a FLAT add on the magazine's last round. It
             // joins `ms_eff` rather than the multishot BUCKET because the
@@ -479,14 +482,11 @@ pub(super) fn resolve_the_shot(
             // base pellet count IS higher, and everything relative reads the
             // raised number — the mod bucket AND the live grants below it.
             //
-            // The bucket is recovered as `multishot / base_multishot`, the
-            // ratio the panel already resolved, rather than carried a second
-            // time: two copies of one factor is how they come to disagree.
-            // `base_multishot` is a weapon stat and never zero.
+            // The bucket is recovered from the resolved panel ratio rather than
+            // carried a second time so the two copies cannot disagree.
             + if last_round && active.base_multishot_on_last_round > 0.0 && !ms_locked {
                 active.base_multishot_on_last_round
-                    * (active.multishot / active.base_multishot.max(1e-9)
-                        + arc.total(&params.arcane.buffs, ArcGrant::Multishot, t))
+                    * (ms_bucket_ratio + arc.total(&params.arcane.buffs, ArcGrant::Multishot, t))
             } else {
                 0.0
             }
@@ -496,10 +496,10 @@ pub(super) fn resolve_the_shot(
             // BLAZING BARREL, both of its shapes, and they are two brackets.
             //
             // "+0.05 BASE Multishot" is added before mods and is therefore
-            // MULTIPLIED by them — the bucket recovered as `multishot /
-            // base_multishot`, exactly as Forceful Finality does two arms up
-            // and for the same quoted reason. "+5% Multishot" is what a
-            // multishot MOD grants, so it is a share of the weapon's base.
+            // MULTIPLIED by them — the bucket recovered from the resolved panel,
+            // exactly as Forceful Finality does two arms up and for the same
+            // quoted reason. "+5% Multishot" is what a multishot MOD grants, so
+            // it is a share of the weapon's scaled base.
             //
             // Both are silenced by an Acuity lock, like every other live
             // multishot grant here.
@@ -507,9 +507,9 @@ pub(super) fn resolve_the_shot(
                 0.0
             } else {
                 buff_total(active, crate::model::BuffGrant::BaseMultishot, buff_stacks, t)
-                    * (active.multishot / active.base_multishot.max(1e-9))
+                    * ms_bucket_ratio
                     + buff_total(active, crate::model::BuffGrant::Multishot, buff_stacks, t)
-                        * active.base_multishot
+                        * scaled_ms_base
             };
         let rounds = Rounds::roll(active.base_multishot.round().max(1.0) as u32, ms_eff, &mut d.spine);
         let rolled = rounds.total();

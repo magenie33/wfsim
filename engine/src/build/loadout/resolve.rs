@@ -642,8 +642,13 @@ pub fn resolve_for(
                 } => match policy {
                     StackPolicy::AssumedMax => multishot += per_stack * max_stacks as f64,
                     StackPolicy::Emergent => {
+                        let scaled_base = if base.has_central_beam && base.base_multishot > 1.0 {
+                            base.base_multishot - 1.0
+                        } else {
+                            base.base_multishot
+                        };
                         multishot_stack = Some(StackSpec {
-                            per_stack: base.base_multishot * per_stack,
+                            per_stack: scaled_base * per_stack,
                             max_stacks,
                             duration,
                             initial_stacks: 0, // EARNED — docs/BUFFS.md §Activation policy
@@ -2143,8 +2148,17 @@ pub fn resolve_for(
                 ..*b
             })
             .collect(),
-        multishot: relative_for(UpgradeType::WEAPON_FIRE_ITERATIONS, own_multishot, stacking_add(evo_ms_bonus, multishot), 0.0),
+        multishot: {
+            let fixed = if base.has_central_beam && own_multishot > 1.0 { 1.0 } else { 0.0 };
+            fixed + relative_for(
+                UpgradeType::WEAPON_FIRE_ITERATIONS,
+                own_multishot - fixed,
+                stacking_add(evo_ms_bonus, multishot),
+                0.0,
+            )
+        },
         base_multishot: own_multishot,
+        has_central_beam: base.has_central_beam,
         // Magazine capacity: +% of base, rounded to the nearest whole round.
         // A charge-backed Incarnon magazine is a fixed resource OUTSIDE the
         // ammo system — magazine mods are inert, so it never scales.

@@ -205,6 +205,7 @@ impl Default for FightParams {
             ammo_efficiency_applies: true,
             multishot: 1.0,
             base_multishot: 1.0,
+            has_central_beam: false,
             locked_stats: Vec::new(),
             base_damage_bonus: 0.0,
             co_per_type: 0.0,

@@ -234,6 +234,7 @@ path, so an entry may be renamed but never renumbered.
 | [M130](measurements/M130-status-weights-before-quantization.md) | Laetum direct damage permits Impact to quantize to zero; Ocucor footage is confounded by Madurai, and Phantasma Prime status presence changes with its Focus school; random proc draws use quantized composition, with no component floor | 2026-10-31 · 2026-11-01 (owner; proc presence, no frequency measurement) |
 | [M131](measurements/M131-coda-motovore-status-bracket.md) | Coda Motovore's Slash wheel adds to the status-chance mod bracket (Melee Prowess panel87%); Collision Force's card reports720%, confirming sixfold physical-mod potency | 2026-11-01 (owner; panel and card values) |
 | [M132](measurements/M132-vermisplicer-secondary-status.md) | Secondary Vermisplicer shares 39% status across five tendrils, 7.8% per tendril; assembly/loadout not identified | 2026-11-14 (owner-supplied panel reading) |
+| [M133](measurements/M133-phantasma-beam-ramp-and-central-beam.md) | Phantasma Prime: innate beams merge into DoT `ModifiedBase`, continuous beam ramp (15%→100% over 0.6 s) scales DoT seeds (14 on tap, 669–690 at 10 stacks) and resets per target, and `CentralBeam` does not scale with multishot (`5×(1+MS)+1`) | ✅ 2026-11-26 (owner) |
 | [M118](measurements/M118-vectis-prime-compression-and-combo-order.md) | Vectis Prime Incarnon: Primary Compression pays +12% at rank 5 and multiplies, on the direct hit and the orb; the shot combo counts a hit before it pays it; a frozen body takes +1.0 crit damage on the direct hit only; Galvanized Aptitude adds on the weapon's own base, not on Inciting Incident's +200 | ✅ 2026-10-22 (owner) |
 | [M128](measurements/M128-aksondol-reload-wave-start.md) | Aksondol applies its Cold wave at reload start; the count, range and trigger interactions follow the wiki and remain unverified in game | ✅ 2026-10-27 (owner: timing only) |
 
@@ -282,7 +283,9 @@ settles a RULE rather than a weapon has no row and is found by number above.
 | Opticor | `opticor` | [M41](measurements/M41-hitscan-incarnon-explosion-cadence.md) |
 | Opticor Vandal | `opticor_vandal` | [M72](measurements/M72-opticor-vandal-co-base-and-ramp.md) |
 | Paris Prime | `paris_prime` | [M83](measurements/M83-gated-flat-add-and-the-co-base.md) · [M84](measurements/M84-paris-prime-incarnon-co-reads-the-evolved-base.md) |
-| Phantasma | `phantasma` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) |
+| Phage | `phage` | [M133](measurements/M133-phantasma-beam-ramp-and-central-beam.md) |
+| Phantasma | `phantasma` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) · [M133](measurements/M133-phantasma-beam-ramp-and-central-beam.md) |
+| Phantasma Prime | `phantasma_prime` | [M130](measurements/M130-status-weights-before-quantization.md) · [M133](measurements/M133-phantasma-beam-ramp-and-central-beam.md) |
 | Phenmor | `phenmor` | [M9](measurements/M09-incarnon-transition-timings.md) |
 | Praedos | `praedos` | [M73](measurements/M73-heavy-attack-two-clocks.md) |
 | Sancti Magistar | `sancti_magistar` | [M69](measurements/M69-slam-radial-and-flat-add.md) |

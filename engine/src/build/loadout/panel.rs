@@ -646,6 +646,8 @@ pub struct ResolvedPanel {
     /// The weapon's UNMODDED pellet count — the base a relative multishot
     /// buff (Conjunction Voltage) multiplies when it joins the bucket live.
     pub base_multishot: f64,
+    /// See [`crate::data::weapons::AttackSpec::has_central_beam`].
+    pub has_central_beam: bool,
     pub magazine_size: f64,
     /// Reserve rounds after mods (Ammo Chain, a riven's Ammo Maximum…), and
     /// whether the sim is allowed to spend them. Both travel together: a

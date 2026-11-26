@@ -612,6 +612,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             _ => 1.0,
         },
         base_multishot: s.attack.multishot,
+        has_central_beam: s.attack.has_central_beam,
         evo_base_multishot: 0.0,
         magazine_size,
         // The reserve the sim may spend, and the two facts about it. HAVING

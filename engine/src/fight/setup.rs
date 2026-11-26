@@ -1571,6 +1571,7 @@ impl FightParams {
             ammo_efficiency_applies: panel.gauge_form.is_none_or(|f| f.single_shot),
             multishot: panel.multishot + lone_bonus,
             base_multishot: panel.base_multishot,
+            has_central_beam: panel.has_central_beam,
             base_damage_bonus: panel.base_damage_bonus,
             heavy_damage_mods_apply: panel.heavy_damage_mods_apply,
             combo_damage_applies: panel.combo_damage_applies,

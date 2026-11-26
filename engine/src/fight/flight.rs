@@ -229,7 +229,8 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let mut strike_spread: Option<SpreadStrike> = None;
     let (mut any_head, mut any_big) = (false, false);
     let mut beam_merge = l.beam_merge;
-    let target_ramp = active.beam.and_then(|b| b.ramp).filter(|r| r.per_target && l.spatial.is_some());
+    let ramp_spec = active.beam.and_then(|b| b.ramp);
+    let per_target_ramp = active.continuous && ramp_spec.is_none_or(|r| r.per_target);
     let tick = 1.0 / l.live_rate.max(1e-9);
     let mut beam_ramp = l.beam_ramp;
     let radial_delay = match active.radial {
@@ -242,12 +243,13 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let mut pellet_aims = Vec::new();
     {
         let recipient = l.spatial.as_ref().map_or(0, |s| s.impact.body);
-        if let Some(source) = target_ramp.filter(|_| !g.bodies[recipient].fallen
-            && l.spatial.as_ref().is_some_and(|s| !s.miss))
+        if per_target_ramp
+            && !g.bodies[recipient].fallen
+            && l.spatial.as_ref().is_none_or(|s| !s.miss)
         {
             me.target_ramps.resize(g.bodies.len(), TargetRamp::default());
             beam_ramp = me.target_ramps[recipient].hit(
-                g.bodies[recipient].state.generation, t, tick, active.beam_ramp_floor, source,
+                g.bodies[recipient].state.generation, t, tick, active.beam_ramp_floor, ramp_spec,
             );
         }
         let params = if l.spatial.is_some() {
@@ -468,16 +470,22 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
                 status_part_factor: 1.0,
                 status_landing: 1.0,
             };
-            let raw = target_ramp.map_or(strike.raw_per_bucket, |source| {
+            let (raw, mb) = if per_target_ramp {
+                if me.target_ramps.len() <= body {
+                    me.target_ramps.resize(g.bodies.len(), TargetRamp::default());
+                }
                 let here = me.target_ramps[body].hit(
-                    g.bodies[body].state.generation, t, tick, active.beam_ramp_floor, source,
+                    g.bodies[body].state.generation, t, tick, active.beam_ramp_floor, ramp_spec,
                 );
-                strike.raw_per_bucket / beam_ramp.max(1e-9) * here
-            });
+                let ratio = here / beam_ramp.max(1e-9);
+                (strike.raw_per_bucket * ratio, strike.modded_base * ratio)
+            } else {
+                (strike.raw_per_bucket, strike.modded_base)
+            };
             spread_hit(
                 me.seat, &mut me.windows, &inst, &mut g.bodies[body], &spec,
                 raw, strike.shares, strike.crit_multiplier, strike.crit_tier,
-                strike.attrition, strike.modded_base, strike.status_chance, &strike.forced,
+                strike.attrition, mb, strike.status_chance, &strike.forced,
                 &strike.status_vector, me.params, active, &mut me.gal, &mut me.arc, g.r, g.rec,
                 d, t, SpreadBy::Chain, false, true, None,
             );

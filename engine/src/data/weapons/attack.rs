@@ -202,6 +202,10 @@ pub struct AttackSpec {
     pub burst: Option<BurstSpec>,
     #[serde(default = "one")]
     pub multishot: f64,
+    /// Client `CentralBeam = 1` with `fireIterations > 1`: one innate beam is
+    /// unscaled by multishot bonuses (`(multishot - 1) * (1 + MS) + 1`).
+    #[serde(default)]
+    pub has_central_beam: bool,
     /// THIS ATTACK IS NOT AIMED, and this is the flat chance any one of its
     /// damage instances lands on a weak point.
     ///

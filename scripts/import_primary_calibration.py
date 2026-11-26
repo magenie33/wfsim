@@ -248,6 +248,7 @@ def calibrate(objects, binding, dossier, doc):
     pellets = count
     if fire.get('CentralBeam') == '1' and count > 1:
         pellets += 1
+        adopt(updates, doc, ('attack', 'has_central_beam'), True)
     if state.get('FireIterationMode') == 'INCREMENT':
         pellets = number(state.get('MaximumFireIterations'), count)
         if identity.endswith('_single'):

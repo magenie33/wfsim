@@ -1431,13 +1431,13 @@ pub(super) fn settle_pellet(
         };
         let part_factor = if direct { part_factor } else { 1.0 };
         let landing = if direct { ProcLanding::at(landing, part) } else { ProcLanding::default() };
-        // ModifiedBase carries the merge too, which is what makes
-        // damaging status effects "affected TWICE by multishot": more
-        // procs from the summed status chance, and a bigger payload
-        // each because the instance itself is bigger.
+        // ModifiedBase carries both the merge (DoTs "affected TWICE by
+        // multishot") and the continuous beam ramp (measured on Phantasma
+        // Prime: first tick at 15% ramp ticks 14 instead of 86, and 10 Heat
+        // stacks over the ramp window tick 669-690).
         let mb_live = *beam_merge
             * match &rad {
-                None => mb_live,
+                None => mb_live * beam_ramp,
                 Some(r) => r.modified_base * arc_ratio,
             }
             // THE CHAMBERS REACH STATUS DAMAGE, which is stated and not

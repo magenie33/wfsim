@@ -66,6 +66,9 @@ attack:
   # continuous rather than a spread, so all six land on the same target with no
   # accuracy question at all.
   multishot: 6.0
+  # Client fireIterations=5 with CentralBeam=1: multishot bonuses scale the 5
+  # outer beams, not the central beam (5 * (1 + MS) + 1).
+  has_central_beam: true
   # Half an ammo per tick, stated by the page as well as the module: "Consumes
   # 0.5 ammo per tick of damage". With an 11-round magazine that is 22 ticks,
   # under two seconds of fire — which is why the 0.5 s reload matters so much.

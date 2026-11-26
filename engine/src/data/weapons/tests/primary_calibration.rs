@@ -76,3 +76,27 @@ fn charge_only_refire_and_looped_reload_reach_the_combat_model() {
     assert_eq!(p.battery.unwrap().delay_empty_seconds, 0.5);
     assert_eq!(p.base_reload, 1.75);
 }
+
+#[test]
+fn central_beam_multi_tendril_forms_declare_has_central_beam() {
+    let f = fixture();
+    for row in f["forms"].as_array().unwrap() {
+        let id = row["id"].as_str().unwrap();
+        let fire = row.get("fire").and_then(|v| v.as_object());
+        let central = fire
+            .and_then(|m| m.get("CentralBeam"))
+            .and_then(|v| v.as_str())
+            == Some("1");
+        let iters = fire
+            .and_then(|m| m.get("fireIterations"))
+            .and_then(|v| v.as_str())
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(1);
+        let expected = central && iters > 1;
+        let s = spec(id).unwrap();
+        assert_eq!(
+            s.attack.has_central_beam, expected,
+            "{id}: CentralBeam={central}, fireIterations={iters}"
+        );
+    }
+}

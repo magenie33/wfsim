@@ -376,6 +376,8 @@ pub struct FightParams {
     /// UNMODDED pellet count — the base a relative arcane multishot buff
     /// (Conjunction Voltage) multiplies live.
     pub base_multishot: f64,
+    /// See [`crate::data::weapons::AttackSpec::has_central_beam`].
+    pub has_central_beam: bool,
     /// Σ base-damage bonuses on the panel — needed live when CO joins
     /// this bucket (the vector already includes it; only the CO ratio
     /// reads it).

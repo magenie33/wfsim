@@ -1931,24 +1931,27 @@ What a beam pays for all this is the crit roll: one per tick, not `M`.
 `a_beams_dot_scales_with_multishot_squared` asserts every row of that table
 exactly (status chance pinned at 1.0 so the proc counts are not sample means).
 
+**CentralBeam multishot exclusion.** Weapons whose client fire behavior declares
+`CentralBeam = 1` with `fireIterations > 1` (Phantasma, Phantasma Prime: `5 + 1`;
+Phage: `6 + 1`) declare `has_central_beam: true`. Multishot mods and live relative
+multishot grants scale the outer beams only: `1 + (base - 1) × (1 + MS)`.
+
 **Damage RAMP.** *"Initial damage starts at a lower percentage, and ramps up to
 100% of its damage over 0.6 seconds of hitting a target. 0.8 seconds after the
 weapon stops hitting a target, the damage decays back to its initial point over
 2 seconds. For most weapons, this lower percentage is 20%."* Held fire advances
-the ramp one tick-period at a time; a gap longer than the 0.8 s grace decays it.
-The per-weapon exceptions the page lists (Convectrix 60/80%, Phage 70%, Embolist
-30%) are weapon data: an entry that ramps from elsewhere states its own
-`beam_ramp_floor`, which is per ENTRY and not inherited — the Convectrix's
-alt-fire is a separate entry with its own 80%.
+the ramp one tick-period at a time per target; a gap longer than the 0.8 s grace
+decays it, and each new target or respawn starts cold at `beam_ramp_floor`.
+The per-weapon exceptions the page lists (Phantasma 15%, Convectrix 60/80%,
+Phage 70%, Embolist 30%) are weapon data: an entry that ramps from elsewhere
+states its own `beam_ramp_floor`, which is per ENTRY and not inherited.
 
-Applied as a FINAL multiplier on the instance and NOT on ModifiedBase — a
-transient scaling of output, not a weapon-stat change, so the status payloads
-are left out of it. **Unsourced either way**, and unlike the merge it is a
-sub-2% question on sustained fire (at 8 ticks/s the ramp costs ~2.4 ticks out of
-a 170-round magazine).
+The ramp multiplies BOTH the direct hit and the status DoT `ModifiedBase`
+(MEASUREMENTS **M133**: Phantasma Prime +90% Heat ticks 14 on the first tick at
+15% ramp and 669–690 at 10 stacks over the ramp window, against 86 and 856 at
+full ramp).
 
-**Source:** wiki Continuous_Weapon + Multishot. **Status:** merge fully sourced;
-the ramp's interaction with status payloads is a modeling choice.
+**Source:** wiki Continuous_Weapon + Multishot; measured **M133**. **Status:** verified.
 
 #### A beam's GEOMETRY — sphere and chain (Torid Incarnon)
 

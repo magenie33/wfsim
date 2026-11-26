@@ -29,13 +29,13 @@ pub(super) struct TargetRamp {
 #[wfsim_gas_macro::metered]
 impl TargetRamp {
     pub(super) fn hit(
-        &mut self, generation: u32, at: f64, step: f64, floor: f64, source: crate::model::BeamRampSpec,
+        &mut self, generation: u32, at: f64, step: f64, floor: f64, source: Option<crate::model::BeamRampSpec>,
     ) -> f64 {
         if self.generation != Some(generation) {
             *self = Self { generation: Some(generation), ..Default::default() };
         }
         if self.clock.last_tick != Some(at) {
-            self.factor = self.clock.tick(at, step, floor, Some(source));
+            self.factor = self.clock.tick(at, step, floor, source);
         }
         self.factor
     }
@@ -70,9 +70,9 @@ mod tests {
 
     #[test]
     fn simultaneous_links_advance_a_target_clock_once_and_respawn_starts_cold() {
-        let source = crate::model::BeamRampSpec {
+        let source = Some(crate::model::BeamRampSpec {
             rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true,
-        };
+        });
         let mut ramp = TargetRamp::default();
         assert_eq!(ramp.hit(1, 0., 0.1, 0.2, source), 0.2);
         assert_eq!(ramp.hit(1, 0., 0.1, 0.2, source), 0.2);

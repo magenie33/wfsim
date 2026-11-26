@@ -51,6 +51,9 @@ attack:
   fire_rate: 12.0
   # "Innate multishot of 7 beams", 5 Viral apiece.
   multishot: 7.0
+  # Client fireIterations=6 with CentralBeam=1: multishot bonuses scale the 6
+  # outer beams, not the central beam (6 * (1 + MS) + 1).
+  has_central_beam: true
   ammo_cost: 0.5
   crit_chance: 0.19
   crit_multiplier: 2.0
