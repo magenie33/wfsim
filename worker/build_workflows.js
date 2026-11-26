@@ -18,6 +18,16 @@ export const BUILD_WORKFLOW_PRODUCER={
   still_wanted:async(env,d)=>!!await env.LIBRARY.prepare(`SELECT 1 FROM state_build_workflow_nodes n JOIN state_build_workflows f ON f.id=n.workflow
     WHERE n.workflow=? AND n.id=? AND n.computation=? AND n.state='queued' AND f.state='active' AND NOT compute_order_workflow_node_cancelled(n.workflow,n.id)`)
     .bind(d.payload.workflow,d.payload.node,d.question).first(),
+  // Batch-check a whole pack in one query so JS-path sync never issues N serial roundtrips.
+  wanted_many:async(env,demands)=>{
+    if(!demands.length)return new Set();
+    const {results}=await env.LIBRARY.prepare(`SELECT x.ref FROM jsonb_to_recordset((?::text)::jsonb) x(workflow text,node text,question text,ref text)
+      JOIN state_build_workflow_nodes n ON n.workflow=x.workflow AND n.id=x.node AND n.computation=x.question
+      JOIN state_build_workflows f ON f.id=n.workflow
+      WHERE n.state='queued' AND f.state='active' AND NOT compute_order_workflow_node_cancelled(n.workflow,n.id)`)
+      .bind(JSON.stringify(demands.map(d=>({workflow:d.payload.workflow,node:d.payload.node,question:d.question,ref:d.ref})))).all();
+    return new Set(results.map(r=>r.ref));
+  },
   on_fact_writes(env,d,fact) {
     const p=d.payload,db=env.LIBRARY,at=iso(Date.now()),writes=[
       db.prepare('SELECT build_workflow_delivery_guard(?::text,?::text,?::text,?::bigint)').bind(p.workflow,p.node,d.question,fact.task_id)];

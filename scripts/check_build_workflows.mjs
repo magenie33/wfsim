@@ -257,6 +257,15 @@ async function currentCoverageCases(db) {
   await Promise.all(Array.from({length:24},async(_,i)=>intake(await make(4,'concurrent-upload-'+i))));
   const rows=await db.all('SELECT * FROM state_build_workflow_nodes WHERE workflow=? ORDER BY position',flow.id);
   assert.deepEqual(rows.map(n=>n.state),['skipped','skipped','queued','queued']);
+  const queuedNodes=rows.filter(n=>n.state==='queued');
+  let wantedQueries=0;
+  const countedEnv={LIBRARY:{prepare(sql){wantedQueries+=1;return db.prepare(sql);}}};
+  const wantedBatch=await BUILD_WORKFLOW_PRODUCER.wanted_many(countedEnv,[
+    ...queuedNodes.map(n=>({ref:`${n.workflow}|${n.id}`,question:n.computation,payload:{workflow:n.workflow,node:n.id}})),
+    {ref:`${flow.id}|missing`,question:queuedNodes[0].computation,payload:{workflow:flow.id,node:'missing'}},
+  ]);
+  assert.equal(wantedQueries,1,'wanted_many must batch all workflow demands into one SQL query');
+  assert.deepEqual([...wantedBatch].sort(),queuedNodes.map(n=>`${n.workflow}|${n.id}`).sort());
   assert.equal((await db.get('SELECT count(*) n FROM entity_compute_tasks')).n,tasksBefore+2,'only missing boards create computation work');
   assert.equal((await db.get('SELECT count(*) n FROM record_build_workflow_triggers WHERE workflow=?',flow.id)).n,25,'concurrent upload sources are retained');
   for(const n of rows.filter(n=>n.state==='queued')) await f.answerOfficial(env,{device:'official:coverage',owner:'official:coverage'},
