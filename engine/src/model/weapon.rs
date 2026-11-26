@@ -141,7 +141,7 @@ pub struct SpreadSampling {
 }
 
 /// Native attenuation stores elapsed ramp time; cooldown is its divisor.
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub struct BeamRampSpec {
     pub rise_seconds: f64,
     pub cooldown_delay_seconds: f64,

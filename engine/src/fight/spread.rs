@@ -1951,7 +1951,7 @@ pub(super) fn spread_beyond_the_target(
     // the damage radius but not directly struck by the initial beam itself
     // will also not benefit from multishot", so these fire here rather than
     // inside the pellet loop above.
-    if let (Some(s), Some(beam), false) = (&strike_spread, params.beam, bodies.len() < 2) {
+    if let (Some(s), Some(beam), false) = (&strike_spread, active.beam, bodies.len() < 2) {
         spread_from_seeds(
             seat,
             w,

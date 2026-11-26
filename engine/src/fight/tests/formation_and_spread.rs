@@ -1811,3 +1811,99 @@ fn a_shard_continued_is_the_whole_run_to_the_bit() {
     let (cont, _) = shard_onto(&p, short, 2, 8, SEED, false, &mut |_| {}).finish(&p, 10);
     assert_eq!(format!("{cont:?}"), format!("{whole:?}"));
 }
+
+#[test]
+fn planar_incarnon_base_form_does_not_chain_from_incarnon_beam() {
+    let base_w = crate::model::WeaponBase::from_data("torid", false, &["torid_evo1_incarnon_form"]);
+    let inc_w = crate::model::WeaponBase::from_data("torid_incarnon", false, &["torid_evo1_incarnon_form"]);
+    let base_panel = crate::build::loadout::resolve(&base_w, &[], crate::model::StackPolicy::Emergent);
+    let inc_panel = crate::build::loadout::resolve(&inc_w, &[], crate::model::StackPolicy::Emergent);
+    let mut arena = crate::arena::Arena::training(6.0);
+    let grid = crate::formation::Formation::grid(
+        Foe::training_dummy(),
+        BodyPart::humanoid(),
+        3,
+        3,
+        3.0,
+        arena.target_at,
+    );
+    arena.others = grid.foes.into_iter().skip(1).collect();
+    let p = FightParams::incarnon_cycle_from_panels(
+        &inc_panel,
+        &base_panel,
+        false,
+        crate::fight::LockMode::Initial(0),
+        &arena,
+        &crate::data::arcanes::ArcaneFx::none(),
+    );
+    let rec = record(&p, 0x5EED, 0.0, 6.0, 20_000, 0);
+    let transform_t = rec
+        .events()
+        .iter()
+        .find(|e| matches!(e.kind, crate::record::Kind::TransformEnd { transmuted: true }))
+        .map(|e| e.t)
+        .expect("Torid must transform during a 6 s fight");
+    let base_chains = rec
+        .events()
+        .iter()
+        .filter(|e| {
+            e.t < transform_t
+                && matches!(&e.kind, crate::record::Kind::Damage(d) if d.origin == crate::record::Origin::Chain)
+        })
+        .count();
+    let inc_chains = rec
+        .events()
+        .iter()
+        .filter(|e| {
+            e.t >= transform_t
+                && matches!(&e.kind, crate::record::Kind::Damage(d) if d.origin == crate::record::Origin::Chain)
+        })
+        .count();
+    assert_eq!(base_chains, 0, "base-form grenade shots must not fire Incarnon beam chains");
+    assert!(inc_chains > 0, "Incarnon beam ticks must chain");
+}
+
+#[test]
+fn planar_beam_chains_use_body_crit_not_headshot_crit_doubling() {
+    let base = crate::model::WeaponBase::from_data("torid_incarnon", false, &["torid_evo1_incarnon_form"]);
+    let pool = crate::data::mods::pool_for_weapon("torid_incarnon");
+    let acuity = pool.iter().find(|d| d.id == "primary_acuity").expect("primary_acuity");
+    let panel = crate::build::loadout::resolve(&base, &[acuity], crate::model::StackPolicy::Emergent);
+    let mut arena = crate::arena::Arena::training(1.0);
+    arena.body_parts = vec![BodyPart {
+        name: "head".into(),
+        multiplier: 3.0,
+        aim_weight: 1.0,
+        is_head: true,
+        is_weak_point: true,
+        crit_bonus: true,
+    }];
+    arena.others = vec![crate::formation::FoeSpec {
+        id: "e2".into(),
+        params: Foe::training_dummy(),
+        body_parts: arena.body_parts.clone(),
+        at: crate::rules::space::Vec2::new(3.0, arena.target_at.y),
+    }];
+    let mut p = FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
+    let body_cd = p.crit_multiplier;
+    p.base_crit_chance = 1.0;
+    p.unmodded_crit_chance = 1.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() {
+        inputs.set_supplied_chance(1.0, 1.0);
+    }
+    let rec = record(&p, 0x5EED, 0.0, 0.5, 5_000, 0);
+    let own: Vec<_> = rec.events().iter().filter_map(|e| match &e.kind {
+        crate::record::Kind::Damage(d) if d.origin == crate::record::Origin::Own => Some(d),
+        _ => None,
+    }).collect();
+    let chains: Vec<_> = rec.events().iter().filter_map(|e| match &e.kind {
+        crate::record::Kind::Damage(d) if d.origin == crate::record::Origin::Chain => Some(d),
+        _ => None,
+    }).collect();
+    assert!(!own.is_empty() && !chains.is_empty());
+    assert!(own.iter().all(|d| d.head && d.crit_damage > body_cd * 1.5));
+    assert!(
+        chains.iter().all(|d| !d.head && (d.crit_damage - body_cd).abs() < 1e-6),
+        "planar chains must take body crit ({body_cd}) without 2x headshot crit or Acuity CC"
+    );
+}

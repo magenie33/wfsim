@@ -567,7 +567,7 @@ pub struct ReboundBlast {
 /// A continuous beam's GEOMETRY — shape, not a damage part. Carried so
 /// Firestorm has a radius to scale and the multi-target model has its inputs;
 /// the single-target arena reads none of it.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BeamGeometry {
     pub ramp: Option<crate::model::BeamRampSpec>,
     pub range_m: f64,

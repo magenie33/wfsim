@@ -292,7 +292,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             body_at: g.body_at,
             spread_geometry: &me.fixed.spread_geometry,
             bounce_bodies: g.bounce_bodies,
-            chain_layout: &me.fixed.chain_layout,
+            chain_layout: if l.base_form && active.beam != me.params.beam { &None } else { &me.fixed.chain_layout },
             chain_multishot: cached_chains.map(|(ms, _)| ms),
             ricochet_layout: &me.fixed.ricochet_layout,
             aim_off_axis: me.fixed.aim_off_axis,
@@ -485,6 +485,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     }
     // NO FORMATION, NOTHING TO REACH — see [`spread_beyond_the_target`].
     if g.bodies.len() > 1 && l.spatial.is_none() {
+        let layout = if l.base_form && active.beam != me.params.beam { None } else { me.fixed.chain_layout.as_ref() };
         spread_beyond_the_target(
             me.seat,
             &mut me.windows,
@@ -499,7 +500,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             &mut me.arc,
             g.r,
             me.tendril.count,
-            me.fixed.chain_layout.as_ref(),
+            layout,
             cached_chains.map(|(_, sp)| sp),
             &me.fixed.spread_geometry,
             struck,
@@ -508,6 +509,13 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     if l.spatial.is_some() && me.params.arcane.echo_share > 0.0 {
         irradiate::drain_echoes(me.seat, &mut me.windows, g.bodies, me.params, active,
             &me.fixed.spread_geometry, &mut me.gal, &mut me.arc, g.r, g.rec, d, t);
+    }
+    // Settle non-aimed bodies' due status ticks once per spatial shot before area procs drain.
+    if g.bodies.len() > 1 && l.spatial.as_ref().is_some_and(|s| s.last) {
+        settle_crowd_ticks(
+            &mut me.windows, g.bodies, &mut me.gal, &mut me.arc, t + 1e-9,
+            me.params, active, g.r, g.rec, &mut d.status,
+        );
     }
     // …AND ENDS THAT WAY, for whatever settles before the next one — once
     // its burst is done.

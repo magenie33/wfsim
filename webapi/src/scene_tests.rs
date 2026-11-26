@@ -914,3 +914,87 @@ fn floor_aim_selects_another_actor_or_an_empty_point_in_3d() {
     assert!(!miss.spatial_flights().is_empty());
     assert!(miss.spatial_flights().iter().all(|row| row.flight.impacts.is_empty()));
 }
+
+#[test]
+fn spatial_crowd_status_ticks_settle_during_the_fight_not_at_the_end() {
+    let mut input = request("torid", 1, false);
+    input.as_object_mut().unwrap().remove("mode");
+    input["form"] = json!("incarnon");
+    input["mods"] = json!(["hellfire"]);
+    input["duration"] = json!(6.0);
+    input["target_at"] = json!([0., 5.]);
+    input["formation"] = json!([
+        {"id": "near", "at": [1.5, 5.]},
+        {"id": "chain", "at": [4.5, 5.]},
+    ]);
+    input["scene_3d"] = json!({"preset": "source_standard", "placement": {"kind": "supplied"}});
+    let mut p = params(&input);
+    p.spread = None;
+    p.status_chance = 1.0;
+    let replay = record(&p);
+    let mut max_t = 0.0_f64;
+    let mut crowd_ticks = 0usize;
+    let mut max_lag = 0.0_f64;
+    for e in replay.events() {
+        let lag = (max_t - e.t).max(0.0);
+        max_lag = max_lag.max(lag);
+        max_t = max_t.max(e.t);
+        if e.subject.is_some_and(|b| b > 0)
+            && matches!(&e.kind, Kind::Damage(d) if d.origin == wfsim_engine::record::Origin::Status)
+        {
+            crowd_ticks += 1;
+        }
+    }
+    assert!(crowd_ticks > 0, "chained/radius targets must tick Heat DoTs in 3D");
+    assert!(
+        max_lag < 1.5,
+        "crowd DoT ticks must settle during the fight instead of dumping at end: max_lag={max_lag:.2}s"
+    );
+}
+
+#[test]
+fn torid_3d_chains_land_on_body_without_head_crit_or_headshot_rate_dilution() {
+    let mut input = request("torid", 1, false);
+    input.as_object_mut().unwrap().remove("mode");
+    input["form"] = json!("incarnon");
+    input["mods"] = json!(["primary_acuity", "vital_sense"]);
+    input["headshot_pct"] = json!(100);
+    input["weakpoint_aim_pct"] = json!(100);
+    input["duration"] = json!(1.0);
+    input["target_at"] = json!([0., 5.]);
+    input["formation"] = json!([
+        {"id": "near", "at": [1.5, 5.]},
+        {"id": "chain", "at": [4.5, 5.]},
+    ]);
+    input["scene_3d"] = json!({"preset": "source_standard", "placement": {"kind": "supplied"}});
+    let mut p = params(&input);
+    p.spread = None;
+    let body_cd = p.crit_multiplier;
+    p.base_crit_chance = 1.0;
+    p.unmodded_crit_chance = 1.0;
+    if let Some(inputs) = p.critical_inputs.as_mut() {
+        inputs.set_supplied_chance(1.0, 1.0);
+    }
+    let replay = record(&p);
+    let own_hits: Vec<_> = replay.events().iter().filter_map(|e| match &e.kind {
+        Kind::Damage(d) if d.origin == wfsim_engine::record::Origin::Own => Some(d),
+        _ => None,
+    }).collect();
+    let chain_hits: Vec<_> = replay.events().iter().filter_map(|e| match &e.kind {
+        Kind::Damage(d) if d.origin == wfsim_engine::record::Origin::Chain => Some(d),
+        _ => None,
+    }).collect();
+    assert!(!own_hits.is_empty() && !chain_hits.is_empty());
+    assert!(own_hits.iter().all(|d| d.head && d.crit_damage > body_cd * 1.5));
+    assert!(
+        chain_hits.iter().all(|d| !d.head && d.crit_damage <= body_cd + 1e-6),
+        "chain and radius hits must use body crit without 2x headshot crit or Acuity weakpoint CC"
+    );
+    let sim = crate::simulate::simulate_json(&input);
+    assert_eq!(sim["ok"], true, "{sim}");
+    let hs = sim["headshot_rate"].as_f64().unwrap_or(0.0);
+    assert!(
+        (hs - 1.0).abs() < 1e-6,
+        "radius seeds must not dilute reported headshot_rate: {hs}"
+    );
+}

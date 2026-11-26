@@ -1721,7 +1721,8 @@ mod asset_tests {
             wfsim_engine::board::benchmarks::get("standard_single_target").expect("its companion exists");
         // THE RULER'S OWN SCENARIO, with only the cost terms overridden.
         let req = |b: &wfsim_engine::board::benchmarks::Benchmark| {
-            let mut m = serde_json::to_value(&b.scenario).expect("a scenario is json");
+            let raw = serde_json::to_value(&b.scenario).expect("a scenario is json");
+            let mut m = wfsim_engine::board::benchmarks::scenario_for(&raw, "torid");
             let o = m.as_object_mut().expect("a mapping");
             o.insert("weapon".into(), serde_json::json!("torid"));
             o.insert("mode".into(), serde_json::json!("transformed"));

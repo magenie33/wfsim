@@ -632,6 +632,14 @@ pub fn run_once_traced(
                 &mut me.windows, &mut bodies[0], &mut me.gal, &mut me.arc, l.t + 1e-9,
                 me.params, active, &mut r, rec, &mut me.d.status, &me.params.foe, 0,
             );
+            if let Some(b) = l.spatial.as_ref().map(|s| s.impact.body).filter(|&b| b > 0 && !bodies[b].debuffs.idle()) {
+                if let Some(spec) = me.params.body(b) {
+                    process_ticks(
+                        &mut me.windows, &mut bodies[b], &mut me.gal, &mut me.arc, l.t + 1e-9,
+                        me.params, active, &mut r, rec, &mut me.d.status, spec.params, b,
+                    );
+                }
+            }
             // …AND EVERY ENTITY OF THIS SEAT DUE BEFORE IT: a pile whose fuse ran
             // out goes off before the round that would have fed it lands.
             process_entities(&mut entities, l.t, &mut turn!(me, active, &mut me.d), &mut r, rec, &mut bodies);

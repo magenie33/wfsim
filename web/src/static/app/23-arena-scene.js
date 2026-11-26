@@ -101,13 +101,23 @@ function keepApart(a, b) {
 /// drag obeys.
 function setArenaDistance(s, want) {
   const [ax, ay] = s.player_at;
-  let dx = s.target_at[0] - ax, dy = s.target_at[1] - ay;
+  const [ox, oy] = s.target_at;
+  let dx = ox - ax, dy = oy - ay;
   const d = Math.hypot(dx, dy);
   if (d < 1e-9) { dx = 0; dy = 1; }
   const u = d < 1e-9 ? 1 : d;
   const contact = arenaContactDistance(s);
   const m = Math.max(contact, s.scene_3d ? want : want + contact);
-  s.target_at = [ax + (dx / u) * m, ay + (dy / u) * m];
+  const nx = ax + (dx / u) * m, ny = ay + (dy / u) * m;
+  const sx = nx - ox, sy = ny - oy;
+  s.target_at = [nx, ny];
+  if (s.formation && s.formation.length) {
+    s.formation = s.formation.map((entry) => ({
+      ...entry,
+      at: [entry.at[0] + sx, entry.at[1] + sy],
+    }));
+  }
+  if (s.aim_at) s.aim_at = [s.aim_at[0] + sx, s.aim_at[1] + sy];
 }
 
 /// The distances worth one click. CONTACT is first because it is where both

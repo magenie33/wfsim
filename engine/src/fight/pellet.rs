@@ -619,6 +619,7 @@ pub(super) fn settle_pellet(
     // abilities". The tier UPGRADE still runs on the result, which is
     // how Vigilante reaches a Tier-4 hit off it, so the lock binds the
     // chance and not the ceiling.
+    let super_crit_fired = params.super_crit_on_status.is_some() && *super_crit_armed;
     let cc_pellet = match params.super_crit_on_status {
         Some(sc) if *super_crit_armed => {
             *super_crit_armed = false;
@@ -1714,7 +1715,7 @@ pub(super) fn settle_pellet(
             continue;
         }
         if direct && bodies[body_index].fallen {
-            if !follows && spatial.is_none() && params.beam.is_none() && struck.len() > 1 {
+            if !follows && spatial.is_none() && active.beam.is_none() && struck.len() > 1 {
                 spread_from_punch_through(
                     seat, windows, bodies, params, active, struck, punch_raw, shares, punch,
                     spread_mb, status_chance, forced, &spread_composition, part.is_head, part_factor,
@@ -1893,14 +1894,47 @@ pub(super) fn settle_pellet(
             // one pellet carrying multishot as `beam_merge`, so leaving it
             // in hands the shot's multishot to the half that must not take it.
             let for_chain = spatial.and_then(|s| s.beam.as_ref()).is_some_and(|b| !b.links.is_empty());
+            let planar_chain = active.beam.is_some() && spatial.is_none();
             let unmerged = if for_chain { 1.0 } else { 1.0 / (*beam_merge).max(1e-9) };
+            let needs_body_spread = (strike_spread.is_none() && (spatial.is_none() || for_chain)) || planar_chain;
+            // Chain hops, radius seeds and tendrils land on bodies, never heads:
+            // strip weakpoint crit chance and the 2x critical-headshot multiplier.
+            let (body_tier, body_crit, body_attrition, body_raw_per_bucket) =
+                if needs_body_spread && (part.is_head || part.is_weak_point || (part.crit_bonus && head_mult > 1.0 && part.multiplier > 1.0)) {
+                    let body_cc = if super_crit_fired {
+                        cc_pellet
+                    } else {
+                        effective_cc * active.bodyshot_crit_chance_multiplier
+                    };
+                    let (bt, ba) = if (body_cc - cc_pellet).abs() > 1e-12 {
+                        let bt = upgrade_crit_tier(
+                            roll_crit_tier(body_cc, &mut d.extra),
+                            active.crit_tier_upgrade_chance,
+                            &mut d.extra,
+                        );
+                        (bt, noncrit_mult(active.noncrit_bonus, bt, &mut d.extra))
+                    } else {
+                        (tier, attrition)
+                    };
+                    let bc = crate::rules::critical::factor(bt, cd_total as f32) as f64;
+                    let braw = if bt == tier && (bc - crit_multiplier).abs() <= 1e-12
+                        && (ba - attrition).abs() <= 1e-12
+                    {
+                        (raw / bucket / careen) / body_part_denom
+                    } else {
+                        (raw_before_roll!(bc, ba) * falloff / bucket / careen) / body_part_denom
+                    };
+                    (bt, bc, ba, braw)
+                } else {
+                    (tier, crit_multiplier, attrition, (raw / bucket / careen) / body_part_denom)
+                };
             if strike_spread.is_none() && (spatial.is_none() || for_chain) {
                 *strike_spread = Some(SpreadStrike {
-                    raw_per_bucket: ((raw / bucket / careen) / body_part_denom) * unmerged,
+                    raw_per_bucket: body_raw_per_bucket * unmerged,
                     shares,
-                    crit_multiplier,
-                    crit_tier: tier,
-                    attrition,
+                    crit_multiplier: body_crit,
+                    crit_tier: body_tier,
+                    attrition: body_attrition,
                     modded_base: spread_mb * unmerged,
                     status_chance: (status_chance - weakpoint_sc) * unmerged + weakpoint_sc,
                     forced: crate::rules::status::HitProcs::from_slice(forced),
@@ -2006,7 +2040,7 @@ pub(super) fn settle_pellet(
             }
             // ONE ROUND, ONE FLIGHT: the instances multishot added to it do not
             // punch through, the round does, and rolls them again at each body.
-            if params.beam.is_none() && !follows && spatial.is_none() {
+            if active.beam.is_none() && !follows && spatial.is_none() {
                 punched = spread_from_punch_through(
                 seat,
                 windows,
@@ -2036,7 +2070,7 @@ pub(super) fn settle_pellet(
             // landing pellet — so a pellet that landed on nobody starts
             // none of them. The radius-caught seeds' half fires once
             // after the loop, miss or not.
-            if let Some(beam) = params.beam.filter(|_| spatial.is_none()) {
+            if let Some(beam) = active.beam.filter(|_| spatial.is_none()) {
                 spread_from_seeds(
                     seat,
                     windows,
@@ -2044,11 +2078,11 @@ pub(super) fn settle_pellet(
                     params,
                     active,
                     beam,
-                    (raw / bucket) / body_part_denom,
+                    body_raw_per_bucket,
                     shares,
-                    crit_multiplier,
-                    tier,
-                    attrition,
+                    body_crit,
+                    body_tier,
+                    body_attrition,
                     spread_mb,
                     status_chance,
                     forced,
@@ -2109,6 +2143,7 @@ pub(super) fn settle_pellet(
         } else {
             Vec::new()
         };
+        let indirect_beam = spatial.and_then(|s| s.beam.as_ref()).is_some_and(|b| b.kind.is_some());
         if direct {
             // ONE PER LANDING PELLET. *"Weapons with Multishot will
             // count each successful hit from the same shot as multiple
@@ -2116,7 +2151,7 @@ pub(super) fn settle_pellet(
             // which this arena has only one of. `combo_now` already
             // holds this hit. Scoped in only (M117): from the hip a hit
             // pays the counter and adds nothing to it.
-            if combo_counts {
+            if combo_counts && !indirect_beam {
                 sniper_combo.count = combo_now;
                 sniper_combo.last_hit = t;
             }
@@ -2257,7 +2292,7 @@ pub(super) fn settle_pellet(
                 )));
             }
         }
-        if direct {
+        if direct && !indirect_beam {
             // A HIT TAKES A SECOND OFF THE RECHARGE. *"Hitting enemies
             // with the primary fire reduces recharge time by 1 second
             // per hit"*, and the page settles both of the questions
@@ -2555,7 +2590,7 @@ pub(super) fn settle_pellet(
     // same measured reason (M11): a direct hit and its explosion are
     // two.
     bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::Hit, t, d.extra);
-    if direct {
+    if direct && !indirect_beam {
         bump_buffs!(params, buff_stacks, rec_buff_index, rec,
             crate::model::BuffTrigger::DirectHit, t, d.extra);
     }

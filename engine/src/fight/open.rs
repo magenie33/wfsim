@@ -327,8 +327,9 @@ pub(super) fn open<'a>(
                         }
                     }
                 }
-                let (bms, bsp) = match &base_struck {
-                    Some(bs) => {
+                let base_matches_beam = params.cycle.as_ref().is_some_and(|cy| cy.base_form.beam == params.beam);
+                let (bms, bsp) = match (&base_struck, base_matches_beam) {
+                    (Some(bs), true) => {
                         let base_all =
                             crate::rules::chain::resolve_in(layout, params.body_count(), bs, spec);
                         let mut bms = Vec::new();
@@ -344,7 +345,7 @@ pub(super) fn open<'a>(
                         }
                         (Some(bms), Some(bsp))
                     }
-                    None => (None, None),
+                    _ => (None, None),
                 };
                 (ms, sp, bms, bsp)
             }
