@@ -806,16 +806,16 @@ impl Scene {
         Vec3(self.bodies[index].center.map(f64::from))
     }
 
-    /// Open-arena acquisition uses root reach and the angle to the posed center.
+    /// Open-arena acquisition uses root reach and the reticle angle to the posed center.
     pub(crate) fn beam_acquire(
-        &self, origin: Vec3, line: Vec3, cone_deg: f64, range: f64, eligible: &[bool],
+        &self, origin: Vec3, sight: Vec3, line: Vec3, cone_deg: f64, range: f64, eligible: &[bool],
     ) -> Vec<Impact> {
         let dot_limit = libm::cos(cone_deg.to_radians());
         let player = self.input.player.world.point(Vec3([0.; 3]));
         let mut candidates: Vec<_> = (0..self.bodies.len())
             .filter(|&i| eligible.get(i) == Some(&true) && self.root(i).minus(player).length() <= range)
             .filter_map(|i| {
-                let toward = self.beam_center(i).minus(origin).normalized()?;
+                let toward = self.beam_center(i).minus(sight).normalized()?;
                 let score = toward.dot(line);
                 (score >= dot_limit).then_some((score, i))
             })

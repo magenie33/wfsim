@@ -998,3 +998,138 @@ fn torid_3d_chains_land_on_body_without_head_crit_or_headshot_rate_dilution() {
         "radius seeds must not dilute reported headshot_rate: {hs}"
     );
 }
+
+#[test]
+fn standard_scene_raises_aim_pose_and_fixes_boar_and_ignis_beams() {
+    let mut torid = request("torid", 1, false);
+    torid["scene_3d"] = json!({"preset": "source_standard", "placement": {"kind": "center_distance", "distance": 5.}});
+    let std_muzzle = record(&params(&torid)).spatial_flights()[0].flight.muzzle;
+    assert!(std_muzzle.0[1] > 1.4, "standard aim pose should raise rifle muzzle to shoulder height: {std_muzzle:?}");
+    torid["scene_3d"]["preset"] = json!("source_default");
+    let raw_muzzle = record(&params(&torid)).spatial_flights()[0].flight.muzzle;
+    assert!(raw_muzzle.0[1] < 0.5, "source_default keeps SGEO-01 bind pose unchanged: {raw_muzzle:?}");
+
+    let mut boar = request("boar_prime", 5, false);
+    boar.as_object_mut().unwrap().remove("mode");
+    boar["form"] = json!("incarnon");
+    boar["headshot_pct"] = json!(100);
+    boar["weakpoint_aim_pct"] = json!(100);
+    boar["scene_3d"] = json!({"preset": "source_standard", "placement": {"kind": "center_distance", "distance": 5.}});
+    let boar_rec = record(&params(&boar));
+    let boar_beam = &boar_rec.spatial_flights()[0].flight;
+    let acquired = boar_beam.beam_contacts.iter()
+        .filter(|c| c.kind == wfsim_engine::scene::BeamContactKind::Acquired)
+        .count();
+    let reached: std::collections::BTreeSet<_> = boar_beam.impacts.iter().map(|h| h.body)
+        .chain(boar_beam.beam_contacts.iter().map(|c| c.impact.body))
+        .collect();
+    assert_eq!(acquired, 2, "Boar Incarnon reticle cone must acquire 2 extra beams at 5m head aim");
+    assert_eq!(reached.len(), 9);
+
+    let mut ignis = request("ignis_wraith", 1, false);
+    ignis["enemy"] = json!("thrax_centurion");
+    ignis["target_at"] = json!([0., 5.]);
+    ignis["formation"] = json!([{"id": "side", "at": [2.0, 5.]}]);
+    ignis["headshot_pct"] = json!(100);
+    ignis["weakpoint_aim_pct"] = json!(100);
+    ignis["scene_3d"] = json!({"preset": "source_standard", "placement": {"kind": "supplied"}});
+    let ignis_rec = record(&params(&ignis));
+    let ignis_beam = &ignis_rec.spatial_flights()[0].flight;
+    let radius_hits: Vec<_> = ignis_beam.beam_contacts.iter()
+        .filter(|c| c.kind == wfsim_engine::scene::BeamContactKind::Radius)
+        .map(|c| c.impact.body)
+        .collect();
+    assert_eq!(radius_hits, [1], "Ignis Wraith 3m sphere must anchor on struck enemy rather than open sky");
+}
+
+#[test]
+fn sentinel_weakpoint_aim_is_clamped_to_zero_in_3d() {
+    let mut input = request("verglas_prime", 1, false);
+    input["headshot_pct"] = json!(100);
+    input["weakpoint_aim_pct"] = json!(100);
+    input["duration"] = json!(3.0);
+    input["scene_3d"] = json!({"preset": "source_standard", "placement": {"kind": "center_distance", "distance": 5.}});
+    let sim = crate::simulate::simulate_json(&input);
+    assert_eq!(sim["ok"], true, "{sim}");
+    assert_eq!(sim["headshot_rate"].as_f64().unwrap(), 0.0);
+}
+
+#[test]
+fn dual_toxocyst_3d_ricochets_keep_headshot_rate_intact() {
+    let mut input = request("dual_toxocyst", 1, false);
+    input.as_object_mut().unwrap().remove("mode");
+    input["form"] = json!("incarnon");
+    input["headshot_pct"] = json!(100);
+    input["weakpoint_aim_pct"] = json!(100);
+    input["duration"] = json!(2.0);
+    input["target_at"] = json!([0., 5.]);
+    input["formation"] = json!([{"id": "side", "at": [2.0, 5.]}]);
+    input["scene_3d"] = json!({"preset": "source_standard", "placement": {"kind": "supplied"}});
+    let mut p = params(&input);
+    p.spread = None;
+    let replay = record(&p);
+    assert!(replay.events().iter().any(|e| e.subject == Some(1)
+        && matches!(&e.kind, Kind::Damage(d) if d.origin == wfsim_engine::record::Origin::Ricochet)));
+    let sim = crate::simulate::simulate_json(&input);
+    assert_eq!(sim["ok"], true, "{sim}");
+    assert!((sim["headshot_rate"].as_f64().unwrap() - 1.0).abs() < 1e-6);
+}
+
+#[test]
+fn missed_non_homing_aoe_projectile_detonates_on_floor() {
+    let mut input = request("kuva_tonkor", 1, false);
+    input["enemy"] = json!("angst");
+    input["target_at"] = json!([1.5, 22.]);
+    input["aim_at"] = json!([0., 2.]);
+    input["headshot_pct"] = json!(0);
+    input["weakpoint_aim_pct"] = json!(0);
+    input["duration"] = json!(1.0);
+    input["scene_3d"] = json!({"preset": "source_standard", "placement": {"kind": "supplied"}});
+    let mut p = params(&input);
+    p.spread = None;
+    let replay = record(&p);
+    let flight = &replay.spatial_flights()[0].flight;
+    assert!(flight.impacts.is_empty(), "off-body shot should miss direct contact");
+    assert!(!flight.detonations.is_empty(), "downward miss should record floor detonation");
+    assert!(
+        flight.radial_impacts.iter().any(|h| h.body == 0),
+        "floor detonation within blast radius should catch nearby body: {:?}",
+        flight.detonations
+    );
+}
+
+#[test]
+fn drakgoon_charged_and_kompressa_match_between_2d_and_3d() {
+    let mut drak3 = request("kuva_drakgoon", 1, false);
+    drak3.as_object_mut().unwrap().remove("mode");
+    drak3["form"] = json!("charged");
+    drak3["valence_element"] = json!("heat");
+    drak3["valence_bonus"] = json!(0.6);
+    drak3["duration"] = json!(10.0);
+    drak3["runs"] = json!(20);
+    drak3["scene_3d"] = json!({"preset": "source_standard", "placement": {"kind": "center_distance", "distance": 5.}});
+    let mut drak2 = drak3.clone();
+    drak2.as_object_mut().unwrap().remove("scene_3d");
+    drak2.as_object_mut().unwrap().remove("weakpoint_aim_pct");
+    let d3 = crate::simulate::simulate_json(&drak3)["dps"].as_f64().unwrap();
+    let d2 = crate::simulate::simulate_json(&drak2)["dps"].as_f64().unwrap();
+    assert!((d3 / d2 - 1.0).abs() < 0.1, "kuva_drakgoon charged 3D/2D mismatch: {d3} vs {d2}");
+
+    let mut komp3 = request("kompressa", 1, false);
+    komp3["enemy"] = json!("thrax_centurion");
+    komp3["duration"] = json!(10.0);
+    komp3["runs"] = json!(20);
+    komp3["scene_3d"] = json!({"preset": "source_standard", "placement": {"kind": "center_distance", "distance": 5.}});
+    let mut komp2 = komp3.clone();
+    komp2.as_object_mut().unwrap().remove("scene_3d");
+    komp2.as_object_mut().unwrap().remove("weakpoint_aim_pct");
+    let base3 = crate::simulate::simulate_json(&komp3)["dps"].as_f64().unwrap();
+    let base2 = crate::simulate::simulate_json(&komp2)["dps"].as_f64().unwrap();
+    assert!((base3 / base2 - 1.0).abs() < 0.15, "kompressa base 3D/2D mismatch: {base3} vs {base2}");
+    komp3["mods"] = json!(["galvanized_diffusion", "lethal_torrent"]);
+    komp2["mods"] = json!(["galvanized_diffusion", "lethal_torrent"]);
+    let mod3 = crate::simulate::simulate_json(&komp3)["dps"].as_f64().unwrap();
+    let mod2 = crate::simulate::simulate_json(&komp2)["dps"].as_f64().unwrap();
+    assert!((mod3 / mod2 - 1.0).abs() < 0.15, "kompressa modded 3D/2D mismatch: {mod3} vs {mod2}");
+    assert!(mod3 > base3 * 2.5 && mod2 > base2 * 2.5, "kompressa radial must scale with multishot");
+}

@@ -64,7 +64,6 @@ attack:
     crit_chance: 0.16
     crit_multiplier: 1.8
     status_chance: 0.36
-    takes_multishot: false
     takes_blast_radius_mods: true
     damage: { viral: 46 }   # total 46
 

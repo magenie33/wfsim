@@ -274,6 +274,23 @@ impl Scene {
             })
             .collect()
     }
+    /// Where a straight non-homing projectile meets the open-arena floor, if within reach.
+    pub(crate) fn floor_contact(
+        &self,
+        from: Vec3,
+        direction: Vec3,
+        speed: Option<f64>,
+        range: f64,
+    ) -> Option<(Vec3, f64, f64)> {
+        let line = direction.normalized()?;
+        let max_distance = range.min(speed.unwrap_or(100_000.) * self.input.maximum_flight_seconds);
+        let floor = self.input.player.world.0[7];
+        let dist = floor_distance(from, line, floor);
+        if !dist.is_finite() || dist > max_distance {
+            return None;
+        }
+        Some((from.along(line, dist), dist, speed.map_or(0., |v| dist / v)))
+    }
 }
 
 #[wfsim_gas_macro::metered]

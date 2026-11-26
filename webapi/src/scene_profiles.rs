@@ -117,16 +117,31 @@ pub(crate) fn source_default_choices() -> Value {
             let c = &enemy.model.controller;
             (id, c.radius * c.scale)
         }).collect::<BTreeMap<_, _>>(),
-        "player_controller_skin_m": standing(Affine::IDENTITY, None).ok().map(|(player, _, _)| player.controller.skin),
-        "player_controller_radius_m": standing(Affine::IDENTITY, None).ok().map(|(player, _, _)| {
+        "player_controller_skin_m": standing(Affine::IDENTITY, None, false).ok().map(|(player, _, _)| player.controller.skin),
+        "player_controller_radius_m": standing(Affine::IDENTITY, None, false).ok().map(|(player, _, _)| {
             player.controller.radius * player.controller.scale
         }),
     })
 }
 
+// Standard gameplay scenes raise Excalibur's idle A-pose hand mounts (bones 17/48,
+// pointing downward at hip height) to forward-facing shoulder height while keeping
+// `source_default` and explicit scenes bit-identical to the SGEO-01 rig.
+const STANDARD_LEFT_HAND: Affine = Affine([
+    1., 0., 0., -0.18,
+    0., 1., 0., 1.48,
+    0., 0., 1., 0.35,
+]);
+const STANDARD_RIGHT_HAND: Affine = Affine([
+    1., 0., 0., 0.18,
+    0., 1., 0., 1.48,
+    0., 0., 1., 0.35,
+]);
+
 fn standing(
     world: Affine,
     fire: Option<EquippedFire>,
+    aim_pose: bool,
 ) -> Result<(PlayerModel, Mount, Vec3), String> {
     static SOURCE: OnceLock<Result<StandingPlayer, String>> = OnceLock::new();
     let source = SOURCE
@@ -138,6 +153,10 @@ fn standing(
         .as_ref()
         .map_err(Clone::clone)?;
     let mut player = source.player.clone();
+    if aim_pose {
+        if let Some(left) = player.bones.get_mut(17) { *left = STANDARD_LEFT_HAND; }
+        if let Some(right) = player.bones.get_mut(48) { *right = STANDARD_RIGHT_HAND; }
+    }
     player.world = world;
     player.equipped_fire = fire;
     let reference = player
@@ -214,7 +233,7 @@ pub(crate) fn source_default<'a>(
     let [enemy_x, _, enemy_z] = facing.0;
     let (player, camera, reference_point) = match carrier {
         Some(c) => (c.player, c.camera, c.reference_point),
-        None => standing(pose(player_at, x, z, 1.), fire.cloned())?,
+        None => standing(pose(player_at, x, z, 1.), fire.cloned(), matches!(preset, Preset::SourceStandard))?,
     };
     let (sin, cos) = enemy_yaw_deg.to_radians().sin_cos_portable();
     let roster: Vec<_> = std::iter::once(aimed).chain(formation).collect();
@@ -292,7 +311,7 @@ pub(crate) fn explicit(raw: &Value, count: usize, player_at: Vec2) -> Result<Arc
             .transpose()
             .map_err(|e| format!("scene_3d player equipment: {e}"))?
             .flatten();
-        let (player, camera, reference_point) = standing(pose(player_at, 0., 1., 1.), equipment)?;
+        let (player, camera, reference_point) = standing(pose(player_at, 0., 1., 1.), equipment, false)?;
         fields.insert("player".into(), json!(player));
         fields.entry("camera").or_insert_with(|| json!(camera));
         fields

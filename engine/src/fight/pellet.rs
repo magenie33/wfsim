@@ -231,6 +231,7 @@ pub(super) fn weakpoint_contact(
 pub(super) fn settle_pellet(
     pellet_idx: u32,
     follows: bool,
+    multishot_copy: bool,
     shot: &Strike,
     live: &mut Live,
     direct_proc_draw: &mut status::SceneProcDraw<'_>,
@@ -1044,7 +1045,7 @@ pub(super) fn settle_pellet(
     };
     let radial_stage = match attack_radial {
         _ if skip_radial => None,
-        Some(r) if !r.takes_multishot && pellet_idx > 0 => None,
+        Some(r) if !r.takes_multishot && multishot_copy => None,
         // A THROW NOBODY DETONATES explodes not at all.
         Some(r) if r.blast_kind == crate::model::BlastKind::InFlight && !detonates => None,
         other => other,
@@ -2144,6 +2145,8 @@ pub(super) fn settle_pellet(
             Vec::new()
         };
         let indirect_beam = spatial.and_then(|s| s.beam.as_ref()).is_some_and(|b| b.kind.is_some());
+        let redirected = spatial.is_some_and(|s| s.redirected);
+        let indirect_spatial = indirect_beam || redirected;
         if direct {
             // ONE PER LANDING PELLET. *"Weapons with Multishot will
             // count each successful hit from the same shot as multiple
@@ -2151,7 +2154,7 @@ pub(super) fn settle_pellet(
             // which this arena has only one of. `combo_now` already
             // holds this hit. Scoped in only (M117): from the hip a hit
             // pays the counter and adds nothing to it.
-            if combo_counts && !indirect_beam {
+            if combo_counts && !indirect_spatial {
                 sniper_combo.count = combo_now;
                 sniper_combo.last_hit = t;
             }
@@ -2292,7 +2295,7 @@ pub(super) fn settle_pellet(
                 )));
             }
         }
-        if direct && !indirect_beam {
+        if direct && !indirect_spatial {
             // A HIT TAKES A SECOND OFF THE RECHARGE. *"Hitting enemies
             // with the primary fire reduces recharge time by 1 second
             // per hit"*, and the page settles both of the questions
@@ -2328,6 +2331,11 @@ pub(super) fn settle_pellet(
                 weakpoint_contact(params, arc, windows, buff_stacks, weakpoint_pile,
                     rec_buff_index, rec, t, d, part.is_weak_point, params.foe.eximus);
             }
+        } else if direct && redirected && part.is_weak_point {
+            // Ricochet headshots still arm weakpoint buffs (e.g. Dual Toxocyst Frenzy, M111),
+            // without counting unaimed redirects into aimed headshot rate or resetting streaks on body hits.
+            weakpoint_contact(params, arc, windows, buff_stacks, weakpoint_pile,
+                rec_buff_index, rec, t, d, true, params.foe.eximus);
         }
 
         let break_killed = match broke {
@@ -2590,7 +2598,7 @@ pub(super) fn settle_pellet(
     // same measured reason (M11): a direct hit and its explosion are
     // two.
     bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::Hit, t, d.extra);
-    if direct && !indirect_beam {
+    if direct && !indirect_spatial {
         bump_buffs!(params, buff_stacks, rec_buff_index, rec,
             crate::model::BuffTrigger::DirectHit, t, d.extra);
     }

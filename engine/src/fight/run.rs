@@ -1143,12 +1143,18 @@ pub fn run_once_traced(
                 0.0
             };
             let resolved = if live == 0.0 { spread } else { scaling.resolved(live) };
-            match (n_pellets > 0, me.params.scene_3d.as_ref(), scaling.runtime.timing) {
+            let mut resolved = match (n_pellets > 0, me.params.scene_3d.as_ref(), scaling.runtime.timing) {
                 (true, Some(scene), Some(timing)) => me.spread_state.emit(
                     active as *const FightParams, scaling, resolved, timing, live, t, scene.input().frame_seconds,
                 ),
                 _ => resolved,
+            };
+            if me.params.scene_3d.is_none() {
+                if let Some(scale) = scaling.runtime.charge_attenuation {
+                    resolved.min_deg *= f64::from(scale);
+                }
             }
+            resolved
         });
         let landing = Landing {
             spread,

@@ -215,12 +215,37 @@ pub(super) fn launch(
             if let Some(center) = path.blast_center {
                 path.radial_impacts = scene.blast_hits(hit, center, f64::from(radial.radius_m as f32), &eligible);
             } else if active.homing.is_none() {
-                path.radial_impacts = (0..bodies.len()).filter_map(|body| {
+                path.radial_impacts = eligible.iter().enumerate().filter_map(|(body, &present)| {
+                    if !present {
+                        return None;
+                    }
                     let distance = scene.distance_to_body(hit.point, body);
                     (radial.falloff_at(distance) > 0.).then_some(crate::scene::Impact {
                         body, part: 0, radial: true, radial_distance: distance, ..hit
                     })
                 }).collect();
+            }
+        } else if let Some(radial) = active.radial.filter(|_| rebound.is_none() && active.homing.is_none()) {
+            if let Some((point, travel, seconds)) = scene.floor_contact(
+                path.muzzle, path.direction, active.projectile_speed_mps, active.range_m,
+            ) {
+                path.detonations.push(crate::scene::DetonationTrace {
+                    point, seconds, travel, body: None, expired: false,
+                });
+                path.stopped_at = Some(point);
+                let hits: Vec<_> = eligible.iter().enumerate().filter_map(|(body, &present)| {
+                    if !present {
+                        return None;
+                    }
+                    let distance = scene.distance_to_body(point, body);
+                    (radial.falloff_at(distance) > 0.).then_some(crate::scene::Impact {
+                        body, proxy: 0, part: 0, point, exit: point,
+                        seconds, travel, material: 0., remaining: 0.,
+                        radial: true, radial_distance: distance,
+                    })
+                }).collect();
+                path.radial_impacts.extend_from_slice(&hits);
+                surface_blasts.extend(hits);
             }
         }
         let each = l.rounds.per_round(l.n_pellets);
@@ -454,8 +479,10 @@ fn lock_shot(
     scene: &crate::scene::Scene, active: &FightParams, lock: crate::model::LockOn,
     eligible: &[bool], head: bool, me: &mut Combatant, path: &mut crate::scene::Flight,
 ) {
-    let forward = path.aim_target.minus(path.muzzle).normalized().unwrap_or(path.direction);
-    let candidates = scene.beam_acquire(path.muzzle, forward, lock.acquire_deg, lock.range_m, eligible);
+    let forward = path.aim_target.minus(path.camera).normalized()
+        .or_else(|| path.aim_target.minus(path.muzzle).normalized())
+        .unwrap_or(path.direction);
+    let candidates = scene.beam_acquire(path.muzzle, path.camera, forward, lock.acquire_deg, lock.range_m, eligible);
     let choices = &candidates[..candidates.len().min(lock.targets as usize)];
     if choices.is_empty() { return; }
     let round = me.ammo.rounds_this_mag.saturating_sub(1) as usize;

@@ -42,10 +42,14 @@ pub(super) fn seeds(
         taken[hit.body] = true;
     }
     let reticle = path.aim_target.minus(path.muzzle).normalized().unwrap_or(path.direction);
+    let sight_line = path.aim_target.minus(path.camera).normalized().unwrap_or(reticle);
     if let Some(beam) = beam {
         if beam.damage_radius_m > 0. {
             let line = path.direction.normalized().unwrap_or(reticle);
-            let endpoint = path.stopped_at.unwrap_or_else(|| path.muzzle.along(line, active.range_m));
+            let endpoint = path
+                .stopped_at
+                .or_else(|| path.impacts.last().map(|hit| hit.point))
+                .unwrap_or_else(|| path.muzzle.along(line, active.range_m));
             path.beam_endpoint = Some(endpoint);
             for (body, &is_present) in eligible.iter().enumerate() {
                 if is_present && !taken[body] && scene.distance_to_body(endpoint, body) <= beam.damage_radius_m {
@@ -59,7 +63,7 @@ pub(super) fn seeds(
             let count = (beam.beams_count as usize).saturating_sub(path.impacts.len());
             let muzzle = path.muzzle;
             let range = beam.beams_range_m + (active.range_m - beam.range_m);
-            let candidates = scene.beam_acquire(muzzle, reticle, beam.beams_acquire_deg, range, eligible);
+            let candidates = scene.beam_acquire(muzzle, path.camera, sight_line, beam.beams_acquire_deg, range, eligible);
             let mut remaining = count;
             for impact in candidates {
                 if remaining == 0 { break; }
@@ -82,7 +86,7 @@ pub(super) fn seeds(
     }
     if tendrils > 0 && active.tendril_max > 0 {
         let muzzle = path.muzzle;
-        let candidates = scene.beam_acquire(muzzle, reticle, active.tendril_acquire_deg, active.tendril_range_m, eligible);
+        let candidates = scene.beam_acquire(muzzle, path.camera, sight_line, active.tendril_acquire_deg, active.tendril_range_m, eligible);
         let mut remaining = tendrils;
         for impact in candidates {
             if remaining == 0 {

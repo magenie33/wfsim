@@ -1309,6 +1309,7 @@ impl FightParams {
             spread: panel.spread,
             spread_scaling: panel.spread_scaling.filter(|s| {
                 (arena.scene_3d.is_some() && s.runtime != crate::model::SpreadRuntime::default())
+                    || s.runtime.charge_attenuation.is_some()
                     || live_accuracy
             }),
             live_accuracy,

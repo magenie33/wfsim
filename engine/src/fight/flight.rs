@@ -378,13 +378,13 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
                 } else {
                     (&shot, &mut direct_proc_draw)
                 };
-                let (instance, follows) = l.spatial.as_ref().map_or(
-                    (pellet_idx, follows || l.radial_only), |s| (s.instance, s.follows),
+                let (instance, reuse_aim, multishot_copy) = l.spatial.as_ref().map_or(
+                    (pellet_idx, follows || l.radial_only, follows), |s| (s.instance, s.follows, s.follows),
                 );
                 if l.spatial.as_ref().is_none_or(|s| !s.miss) {
-                    settle_pellet(instance, follows, projectile, &mut live, proc_draw);
+                    settle_pellet(instance, reuse_aim, multishot_copy, projectile, &mut live, proc_draw);
                 }
-                if !follows { aims[round] = *live.round_aim; }
+                if !reuse_aim { aims[round] = *live.round_aim; }
                 if radial_delay > 0.0 { pellet_aims.push(*live.round_aim); }
             }
         } else {
@@ -392,11 +392,11 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
                 if l.radial_only && l.spatial.is_none() {
                     *live.round_aim = l.pellet_aims[pellet_idx as usize];
                 }
-                let (instance, follows) = l.spatial.as_ref().map_or(
-                    (pellet_idx, follows || l.radial_only), |s| (s.instance, s.follows),
+                let (instance, reuse_aim, multishot_copy) = l.spatial.as_ref().map_or(
+                    (pellet_idx, follows || l.radial_only, follows), |s| (s.instance, s.follows, s.follows),
                 );
                 if l.spatial.as_ref().is_none_or(|s| !s.miss) {
-                    settle_pellet(instance, follows, &shot, &mut live, &mut direct_proc_draw);
+                    settle_pellet(instance, reuse_aim, multishot_copy, &shot, &mut live, &mut direct_proc_draw);
                 }
                 if radial_delay > 0.0 { pellet_aims.push(*live.round_aim); }
             }
