@@ -944,11 +944,14 @@ pub(super) fn spread_from_punch_through(
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
     t: f64,
+    target_ramp_ctx: Option<TargetRampCtx>,
+    target_ramps: &mut Vec<TargetRamp>,
 ) -> PunchedWeakPoints {
     let mut punched = PunchedWeakPoints::default();
     if struck.len() <= 1 {
         return punched;
     }
+    let bodies_len = bodies.len();
     let mut group = EchoInputs::for_group(status_vector, shares, active, params, t, w);
     // The FIRST is the body the rest of the engagement is already scored
     // against; everything behind it is what this function is for.
@@ -1019,6 +1022,13 @@ pub(super) fn spread_from_punch_through(
         };
         // The round carries raw damage before either body's independent rolls.
         let instances = punch.multishot.floor() as u32 + d.spine.chance(punch.multishot.fract()) as u32;
+        if bodies[s].fallen {
+            continue;
+        }
+        let ramp_ratio = match target_ramp_ctx {
+            Some(ctx) => ctx.ratio(target_ramps, bodies_len, s, bodies[s].state.generation, t),
+            None => 1.0,
+        };
         for _ in 0..instances {
             let tier = upgrade_crit_tier(
                 roll_crit_tier(punch.crit_chance, &mut d.spine),
@@ -1035,12 +1045,12 @@ pub(super) fn spread_from_punch_through(
                 &inst,
                 foe,
                 &spec,
-                crate::rules::critical::apply_factor(raw_per_bucket as f32, crit_multiplier as f32) as f64 * attrition,
+                crate::rules::critical::apply_factor((raw_per_bucket * ramp_ratio) as f32, crit_multiplier as f32) as f64 * attrition,
                 shares,
                 crit_multiplier,
                 tier,
                 attrition,
-                modded_base,
+                modded_base * ramp_ratio,
                 status_chance,
                 forced,
                 status_vector,
@@ -1319,6 +1329,8 @@ pub(super) fn spread_from_tendrils(
     rec: &mut crate::record::Record,
     d: &mut crate::rules::rng::Draws,
     t: f64,
+    target_ramp_ctx: Option<TargetRampCtx>,
+    target_ramps: &mut Vec<TargetRamp>,
 ) {
     if live == 0 || params.tendril_max == 0 {
         return;
@@ -1327,6 +1339,7 @@ pub(super) fn spread_from_tendrils(
     if candidates.is_empty() {
         return;
     }
+    let bodies_len = bodies.len();
     let mut group = EchoInputs::for_group(status_vector, shares, active, params, t, w);
     let mut taken = 0usize;
     let limit = live as usize;
@@ -1356,18 +1369,25 @@ pub(super) fn spread_from_tendrils(
             status_landing: 1.0,
         };
         let foe = &mut bodies[b];
+        if foe.fallen {
+            continue;
+        }
+        let ramp_ratio = match target_ramp_ctx {
+            Some(ctx) => ctx.ratio(target_ramps, bodies_len, b, foe.state.generation, t),
+            None => 1.0,
+        };
         spread_hit(
             seat,
             w,
             &inst,
             foe,
             &spec,
-            raw_per_bucket,
+            raw_per_bucket * ramp_ratio,
             shares,
             crit_multiplier,
             crit_tier,
             attrition,
-            modded_base,
+            modded_base * ramp_ratio,
             status_chance,
             forced,
             status_vector,
@@ -1622,7 +1642,10 @@ pub(super) fn spread_from_seeds(
     // with punch through, and EMPTY when it struck the floor. It decides who
     // may headshot and who carries multishot, and nothing else.
     struck: &[usize],
+    target_ramp_ctx: Option<TargetRampCtx>,
+    target_ramps: &mut Vec<TargetRamp>,
 ) {
+    let bodies_len = bodies.len();
     if let Some(cached) = cached_chains {
         if cached.is_empty() {
             return;
@@ -1631,18 +1654,25 @@ pub(super) fn spread_from_seeds(
         for inst in cached {
             let Some(spec) = params.body(inst.target) else { continue };
             let foe = &mut bodies[inst.target];
+            if foe.fallen {
+                continue;
+            }
+            let ramp_ratio = match target_ramp_ctx {
+                Some(ctx) => ctx.ratio(target_ramps, bodies_len, inst.target, foe.state.generation, t),
+                None => 1.0,
+            };
             spread_hit(
                 seat,
                 w,
                 inst,
                 foe,
                 &spec,
-                raw_per_bucket,
+                raw_per_bucket * ramp_ratio,
                 shares,
                 crit_multiplier,
                 crit_tier,
                 attrition,
-                modded_base,
+                modded_base * ramp_ratio,
                 status_chance,
                 forced,
                 status_vector,
@@ -1667,6 +1697,7 @@ pub(super) fn spread_from_seeds(
         range_m: beam.chain_range_m,
         falloff: beam.chain_damage_per_hop,
         compounds: beam.chain_compounds,
+        fanout: beam.chain_fanout,
     };
     // FROM THE PRECOMPUTED LAYOUT. Nothing in this arena moves, so which body
     // the sphere catches and which body is nearest to which are constants —
@@ -1705,6 +1736,13 @@ pub(super) fn spread_from_seeds(
         }
         let Some(spec) = params.body(inst.target) else { continue };
         let foe = &mut bodies[inst.target];
+        if foe.fallen {
+            continue;
+        }
+        let ramp_ratio = match target_ramp_ctx {
+            Some(ctx) => ctx.ratio(target_ramps, bodies_len, inst.target, foe.state.generation, t),
+            None => 1.0,
+        };
         let grp = match &mut group {
             Some(g) => g,
             None => group.insert(EchoInputs::for_group(status_vector, shares, active, params, t, w)),
@@ -1715,12 +1753,12 @@ pub(super) fn spread_from_seeds(
             inst,
             foe,
             &spec,
-            raw_per_bucket,
+            raw_per_bucket * ramp_ratio,
             shares,
             crit_multiplier,
             crit_tier,
             attrition,
-            modded_base,
+            modded_base * ramp_ratio,
             status_chance,
             forced,
             status_vector,
@@ -1915,6 +1953,8 @@ pub(super) fn spread_beyond_the_target(
     chain_splash: Option<&[crate::rules::chain::Instance]>,
     geometry: &SpreadGeometry<'_>,
     struck: &[usize],
+    target_ramp_ctx: Option<TargetRampCtx>,
+    target_ramps: &mut Vec<TargetRamp>,
 ) {
     // …AND THE TENDRILS, ONCE FOR THE SHOT. They are extra BEAMS rather
     // than a spread of this one, so they neither take its multishot nor
@@ -1944,6 +1984,8 @@ pub(super) fn spread_beyond_the_target(
             rec,
             d,
             t,
+            target_ramp_ctx,
+            target_ramps,
         );
     }
     // …AND THE RADIUS-CAUGHT SEEDS' CHAINS, ONCE FOR THE SHOT. The other
@@ -1982,6 +2024,8 @@ pub(super) fn spread_beyond_the_target(
             // filtering on `multishot`, so it has to agree with that half
             // about who was struck directly.
             struck,
+            target_ramp_ctx,
+            target_ramps,
         );
     }
 

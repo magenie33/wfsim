@@ -458,15 +458,16 @@ def calibrate(objects, binding, dossier, doc):
                 'uniform': fire.get('spreadUniform') == '1',
                 'hip_min_deg': profile['hip']['range'][0], 'hip_max_deg': profile['hip']['range'][1]}}
             adopt(updates, doc, ('attack', 'spread'), spread)
-    if a.get('beam') and 'ContinuousDamageAttenuationTime' in impact:
+    if 'ContinuousDamageAttenuationTime' in impact:
         ramp = {'rise_seconds': number(impact['ContinuousDamageAttenuationTime']),
             'cooldown_delay_seconds': number(impact.get('ContinuousDamageAttenuationCooldownDelay')),
             'cooldown_divisor': number(impact.get('ContinuousDamageAttenuationCooldownTime'), 1)}
         if ramp['rise_seconds'] > 0 and ramp['cooldown_divisor'] > 0:
-            if impact.get('AttenuateContinuousDamagePerTarget') == '1':
-                ramp['per_target'] = True
-                limits.append('client_beam_target_ramp')
-            adopt(updates, doc, ('attack', 'beam', 'ramp'), ramp)
+            if a.get('beam'):
+                if impact.get('AttenuateContinuousDamagePerTarget') == '1':
+                    ramp['per_target'] = True
+                    limits.append('client_beam_target_ramp')
+                adopt(updates, doc, ('attack', 'beam', 'ramp'), ramp)
             if 'ContinuousDamageAttenuation' in impact:
                 adopt(updates, doc, ('beam_ramp_floor',), pair(impact['ContinuousDamageAttenuation'])[0])
     if path and any(k in projectile for k in ('OnProjectileStoppedScript', 'ScriptInstance')):

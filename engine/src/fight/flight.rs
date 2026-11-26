@@ -241,6 +241,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let shot_shares = TypeShares::of(&l.qvec);
     let mut direct_proc_draw = crate::rules::status::SceneProcDraw::new(&l.qvec);
     let mut pellet_aims = Vec::new();
+    let target_ramp_ctx;
     {
         let recipient = l.spatial.as_ref().map_or(0, |s| s.impact.body);
         if per_target_ramp
@@ -252,6 +253,12 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
                 g.bodies[recipient].state.generation, t, tick, active.beam_ramp_floor, ramp_spec,
             );
         }
+        target_ramp_ctx = per_target_ramp.then_some(TargetRampCtx {
+            base_ramp: beam_ramp,
+            tick,
+            floor: active.beam_ramp_floor,
+            spec: ramp_spec,
+        });
         let params = if l.spatial.is_some() {
             spatial::Recipient::params(me.params, &mut me.spatial_recipient, recipient)
         } else {
@@ -265,7 +272,9 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             skip_radial: radial_delay > 0.0 || l.spatial.as_ref().is_some_and(|s| !s.impact.radial),
             ordinary_projectile_count: active.additional_projectile.as_ref()
                 .map(|_| active.base_multishot as u32),
-            round_multishot: l.rounds.per_round(l.n_pellets),
+            // Continuous beams already merge multishot into `beam_merge`;
+            // punch-through must never roll extra copies on top of it.
+            round_multishot: if active.continuous { 1.0 } else { l.rounds.per_round(l.n_pellets) },
             seat: me.seat,
             arena: me.params,
             active,
@@ -313,6 +322,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             status_damage: me.fixed.status_damage,
             live_rate: l.live_rate,
             beam_ramp,
+            target_ramp_ctx,
             next_shot_bonus: l.next_shot_bonus,
             undamaged: l.undamaged,
             t,
@@ -349,6 +359,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             blob_contact: &mut blob_contact,
             super_crit_armed: &mut me.super_crit_armed,
             round_aim: &mut round_aim,
+            target_ramps: &mut me.target_ramps,
         };
         if let Some(additional) = active.additional_projectile.as_deref()
             .filter(|_| l.rounds.has_additional(l.n_pellets))
@@ -470,17 +481,14 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
                 status_part_factor: 1.0,
                 status_landing: 1.0,
             };
-            let (raw, mb) = if per_target_ramp {
-                if me.target_ramps.len() <= body {
-                    me.target_ramps.resize(g.bodies.len(), TargetRamp::default());
+            let (raw, mb) = match target_ramp_ctx {
+                Some(ctx) => {
+                    let ratio = ctx.ratio(
+                        &mut me.target_ramps, g.bodies.len(), body, g.bodies[body].state.generation, t,
+                    );
+                    (strike.raw_per_bucket * ratio, strike.modded_base * ratio)
                 }
-                let here = me.target_ramps[body].hit(
-                    g.bodies[body].state.generation, t, tick, active.beam_ramp_floor, ramp_spec,
-                );
-                let ratio = here / beam_ramp.max(1e-9);
-                (strike.raw_per_bucket * ratio, strike.modded_base * ratio)
-            } else {
-                (strike.raw_per_bucket, strike.modded_base)
+                None => (strike.raw_per_bucket, strike.modded_base),
             };
             spread_hit(
                 me.seat, &mut me.windows, &inst, &mut g.bodies[body], &spec,
@@ -512,6 +520,8 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             cached_chains.map(|(_, sp)| sp),
             &me.fixed.spread_geometry,
             struck,
+            target_ramp_ctx,
+            &mut me.target_ramps,
         );
     }
     if l.spatial.is_some() && me.params.arcane.echo_share > 0.0 {

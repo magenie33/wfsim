@@ -261,6 +261,7 @@ pub(super) fn open<'a>(
                     range_m: rc.range_m,
                     falloff: 1.0,
                     compounds: false,
+                    fanout: false,
                 },
             ))
         }
@@ -280,6 +281,7 @@ pub(super) fn open<'a>(
                     range_m: b.chain_range_m,
                     falloff: b.chain_damage_per_hop,
                     compounds: b.chain_compounds,
+                    fanout: b.chain_fanout,
                 },
             );
             // AND WHO ELSE THE SHOT TAKES ON ITS OWN — `rules::chain::acquired`, the
@@ -314,6 +316,7 @@ pub(super) fn open<'a>(
                     range_m: b.chain_range_m,
                     falloff: b.chain_damage_per_hop,
                     compounds: b.chain_compounds,
+                    fanout: b.chain_fanout,
                 };
                 let all = crate::rules::chain::resolve_in(layout, params.body_count(), &struck, spec);
                 let mut ms = Vec::new();

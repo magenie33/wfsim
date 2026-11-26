@@ -29,6 +29,24 @@ attack:
   damage: { electricity: 12 }   # 12 a pellet, 24 a shot
 
   range_m: 9
+  # Twin 9 m beams chaining up to 5 enemies within 7 m at 0.5^n damage (wiki Basmu).
+  # Ramp climbs 20% -> 100% over 0.5 s, decays over 2.0 s after 0.8 s idle.
+  beam:
+    range_m: 9.0
+    damage_radius_m: 0.0
+    radius_takes_multishot: false
+    chain:
+      hops: 5
+      range_m: 7.0
+      damage_per_hop: 0.50
+      compounds: true
+      origin: radius_targets
+    ramp:
+      rise_seconds: 0.5
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 4.0
+      per_target: true
+beam_ramp_floor: 0.2
 source:
   url: https://wiki.warframe.com/w/Basmu
 battery:

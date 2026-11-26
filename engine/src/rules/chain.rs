@@ -39,6 +39,9 @@ pub struct Spec {
     /// than 50% and 25%. One word's difference on the page and a factor of two
     /// on the second hop.
     pub compounds: bool,
+    /// When true, every hop fans out from the seed target directly rather than
+    /// chaining from the previous hop (Vermisplicer primary).
+    pub fanout: bool,
 }
 
 /// ONE DAMAGE INSTANCE the shot produced, and everything the geometry decides
@@ -354,6 +357,9 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
         // ONE `seen` PER SEED — a path never revisits its OWN bodies, and one
         // path running out does not stop another. Cleared rather than
         // reallocated: this runs once per landing pellet.
+        if spec.fanout && direct && valid_struck.last() != Some(&s) {
+            continue;
+        }
         seen.fill(false);
         seen[s] = true;
         let (mut cur, mut share) = (s, 1.0);
@@ -365,7 +371,7 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
             for &j in &layout.near[cur] {
                 let idx = j as usize;
                 if !seen[idx] {
-                    if any_next.is_none() {
+                    if !spec.fanout && any_next.is_none() {
                         any_next = Some(idx);
                     }
                     if !taken[idx] {
@@ -386,7 +392,9 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
                 status_landing: 1.0,
             });
             seen[next] = true;
-            cur = next;
+            if !spec.fanout {
+                cur = next;
+            }
         }
     }
     out
@@ -472,6 +480,9 @@ pub fn resolve_with(
         });
 
         // …and then runs its own path.
+        if spec.fanout && direct && struck.last() != Some(&s) {
+            continue;
+        }
         let (mut cur, mut share) = (s, 1.0);
         let mut seen = vec![false; bodies.len()];
         seen[s] = true;
@@ -482,6 +493,9 @@ pub fn resolve_with(
             // with nothing fresh left in range still produces.
             let mut next = None;
             for fresh in [true, false] {
+                if !fresh && spec.fanout {
+                    break;
+                }
                 let mut best = f64::INFINITY;
                 let mut tied: Vec<usize> = Vec::new();
                 for j in 0..bodies.len() {
@@ -517,7 +531,9 @@ pub fn resolve_with(
                 status_landing: 1.0,
             });
             seen[next] = true;
-            cur = next;
+            if !spec.fanout {
+                cur = next;
+            }
         }
     }
     out
@@ -541,11 +557,12 @@ mod tests {
     /// a candidate anyway.
     #[test]
     fn a_layout_answers_exactly_what_the_scan_does() {
-        let nukor = Spec { hops: 2, range_m: 9.0, falloff: 0.5, compounds: false };
+        let nukor = Spec { hops: 2, range_m: 9.0, falloff: 0.5, compounds: false, fanout: false };
+        let vermisplicer = Spec { hops: 3, range_m: 6.0, falloff: 0.7, compounds: false, fanout: true };
         for spacing in [1.5_f64, 2.0, 3.0] {
             let bodies = grid(spacing);
             for radius in [0.0_f64, 2.3, 5.0] {
-                for spec in [TORID, nukor] {
+                for spec in [TORID, nukor, vermisplicer] {
                     for struck in [vec![], vec![FRONT_MIDDLE], vec![0usize, 4], vec![0, 1, 2]] {
                         let at = bodies[FRONT_MIDDLE];
                         let splash = Splash { at, radius_m: radius };
@@ -568,7 +585,7 @@ mod tests {
 
     /// The Torid Incarnon's own constants, which are the ones every number in
     /// docs/MECHANICS.md §12 was computed against.
-    const TORID: Spec = Spec { hops: 5, range_m: 7.0, falloff: 0.75, compounds: true };
+    const TORID: Spec = Spec { hops: 5, range_m: 7.0, falloff: 0.75, compounds: true, fanout: false };
 
     /// A 3 x 3 formation at 3 m, the fixture the owner chose: the
     /// smallest arrangement dense enough that a five-hop path never runs out of
@@ -589,7 +606,7 @@ mod tests {
 
     /// The Boar Incarnon's: three beams, 10 degrees off the reticle, 20 m.
     const BOAR: Acquire = Acquire { count: 3, cone_deg: 10.0, range_m: 20.0 };
-    const BOAR_CHAIN: Spec = Spec { hops: 2, range_m: 10.0, falloff: 0.80, compounds: true };
+    const BOAR_CHAIN: Spec = Spec { hops: 2, range_m: 10.0, falloff: 0.80, compounds: true, fanout: false };
 
     /// A LINE THE PLAYER IS LOOKING DOWN, and one body off to the side.
     ///
@@ -789,7 +806,7 @@ mod tests {
     #[test]
     fn a_hop_repeats_only_once_nothing_fresh_is_in_range() {
         let bodies = vec![Vec2::ORIGIN, Vec2::new(0.0, 2.0)];
-        let spec = Spec { hops: 1, range_m: 5.0, falloff: 0.5, compounds: true };
+        let spec = Spec { hops: 1, range_m: 5.0, falloff: 0.5, compounds: true, fanout: false };
         let layout = Layout::build(&bodies, Splash { at: bodies[0], radius_m: 5.0 }, spec);
         let v = resolve_in(&layout, bodies.len(), &[0], spec);
         // Two seeds, one hop each, and only two bodies to share: the second
@@ -977,7 +994,7 @@ mod tests {
     fn a_flat_chain_pays_every_hop_the_same() {
         let bodies: Vec<Vec2> = (0..3).map(|i| Vec2::new(i as f64 * 2.0, 0.0)).collect();
         let splash = Splash { at: bodies[0], radius_m: 0.0 };
-        let nukor = Spec { hops: 2, range_m: 9.0, falloff: 0.5, compounds: false };
+        let nukor = Spec { hops: 2, range_m: 9.0, falloff: 0.5, compounds: false, fanout: false };
         let hops: Vec<f64> = resolve(&bodies, &[0], splash, nukor)
             .iter()
             .filter(|i| i.share < 1.0)
@@ -1074,5 +1091,24 @@ mod tests {
         assert_eq!(v.len(), 1);
         assert_eq!(v[0].target, 0);
         assert_eq!(v[0].share, 1.0);
+    }
+
+    #[test]
+    fn fanout_hops_measure_range_from_the_seed_not_previous_hop() {
+        // Line of bodies at 0, 4, 8 m with 6 m chain range: serial chaining
+        // walks 0 -> 1 -> 2, while fanout (Vermisplicer primary) branches from
+        // seed 0 only and cannot reach body 2 at 8 m.
+        let bodies = vec![Vec2::new(0.0, 0.0), Vec2::new(4.0, 0.0), Vec2::new(8.0, 0.0)];
+        let splash = Splash { at: Vec2::ORIGIN, radius_m: 0.0 };
+        let fanout = Spec { hops: 3, range_m: 6.0, falloff: 0.7, compounds: false, fanout: true };
+        let serial = Spec { fanout: false, ..fanout };
+
+        let got_fanout = resolve(&bodies, &[0], splash, fanout);
+        let layout = Layout::build(&bodies, splash, fanout);
+        assert_eq!(got_fanout, resolve_in(&layout, bodies.len(), &[0], fanout));
+        assert_eq!(got_fanout.iter().map(|i| i.target).collect::<Vec<_>>(), vec![0, 1]);
+
+        let got_serial = resolve(&bodies, &[0], splash, serial);
+        assert_eq!(got_serial.iter().map(|i| i.target).collect::<Vec<_>>(), vec![0, 1, 2]);
     }
 }

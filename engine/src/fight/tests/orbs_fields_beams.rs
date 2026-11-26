@@ -1178,3 +1178,168 @@ fn m133_beam_ramp_scales_dot_seeds_and_resets_per_target() {
         "respawned target hit {hit} did not match initial 15% ramp hit {initial} (full={full_hit})"
     );
 }
+
+/// Planar chaining beams track each target's ramp independently: killing and
+/// respawning body 0 resets body 0 to 20% while leaving body 1 at full 100%.
+#[test]
+fn planar_beam_ramps_track_chain_targets_independently() {
+    let mut p = FightParams {
+        damage: DamageVector::new().with(DamageType::Heat, 100.0),
+        continuous: true,
+        beam_ramp_floor: 0.2,
+        multishot: 1.0,
+        base_multishot: 1.0,
+        fire_rate: 10.0,
+        crit_multiplier: 1.0,
+        base_crit_chance: 0.0,
+        status_chance: 0.0,
+        base_status_chance: 0.0,
+        duration_seconds: 1.2,
+        target_at: crate::rules::space::Vec2::new(0.0, 2.0),
+        beam: Some(crate::model::BeamGeometry {
+            range_m: 20.0,
+            damage_radius_m: 0.0,
+            radius_takes_multishot: false,
+            chain_hops: 1,
+            chain_range_m: 10.0,
+            chain_damage_per_hop: 0.5,
+            chain_compounds: true,
+            chain_fanout: false,
+            chain_takes_multishot: false,
+            chain_nodes_have_radius: false,
+            beams_count: 1,
+            beams_acquire_deg: 0.0,
+            beams_range_m: 0.0,
+            ramp: None,
+        }),
+        ..FightParams::default()
+    };
+    p.arcane = ArcaneFx::none();
+    p.foe.base_health = 650.0;
+    p.foe.base_armor = 0.0;
+    p.foe.base_shield = 0.0;
+    p.foe.base_overguard = 0.0;
+    p.foe.mode = TargetMode::InstantRespawn;
+    p.body_parts = vec![BodyPart {
+        name: "body".into(),
+        aim_weight: 1.0,
+        multiplier: 1.0,
+        is_head: false,
+        is_weak_point: false,
+        crit_bonus: false,
+    }];
+    let mut tank = p.foe.clone();
+    tank.base_health = 1e9;
+    p.others = vec![crate::formation::FoeSpec {
+        id: "chain".into(),
+        params: tank,
+        body_parts: p.body_parts.clone(),
+        at: crate::rules::space::Vec2::new(2.0, 2.0),
+    }];
+
+    let rec = record(&p, 1, 0.0, 2.0, 400, 0);
+    let kill_t = rec
+        .events()
+        .iter()
+        .find_map(|e| match &e.kind {
+            crate::record::Kind::Damage(d) if e.subject == Some(0) && d.killed => Some(e.t),
+            _ => None,
+        })
+        .expect("body 0 killed");
+    let (respawn_t, b0) = rec
+        .events()
+        .iter()
+        .find_map(|e| match &e.kind {
+            crate::record::Kind::Damage(d) if e.subject == Some(0) && e.t > kill_t + 1e-9 => {
+                Some((e.t, d.raw))
+            }
+            _ => None,
+        })
+        .expect("body 0 hit after respawn");
+    let b1 = rec
+        .events()
+        .iter()
+        .find_map(|e| match &e.kind {
+            crate::record::Kind::Damage(d)
+                if e.subject == Some(1) && (e.t - respawn_t).abs() < 1e-9 =>
+            {
+                Some(d.raw)
+            }
+            _ => None,
+        })
+        .expect("body 1 chain hit on same tick as body 0 respawn");
+    assert!(b0 < 25.0, "respawned body 0 should drop to 20% floor, got {b0}");
+    assert!((b1 - 50.0).abs() < 1.0, "body 1 should stay at full 100% ramp (50), got {b1}");
+}
+
+/// Continuous weapons merge multishot into `beam_merge`; planar punch-through
+/// must never re-roll `round_multishot` on top of the merged tick when
+/// `1 < multishot < 2` and a tick rolls `1`.
+#[test]
+fn continuous_punch_through_never_re_rolls_multishot() {
+    let mut p = FightParams {
+        damage: DamageVector::new().with(DamageType::Heat, 100.0),
+        continuous: true,
+        beam_ramp_floor: 1.0,
+        multishot: 1.5,
+        base_multishot: 1.0,
+        punch_through_m: 2.0,
+        fire_rate: 10.0,
+        crit_multiplier: 1.0,
+        base_crit_chance: 0.0,
+        status_chance: 0.0,
+        base_status_chance: 0.0,
+        duration_seconds: 2.0,
+        target_at: crate::rules::space::Vec2::new(0.0, 1.0),
+        ..FightParams::default()
+    };
+    p.arcane = ArcaneFx::none();
+    p.foe.base_health = 1e9;
+    p.foe.base_armor = 0.0;
+    p.foe.base_shield = 0.0;
+    p.foe.base_overguard = 0.0;
+    p.body_parts = vec![BodyPart {
+        name: "body".into(),
+        aim_weight: 1.0,
+        multiplier: 1.0,
+        is_head: false,
+        is_weak_point: false,
+        crit_bonus: false,
+    }];
+    p.others = vec![crate::formation::FoeSpec {
+        id: "behind".into(),
+        params: p.foe.clone(),
+        body_parts: p.body_parts.clone(),
+        at: crate::rules::space::Vec2::new(0.0, 2.0),
+    }];
+    let rec = record(&p, 42, 0.0, 3.0, 2000, 0);
+    let mut sum = [0.0_f64; 2];
+    for e in rec.events() {
+        if let crate::record::Kind::Damage(d) = &e.kind {
+            if let Some(sub) = e.subject {
+                if (sub as usize) < 2 {
+                    sum[sub as usize] += d.raw;
+                }
+            }
+        }
+    }
+    assert!(sum[0] > 0.0, "aimed body took damage");
+    assert!(
+        (sum[1] - sum[0]).abs() < 1e-6,
+        "punched body {} != aimed body {} (double-rolled multishot)",
+        sum[1], sum[0]
+    );
+}
+
+#[test]
+fn basmu_beam_declares_its_chain_and_ramp() {
+    let b = crate::model::WeaponBase::from_data("basmu_beam", false, &[]);
+    let geom = b.beam.expect("basmu_beam chain geometry");
+    assert_eq!(geom.chain_hops, 5);
+    assert!((geom.chain_range_m - 7.0).abs() < 1e-9);
+    assert!((geom.chain_damage_per_hop - 0.5).abs() < 1e-9);
+    assert!(geom.chain_compounds);
+    let ramp = geom.ramp.expect("basmu_beam ramp");
+    assert!((ramp.rise_seconds - 0.5).abs() < 1e-9);
+    assert!((b.beam_ramp_floor - 0.2).abs() < 1e-9);
+}

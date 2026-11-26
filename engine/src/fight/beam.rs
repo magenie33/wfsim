@@ -26,6 +26,34 @@ pub(super) struct TargetRamp {
     factor: f64,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(super) struct TargetRampCtx {
+    pub(super) base_ramp: f64,
+    pub(super) tick: f64,
+    pub(super) floor: f64,
+    pub(super) spec: Option<crate::model::BeamRampSpec>,
+}
+
+#[wfsim_gas_macro::metered]
+impl TargetRampCtx {
+    /// Per-target ramp ratio relative to the aimed target's `base_ramp`,
+    /// advancing `ramps[body]` once per tick `t` and resetting on respawn.
+    pub(super) fn ratio(
+        self,
+        ramps: &mut Vec<TargetRamp>,
+        bodies_len: usize,
+        body: usize,
+        generation: u32,
+        t: f64,
+    ) -> f64 {
+        if ramps.len() <= body {
+            ramps.resize(bodies_len, TargetRamp::default());
+        }
+        let here = ramps[body].hit(generation, t, self.tick, self.floor, self.spec);
+        here / self.base_ramp.max(1e-9)
+    }
+}
+
 #[wfsim_gas_macro::metered]
 impl TargetRamp {
     pub(super) fn hit(
