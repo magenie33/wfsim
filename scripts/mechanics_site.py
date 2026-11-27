@@ -644,6 +644,9 @@ MECH_CSS = """
 .mech-toc a:hover{color:var(--accent)}
 .mech-wlist{display:flex;flex-wrap:wrap;gap:5px}
 .mech-cite{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;background:var(--panel3);border:1px solid var(--line);border-radius:6px;padding:7px;color:var(--text-2);word-break:break-all;margin:0 0 8px}
+.mech-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font:inherit;font-size:12px;background:var(--panel2);border:1px solid var(--line);color:var(--text);cursor:pointer}
+.mech-btn:hover{border-color:var(--accent);color:var(--accent)}
+.mech-btn-row{display:flex;flex-wrap:wrap;gap:6px}
 .mech-calc{margin:16px 0;padding:14px 16px;background:var(--panel3);border:1px solid var(--line);border-radius:8px}
 .mech-calc h3{margin:0 0 10px;font-size:14px}
 .mc-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
@@ -1051,29 +1054,50 @@ def ship_mechanics(
                 + f"{html_mod.escape(name)}</a>"
                 for href, (name, icon) in list(seen_weapons.items())[:28]
             )
-            cite_ref = (
-                f"&lt;ref&gt;[{en_art_url} WFSim Mechanics: {html_mod.escape(art['en']['title'])}], "
-                f"updated {art['updated']}.&lt;/ref&gt;"
-            )
+            cite_raw = f"<ref>[{en_art_url} WFSim Mechanics: {art['en']['title']}], updated {art['updated']}.</ref>"
+            cite_ref = html_mod.escape(cite_raw)
+            md_cite_raw = f"[{loc['title']}]({art_url})"
             lbl_toc = "本页目录" if lang == "zh" else "On This Page"
             lbl_weapons = f"文中武器 ({len(seen_weapons)})" if lang == "zh" else f"Weapons Referenced ({len(seen_weapons)})"
-            lbl_cite = "引用格式" if lang == "zh" else "Cite"
+            lbl_cite = "引用与分享" if lang == "zh" else "Cite & Share"
             lbl_updated = f"更新日期：{art['updated']}" if lang == "zh" else f"Updated {art['updated']}"
             lbl_md = "纯文本 Markdown" if lang == "zh" else "Plain Markdown"
+            lbl_copy_url = "复制链接" if lang == "zh" else "Copy link"
+            lbl_copy_ref = "复制 Wiki 引用" if lang == "zh" else "Copy Wiki <ref>"
+            lbl_copy_md = "复制 MD 链接" if lang == "zh" else "Copy MD link"
+            lbl_copied = "已复制" if lang == "zh" else "Copied"
+
+            share_script = f"""<script>(function(){{
+  var okTxt={json.dumps(lbl_copied, ensure_ascii=False)};
+  function cp(text,btn){{
+    var done=function(){{var old=btn.textContent;btn.textContent=okTxt;setTimeout(function(){{btn.textContent=old;}},1400);}};
+    if(navigator.clipboard&&navigator.clipboard.writeText){{navigator.clipboard.writeText(text).then(done);}}
+    else{{var ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();try{{document.execCommand("copy");done();}}finally{{document.body.removeChild(ta);}}}}
+  }}
+  document.querySelectorAll("[data-copy]").forEach(function(b){{
+    b.addEventListener("click",function(){{cp(b.getAttribute("data-copy"),b);}});
+  }});
+  document.querySelectorAll(".mech-anchor").forEach(function(a){{
+    a.addEventListener("click",function(){{
+      var u=location.origin+location.pathname+a.getAttribute("href");
+      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u);
+    }});
+  }});
+}})();</script>"""
 
             article_body = f"""<div class="mech-layout">
 <article class="mech-article">
   <div class="mech-crumb"><a href="{prefix}">{"机制" if lang == "zh" else "Mechanics"}</a> / <span>{html_mod.escape(loc["short_title"])}</span></div>
   <h1>{html_mod.escape(loc["title"])}</h1>
-  <div class="mech-meta"><span>{lbl_updated}</span><span>{html_mod.escape(art["category"][lang])}</span><a href="{md_twin_path}">{lbl_md}</a></div>
+  <div class="mech-meta"><span>{lbl_updated}</span><span>{html_mod.escape(art["category"][lang])}</span><a href="{md_twin_path}">{lbl_md}</a><button type="button" class="mech-btn" data-copy="{html_mod.escape(art_url, quote=True)}">{lbl_copy_url}</button></div>
   {body_html}
 </article>
 <aside class="mech-aside">
   <div class="mech-box"><h3>{lbl_toc}</h3><ul class="mech-toc">{toc_html}</ul></div>
-  <div class="mech-box"><h3>{lbl_cite}</h3><div class="mech-cite">{cite_ref}</div></div>
+  <div class="mech-box"><h3>{lbl_cite}</h3><div class="mech-cite">{cite_ref}</div><div class="mech-btn-row"><button type="button" class="mech-btn" data-copy="{html_mod.escape(art_url, quote=True)}">{lbl_copy_url}</button><button type="button" class="mech-btn" data-copy="{html_mod.escape(cite_raw, quote=True)}">{lbl_copy_ref}</button><button type="button" class="mech-btn" data-copy="{html_mod.escape(md_cite_raw, quote=True)}">{lbl_copy_md}</button></div></div>
   <div class="mech-box"><h3>{lbl_weapons}</h3><div class="mech-wlist">{wlist_html}</div></div>
 </aside>
-</div>"""
+</div>{share_script}"""
 
             ld_blocks: list[dict] = [
                 {
