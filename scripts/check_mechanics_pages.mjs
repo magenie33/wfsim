@@ -130,6 +130,19 @@ for (const [label, doc, expected] of [
 
 check("magnetic-electricity embeds interactive calculator",
   magEn.includes('id="magnetic-calculator"') && magZh.includes('id="magnetic-calculator"'));
+check("all articles expose one-click Copy for AI with attribution and zero leaked {#id} tokens",
+  [beamEn, beamZh, magEn, magZh].every((doc) => doc.includes("data-copy-ai") && !doc.includes("{#")));
+check("beam-weapons uses identical permanent semantic anchors across EN and ZH",
+  ["key-formulas", "ramp-up", "first-tick", "dot-snapshot", "multishot", "formulas", "torid-incarnon"].every(
+    (id) => beamEn.includes(`id="${id}"`) && beamZh.includes(`id="${id}"`)));
+check("magnetic-electricity uses identical permanent semantic anchors across EN and ZH",
+  ["key-formulas", "electricity-formula", "headshot-anchor", "gas-vs-electricity", "magnetic-break", "weakpoint-tiers"].every(
+    (id) => magEn.includes(`id="${id}"`) && magZh.includes(`id="${id}"`)));
+check("markdown twins open with canonical source metadata and strip {#id} markers",
+  ["mechanics/beam-weapons.md", "mechanics/zh/beam-weapons.md", "mechanics/magnetic-electricity.md", "mechanics/zh/magnetic-electricity.md"].every((p) => {
+    const md = readFileSync(resolve(OUT, p), "utf8");
+    return (md.startsWith("> Source: WFSim") || md.startsWith("> 出处：WF模拟")) && !md.includes("{#");
+  }));
 check("beam-weapons embeds collapsible full beam index",
   beamEn.includes('id="full-beam-index"') && beamZh.includes('id="full-beam-index"'));
 check("magnetic-electricity embeds collapsible full W-tier index (all 5 tiers + melee)",

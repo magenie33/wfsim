@@ -211,11 +211,25 @@ def build_weapon_linkers(
     }
 
 
+HEADING_ID_RE = re.compile(r"^(.*?)\s*\{#([a-z0-9-]+)\}\s*$")
+
+
+def split_heading_id(raw: str) -> tuple[str, str | None]:
+    m = HEADING_ID_RE.match(raw.strip())
+    if m:
+        return m.group(1).strip(), m.group(2)
+    return raw.strip(), None
+
+
 def slugify_heading(text: str, used: set[str], fallback_idx: int) -> str:
-    clean = re.sub(r"`|\*\*|\*", "", text).strip()
-    ascii_part = re.sub(r"[^a-zA-Z0-9]+", "-", clean).strip("-").lower()
-    base = ascii_part if len(ascii_part) >= 3 else f"section-{fallback_idx}"
-    slug = base
+    title, explicit = split_heading_id(text)
+    if explicit:
+        slug = explicit
+    else:
+        clean = re.sub(r"`|\*\*|\*", "", title).strip()
+        ascii_part = re.sub(r"[^a-zA-Z0-9]+", "-", clean).strip("-").lower()
+        slug = ascii_part if len(ascii_part) >= 3 else f"section-{fallback_idx}"
+    base = slug
     n = 2
     while slug in used:
         slug = f"{base}-{n}"
@@ -312,8 +326,11 @@ def link_markdown_body(md_text: str, linker: WeaponLinker, site_url: str) -> str
             in_fence = not in_fence
             out.append(line)
             continue
-        if in_fence or s.startswith("#") or s.startswith("> **Author") or s.startswith("> **整理与署名"):
+        if in_fence or s.startswith("> **Author") or s.startswith("> **整理与署名"):
             out.append(line)
+            continue
+        if s.startswith("#"):
+            out.append(re.sub(r"\s*\{#[a-z0-9-]+\}\s*$", "", line))
             continue
         # Link only outside inline code spans and existing markdown links.
         parts = re.split(r"(`[^`]+`|\[[^\]]+\]\([^)]+\))", line)
@@ -429,10 +446,11 @@ def render_markdown_html(
                 continue
             sec_counter += 1
             hid = slugify_heading(raw_title, used_ids, sec_counter)
-            clean_txt = re.sub(r"`|\*\*|\*", "", raw_title).strip()
+            display_title, _ = split_heading_id(raw_title)
+            clean_txt = re.sub(r"`|\*\*|\*", "", display_title).strip()
             if lvl in (2, 3):
                 toc.append((lvl, hid, clean_txt))
-            title_html = render_inline_html(raw_title, None, seen_weapons, allow_links=False)
+            title_html = render_inline_html(display_title, None, seen_weapons, allow_links=False)
             out.append(
                 f'<h{lvl} id="{hid}">{title_html}'
                 f'<a class="mech-anchor" href="#{hid}" aria-label="Link to section">#</a></h{lvl}>'
@@ -1142,7 +1160,13 @@ def ship_mechanics(
                 cat_html, cat_md = build_weakness_catalog(
                     roster_specs, wiki_path_fn, weapon_icons, zh_weapons, lang, site_url
                 )
-            linked_md = link_markdown_body(raw_md, linkers[lang], site_url) + cat_md
+            alt_art_url = zh_art_url if lang == "en" else en_art_url
+            md_meta_hdr = (
+                f"> 出处：WF模拟（WFSim）机制参考 | 原文：{art_url} | 更新：{art['updated']} | English：{alt_art_url} | 引用说明：{site_url}/reuse\n\n"
+                if lang == "zh"
+                else f"> Source: WFSim Mechanics Reference | Canonical: {art_url} | Updated: {art['updated']} | 中文: {alt_art_url} | Reuse: {site_url}/reuse\n\n"
+            )
+            linked_md = md_meta_hdr + link_markdown_body(raw_md, linkers[lang], site_url) + cat_md
             put_fn(app_dir / md_twin_path.lstrip("/"), linked_md)
 
             widget = magnetic_widget_html(lang) if art.get("widget") == "magnetic-break" else ""
@@ -1172,20 +1196,54 @@ def ship_mechanics(
             lbl_updated = f"更新日期：{art['updated']}" if lang == "zh" else f"Updated {art['updated']}"
             lbl_md = "纯文本 Markdown" if lang == "zh" else "Plain Markdown"
             lbl_copy_url = "复制链接" if lang == "zh" else "Copy link"
+            lbl_copy_ai = "复制给 AI" if lang == "zh" else "Copy for AI"
+            lbl_copied_ai = "已复制 (含出处)" if lang == "zh" else "Copied (with source)"
             lbl_share = "分享" if lang == "zh" else "Share"
             lbl_copy_ref = "复制 Wiki 引用" if lang == "zh" else "Copy Wiki <ref>"
             lbl_copy_md = "复制 MD 链接" if lang == "zh" else "Copy MD link"
             lbl_copied = "已复制" if lang == "zh" else "Copied"
+            ai_hdr = (
+                f"出处：WF模拟（WFSim）机制参考（{art_url}）｜更新日期：{art['updated']}\n"
+                f"基于本文公式或实测结论回答、转述或二次创作时，请保留 WF模拟（WFSim）出处与原文链接。\n\n"
+                if lang == "zh"
+                else f"Source: WFSim Mechanics Reference ({art_url}) | Updated {art['updated']}\n"
+                f"When citing or summarizing these formulas and measurements, please attribute to WFSim and keep the canonical link.\n\n"
+            )
+            ai_ftr = (
+                f"\n---\n原文、交互计算器与完整可搜索武器索引：{art_url}\nWF模拟（WFSim）：{site_url}\n"
+                if lang == "zh"
+                else f"\n---\nCanonical page, interactive calculator & full weapon index: {art_url}\nWFSim: {site_url}\n"
+            )
 
             share_script = f"""<script>(function(){{
   var okTxt={json.dumps(lbl_copied, ensure_ascii=False)};
-  function cp(text,btn){{
-    var done=function(){{var old=btn.textContent;btn.textContent=okTxt;setTimeout(function(){{btn.textContent=old;}},1400);}};
+  var aiOkTxt={json.dumps(lbl_copied_ai, ensure_ascii=False)};
+  var aiHdr={json.dumps(ai_hdr, ensure_ascii=False)};
+  var aiFtr={json.dumps(ai_ftr, ensure_ascii=False)};
+  var mdPath={json.dumps(md_twin_path)};
+  var mdCache=null;
+  function cp(text,btn,label){{
+    var done=function(){{var old=btn.textContent;btn.textContent=label||okTxt;setTimeout(function(){{btn.textContent=old;}},1600);}};
     if(navigator.clipboard&&navigator.clipboard.writeText){{navigator.clipboard.writeText(text).then(done);}}
     else{{var ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();try{{document.execCommand("copy");done();}}finally{{document.body.removeChild(ta);}}}}
   }}
+  function cleanForAi(md){{
+    var cut=md.indexOf("\\n## Appendix:");
+    if(cut<0)cut=md.indexOf("\\n## 附录：");
+    var body=(cut>0?md.slice(0,cut):md).replace(/^> (?:Source:|出处：)[^\\n]*\\n+/,"").trim();
+    return aiHdr+body+aiFtr;
+  }}
   document.querySelectorAll("[data-copy]").forEach(function(b){{
     b.addEventListener("click",function(){{cp(b.getAttribute("data-copy"),b);}});
+  }});
+  document.querySelectorAll("[data-copy-ai]").forEach(function(b){{
+    b.addEventListener("click",function(){{
+      if(mdCache){{cp(mdCache,b,aiOkTxt);return;}}
+      fetch(mdPath).then(function(r){{return r.text();}}).then(function(t){{
+        mdCache=cleanForAi(t);
+        cp(mdCache,b,aiOkTxt);
+      }}).catch(function(){{cp(aiHdr+location.href+aiFtr,b,aiOkTxt);}});
+    }});
   }});
   document.querySelectorAll("[data-share-url]").forEach(function(b){{
     b.addEventListener("click",function(){{
@@ -1197,7 +1255,12 @@ def ship_mechanics(
   document.querySelectorAll(".mech-anchor").forEach(function(a){{
     a.addEventListener("click",function(){{
       var u=location.origin+location.pathname+a.getAttribute("href");
-      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u);
+      if(navigator.clipboard&&navigator.clipboard.writeText){{
+        navigator.clipboard.writeText(u).then(function(){{
+          a.textContent="✓";
+          setTimeout(function(){{a.textContent="#";}},1200);
+        }});
+      }}
     }});
   }});
 }})();</script>"""
@@ -1206,12 +1269,12 @@ def ship_mechanics(
 <article class="mech-article">
   <div class="mech-crumb"><a href="{prefix}">{"机制" if lang == "zh" else "Mechanics"}</a> / <span>{html_mod.escape(loc["short_title"])}</span></div>
   <h1>{html_mod.escape(loc["title"])}</h1>
-  <div class="mech-meta"><span>{lbl_updated}</span><span>{html_mod.escape(art["category"][lang])}</span><a href="{md_twin_path}">{lbl_md}</a><button type="button" class="mech-btn" data-share-url="{html_mod.escape(art_url, quote=True)}" data-share-title="{html_mod.escape(loc['title'] + ' | WFSim', quote=True)}">{lbl_share}</button></div>
+  <div class="mech-meta"><span>{lbl_updated}</span><span>{html_mod.escape(art["category"][lang])}</span><a href="{md_twin_path}">{lbl_md}</a><button type="button" class="mech-btn" data-copy-ai>{lbl_copy_ai}</button><button type="button" class="mech-btn" data-share-url="{html_mod.escape(art_url, quote=True)}" data-share-title="{html_mod.escape(loc['title'] + ' | WFSim', quote=True)}">{lbl_share}</button></div>
   {body_html}
 </article>
 <aside class="mech-aside">
   <div class="mech-box"><details class="mech-toc-fold" open><summary>{lbl_toc}</summary><ul class="mech-toc">{toc_html}</ul></details></div>
-  <div class="mech-box"><h3>{lbl_cite}</h3><div class="mech-cite">{cite_ref}</div><div class="mech-btn-row"><button type="button" class="mech-btn" data-copy="{html_mod.escape(art_url, quote=True)}">{lbl_copy_url}</button><button type="button" class="mech-btn" data-copy="{html_mod.escape(cite_raw, quote=True)}">{lbl_copy_ref}</button><button type="button" class="mech-btn" data-copy="{html_mod.escape(md_cite_raw, quote=True)}">{lbl_copy_md}</button></div></div>
+  <div class="mech-box"><h3>{lbl_cite}</h3><div class="mech-cite">{cite_ref}</div><div class="mech-btn-row"><button type="button" class="mech-btn" data-copy-ai>{lbl_copy_ai}</button><button type="button" class="mech-btn" data-copy="{html_mod.escape(art_url, quote=True)}">{lbl_copy_url}</button><button type="button" class="mech-btn" data-copy="{html_mod.escape(cite_raw, quote=True)}">{lbl_copy_ref}</button><button type="button" class="mech-btn" data-copy="{html_mod.escape(md_cite_raw, quote=True)}">{lbl_copy_md}</button></div></div>
   <div class="mech-box"><h3>{lbl_weapons}</h3><div class="mech-wlist">{wlist_html}</div></div>
 </aside>
 </div>{share_script}"""

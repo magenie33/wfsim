@@ -5,7 +5,19 @@
 
 ---
 
-## 1. Why Cover Magnetic and Electricity Together?
+## Key Formulas & Verified Constants {#key-formulas}
+
+| Quantity | Formula / Constant | Verified Scope |
+| --- | --- | --- |
+| **Electricity Stack Seed** | `Seed_i = 0.5 × ModdedBaseDmg × Crit × BodyPart_i × Faction × (1 + ElecMod) × S` | Snapshotted per proc; 6 ticks over 6 s (3 m AoE) |
+| **Electricity / Gas Tick** | `Tick(t) = (∑ Seed_i) × Faction × L_latest × Mitigation(t)` | `L_latest` uses the **most recently applied** stack's hit part (e.g. `3.0×` head vs `1.0×` body) |
+| **Magnetic Disrupt (Pre-Break)** | `+100%` damage to Shields & Overguard at 1 stack, `+25%` per extra stack up to **`+325%` at 10 stacks** | Multiplicative against Shield & Overguard pools |
+| **Magnetic Break Stage 1** | `Q = trunc(MaxPool × 0.005 × N)`, `Norm = round(Q / (1 + max(W, 0) × V))`, `Packet1 = Norm × S × A` | `N ∈ [1, 10]`; humanoid proxy `(V=1, A=2)` → net `2 / (1 + W)` |
+| **Magnetic Break Stage 2** | Forced 1-stack Electricity (`Body`, resets `L_latest = 1.0`): `Tick = max(1, 0.5 × (1 + Packet1 × S)) × (1 + ElecMod)` | **`S²` double-dip** on `+Status Damage` across Stages 1 & 2 |
+
+---
+
+## 1. Why Cover Magnetic and Electricity Together? {#overview}
 
 In Warframe's elemental system, **Electricity** is a primary element and **Magnetic** (Cold + Electricity) is a combined element — yet under current game mechanics, the two are tightly coupled at the engine level:
 
@@ -26,9 +38,9 @@ flowchart LR
 
 ---
 
-## 2. Core Mechanic I: Electricity Status (Tesla Chain) Full Calculation
+## 2. Core Mechanic I: Electricity Status (Tesla Chain) Full Calculation {#electricity}
 
-### 1. Base Properties & the "Third DoT Resolution Model"
+### 1. Base Properties & the "Third DoT Resolution Model" {#electricity-base}
 
 Warframe's damage-over-time statuses follow **three** distinct engine architectures; Electricity (and Gas) use the third:
 
@@ -45,7 +57,7 @@ Five hard parameters of Electricity:
 
 ---
 
-### 2. Exact Electricity Damage Formula
+### 2. Exact Electricity Damage Formula {#electricity-formula}
 
 #### (1) Single-Stack Seed (Snapshotted Individually)
 Each Electricity proc creates an independent damage seed inside the merged pool, locking in the triggering hit's offensive multipliers:
@@ -68,7 +80,7 @@ Final Tick Damage = Base Tick Damage × Landing Multiplier L × Live Armor / Res
 
 ---
 
-### 3. Second Headshot Landing Layer `L` & Latest-Application Anchor
+### 3. Second Headshot Landing Layer `L` & Latest-Application Anchor {#headshot-anchor}
 
 Electricity and Gas ticks carry an additional body-part landing multiplier (verified in-game):
 
@@ -97,7 +109,7 @@ When a target holds both body-applied and head-applied Electricity stacks, two r
 
 ---
 
-## 3. Comparison: Gas vs. Electricity
+## 3. Comparison: Gas vs. Electricity {#gas-vs-electricity}
 
 Gas (Heat + Toxin) belongs to the exact same radial-pool + body-part-landing family as Electricity. Remember **4 similarities** and **4 differences**:
 
@@ -114,7 +126,7 @@ Gas (Heat + Toxin) belongs to the exact same radial-pool + body-part-landing fam
 
 ---
 
-## 4. Core Mechanic II: Magnetic Status (Disrupt) & Magnetic Break Procs
+## 4. Core Mechanic II: Magnetic Status (Disrupt) & Magnetic Break Procs {#magnetic}
 
 Magnetic (Cold + Electricity) must be calculated in two distinct phases: **before the break** and **at the moment of break**.
 
@@ -127,7 +139,7 @@ flowchart LR
     D2 --> E["Joins Ordinary Electricity Pool as Body Hit<br/>(Sets pool to body; a later head Electric proc restores head landing)"]
 ```
 
-### 1. Phase 1: Before the Break (Magnetic Disrupt Stacks)
+### 1. Phase 1: Before the Break (Magnetic Disrupt Stacks) {#magnetic-disrupt}
 
 * **Duration & Cap**: **6 seconds** per stack, capped at **10 stacks** (shared FIFO slots across all sources; new stacks beyond 10 replace the oldest).
 * **Bonus Damage to Shields & Overguard**:
@@ -139,7 +151,7 @@ flowchart LR
 
 ---
 
-### 2. Phase 2: The Break Moment — Two-Stage Magnetic Break Formula
+### 2. Phase 2: The Break Moment — Two-Stage Magnetic Break Formula {#magnetic-break}
 
 The instant a target carrying `N` Magnetic stacks (`1 ≤ N ≤ 10`) has its **Shield** or **Overguard** broken, the game **snapshots `N`** (later Magnetic decay or stacks do not alter the break) and runs **two consecutive stages**:
 
@@ -178,7 +190,7 @@ Even if Weapon A stacked 10 Magnetic procs beforehand, whichever **Weapon B land
 
 ---
 
-### 3. Understanding Native Weakpoint Bonus `W`: All 5 Weapon Tiers & Representative Weapons
+### 3. Understanding Native Weakpoint Bonus `W`: All 5 Weapon Tiers & Representative Weapons {#weakpoint-tiers}
 
 #### (1) What Exactly Is the Innate Weakpoint Bonus `W`?
 * **`W` is an innate hidden property built into each weapon's base profile** — completely independent of equipped headshot mods, Deadhead arcanes, or Incarnon headshot evolutions (stacking headshot damage never changes `W`).
@@ -204,7 +216,7 @@ Besides the weapon's `W`, the enemy's highest positive weakness proxy `(V, A)` s
 
 ---
 
-### 4. Two-Way Interaction Between Magnetic Break Procs & Headshot Electricity Pools
+### 4. Two-Way Interaction Between Magnetic Break Procs & Headshot Electricity Pools {#headshot-pool-interaction}
 
 Because the forced Electricity proc from a Magnetic break **always enters the shared Electricity pool as a body hit**, two interactions follow:
 
@@ -213,9 +225,9 @@ Because the forced Electricity proc from a Magnetic break **always enters the sh
 
 ---
 
-## 5. Four Measurement-Calibrated Worked Examples
+## 5. Four Measurement-Calibrated Worked Examples {#worked-examples}
 
-### Example 1: Electricity (& Gas) Mixed Hit-Order Walkthrough (In-Game Verified)
+### Example 1: Electricity (& Gas) Mixed Hit-Order Walkthrough (In-Game Verified) {#example-mixed-order}
 
 * **Setup**: Laetum base form (modded base `160`, quantized yellow-crit mult `c ≈ 2.2037`), `+80%` headshot damage (head seed part mult `P = 3 × 1.8 = 5.4`, second landing mult `L = 1.8`), `+200%` Electricity (`×3`), unarmored target.
 * **Per-Stack Contribution (after `× 0.5`)**:
@@ -235,7 +247,7 @@ Because the forced Electricity proc from a Magnetic break **always enters the sh
 
 ---
 
-### Example 2: Magnetic Overguard Break Step-by-Step — Naked, Electricity Mod, `S²` Double-Dip, Armor & Post-Break Head Pull
+### Example 2: Magnetic Overguard Break Step-by-Step — Naked, Electricity Mod, `S²` Double-Dip, Armor & Post-Break Head Pull {#example-overguard-break}
 
 * **Target**: Level 50 Steel Path Corrupted Heavy Gunner Eximus (armor stripped, max Overguard = **`103,623`**, head proxy `V = 1.0, A = 2.0`) with **10 Magnetic stacks** at break.
 * **Breaking Weapon**: **Laetum** (native **`W = 0.5`**, `+80%` headshot damage, `+200%` Magnetic).
@@ -267,7 +279,7 @@ Because the forced Electricity proc from a Magnetic break **always enters the sh
 
 ---
 
-### Example 3: All 5 `W` Tiers Breaking the Same Shield Side-by-Side (In-Game Controls)
+### Example 3: All 5 `W` Tiers Breaking the Same Shield Side-by-Side (In-Game Controls) {#example-five-w-tiers}
 
 #### Scenario A: Level 100 Steel Path Corrupted Crewman (Max Shield `19,157`, 10 Magnetic Stacks, `V = 1.0, A = 2.0`)
 * **Shared Raw Source `Q`**: `trunc(19,157 × 0.005 × 10) = trunc(957.85) =` **957**
@@ -296,7 +308,7 @@ The same 4-step formula reproduces every cross-level and single-stack control ve
 
 ---
 
-### Example 4: Comparing Target Weakness Proxies `(V, A)` Under Full Modifiers & 900 Armor
+### Example 4: Comparing Target Weakness Proxies `(V, A)` Under Full Modifiers & 900 Armor {#example-proxies-armor}
 
 * **Uniform Setup**: **`100,000`** max Shield or Overguard broken at **10 Magnetic stacks** (`Q = 5,000`); breaking weapon carries **`+165%` Electricity**, **`+90%` Status Damage (`S = 1.9`)**, **`+55%` Faction (`1.55`)**, and **`+80%` Headshot Damage (`L = 1.8`)**; exposed Health underneath has **`900` Armor** (`51.96%` DR, `0.480385` health multiplier).
 * **Full Walkthrough (Standard Humanoid, `W = 0.0`)**:
@@ -323,7 +335,7 @@ Full comparison across **3 target proxy classes** and **3 weapon `W` tiers** (al
 
 ---
 
-## 6. Magnetic / Electricity / Gas Quick-Reference Comparison
+## 6. Magnetic / Electricity / Gas Quick-Reference Comparison {#quick-reference}
 
 | Dimension | Magnetic (Disrupt + Break Proc) | Electricity (Tesla Chain) | Gas (Gas Cloud) |
 | --- | --- | --- | --- |
@@ -342,7 +354,7 @@ Full comparison across **3 target proxy classes** and **3 weapon `W` tiers** (al
 
 ---
 
-## 7. Common Misconceptions
+## 7. Common Misconceptions {#misconceptions}
 
 1. **Myth: "Magnetic break always deals 3%/stack of max Shield/Overguard, identically across all weapons."**  
    → **Reality**: The effective base coefficient is `0.005` (0.5%/stack), normalized by `÷ (1 + max(W, 0) × V)` and scaled by proxy multiplier `A`. Consequently, **lower native `W` yields higher Magnetic break damage** — on humanoids, `W = 0` weapons (all melee, Kuva Nukor, etc.) deal **2×** the break damage of `W = 1.0` weapons (Lanka, Rubico Prime, etc.).

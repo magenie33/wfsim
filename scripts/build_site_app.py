@@ -2476,7 +2476,8 @@ def ship_agent_files(by_slot: dict, mechanics_entries: list[dict] = ()) -> None:
         f"- [{m['title']}]({m['md_url']}): {m['description']}\n"
         for m in mechanics_entries
     )
-    mech_section = f"\n## Mechanics\n\n{mech_md}" if mech_md else ""
+    mech_zh = f"- [中文机制参考目录 (Chinese Mechanics Reference)]({SITE}/mechanics/zh.md): Warframe 射线与磁力/电击异常计算机制中文参考文档\n" if mechanics_entries else ""
+    mech_section = f"\n## Mechanics\n\n{mech_md}{mech_zh}" if mech_md else ""
     links = (f"- [Mechanics reference]({SITE}/mechanics.md): calibrated Warframe damage, status, and weapon mechanics\n"
              f"- [Method]({SITE}/method.md): how WFSim judges a build, and the in-game readings behind each rule\n"
              f"- [MCP server]({MCP_URL}): these lookups as tools, read-only, no sign-in\n"
@@ -2557,6 +2558,11 @@ def ship_agent_files(by_slot: dict, mechanics_entries: list[dict] = ()) -> None:
              "representativeQueries": [q for m in mechanics_entries for q in m.get("queries", [])][:4]
              or ["how do Warframe beam weapons calculate ramp-up",
                  "how does Warframe Magnetic break damage work"]},
+            *[{"identifier": f"urn:air:{host}:doc:mechanics-{m['slug']}",
+               "displayName": m["title"],
+               "type": "text/markdown", "url": m["md_url"],
+               "representativeQueries": (m.get("queries") or [m["title"], m["description"]])[:5]}
+              for m in mechanics_entries],
         ],
     }, indent=2) + "\n")
     # RFC 9727: the public read APIs — the MCP server, the A2A agent and the published board.

@@ -5,7 +5,19 @@
 
 ---
 
-## 1. What Is a "Beam Weapon"?
+## Key Formulas & Verified Constants {#key-formulas}
+
+| Quantity | Formula / Constant | Verified Scope |
+| --- | --- | --- |
+| **Tick Rate & Ammo** | `Ticks/sec = Fire Rate`; typical ammo cost `0.5 / tick` (`1.0 / tick` on select beams) | All `Held` continuous weapons |
+| **First-Tick Ramp Share** | `R(1) = Floor + (1 - Floor) × min(1, 1 / (Fire Rate × T_rise))` (`Floor` typically `0.20`, `T_rise = 0.6 s`) | Pre-advance before Tick 1; `Floor = 1.0` skips ramp |
+| **Cooldown Hold & Decay** | Hold `0.8 s` after ceasing fire, then decay linearly to `Floor` over `2.0 s` | Warm restart resumes from current level |
+| **Merged Multishot** | Direct hit `× M`, status procs/tick `× M`, crit roll `1×` → **DoT DPS scales as `M²`** | Outer-only scaling on multi-beam shotguns (`1 + (B - 1) × (1 + MS)`) |
+| **Punch Through Gate** | Any beam with terminal impact radius `radius > 0` clamps Punch Through depth to `0` | Applies to Ignis Wraith, Torid Incarnon, Gaze, etc. |
+
+---
+
+## 1. What Is a "Beam Weapon"? {#definition}
 
 In Warframe, **beam weapons** are firearms whose trigger type is **Held (Continuous)**.
 
@@ -33,7 +45,7 @@ flowchart LR
 
 ---
 
-## 2. Damage Ramp-Up Lifecycle & Multi-Enemy Resolution
+## 2. Damage Ramp-Up Lifecycle & Multi-Enemy Resolution {#ramp-up}
 
 Damage ramp-up is the single most overlooked — and most frequently miscalculated — beam mechanic. It is not simply "starts at 20% and climbs to 100%": it is a **5-stage state machine running independently on every enemy**.
 
@@ -48,7 +60,7 @@ flowchart LR
     S2 -->|"Target Dies / New Spawn"| S0
 ```
 
-### Stage 1: Initial Contact & Why the First Tick Scales with Fire Rate (Pre-Advance)
+### Stage 1: Initial Contact & Why the First Tick Scales with Fire Rate (Pre-Advance) {#first-tick}
 
 When a beam touches a fresh target, the game initializes the first-tick countdown to **`1 ÷ Fire Rate`** and **advances the ramp clock by `1 ÷ Fire Rate` seconds before reading the multiplier for Tick 1**.
 
@@ -88,7 +100,7 @@ Take **Torid (Incarnon Form)** (base ramp floor **20%**, ramp duration **0.6 s**
 
 ---
 
-### Stage 2: Linear Climb & Permanent Status DoT Snapshotting
+### Stage 2: Linear Climb & Permanent Status DoT Snapshotting {#dot-snapshot}
 
 On each sustained tick, ramp progress rises by `(1 ÷ Fire Rate) ÷ Ramp Duration`, capped at `1.0` (100%).
 
@@ -108,7 +120,7 @@ On each sustained tick, ramp progress rises by `(1 ÷ Fire Rate) ÷ Ramp Duratio
 
 ---
 
-### Stages 3 & 4: Grace-Period Hold, Linear Cooldown Decay, and "Warm Restart"
+### Stages 3 & 4: Grace-Period Hold, Linear Cooldown Decay, and "Warm Restart" {#cooldown-decay}
 
 When a beam leaves a target or stops firing (repositioning, dodging, reloading), ramp progress does **not** instantly reset. Instead it evaluates the **idle gap `idle`**:
 
@@ -133,7 +145,7 @@ When the beam hits again, advance one tick before reading:
 
 ---
 
-### Stage 5: Per-Target Timers, Multi-Chain Deduplication & Full Multi-Enemy Timeline
+### Stage 5: Per-Target Timers, Multi-Chain Deduplication & Full Multi-Enemy Timeline {#multi-target}
 
 In real combat with multiple enemies, beam ramp-up enforces **4 strict rules**:
 1. **One clock per enemy**: Almost every beam tracks ramp progress independently on each enemy (rare exceptions such as **Tazicor** and **Panthera Alt-Fire** share one beam-wide clock).
@@ -161,7 +173,7 @@ In real combat with multiple enemies, beam ramp-up enforces **4 strict rules**:
 
 > Notice the divergence in the final row: after the exact same `1.5 s` pause, fully ramped Enemies B and C only dip to a **78.3% warm restart** (back to 100% in 2 ticks), while Enemy D (which only had 2 ticks of progress) bottoms out completely back to a **36.7% cold restart**.
 
-### Measured Ramp-Up Floors Across Beam Weapons
+### Measured Ramp-Up Floors Across Beam Weapons {#ramp-floors}
 
 | Base Floor | Representative Weapons | Special Curve Parameters (Default: 0.6s ramp / 0.8s delay / 1.2s decay) |
 | :---: | --- | --- |
@@ -177,9 +189,9 @@ In real combat with multiple enemies, beam ramp-up enforces **4 strict rules**:
 
 ---
 
-## 3. The Other 5 Core Beam Rules (with Worked Math)
+## 3. The Other 5 Core Beam Rules (with Worked Math) {#core-rules}
 
-### Rule 1: Fire Rate = Ticks/sec, Ammo Cost Usually 0.5/Tick
+### Rule 1: Fire Rate = Ticks/sec, Ammo Cost Usually 0.5/Tick {#fire-rate}
 
 * **Core Relations**:
   * `Ticks per second = Modded Fire Rate`
@@ -197,7 +209,7 @@ In real combat with multiple enemies, beam ramp-up enforces **4 strict rules**:
 
 ---
 
-### Rule 2: Merged Multishot Mechanics
+### Rule 2: Merged Multishot Mechanics {#multishot}
 
 * **Standard weapons**: `3.0` multishot fires 3 separate pellets that each roll crit and status independently.
 * **Beam weapons (on the same target)**: Extra beams merge into a single damage tick. Given integer multishot `M` rolled from the fractional multishot (e.g. `2.8` rolls `M = 2` 20% of the time and `M = 3` 80% of the time):
@@ -233,7 +245,7 @@ Actual Beam Count = (Base Beams - 1) × (1 + Multishot Bonus) + 1
 
 ---
 
-### Rule 3: Complete Single-Tick Direct & Status DoT Formulas
+### Rule 3: Complete Single-Tick Direct & Status DoT Formulas {#formulas}
 
 #### (1) Merged Direct Tick Damage
 ```text
@@ -261,7 +273,7 @@ DoT Tick = (Single-Beam Base Damage × M × Current Ramp Mult × Crit Mult × Pa
 
 ---
 
-### Rule 4: Range, Falloff, Punch Through Gates & Headshots
+### Rule 4: Range, Falloff, Punch Through Gates & Headshots {#range-punch-through}
 
 * **Hard Range Wall**: Almost all beams deal 100% damage up to max range and 0 beyond it.
   * **Rare beams with distance falloff**: **Furis (Incarnon Form)** (linear falloff across 10–16 m), **Catabolyst / Coda Catabolyst** (9–19 m falloff down to ~1.88%).
@@ -274,7 +286,7 @@ DoT Tick = (Single-Beam Base Damage × M × Current Ramp Mult × Crit Mult × Pa
 
 ---
 
-### Rule 5: Chain Pathfinding Rules (Verified)
+### Rule 5: Chain Pathfinding Rules (Verified) {#chain-rules}
 
 1. **Ignores terrain and line-of-sight**: Only checks 3D distance between enemies against chain hop range.
 2. **"Fresh target" first, then "nearest"**: When multiple origins chain on the same tick, each chain prioritizes enemies not yet hit by any chain that tick (closest first); only if no fresh target is in range may it re-hit an already-struck enemy.
@@ -283,9 +295,9 @@ DoT Tick = (Single-Beam Base Damage × M × Current Ramp Mult × Crit Mult × Pa
 
 ---
 
-## 4. Complete Taxonomy of Beam Weapons (6 Mechanical Types)
+## 4. Complete Taxonomy of Beam Weapons (6 Mechanical Types) {#taxonomy}
 
-### Type 1: Pure Single-Target Direct Beams (Including Wide Beams)
+### Type 1: Pure Single-Target Direct Beams (Including Wide Beams) {#type-single}
 * **Traits**: Single main beam, no terminal sphere, no chains, no auto-lock beams (some have wide sweep volumes or infinite body pierce).
 * **Representative Weapons**:
   * **Primary**: Synapse / Coda Synapse, Flux Rifle, Glaxion (base), Enkaus
@@ -294,7 +306,7 @@ DoT Tick = (Single-Beam Base Damage × M × Current Ramp Mult × Crit Mult × Pa
 
 ---
 
-### Type 2: Innate Multi-Beam Merged Weapons
+### Type 2: Innate Multi-Beam Merged Weapons {#type-multi-beam}
 * **Traits**: Innately fire `2–7` beams that merge when aimed at one target:
   * **2A. Full-Beam Scaling**:
     * **Quanta / Quanta Vandal / Tenet Quanta**: 2 base beams, 50 m (longest standard beam range).
@@ -306,7 +318,7 @@ DoT Tick = (Single-Beam Base Damage × M × Current Ramp Mult × Crit Mult × Pa
 
 ---
 
-### Type 3: Terminal Damage-Sphere Beams
+### Type 3: Terminal Damage-Sphere Beams {#type-terminal-sphere}
 * **Traits**: Generates a spherical damage zone (`radius > 0`) at the contact point (or max range).
   1. Not a separate explosion, no radial falloff, direct target is hit only once;
   2. Sphere-edge targets do not get multishot and cannot headshot;
@@ -316,7 +328,7 @@ DoT Tick = (Single-Beam Base Damage × M × Current Ramp Mult × Crit Mult × Pa
 
 ---
 
-### Type 4: Chaining Beams
+### Type 4: Chaining Beams {#type-chaining}
 
 | Subtype | Decay & Chaining Rule | Representative Weapons & Parameters |
 | --- | --- | --- |
@@ -326,13 +338,13 @@ DoT Tick = (Single-Beam Base Damage × M × Current Ramp Mult × Crit Mult × Pa
 
 ---
 
-### Type 5: Hybrid Multi-Origin Chaining Beams
+### Type 5: Hybrid Multi-Origin Chaining Beams {#type-hybrid-chain}
 * **5A. Terminal Sphere Multi-Origin + Chain**: **Torid (Incarnon Form)** — every enemy inside the 2.3 m sphere becomes an independent 5-hop chain origin.
 * **5B. Auto-Lock Multi-Beam + Chain**: **Boar / Boar Prime (Incarnon Form)** — auto-locks up to **3 distinct targets** within 10° of the reticle, each chaining **2 hops** (10 m, 80% geometric), covering up to **9 enemies** per tick.
 
 ---
 
-### Type 6: Kill-Spawned Independent Secondary-Beam Weapons
+### Type 6: Kill-Spawned Independent Secondary-Beam Weapons {#type-kill-spawned}
 * **Traits**: Kills spawn extra auto-seeking energy tendrils; each tendril is a **full 100% independent beam instance** (independent crit & status rolls, **scales with weapon multishot, cannot headshot**), cleared on reload or empty magazine.
 * **Representative Weapon**: **Ocucor** — up to 4 tendrils (40° acquire / 60° hold, 20 m range, scales with Ruinous Extension); against a single target, tendrils curving onto the main target are purely visual with 0 extra damage or status.
 
@@ -340,9 +352,9 @@ DoT Tick = (Single-Beam Base Damage × M × Current Ramp Mult × Crit Mult × Pa
 
 ---
 
-## 5. Comprehensive Worked Weapon Examples
+## 5. Comprehensive Worked Weapon Examples {#worked-examples}
 
-### Example 1 (Deep Dive): Torid — Both Forms in Full Detail
+### Example 1 (Deep Dive): Torid — Both Forms in Full Detail {#torid-incarnon}
 
 #### 1. Dual-Form Base Stats & Charging Rules
 * **Base Form (Grenade Launcher)**: 100 pure Toxin direct hit; sticks and spawns a 3 m Toxin cloud (40 Toxin/s for 10 s = 10 ticks). Multiple grenades on the same target **stack independently** (3 shots = 3 clouds ticking simultaneously), rather than refreshing.
@@ -379,7 +391,7 @@ In that 4-origin, 24-instance scenario at **3× multishot**:
 
 ---
 
-### Example 2: Phantasma Prime — 2% Floor, 0.5 s Warm-Reload & Center Beam
+### Example 2: Phantasma Prime — 2% Floor, 0.5 s Warm-Reload & Center Beam {#phantasma-prime}
 
 * **Stats**: Innate **6 beams** (**5 outer + 1 center**), 15 damage/beam (90 total), **22.2% status/beam**, **12 ticks/s**, 0.5 ammo/tick (11 mag = 22 ticks ≈ 1.83 s, **0.5 s reload**), infinite body pierce, **2% base ramp floor**.
 * **Worked Walkthrough (verified in-game)**:
@@ -389,14 +401,14 @@ In that 4-origin, 24-instance scenario at **3× multishot**:
 
 ---
 
-### Example 3: Kuva Nukor vs. Amprex — Fixed vs. Geometric Chains & Punch Through
+### Example 3: Kuva Nukor vs. Amprex — Fixed vs. Geometric Chains & Punch Through {#kuva-nukor-amprex}
 
 * **Kuva Nukor (Fixed-Ratio Chain)**: 2 hops / 9 m / fixed **50%** per hop → 3-target total `100% + 50% + 50% =` **200%** (Hop 2 does *not* drop to 25%); paired with 5.0× crit damage, 50% status, and hidden permanent **Microwave** status (counts for GunCO).
 * **Amprex (Geometric Chain + Punch-Through Stacking)**: 3 hops / 10 m / **50% geometric** → single-origin 4-target total `100% + 50% + 25% + 12.5% =` **187.5%**. With **+2.2 m Punch Through** against 3 lined-up humanoids (0.5 m thick each), the main beam pierces all 3, each counting as a direct hit and spawning its own 3-hop chain → total multiplier jumps to `3 × 187.5% =` **562.5%** (**Tenet Glaxion, Tenet Cycron, and Larkspur / Prime** follow the same rule).
 
 ---
 
-### Example 4: Boar Prime (Incarnon) vs. Ocucor — Auto-Lock Multi-Beams vs. Kill Tendrils
+### Example 4: Boar Prime (Incarnon) vs. Ocucor — Auto-Lock Multi-Beams vs. Kill Tendrils {#boar-ocucor}
 
 | Dimension | Boar Prime (Incarnon Form) | Ocucor |
 | --- | --- | --- |
@@ -408,7 +420,7 @@ In that 4-origin, 24-instance scenario at **3× multishot**:
 
 ---
 
-### Example 5: Ignis Wraith vs. Vermisplicer (Primary / Secondary)
+### Example 5: Ignis Wraith vs. Vermisplicer (Primary / Secondary) {#ignis-vermisplicer}
 
 * **Ignis Wraith**: Infinite body pierce across its 27 m beam (all pierced targets receive multishot) plus a 3 m falloff-free terminal sphere (reaching 30 m); sphere-edge targets ignore multishot and headshots; Punch Through depth is clamped to `0` by the 3 m radius gate (no wall-piercing, no benefit from PT mods).
 * **Vermisplicer (Primary vs. Secondary)**:
@@ -417,7 +429,7 @@ In that 4-origin, 24-instance scenario at **3× multishot**:
 
 ---
 
-## 6. Mainstream Beam Weapons Quick-Reference Table
+## 6. Mainstream Beam Weapons Quick-Reference Table {#quick-reference}
 
 > Note: "Base Tick 1" uses `Floor + (1 - Floor) × min(1, 1 ÷ (Base FR × Ramp Time))` and shifts dynamically with modded Fire Rate.
 
@@ -444,7 +456,7 @@ In that 4-origin, 24-instance scenario at **3× multishot**:
 
 ---
 
-## 7. Common Misconceptions
+## 7. Common Misconceptions {#misconceptions}
 
 1. **Myth: "Tick 1 is always a fixed 20% (or 15% on Phantasma), and stopping fire resets ramp instantly."**  
    → **Reality**: The ramp clock pre-advances by `1 ÷ Fire Rate` before Tick 1 resolves, so **Tick 1 scales dynamically with Fire Rate** (Phantasma's true floor is `2%`, yielding `15.6%` only at 12 FR). Ceasing fire preserves 100% ramp during the `0.8 s` grace delay before decaying linearly, independently per target.

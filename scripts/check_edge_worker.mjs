@@ -40,6 +40,9 @@ const front = jsonc("wrangler.edge.jsonc");
 check("the edge serves the same assets, routed the same way",
   JSON.stringify(front.assets) === JSON.stringify(back.assets),
   `${JSON.stringify(front.assets)} against ${JSON.stringify(back.assets)}`);
+check("mechanics routes run worker first for Accept: text/markdown and canonical Link headers",
+  ["/mechanics", "/mechanics/*", "/mechanics.md"].every((r) => (front.assets.run_worker_first || []).includes(r)),
+  JSON.stringify(front.assets.run_worker_first));
 check("the edge is not placed", !front.placement, JSON.stringify(front.placement));
 const binding = (front.services || []).find((s) => s.binding === "BACKEND");
 check("the edge passes on to the worker wrangler.jsonc deploys", binding && binding.service === back.name,

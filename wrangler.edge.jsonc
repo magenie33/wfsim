@@ -23,6 +23,7 @@
     "html_handling": "drop-trailing-slash",
     "run_worker_first": ["/api/*", "/asset/*", "/pkg/*", "/", "/weapons", "/weapons/*",
                          "/index.md", "/weapons.md", "/method", "/method/*", "/method.md",
+                         "/mechanics", "/mechanics/*", "/mechanics.md",
                          "/.well-known/*", "/og/s/*", "/auth.md", "/privacy", "/terms", "/refunds",
                          "/board/*", "/board.meta.json"]
   }
