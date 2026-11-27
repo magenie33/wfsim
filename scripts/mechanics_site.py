@@ -678,7 +678,8 @@ MECH_CSS = """
 .mech-toc-fold>summary::after{content:"▸";font-size:12px;transition:transform .12s}
 .mech-toc-fold[open]>summary::after{transform:rotate(90deg)}
 .mech-toc-fold[open]>summary{margin-bottom:8px}
-.mech-lang-btn{font-size:12px;text-decoration:none;white-space:nowrap}
+.mech-lang-sel{height:28px;padding:0 8px;font:inherit;font-size:12px;background:var(--plane);color:var(--text);border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.mech-lang-sel:hover,.mech-lang-sel:focus{outline:none;border-color:var(--accent)}
 @media(max-width:900px){.mech-page .topbar-inner .menu-toggle{margin-left:auto}}
 """
 
@@ -701,9 +702,12 @@ def page_shell(
     e = html_mod.escape
     zh = lang == "zh"
     html_lang = "zh-Hans" if zh else "en"
-    other_href = "/mechanics" + en_url.split("/mechanics", 1)[1] if zh else "/mechanics" + zh_url.split("/mechanics", 1)[1]
+    en_path = "/mechanics" + en_url.split("/mechanics", 1)[1]
+    zh_path = "/mechanics" + zh_url.split("/mechanics", 1)[1]
+    other_href = en_path if zh else zh_path
     other_lbl = "English" if zh else "中文"
     other_lang = "en" if zh else "zh-Hans"
+    other_code = "en" if zh else "zh"
     nav_arsenal = "军械库" if zh else "Arsenal"
     nav_bench = "基准榜" if zh else "Benchmark"
     nav_mech = "机制" if zh else "Mechanics"
@@ -711,6 +715,9 @@ def page_shell(
     nav_comm = "社区" if zh else "Community"
     nav_method = "方法" if zh else "Method"
     lbl_menu = "菜单" if zh else "Menu"
+    lbl_settings = "设置" if zh else "Settings"
+    lbl_language = "语言" if zh else "Language"
+    lbl_theme_row = "主题" if zh else "Theme"
     lbl_support = "支持" if zh else "Support"
     lbl_support_title = "支持 WF模拟" if zh else "Support WFSim"
     lbl_theme = "切换浅色/深色主题" if zh else "Toggle light / dark"
@@ -727,29 +734,54 @@ def page_shell(
     )
     og_dims = '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n' if has_og_card else ""
     tw_card = "summary_large_image" if has_og_card else "summary"
-    chrome_js = """<script>(function(){
+    # Match main app's wfsim-lang preference: redirect default EN route to /zh when user chose zh or browser is zh-*.
+    lang_boot_js = (
+        f'(function(){{try{{var s=localStorage.getItem("wfsim-lang");'
+        f'if(s==="en")return;'
+        f'if(s==="zh"){{location.replace({json.dumps(zh_path)}+location.hash);return;}}'
+        f'var ws=navigator.languages&&navigator.languages.length?navigator.languages:[navigator.language||"en"];'
+        f'for(var i=0;i<ws.length;i++){{var tag=String(ws[i]).toLowerCase();'
+        f'if(tag==="zh"||tag.indexOf("zh-")===0){{location.replace({json.dumps(zh_path)}+location.hash);return;}}'
+        f'if(tag==="en"||tag.indexOf("en-")===0)return;}}}}catch(e){{}}}})();'
+        if not zh
+        else ""
+    )
+    chrome_js = f"""<script>(function(){{
   var tb=document.getElementById("topbar"), mt=document.getElementById("menu-toggle");
   var cm=document.getElementById("community-menu"), ct=document.getElementById("community-toggle");
-  var th=document.getElementById("theme-toggle");
-  function setMenu(on){if(!tb||!mt)return;tb.classList.toggle("menu-open",on);mt.setAttribute("aria-expanded",String(on));}
-  function setComm(on){if(!cm||!ct)return;cm.classList.toggle("open",on);ct.setAttribute("aria-expanded",String(on));}
-  if(mt)mt.addEventListener("click",function(ev){ev.stopPropagation();setComm(false);setMenu(!tb.classList.contains("menu-open"));});
-  if(ct)ct.addEventListener("click",function(ev){ev.stopPropagation();setComm(!cm.classList.contains("open"));});
-  document.addEventListener("click",function(ev){
+  var tm=document.getElementById("tbmore"), tt=document.getElementById("tbmore-toggle");
+  var ls=document.getElementById("lang-select"), th=document.getElementById("theme-toggle");
+  var routes={{en:{json.dumps(en_path)},zh:{json.dumps(zh_path)}}};
+  function setMenu(on){{if(!tb||!mt)return;tb.classList.toggle("menu-open",on);mt.setAttribute("aria-expanded",String(on));}}
+  function setComm(on){{if(!cm||!ct)return;cm.classList.toggle("open",on);ct.setAttribute("aria-expanded",String(on));}}
+  function setMore(on){{if(!tm||!tt)return;tm.classList.toggle("open",on);tt.setAttribute("aria-expanded",String(on));}}
+  if(mt)mt.addEventListener("click",function(ev){{ev.stopPropagation();setComm(false);setMore(false);setMenu(!tb.classList.contains("menu-open"));}});
+  if(ct)ct.addEventListener("click",function(ev){{ev.stopPropagation();setMore(false);setComm(!cm.classList.contains("open"));}});
+  if(tt)tt.addEventListener("click",function(ev){{ev.stopPropagation();setComm(false);setMore(!tm.classList.contains("open"));}});
+  document.addEventListener("click",function(ev){{
     if(tb&&tb.classList.contains("menu-open")&&!tb.contains(ev.target))setMenu(false);
     if(cm&&cm.classList.contains("open")&&!cm.contains(ev.target))setComm(false);
-  });
-  document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){setMenu(false);setComm(false);}});
-  if(th)th.addEventListener("click",function(){
+    if(tm&&tm.classList.contains("open")&&!tm.contains(ev.target))setMore(false);
+  }});
+  document.addEventListener("keydown",function(ev){{if(ev.key==="Escape"){{setMenu(false);setComm(false);setMore(false);}}}});
+  if(ls)ls.addEventListener("change",function(){{
+    var v=ls.value==="zh"?"zh":"en";
+    try{{localStorage.setItem("wfsim-lang",v);}}catch(e){{}}
+    if(routes[v]&&routes[v]!==location.pathname)location.assign(routes[v]+location.hash);
+  }});
+  document.querySelectorAll("[data-set-lang]").forEach(function(a){{
+    a.addEventListener("click",function(){{try{{localStorage.setItem("wfsim-lang",a.getAttribute("data-set-lang"));}}catch(e){{}}}});
+  }});
+  if(th)th.addEventListener("click",function(){{
     var cur=document.documentElement.getAttribute("data-theme");
     var dark=cur?cur==="dark":!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches);
     var next=dark?"light":"dark";
     document.documentElement.setAttribute("data-theme",next);
-    try{localStorage.setItem("wfsim-theme",next);}catch(e){}
-  });
+    try{{localStorage.setItem("wfsim-theme",next);}}catch(e){{}}
+  }});
   var toc=document.querySelector(".mech-toc-fold");
   if(toc&&window.matchMedia&&window.matchMedia("(max-width:880px)").matches)toc.open=false;
-})();</script>"""
+}})();</script>"""
     return f"""<!doctype html>
 <html lang="{html_lang}">
 <head>
@@ -772,7 +804,7 @@ def page_shell(
 <link rel="stylesheet" href="{e(style_href)}">
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
 {ld_html}<style>{MECH_CSS}</style>
-<script>(function(){{try{{var t=localStorage.getItem("wfsim-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}}catch(e){{}}}})();</script>
+<script>(function(){{try{{var t=localStorage.getItem("wfsim-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}}catch(e){{}}}})();{lang_boot_js}</script>
 </head>
 <body class="mech-page">
 <header class="topbar" id="topbar">
@@ -802,8 +834,19 @@ def page_shell(
       </nav>
       <div class="tblinks">
         <a class="sup-link ghost-btn" href="/support" title="{lbl_support_title}" aria-label="{lbl_support}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg><span class="tbl">{lbl_support}</span></a>
-        <a class="ghost-btn mech-lang-btn" href="{e(other_href)}" lang="{other_lang}">{other_lbl}</a>
-        <button type="button" id="theme-toggle" class="ghost-btn" title="{lbl_theme}" aria-label="{lbl_theme}">◐</button>
+        <div class="tbmore" id="tbmore">
+          <button type="button" id="tbmore-toggle" class="ghost-btn tbmore-btn" aria-expanded="false" aria-controls="tbmore-panel" aria-haspopup="true" title="{lbl_settings}" aria-label="{lbl_settings}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h10m4 0h2M4 17h4m4 0h8M14 4.5v5M8 14.5v5"/></svg></button>
+          <div class="tbmore-panel" id="tbmore-panel">
+            <div class="tbmore-row">
+              <span class="tbl">{lbl_language}</span>
+              <select id="lang-select" class="dd mech-lang-sel" aria-label="Language / 语言"><option value="en"{"" if zh else " selected"}>English</option><option value="zh"{" selected" if zh else ""}>中文</option></select>
+            </div>
+            <div class="tbmore-row">
+              <span class="tbl">{lbl_theme_row}</span>
+              <button type="button" id="theme-toggle" class="ghost-btn" title="{lbl_theme}" aria-label="{lbl_theme}">◐</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -814,7 +857,7 @@ def page_shell(
 <footer class="footer">
   <div class="footer-inner">
     <span>{"WF模拟 是非官方粉丝项目，与 Digital Extremes 无关。" if zh else "WFSim is an unofficial fan project, not affiliated with or endorsed by Digital Extremes."}</span>
-    · <a href="/weapons">{nav_arsenal}</a> · <a href="{mech_home}">{nav_mech}</a> · <a href="{method_home}">{nav_method}</a> · <a href="{e(md_path)}">Markdown</a>
+    · <a href="/weapons">{nav_arsenal}</a> · <a href="{mech_home}">{nav_mech}</a> · <a href="{method_home}">{nav_method}</a> · <a href="{e(other_href)}" lang="{other_lang}" data-set-lang="{other_code}">{other_lbl}</a> · <a href="{e(md_path)}">Markdown</a>
   </div>
 </footer>
 {chrome_js}

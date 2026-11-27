@@ -71,14 +71,17 @@ for (const route of routes) {
   check(`${route}: bidirectional hreflang en & zh-Hans`,
     html.includes(`hreflang="en" href="${SITE}${enAlt}"`) &&
     html.includes(`hreflang="zh-Hans" href="${SITE}${zhAlt}"`));
-  check(`${route}: unified site topbar and mobile menu shell`,
+  check(`${route}: unified site topbar, settings menu, and language sync`,
     html.includes('id="menu-toggle"') &&
     html.includes('id="topmenu"') &&
     html.includes('class="topnav"') &&
     html.includes('class="tnav sel"') &&
     html.includes(isZh ? ">军械库</a>" : ">Arsenal</a>") &&
     html.includes('id="community-toggle"') &&
-    html.includes('id="theme-toggle"'));
+    html.includes('id="tbmore-toggle"') &&
+    html.includes('id="lang-select"') &&
+    html.includes('id="theme-toggle"') &&
+    html.includes('wfsim-lang'));
 
   // Validate all JSON-LD blocks parse cleanly.
   const lds = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]

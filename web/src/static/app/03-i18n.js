@@ -206,6 +206,10 @@ function applyI18n() {
     if (!el.dataset.i18nSrc) el.dataset.i18nSrc = node.textContent.trim();
     node.textContent = node.textContent.replace(el.dataset.i18nSrc, tr(el.dataset.i18nSrc)) || tr(el.dataset.i18nSrc);
   });
+  document.querySelectorAll("[data-i18n-href]").forEach((el) => {
+    if (!el.dataset.i18nHrefEn) el.dataset.i18nHrefEn = el.getAttribute("href");
+    el.setAttribute("href", LANG === "zh" ? el.dataset.i18nHref : el.dataset.i18nHrefEn);
+  });
 }
 // META's names in the reader's language, once (`headlessApplyNames`); the
 // English stays as `name_en`, which URLs and wiki links are built from.
