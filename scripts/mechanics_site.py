@@ -615,7 +615,6 @@ MECH_CSS = """
 .mech-card p{margin:0;font-size:13.5px;color:var(--text-2);line-height:1.55}
 .mech-card-meta{margin-top:auto;padding-top:8px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
 .mech-layout{display:grid;grid-template-columns:minmax(0,1fr) 248px;gap:22px;align-items:start}
-@media(max-width:880px){.mech-layout{grid-template-columns:1fr}.mech-aside{order:-1}}
 .mech-article{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px 28px;min-width:0}
 @media(max-width:600px){.mech-article{padding:16px}}
 .mech-crumb{font-size:12.5px;color:var(--muted);margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -654,6 +653,7 @@ MECH_CSS = """
 .mf-label{font-weight:600;font-size:13px;color:var(--text)}
 .mf-next{font-size:12px;color:var(--text-2);margin-top:3px}
 .mech-aside{position:sticky;top:64px;display:flex;flex-direction:column;gap:12px}
+@media(max-width:880px){.mech-layout{grid-template-columns:1fr}.mech-aside{position:static;top:auto;order:0}}
 .mech-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 14px}
 .mech-box h3{margin:0 0 8px;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 .mech-toc{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12.5px}
@@ -798,8 +798,9 @@ def page_shell(
     document.documentElement.setAttribute("data-theme",next);
     try{{localStorage.setItem("wfsim-theme",next);}}catch(e){{}}
   }});
-  var toc=document.querySelector(".mech-toc-fold");
-  if(toc&&window.matchMedia&&window.matchMedia("(max-width:880px)").matches)toc.open=false;
+  if(window.matchMedia&&window.matchMedia("(max-width:880px)").matches){{
+    document.querySelectorAll(".mech-toc-fold").forEach(function(d){{d.open=false;}});
+  }}
 }})();</script>"""
     return f"""<!doctype html>
 <html lang="{html_lang}">
@@ -1265,7 +1266,7 @@ def ship_mechanics(
 </article>
 <aside class="mech-aside">
   <div class="mech-box"><details class="mech-toc-fold" open><summary>{lbl_toc}</summary><ul class="mech-toc">{toc_html}</ul></details></div>
-  <div class="mech-box"><h3>{lbl_weapons}</h3><div class="mech-wlist">{wlist_html}</div></div>
+  <div class="mech-box"><details class="mech-toc-fold" open><summary>{lbl_weapons}</summary><div class="mech-wlist">{wlist_html}</div></details></div>
   <div class="mech-aside-links"><button type="button" data-copy="{html_mod.escape(cite_raw, quote=True)}">{lbl_copy_ref}</button><span>·</span><a href="{md_twin_path}">Markdown</a></div>
 </aside>
 </div>{share_script}"""

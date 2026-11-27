@@ -132,6 +132,8 @@ check("magnetic-electricity embeds interactive calculator",
   magEn.includes('id="magnetic-calculator"') && magZh.includes('id="magnetic-calculator"'));
 check("all articles expose one-click Copy for AI with attribution and zero leaked {#id} tokens",
   [beamEn, beamZh, magEn, magZh].every((doc) => doc.includes("data-copy-ai") && !doc.includes("{#")));
+check("mobile layout disables sticky floating sidebar",
+  [beamEn, beamZh, magEn, magZh].every((doc) => doc.includes("@media(max-width:880px){.mech-layout{grid-template-columns:1fr}.mech-aside{position:static;top:auto;order:0}}")));
 check("beam-weapons uses identical permanent semantic anchors across EN and ZH",
   ["key-formulas", "ramp-up", "first-tick", "dot-snapshot", "multishot", "formulas", "torid-incarnon"].every(
     (id) => beamEn.includes(`id="${id}"`) && beamZh.includes(`id="${id}"`)));
