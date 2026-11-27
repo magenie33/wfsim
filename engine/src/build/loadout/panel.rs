@@ -723,6 +723,7 @@ pub struct ResolvedPanel {
     /// fight. `None` under the other policies — AssumedMax has already folded
     /// it into `crit_chance`, and BaseOnly refuses conditionals.
     pub crit_chance_per_hit: Option<CritPerHit>,
+    pub power_shot_crit_per_hit: Option<(f64, u32)>,
     /// ACID SHELLS' corpse explosion, when the build carries the augment.
     pub acid_shells: Option<AcidShells>,
     /// Fraction of the magazine returned on each kill, from the reserve.

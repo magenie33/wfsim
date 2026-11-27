@@ -6,7 +6,7 @@
 #
 # A BEAM THAT CHAINS where the primary splashes, and the damage TYPE differs
 # too: Puncture and Radiation here, Radiation alone there. The grip trades
-# REACH for damage, 22 m on Haymaker to 41 m on Gibber.
+# REACH for damage, 21 m on Haymaker to 40 m on Gibber.
 id: gaze_secondary
 name: Gaze
 chamber: gaze
@@ -49,13 +49,13 @@ fire_rate:
   ramble: 12
   ulnaris: 12
 
-# THE GRIP SETS THE REACH ON A BEAM, published per grip beside the
-# damage: a grip that hits harder reaches less far.
+# THE GRIP SETS THE REACH ON A BEAM, from client `TraceDistance` overrides per
+# grip: a grip that hits harder reaches less far.
 range_m:
-  gibber: 41
-  haymaker: 22
-  lovetap: 25
-  ramble: 38
+  gibber: 40
+  haymaker: 21
+  lovetap: 24
+  ramble: 37
   ulnaris: 30
 
 # THE MAGAZINE IS A SIZE CLASS, and the loader names which one.

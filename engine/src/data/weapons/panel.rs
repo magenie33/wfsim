@@ -756,7 +756,9 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             child.attack = attack.clone();
             child.attack.combo_script = s.attack.combo_script.clone();
             child.attack.spends_combo = s.attack.spends_combo;
-            child.attack.fire_rate = s.attack.fire_rate;
+            if s.slot == "melee" {
+                child.attack.fire_rate = s.attack.fire_rate;
+            }
             child.attack.heavy = s.attack.heavy;
             child.attack.wait_for_lingering = s.attack.wait_for_lingering;
             if let Some(co) = &attack.co_behavior { child.co_behavior = Some(co.clone()); }
@@ -797,6 +799,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         evo_slam_radius_bonus: 0.0,
         evo_heavy_windup_speed: 0.0,
         evo_proc_conversion: None,
+        power_shot_crit_per_hit: None,
         follow_through: s.attack.follow_through,
         melee_radius: s.attack.melee_radius,
         spends_combo: s.attack.spends_combo,

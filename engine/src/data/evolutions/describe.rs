@@ -433,6 +433,10 @@ impl EvolutionDef {
                     "weakpoint hits build +{:.0}% Incarnon charge",
                     v * 100.0
                 ),
+                EvoEffect::PowerShotCritPerHit { per_stack, max_stacks } => format!(
+                    "+{:.0}% critical chance and critical damage per Incarnon hit ({max_stacks} max) on the fully charged blast",
+                    per_stack * 100.0
+                ),
                 EvoEffect::StackingDamageOnPlainHit {
                     per_stack,
                     max_stacks,

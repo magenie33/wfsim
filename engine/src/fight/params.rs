@@ -534,6 +534,7 @@ pub struct FightParams {
     /// takes it — so it is a rate and a cap here rather than a `TimedBuff`, the
     /// same shape `crit_chance_per_tendril` carries one field down.
     pub crit_chance_per_hit: Option<crate::model::CritPerHit>,
+    pub power_shot_crit_per_hit: Option<(f64, u32)>,
     // ---- MELEE: the combo counter and what reads it ----------------------
     //
     // ONE COUNTER, THREE READERS, and they want opposite things from it. A

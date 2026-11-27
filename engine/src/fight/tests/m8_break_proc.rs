@@ -677,3 +677,75 @@ fn m8_forced_proc_side_effect_cannot_pay_the_packet_into_a_fresh_spawn() {
     assert_eq!(q.r.tally.effective(), 750.0);
     assert!(q.body.debuffs.dots.is_empty());
 }
+
+#[test]
+fn eg01_magnetic_break_inherits_latest_magnetic_group_and_reverts_head_landing_on_expiry() {
+    // Case 4: Cross-mode/seat Magnetic stack splits break Electricity from Weapon A's Head Electricity.
+    let mut split = Probe::new();
+    split.p.arcane = arc("primary_deadhead");
+    split.arc = ArcRuntime::init(&split.p);
+    split.electric(true, 0.0);
+    let mut other_mode = split.p.clone();
+    other_mode.form = crate::model::FormKind::AltFire;
+    let mit = split.body.debuffs.mitigation(0.0, 1.0, 0.0, 1.0);
+    settle_procs(
+        &[DamageType::Magnetic; 10], Seat::WIELDER, 0.0, 0,
+        InstanceScale {
+            native_source: None, native_part: None, mb_live: 10.0, crit_multiplier: 1.0,
+            part_factor: 1.0, landing: ProcLanding::default(), attrition: 1.0,
+            xh_bracket: 1.0, status_damage_live: 0.0,
+        },
+        &mut split.body.debuffs, &mut split.gal, &mut split.arc, &mut split.body.state,
+        &split.p, &other_mode, &mit, &mut split.r, &mut split.rec, &mut split.rng,
+        &split.p.foe, DEPTH_PROC,
+    );
+    split.break_pool(BrokenPool::Overguard, 0.0);
+    split.tick(0.01);
+    assert_eq!(split.r.dot_ticks, 2, "cross-behavior Magnetic break splits into 2 radial groups");
+    let expected_split = 5000.0 + (432.0 + 0.5) * 1.8 + (2500.0 + 0.5) * 1.0;
+    assert!((split.r.tally.effective() - expected_split).abs() < 1e-6, "got {}", split.r.tally.effective());
+
+    // Case 5: Longer Head Electricity (12 s -> 12 ticks) followed by shorter same-weapon Magnetic
+    // break Electricity (3 s -> 3 ticks) ticks at 1.0x for ticks 0..2, then reverts to 1.8x HEAD!
+    let mut rev = Probe::new();
+    rev.p.foe.mode = TargetMode::InstantRespawn;
+    rev.p.arcane = arc("primary_deadhead");
+    rev.arc = ArcRuntime::init(&rev.p);
+    rev.p.status_duration_multiplier = 2.0;
+    let head_part = all_head().remove(0);
+    let mit0 = rev.body.debuffs.mitigation(0.0, 2.0, 0.0, 1.0);
+    settle_procs(
+        &[DamageType::Electricity], Seat::WIELDER, 0.0, 0,
+        InstanceScale {
+            native_source: None, native_part: None, mb_live: 160.0, crit_multiplier: 1.0,
+            part_factor: 5.4, landing: ProcLanding::at(1.8, &head_part), attrition: 1.0,
+            xh_bracket: 1.0, status_damage_live: 0.0,
+        },
+        &mut rev.body.debuffs, &mut rev.gal, &mut rev.arc, &mut rev.body.state,
+        &rev.p, &rev.p, &mit0, &mut rev.r, &mut rev.rec, &mut rev.rng, &rev.p.foe, DEPTH_PROC,
+    );
+    rev.p.status_duration_multiplier = 0.5;
+    let mit1 = rev.body.debuffs.mitigation(0.0, 0.5, 0.0, 1.0);
+    settle_procs(
+        &[DamageType::Magnetic; 10], Seat::WIELDER, 0.0, 0,
+        InstanceScale {
+            native_source: None, native_part: None, mb_live: 10.0, crit_multiplier: 1.0,
+            part_factor: 1.0, landing: ProcLanding::default(), attrition: 1.0,
+            xh_bracket: 1.0, status_damage_live: 0.0,
+        },
+        &mut rev.body.debuffs, &mut rev.gal, &mut rev.arc, &mut rev.body.state,
+        &rev.p, &rev.p, &mit1, &mut rev.r, &mut rev.rec, &mut rev.rng, &rev.p.foe, DEPTH_PROC,
+    );
+    rev.body.state.health = 100_000.0;
+    rev.break_pool(BrokenPool::Overguard, 0.0);
+    rev.tick(2.01);
+    assert_eq!(rev.r.dot_ticks, 3, "merged ticks at t=0, 1, 2");
+    let before_revert = rev.r.tally.dot();
+    assert!((before_revert - 3.0 * (432.0 + 2500.0 + 0.5)).abs() < 1e-6, "got {before_revert}");
+
+    // At t = 3.0, the 3-tick break stack has expired; the surviving Head stack reverts to 1.8x and grants Deadhead!
+    rev.body.state.health = 500.0;
+    rev.tick(3.01);
+    assert_eq!(rev.r.kills, 1);
+    assert_eq!(rev.arc.states[0].stacks, 1, "reverted HEAD tick kill grants Primary Deadhead");
+}

@@ -4,8 +4,8 @@
 # see notes: kitgun_entry_is_default_assembly
 #
 # A TENDRIL THAT SPLITS: "Long-range proboscis attaches to a target and then
-# splits off to attack up to three more enemies." The GRIP sets the reach (30 m
-# on Brash to 16 m on Tremor), and `spec_assembled` composes it into
+# splits off to attack up to three more enemies." The GRIP sets the reach (21 m
+# on Brash to 7 m on Tremor), and `spec_assembled` composes it into
 # `beam.range_m`.
 id: vermisplicer_primary
 name: Vermisplicer
@@ -74,7 +74,7 @@ attack:
       cooldown_divisor: 2
       per_target: true
     # The default grip's reach; an assembly replaces it with its own grip's.
-    range_m: 30
+    range_m: 21
     damage_radius_m: 0.0
     radius_takes_multishot: false
     chain:

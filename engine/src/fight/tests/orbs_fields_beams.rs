@@ -1494,3 +1494,134 @@ fn athodai_alt_fires_as_continuous_beam_with_merged_multishot_and_ramp() {
         assert!(ramp.per_target);
     }
 }
+
+#[test]
+fn athodai_alt_dumps_modded_or_partial_clip_with_per_tick_ammo_and_ramp() {
+    use crate::build::loadout::resolve;
+    use crate::model::StackPolicy;
+    let base = crate::model::WeaponBase::from_data("athodai_alt", false, &[]);
+    let panel = resolve(&base, &[], StackPolicy::Emergent);
+    let arena = crate::arena::Arena::training(2.0);
+    let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
+    p.duration_seconds = 1.95;
+    p.infinite_reserve = false;
+    p.reserve_ammo = 0.0;
+    let full = monte_carlo(&p, 1, 1);
+    assert_eq!(full.mean_shots, 24.0, "full 24-round clip drains 1/tick at 12/s");
+
+    let mut partial = p.clone();
+    partial.magazine_size = 5.0;
+    let short = monte_carlo(&partial, 1, 1);
+    assert_eq!(short.mean_shots, 5.0, "partial 5-round clip caps at 5 ticks");
+
+    let mut boosted = p;
+    boosted.magazine_size = 36.0;
+    boosted.duration_seconds = 2.95;
+    let extended = monte_carlo(&boosted, 1, 1);
+    assert_eq!(extended.mean_shots, 36.0, "modded >24 clip fires the entire 36-round clip");
+}
+
+#[test]
+fn onos_incarnon_ramps_over_eight_ticks_fires_power_shot_and_clamps_under_fifty_charges() {
+    use crate::build::loadout::resolve;
+    use crate::model::StackPolicy;
+    let base = crate::model::WeaponBase::from_data("onos_incarnon", true, &["onos_evo1_incarnon_form"]);
+    let panel = resolve(&base, &[], StackPolicy::Emergent);
+    let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(2.0), &ArcaneFx::none());
+    p.body_parts = mono_body(1.0);
+    p.base_crit_chance = 0.0;
+    p.critical_inputs = None;
+    p.status_chance = 0.0;
+    let ps = p.melee_profiles.get_mut("power_shot").unwrap();
+    ps.body_parts = mono_body(1.0);
+    ps.base_crit_chance = 0.0;
+    ps.critical_inputs = None;
+    ps.radial.as_mut().unwrap().crit_chance = 0.0;
+    ps.radial.as_mut().unwrap().critical_inputs = None;
+    p.duration_seconds = 4.6;
+
+    let mut rec = crate::record::Record::window(0.0, 10.0, 1000, 0);
+    let res = run_once_traced(&p, &mut Rng::new(7), None, &mut rec);
+    assert_eq!(res.shots, 9, "8 beam ticks + 1 auto-switched power_shot");
+    let direct_hits: Vec<f64> = rec.events().iter().filter_map(|e| match &e.kind {
+        crate::record::Kind::Damage(d)
+            if d.origin == crate::record::Origin::Own && d.dtype == DamageType::Radiation => Some(d.raw),
+        _ => None,
+    }).collect();
+    assert_eq!(direct_hits.len(), 8);
+    assert!((direct_hits[0] - 30.0 * 1.1875).abs() < 1e-6);
+    assert!((direct_hits[7] - 30.0 * 2.5).abs() < 1e-6);
+    let blast_hits: Vec<f64> = rec.events().iter().filter_map(|e| match &e.kind {
+        crate::record::Kind::Damage(d)
+            if matches!(d.origin, crate::record::Origin::Own | crate::record::Origin::Splash)
+                && d.dtype == DamageType::Heat => Some(d.raw),
+        _ => None,
+    }).collect();
+    assert_eq!(blast_hits, vec![2200.0, 1100.0]);
+
+    // With < 50 charges left after the 8th tick, focus stays clamped at 2.5x without switching.
+    let mut low = p.clone();
+    low.magazine_size = 20.0;
+    low.infinite_reserve = false;
+    low.reserve_ammo = 0.0;
+    low.duration_seconds = 6.0;
+    let mut low_rec = crate::record::Record::window(0.0, 10.0, 1000, 0);
+    let _ = run_once_traced(&low, &mut Rng::new(7), None, &mut low_rec);
+    let low_rad: Vec<f64> = low_rec.events().iter().filter_map(|e| match &e.kind {
+        crate::record::Kind::Damage(d) if d.dtype == DamageType::Radiation => Some(d.raw),
+        _ => None,
+    }).collect();
+    assert_eq!(low_rad.len(), 12);
+    assert!((low_rad[7] - 75.0).abs() < 1e-6);
+    assert!((low_rad[11] - 75.0).abs() < 1e-6, "clamped at 2.5x while <50 charges remain");
+}
+
+#[test]
+fn onos_devastation_cascade_stacks_crit_on_power_shot_and_resets_after_blast() {
+    use crate::build::loadout::resolve;
+    use crate::model::StackPolicy;
+    let plain_evos: &[&str] = &["onos_evo1_incarnon_form"];
+    let cascade_evos: &[&str] = &["onos_evo1_incarnon_form", "onos_devastation_cascade"];
+    let run_for = |evos: &[&str]| {
+        let base = crate::model::WeaponBase::from_data("onos_incarnon", true, evos);
+        let panel = resolve(&base, &[], StackPolicy::Emergent);
+        let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(2.0), &ArcaneFx::none());
+        p.duration_seconds = 9.6;
+        monte_carlo(&p, 64, 11).mean_damage
+    };
+    let without = run_for(plain_evos);
+    let with = run_for(cascade_evos);
+    assert!(with > without * 1.35, "Devastation Cascade boosts PowerShot CC/CD: {without} -> {with}");
+}
+
+#[test]
+fn inactive_behavior_freezes_beam_ramp_across_mode_switch_while_reload_decays() {
+    let spec = Some(crate::model::BeamRampSpec {
+        rise_seconds: 0.6,
+        ceiling: 1.0,
+        rise_ticks: 0,
+        cooldown_delay_seconds: 0.8,
+        cooldown_divisor: 2.0,
+        per_target: true,
+        reset_on_release: false,
+    });
+    let mut beam = BeamRamp::default();
+    let mut targets = vec![TargetRamp::default()];
+    for step in 0..6 {
+        let now = f64::from(step) * 0.1;
+        let _ = beam.tick(now, 0.1, 0.2, spec);
+        let _ = targets[0].hit(1, now, 0.1, 0.2, spec);
+    }
+    assert!((targets[0].hit(1, 0.5, 0.1, 0.2, spec) - 1.0).abs() < 1e-12);
+
+    // Suspend at t = 0.6 into another mode for 10 seconds (well past 0.8 + 1.2 s decay).
+    let mut inactive = FrozenBeam::default();
+    inactive.swap(&mut beam, &mut targets, 0.6, 0.6);
+    assert!(targets.is_empty(), "other mode starts with its own empty target list");
+    inactive.swap(&mut beam, &mut targets, 10.6, 10.6);
+    assert!((targets[0].hit(1, 10.6, 0.1, 0.2, spec) - 1.0).abs() < 1e-12, "frozen while inactive");
+
+    // Staying on the active behavior through a 2.5 s reload decays back to cold.
+    let after_reload = targets[0].hit(1, 13.2, 0.1, 0.2, spec);
+    assert!((after_reload - (0.2 + 0.8 / 6.0)).abs() < 1e-12, "reload decays active ramp: {after_reload}");
+}

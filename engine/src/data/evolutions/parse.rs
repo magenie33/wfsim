@@ -295,6 +295,10 @@ pub(super) fn effect(v: &Value) -> Option<EvoEffect> {
         "instant_reload_on_kill" => {
             EvoEffect::InstantReloadOnKill { chance: f(v, "chance").unwrap_or(0.0) }
         }
+        "power_shot_crit_per_hit" => EvoEffect::PowerShotCritPerHit {
+            per_stack: f(v, "per_stack").unwrap_or(0.0),
+            max_stacks: v.get("max_stacks").and_then(Value::as_u64).unwrap_or(0) as u32,
+        },
         "round_restore_on_status_hit" => {
             let Some(status) = v.get("status").and_then(Value::as_str).and_then(crate::rules::damage::DamageType::from_name)
             else {

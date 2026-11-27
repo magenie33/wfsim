@@ -10,17 +10,15 @@ transforms_from: onos
 
 # see notes: bulk_intake_stats_are
 #
-# THE CHARGED SHOT IS THIS FORM, AND IT IS THE PART THAT IS MISSING. What this
-# entry carries is the beam that plays WHILE the cannon charges; what the form
-# is FOR is the blast at the end of that charge, and a fight simulated without
-# it reports a weapon that cannot kill anything. The arithmetic of one cycle,
-# from the wiki's own attack rows: 8 beam ticks at 30 Radiation against 2,200
-# Heat direct plus 1,100 Heat radial — the beam is a ninth of it.
+# Behavior 1 (`EntratiWristGunBeamFireBehavior` + `EntratiWristGunBeamStateBehavior`)
+# focuses from 1.0x to 2.5x over 8 beam ticks (`0.125` progress/tick, weapon-shared,
+# instant reset on trigger release). When focus reaches 1.0 with >= 50 Incarnon
+# charges remaining, `0x1348490` resets focus and switches to Behavior 2 (`power_shot`,
+# 50 charges: 2,200 Heat trace + 1,100 Heat 3 m radial), then returns to Behavior 1;
+# below 50 charges the beam stays clamped at 2.5x until empty.
 unmodeled:
-  - reason: client_secondary_other_behavior
-  - "The Incarnon Form's charged shot is not modelled, and it is most of the form: 2,200 Heat with guaranteed status, 38% crit and 3.2x, with the beam's 5 m punch through. It costs 50 of the 350 Incarnon rounds, so one gauge is seven charged shots. The number reads low."
-  - "The charged shot's explosion is not modelled either: 1,100 Heat in 3 m at 38% crit and 3.2x, falling off to 70% at the rim, needing no line of sight."
-  - "The beam's charge ramp is not modelled: its damage climbs to 2.5x the longer the trigger is held, resetting on release or on a charged shot. The beam here is scored at its lowest."
+  - reason: explosion_ignores_cover
+  - reason: self_stagger
 
 gauge_form:
   gauge:
@@ -56,11 +54,13 @@ attack:
   trigger: held
   beam_ramp:
     rise_seconds: 0
+    rise_ticks: 8
+    ceiling: 2.5
     cooldown_delay_seconds: 0
     cooldown_divisor: 0
     per_target: false
-  shot_type: projectile
-  projectile_speed_mps: 40
+    reset_on_release: true
+  shot_type: hit_scan
   fire_rate: 2
   multishot: 1.0
   ammo_cost: 1                  # of the 350-round charge pool
@@ -73,6 +73,34 @@ attack:
   punch_through_m: 5.0
   infinite_body_punch_through: true
   damage: { radiation: 30 }   # total 30
+  profiles:
+    power_shot:
+      spread:
+        min_deg: 0.0
+        max_deg: 0.0
+      trigger: semi
+      shot_type: hit_scan
+      fire_rate: 1.3333333333333333
+      multishot: 1.0
+      ammo_cost: 50
+      crit_chance: 0.38
+      crit_multiplier: 3.2
+      status_chance: 0.26
+      forced_procs: [heat, impact]
+      punch_through_m: 1.0
+      infinite_body_punch_through: true
+      range_m: 300
+      damage: { heat: 2200 }
+      radial:
+        radius_m: 3.0
+        falloff_start_m: 0.0
+        falloff_reduction: 0.3
+        crit_chance: 0.38
+        crit_multiplier: 3.2
+        status_chance: 0.26
+        takes_multishot: false
+        takes_blast_radius_mods: true
+        damage: { heat: 1100 }
 
 # incarnon_evolutions: see data/weapons/secondary/onos.yaml (shared group)
 

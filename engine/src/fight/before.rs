@@ -41,6 +41,8 @@ pub(super) fn before_the_shot(
     rs_armed: &mut bool,
     opening_closed: &mut bool,
     field_duration_boost: &mut bool,
+    beam: &mut BeamRamp,
+    target_ramps: &mut Vec<TargetRamp>,
     switch_to: Option<super::cycle::SwitchTo>,) -> Flow {
     let t = *t_at;
         // THE FRAME FOR THIS INSTANT IS ALREADY DRAWN, by the scan loop just
@@ -81,6 +83,7 @@ pub(super) fn before_the_shot(
         let next_cost = {
             let active: &FightParams = match &params.cycle {
                 Some(cy) if incarnon.in_base_form => &cy.base_form,
+                _ if incarnon.power_shot_armed => params.melee_profiles.get("power_shot").unwrap_or(params),
                 _ => params,
             };
             bar.expire(t);
@@ -252,6 +255,11 @@ pub(super) fn before_the_shot(
                 let out = apl.pick(&incarnon.now(params, ammo, next_cost, t, tennokai, &remains, None))
                     == crate::data::apl::Action::TransformOut;
                 if out {
+                    if params.beam_ramp.is_some_and(|s| s.reset_on_release) {
+                        *beam = BeamRamp::default();
+                    }
+                    incarnon.power_shot_armed = false;
+                    incarnon.frozen_beam.swap(beam, target_ramps, t, t);
                     incarnon.in_base_form = true;
                     record_weapon(params, rec, ammo, incarnon);
                 }
@@ -262,13 +270,14 @@ pub(super) fn before_the_shot(
                 let was_base = incarnon.in_base_form;
                 charge_the_gauge(params, apl, tennokai, rec, rng, d, cy, charge_on, true,
                     r.pellets, r.weakpoint_hits + r.headshots_on_others,
-                    t_at, r, ammo, incarnon, double_tap, buff_stacks, rs_armed, opening_closed);
+                    t_at, r, ammo, incarnon, double_tap, buff_stacks, rs_armed, opening_closed,
+                    beam, target_ramps);
                 if was_base && !incarnon.in_base_form { return Flow::Continue; }
             }
         }
         charge_magazine_cycle(
             params, apl, tennokai, rec, rng, next_cost, t_at, r, ammo, incarnon, double_tap,
             windows, arc, buff_stacks, rs_armed, opening_closed,
-            field_duration_boost, last_shot_t, switch_to,
+            field_duration_boost, beam, target_ramps, last_shot_t, switch_to,
         )
 }

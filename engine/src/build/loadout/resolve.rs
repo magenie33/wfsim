@@ -2253,6 +2253,7 @@ pub fn resolve_for(
         crit_chance_on_headshot,
         on_weakpoint,
         crit_chance_stack,
+        power_shot_crit_per_hit: base.power_shot_crit_per_hit,
         status_damage_multiplier: relative_for(UpgradeType::WEAPON_PROC_DAMAGE, 1.0, status_damage, 0.0),
         native_status_damage_bonus: status_damage as f32,
         status_damage_of_type: tenno.shard_status_damage_of_type(base.slot),

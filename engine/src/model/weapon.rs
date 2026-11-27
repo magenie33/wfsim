@@ -140,14 +140,25 @@ pub struct SpreadSampling {
     pub hip_max_deg: Option<f64>,
 }
 
+#[wfsim_gas_macro::metered]
+fn default_beam_ceiling() -> f64 {
+    1.0
+}
+
 /// Native attenuation stores elapsed ramp time; cooldown is its divisor.
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
 pub struct BeamRampSpec {
     pub rise_seconds: f64,
+    #[serde(default = "default_beam_ceiling")]
+    pub ceiling: f64,
+    #[serde(default)]
+    pub rise_ticks: u32,
     pub cooldown_delay_seconds: f64,
     pub cooldown_divisor: f64,
     #[serde(default)]
     pub per_target: bool,
+    #[serde(default)]
+    pub reset_on_release: bool,
 }
 
 /// A TOME'S RECHARGE METER — a clock you spend, and the third way this roster
@@ -1346,6 +1357,8 @@ pub struct WeaponBase {
     /// A proc conversion granted by an evolution — `(from, to, chance)`.
     /// See [`ModEffect::ProcConversion`], whose runtime this shares.
     pub evo_proc_conversion: Option<(crate::rules::damage::DamageType, crate::rules::damage::DamageType, f64)>,
+    /// Devastation Cascade (`EntratiWristGunIncarnonCritsForHits`): additive CC/CD per hit in Incarnon Form on `power_shot`.
+    pub power_shot_crit_per_hit: Option<(f64, u32)>,
     /// Reload-speed bonus from evolutions, into the same bucket the mods feed.
     pub evo_reload_bonus: f64,
     /// READY RETALIATION's window — see

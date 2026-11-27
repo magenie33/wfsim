@@ -65,6 +65,7 @@ pub(super) struct Landing {
     pub(super) sc_arc_shot: f64,
     pub(super) weakpoint_cd: f64,
     pub(super) weakpoint_sc: f64,
+    pub(super) power_shot_crit_damage: f64,
     pub(super) bd_reload_add: f64,
     pub(super) bd_eximus_add: f64,
     pub(super) dt_mult: f64,
@@ -315,6 +316,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             sc_arc_shot: l.sc_arc_shot,
             weakpoint_cd: l.weakpoint_cd,
             weakpoint_sc: l.weakpoint_sc,
+            power_shot_crit_damage: l.power_shot_crit_damage,
             bd_reload_add: l.bd_reload_add,
             bd_eximus_add: l.bd_eximus_add,
             dt_mult: l.dt_mult,
@@ -624,6 +626,8 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         &mut me.rs_armed,
         &mut me.opening_closed,
         &mut me.field_duration_boost,
+        &mut me.beam,
+        &mut me.target_ramps,
     );
     t
 }

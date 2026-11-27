@@ -924,3 +924,80 @@ fn push_dot_capped_n_matches_repeated_single_pushes() {
         }
     }
 }
+
+#[test]
+fn zero_or_negative_status_duration_boosts_same_batch_pellets_only_with_zero_dot_ticks() {
+    for sd in [0.0, -0.2] {
+        for dtype in [
+            DamageType::Heat,
+            DamageType::Slash,
+            DamageType::Toxin,
+            DamageType::Electricity,
+            DamageType::Gas,
+            DamageType::Viral,
+        ] {
+            let mut foe = Foe::training_dummy();
+            foe.status_immunities.clear();
+            let p = FightParams {
+                foe,
+                arcane: ArcaneFx::none(),
+                body_parts: mono_body(1.0),
+                damage: DamageVector::new().with(dtype, 20.0),
+                co_per_type: 1.2,
+                co_behavior: crate::model::CoBehavior::AdditiveWithBaseDamage,
+                multishot: 2.0,
+                base_multishot: 1.0,
+                continuous: false,
+                status_chance: 1.0,
+                base_crit_chance: 0.0,
+                status_duration_multiplier: sd,
+                fire_rate: 10.0,
+                magazine_size: 10.0,
+                duration_seconds: 0.15,
+                ..FightParams::default()
+            };
+            let mut rec = crate::record::Record::window(0.0, 1.0, 100, 0);
+            let res = run_once_traced(&p, &mut Rng::new(3), None, &mut rec);
+            assert_eq!(res.dot_ticks, 0, "{dtype:?} at sd={sd} must deal 0 DoT ticks");
+            let hits: Vec<f64> = rec.events().iter().filter_map(|e| match &e.kind {
+                crate::record::Kind::Damage(d)
+                    if matches!(d.origin, crate::record::Origin::Own | crate::record::Origin::Multishot) => Some(d.raw),
+                _ => None,
+            }).collect();
+            assert_eq!(hits.len(), 4, "{dtype:?} at sd={sd}: 2 shots x 2 pellets");
+            assert!((hits[0] - 20.0).abs() < 1e-6, "{dtype:?} shot 1 pellet 1 unboosted: {}", hits[0]);
+            assert!((hits[1] - 44.0).abs() < 1e-6, "{dtype:?} shot 1 pellet 2 boosted (+120% CO): {}", hits[1]);
+            assert!((hits[2] - 20.0).abs() < 1e-6, "{dtype:?} shot 2 pellet 1 expired/unboosted: {}", hits[2]);
+            assert!((hits[3] - 44.0).abs() < 1e-6, "{dtype:?} shot 2 pellet 2 boosted: {}", hits[3]);
+        }
+
+        // Continuous beam merges multishot into 1 packet per tick, so solo beam ticks stay unboosted.
+        let beam = FightParams {
+            foe: Foe::training_dummy(),
+            arcane: ArcaneFx::none(),
+            body_parts: mono_body(1.0),
+            damage: DamageVector::new().with(DamageType::Heat, 100.0),
+            co_per_type: 1.2,
+            co_behavior: crate::model::CoBehavior::AdditiveWithBaseDamage,
+            multishot: 2.0,
+            base_multishot: 1.0,
+            continuous: true,
+            beam_ramp_floor: 1.0,
+            status_chance: 1.0,
+            base_crit_chance: 0.0,
+            status_duration_multiplier: sd,
+            fire_rate: 12.0,
+            magazine_size: 10.0,
+            duration_seconds: 0.2,
+            ..FightParams::default()
+        };
+        let mut beam_rec = crate::record::Record::window(0.0, 1.0, 100, 0);
+        let beam_res = run_once_traced(&beam, &mut Rng::new(3), None, &mut beam_rec);
+        assert_eq!(beam_res.dot_ticks, 0);
+        for e in beam_rec.events() {
+            if let crate::record::Kind::Damage(d) = &e.kind {
+                assert!((d.raw - 200.0).abs() < 1e-6, "merged beam tick stays unboosted at sd={sd}: {}", d.raw);
+            }
+        }
+    }
+}

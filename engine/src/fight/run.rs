@@ -450,6 +450,7 @@ pub fn run_once_traced(
             apl: o.apl,
             seconds: tg.switch_seconds,
             bucket: tg.reload_bucket,
+            frozen_beam: FrozenBeam::default(),
         });
     }
     // FLATTENED BACK INTO LOCALS, deliberately. The loop names these thirty-eight
@@ -608,7 +609,8 @@ pub fn run_once_traced(
                         charge_the_gauge(me.params, &me.apl, false, rec, rng, &mut me.d, cy,
                             charge_on, true, r.pellets, r.weakpoint_hits + r.headshots_on_others,
                             &mut now, &mut r, &mut me.ammo, &mut me.incarnon, &mut me.double_tap,
-                            &mut me.buff_stacks, &mut me.rs_armed, &mut me.opening_closed);
+                            &mut me.buff_stacks, &mut me.rs_armed, &mut me.opening_closed,
+                            &mut me.beam, &mut me.target_ramps);
                         if !me.incarnon.in_base_form { me.next_t = now; }
                     }
                 }
@@ -726,6 +728,8 @@ pub fn run_once_traced(
             &mut me.rs_armed,
             &mut me.opening_closed,
             &mut me.field_duration_boost,
+            &mut me.beam,
+            &mut me.target_ramps,
             me.other.as_ref().map(|o| super::cycle::SwitchTo { form: o.params.form.id(), seconds: o.seconds, bucket: o.bucket }),
         ) };
         match flow {
@@ -751,6 +755,10 @@ pub fn run_once_traced(
             // and the one magazine held to what this mode holds.
             Flow::Switch => {
                 if let Some(o) = me.other.as_mut() {
+                    if me.params.beam_ramp.is_some_and(|s| s.reset_on_release) {
+                        me.beam = BeamRamp::default();
+                    }
+                    o.frozen_beam.swap(&mut me.beam, &mut me.target_ramps, me.next_t, t);
                     std::mem::swap(&mut me.params, &mut o.params);
                     std::mem::swap(&mut me.fixed, &mut o.fixed);
                     std::mem::swap(&mut me.apl, &mut o.apl);
@@ -811,7 +819,12 @@ pub fn run_once_traced(
             }
         }
         let active = melee_profile(active, &me.melee);
-        let event_profile = current_melee_event(active, &me.melee).and_then(|h| h.profile.clone());
+        let firing_power_shot = std::mem::take(&mut me.incarnon.power_shot_armed);
+        let event_profile = if firing_power_shot {
+            Some("power_shot".to_string())
+        } else {
+            current_melee_event(active, &me.melee).and_then(|h| h.profile.clone())
+        };
         let active = event_profile.as_ref().map_or(active, |name| active.melee_profiles.get(name)
             .unwrap_or_else(|| panic!("missing melee attack profile: {name}")));
         if active.bow_cycle.is_none() && me.params.cycle.as_ref().is_some_and(|c| c.ends == Ends::SingleShot) {
@@ -915,6 +928,15 @@ pub fn run_once_traced(
             0,
         );
 
+        let power_shot_crit_bonus = if firing_power_shot {
+            active.power_shot_crit_per_hit.map_or(0.0, |(per_stack, max_stacks)| {
+                let stacks = r.hits.saturating_sub(me.incarnon.power_shot_hit_mark).min(max_stacks);
+                per_stack * f64::from(stacks)
+            })
+        } else {
+            0.0
+        };
+
         let Resolved {
             flat_crit,
             crit_chance_relative,
@@ -961,7 +983,8 @@ pub fn run_once_traced(
             &mut bodies[0],
             &mut me.weakpoint_pile,
             &mut me.double_tap,
-            super::melee::animosity_crit(me.params, &me.melee, active.spends_combo || tennokai_heavy),
+            super::melee::animosity_crit(me.params, &me.melee, active.spends_combo || tennokai_heavy)
+                + power_shot_crit_bonus,
         );
         // AN ORB ATTACK FIRES NO PELLETS — when the TRIGGER is what deploys it.
         // The shot settles no collision and no explosion, because everything it
@@ -1197,6 +1220,7 @@ pub fn run_once_traced(
             sc_arc_shot,
             weakpoint_cd,
             weakpoint_sc,
+            power_shot_crit_damage: power_shot_crit_bonus,
             bd_reload_add,
             bd_eximus_add,
             dt_mult,
@@ -1244,6 +1268,16 @@ pub fn run_once_traced(
                 me.incarnon.in_base_form = true;
                 me.incarnon.base_magazine = me.ammo.loaded;
             }
+            if firing_power_shot {
+                me.incarnon.power_shot_hit_mark = r.hits;
+            } else if active.continuous && me.beam.progress >= 1.0 - 1e-9 {
+                if let Some(ps) = active.melee_profiles.get("power_shot") {
+                    if can_fire(me.ammo.loaded, ps.ammo_cost) {
+                        me.beam = BeamRamp::default();
+                        me.incarnon.power_shot_armed = true;
+                    }
+                }
+            }
             next_shot_due(
                 me.params, active, &mut t, swing, initial_now, tennokai, tennokai_heavy, &mut r,
                 &mut me.bar, &mut me.buff_stacks, &me.ammo, &me.incarnon, &mut me.melee,
@@ -1267,6 +1301,16 @@ pub fn run_once_traced(
             if single_shot {
                 me.incarnon.in_base_form = true;
                 me.incarnon.base_magazine = me.ammo.loaded;
+            }
+            if firing_power_shot {
+                me.incarnon.power_shot_hit_mark = r.hits;
+            } else if active.continuous && me.beam.progress >= 1.0 - 1e-9 {
+                if let Some(ps) = active.melee_profiles.get("power_shot") {
+                    if can_fire(me.ammo.loaded, ps.ammo_cost) {
+                        me.beam = BeamRamp::default();
+                        me.incarnon.power_shot_armed = true;
+                    }
+                }
             }
             next_shot_due(
                 me.params, active, &mut t, landing.swing, initial_now, tennokai, tennokai_heavy, &mut r,

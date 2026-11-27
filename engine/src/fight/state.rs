@@ -231,6 +231,9 @@ pub(super) struct IncarnonState {
     /// duration, and that is not an omission — there is nothing to time.
     pub(super) charges: u32,
     pub(super) base_magazine: f64,
+    pub(super) frozen_beam: FrozenBeam,
+    pub(super) power_shot_armed: bool,
+    pub(super) power_shot_hit_mark: u32,
 }
 
 #[wfsim_gas_macro::metered]

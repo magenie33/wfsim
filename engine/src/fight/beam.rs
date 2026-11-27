@@ -24,6 +24,37 @@ pub(super) struct TargetRamp {
     factor: f64,
 }
 
+/// Inactive-behavior beam ramp state, frozen while another mode or Incarnon form
+/// is active (`WeaponEx::SwitchBehavior` `0x614fe0` + `WeaponEx::Update` `0x332338`).
+#[derive(Debug, Clone, Default)]
+pub(super) struct FrozenBeam {
+    beam: BeamRamp,
+    targets: Vec<TargetRamp>,
+    suspended_at: Option<f64>,
+}
+
+#[wfsim_gas_macro::metered]
+impl FrozenBeam {
+    pub(super) fn swap(
+        &mut self,
+        beam: &mut BeamRamp,
+        targets: &mut Vec<TargetRamp>,
+        suspend_at: f64,
+        resume_at: f64,
+    ) {
+        if let Some(t0) = self.suspended_at {
+            let delta = resume_at - t0;
+            self.beam.shift_clock(delta);
+            for tr in &mut self.targets {
+                tr.shift_clock(delta);
+            }
+        }
+        std::mem::swap(&mut self.beam, beam);
+        std::mem::swap(&mut self.targets, targets);
+        self.suspended_at = Some(suspend_at);
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub(super) struct TargetRampCtx {
     pub(super) base_ramp: f64,
@@ -54,6 +85,10 @@ impl TargetRampCtx {
 
 #[wfsim_gas_macro::metered]
 impl TargetRamp {
+    pub(super) fn shift_clock(&mut self, delta: f64) {
+        self.clock.shift_clock(delta);
+    }
+
     pub(super) fn hit(
         &mut self, generation: u32, at: f64, step: f64, floor: f64, source: Option<crate::model::BeamRampSpec>,
     ) -> f64 {
@@ -69,17 +104,28 @@ impl TargetRamp {
 
 #[wfsim_gas_macro::metered]
 impl BeamRamp {
+    pub(super) fn shift_clock(&mut self, delta: f64) {
+        if let Some(last) = &mut self.last_tick {
+            *last += delta;
+        }
+    }
+
     /// Advance the ramp by one tick's elapsed time before reading the factor,
     /// matching DE's native beam impact update (`0x1788204..0x17882ad`): contact
     /// initializes the first tick countdown to `1 / fire_rate` and accumulates
     /// elapsed time before evaluating attenuation.
     pub(super) fn tick(&mut self, now: f64, tick_seconds: f64, floor: f64, source: Option<crate::model::BeamRampSpec>) -> f64 {
         let rise = source.map_or(BEAM_RAMP_SECONDS, |s| s.rise_seconds);
+        let ceiling = source.map_or(1.0, |s| s.ceiling);
+        let rise_ticks = source.map_or(0, |s| s.rise_ticks);
+        let reset_on_release = source.is_some_and(|s| s.reset_on_release);
         let delay = source.map_or(BEAM_DECAY_DELAY, |s| s.cooldown_delay_seconds);
         let decay = source.map_or(BEAM_DECAY_SECONDS, |s| s.rise_seconds * s.cooldown_divisor);
         if let Some(prev) = self.last_tick {
             let idle = now - prev - tick_seconds;
-            if idle > delay {
+            if reset_on_release && idle > 1e-9 {
+                self.progress = 0.0;
+            } else if idle > delay {
                 self.progress = if decay > 0.0 {
                     (self.progress - (idle - delay) / decay).max(0.0)
                 } else {
@@ -87,12 +133,14 @@ impl BeamRamp {
                 };
             }
         }
-        self.progress = if rise > 0.0 {
+        self.progress = if rise_ticks > 0 {
+            (self.progress + 1.0 / f64::from(rise_ticks)).min(1.0)
+        } else if rise > 0.0 {
             (self.progress + tick_seconds / rise).min(1.0)
         } else {
             1.0
         };
-        let mult = floor + (1.0 - floor) * self.progress;
+        let mult = floor + (ceiling - floor) * self.progress;
         self.last_tick = Some(now);
         mult
     }
@@ -105,7 +153,8 @@ mod tests {
     #[test]
     fn simultaneous_links_advance_a_target_clock_once_and_respawn_starts_cold() {
         let source = Some(crate::model::BeamRampSpec {
-            rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true,
+            rise_seconds: 0.6, ceiling: 1.0, rise_ticks: 0, cooldown_delay_seconds: 0.8,
+            cooldown_divisor: 2.0, per_target: true, reset_on_release: false,
         });
         let mut ramp = TargetRamp::default();
         let first = 0.2 + 0.8 / 6.0;
@@ -119,7 +168,8 @@ mod tests {
     #[test]
     fn native_cooldown_divides_time_state_before_normalizing_progress() {
         let source = Some(crate::model::BeamRampSpec {
-            rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: false,
+            rise_seconds: 0.6, ceiling: 1.0, rise_ticks: 0, cooldown_delay_seconds: 0.8,
+            cooldown_divisor: 2.0, per_target: false, reset_on_release: false,
         });
         let mut native = BeamRamp { progress: 1.0, last_tick: Some(0.0) };
         let mut ordinary = native;
@@ -134,7 +184,8 @@ mod tests {
     #[test]
     fn faster_fire_rate_lowers_first_tick_and_matches_phantasma_m133() {
         let torid = Some(crate::model::BeamRampSpec {
-            rise_seconds: 0.6, cooldown_delay_seconds: 0.8, cooldown_divisor: 2.0, per_target: true,
+            rise_seconds: 0.6, ceiling: 1.0, rise_ticks: 0, cooldown_delay_seconds: 0.8,
+            cooldown_divisor: 2.0, per_target: true, reset_on_release: false,
         });
         let slow = BeamRamp::default().tick(0.0, 1.0 / 6.4, 0.2, torid);
         let base = BeamRamp::default().tick(0.0, 1.0 / 8.0, 0.2, torid);

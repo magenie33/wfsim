@@ -457,6 +457,10 @@ pub enum EvoEffect {
     /// LADDER POSITION ("tier 1's first option"). Reading it is what lets the
     /// form and the evolution stop being two controls for one fact — asking to
     /// fire the Incarnon form implies the evolution that IS firing it.
+    /// Devastation Cascade (`EntratiWristGunIncarnonCritsForHits`): each enemy hit
+    /// in Incarnon Form adds `per_stack` relative CC and CD up to `max_stacks` on
+    /// Behavior 2 (`power_shot`), cleared on firing or reverting.
+    PowerShotCritPerHit { per_stack: f64, max_stacks: u32 },
     UnlocksForm(String),
     Inert(String),
     /// NOT A TODO — AN EDGE. The clause is understood and cannot pay out in

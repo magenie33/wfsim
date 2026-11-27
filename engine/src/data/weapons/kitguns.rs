@@ -716,20 +716,27 @@ mod tests {
         }
     }
 
-    /// THE GRIP SETS A BEAM'S REACH AND NOT ITS FIRE RATE, off each page's
-    /// own per-grip list — Gaze as a secondary: *"When paired with the Haymaker
-    /// grip, the range of the beam is 22 m"* … *"Gibber grip … 41 m"*.
+    /// THE GRIP SETS A BEAM'S REACH AND NOT ITS FIRE RATE, matching client
+    /// `TraceDistance` grip overrides plus Vermisplicer's `-9 m` barrel upgrade.
     #[test]
     fn a_beam_chambers_grip_sets_its_reach() {
         let a = |chamber: &str, grip: &str| {
             assemble(&Assembly { chamber: chamber.into(), grip: grip.into(), loader: "bellows".into() })
                 .unwrap_or_else(|| panic!("{chamber} + {grip}"))
         };
-        assert_eq!(a("gaze", "haymaker").range_m, Some(22.0));
-        assert_eq!(a("gaze", "gibber").range_m, Some(41.0));
+        assert_eq!(a("gaze", "haymaker").range_m, Some(21.0));
+        assert_eq!(a("gaze", "lovetap").range_m, Some(24.0));
+        assert_eq!(a("gaze", "ulnaris").range_m, Some(30.0));
+        assert_eq!(a("gaze", "ramble").range_m, Some(37.0));
+        assert_eq!(a("gaze", "gibber").range_m, Some(40.0));
         assert_eq!(a("gaze", "tremor").range_m, Some(16.0));
         assert_eq!(a("vermisplicer", "haymaker").range_m, Some(12.0));
-        assert_eq!(a("vermisplicer", "brash").range_m, Some(30.0));
+        assert_eq!(a("vermisplicer", "gibber").range_m, Some(31.0));
+        assert_eq!(a("vermisplicer", "brash").range_m, Some(21.0));
+        assert_eq!(a("vermisplicer", "palmaris").range_m, Some(19.0));
+        assert_eq!(a("vermisplicer", "shrewd").range_m, Some(17.0));
+        assert_eq!(a("vermisplicer", "steadyslam").range_m, Some(11.0));
+        assert_eq!(a("vermisplicer", "tremor").range_m, Some(7.0));
         // …AND THE FIRE RATE DOES NOT MOVE: twelve ticks a second on every grip.
         for g in ["haymaker", "gibber"] {
             assert_eq!(a("gaze", g).fire_rate, 12.0);

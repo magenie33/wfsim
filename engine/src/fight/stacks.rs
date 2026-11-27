@@ -193,14 +193,17 @@ pub(super) fn push_break_proc(
         (Some(weakness), Some(proxy)) => crate::rules::status::magnetic_break_normalized_source(base, weakness, proxy) as f64,
         _ => base,
     };
+    let (break_key, break_owner) = debuffs
+        .last_disrupt_source
+        .unwrap_or_else(|| (super::procs::radial_group_key(owner, active), owner));
     use crate::rules::upgrades::{NativeScalar, ScalarMutation};
     let magnetic = crate::model::ProcType::new(10).expect("native Magnetic id");
     let electric = crate::model::ProcType::new(5).expect("native Electric id");
     let mut parent = crate::model::DamageData::new(NativeScalar::new(base as f32));
     parent.origin_proc = Some(magnetic);
     parent.part = crate::model::HitPart::ANY_PART;
-    parent.source = Some(crate::model::SourceId(owner.0 as u32));
-    parent.source_weapon = Some(crate::model::WeaponId(owner.0 as u32));
+    parent.source = Some(crate::model::SourceId(break_owner.0 as u32));
+    parent.source_weapon = Some(crate::model::WeaponId(break_owner.0 as u32));
     parent.procs.set_forced(electric);
     parent.apply_proc_upgrades(magnetic, proc_damage_entries(params, status_damage_live), ScalarMutation::Materialize);
     if rec.native_trace_is_on() {
@@ -234,7 +237,8 @@ pub(super) fn push_break_proc(
     let procs = crate::rules::status::procs_for_hit(&forced,
         0.0, &DamageVector::new(), foe.proc_handlers(), rng);
     let generation = target.generation;
-    settle_procs(&procs, owner, now, body_index, InstanceScale { native_source: Some(parent.scalar), native_part: Some(parent.part),
+    debuffs.pending_break_group = Some(break_key);
+    settle_procs(&procs, break_owner, now, body_index, InstanceScale { native_source: Some(parent.scalar), native_part: Some(parent.part),
         mb_live,
         crit_multiplier: 1.0,
         part_factor: 1.0,
@@ -243,6 +247,7 @@ pub(super) fn push_break_proc(
         xh_bracket: 1.0,
         status_damage_live,
     }, debuffs, gal, arc, target, params, active, &mit, r, rec, rng, foe, DEPTH_PROC);
+    debuffs.pending_break_group = None;
     if target.generation != generation {
         return true;
     }

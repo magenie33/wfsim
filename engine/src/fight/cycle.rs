@@ -67,6 +67,8 @@ pub(super) fn charge_magazine_cycle(
     rs_armed: &mut bool,
     opening_closed: &mut bool,
     field_duration_boost: &mut bool,
+    beam: &mut BeamRamp,
+    target_ramps: &mut Vec<TargetRamp>,
     // When the last shot left — what a battery's delay counts from.
     last_shot_t: f64,
     switch_to: Option<SwitchTo>,
@@ -83,6 +85,11 @@ pub(super) fn charge_magazine_cycle(
         }
         if let Some(cy) = params.cycle.as_ref().filter(|c| c.ends == Ends::ChargeMagazine || (c.ends == Ends::SingleShot && incarnon.in_base_form)) {
             if want == Action::TransformOut {
+                let suspend_at = *t;
+                if params.beam_ramp.is_some_and(|s| s.reset_on_release) {
+                    *beam = BeamRamp::default();
+                }
+                incarnon.power_shot_armed = false;
                 // Charge magazine spent: revert to the base form. The swap
                 // fully reloads the base magazine (wiki side effect). The
                 // revert does NOT count as a transform — `transforms` counts
@@ -103,6 +110,7 @@ pub(super) fn charge_magazine_cycle(
                 // see `ClearedBy::Reload`.
                 magazine_refilled(params, ammo, r, buff_stacks, rs_armed, opening_closed, false, None);
                 incarnon.in_base_form = true;
+                incarnon.frozen_beam.swap(beam, target_ramps, suspend_at, *t);
                 double_tap.swap(*t);
                 record_weapon(params, rec, ammo, incarnon);
                 rec.push(*t, None, crate::record::Kind::TransformEnd { transmuted: false });
@@ -325,6 +333,8 @@ pub(super) fn charge_the_gauge(
     buff_stacks: &mut [LiveStacks],
     rs_armed: &mut bool,
     opening_closed: &mut bool,
+    beam: &mut BeamRamp,
+    target_ramps: &mut Vec<TargetRamp>,
 ) {
         // KILLS ADVANCE THEIR MARK IN EITHER FORM, and the two halves are
         // separate on purpose. A hit is bounded by the shot that caused it,
@@ -381,6 +391,7 @@ pub(super) fn charge_the_gauge(
             let action = apl.pick(&incarnon.now(params, ammo, 0.0, *t, tennokai, &remains, None));
             if action == Action::TransformIn || (cy.ends == Ends::SingleShot && action == Action::AltFire) {
                 if cy.ends == Ends::SingleShot {
+                    incarnon.frozen_beam.swap(beam, target_ramps, *t, *t);
                     incarnon.in_base_form = false;
                     incarnon.charges = 0;
                     ammo.loaded = incarnon.base_magazine;
@@ -388,6 +399,10 @@ pub(super) fn charge_the_gauge(
                     r.transforms += 1;
                     record_weapon(params, rec, ammo, incarnon);
                     return;
+                }
+                let suspend_at = *t;
+                if cy.base_form.beam_ramp.is_some_and(|s| s.reset_on_release) {
+                    *beam = BeamRamp::default();
                 }
                 // BOTH DIRECTIONS TAKE IT. The wiki says Ready
                 // Retaliation "can affect transition INTO Incarnon form
@@ -423,6 +438,9 @@ pub(super) fn charge_the_gauge(
                 }
                 r.transforms += 1;
                 incarnon.in_base_form = false;
+                incarnon.frozen_beam.swap(beam, target_ramps, suspend_at, *t);
+                incarnon.power_shot_armed = false;
+                incarnon.power_shot_hit_mark = r.hits;
                 double_tap.swap(*t);
                 // The CHARGE magazine is filled by the gauge, not reloaded
                 // from reserve — it is outside the ammo economy, takes no

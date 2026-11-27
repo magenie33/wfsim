@@ -165,6 +165,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 EvoEffect::ProcConversion { from, to, chance } => {
                     base.evo_proc_conversion = Some((*from, *to, *chance));
                 }
+                EvoEffect::PowerShotCritPerHit { per_stack, max_stacks } => {
+                    base.power_shot_crit_per_hit = Some((*per_stack, *max_stacks));
+                }
                 EvoEffect::StackingFireRatePerShellReloaded { per_stack, max_stacks } => {
                     base.stacking_buffs.push(crate::model::StackingBuff {
                         id: "per_shell_fire_rate",

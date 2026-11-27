@@ -4,12 +4,26 @@ use super::*;
 #[wfsim_gas_macro::metered]
 pub(super) fn apply_independent_forced(forced: crate::rules::damage::ForcedProcs, body: &mut Body, t: f64, duration: f64) {
     if forced.independent("lifted") {
-        let until = t + LIFTED_SECONDS * duration;
+        let until = t + super::debuffs::proc_duration(LIFTED_SECONDS, duration);
         body.debuffs.lifted = Some(body.debuffs.lifted.map_or(until, |e| e.max(until)));
     }
     if forced.independent("knockdown") {
-        let until = t + KNOCKDOWN_SECONDS * duration;
+        let until = t + super::debuffs::proc_duration(KNOCKDOWN_SECONDS, duration);
         body.debuffs.knockdown = Some(body.debuffs.knockdown.map_or(until, |e| e.max(until)));
+    }
+}
+
+#[inline]
+#[wfsim_gas_macro::metered]
+pub(super) fn radial_group_key(
+    owner: Seat,
+    active: &FightParams,
+) -> crate::rules::status::radial::GroupKey {
+    crate::rules::status::radial::GroupKey {
+        refCellAt28: (owner.0 as u64) + 1,
+        refCellAt30: (owner.0 as u64) + 1,
+        byteAt18: active.form as u8,
+        opaqueIdentityAt38: 1,
     }
 }
 
@@ -103,13 +117,15 @@ pub(super) fn has_status(debuffs: &DebuffState, t: DamageType) -> bool {
         DamageType::Impact => !debuffs.stagger.is_empty(),
         DamageType::Puncture => !debuffs.weakened.is_empty(),
         DamageType::Cold => !debuffs.freeze.is_empty() || debuffs.frozen_until.is_some(),
-        DamageType::Heat => debuffs.heat.is_some(),
+        DamageType::Heat => debuffs.heat.is_some() || debuffs.subtick_heat_until.is_some(),
         DamageType::Void => !debuffs.attractor.is_empty(),
         DamageType::Tau => !debuffs.tau.is_empty(),
         // Slash, Toxin, Electricity and Gas are DoTs and are answered below.
         _ => false,
     };
-    own || debuffs.live_dot_count(t) > 0
+    let subtick = super::debuffs::dot_family_slot(t)
+        .is_some_and(|f| debuffs.subtick_dot_until[f].is_some());
+    own || subtick || debuffs.live_dot_count(t) > 0
 }
 
 /// Stacks of a combined status the target must be AT, counting the one this
@@ -591,6 +607,8 @@ struct ProcDotCtx<'a> {
     native_part: Option<crate::model::HitPart>,
     general_cap: Option<usize>,
     status_damage_live: f64,
+    duration: f64,
+    group_key: crate::rules::status::radial::GroupKey,
 }
 
 #[inline]
@@ -669,8 +687,20 @@ fn push_proc_dot(
             crate::model::StoredStatusSeed::radial(base_seed),
         _ => crate::model::StoredStatusSeed::from_unbound_source(base_seed),
     };
+    let group_key = debuffs.pending_break_group.unwrap_or(ctx.group_key);
+    let native_group = if matches!(dtype, DamageType::Electricity | DamageType::Gas) && ticks > 0 {
+        debuffs.resolve_radial_group(group_key)
+    } else {
+        None
+    };
+    if let Some(f) = super::debuffs::dot_family_slot(dtype) {
+        if ticks == 0 || (matches!(dtype, DamageType::Electricity | DamageType::Gas) && ctx.duration < 1.0) {
+            let until = ctx.at + ctx.duration;
+            debuffs.subtick_dot_until[f] = Some(debuffs.subtick_dot_until[f].map_or(until, |e| e.max(until)));
+        }
+    }
     let dot = Dot {
-        native_group: None,
+        native_group,
         native_part: ctx.native_part,
         owner: ctx.owner,
         next_tick: ctx.at + delay,
@@ -691,7 +721,9 @@ fn push_proc_dot(
             _ => base_seed,
         }),
     };
-    debuffs.push_dot_capped(dot, dot_cap_with_unit(dtype, ctx.general_cap));
+    if ticks > 0 {
+        debuffs.push_dot_capped(dot, dot_cap_with_unit(dtype, ctx.general_cap));
+    }
     dot
 }
 
@@ -771,6 +803,8 @@ pub(super) fn settle_procs(
     let fm2 = faction_at(params.faction_at_time(at), depth);
     let ecl = params.ability_final_at(at);
     let seeded_by = rec.shot().unwrap_or(u32::MAX);
+    let dot_duration = super::debuffs::proc_duration(STATUS_DURATION, status_damage);
+    let group_key = radial_group_key(owner, active);
     let dot_ctx = ProcDotCtx {
         params,
         owner,
@@ -789,6 +823,8 @@ pub(super) fn settle_procs(
         native_part,
         general_cap,
         status_damage_live,
+        duration: dot_duration,
+        group_key,
     };
     if active.applies_microwave && status::has_applied_proc(procs, &foe.status_immunities) {
         debuffs.microwave = true;
@@ -823,14 +859,14 @@ pub(super) fn settle_procs(
         match proc {
             DamageType::Impact => debuffs.push_proc_stack(
                 super::debuffs::ProcStackKind::Stagger,
-                at + STAGGER_DURATION * status_damage,
+                at + super::debuffs::proc_duration(STAGGER_DURATION, status_damage),
                 stagger_cap,
                 at,
             ),
             DamageType::Puncture => {
                 debuffs.push_proc_stack(
                     super::debuffs::ProcStackKind::Weakened,
-                    at + WEAKENED_DURATION * status_damage,
+                    at + super::debuffs::proc_duration(WEAKENED_DURATION, status_damage),
                     weakened_cap,
                     at,
                 );
@@ -904,11 +940,13 @@ pub(super) fn settle_procs(
                 // A head hit's arc reaches a neighbour's body for 130 where a
                 // body hit's own tick is 24 — x5.4, the whole head ladder (M100).
                 // Where the arc lands is drawn in `drain_area_procs`.
-                debuffs.post_area(
-                    Dot { landing: ProcLanding::default(), ..dot },
-                    TESLA_RADIUS_M,
-                    dot_cap_with_unit(DamageType::Electricity, general_cap),
-                );
+                if immediate_ticks > 0 {
+                    debuffs.post_area(
+                        Dot { landing: ProcLanding::default(), ..dot },
+                        TESLA_RADIUS_M,
+                        dot_cap_with_unit(DamageType::Electricity, general_cap),
+                    );
+                }
             }
             DamageType::Gas => {
                 let dot = push_proc_dot(
@@ -931,28 +969,30 @@ pub(super) fn settle_procs(
                 // the radius by 0.3 meters up to 6 meters". Counted BEFORE this
                 // proc was applied, which is what makes the first cloud 3 m
                 // rather than 3.3.
-                let radius_m = (GAS_RADIUS_M + GAS_RADIUS_STEP_M * stacks_before as f64)
-                    .min(GAS_RADIUS_MAX_M);
-                // BODY-ONLY on a neighbour, seed and landing both: the cloud's
-                // neighbours are unmeasured, and M100's arc is not a cloud.
-                // ITS OWN SEED, the part taken out as the frozen number is.
-                let seed = match rec.seed_at(dot.seed) {
-                    Some(sd) => rec.seed(crate::record::Seed { body_part: sd.body_part / part_factor.max(1e-9), ..sd }),
-                    None => u32::MAX,
-                };
-                debuffs.post_area(
-                    Dot {
-                        retained: crate::model::StoredStatusSeed::radial(make_proc_seed(
-                            mb_live, DOT_COEFFICIENT, sdm + params.status_damage_of(DamageType::Gas),
-                            crit_multiplier, 1.0, attrition, ecl,
-                        )),
-                        landing: ProcLanding::default(),
-                        seed,
-                        ..dot
-                    },
-                    radius_m,
-                    dot_cap_with_unit(DamageType::Gas, general_cap),
-                );
+                if immediate_ticks > 0 {
+                    let radius_m = (GAS_RADIUS_M + GAS_RADIUS_STEP_M * stacks_before as f64)
+                        .min(GAS_RADIUS_MAX_M);
+                    // BODY-ONLY on a neighbour, seed and landing both: the cloud's
+                    // neighbours are unmeasured, and M100's arc is not a cloud.
+                    // ITS OWN SEED, the part taken out as the frozen number is.
+                    let seed = match rec.seed_at(dot.seed) {
+                        Some(sd) => rec.seed(crate::record::Seed { body_part: sd.body_part / part_factor.max(1e-9), ..sd }),
+                        None => u32::MAX,
+                    };
+                    debuffs.post_area(
+                        Dot {
+                            retained: crate::model::StoredStatusSeed::radial(make_proc_seed(
+                                mb_live, DOT_COEFFICIENT, sdm + params.status_damage_of(DamageType::Gas),
+                                crit_multiplier, 1.0, attrition, ecl,
+                            )),
+                            landing: ProcLanding::default(),
+                            seed,
+                            ..dot
+                        },
+                        radius_m,
+                        dot_cap_with_unit(DamageType::Gas, general_cap),
+                    );
+                }
             }
             DamageType::Heat => {
                 // Singleton accumulator: add the contribution and
@@ -980,19 +1020,25 @@ pub(super) fn settle_procs(
                     * part_factor
                     // …and Eclipse, applied ONCE at the proc. See `Dot::live`.
                     * ecl;
-                let expiry = at + STATUS_DURATION * status_damage;
-                debuffs.apply_heat(
-                    at,
-                    contrib,
-                    expiry,
-                    heat_cap,
-                    HeatOrigin {
-                        bracket: active.elem_bracket(DamageType::Heat),
-                        depth,
-                        // The seed taken out of `contrib`, exactly as a Dot's.
-                        unit: DOT_COEFFICIENT * sdm * ecl,
-                    },
-                );
+                if status_damage <= 0.0 {
+                    let until = at + super::debuffs::MIN_PROC_DURATION;
+                    debuffs.subtick_heat_until =
+                        Some(debuffs.subtick_heat_until.map_or(until, |e| e.max(until)));
+                } else {
+                    let expiry = at + STATUS_DURATION * status_damage;
+                    debuffs.apply_heat(
+                        at,
+                        contrib,
+                        expiry,
+                        heat_cap,
+                        HeatOrigin {
+                            bracket: active.elem_bracket(DamageType::Heat),
+                            depth,
+                            // The seed taken out of `contrib`, exactly as a Dot's.
+                            unit: DOT_COEFFICIENT * sdm * ecl,
+                        },
+                    );
+                }
             }
             DamageType::Cold => {
                 // Primary Frostbite: each Cold status THIS WEAPON APPLIES
@@ -1007,27 +1053,30 @@ pub(super) fn settle_procs(
                     arc.bump_trigger(&params.arcane.buffs, ArcTrigger::ColdStatus, at);
                 }
             }
-            DamageType::Magnetic => debuffs.push_proc_stack(
-                super::debuffs::ProcStackKind::Disrupt,
-                at + STATUS_DURATION * status_damage,
-                ten_cap,
-                at,
-            ),
+            DamageType::Magnetic => {
+                debuffs.push_proc_stack(
+                    super::debuffs::ProcStackKind::Disrupt,
+                    at + super::debuffs::proc_duration(STATUS_DURATION, status_damage),
+                    ten_cap,
+                    at,
+                );
+                debuffs.last_disrupt_source = Some((group_key, owner));
+            }
             DamageType::Viral => debuffs.push_proc_stack(
                 super::debuffs::ProcStackKind::Virus,
-                at + STATUS_DURATION * status_damage,
+                at + super::debuffs::proc_duration(STATUS_DURATION, status_damage),
                 ten_cap,
                 at,
             ),
             DamageType::Corrosive => debuffs.push_proc_stack(
                 super::debuffs::ProcStackKind::Corrosion,
-                at + CORROSION_DURATION * status_damage,
+                at + super::debuffs::proc_duration(CORROSION_DURATION, status_damage),
                 corrosion_cap,
                 at,
             ),
             DamageType::Radiation => debuffs.push_proc_stack(
                 super::debuffs::ProcStackKind::Confusion,
-                at + STATUS_DURATION * status_damage,
+                at + super::debuffs::proc_duration(STATUS_DURATION, status_damage),
                 ten_cap,
                 at,
             ),
@@ -1037,13 +1086,13 @@ pub(super) fn settle_procs(
             // counter and nothing else — see `DebuffState::attractor`.
             DamageType::Void => debuffs.push_proc_stack(
                 super::debuffs::ProcStackKind::Attractor,
-                at + ATTRACTOR_DURATION * status_damage,
+                at + super::debuffs::proc_duration(ATTRACTOR_DURATION, status_damage),
                 1,
                 at,
             ),
             DamageType::Tau => debuffs.push_proc_stack(
                 super::debuffs::ProcStackKind::Tau,
-                at + TAU_DURATION * status_damage,
+                at + super::debuffs::proc_duration(TAU_DURATION, status_damage),
                 ten_cap,
                 at,
             ),
@@ -1064,7 +1113,7 @@ pub(super) fn settle_procs(
                 };
                 debuffs.blast.push(BlastStack {
                     charges_gauge,
-                    fuse: at + BLAST_FUSE * status_damage,
+                    fuse: at + super::debuffs::proc_duration(BLAST_FUSE, status_damage),
                     value: BLAST_COEFFICIENT
                         * mb_live
                         * sdm

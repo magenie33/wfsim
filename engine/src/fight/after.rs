@@ -55,13 +55,16 @@ pub(super) fn after_the_landing(
     sniper_combo: &mut SniperComboCount,
     rs_armed: &mut bool,
     opening_closed: &mut bool,
-    field_duration_boost: &mut bool,) {
+    field_duration_boost: &mut bool,
+    beam: &mut BeamRamp,
+    target_ramps: &mut Vec<TargetRamp>,) {
         if !finalizes {
             if let Some((cy,charge_on))=params.cycle.as_ref().and_then(|cy|match cy.arms {
                 Arms::Gauge{charge_on,..}=>Some((cy,charge_on)),_=>None,
             }) {
                 charge_the_gauge(params,apl,flash,rec,rng,d,cy,charge_on,base_form_at_fire,
-                    pellets_before,headshots_before,t,r,ammo,incarnon,double_tap,buff_stacks,rs_armed,opening_closed);
+                    pellets_before,headshots_before,t,r,ammo,incarnon,double_tap,buff_stacks,rs_armed,opening_closed,
+                    beam,target_ramps);
             }
             return;
         }
@@ -222,7 +225,7 @@ pub(super) fn after_the_landing(
             charge_the_gauge(
                 params, apl, flash, rec, rng, d, cy, charge_on, base_form_at_fire, pellets_before, headshots_before,
                 t, r, ammo, incarnon, double_tap, buff_stacks,
-                rs_armed, opening_closed,
+                rs_armed, opening_closed, beam, target_ramps,
             );
         }
 

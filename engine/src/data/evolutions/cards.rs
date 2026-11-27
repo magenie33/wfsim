@@ -193,6 +193,7 @@ impl EvolutionDef {
                 | EvoEffect::CritChanceByBodyPart { .. }
                 | EvoEffect::RoundRestoreOnStatusHit { .. }
                 | EvoEffect::InstantReloadOnKill { .. }
+                | EvoEffect::PowerShotCritPerHit { .. }
                 | EvoEffect::MagGrowthOnEmptyReload { .. }
                 | EvoEffect::CritOnUndamaged { .. }
                 | EvoEffect::ReloadSpeedBonus(_)

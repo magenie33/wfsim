@@ -250,6 +250,7 @@ impl Default for FightParams {
             base_damage_on_eximus_weakpoint: None,
             acid_shells: None,
             crit_chance_per_hit: None,
+            power_shot_crit_per_hit: None,
             combo_script: Vec::new(),
             heavy_script: Vec::new(),
             melee_heavy: None,

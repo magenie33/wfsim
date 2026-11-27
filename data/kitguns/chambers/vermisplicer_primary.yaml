@@ -47,14 +47,14 @@ fire_rate:
   steadyslam: 12
   tremor: 12
 
-# THE GRIP SETS THE REACH ON A BEAM, published per grip beside the
-# damage: a grip that hits harder reaches less far.
+# THE GRIP SETS THE REACH ON A BEAM, and the Vermisplicer barrel installs
+# `WEAPON_RANGE ADD -9` onto primary grip `TraceDistance` overrides (30..16 m).
 range_m:
-  brash: 30
-  palmaris: 28
-  shrewd: 26
-  steadyslam: 20
-  tremor: 16
+  brash: 21
+  palmaris: 19
+  shrewd: 17
+  steadyslam: 11
+  tremor: 7
 
 # THE MAGAZINE IS A SIZE CLASS, and the loader names which one.
 magazine:

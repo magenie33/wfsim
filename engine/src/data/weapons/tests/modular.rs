@@ -231,17 +231,20 @@ fn every_grip_of_every_modular_entry_builds_and_fires() {
 }
 
 /// A BEAM'S GRIP REACHES THE PANEL as the beam's range — Gaze, secondary,
-/// on Haymaker is 22 m and on Gibber 41 m, whatever the entry's preview says.
+/// on Haymaker is 21 m and on Gibber 40 m; Vermisplicer, primary, is 21 m on
+/// Brash and 7 m on Tremor.
 #[test]
 fn a_beam_kitguns_reach_is_its_grips() {
     use crate::data::weapons::kitguns::Assembly;
-    let reach = |grip: &str| {
-        let a = Assembly { chamber: "gaze".into(), grip: grip.into(), loader: "bellows".into() };
-        let s = spec_assembled(spec("gaze_secondary").unwrap(), Some(&a.clone().into())).expect("composes");
+    let reach = |chamber: &str, entry: &str, grip: &str| {
+        let a = Assembly { chamber: chamber.into(), grip: grip.into(), loader: "bellows".into() };
+        let s = spec_assembled(spec(entry).unwrap(), Some(&a.clone().into())).expect("composes");
         s.attack.beam.as_ref().expect("a beam").range_m
     };
-    assert_eq!(reach("haymaker"), 22.0);
-    assert_eq!(reach("gibber"), 41.0);
+    assert_eq!(reach("gaze", "gaze_secondary", "haymaker"), 21.0);
+    assert_eq!(reach("gaze", "gaze_secondary", "gibber"), 40.0);
+    assert_eq!(reach("vermisplicer", "vermisplicer_primary", "brash"), 21.0);
+    assert_eq!(reach("vermisplicer", "vermisplicer_primary", "tremor"), 7.0);
     // A FLAT REACH LANDS ON THE ATTACK: Catchmoon's 42 m wall.
     let a = Assembly { chamber: "catchmoon".into(), grip: "brash".into(), loader: "bellows".into() };
     let s = spec_assembled(spec("catchmoon_primary").unwrap(), Some(&a.clone().into())).expect("composes");

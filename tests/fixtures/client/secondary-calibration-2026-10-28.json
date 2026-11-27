@@ -19717,9 +19717,7 @@
         "attack.punch_through_m": 5.0,
         "attack.infinite_body_punch_through": true
       },
-      "limits": [
-        "client_secondary_other_behavior"
-      ],
+      "limits": [],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=210",
         "AmmoClipSize": "AmmoClipSize=20",

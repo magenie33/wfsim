@@ -158,6 +158,16 @@ pub(super) struct DebuffState {
     pub(super) dots: Vec<Dot>,
     /// Caller-supplied radial group keys interned by 1-based `NonZeroU16`.
     pub(super) native_groups: Vec<crate::rules::status::radial::GroupKey>,
+    /// First radial group key applied on this body (`native_group = None` fast path).
+    pub(super) default_radial_source: Option<crate::rules::status::radial::GroupKey>,
+    /// Latest active Magnetic stack's `(group_key, instigator)` (`0x16c9d21`).
+    pub(super) last_disrupt_source: Option<(crate::rules::status::radial::GroupKey, Seat)>,
+    /// Transient group override while `push_break_proc` applies forced Electricity.
+    pub(super) pending_break_group: Option<crate::rules::status::radial::GroupKey>,
+    /// Sub-tick (`< 1.0 s` or `FLT_EPSILON` at `<= -100%`) active expiries for Slash/Electricity/Toxin/Gas.
+    pub(super) subtick_dot_until: [Option<f64>; 4],
+    /// Zero-duration (`FLT_EPSILON` at `<= -100%`) Heat active expiry for same-batch CO.
+    pub(super) subtick_heat_until: Option<f64>,
     /// One bit per live type; `u32::MAX` requests a live scan after explicit invalidation.
     pub(super) live_dot_types: u32,
     /// Live (`ticks_left > 0`, un-evicted) stack counts for Slash, Electricity, Toxin and Gas.
@@ -462,6 +472,14 @@ pub(super) fn lands_on_a_part(t: DamageType) -> bool {
 /// each body stands; this plane has no height to decide it, so it is a rate.
 pub(super) const TESLA_HEAD_LANDING_CHANCE: f64 = 10.0 / 189.0;
 pub(super) const STATUS_DURATION: f64 = 6.0; // the standard proc duration
+/// Native `generic_proc_apply` (`0x864e2e`) clamps timed proc durations to `FLT_EPSILON`.
+pub(super) const MIN_PROC_DURATION: f64 = f32::EPSILON as f64;
+
+#[inline]
+#[wfsim_gas_macro::metered]
+pub(super) fn proc_duration(base: f64, status_damage: f64) -> f64 {
+    (base * status_damage).max(MIN_PROC_DURATION)
+}
 /// LIFTED's duration. Not the standard 6 s: an independent
 /// proc is its own effect with its own timer, and DE publishes none for this
 /// one. See [`DebuffState::lifted`].
@@ -939,12 +957,14 @@ impl DebuffState {
         }
         let gas_landing = self.proc_landings[1];
         let gas_history = self.radial_history & (HAD_GAS | HAD_GAS_FALLBACK);
+        let gas_default_source = (!clouds.is_empty()).then_some(self.default_radial_source).flatten();
         *self = DebuffState::default();
         self.tick_q = tick_q;
         self.area_out = out;
         self.area_hit = hits;
         self.dots = clouds;
         self.native_groups = native_groups;
+        self.default_radial_source = gas_default_source;
         self.proc_landings[1] = gas_landing;
         if self.dots.is_empty() {
             self.dots_due = Some(f64::INFINITY);
@@ -965,7 +985,6 @@ impl DebuffState {
         self.dots.iter().filter(|d| d.dtype != EVICTED_DOT_TYPE)
     }
 
-    #[cfg(test)]
     pub(super) fn intern_group(
         &mut self,
         key: crate::rules::status::radial::GroupKey,
@@ -976,6 +995,21 @@ impl DebuffState {
             p
         });
         std::num::NonZeroU16::new((pos + 1) as u16)
+    }
+
+    #[inline]
+    pub(super) fn resolve_radial_group(
+        &mut self,
+        key: crate::rules::status::radial::GroupKey,
+    ) -> Option<std::num::NonZeroU16> {
+        match self.default_radial_source {
+            None => {
+                self.default_radial_source = Some(key);
+                None
+            }
+            Some(first) if first == key => None,
+            Some(_) => self.intern_group(key),
+        }
     }
 
     pub(super) fn group_key(
@@ -1088,6 +1122,7 @@ impl DebuffState {
         self.dot_tombstones = 0;
         self.radial_history = 0;
         self.dots_share_clock = false;
+        self.default_radial_source = None;
         self.dots_due = Some(f64::INFINITY);
         if self.live_dot_types != u32::MAX {
             self.live_dot_types = 0;
@@ -1914,6 +1949,17 @@ impl DebuffState {
         retain_gt(&mut self.confusion, now);
         retain_gt(&mut self.attractor, now);
         retain_gt(&mut self.tau, now);
+        if self.disrupt.is_empty() {
+            self.last_disrupt_source = None;
+        }
+        for slot in &mut self.subtick_dot_until {
+            if slot.is_some_and(|e| e <= now) {
+                *slot = None;
+            }
+        }
+        if self.subtick_heat_until.is_some_and(|e| e <= now) {
+            self.subtick_heat_until = None;
+        }
         if let Some(f) = self.frozen_until {
             if f <= now {
                 // THAW: chill is SET to exactly 3 stacks with FRESH 6 s timers
@@ -2056,7 +2102,12 @@ impl DebuffState {
             (false, Some(c)) => c.general,
             (false, None) => TEN_STACK_CAP,
         };
-        DebuffState::push_capped(&mut self.freeze, t + STATUS_DURATION * status_damage, cap, t);
+        DebuffState::push_capped(
+            &mut self.freeze,
+            t + proc_duration(STATUS_DURATION, status_damage),
+            cap,
+            t,
+        );
         // FROZEN IS A STATE, NOT A STACK. It is tripped by the tenth chill and
         // it suppresses further chill for its 3 s (the early return above);
         // the chill itself stays, pinned at ten, which is what the game shows.
@@ -2066,7 +2117,7 @@ impl DebuffState {
         // four, an Acolyte's four — makes `len() >= TEN_STACK_CAP` unreachable
         // by arithmetic, and a unit that is simply immune says so once.
         if !no_frozen && self.freeze.len() >= TEN_STACK_CAP {
-            self.frozen_until = Some(t + FROZEN_DURATION * status_damage);
+            self.frozen_until = Some(t + proc_duration(FROZEN_DURATION, status_damage));
         }
         true
     }
@@ -2214,7 +2265,7 @@ impl DebuffState {
         n += usize::from(!self.attractor.is_empty());
         n += usize::from(!self.tau.is_empty());
         n += usize::from(!self.blast.is_empty());
-        n += usize::from(self.heat.is_some());
+        n += usize::from(self.heat.is_some() || self.subtick_heat_until.is_some());
         // NO `frozen` LINE. COLD IS ONE STATUS and its stacks are `freeze`,
         // counted above; Frozen is a STATE the tenth of them trips, with its
         // own crowd control and its own crit-damage bonus, and it is not a
@@ -2223,10 +2274,20 @@ impl DebuffState {
         // every Condition Overload bracket. `has_status` answers the other
         // reading of the same question, "is this target cold-statused" for a
         // perk rather than "how many TYPES are on it".
-        let dot_types = if self.live_dot_types == u32::MAX {
+        let mut dot_types = if self.live_dot_types == u32::MAX {
             self.dots.iter().filter(|d| d.ticks_left > 0)
                 .fold(0, |types, d| types | (1 << d.dtype as u32))
         } else { self.live_dot_types };
+        for (slot, dtype) in [
+            (0, DamageType::Slash),
+            (1, DamageType::Electricity),
+            (2, DamageType::Toxin),
+            (3, DamageType::Gas),
+        ] {
+            if self.subtick_dot_until[slot].is_some() {
+                dot_types |= 1 << dtype as u32;
+            }
+        }
         n + dot_types.count_ones() as usize
     }
 }

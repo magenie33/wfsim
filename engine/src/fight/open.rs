@@ -132,6 +132,7 @@ pub(super) struct OtherMode<'a> {
     pub(super) apl: crate::data::apl::Apl,
     pub(super) seconds: f64,
     pub(super) bucket: f64,
+    pub(super) frozen_beam: FrozenBeam,
 }
 
 /// WHAT A COMBATANT ONLY READS — resolved once, constant for the whole
@@ -704,6 +705,9 @@ pub(super) fn open<'a>(
             .cycle
             .as_ref()
             .map_or(0.0, |c| c.base_form.magazine_size),
+        frozen_beam: FrozenBeam::default(),
+        power_shot_armed: false,
+        power_shot_hit_mark: 0u32,
     };
 
 

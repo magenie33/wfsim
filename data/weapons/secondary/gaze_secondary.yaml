@@ -4,7 +4,7 @@
 # see notes: kitgun_entry_is_default_assembly
 #
 # A BEAM THAT CHAINS where the primary splashes, with 1 m of innate punch
-# through. The GRIP sets the reach (22 m on Haymaker to 41 m on Gibber), and
+# through. The GRIP sets the reach (21 m on Haymaker to 40 m on Gibber), and
 # `spec_assembled` composes it into `beam.range_m`.
 id: gaze_secondary
 name: Gaze

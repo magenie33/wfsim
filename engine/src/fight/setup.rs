@@ -1620,6 +1620,7 @@ impl FightParams {
             base_damage_on_eximus_weakpoint: panel.base_damage_on_eximus_weakpoint,
             acid_shells: panel.acid_shells,
             crit_chance_per_hit: panel.crit_chance_per_hit,
+            power_shot_crit_per_hit: panel.power_shot_crit_per_hit,
             combo_script: panel.combo_script.clone(),
             heavy_script: panel.heavy_script.clone(),
             melee_heavy,

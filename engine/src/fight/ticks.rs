@@ -1004,6 +1004,16 @@ pub(super) fn process_ticks(
                     dot_parts = None;
                     value
                 } else if is_consolidated {
+                    for d in &debuffs.dots[start..end_excl] {
+                        if d.ticks_left > 0
+                            && d.dtype == dtype
+                            && (family_shared_clock || (d.native_group == group_id && (d.next_tick - now).abs() < 1e-9))
+                        {
+                            tick_landing = d.landing;
+                            seeded_by = d.cause;
+                            dot_owner = d.owner;
+                        }
+                    }
                     let mut sum = 0.0;
                     // ONE ACCUMULATOR FOR THE WHOLE GROUP, taken from whichever
                     // seed joined it first — "they are added to the same

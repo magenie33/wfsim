@@ -76,6 +76,7 @@ pub(super) struct Strike<'a> {
     pub(super) sc_arc_shot: f64,
     pub(super) weakpoint_cd: f64,
     pub(super) weakpoint_sc: f64,
+    pub(super) power_shot_crit_damage: f64,
     pub(super) bd_reload_add: f64,
     pub(super) bd_eximus_add: f64,
     pub(super) dt_mult: f64,
@@ -286,6 +287,7 @@ pub(super) fn settle_pellet(
         sc_arc_shot,
         weakpoint_cd,
         weakpoint_sc,
+        power_shot_crit_damage,
         bd_reload_add,
         bd_eximus_add,
         dt_mult,
@@ -372,7 +374,8 @@ pub(super) fn settle_pellet(
         + if tennokai { active.tennokai.crit_damage } else { 0.0 }
         // CRITICAL MUTATION: "additive with mods such as Target Cracker" (M107).
         + gal.mutation.bonus
-        + params.arcane.crit_damage_relative;
+        + params.arcane.crit_damage_relative
+        + power_shot_crit_damage;
     // SPITEFUL DEFILEMENT rides the same after-mods FLAT bucket Cold's
     // received bonus does — "Bonus is added after mods as a flat value"
     // (wiki, supplied measured 2026-08-10), so it is added to the
@@ -2654,22 +2657,22 @@ pub(super) fn settle_pellet(
     if active.independent_procs.contains(&"lifted") {
         // A STATE, so it REFRESHES: the later expiry wins rather than
         // the count going up.
-        let until = t + LIFTED_SECONDS * params.status_duration_multiplier;
+        let until = t + super::debuffs::proc_duration(LIFTED_SECONDS, params.status_duration_multiplier);
         bodies[body_index].debuffs.lifted = Some(bodies[body_index].debuffs.lifted.map_or(until, |e| e.max(until)));
     }
     // …AND THE SWING'S OWN, which a stance marks per attack. Same rule
     // as the weapon-level pair one line up: applied on the HIT rather
     // than through the roll, and refreshed rather than stacked.
     if swing_forced_independent.contains(&"lifted") {
-        let until = t + LIFTED_SECONDS * params.status_duration_multiplier;
+        let until = t + super::debuffs::proc_duration(LIFTED_SECONDS, params.status_duration_multiplier);
         bodies[body_index].debuffs.lifted = Some(bodies[body_index].debuffs.lifted.map_or(until, |e| e.max(until)));
     }
     if swing_forced_independent.contains(&"knockdown") {
-        let until = t + KNOCKDOWN_SECONDS * params.status_duration_multiplier;
+        let until = t + super::debuffs::proc_duration(KNOCKDOWN_SECONDS, params.status_duration_multiplier);
         bodies[body_index].debuffs.knockdown = Some(bodies[body_index].debuffs.knockdown.map_or(until, |e| e.max(until)));
     }
     if active.independent_procs.contains(&"knockdown") {
-        let until = t + KNOCKDOWN_SECONDS * params.status_duration_multiplier;
+        let until = t + super::debuffs::proc_duration(KNOCKDOWN_SECONDS, params.status_duration_multiplier);
         bodies[body_index].debuffs.knockdown = Some(bodies[body_index].debuffs.knockdown.map_or(until, |e| e.max(until)));
     }
     if let Some(radial) = radial_stage {

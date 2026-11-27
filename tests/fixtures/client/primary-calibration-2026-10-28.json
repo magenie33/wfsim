@@ -9661,9 +9661,8 @@
         }
       },
       "limits": [
-        "client_spool_pellets",
-        "client_rate_spool",
-        "client_accuracy_runtime"
+        "client_accuracy_runtime",
+        "spool_rebuilds_after_reload"
       ],
       "economy": {
         "AmmoClipSize": "AmmoClipSize=36",
