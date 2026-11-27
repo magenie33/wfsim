@@ -19,7 +19,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="/asset/style.0723dedcae45.css">
+<link rel="stylesheet" href="/asset/style.6bc55f06405c.css">
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "CollectionPage", "name": "Warframe Mechanics Reference", "description": "Factual Warframe damage, status, and weapon mechanics calibrated against in-game Simulacrum measurements, with clickable links to each weapon in WFSim.", "inLanguage": "en", "url": "https://wfsim.app/mechanics"}</script>
 <style>
@@ -35,7 +35,6 @@
 .mech-card p{margin:0;font-size:13.5px;color:var(--text-2);line-height:1.55}
 .mech-card-meta{margin-top:auto;padding-top:8px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
 .mech-layout{display:grid;grid-template-columns:minmax(0,1fr) 248px;gap:22px;align-items:start}
-@media(max-width:880px){.mech-layout{grid-template-columns:1fr}.mech-aside{order:-1}}
 .mech-article{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:24px 28px;min-width:0}
 @media(max-width:600px){.mech-article{padding:16px}}
 .mech-crumb{font-size:12.5px;color:var(--muted);margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -74,6 +73,7 @@
 .mf-label{font-weight:600;font-size:13px;color:var(--text)}
 .mf-next{font-size:12px;color:var(--text-2);margin-top:3px}
 .mech-aside{position:sticky;top:64px;display:flex;flex-direction:column;gap:12px}
+@media(max-width:880px){.mech-layout{grid-template-columns:1fr}.mech-aside{position:static;top:auto;order:0}}
 .mech-box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 14px}
 .mech-box h3{margin:0 0 8px;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 .mech-toc{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12.5px}
@@ -210,8 +210,9 @@
     document.documentElement.setAttribute("data-theme",next);
     try{localStorage.setItem("wfsim-theme",next);}catch(e){}
   });
-  var toc=document.querySelector(".mech-toc-fold");
-  if(toc&&window.matchMedia&&window.matchMedia("(max-width:880px)").matches)toc.open=false;
+  if(window.matchMedia&&window.matchMedia("(max-width:880px)").matches){
+    document.querySelectorAll(".mech-toc-fold").forEach(function(d){d.open=false;});
+  }
 })();</script>
 </body>
 </html>

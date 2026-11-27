@@ -69,18 +69,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "e7065815";
+const BUILD_ID = "30dc5db0";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "1209e74b+";
+const BUILD_SHA = "2df5c89a+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "3014e9940ad2";
+const RELEASE_ID = "f69af138d1e0";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -465,6 +465,10 @@ function applyI18n() {
     if (!node) return;
     if (!el.dataset.i18nSrc) el.dataset.i18nSrc = node.textContent.trim();
     node.textContent = node.textContent.replace(el.dataset.i18nSrc, tr(el.dataset.i18nSrc)) || tr(el.dataset.i18nSrc);
+  });
+  document.querySelectorAll("[data-i18n-href]").forEach((el) => {
+    if (!el.dataset.i18nHrefEn) el.dataset.i18nHrefEn = el.getAttribute("href");
+    el.setAttribute("href", LANG === "zh" ? el.dataset.i18nHref : el.dataset.i18nHrefEn);
   });
 }
 // META's names in the reader's language, once (`headlessApplyNames`); the
@@ -3126,8 +3130,7 @@ function initWeaponSearch() {
     input.value = "";
     if (row.dataset.kind === "warframe") return nav(warframePath(wfFrames().find(f => f.id === row.dataset.id)));
     if (row.dataset.kind === "companion") return nav(companionPath(compHost(row.dataset.id)));
-    switchWeapon(row.dataset.id);
-    nav(weaponModPath(row.dataset.id));
+    nav(weaponPath(row.dataset.id));
   });
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".wsearch")) shut();
@@ -3381,7 +3384,7 @@ async function init() {
   const saved = savedCounts();
   track("presets.saved", "presets", saved.presets);
   track("presets.saved", "customs", saved.customs);
-  const boardBoot = loadBoard(routeWeaponId() ? bootWeapon : null);
+  loadBoard(routeWeaponId() ? bootWeapon : null);
   applyI18n();
   fillSelect("weapon", META.weapons);
   initWeaponSearch();
@@ -3389,11 +3392,6 @@ async function init() {
   $("weapon").value = bootWeapon;
   arcanes = arcanesFor(bootWeapon, d.arcane);
   sim = defaultScenario();
-  if (routeWeaponId()) {
-    await Promise.race([boardBoot, new Promise(resolve => setTimeout(resolve, 4000))]);
-    applyWeapon(bootWeapon, d.mods);
-    boardBoot.then(() => boardRowsLanded(bootWeapon));
-  }
 
   // THROUGH THE DOOR, like every other consumer — see "The agent door". The
   // control and an agent must move the page the same way, and the only thing
@@ -3416,7 +3414,6 @@ async function init() {
   // lists already on this machine are filed per weapon. It needs `META`, which
   // is why it is called here rather than beside the migrations it belongs with.
   foldRivensIntoOneList();
-  if (weaponEditorReady) initPresets();
   reattachOptimize(); // project the durable queue and offer a legacy checkpoint
   $("auto-forma").addEventListener("click", () => autoForma().then(() => renderMods()));
   $("clear-mods").addEventListener("click", () => { clearMods(); });
@@ -3625,8 +3622,9 @@ async function route() {
     // refreshed: `importShare` fills the editor in, but which module is
     // VISIBLE is this function's job and it had been skipped. The query is
     // already stripped, so this re-entry takes the ordinary path.
-    route();
-    importShare(shared);
+    const expected = routeGen + 1;
+    await route();
+    if (routeGen === expected) await importShare(shared);
     return;
   }
   // …AND A SHORT ONE, whose id boot already took off the address. The page is
@@ -3634,8 +3632,11 @@ async function route() {
   if (SHARE_ENABLED && SHORT_SHARE_ID) {
     const id = SHORT_SHARE_ID, sig = SHORT_SHARE_SIG;
     SHORT_SHARE_ID = SHORT_SHARE_SIG = null;
-    route();
+    const expected = routeGen + 1;
+    const drawn = route();
     shortShareCode(id).then(async (code) => {
+      await drawn;
+      if (routeGen !== expected) return;
       if (!code) { presetToast(tr("that share link could not be found")); return; }
       if (await importShare(code) && sig) showShareBy(id, sig);
     });
@@ -3685,14 +3686,9 @@ async function route() {
   const w = m && headlessWeaponAt(META.weapons || [], m[1]);
   // The active module: "" = builder, "simulator", "optimizer".
   const mod = w ? (m[2] === "/builder" ? "" : m[2] ? m[2].slice(1) : "build-library") : "";
-  // THE ROWS BEFORE ANYTHING IS SHOWN. Waiting after the page was unhidden put
-  // the PREVIOUS weapon on screen for the whole round trip. A route that another
-  // navigation overtook while it waited draws nothing.
   const gen = ++routeGen;
   beginPageTiming();
   releaseBoardCache(w ? w.id : null);
-  if (w) await loadWeaponBoard(w.id);
-  if (gen !== routeGen) return;
   if (w) {
     const path = weaponPath(w.id) + (mod === "build-library" ? "" : "/" + (mod || "builder"));
     if (location.pathname !== path) history.replaceState(history.state, "", path + location.search + location.hash);
@@ -3766,7 +3762,9 @@ async function route() {
   // …AND THE COMMUNITY'S MENU, on any of its own pages.
   const community = $("community-toggle");
   if (community) community.classList.toggle("sel", ["compute", "contributors", "clan", "community_projects"].includes(authKind));
-  document.querySelector(".config-page").hidden = !w;
+  const workspace = document.querySelector(".config-page");
+  workspace.hidden = !w;
+  if (!w) workspace.removeAttribute("data-route-pending");
   const modName = { "build-library": "Build Library", simulator: "Simulator", optimizer: "Optimizer", rivens: "Rivens", "riven-analyst": "Riven Analyst", enemies: "Enemies", benchmark: "Benchmark" }[mod];
   const modTitle = modName ? ` · ${tr(modName)}` : "";
   // A TITLE CARRIES THE SEARCH TERMS, not the headline: nobody looks for
@@ -3822,6 +3820,29 @@ async function route() {
     // and redraws when the rest lands, so the page is never a spinner.
     showBenchBoard();
   } else if (w) {
+    // The destination owns the screen before its board or editor is ready.
+    // Keep the old editor state intact for its pending saves, but never show it.
+    const pending = !weaponEditorReady || $("weapon").value !== w.id
+      || boardRequestedRulers(w.id).some(b => !boardHasCell(w.id, b));
+    if (pending) {
+      workspace.dataset.routePending = w.id;
+      renderWeaponIdentity(w);
+      renderModuleTabs(mod, w.id);
+      const doc = $("doc");
+      if (decodeURIComponent(doc.dataset.url || "") !== decodeURIComponent(weaponPath(w.id)) || doc.libraryRows) doc.hidden = true;
+      $("weapon-route-status").innerHTML = loadingHtml();
+      $("weapon-route-status").hidden = false;
+    }
+    const board = loadWeaponBoard(w.id);
+    if (pending && !document.hidden) {
+      // Yield a paint even when the board is already cached.
+      await new Promise(resolve => {
+        const fallback = setTimeout(resolve, 100);
+        requestAnimationFrame(() => { clearTimeout(fallback); setTimeout(resolve, 0); });
+      });
+    }
+    await board;
+    if (gen !== routeGen) return;
     // `?mode=` — HOW the linked build is played, carried by the link that made
     // it. A board row is a weapon AND a mode ("Burston Prime, base form"), so a
     // link that dropped the second half landed on a page measuring something
@@ -3849,6 +3870,7 @@ async function route() {
     // cannot reproduce, and arriving with neither gave you the FIRST ruler's
     // leader whichever board you clicked.
     const wantBench = libraryAddress ? null : new URLSearchParams(location.search).get("bench");
+    const benchAddress = wantBench ? location.pathname + location.search + location.hash : null;
     // WHICH OF THE TWO LEADERS — see the link builder. Null when the link
     // predates the parameter, which means "whichever row leads".
     const rivenParam = new URLSearchParams(location.search).get("riven");
@@ -3857,15 +3879,34 @@ async function route() {
     // SYNCHRONOUSLY: `switchWeapon` builds this weapon's presets out of them
     // and `applyBenchLink` opens one BY NAME. A board that lands afterwards is
     // a deep link that opens the wrong build, which is what a board link exists
-    // to stop. Awaited at the top of this function, before the page is shown.
+    // to stop. Awaited before the editor is shown.
     if (!weaponEditorReady || $("weapon").value !== w.id) {
       switchWeapon(w.id);
     }
     if (libraryAddress && location.pathname + location.search + location.hash !== libraryAddress) history.replaceState(history.state, "", libraryAddress);
-    if (wantBench) applyBenchLink(w, wantBench, wantMode, wantRiven);
+    if (wantBench && !applyBenchLink(w, wantBench, wantMode, wantRiven)) {
+      history.replaceState(history.state, "", benchAddress);
+      workspace.dataset.routePending = w.id;
+      const status = $("weapon-route-status");
+      status.hidden = false;
+      const failed = boardFileState(w.id).failed.has(wantBench);
+      status.textContent = tr(failed ? "The board could not be reached." : "No build has been measured under these board conditions.");
+      if (failed) {
+        const retry = document.createElement("button");
+        retry.className = "ghost-btn small"; retry.textContent = tr("Retry");
+        retry.onclick = () => { boardFileState(w.id).failed.delete(wantBench); route(); };
+        status.append(" ", retry);
+      }
+      markPageUsable(gen);
+      return;
+    }
     // A TASK THIS BROWSER COMPUTED (73-compute.js), opened from its list.
     const wantTask = new URLSearchParams(location.search).get("task");
-    if (wantTask && await openComputeTask(w, wantTask)) history.replaceState(null, "", location.pathname);
+    if (wantTask) {
+      const opened = await openComputeTask(w, wantTask);
+      if (gen !== routeGen) return;
+      if (opened) history.replaceState(null, "", location.pathname);
+    }
     if (wantMode && (w.modes || []).includes(wantMode)) {
       if (wantMode !== mode) {
         mode = wantMode;
@@ -3892,9 +3933,16 @@ async function route() {
     // those fields on arrival — the other tab may have moved them, and the
     // tabs are CSS-hidden rather than re-rendered.
     if (mod === "simulator") renderSim();
-    if (mod === "simulator") await openSimulationReport(w, measurement);
-    if (mod === "optimizer") { renderOpt(); await openOptimizationReport(optimizationId); await refreshOptimizerHistory(true); }
-    else optimizationReport = null;
+    if (mod === "simulator") {
+      await openSimulationReport(w, measurement);
+      if (gen !== routeGen) return;
+    }
+    if (mod === "optimizer") {
+      renderOpt(); await openOptimizationReport(optimizationId);
+      if (gen !== routeGen) return;
+      await refreshOptimizerHistory(true);
+      if (gen !== routeGen) return;
+    } else optimizationReport = null;
     if (mod === "rivens") renderRivens();
     if (mod === "riven-analyst") { history.replaceState(history.state, "", weaponPath(w.id) + "/riven-analyst" + analysisQuery); renderRivenAnalyst(); }
     else closeRivenAnalysisDialog(false);
@@ -3903,6 +3951,8 @@ async function route() {
     if (mod === "benchmark") renderWeaponBench();
     renderBuildLibrary();
     renderQuickCalc();
+    workspace.removeAttribute("data-route-pending");
+    $("weapon-route-status").hidden = true;
   } else {
     renderHome();
   }
@@ -3923,8 +3973,8 @@ const WEAPON_TABS = [["build-library", "Build Library"], ["", "Builder"], ["simu
   ["optimizer", "Optimizer"], ["rivens", "Rivens"], ["riven-analyst", "Riven Analyst"], ["enemies", "Enemies"]];
 
 // Module links follow the active weapon entry.
-function renderModuleTabs(mod = modSuffix()) {
-  $("module-tabs").innerHTML = WEAPON_TABS.map(([id, label]) => `<a class="mtab ${mod === id ? "sel" : ""}" href="${weaponTabPath($("weapon").value, id)}">${tr(label)}</a>`).join("");
+function renderModuleTabs(mod = modSuffix(), weapon = $("weapon").value) {
+  $("module-tabs").innerHTML = WEAPON_TABS.map(([id, label]) => `<a class="mtab ${mod === id ? "sel" : ""}" href="${weaponTabPath(weapon, id)}">${tr(label)}</a>`).join("");
 }
 
 // WHAT AN ARCANE SEAT IS CALLED: the pool it draws, which is a weapon type or
@@ -4035,7 +4085,7 @@ function renderHome() {
         .map((t) => `<span class="tag">${escHtml(weaponTagLabel(t))}</span>`),
       w.weapon_type && w.weapon_type !== w.slot ? tag(ARC_POOL_LABEL[w.weapon_type] || w.weapon_type) : "",
     ].join("");
-    return `<a class="wcard" href="/weapons/${urlSlug(w)}">
+    return `<a class="wcard" href="${weaponPath(w.id)}">
       ${imgTag(IMG(w.image), "wc-img")}
       <div class="wc-info">
         <div class="wc-name">${escHtml(weaponEntryName(w))}</div>
@@ -4605,10 +4655,10 @@ let benchScroll = null;
 
 /// One overview entry per weapon; its link retains the winning build's full identity.
 const benchRowHtml = (cur, { w, mode, row }, i) => `
-      <div class="brow-group"><a class="brow${row ? "" : " none"}" href="/weapons/${urlSlug(w)}${
+      <div class="brow-group"><a class="brow${row ? "" : " none"}" href="${weaponPath(w.id)}${row ? "/builder" : ""}${
         // The winner's ruler, mode and riven group reproduce the displayed score.
         `?bench=${encodeURIComponent(cur.id)}&mode=${encodeURIComponent(mode)}${
-          row ? `&riven=${rowHasRiven(row) ? 1 : 0}` : ""}`}">
+          row ? `&riven=${rowHasRiven(row) ? 1 : 0}` : "&view=library"}`}">
         <span class="brank">${row ? `#${i + 1}` : "—"}</span>
         ${imgTag(IMG(w.image), "bimg")}
         <span class="bname">${escHtml(weaponEntryName(w))}${
@@ -4675,7 +4725,7 @@ function renderHomeHot() {
           (META.weapons || []).filter((w) => w.slot === sl.id).length)).join("")}</div>
       ${hotSlot === "all" ? "" : slotFilterRows(pool, hotFilter)}
     </details>
-    ${rows.length ? `<div class="bench-rows">${shown.map((w, i) => `<a class="brow${score(w) ? "" : " none"}" href="/weapons/${urlSlug(w)}">
+    ${rows.length ? `<div class="bench-rows">${shown.map((w, i) => `<a class="brow${score(w) ? "" : " none"}" href="${weaponPath(w.id)}">
         <span class="brank">${score(w) ? `#${i + 1}` : "—"}</span>
         ${imgTag(IMG(w.image), "bimg")}
         <span class="bname">${escHtml(w.name)}</span></a>`).join("")}</div>`
@@ -14639,7 +14689,7 @@ function restoreState(st, weapon) {
   if (!libraryAddress && (!document.querySelector(".config-page").hidden || (here && here !== w))) {
     history.replaceState(null, "", weaponModPath(w));
   }
-  applyWeapon(w, null); // resets pool/innate/visibility
+  applyWeapon(w, null, false); // reset axes without drawing an intermediate blank build
   releaseAbsent(BUILDS);
   (st.slots || []).forEach((s, i) => {
     if (i >= slots.length) return;
@@ -14697,7 +14747,7 @@ function restoreState(st, weapon) {
   if (officialBuildActive()) autoForma({ alone: true }).then((r) => { if (r) renderMods(); });
   renderAssembly();
   renderWielder(); renderWeaponName();
-  renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); refreshPanel();
+  renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); renderOpt(); refreshPanel();
   if ((st.slots || []).some((s) => isReadOnlyRivenId(s.mod))) refreshRivenNames();
   renderStoredSimResult(); // the simulator shows THIS preset's last test
   if (absentOf(BUILDS, activePreset).length) {
@@ -17251,31 +17301,16 @@ function boardRowState(w, row) {
 /// carrying both, which is what a board row is. Everything after this point
 /// still obeys the rule — picking a build in the bar moves nothing else.
 ///
-/// Silent where it cannot help: a link naming a ruler this build of the site
-/// has never heard of, or a weapon with no row under it, leaves the page as it
-/// found it rather than clearing what is on screen.
+/// An unavailable group never substitutes another group's build.
 function applyBenchLink(w, benchId, wantMode, wantRiven) {
+  const rows = builtinBuilds(benchId).filter(p => p.benchmark === benchId
+    && (wantRiven == null || !!p.riven === wantRiven)
+    && (!wantMode || p.mode === wantMode));
+  if (!rows.length) return false;
   const sc = builtinScenarios().find((s) => s.builtin === benchId);
   if (sc) pickPreset(scenarioBarCfg(), presetId(sc));
-  let rows = builtinBuilds().filter((p) => p.benchmark === benchId);
-  if (!rows.length) return;
-  // WHICH OF THE TWO LEADERS, narrowed FIRST because it is the coarser split:
-  // a weapon's riven rows and its plain ones are two rankings, and taking the
-  // mode's leader out of the union hands back whichever of the two happens to
-  // score higher. Skipped when the link predates the parameter, and skipped
-  // when it would leave nothing — a board that holds only plain rows still has
-  // to answer a `riven=1` link with the row it does have rather than with
-  // silence.
-  if (wantRiven !== null && wantRiven !== undefined) {
-    const narrowed = rows.filter((p) => !!p.riven === wantRiven);
-    if (narrowed.length) rows = narrowed;
-  }
-  // The mode the link asked for, else however this weapon is played — the
-  // board's own row order inside a ruler is best-first, so `find` is the
-  // leader either way.
-  const want = wantMode && (w.modes || []).includes(wantMode) ? wantMode : null;
-  const row = (want && rows.find((p) => p.mode === want)) || rows[0];
-  pickPreset(buildBarCfg(), presetId(row));
+  pickPreset(buildBarCfg(), presetId(rows[0]));
+  return true;
 }
 
 const buildList = () => builtinBuilds().concat(loadPresetList(BUILDS));
@@ -17643,7 +17678,7 @@ const FINDER_EVERY_MODE = "*";
 const finder = {
   weapon: null, sc: "", b: null, mo: null, rv: "all",
   req: new Set(), exc: new Set(),
-  open: null, ref: null, shown: FINDER_FIRST, hi: 0,
+  open: null, ref: null, shown: FINDER_FIRST, hi: 0, filters: true,
   // The ties opened to their exact builds, by `tieGroups` key.
   ties: new Set(),
 };
@@ -18587,13 +18622,16 @@ const defaultEvolutions = (weaponId, sel) => Object.fromEntries(weaponEvos(weapo
 /// AN INDEX OVER `poolWithRivens()`: a board's rows look up every mod they name,
 /// thousands on one card. Only a riven id (`isRivenId`) reads the saved rivens.
 let modIndex = { pool: null, map: null };
+const weaponModPool = w => {
+  const byId = new Map(Object.values(META.mod_pools || {}).flat().map(m => [m.id, m]));
+  return (w.mods || []).map(id => byId.get(id)).filter(Boolean);
+};
 /// `fn` run with `w`'s mod pool in place of the open weapon's, and that one back after.
 function withPoolOf(w, fn) {
   if (!w || !META || w.id === (rivenContextWeapon || ($("weapon") || {}).value)) return fn();
-  const byId = new Map(Object.values(META.mod_pools || {}).flat().map((m) => [m.id, m]));
   const saved = currentPool, savedRivenWeapon = rivenContextWeapon;
   rivenContextWeapon = w.id;
-  currentPool = (w.mods || []).map((id) => byId.get(id)).filter(Boolean);
+  currentPool = weaponModPool(w);
   try { return fn(); } finally { currentPool = saved; rivenContextWeapon = savedRivenWeapon; }
 }
 const modById = (id) => {
@@ -18691,9 +18729,9 @@ function clearMods() {
 // build preset then follows the new weapon via the explicit
 // markPresetDirty() below, which no-ops when this runs inside a preset
 // load (restoreState already holds the applying guard).
-function applyWeapon(id, presetMods) {
+function applyWeapon(id, presetMods, draw = true) {
   weaponEditorReady = true;
-  whileApplying(() => applyWeaponInner(id, presetMods));
+  whileApplying(() => applyWeaponInner(id, presetMods, draw));
   markPresetDirty();
 }
 
@@ -18709,12 +18747,26 @@ function switchWeapon(id) {
   flushPresetSaves();
   $("weapon").value = id;
   ensureWeaponBoard(id);
-  applyWeapon(id, null);
+  currentPool = weaponModPool(weaponInfo(id));
+  rivenModCache = { key: null, list: [] };
   initPresets();
   renderModuleTabs();
 }
 
-function applyWeaponInner(id, presetMods) {
+// The strip describes the weapon, independently of the editor's active build.
+function renderWeaponIdentity(w) {
+  const wimg = IMG(w.image);
+  $("w-img").hidden = !wimg;
+  if (wimg) $("w-img").src = wimg;
+  $("w-name").innerHTML = wl(weaponEntryName(w), wikiUrl(wikiWeaponName(w)));
+  const lines = w.passives || [];
+  $("w-passives").hidden = !lines.length;
+  $("w-passives").innerHTML = lines.map(x => `<div>${escHtml(tr(x))}</div>`).join("");
+  $("w-tags").innerHTML = [w.subtype, w.uses_evo2 ? "Incarnon" : null, w.sentinel ? "Sentinel" : null]
+    .filter(Boolean).map(t => `<span class="tag">${escHtml(t)}</span>`).join("");
+}
+
+function applyWeaponInner(id, presetMods, draw) {
   const w = weaponInfo(id);
   buffList = []; // rebuilt from the next /api/panel response for this build
   // HOW THIS WEAPON IS PLAYED, reset to its own default. "base" is a legal id
@@ -18761,10 +18813,7 @@ function applyWeaponInner(id, presetMods) {
   // weapon and ammo mods do nothing on an infinite reserve, and neither
   // reaches the builder or the optimizer while the pool
   // was computed twice.
-  const byId = new Map(
-    Object.values(META.mod_pools || {}).flat().map((m) => [m.id, m]),
-  );
-  currentPool = (w.mods || []).map((id) => byId.get(id)).filter(Boolean);
+  currentPool = weaponModPool(w);
   // NINE, not eight. The server sends 8 main slots plus the EXILUS slot's own
   // innate polarity (`innate_slots_for`, which has appended it since the
   // 2026-07-28 wiki cross-check), and this line sliced that ninth entry off
@@ -18781,13 +18830,7 @@ function applyWeaponInner(id, presetMods) {
   // that hid the exilus polarity, one slot further along.
   innate[STANCE] = w.stance_polarity || null;
 
-  // A weapon with no asset yet must show NOTHING, not a broken-image box:
-  // src="" still resolves (to the page) and renders as a failed load.
-  const wimg = IMG(w.image);
-  $("w-img").hidden = !wimg;
-  if (wimg) $("w-img").src = wimg;
-  // The weapon name links to its wiki page too (display suffixes like
-  // " (sentinel)" are ours, not part of the page name).
+  renderWeaponIdentity(w);
   renderWeaponName();
   // Subtype (e.g. "Dual Pistols") + form tags; the mod-eligibility group
   // (mod_class) drives the picker's pool but isn't shown as a tag.
@@ -18801,22 +18844,6 @@ function applyWeaponInner(id, presetMods) {
     .map((p) => (POOL_NAME[p] || p).replace(/ Mods$/, "")).join(" + ") + " Mods";
   $("mod-block-h").textContent = tr(poolName || "Mods");
 
-  // WHAT THIS WEAPON DOES BEYOND ITS STATS. Generated engine-side from the data
-  // that implements each passive, so the line and the simulation cannot say
-  // different things. Empty for most weapons; the strip hides itself then.
-  //
-  // It lives here, in the weapon strip, because a passive is part of the
-  // WEAPON — not of the build, not of the fight. Gotva Prime's crit set and
-  // Dual Toxocyst's Frenzy are most of what those weapons are, and until
-  // 2026-08-05 the page never mentioned either, so both read as ordinary guns.
-  const wp = $("w-passives");
-  if (wp) {
-    const lines = w.passives || [];
-    wp.hidden = !lines.length;
-    wp.innerHTML = lines.map((x) => `<div>${escHtml(tr(x))}</div>`).join("");
-  }
-  $("w-tags").innerHTML = [w.subtype, w.uses_evo2 ? "Incarnon" : null, w.sentinel ? "Sentinel" : null]
-    .filter(Boolean).map((t) => `<span class="tag">${t}</span>`).join("");
 
   const AX = weaponAxes(w.id);
   show("arcane-block", AX.arcanes.length > 0);
@@ -18859,8 +18886,10 @@ function applyWeaponInner(id, presetMods) {
   // plan for an empty build, whose layout is the one the weapon was born with.
   if (slots.some((x) => x.mod)) autoForma({ alone: true }).then((r) => { if (r) renderMods(); });
 
-  renderAssembly();
-  renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); renderOpt();
+  if (draw) {
+    renderAssembly();
+    renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); renderOpt();
+  }
 }
 
 // ---- The long image: a weapon's answer laid out to be sent as one picture ----
@@ -23572,6 +23601,7 @@ function renderQuickCalc() {
   const box = $("quick-calc");
   if (!box || !META) return;
   box.hidden = !routeWeaponId() || modSuffix() !== "";
+  if (box.hidden) return;
   const on = gainPrefs.on !== false;
   const list = everyRank();
   box.innerHTML =
@@ -43526,7 +43556,7 @@ function libraryModuleSuffix() {
 function libraryReset(w) {
   Object.assign(finder, { weapon: w.id, b: libraryDefaultBenchmark(), mo: FINDER_EVERY_MODE, rv: "all",
     req: new Set(), exc: new Set(), off: null, query: null, simpleSnapshot: null, advanced: false, advancedSort: false, sort: "score", minScore: null, maxDrain: null,
-    open: null, ref: null, shown: FINDER_FIRST, hi: 0, ties: new Set(), filters: false });
+    open: null, ref: null, shown: FINDER_FIRST, hi: 0, ties: new Set(), filters: true });
 }
 function librarySaveView() {
   if (!libraryActive || !libraryKey) return;
@@ -43691,7 +43721,15 @@ function libraryAfterRender(w, all, list, groups, drawList) {
   if (!libraryActive || libraryNavigating) return;
   loadLibraryRecommendations(w, all);
   const changed = libraryWriteQuery();
-  renderLibrarySummary(w, all);
+  // An unanswered request must not replace the archived summary with an empty board.
+  const absent = boardFiles.get(w.id)?.loaded.get(boardCellDir(finder.b))?.get(finder.b) === null;
+  if (boardHasCell(w.id, finder.b) || absent) renderLibrarySummary(w, all);
+  else if ($("doc").libraryRows || finder.b !== libraryDefaultBenchmark() || finder.mo !== FINDER_EVERY_MODE) {
+    $("doc").hidden = true;
+    $("doc").replaceChildren();
+    $("doc").libraryRows = null;
+    delete $("doc").dataset.libraryKey;
+  }
   const box = $("build-finder");
   if (!boardHasCell(w.id, finder.b)) {
     const ruler = finder.b;
