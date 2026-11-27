@@ -11,10 +11,10 @@ const SITE = "https://wfsim.app";
 const py = process.platform === "win32" ? "python" : "python3";
 function pickRunner() {
   try {
-    execFileSync(py, ["-c", "import yaml"], { stdio: "ignore" });
+    execFileSync(py, ["-c", "import yaml, PIL"], { stdio: "ignore" });
     return { cmd: py, prefix: [] };
   } catch {
-    return { cmd: "uv", prefix: ["run", "--with", "pyyaml", "python"] };
+    return { cmd: "uv", prefix: ["run", "--with", "pyyaml", "--with", "pillow", "python"] };
   }
 }
 const runner = pickRunner();
@@ -59,6 +59,11 @@ for (const route of routes) {
   check(`${route}: canonical & alternate markdown link`,
     html.includes(`<link rel="canonical" href="${SITE}${route}">`) &&
     html.includes(`<link rel="alternate" type="text/markdown" href="${route}.md">`));
+
+  const ogm = html.match(/<meta property="og:image" content="https:\/\/wfsim\.app\/(og\/mechanics[^"]*\.png)">/);
+  check(`${route}: dedicated 1200x630 OG share card generated`,
+    !!ogm && existsSync(resolve(OUT, ogm[1])) && html.includes('<meta name="twitter:card" content="summary_large_image">'),
+    ogm ? ogm[1] : "no og:image card");
 
   const isZh = route.startsWith("/mechanics/zh");
   const enAlt = isZh ? route.replace("/mechanics/zh", "/mechanics") : route;

@@ -211,6 +211,7 @@ CARD_BG, CARD_TEXT, CARD_MUTED, CARD_GOLD = "#0e1014", "#f2f4f8", "#a6adbb", "#e
 # CJK-capable, in preference order; the last entry is the graceful give-up.
 CARD_FONTS = ("C:/Windows/Fonts/msyhbd.ttc", "C:/Windows/Fonts/msyh.ttc",
               "C:/Windows/Fonts/simhei.ttf", "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+              "/System/Library/Fonts/STHeiti Medium.ttc",
               "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
 
 
@@ -1907,7 +1908,7 @@ def prerender(flagged: str, catalog: Path) -> None:
     method_urls = ship_method(flagged)
     style_href = re.search(r'href="(/asset/style\.[^"]+\.css)"', flagged).group(1)
     mechanics_urls, mechanics_entries = mechanics_site.ship_mechanics(
-        ROOT, APP, SITE, style_href, roster(), wiki_path, put
+        ROOT, APP, SITE, style_href, roster(), wiki_path, put, og_card_fn=og_card
     )
     urls = ([SITE + "/", SITE + "/weapons"]
             + [f"{SITE}/{path}" for path, *_ in shell_pages] + method_urls + mechanics_urls

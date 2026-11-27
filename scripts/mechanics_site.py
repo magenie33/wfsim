@@ -690,6 +690,8 @@ def page_shell(
     zh_url: str,
     md_path: str,
     style_href: str,
+    og_image: str,
+    has_og_card: bool,
     ld_blocks: list[dict],
     body_html: str,
 ) -> str:
@@ -707,6 +709,8 @@ def page_shell(
         f'<script type="application/ld+json">{json.dumps(b, ensure_ascii=False)}</script>\n'
         for b in ld_blocks
     )
+    og_dims = '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n' if has_og_card else ""
+    tw_card = "summary_large_image" if has_og_card else "summary"
     return f"""<!doctype html>
 <html lang="{html_lang}">
 <head>
@@ -724,8 +728,8 @@ def page_shell(
 <meta property="og:title" content="{e(title)} | WFSim">
 <meta property="og:description" content="{e(description)}">
 <meta property="og:url" content="{e(canonical_url)}">
-<meta property="og:image" content="https://wfsim.app/logo.svg">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="{e(og_image)}">
+{og_dims}<meta name="twitter:card" content="{tw_card}">
 <link rel="stylesheet" href="{e(style_href)}">
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
 {ld_html}<style>{MECH_CSS}</style>
@@ -992,6 +996,7 @@ def ship_mechanics(
     roster_specs: list[dict],
     wiki_path_fn: Callable[[dict], str],
     put_fn: Callable[[Path, str], None],
+    og_card_fn: Callable[[Path, str, str | None, str, str], bool] | None = None,
 ) -> tuple[list[str], list[dict]]:
     """Build /mechanics and /mechanics/zh index + article pages and .md twins."""
     cat = load_catalog(root)
@@ -1063,6 +1068,7 @@ def ship_mechanics(
             lbl_updated = f"更新日期：{art['updated']}" if lang == "zh" else f"Updated {art['updated']}"
             lbl_md = "纯文本 Markdown" if lang == "zh" else "Plain Markdown"
             lbl_copy_url = "复制链接" if lang == "zh" else "Copy link"
+            lbl_share = "分享" if lang == "zh" else "Share"
             lbl_copy_ref = "复制 Wiki 引用" if lang == "zh" else "Copy Wiki <ref>"
             lbl_copy_md = "复制 MD 链接" if lang == "zh" else "Copy MD link"
             lbl_copied = "已复制" if lang == "zh" else "Copied"
@@ -1077,6 +1083,13 @@ def ship_mechanics(
   document.querySelectorAll("[data-copy]").forEach(function(b){{
     b.addEventListener("click",function(){{cp(b.getAttribute("data-copy"),b);}});
   }});
+  document.querySelectorAll("[data-share-url]").forEach(function(b){{
+    b.addEventListener("click",function(){{
+      var u=b.getAttribute("data-share-url"), t=b.getAttribute("data-share-title")||document.title;
+      if(navigator.share){{navigator.share({{title:t,url:u}}).catch(function(){{}});}}
+      else{{cp(u,b);}}
+    }});
+  }});
   document.querySelectorAll(".mech-anchor").forEach(function(a){{
     a.addEventListener("click",function(){{
       var u=location.origin+location.pathname+a.getAttribute("href");
@@ -1089,7 +1102,7 @@ def ship_mechanics(
 <article class="mech-article">
   <div class="mech-crumb"><a href="{prefix}">{"机制" if lang == "zh" else "Mechanics"}</a> / <span>{html_mod.escape(loc["short_title"])}</span></div>
   <h1>{html_mod.escape(loc["title"])}</h1>
-  <div class="mech-meta"><span>{lbl_updated}</span><span>{html_mod.escape(art["category"][lang])}</span><a href="{md_twin_path}">{lbl_md}</a><button type="button" class="mech-btn" data-copy="{html_mod.escape(art_url, quote=True)}">{lbl_copy_url}</button></div>
+  <div class="mech-meta"><span>{lbl_updated}</span><span>{html_mod.escape(art["category"][lang])}</span><a href="{md_twin_path}">{lbl_md}</a><button type="button" class="mech-btn" data-share-url="{html_mod.escape(art_url, quote=True)}" data-share-title="{html_mod.escape(loc['title'] + ' | WFSim', quote=True)}">{lbl_share}</button></div>
   {body_html}
 </article>
 <aside class="mech-aside">
@@ -1098,6 +1111,14 @@ def ship_mechanics(
   <div class="mech-box"><h3>{lbl_weapons}</h3><div class="mech-wlist">{wlist_html}</div></div>
 </aside>
 </div>{share_script}"""
+
+            card_rel = f"og/mechanics-{slug}.png" if lang == "en" else f"og/mechanics-zh-{slug}.png"
+            card_main = art["en"]["short_title"] if lang == "en" else art["zh"]["short_title"]
+            card_sub = art["zh"]["short_title"] if lang == "en" else art["en"]["short_title"]
+            card_facts = f"WFSim {'机制参考' if lang == 'zh' else 'Mechanics'} · {art['category'][lang]}"
+            card_stats = loc.get("card_stats") or loc["description"]
+            drew_card = bool(og_card_fn and og_card_fn(app_dir / card_rel, card_main, card_sub, card_facts, card_stats))
+            art_og_img = f"{site_url}/{card_rel}" if drew_card else f"{site_url}/logo.svg"
 
             ld_blocks: list[dict] = [
                 {
@@ -1136,6 +1157,8 @@ def ship_mechanics(
                 zh_url=zh_art_url,
                 md_path=md_twin_path,
                 style_href=style_href,
+                og_image=art_og_img,
+                has_og_card=drew_card,
                 ld_blocks=ld_blocks,
                 body_html=article_body,
             )
@@ -1177,6 +1200,13 @@ def ship_mechanics(
             "inLanguage": "zh-Hans" if lang == "zh" else "en",
             "url": idx_url,
         }]
+        idx_card_rel = "og/mechanics.png" if lang == "en" else "og/mechanics-zh.png"
+        idx_card_main = idx_meta.get("card_title") or idx_meta["title"]
+        idx_card_sub = cat["index"]["zh" if lang == "en" else "en"].get("card_title")
+        idx_card_facts = "Warframe Mechanics · Simulacrum Calibrated" if lang == "en" else "Warframe 机制参考 · 幻影装置实测校准"
+        idx_card_stats = idx_meta.get("card_stats") or idx_meta["description"]
+        drew_idx = bool(og_card_fn and og_card_fn(app_dir / idx_card_rel, idx_card_main, idx_card_sub, idx_card_facts, idx_card_stats))
+        idx_og_img = f"{site_url}/{idx_card_rel}" if drew_idx else f"{site_url}/logo.svg"
         idx_html = page_shell(
             lang=lang,
             title=idx_meta["title"],
@@ -1186,6 +1216,8 @@ def ship_mechanics(
             zh_url=f"{site_url}/mechanics/zh",
             md_path=idx_md_path,
             style_href=style_href,
+            og_image=idx_og_img,
+            has_og_card=drew_idx,
             ld_blocks=idx_ld,
             body_html=idx_body,
         )
@@ -1212,7 +1244,7 @@ if __name__ == "__main__":
     (out_dir / "style.css").write_bytes((static / "style.css").read_bytes())
     (out_dir / "logo.svg").write_bytes((static / "logo.svg").read_bytes())
     urls, entries = ship_mechanics(
-        bsa.ROOT, out_dir, bsa.SITE, "/style.css", bsa.roster(), bsa.wiki_path, bsa.put
+        bsa.ROOT, out_dir, bsa.SITE, "/style.css", bsa.roster(), bsa.wiki_path, bsa.put, og_card_fn=bsa.og_card
     )
     src_img = bsa.ROOT / "site" / "img"
     if src_img.is_dir():

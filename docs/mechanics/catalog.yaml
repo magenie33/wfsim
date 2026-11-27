@@ -5,11 +5,17 @@
 index:
   en:
     title: Warframe Mechanics Reference
+    card_title: WFSim Mechanics
+    card_stats: >-
+      Simulacrum-calibrated Warframe formulas · clickable weapon links · plain Markdown twins
     description: >-
       Factual Warframe damage, status, and weapon mechanics calibrated against
       in-game Simulacrum measurements, with clickable links to each weapon in WFSim.
   zh:
     title: Warframe 机制参考
+    card_title: WFSim 机制参考
+    card_stats: >-
+      幻影装置实测校准 · 全武器图标直链 · 纯静态秒开与 Markdown 孪生
     description: >-
       基于幻影装置游戏内实测校准的 Warframe 伤害、异常与武器底层机制手册，
       文中提及的具体武器均可直接点击进入 WFSim 对应武器页。
@@ -24,6 +30,8 @@ articles:
     en:
       title: Beam Weapons (Continuous) Mechanics & Damage Calculation
       short_title: Beam Weapons
+      card_stats: >-
+        First tick scales with Fire Rate · 5-stage ramp-up · M² status DoT · 53 continuous modes
       description: >-
         Fire-rate-dependent first-tick pre-advance, 5-stage per-target ramp-up
         lifecycle, quadratic M² status DoT multishot scaling, center-beam
@@ -55,6 +63,8 @@ articles:
     zh:
       title: 射线武器（持续型武器）计算机制全解析
       short_title: 射线武器机制
+      card_stats: >-
+        首跳随射速变化 · 5 阶段预热曲线 · 多重平方 M² 异常 · 53 个射线形态索引
       description: >-
         射线首跳随射速动态变化公式、5 阶段多敌人独立预热状态机、多重合并 M² 持续异常缩放、
         中心主射线特例、末端半径穿透门控与托里德双形态全景手算。
@@ -84,6 +94,8 @@ articles:
     en:
       title: Magnetic & Electricity Status Mechanics & Calculation (incl. Gas)
       short_title: Magnetic & Electricity
+      card_stats: >-
+        0.5%/stack · 2/(1+W) weakpoint norm · S² status damage · 630 weapons indexed
       description: >-
         Two-stage Magnetic break formula (0.5%/stack, 2/(1+W) native weakpoint
         normalization, S² status damage double-dip), all 5 weapon W tiers, and
@@ -116,6 +128,8 @@ articles:
     zh:
       title: 磁力与电击异常计算机制全解析（含毒气对照）
       short_title: 磁力与电击异常
+      card_stats: >-
+        0.5%/层 · 原生弱点 W 反向归一化 · 异常伤双吃 S² · 630 把武器全档索引
       description: >-
         磁力破防电双阶段精确公式（0.5%/层、原生弱点 W 反向归一化、异常伤双吃 S²）、
         全游戏 5 档 W 代表武器一览，以及电击与毒气“最新一层决定全池爆头落点 L”机制。
