@@ -3,6 +3,7 @@ import { seedComputeWork } from "./pg/fixtures.mjs";
 // Live delivery, unpaid witnesses, recent activity and refusals remain protected.
 //   node scripts/check_forget_past.mjs
 import { facts } from "../worker/factory.js";
+import { DIALS } from "../worker/dials.js";
 import { KEPT_MS } from "../worker/tasks.js";
 import { BOARD_KINDS } from "../worker/board_kinds.js";
 import { testDb } from "./pg/test_db.mjs";
@@ -204,6 +205,74 @@ for (const mode of ['force_generic_plan','force_custom_plan']) {
 }
 await plans.exec('RESET enable_seqscan; RESET enable_bitmapscan; RESET plan_cache_mode;');
 await plans.close();
+
+// ---- automatic 2-day settled intermediate pruning (factory_prune_settled) ----
+check("automatic settled pruning defaults to enabled with a 2-day window",
+  DIALS.settled_prune_on.default === 1 && DIALS.settled_keep_ms.default === 2 * DAY);
+const auto = await testDb("library");
+const AUTO_OLD = iso(NOW - 3 * DAY), AUTO_RECENT = iso(NOW - DAY), AUTO_BEFORE = iso(NOW - DIALS.settled_keep_ms.default);
+const seedAuto = async (id, state, at, { unpaid = false, live = false } = {}) => {
+  await seedComputeWork(auto, {
+    id, verb: "simulate", request: { weapon: "braton", id }, state, due_at: at, opened_at: at,
+    canon: state === "fact" ? '{"score":42}' : null, fact_engine: state === "fact" ? "e1" : null,
+    fact_at: state === "fact" ? at : null, withdrawn_at: state === "withdrawn" ? at : null,
+  });
+  await auto.run(
+    "INSERT INTO relation_task_consumers(producer, ref, question, state, asked_at, due_at, payload, served_at) VALUES ('sweep', ?, ?, ?, ?, ?, '{}', ?)",
+    `ref-${id}`, id, live ? "live" : "served", at, at, live ? null : at);
+  if (state === "fact") await auto.run(
+    "INSERT INTO record_candidate_answers(question, engine, device, owner, canon, result, work, at, credited, credit_work) VALUES (?, 'e1', 'd1', 'o1', '{\"score\":42}', '{}', 100, ?, ?, ?)",
+    id, at, unpaid ? 0 : 1, unpaid ? 100 : null);
+};
+await auto.run("INSERT INTO entity_weapon_builds(id, at, record) VALUES ('b1', '2026-10-01', '{}')");
+await auto.run("INSERT INTO state_board_measurement_selection(identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at) VALUES ('b1', 'r1', 'base', 'verified:e1', 42, 'kpm', 0, ?, ?)", AUTO_OLD, AUTO_OLD);
+await auto.run("INSERT INTO entity_compute_devices(id, seen, work) VALUES ('d1', ?, 500)", AUTO_OLD);
+await auto.run("INSERT INTO record_hourly_compute_totals(verifier, hour, work) VALUES ('o1', '2026-10-28T00', 500)");
+await seedAuto("auto-old-fact", "fact", AUTO_OLD);
+await seedAuto("auto-old-withdrawn", "withdrawn", AUTO_OLD);
+await seedAuto("auto-recent-fact", "fact", AUTO_RECENT);
+await seedAuto("auto-unpaid", "fact", AUTO_OLD, { unpaid: true });
+await seedAuto("auto-live", "fact", AUTO_OLD, { live: true });
+await seedAuto("auto-open", "open", AUTO_OLD, { live: true });
+await seedAuto("auto-reported", "fact", AUTO_OLD);
+const repRow = await auto.get("SELECT result_id FROM state_compute_scheduling WHERE id = 'auto-reported'");
+await auto.run("INSERT INTO entity_calculation_reports(result_id, question, engine, at) SELECT id, computation, engine, accepted_at FROM entity_compute_results WHERE id = ?",
+  repRow.result_id);
+await auto.run("INSERT INTO entity_build_workflow_scopes(id, definition) VALUES ('sc1', '{}')");
+for (const [wf, st, doneAt, nst, def] of [
+  ["wf-old", "succeeded", AUTO_OLD, "succeeded", '{"kind":"measure"}'],
+  ["wf-opt", "succeeded", AUTO_OLD, "succeeded", '{"kind":"optimize"}'],
+  ["wf-recent", "succeeded", AUTO_RECENT, "succeeded", '{"kind":"measure"}'],
+  ["wf-active", "active", null, "queued", '{"kind":"measure"}'],
+]) {
+  await auto.run("INSERT INTO entity_build_workflows(id, build_id, scope_key, kind, scope_id, source, created_at) VALUES (?, 'b1', ?, 'intake', 'sc1', '{}', ?)", wf, `sk-${wf}`, AUTO_OLD);
+  await auto.run("INSERT INTO state_build_workflows(id, build_id, scope_key, state, zone, due_at, completed_at) VALUES (?, 'b1', ?, ?, 3, ?, ?)", wf, `sk-${wf}`, st, AUTO_OLD, doneAt);
+  await auto.run("INSERT INTO entity_build_workflow_expansions(id, workflow, parent_node, plan, created_at) VALUES (?, ?, NULL, '{}', ?)", `${wf}:root`, wf, AUTO_OLD);
+  await auto.run("INSERT INTO state_build_workflow_nodes(workflow, id, expansion, definition, state, computation, retry_at) VALUES (?, '0', ?, (?::text)::jsonb, ?, ?, ?)",
+    wf, `${wf}:root`, def, nst, wf === "wf-old" ? "auto-old-fact" : "auto-recent-fact", AUTO_OLD);
+}
+const autoPruned = Number((await auto.get("SELECT factory_prune_settled(?::text, 100) AS n", AUTO_BEFORE)).n);
+check("factory_prune_settled removes 2-day-old settled workflows and tasks with their specs, tasks and results",
+  autoPruned === 3
+  && !(await auto.get("SELECT 1 FROM entity_build_workflows WHERE id = 'wf-old'"))
+  && !(await auto.get("SELECT 1 FROM state_compute_scheduling WHERE id = 'auto-old-fact'"))
+  && !(await auto.get("SELECT 1 FROM entity_compute_specs WHERE id = 'auto-old-fact'"))
+  && !(await auto.get("SELECT 1 FROM entity_compute_tasks WHERE computation = 'auto-old-fact'"))
+  && !(await auto.get("SELECT 1 FROM entity_compute_results WHERE computation = 'auto-old-fact'"))
+  && !(await auto.get("SELECT 1 FROM entity_compute_specs WHERE id = 'auto-old-withdrawn'")),
+  `pruned=${autoPruned}`);
+check("factory_prune_settled retains recent, optimize, unpaid, live, open, reported, score and credit records",
+  !!(await auto.get("SELECT 1 FROM entity_build_workflows WHERE id = 'wf-recent'"))
+  && !!(await auto.get("SELECT 1 FROM entity_build_workflows WHERE id = 'wf-opt'"))
+  && !!(await auto.get("SELECT 1 FROM entity_build_workflows WHERE id = 'wf-active'"))
+  && !!(await auto.get("SELECT 1 FROM entity_compute_specs WHERE id = 'auto-recent-fact'"))
+  && !!(await auto.get("SELECT 1 FROM entity_compute_specs WHERE id = 'auto-unpaid'"))
+  && !!(await auto.get("SELECT 1 FROM entity_compute_specs WHERE id = 'auto-live'"))
+  && !!(await auto.get("SELECT 1 FROM entity_compute_specs WHERE id = 'auto-open'"))
+  && !!(await auto.get("SELECT 1 FROM entity_compute_specs WHERE id = 'auto-reported'"))
+  && (await auto.get("SELECT score FROM state_board_measurement_selection WHERE identity = 'b1'")).score === 42
+  && (await auto.get("SELECT work FROM record_hourly_compute_totals WHERE verifier = 'o1'")).work === 500);
+await auto.close();
 
 console.log(failures ? `\n${failures} failed` : "\nthe library keeps a window, and only what the window and the board still need");
 process.exit(failures ? 1 : 0);

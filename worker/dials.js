@@ -83,6 +83,10 @@ export const DIALS = {
     says: "nobody is passed over for their share while holding this many leases or fewer" },
   initiator_forget_ms: { default: 600_000, min: 60_000, max: 86_400_000, unit: "ms",
     says: "how often the settler erases the code of an ask that is over" },
+  settled_prune_on: { default: 1, min: 0, max: 1, unit: "switch",
+    says: "1 automatically prunes settled task and workflow intermediates past settled_keep_ms; 0 pauses pruning" },
+  settled_keep_ms: { default: 172_800_000, min: 3_600_000, max: 2_592_000_000, unit: "ms",
+    says: "how long completely settled task and workflow detail stays before automatic pruning" },
   // MERIT (docs/BOARD.md §"Merit"), worker/merit.js.
   merit_on: { default: 1, min: 0, max: 1, unit: "switch",
     says: "1 mints merit from contribution points each ten-minute cron; 0 mints nothing (balances stay)" },

@@ -46,7 +46,7 @@ export function statisticsLimitsFromEnv(env) {
 }
 /// Bounded maintenance passes; archived task pruning runs separately through
 /// scripts/pg_task_archive.py and the unarchived retention call returns zero.
-export const PAST_MS = 60_000, PAST_BATCH = 100, PAST_CALLS = 5;
+export const PAST_MS = 60_000, PAST_BATCH = 100, PAST_CALLS = 5, PRUNE_MS = 5_000, PRUNE_BATCH = 250, PRUNE_CALLS = 2;
 const RELEASE_URL = process.env.RELEASE_URL || "https://wfsim.app/release.json";
 /// THE WORK SIGNAL: the object written to the public bucket, and where readers get it.
 export const SIGNAL_KEY = "work.json", SIGNAL_CACHE = "public, max-age=5";
@@ -371,9 +371,19 @@ export async function run({ once = false, opened = null, servedNow = served, tar
         if (Number(n) < PAST_BATCH) break;
       }
     },
+    prune: async () => {
+      const dials = await dialsOf(env);
+      if (dials.settled_prune_on !== 1) return false;
+      const before = iso(Date.now() - dials.settled_keep_ms);
+      for (let i = 0; i < PRUNE_CALLS; i++) {
+        const { n } = await backgroundEnv.LIBRARY.prepare("SELECT factory_prune_settled(?::text, ?::bigint) AS n")
+          .bind(before, PRUNE_BATCH).first();
+        if (Number(n) < PRUNE_BATCH) break;
+      }
+    },
   };
   if (once) {
-    for (const name of ["signal","statistics", "snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "queueMaintenance", "queueCosts", "queueFleet", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
+    for (const name of ["signal","statistics", "snapshot", "fair", "workflowAdmission", "settle", "delivery", "contribution", "shadow", "admission", "queueMaintenance", "queueCosts", "queueFleet", "demand", "tally", "forget", "past", "prune", "moot"]) await tick(name, jobs[name]);
     statistics.stop();
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
@@ -386,14 +396,14 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   const every = (ms, name) => {
     clock.add(name,ms,async()=>{
       if (stopping) return;
-      await (["statistics","admission", "queueMaintenance", "queueCosts", "queueFleet", "tally", "forget", "past", "moot", "shadow"].includes(name)
+      await (["statistics","admission", "queueMaintenance", "queueCosts", "queueFleet", "tally", "forget", "past", "prune", "moot", "shadow"].includes(name)
         ? background(() => stopping ? undefined : tick(name, jobs[name])) : tick(name, jobs[name])
       );
     });
   };
   every(SNAPSHOT_MS, "heartbeat");
   every(STATISTICS_PUMP_MS,'statistics');
-  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "signal"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(FAIR_MS,"queueMaintenance"); every(DEMAND_MS,"queueCosts"); every(DEMAND_MS,"queueFleet"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
+  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "signal"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(FAIR_MS,"queueMaintenance"); every(DEMAND_MS,"queueCosts"); every(DEMAND_MS,"queueFleet"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PRUNE_MS, "prune"); every(PAST_MS, "moot");
   every(SETTLE_MS, "admission");
   every(SETTLE_MS,"workflowAdmission");
   every(SETTLE_MS,"delivery");every(SETTLE_MS,"contribution");every(FAIR_MS,"shadow");

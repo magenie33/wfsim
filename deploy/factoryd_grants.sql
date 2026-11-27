@@ -56,4 +56,5 @@ GRANT SELECT ON entity_build_workflow_scopes,entity_build_workflows,entity_build
 GRANT SELECT,UPDATE ON state_build_workflows,state_build_workflow_nodes TO wfsim_factoryd;
 GRANT EXECUTE ON FUNCTION build_workflow_repair(text,text,text,text) TO wfsim_factoryd;
 GRANT EXECUTE ON FUNCTION board_admission_seed(bigint,text,bigint),board_admission_claim(bigint,text,text),board_admission_finish(text),
-  board_admission_retry(text,text,text),board_admission_status(text),factory_assert_official_claim(text,bigint,text,text) TO wfsim_factoryd;
+  board_admission_retry(text,text,text),board_admission_status(text),factory_assert_official_claim(text,bigint,text,text),
+  factory_prune_settled(text,bigint) TO wfsim_factoryd;

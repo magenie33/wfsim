@@ -137,13 +137,123 @@ BEGIN
   END IF;
 END $$;
 
+CREATE UNIQUE INDEX IF NOT EXISTS build_workflow_expansions_workflow_id ON entity_build_workflow_expansions(workflow,id);
+DO $workflow_expansion_fk$ BEGIN
+  IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='state_build_workflow_nodes'::regclass
+      AND conname='state_build_workflow_nodes_workflow_expansion_fkey') THEN
+    ALTER TABLE state_build_workflow_nodes
+      ADD CONSTRAINT state_build_workflow_nodes_workflow_expansion_fkey
+      FOREIGN KEY(workflow,expansion) REFERENCES entity_build_workflow_expansions(workflow,id) NOT VALID;
+    ALTER TABLE state_build_workflow_nodes
+      VALIDATE CONSTRAINT state_build_workflow_nodes_workflow_expansion_fkey;
+  END IF;
+  ALTER TABLE state_build_workflow_nodes DROP CONSTRAINT IF EXISTS state_build_workflow_nodes_expansion_fkey;
+END $workflow_expansion_fk$;
+CREATE INDEX IF NOT EXISTS build_admission_expansion_id ON state_build_admission_work(expansion_id);
+CREATE INDEX IF NOT EXISTS build_workflow_nodes_result_id ON state_build_workflow_nodes(result_id,workflow);
+CREATE INDEX IF NOT EXISTS build_workflow_nodes_task_id ON state_build_workflow_nodes(task_id,workflow);
+CREATE INDEX IF NOT EXISTS board_reviews_task_id ON entity_measurement_reviews(task_id);
+CREATE INDEX IF NOT EXISTS answers_by_task_id ON record_candidate_answers(task_id);
+CREATE INDEX IF NOT EXISTS order_cancellations_task_id ON record_compute_order_cancellations(task_id);
+CREATE INDEX IF NOT EXISTS build_workflows_completed_at ON state_build_workflows(completed_at,id)
+  WHERE state IN('succeeded','failed','cancelled');
+CREATE INDEX IF NOT EXISTS calculation_reports_question ON entity_calculation_reports(question);
+CREATE INDEX IF NOT EXISTS user_calculations_question ON entity_user_calculation_requests(question);
+CREATE INDEX IF NOT EXISTS order_cut_protection_question ON relation_compute_order_cut_protection(question);
+
+-- Settled workflow and task intermediates expire after the configured retention window;
+-- canonical builds, published scores, witnesses, reports and credit totals remain intact.
+CREATE OR REPLACE FUNCTION factory_prune_settled(text,bigint) RETURNS bigint
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE
+  cap bigint:=least(greatest(coalesce($2,0),0),1000);
+  wfs text[]:='{}';
+  qs text[]:='{}';
+BEGIN
+  IF $1 IS NULL OR cap=0 THEN RETURN 0; END IF;
+  PERFORM compute_order_cut_lock();
+  SELECT coalesce(array_agg(t.id),'{}') INTO wfs FROM (
+    SELECT f.id FROM state_build_workflows f JOIN entity_build_workflows w ON w.id=f.id
+     WHERE f.state IN('succeeded','failed','cancelled') AND f.completed_at IS NOT NULL AND f.completed_at<$1
+       AND coalesce(w.source->>'family','')<>'true'
+       AND NOT EXISTS(SELECT 1 FROM state_build_workflow_nodes n WHERE n.workflow=f.id
+         AND (n.state IN('pending','queued','awaiting_intake') OR n.definition->>'kind'='optimize'))
+       AND NOT EXISTS(SELECT 1 FROM entity_measurement_reviews r WHERE r.workflow=f.id AND r.state='waiting')
+       AND NOT EXISTS(SELECT 1 FROM state_build_admission_work a WHERE a.kind='expansion'
+         AND a.key>=f.id||':' AND a.key<f.id||';' AND a.lease_until>=$1)
+     ORDER BY f.completed_at,f.id LIMIT cap FOR UPDATE OF f SKIP LOCKED) t;
+  IF cardinality(wfs)>0 THEN
+    DELETE FROM state_build_admission_work WHERE kind='expansion'
+      AND key IN(SELECT id FROM entity_build_workflow_expansions WHERE workflow=ANY(wfs));
+    DELETE FROM state_build_workflow_nodes WHERE workflow=ANY(wfs);
+    DELETE FROM entity_build_workflow_expansions WHERE workflow=ANY(wfs);
+    DELETE FROM record_build_workflow_triggers WHERE workflow=ANY(wfs);
+    DELETE FROM state_build_workflows WHERE id=ANY(wfs);
+    DELETE FROM entity_build_workflows WHERE id=ANY(wfs);
+  END IF;
+
+  WITH candidates AS MATERIALIZED (
+    (SELECT q.id FROM state_compute_scheduling q
+      WHERE q.state IN('fact','spot') AND q.fact_at IS NOT NULL AND q.fact_at<$1 AND q.state='fact'
+        AND factory_past_safe(q.id,$1)
+        AND NOT EXISTS(SELECT 1 FROM entity_calculation_reports p WHERE p.question=q.id)
+        AND NOT EXISTS(SELECT 1 FROM entity_user_calculation_requests u WHERE u.question=q.id AND (u.state='waiting' OR u.expires_at>=$1))
+        AND NOT EXISTS(SELECT 1 FROM entity_measurement_reviews r WHERE r.question=q.id AND r.task_id IS NOT NULL)
+        AND NOT EXISTS(SELECT 1 FROM relation_compute_order_cut_protection cp WHERE cp.question=q.id)
+        AND NOT EXISTS(SELECT 1 FROM record_compute_order_cancellations oc WHERE oc.question=q.id)
+      ORDER BY q.fact_at,q.id LIMIT cap)
+    UNION ALL
+    (SELECT q.id FROM state_compute_scheduling q
+      WHERE q.state='withdrawn' AND q.opened_at<$1 AND coalesce(q.withdrawn_at,q.opened_at)<$1
+        AND factory_past_safe(q.id,$1)
+        AND NOT EXISTS(SELECT 1 FROM entity_calculation_reports p WHERE p.question=q.id)
+        AND NOT EXISTS(SELECT 1 FROM entity_user_calculation_requests u WHERE u.question=q.id AND (u.state='waiting' OR u.expires_at>=$1))
+        AND NOT EXISTS(SELECT 1 FROM entity_measurement_reviews r WHERE r.question=q.id AND r.task_id IS NOT NULL)
+        AND NOT EXISTS(SELECT 1 FROM relation_compute_order_cut_protection cp WHERE cp.question=q.id)
+        AND NOT EXISTS(SELECT 1 FROM record_compute_order_cancellations oc WHERE oc.question=q.id)
+      ORDER BY q.opened_at,q.id LIMIT cap)
+  ), locked AS (
+    SELECT q.id FROM state_compute_scheduling q
+     WHERE q.id IN(SELECT id FROM candidates LIMIT cap)
+       AND ((q.state='fact' AND q.fact_at<$1)
+         OR (q.state='withdrawn' AND q.opened_at<$1 AND coalesce(q.withdrawn_at,q.opened_at)<$1))
+       AND factory_past_safe(q.id,$1)
+       AND NOT EXISTS(SELECT 1 FROM entity_calculation_reports p WHERE p.question=q.id)
+       AND NOT EXISTS(SELECT 1 FROM entity_user_calculation_requests u WHERE u.question=q.id AND (u.state='waiting' OR u.expires_at>=$1))
+       AND NOT EXISTS(SELECT 1 FROM entity_measurement_reviews r WHERE r.question=q.id AND r.task_id IS NOT NULL)
+       AND NOT EXISTS(SELECT 1 FROM relation_compute_order_cut_protection cp WHERE cp.question=q.id)
+       AND NOT EXISTS(SELECT 1 FROM record_compute_order_cancellations oc WHERE oc.question=q.id)
+     ORDER BY q.id FOR UPDATE OF q SKIP LOCKED
+  ) SELECT coalesce(array_agg(id),'{}') INTO qs FROM locked;
+
+  IF cardinality(qs)>0 THEN
+    DELETE FROM relation_task_answer_evidence WHERE task_id IN(SELECT id FROM entity_compute_tasks WHERE computation=ANY(qs));
+    DELETE FROM record_candidate_answers WHERE question=ANY(qs);
+    DELETE FROM record_candidate_answers WHERE task_id IN(SELECT id FROM entity_compute_tasks WHERE computation=ANY(qs));
+    DELETE FROM relation_task_consumers WHERE question=ANY(qs) AND state<>'live';
+    DELETE FROM record_engine_refusals WHERE question=ANY(qs);
+    DELETE FROM state_pending_verifications WHERE question=ANY(qs);
+    DELETE FROM state_task_answer_heads WHERE question=ANY(qs);
+    DELETE FROM state_compute_order_stock_holds WHERE task_id IN(SELECT id FROM entity_compute_tasks WHERE computation=ANY(qs));
+    DELETE FROM record_compute_result_selections WHERE computation=ANY(qs);
+    DELETE FROM state_compute_scheduling WHERE id=ANY(qs) AND state IN('fact','withdrawn');
+    DELETE FROM record_compute_result_proofs WHERE result_id IN(SELECT id FROM entity_compute_results WHERE computation=ANY(qs));
+    DELETE FROM entity_compute_results WHERE computation=ANY(qs);
+    DELETE FROM relation_compute_task_sources WHERE task_id IN(SELECT id FROM entity_compute_tasks WHERE computation=ANY(qs));
+    DELETE FROM entity_compute_tasks WHERE computation=ANY(qs);
+    DELETE FROM entity_compute_specs WHERE id=ANY(qs);
+  END IF;
+  RETURN cardinality(wfs)+cardinality(qs);
+END $$;
+
 REVOKE ALL ON FUNCTION board_admission_changed(),board_admission_seed(bigint,text,bigint),board_admission_claim(bigint,text,text),
   board_admission_finish(text),board_admission_retry(text,text,text),board_admission_status(text),
-  factory_assert_official_claim(text,bigint,text,text) FROM PUBLIC;
+  factory_assert_official_claim(text,bigint,text,text),factory_prune_settled(text,bigint) FROM PUBLIC;
 DO $board_admission_grants$ BEGIN
   IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_factoryd') THEN
     GRANT INSERT ON relation_task_consumers TO wfsim_factoryd;
     GRANT EXECUTE ON FUNCTION board_admission_seed(bigint,text,bigint),board_admission_claim(bigint,text,text),board_admission_finish(text),
-      board_admission_retry(text,text,text),board_admission_status(text),factory_assert_official_claim(text,bigint,text,text) TO wfsim_factoryd;
+      board_admission_retry(text,text,text),board_admission_status(text),factory_assert_official_claim(text,bigint,text,text),
+      factory_prune_settled(text,bigint) TO wfsim_factoryd;
   END IF;
 END $board_admission_grants$;
