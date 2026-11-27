@@ -72,10 +72,12 @@ try {
       card:heads[0]===tr('Mode') && heads[1].startsWith(tr('Mods')+' ·') && heads.includes(tr('Exilus')),
       summary:$('doc').textContent.includes(String(p.board.shown)) && !!$('doc').querySelector('[data-library-build]'),
       noButton:!document.querySelector('[data-fmore]'), compact:$('doc').querySelector('.library-summary').classList.contains('shut'),
+      filtersOpen:!$('library-filters')?.querySelector('.fd-scope')?.hidden && $('library-filters')?.querySelector('.fd-ov')?.classList.contains('shut'),
     };
   })()`);
   check("fresh visits default to Standard Single Target Steel9999", initial.default);
   check("all modes and twenty places are available immediately", initial.all && initial.rows===20);
+  check("detailed filters default open while Overview ships shut", initial.filtersOpen);
   check("board, filters, sort and results occupy four separate sibling cards",initial.panels);
   check("equipment search and Overview belong to filters",initial.filterScope);
   check("ordinary and advanced sort controls belong to sort",initial.sortScope);
@@ -206,8 +208,11 @@ try {
 
   const filtering = await evaluate(`(async () => {
     const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+    const openedByDefault=!document.querySelector('.fd-scope').hidden;
     document.querySelector('[data-library-filters]').click();
-    const available=!document.querySelector('.fd-scope').hidden;
+    const collapsed=document.querySelector('.fd-scope').hidden;
+    document.querySelector('[data-library-filters]').click();
+    const available=openedByDefault&&collapsed&&!document.querySelector('.fd-scope').hidden;
     document.querySelector('[data-fseg="rv"][data-v="plain"]').click();
     const rows=()=>[...document.querySelectorAll('#build-finder tr.fr:not(.mem)')].map(el=>builtinBuilds().find(p=>presetId(p)===el.dataset.frow));
     const plain=rows().length>0&&rows().every(p=>!p.riven);
@@ -276,7 +281,7 @@ try {
   await sleep(300);
   check("the phone keeps library controls inside its viewport", await evaluate("document.documentElement.scrollWidth<=innerWidth && document.querySelector('.library-toolbar').getBoundingClientRect().right<=innerWidth"));
   await evaluate("document.querySelector('[data-library-filters]').click()");
-  check("detailed conditions expand on a phone", await evaluate("!document.querySelector('.fd-scope').hidden"));
+  check("detailed conditions collapse and expand on a phone", await evaluate("document.querySelector('.fd-scope').hidden && (document.querySelector('[data-library-filters]').click(), !document.querySelector('.fd-scope').hidden)"));
   const phone=await evaluate(interactions);
   for(const [key,ok] of Object.entries(phone))check("phone board and Overview interaction: "+key,ok);
   const empty = await evaluate(`(async () => {

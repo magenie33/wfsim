@@ -58,7 +58,7 @@ const FINDER_EVERY_MODE = "*";
 const finder = {
   weapon: null, sc: "", b: null, mo: null, rv: "all",
   req: new Set(), exc: new Set(),
-  open: null, ref: null, shown: FINDER_FIRST, hi: 0,
+  open: null, ref: null, shown: FINDER_FIRST, hi: 0, filters: true,
   // The ties opened to their exact builds, by `tieGroups` key.
   ties: new Set(),
 };

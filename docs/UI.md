@@ -916,8 +916,8 @@ blocks anywhere.
 **A BOX MAY SHIP SHUT, AND ONLY UNTIL THE READER ANSWERS.** `shut` in the
 markup is the default `folded()` falls back to while `wfsim-folds` holds no
 entry for that box; the stored answer outranks it forever after, "open"
-included. Build Library keeps its results open; its Summary and equipment
-overview ship shut, and detailed filters expand from the toolbar.
+included. Build Library keeps its results and detailed filters open; its Summary
+and equipment overview ship shut.
 
 The APL fold spans the row immediately below Mode and ships shut. It shows the
 selected build's executable APL as code, followed by its prose explanation, and

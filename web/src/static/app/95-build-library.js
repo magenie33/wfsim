@@ -30,7 +30,7 @@ function libraryModuleSuffix() {
 function libraryReset(w) {
   Object.assign(finder, { weapon: w.id, b: libraryDefaultBenchmark(), mo: FINDER_EVERY_MODE, rv: "all",
     req: new Set(), exc: new Set(), off: null, query: null, simpleSnapshot: null, advanced: false, advancedSort: false, sort: "score", minScore: null, maxDrain: null,
-    open: null, ref: null, shown: FINDER_FIRST, hi: 0, ties: new Set(), filters: false });
+    open: null, ref: null, shown: FINDER_FIRST, hi: 0, ties: new Set(), filters: true });
 }
 function librarySaveView() {
   if (!libraryActive || !libraryKey) return;
