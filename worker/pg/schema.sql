@@ -397,7 +397,16 @@ BEGIN
   IF jsonb_array_length(s)=0 THEN RETURN; END IF;
   END IF;
   FOR source IN SELECT value FROM jsonb_array_elements(s) ORDER BY coalesce((value->>'ordinal')::bigint,0) LOOP
-    prepared:=prepared||jsonb_build_array(source.value||jsonb_build_object('position',coalesce((source.value->>'position')::bigint,nextval('compute_queue_position'))));
+    prepared:=prepared||jsonb_build_array(source.value||jsonb_build_object(
+      'zone',(SELECT min(coalesce((y->>'zone')::bigint,factory_default_zone(y->>'producer')))
+        FROM jsonb_array_elements(d) y WHERE y->>'question'=source.value->>'id'),
+      'position',coalesce(
+        (SELECT min((y->>'position')::bigint) FROM jsonb_array_elements(d) y
+          WHERE y->>'question'=source.value->>'id' AND y->>'position' IS NOT NULL
+            AND coalesce((y->>'zone')::bigint,factory_default_zone(y->>'producer'))=(
+              SELECT min(coalesce((z->>'zone')::bigint,factory_default_zone(z->>'producer')))
+              FROM jsonb_array_elements(d) z WHERE z->>'question'=source.value->>'id')),
+        coalesce((source.value->>'position')::bigint,nextval('compute_queue_position')))));
   END LOOP;
   PERFORM compute_register_tasks(prepared::text,$3,$4);
   FOR q IN SELECT DISTINCT ON(x.id) x.id,x.reason,x.invalidate FROM jsonb_to_recordset(s) AS x(id text,force boolean,invalidate boolean,reason text)
@@ -420,7 +429,7 @@ BEGIN
           WHERE t.computation=target.id AND previous.producer=incoming->>'producer' AND previous.ref=incoming->>'ref'
             AND previous.trigger_id=incoming->>'trigger_id'));
   FOR source IN SELECT * FROM jsonb_to_recordset(d) AS x(producer text,ref text,question text,
-      trigger_id text,ordinal bigint,asked_at text,due_at text,waits bigint,payload text,initiator text,zone bigint,force boolean,invalidate boolean)
+      trigger_id text,ordinal bigint,asked_at text,due_at text,waits bigint,payload text,initiator text,zone bigint,position bigint,force boolean,invalidate boolean)
       ORDER BY producer,ref,ordinal,trigger_id LOOP
     SELECT * INTO STRICT q FROM state_compute_scheduling WHERE id=source.question;
     SELECT question INTO previous_question FROM relation_task_consumers
@@ -433,17 +442,21 @@ BEGIN
     END IF;
     INSERT INTO relation_compute_task_sources(task_id,producer,ref,trigger_id,asked_at,payload,requirements)
       SELECT q.task_id,source.producer,source.ref,source.trigger_id,coalesce(source.asked_at,$4),source.payload,
-        jsonb_build_object('force',coalesce(source.force,x.force,false),'invalidate',coalesce(source.invalidate,x.invalidate,false),'engine',$3,'zone',source.zone)
+        jsonb_build_object('force',coalesce(source.force,x.force,false),'invalidate',coalesce(source.invalidate,x.invalidate,false),'engine',$3,'zone',source.zone,'position',source.position)
       FROM jsonb_to_recordset(s) x(id text,force boolean,invalidate boolean) WHERE x.id=source.question
       ON CONFLICT DO NOTHING;
-    INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,waits,payload,initiator,delivery_at,zone)
+    INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,waits,payload,initiator,delivery_at,zone,zone_position)
       VALUES(source.producer,source.ref,source.question,'live',coalesce(source.asked_at,$4),source.due_at,source.waits,source.payload,source.initiator,
-        CASE WHEN q.state IN ('fact','spot') THEN $4 END,coalesce(source.zone,factory_default_zone(source.producer)))
+        CASE WHEN q.state IN ('fact','spot') THEN $4 END,coalesce(source.zone,factory_default_zone(source.producer)),source.position)
       ON CONFLICT(producer,ref) DO UPDATE SET question=excluded.question,state='live',asked_at=excluded.asked_at,
         due_at=excluded.due_at,waits=excluded.waits,payload=excluded.payload,served_at=NULL,
         initiator=excluded.initiator,delivery_at=excluded.delivery_at,
-        zone=CASE WHEN relation_task_consumers.question=excluded.question AND relation_task_consumers.state='live'
-          THEN least(relation_task_consumers.zone,excluded.zone) ELSE excluded.zone END;
+        zone=CASE WHEN excluded.zone_position IS NOT NULL THEN excluded.zone
+          WHEN relation_task_consumers.question=excluded.question AND relation_task_consumers.state='live'
+            THEN least(relation_task_consumers.zone,excluded.zone) ELSE excluded.zone END,
+        zone_position=CASE WHEN excluded.zone_position IS NOT NULL THEN excluded.zone_position
+          WHEN relation_task_consumers.question=excluded.question AND relation_task_consumers.state='live'
+            THEN relation_task_consumers.zone_position ELSE NULL END;
   END LOOP;
   PERFORM factory_restate(id) FROM (SELECT DISTINCT unnest(affected) id
     UNION SELECT value->>'id' FROM jsonb_array_elements(s)) changed ORDER BY id;
@@ -516,6 +529,7 @@ CREATE INDEX IF NOT EXISTS demands_live ON relation_task_consumers (state, produ
 CREATE INDEX IF NOT EXISTS demands_live_question ON relation_task_consumers (question) WHERE state = 'live';
 ALTER TABLE relation_task_consumers ADD COLUMN IF NOT EXISTS delivery_at TEXT COLLATE "C";
 ALTER TABLE relation_task_consumers ADD COLUMN IF NOT EXISTS zone BIGINT;
+ALTER TABLE relation_task_consumers ADD COLUMN IF NOT EXISTS zone_position BIGINT;
 DO $queue_zone$ BEGIN
   IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='state_compute_scheduling'::regclass AND conname='compute_zone_bounds') THEN
     ALTER TABLE state_compute_scheduling ADD CONSTRAINT compute_zone_bounds CHECK(zone BETWEEN 0 AND 99) NOT VALID;
@@ -963,6 +977,10 @@ BEGIN
   END IF;
   BEGIN p:=$3::jsonb; EXCEPTION WHEN invalid_text_representation THEN RETURN false; END;
   IF $1='board_review' THEN RETURN EXISTS(SELECT 1 FROM entity_measurement_reviews r WHERE r.id=p->>'review' AND r.ref=$2 AND r.question=$4);
+  ELSIF $1='board_order' THEN
+    RETURN to_regclass('relation_board_order_items') IS NOT NULL
+      AND EXISTS(SELECT 1 FROM relation_board_order_items i JOIN entity_board_orders o ON o.id=i.order_id
+        WHERE i.order_id=split_part($2,'|',1) AND i.ordinal=NULLIF(split_part($2,'|',2),'')::bigint AND i.computation=$4);
   ELSIF $1 IN ('new_build','survey_build','refresh','sweep') THEN
     RETURN $2=(p->>'identity')||'|'||(p->>'ruler')||'|'||(p->>'mode')
       AND EXISTS(SELECT 1 FROM entity_compute_batches b WHERE b.id=p->>'batch')

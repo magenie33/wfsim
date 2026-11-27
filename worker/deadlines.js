@@ -16,4 +16,5 @@ export const DEADLINE_MS = {
   family_build: 3 * 86_400_000,
   refresh: REFRESH_WITHIN_MS,
   sweep: 7 * 86_400_000,
+  board_order: 7 * 86_400_000,
 };

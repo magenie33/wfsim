@@ -40,6 +40,7 @@ import { watchdog, WATCHDOG_CRON, officialRoute } from "./factory.js";
 import { boardReviewsRoute } from "./board_reviews.js";
 import { familyRoute } from "./board_family.js";
 import { boardTasksRoute } from "./board_tasks.js";
+import { boardOrdersRoute } from "./board_orders.js";
 import { boardInventoryRoute } from "./board_inventory.js";
 import { boardPagesRoute } from "./board_pages.js";
 import { boardRequestsRoute } from "./board_requests.js";
@@ -898,6 +899,7 @@ async function serve(request, env, ctx) {
     if (["/api/board/review/status", "/api/board/calibrate", "/api/board/retire"].includes(path)) return boardReviewsRoute(request, env, path, ctx);
     if (path === "/api/board/sync") return noteFactoryCall(request, env, path, () => syncRoute(request, env));
     if (path === "/api/board/ask" || path === "/api/board/adopt") return boardTasksRoute(request, env, path);
+    if (path.startsWith("/api/board/orders/")) return boardOrdersRoute(request, env, path);
     if (path === "/api/board/inventory") return boardInventoryRoute(request, env);
     if (path === "/api/board/pages" || path === "/api/board/pages/catalog") return boardPagesRoute(request, env, ctx);
     if (path === "/api/board/requests/status") return boardRequestsRoute(request, env);

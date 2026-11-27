@@ -30,6 +30,8 @@ export function createLedger({ verbs, producerOf } = {}) {
       if (typeof a.ref !== "string" || !a.ref.trim()) throw new Error("a compute task requires a source");
       if (a.zone !== undefined && a.zone !== null && (!Number.isInteger(a.zone) || a.zone < 0 || a.zone > 99))
         throw new Error("queue zone must be an integer from00 to99");
+      if (a.position !== undefined && a.position !== null && !Number.isSafeInteger(a.position))
+        throw new Error("queue position must be a safe integer");
       const payload = a.payload ?? {}, trigger = a.trigger_id ?? (payload.review || payload.batch || a.ref);
       if (!payload || typeof payload !== "object" || Array.isArray(payload) || typeof trigger !== "string" || !trigger.trim())
         throw new Error("a compute task requires a source");
@@ -37,12 +39,16 @@ export function createLedger({ verbs, producerOf } = {}) {
     }
     for (let i = 0; i < asks.length; i += DEMAND_CHUNK) {
       const qs = new Map(), ds = new Map();
-      asks.slice(i, i + DEMAND_CHUNK).forEach(({ producer, ref, verb, request, due_in_ms, payload = {}, trigger_id = payload.review || payload.batch || ref, force = false, invalidate = false, reason = "requested_recalculation", lanes = null, waits = false, initiator = null, zone = null, capability = null }, k) => {
+      asks.slice(i, i + DEMAND_CHUNK).forEach(({ producer, ref, verb, request, due_in_ms, payload = {}, trigger_id = payload.review || payload.batch || ref, force = false, invalidate = false, reason = "requested_recalculation", lanes = null, waits = false, initiator = null, zone = null, position = null, capability = null }, k) => {
         const id = ids[i + k], due_at = iso(now + due_in_ms), w = waits ? 1 : 0, l = lanes ? JSON.stringify(lanes) : null;
         const q = qs.get(id);
-        if (!q) qs.set(id, { id, ordinal: k, zone, capability, verb, request: canon(computationInput(verb, request)), due_at, lanes: l, waits: w, producer, initiator, force, invalidate, reason });
-        else Object.assign(q, { ...(due_at < q.due_at ? { due_at, producer, initiator } : {}), waits: Math.max(q.waits, w), lanes: q.lanes ?? l, force: q.force || force, invalidate: q.invalidate || invalidate, ...(force ? {reason} : {}) });
-        ds.set(JSON.stringify([producer, ref, trigger_id]), { producer, ref, trigger_id, ordinal: k, question: id, due_at, waits: w, payload: JSON.stringify(payload), initiator, zone, force, invalidate });
+        if (!q) qs.set(id, { id, ordinal: k, zone, position, capability, verb, request: canon(computationInput(verb, request)), due_at, lanes: l, waits: w, producer, initiator, force, invalidate, reason });
+        else {
+          const mergedZone = q.zone === null ? zone : zone === null ? q.zone : Math.min(q.zone, zone);
+          const mergedPos = q.position === null ? position : position === null ? q.position : Math.min(q.position, position);
+          Object.assign(q, { ...(due_at < q.due_at ? { due_at, producer, initiator } : {}), zone: mergedZone, position: mergedPos, waits: Math.max(q.waits, w), lanes: q.lanes ?? l, force: q.force || force, invalidate: q.invalidate || invalidate, ...(force ? {reason} : {}) });
+        }
+        ds.set(JSON.stringify([producer, ref, trigger_id]), { producer, ref, trigger_id, ordinal: k, question: id, due_at, waits: w, payload: JSON.stringify(payload), initiator, zone, position, force, invalidate });
       });
       // IN KEY ORDER, so two asks writing the same rows take their locks alike.
       const sorted = (m, key) => [...m.values()].sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));

@@ -1054,6 +1054,30 @@ work or create credit. An explicit fresh user source can open a separate round;
 a replay of the cancelled source cannot attach to it. Required issued children
 keep their workflow parent, while cancelled pending nodes cannot register.
 
+## Declarative board orders
+
+`worker/board_order_planner.js` plans explicit `builds * rulers * modes` orders
+over weapon traits (`beam`, `continuous`, `incarnon`, `adversary`, `aoe`),
+weapon classes, explicit weapon or build lists, and policies (`rescore`,
+`rescore_all`, `missing`, `all`). `worker/board_order_catalog.js` exports the
+engine's weapon traits, sustainable modes and benchmark admission rules, held
+equal by `board_order_catalog_matches_worker_module` in `wfsim-webapi`.
+
+`worker/board_orders.js` stores orders in `entity_board_orders` and ordered
+entries in `relation_board_order_items` (`producer = 'board_order'`,
+`ref = <order_id>|<ordinal>`). Each order reserves a `zone_position` block
+(`order_base + ordinal`) in its target zone `00` through `99`, preserving
+popularity and score order across bounded admission slices, in-zone `reorder`
+and cross-zone `rezone`. `relation_task_consumers.zone_position` retains each
+order's position so cancelling one order restores shared computations to the
+remaining consumers' exact `(zone, zone_position)`. Rescores open a fresh round
+under the canonical `simulate` computation ID and overwrite
+`state_board_measurement_selection` in place after independent witness
+agreement. `scripts/board_order.mjs` and `/api/board/orders/*` expose `preview`,
+`create`, `admit`, `list`, `reorder`, `rezone`, `sync`, `why` and `cancel`.
+`scripts/check_board_orders.mjs` verifies these invariants on PGlite.
+
+
 Cancelled scheduling, consumer and workflow history may remain physical.
 Garbage collection does not subtract effective counts a second time. Activation
 neither refills work nor changes producer admission controls. Complete workload

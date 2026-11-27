@@ -570,15 +570,32 @@ BEGIN
 END;
 $$;
 
--- Current source intent owns zone; a zone change joins the destination tail.
+-- Current source intent owns zone; explicit positions retain order, while unpositioned zone promotions join the destination tail.
 CREATE OR REPLACE FUNCTION factory_restate(text) RETURNS void LANGUAGE sql AS $$
   UPDATE state_compute_scheduling q SET due_at=l.due,waits=l.waits,producer=l.producer,initiator=l.initiator,
-    zone=l.zone,zone_position=CASE WHEN coalesce(q.zone,factory_default_zone(q.producer))<>l.zone
-      THEN nextval('compute_queue_position') ELSE coalesce(q.zone_position,q.task_id) END
-    FROM (SELECT min(due_at) due,max(waits) waits,count(*) n,min(coalesce(zone,factory_default_zone(producer))) zone,
-      (array_agg(producer ORDER BY coalesce(zone,factory_default_zone(producer)),asked_at,producer))[1] producer,
-      (array_agg(initiator ORDER BY coalesce(zone,factory_default_zone(producer)),asked_at,producer))[1] initiator
-      FROM relation_task_consumers WHERE question=$1 AND state='live') l WHERE q.id=$1 AND l.n>0;
+    zone=l.zone,zone_position=CASE WHEN l.pos IS NOT NULL THEN l.pos
+      WHEN coalesce(q.zone,factory_default_zone(q.producer))<>l.zone THEN nextval('compute_queue_position')
+      ELSE coalesce(q.zone_position,q.task_id) END
+    FROM (SELECT min(d.due_at) due,max(d.waits) waits,count(*) n,
+      min(coalesce(d.zone,factory_default_zone(d.producer))) zone,
+      (array_agg(CASE WHEN d.zone_position IS NOT NULL THEN d.zone_position
+        WHEN coalesce(d.zone,factory_default_zone(d.producer))=cur.q_zone THEN cur.q_pos END
+        ORDER BY coalesce(d.zone,factory_default_zone(d.producer)),
+          CASE WHEN d.zone_position IS NOT NULL THEN d.zone_position
+            WHEN coalesce(d.zone,factory_default_zone(d.producer))=cur.q_zone THEN cur.q_pos END NULLS LAST,
+          d.asked_at,d.producer))[1] pos,
+      (array_agg(d.producer ORDER BY coalesce(d.zone,factory_default_zone(d.producer)),
+        CASE WHEN d.zone_position IS NOT NULL THEN d.zone_position
+          WHEN coalesce(d.zone,factory_default_zone(d.producer))=cur.q_zone THEN cur.q_pos END NULLS LAST,
+        d.asked_at,d.producer))[1] producer,
+      (array_agg(d.initiator ORDER BY coalesce(d.zone,factory_default_zone(d.producer)),
+        CASE WHEN d.zone_position IS NOT NULL THEN d.zone_position
+          WHEN coalesce(d.zone,factory_default_zone(d.producer))=cur.q_zone THEN cur.q_pos END NULLS LAST,
+        d.asked_at,d.producer))[1] initiator
+      FROM relation_task_consumers d,
+        (SELECT coalesce(zone,factory_default_zone(producer)) q_zone,coalesce(zone_position,task_id) q_pos
+          FROM state_compute_scheduling WHERE id=$1) cur
+      WHERE d.question=$1 AND d.state='live') l WHERE q.id=$1 AND l.n>0;
   UPDATE state_compute_scheduling SET state='withdrawn',lease=NULL,lease_until=NULL,leased_to=NULL
     WHERE id=$1 AND state='open' AND NOT EXISTS(SELECT 1 FROM relation_task_consumers WHERE question=$1 AND state='live');
 $$;
@@ -631,6 +648,9 @@ CREATE OR REPLACE FUNCTION factory_past_safe(text, text) RETURNS boolean LANGUAG
 BEGIN
   RETURN NOT EXISTS (SELECT 1 FROM state_build_workflow_nodes n JOIN state_build_workflows f ON f.id=n.workflow
        WHERE n.computation=$1 AND f.state='active')
+     AND (to_regclass('relation_board_order_items') IS NULL
+       OR NOT EXISTS (SELECT 1 FROM relation_board_order_items i JOIN entity_board_orders o ON o.id=i.order_id
+         WHERE i.computation=$1 AND i.state IN ('pending','queued') AND o.state IN ('admitting','active')))
      AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question = $1
                         AND (d.state = 'live' OR d.asked_at >= $2 OR d.served_at >= $2))
      AND NOT EXISTS (SELECT 1 FROM (SELECT at FROM record_candidate_answers WHERE question=$1 OFFSET 0) a WHERE a.at >= $2)
@@ -782,6 +802,12 @@ REVOKE ALL ON FUNCTION factory_inventory_rows(text,text[]) FROM PUBLIC;
 CREATE OR REPLACE FUNCTION board_review_wanted(text, text) RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS (SELECT 1 FROM entity_measurement_reviews r JOIN state_board_measurement_selection s ON s.identity = r.identity AND s.ruler = r.ruler AND s.mode = r.mode
     WHERE r.ref = $1 AND r.question = $2 AND r.state = 'waiting')
+$$;
+
+CREATE OR REPLACE FUNCTION board_order_wanted(text, text) RETURNS boolean LANGUAGE sql STABLE AS $$
+  SELECT EXISTS (SELECT 1 FROM relation_board_order_items i JOIN entity_board_orders o ON o.id = i.order_id
+    WHERE i.order_id = split_part($1, '|', 1) AND i.ordinal = NULLIF(split_part($1, '|', 2), '')::bigint
+      AND i.computation = $2 AND i.state = 'queued' AND o.state IN ('admitting', 'active'))
 $$;
 
 -- A CLIENT THAT ASKS (worker/verify.js `/work`, worker/sync.js): remembered by
@@ -1208,6 +1234,7 @@ BEGIN
     v_unwanted := COALESCE((SELECT jsonb_agg(jsonb_build_array(e ->> 'producer', e ->> 'ref', e ->> 'question')) FROM jsonb_array_elements(v_ds) e
       WHERE NOT CASE WHEN e ->> 'producer' = 'build_workflow' THEN build_workflow_wanted(e ->> 'ref',e ->> 'question')
         WHEN e ->> 'producer' = 'board_review' THEN board_review_wanted(e ->> 'ref', e ->> 'question')
+        WHEN e ->> 'producer' = 'board_order' THEN board_order_wanted(e ->> 'ref', e ->> 'question')
         ELSE board_owed((e ->> 'payload')::jsonb ->> 'identity', (e ->> 'payload')::jsonb ->> 'ruler', (e ->> 'payload')::jsonb ->> 'mode') END),
       '[]'::jsonb);
     IF jsonb_array_length(v_unwanted) > 0 THEN

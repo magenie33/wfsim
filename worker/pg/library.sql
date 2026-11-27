@@ -223,6 +223,46 @@ $$;
 DROP TRIGGER IF EXISTS queue_once ON state_board_pending_work;
 CREATE TRIGGER queue_once BEFORE INSERT ON state_board_pending_work FOR EACH ROW EXECUTE FUNCTION queue_once();
 
+-- Explicit operator board orders: a captured selection of (build, ruler, mode)
+-- items with deterministic ordinal positions inside a target queue zone.
+CREATE TABLE IF NOT EXISTS entity_board_orders (
+  id             TEXT COLLATE "C" PRIMARY KEY,
+  why            TEXT COLLATE "C" NOT NULL,
+  policy         TEXT COLLATE "C" NOT NULL CHECK (policy IN ('rescore', 'rescore_all', 'missing', 'all')),
+  zone           BIGINT NOT NULL CHECK (zone BETWEEN 0 AND 99),
+  order_base     BIGINT NOT NULL,
+  engine         TEXT COLLATE "C" NOT NULL,
+  specification  TEXT COLLATE "C" NOT NULL,
+  total_items    BIGINT NOT NULL CHECK (total_items >= 0),
+  admitted_items BIGINT NOT NULL DEFAULT 0 CHECK (admitted_items >= 0),
+  state          TEXT COLLATE "C" NOT NULL CHECK (state IN ('admitting', 'active', 'completed', 'cancelled')),
+  created_at     TEXT COLLATE "C" NOT NULL,
+  updated_at     TEXT COLLATE "C" NOT NULL
+);
+CREATE INDEX IF NOT EXISTS board_orders_by_zone ON entity_board_orders (state, zone, order_base, id);
+CREATE INDEX IF NOT EXISTS board_orders_by_created ON entity_board_orders (created_at DESC, id DESC);
+
+CREATE TABLE IF NOT EXISTS relation_board_order_items (
+  order_id            TEXT COLLATE "C" NOT NULL REFERENCES entity_board_orders(id) ON DELETE CASCADE,
+  ordinal             BIGINT NOT NULL CHECK (ordinal >= 1),
+  computation         TEXT COLLATE "C" NOT NULL,
+  identity            TEXT COLLATE "C" NOT NULL,
+  ruler               TEXT COLLATE "C" NOT NULL,
+  mode                TEXT COLLATE "C" NOT NULL,
+  force_recalculation BOOLEAN NOT NULL DEFAULT false,
+  state               TEXT COLLATE "C" NOT NULL DEFAULT 'pending' CHECK (state IN ('pending', 'queued', 'settled', 'cancelled')),
+  settled_at          TEXT COLLATE "C",
+  PRIMARY KEY (order_id, ordinal),
+  UNIQUE (order_id, identity, ruler, mode)
+);
+CREATE INDEX IF NOT EXISTS board_order_items_by_state ON relation_board_order_items (order_id, state, ordinal);
+CREATE INDEX IF NOT EXISTS board_order_items_by_computation ON relation_board_order_items (computation, state);
+DO $board_orders_grants$ BEGIN
+  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='wfsim_factoryd') THEN
+    GRANT SELECT, UPDATE ON entity_board_orders, relation_board_order_items TO wfsim_factoryd;
+  END IF;
+END $board_orders_grants$;
+
 -- THE BOARD'S ORDERS BEFORE THE FACTORY, read by `/api/board/adopt` alone
 -- (worker/board_tasks.js `adopt`): one owed row each. `state` is where its
 -- lease left it, or `settled` once adopted; `engine` the first result's

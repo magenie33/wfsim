@@ -10,6 +10,7 @@ import { BOARD_REVIEW_PRODUCER } from "./board_reviews.js";
 import { FAMILY_PRODUCERS, askFamilyTransfers } from "./board_family.js";
 import { BUILD_WORKFLOW_PRODUCER, workflowWork } from './build_workflows.js';
 import { BOARD_PRODUCERS, boardWork, boardPackTask, cellsFilling } from "./board_tasks.js";
+import { BOARD_ORDER_PRODUCER } from "./board_orders.js";
 import { CLIENTS_PER_FACT, SPOT_SHARE, RECHECK_SHARE, REFUSING, servedRelease } from "./verify.js";
 import { watchdogText } from "./watchdog_say.js";
 import { idleFindings } from "./idle_devices.js";
@@ -47,7 +48,7 @@ export const VERBS = {
 let made = null, refusing = null;
 /// THE FACTORY, made on first use: its producers' modules import this one.
 export function facts() {
-  made ||= factory({ verbs: VERBS, producers: { ...BOARD_PRODUCERS, ...RIVEN_PRODUCERS, ...USER_TASK_PRODUCERS, ...FAMILY_PRODUCERS, board_review: BOARD_REVIEW_PRODUCER, build_workflow: BUILD_WORKFLOW_PRODUCER }, threshold: CLIENTS_PER_FACT, spot: SPOT_SHARE,
+  made ||= factory({ verbs: VERBS, producers: { ...BOARD_PRODUCERS, ...RIVEN_PRODUCERS, ...USER_TASK_PRODUCERS, ...FAMILY_PRODUCERS, board_review: BOARD_REVIEW_PRODUCER, board_order: BOARD_ORDER_PRODUCER, build_workflow: BUILD_WORKFLOW_PRODUCER }, threshold: CLIENTS_PER_FACT, spot: SPOT_SHARE,
     on_fact_writes: (env, q, fact) => computationWrites(env.LIBRARY, q, fact.witnesses, fact.engine, fact.at),
     recheck: RECHECK_SHARE, refusing: refusing ?? REFUSING });
   return made;
@@ -59,12 +60,14 @@ export function refusalsFor(on) { refusing = on; made = null; }
 export function workOf(leased) {
   const p = leased.demands[0] && leased.demands[0].producer;
   if(p==='build_workflow') return workflowWork(leased);
+  if(p==='board_order') return boardWork(leased);
   return USER_TASK_PRODUCERS[p] || FAMILY_PRODUCERS[p] ? userCalculationWork(leased) : RIVEN_PRODUCERS[p] ? rivenWork(leased) : BOARD_PRODUCERS[p] ? boardWork(leased) : null;
 }
 /// …AND ONE QUESTION OF A PACK (`nextPack`); only a board row is packed today.
 export function packTaskOf(q) {
   const p = q.demands[0] && q.demands[0].producer;
   if(p==='build_workflow') return workflowWork(q);
+  if(p==='board_order') return boardPackTask(q);
   return BOARD_PRODUCERS[p] ? boardPackTask(q) : null;
 }
 
@@ -74,7 +77,7 @@ export function kindOf(producer, request, payload) {
     ? {kind:'user_calculation',weapon:request.weapon||null} : {kind:'board',weapon:payload.record?.weapon||null,ruler:payload.ruler,mode:payload.mode};
   if (USER_TASK_PRODUCERS[producer] || FAMILY_PRODUCERS[producer]) return { kind: "user_calculation", weapon: request.weapon || null };
   if (RIVEN_PRODUCERS[producer]) return { kind: "riven_gain", weapon: payload.weapon || null, ruler: payload.ruler || null };
-  if (BOARD_PRODUCERS[producer]) return { kind: "board", weapon: (request.record || {}).weapon || null, ruler: request.ruler, mode: request.mode };
+  if (producer === "board_order" || BOARD_PRODUCERS[producer]) return { kind: "board", weapon: (request.record || {}).weapon || null, ruler: request.ruler, mode: request.mode };
   return null;
 }
 

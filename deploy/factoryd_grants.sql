@@ -29,6 +29,7 @@ GRANT SELECT, INSERT ON entity_calculation_reports TO wfsim_factoryd;
 GRANT SELECT, INSERT, UPDATE, DELETE ON state_public_computation_summaries, relation_computation_witnesses, relation_measurement_witnesses TO wfsim_factoryd;
 
 GRANT SELECT,INSERT,UPDATE ON entity_measurement_reviews TO wfsim_factoryd;
+GRANT SELECT,UPDATE ON entity_board_orders,relation_board_order_items TO wfsim_factoryd;
 GRANT SELECT ON board_facts TO wfsim_factoryd;
 GRANT SELECT, UPDATE ON entity_family_search_requests TO wfsim_factoryd;
 GRANT SELECT, INSERT ON record_build_submissions TO wfsim_factoryd;

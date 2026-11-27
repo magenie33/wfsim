@@ -46,6 +46,7 @@ DO $prerequisite$ BEGIN
 END $prerequisite$;
 ${orderCutSchemaSql()}
 ${orderCutBusinessSql()}
+ALTER TABLE relation_task_consumers ADD COLUMN IF NOT EXISTS zone_position BIGINT;
 ${workflows.replace(triggerIndex(),'')}
 ${admission}
 DO $grant$ BEGIN

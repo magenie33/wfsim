@@ -30,7 +30,7 @@ export function taskSchemaSql() {
   const incremental = readFileSync(new URL("../worker/pg/inventory.sql", import.meta.url), "utf8");
   const pipeline=schema.match(/CREATE TABLE IF NOT EXISTS state_task_pipeline_controls[^]*?EXECUTE FUNCTION task_pipeline_notify\('contribution'\);/)?.[0];
   const columns = ["relation_task_consumers delivery_at", "record_candidate_answers credit_work", "record_candidate_answers credit_at",
-    "state_compute_scheduling zone", "state_compute_scheduling zone_position", "state_compute_scheduling required_capability", "state_compute_scheduling required_engine", "relation_task_consumers zone"].map(pair => {
+    "state_compute_scheduling zone", "state_compute_scheduling zone_position", "state_compute_scheduling required_capability", "state_compute_scheduling required_engine", "relation_task_consumers zone", "relation_task_consumers zone_position"].map(pair => {
     const [table, column] = pair.split(" ");
     return schema.match(new RegExp(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column}[^;]+;`))?.[0];
   });
@@ -70,6 +70,8 @@ export function taskSchemaSql() {
       sync.match(new RegExp('CREATE OR REPLACE FUNCTION '+name+'\\([^]*?\\$\\$;'))?.[0]),
     sync.match(/CREATE OR REPLACE FUNCTION factory_eligible\([^]*?\$\$;/)?.[0],
     sync.match(/CREATE OR REPLACE FUNCTION factory_moot_checks\([^]*?\$\$;/)?.[0],
+    library.match(/CREATE TABLE IF NOT EXISTS entity_board_orders[^]*?END \$board_orders_grants\$;/)?.[0],
+    sync.match(/CREATE OR REPLACE FUNCTION board_order_wanted\([^]*?\$\$;/)?.[0],
     sync.match(/CREATE OR REPLACE PROCEDURE board_sync_steps\([^]*?\$\$;/)?.[0],
     sync.match(/CREATE OR REPLACE PROCEDURE board_sync\([^]*?END \$\$;/)?.[0],
     sync.match(/CREATE OR REPLACE FUNCTION factory_restate\([^]*?\$\$;/)?.[0],
