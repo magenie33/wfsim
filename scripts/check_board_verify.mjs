@@ -550,10 +550,17 @@ console.log("\nan older engine whose code moved is handed only rows a served ans
   const led = task(p).question;
   await answer(task(p), J1, { ip: "203.0.113.75" });
   await L.run("UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE state = 'open'");
+  let graceHeadCalls = 0;
+  const origPrepare = L.prepare.bind(L);
+  L.prepare = (sql) => {
+    if (/factory_head/.test(sql)) graceHeadCalls++;
+    return origPrepare(sql);
+  };
   const j = await work(J2, { engine: "ej", ip: "203.0.113.76" });
+  L.prepare = origPrepare;
   const got = (j.pack ? j.pack.tasks : []).map((x) => x.question);
-  check("a joining engine is handed the row the served engine's answer leads, and only that one",
-    got.length === 1 && got[0] === led && j.join === true && j.engine === "e1", JSON.stringify(j));
+  check("a joining engine is handed the row the served engine's answer leads, and only that one, without scanning factory_head",
+    got.length === 1 && got[0] === led && j.join === true && j.engine === "e1" && graceHeadCalls === 0, JSON.stringify({ j, graceHeadCalls }));
   env.ASSETS = site("e1");
 }
 

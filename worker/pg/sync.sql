@@ -230,7 +230,8 @@ $grace$;
     prefix_pick:=split_part(pick,'  SELECT chosen.* FROM (',1)||$prefix$
       SELECT q.* FROM state_compute_scheduling guard
         CROSS JOIN LATERAL(SELECT e.* FROM eligible e WHERE e.id=guard.id OFFSET 0) q
-      WHERE guard.state='open' AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9)
+      WHERE guard.state='open' AND (guard.required_engine IS NULL OR guard.required_engine=$4)
+        AND factory_takeable(guard.lease_until,guard.leased_at,$1,$9)
         AND ($12 IS NULL OR guard.waits=0)
         AND (coalesce(guard.zone,factory_default_zone(guard.producer)),coalesce(guard.zone_position,guard.task_id),guard.id)
           <=(SELECT keep_zone,keep_position,keep_id FROM cut)
@@ -1157,29 +1158,31 @@ BEGIN
     r := r || jsonb_build_object('outcome', 'full');
     RETURN;
   END IF;
-  SELECT * INTO v_head FROM factory_head(v_at, 0, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling, v_grace_s, p ->> 'official_states');
-  v_has_head := FOUND;
-  v_packable := v_has_head AND v_head.waits = 0 AND (p -> 'packable') ? v_head.verb;
-  IF NOT v_has_head AND NOT v_grace THEN
-    UPDATE entity_compute_devices SET next_at = p ->> 'idle_at' WHERE id = v_dev;
-    r := r || jsonb_build_object('outcome', 'idle');
-    RETURN;
-  END IF;
-  -- A WAITED-ON HEAD goes alone to a computer holding nothing; one holding rows
-  -- is handed a pack of the rest (worker/sync.js says why).
-  IF NOT v_grace AND NOT v_packable AND v_holds.questions = 0 THEN
-    r := r || jsonb_build_object('outcome', 'alone');
-    RETURN;
-  END IF;
-  -- A busy witness chooses the fairest packable head, not a global fallback.
-  IF NOT v_grace AND NOT v_packable THEN
-    SELECT * INTO v_head FROM factory_head(v_at, 0, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL,
-      v_ceiling, v_grace_s, p ->> 'official_states', (p -> 'packable')::text);
-    v_packable := FOUND;
-    IF NOT v_packable THEN
+  IF NOT v_grace THEN
+    SELECT * INTO v_head FROM factory_head(v_at, 0, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling, v_grace_s, p ->> 'official_states');
+    v_has_head := FOUND;
+    v_packable := v_has_head AND v_head.waits = 0 AND (p -> 'packable') ? v_head.verb;
+    IF NOT v_has_head THEN
       UPDATE entity_compute_devices SET next_at = p ->> 'idle_at' WHERE id = v_dev;
       r := r || jsonb_build_object('outcome', 'idle');
       RETURN;
+    END IF;
+    -- A WAITED-ON HEAD goes alone to a computer holding nothing; one holding rows
+    -- is handed a pack of the rest (worker/sync.js says why).
+    IF NOT v_packable AND v_holds.questions = 0 THEN
+      r := r || jsonb_build_object('outcome', 'alone');
+      RETURN;
+    END IF;
+    -- A busy witness chooses the fairest packable head, not a global fallback.
+    IF NOT v_packable THEN
+      SELECT * INTO v_head FROM factory_head(v_at, 0, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL,
+        v_ceiling, v_grace_s, p ->> 'official_states', (p -> 'packable')::text);
+      v_packable := FOUND;
+      IF NOT v_packable THEN
+        UPDATE entity_compute_devices SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+        r := r || jsonb_build_object('outcome', 'idle');
+        RETURN;
+      END IF;
     END IF;
   END IF;
   SELECT * INTO v_fair FROM factory_open(v_at, NULL, p #>> '{fair,asking_since}', (p #>> '{fair,per}')::bigint);

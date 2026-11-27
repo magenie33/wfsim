@@ -261,6 +261,54 @@ check("sync_off answers every sync with fallback 7", (await as(E)).fallback === 
 await setDial(env, "sync_off", 0, "check");
 forgetDials(); forgetWitnesses();
 
+console.log("\ngrace engines skip head scans when priority rows pin the served engine");
+{
+  const until = new Date(Date.now() + 86_400_000).toISOString();
+  const savedAssets = env.ASSETS;
+  await free();
+  await L.run("UPDATE state_compute_scheduling SET zone = 0, required_engine = 'e1' WHERE state = 'open'");
+  const held = await as(A);
+  const graceRow = held.pack.tasks[0].question, graceLease = held.pack.lease;
+  env.ASSETS = { fetch: async () => new Response(JSON.stringify({
+    engine: "e1", release: "r2", accepted: [{ engine: "ej", until, join: true }],
+  })) };
+  await L.run(`CREATE OR REPLACE FUNCTION factory_head(text, bigint, bigint, text, text, text, text, text, bigint, bigint, text, text)
+    RETURNS TABLE (id text, verb text, request text, state text, due_at text, waits bigint, producer text)
+    LANGUAGE plpgsql STABLE AS $$
+    BEGIN
+      IF $4 = 'ej' THEN RAISE EXCEPTION 'grace sync scanned factory_head'; END IF;
+      RETURN QUERY SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer
+        FROM factory_candidates($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+          CASE WHEN $2 = 0 THEN '["open"]' ELSE ('["open"]'::jsonb || coalesce(($11::text)::jsonb, '[]'::jsonb))::text END,
+          $12, 1, NULL, NULL, NULL, false) q;
+    END $$`);
+  try {
+    for (const proc of [0, 1]) {
+      await setDial(env, "sync_proc", proc, "check");
+      forgetDials();
+      await comeBack(A);
+      let res = null;
+      try {
+        res = await post(syncRoute, "/api/board/sync", {
+          verifier: A, engine: "ej", protocol: PROTOCOL, consent: YES, lanes: 4, want_ms: 600_000,
+          results: [result(graceLease, graceRow)],
+        }, ips[A]);
+      } catch (err) {
+        res = { ok: false, error: String(err) };
+      }
+      check(`grace sync (${proc ? "proc" : "js"}) acknowledges results and idles without scanning factory_head`,
+        res.ok === true && res.release === "r2" && res.taken?.includes(graceRow) && res.empty === true && res.pack === null,
+        JSON.stringify(res));
+    }
+  } finally {
+    env.ASSETS = savedAssets;
+    await L.run("UPDATE state_compute_scheduling SET zone = NULL, required_engine = NULL WHERE required_engine = 'e1'");
+    await setDial(env, "sync_proc", 0, "check");
+    forgetDials();
+    forgetWitnesses();
+  }
+}
+
 console.log("\nthe official page and desktop refill loop");
 const source = clientSource('scripts/check_board_sync.mjs');
 let monotonic = 0;

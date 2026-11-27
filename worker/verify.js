@@ -259,7 +259,7 @@ async function work(request, env) {
     // all that `packSize` and `short` compare it to.
     db.prepare("SELECT * FROM factory_open(?1::text, ?2::bigint, ?3::text, ?4::bigint)")
       .bind(at, null, iso(now - 2 * d.asked_every_ms), packRows(pace, d)),
-    f.headOf(env, w, engine, now, d),
+    grace ? db.prepare("SELECT 1 WHERE false") : f.headOf(env, w, engine, now, d),
     asksOf(db, id, ahead, b.idle, now, viaRelay(request, env)),
   ]);
   // A REFUSED CLIENT IS TOLD SO (`banned`), or its page would wait for a next
