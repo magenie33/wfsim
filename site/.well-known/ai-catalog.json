@@ -38,6 +38,18 @@
         "quote a WFSim score with its ruler",
         "link a reader to a build in the calculator"
       ]
+    },
+    {
+      "identifier": "urn:air:wfsim.app:doc:mechanics",
+      "displayName": "WFSim mechanics reference",
+      "type": "text/markdown",
+      "url": "https://wfsim.app/mechanics.md",
+      "representativeQueries": [
+        "how do Warframe beam weapons calculate ramp-up and first tick",
+        "Warframe beam multishot status DoT scaling",
+        "Torid Incarnon sphere and chain mechanics",
+        "how does Warframe Magnetic break damage work"
+      ]
     }
   ]
 }
