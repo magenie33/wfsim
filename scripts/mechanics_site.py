@@ -661,10 +661,11 @@ MECH_CSS = """
 .mech-toc a{color:var(--text-2);text-decoration:none}
 .mech-toc a:hover{color:var(--accent)}
 .mech-wlist{display:flex;flex-wrap:wrap;gap:5px}
-.mech-cite{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;background:var(--panel3);border:1px solid var(--line);border-radius:6px;padding:7px;color:var(--text-2);word-break:break-all;margin:0 0 8px}
 .mech-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font:inherit;font-size:12px;background:var(--panel2);border:1px solid var(--line);color:var(--text);cursor:pointer}
 .mech-btn:hover{border-color:var(--accent);color:var(--accent)}
-.mech-btn-row{display:flex;flex-wrap:wrap;gap:6px}
+.mech-aside-links{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--muted);padding:0 4px}
+.mech-aside-links a,.mech-aside-links button{background:none;border:0;padding:0;font:inherit;color:var(--muted);text-decoration:none;cursor:pointer}
+.mech-aside-links a:hover,.mech-aside-links button:hover{color:var(--accent)}
 .mech-calc{margin:16px 0;padding:14px 16px;background:var(--panel3);border:1px solid var(--line);border-radius:8px}
 .mech-calc h3{margin:0 0 10px;font-size:14px}
 .mc-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
@@ -1188,19 +1189,13 @@ def ship_mechanics(
                 for href, (name, icon) in list(seen_weapons.items())[:28]
             )
             cite_raw = f"<ref>[{en_art_url} WFSim Mechanics: {art['en']['title']}], updated {art['updated']}.</ref>"
-            cite_ref = html_mod.escape(cite_raw)
-            md_cite_raw = f"[{loc['title']}]({art_url})"
             lbl_toc = "本页目录" if lang == "zh" else "On This Page"
             lbl_weapons = f"文中武器 ({len(seen_weapons)})" if lang == "zh" else f"Weapons Referenced ({len(seen_weapons)})"
-            lbl_cite = "引用与分享" if lang == "zh" else "Cite & Share"
             lbl_updated = f"更新日期：{art['updated']}" if lang == "zh" else f"Updated {art['updated']}"
-            lbl_md = "纯文本 Markdown" if lang == "zh" else "Plain Markdown"
             lbl_copy_url = "复制链接" if lang == "zh" else "Copy link"
             lbl_copy_ai = "复制给 AI" if lang == "zh" else "Copy for AI"
             lbl_copied_ai = "已复制 (含出处)" if lang == "zh" else "Copied (with source)"
-            lbl_share = "分享" if lang == "zh" else "Share"
-            lbl_copy_ref = "复制 Wiki 引用" if lang == "zh" else "Copy Wiki <ref>"
-            lbl_copy_md = "复制 MD 链接" if lang == "zh" else "Copy MD link"
+            lbl_copy_ref = "Wiki 引用" if lang == "zh" else "Wiki <ref>"
             lbl_copied = "已复制" if lang == "zh" else "Copied"
             ai_hdr = (
                 f"出处：WF模拟（WFSim）机制参考（{art_url}）｜更新日期：{art['updated']}\n"
@@ -1245,13 +1240,6 @@ def ship_mechanics(
       }}).catch(function(){{cp(aiHdr+location.href+aiFtr,b,aiOkTxt);}});
     }});
   }});
-  document.querySelectorAll("[data-share-url]").forEach(function(b){{
-    b.addEventListener("click",function(){{
-      var u=b.getAttribute("data-share-url"), t=b.getAttribute("data-share-title")||document.title;
-      if(navigator.share){{navigator.share({{title:t,url:u}}).catch(function(){{}});}}
-      else{{cp(u,b);}}
-    }});
-  }});
   document.querySelectorAll(".mech-anchor").forEach(function(a){{
     a.addEventListener("click",function(){{
       var u=location.origin+location.pathname+a.getAttribute("href");
@@ -1269,13 +1257,13 @@ def ship_mechanics(
 <article class="mech-article">
   <div class="mech-crumb"><a href="{prefix}">{"机制" if lang == "zh" else "Mechanics"}</a> / <span>{html_mod.escape(loc["short_title"])}</span></div>
   <h1>{html_mod.escape(loc["title"])}</h1>
-  <div class="mech-meta"><span>{lbl_updated}</span><span>{html_mod.escape(art["category"][lang])}</span><a href="{md_twin_path}">{lbl_md}</a><button type="button" class="mech-btn" data-copy-ai>{lbl_copy_ai}</button><button type="button" class="mech-btn" data-share-url="{html_mod.escape(art_url, quote=True)}" data-share-title="{html_mod.escape(loc['title'] + ' | WFSim', quote=True)}">{lbl_share}</button></div>
+  <div class="mech-meta"><span>{lbl_updated}</span><span>{html_mod.escape(art["category"][lang])}</span><button type="button" class="mech-btn" data-copy="{html_mod.escape(art_url, quote=True)}">{lbl_copy_url}</button><button type="button" class="mech-btn" data-copy-ai>{lbl_copy_ai}</button></div>
   {body_html}
 </article>
 <aside class="mech-aside">
   <div class="mech-box"><details class="mech-toc-fold" open><summary>{lbl_toc}</summary><ul class="mech-toc">{toc_html}</ul></details></div>
-  <div class="mech-box"><h3>{lbl_cite}</h3><div class="mech-cite">{cite_ref}</div><div class="mech-btn-row"><button type="button" class="mech-btn" data-copy-ai>{lbl_copy_ai}</button><button type="button" class="mech-btn" data-copy="{html_mod.escape(art_url, quote=True)}">{lbl_copy_url}</button><button type="button" class="mech-btn" data-copy="{html_mod.escape(cite_raw, quote=True)}">{lbl_copy_ref}</button><button type="button" class="mech-btn" data-copy="{html_mod.escape(md_cite_raw, quote=True)}">{lbl_copy_md}</button></div></div>
   <div class="mech-box"><h3>{lbl_weapons}</h3><div class="mech-wlist">{wlist_html}</div></div>
+  <div class="mech-aside-links"><button type="button" data-copy="{html_mod.escape(cite_raw, quote=True)}">{lbl_copy_ref}</button><span>·</span><a href="{md_twin_path}">Markdown</a></div>
 </aside>
 </div>{share_script}"""
 
