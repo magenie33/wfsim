@@ -5,6 +5,23 @@ import { DEEP_SCOPE_GROUPS, DEEP_SCOPE_TESTS, RUST_GROUPS, RUST_SUITES, WHOLE_SC
 import { rivenRequestCases } from './riven_request_cases.mjs';
 
 const list = text => text.split(',').map(s => s.trim());
+function pipelineGroups(workflow) {
+  const section = workflow.split('\n  pipeline:\n')[1]?.split(/\n  [\w-]+:\n/)[0];
+  assert(section, 'pipeline exists');
+  assert.match(section, /fail-fast: false/);
+  const groups = list(section.match(/group: \[([^\]]+)\]/)[1]);
+  assert(groups.length > 1 && new Set(groups).size === groups.length, 'distinct pipeline groups');
+  const steps = Object.fromEntries(groups.map(g => [g, []]));
+  for (const step of section.split(/^      - /m).slice(1)) {
+    const run = step.match(/^\s*run: (.+)$/m)?.[1];
+    if (!run || run === 'npm ci --silent --prefix scripts/pg') continue;
+    const group = step.match(/^\s*if: matrix\.group == '([\w-]+)'(?:\s*&&.*)?$/m)?.[1];
+    assert(groups.includes(group), `one declared pipeline group for ${step.split('\n')[0]}`);
+    steps[group].push(step);
+  }
+  for (const [g, rows] of Object.entries(steps)) assert(rows.length, `nonempty pipeline group ${g}`);
+  return steps;
+}
 function pageGroups(workflow, job = 'page-rest') {
   const section = workflow.split('\n  ' + job + ':\n')[1]?.split(/\n  [\w-]+:\n/)[0];
   assert(section, `${job} exists`);
@@ -99,12 +116,18 @@ assert.match(workflow, /webapi\).*--skip optimize::whole_scope_tests::.*--skip o
 assert.match(workflow, /\*\).*exit 2/);
 const pages = pageGroups(workflow);
 const mainPages = pageGroups(workflow, 'page');
+const pipelines = pipelineGroups(workflow);
 assert.throws(() => pageGroups(workflow.replace("if: matrix.group == 'builder-1'", "if: matrix.group == 'absent'")));
 assert.throws(() => pageGroups(workflow.replace("        if: matrix.group == 'builder-1'\n", '')));
 assert.throws(() => pageGroups(workflow.replace('group: [account, views, builder-1, builder-2, builder-3, heads, library]', 'group: [account]')));
 assert.throws(() => pageGroups(workflow.replace("if: matrix.group == 'controls'", "if: matrix.group == 'absent'"), 'page'));
+assert.throws(() => pageGroups(workflow.replace("if: matrix.group == 'calculation-1'", "if: matrix.group == 'absent'"), 'page'));
 assert.throws(() => pageGroups(workflow.replace('fromJSON(\'["fast"]\')', 'fromJSON(\'["controls"]\')'), 'page'));
 assert.throws(() => pageGroups(workflow.replace('fromJSON(\'["fast"]\')', 'fromJSON(\'[]\')'), 'page'));
+assert.throws(() => pipelineGroups(workflow.replace("if: matrix.group == 'inventory-1'", "if: matrix.group == 'absent'")));
+assert.throws(() => pipelineGroups(workflow.replace("        if: matrix.group == 'inventory-1'\n", '')));
+assert.throws(() => pipelineGroups(workflow.replace('group: [inventory-1, inventory-2, pg-factory]', 'group: [inventory-1]')));
+assert.equal(Object.keys(pipelines).length, 3, 'three balanced pipeline groups');
 const allPages = [...Object.values(pages).flat(), ...Object.values(mainPages).flat()];
 assert.equal(new Set(allPages).size, allPages.length, 'browser commands have one owner');
 assert(pages.account.includes('node scripts/check_browser_db_migration.mjs'),'browser upgrades run in the existing account group');

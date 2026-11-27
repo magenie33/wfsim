@@ -176,7 +176,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      max-parallel: 8
+      max-parallel: 18
       matrix: ${{ fromJSON(needs.plan.outputs.factory_matrix) }}
     steps:
       - uses: actions/checkout@v4
@@ -472,8 +472,8 @@ jobs:
   # Native slices build beside validation; only ship has the signing key.
   # Missing optional slices retain the clients' wasm fallback.
   native-mac:
-    needs: [plan, site]
-    if: needs.site.result == 'success' && needs.plan.outputs.native == 'true' && github.event_name != 'pull_request'
+    needs: [plan, quick, runtime]
+    if: needs.runtime.result == 'success' && needs.plan.outputs.site == 'true' && needs.plan.outputs.native == 'true' && needs.plan.outputs.reuse == '' && github.event_name != 'pull_request'
     strategy:
       fail-fast: false
       matrix:
@@ -485,10 +485,9 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
-          name: release-built
-          path: ${{ runner.temp }}/metadata
+          python-version: "3.14"
       # An engine whose library already names this slice keeps it; one published
       # without it gains it (`release_engine_lib.py` adds a missing target).
       - id: due
@@ -496,27 +495,14 @@ jobs:
           ARCH: ${{ matrix.arch }}
         run: |
           set -euo pipefail
-          built="$RUNNER_TEMP/metadata"
-          engine=$(jq -r '.engine' "$built/release.json")
+          python3 -c "import yaml" 2>/dev/null || python3 -m pip install --quiet pyyaml==6.0.3
+          engine=$(python3 -c 'import sys; sys.path.insert(0, "scripts"); import build_site_app; print(build_site_app.engine_id())')
+          echo "engine=$engine" >> "$GITHUB_OUTPUT"
           if curl --connect-timeout 10 --max-time 30 -sf "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com/engine/$engine.json" -o "$RUNNER_TEMP/lib.json" \
             && jq -e --arg t "$ARCH-macos" '.signed | fromjson | .files[$t]' "$RUNNER_TEMP/lib.json" > /dev/null; then
             echo "::notice::engine library $engine names $ARCH-macos — no Mac build"; echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
           echo "go=true" >> "$GITHUB_OUTPUT"
-      - if: steps.due.outputs.go == 'true'
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: site-built
-          path: ${{ runner.temp }}/built
-      - if: steps.due.outputs.go == 'true'
-        run: |
-          set -euo pipefail
-          built="$RUNNER_TEMP/built/site"
-          # THE SHIPPED WASM AS THE REFERENCE, under the names check_gas.mjs reads.
-          wasm=$(jq -r '.wasm' "$built/release.json"); ref="$RUNNER_TEMP/ref"; mkdir -p "$ref"
-          cp "$built/pkg/wfsim_wasm.$wasm.js" "$ref/wfsim_wasm.js"
-          cp "$built/pkg/wfsim_wasm_bg.$wasm.wasm" "$ref/wfsim_wasm_bg.wasm"
-          for p in $(jq -r '.packs[]' "$built/release.json"); do cp "$built/pkg/$p" "$ref/"; done
       - if: steps.due.outputs.go == 'true'
         uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
         with:
@@ -524,10 +510,6 @@ jobs:
           toolchain: "1.97.1"
           targets: ${{ matrix.arch }}-apple-darwin
           components: llvm-tools-preview
-      - if: steps.due.outputs.go == 'true'
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-        with:
-          python-version: "3.14"
       - if: steps.due.outputs.go == 'true'
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -545,9 +527,55 @@ jobs:
           set -euo pipefail
           t="$ARCH-apple-darwin"
           [ "$(uname -m | sed 's/arm64/aarch64/')" = "$ARCH" ] || { echo "::error::$ARCH slice on a $(uname -m) runner"; exit 1; }
-          python3 scripts/native_pgo.py build --target "$t" \
+          extra=()
+          if [ "$ARCH" = "x86_64" ]; then extra+=(--baseline-only); fi
+          python3 scripts/native_pgo.py build --target "$t" --cache-dir "$PWD/target" "${extra[@]}" \
             --output "out/macos/$ARCH/libwfsim_native.dylib" --work-dir "$RUNNER_TEMP/native-pgo"
-          cargo build --release --locked -p wfsim-cli --bin wfsim-gas --target "$t"
+          CARGO_ENCODED_RUSTFLAGS="-Cstrip=none" cargo build --release --locked -p wfsim-cli --bin wfsim-gas --target "$t"
+      - if: steps.due.outputs.go == 'true'
+        name: Wait for the checked site artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess, sys, time
+          repo, run_id = os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_RUN_ID"]
+          deadline = time.monotonic() + 2700
+          while time.monotonic() < deadline:
+              try:
+                  out = subprocess.check_output(
+                      ["gh", "api", f"repos/{repo}/actions/runs/{run_id}/jobs?filter=latest&per_page=100"],
+                      text=True, timeout=30,
+                  )
+                  site = next((j for j in json.loads(out).get("jobs", []) if j.get("name") == "site"), None)
+                  if site and site.get("status") == "completed":
+                      if site.get("conclusion") == "success":
+                          sys.exit(0)
+                      sys.exit(f"site job finished with conclusion={site.get('conclusion')}")
+              except subprocess.SubprocessError as err:
+                  print(f"waiting for site job: {err}", flush=True)
+              time.sleep(10)
+          sys.exit("timed out waiting for site job")
+          PY
+      - if: steps.due.outputs.go == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: site-built
+          path: ${{ runner.temp }}/built
+      - if: steps.due.outputs.go == 'true'
+        env:
+          ARCH: ${{ matrix.arch }}
+          ENGINE: ${{ steps.due.outputs.engine }}
+        run: |
+          set -euo pipefail
+          t="$ARCH-apple-darwin"
+          built="$RUNNER_TEMP/built/site"
+          [ "$(jq -r '.engine' "$built/release.json")" = "$ENGINE" ] || { echo "::error::engine id moved between due and site-built"; exit 1; }
+          # THE SHIPPED WASM AS THE REFERENCE, under the names check_gas.mjs reads.
+          wasm=$(jq -r '.wasm' "$built/release.json"); ref="$RUNNER_TEMP/ref"; mkdir -p "$ref"
+          cp "$built/pkg/wfsim_wasm.$wasm.js" "$ref/wfsim_wasm.js"
+          cp "$built/pkg/wfsim_wasm_bg.$wasm.wasm" "$ref/wfsim_wasm_bg.wasm"
+          for p in $(jq -r '.packs[]' "$built/release.json"); do cp "$built/pkg/$p" "$ref/"; done
           node scripts/check_gas.mjs native="$PWD/target/$t/release/wfsim-gas" pkg="$RUNNER_TEMP/ref"
           node scripts/check_native_pgo.mjs pkg="$RUNNER_TEMP/ref" library="out/macos/$ARCH/libwfsim_native.dylib"
           python3 scripts/native_artifact.py "out/macos/$ARCH/libwfsim_native.dylib" "$RUNNER_TEMP/built/site/release.json"
@@ -709,6 +737,10 @@ jobs:
     needs: [plan, quick, runtime]
     if: needs.plan.outputs.pipeline == 'true' && needs.plan.outputs.reuse == ''
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [inventory-1, inventory-2, pg-factory]
     services:
       restore-postgres:
         image: postgres:18.7-bookworm
@@ -747,16 +779,21 @@ jobs:
       - name: The checks' Postgres
         run: npm ci --silent --prefix scripts/pg
       - name: The board's pipeline reads and writes Postgres
+        if: matrix.group == 'pg-factory'
         run: node scripts/check_pg_scripts.mjs
       - name: Proven empty and small queue signals skip historical PostgreSQL plans
+        if: matrix.group == 'pg-factory'
         env:
           WFSIM_SIGNAL_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5433/wfsim_checks
         run: node scripts/check_factory_signal_pg.mjs
       - name: Queue cancellation preserves demand ownership
+        if: matrix.group == 'pg-factory'
         run: node scripts/check_cancel_queue.mjs
       - name: Official settlement reports failures and releases claims
+        if: matrix.group == 'pg-factory'
         run: node scripts/check_settle.mjs
       - name: Live board uploads preserve progress within bounded cycles
+        if: matrix.group == 'pg-factory'
         run: node scripts/check_live_publish.mjs
       - uses: dtolnay/rust-toolchain@master
         with:
@@ -766,6 +803,7 @@ jobs:
         with:
           shared-key: ci-tests
       - name: Incremental inventory matches a full engine walk across frozen database cuts
+        if: matrix.group == 'inventory-1'
         run: |
           cargo build -p wfsim-cli --bin wfsim-board
           node scripts/check_inventory_control.mjs
@@ -801,6 +839,10 @@ jobs:
           sudo -n env PATH="$PATH" python3 scripts/check_catalog_file_owner.py
           node scripts/check_board_rank_schema.mjs
           node scripts/check_board_storage.mjs
+      - name: Prepared board inputs and intake queues preserve cut continuity
+        if: matrix.group == 'inventory-2'
+        run: |
+          cargo build -p wfsim-cli --bin wfsim-board --bin wfsim-intake
           node scripts/check_prepared_board_inputs.mjs
           node scripts/check_prepared_board_access.mjs
           node scripts/check_prepared_read_indexes.mjs
@@ -825,34 +867,39 @@ jobs:
           node scripts/check_work_calibration.mjs
           node scripts/check_task_reissue.mjs
           node scripts/check_build_admission.mjs
-          cargo build --bin wfsim-intake
           node scripts/check_intake_batches.mjs
           node scripts/check_board_requested_intake.mjs
       - name: Raw inbox rollover preserves ownership through independent PostgreSQL recovery
+        if: matrix.group == 'pg-factory'
         env:
           WFSIM_RAW_ROLLOVER_TEST_URL: postgresql://postgres@127.0.0.1:5433/wfsim_checks
           WFSIM_RAW_ROLLOVER_RESTORE_URL: postgresql://postgres@127.0.0.1:5434/wfsim_checks
           PGPASSWORD: mailbox_check
           PGPASSFILE: ${{ runner.temp }}/raw-rollover.pgpass
         run: |
+          cargo build -p wfsim-cli --bin wfsim-board --bin wfsim-intake
           printf '%s\n' '127.0.0.1:*:wfsim_checks:postgres:mailbox_check' > "$PGPASSFILE"
           chmod 600 "$PGPASSFILE"
           node scripts/check_raw_inbox_rollover.mjs
           node scripts/check_raw_inbox_archive.mjs
           node scripts/check_build_inbox_storage.mjs
       - name: Producer admission preserves accounting while settlement holds its usage row
+        if: matrix.group == 'pg-factory'
         env:
           WFSIM_ADMISSION_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5433/wfsim_checks
         run: node scripts/check_compute_admission.mjs --require-pg
       - name: Coverage intake preserves every source and cursor through independent PostgreSQL readback
+        if: matrix.group == 'pg-factory'
         env:
           WFSIM_COVERAGE_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5433/wfsim_checks
         run: node scripts/check_board_coverage.mjs
       - name: Compute order imports share a verified cursor for manual and discovered orders
+        if: matrix.group == 'pg-factory'
         env:
           WFSIM_COVERAGE_TEST_URL: postgresql://postgres:mailbox_check@127.0.0.1:5433/wfsim_checks
         run: node scripts/check_compute_order_import.mjs
       - name: Scoring inputs use the production Postgres driver
+        if: matrix.group == 'pg-factory'
         env:
           WFSIM_SCORE_INPUTS_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
         run: |
@@ -861,71 +908,94 @@ jobs:
           sudo -u postgres createdb --owner=wfsim_score_test wfsim_score_inputs
           node scripts/check_score_inputs.mjs
       - name: Bounded intake preserves commit and acknowledgement order on the production driver
+        if: matrix.group == 'pg-factory'
         env:
           WFSIM_INTAKE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
         run: node scripts/check_intake_batches.mjs
       - name: Task reissue preserves sourced demand and rejects retired execution leases
+        if: matrix.group == 'pg-factory'
         env:
           WFSIM_TASK_REISSUE_TEST_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
         run: node scripts/check_task_reissue.mjs
       - name: Durable build intake survives worker crashes and bounded admission retries
+        if: matrix.group == 'pg-factory'
         env:
           WFSIM_BUILD_ADMISSION_TEST_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
         run: node scripts/check_build_admission.mjs
       - name: Independent source and board consumers preserve PostgreSQL cut acknowledgements
+        if: matrix.group == 'pg-factory'
         env:
           WFSIM_BOARD_PIPELINE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
         run: node scripts/check_split_board_capture.mjs
       - name: Queue cancellation uses the production Postgres driver
+        if: matrix.group == 'pg-factory'
         env:
           WFSIM_CANCEL_QUEUE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
         run: node scripts/check_cancel_queue.mjs
       - name: Maintenance preserves native board behavior and source checks
-        if: fromJSON(needs.plan.outputs.plan).fast
+        if: matrix.group == 'inventory-2' && fromJSON(needs.plan.outputs.plan).fast
         run: |
           cargo test -p wfsim-engine --lib board::
           cargo test -p wfsim-cli --lib board::
           cargo clippy -p wfsim-cli --all-targets -- -D warnings
       - name: Equipment builds enter the canonical public library
+        if: matrix.group == 'inventory-1'
         run: node scripts/check_equipment_library_api.mjs
       - name: While work is short an account past its fair share waits, and only then
+        if: matrix.group == 'inventory-1'
         run: node scripts/check_fair.mjs
       - name: The settler in shadow judges as the request path does, and says where it does not
+        if: matrix.group == 'inventory-1'
         run: node scripts/check_settler.mjs
       - name: Available work stays current while complete statistics are paused
+        if: matrix.group == 'inventory-1'
         run: node scripts/check_factory_availability.mjs
       - name: Sampled statistics expire without hiding live work signals
+        if: matrix.group == 'inventory-1'
         run: node scripts/check_statistics_clock.mjs
       - name: Background capacity yields to requests and shares the same public counts
+        if: matrix.group == 'inventory-1'
         run: node scripts/check_factory_capacity.mjs
       - name: The factory deploy carries its dependencies and keeps credentials outside the artifact
+        if: matrix.group == 'inventory-1'
         run: python scripts/check_factory_deploy.py
       - name: Answers queued for the settler leave what settling them in the request leaves, once
+        if: matrix.group == 'inventory-2'
         run: node scripts/check_settler_async.mjs
       - name: A sync as one call answers and writes what the statements do, in two round trips at most
+        if: matrix.group == 'inventory-2'
         run: node scripts/check_sync_proc.mjs
       - name: Concurrent pack grants preserve live leases and post-cut FIFO
+        if: matrix.group == 'pg-factory'
         env:
           WFSIM_ORDER_CUT_TEST_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
         run: node scripts/check_compute_order_lease_pg.mjs
       - name: Every ask names who asked, one asker is held to its share, and a code is erased once the ask is over
+        if: matrix.group == 'inventory-2'
         run: node scripts/check_initiator.mjs
       - name: An official check of another engine goes back to the volunteers, and a spot of one to its fact
+        if: matrix.group == 'inventory-2'
         run: node scripts/check_moot_checks.mjs
       - name: Seven-day task detail is archived and verified before pruning
+        if: matrix.group == 'inventory-2'
         run: |
           node scripts/check_forget_past.mjs
           python scripts/check_task_archive.py
           python scripts/check_pg_backup.py
       - name: A batch is asked most popular weapon first, and a place is due by its batch's day
+        if: matrix.group == 'inventory-2'
         run: node scripts/check_popular_order.mjs
       - name: Merit mints from contribution points within the day's and the balance's caps, and an account sees only its own
+        if: matrix.group == 'inventory-2'
         run: node scripts/check_merit.mjs
       - name: A row its page still computes is kept for it, and only a silent one loses it
+        if: matrix.group == 'inventory-2'
         run: node scripts/check_renew.mjs
       - name: A riven gain is run by the community and credited when two owners agree
+        if: matrix.group == 'inventory-2'
         run: node scripts/check_riven_gain.mjs
       - name: The site reads the live board, and the committed one only until it exists
+        if: matrix.group == 'inventory-2'
         run: node scripts/check_board_live.mjs
 
   # The page in headless Chrome: its controls, lanes and queue.
@@ -936,7 +1006,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: ${{ fromJSON(needs.plan.outputs.plan).fast && fromJSON('["fast"]') || fromJSON('["controls","calculation","community"]') }}
+        group: ${{ fromJSON(needs.plan.outputs.plan).fast && fromJSON('["fast"]') || fromJSON('["controls","calculation-1","calculation-2","calculation-3","community"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/built-site
@@ -973,34 +1043,34 @@ jobs:
         if: matrix.group == 'community'
         run: node scripts/check_compute_ui.mjs
       - name: A lost lane is replaced and says where, and a slow call is not taken for a dead one
-        if: matrix.group == 'calculation'
+        if: matrix.group == 'calculation-2'
         run: node scripts/check_calc_recovers.mjs
       - name: Whole finalist replays retain their serial results across worker counts
-        if: matrix.group == 'calculation'
+        if: matrix.group == 'calculation-3'
         run: node scripts/check_quick_fleet.mjs
       - name: Browser workers report execution errors and retire trapped instances
-        if: matrix.group == 'calculation'
+        if: matrix.group == 'calculation-1'
         run: node scripts/check_worker_execution_errors.mjs
       - name: Gain scans retain their measured axes
-        if: matrix.group == 'calculation'
+        if: matrix.group == 'calculation-3'
         run: node scripts/check_gain_axes.mjs
       - name: Gain scans retain their complete input identity
-        if: matrix.group == 'calculation'
+        if: matrix.group == 'calculation-3'
         run: node scripts/check_gain_freshness.mjs
       - name: Calculation tasks retain their inputs, results and queue across pages
-        if: matrix.group == 'calculation'
+        if: matrix.group == 'calculation-2'
         run: node scripts/check_user_task_center.mjs
       - name: Search tasks and saved-riven batches retain their captured inputs
-        if: matrix.group == 'calculation'
+        if: matrix.group == 'calculation-1'
         run: node scripts/check_task_executors.mjs
       - name: Simulation measurements retain their captured build and fight
-        if: matrix.group == 'calculation'
+        if: matrix.group == 'calculation-1'
         run: node scripts/check_simulation_context.mjs
       - name: Replay follows the measured fight
-        if: matrix.group == 'calculation'
+        if: matrix.group == 'calculation-2'
         run: node scripts/check_replay.mjs
       - name: Combat records regenerate the measured request
-        if: matrix.group == 'calculation'
+        if: matrix.group == 'calculation-2'
         run: node scripts/check_combat_record.mjs
       - name: Exact official simulations request durable independent board reviews
         if: matrix.group == 'community'
@@ -1341,6 +1411,14 @@ jobs:
       # passed on the day `mode` was in the door's key, because no test looked at
       # what came out the far end. What a player PLACES and what the library
       # HOLDS is one question; this is the only place it is asked.
+      - if: matrix.group == 'library'
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.97.1"
+      - if: matrix.group == 'library'
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-release-intake
       - if: matrix.group == 'library'
         run: cargo build --release --bin wfsim-intake
       - name: A submission survives the hop into the library

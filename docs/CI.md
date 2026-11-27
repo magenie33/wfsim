@@ -242,10 +242,13 @@ original full-catalog versions run in three independent deep jobs when required.
 the real test list and runs exact names, refusing a missing protected test or
 empty group. New ordinary whole-scope tests join the ordinary group.
 
-The main page checks run in controls, calculation and community groups. The
+The main page checks run in controls, three calculation groups and community. The
 additional page checks run in independent groups: accounts and sharing,
-views, three builder/search groups, board heads and library integration. Builder
-groups balance measured command durations while retaining each complete command.
+views, three builder/search groups, board heads and library integration. Pipeline
+checks run in three independent groups covering incremental inventory, board
+staging and production PostgreSQL rollover/factory workflows. Builder and
+calculation groups balance measured command durations while retaining each
+complete command.
 Bot card rendering
 runs with the bot checks. Each command belongs
 to one group. `check_ci_partitions` rejects missing, duplicate or empty groups;

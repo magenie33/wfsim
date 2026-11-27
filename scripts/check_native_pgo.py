@@ -128,6 +128,51 @@ class PgoAdmission(unittest.TestCase):
                 self.assertIn("-Cprofile-generate=", receipt["build_flags"]["generate"][-1])
                 self.assertIn("-Cprofile-use=", receipt["build_flags"]["pgo"][-2])
 
+    def test_cached_baseline_snapshots_outputs_and_baseline_only_verifies(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cache = root / "cargo-cache"
+            args = argparse.Namespace(target="x86_64-apple-darwin", windows_v3=False,
+                                      cache_dir=cache, baseline_only=True,
+                                      work_dir=root / "work", output=root / "libwfsim_native.dylib")
+            expected = {"api": {"sample": {"ok": True}}, "rows": {"row": {"score": 2.5}}}
+            exercised_libs = []
+
+            def run(command, *, cwd=None, env=None, stdout=None, check):
+                if command[0] == "cargo":
+                    target_dir = Path(env["CARGO_TARGET_DIR"])
+                    self.assertEqual(target_dir, cache.resolve())
+                    pack = target_dir / "packs"
+                    pack.mkdir(parents=True, exist_ok=True)
+                    (pack / "data.json").write_bytes(b"darwin data")
+                    library = target_dir / args.target / "release" / "libwfsim_native.dylib"
+                    library.parent.mkdir(parents=True, exist_ok=True)
+                    library.write_bytes(b"darwin baseline")
+                    stdout.write(json.dumps({"reason": "build-script-executed", "package_id": "wfsim-engine",
+                                             "out_dir": str(target_dir)}) + "\n")
+                else:
+                    self.assertEqual(command[command.index("--mode") + 1], "verify")
+                    lib_path = Path(command[command.index("--library") + 1])
+                    exercised_libs.append(lib_path)
+                    # Mutating the shared cache after compilation must not affect the snapshotted library.
+                    (cache / args.target / "release" / "libwfsim_native.dylib").write_bytes(b"mutated cache")
+                    p.write(Path(command[-1]), expected)
+
+            with patch.dict(p.os.environ, {}, clear=True), patch.object(p, "host", return_value=args.target), \
+                    patch.object(p, "source_hash", return_value="fixed-source"), \
+                    patch.object(p.subprocess, "check_output", return_value="test rustc"), \
+                    patch.object(p.subprocess, "run", side_effect=run), patch("builtins.print"):
+                p.build(args)
+            self.assertEqual(len(exercised_libs), 1)
+            self.assertNotEqual(exercised_libs[0].parent, cache / args.target / "release")
+            self.assertEqual(args.output.read_bytes(), b"darwin baseline")
+            receipt = json.loads(args.output.with_suffix(".pgo.json").read_bytes())
+            self.assertTrue(receipt["baseline_only"])
+            self.assertEqual(receipt["selected"], "baseline")
+            self.assertIsNone(receipt["pgo_sha256"])
+            self.assertEqual(receipt["selected_sha256"], p.sha(args.output))
+            self.assertEqual(receipt["verification_sha256"], p.sha(args.output.with_suffix(".verify.json")))
+
 
 if __name__ == "__main__":
     unittest.main()

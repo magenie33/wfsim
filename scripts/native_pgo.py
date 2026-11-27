@@ -203,20 +203,24 @@ def build(args) -> None:
     profile.mkdir()
     frozen = source_hash()
     version = subprocess.check_output(["rustc", "-vV"], text=True, encoding="utf-8")
-    sysroot = Path(subprocess.check_output(["rustc", "--print", "sysroot"], text=True, encoding="utf-8").strip())
-    profdata = sysroot / "lib/rustlib" / target / "bin" / ("llvm-profdata.exe" if os.name == "nt" else "llvm-profdata")
-    if not profdata.is_file():
-        raise ValueError("install matching LLVM tools: rustup component add llvm-tools-preview")
+    profdata = None
+    if not getattr(args, "baseline_only", False):
+        sysroot = Path(subprocess.check_output(["rustc", "--print", "sysroot"], text=True, encoding="utf-8").strip())
+        profdata = sysroot / "lib/rustlib" / target / "bin" / ("llvm-profdata.exe" if os.name == "nt" else "llvm-profdata")
+        if not profdata.is_file():
+            raise ValueError("install matching LLVM tools: rustup component add llvm-tools-preview")
     env = data_packs.build_env()
     cargo_profile = ({} if tuning is None else
                      {"CARGO_PROFILE_RELEASE_LTO": tuning["lto"],
                       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": str(tuning["codegen_units"])})
+    cache_dir = args.cache_dir.resolve() if getattr(args, "cache_dir", None) else None
     artifacts, packs, build_flags = {}, {}, {}
 
     def compiled(stage: str, *pgo: str) -> None:
         if source_hash() != frozen:
             raise ValueError("source changed during PGO compilation")
-        target_dir = work / stage
+        use_cache = stage == "baseline" and cache_dir is not None
+        target_dir = cache_dir if use_cache else work / stage
         build_flags[stage] = flags(target, *pgo, target_cpu=tuning["target_cpu"] if tuning else None)
         print(f"native PGO: build {stage} ({target})", flush=True)
         command = ["cargo", "build", "--release", "--locked", "-p", "wfsim-native", "--target", target,
@@ -227,10 +231,20 @@ def build(args) -> None:
         reports = [json.loads(line) for line in (work / f"build-{stage}.jsonl").read_text(encoding="utf-8").splitlines()]
         pack = next(Path(r["out_dir"]) / "packs/data.json" for r in reports
                     if r.get("reason") == "build-script-executed" and "wfsim-engine" in r.get("package_id", ""))
-        packs[stage] = pack
         name = "wfsim_native.dll" if "windows" in target else "libwfsim_native.dylib" if "darwin" in target else "libwfsim_native.so"
-        artifacts[stage] = target_dir / target / "release" / name
-        if sha(pack) != sha(packs["baseline"]):
+        built_lib = target_dir / target / "release" / name
+        if use_cache:
+            snapshot = work / "baseline"
+            snapshot.mkdir(parents=True, exist_ok=True)
+            snap_pack = snapshot / "packs/data.json"
+            snap_pack.parent.mkdir(parents=True, exist_ok=True)
+            snap_pack.write_bytes(pack.read_bytes())
+            snap_lib = snapshot / name
+            snap_lib.write_bytes(built_lib.read_bytes())
+            packs[stage], artifacts[stage] = snap_pack, snap_lib
+        else:
+            packs[stage], artifacts[stage] = pack, built_lib
+        if sha(packs[stage]) != sha(packs["baseline"]):
             raise ValueError("PGO stages compiled different data packs")
 
     def exercised(stage: str, mode: str, name: str, extra_env: dict | None = None):
@@ -242,31 +256,37 @@ def build(args) -> None:
 
     compiled("baseline")
     expected = exercised("baseline", "verify", "verify-baseline")
-    compiled("generate", f"-Cprofile-generate={profile}")
-    exercised("generate", "train", "training", {"LLVM_PROFILE_FILE": str(profile / "%m_%p.profraw")})
-    raw = sorted(profile.glob("*.profraw"))
-    if not raw:
-        raise ValueError("training produced no LLVM profile")
-    merged = profile / "merged.profdata"
-    subprocess.run([str(profdata), "merge", "-o", str(merged), *(str(p) for p in raw)], check=True)
-    compiled("pgo", f"-Cprofile-use={merged}", "-Cllvm-args=-pgo-warn-missing-function")
-    exact(expected, exercised("pgo", "verify", "verify-pgo"))
-    timings = {stage: {} for stage in ["baseline", "pgo"]}
-    for i, stage in enumerate(["baseline", "pgo", "pgo", "baseline"] * 2):
-        print(f"native PGO: timing {i + 1}/8 ({stage})", flush=True)
-        for key, entry in exercised(stage, "bench", f"bench-{i}-{stage}").items():
-            exact(expected["rows"][key], entry["result"])
-            timings[stage].setdefault(key, []).append(statistics.median(entry["ms"]))
-    chosen, ratios = select(timings["baseline"], timings["pgo"])
+    if getattr(args, "baseline_only", False):
+        chosen, ratios, timings, merged = "baseline", {}, {}, None
+    else:
+        compiled("generate", f"-Cprofile-generate={profile}")
+        exercised("generate", "train", "training", {"LLVM_PROFILE_FILE": str(profile / "%m_%p.profraw")})
+        raw = sorted(profile.glob("*.profraw"))
+        if not raw:
+            raise ValueError("training produced no LLVM profile")
+        merged = profile / "merged.profdata"
+        subprocess.run([str(profdata), "merge", "-o", str(merged), *(str(p) for p in raw)], check=True)
+        compiled("pgo", f"-Cprofile-use={merged}", "-Cllvm-args=-pgo-warn-missing-function")
+        exact(expected, exercised("pgo", "verify", "verify-pgo"))
+        timings = {stage: {} for stage in ["baseline", "pgo"]}
+        for i, stage in enumerate(["baseline", "pgo", "pgo", "baseline"] * 2):
+            print(f"native PGO: timing {i + 1}/8 ({stage})", flush=True)
+            for key, entry in exercised(stage, "bench", f"bench-{i}-{stage}").items():
+                exact(expected["rows"][key], entry["result"])
+                timings[stage].setdefault(key, []).append(statistics.median(entry["ms"]))
+        chosen, ratios = select(timings["baseline"], timings["pgo"])
     if source_hash() != frozen:
         raise ValueError("source changed during PGO verification")
     receipt = {"target": target, "rustc": version, "source_sha256": frozen, "data_sha256": sha(packs["baseline"]),
-               "profile_sha256": sha(merged), "training_sha256": sha(TRAIN), "holdout_sha256": sha(HOLDOUT),
+               "profile_sha256": sha(merged) if merged else None, "training_sha256": sha(TRAIN), "holdout_sha256": sha(HOLDOUT),
                "build_flags": build_flags, "selected": chosen, "cost_ratios": ratios,
-               "median_cost_ratio": statistics.median(ratios.values()), "timings_ms": timings,
+               "median_cost_ratio": statistics.median(ratios.values()) if ratios else 1.0, "timings_ms": timings,
                "verified_api_cases": len(expected["api"]), "verified_rows": len(expected["rows"]),
-               "baseline_sha256": sha(artifacts["baseline"]), "pgo_sha256": sha(artifacts["pgo"]),
+               "baseline_sha256": sha(artifacts["baseline"]),
+               "pgo_sha256": sha(artifacts["pgo"]) if "pgo" in artifacts else None,
                "selected_sha256": sha(artifacts[chosen]), "artifacts": str(work)}
+    if getattr(args, "baseline_only", False):
+        receipt["baseline_only"] = True
     if tuning:
         receipt["build_tuning"] = tuning
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -285,6 +305,10 @@ def main() -> None:
     p.add_argument("--target")
     p.add_argument("--windows-v3", action="store_true",
                    help="opt in to x86-64-v3, ThinLTO and one CGU in all stages (compatible Windows x64 CPUs only)")
+    p.add_argument("--cache-dir", type=Path,
+                   help="reusable Cargo target directory for the baseline stage; outputs are snapshotted into work-dir")
+    p.add_argument("--baseline-only", action="store_true",
+                   help="compile and verify the baseline library without PGO instrumentation")
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--work-dir", type=Path, default=ROOT / "target/native-pgo")
     p = sub.add_parser("exercise")
