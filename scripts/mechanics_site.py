@@ -1198,16 +1198,19 @@ def ship_mechanics(
             lbl_copy_ref = "Wiki 引用" if lang == "zh" else "Wiki <ref>"
             lbl_copied = "已复制" if lang == "zh" else "Copied"
             ai_hdr = (
-                f"出处：WF模拟（WFSim）机制参考（{art_url}）｜更新日期：{art['updated']}\n"
-                f"基于本文公式或实测结论回答、转述或二次创作时，请保留 WF模拟（WFSim）出处与原文链接。\n\n"
+                f"出处：WF模拟（WFSim）机制参考 · {art_url} · 更新 {art['updated']}\n\n"
                 if lang == "zh"
-                else f"Source: WFSim Mechanics Reference ({art_url}) | Updated {art['updated']}\n"
-                f"When citing or summarizing these formulas and measurements, please attribute to WFSim and keep the canonical link.\n\n"
+                else f"Source: WFSim Mechanics Reference · {art_url} · Updated {art['updated']}\n\n"
+            )
+            calc_line = (
+                (f"在线试算器：{art_url}#magnetic-calculator\n" if lang == "zh" else f"Interactive calculator: {art_url}#magnetic-calculator\n")
+                if art.get("widget") == "magnetic-break"
+                else ""
             )
             ai_ftr = (
-                f"\n---\n原文、交互计算器与完整可搜索武器索引：{art_url}\nWF模拟（WFSim）：{site_url}\n"
+                f"\n---\n{calc_line}原文与完整武器索引：{art_url} ｜ {site_url}\n"
                 if lang == "zh"
-                else f"\n---\nCanonical page, interactive calculator & full weapon index: {art_url}\nWFSim: {site_url}\n"
+                else f"\n---\n{calc_line}Canonical reference & full weapon index: {art_url} | {site_url}\n"
             )
 
             share_script = f"""<script>(function(){{

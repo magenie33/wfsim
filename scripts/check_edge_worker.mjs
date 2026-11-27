@@ -88,9 +88,11 @@ check("mechanics article serves its markdown twin on Accept: text/markdown",
   mechZhMd && (mechZhMd.headers.get("content-type") || "").startsWith("text/markdown"),
   mechZhMd && mechZhMd.headers.get("content-type"));
 const mechCanon = await edgeServe(get("/mechanics/zh/beam-weapons.md"), env);
-check("direct mechanics .md twin names the HTML page as canonical",
-  mechCanon && (mechCanon.headers.get("link") || "").includes("https://wfsim.app/mechanics/zh/beam-weapons"),
-  mechCanon && mechCanon.headers.get("link"));
+check("direct mechanics .md twin declares UTF-8 and names the HTML page as canonical",
+  mechCanon
+    && (mechCanon.headers.get("content-type") || "").toLowerCase().includes("charset=utf-8")
+    && (mechCanon.headers.get("link") || "").includes("https://wfsim.app/mechanics/zh/beam-weapons"),
+  `${mechCanon && mechCanon.headers.get("content-type")} | ${mechCanon && mechCanon.headers.get("link")}`);
 const wasm = await edgeServe(get("/pkg/live.wasm"), env);
 check("a hashed file is the edge's", wasm && wasm.status === 200, wasm && wasm.status);
 const gone = await edgeServe(get("/pkg/gone.wasm"), env);

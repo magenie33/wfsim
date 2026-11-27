@@ -37,6 +37,7 @@ async function twinFile(request, env, page) {
   const md = await env.ASSETS.fetch(request);
   if (!md.ok || (md.headers.get("content-type") || "").includes("text/html")) return md;
   const headers = new Headers(md.headers);
+  headers.set("content-type", "text/markdown; charset=utf-8");
   headers.set("link", `<https://wfsim.app${page}>; rel="canonical"`);
   return new Response(md.body, { status: md.status, headers });
 }
