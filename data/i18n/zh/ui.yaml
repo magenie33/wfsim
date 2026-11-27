@@ -33,7 +33,7 @@ ui:
   "Serial chain with compounding damage falloff per hop; chains from direct hits take multishot.": "串联跳跃，每跳伤害累乘衰减；由直击目标发起的连锁吃多重射击。"
   "Serial chain where each hop deals a fixed share of main beam damage; chains from direct hits take multishot.": "串联跳跃，每跳按主光束固定比例造成伤害；由直击目标发起的连锁吃多重射击。"
   "Auto-Target Beams": "自动锁定光束"
-  "Total simultaneous beams including the aimed target; extra beams auto-acquire nearby enemies.": "包含主瞄准目标在内的同时光束总数；额外光束会自动锁定附近敌人。"
+  "Total simultaneous beams including the aimed target; extra beams auto-acquire nearby enemies and scale with multishot.": "包含主瞄准目标在内的同时光束总数；额外光束会自动锁定附近敌人并吃多重射击加成。"
   "Board entries retain calculation and verification attribution. An FX result names its delivery author. Account identity settings control public names and labels.": "榜单保留计算、验证的署名，FX 结果署名给交付者；公开名字和标签按账号设置显示。"
   "Find a riven ranking": "查裂罅榜单"
   "zk weapon [ruler] [bonus stats] [malus] [count]": "zk 武器 [标尺] [正面词条] [负面条件] [数量]"

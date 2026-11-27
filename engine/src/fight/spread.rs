@@ -1360,8 +1360,9 @@ pub(super) fn spread_from_tendrils(
             target: b,
             // A WHOLE BEAM, not a share of one.
             share: 1.0,
-            // Its own beam, so the main one's multishot is not its.
-            multishot: false,
+            // Native `CrpSentPistolFireBehavior::Fire` (0x8f56b0 -> 0x611400)
+            // scales active tendrils by weapon multishot (`WEAPON_FIRE_ITERATIONS`).
+            multishot: true,
             // …and it lands on a body, never a head.
             headshot: false,
             part_factor: 1.0,
@@ -1944,6 +1945,8 @@ pub(super) fn spread_beyond_the_target(
     d: &mut crate::rules::rng::Draws,
     t: f64,
     strike_spread: &Option<SpreadStrike>,
+    beam_merge: f64,
+    weakpoint_sc: f64,
     bodies: &mut [Body],
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
@@ -1956,10 +1959,8 @@ pub(super) fn spread_beyond_the_target(
     target_ramp_ctx: Option<TargetRampCtx>,
     target_ramps: &mut Vec<TargetRamp>,
 ) {
-    // …AND THE TENDRILS, ONCE FOR THE SHOT. They are extra BEAMS rather
-    // than a spread of this one, so they neither take its multishot nor
-    // fire per pellet — and they only exist once there is a body that is
-    // not the one the main beam is on (`spread_from_tendrils`).
+    // Tendrils fire once per tick and scale with weapon multishot (`beam_merge`,
+    // native 0x8f56b0 -> 0x611400) while only locking non-aimed bodies.
     if let (Some(s), false) = (&strike_spread, bodies.len() < 2) {
         spread_from_tendrils(
             seat,
@@ -1969,13 +1970,13 @@ pub(super) fn spread_beyond_the_target(
             active,
             geometry,
             tendril_count,
-            s.raw_per_bucket,
+            s.raw_per_bucket * beam_merge,
             s.shares,
             s.crit_multiplier,
             s.crit_tier,
             s.attrition,
-            s.modded_base,
-            s.status_chance,
+            s.modded_base * beam_merge,
+            (s.status_chance - weakpoint_sc) * beam_merge + weakpoint_sc,
             &s.forced,
             &s.status_vector,
             gal,

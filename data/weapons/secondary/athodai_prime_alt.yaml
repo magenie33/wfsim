@@ -1,7 +1,9 @@
 id: athodai_prime_alt
 name: Athodai Prime
-# THE CONE: 100 Heat a round at twelve a second, two metres of punch through,
-# sixteen metres of reach.
+# Continuous beam-burst dump (`WeaponBeamBurstStateBehavior` + `WeaponBeamFireBehavior`
+# + `WeaponBeamImpactBehavior`): empties the magazine at 12 ticks/s, merging multishot
+# per tick with 20% -> 100% per-target ramp over 0.6 s, 2 m terrain punch-through,
+# and free enemy body pierce (`PunchthroughIgnoresAvatars = 1`).
 inherits: athodai_prime
 form: alt_fire
 transform_group: athodai_prime
@@ -15,20 +17,19 @@ co_behavior: additive_with_base_damage
 # wiki `Enemy_Body_Parts`'s list of weapons "always defaulting to the 1x
 # multiplier". The weapon's own page does not say it.
 headshot_multiplier: 1.0
+beam_ramp_floor: 0.2
 
 attack:
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 0.0
     max_deg: 0.0
-  trigger: burst
-  # THE BURST COUNT IS THE MAGAZINE, which is the one thing this entry cannot
-  # say properly: `count` is a constant and the real number is however many
-  # rounds are left. 24 is the UNMODDED magazine — the same call the Tenet
-  # Detron's magazine dump makes, and admitted below.
-  burst:
-    count: 24
-    delay_seconds: 0.0       # module BurstDelay
+  trigger: held
+  beam_ramp:
+    rise_seconds: 0.6
+    cooldown_delay_seconds: 0.8
+    cooldown_divisor: 2.0
+    per_target: true
   shot_type: hit_scan
   fire_rate: 12
   multishot: 1.0
@@ -37,15 +38,15 @@ attack:
   crit_multiplier: 2.5
   status_chance: 0.35
   punch_through_m: 2.0
-  # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki: "Range: 16.0 m" on this attack.
+  infinite_body_punch_through: true
+  # Client `TraceRadius = 2.0` sweeps a 4.0 m diameter capsule (`0xbfe970`).
+  projectile_width_m: 4.0
+  # Client `traceDistance = 16` on `PrimeAthodaiPistolWeapon` `Behaviors[1]`.
   range_m: 16.0
   damage: { heat: 100 }   # total 100
 
 unmodeled:
-  - reason: client_clip_burst
-  - "The burst empties the magazine, and this entry fires a fixed count, the unmodded magazine. Magazine mods lengthen the burst (page), so a build with one reads low."
-  - "The cone is 2 m thick (wiki); the sim fires a ray with no width."
+  - reason: client_beam_target_ramp
 
 source:
   url: https://wiki.warframe.com/w/Athodai_Prime

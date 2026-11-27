@@ -68,7 +68,7 @@ pub(super) fn seeds(
             for impact in candidates {
                 if remaining == 0 { break; }
                 if taken[impact.body] { continue; }
-                add_seed(&mut seeds, path, &mut taken, impact, muzzle, BeamContactKind::Acquired, false);
+                add_seed(&mut seeds, path, &mut taken, impact, muzzle, BeamContactKind::Acquired, true);
                 remaining -= 1;
             }
         }
@@ -95,7 +95,7 @@ pub(super) fn seeds(
             if taken[impact.body] {
                 continue;
             }
-            add_seed(&mut seeds, path, &mut taken, impact, muzzle, BeamContactKind::Tendril, false);
+            add_seed(&mut seeds, path, &mut taken, impact, muzzle, BeamContactKind::Tendril, true);
             remaining -= 1;
         }
     }

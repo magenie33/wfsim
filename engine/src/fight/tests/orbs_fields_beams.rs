@@ -1351,3 +1351,146 @@ fn basmu_beam_declares_its_chain_and_ramp() {
     assert!((ramp.rise_seconds - 0.5).abs() < 1e-9);
     assert!((b.beam_ramp_floor - 0.2).abs() < 1e-9);
 }
+
+#[test]
+fn beam_radius_zeroes_puncture_depth_while_preserving_avatar_pierce() {
+    use crate::build::loadout::resolve;
+    use crate::model::StackPolicy;
+    let rifles = crate::data::mods::class_pool("rifle");
+    let pistols = crate::data::mods::class_pool("pistol");
+    let shred = rifles.iter().find(|m| m.id == "primed_shred").expect("primed_shred");
+    let seeker = pistols.iter().find(|m| m.id == "seeker").expect("seeker");
+
+    for (id, mod_def) in [
+        ("torid_incarnon", shred),
+        ("glaxion_vandal", shred),
+        ("gaze_primary", shred),
+        ("ignis", shred),
+        ("ignis_wraith", shred),
+        ("catabolyst", seeker),
+        ("coda_catabolyst", seeker),
+        ("embolist", seeker),
+    ] {
+        let base = crate::model::WeaponBase::from_data(id, false, &[]);
+        let bare = resolve(&base, &[], StackPolicy::Emergent);
+        let modded = resolve(&base, &[mod_def], StackPolicy::Emergent);
+        assert_eq!(bare.punch_through_m, 0.0, "{id} bare punch_through_m");
+        assert_eq!(modded.punch_through_m, 0.0, "{id} modded punch_through_m");
+    }
+
+    for id in ["ignis", "ignis_wraith", "phantasma", "phantasma_prime", "cortege", "onos_incarnon", "athodai_alt", "athodai_prime_alt"] {
+        let base = crate::model::WeaponBase::from_data(id, false, &[]);
+        let bare = resolve(&base, &[], StackPolicy::Emergent);
+        assert!(bare.infinite_body_punch_through, "{id} should pierce avatars freely");
+    }
+
+    for id in ["furis_incarnon", "atomos"] {
+        let base = crate::model::WeaponBase::from_data(id, false, &[]);
+        let bare = resolve(&base, &[], StackPolicy::Emergent);
+        let modded = resolve(&base, &[seeker], StackPolicy::Emergent);
+        assert!(!bare.infinite_body_punch_through, "{id} has no innate avatar pierce");
+        assert_eq!(bare.punch_through_m, 0.0, "{id} bare punch_through_m");
+        assert!(modded.punch_through_m > 2.0, "{id} accepts punch-through mods: {}", modded.punch_through_m);
+    }
+}
+
+#[test]
+fn ocucor_tendrils_and_boar_extra_beams_scale_with_multishot() {
+    use crate::build::loadout::resolve;
+    use crate::model::StackPolicy;
+    let pistols = crate::data::mods::class_pool("pistol");
+    let shotguns = crate::data::mods::class_pool("shotgun");
+
+    // Ocucor tendril on body 1 scales ~2.2x with Barrel Diffusion (+120% MS).
+    let ocucor = crate::model::WeaponBase::from_data("ocucor", false, &[]);
+    let barrel = pistols.iter().find(|m| m.id == "barrel_diffusion").expect("barrel_diffusion");
+    let run_ocucor = |mods: &[&crate::model::ModDef]| -> f64 {
+        let panel = resolve(&ocucor, mods, StackPolicy::Emergent);
+        let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(2.0), &ArcaneFx::none());
+        p.foe = Foe::training_dummy();
+        p.body_parts = mono_body(1.0);
+        p.crit_multiplier = 1.0;
+        p.base_crit_chance = 0.0;
+        p.status_chance = 0.0;
+        p.base_status_chance = 0.0;
+        p.tendrils_initial = 1;
+        p.tendrils_held = true;
+        p.target_at = crate::rules::space::Vec2::new(0.0, 5.0);
+        p.others = vec![crate::formation::FoeSpec {
+            id: "side".into(),
+            params: Foe::training_dummy(),
+            body_parts: mono_body(1.0),
+            at: crate::rules::space::Vec2::new(1.0, 5.0),
+        }];
+        let rec = record(&p, 7, 0.0, 3.0, 2000, 0);
+        rec.events().iter().filter_map(|e| match (&e.kind, e.subject) {
+            (crate::record::Kind::Damage(d), Some(1)) => Some(d.raw),
+            _ => None,
+        }).sum()
+    };
+    let bare_tendril = run_ocucor(&[]);
+    let ms_tendril = run_ocucor(&[barrel]);
+    assert!(bare_tendril > 0.0, "tendril dealt damage");
+    let ratio = ms_tendril / bare_tendril;
+    assert!((ratio - 2.2).abs() < 0.25, "tendril multishot ratio expected ~2.2, got {ratio} ({bare_tendril} -> {ms_tendril})");
+
+    // Boar Prime Incarnon extra beams + chains on bodies 1..2 scale ~2.2x with Hell's Chamber (+120% MS).
+    let boar = crate::model::WeaponBase::from_data("boar_prime_incarnon", false, &[]);
+    let hells = shotguns.iter().find(|m| m.id == "hells_chamber").expect("hells_chamber");
+    let run_boar = |mods: &[&crate::model::ModDef]| -> f64 {
+        let panel = resolve(&boar, mods, StackPolicy::Emergent);
+        let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(2.0), &ArcaneFx::none());
+        p.foe = Foe::training_dummy();
+        p.body_parts = mono_body(1.0);
+        p.crit_multiplier = 1.0;
+        p.base_crit_chance = 0.0;
+        p.status_chance = 0.0;
+        p.base_status_chance = 0.0;
+        p.target_at = crate::rules::space::Vec2::new(0.0, 10.0);
+        p.others = vec![
+            crate::formation::FoeSpec {
+                id: "left".into(),
+                params: Foe::training_dummy(),
+                body_parts: mono_body(1.0),
+                at: crate::rules::space::Vec2::new(-0.8, 10.0),
+            },
+            crate::formation::FoeSpec {
+                id: "right".into(),
+                params: Foe::training_dummy(),
+                body_parts: mono_body(1.0),
+                at: crate::rules::space::Vec2::new(0.8, 10.0),
+            },
+        ];
+        let rec = record(&p, 7, 0.0, 3.0, 2000, 0);
+        rec.events().iter().filter_map(|e| match (&e.kind, e.subject) {
+            (crate::record::Kind::Damage(d), Some(sub)) if sub >= 1 => Some(d.raw),
+            _ => None,
+        }).sum()
+    };
+    let bare_boar = run_boar(&[]);
+    let ms_boar = run_boar(&[hells]);
+    assert!(bare_boar > 0.0, "extra beams dealt damage");
+    let boar_ratio = ms_boar / bare_boar;
+    assert!((boar_ratio - 2.2).abs() < 0.25, "boar extra-beam multishot ratio expected ~2.2, got {boar_ratio} ({bare_boar} -> {ms_boar})");
+}
+
+#[test]
+fn athodai_alt_fires_as_continuous_beam_with_merged_multishot_and_ramp() {
+    use crate::build::loadout::resolve;
+    use crate::model::StackPolicy;
+    for (id, expected_range, expected_width) in [("athodai_alt", 12.0, 1.6), ("athodai_prime_alt", 16.0, 4.0)] {
+        let base = crate::model::WeaponBase::from_data(id, false, &[]);
+        let panel = resolve(&base, &[], StackPolicy::Emergent);
+        assert!(base.continuous, "{id} continuous");
+        assert!((base.beam_ramp_floor - 0.2).abs() < 1e-9, "{id} floor");
+        assert!(panel.infinite_body_punch_through, "{id} avatar pierce");
+        assert!((panel.punch_through_m - 2.0).abs() < 1e-9, "{id} terrain PT");
+        assert!((panel.projectile_width_m - expected_width).abs() < 1e-9, "{id} sweep width");
+        assert!((panel.range_m - expected_range).abs() < 1e-9, "{id} range");
+        let p = FightParams::from_panel(&panel, &crate::arena::Arena::training(2.0), &ArcaneFx::none());
+        assert!(p.continuous, "{id} continuous");
+        let ramp = p.beam_ramp.expect("athodai beam_ramp");
+        assert!((ramp.rise_seconds - 0.6).abs() < 1e-9);
+        assert!(ramp.per_target);
+    }
+}

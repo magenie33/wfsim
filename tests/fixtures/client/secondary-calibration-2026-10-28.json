@@ -4800,16 +4800,22 @@
         "attack.status_chance": 0.24,
         "attack.multishot": 1.0,
         "attack.fire_rate": 12,
-        "attack.burst": {
-          "count": 24,
-          "delay_seconds": 0.0
+        "attack.trigger": "held",
+        "attack.beam_ramp": {
+          "rise_seconds": 0.6,
+          "cooldown_delay_seconds": 0.8,
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
+        "beam_ramp_floor": 0.2,
         "reload_seconds": 2,
         "attack.range_m": 12,
-        "attack.punch_through_m": 2.0
+        "attack.punch_through_m": 2.0,
+        "attack.infinite_body_punch_through": true,
+        "attack.projectile_width_m": 1.6
       },
       "limits": [
-        "client_clip_burst"
+        "client_beam_target_ramp"
       ],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=48",
@@ -5044,16 +5050,22 @@
         "attack.status_chance": 0.35,
         "attack.multishot": 1.0,
         "attack.fire_rate": 12,
-        "attack.burst": {
-          "count": 24,
-          "delay_seconds": 0.0
+        "attack.trigger": "held",
+        "attack.beam_ramp": {
+          "rise_seconds": 0.6,
+          "cooldown_delay_seconds": 0.8,
+          "cooldown_divisor": 2.0,
+          "per_target": true
         },
+        "beam_ramp_floor": 0.2,
         "reload_seconds": 2,
         "attack.range_m": 16.0,
-        "attack.punch_through_m": 2.0
+        "attack.punch_through_m": 2.0,
+        "attack.infinite_body_punch_through": true,
+        "attack.projectile_width_m": 4.0
       },
       "limits": [
-        "client_clip_burst"
+        "client_beam_target_ramp"
       ],
       "economy": {
         "AmmoCapacity": "AmmoCapacity=72",
@@ -7767,7 +7779,8 @@
         },
         "attack.beam.range_m": 19.0,
         "attack.beam.damage_radius_m": 0.7,
-        "attack.punch_through_m": 0.9,
+        "attack.punch_through_m": 0.0,
+        "attack.punch_through_mods": false,
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
@@ -8650,7 +8663,8 @@
         },
         "attack.beam.range_m": 19.0,
         "attack.beam.damage_radius_m": 0.7,
-        "attack.punch_through_m": 0.9,
+        "attack.punch_through_m": 0.0,
+        "attack.punch_through_mods": false,
         "attack.beam.ramp": {
           "rise_seconds": 0.6,
           "cooldown_delay_seconds": 0.8,
@@ -19700,7 +19714,8 @@
         "attack.multishot": 1.0,
         "attack.fire_rate": 2,
         "attack.range_m": 8,
-        "attack.punch_through_m": 5.0
+        "attack.punch_through_m": 5.0,
+        "attack.infinite_body_punch_through": true
       },
       "limits": [
         "client_secondary_other_behavior"

@@ -1623,37 +1623,24 @@ pub fn resolve_for(
         (base.range_m * (1.0 + pct) + flat + melee_range).max(0.0)
     };
 
-    // PUNCH THROUGH: the weapon's own plus every grant, in metres of material.
-    //
-    // AN AoE ATTACK GETS NEITHER, and the punch-through page states both
-    // halves: *"weapon projectiles with an area of effect (AoE) component will
-    // not Punch Through enemies or level geometry at all"*, and *"Projectile
-    // AoE weapons cannot have their Punch Through stat modified"*.
-    //
-    // The page's *"very few exceptions"* announce themselves in the DATA: an
-    // exception is an entry whose infobox carries a punch-through figure, and
-    // the roster has one (the Vulcax's 2 m). "AN AREA OF EFFECT COMPONENT" IS
-    // BOTH SHAPES this engine models: the Torid is a LINGERING cloud with no
-    // `radial:`, so a rule naming only radials would let it take Primed Shred.
-    // THE ENTRY DECIDES and the class rule is only the fallback: the Torid's
-    // Incarnon form is a BEAM with a damage radius — neither `radial:` nor
-    // `lingering:` — and its page says "Punch Through mods have no effect on
-    // the behavior of the beam".
-    // A TERMINAL BLAST IS NOT AN AREA-OF-EFFECT PROJECTILE for this rule: the
-    // page's sentence is about a round that goes off on contact, and one that
-    // bores through and detonates where the FLIGHT ends is the opposite case.
-    // See `data::weapons::BlastKind` and MEASUREMENTS M50.
+    // Punch-through depth in metres (`docs/MECHANICS.md` §Punch Through):
+    // - Contact AoE (`BlastKind` excluding `Terminal`/`InFlight`) and `lingering`
+    //   clouds refuse punch-through mods unless `punch_through_mods` overrides.
+    // - Continuous beams with `damage_radius_m > 0` (`WeaponBeamFireBehavior::GetPunctureDepth`,
+    //   0x14df6f0) return 0 before reading `tracePunctureDepth` or mods; avatar
+    //   pierce (`PunchthroughIgnoresAvatars`, +0x76d at 0x1753abd) stays separate.
+    let beam_radius_locks_pt = base.beam.is_some_and(|b| b.damage_radius_m > 0.0);
     let contact_blast = base
         .radial
         .as_ref()
         .is_some_and(|r| !matches!(r.blast_kind, crate::model::BlastKind::Terminal | crate::model::BlastKind::InFlight));
     let takes_mods = base
         .punch_through_mods
-        .unwrap_or(!contact_blast && base.lingering.is_none());
+        .unwrap_or(!contact_blast && !beam_radius_locks_pt && base.lingering.is_none());
     // A CHANCE TO EXPLODE ON A BOUNCE TAKES IT ALL AWAY — the Volatile cards'
     // own *"(Disables Punch Through)"*: a glaive that passed through bodies
     // would never bounce off one.
-    let punch_through_m = if thrown_bounce.is_some_and(|b| b.explosion_chance > 0.0) {
+    let punch_through_m = if thrown_bounce.is_some_and(|b| b.explosion_chance > 0.0) || beam_radius_locks_pt {
         0.0
     } else if !takes_mods {
         base.punch_through_m

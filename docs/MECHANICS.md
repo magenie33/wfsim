@@ -3985,27 +3985,24 @@ is an entry whose own infobox carries a punch-through figure, and the roster has
 exactly one attack with both (the Vulcax's 2 m). It keeps its innate depth and
 takes nothing from mods, which never invents a number the wiki did not print.
 
-### …but the SHAPE is only the fallback. The entry decides
+### …and native `Radius > 0` locks beam punch through
 
-`punch_through_mods:` on an attack overrules it, and absent means ORDINARY —
-which for punch through is *yes, mods apply*. The Torid's Incarnon form is why
-the field exists rather than the shape alone deciding:
+`punch_through_mods:` on an attack overrules the projectile fallback, and absent
+means ORDINARY — *yes, mods apply* — unless the attack is a continuous beam
+carrying a positive endpoint `damage_radius_m`. In `WeaponBeamFireBehavior`
+(`vtable[+0x2a0]` = `0x14df6f0`), `GetPunctureDepth()` checks `GetRadius() > 0`
+and returns `0.0` before reading `tracePunctureDepth` or evaluating
+`WEAPON_PUNCTURE_DEPTH` mods. That single gate suppresses both authored depth
+and punch-through mods on every `Radius > 0` beam (`torid_incarnon`,
+`catabolyst`, `coda_catabolyst`, `glaxion_vandal`, `embolist`, `gaze_primary`,
+`ignis`, `ignis_wraith`, `cortege`).
 
-> "Punch Through mods have no effect on the behavior of the beam."
-
-It is a BEAM with a 2.3 m damage radius, so it carries neither `radial:` nor
-`lingering:` and the class rule above — which is about *projectiles* — does not
-reach it. Shred would have gone on.
-
-**The family does not decide it either**, which is the sharp part. The same wiki
-sentence that classifies this weapon for Primary Compression names the group:
-*"Does not work on Continuous Weapons or beam attacks with an AoE component. For
-example, Ignis or Torid Incarnon Genesis"* — and the **Ignis is on the
-punch-through page's EXCEPTION list**, with infinite body punch-through. Two
-weapons the wiki puts in one group for one mechanic sit on opposite sides of
-another. So the answer is transcribed per ENTRY, which is docs/CATALOGS.md's
-rule generalised once more (the Torid Incarnon was the
-question that found it).
+Enemy body pierce on wide flames (`ignis`, `ignis_wraith`, `cortege`,
+`phantasma`, `onos_incarnon`, `athodai_alt`) comes from a separate boolean flag,
+`PunchthroughIgnoresAvatars` (`+0x76d` at `0x1753abd`, modelled as
+`infinite_body_punch_through: true`), which lets the trace pass through enemy
+avatars at zero depth cost while still stopping on world geometry when
+`GetPunctureDepth()` is `0`.
 
 ### …and "an AoE attack" is TWO KINDS of attack
 

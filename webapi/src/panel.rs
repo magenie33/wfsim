@@ -1613,7 +1613,7 @@ fn form_section(
                 "label": "Auto-Target Beams",
                 "base": "—",
                 "final": format!("{} ({} m, {}°)", bp.beams_count, display_number(acquire_range), display_number(bp.beams_acquire_deg)),
-                "note": "Total simultaneous beams including the aimed target; extra beams auto-acquire nearby enemies.",
+                "note": "Total simultaneous beams including the aimed target; extra beams auto-acquire nearby enemies and scale with multishot.",
                 "sources": [],
             }));
         }

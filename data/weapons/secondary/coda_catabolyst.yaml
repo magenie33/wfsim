@@ -64,11 +64,11 @@ attack:
   crit_chance: 0.11
   crit_multiplier: 2.9
   status_chance: 0.50
-  # INNATE 0.9 m, from the attack block's own Punch Through row; the
-  # punch-through page's exception list does not name this weapon. Just under
-  # two body-thicknesses (`space::BODY_MATERIAL_M` is 0.5), so it reaches the
-  # second enemy in a line and stops there.
-  punch_through_m: 0.9
+  # Package declares `tracePunctureDepth = 0.9` alongside `Radius = 0.7`, and
+  # native `WeaponBeamFireBehavior::GetPunctureDepth` (0x14df6f0) returns 0 whenever
+  # `Radius > 0`, suppressing both innate beam punch-through and punch-through mods.
+  punch_through_m: 0.0
+  punch_through_mods: false
   # "Has linear damage falloff from 100% to 1.88% from 9m to 19m target
   # distance" — the steepest in the roster by a wide margin, and it ends exactly
   # where the beam does. The module's reduction is 0.9811, which is the exact

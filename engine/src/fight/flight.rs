@@ -511,6 +511,8 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             d,
             t,
             &strike_spread,
+            beam_merge,
+            l.weakpoint_sc,
             g.bodies,
             &mut me.gal,
             &mut me.arc,

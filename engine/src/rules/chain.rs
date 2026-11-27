@@ -312,8 +312,11 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
     }
     // THE BEAMS THAT AIMED THEMSELVES, and the aimed body is one of the count —
     // so a weapon firing three takes two more than it was pointed at, and one
-    // that struck nobody takes three. Each is a seed like any other: its own
-    // chain, its own path, `seen` of its own.
+    // that struck nobody takes three. Native `LotusBeamFireBehavior::Fire`
+    // (0x611400) evaluates `WEAPON_FIRE_ITERATIONS` on each locked target, so
+    // acquired seeds and their chain hops scale with multishot while still
+    // landing on bodies rather than weak points.
+    let mut acquired_seeds = Vec::new();
     if layout.beams > 1 {
         let mut extra = (layout.beams as usize).saturating_sub(valid_struck.len());
         for &i in &layout.acquired {
@@ -323,6 +326,7 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
             let i = i as usize;
             if i < n && !seeds.contains(&i) {
                 seeds.push(i);
+                acquired_seeds.push(i);
                 extra -= 1;
             }
         }
@@ -347,8 +351,9 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
     }
     for &s in &seeds {
         let direct = valid_struck.contains(&s);
+        let carries_ms = direct || acquired_seeds.contains(&s);
         out.push(Instance {
-            target: s, share: 1.0, multishot: direct, headshot: direct,
+            target: s, share: 1.0, multishot: carries_ms, headshot: direct,
             part_factor: 1.0,
             status_part_factor: 1.0,
             status_landing: 1.0,
@@ -386,7 +391,7 @@ pub fn resolve_in(layout: &Layout, n: usize, struck: &[usize], spec: Spec) -> Ve
             taken[next] = true;
             share = if spec.compounds { share * spec.falloff } else { spec.falloff };
             out.push(Instance {
-                target: next, share, multishot: direct, headshot: false,
+                target: next, share, multishot: carries_ms, headshot: false,
                 part_factor: 1.0,
                 status_part_factor: 1.0,
                 status_landing: 1.0,
@@ -657,8 +662,8 @@ mod tests {
     }
 
     /// ONLY THE BODY THE PLAYER POINTED AT MAY HEADSHOT. The beams the weapon
-    /// took for itself hit bodies, and they do not carry merged multishot
-    /// either — they are separate beams, not more instances of one.
+    /// took for itself hit bodies, while still carrying merged multishot
+    /// (`LotusBeamFireBehavior::Fire`, 0x611400).
     #[test]
     fn a_beam_that_aimed_itself_never_headshots() {
         let (player, aim_at, bodies) = firing_line();
@@ -667,10 +672,8 @@ mod tests {
         // ONE HEADSHOT, and it is the body the player pointed at.
         let heads: Vec<usize> = v.iter().filter(|i| i.headshot).map(|i| i.target).collect();
         assert_eq!(heads, vec![0], "{v:?}");
-        // MERGED MULTISHOT REACHES ONE BEAM AND ITS OWN CHAIN — the aimed seed
-        // plus its two hops, and neither of the beams that aimed themselves.
-        assert_eq!(v.iter().filter(|i| i.multishot).count(), 3, "{v:?}");
-        // …and the two beams that aimed themselves are the other six instances.
+        // MERGED MULTISHOT REACHES ALL THREE LOCKED BEAMS AND THEIR CHAINS.
+        assert_eq!(v.iter().filter(|i| i.multishot).count(), 9, "{v:?}");
         assert_eq!(v.len(), 9, "three seeds, two hops each: {v:?}");
     }
 
