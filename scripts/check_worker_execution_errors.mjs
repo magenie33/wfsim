@@ -68,6 +68,7 @@ const page = `
   ${watch}
   ${lanes}
   ${read("app/08-checkpoint-api.js")}
+  window.__wfsimReady = true;
 `;
 
 async function quickTrap() {
@@ -169,7 +170,7 @@ server.listen(0, "127.0.0.1");
 await once(server, "listening");
 let app;
 try {
-  app = await openApp({ base: `http://127.0.0.1:${server.address().port}`, boot: 100 });
+  app = await openApp({ base: `http://127.0.0.1:${server.address().port}` });
   const trap = await app.evaluate(`(${quickTrap})()`);
   console.log("Quick WASM trap:", JSON.stringify(trap));
   assert.equal(trap.result?.ok, false);

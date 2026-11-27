@@ -527,9 +527,9 @@ jobs:
           set -euo pipefail
           t="$ARCH-apple-darwin"
           [ "$(uname -m | sed 's/arm64/aarch64/')" = "$ARCH" ] || { echo "::error::$ARCH slice on a $(uname -m) runner"; exit 1; }
-          extra=()
-          if [ "$ARCH" = "x86_64" ]; then extra+=(--baseline-only); fi
-          python3 scripts/native_pgo.py build --target "$t" --cache-dir "$PWD/target" "${extra[@]}" \
+          baseline_flag=""
+          if [ "$ARCH" = "x86_64" ]; then baseline_flag="--baseline-only"; fi
+          python3 scripts/native_pgo.py build --target "$t" --cache-dir "$PWD/target" ${baseline_flag:+"$baseline_flag"} \
             --output "out/macos/$ARCH/libwfsim_native.dylib" --work-dir "$RUNNER_TEMP/native-pgo"
           CARGO_ENCODED_RUSTFLAGS="-Cstrip=none" cargo build --release --locked -p wfsim-cli --bin wfsim-gas --target "$t"
       - if: steps.due.outputs.go == 'true'
