@@ -247,6 +247,7 @@ function renderAccountEntry() {
           <a href="${userProfilePath()}?kind=board">${aT("Verified builds")}</a>
           <a href="${userProfilePath()}?kind=optimization">${aT("Optimizations · last 14 days")}</a>
           <a href="${userProfilePath()}?section=recommendations">${aT("My recommendations")}</a>
+          <a href="/account/recommendations">${aT("Mine")}</a>
           <a href="/account/sync">${aT("Cloud sync")}</a>
           <a href="/account">${aT("Account settings")}</a>
           ${extMenuItems(account).map((p) => `<a href="${escHtml(p.path)}?from=menu">${aT(p.label)}</a>`).join("")}

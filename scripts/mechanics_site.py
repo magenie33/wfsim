@@ -673,10 +673,13 @@ MECH_CSS = """
 .mech-chip:hover{border-color:var(--accent);color:var(--accent)}
 .mech-subcat{margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
 .mech-subcat>summary{cursor:pointer;font-size:12.5px;color:var(--text-2);font-weight:600}
-.mech-topnav{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
-.mech-topnav a{padding:4px 9px;border-radius:6px;font-size:13px;color:var(--text-2);text-decoration:none}
-.mech-topnav a:hover,.mech-topnav a.cur{background:var(--panel2);color:var(--text)}
-.mech-topnav a.cur{font-weight:600}
+.mech-toc-fold>summary{cursor:pointer;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);list-style:none;display:flex;align-items:center;justify-content:space-between}
+.mech-toc-fold>summary::-webkit-details-marker{display:none}
+.mech-toc-fold>summary::after{content:"▸";font-size:12px;transition:transform .12s}
+.mech-toc-fold[open]>summary::after{transform:rotate(90deg)}
+.mech-toc-fold[open]>summary{margin-bottom:8px}
+.mech-lang-btn{font-size:12px;text-decoration:none;white-space:nowrap}
+@media(max-width:900px){.mech-page .topbar-inner .menu-toggle{margin-left:auto}}
 """
 
 
@@ -696,21 +699,57 @@ def page_shell(
     body_html: str,
 ) -> str:
     e = html_mod.escape
-    html_lang = "zh-Hans" if lang == "zh" else "en"
-    other_href = "/mechanics" + en_url.split("/mechanics", 1)[1] if lang == "zh" else "/mechanics" + zh_url.split("/mechanics", 1)[1]
-    other_lbl = "English" if lang == "zh" else "中文"
-    nav_weapons = "武器" if lang == "zh" else "Weapons"
-    nav_bench = "基准榜" if lang == "zh" else "Benchmark"
-    nav_mech = "机制" if lang == "zh" else "Mechanics"
-    nav_method = "方法" if lang == "zh" else "Method"
-    mech_home = "/mechanics/zh" if lang == "zh" else "/mechanics"
-    method_home = "/method/zh" if lang == "zh" else "/method"
+    zh = lang == "zh"
+    html_lang = "zh-Hans" if zh else "en"
+    other_href = "/mechanics" + en_url.split("/mechanics", 1)[1] if zh else "/mechanics" + zh_url.split("/mechanics", 1)[1]
+    other_lbl = "English" if zh else "中文"
+    other_lang = "en" if zh else "zh-Hans"
+    nav_arsenal = "军械库" if zh else "Arsenal"
+    nav_bench = "基准榜" if zh else "Benchmark"
+    nav_mech = "机制" if zh else "Mechanics"
+    nav_utility = "工具" if zh else "Utility"
+    nav_comm = "社区" if zh else "Community"
+    nav_method = "方法" if zh else "Method"
+    lbl_menu = "菜单" if zh else "Menu"
+    lbl_support = "支持" if zh else "Support"
+    lbl_support_title = "支持 WF模拟" if zh else "Support WFSim"
+    lbl_theme = "切换浅色/深色主题" if zh else "Toggle light / dark"
+    lbl_compute = "为 WF模拟 贡献算力" if zh else "Help compute WFSim"
+    lbl_contrib = "贡献者" if zh else "Contributors"
+    lbl_projects = "社区项目" if zh else "Community Projects"
+    lbl_qq = "QQ 群" if zh else "QQ group"
+    lbl_clan = "氏族" if zh else "Clan"
+    mech_home = "/mechanics/zh" if zh else "/mechanics"
+    method_home = "/method/zh" if zh else "/method"
     ld_html = "".join(
         f'<script type="application/ld+json">{json.dumps(b, ensure_ascii=False)}</script>\n'
         for b in ld_blocks
     )
     og_dims = '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n' if has_og_card else ""
     tw_card = "summary_large_image" if has_og_card else "summary"
+    chrome_js = """<script>(function(){
+  var tb=document.getElementById("topbar"), mt=document.getElementById("menu-toggle");
+  var cm=document.getElementById("community-menu"), ct=document.getElementById("community-toggle");
+  var th=document.getElementById("theme-toggle");
+  function setMenu(on){if(!tb||!mt)return;tb.classList.toggle("menu-open",on);mt.setAttribute("aria-expanded",String(on));}
+  function setComm(on){if(!cm||!ct)return;cm.classList.toggle("open",on);ct.setAttribute("aria-expanded",String(on));}
+  if(mt)mt.addEventListener("click",function(ev){ev.stopPropagation();setComm(false);setMenu(!tb.classList.contains("menu-open"));});
+  if(ct)ct.addEventListener("click",function(ev){ev.stopPropagation();setComm(!cm.classList.contains("open"));});
+  document.addEventListener("click",function(ev){
+    if(tb&&tb.classList.contains("menu-open")&&!tb.contains(ev.target))setMenu(false);
+    if(cm&&cm.classList.contains("open")&&!cm.contains(ev.target))setComm(false);
+  });
+  document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){setMenu(false);setComm(false);}});
+  if(th)th.addEventListener("click",function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    var dark=cur?cur==="dark":!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: light)").matches);
+    var next=dark?"light":"dark";
+    document.documentElement.setAttribute("data-theme",next);
+    try{localStorage.setItem("wfsim-theme",next);}catch(e){}
+  });
+  var toc=document.querySelector(".mech-toc-fold");
+  if(toc&&window.matchMedia&&window.matchMedia("(max-width:880px)").matches)toc.open=false;
+})();</script>"""
     return f"""<!doctype html>
 <html lang="{html_lang}">
 <head>
@@ -735,17 +774,38 @@ def page_shell(
 {ld_html}<style>{MECH_CSS}</style>
 <script>(function(){{try{{var t=localStorage.getItem("wfsim-theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t);}}catch(e){{}}}})();</script>
 </head>
-<body>
-<header class="topbar">
+<body class="mech-page">
+<header class="topbar" id="topbar">
   <div class="topbar-inner">
     <a class="brand" href="/">WF<span>Sim</span></a>
-    <nav class="mech-topnav">
-      <a href="/weapons">{nav_weapons}</a>
-      <a href="/benchmark">{nav_bench}</a>
-      <a href="{mech_home}" class="cur">{nav_mech}</a>
-      <a href="{method_home}">{nav_method}</a>
-      <a href="{e(other_href)}" lang="{"en" if lang == "zh" else "zh-Hans"}">{other_lbl}</a>
-    </nav>
+    <button id="menu-toggle" class="ghost-btn menu-toggle" aria-expanded="false" aria-controls="topmenu" aria-label="{lbl_menu}" title="{lbl_menu}">☰</button>
+    <div id="topmenu" class="topmenu">
+      <nav class="topnav">
+        <a class="tnav" href="/weapons">{nav_arsenal}</a>
+        <a class="tnav" href="/benchmark">{nav_bench}</a>
+        <a class="tnav sel" href="{mech_home}">{nav_mech}</a>
+        <a class="tnav" href="/utility/fissures">{nav_utility}</a>
+        <div class="tbmore tbgroup" id="community-menu">
+          <button id="community-toggle" class="tnav tbmore-btn tbgroup-btn" aria-expanded="false" aria-controls="community-panel" aria-haspopup="true">{nav_comm}</button>
+          <div class="tbmore-panel" id="community-panel">
+            <a class="tbmenu-link" href="/compute">{lbl_compute}</a>
+            <a class="tbmenu-link" href="/contributors">{lbl_contrib}</a>
+            <a class="tbmenu-link" href="/community/projects">{lbl_projects}</a>
+            <span class="tbmenu-sep"></span>
+            <a class="tbmenu-link" href="{method_home}">{nav_method}</a>
+            <a class="tbmenu-link" href="https://discord.gg/H4BMqvYFVg" target="_blank" rel="noopener">Discord</a>
+            <a class="tbmenu-link" href="https://qm.qq.com/q/uiXrMSTs8S" target="_blank" rel="noopener">{lbl_qq}</a>
+            <a class="tbmenu-link" href="/clan">{lbl_clan}<span class="clan-name">WFSim#582</span></a>
+            <a class="tbmenu-link" href="https://github.com/magenie33/wfsim" target="_blank" rel="noopener">GitHub</a>
+          </div>
+        </div>
+      </nav>
+      <div class="tblinks">
+        <a class="sup-link ghost-btn" href="/support" title="{lbl_support_title}" aria-label="{lbl_support}"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 20.35l-1.32-1.2C6.03 14.92 3 12.17 3 8.79 3 6.03 5.16 3.87 7.92 3.87c1.56 0 3.06.72 4.04 1.86l.04.05.04-.05c.98-1.14 2.48-1.86 4.04-1.86C18.84 3.87 21 6.03 21 8.79c0 3.38-3.03 6.13-7.68 10.37l-1.32 1.19z"/></svg><span class="tbl">{lbl_support}</span></a>
+        <a class="ghost-btn mech-lang-btn" href="{e(other_href)}" lang="{other_lang}">{other_lbl}</a>
+        <button type="button" id="theme-toggle" class="ghost-btn" title="{lbl_theme}" aria-label="{lbl_theme}">◐</button>
+      </div>
+    </div>
   </div>
 </header>
 <main class="mech-wrap">
@@ -753,10 +813,11 @@ def page_shell(
 </main>
 <footer class="footer">
   <div class="footer-inner">
-    <span>{"WF模拟 是非官方粉丝项目，与 Digital Extremes 无关。" if lang == "zh" else "WFSim is an unofficial fan project, not affiliated with or endorsed by Digital Extremes."}</span>
-    · <a href="/weapons">{nav_weapons}</a> · <a href="{mech_home}">{nav_mech}</a> · <a href="{method_home}">{nav_method}</a> · <a href="{e(md_path)}">Markdown</a>
+    <span>{"WF模拟 是非官方粉丝项目，与 Digital Extremes 无关。" if zh else "WFSim is an unofficial fan project, not affiliated with or endorsed by Digital Extremes."}</span>
+    · <a href="/weapons">{nav_arsenal}</a> · <a href="{mech_home}">{nav_mech}</a> · <a href="{method_home}">{nav_method}</a> · <a href="{e(md_path)}">Markdown</a>
   </div>
 </footer>
+{chrome_js}
 </body>
 </html>
 """
@@ -1106,7 +1167,7 @@ def ship_mechanics(
   {body_html}
 </article>
 <aside class="mech-aside">
-  <div class="mech-box"><h3>{lbl_toc}</h3><ul class="mech-toc">{toc_html}</ul></div>
+  <div class="mech-box"><details class="mech-toc-fold" open><summary>{lbl_toc}</summary><ul class="mech-toc">{toc_html}</ul></details></div>
   <div class="mech-box"><h3>{lbl_cite}</h3><div class="mech-cite">{cite_ref}</div><div class="mech-btn-row"><button type="button" class="mech-btn" data-copy="{html_mod.escape(art_url, quote=True)}">{lbl_copy_url}</button><button type="button" class="mech-btn" data-copy="{html_mod.escape(cite_raw, quote=True)}">{lbl_copy_ref}</button><button type="button" class="mech-btn" data-copy="{html_mod.escape(md_cite_raw, quote=True)}">{lbl_copy_md}</button></div></div>
   <div class="mech-box"><h3>{lbl_weapons}</h3><div class="mech-wlist">{wlist_html}</div></div>
 </aside>

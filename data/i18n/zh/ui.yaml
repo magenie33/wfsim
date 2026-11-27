@@ -893,6 +893,7 @@ ui:
   "Could not upload; retrying": 提交失败，正在重试
   "The public library is unavailable": 公共配装库暂时不可用
   "No public builds yet": 暂无公共配装
+  "Arsenal": 军械库
   "Benchmark": 基准榜
   "Mechanics": 机制
   "Before the fight": 战前

@@ -82,7 +82,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .topbar{border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:20}
 /* The shell shares ONE content width (the widest page, home's 1060px) so
    header content aligns with the page below it. */
-.topbar-inner{max-width:1060px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:8px 18px}
+.topbar-inner{max-width:1060px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:8px 18px}
 .wsearch{position:relative;flex:1 1 auto;max-width:430px}
 .wsearch input{width:100%;padding:6px 11px;font:inherit;font-size:13px;background:var(--plane);border:1px solid var(--line);border-radius:8px;color:var(--text)}
 .wsearch input:focus{outline:none;border-color:var(--accent)}
@@ -2443,6 +2443,14 @@ a.user-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px;tex
 @keyframes cmbreathe{0%,100%{opacity:.25}50%{opacity:.7}}
 @media (prefers-reduced-motion:reduce){ .compute-mark .cm-arc{transition:none;animation:none} .compute-mark.cm-spin svg{animation:none} }
 
+@media (min-width:901px){
+  .topbar-inner .brand,.topbar-inner .topnav,.topbar-inner .wsearch{margin-right:4px}
+}
+@media (min-width:901px) and (max-width:1080px){
+  .topbar-inner .sup-link{width:28px;padding:0;gap:0}
+  .topbar-inner .sup-link .tbl{display:none}
+  .tnav{padding:4px 7px}
+}
 @media (max-width:900px){
   /* Below here the wrapper becomes a real box, hanging off the bar. The
      anchor is the bar itself so the panel tracks the sticky header. */
