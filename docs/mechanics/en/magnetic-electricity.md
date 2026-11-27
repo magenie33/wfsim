@@ -1,7 +1,7 @@
 # [Warframe] Magnetic & Electricity Status Mechanics & Calculation Guide
 
 > **Author & Attribution**: WFSim | [wfsim.app](https://wfsim.app)  
-> **Scope & Rigor**: This document objectively explains the underlying damage calculation mechanics of Warframe's **Magnetic** and **Electricity** status effects (with a brief side-by-side comparison to **Gas**, which shares the same radial tick architecture). It contains no build or Mod recommendations. Every formula, weapon native weakpoint tier, and numeric example is calibrated against in-game Simulacrum testing, public reference data, and WFSim's mathematical models.
+> **Scope**: Calculation rules for Warframe **Magnetic** and **Electricity** status effects (plus **Gas**, which shares the same radial pool model), native weapon weakpoint tiers, and Simulacrum-calibrated numeric examples.
 
 ---
 
@@ -58,7 +58,7 @@ Stack Seed S(i) = Modded Base Damage × Crit Multiplier × Hit-Part Multiplier �
 #### (2) Exact Consolidated Pool Tick Formula
 On each tick, the engine sums all living seeds in the pool starting from an initial accumulator value of **`1`**:
 ```text
-Pool Accumulator = 1 + Σ S(i)                       ← +1 added ONCE for the entire pool
+Pool Accumulator = 1 + Σ S(i)                       ← +1 added once for the entire pool
 Base Tick Damage = max(1, 0.5 × Pool Accumulator) × (1 + Electricity Mod%) × Faction Multiplier
 Final Tick Damage = Base Tick Damage × Landing Multiplier L × Live Armor / Resistances / Viral
 ```
@@ -68,9 +68,9 @@ Final Tick Damage = Base Tick Damage × Landing Multiplier L × Live Armor / Res
 
 ---
 
-### 3. The Core of Cores: Second Headshot Landing Layer `L` & "Latest Stack Rules the Whole Pool"
+### 3. Second Headshot Landing Layer `L` & Latest-Application Anchor
 
-This is the most decisive — and most commonly misunderstood — mechanic of Electricity (and Gas), precisely calibrated in-game:
+Electricity and Gas ticks carry an additional body-part landing multiplier (verified in-game):
 
 #### (1) Why Electricity Headshots Outscale Toxin/Heat by an Extra Layer
 * Toxin, Heat, Slash, and Blast ticks do **not** land on a specific body part — headshot damage applies only once inside the initial seed `S(i)`.
@@ -79,25 +79,25 @@ This is the most decisive — and most commonly misunderstood — mechanic of El
   ```text
   Head Landing Multiplier L = 1 + Headshot Damage%    (L = 1.0 on body)
   ```
-* **Quick Illustration**: Suppose a weapon has `+80%` headshot damage (e.g. +50% Evolution + 30% Secondary Deadhead):
+* **Numeric Example**: Suppose a weapon has `+80%` headshot damage (e.g. +50% Evolution + 30% Secondary Deadhead):
   * Standard headshot hit multiplier = `3 × (1 + 0.8) =` **5.4×**
   * **Toxin / Heat headshot** vs. body: **5.4×**
-  * **Electricity (and Gas) headshot** vs. body: `5.4 × (1 + 0.8) =` **9.72×** (~**9.75×** including the `+1` initializer) — headshot damage genuinely **double-dips** on Electricity and Gas!
+  * **Electricity (and Gas) headshot** vs. body: `5.4 × (1 + 0.8) =` **9.72×** (~**9.75×** including the `+1` initializer) — headshot damage applies twice on Electricity and Gas.
 
 #### (2) "The Latest Application Anchors the Entire Pool's `L` and Headshot-Kill Credit"
-When a target carries a mix of body-applied and head-applied Electricity stacks, the engine obeys two ironclad rules:
+When a target holds both body-applied and head-applied Electricity stacks, two rules govern the pool:
 1. **Every old seed stays intact**: Earlier headshot (or headshot-crit) seeds are never overwritten or shrunk by later body hits.
-2. **However, the entire pool's landing multiplier `L` — and whether a lethal DoT tick counts as a "headshot kill" — is decided SOLELY by the body part of the MOST RECENTLY applied Electricity stack!**
+2. **However, the entire pool's landing multiplier `L` — and whether a lethal DoT tick counts as a "headshot kill" — is determined solely by the body part of the most recently applied Electricity stack.**
    * Apply 10 head Electricity procs, then accidentally land 1 body Electricity proc → **the entire pool instantly drops to body landing (`L = 1.0`)**, and if the tick kills the target, **it does NOT count as a headshot kill**.
-   * Conversely, apply 10 body Electricity procs, then finish with 1 head Electricity proc → **the entire pool (including all 10 earlier body seeds!) instantly flips to head landing (`L = 1 + Headshot Damage%`)**, and a lethal tick **counts as a headshot kill**!
+   * Conversely, apply 10 body Electricity procs, then finish with 1 head Electricity proc → **the entire pool (including all 10 earlier body seeds) switches to head landing (`L = 1 + Headshot Damage%`)**, and a lethal tick **counts as a headshot kill**.
 
 #### (3) How Does the 3 m Arc Hit Neighbors?
-* When a host's head-seeded Electricity arcs to neighbors within 3 m, **the arc carries the host's full headshot seed** (neighbors take the full `5.4×` head-seeded arc!).
+* When a host's head-seeded Electricity arcs to neighbors within 3 m, **the arc carries the host's full headshot seed** (neighbors receive the `5.4×` head-seeded arc).
 * Whether the arc also triggers the second head landing multiplier `L` on a neighbor depends on geometry. Across 189 in-game trials at varied positions, the arc landed on a neighbor's head **~5.3% of the time (10/189)**, and on the neighbor's body (`L = 1.0`) the remaining ~94.7%.
 
 ---
 
-## 3. Quick Side Note: Gas vs. Electricity
+## 3. Comparison: Gas vs. Electricity
 
 Gas (Heat + Toxin) belongs to the exact same radial-pool + body-part-landing family as Electricity. Remember **4 similarities** and **4 differences**:
 
@@ -123,8 +123,8 @@ flowchart LR
     A["Target Has N Magnetic Stacks (1–10)<br/>+100% to +325% vs. Shields & Overguard"] -->|"Weapon B Breaks Shield or Overguard"| B["Snapshot Stack Count N & Max Pool<br/>Q = trunc(Max Pool × 0.005 × N)"]
     B --> C["Native Weakness Norm. × Status Dmg S × Proxy A<br/>Norm = round(Q ÷ (1 + max(W,0) × V))<br/>Break Seed = Norm × S (1st) × A × Final Buff"]
     C --> D1["Stage 1: One-Shot Pure Electric Break Packet<br/>Break Seed × Faction × Armor / Resistances<br/>(Body hit; still deals damage if Electric-immune)"]
-    C --> D2["Stage 2: Forced 1 Stack Ordinary Electricity<br/>Proc Seed = Break Seed × S (2nd!) × Faction<br/>(S² Status Dmg double-dip; uses Weapon B Elec%/Dur/Faction)"]
-    D2 --> E["Joins Ordinary Electricity Pool as Body Hit<br/>(Drops pool to body; a later head Electric proc pulls it back to head!)"]
+    C --> D2["Stage 2: Forced 1 Stack Ordinary Electricity<br/>Proc Seed = Break Seed × S (2nd) × Faction<br/>(S² Status Dmg double-dip; uses Weapon B Elec%/Dur/Faction)"]
+    D2 --> E["Joins Ordinary Electricity Pool as Body Hit<br/>(Sets pool to body; a later head Electric proc restores head landing)"]
 ```
 
 ### 1. Phase 1: Before the Break (Magnetic Disrupt Stacks)
@@ -146,7 +146,7 @@ The instant a target carrying `N` Magnetic stacks (`1 ≤ N ≤ 10`) has its **S
 1. **Stage 1: One-Shot Pure Electricity Break Damage Packet** (fixed body hit, cannot crit, ignores headshot bonuses, ignores `+Magnetic%`; even if the target is immune to Electricity *procs*, Stage 1 direct damage still lands).
 2. **Stage 2: Forced 1 Stack of Ordinary Electricity Status** (pushed straight into the target's ordinary Electricity merged pool: 6 s duration, 0 s first tick, 3 m arc).
 
-#### Attribution Rule: The Breaking Weapon Supplies EVERYTHING
+#### Attribution Rule: All Modifiers Come from the Breaking Weapon
 Even if Weapon A stacked 10 Magnetic procs beforehand, whichever **Weapon B lands the breaking blow** supplies the entire modifier context for both stages — **native weakpoint bonus `W`, Electricity mod%, Status Damage, Status Duration, and Faction multipliers** all come from Weapon B.
 
 #### Exact 4-Step Calculation
@@ -156,7 +156,7 @@ Even if Weapon A stacked 10 Magnetic procs beforehand, whichever **Weapon B land
   ```text
   Q = trunc( Max Shield or Overguard × 0.005 × Magnetic Stacks N )
   ```
-* **Step 2: Native Weakness Normalization & Target Proxy Multiplier (Why Weapons Differ by 2×!)**  
+* **Step 2: Native Weakness Normalization & Target Proxy Multiplier**  
   The game selects the target's first **strictly greatest positive native weakness proxy**. If that proxy carries a generic damage multiplier `A`, it first divides `Q` by **`1 + max(W, 0) × V`** using the **breaking weapon's innate weakpoint bonus `W`**, rounds half-up, and then multiplies by Status Damage `S` (1st pass), proxy multiplier `A`, and any final buff:
   ```text
   Normalized Source = round( Q ÷ (1 + max(W, 0) × V) )
@@ -168,12 +168,12 @@ Even if Weapon A stacked 10 Magnetic procs beforehand, whichever **Weapon B land
   Stage 1 Direct Packet = Break Base Seed × Faction Multiplier × Live Armor / Resistances
   ```
   * **Cascading Breaks**: If this direct packet breaks the next protective layer underneath (e.g. breaking Overguard triggers a Stage 1 packet that immediately shatters Shields below it), it **cascades into a second Magnetic break proc**.
-* **Step 4: Stage 2 — Forced Ordinary Electricity Proc (Status Damage Double-Dip `S²`!)**  
+* **Step 4: Stage 2 — Forced Ordinary Electricity Proc (Status Damage `S²`)**  
   The break packet forces 1 stack of ordinary Electricity into the shared Electricity pool:
   ```text
   Forced Electricity Seed = Break Base Seed × Status Damage S × Faction Multiplier
   ```
-  * **Status Damage Double-Dip (`S²`)**: `Break Base Seed` already received Status Damage `S` in Step 2, and the forced Electricity child proc multiplies by `S` a **second time** in Step 4 — scaling the resulting Electricity DoT ticks by **`S²`**! At `+90%` Status Damage (`S = 1.9`), the Magnetic break Electricity ticks jump by `1.9² =` **3.61×**!
+  * **Status Damage Double-Dip (`S²`)**: `Break Base Seed` already received Status Damage `S` in Step 2, and the forced Electricity child proc multiplies by `S` a **second time** in Step 4 — scaling the resulting Electricity DoT ticks by **`S²`**. At `+90%` Status Damage (`S = 1.9`), the ticks scale by `1.9² =` **3.61×**.
   * **Everything else follows ordinary Electricity**: Uses Weapon B's **`1 + Electricity%`**, **Status Duration**, **Faction double-dip**, and **3 m area chain**; **ignores `+Magnetic%`**.
 
 ---
@@ -184,7 +184,7 @@ Even if Weapon A stacked 10 Magnetic procs beforehand, whichever **Weapon B land
 * **`W` is an innate hidden property built into each weapon's base profile** — completely independent of equipped headshot mods, Deadhead arcanes, or Incarnon headshot evolutions (stacking headshot damage never changes `W`).
 * **Incarnon forms and alt-fires inherit their base weapon's `W`**: e.g. Torid & Torid Incarnon are both `W = 0.2`; Laetum & Laetum Incarnon are both `W = 0.5`; Miter & Miter Incarnon are both `W = 1.0`.
 * **Why does a LOWER `W` deal MORE Magnetic break damage?**  
-  In Step 2, `W` sits in the **denominator** `1 + max(W, 0) × V`, followed by multiplying by the target's generic proxy multiplier `A`. Against standard humanoids (`V = 1.0, A = 2.0`), the net multiplier is **`2 ÷ (1 + W)`**. Thus a `W = 0` weapon gets the full `2.00 × Q`, whereas a `W = 1.0` weapon gets divided by `2` and multiplied back by `2`, ending at `1.00 × Q` — literally half!
+  In Step 2, `W` sits in the **denominator** `1 + max(W, 0) × V`, followed by multiplying by the target's generic proxy multiplier `A`. Against standard humanoids (`V = 1.0, A = 2.0`), the net multiplier is **`2 ÷ (1 + W)`**. Thus a `W = 0` weapon gets the full `2.00 × Q`, whereas a `W = 1.0` weapon gets divided by `2` and multiplied back by `2`, ending at `1.00 × Q` — half of a `W = 0` weapon.
 
 #### (2) Complete Table of All 5 `W` Tiers in Warframe (WFSim Calibrated Reference)
 
@@ -199,17 +199,17 @@ Even if Weapon A stacked 10 Magnetic procs beforehand, whichever **Weapon B land
 #### (3) How Target Weakness Proxies `(V, A)` Change the Outcome
 Besides the weapon's `W`, the enemy's highest positive weakness proxy `(V, A)` shapes Step 2:
 * **Standard Humanoids** (Corrupted Heavy Gunner, Corrupted Crewman, Thrax Centurion, Legacyte, etc.): Head proxy **`V = 1.0, A = 2.0`** → net `2 ÷ (1 + W)` (full 2× spread between `W = 0` and `W = 1.0`).
-* **Demolisher Devourer**: Winning proxy **`V = 0.05, A = 2.0`** → net `2 ÷ (1 + 0.05W)` (denominator stays `1.00–1.05`, so every `W` tier gets nearly `2.00 × Q`!).
+* **Demolisher Devourer**: Winning proxy **`V = 0.05, A = 2.0`** → net `2 ÷ (1 + 0.05W)` (denominator stays `1.00–1.05`, so all 5 `W` tiers stay close to `2.00 × Q`).
 * **Techrot Babau** (`V = 1.0` with no generic `A`) and **Acolytes** (no positive weakness proxy, `V = 0`): Normalization and `A` are skipped → all weapons receive a flat **`1.00 × Q`**, regardless of `W`.
 
 ---
 
 ### 4. Two-Way Interaction Between Magnetic Break Procs & Headshot Electricity Pools
 
-Because the forced Electricity proc from a Magnetic break **always enters the shared Electricity pool as a body hit**, two remarkable interactions happen:
+Because the forced Electricity proc from a Magnetic break **always enters the shared Electricity pool as a body hit**, two interactions follow:
 
 1. **Breaking drops an existing head-anchored pool back to body**: If you built a head-anchored Electricity pool (`L = 1.8`) before the break, the forced body proc becomes the latest stack at the break instant → **temporarily pulling the whole pool down to `L = 1.0`** (old head seeds remain intact).
-2. **Landing one headshot Electricity proc AFTER the break pulls the massive Magnetic break seed onto head landing!** If you proc ordinary Electricity on the target's head before the next tick, the pool flips back to `L = 1.8` — **multiplying even the huge Shield/Overguard-derived Magnetic break seed by `1 + Headshot Damage%`!**
+2. **A post-break headshot Electricity proc moves the Magnetic break seed onto head landing:** If you proc ordinary Electricity on the target's head before the next tick, the pool flips back to `L = 1.8` — **multiplying even the huge Shield/Overguard-derived Magnetic break seed by `1 + Headshot Damage%`.**
 
 ---
 
@@ -255,7 +255,7 @@ Because the forced Electricity proc from a Magnetic break **always enters the sh
      * **③ Add `+90%` Status Damage (`S = 1.9`)**:
        * Break Base Seed (1st `S`) = `3,454 × 1.9 × 2 =` **13,125.2** → **Stage 1 Direct Packet = 13,125**
        * Forced Electricity Seed (2nd `S` → **`S²`**) = `13,125.2 × 1.9 =` **24,937.88**
-       * Stage 2 Electricity Tick = `0.5 × (1 + 24,937.88) × 2.65 = 33,044.02 →` **33,044** (exact `1.9² = 3.61×` jump over 9,154!)
+       * Stage 2 Electricity Tick = `0.5 × (1 + 24,937.88) × 2.65 = 33,044.02 →` **33,044** (`1.9² = 3.61×` over 9,154)
      * **④ Add `+55%` Faction Multiplier (`1.55`)**:
        * Stage 1 Direct Packet (1× faction) = `13,125.2 × 1.55 =` **20,344**
        * Forced Electricity Seed (1st faction) = `24,937.88 × 1.55 = 38,653.71`
@@ -263,7 +263,7 @@ Because the forced Electricity proc from a Magnetic break **always enters the sh
      * **⑤ If target still has `900` Armor** (`DR = 0.9 × √(900/2700) = 51.96%`, multiplier `0.4804`):
        * Stage 1 Direct Packet = `20,344 × 0.4804 =` **9,773**; Stage 2 Body Tick = `79,387 × 0.4804 =` **38,136**.
      * **⑥ Armor-stripped, then land 1 headshot Electricity proc after break (pulls pool to `L = 1.8`)**:
-       * The Magnetic break seed's own tick contribution immediately surges to `79,387.12 × 1.8 =` **142,897** (plus whatever seed the follow-up headshot itself adds)!
+       * The Magnetic break seed's own tick contribution increases to `79,387.12 × 1.8 =` **142,897** (before adding the follow-up headshot's own Electricity seed).
 
 ---
 
@@ -305,7 +305,7 @@ The same 4-step formula reproduces every cross-level and single-stack control ve
   3. **Stage 1 Direct Packet (post-armor)** = `19,000 × 1.55 × 0.480385 =` **14,147**
   4. **Stage 2 Electricity Seed** = `19,000 × 1.9 × 1.55 = 55,955`
   5. **Stage 2 Body Tick (post-armor)** = `0.5 × (1 + 55,955) × 2.65 × 1.55 × 0.480385 =` **55,206** (6 ticks = **331,236**)
-  6. **After Follow-Up Headshot Electricity Proc (`L = 1.8`, post-armor)** = `55,206 × 1.8 =` **99,370** (~**596k** over 6 ticks from the break seed alone!)
+  6. **After Follow-Up Headshot Electricity Proc (`L = 1.8`, post-armor)** = `55,206 × 1.8 =` **99,370** (~**596k** over 6 ticks from the break seed alone)
 
 Full comparison across **3 target proxy classes** and **3 weapon `W` tiers** (all post-armor):
 
@@ -319,7 +319,7 @@ Full comparison across **3 target proxy classes** and **3 weapon `W` tiers** (al
 | Same | `W = 1.0` | 4,762 | **13,474** | **52,578** | **94,640** |
 | **Techrot Babau / Acolytes**<br>No generic proxy mult (skips norm. & `A`) | Any `W` (0 / 0.5 / 1.0) | 5,000 *(×1)* | **7,074** | **27,603** | **49,686** |
 
-> Three instant takeaways: ① On standard humanoids, `W = 0` weapons deal **2.0×** the Magnetic break damage of `W = 1.0` weapons; ② On `V = 0.05` targets like Demolisher Devourer, all 5 `W` tiers stay within **5%** of one another; ③ On Techrot Babau or Acolytes (lacking generic `A = 2`), every weapon resolves at a uniform `1.00 × Q`.
+> Summary: ① On standard humanoids, `W = 0` weapons deal **2.0×** the Magnetic break damage of `W = 1.0` weapons; ② On `V = 0.05` targets like Demolisher Devourer, all 5 `W` tiers stay within **5%** of one another; ③ On Techrot Babau or Acolytes (lacking generic `A = 2`), every weapon resolves at a uniform `1.00 × Q`.
 
 ---
 
@@ -342,7 +342,7 @@ Full comparison across **3 target proxy classes** and **3 weapon `W` tiers** (al
 
 ---
 
-## 7. Common Misconceptions Clarified
+## 7. Common Misconceptions
 
 1. **Myth: "Magnetic break always deals 3%/stack of max Shield/Overguard, identically across all weapons."**  
    → **Reality**: The effective base coefficient is `0.005` (0.5%/stack), normalized by `÷ (1 + max(W, 0) × V)` and scaled by proxy multiplier `A`. Consequently, **lower native `W` yields higher Magnetic break damage** — on humanoids, `W = 0` weapons (all melee, Kuva Nukor, etc.) deal **2×** the break damage of `W = 1.0` weapons (Lanka, Rubico Prime, etc.).

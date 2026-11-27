@@ -17,6 +17,7 @@ index:
 articles:
   - slug: beam-weapons
     updated: "2026-11-27"
+    catalog: beam-roster
     category:
       en: Weapon Archetypes
       zh: 武器机制
@@ -75,6 +76,7 @@ articles:
 
   - slug: magnetic-electricity
     updated: "2026-11-27"
+    catalog: weakness-tiers
     category:
       en: Status Effects
       zh: 异常状态

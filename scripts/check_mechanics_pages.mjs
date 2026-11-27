@@ -114,6 +114,20 @@ for (const [label, doc, expected] of [
 
 check("magnetic-electricity embeds interactive calculator",
   magEn.includes('id="magnetic-calculator"') && magZh.includes('id="magnetic-calculator"'));
+check("beam-weapons embeds collapsible full beam index",
+  beamEn.includes('id="full-beam-index"') && beamZh.includes('id="full-beam-index"'));
+check("magnetic-electricity embeds collapsible full W-tier index (all 5 tiers + melee)",
+  [magEn, magZh].every((doc) =>
+    doc.includes('id="full-weakness-index"') &&
+    doc.includes("W = 0.0") && doc.includes("W = 0.2") && doc.includes("W = 0.4") &&
+    doc.includes("W = 0.5") && doc.includes("W = 1.0") && doc.includes("data-melee-sub")));
+
+// Verify all catalog weapon links inside <details> point to valid roster weapons.
+for (const [label, doc] of [["EN beam", beamEn], ["ZH beam", beamZh], ["EN mag", magEn], ["ZH mag", magZh]]) {
+  const chips = [...doc.matchAll(/class="mech-chip"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+  const bad = chips.filter((h) => !validPaths.has(h));
+  check(`${label}: catalog weapon links valid (${chips.length} chips)`, bad.length === 0, bad.slice(0, 5));
+}
 
 console.log(failed ? `\n${failed} failed` : "\nmechanics static pages, markdown twins, SEO metadata, and weapon links PASS");
 process.exit(failed ? 1 : 0);

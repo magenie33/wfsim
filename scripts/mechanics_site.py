@@ -655,6 +655,21 @@ MECH_CSS = """
 .mc-out span{display:block;font-size:11.5px;color:var(--muted)}
 .mc-out strong{display:block;font-size:18px;font-variant-numeric:tabular-nums;color:var(--accent)}
 .mc-out small{display:block;font-size:11.5px;color:var(--text-2)}
+.mech-catalog{margin:22px 0 6px;border:1px solid var(--line);border-radius:8px;background:var(--panel3);padding:10px 14px}
+.mech-catalog>summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--text);list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mech-catalog>summary::-webkit-details-marker{display:none}
+.mech-catalog>summary::after{content:"▸";color:var(--muted);font-size:13px;transition:transform .12s}
+.mech-catalog[open]>summary::after{transform:rotate(90deg)}
+.mech-cat-body{margin-top:12px}
+.mech-filter{width:100%;max-width:360px;padding:6px 10px;margin:0 0 12px;font:inherit;font-size:13px;background:var(--surface);border:1px solid var(--line);border-radius:6px;color:var(--text)}
+.mech-filter:focus{outline:none;border-color:var(--accent)}
+.mech-tier{margin:10px 0 14px}
+.mech-tier h4{margin:0 0 7px;font-size:13px;color:var(--text)}
+.mech-tier-grid{display:flex;flex-wrap:wrap;gap:6px}
+.mech-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:12.5px;background:var(--surface);border:1px solid var(--line);color:var(--text);text-decoration:none}
+.mech-chip:hover{border-color:var(--accent);color:var(--accent)}
+.mech-subcat{margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.mech-subcat>summary{cursor:pointer;font-size:12.5px;color:var(--text-2);font-weight:600}
 .mech-topnav{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
 .mech-topnav a{padding:4px 9px;border-radius:6px;font-size:13px;color:var(--text-2);text-decoration:none}
 .mech-topnav a:hover,.mech-topnav a.cur{background:var(--panel2);color:var(--text)}
@@ -740,6 +755,232 @@ def page_shell(
 """
 
 
+SLOT_LABELS = {
+    "primary": ("Primary", "主武器"),
+    "secondary": ("Secondary", "副武器"),
+    "melee": ("Melee", "近战"),
+    "archgun": ("Archgun", "重型枪械"),
+    "sentinel": ("Companion", "同伴武器"),
+    "exalted": ("Exalted", "显赫武器"),
+}
+
+
+def build_beam_catalog(
+    root: Path,
+    roster_specs: list[dict],
+    wiki_path_fn: Callable[[dict], str],
+    weapon_icons: dict,
+    zh_weapons: dict,
+    lang: str,
+    site_url: str,
+) -> tuple[str, str]:
+    """Generate a collapsible full-roster continuous beam table from data/weapons/."""
+    zh = lang == "zh"
+    roster_by_id = {s["id"]: s for s in roster_specs}
+    rows: list[dict] = []
+    for f in sorted((root / "data" / "weapons").rglob("*.yaml")):
+        d = yaml.load(f.read_text(encoding="utf-8"), Loader=YAML_LOADER)
+        if not isinstance(d, dict) or not d.get("id"):
+            continue
+        atk = d.get("attack")
+        if not isinstance(atk, dict) or atk.get("trigger") != "held":
+            continue
+        wid = d["id"]
+        parent = d.get("transforms_from") or d.get("inherits") or wid
+        target = roster_by_id.get(wid) or roster_by_id.get(parent)
+        if not target:
+            continue
+        tid = target["id"]
+        href = wiki_path_fn(target)
+        icon = asset_icon_url(weapon_icons.get(wid) or weapon_icons.get(tid))
+        en_name = d.get("name") or target["name"]
+        cn_name = zh_weapons.get(wid) or zh_weapons.get(tid) or en_name
+        # Keep form distinction when an alt-fire shares the base weapon's display name.
+        if wid.endswith("_alt") and "(" not in en_name:
+            en_name = f"{en_name} (Alt-Fire)"
+            cn_name = f"{cn_name}（次要）"
+        elif wid.endswith("_beam") and "(" not in en_name:
+            en_name = f"{en_name} (Alt-Fire)"
+            cn_name = f"{cn_name}（次要射线）"
+        display = cn_name if zh else en_name
+        slot = target.get("slot", "other")
+        slot_lbl = SLOT_LABELS.get(slot, (slot, slot))[1 if zh else 0]
+        fr = float(atk.get("fire_rate") or 0)
+        ammo = float(atk.get("ammo_cost") or 0.5)
+        bm = atk.get("beam") or {}
+        ramp = bm.get("ramp") or {}
+        floor = d.get("beam_ramp_floor")
+        floor = 0.2 if floor is None else float(floor)
+        rise = float(ramp.get("rise_seconds") or (0.8 if wid.startswith("panthera") else 0.6))
+        first = 1.0 if floor >= 1.0 else floor + (1.0 - floor) * min(1.0, 1.0 / (fr * rise)) if fr > 0 else floor
+        rows.append({
+            "display": display,
+            "search": f"{en_name} {cn_name} {slot_lbl}".lower(),
+            "href": href,
+            "icon": icon,
+            "slot": slot_lbl,
+            "fr": fr,
+            "ammo": ammo,
+            "floor": floor,
+            "first": first,
+        })
+    rows.sort(key=lambda r: (r["slot"], r["display"].lower()))
+
+    e = html_mod.escape
+    tr_html = []
+    md_rows = [
+        "",
+        "## " + ("附录：全站持续型射线武器完整索引" if zh else "Appendix: Complete Continuous Beam Weapon Index"),
+        "",
+        "| " + ("武器 | 槽位 | 基础射速 | 每跳弹耗 | 基础下限 → 基础首跳" if zh else "Weapon | Slot | Base FR | Ammo/Tick | Base Floor → Base Tick 1") + " |",
+        "| --- | :---: | :---: | :---: | :---: |",
+    ]
+    for r in rows:
+        img = f'<img class="wicon" src="{r["icon"]}" alt="" width="22" height="15" loading="lazy" decoding="async">' if r["icon"] else ""
+        floor_txt = "100%" if r["floor"] >= 1.0 else f"{r['floor']*100:.0f}% → {r['first']*100:.1f}%"
+        tr_html.append(
+            f'<tr data-k="{e(r["search"])}">'
+            f'<td><a class="wlink" href="{r["href"]}">{img}<span>{e(r["display"])}</span></a></td>'
+            f'<td style="text-align:center">{e(r["slot"])}</td>'
+            f'<td style="text-align:center">{r["fr"]:g}</td>'
+            f'<td style="text-align:center">{r["ammo"]:g}</td>'
+            f'<td style="text-align:center">{floor_txt}</td></tr>'
+        )
+        md_rows.append(
+            f"| [{r['display']}]({site_url}{r['href']}) | {r['slot']} | {r['fr']:g} | {r['ammo']:g} | {floor_txt} |"
+        )
+
+    title = f"展开查看全部 {len(rows)} 个持续型射线形态索引（自动同步自 WFSim 武器数据）" if zh else f"Complete Continuous Beam Weapon Index ({len(rows)} modes, generated from WFSim data)"
+    ph = "搜索武器名称或槽位…" if zh else "Filter by weapon name or slot…"
+    hdr = ("武器", "槽位", "基础射速", "每跳弹耗", "基础下限 → 基础首跳") if zh else ("Weapon", "Slot", "Base FR", "Ammo/Tick", "Base Floor → Tick 1")
+    html = f"""<details class="mech-catalog" id="full-beam-index">
+<summary>{title}</summary>
+<div class="mech-cat-body">
+<input class="mech-filter" type="search" placeholder="{ph}" aria-label="{ph}" data-cat-filter="beam">
+<div class="mech-table-wrap"><table class="mech-table"><thead><tr><th>{hdr[0]}</th><th style="text-align:center">{hdr[1]}</th><th style="text-align:center">{hdr[2]}</th><th style="text-align:center">{hdr[3]}</th><th style="text-align:center">{hdr[4]}</th></tr></thead><tbody data-cat-rows="beam">{"".join(tr_html)}</tbody></table></div>
+</div>
+</details>
+<script>(function(){{
+  var inp=document.querySelector('[data-cat-filter="beam"]');
+  if(!inp)return;
+  inp.addEventListener("input",function(){{
+    var q=inp.value.trim().toLowerCase();
+    document.querySelectorAll('[data-cat-rows="beam"] tr').forEach(function(tr){{
+      tr.style.display=!q||tr.getAttribute("data-k").indexOf(q)!==-1?"":"none";
+    }});
+  }});
+}})();</script>"""
+    return html, "\n".join(md_rows) + "\n"
+
+
+def build_weakness_catalog(
+    roster_specs: list[dict],
+    wiki_path_fn: Callable[[dict], str],
+    weapon_icons: dict,
+    zh_weapons: dict,
+    lang: str,
+    site_url: str,
+) -> tuple[str, str]:
+    """Generate a collapsible full-roster native weakpoint (W) tier index from data/weapons/."""
+    zh = lang == "zh"
+    tiers: dict[float, list[dict]] = {}
+    melee_list: list[dict] = []
+    for s in roster_specs:
+        wb = s.get("weakness_bonus")
+        if wb is None:
+            continue
+        w = round(float(wb), 2)
+        wid = s["id"]
+        en_name = s["name"]
+        cn_name = zh_weapons.get(wid) or en_name
+        item = {
+            "display": cn_name if zh else en_name,
+            "search": f"{en_name} {cn_name} w={w}".lower(),
+            "href": wiki_path_fn(s),
+            "icon": asset_icon_url(weapon_icons.get(wid)),
+        }
+        if s.get("slot") == "melee" and w == 0.0:
+            melee_list.append(item)
+        else:
+            tiers.setdefault(w, []).append(item)
+
+    e = html_mod.escape
+    firearm_total = sum(len(v) for v in tiers.values())
+    melee_list.sort(key=lambda x: x["display"].lower())
+    blocks_html: list[str] = []
+    md_lines = [
+        "",
+        "## " + ("附录：全站武器原生弱点加成 W 完整索引" if zh else "Appendix: Complete Weapon Native Weakpoint (W) Index"),
+        "",
+    ]
+
+    for w in sorted(tiers.keys()):
+        items = sorted(tiers[w], key=lambda x: x["display"].lower())
+        net = 2.0 / (1.0 + w)
+        if zh:
+            heading = f"W = {w:.1f}（常规人形净倍率 {net:.2f}× · {len(items)} 把非近战武器" + (f" + 全部 {len(melee_list)} 把近战" if w == 0.0 else "") + "）"
+        else:
+            heading = f"W = {w:.1f} (Humanoid net {net:.2f}× · {len(items)} non-melee" + (f" + all {len(melee_list)} melee" if w == 0.0 else "") + ")"
+        chips = "".join(
+            f'<a class="mech-chip" data-k="{e(it["search"])}" href="{it["href"]}">'
+            + (f'<img class="wicon" src="{it["icon"]}" alt="" width="22" height="15" loading="lazy" decoding="async">' if it["icon"] else "")
+            + f'<span>{e(it["display"])}</span></a>'
+            for it in items
+        )
+        sub = ""
+        if w == 0.0 and melee_list:
+            m_chips = "".join(
+                f'<a class="mech-chip" data-k="{e(it["search"])}" href="{it["href"]}">'
+                + (f'<img class="wicon" src="{it["icon"]}" alt="" width="22" height="15" loading="lazy" decoding="async">' if it["icon"] else "")
+                + f'<span>{e(it["display"])}</span></a>'
+                for it in melee_list
+            )
+            m_lbl = f"展开全部 {len(melee_list)} 把近战武器（全部为 W = 0.0）" if zh else f"Show all {len(melee_list)} melee weapons (all W = 0.0)"
+            sub = f'<details class="mech-subcat" data-melee-sub><summary>{m_lbl}</summary><div class="mech-tier-grid" style="margin-top:8px">{m_chips}</div></details>'
+        blocks_html.append(f'<div class="mech-tier" data-w-tier><h4>{heading}</h4><div class="mech-tier-grid">{chips}</div>{sub}</div>')
+        md_lines.append(f"### {heading}")
+        md_lines.append("")
+        md_lines.append(", ".join(f"[{it['display']}]({site_url}{it['href']})" for it in items))
+        md_lines.append("")
+
+    title = (
+        f"展开查看全站武器原生弱点 W 完整索引（{firearm_total} 把非近战 + {len(melee_list)} 把近战，自动同步自 WFSim 数据）"
+        if zh
+        else f"Complete Weapon Native Weakpoint (W) Index ({firearm_total} non-melee + {len(melee_list)} melee, generated from WFSim data)"
+    )
+    ph = "输入任意中英文武器名快速查 W 档位…" if zh else "Filter any weapon name to look up its W tier…"
+    html = f"""<details class="mech-catalog" id="full-weakness-index">
+<summary>{title}</summary>
+<div class="mech-cat-body">
+<input class="mech-filter" type="search" placeholder="{ph}" aria-label="{ph}" data-cat-filter="weakness">
+{"".join(blocks_html)}
+</div>
+</details>
+<script>(function(){{
+  var inp=document.querySelector('[data-cat-filter="weakness"]');
+  if(!inp)return;
+  inp.addEventListener("input",function(){{
+    var q=inp.value.trim().toLowerCase();
+    document.querySelectorAll('[data-w-tier]').forEach(function(tier){{
+      var any=false;
+      tier.querySelectorAll('.mech-chip').forEach(function(a){{
+        var ok=!q||a.getAttribute("data-k").indexOf(q)!==-1;
+        a.style.display=ok?"":"none";
+        if(ok)any=true;
+      }});
+      tier.style.display=any?"":"none";
+      var sub=tier.querySelector('[data-melee-sub]');
+      if(sub&&q){{
+        var mHit=false;
+        sub.querySelectorAll('.mech-chip').forEach(function(a){{if(a.style.display!=="none")mHit=true;}});
+        sub.open=mHit;
+      }}
+    }});
+  }});
+}})();</script>"""
+    return html, "\n".join(md_lines) + "\n"
+
+
 def ship_mechanics(
     root: Path,
     app_dir: Path,
@@ -752,6 +993,10 @@ def ship_mechanics(
     """Build /mechanics and /mechanics/zh index + article pages and .md twins."""
     cat = load_catalog(root)
     linkers = build_weapon_linkers(root, roster_specs, wiki_path_fn)
+    assets_raw = yaml.load((root / "data" / "assets.yaml").read_text(encoding="utf-8"), Loader=YAML_LOADER)
+    weapon_icons = assets_raw.get("weapons", {}) if isinstance(assets_raw, dict) else {}
+    zh_raw = yaml.load((root / "data" / "i18n" / "zh" / "names.yaml").read_text(encoding="utf-8"), Loader=YAML_LOADER)
+    zh_weapons = zh_raw.get("weapons", {}) if isinstance(zh_raw, dict) else {}
     articles = cat["articles"]
     urls: list[str] = []
     meta_entries: list[dict] = []
@@ -776,11 +1021,25 @@ def ship_mechanics(
             md_twin_path = f"{art_path}.md"
 
             raw_md = (root / "docs" / "mechanics" / loc["source"]).read_text(encoding="utf-8")
-            linked_md = link_markdown_body(raw_md, linkers[lang], site_url)
+            cat_html, cat_md = "", ""
+            if art.get("catalog") == "beam-roster":
+                cat_html, cat_md = build_beam_catalog(
+                    root, roster_specs, wiki_path_fn, weapon_icons, zh_weapons, lang, site_url
+                )
+            elif art.get("catalog") == "weakness-tiers":
+                cat_html, cat_md = build_weakness_catalog(
+                    roster_specs, wiki_path_fn, weapon_icons, zh_weapons, lang, site_url
+                )
+            linked_md = link_markdown_body(raw_md, linkers[lang], site_url) + cat_md
             put_fn(app_dir / md_twin_path.lstrip("/"), linked_md)
 
             widget = magnetic_widget_html(lang) if art.get("widget") == "magnetic-break" else ""
             body_html, toc, seen_weapons = render_markdown_html(raw_md, linkers[lang], widget_html=widget)
+            if cat_html:
+                body_html += "\n" + cat_html
+                cat_id = "full-beam-index" if art.get("catalog") == "beam-roster" else "full-weakness-index"
+                cat_toc_lbl = "全武器索引表" if lang == "zh" else "Full Weapon Index"
+                toc.append((2, cat_id, cat_toc_lbl))
 
             toc_html = "".join(
                 f'<li class="l{lvl}"><a href="#{hid}">{html_mod.escape(lbl)}</a></li>'

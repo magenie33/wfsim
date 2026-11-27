@@ -1,7 +1,7 @@
 # [Warframe] Beam Weapons (Continuous) Mechanics & Damage Calculation Guide
 
 > **Author & Attribution**: WFSim | [wfsim.app](https://wfsim.app)  
-> **Scope & Rigor**: This document objectively explains the underlying damage calculation mechanics and taxonomy of Warframe's beam (continuous) weapons. It contains no build or Mod recommendations. Every formula, edge case, and numeric example is calibrated against in-game Simulacrum testing, public reference data, and WFSim's mathematical models; the single remaining open edge case is explicitly flagged in place.
+> **Scope**: Damage resolution, ramp-up timing, merged multishot, and spread mechanics of Warframe continuous (beam) weapons, calibrated against in-game Simulacrum measurements. Unresolved edge cases are noted in place.
 
 ---
 
@@ -33,7 +33,7 @@ flowchart LR
 
 ---
 
-## 2. The Core of Cores: Full Ramp-Up Lifecycle & Multi-Enemy Walkthrough
+## 2. Damage Ramp-Up Lifecycle & Multi-Enemy Resolution
 
 Damage ramp-up is the single most overlooked — and most frequently miscalculated — beam mechanic. It is not simply "starts at 20% and climbs to 100%": it is a **5-stage state machine running independently on every enemy**.
 
@@ -50,7 +50,7 @@ flowchart LR
 
 ### Stage 1: Initial Contact & Why the First Tick Scales with Fire Rate (Pre-Advance)
 
-When a beam touches a fresh target, the game initializes the first-tick countdown to **`1 ÷ Fire Rate`** and **advances the ramp clock by `1 ÷ Fire Rate` seconds BEFORE reading the multiplier for Tick 1**.
+When a beam touches a fresh target, the game initializes the first-tick countdown to **`1 ÷ Fire Rate`** and **advances the ramp clock by `1 ÷ Fire Rate` seconds before reading the multiplier for Tick 1**.
 
 Therefore, on consecutive tick `k` (`k = 1, 2, 3, ...`), the exact ramp-up multiplier is:
 ```text
@@ -79,12 +79,12 @@ Take **Torid (Incarnon Form)** (base ramp floor **20%**, ramp duration **0.6 s**
 
 > **Intuition**: Raising Fire Rate lowers the *percentage* on Tick 1 simply because **Tick 1 lands earlier** (`0.0658 s` vs `0.156 s`). Over the full 0.6 s ramp window, higher Fire Rate still delivers far more ticks and far more total damage.
 
-#### Example B: Decoding Phantasma Prime's "2% Floor → 15.6% First Tick"
+#### Example B: Phantasma Prime's 2% Base Floor and 15.6% First Tick
 * **Phantasma / Phantasma Prime** actually has a base ramp floor of **`2%`** (`0.02`) and a `0.6 s` ramp duration.
 * At its base Fire Rate of **`12 ticks/s`**, Tick 1 advances `1 ÷ (12 × 0.6) = 13.89%`:  
   `Tick 1 = 2% + 98% × 13.89% =` **15.61%** — which explains why base-fire-rate testing commonly observes a ~15% opening tick.
 * Double its Fire Rate to **`24 ticks/s`**, and Tick 1 advances only `6.94%`:  
-  `Tick 1 = 2% + 98% × 6.94% =` **8.81%**!
+  `Tick 1 = 2% + 98% × 6.94% =` **8.81%**.
 
 ---
 
@@ -92,7 +92,7 @@ Take **Torid (Incarnon Form)** (base ramp floor **20%**, ramp duration **0.6 s**
 
 On each sustained tick, ramp progress rises by `(1 ÷ Fire Rate) ÷ Ramp Duration`, capped at `1.0` (100%).
 
-**Crucial interaction (verified via in-game Simulacrum testing)**: The ramp multiplier does not just scale direct hits — it **multiplies straight into the base damage of any DoT status (Heat / Toxin / Electricity / Gas / Slash) procced on that tick**, and **each status stack permanently snapshots the ramp multiplier of the tick that created it**. Old stacks applied during ramp-up are never upgraded once the beam reaches 100%.
+**Status DoT snapshotting (verified in-game)**: The ramp multiplier does not just scale direct hits — it **multiplies straight into the base damage of any DoT status (Heat / Toxin / Electricity / Gas / Slash) procced on that tick**, and **each status stack permanently snapshots the ramp multiplier of the tick that created it**. Old stacks applied during ramp-up are never upgraded once the beam reaches 100%.
 
 > **Example C (Phantasma Prime stacking Heat across the ramp window — base 12 FR, 2% floor, 90 total base damage, +90% Heat)**:
 > * Tick 1 (`0.083 s`): **15.6%** → Heat stack base `90 × 15.6% = 14.05`
@@ -116,7 +116,7 @@ When a beam leaves a target or stops firing (repositioning, dodging, reloading),
 idle = Current Hit Time - Last Hit Time - Tick Interval (1 ÷ Fire Rate)
 
 Case 1 (Grace Period): if idle ≤ Decay Delay (typically 0.8 s)
-    decayed_progress = previous_progress   (100% preserved, zero decay!)
+    decayed_progress = previous_progress   (100% preserved, zero decay)
 
 Case 2 (Linear Cooldown Decay): if idle > Decay Delay
     decay_duration = Ramp Duration × Decay Divisor (typically 0.6 × 2 = 1.2 s; 2.0 s total to fully reset including the 0.8 s delay)
@@ -138,7 +138,7 @@ When the beam hits again, advance one tick before reading:
 In real combat with multiple enemies, beam ramp-up enforces **4 strict rules**:
 1. **One clock per enemy**: Almost every beam tracks ramp progress independently on each enemy (rare exceptions such as **Tazicor** and **Panthera Alt-Fire** share one beam-wide clock).
 2. **Main beam, terminal sphere, Punch Through, and chains all share that enemy's clock**: Any part of the weapon hitting Enemy X advances Enemy X's single ramp timer.
-3. **Simultaneous chain hits in the same tick advance the clock only ONCE**: Even if 3 chains from different origins strike Enemy B on the same tick, Enemy B's ramp advances by only one `1 ÷ Fire Rate` step — never 3×.
+3. **Simultaneous chain hits in the same tick advance the clock once**: Even if 3 chains from different origins strike Enemy B on the same tick, Enemy B's ramp advances by only one `1 ÷ Fire Rate` step — never 3×.
 4. **Enemy death destroys the clock**: Newly spawned enemies always start cold at `progress = 0`.
 
 #### Multi-Enemy Combat Timeline (4 Targets: Enemy A, B, C, D)
@@ -152,12 +152,12 @@ In real combat with multiple enemies, beam ramp-up enforces **4 strict rules**:
 
 | Timestamp & Event | Enemy A (Main Direct) | Enemy B (Sphere + Chain) | Enemy C (75% Chain) | Enemy D (Late Arrival) |
 | --- | --- | --- | --- | --- |
-| **`t = 0.125s` (Tick 1)**<br>Begin firing on A | Advances once<br>prog `20.8%` → **36.7%** | Hit by sphere & chain simultaneously; **advances ONCE**<br>prog `20.8%` → **36.7%**<br>(chain yields `75% × 36.7% = 27.5%`) | Advances once<br>prog `20.8%` → **36.7%**<br>(yields `75% × 36.7% = 27.5%`) | Unhit<br>(no clock) |
+| **`t = 0.125s` (Tick 1)**<br>Begin firing on A | Advances once<br>prog `20.8%` → **36.7%** | Hit by sphere & chain simultaneously; **advances once**<br>prog `20.8%` → **36.7%**<br>(chain yields `75% × 36.7% = 27.5%`) | Advances once<br>prog `20.8%` → **36.7%**<br>(yields `75% × 36.7% = 27.5%`) | Unhit<br>(no clock) |
 | **`t = 0.375s` (Tick 3)**<br>Sustained fire | 3 consecutive ticks<br>prog `62.5%` → **70.0%** | 3 consecutive ticks<br>prog `62.5%` → **70.0%** | 3 consecutive ticks<br>prog `62.5%` → **70.0%** | Unhit |
 | **`t = 0.625s` (Tick 5)**<br>Sustained fire | Full ramp reached<br>prog `100%` → **100.0%** | Full ramp reached<br>prog `100%` → **100.0%** | Full ramp reached<br>prog `100%` → **100.0%** | Unhit |
-| **`t = 0.750s` (Tick 6)**<br>**A dies, aim shifts to B; D enters range** | **Dead**<br>(new spawn A' starts cold) | Now main direct target;<br>**inherits 100.0% ramp seamlessly!** | Still on 75% chain<br>maintains **100.0%** ramp<br>(yields `75.0%`) | **First hit (56.25% chain)**<br>Starts own cold clock → **36.7%**<br>(yields `56.25% × 36.7% = 20.6%`) |
-| **`t = 1.250s` (0.500s pause)**<br>`idle = 0.375s ≤ 0.8s` | — | **Zero decay**, stays **100.0%** | **Zero decay**, stays **100.0%** | **Zero decay!** Advances `20.8% → 41.7%` → **53.3%** |
-| **`t = 2.750s` (1.500s pause)**<br>`idle = 1.375s > 0.8s`; `0.575s` over delay → `-47.92%` progress | — | `100% - 47.92% = 52.08%`<br>`+20.83% → 72.92%`<br>**Warm restart: 78.3%!** | Same as B<br>**Warm restart: 78.3%!** | `41.67% - 47.92%` → bottoms at **`0%`**<br>`+20.83%` → **Cold restart: 36.7%!** |
+| **`t = 0.750s` (Tick 6)**<br>**A dies, aim shifts to B; D enters range** | **Dead**<br>(new spawn A' starts cold) | Now main direct target;<br>**retains 100.0% ramp** | Still on 75% chain<br>maintains **100.0%** ramp<br>(yields `75.0%`) | **First hit (56.25% chain)**<br>Starts own cold clock → **36.7%**<br>(yields `56.25% × 36.7% = 20.6%`) |
+| **`t = 1.250s` (0.500s pause)**<br>`idle = 0.375s ≤ 0.8s` | — | **Zero decay**, stays **100.0%** | **Zero decay**, stays **100.0%** | **Zero decay**; Advances `20.8% → 41.7%` → **53.3%** |
+| **`t = 2.750s` (1.500s pause)**<br>`idle = 1.375s > 0.8s`; `0.575s` over delay → `-47.92%` progress | — | `100% - 47.92% = 52.08%`<br>`+20.83% → 72.92%`<br>**Warm restart: 78.3%** | Same as B<br>**Warm restart: 78.3%** | `41.67% - 47.92%` → bottoms at **`0%`**<br>`+20.83%` → **Cold restart: 36.7%** |
 
 > Notice the divergence in the final row: after the exact same `1.5 s` pause, fully ramped Enemies B and C only dip to a **78.3% warm restart** (back to 100% in 2 ticks), while Enemy D (which only had 2 ticks of progress) bottoms out completely back to a **36.7% cold restart**.
 
@@ -444,7 +444,7 @@ In that 4-origin, 24-instance scenario at **3× multishot**:
 
 ---
 
-## 7. Common Beam Misconceptions Clarified
+## 7. Common Misconceptions
 
 1. **Myth: "Tick 1 is always a fixed 20% (or 15% on Phantasma), and stopping fire resets ramp instantly."**  
    → **Reality**: The ramp clock pre-advances by `1 ÷ Fire Rate` before Tick 1 resolves, so **Tick 1 scales dynamically with Fire Rate** (Phantasma's true floor is `2%`, yielding `15.6%` only at 12 FR). Ceasing fire preserves 100% ramp during the `0.8 s` grace delay before decaying linearly, independently per target.

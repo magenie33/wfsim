@@ -1704,7 +1704,8 @@ def prerender(flagged: str, catalog: Path) -> None:
         caveats = caveats_of(spec, REASONS)
         live_url = html_mod.escape(board_catalog_url(wid), quote=True)
         mech_links = []
-        if spec.get("trigger") == "held" or wid in ("torid", "boar", "boar_prime", "furis", "mk1_furis", "onos"):
+        atk = spec.get("attack") or {}
+        if (isinstance(atk, dict) and atk.get("trigger") == "held") or wid in ("torid", "boar", "boar_prime", "furis", "mk1_furis", "onos", "basmu", "athodai", "athodai_prime", "panthera", "panthera_prime"):
             mech_links.append('<a href="/mechanics/beam-weapons">Beam weapons mechanics</a>')
         if spec.get("weakness_bonus") is not None:
             mech_links.append('<a href="/mechanics/magnetic-electricity">Magnetic &amp; Electricity mechanics</a>')
