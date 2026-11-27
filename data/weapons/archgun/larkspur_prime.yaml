@@ -132,13 +132,8 @@ attack:
       cooldown_delay_seconds: 0.8
       cooldown_divisor: 2
       per_target: true
-    # 40 m is the ATMOSPHERE column; the Archwing one is 160 (wiki). This said
-    # 20 and was read by nothing, while the weapon's own unmodelled note said
-    # 40 — the two disagreed in the same file until the range was modelled and
-    # the field started deciding something. Same two-column trap
-    # AGENTS.md was written about, caught this time by the file contradicting
-    # itself.
-    range_m: 40.0
+    # Client HeavyBehaviors traceDistance is 50 m (Archwing Behaviors: 180 m).
+    range_m: 50.0
     damage_radius_m: 0.0
     radius_takes_multishot: false
     chain:
