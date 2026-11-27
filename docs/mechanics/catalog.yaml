@@ -1,0 +1,134 @@
+# Mechanics reference articles published at /mechanics and /mechanics/zh.
+# Each entry names one slug served as static HTML and as a markdown twin (.md),
+# with weapon mentions auto-linked to /weapons/<Wiki_Name>.
+
+index:
+  en:
+    title: Warframe Mechanics Reference
+    description: >-
+      Factual Warframe damage, status, and weapon mechanics calibrated against
+      in-game Simulacrum measurements, with clickable links to each weapon in WFSim.
+  zh:
+    title: Warframe 机制参考
+    description: >-
+      基于幻影装置游戏内实测校准的 Warframe 伤害、异常与武器底层机制手册，
+      文中提及的具体武器均可直接点击进入 WFSim 对应武器页。
+
+articles:
+  - slug: beam-weapons
+    updated: "2026-11-27"
+    category:
+      en: Weapon Archetypes
+      zh: 武器机制
+    en:
+      title: Beam Weapons (Continuous) Mechanics & Damage Calculation
+      short_title: Beam Weapons
+      description: >-
+        Fire-rate-dependent first-tick pre-advance, 5-stage per-target ramp-up
+        lifecycle, quadratic M² status DoT multishot scaling, center-beam
+        exceptions, terminal-radius Punch Through gate, and Torid Incarnon math.
+      source: en/beam-weapons.md
+      queries:
+        - how do Warframe beam weapons calculate ramp-up and first tick
+        - Warframe beam multishot status DoT scaling
+        - Torid Incarnon sphere and chain mechanics
+      faq:
+        - q: Does a beam weapon's first tick always deal a fixed 20% damage in Warframe?
+          a: >-
+            No. The ramp clock pre-advances by 1 / Fire Rate before Tick 1 resolves,
+            so Tick 1 equals Floor + (1 - Floor) * min(1, 1 / (Fire Rate * Ramp Duration)).
+            Phantasma Prime has a 2% base floor, which yields 15.6% on Tick 1 at 12 FR
+            and 8.8% at 24 FR.
+        - q: Why does multishot scale beam status DoT quadratically?
+          a: >-
+            On a single target, M beams merge into one tick whose status chance scales
+            by M and whose base damage also scales by M. For Heat, Toxin, Electricity,
+            Gas, and Slash procs, proc frequency (xM) times per-proc base (xM) yields M²
+            scaling.
+        - q: Does Punch Through add chain origins on Torid Incarnon or Ignis Wraith?
+          a: >-
+            No. Any beam with a terminal damage radius (radius > 0) clamps Punch Through
+            depth to 0, overriding both innate and modded Punch Through. Only radius == 0
+            chaining beams such as Amprex, Tenet Glaxion, Tenet Cycron, Kuva Nukor, and
+            Larkspur gain extra chain origins via Punch Through.
+    zh:
+      title: 射线武器（持续型武器）计算机制全解析
+      short_title: 射线武器机制
+      description: >-
+        射线首跳随射速动态变化公式、5 阶段多敌人独立预热状态机、多重合并 M² 持续异常缩放、
+        中心主射线特例、末端半径穿透门控与托里德双形态全景手算。
+      source: zh/beam-weapons.md
+      faq:
+        - q: 射线武器第 1 跳伤害是固定 20% 吗？
+          a: >-
+            不是。首跳结算前预热时钟会先推进 1/射速 秒，首跳倍率等于
+            基础下限 + (1 - 基础下限) × min(1, 1 / (射速 × 预热总时长))。
+            例如幻离子 Prime 基础下限为 2%，12 射速下首跳为 15.6%，24 射速下为 8.8%。
+        - q: 为什么射线武器的持续异常伤害对多重射击呈平方级（M²）增长？
+          a: >-
+            命中同一目标的 M 条射线合并为单跳结算，单跳触发几率乘以 M，同时合并后的异常基底伤害也乘以 M。
+            触发层数与单层伤害同时放大 M 倍，使火、毒、电、毒气、切割持续异常期望呈 M² 增长。
+        - q: 托里德灵化形态或伊格尼斯堆穿透可以增加连锁起点吗？
+          a: >-
+            不行。凡是带有末端伤害半径（半径 > 0）的射线，穿透深度均会被锁死为 0；只有半径为 0 的常规连锁射线
+            （如安培克斯、信条·冷冻光束步枪、信条·循环离子枪、赤毒·努寇微波枪、翠雀）支持穿透多起点。
+
+  - slug: magnetic-electricity
+    updated: "2026-11-27"
+    category:
+      en: Status Effects
+      zh: 异常状态
+    widget: magnetic-break
+    en:
+      title: Magnetic & Electricity Status Mechanics & Calculation (incl. Gas)
+      short_title: Magnetic & Electricity
+      description: >-
+        Two-stage Magnetic break formula (0.5%/stack, 2/(1+W) native weakpoint
+        normalization, S² status damage double-dip), all 5 weapon W tiers, and
+        the Electricity/Gas latest-application headshot landing layer L.
+      source: en/magnetic-electricity.md
+      queries:
+        - how does Warframe Magnetic break damage work
+        - why do different weapons deal different Magnetic break damage in Warframe
+        - Warframe Electricity and Gas headshot double dip latest stack rule
+      faq:
+        - q: Why do different weapons deal different Magnetic break damage against the same shield?
+          a: >-
+            Magnetic break starts from trunc(Max Pool * 0.005 * Stacks), then divides by
+            1 + max(W, 0) * V using the breaking weapon's innate weakpoint bonus W before
+            multiplying by the target's generic proxy multiplier A. On standard humanoids
+            (V = 1, A = 2), net scaling is 2 / (1 + W), so W = 0 weapons (all melee,
+            Kuva Nukor) deal twice the break damage of W = 1.0 weapons (Lanka, Rubico Prime).
+        - q: Does Status Damage double-dip on Magnetic break Electricity procs?
+          a: >-
+            Yes. Status Damage multiplier S scales the Stage 1 break damage packet once,
+            and the forced Stage 2 ordinary Electricity proc inherits that scaled source
+            and multiplies by S a second time, giving S² scaling on the DoT ticks.
+        - q: How does headshot landing work on Electricity and Gas status pools?
+          a: >-
+            Old seeds stay intact, but the body part of the most recently applied stack
+            sets the entire pool's second landing multiplier L = 1 + Headshot Damage% and
+            headshot-kill classification. A later body proc drops the whole pool to L = 1.0;
+            a later headshot proc pulls every living seed (including Magnetic break seeds)
+            onto head landing.
+    zh:
+      title: 磁力与电击异常计算机制全解析（含毒气对照）
+      short_title: 磁力与电击异常
+      description: >-
+        磁力破防电双阶段精确公式（0.5%/层、原生弱点 W 反向归一化、异常伤双吃 S²）、
+        全游戏 5 档 W 代表武器一览，以及电击与毒气“最新一层决定全池爆头落点 L”机制。
+      source: zh/magnetic-electricity.md
+      faq:
+        - q: 为什么不同武器用同样 10 层磁力击破同一个护盾，破防电伤害会相差一倍？
+          a: >-
+            磁力破防以最大池值 × 0.005 × 层数起步，先除以 1 + max(W, 0) × V，再乘目标弱点代理倍率 A。
+            对常规人形目标（V=1, A=2），净系数为 2 / (1 + W)：全部近战及赤毒·努寇微波枪等 W = 0 武器，
+            整整是兰卡、绝路 Prime 等 W = 1.0 武器的 2 倍。
+        - q: 磁力破防电对异常伤害加成是双吃（S²）吗？
+          a: >-
+            是的。第一段一次性破防直伤包吃 1 次异常伤害 S，第二段强制挂出的普通电击异常继承该源值后再吃 1 次 S，
+            最终持续跳伤对异常伤害呈 S² 平方级缩放。
+        - q: 电击和毒气混打头和身体时，二次落点倍率 L 怎么算？
+          a: >-
+            每层旧种子原封不动保留，但整个合并池的落点倍率 L = 1 + 爆头伤害% 与爆头击杀归属完全由最新挂上去的那一层决定。
+            破防后补一枪爆头电，甚至可以把磁力破防电的大种子一并拉上头部落点。

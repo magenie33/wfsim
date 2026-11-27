@@ -15,6 +15,8 @@ function markdownTwin(path) {
   if (path === "/weapons") return "/weapons.md";
   // THE METHOD, at `/method` and `/method/<locale>` (`ship_method`).
   if (/^\/method(\/[a-z]{2,3})?$/.test(path)) return `${path}.md`;
+  // MECHANICS reference pages at `/mechanics`, `/mechanics/zh`, and article slugs.
+  if (/^\/mechanics(?:\/zh)?(?:\/[a-z0-9-]+)?$/.test(path)) return `${path}.md`;
   const m = path.match(/^\/weapons\/([^/.]+)$/);
   return m ? `/weapons/${m[1]}.md` : null;
 }
@@ -24,6 +26,7 @@ function twinOf(path) {
   if (path === "/index.md") return "/";
   if (path === "/weapons.md") return "/weapons";
   if (/^\/method(\/[a-z]{2,3})?\.md$/.test(path)) return path.slice(0, -3);
+  if (/^\/mechanics(?:\/zh)?(?:\/[a-z0-9-]+)?\.md$/.test(path)) return path.slice(0, -3);
   const m = path.match(/^\/weapons\/([^/.]+)\.md$/);
   return m ? `/weapons/${m[1]}` : null;
 }

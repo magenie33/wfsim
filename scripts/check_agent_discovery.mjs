@@ -75,6 +75,12 @@ check("...and each of its pages names every language's", tongues.every((t) =>
   tongues.every((u) => page(t).includes(`hreflang="${u === "/method" ? "en" : u.split("/")[2]}" href="${SITE}${u}"`))));
 check("llms.txt and the skill point at the method", read("llms.txt").includes(`${SITE}/method.md`)
   && read(".well-known/agent-skills/wfsim-weapon-builds/SKILL.md").includes(`${SITE}/method#ruler`));
+check("mechanics reference is served in English and Chinese with markdown twins and llms.txt entry",
+  existsSync(resolve(ROOT, "site/mechanics/index.html")) &&
+  existsSync(resolve(ROOT, "site/mechanics.md")) &&
+  existsSync(resolve(ROOT, "site/mechanics/zh/index.html")) &&
+  existsSync(resolve(ROOT, "site/mechanics/zh.md")) &&
+  read("llms.txt").includes(`${SITE}/mechanics.md`));
 
 const boardCatalog = `${SITE}/api/board/pages/catalog`;
 const weaponCatalog = `${boardCatalog}?weapon=braton`;

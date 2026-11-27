@@ -63,6 +63,7 @@ def yload(text: str):
 # this gate refuses anything it would have rejected.
 from fetch_images import is_image
 import data_packs
+import mechanics_site
 import rust_tokens
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -1702,7 +1703,13 @@ def prerender(flagged: str, catalog: Path) -> None:
                                measured_record(row)))
         caveats = caveats_of(spec, REASONS)
         live_url = html_mod.escape(board_catalog_url(wid), quote=True)
-        seo = f'<p><a href="{live_url}">Current WFSim board data</a></p>'
+        mech_links = []
+        if spec.get("trigger") == "held" or wid in ("torid", "boar", "boar_prime", "furis", "mk1_furis", "onos"):
+            mech_links.append('<a href="/mechanics/beam-weapons">Beam weapons mechanics</a>')
+        if spec.get("weakness_bonus") is not None:
+            mech_links.append('<a href="/mechanics/magnetic-electricity">Magnetic &amp; Electricity mechanics</a>')
+        mech_html = (" · " + " · ".join(mech_links)) if mech_links else ""
+        seo = f'<p><a href="{live_url}">Current WFSim board data</a>{mech_html}</p>'
         if archived_at and (APP / "board" / f"{wid}.json").exists():
             seo += (f'<div aria-label="Archived WFSim board, {archived_at}">'
                     f'<p>Archived WFSim board · {archived_at}</p>{summary_docs[wid]}</div>')
@@ -1897,8 +1904,12 @@ def prerender(flagged: str, catalog: Path) -> None:
         companion_urls.append(SITE + path)
 
     method_urls = ship_method(flagged)
+    style_href = re.search(r'href="(/asset/style\.[^"]+\.css)"', flagged).group(1)
+    mechanics_urls, mechanics_entries = mechanics_site.ship_mechanics(
+        ROOT, APP, SITE, style_href, roster(), wiki_path, put
+    )
     urls = ([SITE + "/", SITE + "/weapons"]
-            + [f"{SITE}/{path}" for path, *_ in shell_pages] + method_urls
+            + [f"{SITE}/{path}" for path, *_ in shell_pages] + method_urls + mechanics_urls
             + [SITE + wiki_path(s) for s in roster()]
             + frame_urls + companion_urls)
     sitemap = ('<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -1912,12 +1923,12 @@ def prerender(flagged: str, catalog: Path) -> None:
     # Without this file the SPA fallback answered /robots.txt with HTML and a
     # 200, which is a soft 404 for every crawler that asks.
     put(APP / "robots.txt", robots_txt())
-    ship_agent_files(by_slot)
+    ship_agent_files(by_slot, mechanics_entries)
     ship_privacy(flagged)
     named = ", ".join("/" + path for path, *_ in shell_pages)
-    print(f"prerendered {len(urls) - 2 - len(shell_pages) - len(method_urls) - len(frame_urls) - len(companion_urls)} weapon pages + "
+    print(f"prerendered {len(urls) - 2 - len(shell_pages) - len(method_urls) - len(mechanics_urls) - len(frame_urls) - len(companion_urls)} weapon pages + "
           f"{len(frame_urls)} Warframe pages + {len(companion_urls)} companion pages + /weapons + "
-          f"{named} + {len(method_urls)} method pages + sitemap.xml + robots.txt — "
+          f"{named} + {len(method_urls)} method pages + {len(mechanics_urls)} mechanics pages + sitemap.xml + robots.txt — "
           f"{WROTE[0]} written, {WROTE[1]} already current")
 
 
@@ -2447,7 +2458,7 @@ def ship_method(flagged: str) -> list[str]:
     return [SITE + at(c) for c in tongues]
 
 
-def ship_agent_files(by_slot: dict) -> None:
+def ship_agent_files(by_slot: dict, mechanics_entries: list[dict] = ()) -> None:
     """The site as an agent reads it: markdown twins of the home page and the
     roster, `/llms.txt`, and the `/.well-known/` documents that point at them.
     `worker/index.js` serves a twin for `Accept: text/markdown`."""
@@ -2459,7 +2470,13 @@ def ship_agent_files(by_slot: dict) -> None:
                         for slot in sorted(by_slot))
     put(APP / "weapons.md", f"# All {len(roster())} Warframe weapons in WFSim\n\n"
         f"Each links to its page as markdown; drop `.md` for the calculator.\n{roster_md}")
-    links = (f"- [Method]({SITE}/method.md): how WFSim judges a build, and the in-game readings behind each rule\n"
+    mech_md = "".join(
+        f"- [{m['title']}]({m['md_url']}): {m['description']}\n"
+        for m in mechanics_entries
+    )
+    mech_section = f"\n## Mechanics\n\n{mech_md}" if mech_md else ""
+    links = (f"- [Mechanics reference]({SITE}/mechanics.md): calibrated Warframe damage, status, and weapon mechanics\n"
+             f"- [Method]({SITE}/method.md): how WFSim judges a build, and the in-game readings behind each rule\n"
              f"- [MCP server]({MCP_URL}): these lookups as tools, read-only, no sign-in\n"
              f"- [All weapons]({SITE}/weapons.md): every weapon WFSim models, by slot\n"
              f"- [Using and citing WFSim]({SITE}/reuse): creator quotations, AI retrieval and licensing\n"
@@ -2468,9 +2485,9 @@ def ship_agent_files(by_slot: dict) -> None:
              f"- [Published board catalog]({BOARD_CATALOG}): ranks and revisions by weapon and ruler\n"
              "- [Source code](https://github.com/magenie33/wfsim): the engine, the game "
              "data and the measurements behind the golden tests\n")
-    put(APP / "index.md", f"# WFSim\n\n{agent_summary()}\n\nCalculator: {SITE}/\n\n{links}")
+    put(APP / "index.md", f"# WFSim\n\n{agent_summary()}\n\nCalculator: {SITE}/\n\n{links}{mech_section}")
     put(APP / "llms.txt", f"# WFSim\n\n> {agent_summary()}\n\n## Start here\n\n{links}"
-        f"\n## Weapons\n\n" + "".join(entry(s) for s in roster()))
+        f"{mech_section}\n## Weapons\n\n" + "".join(entry(s) for s in roster()))
 
     wk = APP / ".well-known"
     skill = skill_md()
@@ -2533,6 +2550,11 @@ def ship_agent_files(by_slot: dict) -> None:
              "representativeQueries": ["how strong is this Warframe weapon",
                                        "quote a WFSim score with its ruler",
                                        "link a reader to a build in the calculator"]},
+            {"identifier": f"urn:air:{host}:doc:mechanics", "displayName": "WFSim mechanics reference",
+             "type": "text/markdown", "url": f"{SITE}/mechanics.md",
+             "representativeQueries": [q for m in mechanics_entries for q in m.get("queries", [])][:4]
+             or ["how do Warframe beam weapons calculate ramp-up",
+                 "how does Warframe Magnetic break damage work"]},
         ],
     }, indent=2) + "\n")
     # RFC 9727: the public read APIs — the MCP server, the A2A agent and the published board.

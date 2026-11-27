@@ -50,7 +50,15 @@ check("the two agree on the runtime", front.compatibility_date === back.compatib
   `${front.compatibility_date} against ${back.compatibility_date}`);
 
 // A FAKE ASSET LAYER: a known file is itself, anything else is the SPA's html.
-const FILES = { "/index.md": "text/markdown", "/pkg/live.wasm": "application/wasm", "/": "text/html" };
+const FILES = {
+  "/index.md": "text/markdown",
+  "/mechanics.md": "text/markdown",
+  "/mechanics/zh/beam-weapons.md": "text/markdown",
+  "/pkg/live.wasm": "application/wasm",
+  "/": "text/html",
+  "/mechanics": "text/html",
+  "/mechanics/zh/beam-weapons": "text/html",
+};
 const assets = {
   async fetch(req) {
     const p = new URL(req.url).pathname;
@@ -68,6 +76,18 @@ check("the home page is the edge's, with its twin named",
 const md = await edgeServe(get("/", { accept: "text/markdown" }), env);
 check("…and its twin to a reader that asks for markdown",
   md && (md.headers.get("content-type") || "").startsWith("text/markdown"), md && md.headers.get("content-type"));
+const mechHtml = await edgeServe(get("/mechanics"), env);
+check("mechanics index is served at the edge with its markdown twin named",
+  mechHtml && mechHtml.status === 200 && (mechHtml.headers.get("link") || "").includes("/mechanics.md"),
+  mechHtml && mechHtml.headers.get("link"));
+const mechZhMd = await edgeServe(get("/mechanics/zh/beam-weapons", { accept: "text/markdown" }), env);
+check("mechanics article serves its markdown twin on Accept: text/markdown",
+  mechZhMd && (mechZhMd.headers.get("content-type") || "").startsWith("text/markdown"),
+  mechZhMd && mechZhMd.headers.get("content-type"));
+const mechCanon = await edgeServe(get("/mechanics/zh/beam-weapons.md"), env);
+check("direct mechanics .md twin names the HTML page as canonical",
+  mechCanon && (mechCanon.headers.get("link") || "").includes("https://wfsim.app/mechanics/zh/beam-weapons"),
+  mechCanon && mechCanon.headers.get("link"));
 const wasm = await edgeServe(get("/pkg/live.wasm"), env);
 check("a hashed file is the edge's", wasm && wasm.status === 200, wasm && wasm.status);
 const gone = await edgeServe(get("/pkg/gone.wasm"), env);
